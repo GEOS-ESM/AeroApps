@@ -1,0 +1,39 @@
+#
+# AOD Registry Resource File
+#
+
+# First block specifies number and channels to compute AOD over
+# and the input filenames to use. 
+# ------------------------------------------------------------
+
+# OMI SO2: 305, 310, 324, 380, 440, 500
+# OMI Aerosol: 354 388 [~380] 471 [~470] 
+# MODIS: .47e-6 .55e-6 .659e-6 .865e-6 1.24e-6 1.64e-6 2.13e-6
+# MISR: 468 [~470] 558 [~550] 672 [~670] 867 [~865]
+# PARASOL: 670 [~670]  865 
+# PACE: [  350, 360, 385, 412, 425, 443, 460, 475, 490, 510, 532, 555, 583,
+#          617, 640, 655, 665, 678, 710, 748, 765, 820, 865, 1245, 1640, 2135,]
+
+n_channels: 26
+n_moments: 500
+r_channels: .350E-6 .360E-6 .385E-6 .412E-6 .425E-6 .443E-6 .460E-6 .475E-6 .490E-6 .510E-6 .532E-6 .555E-6 .583E-6 .617E-6 .640E-6 .655E-6 .665E-6 .678E-6 .710E-6 .748E-6 .765E-6 .820E-6 .865E-6 1.245E-6 1.640E-6 2.135E-6
+
+# --------------------------------------------------------------
+#
+# Mie Tables:
+# ----------
+#  DU.v5   - Ellipsoid database, Levoni refractive indices
+#  SS.v3_2 - OPAC, cap at 95%
+#  OC.v1_2 - OPAC, Chin et al. 2002
+#  BC.v1_2 - OPAC, Chin et al. 2002
+#  SU.v3_2 - OPAC refractive index, Tang et al. growth curve, 
+#            Chin et al. 2002 particle size properties, 
+#            second bin for volcanic aerosols following V. Aquila
+#
+# --------------------------------------------------------------
+
+filename_optical_properties_DU: ExtData/g5chem/x/optics_DU.v5.nc
+filename_optical_properties_SS: ExtData/g5chem/x/optics_SS.v3_2.nc
+filename_optical_properties_OC: ExtData/g5chem/x/optics_OC.v1_2.nc
+filename_optical_properties_BC: ExtData/g5chem/x/optics_BC.v1_2.nc
+filename_optical_properties_SU: ExtData/g5chem/x/optics_SU.v3.nc

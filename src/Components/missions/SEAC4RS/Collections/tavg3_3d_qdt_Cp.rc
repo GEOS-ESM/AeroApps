@@ -1,0 +1,21 @@
+#
+# Resource file with variable list for GEOS-5 Collection <tavg3_3d_qdt_Cp>.
+#
+# This RC file was automatically created on Mon Jul 18 10:28:10 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover05:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: 3d,3-Hourly,Time-Averaged,Pressure-Level,Assimilation,Moist Tendencies
+DQVDTMST: specific humidity tendency due to moist;  kg kg-1 s-1
+DQVDTTRB: tendency of specific humidity due to turbulence;  kg kg-1 s-1
+DQVDTCHM: tendency of water vapor mixing ratio due to chemistry;  kg kg-1 s-1
+DQVDTDYN: tendency of specific humidity due to dynamics;  kg kg-1 s-1
+DQVDTANA: total specific humidity analysis tendency;  kg kg-1 s-1
+DQIDTMST: total ice water tendency due to moist;  kg kg-1 s-1
+DQIDTTRB: tendency of frozen condensate due to turbulence;  kg kg-1 s-1
+DQIDTDYN: tendency of ice water due to dynamics;  kg kg-1 s-1
+DQLDTMST: total liq water tendency due to moist;  kg kg-1 s-1
+DQLDTTRB: tendency of liquid condensate due to turbulence;  kg kg-1 s-1
+DQLDTDYN: tendency of liquid water due to dynamics;  kg kg-1 s-1

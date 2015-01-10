@@ -1,0 +1,4 @@
+DSET /nobackup/MERRA/tavg1_2d_slv_Nx/Y%y4/M%m2/MERRA300.prod.assim.tavg1_2d_slv_Nx.%y4%m2%d2.hdf
+TITLE tavg1_2d_slv_Nx
+OPTIONS template
+TDEF TIME:EOSGRID 999999 LINEAR  00:30Z01JAN2000  1Hr

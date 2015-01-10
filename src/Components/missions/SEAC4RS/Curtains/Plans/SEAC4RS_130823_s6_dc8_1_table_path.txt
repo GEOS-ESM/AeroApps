@@ -1,0 +1,62 @@
+DC8 817: SEAC4RS_130823_s6_dc8 v. 1
+
+Takeoff at 2013-08-23T15:00 UTC
+Total est. flight time = 7 hrs, 48 min
+Total est. distance flown = 2393 nmi
+
+---
+Remarks:
+This flight is primarily a aerosol, radiation, chemistry flight and includes
+an extra two hours that could be used for the NAM or for clouds and convection.
+
+
+DC-8 should hold first pass to WPT1A until third pass of ER-2 (~40 minutes).
+
+There is about a two hour stay on station at WPT1A which could be used for cloud study
+with Learjet, NAM study with the ER-2, or other purposes.
+
+DC-8 and ER-2 should rendezvous at WPT3A after the two hour delays.
+
+There is a 30 minute stay on station at WPT1A that starts low and should end
+high at 18 kft.
+
+On the final pass of WPTIA, the DC-8 will hold until the arrival of the ER-2
+(~67 minutes).
+---
+
+Defined Locations:
+   Name       Lat.       Lon.            Note
+ Origin    29.6000   -95.1700  Starting point
+   KEFD    29.6000   -95.1700  Starting point
+   EWP1    32.3549   -90.8947                
+   EWP2    34.2729   -93.1655                
+  WPT3A    33.7761   -90.9654                
+  WPT1A    33.7973   -92.5883                
+ 
+  Elapsed       Lat.       Lon.    Alt.
+    (hrs)     (deg.)     (deg.)   (kft)
+     0.00    29.6000   -95.1700    0.00
+     0.17    30.5858   -94.7648   18.00
+     0.74    34.2729   -93.1655   18.00
+     1.11    32.3549   -90.8947   18.00
+     1.15    32.3549   -90.8947   18.00
+     1.35    33.2303   -91.9127    1.00
+     1.55    33.7973   -92.5883    1.00
+     2.21    33.7973   -92.5883    1.00
+     4.03    33.7973   -92.5883    1.00
+     4.19    33.7973   -92.5883   18.00
+     4.22    33.7973   -92.5883   18.00
+     4.41    33.7761   -90.9654   18.00
+     4.45    33.7761   -90.9654   18.00
+     4.65    33.7962   -92.4380    1.00
+     4.68    33.7973   -92.5883    1.00
+     5.18    33.7973   -92.5883    1.00
+     5.34    33.7973   -92.5883   18.00
+     5.38    33.7973   -92.5883   18.00
+     5.59    33.7790   -91.1155    1.00
+     5.64    33.7761   -90.9654    1.00
+     5.96    33.7973   -92.5883    1.00
+     7.09    33.7973   -92.5883    1.00
+     7.25    32.9222   -93.1491   18.00
+     7.59    30.7406   -94.4942   18.00
+     7.81    29.6000   -95.1700    0.00

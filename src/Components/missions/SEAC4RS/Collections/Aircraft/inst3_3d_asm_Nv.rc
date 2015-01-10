@@ -1,0 +1,26 @@
+#
+# Resource file with variable list for GEOS-5 Collection <inst3_3d_asm_Nv>.
+#
+# This RC file was automatically created on Mon Jul 18 10:28:10 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover05:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: 3d,3-Hourly,Instantaneous,Model-Level,Assimilation Fields (wind,temperature)
+#SLP: sea level pressure;  Pa
+#PS: surface pressure;  Pa
+#PHIS: surface geopotential height;  m+2 s-2
+#DELP: pressure thickness;  Pa
+#PL: mid level pressure;  Pa
+T: air temperature;  K
+#U: eastward wind;  m s-1
+#V: northward wind specific humidity ertels potential vorticity;  m s-1 kg kg-1 K m+2 kg-1 s-1
+#OMEGA: vertical pressure velocity;  Pa s-1
+QV: specific humidity;  kg kg-1
+#QL: mass fraction of cloud liquid water;  kg kg-1
+#QI: mass fraction of cloud ice water;  kg kg-1
+RH: relative humidity after moist;  1
+H: geopotential height; m
+O3: ozone mass mixing ratio;  kg kg-1
+#EPV: ertels potential vorticity;  K m+2 kg-1 s-1

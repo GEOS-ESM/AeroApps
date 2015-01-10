@@ -1,0 +1,10 @@
+#
+# HISTORY:
+# -------
+#   29Oct2008 -  Todling - created to handle height assignment
+#                          and possibly other opts to odsmatch
+#   25Feb2009 -  Redder/RT - kx's 281:289 where missing
+#   31May2012 -  Todling   - add new GPS 3,41,421,440,821
+# 
+
+list_kx_height_based: 221 223 224 226 229 280:290 299 401 3 4 41 42 421 440 722:723 740:745 786 820 821

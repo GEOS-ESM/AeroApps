@@ -1,0 +1,19 @@
+#AOD_L3A  processing
+
+AOD_L3A_VERBOSE   = YES
+AOD_L3A_OVERWRITE = NO
+
+AOD_L3A_AER_DIR   = /discover/nobackup/projects/gmao/yotc/pub/e561_tst_02
+AOD_L3A_OUT_DIR   = /discover/nobackup/adasilva/GAAS/%s%/Y%y4/M%m2
+
+AOD_L3A_AER_F     = e561_tst_02.inst3_3d_aer_Nv.%y4%m2%d2_%h200z.nc4
+
+AOD_L3A_AOD_F     = %s.aod_f.sfc.%y4%m2%d2_%h200z.nc4
+AOD_L3A_AOD_A     = %s.aod_a.sfc.%y4%m2%d2_%h200z.nc4
+AOD_L3A_AOD_D     = %s.aod_d.sfc.%y4%m2%d2_%h200z.nc4
+AOD_L3A_AOD_K     = %s.aod_k.sfc.%y4%m2%d2_%h200z.nc4
+AOD_L3A_AOD_B     = %s.aod_b.sfc.%y4%m2%d2_%h200z.nc4
+AOD_L3A_ODS_A     = %s.aod_a.obs.%y4%m2%d2_%h200z.ods
+AOD_L3A_LST_A     = %s.aod_a.stdout.%y4%m2%d2_%h200z.txt
+
+#END AOD_L3A  processing

@@ -1,0 +1,58 @@
+#
+# Resource file with variable list for GEOS-5 Collection <tavg3_2d_tag_Nx>.
+#
+# This RC file was automatically created on Mon Jul 18 10:28:10 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover05:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: 2d,3-Hourly,Time-Averaged,Single-Level,Analysis,Constituent Diagnostics
+LWI: land(1) water(0) ice(2) flag;  1
+COEMbbae: CO Emission (Asia and Europe Biomass Burning);  kg m-2 s-1
+COEMbbna: CO Emission (North America Biomass Burning);  kg m-2 s-1
+COEMbbla: CO Emission (Central and South America Biomass Burning);  kg m-2 s-1
+COEMbbaf: CO Emission (Africa Biomass Burning);  kg m-2 s-1
+COEMbbgl: CO Emission (Global Biomass Burning);  kg m-2 s-1
+COEMnbas: CO Emission (Asia Non-Biomass Burning);  kg m-2 s-1
+COEMnbeu: CO Emission (European Non-Biomass Burning);  kg m-2 s-1
+COEMnbna: CO Emission (North American Non-Biomass Burning);  kg m-2 s-1
+COEMnbgl: CO Emission (Global Non-Biomass Burning);  kg m-2 s-1
+COPDbbae: CO Chemical Production (Asia and Europe Biomass Burning);  kg m-2 s-1
+COPDbbna: CO Chemical Production (North America Biomass Burning);  kg m-2 s-1
+COPDbbla: CO Chemical Production (Central and South America Biomass Burning);  kg m-2 s-1
+COPDbbaf: CO Chemical Production (Africa Biomass Burning);  kg m-2 s-1
+COPDbbgl: CO Chemical Production (Global Biomass Burning);  kg m-2 s-1
+COPDnbas: CO Chemical Production (Asia Non-Biomass Burning);  kg m-2 s-1
+COPDnbeu: CO Chemical Production (European Non-Biomass Burning);  kg m-2 s-1
+COPDnbna: CO Chemical Production (North American Non-Biomass Burning);  kg m-2 s-1
+COPDnbgl: CO Chemical Production (Global Non-Biomass Burning);  kg m-2 s-1
+COLSbbae: CO Chemical Loss (Asia and Europe Biomass Burning);  km m-2 s-1
+COLSbbna: CO Chemical Loss (North America Biomass Burning);  km m-2 s-1
+COLSbbla: CO Chemical Loss (Central and South America Biomass Burning);  km m-2 s-1
+COLSbbaf: CO Chemical Loss (Africa Biomass Burning);  km m-2 s-1
+COLSbbgl: CO Chemical Loss (Global Biomass Burning);  km m-2 s-1
+COLSnbas: CO Chemical Loss (Asia Non-Biomass Burning);  kg m-2 s-1
+COLSnbeu: CO Chemical Loss (European Non-Biomass Burning);  kg m-2 s-1
+COLSnbna: CO Chemical Loss (North American Non-Biomass Burning);  kg m-2 s-1
+COLSnbgl: CO Chemical Loss (Global Non-Biomass Burning);  kg m-2 s-1
+COSCbbae: CO Surface Concentration in ppbv (Asia and Europe Biomass Burning);  1e-9
+COSCbbna: CO Surface Concentration in ppbv (North America Biomass Burning);  1e-9
+COSCbbla: CO Surface Concentration in ppbv (Central and South America Biomass Burning);  1e-9
+COSCbbaf: CO Surface Concentration in ppbv (Africa Biomass Burning);  1e-9
+COSCbbgl: CO Surface Concentration in ppbv (Global Biomass Burning);  1e-9
+COSCnbas: CO Surface Concentration in ppbv (Asia Non-Biomass Burning);  1e-9
+COSCnbeu: CO Surface Concentration in ppbv (European Non-Biomass Burning);  1e-9
+COSCnbna: CO Surface Concentration in ppbv (North American Non-Biomass Burning);  1e-9
+COSCnbgl: CO Surface Concentration in ppbv (Global Non-Biomass Burning);  1e-9
+COCLbbae: CO Column Burden (Asia and Europe Biomass Burning);  kg m-2
+COCLbbna: CO Column Burden (North America Biomass Burning);  kg m-2
+COCLbbla: CO Column Burden (Central and South America Biomass Burning);  kg m-2
+COCLbbaf: CO Column Burden (Africa Biomass Burning);  kg m-2
+COCLbbgl: CO Column Burden (Global Biomass Burning);  kg m-2
+COCLnbas: CO Column Burden (Asia Non-Biomass Burning);  kg m-2
+COCLnbeu: CO Column Burden (European Non-Biomass Burning);  kg m-2
+COCLnbna: CO Column Burden (North American Non-Biomass Burning);  kg m-2
+COCLnbgl: CO Column Burden (Global Non-Biomass Burning);  kg m-2
+#CFC12strat: Stratospheric CFC-12 (CCl2F2);  mol mol-1
+#CFC12trop: Tropospheric CFC-12 (CCl2F2);  mol mol-1

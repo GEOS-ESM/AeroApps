@@ -1,0 +1,356 @@
+C ###########################################################
+C #                                                         #
+C #                    THE LIDORT FAMILY                    #
+C #                                                         #
+C #      (LInearized Discrete Ordinate Radiative Transfer)  #
+C #       --         -        -        -          -         #
+C #                                                         #
+C ###########################################################
+
+C ###########################################################
+C #                                                         #
+C #  Author :      Robert. J. D. Spurr                      #
+C #                                                         #
+C #  Address :      RT Solutions, Inc.                      #
+C #            9 Channing Street                            #
+C #             Cambridge, MA 02138, USA                    #
+C #                                                         #
+C #  Tel:       (617) 492 1183                              #
+C #  Email :      rtsolutions@verizon.net                   #
+C #                                                         #
+C #  This Version :   3.3                                   #
+C #  Release Date :   September 2007                        #
+C #                                                         #
+C #       NEW: THERMAL SUPPLEMENT INCLUDED    (3.2)         #
+C #       NEW: OUTGOING SPHERICITY CORRECTION (3.2)         #
+C #       NEW: TOTAL COLUMN JACOBIANS         (3.3)         #
+C #                                                         #
+C ###########################################################
+
+C    #####################################################
+C    #                                                   #
+C    #   This Version of LIDORT comes with a GNU-style   #
+C    #   license. Please read the license carefully.     #
+C    #                                                   #
+C    #####################################################
+
+C  File name :  LIDORT.PARS.
+C  Purpose   : Include File of constants for LIDORT model.
+
+C  Version number
+C  ==============
+
+      CHARACTER*3       LIDORT_VERSION_NUMBER
+      PARAMETER       ( LIDORT_VERSION_NUMBER = '3.3' )
+
+C  File i/o unit numbers
+C  =====================
+
+      INTEGER         LIDORT_FUNIT,   LIDORT_INUNIT,  LIDORT_SCENUNIT
+      INTEGER         LIDORT_RESUNIT, LIDORT_ERRUNIT, LIDORT_DBGUNIT
+      PARAMETER       ( LIDORT_INUNIT   = 21 )
+      PARAMETER       ( LIDORT_SCENUNIT = 21 )
+      PARAMETER       ( LIDORT_FUNIT    = 23 )
+      PARAMETER       ( LIDORT_RESUNIT  = 24 )
+      PARAMETER       ( LIDORT_ERRUNIT  = 25 )
+      PARAMETER       ( LIDORT_DBGUNIT  = 71 )
+
+C  Basic dimensions
+C  ================
+
+C  Computational dimensioning
+C  --------------------------
+
+C  Number of computational streams in the half-space
+
+      INTEGER         MAXSTREAMS
+      PARAMETER       ( MAXSTREAMS = 1 )
+
+C  Maximum number of computational layers
+
+      INTEGER         MAXLAYERS
+      PARAMETER       ( MAXLAYERS = 60 )
+
+C  Maximum number of fine layers used in single scattering corrections
+
+      INTEGER         MAXFINELAYERS
+      PARAMETER       ( MAXFINELAYERS = 4 )
+
+C  Maximum number of input moments.
+C    (Use full range for exact single scatter calculations)
+
+      INTEGER         MAXMOMENTS_INPUT
+      PARAMETER       ( MAXMOMENTS_INPUT = 351 )
+
+C  Max number of thermal coefficients
+
+      INTEGER           MAX_THERMAL_COEFFS
+      PARAMETER       ( MAX_THERMAL_COEFFS = 1 )
+
+C  Geometrical and output parameters
+C  ---------------------------------
+
+C  Maximum number of solar beams
+
+      INTEGER         MAXBEAMS
+      PARAMETER       ( MAXBEAMS = 1 )
+
+C  maximum number of user-defined output zenith angles
+
+      INTEGER         MAX_USER_STREAMS
+      PARAMETER       ( MAX_USER_STREAMS = 1 )
+
+C  maximum number of user-defined output relative azimuth angles
+
+      INTEGER         MAX_USER_RELAZMS
+      PARAMETER       ( MAX_USER_RELAZMS = 1 )
+
+C  Maximum number of output optical depths
+
+      INTEGER         MAX_OUT_USERTAUS
+      PARAMETER       ( MAX_OUT_USERTAUS = 2 )
+
+C  Maximum number of output optical depths away from layer boundaries 
+C   This must be less than or equal to the previous entry
+
+      INTEGER         MAX_OFFGRID_USERTAUS
+      PARAMETER       ( MAX_OFFGRID_USERTAUS = 1 )
+
+C  Fixed parameters
+C  ----------------
+
+C  Two directions (Up and Down)
+
+      INTEGER         MAX_DIRECTIONS
+      PARAMETER       ( MAX_DIRECTIONS = 2 )
+
+C  Surface BRDF dimensioning
+C  -------------------------
+
+C  Maximum number of BRDF kernels
+
+      INTEGER         MAX_BRDF_KERNELS
+      PARAMETER       ( MAX_BRDF_KERNELS = 1 )
+
+C  Maximum number of BRDF parameters per kernel
+
+      INTEGER         MAX_BRDF_PARAMETERS
+      PARAMETER       ( MAX_BRDF_PARAMETERS = 3 )
+
+C  Maximum number of azimuth-quadrature streams for BGRDF Fourier.
+
+      INTEGER         MAXSTREAMS_BRDF, MAXSTHALF_BRDF
+c      PARAMETER       ( MAXSTREAMS_BRDF = 2 )
+      PARAMETER       ( MAXSTREAMS_BRDF = 51 )       ! best
+
+C  Weighting functions
+C  -------------------
+
+C  Maximum number of profile/column weighting functions
+
+      INTEGER          MAX_ATMOSWFS
+      PARAMETER        ( MAX_ATMOSWFS = 4 )
+
+C  Maximum number of surface property weighting functions
+
+      INTEGER          MAX_SURFACEWFS
+      PARAMETER        ( MAX_SURFACEWFS = 4 )
+
+C  Derived dimensions
+C  ==================
+
+C  Maximum possible geometries
+
+      INTEGER         MAX_GEOMETRIES
+      PARAMETER       ( MAX_GEOMETRIES =
+     &           MAX_USER_STREAMS*MAX_USER_RELAZMS*MAXBEAMS )
+
+C  All streams
+
+      INTEGER         MAX_ALLSTRMS
+      PARAMETER       ( MAX_ALLSTRMS = MAX_USER_STREAMS + MAXSTREAMS )
+
+C  All streams for the Legendre PI-matrix setup.
+C   Straightline setting: This setting should avoid dimensioning error
+c      INTEGER         MAX_ALLSTRMS_P1
+c      PARAMETER       ( MAX_ALLSTRMS_P1 = MAX_ALLSTRMS + MAXBEAMS )
+
+C  All streams for the Legendre setup.
+C   This setting should avoid dimensioning error  Watch out for  Kill
+
+      INTEGER         MAX_ALLSTRMS_P1
+      PARAMETER       ( MAX_ALLSTRMS_P1 = 
+     &                        MAX_ALLSTRMS + MAXBEAMS*MAXLAYERS )
+
+C  Maximum number of output streams
+
+      INTEGER         MAX_OUT_STREAMS
+      PARAMETER       ( MAX_OUT_STREAMS = MAX_ALLSTRMS )
+
+C  Maximum number of moments in the diffuse field calculation
+C   This is always 2*MAXSTREAMS, in case we need DELTA-M
+
+      INTEGER         MAXMOMENTS
+      PARAMETER       ( MAXMOMENTS = 2*MAXSTREAMS )
+
+C  Maximum number of Fourier components = 2*MAXSTREAMS - 1
+
+      INTEGER         MAXFOURIER
+      PARAMETER       ( MAXFOURIER = 2*MAXSTREAMS - 1 )
+
+C  Half the number of BRDF azimuth quadratures
+
+      PARAMETER       ( MAXSTHALF_BRDF = MAXSTREAMS_BRDF / 2 )
+
+C  Other derived dimensions
+
+      INTEGER         MAXSTREAMS_2, MAXSTREAMS_P1
+      PARAMETER       ( MAXSTREAMS_2  = 2*MAXSTREAMS )
+      PARAMETER       ( MAXSTREAMS_P1 = MAXSTREAMS + 1 )
+
+C  For the BVP problems
+
+      INTEGER           MAXTOTAL, MAXBANDTOTAL
+      PARAMETER       ( MAXTOTAL = MAXLAYERS*MAXSTREAMS_2 )
+      PARAMETER       ( MAXBANDTOTAL = 9*MAXSTREAMS - 2 )
+
+C  Format constants
+C  ================
+
+      CHARACTER *(*)  FMT_HEADING
+      PARAMETER       ( FMT_HEADING =
+     $                          '( / T6, ''-----> '', A, /)' )
+
+      CHARACTER *(*)  FMT_INTEGER
+      PARAMETER       ( FMT_INTEGER = '(T6, A, T58, I10)' )
+
+      CHARACTER *(*)  FMT_REAL
+      PARAMETER       ( FMT_REAL = '(T6, A, T58, 1PG14.6)' )
+
+      CHARACTER *(*)  FMT_CHAR
+      PARAMETER       ( FMT_CHAR = '(T6, A, T48, A20)' )
+
+      CHARACTER *(*)  FMT_SECTION
+      PARAMETER       ( FMT_SECTION =
+     $                          '( / T6, ''-----> '', A, /)' )
+C     $                  '( // T6 
+C     $                  ''----------------------------------------'', 
+C     $                  ''-----------------------------------'', 
+C     $                      / T6 A, 
+C     $                      / T6  
+C     $                  ''----------------------------------------'', 
+C     $                  ''-----------------------------------'', 
+C     $                          / )' )
+
+C  numbers
+C  =======
+
+      DOUBLE PRECISION FOUR,THREE,TWO,ONEP5,ONE,ZERO
+      DOUBLE PRECISION MINUS_ONE,MINUS_TWO
+      DOUBLE PRECISION HALF,QUARTER,DEG_TO_RAD,PIE,PI4,PI2,PIO2,PIO4
+      DOUBLE PRECISION EPS3, EPS4, EPS5
+      DOUBLE PRECISION SMALLNUM, BIGEXP
+
+      PARAMETER       ( ONE = 1.0D0, ZERO = 0.0D0,  ONEP5 = 1.5D0 )
+      PARAMETER       ( TWO = 2.0D0, THREE = 3.0D0, FOUR = 4.0D0 )
+      PARAMETER       ( QUARTER = 0.25D0, HALF = 0.5D0 )
+      PARAMETER       ( MINUS_ONE = -ONE )
+      PARAMETER       ( MINUS_TWO = -TWO )
+      PARAMETER       ( DEG_TO_RAD = 1.7453292519943D-02 )
+      PARAMETER       ( PIE = 180.0D0*DEG_TO_RAD )
+      PARAMETER       ( PI2 = 2.0D0 * PIE )
+      PARAMETER       ( PI4 = 4.0D0 * PIE )
+      PARAMETER       ( PIO2 = HALF * PIE )
+      PARAMETER       ( PIO4 = QUARTER * PIE )
+      PARAMETER       ( EPS3 = 0.001D0 )
+      PARAMETER       ( EPS4 = 0.0001D0 )
+      PARAMETER       ( EPS5 = 0.00001D0 )
+      PARAMETER       ( SMALLNUM = 1.0D-15 )
+      PARAMETER       ( BIGEXP = 32.0D0 )
+
+C  Control for Using L'Hopital's Rule
+
+      DOUBLE PRECISION HOPITAL_TOLERANCE
+      PARAMETER       ( HOPITAL_TOLERANCE = EPS5 )
+
+C  Control for limits of single scatter albedo
+
+      DOUBLE PRECISION OMEGA_SMALLNUM
+      PARAMETER       ( OMEGA_SMALLNUM = 1.0D-8 )
+
+C  Control for limits of extinction optical depth along solar path
+
+      DOUBLE PRECISION MAX_TAU_SPATH
+      PARAMETER       ( MAX_TAU_SPATH = 32.0D0 )
+
+C  Control for limits of extinction optical depth along USER paths
+
+      DOUBLE PRECISION MAX_TAU_UPATH
+      PARAMETER       ( MAX_TAU_UPATH = 32.0D0 )
+
+C  Control for limits of extinction optical depth along QUADRATURE paths
+
+      DOUBLE PRECISION MAX_TAU_QPATH
+      PARAMETER       ( MAX_TAU_QPATH = 32.0D0 )
+
+C  error indices
+C  =============
+
+      INTEGER           LIDORT_SERIOUS
+      PARAMETER       ( LIDORT_SERIOUS  = 4 )
+
+      INTEGER           LIDORT_WARNING
+      PARAMETER       ( LIDORT_WARNING  = 3 )
+
+      INTEGER           LIDORT_INFO
+      PARAMETER       ( LIDORT_INFO     = 2 )
+
+      INTEGER           LIDORT_DEBUG
+      PARAMETER       ( LIDORT_DEBUG    = 1 )
+
+      INTEGER           LIDORT_SUCCESS
+      PARAMETER       ( LIDORT_SUCCESS  = 0 )
+
+C  directional indices
+
+      INTEGER         UPIDX
+      PARAMETER       ( UPIDX  = 1 )
+
+      INTEGER         DNIDX
+      PARAMETER       ( DNIDX  = 2 )
+
+C  surface indices
+C  ---------------
+
+C  These refer to the BRDF kernel functions currently included.
+
+      INTEGER          LAMBERTIAN_IDX
+      INTEGER          ROSSTHIN_IDX
+      INTEGER          ROSSTHICK_IDX
+      INTEGER          LISPARSE_IDX
+      INTEGER          LIDENSE_IDX
+      INTEGER          HAPKE_IDX
+      INTEGER          ROUJEAN_IDX
+      INTEGER          RAHMAN_IDX
+      INTEGER          COXMUNK_IDX
+c      INTEGER          GISSCOXMUNK_IDX
+      INTEGER          GISSSOIL_IDX
+      INTEGER          GISSSNOW_IDX
+
+      PARAMETER       ( LAMBERTIAN_IDX  = 1 )
+      PARAMETER       ( ROSSTHIN_IDX    = 2 )
+      PARAMETER       ( ROSSTHICK_IDX   = 3 )
+      PARAMETER       ( LISPARSE_IDX    = 4 )
+      PARAMETER       ( LIDENSE_IDX     = 5 )
+      PARAMETER       ( HAPKE_IDX       = 6 )
+      PARAMETER       ( ROUJEAN_IDX     = 7 )
+      PARAMETER       ( RAHMAN_IDX      = 8 )
+      PARAMETER       ( COXMUNK_IDX     = 9 )
+      PARAMETER       ( GISSSOIL_IDX    = 10 )
+      PARAMETER       ( GISSSNOW_IDX    = 11 )
+
+      INTEGER          MAXBRDF_IDX
+      PARAMETER       ( MAXBRDF_IDX = GISSSNOW_IDX )
+
+C  End of file.
+

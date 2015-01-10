@@ -1,0 +1,43 @@
+$NUM_HEADER, 1001
+da Silva, Arlindo
+NASA/GSFC Global Modeling adn Assimilation Office
+$PRODUCT
+NASA DISCOVER-AQ Airborne Campaign, July 2011 (Maryland)
+1, 1
+$FIRST_DATA_DATE, $REV_DATE
+$DT_seconds
+UTC_start, seconds
+$NUM_VARS
+$SCALE_FACTORS
+$MISSING_VALUES
+__VARIABLE_METADATA__
+0
+28
+PI_CONTACT_INFO: Arlindo da Silva, NASA/GSFC, Code 610.1, Greenbelt, MD 20771, (301) 614-6174
+PLATFORM: GEOS-5 ADAS fields interpolated to $SITE 
+LOCATION: lat: $lat; lon: $lon; elevation: $elevation
+ASSOCIATED_DATA: Derived from global gridded fields available from http://gmao.gsfc.nasa.gov/projects/DISCOVER-AQ/
+INSTRUMENT_INFO: GEOS-5 Version 5.7.2 assimilated products interpolated to site location; contact PI for additional information.
+DATA_INFO: For a general description of GEOS-5 data products consult http://gmao.gsfc.nasa.gov/products/#atmos_assim.
+           For mission specific information, consult http://gmao.gsfc.nasa.gov/projects/DISCOVER-AQ/
+UNCERTAINTY:  Contact PI
+ULOD_Flag:   -7777
+ULOD_VALUE:  N/A
+LLOD_Flag:   -8888
+LLOD_VALUE:  N/A
+DM_CONTACT_INFO: Virginie Buchard-Marchant, USRA and NASA/GSFC, Code 610.1, Greenbelt, MD 20771, (301) 614-6266
+PROJECT_INFO:  http://discover-aq.larc.nasa.gov/science.php
+STIPULATIONS_ON_USE: The data is preliminary and subject to change
+OTHER_COMMENTS: The GEOS-5 Atmospheric Data Assimilation System
+                utilizes the GSI analysis solver originally developed
+at NOAA/NCEP, combined with the GEOS-5 atmospheric forecast model.
+This system includes a wealth of in-situ and satellite radiance data, see
+http://gmao.gsfc.nasa.gov/products/forecasts/systems/fp/obstat_coverage/.
+Model resolution is 0.25 deg longitude by 0.3125 deg latitude, 
+with 72 vertical layers, with the model top at 0.01 hPa (~85 km). 
+Aerosols are transported on-line within GEOS-5, with aerosol
+processes deverived from the GOCART model. For additional information,
+http://geos5.org/wiki/index.php?title=GEOS-5_Configuration_for_DISCOVER-AQ.
+REVISION: RA
+RA: This version does NOT include assimilation of MODIS aerosol measurements. 
+$VAR_NAMES

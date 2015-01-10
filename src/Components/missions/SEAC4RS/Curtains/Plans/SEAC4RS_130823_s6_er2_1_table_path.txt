@@ -1,0 +1,73 @@
+ER2 809: SEAC4RS_130823_s6_er2 v. 1
+
+Takeoff at 2013-08-23T15:20 UTC
+Total est. flight time = 7 hrs, 52 min
+Total est. distance flown = 2879 nmi
+
+---
+Remarks:
+This flight is primarily a aerosol, radiation, chemistry flight and includes
+an extra two hours that could be used for the NAM or for clouds and convection.
+
+
+The ER-2 will coordinate with the DC-8 on the first pass of the DC-8 to WPT1A,
+the third pass of ER-2.
+
+The leg out to OKC is an example NAM sampling, which is one of the possibilities
+for what could be done during that ~2 hour period.
+
+DC-8 and ER-2 should rendezvous at WPT3A after the two hour delays.
+
+On the final pass from WPT3 to WPT1, the ER-2 and DC-8 should rendezvous
+at WPTIA. The DC-8 will hold until the arrival of the ER-2 (~67 minutes).
+---
+
+Defined Locations:
+  Name       Lat.       Lon.            Note
+  KEFD    29.6000   -95.1700  Starting point
+  WPT1    33.8000   -93.4000              UL
+   OKC    35.3931   -97.6008                
+  EWP1    32.3549   -90.8947                
+  EWP2    34.2729   -93.1655                
+ WPT3A    33.7761   -90.9654                
+  WPT3    33.7575   -90.1544                
+ WPT1A    33.7973   -92.5883                
+   N01    30.8802   -93.2410                
+   N02    34.6465   -94.5575                
+   N03    35.0578   -96.1852                
+   N04    33.8092   -93.4000                
+   N05    32.4446   -91.8080                
+   N06    31.0041   -94.7580                
+ 
+  Elapsed       Lat.       Lon.    Alt.
+    (hrs)     (deg.)     (deg.)   (kft)
+     0.00    29.6000   -95.1700    0.00
+     0.40    30.8802   -93.2410   61.00
+     0.57    30.8802   -93.2410   61.00
+     0.99    32.3549   -90.8947   61.00
+     1.42    34.2755   -93.1625   61.00
+     1.47    34.2755   -93.1625   61.00
+     1.89    32.3554   -90.8942   61.00
+     1.94    32.3554   -90.8942   61.00
+     2.38    34.2745   -93.1637   61.00
+     2.59    34.6465   -94.5575   45.00
+     2.83    35.0578   -96.1852   61.00
+     3.02    35.3931   -97.6008   61.00
+     3.07    35.3931   -97.6008   61.00
+     4.07    33.7575   -90.1544   61.00
+     4.12    33.7575   -90.1544   61.00
+     4.55    33.8092   -93.4000   61.00
+     4.58    33.8092   -93.4000   61.00
+     4.91    32.4446   -91.8080   61.00
+     5.21    33.7568   -90.1549   61.00
+     5.25    33.7568   -90.1549   61.00
+     5.68    33.8062   -93.4005   61.00
+     5.71    33.8062   -93.4005   61.00
+     6.04    32.4428   -91.8071   61.00
+     6.34    33.7568   -90.1561   61.00
+     6.38    33.7568   -90.1561   61.00
+     6.81    33.8021   -93.4017   61.00
+     6.97    33.8021   -93.4017   61.00
+     7.07    33.8016   -93.9627   65.00
+     7.52    31.0451   -94.7673   65.00
+     7.88    29.6000   -95.1700    0.00

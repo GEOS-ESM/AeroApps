@@ -1,0 +1,47 @@
+#
+# Resource file with variable list for GEOS-5 Collection <tavg1_2d_flx_Nx>.
+#
+# This RC file was automatically created on Mon Jul 18 10:28:10 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover05:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: 2d,1-Hourly,Time-Averaged,Single-Level,Assimilation,Surface Flux Diagnostics
+EFLUX: total latent energy flux;  W m-2
+EVAP: evaporation from turbulence;  kg m-2 s-1
+HFLUX: sensible heat flux from turbulence;  W m-2
+TAUX: eastward surface stress;  N m-2
+TAUY: northward surface stress;  N m-2
+TAUGWX: surface eastward gravity wave stress;  N m-2
+TAUGWY: surface northward gravity wave stress;  N m-2
+PBLH: planetary boundary layer height;  m
+DISPH: zero plane displacement height;  m
+BSTAR: surface bouyancy scale;  m s-2
+USTAR: surface velocity scale;  m s-1
+TSTAR: surface temperature scale;  K
+QSTAR: surface moisture scale;  kg kg-1
+Z0H: surface roughness for heat;  m
+Z0M: surface roughness;  m
+HLML: surface layer height;  m
+TLML: surface air temperature;  K
+QLML: surface specific humidity;  kg kg-1
+ULML: surface eastward wind;  m s-1
+VLML: surface northward wind;  m s-1
+RHOA: air density at surface;  kg m-3
+SPEED: surface ventilation velocity;  m s-1
+CDH: surface exchange coefficient for heat;  kg m-2 s-1
+CDQ: surface exchange coefficient for moisture;  kg m-2 s-1
+CDM: surface exchange coefficient for momentum;  kg m-2 s-1
+CN: surface neutral drag coefficient;  1
+TSH: effective surface skin temperature;  K
+QSH: effective surface specific humidity;  kg kg-1
+FRSEAICE: ice covered fraction of tile;  1
+PRECANV: anvil precipitation;  kg m-2 s-1
+PRECCON: convective precipitation;  kg m-2 s-1
+PRECLSC: nonanvil large scale precipitation;  kg m-2 s-1
+PRECSNO: snowfall;  kg m-2 s-1
+PRECTOT: total precipitation;  kg m-2 s-1
+PGENTOT: Total column production of precipitation;  kg m-2 s-1
+PREVTOT: Total column re-evap/subl of precipitation;  kg m-2 s-1
+RISFC: surface bulk richardson number;  1

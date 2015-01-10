@@ -1,0 +1,117 @@
+Tunning for NCA: nnr_002
+------------------------
+
+1) Based on collection 5.1; after some exploratory analysis, decided
+no to include deep blue until collection 6.
+
+2) Land albedo threshhold (alb_min) is 0.25 as in NNR_001; this should
+be changed to 0.15 when we reconsider deep blue in collection 6.
+
+3) Ocean now uses albedo LUT rather than wind speed.
+
+4) Cloud thereshold is now 70%
+
+modl nnr_002 (Terra, Land)
+==========================
+Testing results for 3049 testing cases:
+OUTPUT 1 (node nr 35):
+Regression line parameters:
+slope       =  0.832033
+intercept   = -0.317249
+correlation =  0.907448
+tailprob    =  0.000000
+stderr      =  0.006979
+
+modl nnr_002 (Aqua, Land)
+==========================
+Testing results for 1965 testing cases:
+OUTPUT 1 (node nr 35):
+Regression line parameters:
+slope       =  0.816729
+intercept   = -0.345608
+correlation =  0.904867
+tailprob    =  0.000000
+stderr      =  0.008672
+
+mydo nnr_002 (Aqua, Ocean)
+=========================
+Testing results for 1591 testing cases:
+OUTPUT 1 (node nr 31):
+Regression line parameters:
+slope       =  0.881585
+intercept   = -0.215375
+correlation =  0.941079
+tailprob    =  0.000000
+stderr      =  0.007948
+
+modo nnr_002 (Terra, Ocean)
+===========================
+Testing results for 1979 testing cases:
+OUTPUT 1 (node nr 31):
+Regression line parameters:
+slope       =  0.887082
+intercept   = -0.223879
+correlation =  0.937936
+tailprob    =  0.000000
+stderr      =  0.007377
+
+
+
+-------------------------- before NCA in 2013 ---------------------
+
+mydl nnr_001 (baseline)
+=======================
+
+Testing results for 1974 testing cases:
+OUTPUT 1 (node nr 29):
+Regression line parameters:
+slope       =  0.798472
+intercept   = -0.376481
+correlation =  0.895175
+tailprob    =  0.000000
+stderr      =  0.008953
+
+mydl nnr_002
+------------
+OUTPUT 1 (node nr 35):
+Regression line parameters:
+slope       =  0.816729
+intercept   = -0.345608
+correlation =  0.904867
+tailprob    =  0.000000
+stderr      =  0.008672
+
+mydo nnr_001 (baseline)
+=======================
+Testing results for 1591 testing cases:
+OUTPUT 1 (node nr 31):
+Regression line parameters:
+slope       =  0.884626
+intercept   = -0.210880
+correlation =  0.942081
+tailprob    =  0.000000
+stderr      =  0.007900
+
+mydo nnr_002 (albedo instead of speed)
+======================================
+Testing results for 1591 testing cases:
+OUTPUT 1 (node nr 31):
+Regression line parameters:
+slope       =  0.881585
+intercept   = -0.215375
+correlation =  0.941079
+tailprob    =  0.000000
+stderr      =  0.007948
+
+mydd  nnr_002 (albedo>0.15)
+==========================
+Testing results for 1055 testing cases:
+OUTPUT 1 (node nr 21):
+Regression line parameters:
+slope       =  0.774058
+intercept   = -0.429037
+correlation =  0.884389
+tailprob    =  0.000000
+stderr      =  0.012589
+
+

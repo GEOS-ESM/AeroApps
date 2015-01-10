@@ -1,0 +1,14 @@
+#
+# Resource file with variable list for GEOS-5 Collection <modis-t_land>.
+#
+# This RC file was automatically created on Mon Jul 18 10:28:10 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover05:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: Gridded MODIS Aerosol Retrievals
+tau: Aerosol Optical Depth;  1
+tau_: Aerosol Optical Depth (Revised);  1
+tau_fine: Aerosol Optical Depth (Fine Mode);  1
+cloud: Cloud Fraction;  1

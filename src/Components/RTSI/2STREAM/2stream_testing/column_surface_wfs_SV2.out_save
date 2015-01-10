@@ -1,0 +1,13 @@
+Column WFS (Stream value = 0.57735):
+
+      geom#  WF#      2s-analytic       2s-Findiff.       %diff
+
+uptoa    1    1    -1.301782144E-02  -1.301767583E-02   1.118579673E-03
+dnboa    1    1    -1.531358996E-02  -1.531347989E-02   7.187539494E-04
+
+Surface WFS (Stream value = 0.57735):
+
+      geom#  WF#      2s-analytic       2s-Findiff.       %diff
+
+uptoa    1    1     2.343626718E-02   2.343634096E-02  -3.148005222E-04
+dnboa    1    1     7.436996383E-04   7.437019794E-04  -3.147921558E-04

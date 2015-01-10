@@ -1,0 +1,3 @@
+DSET geos-ica.nc4
+OPTIONS zrev
+ZDEF height_edge 27 LINEAR 1 1

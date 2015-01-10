@@ -1,0 +1,1778 @@
+!BOI
+
+!  !TITLE: The ODS Library Documentation \\ Version 2.18
+
+!  !AUTHORS: Christopher Redder and Arlindo da Silva
+
+!  !AFFILIATION: Data Assimilation Office, NASA/GSFC, Greenbelt, MD 20771
+
+!  !DATE: February 2001
+
+!  !INTRODUCTION: Package Overview 
+\setcounter{secnumdepth}{5}
+\setlength{\parskip}{0.5em}
+This document describes the Observation Data Stream (ODS) format used
+for pre- and post-analysis station data (non-gridded). These HDF
+compliant files are intended to serve as input as well as output for
+the Goddard EOS Data Assimilation System (GEOS/DAS). This document
+describes the concept of an ODS file and the application program
+interface (API) software. It is geared to the producers and users of
+such data sets.
+
+This document deals with the Observation Data Stream (ODS) concept
+and its FORTRAN implementation using MFHDF, the NetCDF interface to the
+Hierarchical Data Format (HDF\footnote{The conventions adopted in ODS
+do not strictly adhere to the EOSDIS standard for HDF files.})
+developed at the National Center for Supercomputer Applications
+(NCSA). No prior exposure to NetCDF or HDF is assumed, but familiarity
+with the general structure of Goddard EOS Data Assimilation System
+(GEOS/DAS) would be helpful.
+
+%....................................................................
+
+\subsection{Design Considerations}
+\label{sec:Design}
+%           ---------------------
+
+Originally, all observational data received at DAO were first
+archived with a consistent home-grown format known as UNPACK. UNPACK
+files held all observational data received, including data that is
+never included in the assimilation process. In preparation for
+assimilation, a pre-processing system referred to as REPACK selects
+data from UNPACK files, performs a few simple quality checks and
+corrections (such as the hydrostatic check), producing as output a
+REPACK file which is read by GEOS/DAS.  REPACK files are usually much
+smaller than UNPACK files as they are tailored for the needs of the
+assimilation system. Details of the UNPACK/REPACK systems and file
+formats can be found in Lamich {\em et al.}~(1996).
+
+Useful by-products of the assimilation system were the innovation
+files (known internally as {\em del-files}) which contain the
+difference between the observations and the first guess (a 6 hour
+forecast) interpolated to the observation location, along with the
+quality control marks assigned by GEOS/DAS. These innovation files
+were the primary input for our covariance modeling effort, as well as
+for the monitoring and validation systems that were in development.
+The main disadvantages of the {\em del-files} were: 1) the actual
+observation values are not stored in the file, only the difference
+from the first guess, 2) the analyzed value interpolated to
+observation location is not present, and 3) the file structure is
+designed around the original upper air analysis system obtained from
+NCAR in the early 1980's and does not provide a natural framework for
+the wealth of new data types coming with the EOS era.  Resolving these
+deficiencies would be helpful to DAO staff which rely on the
+observation value and the interpolated analysis as well as the
+innovation.
+
+The main design goals of ODS are therefore:
+
+\begin{enumerate}
+
+\item To unify the REPACK, innovation files and other type of files
+with observation data into a single consistent format. (ODS files are
+not meant to be a replacement for UNPACK files.)  This unification is
+especially helpful if observation data sets originate from different
+operation weather centers such as NCEP and ECMWP.  Using HDF also
+ensures portability of the software and data files between a diverse
+set of hardware platforms.
+
+\item To develop simple data structures, with easy to use access
+routines available for many purposes.  The access routines should be
+callable from commercial application software such as Matlab and IDL.
+
+\item To make ODS files sufficiently self-describing and provide
+several additional pieces of information about the observation such as
+sounding identifiers and time stamp.
+
+\item To accommodate not only data to be used directly by the GEOS/DAS
+but also {\em passive} data types which are useful for validation,
+tuning or diagnostic studies.  This setup would allow bias corrections
+and random error characterization to be developed off-line for new
+data types before being used directly in the GEOS/DAS.  Typical
+examples of {\em passive} data types are significant level data which
+are currently not used by the GEOS/DAS but provide an excellent
+validation tool.
+
+\item To enable the user to acquire additional information required for
+each data type.  With the increasing sophistication of the 
+assimilation methodology, additional information ({\em meta-data})
+about the data type will undoubtedly be required.  Because this
+{\em meta-data} can vary widely with data type and is of concern only
+for the assimilation specialist, this data should be in a separate
+file.  ODS files should then include only a pointer to this file.
+Guidelines for the preparation of meta-data files will be presented
+elsewhere.
+
+\item To vary the ODS file format between the types termed {\em
+pre-analysis} and {\em post-analysis}.  A {\em pre-analysis} file 
+should be produced by the pre-processing system and does not contain
+those attributes which can only be provided by the assimilation system
+(e.g., the 6 hour forecast, the interpolated analysis value).  A {\em
+post-analysis} should be produced by GEOS/DAS, having the same
+information in the pre-analysis ODS files complemented by the
+assimilation specific information. Nevertheless, a post-analysis ODS
+file should also be a valid input for GEOS/DAS as it provides the same
+information as the pre-analysis ODS file.  As pointed out by David
+Lamich, GEOS/DAS could be configured to read data from a post-analysis
+ODS file and perform an  assimilation using the same quality-control
+marks of the original assimilation. This capability is extremely
+useful to isolate the effects of the quality control subsystem when
+testing the impact of modifications to the system.
+
+\end{enumerate}
+
+The manual provides a description of how the ODS concept and design
+is implemented.  The remainder of this section describes the
+data stored in each ODS file and the access software.
+Section~\ref{sec:Software} discusses the installation, usage and
+testing.  Appendix~\ref{sec:FileStruct} gives an overview of the file
+structure, and Appendix~\ref{app:ProLogues} contain the prologues and
+thus the details of the interfaces of each callable ODS routine.
+
+%....................................................................
+\subsection{Header Information}
+%           ------------------
+\label{sec:HeaderInfo}
+Every ODS file contains header information about the observation 
+reports and the file itself.  Much of the information names the
+observation attributes, sets the valid ranges, and provides the units.
+Some of the information is used internally by the ODS library to
+locate, check and process the data.  Most of these parameters are
+given in Sections~\ref{sec:ObRep} and~\ref{sec:ODSQuery}.  In the rest
+of this section, two types of header information is discussed:
+global attributes and lists of valid values of certain observation
+attributes.
+
+\subsubsection{Global attributes}
+%              -----------------
+\label{sec:GlobAtt}
+Global attributes are primarily ODS file parameters and do not
+directly provide information about the observation reports.
+Table~\ref{tab:GlobAtt} contains the list of global attributes.
+Except for the $type$ and $history$, all attributes are hardwired to
+the settings as indicated in Table~\ref{tab:GlobAtt}.
+
+\begin{table}[h]
+\caption{\small The global attributes }
+\label{tab:GlobAtt}
+\begin{center}
+\begin{tabular}{lll}
+\hline
+{\em Global Attr} &                          &{\em Present} \\
+{\em Name}        & {\em Description}        &{\em Setting} \\
+\hline
+$source$          & Source of ODS file       & Data Assimilation Office, Code 910.3, NASA/GSFC \\
+$title$           & Title of ODS file        & GEOS DAS Observational Data Stream (ODS) File \\
+$type$            & ODS file type            &       \\
+$version$         & ODS version tag          & 2.16  \\
+$data\_info$      & Point of contact         & Contact data@dao.gsfc.nasa.gov \\
+$history$         & History tag of ODS data  &       \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+The global attributes listed in Table~\ref{tab:GlobAtt} and defined by
+the application program are as follows:
+\begin{description}
+
+\item[$type$] The ODS file type which is currently either pre-analysis
+or post-analysis and is set when the ODS file is created by the 
+routine, {\tt ODS\_Create}, as discussed in Section~\ref{sec:WriteODS}.
+
+\item[$history$] The history tag which is designed to provide
+information about the changes to the ODS file.  This attribute can be
+updated when the file is closed by the routine {\tt ODS\_Close} as 
+discussed in Section~\ref{sec:WriteODS}.
+\end{description}
+
+\subsubsection{Lists}
+%              -----
+\label{sec:lists}
+
+These lists contain information about the valid indices for the
+observation attributes, data type index ($kt$), data source index
+($kx$), and the quality control history flag ($qcexcl$) which are
+described in Section~\ref{sec:ObRep}.
+
+\begin{table}[h]
+\caption{\small The set of lists containing information about the
+valid indices for the observation attributes, data type index ($kt$),
+data source index ($kx$), and the quality control history flag
+($qcexcl$) which are described in Section~\ref{sec:ObRep}.  The first
+column provides the list names that are valid as input parameters to
+the routine, {\tt ODS\_GetList} (See Table~\ref{tab:API77}).  The
+second column contain the dimension names for input to the ODS query
+routine, {\tt ODS\_IGet} as (See Table~\ref{tab:API77} and discussed
+in Section~\ref{sec:ODSQuery}.)}
+
+\label{tab:lists}
+\begin{center}
+\begin{tabular}{llll}
+\hline
+{\em List}   & {\em Name of}   &                                      &{\em For Sample} \\
+{\em Name}   & {\em List Size} &   {\em Description}                  &{\em List...}    \\
+\hline
+$kt\_names$  & $nkt$           & Names of GEOS/DAS data types         & See Table~\ref{tab:kt}     \\
+$kt\_units$  & $nkt$           & Units of GEOS/DAS data types         & See Table~\ref{tab:kt}     \\
+$kx\_names$  & $nkx$           & Names of GEOS/DAS data sources       & See Table~\ref{tab:kx}     \\
+$kx\_meta$   & $nkx$           & $kx$ specific meta-data information  & See Table~\ref{tab:kx}     \\
+$qcx\_names$ & $nqcx$          & Meaning of each possible value of
+                                 $qcexcl$                             & See Table~\ref{tab:qcexcl} \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{Observation attributes}
+%           -------------------
+\label{sec:ObRep}
+
+Most of an ODS file consists of observation reports and is arranged in
+segments each of which contains all of the reports for a given
+synoptic data and time.  Within each report, the observed value must
+be accompanied by a set of attributes describing the
+measurement\footnote{Technically some of these attributes should be
+referred to as {\em meta-data}.  However, the term {\em meta-data}
+shall be defined in this document for additional information not
+present in the ODS files.}  A list of these attributes is given in
+Table~\ref{tab:ObAtt}.  All attributes listed in Table~\ref{tab:ObAtt}
+must be present in any ODS file except for the attributes, $omf$,
+$oma$, and $xvec$, which apply only to post-analysis files.  All
+attributes must be assigned; {\em missing values} are not allowed in
+an ODS file except for the attributes, $xm$, $obs$, $omf$, $oma$ and
+$xvec$. (see Table~\ref{tab:ObAtt}).  Any missing attributes should be
+set to 10$^{15}$ (DAO standard).
+
+\begin{table}[h]
+\caption{\small List of observation attributes.  The FORTRAN interface
+refers to how this attribute is written/read to file using the
+software described in Sections~\ref{sec:WriteODS}
+and~\ref{sec:ReadODS}}
+\label{tab:ObAtt}
+\begin{center}
+\begin{tabular}{llcccc}
+\hline
+{\em Attr.} &                                &{\em FORTRAN}   &                 &{\em Valid}     & {\em Storage} \\
+{\em Name}  &   {\em Description}            &{\em Interface} &{\em Units}      &{\em Range}     & {\em (bytes)} \\
+\hline
+$lat$       & Latitude                       & Real           & degrees north   & $[-90,+90]$    & 2\\
+$lon$       & Longitude                      & Real           & degrees east    & $[-180,+180]$  & 2\\
+$lev$       & Observation level or channel   & Real           & hPa,m  or none  &                & 4\\ 
+$time$      & minutes since first julian day & Integer        & minutes         & $[-180,65354]$ & 2\\
+$kt$        & Data type index                & Integer        &                 & $[1,255]$      & 1\\
+$kx$        & Data source index              & Integer        &                 & $[1,65535]$    & 2\\
+$ks$        & Sounding index                 & Integer        &                 & $[1,2^{30}]$   & 4\\
+$xm$        & Meta-data                      & Real           &                 &                & 4\\
+$qcexcl$    & Quality control exclusion flag & Integer        &                 & $[0,255]$      & 1\\
+$qchist$    & Quality control history mark   & Integer        &                 & $[0,65534]$    & 2\\
+$obs$       & Observation value              & Real           & depends on $kt$ &                & 4\\
+$omf$       & Observation minus forecast     & Real           & depends on $kt$ &                & 4\\
+$oma$       & Observation minus analysis     & Real           & depends on $kt$ &                & 4\\
+$xvec$      & PSAS CG solution vector        & Real           & depends on $kt$ &                & 4\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+Each observation attribute is further described below.
+
+\subsubsection{Latitude ($lat$)}
+%              ----------------
+The latitude of the observation, in degrees, negative in the southern
+hemisphere, positive in the northern hemisphere.  The latitude is
+encoded internally with 2 bytes at a resolution of 0.01$^\circ$.
+
+\subsubsection{Longitude ($lon$)}
+%              -----------------
+The longitude of the observation, in degrees, from 180W to 180E.  West
+longitudes should be encoded as negative numbers, {\em e.g.},
+90W = -90, 90E = +90.  The longitude is encoded internally with 2
+bytes at a resolution of 0.01$^\circ$.
+
+\subsubsection{Level ($lev$)}
+%              -------------
+In the case of conventional observations such as temperature
+soundings, this attribute refers to the vertical level, say 500~hPa.
+The concept of level is extended here to include the channels of
+radiance measurements. To allow greater flexibility, the level is
+recorded internally as a 4 byte float.  For surface observations,
+including ships, buoys and other sea platforms, $lev$ should be set
+to the height of the measuring instrument above the surface.  For 
+GEOS versions 3 and prior, $lev$ has been set to 2000.0 for surface 
+observations.
+
+\subsubsection{Sampling time ($time$)}
+%              ----------------------
+\label{sec:time}
+This attribute gives the elapsed time in minutes since 0~GMT of the
+first day on file. It should refer to the actual time of measurement 
+and not to the synoptic time.  Negative numbers should indicate the
+time before 0~GMT of the first day on file.  Julian days extend from
+midnight to midnight GMT rather than from noon to noon where julian
+day 2,440,000 is May 23, 1968.  To convert from time since the first
+synoptic data and on file to calendar data and time (and vice-versa),
+use the ODS utility routines {\tt ODS\_Time2Cal} and
+{\tt ODS\_Cal2Time} (See Table~\ref{tab:API77}).  Also note in
+Table~\ref{tab:ObAtt} that $time$ is stored as a two byte integer and
+that the maximum value is 65354.  As a result, the latest synoptic 
+date can only be 45 days (i.e. 64800 minutes) after the first date on
+file before the sampling time exceeds the maximum allowed.  In the f90
+interface routines, {\tt ODS\_Put} and {\tt ODS\_Get}, the time is
+automatically converted to the number of minutes since the
+corresponding synoptic date and time.
+
+\subsubsection{Data type index ($kt$)}
+%              ----------------------
+\label{sec:kt}
+This index identifies the observable.  For example, an observation of
+sea level pressure has $kt=3$.  A partial list of data types currently
+in use at DAO is given in Table~\ref{tab:kt}.  By retrieving the data
+type information from each ODS file the user will be able to identify
+each data type and its units.
+
+\begin{table}[h]
+\caption{\small Sample list of data types used in GEOS/DAS ($kt$ index).
+A current version of this list must be included in each ODS file for
+completeness.}
+\label{tab:kt}
+\begin{center}
+\begin{tabular}{rccl}
+\hline
+{\em kt} & {\em Variable} & {\em Units} & {\em Description}                  \\
+\hline
+    1    & $u_s$          & m/sec       & Surface zonal wind                 \\
+    2    & $v_s$          & m/sec       & Surface meridional wind            \\
+    3    & $slp$          & hPa         & Sea level pressure                 \\
+    4    & $u$            & m/sec       & Upper-air zonal wind               \\
+    5    & $v$            & m/sec       & Upper-air meridional wind          \\
+    6    & $h$            & m           & Upper-air geopotential height      \\
+    7    & $w$            & g/kg        & Upper-air water vapor mixing ratio \\
+    8    & $T$            & Kelvin      & Upper-air temperature              \\
+    9    & $T_d$          & Kelvin      & Upper-air dew-point temperature    \\
+   10    & $rh$           & \%          & Upper-air relative humidity        \\
+         &  etc \\
+     
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsubsection{Data source index ($kx$)}
+%              ------------------------
+\label{sec:kx}
+This index is an integer which identifies the origin of the
+measurement (see Table~\ref{tab:kx}). For example, a measurement with
+$kx=7$ was made by a radiosonde.  The observation attribute $xm$
+(meta-data index, described below) can be used to identify the
+particular station that provided the report.
+
+\begin{table}[h]
+\caption{\small Partial list of data sources used in GEOS/DAS
+($kx$ index). A current version of this list must be included in each
+ODS file for completeness.}
+\label{tab:kx}
+\begin{center}
+\begin{tabular}{rll}
+\hline
+{\em kx} & {\em Description}       & {\em Meta-data} \\
+\hline
+    1    & Surface Land Obs - 1                      \\ 
+    2    & Surface Land Obs - 2                      \\
+    3    & Surface Ship Obs - 1                      \\
+    4    & Surface Ship Obs - 2                      \\ 
+    5    & Environment Buoy                          \\ 
+    6    & Drifting Buoy                             \\ 
+    7    & Rawinsonde              & QCHum           \\ 
+    8    & Pilot Wind                                \\
+    9    & Ship Released Rawinsonde                  \\
+   10    & Dropwinsonde                              \\
+         & etc.                                      \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsubsection{Sounding index ($ks$)}
+%              ---------------------
+This index is needed to allow the assembly of observations coming from
+the same sounding during a given synoptic time.  For example, a
+radiosonde reporting profiles of winds, temperature and humidity
+should have the same sounding index associated with each piece of
+data.  In the case of satellite retrievals, each sounding should have
+their own index $ks$, although the retrievals originates from the same
+{\em instrument}.  The concept of sounding is extended here to include
+also radiance measurements: satellite measured radiances at several
+channels (loosely equivalent to vertical levels) for a given horizontal
+location.  Notice that sounding indices only refer to a given synoptic
+time.  For example, if at 0Z the sounding from station LAX was
+assigned the index 5217, at the next synoptic time a sounding from the
+same station could have an index of 27.  The use of $ks$ can unify 
+single level observation reports from such sources as aircraft which
+measure several quantities including pressure, temperature and wind
+speed and direction.  As currently implemented, there is a maximum of 
+$2^{30}$ (= 1,073,741,824) soundings allowed per synoptic time.
+
+\subsubsection{Meta-data index ($xm$)}
+%              ----------------------
+This index is intended to point to meta-data information stored in a
+separate file tailored to the particular data source.    For
+example, one could maintain a radiosonde master file which tabulates
+instrumentation, black-list and bias correction information for each
+reporting radiosonde.  In this case, the meta-data information could
+point to the record in this master file corresponding to the reporting
+station. In the case of satellite data, the meta-data index could point
+to a record on a separate meta-data file which contains the state
+dependent error covariance for a given sounding.  As for sounding
+indices, meta-data indices are not necessarily tied to station ID's.
+The meta-data index, $xm$, could also be used to store an attribute not
+supported by ODS such as the bias correction applied to an observation.
+
+\subsubsection{Quality control exclusion flag ($qcexcl$)}
+%              -----------------------------------------
+\label{sec:qcexcl}
+The exclusion mark is an integer code indicating whether an
+observation is to be excluded from the analysis, and, if so, for what
+reason. Only data with $qcexcl=0$ are included in the analysis, those
+with $qcexcl>0$ are excluded.  A description of each exclusion code is
+contained in Table~\ref{tab:qcexcl} but note that this list is subject
+to change.  The current list of flags is defined in the file,
+\verb|m_odsmeta.f90|.
+
+\begin{table}[h]
+\caption{\small A samples list of quality control exclusion flags
+($qcexcl$) used in GEOS/DAS.}
+\label{tab:qcexcl}
+\begin{center}
+\begin{tabular}{rl}
+\hline
+{\em qcexcl} & {\em Description}                \\
+\hline
+     0       & clear                            \\
+     1       & unspecified preprocessing flag   \\
+     2       & impossible location              \\
+     3       & gcm deep underground             \\
+     4       & observation value undefined      \\
+     5       & forecast value undefined         \\
+     6       & observation level too high       \\
+     7       & passive data type                \\
+     8       & outside active time window       \\
+     9       & not an analysis variable         \\
+    17       & failed buddy check               \\
+    18       & incomplete wind vector           \\
+    20       & incomplete vertical profile      \\
+    21       & extreme outlier wrt background   \\
+    22       & no relative humidity information \\
+    23       & extreme rh outlier wrt backgrd   \\
+    24       & extreme rhTf outlier wrt backgrd \\
+    25       & failed rh buddy check            \\
+    26       & failed rhTf buddy check          \\
+    27       & invalid saturation mixing ratio  \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsubsection{Quality control history mark ($qchist$)}
+%              ---------------------------------------
+The history mark is used to encode the history of the quality control
+process for each observation.  See Table~\ref{tab:qchist} for a list
+of history marks that are currently used, but note that this list is
+subject to change.  In the current implementation, the history
+mark is an integer code, but in future it will most likely involve
+bitwise encoding.  For this reason, the history mark names are not
+included in the ODS file header. They will be separately documented.
+\begin{table}[h]
+\caption{\small List of quality control history flags ($qchist$)
+used in GEOS/DAS.  The current version of this list is subject to
+change.}
+\label{tab:qchist}
+\begin{center}
+\begin{tabular}{rl}
+\hline
+{\em qchist} & {\em Description}               \\
+\hline
+     0       & clear                           \\
+     1       & unspecified preprocessing flag  \\
+     2       & OBSOLETE                        \\
+     3       & gcm slightly underground        \\
+    17       & outlier wrt background          \\
+    18       & rh outlier wrt background       \\
+    19       & rhTf outlier wrt background     \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsubsection{Observation ($obs$)}
+%              -------------------
+This attribute contains the actual value of the observation.  As
+defined here, the $u$ and $v$ components of a wind field constitute
+two different observations.  Also, a temperature profile at 18 
+mandatory levels is composed of 18 separate observations.  The
+indices ($kt$,$ks$) can be used to group the data as profiles of a
+given quantity.  Units are specified in the $kt$ table such as the
+one given in Table~\ref{tab:kt}.
+
+\subsubsection{Observation minus forecast ($omf$)}
+%              ----------------------------------
+This value is the difference between the observation and the forecast
+interpolated to the sampling location.  Units are specified in the
+$kt$ table such as the one given in Table~\ref{tab:kt}. 
+
+\subsubsection{Observation minus analysis ($oma$)}
+%              ----------------------------------
+This value is the difference between the observation and the analysis
+interpolated to the sampling location.  Units are specified in the
+$kt$ table such as the one given in Table~\ref{tab:kt}. 
+
+\subsubsection{PSAS CG solution vector ($xvec$)}
+%              ---------------------------------
+This value is the conjugate gradient (CG) solution vector returned
+from the Physical-Space Statistical Analysis System (PSAS) in the 
+GEOS/DAS.  Units are specified in the $kt$ table such as the one given
+in Table~\ref{tab:kt} and are the same as that for the observation
+attribute $omf$.  This attribute was added for Version 2.16.
+
+%....................................................................
+\subsection{ODS File Types}
+%           --------------
+\label{sec:Type}
+Each ODS file is either one of two type: pre-analysis or
+post-analysis.  As discussed in Section~\ref{sec:Design}, a
+pre-analysis file is produced by the pre-processing system and
+provides input to the analysis module.  The post-analysis file is an
+extension to its pre-analysis counterpart and contains additional
+information from the analysis subsystem.
+
+\subsubsection{Content}
+%              --------
+For every observation report, a pre-analysis contains information
+for all attributes listed in Table~\ref{tab:ObAtt} except $omf$
+(observation minus forecast), $oma$ (observation minus analysis)
+and $xvec$ (PSAS CG solution vector).  The post-analysis contains all
+of the observation attributes.  However, in no circumstance should the
+application program create a post-analysis ODS file and modify the the
+original observation attributes from the pre-analysis file (except
+possibly $xm$, $qcexcl$ and $qchist$).  If super-obing or other device
+is performed by the assimilation system, a new observation should be
+created, and the original observation should receive an appropriate
+quality control exclusion mark.
+
+\subsubsection{Storage requirements}
+%              --------------------
+Excluding overhead, a pre-analysis ODS file requires 28 bytes of
+storage for each observation as can be determined from
+Table~\ref{tab:ObAtt}.  Therefore, a pre-analysis ODS file with an
+average of 200,000 observations for each of the 4 synoptic times
+will require $\approx$~22.5 Mbytes of storage/day.  A post-analysis
+file requires 40 bytes of storage for each observation so that,
+given the same parameters, a post-analysis ODS file will require
+$\approx$ 32 Mbytes of storage/day.  However, the file for both
+types can be compressed upto 80 percent by applying the {\tt gzip}
+utility.
+
+%....................................................................
+\subsection{Overview of the application program interface (API)}
+%           ---------------------------------------------------
+\label{sec:API}
+\subsubsection{FORTRAN 90 interface}
+%              --------------------
+\label{sec:API90}
+As will be evident in the next subsection, dozens of calls to the 
+FORTRAN 77 interface routines may be required to read the entire data
+set for a synoptic date and time.  Error handling can actually 
+complicate the code even further.  To remedy this problem, the 
+FORTRAN 90 interface library was developed.  The routines in this
+library have simple interfaces and can read and/or write all the data
+for a single synoptic time with few routine calls.  The library
+routines call the FORTRAN 77 interface routines to open or create
+files, extract the file parameters (e.g. file type, number of
+observation reports), extract the observation data and then close the
+file.  Furthermore, the routines perform system related tasks
+including memory allocation for space and exception handling for
+errors.  Additional utility routines and modules exist to allocate
+memory space for input arguments for the library routines, define
+useful constants, print a summary to standard output and complete
+other useful tasks.  Table~\ref{tab:API90} lists each routine, and
+Appendix~\ref{app:ProLogues} describes the input/output parameters
+in some detail.
+
+\begin{table}[h]
+\caption{\small User callable FORTRAN 90 subroutines to read/write ODS
+files.  For a complete description of the input/output parameters, see
+the appropriate section given between the parenthesis next to the
+routine name in the first column.}
+\label{tab:API90}
+\begin{center}
+\begin{tabular}{ll}
+\hline
+{\em Routine Name}                            & {\em \ \ \ \ \ \ \ \ \ \ Function} \\
+\hline
+{\tt ODS\_Init}       (\ref{MODS:Init})       & Allocates memory for ODS vector \\
+{\tt ODS\_Clean}      (\ref{MODS:Clean})      & Deallocates ODS vector \\
+{\tt ODS\_Get}        (generic)               & Reads data from one (\ref{MODS:Get1}) or more (\ref{MODS:GetM}) files \\
+{\tt ODS\_Put}        (\ref{MODS:Put})        & Writes data to file \\
+{\tt ODS\_Merge}      (\ref{MODS:Merge})      & Merges 2 or more ODS vectors \\
+{\tt ODS\_MaskOut}    (\ref{MODS:MaskOut})    & Mask out observations \\
+{\tt ODS\_Tally}      (\ref{MODS:Tally})      & Prints out ODS summary \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+The observation data is passed into and out of these routines via the
+FORTRAN 90 data structure (or record), \verb|ods_vect|, as defined in
+the module \verb|m_ods| (Section~\ref{MODS:Mod}).  This structure 
+consists of two components both of which are also structures.  The
+first is \verb|ods_meta| whose components refer to the global meta-data
+lists in Table~\ref{tab:lists}.  The names of the components are given
+in the first and second column of the table.  An extra component,
+\verb|nsyn|, provides the number of synoptic times per day in the 
+given ODS file.  The second component is \verb|obs_vect| which stores
+the atomic attributes of each observation report for a given synoptic
+date and time.  The component names are given in the first column in
+Table~\ref{tab:ObAtt}.  Two additional components, \verb|nobs| and
+\verb|nvect|, provide the number of observation reports and allocated
+vector size where \verb|nobs| $\le$ \verb|nvect|.
+
+All base-level components are pointers to arrays except those given in
+the previous paragraph and the list sizes in the second column of
+Table~\ref{tab:lists}.   Since they are pointers, space must be
+created prior to storing the data.  If data are to be written, then
+the routine {\tt ODS\_Init} must first be called to create the space.
+To read the data, a call to \verb|ODS_Init| is not necessary (nor
+allowed), since allocation is automatically performed by the routine,
+{\tt ODS\_Get}.  Once space has been allocated, the data can be
+accessed by referencing the components.  For example,
+\verb|ods_vect%obs_vect%lat(:n)| will access the latitude values 
+for all observations reports where \verb|n| is the number of
+observation reports (as stored in the component
+\verb|ods_vect%obs_vect%nobs|).
+
+Data for an entire synoptic time can be written by calling the
+routine, {\tt ODS\_Put}, as shown in the following sample section of
+FORTRAN 90 code:
+\begin{verbatim}
+      use m_ods
+      type (odsvect) :: ods
+      integer :: ierr
+      nobs = nobsmax  ! arbitrarily set elsewhere such as a calling routine
+      call ODS_Init ( ods, NObs, ierr )
+
+      ...
+      ...
+      call ODS_Put ( 'outfile', 'post_anal', 19980521, 60000,
+     .                ods, ierr )
+      ...
+      ...
+      call ODS_Put ( 'outfile', 'post_anal', 19980521, 60000,
+     .                ods, ierr, append = .true. )
+
+      call ODS_Clean ( ods, ierr )   ! deallocate (optional)
+\end{verbatim}
+Note that the code includes a call to the routine, \verb|ODS_Init|,
+which allocates space before writing to the file.   The call to the 
+routine \verb|ODS_Clean| for deallocation is optional.  Also, many
+ODS related parameters such as the maximum value for the data type,
+\verb|ktmax|, are defined in the module, \verb|m_odsmeta|.  Finally,
+observation data can be added by implementing the option
+\verb|append=.true.| if data already exists for a given synoptic
+date and time.
+
+The following code will read an ODS file for a given synoptic date
+and time:
+\begin{verbatim}
+      use m_ods
+      type (odsvect) :: ods
+      character (len=30) :: type
+      integer :: ierr
+
+      call ODS_Get ( 'infile', 19980521, 60000, type, ods, ierr )
+\end{verbatim}
+The name of the called routine is generic for two routines which are 
+given in the entry {\tt ODS\_Get} in Table~\ref{tab:API90}.  The
+interfaces differ only in the rank (0 or 1) of the array of the input
+filename(s).  The right routine would be selected by the FORTRAN
+compiler.
+
+Another set of ODS related utility routines exist in the module
+\verb|m_ods_structure|.  These routines are similar to some of those
+in the module \verb|m_ods| but will soon be obsolete.  The module and
+routine prologues are given in Appendix~\ref{app:ProLogues}.
+
+\subsubsection{FORTRAN 77 interface}
+%              --------------------
+\label{sec:API77}
+
+The ODS library consists of user callable FORTRAN 77 subroutines
+which allow users to create, read and write ODS files.
+Table~\ref{tab:API77} lists each routine, and 
+Appendix~\ref{app:ProLogues} describes the input/output parameters in
+some detail. For the sake of completeness,
+Appendix~\ref{sec:FileStruct} describes the structure of the ODS file
+from the NetCDF interface perspective.
+
+\begin{table}[h]
+\caption{\small User callable FORTRAN 77 subroutines to read/write ODS
+files.  For a complete description of the input/output parameters, see
+the appropriate section given between the parenthesis next to the
+routine name in the first column.}
+\label{tab:API77}
+\begin{center}
+\begin{tabular}{ll}
+\hline
+{\em Routine Name}                         & {\em \ \ \ \ \ \ \ \ \ \ Function} \\
+\hline
+{\tt ODS\_Create}   (\ref{ODS:Create})   & Creates an ODS file\\
+{\tt ODS\_Open}     (\ref{ODS:Open})     & Opens a pre-existing ODS file\\
+{\tt ODS\_Append}   (\ref{ODS:Append})   & Sets up routines to append data to current synoptic time\\
+{\tt ODS\_Close}    (\ref{ODS:Close})    & Closes an ODS file\\ 
+{\tt ODS\_PutI}     (\ref{ODS:PutI})     & Writes an INTEGER observation attribute for a synoptic time\\
+{\tt ODS\_PutR}     (\ref{ODS:PutR})     & Writes an REAL observation attribute for a synoptic time\\
+{\tt ODS\_PutC}     (\ref{ODS:PutC})     & Writes an CHAR observation attribute for a synoptic time\\
+{\tt ODS\_GetI}     (\ref{ODS:GetI})     & Reads an INTEGER observation attribute for a synoptic time\\
+{\tt ODS\_GetR}     (\ref{ODS:GetR})     & Reads a REAL observation attribute for a synoptic time\\
+{\tt ODS\_GetC}     (\ref{ODS:GetC})     & Reads a CHAR observation attribute for a synoptic time\\
+{\tt ODS\_IGet}     (\ref{ODS:IGet})     & Gets an ODS parameter in integer format \\
+{\tt ODS\_RGet}     (\ref{ODS:RGet})     & Gets an ODS parameter in floating point format \\
+{\tt ODS\_CGet}     (\ref{ODS:CGet})     & Gets an ODS parameter in character format \\
+{\tt ODS\_EGet}     (\ref{ODS:EGet})     & Tests for the existance of an ODS parameter \\
+{\tt ODS\_NGet}     (\ref{ODS:NGet})     & Gets the number of ob reports for a synoptic date and time \\
+{\tt ODS\_GetList}  (\ref{ODS:GetList})  & Gets a list in character string format \\
+{\tt ODS\_Julian}   (\ref{ODS:Julian})   & Converts calendar data to Julian day \\
+{\tt ODS\_CalDat}   (\ref{ODS:CalDat})   & Converts Julian day to calendar date \\
+{\tt ODS\_Time2Cal} (\ref{ODS:Time2Cal}) & Converts ODS to calendar "time" format. \\
+{\tt ODS\_Cal2Time} (\ref{ODS:Cal2Time}) & Converts calendar to ODS "time" format. \\
+{\tt ODS\_Min2Cal}  (\ref{ODS:Min2Cal})  & Converts minutes since a given reference to calendar "time" format \\
+{\tt ODS\_Cal2Min}  (\ref{ODS:Cal2Min})  & Converts calendar "time" format to minutes since a given reference \\
+{\tt ODS\_ParmI}    (\ref{ODS:ParmI})    & Gets an ODS integer parameter for creating subsequent files \\
+{\tt ODS\_tParmR}   (\ref{ODS:ParmR})    & Gets an ODS real parameter for creating subsequent files \\
+{\tt ODS\_ParmC}    (\ref{ODS:ParmC})    & Gets an ODS character parameter for creating subsequent files \\
+{\tt ODS\_SetParmI} (\ref{ODS:SetParmI}) & Sets an ODS integer parameter for creating subsequent files \\
+{\tt ODS\_SetParmR} (\ref{ODS:SetParmR}) & Sets an ODS real parameter for creating subsequent files \\
+{\tt ODS\_SetParmC} (\ref{ODS:SetParmC}) & Sets an ODS character parameter for creating subsequent files \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+For most of the callable routines, the input parameter {\tt id} is
+either returned or is an input parameter which should be regarded as
+unit number (or file handle) for access to the desired file.  In
+addition, the status code parameter, {\tt ierr}, is returned.  It is
+advisable that the  {\tt ierr} parameter be check on returned from
+all ODS interface routines.  A zero for {\tt ierr} indicates no error.
+For all other values, see Table~\ref{tab:errors}.  In
+Section~\ref{sec:WriteODS}, the main steps involved in writing/reading
+an ODS file are outlined.
+
+\begin{table}[h]
+\caption{\small Values of the {\tt ierr} parameter returned by ODS
+routines described in Appendix~\ref{app:ProLogues}. The positive error
+codes are issued by the NetCDF routines; negative ones by the ODS
+package (except for {\tt ierr = -1} which is issued by the NetCDF
+package).  For more details consult the NetCDF manual (Rew
+{\em et al.} 1993).}
+\label{tab:errors}
+\begin{center}
+\begin{tabular}{rl}
+\hline
+{\em ierr} & {\em \ \ \ \ \ \ \ \ \ \ Description} \\
+\hline
+    0      & No Error \\
+    1      & Not a netcdf id \\
+    2      & Too many netcdfs open \\
+    3      & netcdf file exists but user selected no clobber \\
+    4      & Invalid Argument \\
+    5      & Write to read only \\
+    6      & Operation not allowed in data mode \\
+    7      & Operation not allowed in define mode \\
+    8      & Coordinates out of Domain \\
+    9      & MAXNCDIMS exceeded \\
+   10      & String match to name in use \\ 
+   11      & Attribute not found \\
+   12      & MAXNCATTRS exceeded \\
+   13      & Not a netcdf data type \\ 
+   14      & Invalid dimension id \\
+   15      & NCUNLIMITED in the wrong index\\ 
+   16      & MAXNCVARS exceeded \\
+   17      & Variable not found \\
+   18      & Action prohibited on NCGLOBAL varid \\
+   19      & Not a netcdf file \\ 
+   -1      & System error \\
+   -3      & Invalid dimension size \\
+   -4      & Invalid interface for variable \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsubsection{FORTRAN 77 write routines}
+%              -------------------------
+\label{sec:WriteODS}
+To write data to an ODS file, one needs to either create a new
+file or open a pre-existing file.  To open a pre-existing file, the
+routine, {\tt ODS\_Open()}, must be called with the mode set for
+writing data to the file.  On return, {\tt ODS\_Open()} provides
+the unit number, {\tt id}, for subsequent access to the file.
+
+To create a brand new ODS file the application program must acquire
+the current lists. (For the set of lists, see
+Section~\ref{sec:lists}.)  These lists will likely be maintained by
+DAO's production group.  The first step is to call the routine
+{\tt ODS\_Create()} to setup the file data structures and save the
+lists.  The first Julian day to be stored on file must also be passed
+into the routine.  The ODS utility routines {\tt ODS\_Julian} and
+{\tt ODS\_CalDat} can be used to convert from calendar date to Julian
+day and vice-versa.  When creating an ODS file the application program
+must specify whether a {\em pre-analysis} or {\em post-analysis} file
+is desired.  On return, {\tt ODS\_Create()} returns the unit number,
+{\tt id}, for subsequent access to the file.
+
+All data for a given observation attribute and synoptic time is
+written to an ODS file with one call to the appropriate interface
+routine (unless the library is set to "append" mode using the
+interface routine {\tt ODS\_Append}.  See Section~\ref{ODS:Append}).
+Currently, analyses are performed 4 times a day at synoptic times 0,
+6, 12 and 18~GMT.  The current practice is that data collected at a
+windows of $\pm$3~hours around the synoptic time are assigned to the
+synoptic time.  (Recall in Section~\ref{sec:time} that ODS files now
+include time stamp information specifying the actual time the
+measurement was made.)   If the application program is to call the 
+ODS interface routines to store a total {\tt nobs} observations for
+the synoptic time 12~GMT, then vectors of length {\tt nobs} for all
+the relevant observation attributes (see Section~\ref{sec:ObRep})
+must be defined.  Once the vectors are defined, the following calls
+can then be executed to write the data to an ODS file:
+
+\begin{verbatim}
+  integer  syn_jul, syn_time
+  real     lat   (nobs), lon(nobs), lev(nobs)
+  integer  time  (nobs), kt (nobs), kx (nobs), ks(nobs)
+  real     xm    (nobs)
+  integer  qcexcl(nobs), qchist(nobs)
+  real     obs   (nobs)
+
+  call ODS_PutR ( id, 'lat',    syn_jul, syn_time, nobs, lat,    ierr )
+  call ODS_PutR ( id, 'lon',    syn_jul, syn_time, nobs, lon,    ierr )
+  call ODS_PutR ( id, 'lev',    syn_jul, syn_time, nobs, lev,    ierr )
+  call ODS_PutI ( id, 'time',   syn_jul, syn_time, nobs, time,   ierr )
+  call ODS_PutI ( id, 'kt',     syn_jul, syn_time, nobs, kt,     ierr )
+  call ODS_PutI ( id, 'kx',     syn_jul, syn_time, nobs, kx,     ierr )
+  call ODS_PutI ( id, 'ks',     syn_jul, syn_time, nobs, ks,     ierr )
+  call ODS_PutR ( id, 'xm',     syn_jul, syn_time, nobs, xm,     ierr )
+  call ODS_PutI ( id, 'qcexcl', syn_jul, syn_time, nobs, qcexcl, ierr )
+  call ODS_PutI ( id, 'qchist', syn_jul, syn_time, nobs, qchist, ierr )
+  call ODS_PutR ( id, 'obs',    syn_jul, syn_time, nobs, obs,    ierr )
+\end{verbatim}
+
+Refer to Appendix~\ref{app:ProLogues} for a complete description of
+I/O parameters for {\tt ODS\_PutI()} and {\tt ODS\_PutR()}.  Notice
+that the particular order in which the data attributes are written is
+not relevant.  However, if a given attribute is not saved, no values
+will be stored on the ODS file for that attribute.  In addition, if an
+attempt is made to retrieve the attribute, then the NetCDF or HDF and
+thus the ODS interface routines will return a non-zero value for the
+returned status parameter {\tt ierr}.  The package performs a test to
+ensure that the data being stored are within the ranges specified in
+Table~\ref{tab:ObAtt} and returns the appropriate error status
+parameter, {\tt ierr}.
+
+Notice that {\tt syn\_jul} and {\tt syn\_time} are the {\em synoptic}
+Julian day and {\em synoptic} time of the segment of observations.
+These are not necessarily the same as the $time$ attribute listed in
+Table~\ref{tab:ObAtt}.  For example, a segment of data corresponding
+to synoptic time 0Z will include observations that were measured in
+the previous day, between 23Z and midnight.
+
+Many synoptic times can be stored on a single ODS file.  However, for
+reasons given at the end of Section~\ref{sec:time}, the maximum is 
+45 days.  In practice, ODS files will probably have data for only
+one day (4 synoptic times).  After all desired synoptic data have been
+written to the file, the routine {\tt ODS\_Close()} should be called
+to close the file, providing an {\tt event} string, probably
+containing the name and version of the program which created the file
+and the data of creation.  If the routine {\tt ODS\_Close()} is not
+called, then the updated internal pointer data is not written to the
+file, effectively preventing the observation data from being saved.
+
+\subsubsection{FORTRAN 77 read routines}
+%              -------------------------
+\label{sec:ReadODS}
+The first step is to call routine {\tt ODS\_Open()} to open the
+desired file with the mode set for reading or writing data to the
+file.  On return, {\tt ODS\_Open()} returns the integer variable {\tt
+id} for subsequent access of the file.  Once the file is opened, all
+data for a given observation attribute and synoptic time can be
+retrieved with one call to the appropriate ODS library routine,
+{\em viz.}
+
+\begin{verbatim}
+  integer  syn_jul, syn_time
+  real     lat(nobsmax), lon(nobsmax), lev(nobsmax)
+  integer  kt (nobsmax), kx (nobsmax)
+  real     obs(nobsmax)
+
+  nobs = nobsmax
+  call ODS_GetR ( id, 'lat', syn_jul, syn_time, nobs, lat, ierr )
+  call ODS_GetR ( id, 'lon', syn_jul, syn_time, nobs, lon, ierr )
+  call ODS_GetR ( id, 'lev', syn_jul, syn_time, nobs, lev, ierr )
+  call ODS_GetI ( id, 'kt',  syn_jul, syn_time, nobs, kt,  ierr )
+  call ODS_GetI ( id, 'kx',  syn_jul, syn_time, nobs, kx,  ierr )
+  call ODS_GetR ( id, 'obs', syn_jul, syn_time, nobs, obs, ierr )
+\end{verbatim}
+
+Note that the {\tt nobs} must first be defined at or higher than the
+actual number of observation reports.  The routines {\tt ODS\_IGet}
+and {\tt ODS\_RGet} assume that the input value for {\tt nobs} is the
+maximum allowed (i.e the available storage space).  The parameter
+{\tt ierr} should always be checked to make sure the data have been
+properly read.  Also, the routine {\tt ODS\_Close()} should always be
+called to close the file especially if the observation data have been
+modified since the file was last opened.  No event tag is necessary
+if the file is opened for reading only and is not modified.
+
+\subsubsection{Query routines}
+%              --------------
+\label{sec:ODSQuery}
+To retrieve parameters other than the number of observation reports
+and those listed in the first column of Table~\ref{tab:lists}, the
+name of the parameter must first be derived using the following rules.
+To retrieve an ODS dimension such as the list sizes contained in the
+second column of Table~\ref{tab:lists}, simply use the dimension name.
+For the global attributes, the name is given in the first column in
+Table~\ref{tab:GlobAtt} but must be preceded by a colon (:) with no
+intervening spaces.
+
+For all other parameters, the parameter name contains two parts which
+are separated by a colon with no intervening spaces.  The first part
+is a NetCDF variable name which in most cases corresponds to the name
+listed in the first column of Tables~\ref{tab:lists}
+and~\ref{tab:ObAtt}.  However, there are two additional NetCDF
+variables which are named $syn\_beg$ and $syn\_len$ and are not 
+included in the table.  These variables correspond to pointers for
+defining the blocks each of which contain the all the observation
+reports for a synoptic date and time.  Some of the NetCDF attributes
+associated with these variables are useful as will be discussed later
+in this section.
+
+The second part of the parameter name is the NetCDF variable attribute
+name.  Some of the more common attribute names in an ODS file are
+
+\begin{description}
+
+\item[$name$] Name of the NetCDF variable.  These names correspond to
+the table entries in the column labeled "Descriptions" in 
+Tables~\ref{tab:lists} and~\ref{tab:ObAtt}.  (A couple entries were
+abbreviated to save table space.)
+
+\item[$units$] Units for the NetCDF variable.  The units correspond to
+the table entries in the column labeled "Unit" in
+Table~\ref{tab:ObAtt}.  (Blank entries denote that the attribute does
+not exist and is therefore invalid for the variable)
+
+\item[$valid\_range$] The valid minimum and maximum value for the
+NetCDF variable.  The ranges correspond to the table entry in the
+column labeled "Valid Range" in Table~\ref{tab:ObAtt}.  (Blank
+entries denote that the attribute does not exist and is therefore
+invalid for the variable)
+
+\item[$missing\_value$] The missing value which is currently set to
+10$^{15}$ (DAO standard). As discussed in Section~\ref{sec:ObRep},
+the only observation attributes that can be set to missing are
+$xm$, $obs$, $omf$, $oma$ and $xvec$.
+
+\end{description}
+
+Other common attributes such as {\it add\_offset} and $scale\_factor$
+exist but are usually important only for the internal processing of
+ODS library routines.  For additional information, see
+Appendix~\ref{sec:FileStruct}.  Note that not all NetCDF variables
+(and thus ODS observation attributes) have these attributes.  Any
+attempt to retrieve the NetCDF attribute that does not exist for a
+given variable will return in an error status from the ODS query
+library routine.  A few special but useful attributes associated with
+the NetCDF variable $syn\_beg$ are listed as follows: 
+
+\begin{description}
+
+\item[$first\_julian\_day$] The first julian on file.  A julian day
+extends from midnight to midnight GMT rather than from noon to noon
+where julian day 2,440,000 is May 23, 1968.
+
+\item[$latest\_julian\_day$]  The latest julian day on file.
+
+\item[$latest\_synoptic\_hour$] The latest synoptic hour (in GMT)
+during the latest julian day on file.
+
+\end{description}
+
+Once the two parts of the parameter name are known, an NetCDF
+attribute name can be derived.  For example, if the ODS observation
+attribute is a data type index ($kx$) and the valid range
+($valid\_range$) is desired then the derived name would be be
+$kx:valid\_range$.
+
+The next step to retrieving the header information is to call routine
+{\tt ODS\_Open()} to open the desired file with the mode set for
+reading or writing data to the file.  On return, {\tt ODS\_Open()}
+returns the integer variable {\tt id} for subsequent access of the
+file.  Once the file is opened, the parameter can be extracted viz,
+
+\begin{verbatim}
+      integer         id, ierr
+      character * (*) parm_name
+      parameter     ( parm_name = 'kx:valid_range')
+      integer     (2) valid_range
+
+      call ODS_IGet ( id, parm_name, valid_range, ierr )
+
+\end{verbatim}
+
+Note that the an array is used as an output argument to the query
+routine since the range actually consists of two values, the minimum
+and maximum.  For the case when only one value is to be retrieved,
+the value can be passed via a scaler FORTRAN argument.  The output
+argument from the routine {\tt ODS\_CGet} should not be an array.
+
+To retrieve a list named in Table~\ref{tab:lists}, the ODS routine,
+{\tt ODS\_GetList} should be used.  The following sample code
+retrieves the list, $kt\_names$:
+
+\begin{verbatim}
+      integer         id, ierr
+      character * (*) dim_name
+      parameter     ( dim_name   = 'nkt')
+      character * (*) list_name
+      parameter     ( list_name  = 'kt_names')
+      integer         nkt
+      integer         kt_names * ( 150 ) ( nkt_max )
+
+      call ODS_IGet    ( id, dim_name,  nkt,           ierr )
+      call ODS_GetList ( id, list_name, nkt, kt_names, ierr )
+\end{verbatim}
+
+Note that the {\tt list\_name} contains no colon since a NetCDF
+variable instead of a NetCDF attribute is being retrieved.  Also note
+that {\tt nkt} must first be defined at or higher than the actual list
+size since the routine {\tt ODS\_GetList} assumes that the input value
+for the list size, {\tt nkt}, is the maximum allowed (i.e the
+available storage space). 
+
+To obtain the number of observation reports for a specified synoptic
+date and time, the integer function, {\tt ODS\_NGet} should be called.
+The following sample code retrieves the number of reports:
+
+\begin{verbatim}
+      integer  ODS_NGet, ODS_Julian
+      integer  id, ierr, nobs, julian_day
+
+      jul_day  = ODS_Julian ( 19680523 )
+      nobs     = ODS_NGet   ( id, julian_day, 6, ierr )
+
+\end{verbatim}
+
+Always remember to check the parameter {\tt ierr} to make sure the
+data have been properly read.  Also, use routine {\tt ODS\_Close()} to
+close the file when you are done especially if the data has been
+modified since the file was last opened.  No event tag is necessary if
+the file is opened for reading only or is not modified..
+
+\subsection{Compatibility with different versions}
+%           -------------------------------------
+Since the ODS library was first created, modifications have been 
+implemented to the data structure.  In anticipation of these changes,
+the ODS software was designed to minimize the changes to the routine
+interface.  Thus, the software was developed to internally adjust to
+many variations in the data structure.  For example, to conserve
+storage, the previous implementations stored the data source index
+($kx$) as a one byte integer with a range from 1 to less than 255.
+Recently, the need arose to extend this range beyond 255 so that two
+bytes were required.  In this case, the ODS routine, {\tt ODS\_Create},
+was internally modified so that new files would store $kx$ as a two
+byte rather than an one byte integer.  To preserve compatibility with
+the original ODS files when opening an ODS file, the access software
+calls the NetCDF routine NCVINQ to inquire the type of the variable
+$kx$ (i.e., one byte {\tt byte} or 2~byte {\tt short}) and take the
+appropriate action when reading $kx$ from the file.  These changes
+occur internally in the access software so that no changes are
+necessary in the calling interface or application program.
+
+However,  some of the observation attributes (i.e. NetCDF variables)
+were either deleted, added or simply renamed to implement ODS Version
+2.00. Thus, modifications in the calling routines may be necessary to
+properly identify the requested information or perhaps add exception
+handling.  These modifications would include resetting the attribute 
+names that are part of the required arguments.
+Table~\ref{tab:ObAttv1} is provided below to list the observation
+attributes used in ODS Versions 1.01 and 1.02.  For the attribute
+names implemented for the current version, see Table~\ref{tab:ObAtt}.
+\begin{table}[h]
+\caption{\small List of observation attributes in Versions 1.01 and
+1.02.  The FORTRAN interface refers to how this attribute is
+written/read to file using the software described in
+Sections~\ref{sec:WriteODS} and~\ref{sec:ReadODS}}
+
+\label{tab:ObAttv1}
+\begin{center}
+\begin{tabular}{llcccc}
+\hline
+{\em Attr.} &                            &{\em FORTRAN}   &                 &{\em Valid}     & {\em Storage} \\
+{\em Name}  &   {\em Description}        &{\em Interface} &{\em Units}      &{\em Range}     & {\em (bytes)} \\
+\hline
+$lat$       & Latitude                   & Real           & degrees north   & $[-90,+90]$    & 2\\
+$lon$       & Longitude                  & Real           & degrees east    & $[-180,+180]$  & 2\\
+$level$     & Pressure Level or channel  & Real           & hPa or none     &                & 4\\ 
+$julian$    & Julian day                 & Integer        &                 &                & 1\\
+$time$      & Time stamp                 & Integer        & minutes         & $[0,1439]$     & 2\\
+$kt$        & Data type index            & Integer        &                 & $[1,255]$      & 1\\
+$kx$        & Data source index          & Integer        &                 & $[1,65535]$    & 2\\
+$ks$        & Sounding index             & Integer        &                 & $[1,65535]$    & 2\\
+$km$        & Meta-data index            & Integer        &                 & $[0,2^{31}-1]$ & 4\\
+$qc\_flag$  & Quality control flag       & Integer        &                 & $[0,65534]$    & 2\\
+$mod\_flag$ & Modification               & Integer        &                 & $[0,255]$      & 1\\
+$obs$       & Observation value          & Real           & depends on $kt$ &                & 4\\
+$omf$       & Observation minus forecast & Real           & depends on $kt$ &                & 4\\
+$oma$       & Observation minus analysis & Real           & depends on $kt$ &                & 4\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+Comparison of Tables~\ref{tab:ObAtt} and~\ref{tab:ObAttv1} reveals
+the following changes from Version 1.02 to 2.00:
+\begin{enumerate}
+
+\item The attribute, $level$, in Version 1.02 was renamed to $lev$.
+
+\item The attribute, $julian$, in Version 1.02 was deleted while the
+      attribute, $time$, was redefined to the number of minutes since
+      0:00~GMT of the {\em first} Julian day on file.
+
+\item The attribute, $km$, in Version 1.02 originally defined as an
+      integer index was redefined to $xm$ as a floating point number.
+      This changed allows an unsupported attribute as well as an index
+      pointer to be stored.
+
+\item The attributes, $qc\_flag$ and $mod\_flag$ in Version 1.02 were
+      renamed to $qcexcl$ and $qchist$.  The meaning of each flag
+      value in Version 1.02 was largely undefined except for zero.
+
+\item The attribute, $xvec$ was added for Version 2.16.
+
+\item The storage requirement per observation report (excluding
+      overhead) in Version 1.02 has increased slightly by one byte for
+      both pre-analysis and post-analysis files for Version 2.00.
+      This increase results in larger data storage by $\approx$~0.8
+      Mbytes/day assuming that 200,000 observations exist for each of 
+      the 4 synoptic times.
+\end{enumerate}
+
+The header section in Version 1.02 remains the same except for the
+lists in Table~\ref{tab:lists}.  The following changes were
+implemented for Version 2.00
+
+\begin{enumerate}
+\item The lists, $kx\_meta$ and $qcx\_names$, were added.
+
+\item The names of the NetCDF dimensions, $ktmax$ amd $kxmax$, were
+      changed to $nkt$ and $nkx$.  The dimension, $nqcx$, was added.
+\end{enumerate}
+
+%..................................................................
+
+\section{Software Installation and Usage}
+%        -------------------------------
+\label{sec:Software}
+\subsection{Availability}
+%           ------------
+\label{sec:Avail}
+%Tell where users can find most recent version, including instructions
+%to check out from CVS.
+A copy of this software can be obtained by virtue of the CVS command,
+\begin{verbatim}
+cvs -d ${UserID}@molotov.gsfc.nasa.gov:/CM/baseline/GEOS_DAS \
+       checkout -r ${TAG} -d ${Out_SubDir} geosdas/Core/src/util/ODS
+\end{verbatim}
+where the C-shell variable, \verb|UserID|, is a valid user
+identification tag, \verb|TAG| is the CVS software version tag and
+\verb|Out_SubDir| is the destination subdirectory on the local 
+platform.
+
+For example, a valid string for \verb|TAG| is 
+\begin{verbatim}
+GEOS_2_9_CORE_DEV_BRANCH
+\end{verbatim}
+If the user identification name is \verb|dao_ops| and the local
+destination directory is \verb|ods|, a valid CVS command is,
+\begin{verbatim}
+cvs -d dao_ops@molotov.gsfc.nasa.gov:/CM/baseline/GEOS_DAS \
+       checkout -r GEOS_2_9_CORE_DEV_BRANCH \
+                -d ods geosdas/Core/src/util/ODS
+\end{verbatim}
+If the above CVS command is implemented in the home directory, then
+the source code and other files would be copied into the directory
+\verb|~dao_ops/ods|.
+
+Once the software is copied to the local output directory all valid
+tags can be listed for a given ODS file via the command,
+\begin{verbatim}
+    cvs status -v $(FILE)
+\end{verbatim}
+where \verb|FILE| is a file extracted from CVS.  To get all versions
+of the ODS library, the most logical choice for \verb|FILE| is
+\verb|Makefile|.  The software can be updated to the desired version
+by entering the command,
+\begin{verbatim}
+    cvs update -r ${TAG}
+\end{verbatim}
+
+\subsection{Dependencies and System Requirements}
+%           ------------------------------------
+\label{sec:System}
+To install the complete ODS library, the host platform must have a
+FORTRAN 90 compiler.  A FORTRAN 77 compiler can be used if the FORTRAN
+90 modules are to be omitted, but must allow the usual extensions
+to the ANSI standard such as "include statements".  There are a few
+declarations in the header file, ods\_worksp.h, that are marked with
+the inline comment, "{\tt (system dependent)}".    These declarations
+for integer and real numbers explicitly set the storage size (e.g.
+2~bytes) rather than use the machine default.  The NetCDF routines
+assume that some of the input arguments have storage sizes that are
+predefined by the source code.  However, the compilers on all
+machines, used thus far at the DAO, do support these extensions
+currently implemented in the ODS software.  Even so, the compilers on
+almost all platforms allow some means of setting the storage size via
+the declaration statements so that only a few statements in the header
+file would need to be modified.
+
+The ODS library calls HDF library routines with the NetCDF interface
+(named MFHDF in the NCSA distribution) to perform the low level I/O.
+The public domain HDF software can be obtained by anonymous ftp from
+{\tt ftp://.ncsa.uiuc.edu/HDF}. NCSA usually provides pre-compiled 
+libraries for most Unix workstations and the Cray supercomputer.  If
+the system on which the ODS library is being installed has the
+{\tt netcdf} library instead of the libraries, {\tt mfhdf}, {\tt df},
+{\tt jpeg} and {\tt z}, then Unidata's version of the NetCDF has been
+implementated.  Any program link to the Unidata's library will compile
+all right, but an error message will result if an attempt is made to
+read the standard ODS files produced at the DAO.  However, the HDF 
+library can read files created by the Unidata's library.
+
+\subsection{Installation Instructions}
+%           -------------------------
+\label{sec:Install}
+To build the ODS library, the following files are required:
+
+\begin{description}
+
+\item[Makefile] This file is used to compile using the make utility
+
+\item[Makefile.conf.{\em ARCH}] where {\em ARCH} is the result of the
+C-Shell UNIX command, {\tt uname~-s} or {\tt uname~-n}.  This include
+file for the file, Makefile, contains all the machine dependent
+configuration parameters necessary to build the software on the
+desired platform.  
+
+\item[Makefile.depend] This file contains the list of object files
+with each entry containing the corresponding source code and the
+header files that are referenced by the source code.
+
+\item[configure] Script to link the make file to the appropriate
+configuration file, Makefile.conf.{\em ARCH} (where ARCH is the result
+of the C-Shell UNIX command, {\tt uname~-s}).  The command,
+\begin{verbatim}
+
+            chmod +x configure
+
+\end{verbatim}
+should be performed so that permission is granted to execute the 
+script
+
+\item[ods\_hdf.h] Header file for the upper level routines in the ODS
+library
+
+\item[ods\_worksp.h] Header file for the lower level routines in the
+ODS library.
+
+\item[stdio.h] Header file defining the FORTRAN IO unit numbers.
+
+\item[ods.xxx] Source code file for the FORTRAN 90 routines.  This
+file is not required if the library is to be built without the 
+FORTRAN 90 modules.  Also, the FORTRAN 90 modules are not required for
+testing the ODS library.
+
+\item[*.f] Source code files for the FORTRAN 77 routines.  A list
+of all files is contained in the make file, Makefile.depend.  The 
+name of most files corresponds to the name of the one library routine
+that the file contains.  The exceptions are the file, ods\_file.f
+which contains the routines, {\tt ODS\_Create}, {\tt ODS\_Open},
+{\tt ODS\_Close}, and {\tt ODS\_Append} and all of the block data
+modules and the file ods\_parm.f which contains the routines {\tt
+ODS\_ParmI}, {\tt ODS\_ParmR} and {\tt ODS\_ParmC}.
+
+\item[*.f90] Source code module files for the FORTRAN 90 routines.
+\end{description}
+
+In order to build, the following instructions must be performed
+\begin{enumerate}
+
+\item   Execute the configure script. If your machine is not supported,
+        copy one the Makefile.conf.* for the machine closest to yours,
+        naming the file Makefile.conf.{\em ARCH}, where {\em ARCH}
+        is the result of 
+\begin{verbatim}
+             uname -n
+\end{verbatim}
+         or
+\begin{verbatim}
+             uname -s
+\end{verbatim}
+Then, edit the configuration file and redefined the make file macros
+so that correct commands and compiler options are used.  A explanation
+of the macros required to install and test is given in the file,
+Makefile.
+
+\item   Enter:
+\begin{verbatim}
+             make lib
+\end{verbatim}
+The library file, libods.a, will be created if the build is
+successful.  To omit the FORTRAN 90 modules, enter
+\begin{verbatim}
+             make lib MODOBJS= 
+\end{verbatim}
+The file will be slightly smaller than if the FORTRAN 90 modules are
+included.  For a list of additional targets, enter
+\begin{verbatim}
+             make help
+\end{verbatim}
+\end{enumerate}
+
+\subsection{Library testing}
+%           ---------------
+\label{sec:Testing}
+The following files are required in addition to the ones listed in
+Section~\ref{sec:Install}:
+\begin{description}
+
+\item[ods\_test.f] Source code for testing the ODS library routines.
+This program requires no interactive input.
+
+\item[ods\_test.dao] The output that should be generated by running the
+test program.
+
+\item[scratch\_import.cdl] An ASCII file containing the dump of an
+ODS file created on an SGI 32-bit machine (IRIX).  This file will be
+used to test the portability of both the library routines and the
+ODS file created on different platforms.
+
+\item[scratch\_v1\_02.cdl] An ASCII file containing the dump of an
+ODS file created from Version 1.02 of the library.  This file will be
+used to test the ability of the library routines to read the ODS file
+created by a previous version of the software.
+ 
+\end{description}
+
+To perform the test, enter:
+\begin{verbatim}
+            make test
+\end{verbatim}
+If all goes well the last 6 lines of output should read:
+\begin{verbatim}
+            ncgen -b -o test1_import.nc sample_import.cdl
+            ncgen -b -o test1_v1_02.nc sample_v1_02.cdl
+            ./ods_test.x > ods_test.out
+            /bin/rm test1_import.nc test1_v1_02.nc test1.nc
+            diff ods_test.out ods_test.dao
+            ***** ODS test successful ***
+\end{verbatim}
+If not, visually check the differences between the files
+{\tt ods\_test.out} and {\tt ods\_test.dao} as formatted output may
+differ slightly.  In addition, the printed version tag may also
+differ.
+
+\subsection{Compiling an ODS application program}
+%           ------------------------------------
+The first step is to make sure is that the HDF and ODS library is
+installed on your system as described in Sections~\ref{sec:System}
+and~\ref{sec:Install}.  If your application program is in a file
+named {\tt my\_program.f}, then the likely Unix command to compile
+and link this program is
+\begin{verbatim}
+  f90 -o my_program.x my_program.f           \
+                     -L$(OLibDir) -lods.a \
+                     -L$(HLibDir) -lmfhdf -ldf -ljpeg -lz
+\end{verbatim}
+where the make file macros {\tt OLibDir} and {\tt HLibDir} are the
+directories containing the ODS and HDF libraries.  Please notice that
+the ODS files are written using the NetCDF Application Program
+Interface (API) but relies on the HDF library.  {\em Therefore, as
+discussed in Section~\ref{sec:System} a standard ODS/HDF file produced
+at the DAO cannot be read by a program linked with Unidata's NetCDF
+library.}
+
+\subsection{Tools for manipulating ODS files}
+%           --------------------------------
+%A few words on GrITAS, GrISAS, and the ODS tools; give URLs where
+%necessary but summarize the functionality of these tools.
+
+In addition to the ODS library, some tools were developed to process
+observation data.  A list of the UNIX command-line tools is as follows:
+
+UNIX command-line tools:
+\begin{description}
+
+\item[deltoods] Converts data from "del" to ODS format.  The software
+and documentation can be found on hera in the following directories,
+\begin{verbatim}
+/production/ods/tools/deltoods/src    # ... the source codes
+/production/ods/tools/deltoods/doc/ps # ... documentation in 
+                                      #     postscript
+\end{verbatim}
+
+\item[grisas] Produces a time-series of area and/or short-time averages.
+The data in the resulting output file can be viewed and further
+manipulated with grisasview.  Both tools are available only on NAS
+machines in the directory,
+\begin{verbatim}
+~dasilva/bin
+\end{verbatim}
+
+\item[gritas] Calculates the time-means and root-time-mean-squares at
+grid boxes, globally or regionally.  The data in the resulting output
+file can be viewed and further manipulated with gritasview.  Both
+tools are available only on NAS machines in the directory,
+\begin{verbatim}
+~dasilva/bin
+\end{verbatim}
+
+\item[ncdc2ods] Converts data from the National Climatic Data Center
+(NCDC) to ODS format.  Enter ncdc2ods.x without any arguments for a
+summary of command-line interface.  The software and documentation can
+be found on hera in the following directories,
+\begin{verbatim}
+/production/ods/tools/ncdc2ods/v1.00/src    # ... the source codes
+/production/ods/tools/ncdc2ods/v1.00/bin    # ... pre-compiled executables
+/production/ods/tools/ncdc2ods/v1.00/doc/ps # ... documentation in 
+                                            #     postscript
+\end{verbatim}
+
+\item[odslist] Lists sorted contents of an ODS file to an ASCII
+file.  In combination with diff or xdiff, this tool can be used to
+compare two ODS files.  Enter odslist without any arguments for a for
+a summary of command-line interface.  This program is compiled with
+the GEOS core system and is currently available on the NAS machines
+only, located at
+\begin{verbatim}
+~todling/GEOS-2.9.0/geosdas/Core/bin
+\end{verbatim}
+
+\item[ods\_scan.x] is a utility developed for the GEOS-3 operational
+system to check and inspect ODS files for correctness.  The utility
+scans the ODS and prints out information including an observation
+count by synoptic hour and/or data type index ($kx$).  The software
+has a simple command line interface (enter ods\_scan.x for the usage)
+and is available in the GEOS-3.x bin directory, i.e.,
+\begin{verbatim}
+/u/dao_ops/GEOS-3.2.5/bin.
+\end{verbatim}
+
+\item[odsselect] Selects data from ODS files by data type (kt), data
+source (kx), level (lev), and quality (qcexcl). Output consists of one
+or more ODS files containing the selected data. Enter odsselect
+without any arguments for a summary of command-line interface. This
+program is compiled with the GEOS core system and is currently
+available on the NAS machines only, located at
+\begin{verbatim}
+~todling/GEOS-2.9.0/geosdas/Core/bin
+\end{verbatim}
+
+\item[z2t] Converts height data to thickness or mean-layer
+temperatures.  Enter z2t.x without any arguments for a summary of
+command-line interface.  The software and documentation can be found
+on hera in the following directories,
+\begin{verbatim}
+/production/ods/tools/z2t/v1.00/src    # ... the source codes
+/production/ods/tools/z2t/v1.00/bin    # ... pre-compiled executables
+/production/ods/tools/z2t/v1.00/doc/ps # ... documentation in
+                                       #     postscript
+\end{verbatim}
+%[ASK RICARDO TODLING ABOUT PERMANENT PATH INFORMATION.]
+\end{description}
+
+MATLAB-based tools: 
+\begin{description}
+
+\item [odsview] Point-and-click graphical ODS file browser.
+Documentation at URL is as follows:
+\begin{verbatim}
+file:/ford1/local/matlab5.3/toolbox/dao/ods/doc/odsview.html
+file:/ford1/local/matlab5.3/toolbox/dao/help/ods/odsview.html
+\end{verbatim}
+
+\item[odsload] Load data from an ODS file into MATLAB.  Documentation
+at URL is as follows:
+\begin{verbatim}
+file:/ford1/local/matlab5.3/toolbox/dao/help/ods/odsload.html
+\end{verbatim}
+
+\end{description}
+
+Installation: These programs are installed on /ford1/local. For setup
+instructions, see URL,
+\begin{verbatim}
+file:/ford1/local/matlab5.3/toolbox/dao/setup.html
+\end{verbatim}
+
+Libraries using ODS routines: 
+\begin{description}
+
+\item [obs\_io] Read and write all ODS data for a given synoptic 
+time.  The software can be obtained by following the procedures
+given in Section~\ref{sec:Avail} with \verb|TAG| and the CVS
+subdirectory begin set to
+\begin{verbatim}
+    OBS_IO_2_1_1
+\end{verbatim}
+and 
+\begin{verbatim}
+    geosdas/Core/src/obs_io
+\end{verbatim}
+\end{description}.
+
+%Chris, here is a list of the ODS tools I developed that can be
+%considered general-purpose. One thing to note is that the location and
+%documentation of these tools is likely to change in the future.
+%Therefore there should be an ODS web page (like the one Rob Lucchesi has
+%for GFIO) where this information is kept up-to-date. Any paper
+%documentation should point to this web page, rather than to URLs of
+%individual tools.
+
+%.........................................................................
+
+\newpage
+
+\centerline{\huge\bf References}
+
+\addcontentsline{toc}{section}{References}
+
+\begin{description}
+
+\item{}Lamich, D., M. Hall, Y. Kondratyeva, R. Govindaraju and
+E. Hartnett, 1996: Documentation of Observational Data Preparation for
+the Goddard Earth Observing System (GEOS) Data Assimilation
+System. {\em NASA Tech. Memorandum 104606}, {\em in
+preparation}.
+
+\item{}Pfaendtner, J., S. Bloom, D. Lamich, M. Seablom,
+       M. Sienkiewicz, J. Stobie, A. da~Silva, 1995: Documentation of
+       the Goddard Earth Observing System (GEOS) Data Assimilation
+       System--Version 1.  {\em NASA Tech. Memo. No. 104606},
+       Vol. ~{\bf 4}, Goddard Space Flight Center, Greenbelt, MD
+       20771. 
+       Available electronically on the World Wide Web as
+       {\tt ftp://dao.gsfc.nasa.gov/pub/tech\_memos/volume\_4.ps.Z}
+
+\item{}Rew, R., G. Davis and S. Emmerson, 1993: {\em NetCDF User's Guide, an
+Interface for Data Access}. Unidata Program Center, University
+Corporation for Atmospheric Research, Boulder, CO, 186pp.
+
+
+\end{description}
+
+%..........................................................................
+
+\newpage
+
+\addcontentsline{toc}{section}{Revision History}
+
+\vspace*{\fill}
+
+\centerline{\huge\bf Revision History}
+
+\bigskip
+
+\bigskip
+
+\begin{center}
+\begin{tabular}{|l|l|l|l|}\hline
+{\bf Version} & {\bf Version} & {\bf Pages Affected/}   & {\bf Aproval}\\
+{\bf Number}  & {\bf Date}    & {\bf Extent of Changes} & {\bf Authority}\\
+\hline
+\hline
+Version 1 & November 10, 1999  & Derived from DAO ON 1995-01 & TBD\\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace*{\fill}
+
+\appendix
+
+\addcontentsline{toc}{part}{APPENDIX}
+
+\section{ODS File Structure}
+\label{sec:FileStruct}
+This appendix describes the structure of the ODS file using the NetCDF
+interface to HDF(MFHDF).  Most users will rely on the FORTRAN
+subroutines (described in Section~\ref{sec:API} and
+Appendix~\ref{app:ProLogues}) to access the data without the need of
+knowing the details of the file structure.  Such information is
+important for those users desiring to access the data using the HDF C
+language interface or from application programs such as IDL.  It is 
+assumed that the reader has familiarity with basic NetCDF concepts.
+For an introduction to NetCDF consult Rew {\em et al.} (1993).
+
+Table~\ref{tab:ncdump} is the dump of the NetCDF header information
+for an ODS file.  In NetCDF jargon, this dump presents the CDL
+description of the file.  Most of the NetCDF dimension, variable and
+attribute names have already been discussed and listed in
+Sections~\ref{sec:HeaderInfo}, \ref{sec:ObRep} and~\ref{sec:ODSQuery}
+and in Tables~\ref{tab:GlobAtt}, \ref{tab:lists} and~\ref{tab:ObAtt}.
+Notice that all synoptic times are stored contiguously in a long
+one-dimensional vector partitioned in batches, each of which has a
+constant length given by the dimension {\tt batchlen}.  To gain access
+to a segment for a particular synoptic time and Julian day, the
+``pointer'', {\tt syn\_beg} and {\tt syn\_len} can be used.  Given a
+Julian day and a synoptic time, {\tt syn\_beg} provide the location of
+the beginning of the data segment, and {\tt syn\_len} the number of
+observation available for the particular synoptic time.  The locations
+are given in observation index number.  From the index number, the
+batch number and the location within the batch can be determined.  The
+pointer variables are stored as two dimensional variables; the first 
+and second dimension correspond to the Julian day and synoptic hour,
+respectively.  An index of 1 for the first dimension corresponds to
+the first Julian day on file.  For the second dimension, an index of
+1 corresponds to 0~GMT and an index of 2 corresponds to the next
+synoptic hour which is usually 6~GMT..
+
+Some NetCDF variables such as {\tt lat} and {\tt time}, have the
+attributes {\tt scale\_factor} and {\tt add\_offset}.  The presence of
+these variable implies that the ODS software performs a linear
+transformation before writing and reading the variable, viz,
+\begin{equation}
+X = a X_s + b
+\end{equation}
+where $X_s$ is the value written to the file and $a$ and $b$ are
+constants given by {\tt scale\_factor} and {\tt add\_offset},
+respectively.  The variable $X$ is the observation attribute value
+given in an observation report and passed to or returned from ODS
+interface routines.  If {\tt scale\_factor} is missing, then $a$~=~1,
+and if {\tt add\_offset} is missing, then  $b$~=~0.  If $X_s$ is an
+integer, then $X_s$ is converted to a real number, and then the
+nearest integer of $a X_s$ is determined.  For the case when $X_s$ is
+to be calculated from the integer $X$, then $X$~-~$b$ is converted to
+real, and then the nearest integer of ($X$~-~$b$)/$a$ is determined.
+If $X_s$ is a real number but stored on file as an integer then the
+type conversion (i.e. real to integer and vice versa), then the type
+conversion is performed immediately prior to writing the data to the
+file or immediately after reading the data from file.  The same rule
+applies if $X_s$ is integer but stored on file as a real number.
+
+\begin{table}[h]
+\caption{\small Annotated header of an ODS file produced by the MFHDF
+utility {\tt ncdump}~{\tt -h}.}
+\label{tab:ncdump}
+\end{table}
+
+\begin{verbatim}
+netcdf SELECT {
+dimensions:
+	nbatches = UNLIMITED ; // (1162 currently)
+	batchlen = 1000 ;
+	nkt = 38 ;
+	nkx = 512 ;
+	nqcx = 33 ;
+	ndays = 255 ;
+	nsyn = 4 ;
+	strlen = 32 ;
+
+variables:
+	char kt_names(nkt, strlen) ;
+		kt_names:name = "Name of GEOS/DAS data types" ;
+	char kt_units(nkt, strlen) ;
+		kt_units:name = "Units for each GEOS/DAS data type" ;
+	char kx_names(nkx, strlen) ;
+		kx_names:name = "Name of GEOS/DAS data sources" ;
+	char kx_meta(nkx, strlen) ;
+		kx_meta:name = "kx specific metadata information" ;
+	char qcx_names(nqcx, strlen) ;
+		qcx_names:name = "Meaning of each possible value of the quality control exclusion mark" ;
+	short lat(nbatches, batchlen) ;
+		lat:name = "Latitude" ;
+		lat:units = "degrees north" ;
+		lat:valid_range = -90.f, 90.f ;
+		lat:scale_factor = 0.0099999998f ;
+	short lon(nbatches, batchlen) ;
+		lon:name = "Longitude" ;
+		lon:units = "degrees east" ;
+		lon:value_at_90E = 90.f ;
+		lon:value_at_90W = -90.f ;
+		lon:valid_range = -180.f, 180.f ;
+		lon:scale_factor = 0.0099999998f ;
+	float lev(nbatches, batchlen) ;
+		lev:name = "Pressure level or channel" ;
+		lev:units = "hPa or none" ;
+	short time(nbatches, batchlen) ;
+		time:name = "minutes since 0:00 GMT of first julian day on file" ;
+		time:units = "minutes since 1999-08-01 00:00:00.0" ;
+		time:add_offset = 32587 ;
+		time:valid_range = -180, 65354 ;
+	byte kt(nbatches, batchlen) ;
+		kt:name = "Data type index" ;
+		kt:add_offset = 1 ;
+		kt:valid_range = 1, 38 ;
+	short kx(nbatches, batchlen) ;
+		kx:name = "Data source index" ;
+		kx:add_offset = 32768 ;
+		kx:valid_range = 1, 512 ;
+	long ks(nbatches, batchlen) ;
+		ks:name = "Sounding index" ;
+		ks:add_offset = 0 ;
+		ks:valid_range = 1, 1073741824 ;
+	float xm(nbatches, batchlen) ;
+		xm:name = "Metadata" ;
+		xm:missing_value = 9.9999999e+14f ;
+	float obs(nbatches, batchlen) ;
+		obs:name = "Observation value" ;
+		obs:missing_value = 9.9999999e+14f ;
+	float omf(nbatches, batchlen) ;
+		omf:name = "Observation minus 6h forecast" ;
+		omf:missing_value = 9.9999999e+14f ;
+	float oma(nbatches, batchlen) ;
+		oma:name = "Observation minus analysis" ;
+		oma:missing_value = 9.9999999e+14f ;
+	float xvec(nbatches, batchlen) ;
+		xvec:name = "PSAS CG solution vector" ;
+		xvec:missing_value = 9.9999999e+14f ;
+	byte qcexcl(nbatches, batchlen) ;
+		qcexcl:name = "Quality control exclusion mark" ;
+		qcexcl:valid_range = 0, 255 ;
+	short qchist(nbatches, batchlen) ;
+		qchist:name = "Quality control history mark" ;
+		qchist:add_offset = 32767 ;
+		qchist:valid_range = 0, 65534 ;
+	long days(ndays) ;
+	long syn_beg(ndays, nsyn) ;
+		syn_beg:name = "Begining of synoptic hour for each day" ;
+		syn_beg:reference_date = "1968-05-23" ;
+		syn_beg:value_at_reference_date = 2440000 ;
+		syn_beg:first_julian_day = 2451392 ;
+		syn_beg:latest_julian_day = 2451393 ;
+		syn_beg:latest_synoptic_hour = 18 ;
+	long syn_len(ndays, nsyn) ;
+		syn_len:name = "Number of observations for syn. time" ;
+
+// global attributes:
+		:source = "Data Assimilation Office, Code 910.3, NASA/GSFC" ;
+		:title = "GEOS DAS Observational Data Stream (ODS) File" ;
+		:type = "post_analysis" ;
+		:version = "2.16" ;
+		:data_info = "Contact data@dao.gsfc.nasa.gov" ;
+		:history = "test1
+                                                                                                                                         " ;
+}
+\end{verbatim}
+
+!EOI

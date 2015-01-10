@@ -1,0 +1,30 @@
+#
+# GrITAS Resource file.
+#
+#
+                                                                                                                                
+# Vertical levels - Must decrease monotonically
+# ---------------------------------------------
+GrITAS*Vertical_Levels: 1000 850 700 500 400 300 250 200 150 100 70 50 30 10 5 2 1 0.4
+                                                                                                                                
+# User Defined Grid List
+# ----------------------
+GrITAS*List::
+#  kt    var name      kx's
+   44    vtmpraob     120
+   44    tacairep     130
+   44    tacsdar      131
+   44    tdropsnd     132
+   44    tacmdcars    133
+    4    uwndraob     220
+    5    vwndraob     220
+    4    uacairep     230
+    5    vacairep     230
+    4    uacsdar      231
+    5    vacsdar      231
+    4    udropsnd     232
+    5    vdropsnd     232
+    4    uacmdcars    233
+    5    vacmdcars    233
+   11    qraob        120
+::

@@ -1,0 +1,46 @@
+#
+# Resource file with variable list for GEOS-5 Collection <tavg1_2d_rad_Nx>.
+#
+# This RC file was automatically created on Mon Jul 18 10:28:10 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover05:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: 2d,1-Hourly,Time-Averaged,Single-Level,Assimilation,Radiation Diagnostics
+EMIS: surface emissivity;  1
+TS: surface skin temperature;  K
+ALBEDO: surface albedo;  1
+ALBNIRDF: surface albedo for near infrared diffuse;  1
+ALBNIRDR: surface albedo for near infrared beam;  1
+ALBVISDF: surface albedo for visible diffuse;  1
+ALBVISDR: surface albedo for visible beam;  1
+LWGEM: longwave flux emitted from surface;  W m-2
+LWGAB: surface absorbed longwave radiation;  W m-2
+LWGABCLR: surface absorbed longwave radiation assuming clear sky;  W m-2
+LWGABCLRCLN: surface absorbed longwave radiation assuming clear sky and no aerosol;  W m-2
+LWGNT: surface net downward longwave flux;  W m-2
+LWGNTCLR: surface net downward longwave flux assuming clear sky;  W m-2
+LWGNTCLRCLN: surface net downward longwave flux assuming clear sky and no aerosol;  W m-2
+LWTUP: upwelling longwave flux at toa;  W m-2
+LWTUPCLR: upwelling longwave flux at toa assuming clear sky;  W m-2
+LWTUPCLRCLN: upwelling longwave flux at toa assuming clear sky and no aerosol;  W m-2
+SWTDN: toa incoming shortwave flux;  W m-2
+SWGDN: surface incoming shortwave flux;  W m-2
+SWGDNCLR: surface incoming shortwave flux assuming clear sky;  W m-2
+SWGNT: surface net downward shortwave flux;  W m-2
+SWGNTCLR: surface net downward shortwave flux assuming clear sky;  W m-2
+SWGNTCLN: surface net downward shortwave flux assuming no aerosol;  W m-2
+SWGNTCLRCLN: surface net downward shortwave flux assuming clear sky and no aerosol;  W m-2
+SWTNT: toa net downward shortwave flux;  W m-2
+SWTNTCLR: toa net downward shortwave flux assuming clear sky;  W m-2
+SWTNTCLN: toa net downward shortwave flux assuming no aerosol;  W m-2
+SWTNTCLRCLN: toa net downward shortwave flux assuming clear sky and no aerosol;  W m-2
+TAUHGH: optical thickness of high clouds(EXPORT);  1
+TAULOW: optical thickness of low clouds;  1
+TAUMID: optical thickness of middle clouds;  1
+TAUTOT: optical thickness of all clouds;  1
+CLDHGH: cloud area fraction for high clouds;  1
+CLDLOW: cloud area fraction for low clouds;  1
+CLDMID: cloud area fraction for middle clouds;  1
+CLDTOT: total cloud area fraction;  1

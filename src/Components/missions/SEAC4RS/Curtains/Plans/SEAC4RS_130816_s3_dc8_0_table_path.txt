@@ -1,0 +1,39 @@
+DC8 817: SEAC4RS_130816_s3_dc8 v. 0
+
+Takeoff at 2013-08-14T15 UTC
+Total est. flight time = 7 hrs, 52 min
+Total est. distance flown = 3483 nmi
+
+---
+Remarks:
+Scienc Flight #3 - NAM
+The DC8 will perform a NAM survery over the south-west United States. A majority
+of the flight will occur between 25 kft and 37kft. An up and down stair-step
+type profile will be performed between those two levels at the flight scientists
+discretion. At the Cart Site Aeronet site (P4) an hour long delay is put into
+the flight plan for to-be-determined maneuvers, some of which will be in
+coordination with the ER2.
+---
+
+Defined Locations:
+ Name       Lat.       Lon.            Note
+ KEFD    29.6000   -95.1700  Starting point
+   P1    33.0000  -116.0000                
+   P2    39.0000  -105.0000                
+   P3    34.5000  -108.0000                
+   P4    36.6067   -97.4864                
+ 
+  Elapsed       Lat.       Lon.    Alt.
+    (hrs)     (deg.)     (deg.)   (kft)
+     0.00    29.6000   -95.1700    0.00
+     0.44    30.4071   -98.5754   35.00
+     2.45    33.0000  -116.0000   35.00
+     2.48    33.0000  -116.0000   35.00
+     3.92    39.0000  -105.0000   35.00
+     3.95    39.0000  -105.0000   35.00
+     4.63    34.5000  -108.0000   35.00
+     4.66    34.5000  -108.0000   35.00
+     5.84    36.6067   -97.4864   35.00
+     6.84    36.6067   -97.4864   35.00
+     7.46    32.3064   -96.0200   35.00
+     7.87    29.6000   -95.1700    0.00

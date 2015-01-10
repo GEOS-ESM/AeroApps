@@ -1,0 +1,71 @@
+ER2 809: SEAC4RS_130821_s5_er2 v. 1c
+
+Takeoff at 2013-08-21T15:00 UTC
+Total est. flight time = 7 hrs, 37 min
+Total est. distance flown = 2745 nmi
+
+---
+Remarks:
+Wed, Aug 21, Science Flight #5 - ER2
+
+The purpose of this flight is to get an initial
+condition for a SEUS chemistry event that is expected next week and to spend
+considerable time studying convection near the gulf coast.
+
+There is a stay on station between EWP2 and EWP3 for one hour to study convection
+over the gulf.
+
+There is a racetrack to be performed at WPT1. The location of the racetrack will
+be determined in flight. This racetrack will study convection and SEUS over
+the city of Muscle Shoals. Time should be coordinated with the DC-8 and Leer Jet
+for this maneuver.
+
+A second stay on station is expected at EWP3 on the way back from Muscle Shoals
+for more study of Gulf convection and currus.
+
+
+
+
+---
+
+Defined Locations:
+ Name       Lat.       Lon.            Note
+ KEFD    29.6000   -95.1700  Starting point
+ EWP2    29.0000   -92.5000                
+ EWP3    29.5000   -89.0000                
+ WPT1    34.7508   -87.6503   Muscle Shoals
+ EWP5    36.0698   -87.3033                
+  N01    29.0785   -92.8348                
+  N02    29.2487   -90.8427                
+  N03    29.5073   -88.9495                
+  N04    36.0175   -87.0012                
+  N05    34.6975   -87.3423                
+  N06    29.6017   -93.6129                
+ 
+  Elapsed       Lat.       Lon.    Alt.
+    (hrs)     (deg.)     (deg.)   (kft)
+     0.00    29.6000   -95.1700    0.00
+     0.40    29.0785   -92.8348   61.00
+     0.46    29.0000   -92.5000   61.00
+     0.72    29.2487   -90.8427   41.00
+     1.02    29.5073   -88.9495   61.00
+     2.02    29.5073   -88.9495   61.00
+     2.08    29.5000   -89.0000   61.00
+     2.11    29.5000   -89.0000   61.00
+     2.96    34.7508   -87.6503   61.00
+     3.20    36.0698   -87.3033   61.00
+     3.26    36.0175   -87.0012   61.00
+     3.50    34.6975   -87.3423   61.00
+     3.57    34.7508   -87.6503   61.00
+     3.80    36.0698   -87.3033   61.00
+     3.87    36.0175   -87.0012   61.00
+     4.11    34.6975   -87.3423   61.00
+     4.17    34.7508   -87.6503   61.00
+     4.41    36.0698   -87.3033   61.00
+     4.48    36.0175   -87.0012   61.00
+     4.71    34.6975   -87.3423   61.00
+     4.78    34.7508   -87.6503   61.00
+     5.63    29.5000   -89.0000   61.00
+     6.65    29.5000   -89.0000   61.00
+     7.29    29.6017   -93.6129   61.00
+     7.62    29.6000   -95.1700    0.00

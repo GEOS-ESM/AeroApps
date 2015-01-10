@@ -1,0 +1,48 @@
+#
+# Resource file with variable list for GEOS-5 Collection <tavg1_2d_lnd_Nx>.
+#
+# This RC file was automatically created on Mon Jul 18 10:28:10 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover05:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: 2d,1-Hourly,Time-Averaged,Single-Level,Assimilation,Land Surface Diagnostics
+GRN: greeness fraction;  1
+LAI: leaf area index;  1
+GWETROOT: root zone soil wetness;  1
+GWETTOP: surface soil wetness;  1
+TPSNOW: surface temperature of snow;  K
+TUNST: surface temperature of unsaturated zone;  K
+TSAT: surface temperature of saturated zone;  K
+TWLT: surface temperature of wilted zone;  K
+PRECSNO: snowfall;  kg m-2 s-1
+PRECTOT: total precipitation;  kg m-2 s-1
+SNOMAS: Total snow storage land;  kg m-2
+SNODP: snow depth;  m
+EVPSOIL: baresoil evap energy flux;  W m-2
+EVPTRNS: transpiration energy flux;  W m-2
+EVPINTR: interception loss energy flux;  W m-2
+EVPSBLN: snow ice evaporation energy flux;  W m-2
+RUNOFF: surface runoff flux;  kg m-2 s-1
+BASEFLOW: baseflow flux;  kg m-2 s-1
+SMLAND: Snowmelt flux land;  kg m-2 s-1
+FRUNST: fractional area of unsaturated zone;  1
+FRSAT: fractional area of saturated zone;  1
+FRSNO: fractional area of land snowcover;  1
+FRWLT: fractional area of wilting zone;  1
+PARDF: surface downwelling par diffuse flux;  W m-2
+PARDR: surface downwelling par beam flux;  W m-2
+SHLAND: Sensible heat flux land;  W m-2
+LHLAND: Latent heat flux land;  W m-2
+EVLAND: Evaporation land;  kg m-2 s-1
+LWLAND: Net longwave land;  W m-2
+SWLAND: Net shortwave land;  W m-2
+GHLAND: Ground heating land;  W m-2
+TWLAND: Avail water storage land;  kg m-2
+TELAND: Total energy storage land;  J m-2
+WCHANGE: rate of change of total land water;  kg m-2 s-1
+ECHANGE: rate of change of total land energy;  W m-2
+SPLAND: rate of spurious land energy source;  W m-2
+SPWATR: rate of spurious land water source;  kg m-2 s-1
+SPSNOW: rate of spurious snow energy;  W m-2

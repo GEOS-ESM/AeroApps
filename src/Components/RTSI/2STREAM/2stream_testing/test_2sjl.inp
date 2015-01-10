@@ -1,0 +1,301 @@
+Modes of operation
+==================
+
+LIDORT - Do full Radiance calculation?
+t
+
+LIDORT - Do nadir single scatter correction?
+f
+
+LIDORT - Do outgoing single scatter correction?
+f
+
+LIDORT - Do Full-up single scatter calculation?
+f
+
+LIDORT - Do direct beam correction?
+f
+
+LIDORT - Perform double convergence test?
+f
+
+Solar beam control
+==================
+
+LIDORT - Include solar sources?
+t
+
+LIDORT - Use classical beam solution?
+t
+
+LIDORT - Plane-parallel treatment of direct beam?
+f
+
+LIDORT - Perform internal Chapman function calculation?
+t
+
+LIDORT - Beam path with refractive atmosphere?
+f
+
+Scatterer control
+=================
+
+LIDORT - Rayleigh atmosphere only?
+f
+
+LIDORT - Isotropic atmosphere only?
+f
+
+LIDORT - No azimuth dependence in the solution?
+f
+
+LIDORT - Compute all Fourier components?
+f
+
+Performance control
+===================
+
+LIDORT - Include Delta-M scaling?
+f
+
+LIDORT - Additional Delta-M scaling for SS correction?
+f
+
+LIDORT - Solution saving mode?
+f
+
+LIDORT - Boundary value problem telescoping mode?
+f
+
+User-defined output control
+===========================
+
+directional output control
+--------------------------
+
+LIDORT - Upwelling output?
+t
+
+LIDORT - Downwelling output?
+t
+
+Stream angle and optical depth output control
+---------------------------------------------
+
+LIDORT - Include quadrature angles in output?
+f
+
+LIDORT - User-defined stream angles?
+t
+
+LIDORT - User-defined optical depths?
+f
+
+LIDORT - Layer boundary optical depths?
+t
+
+mean-value output control
+-------------------------
+
+LIDORT - Generate mean value output additionally?
+f
+
+LIDORT - Generate only mean value output?
+f
+
+Write output control
+====================
+
+output flags
+------------
+
+LIDORT - Debug write?
+f
+
+LIDORT - Input control write?
+f
+
+LIDORT - Input scenario write?
+f
+
+LIDORT - Fourier component output write?
+f
+
+LIDORT - Results write?
+f
+
+output filenames
+----------------
+
+LIDORT - filename for input write
+lidort_input.res
+
+LIDORT - filename for scenario write
+lidort_scenario.res
+
+LIDORT - Fourier output filename
+lidort_fourier.res
+
+LIDORT - filename for main output
+lidort_results.res
+
+Thermal control
+---------------
+
+LIDORT - Do thermal emission?
+f
+
+LIDORT - Do thermal emission, transmittance only?
+f
+
+LIDORT - Number of thermal coefficients
+1
+
+LIDORT - Do surface emission?
+f
+
+Lambertian control
+------------------
+
+LIDORT - Lambertian surface?
+t
+
+LIDORT - Lambertian (isotropic) input albedo
+0.2
+
+BRDF control
+------------
+
+LIDORT - Number of bidirectional reflectance kernels
+1
+
+LIDORT - Number of bidirectional reflectance streams
+25
+
+LIDORT - Kernel names, indices, amplitudes, # parameters, parameters
+Cox-Munk   9  0.10 2    0.079800    1.779556    0.000000
+Ross-thin  2  0.30 2    0.000000    0.000000    0.000000
+Li-dense   5  0.10 2    2.000000    1.000000    0.000000
+
+(Above statement is Formatted. ( A10, I2, F6.2, I2, 3F12.6 )
+
+LIDORT - Do shadow effect for glitter kernels?
+t
+
+LIDORT - Do multiple reflectance for glitter kernels?
+f
+
+Streams/layers/moments
+======================
+
+LIDORT - Number of half-space streams
+1
+
+LIDORT - Number of atmospheric layers
+3
+
+LIDORT - Number of fine layers (outgoing sphericity correction only)
+2
+
+LIDORT - Number of input Legendre moments
+1
+
+Accuracy input
+==============
+
+LIDORT - Fourier series convergence
+0.00000001
+
+LIDORT - Zenith tolerance level
+0.00001
+
+Solar beam inputs
+=================
+
+LIDORT - Solar flux constant
+1.0
+
+LIDORT - Number of solar zenith angles
+1
+
+LIDORT - TOA solar zenith angles (degrees)
+57.0
+
+Pseudo-spherical inputs
+=======================
+
+LIDORT - Earth radius (km)
+6371.0
+
+LIDORT - Refractive index parameter
+0.000288
+
+User defined outputs (Geometry, optical depths or level boundaries)
+===================================================================
+
+LIDORT - Input geometry specification height [km]
+0.0
+
+LIDORT - Number of user-defined relative azimuth angles
+1
+
+LIDORT - User-defined relative azimuth angles
+10.0
+
+LIDORT - Number of user-defined stream angles
+1
+
+LIDORT - User-defined stream angles
+35.0
+
+LIDORT - Number of user-defined optical depths
+0
+
+LIDORT - User-defined optical depths
+0.0
+
+LIDORT - Number of layer boundary optical depths
+2
+
+LIDORT - Which layer boundaries for optical depth
+0
+3
+
+####################################### EXTRA STUFF for LINEARIZATION
+
+LIDORT - Simulation only?
+f
+
+LIDORT - Atmospheric profile weighting functions?
+t
+
+LIDORT - Atmospheric column weighting functions?
+f
+
+LIDORT - Surface property weighting functions?
+f
+
+LIDORT - Atmospheric profile weighting functions, total number
+2
+
+LIDORT - Atmospheric column weighting functions, total number
+1
+
+LIDORT - Do Lambertian albedo weighting function?
+t
+
+LIDORT - Atmospheric profile Jacobian names (character*31)
+Total_absorption_column--------
+
+LIDORT - Atmospheric column Jacobian names (character*31)
+Total_absorption_column--------
+
+LIDORT - Kernels, indices, # pars, Jacobian flags
+Cox-Munk    9 2  T   T F F 
+
+(Above statement is Formatted. (  A10, I3, I2, 1X, L2, 2X, 3L2 )
+
+LIDORT - Surface Jacobian names (character*22)
+Kernel Amplitude------
+Mean-slope-squared----
+

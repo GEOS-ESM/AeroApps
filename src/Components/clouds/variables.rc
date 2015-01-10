@@ -1,0 +1,595 @@
+#
+# MCS Specific Variables
+#
+TAUI: optical thickness for ice clouds (MCS);  1
+TAUL: optical thickness for liquid clouds (MCS);  1
+REI: effective radius for ice clouds (MCS);  microns
+REL: effective radius for liquid clouds (MCS);  microns
+RHMCS: relative humidity (MCS); 1
+DCWP: layer condensed water path (MCS) (ICA); kg m-2
+DTWP: layer total water path (MCS) (ICA); kg m-2
+DCWPM: layer condensed water path (MCS) (gboxmeanICA); kg m-2
+DTWPM: layer total water path (MCS) (gboxmeanICA); kg m-2
+TAUIAM: optical thickness for ice clouds (MCS) (gboxarithmeanICA);  1
+TAULAM: optical thickness for liquid clouds (MCS) (gboxarithmeanICA);  1
+TAUIGM: optical thickness for ice clouds (MCS) (gboxgeomeanICA);  1
+TAULGM: optical thickness for liquid clouds (MCS) (gboxgeomeanICA);  1
+ADECZ: conservative delta-Eddington albedo for zenith sun (MCS); 1
+ADECZM: conserv delta-Edd albedo for zenith sun (MCS) (gboxmeanICA); 1
+ATAU: aerosol optical thickness (MCS); 1
+ASSA: aerosol single scattering albedo (MCS); 1
+AASM: aerosol asymmetry parameter (MCS); 1
+#
+# Standard GEOS-5 Variables
+#
+EFLUX: total latent energy flux;  W m-2
+EVAP: evaporation from turbulence;  kg m-2 s-1
+HFLUX: sensible heat flux from turbulence;  W m-2
+TAUX: eastward surface stress;  N m-2
+TAUY: northward surface stress;  N m-2
+TAUGWX: surface eastward gravity wave stress;  N m-2
+TAUGWY: surface northward gravity wave stress;  N m-2
+PBLH: planetary boundary layer height;  m
+DISPH: zero plane displacement height;  m
+BSTAR: surface bouyancy scale;  m s-2
+USTAR: surface velocity scale;  m s-1
+TSTAR: surface temperature scale;  K
+QSTAR: surface moisture scale;  kg kg-1
+RISFC: surface bulk richardson number;  1
+Z0H: surface roughness for heat;  m
+Z0M: surface roughness;  m
+HLML: surface layer height;  m
+TLML: surface air temperature;  K
+QLML: surface specific humidity;  kg kg-1
+ULML: surface eastward wind;  m s-1
+VLML: surface northward wind;  m s-1
+RHOA: air density at surface;  kg m-3
+SPEED: surface ventilation velocity;  m s-1
+CDH: surface exchange coefficient for heat;  kg m-2 s-1
+CDQ: surface exchange coefficient for moisture;  kg m-2 s-1
+CDM: surface exchange coefficient for momentum;  kg m-2 s-1
+CN: surface neutral drag coefficient;  1
+TSH: effective surface skin temperature;  K
+QSH: effective surface specific humidity;  kg kg-1
+FRSEAICE: ice covered fraction of tile;  1
+PRECANV: anvil precipitation;  kg m-2 s-1
+PRECCON: convective precipitation;  kg m-2 s-1
+PRECLSC: nonanvil large scale precipitation;  kg m-2 s-1
+PRECSNO: snowfall;  kg m-2 s-1
+PRECTOT: total precipitation;  kg m-2 s-1
+PGENTOT: Total column production of precipitation;  kg m-2 s-1
+PREVTOT: Total column re-evap/subl of precipitation;  kg m-2 s-1
+GRN: greeness fraction;  1
+LAI: leaf area index;  1
+GWETROOT: root zone soil wetness;  1
+GWETTOP: surface soil wetness;  1
+TPSNOW: surface temperature of snow;  K
+TUNST: surface temperature of unsaturated zone;  K
+TSAT: surface temperature of saturated zone;  K
+TWLT: surface temperature of wilted zone;  K
+PRECSNO: snowfall;  kg m-2 s-1
+PRECTOT: total precipitation;  kg m-2 s-1
+SNOMAS: Total snow storage land;  kg m-2
+SNODP: snow depth;  m
+EVPSOIL: baresoil evap energy flux;  W m-2
+EVPTRNS: transpiration energy flux;  W m-2
+EVPINTR: interception loss energy flux;  W m-2
+EVPSBLN: snow ice evaporation energy flux;  W m-2
+RUNOFF: surface runoff flux;  kg m-2 s-1
+BASEFLOW: baseflow flux;  kg m-2 s-1
+SMLAND: Snowmelt flux land;  kg m-2 s-1
+FRUNST: fractional area of unsaturated zone;  1
+FRSAT: fractional area of saturated zone;  1
+FRSNO: fractional area of land snowcover;  1
+FRWLT: fractional area of wilting zone;  1
+PARDF: surface downwelling par diffuse flux;  W m-2
+PARDR: surface downwelling par beam flux;  W m-2
+SHLAND: Sensible heat flux land;  W m-2
+LHLAND: Latent heat flux land;  W m-2
+EVLAND: Evaporation land;  kg m-2 s-1
+LWLAND: Net longwave land;  W m-2
+SWLAND: Net shortwave land;  W m-2
+GHLAND: Ground heating land;  W m-2
+TWLAND: Avail water storage land;  kg m-2
+TELAND: Total energy storage land;  J m-2
+WCHANGE: rate of change of total land water;  kg m-2 s-1
+ECHANGE: rate of change of total land energy;  W m-2
+SPLAND: rate of spurious land energy source;  W m-2
+SPWATR: rate of spurious land water source;  kg m-2 s-1
+SPSNOW: rate of spurious snow energy;  W m-2
+U10M: 10-meter eastward wind;  m s-1
+V10M: 10-meter northward wind;  m s-1
+T10M: 10-meter air temperature;  K
+QV10M: 10-meter specific humidity;  kg kg-1
+HFLUXWTR: open water upward sensible heat flux;  W m-2
+HFLUXICE: sea ice upward sensible heat flux;  W m-2
+EFLUXWTR: open water latent energy flux;  W m-2
+EFLUXICE: sea ice latent energy flux;  W m-2
+LWGNTWTR: open water net downward longwave flux;  W m-2
+LWGNTICE: sea ice net downward longwave flux;  W m-2
+SWGNTWTR: open water net downward shortwave flux;  W m-2
+SWGNTICE: sea ice net downward shortwave flux;  W m-2
+PRECSNOOCN: ocean snowfall;  kg m-2 s-1
+RAINOCN: ocean rainfall;  kg m-2 s-1
+TAUXWTR: eastward stress over water;  N m-2
+TAUYWTR: northward stress over water;  N m-2
+TAUXICE: eastward stress over ice;  N m-2
+TAUYICE: northward stress over ice;  N m-2
+FRSEAICE: ice covered fraction of tile;  1
+EMIS: surface emissivity;  1
+TS: surface skin temperature;  K
+ALBEDO: surface albedo;  1
+ALBNIRDF: surface albedo for near infrared diffuse;  1
+ALBNIRDR: surface albedo for near infrared beam;  1
+ALBVISDF: surface albedo for visible diffuse;  1
+ALBVISDR: surface albedo for visible beam;  1
+LWGEM: longwave flux emitted from surface;  W m-2
+LWGAB: surface absorbed longwave radiation;  W m-2
+LWGABCLR: surface absorbed longwave radiation assuming clear sky;  W m-2
+LWGABCLRCLN: surface absorbed longwave radiation assuming clear sky and no aerosol;  W m-2
+LWGNT: surface net downward longwave flux;  W m-2
+LWGNTCLR: surface net downward longwave flux assuming clear sky;  W m-2
+LWGNTCLRCLN: surface net downward longwave flux assuming clear sky and no aerosol;  W m-2
+LWTUP: upwelling longwave flux at toa;  W m-2
+LWTUPCLR: upwelling longwave flux at toa assuming clear sky;  W m-2
+LWTUPCLRCLN: upwelling longwave flux at toa assuming clear sky and no aerosol;  W m-2
+SWTDN: toa incoming shortwave flux;  W m-2
+SWGDN: surface incoming shortwave flux;  W m-2
+SWGDNCLR: surface incoming shortwave flux assuming clear sky;  W m-2
+SWGNT: surface net downward shortwave flux;  W m-2
+SWGNTCLR: surface net downward shortwave flux assuming clear sky;  W m-2
+SWGNTCLN: surface net downward shortwave flux assuming no aerosol;  W m-2
+SWGNTCLRCLN: surface net downward shortwave flux assuming clear sky and no aerosol;  W m-2
+SWTNT: toa net downward shortwave flux;  W m-2
+SWTNTCLR: toa net downward shortwave flux assuming clear sky;  W m-2
+SWTNTCLN: toa net downward shortwave flux assuming no aerosol;  W m-2
+SWTNTCLRCLN: toa net downward shortwave flux assuming clear sky and no aerosol;  W m-2
+TAUHGH: optical thickness of high clouds(EXPORT);  1
+TAULOW: optical thickness of low clouds;  1
+TAUMID: optical thickness of middle clouds;  1
+TAUTOT: optical thickness of all clouds;  1
+CLDHGH: cloud area fraction for high clouds;  1
+CLDLOW: cloud area fraction for low clouds;  1
+CLDMID: cloud area fraction for middle clouds;  1
+CLDTOT: total cloud area fraction;  1
+SLP: sea level pressure;  Pa
+PS: surface pressure;  Pa
+U850: eastward wind at 850 hPa;  m s-1
+U500: eastward wind at 500 hPa;  m s-1
+U250: eastward wind at 250 hPa;  m s-1
+V850: northward wind at 850 hPa;  m s-1
+V500: northward wind at 500 hPa;  m s-1
+V250: northward wind at 250 hPa;  m s-1
+T850: air temperature at 850 hPa;  K
+T500: air temperature at 500 hPa;  K
+T250: air temperature at 250 hPa;  K
+Q850: specific humidity at 850 hPa;  kg kg-1
+Q500: specific humidity at 500 hPa;  kg kg-1
+Q250: specific humidity at 250 hPa;  kg kg-1
+H1000: height at 1000 mb;  m
+H850: height at 850 hPa;  m
+H500: height at 500 hPa;  m
+H250: height at 250 hPa;  m
+OMEGA500: omega at 500 hPa;  Pa s-1
+U10M: 10-meter eastward wind;  m s-1
+U2M: 2-meter eastward wind;  m s-1
+U50M: eastward wind at 50 meters;  m s-1
+V10M: 10-meter northward wind;  m s-1
+V2M: 2-meter northward wind;  m s-1
+V50M: northward wind at 50 meters;  m s-1
+T10M: 10-meter air temperature;  K
+T2M: 2-meter air temperature;  K
+QV10M: 10-meter specific humidity;  kg kg-1
+QV2M: 2-meter specific humidity;  kg kg-1
+TS: surface skin temperature;  K
+DISPH: zero plane displacement height;  m
+TROPPV: tropopause pressure based on EPV estimate;  Pa
+TROPPT: tropopause pressure based on thermal estimate;  Pa
+TROPPB: tropopause pressure based on blended estimate;  Pa
+TROPT: tropopause temperature using blended TROPP estimate;  K
+TROPQ: tropopause specific humidity using blended TROPP estimate;  kg kg-1
+CLDPRS: cloud top pressure;  Pa
+CLDTMP: cloud top temperature;  K
+TQV: total precipitable water vapor;  kg m-2
+TQI: total precipitable ice water;  kg m-2
+TQL: total precipitable liquid water;  kg m-2
+TOX: total column odd oxygen;  kg m-2
+TO3: total column ozone;  Dobsons
+BCEM001: Black Carbon Emission Bin 001;  kg m-2 s-1
+BCEM002: Black Carbon Emission Bin 002;  kg m-2 s-1
+BCDP001: Black Carbon Dry Deposition Bin 001;  kg m-2 s-1
+BCDP002: Black Carbon Dry Deposition Bin 002;  kg m-2 s-1
+BCWT001: Black Carbon Wet Deposition Bin 001;  kg m-2 s-1
+BCWT002: Black Carbon Wet Deposition Bin 002;  kg m-2 s-1
+BCHYPHIL: Black Carbon Hydrophobic to Hydrophilic;  kg m-2 s-1
+BCEMBB: Black Carbon Biomass Burning Emissions;  kg m-2 s-1
+BCEMBF: Black Carbon Biofuel Emissions;  kg m-2 s-1
+BCEMAN: Black Carbon Anthropogenic Emissions;  kg m-2 s-1
+BCSV: black carbon tendency due to conv scav;  kg m-2 s-1
+DUEM001: Dust Emission Bin 001;  kg m-2 s-1
+DUEM002: Dust Emission Bin 002;  kg m-2 s-1
+DUEM003: Dust Emission Bin 003;  kg m-2 s-1
+DUEM004: Dust Emission Bin 004;  kg m-2 s-1
+DUEM005: Dust Emission Bin 005;  kg m-2 s-1
+DUSD001: Dust Sedimentation Bin 001;  kg m-2 s-1
+DUSD002: Dust Sedimentation Bin 002;  kg m-2 s-1
+DUSD003: Dust Sedimentation Bin 003;  kg m-2 s-1
+DUSD004: Dust Sedimentation Bin 004;  kg m-2 s-1
+DUSD005: Dust Sedimentation Bin 005;  kg m-2 s-1
+DUDP001: Dust Dry Deposition Bin 001;  kg m-2 s-1
+DUDP002: Dust Dry Deposition Bin 002;  kg m-2 s-1
+DUDP003: Dust Dry Deposition Bin 003;  kg m-2 s-1
+DUDP004: Dust Dry Deposition Bin 004;  kg m-2 s-1
+DUDP005: Dust Dry Deposition Bin 005;  kg m-2 s-1
+DUWT001: Dust Wet Deposition Bin 001;  kg m-2 s-1
+DUWT002: Dust Wet Deposition Bin 002;  kg m-2 s-1
+DUWT003: Dust Wet Deposition Bin 003;  kg m-2 s-1
+DUWT004: Dust Wet Deposition Bin 004;  kg m-2 s-1
+DUWT005: Dust Wet Deposition Bin 005;  kg m-2 s-1
+DUEXTTFM: Dust Extinction AOT [550 nm] - PM 1.0 um;  1
+DUSCATFM: Dust Scattering AOT [550 nm] - PM 1.0 um;  1
+DUAERIDX: Dust TOMS UV Aerosol Index;  1
+DUSV: dust tendency due to conv scav;  kg m-2 s-1
+SSEM001: Sea Salt Emission Bin 001;  kg m-2 s-1
+SSEM002: Sea Salt Emission Bin 002;  kg m-2 s-1
+SSEM003: Sea Salt Emission Bin 003;  kg m-2 s-1
+SSEM004: Sea Salt Emission Bin 004;  kg m-2 s-1
+SSEM005: Sea Salt Emission Bin 005;  kg m-2 s-1
+SSSD001: Sea Salt Sedimentation Bin 001;  kg m-2 s-1
+SSSD002: Sea Salt Sedimentation Bin 002;  kg m-2 s-1
+SSSD003: Sea Salt Sedimentation Bin 003;  kg m-2 s-1
+SSSD004: Sea Salt Sedimentation Bin 004;  kg m-2 s-1
+SSSD005: Sea Salt Sedimentation Bin 005;  kg m-2 s-1
+SSDP001: Sea Salt Dry Deposition Bin 001;  kg m-2 s-1
+SSDP002: Sea Salt Dry Deposition Bin 002;  kg m-2 s-1
+SSDP003: Sea Salt Dry Deposition Bin 003;  kg m-2 s-1
+SSDP004: Sea Salt Dry Deposition Bin 004;  kg m-2 s-1
+SSDP005: Sea Salt Dry Deposition Bin 005;  kg m-2 s-1
+SSWT001: Sea Salt Wet Deposition Bin 001;  kg m-2 s-1
+SSWT002: Sea Salt Wet Deposition Bin 002;  kg m-2 s-1
+SSWT003: Sea Salt Wet Deposition Bin 003;  kg m-2 s-1
+SSWT004: Sea Salt Wet Deposition Bin 004;  kg m-2 s-1
+SSWT005: Sea Salt Wet Deposition Bin 005;  kg m-2 s-1
+SSEXTTFM: Sea Salt Extinction AOT [550 nm] - PM 1.0 um;  1
+SSSCATFM: Sea Salt Scattering AOT [550 nm] - PM 1.0 um;  1
+SSAERIDX: Sea Salt TOMS UV Aerosol Index;  1
+SSSV: sea salt tendency due to conv scav;  kg m-2 s-1
+SUEM001: Sulfate Emission Bin 001;  kg m-2 s-1
+SUEM002: Sulfate Emission Bin 002;  kg m-2 s-1
+SUEM003: Sulfate Emission Bin 003;  kg m-2 s-1
+SUEM004: Sulfate Emission Bin 004;  kg m-2 s-1
+SUDP001: Sulfate Dry Deposition Bin 001;  kg m-2 s-1
+SUDP002: Sulfate Dry Deposition Bin 002;  kg m-2 s-1
+SUDP003: Sulfate Dry Deposition Bin 003;  kg m-2 s-1
+SUDP004: Sulfate Dry Deposition Bin 004;  kg m-2 s-1
+SUWT001: Sulfate Wet Deposition Bin 001;  kg m-2 s-1
+SUWT002: Sulfate Wet Deposition Bin 002;  kg m-2 s-1
+SUWT003: Sulfate Wet Deposition Bin 003;  kg m-2 s-1
+SUWT004: Sulfate Wet Deposition Bin 004;  kg m-2 s-1
+BCSMASS: Black Carbon Surface Mass Concentration;  kg m-3
+BCCMASS: Black Carbon Column Mass Density;  kg m-2
+BCEXTTAU: Black Carbon Extinction AOT [550 nm];  1
+BCSCATAU: Black Carbon Scattering AOT [550 nm];  1
+BCANGSTR: Black Carbon Angstrom parameter [470-870 nm];  1
+BCFLUXU: Black Carbon column u-wind mass flux;  kg m-1 s-1
+BCFLUXV: Black Carbon column v-wind mass flux;  kg m-1 s-1
+DUSMASS: Dust Surface Mass Concentration;  kg m-3
+DUCMASS: Dust Column Mass Density;  kg m-2
+DUEXTTAU: Dust Extinction AOT [550 nm];  1
+DUSCATAU: Dust Scattering AOT [550 nm];  1
+DUANGSTR: Dust Angstrom parameter [470-870 nm];  1
+DUSMASS25: Dust Surface Mass Concentration - PM 2.5;  kg m-3
+DUCMASS25: Dust Column Mass Density - PM 2.5;  kg m-2
+DUEXTT25: Dust Extinction AOT [550 nm] - PM 2.5;  1
+DUSCAT25: Dust Scattering AOT [550 nm] - PM 2.5;  1
+DUFLUXU: Dust column u-wind mass flux;  kg m-1 s-1
+DUFLUXV: Dust column v-wind mass flux;  kg m-1 s-1
+SSSMASS: Sea Salt Surface Mass Concentration;  kg m-3
+SSCMASS: Sea Salt Column Mass Density;  kg m-2
+SSEXTTAU: Sea Salt Extinction AOT [550 nm];  1
+SSSCATAU: Sea Salt Scattering AOT [550 nm];  1
+SSANGSTR: Sea Salt Angstrom parameter [470-870 nm];  1
+SSSMASS25: Sea Salt Surface Mass Concentration - PM 2.5;  kg m-3
+SSCMASS25: Sea Salt Column Mass Density - PM 2.5;  kg m-2
+SSEXTT25: Sea Salt Extinction AOT [550 nm] - PM 2.5;  1
+SSSCAT25: Sea Salt Scattering AOT [550 nm] - PM 2.5;  1
+SSFLUXU: Sea Salt column u-wind mass flux;  kg m-1 s-1
+SSFLUXV: Sea Salt column v-wind mass flux;  kg m-1 s-1
+SO2SMASS: SO2 Surface Mass Concentration;  kg m-3
+SO2CMASS: SO2 Column Mass Density;  kg m-2
+SO4SMASS: SO4 Surface Mass Concentration;  kg m-3
+SO4CMASS: SO4 Column Mass Density;  kg m-2
+DMSSMASS: DMS Surface Mass Concentration;  kg m-3
+DMSCMASS: DMS Column Mass Density;  kg m-2
+SUEXTTAU: SO4 Extinction AOT [550 nm];  1
+SUSCATAU: SO4 Scattering AOT [550 nm];  1
+SUANGSTR: SO4 Angstrom parameter [470-870 nm];  1
+SUFLUXU: SO4 column u-wind mass flux;  kg m-1 s-1
+SUFLUXV: SO4 column v-wind mass flux;  kg m-1 s-1
+OCSMASS: Organic Carbon Surface Mass Concentration ENSEMBLE;  kg m-3
+OCCMASS: Organic Carbon Column Mass Density ENSEMBLE;  kg m-2
+OCEXTTAU: Organic Carbon Extinction AOT [550 nm] ENSEMBLE;  1
+OCSCATAU: Organic Carbon Scattering AOT [550 nm] ENSEMBLE;  1
+OCANGSTR: Organic Carbon Angstrom parameter [470-870 nm] ENSEMBLE;  1
+OCFLUXU: Organic Carbon column u-wind mass flux ENSEMBLE;  kg m-1 s-1
+OCFLUXV: Organic Carbon column v-wind mass flux ENSEMBLE;  kg m-1 s-1
+TOTEXTTAU: Total Aerosol Extinction AOT [550 nm];  1
+TOTSCATAU: Total Aerosol Scattering AOT [550 nm];  1
+TOTANGSTR: Total Aerosol Angstrom parameter [470-870 nm];  1
+LWI: land(1) water(0) ice(2) flag;  1
+CO2EM: CO2 Emission Bin 001;  kg m-2 s-1
+CO2CL: CO2 Column Load Bin 001;  kg m-2
+CO2SC: CO2 Surface Concentration Bin 001;  1e-6
+COEM: CO Emission ENSEMBLE;  kg m-2 s-1
+COPD: CO Chemical Production ENSEMBLE;  kg m-2 s-1
+COLS: CO Chemical Loss ENSEMBLE;  kg m-2 s-1
+COSC: CO Surface Concentration in ppbv ENSEMBLE;  1e-9
+COCL: CO Column Burden ENSEMBLE;  kg m-2
+PS: surface pressure;  Pa
+DELP: pressure thickness;  Pa
+DTRAIN: detraining mass flux;  kg m-2 s-1
+RH: relative humidity after moist;  1
+QLLS: mass fraction of large scale cloud liquid water;  kg kg-1
+QILS: mass fraction of large scale cloud ice water;  kg kg-1
+QLAN: mass fraction of convective cloud liquid water;  kg kg-1
+QIAN: mass fraction of convective cloud ice water;  kg kg-1
+QCCU: grid mean convective condensate;  kg kg-1
+CFLS: large scale cloud area fraction;  1
+CFAN: convective cloud area fraction;  1
+CFCU: updraft areal fraction;  1
+TAUCLI: optical thickness for ice clouds;  1
+TAUCLW: optical thickness for liquid clouds;  1
+PS: surface pressure;  Pa
+DELP: pressure thickness;  Pa
+MFXC: pressure weighted eastward wind;  Pa m+2 s-1
+MFYC: pressure weighted northward wind;  Pa m+2 s-1
+PS: surface pressure;  Pa
+DELP: pressure thickness;  Pa
+DQRCU: convective rainwater source;  kg kg-1 s-1
+DQRLSAN: large scale rainwater source;  kg kg-1 s-1
+REEVAPCN: evap subl of convective precipitation;  kg kg-1 s-1
+REEVAPLSAN: evap subl of non convective precipitation;  kg kg-1 s-1
+H: mid layer heights;  m
+PL: mid level pressure;  Pa
+PS: surface pressure;  Pa
+DELP: pressure thickness;  Pa
+DOXDTMST: tendency of odd oxygen due to moist processes;  kg kg-1 s-1
+DOXDTTRB: tendency of odd oxygen due to turbulence;  kg kg-1 s-1
+DOXDTCHM: tendency of odd oxygen mixing ratio due to chemistry;  mol mol-1 s-1
+DOXDTDYN: tendency of ozone due to dynamics;  kg kg-1 s-1
+DOXDTANA: total ozone analysis tendency in ppmv sec-1;  1e-6 s-1
+PS: surface pressure;  Pa
+DELP: pressure thickness;  Pa
+DQVDTMST: specific humidity tendency due to moist;  kg kg-1 s-1
+DQVDTTRB: tendency of specific humidity due to turbulence;  kg kg-1 s-1
+DQVDTCHM: tendency of water vapor mixing ratio due to chemistry;  kg kg-1 s-1
+DQVDTDYN: tendency of specific humidity due to dynamics;  kg kg-1 s-1
+DQVDTANA: total specific humidity analysis tendency;  kg kg-1 s-1
+DQIDTMST: total ice water tendency due to moist;  kg kg-1 s-1
+DQIDTTRB: tendency of frozen condensate due to turbulence;  kg kg-1 s-1
+DQIDTDYN: tendency of ice water due to dynamics;  kg kg-1 s-1
+DQLDTMST: total liq water tendency due to moist;  kg kg-1 s-1
+DQLDTTRB: tendency of liquid condensate due to turbulence;  kg kg-1 s-1
+DQLDTDYN: tendency of liquid water due to dynamics;  kg kg-1 s-1
+PS: surface pressure;  Pa
+DELP: pressure thickness;  Pa
+CLOUD: cloud fraction for radiation;  1
+DTDTLWR: air temperature tendency due to longwave;  K s-1
+DTDTLWRCLR: air temperature tendency due to longwave for clear skies;  K s-1
+DTDTSWR: air temperature tendency due to shortwave;  K s-1
+DTDTSWRCLR: air temperature tendency due to shortwave for clear skies;  K s-1
+PS: surface pressure;  Pa
+DELP: pressure thickness;  Pa
+DTDTRAD: tendency of air temperature due to radiation;  K s-1
+DTDTMST: tendency of air temperature due to moist processes;  K s-1
+DTDTTRB: tendency of air temperature due to turbulence;  K s-1
+DTDTFRI: tendency of air temperature due to friction;  K s-1
+DTDTGWD: air temperature tendency due to GWD;  K s-1
+DTDTTOT: tendency of air temperature due to physics;  K s-1
+DTDTDYN: tendency of air temperature due to dynamics;  K s-1
+DTDTANA: total temperature analysis tendency;  K s-1
+DTDTFRIC: tendency of air temperature due to moist processes friction;  K s-1
+PS: surface pressure;  Pa
+DELP: pressure thickness;  Pa
+DUDTMST: zonal wind tendency due to moist;  m s-2
+DUDTTRB: tendency of eastward wind due to turbulence;  m s-2
+DUDTGWD: tendency of eastward wind due to GWD;  m s-2
+DUDTDYN: tendency of eastward wind due to dynamics;  m s-2
+DUDTANA: total eastward wind analysis tendency;  m s-2
+DVDTMST: meridional wind tendency due to moist;  m s-2
+DVDTTRB: tendency of northward wind due to turbulence;  m s-2
+DVDTGWD: tendency of northward wind due to GWD;  m s-2
+DVDTDYN: tendency of northward wind due to dynamics;  m s-2
+DVDTANA: total northward wind analysis tendency;  m s-2
+U: eastward wind;  m s-1
+V: northward wind;  m s-1
+OMEGA: vertical pressure velocity;  Pa s-1
+LWI: land(1) water(0) ice(2) flag;  1
+COEMbbae: CO Emission (Asia and Europe Biomass Burning);  kg m-2 s-1
+COEMbbna: CO Emission (North America Biomass Burning);  kg m-2 s-1
+COEMbbla: CO Emission (Central and South America Biomass Burning);  kg m-2 s-1
+COEMbbaf: CO Emission (Africa Biomass Burning);  kg m-2 s-1
+COEMbbgl: CO Emission (Global Biomass Burning);  kg m-2 s-1
+COEMnbas: CO Emission (Asia Non-Biomass Burning);  kg m-2 s-1
+COEMnbeu: CO Emission (European Non-Biomass Burning);  kg m-2 s-1
+COEMnbna: CO Emission (North American Non-Biomass Burning);  kg m-2 s-1
+COEMnbgl: CO Emission (Global Non-Biomass Burning);  kg m-2 s-1
+COPDbbae: CO Chemical Production (Asia and Europe Biomass Burning);  kg m-2 s-1
+COPDbbna: CO Chemical Production (North America Biomass Burning);  kg m-2 s-1
+COPDbbla: CO Chemical Production (Central and South America Biomass Burning);  kg m-2 s-1
+COPDbbaf: CO Chemical Production (Africa Biomass Burning);  kg m-2 s-1
+COPDbbgl: CO Chemical Production (Global Biomass Burning);  kg m-2 s-1
+COPDnbas: CO Chemical Production (Asia Non-Biomass Burning);  kg m-2 s-1
+COPDnbeu: CO Chemical Production (European Non-Biomass Burning);  kg m-2 s-1
+COPDnbna: CO Chemical Production (North American Non-Biomass Burning);  kg m-2 s-1
+COPDnbgl: CO Chemical Production (Global Non-Biomass Burning);  kg m-2 s-1
+COLSbbae: CO Chemical Loss (Asia and Europe Biomass Burning);  km m-2 s-1
+COLSbbna: CO Chemical Loss (North America Biomass Burning);  km m-2 s-1
+COLSbbla: CO Chemical Loss (Central and South America Biomass Burning);  km m-2 s-1
+COLSbbaf: CO Chemical Loss (Africa Biomass Burning);  km m-2 s-1
+COLSbbgl: CO Chemical Loss (Global Biomass Burning);  km m-2 s-1
+COLSnbas: CO Chemical Loss (Asia Non-Biomass Burning);  kg m-2 s-1
+COLSnbeu: CO Chemical Loss (European Non-Biomass Burning);  kg m-2 s-1
+COLSnbna: CO Chemical Loss (North American Non-Biomass Burning);  kg m-2 s-1
+COLSnbgl: CO Chemical Loss (Global Non-Biomass Burning);  kg m-2 s-1
+COSCbbae: CO Surface Concentration in ppbv (Asia and Europe Biomass Burning);  1e-9
+COSCbbna: CO Surface Concentration in ppbv (North America Biomass Burning);  1e-9
+COSCbbla: CO Surface Concentration in ppbv (Central and South America Biomass Burning);  1e-9
+COSCbbaf: CO Surface Concentration in ppbv (Africa Biomass Burning);  1e-9
+COSCbbgl: CO Surface Concentration in ppbv (Global Biomass Burning);  1e-9
+COSCnbas: CO Surface Concentration in ppbv (Asia Non-Biomass Burning);  1e-9
+COSCnbeu: CO Surface Concentration in ppbv (European Non-Biomass Burning);  1e-9
+COSCnbna: CO Surface Concentration in ppbv (North American Non-Biomass Burning);  1e-9
+COSCnbgl: CO Surface Concentration in ppbv (Global Non-Biomass Burning);  1e-9
+COCLbbae: CO Column Burden (Asia and Europe Biomass Burning);  kg m-2
+COCLbbna: CO Column Burden (North America Biomass Burning);  kg m-2
+COCLbbla: CO Column Burden (Central and South America Biomass Burning);  kg m-2
+COCLbbaf: CO Column Burden (Africa Biomass Burning);  kg m-2
+COCLbbgl: CO Column Burden (Global Biomass Burning);  kg m-2
+COCLnbas: CO Column Burden (Asia Non-Biomass Burning);  kg m-2
+COCLnbeu: CO Column Burden (European Non-Biomass Burning);  kg m-2
+COCLnbna: CO Column Burden (North American Non-Biomass Burning);  kg m-2
+COCLnbgl: CO Column Burden (Global Non-Biomass Burning);  kg m-2
+CFC12strat: Stratospheric CFC-12 Column;  kg m-2
+CFC12trop: Tropospheric CFC-12 Column;  kg m-2
+SLP: sea level pressure;  Pa
+PS: surface pressure;  Pa
+U10M: 10-meter eastward wind;  m s-1
+U2M: 2-meter eastward wind;  m s-1
+U50M: eastward wind at 50 meters;  m s-1
+V10M: 10-meter northward wind;  m s-1
+V2M: 2-meter northward wind;  m s-1
+V50M: northward wind at 50 meters;  m s-1
+T10M: 10-meter air temperature;  K
+T2M: 2-meter air temperature;  K
+QV10M: 10-meter specific humidity;  kg kg-1
+QV2M: 2-meter specific humidity;  kg kg-1
+TS: surface skin temperature;  K
+DISPH: zero plane displacement height;  m
+TROPPV: tropopause pressure based on EPV estimate;  Pa
+TROPPT: tropopause pressure based on thermal estimate;  Pa
+TROPPB: tropopause pressure based on blended estimate;  Pa
+TROPT: tropopause temperature using blended TROPP estimate;  K
+TROPQ: tropopause specific humidity using blended TROPP estimate;  kg kg-1
+TQV: total precipitable water vapor;  kg m-2
+TQI: total precipitable ice water;  kg m-2
+TQL: total precipitable liquid water;  kg m-2
+TOX: total column odd oxygen;  kg m-2
+TO3: total column ozone;  Dobsons
+PS: surface pressure;  Pa
+DELP: pressure thickness;  Pa
+LWI: land(1) water(0) ice(2) flag;  1
+RH: relative humidity after moist;  1
+AIRDENS: air density;  kg m-3
+DU001: Dust Mixing Ratio (bin 001);  kg kg-1
+DU002: Dust Mixing Ratio (bin 002);  kg kg-1
+DU003: Dust Mixing Ratio (bin 003);  kg kg-1
+DU004: Dust Mixing Ratio (bin 004);  kg kg-1
+DU005: Dust Mixing Ratio (bin 005);  kg kg-1
+SS001: Sea Salt Mixing Ratio (bin 001);  kg kg-1
+SS002: Sea Salt Mixing Ratio (bin 002);  kg kg-1
+SS003: Sea Salt Mixing Ratio (bin 003);  kg kg-1
+SS004: Sea Salt Mixing Ratio (bin 004);  kg kg-1
+SS005: Sea Salt Mixing Ratio (bin 005);  kg kg-1
+DMS: Dimethylsulphide;  kg kg-1
+SO2: Sulphur dioxide;  kg kg-1
+SO4: Sulphate aerosol;  kg kg-1
+MSA: Methanesulphonic acid;  kg kg-1
+BCPHOBIC: Hydrophobic Black Carbon;  kg kg-1
+BCPHILIC: Hydrophilic Black Carbon;  kg kg-1
+OCPHOBIC: Hydrophobic Organic Carbon (Particulate Matter);  kg kg-1
+OCPHILIC: Hydrophilic Organic Carbon (Particulate Matter);  kg kg-1
+SLP: sea level pressure;  Pa
+PS: surface pressure;  Pa
+PHIS: surface geopotential height;  m+2 s-2
+DELP: pressure thickness;  Pa
+PL: mid level pressure;  Pa
+T: air temperature;  K
+U: eastward wind;  m s-1
+V: northward wind;  m s-1
+OMEGA: vertical pressure velocity;  Pa s-1
+QV: specific humidity;  kg kg-1
+QL: mass fraction of cloud liquid water;  kg kg-1
+QI: mass fraction of cloud ice water;  kg kg-1
+RH: relative humidity after moist;  1
+H: mid layer heights;  m
+O3: ozone mass mixing ratio;  ppmv
+EPV: ertels potential vorticity;  K m+2 kg-1 s-1
+PS: surface pressure;  Pa
+DELP: pressure thickness;  Pa
+AIRDENS: air density;  kg m-3
+CO: Carbon Monoxide (All Sources);  mol mol-1
+CO2: Carbon Dioxide (All Sources);  mol mol-1
+SLP: sea level pressure;  Pa
+DUEXTTAU: Dust Extinction AOT [550 nm];  1
+SSEXTTAU: Sea Salt Extinction AOT [550 nm];  1
+SUEXTTAU: SO4 Extinction AOT [550 nm];  1
+BCEXTTAU: Black Carbon Extinction AOT [550 nm];  1
+OCEXTTAU: Organic Carbon Extinction AOT [550 nm] ENSEMBLE;  1
+CO2CL: CO2 Column Load Bin 001;  kg m-2
+COCL: CO Column Burden ENSEMBLE;  kg m-2
+COCLbbae: CO Column Burden (Asia and Europe Biomass Burning);  kg m-2
+COCLbbna: CO Column Burden (North America Biomass Burning);  kg m-2
+COCLbbla: CO Column Burden (Central and South America Biomass Burning);  kg m-2
+COCLbbaf: CO Column Burden (Africa Biomass Burning);  kg m-2
+COCLbbgl: CO Column Burden (Global Biomass Burning);  kg m-2
+COCLnbas: CO Column Burden (Asia Non-Biomass Burning);  kg m-2
+COCLnbeu: CO Column Burden (European Non-Biomass Burning);  kg m-2
+COCLnbna: CO Column Burden (North American Non-Biomass Burning);  kg m-2
+COCLnbgl: CO Column Burden (Global Non-Biomass Burning);  kg m-2
+CFC12strat: Stratospheric CFC-12 Column;  kg m-2
+CFC12trop: Tropospheric CFC-12 Column;  kg m-2
+TO3: total column ozone;  Dobsons
+TOTEXTTAU: Total Aerosol Extinction AOT [550 nm];  1
+TOTSCATAU: Total Aerosol Scattering AOT [550 nm];  1
+TOTANGSTR: Total Aerosol Angstrom parameter [470-870 nm];  1
+COSC: CO Surface Concentration in ppbv ENSEMBLE;  1e-9
+DUSMASS: Dust Surface Mass Concentration;  kg m-3
+DUSMASS25: Dust Surface Mass Concentration - PM 2.5;  kg m-3
+SSSMASS: Sea Salt Surface Mass Concentration;  kg m-3
+SSSMASS25: Sea Salt Surface Mass Concentration - PM 2.5;  kg m-3
+BCSMASS: Black Carbon Surface Mass Concentration;  kg m-3
+OCSMASS: Organic Carbon Surface Mass Concentration ENSEMBLE;  kg m-3
+SO4SMASS: SO4 Surface Mass Concentration;  kg m-3
+SO2SMASS: SO2 Surface Mass Concentration;  kg m-3
+SO2CMASS: SO2 Column Mass Density;  kg m-2
+AODANA: Aerosol Optical Depth Analysis;  1
+AODINC: Aerosol Optical Depth Analysis Increment;  1
+delp: pressure thickness;  Pa
+AIRDENS: air density;  kg m-3
+DUINC: Dust Mixing Ratio Analysis Increments;  kg/kg
+SSINC: Sea-salt Mixing Ratio Analysis Increments;  kg/kg
+SUINC: Sulfate Mixing Ratio Analysis Increments;  kg/kg
+BCINC: Black Carbon Mixing Ratio Analysis Increments;  kg/kg
+OCINC: Organic Carbon Mixing Ratio Analysis Increments;  kg/kg
+ps: surface pressure;  Pa
+delp: pressure thickness;  Pa
+CObbae: CO Asia and Europe Biomass Burning;  mol mol-1
+CObbaf: CO Africa Biomass Burning;  mol mol-1
+CObbgl: CO Global Biomass Burning;  mol mol-1
+CObbla: CO Central and South America Biomass Burning;  mol mol-1
+CObbna: CO North America Biomass Burning;  mol mol-1
+COnbas: CO Asia Non-Biomass Burning;  mol mol-1
+COnbeu: CO European Non-Biomass Burning;  mol mol-1
+COnbgl: CO Global Non-Biomass Burning;  mol mol-1
+COnbna: CO North American Non-Biomass Burning;  mol mol-1
+CFC12strat: Stratospheric CFC-12 (CCl2F2);  mol mol-1
+CFC12trop: Tropospheric CFC-12 (CCl2F2);  mol mol-1
+AIRDENS: air density;  kg m-3
+tau: Aerosol Optical Depth;  1
+tau_: Aerosol Optical Depth (Revised);  1
+tau_fine: Aerosol Optical Depth (Fine Mode);  1
+cloud: Cloud Fraction;  1
+tau: Aerosol Optical Depth;  1
+tau_: Aerosol Optical Depth (Revised);  1
+tau_fine: Aerosol Optical Depth (Fine Mode);  1
+cloud: Cloud Fraction;  1
+tau: Aerosol Optical Depth;  1
+tau_: Aerosol Optical Depth (Revised);  1
+tau_fine: Aerosol Optical Depth (Fine Mode);  1
+cloud: Cloud Fraction;  1
+tau: Aerosol Optical Depth;  1
+tau_: Aerosol Optical Depth (Revised);  1
+tau_fine: Aerosol Optical Depth (Fine Mode);  1
+cloud: Cloud Fraction;  1
+

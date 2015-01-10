@@ -1,0 +1,73 @@
+DC8 817: SEAC4RS_130821_s5_dc8 v. 1c
+
+Takeoff at 2013-08-21T15:00 UTC
+Total est. flight time = 8 hrs, 00 min
+Total est. distance flown = 2465 nmi
+
+---
+Remarks:
+The primary goal for the DC-8 for this flight is for SEUS chemistry and a
+secondary goal of working convection near Muscle Shoals (WPT1) with the
+Learjet and the ER-2.
+
+There is a wall with a spiral up to 30 kft on the line between WPT1 and DWP7.
+There is also a 30 minute loiter on the same line near Muscle Shoals.
+
+A two level wall will also be perfomed on the line between DWP8 and DWP9.
+
+10 minutes have been reserved for ATC at the beginning and end of the flight.
+
+---
+
+Defined Locations:
+  Name       Lat.       Lon.            Note
+  DWP1    31.7469   -93.7541                
+ DWP10    35.8258   -93.2030   Upper Buffalo
+ DWP11    31.9318   -93.8879                
+  DWP2    32.0603   -92.0963         Cadwell
+  DWP3    32.9100   -87.2400     CEnterville
+  DWP4    34.7253   -84.7500                
+  DWP5    34.7253   -86.6447      Huntsville
+  DWP6    36.9717   -90.1432           Mingo
+  DWP7    38.1195   -90.6677                
+  DWP8    38.5283   -92.5181                
+  DWP9    37.9910   -92.8842                
+  KEFD    29.6000   -95.1700  Starting point
+  WPT1    34.7508   -87.6503  Muscles Shoals
+ 
+  Elapsed       Lat.       Lon.    Alt.
+    (hrs)     (deg.)     (deg.)   (kft)
+     0.00    29.6000   -95.1700    0.00
+     0.26    31.1151   -94.1784   25.00
+     0.43    31.1151   -94.1784   25.00
+     0.54    31.7469   -93.7541   25.00
+     0.76    32.0603   -92.0963    4.00
+     1.77    32.9100   -87.2400    4.00
+     2.45    34.7253   -84.7500    4.00
+     2.83    34.7253   -86.6447    4.00
+     2.86    34.7305   -86.8253    1.00
+     3.03    34.7508   -87.6503    1.00
+     3.22    35.2687   -88.2142    1.00
+     3.38    34.8549   -87.7628    9.00
+     3.54    35.3723   -88.3282    9.00
+     3.78    35.3275   -88.3013   30.00
+     4.28    35.3275   -88.3013   30.00
+     4.59    36.9717   -90.1432   30.00
+     4.76    38.1195   -90.6677   30.00
+     4.98    38.3668   -91.7687    4.00
+     5.13    38.5283   -92.5181    4.00
+     5.17    38.3975   -92.6078    1.00
+     5.28    37.9910   -92.8842    1.00
+     5.47    37.3019   -92.9877    1.00
+     5.61    37.8527   -92.9051    9.00
+     5.64    37.8527   -92.9051    9.00
+     5.81    37.1636   -93.0088    9.00
+     5.84    37.1636   -93.0088    9.00
+     5.92    37.4094   -92.9721    4.00
+     6.30    35.8258   -93.2030    4.00
+     7.25    31.9318   -93.8879    4.00
+     7.48    30.5454   -94.6585   25.00
+     7.65    30.5454   -94.6585   25.00
+     7.76    30.4245   -94.4884   15.13
+     7.83    30.5454   -94.6584   15.13
+     8.01    29.6000   -95.1700    0.00

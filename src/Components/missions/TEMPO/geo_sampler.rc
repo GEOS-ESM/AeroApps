@@ -1,0 +1,20 @@
+#
+# Resource file for TLE sampler
+#
+
+#PS,SLP,U2M,V2M,T2M,QV2M,U10M,V10M,T10M,QV10M: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_met1_Nx
+#H:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_H_Nv
+#T:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_T_Nv
+#U:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_U_Nv
+#V:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_V_Nv
+#QV:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_QV_Nv
+#DELP: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_DELP_Nv
+
+PS,SLP,U2M,V2M,T2M,QV2M,U10M,V10M,T10M,QV10M: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_2d_met1_Cx
+#H:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_H_Cv
+T:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_T_Cv
+#U:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_U_Cv
+#V:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_V_Cv
+#QV:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_QV_Cv
+#DELP: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_QV_Cv
+

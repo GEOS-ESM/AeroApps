@@ -1,0 +1,20 @@
+/ESMF_CFIOBaseMod.f/1.1/Wed Aug 23 20:17:12 2006//Tgaas-1_5_b2
+/ESMF_CFIOEosMod.F90/1.3/Tue Jun 26 18:36:58 2007//Tgaas-1_5_b2
+/ESMF_CFIOFileMod.F90/1.6.80.2/Wed Aug 22 17:49:43 2012//Tgaas-1_5_b2
+/ESMF_CFIOGrADSMod.F90/1.3/Fri Jul 20 19:46:07 2007//Tgaas-1_5_b2
+/ESMF_CFIOGridMod.F90/1.5/Fri Mar 11 01:41:03 2011//Tgaas-1_5_b2
+/ESMF_CFIOMod.F90/1.30.104.3/Mon Apr  1 18:33:38 2013//Tgaas-1_5_b2
+/ESMF_CFIOSdfMod.F90/1.31.10.1.56.2/Fri Sep 13 15:12:26 2013//Tgaas-1_5_b2
+/ESMF_CFIOUtilMod.F90/1.27/Thu Jun 20 18:53:38 2013//Tgaas-1_5_b2
+/ESMF_CFIOVarInfoMod.F90/1.7.80.1/Thu Aug 16 17:31:04 2012//Tgaas-1_5_b2
+/ESMF_CFIOrGrADSMod.F90/1.1.2.1/Wed Jun 27 15:16:43 2007//Tgaas-1_5_b2
+/ESMF_CFIOwGrADSMod.F90/1.4/Fri Feb  3 19:46:15 2012//Tgaas-1_5_b2
+/GNUmakefile/1.35/Fri Nov 21 15:03:05 2014//Tgaas-1_5_b2
+/GNUmakefile_r4r8/1.25.10.1/Wed Oct  6 12:47:29 2010//Tgaas-1_5_b2
+/ShaveMantissa.c/1.16/Wed Apr 18 14:18:05 2012//Tgaas-1_5_b2
+/ShaveMantissa.h/1.4/Sat Oct 24 14:04:22 2009//Tgaas-1_5_b2
+/ShaveMantissa_py.F90/1.1/Fri Nov 21 14:54:03 2014//Tgaas-1_5_b2
+/netcdf_stub.F90/1.1/Thu Aug 24 05:44:08 2006//Tgaas-1_5_b2
+/shavemantissa.py/1.1/Fri Nov 21 14:54:03 2014//Tgaas-1_5_b2
+/utDownBit.F90/1.2/Tue Dec 19 14:44:13 2006//Tgaas-1_5_b2
+D/examples////

@@ -1,0 +1,24 @@
+#
+# Resource file with variable list for GEOS-5 Collection <tavg3_3d_cld_Nv>.
+#
+# This RC file was automatically created on Sun Aug 7 20:46:23 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover07:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: 3d,3-Hourly,Time-Averaged,Model-Level,Assimilation,Cloud Diagnostics
+PS: surface pressure;  Pa
+DELP: pressure thickness;  Pa
+DTRAIN: detraining mass flux;  kg m-2 s-1
+RH: relative humidity after moist;  1
+QLLS: mass fraction of large scale cloud liquid water;  kg kg-1
+QILS: mass fraction of large scale cloud ice water;  kg kg-1
+QLAN: mass fraction of convective cloud liquid water;  kg kg-1
+QIAN: mass fraction of convective cloud ice water;  kg kg-1
+QCCU: grid mean convective condensate;  kg kg-1
+CFLS: large scale cloud area fraction;  1
+CFAN: convective cloud area fraction;  1
+CFCU: updraft areal fraction;  1
+TAUCLI: optical thickness for ice clouds;  1
+TAUCLW: optical thickness for liquid clouds;  1

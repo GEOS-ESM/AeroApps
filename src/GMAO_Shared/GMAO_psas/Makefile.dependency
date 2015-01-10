@@ -1,0 +1,251 @@
+amatch.o:
+bands0.o: bands.h kind_mats.h
+cgnorm.o: realvals.h
+dupelim.o:
+gdstat.o:
+gridxx.o: m_qea.o
+hunt.o:
+index3r.o:
+indexxi.o:
+indexxr.o:
+initkl.o: ktmax.h kttabl.h ktwanted.h kxmax.h kxtabl.h
+ipick.o: icosdef.h m_Spherical_Partition.o
+ktname0.o: ktmax.h kttabl.h m_output.o
+kxname0.o: ktmax.h kxmax.h kxtabl.h m_output.o
+listvals.o:
+lstins.o:
+lvstat.o:
+obssmry.o: ktmax.h kttabl.h kxmax.h kxtabl.h
+obstat.o: ktmax.h kttabl.h realvals.h
+permuti.o:
+permutl.o:
+permutr.o:
+qtrig0.o:
+rdkttbl.o: realvals.h
+rdkxtbl.o: realvals.h
+rdlevels.o: realvals.h
+rdoetbl.o: realvals.h
+seticos.o: icosdef.h maxreg.h
+smex.o:
+sort.o:
+spline.o:
+vindex.o:
+wrtxvec.o:
+xyz2reg.o: icosdef.h maxreg.h
+getdel2.o:
+ll2xyz.o:
+regsort.o: m_spherical_geometry.o m_Spherical_Partition.o
+restrict.o: ktmax.h kxmax.h
+savemat1.o:
+savematx.o:
+savevect.o:
+tofront.o:
+typsort.o:
+FEalpha_imat.o: rlat_imat.o rlev_imat.o
+FEalpha_tabl.o: config.o
+FEsigW_imat.o: config.o
+FEsigW_tabl.o: config.o
+OEclass_tbl.o: config.o
+config.o: kind_covs.h kind_mats.h ktmax.h kxmax.h latmax.h lvmax.h MX_hfecH.h MX_hoecH.h MXpar_hc.h MX_voecH.h pres4slp.h
+const.o:
+hfecH_tbl.o: config.o
+hfecQ_tbl.o: config.o
+hoecH_tbl.o: config.o
+indexxs.o:
+inxSlist.o:
+ll2qvec.o:
+rdpars.o:
+rdvctbl.o: realvals.h
+rlat_imat.o: config.o
+set_FEhCor.o: config.o hfecH_tbl.o hfecQ_tbl.o
+set_FEvCor.o: config.o vfecH_tbl.o vfecQ_tbl.o
+set_OEvCor.o: config.o kxtabl.h m_output.o OEclass_tbl.o voecH_tbl.o
+setbox.o: config.o
+setpix.o: kxmax.h
+slintab.o:
+slogtab.o:
+tabSlist.o:
+tabl_FEalpha.o: config.o FEalpha_tabl.o m_output.o
+tabl_FEsigW.o: config.o FEsigW_tabl.o m_output.o
+vfecH_tbl.o: config.o
+vfecQ_tbl.o: config.o
+voecH_tbl.o: config.o
+PSAS_Sigs.o: config.o m_FEsigFi_tabl.o m_mvcorF_bldr.o m_psasrc.o m_stdv_FE.o m_xRSRC_sigFi.o m_xTab_lats.o m_xTab_levs.o m_xTab_sigFi.o
+hcorfuns.o: const.o
+imat_alpha.o: const.o FEalpha_imat.o FEalpha_tabl.o rlat_imat.o rlev_imat.o
+imat_sigW.o: config.o const.o FEsigW_imat.o FEsigW_tabl.o m_mvcorF_blox.o rlat_imat.o rlev_imat.o
+intp_ctaus.o:
+intp_hCor.o: const.o hcorfuns.o
+intp_sigO.o: config.o kxtabl.h OEclass_tbl.o
+intp_vCor.o:
+m_AE.o: kind_mats.h m_ai_Operators.o m_Attributes.o m_CGSolver.o m_ClusterDistribution.o m_CorAttrF.o m_CorAttrX.o m_costs.o m_DistributionComm.o m_Distribution.o m_ErrCovModels.o m_FcstErrCovMatx.o m_FEsigFi_tabl.o m_GlobalPartition.o m_MultiAccessNavigator.o m_mvcorF_bldr.o m_Navigator.o m_ob_Operators.o m_parDOT.o m_psasrc.o m_redwin.o m_sigmaPhi.o m_sparse.o m_StatLevels.o m_xTab_lats.o m_xTab_levs.o m_xTab_sigFi.o m_xtenlev.o
+m_AISolver.o: m_AE.o m_gdstat.o m_ktList.o m_rootedAIGrid.o
+m_AIGrid.o: m_EAGrid.o m_LevCache.o m_LVGrid.o
+m_Attributes.o: m_GlobalPartition.o
+m_AttributesComm.o: m_Attributes.o m_CollectorComm.o m_Collector.o m_TransposerComm.o m_Transposer.o
+m_AttributesMAN.o: m_Attributes.o m_MultiAccessNavigator.o
+m_AttrVect.o:
+m_CGSolver.o: bands.h kind_mats.h lapack.H m_block_storage.o m_CorAttrF.o m_CorAttrX.o m_diagcorM.o m_InnovCovMatx.o m_Navigator.o m_parDOT.o m_psasrc.o m_sigmaPhi.o mxpass.h
+m_ClusterDistribution.o: m_AttributesComm.o m_AttributesMAN.o m_Attributes.o m_Dictionary.o m_DictionaryTable.o m_Distribution.o m_GlobalPartition.o m_ktList.o m_MultiAccessNavigator.o m_Spherical_Partition.o
+m_Collector.o:
+m_CollectorComm.o: m_AttrVect.o m_Collector.o
+m_CorAttrF.o: ktmax.h m_CollectorComm.o m_Collector.o m_Navigator.o m_xTab_levs.o
+m_CorAttrX.o: ktmax.h m_CollectorComm.o m_Collector.o m_Navigator.o m_xTab_levs.o
+m_CorFxpy.o: ktmax.h m_AttrVect.o m_block_corFxpy.o m_costs.o m_Navigator.o m_recMatx.o m_symMatx.o
+m_CorOxpy.o: m_AttrVect.o m_block_corOxpy.o m_costs.o m_Navigator.o m_recMatx.o m_symMatx.o
+m_CorUxpy.o: m_AttrVect.o m_block_corUxpy.o m_costs.o m_Navigator.o m_recMatx.o m_symMatx.o
+m_CorMatxF.o: m_AttrVect.o m_CollectorComm.o m_Collector.o m_CorFxpy.o m_Navigator.o m_SparseComm.o m_Checks.o
+m_CorMatxO.o: m_AttrVect.o m_CollectorComm.o m_Collector.o m_CorOxpy.o m_Navigator.o m_SparseComm.o m_Checks.o
+m_CorMatxU.o: m_AttrVect.o m_CollectorComm.o m_Collector.o m_CorUxpy.o m_Navigator.o m_SparseComm.o m_Checks.o
+m_Checks.o: m_Navigator.o m_parDOT.o
+m_Dictionary.o: m_Attributes.o
+m_DictionaryTable.o: m_Attributes.o m_Dictionary.o
+m_Distribution.o: m_AttributesComm.o m_AttributesMAN.o m_Attributes.o m_Collector.o m_Dictionary.o m_keyChain.o m_MultiAccessNavigator.o m_Partitioner.o m_Transposer.o
+m_DistributionComm.o: m_AttributesComm.o m_Attributes.o m_Distribution.o m_TransposerComm.o
+m_EAGrid.o: m_qea.o
+m_ErrCovModels.o: m_psasrc.o m_xRSRC_sigFi.o m_xTab_sigFi.o
+m_FEsigFi_tabl.o:
+m_FcstErrCov.o: m_ai_Operators.o m_Attributes.o m_CorAttrF.o m_costs.o m_DistributionComm.o m_Distribution.o m_ErrCovModels.o m_FcstErrCovMatx.o m_FEsigFi_tabl.o m_GlobalPartition.o m_MultiAccessNavigator.o m_mvcorF_bldr.o m_Navigator.o m_ob_Operators.o m_parDOT.o m_psasrc.o m_redwin.o m_sigmaPhi.o m_sparse.o m_StatLevels.o m_xTab_lats.o m_xTab_levs.o m_xTab_sigFi.o m_xtenlev.o
+m_FcstErrCovMatx.o: kind_covs.h m_AttrVect.o m_Collector.o m_CorAttrF.o m_CorMatxF.o m_gammaChi.o m_gammaPhi.o m_gammaPsi.o m_Navigator.o m_recMatx.o m_sigmaChi.o m_sigmaPhi.o m_sigmaPsi.o m_SparseComm.o m_sparse.o m_symMatx.o
+m_FcstErrCovModels.o: m_sigDCWindErr.o m_sigFi_lookups.o
+m_GetAI.o: m_AISolver.o
+m_GlobalPartition.o: m_Spherical_Partition.o
+m_GrADSfiles.o: config.o
+m_HilbertPartMatx.o: m_AttrVect.o m_recurPart.o
+m_Icosahedron.o: m_geometry.o m_Spherical_Triangle.o
+m_IE.o: m_Attributes.o m_CGSolver.o m_CorAttrF.o m_CorAttrX.o m_costs.o m_DistributionComm.o m_Distribution.o m_ErrCovModels.o m_FcstErrCovMatx.o m_FEsigFi_tabl.o m_GlobalPartition.o m_MultiAccessNavigator.o m_mvcorF_bldr.o m_Navigator.o m_ob_Operators.o m_parDOT.o m_psasrc.o m_redwin.o m_sigmaPhi.o m_sparse.o m_StatLevels.o m_xTab_lats.o m_xTab_levs.o m_xTab_sigFi.o m_xtenlev.o
+m_InnovCov.o: m_Attributes.o m_CorAttrF.o m_CorAttrX.o m_DistributionComm.o m_Distribution.o m_ErrCovModels.o m_FEsigFi_tabl.o m_GlobalPartition.o m_InnovCovMatx.o m_MultiAccessNavigator.o m_mvcorF_bldr.o m_Navigator.o m_ob_Operators.o m_psasrc.o m_redwin.o m_sigmaPhi.o m_sparse.o m_StatLevels.o m_xTab_lats.o m_xTab_levs.o m_xTab_sigFi.o m_xtenlev.o kind_mats.h
+m_InnovCovMatx.o: m_CorAttrF.o m_CorAttrX.o m_FcstErrCovMatx.o m_Navigator.o m_ObsErrCovMatx.o m_sigmaPhi.o
+m_LLAGrid.o: m_aGrid.o
+m_LLGridDistribution.o: m_Attributes.o m_Dictionary80.o m_Dictionary.o m_Distribution.o m_MultiAccessNavigator.o
+m_LVGrid.o: m_ktList.o
+m_LevCache.o:
+m_MultiAccessNavigator.o: m_Navigator.o
+m_Navigator.o: m_CollectorComm.o m_Collector.o
+m_ObsErrCovMatx.o: kind_covs.h m_AttrVect.o m_Collector.o m_CorAttrX.o m_CorMatxO.o m_CorMatxU.o m_Navigator.o m_sigma.o m_SparseComm.o m_sparse.o m_symMatx.o
+m_PartMatx.o: m_AttrVect.o m_compPartMatx.o m_HilbertPartMatx.o m_rectPartMatx.o m_scatPartMatx.o
+m_Partitioner.o: m_Attributes.o m_Collector.o m_Dictionary.o m_keyChain.o m_SharedDictionary.o m_Transposer.o
+m_Regioner.o: m_geometry.o m_Spherical_Partition.o
+m_RegionIterator.o: m_Icosahedron.o
+m_redwin.o: const.o hcorfuns.o kind_mats.h m_CollectorComm.o m_Collector.o m_psasrc.o m_simplePart.o
+m_SharedDictionary.o: m_AttributesComm.o m_Attributes.o m_CollectorComm.o m_Collector.o m_Dictionary.o m_elemPart.o m_keyChain.o m_TransposerComm.o m_Transposer.o
+m_Sndx.o: kxmax.h
+m_SparseComm.o: m_SparseComm_$(SparseComm).o
+m_SparseComm_SHMEM_PTR.o: m_Navigator.o
+m_SparseComm_MPI_1.o: m_Navigator.o
+m_Spherical_Partition.o: m_Icosahedron.o m_RegionIterator.o m_Spherical_Triangle.o
+m_Spherical_Triangle.o: m_geometry.o
+m_StatLevels.o: ktmax.h kttabl.h kxmax.h kxtabl.h realvals.h
+m_Transposer.o:
+m_TransposerComm.o: m_AttrVect.o m_Transposer.o
+m_aGrid.o:
+m_ai_Operators.o:
+m_block_corD.o: config.o FEalpha_imat.o m_kt_corF.o
+m_block_corF.o: config.o m_kt_corF.o
+m_block_corO.o: config.o m_kt_corO.o
+m_block_corU.o: config.o m_kt_corU.o
+m_block_corFxpy.o: config.o kind_covs.h m_kt_uvcorF.o m_mvcorF_matx.o
+m_block_corOxpy.o: config.o kind_covs.h m_kt_corO.o
+m_block_corUxpy.o: config.o kind_covs.h m_kt_corU.o
+m_block_storage.o: kind_covs.h kind_mats.h ktmax.h m_Spherical_Partition.o
+m_boxes.o:
+m_cache.o:
+m_compPartMatx.o: m_AttrVect.o
+m_costs.o: config.o kind_covs.h kind_mats.h lapack.H m_AttrVect.o
+m_diagcorM.o: bands.h config.o FEsigW_imat.o lapack.H m_block_corD.o m_block_corF.o m_block_corO.o m_block_corU.o m_block_storage.o mxpass.h realvals.h
+m_elemPart.o: m_recurPart.o
+m_gammaChi.o: ktmax.h m_Navigator.o
+m_gammaPhi.o: FEalpha_imat.o ktmax.h m_Navigator.o
+m_gammaPsi.o: ktmax.h m_Navigator.o
+m_geometry.o:
+m_gdstat.o:
+m_intpAP.o: m_intpAPelem.o m_intpAPmiss.o
+m_intpAPelem.o:
+m_intpAPmiss.o:
+m_keyChain.o:
+m_kt_corF.o: m_kt_uvcorF.o m_mvcorF_blox.o
+m_kt_corO.o: hoecHH.h ktmax.h kxmax.h kxtabl.h lvmax.h m_redwin.o MX_hoecH.h MX_voecH.h voecHH.h
+m_kt_corU.o: ktmax.h kxmax.h kxtabl.h lvmax.h MX_voecH.h voecHH.h
+m_kt_uvcorF.o: hfecQQ.h lvmax.h m_redwin.o vfecQQ.h
+m_ktList.o:
+m_llgrad.o:
+m_lookup.o:
+m_mvcorF_bldr.o: m_mvcorF_nsep_bldr.o
+m_mvcorF_blox.o: m_mvcorF_nsep_bmop.o m_mvcorF_nsep.o
+m_mvcorF_matx.o: m_mvcorF_nsep_bmop.o
+m_mvcorF_nsep.o: kind_covs.h MX_hfecH.h
+m_mvcorF_nsep_bldr.o: const.o hfecH_tbl.o kind_covs.h m_mvcorF_nsep.o MX_hfecH.h rlev_imat.o vfecH_tbl.o
+m_normCor.o: config.o m_mvcorF_blox.o m_xTab_levs.o rlev_imat.o
+m_ob_Operators.o:
+m_output.o:
+m_parDOT.o:
+m_psas.o:
+m_psasrc.o:
+m_psasversion.o:
+m_qea.o:
+m_recMatx.o: kind_covs.h ktmax.h m_AttrVect.o m_CollectorComm.o m_Collector.o m_costs.o m_Navigator.o m_PartMatx.o m_recurPart.o m_SparseComm.o m_Spherical_Partition.o
+m_rectPartMatx.o: m_AttrVect.o m_recurPart.o
+m_recurPart.o:
+m_rootedAIGrid.o: m_AIGrid.o m_Attributes.o m_DistributionComm.o m_Distribution.o m_GlobalPartition.o m_MultiAccessNavigator.o
+m_scatPartMatx.o: m_AttrVect.o m_recurPart.o
+m_sigDCWindErr.o: FEsigW_tabl.o
+m_sigFi_lookups.o: config.o m_LLAGrid.o
+m_sigma.o: m_Navigator.o
+m_sigmaChi.o: FEsigW_imat.o ktmax.h m_Navigator.o
+m_sigmaPhi.o: m_Navigator.o m_xOp_sigFi.o
+m_sigmaPsi.o: FEsigW_imat.o ktmax.h m_Navigator.o
+m_sparse.o: config.o kttabl.h m_GlobalPartition.o m_redwin.o m_Spherical_Partition.o
+m_spherical_geometry.o:
+m_stdv_FE.o: config.o const.o FEalpha_imat.o FEsigW_imat.o kind_covs.h m_aGrid.o m_AttrVect.o m_intpAP.o m_normCor.o m_sigFi_lookups.o m_subBlocks.o m_xOp_sigFi.o m_xTab_lats.o m_xTab_levs.o rlat_imat.o rlev_imat.o
+m_subBlocks.o: m_AttrVect.o m_Navigator.o
+m_superObs.o: m_boxes.o m_ktList.o m_Regioner.o m_Sndx.o
+m_symMatx.o: kind_covs.h ktmax.h m_AttrVect.o m_CollectorComm.o m_Collector.o m_costs.o m_Distribution.o m_Navigator.o m_PartMatx.o m_recurPart.o m_SparseComm.o m_Spherical_Partition.o
+m_wGrADS.o:
+m_xOp_sigFi.o: const.o m_intpAP.o m_ktList.o m_Navigator.o m_normCor.o m_sigFi_lookups.o m_subBlocks.o
+m_xRSRC_sigFi.o: m_FEsigFi_tabl.o
+m_xTab_lats.o: m_CollectorComm.o m_Collector.o rlat_imat.o
+m_xTab_levs.o: config.o m_CollectorComm.o m_Collector.o rlev_imat.o
+m_xTab_sigFi.o: m_FEsigFi_tabl.o m_GrADSfiles.o m_sigFi_lookups.o
+m_xtenlev.o: config.o m_ktList.o
+merg_lats.o:
+merg_plevs.o:
+rlev_imat.o: config.o
+set_OEclas.o: config.o kttabl.h kxtabl.h m_output.o OEclass_tbl.o
+set_OEhCor.o: config.o hoecH_tbl.o kxtabl.h m_output.o OEclass_tbl.o
+set_fecQQ.o: config.o const.o hfecQQ.h hfecQ_tbl.o rlev_imat.o vfecQQ.h vfecQ_tbl.o
+set_oecHH.o: config.o const.o hoecHH.h hoecH_tbl.o rlev_imat.o voecHH.h voecH_tbl.o
+stdv_FEqc.o: config.o m_FEsigFi_tabl.o m_mvcorF_bldr.o m_psasrc.o m_stdv_FE.o m_xRSRC_sigFi.o m_xTab_lats.o m_xTab_levs.o m_xTab_sigFi.o
+stdv_OEqc.o: config.o m_psasrc.o
+tabIlist.o:
+tabRlist.o:
+m_PHxSolver.o: m_FcstErrCov.o m_gdstat.o m_ktList.o m_rootedAIGrid.o
+m_mvcorF_nsep_bmop.o: m_mvcorF_nsep.o m_redwin.o
+MX_hfecH.h:
+MX_hoecH.h:
+MX_voecH.h:
+MXpar_hc.h:
+bands.h:
+hfecQQ.h:
+hoecHH.h:
+icosdef.h:
+kind_covs.h:
+kind_mats.h:
+ktmax.h:
+kttabl.h:
+ktwanted.h:
+kxmax.h:
+kxtabl.h:
+latmax.h:
+levtabl.h:
+lvmax.h:
+maxreg.h:
+maxrlen.h:
+mxpass.h:
+mxvecs.h:
+pres4slp.h:
+proxel.h:
+qea.h:
+realvals.h:
+vfecQQ.h:
+voecHH.h:
+mp_assign_to_cpu.o:

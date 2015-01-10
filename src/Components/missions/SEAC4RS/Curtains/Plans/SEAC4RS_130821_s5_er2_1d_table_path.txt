@@ -1,0 +1,87 @@
+ER2 809: SEAC4RS_130821_s5_er2 v. 1d
+
+Takeoff at 2013-08-21T14:50 UTC
+Total est. flight time = 7 hrs, 28 min
+Total est. distance flown = 2699 nmi
+
+---
+Remarks:
+Wed, Aug 21, Science Flight #5 - ER2
+
+The purpose of this flight is to get an initial
+condition for a SEUS chemistry event that is expected next week and to spend
+considerable time studying convection near the gulf coast.
+
+There is a racetrack to be performed at WPT1. The location of the racetrack will
+be determined in flight. This racetrack will study convection and SEUS over
+the city of Muscle Shoals. Time should be coordinated with the DC-8 and Leer Jet
+for this maneuver.
+
+Between EWP6 and EWP7 we will perform a satellite run with a CALIPSO overpass
+
+A stay on station is expected at EWP3 on the way back from Muscle Shoals
+for more study of Gulf convection and currus.
+
+
+
+
+---
+
+Defined Locations:
+ Name       Lat.       Lon.            Note
+ KEFD    29.6000   -95.1700  Starting point
+ EWP2    29.0000   -92.5000                
+ EWP3    29.5000   -89.0000                
+ WPT1    34.7508   -87.6503   Muscle Shoals
+ EWP5    35.3578   -87.1784                
+ EWP4    34.7207   -86.6551                
+ EWP7    31.2930   -86.1140                
+ EWP6    34.8862   -87.0939                
+  N01    29.0785   -92.8348                
+  N02    29.2487   -90.8427                
+  N03    29.5061   -88.9590                
+  N04    30.8772   -88.4086                
+  N05    32.3988   -87.7294                
+  N06    35.3482   -86.3530                
+  N07    35.4093   -87.4783                
+  N08    34.0894   -87.8169                
+  N09    34.0371   -87.5220                
+  N10    34.6967   -87.3514                
+  N11    29.6017   -93.6129                
+ 
+  Elapsed       Lat.       Lon.    Alt.
+    (hrs)     (deg.)     (deg.)   (kft)
+     0.00    29.6000   -95.1700    0.00
+     0.40    29.0785   -92.8348   61.00
+     0.57    29.0785   -92.8348   61.00
+     0.62    29.0000   -92.5000   61.00
+     0.89    29.2487   -90.8427   41.00
+     1.19    29.5061   -88.9590   61.00
+     1.24    29.5000   -89.0000   61.00
+     1.28    29.5000   -89.0000   61.00
+     1.54    30.8772   -88.4086   41.00
+     1.83    32.3988   -87.7294   61.00
+     2.23    34.7207   -86.6551   61.00
+     2.33    35.3482   -86.3530   61.00
+     2.36    35.3482   -86.3530   61.00
+     2.47    35.3578   -87.1784   61.00
+     2.54    35.4093   -87.4783   61.00
+     2.77    34.0894   -87.8169   61.00
+     2.84    34.0371   -87.5220   61.00
+     3.08    35.3578   -87.1784   61.00
+     3.14    35.4093   -87.4783   61.00
+     3.38    34.0894   -87.8169   61.00
+     3.45    34.0371   -87.5220   61.00
+     3.68    35.3578   -87.1784   61.00
+     3.75    35.4093   -87.4783   61.00
+     3.99    34.0894   -87.8169   61.00
+     4.05    34.0371   -87.5220   61.00
+     4.17    34.6967   -87.3514   61.00
+     4.21    34.8862   -87.0939   61.00
+     4.25    34.8862   -87.0939   61.00
+     4.85    31.2930   -86.1140   61.00
+     5.33    29.5000   -89.0000   61.00
+     6.33    29.5000   -89.0000   61.00
+     6.51    29.5000   -89.0000   61.00
+     7.14    29.6017   -93.6129   61.00
+     7.48    29.6000   -95.1700    0.00

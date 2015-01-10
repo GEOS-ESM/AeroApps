@@ -1,0 +1,54 @@
+DC8 817: SEAC4RS_130819_s4_dc8 v. 2c
+
+Takeoff at 2013-08-19T15:00 UTC
+Total est. flight time = 8 hrs, 02 min
+Total est. distance flown = 3473 nmi
+
+---
+Remarks:
+Science Flight #4 - Fires
+The DC8 will perform a fire surverys over eastern WY and then in NE. Fly out at
+25 kft and rendezvous with the ER2 prior to performing wall back manuever.
+Descend into rendezvous location so ER2 is above. Perform wall maneuver along
+one of the ER2 rosette spokes. Fly at 3 altitudes to make up the wall. One level
+below the smoke, one level in the smoke, exit at level above smoke. Nominal
+altitudes TBD in flight by visualization of smoke layer. Turn toward P2 and
+repeat: rendezvous with ER2 then perform wall along ER2 rosette spoke.
+Return to Houston.
+
+2c - omit the first rosette - survey whether there is smoke at that location to
+determine if a later survey is desired. Due to omission of first rosette, move
+second survey point further west into WY.
+---
+
+Defined Locations:
+ Name       Lat.       Lon.            Note
+ KEFD    29.6000   -95.1700  Starting point
+ WPT2    43.6800  -104.9942                
+ WPT3    40.2949  -100.3895                
+ WPT1    36.6067   -97.4864                
+  N03    43.0610  -105.3858                
+  N04    44.2799  -104.5865                
+  N09    39.7564  -100.9200                
+  N10    40.8260   -99.8422                
+ 
+  Elapsed       Lat.       Lon.    Alt.
+    (hrs)     (deg.)     (deg.)   (kft)
+     0.00    29.6000   -95.1700    0.00
+     0.38    30.4432   -95.6561   25.00
+     1.23    36.6067   -97.4864   25.00
+     1.40    37.8162   -97.8787   25.00
+     2.46    43.0610  -105.3858   25.00
+     2.64    44.2799  -104.5865   25.00
+     2.68    44.2799  -104.5865   25.00
+     2.86    43.0610  -105.3858   25.00
+     4.21    43.0610  -105.3858   25.00
+     4.86    39.7564  -100.9200   25.00
+     5.04    40.8260   -99.8422   25.00
+     6.21    40.8260   -99.8422   25.00
+     6.25    40.8260   -99.8422   25.00
+     6.45    39.7564  -100.9200   25.00
+     7.00    36.6067   -97.4864   25.00
+     7.17    35.6395   -96.5077   25.00
+     7.74    31.4829   -95.5677   25.00
+     8.04    29.6000   -95.1700    0.00

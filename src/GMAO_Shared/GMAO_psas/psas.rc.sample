@@ -1,0 +1,1945 @@
+#BOP
+#
+# !ROUTINE: psas.rc - PSAS resource file (fvDAS configuration)
+#
+# !DESCRIPTION:
+#
+#  This is a PSAS resource file with parameter settings closely
+#  matching what is described in:
+#
+#  DAO, 1996: Algorithm Theoretical Basis Document
+#             http://dao/subpages/atbd.html
+#
+#  This configuration is also similar to the so-called "etest7a" run,
+#  except that the HH horizontal correlation uses the window-power law
+#  function instead of GASPARI-COHN compactly supported spline, and
+#  the PSI and CHI  autocorrelations are the same as for height.
+#  Observation error stdvs have been updated with recent tuned values
+#  obtained by Dick and Leonid.
+#
+# !REVISION HISTORY:
+#
+# 20Oct98  da Silva  Created from TRMM01 psas.rc file.
+# 21Oct98  da Silva  Replaced obs error statistics with tables
+#                    from b263_w92b experiment. This includes
+#                    new obs error stdv as recently tuned
+#                    by Dick & Leonid, as well as fixes a
+#                    bug in the AIREP stdv table.
+# 8 Jan 98  R Swinbank  Revised mass-wind balance
+# 16Feb99   RT/Brin  Added 1000mb hyper-slab for TOVS
+# 16Feb99   Todling  Merged in from other psas.rc version, SSMI and DAO_TOVS
+#                    kx's, as well as observation error table(s) for SSMI.
+# 25May99   RT/Dee   - Corrected  AIR_AIRP u-wind obs error table
+#           RT/Brin  - Modified boxes to allow 20hPa TOVS data in
+#           Todling  - Upgraded kx table with new data sources
+#                      Note: Not all corresponding obs tables defined yet
+# 08dec99   da Silva Several mods in preparations for PSAS/FV DAS:
+#                    - added 1040 as observational level
+#                    - created upper errors for sfc/ship/buoys/sat wind obs
+#                      based on RAOB values (to be retuned).
+# 20Jan99    Lou     This .rc file has been modified to expand the
+#                    latitude at mass-wind curves and reduce the
+#                    divergence at around 300hPa. This also affects
+#                    the decoupled part.
+# 03mar2000 da Silva Configured for fvPSAS:
+#                    - DataBoxes now let most things in
+#                    - DAO TOVS is on, most CTW
+#                    - restructured file: resources now are divided by sections
+# 04mar2000 da Silva Added 1040 level to RAOB obs error correlation table.
+# 07mar2000 da Silva Made covariances separable, reduced CG min
+#                    tolerances to 0.1
+# 12Apr2000 Dee      Created new obs error classes for DAOTOVS
+# 27Sep2000 Dee      Introduced moisture obs errors for pseudo-rh;
+#                    removed some debris.
+# 02oct2000 da Silva Changed data boxes so that data with p>1000 now
+#                    goes in.
+# 05oct2000 da Silva Introduced q upper-air entries for ITOVS (same as
+#                    RAOBS.
+# 09OCT2000 da Silva Introduced Gaspari's new Conjugate Gradient
+#                    parameters for eliminating "premature exits" in PSAS.
+#                    Ref.: Gaspari et al, 2000
+# 06nov2000 Dee      Created obs error classes for Wentz TPW
+# 18jan2001 Dee      Extended moisture stats to 100hPa (untuned)
+# 22jan2001 da Silva Added ACARS errors (from Leonid)
+#                    Set constant sigF (K=0.6) as default
+# 23jan2001 da Silva Changed obs error class for KX=32 from AIR_AIRP
+#                    to ASDRAIDS per Meta's suggestion.
+# 26feb2001 Dee      Adjusted moisture error stats
+# 27feb2001 da Silva Enabled ERS and NSCAT with same errors as QSCAT
+# 25Oct2001 Sienkiewicz  Add new KX values to DataSourceTable
+#                        GADS use same errors as ASDRAIDS (Leonid suggestion)
+#                        DAOTOVS HIRS/AMSU & AIRS - placeholder entry
+#                        EUMETSAT winds & experimental MODIS
+# 11feb2002 Verter/
+#           da Silva Decreased DAOTOVS height errors; modifed DAOTOVS moisture
+#                    errors (reduced near surface, increased aloft), and
+#                    decreased TPW errors (K=0.85 now). 
+#
+# 30Dec2002 Yang      In this rc file, the changes include
+#                     1.psas_r2c  scheme for coupled part
+#                     2. modification for decoupled part based on the results 
+#                        of NMC method
+#                     3. ht forecast error (stdv)from greg _revc version 
+#                     4. the latest vertical correlation for height error
+#  
+#  26Mar2003 Yang    using Dick Dee's coupling/uncoupling coefficients ML 
+#                    estimation
+#                    .coupling/uncoupling coefficient
+#                    .FcstErr*hCor_SS and .FcstErr*hCor_VV
+#                    using FcstErr*vCor_SS and FcstErr*vCor_VV of 
+#                    rev2c (Aug. 2002, Arlindo)
+# 01May2003 Todling  - Added reduced-PSAS parameters;
+#                    - Changed loc of sigF files
+#                    - changed max number of iterations allowed
+# 30May2003 Todling  Deactivated reduced PSAS (following Ron Gelaro's)
+# 09Jun2003 Todling  - Tightened levs 1 and 2 of CG
+#
+#EOP
+#-------------------------------------------------------------------------------
+
+#     NON-SEPRABLE HEIGHT HORIZONTAL CORRELATION !!!!!!!!
+
+
+
+#
+#              -----------------------------------
+#               SECTION I: Superobbing Parameters
+#              -----------------------------------
+#
+
+# Proximity elimination (superobbing)
+# -----------------------------------
+del_lnp_for_vertical_proximity_check:   0.1                # dellnp
+radius_in_km_for_proximity_check:       300.               # Rkm
+do_you_want_detailed_superob_list:       n                 # y or n
+
+# Equal-Area intermediate grid settings
+# -------------------------------------
+latitude_treshold_for_equal_area_grid:       45
+
+#.
+                #-*-#           #-*-#           #-*-#
+
+#              ------------------------------------
+#               SECTION II-0: Matrix Configuration
+#              ------------------------------------
+
+#GlobalPartition_BaseLevel:       1      # "0" for 80.  It is the default
+                                        # value of BaseLevel.
+#GlobalPartition_RefinementLevel: 1      # "1" for 320.  It is the default
+                                        # value of RefinementLevel.
+
+# If there is not "amat_cuttdistance:" specified (leading by "#", there
+# is no windowing amat(:,:) specified in the code (or amat==I).
+
+#redwin_cutdistance:               1500
+#redwin_function:                  1       # 0 for NOWINDOW
+                                           # 1 for GASPCOHN
+
+#
+#              -------------------------------------------
+#               SECTION II: Conjugate Gradient Parameters
+#              -------------------------------------------
+
+
+# NOTE: Settings according to Greg Gaspari for eliminating premature
+#       exits (da Silva, Oct 2000)
+
+level_for_banded_approximation:        5   # 4 neglect corr R > 3000 km
+                                           # 5 neglect corr R > 6000 km
+                                           # (actual distances depend
+                                           #  on seplim below).
+
+#             Levels  -->      1       2    3*   4      5
+#                           --------------------------------
+
+conjgr_separation_limits:      0       0    0    26.5   58.25  # seplim
+
+conjgr_maximum_no_iterations:  20      40   1    16     40     # maxpass
+conjgr_minimum_no_iterations:  20      40    1    4     40      # minpass
+
+conjgr_max_tolerances:         0.1     0.05 0.1  0.1    0.07  # ~maxpass
+conjgr_min_tolerances:         0.1     0.05 0.3  0.3    0.07  # ~minpass
+
+conjgr_verbose:		       0       1    0    1      1      # 0 = F
+							       # 1 = T
+
+# (*) Level 3 is obsolete; set level 4 or 5 used according to your
+# choice of level_for_banded_approximation above. All levels must be
+# set even if not used.
+
+conjgr_M_small:                16                              # msmall
+
+#.
+
+
+#...............................................................................
+
+#              -------------------------------------------------
+#               SECTION III: Observing System Definition Tables
+#              -------------------------------------------------
+
+DataTypeTable::
+
+#                                                                    mvars
+#  kt    name      unit         desc                          kt = 1 2 3 4 5 6 7
+
+    1   u_SeaLev   m/sec   Sea Level East-West Wind             $  1
+    2   v_SeaLev   m/sec   Sea Level South-North Wind           $  1 1
+    3   p_SeaLev   hPa     Sea Level Pressure                   $  1 1 1
+    4   u_UprAir   m/sec   Upper Air East-West Wind             $  0 0 0 1
+    5   v_UprAir   m/sec   Upper Air South-North Wind           $  0 0 0 1 1
+    6   H_UprAir   m       Upper Air Geopotential Hight         $  0 0 0 1 1 1
+    7   q_UprAir   g/kg    Upper Air Water Vapor Mixing Ratio   $  0 0 0 0 0 0 1
+
+::      # End of "DataTypeTable"
+
+                #-*-#           #-*-#           #-*-#
+
+
+DataSourceTable::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: DataSourceTabl:: - a table of instruments with error classes
+#
+# !REVISION HISTORY:
+#
+#       04Jan95 - Jing G.       - Tabulated version of "kx"
+#
+#             kx :      Original assigned numbers of data sources. int.
+#           clas :      Original char*8 names for compatibility and
+#                       observation error class.
+#           rank :      Assigned ranks, integer.
+#           desc :      A long name or description, char*25.
+#
+#       10May96 - J. Guo        - updated with new RAOBV_NA and TOV_x_NA
+#       08Oct98 - Todling       - added kx's for DAO_TOVS as for G.Brin
+#                                 i.e., kx=93-113 and kx=125-145
+#       06Feb99 - Todling       - added new SSM, TRMM and Prec kx's
+#       23Feb99 - RT/Brin       - changed rank of kx=87 to allow superob
+#                                 together w/ TOVS heights
+#       25May99 - Todling       - added the following kx's from Yelena:
+#                                 114, 116-124, 146-147, 159-185
+#       03Mar2000 da Silva      - Uncommented several lines for fvPSAS
+#       12Apr2000 Dee           - Created obs error classes ITOVS_n
+#                                 for DAOTOVS
+#       06nov2000 Dee      Created obs error classes for Wentz TPW
+#       25oct2001 Sienkiewicz   GADS error - ASDRAIDS per Leonid
+#                               added cld trk winds using CLDTRKWD
+#_______________________________________________________________________
+
+#  kx    clas      rank      desc
+
+
+    1  SFC_LND1  -10000  Surface Land Obs - 1
+    2  SFC_LND2  -10100  Surface Land Obs - 2
+    3  SFC_SHP1  -10400  Surface Ship Obs - 1
+    4  SFC_SHP2  -10500  Surface Ship Obs - 2
+    5  BUOY_ENV  -10200  Environment Buoy
+    6  BUOY_DRF  -10300  Drifting Buoy
+    7  RAOBV_NA    -100  Rawinsonde
+    8  PILOTBAL    -700  Pilot Balloon Wind
+    9  NAVAIDS     -300  Ship Released Rawinsonde
+   10  RAOBV_NA    -500  Dropwinsonde
+   11  RAOBV_NA    -200  Radar-tracked Rawinsonde
+   12  ROCKTSND    -400  Rocketsonde
+   13  RAOBV_NA    -800  Balloon
+   14  ASDRAIDS   -3000  Aircraft - Air/Sat Relay
+   15  ASDRAIDS   -3100  Aircraft - Int. Data Sys
+   16  AIR_AIRP   -3200  Aircraft Report
+   17  AIR_CODR   -3300  Aircraft Coded Report
+#  18  AIR_ALPX   -3400  Aircraft - ALPX
+   19  CLDTRKWD   -3500  Cld Trk Wind - Wisc E1
+   20  CLDTRKWD   -3600  Cld Trk Wind - Wisc E2
+   21  CLDTRKWD   -3700  Cld Trk Wind - Wisc W
+   22  CLDTRKWD   -3800  Cld Trk Wind - Wisc Ocean
+   23  CLDTRKWD   -3900  Cld Trk Wind - Repr. Jap.
+   24  CLDTRKWD   -4000  Cld Trk Wind - US1 Pic triplet
+   25  CLDTRKWD   -4100  Cld Trk Wind - US2 Pic triplet
+   26  CLDTRKWD   -4200  Cld Trk Wind - European (or European IR)
+   27  CLDTRKWD   -4300  Cld Trk Wind - Japanese (or Japanese IR)
+#  28  SCAT_R    -99999  SCATTEROMETER Research Mode
+#  29  WSAT_55     -600  WSAT 55
+#  30  WSAT_57     -610  WSAT 57
+#  31  LIMS       -1100  Limb Infrared Mon.- Strat
+   32  ASDRAIDS   -100002  Aircraft
+   33  TOV_A_NA     900  NESDIS NH Land AM type A
+   34  TOV_A_NA     901  NESDIS SH Land AM type A
+   35  TOV_B_NA     902  NESDIS NH Land AM type B
+   36  TOV_B_NA     903  NESDIS SH Land AM type B
+   37  TOV_C_NA     904  NESDIS NH Land AM type C
+   38  TOV_C_NA     905  NESDIS SH Land AM type C
+   39  TOV_A_NA     906  NESDIS NH Ocn  AM type A
+   40  TOV_A_NA     907  NESDIS SH Ocn  AM type A
+   41  TOV_B_NA     908  NESDIS NH Ocn  AM type B
+   42  TOV_B_NA     909  NESDIS SH Ocn  AM type B
+   43  TOV_C_NA     910  NESDIS NH Ocn  AM type C
+   44  TOV_C_NA     911  NESDIS SH Ocn  AM type C
+   45  TOV_A_NA     912  NESDIS NH Land PM type A
+   46  TOV_A_NA     913  NESDIS SH Land PM type A
+   47  TOV_B_NA     914  NESDIS NH Land PM type B
+   48  TOV_B_NA     915  NESDIS SH Land PM type B
+   49  TOV_C_NA     916  NESDIS NH Land PM type C
+   50  TOV_C_NA     917  NESDIS SH Land PM type C
+   51  TOV_A_NA     918  NESDIS NH Ocn  PM type A
+   52  TOV_A_NA     919  NESDIS SH Ocn  PM type A
+   53  TOV_B_NA     920  NESDIS NH Ocn  PM type B
+   54  TOV_B_NA     921  NESDIS SH Ocn  PM type B
+   55  TOV_C_NA     922  NESDIS NH Ocn  PM type C
+   56  TOV_C_NA     923  NESDIS SH Ocn  PM type C
+#  57  SPEA_NHW     924  Special Sat NH  - Ocn  A
+#  58  SPEA_SHW     925  Special Sat SH  - Ocn  A
+#  59  SPEB_NHW     926  Special Sat NH  - Ocn  B
+#  60  SPEB_SHW     927  Special Sat SH  - Ocn  B
+#  61  SPEC_NHW     928  Special Sat NH  - Ocn  C
+#  62  SPEC_SHW     929  Special Sat SH  - Ocn  C
+#  63  VASA_NHL    1200  VAS NH Land - type A
+#  64  VASA_SHL    1201  VAS SH Land - type A
+#  65  VASB_NHL    1202  VAS NH Land - type B
+#  66  VASB_SHL    1203  VAS SH Land - type B
+#  67  VASA_NHW    1204  VAS NH Ocean- type A
+#  68  VASA_SHW    1205  VAS SH Ocean- type A
+#  69  VASB_NHW    1206  VAS NH Ocean- type B
+#  70  VASB_SHW    1206  VAS SH Ocean- type B
+#  71  GLAA_NHL    1000  NASA-SDUO NH Land  type A
+#  72  GLAA_SHL    1001  NASA-SDUO SH Land  type A
+#  73  GLAB_NHL    1002  NASA-SDUO NH Land  type B
+#  74  GLAB_SHL    1003  NASA-SDUO SH Land  type B
+#  75  GLAC_NHL    1004  NASA-SDUO NH Land  type C
+#  76  GLAC_SHL    1005  NASA-SDUO SH Land  type C
+#  77  GLAD_NHL    1006  NASA-SDUO NH Land  type D
+#  78  GLAD_SHL    1007  NASA-SDUO SH Land  type D
+#  79  GLAA_NHW    1008  NASA-SDUO NH Ocean type A
+#  80  GLAA_SHW    1009  NASA-SDUO SH Ocean type A
+#  81  GLAB_NHW    1010  NASA-SDUO NH Ocean type B
+#  82  GLAB_SHW    1011  NASA-SDUO SH Ocean type B
+#  83  GLAC_NHW    1012  NASA-SDUO NH Ocean type C
+#  84  GLAC_SHW    1013  NASA-SDUO SH Ocean type C
+#  85  GLAD_NHW    1014  NASA-SDUO NH Ocean type D
+#  86  GLAD_SHW    1015  NASA-SDUO SH Ocean type D
+#  87  GEN_1000     899  Pseudo-1000mb Heights
+#  88  ER2MMS     -3410  ER-2 Aircraft / MMS Data
+
+   89  ACARS    -100002  ACARS: Aircraft wind instrument
+   90  SFC_LND1  -99999  Surface METAR
+
+#  91  UARS_MLS   -1300  UARS / MLS 1
+#  92  -          -1301  UARS / MLS 2
+
+   93  ITOVS_1  -1303  DAOTOVS_AM Lnd  Clear H/M/S
+   94  ITOVS_1  -1304  DAOTOVS_AM Lnd  Clear H/M
+   95  ITOVS_1  -1305  DAOTOVS_AM Lnd  Clear M/S
+   96  ITOVS_1  -1306  DAOTOVS_AM Lnd  Clear M
+   97  ITOVS_1  -1307  DAOTOVS_AM Lnd  Clear S
+   98  ITOVS_1  -1308  DAOTOVS_AM Ocn  Clear H/M/S
+   99  ITOVS_1  -1309  DAOTOVS_AM Ocn  Clear H/M
+  100  ITOVS_1  -1310  DAOTOVS_AM Ocn  Clear M/S
+  101  ITOVS_1  -1311  DAOTOVS_AM Ocn  Clear M
+  102  ITOVS_1  -1312  DAOTOVS_AM Ocn  Clear S
+  103  ITOVS_1  -1313  DAOTOVS_AM Ice  Clear H/M/S
+  104  ITOVS_1  -1314  DAOTOVS_AM Ice  Clear H/M
+  105  ITOVS_1  -1315  DAOTOVS_AM Ice  Clear M/S
+  106  ITOVS_1  -1316  DAOTOVS_AM Ice  Clear M
+  107  ITOVS_1  -1317  DAOTOVS_AM Ice  Clear S
+  108  ITOVS_1  -1318  DAOTOVS_AM Lnd Cldclr H/M/S
+  109  ITOVS_1  -1319  DAOTOVS_AM Lnd Cldclr H/M
+  110  ITOVS_1  -1320  DAOTOVS_AM Ocn Cldclr H/M/S
+  111  ITOVS_1  -1321  DAOTOVS_AM Ocn Cldclr H/M
+  112  ITOVS_1  -1322  DAOTOVS_AM Ice Cldclr H/M/S
+  113  ITOVS_1  -1323  DAOTOVS_AM Ice Cldclr H/M
+
+  114  CLDTRKWD   -4400  Cld Trk Wind - Indian Ocn
+  115  CLDTRKWD   -4500  Cld Trk Wind - GOES 9
+
+  116  SSMI_TPW  -99999  SSM/I NESDIS TPW
+# 117  UNDEFINED -99999  TOMS
+# 118  UNDEFINED -99999  SBUV/2
+
+  119  CLDTRKWD   -4601  Cld Trk Wind - US1 IR 
+  120  CLDTRKWD   -4602  Cld Trk Wind - US1 WV,Deep-Layer
+  121  CLDTRKWD   -4603  Cld Trk Wind - US1 WV,Cld-Top
+  122  CLDTRKWD   -4604  Cld Trk Wind - US2 IR 
+  123  CLDTRKWD   -4605  Cld Trk Wind - US2 WV,Deep-Layer
+  124  CLDTRKWD   -4606  Cld Trk Wind - US2 WVapor,Cld-Top
+
+  125  ITOVS_1  -1324  DAOTOVS_PM Lnd  Clear H/M/S
+  126  ITOVS_1  -1325  DAOTOVS_PM Lnd  Clear H/M
+  127  ITOVS_1  -1326  DAOTOVS_PM Lnd  Clear M/S
+  128  ITOVS_1  -1327  DAOTOVS_PM Lnd  Clear M
+  129  ITOVS_1  -1328  DAOTOVS_PM Lnd  Clear S
+  130  ITOVS_1  -1329  DAOTOVS_PM Ocn  Clear H/M/S
+  131  ITOVS_1  -1330  DAOTOVS_PM Ocn  Clear H/M
+  132  ITOVS_1  -1331  DAOTOVS_PM Ocn  Clear M/S
+  133  ITOVS_1  -1332  DAOTOVS_PM Ocn  Clear M
+  134  ITOVS_1  -1333  DAOTOVS_PM Ocn  Clear S
+  135  ITOVS_1  -1334  DAOTOVS_PM Ice  Clear H/M/S
+  136  ITOVS_1  -1335  DAOTOVS_PM Ice  Clear H/M
+  137  ITOVS_1  -1336  DAOTOVS_PM Ice  Clear M/S
+  138  ITOVS_1  -1337  DAOTOVS_PM Ice  Clear M
+  139  ITOVS_1  -1338  DAOTOVS_PM Ice  Clear S
+  140  ITOVS_1  -1339  DAOTOVS_PM Lnd Cldclr H/M/S
+  141  ITOVS_1  -1340  DAOTOVS_PM Lnd Cldclr H/M
+  142  ITOVS_1  -1341  DAOTOVS_PM Ocn Cldclr H/M/S
+  143  ITOVS_1  -1342  DAOTOVS_PM Ocn Cldclr H/M
+  144  ITOVS_1  -1343  DAOTOVS_PM Ice Cldclr H/M/S
+  145  ITOVS_1  -1344  DAOTOVS_PM Ice Cldclr H/M
+
+  146  CLDTRKWD  -99999  Cld Trk Wind - US1 vis 
+  147  CLDTRKWD  -99999  Cld Trk Wind - US2 vis 
+
+  148  SSMI_WSP  -99999  SSM/I WENTZ   Speed only
+  149  SSMI_NSP  -99999  SSM/I NESDIS  Speed only
+
+  150  SSMI_TPW  -99999  SSM/I WENTZ   F8/F14
+  151  QSCAT     -99999  SCATTEROMETER   ERS1
+  152  QSCAT     -99999  SCATTEROMETER   ERS2
+  153  QSCAT     -99999  SCATTEROMETER   NSCAT
+  154  QSCAT     -99999  SCATTEROMETER   QuikSCAT
+# 155  SEAWINDS  -99999  SCATTEROMETER   SEAWINDS
+
+# 156  TRMM      -99999 TRMM
+# 157  TMI_SP    -99999 TMI  Speed only
+  158  ASDRAIDS   -3100  GADS British Airways
+
+# 159  UNDEFINED -99999 SAT am, WATER, CLFRC<=.10
+# 160  UNDEFINED -99999 SAT am, WATER, CLFRC<=.40
+# 161  UNDEFINED -99999 SAT am, WATER, CLFRC> .40
+# 162  UNDEFINED -99999 SAT am, Other, CLFRC<=.10
+# 163  UNDEFINED -99999 SAT am, Other, CLFRC<=.40
+# 164  UNDEFINED -99999 SAT am, Other, CLFRC> .40
+# 165  UNDEFINED -99999 SAT pm, WATER, CLFRC<=.10
+# 166  UNDEFINED -99999 SAT pm, WATER, CLFRC<=.40
+# 167  UNDEFINED -99999 SAT pm, WATER, CLFRC> .40
+# 168  UNDEFINED -99999 SAT pm, Other, CLFRC<=.10
+# 169  UNDEFINED -99999 SAT pm, Other, CLFRC<=.40
+# 170  UNDEFINED -99999 SAT pm, Other, CLFRC> .40
+# 171  UNDEFINED -99999 GPS DAO Refractive
+# 172  UNDEFINED -99999 GPS DAO Bending Angle
+# 173  UNDEFINED -99999 GPS DAO Observation
+# 174  UNDEFINED -99999 GPS JPL Refractive
+# 175  UNDEFINED -99999 GPS JPL Bending Angle
+# 176  UNDEFINED -99999 GPS JPL Observation
+# 177  UNDEFINED -99999 GPS NCAR Refractive
+# 178  UNDEFINED -99999 GPS NCAR Bending Angle
+# 179  UNDEFINED -99999 GPS NCAR Observation
+# 180  UNDEFINED -99999 GPS INST Refractive
+# 181  UNDEFINED -99999 GPS INST Bending Angle
+# 182  UNDEFINED -99999 GPS INST Observation
+
+ 183  SSMI_TPW   -99999 SSM/I WENTZ   F10/F15
+ 184  SSMI_TPW   -99999 SSM/I WENTZ   F11
+ 185  SSMI_TPW   -99999 SSM/I WENTZ   F13
+
+#186  UNDEFINED -99999  DAOTOVS_AM Lnd  Clr H/A/B
+#187  UNDEFINED -99999  DAOTOVS_AM Lnd  Clr H/A
+#188  UNDEFINED -99999  DAOTOVS_AM Lnd  A/B
+#189  UNDEFINED -99999  DAOTOVS_AM Lnd  A
+#190  UNDEFINED -99999  DAOTOVS_AM Lnd  B
+#191  UNDEFINED -99999  DAOTOVS_AM Ocn  Clr H/A/B
+#192  UNDEFINED -99999  DAOTOVS_AM Ocn  Clr H/A
+#193  UNDEFINED -99999  DAOTOVS_AM Ocn  A/B
+#194  UNDEFINED -99999  DAOTOVS_AM Ocn  A
+#195  UNDEFINED -99999  DAOTOVS_AM Ocn  B
+#196  UNDEFINED -99999  DAOTOVS_AM Ice  Clr H/A/B
+#197  UNDEFINED -99999  DAOTOVS_AM Ice  Clr H/A
+#198  UNDEFINED -99999  DAOTOVS_AM Ice  A/B
+#199  UNDEFINED -99999  DAOTOVS_AM Ice  A
+#200  UNDEFINED -99999  DAOTOVS_AM Ice  B
+#201  UNDEFINED -99999  DAOTOVS_AM Lnd  Cldclr H/A/B
+#202  UNDEFINED -99999  DAOTOVS_AM Lnd  Cldclr H/A
+#203  UNDEFINED -99999  DAOTOVS_AM Ocn  Cldclr H/A/B
+#204  UNDEFINED -99999  DAOTOVS_AM Ocn  Cldclr H/A
+#205  UNDEFINED -99999  DAOTOVS_AM Ice  Cldclr H/A/B
+#206  UNDEFINED -99999  DAOTOVS_AM Ice  Cldclr H/A
+#207  UNDEFINED -99999  DAOTOVS_PM Lnd  Clr H/A/B
+#208  UNDEFINED -99999  DAOTOVS_PM Lnd  Clr H/A
+#209  UNDEFINED -99999  DAOTOVS_PM Lnd  A/B
+#210  UNDEFINED -99999  DAOTOVS_PM Lnd  A
+#211  UNDEFINED -99999  DAOTOVS_PM Lnd  B
+#212  UNDEFINED -99999  DAOTOVS_PM Ocn  Clr H/A/B
+#213  UNDEFINED -99999  DAOTOVS_PM Ocn  Clr H/A
+#214  UNDEFINED -99999  DAOTOVS_PM Ocn  A/B
+#215  UNDEFINED -99999  DAOTOVS_PM Ocn  A
+#216  UNDEFINED -99999  DAOTOVS_PM Ocn  B
+#217  UNDEFINED -99999  DAOTOVS_PM Ice  Clr H/A/B
+#218  UNDEFINED -99999  DAOTOVS_PM Ice  Clr H/A
+#219  UNDEFINED -99999  DAOTOVS_PM Ice  A/B
+#220  UNDEFINED -99999  DAOTOVS_PM Ice  A
+#221  UNDEFINED -99999  DAOTOVS_PM Ice  B
+#222  UNDEFINED -99999  DAOTOVS_PM Lnd  Cldclr H/A/B
+#223  UNDEFINED -99999  DAOTOVS_PM Lnd  Cldclr H/A
+#224  UNDEFINED -99999  DAOTOVS_PM Ocn  Cldclr H/A/B
+#225  UNDEFINED -99999  DAOTOVS_PM Ocn  Cldclr H/A
+#226  UNDEFINED -99999  DAOTOVS_PM Ice  Cldclr H/A/B
+#227  UNDEFINED -99999  DAOTOVS_PM Ice  Cldclr H/A
+
+#228  UNDEFINED -99999  NESTAT AIRS Lnd PM type A
+#229  UNDEFINED -99999  NESTAT AIRS Lnd PM type B
+#230  UNDEFINED -99999  NESTAT AIRS Lnd PM type C
+#231  UNDEFINED -99999  NESTAT AIRS Ocn PM type A
+#232  UNDEFINED -99999  NESTAT AIRS Ocn PM type B
+#233  UNDEFINED -99999  NESTAT AIRS Ocn PM type C
+#234  UNDEFINED -99999  NESPHY AIRS Lnd PM type A
+#235  UNDEFINED -99999  NESPHY AIRS Lnd PM type B
+#236  UNDEFINED -99999  NESPHY AIRS Lnd PM type C
+#237  UNDEFINED -99999  NESPHY AIRS Ocn PM type A
+#238  UNDEFINED -99999  NESPHY AIRS Ocn PM type B
+#239  UNDEFINED -99999  NESPHY AIRS Ocn PM type C
+#240  UNDEFINED -99999  DAOAIRS Lnd Clr AIRS/A/B
+#241  UNDEFINED -99999  DAOAIRS Lnd Clr AIRS/A
+#242  UNDEFINED -99999  DAOAIRS Lnd Clr AIRS/B
+#243  UNDEFINED -99999  DAOAIRS Lnd A/B
+#244  UNDEFINED -99999  DAOAIRS Lnd AMSU
+#245  UNDEFINED -99999  DAOAIRS Lnd HSB
+#246  UNDEFINED -99999  DAOAIRS Ocn Clr AIRS/A/B
+#247  UNDEFINED -99999  DAOAIRS Ocn Clr AIRS/A
+#248  UNDEFINED -99999  DAOAIRS Ocn Clr AIRS/B
+#249  UNDEFINED -99999  DAOAIRS Ocn A/B
+#250  UNDEFINED -99999  DAOAIRS Ocn AMSU
+#251  UNDEFINED -99999  DAOAIRS Ocn HSB
+#252  UNDEFINED -99999  DAOAIRS Ice Clr AIRS/A/B
+#253  UNDEFINED -99999  DAOAIRS Ice Clr AIRS/A
+#254  UNDEFINED -99999  DAOAIRS Ice Clr AIRS/B
+#255  UNDEFINED -99999  DAOAIRS Ice A/B
+#256  UNDEFINED -99999  DAOAIRS Ice AMSU
+#257  UNDEFINED -99999  DAOAIRS Ice HSB
+#258  UNDEFINED -99999  DAOAIRS Lnd Cldclr  AIRS/A/B
+#259  UNDEFINED -99999  DAOAIRS Lnd Cldclr  AIRS/A
+#260  UNDEFINED -99999  DAOAIRS Lnd Cldclr  AIRS/B
+#261  UNDEFINED -99999  DAOAIRS Ocn Cldclr  AIRS/A/B
+#262  UNDEFINED -99999  DAOAIRS Ocn Cldclr  AIRS/A
+#263  UNDEFINED -99999  DAOAIRS Ocn Cldclr  AIRS/B
+#264  UNDEFINED -99999  DAOAIRS Ice Cldclr  AIRS/A/B
+#265  UNDEFINED -99999  DAOAIRS Ice Cldclr  AIRS/A
+#266  UNDEFINED -99999  DAOAIRS Ice Cldclr  AIRS/B
+
+ 267  CLDTRKWD  -99999  Cld Trk Wind - European WV
+ 268  CLDTRKWD  -99999  Cld Trk Wind - European Vis
+ 269  CLDTRKWD  -99999  Cld Trk Wind - Japanese WV
+ 270  CLDTRKWD  -99999  Cld Trk Wind - Japanese Vis
+
+#271  UNDEFINED -99999  MLS 205 GHz
+#272  UNDEFINED -99999  MLS 183 GHz
+#273  UNDEFINED -99999  GOME
+#274  UNDEFINED -99999  Cld Trk Wind - MISR
+
+ 275  CLDTRKWD  -99999  Cld Trk Wind - European ELW IR
+ 276  CLDTRKWD  -99999  Cld Trk Wind - European ELW Vis
+ 277  CLDTRKWD  -99999  Cld Trk Wind - European ELW WV
+#278  CLDTRKWD  -99999  Cld Trk Wind - EUMETSAT Hi-res Vis (HRV)
+#279  CLDTRKWD  -99999  Cld Trk Wind - EUMETSAT Clr Sky WV(WVW)
+
+#280  UNDEFINED -99999  Tide Gauge Station
+
+ 281  CLDTRKWD  -99999  Cld Trk Wind - MODIS WV
+ 282  CLDTRKWD  -99999  Cld Trk Wind - MODIS IR
+#283  UNDEFINED -99999  Super-pressure balloon
+
+::      # End of DataSourceTable
+
+
+# Data selection tables in 6-d boxes. For fvPSAS, actual data selection
+# is done at observer level - so insure these limits encompass all data used
+# ---------------------------------------------------------------------
+DataBoxes::
+
+  1  512   1  7  -90 +90  -180 +180     .009 1040.1   -180 +180
+
+::
+
+
+#...............................................................................
+
+#              -----------------------------------------------------
+#               SECTION IV: Observation Error Covariance Parameters
+#              -----------------------------------------------------
+
+ObsErr*Levels:      Pressure    1040 1000   850   700   500   400   300   250   200   150   100    70    50    30    10     5     2     1    .4
+
+ObsErr*SFC_LND1::   # kx = 1  Dee/Rukh 980309: have not seen this datatype
+                    #         Dee/Rukh 980526: adjustment due to QC monitoring
+                    #         da Silva: start with H_UprAir like RAOBS
+  p_SeaLev     1.3
+  H_UprAir.u        5.2 5.4  5.6  6.2   8.6
+::
+
+ObsErr*SFC_LND2::   # kx = 2  Dee/Rukh 980309: retuned from recV_w92 output
+                    #         Dee/Rukh 980526: adjustment due to QC monitoring
+                    #         da Silva: start with H_UprAir like RAOBS
+  p_SeaLev     1.3  
+  H_UprAir.u        5.2 5.4  5.6  6.2   8.6
+::
+
+ObsErr*SFC_SHP1::   # kx = 3  Dee/Rukh 980309: retuned from recV_w92 output
+                    #         da Silva: start with ?_UprAir like RAOBS up to 500 hPa
+  p_SeaLev     0.6 
+  u_SeaLev     2.2
+  v_SeaLev     2.2
+  q_UprAir.u  0.06  0.06  0.09  0.09  0.10
+  u_UprAir.u  2.0   2.0   2.2   2.3   2.7   3.2
+  v_UprAir.u  2.2   2.2   2.3   2.7   3.2   3.4
+  H_UprAir.u  5.2   5.4   5.6   6.2   8.6    # made 1040 stdv a little lower than 1000
+                                             #  to avoid zero tmpu error
+::
+
+ObsErr*QSCAT::   # kx = 154 Made like ships
+  u_SeaLev     2.2
+  v_SeaLev     2.2
+  u_UprAir.u   2.0   2.0   2.2   2.3   2.7   3.2
+  v_UprAir.u   2.0   2.0   2.2   2.3   2.7   3.2
+::
+
+ObsErr*SFC_SHP2::   # kx = 4  Dee/Rukh 980309: retuned from recV_w92 output
+                    #         da Silva: start with ?_UprAir like RAOBS up to 500 hPa
+  p_SeaLev     2.2
+  u_SeaLev     3.2 
+  v_SeaLev     3.2
+  q_UprAir.u  0.06  0.06  0.09  0.09  0.10
+  u_UprAir.u  2.0   2.0   2.2   2.3   2.7   3.2
+  v_UprAir.u  2.2   2.2   2.3   2.7   3.2   3.4
+  H_UprAir.u  5.2   5.4   5.6   6.2   8.6
+
+::
+
+ObsErr*BUOY_ENV::   # kx = 5  Dee/Rukh 980309: retuned from recV_w92 output
+                    #         Dee/Rukh 980526: adjustment due to QC monitoring
+                    #         da Silva: start with ?_UprAir like RAOBS up to 500 hPa
+  p_SeaLev     1.0 
+  u_SeaLev     2.4
+  v_SeaLev     2.4
+  q_UprAir.u  0.06  0.06  0.09  0.09  0.10
+  u_UprAir.u  2.0   2.0   2.2   2.3   2.7   3.2
+  v_UprAir.u  2.2   2.2   2.3   2.7   3.2   3.4
+  H_UprAir.u  5.2   5.4   5.6   6.2   8.6
+::
+
+ObsErr*BUOY_DRF::   # kx = 6  Dee/Rukh 980309: retuned from recV_w92 output
+                    #         Dee/Rukh 980526: adjustment due to QC monitoring
+                    #         da Silva: start with ?_UprAir like RAOBS up to 500 hPa
+  p_SeaLev     2.0 
+  u_SeaLev     2.4
+  v_SeaLev     2.4 
+  q_UprAir.u  0.06  0.06  0.09  0.09  0.10
+  u_UprAir.u  2.0   2.0   2.2   2.3   2.7   3.2
+  v_UprAir.u  2.2   2.2   2.3   2.7   3.2   3.4
+  H_UprAir.u  5.2   5.4   5.6   6.2   8.6
+::
+
+ObsErr*RAOBV_NA::   # kx = 7, 10, 11  Dee 980309: have not seen kx=10
+                    #                 Dee 980309: very few kx=11 (not enough for tuning)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*RAOBV_NA::      Fall '94 NA/EU multivariate O-F's (emeasaF)
+#
+# !DESCRIPTION: Raob height, wind, and mixing ratio error standard deviations.
+#               Tuned to fall 1994 O-F's over North-America (height and wind
+#                       errors) and Europe (mixing ratio errors) obtained
+#                       from the emeasaF run.
+#
+# !REVISION HISTORY:
+#       May 13, 1996 - C. Redder and D. Dee - (original table)
+#       Oct 18, 1996 - A. da Silva - wind sigOs increased above 150hPa
+#       May 26, 1998 - Dee/Rukh - wind errors retuned from recV_w92 output
+#       May 17, 1999 - Dee/Rukh - extended (u,v,h) table to 2 mb.
+#       Dec 08, 1999 - da Silva: faked 1040 hPa stats
+#       Sep 27, 2000 - Dee: new moisture stats for pseudo-rh
+#       Jan 18, 2001 - Dee: extended moisture stats to 100hPa (untuned)
+#_______________________________________________________________________
+
+# Pressure    1040  1000   850   700   500   400   300   250   200   150   100    70    50    30    10    5    2
+
+  q_UprAir.u  0.10  0.10  0.11  0.12  0.13  0.14  0.15  0.16  0.17  0.18  0.19
+  u_UprAir.u  2.0   2.0   2.2   2.3     2.7   3.2   3.4   3.4   3.3   2.7   2.7   2.7   2.7   2.7   2.7   2.7  2.7
+  v_UprAir.u  2.0   2.0   2.2   2.3     2.7   3.2   3.4   3.4   3.3   2.7   2.7   2.7   2.7   2.7   2.7   2.7  2.7
+  H_UprAir.u  5.2   5.4   5.6   6.2     8.6  10.8  12.8  13.5  14.5  16.3  19.3  21.9  23.5  27.7  35.8  60.0 100.
+
+  vCor_HH.u   5
+::
+ObsErr*PILOTBAL::   # kx = 8
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*PILOTBAL::
+#
+# !REVISION HISTORY:
+#       May 15, 1996 - D. Dee - (original table)
+#       Mar 09, 1998 - Dee/Rukh - retuned from recV_w92 output (850hPa,500hPa,200hPa,100hPa)
+#       Dec 08, 1999 - da Silva: faked 1040 hPa stats
+#_______________________________________________________________________
+
+# Pressure    1040  1000   850   700   500   400   300   250   200   150   100    70    50    30    10
+
+  u_UprAir.u  2.60  2.60  2.60  2.60  2.60  2.60  2.60  2.70  2.80  2.90  3.00  3.00  3.00  3.00  3.00
+  v_UprAir.u  2.60  2.60  2.60  2.60  2.60  2.60  2.60  2.70  2.80  2.90  3.00  3.00  3.00  3.00  3.00
+::
+
+ObsErr*NAVAIDS::    # kx = 9  same as kx=7
+  q_UprAir.u  0.10  0.10  0.11  0.12  0.13  0.14  0.15  0.16  0.17  0.18  0.19
+  u_UprAir     2.2   2.2   2.6   3.2   4.0   6.0   8.0   9.0  10.0   9.5   9.0   8.0   7.0   4.1   4.1   4.1   4.1   4.1   4.1
+  v_UprAir     2.2   2.2   2.6   3.2   4.0   6.0   8.0   9.0  10.0   9.5   9.0   8.0   7.0   4.1   4.1   4.1   4.1   4.1   4.1
+  H_UprAir.u   7.8   8.0   8.2  10.9  14.6  18.0  23.8  26.3  28.1  30.9  41.0  49.8  48.7
+  vCor_HH.u       5
+::
+
+ObsErr*ROCKTSND::   # kx = 12  Dee 980309: have not seen this datatype
+  H_UprAir     7.0   7.5  10.4  13.2  14.6  16.8  18.0  18.5  20.6  26.0  38.7  45.4  53.5  53.5 177.0 173.0 187.0 195.0 199.0
+  u_UprAir     5.2   5.2   6.3   5.6   7.7   7.8  10.7  10.6  11.8  10.7   8.8   7.5   9.0   9.5   1.1   1.2   1.5   1.2   1.9
+  v_UprAir     5.2   5.2   6.3   5.6   7.7   7.8  10.7  10.6  11.8  10.7   8.8   7.5   9.0   9.5   1.1   1.2   1.5   1.2   1.9
+::
+
+ObsErr*ASDRAIDS::   # kx = 14, 15   Dee 980309: have not seen kx=15
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*ASDRAIDS::
+#
+# !DESCRIPTION: ASDRAIDS wind error standard deviations.
+#
+# !REVISION HISTORY:
+#       May 15, 1996 - D. Dee - (original table)
+#       Mar 13, 1998 - Dee/Rukh - retuned from recV_w92 output (500hPa,300hPa,200hPa)
+#       Dec 08, 1999 - da Silva: faked 1040 hPa stats
+#_______________________________________________________________________
+
+# Pressure    1040 1000  850  700  500  400  300  250  200  150  100   70   50   30   10
+
+  u_UprAir.u   2.5  2.5  2.5  2.5  2.5  2.4  2.3  2.3  2.3  2.3  2.3  2.3  2.3  2.3  2.3
+  v_UprAir.u   2.5  2.5  2.5  2.5  2.5  2.4  2.3  2.3  2.3  2.3  2.3  2.3  2.3  2.3  2.3
+
+::
+
+ObsErr*AIR_AIRP::   # kx = 16
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*AIR_AIRP::
+#
+# !DESCRIPTION: AIR_AIRP wind error standard deviations.
+#
+# !REVISION HISTORY:
+#       May 15, 1996 - D. Dee - (original table)
+#       Mar 13, 1998 - Dee/Rukh - retuned from recV_w92 output (500hPa,300hPa,200hPa)
+#       May 26, 1998 - Dee/Rukh - slight adjustments based on QC monitoring
+#       May 17, 1999 - Dee/Rukh - corrected u errors
+#       Dec 08, 1999 - da Silva: faked 1040 hPa stats
+#_______________________________________________________________________
+
+# Pressure    1040 1000  850  700  500  400  300  250  200  150  100   70   50   30   10
+
+  u_UprAir.u   3.5  3.5  3.6  3.7  3.8  3.9  4.0  4.0  4.0  4.0  4.0  4.0  4.0  4.0  4.0
+  v_UprAir.u   3.5  3.5  3.6  3.7  3.8  3.9  4.0  4.0  4.0  4.0  4.0  4.0  4.0  4.0  4.0
+
+::
+
+ObsErr*ACARS::   # kx = 89
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*ACARS::
+#
+# !DESCRIPTION: ACARS wind error standard deviations.
+#
+# !REVISION HISTORY:
+#  22jan2001  da Silva  Errors from Leonid (his ASDRAIDS table)
+#_______________________________________________________________________
+
+# Pressure    1040 1000  850  700  500  400  300  250  200  150  100   70   50   30   10
+
+  u_UprAir.u   2.5 2.5  2.5  2.5  2.5  2.4  2.3  2.3  2.3  2.3  2.3  2.3  2.3  2.3  2.3
+  v_UprAir.u   2.5 2.5  2.5  2.5  2.5  2.4  2.3  2.3  2.3  2.3  2.3  2.3  2.3  2.3  2.3
+  
+::
+
+ObsErr*AIR_CODR::   # kx = 17  Dee 980309: have not seen this datatype
+
+# Pressure    1040 1000  850  700  500  400  300  250  200  150  100   70   50   30   10
+
+  u_UprAir     6.2  6.2  7.2  7.2  9.0 11.2 11.4 11.4 11.4 11.4 11.4 11.4 11.4 11.4 11.4
+  v_UprAir     6.2  6.2  7.2  7.2  9.0 11.2 11.4 11.4 11.4 11.4 11.4 11.4 11.4 11.4 11.4
+::
+
+ObsErr*CLDTRKWD::   # kx = 19--27   Dee 980313: have only seen kx=24,26,27
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*CLDTRKWD::
+#
+# !REVISION HISTORY:
+#       May 15, 1996 - D. Dee - (original table)
+#       Mar 13, 1998 - Dee/Rukh - retuned from recV_w92 output
+#                                 separately for kx=24,26,27 (850hPa,500hPa,200hPa)
+#                                 results are similar for these three satellites
+#       Dec 08, 1999 - da Silva: faked 1040 hPa stats
+#_______________________________________________________________________
+
+# Pressure    1040  1000   850   700   500   400   300   250   200   150   100    70    50    30    10
+
+  u_UprAir.u  1.50  1.50  1.50  1.60  1.70  1.90  2.20  2.45  2.70  2.70  2.70  2.70  2.70  2.70  2.70
+  v_UprAir.u  1.50  1.50  1.50  1.60  1.70  1.90  2.20  2.45  2.70  2.70  2.70  2.70  2.70  2.70  2.70
+
+::
+
+ObsErr*SCAT_R::   # kx =   28   Brin/Todling (not tuned yet), da Silva: upper air like RAOB
+  u_SeaLev     2.8
+  v_SeaLev     2.8
+  u_UprAir.u  2.0   2.0   2.2   2.3   2.7   3.2
+  v_UprAir.u  2.2   2.2   2.3   2.7   3.2   3.4
+::
+
+ObsErr*SSMI_WSP:: # kx =  148   Brin/Todling (not tuned yet)
+  u_SeaLev     2.8
+  v_SeaLev     2.8
+  u_UprAir.u  2.0   2.0   2.2   2.3   2.7   3.2
+  v_UprAir.u  2.2   2.2   2.3   2.7   3.2   3.4
+::
+
+ObsErr*SSMI_NSP:: # kx =  149   Brin/Todling (not tuned yet)
+  u_SeaLev     2.8
+  v_SeaLev     2.8
+  u_UprAir.u  2.0   2.0   2.2   2.3   2.7   3.2
+  v_UprAir.u  2.2   2.2   2.3   2.7   3.2   3.4
+::
+
+ObsErr*GEN_1000::   # kx =  87  Dee/Rukh 980309: retuned from recV_w92 output
+
+  H_UprAir     8.0  8.5   8.5
+
+::
+ObsErr*ITOVS_1::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*ITOVS_1::
+#
+# !DESCRIPTION: Class 1 interactive DAOTOVS retrieval errors.
+#               Height: partially based on (S-R) residuals, assuminh a 50/50
+#               partition between correlated/uncorrelated.
+#               Moisture: errors defined so that weights are:
+#               P = 1000 850 700 500 400  300
+#               K = 0.5  0.7 0.7 0.8 0.85 0.85
+#
+# !REVISION HISTORY:
+#       Apr 12, 2000 - D. Dee - (original table)
+#       Feb 11, 2002 - Verter/da Silva
+#_______________________________________________________________________
+
+#   Pressure   1040 1000  850  700  500  400  300  250  200  150  100   70   50   30   10    5    2    1  0.4
+
+# q_UprAir.u  0.06  0.06  0.09  0.09  0.10  0.11  0.12  0.12  0.12  0.12  0.12
+  q_UprAir.u  0.13  0.13  0.09  0.098 0.08  0.07  0.076 0.076 0.076 0.076 0.076 
+  H_UprAir.u  3.7   3.8   4.0  4.4  6.1  7.6  9.1  9.5  10.3 10.9 10.5  10.2 10.0 12.3 15.5 20.6 22.8 25.8 43.3
+  H_UprAir.c  3.7   3.8   4.0  4.4  6.1  7.6  9.1  9.5  10.3 10.9 10.5  10.2 10.0 12.3 15.5 20.6 22.8 25.8 43.3
+  vCor_HH.u     6
+  vCor_HH.c     7
+  hCor_HH.c     6
+::
+
+ObsErr*ITOVS_2::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*ITOVS_2::
+#
+# !DESCRIPTION: Class 2 interactive DAOTOVS retrieval errors.
+#               Same as Class 1 for now.
+#
+# !REVISION HISTORY:
+#       Apr 12, 2000 - D. Dee - (original table)
+#       Feb 11, 2002 - Verter/da Silva
+#_______________________________________________________________________
+
+#   Pressure   1040 1000  850  700  500  400  300  250  200  150  100   70   50   30   10    5    2    1  0.4
+
+  q_UprAir.u  0.13  0.13  0.09  0.098 0.08  0.07  0.076 0.076 0.076 0.076 0.076 
+  H_UprAir.u  3.7   3.8   4.0  4.4  6.1  7.6  9.1  9.5  10.3 10.9 10.5  10.2 10.0 12.3 15.5 20.6 22.8 25.8 43.3
+  H_UprAir.c  3.7   3.8   4.0  4.4  6.1  7.6  9.1  9.5  10.3 10.9 10.5  10.2 10.0 12.3 15.5 20.6 22.8 25.8 43.3
+  vCor_HH.u     6
+  vCor_HH.c     7
+  hCor_HH.c     6
+
+::
+
+ObsErr*ITOVS_3::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*ITOVS_3::
+#
+# !DESCRIPTION: Class 3 interactive DAOTOVS retrieval errors.
+#               Based on:
+#                       sigo  = alpha*sigf
+#                       sigou = beta*sigo
+#               with
+#                       sigf  = global mean sigf from ATESS, Terra 3.10 Jan1998
+#                       alpha = 1.0
+#                       beta  = sigou/sigo from TOV_A_NA
+#
+# !REVISION HISTORY:
+#       Apr 12, 2000 - D. Dee - (original table)
+#_______________________________________________________________________
+
+#   Pressure   1040 1000  850  700  500  400  300  250  200  150  100   70   50   30   10    5    2    1  0.4
+
+  q_UprAir.u  0.06  0.06  0.09  0.09  0.10  0.11  0.12  0.12  0.12  0.12  0.12
+  H_UprAir.u    6.7  6.7  7.3  8.8   12   14   15   16   16   16   17   18   21   26   33   35   38   42   51
+  H_UprAir.c     10  9.9  9.5  9.6   11   13   14   15   16   21   24   28   32   38   38   40   44   49   59
+  vCor_HH.u     6
+  vCor_HH.c     7
+  hCor_HH.c     6
+::
+
+ObsErr*SSMI_TPW::     # kx = 150, 183, 184, 185
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*SSMI_TPW::
+#
+# !DESCRIPTION: SSM/I WENTZ   Total Precipitable Water
+#
+#       TPW data are analyzed by PSAS as if they were 850hPa mixr
+#       observations  (Note: sigf=0.14 at 850hPa)
+#
+# !REVISION HISTORY:
+#       06nov2000 - Dee - original table
+#       11feb2002 - da Silva Reduced error for K=0.85
+#_______________________________________________________________________
+
+#   Pressure   1040 1000  850  700  500  400  300  250  200  150  100   70   50   30   10    5    2    1  0.4
+
+  q_UprAir     0.06 0.06 0.06
+
+::
+
+ObsErr*TOV_A_NA::    # kx =   33, tovA
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*TOV_A_NA::      Fall '94 NA height O-F, O-O's (emeasaF)
+#
+# !DESCRIPTION: TovA height retrieval error standard deviations:
+#                       uncorrelated and correlated components.
+#               Tuned to fall 1994 height O-F's and O-O's (raob and tovA)
+#                       over North-America obtained from the emeasaF run.
+#
+# !REVISION HISTORY:
+#       May 14, 1996 - C. Redder and D. Dee - (original table)
+#       Dec 08, 1999 - da Silva: faked 1040 hPa stats
+#_______________________________________________________________________
+
+#   Pressure    1040 1000  850   700   500   400   300   250   200   150   100    70    50    30    10     5     2     1    .4
+
+  H_UprAir.u    4.0  4.4  8.4  11.5  13.6  14.5  16.2  17.0  18.0  18.5  18.4  19.2  20.2  22.7  39.8  48.4  61.4  76.0 113.2
+  H_UprAir.c    6.0  6.5 10.9  12.5  13.1  13.7  15.4  16.5  17.6  23.8  25.5  30.3  30.9  32.6  46.2  56.2  71.3  88.4 131.6
+  vCor_HH.u     6
+  vCor_HH.c     7
+  hCor_HH.c     6
+::
+
+ObsErr*TOV_B_NA::    # kx =   35, tovB
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*TOV_B_NA::      Fall '94 NA height O-F, O-O's (emeasaF)
+#
+# !DESCRIPTION: TovB height retrieval error standard deviations:
+#                       uncorrelated and correlated components.
+#               Tuned to fall 1994 height O-F's and O-O's (raob and tovB)
+#                       over North-America obtained from the emeasaF run.
+#
+# !REVISION HISTORY:
+#       May 13, 1996 - C. Redder and D. Dee - (original table)
+#       Dec 08, 1999 - da Silva: faked 1040 hPa stats
+#_______________________________________________________________________
+
+#   Pressure    1040 1000  850   700   500   400   300   250   200   150   100    70    50    30    10     5     2     1    .4
+
+  H_UprAir.u    4.0  4.4  8.4  11.5  13.6  14.5  16.2  17.0  18.0  18.5  18.4  19.2  20.2  22.7  39.8  48.4  61.4  76.0 113.2
+  H_UprAir.c    6.0  6.5 10.9  12.5  13.1  13.7  15.4  16.5  17.6  23.8  25.5  30.3  30.9  32.6  46.2  56.2  71.3  88.4 131.6
+  vCor_HH.u     6
+  vCor_HH.c     7
+  hCor_HH.c     6
+::
+
+ObsErr*TOV_C_NA::    # kx =   37, tovC
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*TOV_C_NA::      Fall '94 NA height O-F, O-O's (emeasaF)
+#
+# !DESCRIPTION: TovC height retrieval error standard deviations:
+#                       uncorrelated and correlated components.
+#               Tuned to fall 1994 height O-F's and O-O's (raob and tovC)
+#                       over North-America obtained from the emeasaF run.
+#
+# !REVISION HISTORY:
+#       May 13, 1996 - C. Redder and D. Dee - (original table)
+#       Dec 08, 1999 - da Silva: faked 1040 hPa stats
+#_______________________________________________________________________
+
+#  Pressure    1040  1000  850   700   500   400   300   250   200   150   100    70    50    30    10     5     2     1    .4
+
+  H_UprAir.u   5.0   5.5  8.7  11.4  15.5  17.1  18.3  19.0  19.6  19.9  18.9  18.9  19.1  21.0  40.6  49.3  62.6  77.6 115.5
+  H_UprAir.c   8.0   9.2 14.4  19.2  24.0  27.3  29.9  31.5  32.0  33.2  31.1  29.1  30.7  34.3  65.6  79.8 101.2 125.5 186.9
+  vCor_HH.u     6
+  vCor_HH.c     7
+  hCor_HH.c     6
+::
+
+
+ObsErr*hCor_HH-6::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*hCor_HH-6::     Fall '94 NA height O-F, O-O's (emeasaF)
+#
+# !DESCRIPTION: TovA height retrieval error horizontal correlations:
+#                       correlated component.
+#               Tuned to fall 1994 height O-F's and O-O's (raob and tovA)
+#                       over North-America obtained from the emeasaF run.
+#               Horizontal correlations modeled by the compactly
+#                       supported spline function.
+#               Constant length scale --> separable correlation model.
+#
+# !REVISION HISTORY:
+#       May 13, 1996 - C. Redder and D. Dee - (original table)
+#       Aug 14, 1996 - D. Dee - replaced tuned length scales by a constant
+#                                       (tuned 500mb value)
+#_______________________________________________________________________
+
+#       model*  desc
+
+  GASPARI-COHN  compactly supported spline function
+
+# pres*    d_m*    L ( km )
+
+  1000     3000    531.0
+   925     3000    531.0
+   850     3000    531.0
+   700     3000    531.0
+   500     3000    531.0
+   400     3000    531.0
+   300     3000    531.0
+   250     3000    531.0
+   200     3000    531.0
+   150     3000    531.0
+   100     3000    531.0
+    70     3000    531.0
+    50     3000    531.0
+    40     3000    531.0
+    30     3000    531.0
+    20     3000    531.0
+    15     3000    531.0
+    10     3000    531.0
+     7     3000    531.0
+     5     3000    531.0
+     3     3000    531.0
+     2     3000    531.0
+     1     3000    531.0
+     0.7   3000    531.0
+     0.5   3000    531.0
+     0.4   3000    531.0
+
+::
+
+
+ObsErr*vCor_HH-1::
+
+# 05oct95 - Jing G.     - This version of vertical correlation function
+#       is remodeled based a GEOS/DAS-v1.2 18 level table.  The original
+#       table (see 10Jan95 comment below) is not P.D..
+#
+# 10Jan95 - Jing G.     -
+#
+#    Title from GEOS_DAS data table file "vcoroe.data" reads,
+#
+#       > RAWINSONDE VCORS FROM HL, LH (LIKE VCOROE2 W/ EIGEN VALS >=.1)
+#
+# Extended to 1040 (ams), new condition number is: 121.85
+
+# pres  1040 1000  850  700  500  400  300  250  200  150  100   70   50   30   10    5    2    1  .4
+
+  1040  1.
+  1000   .48  1.
+   850   .36  .48  1.
+   700   .15  .36  .64  1.
+   500   .09  .15  .24  .70  1.
+   400   .05  .09  .14  .55  .79  1.
+   300   .03  .05  .13  .40  .63  .80  1.
+   250   .08  .03  .14  .42  .60  .74  .90  1.
+   200   .07  .08  .22  .44  .52  .60  .73  .79  1.
+   150   .03  .07  .21  .41  .51  .58  .68  .72  .87  1.
+   100   .02  .03  .11  .33  .47  .53  .64  .67  .77  .88  1.
+    70   .00  .02  .06  .28  .42  .50  .60  .63  .72  .80  .88  1.
+    50  -.01  .00  .04  .24  .40  .48  .59  .61  .68  .74  .82  .89  1.
+    30  -.01 -.01  .02  .04  .05  .07  .16  .21  .44  .56  .65  .72  .78  1.
+    10   .00 -.01 -.01  .01  .04  .05  .09  .10  .26  .43  .57  .66  .73  .88  1.
+     5   .00  .00 -.03 -.01  .02  .02  .04  .04  .11  .26  .44  .58  .67  .80  .88  1.
+     2   .00  .00 -.02 -.02 -.01  .00  .00  .00  .05  .12  .27  .45  .60  .72  .79  .87  1.
+     1   .00  .00  .00 -.02 -.02 -.03 -.04 -.05  .00  .06  .13  .28  .49  .65  .71  .77  .86  1.
+    .4   .00  .00  .02  .00 -.03 -.04 -.10 -.11 -.07  .00  .06  .15  .33  .56  .64  .69  .74  .84  1.
+
+# pres  1040 1000  850  700  500  400  300  250  200  150  100   70   50   30   10    5    2    1  .4
+::
+
+
+ObsErr*vCor_HH-5::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*vCor_HH-5::     Fall '94 NA height O-F's (emeasaF)
+#
+# !DESCRIPTION: Raob height error vertical correlations.
+#               Tuned to fall 1994 O-F's over North-America obtained from
+#                       the emeasaF run.
+#
+# !REVISION HISTORY:
+#       May 14, 1996 - C. Redder and D. Dee - (original table)
+#       May 21, 1996 - D. Dee - addition of 10mb vertical correlations
+#       Mar 04m 2000 - da Silva: Added entry for 1040; new condition
+#                      number is 149.61.
+#_______________________________________________________________________
+
+#pres 1040 1000  925  850  700  500  400  300  250  200  150  100   70   50   40   30   20   10
+
+1040  1.00
+1000  0.77 1.00
+ 925  0.54 0.77 1.00
+ 850  0.38 0.54 0.77 1.00
+ 700  0.34 0.38 0.53 0.67 1.00
+ 500  0.29 0.34 0.37 0.39 0.57 1.00
+ 400  0.20 0.29 0.30 0.31 0.43 0.76 1.00
+ 300  0.15 0.20 0.21 0.22 0.31 0.58 0.82 1.00
+ 250  0.11 0.15 0.16 0.17 0.25 0.48 0.69 0.88 1.00
+ 200  0.06 0.11 0.12 0.12 0.19 0.39 0.56 0.76 0.87 1.00
+ 150  0.00 0.06 0.07 0.08 0.13 0.30 0.44 0.59 0.67 0.83 1.00
+ 100  0.00 0.00 0.00 0.03 0.07 0.18 0.31 0.42 0.47 0.61 0.80 1.00
+  70  0.00 0.00 0.00 0.00 0.04 0.12 0.21 0.31 0.35 0.47 0.68 0.76 1.00
+  50  0.00 0.00 0.00 0.00 0.00 0.07 0.15 0.22 0.25 0.38 0.52 0.61 0.79 1.00
+  40  0.00 0.00 0.00 0.00 0.00 0.05 0.12 0.17 0.20 0.31 0.44 0.48 0.65 0.85 1.00
+  30  0.00 0.00 0.00 0.00 0.00 0.00 0.09 0.13 0.14 0.23 0.36 0.36 0.52 0.69 0.89 1.00
+  20  0.00 0.00 0.00 0.00 0.00 0.00 0.05 0.08 0.09 0.15 0.24 0.24 0.39 0.54 0.72 0.82 1.00
+  10  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.05 0.08 0.09 0.15 0.24 0.24 0.39 0.54 0.72 0.82 1.00
+
+#pres 1000  925  850  700  500  400  300  250  200  150  100   70   50   40   30   20   10
+
+::
+
+
+ObsErr*vCor_HH-6::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*vCor_HH-6::     Fall '94 NA height O-F, O-O's (emeasaF)
+#
+# !DESCRIPTION: TovA height retrieval error vertical correlations:
+#                       uncorrelated component.
+#               Tuned to fall 1994 height O-F's and O-O's (raob and tovA)
+#                       over North-America obtained from the emeasaF run.
+#
+# !REVISION HISTORY:
+#       May 13, 1996 - C. Redder and D. Dee - (original table)
+#_______________________________________________________________________
+
+#pres 1000  925  850  700  500  400  300  250  200  150  100   70   50   40   30   20   15   10    7    5    3    2    1 0.70 0.50 0.40
+
+1000  1.00
+ 925  0.85 1.00
+ 850  0.71 0.85 1.00
+ 700  0.54 0.68 0.82 1.00
+ 500  0.37 0.47 0.58 0.83 1.00
+ 400  0.29 0.37 0.45 0.68 0.86 1.00
+ 300  0.20 0.26 0.32 0.52 0.63 0.81 1.00
+ 250  0.16 0.21 0.26 0.42 0.52 0.71 0.83 1.00
+ 200  0.12 0.16 0.20 0.32 0.41 0.57 0.66 0.80 1.00
+ 150  0.08 0.11 0.14 0.22 0.29 0.42 0.49 0.59 0.75 1.00
+ 100  0.03 0.04 0.07 0.12 0.18 0.27 0.32 0.39 0.49 0.66 1.00
+  70  0.00 0.00 0.03 0.06 0.11 0.18 0.22 0.26 0.34 0.46 0.70 1.00
+  50  0.00 0.00 0.00 0.02 0.06 0.12 0.15 0.18 0.24 0.32 0.50 0.72 1.00
+  40  0.00 0.00 0.00 0.00 0.03 0.09 0.11 0.14 0.19 0.25 0.39 0.57 0.80 1.00
+  30  0.00 0.00 0.00 0.00 0.00 0.06 0.08 0.10 0.14 0.19 0.29 0.43 0.60 0.80 1.00
+  20  0.00 0.00 0.00 0.00 0.00 0.00 0.04 0.05 0.09 0.12 0.19 0.29 0.40 0.53 0.66 1.00
+  15  0.00 0.00 0.00 0.00 0.00 0.00 0.03 0.03 0.05 0.08 0.14 0.22 0.30 0.40 0.50 0.75 1.00
+  10  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.04 0.09 0.15 0.20 0.26 0.33 0.50 0.67 1.00
+   7  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.05 0.10 0.14 0.19 0.23 0.35 0.47 0.70 1.00
+   5  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.03 0.08 0.10 0.13 0.16 0.25 0.33 0.50 0.71 1.00
+   3  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.05 0.05 0.08 0.09 0.15 0.20 0.31 0.43 0.63 1.00
+   2  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.05 0.06 0.10 0.13 0.21 0.29 0.44 0.70 1.00
+   1  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.03 0.00 0.03 0.07 0.11 0.15 0.25 0.41 0.57 1.00
+0.70  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.05 0.08 0.10 0.20 0.32 0.44 0.76 1.00
+0.50  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.03 0.06 0.08 0.16 0.26 0.36 0.60 0.78 1.00
+0.40  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.03 0.05 0.06 0.14 0.23 0.32 0.52 0.66 0.85 1.00
+
+#pres 1000  925  850  700  500  400  300  250  200  150  100   70   50   40   30   20   15   10    7    5    3    2    1 0.70 0.50 0.40
+
+::
+
+
+ObsErr*vCor_HH-7::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: ObsErr*vCor_HH-7::     Fall '94 NA height O-F, O-O's (emeasaF)
+#
+# !DESCRIPTION: TovA height retrieval error vertical correlations:
+#                       correlated component.
+#               Tuned to fall 1994 height O-F's and O-O's (raob and tovA)
+#                       over North-America obtained from the emeasaF run.
+#
+# !REVISION HISTORY:
+#       May 13, 1996 - C. Redder and D. Dee - (original table)
+#_______________________________________________________________________
+
+#pres 1000  925  850  700  500  400  300  250  200  150  100   70   50   40   30   20   15   10    7    5    3    2    1 0.70 0.50 0.40
+
+1000  1.00
+ 925  0.84 1.00
+ 850  0.68 0.84 1.00
+ 700  0.53 0.67 0.81 1.00
+ 500  0.35 0.46 0.56 0.81 1.00
+ 400  0.27 0.35 0.44 0.64 0.79 1.00
+ 300  0.18 0.25 0.32 0.46 0.58 0.75 1.00
+ 250  0.13 0.19 0.25 0.38 0.48 0.62 0.83 1.00
+ 200  0.09 0.14 0.19 0.29 0.38 0.49 0.66 0.80 1.00
+ 150  0.06 0.09 0.13 0.20 0.28 0.36 0.49 0.59 0.75 1.00
+ 100  0.00 0.03 0.06 0.10 0.17 0.23 0.32 0.39 0.50 0.75 1.00
+  70  0.00 0.00 0.03 0.04 0.11 0.16 0.22 0.27 0.34 0.52 0.79 1.00
+  50  0.00 0.00 0.00 0.00 0.07 0.11 0.15 0.19 0.24 0.37 0.56 0.71 1.00
+  40  0.00 0.00 0.00 0.00 0.05 0.08 0.11 0.15 0.19 0.29 0.44 0.57 0.80 1.00
+  30  0.00 0.00 0.00 0.00 0.03 0.05 0.08 0.11 0.14 0.22 0.33 0.43 0.60 0.80 1.00
+  20  0.00 0.00 0.00 0.00 0.00 0.00 0.04 0.07 0.09 0.14 0.22 0.28 0.40 0.53 0.67 1.00
+  15  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.04 0.07 0.10 0.16 0.21 0.30 0.40 0.50 0.75 1.00
+  10  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.03 0.07 0.10 0.14 0.20 0.27 0.34 0.50 0.67 1.00
+   7  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.04 0.06 0.10 0.14 0.19 0.24 0.35 0.47 0.70 1.00
+   5  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.03 0.03 0.07 0.10 0.13 0.17 0.25 0.34 0.50 0.72 1.00
+   3  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.04 0.05 0.08 0.10 0.15 0.20 0.31 0.44 0.62 1.00
+   2  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.03 0.03 0.05 0.07 0.10 0.14 0.21 0.30 0.43 0.69 1.00
+   1  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.03 0.00 0.04 0.07 0.11 0.16 0.23 0.39 0.55 1.00
+0.70  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.05 0.08 0.12 0.18 0.29 0.42 0.74 1.00
+0.50  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.04 0.06 0.09 0.14 0.23 0.33 0.57 0.78 1.00
+0.40  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.03 0.05 0.08 0.12 0.20 0.28 0.48 0.67 0.86 1.00
+
+::
+
+#...............................................................................
+
+#              --------------------------------------------------
+#               SECTION V: Forecast Error Covariance Parameters
+#              --------------------------------------------------
+
+# Forcast error stadandard deviations
+# -----------------------------------
+#fcst_err_grads_descr_file: /share/fvpsas/data/sigF/sigF.20lev.ctl $
+#fcst_err_grads_descr_file: /share/fvpsas/data/sigF/sigF.K60.21lev.ctl $
+fcst_err_grads_descr_file:/share/fvdas/fvInput/Static/psas/sigF.revcML.21lev.ctl  $
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !RESOURCE: FcstErr*hCor_HH - a table of windowed power-law function
+#
+# !DESCRIPTION:
+#
+#   A table specify a windowed power-law correlation function.  The
+#   length scale of the convolved spline used as the window function
+#   is fixed to vanish beyond 6000 km.
+#
+# !REVISION HISTORY:
+#       01Jul97 - Jing Guo <guo@eramus> - created the data table, based
+#                 Grep Gaspari's expressions and numbers.  See PSAS'
+#                 source code win_powerlaw_() in file hcorfuns.F90 for
+#                 additional information.
+#_______________________________________________________________________
+
+FcstErr*hCor_HH::
+
+  WIN-POWERLAW	A power-law function windowed with a convolved spline
+
+# pres	 d_m	 L
+
+  1000  6000   524.9
+   925  6000   537.6
+   850  6000   551.5
+   700  6000   583.8
+   500  6000   641.3
+   400  6000   680.6
+   300  6000   732.8
+   250  6000   766.8
+   200  6000   809.6
+   150  6000   866.9
+   100  6000   952.0
+    70  6000  1031.9
+    50  6000  1112.4
+    40  6000  1169.0
+    30  6000  1246.3
+    20  6000  1365.1
+    15  6000  1457.7
+    10  6000  1603.1
+     7  6000  1749.1
+     5  6000  1907.3
+     3  6000  2201.1
+     2  6000  2503.7
+     1  6000  3303.1
+    .7  6000  4025.7
+    .5  6000  5267.9
+    .4  6000  7026.5
+
+::
+# FcstErr.hCor_HH
+
+		#-*-#		#-*-#		#-*-#
+
+
+separable-FcstErr*hCor_HH::
+
+#  WIN-POWERLAW-3000km  A power-law function windowed with a convolved spline
+  WIN-POWERLAW  A power-law function windowed with a convolved spline
+
+# pres   d_m     L
+
+  1000  6000   650.0
+   925  6000   650.0
+   850  6000   650.0
+   700  6000   650.0
+   500  6000   650.0
+   400  6000   650.0
+   300  6000   650.0
+   250  6000   650.0
+   200  6000   650.0
+   150  6000   650.0
+   100  6000   650.0
+    70  6000   650.0
+    50  6000   650.0
+    40  6000   650.0
+    30  6000   650.0
+    20  6000   650.0
+    15  6000   650.0
+    10  6000   650.0
+     7  6000   650.0
+     5  6000   650.0
+     3  6000   650.0
+     2  6000   650.0
+     1  6000   650.0
+    .7  6000   650.0
+    .5  6000   650.0
+    .4  6000   650.0
+
+::
+
+                #-*-#           #-*-#           #-*-#
+
+
+FcstErr*vCor_HH::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: FcstErr*vCor_HH::      Fall '94 NA raob height O-F's (emeasaF)
+#
+# !DESCRIPTION: Forecast height error vertical correlations.
+#               Tuned to fall 1994 North-American rawinsonde height O-F's
+#                       obtained from the emeasaF run.
+#
+# !REVISION HISTORY:
+#       May 13, 1996 - C. Redder and D. Dee - (original table)
+#       Oct. 19, 2001: G. Gaspari, cond # is 1.3016e+4, C = covmat(5,10,Plaw2200,V29)
+#          where Plaw2200 is a 10x10 matrix found using "makevcor.m" with lspt=2200
+#   and pe = [1040, 1000, 925, 850, 700, 500, 400, 300, 250, 200, 150], V29 is the oper. psas matrix
+#  Height-Height vertical correlation matrix obtained by running pph.m using gvcorFmF.m with a=2,w=4
+#  (fit to forecast-minus-forecast residuals (F-F)).  The condition number is 8461 = 11.679/.0013803
+#
+#  G. Gaspari,   12/17/2002
+#
+#       1040  1000   925   850   700   500   400   300   250   200   150   100    70    50    40    30    20    10     7     5     3     2     1 4.000000e-01 2.000000e-01 5.000000e-02 1.000000e-02
+#_______________________________________________________________________
+  1040  1.000
+  1000  0.990  1.000
+   925  0.911  0.952  1.000
+   850  0.764  0.819  0.944  1.000
+   700  0.452  0.495  0.662  0.835  1.000
+   500  0.270  0.265  0.369  0.527  0.797  1.000
+   400  0.222  0.200  0.280  0.424  0.681  0.947  1.000
+   300  0.182  0.152  0.221  0.355  0.583  0.834  0.940  1.000
+   250  0.176  0.146  0.216  0.348  0.562  0.786  0.887  0.975  1.000
+   200  0.182  0.158  0.229  0.356  0.558  0.751  0.828  0.908  0.962  1.000
+   150  0.199  0.186  0.254  0.366  0.547  0.707  0.748  0.793  0.849  0.932  1.000
+   100  0.209  0.211  0.264  0.338  0.466  0.573  0.571  0.577  0.617  0.701  0.840  1.000
+    70  0.200  0.212  0.251  0.293  0.371  0.430  0.403  0.396  0.436  0.521  0.656  0.875  1.000
+    50  0.185  0.203  0.232  0.253  0.297  0.321  0.278  0.262  0.304  0.397  0.539  0.740  0.903  1.000
+    40  0.177  0.198  0.222  0.234  0.262  0.270  0.219  0.198  0.240  0.336  0.487  0.690  0.834  0.962  1.000
+    30  0.166  0.189  0.208  0.211  0.226  0.219  0.162  0.135  0.175  0.271  0.428  0.643  0.770  0.875  0.944  1.000
+    20  0.152  0.176  0.190  0.185  0.186  0.167  0.106  0.076  0.112  0.204  0.357  0.581  0.713  0.790  0.833  0.905  1.000
+    10  0.128  0.152  0.160  0.148  0.137  0.108  0.048  0.018  0.050  0.131  0.269  0.475  0.607  0.691  0.725  0.754  0.797  1.000
+     7  0.126  0.150  0.158  0.143  0.127  0.095  0.033  0.001  0.032  0.114  0.254  0.462  0.595  0.681  0.719  0.753  0.790  0.951  1.000
+     5  0.122  0.146  0.152  0.135  0.117  0.082  0.020 -0.012  0.018  0.098  0.236  0.442  0.574  0.658  0.695  0.731  0.773  0.904  0.959  1.000
+     3  0.113  0.136  0.141  0.123  0.102  0.066  0.005 -0.026  0.002  0.078  0.209  0.407  0.535  0.615  0.650  0.684  0.725  0.857  0.882  0.918  1.000
+     2  0.110  0.133  0.137  0.118  0.095  0.056 -0.004 -0.036 -0.008  0.066  0.196  0.393  0.520  0.600  0.635  0.668  0.708  0.839  0.865  0.886  0.951  1.000
+     1  0.100  0.122  0.125  0.105  0.080  0.041 -0.017 -0.047 -0.022  0.048  0.169  0.354  0.473  0.549  0.582  0.613  0.650  0.767  0.795  0.820  0.861  0.881  1.000
+ 0.400  0.088  0.109  0.110  0.090  0.064  0.026 -0.028 -0.057 -0.034  0.029  0.139  0.308  0.417  0.487  0.517  0.545  0.579  0.683  0.706  0.727  0.768  0.791  0.839  1.000
+ 0.200  0.084  0.104  0.104  0.083  0.056  0.017 -0.036 -0.064 -0.043  0.018  0.124  0.289  0.396  0.463  0.492  0.520  0.553  0.651  0.674  0.694  0.732  0.753  0.806  0.919  1.000
+ 0.050  0.068  0.085  0.085  0.065  0.039  0.002 -0.043 -0.068 -0.050  0.000  0.090  0.230  0.322  0.380  0.405  0.428  0.456  0.536  0.555  0.571  0.603  0.620  0.661  0.761  0.787  1.000
+ 0.010  0.055  0.069  0.068  0.050  0.025 -0.008 -0.048 -0.069 -0.055 -0.013  0.063  0.181  0.259  0.308  0.329  0.349  0.372  0.437  0.453  0.466  0.491  0.505  0.537  0.618  0.637  0.824  1.000
+#
+# Corresponding height error standard deviations (in meters)
+#  1040 1000 925 850 700 500 400 300 250 200 150 100 70 50 40 30 20
+#    10    7   5   3   2   1 0.4 0.2 0.05 0.01
+#
+#  7.8777 7.4943 7.1828 7.5101 10.168 15.758 19.088 23.241 24.088 23.274 21.306 20.315 21.204 22.902 23.964 25.498 27.872
+# 32.973 33.538 34.783 37.368  38.455 42.228 47.907 50.544 62.109 77.208
+#
+#       1040  1000   925   850   700   500   400   300   250   200   150   100    70    50    40    30    20    10     7     5     3
+#    2     1 4.000000e-01 2.000000e-01 5.000000e-02 1.000000e-02
+
+::
+
+
+
+                #-*-#           #-*-#           #-*-#
+
+
+FcstErr*Aref::
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# !NAME: FcstErr*Aref:: - a parameter table of mass-wind balance
+#
+# !DESCRIPTION:
+# This model uses the maximum latitude locations to describe the pattern
+# of the mass-wind balanced scheme.
+#
+# !REVISION HISTORY:
+#       13 Jan 99  R. Swinbank  experimental parameters
+#       20 Feb 03  Dee          ML tuning
+#_______________________________________________________________________
+
+  PSAS:x2
+
+#        !  G(x)=b*(1-exp(-x^2/K^2))/sin(x), |x| > 0,
+#        !  G(x)=0.0,                         x  = 0,
+#        !  e(x)=A + B*exp(-x^2/L^2),
+#        !  D(x)=e(x).
+#        !
+#        !  u = -G(x)(dh/dy) - D(x)(dh/dx),
+#        !  v = -D(x)(dh/dy) + G(x)(dh/dx).
+# pres       A      L     B    K     b
+
+  1000.    0.20    0.4   0.8  0.40   0.45
+   925.    0.12    0.4   0.7  0.40   0.66
+   850.    0.07    0.4   0.6  0.40   0.80
+   700.    0.0     0.4   0.5  0.40   0.80
+   500.    0.0     0.4   0.45 0.40   0.80
+   400.    0.0     0.4   0.4  0.40   0.80
+   300.    0.0     0.4   0.25 0.40   0.80
+   250.    0.0     0.4   0.1  0.40   0.80
+   200.    0.0     0.4   0.0  0.40   0.80
+   150.    0.0     0.4   0.0  0.40   0.70
+   100.    0.0     0.4   0.0  0.40   0.60
+    70.    0.0     0.4   0.0  0.40   0.50
+    50.    0.0     0.4   0.0  0.40   0.40
+    30.    0.0     0.4   0.0  0.40   0.30
+    20.    0.0     0.4   0.0  0.40   0.30
+    10.    0.0     0.4   0.0  0.40   0.30
+     7.    0.0     0.4   0.0  0.40   0.30
+     5.    0.0     0.4   0.0  0.40   0.30
+     3.    0.0     0.4   0.0  0.40   0.30
+     2.    0.0     0.4   0.0  0.40   0.30
+     1.    0.0     0.4   0.0  0.40   0.30
+     0.7   0.0     0.4   0.0  0.40   0.30
+     0.5   0.0     0.4   0.0  0.40   0.30
+     0.4   0.0     0.4   0.0  0.40   0.30
+     0.2   0.0     0.4   0.0  0.40   0.30
+     0.05  0.0     0.4   0.0  0.40   0.30
+     0.01  0.0     0.4   0.0  0.40   0.30
+::
+
+
+FcstErr*Sigma_Wind::
+
+  PSAS/S&L
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: FcstErr*Sigma_Wind::   Fall '94 NA raob multivariate O-F's (emeasaF)
+#
+# !DESCRIPTION: Forecast wind error standard deviations: stream function and
+#                       velocity potential components.
+#               Tuned to fall 1994 North-American rawinsonde height-wind
+#                       O-F's obtained from the emeasaF run.
+#               Horizontal correlations modeled by the compactly
+#                       supported spline function.
+#
+# !REVISION HISTORY:
+#       May 13, 1996 - C. Redder and D. Dee - (original table)
+#       Oct 05, 1996 - da Silva, divided original psi stdv by
+#                      a factor of 2; then plotted ratio psi/chi
+#                      and subjectively "smoothed" this curve:
+#  13 Jan 99  R. Swinbank Experimental parameters derived by
+#    scaling up earlier values to give more reasonable overall wind errors,
+#    and more of the wind error is assigned to streamfunction.
+#    In trosphere SigWv is 10% of sigWs, at lower levels % is greater, above
+#    tropopause sigWv goes to 0.
+#
+#       Feb 28, 2003 - Dee - based on ML estimation
+#
+#       model*  desc
+# The height decoupled winds are computed via:
+#!
+#! ud = + dChi/dx - dPsi/dy
+#! vd = + dPsi/dx + dChi/dx
+#! Cov(Chi) = sigChi.sigChi.corChi
+#! sigChi = sigWv.(scaling).exp(-x^2/J^2)
+#! sigPsi = sigWs.(scaling).exp(-x^2/J^2)
+
+# pres*               sigWs  sigWv  J
+
+       1000.00         12.0  14.7  4.0
+        925.00         12.6  15.5  4.0
+        850.00         13.9  15.4  4.0
+        700.00         15.2  15.2  4.0
+        500.00         15.8  15.8  4.0
+        400.00         16.6  16.6  4.0
+        300.00         16.9  16.9  4.0
+        250.00         20.4  20.4  4.0
+        200.00         24.4  24.4  4.0
+        150.00         23.8  23.8  4.0
+        100.00         19.3  19.3  4.0
+         70.00         18.3  14.9  4.0
+         50.00         19.1  12.5  4.0
+         40.00         20.2  11.6  4.0
+         30.00         21.3  10.6  4.0
+         20.00         28.3  11.9  4.0
+         15.00         31.7  11.8  4.0
+         10.00         35.1  11.7  4.0
+          7.00         40.0  10.0  4.0
+          5.00         40.0  10.0  4.0
+          3.00         40.0  10.0  4.0
+          2.00         40.0  10.0  4.0
+          1.00         40.0  10.0  4.0
+          0.70         40.0  10.0  4.0
+          0.50         40.0  10.0  4.0
+          0.40         40.0  10.0  4.0
+          0.20         40.0  10.0  4.0
+          0.05         40.0  10.0  4.0
+          0.01         40.0  10.0  4.0
+::
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !RESOURCE: FcstErr*hCor_SS - a copy of WPL FcstErr*hCor_HH
+#
+# !DESCRIPTION:
+#
+#   A table specify a windowed power-law correlation function.  The
+#   length scale of the convolved spline used as the window function
+#   is fixed to vanish beyond 6000 km.
+#
+# !REVISION HISTORY:
+#       01Jul97 - Jing Guo <guo@eramus> - created the data table, based
+#                 Grep Gaspari's expressions and numbers.  See PSAS'
+#                 source code win_powerlaw_() in file hcorfuns.F90 for
+#                 additional information.
+#       Feb 28, 2003 - Dee - based on ML estimation
+#_______________________________________________________________________
+
+FcstErr*hCor_SS::
+
+#  WIN-POWERLAW-3000km  A power-law function windowed with a convolved spline
+  WIN-POWERLAW  A power-law function windowed with a convolved spline
+
+
+# pres   d_m     L
+
+  1000  6000   700.0
+   925  6000   680.0
+   850  6000   660.0
+   700  6000   640.0
+   500  6000   620.0
+   400  6000   610.0
+   300  6000   600.0
+   250  6000   610.0
+   200  6000   640.0
+   150  6000   690.0
+   100  6000   750.0
+    70  6000   800.0
+    50  6000   860.0
+    40  6000   890.0
+    30  6000   920.0
+    20  6000  1000.0
+    15  6000  1050.0
+    10  6000  1100.0
+     7  6000  1100.0
+     5  6000  1100.0
+     3  6000  1100.0
+     2  6000  1100.0
+     1  6000  1100.0
+    .7  6000  1100.0
+    .5  6000  1100.0
+    .4  6000  1100.0
+::
+
+                #-*-#           #-*-#           #-*-#
+
+
+FcstErr*vCor_SS::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: FcstErr*vCor_SS::
+#
+# !DESCRIPTION: Forecast wind error vertical correlations: stream function
+#                       component.
+#
+# !REVISION HISTORY:
+#       Jan 13, 1999  R. Swinbank
+#       28Aug2002     da Silva   Introduced vertical correlation (about
+#                                1km vertical decorrelation length scale)
+#_______________________________________________________________________
+
+#pres 1000  925  850  700  500  400  300  250  200  150  100   70   50   40   30   20   15   10    7    5    3    2    1 0.70 0.50 0.40 0.20 0.05 0.01
+
+ 1000.00 1.00
+  925.00 0.91 1.00
+  850.00 0.66 0.89 1.00
+  700.00 0.13 0.29 0.55 1.00
+  500.00 0.00 0.00 0.01 0.16 1.00
+  400.00 0.00 0.00 0.00 0.01 0.45 1.00
+  300.00 0.00 0.00 0.00 0.00 0.02 0.27 1.00
+  250.00 0.00 0.00 0.00 0.00 0.00 0.03 0.59 1.00
+  200.00 0.00 0.00 0.00 0.00 0.00 0.00 0.07 0.45 1.00
+  150.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.02 0.27 1.00
+  100.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.07 1.00
+   70.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.13 1.00
+   50.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.16 1.00
+   40.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.45 1.00
+   30.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.02 0.27 1.00
+   20.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.07 1.00
+   15.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.27 1.00
+   10.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.07 1.00
+    7.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.13 1.00
+    5.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.16 1.00
+    3.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.02 1.00
+    2.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.07 1.00
+    1.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+    0.70 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.13 1.00
+    0.50 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.16 1.00
+    0.40 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.45 1.00
+    0.20 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+    0.05 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+    0.01 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+
+#pres 1000  925  850  700  500  400  300  250  200  150  100   70   50   40   30   20   15   10    7    5    3    2    1 0.70 0.50 0.40 0.20 0.05 0.01
+
+::
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !RESOURCE: FcstErr*hCor_VV
+#
+# !DESCRIPTION:
+#
+#   A table specify a windowed power-law correlation function.  The
+#   length scale of the convolved spline used as the window function
+#   is fixed to vanish beyond 6000 km.
+#
+# !REVISION HISTORY:
+#       01Jul97 - Jing Guo <guo@eramus> - created the data table, based
+#                 Grep Gaspari's expressions and numbers.  See PSAS'
+#                 source code win_powerlaw_() in file hcorfuns.F90 for
+#                 additional information.
+#       Feb 28, 2003 - Dee - based on ML estimation
+#_______________________________________________________________________
+
+FcstErr*hCor_VV::
+
+  WIN-POWERLAW  A power-law function windowed with a convolved spline
+
+# pres   d_m     L
+
+  1000  6000   1000.0
+   925  6000   1000.0
+   850  6000   1000.0
+   700  6000   1000.0
+   500  6000   1000.0
+   400  6000   1000.0
+   300  6000   1000.0
+   250  6000   1000.0
+   200  6000   1000.0
+   150  6000   1000.0
+   100  6000   1000.0
+    70  6000   1000.0
+    50  6000   1000.0
+    40  6000   1000.0
+    30  6000   1000.0
+    20  6000   1000.0
+    15  6000   1000.0
+    10  6000   1000.0
+     7  6000   1000.0
+     5  6000   1000.0
+     3  6000   1000.0
+     2  6000   1000.0
+     1  6000   1000.0
+    .7  6000   1000.0
+    .5  6000   1000.0
+    .4  6000   1000.0
+
+::
+# FcstErr.hCor_VV
+
+                #-*-#           #-*-#           #-*-#
+
+
+FcstErr*vCor_VV::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: FcstErr*vCor_VV::
+#
+# !DESCRIPTION: Forecast wind error vertical correlations: velocity potential
+#                       component.
+#
+# !REVISION HISTORY:
+#       Jan 13, 1999  R. Swinbank
+#       28Aug2002     da Silva   Introduced vertical correlation (about
+#                                1km vertical decorrelation length scale)
+#_______________________________________________________________________
+
+#pres 1000  925  850  700  500  400  300  250  200  150  100   70   50   40   30   20   15   10    7    5    3    2    1 0.70 0.50 0.40 0.20 0.05 0.01
+
+ 1000.00 1.00
+  925.00 0.91 1.00
+  850.00 0.66 0.89 1.00
+  700.00 0.13 0.29 0.55 1.00
+  500.00 0.00 0.00 0.01 0.16 1.00
+  400.00 0.00 0.00 0.00 0.01 0.45 1.00
+  300.00 0.00 0.00 0.00 0.00 0.02 0.27 1.00
+  250.00 0.00 0.00 0.00 0.00 0.00 0.03 0.59 1.00
+  200.00 0.00 0.00 0.00 0.00 0.00 0.00 0.07 0.45 1.00
+  150.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.02 0.27 1.00
+  100.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.07 1.00
+   70.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.13 1.00
+   50.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.16 1.00
+   40.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.45 1.00
+   30.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.02 0.27 1.00
+   20.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.07 1.00
+   15.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.27 1.00
+   10.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.07 1.00
+    7.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.13 1.00
+    5.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.16 1.00
+    3.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.02 1.00
+    2.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.07 1.00
+    1.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+    0.70 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.13 1.00
+    0.50 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.16 1.00
+    0.40 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.45 1.00
+    0.20 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+    0.05 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+    0.01 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+
+#pres 1000  925  850  700  500  400  300  250  200  150  100   70   50   40   30   20   15   10    7    5    3    2    1 0.70 0.50 0.40 0.20 0.05 0.01
+
+::
+
+
+
+FcstErr*hCor_QQ::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: FcstErr*hCor_QQ::      Fall '94 EU raob mixing ratio O-F's (emeasaF)
+#
+# !DESCRIPTION: Forecast mixing ratio error horizontal correlations.
+#               Tuned to fall 1994 European rawinsonde mixing ratio O-F's
+#                       obtained from the emeasaF run.
+#               Horizontal correlations modeled by the compactly
+#                       supported spline function.
+#               Constant length scale --> separable correlation model.
+#
+# !REVISION HISTORY:
+#       May 13, 1996 - C. Redder and D. Dee - (original table)
+#       Aug 14, 1996 - D. Dee - replaced tuned length scales by a constant
+#                                       (average of tuned values)
+#_______________________________________________________________________
+
+#       model*  desc
+
+#  WIN-POWERLAW-3000km  A power-law function windowed with a convolved spline
+GASPARI-COHN    compactly supported spline function
+
+# pres*    d_m*    L ( km )
+
+  1000     3000     287.0
+   925     3000     287.0
+   850     3000     287.0
+   700     3000     287.0
+   500     3000     287.0
+   400     3000     287.0
+   300     3000     287.0
+   250     3000     287.0
+   200     3000     287.0
+   150     3000     287.0
+   100     3000     287.0
+    70     3000     287.0
+    50     3000     287.0
+    40     3000     287.0
+    30     3000     287.0
+    20     3000     287.0
+    15     3000     287.0
+    10     3000     287.0
+     7     3000     287.0
+     5     3000     287.0
+     3     3000     287.0
+     2     3000     287.0
+     1     3000     287.0
+     0.7   3000     287.0
+     0.5   3000     287.0
+     0.4   3000     287.0
+     0.2   3000     287.0
+     0.05  3000     287.0
+     0.01  3000     287.0
+
+::
+
+                #-*-#           #-*-#           #-*-#
+
+
+
+FcstErr*vCor_QQ::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: FcstErr*vCor_QQ::      Fall '94 EU raob mixing ratio O-F's (emeasaF)
+#
+# !DESCRIPTION: Forecast mixing ratio error vertical correlations.
+#               Tuned to fall 1994 North-American rawinsonde mixing ratio O-F's
+#                       obtained from the emeasaF run.
+#
+# !REVISION HISTORY:
+#       May 14, 1996 - C. Redder and D. Dee - (original table)
+#_______________________________________________________________________
+
+#pres 1000  925  850  700  500  400  300  250  200  150  100   70   50   40   30   20   15   10    7    5    3    2    1 0.70 0.50 0.40 0.20 0.05 0.01
+
+1000  1.00
+ 925  0.23 1.00
+ 850  0.00 0.37 1.00
+ 700  0.00 0.16 0.32 1.00
+ 500  0.00 0.00 0.00 0.28 1.00
+ 400  0.00 0.00 0.00 0.00 0.42 1.00
+ 300  0.00 0.00 0.00 0.00 0.14 0.44 1.00
+ 250  0.00 0.00 0.00 0.00 0.00 0.22 0.37 1.00
+ 200  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+ 150  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+ 100  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+  70  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+  50  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+  40  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+  30  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+  20  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+  15  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+  10  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+   7  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+   5  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+   3  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+   2  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+   1  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+0.70  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+0.50  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+0.40  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+0.20  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+0.05  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+0.01  0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00
+
+#pres 1000  925  850  700  500  400  300  250  200  150  100   70   50   40   30   20   15   10    7    5    3    2    1 0.70 0.50 0.40 0.20 0.05 0.01
+
+::
+
+
+#...............................................................................
+
+#              --------------------------------------------------
+#               APPENDIX: Parameters for Off-line Applications
+#              --------------------------------------------------
+#
+analysis_increment_output_file_name:   OBSOLETE_FOR_fvPSAS $
+innovation_file_name:                  OBSOLETE_FOR_fvPSAS $
+
+#.
+
+# Analysis increment output control (for off-line applications)
+# ------------------------------------------------------------
+
+        # pressure levels of upper-air variables
+
+want_analysis_incs_only_on_selected_levels: yes
+Analysis_Incs_Levels: Pressure 1000 850 700 500 400 300 250 200 150 100 70 50 30 10 5 2 1 .4
+
+
+        # variables
+
+want_analysis_incs_of_sealevel_pressure:     no       # yes or no
+want_analysis_incs_of_sealevel_u:            no       # yes or no
+want_analysis_incs_of_sealevel_v:            no       # yes or no
+
+want_analysis_incs_of_upper_level_heights:   yes      # yes or no
+want_analysis_incs_of_upper_level_u:         yes      # yes or no
+want_analysis_incs_of_upper_level_v:         yes      # yes or no
+
+want_analysis_incs_of_upper_level_mixr:      yes      # yes or no
+
+#.
+
+                #-*-#           #-*-#           #-*-#
+

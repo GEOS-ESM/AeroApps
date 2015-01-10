@@ -1,0 +1,67 @@
+ER2 809: SEAC4RS_130819_s4_er2 v. 2d_alternate
+
+Takeoff at 2013-08-19T15:10 UTC
+Total est. flight time = 7 hrs, 59 min
+Total est. distance flown = 2901 nmi
+
+---
+Remarks:
+Science Flight #4 - Fires
+
+The ER2 will take off after the DC8 from Ellington. Both planes will fly toward
+eastern Wyomingand do a survey. ER-2 survey will consist of a rosette pattern.
+The DC8 will perform a wall profile. Planes should rendezvous at each site prior to performing their
+survey. Flight time is 8 hours.
+
+NOTE: This is the alternate ER2 plan, if conditions at P3 are unfavorable
+---
+
+Defined Locations:
+ Name       Lat.       Lon.            Note
+ KEFD    29.6072   -95.1890  Starting point
+   P2    43.6725  -104.9942                
+   P1    36.6067   -97.4864                
+   P3    40.2949  -100.3895                
+   P4    44.0155  -108.3480                
+   P5    35.0649  -100.6269                
+  N01    31.6378   -95.8175                
+  N02    37.2548   -97.7200                
+  N03    43.0610  -105.3858                
+  N04    44.2799  -104.5865                
+  N05    43.7216  -104.0604                
+  N06    43.6125  -105.9193                
+  N07    44.2244  -105.5254                
+  N08    43.1144  -104.4656                
+  N09    30.6606   -96.1723                
+  VUH    29.2693   -94.8677                
+ 
+  Elapsed       Lat.       Lon.    Alt.
+    (hrs)     (deg.)     (deg.)   (kft)
+     0.00    29.6072   -95.1890    0.00
+     0.08    29.4303   -95.0204   23.00
+     0.14    29.2693   -94.8677   23.00
+     0.29    29.2693   -94.8677   23.00
+     0.64    30.9603   -95.4325   61.00
+     1.57    36.6067   -97.4864   61.00
+     1.68    37.2500   -97.7399   61.00
+     3.00    43.0610  -105.3858   61.00
+     3.22    44.2799  -104.5865   61.00
+     3.25    44.2799  -104.5865   61.00
+     3.36    43.7216  -104.0604   61.00
+     3.39    43.7216  -104.0604   61.00
+     3.60    43.6125  -105.9193   61.00
+     3.64    43.6125  -105.9193   61.00
+     3.74    44.2244  -105.5254   61.00
+     3.78    44.2244  -105.5254   61.00
+     3.99    43.1144  -104.4656   61.00
+     4.02    43.1144  -104.4656   61.00
+     4.13    43.0604  -105.3862   61.00
+     4.16    43.0604  -105.3862   61.00
+     4.38    44.2789  -104.5857   61.00
+     4.41    44.2789  -104.5857   61.00
+     4.84    44.0155  -108.3480   61.00
+     4.87    44.0155  -108.3480   61.00
+     6.57    35.0649  -100.6269   61.00
+     6.74    35.0649  -100.6269   61.00
+     7.65    30.6606   -96.1723   61.00
+     7.99    29.6072   -95.1890    0.00

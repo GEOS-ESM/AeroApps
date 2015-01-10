@@ -1,0 +1,15 @@
+#
+# Resource file with variable list for GEOS-5 Collection <inst3_3d_chm_Nv>.
+#
+# This RC file was automatically created on Mon Jul 18 10:28:10 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover05:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: 3d,3-Hourly,Instantaneous,Model-Level,Analysis,Chemistry
+#PS: surface pressure;  Pa
+#DELP: pressure thickness;  Pa
+AIRDENS: air density;  kg m-3
+CO: Carbon Monoxide (All Sources);  mol mol-1
+CO2: Carbon Dioxide (All Sources);  mol mol-1

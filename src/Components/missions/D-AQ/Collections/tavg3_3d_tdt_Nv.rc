@@ -1,0 +1,21 @@
+#
+# Resource file with variable list for GEOS-5 Collection <tavg3_3d_tdt_Nv>.
+#
+# This RC file was automatically created on Sun Aug 7 20:46:23 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover07:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: 3d,3-Hourly,Time-Averaged,Model-Level,Assimilation,Temperature Tendencies
+PS: surface pressure;  Pa
+DELP: pressure thickness;  Pa
+DTDTRAD: tendency of air temperature due to radiation;  K s-1
+DTDTMST: tendency of air temperature due to moist processes;  K s-1
+DTDTTRB: tendency of air temperature due to turbulence;  K s-1
+DTDTFRI: tendency of air temperature due to friction;  K s-1
+DTDTGWD: air temperature tendency due to GWD;  K s-1
+DTDTTOT: tendency of air temperature due to physics;  K s-1
+DTDTDYN: tendency of air temperature due to dynamics;  K s-1
+DTDTANA: total temperature analysis tendency;  K s-1
+DTDTFRIC: tendency of air temperature due to moist processes friction;  K s-1

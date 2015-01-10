@@ -1,0 +1,13 @@
+Notes:
+
+1. Currently mcs_aero.py is very memory intensive.
+It will only run on dali, not discover.
+
+2. Need the following resource files to run mcs_aero.py:
+  Aod_MODIS_Clouds.rc
+  Chem_Registry.rc
+  variables.rc
+
+3. Directory must contain a link to the aerosol mie tables data
+called Extdata. For example,
+  ln -s /discover/nobackup/projects/gmao/share/dasilva/fvInput/ ExtData

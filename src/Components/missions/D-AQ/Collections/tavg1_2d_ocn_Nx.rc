@@ -1,0 +1,29 @@
+#
+# Resource file with variable list for GEOS-5 Collection <tavg1_2d_ocn_Nx>.
+#
+# This RC file was automatically created on Mon Jul 18 10:28:10 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover05:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: 2d,1-Hourly,Time-Averaged,Single-Level,Assimilation,Ocean Surface
+U10M: 10-meter eastward wind;  m s-1
+V10M: 10-meter northward wind 10-meter specific humidity;  m s-1 kg kg-1
+T10M: 10-meter air temperature;  K
+QV10M: 10-meter specific humidity;  kg kg-1
+HFLUXWTR: open water upward sensible heat flux;  W m-2
+HFLUXICE: sea ice upward sensible heat flux;  W m-2
+EFLUXWTR: open water latent energy flux;  W m-2
+EFLUXICE: sea ice latent energy flux;  W m-2
+LWGNTWTR: open water net downward longwave flux;  W m-2
+LWGNTICE: sea ice net downward longwave flux;  W m-2
+SWGNTWTR: open water net downward shortwave flux;  W m-2
+SWGNTICE: sea ice net downward shortwave flux;  W m-2
+PRECSNOOCN: ocean snowfall;  kg m-2 s-1
+RAINOCN: ocean rainfall;  kg m-2 s-1
+TAUXWTR: eastward stress over water;  N m-2
+TAUYWTR: northward stress over water;  N m-2
+TAUXICE: eastward stress over ice;  N m-2
+TAUYICE: northward stress over ice;  N m-2
+FRSEAICE: ice covered fraction of tile;  1

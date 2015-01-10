@@ -1,0 +1,239 @@
+Basic metadata
+--------------
+  1 Date
+  2 DOY
+  3 Time
+  4 Location
+  5 Satellite
+  6 Collection
+  7 Longitude
+  8 Latitude
+  9 SolarZenith
+ 10 SolarAzimuth
+ 11 SensorZenith
+ 12 SensorAzimuth
+ 13 ScatteringAngle
+
+AERONET Level 2.0 Retrievals
+----------------------------
+ 14 nval_AOT_1020_l20
+ 15 mean_AOT_1020_l20
+ 16 mean_AOT_870_l20
+ 17 mean_AOT_675_l20
+ 18 sdev_AOT_675_l20
+ 19 mean_AOT_500_l20
+ 20 mean_AOT_440_l20
+ 21 mean_AOT_380_l20
+ 22 mean_AOT_340_l20
+ 23 mean_Water_cm_l20
+
+ AERONET Level 1.5 Retrievals
+ ----------------------------
+ 24 nval_AOT_1020_l15
+ 25 mean_AOT_1020_l15
+ 26 mean_AOT_870_l15
+ 27 mean_AOT_675_l15
+ 28 sdev_AOT_675_l15
+ 29 mean_AOT_500_l15
+ 30 mean_AOT_440_l15
+ 31 mean_AOT_380_l15
+ 32 mean_AOT_340_l15
+ 33 mean_Water_cm_l15
+
+
+Combined Land/Ocean MODIS Retrievals.
+These are statistics computed on 5x5 deg boxes
+around the AERONET site:
+  mean - average value
+  sdev - standard deviation
+  npix - sample size
+----------------------------------------
+ 34 npix_AOT0550
+ 35 mean_AOT0550
+ 36 sdev_AOT0550
+ 37 mean_rAOTse0550  -- ratio fine/total
+ 38 sdev_rAOTse0550
+
+
+MODIS Land Retrievals
+These are statistics computed on 5x5 boxes
+around the AERONET site.
+ mean - average value
+ sdev - standard deviation
+ npix - sample size
+ pval - value at the central 1x1 box around site
+ QA   - Quality assurance flag:
+        0 - bad, ignore it
+        1   Good
+        2 - Very Good
+        3 - Excellent, better than ice cream
+-----------------------------------------------------
+ 39 mean_AOT0470corr_l    "corr" means "corrected", the standard land retrieval
+ 40 npix_AOT0550corr_l
+ 41 pval_AOT0550corr_l
+ 42 mean_AOT0550corr_l
+ 43 sdev_AOT0550corr_l
+ 44 mean_AOT0660corr_l
+ 45 mean_AOT2100corr_l
+ 46 mean_rAOTse0550_l
+ 47 pval_rAOTse0550_l
+ 48 mean_AOT0550sm_l
+ 49 pval_AOT0550sm_l
+ 50 mean_Aexp0470_0670_l
+ 51 mean_surfre0470_l
+ 52 mean_surfre0660_l
+ 53 mean_surfre2100_l
+ 54 mean_fiterr_l
+ 55 mean_atype_l
+ 56 mean_cfrac_l
+ 57 mean_mconc_l
+ 58 QA0470_l
+ 59 mean_mref0470_l
+ 60 mean_mref0550_l
+ 61 mean_mref0660_l
+ 62 mean_mref0870_l
+ 63 mean_mref1200_l
+ 64 mean_mref1600_l
+ 65 mean_mref2100_l
+ 66 pval_mref0470_l
+ 67 pval_mref0550_l
+ 68 pval_mref0660_l
+ 69 pval_mref0870_l
+ 70 pval_mref1200_l
+ 71 pval_mref1600_l
+ 72 pval_mref2100_l
+
+
+MODIS Ocean Retrievals 
+These are statistics computed on 5x5 boxes 
+around the AERONET site.
+mean - average value
+sdev - standard deviation
+npix - sample size
+pval - value at the central 1x1 box around site
+QA   - Quality assurance flag:
+       0 - bad, ignore it
+       1   Good
+       2 - Very Good
+       3 - Excellent, better than ice cream
+-----------------------------------------------
+ 73 mean_AOT0470ea_o    "ea" means "effective", or total aerosol
+ 74 npix_AOT0550ea_o
+ 75 pval_AOT0550ea_o
+ 76 mean_AOT0550ea_o
+ 77 sdev_AOT0550ea_o
+ 78 mean_AOT0660ea_o
+ 79 mean_AOT0870ea_o
+ 80 mean_AOT1200ea_o
+ 81 mean_AOT1600ea_o
+ 82 mean_AOT2100ea_o
+ 83 mean_AOT0470sa_o    "sa" means "small aerosol", or fine mode
+ 84 npix_AOT0550sa_o
+ 85 pval_AOT0550sa_o
+ 86 mean_AOT0550sa_o
+ 87 sdev_AOT0550sa_o
+ 88 mean_AOT0660sa_o
+ 89 mean_AOT0870sa_o
+ 90 mean_AOT1200sa_o
+ 91 mean_AOT1600sa_o
+ 92 mean_AOT2100sa_o
+ 93 mean_rAOTse0550a_o
+ 94 mean_effr0550a_o
+ 95 sdev_effr0550a_o
+ 96 mean_solindx_sa_o
+ 97 mean_solindx_la_o
+ 98 mean_lsqerr_a_o
+ 99 mean_cfrac_o          cloud fraction
+100 sdev_cfrac_o
+101 QAavg_o
+102 mean_mref0470_o       reflectance
+103 mean_mref0550_o
+104 mean_mref0660_o
+105 mean_mref0870_o
+106 mean_mref1200_o
+107 mean_mref1600_o
+108 mean_mref2100_o
+109 sdev_mref0470_o
+110 sdev_mref0550_o
+111 sdev_mref0660_o
+112 sdev_mref0870_o
+113 sdev_mref1200_o
+114 sdev_mref1600_o
+115 sdev_mref2100_o
+
+I do not know what these are
+----------------------------
+116 mean_wni
+117 mean_wir
+118 pval_wni
+119 pval_wir
+120 mean_pathrad0470_l
+121 mean_pathrad0660_l
+122 mean_critref0470_l
+123 mean_critref0660_l
+124 mean_errprad0470_l
+125 mean_errprad0660_l
+126 mean_errcref0470_l
+127 mean_errcref0660_l
+128 mean_qwtprad0470_l
+129 mean_qwtprad0660_l
+130 mean_qwtcref0470_l
+131 mean_qwtcref0660_l
+
+MODIS Deep-Blue Retrievals over Land
+These are statistics computed on 5x5 boxes
+around the AERONET site.
+mean - average value
+sdev - standard deviation
+npix - sample size
+pval - value at the central 1x1 box around site
+QA   - Quality assurance flag:
+       0 - bad, ignore it
+       1   Good
+       2 - Very Good
+       3 - Excellent, better than ice cream
+-----------------------------------------------
+132 npix_AOT0550dpbl_l
+133 pval_AOT0550dpbl_l
+134 mean_AOT0550dpbl_l
+135 sdev_AOT0550dpbl_l
+136 mean_AOT0412dpbl_l
+137 mean_AOT0470dpbl_l
+138 mean_AOT0660dpbl_l
+139 mean_Aext0412_0470dpbl_l
+140 mean_SSA0412dpbl_l
+141 mean_SSA0470dpbl_l
+142 mean_SSA0660dpbl_l
+143 mean_surfre0412dpbl_l
+144 mean_surfre0470dpbl_l
+145 mean_surfre0660dpbl_l
+
+Norm O'Neal's spectral deconvolution algorithm applied to 
+AERONET data
+---------------------------------------------------------
+146 tau_550_norm
+147 eta_norm
+148 tau_f
+149 tau_c
+150 alpha_norm
+151 alpha_f
+152 Deta
+
+AERONET Retrievals log-interpolated to MODIS wavelengths
+--------------------------------------------------------
+153 tau_466
+154 tau_553
+155 tau_644
+156 tau_866
+157 tau_2119
+158 Angs_466_644
+159 exp_errorO_pct
+160 exp_errorL_pct
+
+Auxiliary data from NCEP analysis at 1x1 box
+--------------------------------------------
+161 ncep_pwat
+162 ncep_O3
+163 ncep_pres
+164 ncep_windspd
+165 ncep_winddir

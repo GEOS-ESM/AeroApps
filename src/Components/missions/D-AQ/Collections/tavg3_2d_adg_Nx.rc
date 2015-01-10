@@ -1,0 +1,81 @@
+#
+# Resource file with variable list for GEOS-5 Collection <tavg3_2d_adg_Nx>.
+#
+# This RC file was automatically created on Mon Jul 18 10:28:10 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover05:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: 2d,3-Hourly,Time-Averaged,Single-Level,Analysis,Aerosol Diagnostics (extended)
+BCEM001: Black Carbon Emission Bin 001;  kg m-2 s-1
+BCEM002: Black Carbon Emission Bin 002;  kg m-2 s-1
+BCDP001: Black Carbon Dry Deposition Bin 001;  kg m-2 s-1
+BCDP002: Black Carbon Dry Deposition Bin 002;  kg m-2 s-1
+BCWT001: Black Carbon Wet Deposition Bin 001;  kg m-2 s-1
+BCWT002: Black Carbon Wet Deposition Bin 002;  kg m-2 s-1
+BCHYPHIL: Black Carbon Hydrophobic to Hydrophilic;  kg m-2 s-1
+BCEMBB: Black Carbon Biomass Burning Emissions;  kg m-2 s-1
+BCEMBF: Black Carbon Biofuel Emissions;  kg m-2 s-1
+BCEMAN: Black Carbon Anthropogenic Emissions;  kg m-2 s-1
+BCSV: black carbon tendency due to conv scav;  kg m-2 s-1
+DUEM001: Dust Emission Bin 001;  kg m-2 s-1
+DUEM002: Dust Emission Bin 002;  kg m-2 s-1
+DUEM003: Dust Emission Bin 003;  kg m-2 s-1
+DUEM004: Dust Emission Bin 004;  kg m-2 s-1
+DUEM005: Dust Emission Bin 005;  kg m-2 s-1
+DUSD001: Dust Sedimentation Bin 001;  kg m-2 s-1
+DUSD002: Dust Sedimentation Bin 002;  kg m-2 s-1
+DUSD003: Dust Sedimentation Bin 003;  kg m-2 s-1
+DUSD004: Dust Sedimentation Bin 004;  kg m-2 s-1
+DUSD005: Dust Sedimentation Bin 005;  kg m-2 s-1
+DUDP001: Dust Dry Deposition Bin 001;  kg m-2 s-1
+DUDP002: Dust Dry Deposition Bin 002;  kg m-2 s-1
+DUDP003: Dust Dry Deposition Bin 003;  kg m-2 s-1
+DUDP004: Dust Dry Deposition Bin 004;  kg m-2 s-1
+DUDP005: Dust Dry Deposition Bin 005;  kg m-2 s-1
+DUWT001: Dust Wet Deposition Bin 001;  kg m-2 s-1
+DUWT002: Dust Wet Deposition Bin 002;  kg m-2 s-1
+DUWT003: Dust Wet Deposition Bin 003;  kg m-2 s-1
+DUWT004: Dust Wet Deposition Bin 004;  kg m-2 s-1
+DUWT005: Dust Wet Deposition Bin 005;  kg m-2 s-1
+DUEXTTFM: Dust Extinction AOT [550 nm] - PM 1.0 um;  1
+DUSCATFM: Dust Scattering AOT [550 nm] - PM 1.0 um;  1
+DUAERIDX: Dust TOMS UV Aerosol Index;  1
+DUSV: dust tendency due to conv scav;  kg m-2 s-1
+SSEM001: Sea Salt Emission Bin 001;  kg m-2 s-1
+SSEM002: Sea Salt Emission Bin 002;  kg m-2 s-1
+SSEM003: Sea Salt Emission Bin 003;  kg m-2 s-1
+SSEM004: Sea Salt Emission Bin 004;  kg m-2 s-1
+SSEM005: Sea Salt Emission Bin 005;  kg m-2 s-1
+SSSD001: Sea Salt Sedimentation Bin 001;  kg m-2 s-1
+SSSD002: Sea Salt Sedimentation Bin 002;  kg m-2 s-1
+SSSD003: Sea Salt Sedimentation Bin 003;  kg m-2 s-1
+SSSD004: Sea Salt Sedimentation Bin 004;  kg m-2 s-1
+SSSD005: Sea Salt Sedimentation Bin 005;  kg m-2 s-1
+SSDP001: Sea Salt Dry Deposition Bin 001;  kg m-2 s-1
+SSDP002: Sea Salt Dry Deposition Bin 002;  kg m-2 s-1
+SSDP003: Sea Salt Dry Deposition Bin 003;  kg m-2 s-1
+SSDP004: Sea Salt Dry Deposition Bin 004;  kg m-2 s-1
+SSDP005: Sea Salt Dry Deposition Bin 005;  kg m-2 s-1
+SSWT001: Sea Salt Wet Deposition Bin 001;  kg m-2 s-1
+SSWT002: Sea Salt Wet Deposition Bin 002;  kg m-2 s-1
+SSWT003: Sea Salt Wet Deposition Bin 003;  kg m-2 s-1
+SSWT004: Sea Salt Wet Deposition Bin 004;  kg m-2 s-1
+SSWT005: Sea Salt Wet Deposition Bin 005;  kg m-2 s-1
+SSEXTTFM: Sea Salt Extinction AOT [550 nm] - PM 1.0 um;  1
+SSSCATFM: Sea Salt Scattering AOT [550 nm] - PM 1.0 um;  1
+SSAERIDX: Sea Salt TOMS UV Aerosol Index;  1
+SSSV: sea salt tendency due to conv scav;  kg m-2 s-1
+SUEM001: Sulfate Emission Bin 001;  kg m-2 s-1
+SUEM002: Sulfate Emission Bin 002;  kg m-2 s-1
+SUEM003: Sulfate Emission Bin 003;  kg m-2 s-1
+SUEM004: Sulfate Emission Bin 004;  kg m-2 s-1
+SUDP001: Sulfate Dry Deposition Bin 001;  kg m-2 s-1
+SUDP002: Sulfate Dry Deposition Bin 002;  kg m-2 s-1
+SUDP003: Sulfate Dry Deposition Bin 003;  kg m-2 s-1
+SUDP004: Sulfate Dry Deposition Bin 004;  kg m-2 s-1
+SUWT001: Sulfate Wet Deposition Bin 001;  kg m-2 s-1
+SUWT002: Sulfate Wet Deposition Bin 002;  kg m-2 s-1
+SUWT003: Sulfate Wet Deposition Bin 003;  kg m-2 s-1
+SUWT004: Sulfate Wet Deposition Bin 004;  kg m-2 s-1

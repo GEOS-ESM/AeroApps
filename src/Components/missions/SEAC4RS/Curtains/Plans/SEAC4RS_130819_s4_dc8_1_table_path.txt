@@ -1,0 +1,63 @@
+DC8 817: SEAC4RS_130819_s4_dc8 v. 1
+
+Takeoff at 2013-08-19T15:00 UTC
+Total est. flight time = 7 hrs, 59 min
+Total est. distance flown = 2583 nmi
+
+---
+Remarks:
+This flight is one of two plans being proposed for science flight #4. It is a
+SEUS chemistry flight, with a goal of smapling the area for an initial
+condition for an expected enhanced chemistry period to happen later in the week.
+
+Fourty minutes have been reserved between D5 and N10 for studying convection.
+
+A wall will be done between N10 and N11 in coordination with an ER-2 rosette.
+Take-off should be coordinated so that the DC-8 and the ER-2 reach N10 at the
+same time.
+
+10 minutes have been reserved for ATC at the beginning and end of the flight.
+
+---
+
+Defined Locations:
+ Name       Lat.       Lon.            Note
+ KEFD    29.6000   -95.1700  Starting point
+   D3    32.9100   -87.2400                
+   D4    34.1200   -84.7500                
+   D6    38.5283   -92.5181                
+   D8    34.7873   -92.4114                
+   D9    31.9318   -93.8879                
+  N10    37.7023   -89.9960                
+  N11    38.5251   -91.3547                
+   D2    31.4892   -92.5622                
+   D5    34.1200   -86.9000                
+   D1    31.7469   -93.7541                
+   P1    38.1195   -90.6677                
+   D7    37.9910   -92.8842                
+ 
+  Elapsed       Lat.       Lon.    Alt.
+    (hrs)     (deg.)     (deg.)   (kft)
+     0.00    29.6000   -95.1700    0.00
+     0.26    31.1151   -94.1784   25.00
+     0.43    31.1151   -94.1784   25.00
+     0.55    31.7469   -93.7541   25.00
+     0.69    31.4892   -92.5622   25.00
+     0.94    32.0194   -90.6907    4.00
+     1.68    32.9100   -87.2400    4.00
+     2.27    34.1200   -84.7500    4.00
+     2.71    34.1200   -86.9000    4.00
+     2.94    35.4071   -87.9727   25.00
+     3.61    35.4071   -87.9727   25.00
+     3.98    37.7023   -89.9960   25.00
+     4.99    37.6470   -89.9794    1.00
+     5.33    38.5251   -91.3547    1.00
+     5.56    38.5283   -92.5181    1.00
+     5.71    37.9910   -92.8842    1.00
+     6.49    34.7873   -92.4114    1.00
+     7.23    31.9318   -93.8879    1.00
+     7.48    30.4327   -94.7200   25.00
+     7.65    30.4327   -94.7200   25.00
+     7.78    30.4352   -94.5203   13.70
+     7.84    30.4327   -94.7200   13.70
+     8.00    29.6000   -95.1700    0.00

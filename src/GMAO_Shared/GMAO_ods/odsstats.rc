@@ -1,0 +1,91 @@
+#
+# ObsFuncs Resource file.
+#
+# !HISTORY:
+#
+#   2008-01-28 - Todling - Initial version
+#   2014-02-21 - Gelaro  - Update to present observing system blend
+#   2014-02-21 - Todling - Add (Variable opts commented out) as examples (see Note 1)
+# 
+# Notes:
+#   1. opts xvecxomf and xvecxoma are only meaningful when xvec stores sensitivities 
+#      rather than impact.
+#
+
+OBS*Operations: sum numneg # stdev
+#OBS*Variable: xvecxomf
+#OBS*Variable: xvecxoma
+
+OBS*Class*Kts:: 
+   LandSfc    4 5 11 33 44
+   MarineSfc  4 5 11 33 44
+   DriftBuoy  4 5 33 44
+   GeoWind    4 5
+   Aircraft   4 5 44
+   GOESND     40
+#  SSMIspd     12
+#  Qscat      4 5
+   ASCAT      4 5
+   MODIS      4 5 
+#  AVHRR      4 5 
+   WINDSAT    4 5
+   Radiosonde 4 5 11 33 44 
+   Pibal      4 5
+   TMI        17
+   GPSRO      88 89
+   HIRS       40
+   AIRS       40
+   IASI       40
+   MSU        40
+   AMSUA      40
+   AMSUB      40
+   MHS        40
+   AMSRE      40
+   SSU        40
+#  SBUV       21 22
+   Profiler   4 5
+   NEXRAD     4 5
+#  WLidar     4 5
+   Dropsnd    4 5 11 44
+   ATMS       40
+   SEVIRI     40
+   SSMI       40
+#  OMI        21
+::
+
+OBS*Class*Kxs::
+   LandSfc    181 187 281 287
+   MarineSfc  180 182 183 280 282 284
+   DriftBuoy  199 299
+   GeoWind    241:243 245:256
+   Aircraft   130 131 133:135 230 231 233:235
+   GOESND     57:63
+#  SSMIspd    283
+#  Qscat      285
+   ASCAT      290
+   MODIS      257:259
+#  AVHRR      244
+   WINDSAT    289
+   Radiosonde 120 220 
+   Pibal      221
+   TMI        211
+   GPSRO      3 4 41 42 722 723 740:745 786 820
+   HIRS       5:12 14:19 25 26
+   AIRS       49
+   IASI       875 876
+   MSU        205:212 214
+   AMSUA      315:319 300 325 326
+   AMSUB      415:417
+   MHS        818 819 825 826
+   AMSRE      547:549
+   SSU        305:312 314
+#  SBUV       457:462 464:469
+   Profiler   223
+   NEXRAD     224
+#  WLidar     226
+   Dropsnd    132 232
+   ATMS       900
+   SEVIRI     989 990
+   SSMI       708 710 711 713:715
+#  OMI        449
+::

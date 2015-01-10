@@ -1,0 +1,760 @@
+#!/usr/bin/env perl
+#
+# Converts observation GSI diagnotic files to ODS files.
+#
+# !REVISION HISTORY:
+#
+#  05May2005  Todling   Initial code (Based on Dick Dee's csh script).
+#  08Jul2005  Todling   Bug fix; conv files was defined twice
+#  05Aug2005  Todling   Added eos_amsua to list of instruments
+#  31Jan2006  Sienkiewicz Added ssmi and pcp
+#  22Feb2006  Todling   Added ssu
+#  29Mar2006  Todling   Added omi
+#  14Dec2006  Todling   update obs sys for gsi 2006_09
+#  22Dec2006  Todling   Add opt to do OmF only
+#  26Dec2006  Todling   Add -type option
+#  02Mar2007  Todling   Add -log option
+#  17Mar2007  Todling   Add -res option
+#  21Jan2008  Todling   - Complete implementation of obs impacts (needs generalization)
+#                       - Bug fix: double inclusion of amsua
+#                       - CAUTIONS: redef meaning of -i option
+#  08Apr2008  Meta      Add mlsoz (MLS ozone)
+#  17Feb2009  Sienkiewicz Bug fix; add "dir" to GetOptions
+#  17Feb2009  RT/Deascu When applicable:
+#                       - Now, extract sensitivities from asens-diag rather than impacts
+#                       - Calculate observation impacts from files containing ob sens
+#                       - Calculate sigma-o impacts for initial loop
+#  21Mar2009  Todling   - Toward speeding this up: generate ods file per intrument type
+#                       - unwired diag types (see unique_instruments.csh)
+#                       - single ods file only create upon request now
+#                       - ods files default to gsi-diag filename except for extension
+#  24Mar2009  Todling   - Breaking up into subroutines
+#  27Mar2009  Stassi    Parallized script part handling OmF/OmA
+#  30Mar2009  Todling  - add rc option
+#                      - redefined default for parallelization
+#  06Apr2009  Todling  Only call zeit when running in 1 cpu.
+#  04Sep2009  Stassi   Add unique_instruments() to replace call to shell script
+#  26Jan2010  Todling  Changes to handle obs and sigo impact
+#  03Feb2010  Todling  Revisited calculation of obs impact; impact to sigo not ready yet 
+#  25Mar2013  Todling  Add 0-hr observation impacts
+#  06Feb2014  Todling  Add -sens as opt to allow getting sensitivities instead of impacts
+#  02Apr2014  Todling  Add -psigo as opt to allow writing out ods files w/ prescribed sigo
+#-----------------------------------------------------------------------------
+
+use Env;                 # make env vars readily available
+use FindBin;             # so we can find where this script resides
+use File::Basename;      # for basename(), dirname()
+use File::Copy "cp";     # for cp()
+use Getopt::Long;        # command line options
+use Shell qw(cat rm);    # cat command
+use Time::Local;         # time functions
+
+# look for perl packages in the following locations
+#--------------------------------------------------
+use lib ( "$FindBin::Bin", "$FVROOT/bin", "$ESMADIR/$ARCH/bin" );
+ 
+# Command line options
+# --------------------
+  GetOptions( "h", "i=s", "o=s", "m=s", "omf", "sens", "psigo", "type=s", "log=s", "res=s", "dir=s", "single", "ncpus=i", "rc=s" );
+
+  usage() if $opt_h;
+
+# FVROOT is where the binaries have been installed
+# ------------------------------------------------
+  $fvroot  = dirname($FindBin::Bin);
+  $fvroot  =~ s|/u/.realmounts/share|/share|;   # for portability across
+                                                # NAS machines
+  $user = getlogin();
+
+  $init_status=init();
+
+  if (! $init_status ) {
+
+#    Convert DIAG files into ODS
+#    ---------------------------
+     d2o_all();
+
+#    Matching and calculation of extra quantities
+#    --------------------------------------------
+     if ( "$res0" =~ "ges" || "$res0" =~ "anl" ) {
+
+       matchOMA();# process guess and analysis files
+       imp0hr();  # calculate 0-hr observation impacts
+
+     } else {
+
+       matchIMP() # process observation impacts
+
+     }
+
+  } else {
+    $rc = 1;
+  }
+
+exit ($rc);
+
+#=======================================================================
+# name - d2o_all
+#=======================================================================
+sub d2o_all {
+    my ($newpid, $pid, @pidARR);
+
+# Subroutine to convert various GSI-DIAG files to ODS
+# ---------------------------------------------------
+ 
+    foreach $grp ( @dgrps ) {
+        return if ( $rc!=0 );
+
+        @pidARR = load_balance($MAX, @pidARR); # do not fork more than $MAX jobs
+        defined($newpid=fork) or die ">> ERROR << Cannot fork: $!";
+        unless ($newpid) {
+
+            #---------------#
+            # child process #
+            #---------------#
+            @files =  glob("$filepath/*diag_${grp}*${res0}*${nymdhh}.bin")
+                or print "($myname):No match\n";
+            foreach $file (@files) { d2o($file,$xcmd[0],$res0) };
+
+            if ( $dooma || $miter > 1 ) {
+                @files =  glob("$filepath/*diag_${grp}*${res1}*${nymdhh}.bin")
+                    or print "($myname):No match\n";
+                foreach $file (@files) { d2o($file,$xcmd[1],$res1) };
+            }
+            exit;
+        }
+
+        #---------------#
+        # adult process #
+        #---------------#
+        push @pidARR, $newpid;
+    }
+
+    # wait for forked jobs to complete
+    #---------------------------------
+    while (@pidARR) {
+        $pid = shift @pidARR;
+        waitpid($pid,0);
+    }
+
+    if ( "$doobsens" eq "-sens"  || $miter == 1 ) {
+          foreach $grp ( @dgrps ) {
+                  $ifile = "$expid.${grp}_${opt_res}${jp1}.${nymdhh}.ods";
+                  $ofile = "${opt_o}_${grp}.obs.${nymdhh}.ods";
+                  rename($ifile,$ofile);
+          }
+    }
+
+} # < end d2o_all >
+
+#=======================================================================
+# name - d2o
+#=======================================================================
+sub d2o {
+# Subroutine to convert single GSI-DIAG files to ODS
+# --------------------------------------------------
+my ( $file, $xxcmd, $xres ) = @_;
+       if ( -e $file && !(-z $file) ) {
+         $cmd = $fvroot . "/bin/odsselect $prepsigo $doobsens $xxcmd -ncf -rmdupl -qc ALL -o $expid.${grp}_${xres}.${nymdhh} $file";
+         print " $cmd\n";
+         $gesrc = System($cmd, "$log",$MAX, "odsselect");
+         print " $0: odsselect \$rc =  $rc\n";
+         die ">>>> ERROR <<< running odsselect" if ( $rc );
+       }
+}
+
+#=======================================================================
+# name - matchOMA
+#=======================================================================
+sub matchOMA {
+    my ($newpid, $pid, @pidARR);
+
+# Subroutine to place OMA in proper slot of ODS files
+# ---------------------------------------------------
+
+    foreach $grp ( @dgrps ) {
+
+        @pidARR = load_balance($MAX, @pidARR); # do not fork more than $MAX jobs
+        defined($newpid=fork) or die ">> ERROR << Cannot fork: $!";
+        unless ($newpid) {
+
+            #---------------#
+            # child process #
+            #---------------#
+            if ( $dooma && (-e "$expid.${grp}_${res0}.${nymdhh}.ods") && (-e "$expid.${grp}_${res1}.${nymdhh}.ods") ) {
+
+                #  Match and place OMA into one of the ODS files
+                #  ---------------------------------------------
+                $cmd = $fvroot . "/bin/odsmatch -rc $odsmatchrc $expid.${grp}_${res0}.${nymdhh}.ods  $expid.${grp}_${res1}.${nymdhh}.ods ${odsfnbase}_${grp}.${nymdhh}.ods";
+                print " $cmd\n";
+                $gesrc = System($cmd, "$log",$MAX, "odsmatch");
+                die ">>>> ERROR <<< running odsmatch" if ( $rc );
+                print " $0: odsmatch \$rc =  $rc\n";
+                print "rm  $expid.${grp}_${res0}.${nymdhh}.ods \n";
+                       rm("$expid.${grp}_${res0}.${nymdhh}.ods");
+                print "rm  $expid.${grp}_${res1}.${nymdhh}.ods \n";
+                       rm("$expid.${grp}_${res1}.${nymdhh}.ods");
+            }
+            exit;
+        }
+
+        #---------------#
+        # adult process #
+        #---------------#
+        push @pidARR, $newpid;
+
+    } # < loop over instrument type >
+
+    # wait for forked jobs to complete
+    #---------------------------------
+    while (@pidARR) {
+        $pid = shift @pidARR;
+        waitpid($pid,0);
+    }
+
+    # Create a single ods file only upon request
+    # ------------------------------------------
+    if ( $opt_single ) {
+        for $grp ( @dgrps ) {
+            $cmd = $fvroot . "/bin/odsselect $prepsigo -rmdupl -append -qc ALL -o ${odsfnbase}.${nymdhh} ${odsfnbase}_${grp}.${nymdhh}.ods";
+            print " $cmd\n";
+            $gesrc = System($cmd, "$log",$MAX, "odsselect");
+            die ">>>> ERROR <<< creating single ods file" if ( $rc );
+            print " $0: odsselect \$rc =  $rc\n";
+            print "rm  ${odsfnbase}_${grp}.${nymdhh}.ods \n";
+                   rm("${odsfnbase}_${grp}.${nymdhh}.ods");
+        }
+    }
+
+} # < end matchOMA >
+
+#=======================================================================
+# name - imp0hr
+#=======================================================================
+sub imp0hr {
+    return unless ( $do_0hr_imp );
+    my ($newpid, $pid, @pidARR);
+
+# Select good observations off each ods file
+# ------------------------------------------
+
+    foreach $grp ( @dgrps ) {
+
+        @pidARR = load_balance($MAX, @pidARR); # do not fork more than $MAX jobs
+        defined($newpid=fork) or die ">> ERROR << Cannot fork: $!";
+        unless ($newpid) {
+
+            #---------------#
+            # child process #
+            #---------------#
+            if ( (-e "${odsfnbase}_${grp}.${nymdhh}.ods") && (! -e "$expid.selgood_${grp}.${nymdhh}.ods") ) {
+
+                #  Match and place OMA into one of the ODS files
+                #  ---------------------------------------------
+                $cmd = $fvroot . "/bin/odsselect $prepsigo -qc GOOD -o $expid.selgood_${grp}.${nymdhh}  ${odsfnbase}_${grp}.${nymdhh}.ods";
+                print " $cmd\n";
+                $gesrc = System($cmd, "$log",$MAX, "odsselect");
+                die ">>>> ERROR <<< running odsselect during imp0hr" if ( $rc );
+                print " $0: odsselect \$rc =  $rc\n";
+            }
+            exit;
+        }
+
+        #---------------#
+        # adult process #
+        #---------------#
+        push @pidARR, $newpid;
+
+    } # < loop over instrument type >
+
+    # wait for forked jobs to complete
+    #---------------------------------
+    while (@pidARR) {
+        $pid = shift @pidARR;
+        waitpid($pid,0);
+    }
+
+# Now calculate 0-hr observation impacts
+# --------------------------------------
+
+    foreach $grp ( @dgrps ) {
+
+        @pidARR = load_balance($MAX, @pidARR); # do not fork more than $MAX jobs
+        defined($newpid=fork) or die ">> ERROR << Cannot fork: $!";
+        unless ($newpid) {
+
+            #---------------#
+            # child process #
+            #---------------#
+            if ( (-e "$expid.selgood_${grp}.${nymdhh}.ods") ) {
+
+                #  Match and place OMA into one of the ODS files
+                #  ---------------------------------------------
+                $cmd = $fvroot . "/bin/odsmatch -imp0hr -rc $odsmatchrc $expid.selgood_${grp}.${nymdhh}.ods  $expid.selgood_${grp}.${nymdhh}.ods ${ods0hbase}_${grp}.${nymdhh}.ods";
+                print " $cmd\n";
+                $gesrc = System($cmd, "$log",$MAX, "odsmatch");
+                die ">>>> ERROR <<< running odsmatch during imp0hr" if ( $rc );
+                print " $0: odsmatch \$rc =  $rc\n";
+                print "rm  $expid.selgood_${grp}.${nymdhh}.ods \n";
+                       rm("$expid.selgood_${grp}.${nymdhh}.ods");
+            }
+            exit;
+        }
+
+        #---------------#
+        # adult process #
+        #---------------#
+        push @pidARR, $newpid;
+
+    } # < loop over instrument type >
+
+    # wait for forked jobs to complete
+    #---------------------------------
+    while (@pidARR) {
+        $pid = shift @pidARR;
+        waitpid($pid,0);
+    }
+
+} # < end imp0hr >
+
+#=======================================================================
+# name - matchIMP
+#=======================================================================
+sub matchIMP {
+
+  #  Match sensitivities and calculate observation impacts depending on options
+  #  --------------------------------------------------------------------------
+     foreach $grp ( @dgrps ) {
+
+       $jiter = 1;
+       $ifileb = "${expid}.diag_${grp}.${nymdhh}.ods";
+       $ifile1 = "$expid.${grp}_${res0}.${nymdhh}.ods";
+       if ( -e "$ifile1" && !-z "$ifile1" ) {
+
+         #  Get observation impact for this iteration
+         #  -----------------------------------------
+         if ( "$doobsens" eq "-sens" ) {
+            if ( -e "$ifileb" ) {
+                 $ofile1 = "${odsfnbase}${jiter}_${grp}.sens.${nymdhh}.ods";
+                 $cmd = $fvroot . "/bin/odsmatch -rc $odsmatchrc -obsimp -hassens $ifileb $ifile1 $ofile1";
+                 print " $cmd\n";
+                 $gesrc = System($cmd, "$log",$MAX, "odsmatch");
+                    die ">>>> ERROR <<< running odsmatch" if ( $rc );
+                    print " $0: odsmatch \$rc =  $rc\n";
+            }
+         } else {
+         $ofile1 = "$expid.${grp}_${res0}.${nymdhh}.ods";
+         }
+
+         # If sensitivities are in file, then get sensitivities to sigo
+         # ------------------------------------------------------------
+         if ( $miter == 1 && "$doobsens" eq "-sens" && -e "$ifileb" ) {
+              $cmd = $fvroot . "/bin/odsmatch -rc $odsmatchrc -sigoimp $ifileb $ifile1 ${odsfnbase}${jiter}_${grp}.sigo.${nymdhh}.ods";
+              print " $cmd\n";
+              $gesrc = System($cmd, "$log",$MAX, "odsmatch");
+                 die ">>>> ERROR <<< running odsmatch" if ( $rc );
+                 print " $0: odsmatch \$rc =  $rc\n";
+         }
+
+       }
+
+       if ( $miter == 1 ) {
+         if ( -e "$ofile1" ) {
+            $ofile  = "${odsfnbase}_${grp}.obs.${nymdhh}.ods";
+            rename("$ofile1","$ofile");
+         }
+       }
+
+       if ( $miter == 2 ) {
+
+         $jiter = 2;
+         $ifile2 = "${expid}.${grp}_${res1}.${nymdhh}.ods";
+         if ( -e "$ifile2" && !-z "$ifile2" ) {
+
+           # Get observation impact for this iteration
+           # -----------------------------------------
+           if ( "$doobsens" eq "-sens" ) {
+              if ( -e "$ifileb" ) {
+                  $ofile2 = "${odsfnbase}${jiter}_${grp}.sens.${nymdhh}.ods";
+                  $cmd = $fvroot . "/bin/odsmatch -rc $odsmatchrc -obsimp -hassens $ifileb $ifile2 $ofile2";
+                  print " $cmd\n";
+                  $gesrc = System($cmd, "$log",$MAX, "odsmatch");
+                     die ">>>> ERROR <<< running odsmatch" if ( $rc );
+              }
+           } else {
+           $ofile2 = "$expid.${grp}_${res1}.${nymdhh}.ods";
+           }
+
+          # If sensitivities are in file, then get sensitivities to sigo
+          # ------------------------------------------------------------
+           if ( "$doobsens" eq "-sens" && -e "$ifileb" ) {
+                $cmd = $fvroot . "/bin/odsmatch -rc $odsmatchrc -sigoimp $ifileb $ifile2 ${odsfnbase}${jiter}_${grp}.sigo.${nymdhh}.ods";
+                print " $cmd\n";
+                $gesrc = System($cmd, "$log",$MAX, "odsmatch");
+                   die ">>>> ERROR <<< running odsmatch" if ( $rc );
+           }
+
+         }
+
+         # Now do final matching and calculate total impact
+         # ------------------------------------------------
+         if ( -e "$ofile1" && -e "$ofile2" ) {
+              if ( -z "$ofile1" || -z "$ofile2" ) {
+                print " empty files: ...${grp}.sens.${nymdhh}.ods \n";
+              } else {
+                $ofile  = "${odsfnbase}_${grp}.obs.${nymdhh}.ods";
+                $cmd = $fvroot . "/bin/odsmatch -rc $odsmatchrc -addimp $ofile1 $ofile2 $ofile";
+                print " $cmd\n";
+                $gesrc = System($cmd, "$log",$MAX, "odsmatch");
+                   die ">>>> ERROR <<< running second odsmatch" if ( $rc );
+                   print " $0: second odsmatch \$rc =  $rc\n";
+              }
+         }
+
+       } # miter=2
+
+     } # < loop over instrument type >
+
+} # < end matchIMP >
+
+#=======================================================================
+# name - init
+#=======================================================================
+sub init {
+
+
+  if ( $#ARGV < 2 ) {
+       print STDERR "missing nymd, nhms and/or expid; see usage";
+       usage();
+  } else {              # required command lile args
+       $nymd  = $ARGV[0];
+       $nhms  = sprintf("%6.6d",$ARGV[1]);
+       $expid = $ARGV[2];
+       $yyyy  = substr($nymd,0,4);
+       $mm    = substr($nymd,4,2);
+       $dd    = substr($nymd,6,2);
+       $hh    = substr($nhms,0,2);
+       $nymdhh  = "${nymd}_${hh}z";
+  }
+
+  $MAX = 1;
+  if ( defined($opt_ncpus) ) {
+      $MAX = $opt_ncpus;
+      if ($MAX < 1) { $MAX = 1; } 
+      else {
+          $NCPUS = $ENV{"NCPUS"};
+          if ($NCPUS) {
+            if($MAX > $NCPUS) { 
+               $MAX = $NCPUS; 
+               print "Redefine number of processes used to NCPUS: $MAX \n";
+            }
+          }
+      }
+  }
+
+  $do_0hr_imp = $ENV{"DO_0HR_IMP"};
+
+  if( $opt_o ) {
+      $odsfnbase = $opt_o;
+      $ods0hbase = "${opt_o}_imp0hr";
+  } else {
+      $odsfnbase = "$expid.diag";
+      $ods0hbase = "$expid.imp0hr_diag";
+  }
+
+  if( $opt_i ) {
+      $inputods = $opt_i;
+  } else {
+      $inputods = "$expid.ana.obs.${nymd}_${hh}z.ods";
+  }
+
+  if( $opt_rc ) {
+      $odsmatchrc = $opt_rc;
+  } else {
+      $odsmatchrc = "$fvroot/etc/odsmatch.rc";
+  }
+
+  if( $opt_log ) {
+      $log = $opt_log;
+  } else {
+      $log = "ods.log";
+  }
+
+  if( $opt_dir ) {
+      $filepath = $opt_dir;
+  } else {
+      $filepath = ".";
+  }
+
+  $prepsigo = "";
+  if ( $opt_psigo ) {
+     $prepsigo = "-prepsigo";
+  }
+  $dooma = 1;
+  if( $opt_omf ) {
+      $dooma = 0;
+  }
+
+  $doobsens = "";
+  $miter = 0;
+  if( $opt_m ) {
+      if( $opt_res eq "" ) {
+          print STDERR "missing -res paramter";
+          usage();
+      }
+      $miter = $opt_m;
+      if ( $opt_sens ) {
+         $doobsens  = "-sens";
+      } else {
+         $doobsens  = "";
+      }
+      $dooma = 0;
+      $dooma = 0;
+      if ( $miter == 1 ) {
+        $jiter = 1; $jp1 = $jiter + 1;
+        @resd = ( "${opt_res}${jp1}");
+        @xcmd = ( "-miter $miter -jiter $jiter" );
+      }
+      if ( $miter == 2 ) {
+        @resd = ( "${opt_res}2", "${opt_res}3" );
+        @xcmd = ( "-miter $miter -jiter 1", "-miter $miter -jiter 2" );
+      }
+
+  } else {
+      @resd = ( 'ges', 'anl' );
+      @xcmd = ( ""   , ""    );
+  }
+  $res0 = $resd[0]; 
+  $res1 = $resd[1]; 
+
+  if ( $opt_type ) {
+      @dgrps = ( $opt_type );
+  } else {
+      @dgrps = unique_instruments();
+
+      if ( @dgrps ) {
+          print " will convert the following GSI diag file-types into ODS: \n";
+          foreach (@dgrps) { print " $_" }; print "\n\n";
+      } else {
+          print "diag2ods(error): something amiss, instruments not found \n";
+          return 1;
+      }
+  }
+  $rc = 0;
+
+# Clean up
+# --------
+        rm("$expid.${res0}_${nymdhh}.ods") if ( -e "$expid.${res0}_${nymdhh}.ods");
+        rm("$expid.${res1}_${nymdhh}.ods") if ( -e "$expid.${res1}_${nymdhh}.ods");
+
+return 0;
+}
+
+#=======================================================================
+# name - unique_instruments
+#=======================================================================
+sub unique_instruments {
+    my (@names, $type, @list);
+
+    if ( $opt_m ) {
+       @names = (<$filepath/*diag_*_ans_*.*bin>);
+    } else {
+       @names = (<$filepath/*diag_*anl.*bin>);
+    }
+    foreach (@names) {
+        $type = "";
+        if ( $opt_m ) {
+          $type = $1 if /diag_(\S*)_ans/;
+        } else {
+          $type = $1 if /diag_(\S*)_anl/;
+        }
+        if ($type) {
+            push @list, $type unless included(@list, $type);
+        }
+    }
+    return @list;
+}
+
+#=======================================================================
+# name - included
+#=======================================================================
+sub included {
+    my (@arr, $val);
+    my $found;
+
+    $val = pop @_;
+    @arr = @_;
+
+    $found = 0;
+    foreach (@arr) { $found = 1 if $val eq $_ };
+
+    return $found;
+}
+
+#=======================================================================
+# name - System
+#=======================================================================
+sub System {
+
+    my ( $cmd, $logfile, $npes, $xname ) = @_;
+    my ( @zname );
+
+    open SAVEOUT, ">&STDOUT";  # save stdout
+    open SAVEERR, ">&STDERR";  # save stderr
+
+    open STDOUT, ">>$logfile" or die "can't redirect stdout";
+    open STDERR, ">>$logfile" or die "can't redirect stderr";
+
+    select STDERR; $| = 1;     # make it unbuffered
+    select STDOUT; $| = 1;     # make it unbuffered
+
+    @zname = split(" ", $cmd);
+    if( $npes == 1 ) {
+      if ( "$zname[0]" eq "mpirun" || "$zname[0]" eq "prun" ) {
+        $rc1 = system( "zeit_ci.x -r .zeit $xname");
+      } else {
+        $rc1 = system( "zeit_ci.x -r .zeit $zname[0]");
+      }
+    }
+
+
+    $rc = system ( $cmd );     # run the shell command
+
+    if( $npes == 1 ) {
+      if ( "$zname[0]" eq "mpirun" || "$zname[0]" eq "prun" ) {
+        $rc2 = system( "zeit_co.x -r .zeit $xname");
+      } else {
+        $rc2 = system( "zeit_co.x -r .zeit $zname[0]");
+      }
+    }
+
+    # Bitwise shift returns actual UNIX return code
+    $exit_code = $rc >> 8;
+
+    close STDOUT;
+    close STDERR;
+
+    open STDOUT, ">&SAVEOUT" ;  # restore stdout
+    open STDERR, ">&SAVEERR" ;  # restore stdout
+
+    return $exit_code;
+
+  }
+
+#=======================================================================
+# name: load_balance
+# purpose: If the number of child processes is at MAX or above, then
+#          wait here until enough child processes complete to get the
+#          total number under the limit.
+#=======================================================================
+sub load_balance {
+
+    my ($MAX, @pidARR);
+    my ($check_counter, $pid, $status);
+
+    # get input parameters
+    #---------------------
+    $MAX = shift @_;
+    @pidARR = @_;
+
+    while (scalar(@pidARR) >= $MAX) {
+
+        # loop through child processes
+        #-----------------------------
+        $check_counter = 0;
+        while (1) {
+
+            # check child process
+            #---------------------------------
+            # status equals 0   if still alive
+            # status equals pid if complete
+            # status equals -1  if not found
+            #---------------------------------
+            $pid = shift @pidARR;
+            $status = waitpid($pid, WNOHANG);
+            last if $status;
+
+            # child process not complete
+            #---------------------------
+            push @pidARR, $pid;
+            $check_counter++;
+
+            # take one second breather before looping through again
+            #------------------------------------------------------
+            if ($check_counter >= $MAX) {
+                sleep 1;
+                $check_counter = 0;
+            }
+        }
+    }
+    return @pidARR if @pidARR;
+}
+
+#=======================================================================
+# name - usage
+#=======================================================================
+sub usage {
+
+   print <<"EOF";
+
+NAME
+     diag2ods - Converts GSI observation diagnostic files to ODS
+          
+SYNOPSIS
+
+     diag2ods [...options...]  nymd nhms expid
+          
+DESCRIPTION
+
+     The following parameter are required 
+
+     nymd     Year-month-day, e.g., 19990901  for 01 Sept 1999 
+     mhms     Hour-minutes-seconds, e.g., 120000
+     expid    Experiment ID (name)
+
+OPTIONS
+ 
+ -dir          full path of input files locations; default: .
+
+ -h            prints this usage notice
+ 
+ -i            input ODS file (needed only when processing obs impacts) 
+                 (default: expid.ana.obs.yyyymmdd_hhz.ods)
+
+ -log          echo output to a log file; default name: ods.log
+
+ -m            total number of analysis iterations (miter from gsi.rc)
+                 (default: ignore)
+
+ -ncpus        number of processes to run in parallel
+                 (default: 1 - serial run)
+
+ -o            base filename of ods output file; default: expid.ana.obs
+
+ -omf          does OmF only (without merge with oma)
+
+ -res          residual type, e.g., -res 'txe2','txe1'
+                 (default: ignore; must be present when -m present)
+
+ -rc RCFILE    full path name of odsmatch file
+                 (default: $fvroot/etc)
+
+ -single       create ONLY single ods file containing all instruments
+                 (default: one ods file per instrument)
+
+ -type         allows choosing specific diag file, e.g., -type amsua
+                 (default: all "known" types)
+
+ENVIRONMENT
+
+  NCPUS        allows calculation to be spread among processes
+  DO_0HR_IMP   when set to 1 will calculate 0-hr impact
+
+AUTHOR
+      R. Todling (todling\@gmao.gsfc.nasa.gov), NASA/GSFC/GMAO
+
+EOF
+
+  exit(1)
+
+}

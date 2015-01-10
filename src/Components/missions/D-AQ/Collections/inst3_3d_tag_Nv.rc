@@ -1,0 +1,24 @@
+#
+# Resource file with variable list for GEOS-5 Collection <inst3_3d_tag_Nv>.
+#
+# This RC file was automatically created on Sun Aug 7 20:46:23 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover07:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: 3d,3-Hourly,Instantaneous,Model-Level,Analysis,Tag Tracers
+ps: surface pressure;  Pa
+delp: pressure thickness;  Pa
+CObbae: CO Asia and Europe Biomass Burning;  mol mol-1
+CObbaf: CO Africa Biomass Burning;  mol mol-1
+CObbgl: CO Global Biomass Burning;  mol mol-1
+CObbla: CO Central and South America Biomass Burning;  mol mol-1
+CObbna: CO North America Biomass Burning;  mol mol-1
+COnbas: CO Asia Non-Biomass Burning;  mol mol-1
+COnbeu: CO European Non-Biomass Burning;  mol mol-1
+COnbgl: CO Global Non-Biomass Burning;  mol mol-1
+COnbna: CO North American Non-Biomass Burning;  mol mol-1
+CFC12strat: Stratospheric CFC-12 (CCl2F2);  mol mol-1
+CFC12trop: Tropospheric CFC-12 (CCl2F2);  mol mol-1
+AIRDENS: air density;  kg m-3

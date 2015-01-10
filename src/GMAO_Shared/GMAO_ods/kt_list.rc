@@ -1,0 +1,107 @@
+# 
+# KT List in resource file format 
+#
+# !REVISION HISTORY:
+#
+#  13Nov2006  da Silva  List as obtained from Yelena; slightly
+#                       reformatted to look like an RC file.
+#  31May2012  Todling   remove cloud fraction (90) - see 20
+#                       slots 92/93 made consistent w/ odsmeta.h
+#
+#
+
+kt_list::
+   1 Surface (10m) zonal wind                           m/sec
+   2 Surface (10m) meridional wind                      m/sec
+   3 Sea level pressure                                 hPa
+   4 Upper-air zonal wind                               m/sec
+   5 Upper-air meridional wind                          m/sec
+   6 Upper-air geopotential height                      m
+   7 Upper-air water vapor mixing ratio                 g/kg
+   8 Upper-air temperature                              Kelvin
+   9 Upper-air dew-point temperature                    Kelvin
+  10 Upper-air relative humidity                        %
+  11 Upper-air specific humidity                        g/kg
+  12 Surface (10m) wind speed                           m/sec
+  13 Surface (10m) temperature                          Kelvin
+  14 Surface (10m) dew-point temperature                Kelvin
+  15 Surface (10m) relative humidity                    %
+  16 Surface (10m) specific humidity                    g/kg
+  17 Precipitation rate                                 mm/day
+  18 Total precipitable water                           mm
+  19 Total cloud liquid water                           mm
+  20 Fractional cloud cover                             %
+  21 Column ozone                                       Dobson
+  22 Ozone layer                                        Dobson
+  23 Upper-air thickness                                m
+  24 Surface (2m) wind speed                            m/sec
+  25 Surface (2m) maximum wind speed                    m/sec
+  26 Surface (2m) maximum wind gust                     m/sec
+  27 Surface (2m) temperature                           Kelvin
+  28 Surface (2m) maximum temperature                   Kelvin
+  29 Surface (2m) minimum temperature                   Kelvin
+  30 Surface (2m) dew-point temperature                 Kelvin
+  31 Surface (2m) relative humidity                     %
+  32 Surface (2m) specific humidity                     g/kg
+  33 Surface (2m) pressure                              hPa
+  34 Visibility                                         km
+  35 Snow depth                                         mm
+  36 Weather condition                                  none
+  37 Upper-air potential temperature (ps=1000hPa)       Kelvin
+  38 Surface skin temperature                           Kelvin
+  39 Sea Surface temperature                            Kelvin
+  40 Brightness temperature                             Kelvin
+  41 Layer-mean virtual temperature                     Kelvin
+  42 Line-of-Sight Wind (LOS)                           m/sec
+  43 Log(eps+AOD)                                       none
+  44 Upper-air virtual temperature                      Kelvin
+  45 Aerosol Optical Depth                              None  
+  46 Angstrom Exponent                                  None 
+  47 Surface Albedo                                     %
+  48 Reflectance                                        %
+  49 Aerosol Absorption Optical Depth                   None
+  50 Single Scattering Albedo                           %
+  51 CO mixing ratio                                    ppmv
+  52 NO2 mixing ratio                                   ppmv
+  53            d e l e t e d
+  54 Solar Zenith Angle                                 Degrees
+  55 Solar Azimuth Angle                                Degrees
+  56 Sensor Zenith Angle                                Degrees
+  57 Sensor Azimuth Angle                               Degrees
+  58 Aerosol Scattering Angle                           Degress
+  59 Aerosol Glittering angle                           Degrees
+  60 Aerosol Type                 
+  61 Fine model Optical thickness                        nm           
+  62 Fine model Angstrom exponent                        none
+  63 Cloud Pressure                                      hPa    
+  64 ColumnAmountO3                                      DU
+  65 ColumnAmountSO2_PBL                                 DU
+  66 ColumnAmountSO2_TRL                                 DU 
+  67 DELETED                                                  
+  68 DELETED                                                   
+  69 DELETED                                                 
+  70 Aerosol Optical Depth Ratio (Small/Total)          None
+  71 Terrain Height                                     m
+  72                         d e l e t e d
+  73                         d e l e t e d
+  74 Quality Assurance Flag                             None
+  75 Confidence Flag (Deep Blue Aerosol)                None
+  76 Aerosol Refractive index (Real)                    TBD
+  77 Aerosol Refractive index (Imaginary)               TBD
+  78 Reflectivity                                       TBD
+  79 Height of aerosol layer                            meter
+  80 Radiance                                           TBD
+  81 Aerosol Index                                      None
+  82 Fire Radiative Power                               Megawatts
+  83 Aerosol Asymmetry Factor                           None
+  84 Aerosol Mass Concentration                         kg/meter2
+  85 Aerosol Effective Radius                           micron
+  86 GSI precip rate ln(1+rain_rate)                    ln(mm/hr)
+  87 Ozone mixing ratio                                 ppmv
+  88 Refractivity                                       N-units
+  89 Bending Angle                                      NONE
+  90                        d e l e t e d 
+  92 position-type obs: latitude                        degrees
+  93 position-type obs: longitude                       degrees
+  94 Dopler wind lidar                                  m/s
+::

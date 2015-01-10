@@ -1,0 +1,356 @@
+# 
+# KX List in resource file format 
+#
+# !REVISION HISTORY:
+#
+#  13Nov2006  da Silva  List as obtained from Yelena; slightly
+#                       reformatted to look like an RC file.
+#
+#
+
+kx_list::
+    1 Surface Land Obs - 1
+    2 Surface Land Obs - 2
+    3 Surface Ship Obs - 1
+    4 Surface Ship Obs - 2
+    5 Environment Buoy
+    6 Drifting Buoy
+    7 Rawinsonde
+    8 Pilot Wind
+    9 Ship Released Rawinsonde
+   10 Dropwinsonde
+   11 Radar-tracked Rawinsonde
+   12 Rocketsonde
+   13 Balloon
+   14 Aircraft - Air/Sat Relay
+   15 Aircraft - Int. Data Sys
+   16 Aircraft Report
+   17 Aircraft Coded Report
+   18 Aircraft - ALPX
+   19 Cloud Track Wind - Wisc E1
+   20 Cloud Track Wind - Wisc E2
+   21 Cloud Track Wind - Wisc W
+   22 Cloud Track Wind - Wisc Ocean
+   23 Cloud Track Wind - Repr. Jap.
+   24 Cloud Track Wind - US1 Picture triplet *)
+   25 Cloud Track Wind - US2 Picture triplet *)
+   26 Cloud Track Wind - European IR automated cloud-drift **)
+   27 Cloud Track Wind - Japanese IR automated cloud-drift **)
+   28 SCATTEROMETER Research Mode
+   29 WSAT 55
+   30 WSAT 57
+   31 Limb Infrared Monitor - Strat
+   32 Aircraft EU experiment
+   33 NESDIS NH Land AM type A
+   34 NESDIS SH Land AM type A
+   35 NESDIS NH Land AM type B / NO HIRS
+   36 NESDIS SH Land AM type B / NO HIRS
+   37 NESDIS NH Land AM type C
+   38 NESDIS SH Land AM type C
+   39 NESDIS NH Ocean AM type A
+   40 NESDIS SH Ocean AM type A
+   41 NESDIS NH Ocean AM type B / NO HIRS
+   42 NESDIS SH Ocean AM type B / NO HIRS
+   43 NESDIS NH Ocean AM type C
+   44 NESDIS SH Ocean AM type C
+   45 NESDIS NH Land PM type A
+   46 NESDIS SH Land PM type A
+   47 NESDIS NH Land PM type B / NO HIRS
+   48 NESDIS SH Land PM type B / NO HIRS
+   49 NESDIS NH Land PM type C
+   50 NESDIS SH Land PM type C
+   51 NESDIS NH Ocean PM type A
+   52 NESDIS SH Ocean PM type A
+   53 NESDIS NH Ocean PM type B / NO HIRS
+   54 NESDIS SH Ocean PM type B / NO HIRS
+   55 NESDIS NH Ocean PM type C
+   56 NESDIS SH Ocean PM type C
+   57 Special Sat NH - Ocn A
+   58 Special Sat SH - Ocn A
+   59 Special Sat NH - Ocn B
+   60 Special Sat SH - Ocn B
+   61 Special Sat NH - Ocn C
+   62 Special Sat SH - Ocn C
+   63 VAS NH Land - type A
+   64 VAS SH Land - type A
+   65 VAS NH Land - type B
+   66 VAS SH Land - type B
+   67 VAS NH Ocean - type A
+   68 VAS SH Ocean - type A
+   69 VAS NH Ocean - type B
+   70 VAS SH Ocean - type B
+   71 NASA-GLA NH Land type A
+   72 NASA-GLA SH Land type A
+   73 NASA-GLA NH Land type B
+   74 NASA-GLA SH Land type B
+   75 NASA-GLA NH Land type C
+   76 NASA-GLA SH Land type C
+   77 NASA-GLA NH Land type D
+   78 NASA-GLA SH Land type D
+   79 NASA-GLA NH Oceantype A
+   80 NASA-GLA SH Ocean type A
+   81 NASA-GLA NH Ocean type B
+   82 NASA-GLA SH Ocean type B
+   83 NASA-GLA NH Ocean type C
+   84 NASA-GLA SH Ocean type C
+   85 NASA-GLA NH Ocean type D
+   86 NASA-GLA SH Ocean type D
+   87 Pseudo-1000 mb Heights
+   88 ER-2 Aircraft / MMS Data
+   89 Aircraft reports (ACARS)
+   90 Surface METAR
+   91 UARS / MLS 1
+   92 UARS / MLS 2
+   93 DAOTOVS Land  AM Type: Clr HIRS/MSU/SSU
+   94 DAOTOVS Land  AM Type: Clr HIRS/MSU
+   95 DAOTOVS Land  AM Type: MSU/SSU
+   96 DAOTOVS Land  AM Type: MSU
+   97 DAOTOVS Land  AM Type: SSU 
+   98 DAOTOVS Ocean AM Type: Clr HIRS/MSU/SSU
+   99 DAOTOVS Ocean AM Type: Clr HIRS/MSU
+  100 DAOTOVS Ocean AM Type: MSU/SSU
+  101 DAOTOVS Ocean AM Type: MSU
+  102 DAOTOVS Ocean AM Type: SSU 
+  103 DAOTOVS Ice   AM Type: Clr HIRS/MSU/SSU
+  104 DAOTOVS Ice   AM Type: Clr HIRS/MSU
+  105 DAOTOVS Ice   AM Type: MSU/SSU
+  106 DAOTOVS Ice   AM Type: MSU
+  107 DAOTOVS Ice   AM Type: SSU 
+  108 DAOTOVS Land  AM Type: Cld Clr  HIRS/MSU/SSU
+  109 DAOTOVS Land  AM Type: Cld Clr  HIRS/MSU
+  110 DAOTOVS Ocean AM Type: Cld Clr  HIRS/MSU/SSU
+  111 DAOTOVS Ocean AM Type: Cld Clr  HIRS/MSU
+  112 DAOTOVS Ice   AM Type: Cld Clr  HIRS/MSU/SSU
+  113 DAOTOVS Ice   AM Type: Cld Clr  HIRS/MSU
+  114 Cloud Track Wind - INDIAN OCEAN
+  115 Cloud Track Wind - GOES 9 (04/04/97-03/11/98)
+  116 SSM/I NESDIS Precipitation 
+  117 TOMS
+  118 SBUV/2
+  119 Cloud Track Wind - US1 IR automated cloud-drift
+  120 Cloud Track Wind - US1 Water Vapor,Deep-Layer 
+  121 Cloud Track Wind - US1 Water Vapor,Cloud-Top
+  122 Cloud Track Wind - US2 IR automated cloud-drift
+  123 Cloud Track Wind - US2 Water Vapor,Deep-Layer
+  124 Cloud Track Wind - US2 Water Vapor,Cloud-Top
+  125 DAOTOVS Land  PM Type: Clr HIRS/MSU/SSU
+  126 DAOTOVS Land  PM Type: Clr HIRS/MSU
+  127 DAOTOVS Land  PM Type: MSU/SSU
+  128 DAOTOVS Land  PM Type: MSU
+  129 DAOTOVS Land  PM Type: SSU
+  130 DAOTOVS Ocean PM Type: Clr HIRS/MSU/SSU
+  131 DAOTOVS Ocean PM Type: Clr HIRS/MSU
+  132 DAOTOVS Ocean PM Type: MSU/SSU
+  133 DAOTOVS Ocean PM Type: MSU
+  134 DAOTOVS Ocean PM Type: SSU
+  135 DAOTOVS Ice   PM Type: Clr HIRS/MSU/SSU
+  136 DAOTOVS Ice   PM Type: Clr HIRS/MSU
+  137 DAOTOVS Ice   PM Type: MSU/SSU
+  138 DAOTOVS Ice   PM Type: MSU
+  139 DAOTOVS Ice   PM Type: SSU
+  140 DAOTOVS Land  PM Type: Cld Clr  HIRS/MSU/SSU
+  141 DAOTOVS Land  PM Type: Cld Clr  HIRS/MSU
+  142 DAOTOVS Ocean PM Type: Cld Clr  HIRS/MSU/SSU
+  143 DAOTOVS Ocean PM Type: Cld Clr  HIRS/MSU
+  144 DAOTOVS Ice   PM Type: Cld Clr  HIRS/MSU/SSU
+  145 DAOTOVS Ice   PM Type: Cld Clr  HIRS/MSU
+  146 Cloud Track Wind - US1 visible automated cloud-drift
+  147 Cloud Track Wind - US2 visible automated cloud-drift
+  148 SSM/I WENTZ  Speed only
+  149 SSM/I NESDIS Speed only
+  150 SSM/I WENTZ F8/F14
+  151 SCATTEROMETER   ERS1
+  152 SCATTEROMETER   ERS2
+  153 SCATTEROMETER   NSCAT
+  154 SCATTEROMETER   QuikSCAT
+  155 SCATTEROMETER   SEAWINDS
+  156 TRMM
+  157 TMI 
+  158 GADS(BRITISH AIRWAYS)
+  159 SAT am, WATER, CLFRC<=.10
+  160 SAT am, WATER, CLFRC<=.40
+  161 SAT am, WATER, CLFRC> .40
+  162 SAT am, Other, CLFRC<=.10
+  163 SAT am, Other, CLFRC<=.40
+  164 SAT am, Other, CLFRC> .40
+  165 SAT pm, WATER, CLFRC<=.10
+  166 SAT pm, WATER, CLFRC<=.40
+  167 SAT pm, WATER, CLFRC> .40
+  168 SAT pm, Other, CLFRC<=.10
+  169 SAT pm, Other, CLFRC<=.40
+  170 SAT pm, Other, CLFRC> .40
+  171 GPS DAO Refractive Retrieval
+  172 GPS DAO Bending Angle Retrieval
+  173 GPS DAO Observation Retrieval
+  174 GPS JPL Refractive Retrieval
+  175 GPS JPL Bending Angle Retrieval
+  176 GPS JPL Observation Retrieval
+  177 GPS NCAR Refractive Retrieval
+  178 GPS NCAR Bending Angle Retrieval
+  179 GPS NCAR Observation Retrieval
+  180 GPS INST Refractive Retrieval
+  181 GPS INST Bending Angle Retrieval
+  182 GPS INST Observation Retrieval
+  183 SSM/I WENTZ F10/F15
+  184 SSM/I WENTZ F11
+  185 SSM/I WENTZ F13
+  186 DAOTOVS Land  AM Type: Clr HIRS/AMSUA/AMSUB
+  187 DAOTOVS Land  AM Type: Clr HIRS/AMSUA
+  188 DAOTOVS Land  AM Type: AMSUA/AMSUB
+  189 DAOTOVS Land  AM Type: AMSUA
+  190 DAOTOVS Land  AM Type: AMSUB 
+  191 DAOTOVS Ocean AM Type: Clr HIRS/AMSUA/AMSUB
+  192 DAOTOVS Ocean AM Type: Clr HIRS/AMSUA
+  193 DAOTOVS Ocean AM Type: AMSUA/AMSUB
+  194 DAOTOVS Ocean AM Type: AMSUA
+  195 DAOTOVS Ocean AM Type: AMSUB 
+  196 DAOTOVS Ice   AM Type: Clr HIRS/AMSUA/AMSUB
+  197 DAOTOVS Ice   AM Type: Clr HIRS/AMSUA
+  198 DAOTOVS Ice   AM Type: AMSUA/AMSUB
+  199 DAOTOVS Ice   AM Type: AMSUA
+  200 DAOTOVS Ice   AM Type: AMSUB 
+  201 DAOTOVS Land  AM Type: Cld Clr  HIRS/AMSUA/AMSUB
+  202 DAOTOVS Land  AM Type: Cld Clr  HIRS/AMSUA
+  203 DAOTOVS Ocean AM Type: Cld Clr  HIRS/AMSUA/AMSUB
+  204 DAOTOVS Ocean AM Type: Cld Clr  HIRS/AMSUA
+  205 DAOTOVS Ice   AM Type: Cld Clr  HIRS/AMSUA/AMSUB
+  206 DAOTOVS Ice   AM Type: Cld Clr  HIRS/AMSUA
+  207 DAOTOVS Land  PM Type: Clr HIRS/AMSUA/AMSUB
+  208 DAOTOVS Land  PM Type: Clr HIRS/AMSUA
+  209 DAOTOVS Land  PM Type: AMSUA/AMSUB
+  210 DAOTOVS Land  PM Type: AMSUA
+  211 DAOTOVS Land  PM Type: AMSUB
+  212 DAOTOVS Ocean PM Type: Clr HIRS/AMSUA/AMSUB
+  213 DAOTOVS Ocean PM Type: Clr HIRS/AMSUA
+  214 DAOTOVS Ocean PM Type: AMSUA/AMSUB
+  215 DAOTOVS Ocean PM Type: AMSUA
+  216 DAOTOVS Ocean PM Type: AMSUB
+  217 DAOTOVS Ice   PM Type: Clr HIRS/AMSUA/AMSUB
+  218 DAOTOVS Ice   PM Type: Clr HIRS/AMSUA
+  219 DAOTOVS Ice   PM Type: AMSUA/AMSUB
+  220 DAOTOVS Ice   PM Type: AMSUA
+  221 DAOTOVS Ice   PM Type: AMSUB
+  222 DAOTOVS Land  PM Type: Cld Clr  HIRS/AMSUA/AMSUB
+  223 DAOTOVS Land  PM Type: Cld Clr  HIRS/AMSUA
+  224 DAOTOVS Ocean PM Type: Cld Clr  HIRS/AMSUA/AMSUB
+  225 DAOTOVS Ocean PM Type: Cld Clr  HIRS/AMSUA
+  226 DAOTOVS Ice   PM Type: Cld Clr  HIRS/AMSUA/AMSUB
+  227 DAOTOVS Ice   PM Type: Cld Clr  HIRS/AMSUA
+  228 NESTAT AIRS Land PM type A
+  229 NESTAT AIRS Land PM type B
+  230 NESTAT AIRS Land PM type C
+  231 NESTAT AIRS Ocean PM type A
+  232 NESTAT AIRS Ocean PM type B
+  233 NESTAT AIRS Ocean PM type C
+  234 NESPHY AIRS Land PM type A
+  235 NESPHY AIRS Land PM type B
+  236 NESPHY AIRS Land PM type C
+  237 NESPHY AIRS Ocean PM type A
+  238 NESPHY AIRS Ocean PM type B
+  239 NESPHY AIRS Ocean PM type C
+  240 DAOAIRS Land  Type: Clr AIRS/AMSU/HSB
+  241 DAOAIRS Land  Type: Clr AIRS/AMSU
+  242 DAOAIRS Land  Type: Clr AIRS/HSB
+  243 DAOAIRS Land  Type: AMSU/HSB
+  244 DAOAIRS Land  Type: AMSU
+  245 DAOAIRS Land  Type: HSB
+  246 DAOAIRS Ocean Type: Clr AIRS/AMSU/HSB
+  247 DAOAIRS Ocean Type: Clr AIRS/AMSU
+  248 DAOAIRS Ocean Type: Clr AIRS/HSB
+  249 DAOAIRS Ocean Type: AMSU/HSB
+  250 DAOAIRS Ocean Type: AMSU
+  251 DAOAIRS Ocean Type: HSB
+  252 DAOAIRS Ice   Type: Clr AIRS/AMSU/HSB
+  253 DAOAIRS Ice   Type: Clr AIRS/AMSU
+  254 DAOAIRS Ice   Type: Clr AIRS/HSB
+  255 DAOAIRS Ice   Type: AMSU/HSB
+  256 DAOAIRS Ice   Type: AMSU
+  257 DAOAIRS Ice   Type: HSB
+  258 DAOAIRS Land  Type: Cld Clr  AIRS/AMSU/HSB
+  259 DAOAIRS Land  Type: Cld Clr  AIRS/AMSU
+  260 DAOAIRS Land  Type: Cld Clr  AIRS/HSB
+  261 DAOAIRS Ocean Type: Cld Clr  AIRS/AMSU/HSB
+  262 DAOAIRS Ocean Type: Cld Clr  AIRS/AMSU
+  263 DAOAIRS Ocean Type: Cld Clr  AIRS/HSB
+  264 DAOAIRS Ice   Type: Cld Clr  AIRS/AMSU/HSB
+  265 DAOAIRS Ice   Type: Cld Clr  AIRS/AMSU
+  266 DAOAIRS Ice   Type: Cld Clr  AIRS/HSB
+  267 Cloud Track Wind - European Water Vapor
+  268 Cloud Track Wind - European visible automated cloud-drift
+  269 Cloud Track Wind - Japanese Water Vapor
+  270 Cloud Track Wind - Japanese visible automated cloud-drift
+  271 Microwave Limb Sounder (MLS) at 205 GHz
+  272 Microwave Limb Sounder (MLS) at 183 GHz
+  273 Global Ozone Monitoring Experiment (GOME)
+  274 Cloud Track Wind - MISR
+  275 Cloud Track Wind - European ELW***) IR
+  276 Cloud Track Wind - European ELW***) visible automated cloud-drift
+  277 Cloud Track Wind - European ELW***) Water Vapor
+  278 Cloud Track Wind - European High-resolution Visible Wind(HRV)
+  279 Cloud Track Wind - European Clear Sky Water Vapor(WVW)
+  280 TIDE GAUGE STATION
+  281 Cloud Track Wind - TERRA Modis Water Vapor -CIMSS
+  282 Cloud Track Wind - TERRA Modis IR-CIMSS
+  283 Super-pressure balloon
+  284 VAD (NEXRAD) WINDS
+  285 WIND PROFILER
+  286 Cloud Track Wind-European High-resolution Water Vapor Wind(HWW)
+  287 GOES IRET - US1 Land Type: Clr
+  288 GOES IRET - US1 Ocean Type: Clr
+  289 GOES IRET - US2 Land Type: Clr
+  290 GOES IRET - US2 Ocean Type: Clr
+  291 GOES IRET - US3 Land Type: Clr
+  292 GOES IRET - US3 Ocean Type: Clr
+  293 HRDI - High Resolution Doppler Imager
+  294 SABER - Sounding of the Atmosphere Broadband Emission Radiometer 
+  295 Cloud Track Wind - AQUA Modis Water Vapor-CIMSS
+  296 Cloud Track Wind - AQUA Modis IR-CIMSS
+  297 Cloud Track Wind - TERRA Modis Water Vapor-NESDIS
+  298 Cloud Track Wind - TERRA Modis IR -NESDIS
+  299 Cloud Track Wind - AQUA Modis Water Vapor-NESDIS
+  300 Cloud Track Wind - AQUA Modis IR -NESDIS
+  301 TERRA MODIS Aerosol (Ocean Algorithm)
+  302 TERRA MODIS Aerosol (Land Algorithm)
+  303 EPTOMS Aerosol (Ocean Algorithm)
+  304 EPTOMS Aerosol (Land Algorithm)
+  305 MSG Cloud track wind - Infrared channel
+  306 MSG Cloud track wind - Water vapor channel
+  307 MSG Cloud track wind - Visible channel
+  308 MSG Clear sky Water Vapor channel wind
+  309 TERRA MODIS Deep Blue Aerosol (Ocean Algorithm)
+  310 TERRA MODIS Deep Blue Aerosol (Land Algorithm)
+  311 AQUA MODIS Aerosol (Ocean Algorithm)
+  312 AQUA MODIS Aerosol (Land Algorithm)
+  313 MISR (Multi-angle Imaging SpectroRadiometer)
+  314 OMI (Ozone Monitoring Instrument)
+  315 Mozaic Aircraft Data
+  316 Parasol  (Ocean Algorithm)
+  317 Parasol  (Land Algorithm)
+  318 MOPITT (Measurements Of Pollution In The Troposphere)  
+  319 AQUA MODIS Deep Blue Aerosol (Ocean Algorithm)
+  320 AQUA MODIS Deep Blue Aerosol (Land Algorithm)
+  321 TERRA MODIS pixFire 
+  322 AQUA MODIS Pixfire 
+  323 AERONET Aerosol Retrievals
+  324 AVHRR PATMOSX Aerosol Retrievals
+  325 OMSO2 (OMI SULFER DIOXIDE)
+::
+
+# Notes:
+#
+# *)  Before March 11, 1998,12z we define KX = 24,25 as:
+#
+#   24 Cloud Track Wind - NESS East
+#   25 Cloud Track Wind - NESS West
+#
+# **)  Before March 22, 2000,0z we define KX = 26,27 as:
+#
+#   26 Cloud Track Wind - European
+#   27 Cloud Track Wind - Japanese
+#
+#***) ELW -  EUMETSAT Expanded Low-Resolution Winds
+#            After  April 24, 6z
+#
+
+
+

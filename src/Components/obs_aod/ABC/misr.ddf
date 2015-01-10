@@ -1,0 +1,7 @@
+DSET /nobackup/MISR/Level3/GRITAS/Y%y4/M%m2/MISR_L3_F12_0022.tavg3d_aero_w4.x1152_y721_tc8.%y4%m2%d2.nc4
+TITLE MISR 3-hourly Retrivals (Collection 51)
+OPTIONS template
+UNDEF 1.e+15
+XDEF lon 1152 linear -180 0.3125
+TDEF time 99999 LINEAR  00:00Z01mar2000  3Hr
+

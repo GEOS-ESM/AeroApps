@@ -1,0 +1,21 @@
+#
+# GrITAS Resource file.
+#
+#
+
+# Vertical levels - Must decrease monotonically
+# ---------------------------------------------
+GrITAS*Vertical_Levels: 870 660 550 470
+
+# User Defined Grid List
+# ----------------------
+GrITAS*List::
+#  kt    var name      kx's
+   45    modo          301 
+   45    modl          302
+   45    mydo          311 
+   45    mydl          312 
+   45    misr          313
+   45    deep          320
+   45    anet          323
+::

@@ -1,0 +1,142 @@
+! ===============================================================
+! =                                                             =
+! =                    THE VECTOR LIDORT MODEL                  =
+! =                                                             =
+! =  (Vector LInearized Discrete Ordinate Radiative Transfer)   =
+! =   -      --         -        -        -         -           =
+! =                                                             =
+! ===============================================================
+
+! ===============================================================
+! =                                                             =
+! =  Author :      Robert. J. D. Spurr                          =
+! =                                                             =
+! =  Address :      RT Solutions, inc.                          =
+! =                 9 Channing Street                           =
+! =                 Cambridge, MA 02138, USA                    =
+! =                 Tel: (617) 492 1183                         =
+! =                                                             =
+! =  Email :      rtsolutions@verizon.net                       =
+! =                                                             =
+! =  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT           =
+! =  Release Date :   December 2005  (2.0)                      =
+! =  Release Date :   March 2007     (2.2)                      =
+! =  Release Date :   October 2007   (2.3)                      =
+! =  Release Date :   December 2008  (2.4)                      =
+! =  Release Date :   April/May 2009 (2.4R)                     =
+! =  Release Date :   July 2009      (2.4RT)                    =
+! =                                                             =
+! =       NEW: TOTAL COLUMN JACOBIANS         (2.4)             =
+! =       NEW: BPDF Land-surface KERNELS      (2.4R)            =
+! =       NEW: Thermal Emission Treatment     (2.4RT)           =
+! =                                                             =
+! ===============================================================
+
+!    =====================================================
+!    =                                                   =
+!    =   This Version of VLIDORT comes with a GNU-style  =
+!    =   license. Please read the license carefully.     =
+!    =                                                   =
+!    =====================================================
+
+!  Results for Weighting function output
+!  -------------------------------------
+
+!  output from single Fourier term
+
+      DOUBLE PRECISION SURFACEWF_F                                &
+         ( MAX_SURFACEWFS,   MAX_USER_LEVELS,                     & 
+           MAX_USER_VZANGLES, MAX_SZANGLES, MAXSTOKES, MAX_DIRECTIONS )  
+
+      DOUBLE PRECISION ATMOSWF_F                                   &
+         ( MAX_ATMOSWFS,   0:MAXLAYERS, MAX_USER_LEVELS,           &
+           MAX_USER_VZANGLES, MAX_SZANGLES,  MAXSTOKES, MAX_DIRECTIONS )
+
+!  Fourier-summed values
+
+      DOUBLE PRECISION SURFACEWF                        &
+         ( MAX_SURFACEWFS, MAX_USER_LEVELS,             &
+           MAX_GEOMETRIES, MAXSTOKES, MAX_DIRECTIONS )
+
+!  Former code................................................
+!      DOUBLE PRECISION ATMOSWF                          &
+!         ( MAX_ATMOSWFS,   MAXLAYERS, MAX_USER_LEVELS,  &
+!           MAX_GEOMETRIES, MAXSTOKES, MAX_DIRECTIONS )
+
+      DOUBLE PRECISION PROFILEWF                          &
+        ( MAX_ATMOSWFS,   MAXLAYERS, MAX_USER_LEVELS,     &
+          MAX_GEOMETRIES, MAXSTOKES, MAX_DIRECTIONS )
+
+      DOUBLE PRECISION COLUMNWF                          &
+        ( MAX_ATMOSWFS,   MAX_USER_LEVELS,               &
+          MAX_GEOMETRIES, MAXSTOKES, MAX_DIRECTIONS )
+
+!  mean intensity (actinic flux) weighting functions. Total Fluxes.
+!   ( atmospheric WFs have separate Direct Beam WFs. Introduced 09.24.09 )
+
+      DOUBLE PRECISION MINT_SURFACEWF             &
+          ( MAX_SURFACEWFS, MAX_USER_LEVELS,      &
+            MAX_SZANGLES, MAXSTOKES, MAX_DIRECTIONS )
+
+      DOUBLE PRECISION MINT_ATMOSWF                     &
+          ( MAX_ATMOSWFS, 0:MAXLAYERS, MAX_USER_LEVELS, &  
+            MAX_SZANGLES, MAXSTOKES, MAX_DIRECTIONS )
+ 
+      DOUBLE PRECISION MINT_ATMOSWF_DIRECT              &
+          ( MAX_ATMOSWFS, 0:MAXLAYERS, MAX_USER_LEVELS, & 
+            MAX_SZANGLES, MAXSTOKES )
+
+!  flux weighting functions. Total Fluxes.
+!   ( atmospheric WFs have separate Direct Beam WFs. Introduced 09.24.09 )
+
+      DOUBLE PRECISION FLUX_SURFACEWF             &
+          ( MAX_SURFACEWFS, MAX_USER_LEVELS,      &
+            MAX_SZANGLES, MAXSTOKES, MAX_DIRECTIONS )
+
+      DOUBLE PRECISION FLUX_ATMOSWF                     &
+          ( MAX_ATMOSWFS, 0:MAXLAYERS, MAX_USER_LEVELS, &
+            MAX_SZANGLES, MAXSTOKES, MAX_DIRECTIONS )
+
+      DOUBLE PRECISION FLUX_ATMOSWF_DIRECT              &
+          ( MAX_ATMOSWFS, 0:MAXLAYERS, MAX_USER_LEVELS, &
+            MAX_SZANGLES, MAXSTOKES )
+
+!  RT Solutions Inc. RJD Spurr.  11 September 2009. 
+!    LTE linearization: Introduction of T-Jacobians for BB functions
+!   Only works with pure thermal emission (no scattering)
+!  Introduced for the GEOCAPE study
+
+      DOUBLE PRECISION LTE_ATMOSWF                &
+         ( 0:MAXLAYERS, MAX_USER_LEVELS,          &
+           MAX_USER_VZANGLES, MAX_DIRECTIONS )
+
+!----------------------------------- REMOVED, 28 March 2007 ------------
+!  Quadrature stream solutions (not strictly part of the results)
+!   Stored here for convenience. Really only for One Fourier term
+!      DOUBLE PRECISION QUAD_ATMOSWF
+!     C    ( MAX_ATMOSWFS, MAXLAYERS, MAX_USER_LEVELS,
+!     C      MAXSTREAMS,   MAX_SZANGLES,  MAXSTOKES, MAX_DIRECTIONS )
+!      DOUBLE PRECISION QUAD_SURFACEWF
+!     C    ( MAX_SURFACEWFS,  MAX_USER_LEVELS,
+!     C      MAXSTREAMS,      MAX_SZANGLES, MAXSTOKES, MAX_DIRECTIONS )
+!      DOUBLE PRECISION QUAD_SURFBBWF
+!     C    ( MAX_USER_LEVELS,
+!     C      MAXSTREAMS,      MAX_SZANGLES, MAXSTOKES, MAX_DIRECTIONS )
+!      COMMON / L_VLIDORT_RESULTS_QUADWFS /
+!     &     QUAD_ATMOSWF, QUAD_SURFACEWF, QUAD_SURFBBWF
+!      SAVE   / L_VLIDORT_RESULTS_QUADWFS     /
+!----------------------------------- REMOVED, 28 March 2007 ------------
+
+!  Commons storage
+!  ---------------
+
+      COMMON / L_VLIDORT_RESULTS_WEIGHTFUNCS /   &
+               SURFACEWF_F,    ATMOSWF_F,        &
+               SURFACEWF, PROFILEWF, COLUMNWF,   &
+               MINT_SURFACEWF, MINT_ATMOSWF, MINT_ATMOSWF_DIRECT, &
+               FLUX_SURFACEWF, FLUX_ATMOSWF, FLUX_ATMOSWF_DIRECT, &
+               LTE_ATMOSWF
+
+      SAVE   / L_VLIDORT_RESULTS_WEIGHTFUNCS /
+
+!  End of file.

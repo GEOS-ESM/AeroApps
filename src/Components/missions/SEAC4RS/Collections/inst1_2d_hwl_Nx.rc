@@ -1,0 +1,43 @@
+#
+# Resource file with variable list for GEOS-5 Collection <inst1_2d_hwl_Nx>.
+#
+# This RC file was automatically created on Mon Jul 18 10:28:10 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover05:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: 2d,1-Hourly,Instantaneous,Single-Level,Analysis,Hyperwall
+SLP: sea level pressure;  Pa
+DUEXTTAU: Dust Extinction AOT [550 nm];  1
+SSEXTTAU: Sea Salt Extinction AOT [550 nm];  1
+SUEXTTAU: SO4 Extinction AOT [550 nm];  1
+BCEXTTAU: Black Carbon Extinction AOT [550 nm];  1
+OCEXTTAU: Organic Carbon Extinction AOT [550 nm] ENSEMBLE;  1
+CO2CL: CO2 Column Load Bin 001;  kg m-2
+COCL: CO Column Burden ENSEMBLE;  kg m-2
+COCLbbae: CO Column Burden (Asia and Europe Biomass Burning);  kg m-2
+COCLbbna: CO Column Burden (North America Biomass Burning);  kg m-2
+COCLbbla: CO Column Burden (Central and South America Biomass Burning);  kg m-2
+COCLbbaf: CO Column Burden (Africa Biomass Burning);  kg m-2
+COCLbbgl: CO Column Burden (Global Biomass Burning);  kg m-2
+COCLnbas: CO Column Burden (Asia Non-Biomass Burning);  kg m-2
+COCLnbeu: CO Column Burden (European Non-Biomass Burning);  kg m-2
+COCLnbna: CO Column Burden (North American Non-Biomass Burning);  kg m-2
+COCLnbgl: CO Column Burden (Global Non-Biomass Burning);  kg m-2
+CFC12strat: Stratospheric CFC-12 Column;  kg m-2
+CFC12trop: Tropospheric CFC-12 Column;  kg m-2
+TO3: total column ozone;  Dobsons
+TOTEXTTAU: Total Aerosol Extinction AOT [550 nm];  1
+TOTSCATAU: Total Aerosol Scattering AOT [550 nm];  1
+TOTANGSTR: Total Aerosol Angstrom parameter [470-870 nm];  1
+COSC: CO Surface Concentration in ppbv ENSEMBLE;  1e-9
+DUSMASS: Dust Surface Mass Concentration;  kg m-3
+DUSMASS25: Dust Surface Mass Concentration - PM 2.5;  kg m-3
+SSSMASS: Sea Salt Surface Mass Concentration;  kg m-3
+SSSMASS25: Sea Salt Surface Mass Concentration - PM 2.5;  kg m-3
+BCSMASS: Black Carbon Surface Mass Concentration;  kg m-3
+OCSMASS: Organic Carbon Surface Mass Concentration ENSEMBLE;  kg m-3
+SO4SMASS: SO4 Surface Mass Concentration;  kg m-3
+SO2SMASS: SO2 Surface Mass Concentration;  kg m-3
+SO2CMASS: SO2 Column Mass Density;  kg m-2

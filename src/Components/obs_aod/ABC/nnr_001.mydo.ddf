@@ -1,0 +1,5 @@
+DSET /nobackup/6/NNR/Level3/MYD04/Y%y4/M%m2/nnr_001.MYD04_l3a.ocean.%y4%m2%d2_%h200z.nc4
+TITLE MODIS AOD: Neural Net Experiment nnr_001 - Aqua (ocean)
+OPTIONS template
+TDEF time 36000 linear 0z4jul2002 3hr
+

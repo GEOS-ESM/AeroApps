@@ -1,0 +1,57 @@
+# what: known ODS KX values for ozone obvervations.
+#  who: jing.guo@nasa.gov
+# when: Fri Dec 20 15:04:43 EST 2013 
+# 
+# ODS KX values of layer-ozone data, for different *dplat*s.
+#
+#  dtype      dplat* isat   kx
+
+  tomseff         -    0   440
+  tomseff     nim07    1   441
+  tomseff        ep    2   442
+     gome*        -    0   445
+      omi*        -    0   449
+   omieff         -    0   449
+      omi*     aura    0   449
+   omieff      aura    0   449
+    sbuv2         -    0   450
+    sbuv2     nim07    1   451
+    sbuv2       n11   11   461
+    sbuv2       n14   14   464
+    sbuv2       n16   16   466
+    sbuv2       n17   17   467
+    sbuv2       n18   18   468
+    sbuv2       n19   19   469
+     gome*  metop-a   25   470
+     gome*  metop-b   26   471
+
+# ODS KX values of level-ozone data, for different *dplat*s.
+#
+#  dtype      dplat* isat   kx
+
+    o3lev         -    0   304
+    o3lev      aura    0   304
+      mls*        -    0   310
+    mls20*        -    0   315
+    mls22*        -    0   320
+    mls30*        -    0   325
+    mls55         -    0   330
+    mls55      aura    0   330
+
+# Notes for (*):
+#
+#    dplat: GSI aliases for satellite platforms, where "-" entries
+#           represent *base* KX values assigned to each dtypes.
+#    gome : This ozone type is not in MERRA-2, but is listed in
+#           gsi.rc.tmpl in GSI_GridComp/etc/.  Its kx values are
+#           not properly assigned in the current 5_12_2_UNSTABLE tag,
+#           which will be patched soon.  Also, its KX values are
+#           blocking sbuv2_n- sequence, if there is any sbuv2 beyand
+#           n19.
+#    omi  : KX for this dtype was intentionally overridden by its
+#           dtype=omieff, although it might be a bad choice.
+#    mls  : This is for the original NCEP MLS ozone.
+#    mls20: NCEP MLS ozone, version 2.0.
+#    mls22: NCEP MLS ozone, version 2.2.
+#    mls30: NCEP MLS ozone, version 3.0.
+#

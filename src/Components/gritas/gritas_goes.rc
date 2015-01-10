@@ -1,0 +1,19 @@
+#
+# GrITAS Resource file.
+#
+#
+
+# Vertical levels - Must decrease monotonically
+# ---------------------------------------------
+GrITAS*Vertical_Levels: 2 3 4 5
+
+# User Defined Grid List
+# ----------------------
+GrITAS*List::
+#  kt    var name      kx's
+   40    goes08        258
+   40    goes09        259
+   40    goes10        260
+   40    goes11        261
+   40    goes12        262
+::

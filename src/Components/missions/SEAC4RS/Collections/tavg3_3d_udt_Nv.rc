@@ -1,0 +1,25 @@
+#
+# Resource file with variable list for GEOS-5 Collection <tavg3_3d_udt_Nv>.
+#
+# This RC file was automatically created on Sun Aug 7 20:46:23 EDT 2011 
+# by script /discover/nobackup/projects/gmao/share/dasilva/bin/mk_coll_rc.csh
+# based on GEOS-5 files found on
+#    discover07:/portal/GMAO/yotc/e572_fp/das/Y2011/M07/D01
+#
+#------------------------------------------------------------------
+__TITLE__: 3d,3-Hourly,Time-Averaged,Model-Level,Assimilation,Wind Tendencies
+PS: surface pressure;  Pa
+DELP: pressure thickness;  Pa
+DUDTMST: zonal wind tendency due to moist;  m s-2
+DUDTTRB: tendency of eastward wind due to turbulence;  m s-2
+DUDTGWD: tendency of eastward wind due to GWD;  m s-2
+DUDTDYN: tendency of eastward wind due to dynamics;  m s-2
+DUDTANA: total eastward wind analysis tendency;  m s-2
+DVDTMST: meridional wind tendency due to moist;  m s-2
+DVDTTRB: tendency of northward wind due to turbulence;  m s-2
+DVDTGWD: tendency of northward wind due to GWD;  m s-2
+DVDTDYN: tendency of northward wind due to dynamics;  m s-2
+DVDTANA: total northward wind analysis tendency;  m s-2
+U: eastward wind;  m s-1
+V: northward wind;  m s-1
+OMEGA: vertical pressure velocity;  Pa s-1
