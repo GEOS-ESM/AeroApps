@@ -14,6 +14,7 @@
 *.a
 *___.F90
 *___.f90
+*~
  
 # Packages #
 ############
@@ -43,3 +44,14 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Assorted GEOS-binaries
+########################
+odslist
+odsmatch
+odsselect
+odsshuffle
+odsstats
+odsmeta.py
+rst_date
+argopt
