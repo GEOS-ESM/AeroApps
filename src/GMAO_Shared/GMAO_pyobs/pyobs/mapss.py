@@ -266,6 +266,7 @@ class MAPSS(object):
 
 #       Read the data
 #       -------------
+        print filename
         data = loadtxt(filename, delimiter=',',
                        dtype={'names':self.Vars,'formats':self.formats},
                        converters = self.converters,
@@ -407,10 +408,17 @@ class MISR_MREF(MAPSS):
 if __name__ == "__main__":
 
     tdir = '/nobackup/MAPSS'
+    adir = tdir+'/AERONET/AerosolOpticalDepth/2008'
+    gdir = tdir+'/MISR/Geometry/2008'
+    rdir = tdir+'/MISR/RegEqRefl/2008'
+
     #    tdir = '/Users/adasilva/workspace/Data_Analysis/DeepBlue'
 
 #    m = MAPSS(tdir+'/Aeronet/AOD/2008')
-    a = ANET(tdir+'/Aeronet_AOD/2008',Verbose=True)
 #    d = DEEP_AOD(tdir+'/DeepBlue_AOD_Land/2008',Verbose=True)
 #    r = DEEP_MREF(tdir+'/DeepBlue_Reflectance_Land/2008',Verbose=True)
 #    s = DEEP_SREF(tdir+'/DeepBlue_Surface_Reflectance_Land/2008',Verbose=True)
+
+#    a = ANET(adir,Verbose=True)
+#    g = MISR_GEOM(gdir,Verbose=True)
+    r = MISR_MREF(rdir,Verbose=True)
