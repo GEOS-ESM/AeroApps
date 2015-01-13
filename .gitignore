@@ -6,6 +6,9 @@
 *.exe
 *.o
 *.so
+*.mod
+*.MOD
+*.d
  
 # Packages #
 ############
