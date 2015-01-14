@@ -61,6 +61,11 @@ VARS = dict (
                'mean_Refl0866eq1', 'mean_Refl0866eq2', 'mean_Refl0866eq3',
                'mean_Refl0866eq4', 'mean_Refl0866eq5', 'mean_Refl0866eq6',
                'mean_Refl0866eq7', 'mean_Refl0866eq8', 'mean_Refl0866eq9',),
+
+   MISR_AOD = ('irowc','icolc',
+               'mean_AOD0446b', 'mean_AOD0558b', 
+               'mean_AOD0672b', 'mean_AOD0866b'),
+
                )
               
 ALIAS = dict (             Longitude = 'lon',
@@ -77,6 +82,10 @@ ALIAS = dict (             Longitude = 'lon',
                         mean_AOD0410 = 'tau410',
                         mean_AOD0380 = 'tau380',
                         mean_AOD0340 = 'tau340',
+                        mean_AOD0446b = 'tau446',
+                        mean_AOD0558b = 'tau558',
+                        mean_AOD0672b = 'tau672',
+                        mean_AOD0866b = 'tau866',
               )
 
 ALIAS['mean_AOD0412dpbl-l'] = 'tau412'
@@ -392,6 +401,20 @@ class MISR_GEOM(MAPSS):
         self.iValid = (self.SolarZenith>0) # for now
         
 #..........................................................................
+class MISR_AOD(MAPSS):
+
+    def __init__ (self, Path, xVars = VARS['MISR_AOD'], Verbose=False):
+        """
+        Given a directory/file list returns a MAPSS object for MISR AOD
+        retrievals.
+        """
+        MAPSS.__init__(self,Path,xVars=xVars,Verbose=Verbose)
+
+        # Interpolate to 550 nm, if missing
+        # ---------------------------------
+        self.iValid = self.iValid & (self.tau558>-0.01)
+
+#..........................................................................
 class MISR_MREF(MAPSS):
 
     def __init__ (self, Path, xVars = VARS['MISR_MREF'], Verbose=False):
@@ -411,14 +434,19 @@ if __name__ == "__main__":
     adir = tdir+'/AERONET/AerosolOpticalDepth/2008'
     gdir = tdir+'/MISR/Geometry/2008'
     rdir = tdir+'/MISR/RegEqRefl/2008'
+    mdir = tdir+'/MISR/RegBestEstimateSpectralOptDepth/2008'
 
     #    tdir = '/Users/adasilva/workspace/Data_Analysis/DeepBlue'
 
-#    m = MAPSS(tdir+'/Aeronet/AOD/2008')
-#    d = DEEP_AOD(tdir+'/DeepBlue_AOD_Land/2008',Verbose=True)
-#    r = DEEP_MREF(tdir+'/DeepBlue_Reflectance_Land/2008',Verbose=True)
-#    s = DEEP_SREF(tdir+'/DeepBlue_Surface_Reflectance_Land/2008',Verbose=True)
-
 #    a = ANET(adir,Verbose=True)
 #    g = MISR_GEOM(gdir,Verbose=True)
-    r = MISR_MREF(rdir,Verbose=True)
+#    r = MISR_MREF(rdir,Verbose=True)
+    m = MISR_AOD(mdir,Verbose=True)
+
+
+def deep():
+    m = MAPSS(tdir+'/Aeronet/AOD/2008')
+    d = DEEP_AOD(tdir+'/DeepBlue_AOD_Land/2008',Verbose=True)
+    r = DEEP_MREF(tdir+'/DeepBlue_Reflectance_Land/2008',Verbose=True)
+    s = DEEP_SREF(tdir+'/DeepBlue_Surface_Reflectance_Land/2008',Verbose=True)
+
