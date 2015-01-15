@@ -1,6 +1,8 @@
 """
 
-Playing with Deep Blue
+Playing with Deep Blue.
+
+     *** OLD CSV VERSION ****
 
 """
 

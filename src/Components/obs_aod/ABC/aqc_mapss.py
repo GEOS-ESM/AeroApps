@@ -1,6 +1,6 @@
 """
 
-Playing with Deep Blue
+Playing with Deep Blue.
 
 """
 
