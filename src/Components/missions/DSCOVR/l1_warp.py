@@ -55,7 +55,11 @@ if __name__ == "__main__":
 
     parser.add_option("-y", "--Ny", dest="Ny", default=Nx,
               type='int',
-              help="Number of NORTH-SOUTH pixels (default is same as Nx)" )
+              help="Number of NORTH-SOUTH pixels (default:%d)"%Nx )
+
+    parser.add_option("-p", "--prime",
+                      action="store_true", dest="prime",
+                      help="Input image starts at prime meridian; default is date line")
 
     parser.add_option("-f", "--force",
                       action="store_true", dest="force",
@@ -92,9 +96,10 @@ if __name__ == "__main__":
         lon_0, lat_0 = getCenterPoint(tyme)
             
         # Instantiate basemap transform for this time
+        # Not sure why, but we need lat_0 = - lat_0
         # -------------------------------------------
         m =  Basemap(projection='ortho',resolution=None,
-                     lon_0 = lon_0, lat_0 = lat_0,
+                     lon_0 = lon_0[0], lat_0 = -lat_0[0],
                      rsphere=(rsphere[0]+rsphere[1])/2)
 
         # Form output file
@@ -119,17 +124,23 @@ if __name__ == "__main__":
         # Define lat/lon grid that image spans (projection='cyl').
         # --------------------------------------------------------
         dlon = 360./float(nlons)
-        dlat = 180./float(nlats-1)
+        dlat = 180./float(nlats-1)            
         lons = arange(-180,180.,dlon)
         lats = arange(-90.,90+dlat,dlat)
-
+        I = range(nlons)
+        if options.prime:
+            Lons = arange(0,360.,dlon)
+            J = Lons>180
+            Lons[J] = Lons[J] - 360.
+            I = Lons.argsort() # this will do a lon swap so that array goes from -180 to 180.
+        
         # Interpolate from global latlon to ortho disk
         # --------------------------------------------
         rgb = ma.zeros((options.Ny,options.Nx,nc))
         for k in range(nc):
             if options.verbose:
-                print "   - Remapping Layer ", k
-            rgb[:,:,k] = m.transform_scalar(RGB[:,:,k],lons,lats,
+                print "   - Remapping Layer ", k, lon_0[0], lat_0[0]
+            rgb[:,:,k] = m.transform_scalar(RGB[:,I,k],lons,lats,
                                             options.Nx, options.Ny,
                                             masked=True)
         # Save the image
