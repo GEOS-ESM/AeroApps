@@ -34,10 +34,14 @@ class ABC_MISR(NN):
         
         # Read in NPZ files written by collocation app
         # --------------------------------------------
-        self.a = MAPSS(npzDir+'/mapss.anet.??????.npz')
-        self.d = MAPSS(npzDir+'/mapss.dtau.??????.npz')
-        self.r = MAPSS(npzDir+'/mapss.dref.??????.npz')
-        self.s = MAPSS(npzDir+'/mapss.sref.??????.npz')
+        self.a = MAPSS(npzDir+'/mapss.anet_misr.??????.npz')
+        self.m = MAPSS(npzDir+'/mapss.misr_maod.??????.npz')
+        self.g = MAPSS(npzDir+'/mapss.misr_geom.??????.npz')
+        self.r = MAPSS(npzDir+'/mapss.misr_mref.??????.npz')
+        #------------------------------------------------------------------------
+        "Changed to read 'misr_maod,' 'misr_geom', misr_mref' ~ Suniyya Waraich."
+        #------------------------------------------------------------------------
+
 
         # Inherit coordinates from AERONET file
         # -------------------------------------
@@ -54,46 +58,123 @@ class ABC_MISR(NN):
 
         # Air mass factor
         # ---------------
-        self.amf = (1./cos(d2r*self.r.SolarZenith))+(1./cos(d2r*self.r.SensorZenith))  
+        self.amf1 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith1))
+        self.amf2 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith2))
+        self.amf3 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith3))
+        self.amf4 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith4))
+        self.amf5 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith5))
+        self.amf6 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith6))
+        self.amf7 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith7))
+        self.amf8 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith8))
+        self.amf9 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith9))
+        #-------------------------------------------------------------------------------
+	"changed self.r.SolarZenith to self.g.SolarZenith."                     
+	"replaced self.r.SensorZenith by self.g.SensorZenith1,..., self.g.SensorZenith9"
+	"thereby replacing self.amf by self.amf1,..., self.amf9. ~ Suniyya Waraich "
+	#-------------------------------------------------------------------------------
 
         # Expose reflectances
         # -------------------
-        self.sRef412 = self.s.sRef412
-        self.sRef470 = self.s.sRef470
-        self.sRef660 = self.s.sRef660
-        self.dRef412 = self.r.dRef412
-        self.dRef470 = self.r.dRef470
-        self.dRef660 = self.r.dRef660
-        self.xRef412 = self.dRef412 - self.sRef412 
-        self.xRef470 = self.dRef470 - self.sRef470 
- 
+       # self.sRef412 = self.s.sRef412
+       # self.sRef470 = self.s.sRef470
+       # self.sRef660 = self.s.sRef660
+       # self.dRef412 = self.r.dRef412
+       # self.dRef470 = self.r.dRef470
+       # self.dRef660 = self.r.dRef660
+       # self.xRef412 = self.dRef412 - self.sRef412 
+       # self.xRef470 = self.dRef470 - self.sRef470 
+        #------------------------------------------------------------------
+        "There were no analogous readings in the geom, mref or maod files."
+        "So commented out Expose reflectances             ~Suniyya Waraich"
+        #------------------------------------------------------------------
+
+         
         # Expose AOD
         # ----------
         self.aTau440  = self.a.tau440
         self.aTau550  = self.a.tau550
-        self.dTau412  = self.d.tau550
-        self.dTau470  = self.d.tau470
-        self.dTau550  = self.d.tau550
-        self.dTau660  = self.d.tau660
-        self.angstrom = -log(self.dTau660/self.dTau470)/log(660./470.)
+        #self.dTau412  = self.d.tau550
+        self.mTau446  = self.m.tau446
+        #self.dTau470  = self.d.tau470
+        #self.dTau550  = self.d.tau550
+        self.mTau558  = self.m.tau558
+        #self.dTau660  = self.d.tau660
+        self.mTau672  = self.m.tau672
+        #-------------------------------------------------------------------------
+	"Changed AOD values. Replaced self.d tau values by available self.m "
+	" tau values. tau550, tau470 and tau660 were unavailable. ~Suniyya Waraich "
+	#-------------------------------------------------------------------------
+
+        #Sanity Check
+        #------------
+	self.iValid = (self.a.tau550 >-0.01) &\
+                      (self.albedo >0) &\
+                      (self.m.tau558>-0.01)
+                    # &\
+                    # (self.d.qa_flag >0)
+
+	
+        #-------------------------------------------------------------------
+        "Moved sanity check up here to prevent log errors. ~Suniyya Waraich"
+        #-------------------------------------------------------------------        
+	
+	self.angstrom = -log(self.mTau672/self.mTau446)/log(672./446.)
         self.laTau550 = log(self.a.tau550+0.01)
-        self.ldTau550 = log(self.d.tau550+0.01)
+        self.lmTau558 = log(self.m.tau558+0.01)
+        #-------------------------------------------------------
+        "Propagated changes made in Expose AOD"
+        "by changing dTau470 to mTau446 and dTau660 to mTau 672"
+        "and self.1mTau550 to self.1mTau558    ~Suniyya Waraich"
+        #-------------------------------------------------------
+        
+        
 
         # Angle transforms: for NN calculations we work with cosine of angles
         # -------------------------------------------------------------------
-        self.ScatteringAngle = cos(self.r.ScatteringAngle*pi/180.0) 
-        self.SensorAzimuth   = cos(self.r.SensorAzimuth*pi/180.0)   
-        self.SensorZenith    = cos(self.r.SensorZenith*pi/180.0)    
-        self.SolarAzimuth    = cos(self.r.SolarAzimuth*pi/180.0)    
-        self.SolarZenith     = cos(self.r.SolarZenith*pi/180.0)     
+        #print "self.g.ScatteringAngle1:",self.g.ScatteringAngle1
+        self.ScatteringAngle1 = cos(self.g.ScatteringAngle1*pi/180.0)
+        self.ScatteringAngle2 = cos(self.g.ScatteringAngle2*pi/180.0)
+        self.ScatteringAngle3 = cos(self.g.ScatteringAngle3*pi/180.0)
+        self.ScatteringAngle4 = cos(self.g.ScatteringAngle4*pi/180.0)
+        self.ScatteringAngle5 = cos(self.g.ScatteringAngle5*pi/180.0)
+        self.ScatteringAngle6 = cos(self.g.ScatteringAngle6*pi/180.0)
+        self.ScatteringAngle7 = cos(self.g.ScatteringAngle7*pi/180.0)
+        self.ScatteringAngle8 = cos(self.g.ScatteringAngle8*pi/180.0)
+        self.ScatteringAngle9 = cos(self.g.ScatteringAngle9*pi/180.0)
+        # replaced self.r.ScatteringAngle by the 9 self.g.ScatteringAngle's.
+        #self.SensorAzimuth   = cos(self.r.SensorAzimuth*pi/180.0)
+        self.RelativeAzimuth1 = cos(self.g.RelativeAzimuth1*pi/180.0)
+        self.RelativeAzimuth2 = cos(self.g.RelativeAzimuth2*pi/180.0)
+        self.RelativeAzimuth3 = cos(self.g.RelativeAzimuth3*pi/180.0)
+        self.RelativeAzimuth4 = cos(self.g.RelativeAzimuth4*pi/180.0)
+        self.RelativeAzimuth5 = cos(self.g.RelativeAzimuth5*pi/180.0)
+        self.RelativeAzimuth6 = cos(self.g.RelativeAzimuth6*pi/180.0)
+        self.RelativeAzimuth7 = cos(self.g.RelativeAzimuth7*pi/180.0)
+        self.RelativeAzimuth8 = cos(self.g.RelativeAzimuth8*pi/180.0)
+        self.RelativeAzimuth9 = cos(self.g.RelativeAzimuth9*pi/180.0)
+        # replaced Sensor Azimuth by 9 Relative Azimuths
+        self.SensorZenith1   = cos(self.g.SensorZenith1*pi/180.0)
+        self.SensorZenith2   = cos(self.g.SensorZenith2*pi/180.0)
+        self.SensorZenith3   = cos(self.g.SensorZenith3*pi/180.0)
+        self.SensorZenith4   = cos(self.g.SensorZenith4*pi/180.0)
+        self.SensorZenith5   = cos(self.g.SensorZenith5*pi/180.0)
+        self.SensorZenith6   = cos(self.g.SensorZenith6*pi/180.0)
+        self.SensorZenith7   = cos(self.g.SensorZenith7*pi/180.0)
+        self.SensorZenith8   = cos(self.g.SensorZenith8*pi/180.0)
+        self.SensorZenith9   = cos(self.g.SensorZenith9*pi/180.0)
+        # replaced self.r.SensorZenith by the 9 self.g.SensorZenith's
+        #self.SolarAzimuth    = cos(self.r.SolarAzimuth*pi/180.0)    
+        "none present"
+        self.SolarZenith     = cos(self.g.SolarZenith*pi/180.0)
+        #changed self.r.SolarZenith to self.g.SolarZenith
 
         # Sanity check
         # ------------
-        self.iValid = (self.a.tau550>-0.01) &\
-                      (self.albedo>0)        &\
-                      (self.d.tau550>-0.01) &\
-                      (self.d.qa_flag>0)
-                     
+       
+        #----------------------------------------------------------------------------
+        "Commented out last check and replaced d.tau550 by m.tau558 ~ Suniyya Waraich"
+        #----------------------------------------------------------------------------
+        
         # NNR AOD, on demand
         # ------------------
         self.lnTau550 = None  # See tranSVC()
@@ -554,4 +635,4 @@ def hold():
     m.getNNR()
     m.trainSVC()
     I = m.svcIndex
-    J = I & (m.svcEval==1)&(m.albedo>0.15)&(m.ldTau550>-5)
+    J = I & (m.svcEval==1)&(m.albedo>0.15)&(m.ldTau550>-5) 
