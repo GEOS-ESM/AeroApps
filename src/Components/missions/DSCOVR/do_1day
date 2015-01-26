@@ -1,0 +1,26 @@
+#!/bin/csh -f
+#
+# Run l1_warp for 1 day worth of files. This is needed because of the long python load times.
+#
+
+if ( $#argv < 1 ) then
+   echo "usage: do_1day dirname"
+   exit 1
+else
+   set dirn = $1
+endif
+
+if ( ! (-d $dirn) ) then
+   echo "ERROR: $dirn is not an existing directory"
+   exit 1
+endif
+
+set ESMADIR = /home/adasilva/workspace/GAAS
+
+#source /home/adasilva/workspace/GAAS/src/g5_modules
+
+set newdirn = `echo $dirn | sed -e s@IMAGES/5760x2881@OBS/DSCOVR/IMAGES@`
+
+mkdir -p $newdirn
+
+$ESMADIR/src/Components/missions/DSCOVR/l1_warp.py -v -d $newdirn $dirn/*.png

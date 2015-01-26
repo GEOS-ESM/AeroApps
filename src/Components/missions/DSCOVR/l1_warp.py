@@ -84,10 +84,10 @@ if __name__ == "__main__":
 
         # Get image time from file name
         # -----------------------------
-        tokens = imFile.split('_')
+        tokens = os.path.basename(imFile).split('_')
         nymd = tokens[5]
         hhmm = tokens[6]
-        Y, M, D = int(nymd[0:4]), int(nymd[4:6]), int(nymd[7:])
+        Y, M, D = int(nymd[0:4]), int(nymd[4:6]), int(nymd[6:])
         h, m = int(hhmm[0:2]),int(hhmm[2:4])
         tyme = [ datetime(Y,M,D,h,m), ]
         

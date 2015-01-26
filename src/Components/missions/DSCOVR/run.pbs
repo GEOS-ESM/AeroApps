@@ -1,0 +1,40 @@
+#!/bin/csh
+#SBATCH -J DSCOVR_IMG
+#SBATCH -A s0911
+#SBATCH -N 4 -n 48 --ntasks-per-node=12
+#SBATCH -t 12:00:00
+#SBATCH --mail-user=arlindo.dasilva@nasa.gov
+#SBATCH -p compute
+#SBATCH -o run.stdout
+
+# Environment
+# -----------
+  set prund = /discover/nobackup/projects/gmao/share/dasilva/bin/prund
+  set ESMADIR = /home/adasilva/workspace/GAAS
+  set DSCOVR = $ESMADIR/src/Components/missions/DSCOVR
+
+  source $HOME/workspace/GAAS/src/g5_modules
+
+# Make a list of day directories
+# ------------------------------
+  set days = " "
+  foreach mm ( 01 02 03 )
+      set days = "$days $HOME/opendap/nr/Ganymed/7km/c1440_NR/IMAGES/5760x2881/AEROSOLS/Y2006/M$mm/D??" 
+  end
+
+  echo "Processing the following days --------------------------------------------"
+  ls -1d $days
+  echo "--------------------------------------------------------------------------"
+
+# Server: hold work load
+# ----------------------
+  $prund -H `hostname` -d $days &
+
+  exit
+
+# Client: get work from server
+# ----------------------------
+  cd $DSCOVR
+  $prund -H `hostname` mpiexec.hydra -np 48 $DSCOVR/do_1day 
+   
+
