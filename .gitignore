@@ -37,6 +37,7 @@
 *.zip
 *.npz
 *.png
+*.mp4
  
 # Logs and databases #
 ######################
