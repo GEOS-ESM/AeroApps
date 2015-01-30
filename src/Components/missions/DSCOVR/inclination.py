@@ -6,7 +6,7 @@ from pyobs import sgp4
 from datetime import datetime, timedelta
 from numpy import ones, array, sin, cos, pi, arcsin
 
-def getCenterPoint(tyme,lon0=0):
+def getCenterPoint(tyme,lon0=180.):
     """
     Return central (lon,lat) for ortographic projection associated with a
     L1 orbit. For simplicity a circular orbit around the sun is assumed. 
@@ -29,7 +29,7 @@ def getCenterPoint(tyme,lon0=0):
     # -------------------------------------------------------------
     tn = array([(t-ts).total_seconds() for t in tyme])/P_secs # summer solsice is reference
     
-    lon = lon0 - sod * omega
+    lon = lon0 - sod * omega # at 0Z sun is at 180E
 
     lat = (180./pi) * arcsin(sin(pi*eps/180.) * cos(2*pi*tn))
     
