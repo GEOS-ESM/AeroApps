@@ -170,6 +170,11 @@ if __name__ == "__main__":
             t = tyme[0]
             Y,M,D,h,m = (t.year,t.month,t.day,t.hour,t.minute)
             outfile = outFile[:-18] + '%4d%02d%02d_%02d%02dz.png'%(Y,M,D,h,m) 
+
+            if os.path.exists(outfile):
+                print "[x] Output file exists, skipping %s"%outfile
+                continue
+
             if options.verbose:
                 print "    Working on %s"%outfile
 
