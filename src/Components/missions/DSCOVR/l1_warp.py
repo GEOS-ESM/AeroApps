@@ -180,7 +180,7 @@ if __name__ == "__main__":
             # Interpolate global image in time
             # --------------------------------
             if options.interp:
-                a = float(n * dt) / DT
+                a = float(n) / float(options.n_split)
                 RGB = (1-a) * RGB1 + a * RGB2
             else:
                 RGB = RGB1
