@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     parser.add_option("-p", "--prime",
                       action="store_true", dest="prime",
-                      help="Input image starts at prime meridian; default is date line")
+                      help="Input image starts at 17.5W; default is date line")
 
     parser.add_option("-I", "--interpolate",
                       action="store_true", dest="interp",
@@ -139,12 +139,12 @@ if __name__ == "__main__":
         # Define lat/lon grid that image spans (projection='cyl').
         # --------------------------------------------------------
         dlon = 360./float(nlons)
-        dlat = 180./float(nlats-1)            
+        dlat = 180./float(nlats-1)
         lons = arange(-180,180.,dlon)
         lats = arange(-90.,90+dlat,dlat)
         I = range(nlons)
-        if options.prime:
-            Lons = arange(0,360.,dlon)
+        if options.prime: # notice 17.5W, not quite prime meridian
+            Lons = arange(-17.5,360.-17.5,dlon)
             J = Lons>180
             Lons[J] = Lons[J] - 360.
             I = Lons.argsort() # this will do a lon swap so that array goes from -180 to 180.
@@ -206,6 +206,9 @@ if __name__ == "__main__":
                 rgb[:,:,k] = m.transform_scalar(RGB[:,I,k],lons,lats,
                                                 options.Nx, options.Ny,
                                                 masked=True)
+
+            rgb[rgb.mask] = 0
+
             # Save the image
             # --------------
             imsave(outfile,rgb)
