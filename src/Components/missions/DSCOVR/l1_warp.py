@@ -9,7 +9,7 @@ import os
 
 from netCDF4 import Dataset
 
-from numpy import zeros, ones, arange, array, ma, linspace, meshgrid
+from numpy import zeros, ones, arange, array, ma, linspace, meshgrid, NaN
 from mpl_toolkits.basemap import Basemap, interp
 
 from matplotlib.image import imread, imsave
@@ -199,15 +199,16 @@ if __name__ == "__main__":
 
             # Interpolate from global latlon to ortho disk
             # --------------------------------------------
-            rgb = ma.zeros((options.Ny,options.Nx,nc))
+            rgb = zeros((options.Ny,options.Nx,nc))
             for k in range(nc):
                 if options.verbose:
                     print "    - Remapping Layer ", k, options.Nx, options.Ny, lon_0[0], lat_0[0]
-                rgb[:,:,k] = m.transform_scalar(RGB[:,I,k],lons,lats,
+                rgb_ = m.transform_scalar(RGB[:,I,k],lons,lats,
                                                 options.Nx, options.Ny,
-                                                masked=True)
+                                                masked=False)
+                rgb_[rgb_==rgb_[0,0]] = 0 # make background black
+                rgb[:,:,k] = rgb_[:,:]
 
-            rgb[rgb.mask] = 0
 
             # Save the image
             # --------------
