@@ -18,7 +18,8 @@ class MCD43GF(object):
         Returns albedo file name.
         """
         y = min(max(time.year,ymin),ymax)
-        doy = time.toordinal() - datetime(y-1,12,31).toordinal()
+        t = datetime(y,time.month,time.day,time.hour,time.minute,time.second)
+        doy = t.toordinal() - datetime(y-1,12,31).toordinal()
         doy_ = 1 + 8 * int(0.5+(doy-1)/8.) # discrete doy
         filename = root+'/'+'%d/00-05.%03d/MCD43GF_wsa_Band4_%03d_%d_f.hdf'%(y,doy_,doy_,y)
         print "%03d %03d %s"%(doy,doy_,filename)
@@ -31,14 +32,14 @@ class MCD43GF(object):
         h = self.AlbedoOpenFile(time,**kwopts)
         return h.select('Albedo_Map_0.555')
  
-    def AlbedoSample(self,lon,lat,time,**kwopts):
+    def AlbedoSample(self,lon,lat,time,Verbose=False,**kwopts):
         """
         Nearest-neighbor sampling of albedo file.
         """
 
         # Open first albedo file
         # ---------------------- 
-        h = self.AlbedoOpenFile(time[0])
+        h = self.AlbedoOpenFile(time[0],**kwopts)
 
         # Scaling
         # -------
@@ -61,8 +62,8 @@ class MCD43GF(object):
         for doy in DOY:
             dicDOY[doy] = 1
 
-        # Loop over dates on asingle albedo file
-        # --------------------------------------
+        # Loop over dates on a single albedo file
+        # ---------------------------------------
         a = - ones(len(time))
         for doy in sorted(dicDOY.keys()):
 
@@ -83,16 +84,24 @@ class MCD43GF(object):
                 i = int(0.5+(lon_[k]-Lon[0])/dLon)
                 j = int(0.5+(lat_[k]-Lat[0])/dLat)
                 a_[k] = A[j,i] # read one at a time --- can be optimized if needed
-        
+
+                if Verbose:
+                    if a_[k] >= 0.0 and a_[k] != fill:
+                        print time_[k], "%8.3f %8.3f %6.3f  ...%8.3f%%"\
+                        %(lon_[k],lat_[k],scale*a_[k],100.*k/float(n_))
+
+                
             a[N] = a_[:] # scatter
        
-        # Scale and reflace fill values
+        # Scale and replace fill values
         # -----------------------------
         a[a==fill] = -1
         K = (a>0)
         a[K] = scale * a[K] + add
 
-        return a
+        self.albedo = a
+        
+        return
         
 #--------------------------------------------------------------------------------------------
 
@@ -110,7 +119,7 @@ if __name__ == "__main__":
 
     I = (a.tau550>0)
 
-    A = m.AlbedoSample(a.lon[I],a.lat[I],a.time[I])
+    A = m.AlbedoSample(a.lon[I],a.lat[I],a.time[I],Verbose=True)
     
     
 def later():
