@@ -9,11 +9,12 @@ from pyhdf.SD import SD
 
 from glob import glob
 
-from numpy import zeros, ones, array, int
+from numpy import zeros, ones, array, int, savez, mod
 
 class MCD43GF(object):
 
-    def AlbedoOpenFile(self,time,root='/nobackup/10/MODIS/005/Level3/Albedo/data',ymin=2001,ymax=2012):
+    def AlbedoOpenFile(self,time,root='/nobackup/10/MODIS/005/Level3/Albedo/data',
+                       ymin=2001,ymax=2012,Verbose=False):
         """
         Returns albedo file name.
         """
@@ -22,7 +23,8 @@ class MCD43GF(object):
         doy = t.toordinal() - datetime(y-1,12,31).toordinal()
         doy_ = 1 + 8 * int(0.5+(doy-1)/8.) # discrete doy
         filename = root+'/'+'%d/00-05.%03d/MCD43GF_wsa_Band4_%03d_%d_f.hdf'%(y,doy_,doy_,y)
-        print "%03d %03d %s"%(doy,doy_,filename)
+        if Verbose:
+            print "%03d %03d %s"%(doy,doy_,filename)
         return SD(filename)
 
     def AlbedoGetSDS(self,time,**kwopts):
@@ -32,14 +34,20 @@ class MCD43GF(object):
         h = self.AlbedoOpenFile(time,**kwopts)
         return h.select('Albedo_Map_0.555')
  
-    def AlbedoSample(self,lon,lat,time,Verbose=False,**kwopts):
+    def AlbedoSample(self,lon=None,lat=None,time=None,Verbose=False,npzFile=None,**kwopts):
         """
         Nearest-neighbor sampling of albedo file.
         """
 
+        # Coordinates
+        # -----------
+        if lon  is None: lon  = self.lon
+        if lat  is None: lat  = self.lat
+        if time is None: time = self.time
+        
         # Open first albedo file
         # ---------------------- 
-        h = self.AlbedoOpenFile(time[0],**kwopts)
+        h = self.AlbedoOpenFile(time[0],Verbose=Verbose,**kwopts)
 
         # Scaling
         # -------
@@ -86,7 +94,7 @@ class MCD43GF(object):
                 a_[k] = A[j,i] # read one at a time --- can be optimized if needed
 
                 if Verbose:
-                    if a_[k] >= 0.0 and a_[k] != fill:
+                    if mod(k,1000)==0 and a_[k] >= 0.0 and a_[k] != fill:
                         print time_[k], "%8.3f %8.3f %6.3f  ...%8.3f%%"\
                         %(lon_[k],lat_[k],scale*a_[k],100.*k/float(n_))
 
@@ -100,6 +108,12 @@ class MCD43GF(object):
         a[K] = scale * a[K] + add
 
         self.albedo = a
+
+        if npzFile is not None:
+           version = 2
+           meta = [ version, 'albedo', 'Albedo_Map_0.555' ]
+           data = dict(N=N, lon=lon,lat=lat,time=time,albedo=a)
+           savez(npzFile,meta=meta,**data)
         
         return
         
@@ -119,7 +133,7 @@ if __name__ == "__main__":
 
     I = (a.tau550>0)
 
-    A = m.AlbedoSample(a.lon[I],a.lat[I],a.time[I],Verbose=True)
+    A = m.AlbedoSample(a.lon[I],a.lat[I],a.time[I],Verbose=True,npzFile='albedo.npz')
     
     
 def later():
