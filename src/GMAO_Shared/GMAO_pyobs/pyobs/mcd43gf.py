@@ -34,7 +34,7 @@ class MCD43GF(object):
         h = self.AlbedoOpenFile(time,**kwopts)
         return h.select('Albedo_Map_0.555')
  
-    def AlbedoSample(self,lon=None,lat=None,time=None,Verbose=False,npzFile=None,**kwopts):
+    def AlbedoSample(self,npzFile=None,lon=None,lat=None,time=None,time=None,Verbose=False,**kwopts):
         """
         Nearest-neighbor sampling of albedo file.
         """
