@@ -161,6 +161,7 @@ if __name__ == "__main__":
 
         # Time slices (if so desired for smoother animation)
         # --------------------------------------------------
+        Space = None
         for n in range(options.n_split):
 
             # This image time
@@ -206,7 +207,15 @@ if __name__ == "__main__":
                 rgb_ = m.transform_scalar(RGB[:,I,k],lons,lats,
                                                 options.Nx, options.Ny,
                                                 masked=False)
-                rgb_[rgb_==rgb_[0,0]] = 0 # make background black
+             
+                if Space is None:
+                    lonsout, latsout = m.makegrid(options.Nx,options.Ny)
+                    Space = (lonsout>1e29)
+                    del lonsout
+                    del latsout
+                    
+                #rgb_[rgb_==rgb_[0,0]] = 0 # make background black
+                rgb_[Space] = 0 
                 rgb[:,:,k] = rgb_[:,:]
 
 

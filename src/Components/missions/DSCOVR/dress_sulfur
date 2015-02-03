@@ -1,0 +1,55 @@
+#!/bin/csh -f
+#
+# Wrapper around mencoder.
+#
+    
+    if ( $#argv < 1 ) then
+            echo "usage:"
+            echo "       $0:r [-d output_dirname]  png_filename(s)"
+            exit 1
+    endif
+
+    # Output file
+    # ----------- 
+    if ( "$1" == "-d" ) then
+        shift
+        set outdir = $1
+        shift
+    else
+        set outdir = "."
+    endif
+
+    # Images
+    # ------
+    set Images = ( $argv )
+ 
+    foreach image ( $Images )
+
+    set dateIndex = "2008-07-19 00:00 UTC" 
+    convert $image -resize 2208x1080 -background black \
+        -gravity north -extent 2208x1242 \
+        -gravity northwest $HOME/silo/cbar/nasa-logo_transparent-210x180.png \
+        -composite \
+        -fill white  -pointsize 40 -weight Bold -annotate +270+75 '2008-07-19 00 UTC'  \
+        -fill orange -pointsize 24 -weight Bold -annotate +220+25 \
+        "Global Modeling and Assimilation Office" \
+        -fill white -pointsize 24 -weight Bold -annotate +210+135 \
+        "GEOS-5 Non-hydrostatic Model Simulation" \
+        -gravity southwest $HOME/silo/cbar/so2_cbar-white.png -composite \
+        -gravity southeast $HOME/silo/cbar/so4_cbar-white.png -composite \
+        -gravity northeast $HOME/silo/cbar/dscovr-logo-medium.jpg -composite \
+        -resize 1920x1080 test.png
+
+
+    end
+
+    exit 0
+
+    convert $image -resize 2880x1440 -background black \
+        -gravity north -extent 2880x1620 \
+        -gravity southwest /gpfsm/dnb03/projects/p38/IDL/nasa-logo_transparent-210x180.png \
+        -composite -fill white -pointsize 80 -weight Bold -annotate +400+55 '2008-07-19 00:00UTC'  \
+        -gravity southeast /gpfsm/dnb03/projects/p38/IDL/bt_cbar-black-small.png \
+        -composite -fill white -pointsize 36 -weight Bold -annotate +1980+5 \
+        "Global Modeling and Assimilation Office" -resize 1920x1080 test.png
+
