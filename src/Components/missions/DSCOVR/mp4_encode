@@ -11,7 +11,7 @@
 
     # Output file
     # ----------- 
-    if ( "$1" == "-" ) then
+    if ( "$1" == "-o" ) then
         shift
         set mp4File = $1
         shift
@@ -25,7 +25,7 @@
         echo $0": missing PNG file names"
         exit 2
     else
-        set pngList  = /tmp/mp4_encode.txt
+        set pngList  = /tmp/mp4_encode.$$.txt
 	/bin/ls -1 $argv > $pngList
     endif
 
@@ -43,10 +43,10 @@
 
     # Run mencoder
     # ------------
-####    mencoder mf://@$pngList -mf w=1920:h=1080:type=png:fps=12 -o ${mp4File} -of lavf -lavfopts format=mp4 -oac lavc -ovc lavc -lavcopts vcodec=$codec
-    mencoder mf://@/tmp/mp4_encode.txt -mf type=png:fps=30 -o ${mp4File} -of lavf -lavfopts format=mp4 -oac lavc -ovc lavc -lavcopts vcodec=$codec
+###    mencoder mf://@/tmp/mp4_encode.$$.txt -mf type=png:fps=30 -o ${mp4File} -of lavf -lavfopts format=mp4 -oac lavc -ovc lavc -lavcopts vcodec=$codec
+    mencoder mf://@${pngList} -mf type=png:fps=30 -o ${mp4File} -of lavf -lavfopts format=mp4 -oac lavc -ovc lavc -lavcopts vcodec=$codec
 
-    #/bin/rm -rf $pngList
+    /bin/rm -rf $pngList
 
     exit 0
 
