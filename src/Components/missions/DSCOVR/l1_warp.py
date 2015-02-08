@@ -25,6 +25,18 @@ from inclination import getCenterPoint
 rsphere=(6378137.00,6356752.3142)
 satellite_height = 35785831.0
 
+def _parseFilename(imFile):
+    """
+    Get time from a G5NR image file name.
+    """
+    tokens = os.path.basename(imFile).split('_')
+    nymd = tokens[5]
+    hhmm = tokens[6]
+    Y, M, D = int(nymd[0:4]), int(nymd[4:6]), int(nymd[6:])
+    h, m = int(hhmm[0:2]),int(hhmm[2:4])
+    tyme = datetime(Y,M,D,h,m)
+    return tyme
+
 # -------------------------- M A I N -----------------------------
 if __name__ == "__main__":
     
@@ -95,7 +107,11 @@ if __name__ == "__main__":
 
     # Time steps
     # ----------
-    DT = timedelta(minutes=30) # global images are 30 min (hardwired)
+    if len(Images) == 1:
+        DT = timedelta(minutes=30) # global images are 30 min (hardwired)
+    else:
+        t1, t2 = _parseFilename(Images[0]), _parseFilename(Images[1])
+        DT = t2 - t1
     dt = DT / options.n_split
         
     # Upstream image
@@ -118,10 +134,10 @@ if __name__ == "__main__":
 
         # Unless force, do not overwrite files
         # ------------------------------------
-        if not options.force:
-            if os.path.exists(outFile):
-                print "[x] Output file exists, skipping %s"%outFile
-                continue
+        #if not options.force:
+        #    if os.path.exists(outFile):
+        #        print "[x] Output file exists, skipping %s"%outFile
+        #        continue
 
         if options.verbose:
             print "[ ] Reading %s"%os.path.basename(imFile)
@@ -149,15 +165,9 @@ if __name__ == "__main__":
             Lons[J] = Lons[J] - 360.
             I = Lons.argsort() # this will do a lon swap so that array goes from -180 to 180.
        
-
         # Get image time from file name
         # -----------------------------
-        tokens = os.path.basename(imFile).split('_')
-        nymd = tokens[5]
-        hhmm = tokens[6]
-        Y, M, D = int(nymd[0:4]), int(nymd[4:6]), int(nymd[6:])
-        h, m = int(hhmm[0:2]),int(hhmm[2:4])
-        tyme0 = datetime(Y,M,D,h,m)
+        tyme0 = _parseFilename(imFile)
 
         # Time slices (if so desired for smoother animation)
         # --------------------------------------------------
@@ -172,9 +182,10 @@ if __name__ == "__main__":
             Y,M,D,h,m = (t.year,t.month,t.day,t.hour,t.minute)
             outfile = outFile[:-18] + '%4d%02d%02d_%02d%02dz.png'%(Y,M,D,h,m) 
 
-            if os.path.exists(outfile):
-                print "[x] Output file exists, skipping %s"%outfile
-                continue
+            if not options.force:
+                if os.path.exists(outfile):
+                    print "[x] Output file exists, skipping %s"%outfile
+                    continue
 
             if options.verbose:
                 print "    Working on %s"%outfile

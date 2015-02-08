@@ -42,8 +42,16 @@
        if ( $mm < 10 ) set mm = 0$mm
        if ( $dd < 10 ) set dd = 0$dd
        if ( $hh < 10 ) set hh = 0$hh
+
        set dateIndex = "${yy}-${MM}-${dd}  ${hh}:${mm} UTC" 
-       echo "Dressing $dateIndex"
+
+       if ( -e $dressed ) then
+
+          echo "Skipping $dateIndex"
+
+       else
+
+          echo "Dressing CLOUDS $dateIndex"
 
     convert $image -background black \
         -gravity north -extent 1920x1080 \
@@ -58,6 +66,8 @@
         -gravity southeast  $HOME/silo/cbar/clouds_cbar-white2.png -composite \
         -gravity northeast  $HOME/silo/cbar/dscovr-logo-medium2.png -composite \
         $dressed
+
+    endif
 
     end
 

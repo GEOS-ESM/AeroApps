@@ -44,6 +44,13 @@
        if ( $hh < 10 ) set hh = 0$hh
        set dateIndex1 = "${yy}-${MM}-${dd}" 
        set dateIndex2 = "${hh}:${mm} UTC" 
+
+       if ( -e $dressed ) then
+
+          echo "Skipping $dateIndex1 $dateIndex2"
+
+       else
+
        echo "Dressing SULFUR $dateIndex1 $dateIndex2"
 
     convert $image -background black \
@@ -61,6 +68,8 @@
         -gravity west  $HOME/silo/cbar/so2_cbar-whiteV2.png -composite \
         -gravity east  $HOME/silo/cbar/so4_cbar-whiteV2.png -composite \
         $dressed
+
+      endif
 
     end
 
