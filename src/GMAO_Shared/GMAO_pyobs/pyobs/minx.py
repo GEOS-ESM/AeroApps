@@ -91,7 +91,10 @@ class MINX(object):
         self.time = cf(RC['UTC TIME'])
         self.area = float(cf(RC['AREA (SQ KM)']))
         self.perimeter = float(cf(RC['PERIMETER LENGTH (KM)']))
-        self.frp = float(cf(RC['POWER OF FIRE IN MW']))
+        try:
+            self.frp = float(cf(RC['POWER OF FIRE IN MW']))
+        except:
+            self.frp = MISSING
         self.zm = float(cf(RC['BEST MEDIAN HT (M ASL)']))
         self.zt = float(cf(RC['BEST TOP HT (M ASL)']))
         # self.qa = cf(RC['REGION DATA QUALITY'])
@@ -208,9 +211,10 @@ class MINXs(object):
         """
 
         if type(minxFiles) == StringType:
-            minxFiles = glob(minxFiles)
+            #minxFiles = sorted(glob(minxFiles))
+            minxFiles = glob(minxFiles) # should be sorted, must be fixed after AGU (ams)
 
-        Atts = ['nobs','qa','lon', 'lat', 'lon_f', 'lat_f','z', 'zm', 'zt','tyme', 'frp']
+        Atts = ['file','nobs','qa','lon', 'lat', 'lon_f', 'lat_f','zs','z', 'zm', 'zt','tyme', 'frp']
 
         for a in Atts:
             self.__dict__[a] = []
@@ -227,15 +231,20 @@ class MINXs(object):
             if m.pow_MW[k]<0: 
                 print '-- No fires for plume <%s>'%os.path.basename(minxFile)
                 continue
-                
+
+            self.file.append(minxFile)
             self.tyme.append(m.tyme)
             self.frp.append(m.frp)
             self.nobs.append(m.N)
-            self.qa.append(m.qa=='GOOD')
+            #self.qa.append(m.qa='GOOD')
 
-            h = m.z[I]-m.zs[I]           # IMPORTANT: above surface!!!!
+            self.zs.append(m.zs[k])       # Terrain height near stronger fire
+                                          # Rationale: we will model PR at fire location
+
+            #h = m.z[I]-m.zs[I]           # IMPORTANT: above surface!!!!
+            h = m.z[I]-m.zs[k]            # IMPORTANT: above surface at stronger fire
             j = h.argsort()[N/2]
-            self.lon.append(m.lon[j])
+            self.lon.append(m.lon[j])     # coordinates of median fire     
             self.lat.append(m.lat[j])
             self.zm.append(h[j]) 
             
@@ -245,7 +254,7 @@ class MINXs(object):
             bins, P = calc_kde1d(h) 
             self.z.append(bins[P.argmax()])
 
-            self.lon_f.append(m.lon[k])
+            self.lon_f.append(m.lon[k]) # coordinates nearest stronger fire
             self.lat_f.append(m.lat[k])
             
         for a in Atts:
@@ -281,7 +290,7 @@ class MINXs(object):
         ga = GrADS(Window=False,Echo=False)
     
         ga.open(dir+'/geosgcm_surf.ddf')
-        self.sampleFile(ga,onlyVars=('ustar', 'pblh', 'shfx', 'lhfx', 'rhos', 'ts'))
+        self.sampleFile(ga,onlyVars=('ustar', 'bstar', 'pblh', 'shfx', 'lhfx', 'rhos', 'ts'))
         ga('close 1')
 
         ga.open(dir+'/inst3d_prog_v.ddf')
@@ -292,6 +301,25 @@ class MINXs(object):
         ga.open(dir+'/inst3d_aer_v.ddf')
         ga('set z 1 72')
         self.sampleFile(ga,onlyVars=('delp',), npzFile=npzFile)
+
+#---
+    def getFP(self, npzFile=None, dir='/home/adasilva/iesa/aerosol/experiments/seac4rs_01'):
+        """
+        Get Met fields from GEOS-5 Forward Processing.
+        """
+        from grads import GrADS
+
+        ga = GrADS(Window=False,Echo=False)
+    
+        ga.open(dir+'/tavg1_2d_flx_Nx.ddf')
+        self.sampleFile(ga,onlyVars=('ustar', 'bstar', 'pblh', 'hflux', 'eflux', 'rhoa', 'tsh'))
+        ga('close 1')
+
+        ga.open(dir+'/inst3_3d_asm_Nv.ddf')
+        ga('set z 1 72')
+        self.sampleFile(ga,onlyVars=('u','v','t','qv','o3','delp'),
+                        npzFile=npzFile)
+        ga('close 1')
 
 #---
     def sampleFile(self, ga, npzFile=None, onlyVars=None, Verbose=True):
@@ -332,6 +360,36 @@ class MINXs(object):
         for v in npz.keys():
             self.sample.__dict__[v] = npz[v]
 
+#---
+    def drawMap(self,bbox=None,I=None):
+        """
+        Draw plume locations on map.
+        """
+        from mpl_toolkits.basemap import Basemap
+
+        if bbox is None:
+            bbox = self.lon.min()-5, self.lat.min()-5, self.lon.max()+5, self.lat.max()+5
+        if I is None:
+            I = range(self.N)
+
+        # Basemap
+        # -------
+        m = Basemap(projection='cyl',
+            llcrnrlon=bbox[0],urcrnrlon=bbox[2],
+            llcrnrlat=bbox[1],urcrnrlat=bbox[3],
+            rsphere=6371200.,resolution='l',area_thresh=10000)
+
+        m.bluemarble()
+        m.drawcoastlines()
+        m.drawstates()
+        m.drawcountries()
+
+        # plot fires
+        # ----------
+        m.plot(self.lon[I],self.lat[I],'ro',label='Below PBL')
+    
+        return m
+
 #....................................................................
 class Sample(object):
     def __init__(self):
@@ -341,11 +399,14 @@ class Sample(object):
 
 if __name__ == "__main__":
 
-    m = MINX('Plumes_O72673-B55-SPWR2.txt')
+#    m = MINXs('/home/adasilva/workspace/misrPlumes/western_fires_2013/*.txt')
+    m = MINXs('/Users/adasilva/workspace/misrPlumes/western_fires_2013/*.txt')
+
+    #m.getFP(npzFile='seac4rs_01.npz')
 
 def hold():
 
-    from grads import GrADS
+
     #m = MINXs('/Users/adasilva/workspace.local/misrPlumes/canada2008/Plumes_O450*.txt')
     #m.getMERRA(npzFile='merra_O450.npz')
 
