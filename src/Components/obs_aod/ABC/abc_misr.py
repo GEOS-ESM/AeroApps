@@ -8,40 +8,41 @@ import os
 
 from numpy import pi, cos, log, zeros, ones, savez, arange, exp
 from numpy import c_ as cat
+###from abc_modis         import NN, _plotKDE, aodFormat
 
 #from ffnet        import loadnet
-from sknet        import loadnet
-from pyobs        import NPZ
+###from sknet        import loadnet
+
+from pyobs             import NPZ
+from pyobs.mapss       import MAPSS
+from pyobs.mcd43gf     import MCD43GF
+from pyobs.igbp        import IGBP
 
 from matplotlib.pyplot import title, savefig
-from pyobs.mapss       import MAPSS
-from abc_modis         import NN, _plotKDE, aodFormat
 
 MISSING = -1.0e20
 d2r = pi / 180.
 
-class ABC_MISR(NN):
+#class ABC_MISR(NN):
+class ABC_MISR(object):
 
     def __init__(self,
-                 npzDir='./NPZ',
+                 npzDir='/nobackup/MAPSS/Collocation/MISR',
+                 AlbedoGF_Root = '/nobackup/10/MODIS/005/Level3/Albedo/data',
                  albedoNPZ='mapss-misr_albedo.npz',
                  tol=0.5,
                  Input=None,Target=None,
                  verbose=False):
 
         self.verbose = verbose
-        self.ident = 'misr' # deeb blue land
+        self.ident = 'misr' 
         
         # Read in NPZ files written by collocation app
         # --------------------------------------------
         self.a = MAPSS(npzDir+'/mapss.anet_misr.??????.npz')
-        self.m = MAPSS(npzDir+'/mapss.misr_maod.??????.npz')
-        self.g = MAPSS(npzDir+'/mapss.misr_geom.??????.npz')
-        self.r = MAPSS(npzDir+'/mapss.misr_mref.??????.npz')
-        #------------------------------------------------------------------------
-        "Changed to read 'misr_maod,' 'misr_geom', misr_mref' ~ Suniyya Waraich."
-        #------------------------------------------------------------------------
-
+        #self.m = MAPSS(npzDir+'/mapss.misr_maod.??????.npz')
+        #self.g = MAPSS(npzDir+'/mapss.misr_geom.??????.npz')
+        #self.r = MAPSS(npzDir+'/mapss.misr_mref.??????.npz')
 
         # Inherit coordinates from AERONET file
         # -------------------------------------
@@ -49,11 +50,16 @@ class ABC_MISR(NN):
 
         # Albedo
         # ------
-        if not os.path.exists(npzDir+'/'+albedoNPZ):
-            self.getAlbedo(npzDir+'/'+albedoNPZ)
+        npzFile = npzDir+'/'+albedoNPZ
+        if not os.path.exists(npzFile):
+            # self.getClmAlbedo(npzFile)
+            self.AlbedoSample(npzFile=npzFile,
+                              Verbose = True,
+                              root=AlbedoGF_Root)
         else:
-            self.albedo = NPZ(npzDir+'/'+albedoNPZ).var
+            self.albedo = NPZ(npzDir+'/'+albedoNPZ).albedo
 
+    def later():
 
 
         # Air mass factor
@@ -241,12 +247,14 @@ class ABC_MISR(NN):
 
         self.__dict__[vname] = U
 
-        version = 1
+        version = 2
         meta = [ version, vname, expr ]
-        savez(outfile,meta=meta,lon=self.lon,lat=self.lat,time=self.time,var=U)
+        data = dict(N=N, lon=self.lon,lat=self.lat,time=self.time)
+        data[vname] = U
+        savez(outfile,meta=meta,**data)
 
-    def getAlbedo(self,npzFile):
-        from grads import GrADS
+    def getClmAlbedo(npzFile=None):
+        import GrADS
         ga = GrADS(Echo=False,Window=False)
         ga('open albedo_clim.ctl')
         self.addVar(ga,npzFile,expr='albedo',clmYear=2000)
@@ -355,7 +363,62 @@ class ABC_MISR(NN):
 
         self.lnTau550 = target
  
-#---
+#-------------------------------------------------------------------
+def prepAncillary(npzDir='/nobackup/MAPSS/Collocation/MISR',
+                  aer_x = '/nobackup/MERRAero/inst2d_hwl_x.ddf',
+                  slv_Nx = '/nobackup/MERRA/slv_Nx',
+                  AlbedoGF_Root = '/nobackup/10/MODIS/005/Level3/Albedo/data',
+                  igbp_dir='/nobackup/Emissions/Vegetation/GL_IGBP_INPE'):
+    """
+    Prepare ancillary data, saving it to NPZ file.
+    """
+
+    # Get coordinates
+    # ---------------
+    a = MAPSS(npzDir+'/mapss.anet_misr.??????.npz')
+    #a = MAPSS(npzDir+'/mapss.anet_misr.200806.npz')
+
+    a.sample = None
+
+    # Vegetation type
+    # ---------------
+    print "<> Sampling vegetation type"
+    veg = a.detailedVeg(Path=igbp_dir)
+
+    # Albedo
+    # ------
+    print "<> Sampling surface albedo..."
+    a.AlbedoSample(Verbose = True,
+                   root=AlbedoGF_Root)
+
+    # Speciate
+    # --------
+    print "<> Speciating aerosols..."
+    a.speciate(aer_x)
+    
+    # Wind speed
+    # ----------
+    print "<> Sampling 10M wind..."
+    a.sampleFile(slv_Nx,onlyVars=('U10M','V10M'))
+    a.wind = a.sample.U10M**2 + a.sample.V10M**2 
+
+    # Ocean Albedo (still neds to be water masked later)
+    # --------------------------------------------------
+    print "<> Doing Cox Munk..."
+    a.getCoxMunk()
+
+    # Save to NPZ file
+    # ----------------
+    npzFile = 'mapss.anet_misr.ancillary.npz'
+    savez(npzFile,
+          version=1,nobs=len(a.lon), lon=a.lon,lat=a.lat,time=a.time,
+          u10m = a.sample.U10M, v10m=a.sample.V10M, ocnAlbedo=a.ocnAlbedo,
+          fdu=a.fdu, fss=a.fss, fbc=a.fbc, foc=a.foc, fcc=a.fcc, fsu=a.fsu,
+          lndAlbedo=a.lndAlbedo, veg = a.veg)
+
+    return a
+    
+#-------------------------------------------------------------------
 
 __Months__ = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
 
@@ -616,9 +679,13 @@ def doPlots(m,expid,ident, Target):
 
 if __name__ == "__main__":
 
+    a = prepAncillary()
+
+
+def hold():
+
     m, expid, ident, Target = _deepNNR()
     
-def hold():
 
     m = AQC_DEEP(verbose=True)
     m.getNNR()
