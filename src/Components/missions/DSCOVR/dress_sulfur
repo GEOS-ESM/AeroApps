@@ -1,0 +1,76 @@
+#!/bin/csh -f
+#
+# Wrapper around mencoder.
+#
+    
+    if ( $#argv < 1 ) then
+            echo "usage:"
+            echo "       $0:r [-d output_dirname]  png_filename(s)"
+            exit 1
+    endif
+
+    # Output file
+    # ----------- 
+    if ( "$1" == "-d" ) then
+        shift
+        set outdir = $1
+        shift
+    else
+        set outdir = "DRESSED"
+    endif
+    mkdir -p $outdir
+
+    # Images
+    # ------
+    set Images = ( $argv )
+ 
+    set hh =
+    set mm = 
+    foreach image ( $Images )
+       set basen = `basename $image`
+       set dressed = ${outdir}/$basen
+
+       set yyyymmdd = `echo $basen | awk -F_ '{print $6}'`
+       set hhmm = `echo $basen | awk -F_ '{print $7}' | sed s/z.png// `
+       @ yy = $yyyymmdd / 10000
+       @ mmdd = ${yyyymmdd} - 10000 * $yy
+       @ MM = ${mmdd} / 100
+       @ dd = ${mmdd} - 100 * $MM
+       @ hh = ${hhmm} / 100
+       @ mm = ${hhmm} - 100 * $hh
+       if ( $MM < 10 ) set MM = 0$MM
+       if ( $mm < 10 ) set mm = 0$mm
+       if ( $dd < 10 ) set dd = 0$dd
+       if ( $hh < 10 ) set hh = 0$hh
+       set dateIndex1 = "${yy}-${MM}-${dd}" 
+       set dateIndex2 = "${hh}:${mm} UTC" 
+       echo "Dressing SULFUR $dateIndex1 $dateIndex2"
+
+    convert $image -background black \
+        -gravity north -extent 1920x1080 \
+        -gravity northwest $HOME/silo/cbar/nasa-logo_transparent-210x180a.png \
+        -composite \
+        -fill orange -pointsize 16 -weight Bold -annotate +220+60 \
+         "Global Modeling and Assimilation Office" \
+        -fill white -pointsize 18 -weight Bold -annotate +200+110 \
+        "GEOS-5 Non-hydrostatic Model Simulation" \
+        -fill white  -pointsize 18 -weight Bold -annotate +260+135 'as seen from L1 Orbit'  \
+        -fill white  -pointsize 40 -weight Bold -annotate +130+960 "$dateIndex1"  \
+        -fill white  -pointsize 40 -weight Bold -annotate +1585+960 "$dateIndex2"  \
+        -gravity northeast  $HOME/silo/cbar/dscovr-logo-small2.png -composite \
+        -gravity west  $HOME/silo/cbar/so2_cbar-whiteV2.png -composite \
+        -gravity east  $HOME/silo/cbar/so4_cbar-whiteV2.png -composite \
+        $dressed
+
+    end
+
+    exit 0
+
+    convert $image -resize 2880x1440 -background black \
+        -gravity north -extent 2880x1620 \
+        -gravity southwest /gpfsm/dnb03/projects/p38/IDL/nasa-logo_transparent-210x180.png \
+        -composite -fill white -pointsize 80 -weight Bold -annotate +400+55 '2008-07-19 00:00UTC'  \
+        -gravity southeast /gpfsm/dnb03/projects/p38/IDL/bt_cbar-black-small.png \
+        -composite -fill white -pointsize 36 -weight Bold -annotate +1980+5 \
+        "Global Modeling and Assimilation Office" -resize 1920x1080 test.png
+

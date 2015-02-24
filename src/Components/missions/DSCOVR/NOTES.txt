@@ -1,0 +1,17 @@
+
+How to compose images for a final movie (with colorbar, titles, etc.)
+
+   Arlindo
+
+;smlImgFile = 'cube_ir_small_'+myTag+'-SNAP_'+myIndex+'.png'
+;dateIndex = STRING(myYear  ,FORMAT='(i4.4)')+" / "+$
+;            STRING(myMon   ,FORMAT='(i2.2)')+" / "+$
+;            STRING(myDay   ,FORMAT='(i2.2)')+"   "+$
+;            STRING(myHour  ,FORMAT='(i2.2)')+"Z"
+;spawn, 'convert '+pngImgFile+' -resize 2880x1440 -background black -gravity north -extent 2880x1620 '+$
+;       '-gravity southwest /gpfsm/dnb03/projects/p38/IDL/nasa-logo_transparent-210x180.png -composite '+$
+;       '-fill white -pointsize 80 -weight Bold -annotate +400+55 "'+dateIndex+'"  '+ $
+;       '-gravity southeast /gpfsm/dnb03/projects/p38/IDL/bt_cbar-black-small.png -composite '+ $
+;       '-fill white -pointsize 36 -weight Bold -annotate +1980+5 "Global Modeling and Assimilation Office" -resize 1920x1080 '+smlImgFile
+
+

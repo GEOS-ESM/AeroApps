@@ -1,0 +1,52 @@
+#!/bin/csh -f
+#
+# Wrapper around mencoder.
+#
+    
+    if ( $#argv < 1 ) then
+            echo "usage:"
+            echo "       $0:r [-o outfilename.mp4]  png_filename(s)"
+            exit 1
+    endif
+
+    # Output file
+    # ----------- 
+    if ( "$1" == "-o" ) then
+        shift
+        set mp4File = $1
+        shift
+    else
+        set mp4File = "movie.mp4"
+    endif
+
+    # Images
+    # ------ 
+    if ( $#argv < 1 ) then
+        echo $0": missing PNG file names"
+        exit 2
+    else
+        set pngList  = /tmp/mp4_encode.$$.txt
+	/bin/ls -1 $argv > $pngList
+    endif
+
+    # Load modules on discover
+    # ------------------------ 
+    if ( -e /usr/share/modules/init/tcsh ) then
+        source /usr/share/modules/init/tcsh
+        module purge
+        module load other/mp4movie
+    endif
+
+    # CODEC
+    # ----- 
+    set codec = "mpeg4:vbitrate=10125000:mbd=2:keyint=132:mv0:trell:v4mv:cbp:last_pred=3:predia=2:dia=2:cmp=2:subcmp=2:vglobal=1:vqmax=10:lmax=10"
+
+    # Run mencoder
+    # ------------
+###    mencoder mf://@/tmp/mp4_encode.$$.txt -mf type=png:fps=30 -o ${mp4File} -of lavf -lavfopts format=mp4 -oac lavc -ovc lavc -lavcopts vcodec=$codec
+    mencoder mf://@${pngList} -mf type=png:fps=30 -o ${mp4File} -of lavf -lavfopts format=mp4 -oac lavc -ovc lavc -lavcopts vcodec=$codec
+
+    /bin/rm -rf $pngList
+
+    exit 0
+
