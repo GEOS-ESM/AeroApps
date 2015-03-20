@@ -22,10 +22,15 @@ class MCD43GF(object):
         t = datetime(y,time.month,time.day,time.hour,time.minute,time.second)
         doy = t.toordinal() - datetime(y-1,12,31).toordinal()
         doy_ = 1 + 8 * int(0.5+(doy-1)/8.) # discrete doy
+        doy_ = min(361,doy_)
         filename = root+'/'+'%d/00-05.%03d/MCD43GF_wsa_Band4_%03d_%d_f.hdf'%(y,doy_,doy_,y)
         if Verbose:
             print "%03d %03d %s"%(doy,doy_,filename)
-        return SD(filename)
+        try:
+            h = SD(filename) 
+        except:
+            raise ValueError, "could not open <%s>"%filename
+        return h
 
     def AlbedoGetSDS(self,time,**kwopts):
         """
