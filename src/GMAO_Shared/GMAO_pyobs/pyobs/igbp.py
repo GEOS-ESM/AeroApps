@@ -24,6 +24,17 @@ FLAMING_FRACTION = [ 0.45, 0.45, 0.75, 0.97 ]
 
 #................................ Static Methods ...............................
 
+class IGBP(object):
+    """
+    Base class to add IGBP capabilities to other obs classes.
+    """
+
+    def simpleVeg(self,Path,nonVeg=GRASSLAND):
+        self.veg = getSimpleVeg(self.lon,self.lat,Path=Path,nonVeg=nonVeg)
+
+    def detailedVeg(self,Path): 
+        self.veg = getDetailedVeg(self.lon,self.lat,Path=Path)
+
 def getSimpleVeg(lon,lat,Path,nonVeg=GRASSLAND): 
     """
         Given the pathname for the IGBP datasets, returns

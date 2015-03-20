@@ -8,92 +8,156 @@ import os
 
 from numpy import pi, cos, log, zeros, ones, savez, arange, exp
 from numpy import c_ as cat
+###from abc_modis         import NN, _plotKDE, aodFormat
 
 #from ffnet        import loadnet
-from sknet        import loadnet
-from pyobs        import NPZ
+###from sknet        import loadnet
+
+from pyobs             import NPZ
+from pyobs.mapss       import MAPSS
+from pyobs.mcd43gf     import MCD43GF
+from pyobs.igbp        import IGBP
 
 from matplotlib.pyplot import title, savefig
-from pyobs.mapss       import MAPSS
-from abc_modis         import NN, _plotKDE, aodFormat
 
 MISSING = -1.0e20
 d2r = pi / 180.
 
-class ABC_MISR(NN):
+#class ABC_MISR(NN):
+class ABC_MISR(object):
 
     def __init__(self,
-                 npzDir='./NPZ',
-                 albedoNPZ='mapss-misr_albedo.npz',
+                 npzDir='/nobackup/MAPSS/Collocation/MISR',
                  tol=0.5,
                  Input=None,Target=None,
                  verbose=False):
 
         self.verbose = verbose
-        self.ident = 'misr' # deeb blue land
+        self.ident = 'misr' 
         
         # Read in NPZ files written by collocation app
         # --------------------------------------------
-        self.a = MAPSS(npzDir+'/mapss.anet.??????.npz')
-        self.d = MAPSS(npzDir+'/mapss.dtau.??????.npz')
-        self.r = MAPSS(npzDir+'/mapss.dref.??????.npz')
-        self.s = MAPSS(npzDir+'/mapss.sref.??????.npz')
+        self.a = MAPSS(npzDir+'/mapss.anet_misr.??????.npz')
+        self.m = MAPSS(npzDir+'/mapss.misr_maod.??????.npz')
+        self.g = MAPSS(npzDir+'/mapss.misr_geom.??????.npz')
+        self.r = MAPSS(npzDir+'/mapss.misr_mref.??????.npz')
+
+        # Ancillary variables by prepAncillary below
+        # ------------------------------------------
+        self.x = MAPSS(npzDir+'/mapss.xtra_misr.??????.npz')
 
         # Inherit coordinates from AERONET file
         # -------------------------------------
         self.lon, self.lat, self.time, self.N = (self.a.lon, self.a.lat, self.a.time, self.a.nobs)
 
-        # Albedo
-        # ------
-        if not os.path.exists(npzDir+'/'+albedoNPZ):
-            self.getAlbedo(npzDir+'/'+albedoNPZ)
-        else:
-            self.albedo = NPZ(npzDir+'/'+albedoNPZ).var
-
-
-
         # Air mass factor
         # ---------------
-        self.amf = (1./cos(d2r*self.r.SolarZenith))+(1./cos(d2r*self.r.SensorZenith))  
+        self.amf1 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith1))
+        self.amf2 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith2))
+        self.amf3 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith3))
+        self.amf4 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith4))
+        self.amf5 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith5))
+        self.amf6 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith6))
+        self.amf7 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith7))
+        self.amf8 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith8))
+        self.amf9 = (1./cos(d2r*self.g.SolarZenith))+(1./cos(d2r*self.g.SensorZenith9))
 
         # Expose reflectances
         # -------------------
-        self.sRef412 = self.s.sRef412
-        self.sRef470 = self.s.sRef470
-        self.sRef660 = self.s.sRef660
-        self.dRef412 = self.r.dRef412
-        self.dRef470 = self.r.dRef470
-        self.dRef660 = self.r.dRef660
-        self.xRef412 = self.dRef412 - self.sRef412 
-        self.xRef470 = self.dRef470 - self.sRef470 
- 
+       # self.sRef412 = self.s.sRef412
+       # self.sRef470 = self.s.sRef470
+       # self.sRef660 = self.s.sRef660
+       # self.dRef412 = self.r.dRef412
+       # self.dRef470 = self.r.dRef470
+       # self.dRef660 = self.r.dRef660
+       # self.xRef412 = self.dRef412 - self.sRef412 
+       # self.xRef470 = self.dRef470 - self.sRef470 
+        #------------------------------------------------------------------
+        "There were no analogous readings in the geom, mref or maod files."
+        "So commented out Expose reflectances             ~Suniyya Waraich"
+        #------------------------------------------------------------------
+
+         
         # Expose AOD
         # ----------
         self.aTau440  = self.a.tau440
         self.aTau550  = self.a.tau550
-        self.dTau412  = self.d.tau550
-        self.dTau470  = self.d.tau470
-        self.dTau550  = self.d.tau550
-        self.dTau660  = self.d.tau660
-        self.angstrom = -log(self.dTau660/self.dTau470)/log(660./470.)
+        #self.dTau412  = self.d.tau550
+        self.mTau446  = self.m.tau446
+        #self.dTau470  = self.d.tau470
+        #self.dTau550  = self.d.tau550
+        self.mTau558  = self.m.tau558
+        #self.dTau660  = self.d.tau660
+        self.mTau672  = self.m.tau672
+        #-------------------------------------------------------------------------
+	"Changed AOD values. Replaced self.d tau values by available self.m "
+	" tau values. tau550, tau470 and tau660 were unavailable. ~Suniyya Waraich "
+	#-------------------------------------------------------------------------
+
+        #Sanity Check
+        #------------
+	self.iValid = (self.a.tau550 >-0.01) &\
+                      (self.albedo >0) &\
+                      (self.m.tau558>-0.01)
+                    # &\
+                    # (self.d.qa_flag >0)
+
+	
+        #-------------------------------------------------------------------
+        "Moved sanity check up here to prevent log errors. ~Suniyya Waraich"
+        #-------------------------------------------------------------------        
+	
+	self.angstrom = -log(self.mTau672/self.mTau446)/log(672./446.)
         self.laTau550 = log(self.a.tau550+0.01)
-        self.ldTau550 = log(self.d.tau550+0.01)
+        self.lmTau558 = log(self.m.tau558+0.01)
+        #-------------------------------------------------------
+        "Propagated changes made in Expose AOD"
+        "by changing dTau470 to mTau446 and dTau660 to mTau 672"
+        "and self.1mTau550 to self.1mTau558    ~Suniyya Waraich"
+        #-------------------------------------------------------
+        
+        
 
         # Angle transforms: for NN calculations we work with cosine of angles
         # -------------------------------------------------------------------
-        self.ScatteringAngle = cos(self.r.ScatteringAngle*pi/180.0) 
-        self.SensorAzimuth   = cos(self.r.SensorAzimuth*pi/180.0)   
-        self.SensorZenith    = cos(self.r.SensorZenith*pi/180.0)    
-        self.SolarAzimuth    = cos(self.r.SolarAzimuth*pi/180.0)    
-        self.SolarZenith     = cos(self.r.SolarZenith*pi/180.0)     
+        #print "self.g.ScatteringAngle1:",self.g.ScatteringAngle1
+        self.ScatteringAngle1 = cos(self.g.ScatteringAngle1*pi/180.0)
+        self.ScatteringAngle2 = cos(self.g.ScatteringAngle2*pi/180.0)
+        self.ScatteringAngle3 = cos(self.g.ScatteringAngle3*pi/180.0)
+        self.ScatteringAngle4 = cos(self.g.ScatteringAngle4*pi/180.0)
+        self.ScatteringAngle5 = cos(self.g.ScatteringAngle5*pi/180.0)
+        self.ScatteringAngle6 = cos(self.g.ScatteringAngle6*pi/180.0)
+        self.ScatteringAngle7 = cos(self.g.ScatteringAngle7*pi/180.0)
+        self.ScatteringAngle8 = cos(self.g.ScatteringAngle8*pi/180.0)
+        self.ScatteringAngle9 = cos(self.g.ScatteringAngle9*pi/180.0)
+
+        self.RelativeAzimuth1 = cos(self.g.RelativeAzimuth1*pi/180.0)
+        self.RelativeAzimuth2 = cos(self.g.RelativeAzimuth2*pi/180.0)
+        self.RelativeAzimuth3 = cos(self.g.RelativeAzimuth3*pi/180.0)
+        self.RelativeAzimuth4 = cos(self.g.RelativeAzimuth4*pi/180.0)
+        self.RelativeAzimuth5 = cos(self.g.RelativeAzimuth5*pi/180.0)
+        self.RelativeAzimuth6 = cos(self.g.RelativeAzimuth6*pi/180.0)
+        self.RelativeAzimuth7 = cos(self.g.RelativeAzimuth7*pi/180.0)
+        self.RelativeAzimuth8 = cos(self.g.RelativeAzimuth8*pi/180.0)
+        self.RelativeAzimuth9 = cos(self.g.RelativeAzimuth9*pi/180.0)
+
+        self.SensorZenith1   = cos(self.g.SensorZenith1*pi/180.0)
+        self.SensorZenith2   = cos(self.g.SensorZenith2*pi/180.0)
+        self.SensorZenith3   = cos(self.g.SensorZenith3*pi/180.0)
+        self.SensorZenith4   = cos(self.g.SensorZenith4*pi/180.0)
+        self.SensorZenith5   = cos(self.g.SensorZenith5*pi/180.0)
+        self.SensorZenith6   = cos(self.g.SensorZenith6*pi/180.0)
+        self.SensorZenith7   = cos(self.g.SensorZenith7*pi/180.0)
+        self.SensorZenith8   = cos(self.g.SensorZenith8*pi/180.0)
+        self.SensorZenith9   = cos(self.g.SensorZenith9*pi/180.0)
 
         # Sanity check
         # ------------
-        self.iValid = (self.a.tau550>-0.01) &\
-                      (self.albedo>0)        &\
-                      (self.d.tau550>-0.01) &\
-                      (self.d.qa_flag>0)
-                     
+       
+        #----------------------------------------------------------------------------
+        "Commented out last check and replaced d.tau550 by m.tau558 ~ Suniyya Waraich"
+        #----------------------------------------------------------------------------
+        
         # NNR AOD, on demand
         # ------------------
         self.lnTau550 = None  # See tranSVC()
@@ -113,168 +177,67 @@ class ABC_MISR(NN):
             self.Target = ('laTau550',)
         else:
             self.Target = Target
-
-        
-    def addVar(self,ga,outfile,expr='ustar',vname=None, clmYear=None):
-        """
-        Given a grads object having the correct file as default,
-        writes out a CSV file with the 3 variables. When *clmYear* is
-        specified, the actual year in the time attribute is replaced
-        with he climatological year *clmYear*.
-
-        This algorithm uses a *nearest neighbor* interpolation.
-        
-        """
-
-        N = self.N
-        U = ones(N)
-        U[:] = MISSING
-
-        if vname == None:
-            vname = expr
-
-        for i in range(N):
-
-            x = self.lon[i]
-            y = self.lat[i]
-
-            if clmYear == None:
-                t = self.time[i]
-            else:
-                t = dt2gat(self.time[i])
-                t = t[:-4] + str(clmYear) # replace year
-
-            ga('set lon %f %f'%(x-1.,x+1.),Quiet=True)
-            ga('set lat %f %f'%(y-1.,y+1.),Quiet=True)
-            ga('set time %s'%t,Quiet=True)
-
-            try:
-                u, levs = ga.interp(expr, lons=(x,),lats=(y,))
-                U[i] = u.data
-            except:
-                ga.flush()
-
-            if U[i] >= 0.0:
-                print self.time[i], "%8.3f %8.3f %6.3f  ...%8.3f%%"\
-                      %(x,y,U[i],100.*i/float(N))
-
-        self.__dict__[vname] = U
-
-        version = 1
-        meta = [ version, vname, expr ]
-        savez(outfile,meta=meta,lon=self.lon,lat=self.lat,time=self.time,var=U)
-
-    def getAlbedo(self,npzFile):
-        from grads import GrADS
-        ga = GrADS(Echo=False,Window=False)
-        ga('open albedo_clim.ctl')
-        self.addVar(ga,npzFile,expr='albedo',clmYear=2000)
-
-    def trainNovel(self,nu=0.1,kernel='rbf',gamma=0.1,**kwopts):
-        """
-        Train Novelty SVM and apply it to "bad" data.                                           
-        NoteL I did not work too well with refletances...
-        """
-        from sklearn import svm
-
-        self.clf = svm.OneClassSVM(nu=nu, kernel=kernel, gamma=gamma,**kwopts)
-
-        # Fit using good data
-        # -------------------
-        Xgood = self.getInputs(I=self.iGood)
-        self.clf.fit(Xgood)
-        self.NovelTrain = self.clf.predict(Xgood)
-        self.NovelTrate = 100.*self.NovelTrain[self.NovelTrain==1].size/self.NovelTrain.size
-
-        # Eval on bad data
-        # ----------------
-        Xbad = self.getInputs(I=self.iBad)
-        self.NovelBad = self.clf.predict(Xbad)
-        self.NovelBrate = 100.*self.NovelBad[self.NovelBad==-1].size/self.NovelBad.size
-
-    def trainSVC(self,Verbose=True,tol=0.5,alb_min=0.15,doScores=False,**kwopts):
-        """
-        Train Novelty SVM and apply it to "bad" data.                                           
-        """
-        from sklearn import svm, cross_validation
-
-        # Segregate retrievals into good/bad according to AERONET
-        # -------------------------------------------------------
-        diff = self.ldTau550-self.laTau550
-        self.iGood = self.iValid&(abs(diff)<=tol)
-        self.iBad  = self.iValid&(abs(diff)>tol)   # too large or too small
-        self.iBad1 = self.iValid&(diff<-tol)       # too large
-        self.iBad2 = self.iValid&(diff>+tol)       # too small
-
-        # Instantiate classifier
-        # ----------------------
-        self.clf = svm.SVC(**kwopts)
-
-        Input = self.Input
-
-        # Features and class labels
-        # -------------------------
-        I = (self.iValid)&(self.d.qa_flag>0)&(self.lnTau550>-5)&(m.albedo>alb_min)
-        X = self.getInputs(I=I,Input=Input)
-        y = ones(self.N)  # Good = 1
-        y[self.iBad] = -1 # Bad = -1
-        y = y[I]
-
-        # Train the classifier
-        # --------------------
-        if Verbose:
-            print "- Training SVM classifier with %d samples"%y.size
-        self.svc = svm.SVC(**kwopts)
-        self.svc.fit(X,y)
-
-        # Save for diagnostics
-        # --------------------
-        self.svcTarget   = MISSING * ones(self.N)
-        self.svcEval     = MISSING * ones(self.N)
-
-        self.svcIndex       = I       # Indices used for training
-        self.svcTarget[I]   = y       # Correct outcome
-        self.svcEval[I]     = self.svc.predict(X) # Trained outcome
-        # self.svcFeature     = Input   # Inputs used
-
-        # Calculate scores
-        # ----------------
-        if Verbose:
-            print "- Calculating Cross Validated scores..."
-        self.svcScores = cross_validation.cross_val_score(self.svc, X, y, n_jobs=1)
-        if Verbose:
-            print "- Cross Validated scores are ", self.svcScores
-
-    def getNNR(self):
-        """
-        Apply pre-computed NNR to reflectances.
-        """
-
-        # Load network
-        # ------------
-        self.net = loadnet('nnr_001.mydd_Tau.net')
-
-        Input = self.net.InputNames
-        
-        # Q/C
-        # ---
-        iValid =  (m.sRef412>0)    & \
-                  (m.sRef470>0)    & \
-                  (m.dRef412>0)    & \
-                  (m.dRef470>0)    & \
-                  (m.aTau550>0)    & \
-                  (m.dTau550>0)    & \
-                  (m.d.qa_flag>0)  & \
-                  (m.albedo>0)
-
-        # Evaluate
-        # --------
-        target = MISSING * ones(self.lon.shape)
-        target[iValid] = self.net(self.getInputs(I=iValid,Input=Input))
-
-        self.lnTau550 = target
  
-#---
+#-------------------------------------------------------------------
+def prepAncillary(year, month, npzDir='/nobackup/MAPSS/Collocation/MISR',
+                  aer_x = '/nobackup/MERRAero/inst2d_hwl_x.ddf',
+                  slv_Nx = '/nobackup/MERRA/slv_Nx',
+                  AlbedoGF_Root = '/nobackup/10/MODIS/005/Level3/Albedo/data',
+                  igbp_dir='/nobackup/Emissions/Vegetation/GL_IGBP_INPE'):
+    """
+    Prepare ancillary data, saving it to NPZ file.
+    """
+
+    # Get coordinates
+    # ---------------
+    npzFile = 'mapss.xtra_misr.%d4%02d.npz'%(year,month)
+    if os.path.exists(npzFile):
+        print ">< Skipping ancillaries on ", year, month
+        return
+    else:
+        print "<> Creatig ancillaries on ", year, month
+    a = MAPSS(npzDir+'/mapss.anet_misr.%4d%02d.npz'%(year,month))
+
+    a.sample = None
+
+    # Vegetation type
+    # ---------------
+    print "   o Sampling vegetation type"
+    veg = a.detailedVeg(Path=igbp_dir)
+
+    # Speciate
+    # --------
+    print "   o Speciating aerosols..."
+    a.speciate(aer_x)
+    
+    # Wind speed
+    # ----------
+    print "   o Sampling 10M wind..."
+    a.sampleFile(slv_Nx,onlyVars=('U10M','V10M'))
+    a.wind = a.sample.U10M**2 + a.sample.V10M**2 
+
+    # Ocean Albedo (still neds to be water masked later)
+    # --------------------------------------------------
+    print "<> Doing Cox Munk..."
+    a.getCoxMunk()
+
+    # Land Albedo
+    # -----------
+    print "   o Sampling surface albedo..."
+    a.AlbedoSample(Verbose = True,
+                   root=AlbedoGF_Root)
+
+    # Save to NPZ file
+    # ----------------
+    savez(npzFile,
+          version=1,nobs=len(a.lon), lon=a.lon,lat=a.lat,time=a.time,
+          u10m = a.sample.U10M, v10m=a.sample.V10M, ocnAlbedo=a.ocnAlbedo,
+          fdu=a.fdu, fss=a.fss, fbc=a.fbc, foc=a.foc, fcc=a.fcc, fsu=a.fsu,
+          lndAlbedo=a.lndAlbedo, veg = a.veg)
+
+    return a
+    
+#-------------------------------------------------------------------
 
 __Months__ = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
 
@@ -535,9 +498,14 @@ def doPlots(m,expid,ident, Target):
 
 if __name__ == "__main__":
 
+    for year in range(2003,2015):
+        for month in range(1,13):
+            a = prepAncillary(year,month)
+
+def hold():
+
     m, expid, ident, Target = _deepNNR()
     
-def hold():
 
     m = AQC_DEEP(verbose=True)
     m.getNNR()
@@ -554,4 +522,4 @@ def hold():
     m.getNNR()
     m.trainSVC()
     I = m.svcIndex
-    J = I & (m.svcEval==1)&(m.albedo>0.15)&(m.ldTau550>-5)
+    J = I & (m.svcEval==1)&(m.albedo>0.15)&(m.ldTau550>-5) 

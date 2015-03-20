@@ -16,7 +16,7 @@ class NPZ(object):
         or a string with wild characters like '*.npz'.
         """
         if type(npzFiles) == StringType:
-            npzFiles = sort(glob(npzFiles))
+            npzFiles = sorted(glob(npzFiles))
 
         if Verbose:
             print '[] Loading ', npzFiles[0] 

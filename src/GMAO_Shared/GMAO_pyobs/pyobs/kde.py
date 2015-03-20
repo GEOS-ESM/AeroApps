@@ -125,13 +125,13 @@ def calc_kde2d(x_values,y_values,x_range=None,y_range=None,
     return (x_bins,y_bins,P)
 
 #---
-def plot_kde2d( x_bins, y_bins, P, centroid=False, formatter=None,
+def plot_kde2d( x_bins, y_bins, P, centroid=False, formatter=None,dpi=None,
                 regression=None,Title=None,xLabel=None,yLabel=None):
 
 
     #   Plot results with 2 different colormaps
     #   ---------------------------------------
-    fig = figure()
+    fig = figure(dpi=dpi)
     ax = fig.add_axes([0.1,0.1,0.75,0.75])
     if formatter != None:
         ax.xaxis.set_major_formatter(formatter)

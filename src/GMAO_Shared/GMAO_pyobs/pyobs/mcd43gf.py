@@ -9,20 +9,28 @@ from pyhdf.SD import SD
 
 from glob import glob
 
-from numpy import zeros, ones, array, int
+from numpy import zeros, ones, array, int, savez, mod
 
 class MCD43GF(object):
 
-    def AlbedoOpenFile(self,time,root='/nobackup/10/MODIS/005/Level3/Albedo/data',ymin=2001,ymax=2012):
+    def AlbedoOpenFile(self,time,root='/nobackup/10/MODIS/005/Level3/Albedo/data',
+                       ymin=2001,ymax=2012,Verbose=False):
         """
         Returns albedo file name.
         """
         y = min(max(time.year,ymin),ymax)
-        doy = time.toordinal() - datetime(y-1,12,31).toordinal()
+        t = datetime(y,time.month,time.day,time.hour,time.minute,time.second)
+        doy = t.toordinal() - datetime(y-1,12,31).toordinal()
         doy_ = 1 + 8 * int(0.5+(doy-1)/8.) # discrete doy
+        doy_ = min(361,doy_)
         filename = root+'/'+'%d/00-05.%03d/MCD43GF_wsa_Band4_%03d_%d_f.hdf'%(y,doy_,doy_,y)
-        print "%03d %03d %s"%(doy,doy_,filename)
-        return SD(filename)
+        if Verbose:
+            print "%03d %03d %s"%(doy,doy_,filename)
+        try:
+            h = SD(filename) 
+        except:
+            raise ValueError, "could not open <%s>"%filename
+        return h
 
     def AlbedoGetSDS(self,time,**kwopts):
         """
@@ -31,14 +39,20 @@ class MCD43GF(object):
         h = self.AlbedoOpenFile(time,**kwopts)
         return h.select('Albedo_Map_0.555')
  
-    def AlbedoSample(self,lon,lat,time,**kwopts):
+    def AlbedoSample(self,npzFile=None,lon=None,lat=None,time=None,Verbose=False,**kwopts):
         """
         Nearest-neighbor sampling of albedo file.
         """
 
+        # Coordinates
+        # -----------
+        if lon  is None: lon  = self.lon
+        if lat  is None: lat  = self.lat
+        if time is None: time = self.time
+        
         # Open first albedo file
         # ---------------------- 
-        h = self.AlbedoOpenFile(time[0])
+        h = self.AlbedoOpenFile(time[0],Verbose=Verbose,**kwopts)
 
         # Scaling
         # -------
@@ -61,8 +75,8 @@ class MCD43GF(object):
         for doy in DOY:
             dicDOY[doy] = 1
 
-        # Loop over dates on asingle albedo file
-        # --------------------------------------
+        # Loop over dates on a single albedo file
+        # ---------------------------------------
         a = - ones(len(time))
         for doy in sorted(dicDOY.keys()):
 
@@ -83,16 +97,30 @@ class MCD43GF(object):
                 i = int(0.5+(lon_[k]-Lon[0])/dLon)
                 j = int(0.5+(lat_[k]-Lat[0])/dLat)
                 a_[k] = A[j,i] # read one at a time --- can be optimized if needed
-        
+
+                if Verbose:
+                    if mod(k,1000)==0 and a_[k] >= 0.0 and a_[k] != fill:
+                        print time_[k], "%8.3f %8.3f %6.3f  ...%8.3f%%"\
+                        %(lon_[k],lat_[k],scale*a_[k],100.*k/float(n_))
+
+                
             a[N] = a_[:] # scatter
        
-        # Scale and reflace fill values
+        # Scale and replace fill values
         # -----------------------------
         a[a==fill] = -1
         K = (a>0)
         a[K] = scale * a[K] + add
 
-        return a
+        self.lndAlbedo = a
+
+        if npzFile is not None:
+           version = 2
+           meta = [ version, 'albedo', 'Albedo_Map_0.555' ]
+           data = dict(N=N, lon=lon,lat=lat,time=time,lndAlbedo=a)
+           savez(npzFile,meta=meta,**data)
+        
+        return
         
 #--------------------------------------------------------------------------------------------
 
@@ -110,7 +138,7 @@ if __name__ == "__main__":
 
     I = (a.tau550>0)
 
-    A = m.AlbedoSample(a.lon[I],a.lat[I],a.time[I])
+    A = m.AlbedoSample(a.lon[I],a.lat[I],a.time[I],Verbose=True,npzFile='albedo.npz')
     
     
 def later():

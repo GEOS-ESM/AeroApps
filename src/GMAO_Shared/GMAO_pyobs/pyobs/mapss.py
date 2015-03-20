@@ -5,10 +5,13 @@
 import os
 import sys
 from   types    import *
-from   numpy    import loadtxt, ones, savez, pi, log, concatenate, arange, savez, shape, array
+from   numpy    import loadtxt, ones, zeros,  savez, pi, log, interp, \
+                       concatenate, arange, savez, shape, array
 from   datetime import datetime as TIME
 
-from pyobs.npz  import NPZ
+from npz       import NPZ
+from mcd43gf   import MCD43GF
+from igbp      import IGBP
 
 MISSING = -999.
 
@@ -108,7 +111,7 @@ for v in VARS['MISR_MREF']:
         ALIAS[v] = 'mRef'+v[10:]
 
 #---- 
-class MAPSS(object):
+class MAPSS(MCD43GF,IGBP):
     """Base class for Multi-sensor Aerosol Products Subset Statistics (MAPSS)"""
 
     def __init__ (self,Path,xVars=(),Verbose=False):
@@ -120,6 +123,7 @@ class MAPSS(object):
         self.columns = None
         self.nobs = 0
         self.Vars = VARS['META'] + xVars
+        self.sample = None
 
         # Past is string or list
         # ----------------------
@@ -325,6 +329,112 @@ class MAPSS(object):
         self.converters = None
         savez(outFile,**self.__dict__)
         self.converters = xxx
+
+#---
+    def speciate(self,aer_x,FineMode=False):
+        """
+        Use GAAS to derive fractional composition.
+        """
+
+        self.sampleFile(aer_x,onlyVars=('TOTEXTTAU',
+                                        'DUEXTTAU',
+                                        'SSEXTTAU',
+                                        'BCEXTTAU',
+                                        'OCEXTTAU',
+                                        'SUEXTTAU',
+                                        ))
+        s = self.sample
+        I = (s.TOTEXTTAU<=0)
+        s.TOTEXTTAU[I] = 1.E30
+        self.fdu  = s.DUEXTTAU / s.TOTEXTTAU
+        self.fss  = s.SSEXTTAU / s.TOTEXTTAU
+        self.fbc  = s.BCEXTTAU / s.TOTEXTTAU
+        self.foc  = s.OCEXTTAU / s.TOTEXTTAU
+        self.fcc  = self.fbc + self.foc
+        self.fsu  = s.SUEXTTAU / s.TOTEXTTAU
+
+        if FineMode:
+            TOTEXTTAU = s.TOTEXTTAU[:]
+            self.sampleFile(aer_x,onlyVars=('DUEXTTFM','SSEXTTFM'))
+            self.fduf = s.DUEXTTFM / TOTEXTTAU
+            self.fssf = s.SSEXTTFM / TOTEXTTAU
+
+            del self.sample
+
+#---
+    def sampleFile(self, inFile, npzFile=None, onlyVars=None, Verbose=False):
+        """
+        Interpolates all variables of inFile and optionally
+        save them to file *npzFile*
+        """
+        from gfio import GFIO, GFIOctl, GFIOHandle
+
+        # Instantiate grads and open file
+        # -------------------------------
+        name, ext = os.path.splitext(inFile)
+        if ext in ( '.nc4', '.nc', '.hdf'):
+          fh = GFIO(inFile)     # open single file
+          if fh.lm == 1:
+            timeInterp = False    # no time interpolation in this case
+          else:
+            raise ValueError, "cannot handle files with more tha 1 time, use ctl instead"
+        else:
+          fh = GFIOctl(inFile)  # open timeseries
+          timeInterp = True     # perform time interpolation
+
+        if self.sample==None:
+            self.sample = GFIOHandle(inFile)
+        if onlyVars is None:
+            onlyVars = fh.vname
+
+        nt = self.lon.shape
+        tymes = self.time
+        lons = self.lon
+        lats = self.lat
+
+        # Loop over variables on file
+        # ---------------------------
+        for v in onlyVars:
+            if Verbose:
+                print "<> Sampling ", v
+            if timeInterp:
+              var = fh.sample(v,lons,lats,tymes,Verbose=Verbose)
+            else:
+              var = fh.interp(v,lons,lats)
+            if len(var.shape) == 1:
+                self.sample.__dict__[v] = var
+            elif len(var.shape) == 2:
+                var = var.T # shape should be (nobs,nz)
+                self.sample.__dict__[v] = var
+            else:
+                raise IndexError, 'variable <%s> has rank = %d'%(v,len(var.shape))
+
+        if npzFile is not None:
+            savez(npzFile,**self.sample.__dict__)            
+
+    def getCoxMunk(self,filename='/nobackup/NNR/Misc/coxmunk_lut.npz',channel=550):
+        """
+        Returns ocean albedo.
+        """
+        
+        # Get precomputed albedo LUT
+        # --------------------------
+        lut = NPZ(filename)
+        
+        # Trimmed wind speed
+        # ------------------
+        w10m = self.wind.copy()
+        w10m[w10m<0] = 0
+        w10m[w10m>50.] = 50.
+
+        j = list(lut.channels).index(channel)
+
+        # Interpolate albedo
+        # ------------------
+        albedo = zeros(len(w10m))
+        albedo[:] = interp(w10m,lut.speed,lut.albedo[:,j])
+
+        self.ocnAlbedo = albedo
 
 #..........................................................................
 class ANET(MAPSS):

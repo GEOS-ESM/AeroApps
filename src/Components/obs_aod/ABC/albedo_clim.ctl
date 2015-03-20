@@ -1,4 +1,4 @@
-DSET /nobackup/MODIS/Level3/ALBEDO/clim/albedo_555nm.clim.%d2%mc%y4.nc
+DSET /nobackup/MODIS/051/Level3/ALBEDO/clim/albedo_555nm.clim.%d2%mc%y4.nc
 title Climatological Albedo
 dtype netcdf
 options template

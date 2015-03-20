@@ -51,7 +51,10 @@ def Open(filename):
     # --------------------------
     Vars = dict()
     for i in range(len(f.vname)):
-        v = f.vname[i].upper()
+        if f.lower:
+            v = f.vname[i].upper()
+        else:
+            v = f.vname[i]
         var = StnVar(v)
         var.title = f.vtitle[i]
         var.km = f.kmvar[i]
@@ -75,7 +78,6 @@ def getStations(csvFile):
         name += [row['name'],]
         lon  += [float(row['lon']),]
         lat  += [float(row['lat']),]
-        
     return ( array(name), array(lon), array(lat) )
 
 def getTyme(f,t1,t2):
@@ -334,7 +336,8 @@ def writeNC ( stnName, stnLon, stnLat, tyme, f, options,
     # --------------------------------
     Vars = options.Vars or f.vname
     for v in Vars:
-        var = f.Vars[v.upper()]
+        #var = f.Vars[v.upper()]
+        var = f.Vars[v]
         if var.km == 0:
             dim = ('station','time',)
             shp = ( ns_, nt_)

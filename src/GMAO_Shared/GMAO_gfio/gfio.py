@@ -8,6 +8,10 @@ import os
 from numpy    import linspace, ones, zeros, any, array, float32, tile
 from datetime import datetime, timedelta
 
+from collections import OrderedDict
+
+__MAXFILES__ = 512 # max number of files to keep open at once, per instance
+
 from GFIO_ import *
 
 class GFIOHandle(object):
@@ -526,7 +530,7 @@ class GFIOctl(object):
         self.dt = dt
         self.tbeg = _gat2dt(t0)
         self.tend = self.tbeg + (self.lm-1) * self.dt
-        self.Files = dict()
+        self.Files = OrderedDict()
 
         # Open GFIO file for first time
         # -----------------------------
@@ -541,6 +545,23 @@ class GFIOctl(object):
             self.__dict__[att] = self.gfio.__dict__[att]
         
 #---
+
+    def _fifo(self,filename,gfio):
+        """
+        Save gfio object in container. If the maximum number of files
+        are exceeded, then the first in goes out.
+        """
+
+        # Close 1 file if too many files are open
+        # ---------------------------------------
+        if len(self.Files)  > __MAXFILES__:
+            first = self.Files.keys()[0]
+            self.Files[first].close() # close this file
+            del self.Files[first]     # delete this entry
+            #print '------- deleted %s ----------'%first
+            
+        self.Files[filename] = gfio
+            
     def read(self,vname,nymd=None,nhms=None,tyme=None,**kwds):
         """
         Reads a variable at a given time/date, or the first time on file if
@@ -561,7 +582,8 @@ class GFIOctl(object):
             filename = _strTemplate(self.dset,nymd=nymd,nhms=nhms)
             if self.Files.has_key(filename) == False:
                 gfio = GFIO(filename)
-                self.Files[filename] = gfio
+                #self.Files[filename] = gfio
+                self._fifo(filename,gfio)
             else:
                 gfio = self.Files[filename]
 
@@ -638,7 +660,8 @@ class GFIOctl(object):
             filename = _strTemplate(self.dset,nymd=nymd,nhms=nhms)
             if self.Files.has_key(filename) == False:
                 gfio = GFIO(filename)
-                self.Files[filename] = gfio
+                #self.Files[filename] = gfio
+                self._fifo(filename,gfio)
             else:
                 gfio = self.Files[filename]
 
