@@ -9,6 +9,7 @@
 """
 
 import os
+import sys
 
 from optparse     import OptionParser
 from netCDF4      import Dataset
@@ -74,7 +75,7 @@ class Writer(object):
         descr = var.long_name.replace('__ENSEMBLE__','').replace('_',' ')
         self.row(vname,dim,descr,var.units)
     
-    def doCollection(self,Coll,nature=False):
+    def doCollection(self,Coll,options):
         """
         Write spec for a given collection.
         """
@@ -116,9 +117,12 @@ class Writer(object):
             dim, freq, sampling, level = ('2d','invariants','time independent', 'surface')
             descr = Title[1]
         else:
-            if nature:
+            if options.nature:
                 dim_, freq, sampling, level, res = Title[:5]
                 descr = ','.join(Title[5:])[:-2]
+            elif options.merra:
+                dim_, freq, sampling, level = Title[:4]
+                descr = ','.join(Title[5:]) #[:-2].replace("'","")
             else:
                 if len(Title) >= 4:
                     dim_, freq, sampling, level = Title[:4]
@@ -126,19 +130,28 @@ class Writer(object):
                 else:
                     descr = 'fix me, please'
                     
-        if Coll.LongName is not None:
-            Descr = Coll.LongName.split()[4:]
-            descr = ' '.join(Descr)
+        #if Coll.LongName is not None:
+        #    Descr = Coll.LongName.split()[4:]
+        #    descr = ' '.join(Descr)
             
         descr = descr.replace('Forecast,','').replace('Assimilation,','').replace('Analysis,','')
 
         # Section Header
         # --------------
-        self.section(Coll.name,descr)
+        if Coll.ShortName is None:
+            self.section(Coll.name,descr)
+        else:
+            cname = Coll.name + ' (%s)'%str(Coll.ShortName)
+            self.section(cname,descr)
 
         # Properties
         # ----------
-        self.property('Frequency',"%s (%s)"%(freq.lower(),sampling.lower()))
+        if Coll.tbeg is None:
+            self.property('Frequency',"%s (%s)"%(freq.lower(),sampling.lower()))
+        else:
+            date,time = Coll.tbeg.split('T')
+            tbeg = time[:5]+' UTC'
+            self.property('Frequency',"%s from %s (%s)"%(freq.lower(),tbeg,sampling.lower()))
         self.property("Spatial Grid","%s, %s, %s"%(dim.upper(),level.lower(),res.lower()))
         if Coll.nz<1:
             self.property("Dimensions","longitude=%d, latitude=%d, time=%d "%(Coll.nx,Coll.ny,Coll.nt))
@@ -269,6 +282,10 @@ def getCollection(filename,collname):
         Coll.LongName = Coll.nc.LongName
     except:
         Coll.LongName = None        
+    try:
+        Coll.ShortName = Coll.nc.ShortName
+    except:
+        Coll.ShortName = None        
     Coll.nx = len(Coll.nc.dimensions['lon'])
     Coll.ny = len(Coll.nc.dimensions['lat'])
     try:
@@ -283,6 +300,14 @@ def getCollection(filename,collname):
         if v.upper() in ('LON', 'LAT', 'LEV','TIME', 'TAITIME' ):
             continue
         Coll.variables[v] = Coll.nc.variables[v]
+    try:
+        time = Coll.nc.variables['time']
+        tunits = time.units
+        units, offset = time.units.split(' since ')
+        Coll.tbeg = offset.replace(' ','T')
+    except:
+        Coll.tbeg = None
+ 
     return Coll
         
 def get1d(dname):
@@ -377,6 +402,10 @@ if __name__ == "__main__":
     parser.add_option("-H", "--history", dest="history", default=None,
               help="Optional HISTORY.rc resource file (default=None)")
 
+    parser.add_option("-M", "--merra",
+                      action="store_true", dest="merra",
+                      help="Assume MERRA-2 file name conventions")
+
     parser.add_option("-N", "--nature",
                       action="store_true", dest="nature",
                       help="Assume Nature Run file name conventions")
@@ -398,9 +427,22 @@ if __name__ == "__main__":
     # ----------------------------
     if options.history is not None:
         cf = Config(options.history)
+        Descr = dict()
+        for v in cf.keys():
+            v_ = v.replace('-.descr','.descr')
+            Descr[v_] = cf(v)
     else:
         cf = None
     
+    # Only one type of files
+    # ----------------------
+    n = 0
+    if options.merra:  n+=1
+    if options.nature: n+=1
+    if options.fp:     n+=1
+    if n>1:
+       raise 'ValueError', 'only one of -N, -M, -F can be specified'
+
     # Instantiate writer
     # ------------------
     name, ext = os.path.splitext(options.outFile)
@@ -414,14 +456,14 @@ if __name__ == "__main__":
         writer = rtfWriter(options.outFile)
     else:
         raise ValueError, "unsupported format <%s>"%options.format
-    
+
     # Unique name of collections
     # --------------------------
     Files = dict()
     for fname in inFiles:
         if options.nature:
             collname = os.path.basename(fname).split('.')[1] 
-        if options.fp:
+        elif options.fp:
             collname = os.path.basename(fname).split('.')[3] 
         else:
             collname = os.path.basename(fname).split('.')[1]
@@ -449,9 +491,13 @@ if __name__ == "__main__":
         fname = Files[collname]
         Collection = getCollection(fname,collname)
         if cf is not None:
-            rcn = collname+'.descr'
-            Collection.title = cf(rcn) # override what is on file
-        writer.doCollection(Collection,options.nature)
+            try:
+                rcn = collname+'.descr'
+                title = Descr[rcn][:-2].replace("'","") # override what is on file 
+                Collection.title = title
+            except:
+                pass
+        writer.doCollection(Collection,options)
 
     # All done
     # --------
