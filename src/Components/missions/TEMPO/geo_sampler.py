@@ -102,15 +102,13 @@ def scanTimes(nNS,nEW,tBeg):
 def getCoords(options):
     """
     Get coordinates from TEMPO geo-location file.
-    Read and Tighten the E-W domain
+    Assumes the file has albed been tighten in the E-W domain
     """
     if options.verbose:
         print " <> Getting GEO coordinates from ", geoFile
     nc = Dataset(options.geoFile)
-    lon = nc.variables[u'clon'][:,124:1374]
-    lat = nc.variables[u'clat'][:,124:1374]
-    lon  = lon[:,-1::-1] # flip E/W dimension, better done in lg1 file
-    lat  = lat[:,-1::-1] # flip E/W dimension, better done in lg1 file
+    lon = nc.variables[u'clon'][:,:]
+    lat = nc.variables[u'clat'][:,:]
     missing = nc.variables[u'clon'].missing_value
     return (nc,lon,lat,missing)
 
