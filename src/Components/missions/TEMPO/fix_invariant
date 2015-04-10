@@ -1,0 +1,24 @@
+#!/bin/csh -f
+#
+#  Reduces the domain of the invatiant TEMPO coordinate file.
+#  Originally Xiaong Liu gave us a larger domain in an IDL savefile
+#  and later on the domain was reduced to correspond to the actual scan 
+#  of the instrument. The original file also had the x coordinates going
+#  from east to west. We reverse this here as to get a sane file that
+#  goes from west to east.
+#
+#  Arlindo da Silva, Feb 2015
+#
+
+set infile  = '/home/dasilva/silo/TEMPO/LevelG/invariant/tempo.lg1.invariant-LargerDomain.nc4'
+set outfile = '/home/dasilva/silo/TEMPO/LevelG/invariant/tempo.lg1.invariant.nc4'
+
+set ncks = $BASEDIR/Linux/bin/ncks
+set ncpdq = $BASEDIR/Linux/bin/ncpdq
+
+/bin/rm -rf tmp.nc4 $outfile
+
+echo $ncks -d ew,124,1373 $infile tmp.nc4
+$ncks -d ew,124,1373 $infile tmp.nc4
+
+#$ncpdq -h -a -clon tmp.nc4 test.nc4
