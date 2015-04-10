@@ -11,19 +11,20 @@ import os
 import MieObs_
 from types import *
 from netCDF4 import Dataset
-from mieobs import VNAMES, getAOPext
-from numpy import zeros, arange, array, ones, zeros, interp, isnan, ma, NaN, squeeze
+from mieobs import VNAMES, getAOPext, getAOPscalar
+from numpy import zeros, arange, array, ones, zeros, interp, isnan, ma, NaN, squeeze, transpose, shape, asarray
 from math import pi, sin, cos, asin, acos
 
 from types           import *
 from optparse        import OptionParser
-from datetime        import *
+from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 from csv             import DictReader
 
 from MAPL           import Config, eta
 from MAPL.constants import *
 from pyobs          import ICARTT
+from pyobs.sgp4     import getTrack 
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
@@ -31,8 +32,8 @@ VNAMES_SS = ['SS001','SS002','SS003','SS004','SS004']
 VNAMES_BC = ['BCPHOBIC','BCPHILIC']
 VNAMES_OC = ['OCPHOBIC','OCPHILIC']
 VNAMES_SU = ['SO4']
-MieVarsNames = ['ext','scatext','backscat','aback_sfc','aback_toa','depol']
-MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless']
+MieVarsNames = ['ext','scatext','backscat','aback_sfc','aback_toa','depol','ext2back','tau','ssa','g']
+MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitless','unitless','unitless']
 
 class MieCalc(object):
     pass
@@ -47,22 +48,23 @@ def getVars(inFile):
 #    """
 
     Vars       = MieCalc()
-    levs       = MieCalc()
-    levUnits   = MieCalc()
     file       = Dataset(inFile)
     names      = file.variables.keys()
-    lon        = file.variables['trjLon'][:]
-    lat        = file.variables['trjLat'][:]
-    tyme       = file.variables['time'][:]
-    MIENAMES = names
+    MIENAMES   = names
     for n, name in enumerate(MIENAMES):
         var = file.variables[name]
+        if (name == 'trjLon') or (name == 'stnLon'):
+            name = 'LONGITUDE'
+        if (name == 'trjLat') or (name == 'stnLat'):
+            name = 'LATITUDE'
+        name = name.upper()
         size = len(var.shape)
+        if size == 3:
+            setattr(Vars,name,var[:,:,:])
         if size == 2:
             setattr(Vars,name,var[:,:])
         if size == 1:
             setattr(Vars,name,var[:])
-
     return Vars        
 
 #---
@@ -70,24 +72,56 @@ def computeMie(Vars, channel, varnames, rcFile):
     """
 #    Computes optical quantities and combines into a dictionary
 #   """
-    ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+    
+    #STN Sampled?
+    if options.station:
+        NAMES = VNAMES + ['PS','DELP','RH','AIRDENS']
+        nstn = len(Vars.STATION)
+        nobs = len(Vars.TIME)
+        for v in range(nstn):
+            VarsIn = MieCalc()
+            for n, name in enumerate(NAMES):
+                Var = getattr(Vars,name)
+                size = len(Var.shape)
+                if (size == 2):
+                    #1D Variables, ex. PS
+                    setattr(VarsIn,name,Var[v,:])
+                if size == 3:
+                    #2D Variables, ex. DU001
+                    setattr(VarsIn,name,Var[v,:,:])
+  
+            if (v==0):
+                tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                ext2back = ext/backscat
+                MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}
+            else:
+                tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                ext2back = ext/backscat
+                MieVars['ext'].append(ext)
+                MieVars['scatext'].append(sca)
+                MieVars['backscat'].append(backscat)
+                MieVars['aback_sfc'].append(aback_sfc)
+                MieVars['aback_toa'].append(aback_toa)
+                MieVars['depol'].append(depol) 
+                MieVars['ext2back'].append(ext2back)
+                MieVars['tau'].append(tau)
+                MieVars['ssa'].append(ssa)
+                MieVars['g'].append(g)
 
-    MieVars = dict()
-    MieVars['ext'] = ext
-    MieVars['scatext'] = sca
-    MieVars['backscat'] = backscat
-    MieVars['aback_sfc'] = aback_sfc
-    MieVars['aback_toa'] = aback_toa
-    MieVars['depol'] = depol
+    #TRJ Sampled?
+    else:
+        tau,ssa,g = getAOPscalar(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+        ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+        ext2back = ext/backscat
+        MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}
 
     return MieVars
 
 #---
-def writeNC ( lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
+def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
               MieVarsUnits, inFile, outFile, zlib=False):
-#, levs, levUnits, trjFile, options,
-#              title='GEOS-5 Trajectory Sampler',
-#              doAkBk=False, zlib=False):
     """
     Write a NetCDF file with sampled GEOS-5 variables along the satellite track
     described by (lon,lat,tyme).
@@ -113,18 +147,31 @@ def writeNC ( lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
     # Create dimensions
     # -----------------
     nt = nc.createDimension('time',len(tyme))
+    if options.station:
+        ns = nc.createDimension('station',len(stations))
     ls = nc.createDimension('ls',19)
     if km>0:
         nz = nc.createDimension('lev',km)
     x = nc.createDimension('x',1)
     y = nc.createDimension('y',1)
 
+    if options.station:
+        # Station names
+        # -------------
+        stnName_ = nc.createVariable('stnName','S1',('station','ls'),zlib=zlib)
+        stnName_.long_name = 'Station Names'
+        stnName_.axis = 'e'
+        stnName_[:] = stations[:]   
+
     # Coordinate variables
     # --------------------
     time = nc.createVariable('time','i4',('time',),zlib=zlib)
     time.long_name = 'Time'
     t0 = tyme[0]
-    time.units = 'seconds since tstart'
+    isot0 = isotimeIn[0]
+    date0 = ''.join(isot0[:10])
+    time0 = ''.join(isot0[-8:])
+    time.units = 'seconds since '+date0+' '+time0
     time[:] = tyme
     if km > 0: # pressure level not supported yet
         lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
@@ -144,19 +191,34 @@ def writeNC ( lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
     y.long_name = 'Fake Latitude for GrADS Compatibility'
     y.units = 'degrees_north'
     y[:] = zeros(1)
+    if options.station:
+        e = nc.createVariable('station','i4',('station',),zlib=zlib)
+        e.long_name = 'Station Ensemble Dimension'
+        e.axis = 'e'
+        e.grads_dim = 'e'
+        e[:] = range(len(stations))
     
-    # Trajectory coordinates
+    # Lat/Lon Coordinates
     # ----------------------
-    lon = nc.createVariable('trjLon','f4',('time',),zlib=zlib)
-    lon.long_name = 'Trajectory Longitude'
-    lon.units = 'degrees_east'
-    lon[:] = lons[:]
-    lat = nc.createVariable('trjLat','f4',('time',),zlib=zlib)
-    lat.long_name = 'Trajectory Latitude'
-    lat.units = 'degrees_north'
-    lat[:] = lats[:]
+    if options.station:
+        lon = nc.createVariable('longitude','f4',('station',),zlib=zlib)
+        lon.long_name = 'Longitude'
+        lon.units = 'degrees_east'
+        lon[:] = lons[:]
+        lat = nc.createVariable('latitude','f4',('station',),zlib=zlib)
+        lat.long_name = 'Latitude'
+        lat.units = 'degrees_north'
+        lat[:] = lats[:]
+    else:
+        lon = nc.createVariable('longitude','f4',('time',),zlib=zlib)
+        lon.long_name = 'Longitude'
+        lon.units = 'degrees_east'
+        lon[:] = lons[:]
+        lat = nc.createVariable('latitude','f4',('time',),zlib=zlib)
+        lat.long_name = 'Latitude'
+        lat.units = 'degrees_north'
+        lat[:] = lats[:]        
     
-
     # Time in ISO format if so desired
     # ---------------------------------
     isotime = nc.createVariable('isotime','S1',('time','ls'),zlib=zlib)
@@ -166,8 +228,15 @@ def writeNC ( lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
     # Write each variable
     # --------------------------------------------------
     for n, name in enumerate(MieVarsNames):
+
         var = squeeze(MieVars[name])
         size = len(var.shape)
+        if options.station:
+            if size == 2:
+                var = asarray([var])
+                size = len(var.shape)
+        if size == 3:
+            dim = ('station','time','lev')
         if size == 2:
             dim = ('time','lev')
         if size == 1:
@@ -176,7 +245,10 @@ def writeNC ( lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
         this.standard_name = name
         this.units = MieVarsUnits[n]
         this.missing_value = MAPL_UNDEF
-        this[:] = var
+        if options.station:
+            this[:] = transpose(var,(0,2,1))
+        else:
+            this[:] = transpose(var)
 
     # Close the file
     # --------------
@@ -239,6 +311,10 @@ if __name__ == "__main__":
                       action="store_true", dest="ocarbon",
                       help="Organic Carbon Only")
 
+    parser.add_option("--stn",
+                      action="store_true", dest="station",
+                      help="Input File is from stn_sampler.py")
+
     (options, args) = parser.parse_args()
 
          
@@ -263,33 +339,37 @@ if __name__ == "__main__":
 
     # Run Mie Calculator and Write Output Files
     # --------------------------
+    if options.station:
+        StnNames = Vars.STNNAME
+    else:
+        StnNames = ''
+
     channelIn = float(options.channel)
-    outFile = 'sampled.aerosol.optical.properties.'+options.channel+'nm.total.nc'
-    MieVars = computeMie(Vars,channelIn,VNAMES,rcFile)
-    writeNC(Vars.trjLon,Vars.trjLat,Vars.time,Vars.isotime,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
+    MieVars = computeMie(Vars,channelIn,VNAMES,options.rcFile)
+    writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,options.outFile)
 
     if options.dust:
-        outFile = 'sampled.aerosol.optical.properties.'+options.channel+'nm.dust.nc'
-        MieVars = computeMie(Vars,channelIn,VNAMES_DU,rcFile)
-        writeNC(Vars.trjLon,Vars.trjLat,Vars.time,Vars.isotime,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
+        outFile = options.outFile+'.dust'
+        MieVars = computeMie(Vars,channelIn,VNAMES_DU,options.rcFile)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
 
     if options.seasalt:
-        outFile = 'sampled.aerosol.optical.properties.'+options.channel+'nm.ss.nc'
-        MieVars = computeMie(Vars,channelIn,VNAMES_SS,rcFile)
-        writeNC(Vars.trjLon,Vars.trjLat,Vars.time,Vars.isotime,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
+        outFile = options.outFile+'.ss'
+        MieVars = computeMie(Vars,channelIn,VNAMES_SS,options.rcFile)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
 
     if options.sulfate:
-        outFile = 'sampled.aerosol.optical.properties.'+options.channel+'nm.su.nc'
-        MieVars = computeMie(Vars,channelIn,VNAMES_SU,rcFile)
-        writeNC(Vars.trjLon,Vars.trjLat,Vars.time,Vars.isotime,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
+        outFile = options.outFile+'.su'
+        MieVars = computeMie(Vars,channelIn,VNAMES_SU,options.rcFile)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
 
     if options.bcarbon:
-        outFile = 'sampled.aerosol.optical.properties.'+options.channel+'nm.bc.nc'
-        MieVars = computeMie(Vars,channelIn,VNAMES_BC,rcFile)
-        writeNC(Vars.trjLon,Vars.trjLat,Vars.time,Vars.isotime,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
+        outFile = options.outFile+'.bc'
+        MieVars = computeMie(Vars,channelIn,VNAMES_BC,options.rcFile)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
 
     if options.ocarbon:
-        outFile = 'sampled.aerosol.optical.properties.'+options.channel+'nm.oc.nc'
-        MieVars = computeMie(Vars,channelIn,VNAMES_OC,rcFile)
-        writeNC(Vars.trjLon,Vars.trjLat,Vars.time,Vars.isotime,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
+        outFile = options.outFile+'.oc'
+        MieVars = computeMie(Vars,channelIn,VNAMES_OC,options.rcFile)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
    
