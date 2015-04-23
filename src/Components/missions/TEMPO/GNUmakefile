@@ -64,7 +64,7 @@ esma_help help:
 #                  User Defined Targets
 #                  --------------------
 
-INC_DIRS = . 
+INC_DIRS = . $(INC_MAPL_BASE) $(INC_MPI) $(INC_NETCDF)
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
@@ -76,6 +76,9 @@ python: $(PY_EXTS)
 
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
+
+%.x: %.o
+	$(FC) $(FOPTS) $^ -o $@ $(LIB_MAPL_BASE) $(LIB_NETCDF)
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------
