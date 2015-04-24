@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-int main(){
+int sys_tracker_(){
 	int i=0;
 	struct rusage r_usage;
 	while (i++ <=10) {
