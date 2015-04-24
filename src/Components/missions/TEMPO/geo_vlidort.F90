@@ -15,7 +15,7 @@ program shmem_reader
 
 !  Global, 3D arrays to be allocated using SHMEM
 !  ---------------------------------------------
-   real, pointer :: CLDTOT(:,:,:) => null()
+   real, pointer :: CLDTOT(:,:) => null()
    real, pointer :: AIRDENS(:,:,:,:) => null()
 !   real, pointer :: T(:,:,:) => null()
 
@@ -51,8 +51,8 @@ program shmem_reader
 !  Allocate the Global CLDTOT array using SHMEM
 !  It will be available on all processors
 !  ---------------------------------------------------------
-   call MAPL_AllocNodeArray(CLDTOT,(/im,jm,1/),rc=ierr)
-!   call MAPL_AllocNodeArray(V,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(CLDTOT,(/im,jm/),rc=ierr)
+   call MAPL_AllocNodeArray(AIRDENS,(/im,jm,lm/),rc=ierr)
 !   call MAPL_AllocNodeArray(T,(/im,jm,lm/),rc=ierr)
 
 !  Read the data
