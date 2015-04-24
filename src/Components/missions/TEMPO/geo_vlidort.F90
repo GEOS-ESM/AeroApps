@@ -16,7 +16,7 @@ program shmem_reader
 !  Global, 3D arrays to be allocated using SHMEM
 !  ---------------------------------------------
    real, pointer :: CLDTOT(:,:) => null()
-   real, pointer :: AIRDENS(:,:,:,:) => null()
+   real, pointer :: AIRDENS(:,:,:) => null()
 !   real, pointer :: T(:,:,:) => null()
 
 !  Miscellaneous
@@ -24,7 +24,10 @@ program shmem_reader
    integer :: ierr
    integer :: myid, npet, CoresPerNode
    integer :: im, jm, lm
+   integer :: p
+   integer :: startl, countl, endl
    integer :: ncid, varid
+   integer, pointer :: nlayer(:) => null() 
    real    :: memusage
 
 !  Initialize MPI
@@ -32,6 +35,7 @@ program shmem_reader
    call MPI_INIT(ierr)
    call MPI_COMM_RANK(MPI_COMM_WORLD,myid,ierr)
    call MPI_COMM_SIZE(MPI_COMM_WORLD,npet,ierr)
+   allocate (nlayer(npet))
    if (myid == 0) write(*,'(A,I4,A)')'Starting MPI on ',npet, ' processors'
 
 !  Initialize SHMEM
@@ -48,7 +52,7 @@ program shmem_reader
    AER_file = "/nobackup/TEMPO/aer_nv/Y2005/M12/tempo-g5nr.lb2.aer_Nv.20051231_00z.nc4"
    !T_file = "/home/adasilva/opendap/c1440_NR/DATA/0.0625_deg/inst/inst30mn_3d_T_Nv/Y2005/M07/D12/c1440_NR.inst30mn_3d_T_Nv.20050712_1200z.nc4"
 
-!  Allocate the Global CLDTOT array using SHMEM
+!  Allocate the Global arraya using SHMEM
 !  It will be available on all processors
 !  ---------------------------------------------------------
    call MAPL_AllocNodeArray(CLDTOT,(/im,jm/),rc=ierr)
@@ -57,8 +61,8 @@ program shmem_reader
 
 !  Read the data
 !  ------------------------------
-   if (myid == 0) then
-      call sys_tracker()
+   if (myid == 0) then  
+      call sys_tracker()    
       write(*,*) 'Reading the cloud fraction on PE', myid
       call check( nf90_open(MET_file,NF90_NOWRITE,ncid), "opening MET file")
       call check( nf90_inq_varid(ncid,"CLDTOT",varid), "getting CLDTOT varid")
@@ -66,8 +70,49 @@ program shmem_reader
       call check( nf90_close(ncid), "closing MET file")
       call sys_tracker()
     end if
-!  Read the data files in parallel
+
+!  Wait for everyone to have access to CLDTOT
+   call MPI_Barrier(MPI_COMM_WORLD, ierr)
+
+!  Figure out how many layers each PE has to read
+!  -----------------------------
+   if (npet >= lm) then
+      nlayer(1:npet) = 1
+   else if (npet < lm) then
+      nlayer(1:npet) = lm/npet
+      nlayer(npet)   = nlayer(npet) + mod(lm,npet)
+   end if 
+
+!  Read the AIRDENS variable in parallel layer-by-layer
 !  ------------------------------
+   do p = 0, npet-1
+      if (myid == p) then
+         startl = myid*nlayer(p+1)+1
+         countl = nlayer(p+1)
+         endl   = startl + countl
+         write(*,*)'Reading ', countl, ' layers starting on ', startl, ' on PE ', myid
+         call check( nf90_open(AER_file,NF90_NOWRITE,ncid), "opening AER file")
+         call check( nf90_inq_varid(ncid,"AIRDENS",varid), "getting AIRDENS varid")
+         call check( nf90_get_var(ncid,varid,AIRDENS(:,:,startl:endl), start = (/ 1, 1, startl, 1 /), count=(/im,jm,countl,1/)), "reading CLDTOT")
+         call check( nf90_close(ncid), "closing MET file")
+      endif
+   end do
+
+!  Wait for everyone to finish reading
+   call MPI_Barrier(MPI_COMM_WORLD, ierr)
+   if (myid == 0) then  
+      call sys_tracker()   
+   endif
+
+
+   ! if (myid == 0) then
+   !    write(*,*) 'Reading the air density on PE', myid
+   !    call check( nf90_open(AER_file,NF90_NOWRITE,ncid), "opening AER file")
+   !    call check( nf90_inq_varid(ncid,"AIRDENS",varid), "getting AIRDENS varid")
+   !    call check( nf90_get_var(ncid,varid,AIRDENS, start = (/ 1, 1, 1 ,1/), count=(/im,jm,lm,1/)), "reading AIRDENS")
+   !    call check( nf90_close(ncid), "closing AER file")
+   !    call sys_tracker()
+   !  end if
    ! if (npet >= 3) then
    !    if (myid == 0) then
    !       write(*,*)'Reading U on PE ', myid
@@ -110,6 +155,7 @@ program shmem_reader
 
 !  All done
 !  --------
+   deallocate(nlayer)
    call shutdown()
 
    contains
@@ -130,7 +176,7 @@ program shmem_reader
 
          ! shmem must deallocate shared memory arrays
          call MAPL_DeallocNodeArray(CLDTOT,rc=ierr)
-         !call MAPL_DeallocNodeArray(V,rc=ierr)
+         call MAPL_DeallocNodeArray(AIRDENS,rc=ierr)
          !call MAPL_DeallocNodeArray(T,rc=ierr)
 
          call MAPL_FinalizeShmem (rc=ierr)
