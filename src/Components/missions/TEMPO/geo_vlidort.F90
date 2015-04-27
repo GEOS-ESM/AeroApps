@@ -62,11 +62,12 @@ program shmem_reader
 !  ------------------------------
    if (myid == 0) then  
       call sys_tracker()    
-      write(*,*) 'Reading the cloud fraction on PE', myid
-      call check( nf90_open(MET_file,NF90_NOWRITE,ncid), "opening MET file")
-      call check( nf90_inq_varid(ncid,"CLDTOT",varid), "getting CLDTOT varid")
-      call check( nf90_get_var(ncid,varid,CLDTOT, start = (/ 1, 1, 1 /), count=(/im,jm,1/)), "reading CLDTOT")
-      call check( nf90_close(ncid), "closing MET file")
+      call readvar2D("CLDTOT", MET_file, CLDTOT)
+      ! write(*,*) 'Reading the cloud fraction on PE', myid
+      ! call check( nf90_open(MET_file,NF90_NOWRITE,ncid), "opening MET file")
+      ! call check( nf90_inq_varid(ncid,"CLDTOT",varid), "getting CLDTOT varid")
+      ! call check( nf90_get_var(ncid,varid,CLDTOT, start = (/ 1, 1, 1 /), count=(/im,jm,1/)), "reading CLDTOT")
+      ! call check( nf90_close(ncid), "closing MET file")
       call sys_tracker()
     end if
 
@@ -118,6 +119,21 @@ program shmem_reader
    call shutdown()
 
    contains
+
+      subroutine readvar2D(varname, filename, var)
+         character(len=*), intent(in)  ::  varname
+         character(len=*), intent(in)  ::  filename
+         real, dimension(im,jm)        ::  var
+
+         integer                       :: ncid, varid
+
+
+         write(*,'(A,A,A,I4)')'Reading ',trim(varname), ' on PE ', myid
+         call check( nf90_open(filename,NF90_NOWRITE,ncid), "opening file " // filename)
+         call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
+         call check( nf90_get_var(ncid,varid,var), "reading " // varname)
+         call check( nf90_close(ncid), "closing " // filename)
+      end subroutine readvar2D
 
       subroutine par_layreadvar(varname, filename, var)
          character(len=*), intent(in)  ::  varname
