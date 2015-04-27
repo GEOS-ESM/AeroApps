@@ -29,7 +29,7 @@ program shmem_reader
    integer               :: startl, countl, endl
    integer, pointer      :: nlayer(:) => null()
    real                  :: memusage
-   character(len=256)    :: msg
+   character(len=61)    :: msg
    integer               :: status(MPI_STATUS_SIZE)
 
 !  Initialize MPI
@@ -96,19 +96,24 @@ program shmem_reader
    if ( myid  == 0 ) then
          open (unit = 2, file="test_write")
          write(2,'(A)') '--- Array Statistics ---'
+   end if
 
-         do p = 1,npet-1
-            call mpi_recv(msg, 256, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status, ierr)
-            write(2,*) msg
-         end do
-   else
-      write(msg,'(A,I4,E,E)')'AIRDENS: ',myid,maxval(AIRDENS),minval(AIRDENS)
-      call mpi_send(msg, 50, MPI_CHARACTER, 0, 1, MPI_COMM_WORLD, ierr)
-   end if
-   if (myid == 0) then
-      write(2,*) 'These should all have the same min/max values!'
-      close(2)
-   end if
+   call shmem_test3D('AIRDENS',AIRDENS)
+
+   ! if ( myid  == 0 ) then
+   !       open (unit = 2, file="test_write")
+   !       do p = 1,npet-1
+   !          call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status, ierr)
+   !          write(2,*) msg
+   !       end do
+   ! else
+   !    write(msg,'(A9,I4,E24.17,E24.17)')'AIRDENS: ',myid,maxval(AIRDENS),minval(AIRDENS)
+   !    call mpi_send(msg, 61, MPI_CHARACTER, 0, 1, MPI_COMM_WORLD, ierr)
+   ! end if
+   ! if (myid == 0) then
+   !    write(2,*) 'These should all have the same min/max values!'
+   !    close(2)
+   ! end if
  
 
    ! if ( myid == 0 ) then
@@ -183,6 +188,42 @@ program shmem_reader
             end if
          end do
       end subroutine par_layreadvar
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    shmem_test
+! PURPOSE
+!     test that shared memory arrays have same values across all processors
+! INPUT
+!     varname: string of variable name
+!     var    : the variable to be checked
+! OUTPUT
+!     Writes to the file test_write the min and max value of the variable as 
+!     reported by each processor
+!  HISTORY
+!     27 April P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      subroutine shmem_test3D(varname,var)
+         character(len=*), intent(in)  :: varname
+         real,dimension(im,jm,lm)      :: var
+
+         if ( myid  == 0 ) then
+            open (unit = 2, file="test_write",position="append")
+            do p = 1,npet-1
+               call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status, ierr)
+               write(2,*) msg
+            end do
+         else
+            write(msg,'(A9,I4,E24.17,E24.17)') varname,myid,maxval(var),minval(var)
+            call mpi_send(msg, 61, MPI_CHARACTER, 0, 1, MPI_COMM_WORLD, ierr)
+         end if
+         if (myid == 0) then
+            write(2,*) 'These should all have the same min/max values!'
+            close(2)
+         end if
+
+      end subroutine shmem_test3D
+
 
       subroutine check(status, loc)
 
