@@ -174,13 +174,13 @@ program shmem_reader
                call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status, ierr)
                write(2,*) msg
             end do
+            write(msg,'(A9,I4,E24.17,E24.17)') varname,myid,maxval(var),minval(var)
+            write(2,*) msg
+            write(2,*) 'These should all have the same min/max values!'
+            close(2)
          else
             write(msg,'(A9,I4,E24.17,E24.17)') varname,myid,maxval(var),minval(var)
             call mpi_send(msg, 61, MPI_CHARACTER, 0, 1, MPI_COMM_WORLD, ierr)
-         end if
-         if (myid == 0) then
-            write(2,*) 'These should all have the same min/max values!'
-            close(2)
          end if
 
       end subroutine shmem_test3D
