@@ -160,7 +160,7 @@ program shmem_reader
 !     varname: string of variable name
 !     var    : the variable to be checked
 ! OUTPUT
-!     Writes to the file test_write the min and max value of the variable as 
+!     Writes to the file shmem_test.txt the min and max value of the variable as 
 !     reported by each processor
 !  HISTORY
 !     27 April P. Castellanos
@@ -170,7 +170,7 @@ program shmem_reader
          real,dimension(im,jm,lm)      :: var
 
          if ( myid  == 0 ) then
-            open (unit = 2, file="shemem_test.txt",position="append")
+            open (unit = 2, file="shmem_test.txt",position="append")
             do p = 1,npet-1
                call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status, ierr)
                write(2,*) msg
