@@ -5,19 +5,11 @@
 
 int sys_tracker_(){
 	int i=0;
+	long mb=0;
 	struct rusage r_usage;
-	while (i++ <=10) {
-		void *m = malloc(20*1024*1024);
-		memset(m,0,20*1024*1024);
-		getrusage(RUSAGE_SELF,&r_usage);
-		printf("Memory usage = %ld\n",r_usage.ru_maxrss);
-		sleep(3);
-	}
-	printf("\nAllocated memory, sleeping ten seconds after which we will check again ..\n\n");
-	sleep(10);
 	getrusage(RUSAGE_SELF,&r_usage);
-	printf("Memory usage = %ld\n",r_usage.ru_maxrss);
+	mb = r_usage.ru_maxrss;
+	printf("Maximum Memory usage = %ld mb\n",mb/1000);
 	return 0;
-
 
 }
