@@ -77,7 +77,8 @@ python: $(PY_EXTS)
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
 
-%.x: %.o
+%.x: %.o sys_tracker.o
+	$(CC) -c sys_tracker.c
 	$(FC) $(FOPTS) $^ -o $@ $(LIB_MAPL_BASE) $(LIB_NETCDF)
 
 # Hack to prevent remaking dep files during cleaning
