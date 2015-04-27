@@ -99,6 +99,7 @@ program shmem_reader
    end if
 
    call shmem_test3D('AIRDENS',AIRDENS)
+   call shmem_test3D('DELP',DELP)
 
 !  Wait for everyone to finish
    call MAPL_SyncSharedMemory(rc=ierr)
@@ -169,7 +170,7 @@ program shmem_reader
          real,dimension(im,jm,lm)      :: var
 
          if ( myid  == 0 ) then
-            open (unit = 2, file="test_write",position="append")
+            open (unit = 2, file="shemem_test.txt",position="append")
             do p = 1,npet-1
                call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status, ierr)
                write(2,*) msg
