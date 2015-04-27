@@ -56,7 +56,7 @@ program shmem_reader
 !  ---------------------------------------------------------
    call MAPL_AllocNodeArray(CLDTOT,(/im,jm/),rc=ierr)
    call MAPL_AllocNodeArray(AIRDENS,(/im,jm,lm/),rc=ierr)
-!   call MAPL_AllocNodeArray(DELP,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(DELP,(/im,jm,lm/),rc=ierr)
 
 !  Read the data
 !  ------------------------------
@@ -85,7 +85,7 @@ program shmem_reader
 !  Read the AIRDENS variable layer-by-layer in parallel
 !  ------------------------------
   call par_layreader("AIRDENS", AER_file, AIRDENS)
-!  call par_layreader(myid, npet, nlayer, "DELP", AER_file, im, jm, lm, DELP)
+  call par_layreader("DELP", AER_file, DELP)
 
    ! do p = 0, npet-1
    !    if (myid == p) then
@@ -191,6 +191,7 @@ program shmem_reader
          ! shmem must deallocate shared memory arrays
          call MAPL_DeallocNodeArray(CLDTOT,rc=ierr)
          call MAPL_DeallocNodeArray(AIRDENS,rc=ierr)
+         call MAPL_DeallocNodeArray(DELP,rc=ierr)
 
          call MAPL_FinalizeShmem (rc=ierr)
 
