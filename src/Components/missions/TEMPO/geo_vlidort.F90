@@ -87,26 +87,6 @@ program shmem_reader
   call par_layreader("AIRDENS", AER_file, AIRDENS)
   call par_layreader("DELP", AER_file, DELP)
 
-   ! do p = 0, npet-1
-   !    if (myid == p) then
-   !       startl = myid*nlayer(p+1)+1
-   !       countl = nlayer(p+1)
-   !       endl   = startl + countl
-   !       write(*,*)'Reading ', countl, ' layers starting on ', startl, ' on PE ', myid
-   !       call check( nf90_open(AER_file,NF90_NOWRITE,ncid), "opening AER file")
-   !       call check( nf90_inq_varid(ncid,"AIRDENS",varid), "getting AIRDENS varid")
-   !       call check( nf90_get_var(ncid,varid,AIRDENS(:,:,startl:endl), start = (/ 1, 1, startl, 1 /), count=(/im,jm,countl,1/)), "reading CLDTOT")
-   !       call check( nf90_close(ncid), "closing MET file")
-   !    endif
-   ! end do
-
-!  Wait for everyone to finish reading
-!   call MPI_Barrier(MPI_COMM_WORLD, ierr)
-!   if (myid == 0) then  
-!      call sys_tracker()   
-!   endif
-
-
 
 !  Although read on individual PEs, U,V,T should have the same
 !  data in all PEs. Let's verify that.
@@ -129,6 +109,9 @@ program shmem_reader
 
 !  Wait for everyone to finish
    call MAPL_SyncSharedMemory(rc=ierr)
+   if (myid == 0) then  
+      call sys_tracker()   
+   endif   
 
 !  All done
 !  --------
