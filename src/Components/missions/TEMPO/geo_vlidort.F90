@@ -77,7 +77,7 @@ program shmem_reader
     end if
 
 !  Wait for everyone to have access to CLDTOT
-   call MPI_Barrier(MPI_COMM_WORLD, ierr)
+   call MAPL_SyncSharedMemory(rc=ierr)
 
 !  Figure out how many layers each PE has to read
 !  -----------------------------
