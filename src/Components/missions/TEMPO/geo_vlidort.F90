@@ -63,11 +63,6 @@ program shmem_reader
    if (myid == 0) then  
       call sys_tracker()    
       call readvar2D("CLDTOT", MET_file, CLDTOT)
-      ! write(*,*) 'Reading the cloud fraction on PE', myid
-      ! call check( nf90_open(MET_file,NF90_NOWRITE,ncid), "opening MET file")
-      ! call check( nf90_inq_varid(ncid,"CLDTOT",varid), "getting CLDTOT varid")
-      ! call check( nf90_get_var(ncid,varid,CLDTOT, start = (/ 1, 1, 1 /), count=(/im,jm,1/)), "reading CLDTOT")
-      ! call check( nf90_close(ncid), "closing MET file")
       call sys_tracker()
     end if
 
