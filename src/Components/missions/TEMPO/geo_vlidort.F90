@@ -32,7 +32,6 @@ program shmem_reader
    real, pointer :: BCPHILIC(:,:,:) => null()
    real, pointer :: OCPHOBIC(:,:,:) => null()
    real, pointer :: OCPHILIC(:,:,:) => null()
-   real, pointer :: SO4(:,:,:) => null()
 
 !  Miscellaneous
 !  -------------
@@ -88,7 +87,6 @@ program shmem_reader
    call MAPL_AllocNodeArray(BCPHILIC,(/im,jm,lm/),rc=ierr)
    call MAPL_AllocNodeArray(OCPHOBIC,(/im,jm,lm/),rc=ierr)
    call MAPL_AllocNodeArray(OCPHILIC,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(SO4,(/im,jm,lm/),rc=ierr)
 
 !  Read the cloud data
 !  ------------------------------
@@ -131,7 +129,6 @@ program shmem_reader
   call par_layreadvar("BCPHILIC", AER_file, BCPHILIC)
   call par_layreadvar("OCPHOBIC", AER_file, OCPHOBIC)
   call par_layreadvar("OCPHILIC", AER_file, OCPHILIC)
-  call par_layreadvar("SO4", AER_file, SO4)
 
 !  Wait for everyone to finish and print max memory used
 !  -----------------------------------------------------------  
@@ -167,7 +164,6 @@ program shmem_reader
    call shmem_test3D('BCPHILIC',BCPHILIC)
    call shmem_test3D('OCPHOBIC',OCPHOBIC)
    call shmem_test3D('OCPHILIC',OCPHILIC)
-   call shmem_test3D('SO4',SO4)
 
 
 !  Wait for everyone to finish and print max memory used
