@@ -1,5 +1,19 @@
-! program to read several variables from a netcdf file into a
-! a shared memory array using MAPL_ShmemMod
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    geo_vlidort
+! PURPOSE
+!     Reads in parallel the model data (in a netcdf file) interpolated to TEMPO grid 
+!     The variables are needed as input to vlidort
+!     A shared memory array created with a call to MAPL_ShmemMod is used for the variables
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     27 April P. Castellanos adapted from A. da Silva shmem_reader.F90
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 program shmem_reader
 
@@ -11,7 +25,7 @@ program shmem_reader
 
 !  Test flat
 !  -----------
-   logical       :: test_shmem = .True.
+   logical       :: test_shmem = .False.
 
 !  File names
 !  ----------
@@ -169,24 +183,36 @@ program shmem_reader
       call shmem_test3D('BCPHILIC',BCPHILIC)
       call shmem_test3D('OCPHOBIC',OCPHOBIC)
       call shmem_test3D('OCPHILIC',OCPHILIC)
+
+   !  Wait for everyone to finish and print max memory used
+   !  -----------------------------------------------------------  
+      call MAPL_SyncSharedMemory(rc=ierr)
+      if (myid == 0) then  
+         write(*,*) 'Tested shared memory' 
+         call sys_tracker()   
+      end if   
    end if 
-
-
-!  Wait for everyone to finish and print max memory used
-!  -----------------------------------------------------------  
-   call MAPL_SyncSharedMemory(rc=ierr)
-   if (myid == 0) then  
-      write(*,*) 'Tested shared memory' 
-      call sys_tracker()   
-   end if   
-
 
 !  All done
 !  --------
    call shutdown()
 
    contains
-
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    readvar2D
+! PURPOSE
+!     reads a 2D variable from a netcdf file all at once
+!     can only be called by one processor
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     27 April P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       subroutine readvar2D(varname, filename, var)
          character(len=*), intent(in)  ::  varname
          character(len=*), intent(in)  ::  filename
@@ -202,6 +228,22 @@ program shmem_reader
          call check( nf90_close(ncid), "closing " // filename)
       end subroutine readvar2D
 
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    par_layreadvar
+! PURPOSE
+!     uses npet processors to read a variable from a netcdf file in chunks of layers
+!     is called by multiple processors
+!     variable to be read must have dimensions (ew,ns,lev,time=1)
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     27 April P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       subroutine par_layreadvar(varname, filename, var)
          character(len=*), intent(in)  ::  varname
          character(len=*), intent(in)  ::  filename
