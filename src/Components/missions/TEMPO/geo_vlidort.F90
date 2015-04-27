@@ -9,6 +9,10 @@ program shmem_reader
    implicit none
    include "mpif.h"
 
+!  Test flat
+!  -----------
+   logical       :: test_shmem = .True.
+
 !  File names
 !  ----------
    character(len=256) :: MET_file, AER_file 
@@ -43,7 +47,7 @@ program shmem_reader
    integer               :: startl, countl, endl
    integer, pointer      :: nlayer(:) => null()
    real                  :: memusage
-   character(len=61)    :: msg
+   character(len=61)     :: msg
    integer               :: status(MPI_STATUS_SIZE)
 
 !  Initialize MPI
@@ -136,34 +140,36 @@ program shmem_reader
    if (myid == 0) then 
       write(*,*) 'Read all variables' 
       call sys_tracker()   
-   endif     
+   end if     
 
 
+   if (test_shmem) then
 !  Although read on individual PEs, all shared variables should have the same
 !  data in all PEs. Let's verify that.
 !  -----------------------------------------------------------   
-   if ( myid  == 0 ) then
-         open (unit = 2, file="shmem_test.txt")
-         write(2,'(A)') '--- Array Statistics ---'
-   end if
+      if ( myid  == 0 ) then
+            open (unit = 2, file="shmem_test.txt")
+            write(2,'(A)') '--- Array Statistics ---'
+      end if
 
-   call shmem_test2D('CLDTOT',CLDTOT)
-   call shmem_test3D('AIRDENS',AIRDENS)
-   call shmem_test3D('DELP',DELP)
-   call shmem_test3D('DU001',DU001)
-   call shmem_test3D('DU002',DU002)
-   call shmem_test3D('DU003',DU003)
-   call shmem_test3D('DU004',DU004)
-   call shmem_test3D('DU005',DU005)
-   call shmem_test3D('SS001',SS001)
-   call shmem_test3D('SS002',SS002)
-   call shmem_test3D('SS003',SS003)
-   call shmem_test3D('SS004',SS004)
-   call shmem_test3D('SS005',SS005)
-   call shmem_test3D('BCPHOBIC',BCPHOBIC)
-   call shmem_test3D('BCPHILIC',BCPHILIC)
-   call shmem_test3D('OCPHOBIC',OCPHOBIC)
-   call shmem_test3D('OCPHILIC',OCPHILIC)
+      call shmem_test2D('CLDTOT',CLDTOT)
+      call shmem_test3D('AIRDENS',AIRDENS)
+      call shmem_test3D('DELP',DELP)
+      call shmem_test3D('DU001',DU001)
+      call shmem_test3D('DU002',DU002)
+      call shmem_test3D('DU003',DU003)
+      call shmem_test3D('DU004',DU004)
+      call shmem_test3D('DU005',DU005)
+      call shmem_test3D('SS001',SS001)
+      call shmem_test3D('SS002',SS002)
+      call shmem_test3D('SS003',SS003)
+      call shmem_test3D('SS004',SS004)
+      call shmem_test3D('SS005',SS005)
+      call shmem_test3D('BCPHOBIC',BCPHOBIC)
+      call shmem_test3D('BCPHILIC',BCPHILIC)
+      call shmem_test3D('OCPHOBIC',OCPHOBIC)
+      call shmem_test3D('OCPHILIC',OCPHILIC)
+   end if 
 
 
 !  Wait for everyone to finish and print max memory used
@@ -172,7 +178,8 @@ program shmem_reader
    if (myid == 0) then  
       write(*,*) 'Tested shared memory' 
       call sys_tracker()   
-   endif   
+   end if   
+
 
 !  All done
 !  --------
