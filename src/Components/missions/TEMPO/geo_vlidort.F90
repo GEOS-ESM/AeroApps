@@ -84,8 +84,8 @@ program shmem_reader
 
 !  Read the AIRDENS variable layer-by-layer in parallel
 !  ------------------------------
-  call par_layreader("AIRDENS", AER_file, AIRDENS)
-  call par_layreader("DELP", AER_file, DELP)
+  call par_layreadvar("AIRDENS", AER_file, AIRDENS)
+  call par_layreadvar("DELP", AER_file, DELP)
 
 
 !  Although read on individual PEs, U,V,T should have the same
@@ -119,7 +119,7 @@ program shmem_reader
 
    contains
 
-      subroutine par_layreader(varname, filename, var)
+      subroutine par_layreadvar(varname, filename, var)
          character(len=*), intent(in)  ::  varname
          character(len=*), intent(in)  ::  filename
          real, dimension(im,jm,lm)        ::  var
@@ -140,7 +140,7 @@ program shmem_reader
                call check( nf90_close(ncid), "closing MET file")
             end if
          end do
-      end subroutine par_layreader
+      end subroutine par_layreadvar
 
       subroutine check(status, loc)
 
