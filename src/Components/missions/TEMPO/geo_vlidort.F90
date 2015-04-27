@@ -23,6 +23,11 @@ program shmem_reader
    real, pointer :: DU003(:,:,:) => null()
    real, pointer :: DU004(:,:,:) => null()
    real, pointer :: DU005(:,:,:) => null()
+   real, pointer :: SS001(:,:,:) => null()
+   real, pointer :: SS002(:,:,:) => null()
+   real, pointer :: SS003(:,:,:) => null()
+   real, pointer :: SS004(:,:,:) => null()
+   real, pointer :: SS005(:,:,:) => null()
 
 !  Miscellaneous
 !  -------------
@@ -69,6 +74,11 @@ program shmem_reader
    call MAPL_AllocNodeArray(DU003,(/im,jm,lm/),rc=ierr)
    call MAPL_AllocNodeArray(DU004,(/im,jm,lm/),rc=ierr)
    call MAPL_AllocNodeArray(DU005,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(SS001,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(SS002,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(SS003,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(SS004,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(SS005,(/im,jm,lm/),rc=ierr)
 
 !  Read the cloud data
 !  ------------------------------
@@ -102,6 +112,11 @@ program shmem_reader
   call par_layreadvar("DU003", AER_file, DU003)
   call par_layreadvar("DU004", AER_file, DU004)
   call par_layreadvar("DU005", AER_file, DU005)
+  call par_layreadvar("SS001", AER_file, SS001)
+  call par_layreadvar("SS002", AER_file, SS002)
+  call par_layreadvar("SS003", AER_file, SS003)
+  call par_layreadvar("SS004", AER_file, SS004)
+  call par_layreadvar("SS005", AER_file, SS005)
 
 !  Wait for everyone to finish and print max memory used
 !  -----------------------------------------------------------  
@@ -128,6 +143,12 @@ program shmem_reader
    call shmem_test3D('DU003',DU003)
    call shmem_test3D('DU004',DU004)
    call shmem_test3D('DU005',DU005)
+   call shmem_test3D('SS001',SS001)
+   call shmem_test3D('SS002',SS002)
+   call shmem_test3D('SS003',SS003)
+   call shmem_test3D('SS004',SS004)
+   call shmem_test3D('SS005',SS005)
+
 
 !  Wait for everyone to finish and print max memory used
 !  -----------------------------------------------------------  
