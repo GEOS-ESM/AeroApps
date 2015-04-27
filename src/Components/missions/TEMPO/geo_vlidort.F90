@@ -69,6 +69,7 @@ program shmem_reader
     end if
 
 !  Wait for everyone to have access to CLDTOT and shared memory
+!  -----------------------------------------------------------   
    call MAPL_SyncSharedMemory(rc=ierr)
 
 !  Everyone Figure out how many layers each PE has to read
@@ -89,19 +90,17 @@ program shmem_reader
 !  Although read on individual PEs, all shared variables should have the same
 !  data in all PEs. Let's verify that.
 !  -----------------------------------------------------------   
-   !call MPI_FILE_OPEN(MPI_COMM_WORLD, 'test_write', MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
-   !                    MPI_INFO_NULL, rcid, ierr)
-
-
    if ( myid  == 0 ) then
-         open (unit = 2, file="test_write")
+         open (unit = 2, file="shmem_test.txt")
          write(2,'(A)') '--- Array Statistics ---'
    end if
 
+   call shmem_test2D('CLDTOT',CLDTOT)
    call shmem_test3D('AIRDENS',AIRDENS)
    call shmem_test3D('DELP',DELP)
 
-!  Wait for everyone to finish
+!  Wait for everyone to finish and print max memory used
+!  -----------------------------------------------------------  
    call MAPL_SyncSharedMemory(rc=ierr)
    if (myid == 0) then  
       call sys_tracker()   
@@ -116,7 +115,7 @@ program shmem_reader
       subroutine readvar2D(varname, filename, var)
          character(len=*), intent(in)  ::  varname
          character(len=*), intent(in)  ::  filename
-         real, dimension(im,jm)        ::  var
+         real, dimension(:,:)        ::  var
 
          integer                       :: ncid, varid
 
@@ -153,7 +152,7 @@ program shmem_reader
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!    shmem_test
+!    shmem_test3D
 ! PURPOSE
 !     test that shared memory arrays have same values across all processors
 ! INPUT
@@ -167,7 +166,7 @@ program shmem_reader
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       subroutine shmem_test3D(varname,var)
          character(len=*), intent(in)  :: varname
-         real,dimension(im,jm,lm)      :: var
+         real,dimension(:,:,:)      :: var
 
          if ( myid  == 0 ) then
             open (unit = 2, file="shmem_test.txt",position="append")
@@ -186,6 +185,55 @@ program shmem_reader
 
       end subroutine shmem_test3D
 
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    shmem_test2D
+! PURPOSE
+!     test that shared memory arrays have same values across all processors
+! INPUT
+!     varname: string of variable name
+!     var    : the variable to be checked
+! OUTPUT
+!     Writes to the file shmem_test.txt the min and max value of the variable as 
+!     reported by each processor
+!  HISTORY
+!     27 April P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      subroutine shmem_test2D(varname,var)
+         character(len=*), intent(in)  :: varname
+         real,dimension(:,:)      :: var
+
+         if ( myid  == 0 ) then
+            open (unit = 2, file="shmem_test.txt",position="append")
+            do p = 1,npet-1
+               call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status, ierr)
+               write(2,*) msg
+            end do
+            write(msg,'(A9,I4,E24.17,E24.17)') varname,myid,maxval(var),minval(var)
+            write(2,*) msg
+            write(2,*) 'These should all have the same min/max values!'
+            close(2)
+         else
+            write(msg,'(A9,I4,E24.17,E24.17)') varname,myid,maxval(var),minval(var)
+            call mpi_send(msg, 61, MPI_CHARACTER, 0, 1, MPI_COMM_WORLD, ierr)
+         end if
+
+      end subroutine shmem_test2D
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     check
+! PURPOSE
+!     tests the return value of an NF90 call
+!     prints a message (loc) if the return value indicates an error
+! INPUT
+!     status : NF90 return value to be checked
+!     loc    : use character string indicating where in the code the NF90 call is
+! OUTPUT
+!     Writes to the standard output the loc and the NF90 error
+!  HISTORY
+!     27 April P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
       subroutine check(status, loc)
 
