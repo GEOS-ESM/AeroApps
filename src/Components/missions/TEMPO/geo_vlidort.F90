@@ -18,6 +18,11 @@ program shmem_reader
    real, pointer :: CLDTOT(:,:) => null()
    real, pointer :: AIRDENS(:,:,:) => null()
    real, pointer :: DELP(:,:,:) => null()
+   real, pointer :: DU001(:,:,:) => null()
+   real, pointer :: DU002(:,:,:) => null()
+   real, pointer :: DU003(:,:,:) => null()
+   real, pointer :: DU004(:,:,:) => null()
+   real, pointer :: DU005(:,:,:) => null()
 
 !  Miscellaneous
 !  -------------
@@ -59,12 +64,19 @@ program shmem_reader
    call MAPL_AllocNodeArray(CLDTOT,(/im,jm/),rc=ierr)
    call MAPL_AllocNodeArray(AIRDENS,(/im,jm,lm/),rc=ierr)
    call MAPL_AllocNodeArray(DELP,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(DU001,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(DU002,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(DU003,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(DU004,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(DU005,(/im,jm,lm/),rc=ierr)
 
 !  Read the cloud data
 !  ------------------------------
    if (myid == 0) then  
+      write(*,*) 'Allocated all shared memory'
       call sys_tracker()    
       call readvar2D("CLDTOT", MET_file, CLDTOT)
+      write(*,*) 'Read cloud information'
       call sys_tracker()
     end if
 
@@ -85,6 +97,19 @@ program shmem_reader
 !  ------------------------------
   call par_layreadvar("AIRDENS", AER_file, AIRDENS)
   call par_layreadvar("DELP", AER_file, DELP)
+  call par_layreadvar("DU001", AER_file, DU001)
+  call par_layreadvar("DU002", AER_file, DU002)
+  call par_layreadvar("DU003", AER_file, DU003)
+  call par_layreadvar("DU004", AER_file, DU004)
+  call par_layreadvar("DU005", AER_file, DU005)
+
+!  Wait for everyone to finish and print max memory used
+!  -----------------------------------------------------------  
+   call MAPL_SyncSharedMemory(rc=ierr)
+   if (myid == 0) then 
+      write(*,*) 'Read all variables' 
+      call sys_tracker()   
+   endif     
 
 
 !  Although read on individual PEs, all shared variables should have the same
@@ -98,11 +123,17 @@ program shmem_reader
    call shmem_test2D('CLDTOT',CLDTOT)
    call shmem_test3D('AIRDENS',AIRDENS)
    call shmem_test3D('DELP',DELP)
+   call shmem_test3D('DU001',DU001)
+   call shmem_test3D('DU002',DU002)
+   call shmem_test3D('DU003',DU003)
+   call shmem_test3D('DU004',DU004)
+   call shmem_test3D('DU005',DU005)
 
 !  Wait for everyone to finish and print max memory used
 !  -----------------------------------------------------------  
    call MAPL_SyncSharedMemory(rc=ierr)
    if (myid == 0) then  
+      write(*,*) 'Tested shared memory' 
       call sys_tracker()   
    endif   
 
@@ -120,7 +151,7 @@ program shmem_reader
          integer                       :: ncid, varid
 
 
-         write(*,'(A,A,A,I4)')'Reading ',trim(varname), ' on PE ', myid
+!         write(*,'(A,A,A,I4)')'Reading ',trim(varname), ' on PE ', myid
          call check( nf90_open(filename,NF90_NOWRITE,ncid), "opening file " // filename)
          call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
          call check( nf90_get_var(ncid,varid,var), "reading " // varname)
@@ -141,7 +172,7 @@ program shmem_reader
                startl = myid*nlayer(p+1)+1
                countl = nlayer(p+1)
                endl   = startl + countl
-               write(*,'(A,A,A,I2,A,I2,A,I4)')'Reading ',trim(varname),' ', countl, ' layers starting on ', startl, ' on PE ', myid
+!               write(*,'(A,A,A,I2,A,I2,A,I4)')'Reading ',trim(varname),' ', countl, ' layers starting on ', startl, ' on PE ', myid
                call check( nf90_open(filename,NF90_NOWRITE,ncid), "opening file " // filename)
                call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
                call check( nf90_get_var(ncid,varid,var(:,:,startl:endl), start = (/ 1, 1, startl, 1 /), count=(/im,jm,countl,1/)), "reading " // varname)
