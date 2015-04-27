@@ -33,11 +33,8 @@ program shmem_reader
 !  Initialize MPI
 !  --------------
    call MPI_INIT(ierr)
-   write(*,*) 'MPI_INIT ERROR', ierr
    call MPI_COMM_RANK(MPI_COMM_WORLD,myid,ierr)
-   write(*,*) 'MPI_COMM_RANK ERROR', ierr
    call MPI_COMM_SIZE(MPI_COMM_WORLD,npet,ierr)
-   write(*,*) 'MPI_COMM_SIZE ERROR', ierr
    allocate (nlayer(npet))
    if (myid == 0) write(*,'(A,I4,A)')'Starting MPI on ',npet, ' processors'
 
@@ -153,7 +150,7 @@ program shmem_reader
                startl = myid*nlayer(p+1)+1
                countl = nlayer(p+1)
                endl   = startl + countl
-               write(*,*)'Reading ',trim(varname),' ', countl, ' layers starting on ', startl, ' on PE ', myid
+               write(*,'(A,A,A,I2,A,I2,A,I4)')'Reading ',trim(varname),' ', countl, ' layers starting on ', startl, ' on PE ', myid
                call check( nf90_open(filename,NF90_NOWRITE,ncid), "opening file " // filename)
                call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
                call check( nf90_get_var(ncid,varid,var(:,:,startl:endl), start = (/ 1, 1, startl, 1 /), count=(/im,jm,countl,1/)), "reading " // varname)
