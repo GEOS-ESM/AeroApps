@@ -21,14 +21,16 @@ program shmem_reader
 
 !  Miscellaneous
 !  -------------
-   integer :: ierr
-   integer :: myid, npet, CoresPerNode
-   integer :: im, jm, lm
-   integer :: ncid, varid
-   integer :: p
-   integer :: startl, countl, endl
-   integer, pointer :: nlayer(:) => null()
-   real    :: memusage
+   integer               :: ierr
+   integer               :: myid, npet, CoresPerNode
+   integer               :: im, jm, lm
+   integer               :: ncid, varid, rcid
+   integer               :: p
+   integer               :: startl, countl, endl
+   integer, pointer      :: nlayer(:) => null()
+   real                  :: memusage
+   character(len=256)    :: msg
+   integer               :: status(MPI_STATUS_SIZE)
 
 !  Initialize MPI
 !  --------------
@@ -58,7 +60,7 @@ program shmem_reader
    call MAPL_AllocNodeArray(AIRDENS,(/im,jm,lm/),rc=ierr)
    call MAPL_AllocNodeArray(DELP,(/im,jm,lm/),rc=ierr)
 
-!  Read the data
+!  Read the cloud data
 !  ------------------------------
    if (myid == 0) then  
       call sys_tracker()    
@@ -84,24 +86,53 @@ program shmem_reader
   call par_layreadvar("DELP", AER_file, DELP)
 
 
-!  Although read on individual PEs, U,V,T should have the same
+!  Although read on individual PEs, all shared variables should have the same
 !  data in all PEs. Let's verify that.
-!  -----------------------------------------------------------
-   ! call MPI_Barrier(MPI_COMM_WORLD,ierr)    
-   ! if ( myid == 0 ) then
-   !    print *, '--- Array Statistics ---'
-   ! end if
-   ! write(*,*)'CLDTOT: ',myid,maxval(CLDTOT),minval(CLDTOT)
-   ! call MPI_Barrier(MPI_COMM_WORLD,ierr)
-   ! write(*,*)'AIRDENS: ',myid,maxval(AIRDENS),minval(AIRDENS)
-   ! call MPI_Barrier(MPI_COMM_WORLD,ierr)
-   ! write(*,*)'DELP: ',myid,maxval(DELP),minval(DELP)
-   ! call MPI_Barrier(MPI_COMM_WORLD,ierr)
+!  -----------------------------------------------------------   
+   !call MPI_FILE_OPEN(MPI_COMM_WORLD, 'test_write', MPI_MODE_WRONLY + MPI_MODE_CREATE, & 
+   !                    MPI_INFO_NULL, rcid, ierr)
+
+
+   if ( myid  == 0 ) then
+         open (unit = 2, file="test_write")
+         write(2,'(A)') '--- Array Statistics ---'
+
+         do p = 1,npet-1
+            call mpi_recv(msg, 256, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status, ierr)
+            write(2,*) msg
+         end do
+   else
+      write(msg,'(A,I4,E,E)')'AIRDENS: ',myid,maxval(AIRDENS),minval(AIRDENS)
+      call mpi_send(msg, 50, MPI_CHARACTER, 0, 1, MPI_COMM_WORLD, ierr)
+   end if
+   if (myid == 0) then
+      write(2,*) 'These should all have the same min/max values!'
+      close(2)
+   end if
+ 
+
    ! if ( myid == 0 ) then
    !    open (unit = 2, file="test_write")
-   !    write(2,*) "these values should all have the same min max values"
+   !    write(2,'(A)') '--- Array Statistics ---'
    !    close(2)
    ! end if
+   ! call MAPL_SyncSharedMemory(rc=ierr)
+   ! open (unit = 2, file="test_write",position="append")
+
+   ! write(2,*)'CLDTOT: ',myid,maxval(CLDTOT),minval(CLDTOT)
+   ! call MAPL_SyncSharedMemory(rc=ierr)
+   ! write(2,*)'AIRDENS: ',myid,maxval(AIRDENS),minval(AIRDENS)
+   ! call MAPL_SyncSharedMemory(rc=ierr)
+   ! write(2,*)'DELP: ',myid,maxval(DELP),minval(DELP)
+   ! call MAPL_SyncSharedMemory(rc=ierr)
+
+   ! if ( myid == 0 ) then      
+   !    write(2,*) "these values should all have the same min max values"      
+   ! end if
+   ! call MAPL_SyncSharedMemory(rc=ierr)
+   ! close(2)
+
+   !call MPI_FILE_CLOSE(rcid, ierr) 
 
 !  Wait for everyone to finish
    call MAPL_SyncSharedMemory(rc=ierr)
