@@ -28,6 +28,11 @@ program shmem_reader
    real, pointer :: SS003(:,:,:) => null()
    real, pointer :: SS004(:,:,:) => null()
    real, pointer :: SS005(:,:,:) => null()
+   real, pointer :: BCPHOBIC(:,:,:) => null()
+   real, pointer :: BCPHILIC(:,:,:) => null()
+   real, pointer :: OCPHOBIC(:,:,:) => null()
+   real, pointer :: OCPHILIC(:,:,:) => null()
+   real, pointer :: SO4(:,:,:) => null()
 
 !  Miscellaneous
 !  -------------
@@ -79,6 +84,11 @@ program shmem_reader
    call MAPL_AllocNodeArray(SS003,(/im,jm,lm/),rc=ierr)
    call MAPL_AllocNodeArray(SS004,(/im,jm,lm/),rc=ierr)
    call MAPL_AllocNodeArray(SS005,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(BCPHOBIC,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(BCPHILIC,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(OCPHOBIC,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(OCPHILIC,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(SO4,(/im,jm,lm/),rc=ierr)
 
 !  Read the cloud data
 !  ------------------------------
@@ -117,6 +127,11 @@ program shmem_reader
   call par_layreadvar("SS003", AER_file, SS003)
   call par_layreadvar("SS004", AER_file, SS004)
   call par_layreadvar("SS005", AER_file, SS005)
+  call par_layreadvar("BCPHOBIC", AER_file, BCPHOBIC)
+  call par_layreadvar("BCPHILIC", AER_file, BCPHILIC)
+  call par_layreadvar("OCPHOBIC", AER_file, OCPHOBIC)
+  call par_layreadvar("OCPHILIC", AER_file, OCPHILIC)
+  call par_layreadvar("SO4", AER_file, SO4)
 
 !  Wait for everyone to finish and print max memory used
 !  -----------------------------------------------------------  
@@ -148,6 +163,11 @@ program shmem_reader
    call shmem_test3D('SS003',SS003)
    call shmem_test3D('SS004',SS004)
    call shmem_test3D('SS005',SS005)
+   call shmem_test3D('BCPHOBIC',BCPHOBIC)
+   call shmem_test3D('BCPHILIC',BCPHILIC)
+   call shmem_test3D('OCPHOBIC',OCPHOBIC)
+   call shmem_test3D('OCPHILIC',OCPHILIC)
+   call shmem_test3D('SO4',SO4)
 
 
 !  Wait for everyone to finish and print max memory used
