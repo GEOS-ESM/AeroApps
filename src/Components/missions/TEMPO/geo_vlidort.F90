@@ -24,10 +24,10 @@ program shmem_reader
    integer :: ierr
    integer :: myid, npet, CoresPerNode
    integer :: im, jm, lm
+   integer :: ncid, varid
    integer :: p
    integer :: startl, countl, endl
-   integer :: ncid, varid
-   integer, allocatable :: nlayer(:) 
+   integer, pointer :: nlayer(:) => null()
    real    :: memusage
 
 !  Initialize MPI
@@ -44,9 +44,7 @@ program shmem_reader
 !  Initialize SHMEM
 !  ----------------
    CoresPerNode = MAPL_CoresPerNodeGet(MPI_COMM_WORLD,rc=ierr) ! a must
-   write(*,*) 'MAPL_CORESPERNOTEGET', ierr
    call MAPL_InitializeShmem(rc=ierr)
-   write(*,*) 'MAPL_INITIALIZESHMEM', ierr
 
 !  For now hard code file names and dimensions, could query file for dimensions
 !  ----------------------------------------------------------------------------
@@ -60,8 +58,7 @@ program shmem_reader
 !  It will be available on all processors
 !  ---------------------------------------------------------
    call MAPL_AllocNodeArray(CLDTOT,(/im,jm/),rc=ierr)
-   write(*,*) 'MAPL_ALLOCNODEARRAY', ierr
-!   call MAPL_AllocNodeArray(AIRDENS,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(AIRDENS,(/im,jm,lm/),rc=ierr)
 !   call MAPL_AllocNodeArray(DELP,(/im,jm,lm/),rc=ierr)
 
 !  Read the data
@@ -76,35 +73,35 @@ program shmem_reader
       call sys_tracker()
     end if
 
-!  Wait for everyone to have access to CLDTOT
+!  Wait for everyone to have access to CLDTOT and shared memory
    call MAPL_SyncSharedMemory(rc=ierr)
 
-!  Figure out how many layers each PE has to read
+!  Everyone Figure out how many layers each PE has to read
 !  -----------------------------
-   ! if (npet >= lm) then
-   !    nlayer(1:npet) = 1
-   ! else if (npet < lm) then
-   !    nlayer(1:npet) = lm/npet
-   !    nlayer(npet)   = nlayer(npet) + mod(lm,npet)
-   ! end if 
+   if (npet >= lm) then
+      nlayer(1:npet) = 1
+   else if (npet < lm) then
+      nlayer(1:npet) = lm/npet
+      nlayer(npet)   = nlayer(npet) + mod(lm,npet)
+   end if 
 
-!  Read the AIRDENS variable in parallel layer-by-layer
+!  Read the AIRDENS variable layer-by-layer in parallel
 !  ------------------------------
-!   call par_reader(myid, npet, nlayer, "AIRDENS", AER_file, im, jm, lm, AIRDENS)
-!   call par_reader(myid, npet, nlayer, "DELP", AER_file, im, jm, lm, DELP)
+  call par_layreader("AIRDENS", AER_file, AIRDENS)
+!  call par_layreader(myid, npet, nlayer, "DELP", AER_file, im, jm, lm, DELP)
 
-!    do p = 0, npet-1
-!       if (myid == p) then
-!          startl = myid*nlayer(p+1)+1
-!          countl = nlayer(p+1)
-!          endl   = startl + countl
-!          write(*,*)'Reading ', countl, ' layers starting on ', startl, ' on PE ', myid
-!          call check( nf90_open(AER_file,NF90_NOWRITE,ncid), "opening AER file")
-!          call check( nf90_inq_varid(ncid,"AIRDENS",varid), "getting AIRDENS varid")
-!          call check( nf90_get_var(ncid,varid,AIRDENS(:,:,startl:endl), start = (/ 1, 1, startl, 1 /), count=(/im,jm,countl,1/)), "reading CLDTOT")
-!          call check( nf90_close(ncid), "closing MET file")
-!       endif
-!    end do
+   ! do p = 0, npet-1
+   !    if (myid == p) then
+   !       startl = myid*nlayer(p+1)+1
+   !       countl = nlayer(p+1)
+   !       endl   = startl + countl
+   !       write(*,*)'Reading ', countl, ' layers starting on ', startl, ' on PE ', myid
+   !       call check( nf90_open(AER_file,NF90_NOWRITE,ncid), "opening AER file")
+   !       call check( nf90_inq_varid(ncid,"AIRDENS",varid), "getting AIRDENS varid")
+   !       call check( nf90_get_var(ncid,varid,AIRDENS(:,:,startl:endl), start = (/ 1, 1, startl, 1 /), count=(/im,jm,countl,1/)), "reading CLDTOT")
+   !       call check( nf90_close(ncid), "closing MET file")
+   !    endif
+   ! end do
 
 !  Wait for everyone to finish reading
 !   call MPI_Barrier(MPI_COMM_WORLD, ierr)
@@ -127,11 +124,14 @@ program shmem_reader
    ! call MPI_Barrier(MPI_COMM_WORLD,ierr)
    ! write(*,*)'DELP: ',myid,maxval(DELP),minval(DELP)
    ! call MPI_Barrier(MPI_COMM_WORLD,ierr)
-   if ( myid == 0 ) then
-      open (unit = 2, file="test_write")
-      write(2,*) "these values should all have the same min max values"
-      close(2)
-   end if
+   ! if ( myid == 0 ) then
+   !    open (unit = 2, file="test_write")
+   !    write(2,*) "these values should all have the same min max values"
+   !    close(2)
+   ! end if
+
+!  Wait for everyone to finish
+   call MAPL_SyncSharedMemory(rc=ierr)
 
 !  All done
 !  --------
@@ -139,11 +139,9 @@ program shmem_reader
 
    contains
 
-      subroutine par_reader(myid, npet, nlayer, varname, filename, im, jm, lm, var)
-         integer, intent(in)           ::  myid, npet, im, jm, lm
+      subroutine par_layreader(varname, filename, var)
          character(len=*), intent(in)  ::  varname
          character(len=*), intent(in)  ::  filename
-         integer, intent(in)              ::  nlayer(*) 
          real, dimension(im,jm,lm)        ::  var
 
          integer                       :: p, startl, countl, endl
@@ -155,14 +153,14 @@ program shmem_reader
                startl = myid*nlayer(p+1)+1
                countl = nlayer(p+1)
                endl   = startl + countl
-               write(*,*)'Reading ',varname,' ', countl, ' layers starting on ', startl, ' on PE ', myid
+               write(*,*)'Reading ',trim(varname),' ', countl, ' layers starting on ', startl, ' on PE ', myid
                call check( nf90_open(filename,NF90_NOWRITE,ncid), "opening file " // filename)
                call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
                call check( nf90_get_var(ncid,varid,var(:,:,startl:endl), start = (/ 1, 1, startl, 1 /), count=(/im,jm,countl,1/)), "reading " // varname)
                call check( nf90_close(ncid), "closing MET file")
-            endif
+            end if
          end do
-      end subroutine par_reader
+      end subroutine par_layreader
 
       subroutine check(status, loc)
 
@@ -176,12 +174,26 @@ program shmem_reader
 
       end subroutine check
 
-      subroutine shutdown()
-         !deallocate(nlayer)
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    shutdown
+! PURPOSE
+!     Clean up allocated arrays and finalize MPI
+! INPUT
+!     None
+! OUTPUT
+!     None
+!  HISTORY
+!     27 April P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+      subroutine shutdown()         
+
+         deallocate(nlayer)
+
          ! shmem must deallocate shared memory arrays
          call MAPL_DeallocNodeArray(CLDTOT,rc=ierr)
-         !call MAPL_DeallocNodeArray(AIRDENS,rc=ierr)
-         !call MAPL_DeallocNodeArray(T,rc=ierr)
+         call MAPL_DeallocNodeArray(AIRDENS,rc=ierr)
 
          call MAPL_FinalizeShmem (rc=ierr)
 
