@@ -55,7 +55,7 @@ program shmem_reader
 !  -------------
    integer               :: ierr
    integer               :: myid, npet, CoresPerNode
-   integer               :: im, jm, lm
+   integer               :: im, jm, km
    integer               :: ncid, varid, rcid
    integer               :: p
    integer               :: startl, countl, endl
@@ -81,7 +81,7 @@ program shmem_reader
 !  ----------------------------------------------------------------------------
    im = 1250
    jm = 2000
-   lm = 72
+   km = 72
    MET_file = "/nobackup/TEMPO/met_Nv/Y2005/M12/tempo-g5nr.lb2.met_Nv.20051231_00z.nc4"
    AER_file = "/nobackup/TEMPO/aer_nv/Y2005/M12/tempo-g5nr.lb2.aer_Nv.20051231_00z.nc4"
 
@@ -89,22 +89,22 @@ program shmem_reader
 !  It will be available on all processors
 !  ---------------------------------------------------------
    call MAPL_AllocNodeArray(CLDTOT,(/im,jm/),rc=ierr)
-   call MAPL_AllocNodeArray(AIRDENS,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(DELP,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(DU001,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(DU002,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(DU003,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(DU004,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(DU005,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(SS001,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(SS002,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(SS003,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(SS004,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(SS005,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(BCPHOBIC,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(BCPHILIC,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(OCPHOBIC,(/im,jm,lm/),rc=ierr)
-   call MAPL_AllocNodeArray(OCPHILIC,(/im,jm,lm/),rc=ierr)
+   call MAPL_AllocNodeArray(AIRDENS,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(DELP,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(DU001,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(DU002,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(DU003,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(DU004,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(DU005,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(SS001,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(SS002,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(SS003,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(SS004,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(SS005,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(BCPHOBIC,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(BCPHILIC,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(OCPHOBIC,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(OCPHILIC,(/im,jm,km/),rc=ierr)
 
 !  Read the cloud data
 !  ------------------------------
@@ -122,11 +122,11 @@ program shmem_reader
 
 !  Everyone Figure out how many layers each PE has to read
 !  -----------------------------
-   if (npet >= lm) then
+   if (npet >= km) then
       nlayer(1:npet) = 1
-   else if (npet < lm) then
-      nlayer(1:npet) = lm/npet
-      nlayer(npet)   = nlayer(npet) + mod(lm,npet)
+   else if (npet < km) then
+      nlayer(1:npet) = km/npet
+      nlayer(npet)   = nlayer(npet) + mod(km,npet)
    end if 
 
 !  Read the AIRDENS variable layer-by-layer in parallel
@@ -247,7 +247,7 @@ program shmem_reader
       subroutine par_layreadvar(varname, filename, var)
          character(len=*), intent(in)  ::  varname
          character(len=*), intent(in)  ::  filename
-         real, dimension(im,jm,lm)        ::  var
+         real, dimension(im,jm,km)        ::  var
 
          integer                       :: p, startl, countl, endl
          integer                       :: ncid, varid
