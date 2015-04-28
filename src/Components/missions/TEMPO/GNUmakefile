@@ -70,6 +70,8 @@ USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir))
 
 vpath % $(INC_DIRS) 
 
+THIS_GFIO = GMAO_gfio_r4
+
 # Python extension modules
 # ------------------------
 python: $(PY_EXTS)
@@ -79,8 +81,10 @@ python: $(PY_EXTS)
 
 %.x: %.o sys_tracker.o
 	$(CC) -c sys_tracker.c
-	$(FC) $(FOPTS) $^ -o $@ $(LIB_CHEM_BASE) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
-	$(LIB_NETCDF) $(LIB_EU) $(LIB_GFIO) $(LIB_ESMF) $(LIB_MPI) $(LIB_SDF) $(LIB_SYS)
+	$(FC) $(FOPTS) $^ -o $@  $(LIB_CHEM_BASE) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+	$(LIB_GFIO) $(LIB_ESMF) $(LIB_MPI) $(LIB_SDF) $(LIB_SYS) \
+	$(LIB_NETCDF) 
+
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------
