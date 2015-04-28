@@ -82,7 +82,7 @@ python: $(PY_EXTS)
 %.x: %.o sys_tracker.o
 	$(CC) -c sys_tracker.c
 	$(FC) $(FOPTS) $^ -o $@  $(LIB_CHEM_BASE) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
-	$(LIB_GFIO) $(LIB_ESMF) $(LIB_MPI) $(LIB_SDF) $(LIB_SYS) \
+	$(LIB_MPEU) $(LIB_GFIO) $(LIB_ESMF) $(LIB_MPI) $(LIB_SDF) $(LIB_SYS) \
 	$(LIB_NETCDF) 
 
 
