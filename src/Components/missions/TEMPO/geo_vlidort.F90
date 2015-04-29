@@ -25,51 +25,58 @@ program shmem_reader
 
 !  Test flat
 !  -----------
-   logical       :: test_shmem = .False.
+   logical               :: test_shmem = .False.
 
 !  File names
 !  ----------
-   character(len=256) :: MET_file, AER_file 
+   character(len=256)    :: MET_file, AER_file 
 
 !  Global, 3D arrays to be allocated using SHMEM
 !  ---------------------------------------------
-   real, pointer :: CLDTOT(:,:) => null()
-   real, pointer :: AIRDENS(:,:,:) => null()
-   real, pointer :: DELP(:,:,:) => null()
-   real, pointer :: DU001(:,:,:) => null()
-   real, pointer :: DU002(:,:,:) => null()
-   real, pointer :: DU003(:,:,:) => null()
-   real, pointer :: DU004(:,:,:) => null()
-   real, pointer :: DU005(:,:,:) => null()
-   real, pointer :: SS001(:,:,:) => null()
-   real, pointer :: SS002(:,:,:) => null()
-   real, pointer :: SS003(:,:,:) => null()
-   real, pointer :: SS004(:,:,:) => null()
-   real, pointer :: SS005(:,:,:) => null()
-   real, pointer :: BCPHOBIC(:,:,:) => null()
-   real, pointer :: BCPHILIC(:,:,:) => null()
-   real, pointer :: OCPHOBIC(:,:,:) => null()
-   real, pointer :: OCPHILIC(:,:,:) => null()
+   real, pointer         :: CLDTOT(:,:) => null()
+   real, pointer         :: AIRDENS(:,:,:) => null()
+   real, pointer         :: DELP(:,:,:) => null()
+   real, pointer         :: DU001(:,:,:) => null()
+   real, pointer         :: DU002(:,:,:) => null()
+   real, pointer         :: DU003(:,:,:) => null()
+   real, pointer         :: DU004(:,:,:) => null()
+   real, pointer         :: DU005(:,:,:) => null()
+   real, pointer         :: SS001(:,:,:) => null()
+   real, pointer         :: SS002(:,:,:) => null()
+   real, pointer         :: SS003(:,:,:) => null()
+   real, pointer         :: SS004(:,:,:) => null()
+   real, pointer         :: SS005(:,:,:) => null()
+   real, pointer         :: BCPHOBIC(:,:,:) => null()
+   real, pointer         :: BCPHILIC(:,:,:) => null()
+   real, pointer         :: OCPHOBIC(:,:,:) => null()
+   real, pointer         :: OCPHILIC(:,:,:) => null()
+
+!  VLIDORT input arrays
+!  ---------------------------
+   real, pointer         :: pe(:,:) => null()   ! edge pressure [Pa]
+   real, pointer         :: ze(:,:) => null()   ! edge height above sfc [m]
+   real, pointer         :: te(:,:) => null()   ! edge Temperature [K]
+   integer               :: nobs                ! number of profiles VLIDORT will work on
+   real                  :: ptop                ! top (edge) pressure [Pa]
 
 !  Miscellaneous
 !  -------------
-   integer               :: ierr
-   integer               :: myid, npet, CoresPerNode
-   integer               :: im, jm, km
-   integer               :: ncid, varid, rcid
-   integer               :: p
-   integer               :: startl, countl, endl
-   integer, pointer      :: nlayer(:) => null()
-   real                  :: memusage
-   character(len=61)     :: msg
-   integer               :: status(MPI_STATUS_SIZE)
+   integer               :: ierr                      ! MPI error message
+   integer               :: status(MPI_STATUS_SIZE)  ! MPI status
+   integer               :: myid, npet, CoresPerNode  ! MPI dimensions and processor id
+   integer               :: im, jm, km                ! size of TEMPO domain
+   integer               :: ncid, varid, rcid         ! netcdf ids
+   integer               :: p                         ! i-processor
+   integer               :: startl, countl, endl      ! array indices and counts for layers to be read
+   integer, pointer      :: nlayer(:) => null()       ! how many layers each processor reads
+   character(len=61)     :: msg                       ! message printed by shmen_test
+
 
 !  Initialize MPI
 !  --------------
    call MPI_INIT(ierr)
    call MPI_COMM_RANK(MPI_COMM_WORLD,myid,ierr)
    call MPI_COMM_SIZE(MPI_COMM_WORLD,npet,ierr)
-   allocate (nlayer(npet))
    if (myid == 0) write(*,'(A,I4,A)')'Starting MPI on ',npet, ' processors'
 
 !  Initialize SHMEM
@@ -106,6 +113,15 @@ program shmem_reader
    call MAPL_AllocNodeArray(OCPHOBIC,(/im,jm,km/),rc=ierr)
    call MAPL_AllocNodeArray(OCPHILIC,(/im,jm,km/),rc=ierr)
 
+!  Allocate arrays that will be copied on each processor - unshared
+!  ---------------------------------------------------------
+   nobs = 1
+   ptop = 1.0
+   allocate (nlayer(npet))
+   allocate (pe(km+1,nobs))
+   allocate (ze(km+1,nobs))
+   allocate (te(km+1,nobs))
+
 !  Read the cloud data
 !  ------------------------------
    if (myid == 0) then  
@@ -129,7 +145,7 @@ program shmem_reader
       nlayer(npet)   = nlayer(npet) + mod(km,npet)
    end if 
 
-!  Read the AIRDENS variable layer-by-layer in parallel
+!  Read the netcdf variables layer-by-layer in parallel
 !  ------------------------------
   call par_layreadvar("AIRDENS", AER_file, AIRDENS)
   call par_layreadvar("DELP", AER_file, DELP)
@@ -184,13 +200,20 @@ program shmem_reader
       call shmem_test3D('OCPHOBIC',OCPHOBIC)
       call shmem_test3D('OCPHILIC',OCPHILIC)
 
-   !  Wait for everyone to finish and print max memory used
-   !  -----------------------------------------------------------  
+!  Wait for everyone to finish and print max memory used
+!  -----------------------------------------------------------  
       call MAPL_SyncSharedMemory(rc=ierr)
       if (myid == 0) then  
          write(*,*) 'Tested shared memory' 
          call sys_tracker()   
       end if   
+   end if 
+
+!  Prepare inputs for VLIDORT
+!  ------------------------------
+   if (myid == 0) then  
+      call getEdgeVars ( km, nobs, reshape(airdens(1,1,:),(/km,nobs/)), reshape(delp(1,1,:),(/km,nobs/)), ptop, &
+                           pe, ze, te )
    end if 
 
 !  All done
@@ -391,5 +414,6 @@ program shmem_reader
          call MPI_Finalize(ierr)
 
       end subroutine shutdown
+
 
 end program shmem_reader
