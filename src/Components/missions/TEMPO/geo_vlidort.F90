@@ -53,22 +53,34 @@ program shmem_reader
 
 !  VLIDORT input arrays
 !  ---------------------------
-   real, pointer         :: pe(:,:) => null()   ! edge pressure [Pa]
-   real, pointer         :: ze(:,:) => null()   ! edge height above sfc [m]
-   real, pointer         :: te(:,:) => null()   ! edge Temperature [K]
-   integer               :: nobs                ! number of profiles VLIDORT will work on
-   real                  :: ptop                ! top (edge) pressure [Pa]
+   real, pointer         :: pe(:,:) => null()      ! edge pressure [Pa]
+   real, pointer         :: ze(:,:) => null()      ! edge height above sfc [m]
+   real, pointer         :: te(:,:) => null()      ! edge Temperature [K]
+   integer               :: nobs                   ! number of profiles VLIDORT will work on
+   real, parameter       :: ptop = 1.0             ! top (edge) pressure [Pa]
+   integer               :: nch                    ! number of channels
+   integer, parameter    :: nq = 14                ! number of tracers
+   integer               :: verbose 
+   character, pointer    :: vnames(:,:) => null() ! variable name
+   real, pointer         :: qm(:,:,:) => null()    ! (mixing ratio) * delp/g
+   real, pointer         :: rh(:,:) => null()      ! relative humidity
+   real, pointer         :: tau(:,:,:) => null()   ! aerosol optical depth
+   real, pointer         :: ssa(:,:,:) => null()   ! single scattering albedo
+   real, pointer         :: g(:,:,:) => null()     ! asymmetry factor
+   real, pointer         :: channels(:) => null()  ! channels to simulate
+   character(len=*), parameter      :: rcfile = 'Aod_EOS.rc'  ! resource file
+
 
 !  Miscellaneous
 !  -------------
    integer               :: ierr                      ! MPI error message
-   integer               :: status(MPI_STATUS_SIZE)  ! MPI status
+   integer               :: status(MPI_STATUS_SIZE)   ! MPI status
    integer               :: myid, npet, CoresPerNode  ! MPI dimensions and processor id
    integer               :: im, jm, km                ! size of TEMPO domain
    integer               :: ncid, varid, rcid         ! netcdf ids
    integer               :: p                         ! i-processor
    integer               :: startl, countl, endl      ! array indices and counts for layers to be read
-   integer, pointer      :: nlayer(:) => null()       ! how many layers each processor reads
+   integer, allocatable  :: nlayer(:)                 ! how many layers each processor reads
    character(len=61)     :: msg                       ! message printed by shmen_test
 
 
@@ -115,12 +127,26 @@ program shmem_reader
 
 !  Allocate arrays that will be copied on each processor - unshared
 !  ---------------------------------------------------------
-   nobs = 1
-   ptop = 1.0
-   allocate (nlayer(npet))
+
+!  Needed for vlidort
+!  -----------------------
+   verbose = 1
+   nobs    = 1
+   nch     = 1
+   allocate (vnames(nq,16))
    allocate (pe(km+1,nobs))
    allocate (ze(km+1,nobs))
    allocate (te(km+1,nobs))
+   allocate (qm(km,nq,nobs))
+   allocate (rh(km,nobs))
+   allocate (tau(km,nch,nobs))
+   allocate (ssa(km,nch,nobs))
+   allocate (g(km,nch,nobs))
+   allocate (channels(nch))
+
+!  Needed for reading
+!  ----------------------
+   allocate (nlayer(npet))
 
 !  Read the cloud data
 !  ------------------------------
@@ -214,6 +240,10 @@ program shmem_reader
    if (myid == 0) then  
       call getEdgeVars ( km, nobs, reshape(airdens(1,1,:),(/km,nobs/)), reshape(delp(1,1,:),(/km,nobs/)), ptop, &
                            pe, ze, te )
+
+      ! call getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
+      !                      qm, rh, &
+      !                      tau, ssa, g, ierr )
    end if 
 
 !  All done
@@ -402,12 +432,34 @@ program shmem_reader
 
       subroutine shutdown()         
 
-         deallocate(nlayer)
+         deallocate (pe)
+         deallocate (ze)
+         deallocate (te)
+         deallocate (vnames)
+         deallocate (qm)
+         deallocate (rh)
+         deallocate (tau)
+         deallocate (ssa)
+         deallocate (g)
 
          ! shmem must deallocate shared memory arrays
          call MAPL_DeallocNodeArray(CLDTOT,rc=ierr)
          call MAPL_DeallocNodeArray(AIRDENS,rc=ierr)
          call MAPL_DeallocNodeArray(DELP,rc=ierr)
+         call MAPL_DeallocNodeArray(DU001,rc=ierr)
+         call MAPL_DeallocNodeArray(DU002,rc=ierr)
+         call MAPL_DeallocNodeArray(DU003,rc=ierr)
+         call MAPL_DeallocNodeArray(DU004,rc=ierr)                           
+         call MAPL_DeallocNodeArray(DU005,rc=ierr)
+         call MAPL_DeallocNodeArray(SS001,rc=ierr) 
+         call MAPL_DeallocNodeArray(SS002,rc=ierr) 
+         call MAPL_DeallocNodeArray(SS003,rc=ierr) 
+         call MAPL_DeallocNodeArray(SS004,rc=ierr) 
+         call MAPL_DeallocNodeArray(SS005,rc=ierr) 
+         call MAPL_DeallocNodeArray(BCPHOBIC,rc=ierr) 
+         call MAPL_DeallocNodeArray(BCPHILIC,rc=ierr) 
+         call MAPL_DeallocNodeArray(OCPHOBIC,rc=ierr) 
+         call MAPL_DeallocNodeArray(OCPHILIC,rc=ierr) 
 
          call MAPL_FinalizeShmem (rc=ierr)
 
