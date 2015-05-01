@@ -63,7 +63,6 @@ program shmem_reader
    integer, parameter    :: nq = 14                ! number of tracers
    integer               :: verbose 
    real, pointer         :: qm(:,:,:) => null()    ! (mixing ratio) * delp/g
-!   real, pointer         :: rh(:,:) => null()      ! relative humidity
    real, pointer         :: tau(:,:,:) => null()   ! aerosol optical depth
    real, pointer         :: ssa(:,:,:) => null()   ! single scattering albedo
    real, pointer         :: g(:,:,:) => null()     ! asymmetry factor
@@ -82,9 +81,6 @@ program shmem_reader
                                                              'BCphobic', 'BCphilic',                      &
                                                              'OCphobic', 'OCphilic'/) ! array of variable name strings
    character             :: vnames(nq,16)          ! character array of variable names
-
-!   real, allocatable     :: ps(:,:)                  ! saturation vapor pressure temporary variable
-!   real, allocatable     :: rh(:,:)                  ! relative humidity temporary variable
 
 
 !  Miscellaneous
@@ -157,7 +153,6 @@ program shmem_reader
    allocate (ze(km+1,nobs))
    allocate (te(km+1,nobs))
    allocate (qm(km,nq,nobs))
-!   allocate (rh(km,nobs))
    allocate (tau(km,nch,nobs))
    allocate (ssa(km,nch,nobs))
    allocate (g(km,nch,nobs))
@@ -169,9 +164,6 @@ program shmem_reader
 
    allocate (radiance_VL(nobs,nch))
    allocate (reflectance_VL(nobs, nch))
-
-!   allocate (rh(km,nobs))
-!   allocate (ps(km,nobs))
 
 !  Needed for reading
 !  ----------------------
@@ -272,15 +264,6 @@ program shmem_reader
    if (myid == 0) then  
       call getEdgeVars ( km, nobs, reshape(AIRDENS(1,1,:),(/km,nobs/)), reshape(DELP(1,1,:),(/km,nobs/)), ptop, &
                           pe, ze, te )
-
-!  this is a temporary hack just to be able to test vlidort
-      ! do n = 1, nobs
-      !    do k = 1, km
-      !       ps(k,n) = 6.11 * 10 ** ((7.5*(te(k,n)-273.15))/(237.3+(te(k,n)-273.15)))   ! hPa
-      !       ps(k,n) = 100.*ps(k,n)  !Pa
-      !       rh(k,n) = 100.*QV(1,1,k)*pe(k,n)/ps(k,n)  ! %
-      !    end do
-      ! end do
 
       call strarr_2_chararr(vnames_string,nq,16,vnames)
 
