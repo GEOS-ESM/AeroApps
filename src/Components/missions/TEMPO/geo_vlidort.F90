@@ -35,6 +35,7 @@ program shmem_reader
 !  ---------------------------------------------
    real, pointer         :: CLDTOT(:,:) => null()
    real, pointer         :: AIRDENS(:,:,:) => null()
+   real, pointer         :: RH(:,:,:) => null()
    real, pointer         :: DELP(:,:,:) => null()
    real, pointer         :: DU001(:,:,:) => null()
    real, pointer         :: DU002(:,:,:) => null()
@@ -61,14 +62,29 @@ program shmem_reader
    integer               :: nch                    ! number of channels
    integer, parameter    :: nq = 14                ! number of tracers
    integer               :: verbose 
-   character, pointer    :: vnames(:,:) => null() ! variable name
    real, pointer         :: qm(:,:,:) => null()    ! (mixing ratio) * delp/g
-   real, pointer         :: rh(:,:) => null()      ! relative humidity
+!   real, pointer         :: rh(:,:) => null()      ! relative humidity
    real, pointer         :: tau(:,:,:) => null()   ! aerosol optical depth
    real, pointer         :: ssa(:,:,:) => null()   ! single scattering albedo
    real, pointer         :: g(:,:,:) => null()     ! asymmetry factor
-   real, pointer         :: channels(:) => null()  ! channels to simulate
+   real, pointer         :: albedo(:,:) => null()  ! surface albedo
+   real, pointer         :: solar_zenith(:) => null() 
+   real, pointer         :: relat_azymuth(:) => null()
+   real, pointer         :: sensor_zenith(:) => null()
+   real, parameter       :: channels(1) = 550.0    ! channels to simulate
+   real, parameter       :: MISSING = -999
+   real*8,pointer        :: radiance_VL(:,:) => null()      ! TOA normalized radiance from VLIDORT
+   real*8,pointer        :: reflectance_VL(:,:) => null()  ! TOA reflectance from VLIDORT
+
    character(len=*), parameter      :: rcfile = 'Aod_EOS.rc'  ! resource file
+   character(len=16), parameter     :: vnames_string(nq) = (/'du001', 'du002', 'du003', 'du004', 'du005', &
+                                                             'ss001', 'ss002', 'ss003', 'ss004', 'ss005', &
+                                                             'BCphobic', 'BCphilic',                      &
+                                                             'OCphobic', 'OCphilic'/) ! array of variable name strings
+   character             :: vnames(nq,16)          ! character array of variable names
+
+!   real, allocatable     :: ps(:,:)                  ! saturation vapor pressure temporary variable
+!   real, allocatable     :: rh(:,:)                  ! relative humidity temporary variable
 
 
 !  Miscellaneous
@@ -77,11 +93,13 @@ program shmem_reader
    integer               :: status(MPI_STATUS_SIZE)   ! MPI status
    integer               :: myid, npet, CoresPerNode  ! MPI dimensions and processor id
    integer               :: im, jm, km                ! size of TEMPO domain
+   integer               :: i, j, k, n                ! size of TEMPO domain
    integer               :: ncid, varid, rcid         ! netcdf ids
    integer               :: p                         ! i-processor
    integer               :: startl, countl, endl      ! array indices and counts for layers to be read
    integer, allocatable  :: nlayer(:)                 ! how many layers each processor reads
    character(len=61)     :: msg                       ! message printed by shmen_test
+   real, parameter       :: grav = 9.81                  ! gravity
 
 
 !  Initialize MPI
@@ -102,13 +120,15 @@ program shmem_reader
    jm = 2000
    km = 72
    MET_file = "/nobackup/TEMPO/met_Nv/Y2005/M12/tempo-g5nr.lb2.met_Nv.20051231_00z.nc4"
-   AER_file = "/nobackup/TEMPO/aer_nv/Y2005/M12/tempo-g5nr.lb2.aer_Nv.20051231_00z.nc4"
+   AER_file = "/nobackup/TEMPO/aer_Nv/Y2005/M12/tempo-g5nr.lb2.aer_Nv.20051231_00z.nc4"
 
+ 
 !  Allocate the Global arraya using SHMEM
 !  It will be available on all processors
 !  ---------------------------------------------------------
    call MAPL_AllocNodeArray(CLDTOT,(/im,jm/),rc=ierr)
    call MAPL_AllocNodeArray(AIRDENS,(/im,jm,km/),rc=ierr)
+   call MAPL_AllocNodeArray(RH,(/im,jm,km/),rc=ierr)
    call MAPL_AllocNodeArray(DELP,(/im,jm,km/),rc=ierr)
    call MAPL_AllocNodeArray(DU001,(/im,jm,km/),rc=ierr)
    call MAPL_AllocNodeArray(DU002,(/im,jm,km/),rc=ierr)
@@ -133,16 +153,25 @@ program shmem_reader
    verbose = 1
    nobs    = 1
    nch     = 1
-   allocate (vnames(nq,16))
    allocate (pe(km+1,nobs))
    allocate (ze(km+1,nobs))
    allocate (te(km+1,nobs))
    allocate (qm(km,nq,nobs))
-   allocate (rh(km,nobs))
+!   allocate (rh(km,nobs))
    allocate (tau(km,nch,nobs))
    allocate (ssa(km,nch,nobs))
    allocate (g(km,nch,nobs))
-   allocate (channels(nch))
+   allocate (albedo(nch,nobs))
+
+   allocate (solar_zenith(nobs))
+   allocate (relat_azymuth(nobs))
+   allocate (sensor_zenith(nobs))
+
+   allocate (radiance_VL(nobs,nch))
+   allocate (reflectance_VL(nobs, nch))
+
+!   allocate (rh(km,nobs))
+!   allocate (ps(km,nobs))
 
 !  Needed for reading
 !  ----------------------
@@ -153,7 +182,7 @@ program shmem_reader
    if (myid == 0) then  
       write(*,*) 'Allocated all shared memory'
       call sys_tracker()    
-      call readvar2D("CLDTOT", MET_file, CLDTOT)
+       call readvar2D("CLDTOT", MET_file, CLDTOT)
       write(*,*) 'Read cloud information'
       call sys_tracker()
     end if
@@ -173,22 +202,23 @@ program shmem_reader
 
 !  Read the netcdf variables layer-by-layer in parallel
 !  ------------------------------
-  call par_layreadvar("AIRDENS", AER_file, AIRDENS)
-  call par_layreadvar("DELP", AER_file, DELP)
-  call par_layreadvar("DU001", AER_file, DU001)
-  call par_layreadvar("DU002", AER_file, DU002)
-  call par_layreadvar("DU003", AER_file, DU003)
-  call par_layreadvar("DU004", AER_file, DU004)
-  call par_layreadvar("DU005", AER_file, DU005)
-  call par_layreadvar("SS001", AER_file, SS001)
-  call par_layreadvar("SS002", AER_file, SS002)
-  call par_layreadvar("SS003", AER_file, SS003)
-  call par_layreadvar("SS004", AER_file, SS004)
-  call par_layreadvar("SS005", AER_file, SS005)
-  call par_layreadvar("BCPHOBIC", AER_file, BCPHOBIC)
-  call par_layreadvar("BCPHILIC", AER_file, BCPHILIC)
-  call par_layreadvar("OCPHOBIC", AER_file, OCPHOBIC)
-  call par_layreadvar("OCPHILIC", AER_file, OCPHILIC)
+  call mp_layreadvar("AIRDENS", AER_file, AIRDENS)
+  call mp_layreadvar("RH", AER_file, RH)
+  call mp_layreadvar("DELP", AER_file, DELP)
+  call mp_layreadvar("DU001", AER_file, DU001)
+  call mp_layreadvar("DU002", AER_file, DU002)
+  call mp_layreadvar("DU003", AER_file, DU003)
+  call mp_layreadvar("DU004", AER_file, DU004)
+  call mp_layreadvar("DU005", AER_file, DU005)
+  call mp_layreadvar("SS001", AER_file, SS001)
+  call mp_layreadvar("SS002", AER_file, SS002)
+  call mp_layreadvar("SS003", AER_file, SS003)
+  call mp_layreadvar("SS004", AER_file, SS004)
+  call mp_layreadvar("SS005", AER_file, SS005)
+  call mp_layreadvar("BCPHOBIC", AER_file, BCPHOBIC)
+  call mp_layreadvar("BCPHILIC", AER_file, BCPHILIC)
+  call mp_layreadvar("OCPHOBIC", AER_file, OCPHOBIC)
+  call mp_layreadvar("OCPHILIC", AER_file, OCPHILIC)
 
 !  Wait for everyone to finish and print max memory used
 !  -----------------------------------------------------------  
@@ -209,6 +239,7 @@ program shmem_reader
       end if
 
       call shmem_test2D('CLDTOT',CLDTOT)
+      call shmem_test3D('RH',RH)
       call shmem_test3D('AIRDENS',AIRDENS)
       call shmem_test3D('DELP',DELP)
       call shmem_test3D('DU001',DU001)
@@ -233,24 +264,98 @@ program shmem_reader
          write(*,*) 'Tested shared memory' 
          call sys_tracker()   
       end if   
-   end if 
+    end if 
 
 !  Prepare inputs for VLIDORT
+!  split up domain among processors
 !  ------------------------------
    if (myid == 0) then  
-      call getEdgeVars ( km, nobs, reshape(airdens(1,1,:),(/km,nobs/)), reshape(delp(1,1,:),(/km,nobs/)), ptop, &
-                           pe, ze, te )
+      call getEdgeVars ( km, nobs, reshape(AIRDENS(1,1,:),(/km,nobs/)), reshape(DELP(1,1,:),(/km,nobs/)), ptop, &
+                          pe, ze, te )
 
-      ! call getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
-      !                      qm, rh, &
-      !                      tau, ssa, g, ierr )
+!  this is a temporary hack just to be able to test vlidort
+      ! do n = 1, nobs
+      !    do k = 1, km
+      !       ps(k,n) = 6.11 * 10 ** ((7.5*(te(k,n)-273.15))/(237.3+(te(k,n)-273.15)))   ! hPa
+      !       ps(k,n) = 100.*ps(k,n)  !Pa
+      !       rh(k,n) = 100.*QV(1,1,k)*pe(k,n)/ps(k,n)  ! %
+      !    end do
+      ! end do
+
+      call strarr_2_chararr(vnames_string,nq,16,vnames)
+
+      do n = 1, nobs
+         call calc_qm(DU001,1,n)
+         call calc_qm(DU002,2,n)
+         call calc_qm(DU003,3,n)
+         call calc_qm(DU004,4,n)
+         call calc_qm(DU005,5,n)
+         call calc_qm(SS001,6,n)
+         call calc_qm(SS002,7,n)
+         call calc_qm(SS003,8,n)
+         call calc_qm(SS004,9,n)
+         call calc_qm(SS005,10,n)
+         call calc_qm(BCPHOBIC,11,n)
+         call calc_qm(BCPHILIC,12,n)
+         call calc_qm(OCPHOBIC,13,n)
+         call calc_qm(OCPHILIC,14,n)
+      end do
+ 
+      call getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
+                           qm, reshape(RH(1,1,:),(/km,nobs/)), &
+                           tau, ssa, g, ierr )
+
+      albedo(:,:) = 0.05
+      sensor_zenith(:) = 2.0
+      solar_zenith(:)  = 60.0
+      relat_azymuth    = 20.0
+
+
+       call Scalar (km, nch, nobs ,dble(channels),        &
+                    dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), dble(albedo),&
+                    dble(solar_zenith), dble(relat_azymuth), dble(sensor_zenith), &
+                    dble(MISSING),verbose,radiance_VL,reflectance_VL, ierr)
+
+       write(*,*) reflectance_VL
+       write(*,*) 'Called VLIDORT Scalar' 
+       call sys_tracker()
    end if 
 
 !  All done
 !  --------
+   call MAPL_SyncSharedMemory(rc=ierr)
    call shutdown()
 
+!-----------------------------------------------------------------------------------
    contains
+
+   subroutine calc_qm(var,n,iobs)
+      real, intent(in), dimension(:,:,:)     :: var
+      integer, intent(in)                    :: n, iobs
+
+      integer                                :: k
+
+      do k = 1, km
+            qm(k,n,iobs) = var(1,1,k)*DELP(1,1,k)/grav
+      end do
+   end subroutine calc_qm
+
+
+   subroutine strarr_2_chararr(strings, ns, maxlen, chars)
+      character(len=maxlen), intent(in)     :: strings(ns)
+      integer, intent(in)                   :: ns
+      integer, intent(in)                   :: maxlen
+      character, intent(inout)              :: chars(ns,maxlen)
+
+      integer                               :: s, c
+
+      do s = 1,ns         
+         do c = 1,maxlen
+            chars(s,c) = strings(s)(c:c)
+         end do
+      end do
+   end subroutine strarr_2_chararr
+
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
 !    readvar2D
@@ -267,9 +372,9 @@ program shmem_reader
 !     27 April P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       subroutine readvar2D(varname, filename, var)
-         character(len=*), intent(in)  ::  varname
-         character(len=*), intent(in)  ::  filename
-         real, dimension(:,:)        ::  var
+         character(len=*), intent(in)           ::  varname
+         character(len=*), intent(in)           ::  filename
+         real, dimension(:,:), intent(inout)    ::  var
 
          integer                       :: ncid, varid
 
@@ -283,7 +388,7 @@ program shmem_reader
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!    par_layreadvar
+!    mp_layreadvar
 ! PURPOSE
 !     uses npet processors to read a variable from a netcdf file in chunks of layers
 !     is called by multiple processors
@@ -297,10 +402,10 @@ program shmem_reader
 !  HISTORY
 !     27 April P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-      subroutine par_layreadvar(varname, filename, var)
-         character(len=*), intent(in)  ::  varname
-         character(len=*), intent(in)  ::  filename
-         real, dimension(im,jm,km)        ::  var
+      subroutine mp_layreadvar(varname, filename, var)
+         character(len=*), intent(in)              ::  varname
+         character(len=*), intent(in)              ::  filename
+         real, dimension(im,jm,km), intent(inout)  ::  var
 
          integer                       :: p, startl, countl, endl
          integer                       :: ncid, varid
@@ -318,7 +423,7 @@ program shmem_reader
                call check( nf90_close(ncid), "closing MET file")
             end if
          end do
-      end subroutine par_layreadvar
+      end subroutine mp_layreadvar
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -435,33 +540,39 @@ program shmem_reader
          deallocate (pe)
          deallocate (ze)
          deallocate (te)
-         deallocate (vnames)
          deallocate (qm)
-         deallocate (rh)
+!         deallocate (rh)
          deallocate (tau)
          deallocate (ssa)
          deallocate (g)
 
-         ! shmem must deallocate shared memory arrays
-         call MAPL_DeallocNodeArray(CLDTOT,rc=ierr)
-         call MAPL_DeallocNodeArray(AIRDENS,rc=ierr)
-         call MAPL_DeallocNodeArray(DELP,rc=ierr)
-         call MAPL_DeallocNodeArray(DU001,rc=ierr)
-         call MAPL_DeallocNodeArray(DU002,rc=ierr)
-         call MAPL_DeallocNodeArray(DU003,rc=ierr)
-         call MAPL_DeallocNodeArray(DU004,rc=ierr)                           
-         call MAPL_DeallocNodeArray(DU005,rc=ierr)
-         call MAPL_DeallocNodeArray(SS001,rc=ierr) 
-         call MAPL_DeallocNodeArray(SS002,rc=ierr) 
-         call MAPL_DeallocNodeArray(SS003,rc=ierr) 
-         call MAPL_DeallocNodeArray(SS004,rc=ierr) 
-         call MAPL_DeallocNodeArray(SS005,rc=ierr) 
-         call MAPL_DeallocNodeArray(BCPHOBIC,rc=ierr) 
-         call MAPL_DeallocNodeArray(BCPHILIC,rc=ierr) 
-         call MAPL_DeallocNodeArray(OCPHOBIC,rc=ierr) 
-         call MAPL_DeallocNodeArray(OCPHILIC,rc=ierr) 
+         ! deallocate (rh)
+         ! deallocate(ps)
 
-         call MAPL_FinalizeShmem (rc=ierr)
+         deallocate(nlayer)
+
+
+         ! shmem must deallocate shared memory arrays
+         ! call MAPL_DeallocNodeArray(CLDTOT,rc=ierr)
+         ! call MAPL_DeallocNodeArray(AIRDENS,rc=ierr)
+         ! call MAPL_DeallocNodeArray(RH,rc=ierr)
+         ! call MAPL_DeallocNodeArray(DELP,rc=ierr)
+         ! call MAPL_DeallocNodeArray(DU001,rc=ierr)
+         ! call MAPL_DeallocNodeArray(DU002,rc=ierr)
+         ! call MAPL_DeallocNodeArray(DU003,rc=ierr)
+         ! call MAPL_DeallocNodeArray(DU004,rc=ierr)                           
+         ! call MAPL_DeallocNodeArray(DU005,rc=ierr)
+         ! call MAPL_DeallocNodeArray(SS001,rc=ierr) 
+         ! call MAPL_DeallocNodeArray(SS002,rc=ierr) 
+         ! call MAPL_DeallocNodeArray(SS003,rc=ierr) 
+         ! call MAPL_DeallocNodeArray(SS004,rc=ierr) 
+         ! call MAPL_DeallocNodeArray(SS005,rc=ierr) 
+         ! call MAPL_DeallocNodeArray(BCPHOBIC,rc=ierr) 
+         ! call MAPL_DeallocNodeArray(BCPHILIC,rc=ierr) 
+         ! call MAPL_DeallocNodeArray(OCPHOBIC,rc=ierr) 
+         ! call MAPL_DeallocNodeArray(OCPHILIC,rc=ierr) 
+
+         !call MAPL_FinalizeShmem (rc=ierr)
 
          call MPI_Finalize(ierr)
 
