@@ -62,35 +62,35 @@ program shmem_reader
 
 ! VLIDORT input arrays
 ! ---------------------------
-  real, pointer         :: pe(:,:) => null()      ! edge pressure [Pa]
-  real, pointer         :: ze(:,:) => null()      ! edge height above sfc [m]
-  real, pointer         :: te(:,:) => null()      ! edge Temperature [K]
-  integer               :: nobs                   ! number of profiles VLIDORT will work on
-  real, parameter       :: ptop = 1.0             ! top (edge) pressure [Pa]
-  integer               :: nch                    ! number of channels
-  integer, parameter    :: nq = 14                ! number of tracers
-  integer               :: verbose 
-  real, pointer         :: qm(:,:,:) => null()    ! (mixing ratio) * delp/g
-  real, pointer         :: tau(:,:,:) => null()   ! aerosol optical depth
-  real, pointer         :: ssa(:,:,:) => null()   ! single scattering albedo
-  real, pointer         :: g(:,:,:) => null()     ! asymmetry factor
-  real, pointer         :: albedo(:,:) => null()  ! surface albedo
-  real, pointer         :: solar_zenith(:) => null() 
-  real, pointer         :: relat_azimuth(:) => null()
-  real, pointer         :: sensor_zenith(:) => null()
-  real                  :: sensor_azimuth
-  real                  :: solar_azimuth
-  real, parameter       :: channels(1) = 550.0    ! channels to simulate
-  real, parameter       :: MISSING = -999
-  real*8,pointer        :: radiance_VL(:,:) => null()      ! TOA normalized radiance from VLIDORT
-  real*8,pointer        :: reflectance_VL(:,:) => null()  ! TOA reflectance from VLIDORT
+  real, pointer                         :: pe(:,:) => null()      ! edge pressure [Pa]
+  real, pointer                         :: ze(:,:) => null()      ! edge height above sfc [m]
+  real, pointer                         :: te(:,:) => null()      ! edge Temperature [K]
+  integer, parameter                    :: nobs = 1                   ! number of profiles VLIDORT will work on
+  real, parameter                       :: ptop = 1.0             ! top (edge) pressure [Pa]
+  integer, parameter                    :: nch = 1                    ! number of channels
+  integer, parameter                    :: nq = 14                ! number of tracers
+  integer, parameter                    :: verbose = 0
+  real, pointer                         :: qm(:,:,:) => null()    ! (mixing ratio) * delp/g
+  real, pointer                         :: tau(:,:,:) => null()   ! aerosol optical depth
+  real, pointer                         :: ssa(:,:,:) => null()   ! single scattering albedo
+  real, pointer                         :: g(:,:,:) => null()     ! asymmetry factor
+  real, pointer                         :: albedo(:,:) => null()  ! surface albedo
+  real, pointer                         :: solar_zenith(:) => null() 
+  real, pointer                         :: relat_azimuth(:) => null()
+  real, pointer                         :: sensor_zenith(:) => null()
+  real                                  :: sensor_azimuth
+  real                                  :: solar_azimuth
+  real, dimension(nch),parameter        :: channels = (/550.0/)    ! channels to simulate
+  real, parameter                       :: MISSING = -999
+  real*8,pointer                        :: radiance_VL(:,:) => null()      ! TOA normalized radiance from VLIDORT
+  real*8,pointer                        :: reflectance_VL(:,:) => null()  ! TOA reflectance from VLIDORT
 
-  character(len=*), parameter      :: rcfile = 'Aod_EOS.rc'  ! resource file
-  character(len=16), parameter     :: vnames_string(nq) = (/'du001', 'du002', 'du003', 'du004', 'du005', &
+  character(len=*), parameter           :: rcfile = 'Aod_EOS.rc'  ! resource file
+  character(len=16), parameter          :: vnames_string(nq) = (/'du001', 'du002', 'du003', 'du004', 'du005', &
                                                              'ss001', 'ss002', 'ss003', 'ss004', 'ss005', &
                                                              'BCphobic', 'BCphilic',                      &
                                                              'OCphobic', 'OCphilic'/) ! array of variable name strings
-  character             :: vnames(nq,16)          ! character array of variable names
+  character                             :: vnames(nq,16)          ! character array of variable names
 
 
 ! Miscellaneous
@@ -185,9 +185,6 @@ program shmem_reader
 
 ! Needed for vlidort
 ! -----------------------
-  verbose = 0
-  nobs    = 1
-  nch     = 1
   allocate (pe(km+1,nobs))
   allocate (ze(km+1,nobs))
   allocate (te(km+1,nobs))
@@ -325,7 +322,7 @@ program shmem_reader
       endi   = starti + counti
 
       do i = p+1,p+1 !starti, endi
-        do j = 1, jm
+        do j = 1, 1!jm
 
           call getEdgeVars ( km, nobs, reshape(AIRDENS(i,j,:),(/km,nobs/)), reshape(DELP(i,j,:),(/km,nobs/)), ptop, &
                              pe, ze, te )     
@@ -376,7 +373,7 @@ program shmem_reader
 
             ! Write output to correct position in array
             ! --------------------------------------------
-            call mp_write_outfile(ncid,radVarID,refVarID,(/i,j,1/),radiance_VL,reflectance_VL)
+            call mp_write_outfile(ncid,radVarID,refVarID,(/i,j,1,1/),(/i,j,nobs,nch/),radiance_VL,reflectance_VL)
 
             ! Keep track of progress of each processor
             ! -----------------------------------------
@@ -429,10 +426,10 @@ program shmem_reader
     integer,intent(out)                :: ncid
     integer,intent(out)                :: radVarID, refVarID    
     
-    integer, dimension(3)              :: chunk_size
-    integer, dimension(3)              :: dimids
-    integer                            :: timeDimID, ewDimID, nsDimID
-    integer                            :: old_fillmode
+    integer, dimension(4)              :: chunk_size
+    integer, dimension(4)              :: dimids
+    integer                            :: timeDimID, ewDimID, nsDimID, chaDimID
+    integer                            :: chaVarID
 
 
 
@@ -441,6 +438,7 @@ program shmem_reader
     call check(nf90_def_dim(ncid, "time", 1, timeDimID), "creating time dimension")
     call check(nf90_def_dim(ncid, "ew", im, ewDimID), "creating ew dimension") !im
     call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
+    call check(nf90_def_dim(ncid, "ch", nch, chaDimID), "creating nch dimension")
 
     call check(nf90_put_att(ncid,NF90_GLOBAL,'title','VLIDORT Simulation of GEOS-5 TEMPO Sampler'),"title attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'institution','NASA/Goddard Space Flight Center'),"institution attr")
@@ -453,26 +451,38 @@ program shmem_reader
     call check(nf90_put_att(ncid,NF90_GLOBAL,"contact","Arlindo da Silva <arlindo.dasilva@nasa.gov>"),"contact attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,"Conventions","cf"),"conventions attr")
 
-    dimids = (/ewDimID,nsDimID,timeDimID/)
-    chunk_size = (/1,1,1/)
+    dimids = (/ewDimID,nsDimID,timeDimID,chaDimID/)
+    chunk_size = (/1,1,1,nch/)
 
-    call check(nf90_def_var(ncid,'radiance_550',nf90_float,dimids,radVarID,chunksizes=chunk_size),"create radiance var")
-    call check(nf90_def_var(ncid,'reflectance_550',nf90_float,dimids,refVarID,chunksizes=chunk_size),"create reflectance var")
+    call check(nf90_def_var(ncid,'channel',nf90_float,(/chaDimID/),chaVarID),"create channel var")
+    call check(nf90_def_var(ncid,'radiance',nf90_float,dimids,radVarID,chunksizes=chunk_size),"create radiance var")
+    call check(nf90_def_var(ncid,'reflectance',nf90_float,dimids,refVarID,chunksizes=chunk_size),"create reflectance var")
 
-    call check(nf90_put_att(ncid,radVarID,'standard_name','Top of Atmosphere Radiance at 550 nm'),"standard_name attr")
-    call check(nf90_put_att(ncid,radVarID,'long_name','Top of Atmosphere Radiance at 550 nm'),"long_name attr")
+    call check(nf90_put_att(ncid,chaVarID,'standard_name','Channel'),"standard_name attr")
+    call check(nf90_put_att(ncid,chaVarID,'long_name','Channel Wavelength'),"long_name attr")
+    call check(nf90_put_att(ncid,chaVarID,'missing_value',real(MISSING)),"missing_value attr")
+    call check(nf90_put_att(ncid,chaVarID,'units','nm'),"units attr")
+    call check(nf90_put_att(ncid,chaVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+    call check(nf90_put_att(ncid,radVarID,'standard_name','Top of Atmosphere Radiance'),"standard_name attr")
+    call check(nf90_put_att(ncid,radVarID,'long_name','Top of Atmosphere Radiance'),"long_name attr")
     call check(nf90_put_att(ncid,radVarID,'missing_value',real(MISSING)),"missing_value attr")
     call check(nf90_put_att(ncid,radVarID,'units','W m-2 sr-1 nm-1'),"units attr")
     call check(nf90_put_att(ncid,radVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")
 
-    call check(nf90_put_att(ncid,refVarID,'standard_name','Top of Atmosphere Reflectance at 550 nm'),"standard_name attr")
-    call check(nf90_put_att(ncid,refVarID,'long_name','Top of Atmosphere Reflectance at 550 nm'),"long_name attr")
+    call check(nf90_put_att(ncid,refVarID,'standard_name','Top of Atmosphere Reflectance'),"standard_name attr")
+    call check(nf90_put_att(ncid,refVarID,'long_name','Top of Atmosphere Reflectance'),"long_name attr")
     call check(nf90_put_att(ncid,refVarID,'missing_value',real(MISSING)),"missing_value attr")
     call check(nf90_put_att(ncid,refVarID,'units','None'),"units attr")
     call check(nf90_put_att(ncid,refVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")
 
     !Leave define mode
     call check(nf90_enddef(ncid),"leaving define mode")
+
+    ! one processor writes out channels
+    if (myid == 0) then
+      call check(nf90_put_var(ncid, chaVarID, channels), "writing out channels")
+    endif
 
     ! force independent write 
     call check(nf90_var_par_access(ncid, refVarID, nf90_independent),"reflectance writes independently")
@@ -496,14 +506,14 @@ program shmem_reader
 !     6 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  subroutine mp_write_outfile(ncid,radVarID,refVarID,start,radData,refData)
+  subroutine mp_write_outfile(ncid,radVarID,refVarID,start,count,radData,refData)
     integer,intent(in)                  :: ncid
     integer,intent(in)                  :: radVarID, refVarID    
     real*8,dimension(:,:),intent(in)    :: refData, radData
-    integer,dimension(3),intent(in)     :: start
+    integer,dimension(4),intent(in)     :: start, count
 
-    call check(nf90_put_var(ncid, radVarID, radData(1,1), start = start), "writing out radiance")
-    call check(nf90_put_var(ncid, refVarID, refData(1,1), start = start), "writing out reflectance")
+    call check(nf90_put_var(ncid, radVarID, radData, start = start, count = count), "writing out radiance")
+    call check(nf90_put_var(ncid, refVarID, refData, start = start, count = count), "writing out reflectance")
 
   end subroutine mp_write_outfile
 
