@@ -269,38 +269,8 @@ program shmem_reader
   if (test_shmem) then
 ! Although read on individual PEs, all shared variables should have the same
 ! data in all PEs. Let's verify that.
-! -----------------------------------------------------------   
-    if ( myid  == 0 ) then
-      open (unit = 2, file="shmem_test.txt")
-      write(2,'(A)') '--- Array Statistics ---'
-    end if
-
-    call shmem_test2D('CLDTOT',CLDTOT)
-    call shmem_test3D('RH',RH)
-    call shmem_test3D('AIRDENS',AIRDENS)
-    call shmem_test3D('DELP',DELP)
-    call shmem_test3D('DU001',DU001)
-    call shmem_test3D('DU002',DU002)
-    call shmem_test3D('DU003',DU003)
-    call shmem_test3D('DU004',DU004)
-    call shmem_test3D('DU005',DU005)
-    call shmem_test3D('SS001',SS001)
-    call shmem_test3D('SS002',SS002)
-    call shmem_test3D('SS003',SS003)
-    call shmem_test3D('SS004',SS004)
-    call shmem_test3D('SS005',SS005)
-    call shmem_test3D('BCPHOBIC',BCPHOBIC)
-    call shmem_test3D('BCPHILIC',BCPHILIC)
-    call shmem_test3D('OCPHOBIC',OCPHOBIC)
-    call shmem_test3D('OCPHILIC',OCPHILIC)
-
-!   Wait for everyone to finish and print max memory used
-!   -----------------------------------------------------------  
-    call MAPL_SyncSharedMemory(rc=ierr)
-    if (myid == 0) then  
-      write(*,*) 'Tested shared memory' 
-      call sys_tracker()   
-    end if   
+! -----------------------------------------------------------     
+    call do_testing()
   end if 
 
 ! Prepare inputs and run VLIDORT
@@ -833,6 +803,44 @@ program shmem_reader
 !  HISTORY
 !     27 April P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine do_testing()
+
+    if ( myid  == 0 ) then
+      open (unit = 2, file="shmem_test.txt")
+      write(2,'(A)') '--- Array Statistics ---'
+    end if
+
+    call shmem_test2D('CLDTOT',CLDTOT)
+    call shmem_test3D('RH',RH)
+    call shmem_test3D('AIRDENS',AIRDENS)
+    call shmem_test3D('DELP',DELP)
+    call shmem_test3D('DU001',DU001)
+    call shmem_test3D('DU002',DU002)
+    call shmem_test3D('DU003',DU003)
+    call shmem_test3D('DU004',DU004)
+    call shmem_test3D('DU005',DU005)
+    call shmem_test3D('SS001',SS001)
+    call shmem_test3D('SS002',SS002)
+    call shmem_test3D('SS003',SS003)
+    call shmem_test3D('SS004',SS004)
+    call shmem_test3D('SS005',SS005)
+    call shmem_test3D('BCPHOBIC',BCPHOBIC)
+    call shmem_test3D('BCPHILIC',BCPHILIC)
+    call shmem_test3D('OCPHOBIC',OCPHOBIC)
+    call shmem_test3D('OCPHILIC',OCPHILIC)
+
+    !   Wait for everyone to finish and print max memory used
+    !   -----------------------------------------------------------  
+    call MAPL_SyncSharedMemory(rc=ierr)
+    if (myid == 0) then  
+      write(*,*) 'Tested shared memory' 
+      call sys_tracker()   
+    end if   
+
+  end subroutine do_testing
+
+
+
   subroutine shmem_test3D(varname,var)
     character(len=*), intent(in)  :: varname
     real,dimension(:,:,:)      :: var
