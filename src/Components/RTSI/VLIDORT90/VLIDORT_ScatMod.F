@@ -181,16 +181,16 @@
       self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_BRDF_F          = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_BRDF_F
       self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_USER_BRDF_F_0   = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_USER_BRDF_F_0
       self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_USER_BRDF_F     = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_USER_BRDF_F
-      self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_EXACTDB_BRDFUNC = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_EXACTDB_BRDFUNC
+      self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_EXACTDB_BRDFUNC = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC
       self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_EMISSIVITY      = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_EMISSIVITY
       self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_USER_EMISSIVITY = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_USER_EMISSIVITY
 
 !                         Angles (SZA, viewing, relatuve azimuth), Level
 !                        ------------------------------------------------      
-      self%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_SZANGLES(1) = self%Surface%solar_zenith
+      self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1) = self%Surface%solar_zenith
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_RELAZMS(1) = self%Surface%relat_azimuth
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_VZANGLES_INPUT(1) = self%Surface%sensor_zenith
-      self%Surface%Base%VIO%VLIDORT_FixIn%UserVal%TS_USER_LEVELS(1) = 0.0     ! This is TOA   
+      self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_LEVELS(1) = 0.0     ! This is TOA   
 
  
                       
@@ -442,7 +442,8 @@
       self%Surface%Base%VIO%VLIDORT_FixIn%Optical%TS_DELTAU_VERT_INPUT = deltau_vert_input
       self%Surface%Base%VIO%VLIDORT_ModIn%MOptical%TS_OMEGA_TOTAL_INPUT = omega_total_input
       self%Surface%Base%VIO%VLIDORT_FixIn%Optical%TS_GREEKMAT_TOTAL_INPUT = greekmat_total_input
-     
+      
+!      print*, 'CALL MASTER', rc
  
 !     Call the MASTER driver for doing the actual calculation
 !     -----------------------------------------------------------
@@ -450,13 +451,17 @@
      &     self%Surface%Base%VIO%VLIDORT_ModIn, 
      &     self%Surface%Base%VIO%VLIDORT_Sup, 
      &     self%Surface%Base%VIO%VLIDORT_Out)
+  
+!      write(*,*) 'after MASTER'
+!      write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_INPUTCHECK
+!      write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_CALCULATION
 
       if ( self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_INPUTCHECK /= 0 ) rc = 3
       if ( self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_CALCULATION /= 0 ) rc = 4
       if ( rc /= 0 ) return
       
       STOKES = self%Surface%Base%VIO%VLIDORT_Out%Main%TS_STOKES ! output of VLIDORT_MASTER subroutine
-      FLUX_FACTOR = self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_FLUX_FACTOR
+      FLUX_FACTOR = self%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR
       
 !     Return TOA radiance
 !     -------------------
@@ -468,17 +473,17 @@
       if ( scalar ) then
        RADIANCE = STOKES(1, 1, 1, IDR)
               
-       REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR ) 
+       REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR ) 
       
       end if
-  
+!      print*, 'compute radinaces'
       if ( vector ) then
        RADIANCE = STOKES(1, 1, 1, IDR)
        Q = STOKES(1, 1, 2, IDR)
        U = STOKES(1, 1, 3, IDR)
 !       V = STOKES(1, 1, 4, IDR)
 
-       REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR )   
+       REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR )   
       end if
 
 

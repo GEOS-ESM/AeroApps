@@ -197,16 +197,16 @@
       self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_BRDF_F          = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_BRDF_F
       self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_USER_BRDF_F_0   = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_USER_BRDF_F_0
       self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_USER_BRDF_F     = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_USER_BRDF_F
-      self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_EXACTDB_BRDFUNC = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_EXACTDB_BRDFUNC
+      self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_EXACTDB_BRDFUNC = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC
       self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_EMISSIVITY      = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_EMISSIVITY
       self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_USER_EMISSIVITY = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_USER_EMISSIVITY
 
 !                         Angles (SZA, viewing, relatuve azimuth), Level
 !                        ------------------------------------------------      
-      self%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_SZANGLES(1) = self%Surface%solar_zenith
+      self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1) = self%Surface%solar_zenith
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_RELAZMS(1) = self%Surface%relat_azimuth
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_VZANGLES_INPUT(1) = self%Surface%sensor_zenith
-      self%Surface%Base%VIO%VLIDORT_FixIn%UserVal%TS_USER_LEVELS(1) = 0.0     ! This is TOA              
+      self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_LEVELS(1) = 0.0     ! This is TOA              
       
       NGREEK_MOMENTS_INPUT = self%Surface%Base%VIO%VLIDORT_ModIn%MCont%TS_NGREEK_MOMENTS_INPUT
       NLAYERS = self%Surface%Base%VIO%VLIDORT_FixIn%Cont%TS_NLAYERS     
@@ -488,7 +488,7 @@
       if ( rc /= 0 ) return
       
       STOKES = self%Surface%Base%VIO%VLIDORT_Out%Main%TS_STOKES ! output of VLIDORT_MASTER subroutine
-      FLUX_FACTOR = self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_FLUX_FACTOR
+      FLUX_FACTOR = self%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR
 
 !     Return TOA radiance
 !     -------------------
@@ -500,7 +500,7 @@
       if ( scalar ) then
        RADIANCE = STOKES(1, 1, 1, IDR)
               
-       REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR ) 
+       REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR ) 
       
       end if
   
@@ -510,7 +510,7 @@
        U = STOKES(1, 1, 3, IDR)
 !       V = STOKES(1, 1, 4, IDR)
 !      print *, 'RAD', RADIANCE, Q, U
-       REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR )   
+       REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR )   
       end if
 !     print *, 'RADIANCE',self%wavelength, RADIANCE
 

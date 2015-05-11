@@ -105,8 +105,8 @@
       logical                             ::   DO_DEBUG_RESTORATION
       logical                             ::   DO_EXACTONLY
       integer                             ::   N_MOMENTS_INPUT
-      logical                             ::   DO_GLITTER_MSRCORR
-      logical                             ::   DO_GLITTER_MSRCORR_EXACTONLY  
+      logical                             ::   DO_MSRCORR
+      logical                             ::   DO_MSRCORR_DBONLY  
       integer                             ::   GLITTER_MSRCORR_ORDER
       integer                             ::   GLITTER_MSRCORR_NMUQUAD
       integer                             ::   GLITTER_MSRCORR_NPHIQUAD
@@ -163,10 +163,10 @@
 
       ! Only for Cox-Munk type kernels
       DO_SHADOW_EFFECT = .true.      ! Shadow effect for glitter kernels
-      DO_EXACTONLY = .false.        ! only exact BRDF (no Fourier calc)
+!      DO_EXACTONLY = .false.        ! only exact BRDF (no Fourier calc)
 
-      DO_GLITTER_MSRCORR  = .true.  ! Do multiple reflectance correction for glitter kernels
-      DO_GLITTER_MSRCORR_EXACTONLY  = .false. ! Do multiple reflectance correction 
+      DO_MSRCORR  = .true.  ! Do multiple reflectance correction for glitter kernels
+      DO_MSRCORR_DBONLY  = .false. ! Do multiple reflectance correction 
                                                !for only the exact term of glitter kernels
 
       GLITTER_MSRCORR_ORDER = 0   !Order of correction for multiple reflectance computations
@@ -208,11 +208,11 @@
       VBRDF%VBRDF_Sup_In%BS_BRDF_FACTORS           = BRDF_FACTORS
       VBRDF%VBRDF_Sup_In%BS_NSTREAMS_BRDF          = NSTREAMS_BRDF
       VBRDF%VBRDF_Sup_In%BS_DO_SHADOW_EFFECT       = DO_SHADOW_EFFECT
-      VBRDF%VBRDF_Sup_In%BS_DO_EXACTONLY           = DO_EXACTONLY
+!      VBRDF%VBRDF_Sup_In%BS_DO_EXACTONLY           = DO_EXACTONLY
      
 
-      VBRDF%VBRDF_Sup_In%BS_DO_GLITTER_MSRCORR           = DO_GLITTER_MSRCORR
-      VBRDF%VBRDF_Sup_In%BS_DO_GLITTER_MSRCORR_EXACTONLY = DO_GLITTER_MSRCORR_EXACTONLY
+      VBRDF%VBRDF_Sup_In%BS_DO_GLITTER_MSRCORR           = DO_MSRCORR
+      VBRDF%VBRDF_Sup_In%BS_DO_GLITTER_MSRCORR_DBONLY = DO_MSRCORR_DBONLY
       VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_ORDER        = GLITTER_MSRCORR_ORDER
       VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_NMUQUAD      = GLITTER_MSRCORR_NMUQUAD
       VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_NPHIQUAD     = GLITTER_MSRCORR_NPHIQUAD
@@ -231,9 +231,10 @@
       call VBRDF_MAINMASTER (DO_DEBUG_RESTORATION, ! Inputs
      & N_MOMENTS_INPUT,                      ! Inputs
      & VBRDF%VBRDF_Sup_In,                   ! Inputs
-     & self%Base%VIO%VBRDF_Sup_Out)          ! Outputs
-       BRDF = self%Base%VIO%VBRDF_Sup_Out%BS_EXACTDB_BRDFUNC(1,1,1,1)     
-       print*, 'ok BRDF', self%Base%VIO%VBRDF_Sup_Out%BS_EXACTDB_BRDFUNC(1,1,1,1)       
+     & self%Base%VIO%VBRDF_Sup_Out,          ! Outputs
+     & self%Base%VIO%VBRDF_Sup_OutputStatus)          ! Outputs
+       BRDF = self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)     
+       print*, 'ok BRDF', self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)       
       end subroutine VLIDORT_GissCoxMunk
 
 !.................................................................................
@@ -398,9 +399,10 @@
       call VBRDF_MAINMASTER (DO_DEBUG_RESTORATION, ! Inputs
      & N_MOMENTS_INPUT,                      ! Inputs
      & VBRDF%VBRDF_Sup_In,                   ! Inputs
-     & self%Base%VIO%VBRDF_Sup_Out)          ! Outputs
-       BRDF = self%Base%VIO%VBRDF_Sup_Out%BS_EXACTDB_BRDFUNC(1,1,1,1)     
-       print*, 'ok BRDF', self%Base%VIO%VBRDF_Sup_Out%BS_EXACTDB_BRDFUNC(1,1,1,1)  
+     & self%Base%VIO%VBRDF_Sup_Out,          ! Outputs
+     & self%Base%VIO%VBRDF_Sup_OutputStatus)          ! Outputs
+       BRDF = self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)     
+       print*, 'ok BRDF', self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)  
                
       end subroutine VLIDORT_LANDMODIS
 
