@@ -24,7 +24,7 @@
           TYPE(VLIDORT_Outputs)                  :: VLIDORT_Out
 
 !!          TYPE(Exception_Handling_def)       :: VLIDORT_Status
-          TYPE(VLIDORT_Exception_Handling)       :: VLIDORT_BRDFCheck_Status
+          TYPE(VBRDF_Output_Exception_Handling)   :: VBRDF_Sup_OutputStatus
 
 
           !  BRDF input and output structure
@@ -83,6 +83,8 @@
       logical                                :: DO_DOUBLE_CONVTEST
       logical                                :: DO_SOLAR_SOURCES
       logical                                :: DO_PLANE_PARALLEL
+      logical                                :: DO_FO_CALC
+      logical                                :: DO_OBSERVATION_GEOMETRY
       logical                                :: DO_REFRACTIVE_GEOMETRY
       logical                                :: DO_CHAPMAN_FUNCTION
       logical                                :: DO_RAYLEIGH_ONLY
@@ -104,6 +106,7 @@
       character (LEN=60)                     :: SCENARIO_WRITE_FILENAME
       character (LEN=60)                     :: FOURIER_WRITE_FILENAME
       character (LEN=60)                     :: RESULTS_WRITE_FILENAME
+      integer                                :: TAYLOR_ORDER
       integer                                :: NSTOKES
       integer                                :: NSTREAMS
       integer                                :: NLAYERS
@@ -116,6 +119,8 @@
       real*8                                 :: EARTH_RADIUS
       real*8                                 :: RFINDEX_PARAMETER
       real*8                                 :: GEOMETRY_SPECHEIGHT
+      integer                                :: N_USER_OBSGEOMS
+      real*8, dimension( MAX_USER_OBSGEOMS,3):: USER_OBSGEOMS
       integer                                :: N_USER_RELAZMS
       real*8, dimension( MAX_USER_RELAZMS )  :: USER_RELAZMS  
       integer                                :: N_USER_VZANGLES
@@ -141,9 +146,11 @@
 
      
 !    initialize variables to false or zero
-!    -------------------------------------
+!    -------------------------------------    
+
       call VLIDORT_INIT_CONTROL_VARS (DO_FULLRAD_MODE, DO_SSCORR_NADIR,
-     &     DO_SSCORR_OUTGOING, DO_SSCORR_TRUNCATION, DO_SS_EXTERNAL, DO_SSFULL,
+     &     DO_SSCORR_OUTGOING, DO_FO_CALC, DO_SSCORR_TRUNCATION,
+     &     DO_SS_EXTERNAL, DO_SSFULL,
      &     DO_DOUBLE_CONVTEST, DO_PLANE_PARALLEL, DO_REFRACTIVE_GEOMETRY, 
      &     DO_CHAPMAN_FUNCTION, 
      &     DO_RAYLEIGH_ONLY, DO_DELTAM_SCALING, DO_SOLUTION_SAVING, 
@@ -151,7 +158,7 @@
      &     DO_USER_VZANGLES, DO_ADDITIONAL_MVOUT, DO_MVOUT_ONLY, 
      &     DO_DEBUG_WRITE, DO_WRITE_INPUT, DO_WRITE_SCENARIO, 
      &     DO_WRITE_FOURIER, DO_WRITE_RESULTS, DO_LAMBERTIAN_SURFACE, 
-     &     DO_SPECIALIST_OPTION_1, 
+     &     DO_OBSERVATION_GEOMETRY,DO_SPECIALIST_OPTION_1, 
      &     DO_SPECIALIST_OPTION_2, DO_SPECIALIST_OPTION_3, DO_TOA_CONTRIBS,
      &     DO_SURFACE_LEAVING, DO_SL_ISOTROPIC)
 
@@ -160,13 +167,15 @@
      &     THERMAL_BB_INPUT, DO_SURFACE_EMISSION, 
      &     SURFBB, DO_THERMAL_TRANSONLY)
 
-      call VLIDORT_INIT_MODEL_VARS(NSTOKES, NSTREAMS, NLAYERS, NFINELAYERS, 
+      call VLIDORT_INIT_MODEL_VARS(TAYLOR_ORDER,NSTOKES, 
+     &     NSTREAMS, NLAYERS, NFINELAYERS, 
      &     NGREEK_MOMENTS_INPUT, VLIDORT_ACCURACY,  
      &     FLUX_FACTOR, N_SZANGLES, SZANGLES,       
      &     EARTH_RADIUS, RFINDEX_PARAMETER,       
      &     GEOMETRY_SPECHEIGHT, N_USER_RELAZMS,     
      &     USER_RELAZMS, N_USER_VZANGLES,           
      &     USER_VZANGLES, N_USER_LEVELS, USER_LEVELS,
+     &     N_USER_OBSGEOMS, USER_OBSGEOMS,
      &     LAMBERTIAN_ALBEDO)
 
 
@@ -180,6 +189,7 @@
       DO_FULLRAD_MODE    = .true.  ! Do full Stokes vector calculation?
       DO_SSCORR_NADIR    = .false. ! Do nadir single scatter correction?
       DO_SSCORR_OUTGOING = .true.  ! Do outgoing single scatter correction?
+      DO_FO_CALC         = .false. ! Do outgoung single Nakajima scatter correction?
       DO_SSFULL          = .false. ! Do Full-up single scatter calculation?
 !      DO_DBCORRECTION    = .true.  ! Do direct beam correction?
       DO_DOUBLE_CONVTEST = .true.  ! Perform double convergence test?
@@ -207,6 +217,7 @@
       DO_UPWELLING = .true.     ! Upwelling output?
       DO_DNWELLING = .false.    ! Downwelling output?
       DO_USER_VZANGLES = .true. ! User-defined Viewing zenith angles?
+      DO_OBSERVATION_GEOMETRY = .false. ! Do Observation Geometry?
       
 
       DO_ADDITIONAL_MVOUT = .true.  ! Generate mean value output additionally?
@@ -250,6 +261,8 @@
       NLAYERS = km                    ! Number of atmospheric layers
       NFINELAYERS = 3                 ! Number of fine layers (outgoing sphericity correction)
       NGREEK_MOMENTS_INPUT = 300     ! Number of scattering matrix expansion coefficients
+      TAYLOR_ORDER = 3                ! Number of small-number terms in Taylor series expansions
+      N_USER_OBSGEOMS = 1             ! Number of observation Geometry inputs
       
 
 !                            accuracy input
@@ -310,6 +323,7 @@
 
       self%VIO%VLIDORT_ModIn%MBool%TS_DO_SSCORR_NADIR        = DO_SSCORR_NADIR
       self%VIO%VLIDORT_ModIn%MBool%TS_DO_SSCORR_OUTGOING     = DO_SSCORR_OUTGOING
+      self%VIO%VLIDORT_ModIn%MBool%TS_DO_FO_CALC             = DO_FO_CALC
       self%VIO%VLIDORT_ModIn%MBool%TS_DO_DOUBLE_CONVTEST     = DO_DOUBLE_CONVTEST
       self%VIO%VLIDORT_ModIn%MBool%TS_DO_SOLAR_SOURCES       = DO_SOLAR_SOURCES
       self%VIO%VLIDORT_ModIn%MBool%TS_DO_REFRACTIVE_GEOMETRY = DO_REFRACTIVE_GEOMETRY
@@ -329,6 +343,7 @@
 
 !  Fixed control inputs
 !      self%VIO%VLIDORT_FixIn%Cont%TS_NSTOKES               = NSTOKES
+      self%VIO%VLIDORT_FixIn%Cont%TS_TAYLOR_ORDER           = TAYLOR_ORDER
       self%VIO%VLIDORT_FixIn%Cont%TS_NSTREAMS               = self%NSTREAMS
       self%VIO%VLIDORT_FixIn%Cont%TS_NLAYERS                = NLAYERS
       self%VIO%VLIDORT_FixIn%Cont%TS_NFINELAYERS            = NFINELAYERS
@@ -341,13 +356,17 @@
 
 !  Beam inputs
 
-      self%VIO%VLIDORT_ModIn%MSunRays%TS_FLUX_FACTOR              = FLUX_FACTOR      
+      self%VIO%VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR               = FLUX_FACTOR      
       self%VIO%VLIDORT_ModIn%MSunRays%TS_N_SZANGLES               = self%NBEAMS
       self%VIO%VLIDORT_ModIn%MUserVal%TS_N_USER_RELAZMS           = self%N_USER_RELAZMS     
-      self%VIO%VLIDORT_FixIn%UserVal%TS_N_USER_VZANGLES           = self%N_USER_STREAMS
+      self%VIO%VLIDORT_ModIn%MUserVal%TS_N_USER_VZANGLES          = self%N_USER_STREAMS
       self%VIO%VLIDORT_FixIn%UserVal%TS_N_USER_LEVELS             = self%N_USER_LEVELS
       
       self%VIO%VLIDORT_ModIn%MUserVal%TS_GEOMETRY_SPECHEIGHT      = GEOMETRY_SPECHEIGHT
+
+      self%VIO%VLIDORT_ModIn%MUserVal%TS_N_USER_OBSGEOMS          = N_USER_OBSGEOMS     
+      self%VIO%VLIDORT_ModIn%MUserVal%TS_USER_OBSGEOMS_INPUT      = USER_OBSGEOMS
+      
 
 !  Fixed Chapman function inputs
 
@@ -398,7 +417,7 @@
       if ( N_THERMAL_COEFFS .GT. MAX_THERMAL_COEFFS )   rc =  10
      
       
-      print*, 'test...', NSTREAMS, MAXSTREAMS, rc
+!      print*, 'test...', NSTREAMS, MAXSTREAMS, rc
 
 !     All done
 !     --------
