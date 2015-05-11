@@ -69,7 +69,7 @@ program shmem_reader
   real, parameter                       :: ptop = 1.0             ! top (edge) pressure [Pa]
   integer, parameter                    :: nch = 1                    ! number of channels
   integer, parameter                    :: nq = 14                ! number of tracers
-  integer, parameter                    :: verbose = 0
+  integer, parameter                    :: verbose = 1
   real, pointer                         :: qm(:,:,:) => null()    ! (mixing ratio) * delp/g
   real, pointer                         :: tau(:,:,:) => null()   ! aerosol optical depth
   real, pointer                         :: ssa(:,:,:) => null()   ! single scattering albedo
@@ -80,7 +80,7 @@ program shmem_reader
   real, pointer                         :: sensor_zenith(:) => null()
   real                                  :: sensor_azimuth
   real                                  :: solar_azimuth
-  real, dimension(nch),parameter        :: channels = (/550.0/)    ! channels to simulate
+  real, dimension(nch),parameter        :: channels = (/405.0/)    ! channels to simulate
   real, parameter                       :: MISSING = -999
   real*8,pointer                        :: radiance_VL(:,:) => null()      ! TOA normalized radiance from VLIDORT
   real*8,pointer                        :: reflectance_VL(:,:) => null()  ! TOA reflectance from VLIDORT
@@ -100,29 +100,31 @@ program shmem_reader
   integer               :: myid, npet, CoresPerNode  ! MPI dimensions and processor id
   integer               :: im, jm, km                ! size of TEMPO domain
   integer               :: i, j, k, n                ! size of TEMPO domain
+  integer               :: clrm, c                      ! number of clear 
   integer               :: ncid, radVarID, refVarID  ! netcdf ids
-  integer               :: p                         ! i-processor
+  integer               :: p, pp                     ! i-processor
   integer               :: doy                       ! day of year
   integer               :: starti, counti, endi      ! array indices and counts for e-w columns to be read
-  integer, allocatable  :: nlayer(:)                 ! how many layers each processor reads
-  integer, allocatable  :: nlon(:)                   ! how many east-west columns each processor reads
+  integer, allocatable  :: nclr(:)                   ! how many clear pixels each processor reads
 
-  character(len=61)     :: msg                       ! message printed by shmen_test
+  character(len=100)    :: msg                       ! message printed to stdout
 
   real                  :: sat_lon                   ! satellite longitude
   real                  :: sat_lat                   ! satellite latitude
   real                  :: sat_alt                   ! satellite altitude
   real                  :: Earth_rad                 ! earth radius
   real, parameter       :: grav = 9.81               ! gravity
-  integer               :: count 
+  real                  :: progress 
 
   integer               :: t1, t2, clock_max
   real*8                :: clock_rate
 
+  integer,allocatable,dimension(:)    :: i_work, j_work     ! working indeces
+  real, parameter                     :: cldmax = 0.01
 
   call system_clock ( t1, clock_rate, clock_max )
 
-  count = 10
+  progress = 0.1
 
 ! Initialize MPI
 ! --------------
@@ -139,7 +141,7 @@ program shmem_reader
 ! For now hard code file names and dimensions, could query file for dimensions
 ! ----------------------------------------------------------------------------
   date = '20051231'
-  time = '00'
+  time = '18'
   im = 1250
   jm = 2000
   km = 72
@@ -203,38 +205,74 @@ program shmem_reader
 
 ! Needed for reading
 ! ----------------------
-  allocate (nlayer(npet))
-  allocate (nlon(npet))
+  allocate (nclr(npet)) 
+  nclr = 0
 
 ! Read the cloud and geographic data
-! ------------------------------
-  if (myid == 0) then  
+! -------------------------------------
+  call mp_colreadvar("CLDTOT", MET_file, CLDTOT)
+  call mp_colreadvar("clat", INV_FILE, CLAT)
+  call mp_colreadvar("clon", INV_FILE, CLON)
+  call mp_readGattr("sat_lat", INV_FILE, sat_lat)
+  call mp_readGattr("sat_lon", INV_FILE, sat_lon)
+  call mp_readGattr("sat_alt", INV_FILE, sat_alt)
+  call mp_readGattr("Earth_radius", INV_FILE, earth_rad) 
+  
+  if (myid == 0) then
     write(*,*) 'Allocated all shared memory'
-    call sys_tracker()    
-    call readvar2D("CLDTOT", MET_file, CLDTOT)
-    call readvar2D("clat", INV_FILE, CLAT)
-    call readvar2D("clon", INV_FILE, CLON)
-    write(*,*) 'Read cloud information'
+    write(*,*) 'Read cloud and geographic information'
     call sys_tracker()
   end if
 
-  call readGattr("sat_lat", INV_FILE, sat_lat)
-  call readGattr("sat_lon", INV_FILE, sat_lon)
-  call readGattr("sat_alt", INV_FILE, sat_alt)
-  call readGattr("Earth_radius", INV_FILE, earth_rad)  
-
-! Wait for everyone to have access to CLDTOT and shared memory
+! Wait for everyone to have access to what's been read into shared memory
 ! -----------------------------------------------------------   
   call MAPL_SyncSharedMemory(rc=ierr)
 
+! Create cloud mask
+! ------------------------
+  ! first check that you can!!!!!
+  if (.not. ANY(CLDTOT <= cldmax)) then
+    write(*,*) 'domain is too cloudy, nothing to do'
+    write(*,*) 'Exiting.....'
+    call MPI_ABORT(MPI_COMM_WORLD,myid)
+  endif
 
-! Everyone Figure out how many layers each PE has to read
-! -----------------------------
-  if (npet >= km) then
-    nlayer(1:npet) = 1
-  else if (npet < km) then
-    nlayer(1:npet) = km/npet
-    nlayer(npet)   = nlayer(npet) + mod(km,npet)
+  ! figure out how many indices to work on
+  clrm = 0
+  do i=1,im
+    do j=1,jm
+      if (CLDTOT(i,j) <= cldmax) then
+        clrm = clrm + 1
+      end if 
+    end do
+  end do
+
+  ! store them
+  allocate(i_work(clrm))
+  allocate(j_work(clrm))
+
+  clrm = 0
+  do i=1,im
+    do j=1,jm
+      if (CLDTOT(i,j) <= cldmax) then
+        clrm = clrm + 1
+        i_work(clrm) = i
+        j_work(clrm) = j
+      end if 
+    end do
+  end do
+
+  if (myid == 0) then
+    write(*,*) 100.*clrm/(im*jm),'% of the domain is clear'
+    write(*,*) 'simulating ',clrm,' pixels'
+  end if 
+
+! Split up domain among processors
+  if (npet >= clrm) then
+    nclr(1:npet) = 1
+  else if (npet < clrm) then
+    nclr(1:npet) = clrm/npet
+    nclr(npet)   = nclr(npet) + mod(clrm,npet)
   end if 
 
 ! Read the netcdf variables layer-by-layer in parallel
@@ -273,86 +311,130 @@ program shmem_reader
     call do_testing()
   end if 
 
+
 ! Prepare inputs and run VLIDORT
-! Split up domain among processors
 ! ------------------------------
   call strarr_2_chararr(vnames_string,nq,16,vnames)
-
-  if (npet >= im) then
-    nlon(1:npet) = 1
-  else if (npet < im) then
-    nlon(1:npet) = im/npet
-    nlon(npet)   = nlon(npet) + mod(im,npet)
-  end if 
-
-  do p = 0, 7 !npet-1
+  
+  do p = 7,7 !npet-1
     if (myid == p) then
-      starti = myid*nlon(p+1)+1
-      counti = nlon(p+1)
-      endi   = starti + counti
+      if (p == 0) then
+        starti = 1
+      else
+        starti = sum(nclr(1:p))+1
+      end if
+      counti = nclr(p+1)
+      endi   = starti + counti - 1
 
-      do i = p+1,p+1 !starti, endi
-        do j = 1, 1!jm
+      do c = 571506, endi !starti, endi
+        call getEdgeVars ( km, nobs, reshape(AIRDENS(i_work(c),j_work(c),:),(/km,nobs/)), reshape(DELP(i_work(c),j_work(c),:),(/km,nobs/)), ptop, &
+                           pe, ze, te )   
 
-          call getEdgeVars ( km, nobs, reshape(AIRDENS(i,j,:),(/km,nobs/)), reshape(DELP(i,j,:),(/km,nobs/)), ptop, &
-                             pe, ze, te )     
+        if (verbose==1) then
+          write(*,'(A,I)') 'getEdgeVars ', myid
+          ! write(msg,'(A,I)') 'getEdgeVars ', myid
+          ! call mp_write_msg(msg)                          
+        endif
 
-            do n = 1, nobs
-              call calc_qm(DU001,1,n,i,j)
-              call calc_qm(DU002,2,n,i,j)
-              call calc_qm(DU003,3,n,i,j)
-              call calc_qm(DU004,4,n,i,j)
-              call calc_qm(DU005,5,n,i,j)
-              call calc_qm(SS001,6,n,i,j)
-              call calc_qm(SS002,7,n,i,j)
-              call calc_qm(SS003,8,n,i,j)
-              call calc_qm(SS004,9,n,i,j)
-              call calc_qm(SS005,10,n,i,j)
-              call calc_qm(BCPHOBIC,11,n,i,j)
-              call calc_qm(BCPHILIC,12,n,i,j)
-              call calc_qm(OCPHOBIC,13,n,i,j)
-              call calc_qm(OCPHILIC,14,n,i,j)
+        do n = 1, nobs
+          call calc_qm(DU001,1,n,i_work(c),j_work(c))
+          call calc_qm(DU002,2,n,i_work(c),j_work(c))
+          call calc_qm(DU003,3,n,i_work(c),j_work(c))
+          call calc_qm(DU004,4,n,i_work(c),j_work(c))
+          call calc_qm(DU005,5,n,i_work(c),j_work(c))
+          call calc_qm(SS001,6,n,i_work(c),j_work(c))
+          call calc_qm(SS002,7,n,i_work(c),j_work(c))
+          call calc_qm(SS003,8,n,i_work(c),j_work(c))
+          call calc_qm(SS004,9,n,i_work(c),j_work(c))
+          call calc_qm(SS005,10,n,i_work(c),j_work(c))
+          call calc_qm(BCPHOBIC,11,n,i_work(c),j_work(c))
+          call calc_qm(BCPHILIC,12,n,i_work(c),j_work(c))
+          call calc_qm(OCPHOBIC,13,n,i_work(c),j_work(c))
+          call calc_qm(OCPHILIC,14,n,i_work(c),j_work(c))
 
-              call sensor_geometry(CLAT(i,j),CLON(i,j),n)
-              call solar_geometry(CLAT(i,j),CLON(i,j),n)
-              relat_azimuth(n) = abs(sensor_azimuth - solar_azimuth)        
-            end do
+          if (verbose==1) then
+            write(*,*) 'calc_qm ', myid
+            ! write(msg,'(A,I)') 'calc_qm ', myid
+            ! call mp_write_msg(msg) 
+          endif
+
+          call sensor_geometry(CLAT(i_work(c),j_work(c)),CLON(i_work(c),j_work(c)),n)
+
+
+          if (verbose==1) then
+            write(*,*) 'sensor_geometry ', myid, sensor_zenith, sensor_azimuth
+            ! write(msg,'(A,I)') 'sensor_geometry ', myid
+            ! call mp_write_msg(msg) 
+          endif
+
+          call solar_geometry(CLAT(i_work(c),j_work(c)),CLON(i_work(c),j_work(c)),n)
+
+          if (verbose==1) then
+            write(*,*) 'solar_geometry ', myid, solar_zenith, solar_azimuth
+            ! write(msg,*) 'solar_geometry ', myid, solar_zenith, solar_azimuth
+            ! call mp_write_msg(msg) 
+          end if 
+
+          if (solar_zenith(n) < 90.0) then
+            relat_azimuth(n) = abs(sensor_azimuth - solar_azimuth)        
+          end if
+        end do           
+
+        if (solar_zenith(nobs) < 90.0) then
  
-            call getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
-                           qm, reshape(RH(i,j,:),(/km,nobs/)), &
-                           tau, ssa, g, ierr )
+          call getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
+                         qm, reshape(RH(i_work(c),j_work(c),:),(/km,nobs/)), &
+                         tau, ssa, g, ierr )
 
-            albedo(:,:)      = 0.05
+          if (verbose==1) then
+            write(*,*) 'getAOPscalar ', myid
+            ! write(msg,'(A,I)') 'getAOPscalar ', myid
+            ! call mp_write_msg(msg) 
+          endif
 
-            ! Call to vlidort scalar code
-            ! ------------------------------
-            call Scalar (km, nch, nobs ,dble(channels),        &
-                    dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), dble(albedo),&
-                    dble(solar_zenith), dble(relat_azimuth), dble(sensor_zenith), &
-                    dble(MISSING),verbose,radiance_VL,reflectance_VL, ierr)
+          albedo(:,:)      = 0.05
 
-            if (ANY(radiance_VL == MISSING) .or. ANY(reflectance_VL == MISSING)) then
-              write(*,*) 'VLIDORT returned a missing value'
-              write(*,*) 'Exiting......'
-              call MPI_ABORT(MPI_COMM_WORLD,myid)
-            else if (ierr > 0) then
-              write(*,*) 'VLIDORT returned rc code ', ierr
-              write(*,*) 'Exiting......'
-              call MPI_ABORT(MPI_COMM_WORLD,myid)
-            end if 
+          ! Call to vlidort scalar code
+          ! ------------------------------
+          call Scalar (km, nch, nobs ,dble(channels),        &
+                  dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), dble(albedo),&
+                  dble(solar_zenith), dble(relat_azimuth), dble(sensor_zenith), &
+                  dble(MISSING),verbose,radiance_VL,reflectance_VL, ierr)
 
-            ! Write output to correct position in array
-            ! --------------------------------------------
-            call mp_write_outfile(ncid,radVarID,refVarID,(/i,j,1,1/),(/i,j,nobs,nch/),radiance_VL,reflectance_VL)
+          if (verbose==1) then
+            write(*,*) 'VLIDORT scalar ', myid, ierr
+            ! write(msg,'(A,I,I)') 'VLIDORT scalar ', myid, ierr
+            ! call mp_write_msg(msg) 
+          endif
 
-            ! Keep track of progress of each processor
-            ! -----------------------------------------
-             if (100.*j/jm >= count) then
-               write(*,*) 'geo_vlidort ',myid,' ',count,'%'
-               count = count + 10
-             end if
-          end do
-       end do
+          if (ANY(radiance_VL == MISSING) .or. ANY(reflectance_VL == MISSING)) then
+            write(*,*) 'VLIDORT returned a missing value'
+            write(*,*) 'Exiting......'
+            call MPI_ABORT(MPI_COMM_WORLD,myid)
+          else if (ierr > 0) then
+            write(*,*) 'VLIDORT returned rc code ', ierr
+            write(*,*) 'Exiting......'
+            call MPI_ABORT(MPI_COMM_WORLD,myid)
+          end if 
+
+          ! Write output to correct position in array
+          ! --------------------------------------------
+          call mp_write_outfile(ncid,radVarID,refVarID,(/i_work(c),j_work(c),1,1/),(/1,1,nobs,nch/),radiance_VL,reflectance_VL)
+
+          ! Keep track of progress of each processor
+          ! -----------------------------------------
+          ! progress = 100.*real(c-starti)/real(counti)
+          ! write(msg,'(A,I,A,I,F,A)') 'geo_vlidort ',myid,' ',c, progress,'%'
+          ! call mp_write_msg(msg)
+
+        end if 
+        !if (100.*real(c-starti)/real(counti) >= progress) then
+          progress = 100.*real(c-starti)/real(counti)
+          write(*,*) 'geo_vlidort ',myid,' ',c,endi, progress,'%'
+          !progress = progress + 0.1
+        !end if
+      
+      end do
     end if
   end do 
 
@@ -379,6 +461,21 @@ program shmem_reader
 
   contains
 
+  subroutine mp_write_msg(msg)
+    character(len=100), intent(in)    :: msg
+    character(len=100)                :: msgr
+
+    if ( myid  == 0 ) then
+      do pp = 1,npet-1
+        call mpi_recv(msgr, 100, MPI_CHARACTER, pp, 1, MPI_COMM_WORLD, status, ierr)
+        write(*,*) trim(msgr)
+      end do
+      write(*,*) trim(msg)
+    else
+      call mpi_send(msg, 100, MPI_CHARACTER, 0, 1, MPI_COMM_WORLD, ierr)
+    end if 
+
+  end subroutine mp_write_msg
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
 !     mp_create_outfile
@@ -571,6 +668,7 @@ program shmem_reader
     real                              :: lambda
     real                              :: sin_rho
     real                              :: sensor_elev
+    real                              :: cos_az
     real, parameter                   :: pi  = 2.0*acos(0.0)
     real, parameter                   :: d2r = pi/180.0
     real, parameter                   :: r2d = 180.0/pi
@@ -579,9 +677,16 @@ program shmem_reader
     delta_L = d2r*abs(sat_lon - lon)
     lambda = acos(sin(d2r*sat_lat)*sin(d2r*lat) + cos(d2r*sat_lat)*cos(d2r*lat)*cos(delta_L))
  
-    sensor_azimuth = r2d*acos((sin(d2r*lat) - cos(lambda)*sin(d2r*sat_lat))/(sin(lambda)*cos(d2r*sat_lat)))
+    cos_az = (sin(d2r*lat) - cos(lambda)*sin(d2r*sat_lat))/(sin(lambda)*cos(d2r*sat_lat))
+    
+    ! hack to deal with nadir pixels where numerical errors give slightly more than 1
+    if (cos_az > 1.0)  cos_az = 1.0
+    if (cos_az < -1.0) cos_az = -1.0
+
+    sensor_azimuth = r2d*acos(cos_az)
 
     sin_rho = earth_rad/(earth_rad+sat_alt)
+
     sensor_zenith(n) = r2d*atan(sin_rho*sin(lambda)/(1-sin_rho*cos(lambda)))
 
   end subroutine sensor_geometry
@@ -614,23 +719,40 @@ program shmem_reader
     real                              :: tt
     real                              :: D
     real                              :: ET
+    real                              :: cos_az
 
 
     read(time,*) tt
     D      = 360*(doy-81)/365 
     ET     = 9.87*sin(2*D*d2r) - 7.53*cos(D*d2r) - 1.5*sin(D*d2r)  ! Equation of time in minutes needed for true solar time
     lst    = lon/15.0 + tt + ET/60.0
+
+    if (lst < 0.0) then
+      lst = 24.0 + lst
+    else if (lst > 24.0) then
+      lst = lst - 24.0
+    end if 
+
     hr_ang = d2r*360*(lst - 12.0)/24.0
 
     solar_declin = 23.45*d2r*sin(D*d2r)
+
     solar_zenith(n) = r2d*acos(sin(abs(d2r*lat))*sin(solar_declin) + cos(d2r*abs(lat))*cos(solar_declin)*cos(hr_ang))
 
     solar_elev   = 90.0 - solar_zenith(n)
 
-    solar_azimuth = r2d*acos(((cos(d2r*lat)*sin(solar_declin)) - cos(hr_ang)*cos(solar_declin)*sin(d2r*lat))/(cos(d2r*solar_elev)))
+    cos_az = ((cos(d2r*lat)*sin(solar_declin)) - cos(hr_ang)*cos(solar_declin)*sin(d2r*lat))/(cos(d2r*solar_elev))
 
-    if (hr_ang > 0) then
-      solar_azimuth = solar_azimuth + 180.0
+    ! hack to deal with nadir pixels where numerical errors give slightly more than 1
+    if (cos_az > 1.0)  cos_az = 1.0
+    if (cos_az < -1.0) cos_az = -1.0
+
+    if (solar_elev > 0 ) then
+      solar_azimuth = r2d*acos(cos_az)
+
+      if (hr_ang > 0) then
+        solar_azimuth = solar_azimuth + 180.0
+      end if
     end if
 
   end subroutine solar_geometry
@@ -724,7 +846,7 @@ program shmem_reader
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!    readGattr
+!    mp_readGattr
 ! PURPOSE
 !     reads a global attribute from a netcdf file
 ! INPUT
@@ -736,18 +858,74 @@ program shmem_reader
 !  HISTORY
 !     4 May P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine readGattr(attrname, filename, attrvar)
+  subroutine mp_readGattr(attrname, filename, attrvar)
     character(len=*), intent(in)           ::  attrname
     character(len=*), intent(in)           ::  filename
     real,  intent(inout)                   ::  attrvar
 
     integer                                :: ncid, varid
 
-    call check( nf90_open(filename,NF90_NOWRITE,ncid), "opening file " // filename)
+    call check( nf90_open(filename,IOR(nf90_nowrite, nf90_mpiio),ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
     call check( nf90_get_att(ncid, NF90_GLOBAL, attrname, attrvar), "getting value for global attribute" // attrname)
     call check( nf90_close(ncid), "closing " // filename)
-  end subroutine readGattr
+  end subroutine mp_readGattr
 
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_colreadvar
+! PURPOSE
+!     uses npet processors to read a variable from a netcdf file in chunks of columns
+!     is called by multiple processors
+!     variable to be read must have dimensions (ew,ns,time=1)
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     7 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_colreadvar(varname, filename, var)
+    character(len=*), intent(in)              ::  varname
+    character(len=*), intent(in)              ::  filename
+    real, dimension(im,jm), intent(inout)  ::  var
+
+    integer                       :: p, startc, countc, endc
+    integer                       :: ncid, varid
+    integer, dimension(npet)      :: ncol                ! how many columns each processor reads
+
+    ! Everyone Figure out how many columns each PE has to read
+    ! -----------------------------
+    ncol = 0
+    if (npet >= jm) then
+      ncol(1:npet) = 1
+    else if (npet < jm) then
+      ncol(1:npet) = jm/npet
+      ncol(npet)   = ncol(npet) + mod(jm,npet)
+    end if 
+
+
+    call check( nf90_open(filename, IOR(nf90_nowrite, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
+    do p = 0, npet-1
+      if (myid == p) then
+        if (p == 0) then
+          startc = 1
+        else
+          startc = sum(ncol(1:p))+1
+        end if
+        countc = ncol(p+1)
+        endc   = startc + countc - 1
+
+        call check( nf90_get_var(ncid, varid,var(:,startc:endc), start = (/ 1, startc, 1 /), count=(/im,countc,1/)), "reading " // varname)
+
+      end if
+    end do
+    call check( nf90_close(ncid), "closing "// filename)
+    !
+  end subroutine mp_colreadvar
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -772,20 +950,36 @@ program shmem_reader
 
     integer                       :: p, startl, countl, endl
     integer                       :: ncid, varid
+    integer, dimension(npet)      :: nlayer                ! how many layers each processor reads
+
+    ! Everyone Figure out how many layers each PE has to read
+    ! -----------------------------
+    nlayer = 0
+    if (npet >= km) then
+      nlayer(1:npet) = 1
+    else if (npet < km) then
+      nlayer(1:npet) = km/npet
+      nlayer(npet)   = nlayer(npet) + mod(km,npet)
+    end if 
+
 
     call check( nf90_open(filename, IOR(nf90_nowrite, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
     call check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
     do p = 0, npet-1
       if (myid == p) then
-        startl = myid*nlayer(p+1)+1
+        if (p == 0) then
+          startl = 1
+        else
+          startl = sum(nlayer(1:p))+1
+        end if
         countl = nlayer(p+1)
-        endl   = startl + countl
+        endl   = startl + countl - 1
 
         call check( nf90_get_var(ncid, varid,var(:,:,startl:endl), start = (/ 1, 1, startl, 1 /), count=(/im,jm,countl,1/)), "reading " // varname)
 
       end if
     end do
-    call check( nf90_close(ncid), "closing MET file")
+    call check( nf90_close(ncid), "closing "// filename)
     !
   end subroutine mp_layreadvar
 
@@ -843,7 +1037,8 @@ program shmem_reader
 
   subroutine shmem_test3D(varname,var)
     character(len=*), intent(in)  :: varname
-    real,dimension(:,:,:)      :: var
+    real,dimension(:,:,:)         :: var
+    character(len=61)             :: msg
 
     if ( myid  == 0 ) then
       open (unit = 2, file="shmem_test.txt",position="append")
@@ -947,8 +1142,7 @@ program shmem_reader
     deallocate (ssa)
     deallocate (g)
 
-    deallocate (nlayer)
-    deallocate (nlon)
+    deallocate (nclr)
 
     ! shmem must deallocate shared memory arrays
     ! call MAPL_DeallocNodeArray(CLDTOT,rc=ierr)
