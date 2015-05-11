@@ -19,7 +19,7 @@
 ! #  Email :       rtsolutions@verizon.net                      #
 ! #                                                             #
 ! #  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT, 2.4RTC,  #
-! #                   2.5, 2.6                                  #
+! #                   2.5, 2.6, 2.7                             #
 ! #  Release Date :   December 2005  (2.0)                      #
 ! #  Release Date :   March 2007     (2.2)                      #
 ! #  Release Date :   October 2007   (2.3)                      #
@@ -29,6 +29,7 @@
 ! #  Release Date :   October 2010   (2.4RTC)                   #
 ! #  Release Date :   March 2011     (2.5)                      #
 ! #  Release Date :   May 2012       (2.6)                      #
+! #  Release Date :   August 2014    (2.7)                      #
 ! #                                                             #
 ! #       NEW: TOTAL COLUMN JACOBIANS         (2.4)             #
 ! #       NEW: BPDF Land-surface KERNELS      (2.4R)            #
@@ -36,6 +37,9 @@
 ! #       Consolidated BRDF treatment         (2.4RTC)          #
 ! #       f77/f90 Release                     (2.5)             #
 ! #       External SS / New I/O Structures    (2.6)             #
+! #                                                             #
+! #       SURFACE-LEAVING / BRDF-SCALING      (2.7)             #
+! #       TAYLOR Series / OMP THREADSAFE      (2.7)             #
 ! #                                                             #
 ! ###############################################################
 
@@ -150,6 +154,10 @@
       DOUBLE PRECISION :: T_MULT_UP ( MAXLAYERS, 0:MAX_THERMAL_COEFFS )
       DOUBLE PRECISION :: T_MULT_DN ( MAXLAYERS, 0:MAX_THERMAL_COEFFS )
 
+!mick fix 7/23/2014 - initialized for packing
+      T_DIRECT_UP = ZERO ; T_UT_DIRECT_UP = ZERO
+      T_DIRECT_DN = ZERO ; T_UT_DIRECT_DN = ZERO
+
 !  POWERS OF OPTICAL THICKNESS
 !  ---------------------------
 
@@ -250,12 +258,9 @@
       IF ( .NOT. DO_USER_STREAMS ) RETURN
 
 !  ZERO DIRECT SOLUTIONS if working in MSMODE only, then return
+!   (Zeroing is done at the beginning of the routine now)
 
-      IF ( DO_MSMODE_THERMAL ) THEN
-         T_DIRECT_UP = 0.0d0 ; T_UT_DIRECT_UP = 0.0d0
-         T_DIRECT_DN = 0.0d0 ; T_UT_DIRECT_DN = 0.0d0
-         RETURN
-      ENDIF
+      IF ( DO_MSMODE_THERMAL ) RETURN
 
 !  SHORT HAND
 

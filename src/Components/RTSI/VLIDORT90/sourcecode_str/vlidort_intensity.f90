@@ -19,7 +19,7 @@
 ! #  Email :       rtsolutions@verizon.net                      #
 ! #                                                             #
 ! #  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT, 2.4RTC,  #
-! #                   2.5, 2.6                                  #
+! #                   2.5, 2.6, 2.7                             #
 ! #  Release Date :   December 2005  (2.0)                      #
 ! #  Release Date :   March 2007     (2.2)                      #
 ! #  Release Date :   October 2007   (2.3)                      #
@@ -29,6 +29,7 @@
 ! #  Release Date :   October 2010   (2.4RTC)                   #
 ! #  Release Date :   March 2011     (2.5)                      #
 ! #  Release Date :   May 2012       (2.6)                      #
+! #  Release Date :   August 2014    (2.7)                      #
 ! #                                                             #
 ! #       NEW: TOTAL COLUMN JACOBIANS         (2.4)             #
 ! #       NEW: BPDF Land-surface KERNELS      (2.4R)            #
@@ -36,6 +37,9 @@
 ! #       Consolidated BRDF treatment         (2.4RTC)          #
 ! #       f77/f90 Release                     (2.5)             #
 ! #       External SS / New I/O Structures    (2.6)             #
+! #                                                             #
+! #       SURFACE-LEAVING / BRDF-SCALING      (2.7)             #
+! #       TAYLOR Series / OMP THREADSAFE      (2.7)             #
 ! #                                                             #
 ! ###############################################################
 
@@ -72,15 +76,19 @@
 ! #              QUADINTENS_OFFGRID_UP                          #
 ! #              QUADINTENS_OFFGRID_DN                          #
 ! #                                                             #
+! #              VLIDORT_CONVERGE  (master)                     #
+! #              VLIDORT_CONVERGE_OBSGEO  (master)              #
+! #                                                             #
 ! ###############################################################
-
 
       MODULE vlidort_intensity
 
       PRIVATE
-      PUBLIC :: VLIDORT_UPUSER_INTENSITY, &
-                VLIDORT_DNUSER_INTENSITY, &
-                VLIDORT_INTEGRATED_OUTPUT
+      PUBLIC :: VLIDORT_UPUSER_INTENSITY,&
+                VLIDORT_DNUSER_INTENSITY,&
+                VLIDORT_INTEGRATED_OUTPUT,&
+                VLIDORT_CONVERGE,&
+                VLIDORT_CONVERGE_OBSGEO
 
       CONTAINS
 
@@ -91,7 +99,7 @@
         FLUX_MULTIPLIER, SURFACE_FACTOR, DO_DEBUG_WRITE, DO_FDTEST, &
         NSTOKES, NLAYERS, N_USER_LEVELS, DO_TOA_CONTRIBS, &
         N_USER_STREAMS, DO_LAYER_SCATTERING, &
-        DO_USER_STREAMS, LOCAL_UM_START, &
+        DO_USER_STREAMS, DO_OBSERVATION_GEOMETRY, LOCAL_UM_START, &
         PARTLAYERS_OUTFLAG, PARTLAYERS_OUTINDEX, PARTLAYERS_LAYERIDX, &
         UTAU_LEVEL_MASK_UP, T_DELT_USERM, T_UTUP_USERM, &
         CUMTRANS, &
@@ -133,6 +141,7 @@
       LOGICAL, INTENT (IN) ::           DO_LAYER_SCATTERING &
           ( 0:MAXMOMENTS, MAXLAYERS )
       LOGICAL, INTENT (IN) ::           DO_USER_STREAMS
+      LOGICAL, INTENT (IN) ::           DO_OBSERVATION_GEOMETRY
       INTEGER, INTENT (IN) ::           LOCAL_UM_START
       LOGICAL, INTENT (IN) ::           PARTLAYERS_OUTFLAG  ( MAX_USER_LEVELS )
       INTEGER, INTENT (IN) ::           PARTLAYERS_OUTINDEX ( MAX_USER_LEVELS )
@@ -221,7 +230,7 @@
 
       LOGICAL ::          SFLAG
       INTEGER ::          N, NUT, NSTART, NUT_PREV, NLEVEL, NC, O1
-      INTEGER ::          UT, UTA, UM
+      INTEGER ::          UT, UTA, UM, LUM
       DOUBLE PRECISION :: LAYER_SOURCE (MAX_USER_STREAMS, MAXSTOKES )
       DOUBLE PRECISION :: FINAL_SOURCE
 
@@ -230,16 +239,26 @@
       DOUBLE PRECISION :: BOA_DIRECT_SOURCE &
           ( MAX_USER_STREAMS, MAXSTOKES )
 
+!  Local user index
+
+     LUM = 1
+
 !  Zero all Fourier components - New rule, better for safety
 !    Only did this for components close to zenith (formerly)
 
       IF ( DO_USER_STREAMS ) THEN
         DO UTA = 1, N_USER_LEVELS
-          DO UM = 1, N_USER_STREAMS
-            DO O1 = 1, NSTOKES
-              STOKES_F(UTA,UM,IBEAM,O1,UPIDX) = ZERO
+          IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+            DO UM = 1, N_USER_STREAMS
+              DO O1 = 1, NSTOKES
+                STOKES_F(UTA,UM,IBEAM,O1,UPIDX) = ZERO
+              ENDDO
             ENDDO
-          ENDDO
+          ELSE
+            DO O1 = 1, NSTOKES
+              STOKES_F(UTA,LUM,IBEAM,O1,UPIDX) = ZERO
+            ENDDO
+          ENDIF
         ENDDO
       ENDIF
 
@@ -253,6 +272,7 @@
         CALL GET_BOA_SOURCE ( DO_MSMODE_THERMAL, &
           DO_INCLUDE_SURFACE, DO_INCLUDE_SURFEMISS, &
           DO_INCLUDE_DIRECTBEAM, DO_INCLUDE_MVOUTPUT, &
+          DO_OBSERVATION_GEOMETRY, &
           FOURIER_COMPONENT, IBEAM, &
           SURFACE_FACTOR, &
           DO_QUAD_OUTPUT, NSTOKES, &
@@ -276,30 +296,53 @@
 !  Set the cumulative source term equal to BOA values
 
         NC = 0
-        DO UM = LOCAL_UM_START, N_USER_STREAMS
-          DO O1 = 1, NSTOKES
-            CUMSOURCE_UP(UM,O1,NC) = BOA_DIFFUSE_SOURCE(UM,O1) + &
-                                     BOA_DIRECT_SOURCE(UM,O1)
+        IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+          DO UM = LOCAL_UM_START, N_USER_STREAMS
+            DO O1 = 1, NSTOKES
+              CUMSOURCE_UP(UM,O1,NC) = BOA_DIFFUSE_SOURCE(UM,O1) + &
+                                       BOA_DIRECT_SOURCE(UM,O1)
+            ENDDO
           ENDDO
-        ENDDO
+        ELSE
+          DO O1 = 1, NSTOKES
+            CUMSOURCE_UP(IBEAM,O1,NC) = BOA_DIFFUSE_SOURCE(IBEAM,O1) + &
+                                        BOA_DIRECT_SOURCE(IBEAM,O1)
+          ENDDO
+        ENDIF
 
 !  Debug write
 
-!        IF ( DO_DEBUG_WRITE ) THEN
-!          DO UM = LOCAL_UM_START, N_USER_STREAMS
-!           DO O1 = 1, NSTOKES
-!            if ( um.eq.1.and.o1.eq.1) then
-!              IF ( FOURIER_COMPONENT.EQ.0.AND.DO_FDTEST)THEN
-!                write(81,*) UM,O1,BOA_DIFFUSE_SOURCE(UM,O1),
-!     &                            BOA_DIRECT_SOURCE(UM,O1)
-!              ELSE IF ( FOURIER_COMPONENT.EQ.0.AND..NOT.DO_FDTEST)THEN
-!                write(82,*) UM,O1,BOA_DIFFUSE_SOURCE(UM,O1),
-!     &                            BOA_DIRECT_SOURCE(UM,O1)
-!              ENDIF
-!            endif
-!           ENDDO
-!          ENDDO
-!        ENDIF
+        IF ( DO_DEBUG_WRITE ) THEN
+          write(*,*)
+          write(*,*) 'at int up: boa dbg'
+          IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+            DO UM = LOCAL_UM_START, N_USER_STREAMS
+             DO O1 = 1, NSTOKES
+              if ( um.eq.ibeam .and. o1.eq.1 ) then
+                IF ( FOURIER_COMPONENT.EQ.0.AND.DO_FDTEST)THEN
+                  write(*,*) UM,O1,BOA_DIFFUSE_SOURCE(UM,O1),&
+                                   BOA_DIRECT_SOURCE(UM,O1)
+                ELSE IF ( FOURIER_COMPONENT.EQ.0.AND..NOT.DO_FDTEST)THEN
+                  write(*,*) UM,O1,BOA_DIFFUSE_SOURCE(UM,O1),&
+                                   BOA_DIRECT_SOURCE(UM,O1)
+                ENDIF
+              endif
+             ENDDO
+            ENDDO
+          ELSE
+            DO O1 = 1, NSTOKES
+             if ( o1.eq.1 ) then
+               IF ( FOURIER_COMPONENT.EQ.0.AND.DO_FDTEST)THEN
+                 write(*,*) IBEAM,O1,BOA_DIFFUSE_SOURCE(IBEAM,O1),&
+                                     BOA_DIRECT_SOURCE(IBEAM,O1)
+               ELSE IF ( FOURIER_COMPONENT.EQ.0.AND..NOT.DO_FDTEST)THEN
+                 write(*,*) IBEAM,O1,BOA_DIFFUSE_SOURCE(IBEAM,O1),&
+                                     BOA_DIRECT_SOURCE(IBEAM,O1)
+               ENDIF
+             endif
+            ENDDO
+          ENDIF
+        ENDIF
 
       ENDIF
 
@@ -340,6 +383,7 @@
               DO_SOLAR_SOURCES, NSTOKES, &
               DO_THERMAL_TRANSONLY, &
               DO_CLASSICAL_SOLUTION, DO_MSMODE_VLIDORT, &
+              DO_OBSERVATION_GEOMETRY, &
               N_USER_STREAMS, LOCAL_UM_START, &
               K_REAL, K_COMPLEX, &
               LCON, MCON, &
@@ -350,16 +394,27 @@
               LAYER_TSUP_UP, &
               LAYER_SOURCE )
 
-            DO UM = LOCAL_UM_START, N_USER_STREAMS
+            IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+              DO UM = LOCAL_UM_START, N_USER_STREAMS
+                DO O1 = 1, NSTOKES
+                  IF ( DO_TOA_CONTRIBS ) THEN
+                    MS_CONTRIBS_F(UM,IBEAM,O1,N) = FLUX_MULTIPLIER * &
+                        CUMTRANS(N,UM) * LAYER_SOURCE(UM,O1)
+                  ENDIF
+                  CUMSOURCE_UP(UM,O1,NC) = LAYER_SOURCE(UM,O1) + &
+                      T_DELT_USERM(N,UM)*CUMSOURCE_UP(UM,O1,NC-1)
+                ENDDO
+              ENDDO
+            ELSE
               DO O1 = 1, NSTOKES
                 IF ( DO_TOA_CONTRIBS ) THEN
-                  MS_CONTRIBS_F(UM,IBEAM,O1,N) = FLUX_MULTIPLIER * &
-                      CUMTRANS(N,UM) * LAYER_SOURCE(UM,O1)
+                  MS_CONTRIBS_F(LUM,IBEAM,O1,N) = FLUX_MULTIPLIER * &
+                      CUMTRANS(N,IBEAM) * LAYER_SOURCE(IBEAM,O1)
                 ENDIF
-                CUMSOURCE_UP(UM,O1,NC) = LAYER_SOURCE(UM,O1) + &
-                         T_DELT_USERM(N,UM)*CUMSOURCE_UP(UM,O1,NC-1)
+                CUMSOURCE_UP(IBEAM,O1,NC) = LAYER_SOURCE(IBEAM,O1) + &
+                    T_DELT_USERM(N,IBEAM)*CUMSOURCE_UP(IBEAM,O1,NC-1)
               ENDDO
-            ENDDO
+            ENDIF
           ENDDO
         ENDIF
 
@@ -381,6 +436,7 @@
               DO_SOLAR_SOURCES, NSTOKES, &
               DO_THERMAL_TRANSONLY, &
               DO_CLASSICAL_SOLUTION, DO_MSMODE_VLIDORT, &
+              DO_OBSERVATION_GEOMETRY, &
               N_USER_STREAMS, LOCAL_UM_START, &
               K_REAL, K_COMPLEX, &
               LCON, MCON, &
@@ -391,14 +447,24 @@
               LAYER_TSUP_UTUP, &
               LAYER_SOURCE )
 
-            DO UM = LOCAL_UM_START, N_USER_STREAMS
+            IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+              DO UM = LOCAL_UM_START, N_USER_STREAMS
+                DO O1 = 1, NSTOKES
+                  FINAL_SOURCE = LAYER_SOURCE(UM,O1) + &
+                               T_UTUP_USERM(UT,UM)*CUMSOURCE_UP(UM,O1,NC)
+                  STOKES_F(UTA,UM,IBEAM,O1,UPIDX) = &
+                               FLUX_MULTIPLIER * FINAL_SOURCE
+                ENDDO
+              ENDDO
+            ELSE
               DO O1 = 1, NSTOKES
-                FINAL_SOURCE = LAYER_SOURCE(UM,O1) + &
-                             T_UTUP_USERM(UT,UM)*CUMSOURCE_UP(UM,O1,NC)
-                STOKES_F(UTA,UM,IBEAM,O1,UPIDX) = &
+                FINAL_SOURCE = LAYER_SOURCE(IBEAM,O1) + &
+                             T_UTUP_USERM(UT,IBEAM)*CUMSOURCE_UP(IBEAM,O1,NC)
+                STOKES_F(UTA,LUM,IBEAM,O1,UPIDX) = &
                              FLUX_MULTIPLIER * FINAL_SOURCE
               ENDDO
-            ENDDO
+            ENDIF
+
           ENDIF
 
 !  Ongrid output
@@ -410,32 +476,63 @@
 !   Commented out code helps with FD testing
 
           IF ( DO_USER_STREAMS ) THEN
-            DO UM = LOCAL_UM_START, N_USER_STREAMS
+            IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+              DO UM = LOCAL_UM_START, N_USER_STREAMS
+                DO O1 = 1, NSTOKES
+                  FINAL_SOURCE = FLUX_MULTIPLIER * CUMSOURCE_UP(UM,O1,NC)
+                  STOKES_F(UTA,UM,IBEAM,O1,UPIDX) = FINAL_SOURCE
+
+!                  if (DABS(FINAL_SOURCE).GT.1.0d-10 ) then           ! FD
+!                    STOKES_F(UTA,UM,IBEAM,O1,UPIDX) = FINAL_SOURCE   ! FD
+!                  endif                                              ! FD
+                ENDDO
+              ENDDO
+            ELSE
               DO O1 = 1, NSTOKES
-                FINAL_SOURCE = FLUX_MULTIPLIER * CUMSOURCE_UP(UM,O1,NC)
-                STOKES_F(UTA,UM,IBEAM,O1,UPIDX) = FINAL_SOURCE
+                FINAL_SOURCE = FLUX_MULTIPLIER * CUMSOURCE_UP(IBEAM,O1,NC)
+                STOKES_F(UTA,LUM,IBEAM,O1,UPIDX) = FINAL_SOURCE
+
 !                if (DABS(FINAL_SOURCE).GT.1.0d-10 ) then           ! FD
-!                  STOKES_F(UTA,UM,IBEAM,O1,UPIDX) = FINAL_SOURCE   ! FD
+!                  STOKES_F(UTA,LUM,IBEAM,O1,UPIDX) = FINAL_SOURCE  ! FD
 !                endif                                              ! FD
               ENDDO
-            ENDDO
+            ENDIF
           ENDIF
 
         ENDIF
 
 !  debug write
 
-!        IF ( DO_DEBUG_WRITE ) THEN
-!         DO UM = LOCAL_UM_START, N_USER_STREAMS
-!          DO O1 = 1, NSTOKES
-!            if (do_fdtest) then
-!                write(*,'(5i3,1pe20.10)')
-!     &         fourier_component,uta,ibeam,um,o1,
-!     &           STOKES_F(UTA,UM,IBEAM,O1,UPIDX)
-!            endif
-!          ENDDO
-!         ENDDO
-!        ENDIF
+        IF ( DO_DEBUG_WRITE ) THEN
+          write(*,*)
+          write(*,*) 'at int up: stokes_f dbg'
+          IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+            DO UM = LOCAL_UM_START, N_USER_STREAMS
+              DO O1 = 1, NSTOKES
+                !if (do_fdtest) then
+                 !write(*,*) 'LOCAL_UM_START = ',LOCAL_UM_START
+                 !stop
+                 if (um.eq.ibeam .and. o1.eq.1) then
+                  write(*,'(4i3,1pe20.10)') &
+                    fourier_component,uta,ibeam,o1, &
+                    STOKES_F(UTA,UM,IBEAM,O1,UPIDX)
+                 endif
+                !endif
+              ENDDO
+            ENDDO
+          ELSE
+            DO O1 = 1, NSTOKES
+              !if (do_fdtest) then
+              if (o1.eq.1) then
+                write(*,'(4i3,1pe20.10)') &
+                  fourier_component,uta,ibeam,o1, &
+                  STOKES_F(UTA,LUM,IBEAM,O1,UPIDX)
+              endif
+              !endif
+            ENDDO
+          ENDIF
+          !stop
+        ENDIF
 
 !  Check for updating the recursion
 
@@ -453,7 +550,7 @@
       RETURN
       END SUBROUTINE VLIDORT_UPUSER_INTENSITY
 
-!
+!
 
       SUBROUTINE VLIDORT_DNUSER_INTENSITY ( &
         DO_INCLUDE_THERMEMISS, FOURIER_COMPONENT, &
@@ -461,7 +558,8 @@
         DO_DEBUG_WRITE, NSTOKES, &
         N_USER_LEVELS, &
         N_USER_STREAMS, DO_LAYER_SCATTERING, &
-        DO_USER_STREAMS, LOCAL_UM_START, &
+        DO_USER_STREAMS, DO_OBSERVATION_GEOMETRY, &
+        LOCAL_UM_START, &
         PARTLAYERS_OUTFLAG, &
         PARTLAYERS_OUTINDEX, UTAU_LEVEL_MASK_DN, &
         PARTLAYERS_LAYERIDX, &
@@ -493,6 +591,7 @@
       LOGICAL, INTENT (IN) ::          DO_LAYER_SCATTERING &
           ( 0:MAXMOMENTS, MAXLAYERS )
       LOGICAL, INTENT (IN) ::          DO_USER_STREAMS
+      LOGICAL, INTENT (IN) ::          DO_OBSERVATION_GEOMETRY
       INTEGER, INTENT (IN) ::          LOCAL_UM_START
       LOGICAL, INTENT (IN) ::          PARTLAYERS_OUTFLAG  ( MAX_USER_LEVELS )
       INTEGER, INTENT (IN) ::          PARTLAYERS_OUTINDEX ( MAX_USER_LEVELS )
@@ -546,21 +645,31 @@
 
       LOGICAL ::          SFLAG
       INTEGER ::          N, NUT, NSTART, NUT_PREV, NLEVEL
-      INTEGER ::          UT, UTA, UM, NC, O1
+      INTEGER ::          UT, UTA, UM, NC, O1, LUM
       DOUBLE PRECISION :: TOA_SOURCE ( MAX_USER_STREAMS, MAXSTOKES )
       DOUBLE PRECISION :: LAYER_SOURCE ( MAX_USER_STREAMS, MAXSTOKES )
       DOUBLE PRECISION :: FINAL_SOURCE
+
+!  Local user index
+
+      LUM = 1
 
 !  Zero all Fourier components close to zenith
 
       IF ( DO_USER_STREAMS ) THEN
         IF ( LOCAL_UM_START .GT. 1 ) THEN
           DO UTA = 1, N_USER_LEVELS
-            DO UM = 1, LOCAL_UM_START - 1
-              DO O1 = 1, NSTOKES
-                STOKES_F(UTA,UM,IBEAM,O1,DNIDX) = ZERO
+            IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+              DO UM = 1, LOCAL_UM_START - 1
+                DO O1 = 1, NSTOKES
+                  STOKES_F(UTA,UM,IBEAM,O1,DNIDX) = ZERO
+                ENDDO
               ENDDO
-            ENDDO
+            ELSE
+              DO O1 = 1, NSTOKES
+                STOKES_F(UTA,LUM,IBEAM,O1,DNIDX) = ZERO
+              ENDDO
+            ENDIF
           ENDDO
         ENDIF
       ENDIF
@@ -569,15 +678,22 @@
 
       IF ( DO_USER_STREAMS ) THEN
         CALL GET_TOA_SOURCE ( &
-          NSTOKES, N_USER_STREAMS, LOCAL_UM_START, &
+          DO_OBSERVATION_GEOMETRY, NSTOKES, &
+          N_USER_STREAMS, LOCAL_UM_START, IBEAM, &
           TOA_SOURCE )
 
         NC = 0
-        DO UM = LOCAL_UM_START, N_USER_STREAMS
-          DO O1 = 1, NSTOKES
-            CUMSOURCE_DN(UM,O1,NC) = TOA_SOURCE(UM,O1)
+        IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+          DO UM = LOCAL_UM_START, N_USER_STREAMS
+            DO O1 = 1, NSTOKES
+              CUMSOURCE_DN(UM,O1,NC) = TOA_SOURCE(UM,O1)
+            ENDDO
           ENDDO
-        ENDDO
+        ELSE
+          DO O1 = 1, NSTOKES
+            CUMSOURCE_DN(IBEAM,O1,NC) = TOA_SOURCE(IBEAM,O1)
+          ENDDO
+        ENDIF
       ENDIF
 
 !  initialise cumulative source term loop
@@ -613,6 +729,7 @@
               DO_SOLAR_SOURCES, NSTOKES, &
               DO_THERMAL_TRANSONLY, &
               DO_CLASSICAL_SOLUTION, DO_MSMODE_VLIDORT, &
+              DO_OBSERVATION_GEOMETRY, &
               N_USER_STREAMS, LOCAL_UM_START, &
               K_REAL, K_COMPLEX, &
               LCON, MCON, &
@@ -623,12 +740,19 @@
               LAYER_TSUP_DN, &
               LAYER_SOURCE )
 
-            DO UM = LOCAL_UM_START, N_USER_STREAMS
-              DO O1 = 1, NSTOKES
-                CUMSOURCE_DN(UM,O1,NC) = LAYER_SOURCE(UM,O1) + &
-                          T_DELT_USERM(N,UM)*CUMSOURCE_DN(UM,O1,NC-1)
+            IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+              DO UM = LOCAL_UM_START, N_USER_STREAMS
+                DO O1 = 1, NSTOKES
+                  CUMSOURCE_DN(UM,O1,NC) = LAYER_SOURCE(UM,O1) + &
+                            T_DELT_USERM(N,UM)*CUMSOURCE_DN(UM,O1,NC-1)
+                ENDDO
               ENDDO
-            ENDDO
+            ELSE
+              DO O1 = 1, NSTOKES
+                CUMSOURCE_DN(IBEAM,O1,NC) = LAYER_SOURCE(IBEAM,O1) + &
+                          T_DELT_USERM(N,IBEAM)*CUMSOURCE_DN(IBEAM,O1,NC-1)
+              ENDDO
+            ENDIF
           ENDDO
         ENDIF
 
@@ -650,6 +774,7 @@
               DO_SOLAR_SOURCES, NSTOKES, &
               DO_THERMAL_TRANSONLY, &
               DO_CLASSICAL_SOLUTION, DO_MSMODE_VLIDORT, &
+              DO_OBSERVATION_GEOMETRY, &
               N_USER_STREAMS, LOCAL_UM_START, &
               K_REAL, K_COMPLEX, &
               LCON, MCON, &
@@ -660,14 +785,23 @@
               LAYER_TSUP_UTDN, &
               LAYER_SOURCE )
 
-            DO UM = LOCAL_UM_START, N_USER_STREAMS
+            IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+              DO UM = LOCAL_UM_START, N_USER_STREAMS
+                DO O1 = 1, NSTOKES
+                  FINAL_SOURCE = LAYER_SOURCE(UM,O1) + &
+                               T_UTDN_USERM(UT,UM)*CUMSOURCE_DN(UM,O1,NC)
+                  STOKES_F(UTA,UM,IBEAM,O1,DNIDX) = &
+                               FLUX_MULTIPLIER * FINAL_SOURCE
+                ENDDO
+              ENDDO
+            ELSE
               DO O1 = 1, NSTOKES
-                FINAL_SOURCE = LAYER_SOURCE(UM,O1) + &
-                             T_UTDN_USERM(UT,UM)*CUMSOURCE_DN(UM,O1,NC)
-                STOKES_F(UTA,UM,IBEAM,O1,DNIDX) = &
+                FINAL_SOURCE = LAYER_SOURCE(IBEAM,O1) + &
+                             T_UTDN_USERM(UT,IBEAM)*CUMSOURCE_DN(IBEAM,O1,NC)
+                STOKES_F(UTA,LUM,IBEAM,O1,DNIDX) = &
                              FLUX_MULTIPLIER * FINAL_SOURCE
               ENDDO
-            ENDDO
+            ENDIF
           ENDIF
 
 !  Ongrid output
@@ -678,26 +812,43 @@
 !  User-defined stream output, just set to the cumulative source term
 
           IF ( DO_USER_STREAMS ) THEN
-            DO UM = LOCAL_UM_START, N_USER_STREAMS
-              DO O1 = 1, NSTOKES
-                STOKES_F(UTA,UM,IBEAM,O1,DNIDX) = &
-                       FLUX_MULTIPLIER * CUMSOURCE_DN(UM,O1,NC)
+            IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+              DO UM = LOCAL_UM_START, N_USER_STREAMS
+                DO O1 = 1, NSTOKES
+                  STOKES_F(UTA,UM,IBEAM,O1,DNIDX) = &
+                         FLUX_MULTIPLIER * CUMSOURCE_DN(UM,O1,NC)
+                ENDDO
               ENDDO
-            ENDDO
+            ELSE
+              DO O1 = 1, NSTOKES
+                STOKES_F(UTA,LUM,IBEAM,O1,DNIDX) = &
+                       FLUX_MULTIPLIER * CUMSOURCE_DN(IBEAM,O1,NC)
+              ENDDO
+            ENDIF
           ENDIF
 
         ENDIF
 
 !        IF ( DO_DEBUG_WRITE ) THEN
-!         DO UM = LOCAL_UM_START, N_USER_STREAMS
-!          DO O1 = 1, NSTOKES
-!            if (do_fdtest) then
-!                if (uta.gt.1)write(69,'(5i3,1pe20.10)')
-!     &         fourier_component,uta-1,ibeam,um,o1,
-!     &           STOKES_F(UTA,UM,IBEAM,O1,DNIDX)
-!            endif
-!          ENDDO
-!         ENDDO
+!          IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+!            DO UM = LOCAL_UM_START, N_USER_STREAMS
+!              DO O1 = 1, NSTOKES
+!                if (do_fdtest) then
+!                  if (uta.gt.1)write(*,'(5i3,1pe20.10)')
+!     &              fourier_component,uta-1,ibeam,um,o1,
+!     &              STOKES_F(UTA,UM,IBEAM,O1,DNIDX)
+!                endif
+!              ENDDO
+!            ENDDO
+!          ELSE
+!            DO O1 = 1, NSTOKES
+!              if (do_fdtest) then
+!                if (uta.gt.1)write(*,'(5i3,1pe20.10)')
+!     &            fourier_component,uta-1,ibeam,lum,o1,
+!     &            STOKES_F(UTA,LUM,IBEAM,O1,DNIDX)
+!              endif
+!            ENDDO
+!          ENDIF
 !        ENDIF
 
 !  Check for updating the recursion
@@ -716,45 +867,54 @@
       RETURN
       END SUBROUTINE VLIDORT_DNUSER_INTENSITY
 
-!
+!
 
       SUBROUTINE GET_TOA_SOURCE ( &
-        NSTOKES, N_USER_STREAMS, LOCAL_UM_START, &
+        DO_OBSERVATION_GEOMETRY, NSTOKES, &
+        N_USER_STREAMS, LOCAL_UM_START, IBEAM, &
         TOA_SOURCE )
 
       USE VLIDORT_PARS
 
       IMPLICIT NONE
 
+      LOGICAL, INTENT (IN) ::          DO_OBSERVATION_GEOMETRY
       INTEGER, INTENT (IN) ::          NSTOKES
       INTEGER, INTENT (IN) ::          N_USER_STREAMS
       INTEGER, INTENT (IN) ::          LOCAL_UM_START
-
+      INTEGER, INTENT (IN) ::          IBEAM
       DOUBLE PRECISION, INTENT (OUT) :: TOA_SOURCE &
           ( MAX_USER_STREAMS, MAXSTOKES )
 
 !  local variables
 
-      INTEGER ::         UM, O1
+      INTEGER :: UM, O1
 
 !  initialise TOA source function
 
-      DO UM = LOCAL_UM_START, N_USER_STREAMS
-        DO O1 = 1, NSTOKES
-          TOA_SOURCE(UM,O1) = ZERO
+      if ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO UM = LOCAL_UM_START, N_USER_STREAMS
+          DO O1 = 1, NSTOKES
+            TOA_SOURCE(UM,O1) = ZERO
+          ENDDO
         ENDDO
-      ENDDO
+      else
+        DO O1 = 1, NSTOKES
+          TOA_SOURCE(IBEAM,O1) = ZERO
+        ENDDO
+      endif
 
 !  Finish
 
       RETURN
       END SUBROUTINE GET_TOA_SOURCE
 
-!
+!
 
       SUBROUTINE GET_BOA_SOURCE ( DO_MSMODE_THERMAL, &
         DO_INCLUDE_SURFACE, DO_INCLUDE_SURFEMISS, &
         DO_INCLUDE_DIRECTBEAM, DO_INCLUDE_MVOUTPUT, &
+        DO_OBSERVATION_GEOMETRY, &
         FOURIER_COMPONENT, IBEAM, &
         SURFACE_FACTOR, &
         DO_QUAD_OUTPUT, NSTOKES, &
@@ -786,6 +946,7 @@
       LOGICAL, INTENT (IN) ::           DO_INCLUDE_DIRECTBEAM
       LOGICAL, INTENT (IN) ::           DO_INCLUDE_SURFEMISS
       LOGICAL, INTENT (IN) ::           DO_INCLUDE_MVOUTPUT
+      LOGICAL, INTENT (IN) ::           DO_OBSERVATION_GEOMETRY
       DOUBLE PRECISION, INTENT (IN) ::  SURFACE_FACTOR
       INTEGER, INTENT (IN) ::           FOURIER_COMPONENT
       INTEGER, INTENT (IN) ::           IBEAM
@@ -839,7 +1000,7 @@
 !  ---------------
 
       INTEGER ::          N, J, I, IR, IROW, UM, O1, O2, O11, OM
-      INTEGER ::          K, KO1, K0, K1, K2, M
+      INTEGER ::          K, KO1, K0, K1, K2, M, IB, LUM
       DOUBLE PRECISION :: REFLEC, S_REFLEC, STOTAL, KMULT
       DOUBLE PRECISION :: SPAR, HOM1, HOM2, SHOM_R, LOCAL_EMISS, FP_SBB
       DOUBLE PRECISION :: SHOM_CR, HOM1CR, HOM2CR
@@ -847,14 +1008,26 @@
       LOGICAL          :: DO_QTHTONLY
       DOUBLE PRECISION :: THELP ( MAXSTREAMS )
 
+!  Local index
+
+      IB = IBEAM
+      LUM = 1
+
 !  initialise boa source function
 
-      DO UM = LOCAL_UM_START, N_USER_STREAMS
-        DO O1 = 1, NSTOKES
-          BOA_DIFFUSE_SOURCE(UM,O1) = ZERO
-          BOA_DIRECT_SOURCE(UM,O1)  = ZERO
+      IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO UM = LOCAL_UM_START, N_USER_STREAMS
+          DO O1 = 1, NSTOKES
+            BOA_DIFFUSE_SOURCE(UM,O1) = ZERO
+            BOA_DIRECT_SOURCE(UM,O1)  = ZERO
+          ENDDO
         ENDDO
-      ENDDO
+      ELSE
+        DO O1 = 1, NSTOKES
+          BOA_DIFFUSE_SOURCE(IB,O1) = ZERO
+          BOA_DIRECT_SOURCE(IB,O1)  = ZERO
+        ENDDO
+      ENDIF
 
 !  Special flag
 
@@ -865,7 +1038,7 @@
 
       N = NLAYERS
 
-!mick thermal fix - add if condition
+!mick thermal fix - added if condition
       !KO1 = K_REAL(N) + 1
       IF ( .NOT. DO_THERMAL_TRANSONLY ) KO1 = K_REAL(N) + 1
 
@@ -962,9 +1135,13 @@
 !              ENDDO
 !            ENDIF
             REFLEC = KMULT * REFLEC
-            DO UM = LOCAL_UM_START, N_USER_STREAMS
-              BOA_DIFFUSE_SOURCE(UM,O1) = REFLEC
-            ENDDO
+            IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+              DO UM = LOCAL_UM_START, N_USER_STREAMS
+                BOA_DIFFUSE_SOURCE(UM,O1) = REFLEC
+              ENDDO
+            ELSE
+              BOA_DIFFUSE_SOURCE(IB,O1) = REFLEC
+            ENDIF
             IF ( DO_QTHTONLY ) THEN
               DO I = 1, NSTREAMS
                 BOA_THTONLY_SOURCE(I,O1) = REFLEC
@@ -978,7 +1155,29 @@
         ELSE
 
           KMULT = SURFACE_FACTOR
-          DO UM = LOCAL_UM_START, N_USER_STREAMS
+
+          IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+            DO UM = LOCAL_UM_START, N_USER_STREAMS
+              DO O1 = 1, NSTOKES
+                REFLEC = ZERO
+                DO J = 1, NSTREAMS
+                  S_REFLEC = ZERO
+                  DO O2 = 1, NSTOKES
+                    OM = MUELLER_INDEX(O1,O2)
+                    S_REFLEC = S_REFLEC + STOKES_DOWNSURF(J,O2) * &
+                                          USER_BRDF_F(M,OM,UM,J)
+                  ENDDO
+                  REFLEC = REFLEC + S_REFLEC
+!                  IF ( DO_QTHTONLY ) THEN
+!                    DO I = 1, NSTREAMS
+!                      BOA_THTONLY_SOURCE(I,O1) = REFLEC
+!                    ENDDO
+!                  ENDIF
+               ENDDO
+               BOA_DIFFUSE_SOURCE(UM,O1) = KMULT * REFLEC
+              ENDDO
+            ENDDO
+          ELSE
             DO O1 = 1, NSTOKES
               REFLEC = ZERO
               DO J = 1, NSTREAMS
@@ -986,7 +1185,7 @@
                 DO O2 = 1, NSTOKES
                   OM = MUELLER_INDEX(O1,O2)
                   S_REFLEC = S_REFLEC + STOKES_DOWNSURF(J,O2) * &
-                                        USER_BRDF_F(M,OM,UM,J)
+                                        USER_BRDF_F(M,OM,IB,J)
                 ENDDO
                 REFLEC = REFLEC + S_REFLEC
 !                IF ( DO_QTHTONLY ) THEN
@@ -995,9 +1194,10 @@
 !                  ENDDO
 !                ENDIF
              ENDDO
-             BOA_DIFFUSE_SOURCE(UM,O1) = KMULT * REFLEC
+             BOA_DIFFUSE_SOURCE(IB,O1) = KMULT * REFLEC
             ENDDO
-          ENDDO
+          ENDIF
+
           IF ( DO_QTHTONLY ) THEN
             O11 = 1
             DO I = 1, NSTREAMS
@@ -1016,13 +1216,19 @@
 !   Addition of the DBCORRECTION clause is now required
 
         IF ( DO_INCLUDE_DIRECTBEAM .AND. .NOT.DO_DBCORRECTION ) THEN
-          DO UM = LOCAL_UM_START, N_USER_STREAMS
-            DO O1 = 1, NSTOKES
-              BOA_DIRECT_SOURCE(UM,O1) = &
-                     BOA_DIRECT_SOURCE(UM,O1)     + &
-                     USER_DIRECT_BEAM(UM,IBEAM,O1)
+          IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+            DO UM = LOCAL_UM_START, N_USER_STREAMS
+              DO O1 = 1, NSTOKES
+                BOA_DIRECT_SOURCE(UM,O1) = BOA_DIRECT_SOURCE(UM,O1) + &
+                    USER_DIRECT_BEAM(UM,IB,O1)
+              ENDDO
             ENDDO
-          ENDDO
+          ELSE
+            DO O1 = 1, NSTOKES
+              BOA_DIRECT_SOURCE(IB,O1) = BOA_DIRECT_SOURCE(IB,O1) + &
+                  USER_DIRECT_BEAM(LUM,IB,O1)
+            ENDDO
+          ENDIF
         ENDIF
 
 !  End inclusion of surface terms
@@ -1033,24 +1239,38 @@
 
       IF ( DO_INCLUDE_SURFEMISS ) THEN
         FP_SBB = SURFBB ; if ( DO_MSMODE_THERMAL ) go to 23
+
         if ( do_lambertian_surface ) then
           o1 = 1
           local_emiss = FP_SBB * ( one - lambertian_albedo )
-          DO UM = LOCAL_UM_START, N_USER_STREAMS
-              BOA_DIFFUSE_SOURCE(UM,O1) = &
-            BOA_DIFFUSE_SOURCE(UM,O1) + LOCAL_EMISS
-          ENDDO
-        else
-          DO UM = LOCAL_UM_START, N_USER_STREAMS
-            DO O1 = 1, NSTOKES
-!  @@@ Rob fix, ordering of USER_EMISSIVITY indices wrong
-!             BOA_DIFFUSE_SOURCE(UM,O1) = &
-!             BOA_DIFFUSE_SOURCE(UM,O1) + FP_SBB*USER_EMISSIVITY(UM,O1)
-              BOA_DIFFUSE_SOURCE(UM,O1) = &
-              BOA_DIFFUSE_SOURCE(UM,O1) + FP_SBB*USER_EMISSIVITY(O1,UM)
+          IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+            DO UM = LOCAL_UM_START, N_USER_STREAMS
+              BOA_DIFFUSE_SOURCE(UM,O1) = BOA_DIFFUSE_SOURCE(UM,O1) &
+                                          + LOCAL_EMISS
             ENDDO
-          ENDDO
+          ELSE
+            BOA_DIFFUSE_SOURCE(IB,O1) = BOA_DIFFUSE_SOURCE(IB,O1) &
+                                           + LOCAL_EMISS
+          ENDIF
+        else
+          IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+            DO UM = LOCAL_UM_START, N_USER_STREAMS
+              DO O1 = 1, NSTOKES
+!  @@@ Rob fix, ordering of USER_EMISSIVITY indices wrong
+!               BOA_DIFFUSE_SOURCE(UM,O1) = BOA_DIFFUSE_SOURCE(UM,O1) &
+!                                         + FP_SBB*USER_EMISSIVITY(UM,O1)
+                BOA_DIFFUSE_SOURCE(UM,O1) = BOA_DIFFUSE_SOURCE(UM,O1) &
+                                          + FP_SBB*USER_EMISSIVITY(O1,UM)
+              ENDDO
+            ENDDO
+          ELSE
+            DO O1 = 1, NSTOKES
+              BOA_DIFFUSE_SOURCE(IB,O1) = BOA_DIFFUSE_SOURCE(IB,O1) &
+                                           + FP_SBB*USER_EMISSIVITY(O1,IB)
+            ENDDO
+          ENDIF
         endif
+
 23      IF ( DO_QTHTONLY ) THEN
           if ( do_lambertian_surface ) then
             o1 = 1
@@ -1087,6 +1307,7 @@
         DO_SOLAR_SOURCES, NSTOKES, &
         DO_THERMAL_TRANSONLY, &
         DO_CLASSICAL_SOLUTION, DO_MSMODE_VLIDORT, &
+        DO_OBSERVATION_GEOMETRY, &
         N_USER_STREAMS, LOCAL_UM_START, &
         K_REAL, K_COMPLEX, &
         LCON, MCON, &
@@ -1109,6 +1330,7 @@
       LOGICAL, INTENT (IN) ::           DO_THERMAL_TRANSONLY
       LOGICAL, INTENT (IN) ::           DO_CLASSICAL_SOLUTION
       LOGICAL, INTENT (IN) ::           DO_MSMODE_VLIDORT
+      LOGICAL, INTENT (IN) ::           DO_OBSERVATION_GEOMETRY
       INTEGER, INTENT (IN) ::           N_USER_STREAMS
       INTEGER, INTENT (IN) ::           LOCAL_UM_START
       INTEGER, INTENT (IN) ::           K_REAL ( MAXLAYERS )
@@ -1138,7 +1360,7 @@
 !  local variables
 
       LOGICAL ::          L1
-      INTEGER ::          UM, O1, K, KO1, K0, K1, K2, M1
+      INTEGER ::          UM, O1, K, KO1, K0, K1, K2, M1, IB, LUM
       DOUBLE PRECISION :: H_R, H_CR, SFOR1, SFOR2, TM
       DOUBLE PRECISION :: LUXR, MUXR, LUX_CR, LUX_CI, MUX_CR, MUX_CI
 
@@ -1147,13 +1369,25 @@
       M1 = M
       L1 = SOURCETERM_FLAG
 
+!  Local user indices
+
+      IB  = IBEAM
+      LUM = 1
+
 !   Very important to zero output term (bug solved 04/20/05)
 
-      DO UM = LOCAL_UM_START, N_USER_STREAMS
-        DO O1 = 1, NSTOKES
-          LAYERSOURCE(UM,O1)       = ZERO
+      IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO UM = LOCAL_UM_START, N_USER_STREAMS
+          DO O1 = 1, NSTOKES
+            LAYERSOURCE(UM,O1) = ZERO
+          ENDDO
         ENDDO
-      ENDDO
+      ELSE
+        DO O1 = 1, NSTOKES
+          LAYERSOURCE(IB,O1) = ZERO
+        ENDDO
+      ENDIF
+
 !      IF ( .not. L1 ) RETURN   ! @@@ Rob, wrong place.
 
 !  Avoid this section if thermal transmittance only
@@ -1171,36 +1405,67 @@
 
 !  Whole layer source function Homogeneous only
 
-      DO UM = LOCAL_UM_START, N_USER_STREAMS
+      IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO UM = LOCAL_UM_START, N_USER_STREAMS
+          DO O1 = 1, NSTOKES
+            H_R = ZERO
+            DO K = 1, K_REAL(N)
+              LUXR = LCON(K,N) * UHOM_UPDN(UM,O1,K,N)
+              MUXR = MCON(K,N) * UHOM_UPUP(UM,O1,K,N)
+              H_R = H_R + LUXR * HMULT_2(K,UM,N) + &
+                          MUXR * HMULT_1(K,UM,N)
+            ENDDO
+            H_CR = ZERO
+            DO K = 1, K_COMPLEX(N)
+              K0 = 2*K-2
+              K1 = KO1 + K0
+              K2 = K1  + 1
+              LUX_CR = LCON(K1,N) * UHOM_UPDN(UM,O1,K1,N) - &
+                       LCON(K2,N) * UHOM_UPDN(UM,O1,K2,N)
+              LUX_CI = LCON(K1,N) * UHOM_UPDN(UM,O1,K2,N) + &
+                       LCON(K2,N) * UHOM_UPDN(UM,O1,K1,N)
+              MUX_CR = MCON(K1,N) * UHOM_UPUP(UM,O1,K1,N) - &
+                       MCON(K2,N) * UHOM_UPUP(UM,O1,K2,N)
+              MUX_CI = MCON(K1,N) * UHOM_UPUP(UM,O1,K2,N) + &
+                       MCON(K2,N) * UHOM_UPUP(UM,O1,K1,N)
+              H_CR = H_CR + LUX_CR * HMULT_2(K1,UM,N) - &
+                            LUX_CI * HMULT_2(K2,UM,N) + &
+                            MUX_CR * HMULT_1(K1,UM,N) - &
+                            MUX_CI * HMULT_1(K2,UM,N)
+            ENDDO
+            LAYERSOURCE(UM,O1) = H_R + H_CR
+          ENDDO
+        ENDDO
+      ELSE
         DO O1 = 1, NSTOKES
           H_R = ZERO
           DO K = 1, K_REAL(N)
-            LUXR = LCON(K,N) * UHOM_UPDN(UM,O1,K,N)
-            MUXR = MCON(K,N) * UHOM_UPUP(UM,O1,K,N)
-            H_R = H_R + LUXR * HMULT_2(K,UM,N) + &
-                        MUXR * HMULT_1(K,UM,N)
+            LUXR = LCON(K,N) * UHOM_UPDN(IB,O1,K,N)
+            MUXR = MCON(K,N) * UHOM_UPUP(IB,O1,K,N)
+            H_R = H_R + LUXR * HMULT_2(K,IB,N) + &
+                        MUXR * HMULT_1(K,IB,N)
           ENDDO
           H_CR = ZERO
           DO K = 1, K_COMPLEX(N)
             K0 = 2*K-2
             K1 = KO1 + K0
             K2 = K1  + 1
-            LUX_CR = LCON(K1,N) * UHOM_UPDN(UM,O1,K1,N) - &
-                     LCON(K2,N) * UHOM_UPDN(UM,O1,K2,N)
-            LUX_CI = LCON(K1,N) * UHOM_UPDN(UM,O1,K2,N) + &
-                     LCON(K2,N) * UHOM_UPDN(UM,O1,K1,N)
-            MUX_CR = MCON(K1,N) * UHOM_UPUP(UM,O1,K1,N) - &
-                     MCON(K2,N) * UHOM_UPUP(UM,O1,K2,N)
-            MUX_CI = MCON(K1,N) * UHOM_UPUP(UM,O1,K2,N) + &
-                     MCON(K2,N) * UHOM_UPUP(UM,O1,K1,N)
-            H_CR = H_CR + LUX_CR * HMULT_2(K1,UM,N) - &
-                          LUX_CI * HMULT_2(K2,UM,N) + &
-                          MUX_CR * HMULT_1(K1,UM,N) - &
-                          MUX_CI * HMULT_1(K2,UM,N)
+            LUX_CR = LCON(K1,N) * UHOM_UPDN(IB,O1,K1,N) - &
+                     LCON(K2,N) * UHOM_UPDN(IB,O1,K2,N)
+            LUX_CI = LCON(K1,N) * UHOM_UPDN(IB,O1,K2,N) + &
+                     LCON(K2,N) * UHOM_UPDN(IB,O1,K1,N)
+            MUX_CR = MCON(K1,N) * UHOM_UPUP(IB,O1,K1,N) - &
+                     MCON(K2,N) * UHOM_UPUP(IB,O1,K2,N)
+            MUX_CI = MCON(K1,N) * UHOM_UPUP(IB,O1,K2,N) + &
+                     MCON(K2,N) * UHOM_UPUP(IB,O1,K1,N)
+            H_CR = H_CR + LUX_CR * HMULT_2(K1,IB,N) - &
+                          LUX_CI * HMULT_2(K2,IB,N) + &
+                          MUX_CR * HMULT_1(K1,IB,N) - &
+                          MUX_CI * HMULT_1(K2,IB,N)
           ENDDO
-          LAYERSOURCE(UM,O1) = H_R + H_CR
+          LAYERSOURCE(IB,O1) = H_R + H_CR
         ENDDO
-      ENDDO
+      ENDIF
 
 !  Continuation point
 
@@ -1213,10 +1478,15 @@
         TM = ONE
         IF ( DO_SOLAR_SOURCES ) TM = ONE/PI4
         O1 = 1
-        DO UM = LOCAL_UM_START, N_USER_STREAMS
-          LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + &
-                    LAYER_TSUP_UP(UM,N)*TM
-        ENDDO
+        IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+          DO UM = LOCAL_UM_START, N_USER_STREAMS
+            LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) &
+                               + LAYER_TSUP_UP(UM,N)*TM
+          ENDDO
+        ELSE
+          LAYERSOURCE(IB,O1) = LAYERSOURCE(IB,O1) &
+                             + LAYER_TSUP_UP(IB,N)*TM
+        ENDIF
       ENDIF
 
 !  nothing more to do if no solar sources
@@ -1226,12 +1496,19 @@
 !  Add particular integral contribution (solar term)
 
       IF ( DO_CLASSICAL_SOLUTION ) THEN
-        DO UM = LOCAL_UM_START, N_USER_STREAMS
-          DO O1 = 1, NSTOKES
-            SFOR2 =  EMULT_UP(UM,N,IBEAM) * UPAR_UP_2(UM,O1,N)
-            LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR2
+        IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+          DO UM = LOCAL_UM_START, N_USER_STREAMS
+            DO O1 = 1, NSTOKES
+              SFOR2 =  EMULT_UP(UM,N,IB) * UPAR_UP_2(UM,O1,N)
+              LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR2
+            ENDDO
           ENDDO
-        ENDDO
+        ELSE
+          DO O1 = 1, NSTOKES
+            SFOR2 =  EMULT_UP(LUM,N,IB) * UPAR_UP_2(IB,O1,N)
+            LAYERSOURCE(IB,O1) = LAYERSOURCE(IB,O1) + SFOR2
+          ENDDO
+        ENDIF
       ELSE
 !  PLACEHOLDER FOR GREENS FUNCT
       ENDIF
@@ -1242,18 +1519,34 @@
 
 !  Full radiance mode, add single scatter part
 
-      DO UM = LOCAL_UM_START, N_USER_STREAMS
-        DO O1 = 1, NSTOKES
-          SFOR1 = UPAR_UP_1(UM,O1,N) * EMULT_UP(UM,N,IBEAM)
-          LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR1
+      IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO UM = LOCAL_UM_START, N_USER_STREAMS
+          DO O1 = 1, NSTOKES
+            SFOR1 = UPAR_UP_1(UM,O1,N) * EMULT_UP(UM,N,IB)
+            LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR1
+          ENDDO
         ENDDO
-      ENDDO
+      ELSE
+        DO O1 = 1, NSTOKES
+          SFOR1 = UPAR_UP_1(IB,O1,N) * EMULT_UP(LUM,N,IB)
+          LAYERSOURCE(IB,O1) = LAYERSOURCE(IB,O1) + SFOR1
+        ENDDO
+      ENDIF
 
 !  debug. NSTOKES = 1 checks out.
 
-!      DO UM = LOCAL_UM_START, N_USER_STREAMS
-!        write(*,*)N,um, LAYERSOURCE(UM,1), EMULT_UP(UM,N,IBEAM)
-!      ENDDO
+!      IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+!        !write(*,*) 'at dbg 1a'
+!        if ( ib.eq.1 .and. o1.eq.1 .and. um.eq.1 ) then
+!          DO UM = LOCAL_UM_START, N_USER_STREAMS
+!            write(*,*)N,um, LAYERSOURCE(UM,O1), EMULT_UP(UM,N,IB)
+!          ENDDO
+!       endif
+!      ELSE
+!        if ( ib.eq.1 .and. o1.eq.1) then
+!         write(*,*)N,ib, LAYERSOURCE(IB,O1), EMULT_UP(LUM,N,IB)
+!        endif
+!      ENDIF
 !      if (n.eq.1)pause
 
 !  Finish
@@ -1261,7 +1554,7 @@
       RETURN
       END SUBROUTINE WHOLELAYER_STERM_UP
 
-!
+!
 
       SUBROUTINE WHOLELAYER_STERM_DN ( &
         N, IBEAM, SOURCETERM_FLAG, &
@@ -1269,6 +1562,7 @@
         DO_SOLAR_SOURCES, NSTOKES, &
         DO_THERMAL_TRANSONLY, &
         DO_CLASSICAL_SOLUTION, DO_MSMODE_VLIDORT, &
+        DO_OBSERVATION_GEOMETRY, &
         N_USER_STREAMS, LOCAL_UM_START, &
         K_REAL, K_COMPLEX, &
         LCON, MCON, &
@@ -1292,6 +1586,7 @@
       LOGICAL, INTENT (IN) ::          DO_THERMAL_TRANSONLY
       LOGICAL, INTENT (IN) ::          DO_CLASSICAL_SOLUTION
       LOGICAL, INTENT (IN) ::          DO_MSMODE_VLIDORT
+      LOGICAL, INTENT (IN) ::          DO_OBSERVATION_GEOMETRY
       INTEGER, INTENT (IN) ::          N_USER_STREAMS
       INTEGER, INTENT (IN) ::          LOCAL_UM_START
       INTEGER, INTENT (IN) ::          K_REAL ( MAXLAYERS )
@@ -1321,18 +1616,30 @@
 !  local variables
 
       LOGICAL ::          L1
-      INTEGER ::          UM, O1, K, KO1, K0, K1, K2
+      INTEGER ::          UM, O1, K, KO1, K0, K1, K2, IB, LUM
       DOUBLE PRECISION :: H_R, H_CR, SFOR1, SFOR2, TM
       DOUBLE PRECISION :: LUXR, MUXR, LUX_CR, LUX_CI, MUX_CR, MUX_CI
+
+!  Local user indices
+
+      IB  = IBEAM
+      LUM = 1
 
 !  Zeroing is very important here
 
       L1 = SOURCETERM_FLAG
-      DO UM = LOCAL_UM_START, N_USER_STREAMS
-        DO O1 = 1, NSTOKES
-          LAYERSOURCE(UM,O1)       = ZERO
+      IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO UM = LOCAL_UM_START, N_USER_STREAMS
+          DO O1 = 1, NSTOKES
+            LAYERSOURCE(UM,O1) = ZERO
+          ENDDO
         ENDDO
-      ENDDO
+      ELSE
+        DO O1 = 1, NSTOKES
+          LAYERSOURCE(IB,O1) = ZERO
+        ENDDO
+      ENDIF
+
 !      IF ( .not. L1 ) RETURN   ! @@@ Rob, wrong place.
 
 !  Avoid this section if thermal transmittance only
@@ -1348,38 +1655,69 @@
 
       KO1 = K_REAL(N) + 1
 
-!  Whole layer source function, homoegeneous solution contribution
+!  Whole layer source function, homogeneous solution contribution
 
-      DO UM = LOCAL_UM_START, N_USER_STREAMS
+      IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO UM = LOCAL_UM_START, N_USER_STREAMS
+          DO O1 = 1, NSTOKES
+            H_R = ZERO
+            DO K = 1, K_REAL(N)
+              LUXR = LCON(K,N) * UHOM_DNDN(UM,O1,K,N)
+              MUXR = MCON(K,N) * UHOM_DNUP(UM,O1,K,N)
+              H_R = H_R + LUXR * HMULT_1(K,UM,N) + &
+                          MUXR * HMULT_2(K,UM,N)
+            ENDDO
+            H_CR = ZERO
+            DO K = 1, K_COMPLEX(N)
+              K0 = 2*K-2
+              K1 = KO1 + K0
+              K2 = K1  + 1
+              LUX_CR = LCON(K1,N) * UHOM_DNDN(UM,O1,K1,N) - &
+                       LCON(K2,N) * UHOM_DNDN(UM,O1,K2,N)
+              LUX_CI = LCON(K1,N) * UHOM_DNDN(UM,O1,K2,N) + &
+                       LCON(K2,N) * UHOM_DNDN(UM,O1,K1,N)
+              MUX_CR = MCON(K1,N) * UHOM_DNUP(UM,O1,K1,N) - &
+                       MCON(K2,N) * UHOM_DNUP(UM,O1,K2,N)
+              MUX_CI = MCON(K1,N) * UHOM_DNUP(UM,O1,K2,N) + &
+                       MCON(K2,N) * UHOM_DNUP(UM,O1,K1,N)
+              H_CR = H_CR + LUX_CR * HMULT_1(K1,UM,N) - &
+                            LUX_CI * HMULT_1(K2,UM,N) + &
+                            MUX_CR * HMULT_2(K1,UM,N) - &
+                            MUX_CI * HMULT_2(K2,UM,N)
+            ENDDO
+            LAYERSOURCE(UM,O1) = H_R + H_CR
+          ENDDO
+        ENDDO
+      ELSE
         DO O1 = 1, NSTOKES
           H_R = ZERO
           DO K = 1, K_REAL(N)
-            LUXR = LCON(K,N) * UHOM_DNDN(UM,O1,K,N)
-            MUXR = MCON(K,N) * UHOM_DNUP(UM,O1,K,N)
-            H_R = H_R + LUXR * HMULT_1(K,UM,N) + &
-                        MUXR * HMULT_2(K,UM,N)
+            LUXR = LCON(K,N) * UHOM_DNDN(IB,O1,K,N)
+            MUXR = MCON(K,N) * UHOM_DNUP(IB,O1,K,N)
+            H_R = H_R + LUXR * HMULT_1(K,IB,N) + &
+                        MUXR * HMULT_2(K,IB,N)
           ENDDO
           H_CR = ZERO
           DO K = 1, K_COMPLEX(N)
             K0 = 2*K-2
             K1 = KO1 + K0
             K2 = K1  + 1
-            LUX_CR = LCON(K1,N) * UHOM_DNDN(UM,O1,K1,N) - &
-                     LCON(K2,N) * UHOM_DNDN(UM,O1,K2,N)
-            LUX_CI = LCON(K1,N) * UHOM_DNDN(UM,O1,K2,N) + &
-                     LCON(K2,N) * UHOM_DNDN(UM,O1,K1,N)
-            MUX_CR = MCON(K1,N) * UHOM_DNUP(UM,O1,K1,N) - &
-                     MCON(K2,N) * UHOM_DNUP(UM,O1,K2,N)
-            MUX_CI = MCON(K1,N) * UHOM_DNUP(UM,O1,K2,N) + &
-                     MCON(K2,N) * UHOM_DNUP(UM,O1,K1,N)
-            H_CR = H_CR + LUX_CR * HMULT_1(K1,UM,N) - &
-                          LUX_CI * HMULT_1(K2,UM,N) + &
-                          MUX_CR * HMULT_2(K1,UM,N) - &
-                          MUX_CI * HMULT_2(K2,UM,N)
+            LUX_CR = LCON(K1,N) * UHOM_DNDN(IB,O1,K1,N) - &
+                     LCON(K2,N) * UHOM_DNDN(IB,O1,K2,N)
+            LUX_CI = LCON(K1,N) * UHOM_DNDN(IB,O1,K2,N) + &
+                     LCON(K2,N) * UHOM_DNDN(IB,O1,K1,N)
+            MUX_CR = MCON(K1,N) * UHOM_DNUP(IB,O1,K1,N) - &
+                     MCON(K2,N) * UHOM_DNUP(IB,O1,K2,N)
+            MUX_CI = MCON(K1,N) * UHOM_DNUP(IB,O1,K2,N) + &
+                     MCON(K2,N) * UHOM_DNUP(IB,O1,K1,N)
+            H_CR = H_CR + LUX_CR * HMULT_1(K1,IB,N) - &
+                          LUX_CI * HMULT_1(K2,IB,N) + &
+                          MUX_CR * HMULT_2(K1,IB,N) - &
+                          MUX_CI * HMULT_2(K2,IB,N)
           ENDDO
-          LAYERSOURCE(UM,O1) = H_R + H_CR
+          LAYERSOURCE(IB,O1) = H_R + H_CR
         ENDDO
-      ENDDO
+      ENDIF
 
 !  Continuation point
 
@@ -1391,10 +1729,15 @@
         TM = ONE
         IF ( DO_SOLAR_SOURCES ) TM = ONE/PI4
         O1 = 1
-        DO UM = LOCAL_UM_START, N_USER_STREAMS
-          LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) &
+        IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+          DO UM = LOCAL_UM_START, N_USER_STREAMS
+            LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) &
                                  + LAYER_TSUP_DN(UM,N)*TM
-        ENDDO
+          ENDDO
+        ELSE
+          LAYERSOURCE(IB,O1) = LAYERSOURCE(IB,O1) &
+                               + LAYER_TSUP_DN(IB,N)*TM
+        ENDIF
       ENDIF
 
 !  nothing more to do is no solar sources
@@ -1404,12 +1747,19 @@
 !  Particular integral contribution
 
       IF ( DO_CLASSICAL_SOLUTION ) THEN
-        DO UM = LOCAL_UM_START, N_USER_STREAMS
-          DO O1 = 1, NSTOKES
-            SFOR2 =  EMULT_DN(UM,N,IBEAM) * UPAR_DN_2(UM,O1,N)
-            LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR2
+        IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+          DO UM = LOCAL_UM_START, N_USER_STREAMS
+            DO O1 = 1, NSTOKES
+              SFOR2 =  EMULT_DN(UM,N,IB) * UPAR_DN_2(UM,O1,N)
+              LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR2
+            ENDDO
           ENDDO
-        ENDDO
+        ELSE
+          DO O1 = 1, NSTOKES
+            SFOR2 =  EMULT_DN(LUM,N,IB) * UPAR_DN_2(IB,O1,N)
+            LAYERSOURCE(IB,O1) = LAYERSOURCE(IB,O1) + SFOR2
+          ENDDO
+        ENDIF
       ELSE
 !  PLACEHOLDER GREENS FUNCT
       ENDIF
@@ -1420,19 +1770,26 @@
 
 !  Full radiance mode, add single scatter part
 
-      DO UM = LOCAL_UM_START, N_USER_STREAMS
-        DO O1 = 1, NSTOKES
-          SFOR1 = UPAR_DN_1(UM,O1,N) * EMULT_DN(UM,N,IBEAM)
-          LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR1
+      IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO UM = LOCAL_UM_START, N_USER_STREAMS
+          DO O1 = 1, NSTOKES
+            SFOR1 = UPAR_DN_1(UM,O1,N) * EMULT_DN(UM,N,IB)
+            LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR1
+          ENDDO
         ENDDO
-      ENDDO
+      ELSE
+        DO O1 = 1, NSTOKES
+          SFOR1 = UPAR_DN_1(IB,O1,N) * EMULT_DN(LUM,N,IB)
+          LAYERSOURCE(IB,O1) = LAYERSOURCE(IB,O1) + SFOR1
+        ENDDO
+      ENDIF
 
 !  Finish
 
       RETURN
       END SUBROUTINE WHOLELAYER_STERM_DN
 
-!
+!
 
       SUBROUTINE PARTLAYER_STERM_UP ( &
         N, UT, IBEAM, &
@@ -1440,6 +1797,7 @@
         DO_SOLAR_SOURCES, NSTOKES, &
         DO_THERMAL_TRANSONLY, &
         DO_CLASSICAL_SOLUTION, DO_MSMODE_VLIDORT, &
+        DO_OBSERVATION_GEOMETRY, &
         N_USER_STREAMS, LOCAL_UM_START, &
         K_REAL, K_COMPLEX, &
         LCON, MCON, &
@@ -1462,6 +1820,7 @@
       LOGICAL, INTENT (IN) ::          DO_THERMAL_TRANSONLY
       LOGICAL, INTENT (IN) ::          DO_CLASSICAL_SOLUTION
       LOGICAL, INTENT (IN) ::          DO_MSMODE_VLIDORT
+      LOGICAL, INTENT (IN) ::          DO_OBSERVATION_GEOMETRY
       INTEGER, INTENT (IN) ::          N_USER_STREAMS
       INTEGER, INTENT (IN) ::          LOCAL_UM_START
       INTEGER, INTENT (IN) ::          K_REAL ( MAXLAYERS )
@@ -1491,19 +1850,32 @@
 !  local variables
 
       LOGICAL ::          L1
-      INTEGER ::          UM, O1, K, KO1, K0, K1, K2
+      INTEGER ::          UM, O1, K, KO1, K0, K1, K2, IB, LUM
       DOUBLE PRECISION :: H_R, H_CR, SFOR1, SFOR2, TM
       DOUBLE PRECISION :: LUXR, MUXR, LUX_CR, LUX_CI, MUX_CR, MUX_CI
+
+!  Local user indices
+
+      IB = IBEAM
+      LUM = 1
 
 !  Zeroing is very important here
 
       SFOR2 = ZERO
       L1 = SOURCETERM_FLAG
-      DO UM = LOCAL_UM_START, N_USER_STREAMS
-        DO O1 = 1, NSTOKES
-          LAYERSOURCE(UM,O1)       = ZERO
+
+      IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO UM = LOCAL_UM_START, N_USER_STREAMS
+          DO O1 = 1, NSTOKES
+            LAYERSOURCE(UM,O1) = ZERO
+          ENDDO
         ENDDO
-      ENDDO
+      ELSE
+        DO O1 = 1, NSTOKES
+          LAYERSOURCE(IB,O1) = ZERO
+        ENDDO
+      ENDIF
+
 !      IF ( .not. L1 ) RETURN   ! @@@ Rob, wrong place.
 
 !  Avoid this section if thermal transmittance only
@@ -1521,36 +1893,67 @@
 
 !  Whole layer source function, homogeneous contribution
 
-      DO UM = LOCAL_UM_START, N_USER_STREAMS
+      IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO UM = LOCAL_UM_START, N_USER_STREAMS
+          DO O1 = 1, NSTOKES
+            H_R = ZERO
+            DO K = 1, K_REAL(N)
+              LUXR = LCON(K,N) * UHOM_UPDN(UM,O1,K,N)
+              MUXR = MCON(K,N) * UHOM_UPUP(UM,O1,K,N)
+              H_R = H_R + LUXR * UT_HMULT_UD(K,UM,UT) + &
+                          MUXR * UT_HMULT_UU(K,UM,UT)
+            ENDDO
+            H_CR = ZERO
+            DO K = 1, K_COMPLEX(N)
+              K0 = 2*K-2
+              K1 = KO1 + K0
+              K2 = K1  + 1
+              LUX_CR = LCON(K1,N) * UHOM_UPDN(UM,O1,K1,N) - &
+                       LCON(K2,N) * UHOM_UPDN(UM,O1,K2,N)
+              LUX_CI = LCON(K1,N) * UHOM_UPDN(UM,O1,K2,N) + &
+                       LCON(K2,N) * UHOM_UPDN(UM,O1,K1,N)
+              MUX_CR = MCON(K1,N) * UHOM_UPUP(UM,O1,K1,N) - &
+                       MCON(K2,N) * UHOM_UPUP(UM,O1,K2,N)
+              MUX_CI = MCON(K1,N) * UHOM_UPUP(UM,O1,K2,N) + &
+                       MCON(K2,N) * UHOM_UPUP(UM,O1,K1,N)
+              H_CR = H_CR + LUX_CR * UT_HMULT_UD(K1,UM,UT) - &
+                            LUX_CI * UT_HMULT_UD(K2,UM,UT) + &
+                            MUX_CR * UT_HMULT_UU(K1,UM,UT) - &
+                            MUX_CI * UT_HMULT_UU(K2,UM,UT)
+            ENDDO
+            LAYERSOURCE(UM,O1) = H_R + H_CR
+          ENDDO
+        ENDDO
+      ELSE
         DO O1 = 1, NSTOKES
           H_R = ZERO
           DO K = 1, K_REAL(N)
-            LUXR = LCON(K,N) * UHOM_UPDN(UM,O1,K,N)
-            MUXR = MCON(K,N) * UHOM_UPUP(UM,O1,K,N)
-            H_R = H_R + LUXR * UT_HMULT_UD(K,UM,UT) + &
-                        MUXR * UT_HMULT_UU(K,UM,UT)
+            LUXR = LCON(K,N) * UHOM_UPDN(IB,O1,K,N)
+            MUXR = MCON(K,N) * UHOM_UPUP(IB,O1,K,N)
+            H_R = H_R + LUXR * UT_HMULT_UD(K,IB,UT) + &
+                        MUXR * UT_HMULT_UU(K,IB,UT)
           ENDDO
           H_CR = ZERO
           DO K = 1, K_COMPLEX(N)
             K0 = 2*K-2
             K1 = KO1 + K0
             K2 = K1  + 1
-            LUX_CR = LCON(K1,N) * UHOM_UPDN(UM,O1,K1,N) - &
-                     LCON(K2,N) * UHOM_UPDN(UM,O1,K2,N)
-            LUX_CI = LCON(K1,N) * UHOM_UPDN(UM,O1,K2,N) + &
-                     LCON(K2,N) * UHOM_UPDN(UM,O1,K1,N)
-            MUX_CR = MCON(K1,N) * UHOM_UPUP(UM,O1,K1,N) - &
-                     MCON(K2,N) * UHOM_UPUP(UM,O1,K2,N)
-            MUX_CI = MCON(K1,N) * UHOM_UPUP(UM,O1,K2,N) + &
-                     MCON(K2,N) * UHOM_UPUP(UM,O1,K1,N)
-            H_CR = H_CR + LUX_CR * UT_HMULT_UD(K1,UM,UT) - &
-                          LUX_CI * UT_HMULT_UD(K2,UM,UT) + &
-                          MUX_CR * UT_HMULT_UU(K1,UM,UT) - &
-                          MUX_CI * UT_HMULT_UU(K2,UM,UT)
+            LUX_CR = LCON(K1,N) * UHOM_UPDN(IB,O1,K1,N) - &
+                     LCON(K2,N) * UHOM_UPDN(IB,O1,K2,N)
+            LUX_CI = LCON(K1,N) * UHOM_UPDN(IB,O1,K2,N) + &
+                     LCON(K2,N) * UHOM_UPDN(IB,O1,K1,N)
+            MUX_CR = MCON(K1,N) * UHOM_UPUP(IB,O1,K1,N) - &
+                     MCON(K2,N) * UHOM_UPUP(IB,O1,K2,N)
+            MUX_CI = MCON(K1,N) * UHOM_UPUP(IB,O1,K2,N) + &
+                     MCON(K2,N) * UHOM_UPUP(IB,O1,K1,N)
+            H_CR = H_CR + LUX_CR * UT_HMULT_UD(K1,IB,UT) - &
+                          LUX_CI * UT_HMULT_UD(K2,IB,UT) + &
+                          MUX_CR * UT_HMULT_UU(K1,IB,UT) - &
+                          MUX_CI * UT_HMULT_UU(K2,IB,UT)
           ENDDO
-          LAYERSOURCE(UM,O1) = H_R + H_CR
+          LAYERSOURCE(IB,O1) = H_R + H_CR
         ENDDO
-      ENDDO
+      ENDIF
 
 !  Continuation point
 
@@ -1562,10 +1965,15 @@
         TM = ONE
         IF ( DO_SOLAR_SOURCES ) TM = ONE/PI4
         O1 = 1
-        DO UM = LOCAL_UM_START, N_USER_STREAMS
-          LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + &
-                         LAYER_TSUP_UTUP(UM,UT)*TM
-        ENDDO
+        IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+          DO UM = LOCAL_UM_START, N_USER_STREAMS
+            LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + &
+                           LAYER_TSUP_UTUP(UM,UT)*TM
+          ENDDO
+        ELSE
+          LAYERSOURCE(IB,O1) = LAYERSOURCE(IB,O1) + &
+                         LAYER_TSUP_UTUP(IB,UT)*TM
+        ENDIF
       ENDIF
 
 !  nothing more to do is no solar sources
@@ -1575,12 +1983,19 @@
 !  Particular integral contribution
 
       IF ( DO_CLASSICAL_SOLUTION ) THEN
-        DO UM = LOCAL_UM_START, N_USER_STREAMS
-          DO O1 = 1, NSTOKES
-            SFOR2 =  UT_EMULT_UP(UM,UT,IBEAM) * UPAR_UP_2(UM,O1,N)
-            LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR2
+        IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+          DO UM = LOCAL_UM_START, N_USER_STREAMS
+            DO O1 = 1, NSTOKES
+              SFOR2 =  UT_EMULT_UP(UM,UT,IBEAM) * UPAR_UP_2(UM,O1,N)
+              LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR2
+            ENDDO
           ENDDO
-        ENDDO
+        ELSE
+          DO O1 = 1, NSTOKES
+            SFOR2 =  UT_EMULT_UP(LUM,UT,IB) * UPAR_UP_2(IB,O1,N)
+            LAYERSOURCE(IB,O1) = LAYERSOURCE(IB,O1) + SFOR2
+          ENDDO
+        ENDIF
       ELSE
 !  PLACEHOLDER GREENS FUNCT
       ENDIF
@@ -1588,12 +2003,19 @@
 !  If NOT operating in Ms-mode only, add single scatter part
 
       IF ( .NOT. DO_MSMODE_VLIDORT ) THEN
-        DO UM = LOCAL_UM_START, N_USER_STREAMS
-          DO O1 = 1, NSTOKES
-            SFOR1 = UT_EMULT_UP(UM,UT,IBEAM) * UPAR_UP_1(UM,O1,N)
-            LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR1
+        IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+          DO UM = LOCAL_UM_START, N_USER_STREAMS
+            DO O1 = 1, NSTOKES
+              SFOR1 = UT_EMULT_UP(UM,UT,IBEAM) * UPAR_UP_1(UM,O1,N)
+              LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR1
+            ENDDO
           ENDDO
-        ENDDO
+        ELSE
+          DO O1 = 1, NSTOKES
+            SFOR1 = UT_EMULT_UP(LUM,UT,IB) * UPAR_UP_1(IB,O1,N)
+            LAYERSOURCE(IB,O1) = LAYERSOURCE(IB,O1) + SFOR1
+          ENDDO
+        ENDIF
       ENDIF
 
 !  Finish
@@ -1601,7 +2023,7 @@
       RETURN
       END SUBROUTINE PARTLAYER_STERM_UP
 
-!
+!
 
       SUBROUTINE PARTLAYER_STERM_DN ( &
         N, UT, IBEAM, SOURCETERM_FLAG, &
@@ -1609,6 +2031,7 @@
         DO_SOLAR_SOURCES, NSTOKES, &
         DO_THERMAL_TRANSONLY, &
         DO_CLASSICAL_SOLUTION, DO_MSMODE_VLIDORT, &
+        DO_OBSERVATION_GEOMETRY, &
         N_USER_STREAMS, LOCAL_UM_START, &
         K_REAL, K_COMPLEX, &
         LCON, MCON, &
@@ -1632,6 +2055,7 @@
       LOGICAL, INTENT (IN) ::          DO_THERMAL_TRANSONLY
       LOGICAL, INTENT (IN) ::          DO_CLASSICAL_SOLUTION
       LOGICAL, INTENT (IN) ::          DO_MSMODE_VLIDORT
+      LOGICAL, INTENT (IN) ::          DO_OBSERVATION_GEOMETRY
       INTEGER, INTENT (IN) ::          N_USER_STREAMS
       INTEGER, INTENT (IN) ::          LOCAL_UM_START
       INTEGER, INTENT (IN) ::          K_REAL ( MAXLAYERS )
@@ -1661,19 +2085,31 @@
 !  local variables
 
       LOGICAL ::          L1
-      INTEGER ::          UM, O1, K, KO1, K0, K1, K2
+      INTEGER ::          UM, O1, K, KO1, K0, K1, K2, IB, LUM
       DOUBLE PRECISION :: H_R, H_CR, SFOR1, SFOR2, TM
       DOUBLE PRECISION :: LUXR, MUXR, LUX_CR, LUX_CI, MUX_CR, MUX_CI
+
+!  Local user indices
+
+      IB  = IBEAM
+      LUM = 1
 
 !  Zeroing is very important here
 
       SFOR2 = ZERO
       L1 = SOURCETERM_FLAG
-      DO UM = LOCAL_UM_START, N_USER_STREAMS
-        DO O1 = 1, NSTOKES
-          LAYERSOURCE(UM,O1)       = ZERO
+      IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO UM = LOCAL_UM_START, N_USER_STREAMS
+          DO O1 = 1, NSTOKES
+            LAYERSOURCE(UM,O1) = ZERO
+          ENDDO
         ENDDO
-      ENDDO
+      ELSE
+        DO O1 = 1, NSTOKES
+          LAYERSOURCE(IB,O1) = ZERO
+        ENDDO
+      ENDIF
+
 !      IF ( .not. L1 ) RETURN   ! @@@ Rob, wrong place.
 
 !  Avoid this section if thermal transmittance only
@@ -1691,36 +2127,67 @@
 
 !  Whole layer source function, homogeneous contribution
 
-      DO UM = LOCAL_UM_START, N_USER_STREAMS
+      IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO UM = LOCAL_UM_START, N_USER_STREAMS
+          DO O1 = 1, NSTOKES
+            H_R = ZERO
+            DO K = 1, K_REAL(N)
+              LUXR = LCON(K,N) * UHOM_DNDN(UM,O1,K,N)
+              MUXR = MCON(K,N) * UHOM_DNUP(UM,O1,K,N)
+              H_R = H_R + LUXR * UT_HMULT_DD(K,UM,UT) + &
+                          MUXR * UT_HMULT_DU(K,UM,UT)
+            ENDDO
+            H_CR = ZERO
+            DO K = 1, K_COMPLEX(N)
+              K0 = 2*K-2
+              K1 = KO1 + K0
+              K2 = K1  + 1
+              LUX_CR = LCON(K1,N) * UHOM_DNDN(UM,O1,K1,N) - &
+                       LCON(K2,N) * UHOM_DNDN(UM,O1,K2,N)
+              LUX_CI = LCON(K1,N) * UHOM_DNDN(UM,O1,K2,N) + &
+                       LCON(K2,N) * UHOM_DNDN(UM,O1,K1,N)
+              MUX_CR = MCON(K1,N) * UHOM_DNUP(UM,O1,K1,N) - &
+                       MCON(K2,N) * UHOM_DNUP(UM,O1,K2,N)
+              MUX_CI = MCON(K1,N) * UHOM_DNUP(UM,O1,K2,N) + &
+                       MCON(K2,N) * UHOM_DNUP(UM,O1,K1,N)
+              H_CR = H_CR + LUX_CR * UT_HMULT_DD(K1,UM,UT) - &
+                            LUX_CI * UT_HMULT_DD(K2,UM,UT) + &
+                            MUX_CR * UT_HMULT_DU(K1,UM,UT) - &
+                            MUX_CI * UT_HMULT_DU(K2,UM,UT)
+            ENDDO
+            LAYERSOURCE(UM,O1) = H_R + H_CR
+          ENDDO
+        ENDDO
+      ELSE
         DO O1 = 1, NSTOKES
           H_R = ZERO
           DO K = 1, K_REAL(N)
-            LUXR = LCON(K,N) * UHOM_DNDN(UM,O1,K,N)
-            MUXR = MCON(K,N) * UHOM_DNUP(UM,O1,K,N)
-            H_R = H_R + LUXR * UT_HMULT_DD(K,UM,UT) + &
-                        MUXR * UT_HMULT_DU(K,UM,UT)
+            LUXR = LCON(K,N) * UHOM_DNDN(IB,O1,K,N)
+            MUXR = MCON(K,N) * UHOM_DNUP(IB,O1,K,N)
+            H_R = H_R + LUXR * UT_HMULT_DD(K,IB,UT) + &
+                        MUXR * UT_HMULT_DU(K,IB,UT)
           ENDDO
           H_CR = ZERO
           DO K = 1, K_COMPLEX(N)
             K0 = 2*K-2
             K1 = KO1 + K0
             K2 = K1  + 1
-            LUX_CR = LCON(K1,N) * UHOM_DNDN(UM,O1,K1,N) - &
-                     LCON(K2,N) * UHOM_DNDN(UM,O1,K2,N)
-            LUX_CI = LCON(K1,N) * UHOM_DNDN(UM,O1,K2,N) + &
-                     LCON(K2,N) * UHOM_DNDN(UM,O1,K1,N)
-            MUX_CR = MCON(K1,N) * UHOM_DNUP(UM,O1,K1,N) - &
-                     MCON(K2,N) * UHOM_DNUP(UM,O1,K2,N)
-            MUX_CI = MCON(K1,N) * UHOM_DNUP(UM,O1,K2,N) + &
-                     MCON(K2,N) * UHOM_DNUP(UM,O1,K1,N)
-            H_CR = H_CR + LUX_CR * UT_HMULT_DD(K1,UM,UT) - &
-                          LUX_CI * UT_HMULT_DD(K2,UM,UT) + &
-                          MUX_CR * UT_HMULT_DU(K1,UM,UT) - &
-                          MUX_CI * UT_HMULT_DU(K2,UM,UT)
+            LUX_CR = LCON(K1,N) * UHOM_DNDN(IB,O1,K1,N) - &
+                     LCON(K2,N) * UHOM_DNDN(IB,O1,K2,N)
+            LUX_CI = LCON(K1,N) * UHOM_DNDN(IB,O1,K2,N) + &
+                     LCON(K2,N) * UHOM_DNDN(IB,O1,K1,N)
+            MUX_CR = MCON(K1,N) * UHOM_DNUP(IB,O1,K1,N) - &
+                     MCON(K2,N) * UHOM_DNUP(IB,O1,K2,N)
+            MUX_CI = MCON(K1,N) * UHOM_DNUP(IB,O1,K2,N) + &
+                     MCON(K2,N) * UHOM_DNUP(IB,O1,K1,N)
+            H_CR = H_CR + LUX_CR * UT_HMULT_DD(K1,IB,UT) - &
+                          LUX_CI * UT_HMULT_DD(K2,IB,UT) + &
+                          MUX_CR * UT_HMULT_DU(K1,IB,UT) - &
+                          MUX_CI * UT_HMULT_DU(K2,IB,UT)
           ENDDO
-          LAYERSOURCE(UM,O1) = H_R + H_CR
+          LAYERSOURCE(IB,O1) = H_R + H_CR
         ENDDO
-      ENDDO
+      ENDIF
 
 !  Continuation point
 
@@ -1732,10 +2199,15 @@
         TM = ONE
         IF ( DO_SOLAR_SOURCES ) TM = ONE/PI4
         O1 = 1
-        DO UM = LOCAL_UM_START, N_USER_STREAMS
-          LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + &
-                         LAYER_TSUP_UTDN(UM,UT)*TM
-        ENDDO
+        IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+          DO UM = LOCAL_UM_START, N_USER_STREAMS
+            LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + &
+                           LAYER_TSUP_UTDN(UM,UT)*TM
+          ENDDO
+        ELSE
+          LAYERSOURCE(IB,O1) = LAYERSOURCE(IB,O1) + &
+                         LAYER_TSUP_UTDN(IB,UT)*TM
+        ENDIF
       ENDIF
 
 !  nothing more to do is no solar sources
@@ -1745,12 +2217,19 @@
 !  Particular integral contribution
 
       IF ( DO_CLASSICAL_SOLUTION ) THEN
-        DO UM = LOCAL_UM_START, N_USER_STREAMS
+        IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+          DO UM = LOCAL_UM_START, N_USER_STREAMS
+            DO O1 = 1, NSTOKES
+              SFOR2 =  UT_EMULT_DN(UM,UT,IBEAM) * UPAR_DN_2(UM,O1,N)
+              LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR2
+            ENDDO
+          ENDDO
+        ELSE
           DO O1 = 1, NSTOKES
-            SFOR2 =  UT_EMULT_DN(UM,UT,IBEAM) * UPAR_DN_2(UM,O1,N)
-            LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR2
-       ENDDO
-        ENDDO
+            SFOR2 =  UT_EMULT_DN(LUM,UT,IB) * UPAR_DN_2(IB,O1,N)
+            LAYERSOURCE(IB,O1) = LAYERSOURCE(IB,O1) + SFOR2
+          ENDDO
+        ENDIF
       ELSE
 !  PLACEHOLDER GREENS FUNCT
       ENDIF
@@ -1758,12 +2237,19 @@
 !  If NOT operating in Ms-mode only, add single scatter part
 
       IF ( .NOT. DO_MSMODE_VLIDORT ) THEN
-        DO UM = LOCAL_UM_START, N_USER_STREAMS
-          DO O1 = 1, NSTOKES
-            SFOR1 = UT_EMULT_DN(UM,UT,IBEAM) * UPAR_DN_1(UM,O1,N)
-            LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR1
+        IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+          DO UM = LOCAL_UM_START, N_USER_STREAMS
+            DO O1 = 1, NSTOKES
+              SFOR1 = UT_EMULT_DN(UM,UT,IBEAM) * UPAR_DN_1(UM,O1,N)
+              LAYERSOURCE(UM,O1) = LAYERSOURCE(UM,O1) + SFOR1
+            ENDDO
           ENDDO
-        ENDDO
+        ELSE
+          DO O1 = 1, NSTOKES
+            SFOR1 = UT_EMULT_DN(LUM,UT,IB) * UPAR_DN_1(IB,O1,N)
+            LAYERSOURCE(IB,O1) = LAYERSOURCE(IB,O1) + SFOR1
+          ENDDO
+        ENDIF
       ENDIF
 
 !  Finish
@@ -2872,6 +3358,712 @@
       RETURN
       END SUBROUTINE QUADINTENS_OFFGRID_DN
 
+!
+
+      SUBROUTINE VLIDORT_CONVERGE ( &
+        AZMFAC, FOURIER_COMPONENT, LOCAL_N_USERAZM, &
+        DO_SSCORR_NADIR, DO_SSCORR_OUTGOING, &
+        DO_SS_EXTERNAL, & ! New 15 March 2012
+        DO_SSFULL, DO_DOUBLE_CONVTEST, &
+        DO_RAYLEIGH_ONLY, DO_UPWELLING, &
+        NSTOKES, NSTREAMS, &
+        NLAYERS, VLIDORT_ACCURACY, &
+        N_USER_RELAZMS, N_USER_LEVELS, &
+        DO_TOA_CONTRIBS, &
+        DO_ALL_FOURIER, DO_DBCORRECTION, &
+        DO_NO_AZIMUTH, N_CONVTESTS, &
+        LOCAL_UM_START, N_DIRECTIONS, &
+        WHICH_DIRECTIONS, &
+        N_OUT_STREAMS, VZA_OFFSETS, &
+        STOKES_SS, STOKES_DB, SS_CONTRIBS, &
+        STOKES_F, MS_CONTRIBS_F, IB, &
+        STOKES, FOURIER_SAVED, CONTRIBS, &
+        TESTCONV, LOCAL_ITERATION )
+
+!  convergence test on the Stokes vector intensity
+
+      USE VLIDORT_PARS
+
+      IMPLICIT NONE
+
+      INTEGER, INTENT (IN) ::           FOURIER_COMPONENT
+      INTEGER, INTENT (IN) ::           LOCAL_N_USERAZM
+      DOUBLE PRECISION, INTENT (IN) ::  AZMFAC &
+          ( MAX_USER_STREAMS, MAXBEAMS, MAX_USER_RELAZMS, MAXSTOKES )
+      LOGICAL, INTENT (IN) ::           DO_SSCORR_NADIR
+      LOGICAL, INTENT (IN) ::           DO_SSCORR_OUTGOING
+!  New 15 March 2012
+      LOGICAL, INTENT (IN) ::           DO_SS_EXTERNAL
+      LOGICAL, INTENT (IN) ::           DO_SSFULL
+      LOGICAL, INTENT (IN) ::           DO_DOUBLE_CONVTEST
+      LOGICAL, INTENT (IN) ::           DO_RAYLEIGH_ONLY
+      LOGICAL, INTENT (IN) ::           DO_UPWELLING
+      INTEGER, INTENT (IN) ::           NSTOKES
+      INTEGER, INTENT (IN) ::           NSTREAMS
+      INTEGER, INTENT (IN) ::           NLAYERS
+      DOUBLE PRECISION, INTENT (IN) ::  VLIDORT_ACCURACY
+      INTEGER, INTENT (IN) ::           N_USER_RELAZMS
+      INTEGER, INTENT (IN) ::           N_USER_LEVELS
+      LOGICAL, INTENT (IN) ::           DO_TOA_CONTRIBS
+      LOGICAL, INTENT (IN) ::           DO_ALL_FOURIER
+      LOGICAL, INTENT (IN) ::           DO_DBCORRECTION
+      LOGICAL, INTENT (IN) ::           DO_NO_AZIMUTH
+      INTEGER, INTENT (IN) ::           N_CONVTESTS
+      INTEGER, INTENT (IN) ::           LOCAL_UM_START
+      INTEGER, INTENT (IN) ::           N_DIRECTIONS
+      INTEGER, INTENT (IN) ::           WHICH_DIRECTIONS ( MAX_DIRECTIONS )
+      INTEGER, INTENT (IN) ::           N_OUT_STREAMS
+      INTEGER, INTENT (IN) ::           VZA_OFFSETS &
+          ( MAX_SZANGLES, MAX_USER_VZANGLES )
+      DOUBLE PRECISION, INTENT (IN) ::  STOKES_SS &
+          ( MAX_USER_LEVELS, MAX_GEOMETRIES, MAXSTOKES, MAX_DIRECTIONS )
+      DOUBLE PRECISION, INTENT (IN) ::  STOKES_DB &
+          ( MAX_USER_LEVELS, MAX_GEOMETRIES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (IN) ::  SS_CONTRIBS &
+          ( MAX_GEOMETRIES, MAXSTOKES, MAXLAYERS )
+      DOUBLE PRECISION, INTENT (IN) ::  STOKES_F &
+          ( MAX_USER_LEVELS, MAX_USER_VZANGLES, &
+            MAX_SZANGLES, MAXSTOKES, MAX_DIRECTIONS )
+      DOUBLE PRECISION, INTENT (IN) ::  MS_CONTRIBS_F &
+          ( MAX_USER_VZANGLES, MAX_SZANGLES, MAXSTOKES, MAXLAYERS  )
+      INTEGER, INTENT (IN) ::           IB
+
+      DOUBLE PRECISION, INTENT (INOUT) :: STOKES &
+          ( MAX_USER_LEVELS, MAX_GEOMETRIES, MAXSTOKES, MAX_DIRECTIONS )
+      INTEGER, INTENT (INOUT) ::          FOURIER_SAVED ( MAX_SZANGLES )
+      DOUBLE PRECISION, INTENT (INOUT) :: CONTRIBS &
+          ( MAX_GEOMETRIES, MAXSTOKES, MAXLAYERS )
+      INTEGER, INTENT (INOUT) ::          TESTCONV
+      LOGICAL, INTENT (INOUT) ::          LOCAL_ITERATION
+
+!  local variables
+!  ---------------
+
+      INTEGER ::          COUNT, COUNT_A, V, N
+      INTEGER ::          I, IDIR, UT, UA, W, O
+      DOUBLE PRECISION :: TNEW ( MAXSTOKES ), ACCUR, &
+                          TOLD ( MAXSTOKES ), TAZM ( MAXSTOKES )
+
+!  ###################
+!  Fourier 0 component
+!  ###################
+
+      IF ( FOURIER_COMPONENT.EQ.0 ) THEN
+
+!  Copy DIFFUSE Fourier component at all output angles and optical depth
+!    If no SSCORR and no DBCORR, then two options apply:
+!     (a) Convergence on STOKES = DIFFUSE + SSTRUNCATED + DBTRUNCATED
+!              (full radiance, no SS correction, no DB correction)
+!     (b) Convergence on STOKES = DIFFUSE alone (MS only mode)
+!              (SSTRUNCATED + DBTRUNCATED, do not get calculated)
+
+!  Full single scatter calculation is initialized to zero here (Version
+
+        IF ( .not. DO_SSFULL ) THEN
+          DO IDIR = 1, N_DIRECTIONS
+            W = WHICH_DIRECTIONS(IDIR)
+            DO UT = 1, N_USER_LEVELS
+              DO I = LOCAL_UM_START, N_OUT_STREAMS
+                DO UA = 1, LOCAL_N_USERAZM
+                  V = VZA_OFFSETS(IB,I) + UA
+                  DO O = 1, NSTOKES
+                    STOKES(UT,V,O,W) = STOKES_F(UT,I,IB,O,W)
+                  ENDDO
+                ENDDO
+               ENDDO
+            ENDDO
+          ENDDO
+        ELSE
+          FOURIER_SAVED(IB) = FOURIER_COMPONENT
+          DO IDIR = 1, N_DIRECTIONS
+            W = WHICH_DIRECTIONS(IDIR)
+            DO UT = 1, N_USER_LEVELS
+              DO I = LOCAL_UM_START, N_OUT_STREAMS
+                DO UA = 1, LOCAL_N_USERAZM
+                  V = VZA_OFFSETS(IB,I) + UA
+                  DO O = 1, NSTOKES
+                    STOKES(UT,V,O,W) = ZERO
+                  ENDDO
+                ENDDO
+               ENDDO
+            ENDDO
+          ENDDO
+        ENDIF
+
+!  TOA contribution functions (only if flagged)
+
+        IF ( DO_TOA_CONTRIBS ) THEN
+          IF ( .not. DO_SSFULL ) THEN
+            DO I = LOCAL_UM_START, N_OUT_STREAMS
+              DO UA = 1, LOCAL_N_USERAZM
+                V = VZA_OFFSETS(IB,I) + UA
+                DO O = 1, NSTOKES
+                  DO N = 1, NLAYERS
+                    CONTRIBS(V,O,N) = MS_CONTRIBS_F(I,IB,O,N)
+                  ENDDO
+                ENDDO
+              ENDDO
+            ENDDO
+          ELSE
+            DO I = LOCAL_UM_START, N_OUT_STREAMS
+              DO UA = 1, LOCAL_N_USERAZM
+                V = VZA_OFFSETS(IB,I) + UA
+                DO O = 1, NSTOKES
+                  DO N = 1, NLAYERS
+                    CONTRIBS(V,O,N) = ZERO
+                  ENDDO
+                ENDDO
+              ENDDO
+            ENDDO
+          ENDIF
+        ENDIF
+
+!    STOKES. Add the single scatter component if flagged
+!     If set, now looking at convergence on RADIANCE = DIFFUSE + SSEXACT
+!     Version 2.1.   Added outgoing correction flag to this.....
+!     Version 2.3    Added Full single scatter flag
+
+!  New 15 March 2012, Introduced DO_SS_EXTERNAL flag
+
+        !IF ( DO_SSFULL.OR.DO_SSCORR_NADIR.OR.DO_SSCORR_OUTGOING ) THEN
+        IF ( DO_SSFULL .OR. &
+             ((DO_SSCORR_NADIR.OR.DO_SSCORR_OUTGOING).OR.DO_SS_EXTERNAL) ) THEN
+         DO IDIR = 1, N_DIRECTIONS
+          W = WHICH_DIRECTIONS(IDIR)
+          DO UT = 1, N_USER_LEVELS
+            DO I = LOCAL_UM_START, N_OUT_STREAMS
+              DO UA = 1, LOCAL_N_USERAZM
+                V  = VZA_OFFSETS (IB,I) + UA
+                DO O = 1, NSTOKES
+!         if (v.eq.1)write(*,*)UT,STOKES(UT,V,O,W),STOKES_SS(UT,V,1,W)
+                  STOKES(UT,V,O,W) = &
+                    STOKES(UT,V,O,W) + STOKES_SS(UT,V,O,W)
+                ENDDO
+              ENDDO
+            ENDDO
+          ENDDO
+         ENDDO
+        ENDIF
+!        pause
+
+!    CONTRIBS. Add the single scatter component if flagged
+!     If set, now looking at convergence on RADIANCE = DIFFUSE + SSEXACT
+!     Version 2.1.   Added outgoing correction flag to this.....
+!     Version 2.3    Added Full single scatter flag
+
+        IF ( DO_TOA_CONTRIBS ) THEN
+          IF ( DO_SSFULL.OR.DO_SSCORR_NADIR.OR.DO_SSCORR_OUTGOING ) THEN
+            DO I = LOCAL_UM_START, N_OUT_STREAMS
+              DO UA = 1, LOCAL_N_USERAZM
+                V  = VZA_OFFSETS (IB,I) + UA
+                DO O = 1, NSTOKES
+                  DO N = 1, NLAYERS
+                    CONTRIBS(V,O,N) = &
+                      CONTRIBS(V,O,N) + SS_CONTRIBS(V,O,N)
+                  ENDDO
+                ENDDO
+              ENDDO
+            ENDDO
+          ENDIF
+        ENDIF
+!        pause
+
+!    STOKES. Add the direct beam component if flagged (upwelling only)
+!       Convergence on STOKES = STOKES + DBEXACT
+!    Full single scatter option added Version 2.3
+
+!  New 15 March 2012, Introduced DO_SS_EXTERNAL flag
+
+        !IF ( (DO_SSFULL.OR.DO_DBCORRECTION).AND.DO_UPWELLING ) THEN
+        IF ( ((DO_SSFULL.OR.DO_DBCORRECTION).OR.DO_SS_EXTERNAL) &
+             .AND.DO_UPWELLING ) THEN
+          DO UT = 1, N_USER_LEVELS
+            DO I = LOCAL_UM_START, N_OUT_STREAMS
+              DO UA = 1, LOCAL_N_USERAZM
+                V  = VZA_OFFSETS(IB,I) + UA
+                DO O = 1, NSTOKES
+                  STOKES(UT,V,O,UPIDX) = &
+                    STOKES(UT,V,O,UPIDX) + STOKES_DB(UT,V,O)
+                ENDDO
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDIF
+
+!  If no_azimuth, then set output and exit flag
+
+        IF ( DO_NO_AZIMUTH ) THEN
+          LOCAL_ITERATION = .FALSE.
+          RETURN
+        ENDIF
+
+!  ######################
+!  Fourier components > 0
+!  ######################
+
+      ELSE
+
+!  No examination of convergence
+!  -----------------------------
+
+!  For Rayleigh atmosphere or if All Fourier components are required,
+!     skip convergence test on intensity
+
+        IF ( DO_RAYLEIGH_ONLY .OR. DO_ALL_FOURIER ) THEN
+
+!  For each azimuth, add Fourier component
+
+          DO UA = 1, LOCAL_N_USERAZM
+
+!     - for direction, user optical depth, out stream
+
+            DO IDIR = 1, N_DIRECTIONS
+              W = WHICH_DIRECTIONS(IDIR)
+              DO UT = 1, N_USER_LEVELS
+                DO I = LOCAL_UM_START, N_OUT_STREAMS
+                  V = VZA_OFFSETS(IB,I) + UA
+                  DO O = 1, NSTOKES
+                    TOLD(O) = STOKES(UT,V,O,W)
+                    TAZM(O) = AZMFAC(I,IB,UA,O)*STOKES_F(UT,I,IB,O,W)
+                    STOKES(UT,V,O,W) = TOLD(O) + TAZM(O)
+                  ENDDO
+                ENDDO
+              ENDDO
+            ENDDO
+
+          ENDDO
+
+!  Examine convergence on intensity only
+!  -------------------------------------
+
+!  convergence test applied to ALL directions AND
+!                              ALL stream values (except near zenith) AN
+!                              ALL azimuths taken together
+!                              ALL user optical depths
+
+        ELSE
+
+!  Count number of occasions Fourier term addition is below accuracy level
+
+          COUNT = 0
+          DO UA = 1, N_USER_RELAZMS
+            COUNT_A = 0
+            DO IDIR = 1, N_DIRECTIONS
+              W = WHICH_DIRECTIONS(IDIR)
+              DO UT = 1, N_USER_LEVELS
+                DO I = LOCAL_UM_START, N_OUT_STREAMS
+                  V = VZA_OFFSETS(IB,I) + UA
+                  DO O = 1, NSTOKES
+                    TOLD(O) = STOKES(UT,V,O,W)
+                    TAZM(O) = AZMFAC(I,IB,UA,O)*STOKES_F(UT,I,IB,O,W)
+                    TNEW(O) = TOLD(O) + TAZM(O)
+                  ENDDO
+                  IF ( TAZM(1) .NE. ZERO ) THEN
+                    ACCUR     = DABS(TAZM(1)/TNEW(1))
+                    IF ( ACCUR .LT. VLIDORT_ACCURACY ) THEN
+                      COUNT   = COUNT + 1
+                      COUNT_A = COUNT_A + 1
+                    ENDIF
+                  ELSE
+                    COUNT   = COUNT + 1
+                    COUNT_A = COUNT_A + 1
+                  ENDIF
+                  DO O = 1, NSTOKES
+                    STOKES(UT,V,O,W) = TNEW(O)
+                  ENDDO
+                ENDDO
+              ENDDO
+            ENDDO
+          ENDDO
+
+!  set convergence counter TESTCONV
+
+          IF ( COUNT .EQ. N_CONVTESTS ) THEN
+            TESTCONV = TESTCONV + 1
+            IF ( DO_DOUBLE_CONVTEST ) THEN
+              IF ( TESTCONV .EQ. 2 ) THEN
+                  LOCAL_ITERATION = .FALSE.
+              ENDIF
+            ELSE
+                LOCAL_ITERATION = .FALSE.
+            ENDIF
+            IF ( .NOT. LOCAL_ITERATION ) THEN
+              FOURIER_SAVED(IB) = FOURIER_COMPONENT
+            ENDIF
+          ELSE
+            TESTCONV = 0
+            FOURIER_SAVED(IB) = 2*NSTREAMS - 1
+          ENDIF
+
+!  end convergence clause
+
+        ENDIF
+
+!  TOA_CONTRIBS: For each azimuth, add Fourier component
+
+        IF ( DO_TOA_CONTRIBS ) THEN
+          DO UA = 1, LOCAL_N_USERAZM
+            DO I = LOCAL_UM_START, N_OUT_STREAMS
+              V = VZA_OFFSETS(IB,I) + UA
+              DO N = 1, NLAYERS
+                DO O = 1, NSTOKES
+                  TOLD(O) = CONTRIBS(V,O,N)
+                  TAZM(O) = AZMFAC(I,IB,UA,O)*MS_CONTRIBS_F(I,IB,O,N)
+                  CONTRIBS(V,O,N) = TOLD(O) + TAZM(O)
+                ENDDO
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDIF
+
+!  For Rayleigh scattering alone, stop iteration after third harmonic
+
+        IF ( DO_RAYLEIGH_ONLY ) THEN
+          IF ( FOURIER_COMPONENT .EQ. 2 ) THEN
+            LOCAL_ITERATION = .FALSE.
+            FOURIER_SAVED(IB) = FOURIER_COMPONENT
+          ENDIF
+        ENDIF
+
+!  For all Fourier, keep saveing the output number of Fourier terms
+
+        IF ( DO_ALL_FOURIER ) THEN
+          FOURIER_SAVED(IB) = FOURIER_COMPONENT
+        ENDIF
+
+!  Finish iteration loop
+
+      ENDIF
+
+!  Finish
+
+      RETURN
+      END SUBROUTINE VLIDORT_CONVERGE
+
+!
+
+      SUBROUTINE VLIDORT_CONVERGE_OBSGEO ( &
+        AZMFAC, FOURIER_COMPONENT, LOCAL_N_USERAZM, &
+        DO_SSCORR_NADIR, DO_SSCORR_OUTGOING, &
+        DO_SS_EXTERNAL, & ! New 15 March 2012
+        DO_SSFULL, DO_DOUBLE_CONVTEST, &
+        DO_RAYLEIGH_ONLY, DO_UPWELLING, &
+        NSTOKES, NSTREAMS, &
+        NLAYERS, VLIDORT_ACCURACY, &
+        N_USER_RELAZMS, N_USER_LEVELS, &
+        DO_TOA_CONTRIBS, &
+        DO_ALL_FOURIER, DO_DBCORRECTION, &
+        DO_NO_AZIMUTH, N_CONVTESTS, &
+        LOCAL_UM_START, N_DIRECTIONS, &
+        WHICH_DIRECTIONS, VZA_OFFSETS, &
+        STOKES_SS, STOKES_DB, SS_CONTRIBS, &
+        STOKES_F, MS_CONTRIBS_F, IB, &
+        STOKES, FOURIER_SAVED, CONTRIBS, &
+        TESTCONV, LOCAL_ITERATION )
+
+!  convergence test on the Stokes vector intensity
+
+      USE VLIDORT_PARS
+
+      IMPLICIT NONE
+
+      INTEGER, INTENT (IN) ::           FOURIER_COMPONENT
+      INTEGER, INTENT (IN) ::           LOCAL_N_USERAZM
+      DOUBLE PRECISION, INTENT (IN) ::  AZMFAC &
+          ( MAX_USER_STREAMS, MAXBEAMS, MAX_USER_RELAZMS, MAXSTOKES )
+      LOGICAL, INTENT (IN) ::           DO_SSCORR_NADIR
+      LOGICAL, INTENT (IN) ::           DO_SSCORR_OUTGOING
+!  New 15 March 2012
+      LOGICAL, INTENT (IN) ::           DO_SS_EXTERNAL
+      LOGICAL, INTENT (IN) ::           DO_SSFULL
+      LOGICAL, INTENT (IN) ::           DO_DOUBLE_CONVTEST
+      LOGICAL, INTENT (IN) ::           DO_RAYLEIGH_ONLY
+      LOGICAL, INTENT (IN) ::           DO_UPWELLING
+      INTEGER, INTENT (IN) ::           NSTOKES
+      INTEGER, INTENT (IN) ::           NSTREAMS
+      INTEGER, INTENT (IN) ::           NLAYERS
+      DOUBLE PRECISION, INTENT (IN) ::  VLIDORT_ACCURACY
+      INTEGER, INTENT (IN) ::           N_USER_RELAZMS
+      INTEGER, INTENT (IN) ::           N_USER_LEVELS
+      LOGICAL, INTENT (IN) ::           DO_TOA_CONTRIBS
+      LOGICAL, INTENT (IN) ::           DO_ALL_FOURIER
+      LOGICAL, INTENT (IN) ::           DO_DBCORRECTION
+      LOGICAL, INTENT (IN) ::           DO_NO_AZIMUTH
+      INTEGER, INTENT (IN) ::           N_CONVTESTS
+      INTEGER, INTENT (IN) ::           LOCAL_UM_START
+      INTEGER, INTENT (IN) ::           N_DIRECTIONS
+      INTEGER, INTENT (IN) ::           WHICH_DIRECTIONS ( MAX_DIRECTIONS )
+      INTEGER, INTENT (IN) ::           VZA_OFFSETS &
+          ( MAX_SZANGLES, MAX_USER_VZANGLES )
+      DOUBLE PRECISION, INTENT (IN) ::  STOKES_SS &
+          ( MAX_USER_LEVELS, MAX_GEOMETRIES, MAXSTOKES, MAX_DIRECTIONS )
+      DOUBLE PRECISION, INTENT (IN) ::  STOKES_DB &
+          ( MAX_USER_LEVELS, MAX_GEOMETRIES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (IN) ::  SS_CONTRIBS &
+          ( MAX_GEOMETRIES, MAXSTOKES, MAXLAYERS )
+      DOUBLE PRECISION, INTENT (IN) ::  STOKES_F &
+          ( MAX_USER_LEVELS, MAX_USER_VZANGLES, &
+            MAX_SZANGLES, MAXSTOKES, MAX_DIRECTIONS )
+      DOUBLE PRECISION, INTENT (IN) ::  MS_CONTRIBS_F &
+          ( MAX_USER_VZANGLES, MAX_SZANGLES, MAXSTOKES, MAXLAYERS  )
+      INTEGER, INTENT (IN) ::           IB
+
+      DOUBLE PRECISION, INTENT (INOUT) :: STOKES &
+          ( MAX_USER_LEVELS, MAX_GEOMETRIES, MAXSTOKES, MAX_DIRECTIONS )
+      INTEGER, INTENT (INOUT) ::          FOURIER_SAVED ( MAX_SZANGLES )
+      DOUBLE PRECISION, INTENT (INOUT) :: CONTRIBS &
+          ( MAX_GEOMETRIES, MAXSTOKES, MAXLAYERS )
+      INTEGER, INTENT (INOUT) ::          TESTCONV
+      LOGICAL, INTENT (INOUT) ::          LOCAL_ITERATION
+
+!  local variables
+!  ---------------
+
+      INTEGER ::          COUNT, N
+      INTEGER ::          I, IDIR, UT, UA, W, O, LUM, LUA
+      DOUBLE PRECISION :: TNEW ( MAXSTOKES ), ACCUR, &
+                          TOLD ( MAXSTOKES ), TAZM ( MAXSTOKES )
+
+!  Local user indices
+
+      LUM = 1
+      LUA = 1
+
+!  ###################
+!  Fourier 0 component
+!  ###################
+
+      IF ( FOURIER_COMPONENT.EQ.0 ) THEN
+
+!  Copy DIFFUSE Fourier component at all output angles and optical depth
+!    If no SSCORR and no DBCORR, then two options apply:
+!     (a) Convergence on STOKES = DIFFUSE + SSTRUNCATED + DBTRUNCATED
+!              (full radiance, no SS correction, no DB correction)
+!     (b) Convergence on STOKES = DIFFUSE alone (MS only mode)
+!              (SSTRUNCATED + DBTRUNCATED, do not get calculated)
+
+!  Full single scatter calculation is initialized to zero here (Version
+
+        IF ( .not. DO_SSFULL ) THEN
+          DO IDIR = 1, N_DIRECTIONS
+            W = WHICH_DIRECTIONS(IDIR)
+            DO UT = 1, N_USER_LEVELS
+              DO O = 1, NSTOKES
+                STOKES(UT,IB,O,W) = STOKES_F(UT,LUM,IB,O,W)
+              ENDDO
+            ENDDO
+          ENDDO
+        ELSE
+          FOURIER_SAVED(IB) = FOURIER_COMPONENT
+          DO IDIR = 1, N_DIRECTIONS
+            W = WHICH_DIRECTIONS(IDIR)
+            DO UT = 1, N_USER_LEVELS
+              DO O = 1, NSTOKES
+                STOKES(UT,IB,O,W) = ZERO
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDIF
+
+!  TOA contribution functions (only if flagged)
+
+        IF ( DO_TOA_CONTRIBS ) THEN
+          IF ( .not. DO_SSFULL ) THEN
+            DO O = 1, NSTOKES
+              DO N = 1, NLAYERS
+                CONTRIBS(IB,O,N) = MS_CONTRIBS_F(LUM,IB,O,N)
+              ENDDO
+            ENDDO
+          ELSE
+            DO O = 1, NSTOKES
+              DO N = 1, NLAYERS
+                CONTRIBS(IB,O,N) = ZERO
+              ENDDO
+            ENDDO
+          ENDIF
+        ENDIF
+
+!    STOKES. Add the single scatter component if flagged
+!     If set, now looking at convergence on RADIANCE = DIFFUSE + SSEXACT
+!     Version 2.1.   Added outgoing correction flag to this.....
+!     Version 2.3    Added Full single scatter flag
+
+!  New 15 March 2012, Introduced DO_SS_EXTERNAL flag
+
+        !IF ( DO_SSFULL.OR.DO_SSCORR_NADIR.OR.DO_SSCORR_OUTGOING ) THEN
+        IF ( DO_SSFULL .OR. &
+             ((DO_SSCORR_NADIR.OR.DO_SSCORR_OUTGOING).OR.DO_SS_EXTERNAL) ) THEN
+          DO IDIR = 1, N_DIRECTIONS
+            W = WHICH_DIRECTIONS(IDIR)
+            DO UT = 1, N_USER_LEVELS
+              DO O = 1, NSTOKES
+!          if (ib.eq.1)write(*,*)UT,STOKES(UT,IB,O,W),STOKES_SS(UT,IB,O,W)
+                STOKES(UT,IB,O,W) = STOKES(UT,IB,O,W) + STOKES_SS(UT,IB,O,W)
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDIF
+!        pause
+
+!    CONTRIBS. Add the single scatter component if flagged
+!     If set, now looking at convergence on RADIANCE = DIFFUSE + SSEXACT
+!     Version 2.1.   Added outgoing correction flag to this.....
+!     Version 2.3    Added Full single scatter flag
+
+        IF ( DO_TOA_CONTRIBS ) THEN
+          IF ( DO_SSFULL.OR.DO_SSCORR_NADIR.OR.DO_SSCORR_OUTGOING ) THEN
+            DO O = 1, NSTOKES
+              DO N = 1, NLAYERS
+                CONTRIBS(IB,O,N) = CONTRIBS(IB,O,N) + SS_CONTRIBS(IB,O,N)
+              ENDDO
+            ENDDO
+          ENDIF
+        ENDIF
+!        pause
+
+!    STOKES. Add the direct beam component if flagged (upwelling only)
+!       Convergence on STOKES = STOKES + DBEXACT
+!    Full single scatter option added Version 2.3
+
+!  New 15 March 2012, Introduced DO_SS_EXTERNAL flag
+
+        !IF ( (DO_SSFULL.OR.DO_DBCORRECTION).AND.DO_UPWELLING ) THEN
+        IF ( ((DO_SSFULL.OR.DO_DBCORRECTION).OR.DO_SS_EXTERNAL) &
+             .AND.DO_UPWELLING ) THEN
+          DO UT = 1, N_USER_LEVELS
+            DO O = 1, NSTOKES
+              STOKES(UT,IB,O,UPIDX) = STOKES(UT,IB,O,UPIDX) + STOKES_DB(UT,IB,O)
+            ENDDO
+          ENDDO
+        ENDIF
+
+!  If no_azimuth, then set output and exit flag
+
+        IF ( DO_NO_AZIMUTH ) THEN
+          LOCAL_ITERATION = .FALSE.
+          RETURN
+        ENDIF
+
+!  ######################
+!  Fourier components > 0
+!  ######################
+
+      ELSE
+
+!  No examination of convergence
+!  -----------------------------
+
+!  For Rayleigh atmosphere or if All Fourier components are required,
+!     skip convergence test on intensity
+
+        IF ( DO_RAYLEIGH_ONLY .OR. DO_ALL_FOURIER ) THEN
+
+!  For each geometry, add Fourier component
+!     - for direction, user optical depth
+
+            DO IDIR = 1, N_DIRECTIONS
+              W = WHICH_DIRECTIONS(IDIR)
+              DO UT = 1, N_USER_LEVELS
+                DO O = 1, NSTOKES
+                  TOLD(O) = STOKES(UT,IB,O,W)
+                  TAZM(O) = AZMFAC(LUM,IB,LUA,O)*STOKES_F(UT,LUM,IB,O,W)
+                  STOKES(UT,IB,O,W) = TOLD(O) + TAZM(O)
+                ENDDO
+              ENDDO
+            ENDDO
+
+!  Examine convergence on intensity only
+!  -------------------------------------
+
+!  convergence test applied to ALL directions AND
+!                              ALL stream values (except near zenith) AN
+!                              ALL azimuths taken together
+!                              ALL user optical depths
+
+        ELSE
+
+!  Count number of occasions Fourier term addition is below accuracy level
+
+          COUNT = 0
+          DO IDIR = 1, N_DIRECTIONS
+            W = WHICH_DIRECTIONS(IDIR)
+            DO UT = 1, N_USER_LEVELS
+              DO O = 1, NSTOKES
+                TOLD(O) = STOKES(UT,IB,O,W)
+                TAZM(O) = AZMFAC(LUM,IB,LUA,O)*STOKES_F(UT,LUM,IB,O,W)
+                TNEW(O) = TOLD(O) + TAZM(O)
+              ENDDO
+              IF ( TAZM(1) .NE. ZERO ) THEN
+                ACCUR = DABS(TAZM(1)/TNEW(1))
+                IF ( ACCUR .LT. VLIDORT_ACCURACY ) THEN
+                  COUNT = COUNT + 1
+                ENDIF
+              ELSE
+                COUNT = COUNT + 1
+              ENDIF
+              DO O = 1, NSTOKES
+                STOKES(UT,IB,O,W) = TNEW(O)
+              ENDDO
+            ENDDO
+          ENDDO
+
+!  set convergence counter TESTCONV
+
+          IF ( COUNT .EQ. N_CONVTESTS ) THEN
+            TESTCONV = TESTCONV + 1
+            IF ( DO_DOUBLE_CONVTEST ) THEN
+              IF ( TESTCONV .EQ. 2 ) THEN
+                LOCAL_ITERATION = .FALSE.
+              ENDIF
+            ELSE
+              LOCAL_ITERATION = .FALSE.
+            ENDIF
+            IF ( .NOT. LOCAL_ITERATION ) THEN
+              FOURIER_SAVED(IB) = FOURIER_COMPONENT
+            ENDIF
+          ELSE
+            TESTCONV = 0
+            FOURIER_SAVED(IB) = 2*NSTREAMS - 1
+          ENDIF
+
+!  end convergence clause
+
+        ENDIF
+
+!  TOA_CONTRIBS: For each azimuth, add Fourier component
+
+        IF ( DO_TOA_CONTRIBS ) THEN
+          DO N = 1, NLAYERS
+            DO O = 1, NSTOKES
+              TOLD(O) = CONTRIBS(IB,O,N)
+              TAZM(O) = AZMFAC(LUM,IB,LUA,O)*MS_CONTRIBS_F(LUM,IB,O,N)
+              CONTRIBS(IB,O,N) = TOLD(O) + TAZM(O)
+            ENDDO
+          ENDDO
+        ENDIF
+
+!  For Rayleigh scattering alone, stop iteration after third harmonic
+
+        IF ( DO_RAYLEIGH_ONLY ) THEN
+          IF ( FOURIER_COMPONENT .EQ. 2 ) THEN
+            LOCAL_ITERATION = .FALSE.
+            FOURIER_SAVED(IB) = FOURIER_COMPONENT
+          ENDIF
+        ENDIF
+
+!  For all Fourier, keep saveing the output number of Fourier terms
+
+        IF ( DO_ALL_FOURIER ) THEN
+          FOURIER_SAVED(IB) = FOURIER_COMPONENT
+        ENDIF
+
+!  Finish iteration loop
+
+      ENDIF
+
+!  Finish
+
+      RETURN
+      END SUBROUTINE VLIDORT_CONVERGE_OBSGEO
 
       END MODULE vlidort_intensity
-

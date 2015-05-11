@@ -19,7 +19,7 @@
 ! #  Email :       rtsolutions@verizon.net                      #
 ! #                                                             #
 ! #  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT, 2.4RTC,  #
-! #                   2.5, 2.6                                  #
+! #                   2.5, 2.6, 2.7                             #
 ! #  Release Date :   December 2005  (2.0)                      #
 ! #  Release Date :   March 2007     (2.2)                      #
 ! #  Release Date :   October 2007   (2.3)                      #
@@ -29,6 +29,7 @@
 ! #  Release Date :   October 2010   (2.4RTC)                   #
 ! #  Release Date :   March 2011     (2.5)                      #
 ! #  Release Date :   May 2012       (2.6)                      #
+! #  Release Date :   August 2014    (2.7)                      #
 ! #                                                             #
 ! #       NEW: TOTAL COLUMN JACOBIANS         (2.4)             #
 ! #       NEW: BPDF Land-surface KERNELS      (2.4R)            #
@@ -36,6 +37,9 @@
 ! #       Consolidated BRDF treatment         (2.4RTC)          #
 ! #       f77/f90 Release                     (2.5)             #
 ! #       External SS / New I/O Structures    (2.6)             #
+! #                                                             #
+! #       SURFACE-LEAVING / BRDF-SCALING      (2.7)             #
+! #       TAYLOR Series / OMP THREADSAFE      (2.7)             #
 ! #                                                             #
 ! ###############################################################
 
@@ -63,7 +67,7 @@
 !  Version number
 !  ==============
 
-      CHARACTER (LEN=5), PARAMETER :: VLIDORT_VERSION_NUMBER = '2.6'
+      CHARACTER (LEN=3), PARAMETER :: VLIDORT_VERSION_NUMBER = '2.7'
 
 !  File i/o unit numbers
 !  ======================
@@ -118,6 +122,11 @@
 
       INTEGER, PARAMETER :: MAX_USER_RELAZMS = 3
 
+!  Maximum number of Observational Geometries
+!   New parameter, 25 October 2012
+
+      INTEGER, PARAMETER :: MAX_USER_OBSGEOMS = 1
+
 !  Maximum number of output optical depths
 
       INTEGER, PARAMETER :: MAX_USER_LEVELS = 7
@@ -126,6 +135,12 @@
 !   This must be less than or equal to the previous entry
 
       INTEGER, PARAMETER :: MAX_PARTLAYERS = 6
+
+!  Version 2p7. Maximum number of Terms for Taylor series expansions
+!    If you are retaining contributions of order EPS^n, 
+!    then you need at least n+2 Taylor terms
+
+   INTEGER, PARAMETER :: MAX_TAYLOR_TERMS = 7
 
 !  Fixed parameters
 !  ----------------
@@ -159,6 +174,11 @@
       INTEGER, PARAMETER :: max_msrs_muquad  = 50
       INTEGER, PARAMETER :: max_msrs_phiquad = 100
 
+!  Number of quadrature streams for internal WSA/BSA scaling
+!    New, Version 2.7. User does not need to know this value.
+
+      INTEGER, parameter :: MAXSTREAMS_SCALING = 24
+
 !  Weighting functions
 !  -------------------
 
@@ -169,6 +189,10 @@
 !  Maximum number of surface property weighting functions
 
       INTEGER, PARAMETER :: MAX_SURFACEWFS = 1
+
+!  Maximum number of surface-leaving weighting functions
+
+      INTEGER, PARAMETER :: MAX_SLEAVEWFS = 1
 
 !  Maximum number of error messages
 
@@ -298,6 +322,8 @@
       CHARACTER (LEN=*), PARAMETER :: DWFR6 = '(6(A,I3),A,ES13.6E2)'
       CHARACTER (LEN=*), PARAMETER :: DWFR7 = '(7(A,I3),A,ES13.6E2)'
 
+      CHARACTER (LEN=*), PARAMETER :: DWFR1_3 = '(A,I3,3(A,ES13.6E2))'
+
       CHARACTER (LEN=*), PARAMETER :: DWFC  = '(2A)'
       CHARACTER (LEN=*), PARAMETER :: DWFC1 = '(A,I3,2A)'
       CHARACTER (LEN=*), PARAMETER :: DWFC2 = '(2(A,I3),2A)'
@@ -337,6 +363,11 @@
         SMALLNUM = 1.0D-15
       DOUBLE PRECISION, PARAMETER :: &
         BIGEXP = 32.0D0
+
+!  Rob fix 5/6/13 - Taylor series limiting values
+
+      DOUBLE PRECISION, PARAMETER :: TAYLOR_SMALL = 1.0D-04
+      DOUBLE PRECISION, PARAMETER :: TAYLOR_LARGE = 1.0d+04
 
 !  Control for Using L'Hopital's Rule
 !   Changed, January 2009 for Version 2.4..........
@@ -378,6 +409,7 @@
 !  ---------------
 
 !  These refer to the BRDF kernel functions currently included.
+!  Rob Extension 12/2/14. BPDF Kernels (replaces BPDF2009)
 
       INTEGER, PARAMETER :: LAMBERTIAN_IDX       = 1
       INTEGER, PARAMETER :: ROSSTHIN_IDX         = 2
@@ -391,11 +423,20 @@
       INTEGER, PARAMETER :: GISSCOXMUNK_IDX      = 10
       INTEGER, PARAMETER :: GISSCOXMUNK_CRI_IDX  = 11
 
-!  New for Version 2.4RTC
+!  New for Version 2.4RTC and up to Version 2.6.
+!      INTEGER, PARAMETER :: BPDF2009_IDX         = 12
 
-      INTEGER, PARAMETER :: BPDF2009_IDX         = 12
+!  New BPDF functions for Version 2.7
+!   These match the options in LIDORT Version 3.7.
 
-      INTEGER, PARAMETER :: MAXBRDF_IDX = BPDF2009_IDX
+      INTEGER, PARAMETER :: BPDFSOIL_IDX         = 12
+      INTEGER, PARAMETER :: BPDFVEGN_IDX         = 13
+      INTEGER, PARAMETER :: BPDFNDVI_IDX         = 14
+
+!  New Cox-Munk function for Version 2.7
+
+      INTEGER, PARAMETER :: NewCMGLINT_IDX       = 15
+      INTEGER, PARAMETER :: MAXBRDF_IDX = NewCMGLINT_IDX
 
 !  End of file.
 

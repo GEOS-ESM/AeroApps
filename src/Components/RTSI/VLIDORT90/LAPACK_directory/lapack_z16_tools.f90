@@ -997,10 +997,10 @@
       DOUBLE PRECISION FUNCTION DCABS1(Z)
       double complex z,zz
       double precision t(2)
-!mick
+!mick fix
       !equivalence (zz,t(1))
       zz = z
-!mick
+!mick fix
       t(1) = dble(zz)
       t(2) = dimag(zz)
 

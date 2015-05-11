@@ -19,7 +19,7 @@
 ! #  Email :       rtsolutions@verizon.net                      #
 ! #                                                             #
 ! #  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT, 2.4RTC,  #
-! #                   2.5, 2.6                                  #
+! #                   2.5, 2.6, 2.7                             #
 ! #  Release Date :   December 2005  (2.0)                      #
 ! #  Release Date :   March 2007     (2.2)                      #
 ! #  Release Date :   October 2007   (2.3)                      #
@@ -29,6 +29,7 @@
 ! #  Release Date :   October 2010   (2.4RTC)                   #
 ! #  Release Date :   March 2011     (2.5)                      #
 ! #  Release Date :   May 2012       (2.6)                      #
+! #  Release Date :   August 2014    (2.7)                      #
 ! #                                                             #
 ! #       NEW: TOTAL COLUMN JACOBIANS         (2.4)             #
 ! #       NEW: BPDF Land-surface KERNELS      (2.4R)            #
@@ -36,6 +37,9 @@
 ! #       Consolidated BRDF treatment         (2.4RTC)          #
 ! #       f77/f90 Release                     (2.5)             #
 ! #       External SS / New I/O Structures    (2.6)             #
+! #                                                             #
+! #       SURFACE-LEAVING / BRDF-SCALING      (2.7)             #
+! #       TAYLOR Series / OMP THREADSAFE      (2.7)             #
 ! #                                                             #
 ! ###############################################################
 
@@ -67,6 +71,8 @@
            ( WNUMLO, WNUMHI, TEMPERATURE,     & ! Inputs
              BBFUNC, SMALLV, FAIL, MESSAGE )    ! Outputs
 
+      USE VLIDORT_PARS
+
       implicit none
 
 !  Input arguments
@@ -95,29 +101,44 @@
 !  Local variables
 !  ---------------
 
-!  Saved variables
-
-      DOUBLE PRECISION :: DPI, CONC, VMAX, EPSIL, SIGDPI
-      SAVE            DPI, CONC, VMAX, EPSIL, SIGDPI
-      DATA            DPI / 0.0d0 /
-
-!  Other data statements
-
-      INTEGER      :: NSIMPSON
-      DOUBLE PRECISION :: C2, SIGMA, VCUT, VCP(7), CRITERION
-      DATA        C2 / 1.438786D0 /
-      DATA     SIGMA / 5.67032D-8 /
-      DATA      VCUT / 1.5D0 /
-      DATA       VCP / 10.25D0, 5.7D0, 3.9D0, 2.9D0, 2.3D0, 1.9D0, 0.0D0 /
-      DATA CRITERION / 1.0d-10 /
-      DATA  NSIMPSON / 25 /
+!  Local parameters for:
+!  (1) General use
+      DOUBLE PRECISION, parameter :: &
+        C2     = 1.438786_fpk,         & !Planck function constant #2
+        SIGMA  = 5.67032e-8_fpk,       & !Stefan-Boltzmann constant
+        SIGDPI = 1.80491891383e-8_fpk, & !SIGMA/Pi
+        POWER4 = 4.0_fpk,              &
+        CONC   = 1.5398973382e-01_fpk    !15.0d0/(Pi**POWER4)
+!  (2) Method discrimination
+      DOUBLE PRECISION, parameter :: &
+        EPSIL  = 1.0e-8_fpk, &
+        VMAX   = 32.0_fpk
+!  (2a) Method #1: Simpson's rule
+      integer, parameter :: &
+        NSIMPSON = 25
+      DOUBLE PRECISION, parameter :: &
+        CRITERION = 1.0e-10_fpk
+!  (2b) Method #2: Polynomial series
+      DOUBLE PRECISION, parameter :: &
+        A1 =  3.33333333333e-01_fpk, & !  1.0/3.0
+        A2 = -1.25e-01_fpk,          & ! -1.0/8.0
+        A3 =  1.66666666667e-02_fpk, & !  1.0/60.0
+        A4 = -1.98412698413e-04_fpk, & ! -1.0/5040.0
+        A5 =  3.67430922986e-06_fpk, & !  1.0/272160.0
+        A6 = -7.51563251563e-08_fpk    ! -1.0/13305600.0
+!  (2c) Method #3: Exponential series
+      DOUBLE PRECISION, parameter :: &
+        VCUT = 1.5_fpk
+      DOUBLE PRECISION, parameter, dimension(7) :: &
+        VCP  = (/ 10.25_fpk, 5.7_fpk, 3.9_fpk, 2.9_fpk, &
+                   2.3_fpk,   1.9_fpk, 0.0_fpk /)
 
 !  Other variables
 
       INTEGER      :: N, K, M, MMAX, I
 
       DOUBLE PRECISION :: XLOW, XHIG, XX, X(2), XCUBE, EXPX, OEXPXM1
-      DOUBLE PRECISION :: RANGE, XSTEP, XSTEP3, FACTOR, GAMMA, POWER4
+      DOUBLE PRECISION :: RANGE, XSTEP, XSTEP3, FACTOR, GAMMA
       DOUBLE PRECISION :: PLANCK_LOW, PLANCK_HIG, PLANCK, SCALING
       DOUBLE PRECISION :: VAL, VAL0, OLDVAL, T
 
@@ -125,36 +146,12 @@
       DOUBLE PRECISION :: PLANCK_EXP(2)
       DOUBLE PRECISION :: PLANCK_POL(2)
 
-!  Parameters for the polynomial series
-
-      DOUBLE PRECISION :: A1, A2, A3, A4, A5, A6
-
 !  Initialize output
 
       FAIL    = .false.
       MESSAGE = ' '
       SMALLV  = 0
       BBFUNC  = 0.0d0
-
-!  set parameters
-
-      A1 =  1.0D0 / 3.0D0
-      A2 = -1.0D0 / 8.0D0
-      A3 =  1.0D0 / 60.0D0
-      A4 = -1.0D0 / 5040.0D0
-      A5 =  1.0D0 / 272160.0D0
-      A6 = -1.0D0 / 13305600.0D0
-
-!  set the saved variables
-
-      IF ( DPI .EQ. 0.0d0 ) THEN
-         DPI    = 2.0d0*DASIN(1.0d0)
-         VMAX   = 32.0d0
-         EPSIL  = 1.0d-08
-         SIGDPI = SIGMA / DPI
-         POWER4 = 4.0d0
-         CONC   = 15.0d0 / DPI ** POWER4
-      END IF
 
 !  Check input
 
@@ -173,7 +170,6 @@
 
 !  Scaling constants
 
-      POWER4 = 4.0d0
       SCALING  = SIGDPI * T ** POWER4
 
 !  Wavenumbers are very close.  Get integral
@@ -294,11 +290,10 @@
         EX  = DEXP( - X(I) )
         F   = 1.0d0
         PL  = 0.0d0
-        POWER4 = -4.0d0
         DO  M = 1, MMAX
           MV = M*X(I)
           F  = EX * F
-          M4 = DBLE(M) ** POWER4
+          M4 = DBLE(M) ** (-POWER4)
           PL = PL + F*(6.0d0+MV*(6.0d0+MV*(3.0d0+MV)))*M4
         ENDDO
         PLANCK_EXP(I)  = PL * CONC
@@ -332,6 +327,8 @@
            ( WNUMLO, WNUMHI, TEMPERATURE,              & ! Inputs
              BBFUNC, DBBFUNC, SMALLV, FAIL, MESSAGE )    ! Outputs
 
+      USE VLIDORT_PARS
+
       implicit none
 
 !  Input arguments
@@ -362,28 +359,50 @@
 !  Local variables
 !  ---------------
 
-!  Saved variables
-
-      DOUBLE PRECISION :: DPI, CONC, VMAX, EPSIL, SIGDPI
-      SAVE            DPI, CONC, VMAX, EPSIL, SIGDPI
-      DATA            DPI / 0.0d0 /
-
-!  Other data statements
-
-      INTEGER          :: NSIMPSON
-      DOUBLE PRECISION :: C2, SIGMA, VCUT, VCP(7), CRITERION
-      DATA        C2 / 1.438786D0 /
-      DATA     SIGMA / 5.67032D-8 /
-      DATA      VCUT / 1.5D0 /
-      DATA       VCP / 10.25D0, 5.7D0, 3.9D0, 2.9D0, 2.3D0, 1.9D0, 0.0D0 /
-      DATA CRITERION / 1.0d-10 /
-      DATA  NSIMPSON / 25 /
+!  Local parameters for:
+!  (1) General use
+      DOUBLE PRECISION, parameter :: &
+        C2     = 1.438786_fpk,         & !Planck function constant #2
+        SIGMA  = 5.67032e-8_fpk,       & !Stefan-Boltzmann constant
+        SIGDPI = 1.80491891383e-8_fpk, & !SIGMA/Pi
+        POWER4 = 4.0_fpk,              &
+        CONC   = 1.5398973382e-01_fpk    !15.0d0/(Pi**POWER4)
+!  (2) Method discrimination
+      DOUBLE PRECISION, parameter :: &
+        EPSIL  = 1.0e-8_fpk, &
+        VMAX   = 32.0_fpk
+!  (2a) Method #1: Simpson's rule
+      integer, parameter :: &
+        NSIMPSON = 25
+      DOUBLE PRECISION, parameter :: &
+        CRITERION = 1.0e-10_fpk
+!  (2b) Method #2: Polynomial series
+      DOUBLE PRECISION, parameter :: &
+        A1 =  3.33333333333e-01_fpk, & !  1.0/3.0
+        A2 = -1.25e-01_fpk,          & ! -1.0/8.0
+        A3 =  1.66666666667e-02_fpk, & !  1.0/60.0
+        A4 = -1.98412698413e-04_fpk, & ! -1.0/5040.0
+        A5 =  3.67430922986e-06_fpk, & !  1.0/272160.0
+        A6 = -7.51563251563e-08_fpk    ! -1.0/13305600.0
+      DOUBLE PRECISION, parameter :: &
+        D1 =  3.33333333333e-01_fpk, & !  A1
+        D2 =  0.0d0,                 & !  0.0d0
+        D3 = -1.66666666667e-02_fpk, & ! -1.0d0 * A3
+        D4 =  5.95238095238e-04_fpk, & ! -3.0d0 * A4
+        D5 = -1.83715461493e-05_fpk, & ! -5.0d0 * A5
+        D6 =  5.26094276094e-07_fpk    ! -7.0d0 * A6
+!  (2c) Method #3: Exponential series
+      DOUBLE PRECISION, parameter :: &
+        VCUT = 1.5_fpk
+      DOUBLE PRECISION, parameter, dimension(7) :: &
+        VCP  = (/ 10.25_fpk, 5.7_fpk, 3.9_fpk, 2.9_fpk, &
+                   2.3_fpk,   1.9_fpk, 0.0_fpk /)
 
 !  Other variables
 
       INTEGER      :: N, K, M, MMAX, I
       DOUBLE PRECISION :: XLOW, XHIG, XX, X(2), XCUBE, EXPX, OEXPXM1
-      DOUBLE PRECISION :: RANGE, XSTEP, XSTEP3, FACTOR, GAMMA, POWER4
+      DOUBLE PRECISION :: RANGE, XSTEP, XSTEP3, FACTOR, GAMMA
       DOUBLE PRECISION :: PLANCK_LOW, PLANCK_HIG, PLANCK, SCALING, T
       DOUBLE PRECISION :: DPLANCK_LOW, DPLANCK_HIG, DPLANCK, DSCALING
       DOUBLE PRECISION :: VAL, VAL0, OLDVAL, DVAL, DVAL0, DOLDVAL
@@ -392,11 +411,6 @@
       DOUBLE PRECISION :: PLANCK_EXP(2), DPLANCK_EXP(2)
       DOUBLE PRECISION :: PLANCK_POL(2), DPLANCK_POL(2)
 
-!  Parameters for the polynomial series and derivative
-
-      DOUBLE PRECISION :: A1, A2, A3, A4, A5, A6
-      DOUBLE PRECISION :: D1, D2, D3, D4, D5, D6
-
 !  Initialize output
 
       FAIL    = .false.
@@ -404,33 +418,6 @@
       SMALLV  = 0
       BBFUNC  = 0.0d0
       DBBFUNC = 0.0d0
-
-!  set parameters
-
-      A1 =  1.0D0 / 3.0D0
-      A2 = -1.0D0 / 8.0D0
-      A3 =  1.0D0 / 60.0D0
-      A4 = -1.0D0 / 5040.0D0
-      A5 =  1.0D0 / 272160.0D0
-      A6 = -1.0D0 / 13305600.0D0
-
-      D1 = A1
-      D2 = 0.0d0
-      D3 = -1.0d0 * A3
-      D4 = -3.0d0 * A4
-      D5 = -5.0d0 * A5
-      D6 = -7.0d0 * A6
-
-!  set the saved variables
-
-      IF ( DPI .EQ. 0.0d0 ) THEN
-         DPI    = 2.0d0*DASIN(1.0d0)
-         VMAX   = 32.0d0
-         EPSIL  = 1.0d-08
-         SIGDPI = SIGMA / DPI
-         POWER4 = 4.0d0
-         CONC   = 15.0d0 / DPI ** POWER4
-      END IF
 
 !  Check input
 
@@ -449,7 +436,6 @@
 
 !  Scaling constants
 
-      POWER4 = 4.0d0
       SCALING  = SIGDPI * T ** POWER4
       DSCALING = SCALING / T 
 
@@ -584,11 +570,10 @@
         F   = 1.0d0
         PL  = 0.0d0
         DL  = 0.0D0
-        POWER4 = -4.0d0
         DO  M = 1, MMAX
           MV = M*X(I)
           F  = EX * F
-          M4 = DBLE(M) ** POWER4
+          M4 = DBLE(M) ** (-POWER4)
           PL = PL + F*(6.0d0+MV*(6.0d0+MV*(3.0d0+MV)))*M4
           DL = DL + F*(24.0d0+MV*(24.0d0+MV*(12.0d0+MV*(4.0d0+MV))))*M4
         ENDDO

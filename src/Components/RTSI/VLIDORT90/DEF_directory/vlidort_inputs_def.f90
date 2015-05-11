@@ -20,7 +20,7 @@
 ! #  Email :       rtsolutions@verizon.net                      #
 ! #                                                             #
 ! #  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT, 2.4RTC,  #
-! #                   2.5, 2.6                                  #
+! #                   2.5, 2.6, 2.7                             #
 ! #  Release Date :   December 2005  (2.0)                      #
 ! #  Release Date :   March 2007     (2.2)                      #
 ! #  Release Date :   October 2007   (2.3)                      #
@@ -30,6 +30,7 @@
 ! #  Release Date :   October 2010   (2.4RTC)                   #
 ! #  Release Date :   March 2011     (2.5)                      #
 ! #  Release Date :   May 2012       (2.6)                      #
+! #  Release Date :   August 2014    (2.7)                      #
 ! #                                                             #
 ! #       NEW: TOTAL COLUMN JACOBIANS         (2.4)             #
 ! #       NEW: BPDF Land-surface KERNELS      (2.4R)            #
@@ -37,6 +38,9 @@
 ! #       Consolidated BRDF treatment         (2.4RTC)          #
 ! #       f77/f90 Release                     (2.5)             #
 ! #       External SS / New I/O Structures    (2.6)             #
+! #                                                             #
+! #       SURFACE-LEAVING / BRDF-SCALING      (2.7)             #
+! #       TAYLOR Series / OMP THREADSAFE      (2.7)             #
 ! #                                                             #
 ! ###############################################################
 
@@ -78,7 +82,6 @@
 
       TYPE VLIDORT_Fixed_Boolean
 
-
 !  Full Radiance calculation
 
       LOGICAL     :: TS_DO_FULLRAD_MODE
@@ -108,12 +111,12 @@
 
 !      LOGICAL     :: TS_DO_BRDF_SURFACE
 
-!  directional control
+!  Directional control
 
       LOGICAL     :: TS_DO_UPWELLING
       LOGICAL     :: TS_DO_DNWELLING
 
-!  stream angle flags
+!  Stream angle flags
 
       LOGICAL     :: TS_DO_QUAD_OUTPUT
 
@@ -131,7 +134,7 @@
       LOGICAL     :: TS_DO_SPECIALIST_OPTION_2
       LOGICAL     :: TS_DO_SPECIALIST_OPTION_3
 
-!  surface leaving Control. New 17 May 2012
+!  Surface leaving Control. New 17 May 2012
 
       LOGICAL     :: TS_DO_SURFACE_LEAVING
       LOGICAL     :: TS_DO_SL_ISOTROPIC
@@ -143,6 +146,10 @@
 
       TYPE VLIDORT_Fixed_Control
 
+!  Taylor ordering parameter. Should be set to 2 or 3
+!     Added, 2/19/14 for Taylor-series expansions
+
+      INTEGER   :: TS_TAYLOR_ORDER
 
 !  Number of Stokes parameters
 
@@ -174,7 +181,6 @@
       INTEGER   :: TS_NLAYERS_NOMS
       INTEGER   :: TS_NLAYERS_CUTOFF
 
-
       END TYPE VLIDORT_Fixed_Control
 
 ! #####################################################################
@@ -182,12 +188,9 @@
 
       TYPE VLIDORT_Fixed_Sunrays
 
+!  Flux factor ( should be 1 or pi ). Same for all solar beams.
 
-!  Bottom-of-atmosphere solar zenith angles, DEGREES
-
-!      REAL(fpk), dimension (MAXBEAMS) :: TS_BEAM_SZAS
-      REAL(fpk), dimension (MAX_SZANGLES) :: TS_SZANGLES
-
+      REAL(fpk)  :: TS_FLUX_FACTOR
 
       END TYPE VLIDORT_Fixed_Sunrays
 
@@ -196,21 +199,13 @@
 
       TYPE VLIDORT_Fixed_UserValues
 
-
 !  User-defined zenith angle input
+!    Now moved to Modified User Values, 25 October 2012
+!      INTEGER                                 :: TS_N_USER_STREAMS
 
-!      INTEGER                                  :: TS_N_USER_STREAMS
-      INTEGER                                  :: TS_N_USER_VZANGLES
-
-!  User-defined vertical level output. From Top-of-atmosphere. Example for 4 outputs:
-!     USER_LEVELS(1) = 0.0           --> Top-of-atmosphere
-!     USER_LEVELS(2) = 1.1           --> One tenth of the way down into Layer 2
-!     USER_LEVELS(3) = 3.5           --> One half  of the way down into Layer 4
-!     USER_LEVELS(4) = dble(NLAYERS) --> Bottom of atmosphere
+!  User-defined vertical level output
 
       INTEGER                                 :: TS_N_USER_LEVELS
-      REAL(fpk), dimension (MAX_USER_LEVELS)  :: TS_USER_LEVELS
-
 
       END TYPE VLIDORT_Fixed_UserValues
 
@@ -219,13 +214,12 @@
 
       TYPE VLIDORT_Fixed_Chapman
 
-
-!  multilayer Height inputsm in [km]
+!  Multilayer Height inputs in [km]
 !   Required for the Chapman function calculations
 
       REAL(fpk), dimension (0:MAXLAYERS) :: TS_HEIGHT_GRID
 
-!  multilayer atmospheric inputs. Pressures in [mb], temperatures in [K]
+!  Multilayer atmospheric inputs. Pressures in [mb], temperatures in [K]
 !   Required for the Chapman function calculations, refractive geometry
 
       REAL(fpk), dimension (0:MAXLAYERS) :: TS_PRESSURE_GRID
@@ -241,7 +235,6 @@
 
       REAL(fpk) :: TS_RFINDEX_PARAMETER
 
-
       END TYPE VLIDORT_Fixed_Chapman
 
 ! #####################################################################
@@ -249,8 +242,7 @@
 
       TYPE VLIDORT_Fixed_Optical
 
-
-!  multilayer optical property (bulk)
+!  Multilayer optical property (bulk)
 
       REAL(fpk), dimension ( MAXLAYERS ) :: TS_DELTAU_VERT_INPUT
 
@@ -272,11 +264,10 @@
 
       REAL(fpk) :: TS_SURFACE_BB_INPUT
 
-!  Special LTE variables (RT Solutions Use Only)
-
-      REAL(fpk), dimension ( 2, MAXLAYERS ) :: TS_LTE_DELTAU_VERT_INPUT
-      REAL(fpk), dimension ( 0:MAXLAYERS )  :: TS_LTE_THERMAL_BB_INPUT
-
+!  Special LTE variables (RT Solutions Use Only).
+!   This has been superseded in Version 2.7. No longer required
+!      REAL(fpk), dimension ( 2, MAXLAYERS ) :: TS_LTE_DELTAU_VERT_INPUT
+!      REAL(fpk), dimension ( 0:MAXLAYERS )  :: TS_LTE_THERMAL_BB_INPUT
 
       END TYPE VLIDORT_Fixed_Optical
 
@@ -335,13 +326,17 @@
 
       TYPE VLIDORT_Modified_Boolean
 
-
-!  single scatter and direct beam corrections
+!  Single scatter and direct beam corrections
 
       LOGICAL    :: TS_DO_SSCORR_NADIR
       LOGICAL    :: TS_DO_SSCORR_OUTGOING
 
-!  double convergence test flag
+!  Flag for using FO code to compute single-scatter solution.
+!     New 5 Jul 2013
+
+      LOGICAL    :: TS_DO_FO_CALC
+
+!  Double convergence test flag
 
       LOGICAL    :: TS_DO_DOUBLE_CONVTEST
 
@@ -354,14 +349,14 @@
       LOGICAL    :: TS_DO_REFRACTIVE_GEOMETRY
       LOGICAL    :: TS_DO_CHAPMAN_FUNCTION
 
-!  scatterers and phase function control
+!  Scatterers and phase function control
 
       LOGICAL    :: TS_DO_RAYLEIGH_ONLY
 !      LOGICAL    :: TS_DO_ISOTROPIC_ONLY
 !      LOGICAL    :: TS_DO_NO_AZIMUTH
 !      LOGICAL    :: TS_DO_ALL_FOURIER
 
-!  Deltam scaling flag
+!  Delta-M scaling flag
 
       LOGICAL    :: TS_DO_DELTAM_SCALING
 
@@ -370,12 +365,12 @@
       LOGICAL    :: TS_DO_SOLUTION_SAVING
       LOGICAL    :: TS_DO_BVP_TELESCOPING
 
-!  stream angle flags
+!  Stream angle flags
 
 !      LOGICAL    :: TS_DO_USER_STREAMS
       LOGICAL    :: TS_DO_USER_VZANGLES
 
-!  mean value control
+!  Mean value control
 
       LOGICAL    :: TS_DO_ADDITIONAL_MVOUT
       LOGICAL    :: TS_DO_MVOUT_ONLY
@@ -384,6 +379,10 @@
 
       LOGICAL    :: TS_DO_THERMAL_TRANSONLY
 
+!  Observation-Geometry input control. New 25 October 2012
+!     R. Spurr, RT SOLUTIONS Inc.
+
+      LOGICAL     :: TS_DO_OBSERVATION_GEOMETRY
 
       END TYPE VLIDORT_Modified_Boolean
 
@@ -392,12 +391,10 @@
 
       TYPE VLIDORT_Modified_Control
 
-
-!  number of Legendre phase function expansion moments
+!  Number of Legendre phase function expansion moments
 !       May be re-set after Checking
 
       INTEGER   :: TS_NGREEK_MOMENTS_INPUT
-
 
       END TYPE VLIDORT_Modified_Control
 
@@ -406,16 +403,15 @@
 
       TYPE VLIDORT_Modified_Sunrays
 
-
-!  Flux factor ( should be 1 or pi ). Same for all solar beams.
-
-      REAL(fpk)  :: TS_FLUX_FACTOR
-
-!  number of solar beams to be processed
+!  Number of solar beams to be processed
 
 !      INTEGER    :: TS_NBEAMS
       INTEGER    :: TS_N_SZANGLES
 
+!  Bottom-of-atmosphere solar zenith angles, DEGREES
+
+!      REAL(fpk), dimension (MAXBEAMS) :: TS_BEAM_SZAS
+      REAL(fpk), dimension (MAX_SZANGLES) :: TS_SZANGLES
 
       END TYPE VLIDORT_Modified_Sunrays
 
@@ -432,13 +428,32 @@
 
 !  User-defined zenith angle input
 
+!      INTEGER                                  :: TS_N_USER_STREAMS
+      INTEGER                                  :: TS_N_USER_VZANGLES
 !      REAL(fpk), dimension (MAX_USER_STREAMS)  :: TS_USER_ANGLES_INPUT
       REAL(fpk), dimension (MAX_USER_VZANGLES) :: TS_USER_VZANGLES_INPUT
+
+!  User-defined vertical level output. From Top-of-atmosphere. Example for 4 outputs:
+!     USER_LEVELS(1) = 0.0           --> Top-of-atmosphere
+!     USER_LEVELS(2) = 1.1           --> One tenth of the way down into Layer 2
+!     USER_LEVELS(3) = 3.5           --> One half  of the way down into Layer 4
+!     USER_LEVELS(4) = dble(NLAYERS) --> Bottom of atmosphere
+
+      REAL(fpk), dimension (MAX_USER_LEVELS)  :: TS_USER_LEVELS
 
 !  Geometry specification height
 
       REAL(fpk)                               :: TS_GEOMETRY_SPECHEIGHT
 
+!  Observation-Geometry input control. New 25 October 2012
+!     R. Spurr, RT SOLUTIONS Inc.
+
+      INTEGER                                 :: TS_N_USER_OBSGEOMS
+
+!  User-defined Observation Geometry angle input
+!     New variable, 25 October 2012, for Observational Geometry input
+
+      REAL(fpk), dimension (MAX_USER_OBSGEOMS,3) :: TS_USER_OBSGEOMS_INPUT
 
       END TYPE VLIDORT_Modified_UserValues
 
@@ -446,7 +461,6 @@
 ! #####################################################################
 
       TYPE VLIDORT_Modified_Chapman
-
 
 !  Output from Chapman function calculations - can also be input (not used)
 
@@ -457,7 +471,6 @@
 
       REAL(fpk) :: TS_EARTH_RADIUS
 
-
       END TYPE VLIDORT_Modified_Chapman
 
 ! #####################################################################
@@ -465,11 +478,9 @@
 
       TYPE VLIDORT_Modified_Optical
 
-
-!  multilayer optical property (bulk)
+!  Multilayer optical property (bulk)
 
       REAL(fpk), dimension ( MAXLAYERS ) :: TS_OMEGA_TOTAL_INPUT
-
 
       END TYPE VLIDORT_Modified_Optical
 
@@ -478,14 +489,12 @@
 
       TYPE VLIDORT_Modified_Inputs
 
-
       TYPE(VLIDORT_Modified_Boolean)    :: MBool
       TYPE(VLIDORT_Modified_Control)    :: MCont
       TYPE(VLIDORT_Modified_Sunrays)    :: MSunrays
       TYPE(VLIDORT_Modified_UserValues) :: MUserVal
       TYPE(VLIDORT_Modified_Chapman)    :: MChapman
       TYPE(VLIDORT_Modified_Optical)    :: MOptical
-
 
       END TYPE VLIDORT_Modified_Inputs
 

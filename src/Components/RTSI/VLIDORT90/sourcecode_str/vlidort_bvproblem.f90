@@ -19,7 +19,7 @@
 ! #  Email :       rtsolutions@verizon.net                      #
 ! #                                                             #
 ! #  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT, 2.4RTC,  #
-! #                   2.5, 2.6                                  #
+! #                   2.5, 2.6, 2.7                             #
 ! #  Release Date :   December 2005  (2.0)                      #
 ! #  Release Date :   March 2007     (2.2)                      #
 ! #  Release Date :   October 2007   (2.3)                      #
@@ -29,6 +29,7 @@
 ! #  Release Date :   October 2010   (2.4RTC)                   #
 ! #  Release Date :   March 2011     (2.5)                      #
 ! #  Release Date :   May 2012       (2.6)                      #
+! #  Release Date :   August 2014    (2.7)                      #
 ! #                                                             #
 ! #       NEW: TOTAL COLUMN JACOBIANS         (2.4)             #
 ! #       NEW: BPDF Land-surface KERNELS      (2.4R)            #
@@ -36,6 +37,9 @@
 ! #       Consolidated BRDF treatment         (2.4RTC)          #
 ! #       f77/f90 Release                     (2.5)             #
 ! #       External SS / New I/O Structures    (2.6)             #
+! #                                                             #
+! #       SURFACE-LEAVING / BRDF-SCALING      (2.7)             #
+! #       TAYLOR Series / OMP THREADSAFE      (2.7)             #
 ! #                                                             #
 ! ###############################################################
 
@@ -65,6 +69,7 @@
 ! #                                                             #
 ! #            BVPTEL_MATRIXSETUP_MASTER      (master)          #
 ! #             BVPTEL_MATRIX_INIT                              #
+! #             BVPTEL_MATRIX_INIT_OMP                          #
 ! #             BVPTEL_MATRIX_SETUP                             #
 ! #             BVPTEL_MATRIX_SVD                               #
 ! #                                                             #
@@ -555,7 +560,6 @@
       ENDIF
 
 !  compression row indices, NMIN, NMAX and KALL
-!    Results are now stored in commons
 
       DO J = 1, N_SUPDIAG + 1
         NMIN(J) = 1
@@ -1331,6 +1335,7 @@
         BANDMAT2, IPIVOT, &
         SMAT2, SIPIVOT, &
         AXBID_F, &
+        COL2, SCOL2, &
         R2_BEAM, LCON, MCON, &
         STATUS, MESSAGE, TRACE )
 
@@ -1376,6 +1381,10 @@
       DOUBLE PRECISION, INTENT (IN) ::   AXBID_F &
           ( MAXSTREAMS, MAXSTREAMS, MAXSTOKES_SQ )
 
+!mick fix 7/29/2014 - placed COL2 & SCOL2 in call to make VLIDORT threadsafe
+      DOUBLE PRECISION, INTENT (INOUT) ::  COL2 ( MAXTOTAL, MAXBEAMS )
+      DOUBLE PRECISION, INTENT (INOUT) ::  SCOL2 ( MAXSTRMSTKS_2, MAXBEAMS )
+
       DOUBLE PRECISION, INTENT (INOUT) ::  R2_BEAM ( MAXSTREAMS, MAXSTOKES )
       DOUBLE PRECISION, INTENT (INOUT) ::  LCON ( MAXSTRMSTKS, MAXLAYERS )
       DOUBLE PRECISION, INTENT (INOUT) ::  MCON ( MAXSTRMSTKS, MAXLAYERS )
@@ -1388,9 +1397,6 @@
 !  ---------------
 
       INTEGER ::          STATUS_SUB
-
-      DOUBLE PRECISION, SAVE :: COL2 ( MAXTOTAL, MAXBEAMS )
-      DOUBLE PRECISION, SAVE :: SCOL2 ( MAXSTRMSTKS_2, MAXBEAMS )
 
 !  Intialize Exception handling
 
@@ -1948,6 +1954,10 @@
       CHARACTER (LEN=3) :: CI
       CHARACTER (LEN=2) :: CB
 
+!  mick fix 7/23/2014. Local arrays defined
+      DOUBLE PRECISION  :: LOC_COL2  ( MAXTOTAL, 1 )
+      DOUBLE PRECISION  :: LOC_SCOL2 ( MAXSTRMSTKS_2, 1 )
+
 !  Intialize Exception handling
 
       STATUS  = VLIDORT_SUCCESS
@@ -1961,10 +1971,15 @@
 
 !  LAPACK substitution (DGBTRS) using RHS column vector COL2
 
+!mick fix 7/31/2014 - pass RHS b vector of Ax = b ("COL2") to a local array with
+!                     a 2nd dim of size one to use the LAPACK routine DGBTRS
+!                     again as intended
+        LOC_COL2(1:NTOTAL,1) = COL2(1:NTOTAL,IBEAM)
         CALL DGBTRS &
-           ( 'n', NTOTAL, N_SUBDIAG, N_SUPDIAG, IBEAM, &
+           ( 'n', NTOTAL, N_SUBDIAG, N_SUPDIAG, 1, &
               BANDMAT2, MAXBANDTOTAL, IPIVOT, &
-              COL2, MAXTOTAL, INFO )
+              LOC_COL2, MAXTOTAL, INFO )
+        COL2(1:NTOTAL,IBEAM) = LOC_COL2(1:NTOTAL,1)
 
 !  (error tracing)
 
@@ -2042,9 +2057,14 @@
 
 !  LAPACK substitution (DGETRS) using RHS column vector SCOL2
 
-        CALL DGETRS &
-           ( 'N', NTOTAL, IBEAM, SMAT2, MAXSTRMSTKS_2, SIPIVOT, &
-              SCOL2, MAXSTRMSTKS_2, INFO )
+!mick fix 7/31/2014 - pass RHS b vector of Ax = b ("SCOL2") to a local array with
+!                     a 2nd dim of size one to use the LAPACK routine DGETRS
+!                     again as intended
+        LOC_SCOL2(1:NSTKS_NSTRMS_2,1) = SCOL2(1:NSTKS_NSTRMS_2,IBEAM)
+        CALL DGETRS ( 'N', NSTKS_NSTRMS_2, 1, &
+                      SMAT2, MAXSTRMSTKS_2, SIPIVOT, &
+                      LOC_SCOL2, MAXSTRMSTKS_2, INFO )
+        SCOL2(1:NSTKS_NSTRMS_2,IBEAM) = LOC_SCOL2(1:NSTKS_NSTRMS_2,1)
 
 !  (error tracing)
 
@@ -2052,7 +2072,7 @@
           WRITE(CI, '(I3)' ) INFO
           WRITE(CB, '(I2)' ) IBEAM
           MESSAGE = 'argument i illegal value, for i = '//CI
-          TRACE   = 'DGETRS call (nlayers=1)in BVP_BACKSUB, Beam # '//CB
+          TRACE   = 'DGETRS call (nlayers=1) in BVP_BACKSUB, Beam # '//CB
           STATUS  = VLIDORT_SERIOUS
           RETURN
         ENDIF
@@ -2133,7 +2153,7 @@
         MUELLER_INDEX, K_REAL, K_COMPLEX, &
         SOLA_XPOS, SOLB_XNEG, &
         NSTREAMS_2, NSTKS_NSTRMS_2, T_DELT_EIGEN, &
-        DO_BVTEL_INITIAL, &
+        DO_BVTEL_INITIAL, BVTEL_FOURIER_COMPONENT, &
         N_BVTELMATRIX_SIZE, N_BVTELMATRIX_SUPDIAG, &
         N_BVTELMATRIX_SUBDIAG, NLAYERS_TEL, &
         ACTIVE_LAYERS, &
@@ -2176,6 +2196,7 @@
       DOUBLE PRECISION, INTENT (IN) ::   T_DELT_EIGEN ( MAXEVALUES, MAXLAYERS )
 
       LOGICAL, INTENT (INOUT) ::         DO_BVTEL_INITIAL
+      INTEGER, INTENT (INOUT) ::         BVTEL_FOURIER_COMPONENT
 
       INTEGER, INTENT (OUT) ::           N_BVTELMATRIX_SIZE
       INTEGER, INTENT (OUT) ::           N_BVTELMATRIX_SUPDIAG
@@ -2216,10 +2237,10 @@
 
 !  initialize compression matrix (Do this for every Fourier component)
 
-      CALL BVPTEL_MATRIX_INIT ( &
+      CALL BVPTEL_MATRIX_INIT_OMP ( &
         FOURIER_COMPONENT, NLAYERS, &
         NSTKS_NSTRMS, DO_LAYER_SCATTERING, &
-        DO_BVTEL_INITIAL, &
+        DO_BVTEL_INITIAL, BVTEL_FOURIER_COMPONENT, &
         N_BVTELMATRIX_SIZE, N_BVTELMATRIX_SUPDIAG, &
         N_BVTELMATRIX_SUBDIAG, NLAYERS_TEL, &
         ACTIVE_LAYERS, &
@@ -2337,8 +2358,7 @@
       INTEGER, SAVE ::          NMINTEL_SAVE ( MAXTOTAL )
       INTEGER, SAVE ::          NMAXTEL_SAVE ( MAXTOTAL )
       INTEGER, SAVE ::          KALLTEL_SAVE
-      DOUBLE PRECISION, SAVE :: BANDTELMAT2_SAVE &
-          ( MAXBANDTOTAL, MAXTOTAL )
+      DOUBLE PRECISION, SAVE :: BANDTELMAT2_SAVE ( MAXBANDTOTAL, MAXTOTAL )
 
 !  compression function
 
@@ -2483,7 +2503,144 @@
       RETURN
       END SUBROUTINE BVPTEL_MATRIX_INIT
 
-!
+!
+
+      SUBROUTINE BVPTEL_MATRIX_INIT_OMP ( &
+        FOURIER_COMPONENT, NLAYERS, &
+        NSTKS_NSTRMS, DO_LAYER_SCATTERING, &
+        DO_BVTEL_INITIAL, BVTEL_FOURIER_COMPONENT, &
+        N_BVTELMATRIX_SIZE, N_BVTELMATRIX_SUPDIAG, &
+        N_BVTELMATRIX_SUBDIAG, NLAYERS_TEL, &
+        ACTIVE_LAYERS, &
+        NMINTEL, NMAXTEL, KALLTEL, &
+        BANDTELMAT2 )
+
+!  Initialise the compressed matrix
+
+      USE VLIDORT_PARS
+
+      IMPLICIT NONE
+
+      INTEGER, INTENT (IN) ::           FOURIER_COMPONENT
+      INTEGER, INTENT (IN) ::           NLAYERS
+      INTEGER, INTENT (IN) ::           NSTKS_NSTRMS
+      LOGICAL, INTENT (IN) ::           DO_LAYER_SCATTERING ( 0:MAXMOMENTS, MAXLAYERS )
+
+      LOGICAL, INTENT (INOUT) ::        DO_BVTEL_INITIAL
+      INTEGER, INTENT (INOUT) ::        BVTEL_FOURIER_COMPONENT
+
+      INTEGER, INTENT (OUT) ::          N_BVTELMATRIX_SIZE
+      INTEGER, INTENT (OUT) ::          N_BVTELMATRIX_SUPDIAG
+      INTEGER, INTENT (OUT) ::          N_BVTELMATRIX_SUBDIAG
+      INTEGER, INTENT (OUT) ::          NLAYERS_TEL
+      INTEGER, INTENT (OUT) ::          ACTIVE_LAYERS ( MAXLAYERS )
+      INTEGER, INTENT (OUT) ::          NMINTEL ( MAXTOTAL )
+      INTEGER, INTENT (OUT) ::          NMAXTEL ( MAXTOTAL )
+      INTEGER, INTENT (OUT) ::          KALLTEL
+      DOUBLE PRECISION, INTENT (OUT) :: BANDTELMAT2 ( MAXBANDTOTAL, MAXTOTAL )
+
+!  Local variables
+!  ---------------
+
+      INTEGER :: I, J, NS, N, N3, LOCAL_FOURIER_COMPONENT
+
+!  compression function
+
+!      INTEGER  BTELMAT_ROWMASK
+!      EXTERNAL BTELMAT_ROWMASK
+
+!mick fix 7/29/2014 - Changed subroutine to define output vars each time to make VLIDORT 
+!                     threadsafe.  Removed the saved vars and the original if block with
+!                     its else section in this version of the subroutine.  Also added
+!                     if block to save the original fourier component used to perform
+!                     these setup calculations.
+
+!  Set up
+!  ------
+
+!  Save fourier component used the first time subroutine is called
+
+      IF ( DO_BVTEL_INITIAL ) THEN
+        LOCAL_FOURIER_COMPONENT = FOURIER_COMPONENT
+        BVTEL_FOURIER_COMPONENT = FOURIER_COMPONENT
+        DO_BVTEL_INITIAL = .FALSE.
+      ELSE
+        LOCAL_FOURIER_COMPONENT = BVTEL_FOURIER_COMPONENT
+      ENDIF
+
+!  Determine active layers in atmosphere
+
+      NS = 0
+      ACTIVE_LAYERS = 0
+      DO N = 1, NLAYERS
+       IF ( DO_LAYER_SCATTERING(LOCAL_FOURIER_COMPONENT,N) ) THEN
+        NS = NS + 1
+        ACTIVE_LAYERS(NS) = N
+       ENDIF
+      ENDDO
+      NLAYERS_TEL = NS
+
+!  Size of Reduced BVTEL matrix
+
+      N_BVTELMATRIX_SIZE = 2 * NSTKS_NSTRMS * NLAYERS_TEL
+
+!  Exit if only one active layer
+
+      IF ( NLAYERS_TEL .EQ. 1 ) GO TO 345
+
+!  Number of sub and super diagonals
+
+      N_BVTELMATRIX_SUPDIAG = 3 * NSTKS_NSTRMS - 1
+      N_BVTELMATRIX_SUBDIAG = 3 * NSTKS_NSTRMS - 1
+
+!  Compression row indices
+
+      DO J = 1, N_BVTELMATRIX_SUPDIAG + 1
+        NMINTEL(J) = 1
+      ENDDO
+      DO J = N_BVTELMATRIX_SUPDIAG + 2, N_BVTELMATRIX_SIZE
+        NMINTEL(J) = J - N_BVTELMATRIX_SUPDIAG
+      ENDDO
+
+      DO J = 1, N_BVTELMATRIX_SIZE - N_BVTELMATRIX_SUBDIAG
+        NMAXTEL(J) = J + N_BVTELMATRIX_SUBDIAG
+      ENDDO
+      N3 = N_BVTELMATRIX_SIZE - N_BVTELMATRIX_SUBDIAG + 1
+      DO J = N3, N_BVTELMATRIX_SIZE
+        NMAXTEL(J) = N_BVTELMATRIX_SIZE
+      ENDDO
+
+      KALLTEL = N_BVTELMATRIX_SUBDIAG + N_BVTELMATRIX_SUPDIAG + 1
+
+!  Avoid fancy zeroing - adopt kludge
+!   Potential Danger point
+
+      DO I = 1, MAXBANDTOTAL
+        DO J = 1, N_BVTELMATRIX_SIZE
+          BANDTELMAT2(I,J) = ZERO
+        ENDDO
+      ENDDO
+
+!  Control
+
+      GO TO 346
+
+!  Control point
+
+ 345  CONTINUE
+
+!  Single layer setting
+
+        N_BVTELMATRIX_SIZE = 2 * NSTKS_NSTRMS
+
+ 346  CONTINUE
+
+!  Finish
+
+      RETURN
+      END SUBROUTINE BVPTEL_MATRIX_INIT_OMP
+
+!
 
       SUBROUTINE BVPTEL_MATRIX_SETUP ( &
         DO_INCLUDE_SURFACE, &
@@ -3175,8 +3332,9 @@
         N_BVTELMATRIX_SIZE, &
         N_BVTELMATRIX_SUPDIAG, N_BVTELMATRIX_SUBDIAG, &
         BANDTELMAT2, IPIVOTTEL, &
-        AXBID_F, R2_BEAM, &
-        LCON, MCON, &
+        AXBID_F, &
+        COLTEL2, SCOL2, &
+        R2_BEAM, LCON, MCON, &
         STATUS, MESSAGE, TRACE )
 
       USE VLIDORT_PARS
@@ -3227,6 +3385,10 @@
       DOUBLE PRECISION, INTENT (IN) ::  AXBID_F &
           ( MAXSTREAMS, MAXSTREAMS, MAXSTOKES_SQ )
 
+!mick fix 7/29/2014 - placed COLTEL2 & SCOL2 in call to make VLIDORT threadsafe
+      DOUBLE PRECISION, INTENT (INOUT) :: COLTEL2 ( MAXTOTAL, MAXBEAMS )
+      DOUBLE PRECISION, INTENT (INOUT) :: SCOL2 ( MAXSTRMSTKS_2, MAXBEAMS )
+
       DOUBLE PRECISION, INTENT (INOUT) ::  R2_BEAM ( MAXSTREAMS, MAXSTOKES )
       DOUBLE PRECISION, INTENT (INOUT) ::  LCON ( MAXSTRMSTKS, MAXLAYERS )
       DOUBLE PRECISION, INTENT (INOUT) ::  MCON ( MAXSTRMSTKS, MAXLAYERS )
@@ -3239,9 +3401,6 @@
 !  ---------------
 
       INTEGER ::          STATUS_SUB
-
-      DOUBLE PRECISION, SAVE :: COLTEL2 ( MAXTOTAL, MAXBEAMS )
-      DOUBLE PRECISION, SAVE :: SCOL2 ( MAXSTRMSTKS_2, MAXBEAMS )
 
 !  Intialize Exception handling
 
@@ -3314,7 +3473,7 @@
       RETURN
       END SUBROUTINE BVPTEL_SOLUTION_MASTER
 
-!
+!
 
       SUBROUTINE BVPTEL_COLUMN_SETUP ( &
         DO_INCLUDE_SURFACE, DO_INCLUDE_DIRECTBEAM, &
@@ -3605,6 +3764,9 @@
       CHARACTER (LEN=3) :: CI
       CHARACTER (LEN=2) :: CB
 
+      DOUBLE PRECISION  :: LOC_COLTEL2 ( MAXTOTAL, 1 )
+      DOUBLE PRECISION  :: LOC_SCOL2   ( MAXSTRMSTKS_2, 1 )
+
 !  start code
 !  ----------
 
@@ -3621,11 +3783,16 @@
 
 !  LAPACK substitution using RHS column vector COLTEL2
 
+!mick fix 7/31/2014 - pass RHS b vector of Ax = b ("COLTEL2") to a local array with
+!                     a 2nd dim of size one to use the LAPACK routine DGBTRS
+!                     again as intended
+        LOC_COLTEL2(1:N_BVTELMATRIX_SIZE,1) = COLTEL2(1:N_BVTELMATRIX_SIZE,IBEAM)
         CALL DGBTRS &
            ( 'n', N_BVTELMATRIX_SIZE, &
-              N_BVTELMATRIX_SUBDIAG, N_BVTELMATRIX_SUPDIAG, IBEAM, &
+              N_BVTELMATRIX_SUBDIAG, N_BVTELMATRIX_SUPDIAG, 1, &
               BANDTELMAT2, MAXBANDTOTAL, IPIVOTTEL, &
-              COLTEL2, MAXTOTAL, INFO )
+              LOC_COLTEL2, MAXTOTAL, INFO )
+        COLTEL2(1:N_BVTELMATRIX_SIZE,IBEAM) = LOC_COLTEL2(1:N_BVTELMATRIX_SIZE,1)
 
 !  (error tracing)
 
@@ -3681,10 +3848,15 @@
 
 !  LAPACK substitution (DGETRS) using RHS column vector SCOL2
 
+!mick fix 7/31/2014 - pass RHS b vector of Ax = b ("SCOL2") to a local array with
+!                     a 2nd dim of size one to use the LAPACK routine DGETRS
+!                     again as intended
+        LOC_SCOL2(1:NSTKS_NSTRMS_2,1) = SCOL2(1:NSTKS_NSTRMS_2,IBEAM)
         CALL DGETRS &
-           ( 'N', NSTKS_NSTRMS_2, IBEAM, &
+           ( 'N', NSTKS_NSTRMS_2, 1, &
               SMAT2, MAXSTRMSTKS_2, SIPIVOT, &
-              SCOL2, MAXSTRMSTKS_2, INFO )
+              LOC_SCOL2, MAXSTRMSTKS_2, INFO )
+        SCOL2(1:NSTKS_NSTRMS_2,IBEAM) = LOC_SCOL2(1:NSTKS_NSTRMS_2,1)
 
 !  (error tracing)
 

@@ -19,7 +19,7 @@
 ! #  Email :       rtsolutions@verizon.net                      #
 ! #                                                             #
 ! #  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT, 2.4RTC,  #
-! #                   2.5, 2.6                                  #
+! #                   2.5, 2.6, 2.7                             #
 ! #  Release Date :   December 2005  (2.0)                      #
 ! #  Release Date :   March 2007     (2.2)                      #
 ! #  Release Date :   October 2007   (2.3)                      #
@@ -29,6 +29,7 @@
 ! #  Release Date :   October 2010   (2.4RTC)                   #
 ! #  Release Date :   March 2011     (2.5)                      #
 ! #  Release Date :   May 2012       (2.6)                      #
+! #  Release Date :   August 2014    (2.7)                      #
 ! #                                                             #
 ! #       NEW: TOTAL COLUMN JACOBIANS         (2.4)             #
 ! #       NEW: BPDF Land-surface KERNELS      (2.4R)            #
@@ -36,6 +37,9 @@
 ! #       Consolidated BRDF treatment         (2.4RTC)          #
 ! #       f77/f90 Release                     (2.5)             #
 ! #       External SS / New I/O Structures    (2.6)             #
+! #                                                             #
+! #       SURFACE-LEAVING / BRDF-SCALING      (2.7)             #
+! #       TAYLOR Series / OMP THREADSAFE      (2.7)             #
 ! #                                                             #
 ! ###############################################################
 
@@ -54,10 +58,16 @@
 ! #              VLIDORT_UHOM_SOLUTION                          #
 ! #              VLIDORT_QBEAM_SOLUTION                         #
 ! #              VLIDORT_UBEAM_SOLUTION                         #
-! #              VLIDORT_PIMATRIX_SETUP                         #
 ! #                                                             #
 ! ###############################################################
 
+!  Notes for Version 2.7 (Taylor series expansions)
+!  ------------------------------------------------
+
+!     Rob Fix 05/10/13  - HSINGO defined using TAYLOR_SMALL
+!     Rob Fix 02/19/14  - ZETA_M = RHO_M for the degenerate case....
+!                         otherwise ZETA_M = ONE / RHO_M
+!                         COMPLEX HSINGO removed.
 
       MODULE vlidort_solutions
 
@@ -65,8 +75,7 @@
       PUBLIC :: VLIDORT_QHOM_SOLUTION, &
                 VLIDORT_UHOM_SOLUTION, &
                 VLIDORT_QBEAM_SOLUTION, &
-                VLIDORT_UBEAM_SOLUTION, &
-                VLIDORT_PIMATRIX_SETUP
+                VLIDORT_UBEAM_SOLUTION
 
       CONTAINS
 
@@ -1100,6 +1109,7 @@
         ZETA_M, ZETA_P )
 
 !  Small-number Taylor series expansions, added 30 October 2007
+!  @@@ Rob Fix 10 May 13 - Redefine HSINGO, supercedes above comment
 
       USE VLIDORT_PARS
 
@@ -1183,6 +1193,14 @@
       DOUBLE PRECISION :: SMCR, SNCR, SPCR, SNSCR, SPSCR, SGCR
       DOUBLE PRECISION :: SMCI, SNCI, SPCI, SNSCI, SPSCI, SGCI
 
+!  Notes for Version 2.7 (Taylor series expansions)
+!  ------------------------------------------------
+
+!     Rob Fix 05/10/13  - HSINGO defined using TAYLOR_SMALL
+!     Rob Fix 02/19/14  - ZETA_M = RHO_M for the degenerate case....
+!                         otherwise ZETA_M = ONE / RHO_M
+!                         COMPLEX HSINGO removed.
+
 !  Layer and Fourier
 
       N = GIVEN_LAYER
@@ -1203,11 +1221,10 @@
           RHO_P = SECMUI + KEIGEN(K,N)
           RHO_M = SECMUI - KEIGEN(K,N)
           ZETA_P(K,UM,N) = ONE / RHO_P
-          IF ( DABS(RHO_M) .LT. SMALLNUM ) THEN
-            HSINGO(K,UM,N) = .TRUE.
-            ZETA_M(K,UM,N) = ONE
+          HSINGO(K,UM,N) = ( DABS(RHO_M) .LT. TAYLOR_SMALL )
+          IF ( HSINGO(K,UM,N) ) then
+            ZETA_M(K,UM,N) = RHO_M
           ELSE
-            HSINGO(K,UM,N) = .FALSE.
             ZETA_M(K,UM,N) = ONE / RHO_M
           ENDIF
         ENDDO
@@ -1232,18 +1249,8 @@
             MODULUS_M = A_HELP - B_HELP
             ZETA_P(K1,UM,N) = RHO_P_CR / MODULUS_P
             ZETA_P(K2,UM,N) = -KEIGEN(K2,N) / MODULUS_P
-            IF ( DABS(MODULUS_M) .LT. SMALLNUM ) THEN
-              HSINGO(K1,UM,N) = .TRUE.
-              HSINGO(K2,UM,N) = .TRUE.
-              ZETA_M(K1,UM,N) = ONE
-              ZETA_M(K2,UM,N) = ZERO
-            ELSE
-              HSINGO(K1,UM,N) = .FALSE.
-              HSINGO(K2,UM,N) = .FALSE.
-              ZETA_M(K1,UM,N) = RHO_M_CR / MODULUS_M
-              ZETA_M(K2,UM,N) = KEIGEN(K2,N) / MODULUS_M
-            ENDIF
-
+            ZETA_M(K1,UM,N) = RHO_M_CR / MODULUS_M
+            ZETA_M(K2,UM,N) = KEIGEN(K2,N) / MODULUS_M
           ENDDO
         ENDDO
       ENDIF
@@ -1897,11 +1904,12 @@
       RETURN
       END SUBROUTINE VLIDORT_QBEAM_SOLUTION
 
-!
+!
 
       SUBROUTINE VLIDORT_UBEAM_SOLUTION ( &
         GIVEN_LAYER, FOURIER, IBEAM, &
         DO_UPWELLING, DO_DNWELLING, &
+        DO_OBSERVATION_GEOMETRY, &
         NSTOKES, NSTREAMS, FLUX_FACTOR, &
         LAYER_PIS_CUTOFF, QUAD_HALFWTS, &
         NMOMENTS, N_USER_STREAMS, &
@@ -1923,6 +1931,7 @@
       INTEGER, INTENT (IN) ::           IBEAM
       LOGICAL, INTENT (IN) ::           DO_UPWELLING
       LOGICAL, INTENT (IN) ::           DO_DNWELLING
+      LOGICAL, INTENT (IN) ::           DO_OBSERVATION_GEOMETRY
       INTEGER, INTENT (IN) ::           NSTOKES
       INTEGER, INTENT (IN) ::           NSTREAMS
       DOUBLE PRECISION, INTENT (IN) ::  FLUX_FACTOR
@@ -2064,7 +2073,26 @@
 !    Direct and integarated contributions
 
       IF ( DO_UPWELLING ) THEN
-        DO UM = LOCAL_UM_START, N_USER_STREAMS
+        IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+         DO UM = LOCAL_UM_START, N_USER_STREAMS
+          DO O1 = 1, NSTOKES
+           T1 = ZERO
+           T2 = ZERO
+           DO L = M, NMOMENTS
+            SUM1 = ZERO
+            SUM2 = ZERO
+            DO O2 = 1, NSTOKES
+             SUM1 = SUM1 + HELP_Q1(L,O2)*PI_XUM(L,UM,O1,O2)
+             SUM2 = SUM2 + HELP_Q2(L,O2)*PI_XUM(L,UM,O1,O2)
+            ENDDO
+            T1 = T1 + SUM1
+            T2 = T2 + SUM2
+           ENDDO
+           UPAR_UP_1(UM,O1,N) = T1
+           UPAR_UP_2(UM,O1,N) = T2
+          ENDDO
+         ENDDO
+        ELSE
          DO O1 = 1, NSTOKES
           T1 = ZERO
           T2 = ZERO
@@ -2072,23 +2100,42 @@
            SUM1 = ZERO
            SUM2 = ZERO
            DO O2 = 1, NSTOKES
-            SUM1 = SUM1 + HELP_Q1(L,O2)*PI_XUM(L,UM,O1,O2)
-            SUM2 = SUM2 + HELP_Q2(L,O2)*PI_XUM(L,UM,O1,O2)
+            SUM1 = SUM1 + HELP_Q1(L,O2)*PI_XUM(L,IBEAM,O1,O2)
+            SUM2 = SUM2 + HELP_Q2(L,O2)*PI_XUM(L,IBEAM,O1,O2)
            ENDDO
            T1 = T1 + SUM1
            T2 = T2 + SUM2
           ENDDO
-          UPAR_UP_1(UM,O1,N) = T1
-          UPAR_UP_2(UM,O1,N) = T2
+          UPAR_UP_1(IBEAM,O1,N) = T1
+          UPAR_UP_2(IBEAM,O1,N) = T2
          ENDDO
-        ENDDO
+        ENDIF
       ENDIF
 
 !  Now sum over all harmonic contributions (Downwelling)
 !    Direct and integarated contributions
 
       IF ( DO_DNWELLING ) THEN
-        DO UM = LOCAL_UM_START, N_USER_STREAMS
+        IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+         DO UM = LOCAL_UM_START, N_USER_STREAMS
+          DO O1 = 1, NSTOKES
+           T1 = ZERO
+           T2 = ZERO
+           DO L = M, NMOMENTS
+            SUM1 = ZERO
+            SUM2 = ZERO
+            DO O2 = 1, NSTOKES
+             SUM1 = SUM1 + HELP_Q1(L,O2)*PI_XUP(L,UM,O1,O2)
+             SUM2 = SUM2 + HELP_Q2(L,O2)*PI_XUP(L,UM,O1,O2)
+            ENDDO
+            T1 = T1 + SUM1
+            T2 = T2 + SUM2
+           ENDDO
+           UPAR_DN_1(UM,O1,N) = T1
+           UPAR_DN_2(UM,O1,N) = T2
+          ENDDO
+         ENDDO
+        ELSE
          DO O1 = 1, NSTOKES
           T1 = ZERO
           T2 = ZERO
@@ -2096,689 +2143,36 @@
            SUM1 = ZERO
            SUM2 = ZERO
            DO O2 = 1, NSTOKES
-            SUM1 = SUM1 + HELP_Q1(L,O2)*PI_XUP(L,UM,O1,O2)
-            SUM2 = SUM2 + HELP_Q2(L,O2)*PI_XUP(L,UM,O1,O2)
+            SUM1 = SUM1 + HELP_Q1(L,O2)*PI_XUP(L,IBEAM,O1,O2)
+            SUM2 = SUM2 + HELP_Q2(L,O2)*PI_XUP(L,IBEAM,O1,O2)
            ENDDO
            T1 = T1 + SUM1
            T2 = T2 + SUM2
           ENDDO
-          UPAR_DN_1(UM,O1,N) = T1
-          UPAR_DN_2(UM,O1,N) = T2
+          UPAR_DN_1(IBEAM,O1,N) = T1
+          UPAR_DN_2(IBEAM,O1,N) = T2
          ENDDO
-        ENDDO
+        ENDIF
       ENDIF
 
 !  debug stokes = 1
-
-!      DO UM = LOCAL_UM_START, N_USER_STREAMS
-!        write(*,*)n,um,UPAR_UP_1(UM,1,N),UPAR_UP_2(UM,1,N)
-!      ENDDO
-!      DO UM = LOCAL_UM_START, N_USER_STREAMS
-!        write(*,*)n,um,UPAR_DN_1(UM,1,N),UPAR_DN_2(UM,1,N)
-!      ENDDO
+!      IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+!        DO UM = LOCAL_UM_START, N_USER_STREAMS
+!          write(*,*)n,um,UPAR_UP_1(UM,1,N),UPAR_UP_2(UM,1,N)
+!        ENDDO
+!        DO UM = LOCAL_UM_START, N_USER_STREAMS
+!          write(*,*)n,um,UPAR_DN_1(UM,1,N),UPAR_DN_2(UM,1,N)
+!        ENDDO
+!      ELSE
+!        write(*,*)n,ibeam,UPAR_UP_1(IBEAM,1,N),UPAR_UP_2(IBEAM,1,N)
+!        write(*,*)n,ibeam,UPAR_DN_1(IBEAM,1,N),UPAR_DN_2(IBEAM,1,N)
+!      ENDIF
 !      PAUSE
 
 !  Finish
 
       RETURN
       END SUBROUTINE VLIDORT_UBEAM_SOLUTION
-
-!
-
-      SUBROUTINE VLIDORT_PIMATRIX_SETUP ( &
-        FOURIER, &
-        DO_REFRACTIVE_GEOMETRY, NSTOKES, &
-        NSTREAMS, NLAYERS, &
-        COS_SZANGLES, SUN_SZA_COSINES, &
-        QUAD_STREAMS, NMOMENTS, &
-        NBEAMS, N_USER_STREAMS, &
-        DO_USER_STREAMS, USER_STREAMS, &
-        MUELLER_INDEX, DMAT, &
-        PI_XQP, PI_XQM, &
-        PI_XUP, PI_XUM, &
-        PI_X0P, &
-        PI_XQM_POST, PI_XQM_PRE, &
-        PI_XQP_PRE, PI_XUM_POST, &
-        PI_XUP_PRE )
-
-!  Notes
-!  -----
-
-!  This is equivalent to the Legendre setup modules in LIDORT
-
-!---------old comments ---------------------------------
-!  This needs modification for the case of Refractive atmosphere,
-!  because the solar zenith angle is not constant.
-!-------------------------------------------------------
-
-!  PI-matrix setup, following recipe of Siewert (1982).
-!  Single Fourier component only.
-
-!  Tested against benchmark results in Vestrucci & Siewert (1984), Problem
-
-!  original coding, September 2002, R. Spurr SAO
-!  Multibeam SZA coding, July 2004, R. Spurr SAO
-!  Coding for refractive geometry case, R. Spurr, RT Solutions, May 2005
-
-      USE VLIDORT_PARS
-
-      IMPLICIT NONE
-
-      INTEGER, INTENT (IN) ::           FOURIER
-      LOGICAL, INTENT (IN) ::           DO_REFRACTIVE_GEOMETRY
-      INTEGER, INTENT (IN) ::           NSTOKES
-      INTEGER, INTENT (IN) ::           NSTREAMS
-      INTEGER, INTENT (IN) ::           NLAYERS
-      DOUBLE PRECISION, INTENT (IN) ::  COS_SZANGLES ( MAX_SZANGLES )
-      DOUBLE PRECISION, INTENT (IN) ::  SUN_SZA_COSINES &
-          ( MAXLAYERS, MAX_SZANGLES )
-      DOUBLE PRECISION, INTENT (IN) ::  QUAD_STREAMS ( MAXSTREAMS )
-      INTEGER, INTENT (IN) ::           NMOMENTS
-      INTEGER, INTENT (IN) ::           NBEAMS
-      INTEGER, INTENT (IN) ::           N_USER_STREAMS
-      LOGICAL, INTENT (IN) ::           DO_USER_STREAMS
-      DOUBLE PRECISION, INTENT (IN) ::  USER_STREAMS  ( MAX_USER_STREAMS )
-
-!  Indices and Dmatrix from VLIDORT_DERIVE_INPUTS
-
-      INTEGER         , INTENT (IN)  :: MUELLER_INDEX ( MAXSTOKES, MAXSTOKES )
-      DOUBLE PRECISION, INTENT (IN)  :: DMAT ( MAXSTOKES, MAXSTOKES )
-
-!  Output (generalized spherical functions)
-
-      DOUBLE PRECISION, INTENT (OUT) :: PI_XQP &
-          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
-      DOUBLE PRECISION, INTENT (OUT) :: PI_XQM &
-          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
-      DOUBLE PRECISION, INTENT (OUT) :: PI_XUP &
-          ( 0:MAXMOMENTS, MAX_USER_STREAMS, MAXSTOKES, MAXSTOKES )
-      DOUBLE PRECISION, INTENT (OUT) :: PI_XUM &
-          ( 0:MAXMOMENTS, MAX_USER_STREAMS, MAXSTOKES, MAXSTOKES )
-      DOUBLE PRECISION, INTENT (OUT) :: PI_X0P &
-          ( 0:MAXMOMENTS, MAXBEAMS, MAXLAYERS, MAXSTOKES, MAXSTOKES )
-      DOUBLE PRECISION, INTENT (OUT) :: PI_XQM_POST &
-          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
-      DOUBLE PRECISION, INTENT (OUT) :: PI_XQM_PRE &
-          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
-      DOUBLE PRECISION, INTENT (OUT) :: PI_XQP_PRE &
-          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
-      DOUBLE PRECISION, INTENT (OUT) :: PI_XUM_POST &
-          ( 0:MAXMOMENTS, MAX_USER_STREAMS, MAXSTOKES, MAXSTOKES )
-      DOUBLE PRECISION, INTENT (OUT) :: PI_XUP_PRE &
-          ( 0:MAXMOMENTS, MAX_USER_STREAMS, MAXSTOKES, MAXSTOKES )
-
-!  Local matrices
-
-      DOUBLE PRECISION :: XLM_DIAG ( 0:MAXMOMENTS, MAXSTOKES )
-      DOUBLE PRECISION :: YLM_DIAG ( 0:MAXMOMENTS, MAXSTOKES )
-      DOUBLE PRECISION :: ZLM ( 0:MAXMOMENTS, MAXSTOKES, MAXSTOKES )
-      DOUBLE PRECISION :: PI &
-          ( 0:MAXMOMENTS, MAX_ALLSTRMS_P1, MAXSTOKES, MAXSTOKES )
-      DOUBLE PRECISION :: PHI ( 0:MAXMOMENTS, 0:MAXMOMENTS )
-      DOUBLE PRECISION :: PINORM ( 0:MAXMOMENTS, 0:MAXMOMENTS )
-
-      DOUBLE PRECISION, SAVE :: DF_L ( 0:MAXMOMENTS )
-      DOUBLE PRECISION, SAVE :: DF_LP1 ( 0:MAXMOMENTS )
-      DOUBLE PRECISION, SAVE :: DF_2LP1 ( 0:MAXMOMENTS )
-      DOUBLE PRECISION, SAVE :: DF_LSQM4 ( 0:MAXMOMENTS )
-      DOUBLE PRECISION, SAVE :: DF_RT_LP3XLM1 ( 0:MAXMOMENTS )
-      DOUBLE PRECISION, SAVE :: ZHELP ( 0:MAXMOMENTS )
-      DOUBLE PRECISION, SAVE :: UMXSQ ( MAX_ALLSTRMS_P1 )
-      DOUBLE PRECISION, SAVE :: RT_UMXSQ ( MAX_ALLSTRMS_P1 )
-      DOUBLE PRECISION, SAVE :: UPXSQ_D_UMXSQ ( MAX_ALLSTRMS_P1 )
-      DOUBLE PRECISION, SAVE :: PLEG20 ( MAX_ALLSTRMS_P1 )
-      DOUBLE PRECISION, SAVE :: M2X_D_UMXSQ ( MAX_ALLSTRMS_P1 )
-      DOUBLE PRECISION, SAVE :: XUMXSQ ( MAX_ALLSTRMS_P1 )
-      DOUBLE PRECISION, SAVE :: X_RT_UMXSQ ( MAX_ALLSTRMS_P1 )
-      DOUBLE PRECISION, SAVE :: PIMM_11 ( MAX_ALLSTRMS_P1 )
-      DOUBLE PRECISION, SAVE :: PIMM_KM ( MAX_ALLSTRMS_P1 )
-      DOUBLE PRECISION, SAVE :: X2LP1 ( 0:MAXMOMENTS, MAX_ALLSTRMS_P1 )
-      DOUBLE PRECISION, SAVE :: PISIGN ( 0:MAXMOMENTS, 0:MAXMOMENTS )
-
-!  local variables
-
-!     INTEGER          :: LOCAL_NSTOKES
-      DOUBLE PRECISION :: FAC, XSQ, DF_LPM, DF_LP1MM, ZLM_VALUE
-      DOUBLE PRECISION :: HX, HY, HZ, H1, H2, RCONST_20, RCONST_21
-      DOUBLE PRECISION :: PL20, RL20, PL21, RL21, TL21, XM(MAX_ALLSTRMS_P1)
-      INTEGER          :: M, I, I1, L, SK1, SK2, SK3, SK4, N
-      INTEGER          :: NS, NSA, M1, IB, IP
-
-!  Set integer M = Fourier number
-
-      M = FOURIER
-      NSA = 0
-
-!  Local NSTOKES
-
-!      LOCAL_NSTOKES = NSTOKES
-!      IF ( NSTOKES .GT. 1 ) LOCAL_NSTOKES = 4
-
-!  total number of angles
-
-      IF ( DO_USER_STREAMS ) THEN
-        NS = NSTREAMS + N_USER_STREAMS
-      ELSE
-        NS = NSTREAMS
-      ENDIF
-
-!  add solar streams, depends on the use of refractive geometry
-
-      IF ( DO_REFRACTIVE_GEOMETRY ) THEN
-!        NSA = NS + NBEAMS*NLAYERS
-      ELSE
-        NSA = NS + NBEAMS
-      ENDIF
-
-!  constants
-
-      RCONST_20 = 0.25D0 * DSQRT(6.0D0)
-      RCONST_21 = 2.0D0 * RCONST_20
-
-!  Coefficient matrix PINORM (for normalization) = [ (L-m)!/(L+m)! ] ^1/
-!  ---------------------------------------------------------------------
-
-!  .. first entry = 1 / (2m)!    ---- be careful with overflow
-
-      PHI(M,M) = ONE
-      FAC = ONE
-      DO L = 1, 2*M
-        FAC = FAC * DBLE(L)
-      ENDDO
-      PHI(M,M) = PHI(M,M) / FAC
-
-!  .. Other entries by recurrence
-
-      DO L = M + 1, NMOMENTS
-        FAC = DBLE(L-M)/DBLE(L+M)
-        PHI(L,M) = PHI(L-1,M)*FAC
-      ENDDO
-
-!  .. Square root
-
-      DO L = M , NMOMENTS
-        PINORM(L,M) = DSQRT(PHI(L,M))
-      ENDDO
-
-!  Additional saved quantities (to commons in VLIDORT_PISETUP.VARS)
-!  ----------------------------------------------------------------
-
-!  Only for the first fundamental harmonic
-
-      IF ( M .EQ. 0 ) THEN
-
-!  Sign matrix
-
-        DO M1 = 0, NMOMENTS
-          DO L = M1, NMOMENTS
-            IF (MOD((L-M1),2).EQ.0) THEN
-              PISIGN(L,M1) = ONE
-            ELSE
-              PISIGN(L,M1) = -ONE
-            ENDIF
-          ENDDO
-        ENDDO
-
-!  floating point integer values
-
-        DO L = 0, NMOMENTS
-          DF_L(L)    = DBLE(L)
-          DF_LP1(L)  = DBLE(L+1)
-          DF_2LP1(L) = DBLE(2*L+1)
-        ENDDO
-
-        DF_LSQM4(2) = ZERO
-        DO L = 3, NMOMENTS
-          DF_LSQM4(L) = DSQRT(DBLE(L*L-4))
-        ENDDO
-
-        DO L = 2, NMOMENTS
-          DF_RT_LP3XLM1(L) = DSQRT(DBLE((L+3)*(L-1)))
-          ZHELP(L) = TWO*DF_2LP1(L)/DF_LP1(L)/DF_L(L)
-        ENDDO
-
-      ENDIF
-
-!  local array of all streams (every Fourier component)
-
-        DO I = 1, NSTREAMS
-          XM(I) = QUAD_STREAMS(I)
-        ENDDO
-        IF ( DO_USER_STREAMS ) THEN
-          DO I = 1, N_USER_STREAMS
-            XM(I+NSTREAMS) = USER_STREAMS(I)
-          ENDDO
-        ENDIF
-
-        IF ( DO_REFRACTIVE_GEOMETRY ) THEN
-!          DO N = 1, NLAYERS
-!            DO IB = 1, NBEAMS
-!              IP = NS + NBEAMS * (N-1) + IB
-!              XM(IP) = SUN_SZA_COSINES(N,IB)
-!            ENDDO
-!          ENDDO
-        ELSE
-          DO IB = 1, NBEAMS
-            IP = IB + NS
-            XM(IP) = COS_SZANGLES(IB)
-          ENDDO
-        ENDIF
-
-!  factors associated with stream values
-!   Special case when XM(I) = ONE, factors are zeroed, and
-!    those that give singularities are avoided later (see below)
-!   R. Spurr and V. Natraj, 16 january 2006
-
-      IF ( M .EQ. 0 )  THEN
-        DO I = 1, NSA
-          XSQ = XM(I) * XM(I)
-          PLEG20(I)        = HALF*(THREE*XSQ-ONE)
-          UMXSQ(I)         = ONE - XSQ
-          XUMXSQ(I)        = UMXSQ(I) * XM(I)
-          IF ( XM(I) .EQ. ONE ) THEN
-           RT_UMXSQ(I)      = ZERO
-           X_RT_UMXSQ(I)    = ZERO
-           UPXSQ_D_UMXSQ(I) = ZERO
-           M2X_D_UMXSQ(I)   = ZERO
-          ELSE
-           RT_UMXSQ(I)      = DSQRT(UMXSQ(I))
-           X_RT_UMXSQ(I)    = RT_UMXSQ(I) * XM(I)
-           UPXSQ_D_UMXSQ(I) = (ONE + XSQ) / UMXSQ(I)
-           M2X_D_UMXSQ(I)   = - TWO * XM(I) / UMXSQ(I)
-          ENDIF
-          DO L = 0, NMOMENTS
-            X2LP1(L,I) = XM(I) * DF_2LP1(L)
-          ENDDO
-        ENDDO
-
-!  D-matrix and Mueller indices. NOW DONE in VLIDORT_DERIVE_INPUTS
-!        DO SK1 = 1, MAXSTOKES
-!          DO SK2 = 1, MAXSTOKES
-!            MUELLER_INDEX(SK1,SK2) = MAXSTOKES*(SK1-1) + SK2
-!            DMAT(SK1,SK2) = ZERO
-!          ENDDO
-!          IF ( SK1.GT.2) THEN
-!            DMAT(SK1,SK1) = -ONE
-!          ELSE
-!            DMAT(SK1,SK1) = ONE
-!          ENDIF
-!          MUELLER_DIAGONAL_INDEX(SK1) = MUELLER_INDEX(SK1,SK1)
-!        ENDDO
-
-      ENDIF
-
-!  XYZ matrices
-!  ------------
-
-!  Inverse XLM diagonal matrices (Siewert (1982), Eq. 35a)
-!  YLM diagonal matrices (Siewert (1982), Eq. 35b)
-!  ZLM matrices. (Siewert (1982), Eq. 35c)
-
-!  .. for the azimuth-independent harmonic
-
-      IF ( M .EQ. 0 ) THEN
-
-        DO L = 2, NMOMENTS
-          XLM_DIAG(L,1) = DF_LP1(L)
-          XLM_DIAG(L,2) = DF_RT_LP3XLM1(L)
-          XLM_DIAG(L,3) = XLM_DIAG(L,2)
-          XLM_DIAG(L,4) = XLM_DIAG(L,1)
-          DO SK1 = 1, NSTOKES
-            XLM_DIAG(L,SK1) = ONE/XLM_DIAG(L,SK1)
-          ENDDO
-        ENDDO
-
-        DO L = 2, NMOMENTS
-          YLM_DIAG(L,1) = DF_L(L)
-          YLM_DIAG(L,2) = DF_LSQM4(L)
-          YLM_DIAG(L,3) = YLM_DIAG(L,2)
-          YLM_DIAG(L,4) = YLM_DIAG(L,1)
-        ENDDO
-
-!  .. for the other harmonics
-
-      ELSE
-
-        DO L = M, NMOMENTS
-          DF_LP1MM = DBLE ( L + 1 - M )
-          XLM_DIAG(L,1) = DF_LP1MM
-          XLM_DIAG(L,1) = ONE/XLM_DIAG(L,1)
-          IF ( L .EQ. 1 ) THEN
-            XLM_DIAG(L,2) = ZERO
-          ELSE
-            XLM_DIAG(L,2) = DF_RT_LP3XLM1(L) * DF_LP1MM / DF_LP1(L)
-            XLM_DIAG(L,2) = ONE / XLM_DIAG(L,2)
-          ENDIF
-          XLM_DIAG(L,3) = XLM_DIAG(L,2)
-          XLM_DIAG(L,4) = XLM_DIAG(L,1)
-        ENDDO
-
-        DO SK1 = 1, NSTOKES
-          YLM_DIAG(M,SK1) = ZERO
-        ENDDO
-        DO L = M + 1, NMOMENTS
-          DF_LPM = DBLE ( L + M )
-          YLM_DIAG(L,1) = DF_LPM
-          YLM_DIAG(L,2) = DF_LPM * DF_LSQM4(L) / DF_L(L)
-          YLM_DIAG(L,3) = YLM_DIAG(L,2)
-          YLM_DIAG(L,4) = YLM_DIAG(L,1)
-        ENDDO
-
-        DO L = 2, NMOMENTS
-          ZLM_VALUE = DBLE(M) * ZHELP(L)
-          DO SK1 = 1, NSTOKES
-            DO SK2 = 1, NSTOKES
-              ZLM(L,SK1,SK2) = ZERO
-            ENDDO
-          ENDDO
-          ZLM(L,2,3) = ZLM_VALUE
-          ZLM(L,3,2) = ZLM_VALUE
-        ENDDO
-
-      ENDIF
-
-!  PI calculation
-!  --------------
-
-!  Initialise all the PI matrices for given harmonic
-
-      DO I = 1, NSA
-        DO L = M, NMOMENTS
-          DO SK1 = 1, NSTOKES
-            DO SK2 = 1, NSTOKES
-              PI(L,I,SK1,SK2) = ZERO
-            ENDDO
-          ENDDO
-        ENDDO
-      ENDDO
-
-!mick - alternate PI initialization
-      PI = ZERO
-
-!  M = 0 component. [Siewert (1982), Eqs (28) to (31)]
-
-      IF ( M .EQ. 0 ) THEN
-
-!  .. L = 0
-        DO I = 1, NSA
-          PI(0,I,1,1) = PI(0,I,1,1) + ONE
-          PI(0,I,4,4) = PI(0,I,4,4) + ONE
-        ENDDO
-!  .. L = 1
-        DO I = 1, NSA
-          PI(1,I,1,1) = PI(1,I,1,1) + XM(I)
-          PI(1,I,4,4) = PI(1,I,4,4) + XM(I)
-        ENDDO
-!  .. L = 2
-        DO I = 1, NSA
-          PL20 = PLEG20(I)
-          RL20 = RCONST_20*UMXSQ(I)
-          PI(2,I,1,1) = PI(2,I,1,1) + PL20
-          PI(2,I,2,2) = PI(2,I,2,2) + RL20
-          PI(2,I,3,3) = PI(2,I,2,2)
-          PI(2,I,4,4) = PI(2,I,1,1)
-        ENDDO
-!  .. L > 2
-        DO L = 2, NMOMENTS - 1
-          DO I = 1, NSA
-            DO SK1 = 1, NSTOKES
-              DO SK2 = 1, NSTOKES
-                HX = X2LP1(L,I)*PI(L,I,SK1,SK2)
-                HY = YLM_DIAG(L,SK1)*PI(L-1,I,SK1,SK2)
-                PI(L+1,I,SK1,SK2) = ( HX - HY ) * XLM_DIAG(L,SK1)
-              ENDDO
-            ENDDO
-          ENDDO
-        ENDDO
-
-!  M = 1 component. [Siewert (1982), Eqs (32) to (34), plus (35)]
-
-      ELSE IF ( M .EQ. 1 ) THEN
-
-!  .. L = 1
-        DO I = 1, NSA
-          PI(1,I,1,1) = PI(1,I,1,1) + RT_UMXSQ(I)
-          PI(1,I,4,4) = PI(1,I,4,4) + RT_UMXSQ(I)
-        ENDDO
-!  .. L = 2
-        DO I = 1, NSA
-          PL21 =   THREE     * X_RT_UMXSQ(I)
-          RL21 = - RCONST_21 * X_RT_UMXSQ(I)
-          TL21 = + RCONST_21 * RT_UMXSQ(I)
-          PI(2,I,1,1) = PI(2,I,1,1) + PL21
-          PI(2,I,2,2) = PI(2,I,2,2) + RL21
-          PI(2,I,2,3) = PI(2,I,2,3) + TL21
-          PI(2,I,3,3) = PI(2,I,2,2)
-          PI(2,I,4,4) = PI(2,I,1,1)
-          PI(2,I,3,2) = PI(2,I,2,3)
-        ENDDO
-!  .. L > 2
-        DO L = 2, NMOMENTS - 1
-          DO I = 1, NSA
-            DO SK1 = 1, NSTOKES
-              DO SK2 = 1, NSTOKES
-                HX = X2LP1(L,I)*PI(L,I,SK1,SK2)
-                HY = YLM_DIAG(L,SK1)*PI(L-1,I,SK1,SK2)
-                HZ = ZERO
-                DO SK3 = 1, NSTOKES
-                  HZ = HZ + ZLM(L,SK1,SK3)*PI(L,I,SK3,SK2)
-                ENDDO
-                PI(L+1,I,SK1,SK2) = ( HX - HY + HZ ) * XLM_DIAG(L,SK1)
-              ENDDO
-            ENDDO
-          ENDDO
-        ENDDO
-
-!  M > 1 components. [Siewert (1982), Eqs (36) to (38), plus (35)]
-!  Limiting case of XM(I) = ONE requires special treatment to avoid NaN
-!   R. Spurr and V. Natraj, 16 january 2006
-
-      ELSE
-
-!  .. L = M
-        IF ( M .EQ. 2 ) THEN
-          DO I = 1, NSA
-            PIMM_11(I) =   THREE     * UMXSQ(I)
-            IF ( XM(I).EQ.ONE) THEN
-              PIMM_KM(I) =   RCONST_21
-            ELSE
-              PIMM_KM(I) =   RCONST_21 * UMXSQ(I)
-            ENDIF
-          ENDDO
-        ELSE
-          H1 = DF_2LP1(M-1)
-          H2 = DF_LP1(M-1)*H1/DF_RT_LP3XLM1(M-1)
-          DO I = 1, NSA
-            PIMM_11(I) = H1 * RT_UMXSQ(I) * PIMM_11(I)
-            IF ( XM(I).EQ.ONE) THEN
-              PIMM_KM(I) = ZERO
-            ELSE
-              PIMM_KM(I) = H2 * RT_UMXSQ(I) * PIMM_KM(I)
-            ENDIF
-          ENDDO
-        ENDIF
-        DO I = 1, NSA
-          PI(M,I,1,1) = PI(M,I,1,1) + PIMM_11(I)
-          IF ( XM(I).EQ.ONE ) THEN
-            PI(M,I,2,2) = PI(M,I,2,2) + PIMM_KM(I) * TWO
-            PI(M,I,2,3) = PI(M,I,2,3) - PIMM_KM(I) * TWO
-          ELSE
-            PI(M,I,2,2) = PI(M,I,2,2) + PIMM_KM(I) * UPXSQ_D_UMXSQ(I)
-            PI(M,I,2,3) = PI(M,I,2,3) + PIMM_KM(I) * M2X_D_UMXSQ(I)
-          ENDIF
-          PI(M,I,3,3) = PI(M,I,2,2)
-          PI(M,I,4,4) = PI(M,I,1,1)
-          PI(M,I,3,2) = PI(M,I,2,3)
-        ENDDO
-!  .. L = M + 1
-        IF ( M .LT. NMOMENTS ) THEN
-          DO I = 1, NSA
-            DO SK1 = 1, NSTOKES
-              DO SK2 = 1, NSTOKES
-                HX = X2LP1(M,I)*PI(M,I,SK1,SK2)
-                HZ = ZERO
-                DO SK3 = 1, NSTOKES
-                  HZ = HZ + ZLM(M,SK1,SK3)*PI(M,I,SK3,SK2)
-                ENDDO
-                PI(M+1,I,SK1,SK2) = ( HX + HZ ) * XLM_DIAG(M,SK1)
-              ENDDO
-            ENDDO
-          ENDDO
-        ENDIF
-!  .. L > M + 1
-        DO L = M + 1, NMOMENTS - 1
-          DO I = 1, NSA
-            DO SK1 = 1, NSTOKES
-              DO SK2 = 1, NSTOKES
-                HX = X2LP1(L,I)*PI(L,I,SK1,SK2)
-                HY = YLM_DIAG(L,SK1)*PI(L-1,I,SK1,SK2)
-                HZ = ZERO
-                DO SK3 = 1, NSTOKES
-                  HZ = HZ + ZLM(L,SK1,SK3)*PI(L,I,SK3,SK2)
-                ENDDO
-                PI(L+1,I,SK1,SK2) = ( HX - HY + HZ ) * XLM_DIAG(L,SK1)
-              ENDDO
-            ENDDO
-          ENDDO
-        ENDDO
-
-      ENDIF
-
-!  Normalized output.
-!  ------------------
-
-      DO L = M, NMOMENTS
-
-!  .. at quadrature streams
-
-        DO I = 1, NSTREAMS
-
-          DO SK1 = 1, NSTOKES
-            DO SK2 = 1, NSTOKES
-              PI_XQP(L,I,SK1,SK2) = PI(L,I,SK1,SK2) * PINORM(L,M)
-            ENDDO
-          ENDDO
-
-          DO SK1 = 1, NSTOKES
-            DO SK2 = 1, NSTOKES
-
-              H1 = ZERO
-              H2 = ZERO
-              DO SK3 = 1, NSTOKES
-                H1 = H1 + DMAT(SK1,SK3) * PI_XQP(L,I,SK3,SK2)
-                H2 = H2 + PI_XQP(L,I,SK1,SK3) * DMAT(SK3,SK2)
-              ENDDO
-
-              PI_XQP_PRE(L,I,SK1,SK2)  = H1
-              PI_XQM_PRE(L,I,SK1,SK2)  = H1 * PISIGN(L,M)
-              PI_XQM_POST(L,I,SK1,SK2) = H2 * PISIGN(L,M)
-
-              H1 = ZERO
-              DO SK3 = 1, NSTOKES
-                H2 = ZERO
-                DO SK4 = 1, NSTOKES
-                  H2 = H2 + PI_XQP(L,I,SK3,SK4)*DMAT(SK4,SK2)
-                ENDDO
-                H1 = H1 + DMAT(SK1,SK3)*H2
-              ENDDO
-              PI_XQM(L,I,SK1,SK2)  = H1 * PISIGN(L,M)
-
-            ENDDO
-          ENDDO
-
-        ENDDO
-
-!  .. at positive user_defined angles
-
-        IF ( DO_USER_STREAMS ) THEN
-
-          DO I = 1, N_USER_STREAMS
-            I1 = I + NSTREAMS
-
-            DO SK1 = 1, NSTOKES
-              DO SK2 = 1, NSTOKES
-                PI_XUP(L,I,SK1,SK2) = PI(L,I1,SK1,SK2) * PINORM(L,M)
-              ENDDO
-            ENDDO
-
-            DO SK1 = 1, NSTOKES
-              DO SK2 = 1, NSTOKES
-
-                H2 = ZERO
-                H1 = ZERO
-                DO SK3 = 1, NSTOKES
-                  H1 = H1 + DMAT(SK1,SK3) * PI_XUP(L,I,SK3,SK2)
-                  H2 = H2 + DMAT(SK3,SK2) * PI_XUP(L,I,SK1,SK3)
-                ENDDO
-                PI_XUP_PRE(L,I,SK1,SK2)  = H1
-                PI_XUM_POST(L,I,SK1,SK2) = H2 * PISIGN(L,M)
-
-                H1 = ZERO
-                DO SK3 = 1, NSTOKES
-                  H2 = ZERO
-                  DO SK4 = 1, NSTOKES
-                    H2 = H2 + PI_XUP(L,I,SK3,SK4)*DMAT(SK4,SK2)
-                  ENDDO
-                  H1 = H1 + DMAT(SK1,SK3)*H2
-                ENDDO
-                PI_XUM(L,I,SK1,SK2) = H1 * PISIGN(L,M)
-
-              ENDDO
-            ENDDO
-
-          ENDDO
-
-        ENDIF
-
-!  .. at solar zenith angles
-
-!  depends on use of refractive geometry
-
-        IF ( DO_REFRACTIVE_GEOMETRY ) THEN
-!          DO N = 1, NLAYERS
-!            DO IB = 1, NBEAMS
-!              IP = NS + NBEAMS * (N-1) + IB
-!              DO SK1 = 1, NSTOKES
-!                DO SK2 = 1, NSTOKES
-!                  PI_X0P(L,IB,N,SK1,SK2) =
-!     &                 PI(L,IP,SK1,SK2) * PINORM(L,M)
-!                ENDDO
-!              ENDDO
-!            ENDDO
-!          ENDDO
-        ELSE
-          DO IB = 1, NBEAMS
-            IP = IB + NS
-            DO SK1 = 1, NSTOKES
-              DO SK2 = 1, NSTOKES
-                PI_X0P(L,IB,1,SK1,SK2) = &
-                     PI(L,IP,SK1,SK2) * PINORM(L,M)
-                DO N = 2, NLAYERS
-                  PI_X0P(L,IB,N,SK1,SK2)= PI_X0P(L,IB,1,SK1,SK2)
-                ENDDO
-              ENDDO
-            ENDDO
-          ENDDO
-        ENDIF
-
-!  end loop moments
-
-      ENDDO
-
-!  debug
-
-!      write(77,*)'Fourier',M
-!      DO L = M, NMOMENTS
-!       write(77,*)'Moment ',L
-!       DO SK1 = 1, 4
-!        WRITE(77,'(I3,1p4e15.6)')SK1,(PI_XUP(L,4,SK1,SK2),SK2=1,4)
-!       ENDDO
-!      ENDDO
-
-!  Finish
-
-      RETURN
-      END SUBROUTINE VLIDORT_PIMATRIX_SETUP
 
       END MODULE vlidort_solutions
 

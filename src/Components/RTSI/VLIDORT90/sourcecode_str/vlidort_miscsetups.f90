@@ -19,7 +19,7 @@
 ! #  Email :       rtsolutions@verizon.net                      #
 ! #                                                             #
 ! #  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT, 2.4RTC,  #
-! #                   2.5, 2.6                                  #
+! #                   2.5, 2.6, 2.7                             #
 ! #  Release Date :   December 2005  (2.0)                      #
 ! #  Release Date :   March 2007     (2.2)                      #
 ! #  Release Date :   October 2007   (2.3)                      #
@@ -29,6 +29,7 @@
 ! #  Release Date :   October 2010   (2.4RTC)                   #
 ! #  Release Date :   March 2011     (2.5)                      #
 ! #  Release Date :   May 2012       (2.6)                      #
+! #  Release Date :   August 2014    (2.7)                      #
 ! #                                                             #
 ! #       NEW: TOTAL COLUMN JACOBIANS         (2.4)             #
 ! #       NEW: BPDF Land-surface KERNELS      (2.4R)            #
@@ -36,6 +37,9 @@
 ! #       Consolidated BRDF treatment         (2.4RTC)          #
 ! #       f77/f90 Release                     (2.5)             #
 ! #       External SS / New I/O Structures    (2.6)             #
+! #                                                             #
+! #       SURFACE-LEAVING / BRDF-SCALING      (2.7)             #
+! #       TAYLOR Series / OMP THREADSAFE      (2.7)             #
 ! #                                                             #
 ! ###############################################################
 
@@ -56,10 +60,9 @@
 ! #              VLIDORT_QSPREP                                 #
 ! #              VLIDORT_PREPTRANS                              #
 ! #                                                             #
-! #            VLIDORT_SURFACE_DIRECTBEAM                       #
-! #                                                             #
-! #            VLIDORT_CHAPMAN                                  #
-! #              BEAM_GEOMETRY_PREPARE                          #
+! #            VLIDORT_DIRECTBEAM                               #
+! #            VLIDORT_PIMATRIX_SETUP                           #
+! #            VLIDORT_PIMATRIX_SETUP_OMP  (Version 2.7)        #
 ! #                                                             #
 ! ###############################################################
 
@@ -68,8 +71,9 @@
 
       PRIVATE
       PUBLIC :: VLIDORT_MISCSETUPS, &
-                VLIDORT_SURFACE_DIRECTBEAM, &
-                VLIDORT_CHAPMAN
+                VLIDORT_DIRECTBEAM, &
+                VLIDORT_PIMATRIX_SETUP, &
+                VLIDORT_PIMATRIX_SETUP_OMP
 
       CONTAINS
 
@@ -89,14 +93,15 @@
         DO_SOLUTION_SAVING, NSTREAMS, &
         DO_TOA_CONTRIBS, QUAD_STREAMS, &
         N_USER_STREAMS, DO_USER_STREAMS, &
+        DO_OBSERVATION_GEOMETRY, &
         USER_SECANTS, N_PARTLAYERS, &
         STERM_LAYERMASK_UP, STERM_LAYERMASK_DN, &
         OMEGA_TOTAL, DELTAU_VERT, &
         PARTAU_VERT, GREEKMAT_TOTAL, &
-        TAUGRID, DELTAU_SLANT, &
+        TAUGRID, DELTAU_SLANT, SOLARBEAM_BOATRANS, &   ! Rob fix 11/17/14 added argument
         TRUNC_FACTOR, FAC1, &
         OMEGA_GREEK, LAYER_PIS_CUTOFF, &
-        SOLAR_BEAM_OPDEP, DO_REFLECTED_DIRECTBEAM, &
+        TRANS_SOLAR_BEAM, DO_REFLECTED_DIRECTBEAM, &
         INITIAL_TRANS, AVERAGE_SECANT, LOCAL_CSZA, &
         T_DELT_DISORDS, T_DISORDS_UTUP, &
         T_DISORDS_UTDN, T_DELT_MUBAR, &
@@ -139,6 +144,7 @@
       DOUBLE PRECISION, INTENT (IN) :: QUAD_STREAMS ( MAXSTREAMS )
       INTEGER, INTENT (IN) ::          N_USER_STREAMS
       LOGICAL, INTENT (IN) ::          DO_USER_STREAMS
+      LOGICAL, INTENT (IN) ::          DO_OBSERVATION_GEOMETRY
       DOUBLE PRECISION, INTENT (IN) :: USER_SECANTS  ( MAX_USER_STREAMS )
       INTEGER, INTENT (IN) ::          N_PARTLAYERS
       LOGICAL, INTENT (IN) ::          STERM_LAYERMASK_UP ( MAXLAYERS )
@@ -157,7 +163,7 @@
       DOUBLE PRECISION, INTENT (OUT) :: OMEGA_GREEK &
           ( 0:MAXMOMENTS, MAXLAYERS, MAXSTOKES, MAXSTOKES )
       INTEGER, INTENT (OUT) ::          LAYER_PIS_CUTOFF ( MAXBEAMS )
-      DOUBLE PRECISION, INTENT (OUT) :: SOLAR_BEAM_OPDEP ( MAXBEAMS )
+      DOUBLE PRECISION, INTENT (OUT) :: TRANS_SOLAR_BEAM ( MAXBEAMS )
       LOGICAL, INTENT (OUT) ::          DO_REFLECTED_DIRECTBEAM ( MAXBEAMS )
       DOUBLE PRECISION, INTENT (OUT) :: INITIAL_TRANS ( MAXLAYERS, MAXBEAMS )
       DOUBLE PRECISION, INTENT (OUT) :: AVERAGE_SECANT ( MAXLAYERS, MAXBEAMS )
@@ -182,6 +188,10 @@
       DOUBLE PRECISION, INTENT (OUT) :: ITRANS_USERM &
           ( MAXLAYERS, MAX_USER_STREAMS, MAXBEAMS )
 
+!  Rob fix 11/17/14. Added Argument
+
+      DOUBLE PRECISION, INTENT (OUT) :: SOLARBEAM_BOATRANS ( MAXBEAMS )
+
 !  miscellaneous setup operations, Master routine
 
 !  Performance set-up is in VLIDORT_DERIVE_INPUTS (vlidort_inputs.f)
@@ -200,7 +210,7 @@
         TAUGRID_INPUT, CHAPMAN_FACTORS, &
         OMEGA_TOTAL, DELTAU_VERT, &
         PARTAU_VERT, GREEKMAT_TOTAL, &
-        TAUGRID, DELTAU_SLANT, &
+        TAUGRID, DELTAU_SLANT, SOLARBEAM_BOATRANS, &   ! Rob fix 11/17/14 added argument
         TRUNC_FACTOR, FAC1 )
 
 !  initialise single scatter albedo terms
@@ -222,18 +232,18 @@
         NBEAMS, DELTAU_VERT, &
         TAUGRID, DELTAU_SLANT, &
         LAYER_PIS_CUTOFF, &
-        SOLAR_BEAM_OPDEP, DO_REFLECTED_DIRECTBEAM, &
+        TRANS_SOLAR_BEAM, DO_REFLECTED_DIRECTBEAM, &
         INITIAL_TRANS, AVERAGE_SECANT, &
         LOCAL_CSZA )
 
 !  Transmittances and Transmittance factors
 
       CALL VLIDORT_PREPTRANS ( &
-        DO_SOLUTION_SAVING, NSTREAMS, &
-        NLAYERS, DO_TOA_CONTRIBS, &
+        DO_SOLUTION_SAVING, &
+        NSTREAMS, NLAYERS, DO_TOA_CONTRIBS, &
         LAYER_PIS_CUTOFF, QUAD_STREAMS, &
         NBEAMS, N_USER_STREAMS, &
-        DO_USER_STREAMS, &
+        DO_USER_STREAMS, DO_OBSERVATION_GEOMETRY, &
         USER_SECANTS, N_PARTLAYERS, &
         PARTLAYERS_LAYERIDX, STERM_LAYERMASK_UP, &
         STERM_LAYERMASK_DN, &
@@ -264,7 +274,7 @@
         TAUGRID_INPUT, CHAPMAN_FACTORS, &
         OMEGA_TOTAL, DELTAU_VERT, &
         PARTAU_VERT, GREEKMAT_TOTAL, &
-        TAUGRID, DELTAU_SLANT, &
+        TAUGRID, DELTAU_SLANT, SOLARBEAM_BOATRANS, &   ! Rob fix 11/17/14 added argument
         TRUNC_FACTOR, FAC1 )
 
       USE VLIDORT_PARS
@@ -300,6 +310,10 @@
       DOUBLE PRECISION, INTENT (OUT) :: TRUNC_FACTOR ( MAXLAYERS )
       DOUBLE PRECISION, INTENT (OUT) :: FAC1 ( MAXLAYERS )
 
+!  Rob fix 11/17/14. Added Argument
+
+      DOUBLE PRECISION, INTENT (OUT) :: SOLARBEAM_BOATRANS ( MAXBEAMS )
+
 !  local variables
 
       DOUBLE PRECISION :: FDEL, FAC2, DNL1, FDNL1
@@ -324,6 +338,9 @@
 
 !  slant optical thickness values
 
+!mick fix 7/23/2014 - initialized for packing
+      DELTAU_SLANT = ZERO
+
       DO IB = 1, NBEAMS
         DO N = 1, NLAYERS
           DO K = 1, N
@@ -333,6 +350,16 @@
         ENDDO
       ENDDO
 
+!rob fix 11/17/2014 - initialize for output, then calculate
+
+      SOLARBEAM_BOATRANS = ZERO
+      DO IB = 1, NBEAMS
+         DELS = SUM(DELTAU_SLANT(NLAYERS,1:NLAYERS,IB))
+         IF ( DELS .le. MAX_TAU_SPATH ) THEN
+            SOLARBEAM_BOATRANS(IB) = DELS
+         ENDIF
+      ENDDO
+      
 !  debug
 
 !      do n = 1, nlayers
@@ -450,14 +477,20 @@
           TAUGRID(N)     = TAUGRID_INPUT(N)
           DELTAU_VERT(N) = DELTAU_VERT_INPUT(N)
           DO L = 0, NMOMENTS
-            DO K = 1, 4
-              K1 = KTYPE1(K)
-              K2 = KTYPE2(K)
-              GREEKMAT_TOTAL(L,N,K1) = &
-                    GREEKMAT_TOTAL_INPUT(L,N,K1)
-              GREEKMAT_TOTAL(L,N,K2) = &
-                    GREEKMAT_TOTAL_INPUT(L,N,K2)
-            ENDDO
+!mick fix 1/21/2013 -  added if structure and else section
+            IF ( NSTOKES .GT. 1 ) THEN
+              DO K = 1, 4
+                K1 = KTYPE1(K)
+                K2 = KTYPE2(K)
+                GREEKMAT_TOTAL(L,N,K1) = &
+                      GREEKMAT_TOTAL_INPUT(L,N,K1)
+                GREEKMAT_TOTAL(L,N,K2) = &
+                      GREEKMAT_TOTAL_INPUT(L,N,K2)
+              ENDDO
+            ELSE
+              GREEKMAT_TOTAL(L,N,1) = &
+                    GREEKMAT_TOTAL_INPUT(L,N,1)
+            ENDIF
           ENDDO
         ENDDO
 
@@ -592,7 +625,7 @@
         NBEAMS, DELTAU_VERT, &
         TAUGRID, DELTAU_SLANT, &
         LAYER_PIS_CUTOFF, &
-        SOLAR_BEAM_OPDEP, DO_REFLECTED_DIRECTBEAM, &
+        TRANS_SOLAR_BEAM, DO_REFLECTED_DIRECTBEAM, &
         INITIAL_TRANS, AVERAGE_SECANT, &
         LOCAL_CSZA )
 
@@ -615,7 +648,7 @@
           ( MAXLAYERS, MAXLAYERS, MAXBEAMS )
 
       INTEGER, INTENT (OUT) ::          LAYER_PIS_CUTOFF ( MAXBEAMS )
-      DOUBLE PRECISION, INTENT (OUT) :: SOLAR_BEAM_OPDEP ( MAXBEAMS )
+      DOUBLE PRECISION, INTENT (OUT) :: TRANS_SOLAR_BEAM ( MAXBEAMS )
       LOGICAL, INTENT (OUT) :: DO_REFLECTED_DIRECTBEAM ( MAXBEAMS )
       DOUBLE PRECISION, INTENT (OUT) :: INITIAL_TRANS ( MAXLAYERS, MAXBEAMS )
       DOUBLE PRECISION, INTENT (OUT) :: AVERAGE_SECANT ( MAXLAYERS, MAXBEAMS )
@@ -744,11 +777,11 @@
 !  Set Direct Beam Flag and solar beam total attenuation to surface
 
       DO IB = 1, NBEAMS
-        SOLAR_BEAM_OPDEP(IB) = ZERO
+        TRANS_SOLAR_BEAM(IB) = ZERO
         DO_REFLECTED_DIRECTBEAM(IB) = .FALSE.
         IF ( .NOT.DO_SPECIALIST_OPTION_3 ) THEN
           IF ( TAU_SOLAR(IB) .LT. MAX_TAU_SPATH ) THEN
-            SOLAR_BEAM_OPDEP(IB) = DEXP( - TAU_SOLAR(IB) )
+            TRANS_SOLAR_BEAM(IB) = DEXP( - TAU_SOLAR(IB) )
             DO_REFLECTED_DIRECTBEAM(IB) = .TRUE.
           ENDIF
         ENDIF
@@ -765,14 +798,14 @@
       RETURN
       END SUBROUTINE VLIDORT_QSPREP
 
-!
+!
 
       SUBROUTINE VLIDORT_PREPTRANS ( &
         DO_SOLUTION_SAVING, NSTREAMS, &
         NLAYERS, DO_TOA_CONTRIBS, &
         LAYER_PIS_CUTOFF, QUAD_STREAMS, &
         NBEAMS, N_USER_STREAMS, &
-        DO_USER_STREAMS, &
+        DO_USER_STREAMS, DO_OBSERVATION_GEOMETRY, &
         USER_SECANTS, N_PARTLAYERS, &
         PARTLAYERS_LAYERIDX, STERM_LAYERMASK_UP, &
         STERM_LAYERMASK_DN, &
@@ -800,6 +833,7 @@
       INTEGER, INTENT (IN) ::           NBEAMS
       INTEGER, INTENT (IN) ::           N_USER_STREAMS
       LOGICAL, INTENT (IN) ::           DO_USER_STREAMS
+      LOGICAL, INTENT (IN) ::           DO_OBSERVATION_GEOMETRY
       DOUBLE PRECISION, INTENT (IN) ::  USER_SECANTS  ( MAX_USER_STREAMS )
       INTEGER, INTENT (IN) ::           N_PARTLAYERS
       INTEGER, INTENT (IN) ::           PARTLAYERS_LAYERIDX ( MAX_PARTLAYERS )
@@ -833,8 +867,12 @@
 !  local variables
 !  ---------------
 
-      INTEGER          :: N, UT, UM, IB, I
+      INTEGER          :: N, UT, UM, IB, I, LUM
       DOUBLE PRECISION :: XT, SPHER, HELP
+
+!  Local user index
+
+      LUM = 1
 
 !  Transmittance factors for discrete ordinate streams
 !  ===================================================
@@ -842,6 +880,18 @@
 !  New code by R. Spurr, RT Solutions, 12 April 2005
 !    Required for the solution saving option
 !  Partial layer code added 30 December 2005 by R. Spurr
+
+!mick fix 7/23/2014 - initialized for packing
+        T_DELT_DISORDS = ZERO
+        T_DISORDS_UTDN = ZERO
+        T_DISORDS_UTUP = ZERO
+
+        ITRANS_USERM = ZERO
+        T_DELT_USERM = ZERO
+        T_UTDN_USERM = ZERO
+        T_UTUP_USERM = ZERO
+
+        CUMTRANS = ZERO
 
       IF ( DO_SOLUTION_SAVING ) THEN
 
@@ -945,13 +995,21 @@
 !  Initial transmittances divided by user streams
 !  ----------------------------------------------
 
-      DO IB = 1, NBEAMS
-       DO N = 1, NLAYERS
-        DO UM = 1, N_USER_STREAMS
-         ITRANS_USERM(N,UM,IB) = INITIAL_TRANS(N,IB)*USER_SECANTS(UM)
+      IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO IB = 1, NBEAMS
+         DO N = 1, NLAYERS
+          DO UM = 1, N_USER_STREAMS
+           ITRANS_USERM(N,UM,IB) = INITIAL_TRANS(N,IB)*USER_SECANTS(UM)
+          ENDDO
+         ENDDO
         ENDDO
-       ENDDO
-      ENDDO
+      ELSE
+        DO IB = 1, NBEAMS
+         DO N = 1, NLAYERS
+           ITRANS_USERM(N,LUM,IB) = INITIAL_TRANS(N,IB)*USER_SECANTS(IB)
+         ENDDO
+        ENDDO
+      ENDIF
 
 !  Whole Layer transmittances
 
@@ -1006,9 +1064,9 @@
       RETURN
       END SUBROUTINE VLIDORT_PREPTRANS
 
-!
+!
 
-      SUBROUTINE VLIDORT_SURFACE_DIRECTBEAM ( &
+      SUBROUTINE VLIDORT_DIRECTBEAM ( &
         DELTA_FACTOR, FOURIER_COMPONENT, &
         DO_REFRACTIVE_GEOMETRY, NSTOKES, &
         NSTREAMS, NLAYERS, &
@@ -1022,7 +1080,8 @@
         FLUXVEC, COS_SZANGLES, &
         NBEAMS, N_USER_STREAMS, &
         MUELLER_INDEX, DO_USER_STREAMS, &
-        SOLAR_BEAM_OPDEP, DO_REFLECTED_DIRECTBEAM, &
+        DO_OBSERVATION_GEOMETRY, &
+        TRANS_SOLAR_BEAM, DO_REFLECTED_DIRECTBEAM, &
         ATMOS_ATTN, DIRECT_BEAM, &
         USER_DIRECT_BEAM )
 
@@ -1058,7 +1117,8 @@
 !  New Surface-Leaving stuff 17 May 2012
       LOGICAL, INTENT (IN) ::            DO_SURFACE_LEAVING
       LOGICAL, INTENT (IN) ::            DO_SL_ISOTROPIC
-      DOUBLE PRECISION, INTENT (IN) ::   SLTERM_ISOTROPIC ( MAXSTOKES )
+      DOUBLE PRECISION, INTENT (IN) ::   SLTERM_ISOTROPIC &
+          ( MAXSTOKES, MAXBEAMS )
       DOUBLE PRECISION, INTENT (IN) ::   SLTERM_F_0 &
           ( 0:MAXMOMENTS, MAXSTOKES, MAXSTREAMS, MAXBEAMS )
       DOUBLE PRECISION, INTENT (IN) ::   USER_SLTERM_F_0 &
@@ -1070,7 +1130,8 @@
       INTEGER, INTENT (IN) ::           N_USER_STREAMS
       INTEGER, INTENT (IN) ::           MUELLER_INDEX ( MAXSTOKES, MAXSTOKES )
       LOGICAL, INTENT (IN) ::           DO_USER_STREAMS
-      DOUBLE PRECISION, INTENT (IN) ::  SOLAR_BEAM_OPDEP ( MAXBEAMS )
+      LOGICAL, INTENT (IN) ::           DO_OBSERVATION_GEOMETRY
+      DOUBLE PRECISION, INTENT (IN) ::  TRANS_SOLAR_BEAM ( MAXBEAMS )
       LOGICAL, INTENT (IN) ::           DO_REFLECTED_DIRECTBEAM ( MAXBEAMS )
 
       DOUBLE PRECISION, INTENT (OUT) :: ATMOS_ATTN ( MAXBEAMS )
@@ -1082,13 +1143,17 @@
 !  Local variables
 !  ---------------
 
-      DOUBLE PRECISION :: X0_FLUX, X0_BOA, ATTN, REFLEC, SUM, SL
-      INTEGER          :: I, UI, O1, O2, IB, M, OM
+      DOUBLE PRECISION :: X0_FLUX, X0_BOA, ATTN, REFLEC, SUM, SL, Help
+      INTEGER          :: I, UI, O1, O2, IB, M, OM, LUI
 
 !  Initialize
 !  ----------
 
-!   Safety first!  Return if there is no reflection.
+!  Local user index
+
+      LUI = 1
+
+!  Safety first!  Return if there is no reflection.
 
       DO IB = 1, NBEAMS
         DO I = 1, NSTREAMS
@@ -1097,11 +1162,17 @@
           ENDDO
         ENDDO
         IF ( DO_USER_STREAMS ) THEN
-          DO UI = 1, N_USER_STREAMS
-            DO O1 = 1, NSTOKES
-              USER_DIRECT_BEAM(UI,IB,O1) = ZERO
+          IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+            DO UI = 1, N_USER_STREAMS
+              DO O1 = 1, NSTOKES
+                USER_DIRECT_BEAM(UI,IB,O1) = ZERO
+              ENDDO
             ENDDO
-          ENDDO
+          ELSE
+            DO O1 = 1, NSTOKES
+              USER_DIRECT_BEAM(LUI,IB,O1) = ZERO
+            ENDDO
+          ENDIF
         ENDIF
       ENDDO
 
@@ -1130,7 +1201,7 @@
 
         X0_FLUX        = FOUR * X0_BOA / DELTA_FACTOR
         X0_FLUX        = FLUX_FACTOR * X0_FLUX / PI4             ! New
-        ATTN           = X0_FLUX * SOLAR_BEAM_OPDEP(IB)
+        ATTN           = X0_FLUX * TRANS_SOLAR_BEAM(IB)
         ATMOS_ATTN(IB) = ATTN
 
 !  Lambertian case
@@ -1146,9 +1217,13 @@
               DIRECT_BEAM(I,IB,1) = REFLEC
             ENDDO
             IF ( DO_USER_STREAMS ) THEN
-              DO UI = 1, N_USER_STREAMS
-                USER_DIRECT_BEAM(UI,IB,1) = REFLEC
-              ENDDO
+              IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+                DO UI = 1, N_USER_STREAMS
+                  USER_DIRECT_BEAM(UI,IB,1) = REFLEC
+                ENDDO
+              ELSE
+                USER_DIRECT_BEAM(LUI,IB,1) = REFLEC
+              ENDIF
             ENDIF
           ENDIF
         ENDIF
@@ -1168,58 +1243,84 @@
                 SUM = SUM + FLUXVEC(O2) * BRDF_F_0(M,OM,I,IB)
               ENDDO
               DIRECT_BEAM(I,IB,O1) = ATTN * SUM
-
             ENDDO
           ENDDO
 
 !  Solar beam reflected into User directions
 
           IF ( DO_USER_STREAMS ) THEN
-            DO UI = 1, N_USER_STREAMS
+            IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+              DO UI = 1, N_USER_STREAMS
+                DO O1 = 1, NSTOKES
+                  SUM = ZERO
+                  DO O2 = 1, NSTOKES
+                    OM = MUELLER_INDEX(O1,O2)
+                    SUM = SUM + FLUXVEC(O2)*USER_BRDF_F_0(M,OM,UI,IB)
+                  ENDDO
+                  USER_DIRECT_BEAM(UI,IB,O1) = ATTN * SUM
+                ENDDO
+              ENDDO
+            ELSE
               DO O1 = 1, NSTOKES
                 SUM = ZERO
                 DO O2 = 1, NSTOKES
                   OM = MUELLER_INDEX(O1,O2)
-                  SUM = SUM + FLUXVEC(O2)*USER_BRDF_F_0(M,OM,UI,IB)
+                  SUM = SUM + FLUXVEC(O2)*USER_BRDF_F_0(M,OM,LUI,IB)
                 ENDDO
-                USER_DIRECT_BEAM(UI,IB,O1) = ATTN * SUM
+                USER_DIRECT_BEAM(LUI,IB,O1) = ATTN * SUM
               ENDDO
-            ENDDO
+            ENDIF
           ENDIF
 
         ENDIF
 
 !@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ START
 !  New Surface-Leaving stuff 17 May 2012
+
+!  Corrected implementation, 30 July 2012
+!    Normalized to Flux-factor / DELTA_Factor
+!    Delta_Factor = 1.0 for the Isotropic or non-iso Fourier = 0 cases
+
         IF ( DO_SURFACE_LEAVING ) THEN
+          HELP = FLUX_FACTOR / DELTA_FACTOR
           IF ( DO_SL_ISOTROPIC .and. M.EQ.0 ) THEN
             DO O1 = 1, NSTOKES
-              SL = SLTERM_ISOTROPIC(O1)
+              SL = SLTERM_ISOTROPIC(O1,IB) * HELP
               DO I = 1, NSTREAMS
                 DIRECT_BEAM(I,IB,O1) = DIRECT_BEAM(I,IB,O1) + SL
               ENDDO
               IF ( DO_USER_STREAMS ) THEN
-                DO UI = 1, N_USER_STREAMS
-                  USER_DIRECT_BEAM(UI,IB,O1) = USER_DIRECT_BEAM(UI,IB,O1) + SL
-                ENDDO
+                IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+                  DO UI = 1, N_USER_STREAMS
+                    USER_DIRECT_BEAM(UI,IB,O1) = USER_DIRECT_BEAM(UI,IB,O1) + SL
+                  ENDDO
+                ELSE
+                  USER_DIRECT_BEAM(LUI,IB,O1) = USER_DIRECT_BEAM(LUI,IB,O1) + SL
+                ENDIF
               ENDIF
             ENDDO
           ELSE
             DO O1 = 1, NSTOKES
               DO I = 1, NSTREAMS
-                SL = SLTERM_F_0(M,O1,I,IB)
+                SL = SLTERM_F_0(M,O1,I,IB) * HELP
                 DIRECT_BEAM(I,IB,O1) = DIRECT_BEAM(I,IB,O1) + SL
               ENDDO
               IF ( DO_USER_STREAMS ) THEN
-                DO UI = 1, N_USER_STREAMS
-                  SL = USER_SLTERM_F_0(M,O1,UI,IB)
-                  USER_DIRECT_BEAM(UI,IB,O1) = USER_DIRECT_BEAM(UI,IB,O1) + SL
-                ENDDO
+                IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+                  DO UI = 1, N_USER_STREAMS
+                    SL = USER_SLTERM_F_0(M,O1,UI,IB)* HELP
+                    USER_DIRECT_BEAM(UI,IB,O1) = USER_DIRECT_BEAM(UI,IB,O1) + SL
+                  ENDDO
+                ELSE
+                  SL = USER_SLTERM_F_0(M,O1,LUI,IB)* HELP
+                  USER_DIRECT_BEAM(LUI,IB,O1) = USER_DIRECT_BEAM(LUI,IB,O1) + SL
+                ENDIF
               ENDIF
             ENDDO
           ENDIF
         ENDIF
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ END 
+
+!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ END
 
 !  end direct beam calculation
 
@@ -1229,538 +1330,1332 @@
 !  finish
 
       RETURN
-      END SUBROUTINE VLIDORT_SURFACE_DIRECTBEAM
+      END SUBROUTINE VLIDORT_DIRECTBEAM
 
 !
 
-      SUBROUTINE VLIDORT_CHAPMAN ( &
-        DO_PLANE_PARALLEL, DO_REFRACTIVE_GEOMETRY, &
-        NLAYERS, N_SZANGLES, &
-        SZANGLES, &
-        EARTH_RADIUS, RFINDEX_PARAMETER, &
-        HEIGHT_GRID, PRESSURE_GRID, &
-        TEMPERATURE_GRID, FINEGRID, &
-        SZA_LOCAL_INPUT, CHAPMAN_FACTORS, &
-        FAIL, MESSAGE, TRACE )
+      SUBROUTINE VLIDORT_PIMATRIX_SETUP ( &
+        FOURIER, &
+        DO_REFRACTIVE_GEOMETRY, NSTOKES, &
+        NSTREAMS, NLAYERS, &
+        COS_SZANGLES, SUN_SZA_COSINES, &
+        QUAD_STREAMS, NMOMENTS, &
+        NBEAMS, N_USER_STREAMS, &
+        DO_USER_STREAMS, USER_STREAMS, &
+        MUELLER_INDEX, DMAT, &
+        PI_XQP, PI_XQM, &
+        PI_XUP, PI_XUM, &
+        PI_X0P, &
+        PI_XQM_POST, PI_XQM_PRE, &
+        PI_XQP_PRE, PI_XUM_POST, &
+        PI_XUP_PRE )
 
-!  This is the internal Chapman function calculation of the slant path
-!  Chapman Factors required for slant-path optical thickness values.
+!  Notes
+!  -----
 
-!  This module calculates CHAPMAN_FACTORS internally inside VLIDORT,
-!  saving you the job of doing it yourself, though you can input these
-!  quantities, if the DO_CHAPMAN_FACTORS flag is not set.
+!  This is equivalent to the Legendre setup modules in LIDORT
 
-!  The following options apply:
+!---------old comments ---------------------------------
+!  This needs modification for the case of Refractive atmosphere,
+!  because the solar zenith angle is not constant.
+!-------------------------------------------------------
 
-!   1. If the plane-parallel flag is on, no further inputs are required
+!  PI-matrix setup, following recipe of Siewert (1982).
+!  Single Fourier component only.
 
-!   2. If the plane-parallel flag is off, then Pseudo-spherical:
-!       (a) Straight line geometry, must specify
-!               Earth_radius, height grid
-!       (b) Refractive geometry, must specify
-!               Earth_radius, height grid
-!               pressure grid, temperature grid
+!  Tested against benchmark results in Vestrucci & Siewert (1984), Problem
 
-!  The logic will be checked before the module is called.
-
-!  Newly programmed by R. Spurr, RT SOLUTIONS Inc. 5/5/05.
-
-!    Based round a call to a pure geometry module which returns slant
-!    path distances which was adapted for use in the Radiant model by
-!    R. Spurr during an OCO L2 intensive April 24-29, 2005.
+!  original coding, September 2002, R. Spurr SAO
+!  Multibeam SZA coding, July 2004, R. Spurr SAO
+!  Coding for refractive geometry case, R. Spurr, RT Solutions, May 2005
 
       USE VLIDORT_PARS
 
       IMPLICIT NONE
 
-      LOGICAL, INTENT (IN) ::           DO_PLANE_PARALLEL
+      INTEGER, INTENT (IN) ::           FOURIER
       LOGICAL, INTENT (IN) ::           DO_REFRACTIVE_GEOMETRY
+      INTEGER, INTENT (IN) ::           NSTOKES
+      INTEGER, INTENT (IN) ::           NSTREAMS
       INTEGER, INTENT (IN) ::           NLAYERS
-      INTEGER, INTENT (IN) ::           N_SZANGLES
-      DOUBLE PRECISION, INTENT (IN) ::  SZANGLES ( MAX_SZANGLES )
-      DOUBLE PRECISION, INTENT (IN) ::  EARTH_RADIUS
-      DOUBLE PRECISION, INTENT (IN) ::  RFINDEX_PARAMETER
-      DOUBLE PRECISION, INTENT (IN) ::  HEIGHT_GRID ( 0:MAXLAYERS )
-      DOUBLE PRECISION, INTENT (IN) ::  PRESSURE_GRID ( 0:MAXLAYERS )
-      DOUBLE PRECISION, INTENT (IN) ::  TEMPERATURE_GRID ( 0:MAXLAYERS )
-      INTEGER, INTENT (IN) ::           FINEGRID ( MAXLAYERS )
-
-      DOUBLE PRECISION, INTENT (OUT) :: SZA_LOCAL_INPUT &
-          ( 0:MAXLAYERS, MAX_SZANGLES )
-      DOUBLE PRECISION, INTENT (OUT) :: CHAPMAN_FACTORS &
-          ( MAXLAYERS, MAXLAYERS, MAXBEAMS )
-      LOGICAL, INTENT (OUT)           :: FAIL
-      CHARACTER (LEN=*), INTENT (INOUT) :: MESSAGE
-      CHARACTER (LEN=*), INTENT (INOUT) :: TRACE
-
-!  Local variables
-!  ---------------
-
-!  number of iterations (refractive case only)
-!      This is debug output
-
-      INTEGER          ::  ITERSAVE(MAXLAYERS)
-
-!  other local variables
-
-      INTEGER          :: IB
-      DOUBLE PRECISION :: SUN0
-
-!  get spherical optical depths
-!  ----------------------------
-
-!  start beam loop
-
-!mick - added initialization
-      CHAPMAN_FACTORS = ZERO
-      SZA_LOCAL_INPUT = ZERO
-
-      DO IB = 1, N_SZANGLES
-
-        SUN0 = SZANGLES(IB)
-
-        CALL BEAM_GEOMETRY_PREPARE &
-           ( MAX_SZANGLES, MAXLAYERS, IB, NLAYERS, FINEGRID, &
-             SUN0, EARTH_RADIUS, RFINDEX_PARAMETER, &
-             DO_PLANE_PARALLEL, DO_REFRACTIVE_GEOMETRY, &
-             HEIGHT_GRID, PRESSURE_GRID, TEMPERATURE_GRID, &
-             CHAPMAN_FACTORS, SZA_LOCAL_INPUT, &
-             ITERSAVE, FAIL, MESSAGE )
-
-!  return if failed
-
-        IF ( FAIL ) THEN
-          TRACE = 'Geometry failure in VLIDORT_CHAPMAN'
-          RETURN
-        ENDIF
-
-!  end beam loop
-
-      ENDDO
-
-!  Finish
-
-      RETURN
-      END SUBROUTINE VLIDORT_CHAPMAN
-
-!
-
-      SUBROUTINE BEAM_GEOMETRY_PREPARE ( &
-        MAXBEAMS, MAXLAYERS, IBEAM, NLAYERS, FINEGRID, &
-        SZA_GEOM_TRUE, REARTH, RFINDEX_PARAMETER, &
-        DO_PLANE_PARALLEL, DO_REFRACTIVE_GEOMETRY, &
-        HEIGHTS, PRESSURES, TEMPERATURES, &
-        CHAPMAN_FACTORS, SZA_LEVEL_OUTPUT, &
-        ITERSAVE, FAIL, MESSAGE )
-
-      IMPLICIT NONE
-
-!  Generate path CHAPMAN_FACTORS and SZA angles SZA_LEVEL_OUTPUT
-!  for a curved ray-traced beam through a multilayer atmosphere.
-
-!  Coarse layering is input to the module. Values of Z, P, T  are
-!  given at the layer boundaries, with the first value (index 0) at TOA.
-
-!  The refractive geometry is assumed to start at the TOA level.
-
-!  We also require the earth radius and the refractive index parameter
-!   (For the Born-Wolf approximation)
-
-!  There is no refraction if the flag DO_REFRACTIVE_GEOMETRY is not set.
-!  In this case we do not require pressure and temperature information.
-!  The calculation will then be for geometric rays.
-
-!  The plane parallel Flag and the refractive geometry flag should not
-!  both be true - this should be checked outside.
-
-!  In the refracting case, fine-gridding of pressure and temperature is
-!  done internally, temperature is interpolated linearly with height,
-!  and pressure log-linearly. The refraction uses Snell's law rule.
-!  Finelayer gridding assumes equidistant heights within coarse layers
-!  but the number of fine layers can be varied
-
-!  Output is specified at coarse layer boundaries
-
-!  Module is stand-alone.
-
-!  Reprogrammed for the OCO L2 algorithm
-!   R. Spurr, RT Solutions, Inc.   April 27, 2005
-
-!  Intended use in LIDORT and Radiant RT models.
-
-!  Input arguments
-!  ===============
-
-!  input dimensioning
-
-      INTEGER, INTENT (IN) ::          MAXLAYERS, MAXBEAMS
-
-!  Beam index
-
-      INTEGER, INTENT (IN) ::          IBEAM
-
-!  number of coarse layers
-
-      INTEGER, INTENT (IN) ::          NLAYERS
-
-!  number of fine layers within coarse layers
-
-      INTEGER, INTENT (IN) ::          FINEGRID(MAXLAYERS)
-
-!  True solar zenith angle (degrees)
-
-      DOUBLE PRECISION, INTENT (IN) :: SZA_GEOM_TRUE
-
-!  Earth radius (km)
-
-      DOUBLE PRECISION, INTENT (IN) :: REARTH
-
-!  Refractive index parametaer (Born-Wolf approximation)
-
-      DOUBLE PRECISION, INTENT (IN) :: RFINDEX_PARAMETER
-
-!  flag for plane parallel case
-
-      LOGICAL, INTENT (IN) ::          DO_PLANE_PARALLEL
-
-!  flag for refractive geometry
-
-      LOGICAL, INTENT (IN) ::          DO_REFRACTIVE_GEOMETRY
-
-!  Coarse grids of heights, pressures and temperatures
-
-      DOUBLE PRECISION, INTENT (IN) :: HEIGHTS (0:MAXLAYERS)
-      DOUBLE PRECISION, INTENT (IN) :: PRESSURES (0:MAXLAYERS)
-      DOUBLE PRECISION, INTENT (IN) :: TEMPERATURES (0:MAXLAYERS)
-
-!  Output arguments
-!  ================
-
-!  Path segments distances (km)
-
-!mick
-!      DOUBLE PRECISION, INTENT (OUT) :: &
-!        CHAPMAN_FACTORS (MAXLAYERS, MAXLAYERS, MAXBEAMS)
-      DOUBLE PRECISION, INTENT (INOUT) :: &
-        CHAPMAN_FACTORS (MAXLAYERS, MAXLAYERS, MAXBEAMS)
-
-!  solar zenith angles at nadir
-
-!mick
-!      DOUBLE PRECISION, INTENT (OUT) :: &
-!        SZA_LEVEL_OUTPUT (0:MAXLAYERS,MAXBEAMS)
-      DOUBLE PRECISION, INTENT (INOUT) :: &
-        SZA_LEVEL_OUTPUT (0:MAXLAYERS,MAXBEAMS)
-
-!  number of iterations (refractive case only)
-!   This is debug output
-
-      INTEGER, INTENT (OUT)         :: ITERSAVE(MAXLAYERS)
-
-!  output status
-
-      LOGICAL, INTENT (OUT)           :: FAIL
-      CHARACTER (LEN=*), INTENT (OUT) :: MESSAGE
-
-!  Local variables
-!  ===============
-
-!  local dimensioning
-
-      INTEGER, PARAMETER :: &
-        LOCAL_MAXLAYERS = 141, &
-        LOCAL_MAXFINELAYERS = 20
-
-!  fine layer gridding for refraction
-
-      DOUBLE PRECISION :: ZRFINE(LOCAL_MAXLAYERS,0:LOCAL_MAXFINELAYERS)
-      DOUBLE PRECISION :: PRFINE(LOCAL_MAXLAYERS,0:LOCAL_MAXFINELAYERS)
-      DOUBLE PRECISION :: TRFINE(LOCAL_MAXLAYERS,0:LOCAL_MAXFINELAYERS)
-
-!  local height arrays
-
-      DOUBLE PRECISION :: H(0:LOCAL_MAXLAYERS)
-      DOUBLE PRECISION :: DELZ(LOCAL_MAXLAYERS)
-
-!  help variables
-
-      INTEGER          :: N, J, NRFINE, K, ITER, MAXF,IB
-      LOGICAL          :: LOOP
-      DOUBLE PRECISION :: GM_TOA, TH_TOA, MU_TOA, MU_NEXT
-      DOUBLE PRECISION :: Z1, Z0, Z, T1, T0, T, P1, P0, Q1, Q0, Q
-      DOUBLE PRECISION :: FU, FL, DEG_TO_RAD
-
-      DOUBLE PRECISION :: LAYER_DIST, &
-            MU_PREV, STH1, SINTH1, STH2, SINTH2, LOCAL_SUBTHICK, &
-            PHI, PHI_0, PHI_CUM, SINPHI, DELPHI, REFRAC, RATIO, &
-            RE_LOWER, RE_UPPER, DIST, STH2D, SINTH2D, SNELL
-
-!  Standard temperature (K) and pressure (mbar).
-
-      DOUBLE PRECISION, PARAMETER :: &
-        T_STANDARD = 273.16D0, &
-        P_STANDARD = 1013.25D0, &
-        STP_RATIO  = T_STANDARD / P_STANDARD
-
-!  Loschmidt's number (particles/cm2/km).
-
-      DOUBLE PRECISION, PARAMETER :: &
-        RHO_STANDARD = 2.68675D+24
-
-!  Some setup operations
-!  =====================
-
-!  initialise output
-
-      IB = IBEAM
-      SZA_LEVEL_OUTPUT(0,IB) = 0.0D0
-      DO N = 1, NLAYERS
-        SZA_LEVEL_OUTPUT(N,IB) = 0.0D0
-        DO K = 1, NLAYERS
-          CHAPMAN_FACTORS(N,K,IB) = 0.0D0
-        ENDDO
-      ENDDO
-      FAIL    = .FALSE.
-      MESSAGE = ' '
-
-!  check local dimensioning
-
-      IF ( LOCAL_MAXLAYERS .LT. NLAYERS ) THEN
-        MESSAGE = 'local coarse layer dimensioning insufficient'
-        FAIL = .TRUE.
-        RETURN
+      DOUBLE PRECISION, INTENT (IN) ::  COS_SZANGLES ( MAX_SZANGLES )
+      DOUBLE PRECISION, INTENT (IN) ::  SUN_SZA_COSINES &
+          ( MAXLAYERS, MAX_SZANGLES )
+      DOUBLE PRECISION, INTENT (IN) ::  QUAD_STREAMS ( MAXSTREAMS )
+      INTEGER, INTENT (IN) ::           NMOMENTS
+      INTEGER, INTENT (IN) ::           NBEAMS
+      INTEGER, INTENT (IN) ::           N_USER_STREAMS
+      LOGICAL, INTENT (IN) ::           DO_USER_STREAMS
+      DOUBLE PRECISION, INTENT (IN) ::  USER_STREAMS  ( MAX_USER_STREAMS )
+
+!  Indices and Dmatrix from VLIDORT_DERIVE_INPUTS
+
+      INTEGER         , INTENT (IN)  :: MUELLER_INDEX ( MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (IN)  :: DMAT ( MAXSTOKES, MAXSTOKES )
+
+!  Output (generalized spherical functions)
+
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XQP &
+          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XQM &
+          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XUP &
+          ( 0:MAXMOMENTS, MAX_USER_STREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XUM &
+          ( 0:MAXMOMENTS, MAX_USER_STREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_X0P &
+          ( 0:MAXMOMENTS, MAXBEAMS, MAXLAYERS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XQM_POST &
+          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XQM_PRE &
+          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XQP_PRE &
+          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XUM_POST &
+          ( 0:MAXMOMENTS, MAX_USER_STREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XUP_PRE &
+          ( 0:MAXMOMENTS, MAX_USER_STREAMS, MAXSTOKES, MAXSTOKES )
+
+!  Local matrices
+
+      DOUBLE PRECISION :: XLM_DIAG ( 0:MAXMOMENTS, MAXSTOKES )
+      DOUBLE PRECISION :: YLM_DIAG ( 0:MAXMOMENTS, MAXSTOKES )
+      DOUBLE PRECISION :: ZLM ( 0:MAXMOMENTS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION :: PI &
+          ( 0:MAXMOMENTS, MAX_ALLSTRMS_P1, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION :: PHI ( 0:MAXMOMENTS, 0:MAXMOMENTS )
+      DOUBLE PRECISION :: PINORM ( 0:MAXMOMENTS, 0:MAXMOMENTS )
+
+      DOUBLE PRECISION, SAVE :: DF_L ( 0:MAXMOMENTS )
+      DOUBLE PRECISION, SAVE :: DF_LP1 ( 0:MAXMOMENTS )
+      DOUBLE PRECISION, SAVE :: DF_2LP1 ( 0:MAXMOMENTS )
+      DOUBLE PRECISION, SAVE :: DF_LSQM4 ( 0:MAXMOMENTS )
+      DOUBLE PRECISION, SAVE :: DF_RT_LP3XLM1 ( 0:MAXMOMENTS )
+      DOUBLE PRECISION, SAVE :: ZHELP ( 0:MAXMOMENTS )
+      DOUBLE PRECISION, SAVE :: UMXSQ ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: RT_UMXSQ ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: UPXSQ_D_UMXSQ ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: PLEG20 ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: M2X_D_UMXSQ ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: XUMXSQ ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: X_RT_UMXSQ ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: PIMM_11 ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: PIMM_KM ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: X2LP1 ( 0:MAXMOMENTS, MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: PISIGN ( 0:MAXMOMENTS, 0:MAXMOMENTS )
+
+!  local variables
+
+!     INTEGER          :: LOCAL_NSTOKES
+      DOUBLE PRECISION :: FAC, XSQ, DF_LPM, DF_LP1MM, ZLM_VALUE
+      DOUBLE PRECISION :: HX, HY, HZ, H1, H2, RCONST_20, RCONST_21
+      DOUBLE PRECISION :: PL20, RL20, PL21, RL21, TL21, XM(MAX_ALLSTRMS_P1)
+      INTEGER          :: M, I, I1, L, SK1, SK2, SK3, SK4, N
+      INTEGER          :: NS, NSA, M1, IB, IP
+
+!  Set integer M = Fourier number
+
+      M = FOURIER
+      NSA = 0
+
+!  Local NSTOKES
+
+!      LOCAL_NSTOKES = NSTOKES
+!      IF ( NSTOKES .GT. 1 ) LOCAL_NSTOKES = 4
+
+!  total number of angles
+
+      IF ( DO_USER_STREAMS ) THEN
+        NS = NSTREAMS + N_USER_STREAMS
+      ELSE
+        NS = NSTREAMS
       ENDIF
 
-!  earth radii and heights differences
-
-      DO N = 0, NLAYERS
-        H(N) = HEIGHTS(N) + REARTH
-      ENDDO
-
-      DO N = 1, NLAYERS
-        DELZ(N) = HEIGHTS(N-1)-HEIGHTS(N)
-      ENDDO
-
-!  TOA values
-
-      SZA_LEVEL_OUTPUT(0,IB) = SZA_GEOM_TRUE
-      DEG_TO_RAD = DATAN(1.0D0) / 45.0D0
-      TH_TOA = SZA_GEOM_TRUE * DEG_TO_RAD
-      MU_TOA = DCOS(TH_TOA)
-      GM_TOA = DSQRT ( 1.0D0 - MU_TOA * MU_TOA )
-      STH2D  = 0.0D0
-
-!  derive the fine values
+!  add solar streams, depends on the use of refractive geometry
 
       IF ( DO_REFRACTIVE_GEOMETRY ) THEN
-
-!mick fix - moved inside if block from above
-        !  Check fine layers do not exceed local dimensions assigned
-        MAXF = 0
-        DO N = 1, NLAYERS
-          MAXF = MAX(MAXF,FINEGRID(N))
-        ENDDO
-        IF ( LOCAL_MAXFINELAYERS .LT. MAXF ) THEN
-          MESSAGE = 'local fine layer dimensioning insufficient'
-          FAIL = .TRUE.
-          RETURN
-        ENDIF
-
-        Z0 = HEIGHTS(0)
-        P0 = PRESSURES(0)
-        T0 = TEMPERATURES(0)
-        Q0 = DLOG(P0)
-        DO N = 1, NLAYERS
-          NRFINE = FINEGRID(N)
-          LOCAL_SUBTHICK = DELZ(N) / DBLE(NRFINE)
-          P1 = PRESSURES(N)
-          Z1 = HEIGHTS(N)
-          T1 = TEMPERATURES(N)
-          Q1 = DLOG(P1)
-          ZRFINE(N,0) = Z0
-          PRFINE(N,0) = P0
-          TRFINE(N,0) = T0
-          DO J = 1, NRFINE - 1
-            Z  = Z0 - DBLE(J)*LOCAL_SUBTHICK
-            FL = ( Z0 - Z ) / DELZ(N)
-            FU = 1.0d0 - FL
-            Q  = FL * Q1 + FU * Q0
-            T  = FL * T0 + FU * T1
-            PRFINE(N,J) = DEXP (  Q )
-            TRFINE(N,J) = T
-            ZRFINE(N,J) = Z
-          ENDDO
-          PRFINE(N,NRFINE) = P1
-          TRFINE(N,NRFINE) = T1
-          ZRFINE(N,NRFINE) = Z1
-!              write(*,'(i3,11F10.4)')N,(PRFINE(N,J),J=0,NRFINE)
-          Z0 = Z1
-          P0 = P1
-          T0 = T1
-          Q0 = Q1
-        ENDDO
+!        NSA = NS + NBEAMS*NLAYERS
+      ELSE
+        NSA = NS + NBEAMS
       ENDIF
 
-!  plane-parallel case
-!  ===================
+!  constants
 
-      IF ( DO_PLANE_PARALLEL ) THEN
-        DO N = 1, NLAYERS
-          SZA_LEVEL_OUTPUT(N,IB) = SZA_GEOM_TRUE
-          DO K = 1, N
-            CHAPMAN_FACTORS(N,K,IB) = 1.0D0 / MU_TOA
-          ENDDO
-        ENDDO
-        RETURN
-      ENDIF
+      RCONST_20 = 0.25D0 * DSQRT(6.0D0)
+      RCONST_21 = 2.0D0 * RCONST_20
 
-!  Refractive Geometry case
-!  ========================
+!  Coefficient matrix PINORM (for normalization) = [ (L-m)!/(L+m)! ] ^1/
+!  ---------------------------------------------------------------------
 
-      IF ( DO_REFRACTIVE_GEOMETRY ) THEN
+!  .. first entry = 1 / (2m)!    ---- be careful with overflow
 
-!  Start value of SZA cosine
+      PHI(M,M) = ONE
+      FAC = ONE
+      DO L = 1, 2*M
+        FAC = FAC * DBLE(L)
+      ENDDO
+      PHI(M,M) = PHI(M,M) / FAC
 
-        MU_PREV = MU_TOA
+!  .. Other entries by recurrence
 
-!  start layer loop
+      DO L = M + 1, NMOMENTS
+        FAC = DBLE(L-M)/DBLE(L+M)
+        PHI(L,M) = PHI(L-1,M)*FAC
+      ENDDO
 
-        DO N = 1, NLAYERS
+!  .. Square root
 
-!  start values
+      DO L = M , NMOMENTS
+        PINORM(L,M) = DSQRT(PHI(L,M))
+      ENDDO
 
-          SINTH1 = GM_TOA * H(N) / H(0)
-          STH1 = DASIN(SINTH1)
-          PHI_0 = TH_TOA - STH1
-          NRFINE = FINEGRID(N)
+!  Additional saved quantities (to commons in VLIDORT_PISETUP.VARS)
+!  ----------------------------------------------------------------
 
-!  iteration loop
+!  Only for the first fundamental harmonic
 
-          ITER = 0
-          LOOP = .TRUE.
-          DO WHILE (LOOP.AND.ITER.LT.100)
-            ITER = ITER + 1
-            PHI_CUM = 0.0D0
-            RE_UPPER = ZRFINE(1,0) + REARTH
-            RATIO  = PRFINE(1,0) * STP_RATIO / TRFINE(1,0)
-            REFRAC = 1.0D0 + RFINDEX_PARAMETER * RATIO
-            SNELL = REFRAC * RE_UPPER * SINTH1
-            DO K = 1, N
-              LAYER_DIST = 0.0D0
-              LOCAL_SUBTHICK = DELZ(K) / DBLE(NRFINE)
-              DO J = 0, NRFINE - 1
-                RATIO  = PRFINE(K,J) * STP_RATIO / TRFINE(K,J)
-                REFRAC = 1.0D0 + RFINDEX_PARAMETER * RATIO
-                RE_LOWER = RE_UPPER - LOCAL_SUBTHICK
-                SINTH2 = SNELL/ (REFRAC * RE_UPPER )
-                IF ( SINTH2.GT.1.0D0 ) SINTH2 = 1.0D0
-                STH2 = DASIN(SINTH2)
-                SINTH2D = RE_UPPER * SINTH2 / RE_LOWER
-                IF ( SINTH2D .GT. 1.0D0 ) THEN
-                  MESSAGE = 'refraction yields angles > 90 some levels'
-                  FAIL = .TRUE.
-                  RETURN
-                ENDIF
-                STH2D = DASIN(SINTH2D)
-                PHI = STH2D - STH2
-                SINPHI = DSIN(PHI)
-                PHI_CUM = PHI_CUM + PHI
-                DIST = RE_UPPER * SINPHI / SINTH2D
-                LAYER_DIST = LAYER_DIST +  DIST
-                RE_UPPER = RE_LOWER
-              ENDDO
-              CHAPMAN_FACTORS(N,K,IB) = LAYER_DIST / DELZ(K)
-            ENDDO
+      IF ( M .EQ. 0 ) THEN
 
-!  examine convergence
+!  Sign matrix
 
-            DELPHI = PHI_0 - PHI_CUM
-            LOOP = (DABS(DELPHI/PHI_CUM).GT.1.0D-4)
-
-!  Fudge factors to speed up the iteration
-
-            IF ( SZA_GEOM_TRUE .GT. 88.7D0 ) THEN
-              STH1 = STH1 + 0.1 * DELPHI
-              PHI_0 = TH_TOA - STH1
-            ELSE IF ( SZA_GEOM_TRUE .LT. 80.0D0 ) THEN
-              PHI_0 = PHI_CUM
-              STH1 = TH_TOA - PHI_0
+        DO M1 = 0, NMOMENTS
+          DO L = M1, NMOMENTS
+            IF (MOD((L-M1),2).EQ.0) THEN
+              PISIGN(L,M1) = ONE
             ELSE
-              STH1 = STH1 + 0.3 * DELPHI
-              PHI_0 = TH_TOA - STH1
+              PISIGN(L,M1) = -ONE
             ENDIF
-            SINTH1 = DSIN(STH1)
-
           ENDDO
-
-!  failure
-
-          IF ( LOOP ) THEN
-            MESSAGE = 'refractive iteration not converged'
-            FAIL = .TRUE.
-            RETURN
-          ENDIF
-
-!  Update and save angle output
-
-          MU_NEXT = DCOS(STH2D)
-          MU_PREV = MU_NEXT
-          SZA_LEVEL_OUTPUT(N,IB) = DACOS(MU_NEXT) / DEG_TO_RAD
-          ITERSAVE(N) = ITER
-
         ENDDO
 
-!  Straight line geometry
-!  ======================
+!  floating point integer values
+
+        DO L = 0, NMOMENTS
+          DF_L(L)    = DBLE(L)
+          DF_LP1(L)  = DBLE(L+1)
+          DF_2LP1(L) = DBLE(2*L+1)
+        ENDDO
+
+        DF_LSQM4(2) = ZERO
+        DO L = 3, NMOMENTS
+          DF_LSQM4(L) = DSQRT(DBLE(L*L-4))
+        ENDDO
+
+        DO L = 2, NMOMENTS
+          DF_RT_LP3XLM1(L) = DSQRT(DBLE((L+3)*(L-1)))
+          ZHELP(L) = TWO*DF_2LP1(L)/DF_LP1(L)/DF_L(L)
+        ENDDO
+
+      ENDIF
+
+!  local array of all streams (every Fourier component)
+
+      DO I = 1, NSTREAMS
+        XM(I) = QUAD_STREAMS(I)
+      ENDDO
+      IF ( DO_USER_STREAMS ) THEN
+        DO I = 1, N_USER_STREAMS
+          XM(I+NSTREAMS) = USER_STREAMS(I)
+        ENDDO
+      ENDIF
+
+      IF ( DO_REFRACTIVE_GEOMETRY ) THEN
+!        DO N = 1, NLAYERS
+!          DO IB = 1, NBEAMS
+!            IP = NS + NBEAMS * (N-1) + IB
+!            XM(IP) = SUN_SZA_COSINES(N,IB)
+!          ENDDO
+!        ENDDO
+      ELSE
+        DO IB = 1, NBEAMS
+          IP = IB + NS
+          XM(IP) = COS_SZANGLES(IB)
+        ENDDO
+      ENDIF
+
+!  factors associated with stream values
+!   Special case when XM(I) = ONE, factors are zeroed, and
+!    those that give singularities are avoided later (see below)
+!   R. Spurr and V. Natraj, 16 january 2006
+
+      IF ( M .EQ. 0 )  THEN
+        DO I = 1, NSA
+          XSQ = XM(I) * XM(I)
+          PLEG20(I)        = HALF*(THREE*XSQ-ONE)
+          UMXSQ(I)         = ONE - XSQ
+          XUMXSQ(I)        = UMXSQ(I) * XM(I)
+          IF ( XM(I) .EQ. ONE ) THEN
+           RT_UMXSQ(I)      = ZERO
+           X_RT_UMXSQ(I)    = ZERO
+           UPXSQ_D_UMXSQ(I) = ZERO
+           M2X_D_UMXSQ(I)   = ZERO
+          ELSE
+           RT_UMXSQ(I)      = DSQRT(UMXSQ(I))
+           X_RT_UMXSQ(I)    = RT_UMXSQ(I) * XM(I)
+           UPXSQ_D_UMXSQ(I) = (ONE + XSQ) / UMXSQ(I)
+           M2X_D_UMXSQ(I)   = - TWO * XM(I) / UMXSQ(I)
+          ENDIF
+          DO L = 0, NMOMENTS
+            X2LP1(L,I) = XM(I) * DF_2LP1(L)
+          ENDDO
+        ENDDO
+
+!  D-matrix and Mueller indices. NOW DONE in VLIDORT_DERIVE_INPUTS
+!        DO SK1 = 1, MAXSTOKES
+!          DO SK2 = 1, MAXSTOKES
+!            MUELLER_INDEX(SK1,SK2) = MAXSTOKES*(SK1-1) + SK2
+!            DMAT(SK1,SK2) = ZERO
+!          ENDDO
+!          IF ( SK1.GT.2) THEN
+!            DMAT(SK1,SK1) = -ONE
+!          ELSE
+!            DMAT(SK1,SK1) = ONE
+!          ENDIF
+!          MUELLER_DIAGONAL_INDEX(SK1) = MUELLER_INDEX(SK1,SK1)
+!        ENDDO
+
+      ENDIF
+
+!  XYZ matrices
+!  ------------
+
+!  Inverse XLM diagonal matrices (Siewert (1982), Eq. 35a)
+!  YLM diagonal matrices (Siewert (1982), Eq. 35b)
+!  ZLM matrices. (Siewert (1982), Eq. 35c)
+
+!  .. for the azimuth-independent harmonic
+
+      IF ( M .EQ. 0 ) THEN
+
+        DO L = 2, NMOMENTS
+          XLM_DIAG(L,1) = DF_LP1(L)
+          XLM_DIAG(L,2) = DF_RT_LP3XLM1(L)
+          XLM_DIAG(L,3) = XLM_DIAG(L,2)
+          XLM_DIAG(L,4) = XLM_DIAG(L,1)
+          DO SK1 = 1, NSTOKES
+            XLM_DIAG(L,SK1) = ONE/XLM_DIAG(L,SK1)
+          ENDDO
+        ENDDO
+
+        DO L = 2, NMOMENTS
+          YLM_DIAG(L,1) = DF_L(L)
+          YLM_DIAG(L,2) = DF_LSQM4(L)
+          YLM_DIAG(L,3) = YLM_DIAG(L,2)
+          YLM_DIAG(L,4) = YLM_DIAG(L,1)
+        ENDDO
+
+!  .. for the other harmonics
 
       ELSE
 
-        DO N = 1, NLAYERS
-
-!  start values
-
-          SINTH1 = GM_TOA * H(N) / H(0)
-          STH1   = DASIN(SINTH1)
-          RE_UPPER = H(0)
-
-!  solar zenith angles are all the same = input value
-
-          SZA_LEVEL_OUTPUT(N,IB) = SZA_GEOM_TRUE
-
-! loop over layers K from 1 to layer N
-
-          DO K = 1, N
-
-!  sine-rule; PHI = earth-centered angle
-
-            RE_LOWER = RE_UPPER - DELZ(K)
-            SINTH2 = RE_UPPER * SINTH1 / RE_LOWER
-            STH2   = DASIN(SINTH2)
-            PHI    = STH2 - STH1
-            SINPHI = DSIN(PHI)
-            DIST = RE_UPPER * SINPHI / SINTH2
-            CHAPMAN_FACTORS(N,K,IB) = DIST / DELZ(K)
-
-!  re-set
-
-            RE_UPPER = RE_LOWER
-            SINTH1 = SINTH2
-            STH1   = STH2
-
-          ENDDO
-
-!  finish main layer loop
-
+        DO L = M, NMOMENTS
+          DF_LP1MM = DBLE ( L + 1 - M )
+          XLM_DIAG(L,1) = DF_LP1MM
+          XLM_DIAG(L,1) = ONE/XLM_DIAG(L,1)
+          IF ( L .EQ. 1 ) THEN
+            XLM_DIAG(L,2) = ZERO
+          ELSE
+            XLM_DIAG(L,2) = DF_RT_LP3XLM1(L) * DF_LP1MM / DF_LP1(L)
+            XLM_DIAG(L,2) = ONE / XLM_DIAG(L,2)
+          ENDIF
+          XLM_DIAG(L,3) = XLM_DIAG(L,2)
+          XLM_DIAG(L,4) = XLM_DIAG(L,1)
         ENDDO
 
-!  Finish
+        DO SK1 = 1, NSTOKES
+          YLM_DIAG(M,SK1) = ZERO
+        ENDDO
+        DO L = M + 1, NMOMENTS
+          DF_LPM = DBLE ( L + M )
+          YLM_DIAG(L,1) = DF_LPM
+          YLM_DIAG(L,2) = DF_LPM * DF_LSQM4(L) / DF_L(L)
+          YLM_DIAG(L,3) = YLM_DIAG(L,2)
+          YLM_DIAG(L,4) = YLM_DIAG(L,1)
+        ENDDO
+
+        DO L = 2, NMOMENTS
+          ZLM_VALUE = DBLE(M) * ZHELP(L)
+          DO SK1 = 1, NSTOKES
+            DO SK2 = 1, NSTOKES
+              ZLM(L,SK1,SK2) = ZERO
+            ENDDO
+          ENDDO
+          ZLM(L,2,3) = ZLM_VALUE
+          ZLM(L,3,2) = ZLM_VALUE
+        ENDDO
 
       ENDIF
 
-!  end of routine
+!  PI calculation
+!  --------------
+
+!  Initialise all the PI matrices for given harmonic
+
+      DO I = 1, NSA
+        DO L = M, NMOMENTS
+          DO SK1 = 1, NSTOKES
+            DO SK2 = 1, NSTOKES
+              PI(L,I,SK1,SK2) = ZERO
+            ENDDO
+          ENDDO
+        ENDDO
+      ENDDO
+
+!mick - alternate PI initialization
+      PI = ZERO
+
+!  M = 0 component. [Siewert (1982), Eqs (28) to (31)]
+
+      IF ( M .EQ. 0 ) THEN
+
+!  .. L = 0
+        DO I = 1, NSA
+          PI(0,I,1,1) = PI(0,I,1,1) + ONE
+          PI(0,I,4,4) = PI(0,I,4,4) + ONE
+        ENDDO
+!  .. L = 1
+        DO I = 1, NSA
+          PI(1,I,1,1) = PI(1,I,1,1) + XM(I)
+          PI(1,I,4,4) = PI(1,I,4,4) + XM(I)
+        ENDDO
+!  .. L = 2
+        DO I = 1, NSA
+          PL20 = PLEG20(I)
+          RL20 = RCONST_20*UMXSQ(I)
+          PI(2,I,1,1) = PI(2,I,1,1) + PL20
+          PI(2,I,2,2) = PI(2,I,2,2) + RL20
+          PI(2,I,3,3) = PI(2,I,2,2)
+          PI(2,I,4,4) = PI(2,I,1,1)
+        ENDDO
+!  .. L > 2
+        DO L = 2, NMOMENTS - 1
+          DO I = 1, NSA
+            DO SK1 = 1, NSTOKES
+              DO SK2 = 1, NSTOKES
+                HX = X2LP1(L,I)*PI(L,I,SK1,SK2)
+                HY = YLM_DIAG(L,SK1)*PI(L-1,I,SK1,SK2)
+                PI(L+1,I,SK1,SK2) = ( HX - HY ) * XLM_DIAG(L,SK1)
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDDO
+
+!  M = 1 component. [Siewert (1982), Eqs (32) to (34), plus (35)]
+
+      ELSE IF ( M .EQ. 1 ) THEN
+
+!  .. L = 1
+        DO I = 1, NSA
+          PI(1,I,1,1) = PI(1,I,1,1) + RT_UMXSQ(I)
+          PI(1,I,4,4) = PI(1,I,4,4) + RT_UMXSQ(I)
+        ENDDO
+!  .. L = 2
+        DO I = 1, NSA
+          PL21 =   THREE     * X_RT_UMXSQ(I)
+          RL21 = - RCONST_21 * X_RT_UMXSQ(I)
+          TL21 = + RCONST_21 * RT_UMXSQ(I)
+          PI(2,I,1,1) = PI(2,I,1,1) + PL21
+          PI(2,I,2,2) = PI(2,I,2,2) + RL21
+          PI(2,I,2,3) = PI(2,I,2,3) + TL21
+          PI(2,I,3,3) = PI(2,I,2,2)
+          PI(2,I,4,4) = PI(2,I,1,1)
+          PI(2,I,3,2) = PI(2,I,2,3)
+        ENDDO
+!  .. L > 2
+        DO L = 2, NMOMENTS - 1
+          DO I = 1, NSA
+            DO SK1 = 1, NSTOKES
+              DO SK2 = 1, NSTOKES
+                HX = X2LP1(L,I)*PI(L,I,SK1,SK2)
+                HY = YLM_DIAG(L,SK1)*PI(L-1,I,SK1,SK2)
+                HZ = ZERO
+                DO SK3 = 1, NSTOKES
+                  HZ = HZ + ZLM(L,SK1,SK3)*PI(L,I,SK3,SK2)
+                ENDDO
+                PI(L+1,I,SK1,SK2) = ( HX - HY + HZ ) * XLM_DIAG(L,SK1)
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDDO
+
+!  M > 1 components. [Siewert (1982), Eqs (36) to (38), plus (35)]
+!  Limiting case of XM(I) = ONE requires special treatment to avoid NaN
+!   R. Spurr and V. Natraj, 16 january 2006
+
+      ELSE
+
+!  .. L = M
+        IF ( M .EQ. 2 ) THEN
+          DO I = 1, NSA
+            PIMM_11(I) =   THREE     * UMXSQ(I)
+            IF ( XM(I).EQ.ONE) THEN
+              PIMM_KM(I) =   RCONST_21
+            ELSE
+              PIMM_KM(I) =   RCONST_21 * UMXSQ(I)
+            ENDIF
+          ENDDO
+        ELSE
+          H1 = DF_2LP1(M-1)
+          H2 = DF_LP1(M-1)*H1/DF_RT_LP3XLM1(M-1)
+          DO I = 1, NSA
+            PIMM_11(I) = H1 * RT_UMXSQ(I) * PIMM_11(I)
+            IF ( XM(I).EQ.ONE) THEN
+              PIMM_KM(I) = ZERO
+            ELSE
+              PIMM_KM(I) = H2 * RT_UMXSQ(I) * PIMM_KM(I)
+            ENDIF
+          ENDDO
+        ENDIF
+
+        DO I = 1, NSA
+          PI(M,I,1,1) = PI(M,I,1,1) + PIMM_11(I)
+          IF ( XM(I).EQ.ONE ) THEN
+            PI(M,I,2,2) = PI(M,I,2,2) + PIMM_KM(I) * TWO
+            PI(M,I,2,3) = PI(M,I,2,3) - PIMM_KM(I) * TWO
+          ELSE
+            PI(M,I,2,2) = PI(M,I,2,2) + PIMM_KM(I) * UPXSQ_D_UMXSQ(I)
+            PI(M,I,2,3) = PI(M,I,2,3) + PIMM_KM(I) * M2X_D_UMXSQ(I)
+          ENDIF
+          PI(M,I,3,3) = PI(M,I,2,2)
+          PI(M,I,4,4) = PI(M,I,1,1)
+          PI(M,I,3,2) = PI(M,I,2,3)
+        ENDDO
+!  .. L = M + 1
+        IF ( M .LT. NMOMENTS ) THEN
+          DO I = 1, NSA
+            DO SK1 = 1, NSTOKES
+              DO SK2 = 1, NSTOKES
+                HX = X2LP1(M,I)*PI(M,I,SK1,SK2)
+                HZ = ZERO
+                DO SK3 = 1, NSTOKES
+                  HZ = HZ + ZLM(M,SK1,SK3)*PI(M,I,SK3,SK2)
+                ENDDO
+                PI(M+1,I,SK1,SK2) = ( HX + HZ ) * XLM_DIAG(M,SK1)
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDIF
+!  .. L > M + 1
+        DO L = M + 1, NMOMENTS - 1
+          DO I = 1, NSA
+            DO SK1 = 1, NSTOKES
+              DO SK2 = 1, NSTOKES
+                HX = X2LP1(L,I)*PI(L,I,SK1,SK2)
+                HY = YLM_DIAG(L,SK1)*PI(L-1,I,SK1,SK2)
+                HZ = ZERO
+                DO SK3 = 1, NSTOKES
+                  HZ = HZ + ZLM(L,SK1,SK3)*PI(L,I,SK3,SK2)
+                ENDDO
+                PI(L+1,I,SK1,SK2) = ( HX - HY + HZ ) * XLM_DIAG(L,SK1)
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDDO
+
+      ENDIF
+
+!  Normalized output.
+!  ------------------
+
+      DO L = M, NMOMENTS
+
+!  .. at quadrature streams
+
+        DO I = 1, NSTREAMS
+
+          DO SK1 = 1, NSTOKES
+            DO SK2 = 1, NSTOKES
+              PI_XQP(L,I,SK1,SK2) = PI(L,I,SK1,SK2) * PINORM(L,M)
+            ENDDO
+          ENDDO
+
+          DO SK1 = 1, NSTOKES
+            DO SK2 = 1, NSTOKES
+
+              H1 = ZERO
+              H2 = ZERO
+              DO SK3 = 1, NSTOKES
+                H1 = H1 + DMAT(SK1,SK3) * PI_XQP(L,I,SK3,SK2)
+                H2 = H2 + PI_XQP(L,I,SK1,SK3) * DMAT(SK3,SK2)
+              ENDDO
+
+              PI_XQP_PRE(L,I,SK1,SK2)  = H1
+              PI_XQM_PRE(L,I,SK1,SK2)  = H1 * PISIGN(L,M)
+              PI_XQM_POST(L,I,SK1,SK2) = H2 * PISIGN(L,M)
+
+              H1 = ZERO
+              DO SK3 = 1, NSTOKES
+                H2 = ZERO
+                DO SK4 = 1, NSTOKES
+                  H2 = H2 + PI_XQP(L,I,SK3,SK4)*DMAT(SK4,SK2)
+                ENDDO
+                H1 = H1 + DMAT(SK1,SK3)*H2
+              ENDDO
+              PI_XQM(L,I,SK1,SK2)  = H1 * PISIGN(L,M)
+
+            ENDDO
+          ENDDO
+
+        ENDDO
+
+!  .. at positive user_defined angles
+
+        IF ( DO_USER_STREAMS ) THEN
+
+          DO I = 1, N_USER_STREAMS
+            I1 = I + NSTREAMS
+
+            DO SK1 = 1, NSTOKES
+              DO SK2 = 1, NSTOKES
+                PI_XUP(L,I,SK1,SK2) = PI(L,I1,SK1,SK2) * PINORM(L,M)
+              ENDDO
+            ENDDO
+
+            DO SK1 = 1, NSTOKES
+              DO SK2 = 1, NSTOKES
+
+                H2 = ZERO
+                H1 = ZERO
+                DO SK3 = 1, NSTOKES
+                  H1 = H1 + DMAT(SK1,SK3) * PI_XUP(L,I,SK3,SK2)
+                  H2 = H2 + DMAT(SK3,SK2) * PI_XUP(L,I,SK1,SK3)
+                ENDDO
+                PI_XUP_PRE(L,I,SK1,SK2)  = H1
+                PI_XUM_POST(L,I,SK1,SK2) = H2 * PISIGN(L,M)
+
+                H1 = ZERO
+                DO SK3 = 1, NSTOKES
+                  H2 = ZERO
+                  DO SK4 = 1, NSTOKES
+                    H2 = H2 + PI_XUP(L,I,SK3,SK4)*DMAT(SK4,SK2)
+                  ENDDO
+                  H1 = H1 + DMAT(SK1,SK3)*H2
+                ENDDO
+                PI_XUM(L,I,SK1,SK2) = H1 * PISIGN(L,M)
+
+              ENDDO
+            ENDDO
+
+          ENDDO
+
+        ENDIF
+
+!  .. at solar zenith angles
+
+!  depends on use of refractive geometry
+
+        IF ( DO_REFRACTIVE_GEOMETRY ) THEN
+!          DO N = 1, NLAYERS
+!            DO IB = 1, NBEAMS
+!              IP = NS + NBEAMS * (N-1) + IB
+!              DO SK1 = 1, NSTOKES
+!                DO SK2 = 1, NSTOKES
+!                  PI_X0P(L,IB,N,SK1,SK2) =
+!     &                 PI(L,IP,SK1,SK2) * PINORM(L,M)
+!                ENDDO
+!              ENDDO
+!            ENDDO
+!          ENDDO
+        ELSE
+          DO IB = 1, NBEAMS
+            IP = IB + NS
+            DO SK1 = 1, NSTOKES
+              DO SK2 = 1, NSTOKES
+                PI_X0P(L,IB,1,SK1,SK2) = &
+                     PI(L,IP,SK1,SK2) * PINORM(L,M)
+                DO N = 2, NLAYERS
+                  PI_X0P(L,IB,N,SK1,SK2)= PI_X0P(L,IB,1,SK1,SK2)
+                ENDDO
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDIF
+
+!  end loop moments
+
+      ENDDO
+
+!  debug
+
+!      write(77,*)'Fourier',M
+!      DO L = M, NMOMENTS
+!       write(77,*)'Moment ',L
+!       DO SK1 = 1, 4
+!        WRITE(77,'(I3,1p4e15.6)')SK1,(PI_XUP(L,4,SK1,SK2),SK2=1,4)
+!       ENDDO
+!      ENDDO
+
+!  Finish
 
       RETURN
-      END SUBROUTINE BEAM_GEOMETRY_PREPARE
+      END SUBROUTINE VLIDORT_PIMATRIX_SETUP
+
+!
+
+      SUBROUTINE VLIDORT_PIMATRIX_SETUP_OMP ( &
+        FOURIER, &
+        DO_REFRACTIVE_GEOMETRY, NSTOKES, &
+        NSTREAMS, NLAYERS, &
+        COS_SZANGLES, SUN_SZA_COSINES, &
+        QUAD_STREAMS, NMOMENTS, &
+        NBEAMS, N_USER_STREAMS, &
+        DO_USER_STREAMS, USER_STREAMS, &
+        MUELLER_INDEX, DMAT, &
+        PIMM_11, PIMM_KM, &
+        PI_XQP, PI_XQM, &
+        PI_XUP, PI_XUM, &
+        PI_X0P, &
+        PI_XQM_POST, PI_XQM_PRE, &
+        PI_XQP_PRE, PI_XUM_POST, &
+        PI_XUP_PRE )
+
+!  Notes
+!  -----
+
+!  This is equivalent to the Legendre setup modules in LIDORT
+
+!---------old comments ---------------------------------
+!  This needs modification for the case of Refractive atmosphere,
+!  because the solar zenith angle is not constant.
+!-------------------------------------------------------
+
+!  PI-matrix setup, following recipe of Siewert (1982).
+!  Single Fourier component only.
+
+!  Tested against benchmark results in Vestrucci & Siewert (1984), Problem
+
+!  original coding, September 2002, R. Spurr SAO
+!  Multibeam SZA coding, July 2004, R. Spurr SAO
+!  Coding for refractive geometry case, R. Spurr, RT Solutions, May 2005
+
+      USE VLIDORT_PARS
+
+      IMPLICIT NONE
+
+      INTEGER, INTENT (IN) ::           FOURIER
+      LOGICAL, INTENT (IN) ::           DO_REFRACTIVE_GEOMETRY
+      INTEGER, INTENT (IN) ::           NSTOKES
+      INTEGER, INTENT (IN) ::           NSTREAMS
+      INTEGER, INTENT (IN) ::           NLAYERS
+      DOUBLE PRECISION, INTENT (IN) ::  COS_SZANGLES ( MAX_SZANGLES )
+      DOUBLE PRECISION, INTENT (IN) ::  SUN_SZA_COSINES &
+          ( MAXLAYERS, MAX_SZANGLES )
+      DOUBLE PRECISION, INTENT (IN) ::  QUAD_STREAMS ( MAXSTREAMS )
+      INTEGER, INTENT (IN) ::           NMOMENTS
+      INTEGER, INTENT (IN) ::           NBEAMS
+      INTEGER, INTENT (IN) ::           N_USER_STREAMS
+      LOGICAL, INTENT (IN) ::           DO_USER_STREAMS
+      DOUBLE PRECISION, INTENT (IN) ::  USER_STREAMS  ( MAX_USER_STREAMS )
+
+!  Indices and Dmatrix from VLIDORT_DERIVE_INPUTS
+
+      INTEGER         , INTENT (IN)  :: MUELLER_INDEX ( MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (IN)  :: DMAT ( MAXSTOKES, MAXSTOKES )
+
+!  InOut variables
+
+      DOUBLE PRECISION, INTENT (INOUT) :: PIMM_11 ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, INTENT (INOUT) :: PIMM_KM ( MAX_ALLSTRMS_P1 )
+
+!  Output (generalized spherical functions)
+
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XQP &
+          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XQM &
+          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XUP &
+          ( 0:MAXMOMENTS, MAX_USER_STREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XUM &
+          ( 0:MAXMOMENTS, MAX_USER_STREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_X0P &
+          ( 0:MAXMOMENTS, MAXBEAMS, MAXLAYERS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XQM_POST &
+          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XQM_PRE &
+          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XQP_PRE &
+          ( 0:MAXMOMENTS, MAXSTREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XUM_POST &
+          ( 0:MAXMOMENTS, MAX_USER_STREAMS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION, INTENT (OUT) :: PI_XUP_PRE &
+          ( 0:MAXMOMENTS, MAX_USER_STREAMS, MAXSTOKES, MAXSTOKES )
+
+!  Local matrices
+
+      DOUBLE PRECISION :: XLM_DIAG ( 0:MAXMOMENTS, MAXSTOKES )
+      DOUBLE PRECISION :: YLM_DIAG ( 0:MAXMOMENTS, MAXSTOKES )
+      DOUBLE PRECISION :: ZLM ( 0:MAXMOMENTS, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION :: PI &
+          ( 0:MAXMOMENTS, MAX_ALLSTRMS_P1, MAXSTOKES, MAXSTOKES )
+      DOUBLE PRECISION :: PHI ( 0:MAXMOMENTS, 0:MAXMOMENTS )
+      DOUBLE PRECISION :: PINORM ( 0:MAXMOMENTS, 0:MAXMOMENTS )
+
+      DOUBLE PRECISION, SAVE :: DF_L ( 0:MAXMOMENTS )
+      DOUBLE PRECISION, SAVE :: DF_LP1 ( 0:MAXMOMENTS )
+      DOUBLE PRECISION, SAVE :: DF_2LP1 ( 0:MAXMOMENTS )
+      DOUBLE PRECISION, SAVE :: DF_LSQM4 ( 0:MAXMOMENTS )
+      DOUBLE PRECISION, SAVE :: DF_RT_LP3XLM1 ( 0:MAXMOMENTS )
+      DOUBLE PRECISION, SAVE :: ZHELP ( 0:MAXMOMENTS )
+      DOUBLE PRECISION, SAVE :: UMXSQ ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: RT_UMXSQ ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: UPXSQ_D_UMXSQ ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: PLEG20 ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: M2X_D_UMXSQ ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: XUMXSQ ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: X_RT_UMXSQ ( MAX_ALLSTRMS_P1 )
+!mick fix 7/28/2014 - these two defined InOut for now to make VLIDORT threadsafe
+      !DOUBLE PRECISION :: PIMM_11 ( MAX_ALLSTRMS_P1 )
+      !DOUBLE PRECISION :: PIMM_KM ( MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: X2LP1 ( 0:MAXMOMENTS, MAX_ALLSTRMS_P1 )
+      DOUBLE PRECISION, SAVE :: PISIGN ( 0:MAXMOMENTS, 0:MAXMOMENTS )
+
+!  local variables
+
+!     INTEGER          :: LOCAL_NSTOKES
+      DOUBLE PRECISION :: FAC, XSQ, DF_LPM, DF_LP1MM, ZLM_VALUE
+      DOUBLE PRECISION :: HX, HY, HZ, H1, H2, RCONST_20, RCONST_21
+      DOUBLE PRECISION :: PL20, RL20, PL21, RL21, TL21, XM(MAX_ALLSTRMS_P1)
+      INTEGER          :: M, I, I1, L, SK1, SK2, SK3, SK4, N
+      INTEGER          :: NS, NSA, M1, IB, IP
+
+!  Set integer M = Fourier number
+
+      M = FOURIER
+      NSA = 0
+
+!  Local NSTOKES
+
+!      LOCAL_NSTOKES = NSTOKES
+!      IF ( NSTOKES .GT. 1 ) LOCAL_NSTOKES = 4
+
+!  total number of angles
+
+      IF ( DO_USER_STREAMS ) THEN
+        NS = NSTREAMS + N_USER_STREAMS
+      ELSE
+        NS = NSTREAMS
+      ENDIF
+
+!  add solar streams, depends on the use of refractive geometry
+
+      IF ( DO_REFRACTIVE_GEOMETRY ) THEN
+!        NSA = NS + NBEAMS*NLAYERS
+      ELSE
+        NSA = NS + NBEAMS
+      ENDIF
+
+!  constants
+
+      RCONST_20 = 0.25D0 * DSQRT(6.0D0)
+      RCONST_21 = 2.0D0 * RCONST_20
+
+!  Coefficient matrix PINORM (for normalization) = [ (L-m)!/(L+m)! ] ^1/
+!  ---------------------------------------------------------------------
+
+!  .. first entry = 1 / (2m)!    ---- be careful with overflow
+
+      PHI(M,M) = ONE
+      FAC = ONE
+      DO L = 1, 2*M
+        FAC = FAC * DBLE(L)
+      ENDDO
+      PHI(M,M) = PHI(M,M) / FAC
+
+!  .. Other entries by recurrence
+
+      DO L = M + 1, NMOMENTS
+        FAC = DBLE(L-M)/DBLE(L+M)
+        PHI(L,M) = PHI(L-1,M)*FAC
+      ENDDO
+
+!  .. Square root
+
+      DO L = M , NMOMENTS
+        PINORM(L,M) = DSQRT(PHI(L,M))
+      ENDDO
+
+!  Additional saved quantities
+!  ---------------------------
+
+!  Only for the first fundamental harmonic
+
+!mick fix 7/28/2014 - do for each fourier right now to make VLIDORT threadsafe
+      IF ( M .EQ. 0 ) THEN
+
+!  Sign matrix
+
+        DO M1 = 0, NMOMENTS
+          DO L = M1, NMOMENTS
+            IF (MOD((L-M1),2).EQ.0) THEN
+              PISIGN(L,M1) = ONE
+            ELSE
+              PISIGN(L,M1) = -ONE
+            ENDIF
+          ENDDO
+        ENDDO
+
+!  floating point integer values
+
+        DO L = 0, NMOMENTS
+          DF_L(L)    = DBLE(L)
+          DF_LP1(L)  = DBLE(L+1)
+          DF_2LP1(L) = DBLE(2*L+1)
+        ENDDO
+
+        DF_LSQM4(2) = ZERO
+        DO L = 3, NMOMENTS
+          DF_LSQM4(L) = DSQRT(DBLE(L*L-4))
+        ENDDO
+
+        DO L = 2, NMOMENTS
+          DF_RT_LP3XLM1(L) = DSQRT(DBLE((L+3)*(L-1)))
+          ZHELP(L) = TWO*DF_2LP1(L)/DF_LP1(L)/DF_L(L)
+        ENDDO
+
+      ENDIF
+
+!  local array of all streams (every Fourier component)
+
+      DO I = 1, NSTREAMS
+        XM(I) = QUAD_STREAMS(I)
+      ENDDO
+      IF ( DO_USER_STREAMS ) THEN
+        DO I = 1, N_USER_STREAMS
+          XM(I+NSTREAMS) = USER_STREAMS(I)
+        ENDDO
+      ENDIF
+
+      IF ( DO_REFRACTIVE_GEOMETRY ) THEN
+!        DO N = 1, NLAYERS
+!          DO IB = 1, NBEAMS
+!            IP = NS + NBEAMS * (N-1) + IB
+!            XM(IP) = SUN_SZA_COSINES(N,IB)
+!          ENDDO
+!        ENDDO
+      ELSE
+        DO IB = 1, NBEAMS
+          IP = IB + NS
+          XM(IP) = COS_SZANGLES(IB)
+        ENDDO
+      ENDIF
+
+!  factors associated with stream values
+!   Special case when XM(I) = ONE, factors are zeroed, and
+!    those that give singularities are avoided later (see below)
+!   R. Spurr and V. Natraj, 16 january 2006
+
+!mick fix 7/28/2014 - do for each fourier right now to make VLIDORT threadsafe
+      IF ( M .EQ. 0 )  THEN
+        DO I = 1, NSA
+          XSQ = XM(I) * XM(I)
+          PLEG20(I)        = HALF*(THREE*XSQ-ONE)
+          UMXSQ(I)         = ONE - XSQ
+          XUMXSQ(I)        = UMXSQ(I) * XM(I)
+          IF ( XM(I) .EQ. ONE ) THEN
+           RT_UMXSQ(I)      = ZERO
+           X_RT_UMXSQ(I)    = ZERO
+           UPXSQ_D_UMXSQ(I) = ZERO
+           M2X_D_UMXSQ(I)   = ZERO
+          ELSE
+           RT_UMXSQ(I)      = DSQRT(UMXSQ(I))
+           X_RT_UMXSQ(I)    = RT_UMXSQ(I) * XM(I)
+           UPXSQ_D_UMXSQ(I) = (ONE + XSQ) / UMXSQ(I)
+           M2X_D_UMXSQ(I)   = - TWO * XM(I) / UMXSQ(I)
+          ENDIF
+          DO L = 0, NMOMENTS
+            X2LP1(L,I) = XM(I) * DF_2LP1(L)
+          ENDDO
+        ENDDO
+
+!  D-matrix and Mueller indices. NOW DONE in VLIDORT_DERIVE_INPUTS
+!        DO SK1 = 1, MAXSTOKES
+!          DO SK2 = 1, MAXSTOKES
+!            MUELLER_INDEX(SK1,SK2) = MAXSTOKES*(SK1-1) + SK2
+!            DMAT(SK1,SK2) = ZERO
+!          ENDDO
+!          IF ( SK1.GT.2) THEN
+!            DMAT(SK1,SK1) = -ONE
+!          ELSE
+!            DMAT(SK1,SK1) = ONE
+!          ENDIF
+!          MUELLER_DIAGONAL_INDEX(SK1) = MUELLER_INDEX(SK1,SK1)
+!        ENDDO
+
+      ENDIF
+
+!  XYZ matrices
+!  ------------
+
+!  Inverse XLM diagonal matrices (Siewert (1982), Eq. 35a)
+!  YLM diagonal matrices (Siewert (1982), Eq. 35b)
+!  ZLM matrices. (Siewert (1982), Eq. 35c)
+
+!  .. for the azimuth-independent harmonic
+
+      IF ( M .EQ. 0 ) THEN
+
+        DO L = 2, NMOMENTS
+          XLM_DIAG(L,1) = DF_LP1(L)
+          XLM_DIAG(L,2) = DF_RT_LP3XLM1(L)
+          XLM_DIAG(L,3) = XLM_DIAG(L,2)
+          XLM_DIAG(L,4) = XLM_DIAG(L,1)
+          DO SK1 = 1, NSTOKES
+            XLM_DIAG(L,SK1) = ONE/XLM_DIAG(L,SK1)
+          ENDDO
+        ENDDO
+
+        DO L = 2, NMOMENTS
+          YLM_DIAG(L,1) = DF_L(L)
+          YLM_DIAG(L,2) = DF_LSQM4(L)
+          YLM_DIAG(L,3) = YLM_DIAG(L,2)
+          YLM_DIAG(L,4) = YLM_DIAG(L,1)
+        ENDDO
+
+!  .. for the other harmonics
+
+      ELSE
+
+        DO L = M, NMOMENTS
+          DF_LP1MM = DBLE ( L + 1 - M )
+          XLM_DIAG(L,1) = DF_LP1MM
+          XLM_DIAG(L,1) = ONE/XLM_DIAG(L,1)
+          IF ( L .EQ. 1 ) THEN
+            XLM_DIAG(L,2) = ZERO
+          ELSE
+            XLM_DIAG(L,2) = DF_RT_LP3XLM1(L) * DF_LP1MM / DF_LP1(L)
+            XLM_DIAG(L,2) = ONE / XLM_DIAG(L,2)
+          ENDIF
+          XLM_DIAG(L,3) = XLM_DIAG(L,2)
+          XLM_DIAG(L,4) = XLM_DIAG(L,1)
+        ENDDO
+
+        DO SK1 = 1, NSTOKES
+          YLM_DIAG(M,SK1) = ZERO
+        ENDDO
+        DO L = M + 1, NMOMENTS
+          DF_LPM = DBLE ( L + M )
+          YLM_DIAG(L,1) = DF_LPM
+          YLM_DIAG(L,2) = DF_LPM * DF_LSQM4(L) / DF_L(L)
+          YLM_DIAG(L,3) = YLM_DIAG(L,2)
+          YLM_DIAG(L,4) = YLM_DIAG(L,1)
+        ENDDO
+
+        DO L = 2, NMOMENTS
+          ZLM_VALUE = DBLE(M) * ZHELP(L)
+          DO SK1 = 1, NSTOKES
+            DO SK2 = 1, NSTOKES
+              ZLM(L,SK1,SK2) = ZERO
+            ENDDO
+          ENDDO
+          ZLM(L,2,3) = ZLM_VALUE
+          ZLM(L,3,2) = ZLM_VALUE
+        ENDDO
+
+      ENDIF
+
+!  PI calculation
+!  --------------
+
+!  Initialise all the PI matrices for given harmonic
+
+      DO I = 1, NSA
+        DO L = M, NMOMENTS
+          DO SK1 = 1, NSTOKES
+            DO SK2 = 1, NSTOKES
+              PI(L,I,SK1,SK2) = ZERO
+            ENDDO
+          ENDDO
+        ENDDO
+      ENDDO
+
+!mick - alternate PI initialization
+      PI = ZERO
+
+!  M = 0 component. [Siewert (1982), Eqs (28) to (31)]
+
+      IF ( M .EQ. 0 ) THEN
+
+!  .. L = 0
+        DO I = 1, NSA
+          PI(0,I,1,1) = PI(0,I,1,1) + ONE
+          PI(0,I,4,4) = PI(0,I,4,4) + ONE
+        ENDDO
+!  .. L = 1
+        DO I = 1, NSA
+          PI(1,I,1,1) = PI(1,I,1,1) + XM(I)
+          PI(1,I,4,4) = PI(1,I,4,4) + XM(I)
+        ENDDO
+!  .. L = 2
+        DO I = 1, NSA
+          PL20 = PLEG20(I)
+          RL20 = RCONST_20*UMXSQ(I)
+          PI(2,I,1,1) = PI(2,I,1,1) + PL20
+          PI(2,I,2,2) = PI(2,I,2,2) + RL20
+          PI(2,I,3,3) = PI(2,I,2,2)
+          PI(2,I,4,4) = PI(2,I,1,1)
+        ENDDO
+!  .. L > 2
+        DO L = 2, NMOMENTS - 1
+          DO I = 1, NSA
+            DO SK1 = 1, NSTOKES
+              DO SK2 = 1, NSTOKES
+                HX = X2LP1(L,I)*PI(L,I,SK1,SK2)
+                HY = YLM_DIAG(L,SK1)*PI(L-1,I,SK1,SK2)
+                PI(L+1,I,SK1,SK2) = ( HX - HY ) * XLM_DIAG(L,SK1)
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDDO
+
+!  M = 1 component. [Siewert (1982), Eqs (32) to (34), plus (35)]
+
+      ELSE IF ( M .EQ. 1 ) THEN
+
+!  .. L = 1
+        DO I = 1, NSA
+          PI(1,I,1,1) = PI(1,I,1,1) + RT_UMXSQ(I)
+          PI(1,I,4,4) = PI(1,I,4,4) + RT_UMXSQ(I)
+        ENDDO
+!  .. L = 2
+        DO I = 1, NSA
+          PL21 =   THREE     * X_RT_UMXSQ(I)
+          RL21 = - RCONST_21 * X_RT_UMXSQ(I)
+          TL21 = + RCONST_21 * RT_UMXSQ(I)
+          PI(2,I,1,1) = PI(2,I,1,1) + PL21
+          PI(2,I,2,2) = PI(2,I,2,2) + RL21
+          PI(2,I,2,3) = PI(2,I,2,3) + TL21
+          PI(2,I,3,3) = PI(2,I,2,2)
+          PI(2,I,4,4) = PI(2,I,1,1)
+          PI(2,I,3,2) = PI(2,I,2,3)
+        ENDDO
+!  .. L > 2
+        DO L = 2, NMOMENTS - 1
+          DO I = 1, NSA
+            DO SK1 = 1, NSTOKES
+              DO SK2 = 1, NSTOKES
+                HX = X2LP1(L,I)*PI(L,I,SK1,SK2)
+                HY = YLM_DIAG(L,SK1)*PI(L-1,I,SK1,SK2)
+                HZ = ZERO
+                DO SK3 = 1, NSTOKES
+                  HZ = HZ + ZLM(L,SK1,SK3)*PI(L,I,SK3,SK2)
+                ENDDO
+                PI(L+1,I,SK1,SK2) = ( HX - HY + HZ ) * XLM_DIAG(L,SK1)
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDDO
+
+!  M > 1 components. [Siewert (1982), Eqs (36) to (38), plus (35)]
+!  Limiting case of XM(I) = ONE requires special treatment to avoid NaN
+!   R. Spurr and V. Natraj, 16 january 2006
+
+      ELSE
+
+!  .. L = M
+        IF ( M .EQ. 2 ) THEN
+          DO I = 1, NSA
+            PIMM_11(I) =   THREE * UMXSQ(I)
+            IF ( XM(I).EQ.ONE) THEN
+              PIMM_KM(I) =   RCONST_21
+            ELSE
+              PIMM_KM(I) =   RCONST_21 * UMXSQ(I)
+            ENDIF
+          ENDDO
+        ELSE
+          H1 = DF_2LP1(M-1)
+          H2 = DF_LP1(M-1)*H1/DF_RT_LP3XLM1(M-1)
+          DO I = 1, NSA
+            PIMM_11(I) = H1 * RT_UMXSQ(I) * PIMM_11(I)
+            IF ( XM(I).EQ.ONE) THEN
+              PIMM_KM(I) = ZERO
+            ELSE
+              PIMM_KM(I) = H2 * RT_UMXSQ(I) * PIMM_KM(I)
+            ENDIF
+          ENDDO
+        ENDIF
+
+        DO I = 1, NSA
+          PI(M,I,1,1) = PI(M,I,1,1) + PIMM_11(I)
+          IF ( XM(I).EQ.ONE ) THEN
+            PI(M,I,2,2) = PI(M,I,2,2) + PIMM_KM(I) * TWO
+            PI(M,I,2,3) = PI(M,I,2,3) - PIMM_KM(I) * TWO
+          ELSE
+            PI(M,I,2,2) = PI(M,I,2,2) + PIMM_KM(I) * UPXSQ_D_UMXSQ(I)
+            PI(M,I,2,3) = PI(M,I,2,3) + PIMM_KM(I) * M2X_D_UMXSQ(I)
+          ENDIF
+          PI(M,I,3,3) = PI(M,I,2,2)
+          PI(M,I,4,4) = PI(M,I,1,1)
+          PI(M,I,3,2) = PI(M,I,2,3)
+        ENDDO
+!  .. L = M + 1
+        IF ( M .LT. NMOMENTS ) THEN
+          DO I = 1, NSA
+            DO SK1 = 1, NSTOKES
+              DO SK2 = 1, NSTOKES
+                HX = X2LP1(M,I)*PI(M,I,SK1,SK2)
+                HZ = ZERO
+                DO SK3 = 1, NSTOKES
+                  HZ = HZ + ZLM(M,SK1,SK3)*PI(M,I,SK3,SK2)
+                ENDDO
+                PI(M+1,I,SK1,SK2) = ( HX + HZ ) * XLM_DIAG(M,SK1)
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDIF
+!  .. L > M + 1
+        DO L = M + 1, NMOMENTS - 1
+          DO I = 1, NSA
+            DO SK1 = 1, NSTOKES
+              DO SK2 = 1, NSTOKES
+                HX = X2LP1(L,I)*PI(L,I,SK1,SK2)
+                HY = YLM_DIAG(L,SK1)*PI(L-1,I,SK1,SK2)
+                HZ = ZERO
+                DO SK3 = 1, NSTOKES
+                  HZ = HZ + ZLM(L,SK1,SK3)*PI(L,I,SK3,SK2)
+                ENDDO
+                PI(L+1,I,SK1,SK2) = ( HX - HY + HZ ) * XLM_DIAG(L,SK1)
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDDO
+
+      ENDIF
+
+!  Normalized output.
+!  ------------------
+
+      DO L = M, NMOMENTS
+
+!  .. at quadrature streams
+
+        DO I = 1, NSTREAMS
+
+          DO SK1 = 1, NSTOKES
+            DO SK2 = 1, NSTOKES
+              PI_XQP(L,I,SK1,SK2) = PI(L,I,SK1,SK2) * PINORM(L,M)
+            ENDDO
+          ENDDO
+
+          DO SK1 = 1, NSTOKES
+            DO SK2 = 1, NSTOKES
+
+              H1 = ZERO
+              H2 = ZERO
+              DO SK3 = 1, NSTOKES
+                H1 = H1 + DMAT(SK1,SK3) * PI_XQP(L,I,SK3,SK2)
+                H2 = H2 + PI_XQP(L,I,SK1,SK3) * DMAT(SK3,SK2)
+              ENDDO
+
+              PI_XQP_PRE(L,I,SK1,SK2)  = H1
+              PI_XQM_PRE(L,I,SK1,SK2)  = H1 * PISIGN(L,M)
+              PI_XQM_POST(L,I,SK1,SK2) = H2 * PISIGN(L,M)
+
+              H1 = ZERO
+              DO SK3 = 1, NSTOKES
+                H2 = ZERO
+                DO SK4 = 1, NSTOKES
+                  H2 = H2 + PI_XQP(L,I,SK3,SK4)*DMAT(SK4,SK2)
+                ENDDO
+                H1 = H1 + DMAT(SK1,SK3)*H2
+              ENDDO
+              PI_XQM(L,I,SK1,SK2)  = H1 * PISIGN(L,M)
+
+            ENDDO
+          ENDDO
+
+        ENDDO
+
+!  .. at positive user_defined angles
+
+        IF ( DO_USER_STREAMS ) THEN
+
+          DO I = 1, N_USER_STREAMS
+            I1 = I + NSTREAMS
+
+            DO SK1 = 1, NSTOKES
+              DO SK2 = 1, NSTOKES
+                PI_XUP(L,I,SK1,SK2) = PI(L,I1,SK1,SK2) * PINORM(L,M)
+              ENDDO
+            ENDDO
+
+            DO SK1 = 1, NSTOKES
+              DO SK2 = 1, NSTOKES
+
+                H2 = ZERO
+                H1 = ZERO
+                DO SK3 = 1, NSTOKES
+                  H1 = H1 + DMAT(SK1,SK3) * PI_XUP(L,I,SK3,SK2)
+                  H2 = H2 + DMAT(SK3,SK2) * PI_XUP(L,I,SK1,SK3)
+                ENDDO
+                PI_XUP_PRE(L,I,SK1,SK2)  = H1
+                PI_XUM_POST(L,I,SK1,SK2) = H2 * PISIGN(L,M)
+
+                H1 = ZERO
+                DO SK3 = 1, NSTOKES
+                  H2 = ZERO
+                  DO SK4 = 1, NSTOKES
+                    H2 = H2 + PI_XUP(L,I,SK3,SK4)*DMAT(SK4,SK2)
+                  ENDDO
+                  H1 = H1 + DMAT(SK1,SK3)*H2
+                ENDDO
+                PI_XUM(L,I,SK1,SK2) = H1 * PISIGN(L,M)
+
+              ENDDO
+            ENDDO
+
+          ENDDO
+
+        ENDIF
+
+!  .. at solar zenith angles
+
+!  depends on use of refractive geometry
+
+        IF ( DO_REFRACTIVE_GEOMETRY ) THEN
+!          DO N = 1, NLAYERS
+!            DO IB = 1, NBEAMS
+!              IP = NS + NBEAMS * (N-1) + IB
+!              DO SK1 = 1, NSTOKES
+!                DO SK2 = 1, NSTOKES
+!                  PI_X0P(L,IB,N,SK1,SK2) =
+!     &                 PI(L,IP,SK1,SK2) * PINORM(L,M)
+!                ENDDO
+!              ENDDO
+!            ENDDO
+!          ENDDO
+        ELSE
+          DO IB = 1, NBEAMS
+            IP = IB + NS
+            DO SK1 = 1, NSTOKES
+              DO SK2 = 1, NSTOKES
+                PI_X0P(L,IB,1,SK1,SK2) = &
+                     PI(L,IP,SK1,SK2) * PINORM(L,M)
+                DO N = 2, NLAYERS
+                  PI_X0P(L,IB,N,SK1,SK2)= PI_X0P(L,IB,1,SK1,SK2)
+                ENDDO
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDIF
+
+!  end loop moments
+
+      ENDDO
+
+!  debug
+
+!      write(77,*)'Fourier',M
+!      DO L = M, NMOMENTS
+!       write(77,*)'Moment ',L
+!       DO SK1 = 1, 4
+!        WRITE(77,'(I3,1p4e15.6)')SK1,(PI_XUP(L,4,SK1,SK2),SK2=1,4)
+!       ENDDO
+!      ENDDO
+
+!  Finish
+
+      RETURN
+      END SUBROUTINE VLIDORT_PIMATRIX_SETUP_OMP
 
       END MODULE vlidort_miscsetups_module
 

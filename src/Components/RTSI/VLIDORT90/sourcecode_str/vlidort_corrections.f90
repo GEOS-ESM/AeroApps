@@ -19,7 +19,7 @@
 ! #  Email :       rtsolutions@verizon.net                      #
 ! #                                                             #
 ! #  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT, 2.4RTC,  #
-! #                   2.5, 2.6                                  #
+! #                   2.5, 2.6, 2.7                             #
 ! #  Release Date :   December 2005  (2.0)                      #
 ! #  Release Date :   March 2007     (2.2)                      #
 ! #  Release Date :   October 2007   (2.3)                      #
@@ -29,6 +29,7 @@
 ! #  Release Date :   October 2010   (2.4RTC)                   #
 ! #  Release Date :   March 2011     (2.5)                      #
 ! #  Release Date :   May 2012       (2.6)                      #
+! #  Release Date :   August 2014    (2.7)                      #
 ! #                                                             #
 ! #       NEW: TOTAL COLUMN JACOBIANS         (2.4)             #
 ! #       NEW: BPDF Land-surface KERNELS      (2.4R)            #
@@ -36,6 +37,9 @@
 ! #       Consolidated BRDF treatment         (2.4RTC)          #
 ! #       f77/f90 Release                     (2.5)             #
 ! #       External SS / New I/O Structures    (2.6)             #
+! #                                                             #
+! #       SURFACE-LEAVING / BRDF-SCALING      (2.7)             #
+! #       TAYLOR Series / OMP THREADSAFE      (2.7)             #
 ! #                                                             #
 ! ###############################################################
 
@@ -57,17 +61,16 @@
 ! #              VLIDORTSS_FMATRICES_MULTI                      #
 ! #                                                             #
 ! #      Version 2.2. outgoing sphericity correction            #
-! #              2.3.  partial-layer integration                #
+! #              2.3. partial-layer integration                 #
 ! #                                                             #
 ! #            VLIDORT_SSCORR_OUTGOING (master)                 #
 ! #                 SSCORR_OUTGOING_ZMATRIX                     #
-! #                 OUTGOING_SPHERGEOM_FINE_UP                  #
-! #                 OUTGOING_SPHERGEOM_FINE_DN                  #
 ! #                 OUTGOING_INTEGRATION_UP                     #
 ! #                 OUTGOING_INTEGRATION_DN                     #
-! #                 MULTI_OUTGOING_ADJUSTGEOM                   #
 ! #                                                             #
 ! #            VLIDORT_DBCORRECTION                             #
+! #                                                             #
+! #            VFO_MASTER_INTERFACE                             #
 ! #                                                             #
 ! #      Version 2.4RTC ------- Notes -------                   #
 ! #                                                             #
@@ -87,13 +90,13 @@
 
       MODULE vlidort_corrections
 
+      USE FO_VectorSS_masters
+
       PRIVATE
       PUBLIC :: VLIDORT_SSCORR_NADIR, &
                 VLIDORT_SSCORR_OUTGOING, &
                 VLIDORT_DBCORRECTION, &
-                OUTGOING_SPHERGEOM_FINE_UP, &
-                OUTGOING_SPHERGEOM_FINE_DN, &
-                MULTI_OUTGOING_ADJUSTGEOM
+                VFO_MASTER_INTERFACE
 
       CONTAINS
 
@@ -101,7 +104,7 @@
         SSFLUX, &
         DO_SSCORR_TRUNCATION, DO_REFRACTIVE_GEOMETRY, &
         DO_DELTAM_SCALING, DO_UPWELLING, &
-        DO_DNWELLING, NSTOKES, &
+        DO_DNWELLING, DO_OBSERVATION_GEOMETRY, NSTOKES, &
         NLAYERS, NGREEK_MOMENTS_INPUT, &
         N_USER_RELAZMS, USER_RELAZMS, &
         N_USER_LEVELS, &
@@ -143,6 +146,7 @@
       LOGICAL, INTENT (IN) ::           DO_DELTAM_SCALING
       LOGICAL, INTENT (IN) ::           DO_UPWELLING
       LOGICAL, INTENT (IN) ::           DO_DNWELLING
+      LOGICAL, INTENT (IN) ::           DO_OBSERVATION_GEOMETRY
       INTEGER, INTENT (IN) ::           NSTOKES
       INTEGER, INTENT (IN) ::           NLAYERS
       INTEGER, INTENT (IN) ::           NGREEK_MOMENTS_INPUT
@@ -214,7 +218,7 @@
 !  Indices
 
       INTEGER ::           N, NUT, NSTART, NUT_PREV, NLEVEL
-      INTEGER ::           UT, UTA, UM, IA, NC, IB, V, O1, O2, NM1
+      INTEGER ::           UT, UTA, UM, IA, NC, IB, V, O1, O2, NM1, LUM
       INTEGER ::           INDEX_11, INDEX_12, INDEX_34
       INTEGER ::           INDEX_22, INDEX_33, INDEX_44
 
@@ -246,8 +250,8 @@
       DOUBLE PRECISION ::  S2 (MAX_GEOMETRIES,MAXLAYERS)
 
 !  Sunlight parameters
-!    - assumes the Flux vector is (F,0,0,0)
-!   - drop this variables when further testing has been done
+!   - assumes the Flux vector is (F,0,0,0)
+!   - drop this variable when further testing has been done
 
       LOGICAL, PARAMETER :: SUNLIGHT = .TRUE.
       INTEGER ::            NPOLAR
@@ -260,6 +264,10 @@
 
       IF (SUNLIGHT) NPOLAR = MIN(NSTOKES,3)
       IF (.NOT.SUNLIGHT) NPOLAR = NSTOKES
+
+!  Local user index
+
+      LUM = 1
 
 !  indexing keys
 
@@ -316,14 +324,21 @@
         END DO
       ENDIF
 
-      DO UM = 1, N_USER_STREAMS
-        CALPHA(UM) = USER_STREAMS(UM)
-        SALPHA(UM) = DSQRT ( ONE - CALPHA(UM) * CALPHA(UM) )
-      ENDDO
-
-      DO IA = 1, N_USER_RELAZMS
-        CPHI(IA) = DCOS ( USER_RELAZMS(IA) * DEG_TO_RAD )
-      ENDDO
+      IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO UM = 1, N_USER_STREAMS
+          CALPHA(UM) = USER_STREAMS(UM)
+          SALPHA(UM) = DSQRT ( ONE - CALPHA(UM) * CALPHA(UM) )
+        ENDDO
+        DO IA = 1, N_USER_RELAZMS
+          CPHI(IA) = DCOS ( USER_RELAZMS(IA) * DEG_TO_RAD )
+        ENDDO
+      ELSE
+        DO V = 1, N_GEOMETRIES
+          CALPHA(V) = USER_STREAMS(V)
+          SALPHA(V) = DSQRT ( ONE - CALPHA(V) * CALPHA(V) )
+          CPHI(V) = DCOS ( USER_RELAZMS(V) * DEG_TO_RAD )
+        ENDDO
+      ENDIF
 
 !  Upwelling single scatter Phase matrices
 !  ---------------------------------------
@@ -336,19 +351,19 @@
         VIEWSIGN = -1.0D0
         IF ( DO_REFRACTIVE_GEOMETRY ) THEN
           CALL VLIDORTSS_FMATRICES_MULTI ( &
-            DO_SSCORR_TRUNCATION, NLAYERS, &
-            N_GEOMETRIES, NGREEK_MOMENTS_INPUT, &
-            NBEAMS, N_USER_STREAMS,  N_USER_RELAZMS, &
-            LAYER_MAXMOMENTS,  GREEKMAT_TOTAL_INPUT, SSFDEL, &
+            DO_SSCORR_TRUNCATION, DO_OBSERVATION_GEOMETRY, NLAYERS, &
+            NSTOKES, N_GEOMETRIES, NGREEK_MOMENTS_INPUT, &
+            NBEAMS, N_USER_STREAMS, N_USER_RELAZMS, &
+            LAYER_MAXMOMENTS, GREEKMAT_TOTAL_INPUT, SSFDEL, &
             VIEWSIGN, VZA_OFFSETS, &
             CTHETA, STHETA, CALPHA, SALPHA, CPHI, USER_RELAZMS, &
             C1, S1, C2, S2, FMAT_UP )
         ELSE
           CALL VLIDORTSS_FMATRICES ( &
-            DO_SSCORR_TRUNCATION, NLAYERS, &
-            N_GEOMETRIES, NGREEK_MOMENTS_INPUT, &
-            NBEAMS, N_USER_STREAMS,  N_USER_RELAZMS, &
-            LAYER_MAXMOMENTS,  GREEKMAT_TOTAL_INPUT, SSFDEL, &
+            DO_SSCORR_TRUNCATION, DO_OBSERVATION_GEOMETRY, NLAYERS, &
+            NSTOKES, N_GEOMETRIES, NGREEK_MOMENTS_INPUT, &
+            NBEAMS, N_USER_STREAMS, N_USER_RELAZMS, &
+            LAYER_MAXMOMENTS, GREEKMAT_TOTAL_INPUT, SSFDEL, &
             VIEWSIGN, VZA_OFFSETS, &
             CTHETA, STHETA, CALPHA, SALPHA, CPHI, USER_RELAZMS, &
             C1, S1, C2, S2, FMAT_UP )
@@ -356,6 +371,9 @@
 
 !   Z matrices, Hovenier and van der Mee (1983), Eq 88.
 !   ---------------------------------------------------
+
+!mick fix 1/16/2013 - initialize all entries
+        ZMAT_UP = ZERO
 
         IF ( NSTOKES .GT. 1 ) THEN
 
@@ -384,7 +402,7 @@
              ZMAT_UP(V,N,2,1) =  -FMAT_UP(V,N,INDEX_12) * C2(V,N)
              ZMAT_UP(V,N,3,1) =   FMAT_UP(V,N,INDEX_12) * S2(V,N)
              ZMAT_UP(V,N,4,1) =   ZERO
-!  this next part remain untested. Need to check signs.
+!  this next part remains untested. Need to check signs.
              HELP2C1 = FMAT_UP(V,N,INDEX_22) * C1(V,N)
              HELP2S1 = FMAT_UP(V,N,INDEX_22) * S1(V,N)
              HELP3C1 = FMAT_UP(V,N,INDEX_33) * C1(V,N)
@@ -412,7 +430,7 @@
 
 !  debug
 !         write(97,'(2i4,1pe15.7)')V,21,ZMAT_UP(V,21,1,1)
-!         write(97,'(2i4,1pe15.7)')V,22,ZMAT_UP(V,22,1,1
+!         write(97,'(2i4,1pe15.7)')V,22,ZMAT_UP(V,22,1,1)
 !        pause
 
 !  add TMS correction factor, scalar case
@@ -481,136 +499,140 @@
           ENDDO
         ENDDO
 
+!  Lattice calculation
+
+        IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+
 !  initialise optical depth loop
 
-        NSTART = NLAYERS
-        NUT_PREV = NSTART + 1
+          NSTART = NLAYERS
+          NUT_PREV = NSTART + 1
 
 !  Main loop over all output optical depths
 
-        DO UTA = N_USER_LEVELS, 1, -1
+          DO UTA = N_USER_LEVELS, 1, -1
 
 !  Layer index for given optical depth
 
-          NLEVEL = UTAU_LEVEL_MASK_UP(UTA)
-          NUT    = NLEVEL + 1
+            NLEVEL = UTAU_LEVEL_MASK_UP(UTA)
+            NUT    = NLEVEL + 1
 
 !  Cumulative single scatter source terms :
 !      For loop over layers working upwards to level NUT,
 !      Get layer source terms = Exact Z-matrix * Multiplier
 
-          DO N = NSTART, NUT, -1
-           NC = NLAYERS + 1 - N
+            DO N = NSTART, NUT, -1
+             NC = NLAYERS + 1 - N
 
 !  sunlight case, no circular polarization
 !    Addition of Single scatter Contribution functions
 
-           IF ( SUNLIGHT ) THEN
-            DO IB = 1, NBEAMS
-             DO UM = 1, N_USER_STREAMS
-              MULTIPLIER = EMULT_UP(UM,N,IB)
-              DO IA = 1, N_USER_RELAZMS
-               V = VZA_OFFSETS(IB,UM) + IA
-               DO O1 = 1, NPOLAR
-                HELP = ZMAT_UP(V,N,O1,1) * FLUXVEC(1)
-                SS_LAYERSOURCE = HELP* MULTIPLIER
-                IF (DO_TOA_CONTRIBS) THEN
-                  SS_CONTRIBS(V,O1,N) = CUMTRANS(N,UM) * SS_LAYERSOURCE
-                  SS_CONTRIBS(V,O1,N) = SSFLUX * SS_CONTRIBS(V,O1,N)
-                ENDIF
-                SS_CUMSOURCE_UP(V,O1,NC) = SS_LAYERSOURCE + &
-                   T_DELT_USERM(N,UM)*SS_CUMSOURCE_UP(V,O1,NC-1)
+             IF ( SUNLIGHT ) THEN
+              DO IB = 1, NBEAMS
+               DO UM = 1, N_USER_STREAMS
+                MULTIPLIER = EMULT_UP(UM,N,IB)
+                DO IA = 1, N_USER_RELAZMS
+                 V = VZA_OFFSETS(IB,UM) + IA
+                 DO O1 = 1, NPOLAR
+                  HELP = ZMAT_UP(V,N,O1,1) * FLUXVEC(1)
+                  SS_LAYERSOURCE = HELP* MULTIPLIER
+                  IF (DO_TOA_CONTRIBS) THEN
+                    SS_CONTRIBS(V,O1,N) = CUMTRANS(N,UM) * SS_LAYERSOURCE
+                    SS_CONTRIBS(V,O1,N) = SSFLUX * SS_CONTRIBS(V,O1,N)
+                  ENDIF
+                  SS_CUMSOURCE_UP(V,O1,NC) = SS_LAYERSOURCE + &
+                     T_DELT_USERM(N,UM)*SS_CUMSOURCE_UP(V,O1,NC-1)
+                 ENDDO
+                ENDDO
                ENDDO
               ENDDO
-             ENDDO
-            ENDDO
 
 !  general case
 
-           ELSE
-            DO IB = 1, NBEAMS
-             DO UM = 1, N_USER_STREAMS
-              MULTIPLIER = EMULT_UP(UM,N,IB)
-              DO IA = 1, N_USER_RELAZMS
-               V = VZA_OFFSETS(IB,UM) + IA
-               DO O1 = 1, NSTOKES
-                HELP = ZERO
-                DO O2 = 1, NSTOKES
-                 HELP = HELP + ZMAT_UP(V,N,O1,O2) * FLUXVEC(O2)
+             ELSE
+              DO IB = 1, NBEAMS
+               DO UM = 1, N_USER_STREAMS
+                MULTIPLIER = EMULT_UP(UM,N,IB)
+                DO IA = 1, N_USER_RELAZMS
+                 V = VZA_OFFSETS(IB,UM) + IA
+                 DO O1 = 1, NSTOKES
+                  HELP = ZERO
+                  DO O2 = 1, NSTOKES
+                   HELP = HELP + ZMAT_UP(V,N,O1,O2) * FLUXVEC(O2)
+                  ENDDO
+                  SS_LAYERSOURCE = HELP* MULTIPLIER
+                  IF (DO_TOA_CONTRIBS) THEN
+                    SS_CONTRIBS(V,O1,N) = CUMTRANS(N,UM) * SS_LAYERSOURCE
+                    SS_CONTRIBS(V,O1,N) = SSFLUX * SS_CONTRIBS(V,O1,N)
+                  ENDIF
+                  SS_CUMSOURCE_UP(V,O1,NC) = SS_LAYERSOURCE + &
+                     T_DELT_USERM(N,UM)*SS_CUMSOURCE_UP(V,O1,NC-1)
+                 ENDDO
                 ENDDO
-                SS_LAYERSOURCE = HELP* MULTIPLIER
-                IF (DO_TOA_CONTRIBS) THEN
-                  SS_CONTRIBS(V,O1,N) = CUMTRANS(N,UM) * SS_LAYERSOURCE
-                  SS_CONTRIBS(V,O1,N) = SSFLUX * SS_CONTRIBS(V,O1,N)
-                ENDIF
-                SS_CUMSOURCE_UP(V,O1,NC) = SS_LAYERSOURCE + &
-                   T_DELT_USERM(N,UM)*SS_CUMSOURCE_UP(V,O1,NC-1)
                ENDDO
               ENDDO
-             ENDDO
-            ENDDO
-           ENDIF
+             ENDIF
 
 !  end layer loop
 
-          ENDDO
+            ENDDO
 
 !  Offgrid output :
 !    add additional partial layer source term = Exact Z-matrix * Multipl
 !    Set final cumulative source and Correct the intensity
 
-          IF ( PARTLAYERS_OUTFLAG(UTA) ) THEN
-            UT = PARTLAYERS_OUTINDEX(UTA)
-            N  = PARTLAYERS_LAYERIDX(UT)
+            IF ( PARTLAYERS_OUTFLAG(UTA) ) THEN
+              UT = PARTLAYERS_OUTINDEX(UTA)
+              N  = PARTLAYERS_LAYERIDX(UT)
 
 !  sunlight case, no circular polarization
 
-            IF ( SUNLIGHT ) THEN
+              IF ( SUNLIGHT ) THEN
 
-             DO IB = 1, NBEAMS
-              DO UM = 1, N_USER_STREAMS
-               MULTIPLIER = UT_EMULT_UP(UM,UT,IB)
-               DO IA = 1, N_USER_RELAZMS
-                V = VZA_OFFSETS(IB,UM) + IA
-                DO O1 = 1, NPOLAR
-                 HELP = ZMAT_UP(V,N,O1,1) * FLUXVEC(1)
-                 SS_LAYERSOURCE = HELP * MULTIPLIER
-                 SS_CUMSOURCE   = SS_CUMSOURCE_UP(V,O1,NC)
-                 TR_CUMSOURCE   = T_UTUP_USERM(UT,UM) * SS_CUMSOURCE
-                 FINAL_SOURCE   = TR_CUMSOURCE + SS_LAYERSOURCE
-                 SSCORRECTION   = SSFLUX * FINAL_SOURCE
-                 STOKES_SS(UTA,V,O1,UPIDX) = SSCORRECTION
+               DO IB = 1, NBEAMS
+                DO UM = 1, N_USER_STREAMS
+                 MULTIPLIER = UT_EMULT_UP(UM,UT,IB)
+                 DO IA = 1, N_USER_RELAZMS
+                  V = VZA_OFFSETS(IB,UM) + IA
+                  DO O1 = 1, NPOLAR
+                   HELP = ZMAT_UP(V,N,O1,1) * FLUXVEC(1)
+                   SS_LAYERSOURCE = HELP * MULTIPLIER
+                   SS_CUMSOURCE   = SS_CUMSOURCE_UP(V,O1,NC)
+                   TR_CUMSOURCE   = T_UTUP_USERM(UT,UM) * SS_CUMSOURCE
+                   FINAL_SOURCE   = TR_CUMSOURCE + SS_LAYERSOURCE
+                   SSCORRECTION   = SSFLUX * FINAL_SOURCE
+                   STOKES_SS(UTA,V,O1,UPIDX) = SSCORRECTION
+                  ENDDO
+                 ENDDO
                 ENDDO
                ENDDO
-              ENDDO
-             ENDDO
 
 !  general case
 
-            ELSE
+              ELSE
 
-             DO IB = 1, NBEAMS
-              DO UM = 1, N_USER_STREAMS
-               MULTIPLIER = UT_EMULT_UP(UM,UT,IB)
-               DO IA = 1, N_USER_RELAZMS
-                V = VZA_OFFSETS(IB,UM) + IA
-                DO O1 = 1, NSTOKES
-                 HELP = ZERO
-                 DO O2 = 1, NSTOKES
-                  HELP = HELP + ZMAT_UP(V,N,O1,O2) * FLUXVEC(O2)
+               DO IB = 1, NBEAMS
+                DO UM = 1, N_USER_STREAMS
+                 MULTIPLIER = UT_EMULT_UP(UM,UT,IB)
+                 DO IA = 1, N_USER_RELAZMS
+                  V = VZA_OFFSETS(IB,UM) + IA
+                  DO O1 = 1, NSTOKES
+                   HELP = ZERO
+                   DO O2 = 1, NSTOKES
+                    HELP = HELP + ZMAT_UP(V,N,O1,O2) * FLUXVEC(O2)
+                   ENDDO
+                   SS_LAYERSOURCE = HELP * MULTIPLIER
+                   SS_CUMSOURCE   = SS_CUMSOURCE_UP(V,O1,NC)
+                   TR_CUMSOURCE   = T_UTUP_USERM(UT,UM) * SS_CUMSOURCE
+                   FINAL_SOURCE   = TR_CUMSOURCE + SS_LAYERSOURCE
+                   SSCORRECTION   = SSFLUX * FINAL_SOURCE
+                   STOKES_SS(UTA,V,O1,UPIDX) = SSCORRECTION
+                  ENDDO
                  ENDDO
-                 SS_LAYERSOURCE = HELP * MULTIPLIER
-                 SS_CUMSOURCE   = SS_CUMSOURCE_UP(V,O1,NC)
-                 TR_CUMSOURCE   = T_UTUP_USERM(UT,UM) * SS_CUMSOURCE
-                 FINAL_SOURCE   = TR_CUMSOURCE + SS_LAYERSOURCE
-                 SSCORRECTION   = SSFLUX * FINAL_SOURCE
-                 STOKES_SS(UTA,V,O1,UPIDX) = SSCORRECTION
                 ENDDO
                ENDDO
-              ENDDO
-             ENDDO
 
-            ENDIF
+              ENDIF
 
 !  debug code to be inserted above
 !                     write(98,'(a,3i4,1p2e15.7)')
@@ -619,11 +641,163 @@
 !  Ongrid output :
 !     Set final cumulative source and correct Stokes vector
 
-          ELSE
-            DO IB = 1, NBEAMS
-             DO UM = 1, N_USER_STREAMS
-              DO IA = 1, N_USER_RELAZMS
-               V = VZA_OFFSETS(IB,UM) + IA
+            ELSE
+              DO IB = 1, NBEAMS
+               DO UM = 1, N_USER_STREAMS
+                DO IA = 1, N_USER_RELAZMS
+                 V = VZA_OFFSETS(IB,UM) + IA
+                 DO O1 = 1, NPOLAR
+                  FINAL_SOURCE = SS_CUMSOURCE_UP(V,O1,NC)
+                  SSCORRECTION = SSFLUX * FINAL_SOURCE
+                  STOKES_SS(UTA,V,O1,UPIDX) = SSCORRECTION
+!              write(34,'(2i5,1pe22.12)')V,UTA,STOKES_SS(UTA,V,O1,UPIDX)
+                 ENDDO
+                ENDDO
+               ENDDO
+              ENDDO
+            ENDIF
+
+!  insert this debug code in the above loops
+!                     write(97,'(a,3i4,1p2e15.7)')
+!     &                 'up  ',UTA,IB,V,UNCORRECTED,SSCORRECTION
+
+!  Check for updating the recursion
+
+            IF ( NUT .NE. NUT_PREV ) NSTART = NUT - 1
+            NUT_PREV = NUT
+
+!  end optical depth loop
+
+          ENDDO
+
+!  End lattice calculation
+
+        ENDIF
+
+!  Observational geometry calculation
+
+        IF ( DO_OBSERVATION_GEOMETRY ) THEN
+
+!  initialise optical depth loop
+
+          NSTART = NLAYERS
+          NUT_PREV = NSTART + 1
+
+!  Main loop over all output optical depths
+
+          DO UTA = N_USER_LEVELS, 1, -1
+
+!  Layer index for given optical depth
+
+            NLEVEL = UTAU_LEVEL_MASK_UP(UTA)
+            NUT    = NLEVEL + 1
+
+!  Cumulative single scatter source terms :
+!      For loop over layers working upwards to level NUT,
+!      Get layer source terms = Exact Z-matrix * Multiplier
+
+            DO N = NSTART, NUT, -1
+             NC = NLAYERS + 1 - N
+
+!  sunlight case, no circular polarization
+!    Addition of Single scatter Contribution functions
+
+             IF ( SUNLIGHT ) THEN
+               DO V = 1, N_GEOMETRIES
+                 MULTIPLIER = EMULT_UP(LUM,N,V)
+                 DO O1 = 1, NPOLAR
+                   HELP = ZMAT_UP(V,N,O1,1) * FLUXVEC(1)
+                   SS_LAYERSOURCE = HELP* MULTIPLIER
+                   IF (DO_TOA_CONTRIBS) THEN
+                     SS_CONTRIBS(V,O1,N) = CUMTRANS(N,V) * SS_LAYERSOURCE
+                     SS_CONTRIBS(V,O1,N) = SSFLUX * SS_CONTRIBS(V,O1,N)
+                   ENDIF
+                   SS_CUMSOURCE_UP(V,O1,NC) = SS_LAYERSOURCE + &
+                      T_DELT_USERM(N,V)*SS_CUMSOURCE_UP(V,O1,NC-1)
+                 ENDDO
+               ENDDO
+
+!  general case
+
+             ELSE
+               DO V = 1, N_GEOMETRIES
+                 MULTIPLIER = EMULT_UP(LUM,N,V)
+                 DO O1 = 1, NSTOKES
+                   HELP = ZERO
+                   DO O2 = 1, NSTOKES
+                     HELP = HELP + ZMAT_UP(V,N,O1,O2) * FLUXVEC(O2)
+                   ENDDO
+                   SS_LAYERSOURCE = HELP* MULTIPLIER
+                   IF (DO_TOA_CONTRIBS) THEN
+                     SS_CONTRIBS(V,O1,N) = CUMTRANS(N,V) * SS_LAYERSOURCE
+                     SS_CONTRIBS(V,O1,N) = SSFLUX * SS_CONTRIBS(V,O1,N)
+                   ENDIF
+                   SS_CUMSOURCE_UP(V,O1,NC) = SS_LAYERSOURCE + &
+                      T_DELT_USERM(N,V)*SS_CUMSOURCE_UP(V,O1,NC-1)
+                 ENDDO
+               ENDDO
+             ENDIF
+
+!  end layer loop
+
+            ENDDO
+
+!  Offgrid output :
+!    add additional partial layer source term = Exact Z-matrix * Multipl
+!    Set final cumulative source and Correct the intensity
+
+            IF ( PARTLAYERS_OUTFLAG(UTA) ) THEN
+              UT = PARTLAYERS_OUTINDEX(UTA)
+              N  = PARTLAYERS_LAYERIDX(UT)
+
+!  sunlight case, no circular polarization
+
+              IF ( SUNLIGHT ) THEN
+
+               DO V = 1, N_GEOMETRIES
+                 MULTIPLIER = UT_EMULT_UP(LUM,UT,V)
+                 DO O1 = 1, NPOLAR
+                   HELP = ZMAT_UP(V,N,O1,1) * FLUXVEC(1)
+                   SS_LAYERSOURCE = HELP * MULTIPLIER
+                   SS_CUMSOURCE   = SS_CUMSOURCE_UP(V,O1,NC)
+                   TR_CUMSOURCE   = T_UTUP_USERM(UT,V) * SS_CUMSOURCE
+                   FINAL_SOURCE   = TR_CUMSOURCE + SS_LAYERSOURCE
+                   SSCORRECTION   = SSFLUX * FINAL_SOURCE
+                   STOKES_SS(UTA,V,O1,UPIDX) = SSCORRECTION
+                 ENDDO
+               ENDDO
+
+!  general case
+
+              ELSE
+
+               DO V = 1, N_GEOMETRIES
+                 MULTIPLIER = UT_EMULT_UP(LUM,UT,V)
+                 DO O1 = 1, NSTOKES
+                   HELP = ZERO
+                   DO O2 = 1, NSTOKES
+                    HELP = HELP + ZMAT_UP(V,N,O1,O2) * FLUXVEC(O2)
+                   ENDDO
+                   SS_LAYERSOURCE = HELP * MULTIPLIER
+                   SS_CUMSOURCE   = SS_CUMSOURCE_UP(V,O1,NC)
+                   TR_CUMSOURCE   = T_UTUP_USERM(UT,V) * SS_CUMSOURCE
+                   FINAL_SOURCE   = TR_CUMSOURCE + SS_LAYERSOURCE
+                   SSCORRECTION   = SSFLUX * FINAL_SOURCE
+                   STOKES_SS(UTA,V,O1,UPIDX) = SSCORRECTION
+                 ENDDO
+               ENDDO
+
+              ENDIF
+
+!  debug code to be inserted above
+!                     write(98,'(a,3i4,1p2e15.7)')
+!     &                 'up  ',UTA,IB,V,UNCORRECTED,SSCORRECTION
+
+!  Ongrid output :
+!     Set final cumulative source and correct Stokes vector
+
+            ELSE
+              DO V = 1, N_GEOMETRIES
                DO O1 = 1, NPOLAR
                 FINAL_SOURCE = SS_CUMSOURCE_UP(V,O1,NC)
                 SSCORRECTION = SSFLUX * FINAL_SOURCE
@@ -631,9 +805,8 @@
 !            write(34,'(2i5,1pe22.12)')V,UTA,STOKES_SS(UTA,V,O1,UPIDX)
                ENDDO
               ENDDO
-             ENDDO
-            ENDDO
-          ENDIF
+
+            ENDIF
 
 !  insert this debug code in the above loops
 !                     write(97,'(a,3i4,1p2e15.7)')
@@ -644,9 +817,16 @@
           IF ( NUT .NE. NUT_PREV ) NSTART = NUT - 1
           NUT_PREV = NUT
 
-!  end optical depth loop and Upwelling clause
+!  end optical depth loop
 
         ENDDO
+
+!  End observationl geometry calculation
+
+        ENDIF
+
+!  end Upwelling clause
+
       ENDIF
 
 !  Downwelling single scatter Phase matrices
@@ -660,8 +840,8 @@
         VIEWSIGN = +1.0D0
         IF ( DO_REFRACTIVE_GEOMETRY ) THEN
           CALL VLIDORTSS_FMATRICES_MULTI &
-        ( DO_SSCORR_TRUNCATION, NLAYERS, &
-          N_GEOMETRIES, NGREEK_MOMENTS_INPUT, &
+        ( DO_SSCORR_TRUNCATION, DO_OBSERVATION_GEOMETRY, NLAYERS, &
+          NSTOKES, N_GEOMETRIES, NGREEK_MOMENTS_INPUT, &
           NBEAMS, N_USER_STREAMS,  N_USER_RELAZMS, &
           LAYER_MAXMOMENTS,  GREEKMAT_TOTAL_INPUT, SSFDEL, &
           VIEWSIGN, VZA_OFFSETS, &
@@ -669,8 +849,8 @@
           C1, S1, C2, S2, FMAT_DN )
         ELSE
           CALL VLIDORTSS_FMATRICES &
-        ( DO_SSCORR_TRUNCATION, NLAYERS, &
-          N_GEOMETRIES, NGREEK_MOMENTS_INPUT, &
+        ( DO_SSCORR_TRUNCATION, DO_OBSERVATION_GEOMETRY, NLAYERS, &
+          NSTOKES, N_GEOMETRIES, NGREEK_MOMENTS_INPUT, &
           NBEAMS, N_USER_STREAMS,  N_USER_RELAZMS, &
           LAYER_MAXMOMENTS,  GREEKMAT_TOTAL_INPUT, SSFDEL, &
           VIEWSIGN, VZA_OFFSETS, &
@@ -679,6 +859,9 @@
         ENDIF
 
 !   Z matrices, Hovenier and van der Mee (1983), Eq 88.
+
+!mick fix 1/16/2013 - initialize all entries
+        ZMAT_DN = ZERO
 
         IF ( NSTOKES .GT. 1 ) THEN
 
@@ -795,130 +978,134 @@
           ENDDO
         ENDDO
 
+!  Lattice calculation
+
+        IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+
 !  initialise optical depth loop
 
-        NSTART = 1
-        NUT_PREV = NSTART - 1
+          NSTART = 1
+          NUT_PREV = NSTART - 1
 
 !  Main loop over all output optical depths
 
-        DO UTA = 1, N_USER_LEVELS
+          DO UTA = 1, N_USER_LEVELS
 
 !  Layer index for given optical depth
 
-          NLEVEL = UTAU_LEVEL_MASK_DN(UTA)
-          NUT = NLEVEL
+            NLEVEL = UTAU_LEVEL_MASK_DN(UTA)
+            NUT = NLEVEL
 
 !  Cumulative single scatter source terms :
 !      For loop over layers working downwards to NUT,
 !      Get layer source terms = Exact Z-matrix * Multiplier
 
-          DO N = NSTART, NUT
-           NC = N
+            DO N = NSTART, NUT
+             NC = N
 
 !  sunlight case
 
-           IF ( SUNLIGHT ) THEN
+             IF ( SUNLIGHT ) THEN
 
-            DO IB = 1, NBEAMS
-             DO UM = 1, N_USER_STREAMS
-              MULTIPLIER = EMULT_DN(UM,N,IB)
-              DO IA = 1, N_USER_RELAZMS
-               V = VZA_OFFSETS(IB,UM) + IA
-               DO O1 = 1, NPOLAR
-                HELP =  ZMAT_DN(V,N,O1,1) * FLUXVEC(1)
-                SS_LAYERSOURCE = HELP* MULTIPLIER
-                SS_CUMSOURCE_DN(V,O1,NC) = SS_LAYERSOURCE + &
-                   T_DELT_USERM(N,UM)*SS_CUMSOURCE_DN(V,O1,NC-1)
+              DO IB = 1, NBEAMS
+               DO UM = 1, N_USER_STREAMS
+                MULTIPLIER = EMULT_DN(UM,N,IB)
+                DO IA = 1, N_USER_RELAZMS
+                 V = VZA_OFFSETS(IB,UM) + IA
+                 DO O1 = 1, NPOLAR
+                  HELP =  ZMAT_DN(V,N,O1,1) * FLUXVEC(1)
+                  SS_LAYERSOURCE = HELP* MULTIPLIER
+                  SS_CUMSOURCE_DN(V,O1,NC) = SS_LAYERSOURCE + &
+                     T_DELT_USERM(N,UM)*SS_CUMSOURCE_DN(V,O1,NC-1)
+                 ENDDO
+                ENDDO
                ENDDO
               ENDDO
-             ENDDO
-            ENDDO
 
 !  general case
 
-           ELSE
+             ELSE
 
-            DO IB = 1, NBEAMS
-             DO UM = 1, N_USER_STREAMS
-              MULTIPLIER = EMULT_DN(UM,N,IB)
-              DO IA = 1, N_USER_RELAZMS
-               V = VZA_OFFSETS(IB,UM) + IA
-               DO O1 = 1, NSTOKES
-                HELP = ZERO
-                DO O2 = 1, NSTOKES
-                 HELP = HELP + ZMAT_DN(V,N,O1,O2) * FLUXVEC(O2)
+              DO IB = 1, NBEAMS
+               DO UM = 1, N_USER_STREAMS
+                MULTIPLIER = EMULT_DN(UM,N,IB)
+                DO IA = 1, N_USER_RELAZMS
+                 V = VZA_OFFSETS(IB,UM) + IA
+                 DO O1 = 1, NSTOKES
+                  HELP = ZERO
+                  DO O2 = 1, NSTOKES
+                   HELP = HELP + ZMAT_DN(V,N,O1,O2) * FLUXVEC(O2)
+                  ENDDO
+                  SS_LAYERSOURCE = HELP* MULTIPLIER
+                  SS_CUMSOURCE_DN(V,O1,NC) = SS_LAYERSOURCE + &
+                     T_DELT_USERM(N,UM)*SS_CUMSOURCE_DN(V,O1,NC-1)
+                 ENDDO
                 ENDDO
-                SS_LAYERSOURCE = HELP* MULTIPLIER
-                SS_CUMSOURCE_DN(V,O1,NC) = SS_LAYERSOURCE + &
-                   T_DELT_USERM(N,UM)*SS_CUMSOURCE_DN(V,O1,NC-1)
                ENDDO
               ENDDO
-             ENDDO
-            ENDDO
 
-           ENDIF
+             ENDIF
 
 !  end layer loop
 
-          ENDDO
+            ENDDO
 
 !  Offgrid output :
 !    add additional partial layer source term = Exact Z-matrix * Multipl
 !    Set final cumulative source and Correct the intensity
 
-          IF ( PARTLAYERS_OUTFLAG(UTA) ) THEN
-            UT = PARTLAYERS_OUTINDEX(UTA)
-            N  = PARTLAYERS_LAYERIDX(UT)
+            IF ( PARTLAYERS_OUTFLAG(UTA) ) THEN
+              UT = PARTLAYERS_OUTINDEX(UTA)
+              N  = PARTLAYERS_LAYERIDX(UT)
 
 !  sunlight case
 
-           IF ( SUNLIGHT ) THEN
+             IF ( SUNLIGHT ) THEN
 
-            DO IB = 1, NBEAMS
-             DO UM = 1, N_USER_STREAMS
-              MULTIPLIER = UT_EMULT_DN(UM,UT,IB)
-              DO IA = 1, N_USER_RELAZMS
-               V = VZA_OFFSETS(IB,UM) + IA
-               DO O1 = 1, NSTOKES
-                HELP = ZMAT_DN(V,N,O1,1) * FLUXVEC(1)
-                SS_LAYERSOURCE = HELP * MULTIPLIER
-                SS_CUMSOURCE   = SS_CUMSOURCE_DN(V,O1,NC)
-                TR_CUMSOURCE   = T_UTDN_USERM(UT,UM) * SS_CUMSOURCE
-                FINAL_SOURCE   = TR_CUMSOURCE + SS_LAYERSOURCE
-                SSCORRECTION   = SSFLUX * FINAL_SOURCE
-                STOKES_SS(UTA,V,O1,DNIDX) = SSCORRECTION
-               ENDDO
+              DO IB = 1, NBEAMS
+               DO UM = 1, N_USER_STREAMS
+                MULTIPLIER = UT_EMULT_DN(UM,UT,IB)
+                DO IA = 1, N_USER_RELAZMS
+                 V = VZA_OFFSETS(IB,UM) + IA
+                 DO O1 = 1, NSTOKES
+                  HELP = ZMAT_DN(V,N,O1,1) * FLUXVEC(1)
+                  SS_LAYERSOURCE = HELP * MULTIPLIER
+                  SS_CUMSOURCE   = SS_CUMSOURCE_DN(V,O1,NC)
+                  TR_CUMSOURCE   = T_UTDN_USERM(UT,UM) * SS_CUMSOURCE
+                  FINAL_SOURCE   = TR_CUMSOURCE + SS_LAYERSOURCE
+                  SSCORRECTION   = SSFLUX * FINAL_SOURCE
+                  STOKES_SS(UTA,V,O1,DNIDX) = SSCORRECTION
+                 ENDDO
+                ENDDO
+                 ENDDO
               ENDDO
-             ENDDO
-            ENDDO
 
 !  general case
 
-           ELSE
+             ELSE
 
-            DO IB = 1, NBEAMS
-             DO UM = 1, N_USER_STREAMS
-              MULTIPLIER = UT_EMULT_DN(UM,UT,IB)
-              DO IA = 1, N_USER_RELAZMS
-               V = VZA_OFFSETS(IB,UM) + IA
-               DO O1 = 1, NSTOKES
-                HELP = ZERO
-                DO O2 = 1, NSTOKES
-                 HELP = HELP + ZMAT_DN(V,N,O1,O2) * FLUXVEC(O2)
+              DO IB = 1, NBEAMS
+               DO UM = 1, N_USER_STREAMS
+                MULTIPLIER = UT_EMULT_DN(UM,UT,IB)
+                DO IA = 1, N_USER_RELAZMS
+                 V = VZA_OFFSETS(IB,UM) + IA
+                 DO O1 = 1, NSTOKES
+                  HELP = ZERO
+                  DO O2 = 1, NSTOKES
+                   HELP = HELP + ZMAT_DN(V,N,O1,O2) * FLUXVEC(O2)
+                  ENDDO
+                  SS_LAYERSOURCE = HELP * MULTIPLIER
+                  SS_CUMSOURCE   = SS_CUMSOURCE_DN(V,O1,NC)
+                  TR_CUMSOURCE   = T_UTDN_USERM(UT,UM) * SS_CUMSOURCE
+                  FINAL_SOURCE   = TR_CUMSOURCE + SS_LAYERSOURCE
+                  SSCORRECTION   = SSFLUX * FINAL_SOURCE
+                  STOKES_SS(UTA,V,O1,DNIDX) = SSCORRECTION
+                 ENDDO
                 ENDDO
-                SS_LAYERSOURCE = HELP * MULTIPLIER
-                SS_CUMSOURCE   = SS_CUMSOURCE_DN(V,O1,NC)
-                TR_CUMSOURCE   = T_UTDN_USERM(UT,UM) * SS_CUMSOURCE
-                FINAL_SOURCE   = TR_CUMSOURCE + SS_LAYERSOURCE
-                SSCORRECTION   = SSFLUX * FINAL_SOURCE
-                STOKES_SS(UTA,V,O1,DNIDX) = SSCORRECTION
                ENDDO
               ENDDO
-             ENDDO
-            ENDDO
 
-           ENDIF
+             ENDIF
 
 !  debug code to be inserted
 !                     write(98,'(a,3i4,1p2e15.7)')
@@ -927,35 +1114,186 @@
 !  Ongrid output :
 !     Set final cumulative source and correct Stokes vector
 
-          ELSE
+            ELSE
 
-           DO IB = 1, NBEAMS
-            DO UM = 1, N_USER_STREAMS
-             DO IA = 1, N_USER_RELAZMS
-              V = VZA_OFFSETS(IB,UM) + IA
-              DO O1 = 1, NSTOKES
-               FINAL_SOURCE = SS_CUMSOURCE_DN(V,O1,NC)
-               SSCORRECTION = SSFLUX * FINAL_SOURCE
-               STOKES_SS(UTA,V,O1,DNIDX) = SSCORRECTION
+             DO IB = 1, NBEAMS
+              DO UM = 1, N_USER_STREAMS
+               DO IA = 1, N_USER_RELAZMS
+                V = VZA_OFFSETS(IB,UM) + IA
+                DO O1 = 1, NSTOKES
+                 FINAL_SOURCE = SS_CUMSOURCE_DN(V,O1,NC)
+                 SSCORRECTION = SSFLUX * FINAL_SOURCE
+                 STOKES_SS(UTA,V,O1,DNIDX) = SSCORRECTION
+                ENDDO
+               ENDDO
               ENDDO
              ENDDO
-            ENDDO
-           ENDDO
 
 !  debug code to be inserted above
 !         write(97,'(a,3i4,1p2e15.7)')
 !     &        'down',UTA,IB,V,UNCORRECTED,SSCORRECTION
 
-          ENDIF
+            ENDIF
 
 !  Check for updating the recursion
 
-          IF ( NUT .NE. NUT_PREV ) NSTART = NUT + 1
-          NUT_PREV = NUT
+            IF ( NUT .NE. NUT_PREV ) NSTART = NUT + 1
+            NUT_PREV = NUT
 
-!  end optical depth loop and Downwelling clause
+!  end optical depth loop
 
-        ENDDO
+          ENDDO
+
+!  End lattice calculation
+
+        ENDIF
+
+!  Observational geometry calculation
+
+        IF ( DO_OBSERVATION_GEOMETRY ) THEN
+
+!  initialise optical depth loop
+
+          NSTART = 1
+          NUT_PREV = NSTART - 1
+
+!  Main loop over all output optical depths
+
+          DO UTA = 1, N_USER_LEVELS
+
+!  Layer index for given optical depth
+
+            NLEVEL = UTAU_LEVEL_MASK_DN(UTA)
+            NUT = NLEVEL
+
+!  Cumulative single scatter source terms :
+!      For loop over layers working downwards to NUT,
+!      Get layer source terms = Exact Z-matrix * Multiplier
+
+            DO N = NSTART, NUT
+             NC = N
+
+!  sunlight case
+
+             IF ( SUNLIGHT ) THEN
+              DO V = 1, N_GEOMETRIES
+                MULTIPLIER = EMULT_DN(LUM,N,V)
+                DO O1 = 1, NPOLAR
+                  HELP =  ZMAT_DN(V,N,O1,1) * FLUXVEC(1)
+                  SS_LAYERSOURCE = HELP* MULTIPLIER
+                  SS_CUMSOURCE_DN(V,O1,NC) = SS_LAYERSOURCE + &
+                     T_DELT_USERM(N,V)*SS_CUMSOURCE_DN(V,O1,NC-1)
+                ENDDO
+              ENDDO
+
+!  general case
+
+             ELSE
+
+              DO V = 1, N_GEOMETRIES
+                MULTIPLIER = EMULT_DN(LUM,N,V)
+                DO O1 = 1, NSTOKES
+                  HELP = ZERO
+                  DO O2 = 1, NSTOKES
+                   HELP = HELP + ZMAT_DN(V,N,O1,O2) * FLUXVEC(O2)
+                  ENDDO
+                  SS_LAYERSOURCE = HELP* MULTIPLIER
+                  SS_CUMSOURCE_DN(V,O1,NC) = SS_LAYERSOURCE + &
+                     T_DELT_USERM(N,V)*SS_CUMSOURCE_DN(V,O1,NC-1)
+                ENDDO
+              ENDDO
+
+             ENDIF
+
+!  end layer loop
+
+            ENDDO
+
+!  Offgrid output :
+!    add additional partial layer source term = Exact Z-matrix * Multiple
+!    Set final cumulative source and correct the intensity
+
+            IF ( PARTLAYERS_OUTFLAG(UTA) ) THEN
+              UT = PARTLAYERS_OUTINDEX(UTA)
+              N  = PARTLAYERS_LAYERIDX(UT)
+
+!  sunlight case
+
+             IF ( SUNLIGHT ) THEN
+
+              DO V = 1, N_GEOMETRIES
+                MULTIPLIER = UT_EMULT_DN(LUM,UT,V)
+                DO O1 = 1, NSTOKES
+                  HELP = ZMAT_DN(V,N,O1,1) * FLUXVEC(1)
+                  SS_LAYERSOURCE = HELP * MULTIPLIER
+                  SS_CUMSOURCE   = SS_CUMSOURCE_DN(V,O1,NC)
+                  TR_CUMSOURCE   = T_UTDN_USERM(UT,V) * SS_CUMSOURCE
+                  FINAL_SOURCE   = TR_CUMSOURCE + SS_LAYERSOURCE
+                  SSCORRECTION   = SSFLUX * FINAL_SOURCE
+                  STOKES_SS(UTA,V,O1,DNIDX) = SSCORRECTION
+                ENDDO
+              ENDDO
+
+!  general case
+
+             ELSE
+
+              DO V = 1, N_GEOMETRIES
+                MULTIPLIER = UT_EMULT_DN(LUM,UT,V)
+                DO O1 = 1, NSTOKES
+                  HELP = ZERO
+                  DO O2 = 1, NSTOKES
+                   HELP = HELP + ZMAT_DN(V,N,O1,O2) * FLUXVEC(O2)
+                  ENDDO
+                  SS_LAYERSOURCE = HELP * MULTIPLIER
+                  SS_CUMSOURCE   = SS_CUMSOURCE_DN(V,O1,NC)
+                  TR_CUMSOURCE   = T_UTDN_USERM(UT,V) * SS_CUMSOURCE
+                  FINAL_SOURCE   = TR_CUMSOURCE + SS_LAYERSOURCE
+                  SSCORRECTION   = SSFLUX * FINAL_SOURCE
+                  STOKES_SS(UTA,V,O1,DNIDX) = SSCORRECTION
+                ENDDO
+              ENDDO
+
+             ENDIF
+
+!  debug code to be inserted
+!                     write(98,'(a,3i4,1p2e15.7)')
+!     &                 'down',UTA,IB,V,UNCORRECTED,SSCORRECTION
+
+!  Ongrid output :
+!     Set final cumulative source and correct Stokes vector
+
+            ELSE
+
+             DO V = 1, N_GEOMETRIES
+               DO O1 = 1, NSTOKES
+                 FINAL_SOURCE = SS_CUMSOURCE_DN(V,O1,NC)
+                 SSCORRECTION = SSFLUX * FINAL_SOURCE
+                 STOKES_SS(UTA,V,O1,DNIDX) = SSCORRECTION
+               ENDDO
+             ENDDO
+
+!  debug code to be inserted above
+!         write(97,'(a,3i4,1p2e15.7)')
+!     &        'down',UTA,IB,V,UNCORRECTED,SSCORRECTION
+
+            ENDIF
+
+!  Check for updating the recursion
+
+            IF ( NUT .NE. NUT_PREV ) NSTART = NUT + 1
+            NUT_PREV = NUT
+
+!  end optical depth loop
+
+          ENDDO
+
+!  End observationl geometry calculation
+
+        ENDIF
+
+!  end Downwelling clause
+
       ENDIF
 
 !  Finish
@@ -963,12 +1301,12 @@
       RETURN
       END SUBROUTINE VLIDORT_SSCORR_NADIR
 
-!
+!
 
       SUBROUTINE VLIDORTSS_FMATRICES &
-        ( DO_SSCORR_TRUNCATION, NLAYERS, &
-          N_GEOMETRIES, NGREEKMOMS, &
-          NBEAMS, N_USER_STREAMS,  N_USER_RELAZMS, &
+        ( DO_SSCORR_TRUNCATION, DO_OBSERVATION_GEOMETRY, NLAYERS, &
+          NSTOKES, N_GEOMETRIES, NGREEKMOMS, &
+          NBEAMS, N_USER_STREAMS, N_USER_RELAZMS, &
           LAYER_MAXMOMENTS, GREEKMAT_TOTAL_INPUT, SSFDEL, &
           VSIGN, VZA_OFFSETS, &
           CTHETA, STHETA, CALPHA, SALPHA, CPHI, PHI, &
@@ -988,10 +1326,14 @@
 
       LOGICAL, INTENT(IN) ::          DO_SSCORR_TRUNCATION
 
+!  Observational geometry control
+
+      LOGICAL, INTENT(IN) ::          DO_OBSERVATION_GEOMETRY
+
 !  control integers
 
-      INTEGER, INTENT(IN) ::          NLAYERS, N_GEOMETRIES, NGREEKMOMS
-      INTEGER, INTENT(IN) ::          NBEAMS, N_USER_STREAMS,  N_USER_RELAZMS
+      INTEGER, INTENT(IN) ::          NLAYERS, NSTOKES, N_GEOMETRIES, NGREEKMOMS
+      INTEGER, INTENT(IN) ::          NBEAMS, N_USER_STREAMS, N_USER_RELAZMS
 
 !  +/- sign, offsets
 
@@ -1089,18 +1431,19 @@
 !  Geometrical quantities
 !  ----------------------
 
-      DO IB = 1, NBEAMS
-        DO UM = 1, N_USER_STREAMS
-          DO IA = 1, N_USER_RELAZMS
-            V = VZA_OFFSETS(IB,UM) + IA
+      IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO IB = 1, NBEAMS
+          DO UM = 1, N_USER_STREAMS
+            DO IA = 1, N_USER_RELAZMS
+              V = VZA_OFFSETS(IB,UM) + IA
 
 !  cosine scatter angle (this is valid only for non-refracting atmospher
 !  VSIGN = -1 for upwelling, +1 for downwelling
 
-            COSSCAT = VSIGN * CTHETA(1,IB) * CALPHA(UM) + &
-                              STHETA(1,IB) * SALPHA(UM) * CPHI(IA)
+              COSSCAT = VSIGN * CTHETA(1,IB) * CALPHA(UM) + &
+                                STHETA(1,IB) * SALPHA(UM) * CPHI(IA)
 
-            UUU(V)  = COSSCAT
+              UUU(V)  = COSSCAT
 
 !  Cosine Sigma 1 and 2. H/VdM, Eqs. (99)-(101)
 
@@ -1108,33 +1451,33 @@
 !    Watch for sin^2(scatter angle) less than zero (machine precision)
 !    R. Spurr, 16 January 2006, RT SOLUTIONS Inc.
 
-            HELP_SINSCAT = ( ONE - COSSCAT * COSSCAT )
-            IF ( HELP_SINSCAT.LE.ZERO ) THEN
-              SINSCAT = 1.0D-12
-            ELSE
-              SINSCAT = DSQRT ( HELP_SINSCAT )
-            ENDIF
+              HELP_SINSCAT = ( ONE - COSSCAT * COSSCAT )
+              IF ( HELP_SINSCAT.LE.ZERO ) THEN
+                SINSCAT = 1.0D-12
+              ELSE
+                SINSCAT = DSQRT ( HELP_SINSCAT )
+              ENDIF
 
 !  b. necessary limit analyses - Hovenier limits.
 !     R. Spurr and V. Natraj, 17 January 2006
 
-            IF ( DABS(SINSCAT) .LE. 1.0D-12 ) THEN
-              CSIG1 = ZERO
-              CSIG2 = ZERO
-            ELSE
-             IF ( STHETA(1,IB) .EQ. ZERO ) THEN
-              CSIG1 = -  CPHI(IA)
-             ELSE
-              CSIG1   = ( - VSIGN * CALPHA(UM) + CTHETA(1,IB)*COSSCAT ) &
-                        / SINSCAT / STHETA(1,IB)
-             ENDIF
-             IF ( SALPHA(UM) .EQ. ZERO ) THEN
-               CSIG2 = -  CPHI(IA)
-             ELSE
-               CSIG2   = ( - CTHETA(1,IB) + VSIGN*CALPHA(UM)*COSSCAT ) &
-                          / SINSCAT / SALPHA(UM)
-             ENDIF
-            ENDIF
+              IF ( DABS(SINSCAT) .LE. 1.0D-12 ) THEN
+                CSIG1 = ZERO
+                CSIG2 = ZERO
+              ELSE
+               IF ( STHETA(1,IB) .EQ. ZERO ) THEN
+                CSIG1 = -  CPHI(IA)
+               ELSE
+                CSIG1   = ( - VSIGN * CALPHA(UM) + CTHETA(1,IB)*COSSCAT ) &
+                          / SINSCAT / STHETA(1,IB)
+               ENDIF
+               IF ( SALPHA(UM) .EQ. ZERO ) THEN
+                 CSIG2 = -  CPHI(IA)
+               ELSE
+                 CSIG2   = ( - CTHETA(1,IB) + VSIGN*CALPHA(UM)*COSSCAT ) &
+                            / SINSCAT / SALPHA(UM)
+               ENDIF
+              ENDIF
 
 !  Debugged again, 06 October 2010. Everything OK.
 !       write(*,'(2i4,f6.2,1p3e15.7)')V,1,VSIGN,CSIG1,CSIG2,PHI(IA)
@@ -1143,57 +1486,163 @@
 
 !  These lines are necessary to avoid bad values
 
-            IF ( CSIG1 .GT. ONE  ) CSIG1 = ONE
-            IF ( CSIG1 .LT. -ONE ) CSIG1 = -ONE
+              IF ( CSIG1 .GT. ONE  ) CSIG1 = ONE
+              IF ( CSIG1 .LT. -ONE ) CSIG1 = -ONE
 
-            IF ( CSIG2 .GT. ONE  ) CSIG2 = ONE
-            IF ( CSIG2 .LT. -ONE ) CSIG2 = -ONE
+              IF ( CSIG2 .GT. ONE  ) CSIG2 = ONE
+              IF ( CSIG2 .LT. -ONE ) CSIG2 = -ONE
 
 !  output, H/VdM, Eqs. (89)-(94)
 !    Rotation sines and cosines. Same for all layers
 
-            CSIG1_2 = TWO * CSIG1
-            CSIG2_2 = TWO * CSIG2
-            IF ( DABS(CSIG1-ONE).LT.1.0D-12)THEN
-             SSIG1 = ZERO
-            ELSE
-             SSIG1 = DSQRT ( 1.0D0 - CSIG1 * CSIG1 )
-            ENDIF
-            IF ( DABS(CSIG2-ONE).LT.1.0D-12)THEN
-             SSIG2 = ZERO
-            ELSE
-             SSIG2 = DSQRT ( 1.0D0 - CSIG2 * CSIG2 )
-            ENDIF
+              CSIG1_2 = TWO * CSIG1
+              CSIG2_2 = TWO * CSIG2
+              IF ( DABS(CSIG1-ONE).LT.1.0D-12)THEN
+               SSIG1 = ZERO
+              ELSE
+               SSIG1 = DSQRT ( 1.0D0 - CSIG1 * CSIG1 )
+              ENDIF
+              IF ( DABS(CSIG2-ONE).LT.1.0D-12)THEN
+               SSIG2 = ZERO
+              ELSE
+               SSIG2 = DSQRT ( 1.0D0 - CSIG2 * CSIG2 )
+              ENDIF
 
 !  For relazm in [180,360), need sign reversal for S1 and S2
 !  See H/VdM, Eqs. 94-95. V. Natraj and R. Spurr, 01 May 2009.
 
-            C1(V,1) = CSIG1_2 * CSIG1 - ONE
-            C2(V,1) = CSIG2_2 * CSIG2 - ONE
+              C1(V,1) = CSIG1_2 * CSIG1 - ONE
+              C2(V,1) = CSIG2_2 * CSIG2 - ONE
 
-            IF (PHI(IA) .LE. 180.D0) THEN
-              S1(V,1) = CSIG1_2 * SSIG1
-              S2(V,1) = CSIG2_2 * SSIG2
-            ELSE
-              S1(V,1) = -CSIG1_2 * SSIG1
-              S2(V,1) = -CSIG2_2 * SSIG2
-            ENDIF
+              IF (PHI(IA) .LE. 180.D0) THEN
+                S1(V,1) = CSIG1_2 * SSIG1
+                S2(V,1) = CSIG2_2 * SSIG2
+              ELSE
+                S1(V,1) = -CSIG1_2 * SSIG1
+                S2(V,1) = -CSIG2_2 * SSIG2
+              ENDIF
 
 !  Copy to all other layers
 
-            DO N = 2, NLAYERS
-              C1(V,N) = C1(V,1)
-              S1(V,N) = S1(V,1)
-              C2(V,N) = C2(V,1)
-              S2(V,N) = S2(V,1)
-            ENDDO
-!    write(8,'(i5,1p4e15.7)')V,C1(V,1),S1(V,1),C2(V,1),S2(V,1)
+              DO N = 2, NLAYERS
+                C1(V,N) = C1(V,1)
+                S1(V,N) = S1(V,1)
+                C2(V,N) = C2(V,1)
+                S2(V,N) = S2(V,1)
+              ENDDO
+!      write(8,'(i5,1p4e15.7)')V,C1(V,1),S1(V,1),C2(V,1),S2(V,1)
 
 !  End geometry loops
 
+            ENDDO
           ENDDO
         ENDDO
-      ENDDO
+
+      ELSE
+
+        DO V = 1, N_GEOMETRIES
+
+!  cosine scatter angle (this is valid only for non-refracting atmospher
+!  VSIGN = -1 for upwelling, +1 for downwelling
+
+          COSSCAT = VSIGN * CTHETA(1,V) * CALPHA(V) + &
+                            STHETA(1,V) * SALPHA(V) * CPHI(V)
+
+          UUU(V)  = COSSCAT
+
+!  Cosine Sigma 1 and 2. H/VdM, Eqs. (99)-(101)
+
+!  a. safety
+!    Watch for sin^2(scatter angle) less than zero (machine precision)
+!    R. Spurr, 16 January 2006, RT SOLUTIONS Inc.
+
+          HELP_SINSCAT = ( ONE - COSSCAT * COSSCAT )
+          IF ( HELP_SINSCAT.LE.ZERO ) THEN
+            SINSCAT = 1.0D-12
+          ELSE
+            SINSCAT = DSQRT ( HELP_SINSCAT )
+          ENDIF
+
+!  b. necessary limit analyses - Hovenier limits.
+!     R. Spurr and V. Natraj, 17 January 2006
+
+          IF ( DABS(SINSCAT) .LE. 1.0D-12 ) THEN
+            CSIG1 = ZERO
+            CSIG2 = ZERO
+          ELSE
+           IF ( STHETA(1,V) .EQ. ZERO ) THEN
+            CSIG1 = -  CPHI(V)
+           ELSE
+            CSIG1   = ( - VSIGN * CALPHA(V) + CTHETA(1,V)*COSSCAT ) &
+                      / SINSCAT / STHETA(1,V)
+           ENDIF
+           IF ( SALPHA(V) .EQ. ZERO ) THEN
+             CSIG2 = -  CPHI(V)
+           ELSE
+             CSIG2   = ( - CTHETA(1,V) + VSIGN*CALPHA(V)*COSSCAT ) &
+                        / SINSCAT / SALPHA(V)
+           ENDIF
+          ENDIF
+
+!  Debugged again, 06 October 2010. Everything OK.
+!       write(*,'(2i4,f6.2,1p3e15.7)')V,1,VSIGN,CSIG1,CSIG2,PHI(IA)
+!       write(*,'(i4,2f6.1,1p6e15.7)')V,VSIGN,PHI(IA),
+!     &   SALPHA(UM),CALPHA(UM),STHETA(1,IB),CTHETA(1,IB),CSIG1,CSIG2
+
+!  These lines are necessary to avoid bad values
+
+          IF ( CSIG1 .GT. ONE  ) CSIG1 = ONE
+          IF ( CSIG1 .LT. -ONE ) CSIG1 = -ONE
+
+          IF ( CSIG2 .GT. ONE  ) CSIG2 = ONE
+          IF ( CSIG2 .LT. -ONE ) CSIG2 = -ONE
+
+!  output, H/VdM, Eqs. (89)-(94)
+!    Rotation sines and cosines. Same for all layers
+
+          CSIG1_2 = TWO * CSIG1
+          CSIG2_2 = TWO * CSIG2
+          IF ( DABS(CSIG1-ONE).LT.1.0D-12)THEN
+           SSIG1 = ZERO
+          ELSE
+           SSIG1 = DSQRT ( 1.0D0 - CSIG1 * CSIG1 )
+          ENDIF
+          IF ( DABS(CSIG2-ONE).LT.1.0D-12)THEN
+           SSIG2 = ZERO
+          ELSE
+           SSIG2 = DSQRT ( 1.0D0 - CSIG2 * CSIG2 )
+          ENDIF
+
+!  For relazm in [180,360), need sign reversal for S1 and S2
+!  See H/VdM, Eqs. 94-95. V. Natraj and R. Spurr, 01 May 2009.
+
+          C1(V,1) = CSIG1_2 * CSIG1 - ONE
+          C2(V,1) = CSIG2_2 * CSIG2 - ONE
+
+          IF (PHI(V) .LE. 180.D0) THEN
+            S1(V,1) = CSIG1_2 * SSIG1
+            S2(V,1) = CSIG2_2 * SSIG2
+          ELSE
+            S1(V,1) = -CSIG1_2 * SSIG1
+            S2(V,1) = -CSIG2_2 * SSIG2
+          ENDIF
+
+!  Copy to all other layers
+
+          DO N = 2, NLAYERS
+            C1(V,N) = C1(V,1)
+            S1(V,N) = S1(V,1)
+            C2(V,N) = C2(V,1)
+            S2(V,N) = S2(V,1)
+          ENDDO
+
+!         write(8,'(i5,1p4e15.7)')V,C1(V,1),S1(V,1),C2(V,1),S2(V,1)
+
+!  End geometry loop
+
+        ENDDO
+
+      ENDIF
 
 !  F-matrices
 !  ----------
@@ -1232,20 +1681,38 @@
            F    = SSFDEL(N) * DNL1
            FT   = ONE - SSFDEL(N)
            GK11(N) = (GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(1))-F)/FT
-           GK12(N) =  GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(3))   /FT
-           GK44(N) = (GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(6))-F)/FT
-           GK34(N) =  GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(5))   /FT
-           GK22(N) = (GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(2))-F)/FT
-           GK33(N) = (GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(4))-F)/FT
+!mick fix 1/21/2013 - added IF structure and ELSE section
+           IF (NSTOKES .GT. 1) THEN
+             GK12(N) =  GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(3))   /FT
+             GK44(N) = (GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(6))-F)/FT
+             GK34(N) =  GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(5))   /FT
+             GK22(N) = (GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(2))-F)/FT
+             GK33(N) = (GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(4))-F)/FT
+           ELSE
+             GK12(N) = ZERO
+             GK44(N) = ZERO
+             GK34(N) = ZERO
+             GK22(N) = ZERO
+             GK33(N) = ZERO
+           END IF
           ENDDO
         ELSE
           DO N = 1, NLAYERS
            GK11(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(1))
-           GK12(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(3))
-           GK44(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(6))
-           GK34(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(5))
-           GK22(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(2))
-           GK33(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(4))
+!mick fix 1/21/2013 - added IF structure and ELSE section
+           IF (NSTOKES .GT. 1) THEN
+             GK12(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(3))
+             GK44(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(6))
+             GK34(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(5))
+             GK22(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(2))
+             GK33(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(4))
+           ELSE
+             GK12(N) = ZERO
+             GK44(N) = ZERO
+             GK34(N) = ZERO
+             GK22(N) = ZERO
+             GK33(N) = ZERO
+           ENDIF
           ENDDO
         ENDIF
 
@@ -1397,12 +1864,12 @@
       RETURN
       END SUBROUTINE VLIDORTSS_FMATRICES
 
-!
+!
 
       SUBROUTINE VLIDORTSS_FMATRICES_MULTI &
-        ( DO_SSCORR_TRUNCATION, NLAYERS, &
-          N_GEOMETRIES, NGREEKMOMS, &
-          NBEAMS, N_USER_STREAMS,  N_USER_RELAZMS, &
+        ( DO_SSCORR_TRUNCATION, DO_OBSERVATION_GEOMETRY, NLAYERS, &
+          NSTOKES, N_GEOMETRIES, NGREEKMOMS, &
+          NBEAMS, N_USER_STREAMS, N_USER_RELAZMS, &
           LAYER_MAXMOMENTS, GREEKMAT_TOTAL_INPUT, SSFDEL, &
           VSIGN, VZA_OFFSETS, &
           CTHETA, STHETA, CALPHA, SALPHA, CPHI, PHI, &
@@ -1424,9 +1891,13 @@
 
       LOGICAL, INTENT(IN) ::           DO_SSCORR_TRUNCATION
 
+!  Observational geometry control
+
+      LOGICAL, INTENT(IN) ::           DO_OBSERVATION_GEOMETRY
+
 !  control integers
 
-      INTEGER, INTENT(IN) ::           NLAYERS, N_GEOMETRIES, NGREEKMOMS
+      INTEGER, INTENT(IN) ::           NLAYERS, NSTOKES, N_GEOMETRIES, NGREEKMOMS
       INTEGER, INTENT(IN) ::           NBEAMS, N_USER_STREAMS,  N_USER_RELAZMS
 
 !  +/- sign, offsets
@@ -1524,19 +1995,20 @@
 !  Geometrical quantities
 !  ----------------------
 
-      DO IB = 1, NBEAMS
-        DO UM = 1, N_USER_STREAMS
-          DO IA = 1, N_USER_RELAZMS
-            V = VZA_OFFSETS(IB,UM) + IA
-            DO N = 1, NLAYERS
+      IF (.not. DO_OBSERVATION_GEOMETRY ) THEN
+        DO IB = 1, NBEAMS
+          DO UM = 1, N_USER_STREAMS
+            DO IA = 1, N_USER_RELAZMS
+              V = VZA_OFFSETS(IB,UM) + IA
+              DO N = 1, NLAYERS
 
 !  cosine scatter angle (this is valid only for non-refracting atmospher
 !  VSIGN = -1 for upwelling, +1 for downwelling
 
-              COSSCAT = VSIGN * CTHETA(N,IB) * CALPHA(UM) + &
-                                STHETA(N,IB) * SALPHA(UM) * CPHI(IA)
+                COSSCAT = VSIGN * CTHETA(N,IB) * CALPHA(UM) + &
+                                  STHETA(N,IB) * SALPHA(UM) * CPHI(IA)
 
-              UUU(V,N)  = COSSCAT
+                UUU(V,N)  = COSSCAT
 
 !  Cosine Sigma 1 and 2. H/VdM, Eqs. (99)-(101)
 
@@ -1544,80 +2016,173 @@
 !    Watch for sin^2(scatter angle) less than zero (machine precision)
 !    R. Spurr, 16 January 2006, RT SOLUTIONS Inc.
 
-              HELP_SINSCAT = ( ONE - COSSCAT * COSSCAT )
-              IF ( HELP_SINSCAT.LE.ZERO ) THEN
-                SINSCAT = 1.0D-12
-              ELSE
-                SINSCAT = DSQRT ( HELP_SINSCAT )
-              ENDIF
+                HELP_SINSCAT = ( ONE - COSSCAT * COSSCAT )
+                IF ( HELP_SINSCAT.LE.ZERO ) THEN
+                  SINSCAT = 1.0D-12
+                ELSE
+                  SINSCAT = DSQRT ( HELP_SINSCAT )
+                ENDIF
 
 !  b. necessary limit analyses - Hovenier limits.
 !     R. Spurr and V. Natraj, 17 January 2006
 
-              IF ( DABS(SINSCAT) .LE. 1.0D-12 ) THEN
-               CSIG1 = ZERO
-               CSIG2 = ZERO
-              ELSE
-               IF ( STHETA(1,IB) .EQ. ZERO ) THEN
-                CSIG1 = -  CPHI(IA)
-               ELSE
-                CSIG1 = ( - VSIGN*CALPHA(UM) + CTHETA(N,IB)*COSSCAT ) &
-                             / SINSCAT / STHETA(N,IB)
-               ENDIF
-               IF ( SALPHA(UM) .EQ. ZERO ) THEN
-                CSIG2 = -  CPHI(IA)
-               ELSE
-                CSIG2 = ( - CTHETA(N,IB) + VSIGN*CALPHA(UM)*COSSCAT ) &
-                             / SINSCAT / SALPHA(UM)
-               ENDIF
-              ENDIF
+                IF ( DABS(SINSCAT) .LE. 1.0D-12 ) THEN
+                 CSIG1 = ZERO
+                 CSIG2 = ZERO
+                ELSE
+                 IF ( STHETA(1,IB) .EQ. ZERO ) THEN
+                  CSIG1 = -  CPHI(IA)
+                 ELSE
+                  CSIG1 = ( - VSIGN*CALPHA(UM) + CTHETA(N,IB)*COSSCAT ) &
+                               / SINSCAT / STHETA(N,IB)
+                 ENDIF
+                 IF ( SALPHA(UM) .EQ. ZERO ) THEN
+                  CSIG2 = -  CPHI(IA)
+                 ELSE
+                  CSIG2 = ( - CTHETA(N,IB) + VSIGN*CALPHA(UM)*COSSCAT ) &
+                               / SINSCAT / SALPHA(UM)
+                 ENDIF
+                ENDIF
 
 !  These lines are necessary to avoid bad values
 
-              IF ( CSIG1 .GT. ONE  ) CSIG1 = ONE
-              IF ( CSIG1 .LT. -ONE ) CSIG1 = -ONE
+                IF ( CSIG1 .GT. ONE  ) CSIG1 = ONE
+                IF ( CSIG1 .LT. -ONE ) CSIG1 = -ONE
 
-              IF ( CSIG2 .GT. ONE  ) CSIG2 = ONE
-              IF ( CSIG2 .LT. -ONE ) CSIG2 = -ONE
+                IF ( CSIG2 .GT. ONE  ) CSIG2 = ONE
+                IF ( CSIG2 .LT. -ONE ) CSIG2 = -ONE
 
 !  output, H/VdM, Eqs. (89)-(94)
 
-              CSIG1_2 = TWO * CSIG1
-              CSIG2_2 = TWO * CSIG2
-              IF ( DABS(CSIG1-ONE).LT.1.0D-12)THEN
-               SSIG1 = ZERO
-              ELSE
-               SSIG1 = DSQRT ( 1.0D0 - CSIG1 * CSIG1 )
-              ENDIF
-              IF ( DABS(CSIG2-ONE).LT.1.0D-12)THEN
-               SSIG2 = ZERO
-              ELSE
-               SSIG2 = DSQRT ( 1.0D0 - CSIG2 * CSIG2 )
-              ENDIF
+                CSIG1_2 = TWO * CSIG1
+                CSIG2_2 = TWO * CSIG2
+                IF ( DABS(CSIG1-ONE).LT.1.0D-12)THEN
+                 SSIG1 = ZERO
+                ELSE
+                 SSIG1 = DSQRT ( 1.0D0 - CSIG1 * CSIG1 )
+                ENDIF
+                IF ( DABS(CSIG2-ONE).LT.1.0D-12)THEN
+                 SSIG2 = ZERO
+                ELSE
+                 SSIG2 = DSQRT ( 1.0D0 - CSIG2 * CSIG2 )
+                ENDIF
 
 !  For relazm in [180,360), need sign reversal for S1 and S2
 !  See H/VdM, Eqs. 94-95. V. Natraj and R. Spurr, 01 May 2009.
 
-              C1(V,N) = CSIG1_2 * CSIG1 - ONE
-              C2(V,N) = CSIG2_2 * CSIG2 - ONE
+                C1(V,N) = CSIG1_2 * CSIG1 - ONE
+                C2(V,N) = CSIG2_2 * CSIG2 - ONE
 
-              IF (PHI(IA) .LE. 180.D0) THEN
-                S1(V,N) = CSIG1_2 * SSIG1
-                S2(V,N) = CSIG2_2 * SSIG2
-              ELSE
-                S1(V,N) = -CSIG1_2 * SSIG1
-                S2(V,N) = -CSIG2_2 * SSIG2
-              ENDIF
+                IF (PHI(IA) .LE. 180.D0) THEN
+                  S1(V,N) = CSIG1_2 * SSIG1
+                  S2(V,N) = CSIG2_2 * SSIG2
+                ELSE
+                  S1(V,N) = -CSIG1_2 * SSIG1
+                  S2(V,N) = -CSIG2_2 * SSIG2
+                ENDIF
 
 !  End layer loop
 
-            ENDDO
+              ENDDO
 
 !  End geometry loops
 
+            ENDDO
           ENDDO
         ENDDO
-      ENDDO
+
+      ELSE
+
+        DO V = 1, N_GEOMETRIES
+          DO N = 1, NLAYERS
+
+!  cosine scatter angle (this is valid only for non-refracting atmospher
+!  VSIGN = -1 for upwelling, +1 for downwelling
+
+            COSSCAT = VSIGN * CTHETA(N,V) * CALPHA(V) + &
+                              STHETA(N,V) * SALPHA(V) * CPHI(V)
+
+            UUU(V,N)  = COSSCAT
+
+!  Cosine Sigma 1 and 2. H/VdM, Eqs. (99)-(101)
+
+!  a. safety
+!    Watch for sin^2(scatter angle) less than zero (machine precision)
+!    R. Spurr, 16 January 2006, RT SOLUTIONS Inc.
+
+            HELP_SINSCAT = ( ONE - COSSCAT * COSSCAT )
+            IF ( HELP_SINSCAT.LE.ZERO ) THEN
+              SINSCAT = 1.0D-12
+            ELSE
+              SINSCAT = DSQRT ( HELP_SINSCAT )
+            ENDIF
+
+!  b. necessary limit analyses - Hovenier limits.
+!     R. Spurr and V. Natraj, 17 January 2006
+
+            IF ( DABS(SINSCAT) .LE. 1.0D-12 ) THEN
+             CSIG1 = ZERO
+             CSIG2 = ZERO
+            ELSE
+             IF ( STHETA(1,V) .EQ. ZERO ) THEN
+              CSIG1 = -  CPHI(V)
+             ELSE
+              CSIG1 = ( - VSIGN*CALPHA(V) + CTHETA(N,V)*COSSCAT ) &
+                           / SINSCAT / STHETA(N,V)
+             ENDIF
+             IF ( SALPHA(V) .EQ. ZERO ) THEN
+              CSIG2 = -  CPHI(V)
+             ELSE
+              CSIG2 = ( - CTHETA(N,V) + VSIGN*CALPHA(V)*COSSCAT ) &
+                           / SINSCAT / SALPHA(V)
+             ENDIF
+            ENDIF
+
+!  These lines are necessary to avoid bad values
+
+            IF ( CSIG1 .GT. ONE  ) CSIG1 = ONE
+            IF ( CSIG1 .LT. -ONE ) CSIG1 = -ONE
+
+            IF ( CSIG2 .GT. ONE  ) CSIG2 = ONE
+            IF ( CSIG2 .LT. -ONE ) CSIG2 = -ONE
+
+!  output, H/VdM, Eqs. (89)-(94)
+
+            CSIG1_2 = TWO * CSIG1
+            CSIG2_2 = TWO * CSIG2
+            IF ( DABS(CSIG1-ONE).LT.1.0D-12)THEN
+             SSIG1 = ZERO
+            ELSE
+             SSIG1 = DSQRT ( 1.0D0 - CSIG1 * CSIG1 )
+            ENDIF
+            IF ( DABS(CSIG2-ONE).LT.1.0D-12)THEN
+             SSIG2 = ZERO
+            ELSE
+             SSIG2 = DSQRT ( 1.0D0 - CSIG2 * CSIG2 )
+            ENDIF
+
+!  For relazm in [180,360), need sign reversal for S1 and S2
+!  See H/VdM, Eqs. 94-95. V. Natraj and R. Spurr, 01 May 2009.
+
+            C1(V,N) = CSIG1_2 * CSIG1 - ONE
+            C2(V,N) = CSIG2_2 * CSIG2 - ONE
+
+            IF (PHI(V) .LE. 180.D0) THEN
+              S1(V,N) = CSIG1_2 * SSIG1
+              S2(V,N) = CSIG2_2 * SSIG2
+            ELSE
+              S1(V,N) = -CSIG1_2 * SSIG1
+              S2(V,N) = -CSIG2_2 * SSIG2
+            ENDIF
+
+!  End layer loop
+
+          ENDDO
+
+!  End geometry loop
+        ENDDO
+
+      ENDIF
 
 !  F-matrices
 !  ----------
@@ -1656,20 +2221,38 @@
            F    = SSFDEL(N) * DNL1
            FT   = ONE - SSFDEL(N)
            GK11(N) = (GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(1))-F)/FT
-           GK12(N) =  GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(3))   /FT
-           GK44(N) = (GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(6))-F)/FT
-           GK34(N) =  GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(5))   /FT
-           GK22(N) = (GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(2))-F)/FT
-           GK33(N) = (GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(4))-F)/FT
+!mick fix 1/21/2013 - added IF structure and ELSE section
+           IF (NSTOKES .GT. 1) THEN
+             GK12(N) =  GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(3))   /FT
+             GK44(N) = (GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(6))-F)/FT
+             GK34(N) =  GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(5))   /FT
+             GK22(N) = (GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(2))-F)/FT
+             GK33(N) = (GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(4))-F)/FT
+           ELSE
+             GK12(N) = ZERO
+             GK44(N) = ZERO
+             GK34(N) = ZERO
+             GK22(N) = ZERO
+             GK33(N) = ZERO
+           END IF
           ENDDO
         ELSE
           DO N = 1, NLAYERS
            GK11(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(1))
-           GK12(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(3))
-           GK44(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(6))
-           GK34(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(5))
-           GK22(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(2))
-           GK33(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(4))
+!mick fix 1/21/2013 - added IF structure and ELSE section
+           IF (NSTOKES .GT. 1) THEN
+             GK12(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(3))
+             GK44(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(6))
+             GK34(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(5))
+             GK22(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(2))
+             GK33(N) = GREEKMAT_TOTAL_INPUT(L,N,GREEKMAT_INDEX(4))
+           ELSE
+             GK12(N) = ZERO
+             GK44(N) = ZERO
+             GK34(N) = ZERO
+             GK22(N) = ZERO
+             GK33(N) = ZERO
+           ENDIF
           ENDDO
         ENDIF
 
@@ -1837,7 +2420,7 @@
       SUBROUTINE VLIDORT_SSCORR_OUTGOING ( &
         SSFLUX, &
         DO_SSCORR_TRUNCATION, DO_DELTAM_SCALING, &
-        DO_UPWELLING, DO_DNWELLING, &
+        DO_UPWELLING, DO_DNWELLING, DO_OBSERVATION_GEOMETRY, &
         NSTOKES, NLAYERS, &
         NGREEK_MOMENTS_INPUT, &
         N_USER_RELAZMS, N_USER_LEVELS, &
@@ -1880,6 +2463,7 @@
 !@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
       USE VLIDORT_PARS
+      USE VLIDORT_GEOMETRY
 
       IMPLICIT NONE
 
@@ -1889,6 +2473,7 @@
       LOGICAL, INTENT (IN) ::           DO_DELTAM_SCALING
       LOGICAL, INTENT (IN) ::           DO_UPWELLING
       LOGICAL, INTENT (IN) ::           DO_DNWELLING
+      LOGICAL, INTENT (IN) ::           DO_OBSERVATION_GEOMETRY
       INTEGER, INTENT (IN) ::           NSTOKES
       INTEGER, INTENT (IN) ::           NLAYERS
       INTEGER, INTENT (IN) ::           NGREEK_MOMENTS_INPUT
@@ -2024,7 +2609,8 @@
 !  INDICES
 
       INTEGER ::           N, NUT, NSTART, NUT_PREV, NLEVEL
-      INTEGER ::           UT, UTA, UM, IA, NC, IB, V, O1, O2, NM1
+      INTEGER ::           UT, UTA, UM, IA, NC, IB, V, O1, O2, NM1, &
+                           LUM, LIB, LUA
 
 !  HELP VARIABLES (DOUBLE PRECISION)
 
@@ -2051,6 +2637,12 @@
       FAIL    = .FALSE.
       MESSAGE = ' '
       TRACE   = ' '
+
+!  Local user indices
+
+      LUM = 1
+      LIB = 1
+      LUA = 1
 
 !  SET UP PARTIALS FLAG
 
@@ -2111,55 +2703,59 @@
 !  SOURCE TERM CALCULATIONS
 !  ========================
 
+!  Lattice calculation
+
+      IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+
 !  START THE MAIN LOOP OVER ALL SOLAR AND VIEWING GEOMETRIES
 !   USE THE ADJUSTED VALUES OF THE ANGLES
 
-      DO UM = 1, N_USER_STREAMS
-        ALPHA_BOA = USER_VZANGLES_ADJUST(UM)
-        DO IB = 1, NBEAMS
-          DO IA = 1, N_USER_RELAZMS
-            THETA_BOA = SZANGLES_ADJUST(UM,IB,IA)
-            PHI_BOA   = USER_RELAZMS_ADJUST(UM,IB,IA)
-            V = VZA_OFFSETS(IB,UM) + IA
+        DO UM = 1, N_USER_STREAMS
+          ALPHA_BOA = USER_VZANGLES_ADJUST(UM)
+          DO IB = 1, NBEAMS
+            DO IA = 1, N_USER_RELAZMS
+              THETA_BOA = SZANGLES_ADJUST(UM,IB,IA)
+              PHI_BOA   = USER_RELAZMS_ADJUST(UM,IB,IA)
+              V = VZA_OFFSETS(IB,UM) + IA
 
 !  UPWELLING SOURCE TERMS
 !  ----------------------
 
-            IF ( DO_UPWELLING ) THEN
+              IF ( DO_UPWELLING ) THEN
 
 !  CALL TO GEOMETRY ROUTINE, PATH DISTANCES ETC....
 
-              CALL OUTGOING_SPHERGEOM_FINE_UP ( &
-                MAXLAYERS, MAXFINELAYERS, MAX_PARTLAYERS, &
-                DO_FINE, DO_PARTIALS, NLAYERS, NFINELAYERS, &
-                N_PARTLAYERS, PARTLAYERS_LAYERIDX, &
-                HEIGHT_GRID, HEIGHT_GRID_UT, EARTH_RADIUS, &
-                ALPHA_BOA, THETA_BOA, PHI_BOA, &
-                SUNPATHS,      RADII,      NTRAVERSE,      ALPHA_ALL, &
-                SUNPATHS_FINE, RADII_FINE, NTRAVERSE_FINE, ALPHA_FINE, &
-                SUNPATHS_UT,   RADII_UT,   NTRAVERSE_UT,   ALPHA_UT, &
-                PARTLAYERS_LAYERFINEIDX, LOSPATHS, LOSPATHS_UT_UP, &
-                THETA_ALL, PHI_ALL, COSSCAT_UP, &
-                FAIL, MESSAGE )
+                CALL OUTGOING_SPHERGEOM_FINE_UP ( &
+                  MAXLAYERS, MAXFINELAYERS, MAX_PARTLAYERS, &
+                  DO_FINE, DO_PARTIALS, NLAYERS, NFINELAYERS, &
+                  N_PARTLAYERS, PARTLAYERS_LAYERIDX, &
+                  HEIGHT_GRID, HEIGHT_GRID_UT, EARTH_RADIUS, &
+                  ALPHA_BOA, THETA_BOA, PHI_BOA, &
+                  SUNPATHS,      RADII,      NTRAVERSE,      ALPHA_ALL, &
+                  SUNPATHS_FINE, RADII_FINE, NTRAVERSE_FINE, ALPHA_FINE, &
+                  SUNPATHS_UT,   RADII_UT,   NTRAVERSE_UT,   ALPHA_UT, &
+                  PARTLAYERS_LAYERFINEIDX, LOSPATHS, LOSPATHS_UT_UP, &
+                  THETA_ALL, PHI_ALL, COSSCAT_UP, &
+                  FAIL, MESSAGE )
 
 !  EXCEPTION HANDLING
 
-              IF ( FAIL ) THEN
-                WRITE(CV,'(I3)')V
-                TRACE = 'ERROR FROM OUTGOING_SPHERGEOM_FINE_UP, '// &
-                        ' GEOMETRY '//CV
-                RETURN
-              ENDIF
+                IF ( FAIL ) THEN
+                  WRITE(CV,'(I3)')V
+                  TRACE = 'ERROR FROM OUTGOING_SPHERGEOM_FINE_UP, '// &
+                          ' GEOMETRY '//CV
+                  RETURN
+                ENDIF
 
 !  DEBUG GEOMETRY
-!            DO N = 0, NLAYERS
-!              WRITE(45,'(I4,101F10.5)')N,(SUNPATHS(N,V),V=1,NLAYERS)
-!            ENDDO
-!            PAUSE
+!              DO N = 0, NLAYERS
+!                WRITE(45,'(I4,101F10.5)')N,(SUNPATHS(N,V),V=1,NLAYERS)
+!              ENDDO
+!              PAUSE
 
 !  MULTIPLIERS, TRANSMITTANCES
 
-              CALL OUTGOING_INTEGRATION_UP &
+                CALL OUTGOING_INTEGRATION_UP &
                  ( NLAYERS, NFINELAYERS, DO_PARTIALS, EXTINCTION, &
                    N_PARTLAYERS, PARTLAYERS_LAYERIDX, &
                    PARTLAYERS_LAYERFINEIDX, &
@@ -2169,69 +2765,69 @@
                    UP_MULTIPLIERS(1,V), UP_LOSTRANS(1,V), BOA_ATTN(V), &
                    UP_MULTIPLIERS_UT(1,V), UP_LOSTRANS_UT(1,V) )
 
-!      DO N = 1, NLAYERS
-!        WRITE(85,'(I4,1P2E18.10)')N,UP_LOSTRANS(N,1),UP_MULTIPLIERS(N,1)
-!      ENDDO
+!        DO N = 1, NLAYERS
+!          WRITE(85,'(I4,1P2E18.10)')N,UP_LOSTRANS(N,1),UP_MULTIPLIERS(N,1)
+!        ENDDO
 
 !  DEBUG
-!              WRITE(45,*)V
-!              DO N = 1, NLAYERS
-!                WRITE(45,'(1P2E18.10)')
-!     &           UP_LOSTRANS(N,V),UP_MULTIPLIERS(N,V)
-!              ENDDO
-!               PAUSE
+!                WRITE(45,*)V
+!                DO N = 1, NLAYERS
+!                  WRITE(45,'(1P2E18.10)')
+!     &             UP_LOSTRANS(N,V),UP_MULTIPLIERS(N,V)
+!                ENDDO
+!                PAUSE
 
-!              IF (V.EQ.1)WRITE(35,*)V
-!              DO UT = 1, N_PARTLAYERS
-!                IF (V.EQ.1)WRITE(35,'(1P2E18.10)')
-!     &           UP_LOSTRANS_UT(UT,V),UP_MULTIPLIERS_UT(UT,V)
-!              ENDDO
+!                IF (V.EQ.1)WRITE(35,*)V
+!                DO UT = 1, N_PARTLAYERS
+!                  IF (V.EQ.1)WRITE(35,'(1P2E18.10)')
+!     &             UP_LOSTRANS_UT(UT,V),UP_MULTIPLIERS_UT(UT,V)
+!                ENDDO
 
 !  DEBUG: MULTIPLIERS (ALL LAYERS), UPWELLING OLD WAY
-!              CALL OUTGOING_INTEGRATION_OLD_UP
-!     I           ( NLAYERS, EXTINCTION, DELTAU_VERT,
-!     I             LOSPATHS, SUNPATHS, NTRAVERSE,
-!     O             UP_MULTIPLIERS(1,V), UP_LOSTRANS(1,V) )
-!              WRITE(46,*)V
-!              DO N = 1, NLAYERS
-!                WRITE(46,*)UP_LOSTRANS(N,V),UP_MULTIPLIERS(N,V)
-!              ENDDO
+!                CALL OUTGOING_INTEGRATION_OLD_UP
+!     I             ( NLAYERS, EXTINCTION, DELTAU_VERT,
+!     I               LOSPATHS, SUNPATHS, NTRAVERSE,
+!     O               UP_MULTIPLIERS(1,V), UP_LOSTRANS(1,V) )
+!                WRITE(46,*)V
+!                DO N = 1, NLAYERS
+!                  WRITE(46,*)UP_LOSTRANS(N,V),UP_MULTIPLIERS(N,V)
+!                ENDDO
 
 !  START LAYER LOOP
 
-              DO N = NLAYERS, 1, -1
+                DO N = NLAYERS, 1, -1
 
 !  TRIGONOMETRY
 
-                CTHETA = DCOS(THETA_ALL(N))
-                STHETA = DSIN(THETA_ALL(N))
-                CALPHA = DCOS(ALPHA_ALL(N))
-                SALPHA = DSIN(ALPHA_ALL(N))
-                CPHI   = DCOS(PHI_ALL(N))
-                CSA    = COSSCAT_UP(N)
-                VSIGN  = -1.0D0
+                  CTHETA = DCOS(THETA_ALL(N))
+                  STHETA = DSIN(THETA_ALL(N))
+                  CALPHA = DCOS(ALPHA_ALL(N))
+                  SALPHA = DSIN(ALPHA_ALL(N))
+                  CPHI   = DCOS(PHI_ALL(N))
+                  CSA    = COSSCAT_UP(N)
+                  VSIGN  = -1.0D0
 
 !  CALL TO SCATTERING LAW FOR PHASE MATRIX ZMAT
 
-                CALL SSCORR_OUTGOING_ZMATRIX &
-                ( DO_SSCORR_TRUNCATION, SUNLIGHT, N, NSTOKES, &
-                  NGREEK_MOMENTS_INPUT, LAYER_MAXMOMENTS(N), &
-                  GREEKMAT_TOTAL_INPUT, SSFDEL(N), &
-                  CTHETA, STHETA, CALPHA, SALPHA, CPHI, &
-                  PHI_ALL(N), CSA, VSIGN, &
-                  ZMAT_LOCAL, FMAT_LOCAL )
+                  CALL SSCORR_OUTGOING_ZMATRIX &
+                  ( DO_SSCORR_TRUNCATION, SUNLIGHT, N, NSTOKES, &
+                    NGREEK_MOMENTS_INPUT, LAYER_MAXMOMENTS(N), &
+                    GREEKMAT_TOTAL_INPUT, SSFDEL(N), &
+                    CTHETA, STHETA, CALPHA, SALPHA, CPHI, &
+                    PHI_ALL(N), CSA, VSIGN, &
+                    ZMAT_LOCAL, FMAT_LOCAL )
 
 !  PHASE MATRIX (MULTIPLIED BY TMS FACTOR). SAVE THEM.
 !     SUNLIGHT ONLY, THE FIRST COLUMN OF THE MATRIX
 !    GENERAL CASE, CODE PROGRAMMED 05 OCTOBER 2010
 
-                IF ( STERM_LAYERMASK_UP(N) ) THEN
-                 DO O1 = 1, NSTOKES
-                  DO O2 = 1, NSTOKES
-                   ZMAT_UP(V,N,O1,O2) = ZMAT_LOCAL(O1,O2) * TMS(N)
-                  ENDDO
-                 ENDDO
-                ENDIF
+                  IF ( STERM_LAYERMASK_UP(N) ) THEN
+                   DO O1 = 1, NSTOKES
+                    DO O2 = 1, NSTOKES
+                     ZMAT_UP(V,N,O1,O2) = ZMAT_LOCAL(O1,O2) * TMS(N)
+                    ENDDO
+                   ENDDO
+                  ENDIF
 
 !  DEBUG FOR 2OS GEOMTEST
 !      WRITE(46,'(I4,1P3E20.10)') &
@@ -2239,41 +2835,41 @@
 
 !  FINISH THE LAYER LOOP AND END UPWELLING
 
-              ENDDO
-            ENDIF
+                ENDDO
+              ENDIF
 
 !  DOWNWELLING SOURCE TERMS: PHASE MATRIX, MULTIPLIERS, TRANSMITTANCES
 !  -------------------------------------------------------------------
 
-            IF ( DO_DNWELLING ) THEN
+              IF ( DO_DNWELLING ) THEN
 
 !  CALL TO GEOMETRY ROUTINE, PATH DISTANCES ETC....
 
-              CALL OUTGOING_SPHERGEOM_FINE_DN ( &
-                MAXLAYERS, MAXFINELAYERS, MAX_PARTLAYERS, &
-                DO_FINE, DO_PARTIALS, NLAYERS, NFINELAYERS, &
-                N_PARTLAYERS, PARTLAYERS_LAYERIDX, &
-                HEIGHT_GRID, HEIGHT_GRID_UT, EARTH_RADIUS, &
-                ALPHA_BOA, THETA_BOA, PHI_BOA, &
-                SUNPATHS,      RADII,      NTRAVERSE,      ALPHA_ALL, &
-                SUNPATHS_FINE, RADII_FINE, NTRAVERSE_FINE, ALPHA_FINE, &
-                SUNPATHS_UT,   RADII_UT,   NTRAVERSE_UT,   ALPHA_UT, &
-                PARTLAYERS_LAYERFINEIDX, LOSPATHS, LOSPATHS_UT_DN, &
-                THETA_ALL, PHI_ALL, COSSCAT_DN, &
-                FAIL, MESSAGE )
+                CALL OUTGOING_SPHERGEOM_FINE_DN ( &
+                  MAXLAYERS, MAXFINELAYERS, MAX_PARTLAYERS, &
+                  DO_FINE, DO_PARTIALS, NLAYERS, NFINELAYERS, &
+                  N_PARTLAYERS, PARTLAYERS_LAYERIDX, &
+                  HEIGHT_GRID, HEIGHT_GRID_UT, EARTH_RADIUS, &
+                  ALPHA_BOA, THETA_BOA, PHI_BOA, &
+                  SUNPATHS,      RADII,      NTRAVERSE,      ALPHA_ALL, &
+                  SUNPATHS_FINE, RADII_FINE, NTRAVERSE_FINE, ALPHA_FINE, &
+                  SUNPATHS_UT,   RADII_UT,   NTRAVERSE_UT,   ALPHA_UT, &
+                  PARTLAYERS_LAYERFINEIDX, LOSPATHS, LOSPATHS_UT_DN, &
+                  THETA_ALL, PHI_ALL, COSSCAT_DN, &
+                  FAIL, MESSAGE )
 
 !  EXCEPTION HANDLING
 
-              IF ( FAIL ) THEN
-                WRITE(CV,'(I3)')V
-                TRACE = 'ERROR FROM OUTGOING_SPHERGEOM_FINE_DN, '// &
-                        ' GEOMETRY '//CV
-                RETURN
-              ENDIF
+                IF ( FAIL ) THEN
+                  WRITE(CV,'(I3)')V
+                  TRACE = 'ERROR FROM OUTGOING_SPHERGEOM_FINE_DN, '// &
+                          ' GEOMETRY '//CV
+                  RETURN
+                ENDIF
 
 !  MULTIPLIERS AND TRANSMITTANCES
 
-              CALL OUTGOING_INTEGRATION_DN &
+                CALL OUTGOING_INTEGRATION_DN &
                  ( NLAYERS, NFINELAYERS, &
                    DO_PARTIALS, EXTINCTION, &
                    N_PARTLAYERS, PARTLAYERS_LAYERIDX, &
@@ -2285,39 +2881,281 @@
                    DN_MULTIPLIERS_UT(1,V), DN_LOSTRANS_UT(1,V) )
 
 !  DEBUG
-!              WRITE(65,*)V
-!              DO N = 1, NLAYERS
-!                WRITE(65,'(1P2E18.10)')
-!     &           DN_LOSTRANS(N,V),DN_MULTIPLIERS(N,V)
-!              ENDDO
+!                WRITE(65,*)V
+!                DO N = 1, NLAYERS
+!                  WRITE(65,'(1P2E18.10)')
+!     &             DN_LOSTRANS(N,V),DN_MULTIPLIERS(N,V)
+!                ENDDO
 
 !  DEBUG: MULTIPLIERS (ALL LAYERS), DOWN WELLING OLD WAY
-!              CALL OUTGOING_INTEGRATION_OLD_DN
-!     I           ( NLAYERS, EXTINCTION, DELTAU_VERT,
-!     I             LOSPATHS, SUNPATHS, NTRAVERSE,
-!     O             DN_MULTIPLIERS(1,V), DN_LOSTRANS(1,V) )
-!              WRITE(66,*)V
-!              DO N = 1, NLAYERS
-!                WRITE(66,*)DN_LOSTRANS(N,V),DN_MULTIPLIERS(N,V)
-!              ENDDO
+!                CALL OUTGOING_INTEGRATION_OLD_DN
+!     I             ( NLAYERS, EXTINCTION, DELTAU_VERT,
+!     I               LOSPATHS, SUNPATHS, NTRAVERSE,
+!     O               DN_MULTIPLIERS(1,V), DN_LOSTRANS(1,V) )
+!                WRITE(66,*)V
+!                DO N = 1, NLAYERS
+!                  WRITE(66,*)DN_LOSTRANS(N,V),DN_MULTIPLIERS(N,V)
+!                ENDDO
 
 !  START LAYER LOOP
 
-              DO N = 1, NLAYERS
+                DO N = 1, NLAYERS
 
 !  TRIGONOMETRY
 
-                CTHETA = DCOS(THETA_ALL(N-1))
-                STHETA = DSIN(THETA_ALL(N-1))
-                CALPHA = DCOS(ALPHA_ALL(N-1))
-                SALPHA = DSIN(ALPHA_ALL(N-1))
-                CPHI   = DCOS(PHI_ALL(N-1))
-                CSA    = COSSCAT_DN(N-1)
-                VSIGN  = +1.0D0
+                  CTHETA = DCOS(THETA_ALL(N-1))
+                  STHETA = DSIN(THETA_ALL(N-1))
+                  CALPHA = DCOS(ALPHA_ALL(N-1))
+                  SALPHA = DSIN(ALPHA_ALL(N-1))
+                  CPHI   = DCOS(PHI_ALL(N-1))
+                  CSA    = COSSCAT_DN(N-1)
+                  VSIGN  = +1.0D0
 
 !  CALL TO SCATTERING LAW FOR PHASE MATRIX ZMAT
 
-                CALL SSCORR_OUTGOING_ZMATRIX &
+                  CALL SSCORR_OUTGOING_ZMATRIX &
+                  ( DO_SSCORR_TRUNCATION, SUNLIGHT, N, NSTOKES, &
+                    NGREEK_MOMENTS_INPUT, LAYER_MAXMOMENTS(N), &
+                    GREEKMAT_TOTAL_INPUT, SSFDEL(N), &
+                    CTHETA, STHETA, CALPHA, SALPHA, CPHI, &
+                    PHI_ALL(N-1), CSA, VSIGN, &
+                    ZMAT_LOCAL, FMAT_LOCAL )
+
+!  PHASE MATRIX (MULTIPLIED BY TMS FACTOR). SAVE THEM.
+!     SUNLIGHT ONLY, THE FIRST COLUMN OF THE MATRIX
+!    GENERAL CASE, CODE PROGRAMMED 05 OCTOBER 2010
+
+                  IF ( STERM_LAYERMASK_DN(N) ) THEN
+                   DO O1 = 1, NSTOKES
+                    DO O2 = 1, NSTOKES
+                     ZMAT_DN(V,N,O1,O2) = ZMAT_LOCAL(O1,O2) * TMS(N)
+                    ENDDO
+                   ENDDO
+                  ENDIF
+
+!  END LAYER LOOP AND DOWNWELLING
+
+                ENDDO
+              ENDIF
+
+!   FINISH GEOMETRY LOOPS
+
+            ENDDO
+          ENDDO
+        ENDDO
+
+!  End lattice calculation
+
+      ENDIF
+
+!  Observational geometry calculation
+
+      IF ( DO_OBSERVATION_GEOMETRY ) THEN
+
+!  START THE MAIN LOOP OVER ALL SOLAR AND VIEWING GEOMETRIES
+!   USE THE ADJUSTED VALUES OF THE ANGLES
+
+        DO V = 1, N_GEOMETRIES
+          ALPHA_BOA = USER_VZANGLES_ADJUST(V)
+          THETA_BOA = SZANGLES_ADJUST(LUM,V,LUA)
+          PHI_BOA   = USER_RELAZMS_ADJUST(LUM,LIB,V)
+
+!  UPWELLING SOURCE TERMS
+!  ----------------------
+
+          IF ( DO_UPWELLING ) THEN
+
+!  CALL TO GEOMETRY ROUTINE, PATH DISTANCES ETC....
+
+            CALL OUTGOING_SPHERGEOM_FINE_UP ( &
+              MAXLAYERS, MAXFINELAYERS, MAX_PARTLAYERS, &
+              DO_FINE, DO_PARTIALS, NLAYERS, NFINELAYERS, &
+              N_PARTLAYERS, PARTLAYERS_LAYERIDX, &
+              HEIGHT_GRID, HEIGHT_GRID_UT, EARTH_RADIUS, &
+              ALPHA_BOA, THETA_BOA, PHI_BOA, &
+              SUNPATHS,      RADII,      NTRAVERSE,      ALPHA_ALL, &
+              SUNPATHS_FINE, RADII_FINE, NTRAVERSE_FINE, ALPHA_FINE, &
+              SUNPATHS_UT,   RADII_UT,   NTRAVERSE_UT,   ALPHA_UT, &
+              PARTLAYERS_LAYERFINEIDX, LOSPATHS, LOSPATHS_UT_UP, &
+              THETA_ALL, PHI_ALL, COSSCAT_UP, &
+              FAIL, MESSAGE )
+
+!  EXCEPTION HANDLING
+
+            IF ( FAIL ) THEN
+              WRITE(CV,'(I3)')V
+              TRACE = 'ERROR FROM OUTGOING_SPHERGEOM_FINE_UP, '// &
+                      ' GEOMETRY '//CV
+              RETURN
+            ENDIF
+
+!  DEBUG GEOMETRY
+!           DO N = 0, NLAYERS
+!             WRITE(45,'(I4,101F10.5)')N,(SUNPATHS(N,V),V=1,NLAYERS)
+!           ENDDO
+!           PAUSE
+
+!  MULTIPLIERS, TRANSMITTANCES
+
+            CALL OUTGOING_INTEGRATION_UP &
+               ( NLAYERS, NFINELAYERS, DO_PARTIALS, EXTINCTION, &
+                 N_PARTLAYERS, PARTLAYERS_LAYERIDX, &
+                 PARTLAYERS_LAYERFINEIDX, &
+                 SUNPATHS, RADII, NTRAVERSE, ALPHA_ALL, &
+                 SUNPATHS_UT, RADII_UT, NTRAVERSE_UT, ALPHA_UT, &
+                 SUNPATHS_FINE, NTRAVERSE_FINE, ALPHA_FINE, &
+                 UP_MULTIPLIERS(1,V), UP_LOSTRANS(1,V), BOA_ATTN(V), &
+                 UP_MULTIPLIERS_UT(1,V), UP_LOSTRANS_UT(1,V) )
+
+!           DO N = 1, NLAYERS
+!             WRITE(85,'(I4,1P2E18.10)')N,UP_LOSTRANS(N,1),UP_MULTIPLIERS(N,1)
+!           ENDDO
+
+!  DEBUG
+!           WRITE(45,*)V
+!           DO N = 1, NLAYERS
+!             WRITE(45,'(1P2E18.10)')
+!     &        UP_LOSTRANS(N,V),UP_MULTIPLIERS(N,V)
+!           ENDDO
+!           PAUSE
+
+!           IF (V.EQ.1)WRITE(35,*)V
+!           DO UT = 1, N_PARTLAYERS
+!             IF (V.EQ.1)WRITE(35,'(1P2E18.10)')
+!     &         UP_LOSTRANS_UT(UT,V),UP_MULTIPLIERS_UT(UT,V)
+!           ENDDO
+
+!  DEBUG: MULTIPLIERS (ALL LAYERS), UPWELLING OLD WAY
+!           CALL OUTGOING_INTEGRATION_OLD_UP
+!     I        ( NLAYERS, EXTINCTION, DELTAU_VERT,
+!     I          LOSPATHS, SUNPATHS, NTRAVERSE,
+!     O          UP_MULTIPLIERS(1,V), UP_LOSTRANS(1,V) )
+!           WRITE(46,*)V
+!           DO N = 1, NLAYERS
+!             WRITE(46,*)UP_LOSTRANS(N,V),UP_MULTIPLIERS(N,V)
+!           ENDDO
+
+!  START LAYER LOOP
+
+            DO N = NLAYERS, 1, -1
+
+!  TRIGONOMETRY
+
+              CTHETA = DCOS(THETA_ALL(N))
+              STHETA = DSIN(THETA_ALL(N))
+              CALPHA = DCOS(ALPHA_ALL(N))
+              SALPHA = DSIN(ALPHA_ALL(N))
+              CPHI   = DCOS(PHI_ALL(N))
+              CSA    = COSSCAT_UP(N)
+              VSIGN  = -1.0D0
+
+!  CALL TO SCATTERING LAW FOR PHASE MATRIX ZMAT
+
+              CALL SSCORR_OUTGOING_ZMATRIX &
+                ( DO_SSCORR_TRUNCATION, SUNLIGHT, N, NSTOKES, &
+                  NGREEK_MOMENTS_INPUT, LAYER_MAXMOMENTS(N), &
+                  GREEKMAT_TOTAL_INPUT, SSFDEL(N), &
+                  CTHETA, STHETA, CALPHA, SALPHA, CPHI, &
+                  PHI_ALL(N), CSA, VSIGN, &
+                  ZMAT_LOCAL, FMAT_LOCAL )
+
+!  PHASE MATRIX (MULTIPLIED BY TMS FACTOR). SAVE THEM.
+!     SUNLIGHT ONLY, THE FIRST COLUMN OF THE MATRIX
+!    GENERAL CASE, CODE PROGRAMMED 05 OCTOBER 2010
+
+              IF ( STERM_LAYERMASK_UP(N) ) THEN
+                DO O1 = 1, NSTOKES
+                  DO O2 = 1, NSTOKES
+                    ZMAT_UP(V,N,O1,O2) = ZMAT_LOCAL(O1,O2) * TMS(N)
+                  ENDDO
+                ENDDO
+              ENDIF
+
+!  DEBUG FOR 2OS GEOMTEST
+!      WRITE(46,'(I4,1P3E20.10)') &
+!              N,ZMAT_LOCAL(1,1),ZMAT_LOCAL(2,1),ZMAT_LOCAL(3,1)
+
+!  FINISH THE LAYER LOOP AND END UPWELLING
+
+            ENDDO
+          ENDIF
+
+!  DOWNWELLING SOURCE TERMS: PHASE MATRIX, MULTIPLIERS, TRANSMITTANCES
+!  -------------------------------------------------------------------
+
+          IF ( DO_DNWELLING ) THEN
+
+!  CALL TO GEOMETRY ROUTINE, PATH DISTANCES ETC....
+
+            CALL OUTGOING_SPHERGEOM_FINE_DN ( &
+              MAXLAYERS, MAXFINELAYERS, MAX_PARTLAYERS, &
+              DO_FINE, DO_PARTIALS, NLAYERS, NFINELAYERS, &
+              N_PARTLAYERS, PARTLAYERS_LAYERIDX, &
+              HEIGHT_GRID, HEIGHT_GRID_UT, EARTH_RADIUS, &
+              ALPHA_BOA, THETA_BOA, PHI_BOA, &
+              SUNPATHS,      RADII,      NTRAVERSE,      ALPHA_ALL, &
+              SUNPATHS_FINE, RADII_FINE, NTRAVERSE_FINE, ALPHA_FINE, &
+              SUNPATHS_UT,   RADII_UT,   NTRAVERSE_UT,   ALPHA_UT, &
+              PARTLAYERS_LAYERFINEIDX, LOSPATHS, LOSPATHS_UT_DN, &
+              THETA_ALL, PHI_ALL, COSSCAT_DN, &
+              FAIL, MESSAGE )
+
+!  EXCEPTION HANDLING
+
+            IF ( FAIL ) THEN
+              WRITE(CV,'(I3)')V
+              TRACE = 'ERROR FROM OUTGOING_SPHERGEOM_FINE_DN, '// &
+                      ' GEOMETRY '//CV
+              RETURN
+            ENDIF
+
+!  MULTIPLIERS AND TRANSMITTANCES
+
+            CALL OUTGOING_INTEGRATION_DN &
+               ( NLAYERS, NFINELAYERS, &
+                 DO_PARTIALS, EXTINCTION, &
+                 N_PARTLAYERS, PARTLAYERS_LAYERIDX, &
+                 PARTLAYERS_LAYERFINEIDX, &
+                 SUNPATHS, RADII, NTRAVERSE, ALPHA_ALL, &
+                 SUNPATHS_UT,   NTRAVERSE_UT,   ALPHA_UT, &
+                 SUNPATHS_FINE, NTRAVERSE_FINE, ALPHA_FINE, &
+                 DN_MULTIPLIERS(1,V), DN_LOSTRANS(1,V), &
+                 DN_MULTIPLIERS_UT(1,V), DN_LOSTRANS_UT(1,V) )
+
+!  DEBUG
+!           WRITE(65,*)V
+!           DO N = 1, NLAYERS
+!             WRITE(65,'(1P2E18.10)')
+!     &        DN_LOSTRANS(N,V),DN_MULTIPLIERS(N,V)
+!           ENDDO
+
+!  DEBUG: MULTIPLIERS (ALL LAYERS), DOWN WELLING OLD WAY
+!           CALL OUTGOING_INTEGRATION_OLD_DN
+!     I        ( NLAYERS, EXTINCTION, DELTAU_VERT,
+!     I          LOSPATHS, SUNPATHS, NTRAVERSE,
+!     O          DN_MULTIPLIERS(1,V), DN_LOSTRANS(1,V) )
+!           WRITE(66,*)V
+!           DO N = 1, NLAYERS
+!             WRITE(66,*)DN_LOSTRANS(N,V),DN_MULTIPLIERS(N,V)
+!           ENDDO
+
+!  START LAYER LOOP
+
+            DO N = 1, NLAYERS
+
+!  TRIGONOMETRY
+
+              CTHETA = DCOS(THETA_ALL(N-1))
+              STHETA = DSIN(THETA_ALL(N-1))
+              CALPHA = DCOS(ALPHA_ALL(N-1))
+              SALPHA = DSIN(ALPHA_ALL(N-1))
+              CPHI   = DCOS(PHI_ALL(N-1))
+              CSA    = COSSCAT_DN(N-1)
+              VSIGN  = +1.0D0
+
+!  CALL TO SCATTERING LAW FOR PHASE MATRIX ZMAT
+
+              CALL SSCORR_OUTGOING_ZMATRIX &
                 ( DO_SSCORR_TRUNCATION, SUNLIGHT, N, NSTOKES, &
                   NGREEK_MOMENTS_INPUT, LAYER_MAXMOMENTS(N), &
                   GREEKMAT_TOTAL_INPUT, SSFDEL(N), &
@@ -2329,24 +3167,26 @@
 !     SUNLIGHT ONLY, THE FIRST COLUMN OF THE MATRIX
 !    GENERAL CASE, CODE PROGRAMMED 05 OCTOBER 2010
 
-                IF ( STERM_LAYERMASK_DN(N) ) THEN
-                 DO O1 = 1, NSTOKES
+              IF ( STERM_LAYERMASK_DN(N) ) THEN
+                DO O1 = 1, NSTOKES
                   DO O2 = 1, NSTOKES
-                   ZMAT_DN(V,N,O1,O2) = ZMAT_LOCAL(O1,O2) * TMS(N)
+                    ZMAT_DN(V,N,O1,O2) = ZMAT_LOCAL(O1,O2) * TMS(N)
                   ENDDO
-                 ENDDO
-                ENDIF
+                ENDDO
+              ENDIF
 
 !  END LAYER LOOP AND DOWNWELLING
 
-              ENDDO
-            ENDIF
+            ENDDO
+          ENDIF
 
-!   FINISH GEOMETRY LOOPS
+!   FINISH GEOMETRY LOOP
 
-          ENDDO
         ENDDO
-      ENDDO
+
+!  End observationl geometry calculation
+
+      ENDIF
 
 !  RECURRENCE RELATION FOR THE UPWELLING STOKES VECTOR
 !  ===================================================
@@ -2553,7 +3393,7 @@
       RETURN
       END SUBROUTINE VLIDORT_SSCORR_OUTGOING
 
-!
+!
 
       SUBROUTINE SSCORR_OUTGOING_ZMATRIX &
         ( DO_SSCORR_TRUNCATION, DO_SUNLIGHT, LAYER, NSTOKES, &
@@ -2789,21 +3629,43 @@
           FDNL1 = TRUNCFACTOR * DNL1
           FACT  = ONE - TRUNCFACTOR
           GK11 = ( GREEKMATRIX(L,N,GREEKMAT_INDEX(1)) - FDNL1 ) / FACT
-          GK12 =   GREEKMATRIX(L,N,GREEKMAT_INDEX(3)) / FACT
-          IF ( .NOT. DO_SUNLIGHT ) THEN
-           GK44 = ( GREEKMATRIX(L,N,GREEKMAT_INDEX(6)) - FDNL1 ) / FACT
-           GK34 =   GREEKMATRIX(L,N,GREEKMAT_INDEX(5)) / FACT
-           GK22 = ( GREEKMATRIX(L,N,GREEKMAT_INDEX(2)) - FDNL1 ) / FACT
-           GK33 = ( GREEKMATRIX(L,N,GREEKMAT_INDEX(4)) - FDNL1 ) / FACT
+!mick fix 1/21/2013 - added IF structure and ELSE section
+          IF ( NSTOKES .GT. 1 ) THEN
+            GK12 =   GREEKMATRIX(L,N,GREEKMAT_INDEX(3)) / FACT
+            IF ( .NOT. DO_SUNLIGHT ) THEN
+             GK44 = ( GREEKMATRIX(L,N,GREEKMAT_INDEX(6)) - FDNL1 ) / FACT
+             GK34 =   GREEKMATRIX(L,N,GREEKMAT_INDEX(5)) / FACT
+             GK22 = ( GREEKMATRIX(L,N,GREEKMAT_INDEX(2)) - FDNL1 ) / FACT
+             GK33 = ( GREEKMATRIX(L,N,GREEKMAT_INDEX(4)) - FDNL1 ) / FACT
+            ENDIF
+          ELSE
+             GK12 = ZERO
+             IF ( .NOT. DO_SUNLIGHT ) THEN
+              GK44 = ZERO
+              GK34 = ZERO
+              GK22 = ZERO
+              GK33 = ZERO
+             ENDIF
           ENDIF
         ELSE
           GK11 = GREEKMATRIX(L,N,GREEKMAT_INDEX(1))
-          GK12 = GREEKMATRIX(L,N,GREEKMAT_INDEX(3))
-          IF ( .NOT. DO_SUNLIGHT ) THEN
-           GK44 = GREEKMATRIX(L,N,GREEKMAT_INDEX(6))
-           GK34 = GREEKMATRIX(L,N,GREEKMAT_INDEX(5))
-           GK22 = GREEKMATRIX(L,N,GREEKMAT_INDEX(2))
-           GK33 = GREEKMATRIX(L,N,GREEKMAT_INDEX(4))
+!mick fix 1/21/2013 - added IF structure and ELSE section
+          IF ( NSTOKES .GT. 1 ) THEN
+            GK12 = GREEKMATRIX(L,N,GREEKMAT_INDEX(3))
+            IF ( .NOT. DO_SUNLIGHT ) THEN
+             GK44 = GREEKMATRIX(L,N,GREEKMAT_INDEX(6))
+             GK34 = GREEKMATRIX(L,N,GREEKMAT_INDEX(5))
+             GK22 = GREEKMATRIX(L,N,GREEKMAT_INDEX(2))
+             GK33 = GREEKMATRIX(L,N,GREEKMAT_INDEX(4))
+            ENDIF
+          ELSE
+             GK12 = ZERO
+             IF ( .NOT. DO_SUNLIGHT ) THEN
+              GK44 = ZERO
+              GK34 = ZERO
+              GK22 = ZERO
+              GK33 = ZERO
+             ENDIF
           ENDIF
         ENDIF
 
@@ -2973,1834 +3835,6 @@
 
       RETURN
       END SUBROUTINE SSCORR_OUTGOING_ZMATRIX
-
-!
-
-      SUBROUTINE OUTGOING_SPHERGEOM_FINE_UP &
-        ( MAXLAYERS, MAXFINE, MAXPARTIALS, &
-          DO_FINE, DO_PARTIALS, NLAYERS, NFINE, &
-          N_PARTIALS, PARTIALS_IDX, &
-          HEIGHTS, HEIGHTS_P, ERADIUS, &
-          ALPHA_BOA, THETA_BOA, PHI_BOA, &
-          SUNPATHS,      RADII,      NTRAVERSE,      ALPHA_ALL, &
-          SUNPATHS_FINE, RADII_FINE, NTRAVERSE_FINE, ALPHA_FINE, &
-          SUNPATHS_P,    RADII_P,    NTRAVERSE_P,    ALPHA_P, &
-          PARTIALS_FINEIDX, LOSPATHS, LOSPATHS_P_UP, &
-          THETA_ALL, PHI_ALL, COSSCAT_UP, &
-          FAIL, MESSAGE )
-
-      IMPLICIT NONE
-
-!  COMPLETELY STAND-ALONE GEOMETRY ROUTINE FOR THE OUTGOING CORRECTION
-!   THIS IS APPLICABLE TO THE UPWELLING PATH GEOEMTRY
-
-!    STARTING INPUTS ARE THE BOA VALUES OF SZA, VZA AND PHI
-!    NEED ALSO THE HEIGHT GRIDS, EARTH RADIUS AND CONTROL
-
-!  THIS ROUTINE HAS THE FINE GRIDDING TREATMENT
-!  VERSION 2.3. SEPTEMBER 2007, PARTIAL LAYER GEOMETRIES ADDED
-
-!  INPUTS
-
-      INTEGER, INTENT(IN) ::           MAXLAYERS, MAXFINE, MAXPARTIALS
-      INTEGER, INTENT(IN) ::           NLAYERS, NFINE
-      LOGICAL, INTENT(IN) ::           DO_FINE, DO_PARTIALS
-      INTEGER, INTENT(IN) ::           N_PARTIALS
-      INTEGER, INTENT(IN) ::           PARTIALS_IDX (MAXPARTIALS)
-      DOUBLE PRECISION, INTENT(IN) ::  ERADIUS, HEIGHTS (0:MAXLAYERS)
-      DOUBLE PRECISION, INTENT(IN) ::  HEIGHTS_P(MAXPARTIALS)
-      DOUBLE PRECISION, INTENT(IN) ::  ALPHA_BOA, THETA_BOA
-
-!  INPUT/OUTPUT
-
-      DOUBLE PRECISION, INTENT(INOUT) ::  PHI_BOA
-
-!  MAIN OUTPUTS (GEOMETRY)
-
-      INTEGER, INTENT(OUT) ::           NTRAVERSE   (0:MAXLAYERS)
-      DOUBLE PRECISION, INTENT(OUT) ::  SUNPATHS   (0:MAXLAYERS,MAXLAYERS)
-      DOUBLE PRECISION, INTENT(OUT) ::  RADII      (0:MAXLAYERS)
-      DOUBLE PRECISION, INTENT(OUT) ::  ALPHA_ALL  (0:MAXLAYERS)
-
-!  FINE LEVEL OUTPUT (GEOMETRY)
-
-      INTEGER, INTENT(OUT) ::           NTRAVERSE_FINE(MAXLAYERS,MAXFINE)
-      DOUBLE PRECISION, INTENT(OUT) ::  SUNPATHS_FINE & 
-          (MAXLAYERS,MAXLAYERS,MAXFINE)
-      DOUBLE PRECISION, INTENT(OUT) ::  RADII_FINE    (MAXLAYERS,MAXFINE)
-      DOUBLE PRECISION, INTENT(OUT) ::  ALPHA_FINE    (MAXLAYERS,MAXFINE)
-
-!  PARTIAL LAYER OUTPUT (GEOMETRY)
-
-      INTEGER, INTENT(OUT) ::           NTRAVERSE_P(MAXPARTIALS)
-      DOUBLE PRECISION, INTENT(OUT) ::  SUNPATHS_P (MAXPARTIALS,MAXLAYERS)
-      DOUBLE PRECISION, INTENT(OUT) ::  RADII_P    (MAXPARTIALS)
-      DOUBLE PRECISION, INTENT(OUT) ::  ALPHA_P    (MAXPARTIALS)
-
-!  OTHER (INCIDENTAL) GEOMETRICAL OUTPUT
-
-      DOUBLE PRECISION, INTENT(OUT) ::  LOSPATHS(MAXLAYERS)
-      DOUBLE PRECISION, INTENT(OUT) ::  LOSPATHS_P_UP(MAXPARTIALS)
-      INTEGER, INTENT(OUT) ::           PARTIALS_FINEIDX(MAXPARTIALS)
-
-      DOUBLE PRECISION, INTENT(OUT) ::  THETA_ALL  (0:MAXLAYERS)
-      DOUBLE PRECISION, INTENT(OUT) ::  PHI_ALL    (0:MAXLAYERS)
-      DOUBLE PRECISION, INTENT(OUT) ::  COSSCAT_UP (0:MAXLAYERS)
-
-!  STATUS OUTPUT
-
-      LOGICAL, INTENT(OUT) ::           FAIL
-      CHARACTER (LEN=*), INTENT(INOUT) :: MESSAGE
-
-!  LOCAL
-
-      LOGICAL ::           DIRECT_SUN
-      INTEGER ::           N, K, KRAD, N1, UT, NP
-      DOUBLE PRECISION ::  DEG_TO_RAD, EX, EY, EZ, PX, PY, PZ
-      DOUBLE PRECISION ::  SALPHA_BOA, CALPHA_BOA, SPHI_BOA, PIE, PI2
-      DOUBLE PRECISION ::  STHETA_BOA, CTHETA_BOA, CPHI_BOA
-      DOUBLE PRECISION ::  KSI, CKSI, SKSI, XICUM, TANGR, FAC
-      DOUBLE PRECISION ::  CTHETA, STHETA, CALPHA, SALPHA, CPHI
-      DOUBLE PRECISION ::  B, STH0, TH0, KS1, STH1, TH1, THETA_P
-
-!  LOCAL ARRAYS ASSOCIATED WITH FINE GRID OUTPUT
-
-      INTEGER ::            J
-      INTEGER, PARAMETER :: MAXLOCALFINE = 20
-      LOGICAL ::            DIRECT_SUNF(MAXLOCALFINE)
-      DOUBLE PRECISION ::   DIFZ, DFINE1, SAF, XICUM0, PATH
-      DOUBLE PRECISION ::   THETAF(MAXLOCALFINE), XICUMF, DIFA
-      DOUBLE PRECISION ::   CTHETAF(MAXLOCALFINE)
-      DOUBLE PRECISION ::   STHETAF(MAXLOCALFINE)
-      DOUBLE PRECISION ::   KSIF(MAXLOCALFINE)
-
-!  INITIALISE OUTPUT
-
-      FAIL = .FALSE.
-      MESSAGE = ' '
-
-!  CHECK RANGE OF INPUTS
-
-      IF ( ALPHA_BOA.GE.90.0D0.OR.ALPHA_BOA.LT.0.0D0 ) THEN
-        MESSAGE = 'BOA LOS ANGLE OUTSIDE RANGE [0,90])'
-        FAIL    = .TRUE.
-        RETURN
-      ENDIF
-      IF ( PHI_BOA.LT.0.0D0 )   PHI_BOA = - PHI_BOA
-
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!  BUG CORRECTED 01 OCTOBER 2010------------------------- RTS, R. SPURR
-
-!  IMPORTANT, DO NOT LIMIT THE AZIMUTH TO < 180 DEGREES
-
-!      IF ( PHI_BOA.GT.180.0D0 ) PHI_BOA = 360.0D0 - PHI_BOA    ! OLD
-       IF ( PHI_BOA.GT.360.0D0 ) PHI_BOA = PHI_BOA - 360.0D0    ! NEW
-
-!  BUG CORRECTED 01 OCTOBER 2010------------------------- RTS, R. SPURR
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-      IF ( THETA_BOA.GE.90.0D0.OR.THETA_BOA.LT.0.0D0 ) THEN
-        MESSAGE = 'BOA SZA ANGLE OUTSIDE RANGE [0,90])'
-        FAIL    = .TRUE.
-        RETURN
-      ENDIF
-      IF ( DO_FINE ) THEN
-       IF ( NFINE.GT.MAXLOCALFINE ) THEN
-         MESSAGE = 'LOCAL FINELAYER DIMENSIONING INSUFFICIENT'
-         FAIL    = .TRUE.
-         RETURN
-       ENDIF
-      ENDIF
-
-!  ZERO THE SUN PATHS
-!  INITIALIZE NUMBER OF LAYERS TRAVERSED  (NOMINAL CONDITIONS)
-
-      DO N = 0, NLAYERS
-        NTRAVERSE(N) = N
-        DO K = 1, NLAYERS
-         SUNPATHS(N,K) = 0.0D0
-        ENDDO
-      ENDDO
-
-!  ZERO THE PARTIAL PATHS, INITIALIZE THE TRAVERSE NUMBER (NOMINAL)
-
-      IF ( DO_PARTIALS ) THEN
-        DO UT = 1, N_PARTIALS
-          NP = PARTIALS_IDX(UT)
-          NTRAVERSE_P(UT) = NP
-          DO K = 1, NP
-            SUNPATHS_P(UT,K) = 0.0D0
-          ENDDO
-        ENDDO
-      ENDIF
-
-!  ZERO THE FINE DATA PATHS
-
-      IF ( DO_FINE ) THEN
-       DFINE1 = DBLE(NFINE) + 1
-       DO N = 1, NLAYERS
-        DO J = 1, NFINE
-         NTRAVERSE_FINE(N,J) = N
-         DO K = 1, NLAYERS
-          SUNPATHS_FINE(N,K,J) = 0.0D0
-         ENDDO
-        ENDDO
-       ENDDO
-      ENDIF
-
-!  START AT BOA
-
-      PIE        = DACOS(-1.0D0)
-      DEG_TO_RAD = PIE / 180.0D0
-      PI2        = 2.0D0 * PIE
-
-      ALPHA_ALL(NLAYERS) = ALPHA_BOA * DEG_TO_RAD
-      THETA_ALL(NLAYERS) = THETA_BOA * DEG_TO_RAD
-      PHI_ALL(NLAYERS)   = PHI_BOA   * DEG_TO_RAD
-
-!  COSINE OF SCATTERING ANGLE AT BOA
-
-      SALPHA_BOA = DSIN(ALPHA_ALL(NLAYERS))
-      CALPHA_BOA = DCOS(ALPHA_ALL(NLAYERS))
-      STHETA_BOA = DSIN(THETA_ALL(NLAYERS))
-      CTHETA_BOA = DCOS(THETA_ALL(NLAYERS))
-      CPHI_BOA   = DCOS(PHI_ALL(NLAYERS))
-      SPHI_BOA   = DSIN(PHI_ALL(NLAYERS))
-
-      COSSCAT_UP (NLAYERS) = - CALPHA_BOA * CTHETA_BOA + &
-                               SALPHA_BOA * STHETA_BOA * CPHI_BOA
-
-!  RADII
-!  -----
-
-!  LAYER LEVELS
-
-      DO N = 0, NLAYERS
-        RADII(N) = ERADIUS + HEIGHTS(N)
-      ENDDO
-
-!  FINE LEVELS
-
-      IF ( DO_FINE ) THEN
-        DO N = 1, NLAYERS
-          DIFZ = (RADII(N-1)-RADII(N))/DFINE1
-          DO J = 1, NFINE
-            RADII_FINE(N,J) = RADII(N) + DIFZ * DBLE(J)
-          ENDDO
-        ENDDO
-      ENDIF
-
-!  PARTIAL LEVELS
-!   FIND THE FINE LEVEL JUST BELOW PARTIAL POINT = (0,1,2,...NFINE)
-
-      IF ( DO_PARTIALS ) THEN
-        DO UT = 1, N_PARTIALS
-          NP = PARTIALS_IDX(UT)
-          RADII_P(UT) = ERADIUS + HEIGHTS_P(UT)
-          J = 1
-          DO WHILE (RADII_P(UT).GT.RADII_FINE(NP,J))
-             J = J + 1
-             IF (J.GT.NFINE) GO TO 5778
-          ENDDO
- 5778     CONTINUE
-          PARTIALS_FINEIDX(UT) = J - 1
-        ENDDO
-      ENDIF
-!          J = 1
-!          DO WHILE (RADII_P(UT).GT.RADII_FINE(NP,J).AND.J.LE.NFINE)
-!           J = J + 1
-!          ENDDO
-
-!  SPECIAL CASE. DIRECT NADIR VIEWING
-!  ==================================
-
-!  COMPUTE EVERYTHING AND EXIT.
-!    (THIS IS THE SAME AS THE REGULAR PSEUDO-SPHERICAL )
-
-      IF ( SALPHA_BOA.EQ.0.0D0 ) THEN
-
-!  WHOLE LAYER AND FINE DIVISIONS
-!  ------------------------------
-
-!  START LAYER LOOP, WORKING UPWARDS
-
-        DO N = NLAYERS,1,-1
-
-!  SET MAIN OUTPUT.
-
-          ALPHA_ALL(N-1)   = ALPHA_ALL(N)
-          THETA_ALL(N-1)   = THETA_ALL(N)
-          PHI_ALL(N-1)     = PHI_ALL(N)
-          COSSCAT_UP(N-1) = COSSCAT_UP(N)
-          LOSPATHS(N) = RADII(N-1)-RADII(N)
-          IF ( DO_FINE ) THEN
-            DO J = 1, NFINE
-              ALPHA_FINE(N,J) = 0.0D0
-            ENDDO
-          ENDIF
-
-!  OVERHEAD SUN
-
-          IF (STHETA_BOA.EQ.0.0D0 ) THEN
-            DO K = N, 1, -1
-              SUNPATHS(N,K) = RADII(K-1)-RADII(K)
-            ENDDO
-            IF ( DO_FINE ) THEN
-              DO J = 1, NFINE
-                DO K = N - 1, 1, -1
-                  SUNPATHS_FINE(N,K,J) = RADII(K-1)-RADII(K)
-                ENDDO
-                SUNPATHS_FINE(N,N,J) = RADII(N-1)-RADII_FINE(N,J)
-              ENDDO
-            ENDIF
-          ENDIF
-
-!  NON-OVERHEAD SUN
-!  MAIN OUTPUT OF SOLAR PATHS
-!  SOLAR PATH DISTANCES FOR FINE OUTPUT
-
-          IF (STHETA_BOA.GT.0.0D0 ) THEN
-            STH0 = STHETA_BOA
-            TH0  = THETA_ALL(N)
-            DO K = N, 1, -1
-              STH1 = STH0*RADII(K)/RADII(K-1)
-              TH1  = DASIN(STH1)
-              KS1  = TH0-TH1
-              SUNPATHS(N,K) = DSIN(KS1)*RADII(K)/STH1
-              STH0 = STH1
-              TH0  = TH1
-            ENDDO
-            IF ( DO_FINE ) THEN
-              DO J = 1, NFINE
-                STH0 = STHETA_BOA
-                TH0  = THETA_ALL(N)
-                STH1 = STH0*RADII_FINE(N,J)/RADII(N-1)
-                TH1  = DASIN(STH1)
-                KS1  = TH0-TH1
-                SUNPATHS_FINE(N,N,J) = DSIN(KS1)*RADII_FINE(N,J)/STH1
-                STH0 = STH1
-                TH0  = TH1
-                DO K = N-1, 1, -1
-                  STH1 = STH0*RADII(K)/RADII(K-1)
-                  TH1  = DASIN(STH1)
-                  KS1  = TH0-TH1
-                  SUNPATHS_FINE(N,K,J) = DSIN(KS1)*RADII(K)/STH1
-                  STH0 = STH1
-                  TH0  = TH1
-                ENDDO
-              ENDDO
-            ENDIF
-          ENDIF
-
-!  END MAIN LAYER LOOP
-
-        ENDDO
-
-!  PARTIAL LAYERS
-!  --------------
-
-        IF ( DO_PARTIALS ) THEN
-          DO UT = 1, N_PARTIALS
-            NP = PARTIALS_IDX(UT)
-
-!  LOS ANGLE AND PATHS
-
-            ALPHA_P(UT) = ALPHA_ALL(NLAYERS)
-            LOSPATHS_P_UP(UT) = RADII_P(UT)-RADII(NP)
-
-!  OVERHEAD SUN
-
-            IF (STHETA_BOA.EQ.0.0D0 ) THEN
-              DO K = 1, NP-1
-                SUNPATHS_P(UT,K) = RADII(K-1)-RADII(K)
-              ENDDO
-              SUNPATHS_P(UT,NP) = RADII(NP-1)-RADII_P(UT)
-            ENDIF
-
-!  NON-OVERHEAD SUN
-
-            IF (STHETA_BOA.GT.0.0D0 ) THEN
-              STH0 = STHETA_BOA
-              TH0  = THETA_ALL(NP)
-              STH1 = STH0*RADII_P(UT)/RADII(NP-1)
-              TH1  = DASIN(STH1)
-              KS1  = TH0-TH1
-              SUNPATHS_P(UT,NP) = DSIN(KS1)*RADII_P(UT)/STH1
-              STH0 = STH1
-              TH0  = TH1
-              DO K = NP-1, 1, -1
-                STH1 = STH0*RADII(K)/RADII(K-1)
-                TH1  = DASIN(STH1)
-                KS1  = TH0-TH1
-                SUNPATHS_P(UT,K) = DSIN(KS1)*RADII(K)/STH1
-                STH0 = STH1
-                TH0  = TH1
-              ENDDO
-            ENDIF
-
-!  FINISH PARTIAL LAYER STUFF
-
-          ENDDO
-        ENDIF
-
-!  RETURN, AS EVERYTHING NOW DONE
-
-        RETURN
-
-!  END REGULAR PSEUDO-SPHERICAL CLAUSE, LOS IS ZERO
-
-      ENDIF
-
-!  OUTGOING SPHERICITY GEOMETRY
-!  ============================
-
-!  DEFINE UNIT SOLAR VECTOR AT BOA
-
-      EX = - STHETA_BOA * CPHI_BOA
-      EY = - STHETA_BOA * SPHI_BOA
-      EZ = - CTHETA_BOA
-
-!  SUN PATHS, BOA GEOMETRY, ALWAYS DIRECTLY ILLUMINATED
-
-      IF ( STHETA_BOA.EQ.0.0D0 ) THEN
-        DO K = NLAYERS, 1, -1
-          SUNPATHS(NLAYERS,K) = RADII(K-1)-RADII(K)
-        ENDDO
-      ELSE
-        STH0 = STHETA_BOA
-        TH0  = THETA_ALL(NLAYERS)
-        DO K = NLAYERS, 1, -1
-          STH1 = STH0*RADII(K)/RADII(K-1)
-          TH1  = DASIN(STH1)
-          KS1  = TH0-TH1
-          SUNPATHS(NLAYERS,K) = DSIN(KS1)*RADII(K)/STH1
-          STH0 = STH1
-          TH0  = TH1
-        ENDDO
-      ENDIF
-
-!  CHECK SINGLE ILLUMINATION
-!      --NOT REQUIRED, NOW WE HAVE THE TANGENT POINT TREATMENT
-!      IF (STHETA_BOA.GT.0.0D0 ) THEN
-!        XICUM = DASIN(RADII(NLAYERS)*SALPHA_BOA/RADII(0))
-!        XICUM = ALPHA_ALL(NLAYERS)-XICUM
-!        PX = - RADII(0) * DSIN(XICUM)
-!        PY = 0.0D0
-!        PZ =   RADII(0) * DCOS(XICUM)
-!        B = EX*PX + EY*PY + EZ*PZ
-!        CTHETA = -B/RADII(0)
-!        IF ( CTHETA.LE.0.0D0 ) THEN
-!          WRITE(*,*)'LIMIT VALUE = ',90.0D0-XICUM/DEG_TO_RAD
-!        ENDIF
-!      ENDIF
-
-!  INITIALISE LOS CUMULATIVE ANGLE
-
-      XICUM  = 0.0D0
-
-!  SET TOA DIRECT ILLUMINATION FLAG
-
-      DIRECT_SUN = .TRUE.
-      IF ( DO_FINE ) THEN
-        DO J = 1, NFINE
-          DIRECT_SUNF(J) = .TRUE.
-        ENDDO
-      ENDIF
-
-!  START LOOP OVER POSITIONS (LAYER UPPER BOUNDARIES)
-
-      DO N = NLAYERS - 1, 0, -1
-
-!  NEXT LEVEL UP
-
-        N1 = N + 1
-
-!  LOS ANGLES AT LEVEL BOUNDARIES
-
-        SALPHA = RADII(NLAYERS) * SALPHA_BOA / RADII(N)
-        ALPHA_ALL(N)  = DASIN(SALPHA)
-        CALPHA = DCOS(ALPHA_ALL(N))
-
-!  LOSPATHS
-
-        KSI = ALPHA_ALL(N1) - ALPHA_ALL(N)
-        SKSI = DSIN(KSI)
-        CKSI = DCOS(KSI)
-        LOSPATHS(N1) = SKSI * RADII(N1) / SALPHA
-        XICUM0 = XICUM
-        XICUM  = XICUM + KSI
-
-!  FINE GRID LOSPATH OUTPUT (ANGLE AND RADIUS)
-!    LOCALLY SAVE THE EARTH-CENTER ANGLE KSIF
-
-        IF ( DO_FINE ) THEN
-          DIFA = (ALPHA_ALL(N1)-ALPHA_ALL(N))/DFINE1
-          DO J = 1, NFINE
-            ALPHA_FINE(N1,J) = ALPHA_ALL(N1) - DIFA * DBLE(J)
-            SAF = DSIN(ALPHA_FINE(N1,J))
-            RADII_FINE(N1,J) = SALPHA_BOA * RADII(NLAYERS) / SAF
-            KSIF(J) = ALPHA_ALL(N1) - ALPHA_FINE(N1,J)
-          ENDDO
-        ENDIF
-
-!  SUN ANGLES FOR THE DIRECT NADIR CASE
-
-        IF (STHETA_BOA.EQ.0.0D0 ) THEN
-         THETA_ALL(N) = XICUM
-         CTHETA = DCOS(THETA_ALL(N))
-         STHETA = DSQRT(1.0D0-CTHETA*CTHETA)
-         IF ( DO_FINE ) THEN
-           DO J = 1, NFINE
-             THETAF(J)  = XICUM0 + KSIF(J)
-             CTHETAF(J) = DCOS(THETAF(J))
-             STHETAF(J) = DSQRT(1.0D0-CTHETA*CTHETA)
-           ENDDO
-         ENDIF
-        ENDIF
-
-!  SUN ANGLES FOR THE GENERAL CASE
-!    LOCAL SAVE OF ANGLES, COSINES, SINES AND  ILLUMINATION FLAGS
-
-        IF (STHETA_BOA.GT.0.0D0 ) THEN
-         PX = - RADII(N) * DSIN(XICUM)
-         PY = 0.0D0
-         PZ =   RADII(N) * DCOS(XICUM)
-         B = EX*PX + EY*PY + EZ*PZ
-         CTHETA = -B/RADII(N)
-         DIRECT_SUN = (DIRECT_SUN.AND.CTHETA.GE.0.D0)
-         STHETA = DSQRT(1.0D0-CTHETA*CTHETA)
-         THETA_ALL(N) = DACOS(CTHETA)
-         IF ( DO_FINE ) THEN
-           DO J = 1, NFINE
-             XICUMF  = XICUM0 + KSIF(J)
-             PX = - RADII_FINE(N1,J) * DSIN(XICUMF)
-             PY = 0.0D0
-             PZ =   RADII_FINE(N1,J) * DCOS(XICUMF)
-             B  = EX*PX + EY*PY + EZ*PZ
-             CTHETAF(J) = -B/RADII_FINE(N1,J)
-             DIRECT_SUNF(J) = (DIRECT_SUNF(J).AND.CTHETAF(J).GE.0.D0)
-             STHETAF(J) = DSQRT(1.0D0-CTHETAF(J)*CTHETAF(J))
-             THETAF(J)  = DACOS(CTHETAF(J))
-           ENDDO
-         ENDIF
-        ENDIF
-
-!  UNIT VECTOR F2(I) PERPENDICULAR TO OP BUT IN PLANE OF PATH
-!  PROJECTION OF F2(I) ON SOLAR PATH GIVES THE RELATIVE AZIMUTH AT P
-!        F2X = DSIN(XICUM)
-!        F2Y = 0.0D0
-!        F2Z = DCOS(XICUM)
-!        CPHI = - (EX*F2X + EY*F2Y + EZ*F2Z ) / STHETA
-!        CPHI = - (EX*F2X + EY*F2Y + EZ*F2Z ) / STHETA
-!        IF ( CPHI.GT.1.0D0)  CPHI = 1.0D0
-!        IF ( CPHI.LT.-1.0D0) CPHI = -1.0D0
-! ********************************************* APPARENTLY NOT CORRECT
-
-!  FIX PHI BY USING CONSTANCY OF SCATTER ANGLE
-
-        COSSCAT_UP(N) = COSSCAT_UP(N+1)
-        IF (STHETA_BOA.EQ.0.0D0 ) THEN
-          PHI_ALL(N)     = PHI_ALL(N+1)
-        ELSE
-         CPHI = (COSSCAT_UP(N)+CALPHA*CTHETA)/STHETA/SALPHA
-         IF ( CPHI.GT.1.0D0) CPHI = 1.0D0
-         IF ( CPHI.LT.-1.0D0) CPHI = -1.0D0
-         PHI_ALL(N)     = DACOS(CPHI)
-
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
- !  BUG CORRECTED 01 OCTOBER 2010------------------------- RTS, R. SPURR
-
-!  IF AZIMUTH > 180 DEGREES. MUST ENSURE CONSISTENCY, ADD THIS LINE.
-
-         IF ( PHI_BOA.GT.180.0D0 ) PHI_ALL(N) = PI2 - PHI_ALL(N)
-
- !  B G CORRECTED 01 OCTOBER 2010------------------------- RTS, R. SPURR
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-        ENDIF
-
-!  SUN PATHS, DIRECT SUN AT LAYER TOP
-!  ==================================
-
-!   MEANS THAT THE SZA AT LAYER TOP IS < 90.
-!    ===> SZA < 90 FOR ALL FINE POINTS IN LAYER BENEATH
-
-        IF ( DIRECT_SUN ) THEN
-
-!  WORK UP FROM LEVEL N TO TOA
-!    LAYER TOP CALCULATION GETS LEFT OUT AT TOA
-
-         IF ( N .GT. 0 ) THEN
-          STH0 = STHETA
-          TH0  = THETA_ALL(N)
-          DO K = N, 1, -1
-           STH1 = STH0*RADII(K)/RADII(K-1)
-           TH1  = DASIN(STH1)
-           KS1  = TH0-TH1
-           SUNPATHS(N,K) = DSIN(KS1)*RADII(K)/STH1
-           STH0 = STH1
-           TH0  = TH1
-          ENDDO
-         ENDIF
-
-! DBG         WRITE(*,*)'REGULAR',N1,(SUNPATHS(N1,K),K=N1,1,-1)
-
-!  FINE GRID CALCULATION IS ALWAYS REQUIRED
-!  ----------------------------------------
-
-!   START AT THE GRID POINT ON LOS PATH AND WORK UPWARDS,
-!     FIRST ACROSS PARTIAL LAYER TO UPPER BOUNDARY, THEN CONTINUE
-!     UPWARDS TO TOA ON A WHOLE LAYER BASIS. SINE RULE.
-
-         IF ( DO_FINE ) THEN
-          DO J = 1, NFINE
-           STH0 = STHETAF(J)
-           TH0  = THETAF(J)
-           STH1 = STH0*RADII_FINE(N1,J)/RADII(N)
-           TH1  = DASIN(STH1)
-           KS1  = TH0-TH1
-           SUNPATHS_FINE(N1,N1,J) = DSIN(KS1)*RADII_FINE(N1,J)/STH1
-           STH0 = STH1
-           TH0  = TH1
-           DO K = N, 1, -1
-            STH1 = STH0*RADII(K)/RADII(K-1)
-            TH1  = DASIN(STH1)
-            KS1  = TH0-TH1
-            SUNPATHS_FINE(N1,K,J) = DSIN(KS1)*RADII(K)/STH1
-            STH0 = STH1
-            TH0  = TH1
-           ENDDO
-!  DBG           WRITE(*,*)'REGULAR',N1,J,(SUNPATHS_FINE(N1,K,J),K=N1,1,
-          ENDDO
-
-!  DBG         WRITE(*,*)'REGULAR',N,(SUNPATHS(N,K),K=N,1,-1)
-
-         ENDIF
-
-!  COMPLETE DIRECT SUN COMPUTATIONS
-
-        ENDIF
-
-!  SUN PATHS, NOT DIRECT SUN , WITH TANGENT POINT
-!  ==============================================
-
-!  ALTHOUGH LAYER TOP HAS A TANGENT POINT, NOT ALL OF THE FINE-GRID
-!   POINTS WILL HAVE A TANGENT POINT.
-
-        IF (.NOT.DIRECT_SUN ) THEN
-
-!  FIRST DO THE LAYER-TOP CALCULATION.
-!  -----------------------------------
-
-!  TANGR = TANGENT POINT RADIUS.
-
-         TANGR = STHETA*RADII(N)
-
-!  NTRAVERSE(N) IS THE NUMBER OF LAYERS TRAVERSED BY RAY.
-
-         KRAD = NLAYERS
-         DO WHILE (TANGR.GT.RADII(KRAD))
-          KRAD = KRAD - 1
-         ENDDO
-         NTRAVERSE(N) = KRAD + 1
-
-!  START AT THE TOA ANGLES
-
-         STH0 = TANGR/RADII(0)
-         TH0 = DASIN(STH0)
-
-!  WORK DOWNWARDS FROM TOA (SINE RULE) TO LEVEL IMMEDIATELY ABOVE
-!  THE TANGENT LAYER. DON'T FORGET TO DOUBLE THE PATH LENGTH FOR
-!  ANY LAYERS WHICH ARE TRAVERSED TWICE.
-
-         DO K = 1, KRAD
-          STH1 = RADII(K-1)*STH0/RADII(K)
-          TH1 = DASIN(STH1)
-          KS1 = TH1-TH0
-          FAC = 1.0D0
-          IF ( K.GT.N) FAC = 2.0D0
-          SUNPATHS(N,K) = FAC*DSIN(KS1)*RADII(K-1)/STH1
-          STH0 = STH1
-          TH0  = TH1
-         ENDDO
-
-!  TANGENT LAYER PATH LENGTH. TWICE AGAIN. THE FOLLOWING CHECK IS GOOD.
-!  CHECK       WRITE(*,*)TANGR/DTAN(TH1),RADII(KRAD)*DCOS(TH1)
-
-         SUNPATHS(N,KRAD+1)=2.0D0*RADII(KRAD)*DCOS(TH1)
-
-! DBG         WRITE(*,*)'--TANGENT',N1,(SUNPATHS(N1,K),K=NTRAVERSE(N1),1
-
-!  FINE LAYER DEVELOPMENT (SLIGHTLY DIFFERENT)
-!  ---------------------
-
-         IF ( DO_FINE ) THEN
-          DO J = 1, NFINE
-
-!  IF THERE IS NO TANGENT POINT, REPEAT CALCULATION ABOVE.
-
-           IF ( DIRECT_SUNF(J) ) THEN
-            STH0 = STHETAF(J)
-            TH0  = THETAF(J)
-            STH1 = STH0*RADII_FINE(N1,J)/RADII(N)
-            TH1  = DASIN(STH1)
-            KS1  = TH0-TH1
-            SUNPATHS_FINE(N1,N1,J) = DSIN(KS1)*RADII_FINE(N1,J)/STH1
-            STH0 = STH1
-            TH0  = TH1
-            DO K = N, 1, -1
-             STH1 = STH0*RADII(K)/RADII(K-1)
-             TH1  = DASIN(STH1)
-             KS1  = TH0-TH1
-             SUNPATHS_FINE(N1,K,J) = DSIN(KS1)*RADII(K)/STH1
-             STH0 = STH1
-             TH0  = TH1
-            ENDDO
-
-! DBG           WRITE(*,*)'REGULAR',N1,J,
-!     &       (SUNPATHS_FINE(N1,K,J),K=NTRAVERSE_FINE(N1,J),1,-1)
-
-!  FINE GRID CALCULATION WITH TANGENT POINT
-!  ----------------------------------------
-
-           ELSE
-
-!  LOCAL TANGENT RADIUS AND NUMBER OF LAYERS TRAVERSED
-
-            TANGR = STHETAF(J)*RADII_FINE(N1,J)
-            KRAD = NLAYERS
-            DO WHILE (TANGR.GT.RADII(KRAD))
-             KRAD = KRAD - 1
-            ENDDO
-            NTRAVERSE_FINE(N1,J) = KRAD + 1
-
-!  START AGAIN AT TOA
-
-            STH0 = TANGR/RADII(0)
-            TH0  = DASIN(STH0)
-
-!  WORK DOWN TO THE LEVEL N
-
-            DO K = 1, N
-             STH1 = RADII(K-1)*STH0/RADII(K)
-             TH1 = DASIN(STH1)
-             KS1 = TH1-TH0
-             SUNPATHS_FINE(N1,K,J) = DSIN(KS1)*RADII(K-1)/STH1
-             STH0 = STH1
-             TH0  = TH1
-            ENDDO
-
-!  IN LAYER BELOW LEVEL N, WORK DOWN TO LEVEL OF FINE GRID RADIUS
-!     (SINGLE CONTRIBUTION)
-
-            STH1 = RADII(N)*STH0/RADII_FINE(N1,J)
-            TH1 = DASIN(STH1)
-            KS1 = TH1-TH0
-            PATH = DSIN(KS1)*RADII(N)/STH1
-            STH0 = STH1
-            TH0  = TH1
-
-!  IN LAYER BELOW LEVEL N, COMPLETE THE PATH DOWN TO THE TANGENT POINT
-!    (DOUBLE CONTRIBUTION). FINISH.
-
-            IF ( KRAD.EQ.N ) THEN
-
-              PATH = PATH + 2.0D0*RADII_FINE(N1,J)*DCOS(TH1)
-              SUNPATHS_FINE(N1,KRAD+1,J) = PATH
-
-!  CHECK    WRITE(*,*)'1',TANGR/DTAN(TH1),RADII_FINE(N1,J)*DCOS(TH1)
-
-!  IN LAYER BELOW LEVEL N, NEED TO GO DOWN FURTHER.
-!    (FROM NOW ON, WE NEED DOUBLE CONTRIBUTIONS)
-!     --- CONTINUE THE PATH TO THE BOTTOM OF THIS LAYER
-!     --- CONTINUE DOWN BY WHOLE-LAYER STEPS UNTIL REACH LEVEL ABOVE TAN
-!     --- COMPLETE THE PATH DOWN TO THE TANGENT POINT
-
-            ELSE
-              STH1 = RADII_FINE(N1,J)*STH0/RADII(N1)
-              TH1 = DASIN(STH1)
-              KS1 = TH1-TH0
-              PATH = PATH + 2.0D0 * DSIN(KS1)*RADII_FINE(N1,J)/STH1
-              SUNPATHS_FINE(N1,N1,J) = PATH
-              STH0 = STH1
-              TH0  = TH1
-              DO K = N1 + 1, KRAD
-               STH1 = RADII(K-1)*STH0/RADII(K)
-               TH1 = DASIN(STH1)
-               KS1 = TH1-TH0
-               SUNPATHS_FINE(N1,K,J) = DSIN(KS1)*RADII(K-1)/STH1
-               STH0 = STH1
-               TH0  = TH1
-              ENDDO
-              SUNPATHS_FINE(N1,KRAD+1,J)=2.0D0*RADII(KRAD)*DCOS(TH1)
-!  CHECK 2    WRITE(*,*)'2',TANGR/DTAN(TH1),RADII(KRAD)*DCOS(TH1)
-            ENDIF
-
-! DBG           WRITE(*,*)'TANGENT',N1,J,
-!     &       (SUNPATHS_FINE(N1,K,J),K=NTRAVERSE_FINE(N1,J),1,-1)
-
-!  COMPLETE TANGENT POINT CLAUSE
-
-           ENDIF
-
-!  COMPLETE FINE-GRID LOOP
-
-          ENDDO
-
-!  DBG        WRITE(*,*)'TANGENT',N,(SUNPATHS(N,K),K=NTRAVERSE(N),1,-1)
-
-!  COMPLETE TANGENT POINT CALCULATION
-
-         ENDIF
-
-        ENDIF
-
-!  END LAYER LOOP
-
-      ENDDO
-
-!  PARTIALS SECTION
-!  ----------------
-
-!  PARTIAL ANGLES AND LOSPATHS
-
-      IF ( DO_PARTIALS ) THEN
-        DO UT = 1, N_PARTIALS
-          NP = PARTIALS_IDX(UT)
-
-!  ESTABLISH THE LOS ANGLE, AND LOSPATHS
-
-          TH0 = ALPHA_ALL(NP)
-          STH0 = DSIN(TH0)
-          SALPHA = RADII(NP)*STH0 / RADII_P(UT)
-          ALPHA_P(UT) = DASIN(SALPHA)
-          CALPHA = DSQRT(1.0D0-SALPHA*SALPHA)
-
-          KSI = ALPHA_ALL(NP) - ALPHA_P(UT)
-          LOSPATHS_P_UP(UT) = DSIN(KSI)*RADII(NP)/SALPHA
-
-!          KSI = ALPHA_P(UT) - ALPHA_ALL(NP-1)
-!          LOSPATHS_P_DN(UT) = DSIN(KSI)*RADII(NP-1)/SALPHA
-
-!  CHECK DEBUG
-!          LOSPATHS_P_DN(UT) = LOSPATHS(NP)-LOSPATHS_P_UP(UT)
-!          WRITE(*,*)LOSPATHS_P_UP(UT),LOSPATHS_P_DN(UT),
-!     &              RADII_P(UT)-RADII(NP)
-!          PAUSE
-
-!  ESTABLISH THE SOLAR ANGLE, BOTH NAIDR =SUN-AT-BOA AND GENERALLY
-
-          XICUM = ALPHA_ALL(NLAYERS) - ALPHA_P(UT)
-          DIRECT_SUN = .TRUE.
-          IF (STHETA_BOA.EQ.0.0D0 ) THEN
-            THETA_P = XICUM
-            CTHETA = DCOS(THETA_P)
-            STHETA = DSQRT(1.0D0-CTHETA*CTHETA)
-          ELSE
-            PX = - RADII_P(UT) * DSIN(XICUM)
-            PY = 0.0D0
-            PZ =   RADII_P(UT) * DCOS(XICUM)
-            B = EX*PX + EY*PY + EZ*PZ
-            CTHETA = -B/RADII_P(UT)
-            DIRECT_SUN = (DIRECT_SUN.AND.CTHETA.GE.0.D0)
-            STHETA = DSQRT(1.0D0-CTHETA*CTHETA)
-            THETA_P = DACOS(CTHETA)
-          ENDIF
-
-!         WRITE(*,*)DIRECT_SUN,THETA_ALL(NP-1),THETA_P,THETA_ALL(NP)
-
-!  SUN PATHS, DIRECT SUN AT LAYER TOP
-!   FIRST CALCULATE SUNPATH FOR LAYER CONTAINING PARTIAL POINT
-!   THEN WORK UPWARDS TO TOA USING THE SINE RULE.
-
-          IF ( DIRECT_SUN ) THEN
-            STH0 = STHETA
-            TH0  = THETA_P
-            STH1 = STH0*RADII_P(UT)/RADII(NP-1)
-            TH1  = DASIN(STH1)
-            KS1  = TH0-TH1
-            SUNPATHS_P(UT,NP) = DSIN(KS1)*RADII_P(UT)/STH1
-            STH0 = STH1
-            TH0  = TH1
-            DO K = NP-1, 1, -1
-              STH1 = STH0*RADII(K)/RADII(K-1)
-              TH1  = DASIN(STH1)
-              KS1  = TH0-TH1
-              SUNPATHS_P(UT,K) = DSIN(KS1)*RADII(K)/STH1
-              STH0 = STH1
-              TH0  = TH1
-            ENDDO
-          ENDIF
-
-!  DEBUG
-! 14       FORMAT(A11,1X,10F10.6)
-!          J = PARTIALS_FINEIDX(UT)
-!          WRITE(*,*)UT,NTRAVERSE_P(UT)
-!          WRITE(*,*)UT,J,NP,LOSPATHS_P_UP(UT)/LOSPATHS(NP)
-!           WRITE(*,14)'REGULAR FEB',(SUNPATHS(NP,K),K=NP,1,-1)
-!           DO J = 1, NFINE
-!             WRITE(*,14)'REGULAR FEB',(SUNPATHS_FINE(NP,K,J),K=NP,1,-1)
-!             IF (J.EQ.PARTIALS_FINEIDX(UT))
-!     &        WRITE(*,14)'REGULAR UT ',(SUNPATHS_P(UT,K),K=NP,1,-1)
-!           ENDDO
-!           WRITE(*,14)'REGULAR FEB',0.0D0,(SUNPATHS(NP-1,K),K=NP-1,1,-1
-!
-!  SUN PATHS, NOT DIRECT SUN , WITH TANGENT POINT. CODE SIMILAR TO ABOVE
-!  TANGR = TANGENT POINT RADIUS FOR THIS RAY
-!   NTRAVERSE_P(UT) = NUMBER OF LAYERS TRAVERSED BY RAY.
-
-!  WORK DOWNWARDS FROM TOA (SINE RULE) TO LEVEL IMMEDIATELY ABOVE
-!  THE TANGENT LAYER. DON'T FORGET TO DOUBLE THE PATH LENGTH FOR
-!  ANY LAYERS WHICH ARE TRAVERSED TWICE.
-
-!  TANGENT LAYER PATH LENGTH. TWICE AGAIN. THE FOLLOWING CHECK IS GOOD.
-!  CHECK       WRITE(*,*)TANGR/DTAN(TH1),RADII(KRAD)*DCOS(TH1)
-
-          IF (.NOT.DIRECT_SUN ) THEN
-            TANGR = STHETA*RADII(N)
-            KRAD = NLAYERS
-            DO WHILE (TANGR.GT.RADII(KRAD))
-              KRAD = KRAD - 1
-            ENDDO
-            NTRAVERSE_P(UT) = KRAD + 1
-            STH0 = TANGR/RADII(0)
-            TH0 = DASIN(STH0)
-            DO K = 1, KRAD
-              STH1 = RADII(K-1)*STH0/RADII(K)
-              TH1 = DASIN(STH1)
-              KS1 = TH1-TH0
-              FAC = 1.0D0
-              IF ( K.GT.NP) FAC = 2.0D0
-              SUNPATHS_P(UT,K) = FAC*DSIN(KS1)*RADII(K-1)/STH1
-              STH0 = STH1
-              TH0  = TH1
-            ENDDO
-            SUNPATHS_P(UT,KRAD+1)=2.0D0*RADII_P(UT)*DCOS(TH1)
-          ENDIF
-
-!  FINISH PARTIALS LOOP
-
-        ENDDO
-      ENDIF
-
-!  FINISH
-
-      RETURN
-      END SUBROUTINE OUTGOING_SPHERGEOM_FINE_UP
-
-!
-
-      SUBROUTINE OUTGOING_SPHERGEOM_FINE_DN &
-        ( MAXLAYERS, MAXFINE, MAXPARTIALS, &
-          DO_FINE, DO_PARTIALS, NLAYERS, NFINE, &
-          N_PARTIALS, PARTIALS_IDX, &
-          HEIGHTS, HEIGHTS_P, ERADIUS, &
-          ALPHA_BOA, THETA_BOA, PHI_BOA, &
-          SUNPATHS,      RADII,      NTRAVERSE,      ALPHA_ALL, &
-          SUNPATHS_FINE, RADII_FINE, NTRAVERSE_FINE, ALPHA_FINE, &
-          SUNPATHS_P,    RADII_P,    NTRAVERSE_P,    ALPHA_P, &
-          PARTIALS_FINEIDX, LOSPATHS, LOSPATHS_P_DN, &
-          THETA_ALL, PHI_ALL, COSSCAT_DN, &
-          FAIL, MESSAGE )
-
-      IMPLICIT NONE
-
-
-!  COMPLETELY STAND-ALONE GEOMETRY ROUTINE FOR THE OUTGOING CORRECTION
-!   THIS IS APPLICABLE TO THE DOWNWELLING PATH GEOEMTRY
-
-!    STARTING INPUTS ARE THE BOA VALUES OF SZA, VZA AND PHI
-!    NEED ALSO THE HEIGHT GRIDS, EARTH RADIUS AND CONTROL
-
-!  THIS ROUTINE HAS THE FINE GRIDDING TREATMENT
-!  VERSION 2.3. SEPTEMBER 2007, PARTIAL LAYER GEOMETRIES ADDED
-
-!  INPUTS
-
-      INTEGER, INTENT(IN) ::           MAXLAYERS, MAXFINE, MAXPARTIALS
-      INTEGER, INTENT(IN) ::           NLAYERS, NFINE
-      LOGICAL, INTENT(IN) ::           DO_FINE, DO_PARTIALS
-      INTEGER, INTENT(IN) ::           N_PARTIALS
-      INTEGER, INTENT(IN) ::           PARTIALS_IDX    (MAXPARTIALS)
-      DOUBLE PRECISION, INTENT(IN) ::  ERADIUS, HEIGHTS (0:MAXLAYERS)
-      DOUBLE PRECISION, INTENT(IN) ::  HEIGHTS_P(MAXPARTIALS)
-      DOUBLE PRECISION, INTENT(IN) ::  ALPHA_BOA, THETA_BOA
-
-!  INPUT/OUTPUT
-
-      DOUBLE PRECISION, INTENT(INOUT) :: PHI_BOA
-
-!  MAIN OUTPUTS (GEOMETRY)
-
-      INTEGER, INTENT(OUT) ::           NTRAVERSE   (0:MAXLAYERS)
-      DOUBLE PRECISION, INTENT(OUT) ::  SUNPATHS   (0:MAXLAYERS,MAXLAYERS)
-      DOUBLE PRECISION, INTENT(OUT) ::  RADII      (0:MAXLAYERS)
-      DOUBLE PRECISION, INTENT(OUT) ::  ALPHA_ALL  (0:MAXLAYERS)
-
-!  FINE LEVEL OUTPUT (GEOMETRY)
-
-      INTEGER, INTENT(OUT) ::           NTRAVERSE_FINE(MAXLAYERS,MAXFINE)
-      DOUBLE PRECISION, INTENT(OUT) ::  SUNPATHS_FINE & 
-          (MAXLAYERS,MAXLAYERS,MAXFINE)
-      DOUBLE PRECISION, INTENT(OUT) ::  RADII_FINE    (MAXLAYERS,MAXFINE)
-      DOUBLE PRECISION, INTENT(OUT) ::  ALPHA_FINE    (MAXLAYERS,MAXFINE)
-
-!  PARTIAL LAYER OUTPUT (GEOMETRY)
-
-      INTEGER, INTENT(OUT) ::           NTRAVERSE_P(MAXPARTIALS)
-      DOUBLE PRECISION, INTENT(OUT) ::  SUNPATHS_P (MAXPARTIALS,MAXLAYERS)
-      DOUBLE PRECISION, INTENT(OUT) ::  RADII_P    (MAXPARTIALS)
-      DOUBLE PRECISION, INTENT(OUT) ::  ALPHA_P    (MAXPARTIALS)
-
-!  OTHER (INCIDENTAL) GEOMETRICAL OUTPUT
-
-      DOUBLE PRECISION, INTENT(OUT) ::  LOSPATHS(MAXLAYERS)
-      DOUBLE PRECISION, INTENT(OUT) ::  LOSPATHS_P_DN(MAXPARTIALS)
-      INTEGER, INTENT(OUT) ::           PARTIALS_FINEIDX(MAXPARTIALS)
-
-      DOUBLE PRECISION, INTENT(OUT) ::  THETA_ALL  (0:MAXLAYERS)
-      DOUBLE PRECISION, INTENT(OUT) ::  PHI_ALL    (0:MAXLAYERS)
-      DOUBLE PRECISION, INTENT(OUT) ::  COSSCAT_DN (0:MAXLAYERS)
-
-!  STATUS OUTPUT
-
-      LOGICAL, INTENT(OUT) ::           FAIL
-      CHARACTER (LEN=*), INTENT(INOUT) :: MESSAGE
-
-!  LOCAL
-
-      LOGICAL ::           DIRECT_SUN
-      INTEGER ::           N, K, KRAD, N1, UT, NP
-      DOUBLE PRECISION ::  DEG_TO_RAD, EX, EY, EZ, PX, PY, PZ
-      DOUBLE PRECISION ::  SALPHA_BOA, CALPHA_BOA, SPHI_BOA, PIE, PI2
-      DOUBLE PRECISION ::  STHETA_BOA, CTHETA_BOA, CPHI_BOA
-      DOUBLE PRECISION ::  KSI, CKSI, SKSI, XICUM, TANGR, FAC
-      DOUBLE PRECISION ::  CTHETA, STHETA, CALPHA, SALPHA, CPHI
-      DOUBLE PRECISION ::  B, STH0, TH0, KS1, STH1, TH1, THETA_P
-
-!  LOCAL ARRAYS ASSOCIATED WITH FINE GRID OUTPUT
-
-      INTEGER ::            J
-      INTEGER, PARAMETER :: MAXLOCALFINE = 20
-      LOGICAL ::            DIRECT_SUNF(MAXLOCALFINE)
-      DOUBLE PRECISION ::   DIFZ, DFINE1, SAF, XICUM0, PATH
-      DOUBLE PRECISION ::   THETAF(MAXLOCALFINE), XICUMF, DIFA
-      DOUBLE PRECISION ::   CTHETAF(MAXLOCALFINE)
-      DOUBLE PRECISION ::   STHETAF(MAXLOCALFINE)
-      DOUBLE PRECISION ::   KSIF(MAXLOCALFINE)
-
-!  INITIALISE OUTPUT
-
-      FAIL = .FALSE.
-      MESSAGE = ' '
-
-!  CHECK RANGE OF INPUTS
-
-      IF ( ALPHA_BOA.GE.90.0D0.OR.ALPHA_BOA.LT.0.0D0 ) THEN
-        MESSAGE = 'BOA LOS ANGLE OUTSIDE RANGE [0,90])'
-        FAIL    = .TRUE.
-        RETURN
-      ENDIF
-      IF ( PHI_BOA.LT.0.0D0 )   PHI_BOA = - PHI_BOA
-
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!  BUG CORRECTED 01 OCTOBER 2010------------------------- RTS, R. SPURR
-
-!  IMPORTANT, DO NOT LIMIT THE AZIMUTH TO < 180 DEGREES
-
-!      IF ( PHI_BOA.GT.180.0D0 ) PHI_BOA = 360.0D0 - PHI_BOA    ! OLD
-       IF ( PHI_BOA.GT.360.0D0 ) PHI_BOA = PHI_BOA - 360.0D0    ! NEW
-
-!  BUG CORRECTED 01 OCTOBER 2010------------------------- RTS, R. SPURR
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-      IF ( THETA_BOA.GE.90.0D0.OR.THETA_BOA.LT.0.0D0 ) THEN
-        MESSAGE = 'BOA SZA ANGLE OUTSIDE RANGE [0,90])'
-        FAIL    = .TRUE.
-        RETURN
-      ENDIF
-      IF ( DO_FINE ) THEN
-       IF ( NFINE.GT.MAXLOCALFINE ) THEN
-         MESSAGE = 'LOCAL FINELAYER DIMENSIONING INSUFFICIENT'
-         FAIL    = .TRUE.
-         RETURN
-       ENDIF
-      ENDIF
-
-!  ZERO THE SUN PATHS
-!  INITIALIZE NUMBER OF LAYERS TRAVERSED  (NOMINAL CONDITIONS)
-
-      DO N = 0, NLAYERS
-        NTRAVERSE(N) = N
-        DO K = 1, NLAYERS
-         SUNPATHS(N,K) = 0.0D0
-        ENDDO
-      ENDDO
-
-!  ZERO THE PARTIAL PATHS, INITIALIZE THE TRAVERSE NUMBER (NOMINAL)
-
-      IF ( DO_PARTIALS ) THEN
-        DO UT = 1, N_PARTIALS
-          NP = PARTIALS_IDX(UT)
-          NTRAVERSE_P(UT) = NP
-          DO K = 1, NP
-            SUNPATHS_P(UT,K) = 0.0D0
-          ENDDO
-        ENDDO
-      ENDIF
-
-!  ZERO THE FINE DATA PATHS
-
-      IF ( DO_FINE ) THEN
-       DFINE1 = DBLE(NFINE) + 1
-       DO N = 1, NLAYERS
-        DO J = 1, NFINE
-         NTRAVERSE_FINE(N,J) = N
-         DO K = 1, NLAYERS
-          SUNPATHS_FINE(N,K,J) = 0.0D0
-         ENDDO
-        ENDDO
-       ENDDO
-      ENDIF
-
-!  START AT BOA
-
-      PIE        = DACOS(-1.0D0)
-      DEG_TO_RAD = PIE / 180.0D0
-      PI2        = 2.0D0 * PIE
-
-      ALPHA_ALL(NLAYERS) = ALPHA_BOA * DEG_TO_RAD
-      THETA_ALL(NLAYERS) = THETA_BOA * DEG_TO_RAD
-      PHI_ALL(NLAYERS)   = PHI_BOA   * DEG_TO_RAD
-
-!  COSINE OF SCATTERING ANGLE AT BOA
-
-      SALPHA_BOA = DSIN(ALPHA_ALL(NLAYERS))
-      CALPHA_BOA = DCOS(ALPHA_ALL(NLAYERS))
-      STHETA_BOA = DSIN(THETA_ALL(NLAYERS))
-      CTHETA_BOA = DCOS(THETA_ALL(NLAYERS))
-      CPHI_BOA   = DCOS(PHI_ALL(NLAYERS))
-      SPHI_BOA   = DSIN(PHI_ALL(NLAYERS))
-
-      COSSCAT_DN (NLAYERS) = + CALPHA_BOA * CTHETA_BOA + &
-                               SALPHA_BOA * STHETA_BOA * CPHI_BOA
-
-!  RADII
-!  -----
-
-!  LAYER LEVELS
-
-      DO N = 0, NLAYERS
-        RADII(N) = ERADIUS + HEIGHTS(N)
-      ENDDO
-
-!  FINE LEVELS
-
-      IF ( DO_FINE ) THEN
-        DO N = 1, NLAYERS
-          DIFZ = (RADII(N-1)-RADII(N))/DFINE1
-          DO J = 1, NFINE
-            RADII_FINE(N,J) = RADII(N) + DIFZ * DBLE(J)
-          ENDDO
-        ENDDO
-      ENDIF
-
-!  PARTIAL LEVELS
-!   FIND THE FINE LEVEL JUST BELOW PARTIAL POINT = (0,1,2,...NFINE)
-
-      IF ( DO_PARTIALS ) THEN
-        DO UT = 1, N_PARTIALS
-          NP = PARTIALS_IDX(UT)
-          RADII_P(UT) = ERADIUS + HEIGHTS_P(UT)
-          J = 1
-          DO WHILE (RADII_P(UT).GT.RADII_FINE(NP,J))
-             J = J + 1
-             IF (J.GT.NFINE) GO TO 5778
-          ENDDO
- 5778     CONTINUE
-          PARTIALS_FINEIDX(UT) = J - 1
-        ENDDO
-      ENDIF
-
-!  SPECIAL CASE. DIRECT NADIR VIEWING
-!  ==================================
-
-!  COMPUTE EVERYTHING AND EXIT.
-!    (THIS IS THE SAME AS THE REGULAR PSEUDO-SPHERICAL )
-
-      IF ( SALPHA_BOA.EQ.0.0D0 ) THEN
-
-!  WHOLE LAYER AND FINE DIVISIONS
-!  ------------------------------
-
-!  START LAYER LOOP, WORKING UPWARDS
-
-        DO N = NLAYERS,1,-1
-
-!  SET MAIN OUTPUT.
-
-          ALPHA_ALL(N-1)   = ALPHA_ALL(N)
-          THETA_ALL(N-1)   = THETA_ALL(N)
-          PHI_ALL(N-1)     = PHI_ALL(N)
-          COSSCAT_DN(N-1) = COSSCAT_DN(N)
-          LOSPATHS(N) = RADII(N-1)-RADII(N)
-          IF ( DO_FINE ) THEN
-            DO J = 1, NFINE
-              ALPHA_FINE(N,J) = 0.0D0
-            ENDDO
-          ENDIF
-
-!  OVERHEAD SUN
-
-          IF (STHETA_BOA.EQ.0.0D0 ) THEN
-            DO K = N, 1, -1
-              SUNPATHS(N,K) = RADII(K-1)-RADII(K)
-            ENDDO
-            IF ( DO_FINE ) THEN
-              DO J = 1, NFINE
-                DO K = N - 1, 1, -1
-                  SUNPATHS_FINE(N,K,J) = RADII(K-1)-RADII(K)
-                ENDDO
-                SUNPATHS_FINE(N,N,J) = RADII(N-1)-RADII_FINE(N,J)
-              ENDDO
-            ENDIF
-          ENDIF
-
-!  NON-OVERHEAD SUN
-!  MAIN OUTPUT OF SOLAR PATHS
-!  SOLAR PATH DISTANCES FOR FINE OUTPUT
-
-          IF (STHETA_BOA.GT.0.0D0 ) THEN
-            STH0 = STHETA_BOA
-            TH0  = THETA_ALL(N)
-            DO K = N, 1, -1
-              STH1 = STH0*RADII(K)/RADII(K-1)
-              TH1  = DASIN(STH1)
-              KS1  = TH0-TH1
-              SUNPATHS(N,K) = DSIN(KS1)*RADII(K)/STH1
-              STH0 = STH1
-              TH0  = TH1
-            ENDDO
-            IF ( DO_FINE ) THEN
-              DO J = 1, NFINE
-                STH0 = STHETA_BOA
-                TH0  = THETA_ALL(N)
-                STH1 = STH0*RADII_FINE(N,J)/RADII(N-1)
-                TH1  = DASIN(STH1)
-                KS1  = TH0-TH1
-                SUNPATHS_FINE(N,N,J) = DSIN(KS1)*RADII_FINE(N,J)/STH1
-                STH0 = STH1
-                TH0  = TH1
-                DO K = N-1, 1, -1
-                  STH1 = STH0*RADII(K)/RADII(K-1)
-                  TH1  = DASIN(STH1)
-                  KS1  = TH0-TH1
-                  SUNPATHS_FINE(N,K,J) = DSIN(KS1)*RADII(K)/STH1
-                  STH0 = STH1
-                  TH0  = TH1
-                ENDDO
-              ENDDO
-            ENDIF
-          ENDIF
-
-!  END MAIN LAYER LOOP
-
-        ENDDO
-
-!  PARTIAL LAYERS
-!  --------------
-
-        IF ( DO_PARTIALS ) THEN
-          DO UT = 1, N_PARTIALS
-            NP = PARTIALS_IDX(UT)
-
-!  LOS ANGLE AND PATHS
-
-            ALPHA_P(UT) = ALPHA_ALL(NLAYERS)
-            LOSPATHS_P_DN(UT) = RADII(NP-1)-RADII_P(UT)
-
-!  OVERHEAD SUN
-
-            IF (STHETA_BOA.EQ.0.0D0 ) THEN
-              DO K = 1, NP-1
-                SUNPATHS_P(UT,K) = RADII(K-1)-RADII(K)
-              ENDDO
-              SUNPATHS_P(UT,NP) = RADII(NP-1)-RADII_P(UT)
-            ENDIF
-
-!  NON-OVERHEAD SUN
-
-            IF (STHETA_BOA.GT.0.0D0 ) THEN
-              STH0 = STHETA_BOA
-              TH0  = THETA_ALL(NP)
-              STH1 = STH0*RADII_P(UT)/RADII(NP-1)
-              TH1  = DASIN(STH1)
-              KS1  = TH0-TH1
-              SUNPATHS_P(UT,NP) = DSIN(KS1)*RADII_P(UT)/STH1
-              STH0 = STH1
-              TH0  = TH1
-              DO K = NP-1, 1, -1
-                STH1 = STH0*RADII(K)/RADII(K-1)
-                TH1  = DASIN(STH1)
-                KS1  = TH0-TH1
-                SUNPATHS_P(UT,K) = DSIN(KS1)*RADII(K)/STH1
-                STH0 = STH1
-                TH0  = TH1
-              ENDDO
-            ENDIF
-
-!  FINISH PARTIAL LAYER STUFF
-
-          ENDDO
-        ENDIF
-
-!  RETURN, AS EVERYTHING NOW DONE
-
-        RETURN
-
-!  END REGULAR PSEUDO-SPHERICAL CLAUSE, LOS IS ZERO
-
-      ENDIF
-
-!  OUTGOING SPHERICITY GEOMETRY
-!  ============================
-
-!  DEFINE UNIT SOLAR VECTOR AT BOA
-!   NOTE CHANGE OF SIGN FOR EX HERE.
-
-      EX = + STHETA_BOA * CPHI_BOA
-      EY = - STHETA_BOA * SPHI_BOA
-      EZ = - CTHETA_BOA
-
-!  SUN PATHS, BOA GEOMETRY, ALWAYS DIRECTLY ILLUMINATED
-
-      IF ( STHETA_BOA.EQ.0.0D0 ) THEN
-        DO K = NLAYERS, 1, -1
-          SUNPATHS(NLAYERS,K) = RADII(K-1)-RADII(K)
-        ENDDO
-      ELSE
-        STH0 = STHETA_BOA
-        TH0  = THETA_ALL(NLAYERS)
-        DO K = NLAYERS, 1, -1
-          STH1 = STH0*RADII(K)/RADII(K-1)
-          TH1  = DASIN(STH1)
-          KS1  = TH0-TH1
-          SUNPATHS(NLAYERS,K) = DSIN(KS1)*RADII(K)/STH1
-          STH0 = STH1
-          TH0  = TH1
-        ENDDO
-      ENDIF
-
-!  CHECK SINGLE ILLUMINATION
-!      --NOT REQUIRED, NOW WE HAVE THE TANGENT POINT TREATMENT
-!      IF (STHETA_BOA.GT.0.0D0 ) THEN
-!        XICUM = DASIN(RADII(NLAYERS)*SALPHA_BOA/RADII(0))
-!        XICUM = ALPHA_ALL(NLAYERS)-XICUM
-!        PX = - RADII(0) * DSIN(XICUM)
-!        PY = 0.0D0
-!        PZ =   RADII(0) * DCOS(XICUM)
-!        B = EX*PX + EY*PY + EZ*PZ
-!        CTHETA = -B/RADII(0)
-!        IF ( CTHETA.LE.0.0D0 ) THEN
-!          WRITE(*,*)'LIMIT VALUE = ',90.0D0-XICUM/DEG_TO_RAD
-!        ENDIF
-!      ENDIF
-
-!  INITIALISE LOS CUMULATIVE ANGLE
-
-      XICUM  = 0.0D0
-
-!  SET TOA DIRECT ILLUMINATION FLAG
-
-      DIRECT_SUN = .TRUE.
-      IF ( DO_FINE ) THEN
-        DO J = 1, NFINE
-          DIRECT_SUNF(J) = .TRUE.
-        ENDDO
-      ENDIF
-
-!  START LOOP OVER POSITIONS (LAYER UPPER BOUNDARIES)
-
-      DO N = NLAYERS - 1, 0, -1
-
-!  NEXT LEVEL UP
-
-        N1 = N + 1
-
-!  LOS ANGLES AT LEVEL BOUNDARIES
-
-        SALPHA = RADII(NLAYERS) * SALPHA_BOA / RADII(N)
-        ALPHA_ALL(N)  = DASIN(SALPHA)
-        CALPHA = DCOS(ALPHA_ALL(N))
-
-!  LOSPATHS
-
-        KSI = ALPHA_ALL(N1) - ALPHA_ALL(N)
-        SKSI = DSIN(KSI)
-        CKSI = DCOS(KSI)
-        LOSPATHS(N1) = SKSI * RADII(N1) / SALPHA
-        XICUM0 = XICUM
-        XICUM  = XICUM + KSI
-
-!  FINE GRID LOSPATH OUTPUT (ANGLE AND RADIUS)
-!    LOCALLY SAVE THE EARTH-CENTER ANGLE KSIF
-
-        IF ( DO_FINE ) THEN
-          DIFA = (ALPHA_ALL(N1)-ALPHA_ALL(N))/DFINE1
-          DO J = 1, NFINE
-            ALPHA_FINE(N1,J) = ALPHA_ALL(N1) - DIFA * DBLE(J)
-            SAF = DSIN(ALPHA_FINE(N1,J))
-            RADII_FINE(N1,J) = SALPHA_BOA * RADII(NLAYERS) / SAF
-            KSIF(J) = ALPHA_ALL(N1) - ALPHA_FINE(N1,J)
-          ENDDO
-        ENDIF
-
-!  SUN ANGLES FOR THE DIRECT NADIR CASE
-
-        IF (STHETA_BOA.EQ.0.0D0 ) THEN
-         THETA_ALL(N) = XICUM
-         CTHETA = DCOS(THETA_ALL(N))
-         STHETA = DSQRT(1.0D0-CTHETA*CTHETA)
-         IF ( DO_FINE ) THEN
-           DO J = 1, NFINE
-             THETAF(J)  = XICUM0 + KSIF(J)
-             CTHETAF(J) = DCOS(THETAF(J))
-             STHETAF(J) = DSQRT(1.0D0-CTHETA*CTHETA)
-           ENDDO
-         ENDIF
-        ENDIF
-
-!  SUN ANGLES FOR THE GENERAL CASE
-!    LOCAL SAVE OF ANGLES, COSINES, SINES AND  ILLUMINATION FLAGS
-
-        IF (STHETA_BOA.GT.0.0D0 ) THEN
-         PX = - RADII(N) * DSIN(XICUM)
-         PY = 0.0D0
-         PZ =   RADII(N) * DCOS(XICUM)
-         B = EX*PX + EY*PY + EZ*PZ
-         CTHETA = -B/RADII(N)
-         DIRECT_SUN = (DIRECT_SUN.AND.CTHETA.GE.0.D0)
-         STHETA = DSQRT(1.0D0-CTHETA*CTHETA)
-         THETA_ALL(N) = DACOS(CTHETA)
-         IF ( DO_FINE ) THEN
-           DO J = 1, NFINE
-             XICUMF  = XICUM0 + KSIF(J)
-             PX = - RADII_FINE(N1,J) * DSIN(XICUMF)
-             PY = 0.0D0
-             PZ =   RADII_FINE(N1,J) * DCOS(XICUMF)
-             B  = EX*PX + EY*PY + EZ*PZ
-             CTHETAF(J) = -B/RADII_FINE(N1,J)
-             DIRECT_SUNF(J) = (DIRECT_SUNF(J).AND.CTHETAF(J).GE.0.D0)
-             STHETAF(J) = DSQRT(1.0D0-CTHETAF(J)*CTHETAF(J))
-             THETAF(J)  = DACOS(CTHETAF(J))
-           ENDDO
-         ENDIF
-        ENDIF
-
-!  UNIT VECTOR F2(I) PERPENDICULAR TO OP BUT IN PLANE OF PATH
-!  PROJECTION OF F2(I) ON SOLAR PATH GIVES THE RELATIVE AZIMUTH AT P
-!        F2X = DSIN(XICUM)
-!        F2Y = 0.0D0
-!        F2Z = DCOS(XICUM)
-!        CPHI = - (EX*F2X + EY*F2Y + EZ*F2Z ) / STHETA
-!        CPHI = - (EX*F2X + EY*F2Y + EZ*F2Z ) / STHETA
-!        IF ( CPHI.GT.1.0D0)  CPHI = 1.0D0
-!        IF ( CPHI.LT.-1.0D0) CPHI = -1.0D0
-! ********************************************* APPARENTLY NOT CORRECT
-
-!  FIX PHI BY USING CONSTANCY OF SCATTER ANGLE
-
-        COSSCAT_DN(N) = COSSCAT_DN(N+1)
-        IF (STHETA_BOA.EQ.0.0D0 ) THEN
-          PHI_ALL(N)     = PHI_ALL(N+1)
-        ELSE
-         CPHI = (COSSCAT_DN(N)-CALPHA*CTHETA)/STHETA/SALPHA
-         IF ( CPHI.GT.1.0D0) CPHI = 1.0D0
-         IF ( CPHI.LT.-1.0D0) CPHI = -1.0D0
-         PHI_ALL(N)     = DACOS(CPHI)
-
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
- !  BUG CORRECTED 01 OCTOBER 2010------------------------- RTS, R. SPURR
-
-!  IF AZIMUTH > 180 DEGREES. MUST ENSURE CONSISTENCY, ADD THIS LINE.
-
-         IF ( PHI_BOA.GT.180.0D0 ) PHI_ALL(N) = PI2 - PHI_ALL(N)
-
- !  B G CORRECTED 01 OCTOBER 2010------------------------- RTS, R. SPURR
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-        ENDIF
-
-!  SUN PATHS, DIRECT SUN AT LAYER TOP
-!  ==================================
-
-!   MEANS THAT THE SZA AT LAYER TOP IS < 90.
-!    ===> SZA < 90 FOR ALL FINE POINTS IN LAYER BENEATH
-
-        IF ( DIRECT_SUN ) THEN
-
-!  WORK UP FROM LEVEL N TO TOA
-!    LAYER TOP CALCULATION GETS LEFT OUT AT TOA
-
-         IF ( N .GT. 0 ) THEN
-          STH0 = STHETA
-          TH0  = THETA_ALL(N)
-          DO K = N, 1, -1
-           STH1 = STH0*RADII(K)/RADII(K-1)
-           TH1  = DASIN(STH1)
-           KS1  = TH0-TH1
-           SUNPATHS(N,K) = DSIN(KS1)*RADII(K)/STH1
-           STH0 = STH1
-           TH0  = TH1
-          ENDDO
-         ENDIF
-
-! DBG         WRITE(*,*)'REGULAR',N1,(SUNPATHS(N1,K),K=N1,1,-1)
-
-!  FINE GRID CALCULATION IS ALWAYS REQUIRED
-!  ----------------------------------------
-
-!   START AT THE GRID POINT ON LOS PATH AND WORK UPWARDS,
-!     FIRST ACROSS PARTIAL LAYER TO UPPER BOUNDARY, THEN CONTINUE
-!     UPWARDS TO TOA ON A WHOLE LAYER BASIS. SINE RULE.
-
-         IF ( DO_FINE ) THEN
-          DO J = 1, NFINE
-           STH0 = STHETAF(J)
-           TH0  = THETAF(J)
-           STH1 = STH0*RADII_FINE(N1,J)/RADII(N)
-           TH1  = DASIN(STH1)
-           KS1  = TH0-TH1
-           SUNPATHS_FINE(N1,N1,J) = DSIN(KS1)*RADII_FINE(N1,J)/STH1
-           STH0 = STH1
-           TH0  = TH1
-           DO K = N, 1, -1
-            STH1 = STH0*RADII(K)/RADII(K-1)
-            TH1  = DASIN(STH1)
-            KS1  = TH0-TH1
-            SUNPATHS_FINE(N1,K,J) = DSIN(KS1)*RADII(K)/STH1
-            STH0 = STH1
-            TH0  = TH1
-           ENDDO
-!  DBG           WRITE(*,*)'REGULAR',N1,J,(SUNPATHS_FINE(N1,K,J),K=N1,1,
-          ENDDO
-
-!  DBG         WRITE(*,*)'REGULAR',N,(SUNPATHS(N,K),K=N,1,-1)
-
-         ENDIF
-
-!  COMPLETE DIRECT SUN COMPUTATIONS
-
-        ENDIF
-
-!  SUN PATHS, NOT DIRECT SUN , WITH TANGENT POINT
-!  ==============================================
-
-!  ALTHOUGH LAYER TOP HAS A TANGENT POINT, NOT ALL OF THE FINE-GRID
-!   POINTS WILL HAVE A TANGENT POINT.
-
-        IF (.NOT.DIRECT_SUN ) THEN
-
-!  FIRST DO THE LAYER-TOP CALCULATION.
-!  -----------------------------------
-
-!  TANGR = TANGENT POINT RADIUS.
-
-         TANGR = STHETA*RADII(N)
-
-!  NTRAVERSE(N) IS THE NUMBER OF LAYERS TRAVERSED BY RAY.
-
-         KRAD = NLAYERS
-         DO WHILE (TANGR.GT.RADII(KRAD))
-          KRAD = KRAD - 1
-         ENDDO
-         NTRAVERSE(N) = KRAD + 1
-
-!  START AT THE TOA ANGLES
-
-         STH0 = TANGR/RADII(0)
-         TH0 = DASIN(STH0)
-
-!  WORK DOWNWARDS FROM TOA (SINE RULE) TO LEVEL IMMEDIATELY ABOVE
-!  THE TANGENT LAYER. DON'T FORGET TO DOUBLE THE PATH LENGTH FOR
-!  ANY LAYERS WHICH ARE TRAVERSED TWICE.
-
-         DO K = 1, KRAD
-          STH1 = RADII(K-1)*STH0/RADII(K)
-          TH1 = DASIN(STH1)
-          KS1 = TH1-TH0
-          FAC = 1.0D0
-          IF ( K.GT.N) FAC = 2.0D0
-          SUNPATHS(N,K) = FAC*DSIN(KS1)*RADII(K-1)/STH1
-          STH0 = STH1
-          TH0  = TH1
-         ENDDO
-
-!  TANGENT LAYER PATH LENGTH. TWICE AGAIN. THE FOLLOWING CHECK IS GOOD.
-!  CHECK       WRITE(*,*)TANGR/DTAN(TH1),RADII(KRAD)*DCOS(TH1)
-
-         SUNPATHS(N,KRAD+1)=2.0D0*RADII(KRAD)*DCOS(TH1)
-
-! DBG         WRITE(*,*)'--TANGENT',N1,(SUNPATHS(N1,K),K=NTRAVERSE(N1),1
-
-!  FINE LAYER DEVELOPMENT (SLIGHTLY DIFFERENT)
-!  ---------------------
-
-         IF ( DO_FINE ) THEN
-          DO J = 1, NFINE
-
-!  IF THERE IS NO TANGENT POINT, REPEAT CALCULATION ABOVE.
-
-           IF ( DIRECT_SUNF(J) ) THEN
-            STH0 = STHETAF(J)
-            TH0  = THETAF(J)
-            STH1 = STH0*RADII_FINE(N1,J)/RADII(N)
-            TH1  = DASIN(STH1)
-            KS1  = TH0-TH1
-            SUNPATHS_FINE(N1,N1,J) = DSIN(KS1)*RADII_FINE(N1,J)/STH1
-            STH0 = STH1
-            TH0  = TH1
-            DO K = N, 1, -1
-             STH1 = STH0*RADII(K)/RADII(K-1)
-             TH1  = DASIN(STH1)
-             KS1  = TH0-TH1
-             SUNPATHS_FINE(N1,K,J) = DSIN(KS1)*RADII(K)/STH1
-             STH0 = STH1
-             TH0  = TH1
-            ENDDO
-
-! DBG           WRITE(*,*)'REGULAR',N1,J,
-!     &       (SUNPATHS_FINE(N1,K,J),K=NTRAVERSE_FINE(N1,J),1,-1)
-
-!  FINE GRID CALCULATION WITH TANGENT POINT
-!  ----------------------------------------
-
-           ELSE
-
-!  LOCAL TANGENT RADIUS AND NUMBER OF LAYERS TRAVERSED
-
-            TANGR = STHETAF(J)*RADII_FINE(N1,J)
-            KRAD = NLAYERS
-            DO WHILE (TANGR.GT.RADII(KRAD))
-             KRAD = KRAD - 1
-            ENDDO
-            NTRAVERSE_FINE(N1,J) = KRAD + 1
-
-!  START AGAIN AT TOA
-
-            STH0 = TANGR/RADII(0)
-            TH0  = DASIN(STH0)
-
-!  WORK DOWN TO THE LEVEL N
-
-            DO K = 1, N
-             STH1 = RADII(K-1)*STH0/RADII(K)
-             TH1 = DASIN(STH1)
-             KS1 = TH1-TH0
-             SUNPATHS_FINE(N1,K,J) = DSIN(KS1)*RADII(K-1)/STH1
-             STH0 = STH1
-             TH0  = TH1
-            ENDDO
-
-!  IN LAYER BELOW LEVEL N, WORK DOWN TO LEVEL OF FINE GRID RADIUS
-!     (SINGLE CONTRIBUTION)
-
-            STH1 = RADII(N)*STH0/RADII_FINE(N1,J)
-            TH1 = DASIN(STH1)
-            KS1 = TH1-TH0
-            PATH = DSIN(KS1)*RADII(N)/STH1
-            STH0 = STH1
-            TH0  = TH1
-
-!  IN LAYER BELOW LEVEL N, COMPLETE THE PATH DOWN TO THE TANGENT POINT
-!    (DOUBLE CONTRIBUTION). FINISH.
-
-            IF ( KRAD.EQ.N ) THEN
-
-              PATH = PATH + 2.0D0*RADII_FINE(N1,J)*DCOS(TH1)
-              SUNPATHS_FINE(N1,KRAD+1,J) = PATH
-
-!  CHECK    WRITE(*,*)'1',TANGR/DTAN(TH1),RADII_FINE(N1,J)*DCOS(TH1)
-
-!  IN LAYER BELOW LEVEL N, NEED TO GO DOWN FURTHER.
-!    (FROM NOW ON, WE NEED DOUBLE CONTRIBUTIONS)
-!     --- CONTINUE THE PATH TO THE BOTTOM OF THIS LAYER
-!     --- CONTINUE DOWN BY WHOLE-LAYER STEPS UNTIL REACH LEVEL ABOVE TAN
-!     --- COMPLETE THE PATH DOWN TO THE TANGENT POINT
-
-            ELSE
-              STH1 = RADII_FINE(N1,J)*STH0/RADII(N1)
-              TH1 = DASIN(STH1)
-              KS1 = TH1-TH0
-              PATH = PATH + 2.0D0 * DSIN(KS1)*RADII_FINE(N1,J)/STH1
-              SUNPATHS_FINE(N1,N1,J) = PATH
-              STH0 = STH1
-              TH0  = TH1
-              DO K = N1 + 1, KRAD
-               STH1 = RADII(K-1)*STH0/RADII(K)
-               TH1 = DASIN(STH1)
-               KS1 = TH1-TH0
-               SUNPATHS_FINE(N1,K,J) = DSIN(KS1)*RADII(K-1)/STH1
-               STH0 = STH1
-               TH0  = TH1
-              ENDDO
-              SUNPATHS_FINE(N1,KRAD+1,J)=2.0D0*RADII(KRAD)*DCOS(TH1)
-!  CHECK 2    WRITE(*,*)'2',TANGR/DTAN(TH1),RADII(KRAD)*DCOS(TH1)
-            ENDIF
-
-! DBG           WRITE(*,*)'TANGENT',N1,J,
-!     &       (SUNPATHS_FINE(N1,K,J),K=NTRAVERSE_FINE(N1,J),1,-1)
-
-!  COMPLETE TANGENT POINT CLAUSE
-
-           ENDIF
-
-!  COMPLETE FINE-GRID LOOP
-
-          ENDDO
-
-!  DBG        WRITE(*,*)'TANGENT',N,(SUNPATHS(N,K),K=NTRAVERSE(N),1,-1)
-
-!  COMPLETE TANGENT POINT CALCULATION
-
-         ENDIF
-
-        ENDIF
-
-!  END LAYER LOOP
-
-      ENDDO
-
-!  PARTIALS SECTION
-!  ----------------
-
-!  PARTIAL ANGLES AND LOSPATHS
-
-      IF ( DO_PARTIALS ) THEN
-        DO UT = 1, N_PARTIALS
-          NP = PARTIALS_IDX(UT)
-
-!  ESTABLISH THE LOS ANGLE, AND LOSPATHS
-
-          TH0 = ALPHA_ALL(NP)
-          STH0 = DSIN(TH0)
-          SALPHA = RADII(NP)*STH0 / RADII_P(UT)
-          ALPHA_P(UT) = DASIN(SALPHA)
-          CALPHA = DSQRT(1.0D0-SALPHA*SALPHA)
-
-!          KSI = ALPHA_ALL(NP) - ALPHA_P(UT)
-!          LOSPATHS_P_UP(UT) = DSIN(KSI)*RADII(NP)/SALPHA
-
-          KSI = ALPHA_P(UT) - ALPHA_ALL(NP-1)
-          LOSPATHS_P_DN(UT) = DSIN(KSI)*RADII(NP-1)/SALPHA
-
-!  ESTABLISH THE SOLAR ANGLE, BOTH NAIDR =SUN-AT-BOA AND GENERALLY
-
-          XICUM = ALPHA_ALL(NLAYERS) - ALPHA_P(UT)
-          DIRECT_SUN = .TRUE.
-          IF (STHETA_BOA.EQ.0.0D0 ) THEN
-            THETA_P = XICUM
-            CTHETA = DCOS(THETA_P)
-            STHETA = DSQRT(1.0D0-CTHETA*CTHETA)
-          ELSE
-            PX = - RADII_P(UT) * DSIN(XICUM)
-            PY = 0.0D0
-            PZ =   RADII_P(UT) * DCOS(XICUM)
-            B = EX*PX + EY*PY + EZ*PZ
-            CTHETA = -B/RADII_P(UT)
-            DIRECT_SUN = (DIRECT_SUN.AND.CTHETA.GE.0.D0)
-            STHETA = DSQRT(1.0D0-CTHETA*CTHETA)
-            THETA_P = DACOS(CTHETA)
-          ENDIF
-
-!         WRITE(*,*)DIRECT_SUN,THETA_ALL(NP-1),THETA_P,THETA_ALL(NP)
-
-!  SUN PATHS, DIRECT SUN AT LAYER TOP
-!   FIRST CALCULATE SUNPATH FOR LAYER CONTAINING PARTIAL POINT
-!   THEN WORK UPWARDS TO TOA USING THE SINE RULE.
-
-          IF ( DIRECT_SUN ) THEN
-            STH0 = STHETA
-            TH0  = THETA_P
-            STH1 = STH0*RADII_P(UT)/RADII(NP-1)
-            TH1  = DASIN(STH1)
-            KS1  = TH0-TH1
-            SUNPATHS_P(UT,NP) = DSIN(KS1)*RADII_P(UT)/STH1
-            STH0 = STH1
-            TH0  = TH1
-            DO K = NP-1, 1, -1
-              STH1 = STH0*RADII(K)/RADII(K-1)
-              TH1  = DASIN(STH1)
-              KS1  = TH0-TH1
-              SUNPATHS_P(UT,K) = DSIN(KS1)*RADII(K)/STH1
-              STH0 = STH1
-              TH0  = TH1
-            ENDDO
-          ENDIF
-
-!  DEBUG
-! 14       FORMAT(A11,1X,10F10.6)
-!          J = PARTIALS_FINEIDX(UT)
-!          WRITE(*,*)UT,NTRAVERSE_P(UT)
-!          WRITE(*,*)UT,J,NP,LOSPATHS_P_UP(UT)/LOSPATHS(NP)
-!           WRITE(*,14)'REGULAR FEB',(SUNPATHS(NP,K),K=NP,1,-1)
-!           DO J = 1, NFINE
-!             WRITE(*,14)'REGULAR FEB',(SUNPATHS_FINE(NP,K,J),K=NP,1,-1)
-!             IF (J.EQ.PARTIALS_FINEIDX(UT))
-!     &        WRITE(*,14)'REGULAR UT ',(SUNPATHS_P(UT,K),K=NP,1,-1)
-!           ENDDO
-!           WRITE(*,14)'REGULAR FEB',0.0D0,(SUNPATHS(NP-1,K),K=NP-1,1,-1
-!
-!  SUN PATHS, NOT DIRECT SUN , WITH TANGENT POINT. CODE SIMILAR TO ABOVE
-!  TANGR = TANGENT POINT RADIUS FOR THIS RAY
-!   NTRAVERSE_P(UT) = NUMBER OF LAYERS TRAVERSED BY RAY.
-
-!  WORK DOWNWARDS FROM TOA (SINE RULE) TO LEVEL IMMEDIATELY ABOVE
-!  THE TANGENT LAYER. DON'T FORGET TO DOUBLE THE PATH LENGTH FOR
-!  ANY LAYERS WHICH ARE TRAVERSED TWICE.
-
-!  TANGENT LAYER PATH LENGTH. TWICE AGAIN. THE FOLLOWING CHECK IS GOOD.
-!  CHECK       WRITE(*,*)TANGR/DTAN(TH1),RADII(KRAD)*DCOS(TH1)
-
-          IF (.NOT.DIRECT_SUN ) THEN
-            TANGR = STHETA*RADII(N)
-            KRAD = NLAYERS
-            DO WHILE (TANGR.GT.RADII(KRAD))
-              KRAD = KRAD - 1
-            ENDDO
-            NTRAVERSE_P(UT) = KRAD + 1
-            STH0 = TANGR/RADII(0)
-            TH0 = DASIN(STH0)
-            DO K = 1, KRAD
-              STH1 = RADII(K-1)*STH0/RADII(K)
-              TH1 = DASIN(STH1)
-              KS1 = TH1-TH0
-              FAC = 1.0D0
-              IF ( K.GT.NP) FAC = 2.0D0
-              SUNPATHS_P(UT,K) = FAC*DSIN(KS1)*RADII(K-1)/STH1
-              STH0 = STH1
-              TH0  = TH1
-            ENDDO
-            SUNPATHS_P(UT,KRAD+1)=2.0D0*RADII_P(UT)*DCOS(TH1)
-          ENDIF
-
-!  FINISH PARTIALS LOOP
-
-        ENDDO
-      ENDIF
-
-!  FINISH
-
-      RETURN
-      END SUBROUTINE OUTGOING_SPHERGEOM_FINE_DN
 
 !
 
@@ -5511,256 +4545,11 @@
 
 !
 
-      SUBROUTINE MULTI_OUTGOING_ADJUSTGEOM &
-         ( MAX_VZA, MAX_SZA, MAX_AZM, N_VZA, N_SZA, N_AZM, &
-           HSURFACE, ERADIUS, DO_ADJUST_SURFACE, &
-           ALPHA_BOA, THETA_BOA, PHI_BOA, &
-           ALPHA_SSA, THETA_SSA, PHI_SSA, FAIL, MESSAGE, TRACE )
-
-      IMPLICIT NONE
-
-! STAND-ALONE GEOMETRY ROUTINE FOR ADJUSTING THE OUTGOING CORRECTION
-!    STARTING INPUTS ARE THE BOA VALUES OF SZA, VZA AND PHI
-!    NEED ALSO THE HEIGHT OF NEW SURFACE, EARTH RADIUS.
-
-!  HEIGHT GRID HERE IS ARTIFICIAL
-
-!  INPUTS
-
-      INTEGER, INTENT(IN) ::           MAX_VZA, MAX_SZA, MAX_AZM
-      INTEGER, INTENT(IN) ::           N_VZA, N_SZA, N_AZM
-      DOUBLE PRECISION, INTENT(IN) ::  ERADIUS, HSURFACE
-      LOGICAL, INTENT(IN) ::           DO_ADJUST_SURFACE
-      DOUBLE PRECISION, INTENT(IN) ::  ALPHA_BOA (MAX_VZA)
-      DOUBLE PRECISION, INTENT(IN) ::  THETA_BOA (MAX_SZA)
-
-!  INPUT/OUTPUT
-
-      DOUBLE PRECISION, INTENT(INOUT) ::  PHI_BOA   (MAX_AZM)
-
-!  OUTPUTS
-
-      DOUBLE PRECISION, INTENT(OUT) ::  ALPHA_SSA (MAX_VZA)
-      DOUBLE PRECISION, INTENT(OUT) ::  THETA_SSA (MAX_VZA,MAX_SZA,MAX_AZM)
-      DOUBLE PRECISION, INTENT(OUT) ::  PHI_SSA   (MAX_VZA,MAX_SZA,MAX_AZM)
-      LOGICAL, INTENT(OUT) ::           FAIL
-      CHARACTER (LEN=*), INTENT(INOUT) :: MESSAGE, TRACE
-
-!  LOCAL
-
-      INTEGER ::           J, I, K
-      DOUBLE PRECISION ::  DEG_TO_RAD, EX, EY, EZ, PX, PY, PZ, PIE, PI2
-      DOUBLE PRECISION ::  SALPHA_BOA, CALPHA_BOA, SPHI_BOA
-      DOUBLE PRECISION ::  STHETA_BOA, CTHETA_BOA, CPHI_BOA
-      DOUBLE PRECISION ::  KSI, CKSI, SKSI, XICUM, COSSCAT_UP
-      DOUBLE PRECISION ::  PHI_ALL, ALPHA_ALL, THETA_ALL
-      DOUBLE PRECISION ::  CTHETA, STHETA, CALPHA, SALPHA, CPHI
-      DOUBLE PRECISION ::  B,RSSA
-      CHARACTER (LEN=2) :: C2
-
-!  INITIALISE OUTPUT
-
-      FAIL    = .FALSE.
-      MESSAGE = ' '
-      TRACE   = ' '
-
-!  CHECK RANGE OF INPUTS
-
-      DO J = 1, N_VZA
-       IF ( ALPHA_BOA(J).GE.90.0D0.OR.ALPHA_BOA(J).LT.0.0D0 ) THEN
-        WRITE(C2,'(I2)')J
-        MESSAGE = 'BOA LOS ANGLE OUTSIDE RANGE [0,90])'
-        TRACE   = 'CHANGE BOA LOS ANGLE, NUMBER '//C2
-        FAIL    = .TRUE.
-        RETURN
-       ENDIF
-      ENDDO
-
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!  BUG CORRECTED 01 OCTOBER 2010------------------------- RTS, R. SPURR
-
-!  IMPORTANT, DO NOT LIMIT THE AZIMUTH TO < 180 DEGREES
-
-      DO K = 1, N_AZM
-        IF ( PHI_BOA(K).LT.0.0D0   ) PHI_BOA(K) = - PHI_BOA(K)
-!        IF ( PHI_BOA(K).GT.180.0D0 ) PHI_BOA(K) = 360.0D0 - PHI_BOA(K)
-        IF ( PHI_BOA(K).GT.360.0D0 ) PHI_BOA(K) = PHI_BOA(K) - 360.0D0
-      ENDDO
-
-!  BUG CORRECTED 01 OCTOBER 2010------------------------- RTS, R. SPURR
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-      DO I = 1, N_SZA
-       IF ( THETA_BOA(I).GE.90.0D0.OR.THETA_BOA(I).LT.0.0D0 ) THEN
-        WRITE(C2,'(I2)')I
-        MESSAGE = 'BOA SZA ANGLE OUTSIDE RANGE [0,90])'
-        TRACE   = 'CHANGE BOA SZA ANGLE, NUMBER '//C2
-        FAIL    = .TRUE.
-        RETURN
-       ENDIF
-      ENDDO
-
-!  NO ADJUSTMENT, JUST COPY AND EXIT
-
-      IF ( .NOT. DO_ADJUST_SURFACE ) THEN
-        DO J = 1, N_VZA
-          ALPHA_SSA(J)   = ALPHA_BOA(J)
-          DO I = 1, N_SZA
-            DO K = 1, N_AZM
-              THETA_SSA(J,I,K) = THETA_BOA(I)
-              PHI_SSA(J,I,K)   = PHI_BOA(K)
-            ENDDO
-          ENDDO
-        ENDDO
-        RETURN
-      ENDIF
-
-!  CONVERSION
-
-      PIE = DACOS(-1.0D0)
-      PI2 = 2.0D0 * PIE
-      DEG_TO_RAD = PIE / 180.0D0
-
-!  RADIUS OF SURFACE
-
-      RSSA = HSURFACE + ERADIUS
-
-!  START VZA LOOP
-
-      DO J = 1, N_VZA
-
-        ALPHA_ALL = ALPHA_BOA(J) * DEG_TO_RAD
-        SALPHA_BOA = DSIN(ALPHA_ALL)
-        CALPHA_BOA = DCOS(ALPHA_ALL)
-
-!  SPECIAL CASE. DIRECT NADIR VIEWING. COMPUTE EVERYTHING AND EXIT.
-!    (THIS IS THE SAME AS THE REGULAR PSEUDO-SPHERICAL )
-
-        IF ( SALPHA_BOA.EQ.0.0D0 ) THEN
-          ALPHA_SSA(J)   = ALPHA_BOA(J)
-          DO I = 1, N_SZA
-            DO K = 1, N_AZM
-              THETA_SSA(J,I,K) = THETA_BOA(I)
-              PHI_SSA(J,I,K)   = PHI_BOA(K)
-            ENDDO
-          ENDDO
-          GO TO 567
-        ENDIF
-
-!  LOS ANGLE
-
-        SALPHA       = ERADIUS * SALPHA_BOA / RSSA
-        ALPHA_SSA(J) = DASIN(SALPHA)
-        CALPHA       = DCOS(ALPHA_SSA(J))
-
-!  LOSPATHS
-
-        KSI  = ALPHA_ALL - ALPHA_SSA(J)
-        SKSI = DSIN(KSI)
-        CKSI = DCOS(KSI)
-        XICUM = KSI
-
-!  OUTPUT ANGLE IN DEGREES
-
-        ALPHA_SSA(J) = ALPHA_SSA(J) / DEG_TO_RAD
-
-!  LOS VECTOR
-
-        PX = - RSSA * DSIN(XICUM)
-        PY = 0.0D0
-        PZ =   RSSA * DCOS(XICUM)
-
-!  START SZA LOOP
-
-        DO I = 1, N_SZA
-
-          THETA_ALL = THETA_BOA(I) * DEG_TO_RAD
-          STHETA_BOA = DSIN(THETA_ALL)
-          CTHETA_BOA = DCOS(THETA_ALL)
-
-!  START AZIMUTH LOOP
-
-          DO K = 1, N_AZM
-
-            PHI_ALL   = PHI_BOA(K)   * DEG_TO_RAD
-            CPHI_BOA  = DCOS(PHI_ALL)
-            SPHI_BOA  = DSIN(PHI_ALL)
-
-!  DEFINE UNIT SOLAR VECTOR
-
-            EX = - STHETA_BOA * CPHI_BOA
-            EY = - STHETA_BOA * SPHI_BOA
-            EZ = - CTHETA_BOA
-
-!  SUN ANGLE
-
-            B = EX*PX + EY*PY + EZ*PZ
-            CTHETA = -B/RSSA
-            STHETA = DSQRT(1.0D0-CTHETA*CTHETA)
-            THETA_SSA(J,I,K) = DACOS(CTHETA)/DEG_TO_RAD
-            IF ( CTHETA.LT.0.0D0 ) THEN
-              WRITE(C2,'(I2)')J
-              MESSAGE = 'LOS-PATH SZA ANGLE OUTSIDE RANGE [0,90])'
-              TRACE   = 'CHECK INPUTS FOR LOS ANGLE '//C2
-              FAIL    = .TRUE.
-              RETURN
-            ENDIF
-
-!  SCATTERING ANGLE
-
-            COSSCAT_UP  = - CALPHA_BOA * CTHETA_BOA + &
-                            SALPHA_BOA * STHETA_BOA * CPHI_BOA
-
-!  FIX PHI BY USING CONSTANCY OF SCATTER ANGLE
-
-            IF ( PHI_BOA(K).EQ.180.0D0 ) THEN
-              PHI_SSA(J,I,K) = PHI_ALL
-            ELSE IF ( PHI_BOA(K) .EQ. 0.0D0 ) THEN
-              PHI_SSA(J,I,K) = 0.0D0
-            ELSE
-              CPHI = (COSSCAT_UP+CALPHA*CTHETA)/STHETA/SALPHA
-              IF ( CPHI.GT.1.0D0) CPHI = 1.0D0
-              IF ( CPHI.LT.-1.0D0) CPHI = -1.0D0
-              PHI_SSA(J,I,K) = DACOS(CPHI)
-
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!  BUG CORRECTED 05 OCTOBER 2010----------------- V. NATRAJ, R. SPURR
-!  IF AZIMUTH > 180 DEGREES. MUST ENSURE CONSISTENCY, ADD THIS LINE.
-              IF ( PHI_BOA(K).GT.180.0D0 ) THEN
-                 PHI_SSA(J,I,K)= PI2 - PHI_SSA(J,I,K)
-              ENDIF
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-            ENDIF
-            PHI_SSA(J,I,K) = PHI_SSA(J,I,K) / DEG_TO_RAD
-
-!  END AZIMUTH AND SOLAR LOOPS
-
-          ENDDO
-        ENDDO
-
-!  CONTINUATION POINT
-
- 567    CONTINUE
-
-!  END LOS LOOP
-
-      ENDDO
-
-!  FINISH
-
-      RETURN
-      END SUBROUTINE MULTI_OUTGOING_ADJUSTGEOM
-
-!
-
       SUBROUTINE VLIDORT_DBCORRECTION ( &
         FLUXMULT, &
         DO_SSCORR_OUTGOING, DO_REFRACTIVE_GEOMETRY, &
-        DO_UPWELLING, NSTOKES, &
-        NLAYERS, &
+        DO_UPWELLING, DO_OBSERVATION_GEOMETRY, &
+        NSTOKES, NLAYERS, &
         SZA_LOCAL_INPUT, N_USER_RELAZMS, &
         N_USER_LEVELS, &
         DO_LAMBERTIAN_SURFACE, &
@@ -5774,7 +4563,7 @@
         PARTLAYERS_OUTINDEX, UTAU_LEVEL_MASK_UP, &
         PARTLAYERS_LAYERIDX, N_GEOMETRIES, &
         VZA_OFFSETS, &
-        SOLAR_BEAM_OPDEP, DO_REFLECTED_DIRECTBEAM, &
+        TRANS_SOLAR_BEAM, DO_REFLECTED_DIRECTBEAM, &
         T_DELT_USERM, T_UTUP_USERM, &
         UP_LOSTRANS, UP_LOSTRANS_UT, BOA_ATTN, &
         DB_CUMSOURCE, EXACTDB_SOURCE, &
@@ -5793,6 +4582,7 @@
       LOGICAL, INTENT (IN) ::           DO_SSCORR_OUTGOING
       LOGICAL, INTENT (IN) ::           DO_REFRACTIVE_GEOMETRY
       LOGICAL, INTENT (IN) ::           DO_UPWELLING
+      LOGICAL, INTENT (IN) ::           DO_OBSERVATION_GEOMETRY
       INTEGER, INTENT (IN) ::           NSTOKES
       INTEGER, INTENT (IN) ::           NLAYERS
       DOUBLE PRECISION, INTENT (IN) ::  SZA_LOCAL_INPUT &
@@ -5807,7 +4597,8 @@
 !  New Surface-Leaving stuff 17 May 2012
       LOGICAL, INTENT (IN) ::            DO_SURFACE_LEAVING
       LOGICAL, INTENT (IN) ::            DO_SL_ISOTROPIC
-      DOUBLE PRECISION, INTENT (IN) ::   SLTERM_ISOTROPIC ( MAXSTOKES )
+      DOUBLE PRECISION, INTENT (IN) ::   SLTERM_ISOTROPIC &
+          ( MAXSTOKES, MAXBEAMS )
       DOUBLE PRECISION, INTENT (IN) ::   SLTERM_USERANGLES &
           ( MAXSTOKES, MAX_USER_STREAMS, MAX_USER_RELAZMS, MAXBEAMS  )
 
@@ -5825,7 +4616,7 @@
       INTEGER, INTENT (IN) ::           N_GEOMETRIES
       INTEGER, INTENT (IN) ::           VZA_OFFSETS &
           ( MAX_SZANGLES, MAX_USER_VZANGLES )
-      DOUBLE PRECISION, INTENT (IN) ::  SOLAR_BEAM_OPDEP ( MAXBEAMS )
+      DOUBLE PRECISION, INTENT (IN) ::  TRANS_SOLAR_BEAM ( MAXBEAMS )
       LOGICAL, INTENT (IN) ::           DO_REFLECTED_DIRECTBEAM ( MAXBEAMS )
       DOUBLE PRECISION, INTENT (IN) ::  T_DELT_USERM &
           ( MAXLAYERS, MAX_USER_STREAMS )
@@ -5850,11 +4641,16 @@
 !  ---------------
 
       INTEGER ::           N, NUT, NSTART, NUT_PREV, NLEVEL, NELEMENTS
-      INTEGER ::           UT, UTA, UM, UA, NC, IB, V, O1, O2, OM
+      INTEGER ::           UT, UTA, UM, UA, NC, IB, V, O1, O2, OM, LUM, LUA
       DOUBLE PRECISION ::  FINAL_SOURCE, TR, X0_FLUX, X0_BOA, ATTN, SUM
 
 !  FIRST STAGE
 !  -----------
+
+!  Local user indices
+
+      LUM = 1
+      LUA = 1
 
 !  INITIALIZE
 
@@ -5879,77 +4675,154 @@
 !  NEW CODE  R. SPURR, 6 AUGUST 2007. RT SOLUTIONS INC.
 !  ====================================================
 
+!  Lattice calculation
+
+      IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+
 !  START GEOMETRY LOOPS
 
-      DO UM = 1, N_USER_STREAMS
-        DO IB = 1, NBEAMS
-          IF ( DO_REFLECTED_DIRECTBEAM(IB) ) THEN
-            DO UA = 1, N_USER_RELAZMS
-              V = VZA_OFFSETS(IB,UM) + UA
+        DO UM = 1, N_USER_STREAMS
+          DO IB = 1, NBEAMS
+            IF ( DO_REFLECTED_DIRECTBEAM(IB) ) THEN
+              DO UA = 1, N_USER_RELAZMS
+                V = VZA_OFFSETS(IB,UM) + UA
 
 !  BEAM ATTENUATION
 
-              IF ( DO_SSCORR_OUTGOING ) THEN
-                X0_BOA = DCOS(SZANGLES_ADJUST(UM,IB,UA)*DEG_TO_RAD)
-                ATTN = BOA_ATTN(V)
-              ELSE
-                IF ( DO_REFRACTIVE_GEOMETRY ) THEN
-                  X0_BOA = DCOS(SZA_LOCAL_INPUT(NLAYERS,IB)*DEG_TO_RAD)
+                IF ( DO_SSCORR_OUTGOING ) THEN
+                  X0_BOA = DCOS(SZANGLES_ADJUST(UM,IB,UA)*DEG_TO_RAD)
+                  ATTN = BOA_ATTN(V)
                 ELSE
-                  X0_BOA = COS_SZANGLES(IB)
+                  IF ( DO_REFRACTIVE_GEOMETRY ) THEN
+                    X0_BOA = DCOS(SZA_LOCAL_INPUT(NLAYERS,IB)*DEG_TO_RAD)
+                  ELSE
+                    X0_BOA = COS_SZANGLES(IB)
+                  ENDIF
+                  ATTN = TRANS_SOLAR_BEAM(IB)
                 ENDIF
-                ATTN = SOLAR_BEAM_OPDEP(IB)
-              ENDIF
-              X0_FLUX = FOUR * X0_BOA
-              ATTN    = ATTN * X0_FLUX
-              ATTN_DB_SAVE(V) = ATTN
+                X0_FLUX = FOUR * X0_BOA
+                ATTN    = ATTN * X0_FLUX
+                ATTN_DB_SAVE(V) = ATTN
 
-!  ASSIGN REFLECTION TERM
-!  INITIALIZE CUMULATIVE SOURCE TERM = REFLEC * F.MU_0.T/PI
-!    T = ATTENUATION OF DIRECT BEAM TO BOA, F = FLUX
+!  DEFINE EXACT DB SOURCE TERM
 
-              IF ( .NOT. DO_LAMBERTIAN_SURFACE ) THEN
-                DO O1 = 1, NSTOKES
-                  SUM = ZERO
-                  DO O2 = 1, NSTOKES
-                    OM = MUELLER_INDEX(O1,O2)
-                    SUM = SUM + &
-                    FLUXVEC(O2)*EXACTDB_BRDFUNC(OM,UM,UA,IB)
+                IF ( .NOT. DO_LAMBERTIAN_SURFACE ) THEN
+                  DO O1 = 1, NSTOKES
+                    SUM = ZERO
+                    DO O2 = 1, NSTOKES
+                      OM = MUELLER_INDEX(O1,O2)
+                      SUM = SUM + FLUXVEC(O2)*EXACTDB_BRDFUNC(OM,UM,UA,IB)
+                    ENDDO
+                    EXACTDB_SOURCE(V,O1) = ATTN * SUM
                   ENDDO
-                  EXACTDB_SOURCE(V,O1) = ATTN * SUM
-                ENDDO
-              ELSE
-                O1 = 1
-                EXACTDB_SOURCE(V,O1) = ATTN * LAMBERTIAN_ALBEDO
-              ENDIF
+                ELSE
+                  O1 = 1
+                  EXACTDB_SOURCE(V,O1) = ATTN * LAMBERTIAN_ALBEDO * FLUXVEC(O1)
+                ENDIF
 
 !  New Surface-Leaving stuff 17 May 2012
+!   Multiply terms by 4pi to get correct normalization. 7/30/12
 
-              IF ( DO_SURFACE_LEAVING ) THEN
-                IF ( DO_SL_ISOTROPIC ) THEN
-                   O1 = 1
-                   EXACTDB_SOURCE(V,O1) = &
-                      EXACTDB_SOURCE(V,O1) + SLTERM_ISOTROPIC(O1)
-                ELSE
-                  DO O1 = 1, NSTOKES
-                    EXACTDB_SOURCE(V,O1) = &
-                      EXACTDB_SOURCE(V,O1) + SLTERM_USERANGLES(O1,UM,UA,IB)
-                  ENDDO
+                IF ( DO_SURFACE_LEAVING ) THEN
+                  IF ( DO_SL_ISOTROPIC ) THEN
+                    O1 = 1
+!                    EXACTDB_SOURCE(V,O1) = EXACTDB_SOURCE(V,O1) &
+!                      + SLTERM_ISOTROPIC(O1,IB)
+                    EXACTDB_SOURCE(V,O1) = EXACTDB_SOURCE(V,O1) &
+                      + SLTERM_ISOTROPIC(O1,IB) * PI4
+                  ELSE
+                    DO O1 = 1, NSTOKES
+                      EXACTDB_SOURCE(V,O1) = EXACTDB_SOURCE(V,O1) &
+                        + SLTERM_USERANGLES(O1,UM,UA,IB) * PI4
+                    ENDDO
+                  ENDIF
                 ENDIF
-              ENDIF
 
 !  FINISH LOOPS OVER GEOMETRIES
 
-            ENDDO
+              ENDDO
+            ENDIF
+          ENDDO
+        ENDDO
+
+!  End lattice calculation
+
+      ENDIF
+
+!  Observational geometry calculation
+
+      IF ( DO_OBSERVATION_GEOMETRY ) THEN
+
+!  START GEOMETRY LOOPS
+
+        DO V = 1, N_GEOMETRIES
+          IF ( DO_REFLECTED_DIRECTBEAM(V) ) THEN
+
+!  BEAM ATTENUATION
+
+            IF ( DO_SSCORR_OUTGOING ) THEN
+              X0_BOA = DCOS(SZANGLES_ADJUST(LUM,V,LUA)*DEG_TO_RAD)
+              ATTN = BOA_ATTN(V)
+            ELSE
+              IF ( DO_REFRACTIVE_GEOMETRY ) THEN
+                X0_BOA = DCOS(SZA_LOCAL_INPUT(NLAYERS,V)*DEG_TO_RAD)
+              ELSE
+                X0_BOA = COS_SZANGLES(V)
+              ENDIF
+              ATTN = TRANS_SOLAR_BEAM(V)
+            ENDIF
+            X0_FLUX = FOUR * X0_BOA
+            ATTN    = ATTN * X0_FLUX
+            ATTN_DB_SAVE(V) = ATTN
+
+!  DEFINE EXACT DB SOURCE TERM
+
+            IF ( .NOT. DO_LAMBERTIAN_SURFACE ) THEN
+              DO O1 = 1, NSTOKES
+                SUM = ZERO
+                DO O2 = 1, NSTOKES
+                  OM = MUELLER_INDEX(O1,O2)
+                  SUM = SUM + FLUXVEC(O2)*EXACTDB_BRDFUNC(OM,LUM,LUA,V)
+                ENDDO
+                EXACTDB_SOURCE(V,O1) = ATTN * SUM
+              ENDDO
+            ELSE
+              O1 = 1
+              EXACTDB_SOURCE(V,O1) = ATTN * LAMBERTIAN_ALBEDO * FLUXVEC(O1)
+            ENDIF
+
+!  New Surface-Leaving stuff 17 May 2012
+!   Multiply terms by 4pi to get correct normalization. 7/30/12
+
+            IF ( DO_SURFACE_LEAVING ) THEN
+              IF ( DO_SL_ISOTROPIC ) THEN
+                O1 = 1
+!                EXACTDB_SOURCE(V,O1) = EXACTDB_SOURCE(V,O1) &
+!                  + SLTERM_ISOTROPIC(O1,V)
+                EXACTDB_SOURCE(V,O1) = EXACTDB_SOURCE(V,O1) &
+                  + SLTERM_ISOTROPIC(O1,V)*PI4
+              ELSE
+                DO O1 = 1, NSTOKES
+                  EXACTDB_SOURCE(V,O1) = EXACTDB_SOURCE(V,O1) &
+                    + SLTERM_USERANGLES(O1,LUM,LUA,V) * PI4
+                ENDDO
+              ENDIF
+            ENDIF
+
+!  FINISH LOOP OVER GEOMETRIES
+
           ENDIF
         ENDDO
-      ENDDO
+
+!  End observationl geometry calculation
+
+      ENDIF
 
 !  UPWELLING RECURRENCE: TRANSMITTANCE OF EXACT SOURCE TERM
 !  --------------------------------------------------------
 
-!  INITIALIZE CUMULATIVE COUNT
-!    MULTIPLY BY FLUX MULTIPLIER
+!  INITIALIZE CUMULATIVE SOURCE TERM = REFLEC * F.MU_0.T/PI
+!    T = ATTENUATION OF DIRECT BEAM TO BOA, F = FLUX, REFLEC = ALBEDO/BRDF
 
       NC = 0
       DO O1 = 1, NSTOKES
@@ -5986,21 +4859,34 @@
         DO N = NSTART, NUT, -1
           NC = NLAYERS + 1 - N
 
-          DO IB = 1, NBEAMS
-            DO UM = 1, N_USER_STREAMS
-              DO UA = 1, N_USER_RELAZMS
-                V = VZA_OFFSETS(IB,UM) + UA
-                IF ( DO_SSCORR_OUTGOING ) THEN
-                  TR = UP_LOSTRANS(N,V)
-                ELSE
-                  TR = T_DELT_USERM(N,UM)
-                ENDIF
-                DO O1 = 1, NELEMENTS
-                  DB_CUMSOURCE(V,O1,NC) = TR * DB_CUMSOURCE(V,O1,NC-1)
+          IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+            DO IB = 1, NBEAMS
+              DO UM = 1, N_USER_STREAMS
+                DO UA = 1, N_USER_RELAZMS
+                  V = VZA_OFFSETS(IB,UM) + UA
+                  IF ( DO_SSCORR_OUTGOING ) THEN
+                    TR = UP_LOSTRANS(N,V)
+                  ELSE
+                    TR = T_DELT_USERM(N,UM)
+                  ENDIF
+                  DO O1 = 1, NELEMENTS
+                    DB_CUMSOURCE(V,O1,NC) = TR * DB_CUMSOURCE(V,O1,NC-1)
+                  ENDDO
                 ENDDO
               ENDDO
             ENDDO
-          ENDDO
+          ELSE
+            DO V = 1, N_GEOMETRIES
+              IF ( DO_SSCORR_OUTGOING ) THEN
+                TR = UP_LOSTRANS(N,V)
+              ELSE
+                TR = T_DELT_USERM(N,V)
+              ENDIF
+              DO O1 = 1, NELEMENTS
+                DB_CUMSOURCE(V,O1,NC) = TR * DB_CUMSOURCE(V,O1,NC-1)
+              ENDDO
+            ENDDO
+          ENDIF
 
 !  END LAYER LOOP
 
@@ -6012,37 +4898,58 @@
 
           UT = PARTLAYERS_OUTINDEX(UTA)
           N  = PARTLAYERS_LAYERIDX(UT)
-          DO IB = 1, NBEAMS
-            DO UM = 1, N_USER_STREAMS
-              DO UA = 1, N_USER_RELAZMS
-                V = VZA_OFFSETS(IB,UM) + UA
-                IF ( DO_SSCORR_OUTGOING ) THEN
-                  TR = UP_LOSTRANS_UT(UT,V)
-                ELSE
-                  TR = T_UTUP_USERM(UT,UM)
-                ENDIF
-                DO O1 = 1, NELEMENTS
-                  STOKES_DB(UTA,V,O1) = TR * DB_CUMSOURCE(V,O1,NC)
+
+          IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+            DO IB = 1, NBEAMS
+              DO UM = 1, N_USER_STREAMS
+                DO UA = 1, N_USER_RELAZMS
+                  V = VZA_OFFSETS(IB,UM) + UA
+                  IF ( DO_SSCORR_OUTGOING ) THEN
+                    TR = UP_LOSTRANS_UT(UT,V)
+                  ELSE
+                    TR = T_UTUP_USERM(UT,UM)
+                  ENDIF
+                  DO O1 = 1, NELEMENTS
+                    STOKES_DB(UTA,V,O1) = TR * DB_CUMSOURCE(V,O1,NC)
+                  ENDDO
                 ENDDO
               ENDDO
             ENDDO
-          ENDDO
+          ELSE
+            DO V = 1, N_GEOMETRIES
+              IF ( DO_SSCORR_OUTGOING ) THEN
+                TR = UP_LOSTRANS_UT(UT,V)
+              ELSE
+                TR = T_UTUP_USERM(UT,V)
+              ENDIF
+              DO O1 = 1, NELEMENTS
+                STOKES_DB(UTA,V,O1) = TR * DB_CUMSOURCE(V,O1,NC)
+              ENDDO
+            ENDDO
+          ENDIF
 
 !  ONGRID OUTPUT : SET FINAL CUMULATIVE SOURCE DIRECTLY
 
         ELSE
 
-          DO IB = 1, NBEAMS
-            DO UM = 1, N_USER_STREAMS
-              DO UA = 1, N_USER_RELAZMS
-                V = VZA_OFFSETS(IB,UM) + UA
-                DO O1 = 1, NELEMENTS
-                  FINAL_SOURCE = DB_CUMSOURCE(V,O1,NC)
-                  STOKES_DB(UTA,V,O1) = FINAL_SOURCE
-               ENDDO
-              ENDDO
+          DO V = 1, N_GEOMETRIES
+            DO O1 = 1, NELEMENTS
+              FINAL_SOURCE = DB_CUMSOURCE(V,O1,NC)
+              STOKES_DB(UTA,V,O1) = FINAL_SOURCE
             ENDDO
           ENDDO
+
+!          DO IB = 1, NBEAMS
+!            DO UM = 1, N_USER_STREAMS
+!              DO UA = 1, N_USER_RELAZMS
+!                V = VZA_OFFSETS(IB,UM) + UA
+!                DO O1 = 1, NELEMENTS
+!                  FINAL_SOURCE = DB_CUMSOURCE(V,O1,NC)
+!                  STOKES_DB(UTA,V,O1) = FINAL_SOURCE
+!               ENDDO
+!              ENDDO
+!            ENDDO
+!          ENDDO
 
         ENDIF
 
@@ -6059,6 +4966,435 @@
 
       RETURN
       END SUBROUTINE VLIDORT_DBCORRECTION
+
+!
+
+      SUBROUTINE VFO_MASTER_INTERFACE ( &
+        DO_SOLAR_SOURCES, DO_THERMAL_EMISSION, DO_SURFACE_EMISSION,    & ! Input flags
+        DO_PLANE_PARALLEL, DO_SSCORR_NADIR, DO_SSCORR_OUTGOING,        & ! Input flags
+        DO_DELTAM_SCALING, DO_UPWELLING, DO_DNWELLING,                 & ! Input flags
+        DO_LAMBERTIAN_SURFACE, DO_OBSERVATION_GEOMETRY,                & ! Input flags
+        NSTOKES, NLAYERS, NFINELAYERS, NMOMENTS, NSTREAMS,             & ! Input numbers
+        NGREEK_MOMENTS_INPUT,                                          & ! Input numbers
+        N_SZANGLES, SZANGLES, N_USER_VZANGLES, USER_VZANGLES,          & ! Input geometry
+        N_USER_RELAZMS, USER_RELAZMS,                                  & ! Input geometry
+        N_USER_LEVELS, USER_LEVELS, EARTH_RADIUS, HEIGHT_GRID,         & ! Input other
+        SS_FLUX_MULTIPLIER, FLUXVEC,                                   & ! Inputs (Optical - Regular)
+        DELTAU_VERT_INPUT, OMEGA_TOTAL_INPUT, GREEKMAT_TOTAL_INPUT,    & ! Inputs (Optical - Regular)
+        DELTAU_VERT, OMEGA_TOTAL, GREEKMAT_TOTAL, TRUNC_FACTOR,        & ! Inputs (Optical - Regular)
+        THERMAL_BB_INPUT,                                              & ! Inputs (Optical - Regular)
+        LAMBERTIAN_ALBEDO, EXACTDB_BRDFUNC, SURFBB, USER_EMISSIVITY,   & ! Inputs (Optical - Surface)
+        FO_STOKES_SS, FO_STOKES_DB, FO_STOKES_DTA, FO_STOKES_DTS,      & ! Output
+        FO_STOKES, FAIL, MESSAGE, TRACE )                                ! Output
+
+      USE VLIDORT_PARS
+
+      IMPLICIT NONE
+
+!  Parameter argument
+!  ------------------
+
+      INTEGER, PARAMETER  :: FFP = SELECTED_REAL_KIND(15)
+
+!  Inputs
+!  ======
+
+      LOGICAL, INTENT(IN) ::            DO_SOLAR_SOURCES
+      LOGICAL, INTENT(IN) ::            DO_THERMAL_EMISSION
+      LOGICAL, INTENT(IN) ::            DO_SURFACE_EMISSION
+      LOGICAL, INTENT(IN) ::            DO_PLANE_PARALLEL
+      LOGICAL, INTENT(IN) ::            DO_SSCORR_NADIR
+      LOGICAL, INTENT(IN) ::            DO_SSCORR_OUTGOING
+      LOGICAL, INTENT(IN) ::            DO_DELTAM_SCALING
+      LOGICAL, INTENT(IN) ::            DO_UPWELLING
+      LOGICAL, INTENT(IN) ::            DO_DNWELLING
+      LOGICAL, INTENT(IN) ::            DO_LAMBERTIAN_SURFACE
+      LOGICAL, INTENT(IN) ::            DO_OBSERVATION_GEOMETRY
+
+      INTEGER, INTENT(IN) ::            NSTOKES
+      INTEGER, INTENT(IN) ::            NLAYERS
+      INTEGER, INTENT(IN) ::            NFINELAYERS
+
+      INTEGER, INTENT(IN) ::            NMOMENTS
+      INTEGER, INTENT(IN) ::            NSTREAMS
+      INTEGER, INTENT(IN) ::            NGREEK_MOMENTS_INPUT
+
+      INTEGER, INTENT(IN) ::            N_SZANGLES
+      DOUBLE PRECISION, INTENT(IN) ::   SZANGLES ( MAX_SZANGLES )
+      INTEGER, INTENT(IN) ::            N_USER_VZANGLES
+      DOUBLE PRECISION, INTENT(IN) ::   USER_VZANGLES ( MAX_USER_VZANGLES )
+      INTEGER, INTENT(IN) ::            N_USER_RELAZMS
+      DOUBLE PRECISION, INTENT(IN) ::   USER_RELAZMS  ( MAX_USER_RELAZMS )
+      INTEGER, INTENT(IN) ::            N_USER_LEVELS
+      DOUBLE PRECISION, INTENT(IN) ::   USER_LEVELS ( MAX_USER_LEVELS )
+
+      DOUBLE PRECISION, INTENT(IN) ::   EARTH_RADIUS
+      DOUBLE PRECISION, INTENT(IN) ::   HEIGHT_GRID ( 0:MAXLAYERS )
+
+      DOUBLE PRECISION, INTENT(IN) ::   SS_FLUX_MULTIPLIER
+      DOUBLE PRECISION, INTENT(IN) ::   FLUXVEC ( MAXSTOKES )
+
+      DOUBLE PRECISION, INTENT(IN) ::   DELTAU_VERT_INPUT ( MAXLAYERS )
+      DOUBLE PRECISION, INTENT(IN) ::   OMEGA_TOTAL_INPUT ( MAXLAYERS )
+      DOUBLE PRECISION, INTENT(IN) ::   GREEKMAT_TOTAL_INPUT &
+          ( 0:MAXMOMENTS_INPUT, MAXLAYERS, MAXSTOKES_SQ )
+
+      DOUBLE PRECISION, INTENT(IN) ::   DELTAU_VERT ( MAXLAYERS )
+      DOUBLE PRECISION, INTENT(IN) ::   OMEGA_TOTAL ( MAXLAYERS )
+      DOUBLE PRECISION, INTENT(IN) ::   GREEKMAT_TOTAL &
+          ( 0:MAXMOMENTS, MAXLAYERS, MAXSTOKES_SQ )
+      DOUBLE PRECISION, INTENT(IN) ::   TRUNC_FACTOR ( MAXLAYERS )
+
+      DOUBLE PRECISION, INTENT(IN) ::   THERMAL_BB_INPUT ( 0:MAXLAYERS )
+
+      DOUBLE PRECISION, INTENT(IN) ::   LAMBERTIAN_ALBEDO
+      DOUBLE PRECISION, INTENT(IN) ::   EXACTDB_BRDFUNC &
+          ( MAXSTOKES_SQ, MAX_USER_STREAMS, MAX_USER_RELAZMS, MAXBEAMS )
+
+      DOUBLE PRECISION, INTENT(IN) ::   SURFBB
+      DOUBLE PRECISION, INTENT(IN) ::   USER_EMISSIVITY &
+          ( MAXSTOKES, MAX_USER_STREAMS )
+
+!  Outputs
+!  =======
+
+!  Solar
+
+      DOUBLE PRECISION, INTENT (INOUT)  :: FO_STOKES_SS &
+          ( MAX_USER_LEVELS, MAX_GEOMETRIES, MAXSTOKES, MAX_DIRECTIONS )
+      DOUBLE PRECISION, INTENT (INOUT)  :: FO_STOKES_DB &
+          ( MAX_USER_LEVELS, MAX_GEOMETRIES, MAXSTOKES )
+
+!  Thermal
+
+      DOUBLE PRECISION, INTENT (INOUT)  :: FO_STOKES_DTA &
+          ( MAX_USER_LEVELS, MAX_GEOMETRIES, MAXSTOKES, MAX_DIRECTIONS )
+      DOUBLE PRECISION, INTENT (INOUT)  :: FO_STOKES_DTS &
+          ( MAX_USER_LEVELS, MAX_GEOMETRIES, MAXSTOKES )
+
+!  Composite
+
+      DOUBLE PRECISION, INTENT (INOUT)  :: FO_STOKES &
+          ( MAX_USER_LEVELS, MAX_GEOMETRIES, MAXSTOKES, MAX_DIRECTIONS )
+
+      LOGICAL, INTENT (OUT)             :: FAIL
+      CHARACTER (LEN=*), INTENT (INOUT) :: MESSAGE
+      CHARACTER (LEN=*), INTENT (INOUT) :: TRACE
+
+!  Local variables
+!  ===============
+
+!  Max dimensions
+!  --------------
+
+      INTEGER   :: MAXGEOMS, MAXFINE!, MAXLAYERS, MAXMOMENTS_INPUT, MAX_USER_LEVELS
+
+!  Dimensions
+!  ----------
+
+!  Layer and geometry control. Finelayer divisions may be changed
+
+      INTEGER   :: NGEOMS!, NLAYERS
+      INTEGER   :: NFINEDIVS (MAXLAYERS, MAX_GEOMETRIES )
+      INTEGER   :: NMOMENTS_INPUT
+      !INTEGER   :: N_USER_LEVELS
+
+!  Number of Stokes components
+
+      !INTEGER   :: NSTOKES
+
+!  Configuration inputs
+!  --------------------
+
+!  Sources control, including thermal
+
+      !LOGICAL   :: DO_SOLAR_SOURCES
+      !LOGICAL   :: DO_THERMAL_EMISSION
+      !LOGICAL   :: DO_SURFACE_EMISSION
+
+!  Flags (sphericity flags should be mutually exclusive)
+
+      LOGICAL   :: DO_PLANPAR
+      LOGICAL   :: DO_REGULAR_PS
+      LOGICAL   :: DO_ENHANCED_PS
+
+!  Delta-m scaling flag
+
+      !LOGICAL   :: DO_DELTAM_SCALING
+
+!  Directional Flags
+
+      !LOGICAL   :: DO_UPWELLING, DO_DNWELLING
+
+!  Lambertian surface flag
+
+      LOGICAL   :: DO_LAMBERTIAN
+
+!  Vector sunlight flag
+
+      LOGICAL   :: DO_SUNLIGHT
+
+!  General inputs
+!  --------------
+
+!  DTR = degrees-to-Radians
+
+      REAL(FFP) :: DTR!, VSIGN, PIE
+
+!  Critical adjustment for cloud layers
+
+      LOGICAL   :: DoCrit
+      REAL(FFP) :: Acrit
+
+!  Earth radius + heights
+
+      REAL(FFP) :: ERADIUS
+      REAL(FFP) :: HEIGHTS ( 0:MAXLAYERS )
+
+!  Output levels
+
+      INTEGER   :: FO_USER_LEVELS ( MAX_USER_LEVELS )
+
+!  Geometry inputs
+!  ---------------
+
+!  Input angles (Degrees)
+
+      REAL(FFP) :: theta_boa ( MAX_GEOMETRIES ) !SZA
+      REAL(FFP) :: alpha_boa ( MAX_GEOMETRIES ) !UZA
+      REAL(FFP) :: phi_boa   ( MAX_GEOMETRIES ) !RAA
+
+!     Mu0 = cos(theta_boa), required for surface term (both regular & enhanced)
+!     Mu1 = cos(alpha_boa), required for the Regular PS only
+
+      REAL(FFP) :: Mu0 ( MAX_GEOMETRIES )
+      REAL(FFP) :: Mu1 ( MAX_GEOMETRIES )
+
+!  Flag for the Nadir case. Intent(inout), input if DO_LOSpaths set
+
+      LOGICAL   :: DoNadir ( MAX_GEOMETRIES )
+
+!  Optical inputs
+!  --------------
+
+!  Solar flux
+
+      REAL(FFP) :: FLUX
+      !REAL(FFP) :: FLUXVEC ( MAXSTOKES )
+
+!  Atmosphere
+
+      REAL(FFP) :: EXTINCTION  ( MAXLAYERS )
+      REAL(FFP) :: DELTAUS     ( MAXLAYERS )
+      REAL(FFP) :: OMEGA       ( MAXLAYERS )
+      REAL(FFP) :: GREEKMAT    ( MAXLAYERS, 0:MAXMOMENTS_INPUT, MAXSTOKES, MAXSTOKES )
+
+!  For TMS correction
+
+      REAL(FFP) :: TRUNCFAC    ( MAXLAYERS )
+
+!  Thermal inputs
+
+      REAL(FFP) :: BB_INPUT ( 0:MAXLAYERS )
+
+!  Surface properties - reflective (could be the albedo)
+
+      REAL(FFP) :: REFLEC ( MAXSTOKES, MAXSTOKES, MAX_GEOMETRIES )
+
+!  Surface properties - emissive
+
+      !REAL(FFP) :: SURFBB
+      REAL(FFP) :: EMISS ( MAX_GEOMETRIES )
+
+!  Subroutine outputs
+!  ------------------
+
+      !REAL(FFP) :: FO_STOKES ( MAXSTOKES, MAX_GEOMETRIES )
+
+!  Other variables
+
+      INTEGER   :: G, GK, L, N, NS2, O1, O2
+      INTEGER   :: LUM=1, LUA=1
+      REAL(FFP) :: DNM1
+
+!  Define VFO_MASTER inputs
+!  ========================
+
+!  Note: argument passing for variables defined elsewhere
+!        commented out here
+
+!  Max dimensions
+
+      maxgeoms          = MAX_GEOMETRIES
+      !maxlayers        =
+      maxfine           = MAXFINELAYERS
+      !maxmoments_input =
+      !max_user_levels  =
+
+!  Dimensions
+
+      !Note: set for ObsGeo mode only at present
+      ngeoms          = N_SZANGLES
+
+      !nlayers        =
+      nfinedivs       = NFINELAYERS
+
+      !recall NMOMENTS = MIN(2*NSTREAMS-1, NGREEK_MOMENTS_INPUT)
+      !nmoments_input  = NMOMENTS
+      nmoments_input  = NGREEK_MOMENTS_INPUT
+
+      !n_user_levels  =
+      !nstokes        =
+
+!  Configuration inputs
+
+      !do_solar_sources    =
+      !do_thermal_emission =
+      !do_surface_emission =
+
+      if (DO_PLANE_PARALLEL) then
+        do_planpar     = .TRUE.
+        do_regular_ps  = .FALSE.
+        do_enhanced_ps = .FALSE.
+      else
+        do_planpar = .FALSE.
+        if (DO_SSCORR_NADIR) then
+          do_regular_ps  = .TRUE.
+          do_enhanced_ps = .FALSE.
+        else if (DO_SSCORR_OUTGOING) then
+          do_regular_ps  = .FALSE.
+          do_enhanced_ps = .TRUE.
+        end if
+      end if
+
+      !do_deltam_scaling  =
+      !do_upwelling       =
+      !do_dnwelling       =
+
+      do_lambertian      = DO_LAMBERTIAN_SURFACE
+      do_sunlight        = .TRUE. !set for now
+
+!  General inputs
+
+      dtr    = DEG_TO_RAD
+      !Pie   =
+      DoCrit = .FALSE. !set for now
+      Acrit  = ZERO    !set for now
+
+      !defined within VFO_MASTER now
+      !if ( do_upwelling ) then
+      !  vsign =  one
+      !else if ( do_dnwelling ) then
+      !  vsign = -one
+      !end if
+
+      eradius             = EARTH_RADIUS
+      heights(0:nlayers)  = HEIGHT_GRID(0:NLAYERS)
+
+      fo_user_levels(1:n_user_levels) = &
+        INT(user_levels(1:n_user_levels))
+
+!  Geometry inputs
+
+      !Note: set for ObsGeo mode only at present
+
+      !angles in deg
+      theta_boa(1:ngeoms) = SZANGLES(1:N_SZANGLES)
+      alpha_boa(1:ngeoms) = USER_VZANGLES(1:N_USER_VZANGLES)
+      phi_boa  (1:ngeoms) = USER_RELAZMS (1:N_USER_RELAZMS)
+
+      !For regular & enhanced PS
+      Mu0(1:ngeoms) = cos( theta_boa(1:ngeoms) * dtr ) !cos(SZA)
+      !For regular PS only
+      Mu1(1:ngeoms) = cos( alpha_boa(1:ngeoms) * dtr ) !cos(UZA)
+
+      !For enhanced PS only
+      do g=1,ngeoms
+        if (alpha_boa(g) == ZERO) then
+          DoNadir(g) = .TRUE.
+        else
+          DoNadir(g) = .FALSE.
+        end if
+      end do
+
+!  Optical inputs
+
+      flux     = SS_FLUX_MULTIPLIER !=FLUX_FACTOR/(4.0d0*PIE)
+      !fluxvec
+
+! @@ Rob 7/30/13
+!   If deltam-scaling, must use scaled deltau !!!
+
+      if (do_deltam_scaling) then
+        extinction(1:nlayers) = DELTAU_VERT(1:NLAYERS)/&
+          (HEIGHT_GRID(0:NLAYERS-1)-HEIGHT_GRID(1:NLAYERS))
+        deltaus(1:nlayers)    = DELTAU_VERT(1:NLAYERS)
+      else
+        extinction(1:nlayers) = DELTAU_VERT_INPUT(1:NLAYERS)/&
+          (HEIGHT_GRID(0:NLAYERS-1)-HEIGHT_GRID(1:NLAYERS))
+        deltaus(1:nlayers)    = DELTAU_VERT_INPUT(1:NLAYERS)
+      endif
+
+      omega(1:nlayers)      = OMEGA_TOTAL_INPUT(1:NLAYERS)
+      do o1=1,nstokes
+        do o2=1,nstokes
+          gk = 4*(o1-1) + o2
+          do l=0,nmoments_input
+            do n=1,nlayers
+              greekmat(n,l,o1,o2) = GREEKMAT_TOTAL_INPUT(L,N,GK)
+            end do
+          end do
+        end do
+      end do
+
+      !For TMS correction only
+      if (do_deltam_scaling) then
+        do n=1,nlayers
+          truncfac(n) = TRUNC_FACTOR(N)
+        end do
+      end if
+
+      bb_input(0:nlayers) = THERMAL_BB_INPUT(0:NLAYERS)
+
+      reflec = ZERO
+      if (do_lambertian) then
+        do g=1,ngeoms
+          reflec(1,1,g) = LAMBERTIAN_ALBEDO
+        end do
+      else
+        !Note: set for ObsGeo mode only at present
+        do g=1,ngeoms
+          do o1=1,nstokes
+            do o2=1,nstokes
+              gk = 4*(o1-1) + o2
+              reflec(o1,o2,g) = EXACTDB_BRDFUNC(gk,lum,lua,g)
+            end do
+          end do
+        end do
+      end if
+
+      !surfbb =
+      do g=1,ngeoms
+        emiss(g) = USER_EMISSIVITY(1,g)
+      end do
+
+!  Call VFO_MASTER
+!  ===============
+
+      CALL VFO_MASTER &
+       ( maxgeoms, maxlayers, maxfine, maxmoments_input, max_user_levels,    & ! Input max dims
+         ngeoms, nlayers, nfinedivs, nmoments_input, n_user_levels, nstokes, & ! Input dims
+         do_solar_sources, do_thermal_emission, do_surface_emission,         & ! Input flags
+         do_planpar, do_regular_ps, do_enhanced_ps, do_deltam_scaling,       & ! Input flags
+         do_upwelling, do_dnwelling, do_lambertian, do_sunlight,             & ! Input flags
+         dtr, Pie, doCrit, Acrit, eradius, heights, fo_user_levels,          & ! Input general
+         theta_boa, alpha_boa, phi_boa, Mu0, Mu1, doNadir,                   & ! Input geometry
+         flux, fluxvec, extinction, deltaus, omega, greekmat, truncfac,      & ! Input (Optical - Regular)
+         bb_input, reflec, surfbb, emiss,                                    & ! Input (Optical - Surface)
+         fo_stokes_ss, fo_stokes_db, fo_stokes_dta, fo_stokes_dts,           & ! Output
+         fo_stokes, fail, message, trace )                                     ! Output
+
+      END SUBROUTINE VFO_MASTER_INTERFACE
 
       END MODULE vlidort_corrections
 
