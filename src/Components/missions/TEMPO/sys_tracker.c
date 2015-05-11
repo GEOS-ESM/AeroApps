@@ -15,7 +15,7 @@ int sys_tracker_(){
 	s_sec = (float)r_usage.ru_stime.tv_sec + 1e-6*(float)r_usage.ru_stime.tv_usec;
 	u_sec = (float)r_usage.ru_utime.tv_sec + 1e-6*(float)r_usage.ru_utime.tv_usec;
 	printf("	Maximum Memory usage = %ld mb\n",mb);
-	printf("	Processor time used  = %5.2f s\n",s_sec);
+	printf("	System time elapsed  = %5.2f s\n",s_sec);
 	printf("	User time elapsed    = %5.2f s\n",u_sec);
 	return 0;
 
