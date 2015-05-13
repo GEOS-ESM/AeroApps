@@ -7,7 +7,8 @@
 subroutine Scalar_LandMODIS (km, nch, nobs,channels,        &
                    tau, ssa, g, pe, he, te, kernel_wt, param, &
                    solar_zenith, relat_azymuth, sensor_zenith, &
-                   MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, BRDF,rc, albedo, reflectance_VL,radiance_VL )
+                   MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, rc, &
+                   albedo, reflectance_VL,radiance_VL )
 !
 ! Uses VLIDORT in scalar mode to compute OMI aerosol TOA radiances.
 !
@@ -59,7 +60,7 @@ subroutine Scalar_LandMODIS (km, nch, nobs,channels,        &
   real*8, optional, intent(out) :: reflectance_VL(nobs, nch)     ! TOA reflectance from VLIDORT using albedo
   real*8, optional, intent(out) :: radiance_VL(nobs,nch)         ! TOA normalized radiance from VLIDORT
 
-  real*8,           intent(out) :: BRDF(nobs, nch)  
+!  real*8,           intent(out) :: BRDF(nobs, nch)  
 !                         ---  
   integer             :: i,j,n,p,ier
 
@@ -116,7 +117,7 @@ subroutine Scalar_LandMODIS (km, nch, nobs,channels,        &
                              sensor_zenith(j),relat_azymuth(j),&
                              kernel_wt(1,i,j),kernel_wt(2,i,j),kernel_wt(3,i,j),&
                              reshape(param(:,i,j),(/nparam/)),&
-                             .true.,BRDF(j,i),rc)
+                             .true.,rc)
 
       if ( rc /= 0 ) return
 
