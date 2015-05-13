@@ -228,11 +228,11 @@ module VLIDORT_SurfaceMod
       DO_DEBUG_RESTORATION = .false.
       N_MOMENTS_INPUT = 2 * VBRDF%VBRDF_Sup_In%BS_NSTREAMS - 1
 
-      call VBRDF_MAINMASTER (DO_DEBUG_RESTORATION, ! Inputs
-     & N_MOMENTS_INPUT,                      ! Inputs
-     & VBRDF%VBRDF_Sup_In,                   ! Inputs
-     & self%Base%VIO%VBRDF_Sup_Out,          ! Outputs
-     & self%Base%VIO%VBRDF_Sup_OutputStatus)          ! Outputs
+      call VBRDF_MAINMASTER (DO_DEBUG_RESTORATION, &         ! Inputs
+                             N_MOMENTS_INPUT, &              ! Inputs
+                             VBRDF%VBRDF_Sup_In, &           ! Inputs
+                             self%Base%VIO%VBRDF_Sup_Out, &  ! Outputs
+                           self%Base%VIO%VBRDF_Sup_OutputStatus)          ! Outputs
        BRDF = self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)     
        print*, 'ok BRDF', self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)       
    end subroutine VLIDORT_GissCoxMunk
@@ -254,7 +254,7 @@ module VLIDORT_SurfaceMod
       real*8, intent(in)                    :: fiso
       real*8, intent(in)                    :: fgeo
       real*8, intent(in)                    :: fvol
-      real*8, intent(in),dimensions(:)      :: param
+      real*8, intent(in), dimension(:)      :: param
       logical, intent(in)                   :: scalar
       integer, intent(out)                  :: rc     ! error code
       real*8, intent(out)                   :: BRDF     
@@ -455,7 +455,7 @@ module VLIDORT_SurfaceMod
 
       ! Run the VLIDORT Surface Module
       ! -------------------------------------------------
-      call VBRDF_MAINMASTER (DO_DEBUG_RESTORATION, &! Inputs
+      call VBRDF_MAINMASTER (DO_DEBUG_RESTORATION, &                ! Inputs
                              N_MOMENTS_INPUT, &                     ! Inputs
                              VBRDF%VBRDF_Sup_In, &                  ! Inputs
                              self%Base%VIO%VBRDF_Sup_Out, &         ! Outputs
