@@ -85,7 +85,7 @@ python: $(PY_EXTS)
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
 
-%.x: %.o  sys_tracker.o vlidort/VLIDORT_OMI_py.o
+%.x: %.o  sys_tracker.o vlidort/VLIDORT_OMI_py.o vlidort/VLIDORT_BRDF_MODIS_py.o
 	$(CC) -c sys_tracker.c $(LIB_MPI)
 
 	$(FC) $(FOPTS) $^ -o $@  $(LIB_VLIDORT90) $(LIB_CHEM_BASE) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
