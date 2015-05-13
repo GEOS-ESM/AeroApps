@@ -4,7 +4,7 @@
 !
 !.............................................................................
 
-subroutine Scalar (km, nch, nobs,channels,        &
+subroutine Scalar_LandMODIS (km, nch, nobs,channels,        &
                    tau, ssa, g, pe, he, te, kernel_wt, param, &
                    solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, BRDF,rc, albedo, reflectance_VL,radiance_VL )
@@ -113,7 +113,8 @@ subroutine Scalar (km, nch, nobs,channels,        &
 
       print*, 'DO MODIS BRDF'
       call VLIDORT_LANDMODIS(SCAT%Surface,solar_zenith(j),&
-                             sensor_zenith(j),relat_azymuth(j),reshape(kernel_wt(:,i,j),(/nkernel/)),&
+                             sensor_zenith(j),relat_azymuth(j),&
+                             kernel_wt(1,i,j),kernel_wt(2,i,j),kernel_wt(3,i,j),&
                              reshape(param(:,i,j),(/nparam/)),&
                              .true.,BRDF(j,i),rc)
 
@@ -175,11 +176,11 @@ subroutine Scalar (km, nch, nobs,channels,        &
 
   end do ! Loop over obs
 
-end subroutine Scalar
+end subroutine Scalar_LandMODIS
 
 !..........................................................................
 
-subroutine Vector (km, nch, nobs, channels, nMom,  &
+subroutine Vector_LandMODIS (km, nch, nobs, channels, nMom,  &
                    nPol,tau, ssa, g, pmom, pe, he, te, albedo, &
                    U10m, V10m, mr, &
                    solar_zenith, relat_azymuth, sensor_zenith, &
@@ -326,5 +327,5 @@ subroutine Vector (km, nch, nobs, channels, nMom,  &
 
   end do ! Loop over obs
 
-end subroutine Vector
+end subroutine Vector_LandMODIS
 
