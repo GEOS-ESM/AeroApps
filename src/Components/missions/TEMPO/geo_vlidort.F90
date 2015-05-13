@@ -34,7 +34,7 @@ program shmem_reader
 
 ! File names
 ! ----------
-  character(len=256)    :: MET_file, AER_file, INV_file, OUT_file 
+  character(len=256)    :: MET_file, AER_file, INV_file, BRDF_file, OUT_file 
 
 ! Global, 3D arrays to be allocated using SHMEM
 ! ---------------------------------------------
@@ -58,6 +58,9 @@ program shmem_reader
   real, pointer         :: BCPHILIC(:,:,:) => null()
   real, pointer         :: OCPHOBIC(:,:,:) => null()
   real, pointer         :: OCPHILIC(:,:,:) => null()
+  real, pointer         :: KISO(:,:,:) => null()
+  real, pointer         :: KVOL(:,:,:) => null()
+  real, pointer         :: KGEO(:,:,:) => null()
 
 
 ! VLIDORT input arrays
@@ -69,7 +72,7 @@ program shmem_reader
   real, parameter                       :: ptop = 1.0             ! top (edge) pressure [Pa]
   integer, parameter                    :: nch = 1                    ! number of channels
   integer, parameter                    :: nq = 14                ! number of tracers
-  integer, parameter                    :: verbose = 1
+  integer, parameter                    :: verbose = 0
   real, pointer                         :: qm(:,:,:) => null()    ! (mixing ratio) * delp/g
   real, pointer                         :: tau(:,:,:) => null()   ! aerosol optical depth
   real, pointer                         :: ssa(:,:,:) => null()   ! single scattering albedo
@@ -100,6 +103,8 @@ program shmem_reader
   integer               :: myid, npet, CoresPerNode  ! MPI dimensions and processor id
   integer               :: im, jm, km                ! size of TEMPO domain
   integer               :: i, j, k, n                ! size of TEMPO domain
+  integer, parameter    :: nbands = 7                ! number of modis bands
+  integer, dimension(nch), parameter    :: bands = (/3/)             ! modis band that overlaps with vlidort channel
   integer               :: clrm, c                      ! number of clear 
   integer               :: ncid, radVarID, refVarID  ! netcdf ids
   integer               :: p, pp                     ! i-processor
@@ -150,6 +155,7 @@ program shmem_reader
   write(MET_file,'(A,A,A,A,A,A,A,A,A)') '/nobackup/TEMPO/met_Nv/Y',date(1:4),'/M',date(5:6),'/tempo-g5nr.lb2.met_Nv.',date,'_',time,'z.nc4'
   write(AER_file,'(A,A,A,A,A,A,A,A,A)') '/nobackup/TEMPO/aer_Nv/Y',date(1:4),'/M',date(5:6),'/tempo-g5nr.lb2.aer_Nv.',date,'_',time,'z.nc4'
   INV_file = "/nobackup/TEMPO/LevelG/invariant/tempo.lg1.invariant.nc4"
+  BRDF_file = "/nobackup/TEMPO/BRDF/raw/MAIACRTLS.2006008.hdf"
 
 ! OUTFILES
   write(OUT_file,'(A,A,A,A,A)') 'tempo-g5nr.lb2.vlidort.',date,'_',time,'z.nc4'
@@ -181,6 +187,9 @@ program shmem_reader
   call MAPL_AllocNodeArray(BCPHILIC,(/im,jm,km/),rc=ierr)
   call MAPL_AllocNodeArray(OCPHOBIC,(/im,jm,km/),rc=ierr)
   call MAPL_AllocNodeArray(OCPHILIC,(/im,jm,km/),rc=ierr)
+  call MAPL_AllocNodeArray(KISO,(/im,jm,nbands/),rc=ierr)
+  call MAPL_AllocNodeArray(KVOL,(/im,jm,nbands/),rc=ierr)
+  call MAPL_AllocNodeArray(KGEO,(/im,jm,nbands/),rc=ierr)
 
 ! Allocate arrays that will be copied on each processor - unshared
 ! ---------------------------------------------------------
@@ -294,6 +303,9 @@ program shmem_reader
   call mp_layreadvar("BCPHILIC", AER_file, BCPHILIC)
   call mp_layreadvar("OCPHOBIC", AER_file, OCPHOBIC)
   call mp_layreadvar("OCPHILIC", AER_file, OCPHILIC)
+  call mp_readvar3D("Kiso", BRDF_file, (/im,jm,nbands/), 1, KISO)
+  call mp_readvar3D("Kvol", BRDF_file, (/im,jm,nbands/), 1, KVOL)
+  call mp_readvar3D("Kgeo", BRDF_file, (/im,jm,nbands/), 1, KGEO)
 
 ! Wait for everyone to finish and print max memory used
 ! -----------------------------------------------------------  
@@ -326,7 +338,7 @@ program shmem_reader
       counti = nclr(p+1)
       endi   = starti + counti - 1
 
-      do c = 571506, endi !starti, endi
+      do c = 571506, 571506 !starti, endi
         call getEdgeVars ( km, nobs, reshape(AIRDENS(i_work(c),j_work(c),:),(/km,nobs/)), reshape(DELP(i_work(c),j_work(c),:),(/km,nobs/)), ptop, &
                            pe, ze, te )   
 
@@ -982,6 +994,163 @@ program shmem_reader
     call check( nf90_close(ncid), "closing "// filename)
     !
   end subroutine mp_layreadvar
+
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_readvar4D
+! PURPOSE
+!     General code to uses npet processors to read a variable from a netcdf file in chunks across dimenion n
+!     is called by multiple processors
+!     variable to be read must have 4 dimensions 
+! INPUT
+!     varname         : string of variable name
+!     filename        : file to be read
+!     dim = e.g. [im, jm, km, tm]  : size of array to be read
+!     n               : dimension to split up
+!     var             : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     11 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_readvar4D(varname, filename, dim, n, var)
+    character(len=*), intent(in)              ::  varname
+    character(len=*), intent(in)              ::  filename
+    integer, dimension(:), intent(in)         ::  dim
+    integer, intent(in)                       ::  n
+    real, dimension(:,:,:,:), intent(inout)   ::  var
+
+    integer                       :: p, startl, countl, endl
+    integer                       :: ncid, varid
+    integer, dimension(npet)      :: nlayer                ! how many layers each processor reads
+    integer                       :: km
+    integer, allocatable          :: countsize(:)
+
+
+    ! allocate count array
+    !---------------------------------------
+    allocate(countsize(size(dim)))
+
+
+    ! Everyone Figure out how many indeces each PE has to read
+    ! -----------------------------
+    km     = dim(n)
+    nlayer = 0
+    if (npet >= km) then
+      nlayer(1:npet) = 1
+    else if (npet < km) then
+      nlayer(1:npet) = km/npet
+      nlayer(npet)   = nlayer(npet) + mod(km,npet)
+    end if 
+
+    call check( nf90_open(filename, IOR(nf90_nowrite, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
+    do p = 0, npet-1
+      if (myid == p) then
+        if (p == 0) then
+          startl = 1
+        else
+          startl = sum(nlayer(1:p))+1
+        end if
+        countl = nlayer(p+1)
+        endl   = startl + countl - 1
+
+        countsize = dim
+        countsize(n) = countl
+
+        if (n == 1) then
+          call check( nf90_get_var(ncid, varid,var(startl:endl,:,:,:), start = (/ startl, 1, 1, 1 /), count=countsize), "reading " // varname)
+        else if (n == 2) then
+          call check( nf90_get_var(ncid, varid,var(:,startl:endl,:,:), start = (/ 1, startl, 1, 1 /), count=countsize), "reading " // varname)
+        else if (n == 3) then
+          call check( nf90_get_var(ncid, varid,var(:,:,startl:endl,:), start = (/ 1, 1, startl, 1 /), count=countsize), "reading " // varname)
+        else
+          call check( nf90_get_var(ncid, varid,var(:,:,:,startl:endl), start = (/ 1, 1, 1, startl /), count=countsize), "reading " // varname)
+        end if                 
+
+      end if
+    end do
+    call check( nf90_close(ncid), "closing "// filename)
+    !
+  end subroutine mp_readvar4D
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_readvar3D
+! PURPOSE
+!     General code to uses npet processors to read a variable from a netcdf file in chunks across dimenion n
+!     is called by multiple processors
+!     variable to be read must have 3 dimensions 
+! INPUT
+!     varname         : string of variable name
+!     filename        : file to be read
+!     dim = e.g. [im, jm, km]  : size of array to be read
+!     n               : dimension to split up
+!     var             : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     11 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_readvar3D(varname, filename, dim, n, var)
+    character(len=*), intent(in)              ::  varname
+    character(len=*), intent(in)              ::  filename
+    integer, dimension(:), intent(in)         ::  dim
+    integer, intent(in)                       ::  n
+    real, dimension(:,:,:), intent(inout)     ::  var
+
+    integer                       :: p, startl, countl, endl
+    integer                       :: ncid, varid
+    integer, dimension(npet)      :: nlayer                ! how many layers each processor reads
+    integer                       :: km
+    integer, allocatable          :: countsize(:)
+
+
+    ! allocate count array
+    !---------------------------------------
+    allocate(countsize(size(dim)))
+
+
+    ! Everyone Figure out how many indeces each PE has to read
+    ! -----------------------------
+    km     = dim(n)
+    nlayer = 0
+    if (npet >= km) then
+      nlayer(1:npet) = 1
+    else if (npet < km) then
+      nlayer(1:npet) = km/npet
+      nlayer(npet)   = nlayer(npet) + mod(km,npet)
+    end if 
+
+    call check( nf90_open(filename, IOR(nf90_nowrite, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
+    do p = 0, npet-1
+      if (myid == p) then
+        if (p == 0) then
+          startl = 1
+        else
+          startl = sum(nlayer(1:p))+1
+        end if
+        countl = nlayer(p+1)
+        endl   = startl + countl - 1
+
+        countsize = dim
+        countsize(n) = countl
+
+        if (n == 1) then
+          call check( nf90_get_var(ncid, varid,var(startl:endl,:,:), start = (/ startl, 1, 1 /), count=countsize), "reading " // varname)
+        else if (n == 2) then
+          call check( nf90_get_var(ncid, varid,var(:,startl:endl,:), start = (/ 1, startl, 1 /), count=countsize), "reading " // varname)
+        else 
+          call check( nf90_get_var(ncid, varid,var(:,:,startl:endl), start = (/ 1, 1, startl /), count=countsize), "reading " // varname)
+        end if                 
+
+      end if
+    end do
+    call check( nf90_close(ncid), "closing "// filename)
+    !
+  end subroutine mp_readvar3D  
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
