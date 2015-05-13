@@ -240,7 +240,7 @@ module VLIDORT_SurfaceMod
 !.................................................................................
 
    Subroutine VLIDORT_LANDMODIS(self, solar_zenith, sensor_zenith, relative_azimuth, &
-                                fiso,fgeo,fvol, param, scalar, BRDF,rc) 
+                                fiso,fgeo,fvol, param, scalar,rc) 
  
       USE VLIDORT_PARS
       USE VLIDORT_AUX
@@ -257,7 +257,7 @@ module VLIDORT_SurfaceMod
       real*8, intent(in), dimension(:)      :: param
       logical, intent(in)                   :: scalar
       integer, intent(out)                  :: rc     ! error code
-      real*8, intent(out)                   :: BRDF     
+!      real*8, intent(out)                   :: BRDF     
 
       !Input parameters for VLIDORT BRDF supplement:
       TYPE VLIDORT_BRDF
@@ -321,7 +321,8 @@ module VLIDORT_SurfaceMod
 
 
       N_BRDF_KERNELS = 3             ! Number of BRDF kernels (max 3)
-      NSTREAMS_BRDF = 50             ! Number of azimuth quadrature streams for BRDF, not needed if DO_USER_OBSGEOMS is TRUE 
+      NSTREAMS_BRDF = 50             ! Number of azimuth quadrature streams for BRDF
+                                     ! Not really needed for radiance calc if DO_USER_OBSGEOMS is TRUE 
           
 
       ! For each BRDF_KERNELS specify the name, factor and parameter  
@@ -460,7 +461,7 @@ module VLIDORT_SurfaceMod
                              VBRDF%VBRDF_Sup_In, &                  ! Inputs
                              self%Base%VIO%VBRDF_Sup_Out, &         ! Outputs
                              self%Base%VIO%VBRDF_Sup_OutputStatus)          ! Outputs
-       BRDF = self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)     
+!       BRDF = self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)     
        print*, 'ok BRDF', self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)  
                
    end subroutine VLIDORT_LANDMODIS
