@@ -28,7 +28,7 @@ THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
 
 PY_MODS = 
-PY_EXTS = VLIDORT_OMI_.$(F2PYEXT)  VLIDORT_BRDF_.$(F2PYEXT) 
+PY_EXTS = VLIDORT_OMI_.$(F2PYEXT)  VLIDORT_BRDF_MODIS_.$(F2PYEXT) 
 PY_SCRP = 
 
 SEDCMD = s^__ESMADIR__^\$(ESMADIR)^;s^__BASEDIR__^\$(BASEDIR)^
@@ -122,10 +122,15 @@ OMI_.$(F2PYEXT): OMI_py.F90
                  OMI_py.F90 $(LIB_VLIDORT) $(LIBS) \
                  only: scalar vector :
 
-VLIDORT_BRDF_.$(F2PYEXT): VLIDORT_BRDF_py.F90 
+VLIDORT_BRDF_CX_.$(F2PYEXT): VLIDORT_BRDF_CX_py.F90 
 	$(FC) -c $(M). $(M)$(INC_CHEM_BASE) \
 	         $(I)$(INC_VLIDORT90) \
-                VLIDORT_BRDF_py.F90 $(LIB_VLIDORT90) $(LIBS) 
+                VLIDORT_BRDF_CX_py.F90 $(LIB_VLIDORT90) $(LIBS) 
+
+VLIDORT_BRDF_MODIS_.$(F2PYEXT): VLIDORT_BRDF_MODIS_py.F90 
+	$(FC) -c $(M). $(M)$(INC_CHEM_BASE) \
+	         $(I)$(INC_VLIDORT90) \
+                VLIDORT_BRDF_MODIS_py.F90 $(LIB_VLIDORT90) $(LIBS)                 
 
 VLIDORT_OMI_.$(F2PYEXT): VLIDORT_OMI_py.F90 
 	$(FC) -c $(M). $(M)$(INC_CHEM_BASE) \
