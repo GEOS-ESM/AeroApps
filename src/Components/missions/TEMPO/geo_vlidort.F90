@@ -58,9 +58,9 @@ program shmem_reader
   real, pointer         :: BCPHILIC(:,:,:) => null()
   real, pointer         :: OCPHOBIC(:,:,:) => null()
   real, pointer         :: OCPHILIC(:,:,:) => null()
-  real, pointer         :: KISO(:,:,:) => null()
-  real, pointer         :: KVOL(:,:,:) => null()
-  real, pointer         :: KGEO(:,:,:) => null()
+  real*8, pointer         :: KISO(:,:,:) => null()
+  real*8, pointer         :: KVOL(:,:,:) => null()
+  real*8, pointer         :: KGEO(:,:,:) => null()
 
 
 ! VLIDORT input arrays
@@ -81,12 +81,21 @@ program shmem_reader
   real, pointer                         :: solar_zenith(:) => null() 
   real, pointer                         :: relat_azimuth(:) => null()
   real, pointer                         :: sensor_zenith(:) => null()
+  integer, parameter                    :: nkernel = 3
+  integer, parameter                    :: nparam  = 2
+  real*8, pointer                       :: kernel_wt(:,:,:) => null()  ! kernel weights (/fiso,fgeo,fvol/)
+  real*8, pointer                       :: param(:,:,:) => null()      ! Li-Sparse parameters 
+                                                                 ! param1 = crown relative height (h/b)
+                                                                 ! param2 = shape parameter (b/r)
+
   real                                  :: sensor_azimuth
   real                                  :: solar_azimuth
   real, dimension(nch),parameter        :: channels = (/405.0/)    ! channels to simulate
   real, parameter                       :: MISSING = -999
   real*8,pointer                        :: radiance_VL(:,:) => null()      ! TOA normalized radiance from VLIDORT
   real*8,pointer                        :: reflectance_VL(:,:) => null()  ! TOA reflectance from VLIDORT
+  real*8,pointer                        :: radiance_VL_LandMODIS(:,:) => null()
+  real*8,pointer                        :: reflectance_VL_LandMODIS(:,:) => null()
 
   character(len=*), parameter           :: rcfile = 'Aod_EOS.rc'  ! resource file
   character(len=16), parameter          :: vnames_string(nq) = (/'du001', 'du002', 'du003', 'du004', 'du005', &
@@ -105,9 +114,10 @@ program shmem_reader
   integer               :: i, j, k, n                ! size of TEMPO domain
   integer, parameter    :: nbands = 7                ! number of modis bands
   integer, dimension(nch), parameter    :: bands = (/3/)             ! modis band that overlaps with vlidort channel
-  integer               :: clrm, c                      ! number of clear 
+  integer               :: ch                        ! i-channel
+  integer               :: clrm, c                   ! number of clear 
   integer               :: ncid, radVarID, refVarID  ! netcdf ids
-  integer               :: p, pp                     ! i-processor
+  integer               :: p                         ! i-processor
   integer               :: doy                       ! day of year
   integer               :: starti, counti, endi      ! array indices and counts for e-w columns to be read
   integer, allocatable  :: nclr(:)                   ! how many clear pixels each processor reads
@@ -211,6 +221,12 @@ program shmem_reader
 
   allocate (radiance_VL(nobs,nch))
   allocate (reflectance_VL(nobs, nch))
+
+  allocate (radiance_VL_LandMODIS(nobs,nch))
+  allocate (reflectance_VL_LandMODIS(nobs, nch))
+
+  allocate (kernel_wt(nkernel,nch,nobs))
+  allocate (param(nparam,nch,nobs))
 
 ! Needed for reading
 ! ----------------------
@@ -390,6 +406,11 @@ program shmem_reader
           if (solar_zenith(n) < 90.0) then
             relat_azimuth(n) = abs(sensor_azimuth - solar_azimuth)        
           end if
+
+          do ch = 1, nch
+            kernel_wt(:,ch,n) = (/KISO(i,j,bands(ch)),KGEO(i,j,bands(ch)),KVOL(i,j,bands(ch))/)
+            param(:,ch,n)     = (/2,1/)
+          end do
         end do           
 
         if (solar_zenith(nobs) < 90.0) then
@@ -407,11 +428,18 @@ program shmem_reader
           albedo(:,:)      = 0.05
 
           ! Call to vlidort scalar code
+          ! Simple lambertian surface
           ! ------------------------------
           call Scalar (km, nch, nobs ,dble(channels),        &
                   dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), dble(albedo),&
                   dble(solar_zenith), dble(relat_azimuth), dble(sensor_zenith), &
                   dble(MISSING),verbose,radiance_VL,reflectance_VL, ierr)
+
+          call Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
+                   dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
+                   kernel_wt, param, &
+                   dble(solar_zenith), dble(relat_azimuth), dble(sensor_zenith), &
+                   dble(MISSING),verbose,radiance_VL_LandMODIS,reflectance_VL_LandMODIS,ierr )
 
           if (verbose==1) then
             write(*,*) 'VLIDORT scalar ', myid, ierr
@@ -419,7 +447,8 @@ program shmem_reader
             ! call mp_write_msg(msg) 
           endif
 
-          if (ANY(radiance_VL == MISSING) .or. ANY(reflectance_VL == MISSING)) then
+          if (ANY(radiance_VL == MISSING) .or. ANY(reflectance_VL == MISSING) &
+              .or. ANY(radiance_VL_LandMODIS == MISSING) .or. ANY(reflectance_VL_LandMODIS == MISSING)) then
             write(*,*) 'VLIDORT returned a missing value'
             write(*,*) 'Exiting......'
             call MPI_ABORT(MPI_COMM_WORLD,myid)
@@ -476,6 +505,7 @@ program shmem_reader
   subroutine mp_write_msg(msg)
     character(len=100), intent(in)    :: msg
     character(len=100)                :: msgr
+    integer                           :: pp
 
     if ( myid  == 0 ) then
       do pp = 1,npet-1
@@ -1097,8 +1127,8 @@ program shmem_reader
     character(len=*), intent(in)              ::  varname
     character(len=*), intent(in)              ::  filename
     integer, dimension(:), intent(in)         ::  dim
-    integer, intent(in)                       ::  n
-    real, dimension(:,:,:), intent(inout)     ::  var
+    integer, intent(in)                       ::  n  !dimensions to read over in chunks
+    real*8, dimension(:,:,:), intent(inout)     ::  var
 
     integer                       :: p, startl, countl, endl
     integer                       :: ncid, varid
