@@ -125,7 +125,7 @@ subroutine Scalar_LandMODIS (km, nch, nobs,channels,        &
         SCAT%ssa => ssa(:,i,j)
         SCAT%g => g(:,i,j)
          
-        call VLIDORT_Run (SCAT, radiance_VL(j,i), reflectance_cx(j,i), &
+        call VLIDORT_Run (SCAT, radiance_VL_SURF(j,i), reflectance_VL_SURF(j,i), &
                           AOT(j,i), ier,Q(j,i),U(j,i), .true., .true.)
 
        print *, 'radiance land modis',radiance_VL_SURF(j,i), reflectance_VL_SURF(j,i) 
