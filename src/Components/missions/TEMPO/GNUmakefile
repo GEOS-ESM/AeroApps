@@ -88,7 +88,7 @@ python: $(PY_EXTS)
 %.x: %.o  sys_tracker.o vlidort/VLIDORT_OMI_py.o vlidort/VLIDORT_BRDF_MODIS_py.o
 	$(CC) -c sys_tracker.c $(LIB_MPI)
 
-	$(FC) $(FOPTS) $^ -o $@  $(LIB_VLIDORT90) $(LIB_CHEM_BASE) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
+	$(FC) -C $(FOPTS) $^ -o $@  $(LIB_VLIDORT90) $(LIB_CHEM_BASE) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
             $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO)  $(LIB_SDF) \
             $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS) \
             $(LIB_NETCDF)
