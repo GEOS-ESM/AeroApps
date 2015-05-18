@@ -356,7 +356,6 @@ module VLIDORT_SurfaceMod
       BRDF_PARAMETERS(3,3) = 0.0
       LAMBERTIAN_KERNEL_FLAG(3) = .false. 
 
-        
       ! Copy in data structure
       ! ---------------------
 
@@ -462,7 +461,7 @@ module VLIDORT_SurfaceMod
                              self%Base%VIO%VBRDF_Sup_Out, &         ! Outputs
                              self%Base%VIO%VBRDF_Sup_OutputStatus)          ! Outputs
 !       BRDF = self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)     
-       print*, 'ok BRDF', self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)  
+!       print*, 'ok BRDF', self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)  
                
    end subroutine VLIDORT_LANDMODIS
 
