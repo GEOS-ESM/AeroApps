@@ -1,7 +1,7 @@
 
 !	----------------------
-!	This is an include file to define some constants used in the geo_vlidort 
-!	program and subroutines
+!	This is an include file to define some constants and variables 
+! used in the geo_vlidort program and subroutines
 !-------------------------
 
 	! VLIDORT array sizes
@@ -12,7 +12,7 @@
   real, dimension(nch),parameter        :: channels = (/550.0/)    ! channels to simulate
 
   ! Verbose
-  integer, parameter                    :: verbose = 1
+  integer, parameter                    :: verbose = 0
   integer, parameter                    :: verbose_mp = 0
 
   ! MODIS kernel stuff
@@ -37,3 +37,6 @@
 
   ! Cloud Filtering
   real, parameter                     	:: cldmax = 0.01  
+
+
+
