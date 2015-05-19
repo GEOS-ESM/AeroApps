@@ -99,10 +99,12 @@ program geo_vlidort
 
 ! VLIDORT output arrays
 !-------------------------------
-  real*8,pointer                        :: radiance_VL(:,:) => null()      ! TOA normalized radiance from VLIDORT
-  real*8,pointer                        :: reflectance_VL(:,:) => null()  ! TOA reflectance from VLIDORT
-  real*8,pointer                        :: radiance_VL_Surface(:,:) => null()      ! TOA normalized radiance from VLIDORT
+  real*8,pointer                        :: radiance_VL(:,:) => null()             ! TOA normalized radiance from VLIDORT
+  real*8,pointer                        :: reflectance_VL(:,:) => null()          ! TOA reflectance from VLIDORT
+  real*8,pointer                        :: radiance_VL_Surface(:,:) => null()     ! TOA normalized radiance from VLIDORT
   real*8,pointer                        :: reflectance_VL_Surface(:,:) => null()  ! TOA reflectance from VLIDORT  
+  real*8,pointer                        :: Q(:,:) => null()                       ! Q Stokes component
+  real*8,pointer                        :: U(:,:) => null()                       ! U Stokes component
 
 ! VLIDORT working variables
 !------------------------------
@@ -114,6 +116,7 @@ program geo_vlidort
   real                                  :: Earth_rad                 ! earth radius
   integer                               :: doy                       ! day of year
   integer                               :: ch                        ! i-channel  
+  real,allocatable                      :: pmom(:,:,:,:,:)           ! elements of scattering phase matrix for vector calculations
 
 ! MODIS Kernel  arrays
 !--------------------------
@@ -399,7 +402,7 @@ program geo_vlidort
 
 
   if (myid == 0) then
-    write(*,'(f5.2,A)') 100.*clrm/(im*jm),'% of the domain is clear and sunlit'
+    write(*,'(I3,A)') nint(100.*clrm/(im*jm)),'% of the domain is clear and sunlit'
     write(*,'(A,I,A)') '       Simulating ',clrm,' pixels'
     write(*,*) ' '
   end if 
@@ -423,6 +426,9 @@ program geo_vlidort
   if (myid == 0) then 
     write(*,*) 'Read all variables' 
     call sys_tracker()   
+    write(*,*) ' '
+    call system_clock ( t2, clock_rate, clock_max )
+    write ( *, * ) 'Elapsed real time = ', real ( t2 - t1 ) / real ( clock_rate )
     write(*,*) ' '
   end if     
 
@@ -478,11 +484,17 @@ program geo_vlidort
           param(:,ch,nobs)     = (/dble(2),dble(1)/)
         end do
 
-        call getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
-                       qm, reshape(RH(i_work(c),j_work(c),:),(/km,nobs/)), &
-                       tau, ssa, g, ierr )
+        if (scalar) then
+          call getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
+                              qm, reshape(RH(i_work(c),j_work(c),:),(/km,nobs/)), &
+                              tau, ssa, g, ierr )
+        else
+          call getAOPvector ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
+                              qm, reshape(RH(i_work(c),j_work(c),:),(/km,nobs/)),&
+                              nMom,nPol, tau, ssa, g, pmom, ierr )
+        end if
 
-        write(msg,*) 'getAOPscalar ', myid
+        write(msg,*) 'getAOP ', myid
         call write_verbose(msg)
 
         ! Figure out what kinds of surfaces to simulate
@@ -508,21 +520,37 @@ program geo_vlidort
 
         !end if 
 
+        ! LAND PERMANENTLY COVERED BY ICE
+        !---------------------          
+        !if (FRLANDICE(i_work(c),j_work(c)) .ne. 0) then
+        !  write(*,*) 'We found landice!!!!???'
+        !end if
+
         ! LAND
         !---------------------          
         if (FRLAND(i_work(c),j_work(c)) .ne. 0 ) then
           ! do land leaving surface calculations
           ! need to implement snow cover (FRSNO)
           if (ANY(kernel_wt == modis_missing)) then
-            albedo(:,:)      = 0.05  !this needs to be a climatology(?)
-
-            ! Call to vlidort scalar code
             ! Simple lambertian surface model
             !------------------------------
-            ! call Scalar (km, nch, nobs ,dble(channels),        &
-            !         dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), dble(albedo),&
-            !         dble(solar_zenith), dble(relat_azimuth), dble(sensor_zenith), &
-            !         dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ierr)
+            albedo(:,:)      = 0.05  !this needs to be a climatology(?)
+            !if (scalar) then
+              ! Call to vlidort scalar code
+              
+              ! call Scalar (km, nch, nobs ,dble(channels),        &
+              !         dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), dble(albedo),&
+              !         dble(solar_zenith), dble(relat_azimuth), dble(sensor_zenith), &
+              !         dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ierr)
+            !else
+              ! Call to vlidort vector code
+              ! call Vector (km, nch, nobs ,dble(channels), nMom,   &
+                     ! nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), dble(albedo),&
+                     ! reshape(dble(solar_zenith(i_work(c),j_work(c),:)),(/nobs/)), &
+                     ! reshape(dble(relat_azimuth(i_work(c),j_work(c),:)),(/nobs/)), &
+                     ! reshape(dble(sensor_zenith(i_work(c),j_work(c),:)),(/nobs/)), &
+                     ! dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr)
+            !end if
           else             
             ! MODIS BRDF Surface Model
             !------------------------------
@@ -536,11 +564,18 @@ program geo_vlidort
                       reshape(dble(sensor_zenith(i_work(c),j_work(c),:)),(/nobs/)), &
                       dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface,ierr )  
             else
-              albedo(:,:)      = 0.05
-              call Vector (km, nch, nobs ,dble(channels),        &
-                     dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), dble(albedo),&
-                     dble(solar_zenith), dble(relat_azimuth), dble(sensor_zenith), &
-                     dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ierr)
+              ! Call to vlidort vector code
+              write(msg,*) 'getting ready to do vector calculations', myid, ierr
+              call write_verbose(msg)
+
+              call Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
+                      nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+                      kernel_wt, param, &
+                      reshape(dble(solar_zenith(i_work(c),j_work(c),:)),(/nobs/)), &
+                      reshape(dble(relat_azimuth(i_work(c),j_work(c),:)),(/nobs/)), &
+                      reshape(dble(sensor_zenith(i_work(c),j_work(c),:)),(/nobs/)), &
+                      dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr )  
+
             end if
 
             call mp_check_vlidort(radiance_VL_Surface,reflectance_VL_Surface)
@@ -552,14 +587,6 @@ program geo_vlidort
           radiance_VL    = radiance_VL_Surface
           reflectance_VL = reflectance_VL_Surface
 
-          ! LAND PERMANENTLY COVERED BY ICE
-          !---------------------          
-          !if (FRLANDICE(i_work(c),j_work(c)) .ne. 0) then
-          !  write(*,*) 'We found landice!!!!???'
-          !end if
-          
-          ! Done with VLIDORT Simulations
-          !--------------------------------
           write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
           call write_verbose(msg)
 
@@ -571,7 +598,7 @@ program geo_vlidort
           ! -----------------------------------------        
           if (nint(100.*real(c-starti)/real(counti)) > progress) then
             progress = nint(100.*real(c-starti)/real(counti))
-            write(*,*) 'geo_vlidort ',myid,' ',c,endi, nint(progress),'%'           
+            write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',c,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
           end if
         
         end if      
@@ -895,6 +922,12 @@ end subroutine mp_geometry
 
     allocate (kernel_wt(nkernel,nch,nobs))
     allocate (param(nparam,nch,nobs))
+
+    if (.not. scalar) then
+      allocate (pmom(km,nch,nobs,nMom,nPol))
+      allocate (Q(nobs, nch))
+      allocate (U(nobs, nch))
+    end if
 
   ! Needed for reading
   ! ----------------------
