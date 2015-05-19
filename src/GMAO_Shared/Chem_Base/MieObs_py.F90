@@ -305,7 +305,7 @@ end subroutine getEdgeVars
 ! Create the Mie Tables
 ! ---------------------
   mieTables = Chem_MieCreate(rcfile,rc)
-  print *, 'mietables', mieTables%bc_optics_file
+  if (verbose ==1) print *, 'mietables', mieTables%bc_optics_file
   if ( rc /= 0 ) then
      print *, 'Cannot create Mie tables from '//trim(rcfile)
      return
