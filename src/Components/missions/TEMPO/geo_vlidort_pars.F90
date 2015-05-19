@@ -11,6 +11,10 @@
   integer, parameter                    :: nq = 14                ! number of tracers
   real, dimension(nch),parameter        :: channels = (/550.0/)    ! channels to simulate
 
+  ! Vector calculation constants
+  integer, parameter 										:: nPol = 6                ! number of components of the scattering matrix
+  integer, parameter 										:: nMom = 300 						 ! number of phase function moments - 300 is max for dust
+
   ! Verbose
   integer, parameter                    :: verbose = 0
   integer, parameter                    :: verbose_mp = 0
