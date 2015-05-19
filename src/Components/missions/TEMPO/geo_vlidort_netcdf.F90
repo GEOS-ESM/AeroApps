@@ -485,6 +485,79 @@ module geo_vlidort_netcdf
     !
   end subroutine mp_readvar2D  
 
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_readvar1D
+! PURPOSE
+!     General code to uses npet processors to read a variable from a netcdf file in chunks across dimenion n
+!     is called by multiple processors
+!     variable to be read must have 3 dimensions 
+! INPUT
+!     varname         : string of variable name
+!     filename        : file to be read
+!     dim = e.g. [im]  : size of array to be read
+!     n               : dimension to split up
+!     var             : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     11 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_readvar1D(varname, filename, dim, n, npet, myid, var)
+    character(len=*), intent(in)              ::  varname
+    character(len=*), intent(in)              ::  filename
+    integer, dimension(:), intent(in)         ::  dim
+    integer, intent(in)                       ::  n  !dimensions to read over in chunks
+    integer, intent(in)                       ::  npet, myid    
+    real, dimension(:), intent(inout)         ::  var
+
+    integer                       :: p, startl, countl, endl
+    integer                       :: ncid, varid
+    integer, dimension(npet)      :: nlayer                ! how many layers each processor reads
+    integer                       :: km
+    integer, allocatable          :: countsize(:)
+
+
+    ! allocate count array
+    !---------------------------------------
+    allocate(countsize(size(dim)))
+
+
+    ! Everyone Figure out how many indeces each PE has to read
+    ! -----------------------------
+    km     = dim(n)
+    nlayer = 0
+    if (npet >= km) then
+      nlayer(1:npet) = 1
+    else if (npet < km) then
+      nlayer(1:npet) = km/npet
+      nlayer(npet)   = nlayer(npet) + mod(km,npet)
+    end if 
+
+    call check( nf90_open(filename, IOR(nf90_nowrite, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
+    do p = 0, npet-1
+      if (myid == p) then
+        if (p == 0) then
+          startl = 1
+        else
+          startl = sum(nlayer(1:p))+1
+        end if
+        countl = nlayer(p+1)
+        endl   = startl + countl - 1
+
+        countsize = dim
+        countsize(n) = countl
+
+        call check( nf90_get_var(ncid, varid,var(startl:endl), start = (/ startl /), count=countsize), "reading " // varname)
+
+      end if
+    end do
+    call check( nf90_close(ncid), "closing "// filename)
+    !
+  end subroutine mp_readvar1D    
+
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
 !     check
