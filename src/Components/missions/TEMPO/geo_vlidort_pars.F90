@@ -22,7 +22,7 @@
   integer, dimension(nch), parameter    :: bands = (/4/)             ! modis band that overlaps with vlidort channel
 
   ! Missing Value 
-  real, parameter                       :: MISSING = -999
+  real, parameter                       :: MISSING = 1e15
 
   ! RC file
   character(len=*), parameter           :: rcfile = 'Aod_EOS.rc'  ! resource file
