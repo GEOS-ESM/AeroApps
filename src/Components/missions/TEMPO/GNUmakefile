@@ -66,17 +66,17 @@ esma_help help:
 INC_VLIDORT90 = $(ESMADIR)/Linux/include/VLIDORT90
 LIB_VLIDORT90 = $(ESMADIR)/Linux/lib/libVLIDORT90.a
 
-INC_DIRS = . $(INC_MAPL_BASE) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT90)
+INC_DIRS = . $(INC_MAPL_BASE) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT90) ./vlidort
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
-
-
 
 vpath % $(INC_DIRS) 
 
 FREAL = $(FREAL4)
 THIS_CFIO = MAPL_cfio_r4
 THIS_GFIO = GMAO_gfio_r4
+
+DEP = sys_tracker.c.o vlidort/VLIDORT_OMI_py.o vlidort/VLIDORT_BRDF_MODIS_py.o geo_vlidort_netcdf.o
 
 # Python extension modules
 # ------------------------
@@ -85,16 +85,17 @@ python: $(PY_EXTS)
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
 
-%.x: %.o  sys_tracker.o vlidort/VLIDORT_OMI_py.o vlidort/VLIDORT_BRDF_MODIS_py.o
-	$(CC) -c sys_tracker.c $(LIB_MPI)
+%.c.o: %.c          
+	$(CC) -c $^ -o $@ $(LIB_MPI)
 
-	$(FC) -C $(FOPTS) $^ -o $@  $(LIB_VLIDORT90) $(LIB_CHEM_BASE) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
+%.x: $(DEP) %.o 
+	$(FC) $(FOPTS) $^ -o $@  $(LIB_VLIDORT90) $(LIB_CHEM_BASE) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
             $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO)  $(LIB_SDF) \
             $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS) \
-            $(LIB_NETCDF)
+            $(LIB_NETCDF) 
 
-#
-#	
+#	$(CC) -c sys_tracker.c $(LIB_MPI)
+
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------
