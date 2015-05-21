@@ -441,7 +441,7 @@ program geo_vlidort
 ! -----------------------------------
   call strarr_2_chararr(vnames_string,nq,16,vnames)
   
-  do p = 1,1 !1, npet-1
+  do p = 0, npet-1
     if (myid == p) then
       if (p == 0) then
         starti = 1
@@ -451,7 +451,7 @@ program geo_vlidort
       counti = nclr(p+1)
       endi   = starti + counti - 1
 
-      do c = starti, starti+1 ! endi
+      do c = starti, endi
         call getEdgeVars ( km, nobs, reshape(AIRDENS(i_work(c),j_work(c),:),(/km,nobs/)), &
                            reshape(DELP(i_work(c),j_work(c),:),(/km,nobs/)), ptop, &
                            pe, ze, te )   
