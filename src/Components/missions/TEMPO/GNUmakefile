@@ -26,16 +26,16 @@ endif
 
 THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
+BINS := geo_vlidort.x
 
-PY_MODS = 
 PY_EXTS = GeoAngles_.$(F2PYEXT)
 PY_SCRP = geo_warp.py geo_sampler.py
 
-esma_install install python_install: $(DEPS) $(BINS) $(CSHS) $(PY_MODS) $(PY_EXTS) 
+esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
                  $(ESMAINC)/$(THIS) $(ESMABIN)
-	$(CP) -pr $(PY_MODS) $(PY_EXTS)    $(ESMALIB)/Python 
-	$(CP) -p  $(PY_SCRP)               $(ESMABIN)
+	$(CP) -pr $(PY_EXTS)               $(ESMALIB)/Python 
+	$(CP) -p  $(BINS) $(PY_SCRP)       $(ESMABIN)
 
 esma_clean clean:
 	$(RM) -rf *~ *.[aox] *.[Mm][Oo][Dd] *.pyc *.$(F2PYEXT) 
@@ -63,10 +63,11 @@ esma_help help:
 #                  --------------------
 #                  User Defined Targets
 #                  --------------------
-INC_VLIDORT90 = $(ESMADIR)/Linux/include/VLIDORT90
-LIB_VLIDORT90 = $(ESMADIR)/Linux/lib/libVLIDORT90.a
 
-INC_DIRS = . $(INC_MAPL_BASE) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT90) ./vlidort
+INC_VLIDORT90 = $(ESMAINC)/VLIDORT90
+LIB_VLIDORT90 = $(ESMALIB)/libVLIDORT90.a
+
+INC_DIRS = . $(INC_MAPL_BASE) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT90) /usr/include
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
@@ -76,7 +77,17 @@ FREAL = $(FREAL4)
 THIS_CFIO = MAPL_cfio_r4
 THIS_GFIO = GMAO_gfio_r4
 
-DEP = sys_tracker.c.o vlidort/VLIDORT_OMI_py.o vlidort/VLIDORT_BRDF_MODIS_py.o geo_vlidort_netcdf.o
+#                  --------------------
+#                  User Defined Targets
+#                  --------------------
+
+SRCS := sys_tracker.c GeoAngles_py.F90 VLIDORT_OMI_py.F90 VLIDORT_BRDF_MODIS_py.F90 geo_vlidort_netcdf.F90 
+OBJS := $(addsuffix .o, $(basename $(SRCS)))
+DEPS := $(addsuffix .d, $(basename $(SRCS))) 
+ 
+$(LIB) lib : $(DEPS) $(OBJS)
+	$(RM) $(LIB)
+	$(AR) $(AR_FLAGS) $(LIB) $(OBJS)
 
 # Python extension modules
 # ------------------------
@@ -85,17 +96,12 @@ python: $(PY_EXTS)
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
 
-%.c.o: %.c          
-	$(CC) -c $^ -o $@ $(LIB_MPI)
-
-%.x: $(DEP) %.o 
-	$(FC) $(FOPTS) $^ -o $@  $(LIB_VLIDORT90) $(LIB_CHEM_BASE) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
-            $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO)  $(LIB_SDF) \
-            $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS) \
-            $(LIB_NETCDF) 
-
-#	$(CC) -c sys_tracker.c $(LIB_MPI)
-
+%.x: %.o 
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_CHEM_BASE) \
+                                 $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+                                 $(LIB_MAPL_BASE_STUBS2) \
+                                 $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
+                                 $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------
