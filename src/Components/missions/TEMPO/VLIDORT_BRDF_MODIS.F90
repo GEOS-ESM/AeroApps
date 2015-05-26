@@ -1,4 +1,4 @@
-module VLIDORT_BRDF_MODIS_py   
+module VLIDORT_BRDF_MODIS   
 !
 !  Simple f77 wrapper for the Python interface to VLIDORT for OMI aerosol
 !  channels.
@@ -389,4 +389,4 @@ module VLIDORT_BRDF_MODIS_py
 
   end subroutine Vector_LandMODIS
 
-end module VLIDORT_BRDF_MODIS_py
+end module VLIDORT_BRDF_MODIS
