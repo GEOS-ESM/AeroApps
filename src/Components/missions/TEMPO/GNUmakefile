@@ -81,7 +81,7 @@ THIS_GFIO = GMAO_gfio_r4
 #                  User Defined Targets
 #                  --------------------
 
-SRCS := sys_tracker.c GeoAngles_py.F90 VLIDORT_OMI_py.F90 VLIDORT_BRDF_MODIS_py.F90 geo_vlidort_netcdf.F90 
+SRCS := sys_tracker.c GeoAngles_py.F90 VLIDORT_LAMBERT.F90 VLIDORT_BRDF_MODIS.F90  
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
 DEPS := $(addsuffix .d, $(basename $(SRCS))) 
  
@@ -96,12 +96,13 @@ python: $(PY_EXTS)
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
 
-%.x: %.o 
+%.x: geo_vlidort_netcdf.o %.o 
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_CHEM_BASE) \
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
                                  $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)
+                              
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------
