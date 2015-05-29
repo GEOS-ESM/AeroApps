@@ -102,6 +102,11 @@ python: $(PY_EXTS)
                                  $(LIB_MAPL_BASE_STUBS2) \
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
                                  $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)
+
+
+geo_angles.x: GeoAngles_py.o geo_vlidort_netcdf.o geo_angles.o
+	$(FC) $(FOPTS) $^ -o $@   $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+                            $(LIB_MAPL_BASE_STUBS2) $(LIB_MPI) $(LIB_SYS)                                 
                               
 
 # Hack to prevent remaking dep files during cleaning
