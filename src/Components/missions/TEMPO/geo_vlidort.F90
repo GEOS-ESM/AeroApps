@@ -23,8 +23,9 @@ program geo_vlidort
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   use mpi
-  use vlidort_brdf_modis_py        ! Module to run VLIDORT with MODIS BRDF surface supplement
-  use geo_vlidort_netcdf
+  use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
+  use geo_vlidort_netcdf           ! Module with netcdf routines
+  use GeoAngles                    ! Module with geostationary satellite algorithms for scene geometry
 
   implicit none
   include "geo_vlidort_pars.F90"
@@ -49,38 +50,33 @@ program geo_vlidort
 
 ! File names
 ! ----------
-  character(len=256)                    :: MET_file, AER_file, INV_file, BRDF_file, LAND_file, OUT_file 
+  character(len=256)                    :: MET_file, AER_file, ANG_file, INV_file, BRDF_file, LAND_file, OUT_file 
 
 ! Global, 3D arrays to be allocated using SHMEM
 ! ---------------------------------------------
-  real, pointer                         :: CLON(:,:) => null()
-  real, pointer                         :: CLAT(:,:) => null()
-  real, pointer                         :: SCANTIME(:) => null()
-  real, pointer                         :: CLDTOT(:,:) => null()
-  real, pointer                         :: AIRDENS(:,:,:) => null()
-  real, pointer                         :: RH(:,:,:) => null()
-  real, pointer                         :: DELP(:,:,:) => null()
-  real, pointer                         :: DU001(:,:,:) => null()
-  real, pointer                         :: DU002(:,:,:) => null()
-  real, pointer                         :: DU003(:,:,:) => null()
-  real, pointer                         :: DU004(:,:,:) => null()
-  real, pointer                         :: DU005(:,:,:) => null()
-  real, pointer                         :: SS001(:,:,:) => null()
-  real, pointer                         :: SS002(:,:,:) => null()
-  real, pointer                         :: SS003(:,:,:) => null()
-  real, pointer                         :: SS004(:,:,:) => null()
-  real, pointer                         :: SS005(:,:,:) => null()
-  real, pointer                         :: BCPHOBIC(:,:,:) => null()
-  real, pointer                         :: BCPHILIC(:,:,:) => null()
-  real, pointer                         :: OCPHOBIC(:,:,:) => null()
-  real, pointer                         :: OCPHILIC(:,:,:) => null()
-  real, pointer                         :: KISO(:,:,:) => null()
-  real, pointer                         :: KVOL(:,:,:) => null()
-  real, pointer                         :: KGEO(:,:,:) => null()
-  real, pointer                         :: FROCEAN(:,:) => null()
-  real, pointer                         :: FRLAKE(:,:) => null()
-  real, pointer                         :: FRLAND(:,:) => null()
-  real, pointer                         :: FRLANDICE(:,:) => null()  
+  real, pointer                         :: AIRDENS(:,:) => null()
+  real, pointer                         :: RH(:,:) => null()
+  real, pointer                         :: DELP(:,:) => null()
+  real, pointer                         :: DU001(:,:) => null()
+  real, pointer                         :: DU002(:,:) => null()
+  real, pointer                         :: DU003(:,:) => null()
+  real, pointer                         :: DU004(:,:) => null()
+  real, pointer                         :: DU005(:,:) => null()
+  real, pointer                         :: SS001(:,:) => null()
+  real, pointer                         :: SS002(:,:) => null()
+  real, pointer                         :: SS003(:,:) => null()
+  real, pointer                         :: SS004(:,:) => null()
+  real, pointer                         :: SS005(:,:) => null()
+  real, pointer                         :: BCPHOBIC(:,:) => null()
+  real, pointer                         :: BCPHILIC(:,:) => null()
+  real, pointer                         :: OCPHOBIC(:,:) => null()
+  real, pointer                         :: OCPHILIC(:,:) => null()
+  real, pointer                         :: KISO(:,:) => null()
+  real, pointer                         :: KVOL(:,:) => null()
+  real, pointer                         :: KGEO(:,:) => null()
+  real, pointer                         :: SZA(:) => null()
+  real, pointer                         :: VZA(:) => null()
+  real, pointer                         :: RAA(:) => null()  
 
 ! VLIDORT input arrays
 ! ---------------------------
@@ -93,9 +89,6 @@ program geo_vlidort
   real, pointer                         :: ssa(:,:,:) => null()   ! single scattering albedo
   real, pointer                         :: g(:,:,:) => null()     ! asymmetry factor
   real, pointer                         :: albedo(:,:) => null()  ! surface albedo
-  real, pointer                         :: solar_zenith(:,:,:) => null() 
-  real, pointer                         :: relat_azimuth(:,:,:) => null()
-  real, pointer                         :: sensor_zenith(:,:,:) => null()
 
 ! VLIDORT output arrays
 !-------------------------------
@@ -108,13 +101,6 @@ program geo_vlidort
 
 ! VLIDORT working variables
 !------------------------------
-  real                                  :: sensor_azimuth
-  real                                  :: solar_azimuth
-  real                                  :: sat_lon                   ! satellite longitude
-  real                                  :: sat_lat                   ! satellite latitude
-  real                                  :: sat_alt                   ! satellite altitude
-  real                                  :: Earth_rad                 ! earth radius
-  integer                               :: doy                       ! day of year
   integer                               :: ch                        ! i-channel  
   real,allocatable                      :: pmom(:,:,:,:,:)           ! elements of scattering phase matrix for vector calculations
 
@@ -135,13 +121,15 @@ program geo_vlidort
   integer, allocatable                  :: nclr(:)                   ! how many clear pixels each processor reads
   integer                               :: clrm                      ! number of clear pixels
   integer                               :: c                         ! clear pixel working variables
+  real, pointer                         :: CLDTOT(:,:) => null()     ! GEOS-5 cloud fraction
+  real, pointer                         :: FRLAND(:,:) => null()     ! GEOS-5 land fraction
+  real, pointer                         :: SOLAR_ZENITH(:,:) => null() 
   integer,allocatable,dimension(:)      :: i_work, j_work            ! clear pixel working indeces
+  logical,allocatable,dimension(:,:)    :: clmask                    ! cloud-land mask
 
 ! netcdf variables
 !----------------------  
   integer                               :: ncid, radVarID, refVarID  ! netcdf ids
-  integer                               :: timeVarID, clonVarID, clatVarID
-  integer                               :: szaVarID, vzaVarID, raaVarID
 
 ! Miscellaneous
 ! -------------
@@ -160,7 +148,7 @@ program geo_vlidort
 
 
 ! Start Timing
-! -----------------------------
+! -----------------
   call system_clock ( t1, clock_rate, clock_max )
   progress = -1
 
@@ -179,41 +167,13 @@ program geo_vlidort
 
 ! Parse Resource file for input info 
 ! ----------------------------------------------------------------------------
-  CALL getarg(1, arg)
+  call getarg(1, arg)
 
-  open(unit=5, file = arg)
-  do 
-    read(5,'(A)',IOSTAT=io) rcline
-    if (io > 0) then
-      write(*,*) 'Problem reading geo_vlidort rcfile'
-      write(*,*) 'Exiting.....'
-      call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
-    else if (io < 0) then
-      ! end of file
-      exit
-    else 
-      !parse line
-      i = index(rcline, ':')  
-      if (i > 0) then    
-        rcvar = lower_to_upper(rcline(1:i-1))
-        rcvalue = adjustl(rcline(i+1:))
+  call get_config()
 
-        if (trim(rcvar) .eq. 'DATE') date = trim(rcvalue)
-        if (trim(rcvar) .eq. 'TIME') time = trim(rcvalue)
-        if (trim(rcvar) .eq. 'SATNAME') satname = upper_to_lower(trim(rcvalue))
-        if (trim(rcvar) .eq. 'INDIR') indir = trim(rcvalue) 
-        if (trim(rcvar) .eq. 'OUTDIR') outdir = trim(rcvalue)
-        if (trim(rcvar) .eq. 'BRDFNAME') brdfname = trim(rcvalue)
-        if (trim(rcvar) .eq. 'BRDFDATE') brdfdate = trim(rcvalue)
-        if (trim(rcvar) .eq. 'SCALAR') then
-          if (lower_to_upper(trim(rcvalue)) .eq. 'TRUE') scalar = .TRUE.
-          if (lower_to_upper(trim(rcvalue)) .eq. 'FALSE') scalar = .FALSE.
-        end if
-      end if 
-    end if
-  end do 
-  close(5)
 
+! Write out settings to use
+! -------------------------------
   if (myid == 0) then
     write(*,*) 'Simulating ', lower_to_upper(trim(satname)),' domain on ',date,' ', time, 'Z'
     write(*,*) 'Input directory: ',trim(indir)
@@ -224,83 +184,52 @@ program geo_vlidort
     write(*,*) ' '
   end if 
 
-! INFILES
-  write(MET_file,'(A,A,A,A,A,A,A,A,A,A,A,A)') trim(indir),'/met_Nv/Y',date(1:4),'/M',date(5:6),'/',trim(satname),'-g5nr.lb2.met_Nv.',date,'_',time,'z.nc4'
-  write(AER_file,'(A,A,A,A,A,A,A,A,A,A,A,A)') trim(indir),'/aer_Nv/Y',date(1:4),'/M',date(5:6),'/',trim(satname),'-g5nr.lb2.aer_Nv.',date,'_',time,'z.nc4'
-  write(INV_file,'(A,A,A,A)') trim(indir),"/LevelG/invariant/",trim(satname),".lg1.invariant.nc4"
-  write(BRDF_file,'(A,A,A,A,A,A)') trim(indir),"/BRDF/raw/",trim(brdfname),".",brdfdate,".hdf"
-  write(LAND_file,'(A,A,A,A)') trim(indir),"/const_2d_asm_Nx/Y2005/M12/",trim(satname),"-g5nr.lb2.asm_Nx.20051231_00z.nc4" 
+! INFILES & OUTFILE set names
+! -------------------------------
+  call filenames()
 
-! Query for domain dimensions, satellite constants, and missing value
+! Query for domain dimensions and missing value
 !--------------------------------------------------------------
   call mp_readDim("ew", MET_file, im)
   call mp_readDim("ns", MET_file, jm)
   call mp_readDim("lev", MET_file, km)
-  call mp_readGattr("sat_lat", INV_FILE, sat_lat)
-  call mp_readGattr("sat_lon", INV_FILE, sat_lon)
-  call mp_readGattr("sat_alt", INV_FILE, sat_alt)
-  call mp_readGattr("Earth_radius", INV_FILE, earth_rad) 
   call mp_readVattr("missing_value", BRDF_FILE, "Kiso", modis_missing) 
   call mp_readVattr("missing_value", MET_FILE, "CLDTOT", g5nr_missing)
 
-! OUTFILES
-  write(OUT_file,'(A,A,A,A,A,A,A,A)') trim(outdir),'/',trim(satname),'-g5nr.lb2.vlidort.',date,'_',time,'z.nc4'
-  call mp_create_outfile(date,time,ncid,radVarID,refVarID,timeVarID, clonVarID, clatVarID,szaVarID, vzaVarID, raaVarID)
 
-  call date2doy()
-
- 
-! Allocate the Global arraya using SHMEM
-! It will be available on all processors
-! ---------------------------------------------------------
-  call allocate_shared()
-
+! Create OUTFILE
+! --------------------
+  call mp_create_outfile(date,time,ncid,radVarID,refVarID)
 
 ! Allocate arrays that will be copied on each processor - unshared
 ! ---------------------------------------------------------
   call allocate_unshared()
 
 
-! Read the cloud, land and BRDF data
+! Read the cloud, land, and angle data 
 ! -------------------------------------
-  call mp_colreadvar("CLDTOT", MET_file, npet, myid, CLDTOT)
-  call mp_readvar1D("scanTime", MET_file, (/im/), 1, npet, myid, SCANTIME)
-  call mp_colreadvar("clat", INV_FILE, npet, myid, CLAT)
-  call mp_colreadvar("clon", INV_FILE, npet, myid, CLON)
-  call mp_colreadvar("FROCEAN", LAND_file, npet, myid, FROCEAN)
-  call mp_colreadvar("FRLAKE", LAND_file,  npet, myid, FRLAKE)
-  call mp_colreadvar("FRLAND", LAND_file,  npet, myid, FRLAND)
-  call mp_colreadvar("FRLANDICE", LAND_file,  npet, myid, FRLANDICE)  
-  call mp_readvar3D("Kiso", BRDF_file, (/im,jm,nbands/), 1, npet, myid, KISO)
-  call mp_readvar3D("Kvol", BRDF_file, (/im,jm,nbands/), 1, npet, myid, KVOL)
-  call mp_readvar3D("Kgeo", BRDF_file, (/im,jm,nbands/), 1, npet, myid, KGEO)
-  
-  if (myid == 0) then
-    write(*,*) 'Allocated all shared memory'
-    write(*,*) 'Read cloud and geographic information'
-    call sys_tracker()
-    write(*,*) ' '
+  call read_cloud()
+  call read_land()
+  call read_sza()
+
+! Create cloud-land mask
+! ------------------------
+  ! first check that you can do anything!!!!!  
+  if (.not. ANY(CLDTOT <= cldmax)) then   
+    if (myid == 0) then
+      write(*,*) 'The domain is too cloudy, nothing to do'
+      write(*,*) 'Exiting.....'
+    end if
+    GOTO 500
   end if
 
-! Wait for everyone to have access to what's been read into shared memory
-! -----------------------------------------------------------   
-  call MAPL_SyncSharedMemory(rc=ierr)
-
-! Write some of these back to the outfile
-!-----------------------------------------------  
-  call write_outfile1D(ncid,timeVarID,SCANTIME)
-  call write_outfile2D(ncid,clonVarID,CLON)
-  call write_outfile2D(ncid,clatVarID,CLAT)  
-
-! Create cloud mask
-! ------------------------
-  ! first check that you can do anything!!!!!
-  if (.not. ANY(CLDTOT <= cldmax)) then
-    write(*,*) 'domain is too cloudy, nothing to do'
-    write(*,*) 'Exiting.....'
-    GOTO 100
-  endif
-
+  if (.not. ANY(SOLAR_ZENITH <= szamax)) then   
+    if (myid == 0) then
+      write(*,*) 'The sun has set, nothing to do'
+      write(*,*) 'Exiting.....'
+    end if
+    GOTO 500
+  end if
 
 ! Figure out how many indices to work on
 !------------------------------------------
@@ -309,19 +238,30 @@ program geo_vlidort
     do j=1,jm
       if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99))  then
         if (CLDTOT(i,j) <= cldmax) then
-          clrm = clrm + 1
+          if (SOLAR_ZENITH(i,j) <= szamax) then
+            clrm = clrm + 1
+            clmask(i,j) = .True.
+          end if
         end if
       end if 
     end do
   end do
 
   if (clrm == 0) then
-    write(*,*) 'no clear pixels over land, nothing to do'
-    write(*,*) 'Exiting.....'
-    GOTO 100
-  endif
+    if (myid == 0) then
+      write(*,*) 'no clear pixels over land, nothing to do'
+      write(*,*) 'Exiting.....'
+    end if
+    GOTO 500
+  end if
 
-! Store them
+! Cloud and Land data no longer needed
+!---------------------------------------
+  deallocate (CLDTOT)
+  deallocate (FRLAND)
+  deallocate (SOLAR_ZENITH)
+
+! Store indices
 !-------------------
   allocate(i_work(clrm))
   allocate(j_work(clrm))
@@ -329,84 +269,47 @@ program geo_vlidort
   clrm = 0
   do i=1,im
     do j=1,jm
-      if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99)) then
-        if (CLDTOT(i,j) <= cldmax) then
-          clrm = clrm + 1
-          i_work(clrm) = i
-          j_work(clrm) = j
-        end if
+      if (clmask(i,j)) then
+        clrm = clrm + 1
+        i_work(clrm) = i
+        j_work(clrm) = j
       end if 
     end do
-  end do        
-
-! Calculate the viewing geometry
-! Distribute calculations over processors
-!-----------------------------------------------
-  call mp_geometry(doy,time,scanTime,CLON,CLAT,i_work,j_work,nobs,npet,myid,solar_zenith,sensor_zenith,relat_azimuth)
-
-
-! Wait for everyone to have access to what's been read into shared memory
-! -----------------------------------------------------------   
-  call MAPL_SyncSharedMemory(rc=ierr)
-
-! Filter out dark pixels
-!----------------------------
-  deallocate(i_work)
-  deallocate(j_work)
-  clrm = 0
-  do i=1,im
-    do j=1,jm
-      if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99))  then
-        if (CLDTOT(i,j) <= cldmax) then
-          if (relat_azimuth(i,j,nobs) .ne. MISSING) then
-            clrm = clrm + 1
-          end if 
-        end if
-      end if 
-    end do
-  end do
-
-  if (clrm == 0) then
-    write(*,*) 'no sunlit clear pixels over land, nothing to do'
-    write(*,*) 'Exiting.....'
-    GOTO 100
-  endif
-
-! Write geometry to the outfile
-!------------------------------------------------------------  
-  if (myid ==0) then
-    call write_outfile3D(ncid,szaVarID,solar_zenith)
-    call write_outfile3D(ncid,vzaVarID,sensor_zenith)
-    call write_outfile3D(ncid,raaVarID,relat_azimuth)
-  end if
-
-! Store new indices
-!------------------------
-  allocate(i_work(clrm))
-  allocate(j_work(clrm))
-
-  clrm = 0
-  do i=1,im
-    do j=1,jm
-      if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99)) then
-        if (CLDTOT(i,j) <= cldmax) then
-          if (relat_azimuth(i,j,nobs) .ne. MISSING) then
-            clrm = clrm + 1
-            i_work(clrm) = i
-            j_work(clrm) = j
-          end if 
-        end if
-      end if 
-    end do
-  end do    
-
+  end do       
 
   if (myid == 0) then
-    write(*,'(I3,A)') nint(100.*clrm/(im*jm)),'% of the domain is clear and sunlit'
-    write(*,'(A,I,A)') '       Simulating ',clrm,' pixels'
+    write(*,*) '<> Created Cloud Mask'
+    write(*,'(A,I3,A)') '       ',nint(100.*clrm/(im*jm)),'% of the domain is clear and sunlit'
+    write(*,'(A,I,A)')  '       Simulating ',clrm,' pixels'
     write(*,*) ' '
-  end if 
+  end if   
 
+! Allocate the Global arrays using SHMEM
+! It will be available on all processors
+! ---------------------------------------------------------
+ call allocate_shared(clrm)
+ call MAPL_SyncSharedMemory(rc=ierr)
+  
+! Read in the global arrays
+! ------------------------------
+ call read_aer_Nv()
+ call read_BRDF()
+ call read_angles()
+
+! Wait for everyone to finish reading and print max memory used
+! ------------------------------------------------------------------  
+  call MAPL_SyncSharedMemory(rc=ierr)
+   
+  if (myid == 0) then 
+    write(*,*) 'Read all variables' 
+    call sys_tracker()   
+    write(*,*) ' '
+    call system_clock ( t2, clock_rate, clock_max )
+    write ( *, * ) 'Elapsed real time = ', real ( t2 - t1 ) / real ( clock_rate )
+    write(*,*) ' '
+  end if   
+
+GOTO 500
 ! Split up filtered domain among processors
 !----------------------------------------------
   if (npet >= clrm) then
@@ -415,22 +318,6 @@ program geo_vlidort
     nclr(1:npet) = clrm/npet
     nclr(npet)   = nclr(npet) + mod(clrm,npet)
   end if 
-
-! Read the aerosol variables layer-by-layer in parallel
-! ----------------------------------------------------------
-  call read_aer_Nv()
-
-! Wait for everyone to finish reading and print max memory used
-! ------------------------------------------------------------------  
-  call MAPL_SyncSharedMemory(rc=ierr)
-  if (myid == 0) then 
-    write(*,*) 'Read all variables' 
-    call sys_tracker()   
-    write(*,*) ' '
-    call system_clock ( t2, clock_rate, clock_max )
-    write ( *, * ) 'Elapsed real time = ', real ( t2 - t1 ) / real ( clock_rate )
-    write(*,*) ' '
-  end if     
 
 ! Although read on individual PEs, all shared variables should have the same
 ! data in all PEs. Let's verify that.
@@ -451,46 +338,33 @@ program geo_vlidort
       counti = nclr(p+1)
       endi   = starti + counti - 1
 
-      do c = starti, endi
-        call getEdgeVars ( km, nobs, reshape(AIRDENS(i_work(c),j_work(c),:),(/km,nobs/)), &
-                           reshape(DELP(i_work(c),j_work(c),:),(/km,nobs/)), ptop, &
+      do c = starti, starti+ 1 !endi
+        call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
+                           reshape(DELP(c,:),(/km,nobs/)), ptop, &
                            pe, ze, te )   
 
         write(msg,'(A,I)') 'getEdgeVars ', myid
         call write_verbose(msg)
         
-        call calc_qm(DU001,1,nobs,i_work(c),j_work(c))
-        call calc_qm(DU002,2,nobs,i_work(c),j_work(c))
-        call calc_qm(DU003,3,nobs,i_work(c),j_work(c))
-        call calc_qm(DU004,4,nobs,i_work(c),j_work(c))
-        call calc_qm(DU005,5,nobs,i_work(c),j_work(c))
-        call calc_qm(SS001,6,nobs,i_work(c),j_work(c))
-        call calc_qm(SS002,7,nobs,i_work(c),j_work(c))
-        call calc_qm(SS003,8,nobs,i_work(c),j_work(c))
-        call calc_qm(SS004,9,nobs,i_work(c),j_work(c))
-        call calc_qm(SS005,10,nobs,i_work(c),j_work(c))
-        call calc_qm(BCPHOBIC,11,nobs,i_work(c),j_work(c))
-        call calc_qm(BCPHILIC,12,nobs,i_work(c),j_work(c))
-        call calc_qm(OCPHOBIC,13,nobs,i_work(c),j_work(c))
-        call calc_qm(OCPHILIC,14,nobs,i_work(c),j_work(c))
+        call calc_qm()
 
         write(msg,'(A,I)') 'calc_qm ', myid
         call write_verbose(msg)  
 
         do ch = 1, nch
-          kernel_wt(:,ch,nobs) = (/dble(KISO(i_work(c),j_work(c),bands(ch))),&
-                                dble(KGEO(i_work(c),j_work(c),bands(ch))),&
-                                dble(KVOL(i_work(c),j_work(c),bands(ch)))/)
+          kernel_wt(:,ch,nobs) = (/dble(KISO(c,bands(ch))),&
+                                dble(KGEO(c,bands(ch))),&
+                                dble(KVOL(c,bands(ch)))/)
           param(:,ch,nobs)     = (/dble(2),dble(1)/)
         end do
 
         if (scalar) then
           call getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
-                              qm, reshape(RH(i_work(c),j_work(c),:),(/km,nobs/)), &
+                              qm, reshape(RH(c,:),(/km,nobs/)), &
                               tau, ssa, g, ierr )
         else
           call getAOPvector ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
-                              qm, reshape(RH(i_work(c),j_work(c),:),(/km,nobs/)),&
+                              qm, reshape(RH(c,:),(/km,nobs/)),&
                               nMom,nPol, tau, ssa, g, pmom, ierr )
         end if
 
@@ -559,9 +433,9 @@ program geo_vlidort
               call Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
                       dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
                       kernel_wt, param, &
-                      reshape(dble(solar_zenith(i_work(c),j_work(c),:)),(/nobs/)), &
-                      reshape(dble(relat_azimuth(i_work(c),j_work(c),:)),(/nobs/)), &
-                      reshape(dble(sensor_zenith(i_work(c),j_work(c),:)),(/nobs/)), &
+                      (/dble(SZA(c))/), &
+                      (/dble(RAA(c))/), &
+                      (/dble(VZA(c))/), &
                       dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface,ierr )  
             else
               ! Call to vlidort vector code
@@ -571,9 +445,9 @@ program geo_vlidort
               call Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
                       nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
                       kernel_wt, param, &
-                      reshape(dble(solar_zenith(i_work(c),j_work(c),:)),(/nobs/)), &
-                      reshape(dble(relat_azimuth(i_work(c),j_work(c),:)),(/nobs/)), &
-                      reshape(dble(sensor_zenith(i_work(c),j_work(c),:)),(/nobs/)), &
+                      (/dble(SZA(c))/), &
+                      (/dble(RAA(c))/), &
+                      (/dble(VZA(c))/), &
                       dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr )  
 
             end if
@@ -608,9 +482,7 @@ program geo_vlidort
 
 ! Everyone close OUT_file and sync up
 ! -----------------------------------------
-100   call check( nf90_close(ncid), "close outfile" )
-  call MAPL_SyncSharedMemory(rc=ierr)
-
+500  call check( nf90_close(ncid), "close outfile" )
 
   if (myid == 0) then
     write(*,*) '<> Finished VLIDORT Simulation of '//trim(lower_to_upper(satname))//' domain'
@@ -621,8 +493,8 @@ program geo_vlidort
     write(*,*) ' '
   end if
 
-! All done
-! --------
+! ! All done
+! ! --------
   call MAPL_SyncSharedMemory(rc=ierr)
   call shutdown()
 
@@ -632,72 +504,91 @@ program geo_vlidort
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!     mp_geometry
+!     read_cloud
 ! PURPOSE
-!     calculated viewing gemoetry using multiple processors
+!     allocates cloud variables and reads in data
 ! INPUT
 !     none
 ! OUTPUT
 !     none
 !  HISTORY
-!     18 May 2015 P. Castellanos
+!     28 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-subroutine mp_geometry(doy,time,scantime,CLON,CLAT,i_work,j_work,n,npet,myid,solar_zenith,sensor_zenith,relat_azimuth)
-  integer,intent(in)                  :: doy
-  character(len=*),intent(in)         :: time
-  real, intent(in),dimension(:)       :: scantime
-  real, intent(in), dimension(:,:)    :: CLON, CLAT
-  integer, intent(in)                 :: npet, myid, n
-  integer, intent(in), dimension(:)   :: i_work, j_work
+subroutine read_cloud()
+  allocate (CLDTOT(im,jm))
 
-  real,intent(out),dimension(:,:,:)   :: solar_zenith, sensor_zenith, relat_azimuth
+  call readvar2D("CLDTOT", MET_file, CLDTOT)
+end subroutine read_cloud
 
-  integer                             :: clrm
-  integer, dimension(npet)            :: nclr
-  integer                             :: p, c
-  integer                             :: starti, counti, endi
-  real                                :: sensor_azimuth, solar_azimuth
-  real                                :: tt
-  
-  
-  ! Size of domain
-  !---------------------
-  clrm = size(i_work)
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     read_land
+! PURPOSE
+!     allocates land variables and reads in data
+! INPUT
+!     none
+! OUTPUT
+!     none
+!  HISTORY
+!     28 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+subroutine read_land()
+!  call MAPL_AllocNodeArray(FROCEAN,(/im,jm/),rc=ierr)
+!  call MAPL_AllocNodeArray(FRLAKE,(/im,jm/),rc=ierr)
+  allocate(FRLAND(im,jm))
+!  call MAPL_AllocNodeArray(FRLANDICE,(/im,jm/),rc=ierr)
 
-  ! Everyone Figure out how many pixels each PE has to read
-  ! -----------------------------
-  if (npet >= clrm) then
-    nclr(1:npet) = 1
-  else if (npet < clrm) then
-    nclr(1:npet) = clrm/npet
-    nclr(npet)   = nclr(npet) + mod(clrm,npet)
-  end if
+!  call mp_colreadvar("FROCEAN", LAND_file, npet, myid, FROCEAN)
+!  call mp_colreadvar("FRLAKE", LAND_file,  npet, myid, FRLAKE)
+  call readvar2D("FRLAND", LAND_file, FRLAND)
+!  call mp_colreadvar("FRLANDICE", LAND_file,  npet, myid, FRLANDICE)  
 
-  do p = 1, npet-1
-    if (myid == p) then
-      if (p == 0) then
-        starti = 1
-      else
-        starti = sum(nclr(1:p))+1
-      end if
-      counti = nclr(p+1)
-      endi   = starti + counti - 1
+end subroutine read_land
 
-      do c = starti, endi 
-        read(time,*) tt
-        tt = scantime(i_work(c))/3600.0 + tt
-        call solar_geometry(doy,tt,CLAT(i_work(c),j_work(c)),CLON(i_work(c),j_work(c)),solar_zenith(i_work(c),j_work(c),n),solar_azimuth)
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     read_sza
+! PURPOSE
+!     allocates sza variable and reads in data
+! INPUT
+!     none
+! OUTPUT
+!     none
+!  HISTORY
+!     28 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+subroutine read_sza()
+  allocate (SOLAR_ZENITH(im,jm))
 
-        if (solar_zenith(i_work(c),j_work(c),n) < 90.0) then
-          call sensor_geometry(CLAT(i_work(c),j_work(c)),CLON(i_work(c),j_work(c)),sensor_zenith(i_work(c),j_work(c),n),sensor_azimuth)
-          relat_azimuth(i_work(c),j_work(c),n) = abs(sensor_azimuth - solar_azimuth) 
-        else
-          solar_zenith(i_work(c),j_work(c),n) = MISSING
-        end if 
-      end do
-    end if
-  end do
-end subroutine mp_geometry
+  call readvar2D("solar_zenith", ANG_file, SOLAR_ZENITH)
+end subroutine read_sza
+
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     filenames
+! PURPOSE
+!     populate file name varaibles
+! INPUT
+!     none
+! OUTPUT
+!     none
+!  HISTORY
+!     26 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+subroutine filenames()
+
+  ! INFILES
+  write(MET_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(satname),'-g5nr.lb2.met_Nv.',date,'_',time,'z.nc4'
+  write(AER_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(satname),'-g5nr.lb2.aer_Nv.',date,'_',time,'z.nc4'
+  write(ANG_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(satname),'.lb2.angles.',date,'_',time,'z.nc4'
+  write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(satname),'.lg1.invariant.nc4'
+  write(BRDF_file,'(6A)') trim(indir),'/BRDF/raw/',trim(brdfname),'.',brdfdate,'.hdf'
+  write(LAND_file,'(4A)') trim(indir),'/LevelB/invariant/',trim(satname),'-g5nr.lb2.asm_Nx.nc4' 
+
+! OUTFILES
+  write(OUT_file,'(8A)') trim(outdir),'/',trim(satname),'-g5nr.lb2.vlidort.',date,'_',time,'z.nc4'
+end subroutine filenames
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -814,30 +705,101 @@ end subroutine mp_geometry
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_aer_Nv()
-    call mp_layreadvar("AIRDENS", AER_file, npet, myid, AIRDENS)
-    call mp_layreadvar("RH", AER_file, npet, myid, RH)
-    call mp_layreadvar("DELP", AER_file, npet, myid, DELP)
-    call mp_layreadvar("DU001", AER_file, npet, myid, DU001)
-    call mp_layreadvar("DU002", AER_file, npet, myid, DU002)
-    call mp_layreadvar("DU003", AER_file, npet, myid, DU003)
-    call mp_layreadvar("DU004", AER_file, npet, myid, DU004)
-    call mp_layreadvar("DU005", AER_file, npet, myid, DU005)
-    call mp_layreadvar("SS001", AER_file, npet, myid, SS001)
-    call mp_layreadvar("SS002", AER_file, npet, myid, SS002)
-    call mp_layreadvar("SS003", AER_file, npet, myid, SS003)
-    call mp_layreadvar("SS004", AER_file, npet, myid, SS004)
-    call mp_layreadvar("SS005", AER_file, npet, myid, SS005)
-    call mp_layreadvar("BCPHOBIC", AER_file, npet, myid, BCPHOBIC)
-    call mp_layreadvar("BCPHILIC", AER_file, npet, myid, BCPHILIC)
-    call mp_layreadvar("OCPHOBIC", AER_file, npet, myid, OCPHOBIC)
-    call mp_layreadvar("OCPHILIC", AER_file, npet, myid, OCPHILIC)
+    real, dimension(im,jm,km)   :: temp
+
+    if (myid == 0) then
+      call readvar3D("AIRDENS", AER_file, temp)
+      call reduceProfile(temp,clmask,AIRDENS)      
+
+      call readvar3D("RH", AER_file, temp)
+      call reduceProfile(temp,clmask,RH)
+
+      call readvar3D("DELP", AER_file, temp)
+      call reduceProfile(temp,clmask,DELP)
+
+      call readvar3D("DU001", AER_file, temp)
+      call reduceProfile(temp,clmask,DU001)
+
+      call readvar3D("DU002", AER_file, temp)
+      call reduceProfile(temp,clmask,DU002)
+
+      call readvar3D("DU003", AER_file, temp)
+      call reduceProfile(temp,clmask,DU003)
+
+      call readvar3D("DU004", AER_file, temp)
+      call reduceProfile(temp,clmask,DU004)
+
+      call readvar3D("DU005", AER_file, temp)
+      call reduceProfile(temp,clmask,DU005)
+
+      call readvar3D("SS001", AER_file, temp)
+      call reduceProfile(temp,clmask,SS001)
+
+      call readvar3D("SS002", AER_file, temp)
+      call reduceProfile(temp,clmask,SS002)
+
+      call readvar3D("SS003", AER_file, temp)
+      call reduceProfile(temp,clmask,SS003)
+
+      call readvar3D("SS004", AER_file, temp)
+      call reduceProfile(temp,clmask,SS004)
+
+      call readvar3D("SS005", AER_file, temp)
+      call reduceProfile(temp,clmask,SS005)
+
+      call readvar3D("BCPHOBIC", AER_file, temp)
+      call reduceProfile(temp,clmask,BCPHOBIC) 
+
+      call readvar3D("BCPHILIC", AER_file, temp)
+      call reduceProfile(temp,clmask,BCPHILIC)
+
+      call readvar3D("OCPHOBIC", AER_file, temp)
+      call reduceProfile(temp,clmask,OCPHOBIC) 
+
+      call readvar3D("OCPHILIC", AER_file, temp)
+      call reduceProfile(temp,clmask,OCPHILIC)    
+
+      write(*,*) '<> Read aeorosl data to shared memory'  
+    end if
   end subroutine read_aer_Nv
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!     allocate_shared
+!     reducedProfile
 ! PURPOSE
-!     allocates all the shared memory arrays that I need
+!     reduces a 3D array of profiles into a 2D array of profiles according to a mask
+! INPUT
+!     var: variables to reduce
+!     mask: 2-D mask
+! OUTPUT
+!     none
+!  HISTORY
+!     29 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+  subroutine reduceProfile(var,mask,reducedProfile)
+    real,intent(in),dimension(:,:,:)               :: var
+    logical,intent(in),dimension(:,:)              :: mask
+    real,intent(inout),dimension(:,:)              :: reducedProfile
+
+    integer                                        :: im, jm, km, k
+
+    im = size(var,1)
+    jm = size(var,2)
+    km = size(var,3)
+
+    do k = 1, km
+      reducedProfile(:,k) = pack(reshape(var(:,:,k),(/im,jm/)),mask)
+    end do
+
+  end subroutine reduceProfile
+
+
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     read_BRDF
+! PURPOSE
+!     read in all the BRDF variables
 ! INPUT
 !     none
 ! OUTPUT
@@ -845,45 +807,91 @@ end subroutine mp_geometry
 !  HISTORY
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine allocate_shared()
+  subroutine read_BRDF()
+    real, dimension(im,jm,nbands)   :: temp
 
-    call MAPL_AllocNodeArray(CLON,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(CLAT,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(SCANTIME,(/im/),rc=ierr)
-    call MAPL_AllocNodeArray(CLDTOT,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(CLDTOT,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(AIRDENS,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(RH,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DELP,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU001,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU002,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU003,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU004,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU005,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS001,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS002,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS003,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS004,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS005,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(BCPHOBIC,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(BCPHILIC,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(OCPHOBIC,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(OCPHILIC,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(KISO,(/im,jm,nbands/),rc=ierr)
-    call MAPL_AllocNodeArray(KVOL,(/im,jm,nbands/),rc=ierr)
-    call MAPL_AllocNodeArray(KGEO,(/im,jm,nbands/),rc=ierr)
-    call MAPL_AllocNodeArray(FROCEAN,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(FRLAKE,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(FRLAND,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(FRLANDICE,(/im,jm/),rc=ierr)
+    if (myid == 0) then
+      call readvar3D("Kiso", BRDF_file, temp)
+      call reduceProfile(temp,clmask,KISO)
 
-    call MAPL_AllocNodeArray (solar_zenith,(/im,jm,nobs/),rc=ierr)
-    call MAPL_AllocNodeArray (relat_azimuth,(/im,jm,nobs/),rc=ierr)
-    call MAPL_AllocNodeArray (sensor_zenith,(/im,jm,nobs/),rc=ierr)
+      call readvar3D("Kvol", BRDF_file, temp)
+      call reduceProfile(temp,clmask,KVOL)
 
-    solar_zenith = MISSING
-    sensor_zenith = MISSING
-    relat_azimuth = MISSING
+      call readvar3D("Kgeo", BRDF_file, temp)
+      call reduceProfile(temp,clmask,KGEO)
+
+      write(*,*) '<> Read BRDF data to shared memory' 
+    end if 
+  end subroutine read_BRDF  
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     read_angles
+! PURPOSE
+!     read in all the sensor and solar position angles
+! INPUT
+!     none
+! OUTPUT
+!     none
+!  HISTORY
+!     15 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+  subroutine read_angles()
+    real, dimension(im,jm)     :: temp
+
+    if (myid == 0) then
+      call readvar2D("solar_zenith", ANG_file, temp)
+      SZA = pack(temp,clmask)
+
+      call readvar2D("sensor_zenith", ANG_file, temp)
+      VZA = pack(temp,clmask)
+
+      call readvar2D("relat_azimuth", ANG_file, temp)
+      RAA = pack(temp,clmask)
+      write(*,*) '<> Read angle data to shared memory' 
+    end if
+
+  end subroutine read_angles  
+
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     allocate_shared
+! PURPOSE
+!     allocates all the shared memory arrays that I need
+! INPUT
+!     clrm   :: number of pixels after cloud filtering
+! OUTPUT
+!     none
+!  HISTORY
+!     15 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+  subroutine allocate_shared(clrm)
+    integer, intent(in)    :: clrm
+
+    call MAPL_AllocNodeArray(AIRDENS,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(RH,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DELP,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU001,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU002,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU003,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU004,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU005,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS001,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS002,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS003,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS004,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS005,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(BCPHOBIC,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(BCPHILIC,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(OCPHOBIC,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(OCPHILIC,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(KISO,(/clrm,nbands/),rc=ierr)
+    call MAPL_AllocNodeArray(KVOL,(/clrm,nbands/),rc=ierr)
+    call MAPL_AllocNodeArray(KGEO,(/clrm,nbands/),rc=ierr)
+    call MAPL_AllocNodeArray(SZA,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(VZA,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
 
   end subroutine allocate_shared
 
@@ -933,6 +941,10 @@ end subroutine mp_geometry
   ! ----------------------
     allocate (nclr(npet)) 
     nclr = 0
+
+    allocate(clmask(im,jm))
+    clmask = .False.
+
   end subroutine allocate_unshared
 
 
@@ -1001,18 +1013,18 @@ end subroutine mp_geometry
 !     6 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  subroutine mp_create_outfile(date,time,ncid,radVarID,refVarID,timeVarID, clonVarID, clatVarID,szaVarID, vzaVarID, raaVarID)
+  subroutine mp_create_outfile(date, time, ncid, radVarID, refVarID)
     character(len=*)                   :: date, time
     integer,intent(out)                :: ncid
     integer,intent(out)                :: radVarID, refVarID    
-    integer,intent(out)                :: timeVarID, clonVarID, clatVarID
-    integer,intent(out)                :: szaVarID, vzaVarID, raaVarID    
     
     integer, dimension(4)              :: chunk_size
     integer, dimension(4)              :: dimids
-    integer                            :: timeDimID, ewDimID, nsDimID, chaDimID, chaVarID
- 
-
+    integer                            :: timeDimID, ewDimID, nsDimID, chaDimID
+        integer                        :: szaVarID, vzaVarID, raaVarID    
+    integer                            :: timeVarID, clonVarID, clatVarID, chaVarID
+    real,allocatable,dimension(:,:)    :: clon, clat, sza, vza, raa
+    real,allocatable,dimension(:)      :: scantime
 
 
     call check(nf90_create(OUT_file, IOR(IOR(nf90_netcdf4, nf90_clobber),nf90_mpiio), ncid, &
@@ -1042,9 +1054,9 @@ end subroutine mp_geometry
     call check(nf90_def_var(ncid,'channel',nf90_float,(/chaDimID/),chaVarID),"create channel var")
     call check(nf90_def_var(ncid,'radiance',nf90_float,dimids,radVarID,chunksizes=chunk_size),"create radiance var")
     call check(nf90_def_var(ncid,'reflectance',nf90_float,dimids,refVarID,chunksizes=chunk_size),"create reflectance var")
-    call check(nf90_def_var(ncid,'solar_zenith',nf90_float,(/ewDimID,nsDimID,timeDimID/),szaVarID),"create solar_zenith var")
-    call check(nf90_def_var(ncid,'sensor_zenith',nf90_float,(/ewDimID,nsDimID,timeDimID/),vzaVarID),"create sensor_zenith var")
-    call check(nf90_def_var(ncid,'relat_azimuth',nf90_float,(/ewDimID,nsDimID,timeDimID/),raaVarID),"create relat_azimuth var")
+    call check(nf90_def_var(ncid,'solar_zenith',nf90_float,(/ewDimID,nsDimID/),szaVarID),"create solar_zenith var")
+    call check(nf90_def_var(ncid,'sensor_zenith',nf90_float,(/ewDimID,nsDimID/),vzaVarID),"create sensor_zenith var")
+    call check(nf90_def_var(ncid,'relat_azimuth',nf90_float,(/ewDimID,nsDimID/),raaVarID),"create relat_azimuth var")
 
     call check(nf90_put_att(ncid,chaVarID,'standard_name','Channel'),"standard_name attr")
     call check(nf90_put_att(ncid,chaVarID,'long_name','Channel Wavelength'),"long_name attr")
@@ -1089,16 +1101,51 @@ end subroutine mp_geometry
     !Leave define mode
     call check(nf90_enddef(ncid),"leaving define mode")
 
-    ! one processor writes out channels
+    ! one processor writes out channels and clon, clat, scantime
     if (myid == 0) then
       call check(nf90_put_var(ncid, chaVarID, channels), "writing out channels")
+
+      allocate (scantime(im))
+      allocate (clon(im, jm))
+      allocate (clat(im, jm))
+
+      call readvar1D("scanTime", MET_file, scantime)
+      call check(nf90_put_var(ncid,timeVarID,scantime), "writing out scantime")
+
+      call readvar2D("clon", INV_file, clon)
+      call check(nf90_put_var(ncid,clonVarID,clon), "writing out clon")
+
+      call readvar2D("clon", INV_file, clat)
+      call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
+
+      deallocate (clon)
+      deallocate (clat)  
+      deallocate (scantime)
+
+      allocate (sza(im,jm))
+      allocate (vza(im,jm))
+      allocate (raa(im,jm))
+
+      call readvar2D("solar_zenith", ANG_file, sza)
+      call check(nf90_put_var(ncid,szaVarID,sza), "writing out sza")
+
+      call readvar2D("sensor_zenith", ANG_file, vza)
+      call check(nf90_put_var(ncid,vzaVarID,vza), "writing out vza")
+
+      call readvar2D("relat_azimuth", ANG_file, raa)
+      call check(nf90_put_var(ncid,raaVarID,raa), "writing out raa")
+
+      deallocate (sza)
+      deallocate (vza)
+      deallocate (raa)
+
     endif
 
     ! force independent write 
     call check(nf90_var_par_access(ncid, refVarID, nf90_independent),"reflectance writes independently")
     call check(nf90_var_par_access(ncid, radVarID, nf90_independent),"radiance writes independently")
 
-!    call check( nf90_close(ncid), "close outfile" )
+    !call check( nf90_close(ncid), "close outfile" )
 
   end subroutine mp_create_outfile  
 
@@ -1151,29 +1198,6 @@ end subroutine mp_geometry
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!     write_outfile2D
-! PURPOSE
-!     write general data to outfile by one processor
-! INPUT
-!     none
-! OUTPUT
-!     none
-!  HISTORY
-!     18 May 2015 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  subroutine write_outfile2D(ncid,VarID,myData)
-    integer,intent(in)                  :: ncid
-    integer,intent(in)                  :: VarID    
-    real,dimension(:,:),intent(in)    :: myData
-
-    call check(nf90_put_var(ncid, VarID, myData ), "writing out myData")
-
-  end subroutine write_outfile2D
-
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
 !     write_outfile1D
 ! PURPOSE
 !     write general data to outfile by one processor
@@ -1194,180 +1218,6 @@ end subroutine mp_geometry
 
   end subroutine write_outfile1D
 
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     date2doy
-! PURPOSE
-!     calculate the day of the year from the date (Jan 1 = 1)
-! INPUT
-!     none
-! OUTPUT
-!     doy  : day of year
-!  HISTORY
-!     5 May 2015 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  subroutine date2doy()
-    integer                                  :: yyyy
-    integer                                  :: mm 
-    integer                                  :: dd
-    integer, dimension(12)                   :: daysInMonth 
-    integer                                  :: i               
-
-    read(date(1:4),'(i)') yyyy
-    read(date(5:6),'(i)') mm
-    read(date(7:8),'(i)') dd
-
-    daysInMonth = (/31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31/) 
-    if (leap(yyyy)) then
-      daysInMonth(1) = 29
-    end if 
-
-    doy = 0
-    do i = 1, mm-1
-      doy = doy + daysInMonth(i)
-    end do
-    doy = doy + dd
-
-  end subroutine date2doy
-
-!***********************************************************************************************************************************
-!  LEAP
-!
-!  Input:
-!     year  -  integer
-!  Output:
-!     Function return value = .true. if year is a leap year, and .false. otherwise.
-!***********************************************************************************************************************************
-
-  FUNCTION LEAP (YEAR) RESULT (LEAPFLAG)
-
-    IMPLICIT NONE
-
-    INTEGER :: YEAR
-    LOGICAL :: LEAPFLAG
-
-    LEAPFLAG = .FALSE.
-    IF (MOD(YEAR,4) .EQ. 0)   LEAPFLAG = .TRUE.
-    IF (MOD(YEAR,100) .EQ. 0) LEAPFLAG = .FALSE.
-    IF (MOD(YEAR,400) .EQ. 0) LEAPFLAG = .TRUE.
-    RETURN
-  END FUNCTION
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     sensor_geometry
-! PURPOSE
-!     calculate the sensor viewing zenith and azimuth angles
-! INPUT
-!     lon : longitude of pixel center
-!     n   : observation number
-! OUTPUT
-!     solar_zenith 
-!     solar_azimuth
-!  HISTORY
-!     5 May 2015 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  subroutine sensor_geometry(lat,lon,sensor_zenith,sensor_azimuth)
-    real, intent(in)                  :: lat, lon
-    real, intent(out)                 :: sensor_zenith, sensor_azimuth
-
-    real                              :: delta_L
-    real                              :: lambda
-    real                              :: sin_rho
-    real                              :: sensor_elev
-    real                              :: cos_az
-    real, parameter                   :: pi  = 2.0*acos(0.0)
-    real, parameter                   :: d2r = pi/180.0
-    real, parameter                   :: r2d = 180.0/pi
-
- 
-    delta_L = d2r*abs(sat_lon - lon)
-    lambda = acos(sin(d2r*sat_lat)*sin(d2r*lat) + cos(d2r*sat_lat)*cos(d2r*lat)*cos(delta_L))
- 
-    cos_az = (sin(d2r*lat) - cos(lambda)*sin(d2r*sat_lat))/(sin(lambda)*cos(d2r*sat_lat))
-    
-    ! hack to deal with nadir pixels where numerical errors give slightly more than 1
-    if (cos_az > 1.0)  cos_az = 1.0
-    if (cos_az < -1.0) cos_az = -1.0
-
-    sensor_azimuth = r2d*acos(cos_az)
-
-    sin_rho = earth_rad/(earth_rad+sat_alt)
-
-    sensor_zenith = r2d*atan(sin_rho*sin(lambda)/(1-sin_rho*cos(lambda)))
-
-  end subroutine sensor_geometry
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!    solar_geometry
-! PURPOSE
-!     calculated solar geomtery for the pixel
-! INPUT
-!     lat, lon  : pixel location
-!     doy, time : scan time
-! OUTPUT
-!     solar_azimuth
-!     solar_zenith
-!  HISTORY
-!     4 May 2015 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  subroutine solar_geometry(doy, time, lat,lon,solar_zenith,solar_azimuth)
-    integer                           :: doy
-    real, intent(in)                  :: time      
-    real, intent(in)                  :: lat, lon
-    real, intent(out)                 :: solar_zenith, solar_azimuth            
-
-    real, parameter                   :: pi  = 2.0*acos(0.0)
-    real, parameter                   :: d2r = pi/180.0
-    real, parameter                   :: r2d = 180.0/pi
-    real                              :: lst
-    real                              :: hr_ang
-    real                              :: solar_declin
-    real                              :: solar_elev
-    real                              :: D
-    real                              :: ET
-    real                              :: cos_az
-
-
-    D      = 360*(real(doy)-81)/365 
-    ET     = 9.87*sin(2*D*d2r) - 7.53*cos(D*d2r) - 1.5*sin(D*d2r)  ! Equation of time in minutes needed for true solar time
-    lst    = lon/15.0 + time + ET/60.0
-
-    if (lst < 0.0) then
-      lst = 24.0 + lst
-    else if (lst > 24.0) then
-      lst = lst - 24.0
-    end if 
-
-    hr_ang = d2r*360*(lst - 12.0)/24.0
-
-    solar_declin = 23.45*d2r*sin(D*d2r)
-
-    solar_zenith = r2d*acos(sin(abs(d2r*lat))*sin(solar_declin) + cos(d2r*abs(lat))*cos(solar_declin)*cos(hr_ang))
-
-    solar_elev   = 90.0 - solar_zenith
-
-    cos_az = ((cos(d2r*lat)*sin(solar_declin)) - cos(hr_ang)*cos(solar_declin)*sin(d2r*lat))/(cos(d2r*solar_elev))
-
-    ! hack to deal with nadir pixels where numerical errors give slightly more than 1
-    if (cos_az > 1.0)  cos_az = 1.0
-    if (cos_az < -1.0) cos_az = -1.0
-
-    if (solar_elev > 0 ) then
-      solar_azimuth = r2d*acos(cos_az)
-
-      if (hr_ang > 0) then
-        solar_azimuth = solar_azimuth + 180.0
-      end if
-    end if
-
-  end subroutine solar_geometry
-
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
 !    cal_qm
@@ -1384,14 +1234,24 @@ end subroutine mp_geometry
 !     6 May P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  subroutine calc_qm(var,q,n,i,j)
-    real, intent(in), dimension(:,:,:)     :: var
-    integer, intent(in)                    :: q, n, i, j
-
+  subroutine calc_qm()
     integer                                :: k
 
     do k = 1, km
-      qm(k,q,n) = var(i,j,k)*DELP(i,j,k)/grav
+      qm(k,1,nobs) = DU001(c,k)*DELP(c,k)/grav
+      qm(k,2,nobs) = DU002(c,k)*DELP(c,k)/grav
+      qm(k,3,nobs) = DU003(c,k)*DELP(c,k)/grav
+      qm(k,4,nobs) = DU004(c,k)*DELP(c,k)/grav
+      qm(k,5,nobs) = DU005(c,k)*DELP(c,k)/grav
+      qm(k,6,nobs) = SS001(c,k)*DELP(c,k)/grav
+      qm(k,7,nobs) = SS002(c,k)*DELP(c,k)/grav
+      qm(k,8,nobs) = SS003(c,k)*DELP(c,k)/grav
+      qm(k,9,nobs) = SS004(c,k)*DELP(c,k)/grav
+      qm(k,10,nobs) = SS005(c,k)*DELP(c,k)/grav
+      qm(k,11,nobs) = BCPHOBIC(c,k)*DELP(c,k)/grav
+      qm(k,12,nobs) = BCPHILIC(c,k)*DELP(c,k)/grav
+      qm(k,13,nobs) = OCPHOBIC(c,k)*DELP(c,k)/grav
+      qm(k,14,nobs) = OCPHILIC(c,k)*DELP(c,k)/grav
     end do
    end subroutine calc_qm
 
@@ -1446,24 +1306,23 @@ end subroutine mp_geometry
       write(2,'(A)') '--- Array Statistics ---'
     end if
 
-    call shmem_test2D('CLDTOT',CLDTOT)
-    call shmem_test3D('RH',RH)
-    call shmem_test3D('AIRDENS',AIRDENS)
-    call shmem_test3D('DELP',DELP)
-    call shmem_test3D('DU001',DU001)
-    call shmem_test3D('DU002',DU002)
-    call shmem_test3D('DU003',DU003)
-    call shmem_test3D('DU004',DU004)
-    call shmem_test3D('DU005',DU005)
-    call shmem_test3D('SS001',SS001)
-    call shmem_test3D('SS002',SS002)
-    call shmem_test3D('SS003',SS003)
-    call shmem_test3D('SS004',SS004)
-    call shmem_test3D('SS005',SS005)
-    call shmem_test3D('BCPHOBIC',BCPHOBIC)
-    call shmem_test3D('BCPHILIC',BCPHILIC)
-    call shmem_test3D('OCPHOBIC',OCPHOBIC)
-    call shmem_test3D('OCPHILIC',OCPHILIC)
+    call shmem_test2D('RH',RH)
+    call shmem_test2D('AIRDENS',AIRDENS)
+    call shmem_test2D('DELP',DELP)
+    call shmem_test2D('DU001',DU001)
+    call shmem_test2D('DU002',DU002)
+    call shmem_test2D('DU003',DU003)
+    call shmem_test2D('DU004',DU004)
+    call shmem_test2D('DU005',DU005)
+    call shmem_test2D('SS001',SS001)
+    call shmem_test2D('SS002',SS002)
+    call shmem_test2D('SS003',SS003)
+    call shmem_test2D('SS004',SS004)
+    call shmem_test2D('SS005',SS005)
+    call shmem_test2D('BCPHOBIC',BCPHOBIC)
+    call shmem_test2D('BCPHILIC',BCPHILIC)
+    call shmem_test2D('OCPHOBIC',OCPHOBIC)
+    call shmem_test2D('OCPHILIC',OCPHILIC)
 
     !   Wait for everyone to finish and print max memory used
     !   -----------------------------------------------------------  
@@ -1536,6 +1395,64 @@ end subroutine mp_geometry
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
+!    get_config()
+! PURPOSE
+!     Read and parse resource file
+!     fixed format
+! INPUT
+!     None
+! OUTPUT
+!     None
+!  HISTORY
+!     29 May P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine get_config()
+    open(unit=5, file = arg, IOSTAT=io, mode = 'READ', status = 'OLD')
+    if (io > 0) then
+      if (myid == 0) then
+        write(*,*) 'Problem opening geo_vlidort rcfile'
+        write(*,*) 'Exiting.....'
+        call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
+      end if
+    end if
+    do 
+      read(5,'(A)',IOSTAT=io) rcline
+      if (io > 0) then
+        if (myid == 0) then
+          write(*,*) 'Problem reading geo_vlidort rcfile'
+          write(*,*) 'Exiting.....'
+          call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
+        end if
+      else if (io < 0) then
+        ! end of file
+        exit
+      else 
+        !parse line
+        i = index(rcline, ':')  
+        if (i > 0) then    
+          rcvar = lower_to_upper(rcline(1:i-1))
+          rcvalue = adjustl(rcline(i+1:))
+
+          if (trim(rcvar) .eq. 'DATE') date = trim(rcvalue)
+          if (trim(rcvar) .eq. 'TIME') time = trim(rcvalue)
+          if (trim(rcvar) .eq. 'SATNAME') satname = upper_to_lower(trim(rcvalue))
+          if (trim(rcvar) .eq. 'INDIR') indir = trim(rcvalue) 
+          if (trim(rcvar) .eq. 'OUTDIR') outdir = trim(rcvalue)
+          if (trim(rcvar) .eq. 'BRDFNAME') brdfname = trim(rcvalue)
+          if (trim(rcvar) .eq. 'BRDFDATE') brdfdate = trim(rcvalue)
+          if (trim(rcvar) .eq. 'SCALAR') then
+            if (lower_to_upper(trim(rcvalue)) .eq. 'TRUE') scalar = .TRUE.
+            if (lower_to_upper(trim(rcvalue)) .eq. 'FALSE') scalar = .FALSE.
+          end if
+        end if 
+      end if
+    end do 
+    close(5)
+
+  end subroutine get_config
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
 !    shutdown
 ! PURPOSE
 !     Clean up allocated arrays and finalize MPI
@@ -1549,18 +1466,17 @@ end subroutine mp_geometry
 
   subroutine shutdown()         
 
-    deallocate (pe)
-    deallocate (ze)
-    deallocate (te)
-    deallocate (qm)
-    deallocate (tau)
-    deallocate (ssa)
-    deallocate (g)
+    ! deallocate (pe)
+    ! deallocate (ze)
+    ! deallocate (te)
+    ! deallocate (qm)
+    ! deallocate (tau)
+    ! deallocate (ssa)
+    ! deallocate (g)
 
-    deallocate (nclr)
+    ! deallocate (nclr)
 
     ! shmem must deallocate shared memory arrays
-    ! call MAPL_DeallocNodeArray(CLDTOT,rc=ierr)
     ! call MAPL_DeallocNodeArray(AIRDENS,rc=ierr)
     ! call MAPL_DeallocNodeArray(RH,rc=ierr)
     ! call MAPL_DeallocNodeArray(DELP,rc=ierr)
