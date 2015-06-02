@@ -309,7 +309,6 @@ program geo_vlidort
     write(*,*) ' '
   end if   
 
-GOTO 500
 ! Split up filtered domain among processors
 !----------------------------------------------
   if (npet >= clrm) then
@@ -338,7 +337,7 @@ GOTO 500
       counti = nclr(p+1)
       endi   = starti + counti - 1
 
-      do c = starti, starti+ 1 !endi
+      do c = starti, endi
         call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                            reshape(DELP(c,:),(/km,nobs/)), ptop, &
                            pe, ze, te )   
@@ -371,111 +370,78 @@ GOTO 500
         write(msg,*) 'getAOP ', myid
         call write_verbose(msg)
 
-        ! Figure out what kinds of surfaces to simulate
-        ! Weight the radiances according to the surface area fractions
-        !------------------------------------------------------------------
-
-        ! WATER
-        !---------------------
-        !if (FROCEAN(i_work(c),j_work(c)) + FRLAKE(i_work(c),j_work(c)) .ne. 0 ) then
-          ! here i calculate water leaving surface calculations
-          ! also need to do something about FRSEAICE
-          !if ((FRLAKE(i_work(c),j_work(c)) > 0) .or. ((FROCEAN(i_work(c),j_work(c))-FRSEAICE(i_work(c),j_work(c))) > 0) then
-            ! do some water calcs!
-          !end if
-          !if (FRSEAICE(i_work(c),j_work(c)) > 0)
-            !do some ice calcs!
-          !end if 
-          ! radiance_VL = radiance_VL + radiance_VL_Surface*(FROCEAN(i_work(c),j_work(c))-FRSEAICE(i_work(c),j_work(c))) 
-          ! radiance_VL = radiance_VL + radiance_VL_Surface*FRLAKE(i_work(c),j_work(c))
-
-          ! reflectance_VL = reflectance_VL + reflectance_VL_Surface*(FROCEAN(i_work(c),j_work(c))-FRSEAICE(i_work(c),j_work(c)))
-          ! reflectance_VL = reflectance_VL + reflectance_VL_Surface*FRLAKE(i_work(c),j_work(c))
-
-        !end if 
-
-        ! LAND PERMANENTLY COVERED BY ICE
-        !---------------------          
-        !if (FRLANDICE(i_work(c),j_work(c)) .ne. 0) then
-        !  write(*,*) 'We found landice!!!!???'
-        !end if
-
-        ! LAND
-        !---------------------          
-        if (FRLAND(i_work(c),j_work(c)) .ne. 0 ) then
-          ! do land leaving surface calculations
-          ! need to implement snow cover (FRSNO)
-          if (ANY(kernel_wt == modis_missing)) then
-            ! Simple lambertian surface model
-            !------------------------------
-            albedo(:,:)      = 0.05  !this needs to be a climatology(?)
-            !if (scalar) then
-              ! Call to vlidort scalar code
-              
-              ! call Scalar (km, nch, nobs ,dble(channels),        &
-              !         dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), dble(albedo),&
-              !         dble(solar_zenith), dble(relat_azimuth), dble(sensor_zenith), &
-              !         dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ierr)
-            !else
-              ! Call to vlidort vector code
-              ! call Vector (km, nch, nobs ,dble(channels), nMom,   &
-                     ! nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), dble(albedo),&
-                     ! reshape(dble(solar_zenith(i_work(c),j_work(c),:)),(/nobs/)), &
-                     ! reshape(dble(relat_azimuth(i_work(c),j_work(c),:)),(/nobs/)), &
-                     ! reshape(dble(sensor_zenith(i_work(c),j_work(c),:)),(/nobs/)), &
-                     ! dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr)
-            !end if
-          else             
-            ! MODIS BRDF Surface Model
-            !------------------------------
-            if (scalar) then 
-              ! Call to vlidort scalar code            
-              call Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
-                      dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
-                      kernel_wt, param, &
-                      (/dble(SZA(c))/), &
-                      (/dble(RAA(c))/), &
-                      (/dble(VZA(c))/), &
-                      dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface,ierr )  
-            else
-              ! Call to vlidort vector code
-              write(msg,*) 'getting ready to do vector calculations', myid, ierr
-              call write_verbose(msg)
-
-              call Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
-                      nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
-                      kernel_wt, param, &
-                      (/dble(SZA(c))/), &
-                      (/dble(RAA(c))/), &
-                      (/dble(VZA(c))/), &
-                      dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr )  
-
-            end if
-
-            call mp_check_vlidort(radiance_VL_Surface,reflectance_VL_Surface)
-
-            ! radiance_VL    = radiance_VL + radiance_VL_Surface*FRLAND(i_work(c),j_work(c))
-            ! reflectance_VL = reflectance_VL + reflectance_VL_Surface*FRLAND(i_work(c),j_work(c))
-          end if          
-          
-          radiance_VL    = radiance_VL_Surface
-          reflectance_VL = reflectance_VL_Surface
-
-          write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
-          call write_verbose(msg)
-
-          ! Write output to correct position in file
-          ! --------------------------------------------
-          call mp_write_vlidort(ncid,radVarID,refVarID,(/i_work(c),j_work(c),1,1/),(/1,1,nobs,nch/),radiance_VL,reflectance_VL)
-
-          ! Keep track of progress of each processor
-          ! -----------------------------------------        
-          if (nint(100.*real(c-starti)/real(counti)) > progress) then
-            progress = nint(100.*real(c-starti)/real(counti))
-            write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',c,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
+        if ((lower_to_upper(BRDFNAME) == 'MAIACRTLS') .or. (ANY(kernel_wt == modis_missing))) then
+          ! Simple lambertian surface model
+          !------------------------------
+          albedo(:,:)      = 0.05  !this needs to be a climatology(?)
+          if (scalar) then
+            ! Call to vlidort scalar code
+            
+            call Scalar_Lambert (km, nch, nobs ,dble(channels),        &
+                    dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), dble(albedo),&
+                    (/dble(SZA(c))/), &
+                    (/dble(RAA(c))/), &
+                    (/dble(VZA(c))/), &
+                    dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ierr)
+          else
+            ! Call to vlidort vector code
+            call Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
+                   nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), dble(albedo),&
+                   (/dble(SZA(c))/), &
+                   (/dble(RAA(c))/), &
+                   (/dble(VZA(c))/), &
+                   dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr)
           end if
-        
-        end if      
+        else             
+          ! MODIS BRDF Surface Model
+          !------------------------------
+          if (scalar) then 
+            ! Call to vlidort scalar code            
+            call Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
+                    dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
+                    kernel_wt, param, &
+                    (/dble(SZA(c))/), &
+                    (/dble(RAA(c))/), &
+                    (/dble(VZA(c))/), &
+                    dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface,ierr )  
+          else
+            ! Call to vlidort vector code
+            write(msg,*) 'getting ready to do vector calculations', myid, ierr
+            call write_verbose(msg)
+
+            call Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
+                    nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+                    kernel_wt, param, &
+                    (/dble(SZA(c))/), &
+                    (/dble(RAA(c))/), &
+                    (/dble(VZA(c))/), &
+                    dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr )  
+
+          end if
+
+          call mp_check_vlidort(radiance_VL_Surface,reflectance_VL_Surface)
+
+          ! radiance_VL    = radiance_VL + radiance_VL_Surface*FRLAND(i_work(c),j_work(c))
+          ! reflectance_VL = reflectance_VL + reflectance_VL_Surface*FRLAND(i_work(c),j_work(c))
+        end if          
+          
+        radiance_VL    = radiance_VL_Surface
+        reflectance_VL = reflectance_VL_Surface
+
+        write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
+        call write_verbose(msg)
+
+        ! Write output to correct position in file
+        ! --------------------------------------------
+        call mp_write_vlidort(ncid,radVarID,refVarID,(/i_work(c),j_work(c),1,1/),(/1,1,nobs,nch/),radiance_VL,reflectance_VL)
+
+        ! Keep track of progress of each processor
+        ! -----------------------------------------        
+        if (nint(100.*real(c-starti)/real(counti)) > progress) then
+          progress = nint(100.*real(c-starti)/real(counti))
+          write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',c,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
+        end if
+                    
       end do
     end if
   end do 
