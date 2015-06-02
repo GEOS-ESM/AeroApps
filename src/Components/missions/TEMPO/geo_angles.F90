@@ -101,7 +101,7 @@ program geo_angles
 
   open(unit=5, file = arg, IOSTAT=io, mode = 'READ', status = 'OLD')
   if (io > 0) then
-    write(*,*) 'Problem opening tempo_angles rcfile'
+    write(*,*) 'Problem opening geo_angles rcfile'
     write(*,*) 'Exiting.....'
     call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
   end if
@@ -500,23 +500,9 @@ end subroutine filenames
   subroutine shutdown()         
 
     ! shmem must deallocate shared memory arrays
-    ! call MAPL_DeallocNodeArray(AIRDENS,rc=ierr)
-    ! call MAPL_DeallocNodeArray(RH,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DELP,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DU001,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DU002,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DU003,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DU004,rc=ierr)                           
-    ! call MAPL_DeallocNodeArray(DU005,rc=ierr)
-    ! call MAPL_DeallocNodeArray(SS001,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SS002,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SS003,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SS004,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SS005,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(BCPHOBIC,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(BCPHILIC,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(OCPHOBIC,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(OCPHILIC,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(CLON,rc=ierr)
+    ! call MAPL_DeallocNodeArray(CLAT,rc=ierr)
+    ! call MAPL_DeallocNodeArray(SCANTIME,rc=ierr)
 
     !call MAPL_FinalizeShmem (rc=ierr)
 
