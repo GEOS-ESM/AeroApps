@@ -36,6 +36,36 @@ module geo_vlidort_netcdf
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
+!    readvar3D
+! PURPOSE
+!     reads a 3D variable from a netcdf file all at once
+!     can only be called by one processor
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     27 April P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine readvar3D(varname, filename, var)
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  filename
+    real, dimension(:,:,:), intent(inout)  ::  var
+
+    integer                                :: ncid, varid
+
+
+!         write(*,'(A,A,A,I4)')'Reading ',trim(varname), ' on PE ', myid
+    call check( nf90_open(filename,NF90_NOWRITE,ncid), "opening file " // filename)
+    call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
+    call check( nf90_get_var(ncid,varid,var), "reading " // varname)
+    call check( nf90_close(ncid), "closing " // filename)
+  end subroutine readvar3D
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
 !    readvar2D
 ! PURPOSE
 !     reads a 2D variable from a netcdf file all at once
@@ -63,6 +93,36 @@ module geo_vlidort_netcdf
     call check( nf90_get_var(ncid,varid,var), "reading " // varname)
     call check( nf90_close(ncid), "closing " // filename)
   end subroutine readvar2D
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    readvar1D
+! PURPOSE
+!     reads a 1D variable from a netcdf file all at once
+!     can only be called by one processor
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     27 April P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine readvar1D(varname, filename, var)
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  filename
+    real, dimension(:), intent(inout)      ::  var
+
+    integer                                :: ncid, varid
+
+    call check( nf90_open(filename,NF90_NOWRITE,ncid), "opening file " // filename)
+    call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
+    call check( nf90_get_var(ncid,varid,var), "reading " // varname)
+    call check( nf90_close(ncid), "closing " // filename)
+  end subroutine readvar1D
+
+
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -557,6 +617,209 @@ module geo_vlidort_netcdf
     call check( nf90_close(ncid), "closing "// filename)
     !
   end subroutine mp_readvar1D    
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_readvarReduced3Dprofile
+! PURPOSE
+!     General code to use npet processors to read profiles from a netcdf file  
+!     user provides array of indices to read 
+! INPUT
+!     varname         : string of variable name
+!     filename        : file to be read
+!     i_work, j_work  : indices to be read
+!     km              : size of profile
+!     npet            : number of processors
+!     myid            : processor id
+!     var             : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     28 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_readvarReduced3Dprofile(varname, filename, i_work, j_work, km, npet, myid, var)
+    character(len=*), intent(in)              ::  varname
+    character(len=*), intent(in)              ::  filename
+    integer, dimension(:), intent(in)         ::  i_work, j_work
+    integer, intent(in)                       ::  km
+    integer, intent(in)                       ::  npet, myid    
+    real, dimension(:,:), intent(inout)       ::  var
+
+    integer                       :: p, c, startl, countl, endl
+    integer                       :: ncid, varid
+    integer, dimension(npet)      :: nlayer                ! how many layers each processor reads
+    integer                       :: clrm
+    integer                       :: countsize(3) 
+
+    countsize = (/1,1,km/)
+
+    ! Everyone Figure out how many indeces each PE has to read
+    ! -----------------------------
+    clrm     = size(i_work)
+
+    nlayer = 0
+    if (npet >= clrm) then
+      nlayer(1:npet) = 1
+    else if (npet < clrm) then
+      nlayer(1:npet) = clrm/npet
+      nlayer(npet)   = nlayer(npet) + mod(clrm,npet)
+    end if 
+
+    call check( nf90_open(filename, IOR(nf90_nowrite, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
+    do p = 0, npet-1
+      if (myid == p) then
+        if (p == 0) then
+          startl = 1
+        else
+          startl = sum(nlayer(1:p))+1
+        end if
+        countl = nlayer(p+1)
+        endl   = startl + countl - 1
+
+        do c = startl, endl
+          call check( nf90_get_var(ncid, varid, var(c,:), start = (/i_work(c), j_work(c),1/), count=countsize), "reading " // varname)
+        end do
+      end if
+    end do
+    call check( nf90_close(ncid), "closing "// filename)
+    !
+  end subroutine mp_readvarReduced3Dprofile      
+
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_readvarReduced2D
+! PURPOSE
+!     General code to use npet processors to read a variable from a netcdf file  
+!     user provides array of indices to read 
+! INPUT
+!     varname         : string of variable name
+!     filename        : file to be read
+!     i_work, j_work  : indices to be read
+!     npet            : number of processors
+!     myid            : processor id
+!     var             : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     28 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_readvarReduced2D(varname, filename, i_work, j_work, npet, myid, var)
+    character(len=*), intent(in)              ::  varname
+    character(len=*), intent(in)              ::  filename
+    integer, dimension(:), intent(in)         ::  i_work, j_work
+    integer, intent(in)                       ::  npet, myid    
+    real, dimension(:), intent(inout)         ::  var
+
+    integer                       :: p, c, startl, countl, endl
+    integer                       :: ncid, varid
+    integer, dimension(npet)      :: nlayer                ! how many layers each processor reads
+    integer                       :: km
+    integer,parameter             :: countsize(2) = (/1,1/)
+    real                          :: temp(1,1) 
+
+    ! Everyone Figure out how many indeces each PE has to read
+    ! -----------------------------
+    km     = size(i_work)
+
+    nlayer = 0
+    if (npet >= km) then
+      nlayer(1:npet) = 1
+    else if (npet < km) then
+      nlayer(1:npet) = km/npet
+      nlayer(npet)   = nlayer(npet) + mod(km,npet)
+    end if 
+
+    call check( nf90_open(filename, IOR(nf90_nowrite, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
+    do p = 0, npet-1
+      if (myid == p) then
+        if (p == 0) then
+          startl = 1
+        else
+          startl = sum(nlayer(1:p))+1
+        end if
+        countl = nlayer(p+1)
+        endl   = startl + countl - 1
+
+        do c = startl, endl
+          call check( nf90_get_var(ncid, varid, temp, start = (/i_work(c), j_work(c)/), count=countsize), "reading " // varname)
+          var(c) = temp(1,1)
+        end do
+      end if
+    end do
+    call check( nf90_close(ncid), "closing "// filename)
+    !
+  end subroutine mp_readvarReduced2D      
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_readvarReduced1D
+! PURPOSE
+!     General code to use npet processors to read a variable from a netcdf file  
+!     user provides array of indices to read 
+! INPUT
+!     varname         : string of variable name
+!     filename        : file to be read
+!     i_work          : indices to be read
+!     npet            : number of processors
+!     myid            : processor id
+!     var             : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     28 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_readvarReduced1D(varname, filename, i_work, npet, myid, var)
+    character(len=*), intent(in)              ::  varname
+    character(len=*), intent(in)              ::  filename
+    integer, dimension(:), intent(in)         ::  i_work
+    integer, intent(in)                       ::  npet, myid    
+    real, dimension(:), intent(inout)         ::  var
+
+    integer                       :: p, c, startl, countl, endl
+    integer                       :: ncid, varid
+    integer, dimension(npet)      :: nlayer                ! how many layers each processor reads
+    integer                       :: km
+    integer,parameter             :: countsize(1) = (/1/)
+    real                          :: temp(1) 
+
+    ! Everyone Figure out how many indeces each PE has to read
+    ! -----------------------------
+    km     = size(i_work)
+
+    nlayer = 0
+    if (npet >= km) then
+      nlayer(1:npet) = 1
+    else if (npet < km) then
+      nlayer(1:npet) = km/npet
+      nlayer(npet)   = nlayer(npet) + mod(km,npet)
+    end if 
+
+    call check( nf90_open(filename, IOR(nf90_nowrite, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
+    do p = 0, npet-1
+      if (myid == p) then
+        if (p == 0) then
+          startl = 1
+        else
+          startl = sum(nlayer(1:p))+1
+        end if
+        countl = nlayer(p+1)
+        endl   = startl + countl - 1
+
+        do c = startl, endl
+          call check( nf90_get_var(ncid, varid, temp, start = (/i_work(c)/), count=countsize), "reading " // varname)
+          var(c) = temp(1)
+        end do
+      end if
+    end do
+    call check( nf90_close(ncid), "closing "// filename)
+    !
+  end subroutine mp_readvarReduced1D      
+
+
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
