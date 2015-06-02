@@ -4,7 +4,7 @@
 !
 !.............................................................................
 
-subroutine Scalar (km, nch, nobs,channels,        &
+subroutine Scalar_Lambert (km, nch, nobs,channels,        &
                    tau, ssa, g, pe, he, te, albedo,            &
                    solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL,reflectance_VL, rc)
@@ -124,11 +124,11 @@ subroutine Scalar (km, nch, nobs,channels,        &
 
   end do ! Loop over obs
 
-end subroutine Scalar
+end subroutine Scalar_Lambert
 
 !..........................................................................
 
-subroutine Vector (km, nch, nobs, channels, nMom,  &
+subroutine Vector_Lambert (km, nch, nobs, channels, nMom,  &
                    nPol,tau, ssa, g, pmom, pe, he, te, albedo, &
                    solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose, radiance_VL, reflectance_VL,Q,U, rc)
@@ -261,7 +261,7 @@ subroutine Vector (km, nch, nobs, channels, nMom,  &
 
   end do ! Loop over obs
 
-end subroutine Vector
+end subroutine Vector_Lambert
 !.............................................................................
 
 subroutine AI_Scalar (km, nch, nobs, channels,        &
