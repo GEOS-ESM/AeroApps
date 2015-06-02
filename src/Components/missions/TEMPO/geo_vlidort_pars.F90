@@ -42,5 +42,6 @@
   ! Cloud Filtering
   real, parameter                     	:: cldmax = 0.01  
 
-
+  ! Geomtry filtering
+  real, parameter                       :: szamax = 90.0
 
