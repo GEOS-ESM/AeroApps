@@ -22,14 +22,14 @@ program geo_vlidort
 
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
-  use mpi
+!  use mpi
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
   use geo_vlidort_netcdf           ! Module with netcdf routines
   use GeoAngles                    ! Module with geostationary satellite algorithms for scene geometry
 
   implicit none
   include "geo_vlidort_pars.F90"
-  !include "mpif.h"
+  include "mpif.h"
 
 ! rcfile variables
 !----------------

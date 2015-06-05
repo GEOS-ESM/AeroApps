@@ -1,10 +1,29 @@
 module geo_vlidort_netcdf
 
   use netcdf
-  use mpi
+  !use mpi
   implicit none 
 
-  PUBLIC
+  private
+
+  include 'mpif.h'
+
+  public :: mp_readDim
+  public :: readvar3D
+  public :: readvar2D
+  public :: readvar1D
+  public :: mp_readGattr
+  public :: mp_readVattr
+  public :: mp_colreadvar
+  public :: mp_layreadvar
+  public :: mp_readvar4D
+  public :: mp_readvar3D
+  public :: mp_readvar2D
+  public :: mp_readvar1D
+  public :: mp_readvarReduced3Dprofile
+  public :: mp_readvarReduced2D
+  public :: mp_readvarReduced1D
+  public :: check
   contains
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
