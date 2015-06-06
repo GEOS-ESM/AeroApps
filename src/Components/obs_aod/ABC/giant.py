@@ -217,7 +217,7 @@ class GIANT(object):
 
     return I
 
-  def getCoxMunk(self,filename='/nobackup/NNR/Misc/avhrr.coxmunk_lut.npz',channel=630):
+  def getCoxMunk(self,filename='/nobackup/NNR/Misc/c6.coxmunk_lut.npz',channel=550.):
     """
     Returns ocean albedo as a function of wid speed.
     """
