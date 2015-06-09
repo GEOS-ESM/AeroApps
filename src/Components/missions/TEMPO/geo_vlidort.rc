@@ -2,11 +2,11 @@
 # Resource file for geo_vlidort
 #
 
-INDIR:   /nobackup/TEMPO
+INDIR:   /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA
 OUTDIR:  .
 DATE: 20051231
 TIME: 17
-SATNAME: tempo
+INSTNAME: tempo
 BRDFNAME: MAIACRTLS
 BRDFDATE: 2006008
 SCALAR: false
