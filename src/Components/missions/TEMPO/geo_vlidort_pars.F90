@@ -36,9 +36,5 @@
   ! Physical constants
   real, parameter       								:: grav = 9.81               ! gravity
 
-  ! Cloud Filtering
-  real, parameter                     	:: cldmax = 0.01  
 
-  ! Geomtry filtering
-  real, parameter                       :: szamax = 90.0
 
