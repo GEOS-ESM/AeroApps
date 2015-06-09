@@ -40,12 +40,16 @@ program geo_vlidort
 
 ! Information to be retrieved from resource file 
 ! ------------------------------------------------
-  character(len=256)                    :: arg
-  character(len=8)                      :: date 
+  character(len=256)                    :: arg                    ! command line rc file argument
+  character(len=8)                      :: date         
   character(len=7)                      :: brdfdate
   character(len=2)                      :: time 
   character(len=256)                    :: instname, indir, outdir, brdfname
   logical                               :: scalar
+  real, dimension(:), allocatable       :: channels               ! channels to simulate
+  integer                               :: nch                    ! number of channels  
+  real                                  :: cldmax                 ! Cloud Filtering  
+  real                                  :: szamax                 ! Geomtry filtering
 
 ! Test flag
 ! -----------
@@ -151,6 +155,10 @@ program geo_vlidort
   real*8                                :: clock_rate
   character(len=*), parameter           :: Iam = 'geo_vlidort'
 
+! temporary
+!-------------------
+  integer, dimension(1), parameter    :: bands = (/4/)             ! modis band that overlaps with vlidort channel  
+
 ! Start Timing
 ! -----------------
   call system_clock ( t1, clock_rate, clock_max )
@@ -182,6 +190,9 @@ program geo_vlidort
     write(*,*) 'BRDF dataset: ',trim(brdfname),' ',trim(brdfdate)
     if (scalar) write(*,*) 'Scalar calculations'
     if (.not. scalar) write(*,*) 'Vector calculations'
+    write(*,*) 'Channels [nm]: ',channels
+    write(*,*) 'Cloud Fraction <= ', cldmax
+    write(*,*) 'SZA <= ', szamax
     write(*,*) ' '
   end if 
 
@@ -334,7 +345,7 @@ program geo_vlidort
   counti = nclr(myid+1)
   endi   = starti + counti - 1
 
-  do c = starti, starti+10 !endi
+  do c = starti, starti+1 !endi
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
@@ -1278,6 +1289,7 @@ end subroutine filenames
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   subroutine get_config(rcfile)
     character(len=*),intent(in)      :: rcfile
+    integer                          :: nLines, nCols
 
     cf = ESMF_ConfigCreate()
     call ESMF_ConfigLoadFile(cf, fileName=trim(rcfile), __RC__)
@@ -1292,6 +1304,17 @@ end subroutine filenames
     call ESMF_ConfigGetAttribute(cf, brdfname, label = 'BRDFNAME:',default='MAIACRTLS')
     call ESMF_ConfigGetAttribute(cf, brdfdate, label = 'BRDFDATE:',__RC__)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
+    call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=90.0)
+    call ESMF_ConfigGetAttribute(cf, cldmax, label = 'CLDMAX:',default=0.01)
+
+    ! Figure out number of channels and read into vector
+    !------------------------------------------------------
+    nCols =  ESMF_ConfigGetLen(cf, label = 'CHANNELS:',__RC__)
+    allocate (channels(nCols))
+    nch = nCols
+    call ESMF_ConfigGetAttribute(cf, channels, label = 'CHANNELS:', default=550.)
+
+    call ESMF_ConfigDestroy(cf)
 
   end subroutine get_config
 
@@ -1338,8 +1361,6 @@ end subroutine filenames
      call MAPL_DeallocNodeArray(reflectance_VL,rc=ierr) 
 
     call MAPL_FinalizeShmem (rc=ierr)
-
-    call ESMF_ConfigDestroy(cf)
 
     call ESMF_Finalize(__RC__)
 
