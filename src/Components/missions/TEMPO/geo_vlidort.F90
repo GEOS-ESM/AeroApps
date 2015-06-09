@@ -17,12 +17,14 @@
 !  HISTORY
 !     27 April 2015 P. Castellanos adapted from A. da Silva shmem_reader.F90
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+#  include "MAPL_Generic.h"
+#  include "MAPL_ErrLogMain.h"
 program geo_vlidort
 
+  use ESMF                         ! ESMF modules
+  use MAPL_Mod
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
-!  use mpi
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
   use geo_vlidort_netcdf           ! Module with netcdf routines
   use GeoAngles                    ! Module with geostationary satellite algorithms for scene geometry
@@ -31,17 +33,18 @@ program geo_vlidort
   include "geo_vlidort_pars.F90"
   include "mpif.h"
 
-! rcfile variables
+! ESMF Objects
 !----------------
-  character(len=256)                    :: arg, rcline, rcvar, rcvalue  
-  integer                               :: io
+  type(ESMF_Config)       :: cf
+  type(ESMF_VM)           :: vm 
 
-! RC Inputs 
-! --------
+! Information to be retrieved from resource file 
+! ------------------------------------------------
+  character(len=256)                    :: arg
   character(len=8)                      :: date 
   character(len=7)                      :: brdfdate
   character(len=2)                      :: time 
-  character(len=256)                    :: satname, indir, outdir, brdfname
+  character(len=256)                    :: instname, indir, outdir, brdfname
   logical                               :: scalar
 
 ! Test flag
@@ -98,6 +101,7 @@ program geo_vlidort
   real*8,pointer                        :: reflectance_VL_Surface(:,:) => null()  ! TOA reflectance from VLIDORT  
   real*8,pointer                        :: Q(:,:) => null()                       ! Q Stokes component
   real*8,pointer                        :: U(:,:) => null()                       ! U Stokes component
+  real*8,pointer                        :: field(:,:) => null()
 
 ! VLIDORT working variables
 !------------------------------
@@ -133,8 +137,8 @@ program geo_vlidort
 
 ! Miscellaneous
 ! -------------
-  integer                               :: ierr                      ! MPI error message
-  integer                               :: status(MPI_STATUS_SIZE)   ! MPI status
+  integer                               :: ierr, rc, status          ! MPI error message
+  integer                               :: status_mpi(MPI_STATUS_SIZE)   ! MPI status
   integer                               :: myid, npet, CoresPerNode  ! MPI dimensions and processor id
   integer                               :: p                         ! i-processor
   character(len=100)                    :: msg                       ! message to be printed
@@ -145,37 +149,34 @@ program geo_vlidort
 ! -----------------------------
   integer*8                             :: t1, t2, clock_max
   real*8                                :: clock_rate
-
+  character(len=*), parameter           :: Iam = 'geo_vlidort'
 
 ! Start Timing
 ! -----------------
   call system_clock ( t1, clock_rate, clock_max )
   progress = -1
 
-
-! Initialize MPI
+! Initialize MPI with ESMF
 ! --------------
-  call MPI_INIT(ierr)
-  call MPI_COMM_RANK(MPI_COMM_WORLD,myid,ierr)
-  call MPI_COMM_SIZE(MPI_COMM_WORLD,npet,ierr)
-  if (myid == 0) write(*,'(A,I4,A)')'Starting MPI on ',npet, ' processors'
+  call ESMF_Initialize (logkindflag=ESMF_LOGKIND_NONE, vm=vm, __RC__)
+
+  call ESMF_VMGet(vm, localPET=myid, PETcount=npet) 
+  if ( MAPL_am_I_root() ) write(*,'(A,I4,A)')'Starting MPI on ',npet, ' processors'
 
 ! Initialize SHMEM
 ! ----------------
   CoresPerNode = MAPL_CoresPerNodeGet(MPI_COMM_WORLD,rc=ierr) ! a must
   call MAPL_InitializeShmem(rc=ierr)
 
-! Parse Resource file for input info 
+! Parse Resource file provided at command line for input info 
 ! ----------------------------------------------------------------------------
   call getarg(1, arg)
-
-  call get_config()
-
+  call get_config(arg)
 
 ! Write out settings to use
 ! -------------------------------
   if (myid == 0) then
-    write(*,*) 'Simulating ', lower_to_upper(trim(satname)),' domain on ',date,' ', time, 'Z'
+    write(*,*) 'Simulating ', lower_to_upper(trim(instname)),' domain on ',date,' ', time, 'Z'
     write(*,*) 'Input directory: ',trim(indir)
     write(*,*) 'Output directory: ',trim(outdir)
     write(*,*) 'BRDF dataset: ',trim(brdfname),' ',trim(brdfdate)
@@ -196,15 +197,13 @@ program geo_vlidort
   call mp_readVattr("missing_value", BRDF_FILE, "Kiso", modis_missing) 
   call mp_readVattr("missing_value", MET_FILE, "CLDTOT", g5nr_missing)
 
-
 ! Create OUTFILE
 ! --------------------
-  call mp_create_outfile(date,time,ncid,radVarID,refVarID)
+  if ( MAPL_am_I_root() )  call create_outfile(date,time,ncid,radVarID,refVarID)
 
 ! Allocate arrays that will be copied on each processor - unshared
 ! ---------------------------------------------------------
   call allocate_unshared()
-
 
 ! Read the cloud, land, and angle data 
 ! -------------------------------------
@@ -327,131 +326,142 @@ program geo_vlidort
 ! -----------------------------------
   call strarr_2_chararr(vnames_string,nq,16,vnames)
   
-  do p = 0, npet-1
-    if (myid == p) then
-      if (p == 0) then
-        starti = 1
-      else
-        starti = sum(nclr(1:p))+1
-      end if
-      counti = nclr(p+1)
-      endi   = starti + counti - 1
-
-      do c = starti, endi
-        call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
-                           reshape(DELP(c,:),(/km,nobs/)), ptop, &
-                           pe, ze, te )   
-
-        write(msg,'(A,I)') 'getEdgeVars ', myid
-        call write_verbose(msg)
-        
-        call calc_qm()
-
-        write(msg,'(A,I)') 'calc_qm ', myid
-        call write_verbose(msg)  
-
-        do ch = 1, nch
-          kernel_wt(:,ch,nobs) = (/dble(KISO(c,bands(ch))),&
-                                dble(KGEO(c,bands(ch))),&
-                                dble(KVOL(c,bands(ch)))/)
-          param(:,ch,nobs)     = (/dble(2),dble(1)/)
-        end do
-
-        if (scalar) then
-          call getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
-                              qm, reshape(RH(c,:),(/km,nobs/)), &
-                              tau, ssa, g, ierr )
-        else
-          call getAOPvector ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
-                              qm, reshape(RH(c,:),(/km,nobs/)),&
-                              nMom,nPol, tau, ssa, g, pmom, ierr )
-        end if
-
-        write(msg,*) 'getAOP ', myid
-        call write_verbose(msg)
-
-        if ((lower_to_upper(BRDFNAME) == 'MAIACRTLS') .or. (ANY(kernel_wt == modis_missing))) then
-          ! Simple lambertian surface model
-          !------------------------------
-          albedo(:,:)      = 0.05  !this needs to be a climatology(?)
-          if (scalar) then
-            ! Call to vlidort scalar code
-            
-            call Scalar_Lambert (km, nch, nobs ,dble(channels),        &
-                    dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), dble(albedo),&
-                    (/dble(SZA(c))/), &
-                    (/dble(RAA(c))/), &
-                    (/dble(VZA(c))/), &
-                    dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ierr)
-          else
-            ! Call to vlidort vector code
-            call Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
-                   nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), dble(albedo),&
-                   (/dble(SZA(c))/), &
-                   (/dble(RAA(c))/), &
-                   (/dble(VZA(c))/), &
-                   dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr)
-          end if
-        else             
-          ! MODIS BRDF Surface Model
-          !------------------------------
-          if (scalar) then 
-            ! Call to vlidort scalar code            
-            call Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
-                    dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
-                    kernel_wt, param, &
-                    (/dble(SZA(c))/), &
-                    (/dble(RAA(c))/), &
-                    (/dble(VZA(c))/), &
-                    dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface,ierr )  
-          else
-            ! Call to vlidort vector code
-            write(msg,*) 'getting ready to do vector calculations', myid, ierr
-            call write_verbose(msg)
-
-            call Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
-                    nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
-                    kernel_wt, param, &
-                    (/dble(SZA(c))/), &
-                    (/dble(RAA(c))/), &
-                    (/dble(VZA(c))/), &
-                    dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr )  
-
-          end if
-
-          call mp_check_vlidort(radiance_VL_Surface,reflectance_VL_Surface)
-
-          ! radiance_VL    = radiance_VL + radiance_VL_Surface*FRLAND(i_work(c),j_work(c))
-          ! reflectance_VL = reflectance_VL + reflectance_VL_Surface*FRLAND(i_work(c),j_work(c))
-        end if          
-          
-        radiance_VL    = radiance_VL_Surface
-        reflectance_VL = reflectance_VL_Surface
-
-        write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
-        call write_verbose(msg)
-
-        ! Write output to correct position in file
-        ! --------------------------------------------
-        call mp_write_vlidort(ncid,radVarID,refVarID,(/i_work(c),j_work(c),1,1/),(/1,1,nobs,nch/),radiance_VL,reflectance_VL)
-
-        ! Keep track of progress of each processor
-        ! -----------------------------------------        
-        if (nint(100.*real(c-starti)/real(counti)) > progress) then
-          progress = nint(100.*real(c-starti)/real(counti))
-          write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',c,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
-        end if
-                    
-      end do
-    end if
-  end do 
-
-! Everyone close OUT_file and sync up
-! -----------------------------------------
-500  call check( nf90_close(ncid), "close outfile" )
-
   if (myid == 0) then
-    write(*,*) '<> Finished VLIDORT Simulation of '//trim(lower_to_upper(satname))//' domain'
+    starti = 1
+  else
+    starti = sum(nclr(1:myid))+1
+  end if
+  counti = nclr(myid+1)
+  endi   = starti + counti - 1
+
+  do c = starti, starti+10 !endi
+    call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
+                       reshape(DELP(c,:),(/km,nobs/)), ptop, &
+                       pe, ze, te )   
+
+    write(msg,'(A,I)') 'getEdgeVars ', myid
+    call write_verbose(msg)
+    
+    call calc_qm()
+
+    write(msg,'(A,I)') 'calc_qm ', myid
+    call write_verbose(msg)  
+
+    do ch = 1, nch
+      kernel_wt(:,ch,nobs) = (/dble(KISO(c,bands(ch))),&
+                            dble(KGEO(c,bands(ch))),&
+                            dble(KVOL(c,bands(ch)))/)
+      param(:,ch,nobs)     = (/dble(2),dble(1)/)
+    end do
+
+    if (scalar) then
+      call getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
+                          qm, reshape(RH(c,:),(/km,nobs/)), &
+                          tau, ssa, g, ierr )
+    else
+      call getAOPvector ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
+                          qm, reshape(RH(c,:),(/km,nobs/)),&
+                          nMom,nPol, tau, ssa, g, pmom, ierr )
+    end if
+
+    write(msg,*) 'getAOP ', myid
+    call write_verbose(msg)
+
+    if ((lower_to_upper(BRDFNAME) == 'MAIACRTLS') .or. (ANY(kernel_wt == modis_missing))) then
+      ! Simple lambertian surface model
+      !------------------------------
+      albedo(:,:)      = 0.05  !this needs to be a climatology(?)
+      if (scalar) then
+        ! Call to vlidort scalar code
+        
+        call Scalar_Lambert (km, nch, nobs ,dble(channels),        &
+                dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), dble(albedo),&
+                (/dble(SZA(c))/), &
+                (/dble(RAA(c))/), &
+                (/dble(VZA(c))/), &
+                dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ierr)
+      else
+        ! Call to vlidort vector code
+        call Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
+               nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), dble(albedo),&
+               (/dble(SZA(c))/), &
+               (/dble(RAA(c))/), &
+               (/dble(VZA(c))/), &
+               dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr)
+      end if
+    else             
+      ! MODIS BRDF Surface Model
+      !------------------------------
+      if (scalar) then 
+        ! Call to vlidort scalar code            
+        call Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
+                dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
+                kernel_wt, param, &
+                (/dble(SZA(c))/), &
+                (/dble(RAA(c))/), &
+                (/dble(VZA(c))/), &
+                dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface,ierr )  
+      else
+        ! Call to vlidort vector code
+        write(msg,*) 'getting ready to do vector calculations', myid, ierr
+        call write_verbose(msg)
+
+        call Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
+                nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+                kernel_wt, param, &
+                (/dble(SZA(c))/), &
+                (/dble(RAA(c))/), &
+                (/dble(VZA(c))/), &
+                dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr )  
+
+      end if
+
+      call mp_check_vlidort(radiance_VL_Surface,reflectance_VL_Surface)
+
+    end if          
+      
+    radiance_VL(c,:)    = radiance_VL_Surface(nobs,:)
+    reflectance_VL(c,:) = reflectance_VL_Surface(nobs,:)
+
+    write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
+    call write_verbose(msg)
+
+    ! Keep track of progress of each processor
+    ! -----------------------------------------        
+    if (nint(100.*real(c-starti)/real(counti)) > progress) then
+      progress = nint(100.*real(c-starti)/real(counti))
+      write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',c,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
+    end if
+                
+  end do
+
+  ! Wait for everyone to finish calculations
+  ! ------------------------------------------
+  call MAPL_SyncSharedMemory(rc=ierr)
+
+  if (MAPL_am_I_root()) then
+    ! Expand radiance to im x jm using mask
+    !-------------------------------
+    allocate (field(im,jm))
+    field = g5nr_missing
+
+    call check( nf90_open(OUT_file, nf90_nowrite, ncid), "opening file " // OUT_file )
+    ! Write output to correct position in file
+    !  --------------------------------------------
+    do ch = 1, nch
+      call check(nf90_put_var(ncid, radVarID, unpack(reshape(radiance_VL(:,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,1,ch/), count = (/im,jm,nobs,1/)), "writing out radiance")
+      call check(nf90_put_var(ncid, refVarID, unpack(reshape(reflectance_VL(:,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,1,ch/), count = (/im,jm,nobs,1/)), "writing out reflectance")
+    end do
+
+    call check( nf90_close(ncid), "close outfile" )
+    deallocate(field)
+  end if
+
+500 call MAPL_SyncSharedMemory(rc=ierr)
+  if (MAPL_am_I_root()) then
+    write(*,*) '<> Finished VLIDORT Simulation of '//trim(lower_to_upper(instname))//' domain'
     call sys_tracker()
     write(*,*) ' '
     call system_clock ( t2, clock_rate, clock_max )
@@ -545,15 +555,15 @@ end subroutine read_sza
 subroutine filenames()
 
   ! INFILES
-  write(MET_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(satname),'-g5nr.lb2.met_Nv.',date,'_',time,'z.nc4'
-  write(AER_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(satname),'-g5nr.lb2.aer_Nv.',date,'_',time,'z.nc4'
-  write(ANG_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(satname),'.lb2.angles.',date,'_',time,'z.nc4'
-  write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(satname),'.lg1.invariant.nc4'
+  write(MET_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'-g5nr.lb2.met_Nv.',date,'_',time,'z.nc4'
+  write(AER_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'-g5nr.lb2.aer_Nv.',date,'_',time,'z.nc4'
+  write(ANG_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'.lb2.angles.',date,'_',time,'z.nc4'
+  write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.nc4'
   write(BRDF_file,'(6A)') trim(indir),'/BRDF/raw/',trim(brdfname),'.',brdfdate,'.hdf'
-  write(LAND_file,'(4A)') trim(indir),'/LevelB/invariant/',trim(satname),'-g5nr.lb2.asm_Nx.nc4' 
+  write(LAND_file,'(4A)') trim(indir),'/LevelB/invariant/',trim(instname),'-g5nr.lb2.asm_Nx.nc4' 
 
 ! OUTFILES
-  write(OUT_file,'(8A)') trim(outdir),'/',trim(satname),'-g5nr.lb2.vlidort.',date,'_',time,'z.nc4'
+  write(OUT_file,'(8A)') trim(outdir),'/',trim(instname),'-g5nr.lb2.vlidort.',date,'_',time,'z.nc4'
 end subroutine filenames
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -592,43 +602,6 @@ end subroutine filenames
     end do
 
   end function lower_to_upper
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     upper_to_lower
-! PURPOSE
-!     converts uppercase characters to lowercase
-! INPUT
-!     word
-! OUTPUT
-!     upper_to_lower
-!  HISTORY
-!     18 May 2015 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;   
-
-  function upper_to_lower ( word )
-    implicit none
-
-    character(len=*), intent(in)   :: word
-    character(len=:),allocatable   :: upper_to_lower
-    integer                        :: i,n
-
-    character(*), parameter :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
-    character(*), parameter :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-    allocate(character(len=len(word)) :: upper_to_lower)
-
-    upper_to_lower = word
-
-    ! Loop over string elements
-    do i = 1, LEN(word)
-    ! Find location of letter in lower case constant string
-      n = INDEX(UPPER_CASE, word( i:i ))
-    ! If current substring is a lower case letter, make it upper case
-      if ( n /= 0 ) upper_to_lower( i:i ) = LOWER_CASE( n:n )
-    end do
-
-  end function upper_to_lower  
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -759,8 +732,6 @@ end subroutine filenames
 
   end subroutine reduceProfile
 
-
-
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
 !     read_BRDF
@@ -859,6 +830,9 @@ end subroutine filenames
     call MAPL_AllocNodeArray(VZA,(/clrm/),rc=ierr)
     call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
 
+    call MAPL_AllocNodeArray(radiance_VL,(/clrm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(reflectance_VL,(/clrm,nch/),rc=ierr)
+
   end subroutine allocate_shared
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -885,14 +859,8 @@ end subroutine filenames
     allocate (g(km,nch,nobs))
     allocate (albedo(nch,nobs))
 
-    allocate (radiance_VL(nobs,nch))
-    allocate (reflectance_VL(nobs, nch))
-
     allocate (radiance_VL_Surface(nobs,nch))
     allocate (reflectance_VL_Surface(nobs, nch))    
-
-    radiance_VL = 0
-    reflectance_VL = 0
 
     allocate (kernel_wt(nkernel,nch,nobs))
     allocate (param(nparam,nch,nobs))
@@ -956,7 +924,7 @@ end subroutine filenames
 
     if ( myid  == 0 ) then
       do pp = 1,npet-1
-        call mpi_recv(msgr, 100, MPI_CHARACTER, pp, 1, MPI_COMM_WORLD, status, ierr)
+        call mpi_recv(msgr, 100, MPI_CHARACTER, pp, 1, MPI_COMM_WORLD, status_mpi, ierr)
         write(*,*) trim(msgr)
       end do
       write(*,*) trim(msg)
@@ -979,7 +947,7 @@ end subroutine filenames
 !     6 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  subroutine mp_create_outfile(date, time, ncid, radVarID, refVarID)
+  subroutine create_outfile(date, time, ncid, radVarID, refVarID)
     character(len=*)                   :: date, time
     integer,intent(out)                :: ncid
     integer,intent(out)                :: radVarID, refVarID    
@@ -993,8 +961,7 @@ end subroutine filenames
     real,allocatable,dimension(:)      :: scantime
 
 
-    call check(nf90_create(OUT_file, IOR(IOR(nf90_netcdf4, nf90_clobber),nf90_mpiio), ncid, &
-                               comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "creating file " // OUT_file)
+    call check(nf90_create(OUT_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // OUT_file)
     call check(nf90_def_dim(ncid, "time", 1, timeDimID), "creating time dimension")
     call check(nf90_def_dim(ncid, "ew", im, ewDimID), "creating ew dimension") !im
     call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
@@ -1067,122 +1034,47 @@ end subroutine filenames
     !Leave define mode
     call check(nf90_enddef(ncid),"leaving define mode")
 
-    ! one processor writes out channels and clon, clat, scantime
-    if (myid == 0) then
-      call check(nf90_put_var(ncid, chaVarID, channels), "writing out channels")
+    ! write out channels and clon, clat, scantime
+    call check(nf90_put_var(ncid, chaVarID, channels), "writing out channels")
 
-      allocate (scantime(im))
-      allocate (clon(im, jm))
-      allocate (clat(im, jm))
+    allocate (scantime(im))
+    allocate (clon(im, jm))
+    allocate (clat(im, jm))
 
-      call readvar1D("scanTime", MET_file, scantime)
-      call check(nf90_put_var(ncid,timeVarID,scantime), "writing out scantime")
+    call readvar1D("scanTime", MET_file, scantime)
+    call check(nf90_put_var(ncid,timeVarID,scantime), "writing out scantime")
 
-      call readvar2D("clon", INV_file, clon)
-      call check(nf90_put_var(ncid,clonVarID,clon), "writing out clon")
+    call readvar2D("clon", INV_file, clon)
+    call check(nf90_put_var(ncid,clonVarID,clon), "writing out clon")
 
-      call readvar2D("clon", INV_file, clat)
-      call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
+    call readvar2D("clon", INV_file, clat)
+    call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
-      deallocate (clon)
-      deallocate (clat)  
-      deallocate (scantime)
+    deallocate (clon)
+    deallocate (clat)  
+    deallocate (scantime)
 
-      allocate (sza(im,jm))
-      allocate (vza(im,jm))
-      allocate (raa(im,jm))
+    allocate (sza(im,jm))
+    allocate (vza(im,jm))
+    allocate (raa(im,jm))
 
-      call readvar2D("solar_zenith", ANG_file, sza)
-      call check(nf90_put_var(ncid,szaVarID,sza), "writing out sza")
+    call readvar2D("solar_zenith", ANG_file, sza)
+    call check(nf90_put_var(ncid,szaVarID,sza), "writing out sza")
 
-      call readvar2D("sensor_zenith", ANG_file, vza)
-      call check(nf90_put_var(ncid,vzaVarID,vza), "writing out vza")
+    call readvar2D("sensor_zenith", ANG_file, vza)
+    call check(nf90_put_var(ncid,vzaVarID,vza), "writing out vza")
 
-      call readvar2D("relat_azimuth", ANG_file, raa)
-      call check(nf90_put_var(ncid,raaVarID,raa), "writing out raa")
+    call readvar2D("relat_azimuth", ANG_file, raa)
+    call check(nf90_put_var(ncid,raaVarID,raa), "writing out raa")
 
-      deallocate (sza)
-      deallocate (vza)
-      deallocate (raa)
+    deallocate (sza)
+    deallocate (vza)
+    deallocate (raa)
 
-    endif
+    call check( nf90_close(ncid), "close outfile" )
 
-    ! force independent write 
-    call check(nf90_var_par_access(ncid, refVarID, nf90_independent),"reflectance writes independently")
-    call check(nf90_var_par_access(ncid, radVarID, nf90_independent),"radiance writes independently")
+  end subroutine create_outfile  
 
-    !call check( nf90_close(ncid), "close outfile" )
-
-  end subroutine mp_create_outfile  
-
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     mp_write_vlidort
-! PURPOSE
-!     write reflectance and radiance data to outfile
-! INPUT
-!     none
-! OUTPUT
-!     none
-!  HISTORY
-!     6 May 2015 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  subroutine mp_write_vlidort(ncid,radVarID,refVarID,start,count,radData,refData)
-    integer,intent(in)                  :: ncid
-    integer,intent(in)                  :: radVarID, refVarID    
-    real*8,dimension(:,:),intent(in)    :: refData, radData
-    integer,dimension(4),intent(in)     :: start, count
-
-    call check(nf90_put_var(ncid, radVarID, radData, start = start, count = count), "writing out radiance")
-    call check(nf90_put_var(ncid, refVarID, refData, start = start, count = count), "writing out reflectance")
-
-  end subroutine mp_write_vlidort
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     write_outfile3D
-! PURPOSE
-!     write general data to outfile by one processor
-! INPUT
-!     none
-! OUTPUT
-!     none
-!  HISTORY
-!     18 May 2015 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  subroutine write_outfile3D(ncid,VarID,myData)
-    integer,intent(in)                  :: ncid
-    integer,intent(in)                  :: VarID    
-    real,dimension(:,:,:),intent(in)    :: myData
-
-    call check(nf90_put_var(ncid, VarID, myData ), "writing out myData")
-
-  end subroutine write_outfile3D
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     write_outfile1D
-! PURPOSE
-!     write general data to outfile by one processor
-! INPUT
-!     none
-! OUTPUT
-!     none
-!  HISTORY
-!     18 May 2015 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  subroutine write_outfile1D(ncid,VarID,myData)
-    integer,intent(in)                  :: ncid
-    integer,intent(in)                  :: VarID    
-    real,dimension(:),intent(in)        :: myData
-
-    call check(nf90_put_var(ncid, VarID, myData ), "writing out myData")
-
-  end subroutine write_outfile1D
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -1300,7 +1192,20 @@ end subroutine filenames
 
   end subroutine do_testing
 
-
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    shmem_test3D
+! PURPOSE
+!     test that shared memory arrays have same values across all processors
+! INPUT
+!     varname: string of variable name
+!     var    : the variable to be checked
+! OUTPUT
+!     Writes to the file shmem_test.txt the min and max value of the variable as 
+!     reported by each processor
+!  HISTORY
+!     27 April P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   subroutine shmem_test3D(varname,var)
     character(len=*), intent(in)  :: varname
@@ -1310,7 +1215,7 @@ end subroutine filenames
     if ( myid  == 0 ) then
       open (unit = 2, file="shmem_test.txt",position="append")
       do p = 1,npet-1
-        call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status, ierr)
+        call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status_mpi, ierr)
         write(2,*) msg
       end do
       write(msg,'(A9,I4,E24.17,E24.17)') varname,myid,maxval(var),minval(var)
@@ -1345,7 +1250,7 @@ end subroutine filenames
     if ( myid  == 0 ) then
       open (unit = 2, file="shmem_test.txt",position="append")
       do p = 1,npet-1
-        call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status, ierr)
+        call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status_mpi, ierr)
         write(2,*) msg
       end do
         write(msg,'(A9,I4,E24.17,E24.17)') varname,myid,maxval(var),minval(var)
@@ -1364,7 +1269,6 @@ end subroutine filenames
 !    get_config()
 ! PURPOSE
 !     Read and parse resource file
-!     fixed format
 ! INPUT
 !     None
 ! OUTPUT
@@ -1372,48 +1276,22 @@ end subroutine filenames
 !  HISTORY
 !     29 May P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine get_config()
-    open(unit=5, file = arg, IOSTAT=io, mode = 'READ', status = 'OLD')
-    if (io > 0) then
-      if (myid == 0) then
-        write(*,*) 'Problem opening geo_vlidort rcfile'
-        write(*,*) 'Exiting.....'
-        call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
-      end if
-    end if
-    do 
-      read(5,'(A)',IOSTAT=io) rcline
-      if (io > 0) then
-        if (myid == 0) then
-          write(*,*) 'Problem reading geo_vlidort rcfile'
-          write(*,*) 'Exiting.....'
-          call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
-        end if
-      else if (io < 0) then
-        ! end of file
-        exit
-      else 
-        !parse line
-        i = index(rcline, ':')  
-        if (i > 0) then    
-          rcvar = lower_to_upper(rcline(1:i-1))
-          rcvalue = adjustl(rcline(i+1:))
+  subroutine get_config(rcfile)
+    character(len=*),intent(in)      :: rcfile
 
-          if (trim(rcvar) .eq. 'DATE') date = trim(rcvalue)
-          if (trim(rcvar) .eq. 'TIME') time = trim(rcvalue)
-          if (trim(rcvar) .eq. 'SATNAME') satname = upper_to_lower(trim(rcvalue))
-          if (trim(rcvar) .eq. 'INDIR') indir = trim(rcvalue) 
-          if (trim(rcvar) .eq. 'OUTDIR') outdir = trim(rcvalue)
-          if (trim(rcvar) .eq. 'BRDFNAME') brdfname = trim(rcvalue)
-          if (trim(rcvar) .eq. 'BRDFDATE') brdfdate = trim(rcvalue)
-          if (trim(rcvar) .eq. 'SCALAR') then
-            if (lower_to_upper(trim(rcvalue)) .eq. 'TRUE') scalar = .TRUE.
-            if (lower_to_upper(trim(rcvalue)) .eq. 'FALSE') scalar = .FALSE.
-          end if
-        end if 
-      end if
-    end do 
-    close(5)
+    cf = ESMF_ConfigCreate()
+    call ESMF_ConfigLoadFile(cf, fileName=trim(rcfile), __RC__)
+
+    ! Read in variables
+    ! -----------------------
+    call ESMF_ConfigGetAttribute(cf, date, label = 'DATE:',__RC__)
+    call ESMF_ConfigGetAttribute(cf, time, label = 'TIME:',__RC__)
+    call ESMF_ConfigGetAttribute(cf, instname, label = 'INSTNAME:',__RC__)
+    call ESMF_ConfigGetAttribute(cf, indir, label = 'INDIR:',__RC__)
+    call ESMF_ConfigGetAttribute(cf, outdir, label = 'OUTDIR:',default=indir)
+    call ESMF_ConfigGetAttribute(cf, brdfname, label = 'BRDFNAME:',default='MAIACRTLS')
+    call ESMF_ConfigGetAttribute(cf, brdfdate, label = 'BRDFDATE:',__RC__)
+    call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
 
   end subroutine get_config
 
@@ -1432,38 +1310,38 @@ end subroutine filenames
 
   subroutine shutdown()         
 
-    ! deallocate (pe)
-    ! deallocate (ze)
-    ! deallocate (te)
-    ! deallocate (qm)
-    ! deallocate (tau)
-    ! deallocate (ssa)
-    ! deallocate (g)
-
-    ! deallocate (nclr)
-
     ! shmem must deallocate shared memory arrays
-    ! call MAPL_DeallocNodeArray(AIRDENS,rc=ierr)
-    ! call MAPL_DeallocNodeArray(RH,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DELP,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DU001,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DU002,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DU003,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DU004,rc=ierr)                           
-    ! call MAPL_DeallocNodeArray(DU005,rc=ierr)
-    ! call MAPL_DeallocNodeArray(SS001,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SS002,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SS003,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SS004,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SS005,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(BCPHOBIC,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(BCPHILIC,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(OCPHOBIC,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(OCPHILIC,rc=ierr) 
+     call MAPL_DeallocNodeArray(AIRDENS,rc=ierr)
+     call MAPL_DeallocNodeArray(RH,rc=ierr)
+     call MAPL_DeallocNodeArray(DELP,rc=ierr)
+     call MAPL_DeallocNodeArray(DU001,rc=ierr)
+     call MAPL_DeallocNodeArray(DU002,rc=ierr)
+     call MAPL_DeallocNodeArray(DU003,rc=ierr)
+     call MAPL_DeallocNodeArray(DU004,rc=ierr)                           
+     call MAPL_DeallocNodeArray(DU005,rc=ierr)
+     call MAPL_DeallocNodeArray(SS001,rc=ierr) 
+     call MAPL_DeallocNodeArray(SS002,rc=ierr) 
+     call MAPL_DeallocNodeArray(SS003,rc=ierr) 
+     call MAPL_DeallocNodeArray(SS004,rc=ierr) 
+     call MAPL_DeallocNodeArray(SS005,rc=ierr) 
+     call MAPL_DeallocNodeArray(BCPHOBIC,rc=ierr) 
+     call MAPL_DeallocNodeArray(BCPHILIC,rc=ierr) 
+     call MAPL_DeallocNodeArray(OCPHOBIC,rc=ierr) 
+     call MAPL_DeallocNodeArray(OCPHILIC,rc=ierr) 
+     call MAPL_DeallocNodeArray(KISO,rc=ierr) 
+     call MAPL_DeallocNodeArray(KVOL,rc=ierr) 
+     call MAPL_DeallocNodeArray(KGEO,rc=ierr) 
+     call MAPL_DeallocNodeArray(SZA,rc=ierr) 
+     call MAPL_DeallocNodeArray(VZA,rc=ierr) 
+     call MAPL_DeallocNodeArray(RAA,rc=ierr) 
+     call MAPL_DeallocNodeArray(radiance_VL,rc=ierr) 
+     call MAPL_DeallocNodeArray(reflectance_VL,rc=ierr) 
 
-    !call MAPL_FinalizeShmem (rc=ierr)
+    call MAPL_FinalizeShmem (rc=ierr)
 
-    call MPI_Finalize(ierr)
+    call ESMF_ConfigDestroy(cf)
+
+    call ESMF_Finalize(__RC__)
 
   end subroutine shutdown
 
