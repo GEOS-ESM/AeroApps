@@ -5,11 +5,9 @@
 !-------------------------
 
 	! VLIDORT array sizes
-	integer, parameter                    :: nobs = 1                   ! number of profiles VLIDORT will work on
+	integer, parameter                    :: nobs = 1               ! number of profiles VLIDORT will work on
   real, parameter                       :: ptop = 1.0             ! top (edge) pressure [Pa]
-  integer, parameter                    :: nch = 1                    ! number of channels
   integer, parameter                    :: nq = 14                ! number of tracers
-  real, dimension(nch),parameter        :: channels = (/550.0/)    ! channels to simulate
 
   ! Vector calculation constants
   integer, parameter 										:: nPol = 6                ! number of components of the scattering matrix
