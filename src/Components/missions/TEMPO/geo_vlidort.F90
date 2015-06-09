@@ -1047,7 +1047,7 @@ end subroutine filenames
     call readvar2D("clon", INV_file, clon)
     call check(nf90_put_var(ncid,clonVarID,clon), "writing out clon")
 
-    call readvar2D("clon", INV_file, clat)
+    call readvar2D("clat", INV_file, clat)
     call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
     deallocate (clon)
