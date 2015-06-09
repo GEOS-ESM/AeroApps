@@ -445,7 +445,7 @@ program geo_vlidort
     allocate (field(im,jm))
     field = g5nr_missing
 
-    call check( nf90_open(OUT_file, nf90_nowrite, ncid), "opening file " // OUT_file )
+    call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
     ! Write output to correct position in file
     !  --------------------------------------------
     do ch = 1, nch
