@@ -67,7 +67,7 @@ esma_help help:
 INC_VLIDORT90 = $(ESMAINC)/VLIDORT90
 LIB_VLIDORT90 = $(ESMALIB)/libVLIDORT90.a
 
-INC_DIRS = . $(INC_MAPL_BASE) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT90) /usr/include
+INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT90) /usr/include
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
@@ -101,7 +101,7 @@ python: $(PY_EXTS)
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
-                                 $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)
+                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
 
 
 geo_angles.x: GeoAngles_py.o geo_vlidort_netcdf.o geo_angles.o
