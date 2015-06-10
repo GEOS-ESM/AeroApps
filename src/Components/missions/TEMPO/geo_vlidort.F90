@@ -45,6 +45,9 @@ program geo_vlidort
   character(len=7)                      :: brdfdate
   character(len=2)                      :: time 
   character(len=256)                    :: instname, indir, outdir, brdfname
+  character(len=256)                    :: brdfband
+  integer, dimension(:),allocatable     :: brdfband_i                  ! modis band indeces that overlap with vlidort channels
+  real, dimension(:),allocatable        :: brdfband_c                  ! modis band center wavelength
   logical                               :: scalar
   real, dimension(:), allocatable       :: channels               ! channels to simulate
   integer                               :: nch                    ! number of channels  
@@ -110,6 +113,7 @@ program geo_vlidort
 ! VLIDORT working variables
 !------------------------------
   integer                               :: ch                        ! i-channel  
+  integer                               :: iband                     ! i-brdfband
   real,allocatable                      :: pmom(:,:,:,:,:)           ! elements of scattering phase matrix for vector calculations
 
 ! MODIS Kernel  arrays
@@ -155,10 +159,7 @@ program geo_vlidort
   real*8                                :: clock_rate
   character(len=*), parameter           :: Iam = 'geo_vlidort'
 
-! temporary
-!-------------------
-  integer, dimension(1), parameter    :: bands = (/4/)             ! modis band that overlaps with vlidort channel  
-
+  
 ! Start Timing
 ! -----------------
   call system_clock ( t1, clock_rate, clock_max )
@@ -188,17 +189,16 @@ program geo_vlidort
     write(*,*) 'Input directory: ',trim(indir)
     write(*,*) 'Output directory: ',trim(outdir)
     write(*,*) 'BRDF dataset: ',trim(brdfname),' ',trim(brdfdate)
-    if (scalar) write(*,*) 'Scalar calculations'
-    if (.not. scalar) write(*,*) 'Vector calculations'
     write(*,*) 'Channels [nm]: ',channels
+    if (lower_to_upper(brdfband) == 'EXACT') write(*,*) 'Using exact BRDF on bands : ',brdfband_i
+    if (lower_to_upper(brdfband) == 'INTERPOLATE') write(*,*) 'Using interpolated BRDF' 
     write(*,*) 'Cloud Fraction <= ', cldmax
     write(*,*) 'SZA <= ', szamax
+    if (scalar) write(*,*) 'Scalar calculations'
+    if (.not. scalar) write(*,*) 'Vector calculations'
     write(*,*) ' '
   end if 
 
-! INFILES & OUTFILE set names
-! -------------------------------
-  call filenames()
 
 ! Query for domain dimensions and missing value
 !--------------------------------------------------------------
@@ -358,10 +358,28 @@ program geo_vlidort
     write(msg,'(A,I)') 'calc_qm ', myid
     call write_verbose(msg)  
 
+    ! Get BRDF Kernel Weights
+    !----------------------------
     do ch = 1, nch
-      kernel_wt(:,ch,nobs) = (/dble(KISO(c,bands(ch))),&
-                            dble(KGEO(c,bands(ch))),&
-                            dble(KVOL(c,bands(ch)))/)
+      if (lower_to_upper(brdfband) == 'EXACT') then
+        kernel_wt(:,ch,nobs) = (/dble(KISO(c,brdfband_i(ch))),&
+                            dble(KGEO(c,brdfband_i(ch))),&
+                            dble(KVOL(c,brdfband_i(ch)))/)
+      else
+        
+        if (channels(ch) > 2130) then
+          iband = minloc(abs(brdfband_c - 2130), dim = 1)
+          kernel_wt(:,ch,nobs) = (/dble(KISO(c,iband)),&
+                            dble(KGEO(c,iband)),&
+                            dble(KVOL(c,iband))/)
+        else
+          ! nearest neighbor interpolation of kernel weights to wavelength
+          ! ******has to fall above available range
+          kernel_wt(1,ch,nobs) = dble(nn_interp(brdfband_c,reshape(KISO(c,:),(/nbands/)),channels(ch)))
+          kernel_wt(2,ch,nobs) = dble(nn_interp(brdfband_c,reshape(KGEO(c,:),(/nbands/)),channels(ch)))
+          kernel_wt(3,ch,nobs) = dble(nn_interp(brdfband_c,reshape(KVOL(c,:),(/nbands/)),channels(ch)))
+        end if
+      end if
       param(:,ch,nobs)     = (/dble(2),dble(1)/)
     end do
 
@@ -378,7 +396,7 @@ program geo_vlidort
     write(msg,*) 'getAOP ', myid
     call write_verbose(msg)
 
-    if ((lower_to_upper(BRDFNAME) == 'MAIACRTLS') .or. (ANY(kernel_wt == modis_missing))) then
+    if ((lower_to_upper(BRDFNAME) /= 'MAIACRTLS') .or. (ANY(kernel_wt == modis_missing))) then
       ! Simple lambertian surface model
       !------------------------------
       albedo(:,:)      = 0.05  !this needs to be a climatology(?)
@@ -491,6 +509,36 @@ program geo_vlidort
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
+!     nn_interp
+! PURPOSE
+!     nearest neighbor interpolation
+! INPUT
+!     x     : x-values
+!     y     : y-values
+!     xint  : x-value to interpolate to
+! OUTPUT
+!     nn_interp  : interpolated y-value
+!  HISTORY
+!     10 June 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+
+function nn_interp(x,y,xint)
+  real,intent(in),dimension(:)    :: x, y
+  real,intent(in)                 :: xint
+  real                            :: nn_interp
+  integer                         :: below, above
+  real                            :: top, bottom
+
+  below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LE. 0)
+  above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GT. 0)
+
+  top = y(above) - y(below)
+  bottom = x(above) - x(below)
+  nn_interp = y(below) + (xint-x(below)) * top / bottom
+end function nn_interp
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
 !     read_cloud
 ! PURPOSE
 !     allocates cloud variables and reads in data
@@ -564,6 +612,7 @@ end subroutine read_sza
 !     26 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
 subroutine filenames()
+  character(len=256)          :: chmax, chmin
 
   ! INFILES
   write(MET_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'-g5nr.lb2.met_Nv.',date,'_',time,'z.nc4'
@@ -573,8 +622,32 @@ subroutine filenames()
   write(BRDF_file,'(6A)') trim(indir),'/BRDF/raw/',trim(brdfname),'.',brdfdate,'.hdf'
   write(LAND_file,'(4A)') trim(indir),'/LevelB/invariant/',trim(instname),'-g5nr.lb2.asm_Nx.nc4' 
 
+  write(chmax,'(I4)') int(maxval(channels))
+  write(chmin,'(I4)') int(minval(channels))
+
 ! OUTFILES
-  write(OUT_file,'(8A)') trim(outdir),'/',trim(instname),'-g5nr.lb2.vlidort.',date,'_',time,'z.nc4'
+  write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lb2.vlidort.'
+
+  if (scalar) then 
+    write(OUT_file,'(2A)') trim(OUT_file),'scalar.'
+  else
+    write(OUT_file,'(2A)') trim(OUT_file),'vector.'
+  end if 
+  
+  if (lower_to_upper(brdfname) == 'MAIACRTLS' .and. lower_to_upper(brdfband) == 'INTERPOLATE') then
+    write(OUT_file,'(2A)') trim(OUT_file),'iMAIACRTLS.'
+  else if (lower_to_upper(brdfname) == 'MAIACRTLS' .and. lower_to_upper(brdfband) == 'EXACT') then
+    write(OUT_file,'(2A)') trim(OUT_file),'MAIACRTLS.'
+  else if (lower_to_upper(brdfname) /= 'MAIACRTLS') then
+    write(OUT_file,'(2A)') trim(OUT_file),'lambertian.'
+  end if
+
+  if (nch == 1) then    
+    write(OUT_file,'(7A)') trim(OUT_file),date,'_',time,'z_',trim(adjustl(chmin)),'nm.nc4'
+  else 
+    write(OUT_file,'(9A)') trim(OUT_file),date,'_',time,'z_',trim(adjustl(chmin)),'-',trim(adjustl(chmax)),'nm.nc4'
+  end if
+
 end subroutine filenames
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -758,7 +831,7 @@ end subroutine filenames
   subroutine read_BRDF()
     real, dimension(im,jm,nbands)   :: temp
 
-    if (myid == 0) then
+    if (MAPL_am_I_root()) then
       call readvar3D("Kiso", BRDF_file, temp)
       call reduceProfile(temp,clmask,KISO)
 
@@ -947,13 +1020,14 @@ end subroutine filenames
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!     mp_create_outfile
+!     create_outfile
 ! PURPOSE
-!     creates a netcdf4 file that can be written to my multiple processors independently
+!     creates the output netcdf4 file 
 ! INPUT
-!     none
+!     date, time  : from RC file
 ! OUTPUT
-!     none
+!     ncid        : netcdf file id
+!     radVarID, refVarID : radiance and reflectance variable IDs
 !  HISTORY
 !     6 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -966,10 +1040,11 @@ end subroutine filenames
     integer, dimension(4)              :: chunk_size
     integer, dimension(4)              :: dimids
     integer                            :: timeDimID, ewDimID, nsDimID, chaDimID
-        integer                        :: szaVarID, vzaVarID, raaVarID    
+    integer                            :: szaVarID, vzaVarID, raaVarID    
     integer                            :: timeVarID, clonVarID, clatVarID, chaVarID
+    integer                            :: nPolVarID, nMomVarID, ewVarID, nsVarID
     real,allocatable,dimension(:,:)    :: clon, clat, sza, vza, raa
-    real,allocatable,dimension(:)      :: scantime
+    real,allocatable,dimension(:)      :: scantime, ew, ns
 
 
     call check(nf90_create(OUT_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // OUT_file)
@@ -978,21 +1053,42 @@ end subroutine filenames
     call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
     call check(nf90_def_dim(ncid, "ch", nch, chaDimID), "creating nch dimension")
 
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'title','VLIDORT Simulation of GEOS-5 TEMPO Sampler'),"title attr")
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'title','VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler'),"title attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'institution','NASA/Goddard Space Flight Center'),"institution attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'source','Global Model and Assimilation Office'),"source attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'history','VLIDORT simulation run from geo_vlidort.x'),"history attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'references','n/a'),"references attr")    
     call check(nf90_put_att(ncid,NF90_GLOBAL,'comment','This file contains VLIDORT simulated top of the atmosphere ' // &
                                                        'radiance and reflectance from GEOS-5 parameters sampled ' // &
-                                                       ' on the TEMPO geostationary grid '),"comment attr")   
-    call check(nf90_put_att(ncid,NF90_GLOBAL,"contact","Arlindo da Silva <arlindo.dasilva@nasa.gov>"),"contact attr")
+                                                       ' on the '//lower_to_upper(trim(instname))//' geostationary grid '),"comment attr")   
+    if (lower_to_upper(brdfname) == 'MAIACRTLS' .and. lower_to_upper(brdfband) == 'INTERPOLATE') then
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_comment','MAIAC RTLS surface BRDF kernel weights interpolated to channels'),"surface_comment")
+    else if (lower_to_upper(brdfname) == 'MAIACRTLS' .and. lower_to_upper(brdfband) == 'EXACT') then
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_comment','MAIAC RTLS surface BRDF kernel weights without inerpolation to channel'),"surface_comment")
+    else if (lower_to_upper(brdfname) /= 'MAIACRTLS') then
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_comment','Lambertian surface reflectance'),"surface_comment")
+    end if
+
+    if ( scalar ) then
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'vlidort_comment','Scalar calculations'),"vlidort_comment")
+    else
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'vlidort_comment','Vector calculations'),"surface_comment")
+      call check(nf90_def_var(ncid,'nPol',nf90_float,(/chaDimID/),nPolVarID),"create scanTime var")
+      call check(nf90_def_var(ncid,'nMom',nf90_float,(/chaDimID/),nMomVarID),"create scanTime var")
+
+      call check(nf90_put_att(ncid,nPolVarID,'long_name','number of components of the scattering matrix'),"long_name attr")
+      call check(nf90_put_att(ncid,nMomVarID,'long_name','number of phase function moments'),"long_name attr")
+    end if
+
+    call check(nf90_put_att(ncid,NF90_GLOBAL,"contact","Patricia Castellanos <patricia.castellanos@nasa.gov>"),"contact attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,"Conventions","cf"),"conventions attr")
 
     dimids = (/ewDimID,nsDimID,timeDimID,chaDimID/)
     chunk_size = (/1,1,1,nch/)
 
     call check(nf90_def_var(ncid,'scanTime',nf90_float,(/ewDimID/),timeVarID),"create scanTime var")
+    call check(nf90_def_var(ncid,'ew',nf90_float,(/ewDimID/),ewVarID),"create ew var")
+    call check(nf90_def_var(ncid,'ns',nf90_float,(/nsDimID/),nsVarID),"create ns var")
     call check(nf90_def_var(ncid,'clon',nf90_float,(/ewDimID,nsDimID/),clonVarID),"create clon var")
     call check(nf90_def_var(ncid,'clat',nf90_float,(/ewDimID,nsDimID/),clatVarID),"create clat var")
     call check(nf90_def_var(ncid,'channel',nf90_float,(/chaDimID/),chaVarID),"create channel var")
@@ -1025,6 +1121,11 @@ end subroutine filenames
     call check(nf90_put_att(ncid,timeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
                                                   time//':00:00'),"units attr")
 
+    call check(nf90_put_att(ncid,ewVarID,'long_name','pseudo longitude'),"long_name attr")
+    call check(nf90_put_att(ncid,ewVarID,'units','degrees_east'),"units attr")
+    call check(nf90_put_att(ncid,nsVarID,'long_name','pseudo latitude'),"long_name attr")
+    call check(nf90_put_att(ncid,nsVarID,'units','degrees_north'),"units attr")   
+
     call check(nf90_put_att(ncid,clonVarID,'long_name','pixel center longitude'),"long_name attr")
     call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
     call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
@@ -1051,6 +1152,8 @@ end subroutine filenames
     allocate (scantime(im))
     allocate (clon(im, jm))
     allocate (clat(im, jm))
+    allocate (ew(im))
+    allocate (ns(jm))    
 
     call readvar1D("scanTime", MET_file, scantime)
     call check(nf90_put_var(ncid,timeVarID,scantime), "writing out scantime")
@@ -1061,9 +1164,17 @@ end subroutine filenames
     call readvar2D("clat", INV_file, clat)
     call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
+    call readvar1D("ew", MET_file, ew)
+    call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
+
+    call readvar1D("ns", MET_file, ns)
+    call check(nf90_put_var(ncid,nsVarID,ns), "writing out ns")   
+
     deallocate (clon)
     deallocate (clat)  
     deallocate (scantime)
+    deallocate (ns)
+    deallocate (ew)
 
     allocate (sza(im,jm))
     allocate (vza(im,jm))
@@ -1081,6 +1192,11 @@ end subroutine filenames
     deallocate (sza)
     deallocate (vza)
     deallocate (raa)
+
+    if (.not. scalar) then
+      call check(nf90_put_var(ncid,nPolVarID,nPol), "writing out nPol")
+      call check(nf90_put_var(ncid,nMomVarID,nMom), "writing out nMom")
+    end if
 
     call check( nf90_close(ncid), "close outfile" )
 
@@ -1280,6 +1396,7 @@ end subroutine filenames
 !    get_config()
 ! PURPOSE
 !     Read and parse resource file
+!     Set filenames
 ! INPUT
 !     None
 ! OUTPUT
@@ -1289,7 +1406,6 @@ end subroutine filenames
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   subroutine get_config(rcfile)
     character(len=*),intent(in)      :: rcfile
-    integer                          :: nLines, nCols
 
     cf = ESMF_ConfigCreate()
     call ESMF_ConfigLoadFile(cf, fileName=trim(rcfile), __RC__)
@@ -1306,13 +1422,25 @@ end subroutine filenames
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=90.0)
     call ESMF_ConfigGetAttribute(cf, cldmax, label = 'CLDMAX:',default=0.01)
+    call ESMF_ConfigGetAttribute(cf, brdfband, label = 'BRDFBAND:', default='INTERPOLATE')
 
     ! Figure out number of channels and read into vector
     !------------------------------------------------------
-    nCols =  ESMF_ConfigGetLen(cf, label = 'CHANNELS:',__RC__)
-    allocate (channels(nCols))
-    nch = nCols
+    nch =  ESMF_ConfigGetLen(cf, label = 'CHANNELS:',__RC__)
+    allocate (channels(nch))
     call ESMF_ConfigGetAttribute(cf, channels, label = 'CHANNELS:', default=550.)
+
+    ! INFILES & OUTFILE set names
+    ! -------------------------------
+    call filenames()
+
+    if (lower_to_upper(brdfband) == 'EXACT' ) then
+      allocate (brdfband_i(nch))
+      call ESMF_ConfigGetAttribute(cf, brdfband_i, label = 'BRDFBAND_I:', __RC__)
+    else
+      allocate (brdfband_c(nbands))
+      call ESMF_ConfigGetAttribute(cf, brdfband_c, label = 'BRDFBAND_C:', __RC__)
+    end if
 
     call ESMF_ConfigDestroy(cf)
 
