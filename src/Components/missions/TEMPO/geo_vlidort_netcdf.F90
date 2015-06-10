@@ -13,6 +13,7 @@ module geo_vlidort_netcdf
   public :: readvar2D
   public :: readvar1D
   public :: mp_readGattr
+  public :: mp_readGattr_char  
   public :: mp_readVattr
   public :: mp_colreadvar
   public :: mp_layreadvar
@@ -168,6 +169,32 @@ module geo_vlidort_netcdf
     call check( nf90_get_att(ncid, NF90_GLOBAL, attrname, attrvar), "getting value for global attribute" // attrname)
     call check( nf90_close(ncid), "closing " // filename)
   end subroutine mp_readGattr
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_readGattr_char
+! PURPOSE
+!     reads a global attribute from a netcdf file
+! INPUT
+!     attrname  : string of attribute name
+!     filename  : file to be read
+!     attrvar   : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     4 May P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_readGattr_char(attrname, filename, attrvar)
+    character(len=*), intent(in)           ::  attrname
+    character(len=*), intent(in)           ::  filename
+    character(len=*), intent(inout)        ::  attrvar
+
+    integer                                :: ncid
+
+    call check( nf90_open(filename,IOR(nf90_nowrite, nf90_mpiio),ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call check( nf90_get_att(ncid, NF90_GLOBAL, attrname, attrvar), "getting value for global attribute" // attrname)
+    call check( nf90_close(ncid), "closing " // filename)
+  end subroutine mp_readGattr_char  
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
