@@ -535,12 +535,12 @@ function nn_interp(x,y,xint)
   above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GT. 0)
 
   
-  if (.not. ANY((/y(above),y(below/) == modis_missing)) then
+  if (.not. ANY((/y(above),y(below)/) == modis_missing)) then
     top = y(above) - y(below)
     bottom = x(above) - x(below)
     nn_interp = y(below) + (xint-x(below)) * top / bottom
   else
-    nn_inter  = modis_missing
+    nn_interp  = modis_missing
   end if
 end function nn_interp
 
