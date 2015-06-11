@@ -193,7 +193,7 @@ program geo_vlidort
     if (lower_to_upper(brdfband) == 'EXACT') write(*,*) 'Using exact BRDF on bands : ',brdfband_i
     if (lower_to_upper(brdfband) == 'INTERPOLATE') write(*,*) 'Using interpolated BRDF' 
     write(*,*) 'Cloud Fraction <= ', cldmax
-    write(*,*) 'SZA <= ', szamax
+    write(*,*) 'SZA < ', szamax
     if (scalar) write(*,*) 'Scalar calculations'
     if (.not. scalar) write(*,*) 'Vector calculations'
     write(*,*) ' '
@@ -233,7 +233,7 @@ program geo_vlidort
     GOTO 500
   end if
 
-  if (.not. ANY(SOLAR_ZENITH <= szamax)) then   
+  if (.not. ANY(SOLAR_ZENITH < szamax)) then   
     if (myid == 0) then
       write(*,*) 'The sun has set, nothing to do'
       write(*,*) 'Exiting.....'
@@ -248,7 +248,7 @@ program geo_vlidort
     do j=1,jm
       if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99))  then
         if (CLDTOT(i,j) <= cldmax) then
-          if (SOLAR_ZENITH(i,j) <= szamax) then
+          if (SOLAR_ZENITH(i,j) < szamax) then
             clrm = clrm + 1
             clmask(i,j) = .True.
           end if
@@ -345,7 +345,7 @@ program geo_vlidort
   counti = nclr(myid+1)
   endi   = starti + counti - 1
 
-  do c = starti, starti+1 !endi
+  do c = 303545,303545 !starti, endi
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
@@ -366,18 +366,20 @@ program geo_vlidort
                             dble(KGEO(c,brdfband_i(ch))),&
                             dble(KVOL(c,brdfband_i(ch)))/)
       else
-        
-        if (channels(ch) > 2130) then
-          iband = minloc(abs(brdfband_c - 2130), dim = 1)
+        ! > 2130 uses highest MODIS wavelength band     
+        if (channels(ch) >= 2130) then  
+          iband = minloc(abs(brdfband_c - channels(ch)), dim = 1)
           kernel_wt(:,ch,nobs) = (/dble(KISO(c,iband)),&
                             dble(KGEO(c,iband)),&
                             dble(KVOL(c,iband))/)
-        else
+        end if
+        
+        if (channels(ch) < 2130) then
           ! nearest neighbor interpolation of kernel weights to wavelength
           ! ******has to fall above available range
           kernel_wt(1,ch,nobs) = dble(nn_interp(brdfband_c,reshape(KISO(c,:),(/nbands/)),channels(ch)))
           kernel_wt(2,ch,nobs) = dble(nn_interp(brdfband_c,reshape(KGEO(c,:),(/nbands/)),channels(ch)))
-          kernel_wt(3,ch,nobs) = dble(nn_interp(brdfband_c,reshape(KVOL(c,:),(/nbands/)),channels(ch)))
+          kernel_wt(3,ch,nobs) = dble(nn_interp(brdfband_c,reshape(KVOL(c,:),(/nbands/)),channels(ch)))          
         end if
       end if
       param(:,ch,nobs)     = (/dble(2),dble(1)/)
@@ -406,7 +408,7 @@ program geo_vlidort
         call Scalar_Lambert (km, nch, nobs ,dble(channels),        &
                 dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), dble(albedo),&
                 (/dble(SZA(c))/), &
-                (/dble(RAA(c))/), &
+                (/dble(abs(RAA(c)))/), &
                 (/dble(VZA(c))/), &
                 dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ierr)
       else
@@ -414,7 +416,7 @@ program geo_vlidort
         call Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
                nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), dble(albedo),&
                (/dble(SZA(c))/), &
-               (/dble(RAA(c))/), &
+               (/dble(abs(RAA(c)))/), &
                (/dble(VZA(c))/), &
                dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr)
       end if
@@ -427,7 +429,7 @@ program geo_vlidort
                 dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
                 kernel_wt, param, &
                 (/dble(SZA(c))/), &
-                (/dble(RAA(c))/), &
+                (/dble(abs(RAA(c)))/), &
                 (/dble(VZA(c))/), &
                 dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface,ierr )  
       else
@@ -439,7 +441,7 @@ program geo_vlidort
                 nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
                 kernel_wt, param, &
                 (/dble(SZA(c))/), &
-                (/dble(RAA(c))/), &
+                (/dble(abs(RAA(c)))/), &
                 (/dble(VZA(c))/), &
                 dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr )  
 
@@ -532,9 +534,14 @@ function nn_interp(x,y,xint)
   below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LE. 0)
   above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GT. 0)
 
-  top = y(above) - y(below)
-  bottom = x(above) - x(below)
-  nn_interp = y(below) + (xint-x(below)) * top / bottom
+  
+  if (.not. ANY((/y(above),y(below/) == modis_missing)) then
+    top = y(above) - y(below)
+    bottom = x(above) - x(below)
+    nn_interp = y(below) + (xint-x(below)) * top / bottom
+  else
+    nn_inter  = modis_missing
+  end if
 end function nn_interp
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
