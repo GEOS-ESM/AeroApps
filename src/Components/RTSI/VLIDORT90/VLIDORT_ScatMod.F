@@ -36,12 +36,12 @@
 
          type(VLIDORT_Surface) :: Surface
 
-       end type VLIDORT_scat
+      end type VLIDORT_scat
        
       Contains
 !.............................................................................
  
-      subroutine VLIDORT_Run (self,radiance, reflectance, AOT,ROT,Q,U, 
+      subroutine VLIDORT_Run (self,radiance, reflectance, ROT,Q,U, 
      &                            scalar,aerosol,rc)
 !
 !     Computes radiances for a single wavelength, pixel. Optical properties
@@ -289,11 +289,10 @@
 !     Loop over the layers:
 !     ---------------------
       AOT = 0.0
-      ROT = 0.0
       
       do i = 1, NLAYERS  
          ray_l = ray(i)         ! indice l for  each layer
-         ROT   = ROT + ray_l
+
          if ( .not. aerosol ) then
             tau_l = 0.0 
             ssa_l = 0.0 
@@ -320,126 +319,127 @@
          deltau_vert_input(i) = tau_ext
          omega_total_input(i) = ssa_tot 
 
-!            Compute Henyey-Greenstein phase function, including Rayleigh
-!            ------------------------------------------------------------
+!        Compute Henyey-Greenstein phase function, including Rayleigh
+!        ------------------------------------------------------------
 
-!     SCALAR testing Rayleigh second moment
-!     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      wmicron = self%wavelength * 1.E-3  ! micrometer
+!        SCALAR testing Rayleigh second moment
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         wmicron = self%wavelength * 1.E-3  ! micrometer
      
-      raysmom2 = (1.0 - DEPOL_RATIO)/(2.0 + DEPOL_RATIO) 
-      if (scalar) then    
+         raysmom2 = (1.0 - DEPOL_RATIO)/(2.0 + DEPOL_RATIO) 
+         if (scalar) then    
 
-!     Phase function moments (Rayleigh only)
-!     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-         if (tau_l == 0.0) then
+!           Phase function moments (Rayleigh only)
+!           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            if (tau_l == 0.0) then
      
-            greekmat_total_input(0,i,1) = 1.0
-            greekmat_total_input(1,i,1) = 0.0
-            greekmat_total_input(2,i,1) = raysmom2
-            do l = 3, NGREEK_MOMENTS_INPUT        
-               greekmat_total_input(l,i,1) = 0.0
-            end do 
-         end if
+               greekmat_total_input(0,i,1) = 1.0
+               greekmat_total_input(1,i,1) = 0.0
+               greekmat_total_input(2,i,1) = raysmom2
+               do l = 3, NGREEK_MOMENTS_INPUT        
+                  greekmat_total_input(l,i,1) = 0.0
+               end do 
+            end if
      
 
-!     SCALAR phase function moments (aerosol + Rayleigh)
-!     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-          if (tau_l /= 0.0) then
-             aerswt = ssa_l * tau_l / tau_scat  
-             rayswt = ray_l / tau_scat    
-             aersmom(0) = 1.0
-             aersmom(1) = 3.0 * g_l
-             aersmom(2) = 5.0 * g_l * aersmom(1) / 3.0
+!           SCALAR phase function moments (aerosol + Rayleigh)
+!           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            if (tau_l /= 0.0) then
+               aerswt = ssa_l * tau_l / tau_scat  
+               rayswt = ray_l / tau_scat    
+               aersmom(0) = 1.0
+               aersmom(1) = 3.0 * g_l
+               aersmom(2) = 5.0 * g_l * aersmom(1) / 3.0
 
-             greekmat_total_input(0,i,1) = 1.0
-             greekmat_total_input(1,i,1) = aersmom(1) * aerswt
-             greekmat_total_input(2,i,1) = raysmom2 * rayswt + aersmom(2) * aerswt
+               greekmat_total_input(0,i,1) = 1.0
+               greekmat_total_input(1,i,1) = aersmom(1) * aerswt
+               greekmat_total_input(2,i,1) = raysmom2 * rayswt + aersmom(2) * aerswt
+            
+               do l = 3, NGREEK_MOMENTS_INPUT         
+                  factor = REAL(2*l+1) / REAL(2*l-1) 
+                  aersmom(l) = factor * g_l * aersmom(l-1)
+                  greekmat_total_input(l,i,1) = aersmom(l) * aerswt
+               end do  
+            end if ! end if tau_l /= 0.0
+         end if  ! end scalar
+      
+!        VECTOR phase function moments 
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         if ( vector ) then  
+   !     print *, 'OK VECTOR'
+   !     Phase function moments (Rayleigh only)
+   !     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            if (tau_l == 0.0) then
+               do k=1, 16
+                  do l=0, 2
+                     greekmat_total_input(l,i,k) = rayvmoms(l,k)
+                  end do
+               end do
+
+               do k = 1, 16 
+                  do l = 3, NGREEK_MOMENTS_INPUT
+                     greekmat_total_input(l,i,k) = 0.0
+                  end do
+               end do
+            end if
+      
+      
+!           VECTOR phase function moments (aerosol + Rayleigh)
+!           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            if (tau_l /= 0.0) then 
+           
+               aerswt = ssa_l * tau_l / tau_scat  
+               rayswt = ray_l / tau_scat 
+               do k = 1, 16
+                  do l= 0, NGREEK_MOMENTS_INPUT
+                     aervmoms(l,i,k) = 0.0
+                  end do
+               end do
+
+      
+   !         if ( self%nmom -1 < NGREEK_MOMENTS_INPUT ) then 
+               do l= 0, self%nmom-1               
+                  aervmoms(l,i,1)  = self%pmom(i,l+1,1) ! P11 
+                  aervmoms(l,i,2)  = self%pmom(i,l+1,2) ! P12                
+                  aervmoms(l,i,5)  = self%pmom(i,l+1,2) ! P12 = P21                            
+                  aervmoms(l,i,11) = self%pmom(i,l+1,3) ! P33 
+                  aervmoms(l,i,12) = self%pmom(i,l+1,4) ! P34            
+                  aervmoms(l,i,15) = -self%pmom(i,l+1,4) ! - P34
+              
+                  if (self%nPol == 4) then
+                     aervmoms(l,i,6)  = self%pmom(i,l+1,1) ! P22 = P11 for spherical               
+                     aervmoms(l,i,16) = self%pmom(i,l+1,3) ! P44 = P33         
+                  else  if (self%nPol == 6) then   
+                     aervmoms(l,i,6)  = self%pmom(i,l+1,5) ! P22  for non spherical               
+                     aervmoms(l,i,16) = self%pmom(i,l+1,6) ! P44  
+                  else
+                     rc = 1
+                  end if
+               end do
+            
+
+               do k = 1, 16
+                  do l = 0,2
+                     greekmat_total_input(l,i,k) = rayvmoms(l,k) * rayswt+ aervmoms(l,i,k) * aerswt
+                  end do
+              
+                  do l = 3, NGREEK_MOMENTS_INPUT
+                     greekmat_total_input(l,i,k) = aervmoms(l,i,k) * aerswt
+                  end do
+                     
+               end do
+               greekmat_total_input(0,i,1) = 1.0
          
-             do l = 3, NGREEK_MOMENTS_INPUT         
-                factor = REAL(2*l+1) / REAL(2*l-1) 
-                aersmom(l) = factor * g_l * aersmom(l-1)
-                greekmat_total_input(l,i,1) = aersmom(l) * aerswt
-             end do  
-          end if ! end if tau_l /= 0.0
-      end if  ! end scalar
-      
-!     VECTOR phase function moments 
-!     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      if ( vector ) then  
-!      print *, 'OK VECTOR'
-!     Phase function moments (Rayleigh only)
-!     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      if (tau_l == 0.0) then
-           do k=1, 16
-             do l=0, 2
-              greekmat_total_input(l,i,k) = rayvmoms(l,k)
-             end do
-           end do
-
-            do k = 1, 16 
-              do l = 3, NGREEK_MOMENTS_INPUT
-             greekmat_total_input(l,i,k) = 0.0
-             end do
-           end do
-
-      end if
-      
-      
-!     VECTOR phase function moments (aerosol + Rayleigh)
-!     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      if (tau_l /= 0.0) then 
         
-         aerswt = ssa_l * tau_l / tau_scat  
-         rayswt = ray_l / tau_scat 
-       do k = 1, 16
-         do l= 0, NGREEK_MOMENTS_INPUT
-            aervmoms(l,i,k) = 0.0
-         end do
-       end do
+            end if                    ! end if tau_l /= 0.0
 
-   
-!         if ( self%nmom -1 < NGREEK_MOMENTS_INPUT ) then 
-            do l= 0, self%nmom-1               
-               aervmoms(l,i,1)  = self%pmom(i,l+1,1) ! P11 
-               aervmoms(l,i,2)  = self%pmom(i,l+1,2) ! P12                
-               aervmoms(l,i,5)  = self%pmom(i,l+1,2) ! P12 = P21                            
-               aervmoms(l,i,11) = self%pmom(i,l+1,3) ! P33 
-               aervmoms(l,i,12) = self%pmom(i,l+1,4) ! P34            
-               aervmoms(l,i,15) = -self%pmom(i,l+1,4) ! - P34
-           
-               if (self%nPol == 4) then
-               aervmoms(l,i,6)  = self%pmom(i,l+1,1) ! P22 = P11 for spherical               
-               aervmoms(l,i,16) = self%pmom(i,l+1,3) ! P44 = P33         
-               else  if (self%nPol == 6) then   
-               aervmoms(l,i,6)  = self%pmom(i,l+1,5) ! P22  for non spherical               
-               aervmoms(l,i,16) = self%pmom(i,l+1,6) ! P44  
-               else
-               rc = 1
-               end if
-            end do
-         
-
-         do k = 1, 16
-            do l = 0,2
-            greekmat_total_input(l,i,k) = rayvmoms(l,k) * rayswt+ aervmoms(l,i,k) * aerswt
-            end do
-           
-            do l = 3, NGREEK_MOMENTS_INPUT
-            greekmat_total_input(l,i,k) = aervmoms(l,i,k) * aerswt
-            end do
-                  
-         end do
-         greekmat_total_input(0,i,1) = 1.0
-      
-     
-      end if                    ! end if tau_l /= 0.0
-
-      end if                    ! end if vector
+         end if                    ! end if vector
       
 !     end layer loop
 !     ---------------
       end do
+
+      ROT = ray_l
   
       self%Surface%Base%VIO%VLIDORT_FixIn%Optical%TS_DELTAU_VERT_INPUT = deltau_vert_input
       self%Surface%Base%VIO%VLIDORT_ModIn%MOptical%TS_OMEGA_TOTAL_INPUT = omega_total_input
@@ -455,17 +455,17 @@
      &     self%Surface%Base%VIO%VLIDORT_Out)
   
       if ( self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_INPUTCHECK /= 0 ) then
-        rc = 3
-        write(*,*) 'VLIDORT_MASTER STATUS_INPUTCHECK RETURNED ERROR'
-        write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_INPUTCHECK
-        write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_CHECKMESSAGES
+         rc = 3
+         write(*,*) 'VLIDORT_MASTER STATUS_INPUTCHECK RETURNED ERROR'
+         write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_INPUTCHECK
+         write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_CHECKMESSAGES
       end if
 
       if ( self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_CALCULATION /= 0 ) then
-        write(*,*) 'VLIDORT_MASTER STATUS_CALCULATION RETURNED ERROR'
-        write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_CALCULATION
-        write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_CHECKMESSAGES
-        rc = 4
+         write(*,*) 'VLIDORT_MASTER STATUS_CALCULATION RETURNED ERROR'
+         write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_CALCULATION
+         write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_CHECKMESSAGES
+         rc = 4
       end if
       if ( rc /= 0 ) return
       
@@ -480,21 +480,20 @@
       U = 0
       V = 0
       if ( scalar ) then
-       RADIANCE = STOKES(1, 1, 1, IDR)
+         RADIANCE = STOKES(1, 1, 1, IDR)
               
-       REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR ) 
+         REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR ) 
       
       end if
 !      print*, 'compute radinaces'
       if ( vector ) then
-       RADIANCE = STOKES(1, 1, 1, IDR)
-       Q = STOKES(1, 1, 2, IDR)
-       U = STOKES(1, 1, 3, IDR)
+         RADIANCE = STOKES(1, 1, 1, IDR)
+         Q = STOKES(1, 1, 2, IDR)
+         U = STOKES(1, 1, 3, IDR)
 !       V = STOKES(1, 1, 4, IDR)
 
-       REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR )   
+         REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR )   
       end if
-
 
       Contains
 
