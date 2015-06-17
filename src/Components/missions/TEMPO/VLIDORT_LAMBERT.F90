@@ -52,6 +52,7 @@ subroutine Scalar_Lambert (km, nch, nobs,channels,        &
   integer             :: i,j, ier
 
   real*8              :: AOT(nobs,nch)            ! total aerosol optical thickness 
+  real*8              :: ROT(nobs,nch)            ! rayleigh optical thickness 
   real*8              :: Q(nobs,nch),U(nobs,nch)    
   type(VLIDORT_scat) :: SCAT
 
@@ -101,7 +102,7 @@ subroutine Scalar_Lambert (km, nch, nobs,channels,        &
            SCAT%g => g(:,i,j)
          
            call VLIDORT_Run (SCAT, radiance_VL(j,i), reflectance_VL(j,i), &
-                                 AOT(j,i),ier,Q(j,i),U(j,i), .true., .true.)
+                                 AOT(j,i),ROT(j,i), Q(j,i),U(j,i), .true., .true., ier)
 
            if ( ier /= 0 ) then
               if ( solar_zenith (j) > 89.9 ) then ! if SZA > 90
@@ -182,7 +183,7 @@ subroutine Vector_Lambert (km, nch, nobs, channels, nMom,  &
   
   integer             :: i,j, ier
   real*8              :: AOT(nobs,nch)            ! total aerosol optical thickness 
-   
+  real*8              :: ROT(nobs,nch)            ! rayleigh optical thickness    
   
   type(VLIDORT_scat) :: SCAT
 
@@ -234,7 +235,7 @@ subroutine Vector_Lambert (km, nch, nobs, channels, nMom,  &
         SCAT%pmom => pmom(:,:,:,i,j)
 
         call VLIDORT_Run (SCAT, radiance_VL(j,i),reflectance_VL(j,i), AOT(j,i),&
-                           ier, Q(j,i),U(j,i),.false., .true.)
+                           ROT(j,i), Q(j,i),U(j,i),.false., .true., ier)
         if ( ier /= 0 ) then
 
               if ( solar_zenith (j) > 89.9 ) then ! if SZA > 90
@@ -329,6 +330,7 @@ subroutine AI_Scalar (km, nch, nobs, channels,        &
   real*8              :: delta_R_model            ! Difference R
   real*8              :: delta_R_OMI              ! Difference R
   real*8              :: AOT(nobs,nch)            ! total aerosol optical thickness 
+  real*8              :: ROT(nobs,nch)            ! rayleigh optical thickness 
   real*8              :: g_tot(nobs,nch)          ! total asymetry factor (column - one profile) 
   real*8              :: sfc_albedo_354nm         ! surface albedo 354 nm OMI file (climato TOMS)
   real*8              :: sfc_albedo_388nm         ! surface albedo 388 nm OMI file (climato TOMS)
@@ -384,7 +386,7 @@ subroutine AI_Scalar (km, nch, nobs, channels,        &
         SCAT%g => g(:,i,j)
                  
         call VLIDORT_Run (SCAT, radiance_VL(j,i),reflectance_VL(j,i), AOT(j,i),&
-                          ier, Q(j,i),U(j,i),.true., .true.)
+                          ROT(j,i), Q(j,i),U(j,i),.true., .true., ier)
 
         if ( ier /= 0 ) then
                  radiance_VL(j,i) = MISSING
@@ -482,7 +484,8 @@ subroutine AI_Vector (km, nch, nobs,  channels, nMom,  &
   integer,          intent(out) :: rc                          ! return code
   real*8,           intent(out) :: AI_VL(nobs)                 ! Aerosol Index model VLIDORT
   real*8,           intent(out) :: refl(nobs)                  ! surface reflectivity R* at 388nm
-  real*8,           intent(out)  :: AOT(nobs,nch)            ! total aerosol optical thickness                           
+  real*8,           intent(out) :: AOT(nobs,nch)            ! total aerosol optical thickness  
+  real*8                        :: ROT(nobs,nch)            ! rayleigh optical thickness  
   
   integer             :: n, i,j, k, imom, ipol, i_354,ier
   real*8              :: spher_alb(nobs,nch)      ! spherical albedo
@@ -555,7 +558,7 @@ subroutine AI_Vector (km, nch, nobs,  channels, nMom,  &
           SCAT%pmom => pmom(:,:,:,i,j)
           print*, 'everything ok' 
           call VLIDORT_Run (SCAT, radiance_VL(j,i),reflectance_VL(j,i), AOT(j,i),&
-                            ier,Q(j,i),U(j,i), .false., .true.)
+                            ROT(j,i),Q(j,i),U(j,i), .false., .true., ier)
                if ( ier /= 0 ) then
                     radiance_VL(j,i) = MISSING
                     AI_VL(j) = MISSING
