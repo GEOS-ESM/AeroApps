@@ -420,7 +420,7 @@ module VLIDORT_SurfaceMod
       ! WSA = White-sky albedo. BSA = Black-sky albedo.
       ! Not implemented for now.  Could be tested
       !--------------------------------------------
-      VBRDF%VBRDF_Sup_In%BS_DO_WSABSA_OUTPUT = .false.
+      VBRDF%VBRDF_Sup_In%BS_DO_WSABSA_OUTPUT = .true.
       VBRDF%VBRDF_Sup_In%BS_DO_WSA_SCALING   = .false.
       VBRDF%VBRDF_Sup_In%BS_DO_BSA_SCALING   = .false.
       VBRDF%VBRDF_Sup_In%BS_WSA_VALUE        = 0
@@ -461,8 +461,7 @@ module VLIDORT_SurfaceMod
                              self%Base%VIO%VBRDF_Sup_Out, &         ! Outputs
                              self%Base%VIO%VBRDF_Sup_OutputStatus)          ! Outputs
 !       BRDF = self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)     
-!       print*, 'ok BRDF', self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)  
-               
+!       print*, 'ok BRDF', self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)             
    end subroutine VLIDORT_LANDMODIS
 
    end module VLIDORT_SurfaceMod
