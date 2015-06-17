@@ -81,6 +81,7 @@ program geo_vlidort
   real, pointer                         :: BCPHILIC(:,:) => null()
   real, pointer                         :: OCPHOBIC(:,:) => null()
   real, pointer                         :: OCPHILIC(:,:) => null()
+  real, pointer                         :: SO4(:,:) => null()
   real, pointer                         :: KISO(:,:) => null()
   real, pointer                         :: KVOL(:,:) => null()
   real, pointer                         :: KGEO(:,:) => null()
@@ -787,7 +788,11 @@ end subroutine filenames
       call reduceProfile(temp,clmask,OCPHOBIC) 
 
       call readvar3D("OCPHILIC", AER_file, temp)
-      call reduceProfile(temp,clmask,OCPHILIC)    
+      call reduceProfile(temp,clmask,OCPHILIC)  
+
+      call readvar3D("SO4", AER_file, temp)
+      call reduceProfile(temp,clmask,SO4)    
+  
 
       write(*,*) '<> Read aeorosl data to shared memory'  
     end if
@@ -914,6 +919,7 @@ end subroutine filenames
     call MAPL_AllocNodeArray(BCPHILIC,(/clrm,km/),rc=ierr)
     call MAPL_AllocNodeArray(OCPHOBIC,(/clrm,km/),rc=ierr)
     call MAPL_AllocNodeArray(OCPHILIC,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SO4,(/clrm,km/),rc=ierr)
     call MAPL_AllocNodeArray(KISO,(/clrm,nbands/),rc=ierr)
     call MAPL_AllocNodeArray(KVOL,(/clrm,nbands/),rc=ierr)
     call MAPL_AllocNodeArray(KGEO,(/clrm,nbands/),rc=ierr)
@@ -1244,6 +1250,7 @@ end subroutine filenames
       qm(k,12,nobs) = BCPHILIC(c,k)*DELP(c,k)/grav
       qm(k,13,nobs) = OCPHOBIC(c,k)*DELP(c,k)/grav
       qm(k,14,nobs) = OCPHILIC(c,k)*DELP(c,k)/grav
+      qm(k,15,nobs) = SO4(c,k)*DELP(c,k)/grav
     end do
    end subroutine calc_qm
 
@@ -1315,6 +1322,7 @@ end subroutine filenames
     call shmem_test2D('BCPHILIC',BCPHILIC)
     call shmem_test2D('OCPHOBIC',OCPHOBIC)
     call shmem_test2D('OCPHILIC',OCPHILIC)
+    call shmem_test2D('SO4',OCPHILIC)
 
     !   Wait for everyone to finish and print max memory used
     !   -----------------------------------------------------------  
@@ -1486,6 +1494,7 @@ end subroutine filenames
      call MAPL_DeallocNodeArray(BCPHILIC,rc=ierr) 
      call MAPL_DeallocNodeArray(OCPHOBIC,rc=ierr) 
      call MAPL_DeallocNodeArray(OCPHILIC,rc=ierr) 
+     call MAPL_DeallocNodeArray(SO4,rc=ierr) 
      call MAPL_DeallocNodeArray(KISO,rc=ierr) 
      call MAPL_DeallocNodeArray(KVOL,rc=ierr) 
      call MAPL_DeallocNodeArray(KGEO,rc=ierr) 

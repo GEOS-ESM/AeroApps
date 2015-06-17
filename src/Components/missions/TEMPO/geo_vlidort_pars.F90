@@ -7,7 +7,7 @@
 	! VLIDORT array sizes
 	integer, parameter                    :: nobs = 1               ! number of profiles VLIDORT will work on
   real, parameter                       :: ptop = 1.0             ! top (edge) pressure [Pa]
-  integer, parameter                    :: nq   = 14                ! number of tracers
+  integer, parameter                    :: nq   = 15                ! number of tracers
 
   ! Vector calculation constants
   integer, parameter 										:: nPol = 6                ! number of components of the scattering matrix
@@ -30,7 +30,7 @@
   character(len=16), parameter          :: vnames_string(nq) = (/'du001', 'du002', 'du003', 'du004', 'du005', &
                                                              'ss001', 'ss002', 'ss003', 'ss004', 'ss005', &
                                                              'BCphobic', 'BCphilic',                      &
-                                                             'OCphobic', 'OCphilic'/) ! array of variable name strings
+                                                             'OCphobic', 'OCphilic','SO4'/) ! array of variable name strings
   character                             :: vnames(nq,16)          ! character array of variable names
 
   ! Physical constants
