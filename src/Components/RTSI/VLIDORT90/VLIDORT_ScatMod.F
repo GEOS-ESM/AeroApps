@@ -565,6 +565,7 @@
        real*8                            :: rad_ray
        real*8                            :: delta_rad
        real*8                            :: AOT
+       real*8                            :: ROT
        real*8                            :: SSA
        real*8                            :: U, Q
        
@@ -573,19 +574,19 @@
        ! --------------------------------------------
        self%Surface%sfc_type = 1 !Lambertian
        self%Surface%albedo = 0.0
-       call VLIDORT_Run (self, rad0, reflectance, AOT,  rc,Q,U, .false., .false.)
+       call VLIDORT_Run (self, rad0, reflectance, AOT, ROT,Q,U, .false., .false., rc)
 
        ! atmosphere Rayleigh and surface albedo = 0.1
        ! --------------------------------------------
        self%Surface%sfc_type =1
        self%Surface%albedo = 0.1
-       call VLIDORT_Run (self, rad1, reflectance, AOT, rc, Q,U,.false., .false.)
+       call VLIDORT_Run (self, rad1, reflectance, AOT, ROT, Q,U,.false., .false., rc)
 
        ! atmosphere Rayleigh and surface albedo = 0.2
        ! --------------------------------------------
        self%Surface%sfc_type = 1
        self%Surface%albedo = 0.2
-       call VLIDORT_Run (self, rad2, reflectance, AOT, rc,Q,U, .false., .false.)
+       call VLIDORT_Run (self, rad2, reflectance, AOT, ROT,Q,U, .false., .false., rc)
 
        beta =  ( rad1 - rad0 ) / ( rad2 - rad0 )
        spher_alb = (( beta * 0.2 ) - 0.1 ) / ( 0.1 * 0.2 * ( beta - 1 )) ! Spherical albedo
@@ -599,7 +600,7 @@
        !----------------------------------------------------------------------------
        self%Surface%sfc_type = 1 
        self%Surface%albedo = 0.0
-       call VLIDORT_Run (self, rad_ray, reflectance, AOT, rc, Q,U,.false., .false.)
+       call VLIDORT_Run (self, rad_ray, reflectance, AOT, ROT, Q,U,.false., .false., rc)
         
 
        delta_rad =  rad - rad_ray    
@@ -627,6 +628,7 @@
        real*8                             :: alpha  
        real*8                             :: SSA
        real*8                             :: AOT 
+       real*8                             :: ROT
        real*8                             :: g_tot
        real*8                             :: Q, U
       ! Compute the radiance for an atmosphere Ray with the R* as the surface alb parameter
@@ -634,7 +636,7 @@
       self%Surface%sfc_type = 1 !Lambertian
       self%Surface%albedo = refl  
       
-      call VLIDORT_Run (self, rad_nouv, reflectance, AOT, rc,Q,U, .false., .false.)
+      call VLIDORT_Run (self, rad_nouv, reflectance, AOT, ROT,Q,U, .false., .false., rc)
       
       if (rad > 0.0) then
       alpha = rad / rad_nouv
