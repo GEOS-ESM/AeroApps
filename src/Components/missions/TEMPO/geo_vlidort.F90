@@ -94,12 +94,15 @@ program geo_vlidort
   real, pointer                         :: pe(:,:) => null()      ! edge pressure [Pa]
   real, pointer                         :: ze(:,:) => null()      ! edge height above sfc [m]
   real, pointer                         :: te(:,:) => null()      ! edge Temperature [K]
-
   real, pointer                         :: qm(:,:,:) => null()    ! (mixing ratio) * delp/g
   real, pointer                         :: tau(:,:,:) => null()   ! aerosol optical depth
   real, pointer                         :: ssa(:,:,:) => null()   ! single scattering albedo
   real, pointer                         :: g(:,:,:) => null()     ! asymmetry factor
   real, pointer                         :: albedo(:,:) => null()  ! surface albedo
+
+  real, pointer                         :: tau_(:,:,:) => null()   ! aerosol optical depth
+  real, pointer                         :: ssa_(:,:,:) => null()   ! single scattering albedo
+  real, pointer                         :: g_(:,:,:) => null()     ! asymmetry factor
 
 ! VLIDORT output arrays
 !-------------------------------
@@ -109,6 +112,16 @@ program geo_vlidort
   real*8,pointer                        :: reflectance_VL_Surface(:,:) => null()  ! TOA reflectance from VLIDORT  
   real*8,pointer                        :: Q(:,:) => null()                       ! Q Stokes component
   real*8,pointer                        :: U(:,:) => null()                       ! U Stokes component
+  real*8,pointer                        :: ROT(:,:,:) => null()                   ! rayleigh optical thickness
+  real*8,pointer                        :: WSA(:,:) => null()                     ! white sky albedo
+  real*8,pointer                        :: BSA(:,:) => null()                     ! black sky albedo  
+
+  real,pointer                          :: Q_(:,:) => null()                        ! Q Stokes component
+  real,pointer                          :: U_(:,:) => null()                        ! U Stokes component
+  real,pointer                          :: ROT_(:,:,:) => null()                    ! rayleigh optical thickness
+  real,pointer                          :: WSA_(:,:) => null()                      ! white sky albedo
+  real,pointer                          :: BSA_(:,:) => null()                      ! black sky albedo  
+
   real*8,pointer                        :: field(:,:) => null()
 
 ! VLIDORT working variables
@@ -143,6 +156,9 @@ program geo_vlidort
 ! netcdf variables
 !----------------------  
   integer                               :: ncid, radVarID, refVarID  ! netcdf ids
+  integer                               :: tauVarID, gVarID, ssaVarID
+  integer                               :: qVarID, uVarID, wsaVarID, bsaVarID
+  integer                               :: rotVarID
 
 ! Miscellaneous
 ! -------------
@@ -211,7 +227,8 @@ program geo_vlidort
 
 ! Create OUTFILE
 ! --------------------
-  if ( MAPL_am_I_root() )  call create_outfile(date,time,ncid,radVarID,refVarID)
+  if ( MAPL_am_I_root() )  call create_outfile(date,time,ncid,radVarID,refVarID, qVarID, uVarID, ssaVarID, &
+                            tauVarID, gVarID, rotVarID, wsaVarID, bsaVarID)
 
 ! Allocate arrays that will be copied on each processor - unshared
 ! ---------------------------------------------------------
@@ -346,7 +363,7 @@ program geo_vlidort
   counti = nclr(myid+1)
   endi   = starti + counti - 1
 
-  do c = starti, endi
+  do c = starti,starti !starti, endi
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
@@ -396,6 +413,10 @@ program geo_vlidort
                           nMom,nPol, tau, ssa, g, pmom, ierr )
     end if
 
+    tau_(c,:,:) = tau(:,:,nobs)
+    ssa_(c,:,:) = ssa(:,:,nobs)
+    g_(c,:,:)   = g(:,:,nobs)
+
     write(msg,*) 'getAOP ', myid
     call write_verbose(msg)
 
@@ -432,7 +453,7 @@ program geo_vlidort
                 (/dble(SZA(c))/), &
                 (/dble(abs(RAA(c)))/), &
                 (/dble(VZA(c))/), &
-                dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface,ierr )  
+                dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ROT, WSA, BSA, ierr )  
       else
         ! Call to vlidort vector code
         write(msg,*) 'getting ready to do vector calculations', myid, ierr
@@ -444,12 +465,17 @@ program geo_vlidort
                 (/dble(SZA(c))/), &
                 (/dble(abs(RAA(c)))/), &
                 (/dble(VZA(c))/), &
-                dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr )  
-
+                dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ROT, WSA, BSA, Q, U, ierr )  
+        Q_(c,:)     = Q(nobs,:)
+        U_(c,:)     = U(nobs,:)
       end if
 
       call mp_check_vlidort(radiance_VL_Surface,reflectance_VL_Surface)
 
+      ROT_(c,:,:) = ROT(:,nobs,:)
+      WSA_(c,:)   = WSA(nobs,:)
+      BSA_(c,:)   = BSA(nobs,:)
+      
     end if          
       
     radiance_VL(c,:)    = radiance_VL_Surface(nobs,:)
@@ -485,10 +511,40 @@ program geo_vlidort
                   start = (/1,1,1,ch/), count = (/im,jm,nobs,1/)), "writing out radiance")
       call check(nf90_put_var(ncid, refVarID, unpack(reshape(reflectance_VL(:,ch),(/clrm/)),clmask,field), &
                   start = (/1,1,1,ch/), count = (/im,jm,nobs,1/)), "writing out reflectance")
+
+      if (.not. scalar) then
+        call check(nf90_put_var(ncid, qVarID, unpack(reshape(Q_(:,ch),(/clrm/)),clmask,field), &
+                    start = (/1,1,1,ch/), count = (/im,jm,nobs,1/)), "writing out Q")
+
+        call check(nf90_put_var(ncid, uVarID, unpack(reshape(U_(:,ch),(/clrm/)),clmask,field), &
+                    start = (/1,1,1,ch/), count = (/im,jm,nobs,1/)), "writing out U")
+      endif
+
+      call check(nf90_put_var(ncid, wsaVarID, unpack(reshape(WSA_(:,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,1,ch/), count = (/im,jm,nobs,1/)), "writing out WSA")
+
+      call check(nf90_put_var(ncid, bsaVarID, unpack(reshape(BSA_(:,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,1,ch/), count = (/im,jm,nobs,1/)), "writing out BSA")
+
+      do k=1,km 
+        call check(nf90_put_var(ncid, tauVarID, unpack(reshape(tau_(:,k,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,k,1,ch/), count = (/im,jm,1,nobs,1/)), "writing out tau")
+
+        call check(nf90_put_var(ncid, gVarID, unpack(reshape(g_(:,k,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,k,1,ch/), count = (/im,jm,1,nobs,1/)), "writing out g")
+
+        call check(nf90_put_var(ncid, ssaVarID, unpack(reshape(ssa_(:,k,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,k,1,ch/), count = (/im,jm,1,nobs,1/)), "writing out ssa")
+
+        call check(nf90_put_var(ncid, rotVarID, unpack(reshape(rot_(:,k,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,k,1,ch/), count = (/im,jm,1,nobs,1/)), "writing out rot")
+      end do
+
     end do
+    deallocate(field)
 
     call check( nf90_close(ncid), "close outfile" )
-    deallocate(field)
+    
   end if
 
 500 call MAPL_SyncSharedMemory(rc=ierr)
@@ -927,6 +983,18 @@ end subroutine filenames
     call MAPL_AllocNodeArray(VZA,(/clrm/),rc=ierr)
     call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
 
+    call MAPL_AllocNodeArray(tau_,(/clrm,km,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(ssa_,(/clrm,km,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(g_,(/clrm,km,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(ROT_,(/clrm,km,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(WSA_,(/clrm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(BSA_,(/clrm,nch/),rc=ierr)
+    
+    if (.not. scalar) then
+      call MAPL_AllocNodeArray(Q_,(/clrm,nch/),rc=ierr)
+      call MAPL_AllocNodeArray(U_,(/clrm,nch/),rc=ierr)
+    end if
+
     call MAPL_AllocNodeArray(radiance_VL,(/clrm,nch/),rc=ierr)
     call MAPL_AllocNodeArray(reflectance_VL,(/clrm,nch/),rc=ierr)
 
@@ -961,6 +1029,10 @@ end subroutine filenames
 
     allocate (kernel_wt(nkernel,nch,nobs))
     allocate (param(nparam,nch,nobs))
+
+    allocate (ROT(km,nobs,nch))
+    allocate (WSA(nobs,nch))
+    allocate (BSA(nobs,nch))    
 
     if (.not. scalar) then
       allocate (pmom(km,nch,nobs,nMom,nPol))
@@ -1045,27 +1117,34 @@ end subroutine filenames
 !     6 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  subroutine create_outfile(date, time, ncid, radVarID, refVarID)
+  subroutine create_outfile(date, time, ncid, radVarID, refVarID, qVarID, uVarID, ssaVarID, &
+                            tauVarID, gVarID, rotVarID, wsaVarID, bsaVarID)
     character(len=*)                   :: date, time
     integer,intent(out)                :: ncid
     integer,intent(out)                :: radVarID, refVarID    
     
     integer, dimension(4)              :: chunk_size
     integer, dimension(4)              :: dimids
-    integer                            :: timeDimID, ewDimID, nsDimID, chaDimID
+    integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID
     integer                            :: szaVarID, vzaVarID, raaVarID    
+    integer                            :: ssaVarID, tauVarID, gVarID, rotVarID, qVarID, uVarID
+    integer                            :: wsaVarID, bsaVarID 
     integer                            :: timeVarID, clonVarID, clatVarID, chaVarID
     integer                            :: nPolVarID, nMomVarID, ewVarID, nsVarID
     real,allocatable,dimension(:,:)    :: clon, clat, sza, vza, raa
     real,allocatable,dimension(:)      :: scantime, ew, ns
 
-
+    ! Open File
     call check(nf90_create(OUT_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // OUT_file)
+
+    ! Create dimensions
     call check(nf90_def_dim(ncid, "time", 1, timeDimID), "creating time dimension")
     call check(nf90_def_dim(ncid, "ew", im, ewDimID), "creating ew dimension") !im
     call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
+    call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
     call check(nf90_def_dim(ncid, "ch", nch, chaDimID), "creating nch dimension")
 
+    ! Global Attributes
     call check(nf90_put_att(ncid,NF90_GLOBAL,'title','VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler'),"title attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'institution','NASA/Goddard Space Flight Center'),"institution attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'source','Global Model and Assimilation Office'),"source attr")
@@ -1099,6 +1178,7 @@ end subroutine filenames
     dimids = (/ewDimID,nsDimID,timeDimID,chaDimID/)
     chunk_size = (/1,1,1,nch/)
 
+    ! Define Variables
     call check(nf90_def_var(ncid,'scanTime',nf90_float,(/ewDimID/),timeVarID),"create scanTime var")
     call check(nf90_def_var(ncid,'ew',nf90_float,(/ewDimID/),ewVarID),"create ew var")
     call check(nf90_def_var(ncid,'ns',nf90_float,(/nsDimID/),nsVarID),"create ns var")
@@ -1110,7 +1190,19 @@ end subroutine filenames
     call check(nf90_def_var(ncid,'solar_zenith',nf90_float,(/ewDimID,nsDimID/),szaVarID),"create solar_zenith var")
     call check(nf90_def_var(ncid,'sensor_zenith',nf90_float,(/ewDimID,nsDimID/),vzaVarID),"create sensor_zenith var")
     call check(nf90_def_var(ncid,'relat_azimuth',nf90_float,(/ewDimID,nsDimID/),raaVarID),"create relat_azimuth var")
+    call check(nf90_def_var(ncid,'tau',nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,chaDimID/),tauVarID),"create aerosol_extinction")
+    call check(nf90_def_var(ncid,'rot',nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,chaDimID/),rotVarID),"create rot")
+    call check(nf90_def_var(ncid,'ssa',nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,chaDimID/),ssaVarID),"create ssa")
+    call check(nf90_def_var(ncid,'g',nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,chaDimID/),gVarID),"create g")
+    call check(nf90_def_var(ncid,'wsa',nf90_float,(/ewDimID,nsDimID,timeDimID,chaDimID/),wsaVarID),"create wsa")
+    call check(nf90_def_var(ncid,'bsa',nf90_float,(/ewDimID,nsDimID,timeDimID,chaDimID/),bsaVarID),"create bsa")
 
+    if (.not. scalar) then
+      call check(nf90_def_var(ncid,'Q',nf90_float,(/ewDimID,nsDimID,timeDimID,chaDimID/),qVarID),"create Q")
+      call check(nf90_def_var(ncid,'U',nf90_float,(/ewDimID,nsDimID,timeDimID,chaDimID/),uVarID),"create U")      
+    end if
+
+    ! Variable Attributes
     call check(nf90_put_att(ncid,chaVarID,'standard_name','Channel'),"standard_name attr")
     call check(nf90_put_att(ncid,chaVarID,'long_name','Channel Wavelength'),"long_name attr")
     call check(nf90_put_att(ncid,chaVarID,'missing_value',real(MISSING)),"missing_value attr")
@@ -1128,7 +1220,6 @@ end subroutine filenames
     call check(nf90_put_att(ncid,refVarID,'missing_value',real(MISSING)),"missing_value attr")
     call check(nf90_put_att(ncid,refVarID,'units','None'),"units attr")
     call check(nf90_put_att(ncid,refVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")
-
 
     call check(nf90_put_att(ncid,timeVarID,'long_name','Initial Time of Scan'),"long_name attr")
     call check(nf90_put_att(ncid,timeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
@@ -1477,32 +1568,42 @@ end subroutine filenames
   subroutine shutdown()         
 
     ! shmem must deallocate shared memory arrays
-     call MAPL_DeallocNodeArray(AIRDENS,rc=ierr)
-     call MAPL_DeallocNodeArray(RH,rc=ierr)
-     call MAPL_DeallocNodeArray(DELP,rc=ierr)
-     call MAPL_DeallocNodeArray(DU001,rc=ierr)
-     call MAPL_DeallocNodeArray(DU002,rc=ierr)
-     call MAPL_DeallocNodeArray(DU003,rc=ierr)
-     call MAPL_DeallocNodeArray(DU004,rc=ierr)                           
-     call MAPL_DeallocNodeArray(DU005,rc=ierr)
-     call MAPL_DeallocNodeArray(SS001,rc=ierr) 
-     call MAPL_DeallocNodeArray(SS002,rc=ierr) 
-     call MAPL_DeallocNodeArray(SS003,rc=ierr) 
-     call MAPL_DeallocNodeArray(SS004,rc=ierr) 
-     call MAPL_DeallocNodeArray(SS005,rc=ierr) 
-     call MAPL_DeallocNodeArray(BCPHOBIC,rc=ierr) 
-     call MAPL_DeallocNodeArray(BCPHILIC,rc=ierr) 
-     call MAPL_DeallocNodeArray(OCPHOBIC,rc=ierr) 
-     call MAPL_DeallocNodeArray(OCPHILIC,rc=ierr) 
-     call MAPL_DeallocNodeArray(SO4,rc=ierr) 
-     call MAPL_DeallocNodeArray(KISO,rc=ierr) 
-     call MAPL_DeallocNodeArray(KVOL,rc=ierr) 
-     call MAPL_DeallocNodeArray(KGEO,rc=ierr) 
-     call MAPL_DeallocNodeArray(SZA,rc=ierr) 
-     call MAPL_DeallocNodeArray(VZA,rc=ierr) 
-     call MAPL_DeallocNodeArray(RAA,rc=ierr) 
-     call MAPL_DeallocNodeArray(radiance_VL,rc=ierr) 
-     call MAPL_DeallocNodeArray(reflectance_VL,rc=ierr) 
+    call MAPL_DeallocNodeArray(AIRDENS,rc=ierr)
+    call MAPL_DeallocNodeArray(RH,rc=ierr)
+    call MAPL_DeallocNodeArray(DELP,rc=ierr)
+    call MAPL_DeallocNodeArray(DU001,rc=ierr)
+    call MAPL_DeallocNodeArray(DU002,rc=ierr)
+    call MAPL_DeallocNodeArray(DU003,rc=ierr)
+    call MAPL_DeallocNodeArray(DU004,rc=ierr)                           
+    call MAPL_DeallocNodeArray(DU005,rc=ierr)
+    call MAPL_DeallocNodeArray(SS001,rc=ierr) 
+    call MAPL_DeallocNodeArray(SS002,rc=ierr) 
+    call MAPL_DeallocNodeArray(SS003,rc=ierr) 
+    call MAPL_DeallocNodeArray(SS004,rc=ierr) 
+    call MAPL_DeallocNodeArray(SS005,rc=ierr) 
+    call MAPL_DeallocNodeArray(BCPHOBIC,rc=ierr) 
+    call MAPL_DeallocNodeArray(BCPHILIC,rc=ierr) 
+    call MAPL_DeallocNodeArray(OCPHOBIC,rc=ierr) 
+    call MAPL_DeallocNodeArray(OCPHILIC,rc=ierr) 
+    call MAPL_DeallocNodeArray(SO4,rc=ierr) 
+    call MAPL_DeallocNodeArray(KISO,rc=ierr) 
+    call MAPL_DeallocNodeArray(KVOL,rc=ierr) 
+    call MAPL_DeallocNodeArray(KGEO,rc=ierr) 
+    call MAPL_DeallocNodeArray(SZA,rc=ierr) 
+    call MAPL_DeallocNodeArray(VZA,rc=ierr) 
+    call MAPL_DeallocNodeArray(RAA,rc=ierr) 
+
+    call MAPL_DeallocNodeArray(tau_,rc=ierr)
+    call MAPL_DeallocNodeArray(ssa_,rc=ierr)
+    call MAPL_DeallocNodeArray(g_,rc=ierr)
+    call MAPL_DeallocNodeArray(ROT_,rc=ierr)
+    call MAPL_DeallocNodeArray(WSA_,rc=ierr)
+    call MAPL_DeallocNodeArray(BSA_,rc=ierr)
+    call MAPL_DeallocNodeArray(Q_,rc=ierr)
+    call MAPL_DeallocNodeArray(U_,rc=ierr)
+
+    call MAPL_DeallocNodeArray(radiance_VL,rc=ierr) 
+    call MAPL_DeallocNodeArray(reflectance_VL,rc=ierr) 
 
     call MAPL_FinalizeShmem (rc=ierr)
 
