@@ -41,8 +41,8 @@
       Contains
 !.............................................................................
  
-      subroutine VLIDORT_Run (self,radiance, reflectance, AOT, rc,Q,U, 
-     &                            scalar,aerosol)
+      subroutine VLIDORT_Run (self,radiance, reflectance, AOT,ROT,Q,U, 
+     &                            scalar,aerosol,rc)
 !
 !     Computes radiances for a single wavelength, pixel. Optical properties
 !     and met fields in self are assumed to have been updated with the
@@ -62,6 +62,7 @@
       real*8,             intent(out)     :: radiance    ! TOA radiance
       real*8,             intent(out)     :: reflectance ! TOA reflectance
       real*8,             intent(out)     :: AOT         ! Aerosol Optical Thickness
+      real*8,             intent(out)     :: ROT         ! Rayleigh Optical Thickness
       real*8,             intent(out)     :: U           ! U Stokes component
       real*8,             intent(out)     :: Q           ! Q Stokes component
       integer,            intent(out)     :: rc
@@ -288,10 +289,11 @@
 !     Loop over the layers:
 !     ---------------------
       AOT = 0.0
+      ROT = 0.0
       
       do i = 1, NLAYERS  
          ray_l = ray(i)         ! indice l for  each layer
-
+         ROT   = ROT + ray_l
          if ( .not. aerosol ) then
             tau_l = 0.0 
             ssa_l = 0.0 
