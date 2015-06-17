@@ -57,8 +57,7 @@ subroutine Scalar (km, nch, nobs,channels,        &
 !                         ---  
   integer             :: i,j, ier
 
-  real*8              :: AOT(nobs,nch)            ! total aerosol optical thickness 
-  real*8              :: ROT(nobs,nch)            ! rayleigh optical thickness 
+  real*8              :: ROT(km,nobs,nch)            ! rayleigh optical thickness 
   real*8              :: Q(nobs, nch)   ! Stokes parameter Q
   real*8              :: U(nobs, nch)   ! Stokes parameter U     
   type(VLIDORT_scat) :: SCAT
@@ -109,7 +108,7 @@ subroutine Scalar (km, nch, nobs,channels,        &
            SCAT%g => g(:,i,j)
          
            call VLIDORT_Run (SCAT, radiance_VL(j,i), reflectance_VL(j,i), &
-                                 AOT(j,i),ROT(j,i),Q(j,i),U(j,i), .true., .true., ier)
+                                 ROT(:,j,i),Q(j,i),U(j,i), .true., .true., ier)
 !           print *, 'radiance albedo',albedo(j,i),radiance_VL(j,i), reflectance_VL(j,i) 
            if ( ier /= 0 ) then
               radiance_VL(j,i) = MISSING
@@ -127,7 +126,7 @@ subroutine Scalar (km, nch, nobs,channels,        &
            SCAT%g => g(:,i,j)
          
            call VLIDORT_Run (SCAT, radiance_VL(j,i), reflectance_cx(j,i), &
-                                 AOT(j,i), ROT(j,i),Q(j,i),U(j,i), .true., .true., ier)
+                                 ROT(:,j,i),Q(j,i),U(j,i), .true., .true., ier)
 
 !           print *, 'radinace cox munk',radiance_VL(j,i), reflectance_cx(j,i) 
            if ( ier /= 0 ) then
@@ -209,9 +208,8 @@ subroutine Vector (km, nch, nobs, channels, nMom,  &
   real*8            :: U(nobs, nch)   ! Stokes parameter U
 !                               ---
   
-  integer             :: i,j, ier
-  real*8              :: AOT(nobs,nch)            ! total aerosol optical thickness 
-  real*8              :: ROT(nobs,nch)            ! rayleigh optical thickness 
+  integer             :: i,j, ier 
+  real*8              :: ROT(km,nobs,nch)            ! rayleigh optical thickness 
   
   type(VLIDORT_scat) :: SCAT
 
@@ -261,7 +259,7 @@ subroutine Vector (km, nch, nobs, channels, nMom,  &
         SCAT%pmom => pmom(:,:,:,i,j)
 
         call VLIDORT_Run (SCAT, radiance_VL(j,i),reflectance_VL(j,i),&
-                          AOT(j,i), ROT(j,i), Q(j,i),U(j,i),.false., .true., ier)
+                          ROT(:,j,i), Q(j,i),U(j,i),.false., .true., ier)
         if ( ier /= 0 ) then
               radiance_VL(j,i) = MISSING
               reflectance_VL(j,i) = MISSING
@@ -279,7 +277,7 @@ subroutine Vector (km, nch, nobs, channels, nMom,  &
            SCAT%g => g(:,i,j)
          
            call VLIDORT_Run (SCAT, radiance_VL(j,i), reflectance_cx(j,i), &
-                                 AOT(j,i), ROT(j,i) ,Q(j,i),U(j,i), .false., .true., ier)
+                                 ROT(:,j,i) ,Q(j,i),U(j,i), .false., .true., ier)
 
 !           print *, 'radinace cox munk',radiance_VL(j,i), reflectance_cx(j,i) 
            if ( ier /= 0 ) then
