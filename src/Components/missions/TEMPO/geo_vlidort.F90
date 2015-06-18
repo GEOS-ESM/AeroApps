@@ -1599,8 +1599,10 @@ end subroutine filenames
     call MAPL_DeallocNodeArray(ROT_,rc=ierr)
     call MAPL_DeallocNodeArray(WSA_,rc=ierr)
     call MAPL_DeallocNodeArray(BSA_,rc=ierr)
-    call MAPL_DeallocNodeArray(Q_,rc=ierr)
-    call MAPL_DeallocNodeArray(U_,rc=ierr)
+    if (.not. scalar) then
+      call MAPL_DeallocNodeArray(Q_,rc=ierr)
+      call MAPL_DeallocNodeArray(U_,rc=ierr)
+    end if
 
     call MAPL_DeallocNodeArray(radiance_VL,rc=ierr) 
     call MAPL_DeallocNodeArray(reflectance_VL,rc=ierr) 
