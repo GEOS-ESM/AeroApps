@@ -465,7 +465,7 @@
       if ( self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_CALCULATION /= 0 ) then
          write(*,*) 'VLIDORT_MASTER STATUS_CALCULATION RETURNED ERROR'
          write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_CALCULATION
-         write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_CHECKMESSAGES
+         write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_MESSAGE
          rc = 4
       end if
       if ( rc /= 0 ) return
