@@ -6,6 +6,8 @@ from dateutil.parser import parse
 import os
 import shutil
 from distutils.dir_util import mkpath
+import numpy as np
+import math
 
 def make_workspace(date,ch,code):
     dirname = str(date.date())+'T'+str(date.time())+'.'+ch+'.'+code
@@ -93,7 +95,7 @@ def make_rcfile(dirname,date,ch,code):
 if __name__ == "__main__":
     
     startdate = '2005-12-31T00:00:00'
-    enddate   = '2005-12-31T00:00:00'
+    enddate   = '2005-12-31T01:00:00'
     channels  = '550','670'
     
     indir     = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA'
@@ -101,21 +103,35 @@ if __name__ == "__main__":
     dt = timedelta(hours=1)
     startdate = parse(startdate)
     enddate   = parse(enddate)
-    
+    nhours    = enddate - startdate
+    nhours    = nhours.seconds/(60*60)
+
+    runlen    = nhours*len(channels)
+    runstring = np.empty(0)
     while (startdate <= enddate):
         for ch in channels:
             workdir = make_workspace(startdate,ch,'vector')
             make_rcfile(workdir,startdate,ch,'vector')
-            os.system('sbatch ./'+workdir+'/geo_vlidort_run.j')
-
+            #os.system('sbatch ./'+workdir+'/geo_vlidort_run.j')
+            runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
 
             workdir = make_workspace(startdate,ch,'scalar')
             make_rcfile(workdir,startdate,ch,'scalar')
-            os.system('sbatch ./'+workdir+'/geo_vlidort_run.j')
+            #os.system('sbatch ./'+workdir+'/geo_vlidort_run.j')
+            runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
        
         startdate = startdate + dt
         
-        
+    streams = min(10, runlen)
+    drun    = np.array([runlen/streams for i in range(streams)])
+    drun[streams-1] = drun[streams-1] + math.fmod(runlen,streams)
+    for s,i in enumerate(np.linspace(0,streams*(runlen/streams),streams,endpoint=False)):
+        for j in range(drun[s]):
+            if (j == 0 ):
+                jobid, errors = os.system('qsub '+runstring[i+j])
+            else:
+                jobid, errors = os.system('qsub -W depend=afterok:'+str(jobid) +' '+runstring[i+j])
+
     
 
 
