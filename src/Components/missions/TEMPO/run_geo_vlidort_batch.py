@@ -4,7 +4,7 @@
 from datetime import datetime, timedelta 
 from dateutil.parser import parse
 import os
-import shutil
+import subprocess
 from distutils.dir_util import mkpath
 import numpy as np
 import math
@@ -126,11 +126,11 @@ if __name__ == "__main__":
     for s,i in enumerate(np.linspace(0,streams*(runlen/streams),streams,endpoint=False)):
         for j in range(drun[s]):
             if (j == 0 ):
-                #jobid, errors = os.system('qsub '+runstring[i+j])
-                print 'qsub '+runstring[i+j]
+                jobid = int(subprocess.check_output(['qsub',runstring[i+j]]))
+                #print 'qsub '+runstring[i+j]
             else:
-                #jobid, errors = os.system('qsub -W depend=afterok:'+str(jobid) +' '+runstring[i+j])
-                print 'qsub -W depend=afterok:str(jobid)' +' '+runstring[i+j]
+                jobid = int(subprocess.check_output(['qsub','-W','depend=afterok:'+str(jobid),runstring[i+j]]))
+                #print 'qsub -W depend=afterok:str(jobid)' +' '+runstring[i+j]
 
     
 
