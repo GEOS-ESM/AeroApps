@@ -95,7 +95,7 @@ def make_rcfile(dirname,date,ch,code):
 if __name__ == "__main__":
     
     startdate = '2005-12-31T00:00:00'
-    enddate   = '2005-12-31T01:00:00'
+    enddate   = '2005-12-31T02:00:00'
     channels  = '550','670'
     
     indir     = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA'
@@ -103,10 +103,7 @@ if __name__ == "__main__":
     dt = timedelta(hours=1)
     startdate = parse(startdate)
     enddate   = parse(enddate)
-    nhours    = enddate - startdate
-    nhours    = nhours.seconds/(60*60)
 
-    runlen    = nhours*len(channels)
     runstring = np.empty(0)
     while (startdate <= enddate):
         for ch in channels:
@@ -121,16 +118,19 @@ if __name__ == "__main__":
             runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
        
         startdate = startdate + dt
-        
+     
+    runlen  = len(runstring)   
     streams = min(10, runlen)
     drun    = np.array([runlen/streams for i in range(streams)])
     drun[streams-1] = drun[streams-1] + math.fmod(runlen,streams)
     for s,i in enumerate(np.linspace(0,streams*(runlen/streams),streams,endpoint=False)):
         for j in range(drun[s]):
             if (j == 0 ):
-                jobid, errors = os.system('qsub '+runstring[i+j])
+                #jobid, errors = os.system('qsub '+runstring[i+j])
+                print 'qsub '+runstring[i+j]
             else:
-                jobid, errors = os.system('qsub -W depend=afterok:'+str(jobid) +' '+runstring[i+j])
+                #jobid, errors = os.system('qsub -W depend=afterok:'+str(jobid) +' '+runstring[i+j])
+                print 'qsub -W depend=afterok:str(jobid)' +' '+runstring[i+j]
 
     
 
