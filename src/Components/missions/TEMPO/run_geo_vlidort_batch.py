@@ -97,9 +97,16 @@ if __name__ == "__main__":
     startdate = '2005-12-31T00:00:00'
     enddate   = '2005-12-31T02:00:00'
     channels  = '550','670'
+
+    calculon  = '/nobackup/TEMPO'
+    nccs      = '/discover/nobackup'
     
-    indir     = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA'
-    outdir    = '/discover/nobackup/pcastell/TEMPO/DATA'
+    if (os.path.exits(calculon)):
+        indir     = calculon + '/DATA'
+        outdir    = '/nobackup/3/pcastell/TEMPO/DATA'
+    else:
+        indir     = nccs + '/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA'
+        outdir    = nccs + '/pcastell/TEMPO/DATA'
     
     dt = timedelta(hours=1)
     startdate = parse(startdate)
@@ -109,12 +116,12 @@ if __name__ == "__main__":
     while (startdate <= enddate):
         for ch in channels:
             # Vector Case
-            workdir = make_workspace(startdate,ch,'vector')
+            workdir = make_workspace(startdate,ch,'vector',outdir)
             make_rcfile(workdir,indir,startdate,ch,'vector')
             runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
 
             # Scalar Case
-            workdir = make_workspace(startdate,ch,'scalar')
+            workdir = make_workspace(startdate,ch,'scalar',outdir)
             make_rcfile(workdir,indir,startdate,ch,'scalar')
             runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
        
