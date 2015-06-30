@@ -108,14 +108,14 @@ if __name__ == "__main__":
     runstring = np.empty(0)
     while (startdate <= enddate):
         for ch in channels:
+            # Vector Case
             workdir = make_workspace(startdate,ch,'vector')
             make_rcfile(workdir,indir,startdate,ch,'vector')
-            #os.system('sbatch ./'+workdir+'/geo_vlidort_run.j')
             runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
 
+            # Scalar Case
             workdir = make_workspace(startdate,ch,'scalar')
-            make_rcfile(workdir,startdate,ch,'scalar')
-            #os.system('sbatch ./'+workdir+'/geo_vlidort_run.j')
+            make_rcfile(workdir,indir,startdate,ch,'scalar')
             runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
        
         startdate = startdate + dt
