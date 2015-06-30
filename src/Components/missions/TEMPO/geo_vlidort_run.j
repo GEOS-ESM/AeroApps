@@ -22,6 +22,7 @@ limit stacksize unlimited
 #######################################################################
 setenv G5DIR /discover/nobackup/pcastell/workspace/GAAS/src
 setenv TEMPOBIN /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/TEMPO 
+setenv OUTDIR /discover/nobackup/pcastell/TEMPO/DATA
 setenv RUN_CMD  "mpirun -np 28"
 
 source $HOME/.cshrc
@@ -32,8 +33,6 @@ source g5_modules
 #   Move to Run Directory
 #######################################################################
 cd $TEMPOBIN
-make clean
-make
 
 ##################################################################
 ######
@@ -44,3 +43,10 @@ make
 ./clean_mem.sh
 $RUN_CMD  ./geo_vlidort.x geo_vlidort.rc
 ./clean_mem.sh 
+
+rm Aod_EOS.rc
+rm Chem_MieRegistry.rc
+rm ExtData
+rm geo_vlidort.x
+#rm geo_vlidort.rc
+mv *nc4 $OUTDIR
