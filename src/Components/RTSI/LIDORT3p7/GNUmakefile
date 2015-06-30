@@ -78,8 +78,9 @@ MOD_DIRS := .
   -include $(ESMADIR)/Config/ESMA_post.mk  # ESMA additional targets, macros
 
 
-#VLIDORT_Mod.F VLIDORT_SurfaceMod.F90 VLIDORT_ScatMod.F VLIDORT_ScatMod_cd.F\
-SRCS := $(foreach dir,$(SRC_DIRS), \
+
+SRCS := LIDORT_Mod.F LIDORT_SurfaceMod.F90 LIDORT_ScatMod.F LIDORT_ScatMod_cd.F\
+				$(foreach dir,$(SRC_DIRS), \
         $(wildcard $(dir)/*.[fFc]) $(wildcard $(dir)/*.[fF]90) )
 
 SRCS += $(BRDF_SUP_SOURCES)\
