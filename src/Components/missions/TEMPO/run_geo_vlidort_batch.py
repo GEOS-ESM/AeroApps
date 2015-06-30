@@ -101,7 +101,7 @@ if __name__ == "__main__":
     calculon  = '/nobackup/TEMPO'
     nccs      = '/discover/nobackup'
     
-    if (os.path.exits(calculon)):
+    if (os.path.exists(calculon)):
         indir     = calculon + '/DATA'
         outdir    = '/nobackup/3/pcastell/TEMPO/DATA'
     else:
