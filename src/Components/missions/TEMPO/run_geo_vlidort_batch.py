@@ -9,8 +9,9 @@ from distutils.dir_util import mkpath
 import numpy as np
 import math
 
-def make_workspace(date,ch,code):
+def make_workspace(date,ch,code,outdir):
     dirname = str(date.date())+'T'+str(date.time())+'.'+ch+'.'+code
+    outdir = outdir + '/Y'+str(date.year)+'/M'+str(date.month).zfill(2)+'/D'+str(date.day).zfill(2)
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     
@@ -26,12 +27,11 @@ def make_workspace(date,ch,code):
     destination = open('geo_vlidort_run.j','w')
     for line in source:
         if (line[0:18] == '#SBATCH --job-name'):
-            destination.write(line[0:19]+dirname+'\n')
+            destination.write('#SBATCH --job-name '+dirname+'\n')
         elif (line[0:15] == 'setenv TEMPOBIN'):
-            destination.write(line[:-1]+dirname+'\n')
-        elif (line[0:13] == 'setenv OUTDIR'):
-            outdir = 'Y'+str(date.year)+'/M'+str(date.month).zfill(2)+'/D'+str(date.day).zfill(2)
-            destination.write(line[:-1]+outdir+'\n')            
+            destination.write('setenv TEMPOBIN '+dirname+'\n')
+        elif (line[0:13] == 'setenv OUTDIR'):            
+            destination.write('setenv OUTDIR '+outdir+'\n')            
             if not os.path.exists(outdir):
                 mkpath(outdir)
         else:
@@ -54,7 +54,7 @@ def make_workspace(date,ch,code):
     
     return dirname 
 
-def make_rcfile(dirname,date,ch,code):
+def make_rcfile(dirname,indir,date,ch,code):
     os.chdir(dirname)
 
     rcfile = open('geo_vlidort.rc','w')
@@ -99,6 +99,7 @@ if __name__ == "__main__":
     channels  = '550','670'
     
     indir     = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA'
+    outdir    = '/discover/nobackup/pcastell/TEMPO/DATA'
     
     dt = timedelta(hours=1)
     startdate = parse(startdate)
@@ -108,7 +109,7 @@ if __name__ == "__main__":
     while (startdate <= enddate):
         for ch in channels:
             workdir = make_workspace(startdate,ch,'vector')
-            make_rcfile(workdir,startdate,ch,'vector')
+            make_rcfile(workdir,indir,startdate,ch,'vector')
             #os.system('sbatch ./'+workdir+'/geo_vlidort_run.j')
             runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
 
