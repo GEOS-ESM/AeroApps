@@ -63,34 +63,27 @@ esma_doc doc:
 
 SRC_DIRS :=  DEF_directory sourcecode_str LAPACK_directory 
 
-VSUP_PATH := vsup
+SUP_PATH := sup
 
 INC_DIRS := . 
  
 MOD_DIRS := . 
 
 # (Include vector supplement source files)
-  -include $(VSUP_PATH)/makefile.vsup
+  -include $(VSUP_PATH)/makefile.sup
 
-# (Include first-order source files)
-  -include $(FO_MAIN_PATH)/makefile.fo
 
- # For parallel install
+# For parallel install
 # --------------------
   -include $(ESMADIR)/Config/ESMA_post.mk  # ESMA additional targets, macros
 
 
-
-SRCS := VLIDORT_Mod.F VLIDORT_SurfaceMod.F90 VLIDORT_ScatMod.F VLIDORT_ScatMod_cd.F\
-        $(foreach dir,$(SRC_DIRS), \
+#VLIDORT_Mod.F VLIDORT_SurfaceMod.F90 VLIDORT_ScatMod.F VLIDORT_ScatMod_cd.F\
+SRCS := $(foreach dir,$(SRC_DIRS), \
         $(wildcard $(dir)/*.[fFc]) $(wildcard $(dir)/*.[fF]90) )
 
-SRCS += $(VBRDF_SUP_SOURCES)\
-        $(VSLEAVE_SUP_SOURCES)\
-        $(FO_SOURCES)\
-        $(FO_SOURCES_Thermal)\
-        $(FO_SOURCES_Scalar)\
-        $(FO_SOURCES_Vector)\
+SRCS += $(BRDF_SUP_SOURCES)\
+        $(SLEAVE_SUP_SOURCES)\
 
 OBJS := $(notdir $(addsuffix .o, $(basename $(SRCS))))
 DEPS := $(notdir $(addsuffix .d, $(basename $(SRCS))))
@@ -101,7 +94,7 @@ USER_FFLAGS = $(BIG_ENDIAN) $(MCMODEL)
 USER_FMODS  = $(foreach dir,$(MOD_DIRS),$(M)$(dir)) 
 USER_FINCS  = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
-vpath % $(SRC_DIRS) $(VSUP_PATH)/vbrdf $(VSUP_PATH)/vsleave $(FO_MAIN_PATH)
+vpath % $(SRC_DIRS) $(SUP_PATH)/brdf $(SUP_PATH)/sleave 
 
 $(LIB_THIS) lib : $(DEPS) $(OBJS)
 	$(RM) $(LIB_THIS)
