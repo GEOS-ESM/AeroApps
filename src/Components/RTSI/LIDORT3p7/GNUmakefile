@@ -64,7 +64,6 @@ esma_doc doc:
 SRC_DIRS :=  DEF_directory sourcecode_str LAPACK_directory 
 
 VSUP_PATH := vsup
-FO_MAIN_PATH := fo_main
 
 INC_DIRS := . 
  
