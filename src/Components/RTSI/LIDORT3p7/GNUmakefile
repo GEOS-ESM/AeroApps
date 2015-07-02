@@ -70,7 +70,7 @@ INC_DIRS := .
 MOD_DIRS := . 
 
 # (Include vector supplement source files)
-  -include $(VSUP_PATH)/makefile.sup
+  -include $(SUP_PATH)/makefile.sup
 
 
 # For parallel install
@@ -78,8 +78,8 @@ MOD_DIRS := .
   -include $(ESMADIR)/Config/ESMA_post.mk  # ESMA additional targets, macros
 
 
-
-SRCS := LIDORT_Mod.F LIDORT_SurfaceMod.F90 LIDORT_ScatMod.F LIDORT_ScatMod_cd.F\
+#LIDORT_ScatMod_cd.F
+SRCS := LIDORT_Mod.F90 LIDORT_SurfaceMod.F90 LIDORT_ScatMod.F \
 				$(foreach dir,$(SRC_DIRS), \
         $(wildcard $(dir)/*.[fFc]) $(wildcard $(dir)/*.[fF]90) )
 
