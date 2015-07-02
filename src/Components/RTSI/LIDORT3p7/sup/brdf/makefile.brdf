@@ -7,7 +7,7 @@ BRDF_SUP_SOURCES =
 BRDF_LINSUP_SOURCES =
 
 BRDF_SUP_SOURCES +=   \
-   $(BASE_SOURCES) \
+   DEF_directory/lidort_pars.f90 \
    $(BRDF_PATH)/brdf_findpar.f90	\
    $(BRDF_PATH)/brdf_sup_inputs_def.f90 \
    $(BRDF_PATH)/brdf_sup_outputs_def.f90\
@@ -17,14 +17,14 @@ BRDF_SUP_SOURCES +=   \
    $(BRDF_PATH)/brdf_sup_masters.f90    \
    $(BRDF_PATH)/brdf_sup_mod.f90
 
-BRDF_LINSUP_SOURCES += \
-   $(BRDF_SUP_SOURCES) \
-   $(BRDF_PATH)/brdf_lin_sup_inputs_def.f90	\
-   $(BRDF_PATH)/brdf_lin_sup_outputs_def.f90	\
-   $(BRDF_PATH)/brdf_lin_sup_kernels.f90	\
-   $(BRDF_PATH)/brdf_lin_sup_routines.f90	\
-   $(BRDF_PATH)/brdf_lin_sup_masters.f90	\
-   $(BRDF_PATH)/brdf_lin_sup_mod.f90
+#BRDF_LINSUP_SOURCES += \
+#   $(BRDF_SUP_SOURCES) \
+#   $(BRDF_PATH)/brdf_lin_sup_inputs_def.f90	\
+#   $(BRDF_PATH)/brdf_lin_sup_outputs_def.f90	\
+#   $(BRDF_PATH)/brdf_lin_sup_kernels.f90	\
+#   $(BRDF_PATH)/brdf_lin_sup_routines.f90	\
+#   $(BRDF_PATH)/brdf_lin_sup_masters.f90	\
+#   $(BRDF_PATH)/brdf_lin_sup_mod.f90
 
 
 #
