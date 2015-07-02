@@ -18,7 +18,6 @@ module LIDORT_SurfaceMod
       type(LIDORT)                 :: Base 
       integer                       :: sfc_type = -1
       real*8                        :: albedo 
-!     real*8,pointer,dimension(16)  :: B => NULL()  ! NSTOKES(4) * NSTOKES for GissCoxMunk
 
       logical                       :: scalar = .false.
       
@@ -81,13 +80,12 @@ module LIDORT_SurfaceMod
        !  TYPE(BRDF_Sup_Outputs)               :: BRDF_Sup_Out
       END TYPE LIDORT_BRDF
 
-      type(LIDORT_BRDF)   :: BRDF
+      type(LIDORT_BRDF)   :: LBRDF
 
 !     Local variables 
 !     ---------------
 !     BRDF variables
 !     ---------------
-      integer                                         ::   NSTOKES
       logical                                         ::   DO_BRDF_SURFACE
       logical                                         ::   DO_USER_STREAMS
       logical,dimension(MAX_BRDF_KERNELS)             ::   LAMBERTIAN_KERNEL_FLAG
@@ -123,12 +121,6 @@ module LIDORT_SurfaceMod
       self%scalar = scalar     
              
 
-      if ( scalar ) then
-         NSTOKES = 1                 ! Number of Stokes vector components
-      else
-         NSTOKES = 3
-      end if
-
       DO_USER_STREAMS     = .true.       ! Use user-defined viewing zenith angles
       DO_BRDF_SURFACE     = .true. 
       DO_SURFACE_EMISSION = .false.  ! Calculation of surface thermal emission
@@ -153,7 +145,7 @@ module LIDORT_SurfaceMod
       !-------------------------------------------------------------   
       BRDF_NAMES(1) = 'GissCoxMnk' 
 !      BRDF_NAMES(1) ='Cox-Munk  '  
-      WHICH_BRDF(1) =  10            ! specified in lidort.pars.f90
+      WHICH_BRDF(1) =  10            ! specified in LIDORT.pars.f90
 !      WHICH_BRDF(1) =  9   
       BRDF_FACTORS(1)      =  1.   
       N_BRDF_PARAMETERS(1) = 3
@@ -182,59 +174,57 @@ module LIDORT_SurfaceMod
       ! Copy in data structure
       ! ---------------------
 
-      BRDF%BRDF_Sup_In%BS_DO_USER_STREAMS     = DO_USER_STREAMS
-      BRDF%BRDF_Sup_In%BS_DO_BRDF_SURFACE     = DO_BRDF_SURFACE
-      BRDF%BRDF_Sup_In%BS_DO_SURFACE_EMISSION = DO_SURFACE_EMISSION
+      LBRDF%BRDF_Sup_In%BS_DO_USER_STREAMS     = DO_USER_STREAMS
+      LBRDF%BRDF_Sup_In%BS_DO_BRDF_SURFACE     = DO_BRDF_SURFACE
+      LBRDF%BRDF_Sup_In%BS_DO_SURFACE_EMISSION = DO_SURFACE_EMISSION
 
       ! Angles
 
-      BRDF%BRDF_Sup_In%BS_NSTOKES              = NSTOKES
-      BRDF%BRDF_Sup_In%BS_NSTREAMS             = self%Base%NSTREAMS
-      BRDF%BRDF_Sup_In%BS_NBEAMS               = self%Base%NBEAMS
-      BRDF%BRDF_Sup_In%BS_BEAM_SZAS(1)         = solar_zenith
-      BRDF%BRDF_Sup_In%BS_N_USER_RELAZMS       = self%Base%N_USER_RELAZMS
-      BRDF%BRDF_Sup_In%BS_USER_RELAZMS(1)      = relative_azimuth
-      BRDF%BRDF_Sup_In%BS_N_USER_STREAMS       = self%Base%N_USER_STREAMS
-      BRDF%BRDF_Sup_In%BS_USER_ANGLES_INPUT(1) = sensor_zenith
+      LBRDF%BRDF_Sup_In%BS_NSTREAMS             = self%Base%NSTREAMS
+      LBRDF%BRDF_Sup_In%BS_NBEAMS               = self%Base%NBEAMS
+      LBRDF%BRDF_Sup_In%BS_BEAM_SZAS(1)         = solar_zenith
+      LBRDF%BRDF_Sup_In%BS_N_USER_RELAZMS       = self%Base%N_USER_RELAZMS
+      LBRDF%BRDF_Sup_In%BS_USER_RELAZMS(1)      = relative_azimuth
+      LBRDF%BRDF_Sup_In%BS_N_USER_STREAMS       = self%Base%N_USER_STREAMS
+      LBRDF%BRDF_Sup_In%BS_USER_ANGLES_INPUT(1) = sensor_zenith
 
       ! BRDF inputs
 
-      BRDF%BRDF_Sup_In%BS_N_BRDF_KERNELS         = N_BRDF_KERNELS
-      BRDF%BRDF_Sup_In%BS_BRDF_NAMES             = BRDF_NAMES
-      BRDF%BRDF_Sup_In%BS_WHICH_BRDF             = WHICH_BRDF
-      BRDF%BRDF_Sup_In%BS_N_BRDF_PARAMETERS      = N_BRDF_PARAMETERS
-      BRDF%BRDF_Sup_In%BS_BRDF_PARAMETERS        = BRDF_PARAMETERS
-      BRDF%BRDF_Sup_In%BS_LAMBERTIAN_KERNEL_FLAG = LAMBERTIAN_KERNEL_FLAG
-      BRDF%BRDF_Sup_In%BS_BRDF_FACTORS           = BRDF_FACTORS
-      BRDF%BRDF_Sup_In%BS_NSTREAMS_BRDF          = NSTREAMS_BRDF
-      BRDF%BRDF_Sup_In%BS_DO_SHADOW_EFFECT       = DO_SHADOW_EFFECT
-!      BRDF%BRDF_Sup_In%BS_DO_EXACTONLY           = DO_EXACTONLY
+      LBRDF%BRDF_Sup_In%BS_N_BRDF_KERNELS         = N_BRDF_KERNELS
+      LBRDF%BRDF_Sup_In%BS_BRDF_NAMES             = BRDF_NAMES
+      LBRDF%BRDF_Sup_In%BS_WHICH_BRDF             = WHICH_BRDF
+      LBRDF%BRDF_Sup_In%BS_N_BRDF_PARAMETERS      = N_BRDF_PARAMETERS
+      LBRDF%BRDF_Sup_In%BS_BRDF_PARAMETERS        = BRDF_PARAMETERS
+      LBRDF%BRDF_Sup_In%BS_LAMBERTIAN_KERNEL_FLAG = LAMBERTIAN_KERNEL_FLAG
+      LBRDF%BRDF_Sup_In%BS_BRDF_FACTORS           = BRDF_FACTORS
+      LBRDF%BRDF_Sup_In%BS_NSTREAMS_BRDF          = NSTREAMS_BRDF
+      LBRDF%BRDF_Sup_In%BS_DO_SHADOW_EFFECT       = DO_SHADOW_EFFECT
+!      LBRDF%BRDF_Sup_In%BS_DO_EXACTONLY           = DO_EXACTONLY
      
 
-      BRDF%BRDF_Sup_In%BS_DO_GLITTER_MSRCORR           = DO_MSRCORR
-      BRDF%BRDF_Sup_In%BS_DO_GLITTER_MSRCORR_DBONLY = DO_MSRCORR_DBONLY
-      BRDF%BRDF_Sup_In%BS_GLITTER_MSRCORR_ORDER        = GLITTER_MSRCORR_ORDER
-      BRDF%BRDF_Sup_In%BS_GLITTER_MSRCORR_NMUQUAD      = GLITTER_MSRCORR_NMUQUAD
-      BRDF%BRDF_Sup_In%BS_GLITTER_MSRCORR_NPHIQUAD     = GLITTER_MSRCORR_NPHIQUAD
+      LBRDF%BRDF_Sup_In%BS_DO_GLITTER_MSRCORR           = DO_MSRCORR
+      LBRDF%BRDF_Sup_In%BS_DO_GLITTER_MSRCORR_DBONLY = DO_MSRCORR_DBONLY
+      LBRDF%BRDF_Sup_In%BS_GLITTER_MSRCORR_ORDER        = GLITTER_MSRCORR_ORDER
+      LBRDF%BRDF_Sup_In%BS_GLITTER_MSRCORR_NMUQUAD      = GLITTER_MSRCORR_NMUQUAD
+      LBRDF%BRDF_Sup_In%BS_GLITTER_MSRCORR_NPHIQUAD     = GLITTER_MSRCORR_NPHIQUAD
 
 
       if ( N_BRDF_KERNELS .GT. MAX_BRDF_KERNELS )       rc = 1
       if ( NSTREAMS_BRDF .GT. MAXSTREAMS_BRDF )         rc = 2
-      if ( NSTOKES  .GT. MAXSTOKES  )                   rc = 3      
       if ( WHICH_BRDF(1) .GT. MAXBRDF_IDX )             rc = 4
 
 
      
       DO_DEBUG_RESTORATION = .false.
-      N_MOMENTS_INPUT = 2 * BRDF%BRDF_Sup_In%BS_NSTREAMS - 1
+      N_MOMENTS_INPUT = 2 * LBRDF%BRDF_Sup_In%BS_NSTREAMS - 1
 
       call BRDF_MAINMASTER (DO_DEBUG_RESTORATION, &         ! Inputs
                              N_MOMENTS_INPUT, &              ! Inputs
-                             BRDF%BRDF_Sup_In, &           ! Inputs
+                             LBRDF%BRDF_Sup_In, &           ! Inputs
                              self%Base%VIO%BRDF_Sup_Out, &  ! Outputs
                            self%Base%VIO%BRDF_Sup_OutputStatus)          ! Outputs
-       BRDF = self%Base%VIO%BRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)     
-       print*, 'ok BRDF', self%Base%VIO%BRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)       
+       BRDF = self%Base%VIO%BRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1)     
+       print*, 'ok BRDF', self%Base%VIO%BRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1)       
    end subroutine LIDORT_GissCoxMunk
 
 !.................................................................................
@@ -269,14 +259,13 @@ module LIDORT_SurfaceMod
        !  TYPE(BRDF_Sup_Outputs)               :: BRDF_Sup_Out
       END TYPE LIDORT_BRDF
 
-      type(LIDORT_BRDF)   :: BRDF
+      type(LIDORT_BRDF)   :: LBRDF
 
        
 !     Local variables 
 !     ---------------
 !      BRDF variables
 !     ---------------
-      integer                             ::   NSTOKES
       logical                             ::   DO_BRDF_SURFACE
       logical                             ::   DO_USER_STREAMS
       logical,dimension(MAX_BRDF_KERNELS) ::   LAMBERTIAN_KERNEL_FLAG
@@ -306,12 +295,6 @@ module LIDORT_SurfaceMod
       self%scalar = scalar     
              
 
-      if ( scalar ) then
-         NSTOKES = 1                 ! Number of Stokes vector components
-      else
-         rc = 9                      ! Scalar only for this BRDF
-      end if
-
       DO_BRDF_SURFACE  = .true. 
       DO_USER_STREAMS  = .true.      ! Use user-defined viewing zenith angles
       DO_SOLAR_SOURCES = .true.      ! TRUE for sunlight, may be TRUE or FALSE in thermal regime
@@ -328,7 +311,7 @@ module LIDORT_SurfaceMod
       ! For each BRDF_KERNELS specify the name, factor and parameter  
       !-------------------------------------------------------------   
       BRDF_NAMES(1) = 'Lambertian'   ! 0 free parameter
-      WHICH_BRDF(1) =  1             ! specified in lidort.pars.f90
+      WHICH_BRDF(1) =  1             ! specified in LIDORT.pars.f90
       BRDF_FACTORS(1) =  fiso        ! From MODIS MOD43
       N_BRDF_PARAMETERS(1) = 0
       BRDF_PARAMETERS(1,1) = 0.0
@@ -337,7 +320,7 @@ module LIDORT_SurfaceMod
       LAMBERTIAN_KERNEL_FLAG(1) = .true. ! set .true. if BRDF_NAME(I) = 'Lambertian'
       
       BRDF_NAMES(2) = 'Ross-thick'   ! 0 free parameter
-      WHICH_BRDF(2) =  3             ! specified in lidort.pars.f90
+      WHICH_BRDF(2) =  3             ! specified in LIDORT.pars.f90
       BRDF_FACTORS(2) =  fvol        ! From MODIS
       N_BRDF_PARAMETERS(2) = 0
       BRDF_PARAMETERS(2,1) = 0.0
@@ -346,7 +329,7 @@ module LIDORT_SurfaceMod
       LAMBERTIAN_KERNEL_FLAG(2) = .false. 
 
       BRDF_NAMES(3) = 'Li-sparse'   ! 2 free parameters
-      WHICH_BRDF(3) =  4            ! specified in lidort.pars.f90
+      WHICH_BRDF(3) =  4            ! specified in LIDORT.pars.f90
       BRDF_FACTORS(3) =  fgeo       ! From MODIS
       N_BRDF_PARAMETERS(3) = 2  
       BRDF_PARAMETERS(3,1) = param(1)    ! h/b (relative height) -> (h is the height-to-center 
@@ -359,90 +342,88 @@ module LIDORT_SurfaceMod
       ! Copy in data structure
       ! ---------------------
 
-      BRDF%BRDF_Sup_In%BS_DO_USER_STREAMS     = DO_USER_STREAMS
-      BRDF%BRDF_Sup_In%BS_DO_BRDF_SURFACE     = DO_BRDF_SURFACE
-      BRDF%BRDF_Sup_In%BS_DO_SURFACE_EMISSION = DO_SURFACE_EMISSION
-      BRDF%BRDF_Sup_In%BS_DO_SOLAR_SOURCES    = DO_SOLAR_SOURCES   
-      BRDF%BRDF_Sup_In%BS_DO_USER_OBSGEOMS    = DO_USER_OBSGEOMS   
+      LBRDF%BRDF_Sup_In%BS_DO_USER_STREAMS     = DO_USER_STREAMS
+      LBRDF%BRDF_Sup_In%BS_DO_BRDF_SURFACE     = DO_BRDF_SURFACE
+      LBRDF%BRDF_Sup_In%BS_DO_SURFACE_EMISSION = DO_SURFACE_EMISSION
+      LBRDF%BRDF_Sup_In%BS_DO_SOLAR_SOURCES    = DO_SOLAR_SOURCES   
+      LBRDF%BRDF_Sup_In%BS_DO_USER_OBSGEOMS    = DO_USER_OBSGEOMS   
 
       ! Angles
 
-      BRDF%BRDF_Sup_In%BS_NSTOKES              = NSTOKES
-      BRDF%BRDF_Sup_In%BS_NSTREAMS             = self%Base%NSTREAMS
-      BRDF%BRDF_Sup_In%BS_NBEAMS               = self%Base%NBEAMS
-      BRDF%BRDF_Sup_In%BS_BEAM_SZAS(1)         = solar_zenith
-      BRDF%BRDF_Sup_In%BS_N_USER_RELAZMS       = self%Base%N_USER_RELAZMS
-      BRDF%BRDF_Sup_In%BS_USER_RELAZMS(1)      = relative_azimuth
-      BRDF%BRDF_Sup_In%BS_N_USER_STREAMS       = self%Base%N_USER_STREAMS
-      BRDF%BRDF_Sup_In%BS_USER_ANGLES_INPUT(1) = sensor_zenith
-      BRDF%BRDF_Sup_In%BS_N_USER_OBSGEOMS      = self%Base%N_USER_OBSGEOMS 
-      BRDF%BRDF_Sup_In%BS_USER_OBSGEOMS(1,1)   = solar_zenith
-      BRDF%BRDF_Sup_In%BS_USER_OBSGEOMS(1,2)   = sensor_zenith
-      BRDF%BRDF_Sup_In%BS_USER_OBSGEOMS(1,3)   = relative_azimuth                       
+      LBRDF%BRDF_Sup_In%BS_NSTREAMS             = self%Base%NSTREAMS
+      LBRDF%BRDF_Sup_In%BS_NBEAMS               = self%Base%NBEAMS
+      LBRDF%BRDF_Sup_In%BS_BEAM_SZAS(1)         = solar_zenith
+      LBRDF%BRDF_Sup_In%BS_N_USER_RELAZMS       = self%Base%N_USER_RELAZMS
+      LBRDF%BRDF_Sup_In%BS_USER_RELAZMS(1)      = relative_azimuth
+      LBRDF%BRDF_Sup_In%BS_N_USER_STREAMS       = self%Base%N_USER_STREAMS
+      LBRDF%BRDF_Sup_In%BS_USER_ANGLES_INPUT(1) = sensor_zenith
+      LBRDF%BRDF_Sup_In%BS_N_USER_OBSGEOMS      = self%Base%N_USER_OBSGEOMS 
+      LBRDF%BRDF_Sup_In%BS_USER_OBSGEOMS(1,1)   = solar_zenith
+      LBRDF%BRDF_Sup_In%BS_USER_OBSGEOMS(1,2)   = sensor_zenith
+      LBRDF%BRDF_Sup_In%BS_USER_OBSGEOMS(1,3)   = relative_azimuth                       
     
       ! BRDF inputs
 
-      BRDF%BRDF_Sup_In%BS_N_BRDF_KERNELS         = N_BRDF_KERNELS
-      BRDF%BRDF_Sup_In%BS_BRDF_NAMES             = BRDF_NAMES
-      BRDF%BRDF_Sup_In%BS_WHICH_BRDF             = WHICH_BRDF
-      BRDF%BRDF_Sup_In%BS_N_BRDF_PARAMETERS      = N_BRDF_PARAMETERS
-      BRDF%BRDF_Sup_In%BS_BRDF_PARAMETERS        = BRDF_PARAMETERS
-      BRDF%BRDF_Sup_In%BS_LAMBERTIAN_KERNEL_FLAG = LAMBERTIAN_KERNEL_FLAG
-      BRDF%BRDF_Sup_In%BS_BRDF_FACTORS           = BRDF_FACTORS
-      BRDF%BRDF_Sup_In%BS_NSTREAMS_BRDF          = NSTREAMS_BRDF
+      LBRDF%BRDF_Sup_In%BS_N_BRDF_KERNELS         = N_BRDF_KERNELS
+      LBRDF%BRDF_Sup_In%BS_BRDF_NAMES             = BRDF_NAMES
+      LBRDF%BRDF_Sup_In%BS_WHICH_BRDF             = WHICH_BRDF
+      LBRDF%BRDF_Sup_In%BS_N_BRDF_PARAMETERS      = N_BRDF_PARAMETERS
+      LBRDF%BRDF_Sup_In%BS_BRDF_PARAMETERS        = BRDF_PARAMETERS
+      LBRDF%BRDF_Sup_In%BS_LAMBERTIAN_KERNEL_FLAG = LAMBERTIAN_KERNEL_FLAG
+      LBRDF%BRDF_Sup_In%BS_BRDF_FACTORS           = BRDF_FACTORS
+      LBRDF%BRDF_Sup_In%BS_NSTREAMS_BRDF          = NSTREAMS_BRDF
 
 
-      BRDF%BRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = .false.
+      LBRDF%BRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = .false.
 
       ! The following is needed for Cox-munck type only
       ! set to initialization values
       !-----------------------------------------------
-      BRDF%BRDF_Sup_In%BS_DO_SHADOW_EFFECT          = .false.  
+      LBRDF%BRDF_Sup_In%BS_DO_SHADOW_EFFECT          = .false.  
 
-      BRDF%BRDF_Sup_In%BS_DO_GLITTER_MSRCORR        = .false.
-      BRDF%BRDF_Sup_In%BS_DO_GLITTER_MSRCORR_DBONLY = .false. 
-      BRDF%BRDF_Sup_In%BS_GLITTER_MSRCORR_ORDER     = 0
-      BRDF%BRDF_Sup_In%BS_GLITTER_MSRCORR_NMUQUAD   = 0
-      BRDF%BRDF_Sup_In%BS_GLITTER_MSRCORR_NPHIQUAD  = 0
+      LBRDF%BRDF_Sup_In%BS_DO_GLITTER_MSRCORR        = .false.
+      LBRDF%BRDF_Sup_In%BS_DO_GLITTER_MSRCORR_DBONLY = .false. 
+      LBRDF%BRDF_Sup_In%BS_GLITTER_MSRCORR_ORDER     = 0
+      LBRDF%BRDF_Sup_In%BS_GLITTER_MSRCORR_NMUQUAD   = 0
+      LBRDF%BRDF_Sup_In%BS_GLITTER_MSRCORR_NPHIQUAD  = 0
 
-      BRDF%BRDF_Sup_In%BS_DO_NewCMGLINT             = .false.
-      BRDF%BRDF_Sup_In%BS_SALINITY                  = 0
-      BRDF%BRDF_Sup_In%BS_WAVELENGTH                = 0
+      LBRDF%BRDF_Sup_In%BS_DO_NewCMGLINT             = .false.
+      LBRDF%BRDF_Sup_In%BS_SALINITY                  = 0
+      LBRDF%BRDF_Sup_In%BS_WAVELENGTH                = 0
 
-      BRDF%BRDF_Sup_In%BS_WINDSPEED                 = 0
-      BRDF%BRDF_Sup_In%BS_WINDDIR                   = 0
+      LBRDF%BRDF_Sup_In%BS_WINDSPEED                 = 0
+      LBRDF%BRDF_Sup_In%BS_WINDDIR                   = 0
 
-      BRDF%BRDF_Sup_In%BS_DO_GlintShadow            = .false.
-      BRDF%BRDF_Sup_In%BS_DO_FoamOption             = .false.
-      BRDF%BRDF_Sup_In%BS_DO_FacetIsotropy          = .false.
+      LBRDF%BRDF_Sup_In%BS_DO_GlintShadow            = .false.
+      LBRDF%BRDF_Sup_In%BS_DO_FoamOption             = .false.
+      LBRDF%BRDF_Sup_In%BS_DO_FacetIsotropy          = .false.
 
       ! WSA and BSA scaling options.
       ! WSA = White-sky albedo. BSA = Black-sky albedo.
       ! Not implemented for now.  Could be tested
       !--------------------------------------------
-      BRDF%BRDF_Sup_In%BS_DO_WSABSA_OUTPUT = .true.
-      BRDF%BRDF_Sup_In%BS_DO_WSA_SCALING   = .false.
-      BRDF%BRDF_Sup_In%BS_DO_BSA_SCALING   = .false.
-      BRDF%BRDF_Sup_In%BS_WSA_VALUE        = 0
-      BRDF%BRDF_Sup_In%BS_BSA_VALUE        = 0
+      LBRDF%BRDF_Sup_In%BS_DO_WSABSA_OUTPUT = .true.
+      LBRDF%BRDF_Sup_In%BS_DO_WSA_SCALING   = .false.
+      LBRDF%BRDF_Sup_In%BS_DO_BSA_SCALING   = .false.
+      LBRDF%BRDF_Sup_In%BS_WSA_VALUE        = 0
+      LBRDF%BRDF_Sup_In%BS_BSA_VALUE        = 0
 
       !  Exception handling
       ! ----------------------------
       MESSAGES(0)     = 'Successful Read of LIDORT Input file'
       ACTIONS(0)      = 'No Action required for this Task'
 
-      BRDF%BRDF_Sup_InputStatus%BS_STATUS_INPUTREAD = LIDORT_SUCCESS
+      LBRDF%BRDF_Sup_InputStatus%BS_STATUS_INPUTREAD = LIDORT_SUCCESS
 
-      BRDF%BRDF_Sup_InputStatus%BS_NINPUTMESSAGES   = 0
-      BRDF%BRDF_Sup_InputStatus%BS_INPUTMESSAGES    = MESSAGES
-      BRDF%BRDF_Sup_InputStatus%BS_INPUTACTIONS     = ACTIONS
+      LBRDF%BRDF_Sup_InputStatus%BS_NINPUTMESSAGES   = 0
+      LBRDF%BRDF_Sup_InputStatus%BS_INPUTMESSAGES    = MESSAGES
+      LBRDF%BRDF_Sup_InputStatus%BS_INPUTACTIONS     = ACTIONS
       
      
       ! Do some checks to make sure parameters are not out of range
       !------------------------------------------------------------
       if ( N_BRDF_KERNELS .GT. MAX_BRDF_KERNELS )       rc = 1
       if ( NSTREAMS_BRDF .GT. MAXSTREAMS_BRDF )         rc = 2
-      if ( NSTOKES  .GT. MAXSTOKES  )                   rc = 3
 
       do i =1, N_BRDF_KERNELS
          if ( WHICH_BRDF(i) .GT. MAXBRDF_IDX )          rc = 4
@@ -451,17 +432,17 @@ module LIDORT_SurfaceMod
       ! Debug flag for restoration
       DO_DEBUG_RESTORATION = .false.
       ! Number of moments (only used for restoration debug)
-      N_MOMENTS_INPUT = 2 * BRDF%BRDF_Sup_In%BS_NSTREAMS - 1
+      N_MOMENTS_INPUT = 2 * LBRDF%BRDF_Sup_In%BS_NSTREAMS - 1
 
       ! Run the LIDORT Surface Module
       ! -------------------------------------------------
       call BRDF_MAINMASTER (DO_DEBUG_RESTORATION, &                ! Inputs
                              N_MOMENTS_INPUT, &                     ! Inputs
-                             BRDF%BRDF_Sup_In, &                  ! Inputs
+                             LBRDF%BRDF_Sup_In, &                  ! Inputs
                              self%Base%VIO%BRDF_Sup_Out, &         ! Outputs
                              self%Base%VIO%BRDF_Sup_OutputStatus)          ! Outputs
-!       BRDF = self%Base%VIO%BRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)     
-!       print*, 'ok BRDF', self%Base%VIO%BRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)             
+!       BRDF = self%Base%VIO%BRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1)     
+!       print*, 'ok BRDF', self%Base%VIO%BRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1)             
    end subroutine LIDORT_LANDMODIS
 
    end module LIDORT_SurfaceMod
