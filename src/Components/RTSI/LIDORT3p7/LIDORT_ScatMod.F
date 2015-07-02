@@ -41,8 +41,7 @@
       Contains
 !.............................................................................
  
-      subroutine LIDORT_Run (self,radiance, reflectance, ROT,Q,U, 
-     &                            scalar,aerosol,rc)
+      subroutine LIDORT_Run (self,radiance, reflectance, ROT, aerosol,rc)
 !
 !     Computes radiances for a single wavelength, pixel. Optical properties
 !     and met fields in self are assumed to have been updated with the
@@ -62,17 +61,13 @@
       real*8,             intent(out)     :: radiance    ! TOA radiance
       real*8,             intent(out)     :: reflectance ! TOA reflectance
       real*8,dimension(:),intent(inout)   :: ROT         ! Rayleigh Optical Thickness
-      real*8,             intent(out)     :: U           ! U Stokes component
-      real*8,             intent(out)     :: Q           ! Q Stokes component
       integer,            intent(out)     :: rc
 
-      logical,            intent(in)      :: scalar  ! If True, do scalar calculation
       logical,            intent(in)      :: aerosol ! if False, Rayleigh only
 
 !                           ----
 
       integer :: STATUS_INPUTCHECK, STATUS_CALCULATION 
-      logical :: vector
 
 !                           ----
 
@@ -81,7 +76,6 @@
       integer                                            :: i, j, k, l, m, n
       integer                                            :: ncoeffs, k1, IDR, ierror
       integer                                            :: NLAYERS
-      integer                                            :: NSTOKES
       real*8                                             :: ray_l      
       real*8                                             :: tau_l 
       real*8                                             :: ssa_l 
@@ -109,10 +103,10 @@
       real*8, dimension(0:2, 16)                         :: rayvmoms
       real*8                                             :: difz
       real*8                                             :: somray
-      logical                                            :: DO_LAMBERTIAN_SURFACE
+      logical                                            :: DO_BRDF_SURFACE
       real*8                                             :: LAMBERTIAN_ALBEDO
       integer                                            :: NGREEK_MOMENTS_INPUT
-      real*8, dimension(0:MAXMOMENTS_INPUT,MAXLAYERS,16) :: greekmat_total_input
+      real*8, dimension(0:MAXMOMENTS_INPUT,MAXLAYERS)    :: greekmat_total_input
       real*8, dimension(0:MAXLAYERS)                     :: height_grid                     
       real*8, dimension(0:MAXLAYERS)                     :: pressure_grid 
       real*8, dimension(0:MAXLAYERS)                     :: temperature_grid
@@ -120,9 +114,8 @@
       real*8, dimension(MAXLAYERS)                       :: deltau_vert_input
       real*8, dimension(MAXLAYERS)                       :: omega_total_input
 
-      real*8, dimension(MAX_USER_LEVELS, MAX_GEOMETRIES
-     &, MAXSTOKES, MAX_DIRECTIONS)                       :: STOKES
-      real*8                                             :: FLUX_FACTOR
+      real*8,dimension(MAX_USER_LEVELS,MAX_GEOMETRIES,MAX_DIRECTIONS)  :: INTENSITY
+      real*8                                                           :: FLUX_FACTOR
 
 !     Volume Rayleigh scattering coefficient (depends closely on the 
 !     thermodynamic conditions of the atm and varies with height, 
@@ -141,23 +134,6 @@
         return
       end if
       
-      if ( scalar ==.true. ) then
-        vector = .not. scalar
-      else
-        vector = .true.
-      end if
-
-!                     Stokes/streams/layers/moments
-!                     -----------------------------
-      if ( vector ) then
-         NSTOKES = 3                                       ! Number of Stokes vector components
-      else
-         NSTOKES = 1        
-      end if
-
-      if ( NSTOKES  .GT. MAXSTOKES  )   rc = 2  
-
-      self%Surface%Base%VIO%LIDORT_FixIn%Cont%TS_NSTOKES          = NSTOKES
       
       if ( self%Surface%Base%VIO%LIDORT_FixIn%Bool%TS_DO_UPWELLING ) then
          IDR = 1
@@ -169,15 +145,15 @@
 !                          --------------------------
 
       if ( self%Surface%sfc_type == 1 ) then               ! Lambertian surface ?
-         DO_LAMBERTIAN_SURFACE = .true.        
+         DO_BRDF_SURFACE = .false.        
          LAMBERTIAN_ALBEDO = self%Surface%albedo           ! Lambertian (isotropic) input albedo
       else                                   
-         DO_LAMBERTIAN_SURFACE = .false. 
+         DO_BRDF_SURFACE = .true. 
          LAMBERTIAN_ALBEDO = 0.0                           ! Use BRDF -> albedo set to 0
  
       end if
 
-      self%Surface%Base%VIO%LIDORT_Fixin%Bool%TS_DO_LAMBERTIAN_SURFACE = DO_LAMBERTIAN_SURFACE
+      self%Surface%Base%VIO%LIDORT_Fixin%Bool%TS_DO_BRDF_SURFACE = DO_BRDF_SURFACE
       self%Surface%Base%VIO%LIDORT_FixIn%Optical%TS_LAMBERTIAN_ALBEDO = LAMBERTIAN_ALBEDO
       self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_BRDF_F_0        = self%Surface%Base%VIO%BRDF_Sup_Out%BS_BRDF_F_0
       self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_BRDF_F          = self%Surface%Base%VIO%BRDF_Sup_Out%BS_BRDF_F
@@ -189,15 +165,15 @@
 
 !                         Angles (SZA, viewing, relatuve azimuth), Level
 !                        ------------------------------------------------      
-      self%Surface%Base%VIO%LIDORT_ModIn%MSunRays%TS_SZANGLES(1) = self%Surface%solar_zenith
-      self%Surface%Base%VIO%LIDORT_ModIn%MUserVal%TS_USER_RELAZMS(1) = self%Surface%relat_azimuth
-      self%Surface%Base%VIO%LIDORT_ModIn%MUserVal%TS_USER_VZANGLES_INPUT(1) = self%Surface%sensor_zenith
-      self%Surface%Base%VIO%LIDORT_ModIn%MUserVal%TS_USER_LEVELS(1) = 0.0     ! This is TOA   
+      self%Surface%Base%VIO%LIDORT_ModIn%MSunRays%TS_BEAM_SZAS(1)           = self%Surface%solar_zenith
+      self%Surface%Base%VIO%LIDORT_ModIn%MUserVal%TS_USER_RELAZMS(1)        = self%Surface%relat_azimuth
+      self%Surface%Base%VIO%LIDORT_ModIn%MUserVal%TS_USER_ANGLES_INPUT(1)   = self%Surface%sensor_zenith
+      self%Surface%Base%VIO%LIDORT_ModIn%MUserVal%TS_USER_LEVELS(1)         = 0.0     ! This is TOA   
 
  
                       
       
-      NGREEK_MOMENTS_INPUT = self%Surface%Base%VIO%LIDORT_ModIn%MCont%TS_NGREEK_MOMENTS_INPUT
+      NGREEK_MOMENTS_INPUT = self%Surface%Base%VIO%LIDORT_ModIn%MCont%TS_NMOMENTS_INPUT
       NLAYERS = self%Surface%Base%VIO%LIDORT_FixIn%Cont%TS_NLAYERS     
      
 !               Calculation of the Rayleigh-Scattering Optical Depth
@@ -248,44 +224,6 @@
          somray = somray + ray(j+1) ! Total Tau Ray
       end do
 
-!     greek moments for Rayleigh only( only if vector )
-!     ----------------------------- 
-      if ( vector ) then
-
-         gammamom2 = -SQRT(6.) * (1 - DEPOL_RATIO) / (2 + DEPOL_RATIO)
-         alphamom2 = 6 * (1 - DEPOL_RATIO) / (2 + DEPOL_RATIO)
-         deltamom1 = 3 * (1 - 2 * DEPOL_RATIO) / (2 + DEPOL_RATIO)
-         raysmom2 = (1.0 - DEPOL_RATIO)/(2.0 + DEPOL_RATIO) 
-
-!DEPOL_RATIO = (6 * COEF_DEPOL - 6) / (3 + 7 * COEF_DEPOL) 
-      
-         rayvmoms(0,1) = 1.0
-         rayvmoms(1,1) = 0.0
-         rayvmoms(2,1) = raysmom2
-         rayvmoms(0,2) = 0.0
-         rayvmoms(1,2) = 0.0
-         rayvmoms(2,2) = gammamom2
-         do k = 3, 4
-            do l = 0, 2
-               rayvmoms(l,k) = 0.0
-            end do
-         end do
-         rayvmoms(0,5) = 0.0
-         rayvmoms(1,5) = 0.0
-         rayvmoms(2,5) = gammamom2 
-         rayvmoms(0,6) = 0.0
-         rayvmoms(1,6) = 0.0
-         rayvmoms(2,6) = alphamom2 
-         do k = 7, 15
-            do l = 0, 2
-               rayvmoms(l,k) = 0.0
-            end do
-         end do
-         rayvmoms(0,16) = 0.0
-         rayvmoms(1,16) = deltamom1
-         rayvmoms(2,16) = 0.0 
-     
-      end if
 
 !     Loop over the layers:
 !     ---------------------
@@ -328,114 +266,40 @@
          wmicron = self%wavelength * 1.E-3  ! micrometer
      
          raysmom2 = (1.0 - DEPOL_RATIO)/(2.0 + DEPOL_RATIO) 
-         if (scalar) then    
 
 !           Phase function moments (Rayleigh only)
 !           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            if (tau_l == 0.0) then
-     
-               greekmat_total_input(0,i,1) = 1.0
-               greekmat_total_input(1,i,1) = 0.0
-               greekmat_total_input(2,i,1) = raysmom2
-               do l = 3, NGREEK_MOMENTS_INPUT        
-                  greekmat_total_input(l,i,1) = 0.0
-               end do 
-            end if
-     
+         if (tau_l == 0.0) then
+  
+            greekmat_total_input(0,i) = 1.0
+            greekmat_total_input(1,i) = 0.0
+            greekmat_total_input(2,i) = raysmom2
+            do l = 3, NGREEK_MOMENTS_INPUT        
+               greekmat_total_input(l,i) = 0.0
+            end do 
+         end if
+  
 
 !           SCALAR phase function moments (aerosol + Rayleigh)
 !           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            if (tau_l /= 0.0) then
-               aerswt = ssa_l * tau_l / tau_scat  
-               rayswt = ray_l / tau_scat    
-               aersmom(0) = 1.0
-               aersmom(1) = 3.0 * g_l
-               aersmom(2) = 5.0 * g_l * aersmom(1) / 3.0
+         if (tau_l /= 0.0) then
+            aerswt = ssa_l * tau_l / tau_scat  
+            rayswt = ray_l / tau_scat    
+            aersmom(0) = 1.0
+            aersmom(1) = 3.0 * g_l
+            aersmom(2) = 5.0 * g_l * aersmom(1) / 3.0
 
-               greekmat_total_input(0,i,1) = 1.0
-               greekmat_total_input(1,i,1) = aersmom(1) * aerswt
-               greekmat_total_input(2,i,1) = raysmom2 * rayswt + aersmom(2) * aerswt
-            
-               do l = 3, NGREEK_MOMENTS_INPUT         
-                  factor = REAL(2*l+1) / REAL(2*l-1) 
-                  aersmom(l) = factor * g_l * aersmom(l-1)
-                  greekmat_total_input(l,i,1) = aersmom(l) * aerswt
-               end do  
-            end if ! end if tau_l /= 0.0
-         end if  ! end scalar
-      
-!        VECTOR phase function moments 
-!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-         if ( vector ) then  
-   !     print *, 'OK VECTOR'
-   !     Phase function moments (Rayleigh only)
-   !     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            if (tau_l == 0.0) then
-               do k=1, 16
-                  do l=0, 2
-                     greekmat_total_input(l,i,k) = rayvmoms(l,k)
-                  end do
-               end do
-
-               do k = 1, 16 
-                  do l = 3, NGREEK_MOMENTS_INPUT
-                     greekmat_total_input(l,i,k) = 0.0
-                  end do
-               end do
-            end if
-      
-      
-!           VECTOR phase function moments (aerosol + Rayleigh)
-!           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            if (tau_l /= 0.0) then 
-           
-               aerswt = ssa_l * tau_l / tau_scat  
-               rayswt = ray_l / tau_scat 
-               do k = 1, 16
-                  do l= 0, NGREEK_MOMENTS_INPUT
-                     aervmoms(l,i,k) = 0.0
-                  end do
-               end do
-
-      
-   !         if ( self%nmom -1 < NGREEK_MOMENTS_INPUT ) then 
-               do l= 0, self%nmom-1               
-                  aervmoms(l,i,1)  = self%pmom(i,l+1,1) ! P11 
-                  aervmoms(l,i,2)  = self%pmom(i,l+1,2) ! P12                
-                  aervmoms(l,i,5)  = self%pmom(i,l+1,2) ! P12 = P21                            
-                  aervmoms(l,i,11) = self%pmom(i,l+1,3) ! P33 
-                  aervmoms(l,i,12) = self%pmom(i,l+1,4) ! P34            
-                  aervmoms(l,i,15) = -self%pmom(i,l+1,4) ! - P34
-              
-                  if (self%nPol == 4) then
-                     aervmoms(l,i,6)  = self%pmom(i,l+1,1) ! P22 = P11 for spherical               
-                     aervmoms(l,i,16) = self%pmom(i,l+1,3) ! P44 = P33         
-                  else  if (self%nPol == 6) then   
-                     aervmoms(l,i,6)  = self%pmom(i,l+1,5) ! P22  for non spherical               
-                     aervmoms(l,i,16) = self%pmom(i,l+1,6) ! P44  
-                  else
-                     rc = 1
-                  end if
-               end do
-            
-
-               do k = 1, 16
-                  do l = 0,2
-                     greekmat_total_input(l,i,k) = rayvmoms(l,k) * rayswt+ aervmoms(l,i,k) * aerswt
-                  end do
-              
-                  do l = 3, NGREEK_MOMENTS_INPUT
-                     greekmat_total_input(l,i,k) = aervmoms(l,i,k) * aerswt
-                  end do
-                     
-               end do
-               greekmat_total_input(0,i,1) = 1.0
+            greekmat_total_input(0,i) = 1.0
+            greekmat_total_input(1,i) = aersmom(1) * aerswt
+            greekmat_total_input(2,i) = raysmom2 * rayswt + aersmom(2) * aerswt
          
-        
-            end if                    ! end if tau_l /= 0.0
-
-         end if                    ! end if vector
-      
+            do l = 3, NGREEK_MOMENTS_INPUT         
+               factor = REAL(2*l+1) / REAL(2*l-1) 
+               aersmom(l) = factor * g_l * aersmom(l-1)
+               greekmat_total_input(l,i) = aersmom(l) * aerswt
+            end do  
+         end if ! end if tau_l /= 0.0
+            
 !     end layer loop
 !     ---------------
       end do
@@ -444,7 +308,7 @@
   
       self%Surface%Base%VIO%LIDORT_FixIn%Optical%TS_DELTAU_VERT_INPUT = deltau_vert_input
       self%Surface%Base%VIO%LIDORT_ModIn%MOptical%TS_OMEGA_TOTAL_INPUT = omega_total_input
-      self%Surface%Base%VIO%LIDORT_FixIn%Optical%TS_GREEKMAT_TOTAL_INPUT = greekmat_total_input
+      self%Surface%Base%VIO%LIDORT_FixIn%Optical%TS_PHASMOMS_TOTAL_INPUT = greekmat_total_input
       
 !      print*, 'CALL MASTER', rc
  
@@ -470,32 +334,17 @@
       end if
       if ( rc /= 0 ) return
       
-      STOKES = self%Surface%Base%VIO%LIDORT_Out%Main%TS_STOKES ! output of LIDORT_MASTER subroutine
       FLUX_FACTOR = self%Surface%Base%VIO%LIDORT_FixIn%SunRays%TS_FLUX_FACTOR
+      INTENSITY   = self%Surface%Base%VIO%LIDORT_Out%Main%TS_INTENSITY ! output of LIDORT_MASTER subroutine
       
 !     Return TOA radiance
 !     -------------------
       RADIANCE = 0.0
       REFLECTANCE = 0.0
-      Q = 0
-      U = 0
-      V = 0
-      if ( scalar ) then
-         RADIANCE = STOKES(1, 1, 1, IDR)
-              
-         REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%LIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR ) 
+      RADIANCE = INTENSITY(1, 1, IDR)
+           
+      REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%LIDORT_ModIn%MSunRays%TS_BEAM_SZAS(1)*pi/180.0) * FLUX_FACTOR ) 
       
-      end if
-!      print*, 'compute radinaces'
-      if ( vector ) then
-         RADIANCE = STOKES(1, 1, 1, IDR)
-         Q = STOKES(1, 1, 2, IDR)
-         U = STOKES(1, 1, 3, IDR)
-!       V = STOKES(1, 1, 4, IDR)
-
-         REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%LIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR )   
-      end if
-
       Contains
 
  
@@ -574,19 +423,19 @@
        ! --------------------------------------------
        self%Surface%sfc_type = 1 !Lambertian
        self%Surface%albedo = 0.0
-       call LIDORT_Run (self, rad0, reflectance, ROT,Q,U, .false., .false., rc)
+       call LIDORT_Run (self, rad0, reflectance, ROT, .false., rc)
 
        ! atmosphere Rayleigh and surface albedo = 0.1
        ! --------------------------------------------
        self%Surface%sfc_type =1
        self%Surface%albedo = 0.1
-       call LIDORT_Run (self, rad1, reflectance, ROT, Q,U,.false., .false., rc)
+       call LIDORT_Run (self, rad1, reflectance, ROT, .false., rc)
 
        ! atmosphere Rayleigh and surface albedo = 0.2
        ! --------------------------------------------
        self%Surface%sfc_type = 1
        self%Surface%albedo = 0.2
-       call LIDORT_Run (self, rad2, reflectance, ROT,Q,U, .false., .false., rc)
+       call LIDORT_Run (self, rad2, reflectance, ROT, .false., rc)
 
        beta =  ( rad1 - rad0 ) / ( rad2 - rad0 )
        spher_alb = (( beta * 0.2 ) - 0.1 ) / ( 0.1 * 0.2 * ( beta - 1 )) ! Spherical albedo
@@ -600,7 +449,7 @@
        !----------------------------------------------------------------------------
        self%Surface%sfc_type = 1 
        self%Surface%albedo = 0.0
-       call LIDORT_Run (self, rad_ray, reflectance, ROT, Q,U,.false., .false., rc)
+       call LIDORT_Run (self, rad_ray, reflectance, ROT, .false., rc)
         
 
        delta_rad =  rad - rad_ray    
@@ -637,7 +486,7 @@
       self%Surface%sfc_type = 1 !Lambertian
       self%Surface%albedo = refl  
       
-      call LIDORT_Run (self, rad_nouv, reflectance, ROT,Q,U, .false., .false., rc)
+      call LIDORT_Run (self, rad_nouv, reflectance, ROT, .false., rc)
       
       if (rad > 0.0) then
       alpha = rad / rad_nouv
