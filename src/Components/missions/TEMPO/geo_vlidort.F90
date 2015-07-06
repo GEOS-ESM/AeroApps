@@ -42,12 +42,12 @@ program geo_vlidort
 ! ------------------------------------------------
   character(len=256)                    :: arg                    ! command line rc file argument
   character(len=8)                      :: date         
-  character(len=7)                      :: brdfdate
+  character(len=7)                      :: surfdate
   character(len=2)                      :: time 
-  character(len=256)                    :: instname, indir, outdir, brdfname
-  character(len=256)                    :: brdfband
-  integer, dimension(:),allocatable     :: brdfband_i                  ! modis band indeces that overlap with vlidort channels
-  real, dimension(:),allocatable        :: brdfband_c                  ! modis band center wavelength
+  character(len=256)                    :: instname, indir, outdir, surfname
+  character(len=256)                    :: surfband               ! flag to use nearest-neighbor interpolation or an exact value given
+  integer, dimension(:),allocatable     :: surfband_i             ! surface band indeces that overlap with vlidort channels
+  real, dimension(:),allocatable        :: surfband_c             ! modis band center wavelength
   logical                               :: scalar
   real, dimension(:), allocatable       :: channels               ! channels to simulate
   integer                               :: nch                    ! number of channels  
@@ -60,7 +60,7 @@ program geo_vlidort
 
 ! File names
 ! ----------
-  character(len=256)                    :: MET_file, AER_file, ANG_file, INV_file, BRDF_file, LAND_file, OUT_file 
+  character(len=256)                    :: MET_file, AER_file, ANG_file, INV_file, SURF_file, LAND_file, OUT_file, ATMOS_file 
 
 ! Global, 3D arrays to be allocated using SHMEM
 ! ---------------------------------------------
@@ -85,6 +85,7 @@ program geo_vlidort
   real, pointer                         :: KISO(:,:) => null()
   real, pointer                         :: KVOL(:,:) => null()
   real, pointer                         :: KGEO(:,:) => null()
+  real, pointer                         :: LER(:,:) => null()
   real, pointer                         :: SZA(:) => null()
   real, pointer                         :: VZA(:) => null()
   real, pointer                         :: RAA(:) => null()  
@@ -127,7 +128,7 @@ program geo_vlidort
 ! VLIDORT working variables
 !------------------------------
   integer                               :: ch                        ! i-channel  
-  integer                               :: iband                     ! i-brdfband
+  integer                               :: iband                     ! i-surfband
   real,allocatable                      :: pmom(:,:,:,:,:)           ! elements of scattering phase matrix for vector calculations
 
 ! MODIS Kernel  arrays
@@ -141,7 +142,7 @@ program geo_vlidort
 
 ! Satellite domain variables
 !------------------------------
-  integer                               :: im, jm, km                ! size of TEMPO domain
+  integer                               :: im, jm, km, tm            ! size of TEMPO domain
   integer                               :: i, j, k, n                ! TEMPO domain working variable
   integer                               :: starti, counti, endi      ! array indices and counts for e-w columns to be read
   integer, allocatable                  :: nclr(:)                   ! how many clear pixels each processor reads
@@ -155,10 +156,9 @@ program geo_vlidort
 
 ! netcdf variables
 !----------------------  
-  integer                               :: ncid, radVarID, refVarID  ! netcdf ids
-  integer                               :: tauVarID, gVarID, ssaVarID
-  integer                               :: qVarID, uVarID, wsaVarID, bsaVarID
-  integer                               :: rotVarID
+  integer                               :: ncid
+  integer,allocatable,dimension(:)      :: radVarID, refVarID, albVarID, qVarID, uVarID
+  integer,allocatable,dimension(:)      :: tauVarID, gVarID, ssaVarID, rotVarID
 
 ! Miscellaneous
 ! -------------
@@ -205,10 +205,10 @@ program geo_vlidort
     write(*,*) 'Simulating ', lower_to_upper(trim(instname)),' domain on ',date,' ', time, 'Z'
     write(*,*) 'Input directory: ',trim(indir)
     write(*,*) 'Output directory: ',trim(outdir)
-    write(*,*) 'BRDF dataset: ',trim(brdfname),' ',trim(brdfdate)
+    write(*,*) 'BRDF dataset: ',trim(surfname),' ',trim(surfdate)
     write(*,*) 'Channels [nm]: ',channels
-    if (lower_to_upper(brdfband) == 'EXACT') write(*,*) 'Using exact BRDF on bands : ',brdfband_i
-    if (lower_to_upper(brdfband) == 'INTERPOLATE') write(*,*) 'Using interpolated BRDF' 
+    if (lower_to_upper(surfband) == 'EXACT') write(*,*) 'Using exact surface relflectance parameters on bands : ',surfband_i
+    if (lower_to_upper(surfband) == 'INTERPOLATE') write(*,*) 'Using interpolated surface reflectance parameters' 
     write(*,*) 'Cloud Fraction <= ', cldmax
     write(*,*) 'SZA < ', szamax
     if (scalar) write(*,*) 'Scalar calculations'
@@ -222,17 +222,18 @@ program geo_vlidort
   call mp_readDim("ew", MET_file, im)
   call mp_readDim("ns", MET_file, jm)
   call mp_readDim("lev", MET_file, km)
-  call mp_readVattr("missing_value", BRDF_FILE, "Kiso", modis_missing) 
+  call mp_readDim("time", MET_file,tm)
+  call mp_readVattr("missing_value", SURF_file, "Kiso", modis_missing) 
   call mp_readVattr("missing_value", MET_FILE, "CLDTOT", g5nr_missing)
-
-! Create OUTFILE
-! --------------------
-  if ( MAPL_am_I_root() )  call create_outfile(date,time,ncid,radVarID,refVarID, qVarID, uVarID, ssaVarID, &
-                            tauVarID, gVarID, rotVarID, wsaVarID, bsaVarID)
 
 ! Allocate arrays that will be copied on each processor - unshared
 ! ---------------------------------------------------------
   call allocate_unshared()
+
+! Create OUTFILE
+! --------------------
+  if ( MAPL_am_I_root() )  call create_outfile(date, time, radVarID, refVarID, albVarID, qVarID, uVarID, &
+                                               ssaVarID, tauVarID, gVarID, rotVarID)
 
 ! Read the cloud, land, and angle data 
 ! -------------------------------------
@@ -321,7 +322,7 @@ program geo_vlidort
 ! Read in the global arrays
 ! ------------------------------
  call read_aer_Nv()
- call read_BRDF()
+ call read_surf()
  call read_angles()
 
 ! Wait for everyone to finish reading and print max memory used
@@ -363,135 +364,151 @@ program geo_vlidort
   counti = nclr(myid+1)
   endi   = starti + counti - 1
 
-  do c = starti, endi
-    call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
-                       reshape(DELP(c,:),(/km,nobs/)), ptop, &
-                       pe, ze, te )   
+  ! do c = starti, endi
+  !   call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
+  !                      reshape(DELP(c,:),(/km,nobs/)), ptop, &
+  !                      pe, ze, te )   
 
-    write(msg,'(A,I)') 'getEdgeVars ', myid
-    call write_verbose(msg)
+  !   write(msg,'(A,I)') 'getEdgeVars ', myid
+  !   call write_verbose(msg)
     
-    call calc_qm()
+  !   call calc_qm()
 
-    write(msg,'(A,I)') 'calc_qm ', myid
-    call write_verbose(msg)  
+  !   write(msg,'(A,I)') 'calc_qm ', myid
+  !   call write_verbose(msg)  
 
-    ! Get BRDF Kernel Weights
-    !----------------------------
-    do ch = 1, nch
-      if (lower_to_upper(brdfband) == 'EXACT') then
-        kernel_wt(:,ch,nobs) = (/dble(KISO(c,brdfband_i(ch))),&
-                            dble(KGEO(c,brdfband_i(ch))),&
-                            dble(KVOL(c,brdfband_i(ch)))/)
-      else
-        ! > 2130 uses highest MODIS wavelength band     
-        if (channels(ch) >= 2130) then  
-          iband = minloc(abs(brdfband_c - channels(ch)), dim = 1)
-          kernel_wt(:,ch,nobs) = (/dble(KISO(c,iband)),&
-                            dble(KGEO(c,iband)),&
-                            dble(KVOL(c,iband))/)
-        end if
+  !   ! Surface Reflectance Parameters
+  !   !----------------------------------
+  !   if ( (lower_to_upper(surfname) == 'MAIACRTLS') ) then
+  !     ! Get BRDF Kernel Weights
+  !     !----------------------------
+  !     do ch = 1, nch
+  !       if (lower_to_upper(surfband) == 'EXACT') then
+  !         kernel_wt(:,ch,nobs) = (/dble(KISO(c,surfband_i(ch))),&
+  !                             dble(KGEO(c,surfband_i(ch))),&
+  !                             dble(KVOL(c,surfband_i(ch)))/)
+  !       else
+  !         ! > 2130 uses highest MODIS wavelength band     
+  !         if (channels(ch) >= 2130) then  
+  !           iband = minloc(abs(surfband_c - channels(ch)), dim = 1)
+  !           kernel_wt(:,ch,nobs) = (/dble(KISO(c,iband)),&
+  !                             dble(KGEO(c,iband)),&
+  !                             dble(KVOL(c,iband))/)
+  !         end if
+          
+  !         if (channels(ch) < 2130) then
+  !           ! nearest neighbor interpolation of kernel weights to wavelength
+  !           ! ******has to fall above available range
+  !           kernel_wt(1,ch,nobs) = dble(nn_interp(surfband_c,reshape(KISO(c,:),(/nbands/)),channels(ch)))
+  !           kernel_wt(2,ch,nobs) = dble(nn_interp(surfband_c,reshape(KGEO(c,:),(/nbands/)),channels(ch)))
+  !           kernel_wt(3,ch,nobs) = dble(nn_interp(surfband_c,reshape(KVOL(c,:),(/nbands/)),channels(ch)))          
+  !         end if
+  !       end if
+  !       param(:,ch,nobs)     = (/dble(2),dble(1)/)
+  !     end do
+  !   else
+  !     ! Use a provided albedo file
+  !     do ch = 1, nch
+  !       if (lower_to_upper(surfband) == 'EXACT') then
+  !         albedo(ch,nobs) = dble(LER(c,surfband_i(ch)))
+  !       else
+  !         albedo(ch,nobs) = dble(nn_interp(surfband_c,reshape(LER(c,:),(/nbands/)),channels(ch)))
+  !       end if
+  !     end do
+  !   end if 
+
+  !   if (scalar) then
+  !     call getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
+  !                         qm, reshape(RH(c,:),(/km,nobs/)), &
+  !                         tau, ssa, g, ierr )
+  !   else
+  !     call getAOPvector ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
+  !                         qm, reshape(RH(c,:),(/km,nobs/)),&
+  !                         nMom,nPol, tau, ssa, g, pmom, ierr )
+  !   end if
+
+  !   tau_(c,:,:) = tau(:,:,nobs)
+  !   ssa_(c,:,:) = ssa(:,:,nobs)
+  !   g_(c,:,:)   = g(:,:,nobs)
+
+  !   write(msg,*) 'getAOP ', myid
+  !   call write_verbose(msg)
+
+  !   if ( (lower_to_upper(surfname) /= 'MAIACRTLS') ) then
+  !     ! Simple lambertian surface model
+  !     !------------------------------
+  !     if (scalar) then
+  !       ! Call to vlidort scalar code
         
-        if (channels(ch) < 2130) then
-          ! nearest neighbor interpolation of kernel weights to wavelength
-          ! ******has to fall above available range
-          kernel_wt(1,ch,nobs) = dble(nn_interp(brdfband_c,reshape(KISO(c,:),(/nbands/)),channels(ch)))
-          kernel_wt(2,ch,nobs) = dble(nn_interp(brdfband_c,reshape(KGEO(c,:),(/nbands/)),channels(ch)))
-          kernel_wt(3,ch,nobs) = dble(nn_interp(brdfband_c,reshape(KVOL(c,:),(/nbands/)),channels(ch)))          
-        end if
-      end if
-      param(:,ch,nobs)     = (/dble(2),dble(1)/)
-    end do
+  !       call Scalar_Lambert (km, nch, nobs ,dble(channels),        &
+  !               dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), dble(albedo),&
+  !               (/dble(SZA(c))/), &
+  !               (/dble(abs(RAA(c)))/), &
+  !               (/dble(VZA(c))/), &
+  !               dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ierr)
+  !     else
+  !       ! Call to vlidort vector code
+  !       call Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
+  !              nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), dble(albedo),&
+  !              (/dble(SZA(c))/), &
+  !              (/dble(abs(RAA(c)))/), &
+  !              (/dble(VZA(c))/), &
+  !              dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr)
+  !       Q_(c,:)     = Q(nobs,:)
+  !       U_(c,:)     = U(nobs,:)
+  !     end if
+  !   else if ( ANY(kernel_wt == modis_missing) ) then
+  !     radiance_VL_Surface(nobs,:) = -500
+  !     reflectance_VL_Surface(nobs,:) = -500
+  !   else             
+  !     ! MODIS BRDF Surface Model
+  !     !------------------------------
+  !     if (scalar) then 
+  !       ! Call to vlidort scalar code            
+  !       call Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
+  !               dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
+  !               kernel_wt, param, &
+  !               (/dble(SZA(c))/), &
+  !               (/dble(abs(RAA(c)))/), &
+  !               (/dble(VZA(c))/), &
+  !               dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ROT, WSA, BSA, ierr )  
+  !     else
+  !       ! Call to vlidort vector code
+  !       write(msg,*) 'getting ready to do vector calculations', myid, ierr
+  !       call write_verbose(msg)
 
-    if (scalar) then
-      call getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
-                          qm, reshape(RH(c,:),(/km,nobs/)), &
-                          tau, ssa, g, ierr )
-    else
-      call getAOPvector ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
-                          qm, reshape(RH(c,:),(/km,nobs/)),&
-                          nMom,nPol, tau, ssa, g, pmom, ierr )
-    end if
-
-    tau_(c,:,:) = tau(:,:,nobs)
-    ssa_(c,:,:) = ssa(:,:,nobs)
-    g_(c,:,:)   = g(:,:,nobs)
-
-    write(msg,*) 'getAOP ', myid
-    call write_verbose(msg)
-
-    if ((lower_to_upper(BRDFNAME) /= 'MAIACRTLS') .or. (ANY(kernel_wt == modis_missing))) then
-      ! Simple lambertian surface model
-      !------------------------------
-      albedo(:,:)      = 0.05  !this needs to be a climatology(?)
-      if (scalar) then
-        ! Call to vlidort scalar code
-        
-        call Scalar_Lambert (km, nch, nobs ,dble(channels),        &
-                dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), dble(albedo),&
-                (/dble(SZA(c))/), &
-                (/dble(abs(RAA(c)))/), &
-                (/dble(VZA(c))/), &
-                dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ierr)
-      else
-        ! Call to vlidort vector code
-        call Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
-               nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), dble(albedo),&
-               (/dble(SZA(c))/), &
-               (/dble(abs(RAA(c)))/), &
-               (/dble(VZA(c))/), &
-               dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, Q, U, ierr)
-      end if
-    else             
-      ! MODIS BRDF Surface Model
-      !------------------------------
-      if (scalar) then 
-        ! Call to vlidort scalar code            
-        call Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
-                dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
-                kernel_wt, param, &
-                (/dble(SZA(c))/), &
-                (/dble(abs(RAA(c)))/), &
-                (/dble(VZA(c))/), &
-                dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ROT, WSA, BSA, ierr )  
-      else
-        ! Call to vlidort vector code
-        write(msg,*) 'getting ready to do vector calculations', myid, ierr
-        call write_verbose(msg)
-
-        call Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
-                nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
-                kernel_wt, param, &
-                (/dble(SZA(c))/), &
-                (/dble(abs(RAA(c)))/), &
-                (/dble(VZA(c))/), &
-                dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ROT, WSA, BSA, Q, U, ierr )  
-        Q_(c,:)     = Q(nobs,:)
-        U_(c,:)     = U(nobs,:)
-      end if
-
-      call mp_check_vlidort(radiance_VL_Surface,reflectance_VL_Surface)
-
-      ROT_(c,:,:) = ROT(:,nobs,:)
-      WSA_(c,:)   = WSA(nobs,:)
-      BSA_(c,:)   = BSA(nobs,:)
+  !       call Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
+  !               nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+  !               kernel_wt, param, &
+  !               (/dble(SZA(c))/), &
+  !               (/dble(abs(RAA(c)))/), &
+  !               (/dble(VZA(c))/), &
+  !               dble(MISSING),verbose,radiance_VL_Surface,reflectance_VL_Surface, ROT, WSA, BSA, Q, U, ierr )  
+  !       Q_(c,:)     = Q(nobs,:)
+  !       U_(c,:)     = U(nobs,:)
+  !     end if
       
-    end if          
-      
-    radiance_VL(c,:)    = radiance_VL_Surface(nobs,:)
-    reflectance_VL(c,:) = reflectance_VL_Surface(nobs,:)
+  !   end if          
+    
+  !   call mp_check_vlidort(radiance_VL_Surface,reflectance_VL_Surface)  
+  !   radiance_VL(c,:)    = radiance_VL_Surface(nobs,:)
+  !   reflectance_VL(c,:) = reflectance_VL_Surface(nobs,:)
+  !   ROT_(c,:,:) = ROT(:,nobs,:)
+  !   WSA_(c,:)   = WSA(nobs,:)
+  !   BSA_(c,:)   = BSA(nobs,:)
 
-    write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
-    call write_verbose(msg)
 
-    ! Keep track of progress of each processor
-    ! -----------------------------------------        
-    if (nint(100.*real(c-starti)/real(counti)) > progress) then
-      progress = nint(100.*real(c-starti)/real(counti))
-      write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',c,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
-    end if
+  !   write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
+  !   call write_verbose(msg)
+
+  !   ! Keep track of progress of each processor
+  !   ! -----------------------------------------        
+  !   if (nint(100.*real(c-starti)/real(counti)) > progress) then
+  !     progress = nint(100.*real(c-starti)/real(counti))
+  !     write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',c,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
+  !   end if
                 
-  end do
+  ! end do
 
   ! Wait for everyone to finish calculations
   ! ------------------------------------------
@@ -499,52 +516,54 @@ program geo_vlidort
 
   if (MAPL_am_I_root()) then
     ! Expand radiance to im x jm using mask
-    !-------------------------------
+    ! Write output to correct position in file
+    !  --------------------------------------------    
     allocate (field(im,jm))
     field = g5nr_missing
 
+!                             Main OUT_File
+!                             -------------
     call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
-    ! Write output to correct position in file
-    !  --------------------------------------------
+
     do ch = 1, nch
-      call check(nf90_put_var(ncid, radVarID, unpack(reshape(radiance_VL(:,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,1,ch/), count = (/im,jm,nobs,1/)), "writing out radiance")
-      call check(nf90_put_var(ncid, refVarID, unpack(reshape(reflectance_VL(:,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,1,ch/), count = (/im,jm,nobs,1/)), "writing out reflectance")
-
+      call check(nf90_put_var(ncid, radVarID(ch), unpack(reshape(radiance_VL(:,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
+      call check(nf90_put_var(ncid, refVarID(ch), unpack(reshape(reflectance_VL(:,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
       if (.not. scalar) then
-        call check(nf90_put_var(ncid, qVarID, unpack(reshape(Q_(:,ch),(/clrm/)),clmask,field), &
-                    start = (/1,1,1,ch/), count = (/im,jm,nobs,1/)), "writing out Q")
+        call check(nf90_put_var(ncid, qVarID(ch), unpack(reshape(Q_(:,ch),(/clrm/)),clmask,field), &
+                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
 
-        call check(nf90_put_var(ncid, uVarID, unpack(reshape(U_(:,ch),(/clrm/)),clmask,field), &
-                    start = (/1,1,1,ch/), count = (/im,jm,nobs,1/)), "writing out U")
+        call check(nf90_put_var(ncid, uVarID(ch), unpack(reshape(U_(:,ch),(/clrm/)),clmask,field), &
+                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
       endif
 
-      call check(nf90_put_var(ncid, wsaVarID, unpack(reshape(WSA_(:,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,1,ch/), count = (/im,jm,nobs,1/)), "writing out WSA")
-
-      call check(nf90_put_var(ncid, bsaVarID, unpack(reshape(BSA_(:,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,1,ch/), count = (/im,jm,nobs,1/)), "writing out BSA")
-
-      do k=1,km 
-        call check(nf90_put_var(ncid, tauVarID, unpack(reshape(tau_(:,k,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,k,1,ch/), count = (/im,jm,1,nobs,1/)), "writing out tau")
-
-        call check(nf90_put_var(ncid, gVarID, unpack(reshape(g_(:,k,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,k,1,ch/), count = (/im,jm,1,nobs,1/)), "writing out g")
-
-        call check(nf90_put_var(ncid, ssaVarID, unpack(reshape(ssa_(:,k,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,k,1,ch/), count = (/im,jm,1,nobs,1/)), "writing out ssa")
-
-        call check(nf90_put_var(ncid, rotVarID, unpack(reshape(rot_(:,k,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,k,1,ch/), count = (/im,jm,1,nobs,1/)), "writing out rot")
-      end do
-
+      ! call check(nf90_put_var(ncid, albVarID, unpack(reshape(albedo_(:,ch),(/clrm/)),clmask,field), &
+      !               start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
     end do
-    deallocate(field)
-
     call check( nf90_close(ncid), "close outfile" )
+
+!                             Supplemental ATMOS_File
+!                             -----------------------
+    call check( nf90_open(ATMOS_file, nf90_write, ncid), "opening file " // ATMOS_file )
+    do ch = 1, nch
+      do k=1,km 
+        call check(nf90_put_var(ncid, tauVarID(ch), unpack(reshape(tau_(:,k,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out tau")
+
+        call check(nf90_put_var(ncid, gVarID(ch), unpack(reshape(g_(:,k,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out g")
+
+        call check(nf90_put_var(ncid, ssaVarID(ch), unpack(reshape(ssa_(:,k,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ssa")
+
+        call check(nf90_put_var(ncid, rotVarID(ch), unpack(reshape(rot_(:,k,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out rot")
+      end do
+    end do
+    call check( nf90_close(ncid), "close atmosfile" )
     
+    deallocate(field)
   end if
 
 500 call MAPL_SyncSharedMemory(rc=ierr)
@@ -676,43 +695,66 @@ end subroutine read_sza
 !     26 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
 subroutine filenames()
-  character(len=256)          :: chmax, chmin
-
+  
   ! INFILES
   write(MET_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'-g5nr.lb2.met_Nv.',date,'_',time,'z.nc4'
   write(AER_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'-g5nr.lb2.aer_Nv.',date,'_',time,'z.nc4'
   write(ANG_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'.lb2.angles.',date,'_',time,'z.nc4'
   write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.nc4'
-  write(BRDF_file,'(6A)') trim(indir),'/BRDF/raw/',trim(brdfname),'.',brdfdate,'.hdf'
-  write(LAND_file,'(4A)') trim(indir),'/LevelB/invariant/',trim(instname),'-g5nr.lb2.asm_Nx.nc4' 
+  if ( lower_to_upper(surfname) == 'MAIACRTLS' ) then
+    write(SURF_file,'(6A)') trim(indir),'/BRDF/raw/',trim(surfname),'.',surfdate,'.hdf'
+  else
+    write(SURF_file,'(4A)') trim(indir),'/LER/omi/OMI_V158_SurfLER_Data_',surfdate,'.nc4'
+  end if
 
-  write(chmax,'(I4)') int(maxval(channels))
-  write(chmin,'(I4)') int(minval(channels))
+  write(LAND_file,'(4A)') trim(indir),'/LevelB/invariant/',trim(instname),'-g5nr.lb2.asm_Nx.nc4' 
 
 ! OUTFILES
   write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lb2.vlidort.'
+  write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lb2.vlidort_atmos.'
 
-  if (scalar) then 
-    write(OUT_file,'(2A)') trim(OUT_file),'scalar.'
-  else
-    write(OUT_file,'(2A)') trim(OUT_file),'vector.'
-  end if 
-  
-  if (lower_to_upper(brdfname) == 'MAIACRTLS' .and. lower_to_upper(brdfband) == 'INTERPOLATE') then
-    write(OUT_file,'(2A)') trim(OUT_file),'iMAIACRTLS.'
-  else if (lower_to_upper(brdfname) == 'MAIACRTLS' .and. lower_to_upper(brdfband) == 'EXACT') then
-    write(OUT_file,'(2A)') trim(OUT_file),'MAIACRTLS.'
-  else if (lower_to_upper(brdfname) /= 'MAIACRTLS') then
-    write(OUT_file,'(2A)') trim(OUT_file),'lambertian.'
-  end if
-
-  if (nch == 1) then    
-    write(OUT_file,'(7A)') trim(OUT_file),date,'_',time,'z_',trim(adjustl(chmin)),'nm.nc4'
-  else 
-    write(OUT_file,'(9A)') trim(OUT_file),date,'_',time,'z_',trim(adjustl(chmin)),'-',trim(adjustl(chmax)),'nm.nc4'
-  end if
+  call outfile_extname(OUT_file)
+  call outfile_extname(ATMOS_file)
 
 end subroutine filenames
+
+subroutine outfile_extname(file)
+  character(len=256),intent(inout)     :: file
+  character(len=256)                   :: chmax, chmin
+  integer                              :: i
+
+
+  if (scalar) then 
+    write(file,'(2A)') trim(file),'scalar.'
+  else
+    write(file,'(2A)') trim(file),'vector.'
+  end if 
+  
+  if (lower_to_upper(surfname) == 'MAIACRTLS' .and. lower_to_upper(surfband) == 'INTERPOLATE') then
+    write(file,'(2A)') trim(file),'iMAIACRTLS.'
+  else if (lower_to_upper(surfname) == 'MAIACRTLS' .and. lower_to_upper(surfband) == 'EXACT') then
+    write(file,'(2A)') trim(file),'MAIACRTLS.'
+  else if (lower_to_upper(surfname) /= 'MAIACRTLS' .and. lower_to_upper(surfband) == 'INTERPOLATE') then
+    write(file,'(2A)') trim(file),'ilambertian.'
+  else if (lower_to_upper(surfname) /= 'MAIACRTLS' .and. lower_to_upper(surfband) == 'EXACT') then
+    write(file,'(2A)') trim(file),'lambertian.'
+  end if
+
+  write(chmax,'(F10.2)') maxval(channels)
+  write(chmin,'(F10.2)') minval(channels)
+
+  i = index(chmax,'.')
+  chmax(i:i) = 'd'
+  i = index(chmin,'.')
+  chmin(i:i) = 'd'
+
+  if (nch == 1) then    
+    write(file,'(7A)') trim(file),date,'_',time,'z_',trim(adjustl(chmin)),'nm.nc4'
+  else 
+    write(file,'(9A)') trim(file),date,'_',time,'z_',trim(adjustl(chmin)),'-',trim(adjustl(chmax)),'nm.nc4'
+  end if
+
+end subroutine outfile_extname
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -770,10 +812,12 @@ end subroutine filenames
     if (ANY(radiance == MISSING) .or. ANY(reflectance == MISSING)) then
       write(*,*) 'VLIDORT returned a missing value'
       write(*,*) 'Exiting......'
+      write(*,*) 'Pixel is ',c
       call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
     else if (ierr > 0) then
       write(*,*) 'VLIDORT returned rc code ', ierr
       write(*,*) 'Exiting......'
+      write(*,*) 'Pixel is ',c
       call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
     end if 
 
@@ -886,32 +930,38 @@ end subroutine filenames
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!     read_BRDF
+!     read_surf
 ! PURPOSE
-!     read in all the BRDF variables
+!     read in all the surface reflectance variables
 ! INPUT
 !     none
 ! OUTPUT
 !     none
 !  HISTORY
 !     15 May 2015 P. Castellanos
+!     Jul 2015 P. Castellanos - added OMI LER option
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine read_BRDF()
+  subroutine read_surf()
     real, dimension(im,jm,nbands)   :: temp
 
     if (MAPL_am_I_root()) then
-      call readvar3D("Kiso", BRDF_file, temp)
-      call reduceProfile(temp,clmask,KISO)
+      if (lower_to_upper(surfname) == 'MAIACRTLS') then
+        call readvar3D("Kiso", SURF_file, temp)
+        call reduceProfile(temp,clmask,KISO)
 
-      call readvar3D("Kvol", BRDF_file, temp)
-      call reduceProfile(temp,clmask,KVOL)
+        call readvar3D("Kvol", SURF_file, temp)
+        call reduceProfile(temp,clmask,KVOL)
 
-      call readvar3D("Kgeo", BRDF_file, temp)
-      call reduceProfile(temp,clmask,KGEO)
+        call readvar3D("Kgeo", SURF_file, temp)
+        call reduceProfile(temp,clmask,KGEO)
 
-      write(*,*) '<> Read BRDF data to shared memory' 
+        write(*,*) '<> Read BRDF data to shared memory' 
+      else
+        call readvar3d("LER", SURF_file, temp)
+        call reduceProfile(temp,clmask,LER)
+      end if
     end if 
-  end subroutine read_BRDF  
+  end subroutine read_surf  
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -976,9 +1026,13 @@ end subroutine filenames
     call MAPL_AllocNodeArray(OCPHOBIC,(/clrm,km/),rc=ierr)
     call MAPL_AllocNodeArray(OCPHILIC,(/clrm,km/),rc=ierr)
     call MAPL_AllocNodeArray(SO4,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(KISO,(/clrm,nbands/),rc=ierr)
-    call MAPL_AllocNodeArray(KVOL,(/clrm,nbands/),rc=ierr)
-    call MAPL_AllocNodeArray(KGEO,(/clrm,nbands/),rc=ierr)
+    if (lower_to_upper(surfname) == 'MAIACRTLS') then
+      call MAPL_AllocNodeArray(KISO,(/clrm,nbands/),rc=ierr)
+      call MAPL_AllocNodeArray(KVOL,(/clrm,nbands/),rc=ierr)
+      call MAPL_AllocNodeArray(KGEO,(/clrm,nbands/),rc=ierr)
+    else
+      call MAPL_AllocNodeArray(LER,(/clrm,nbands/),rc=ierr)
+    end if 
     call MAPL_AllocNodeArray(SZA,(/clrm/),rc=ierr)
     call MAPL_AllocNodeArray(VZA,(/clrm/),rc=ierr)
     call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
@@ -1047,6 +1101,19 @@ end subroutine filenames
 
     allocate(clmask(im,jm))
     clmask = .False.
+
+  ! Netcdf IDs
+  ! ----------
+    allocate (radVarID(nch))
+    allocate (refVarID(nch))
+    allocate (albVarID(nch))
+    allocate (qVarID(nch))
+    allocate (uVarID(nch))
+
+    allocate (tauVarID(nch))
+    allocate (rotVarID(nch))
+    allocate (ssaVarID(nch))
+    allocate (gVarID(nch))
 
   end subroutine allocate_unshared
 
@@ -1117,156 +1184,220 @@ end subroutine filenames
 !     6 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  subroutine create_outfile(date, time, ncid, radVarID, refVarID, qVarID, uVarID, ssaVarID, &
-                            tauVarID, gVarID, rotVarID, wsaVarID, bsaVarID)
-    character(len=*)                   :: date, time
-    integer,intent(out)                :: ncid
-    integer,intent(out)                :: radVarID, refVarID    
+  subroutine create_outfile(date, time, radVarID, refVarID, albVarID, qVarID, uVarID, &
+                            ssaVarID, tauVarID, gVarID, rotVarID)
+    character(len=*) ,intent(in)       :: date, time
+    integer,dimension(:),intent(out)   :: radVarID, refVarID, qVarID, uVarID, albVarID  !OUT_file variables    
+    integer,dimension(:),intent(out)   :: ssaVarID, tauVarID, gVarID, rotVarID          !ATMOS_file variables
     
-    integer, dimension(4)              :: chunk_size
-    integer, dimension(4)              :: dimids
-    integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID
-    integer                            :: szaVarID, vzaVarID, raaVarID    
-    integer                            :: ssaVarID, tauVarID, gVarID, rotVarID, qVarID, uVarID
-    integer                            :: wsaVarID, bsaVarID 
-    integer                            :: timeVarID, clonVarID, clatVarID, chaVarID
-    integer                            :: nPolVarID, nMomVarID, ewVarID, nsVarID
-    real,allocatable,dimension(:,:)    :: clon, clat, sza, vza, raa
-    real,allocatable,dimension(:)      :: scantime, ew, ns
+    integer                            :: ncid
+    integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID       
+    integer                            :: scantimeVarID, clonVarID, clatVarID
+    integer                            :: timeVarID, levVarID, ewVarID, nsVarID
+    integer                            :: ch
 
+    real,allocatable,dimension(:,:)    :: clon, clat, sza, vza, raa
+    real,allocatable,dimension(:)      :: scantime, ew, ns, tyme, lev
+
+    character(len=1000)                :: comment
+
+!                                 OUT_FILE 
+!                                ----------
     ! Open File
     call check(nf90_create(OUT_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // OUT_file)
 
     ! Create dimensions
-    call check(nf90_def_dim(ncid, "time", 1, timeDimID), "creating time dimension")
+    call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
+    call check(nf90_def_dim(ncid, "lev", 1, levDimID), "creating ns dimension") !km
     call check(nf90_def_dim(ncid, "ew", im, ewDimID), "creating ew dimension") !im
     call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
-    call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
-    call check(nf90_def_dim(ncid, "ch", nch, chaDimID), "creating nch dimension")
 
     ! Global Attributes
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'title','VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler'),"title attr")
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'institution','NASA/Goddard Space Flight Center'),"institution attr")
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'source','Global Model and Assimilation Office'),"source attr")
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'history','VLIDORT simulation run from geo_vlidort.x'),"history attr")
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'references','n/a'),"references attr")    
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'comment','This file contains VLIDORT simulated top of the atmosphere ' // &
-                                                       'radiance and reflectance from GEOS-5 parameters sampled ' // &
-                                                       ' on the '//lower_to_upper(trim(instname))//' geostationary grid '),"comment attr")   
-    if (lower_to_upper(brdfname) == 'MAIACRTLS' .and. lower_to_upper(brdfband) == 'INTERPOLATE') then
-      call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_comment','MAIAC RTLS surface BRDF kernel weights interpolated to channels'),"surface_comment")
-    else if (lower_to_upper(brdfname) == 'MAIACRTLS' .and. lower_to_upper(brdfband) == 'EXACT') then
-      call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_comment','MAIAC RTLS surface BRDF kernel weights without inerpolation to channel'),"surface_comment")
-    else if (lower_to_upper(brdfname) /= 'MAIACRTLS') then
-      call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_comment','Lambertian surface reflectance'),"surface_comment")
+    write(comment,'(A)') 'VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler'
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'title',trim(comment)),"title attr")
+
+    write(comment,'(A)') 'NASA/Goddard Space Flight Center'
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'institution',trim(comment)),"institution attr")
+
+    write(comment,'(A)') 'Global Model and Assimilation Office'
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'source',trim(comment)),"source attr")
+
+    write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort.x'
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'history',trim(comment)),"history attr")
+
+    write(comment,'(A)') 'n/a'
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'references',trim(comment)),"references attr") 
+
+    write(comment,'(A)') 'This file contains VLIDORT simulated surface reflectance (albedo) ' // &
+                         'and top of the atmosphere ' // &
+                         'radiance and reflectance from GEOS-5 parameters sampled ' // &
+                         ' on the '//lower_to_upper(trim(instname))//' geostationary grid '
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'comment',trim(comment)),"comment attr")   
+
+    if (lower_to_upper(surfname) == 'MAIACRTLS' .and. lower_to_upper(surfband) == 'INTERPOLATE') then
+      write(comment,'(A)') 'MAIAC RTLS surface BRDF kernel weights interpolated to channel'
+    else if (lower_to_upper(surfname) == 'MAIACRTLS' .and. lower_to_upper(surfband) == 'EXACT') then
+      write(comment,'(A)') 'MAIAC RTLS surface BRDF kernel weights without inerpolation to channel'
+    else if (lower_to_upper(surfname) /= 'MAIACRTLS' .and. lower_to_upper(surfband) == 'INTERPOLATE') then
+      write(comment,'(A)') 'Lambertian surface reflectance interpolated to channel'
+    else if (lower_to_upper(surfname) /= 'MAIACRTLS' .and. lower_to_upper(surfband) == 'EXACT') then
+      write(comment,'(A)') 'Lambertian surface reflectance without interpolation to channel'
     end if
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_comment',trim(comment)),"surface_comment")
 
     if ( scalar ) then
-      call check(nf90_put_att(ncid,NF90_GLOBAL,'vlidort_comment','Scalar calculations'),"vlidort_comment")
+      write(comment,'(A)') 'Scalar calculations'
     else
-      call check(nf90_put_att(ncid,NF90_GLOBAL,'vlidort_comment','Vector calculations'),"surface_comment")
-      call check(nf90_def_var(ncid,'nPol',nf90_float,(/chaDimID/),nPolVarID),"create scanTime var")
-      call check(nf90_def_var(ncid,'nMom',nf90_float,(/chaDimID/),nMomVarID),"create scanTime var")
-
-      call check(nf90_put_att(ncid,nPolVarID,'long_name','number of components of the scattering matrix'),"long_name attr")
-      call check(nf90_put_att(ncid,nMomVarID,'long_name','number of phase function moments'),"long_name attr")
+      write(comment,'(A)') 'Vector calculations'
     end if
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'vlidort_comment',trim(comment)),"vlidort_comment")
+
+    if (.not. scalar) then
+      write(comment,'(I1,A)') nPol, ' components of the scattering matrix '
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'scat_comment',trim(comment)),"scat_comment") 
+    end if
+
+    write(comment,'(I3,A)') nMom,' phase function moments'
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'mie_comment',trim(comment)),"mie_comment")
+
+    write(comment,*) channels
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'channels',trim(adjustl(comment))),"channels_comment") 
 
     call check(nf90_put_att(ncid,NF90_GLOBAL,"contact","Patricia Castellanos <patricia.castellanos@nasa.gov>"),"contact attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,"Conventions","cf"),"conventions attr")
 
-    dimids = (/ewDimID,nsDimID,timeDimID,chaDimID/)
-    chunk_size = (/1,1,1,nch/)
-
     ! Define Variables
-    call check(nf90_def_var(ncid,'scanTime',nf90_float,(/ewDimID/),timeVarID),"create scanTime var")
+!                                     Dimensions
+!                                     ----------    
+    call check(nf90_def_var(ncid,'time',nf90_int,(/timeDimID/),timeVarID),"create time var")
+    call check(nf90_def_var(ncid,'lev',nf90_float,(/levDimID/),levVarID),"create lev var")
     call check(nf90_def_var(ncid,'ew',nf90_float,(/ewDimID/),ewVarID),"create ew var")
     call check(nf90_def_var(ncid,'ns',nf90_float,(/nsDimID/),nsVarID),"create ns var")
+
+    call check(nf90_def_var(ncid,'scanTime',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
     call check(nf90_def_var(ncid,'clon',nf90_float,(/ewDimID,nsDimID/),clonVarID),"create clon var")
     call check(nf90_def_var(ncid,'clat',nf90_float,(/ewDimID,nsDimID/),clatVarID),"create clat var")
-    call check(nf90_def_var(ncid,'channel',nf90_float,(/chaDimID/),chaVarID),"create channel var")
-    call check(nf90_def_var(ncid,'radiance',nf90_float,dimids,radVarID,chunksizes=chunk_size),"create radiance var")
-    call check(nf90_def_var(ncid,'reflectance',nf90_float,dimids,refVarID,chunksizes=chunk_size),"create reflectance var")
-    call check(nf90_def_var(ncid,'solar_zenith',nf90_float,(/ewDimID,nsDimID/),szaVarID),"create solar_zenith var")
-    call check(nf90_def_var(ncid,'sensor_zenith',nf90_float,(/ewDimID,nsDimID/),vzaVarID),"create sensor_zenith var")
-    call check(nf90_def_var(ncid,'relat_azimuth',nf90_float,(/ewDimID,nsDimID/),raaVarID),"create relat_azimuth var")
-    call check(nf90_def_var(ncid,'tau',nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,chaDimID/),tauVarID),"create aerosol_extinction")
-    call check(nf90_def_var(ncid,'rot',nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,chaDimID/),rotVarID),"create rot")
-    call check(nf90_def_var(ncid,'ssa',nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,chaDimID/),ssaVarID),"create ssa")
-    call check(nf90_def_var(ncid,'g',nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,chaDimID/),gVarID),"create g")
-    call check(nf90_def_var(ncid,'wsa',nf90_float,(/ewDimID,nsDimID,timeDimID,chaDimID/),wsaVarID),"create wsa")
-    call check(nf90_def_var(ncid,'bsa',nf90_float,(/ewDimID,nsDimID,timeDimID,chaDimID/),bsaVarID),"create bsa")
 
-    if (.not. scalar) then
-      call check(nf90_def_var(ncid,'Q',nf90_float,(/ewDimID,nsDimID,timeDimID,chaDimID/),qVarID),"create Q")
-      call check(nf90_def_var(ncid,'U',nf90_float,(/ewDimID,nsDimID,timeDimID,chaDimID/),uVarID),"create U")      
-    end if
+!                                     Data
+!                                     ----
+    do ch=1,nch
+      write(comment,'(F10.2)') channels(ch)
+      call check(nf90_def_var(ncid, 'rad_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),radVarID(ch)),"create radiance var")      
+      call check(nf90_def_var(ncid, 'ref_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),refVarID(ch)),"create reflectance var")
+      call check(nf90_def_var(ncid, 'albedo_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),albVarID(ch)),"create albedo var")
+      if (.not. scalar) then
+        call check(nf90_def_var(ncid, 'q_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),qVarID(ch)),"create Q var")
+        call check(nf90_def_var(ncid, 'u_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),uVarID(ch)),"create U var")
+      end if
+    end do
 
     ! Variable Attributes
-    call check(nf90_put_att(ncid,chaVarID,'standard_name','Channel'),"standard_name attr")
-    call check(nf90_put_att(ncid,chaVarID,'long_name','Channel Wavelength'),"long_name attr")
-    call check(nf90_put_att(ncid,chaVarID,'missing_value',real(MISSING)),"missing_value attr")
-    call check(nf90_put_att(ncid,chaVarID,'units','nm'),"units attr")
-    call check(nf90_put_att(ncid,chaVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")
+!                                          Radiance and Reflectance
+!                                          ------------------------  
+    do ch=1,size(channels)
+      write(comment,'(F10.2,A)') channels(ch), ' nm TOA Radiance'
+      call check(nf90_put_att(ncid,radVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm Top of Atmosphere Radiance'
+      call check(nf90_put_att(ncid,radVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+      call check(nf90_put_att(ncid,radVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,radVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
+      call check(nf90_put_att(ncid,radVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
-    call check(nf90_put_att(ncid,radVarID,'standard_name','Top of Atmosphere Radiance'),"standard_name attr")
-    call check(nf90_put_att(ncid,radVarID,'long_name','Top of Atmosphere Radiance'),"long_name attr")
-    call check(nf90_put_att(ncid,radVarID,'missing_value',real(MISSING)),"missing_value attr")
-    call check(nf90_put_att(ncid,radVarID,'units','W m-2 sr-1 nm-1'),"units attr")
-    call check(nf90_put_att(ncid,radVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm TOA Reflectance'
+      call check(nf90_put_att(ncid,refVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm Top of Atmosphere Reflectance'
+      call check(nf90_put_att(ncid,refVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+      call check(nf90_put_att(ncid,refVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,refVarID(ch),'units','None'),"units attr")
+      call check(nf90_put_att(ncid,refVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
-    call check(nf90_put_att(ncid,refVarID,'standard_name','Top of Atmosphere Reflectance'),"standard_name attr")
-    call check(nf90_put_att(ncid,refVarID,'long_name','Top of Atmosphere Reflectance'),"long_name attr")
-    call check(nf90_put_att(ncid,refVarID,'missing_value',real(MISSING)),"missing_value attr")
-    call check(nf90_put_att(ncid,refVarID,'units','None'),"units attr")
-    call check(nf90_put_att(ncid,refVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm Albedo'
+      call check(nf90_put_att(ncid,albVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm Bi-Directional Surface Reflectance'
+      call check(nf90_put_att(ncid,albVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+      call check(nf90_put_att(ncid,albVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,albVarID(ch),'units','None'),"units attr")
+      call check(nf90_put_att(ncid,albVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
-    call check(nf90_put_att(ncid,timeVarID,'long_name','Initial Time of Scan'),"long_name attr")
-    call check(nf90_put_att(ncid,timeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
+      if (.not. scalar) then
+        write(comment,'(F10.2,A)') channels(ch), ' nm TOA Q'
+        call check(nf90_put_att(ncid,qVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm TOA Q Component of the Stokes Vector'
+        call check(nf90_put_att(ncid,qVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,qVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,qVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
+        call check(nf90_put_att(ncid,qVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm TOA U'
+        call check(nf90_put_att(ncid,uVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm TOA U Component of the Stokes Vector'
+        call check(nf90_put_att(ncid,uVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,uVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,uVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
+        call check(nf90_put_att(ncid,uVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+      end if
+
+    end do
+
+!                                          scanTime
+!                                          -------  
+    call check(nf90_put_att(ncid,scantimeVarID,'long_name','Initial Time of Scan'),"long_name attr")
+    call check(nf90_put_att(ncid,scantimeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
                                                   time//':00:00'),"units attr")
 
+!                                          EW, NS, LEV, TIME
+!                                          -----------------------  
     call check(nf90_put_att(ncid,ewVarID,'long_name','pseudo longitude'),"long_name attr")
     call check(nf90_put_att(ncid,ewVarID,'units','degrees_east'),"units attr")
     call check(nf90_put_att(ncid,nsVarID,'long_name','pseudo latitude'),"long_name attr")
     call check(nf90_put_att(ncid,nsVarID,'units','degrees_north'),"units attr")   
+    call check(nf90_put_att(ncid,timeVarID,'long_name','Initial Time of Scan'),"long_name attr")
+    call check(nf90_put_att(ncid,timeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
+                                                  time//':00:00'),"units attr")   
+    call check(nf90_put_att(ncid,levVarID,'long_name','Vertical Level'),"long_name attr")
+    call check(nf90_put_att(ncid,levVarID,'units','layer'),"units attr")
+    call check(nf90_put_att(ncid,levVarID,'positive','down'),"positive attr")
+    call check(nf90_put_att(ncid,levVarID,'axis','z'),"axis attr")
+
+!                                          clon & clat
+!                                          -------  
+    call check(nf90_put_att(ncid,clonVarID,'long_name','pixel center longitude'),"long_name attr")
+    call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
+    call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
+    call check(nf90_put_att(ncid,clatVarID,'missing_value',real(MISSING)),"missing_value attr")
 
     call check(nf90_put_att(ncid,clonVarID,'long_name','pixel center longitude'),"long_name attr")
     call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
     call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
     call check(nf90_put_att(ncid,clatVarID,'missing_value',real(MISSING)),"missing_value attr")  
-
-    call check(nf90_put_att(ncid,szaVarID,'long_name','solar zenith angle'),"long_name attr")
-    call check(nf90_put_att(ncid,szaVarID,'missing_value',real(MISSING)),"missing_value attr")
-    call check(nf90_put_att(ncid,szaVarID,'units','degrees'),"units attr")
-
-    call check(nf90_put_att(ncid,vzaVarID,'long_name','sensor zenith angle'),"long_name attr")
-    call check(nf90_put_att(ncid,vzaVarID,'missing_value',real(MISSING)),"missing_value attr")
-    call check(nf90_put_att(ncid,vzaVarID,'units','degrees'),"units attr") 
-
-    call check(nf90_put_att(ncid,raaVarID,'long_name','relative azimuth angle'),"long_name attr")
-    call check(nf90_put_att(ncid,raaVarID,'missing_value',real(MISSING)),"missing_value attr")
-    call check(nf90_put_att(ncid,raaVarID,'units','degrees'),"units attr")       
+      
 
     !Leave define mode
     call check(nf90_enddef(ncid),"leaving define mode")
 
-    ! write out channels and clon, clat, scantime
-    call check(nf90_put_var(ncid, chaVarID, channels), "writing out channels")
-
+    ! write out ew, ns, lev, time, clon, clat, & scantime
     allocate (scantime(im))
     allocate (clon(im, jm))
     allocate (clat(im, jm))
     allocate (ew(im))
     allocate (ns(jm))    
+    allocate (lev(1))
+    allocate (tyme(tm))
 
     call readvar1D("scanTime", MET_file, scantime)
-    call check(nf90_put_var(ncid,timeVarID,scantime), "writing out scantime")
+    call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
 
     call readvar2D("clon", INV_file, clon)
     call check(nf90_put_var(ncid,clonVarID,clon), "writing out clon")
 
     call readvar2D("clat", INV_file, clat)
     call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
+
+    call readvar1D("time", MET_file, tyme)
+    call check(nf90_put_var(ncid,timeVarID,tyme), "writing out time")
+
+    call readvar1D("lev", MET_file, lev)
+    call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
 
     call readvar1D("ew", MET_file, ew)
     call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
@@ -1279,30 +1410,197 @@ end subroutine filenames
     deallocate (scantime)
     deallocate (ns)
     deallocate (ew)
-
-    allocate (sza(im,jm))
-    allocate (vza(im,jm))
-    allocate (raa(im,jm))
-
-    call readvar2D("solar_zenith", ANG_file, sza)
-    call check(nf90_put_var(ncid,szaVarID,sza), "writing out sza")
-
-    call readvar2D("sensor_zenith", ANG_file, vza)
-    call check(nf90_put_var(ncid,vzaVarID,vza), "writing out vza")
-
-    call readvar2D("relat_azimuth", ANG_file, raa)
-    call check(nf90_put_var(ncid,raaVarID,raa), "writing out raa")
-
-    deallocate (sza)
-    deallocate (vza)
-    deallocate (raa)
-
-    if (.not. scalar) then
-      call check(nf90_put_var(ncid,nPolVarID,nPol), "writing out nPol")
-      call check(nf90_put_var(ncid,nMomVarID,nMom), "writing out nMom")
-    end if
+    deallocate (tyme)
+    deallocate (lev)
 
     call check( nf90_close(ncid), "close outfile" )
+
+!                           ATMOSPHERE OUTPUTS
+!
+    ! Open File
+    call check(nf90_create(ATMOS_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // ATMOS_file)
+
+    ! Create dimensions
+    call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
+    call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
+    call check(nf90_def_dim(ncid, "ew", im, ewDimID), "creating ew dimension") !im
+    call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
+
+    ! Global Attributes
+    write(comment,'(A)') 'Atmospheric inputs for VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler'
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'title',trim(comment)),"title attr")
+
+    write(comment,'(A)') 'NASA/Goddard Space Flight Center'
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'institution',trim(comment)),"institution attr")
+
+    write(comment,'(A)') 'Global Model and Assimilation Office'
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'source',trim(comment)),"source attr")
+
+    write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort.x'
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'history',trim(comment)),"history attr")
+
+    write(comment,'(A)') 'n/a'
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'references',trim(comment)),"references attr") 
+
+    write(comment,'(A)') 'This file contains intermediate input data for the VLIDORT simulation'
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'comment',trim(comment)),"comment attr")   
+
+    if ( scalar ) then
+      write(comment,'(A)') 'Scalar calculations'
+    else
+      write(comment,'(A)') 'Vector calculations'
+    end if
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'vlidort_comment',trim(comment)),"vlidort_comment")
+
+    if (.not. scalar) then
+      write(comment,'(I1,A)') nPol, ' components of the scattering matrix '
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'scat_comment',trim(comment)),"scat_comment") 
+    end if
+
+    write(comment,'(I3,A)') nMom,' phase function moments'
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'mie_comment',trim(comment)),"mie_comment")
+
+    write(comment,*) channels
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'channels',trim(adjustl(comment))),"channels_comment") 
+
+    call check(nf90_put_att(ncid,NF90_GLOBAL,"contact","Patricia Castellanos <patricia.castellanos@nasa.gov>"),"contact attr")
+    call check(nf90_put_att(ncid,NF90_GLOBAL,"Conventions","cf"),"conventions attr")
+
+    ! Define Variables
+!                                     Dimensions
+!                                     ----------    
+    call check(nf90_def_var(ncid,'time',nf90_int,(/timeDimID/),timeVarID),"create time var")
+    call check(nf90_def_var(ncid,'lev',nf90_float,(/levDimID/),levVarID),"create lev var")
+    call check(nf90_def_var(ncid,'ew',nf90_float,(/ewDimID/),ewVarID),"create ew var")
+    call check(nf90_def_var(ncid,'ns',nf90_float,(/nsDimID/),nsVarID),"create ns var")
+
+    call check(nf90_def_var(ncid,'scanTime',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
+    call check(nf90_def_var(ncid,'clon',nf90_float,(/ewDimID,nsDimID/),clonVarID),"create clon var")
+    call check(nf90_def_var(ncid,'clat',nf90_float,(/ewDimID,nsDimID/),clatVarID),"create clat var")
+
+!                                     Data
+!                                     ----
+    do ch=1,nch
+      write(comment,'(F10.2)') channels(ch)
+      call check(nf90_def_var(ncid, 'aot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),tauVarID(ch)),"create aot var")      
+      call check(nf90_def_var(ncid, 'rot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),rotVarID(ch)),"create rot var")
+      call check(nf90_def_var(ncid, 'ssa_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),ssaVarID(ch)),"create ssa var")
+      call check(nf90_def_var(ncid, 'g_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),gVarID(ch)),"create g var")
+    end do
+
+    ! Variable Attributes
+!                                          Intermediate Data
+!                                          -----------------  
+    do ch=1,size(channels)
+
+      write(comment,'(F10.2,A)') channels(ch), ' nm AOT'
+      call check(nf90_put_att(ncid,tauVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm Aerosol Optical Thickness'
+      call check(nf90_put_att(ncid,tauVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+      call check(nf90_put_att(ncid,tauVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,tauVarID(ch),'units','none'),"units attr")
+      call check(nf90_put_att(ncid,tauVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+      write(comment,'(F10.2,A)') channels(ch), ' nm ROT'
+      call check(nf90_put_att(ncid,rotVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm Raylieght Optical Thickness'
+      call check(nf90_put_att(ncid,rotVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+      call check(nf90_put_att(ncid,rotVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,rotVarID(ch),'units','none'),"units attr")
+      call check(nf90_put_att(ncid,rotVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+      write(comment,'(F10.2,A)') channels(ch), ' nm SSA'
+      call check(nf90_put_att(ncid,ssaVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm Single Scattering Albedo'
+      call check(nf90_put_att(ncid,ssaVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+      call check(nf90_put_att(ncid,ssaVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,ssaVarID(ch),'units','none'),"units attr")
+      call check(nf90_put_att(ncid,ssaVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")   
+
+      write(comment,'(F10.2,A)') channels(ch), ' nm g'
+      call check(nf90_put_att(ncid,gVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm Asymmetry Parameter'
+      call check(nf90_put_att(ncid,gVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+      call check(nf90_put_att(ncid,gVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,gVarID(ch),'units','none'),"units attr")
+      call check(nf90_put_att(ncid,gVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")         
+    end do
+
+!                                          scanTime
+!                                          -------  
+    call check(nf90_put_att(ncid,scantimeVarID,'long_name','Initial Time of Scan'),"long_name attr")
+    call check(nf90_put_att(ncid,scantimeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
+                                                  time//':00:00'),"units attr")
+
+!                                          EW, NS, LEV, TIME
+!                                          -----------------------  
+    call check(nf90_put_att(ncid,ewVarID,'long_name','pseudo longitude'),"long_name attr")
+    call check(nf90_put_att(ncid,ewVarID,'units','degrees_east'),"units attr")
+    call check(nf90_put_att(ncid,nsVarID,'long_name','pseudo latitude'),"long_name attr")
+    call check(nf90_put_att(ncid,nsVarID,'units','degrees_north'),"units attr")   
+    call check(nf90_put_att(ncid,timeVarID,'long_name','Initial Time of Scan'),"long_name attr")
+    call check(nf90_put_att(ncid,timeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
+                                                  time//':00:00'),"units attr")   
+    call check(nf90_put_att(ncid,levVarID,'long_name','Vertical Level'),"long_name attr")
+    call check(nf90_put_att(ncid,levVarID,'units','layer'),"units attr")
+    call check(nf90_put_att(ncid,levVarID,'positive','down'),"positive attr")
+    call check(nf90_put_att(ncid,levVarID,'axis','z'),"axis attr")
+
+!                                          clon & clat
+!                                          -------  
+    call check(nf90_put_att(ncid,clonVarID,'long_name','pixel center longitude'),"long_name attr")
+    call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
+    call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
+    call check(nf90_put_att(ncid,clatVarID,'missing_value',real(MISSING)),"missing_value attr")
+
+    call check(nf90_put_att(ncid,clonVarID,'long_name','pixel center longitude'),"long_name attr")
+    call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
+    call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
+    call check(nf90_put_att(ncid,clatVarID,'missing_value',real(MISSING)),"missing_value attr")  
+      
+
+    !Leave define mode
+    call check(nf90_enddef(ncid),"leaving define mode")
+
+    ! write out ew, ns, lev, time, clon, clat, & scantime
+    allocate (scantime(im))
+    allocate (clon(im, jm))
+    allocate (clat(im, jm))
+    allocate (ew(im))
+    allocate (ns(jm))    
+    allocate (lev(km))
+    allocate (tyme(tm))
+
+    call readvar1D("scanTime", MET_file, scantime)
+    call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
+
+    call readvar2D("clon", INV_file, clon)
+    call check(nf90_put_var(ncid,clonVarID,clon), "writing out clon")
+
+    call readvar2D("clat", INV_file, clat)
+    call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
+
+    call readvar1D("time", MET_file, tyme)
+    call check(nf90_put_var(ncid,timeVarID,tyme), "writing out time")
+
+    call readvar1D("lev", MET_file, lev)
+    call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
+
+    call readvar1D("ew", MET_file, ew)
+    call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
+
+    call readvar1D("ns", MET_file, ns)
+    call check(nf90_put_var(ncid,nsVarID,ns), "writing out ns")   
+
+    deallocate (clon)
+    deallocate (clat)  
+    deallocate (scantime)
+    deallocate (ns)
+    deallocate (ew)
+    deallocate (tyme)
+    deallocate (lev)
+
+    call check( nf90_close(ncid), "close atmosfile" )
 
   end subroutine create_outfile  
 
@@ -1523,12 +1821,12 @@ end subroutine filenames
     call ESMF_ConfigGetAttribute(cf, instname, label = 'INSTNAME:',__RC__)
     call ESMF_ConfigGetAttribute(cf, indir, label = 'INDIR:',__RC__)
     call ESMF_ConfigGetAttribute(cf, outdir, label = 'OUTDIR:',default=indir)
-    call ESMF_ConfigGetAttribute(cf, brdfname, label = 'BRDFNAME:',default='MAIACRTLS')
-    call ESMF_ConfigGetAttribute(cf, brdfdate, label = 'BRDFDATE:',__RC__)
+    call ESMF_ConfigGetAttribute(cf, surfname, label = 'SURFNAME:',default='MAIACRTLS')
+    call ESMF_ConfigGetAttribute(cf, surfdate, label = 'SURFDATE:',__RC__)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=90.0)
     call ESMF_ConfigGetAttribute(cf, cldmax, label = 'CLDMAX:',default=0.01)
-    call ESMF_ConfigGetAttribute(cf, brdfband, label = 'BRDFBAND:', default='INTERPOLATE')
+    call ESMF_ConfigGetAttribute(cf, surfband, label = 'SURFBAND:', default='INTERPOLATE')
 
     ! Figure out number of channels and read into vector
     !------------------------------------------------------
@@ -1540,12 +1838,12 @@ end subroutine filenames
     ! -------------------------------
     call filenames()
 
-    if (lower_to_upper(brdfband) == 'EXACT' ) then
-      allocate (brdfband_i(nch))
-      call ESMF_ConfigGetAttribute(cf, brdfband_i, label = 'BRDFBAND_I:', __RC__)
+    if (lower_to_upper(surfband) == 'EXACT' ) then
+      allocate (surfband_i(nch))
+      call ESMF_ConfigGetAttribute(cf, surfband_i, label = 'SURFBAND_I:', __RC__)
     else
-      allocate (brdfband_c(nbands))
-      call ESMF_ConfigGetAttribute(cf, brdfband_c, label = 'BRDFBAND_C:', __RC__)
+      allocate (surfband_c(nbands))
+      call ESMF_ConfigGetAttribute(cf, surfband_c, label = 'SURFBAND_C:', __RC__)
     end if
 
     call ESMF_ConfigDestroy(cf)
