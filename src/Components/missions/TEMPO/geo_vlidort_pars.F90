@@ -20,7 +20,6 @@
   ! MODIS kernel stuff
   integer, parameter                    :: nkernel = 3
   integer, parameter                    :: nparam  = 2
-  integer, parameter                    :: nbands  = 7                ! number of modis bands
 
   ! Missing Value 
   real, parameter                       :: MISSING = 1e15
