@@ -7,7 +7,7 @@
 subroutine Scalar_Lambert (km, nch, nobs,channels,        &
                    tau, ssa, g, pe, he, te, albedo,            &
                    solar_zenith, relat_azymuth, sensor_zenith, &
-                   MISSING,verbose,radiance_VL,reflectance_VL, rc)
+                   MISSING,verbose,radiance_VL,reflectance_VL, ROT, rc)
 !
 ! Uses VLIDORT in scalar mode to compute OMI aerosol TOA radiances.
 !
@@ -48,11 +48,14 @@ subroutine Scalar_Lambert (km, nch, nobs,channels,        &
   real*8,           intent(out) :: radiance_VL(nobs,nch)       ! TOA normalized radiance from VLIDORT
   integer,          intent(out) :: rc                          ! return code
   real*8,           intent(out) :: reflectance_VL(nobs, nch)   ! TOA reflectance from VLIDORT
+  real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness 
+
+  real*8                        :: Q(nobs, nch)                     ! Stokes parameter Q
+  real*8                        :: U(nobs, nch)                     ! Stokes parameter U  
+ 
 !                               ---  
   integer             :: i,j, ier
  
-  real*8              :: ROT(km,nobs,nch)            ! rayleigh optical thickness 
-  real*8              :: Q(nobs,nch),U(nobs,nch)    
   type(VLIDORT_scat) :: SCAT
 
 #define IS_MISSING(x) (abs(x/MISSING-1)<0.001)
@@ -131,7 +134,7 @@ end subroutine Scalar_Lambert
 subroutine Vector_Lambert (km, nch, nobs, channels, nMom,  &
                    nPol,tau, ssa, g, pmom, pe, he, te, albedo, &
                    solar_zenith, relat_azymuth, sensor_zenith, &
-                   MISSING,verbose, radiance_VL, reflectance_VL,Q,U, rc)
+                   MISSING,verbose, radiance_VL, reflectance_VL, ROT, Q ,U, rc)
 !
 ! Place holder.
 !
@@ -176,12 +179,12 @@ subroutine Vector_Lambert (km, nch, nobs, channels, nMom,  &
   real*8,           intent(out) :: radiance_VL(nobs,nch)       ! TOA radiance from VLIDORT
   integer,          intent(out) :: rc                          ! return code
   real*8,           intent(out) :: reflectance_VL(nobs, nch)   ! TOA reflectance from VLIDORT
+  real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness  
   real*8,           intent(out) :: Q(nobs, nch)   ! Q Stokes component
   real*8,           intent(out) :: U(nobs, nch)   ! U Stokes component
 !                               ---
   
   integer             :: i,j, ier 
-  real*8              :: ROT(km,nobs,nch)            ! rayleigh optical thickness    
   
   type(VLIDORT_scat) :: SCAT
 
