@@ -22,7 +22,7 @@ module VLIDORT_BRDF_MODIS
   subroutine Scalar_LandMODIS (km, nch, nobs,channels,        &
                      tau, ssa, g, pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, ROT, WSA, BSA, rc, &
+                     MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, rc, &
                      albedo, reflectance_VL,radiance_VL )
   !
   ! Uses VLIDORT in scalar mode to compute OMI aerosol TOA radiances.
@@ -34,14 +34,14 @@ module VLIDORT_BRDF_MODIS
     integer, parameter            :: nkernel = 3
     integer, parameter            :: nparam  = 2
   ! !INPUT PARAMETERS:
-    integer,          intent(in)  :: km    ! number of levels on file
+    integer,          intent(in)  :: km    ! number of vertical levels
     integer,          intent(in)  :: nch   ! number of channels
     integer,          intent(in)  :: nobs  ! number of observations
                                         
                     
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
-  !                                                   ! --- Mie Parameters ---
+  !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
     real*8, target,   intent(in)  :: ssa(km,nch,nobs) ! single scattering albedo
     real*8, target,   intent(in)  :: g(km,nch,nobs)   ! asymmetry factor
@@ -61,20 +61,19 @@ module VLIDORT_BRDF_MODIS
     real*8, target,   intent(in)  :: relat_azymuth(nobs) 
     real*8, target,   intent(in)  :: sensor_zenith(nobs) 
 
-    real*8, optional, target,   intent(in)  :: albedo(nobs,nch)       ! surface albedo
+    real*8, optional, target,   intent(in)  :: albedo(nobs,nch)       ! surface albedo optional
     
     integer,          intent(in)            :: verbose
 
   ! !OUTPUT PARAMETERS:
 
-    real*8,           intent(out) :: radiance_VL_SURF(nobs,nch)       ! TOA normalized radiance from VLIDORT
+    real*8,           intent(out) :: radiance_VL_SURF(nobs,nch)       ! TOA normalized radiance from VLIDORT using surface module
     real*8,           intent(out) :: reflectance_VL_SURF(nobs, nch)   ! TOA reflectance from VLIDORT using surface module
     integer,          intent(out) :: rc                               ! return code
-    real*8,           intent(out) :: ROT(km,nobs,nch)                    ! rayleigh optical thickness  
-    real*8,           intent(out) :: WSA(nobs,nch)                    ! White-sky albedo 
-    real*8,           intent(out) :: BSA(nobs,nch)                    ! Black-sky albedo     
+    real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness  
+    real*8,           intent(out) :: BR(nobs,nch)                     ! bi-directional reflectance 
     real*8, optional, intent(out) :: reflectance_VL(nobs, nch)        ! TOA reflectance from VLIDORT using albedo
-    real*8, optional, intent(out) :: radiance_VL(nobs,nch)            ! TOA normalized radiance from VLIDORT
+    real*8, optional, intent(out) :: radiance_VL(nobs,nch)            ! TOA normalized radiance from VLIDORT using albedo
 
     real*8                        :: Q(nobs, nch)                     ! Stokes parameter Q
     real*8                        :: U(nobs, nch)                     ! Stokes parameter U  
@@ -146,8 +145,7 @@ module VLIDORT_BRDF_MODIS
         call VLIDORT_Run (SCAT, radiance_VL_SURF(j,i), reflectance_VL_SURF(j,i), &
                           ROT(:,j,i), Q(j,i), U(j,i), .true., .true., ier)
 
-        WSA(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_WSA_CALCULATED
-        BSA(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_BSA_CALCULATED
+        BR(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
 
         if ( verbose > 0 ) then
           print *, 'My radiance land modis',radiance_VL_SURF(j,i), reflectance_VL_SURF(j,i) 
@@ -213,7 +211,7 @@ module VLIDORT_BRDF_MODIS
   subroutine Vector_LandMODIS (km, nch, nobs, channels, nMom,  &
                      nPol,tau, ssa, g, pmom, pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, WSA, BSA, Q, U, rc, &
+                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc, &
                      albedo, reflectance_VL,radiance_VL, Q_lamb, U_lamb)
   !
   ! Place holder.
@@ -222,21 +220,21 @@ module VLIDORT_BRDF_MODIS
    
      implicit NONE
 
-    integer, parameter            :: nkernel = 3
-    integer, parameter            :: nparam  = 2
+    integer, parameter                      :: nkernel = 3   ! number of kernels
+    integer, parameter                      :: nparam  = 2   ! number of kernel parameters
 
   ! !INPUT PARAMETERS:
 
-    integer,          intent(in)            :: km    ! number of levels on file
+    integer,          intent(in)            :: km    ! number of vertical levels 
     integer,          intent(in)            :: nch   ! number of channels
     integer,          intent(in)            :: nobs  ! number of observations
 
-    integer, target,  intent(in)            :: nMom  ! number of moments 
-    integer, target,  intent(in)            :: nPol  ! number of components                               
+    integer, target,  intent(in)            :: nMom  ! number of phase function moments 
+    integer, target,  intent(in)            :: nPol  ! number of scattering matrix components                               
                     
     real*8, target,   intent(in)            :: channels(nch)    ! wavelengths [nm]
 
-  !                                                   ! --- Mie Parameters ---
+  !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
     real*8, target,   intent(in)            :: ssa(km,nch,nobs) ! single scattering albedo
     real*8, target,   intent(in)            :: g(km,nch,nobs)   ! asymmetry factor
@@ -248,34 +246,33 @@ module VLIDORT_BRDF_MODIS
     real*8, target,   intent(in)            :: he(km+1,nobs)    ! height above sea-level  [m]
     real*8, target,   intent(in)            :: te(km+1,nobs)    ! temperature at layer edges [K]
 
-    real*8, target,   intent(in)            :: kernel_wt(nkernel,nch,nobs)   ! kernel weights (/fiso,fgeo,fvol/)
-    real*8, target,   intent(in)            :: param(nparam,nch,nobs)        ! Li-Sparse parameters 
-                                                                   ! param1 = crown relative height (h/b)
-                                                                   ! param2 = shape parameter (b/r)
+    real*8, target,   intent(in)            :: kernel_wt(nkernel,nch,nobs)    ! kernel weights (/fiso,fgeo,fvol/)
+    real*8, target,   intent(in)            :: param(nparam,nch,nobs)         ! Li-Sparse parameters 
+                                                                              ! param1 = crown relative height (h/b)
+                                                                              ! param2 = shape parameter (b/r)
                          
     real*8, target,   intent(in)            :: solar_zenith(nobs)  
     real*8, target,   intent(in)            :: relat_azymuth(nobs) 
     real*8, target,   intent(in)            :: sensor_zenith(nobs) 
 
-    real*8, optional, target,   intent(in)  :: albedo(nobs,nch)       ! surface albedo
+    real*8, optional, target,   intent(in)  :: albedo(nobs,nch)               ! surface albedo optional
 
     integer,          intent(in)            :: verbose
 
   ! !OUTPUT PARAMETERS:
-    real*8,           intent(out)           :: radiance_VL_SURF(nobs,nch)         ! TOA normalized radiance from VLIDORT
-    real*8,           intent(out)           :: reflectance_VL_SURF(nobs, nch)   ! TOA reflectance from VLIDORT using surface module
-    integer,          intent(out)           :: rc                            ! return code
+    real*8,           intent(out)           :: radiance_VL_SURF(nobs,nch)     ! TOA normalized radiance from VLIDORT using surface module
+    real*8,           intent(out)           :: reflectance_VL_SURF(nobs, nch) ! TOA reflectance from VLIDORT using surface module
+    integer,          intent(out)           :: rc                             ! return code
 
-    real*8,           intent(out)           :: ROT(km,nobs,nch)                    ! rayleigh optical thickness
-    real*8,           intent(out)           :: WSA(nobs,nch)                    ! white sky albedo 
-    real*8,           intent(out)           :: BSA(nobs,nch)                    ! black sky albedo 
-    real*8,           intent(out)           :: Q(nobs, nch)                     ! Stokes parameter Q
-    real*8,           intent(out)           :: U(nobs, nch)                     ! Stokes parameter U   
+    real*8,           intent(out)           :: ROT(km,nobs,nch)               ! rayleigh optical thickness
+    real*8,           intent(out)           :: BR(nobs,nch)                   ! bidirectional reflectance 
+    real*8,           intent(out)           :: Q(nobs, nch)                   ! Stokes parameter Q
+    real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
 
-    real*8, optional, intent(out)           :: reflectance_VL(nobs, nch)     ! TOA reflectance from VLIDORT using albedo
-    real*8, optional, intent(out)           :: radiance_VL(nobs,nch)         ! TOA normalized radiance from VLIDORT
-    real*8, optional, intent(out)           :: Q_lamb(nobs, nch)   ! Stokes parameter Q
-    real*8, optional, intent(out)           :: U_lamb(nobs, nch)   ! Stokes parameter U    
+    real*8, optional, intent(out)           :: reflectance_VL(nobs, nch)      ! TOA reflectance from VLIDORT using albedo
+    real*8, optional, intent(out)           :: radiance_VL(nobs,nch)          ! TOA normalized radiance from VLIDORT using albedo
+    real*8, optional, intent(out)           :: Q_lamb(nobs, nch)              ! Stokes parameter Q
+    real*8, optional, intent(out)           :: U_lamb(nobs, nch)              ! Stokes parameter U    
   !                               ---
     
     integer             :: i,j,n,p,ier
@@ -347,9 +344,9 @@ module VLIDORT_BRDF_MODIS
         call VLIDORT_Run (SCAT, radiance_VL_SURF(j,i),reflectance_VL_SURF(j,i),&
                           ROT(:,j,i), Q(j,i), U(j,i), .false., .true., ier)
 
-        WSA(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_WSA_CALCULATED
-        BSA(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_BSA_CALCULATED
         
+        BR(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
+        write(*,*) 'BR ',i,SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
         if ( ier /= 0 ) then
           radiance_VL_SURF(j,i) = MISSING
           reflectance_VL_SURF(j,i) = MISSING               
