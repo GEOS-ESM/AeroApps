@@ -9,6 +9,7 @@ module geo_vlidort_netcdf
   include 'mpif.h'
 
   public :: mp_readDim
+  public :: readvar4D
   public :: readvar3D
   public :: readvar2D
   public :: readvar1D
@@ -83,6 +84,38 @@ module geo_vlidort_netcdf
     call check( nf90_get_var(ncid,varid,var), "reading " // varname)
     call check( nf90_close(ncid), "closing " // filename)
   end subroutine readvar3D
+
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    readvar4D
+! PURPOSE
+!     reads a 4D variable from a netcdf file all at once
+!     can only be called by one processor
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     27 April P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine readvar4D(varname, filename, var)
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  filename
+    real, dimension(:,:,:,:), intent(inout)  ::  var
+
+    integer                                :: ncid, varid
+
+
+!         write(*,'(A,A,A,I4)')'Reading ',trim(varname), ' on PE ', myid
+    call check( nf90_open(filename,NF90_NOWRITE,ncid), "opening file " // filename)
+    call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
+    call check( nf90_get_var(ncid,varid,var), "reading " // varname)
+    call check( nf90_close(ncid), "closing " // filename)
+  end subroutine readvar4D
+
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
