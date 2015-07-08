@@ -102,7 +102,7 @@ if __name__ == "__main__":
     nccs      = '/discover/nobackup'
     
     if (os.path.exists(calculon)):
-        indir     = calculon + '/DATA'
+        indir     = calculon 
         outdir    = '/nobackup/3/pcastell/TEMPO/DATA'
     else:
         indir     = nccs + '/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA'
