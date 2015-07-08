@@ -71,7 +71,7 @@ def Open(filename,doNC4ctl=True):
         else:
             v = f.vname[i]
         var = TempoVar(v)
-        var.title = f.vtitle[i]
+        #var.title = f.vtitle[i]
         var.km = f.kmvar[i]
         if var.km>0:
             var.levunits = f.levunits[:]
@@ -269,7 +269,7 @@ def writeNC ( ncGeo, clon, clat, ctyme, tBeg, Vars, levs, levUnits, options,
     
     # Add pseudo dimensions for GrADS compatibility
     # -------------------------------------------
-    _copyVar(ncGeo,nc,u'ew',dtype='f4',zlib=False,trim=True)
+    _copyVar(ncGeo,nc,u'ew',dtype='f4',zlib=False,trim=False)
     _copyVar(ncGeo,nc,u'ns',dtype='f4',zlib=False,trim=False)
     dt = nc.createVariable('scanTime','f4',('ew',),zlib=False)
     dt.long_name = 'Time of Scan'
@@ -281,8 +281,8 @@ def writeNC ( ncGeo, clon, clat, ctyme, tBeg, Vars, levs, levUnits, options,
     # Save lon/lat if so desired
     # --------------------------
     if options.coords:
-        _copyVar(ncGeo,nc,u'clon',dtype='f4',zlib=False,trim=True)
-        _copyVar(ncGeo,nc,u'clat',dtype='f4',zlib=False,trim=True)
+        _copyVar(ncGeo,nc,u'clon',dtype='f4',zlib=False,trim=False)
+        _copyVar(ncGeo,nc,u'clat',dtype='f4',zlib=False,trim=False)
         
     # Loop over datasets, sample and write each variable
     # --------------------------------------------------
@@ -304,8 +304,10 @@ def writeNC ( ncGeo, clon, clat, ctyme, tBeg, Vars, levs, levUnits, options,
                                      zlib=options.zlib,
                                      chunksizes=chunks)
 
-            this.standard_name = var.title
-            this.long_name = var.title.replace('_',' ')
+            #this.standard_name = var.title
+            this.standard_name = var.name
+            #this.long_name = var.title.replace('_',' ')
+            this.long_name = ''
             this.missing_value = MAPL_UNDEF
             this.units = var.units
             if g.lower:
