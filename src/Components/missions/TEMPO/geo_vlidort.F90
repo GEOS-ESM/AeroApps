@@ -1239,6 +1239,13 @@ end subroutine outfile_extname
     write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort.x'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'history',trim(comment)),"history attr")
 
+    write(comment,'(A)') INV_file  //'\n'// &
+                         ANG_file  //'\n'// &
+                         LAND_file //'\n'// &
+                         MET_file  //'\n'// &
+                         AER_file  //'\n'// &
+                         SURF_file 
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'inputs',trim(comment)),"input files attr")
     write(comment,'(A)') 'n/a'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'references',trim(comment)),"references attr") 
 
