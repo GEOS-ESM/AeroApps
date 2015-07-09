@@ -490,13 +490,6 @@ end if
                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
       call check(nf90_put_var(ncid, refVarID(ch), unpack(reshape(reflectance_L(:,ch),(/clrm/)),clmask,field), &
                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
-      if (.not. scalar) then
-        call check(nf90_put_var(ncid, qVarID(ch), unpack(reshape(Q_(:,ch),(/clrm/)),clmask,field), &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
-
-        call check(nf90_put_var(ncid, uVarID(ch), unpack(reshape(U_(:,ch),(/clrm/)),clmask,field), &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
-      endif
 
       call check(nf90_put_var(ncid, albVarID(ch), unpack(reshape(ALBEDO_(:,ch),(/clrm/)),clmask,field), &
                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
@@ -689,11 +682,6 @@ subroutine outfile_extname(file)
   integer                              :: i
 
 
-  if (scalar) then 
-    write(file,'(2A)') trim(file),'scalar.'
-  else
-    write(file,'(2A)') trim(file),'vector.'
-  end if 
   
   if (lower_to_upper(surfname) == 'MAIACRTLS' .and. lower_to_upper(surfband) == 'INTERPOLATE') then
     write(file,'(2A)') trim(file),'iMAIACRTLS.'
@@ -1021,11 +1009,6 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(ROT_,(/clrm,km,nch/),rc=ierr)
     call MAPL_AllocNodeArray(ALBEDO_,(/clrm,nch/),rc=ierr)
     
-    if (.not. scalar) then
-      call MAPL_AllocNodeArray(Q_,(/clrm,nch/),rc=ierr)
-      call MAPL_AllocNodeArray(U_,(/clrm,nch/),rc=ierr)
-    end if
-
     call MAPL_AllocNodeArray(radiance_L,(/clrm,nch/),rc=ierr)
     call MAPL_AllocNodeArray(reflectance_L,(/clrm,nch/),rc=ierr)
 
@@ -1064,12 +1047,6 @@ end subroutine outfile_extname
     allocate (param(nparam,nch,nobs))
 
     allocate (ROT(km,nobs,nch))
-
-    if (.not. scalar) then
-      allocate (pmom(km,nch,nobs,nMom,nPol))
-      allocate (Q(nobs, nch))
-      allocate (U(nobs, nch))
-    end if
 
   ! Needed for reading
   ! ----------------------
@@ -1760,7 +1737,6 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, outdir, label = 'OUTDIR:',default=indir)
     call ESMF_ConfigGetAttribute(cf, surfname, label = 'SURFNAME:',default='MAIACRTLS')
     call ESMF_ConfigGetAttribute(cf, surfdate, label = 'SURFDATE:',__RC__)
-    call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=90.0)
     call ESMF_ConfigGetAttribute(cf, cldmax, label = 'CLDMAX:',default=0.01)
     call ESMF_ConfigGetAttribute(cf, surfband, label = 'SURFBAND:', default='INTERPOLATE')
@@ -1850,10 +1826,6 @@ end subroutine outfile_extname
     call MAPL_DeallocNodeArray(G_,rc=ierr)
     call MAPL_DeallocNodeArray(ROT_,rc=ierr)
     call MAPL_DeallocNodeArray(ALBEDO_,rc=ierr)
-    if (.not. scalar) then
-      call MAPL_DeallocNodeArray(Q_,rc=ierr)
-      call MAPL_DeallocNodeArray(U_,rc=ierr)
-    end if
 
     call MAPL_DeallocNodeArray(radiance_L,rc=ierr) 
     call MAPL_DeallocNodeArray(reflectance_L,rc=ierr) 
