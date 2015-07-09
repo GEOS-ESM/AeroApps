@@ -19,7 +19,7 @@ module VLIDORT_BRDF_MODIS
     return
   end function IS_MISSING
 
-  subroutine Scalar_LandMODIS (km, nch, nobs,channels,        &
+  subroutine VLIDORT_Scalar_LandMODIS (km, nch, nobs,channels,        &
                      tau, ssa, g, pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, rc, &
@@ -204,11 +204,11 @@ module VLIDORT_BRDF_MODIS
 
     end do ! Loop over obs
 
-  end subroutine Scalar_LandMODIS
+  end subroutine VLIDORT_Scalar_LandMODIS
 
   !..........................................................................
 
-  subroutine Vector_LandMODIS (km, nch, nobs, channels, nMom,  &
+  subroutine VLIDORT_Vector_LandMODIS (km, nch, nobs, channels, nMom,  &
                      nPol,tau, ssa, g, pmom, pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc, &
@@ -396,6 +396,6 @@ module VLIDORT_BRDF_MODIS
 
     end do ! Loop over obs
 
-  end subroutine Vector_LandMODIS
+  end subroutine VLIDORT_Vector_LandMODIS
 
 end module VLIDORT_BRDF_MODIS
