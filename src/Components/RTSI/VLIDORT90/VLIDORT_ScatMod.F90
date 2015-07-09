@@ -41,8 +41,8 @@
       Contains
 !.............................................................................
  
-      subroutine VLIDORT_Run (self,radiance, reflectance, ROT,Q,U, 
-     &                            scalar,aerosol,rc,NSTOKESin, V)
+      subroutine VLIDORT_Run (self,radiance, reflectance, ROT,Q,U, &
+                                 scalar,aerosol,rc,NSTOKESin, V)
 !
 !     Computes radiances for a single wavelength, pixel. Optical properties
 !     and met fields in self are assumed to have been updated with the
@@ -124,8 +124,8 @@
       real*8, dimension(MAXLAYERS)                       :: deltau_vert_input
       real*8, dimension(MAXLAYERS)                       :: omega_total_input
 
-      real*8, dimension(MAX_USER_LEVELS, MAX_GEOMETRIES
-     &, MAXSTOKES, MAX_DIRECTIONS)                       :: STOKES
+      real*8, dimension(MAX_USER_LEVELS, MAX_GEOMETRIES, &
+              MAXSTOKES, MAX_DIRECTIONS)                 :: STOKES
       real*8                                             :: FLUX_FACTOR
 
 !     Volume Rayleigh scattering coefficient (depends closely on the 
@@ -233,12 +233,10 @@
       
       do j = 0, NLAYERS 
         
-         Vol(j) = 3.69296E-18 * A(wmicron) * pressure_grid(j) 
-     &          / temperature_grid(j)
+         Vol(j) = 3.69296E-18 * A(wmicron) * pressure_grid(j) / temperature_grid(j)
          Vol(j) = Vol(j) * 1.E5 ! en km-1
 
-        sect(j) = Vol(j)/2.546899E19 * 1013.25/pressure_grid(j) 
-     &          * temperature_grid(j)/288.15
+        sect(j) = Vol(j)/2.546899E19 * 1013.25/pressure_grid(j) * temperature_grid(j)/288.15
 
           
       end do
@@ -456,10 +454,10 @@
  
 !     Call the MASTER driver for doing the actual calculation
 !     -----------------------------------------------------------
-      call VLIDORT_MASTER (self%Surface%Base%VIO%VLIDORT_FixIn,
-     &     self%Surface%Base%VIO%VLIDORT_ModIn, 
-     &     self%Surface%Base%VIO%VLIDORT_Sup, 
-     &     self%Surface%Base%VIO%VLIDORT_Out)
+      call VLIDORT_MASTER (self%Surface%Base%VIO%VLIDORT_FixIn, &
+           self%Surface%Base%VIO%VLIDORT_ModIn, &
+           self%Surface%Base%VIO%VLIDORT_Sup, &
+           self%Surface%Base%VIO%VLIDORT_Out)
   
       if ( self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_INPUTCHECK /= 0 ) then
          rc = 3
