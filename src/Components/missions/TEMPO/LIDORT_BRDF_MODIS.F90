@@ -6,8 +6,8 @@ module VLIDORT_BRDF_MODIS
 !.............................................................................
   implicit NONE
 
-  PUBLIC VLIDORT_Scalar_LandMODIS
-  PUBLIC VLIDORT_Vector_LandMODIS
+  PUBLIC Scalar_LandMODIS
+  PUBLIC Vector_LandMODIS
 
   contains
 
@@ -31,8 +31,6 @@ module VLIDORT_BRDF_MODIS
 
     implicit NONE
 
-    logical, parameter            :: aerosol = .true.
-    logical, parameter            :: scalar = .true.
     integer, parameter            :: nkernel = 3
     integer, parameter            :: nparam  = 2
   ! !INPUT PARAMETERS:
@@ -135,7 +133,7 @@ module VLIDORT_BRDF_MODIS
                                sensor_zenith(j),relat_azymuth(j),&
                                kernel_wt(1,i,j),kernel_wt(2,i,j),kernel_wt(3,i,j),&
                                reshape(param(:,i,j),(/nparam/)),&
-                               scalar,rc)
+                               .true.,rc)
 
         if ( rc /= 0 ) return
 
@@ -145,7 +143,7 @@ module VLIDORT_BRDF_MODIS
         SCAT%g => g(:,i,j)
          
         call VLIDORT_Run (SCAT, radiance_VL_SURF(j,i), reflectance_VL_SURF(j,i), &
-                          ROT(:,j,i), Q(j,i), U(j,i), scalar, aerosol, ier)
+                          ROT(:,j,i), Q(j,i), U(j,i), .true., .true., ier)
 
         BR(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
 
@@ -184,10 +182,10 @@ module VLIDORT_BRDF_MODIS
           print*, 'DO SURFACE LAMB'
         end if
         call VLIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i),solar_zenith (j),sensor_zenith(j),&
-                               relat_azymuth(j),scalar)
+                               relat_azymuth(j),.true.)
          
         call VLIDORT_Run (SCAT, radiance_VL(j,i), reflectance_VL(j,i), &
-                        ROT(:,j,i), Q(j,i), U(j,i), scalar, aerosol, ier)
+                        ROT(:,j,i), Q(j,i), U(j,i), .true., .true., ier)
         if ( verbose > 0 ) then
           print *, 'radiance albedo',albedo(j,i),radiance_VL(j,i), reflectance_VL(j,i) 
         end if
@@ -221,9 +219,7 @@ module VLIDORT_BRDF_MODIS
      use VLIDORT_ScatMod
    
      implicit NONE
- 
-    logical                                 :: scalar
-    logical ,parameter                      :: aerosol = .true.
+
     integer, parameter                      :: nkernel = 3   ! number of kernels
     integer, parameter                      :: nparam  = 2   ! number of kernel parameters
 
@@ -333,12 +329,11 @@ module VLIDORT_BRDF_MODIS
           print*, 'DO MODIS BRDF'
         end if
 
-        scalar = .true.
         call VLIDORT_LANDMODIS(SCAT%Surface,solar_zenith(j),&
                                sensor_zenith(j),relat_azymuth(j),&
                                kernel_wt(1,i,j),kernel_wt(2,i,j),kernel_wt(3,i,j),&
                                reshape(param(:,i,j),(/nparam/)),&
-                               scalar,rc)
+                               .true.,rc)
 
         SCAT%wavelength = channels(i)        
         SCAT%tau => tau(:,i,j)
@@ -346,9 +341,8 @@ module VLIDORT_BRDF_MODIS
         SCAT%g => g(:,i,j)
         SCAT%pmom => pmom(:,:,:,i,j)
 
-        scalar = .false.
         call VLIDORT_Run (SCAT, radiance_VL_SURF(j,i),reflectance_VL_SURF(j,i),&
-                          ROT(:,j,i), Q(j,i), U(j,i), scalar, aerosol, ier)
+                          ROT(:,j,i), Q(j,i), U(j,i), .false., .true., ier)
 
         
         BR(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
@@ -380,15 +374,12 @@ module VLIDORT_BRDF_MODIS
         if ( verbose > 0 ) then
           print*, 'DO SURFACE LAMB'
         end if
-
-        scalar = .true.
         call VLIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i),solar_zenith (j),sensor_zenith(j),&
-                                 relat_azymuth(j),scalar)
+                                 relat_azymuth(j),.true.)
         if ( rc /= 0 ) return
-        
-        scalar = .false.   
+           
         call VLIDORT_Run (SCAT, radiance_VL(j,i), reflectance_VL(j,i), &
-                          ROT(:,j,i), Q_lamb(j,i), U_lamb(j,i), scalar, aerosol, ier)
+                          ROT(:,j,i), Q_lamb(j,i), U_lamb(j,i), .false., .true., ier)
  
         if ( ier /= 0 ) then
           radiance_VL(j,i) = MISSING
