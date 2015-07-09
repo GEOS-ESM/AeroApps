@@ -435,7 +435,7 @@ if (myid == 0) then
 !     -------------------------------
       if (scalar) then
         ! Call to vlidort scalar code       
-        call Scalar_Lambert (km, nch, nobs ,dble(channels),        &
+        call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels),        &
                 dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), albedo,&
                 (/dble(SZA(c))/), &
                 (/dble(abs(RAA(c)))/), &
@@ -443,7 +443,7 @@ if (myid == 0) then
                 dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
       else
         ! Call to vlidort vector code
-        call Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
+        call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
                nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                (/dble(SZA(c))/), &
                (/dble(abs(RAA(c)))/), &
@@ -460,7 +460,7 @@ if (myid == 0) then
 !     ------------------------------
       if (scalar) then 
         ! Call to vlidort scalar code            
-        call Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
+        call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
                 dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
                 kernel_wt, param, &
                 (/dble(SZA(c))/), &
@@ -469,7 +469,7 @@ if (myid == 0) then
                 dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
       else
         ! Call to vlidort vector code
-        call Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
+        call VLIDORT_Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
                 nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
                 kernel_wt, param, &
                 (/dble(SZA(c))/), &
