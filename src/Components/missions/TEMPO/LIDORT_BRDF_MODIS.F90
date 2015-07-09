@@ -29,10 +29,10 @@ module LIDORT_BRDF_MODIS
   !
     use LIDORT_ScatMod
 
-    logical,parameter             :: aerosol = .true.   ! whether or not simulation contains aerosol
 
     implicit NONE
 
+    logical,parameter             :: aerosol = .true.   ! whether or not simulation contains aerosol
     integer, parameter            :: nkernel = 3
     integer, parameter            :: nparam  = 2
   ! !INPUT PARAMETERS:
