@@ -67,7 +67,10 @@ esma_help help:
 INC_VLIDORT90 = $(ESMAINC)/VLIDORT90
 LIB_VLIDORT90 = $(ESMALIB)/libVLIDORT90.a
 
-INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT90) /usr/include
+INC_LIDORT3p7 = $(ESMAINC)/LIDORT3p7
+LIB_LIDORT3p7 = $(ESMALIB)/libLIDORT3p7.a
+
+INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT90) $(INC_LIDORT3p7) /usr/include
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
@@ -81,7 +84,7 @@ THIS_GFIO = GMAO_gfio_r4
 #                  User Defined Targets
 #                  --------------------
 
-SRCS := sys_tracker.c GeoAngles_py.F90 VLIDORT_LAMBERT.F90 VLIDORT_BRDF_MODIS.F90  
+SRCS := sys_tracker.c GeoAngles_py.F90 VLIDORT_LAMBERT.F90 VLIDORT_BRDF_MODIS.F90  LIDORT_LAMBERT.F90 LIDORT_BRDF_MODIS.F90  
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
 DEPS := $(addsuffix .d, $(basename $(SRCS))) 
  
@@ -106,7 +109,14 @@ python: $(PY_EXTS)
 
 geo_angles.x: GeoAngles_py.o geo_vlidort_netcdf.o geo_angles.o
 	$(FC) $(FOPTS) $^ -o $@   $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
-                            $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)                                 
+                            $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)   
+
+geo_lidort.x: geo_vlidort_netcdf.o %.o 
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
+                                 $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+                                 $(LIB_MAPL_BASE_STUBS2) \
+                                 $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
+                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)                                                          
                               
 
 # Hack to prevent remaking dep files during cleaning
