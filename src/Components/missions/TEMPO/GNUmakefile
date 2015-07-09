@@ -111,7 +111,7 @@ geo_angles.x: GeoAngles_py.o geo_vlidort_netcdf.o geo_angles.o
 	$(FC) $(FOPTS) $^ -o $@   $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                             $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)   
 
-geo_lidort.x: geo_vlidort_netcdf.o %.o 
+geo_lidort.x: geo_vlidort_netcdf.o geo_lidort.o 
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
