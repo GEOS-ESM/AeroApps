@@ -15,6 +15,8 @@ subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels,        &
 
   implicit NONE
 
+  logical, parameter            :: aerosol = .true.
+  logical, parameter            :: scalar = .true.
 ! !INPUT PARAMETERS:
 
   integer,          intent(in)  :: km    ! number of levels on file
@@ -96,7 +98,7 @@ subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels,        &
            end if
            
            call VLIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i),solar_zenith (j),sensor_zenith(j),&
-                               relat_azymuth(j),.true.)
+                               relat_azymuth(j),scalar)
            
            SCAT%wavelength = channels(i)
            SCAT%tau => tau(:,i,j)
@@ -104,7 +106,7 @@ subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels,        &
            SCAT%g => g(:,i,j)
          
            call VLIDORT_Run (SCAT, radiance_VL(j,i), reflectance_VL(j,i), &
-                                 ROT(:,j,i), Q(j,i),U(j,i), .true., .true., ier)
+                                 ROT(:,j,i), Q(j,i),U(j,i), scalar, aerosol, ier)
 
            if ( ier /= 0 ) then
               if ( solar_zenith (j) > 89.9 ) then ! if SZA > 90
@@ -142,6 +144,8 @@ subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nMom,  &
  
    implicit NONE
 
+  logical, parameter            :: aerosol = .true.
+  logical, parameter            :: scalar = .false.
 ! !INPUT PARAMETERS:
 
   integer,          intent(in)  :: km    ! number of levels on file
@@ -227,7 +231,7 @@ subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nMom,  &
        end if
 
        call VLIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i),solar_zenith (j),sensor_zenith(j),&
-                               relat_azymuth(j),.false.)
+                               relat_azymuth(j),scalar)
 
         SCAT%wavelength = channels(i)        
         SCAT%tau => tau(:,i,j)
@@ -236,7 +240,7 @@ subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nMom,  &
         SCAT%pmom => pmom(:,:,:,i,j)
 
         call VLIDORT_Run (SCAT, radiance_VL(j,i),reflectance_VL(j,i), &
-                           ROT(:,j,i), Q(j,i),U(j,i),.false., .true., ier)
+                           ROT(:,j,i), Q(j,i),U(j,i),scalar, aerosol, ier)
         if ( ier /= 0 ) then
 
               if ( solar_zenith (j) > 89.9 ) then ! if SZA > 90
@@ -280,6 +284,8 @@ subroutine VLIDORT_AI_Scalar (km, nch, nobs, channels,        &
 
   implicit NONE
 
+  logical, parameter            :: aerosol = .true.
+  logical, parameter            :: scalar = .true.
 ! !INPUT PARAMETERS:
 
   integer,          intent(in)  :: km    ! number of levels on file
@@ -379,7 +385,7 @@ subroutine VLIDORT_AI_Scalar (km, nch, nobs, channels,        &
            end if
            
         call VLIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i),solar_zenith (j),sensor_zenith(j),&
-                               relat_azymuth(j),.true.)
+                               relat_azymuth(j),scalar)
 
         SCAT%wavelength = channels(i)        
         SCAT%tau => tau(:,i,j)
@@ -387,7 +393,7 @@ subroutine VLIDORT_AI_Scalar (km, nch, nobs, channels,        &
         SCAT%g => g(:,i,j)
                  
         call VLIDORT_Run (SCAT, radiance_VL(j,i),reflectance_VL(j,i), &
-                          ROT(:,j,i), Q(j,i),U(j,i),.true., .true., ier)
+                          ROT(:,j,i), Q(j,i),U(j,i),scalar, aerosol, ier)
 
         if ( ier /= 0 ) then
                  radiance_VL(j,i) = MISSING
@@ -443,6 +449,8 @@ subroutine AI_Vector (km, nch, nobs,  channels, nMom,  &
  
    implicit NONE
 
+  logical, parameter            :: aerosol = .true.
+  logical, parameter            :: scalar = .false.
 ! !INPUT PARAMETERS:
 
   integer,          intent(in)  :: km    ! number of levels on file
@@ -550,7 +558,7 @@ subroutine AI_Vector (km, nch, nobs,  channels, nMom,  &
            end if
           
           call VLIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i),solar_zenith (j),sensor_zenith(j),&
-                               relat_azymuth(j),.false.)
+                               relat_azymuth(j),scalar)
           
           SCAT%wavelength = channels(i)          
           SCAT%tau => tau(:,i,j)
@@ -559,7 +567,7 @@ subroutine AI_Vector (km, nch, nobs,  channels, nMom,  &
           SCAT%pmom => pmom(:,:,:,i,j)
           print*, 'everything ok' 
           call VLIDORT_Run (SCAT, radiance_VL(j,i),reflectance_VL(j,i), &
-                            ROT(:,j,i),Q(j,i),U(j,i), .false., .true., ier)
+                            ROT(:,j,i),Q(j,i),U(j,i), scalar, aerosol, ier)
                if ( ier /= 0 ) then
                     radiance_VL(j,i) = MISSING
                     AI_VL(j) = MISSING
