@@ -7,7 +7,6 @@ module LIDORT_BRDF_MODIS
   implicit NONE
 
   PUBLIC LIDORT_Scalar_LandMODIS
-  PUBLIC LIDORT_Vector_LandMODIS
 
   contains
 
@@ -142,7 +141,7 @@ module LIDORT_BRDF_MODIS
         SCAT%g => g(:,i,j)
          
         call LIDORT_Run (SCAT, radiance_L_SURF(j,i), reflectance_L_SURF(j,i), &
-                          ROT(:,j,i), Q(j,i), U(j,i), aerosol, ier)
+                          ROT(:,j,i), aerosol, ier)
 
         BR(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
 
@@ -184,7 +183,7 @@ module LIDORT_BRDF_MODIS
                                relat_azymuth(j))
          
         call LIDORT_Run (SCAT, radiance_L(j,i), reflectance_L(j,i), &
-                        ROT(:,j,i), Q(j,i), U(j,i), aerosol, ier)
+                        ROT(:,j,i), aerosol, ier)
         if ( verbose > 0 ) then
           print *, 'radiance albedo',albedo(j,i),radiance_L(j,i), reflectance_L(j,i) 
         end if
