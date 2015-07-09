@@ -15,7 +15,7 @@ module LIDORT_SurfaceMod
        
    TYPE LIDORT_Surface
 
-      type(LIDORT)                 :: Base 
+      type(LIDORT)                  :: Base 
       integer                       :: sfc_type = -1
       real*8                        :: albedo 
 
@@ -31,14 +31,13 @@ module LIDORT_SurfaceMod
    contains
 
    Subroutine LIDORT_SurfaceLamb(self, albedo, solar_zenith, &
-                                  sensor_zenith, relative_azimuth, scalar)
+                                  sensor_zenith, relative_azimuth)
          
          type(LIDORT_Surface),intent(inout)  :: self
          real*8,  intent(in)  :: albedo
          real*8,  intent(in)  :: solar_zenith
          real*8,  intent(in)  :: sensor_zenith
          real*8,  intent(in)  :: relative_azimuth
-         logical, intent(in)  :: scalar
          
        
          self%sfc_type      = 1
@@ -46,12 +45,11 @@ module LIDORT_SurfaceMod
          self%solar_zenith  = solar_zenith
          self%sensor_zenith = sensor_zenith
          self%relat_azimuth = relative_azimuth
-         self%scalar        = scalar
       
    end subroutine LIDORT_SurfaceLamb
 !.........................................................................
    Subroutine LIDORT_GissCoxMunk(self,U10m,V10m,m, solar_zenith, &
-                                  sensor_zenith, relative_azimuth, scalar, BRDF,rc) 
+                                  sensor_zenith, relative_azimuth, BRDF,rc) 
  
       USE LIDORT_PARS
       USE LIDORT_AUX
@@ -59,14 +57,13 @@ module LIDORT_SurfaceMod
 
       implicit NONE
 
-      type(LIDORT_Surface), intent(inout)   :: self
+      type(LIDORT_Surface), intent(inout)    :: self
       real*8, intent(in)                     :: solar_zenith
       real*8, intent(in)                     :: sensor_zenith
       real*8, intent(in)                     :: relative_azimuth 
       real*8, intent(in)                     :: U10m
       real*8, intent(in)                     :: V10m
       real*8, intent(in)                     :: m
-      logical, intent(in)                    :: scalar
       integer, intent(out)                   :: rc     ! error code
       real*8, intent(out)                    :: BRDF     
     
@@ -117,9 +114,7 @@ module LIDORT_SurfaceMod
       self%sfc_type      = 2
       self%solar_zenith  = solar_zenith
       self%sensor_zenith = sensor_zenith
-      self%relat_azimuth = relative_azimuth  
-      self%scalar = scalar     
-             
+      self%relat_azimuth = relative_azimuth               
 
       DO_USER_STREAMS     = .true.       ! Use user-defined viewing zenith angles
       DO_BRDF_SURFACE     = .true. 
@@ -230,14 +225,14 @@ module LIDORT_SurfaceMod
 !.................................................................................
 
    Subroutine LIDORT_LANDMODIS(self, solar_zenith, sensor_zenith, relative_azimuth, &
-                                fiso,fgeo,fvol, param, scalar,rc) 
+                                fiso,fgeo,fvol, param,rc) 
  
       USE LIDORT_PARS
       USE LIDORT_AUX
       USE BRDF_SUP_MOD
 
       implicit NONE
-      type(LIDORT_Surface), intent(inout)  :: self
+      type(LIDORT_Surface), intent(inout)   :: self
       real*8, intent(in)                    :: solar_zenith
       real*8, intent(in)                    :: sensor_zenith
       real*8, intent(in)                    :: relative_azimuth 
@@ -245,7 +240,6 @@ module LIDORT_SurfaceMod
       real*8, intent(in)                    :: fgeo
       real*8, intent(in)                    :: fvol
       real*8, intent(in), dimension(:)      :: param
-      logical, intent(in)                   :: scalar
       integer, intent(out)                  :: rc     ! error code
 !      real*8, intent(out)                   :: BRDF     
 
@@ -292,7 +286,6 @@ module LIDORT_SurfaceMod
       self%solar_zenith  = solar_zenith
       self%sensor_zenith = sensor_zenith
       self%relat_azimuth = relative_azimuth  
-      self%scalar = scalar     
              
 
       DO_BRDF_SURFACE  = .true. 
