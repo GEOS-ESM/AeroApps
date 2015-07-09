@@ -421,7 +421,7 @@ if (myid == 0) then
 !     Simple lambertian surface model
 !     -------------------------------
       ! Call to lidort code       
-      call Scalar_Lambert (km, nch, nobs ,dble(channels),        &
+      call LIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels),        &
                 dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), albedo,&
                 (/dble(SZA(c))/), &
                 (/dble(abs(RAA(c)))/), &
@@ -437,7 +437,7 @@ if (myid == 0) then
 !     MODIS BRDF Surface Model
 !     ------------------------------
       ! Call to lidort code            
-      call Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
+      call LIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
                 dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
                 kernel_wt, param, &
                 (/dble(SZA(c))/), &
