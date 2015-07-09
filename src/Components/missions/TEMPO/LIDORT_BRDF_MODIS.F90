@@ -143,7 +143,7 @@ module LIDORT_BRDF_MODIS
         call LIDORT_Run (SCAT, radiance_L_SURF(j,i), reflectance_L_SURF(j,i), &
                           ROT(:,j,i), aerosol, ier)
 
-        BR(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
+        BR(j,i) = SCAT%Surface%Base%VIO%BRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
 
         if ( verbose > 0 ) then
           print *, 'My radiance land modis',radiance_L_SURF(j,i), reflectance_L_SURF(j,i) 
