@@ -79,7 +79,7 @@ MOD_DIRS := .
 
 
 #LIDORT_ScatMod_cd.F
-SRCS := LIDORT_Mod.F90 LIDORT_SurfaceMod.F90 LIDORT_ScatMod.F \
+SRCS := LIDORT_Mod.F90 LIDORT_SurfaceMod.F90 LIDORT_ScatMod.F90 \
 				$(foreach dir,$(SRC_DIRS), \
         $(wildcard $(dir)/*.[fFc]) $(wildcard $(dir)/*.[fF]90) )
 
