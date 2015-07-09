@@ -4,7 +4,7 @@
 !
 !.............................................................................
 
-subroutine Scalar_Lambert (km, nch, nobs,channels,        &
+subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels,        &
                    tau, ssa, g, pe, he, te, albedo,            &
                    solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL,reflectance_VL, ROT, rc)
@@ -127,11 +127,11 @@ subroutine Scalar_Lambert (km, nch, nobs,channels,        &
 
   end do ! Loop over obs
 
-end subroutine Scalar_Lambert
+end subroutine VLIDORT_Scalar_Lambert
 
 !..........................................................................
 
-subroutine Vector_Lambert (km, nch, nobs, channels, nMom,  &
+subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nMom,  &
                    nPol,tau, ssa, g, pmom, pe, he, te, albedo, &
                    solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose, radiance_VL, reflectance_VL, ROT, Q ,U, rc)
@@ -263,10 +263,10 @@ subroutine Vector_Lambert (km, nch, nobs, channels, nMom,  &
 
   end do ! Loop over obs
 
-end subroutine Vector_Lambert
+end subroutine VLIDORT_Vector_Lambert
 !.............................................................................
 
-subroutine AI_Scalar (km, nch, nobs, channels,        &
+subroutine VLIDORT_AI_Scalar (km, nch, nobs, channels,        &
                    tau, ssa, g, pe, he, te, albedo,               &
                    solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,radiance, AI, verbose,radiance_VL,          &
@@ -428,7 +428,7 @@ subroutine AI_Scalar (km, nch, nobs, channels,        &
         end if 
   end do
 
-end subroutine AI_Scalar
+end subroutine VLIDORT_AI_Scalar
 !..........................................................................
 
 subroutine AI_Vector (km, nch, nobs,  channels, nMom,  &
@@ -602,4 +602,4 @@ subroutine AI_Vector (km, nch, nobs,  channels, nMom,  &
 
   end do ! end loop over nobs
   
-end subroutine AI_Vector
+end subroutine VLIDORT_AI_Vector
