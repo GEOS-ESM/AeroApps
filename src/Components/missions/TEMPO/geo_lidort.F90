@@ -153,7 +153,7 @@ program geo_lidort
 ! netcdf variables
 !----------------------  
   integer                               :: ncid                                           ! netcdf file id
-  integer,allocatable,dimension(:)      :: radVarID, refVarID, albVarID, qVarID, uVarID   ! netcdf OUT_file variable IDs
+  integer,allocatable,dimension(:)      :: radVarID, refVarID, albVarID                   ! netcdf OUT_file variable IDs
   integer,allocatable,dimension(:)      :: tauVarID, gVarID, ssaVarID, rotVarID           ! netcdf ATMOS_file variable IDs
 
 ! Miscellaneous
@@ -232,7 +232,7 @@ program geo_lidort
 
 ! Create OUTFILE
 ! --------------
-  if ( MAPL_am_I_root() )  call create_outfile(date, time, radVarID, refVarID, albVarID, qVarID, uVarID, &
+  if ( MAPL_am_I_root() )  call create_outfile(date, time, radVarID, refVarID, albVarID, &
                                                ssaVarID, tauVarID, gVarID, rotVarID)
 
 ! Read the cloud, land, and angle data 
@@ -1061,8 +1061,6 @@ end subroutine outfile_extname
     allocate (radVarID(nch))
     allocate (refVarID(nch))
     allocate (albVarID(nch))
-    allocate (qVarID(nch))
-    allocate (uVarID(nch))
 
     allocate (tauVarID(nch))
     allocate (rotVarID(nch))
@@ -1138,10 +1136,10 @@ end subroutine outfile_extname
 !     6 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  subroutine create_outfile(date, time, radVarID, refVarID, albVarID, qVarID, uVarID, &
+  subroutine create_outfile(date, time, radVarID, refVarID, albVarID, &
                             ssaVarID, tauVarID, gVarID, rotVarID)
     character(len=*) ,intent(in)       :: date, time
-    integer,dimension(:),intent(out)   :: radVarID, refVarID, qVarID, uVarID, albVarID  !OUT_file variables    
+    integer,dimension(:),intent(out)   :: radVarID, refVarID,  albVarID                 !OUT_file variables    
     integer,dimension(:),intent(out)   :: ssaVarID, tauVarID, gVarID, rotVarID          !ATMOS_file variables
     
     integer                            :: ncid
