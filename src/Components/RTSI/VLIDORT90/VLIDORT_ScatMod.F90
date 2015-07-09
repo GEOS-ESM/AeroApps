@@ -42,7 +42,7 @@
 !.............................................................................
  
       subroutine VLIDORT_Run (self,radiance, reflectance, ROT,Q,U, 
-     &                            scalar,aerosol,rc)
+     &                            scalar,aerosol,rc,NSTOKESin, V)
 !
 !     Computes radiances for a single wavelength, pixel. Optical properties
 !     and met fields in self are assumed to have been updated with the
@@ -68,6 +68,10 @@
 
       logical,            intent(in)      :: scalar  ! If True, do scalar calculation
       logical,            intent(in)      :: aerosol ! if False, Rayleigh only
+
+      integer,            intent(in),optional  :: NSTOKESin  ! number of Stokes components
+      real*8,             intent(out),optional :: V          ! V Stokes component
+
 
 !                           ----
 
@@ -102,7 +106,7 @@
 
 
    
-      real*8                                             :: x, V
+      real*8                                             :: x
       real*8, dimension(MAXLAYERS)                       :: Ray
       real*8, dimension(0:MAXMOMENTS_INPUT)              :: aersmom 
       real*8, dimension(0:MAXMOMENTS_INPUT,MAXLAYERS,16) :: aervmoms 
@@ -154,6 +158,8 @@
       else
          NSTOKES = 1        
       end if
+
+      if (present(NSTOKESin)) NSTOKES = NSTOKESin
 
       if ( NSTOKES  .GT. MAXSTOKES  )   rc = 2  
 
@@ -479,7 +485,7 @@
       REFLECTANCE = 0.0
       Q = 0
       U = 0
-      V = 0
+      if (present(V)) V = 0
       if ( scalar ) then
          RADIANCE = STOKES(1, 1, 1, IDR)
               
@@ -491,7 +497,7 @@
          RADIANCE = STOKES(1, 1, 1, IDR)
          Q = STOKES(1, 1, 2, IDR)
          U = STOKES(1, 1, 3, IDR)
-!       V = STOKES(1, 1, 4, IDR)
+         if (present(V))  V = STOKES(1, 1, 4, IDR)
 
          REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR )   
       end if
