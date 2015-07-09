@@ -96,7 +96,7 @@
 
 
    
-      real*8                                             :: x, V
+      real*8                                             :: x
       real*8, dimension(MAXLAYERS)                       :: Ray
       real*8, dimension(0:MAXMOMENTS_INPUT)              :: aersmom 
       real*8, dimension(0:MAXMOMENTS_INPUT,MAXLAYERS,16) :: aervmoms 
@@ -203,12 +203,10 @@
       
       do j = 0, NLAYERS 
         
-         Vol(j) = 3.69296E-18 * A(wmicron) * pressure_grid(j) 
-     &          / temperature_grid(j)
+         Vol(j) = 3.69296E-18 * A(wmicron) * pressure_grid(j) / temperature_grid(j)
          Vol(j) = Vol(j) * 1.E5 ! en km-1
 
-        sect(j) = Vol(j)/2.546899E19 * 1013.25/pressure_grid(j) 
-     &          * temperature_grid(j)/288.15
+        sect(j) = Vol(j)/2.546899E19 * 1013.25/pressure_grid(j) * temperature_grid(j)/288.15
 
           
       end do
@@ -314,10 +312,10 @@
  
 !     Call the MASTER driver for doing the actual calculation
 !     -----------------------------------------------------------
-      call LIDORT_MASTER (self%Surface%Base%VIO%LIDORT_FixIn,
-     &     self%Surface%Base%VIO%LIDORT_ModIn, 
-     &     self%Surface%Base%VIO%LIDORT_Sup, 
-     &     self%Surface%Base%VIO%LIDORT_Out)
+      call LIDORT_MASTER (self%Surface%Base%VIO%LIDORT_FixIn, &
+           self%Surface%Base%VIO%LIDORT_ModIn, &
+           self%Surface%Base%VIO%LIDORT_Sup, &
+           self%Surface%Base%VIO%LIDORT_Out)
   
       if ( self%Surface%Base%VIO%LIDORT_Out%Status%TS_STATUS_INPUTCHECK /= 0 ) then
          rc = 3
@@ -415,7 +413,6 @@
        real*8                            :: delta_rad
        real*8,allocatable,dimension(:)   :: ROT
        real*8                            :: SSA
-       real*8                            :: U, Q
        
        allocate (ROT(self%Surface%Base%VIO%LIDORT_FixIn%Cont%TS_NLAYERS))
       
@@ -478,7 +475,6 @@
       real*8                             :: SSA
       real*8,allocatable,dimension(:)    :: ROT
       real*8                             :: g_tot
-      real*8                             :: Q, U
 
       allocate (ROT(self%Surface%Base%VIO%LIDORT_FixIn%Cont%TS_NLAYERS))
       ! Compute the radiance for an atmosphere Ray with the R* as the surface alb parameter
