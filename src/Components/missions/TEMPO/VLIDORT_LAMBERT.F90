@@ -437,7 +437,7 @@ subroutine VLIDORT_AI_Scalar (km, nch, nobs, channels,        &
 end subroutine VLIDORT_AI_Scalar
 !..........................................................................
 
-subroutine AI_Vector (km, nch, nobs,  channels, nMom,  &
+subroutine VLIDORT_AI_Vector (km, nch, nobs,  channels, nMom,  &
                    nPol,tau, ssa, g, pmom, pe, he, te,albedo,     &
                    solar_zenith,relat_azymuth, sensor_zenith,    &
                    MISSING,verbose, radiance_VL,  &
