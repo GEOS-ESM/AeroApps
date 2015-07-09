@@ -22,7 +22,7 @@ module LIDORT_BRDF_MODIS
   subroutine LIDORT_Scalar_LandMODIS (km, nch, nobs,channels,        &
                      tau, ssa, g, pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, rc, &
+                     MISSING,verbose,radiance_L_SURF,reflectance_L_SURF, ROT, BR, rc, &
                      albedo, reflectance_L,radiance_L )
   !
   ! Uses LIDORT in scalar mode to compute OMI aerosol TOA radiances.
