@@ -15,6 +15,7 @@ subroutine LIDORT_Scalar_Lambert (km, nch, nobs,channels,        &
 
   implicit NONE
 
+  logical,parameter             :: aerosol = .true.   ! whether or not simulation contains aerosol
 ! !INPUT PARAMETERS:
 
   integer,          intent(in)  :: km    ! number of levels on file
@@ -42,6 +43,7 @@ subroutine LIDORT_Scalar_Lambert (km, nch, nobs,channels,        &
   real*8, target,   intent(in)  :: albedo(nobs,nch)       ! surface albedo
   
   integer,          intent(in)  :: verbose
+
 
 ! !OUTPUT PARAMETERS:
 
@@ -93,7 +95,7 @@ subroutine LIDORT_Scalar_Lambert (km, nch, nobs,channels,        &
            end if
            
            call LIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i),solar_zenith (j),sensor_zenith(j),&
-                               relat_azymuth(j),.true.)
+                               relat_azymuth(j))
            
            SCAT%wavelength = channels(i)
            SCAT%tau => tau(:,i,j)
@@ -101,7 +103,7 @@ subroutine LIDORT_Scalar_Lambert (km, nch, nobs,channels,        &
            SCAT%g => g(:,i,j)
          
            call LIDORT_Run (SCAT, radiance_L(j,i), reflectance_L(j,i), &
-                                 ROT(:,j,i), .true., .true., ier)
+                                 ROT(:,j,i), aerosol, ier)
 
            if ( ier /= 0 ) then
               if ( solar_zenith (j) > 89.9 ) then ! if SZA > 90
@@ -142,6 +144,7 @@ subroutine LIDORT_AI_Scalar (km, nch, nobs, channels,        &
 
   implicit NONE
 
+  logical,parameter             :: aerosol = .true.   ! whether or not simulation contains aerosol
 ! !INPUT PARAMETERS:
 
   integer,          intent(in)  :: km    ! number of levels on file
@@ -181,7 +184,7 @@ subroutine LIDORT_AI_Scalar (km, nch, nobs, channels,        &
   real*8,           intent(out) :: refl(nobs)                  ! surface reflectivity R* at 388nm
   
 !                               ---
-  
+
   integer             :: n, i,j, k, ier
   real*8              :: spher_alb(nobs,nch)      ! spherical albedo
   real*8              :: trans(nobs, nch)         ! transmission
@@ -240,15 +243,15 @@ subroutine LIDORT_AI_Scalar (km, nch, nobs, channels,        &
            end if
            
         call LIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i),solar_zenith (j),sensor_zenith(j),&
-                               relat_azymuth(j),.true.)
+                               relat_azymuth(j))
 
         SCAT%wavelength = channels(i)        
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%g => g(:,i,j)
-                 
+
         call LIDORT_Run (SCAT, radiance_L(j,i),reflectance_L(j,i), &
-                          ROT(:,j,i), .true., .true., ier)
+                          ROT(:,j,i), aerosol, ier)
 
         if ( ier /= 0 ) then
                  radiance_L(j,i) = MISSING
