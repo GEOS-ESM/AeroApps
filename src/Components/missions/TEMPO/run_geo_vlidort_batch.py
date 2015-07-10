@@ -54,7 +54,7 @@ def make_workspace(date,ch,code,outdir):
     
     return dirname 
 
-def make_rcfile(dirname,indir,date,ch,code):
+def make_maiac_rcfile(dirname,indir,date,ch,code,interp,i_band=None):
     os.chdir(dirname)
 
     rcfile = open('geo_vlidort.rc','w')
@@ -63,70 +63,126 @@ def make_rcfile(dirname,indir,date,ch,code):
     rcfile.write('DATE: '+str(date.year)+str(date.month).zfill(2)+str(date.day).zfill(2)+'\n')
     rcfile.write('TIME: '+str(date.hour).zfill(2)+'\n')
     rcfile.write('INSTNAME: tempo\n')
-    rcfile.write('BRDFNAME: MAIACRTLS\n')
+    rcfile.write('SURFNAME: MAIACRTLS\n')
 
     #figure out correct MODIS doy
     if (str(startdate.date()) == '2005-12-31'):
-        rcfile.write('BRDFDATE: 2006008\n')
+        rcfile.write('SURFDATE: 2006008\n')
     else:
         doy = date.toordinal() - datetime(date.year-1,12,31).toordinal()
         DOY = 8*(int(doy/8) + 1)
         if (DOY > 365):
             DOY = 8
-            rcfile.write('BRDFDATE: '+str(date.year+1)+str(DOY).zfill(3)+'\n')
+            rcfile.write('SURFDATE: '+str(date.year+1)+str(DOY).zfill(3)+'\n')
         else:
-            rcfile.write('BRDFDATE: '+str(date.year)+str(DOY).zfill(3)+'\n')
+            rcfile.write('SURFDATE: '+str(date.year)+str(DOY).zfill(3)+'\n')
 
-    rcfile.write('BRDFBAND: interpolate\n')
-    rcfile.write('BRDFBAND_C: 645 858 469 555 1240 1640 2130\n')
+
+    rcfile.write('SURFBAND: ' + interp +'\n')
+    if (interp.upper() == 'INTERPOLATE'):
+        rcfile.write('SURFBAND_C: 645 858 469 555 1240 1640 2130 412\n')
+    else:
+        rcfile.write('SURFBAND_I: '+ i_band)
+
+    rcfile.write('SURFBANDM: 1 \n')
+
     if (code == 'scalar'):
         rcfile.write('SCALAR: true\n')
     else:
         rcfile.write('SCALAR: false\n')
+
+
     rcfile.write('CHANNELS: '+ch+'\n')
     rcfile.write('CLDMAX: 0.01\n')
     rcfile.write('SZAMAX: 90.0\n')
     rcfile.close()
 
     os.chdir('../')
+
+def make_ler_rcfile(dirname,indir,date,ch,code,interp,i_band=None):
+    os.chdir(dirname)
+
+    rcfile = open('geo_vlidort.rc','w')
+    rcfile.write('INDIR: ' + indir + '\n')
+    rcfile.write('OUTDIR: .\n')
+    rcfile.write('DATE: ' + str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2) + '\n')
+    rcfile.write('TIME: ' + str(date.hour).zfill(2) + '\n')
+    rcfile.write('INSTNAME: tempo\n')
+    rcfile.write('SURFNAME: LER\n')
+
+    rcfile.write('SURFDATE: ' + str(date.month).zfill(2) +'\n')
+
+    rcfile.write('SURFBAND: ' + interp + '\n')
+    if (interp.upper() == 'INTERPOLATE'):
+        rcfile.write('SURFBAND_C: 354 388\n')
+    else:
+        rcfile.write('SURFBAND_I: ' + i_band)
+
+    rcfile.write('SURFBANDM: 1 \n')
+
+    if (code == 'scalar'):
+        rcfile.write('SCALAR: true\n')
+    else:
+        rcfile.write('SCALAR: false\n')
+
+
+    rcfile.write('CHANNELS: ' + ch + '\n')
+    rcfile.write('CLDMAX: 0.01\n')
+    rcfile.write('SZAMAX: 90.0\n')
+    rcfile.close()
+
+    os.chdir('../')    
         
 #########################################################
 
 if __name__ == "__main__":
     
-    startdate = '2005-12-31T00:00:00'
-    enddate   = '2005-12-31T02:00:00'
+    startdate = '2005-12-31T17:00:00'
+    enddate   = '2005-12-31T17:00:00'
     channels  = '550','670'
-
-    calculon  = '/nobackup/TEMPO'
+    surface   = 'MAIACRTLS'
+    interp    = 'interpolate'
+    i_band    = None
     nccs      = '/discover/nobackup'
     
-    if (os.path.exists(calculon)):
-        indir     = calculon 
-        outdir    = '/nobackup/3/pcastell/TEMPO/DATA'
-    else:
-        indir     = nccs + '/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA'
-        outdir    = nccs + '/pcastell/TEMPO/DATA'
+    indir     = nccs + '/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA'
+    outdir    = nccs + '/pcastell/TEMPO/DATA'
     
     dt = timedelta(hours=1)
     startdate = parse(startdate)
     enddate   = parse(enddate)
 
+    # Create working directories, SLURM scripts, and RC-files
     runstring = np.empty(0)
     while (startdate <= enddate):
-        for ch in channels:
+        for i, ch in enumerate(channels):
+            band_i = None
+            if (i_band is not None):
+                band_i = i_band[i]
+
             # Vector Case
             workdir = make_workspace(startdate,ch,'vector',outdir)
-            make_rcfile(workdir,indir,startdate,ch,'vector')
+
+            if (surface.upper() == 'MAIACRTLS'):
+                make_maiac_rcfile(workdir,indir,startdate,ch,'vector',interp,i_band=band_i)
+            else:
+                make_ler_rcfile(workdir,indir,startdate,ch,'vector',interp,i_band=band_i)
+
             runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
 
             # Scalar Case
             workdir = make_workspace(startdate,ch,'scalar',outdir)
-            make_rcfile(workdir,indir,startdate,ch,'scalar')
+
+            if (surface.upper() == 'MAIACRTLS'):
+                make_maiac_rcfile(workdir,indir,startdate,ch,'scalar',interp,i_band=band_i)
+            else:
+                make_ler_rcfile(workdir,indir,startdate,ch,'scalar',interp,i_band=i_band[i])
+
             runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
        
         startdate = startdate + dt
-     
+
+    # Submite Jobs      
     runlen  = len(runstring)   
     streams = min(10, runlen)
     drun    = np.array([runlen/streams for i in range(streams)])
