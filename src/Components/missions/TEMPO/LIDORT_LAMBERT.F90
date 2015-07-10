@@ -62,7 +62,10 @@ subroutine LIDORT_Scalar_Lambert (km, nch, nobs,channels,        &
   ier = 0
 
   call LIDORT_Init( SCAT%Surface%Base, km, rc)
-  if ( rc /= 0 ) return
+  if ( rc /= 0 ) then
+    write(*,*) 'LIDORT_Init returning with error'
+    return
+  endif
 
   do j = 1, nobs
 
