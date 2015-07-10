@@ -27,7 +27,7 @@ program geo_lidort
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   use lidort_brdf_modis            ! Module to run LIDORT with MODIS BRDF surface supplement
-  use geo_vlidort_netcdf           ! Module with netcdf routines
+  use netcdf_helper                ! Module with netcdf routines
   use GeoAngles                    ! Module with geostationary satellite algorithms for scene geometry
 
   implicit none
@@ -234,7 +234,7 @@ program geo_lidort
 ! --------------
   if ( MAPL_am_I_root() )  call create_outfile(date, time, radVarID, refVarID, albVarID, &
                                                ssaVarID, tauVarID, gVarID, rotVarID)
-
+  call MAPL_SyncSharedMemory(rc=ierr)
 ! Read the cloud, land, and angle data 
 ! -------------------------------------
   call read_cloud()
@@ -348,7 +348,7 @@ program geo_lidort
   end if
   counti = nclr(myid+1)
   endi   = starti + counti - 1
-if (myid == 0) then
+
   do c = starti, starti !starti, endi
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
@@ -448,11 +448,10 @@ if (myid == 0) then
     
 !   Check LIDORT Status, Store Outputs in Shared Arrays
 !   ----------------------------------------------------    
-    call mp_check_lidort(radiance_L_int,reflectance_L_int)  
+    call mp_check_lidort(radiance_L_int,reflectance_L_int,ierr)  
     radiance_L(c,:)    = radiance_L_int(nobs,:)
     reflectance_L(c,:) = reflectance_L_int(nobs,:)
     ALBEDO_(c,:) = albedo(nobs,:)
-    write(*,*) 'albedo out ',ALBEDO_(c,:)
     ROT_(c,:,:) = ROT(:,nobs,:)
     
     write(msg,*) 'LIDORT Calculations DONE', myid, ierr
@@ -466,7 +465,7 @@ if (myid == 0) then
     end if
                 
   end do ! do clear pixels
-end if
+
 ! Wait for everyone to finish calculations
 ! ----------------------------------------
   call MAPL_SyncSharedMemory(rc=ierr)
@@ -592,6 +591,7 @@ end function nn_interp
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
 subroutine read_cloud()
   allocate (CLDTOT(im,jm))
+
 
   call readvar2D("CLDTOT", MET_file, CLDTOT)
 end subroutine read_cloud
@@ -758,9 +758,9 @@ end subroutine outfile_extname
 !  HISTORY
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine mp_check_lidort(radiance,reflectance)
-    real*8, dimension(:,:)    :: radiance, reflectance
-
+  subroutine mp_check_lidort(radiance,reflectance,ierr)
+    real*8, dimension(:,:), intent(in)    :: radiance, reflectance
+    integer,intent(in)                    :: ierr
 
     if (ANY(radiance == MISSING) .or. ANY(reflectance == MISSING)) then
       write(*,*) 'LIDORT returned a missing value'
@@ -1151,7 +1151,7 @@ end subroutine outfile_extname
     real,allocatable,dimension(:,:)    :: clon, clat, sza, vza, raa
     real,allocatable,dimension(:)      :: scantime, ew, ns, tyme, lev
 
-    character(len=1000)                :: comment
+    character(len=2000)                :: comment
 
 !                                 OUT_FILE 
 !                                ----------
@@ -1177,12 +1177,12 @@ end subroutine outfile_extname
     write(comment,'(A)') 'LIDORT simulation run from geo_lidort.x'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'history',trim(comment)),"history attr")
 
-    write(comment,'(A)') INV_file  //'\n'// &
-                         ANG_file  //'\n'// &
-                         LAND_file //'\n'// &
-                         MET_file  //'\n'// &
-                         AER_file  //'\n'// &
-                         SURF_file 
+    write(comment,'(A)') trim(INV_file)  // CHAR(13) // &
+                         trim(ANG_file)  // CHAR(13) //  &
+                         trim(LAND_file) // CHAR(13) // &
+                         trim(MET_file)  // CHAR(13) //  &
+                         trim(AER_file)  // CHAR(13) //  &
+                         trim(SURF_file) 
     call check(nf90_put_att(ncid,NF90_GLOBAL,'inputs',trim(comment)),"input files attr")
     write(comment,'(A)') 'n/a'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'references',trim(comment)),"references attr") 
