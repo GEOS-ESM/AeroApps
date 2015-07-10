@@ -349,7 +349,7 @@ program geo_lidort
   counti = nclr(myid+1)
   endi   = starti + counti - 1
 
-  do c = starti, starti !starti, endi
+  do c = starti, endi
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
