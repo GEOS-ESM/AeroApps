@@ -130,10 +130,9 @@ module netcdf_helper
 !  HISTORY
 !     27 April P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine readvar2D(varname, filename, var,myid)
+  subroutine readvar2D(varname, filename, var)
     character(len=*), intent(in)           ::  varname
     character(len=*), intent(in)           ::  filename
-    integer, intent(in)                    ::  myid
     real, dimension(:,:), intent(inout)    ::  var
 
     integer                                :: ncid, varid
