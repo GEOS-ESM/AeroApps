@@ -23,7 +23,7 @@ program geo_angles
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   !use mpi
-  use geo_vlidort_netcdf           ! Module with netcdf routines
+  use netcdf_helper                ! Module with netcdf routines
   use GeoAngles                    ! Module with geostationary satellite algorithms for scene geometry
 
   implicit none
