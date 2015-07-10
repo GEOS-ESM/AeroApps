@@ -355,8 +355,8 @@ program geo_vlidort
   end if
   counti = nclr(myid+1)
   endi   = starti + counti - 1
-if (myid == 0) then
-  do c = starti, starti !starti, endi
+
+  do c = starti, endi
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
@@ -485,7 +485,6 @@ if (myid == 0) then
     radiance_VL(c,:)    = radiance_VL_int(nobs,:)
     reflectance_VL(c,:) = reflectance_VL_int(nobs,:)
     ALBEDO_(c,:) = albedo(nobs,:)
-    write(*,*) 'albedo out ',ALBEDO_(c,:)
     ROT_(c,:,:) = ROT(:,nobs,:)
     if (.not. scalar) then
       Q_(c,:)      = Q(nobs,:)
@@ -503,7 +502,7 @@ if (myid == 0) then
     end if
                 
   end do ! do clear pixels
-end if
+
 ! Wait for everyone to finish calculations
 ! ----------------------------------------
   call MAPL_SyncSharedMemory(rc=ierr)
@@ -1213,7 +1212,7 @@ end subroutine outfile_extname
     real,allocatable,dimension(:,:)    :: clon, clat, sza, vza, raa
     real,allocatable,dimension(:)      :: scantime, ew, ns, tyme, lev
 
-    character(len=1000)                :: comment
+    character(len=2000)                :: comment
 
 !                                 OUT_FILE 
 !                                ----------
@@ -1239,12 +1238,12 @@ end subroutine outfile_extname
     write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort.x'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'history',trim(comment)),"history attr")
 
-    write(comment,'(A)') INV_file  //'\n'// &
-                         ANG_file  //'\n'// &
-                         LAND_file //'\n'// &
-                         MET_file  //'\n'// &
-                         AER_file  //'\n'// &
-                         SURF_file 
+    write(comment,'(A)') trim(INV_file)  // CHAR(13) // &
+                         trim(ANG_file)  // CHAR(13) //  &
+                         trim(LAND_file) // CHAR(13) // &
+                         trim(MET_file)  // CHAR(13) //  &
+                         trim(AER_file)  // CHAR(13) //  &
+                         trim(SURF_file) 
     call check(nf90_put_att(ncid,NF90_GLOBAL,'inputs',trim(comment)),"input files attr")
     write(comment,'(A)') 'n/a'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'references',trim(comment)),"references attr") 
