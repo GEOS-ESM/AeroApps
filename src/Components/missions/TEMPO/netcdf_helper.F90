@@ -1,4 +1,4 @@
-module geo_vlidort_netcdf
+module netcdf_helper
 
   use netcdf
   !use mpi
@@ -78,7 +78,6 @@ module geo_vlidort_netcdf
     integer                                :: ncid, varid
 
 
-!         write(*,'(A,A,A,I4)')'Reading ',trim(varname), ' on PE ', myid
     call check( nf90_open(filename,NF90_NOWRITE,ncid), "opening file " // filename)
     call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
     call check( nf90_get_var(ncid,varid,var), "reading " // varname)
@@ -109,7 +108,6 @@ module geo_vlidort_netcdf
     integer                                :: ncid, varid
 
 
-!         write(*,'(A,A,A,I4)')'Reading ',trim(varname), ' on PE ', myid
     call check( nf90_open(filename,NF90_NOWRITE,ncid), "opening file " // filename)
     call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
     call check( nf90_get_var(ncid,varid,var), "reading " // varname)
@@ -132,19 +130,20 @@ module geo_vlidort_netcdf
 !  HISTORY
 !     27 April P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine readvar2D(varname, filename, var)
+  subroutine readvar2D(varname, filename, var,myid)
     character(len=*), intent(in)           ::  varname
     character(len=*), intent(in)           ::  filename
+    integer, intent(in)                    ::  myid
     real, dimension(:,:), intent(inout)    ::  var
 
     integer                                :: ncid, varid
 
 
-!         write(*,'(A,A,A,I4)')'Reading ',trim(varname), ' on PE ', myid
     call check( nf90_open(filename,NF90_NOWRITE,ncid), "opening file " // filename)
     call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
     call check( nf90_get_var(ncid,varid,var), "reading " // varname)
     call check( nf90_close(ncid), "closing " // filename)
+
   end subroutine readvar2D
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -927,4 +926,4 @@ module geo_vlidort_netcdf
 
   end subroutine check
 
-end module geo_vlidort_netcdf  
+end module netcdf_helper  
