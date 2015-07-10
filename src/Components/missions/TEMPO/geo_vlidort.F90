@@ -26,7 +26,7 @@ program geo_vlidort
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
-  use geo_vlidort_netcdf           ! Module with netcdf routines
+  use netcdf_helper                ! Module with netcdf routines
   use GeoAngles                    ! Module with geostationary satellite algorithms for scene geometry
 
   implicit none
@@ -241,7 +241,7 @@ program geo_vlidort
 ! --------------
   if ( MAPL_am_I_root() )  call create_outfile(date, time, radVarID, refVarID, albVarID, qVarID, uVarID, &
                                                ssaVarID, tauVarID, gVarID, rotVarID)
-
+  call MAPL_SyncSharedMemory(rc=ierr)
 ! Read the cloud, land, and angle data 
 ! -------------------------------------
   call read_cloud()
