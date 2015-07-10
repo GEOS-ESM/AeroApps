@@ -99,7 +99,7 @@ python: $(PY_EXTS)
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
 
-%.x: geo_vlidort_netcdf.o %.o 
+%.x: netcdf_helper.o %.o 
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_CHEM_BASE) \
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
@@ -107,11 +107,11 @@ python: $(PY_EXTS)
                                  $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
 
 
-geo_angles.x: GeoAngles_py.o geo_vlidort_netcdf.o geo_angles.o
+geo_angles.x: GeoAngles_py.o netcdf_helper.o geo_angles.o
 	$(FC) $(FOPTS) $^ -o $@   $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                             $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)   
 
-geo_lidort.x: geo_vlidort_netcdf.o geo_lidort.o 
+geo_lidort.x: netcdf_helper.o geo_lidort.o 
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
