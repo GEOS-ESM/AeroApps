@@ -12,6 +12,7 @@ import math
 def make_workspace(date,ch,code,outdir):
     dirname = str(date.date())+'T'+str(date.time())+'.'+ch+'.'+code
     outdir = outdir + '/Y'+str(date.year)+'/M'+str(date.month).zfill(2)+'/D'+str(date.day).zfill(2)
+    bindir = os.getcwd() + '/' + dirname
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     
@@ -22,6 +23,8 @@ def make_workspace(date,ch,code,outdir):
         os.symlink('../ExtData','ExtData')
     if not os.path.isfile('Chem_MieRegistry.rc'):
         os.symlink('../Chem_MieRegistry.rc','Chem_MieRegistry.rc')
+    if not os.path.isfile('clean_mem.sh'):
+        os.symlink('../clean_mem.sh','clean_mem.sh')
         
     source = open('../geo_vlidort_run.j','r')
     destination = open('geo_vlidort_run.j','w')
@@ -29,7 +32,7 @@ def make_workspace(date,ch,code,outdir):
         if (line[0:18] == '#SBATCH --job-name'):
             destination.write('#SBATCH --job-name '+dirname+'\n')
         elif (line[0:15] == 'setenv TEMPOBIN'):
-            destination.write('setenv TEMPOBIN '+dirname+'\n')
+            destination.write('setenv TEMPOBIN '+bindir+'\n')
         elif (line[0:13] == 'setenv OUTDIR'):            
             destination.write('setenv OUTDIR '+outdir+'\n')            
             if not os.path.exists(outdir):
@@ -84,7 +87,7 @@ def make_maiac_rcfile(dirname,indir,date,ch,code,interp,i_band=None):
     else:
         rcfile.write('SURFBAND_I: '+ i_band)
 
-    rcfile.write('SURFBANDM: 1 \n')
+    rcfile.write('SURFBANDM: 8 \n')
 
     if (code == 'scalar'):
         rcfile.write('SCALAR: true\n')
@@ -118,7 +121,7 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,i_band=None):
     else:
         rcfile.write('SURFBAND_I: ' + i_band)
 
-    rcfile.write('SURFBANDM: 1 \n')
+    rcfile.write('SURFBANDM: 2 \n')
 
     if (code == 'scalar'):
         rcfile.write('SCALAR: true\n')
@@ -139,7 +142,7 @@ if __name__ == "__main__":
     
     startdate = '2005-12-31T17:00:00'
     enddate   = '2005-12-31T17:00:00'
-    channels  = '550','670'
+    channels  = '550',
     surface   = 'MAIACRTLS'
     interp    = 'interpolate'
     i_band    = None
@@ -170,15 +173,15 @@ if __name__ == "__main__":
 
             runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
 
-            # Scalar Case
-            workdir = make_workspace(startdate,ch,'scalar',outdir)
+            # # Scalar Case
+            # workdir = make_workspace(startdate,ch,'scalar',outdir)
 
-            if (surface.upper() == 'MAIACRTLS'):
-                make_maiac_rcfile(workdir,indir,startdate,ch,'scalar',interp,i_band=band_i)
-            else:
-                make_ler_rcfile(workdir,indir,startdate,ch,'scalar',interp,i_band=i_band[i])
+            # if (surface.upper() == 'MAIACRTLS'):
+            #     make_maiac_rcfile(workdir,indir,startdate,ch,'scalar',interp,i_band=band_i)
+            # else:
+            #     make_ler_rcfile(workdir,indir,startdate,ch,'scalar',interp,i_band=i_band[i])
 
-            runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
+            # runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
        
         startdate = startdate + dt
 
