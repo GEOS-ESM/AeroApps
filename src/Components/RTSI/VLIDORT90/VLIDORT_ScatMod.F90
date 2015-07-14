@@ -294,9 +294,10 @@
 !     Loop over the layers:
 !     ---------------------
       AOT = 0.0
-      ray_l = 0.0
+      ROT = 0.0
       do i = 1, NLAYERS  
          ray_l = ray(i)         ! indice l for  each layer
+         ROT(i) = ray(i)         
 
          if ( .not. aerosol ) then
             tau_l = 0.0 
@@ -443,8 +444,6 @@
 !     end layer loop
 !     ---------------
       end do
-
-      ROT = ray_l
   
       self%Surface%Base%VIO%VLIDORT_FixIn%Optical%TS_DELTAU_VERT_INPUT = deltau_vert_input
       self%Surface%Base%VIO%VLIDORT_ModIn%MOptical%TS_OMEGA_TOTAL_INPUT = omega_total_input
