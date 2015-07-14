@@ -352,7 +352,6 @@ module VLIDORT_BRDF_MODIS
 
         
         BR(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
-        write(*,*) 'BR ',i,SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
         if ( ier /= 0 ) then
           radiance_VL_SURF(j,i) = MISSING
           reflectance_VL_SURF(j,i) = MISSING               
