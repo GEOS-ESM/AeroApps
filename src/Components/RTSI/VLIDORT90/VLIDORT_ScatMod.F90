@@ -294,7 +294,7 @@
 !     Loop over the layers:
 !     ---------------------
       AOT = 0.0
-      
+      ray_l = 0.0
       do i = 1, NLAYERS  
          ray_l = ray(i)         ! indice l for  each layer
 
