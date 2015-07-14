@@ -346,8 +346,8 @@ program geo_lidort
   G_             = dble(MISSING)
   ALBEDO_        = dble(MISSING)
   ROT_           = dble(MISSING)
-  radiance_VL    = dble(MISSING)
-  reflectance_VL = dble(MISSING)
+  radiance_L     = dble(MISSING)
+  reflectance_L  = dble(MISSING)
 
   call MAPL_SyncSharedMemory(rc=ierr)  
 ! Prepare inputs and run LIDORT
