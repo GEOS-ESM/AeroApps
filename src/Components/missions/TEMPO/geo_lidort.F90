@@ -678,7 +678,7 @@ subroutine filenames()
   write(ANG_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'.lb2.angles.',date,'_',time,'z.nc4'
   write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.nc4'
   if ( lower_to_upper(surfname) == 'MAIACRTLS' ) then
-    write(SURF_file,'(6A)') trim(indir),'/BRDF/raw/',trim(surfname),'.',surfdate,'.hdf'
+    write(SURF_file,'(6A)') trim(indir),'/BRDF/',trim(surfname),'.',surfdate,'.hdf'
   else
     write(SURF_file,'(4A)') trim(indir),'/SurfLER/tempo-omi.SurfLER.',date(5:6),'.nc4'
   end if
