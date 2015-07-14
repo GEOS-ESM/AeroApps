@@ -339,6 +339,17 @@ program geo_lidort
 ! ----------------------------------------------------------- 
   if (test_shmem) call do_testing()
 
+! Initialize outputs to be safe
+! -------------------------------
+  TAU_           = dble(MISSING)
+  SSA_           = dble(MISSING)
+  G_             = dble(MISSING)
+  ALBEDO_        = dble(MISSING)
+  ROT_           = dble(MISSING)
+  radiance_VL    = dble(MISSING)
+  reflectance_VL = dble(MISSING)
+
+  call MAPL_SyncSharedMemory(rc=ierr)  
 ! Prepare inputs and run LIDORT
 ! -----------------------------------
   call strarr_2_chararr(vnames_string,nq,16,vnames)
