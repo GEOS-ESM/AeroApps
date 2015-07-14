@@ -48,9 +48,9 @@ program geo_lidort
   character(len=256)                    :: instname, indir, outdir, surfname
   character(len=256)                    :: surfband               ! flag to use nearest-neighbor interpolation or an exact value given
   integer                               :: surfbandm              ! number of wavelength bands or channels in surface reflectance data file
-  integer, dimension(:),allocatable     :: surfband_i             ! surface band indeces that overlap with lidort channels
-  real, dimension(:),allocatable        :: surfband_c             ! modis band center wavelength
-  real, dimension(:), allocatable       :: channels               ! channels to simulate
+  integer, allocatable                  :: surfband_i(:)             ! surface band indeces that overlap with lidort channels
+  real, allocatable                     :: surfband_c(:)             ! modis band center wavelength
+  real, allocatable                     :: channels(:)               ! channels to simulate
   integer                               :: nch                    ! number of channels  
   real                                  :: cldmax                 ! Cloud Filtering  
   real                                  :: szamax                 ! Geomtry filtering
@@ -93,62 +93,64 @@ program geo_lidort
 
 ! LIDORT input arrays
 ! ---------------------------
-  real, pointer                         :: pe(:,:) => null()      ! edge pressure [Pa]
-  real, pointer                         :: ze(:,:) => null()      ! edge height above sfc [m]
-  real, pointer                         :: te(:,:) => null()      ! edge Temperature [K]
-  real, pointer                         :: qm(:,:,:) => null()    ! (mixing ratio) * delp/g
-  real, pointer                         :: tau(:,:,:) => null()   ! aerosol optical depth
-  real, pointer                         :: ssa(:,:,:) => null()   ! single scattering albedo
-  real, pointer                         :: g(:,:,:) => null()     ! asymmetry factor
-  real*8, pointer                       :: albedo(:,:) => null()  ! surface albedo
+  real, allocatable                     :: pe(:,:)                              ! edge pressure [Pa]
+  real, allocatable                     :: ze(:,:)                              ! edge height above sfc [m]
+  real, allocatable                     :: te(:,:)                              ! edge Temperature [K]
+  real, allocatable                     :: qm(:,:,:)                            ! (mixing ratio) * delp/g
+  real, allocatable                     :: tau(:,:,:)                           ! aerosol optical depth
+  real, allocatable                     :: ssa(:,:,:)                           ! single scattering albedo
+  real, allocatable                     :: g(:,:,:)                             ! asymmetry factor
+  real*8, allocatable                   :: albedo(:,:)                          ! surface albedo
 
-  real, pointer                         :: TAU_(:,:,:) => null()   ! aerosol optical depth
-  real, pointer                         :: SSA_(:,:,:) => null()   ! single scattering albedo
-  real, pointer                         :: G_(:,:,:) => null()     ! asymmetry factor
+
 
 ! LIDORT output arrays
 !-------------------------------
 !                                  Intermediate Unshared Arrays
 !                                  -----------------------------
-  real*8,pointer                        :: radiance_L_int(:,:) => null()         ! TOA normalized radiance from LIDORT
-  real*8,pointer                        :: reflectance_L_int(:,:) => null()      ! TOA reflectance from LIDORT  
-  real*8,pointer                        :: ROT(:,:,:) => null()                   ! rayleigh optical thickness
+  real*8, allocatable                   :: radiance_L_int(:,:)                   ! TOA normalized radiance from LIDORT
+  real*8, allocatable                   :: reflectance_L_int(:,:)                ! TOA reflectance from LIDORT  
+  real*8, allocatable                   :: ROT(:,:,:)                            ! rayleigh optical thickness
 
 !                                  Final Shared Arrays
 !                                  -------------------
   real*8,pointer                        :: radiance_L(:,:) => null()             ! TOA normalized radiance from LIDORT
   real*8,pointer                        :: reflectance_L(:,:) => null()          ! TOA reflectance from LIDORT
-  real*8,pointer                        :: ROT_(:,:,:) => null()                  ! rayleigh optical thickness
-  real*8,pointer                        :: ALBEDO_(:,:) => null()                 ! bi-directional surface reflectance
+  real*8,pointer                        :: ROT_(:,:,:) => null()                 ! rayleigh optical thickness
+  real*8,pointer                        :: ALBEDO_(:,:) => null()                ! bi-directional surface reflectance
 
-  real*8,pointer                        :: field(:,:) => null()                   ! Template for unpacking shared arrays
+  real, pointer                         :: TAU_(:,:,:) => null()                 ! aerosol optical depth
+  real, pointer                         :: SSA_(:,:,:) => null()                 ! single scattering albedo
+  real, pointer                         :: G_(:,:,:) => null()                   ! asymmetry factor
+
+  real*8,pointer                        :: field(:,:) => null()                  ! Template for unpacking shared arrays
 
 ! LIDORT working variables
 !------------------------------
-  integer                               :: ch                        ! i-channel  
-  integer                               :: iband                     ! i-surfaceband
+  integer                               :: ch                                    ! i-channel  
+  integer                               :: iband                                 ! i-surfaceband
 
 ! MODIS Kernel variables
 !--------------------------
-  real*8, pointer                       :: kernel_wt(:,:,:) => null()  ! kernel weights (/fiso,fgeo,fvol/)
-  real*8, pointer                       :: param(:,:,:) => null()      ! Li-Sparse parameters 
-                                                                       ! param1 = crown relative height (h/b)
-                                                                       ! param2 = shape parameter (b/r)
+  real*8, allocatable                   :: kernel_wt(:,:,:)                      ! kernel weights (/fiso,fgeo,fvol/)
+  real*8, allocatable                   :: param(:,:,:)                          ! Li-Sparse parameters 
+                                                                                 ! param1 = crown relative height (h/b)
+                                                                                 ! param2 = shape parameter (b/r)
   real                                  :: surf_missing                                                                 
 
 
 ! Satellite domain variables
 !------------------------------
-  integer                               :: im, jm, km, tm               ! size of TEMPO domain
-  integer                               :: i, j, k, n                   ! TEMPO domain working variable
-  integer                               :: starti, counti, endi         ! array indices and counts for each processor
-  integer, allocatable                  :: nclr(:)                      ! how many clear pixels each processor works on
-  integer                               :: clrm                         ! number of clear pixels
-  integer                               :: c                            ! clear pixel working variable
-  real, pointer                         :: CLDTOT(:,:) => null()        ! GEOS-5 cloud fraction
-  real, pointer                         :: FRLAND(:,:) => null()        ! GEOS-5 land fraction
-  real, pointer                         :: SOLAR_ZENITH(:,:) => null()  ! solar zenith angles used for data filtering
-  logical,allocatable,dimension(:,:)    :: clmask                       ! cloud-land mask
+  integer                               :: im, jm, km, tm                        ! size of TEMPO domain
+  integer                               :: i, j, k, n                            ! TEMPO domain working variable
+  integer                               :: starti, counti, endi                  ! array indices and counts for each processor
+  integer, allocatable                  :: nclr(:)                               ! how many clear pixels each processor works on
+  integer                               :: clrm                                  ! number of clear pixels
+  integer                               :: c                                     ! clear pixel working variable
+  real, allocatable                     :: CLDTOT(:,:)                           ! GEOS-5 cloud fraction
+  real, allocatable                     :: FRLAND(:,:)                           ! GEOS-5 land fraction
+  real, allocatable                     :: SOLAR_ZENITH(:,:)                     ! solar zenith angles used for data filtering
+  logical,allocatable                   :: clmask(:,:)                           ! cloud-land mask
 
 ! netcdf variables
 !----------------------  
@@ -158,13 +160,13 @@ program geo_lidort
 
 ! Miscellaneous
 ! -------------
-  integer                               :: ierr, rc, status               ! MPI error message
-  integer                               :: status_mpi(MPI_STATUS_SIZE)    ! MPI status
-  integer                               :: myid, npet, CoresPerNode       ! MPI dimensions and processor id
-  integer                               :: p                              ! i-processor
-  character(len=100)                    :: msg                            ! message to be printed
-  real                                  :: progress                       ! 
-  real                                  :: g5nr_missing                   !
+  integer                               :: ierr, rc, status                      ! MPI error message
+  integer                               :: status_mpi(MPI_STATUS_SIZE)           ! MPI status
+  integer                               :: myid, npet, CoresPerNode              ! MPI dimensions and processor id
+  integer                               :: p                                     ! i-processor
+  character(len=100)                    :: msg                                   ! message to be printed
+  real                                  :: progress                              ! 
+  real                                  :: g5nr_missing                          !
 
 ! System tracking variables
 ! -----------------------------
@@ -349,7 +351,7 @@ program geo_lidort
   counti = nclr(myid+1)
   endi   = starti + counti - 1
 
-  do c = starti, endi
+  do c = starti,starti !starti, endi
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
@@ -433,6 +435,9 @@ program geo_lidort
 !     ---------------------------------------------    
       radiance_L_int(nobs,:) = -500
       reflectance_L_int(nobs,:) = -500
+      albedo = -500
+      ROT = -500
+      ierr = 0
     else             
 !     MODIS BRDF Surface Model
 !     ------------------------------
@@ -452,7 +457,9 @@ program geo_lidort
     radiance_L(c,:)    = radiance_L_int(nobs,:)
     reflectance_L(c,:) = reflectance_L_int(nobs,:)
     ALBEDO_(c,:) = albedo(nobs,:)
-    ROT_(c,:,:) = ROT(:,nobs,:)
+    do ch=1,nch      
+      ROT_(c,:,ch) = ROT(:,nobs,ch)
+    end do
     
     write(msg,*) 'LIDORT Calculations DONE', myid, ierr
     call write_verbose(msg)

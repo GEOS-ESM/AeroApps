@@ -47,10 +47,10 @@ program geo_vlidort
   character(len=256)                    :: instname, indir, outdir, surfname
   character(len=256)                    :: surfband               ! flag to use nearest-neighbor interpolation or an exact value given
   integer                               :: surfbandm              ! number of wavelength bands or channels in surface reflectance data file
-  integer, dimension(:),allocatable     :: surfband_i             ! surface band indeces that overlap with vlidort channels
-  real, dimension(:),allocatable        :: surfband_c             ! modis band center wavelength
+  integer, allocatable                  :: surfband_i(:)          ! surface band indeces that overlap with vlidort channels
+  real, allocatable                     :: surfband_c(:)          ! modis band center wavelength
   logical                               :: scalar
-  real, dimension(:), allocatable       :: channels               ! channels to simulate
+  real, allocatable                     :: channels(:)            ! channels to simulate
   integer                               :: nch                    ! number of channels  
   real                                  :: cldmax                 ! Cloud Filtering  
   real                                  :: szamax                 ! Geomtry filtering
@@ -93,67 +93,67 @@ program geo_vlidort
 
 ! VLIDORT input arrays
 ! ---------------------------
-  real, pointer                         :: pe(:,:) => null()      ! edge pressure [Pa]
-  real, pointer                         :: ze(:,:) => null()      ! edge height above sfc [m]
-  real, pointer                         :: te(:,:) => null()      ! edge Temperature [K]
-  real, pointer                         :: qm(:,:,:) => null()    ! (mixing ratio) * delp/g
-  real, pointer                         :: tau(:,:,:) => null()   ! aerosol optical depth
-  real, pointer                         :: ssa(:,:,:) => null()   ! single scattering albedo
-  real, pointer                         :: g(:,:,:) => null()     ! asymmetry factor
-  real*8, pointer                       :: albedo(:,:) => null()  ! surface albedo
-
-  real, pointer                         :: TAU_(:,:,:) => null()   ! aerosol optical depth
-  real, pointer                         :: SSA_(:,:,:) => null()   ! single scattering albedo
-  real, pointer                         :: G_(:,:,:) => null()     ! asymmetry factor
+  real, allocatable                     :: pe(:,:)                ! edge pressure [Pa]
+  real, allocatable                     :: ze(:,:)                ! edge height above sfc [m]
+  real, allocatable                     :: te(:,:)                ! edge Temperature [K]
+  real, allocatable                     :: qm(:,:,:)              ! (mixing ratio) * delp/g
+  real, allocatable                     :: tau(:,:,:)             ! aerosol optical depth
+  real, allocatable                     :: ssa(:,:,:)             ! single scattering albedo
+  real, allocatable                     :: g(:,:,:)               ! asymmetry factor
+  real*8, allocatable                   :: albedo(:,:)            ! surface albedo
 
 ! VLIDORT output arrays
 !-------------------------------
 !                                  Intermediate Unshared Arrays
 !                                  -----------------------------
-  real*8,pointer                        :: radiance_VL_int(:,:) => null()         ! TOA normalized radiance from VLIDORT
-  real*8,pointer                        :: reflectance_VL_int(:,:) => null()      ! TOA reflectance from VLIDORT  
-  real*8,pointer                        :: Q(:,:) => null()                       ! Q Stokes component
-  real*8,pointer                        :: U(:,:) => null()                       ! U Stokes component
-  real*8,pointer                        :: ROT(:,:,:) => null()                   ! rayleigh optical thickness
+  real*8, allocatable                   :: radiance_VL_int(:,:)                   ! TOA normalized radiance from VLIDORT
+  real*8, allocatable                   :: reflectance_VL_int(:,:)                ! TOA reflectance from VLIDORT  
+  real*8, allocatable                   :: Q(:,:)                                 ! Q Stokes component
+  real*8, allocatable                   :: U(:,:)                                 ! U Stokes component
+  real*8, allocatable                   :: ROT(:,:,:)                             ! rayleigh optical thickness
 
 !                                  Final Shared Arrays
 !                                  -------------------
-  real*8,pointer                        :: radiance_VL(:,:) => null()             ! TOA normalized radiance from VLIDORT
-  real*8,pointer                        :: reflectance_VL(:,:) => null()          ! TOA reflectance from VLIDORT
-  real*8,pointer                        :: Q_(:,:) => null()                      ! Q Stokes component
-  real*8,pointer                        :: U_(:,:) => null()                      ! U Stokes component
-  real*8,pointer                        :: ROT_(:,:,:) => null()                  ! rayleigh optical thickness
-  real*8,pointer                        :: ALBEDO_(:,:) => null()                 ! bi-directional surface reflectance
+  real*8, pointer                       :: radiance_VL(:,:) => null()             ! TOA normalized radiance from VLIDORT
+  real*8, pointer                       :: reflectance_VL(:,:) => null()          ! TOA reflectance from VLIDORT
+  real*8, pointer                       :: Q_(:,:) => null()                      ! Q Stokes component
+  real*8, pointer                       :: U_(:,:) => null()                      ! U Stokes component
+  real*8, pointer                       :: ROT_(:,:,:) => null()                  ! rayleigh optical thickness
+  real*8, pointer                       :: ALBEDO_(:,:) => null()                 ! bi-directional surface reflectance
 
-  real*8,pointer                        :: field(:,:) => null()                   ! Template for unpacking shared arrays
+  real, pointer                         :: TAU_(:,:,:) => null()                  ! aerosol optical depth
+  real, pointer                         :: SSA_(:,:,:) => null()                  ! single scattering albedo
+  real, pointer                         :: G_(:,:,:) => null()                    ! asymmetry factor
+
+  real*8,allocatable                    :: field(:,:)                             ! Template for unpacking shared arrays
 
 ! VLIDORT working variables
 !------------------------------
-  integer                               :: ch                        ! i-channel  
-  integer                               :: iband                     ! i-surfaceband
-  real,allocatable                      :: pmom(:,:,:,:,:)           ! elements of scattering phase matrix for vector calculations
+  integer                               :: ch                                       ! i-channel  
+  integer                               :: iband                                    ! i-surfaceband
+  real,allocatable                      :: pmom(:,:,:,:,:)                          ! elements of scattering phase matrix for vector calculations
 
 ! MODIS Kernel variables
 !--------------------------
-  real*8, pointer                       :: kernel_wt(:,:,:) => null()  ! kernel weights (/fiso,fgeo,fvol/)
-  real*8, pointer                       :: param(:,:,:) => null()      ! Li-Sparse parameters 
-                                                                       ! param1 = crown relative height (h/b)
-                                                                       ! param2 = shape parameter (b/r)
+  real*8, allocatable                   :: kernel_wt(:,:,:)                         ! kernel weights (/fiso,fgeo,fvol/)
+  real*8, allocatable                   :: param(:,:,:)                             ! Li-Sparse parameters 
+                                                                                    ! param1 = crown relative height (h/b)
+                                                                                    ! param2 = shape parameter (b/r)
   real                                  :: surf_missing                                                                 
 
 
 ! Satellite domain variables
 !------------------------------
-  integer                               :: im, jm, km, tm               ! size of TEMPO domain
-  integer                               :: i, j, k, n                   ! TEMPO domain working variable
-  integer                               :: starti, counti, endi         ! array indices and counts for each processor
-  integer, allocatable                  :: nclr(:)                      ! how many clear pixels each processor works on
-  integer                               :: clrm                         ! number of clear pixels
-  integer                               :: c                            ! clear pixel working variable
-  real, pointer                         :: CLDTOT(:,:) => null()        ! GEOS-5 cloud fraction
-  real, pointer                         :: FRLAND(:,:) => null()        ! GEOS-5 land fraction
-  real, pointer                         :: SOLAR_ZENITH(:,:) => null()  ! solar zenith angles used for data filtering
-  logical,allocatable,dimension(:,:)    :: clmask                       ! cloud-land mask
+  integer                               :: im, jm, km, tm                            ! size of TEMPO domain
+  integer                               :: i, j, k, n                                ! TEMPO domain working variable
+  integer                               :: starti, counti, endi                      ! array indices and counts for each processor
+  integer, allocatable                  :: nclr(:)                                   ! how many clear pixels each processor works on
+  integer                               :: clrm                                      ! number of clear pixels
+  integer                               :: c                                         ! clear pixel working variable
+  real, allocatable                     :: CLDTOT(:,:)                               ! GEOS-5 cloud fraction
+  real, allocatable                     :: FRLAND(:,:)                               ! GEOS-5 land fraction
+  real, allocatable                     :: SOLAR_ZENITH(:,:)                         ! solar zenith angles used for data filtering
+  logical, allocatable                  :: clmask(:,:)                               ! cloud-land mask
 
 ! netcdf variables
 !----------------------  
@@ -163,13 +163,13 @@ program geo_vlidort
 
 ! Miscellaneous
 ! -------------
-  integer                               :: ierr, rc, status               ! MPI error message
-  integer                               :: status_mpi(MPI_STATUS_SIZE)    ! MPI status
-  integer                               :: myid, npet, CoresPerNode       ! MPI dimensions and processor id
-  integer                               :: p                              ! i-processor
-  character(len=100)                    :: msg                            ! message to be printed
-  real                                  :: progress                       ! 
-  real                                  :: g5nr_missing                   !
+  integer                               :: ierr, rc, status                            ! MPI error message
+  integer                               :: status_mpi(MPI_STATUS_SIZE)                 ! MPI status
+  integer                               :: myid, npet, CoresPerNode                    ! MPI dimensions and processor id
+  integer                               :: p                                           ! i-processor
+  character(len=100)                    :: msg                                         ! message to be printed
+  real                                  :: progress                                    ! 
+  real                                  :: g5nr_missing                                !
 
 ! System tracking variables
 ! -----------------------------
@@ -344,6 +344,20 @@ program geo_vlidort
 ! ----------------------------------------------------------- 
   if (test_shmem) call do_testing()
 
+! Initialize outputs to be safe
+! -------------------------------
+  TAU_           = dble(MISSING)
+  SSA_           = dble(MISSING)
+  G_             = dble(MISSING)
+  ALBEDO_        = dble(MISSING)
+  ROT_           = dble(MISSING)
+  radiance_VL    = dble(MISSING)
+  reflectance_VL = dble(MISSING)
+  if (.not. scalar) then
+    Q_ = dble(MISSING)
+    U_ = dble(MISSING)
+  end if
+  call MAPL_SyncSharedMemory(rc=ierr)
 ! Prepare inputs and run VLIDORT
 ! -----------------------------------
   call strarr_2_chararr(vnames_string,nq,16,vnames)
@@ -356,7 +370,7 @@ program geo_vlidort
   counti = nclr(myid+1)
   endi   = starti + counti - 1
 
-  do c = starti, endi
+  do c = starti,starti !starti, endi
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
@@ -455,6 +469,13 @@ program geo_vlidort
 !     ---------------------------------------------    
       radiance_VL_int(nobs,:) = -500
       reflectance_VL_int(nobs,:) = -500
+      albedo = -500
+      ROT = -500
+      if (.not. scalar) then
+        Q = -500
+        U = -500
+      end if
+      ierr = 0
     else             
 !     MODIS BRDF Surface Model
 !     ------------------------------
@@ -485,7 +506,10 @@ program geo_vlidort
     radiance_VL(c,:)    = radiance_VL_int(nobs,:)
     reflectance_VL(c,:) = reflectance_VL_int(nobs,:)
     ALBEDO_(c,:) = albedo(nobs,:)
-    ROT_(c,:,:) = ROT(:,nobs,:)
+    do ch=1,nch      
+        ROT_(c,:,ch) = ROT(:,nobs,ch)
+    end do
+
     if (.not. scalar) then
       Q_(c,:)      = Q(nobs,:)
       U_(c,:)      = U(nobs,:)
@@ -558,7 +582,7 @@ program geo_vlidort
       end do
     end do
     call check( nf90_close(ncid), "close atmosfile" )
-    
+  
     deallocate(field)
   end if
 
