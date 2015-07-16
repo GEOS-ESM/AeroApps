@@ -315,7 +315,7 @@ program geo_vlidort_surface
   counti = nclr(myid+1)
   endi   = starti + counti - 1
 
-  do c = starti,starti !starti, endi
+  do c = starti, endi
 
 !   Surface Reflectance Parameters
 !   ----------------------------------
@@ -938,7 +938,7 @@ end subroutine outfile_extname
 
   subroutine create_outfile(date, time, bsaVarID, wsaVarID, albVarID)
     character(len=*) ,intent(in)       :: date, time
-    integer,dimension(:),intent(out)   :: bsaVarID, wsaVarID, , albVarID  !OUT_file variables    
+    integer,dimension(:),intent(out)   :: bsaVarID, wsaVarID, albVarID  !OUT_file variables    
     
     integer                            :: ncid
     integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID       
@@ -1021,8 +1021,8 @@ end subroutine outfile_extname
 !                                     ----
     do ch=1,nch
       write(comment,'(F10.2)') channels(ch)
-      call check(nf90_def_var(ncid, 'bsa_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),bsaVarID(ch)),"create radiance var")      
-      call check(nf90_def_var(ncid, 'wsa_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),wsaVarID(ch)),"create reflectance var")
+      call check(nf90_def_var(ncid, 'bsa_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),bsaVarID(ch)),"create bsa var")      
+      call check(nf90_def_var(ncid, 'wsa_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),wsaVarID(ch)),"create wsa var")
       call check(nf90_def_var(ncid, 'albedo_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),albVarID(ch)),"create albedo var")
     end do
 
@@ -1031,20 +1031,20 @@ end subroutine outfile_extname
 !                                          ------------------------  
     do ch=1,size(channels)
       write(comment,'(F10.2,A)') channels(ch), ' nm BSA'
-      call check(nf90_put_att(ncid,radVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+      call check(nf90_put_att(ncid,bsaVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
       write(comment,'(F10.2,A)') channels(ch), ' nm Black-Sky Albedo'
-      call check(nf90_put_att(ncid,radVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-      call check(nf90_put_att(ncid,radVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,radVarID(ch),'units','None'),"units attr")
-      call check(nf90_put_att(ncid,radVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+      call check(nf90_put_att(ncid,bsaVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+      call check(nf90_put_att(ncid,bsaVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,bsaVarID(ch),'units','None'),"units attr")
+      call check(nf90_put_att(ncid,bsaVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
       write(comment,'(F10.2,A)') channels(ch), ' nm WSA'
-      call check(nf90_put_att(ncid,refVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+      call check(nf90_put_att(ncid,wsaVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
       write(comment,'(F10.2,A)') channels(ch), ' nm White-Sky Albedo'
-      call check(nf90_put_att(ncid,refVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-      call check(nf90_put_att(ncid,refVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,refVarID(ch),'units','None'),"units attr")
-      call check(nf90_put_att(ncid,refVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+      call check(nf90_put_att(ncid,wsaVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+      call check(nf90_put_att(ncid,wsaVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,wsaVarID(ch),'units','None'),"units attr")
+      call check(nf90_put_att(ncid,wsaVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
       write(comment,'(F10.2,A)') channels(ch), ' nm Albedo'
       call check(nf90_put_att(ncid,albVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
@@ -1342,4 +1342,4 @@ end subroutine outfile_extname
   end subroutine deallocate_shared
 
 
-end program geo_vlidort
+end program geo_vlidort_surface
