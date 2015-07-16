@@ -32,7 +32,7 @@ module SURFACE
     logical, parameter            :: scalar = .true.
     integer, parameter            :: nkernel = 3
     integer, parameter            :: nparam  = 2
-    real*8, parameter             :: pi = 4.*atan(1)
+    real*8, parameter             :: pi = 4.*atan(1.0)
   ! !INPUT PARAMETERS:
     integer,          intent(in)  :: km    ! number of vertical levels
     integer,          intent(in)  :: nch   ! number of channels
@@ -81,7 +81,7 @@ module SURFACE
            IS_MISSING(sensor_zenith(j),MISSING) .OR. &
            IS_MISSING(relat_azymuth(j),MISSING)  )  then
 
-        Kvolj,:) = MISSING
+        Kvol(j,:) = MISSING
         Kgeo(j,:) = MISSING
         BR(j,:)  = MISSING
         cycle
@@ -138,14 +138,14 @@ module SURFACE
         delta = acos(cos(sza)*cos(vza) + sin(sza)*sin(vza)*cos(raa))
         D     = sqrt(tan(sza)*tan(sza) + tan(vza)*tan(vza) - 2*tan(sza)*tan(vza)*cos(raa))
 
-        cost = h_b*sqrt( D*D + (tan(sza)*tan(vza)*sin(raa))^2 ) / ( sec(sza) + sec(vza) )
+        cost = h_b*sqrt( D*D + (tan(sza)*tan(vza)*sin(raa))**2 ) / ( (1./cos(sza)) + (1./cos(vza)) )
         cost = min(1.0,cost)
 
         t    = acos(cost)
 
-        O    = ( t - sin(t)*cost )*( sec(sza) + sec(vza) ) / pi
+        O    = ( t - sin(t)*cost )*( (1./cos(sza)) + (1./cos(vza)) ) / pi
 
-        Kgeo(j,i) = O - sec(sza) - sec(vza) + 0.5*sec(vza)*( 1 + cos(delta) )
+        Kgeo(j,i) = O - (1./cos(sza)) - (1./cos(vza)) + 0.5*(1./cos(vza))*( 1 + cos(delta) )
 
         BR(j,i) = fiso + fgeo*Kgeo(j,i) + fvol*Kvol(j,i)       
 
