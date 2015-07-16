@@ -59,7 +59,6 @@ module VLIDORT_SURFACE
     real*8,           intent(out) :: WSA(nobs,nch)                    ! White-sky albedo
     real*8,           intent(out) :: BSA(nobs,nch)                    ! Black-sky albedo        
     real*8,           intent(out) :: BR(nobs,nch)                     ! bi-directional reflectance 
-    real*8, optional, intent(out) :: reflectance_VL(nobs, nch)        ! TOA reflectance from VLIDORT using albedo
   !                         ---  
     integer             :: i,j,n,p,ier
 
