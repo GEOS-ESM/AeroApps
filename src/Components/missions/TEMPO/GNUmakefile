@@ -85,7 +85,7 @@ THIS_GFIO = GMAO_gfio_r4
 #                  --------------------
 
 SRCS := sys_tracker.c GeoAngles_py.F90 VLIDORT_LAMBERT.F90 VLIDORT_BRDF_MODIS.F90 \
-			  LIDORT_LAMBERT.F90 LIDORT_BRDF_MODIS.F90 VLIDORT_SURFACE.F90
+			  LIDORT_LAMBERT.F90 LIDORT_BRDF_MODIS.F90 VLIDORT_SURFACE.F90 SURFACE.F90
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
 DEPS := $(addsuffix .d, $(basename $(SRCS))) 
  
@@ -124,7 +124,14 @@ geo_vlidort_surface.x: netcdf_helper.o geo_vlidort_surface.o
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
-                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)                                
+                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)  
+
+geo_surface.x: netcdf_helper.o geo_surface.o 
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_CHEM_BASE) \
+                                 $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+                                 $(LIB_MAPL_BASE_STUBS2) \
+                                 $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
+                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)                                                                 
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------
