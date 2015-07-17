@@ -8,6 +8,9 @@
 #SBATCH --ntasks=28 --cpus-per-task=1 --ntasks-per-node=28
 #SBATCH --job-name=tempo_geo_vlidort
 #SBATCH -A s1412
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=pcastell
+#SBATCH --output=slurm_%j.out
 #######################################################################
 #                  System Environment Variables
 #######################################################################
