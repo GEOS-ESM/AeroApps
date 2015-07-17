@@ -30,13 +30,19 @@ def make_workspace(date,ch,code,outdir):
     destination = open('geo_vlidort_run.j','w')
     for line in source:
         if (line[0:18] == '#SBATCH --job-name'):
-            destination.write('#SBATCH --job-name '+dirname+'\n')
+            destination.write('#SBATCH --job-name='+dirname+'\n')
+
+        elif (line[0:16] == '#SBATCH --output'):
+            destination.write('#SBATCH --output='+dirname+"_%j.out"+'\n')
+
         elif (line[0:15] == 'setenv TEMPOBIN'):
             destination.write('setenv TEMPOBIN '+bindir+'\n')
+
         elif (line[0:13] == 'setenv OUTDIR'):            
             destination.write('setenv OUTDIR '+outdir+'\n')            
             if not os.path.exists(outdir):
                 mkpath(outdir)
+
         else:
             destination.write(line)        
     source.close()
