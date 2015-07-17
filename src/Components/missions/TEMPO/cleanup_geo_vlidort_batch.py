@@ -23,7 +23,6 @@ if __name__ == "__main__":
     channels  = '550',
     surface   = 'MAIACRTLS'
     interp    = 'interpolate'
-    nccs      = '/discover/nobackup'
     code      = 'vector'
         
     dt        = timedelta(hours=1)
