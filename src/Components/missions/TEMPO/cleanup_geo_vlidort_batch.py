@@ -4,7 +4,7 @@
 from datetime import datetime, timedelta 
 from dateutil.parser import parse
 import os
-import subprocess
+import shutil
 from distutils.dir_util import mkpath
 import numpy as np
 import math
@@ -12,7 +12,7 @@ import math
 def destroy_workspace(date,ch,code):
     dirname = str(date.date())+'T'+str(date.time())+'.'+ch+'.'+code
     if os.path.exists(dirname):
-        os.removedirs(dirname)
+        shutil.rmtree(dirname)
             
 #########################################################
 
