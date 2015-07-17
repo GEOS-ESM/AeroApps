@@ -33,6 +33,7 @@ module SURFACE
     integer, parameter            :: nkernel = 3
     integer, parameter            :: nparam  = 2
     real*8, parameter             :: pi = 4.*atan(1.0)
+    real*8, parameter             :: d2r = pi/180.0
   ! !INPUT PARAMETERS:
     integer,          intent(in)  :: km    ! number of vertical levels
     integer,          intent(in)  :: nch   ! number of channels
@@ -87,9 +88,9 @@ module SURFACE
         cycle
       end if
 
-      vza = sensor_zenith(j)
-      sza = solar_zenith(j)
-      raa = relat_azymuth(j)
+      vza = d2r*sensor_zenith(j)
+      sza = d2r*solar_zenith(j)
+      raa = d2r*relat_azymuth(j)
            
       ! Loop over channels
       ! ------------------
@@ -125,10 +126,10 @@ module SURFACE
 
 
         delta = acos(cos(sza)*cos(vza) + sin(sza)*sin(vza)*cos(raa))
-        D     = sqrt(tan(sza)*tan(sza) + tan(vza)*tan(vza) - 2*tan(sza)*tan(vza)*cos(raa))
+        D     = sqrt(tan(sza)**2 + tan(vza)**2 - 2*tan(sza)*tan(vza)*cos(raa))
         ! ROSS-THICK (KVOL)
         !-----------------------
-        Kvol(j,i) = ( ((0.5*pi - delta)*cos(delta) + sin(delta) ) / (cos(sza) + cos(vza)) ) - 0.25*pi
+        Kvol(j,i) = ( ( ( 0.5*pi - delta )*cos(delta) + sin(delta) ) / ( cos(sza) + cos(vza) ) ) - 0.25*pi
 
         ! Li-Sparse (KGEO)
         !-----------------------
@@ -145,7 +146,7 @@ module SURFACE
 
         O    = ( t - sin(t)*cost )*( (1./cos(sza)) + (1./cos(vza)) ) / pi
 
-        Kgeo(j,i) = O - (1./cos(sza)) - (1./cos(vza)) + 0.5*(1./cos(vza))*( 1 + cos(delta) )
+        Kgeo(j,i) = O - (1./cos(sza)) - (1./cos(vza)) + 0.5*(1./cos(vza))*(1./cos(sza))*( 1 + cos(delta) )
 
         BR(j,i) = fiso + fgeo*Kgeo(j,i) + fvol*Kvol(j,i)       
 
