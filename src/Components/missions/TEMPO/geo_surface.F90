@@ -1,6 +1,6 @@
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!    geo_vlidort_surface
+!    geo_surface
 ! PURPOSE
 !     Reads in parallel the model data (in a netcdf file) interpolated to TEMPO grid 
 !     The variables are needed as input to vlidort
@@ -22,8 +22,8 @@ program geo_vlidort_surface
   use ESMF                         ! ESMF modules
   use MAPL_Mod
   use MAPL_ShmemMod                ! The SHMEM infrastructure
+  use SURFACE                      ! modules for calculating surface reflectance 
   use netcdf                       ! for reading the NR files
-  use vlidort_surface              ! Module to run VLIDORT surface supplement
   use netcdf_helper                ! Module with netcdf routines
   use GeoAngles                    ! Module with geostationary satellite algorithms for scene geometry
 
@@ -76,13 +76,13 @@ program geo_vlidort_surface
 !                                  Intermediate Unshared Arrays
 !                                  -----------------------------
   real*8, allocatable                   :: albedo(:,:)                            ! bi-directional surface reflectance
-  real*8, allocatable                   :: wsa(:,:)                               ! white-sky albedo
-  real*8, allocatable                   :: bsa(:,:)                               ! black-sky albedo  
+  real*8, allocatable                   :: k_vol(:,:)                             ! Ross-thick kernel
+  real*8, allocatable                   :: k_geo(:,:)                             ! Li-sparse kernel  
 
 !                                  Final Shared Arrays
 !                                  -------------------
-  real*8, pointer                       :: WSA_(:,:) => null()                    ! white-sky albedo
-  real*8, pointer                       :: BSA_(:,:) => null()                    ! black-sky albedo
+  real*8, pointer                       :: Kvol_(:,:) => null()                   ! Ross-thick kernel
+  real*8, pointer                       :: Kgeo_(:,:) => null()                   ! Li-sparse kernel
   real*8, pointer                       :: ALBEDO_(:,:) => null()                 ! bi-directional surface reflectance
 
   real*8,allocatable                    :: field(:,:)                             ! Template for unpacking shared arrays
@@ -117,7 +117,7 @@ program geo_vlidort_surface
 ! netcdf variables
 !----------------------  
   integer                               :: ncid                                           ! netcdf file id
-  integer,allocatable,dimension(:)      :: bsaVarID, wsaVarID, albVarID                   ! netcdf OUT_file variable IDs
+  integer,allocatable,dimension(:)      :: volVarID, geoVarID, albVarID                   ! netcdf OUT_file variable IDs
 
 ! Miscellaneous
 ! -------------
@@ -195,7 +195,7 @@ program geo_vlidort_surface
 
 ! Create OUTFILE
 ! --------------
-  if ( MAPL_am_I_root() )  call create_outfile(date, time, bsaVarID, wsaVarID, albVarID)
+  if ( MAPL_am_I_root() )  call create_outfile(date, time, volVarID, geoVarID, albVarID)
   call MAPL_SyncSharedMemory(rc=ierr)
 ! Read the cloud, land, and angle data 
 ! -------------------------------------
@@ -300,9 +300,9 @@ program geo_vlidort_surface
 
 ! Initialize outputs to be safe
 ! -------------------------------
-  WSA_           = dble(MISSING)
-  BSA_           = dble(MISSING)
-  ALBEDO_        = dble(MISSING)
+  Kvol_           = dble(MISSING)
+  Kgeo_           = dble(MISSING)
+  ALBEDO_         = dble(MISSING)
   call MAPL_SyncSharedMemory(rc=ierr)
 ! Prepare inputs and run VLIDORT
 ! -----------------------------------
@@ -371,27 +371,28 @@ program geo_vlidort_surface
     else if ( ANY(kernel_wt == surf_missing) ) then
 !     Save code for pixels that were not gap filled
 !     ---------------------------------------------    
-      wsa    = -500
-      bsa    = -500
-      albedo = -500
-      ierr = 0
+      k_vol    = -500
+      k_geo    = -500
+      albedo   = -500
+      ierr     = 0
     else             
 !     MODIS BRDF Surface Model
 !     ------------------------------
-      call VLIDORT_SURFACE_LandMODIS (km, nch, nobs, dble(channels),        &
+      call SURFACE_LandMODIS (km, nch, nobs, dble(channels),        &
               kernel_wt, param, &
               (/dble(SZA(c))/), &
               (/dble(abs(RAA(c)))/), &
               (/dble(VZA(c))/), &
-              dble(MISSING),verbose, albedo, wsa, bsa, ierr )  
+              dble(MISSING),verbose, albedo, k_vol, k_geo, ierr )  
+
     end if          
     
 !   Check VLIDORT Status, Store Outputs in Shared Arrays
 !   ----------------------------------------------------    
-    call mp_check_vlidort(wsa, bsa, albedo)  
-    WSA_(c,:)    = wsa(nobs,:)
-    BSA_(c,:)    = bsa(nobs,:)
-    ALBEDO_(c,:) = albedo(nobs,:)
+    call mp_check_vlidort(k_vol, k_geo, albedo)  
+    Kvol_(c,:)    = k_vol(nobs,:)
+    Kgeo_(c,:)    = k_geo(nobs,:)
+    ALBEDO_(c,:)  = albedo(nobs,:)
     
     write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
     call write_verbose(msg)
@@ -424,10 +425,10 @@ program geo_vlidort_surface
     call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
 
     do ch = 1, nch
-      call check(nf90_put_var(ncid, wsaVarID(ch), unpack(reshape(WSA_(:,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out wsa")
-      call check(nf90_put_var(ncid, bsaVarID(ch), unpack(reshape(BSA_(:,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out bsa")
+      call check(nf90_put_var(ncid, volVarID(ch), unpack(reshape(Kvol_(:,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out kvol")
+      call check(nf90_put_var(ncid, geoVarID(ch), unpack(reshape(Kgeo_(:,ch),(/clrm/)),clmask,field), &
+                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out kgeo")
       call check(nf90_put_var(ncid, albVarID(ch), unpack(reshape(ALBEDO_(:,ch),(/clrm/)),clmask,field), &
                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
     end do
@@ -584,7 +585,7 @@ subroutine filenames()
   write(LAND_file,'(4A)') trim(indir),'/LevelB/invariant/',trim(instname),'-g5nr.lb2.asm_Nx.nc4' 
 
 ! OUTFILES
-  write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lb2.vlidort_surface.'
+  write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lb2.surface.'
 
   call outfile_extname(OUT_file)
 
@@ -671,11 +672,11 @@ end subroutine outfile_extname
 !  HISTORY
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine mp_check_vlidort(wsa, bsa, albedo)
-    real*8, dimension(:,:)    :: wsa, bsa, albedo
+  subroutine mp_check_vlidort(k_vol, k_geo, albedo)
+    real*8, dimension(:,:)    :: k_vol, k_geo, albedo
 
 
-    if (ANY(wsa == MISSING) .or. ANY(bsa == MISSING) .or. ANY(albedo == MISSING)) then
+    if (ANY(k_vol == MISSING) .or. ANY(k_geo == MISSING) .or. ANY(albedo == MISSING)) then
       write(*,*) 'VLIDORT returned a missing value'
       write(*,*) 'Exiting......'
       write(*,*) 'Pixel is ',c
@@ -823,8 +824,8 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(VZA,(/clrm/),rc=ierr)
     call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
 
-    call MAPL_AllocNodeArray(WSA_,(/clrm,nch/),rc=ierr)
-    call MAPL_AllocNodeArray(BSA_,(/clrm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(Kvol_,(/clrm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(Kgeo_,(/clrm,nch/),rc=ierr)
     call MAPL_AllocNodeArray(ALBEDO_,(/clrm,nch/),rc=ierr)
     
   end subroutine allocate_shared
@@ -845,8 +846,8 @@ end subroutine outfile_extname
   ! Needed for vlidort
   ! -----------------------
     allocate (albedo(nobs,nch))
-    allocate (wsa(nobs,nch))
-    allocate (bsa(nobs, nch))    
+    allocate (k_vol(nobs,nch))
+    allocate (k_geo(nobs, nch))    
 
     if (lower_to_upper(surfname) == 'MAIACRTLS') then
       allocate (kernel_wt(nkernel,nch,nobs))
@@ -863,8 +864,8 @@ end subroutine outfile_extname
 
   ! Netcdf IDs
   ! ----------
-    allocate (wsaVarID(nch))
-    allocate (bsaVarID(nch))
+    allocate (volVarID(nch))
+    allocate (geoVarID(nch))
     allocate (albVarID(nch))
 
   end subroutine allocate_unshared
@@ -936,9 +937,9 @@ end subroutine outfile_extname
 !     6 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  subroutine create_outfile(date, time, bsaVarID, wsaVarID, albVarID)
+  subroutine create_outfile(date, time, volVarID, geoVarID, albVarID)
     character(len=*) ,intent(in)       :: date, time
-    integer,dimension(:),intent(out)   :: bsaVarID, wsaVarID, albVarID  !OUT_file variables    
+    integer,dimension(:),intent(out)   :: volVarID, geoVarID, albVarID  !OUT_file variables    
     
     integer                            :: ncid
     integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID       
@@ -963,7 +964,7 @@ end subroutine outfile_extname
     call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
 
     ! Global Attributes
-    write(comment,'(A)') 'VLIDORT Surface Reflectance Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler'
+    write(comment,'(A)') 'Surface Reflectance Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'title',trim(comment)),"title attr")
 
     write(comment,'(A)') 'NASA/Goddard Space Flight Center'
@@ -972,7 +973,7 @@ end subroutine outfile_extname
     write(comment,'(A)') 'Global Model and Assimilation Office'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'source',trim(comment)),"source attr")
 
-    write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort_surface.x'
+    write(comment,'(A)') 'Simulation run from geo_surface.x'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'history',trim(comment)),"history attr")
 
     write(comment,'(A)') trim(INV_file)  // CHAR(13) // &
@@ -984,7 +985,7 @@ end subroutine outfile_extname
     write(comment,'(A)') 'n/a'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'references',trim(comment)),"references attr") 
 
-    write(comment,'(A)') 'This file contains VLIDORT simulated surface reflectance (albedo) ' // &
+    write(comment,'(A)') 'This file contains simulated surface reflectance (albedo) ' // &
                          ' on the '//lower_to_upper(trim(instname))//' geostationary grid '
     call check(nf90_put_att(ncid,NF90_GLOBAL,'comment',trim(comment)),"comment attr")   
 
@@ -1021,8 +1022,8 @@ end subroutine outfile_extname
 !                                     ----
     do ch=1,nch
       write(comment,'(F10.2)') channels(ch)
-      call check(nf90_def_var(ncid, 'bsa_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),bsaVarID(ch)),"create bsa var")      
-      call check(nf90_def_var(ncid, 'wsa_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),wsaVarID(ch)),"create wsa var")
+      call check(nf90_def_var(ncid, 'kvol_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),volVarID(ch)),"create kvol var")      
+      call check(nf90_def_var(ncid, 'kgeo_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),geoVarID(ch)),"create kgeo var")
       call check(nf90_def_var(ncid, 'albedo_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),albVarID(ch)),"create albedo var")
     end do
 
@@ -1030,21 +1031,21 @@ end subroutine outfile_extname
 !                                            Surface Reflectance
 !                                          ------------------------  
     do ch=1,size(channels)
-      write(comment,'(F10.2,A)') channels(ch), ' nm BSA'
-      call check(nf90_put_att(ncid,bsaVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-      write(comment,'(F10.2,A)') channels(ch), ' nm Black-Sky Albedo'
-      call check(nf90_put_att(ncid,bsaVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-      call check(nf90_put_att(ncid,bsaVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,bsaVarID(ch),'units','None'),"units attr")
-      call check(nf90_put_att(ncid,bsaVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm Kvol'
+      call check(nf90_put_att(ncid,volVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm Ross-Thick Kernel'
+      call check(nf90_put_att(ncid,volVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+      call check(nf90_put_att(ncid,volVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,volVarID(ch),'units','None'),"units attr")
+      call check(nf90_put_att(ncid,volVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
-      write(comment,'(F10.2,A)') channels(ch), ' nm WSA'
-      call check(nf90_put_att(ncid,wsaVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-      write(comment,'(F10.2,A)') channels(ch), ' nm White-Sky Albedo'
-      call check(nf90_put_att(ncid,wsaVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-      call check(nf90_put_att(ncid,wsaVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,wsaVarID(ch),'units','None'),"units attr")
-      call check(nf90_put_att(ncid,wsaVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm Kgeo'
+      call check(nf90_put_att(ncid,geoVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm Li-sparse Kernel'
+      call check(nf90_put_att(ncid,geoVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+      call check(nf90_put_att(ncid,geoVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,geoVarID(ch),'units','None'),"units attr")
+      call check(nf90_put_att(ncid,geoVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
       write(comment,'(F10.2,A)') channels(ch), ' nm Albedo'
       call check(nf90_put_att(ncid,albVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
@@ -1335,8 +1336,8 @@ end subroutine outfile_extname
     call MAPL_DeallocNodeArray(VZA,rc=ierr) 
     call MAPL_DeallocNodeArray(RAA,rc=ierr) 
 
-    call MAPL_DeallocNodeArray(WSA_,rc=ierr)
-    call MAPL_DeallocNodeArray(BSA_,rc=ierr)
+    call MAPL_DeallocNodeArray(Kvol_,rc=ierr)
+    call MAPL_DeallocNodeArray(Kgeo_,rc=ierr)
     call MAPL_DeallocNodeArray(ALBEDO_,rc=ierr)
 
   end subroutine deallocate_shared
