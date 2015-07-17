@@ -119,7 +119,7 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,i_band=None):
     if (interp.upper() == 'INTERPOLATE'):
         rcfile.write('SURFBAND_C: 354 388\n')
     else:
-        rcfile.write('SURFBAND_I: ' + i_band)
+        rcfile.write('SURFBAND_I: ' + i_band + '\n')
 
     rcfile.write('SURFBANDM: 2 \n')
 
@@ -187,7 +187,7 @@ if __name__ == "__main__":
 
     # Submite Jobs      
     runlen  = len(runstring)   
-    streams = min(10, runlen)
+    streams = min(24, runlen)
     drun    = np.array([runlen/streams for i in range(streams)])
     drun[streams-1] = drun[streams-1] + math.fmod(runlen,streams)
     for s,i in enumerate(np.linspace(0,streams*(runlen/streams),streams,endpoint=False)):
