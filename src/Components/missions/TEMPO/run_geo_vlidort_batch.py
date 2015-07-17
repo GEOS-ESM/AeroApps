@@ -10,7 +10,7 @@ import numpy as np
 import math
 
 def make_workspace(date,ch,code,outdir):
-    dirname = str(date.date())+'T'+str(date.time())+'.'+ch+'.'+code
+    dirname = str(date.date())+'T'+str(date.hour)+'.'+ch+'.'+code
     outdir = outdir + '/Y'+str(date.year)+'/M'+str(date.month).zfill(2)+'/D'+str(date.day).zfill(2)
     bindir = os.getcwd() + '/' + dirname
     if not os.path.exists(dirname):
@@ -170,7 +170,12 @@ if __name__ == "__main__":
                 band_i = i_band[i]
 
             # Vector Case
-            workdir = make_workspace(startdate,ch,'vector',outdir)
+            code = 'vector.'
+            if (interp.lower() == 'interpolate'):
+                code = code + 'i' 
+            
+            code = code + surface
+            workdir = make_workspace(startdate,ch,code,outdir)
 
             if (surface.upper() == 'MAIACRTLS'):
                 make_maiac_rcfile(workdir,indir,startdate,ch,'vector',interp,i_band=band_i)
@@ -180,6 +185,11 @@ if __name__ == "__main__":
             runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
 
             # # Scalar Case
+            # code = 'scalar.'
+            # if (interp.lower() == 'interpolate'):
+            #     code = code + 'i' 
+            
+            # code = code + surface
             # workdir = make_workspace(startdate,ch,'scalar',outdir)
 
             # if (surface.upper() == 'MAIACRTLS'):
