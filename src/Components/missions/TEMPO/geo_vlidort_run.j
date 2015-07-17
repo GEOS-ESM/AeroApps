@@ -4,7 +4,6 @@
 #                     Batch Parameters for Run Job
 #######################################################################
 #SBATCH --time=12:00:00
-#SBATCH --time-min=08:00:00
 #SBATCH --constraint=hasw
 #SBATCH --ntasks=28 --cpus-per-task=1 --ntasks-per-node=28
 #SBATCH --job-name=tempo_geo_vlidort
@@ -48,5 +47,8 @@ rm Aod_EOS.rc
 rm Chem_MieRegistry.rc
 rm ExtData
 rm geo_vlidort.x
+rm clean_mem.sh
 #rm geo_vlidort.rc
-mv *nc4 $OUTDIR
+foreach fn (`ls *.nc4`)
+  mv $fn $OUTDIR/
+end
