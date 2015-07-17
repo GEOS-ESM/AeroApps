@@ -212,7 +212,7 @@
       DS1 = XI * XJ
       DS2 = SXI * SXJ
       DS3 = XI  + XJ
-      CKSI = DS1 + DS2 * CKPHI
+      CKSI = DS1 + DS2 * CPHI
       IF ( CKSI.GT.ONE ) CKSI = ONE
       SKSI = DSQRT(ONE-CKSI*CKSI)
       KSI = DACOS(CKSI)
@@ -283,7 +283,7 @@
 
 !  ksi cosine
 
-      CKSI = X_INC  * X_REF + SX_INC * SX_REF * CKPHI
+      CKSI = X_INC  * X_REF + SX_INC * SX_REF * CPHI
 
 !  contributions P and R
 
@@ -301,7 +301,7 @@
       DT1   = T_REF_SQ + T_INC_SQ
       DT2   = T_INC * T_REF
       DT2SQ = DT2 * DT2
-      DELTA = DSQRT ( DT1 - TWO * DT2 * CKPHI )
+      DELTA = DSQRT ( DT1 - TWO * DT2 * CPHI )
       DSQ   = DELTA * DELTA
       H     = DSQRT ( DSQ + SKPHI * SKPHI * DT2SQ )
       COST  = PARS(1) * H / R
