@@ -10,7 +10,7 @@ import numpy as np
 import math
 
 def make_workspace(date,ch,code,outdir):
-    dirname = str(date.date())+'T'+str(date.hour)+'.'+ch+'.'+code
+    dirname = str(date.date())+'T'+str(date.hour).zfill(2)+'.'+ch+'.'+code
     outdir = outdir + '/Y'+str(date.year)+'/M'+str(date.month).zfill(2)+'/D'+str(date.day).zfill(2)
     bindir = os.getcwd() + '/' + dirname
     if not os.path.exists(dirname):
@@ -89,11 +89,11 @@ def make_maiac_rcfile(dirname,indir,date,ch,code,interp,i_band=None):
 
     rcfile.write('SURFBAND: ' + interp +'\n')
     if (interp.upper() == 'INTERPOLATE'):
-        rcfile.write('SURFBAND_C: 645 858 469 555 1240 1640 2130 412\n')
+        rcfile.write('SURFBAND_C: 645 858 469 555 1240 1640 2130\n')
     else:
         rcfile.write('SURFBAND_I: '+ i_band)
 
-    rcfile.write('SURFBANDM: 8 \n')
+    rcfile.write('SURFBANDM: 7 \n')
 
     if (code == 'scalar'):
         rcfile.write('SCALAR: true\n')
@@ -146,9 +146,9 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,i_band=None):
 
 if __name__ == "__main__":
     
-    startdate = '2005-12-31T17:00:00'
-    enddate   = '2005-12-31T17:00:00'
-    channels  = '550',
+    startdate = '2005-12-31T00:00:00'
+    enddate   = '2005-12-31T23:00:00'
+    channels  = '550','670'
     surface   = 'MAIACRTLS'
     interp    = 'interpolate'
     i_band    = None
