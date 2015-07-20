@@ -9,7 +9,7 @@
 #SBATCH --job-name=tempo_geo_vlidort
 #SBATCH -A s1412
 #SBATCH --mail-type=FAIL
-#SBATCH --mail-user=pcastell
+#SBATCH --mail-user=patricia.castellanos@nasa.gov
 #SBATCH --output=slurm_%j.out
 #######################################################################
 #                  System Environment Variables
