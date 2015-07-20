@@ -13,6 +13,11 @@ def destroy_workspace(date,ch,code):
     dirname = str(date.date())+'T'+str(date.hour).zfill(2)+'.'+ch+'.'+code
     if os.path.exists(dirname):
         shutil.rmtree(dirname)
+
+    slurm = dirname + '*.out'
+    if os.path.isfile(slurm):
+        os.remove(slurm)
+
             
 #########################################################
 
@@ -35,7 +40,6 @@ if __name__ == "__main__":
     code = code + surface
 
     # destroy working directories 
-    # SLURM scripts will be implemented later
     while (startdate <= enddate):
         for i, ch in enumerate(channels):
 
