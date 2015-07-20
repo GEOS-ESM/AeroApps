@@ -10,7 +10,7 @@ import numpy as np
 import math
 
 def destroy_workspace(date,ch,code):
-    dirname = str(date.date())+'T'+str(date.time())+'.'+ch+'.'+code
+    dirname = str(date.date())+'T'+str(date.hour).zfill(2)+'.'+ch+'.'+code
     if os.path.exists(dirname):
         shutil.rmtree(dirname)
             
@@ -18,9 +18,9 @@ def destroy_workspace(date,ch,code):
 
 if __name__ == "__main__":
     
-    startdate = '2005-12-31T17:00:00'
-    enddate   = '2005-12-31T17:00:00'
-    channels  = '550',
+    startdate = '2005-12-31T00:00:00'
+    enddate   = '2005-12-31T23:00:00'
+    channels  = '470','550','670'
     surface   = 'MAIACRTLS'
     interp    = 'interpolate'
     code      = 'vector'
@@ -29,15 +29,16 @@ if __name__ == "__main__":
     startdate = parse(startdate)
     enddate   = parse(enddate)
 
+    if (interp.lower() == 'interpolate'):
+        code = code + '.i' 
+
+    code = code + surface
+
     # destroy working directories 
     # SLURM scripts will be implemented later
     while (startdate <= enddate):
         for i, ch in enumerate(channels):
 
-            if (interp.lower() == 'interpolate'):
-                code = code + '.i' 
-            
-            code = code + surface
             destroy_workspace(startdate,ch,code)
 
        
