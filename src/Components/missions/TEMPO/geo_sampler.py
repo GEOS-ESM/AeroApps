@@ -71,7 +71,7 @@ def Open(filename,doNC4ctl=True):
         else:
             v = f.vname[i]
         var = TempoVar(v)
-        var.title = f.vtitle[i]
+        #var.title = f.vtitle[i]
         var.km = f.kmvar[i]
         if var.km>0:
             var.levunits = f.levunits[:]
@@ -291,8 +291,10 @@ def writeNC ( ncGeo, clon, clat, ctyme, tBeg, Vars, levs, levUnits, options,
                                      zlib=options.zlib,
                                      chunksizes=chunks)
 
-            this.standard_name = var.title
-            this.long_name = var.title.replace('_',' ')
+            #this.standard_name = var.title
+            this.standard_name = var.name
+            #this.long_name = var.title.replace('_',' ')
+            this.long_name = ''
             this.missing_value = MAPL_UNDEF
             this.units = var.units
             if g.lower:

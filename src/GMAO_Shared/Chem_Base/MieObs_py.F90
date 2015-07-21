@@ -305,7 +305,7 @@ end subroutine getEdgeVars
 ! Create the Mie Tables
 ! ---------------------
   mieTables = Chem_MieCreate(rcfile,rc)
-  print *, 'mietables', mieTables%bc_optics_file
+  if (verbose ==1) print *, 'mietables', mieTables%bc_optics_file
   if ( rc /= 0 ) then
      print *, 'Cannot create Mie tables from '//trim(rcfile)
      return
@@ -376,7 +376,7 @@ end subroutine getEdgeVars
 !    -------------------------------------------------------------------------
      if ( nPol .LE. mieTables%vtableUse%nPol ) then  ! user requests fewer polarizations
           nPol_ = nPol
-          print*,'nPol mie table', mieTables%vtableUse%nPol
+          if (verbose == 1)  print*,'nPol mie table', mieTables%vtableUse%nPol
           spherical_ext = .FALSE.
      else if ( nPol == 6 .AND. mieTables%vtableUse%nPol == 4 ) then
           nPol_ = 4              ! file only has 4, user wants 6
@@ -386,7 +386,7 @@ end subroutine getEdgeVars
           print *, 'ERROR: inconsistent number of polarizations: ', nPol, mieTables%vtableUse%nPol 
           return
      end if
-     print *, 'npol_ test',iq, nPol_
+     if (verbose ==1) print *, 'npol_ test',iq, nPol_
  
      allocate(pmom_(mieTables%nMom,nPol_),stat=rc)
      if ( rc /= 0 ) then
@@ -426,7 +426,7 @@ end subroutine getEdgeVars
       end do  ! end nobs
   deallocate(pmom_)
   end do ! end tracers
-  print*, 'end tracer', iq
+  if (verbose == 1)  print*, 'end tracer', iq
 !  Normalize ssa and g
 !  -------------------
    where (     tau > 0.0 ) ssa = ssa / tau

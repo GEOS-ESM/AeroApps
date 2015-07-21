@@ -47,7 +47,7 @@ LIB  = lib$(THIS).a
      SRCS = Chem_RegistryMod.F90 Chem_ArrayMod.F90 \
             Chem_BundleMod.F90 Chem_Mod.F90 Chem_InitMod.F90 \
             Chem_MieTableMod.F90 Chem_MieMod.F90 Chem_AodMod.F90 \
-            Chem_SimpleBundleMod.F90
+            Chem_SimpleBundleMod.F90 MieObs_py.F90
      LIBS = $(LIB) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
             $(LIB_EU) $(LIB_CFIO) $(LIB_GFIO) \
             $(LIB_MPEU) $(LIB_MFHDF3) $(LIB_SDF) \

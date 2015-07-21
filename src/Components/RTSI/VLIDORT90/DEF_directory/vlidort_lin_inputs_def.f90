@@ -20,7 +20,7 @@
 ! #  Email :       rtsolutions@verizon.net                      #
 ! #                                                             #
 ! #  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT, 2.4RTC,  #
-! #                   2.5, 2.6                                  #
+! #                   2.5, 2.6, 2.7                             #
 ! #  Release Date :   December 2005  (2.0)                      #
 ! #  Release Date :   March 2007     (2.2)                      #
 ! #  Release Date :   October 2007   (2.3)                      #
@@ -30,6 +30,7 @@
 ! #  Release Date :   October 2010   (2.4RTC)                   #
 ! #  Release Date :   March 2011     (2.5)                      #
 ! #  Release Date :   May 2012       (2.6)                      #
+! #  Release Date :   August 2014    (2.7)                      #
 ! #                                                             #
 ! #       NEW: TOTAL COLUMN JACOBIANS         (2.4)             #
 ! #       NEW: BPDF Land-surface KERNELS      (2.4R)            #
@@ -37,6 +38,9 @@
 ! #       Consolidated BRDF treatment         (2.4RTC)          #
 ! #       f77/f90 Release                     (2.5)             #
 ! #       External SS / New I/O Structures    (2.6)             #
+! #                                                             #
+! #       SURFACE-LEAVING / BRDF-SCALING      (2.7)             #
+! #       TAYLOR Series / OMP THREADSAFE      (2.7)             #
 ! #                                                             #
 ! ###############################################################
 
@@ -67,12 +71,6 @@
 
       TYPE VLIDORT_Fixed_LinControl
 
-
-!  Control linearization
-
-      LOGICAL  :: TS_DO_SIMULATION_ONLY
-      LOGICAL  :: TS_DO_SURFBB_LINEARIZATION
-
 !  Control for atmospheric linearizations, layer by layer
 
       LOGICAL, dimension(MAXLAYERS)  :: TS_LAYER_VARY_FLAG
@@ -90,14 +88,16 @@
 
       INTEGER  :: TS_N_SURFACE_WFS
 
+!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+!@@@ Addition of SLEAVE WF stuff, R. Spurr, 22 August 2012 @@@@@@@@@
+!  Total number of Sleave Jacobians
+      INTEGER  :: TS_N_SLEAVE_WFS
+!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 !  Jacobian names
 
       CHARACTER (LEN=31), dimension(MAX_ATMOSWFS) :: TS_COLUMNWF_NAMES
       CHARACTER (LEN=31), dimension(MAX_ATMOSWFS) :: TS_PROFILEWF_NAMES
-
-!  Special Options (RT Solutions Use Only)
-      LOGICAL  :: TS_DO_LTE_LINEARIZATION
-
 
       END TYPE VLIDORT_Fixed_LinControl
 
@@ -138,7 +138,6 @@
 
       TYPE VLIDORT_Modified_LinControl
 
-
 !  Control linearization
 
       LOGICAL  :: TS_DO_COLUMN_LINEARIZATION
@@ -147,6 +146,25 @@
 
       LOGICAL  :: TS_DO_SURFACE_LINEARIZATION
       LOGICAL  :: TS_DO_LINEARIZATION
+
+!  This flag moved from Fixed Lin Control, Version 2.7
+
+      LOGICAL  :: TS_DO_SIMULATION_ONLY
+
+!  BlackBody Jacobian Flags, Introduced March 26th 2014, Version 2.7
+
+      LOGICAL  :: TS_DO_ATMOS_LBBF
+      LOGICAL  :: TS_DO_SURFACE_LBBF
+
+!  These two flags have been superseded in Version 2.7
+!      LOGICAL  :: TS_DO_SURFBB_LINEARIZATION  !  REPLACED BY TS_DO_SURFACE_LBBF
+!      LOGICAL  :: TS_DO_LTE_LINEARIZATION     !  REPLACED BY TS_DO_ATMOS_LBBF 
+
+!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+!@@@ Addition of SLEAVE WF stuff, R. Spurr, 22 August 2012 @@@@@@@@@
+!  Total number of Sleave Jacobians
+      LOGICAL  :: TS_DO_SLEAVE_WFS
+!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
       END TYPE VLIDORT_Modified_LinControl

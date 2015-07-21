@@ -19,7 +19,7 @@
 ! #  Email :       rtsolutions@verizon.net                      #
 ! #                                                             #
 ! #  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT, 2.4RTC,  #
-! #                   2.5, 2.6                                  #
+! #                   2.5, 2.6, 2.7                             #
 ! #  Release Date :   December 2005  (2.0)                      #
 ! #  Release Date :   March 2007     (2.2)                      #
 ! #  Release Date :   October 2007   (2.3)                      #
@@ -29,6 +29,7 @@
 ! #  Release Date :   October 2010   (2.4RTC)                   #
 ! #  Release Date :   March 2011     (2.5)                      #
 ! #  Release Date :   May 2012       (2.6)                      #
+! #  Release Date :   August 2014    (2.7)                      #
 ! #                                                             #
 ! #       NEW: TOTAL COLUMN JACOBIANS         (2.4)             #
 ! #       NEW: BPDF Land-surface KERNELS      (2.4R)            #
@@ -36,6 +37,9 @@
 ! #       Consolidated BRDF treatment         (2.4RTC)          #
 ! #       f77/f90 Release                     (2.5)             #
 ! #       External SS / New I/O Structures    (2.6)             #
+! #                                                             #
+! #       SURFACE-LEAVING / BRDF-SCALING      (2.7)             #
+! #       TAYLOR Series / OMP THREADSAFE      (2.7)             #
 ! #                                                             #
 ! ###############################################################
 
@@ -57,10 +61,11 @@
 ! #            VLIDORT_INIT_CONTROL_VARS                        #
 ! #            VLIDORT_INIT_MODEL_VARS                          #
 ! #            VLIDORT_INIT_THERMAL_VARS                        #
-! #            VLIDORT_INPUTREAD                                #
+! #            VLIDORT_READ_INPUTS                              #
 ! #                                                             #
 ! #    These routines are called by the Main VLIDORT module     #
 ! #                                                             #
+! #            VLIDORT_CHECK_INPUT_DIMS                         #
 ! #            VLIDORT_CHECK_INPUT                              #
 ! #            VLIDORT_DERIVE_INPUT                             #
 ! #                                                             #
@@ -70,11 +75,12 @@
       MODULE vlidort_inputs
 
       PRIVATE
-      PUBLIC :: VLIDORT_INPUT_MASTER, &
-                VLIDORT_INIT_CONTROL_VARS, &
+      PUBLIC :: VLIDORT_INIT_CONTROL_VARS, &
                 VLIDORT_INIT_MODEL_VARS, &
                 VLIDORT_INIT_THERMAL_VARS, &
-                VLIDORT_INPUTREAD, &
+                VLIDORT_INPUT_MASTER, &
+                VLIDORT_READ_INPUTS, &
+                VLIDORT_CHECK_INPUT_DIMS, &
                 VLIDORT_CHECK_INPUT, &
                 VLIDORT_DERIVE_INPUT
 
@@ -109,10 +115,15 @@
       LOGICAL ::             DO_FULLRAD_MODE
       LOGICAL ::             DO_SSCORR_NADIR
       LOGICAL ::             DO_SSCORR_OUTGOING
+
+!  New 02 Jul 2013
+      LOGICAL ::             DO_FO_CALC
+
       LOGICAL ::             DO_SSCORR_TRUNCATION
 
 !  New 15 March 2012
       LOGICAL ::             DO_SS_EXTERNAL
+
 !  New 17 May 2012
       LOGICAL ::             DO_SURFACE_LEAVING
       LOGICAL ::             DO_SL_ISOTROPIC
@@ -142,6 +153,12 @@
       CHARACTER (LEN=60) ::  SCENARIO_WRITE_FILENAME
       CHARACTER (LEN=60) ::  FOURIER_WRITE_FILENAME
       CHARACTER (LEN=60) ::  RESULTS_WRITE_FILENAME
+
+!  Order of Taylor series (including terms up to EPS^n). 
+!    Introduced 2/19/14 for Version 2.7
+      
+      INTEGER ::             TAYLOR_ORDER
+
       INTEGER ::             NSTOKES
       INTEGER ::             NSTREAMS
       INTEGER ::             NLAYERS
@@ -162,12 +179,17 @@
       DOUBLE PRECISION ::    USER_LEVELS ( MAX_USER_LEVELS )
       LOGICAL ::             DO_LAMBERTIAN_SURFACE
       DOUBLE PRECISION ::    LAMBERTIAN_ALBEDO
+      LOGICAL ::             DO_OBSERVATION_GEOMETRY
+      INTEGER ::             N_USER_OBSGEOMS
+      DOUBLE PRECISION ::    USER_OBSGEOMS ( MAX_USER_OBSGEOMS, 3 )
+
       LOGICAL ::             DO_THERMAL_EMISSION
       INTEGER ::             N_THERMAL_COEFFS
       DOUBLE PRECISION ::    THERMAL_BB_INPUT ( 0:MAXLAYERS )
       LOGICAL ::             DO_SURFACE_EMISSION
       DOUBLE PRECISION ::    SURFBB
       LOGICAL ::             DO_THERMAL_TRANSONLY
+
       LOGICAL ::             DO_SPECIALIST_OPTION_1
       LOGICAL ::             DO_SPECIALIST_OPTION_2
       LOGICAL ::             DO_SPECIALIST_OPTION_3
@@ -196,7 +218,7 @@
 
       CALL VLIDORT_INIT_CONTROL_VARS ( &
         DO_FULLRAD_MODE, DO_SSCORR_NADIR, &
-        DO_SSCORR_OUTGOING, DO_SSCORR_TRUNCATION, &
+        DO_SSCORR_OUTGOING, DO_FO_CALC, DO_SSCORR_TRUNCATION, &
         DO_SS_EXTERNAL, DO_SSFULL, DO_DOUBLE_CONVTEST, &
         DO_PLANE_PARALLEL, DO_REFRACTIVE_GEOMETRY, &
         DO_CHAPMAN_FUNCTION, DO_RAYLEIGH_ONLY, &
@@ -207,7 +229,7 @@
         DO_MVOUT_ONLY, DO_DEBUG_WRITE, &
         DO_WRITE_INPUT, DO_WRITE_SCENARIO, &
         DO_WRITE_FOURIER, DO_WRITE_RESULTS, &
-        DO_LAMBERTIAN_SURFACE, &
+        DO_LAMBERTIAN_SURFACE, DO_OBSERVATION_GEOMETRY, &
         DO_SPECIALIST_OPTION_1, DO_SPECIALIST_OPTION_2, &
         DO_SPECIALIST_OPTION_3, DO_TOA_CONTRIBS, &
         DO_SURFACE_LEAVING, DO_SL_ISOTROPIC )
@@ -218,7 +240,7 @@
         SURFBB, DO_THERMAL_TRANSONLY )
 
       CALL VLIDORT_INIT_MODEL_VARS ( &
-        NSTOKES, NSTREAMS, &
+        TAYLOR_ORDER, NSTOKES, NSTREAMS, &
         NLAYERS, NFINELAYERS, &
         NGREEK_MOMENTS_INPUT, VLIDORT_ACCURACY, &
         FLUX_FACTOR, N_SZANGLES, &
@@ -227,6 +249,7 @@
         N_USER_RELAZMS, USER_RELAZMS, &
         N_USER_VZANGLES, USER_VZANGLES, &
         N_USER_LEVELS, USER_LEVELS, &
+        N_USER_OBSGEOMS, USER_OBSGEOMS, &
         LAMBERTIAN_ALBEDO )
 
 !  Open file
@@ -237,7 +260,7 @@
 !  Read standard inputs
 !    Surface-leaving terms added 17 May 2012
 
-      CALL VLIDORT_INPUTREAD ( &
+      CALL VLIDORT_READ_INPUTS ( &
         DO_FULLRAD_MODE, DO_SSCORR_NADIR, &
         DO_SSCORR_OUTGOING, DO_SSCORR_TRUNCATION, &
         DO_SS_EXTERNAL, DO_SSFULL, DO_DOUBLE_CONVTEST, &
@@ -249,11 +272,12 @@
         DO_QUAD_OUTPUT, DO_USER_VZANGLES, &
         DO_SURFACE_LEAVING, DO_SL_ISOTROPIC,&
         DO_ADDITIONAL_MVOUT, DO_MVOUT_ONLY, &
+        DO_OBSERVATION_GEOMETRY, &
         DO_DEBUG_WRITE, DO_WRITE_INPUT, &
         DO_WRITE_SCENARIO, DO_WRITE_FOURIER, &
         DO_WRITE_RESULTS, INPUT_WRITE_FILENAME, &
         SCENARIO_WRITE_FILENAME, FOURIER_WRITE_FILENAME, &
-        RESULTS_WRITE_FILENAME, NSTOKES, &
+        RESULTS_WRITE_FILENAME, TAYLOR_ORDER, NSTOKES, &
         NSTREAMS, NLAYERS, &
         NFINELAYERS, NGREEK_MOMENTS_INPUT, &
         VLIDORT_ACCURACY, FLUX_FACTOR, &
@@ -262,7 +286,8 @@
         GEOMETRY_SPECHEIGHT, N_USER_RELAZMS, &
         USER_RELAZMS, N_USER_VZANGLES, &
         USER_VZANGLES, N_USER_LEVELS, &
-        USER_LEVELS, DO_LAMBERTIAN_SURFACE, &
+        USER_LEVELS, N_USER_OBSGEOMS, &
+        USER_OBSGEOMS, DO_LAMBERTIAN_SURFACE, &
         LAMBERTIAN_ALBEDO, DO_THERMAL_EMISSION, &
         N_THERMAL_COEFFS, DO_SURFACE_EMISSION, &
         DO_THERMAL_TRANSONLY, &
@@ -311,29 +336,9 @@
       VLIDORT_FixIn%Bool%TS_DO_SURFACE_LEAVING     = DO_SURFACE_LEAVING
       VLIDORT_FixIn%Bool%TS_DO_SL_ISOTROPIC        = DO_SL_ISOTROPIC
 
-!  Modified Boolean inputs
+!  Fixed Control inputs. Taylor order is new, 2p7
 
-      VLIDORT_ModIn%MBool%TS_DO_SSCORR_NADIR        = DO_SSCORR_NADIR
-      VLIDORT_ModIn%MBool%TS_DO_SSCORR_OUTGOING     = DO_SSCORR_OUTGOING
-      VLIDORT_ModIn%MBool%TS_DO_DOUBLE_CONVTEST     = DO_DOUBLE_CONVTEST
-      VLIDORT_ModIn%MBool%TS_DO_SOLAR_SOURCES       = DO_SOLAR_SOURCES
-      VLIDORT_ModIn%MBool%TS_DO_REFRACTIVE_GEOMETRY = DO_REFRACTIVE_GEOMETRY
-      VLIDORT_ModIn%MBool%TS_DO_CHAPMAN_FUNCTION    = DO_CHAPMAN_FUNCTION
-      VLIDORT_ModIn%MBool%TS_DO_RAYLEIGH_ONLY       = DO_RAYLEIGH_ONLY
-      !VLIDORT_ModIn%MBool%TS_DO_ISOTROPIC_ONLY      = DO_ISOTROPIC_ONLY
-      !VLIDORT_ModIn%MBool%TS_DO_NO_AZIMUTH          = DO_NO_AZIMUTH
-      !VLIDORT_ModIn%MBool%TS_DO_ALL_FOURIER         = DO_ALL_FOURIER
-      VLIDORT_ModIn%MBool%TS_DO_DELTAM_SCALING      = DO_DELTAM_SCALING
-      VLIDORT_ModIn%MBool%TS_DO_SOLUTION_SAVING     = DO_SOLUTION_SAVING
-      VLIDORT_ModIn%MBool%TS_DO_BVP_TELESCOPING     = DO_BVP_TELESCOPING
-      !VLIDORT_ModIn%MBool%TS_DO_USER_STREAMS        = DO_USER_STREAMS
-      VLIDORT_ModIn%MBool%TS_DO_USER_VZANGLES       = DO_USER_VZANGLES
-      VLIDORT_ModIn%MBool%TS_DO_ADDITIONAL_MVOUT    = DO_ADDITIONAL_MVOUT
-      VLIDORT_ModIn%MBool%TS_DO_MVOUT_ONLY          = DO_MVOUT_ONLY
-      VLIDORT_ModIn%MBool%TS_DO_THERMAL_TRANSONLY   = DO_THERMAL_TRANSONLY
-
-!  Fixed Control inputs
-
+      VLIDORT_FixIn%Cont%TS_TAYLOR_ORDER     = TAYLOR_ORDER
       VLIDORT_FixIn%Cont%TS_NSTOKES          = NSTOKES
       VLIDORT_FixIn%Cont%TS_NSTREAMS         = NSTREAMS
       VLIDORT_FixIn%Cont%TS_NLAYERS          = NLAYERS
@@ -341,38 +346,13 @@
       VLIDORT_FixIn%Cont%TS_N_THERMAL_COEFFS = N_THERMAL_COEFFS
       VLIDORT_FixIn%Cont%TS_VLIDORT_ACCURACY = VLIDORT_ACCURACY
 
-!  Modified Control inputs
-
-      VLIDORT_ModIn%MCont%TS_NGREEK_MOMENTS_INPUT = NGREEK_MOMENTS_INPUT
-
 !  Fixed Beam inputs
 
-      !VLIDORT_FixIn%SunRays%TS_BEAM_SZAS   = BEAM_SZAS
-      VLIDORT_FixIn%SunRays%TS_SZANGLES    = SZANGLES
-
-!  Modified Beam inputs
-
-      VLIDORT_ModIn%MSunRays%TS_FLUX_FACTOR = FLUX_FACTOR
-      !VLIDORT_ModIn%MSunRays%TS_NBEAMS      = NBEAMS
-      VLIDORT_ModIn%MSunRays%TS_N_SZANGLES  = N_SZANGLES
+      VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR = FLUX_FACTOR
 
 !  Fixed User Value inputs
 
-      !VLIDORT_FixIn%UserVal%TS_N_USER_STREAMS      = N_USER_STREAMS
-      VLIDORT_FixIn%UserVal%TS_N_USER_VZANGLES     = N_USER_VZANGLES
-
       VLIDORT_FixIn%UserVal%TS_N_USER_LEVELS       = N_USER_LEVELS
-      VLIDORT_FixIn%UserVal%TS_USER_LEVELS         = USER_LEVELS
-
-!  Modified User Value inputs
-
-      VLIDORT_ModIn%MUserVal%TS_N_USER_RELAZMS      = N_USER_RELAZMS
-      VLIDORT_ModIn%MUserVal%TS_USER_RELAZMS        = USER_RELAZMS
-
-      !VLIDORT_ModIn%MUserVal%TS_USER_ANGLES_INPUT   = USER_ANGLES
-      VLIDORT_ModIn%MUserVal%TS_USER_VZANGLES_INPUT = USER_VZANGLES
-
-      VLIDORT_ModIn%MUserVal%TS_GEOMETRY_SPECHEIGHT = GEOMETRY_SPECHEIGHT
 
 !  Fixed Chapman Function inputs
 
@@ -382,10 +362,6 @@
       !VLIDORT_FixIn%Chapman%TS_FINEGRID          = FINEGRID
       VLIDORT_FixIn%Chapman%TS_RFINDEX_PARAMETER = RFINDEX_PARAMETER
 
-!  Modified Chapman Function inputs
-
-      VLIDORT_ModIn%MChapman%TS_EARTH_RADIUS      = EARTH_RADIUS
-
 !  Fixed Optical inputs
 
       !VLIDORT_FixIn%Optical%TS_DELTAU_VERT_INPUT    = DELTAU_VERT_INPUT
@@ -393,10 +369,6 @@
       VLIDORT_FixIn%Optical%TS_THERMAL_BB_INPUT     = THERMAL_BB_INPUT
       VLIDORT_FixIn%Optical%TS_LAMBERTIAN_ALBEDO    = LAMBERTIAN_ALBEDO
       VLIDORT_FixIn%Optical%TS_SURFACE_BB_INPUT     = SURFBB
-
-!  Modified Optical inputs
-
-      !VLIDORT_ModIn%MOptical%TS_OMEGA_TOTAL_INPUT    = OMEGA_TOTAL_INPUT
 
 !  Fixed Write inputs
 
@@ -413,6 +385,74 @@
 
       VLIDORT_FixIn%Write%TS_DO_WRITE_RESULTS        = DO_WRITE_RESULTS
       VLIDORT_FixIn%Write%TS_RESULTS_WRITE_FILENAME  = RESULTS_WRITE_FILENAME
+
+!  Modified Boolean inputs
+
+      VLIDORT_ModIn%MBool%TS_DO_SSCORR_NADIR         = DO_SSCORR_NADIR
+      VLIDORT_ModIn%MBool%TS_DO_SSCORR_OUTGOING      = DO_SSCORR_OUTGOING
+      VLIDORT_ModIn%MBool%TS_DO_FO_CALC              = DO_FO_CALC
+
+      VLIDORT_ModIn%MBool%TS_DO_DOUBLE_CONVTEST      = DO_DOUBLE_CONVTEST
+      VLIDORT_ModIn%MBool%TS_DO_SOLAR_SOURCES        = DO_SOLAR_SOURCES
+
+      VLIDORT_ModIn%MBool%TS_DO_REFRACTIVE_GEOMETRY  = DO_REFRACTIVE_GEOMETRY
+      VLIDORT_ModIn%MBool%TS_DO_CHAPMAN_FUNCTION     = DO_CHAPMAN_FUNCTION
+
+      VLIDORT_ModIn%MBool%TS_DO_RAYLEIGH_ONLY        = DO_RAYLEIGH_ONLY
+      !VLIDORT_ModIn%MBool%TS_DO_ISOTROPIC_ONLY       = DO_ISOTROPIC_ONLY
+      !VLIDORT_ModIn%MBool%TS_DO_NO_AZIMUTH           = DO_NO_AZIMUTH
+      !VLIDORT_ModIn%MBool%TS_DO_ALL_FOURIER          = DO_ALL_FOURIER
+
+      VLIDORT_ModIn%MBool%TS_DO_DELTAM_SCALING       = DO_DELTAM_SCALING
+
+      VLIDORT_ModIn%MBool%TS_DO_SOLUTION_SAVING      = DO_SOLUTION_SAVING
+      VLIDORT_ModIn%MBool%TS_DO_BVP_TELESCOPING      = DO_BVP_TELESCOPING
+
+      !VLIDORT_ModIn%MBool%TS_DO_USER_STREAMS         = DO_USER_STREAMS
+      VLIDORT_ModIn%MBool%TS_DO_USER_VZANGLES        = DO_USER_VZANGLES
+
+      VLIDORT_ModIn%MBool%TS_DO_ADDITIONAL_MVOUT     = DO_ADDITIONAL_MVOUT
+      VLIDORT_ModIn%MBool%TS_DO_MVOUT_ONLY           = DO_MVOUT_ONLY
+
+      VLIDORT_ModIn%MBool%TS_DO_THERMAL_TRANSONLY    = DO_THERMAL_TRANSONLY
+
+      VLIDORT_ModIn%MBool%TS_DO_OBSERVATION_GEOMETRY = DO_OBSERVATION_GEOMETRY
+
+!  Modified Control inputs
+
+      VLIDORT_ModIn%MCont%TS_NGREEK_MOMENTS_INPUT = NGREEK_MOMENTS_INPUT
+
+!  Modified Beam inputs
+
+      !VLIDORT_ModIn%MSunRays%TS_NBEAMS      = NBEAMS
+      VLIDORT_ModIn%MSunRays%TS_N_SZANGLES  = N_SZANGLES
+      !VLIDORT_ModIn%MSunRays%TS_BEAM_SZAS   = BEAM_SZAS
+      VLIDORT_ModIn%MSunRays%TS_SZANGLES    = SZANGLES
+
+!  Modified User Value inputs
+
+      VLIDORT_ModIn%MUserVal%TS_N_USER_RELAZMS      = N_USER_RELAZMS
+      VLIDORT_ModIn%MUserVal%TS_USER_RELAZMS        = USER_RELAZMS
+
+      !VLIDORT_ModIn%MUserVal%TS_N_USER_STREAMS      = N_USER_STREAMS
+      VLIDORT_ModIn%MUserVal%TS_N_USER_VZANGLES     = N_USER_VZANGLES
+      !VLIDORT_ModIn%MUserVal%TS_USER_ANGLES_INPUT   = USER_ANGLES
+      VLIDORT_ModIn%MUserVal%TS_USER_VZANGLES_INPUT = USER_VZANGLES
+
+      VLIDORT_ModIn%MUserVal%TS_USER_LEVELS         = USER_LEVELS
+
+      VLIDORT_ModIn%MUserVal%TS_GEOMETRY_SPECHEIGHT = GEOMETRY_SPECHEIGHT
+
+      VLIDORT_ModIn%MUserVal%TS_N_USER_OBSGEOMS     = N_USER_OBSGEOMS
+      VLIDORT_ModIn%MUserVal%TS_USER_OBSGEOMS_INPUT = USER_OBSGEOMS
+
+!  Modified Chapman Function inputs
+
+      VLIDORT_ModIn%MChapman%TS_EARTH_RADIUS      = EARTH_RADIUS
+
+!  Modified Optical inputs
+
+      !VLIDORT_ModIn%MOptical%TS_OMEGA_TOTAL_INPUT    = OMEGA_TOTAL_INPUT
 
 !  Exception handling
 
@@ -449,7 +489,7 @@
 
       SUBROUTINE VLIDORT_INIT_CONTROL_VARS ( &
         DO_FULLRAD_MODE, DO_SSCORR_NADIR, &
-        DO_SSCORR_OUTGOING, DO_SSCORR_TRUNCATION, &
+        DO_SSCORR_OUTGOING, DO_FO_CALC, DO_SSCORR_TRUNCATION, &
         DO_SS_EXTERNAL, DO_SSFULL, DO_DOUBLE_CONVTEST, &
         DO_PLANE_PARALLEL, DO_REFRACTIVE_GEOMETRY, &
         DO_CHAPMAN_FUNCTION, DO_RAYLEIGH_ONLY, &
@@ -460,7 +500,7 @@
         DO_MVOUT_ONLY, DO_DEBUG_WRITE, &
         DO_WRITE_INPUT, DO_WRITE_SCENARIO, &
         DO_WRITE_FOURIER, DO_WRITE_RESULTS, &
-        DO_LAMBERTIAN_SURFACE, &
+        DO_LAMBERTIAN_SURFACE, DO_OBSERVATION_GEOMETRY, &
         DO_SPECIALIST_OPTION_1, DO_SPECIALIST_OPTION_2, &
         DO_SPECIALIST_OPTION_3, DO_TOA_CONTRIBS, &
         DO_SURFACE_LEAVING, DO_SL_ISOTROPIC )
@@ -475,6 +515,7 @@
       LOGICAL, INTENT (OUT) ::             DO_FULLRAD_MODE
       LOGICAL, INTENT (OUT) ::             DO_SSCORR_NADIR
       LOGICAL, INTENT (OUT) ::             DO_SSCORR_OUTGOING
+      LOGICAL, INTENT (OUT) ::             DO_FO_CALC
       LOGICAL, INTENT (OUT) ::             DO_SSCORR_TRUNCATION
 
 !  New 15 March 2012
@@ -505,6 +546,7 @@
       LOGICAL, INTENT (OUT) ::             DO_WRITE_FOURIER
       LOGICAL, INTENT (OUT) ::             DO_WRITE_RESULTS
       LOGICAL, INTENT (OUT) ::             DO_LAMBERTIAN_SURFACE
+      LOGICAL, INTENT (OUT) ::             DO_OBSERVATION_GEOMETRY
       LOGICAL, INTENT (OUT) ::             DO_SPECIALIST_OPTION_1
       LOGICAL, INTENT (OUT) ::             DO_SPECIALIST_OPTION_2
       LOGICAL, INTENT (OUT) ::             DO_SPECIALIST_OPTION_3
@@ -520,6 +562,10 @@
 
       DO_SSCORR_NADIR    = .FALSE.
       DO_SSCORR_OUTGOING = .FALSE.
+
+!  FO computation using dedicated FO code
+
+      DO_FO_CALC         = .FALSE.
 
 !  Additional deltam scaling for the single scatter corrections
 !    Code added by R. Spurr, 07 September 2007
@@ -586,7 +632,7 @@
 
 !  Initialize the Lambertian surface control
 
-      DO_LAMBERTIAN_SURFACE       = .FALSE.
+      DO_LAMBERTIAN_SURFACE = .FALSE.
 
 !  Initialize the MV output flags
 
@@ -602,11 +648,15 @@
       DO_UPWELLING = .FALSE.
       DO_DNWELLING = .FALSE.
 
+!  Observation-Geometry input control
+
+      DO_OBSERVATION_GEOMETRY = .FALSE.
+
 !  Automatic settings in the bookkeeping routine
 
 !      DO_DIRECT_BEAM        = .FALSE.
 !      DO_CLASSICAL_SOLUTION = .FALSE.
-!      DO_ALL_FOURIER     = .FALSE.
+!      DO_ALL_FOURIER        = .FALSE.
 
 !  Specialist options. Should always be initialized here
 
@@ -676,7 +726,7 @@
 !
 
       SUBROUTINE VLIDORT_INIT_MODEL_VARS ( &
-        NSTOKES, NSTREAMS, &
+        TAYLOR_ORDER, NSTOKES, NSTREAMS, &
         NLAYERS, NFINELAYERS, &
         NGREEK_MOMENTS_INPUT, VLIDORT_ACCURACY, &
         FLUX_FACTOR, N_SZANGLES, &
@@ -685,6 +735,7 @@
         N_USER_RELAZMS, USER_RELAZMS, &
         N_USER_VZANGLES, USER_VZANGLES, &
         N_USER_LEVELS, USER_LEVELS, &
+        N_USER_OBSGEOMS, USER_OBSGEOMS, &
         LAMBERTIAN_ALBEDO )
 
 !  Initialises all file-read model inputs for VLIDORT
@@ -694,6 +745,7 @@
 
       IMPLICIT NONE
 
+      INTEGER, INTENT (OUT) ::          TAYLOR_ORDER ! New, 2p7
       INTEGER, INTENT (OUT) ::          NSTOKES
       INTEGER, INTENT (OUT) ::          NSTREAMS
       INTEGER, INTENT (OUT) ::          NLAYERS
@@ -712,6 +764,8 @@
       DOUBLE PRECISION, INTENT (OUT) :: USER_VZANGLES ( MAX_USER_VZANGLES )
       INTEGER, INTENT (OUT) ::          N_USER_LEVELS
       DOUBLE PRECISION, INTENT (OUT) :: USER_LEVELS ( MAX_USER_LEVELS )
+      INTEGER, INTENT (OUT) ::          N_USER_OBSGEOMS
+      DOUBLE PRECISION, INTENT (OUT) :: USER_OBSGEOMS ( MAX_USER_OBSGEOMS, 3 )
       DOUBLE PRECISION, INTENT (OUT) :: LAMBERTIAN_ALBEDO
 
 !  Local variables
@@ -720,6 +774,7 @@
 
 !  Basic integer inputs
 
+      TAYLOR_ORDER = 0
       NSTOKES  = 0
       NSTREAMS = 0
       NLAYERS  = 0
@@ -761,6 +816,7 @@
       N_USER_VZANGLES = 0
       N_USER_RELAZMS  = 0
       N_USER_LEVELS   = 0
+      N_USER_OBSGEOMS = 0
 
       DO I = 1, MAX_USER_VZANGLES
         USER_VZANGLES(I) = ZERO
@@ -774,6 +830,10 @@
         USER_LEVELS(I) = ZERO
       ENDDO
 
+      DO I = 1, MAX_USER_OBSGEOMS
+        USER_OBSGEOMS(I,:) = ZERO
+      ENDDO
+
 ! Finish
 
       RETURN
@@ -781,7 +841,7 @@
 
 !
 
-      SUBROUTINE VLIDORT_INPUTREAD ( &
+      SUBROUTINE VLIDORT_READ_INPUTS ( &
         DO_FULLRAD_MODE, DO_SSCORR_NADIR, &
         DO_SSCORR_OUTGOING, DO_SSCORR_TRUNCATION, &
         DO_SS_EXTERNAL, DO_SSFULL, DO_DOUBLE_CONVTEST, &
@@ -793,11 +853,12 @@
         DO_QUAD_OUTPUT, DO_USER_VZANGLES, &
         DO_SURFACE_LEAVING, DO_SL_ISOTROPIC,&
         DO_ADDITIONAL_MVOUT, DO_MVOUT_ONLY, &
+        DO_OBSERVATION_GEOMETRY, &
         DO_DEBUG_WRITE, DO_WRITE_INPUT, &
         DO_WRITE_SCENARIO, DO_WRITE_FOURIER, &
         DO_WRITE_RESULTS, INPUT_WRITE_FILENAME, &
         SCENARIO_WRITE_FILENAME, FOURIER_WRITE_FILENAME, &
-        RESULTS_WRITE_FILENAME, NSTOKES, &
+        RESULTS_WRITE_FILENAME, TAYLOR_ORDER, NSTOKES, &
         NSTREAMS, NLAYERS, &
         NFINELAYERS, NGREEK_MOMENTS_INPUT, &
         VLIDORT_ACCURACY, FLUX_FACTOR, &
@@ -806,7 +867,8 @@
         GEOMETRY_SPECHEIGHT, N_USER_RELAZMS, &
         USER_RELAZMS, N_USER_VZANGLES, &
         USER_VZANGLES, N_USER_LEVELS, &
-        USER_LEVELS, DO_LAMBERTIAN_SURFACE, &
+        USER_LEVELS, N_USER_OBSGEOMS, &
+        USER_OBSGEOMS, DO_LAMBERTIAN_SURFACE, &
         LAMBERTIAN_ALBEDO, DO_THERMAL_EMISSION, &
         N_THERMAL_COEFFS, DO_SURFACE_EMISSION, &
         DO_THERMAL_TRANSONLY, &
@@ -848,6 +910,7 @@
       LOGICAL, INTENT (INOUT) ::             DO_USER_VZANGLES
       LOGICAL, INTENT (INOUT) ::             DO_ADDITIONAL_MVOUT
       LOGICAL, INTENT (INOUT) ::             DO_MVOUT_ONLY
+      LOGICAL, INTENT (INOUT) ::             DO_OBSERVATION_GEOMETRY
       LOGICAL, INTENT (INOUT) ::             DO_DEBUG_WRITE
       LOGICAL, INTENT (INOUT) ::             DO_WRITE_INPUT
       LOGICAL, INTENT (INOUT) ::             DO_WRITE_SCENARIO
@@ -857,6 +920,9 @@
       CHARACTER (LEN=60), INTENT (INOUT) ::  SCENARIO_WRITE_FILENAME
       CHARACTER (LEN=60), INTENT (INOUT) ::  FOURIER_WRITE_FILENAME
       CHARACTER (LEN=60), INTENT (INOUT) ::  RESULTS_WRITE_FILENAME
+
+      INTEGER, INTENT (INOUT) ::             TAYLOR_ORDER ! New, 2p7
+
       INTEGER, INTENT (INOUT) ::             NSTOKES
       INTEGER, INTENT (INOUT) ::             NSTREAMS
       INTEGER, INTENT (INOUT) ::             NLAYERS
@@ -875,6 +941,8 @@
       DOUBLE PRECISION, INTENT (INOUT) ::    USER_VZANGLES ( MAX_USER_VZANGLES )
       INTEGER, INTENT (INOUT) ::             N_USER_LEVELS
       DOUBLE PRECISION, INTENT (INOUT) ::    USER_LEVELS ( MAX_USER_LEVELS )
+      INTEGER, INTENT (INOUT) ::             N_USER_OBSGEOMS
+      DOUBLE PRECISION, INTENT (INOUT) ::    USER_OBSGEOMS ( MAX_USER_OBSGEOMS, 3 )
       LOGICAL, INTENT (INOUT) ::             DO_LAMBERTIAN_SURFACE
       DOUBLE PRECISION, INTENT (INOUT) ::    LAMBERTIAN_ALBEDO
       LOGICAL, INTENT (INOUT) ::             DO_THERMAL_EMISSION
@@ -1085,6 +1153,17 @@
 
 !@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   END
 
+!  New flag, Observational Geometry
+!   Added, 25 October 12
+
+      IF ( DO_SOLAR_SOURCES ) THEN
+         PAR_STR = 'Do Observation Geometry?'
+         IF (GFINDPAR ( FILUNIT, PREFIX, ERROR, PAR_STR)) &
+              READ (FILUNIT,*,ERR=998) DO_OBSERVATION_GEOMETRY
+         CALL FINDPAR_ERROR &
+           ( ERROR, PAR_STR, STATUS, NM, MESSAGES, ACTIONS )
+      ENDIF
+
 !  Removed isotropic-only option, 17 January 2006.
 !      PAR_STR='Isotropic atmosphere only?'
 !      IF (GFINDPAR ( FILUNIT, PREFIX, ERROR, PAR_STR))
@@ -1273,6 +1352,14 @@
 !  2. Read all model variables
 !  ===========================
 
+!  Taylor order, added 2/19/14, Version 2p7
+
+      PAR_STR = 'Number of small-number terms in Taylor series expansions'
+      IF (GFINDPAR ( FILUNIT, PREFIX, ERROR, PAR_STR)) &
+           READ (FILUNIT,*,ERR=998) TAYLOR_ORDER
+      CALL FINDPAR_ERROR &
+        ( ERROR, PAR_STR, STATUS, NM, MESSAGES, ACTIONS )
+
 !  Stokes/streams/layers/moments (INTEGER input)
 
       PAR_STR = 'Number of Stokes vector components'
@@ -1395,7 +1482,7 @@
 !   Now (July 2009) allowed to vary because of thermal emission
 !   Must take physical values if using solar + thermal.
 
-      if ( DO_SOLAR_SOURCES ) THEN
+      IF ( DO_SOLAR_SOURCES ) THEN
         PAR_STR = 'Solar flux constant'
         IF (GFINDPAR ( FILUNIT, PREFIX, ERROR, PAR_STR)) &
            READ (FILUNIT,*,ERR=998) FLUX_FACTOR
@@ -1411,6 +1498,61 @@
 !     &     READ (FILUNIT,*,ERR=998) (FLUXVEC(I),I=1,MAXSTOKES)
 !      CALL FINDPAR_ERROR
 !     &  ( ERROR, PAR_STR, STATUS, NM, MESSAGES, ACTIONS )
+
+!  Geometry inputs
+!  ---------------
+
+!  Observational Geometry control
+!   New, 25 October 2012
+!     ---- check not exceeding dimensioned number
+
+      IF ( DO_OBSERVATION_GEOMETRY ) THEN
+        PAR_STR = 'Number of Observation Geometry inputs'
+        IF (GFINDPAR ( FILUNIT, PREFIX, ERROR, PAR_STR)) &
+             READ (FILUNIT,*,ERR=998) N_USER_OBSGEOMS
+        CALL FINDPAR_ERROR ( ERROR, PAR_STR, STATUS, NM, MESSAGES, ACTIONS )
+        IF ( N_USER_OBSGEOMS .GT. MAX_USER_OBSGEOMS ) THEN
+          NM = NM + 1
+          MESSAGES(NM) = 'Entry under "Number of Obsevation Geometry inputs" > allowed Maximum dimension'
+          ACTIONS(NM)  = 'Re-set input value or increase MAX_USER_OBSGEOMS dimension in LIDORT_PARS'
+          STATUS       = VLIDORT_SERIOUS
+          NMESSAGES    = NM
+          RETURN
+        ENDIF
+      ENDIF
+
+      IF ( DO_OBSERVATION_GEOMETRY ) THEN
+
+!  Observational Geometry control
+!   New, 25 October 2012
+!     ---- Automatic setting of N_SZANGLES, N_USER_VZANGLES, N_USER_RELAZMS,
+!          and DO_USER_VZANGLES
+
+        N_SZANGLES       = N_USER_OBSGEOMS
+        N_USER_VZANGLES  = N_USER_OBSGEOMS
+        N_USER_RELAZMS   = N_USER_OBSGEOMS
+        DO_USER_VZANGLES = .true.
+
+!  Observational Geometry inputs
+
+        PAR_STR = 'Observation Geometry inputs'
+        IF (GFINDPAR ( FILUNIT, PREFIX, ERROR, PAR_STR)) THEN
+           DO I = 1, N_USER_OBSGEOMS
+             READ (FILUNIT,*,ERR=998) USER_OBSGEOMS(I,1), USER_OBSGEOMS(I,2), USER_OBSGEOMS(I,3)
+           ENDDO
+        ENDIF
+        CALL FINDPAR_ERROR ( ERROR, PAR_STR, STATUS, NM, MESSAGES, ACTIONS )
+
+!     ---- Automatic setting of SZANGLES, USER_VZANGLES, and USER_RELAZMS
+
+        SZANGLES     (1:N_USER_OBSGEOMS) = USER_OBSGEOMS(1:N_USER_OBSGEOMS,1)
+        USER_VZANGLES(1:N_USER_OBSGEOMS) = USER_OBSGEOMS(1:N_USER_OBSGEOMS,2)
+        USER_RELAZMS (1:N_USER_OBSGEOMS) = USER_OBSGEOMS(1:N_USER_OBSGEOMS,3)
+
+!     ---- Skip other geometry input reads
+
+        GO TO 5665
+      ENDIF
 
 !  Solar zenith angles
 !  -------------------
@@ -1428,8 +1570,8 @@
       IF ( N_SZANGLES .GT. MAX_SZANGLES ) THEN
         NM = NM + 1
         MESSAGES(NM) = &
-               'Entry under "Number of solar zenith angles" >'// &
-               ' allowed Maximum dimension'
+            'Entry under "Number of solar zenith angles" >'// &
+            ' allowed Maximum dimension'
         ACTIONS(NM)  = &
             'Re-set input value or increase MAX_SZANGLES dimension '// &
             'in VLIDORT_PARS'
@@ -1449,41 +1591,8 @@
       CALL FINDPAR_ERROR &
         ( ERROR, PAR_STR, STATUS, NM, MESSAGES, ACTIONS )
 
-!  Pseudo-spherical inputs
-!  -----------------------
-
-! (only for Chapman function calculation)
-
-      IF ( DO_CHAPMAN_FUNCTION ) THEN
-
-        PAR_STR = 'Earth radius (km)'
-        IF (GFINDPAR ( FILUNIT, PREFIX, ERROR, PAR_STR)) &
-             READ (FILUNIT,*,ERR=998) EARTH_RADIUS
-        CALL FINDPAR_ERROR &
-        ( ERROR, PAR_STR, STATUS, NM, MESSAGES, ACTIONS )
-
-        IF ( DO_REFRACTIVE_GEOMETRY ) THEN
-          PAR_STR = 'Refractive index parameter'
-          IF (GFINDPAR ( FILUNIT, PREFIX, ERROR, PAR_STR)) &
-               READ (FILUNIT,*,ERR=998) RFINDEX_PARAMETER
-          CALL FINDPAR_ERROR &
-        ( ERROR, PAR_STR, STATUS, NM, MESSAGES, ACTIONS )
-        ENDIF
-
-      ENDIF
-
 !  User defined output control
 !  ---------------------------
-
-!  Input Geometry specfication height
-
-      IF ( DO_SSCORR_OUTGOING ) THEN
-        PAR_STR = 'Input geometry specification height (km)'
-        IF (GFINDPAR ( FILUNIT, PREFIX, ERROR, PAR_STR)) &
-           READ (FILUNIT,*,ERR=998) GEOMETRY_SPECHEIGHT
-        CALL FINDPAR_ERROR &
-        ( ERROR, PAR_STR, STATUS, NM, MESSAGES, ACTIONS )
-      ENDIF
 
 !  1.  Azimuthal input values
 
@@ -1555,6 +1664,43 @@
         ENDIF
         CALL FINDPAR_ERROR &
         ( ERROR, PAR_STR, STATUS, NM, MESSAGES, ACTIONS )
+
+      ENDIF
+
+!  Continuation point for skipping normal geometry input reads
+
+5665 CONTINUE
+
+!  Input Geometry specfication height
+
+      IF ( DO_SSCORR_OUTGOING ) THEN
+        PAR_STR = 'Input geometry specification height (km)'
+        IF (GFINDPAR ( FILUNIT, PREFIX, ERROR, PAR_STR)) &
+           READ (FILUNIT,*,ERR=998) GEOMETRY_SPECHEIGHT
+        CALL FINDPAR_ERROR &
+        ( ERROR, PAR_STR, STATUS, NM, MESSAGES, ACTIONS )
+      ENDIF
+
+!  Pseudo-spherical inputs
+!  -----------------------
+
+! (only for Chapman function calculation)
+
+      IF ( DO_CHAPMAN_FUNCTION ) THEN
+
+        PAR_STR = 'Earth radius (km)'
+        IF (GFINDPAR ( FILUNIT, PREFIX, ERROR, PAR_STR)) &
+             READ (FILUNIT,*,ERR=998) EARTH_RADIUS
+        CALL FINDPAR_ERROR &
+        ( ERROR, PAR_STR, STATUS, NM, MESSAGES, ACTIONS )
+
+        IF ( DO_REFRACTIVE_GEOMETRY ) THEN
+          PAR_STR = 'Refractive index parameter'
+          IF (GFINDPAR ( FILUNIT, PREFIX, ERROR, PAR_STR)) &
+               READ (FILUNIT,*,ERR=998) RFINDEX_PARAMETER
+          CALL FINDPAR_ERROR &
+        ( ERROR, PAR_STR, STATUS, NM, MESSAGES, ACTIONS )
+        ENDIF
 
       ENDIF
 
@@ -1700,33 +1846,188 @@
 !  Finish
 
       RETURN
-      END SUBROUTINE VLIDORT_INPUTREAD
+      END SUBROUTINE VLIDORT_READ_INPUTS
 
 !
 
+      SUBROUTINE VLIDORT_CHECK_INPUT_DIMS &
+      ( VLIDORT_FixIn, VLIDORT_ModIn, &
+        STATUS, NMESSAGES, MESSAGES, ACTIONS )
+
+!  Check input dimensions
+
+!  module, dimensions and numbers
+
+      USE VLIDORT_pars, only : MAX_USER_VZANGLES, MAX_USER_RELAZMS, &
+                               MAX_USER_LEVELS, MAX_SZANGLES, &
+                               MAXSTREAMS, MAXLAYERS, &
+                               MAXMOMENTS_INPUT, MAX_THERMAL_COEFFS, &
+                               MAX_USER_OBSGEOMS, MAXFINELAYERS, &
+                               MAX_MESSAGES, MAXSTOKES, &
+                               VLIDORT_SUCCESS, VLIDORT_SERIOUS
+
+      USE VLIDORT_Inputs_def
+
+      IMPLICIT NONE
+
+!  Subroutine inputs
+!  -----------------
+
+!  VLIDORT input structures
+
+      TYPE(VLIDORT_Fixed_Inputs), INTENT (IN)    :: &
+        VLIDORT_FixIn
+      TYPE(VLIDORT_Modified_Inputs), INTENT (IN) :: &
+        VLIDORT_ModIn
+
+!  Exception handling.  Message Length should be at least 120 Characters
+
+      INTEGER      , intent(out)   :: STATUS
+      INTEGER      , intent(inout) :: NMESSAGES
+      CHARACTER*(*), intent(inout) :: MESSAGES(0:MAX_MESSAGES)
+      CHARACTER*(*), intent(inout) :: ACTIONS (0:MAX_MESSAGES)
+
+!  Local variables
+
+      INTEGER :: NM
+
+!  Initialize Exception handling
+
+      STATUS = VLIDORT_SUCCESS
+      NM = NMESSAGES
+
+!  Check VLIDORT input dimensions against maximum dimensions
+!  =========================================================
+
+!  1a. Basic dimensions - always checked
+
+      IF ( VLIDORT_FixIn%Cont%TS_NSTOKES .GT. MAXSTOKES ) THEN
+        NM = NM + 1
+        MESSAGES(NM) = 'Number Stokes parameters NSTOKES > maximum dimension'
+        ACTIONS(NM)  = 'Re-set input value to 4 or less'
+        STATUS       = VLIDORT_SERIOUS
+      ENDIF
+
+      IF ( VLIDORT_FixIn%Cont%TS_NSTREAMS .GT. MAXSTREAMS ) THEN
+        NM = NM + 1
+        MESSAGES(NM) = 'Number of half-space streams NSTREAMS > maximum dimension'
+        ACTIONS(NM)  = 'Re-set input value or increase MAXSTREAMS dimension in VLIDORT_PARS'
+        STATUS       = VLIDORT_SERIOUS
+      ENDIF
+
+      IF ( VLIDORT_FixIn%Cont%TS_NLAYERS .GT. MAXLAYERS ) THEN
+        NM = NM + 1
+        MESSAGES(NM) = 'Number of layers NLAYERS > maximum dimension'
+        ACTIONS(NM)  = 'Re-set input value or increase MAXLAYERS dimension in VLIDORT_PARS'
+        STATUS       = VLIDORT_SERIOUS
+      ENDIF
+
+      IF ( VLIDORT_FixIn%UserVal%TS_N_USER_LEVELS .GT. MAX_USER_LEVELS ) THEN
+        NM = NM + 1
+        MESSAGES(NM) = 'Number of user vertical output levels N_USER_LEVELS > maximum dimension'
+        ACTIONS(NM)  = 'Re-set input value or increase MAX_USER_LEVELS dimension in VLIDORT_PARS'
+        STATUS       = VLIDORT_SERIOUS
+      ENDIF
+
+      IF ( VLIDORT_ModIn%MCont%TS_NGREEK_MOMENTS_INPUT .GT. MAXMOMENTS_INPUT ) THEN
+        NM = NM + 1
+        MESSAGES(NM) = 'Number of Expansion coefficients NGREEK_MOMENTS_INPUT > maximum dimension'
+        ACTIONS(NM)  = 'Re-set input value or increase MAXMOMENTS_INPUT dimension in VLIDORT_PARS'
+        STATUS       = VLIDORT_SERIOUS
+      ENDIF
+
+!  1b. Basic dimensions - conditionally checked
+
+      IF ( VLIDORT_ModIn%MBool%TS_DO_SSCORR_OUTGOING .or. VLIDORT_FixIn%Bool%TS_DO_SSFULL ) THEN
+        IF ( VLIDORT_FixIn%Cont%TS_NFINELAYERS .GT. MAXFINELAYERS ) THEN
+          NM = NM + 1
+          MESSAGES(NM) = 'Number of fine layers NFINELAYERS > maximum dimension'
+          ACTIONS(NM)  = 'Re-set input value or increase MAXFINELAYERS dimension in VLIDORT_PARS'
+          STATUS       = VLIDORT_SERIOUS
+        ENDIF
+      ENDIF
+
+      IF ( VLIDORT_FixIn%Bool%TS_DO_THERMAL_EMISSION ) THEN
+        IF ( VLIDORT_FixIn%Cont%TS_N_THERMAL_COEFFS .GT. MAX_THERMAL_COEFFS ) THEN
+          NM = NM + 1
+          MESSAGES(NM) = 'Entry under "Number of thermal coefficients" > allowed Maximum dimension'
+          ACTIONS(NM)  = 'Re-set input value or increase MAX_THERMCOEFFS dimension in VLIDORT_PARS'
+          STATUS       = VLIDORT_SERIOUS
+        ENDIF
+      ENDIF
+
+!  2a. Geometry dimensions - always checked
+
+      IF ( VLIDORT_ModIn%MSunrays%TS_N_SZANGLES .GT. MAX_SZANGLES) THEN
+        NM = NM + 1
+        MESSAGES(NM) = 'Number of solar zenith angles N_SZANGLES > maximum dimension'
+        ACTIONS(NM)  = 'Re-set input value or increase MAX_SZANGLES dimension in VLIDORT_PARS'
+        STATUS       = VLIDORT_SERIOUS
+      ENDIF
+
+      IF ( VLIDORT_ModIn%MUserVal%TS_N_USER_RELAZMS .GT. MAX_USER_RELAZMS ) THEN
+        NM = NM + 1
+        MESSAGES(NM) = 'Number of relative azimuths N_USER_RELAZMS > maximum dimension'
+        ACTIONS(NM)  = 'Re-set input value or increase MAX_USER_RELAZMS dimension in VLIDORT_PARS'
+        STATUS       = VLIDORT_SERIOUS
+      ENDIF
+
+!  2b. Geometry dimensions - conditionally checked
+
+      IF ( VLIDORT_ModIn%MBool%TS_DO_USER_VZANGLES ) THEN
+        IF ( VLIDORT_ModIn%MUserVal%TS_N_USER_VZANGLES .GT. MAX_USER_VZANGLES ) THEN
+          NM = NM + 1
+          MESSAGES(NM) = 'Number of user streams N_USER_VZANGLES > maximum dimension'
+          ACTIONS(NM)  = 'Re-set input value or increase MAX_USER_VZANGLES dimension in VLIDORT_PARS'
+          STATUS       = VLIDORT_SERIOUS
+        ENDIF
+      ENDIF
+
+      IF ( VLIDORT_ModIn%MBool%TS_DO_OBSERVATION_GEOMETRY ) THEN
+        IF ( VLIDORT_ModIn%MUserVal%TS_N_USER_OBSGEOMS .GT. MAX_USER_OBSGEOMS ) THEN
+          NM = NM + 1
+          MESSAGES(NM) = 'Number of Observation Geometries > maximum dimension'
+          ACTIONS(NM)  = 'Re-set input value or increase MAX_USER_OBSGEOMS dimension in VLIDORT_PARS'
+          STATUS       = VLIDORT_SERIOUS
+        ENDIF
+      ENDIF
+
+!  Update NMESSAGES
+
+      NMESSAGES = NM
+
+!  Finish
+
+      RETURN
+      END SUBROUTINE VLIDORT_CHECK_INPUT_DIMS
+
+!  %% DO_FULLRAD_MODE argument added (First line). R. Spurr, 05 March 2013
+!  %%   Needed to ensure MS-only output in all cases when flagged
+
       SUBROUTINE VLIDORT_CHECK_INPUT ( &
-        DO_SSFULL, DO_PLANE_PARALLEL, &
+        DO_FULLRAD_MODE, DO_SSFULL, DO_PLANE_PARALLEL, &    ! %%
         DO_UPWELLING, DO_DNWELLING, &
-        DO_QUAD_OUTPUT, DO_ADDITIONAL_MVOUT, &
-        DO_MVOUT_ONLY, NSTOKES, &
-        NSTREAMS, NLAYERS, &
-        NFINELAYERS, SZANGLES, &
-        USER_RELAZMS, N_USER_VZANGLES, &
-        N_USER_LEVELS, USER_LEVELS, &
+        DO_QUAD_OUTPUT, DO_ADDITIONAL_MVOUT, DO_MVOUT_ONLY, &
+        TAYLOR_ORDER, NSTOKES, NSTREAMS, NLAYERS, &   ! Version 2p7. Add line with Taylor order
+        NFINELAYERS, N_USER_LEVELS, &
         HEIGHT_GRID, OMEGA_TOTAL_INPUT, &
         GREEKMAT_TOTAL_INPUT, DO_LAMBERTIAN_SURFACE, &
         DO_THERMAL_EMISSION, &
         DO_SPECIALIST_OPTION_2, DO_SPECIALIST_OPTION_3, &
         NLAYERS_NOMS, NLAYERS_CUTOFF, &
         DO_TOA_CONTRIBS, DO_NO_AZIMUTH, DO_SS_EXTERNAL, &
-        DO_SSCORR_NADIR, DO_SSCORR_OUTGOING, &
+        DO_SSCORR_NADIR, DO_SSCORR_OUTGOING, DO_FO_CALC, &
         DO_SOLAR_SOURCES, DO_REFRACTIVE_GEOMETRY, &
         DO_CHAPMAN_FUNCTION, DO_RAYLEIGH_ONLY, &
         DO_DELTAM_SCALING, DO_SOLUTION_SAVING, &
         DO_BVP_TELESCOPING, DO_USER_VZANGLES, &
-        NGREEK_MOMENTS_INPUT, N_SZANGLES, &
+        DO_OBSERVATION_GEOMETRY, &
+        NGREEK_MOMENTS_INPUT, N_SZANGLES, SZANGLES, &
         EARTH_RADIUS, GEOMETRY_SPECHEIGHT, &
-        N_USER_RELAZMS, USER_VZANGLES, &
+        N_USER_RELAZMS, USER_RELAZMS, &
+        N_USER_VZANGLES, USER_VZANGLES, &
+        USER_LEVELS, &
+        N_USER_OBSGEOMS, USER_OBSGEOMS, &
         DO_THERMAL_TRANSONLY, DO_ALL_FOURIER, &
         DO_DIRECT_BEAM, DO_CLASSICAL_SOLUTION, &
         N_OUT_STREAMS, OUT_ANGLES, &
@@ -1737,21 +2038,26 @@
 
       IMPLICIT NONE
 
+!  %% 05 March 2013. Added FullRad mode flag
+      LOGICAL, INTENT (IN) ::             DO_FULLRAD_MODE
+
       LOGICAL, INTENT (IN) ::             DO_SSFULL
       LOGICAL, INTENT (IN) ::             DO_PLANE_PARALLEL
       LOGICAL, INTENT (IN) ::             DO_UPWELLING
       LOGICAL, INTENT (IN) ::             DO_DNWELLING
       LOGICAL, INTENT (IN) ::             DO_QUAD_OUTPUT
       LOGICAL, INTENT (IN) ::             DO_ADDITIONAL_MVOUT
+
+!  Order of Taylor series (including terms up to EPS^n).
+!       Introduced 2/19/14 for Version 2.7
+      
+      INTEGER , intent(in)  ::            TAYLOR_ORDER
+
       INTEGER, INTENT (IN) ::             NSTOKES
       INTEGER, INTENT (IN) ::             NSTREAMS
       INTEGER, INTENT (IN) ::             NLAYERS
       INTEGER, INTENT (IN) ::             NFINELAYERS
-      DOUBLE PRECISION, INTENT (IN) ::    SZANGLES ( MAX_SZANGLES )
-      DOUBLE PRECISION, INTENT (IN) ::    USER_RELAZMS  ( MAX_USER_RELAZMS )
-      INTEGER, INTENT (IN) ::             N_USER_VZANGLES
       INTEGER, INTENT (IN) ::             N_USER_LEVELS
-      DOUBLE PRECISION, INTENT (IN) ::    USER_LEVELS ( MAX_USER_LEVELS )
       DOUBLE PRECISION, INTENT (IN) ::    HEIGHT_GRID ( 0:MAXLAYERS )
       DOUBLE PRECISION, INTENT (IN) ::    OMEGA_TOTAL_INPUT ( MAXLAYERS )
       DOUBLE PRECISION, INTENT (IN) ::    GREEKMAT_TOTAL_INPUT &
@@ -1769,6 +2075,7 @@
 
       LOGICAL, INTENT (INOUT) ::          DO_SSCORR_NADIR
       LOGICAL, INTENT (INOUT) ::          DO_SSCORR_OUTGOING
+      LOGICAL, INTENT (INOUT) ::          DO_FO_CALC
       LOGICAL, INTENT (INOUT) ::          DO_SOLAR_SOURCES
       LOGICAL, INTENT (INOUT) ::          DO_REFRACTIVE_GEOMETRY
       LOGICAL, INTENT (INOUT) ::          DO_CHAPMAN_FUNCTION
@@ -1778,12 +2085,19 @@
       LOGICAL, INTENT (INOUT) ::          DO_MVOUT_ONLY
       LOGICAL, INTENT (INOUT) ::          DO_BVP_TELESCOPING
       LOGICAL, INTENT (INOUT) ::          DO_USER_VZANGLES
+      LOGICAL, INTENT (INOUT) ::          DO_OBSERVATION_GEOMETRY
       INTEGER, INTENT (INOUT) ::          NGREEK_MOMENTS_INPUT
       INTEGER, INTENT (INOUT) ::          N_SZANGLES
+      DOUBLE PRECISION, INTENT (INOUT) :: SZANGLES ( MAX_SZANGLES )
       DOUBLE PRECISION, INTENT (INOUT) :: EARTH_RADIUS
       DOUBLE PRECISION, INTENT (INOUT) :: GEOMETRY_SPECHEIGHT
       INTEGER, INTENT (INOUT) ::          N_USER_RELAZMS
+      DOUBLE PRECISION, INTENT (INOUT) :: USER_RELAZMS  ( MAX_USER_RELAZMS )
+      INTEGER, INTENT (INOUT) ::          N_USER_VZANGLES
       DOUBLE PRECISION, INTENT (INOUT) :: USER_VZANGLES ( MAX_USER_VZANGLES )
+      DOUBLE PRECISION, INTENT (INOUT) :: USER_LEVELS ( MAX_USER_LEVELS )
+      INTEGER, INTENT (IN) ::             N_USER_OBSGEOMS
+      DOUBLE PRECISION, INTENT (IN) ::    USER_OBSGEOMS ( MAX_USER_OBSGEOMS, 3 )
       LOGICAL, INTENT (INOUT) ::          DO_THERMAL_TRANSONLY
 
       LOGICAL, INTENT (OUT) ::            DO_ALL_FOURIER
@@ -1791,13 +2105,15 @@
       LOGICAL, INTENT (OUT) ::            DO_CLASSICAL_SOLUTION
       INTEGER, INTENT (OUT) ::            N_OUT_STREAMS
       DOUBLE PRECISION, INTENT (OUT) ::   OUT_ANGLES ( MAX_USER_STREAMS )
-      INTEGER, INTENT (OUT) ::            STATUS
-      INTEGER, INTENT (OUT) ::            NMESSAGES
-      CHARACTER (LEN=*), INTENT (OUT) ::  MESSAGES ( 0:MAX_MESSAGES )
-      CHARACTER (LEN=*), INTENT (OUT) ::  ACTIONS ( 0:MAX_MESSAGES )
+
+!  Exception handling.
+
+      INTEGER, INTENT (OUT) ::              STATUS
+      INTEGER, INTENT (INOUT) ::            NMESSAGES
+      CHARACTER (LEN=*), INTENT (INOUT) ::  MESSAGES( 0:MAX_MESSAGES )
+      CHARACTER (LEN=*), INTENT (INOUT) ::  ACTIONS ( 0:MAX_MESSAGES )
 
 !  Local variables
-!  ---------------
 
       INTEGER ::           I, L, N, UTA, NSTART, NALLSTREAMS, NM
       INTEGER ::           INDEX_ANGLES ( MAX_USER_STREAMS )
@@ -1809,14 +2125,14 @@
 !  Initialize output status
 
       STATUS = VLIDORT_SUCCESS
-      MESSAGES(1:MAX_MESSAGES) = ' '
-      ACTIONS (1:MAX_MESSAGES) = ' '
 
-      NMESSAGES       = 0
-      MESSAGES(0)     = 'Successful Check of VLIDORT Basic Input'
-      ACTIONS(0)      = 'No Action required for this Task'
+!      MESSAGES(1:MAX_MESSAGES) = ' '
+!      ACTIONS (1:MAX_MESSAGES) = ' '
+!      NMESSAGES       = 0
+!      MESSAGES(0)     = 'Successful Check of VLIDORT Basic Input'
+!      ACTIONS(0)      = 'No Action required for this Task'
 
-      NM     = NMESSAGES
+      NM = NMESSAGES
 
 !  Automatic input
 !    Flux factor set to unity. (21 December 2005)
@@ -1825,142 +2141,61 @@
       DO_CLASSICAL_SOLUTION = .TRUE.
       DO_DIRECT_BEAM        = .TRUE.
 
-!  All numbers are now checked against maximum dimensions
-!  ------------------------------------------------------
+!  New code for the Observational Geometry
+!  ---------------------------------------
 
-!  New Exception handling code, 13 OCTOBER 2010
+      IF ( DO_OBSERVATION_GEOMETRY ) THEN
 
-      IF ( NSTREAMS .GT. MAXSTREAMS ) THEN
-        NM = NM + 1
-        MESSAGES(NM) = &
-               'Entry under "Number of half-space streams" >'// &
-               ' allowed Maximum dimension'
-        ACTIONS(NM)  = &
-             'Re-set input value or increase MAXSTREAMS dimension '// &
-             'in VLIDORT_PARS'
-        STATUS = VLIDORT_SERIOUS
-        NMESSAGES = NM
-        RETURN
-      ENDIF
-
-      IF ( NLAYERS .GT. MAXLAYERS ) THEN
-        NM = NM + 1
-        MESSAGES(NM) = &
-               'Entry under "Number of atmospheric layers" >'// &
-               ' allowed Maximum dimension'
-        ACTIONS(NM)  = &
-             'Re-set input value or increase MAXLAYERS dimension '// &
-             'in VLIDORT_PARS'
-        STATUS = VLIDORT_SERIOUS
-        NMESSAGES = NM
-        RETURN
-      ENDIF
-
-      IF ( DO_SSCORR_OUTGOING .or. DO_SSFULL ) THEN
-        IF ( NFINELAYERS .GT. MAXFINELAYERS ) THEN
+        IF ( .NOT.DO_SOLAR_SOURCES ) THEN
           NM = NM + 1
           MESSAGES(NM) = &
-               'Entry under "Number of fine layers..." >'// &
-               ' allowed Maximum dimension'
+            'Bad input: DO_SOLAR_SOURCES not set for Observation Geometry option'
           ACTIONS(NM)  = &
-            'Re-set input value or increase MAXFINELAYERS dimension '// &
-            'in VLIDORT_PARS'
+            'Abort: must set DO_SOLAR_SOURCE'
           STATUS = VLIDORT_SERIOUS
-          NMESSAGES = NM
-          RETURN
         ENDIF
+
+!%%% No reason you cannot have Observation Geometry with Cross-Over
+!%%% Clause commented out, 05 March 2013
+!        IF ( DO_THERMAL_EMISSION ) THEN
+!          NM = NM + 1
+!          MESSAGES(NM) = &
+!            'Bad input: DO_THERMAL_EMISSION should not be set for Observation Geometry option'
+!          ACTIONS(NM)  = &
+!            'Abort: must turn off DO_THERMAL EMISSION'
+!          STATUS = VLIDORT_SERIOUS
+!        ENDIF
+!%%% End Clause commented out, 05 March 2013
+
+!  Observational Geometry control
+!   New, 25 October 2012
+!     ---- Automatic setting of N_SZANGLES, N_USER_VZANGLES, N_USER_RELAZMS,
+!          and DO_USER_VZANGLES
+
+        N_SZANGLES       = N_USER_OBSGEOMS
+        N_USER_VZANGLES  = N_USER_OBSGEOMS
+        N_USER_RELAZMS   = N_USER_OBSGEOMS
+        DO_USER_VZANGLES = .true.
+
+!     ---- Automatic setting of SZANGLES, USER_VZANGLES, and USER_RELAZMS
+
+        SZANGLES     (1:N_USER_OBSGEOMS) = USER_OBSGEOMS(1:N_USER_OBSGEOMS,1)
+        USER_VZANGLES(1:N_USER_OBSGEOMS) = USER_OBSGEOMS(1:N_USER_OBSGEOMS,2)
+        USER_RELAZMS (1:N_USER_OBSGEOMS) = USER_OBSGEOMS(1:N_USER_OBSGEOMS,3)
+
       ENDIF
 
-      IF ( NGREEK_MOMENTS_INPUT .GT. MAXMOMENTS_INPUT ) THEN
-        NM = NM + 1
-        MESSAGES(NM) = &
-         'Entry under'// &
-       ' "Number of input Scattering Matrix expansion coefficients" >'// &
-               ' allowed Maximum dimension'
-        ACTIONS(NM)  = &
-         'Re-set input value or increase MAXMOMENTS_INPUT dimension '// &
-            'in VLIDORT_PARS'
-        STATUS = VLIDORT_SERIOUS
-        NMESSAGES = NM
-        RETURN
-      ENDIF
-
-      IF ( NSTOKES .GT. MAXSTOKES ) THEN
-        NM = NM + 1
-        MESSAGES(NM) = &
-         'Entry under'//' "Number of Stokes parameters" >'// &
-               ' allowed Maximum dimension'
-        ACTIONS(NM)  = 'Re-set input value to 4 or less'
-        STATUS = VLIDORT_SERIOUS
-        NMESSAGES = NM
-        RETURN
-      ENDIF
-
-!  Check dimensioning for SZA/AZM/VZA/LEVELS
-
-      IF ( N_SZANGLES .GT. MAX_SZANGLES ) THEN
-        NM = NM + 1
-        MESSAGES(NM) = &
-               'Entry under "Number of solar zenith angles" >'// &
-               ' allowed Maximum dimension'
-        ACTIONS(NM)  = &
-            'Re-set input value or increase MAX_SZANGLES dimension '// &
-            'in VLIDORT_PARS'
-        STATUS = VLIDORT_SERIOUS
-        NMESSAGES = NM
-        RETURN
-      ENDIF
-
-      IF ( N_USER_RELAZMS .GT. MAX_USER_RELAZMS ) THEN
-        NM = NM + 1
-        MESSAGES(NM) = &
-             'Entry under "Number of ..... azimuth angles" >'// &
-             ' allowed Maximum dimension'
-        ACTIONS(NM)  = &
-          'Re-set input value or increase MAX_USER_RELAZMS dimension '// &
-          'in VLIDORT_PARS'
-        STATUS       = VLIDORT_SERIOUS
-        NMESSAGES    = NM
-        RETURN
-      ENDIF
-
-      IF ( DO_USER_VZANGLES ) THEN
-        IF ( N_USER_VZANGLES .GT. MAX_USER_VZANGLES ) THEN
-          NM = NM + 1
-          MESSAGES(NM) = &
-             'Entry under "Number of .....viewing zenith angles" >'// &
-             ' allowed Maximum dimension'
-          ACTIONS(NM)  = &
-          'Re-set input value or increase MAX_USER_VZANGLES dimension '// &
-          'in VLIDORT_PARS'
-          STATUS = VLIDORT_SERIOUS
-          NMESSAGES = NM
-          RETURN
-        ENDIF
-      ENDIF
-
-      IF ( N_USER_LEVELS .GT. MAX_USER_LEVELS ) THEN
-        NM = NM + 1
-        MESSAGES(NM) = &
-             'Entry under "Number of ..... output levels" >'// &
-             ' allowed Maximum dimension'
-        ACTIONS(NM)  = &
-          'Re-set input value or increase MAX_USER_LEVELS dimension '// &
-          'in VLIDORT_PARS'
-        STATUS = VLIDORT_SERIOUS
-        NMESSAGES = NM
-        RETURN
-      ENDIF
-
-!  Check top level options Solar/THermal, set warnings
-!  ===================================================
+!  Check top level options Solar/Thermal, set warnings
+!  ---------------------------------------------------
 
 !  Check thermal or Solar sources present
 
       IF ( .NOT.DO_SOLAR_SOURCES.AND..NOT.DO_THERMAL_EMISSION ) THEN
         NM = NM + 1
-        MESSAGES(NM) = 'Bad input: No solar or thermal sources'
-        ACTIONS(NM)  = 'Abort: must set one of the source flags!'
+        MESSAGES(NM) = &
+          'Bad input: DO_SOLAR_SOURCES,DO_THERMAL_EMISSION both not set'
+        ACTIONS(NM)  = &
+          'Abort: must set DO_SOLAR_SOURCES and/or DO_THERMAL_EMISSION'
         STATUS = VLIDORT_SERIOUS
       ENDIF
 
@@ -1979,30 +2214,40 @@
         ENDIF
       ENDIF
 
-!  Set number of sources NBEAMS to 1 for the thermal-only default
+!  Set number of solar angles N_SZANGLES to 1 for the thermal-only default
 
       IF ( .NOT.DO_SOLAR_SOURCES.AND.DO_THERMAL_EMISSION ) THEN
         IF ( N_SZANGLES .NE. 1 ) THEN
          NM = NM + 1
-         MESSAGES(NM) = 'Bad input: N_Szas set to 1 for thermal-only'
-         ACTIONS(NM) = 'Warning: N_Szas set to 1 internally'
+         MESSAGES(NM) = 'Bad input: N_SZANGLES should be set to 1 for thermal-only'
+         ACTIONS(NM) = 'Warning: N_SZANGLES is set to 1 internally'
          STATUS = VLIDORT_WARNING
          N_SZANGLES = 1
         ENDIF
       ENDIF
 
-!  Set number of sources NBEAMS to 1 for the thermal-only default
+!  Set number of azimuths N_USER_RELAZMS to 1 for the thermal-only default
 
       IF ( .NOT.DO_SOLAR_SOURCES.AND.DO_THERMAL_EMISSION ) THEN
         IF ( N_USER_RELAZMS .NE. 1 ) THEN
          NM = NM + 1
-         MESSAGES(NM) = &
-              'Bad input: N_AZIMUTHS set to 1 for thermal-only'
-         ACTIONS(NM) = &
-               'Warning: N_USER_RELAZMS set to 1 internally'
+         MESSAGES(NM) = 'Bad input: N_USER_RELAZMS should be set to 1 for thermal-only'
+         ACTIONS(NM)  = 'Warning: N_USER_RELAZMS is set to 1 internally'
          STATUS = VLIDORT_WARNING
          N_USER_RELAZMS = 1
         ENDIF
+      ENDIF
+
+!  Check Taylor series parameter is not out of range.
+!   This code was added 2/19/14 for Version 2.7
+
+      IF ( TAYLOR_ORDER .GT. MAX_TAYLOR_TERMS-2 .or. TAYLOR_ORDER .LT. 0 ) THEN
+        NM = NM + 1
+        MESSAGES(NM) = 'Taylor series Order parameter out of range'
+        ACTIONS(NM)  = 'Re-set input value, should be in range 0-4'
+        STATUS       = VLIDORT_SERIOUS
+        NMESSAGES    = NM
+        RETURN
       ENDIF
 
 !  Check inputs (both file-read and derived)
@@ -2041,6 +2286,25 @@
         ENDIF
       ENDIF
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  05 March 2013  Start %%%%%%%%%%%%%%%%%
+!   New check to make sure output is MS-only when DO_FULLRAD_MODE is off
+!     -- Do not want Internal SS Corrections in this case.
+!     -- Turn off Internal SS Corrections, with Warning.
+!   R. Spurr, RT SOLUTIONS Inc.
+      IF ( .not.DO_SS_EXTERNAL .and. .not.DO_FULLRAD_MODE ) then
+        IF ( DO_SSCORR_NADIR .or. DO_SSCORR_OUTGOING ) THEN
+          NM = NM + 1
+          MESSAGES(NM) = &
+             'Internal SS calculation must be Off when MS-only is desired'
+          ACTIONS(NM)  = &
+             'DO_SSCORR_NADIR/DO_SSCORR_OUTGOING flags turned off Internally'
+          STATUS = VLIDORT_WARNING
+          DO_SSCORR_NADIR    = .false.
+          DO_SSCORR_OUTGOING = .false.
+        ENDIF
+      ENDIF
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  05 March 2013 Finish %%%%%%%%%%%%%%%%
+
 !  New 15 March 2012
 !    Turn off SSCORR flags if the external SS calculation applies
 
@@ -2055,6 +2319,18 @@
           NM = NM + 1
           MESSAGES(NM) = 'External SS calculation: Cannot have Outgoing single scatter correction'
           ACTIONS(NM)  = 'Turn off DO_SSCORR_OUTGOING flag'
+          STATUS = VLIDORT_SERIOUS
+        ENDIF
+      ENDIF
+
+!  New 02 Jul 2013
+!  Check dedicated FO code / ObsGeo mode compatibility
+
+      IF (DO_FO_CALC) THEN
+        IF ( .NOT. DO_OBSERVATION_GEOMETRY ) THEN
+          NM = NM + 1
+          MESSAGES(NM) = 'Internal SS calculation: Must set Observation Geometry option'
+          ACTIONS(NM)  = 'Turn on DO_OBSERVATION_GEOMETRY flag'
           STATUS = VLIDORT_SERIOUS
         ENDIF
       ENDIF
@@ -2184,8 +2460,8 @@
         STATUS = VLIDORT_SERIOUS
       ENDIF
 
-!  Check number of input expansion coefficient  moments (non-Rayleigh)
-!  ====================================================
+!  Check number of input expansion coefficient moments (non-Rayleigh)
+!  ------------------------------------------------------------------
 
 !   Isotropic part Removed 17 January 2006, Isotropic option removed.
 
@@ -2298,7 +2574,7 @@
       ENDIF
 
 !  Check azimuth-only conditions
-!  =============================
+!  -----------------------------
 
 !  Check no-Azimuth flag. Now set internally
 !    ---WARNING. Do-no-Azimuth Flag turned on
@@ -2319,17 +2595,32 @@
 !    ---WARNING. SS Flag turned off
 !  Check only required for the diffuse field calculations (Version 2.3)
 
-      IF ( DO_SSCORR_NADIR ) THEN
-        IF ( DO_RAYLEIGH_ONLY .AND. .NOT. DO_SSFULL ) THEN
-          NM = NM + 1
-          MESSAGES(NM) = &
-              'Bad input: No SS correction for Rayleigh only'
-          ACTIONS(NM)  = &
-              'Warning: DO_SSCORR_NADIR turned off internally'
-          STATUS = VLIDORT_WARNING
-          DO_SSCORR_NADIR = .FALSE.
+!  @@@ Rob Fix 5/20/13. NO turn-off DO_SSCORR_NADIR for Rayleigh-BRDF situation
+!     if DO_RAYLEIGH_ONLY.and..NOT.DO_LAMBERTIAN_SURFACE and.not.DO_SS_EXTERNAL,
+!     then one of the SSCORR flags should be set internally
+!  Old Code -------
+!      IF ( DO_SSCORR_NADIR ) THEN
+!        IF ( DO_RAYLEIGH_ONLY .AND. .NOT. DO_SSFULL ) THEN
+!          NM = NM + 1
+!          MESSAGES(NM) = 'Bad input: No SS correction for Rayleigh only'
+!          ACTIONS(NM)  = 'Warning: DO_SSCORR_NADIR turned off internally'
+!          STATUS = VLIDORT_WARNING
+!          DO_SSCORR_NADIR = .FALSE.
+!        ENDIF
+!      ENDIF
+!  New code --------
+      IF ( DO_RAYLEIGH_ONLY .AND. .NOT. DO_LAMBERTIAN_SURFACE ) THEN
+        IF ( .not.DO_SSCORR_OUTGOING .or..not. DO_SSCORR_NADIR ) THEN
+          IF ( .not.DO_SS_EXTERNAL ) THEN
+            NM = NM + 1
+            MESSAGES(NM) = 'Bad input: Rayleigh-only+BRDF: set an SSCORR flag!'
+            ACTIONS(NM)  = 'Warning: DO_SSCORR_NADIR turned on internally'
+            STATUS = VLIDORT_WARNING
+            DO_SSCORR_NADIR = .TRUE.
+          ENDIF
         ENDIF
       ENDIF
+!  @@@ Rob Fix 5/20/13. End of Fix ===================================
 
 !  Full-up single scatter, enabled 25 September 2007.
 !   Single scatter corrections must be turned on
@@ -2363,7 +2654,7 @@
       ENDIF
 
 !  Check thermal inputs
-!  ====================
+!  --------------------
 
 !  If thermal transmittance only, check thermal flag
 
@@ -2403,7 +2694,7 @@
       ENDIF
 
 !  Check viewing geometry input
-!  ============================
+!  ----------------------------
 
 !  Check earth radius (Chapman function only)
 !    ---WARNING. Default value of 6371.0 will be set
@@ -2454,18 +2745,23 @@
 
 !  Check solar zenith angle input
 
-      DO I = 1, N_SZANGLES
-        IF ( SZANGLES(I) .LT. ZERO .OR. &
-             SZANGLES(I).GE.90.0D0 ) THEN
-          WRITE(C2,'(I2)')I
-          NM = NM + 1
-          MESSAGES(NM) = &
-              'Bad input: out-of-range solar angle, no. '//C2
-          ACTIONS(NM)  = &
-              'Look at SZANGLES input, should be < 90 & > 0'
-          STATUS = VLIDORT_SERIOUS
-        ENDIF
-      ENDDO
+!mick hold - 9/26/2012
+      !IF (DO_SOLAR_SOURCES ) THEN
+        DO I = 1, N_SZANGLES
+          IF ( SZANGLES(I) .LT. ZERO .OR. &
+               SZANGLES(I) .GE. 90.0D0 ) THEN
+            WRITE(C2,'(I2)')I
+            NM = NM + 1
+            MESSAGES(NM) = &
+                'Bad input: out-of-range solar angle, no. '//C2
+            ACTIONS(NM)  = &
+                'Look at SZANGLES input, should be < 90 & > 0'
+            STATUS = VLIDORT_SERIOUS
+          ENDIF
+        ENDDO
+      !ELSE IF ( .NOT.DO_SOLAR_SOURCES .AND. DO_THERMAL_EMISSION ) THEN
+      !  SZANGLES(1:N_SZANGLES) = ZERO
+      !ENDIF
 
 !  Check relative azimuths
 
@@ -2531,14 +2827,23 @@
         IF ( N_OUT_STREAMS .EQ. 1 ) THEN
           OUT_ANGLES(1) =  USER_VZANGLES(1)
         ELSE
-          DO I = 1, N_USER_VZANGLES
-            ALL_ANGLES(I) = USER_VZANGLES(I)
-          ENDDO
-          CALL INDEXX ( N_OUT_STREAMS, USER_VZANGLES, INDEX_ANGLES )
-          DO I = 1, N_OUT_STREAMS
-            OUT_ANGLES(I) = ALL_ANGLES(INDEX_ANGLES(I))
-            USER_VZANGLES(I) = OUT_ANGLES(I)
-          ENDDO
+!%%%%%%%%%%%%%%%%%%%%%%%     ROB clause 05 March 2013 %%%%%%%%%%%%%
+!%%%%%% Re-odering only for Lattice computations %%%%%%%%%%%%%%%%%%
+           if ( .not. do_Observation_geometry ) then
+              DO I = 1, N_USER_VZANGLES
+                ALL_ANGLES(I) = USER_VZANGLES(I)
+              ENDDO
+              CALL INDEXX ( N_OUT_STREAMS, USER_VZANGLES, INDEX_ANGLES )
+              DO I = 1, N_OUT_STREAMS
+                OUT_ANGLES(I) = ALL_ANGLES(INDEX_ANGLES(I))
+                USER_VZANGLES(I) = OUT_ANGLES(I)
+              ENDDO
+           ELSE
+              DO I = 1, N_OUT_STREAMS
+                OUT_ANGLES(I) = USER_VZANGLES(I)
+              ENDDO
+           ENDIF
+!%%%%%%%%%%%%%%%%%%%%%%% End ROB clause 05 March 2013 %%%%%%%%%%%%%
         ENDIF
       ENDIF
 
@@ -2602,7 +2907,6 @@
           STATUS = VLIDORT_SERIOUS
         ENDIF
       ENDDO
-
 
 !  Check geophysical scattering inputs
 !  -----------------------------------
@@ -2729,13 +3033,13 @@
       RETURN
       END SUBROUTINE VLIDORT_CHECK_INPUT
 
-!
+!
 
       SUBROUTINE VLIDORT_DERIVE_INPUT ( &
         DO_FULLRAD_MODE, DO_SSCORR_NADIR, DO_SSCORR_OUTGOING, DO_SSFULL, &
         DO_SOLAR_SOURCES, DO_REFRACTIVE_GEOMETRY, DO_RAYLEIGH_ONLY, &
-        DO_UPWELLING, DO_DNWELLING, DO_USER_STREAMS, NSTOKES, &
-        NSTREAMS, NLAYERS, NGREEK_MOMENTS_INPUT, &
+        DO_UPWELLING, DO_DNWELLING, DO_USER_STREAMS, DO_OBSERVATION_GEOMETRY, &
+        NSTOKES, NSTREAMS, NLAYERS, NGREEK_MOMENTS_INPUT, &
         N_SZANGLES, SZANGLES, SZA_LOCAL_INPUT, N_USER_RELAZMS, &
         N_USER_VZANGLES, USER_VZANGLES, N_USER_LEVELS, USER_LEVELS, &
         DELTAU_VERT_INPUT, &
@@ -2777,6 +3081,7 @@
       LOGICAL, INTENT (IN) ::             DO_UPWELLING
       LOGICAL, INTENT (IN) ::             DO_DNWELLING
       LOGICAL, INTENT (IN) ::             DO_USER_STREAMS
+      LOGICAL, INTENT (IN) ::             DO_OBSERVATION_GEOMETRY
       INTEGER, INTENT (IN) ::             NSTOKES
       INTEGER, INTENT (IN) ::             NSTREAMS
       INTEGER, INTENT (IN) ::             NLAYERS
@@ -2790,7 +3095,6 @@
       INTEGER, INTENT (IN) ::             N_USER_VZANGLES
       DOUBLE PRECISION, INTENT (IN) ::    USER_VZANGLES ( MAX_USER_VZANGLES )
       INTEGER, INTENT (IN) ::             N_USER_LEVELS
-      DOUBLE PRECISION, INTENT (IN) ::    USER_LEVELS ( MAX_USER_LEVELS )
       DOUBLE PRECISION, INTENT (IN) ::    GREEKMAT_TOTAL_INPUT &
           ( 0:MAXMOMENTS_INPUT, MAXLAYERS, MAXSTOKES_SQ )
       LOGICAL, INTENT (IN) ::             DO_SURFACE_EMISSION
@@ -2801,12 +3105,12 @@
       DOUBLE PRECISION, INTENT (IN) ::    USER_VZANGLES_ADJUST &
           ( MAX_USER_VZANGLES )
       INTEGER, INTENT (IN) ::             N_OUT_STREAMS
+      DOUBLE PRECISION, INTENT (IN) ::    FLUX_FACTOR
 
       LOGICAL, INTENT (INOUT) ::          DO_SOLUTION_SAVING
       LOGICAL, INTENT (INOUT) ::          DO_BVP_TELESCOPING
       LOGICAL, INTENT (INOUT) ::          DO_ADDITIONAL_MVOUT
       LOGICAL, INTENT (INOUT) ::          DO_MVOUT_ONLY
-      DOUBLE PRECISION, INTENT (INOUT) :: FLUX_FACTOR
       DOUBLE PRECISION, INTENT (INOUT) :: OMEGA_TOTAL_INPUT ( MAXLAYERS )
       LOGICAL, INTENT (INOUT) ::          DO_DOUBLE_CONVTEST
       LOGICAL, INTENT (INOUT) ::          DO_ALL_FOURIER
@@ -2814,6 +3118,7 @@
       LOGICAL, INTENT (INOUT) ::          DO_CLASSICAL_SOLUTION
       LOGICAL, INTENT (INOUT) ::          DO_DBCORRECTION
       LOGICAL, INTENT (INOUT) ::          DO_NO_AZIMUTH
+      DOUBLE PRECISION, INTENT (INOUT) :: USER_LEVELS ( MAX_USER_LEVELS )
 
       DOUBLE PRECISION, INTENT (OUT) ::   FLUXVEC ( MAXSTOKES )
       DOUBLE PRECISION, INTENT (OUT) ::   COS_SZANGLES ( MAX_SZANGLES )
@@ -2898,12 +3203,10 @@
       MESSAGE    = ' '
 
 !  Automatic input
-!    Flux factor set to unity. (21 December 2005)
 
       DO_ALL_FOURIER        = .FALSE.
       DO_CLASSICAL_SOLUTION = .TRUE.
       DO_DIRECT_BEAM        = .TRUE.
-!      FLUX_FACTOR           = ONE
 
 !  SSFULL flag cancels some other flags. Not the DB correction !!!!
 
@@ -3293,7 +3596,11 @@
          IF ( DO_LAYER_SCATTERING(M,N) ) THEN
            EC = 0
            DO L = M, NMOMENTS
-            IF (GREEKMAT_TOTAL_INPUT(L,N,12).NE.ZERO) EC = EC + 1
+!mick fix 1/22/2013 - added NSTOKES IF condition
+            !IF (GREEKMAT_TOTAL_INPUT(L,N,12).NE.ZERO) EC = EC + 1
+            IF (NSTOKES.EQ.4) THEN
+              IF (GREEKMAT_TOTAL_INPUT(L,N,12).NE.ZERO ) EC = EC + 1
+            ENDIF
            ENDDO
            DO_REAL_EIGENSOLVER(M,N) = (EC.EQ.ZERO)
 !mick fix 2/17/11 - added ELSE
@@ -3334,8 +3641,13 @@
 
       CONV_START_STREAMS = 1
       N_CONV_STREAMS = N_OUT_STREAMS - CONV_START_STREAMS + 1
-      N_CONVTESTS = N_USER_RELAZMS * N_CONV_STREAMS * N_DIRECTIONS
-      N_CONVTESTS = N_CONVTESTS * N_USER_LEVELS
+
+      IF ( .not. DO_OBSERVATION_GEOMETRY ) THEN
+        N_CONVTESTS = N_USER_RELAZMS * N_CONV_STREAMS * N_DIRECTIONS
+        N_CONVTESTS = N_CONVTESTS * N_USER_LEVELS
+      ELSE
+        N_CONVTESTS = N_DIRECTIONS * N_USER_LEVELS
+      ENDIF
 
 !  Sort out User vertical level outputs
 !  ------------------------------------

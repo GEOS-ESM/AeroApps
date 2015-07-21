@@ -1,0 +1,9 @@
+#
+# Resource file for geo_angles
+#
+
+INDIR:   /nobackup/TEMPO
+OUTDIR:  /nobackup/TEMPO
+DATE: 20051231
+TIME: 17
+INSTNAME: tempo

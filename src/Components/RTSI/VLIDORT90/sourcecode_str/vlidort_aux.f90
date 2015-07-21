@@ -20,7 +20,7 @@
 ! #  Email :       rtsolutions@verizon.net                      #
 ! #                                                             #
 ! #  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT, 2.4RTC,  #
-! #                   2.5, 2.6                                  #
+! #                   2.5, 2.6, 2.7                             #
 ! #  Release Date :   December 2005  (2.0)                      #
 ! #  Release Date :   March 2007     (2.2)                      #
 ! #  Release Date :   October 2007   (2.3)                      #
@@ -30,6 +30,7 @@
 ! #  Release Date :   October 2010   (2.4RTC)                   #
 ! #  Release Date :   March 2011     (2.5)                      #
 ! #  Release Date :   May 2012       (2.6)                      #
+! #  Release Date :   August 2014    (2.7)                      #
 ! #                                                             #
 ! #       NEW: TOTAL COLUMN JACOBIANS         (2.4)             #
 ! #       NEW: BPDF Land-surface KERNELS      (2.4R)            #
@@ -37,6 +38,9 @@
 ! #       Consolidated BRDF treatment         (2.4RTC)          #
 ! #       f77/f90 Release                     (2.5)             #
 ! #       External SS / New I/O Structures    (2.6)             #
+! #                                                             #
+! #       SURFACE-LEAVING / BRDF-SCALING      (2.7)             #
+! #       TAYLOR Series / OMP THREADSAFE      (2.7)             #
 ! #                                                             #
 ! ###############################################################
 
@@ -191,19 +195,33 @@
 !  Copy inputs to local variables
 
       STATUS_INPUTCHECK  = VLIDORT_Status%TS_STATUS_INPUTCHECK
-      NCHECKMESSAGES     = VLIDORT_Status%TS_NCHECKMESSAGES
-      CKMESSAGES         = VLIDORT_Status%TS_CHECKMESSAGES
-      ACTIONS            = VLIDORT_Status%TS_ACTIONS
-      STATUS_CALCULATION = VLIDORT_Status%TS_STATUS_CALCULATION
-      MESSAGE            = VLIDORT_Status%TS_MESSAGE
-      TRACE_1            = VLIDORT_Status%TS_TRACE_1
-      TRACE_2            = VLIDORT_Status%TS_TRACE_2
-      TRACE_3            = VLIDORT_Status%TS_TRACE_3
+
+      NCHECKMESSAGES = &
+        VLIDORT_Status%TS_NCHECKMESSAGES
+      CKMESSAGES(0:NCHECKMESSAGES) = &
+        VLIDORT_Status%TS_CHECKMESSAGES(0:NCHECKMESSAGES)
+      ACTIONS(0:NCHECKMESSAGES)    = &
+        VLIDORT_Status%TS_ACTIONS(0:NCHECKMESSAGES)
+
+!mick fix 2/4/2013 - added IF condition
+      IF (STATUS_INPUTCHECK .NE. VLIDORT_SERIOUS) THEN
+        STATUS_CALCULATION = VLIDORT_Status%TS_STATUS_CALCULATION
+
+        MESSAGE            = VLIDORT_Status%TS_MESSAGE
+        TRACE_1            = VLIDORT_Status%TS_TRACE_1
+        TRACE_2            = VLIDORT_Status%TS_TRACE_2
+        TRACE_3            = VLIDORT_Status%TS_TRACE_3
+      ENDIF
 
 !  Overall status
 
-      STATUS_OVERALL = ( STATUS_INPUTCHECK  .NE. VLIDORT_SUCCESS ) .or. &
-                       ( STATUS_CALCULATION .NE. VLIDORT_SUCCESS )
+!mick fix 2/4/2013 - added if structure and ELSE condition
+      IF (STATUS_INPUTCHECK .NE. VLIDORT_SERIOUS) THEN
+        STATUS_OVERALL = ( STATUS_INPUTCHECK  .NE. VLIDORT_SUCCESS ) .or. &
+                         ( STATUS_CALCULATION .NE. VLIDORT_SUCCESS )
+      ELSE
+        STATUS_OVERALL = ( STATUS_INPUTCHECK  .NE. VLIDORT_SUCCESS )
+      ENDIF
 
 !  Open if flagged
 
@@ -240,19 +258,33 @@
           write(W,'(A,I3,A,A)')'Message # ',N,' : ',CKMESSAGES(N)(1:NF)
           write(W,'(A,I3,A,A)')'Action  # ',N,' : ',ACTIONS(N)(1:NA)
         ENDDO
+
+!mick fix 11/9/2013 - added error stop
+        CLOSE(ERRORUNIT)
+        WRITE(*,*)
+        WRITE(*,'(1X,2A)') 'VLIDORT input error occurred.  See ',ERRORFILE
+        WRITE(*,*)
+        STOP
       ENDIF
 
 !  Model calculation status
 
       IF ( STATUS_INPUTCHECK .NE. VLIDORT_SERIOUS ) THEN
-       IF ( STATUS_CALCULATION .NE. VLIDORT_SUCCESS ) THEN
-        WRITE(W,*)' FATAL: VLIDORT execution failure '
-        WRITE(W,*)'  -----Here is the message and traces : '
-        WRITE(W,'(A,A)')' Message : ', MESSAGE(1:LEN_STRING(MESSAGE))
-        WRITE(W,'(A,A)')' Trace 1 : ', TRACE_1(1:LEN_STRING(TRACE_1))
-        WRITE(W,'(A,A)')' Trace 2 : ', TRACE_2(1:LEN_STRING(TRACE_2))
-        WRITE(W,'(A,A)')' Trace 3 : ', TRACE_3(1:LEN_STRING(TRACE_3))
-       ENDIF
+        IF ( STATUS_CALCULATION .NE. VLIDORT_SUCCESS ) THEN
+          WRITE(W,*)' FATAL: VLIDORT execution failure '
+          WRITE(W,*)'  -----Here is the message and traces : '
+          WRITE(W,'(A,A)')' Message : ', MESSAGE(1:LEN_STRING(MESSAGE))
+          WRITE(W,'(A,A)')' Trace 1 : ', TRACE_1(1:LEN_STRING(TRACE_1))
+          WRITE(W,'(A,A)')' Trace 2 : ', TRACE_2(1:LEN_STRING(TRACE_2))
+          WRITE(W,'(A,A)')' Trace 3 : ', TRACE_3(1:LEN_STRING(TRACE_3))
+
+!mick fix 11/9/2013 - added error stop
+          CLOSE(ERRORUNIT)
+          WRITE(*,*)
+          WRITE(*,'(1X,2A)') 'VLIDORT calculation error occurred.  See ',ERRORFILE
+          WRITE(*,*)
+          STOP
+        ENDIF
       ENDIF
 
 !  Finish

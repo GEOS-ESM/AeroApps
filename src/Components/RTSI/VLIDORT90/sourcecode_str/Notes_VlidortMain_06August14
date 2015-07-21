@@ -1,0 +1,191 @@
+Conversion to 2.7
+=================
+
+These notes, 06 August 2014
+
+ALL FILES (Except Makefile)
+---------------------------
+
+Add lines in header referencing Version 2.7 (Release date, function)
+
+vlidort_writemodules.f90
+------------------------
+
+1. Remove Inputs and Write-up for LTE_DELTAU_VERT_INPUT, LTE_THERMAL_BB_INPUT
+2. Add input and write-up for DO_FO_CALC
+
+vlidort_thermalsup.f90
+----------------------
+
+1. Mick 7/23/14. T_DIRECT solutions are initialized for packing.
+
+vlidort_Taylor.f90
+------------------
+
+1. Supercedes the Old routine (which was never used). LIDORT-compatible.
+
+vlidort_solutions.f90
+---------------------
+
+1. Uses new Taylor series routines, and defines ZETA = RHO_M in these cases
+2.. Complex-valued HSINGO routine was dropped (only need Real).
+
+vlidort_multipliers.f90
+-----------------------
+
+1. Uses new Taylor series routines, requires TAYLOR_ORDER inputs
+2. Mick 7/23/14. EMULT,UT_EMULT are initialized for packing.
+
+vlidort_miscsetups.f90
+----------------------
+
+1. Addition of alternative VLIDORT_PIMATRIX_SETUP_OMP for GSFs with OMP
+2. TRANS_SOLAR_BEAM replaces SOLAR_BEAM_OPDEP
+
+vlidort_aux.f90
+---------------
+
+1. Added error stops in VLIDORT_WRITE_STATUS (twice). Mick 11/9/13.
+
+vlidort_bvproblem.f90
+---------------------
+
+1. Addition of alternative routine BVPTEL_MATRIX_INIT_OMP, to initialize
+   the telescoped BVP matrix in OPENMP
+2. COL2 and SCOL2 now passed in/out to make BVP thread safe (as in LIDORT)
+3. Calls to DGBTRS made safer
+
+vlidort_getplanck.f90
+---------------------
+
+1. Replace data atatements with parameter statements, OMP Threadsafe.
+
+vlidort_inputs.f90
+------------------
+
+1. Introduce, file-read and follow through the DO_FO_CALC flag.
+2. Taylor Order input introduced, file-read and checked
+
+vlidort_intensity.f90
+---------------------
+
+1. debug_write statements simplified.
+
+vlidort_corrections.f90
+-----------------------
+
+1. EXACTFUNC = ATTN * Lambertian * FLUXVEC(01)
+2. TRANS_SOLAR_BEAM replaces SOLAR_BEAM_OPDEP
+3. Introduce VFO_Master_Interface Routine (public). Use FO_VectorSS_masters
+
+vlidort_pack.f90, vlidort_unpack.f90
+------------------------------------
+
+1. Completely new for 2p7, Aids to transferring Internal Types. 
+
+vlidort_masters.f90
+-------------------
+
+1. Introduce Taylor parameter TAYLOR_ORDER and pass through.
+2. Introduce DO_FO_CALC flag and pass through to call to VFO_Interface
+3. Use modules for pack and unpack routines, Work Type structures (OMP)
+4. replace PIMATRIX_SETUP with slightly Modified version OMP-safe
+5. Moved large chunk of setup operations in FOURIER_MASTER to place in
+   the MAIN_MASTER, with results from THERM/MISC/EMULT routines packed
+   into Work structures to be unpacked in FOURIER.
+
+   *********************************************************
+
+
+vlidort_l_pack.f90, vlidort_l_unpack.f90 (ALSO LC_ and LP_)
+-----------------------------------------------------------
+
+1. Completely new for 2p7, Aids to transferring Internal Types. 
+
+vlidort_l_writemodules.f90
+--------------------------
+
+1. Replace DO_LTE_LINEARIZATION (2.6) with DO_ATMOS_LBBF,DO_SURFACE_LBBF (2p7)
+
+vlidort_ls_corrections.f90
+--------------------------
+
+1. Linearized source term LS_DB_CUMSOURCE is properly initialized. 11/8/13 Mick
+
+vlidort_lp_miscsetups.f90
+-------------------------
+
+1. Taylor series upgraded to new 2.7 stuff
+2. Initialization of LP_EMULT variables for packing.
+
+vlidort_lpc_solutions.f90
+-------------------------
+
+1. Taylor series upgraded to new 2.7 stuff
+
+vlidort_lp_corrections.f90
+--------------------------
+
+1. EXACTFUNC = ATTN * Lambertian * FLUXVEC(01)
+2. TRANS_SOLAR_BEAM replaces SOLAR_BEAM_OPDEP
+3. Introduce VFO_LPS_MASTER_INTERFACE Routine. Use FO_VectorSS_LinMasters
+
+vlidort_l_inputs.f90
+--------------------
+
+1. DO_FO_CALC variable introduced
+2. DO_ATMOS_LBBF and DO_SURFACE_LBBF variables introduced, replaceing
+   the older LTE and SURFBB linearization flags
+3. Code cleaned up somewhat.
+
+vlidort_lc_miscsetups.f90
+-------------------------
+
+1. Taylor series upgraded to new 2.7 stuff
+2. Initialization of LC_EMULT variables for packing.
+
+vlidort_lc_corrections.f90
+--------------------------
+
+1. EXACTFUNC = ATTN * Lambertian * FLUXVEC(01)
+2. TRANS_SOLAR_BEAM replaces SOLAR_BEAM_OPDEP
+3. Introduce VFO_LCS_MASTER_INTERFACE Routine. Use FO_VectorSS_LinMasters
+
+vlidort_lbbf_jacobians.f90
+--------------------------
+
+1. COMPLETELY NEW for VERSION 2.7
+
+vlidort_la_miscsetups.f90
+-------------------------
+
+1. Bug in linearized Delta-M subroutine fixed. 1/17/14 by Rob
+2. Initialization of variables for packing.    7/29/14 by Mick
+
+vlidort_lcs_masters.f90
+-----------------------
+
+1. Introduce Taylor parameter TAYLOR_ORDER and pass through.
+2. Introduce DO_FO_CALC flag and pass through to call to VFO_LCS_Interface
+3. Use modules for pack and unpack routines, Work Type structures (OMP)
+4. replace PIMATRIX_SETUP with slightly Modified version OMP-safe
+5. Moved large chunk of setup operations in FOURIER_MASTER to place in
+   the MAIN_MASTER, with results from THERM/MISC/EMULT routines packed
+   into Work structures to be unpacked in FOURIER.
+6. Replaced LTE and SURFBB linearization flags with ATMOS and SURFACE LBBF
+   flags, removed older LTE inputs. Introduced Call to LBBF Jacobians in 2
+   different places. Use module statement also introduced.
+
+vlidort_lps_masters.f90
+-----------------------
+
+1. Introduce Taylor parameter TAYLOR_ORDER and pass through.
+2. Introduce DO_FO_CALC flag and pass through to call to VFO_LPS_Interface
+3. Use modules for pack and unpack routines, Work Type structures (OMP)
+4. replace PIMATRIX_SETUP with slightly Modified version OMP-safe
+5. Moved large chunk of setup operations in FOURIER_MASTER to place in
+   the MAIN_MASTER, with results from THERM/MISC/EMULT routines packed
+   into Work structures to be unpacked in FOURIER.
+6. Replaced LTE and SURFBB linearization flags with ATMOS and SURFACE LBBF
+   flags, removed older LTE inputs. Introduced Call to LBBF Jacobians in 2
+   different places. Use module statement also introduced.

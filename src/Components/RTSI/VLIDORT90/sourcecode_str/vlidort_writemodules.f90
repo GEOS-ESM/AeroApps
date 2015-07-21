@@ -19,7 +19,7 @@
 ! #  Email :       rtsolutions@verizon.net                      #
 ! #                                                             #
 ! #  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT, 2.4RTC,  #
-! #                   2.5, 2.6                                  #
+! #                   2.5, 2.6, 2.7                             #
 ! #  Release Date :   December 2005  (2.0)                      #
 ! #  Release Date :   March 2007     (2.2)                      #
 ! #  Release Date :   October 2007   (2.3)                      #
@@ -29,6 +29,7 @@
 ! #  Release Date :   October 2010   (2.4RTC)                   #
 ! #  Release Date :   March 2011     (2.5)                      #
 ! #  Release Date :   May 2012       (2.6)                      #
+! #  Release Date :   August 2014    (2.7)                      #
 ! #                                                             #
 ! #       NEW: TOTAL COLUMN JACOBIANS         (2.4)             #
 ! #       NEW: BPDF Land-surface KERNELS      (2.4R)            #
@@ -36,6 +37,9 @@
 ! #       Consolidated BRDF treatment         (2.4RTC)          #
 ! #       f77/f90 Release                     (2.5)             #
 ! #       External SS / New I/O Structures    (2.6)             #
+! #                                                             #
+! #       SURFACE-LEAVING / BRDF-SCALING      (2.7)             #
+! #       TAYLOR Series / OMP THREADSAFE      (2.7)             #
 ! #                                                             #
 ! ###############################################################
 
@@ -53,6 +57,10 @@
 ! #              VLIDORT_WRITERESULTS                           #
 ! #              VLIDORT_WRITEINPUT                             #
 ! #              VLIDORT_WRITESCEN                              #
+! #              VLIDORT_WRITE_STD_INPUT                        #
+! #              VLIDORT_WRITE_SUP_BRDF_INPUT                   #
+! #              VLIDORT_WRITE_SUP_SS_INPUT                     #
+! #              VLIDORT_WRITE_SUP_SLEAVE_INPUT                 #
 ! #                                                             #
 ! ###############################################################
 
@@ -853,25 +861,26 @@
         DO_SURFACE_LEAVING,DO_SL_ISOTROPIC,&
         NSTOKES,NSTREAMS,NLAYERS,&
         NFINELAYERS,N_THERMAL_COEFFS,VLIDORT_ACCURACY,&
-        NLAYERS_NOMS,NLAYERS_CUTOFF,SZANGLES,&
-        N_USER_VZANGLES,N_USER_LEVELS,USER_LEVELS,&
+        NLAYERS_NOMS,NLAYERS_CUTOFF,FLUX_FACTOR,N_USER_LEVELS,&
         HEIGHT_GRID,PRESSURE_GRID,TEMPERATURE_GRID,&
         FINEGRID,RFINDEX_PARAMETER,&
         DELTAU_VERT_INPUT,GREEKMAT_TOTAL_INPUT,THERMAL_BB_INPUT,&
-        LAMBERTIAN_ALBEDO,SURFBB,LTE_DELTAU_VERT_INPUT,LTE_THERMAL_BB_INPUT,&
+        LAMBERTIAN_ALBEDO,SURFBB,&  ! ********
         DO_DEBUG_WRITE,DO_WRITE_INPUT,DO_WRITE_SCENARIO,&
         DO_WRITE_FOURIER,DO_WRITE_RESULTS,&
         INPUT_WRITE_FILENAME,SCENARIO_WRITE_FILENAME,&
         FOURIER_WRITE_FILENAME,RESULTS_WRITE_FILENAME,&
-        DO_SSCORR_NADIR,DO_SSCORR_OUTGOING,DO_DOUBLE_CONVTEST,&
+        DO_SSCORR_NADIR,DO_SSCORR_OUTGOING,DO_FO_CALC,DO_DOUBLE_CONVTEST,&
         DO_SOLAR_SOURCES,DO_REFRACTIVE_GEOMETRY,DO_CHAPMAN_FUNCTION,&
         DO_RAYLEIGH_ONLY,DO_DELTAM_SCALING,DO_SOLUTION_SAVING,&
         DO_BVP_TELESCOPING,DO_USER_VZANGLES,DO_ADDITIONAL_MVOUT,&
-        DO_MVOUT_ONLY,DO_THERMAL_TRANSONLY,&
-        NGREEK_MOMENTS_INPUT,FLUX_FACTOR,N_SZANGLES,&
-        N_USER_RELAZMS,USER_RELAZMS,&
-        USER_VZANGLES,GEOMETRY_SPECHEIGHT,&
+        DO_MVOUT_ONLY,DO_THERMAL_TRANSONLY,DO_OBSERVATION_GEOMETRY,&
+        NGREEK_MOMENTS_INPUT,N_SZANGLES,SZANGLES,&
+        N_USER_RELAZMS,USER_RELAZMS,N_USER_VZANGLES,USER_VZANGLES,&
+        USER_LEVELS,GEOMETRY_SPECHEIGHT,N_USER_OBSGEOMS,USER_OBSGEOMS,&
         EARTH_RADIUS,OMEGA_TOTAL_INPUT)
+
+!  3/28/14. Changes for Version 2.7. remove LTE linearization references
 
       USE VLIDORT_PARS
 
@@ -908,11 +917,9 @@
       INTEGER, INTENT(IN) ::            NLAYERS_NOMS
       INTEGER, INTENT(IN) ::            NLAYERS_CUTOFF
 
-      DOUBLE PRECISION, INTENT(IN) ::   SZANGLES ( MAX_SZANGLES )
+      DOUBLE PRECISION, INTENT(IN) ::   FLUX_FACTOR
 
-      INTEGER, INTENT(IN) ::            N_USER_VZANGLES
       INTEGER, INTENT(IN) ::            N_USER_LEVELS
-      DOUBLE PRECISION, INTENT(IN) ::   USER_LEVELS ( MAX_USER_LEVELS )
 
       DOUBLE PRECISION, INTENT(IN) ::   HEIGHT_GRID ( 0:MAXLAYERS )
       DOUBLE PRECISION, INTENT(IN) ::   PRESSURE_GRID ( 0:MAXLAYERS )
@@ -926,8 +933,10 @@
       DOUBLE PRECISION, INTENT(IN) ::   THERMAL_BB_INPUT ( 0:MAXLAYERS )
       DOUBLE PRECISION, INTENT(IN) ::   LAMBERTIAN_ALBEDO
       DOUBLE PRECISION, INTENT(IN) ::   SURFBB
-      DOUBLE PRECISION, INTENT(IN) ::   LTE_DELTAU_VERT_INPUT ( 2, MAXLAYERS )
-      DOUBLE PRECISION, INTENT(IN) ::   LTE_THERMAL_BB_INPUT ( 0:MAXLAYERS )
+
+!  Code superseded, Version 2.7. Remove this
+!      DOUBLE PRECISION, INTENT(IN) ::   LTE_DELTAU_VERT_INPUT ( 2, MAXLAYERS )
+!      DOUBLE PRECISION, INTENT(IN) ::   LTE_THERMAL_BB_INPUT ( 0:MAXLAYERS )
 
       LOGICAL, INTENT(IN) ::            DO_DEBUG_WRITE
       LOGICAL, INTENT(IN) ::            DO_WRITE_INPUT
@@ -945,6 +954,7 @@
 
       LOGICAL, INTENT(IN) ::          DO_SSCORR_NADIR
       LOGICAL, INTENT(IN) ::          DO_SSCORR_OUTGOING
+      LOGICAL, INTENT(IN) ::          DO_FO_CALC
       LOGICAL, INTENT(IN) ::          DO_DOUBLE_CONVTEST
       LOGICAL, INTENT(IN) ::          DO_SOLAR_SOURCES
       LOGICAL, INTENT(IN) ::          DO_REFRACTIVE_GEOMETRY
@@ -957,16 +967,21 @@
       LOGICAL, INTENT(IN) ::          DO_ADDITIONAL_MVOUT
       LOGICAL, INTENT(IN) ::          DO_MVOUT_ONLY
       LOGICAL, INTENT(IN) ::          DO_THERMAL_TRANSONLY
+      LOGICAL, INTENT(IN) ::          DO_OBSERVATION_GEOMETRY
 
       INTEGER, INTENT(IN) ::          NGREEK_MOMENTS_INPUT
 
-      DOUBLE PRECISION, INTENT(IN) :: FLUX_FACTOR
       INTEGER, INTENT(IN) ::          N_SZANGLES
+      DOUBLE PRECISION, INTENT(IN) :: SZANGLES ( MAX_SZANGLES )
 
       INTEGER, INTENT(IN) ::          N_USER_RELAZMS
       DOUBLE PRECISION, INTENT(IN) :: USER_RELAZMS  ( MAX_USER_RELAZMS )
+      INTEGER, INTENT(IN) ::          N_USER_VZANGLES
       DOUBLE PRECISION, INTENT(IN) :: USER_VZANGLES ( MAX_USER_VZANGLES )
+      DOUBLE PRECISION, INTENT(IN) :: USER_LEVELS ( MAX_USER_LEVELS )
       DOUBLE PRECISION, INTENT(IN) :: GEOMETRY_SPECHEIGHT
+      INTEGER, INTENT(IN) ::          N_USER_OBSGEOMS
+      DOUBLE PRECISION, INTENT(IN) :: USER_OBSGEOMS ( MAX_USER_OBSGEOMS, 3 )
 
       DOUBLE PRECISION, INTENT(IN) :: EARTH_RADIUS
 
@@ -975,13 +990,22 @@
 !  Local variables
 
       INTEGER :: OUTUNIT
-      INTEGER :: SZA,ULEV,LAY,SS,MOM,STRM,S,USTRM,I,IB,URA,STRMI,STRMJ,UVA
+      INTEGER :: SZA,ULEV,LAY,SS,LAYI,LAYJ,MOM,NGREEK,K,STRM,S,USTRM,I,IB,URA,&
+                 STRMI,STRMJ,UVA,UOG, GMASK(8)
+      data GMASK / 1, 2, 5, 6, 11, 12, 15, 16 /
 
 !  Open output file
 
       OUTUNIT = 101
       OPEN (OUTUNIT,file = 'VLIDORT_WRITE_STD_INPUT.dbg',&
             status = 'replace')
+
+!  Define local variable.
+!  Changed 16 oct 14, only output non-zero entries of GreekMat
+
+      NGREEK = 1
+      IF ( NSTOKES.eq.3 ) NGREEK = 5
+      IF ( NSTOKES.eq.4 ) NGREEK = 8
 
 !  Write all input to file
 
@@ -1020,68 +1044,63 @@
       WRITE(OUTUNIT,DWFI)  'NLAYERS_CUTOFF   = ',NLAYERS_CUTOFF
 
       WRITE(OUTUNIT,*)
-      DO SZA=1,MAX_SZANGLES
-        WRITE(OUTUNIT,DWFR1)  'SZA = ',SZA,&
-          ' SZANGLES(SZA) = ',SZANGLES(SZA)
-      END DO
+      WRITE(OUTUNIT,DWFR)  'FLUX_FACTOR      = ',FLUX_FACTOR
 
       WRITE(OUTUNIT,*)
-      WRITE(OUTUNIT,DWFI)  'N_USER_VZANGLES = ',N_USER_VZANGLES
-      WRITE(OUTUNIT,DWFI)  'N_USER_LEVELS   = ',N_USER_LEVELS
-      DO ULEV=1,MAX_USER_LEVELS
-        WRITE(OUTUNIT,DWFR1)  'ULEV = ',ULEV,&
-          ' USER_LEVELS(ULEV)  = ',USER_LEVELS(ULEV)
-      END DO
+      WRITE(OUTUNIT,DWFI)  'N_USER_LEVELS    = ',N_USER_LEVELS
 
       WRITE(OUTUNIT,*)
-      DO LAY=0,MAXLAYERS
+      DO LAY=0,NLAYERS
         WRITE(OUTUNIT,DWFR1)  'LAY = ',LAY,&
           ' HEIGHT_GRID(LAY)      = ',HEIGHT_GRID(LAY)
       END DO
-      DO LAY=0,MAXLAYERS
+      DO LAY=0,NLAYERS
         WRITE(OUTUNIT,DWFR1)  'LAY = ',LAY,&
           ' PRESSURE_GRID(LAY)    = ',PRESSURE_GRID(LAY)
       END DO
-      DO LAY=0,MAXLAYERS
+      DO LAY=0,NLAYERS
         WRITE(OUTUNIT,DWFR1)  'LAY = ',LAY,&
           ' TEMPERATURE_GRID(LAY) = ',TEMPERATURE_GRID(LAY)
       END DO
-      DO LAY=1,MAXLAYERS
+      DO LAY=1,NLAYERS
         WRITE(OUTUNIT,DWFI1)  'LAY = ',LAY,&
           ' FINEGRID (LAY)        = ',FINEGRID(LAY)
       END DO
       WRITE(OUTUNIT,DWFR)  'RFINDEX_PARAMETER = ',RFINDEX_PARAMETER
 
       WRITE(OUTUNIT,*)
-      DO LAY=1,MAXLAYERS
+      DO LAY=1,NLAYERS
         WRITE(OUTUNIT,DWFR1)  'LAY = ',LAY,&
           ' DELTAU_VERT_INPUT(LAY) = ',DELTAU_VERT_INPUT(LAY)
       END DO
-      DO SS=1,MAXSTOKES_SQ
-        DO LAY=1,MAXLAYERS
-          DO MOM=0,MAXMOMENTS_INPUT
+      DO K=1,NGREEK
+        SS = GMASK(K)
+        DO LAY=1,NLAYERS
+          DO MOM=0,NGREEK_MOMENTS_INPUT
             WRITE(OUTUNIT,DWFR3)  'SS = ',SS,' LAY = ',LAY,' MOM = ',MOM,&
               ' GREEKMAT_TOTAL_INPUT(MOM,LAY,SS) = ',&
                 GREEKMAT_TOTAL_INPUT(MOM,LAY,SS)
           END DO
         END DO
       END DO
-      DO LAY=0,MAXLAYERS
+      DO LAY=0,NLAYERS
         WRITE(OUTUNIT,DWFR1)  'LAY = ',LAY,&
           ' THERMAL_BB_INPUT(LAY) = ',THERMAL_BB_INPUT(LAY)
       END DO
       WRITE(OUTUNIT,DWFR)  'LAMBERTIAN_ALBEDO = ',LAMBERTIAN_ALBEDO
       WRITE(OUTUNIT,DWFR)  'SURFBB            = ',SURFBB
-      DO LAY=1,MAXLAYERS
-        DO I=1,2
-          WRITE(OUTUNIT,DWFR2)  'LAY = ',LAY,' I = ',I,&
-            ' LTE_DELTAU_VERT_INPUT(I,LAY) = ',LTE_DELTAU_VERT_INPUT(I,LAY)
-        END DO
-      END DO
-      DO LAY=0,MAXLAYERS
-        WRITE(OUTUNIT,DWFR1)  'LAY = ',LAY,&
-          ' LTE_THERMAL_BB_INPUT(LAY) = ',LTE_THERMAL_BB_INPUT(LAY)
-      END DO
+
+!  Next two loops removed, Version 2.7
+ !     DO LAY=1,NLAYERS
+ !       DO I=1,2
+ !         WRITE(OUTUNIT,DWFR2)  'LAY = ',LAY,' I = ',I,&
+ !           ' LTE_DELTAU_VERT_INPUT(I,LAY) = ',LTE_DELTAU_VERT_INPUT(I,LAY)
+ !       END DO
+ !     END DO
+ !     DO LAY=0,NLAYERS
+ !       WRITE(OUTUNIT,DWFR1)  'LAY = ',LAY,&
+ !         ' LTE_THERMAL_BB_INPUT(LAY) = ',LTE_THERMAL_BB_INPUT(LAY)
+ !     END DO
 
       WRITE(OUTUNIT,*)
       WRITE(OUTUNIT,DWFL)  'DO_DEBUG_WRITE          = ',DO_DEBUG_WRITE
@@ -1100,45 +1119,62 @@
       WRITE(OUTUNIT,'(A)') '--------------------------'
 
       WRITE(OUTUNIT,*)
-      WRITE(OUTUNIT,DWFL)  'DO_SSCORR_NADIR        = ',DO_SSCORR_NADIR
-      WRITE(OUTUNIT,DWFL)  'DO_SSCORR_OUTGOING     = ',DO_SSCORR_OUTGOING
-      WRITE(OUTUNIT,DWFL)  'DO_DOUBLE_CONVTEST     = ',DO_DOUBLE_CONVTEST
-      WRITE(OUTUNIT,DWFL)  'DO_SOLAR_SOURCES       = ',DO_SOLAR_SOURCES
-      WRITE(OUTUNIT,DWFL)  'DO_REFRACTIVE_GEOMETRY = ',DO_REFRACTIVE_GEOMETRY
-      WRITE(OUTUNIT,DWFL)  'DO_CHAPMAN_FUNCTION    = ',DO_CHAPMAN_FUNCTION
-      WRITE(OUTUNIT,DWFL)  'DO_RAYLEIGH_ONLY       = ',DO_RAYLEIGH_ONLY
-      WRITE(OUTUNIT,DWFL)  'DO_DELTAM_SCALING      = ',DO_DELTAM_SCALING
-      WRITE(OUTUNIT,DWFL)  'DO_SOLUTION_SAVING     = ',DO_SOLUTION_SAVING
-      WRITE(OUTUNIT,DWFL)  'DO_BVP_TELESCOPING     = ',DO_BVP_TELESCOPING
-      WRITE(OUTUNIT,DWFL)  'DO_USER_VZANGLES       = ',DO_USER_VZANGLES
-      WRITE(OUTUNIT,DWFL)  'DO_ADDITIONAL_MVOUT    = ',DO_ADDITIONAL_MVOUT
-      WRITE(OUTUNIT,DWFL)  'DO_MVOUT_ONLY          = ',DO_MVOUT_ONLY
-      WRITE(OUTUNIT,DWFL)  'DO_THERMAL_TRANSONLY   = ',DO_THERMAL_TRANSONLY
+      WRITE(OUTUNIT,DWFL)  'DO_SSCORR_NADIR         = ',DO_SSCORR_NADIR
+      WRITE(OUTUNIT,DWFL)  'DO_SSCORR_OUTGOING      = ',DO_SSCORR_OUTGOING
+      WRITE(OUTUNIT,DWFL)  'DO_FO_CALC              = ',DO_FO_CALC
+      WRITE(OUTUNIT,DWFL)  'DO_DOUBLE_CONVTEST      = ',DO_DOUBLE_CONVTEST
+      WRITE(OUTUNIT,DWFL)  'DO_SOLAR_SOURCES        = ',DO_SOLAR_SOURCES
+      WRITE(OUTUNIT,DWFL)  'DO_REFRACTIVE_GEOMETRY  = ',DO_REFRACTIVE_GEOMETRY
+      WRITE(OUTUNIT,DWFL)  'DO_CHAPMAN_FUNCTION     = ',DO_CHAPMAN_FUNCTION
+      WRITE(OUTUNIT,DWFL)  'DO_RAYLEIGH_ONLY        = ',DO_RAYLEIGH_ONLY
+      WRITE(OUTUNIT,DWFL)  'DO_DELTAM_SCALING       = ',DO_DELTAM_SCALING
+      WRITE(OUTUNIT,DWFL)  'DO_SOLUTION_SAVING      = ',DO_SOLUTION_SAVING
+      WRITE(OUTUNIT,DWFL)  'DO_BVP_TELESCOPING      = ',DO_BVP_TELESCOPING
+      WRITE(OUTUNIT,DWFL)  'DO_USER_VZANGLES        = ',DO_USER_VZANGLES
+      WRITE(OUTUNIT,DWFL)  'DO_ADDITIONAL_MVOUT     = ',DO_ADDITIONAL_MVOUT
+      WRITE(OUTUNIT,DWFL)  'DO_MVOUT_ONLY           = ',DO_MVOUT_ONLY
+      WRITE(OUTUNIT,DWFL)  'DO_THERMAL_TRANSONLY    = ',DO_THERMAL_TRANSONLY
+      WRITE(OUTUNIT,DWFL)  'DO_OBSERVATION_GEOMETRY = ',DO_OBSERVATION_GEOMETRY
 
       WRITE(OUTUNIT,*)
-      WRITE(OUTUNIT,DWFI)  'NGREEK_MOMENTS_INPUT   = ',NGREEK_MOMENTS_INPUT
+      WRITE(OUTUNIT,DWFI)  'NGREEK_MOMENTS_INPUT    = ',NGREEK_MOMENTS_INPUT
 
       WRITE(OUTUNIT,*)
-      WRITE(OUTUNIT,DWFR)  'FLUX_FACTOR    = ',FLUX_FACTOR
       WRITE(OUTUNIT,DWFI)  'N_SZANGLES     = ',N_SZANGLES
+      DO SZA=1,N_SZANGLES
+        WRITE(OUTUNIT,DWFR1)  'SZA = ',SZA,&
+          ' SZANGLES(SZA) = ',SZANGLES(SZA)
+      END DO
 
       WRITE(OUTUNIT,*)
       WRITE(OUTUNIT,DWFI)  'N_USER_RELAZMS = ',N_USER_RELAZMS
-      DO URA=1,MAX_USER_RELAZMS
+      DO URA=1,N_USER_RELAZMS
         WRITE(OUTUNIT,DWFR1)  'URA = ',URA,&
           ' USER_RELAZMS(URA) = ',USER_RELAZMS(URA)
       END DO
-      DO UVA=1,MAX_USER_VZANGLES
+      WRITE(OUTUNIT,DWFI)  'N_USER_VZANGLES = ',N_USER_VZANGLES
+      DO UVA=1,N_USER_VZANGLES
         WRITE(OUTUNIT,DWFR1)  'UVA = ',UVA,&
           ' USER_VZANGLES(UVA) = ',USER_VZANGLES(UVA)
       END DO
+      DO ULEV=1,N_USER_LEVELS
+        WRITE(OUTUNIT,DWFR1)  'ULEV = ',ULEV,&
+          ' USER_LEVELS(ULEV)  = ',USER_LEVELS(ULEV)
+      END DO
       WRITE(OUTUNIT,DWFR)  'GEOMETRY_SPECHEIGHT = ',GEOMETRY_SPECHEIGHT
+      WRITE(OUTUNIT,DWFI)  'N_USER_OBSGEOMS     = ',N_USER_OBSGEOMS
+      DO UOG=1,N_USER_OBSGEOMS
+        WRITE(OUTUNIT,DWFR1_3)  'UOG = ',UOG,&
+          ' USER_OBSGEOMS(UOG,1:3) = ',USER_OBSGEOMS(UOG,1),&
+                                   ',',USER_OBSGEOMS(UOG,2),&
+                                   ',',USER_OBSGEOMS(UOG,3)
+      END DO
 
       WRITE(OUTUNIT,*)
       WRITE(OUTUNIT,DWFR)  'EARTH_RADIUS        = ',EARTH_RADIUS
 
       WRITE(OUTUNIT,*)
-      DO LAY=1,MAXLAYERS
+      DO LAY=1,NLAYERS
         WRITE(OUTUNIT,DWFR1)  'LAY = ',LAY,&
           ' OMEGA_TOTAL_INPUT(LAY) = ',OMEGA_TOTAL_INPUT(LAY)
       END DO
@@ -1152,12 +1188,19 @@
 !
 
       SUBROUTINE VLIDORT_WRITE_SUP_BRDF_INPUT ( &
+        NSTOKES,NSTREAMS,N_SZANGLES,N_USER_VZANGLES,N_USER_RELAZMS,&
         EXACTDB_BRDFUNC,BRDF_F_0,BRDF_F,USER_BRDF_F_0,USER_BRDF_F,&
         EMISSIVITY,USER_EMISSIVITY)
 
       USE VLIDORT_PARS
 
       IMPLICIT NONE
+
+      INTEGER, INTENT(IN) ::   NSTOKES
+      INTEGER, INTENT(IN) ::   NSTREAMS
+      INTEGER, INTENT(IN) ::   N_SZANGLES
+      INTEGER, INTENT(IN) ::   N_USER_VZANGLES
+      INTEGER, INTENT(IN) ::   N_USER_RELAZMS
 
       DOUBLE PRECISION, INTENT(IN) ::   EXACTDB_BRDFUNC &
           ( MAXSTOKES_SQ, MAX_USER_STREAMS, MAX_USER_RELAZMS, MAXBEAMS )
@@ -1176,13 +1219,25 @@
 !  Local variables
 
       INTEGER :: OUTUNIT
-      INTEGER :: SZA,ULEV,LAY,SS,MOM,STRM,S,USTRM,I,IB,URA,STRMI,STRMJ,UVA
+      INTEGER :: SZA,ULEV,LAY,SS,MOM,NREFL,K,STRM,S,USTRM,I,IB,URA,&
+                 STRMI,STRMJ,UVA, RMASK3(9), RMASK4(16), RMASK(16)
+      INTEGER :: NMOMENTS
+      data RMASK3 / 1, 2, 3, 5, 6, 7, 9, 10, 11 /
+      data RMASK4 / 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 /
 
 !  Open output file
 
       OUTUNIT = 102
       OPEN (OUTUNIT,file = 'VLIDORT_WRITE_SUP_BRDF_INPUT.dbg',&
             status = 'replace')
+
+!  Define local variables
+!   Changed 16 October 2014, according to correct entries in 4x4 BRDF matrices
+
+      NREFL = NSTOKES * NSTOKES ; RMASK(1) = 1
+      IF ( NSTOKES.eq.3 ) RMASK(1:NREFL) = RMASK3(1:NREFL)
+      IF ( NSTOKES.eq.4 ) RMASK(1:NREFL) = RMASK4(1:NREFL)
+      NMOMENTS = 2*NSTREAMS
 
 !  Write all BRDF input to file
 
@@ -1192,10 +1247,11 @@
       WRITE(OUTUNIT,'(A)') '----------------------'
 
       WRITE(OUTUNIT,*)
-      DO IB=1,MAXBEAMS
-        DO URA=1,MAX_USER_RELAZMS
-          DO USTRM=1,MAX_USER_STREAMS
-            DO SS=1,MAXSTOKES_SQ
+      DO IB=1,N_SZANGLES
+        DO URA=1,N_USER_RELAZMS
+          DO USTRM=1,N_USER_VZANGLES
+            DO K=1,NREFL
+              SS = RMASK(K)
               WRITE(OUTUNIT,DWFR4) &
                 'IB = ',IB,' URA = ',URA,' USTRM = ',USTRM,' SS = ',SS,&
                 ' EXACTDB_BRDFUNC(SS,USTRM,URA,IB) = ',&
@@ -1206,10 +1262,11 @@
       END DO
 
       WRITE(OUTUNIT,*)
-      DO IB=1,MAXBEAMS
-        DO STRM=1,MAXSTREAMS
-          DO SS=1,MAXSTOKES_SQ
-            DO MOM=0,MAXMOMENTS
+      DO IB=1,N_SZANGLES
+        DO STRM=1,NSTREAMS
+          DO K=1,NREFL
+            SS = RMASK(K)
+            DO MOM=0,NMOMENTS
               WRITE(OUTUNIT,DWFR4) &
                 'IB = ',IB,' STRM = ',STRM,' SS = ',SS,' MOM = ',MOM,&
                 ' BRDF_F_0(MOM,SS,STRM,IB) = ',BRDF_F_0(MOM,SS,STRM,IB)
@@ -1217,10 +1274,11 @@
           END DO
         END DO
       END DO
-      DO STRMJ=1,MAXSTREAMS
-        DO STRMI=1,MAXSTREAMS
-          DO SS=1,MAXSTOKES_SQ
-            DO MOM=0,MAXMOMENTS
+      DO STRMJ=1,NSTREAMS
+        DO STRMI=1,NSTREAMS
+          DO K=1,NREFL
+            SS = RMASK(K)
+            DO MOM=0,NMOMENTS
               WRITE(OUTUNIT,DWFR4) &
                 'STRMJ = ',STRMJ,' STRMI = ',STRMI,' SS = ',SS,' MOM = ',MOM,&
                 ' BRDF_F(MOM,SS,STRMI,STRMJ) = ',BRDF_F(MOM,SS,STRMI,STRMJ)
@@ -1230,10 +1288,11 @@
       END DO
 
       WRITE(OUTUNIT,*)
-      DO IB=1,MAXBEAMS
-        DO USTRM=1,MAX_USER_STREAMS
-          DO SS=1,MAXSTOKES_SQ
-            DO MOM=0,MAXMOMENTS
+      DO IB=1,N_SZANGLES
+        DO USTRM=1,N_USER_VZANGLES
+          DO K=1,NREFL
+            SS = RMASK(K)
+            DO MOM=0,NMOMENTS
               WRITE(OUTUNIT,DWFR4) &
                 'IB = ',IB,' USTRM = ',USTRM,' SS = ',SS,' MOM = ',MOM,&
                 ' USER_BRDF_F_0(MOM,SS,USTRM,IB) = ',&
@@ -1242,10 +1301,11 @@
           END DO
         END DO
       END DO
-      DO STRM=1,MAXSTREAMS
-        DO USTRM=1,MAX_USER_STREAMS
-          DO SS=1,MAXSTOKES_SQ
-            DO MOM=0,MAXMOMENTS
+      DO STRM=1,NSTREAMS
+        DO USTRM=1,N_USER_VZANGLES
+          DO K=1,NREFL
+            SS = RMASK(K)
+            DO MOM=0,NMOMENTS
               WRITE(OUTUNIT,DWFR4) &
                 'STRM = ',STRM,' USTRM = ',USTRM,' SS = ',SS,' MOM = ',MOM,&
                 ' USER_BRDF_F(MOM,SS,USTRM,STRM) = ',&
@@ -1256,14 +1316,14 @@
       END DO
 
       WRITE(OUTUNIT,*)
-      DO STRM=1,MAXSTREAMS
-        DO S=1,MAXSTOKES
+      DO STRM=1,NSTREAMS
+        DO S=1,NSTOKES
           WRITE(OUTUNIT,DWFR2)  'STRM = ',STRM,' S = ',S,&
             ' EMISSIVITY (S,STRM) = ',EMISSIVITY (S,STRM)
         END DO
       END DO
-      DO USTRM=1,MAX_USER_STREAMS
-        DO S=1,MAXSTOKES
+      DO USTRM=1,N_USER_VZANGLES
+        DO S=1,NSTOKES
           WRITE(OUTUNIT,DWFR2)  'USTRM = ',USTRM,' S = ',S,&
             ' USER_EMISSIVITY (S,USTRM) = ',USER_EMISSIVITY(S,USTRM)
         END DO
@@ -1278,11 +1338,15 @@
 !
 
       SUBROUTINE VLIDORT_WRITE_SUP_SS_INPUT ( &
+        NSTOKES,N_USER_LEVELS,&
         STOKES_SS,STOKES_DB)
 
       USE VLIDORT_PARS
 
       IMPLICIT NONE
+
+      INTEGER, INTENT(IN) ::   NSTOKES
+      INTEGER, INTENT(IN) ::   N_USER_LEVELS
 
       DOUBLE PRECISION, INTENT(IN) ::  STOKES_SS &
           ( MAX_USER_LEVELS, MAX_GEOMETRIES, MAXSTOKES, MAX_DIRECTIONS )
@@ -1309,9 +1373,9 @@
 
       WRITE(OUTUNIT,*)
       DO DIR=1,MAX_DIRECTIONS
-        DO S=1,MAXSTOKES
+        DO S=1,NSTOKES
           DO GEO=1,MAX_GEOMETRIES
-            DO ULEV=1,MAX_USER_LEVELS
+            DO ULEV=1,N_USER_LEVELS
             WRITE(OUTUNIT,DWFR4) &
               'DIR = ',DIR,' S = ',S,' GEO = ',GEO,' ULEV = ',ULEV,&
               ' STOKES_SS(ULEV,GEO,S,DIR) = ',STOKES_SS(ULEV,GEO,S,DIR)
@@ -1319,9 +1383,9 @@
           END DO
         END DO
       END DO
-      DO S=1,MAXSTOKES
+      DO S=1,NSTOKES
         DO GEO=1,MAX_GEOMETRIES
-          DO ULEV=1,MAX_USER_LEVELS
+          DO ULEV=1,N_USER_LEVELS
           WRITE(OUTUNIT,DWFR3) &
             'S = ',S,' GEO = ',GEO,' ULEV = ',ULEV,&
             ' STOKES_DB(ULEV,GEO,S) = ',STOKES_DB(ULEV,GEO,S)
@@ -1338,13 +1402,21 @@
 !
 
       SUBROUTINE VLIDORT_WRITE_SUP_SLEAVE_INPUT ( &
+        NSTOKES,NSTREAMS,N_SZANGLES,N_USER_VZANGLES,N_USER_RELAZMS,&
         SLTERM_ISOTROPIC,SLTERM_USERANGLES,SLTERM_F_0,USER_SLTERM_F_0)
 
       USE VLIDORT_PARS
 
       IMPLICIT NONE
 
-      DOUBLE PRECISION, INTENT(IN) ::   SLTERM_ISOTROPIC ( MAXSTOKES )
+      INTEGER, INTENT(IN) ::   NSTOKES
+      INTEGER, INTENT(IN) ::   NSTREAMS
+      INTEGER, INTENT(IN) ::   N_SZANGLES
+      INTEGER, INTENT(IN) ::   N_USER_VZANGLES
+      INTEGER, INTENT(IN) ::   N_USER_RELAZMS
+
+      DOUBLE PRECISION, INTENT(IN) ::   SLTERM_ISOTROPIC &
+          ( MAXSTOKES, MAXBEAMS )
       DOUBLE PRECISION, INTENT(IN) ::   SLTERM_USERANGLES &
           ( MAXSTOKES, MAX_USER_STREAMS, MAX_USER_RELAZMS, MAXBEAMS  )
 
@@ -1356,13 +1428,19 @@
 !  Local variables
 
       INTEGER :: OUTUNIT
-      INTEGER :: SZA,ULEV,LAY,SS,MOM,STRM,S,USTRM,I,IB,URA,STRMI,STRMJ,UVA
+      INTEGER :: SZA,ULEV,LAY,SS,MOM,STRM,S,USTRM,I,IB,URA,&
+                 STRMI,STRMJ,UVA
+      INTEGER :: NMOMENTS
 
 !  Open output file
 
       OUTUNIT = 104
       OPEN (OUTUNIT,file = 'VLIDORT_WRITE_SUP_SLEAVE_INPUT.dbg',&
             status = 'replace')
+
+!  Define local variable
+
+      NMOMENTS = 2*NSTREAMS
 
 !  Write all surface-leaving input to file
 
@@ -1372,14 +1450,17 @@
       WRITE(OUTUNIT,'(A)') '------------------------'
 
       WRITE(OUTUNIT,*)
-      DO S=1,MAXSTOKES
-        WRITE(OUTUNIT,DWFR1) &
-          'S = ',S,' SLTERM_ISOTROPIC(S) = ',SLTERM_ISOTROPIC(S)
+      DO IB=1,N_SZANGLES
+        DO S=1,NSTOKES
+          WRITE(OUTUNIT,DWFR2) &
+            'IB = ',IB,' S = ',S,&
+            ' SLTERM_ISOTROPIC(S,IB) = ',SLTERM_ISOTROPIC(S,IB)
+        END DO
       END DO
-      DO IB=1,MAXBEAMS
-        DO URA=1,MAX_USER_RELAZMS
-          DO USTRM=1,MAX_USER_STREAMS
-            DO S=1,MAXSTOKES
+      DO IB=1,N_SZANGLES
+        DO URA=1,N_USER_RELAZMS
+          DO USTRM=1,N_USER_VZANGLES
+            DO S=1,NSTOKES
               WRITE(OUTUNIT,DWFR4) &
                 'IB = ',IB,' URA = ',URA,' USTRM = ',USTRM,' S = ',S,&
                 ' SLTERM_USERANGLES(S,USTRM,URA,IB) = ',&
@@ -1388,10 +1469,10 @@
           END DO
         END DO
       END DO
-      DO IB=1,MAXBEAMS
-        DO STRM=1,MAXSTREAMS
-          DO S=1,MAXSTOKES
-            DO MOM=0,MAXMOMENTS
+      DO IB=1,N_SZANGLES
+        DO STRM=1,NSTREAMS
+          DO S=1,NSTOKES
+            DO MOM=0,NMOMENTS
               WRITE(OUTUNIT,DWFR4) &
                 'IB = ',IB,' STRM = ',STRM,' S = ',S,' MOM = ',MOM,&
                 ' SLTERM_F_0(MOM,S,STRM,IB) = ',SLTERM_F_0(MOM,S,STRM,IB)
@@ -1399,10 +1480,10 @@
           END DO
         END DO
       END DO
-      DO IB=1,MAXBEAMS
-        DO USTRM=1,MAX_USER_STREAMS
-          DO S=1,MAXSTOKES
-            DO MOM=0,MAXMOMENTS
+      DO IB=1,N_SZANGLES
+        DO USTRM=1,N_USER_VZANGLES
+          DO S=1,NSTOKES
+            DO MOM=0,NMOMENTS
               WRITE(OUTUNIT,DWFR4) &
                 'IB = ',IB,' USTRM = ',USTRM,' S = ',S,' MOM = ',MOM,&
                 ' USER_SLTERM_F_0(MOM,S,USTRM,IB) = ',&
