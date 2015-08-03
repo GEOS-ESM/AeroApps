@@ -53,7 +53,8 @@ program geo_angles
   real, pointer                         :: SCANTIME(:) => null()
   real, pointer                         :: SZA(:,:) => null()
   real, pointer                         :: VZA(:,:) => null()
-  real, pointer                         :: RAA(:,:) => null()
+  real, pointer                         :: SAA(:,:) => null()
+  real, pointer                         :: VAA(:,:) => null()
 
 ! Working variables
 !------------------------------
@@ -68,7 +69,7 @@ program geo_angles
 
 ! netcdf variables
 !----------------------  
-  integer                               :: ncid, szaVarID, vzaVarID, raaVarID
+  integer                               :: ncid, szaVarID, vzaVarID, saaVarID, vaaVarID
 
 ! Miscellaneous
 ! -------------
@@ -145,7 +146,7 @@ program geo_angles
 
 ! Create OUTFILE
 !-------------------------
-  if ( MAPL_am_I_root() ) call create_outfile(date,time,ncid,szaVarID, vzaVarID, raaVarID)
+  if ( MAPL_am_I_root() ) call create_outfile(date,time,ncid,szaVarID, vzaVarID, saaVarID, vaaVarID)
 
 ! Allocate the Global arrays using SHMEM
 ! It will be available on all processors
@@ -241,7 +242,8 @@ subroutine get_geometry()
         ! Store in shared memeory
         SZA(i,j) = sat_angles(4)
         VZA(i,j) = sat_angles(2)
-        RAA(i,j) = sat_angles(1) - sat_angles(3)
+        SAA(i,j) = sat_angles(3)
+        VAA(i,j) = sat_angles(1)
 
       end if
     end do
@@ -251,7 +253,8 @@ subroutine get_geometry()
     call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
     call check(nf90_put_var(ncid,szaVarID,SZA), "writing out sza")
     call check(nf90_put_var(ncid,vzaVarID,VZA), "writing out vza")
-    call check(nf90_put_var(ncid,raaVarID,RAA), "writing out raa")
+    call check(nf90_put_var(ncid,saaVarID,SAA), "writing out saa")
+    call check(nf90_put_var(ncid,vaaVarID,VAA), "writing out vaa")
     call check( nf90_close(ncid), "close outfile" )
   end if
 
@@ -336,7 +339,8 @@ end subroutine filenames
     call MAPL_AllocNodeArray(CLAT,(/im,jm/),rc=ierr)
     call MAPL_AllocNodeArray(SZA,(/im,jm/),rc=ierr)
     call MAPL_AllocNodeArray(VZA,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(RAA,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(SAA,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(VAA,(/im,jm/),rc=ierr)
 
   end subroutine allocate_shared
 
@@ -355,10 +359,10 @@ end subroutine filenames
 !    29 May 2015 P. Castellanos - modified for satellite angles only
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  subroutine create_outfile(date, time, ncid, szaVarID, vzaVarID, raaVarID)
+  subroutine create_outfile(date, time, ncid, szaVarID, vzaVarID, saaVarID, vaaVarID)
     character(len=*)                   :: date, time
     integer,intent(out)                :: ncid    
-    integer,intent(out)                :: szaVarID, vzaVarID, raaVarID    
+    integer,intent(out)                :: szaVarID, vzaVarID, saaVarID, vaaVarID    
     
     integer, dimension(4)              :: chunk_size
     integer                            :: ewDimID, nsDimID
@@ -376,7 +380,7 @@ end subroutine filenames
     call check(nf90_put_att(ncid,NF90_GLOBAL,'source','Global Model and Assimilation Office'),"source attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'history','Created from geo_angles.x'),"history attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'references','n/a'),"references attr")    
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'comment','This file contains SZA, VZA, and RAA for the TEMPO geostationary grid '),"comment attr")   
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'comment','This file contains SZA, VZA, SAA and VAA for the TEMPO geostationary grid '),"comment attr")   
     call check(nf90_put_att(ncid,NF90_GLOBAL,"contact","Arlindo da Silva <arlindo.dasilva@nasa.gov>"),"contact attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,"Conventions","cf"),"conventions attr")
 
@@ -388,7 +392,8 @@ end subroutine filenames
     call check(nf90_def_var(ncid,'clat',nf90_float,(/ewDimID,nsDimID/),clatVarID),"create clat var")
     call check(nf90_def_var(ncid,'solar_zenith',nf90_float,(/ewDimID,nsDimID/),szaVarID),"create solar_zenith var")
     call check(nf90_def_var(ncid,'sensor_zenith',nf90_float,(/ewDimID,nsDimID/),vzaVarID),"create sensor_zenith var")
-    call check(nf90_def_var(ncid,'relat_azimuth',nf90_float,(/ewDimID,nsDimID/),raaVarID),"create relat_azimuth var")
+    call check(nf90_def_var(ncid,'solar_azimuth',nf90_float,(/ewDimID,nsDimID/),saaVarID),"create solar_azimuth var")
+    call check(nf90_def_var(ncid,'sensor_azimuth',nf90_float,(/ewDimID,nsDimID/),vaaVarID),"create sensor_azimuth var")    
 
     call check(nf90_put_att(ncid,timeVarID,'long_name','Initial Time of Scan'),"long_name attr")
     call check(nf90_put_att(ncid,timeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
@@ -412,9 +417,13 @@ end subroutine filenames
     call check(nf90_put_att(ncid,vzaVarID,'missing_value',real(MISSING)),"missing_value attr")
     call check(nf90_put_att(ncid,vzaVarID,'units','degrees'),"units attr") 
 
-    call check(nf90_put_att(ncid,raaVarID,'long_name','relative azimuth angle (RAA)'),"long_name attr")
-    call check(nf90_put_att(ncid,raaVarID,'missing_value',real(MISSING)),"missing_value attr")
-    call check(nf90_put_att(ncid,raaVarID,'units','degrees'),"units attr")       
+    call check(nf90_put_att(ncid,saaVarID,'long_name','solar azimuth angle (SAA)'),"long_name attr")
+    call check(nf90_put_att(ncid,saaVarID,'missing_value',real(MISSING)),"missing_value attr")
+    call check(nf90_put_att(ncid,saaVarID,'units','degrees clockwise from North'),"units attr")  
+
+    call check(nf90_put_att(ncid,vaaVarID,'long_name','sensor viewing azimuth angle (VAA)'),"long_name attr")
+    call check(nf90_put_att(ncid,vaaVarID,'missing_value',real(MISSING)),"missing_value attr")
+    call check(nf90_put_att(ncid,vaaVarID,'units','degrees clockwise from North'),"units attr")  
 
     !Leave define mode
     call check(nf90_enddef(ncid),"leaving define mode")
