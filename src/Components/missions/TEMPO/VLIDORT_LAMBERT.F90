@@ -162,7 +162,7 @@ subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nMom,  &
   real*8, target,   intent(in)  :: ssa(km,nch,nobs) ! single scattering albedo
   real*8, target,   intent(in)  :: g(km,nch,nobs)   ! asymmetry factor
   
-  real*8, target,   intent(in)  :: pmom(km,nMom,nPol,nch,nobs) !components of the scat phase matrix
+  real*8, target,   intent(in)  :: pmom(km,nch,nobs,nMom,nPol) !components of the scat phase matrix
 
   real*8, target,   intent(in)  :: MISSING          ! MISSING VALUE
   real*8, target,   intent(in)  :: pe(km+1,nobs)    ! pressure at layer edges [Pa]
@@ -237,7 +237,7 @@ subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nMom,  &
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%g => g(:,i,j)
-        SCAT%pmom => pmom(:,:,:,i,j)
+        SCAT%pmom => pmom(:,i,j,:,:)
 
         call VLIDORT_Run (SCAT, radiance_VL(j,i),reflectance_VL(j,i), &
                            ROT(:,j,i), Q(j,i),U(j,i),scalar, aerosol, ier)
@@ -467,7 +467,7 @@ subroutine VLIDORT_AI_Vector (km, nch, nobs,  channels, nMom,  &
   real*8, target,   intent(in)  :: ssa(km,nch,nobs) ! single scattering albedo
   real*8, target,   intent(in)  :: g(km,nch,nobs)   ! asymmetry factor
   
-  real*8, target,   intent(in)  :: pmom(km,nMom,nPol,nch,nobs) !components of the scat phase matrix
+  real*8, target,   intent(in)  :: pmom(km,nch,nobs,nMom,nPol) !components of the scat phase matrix
 
 
   real*8, target,   intent(in)  :: pe(km+1,nobs)    ! pressure at layer edges [Pa]
@@ -564,7 +564,7 @@ subroutine VLIDORT_AI_Vector (km, nch, nobs,  channels, nMom,  &
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%g => g(:,i,j)
-          SCAT%pmom => pmom(:,:,:,i,j)
+          SCAT%pmom => pmom(:,i,j,:,:)
           print*, 'everything ok' 
           call VLIDORT_Run (SCAT, radiance_VL(j,i),reflectance_VL(j,i), &
                             ROT(:,j,i),Q(j,i),U(j,i), scalar, aerosol, ier)
@@ -604,7 +604,7 @@ subroutine VLIDORT_AI_Vector (km, nch, nobs,  channels, nMom,  &
         SCAT%tau => tau(:,1,j)
         SCAT%ssa => ssa(:,1,j)
         SCAT%g => g(:,1,j) 
-        SCAT%pmom => pmom(:,:,:,1,j)        
+        SCAT%pmom => pmom(:,1,j,:,:)        
         call VLIDORT_AI(SCAT, radiance_VL(j,1),reflectivity_388nm_adj, AI_VL(j), rc)    
         end if     
 

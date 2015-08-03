@@ -243,7 +243,7 @@ module VLIDORT_BRDF_MODIS
     real*8, target,   intent(in)            :: ssa(km,nch,nobs) ! single scattering albedo
     real*8, target,   intent(in)            :: g(km,nch,nobs)   ! asymmetry factor
     
-    real*8, target,   intent(in)            :: pmom(km,nMom,nPol,nch,nobs) !components of the scat phase matrix
+    real*8, target,   intent(in)            :: pmom(km,nch,nobs,nMom,nPol) !components of the scat phase matrix
 
     real*8, target,   intent(in)            :: MISSING          ! MISSING VALUE
     real*8, target,   intent(in)            :: pe(km+1,nobs)    ! pressure at layer edges [Pa]
@@ -344,7 +344,7 @@ module VLIDORT_BRDF_MODIS
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%g => g(:,i,j)
-        SCAT%pmom => pmom(:,:,:,i,j)
+        SCAT%pmom => pmom(:,i,j,:,:)
 
         scalar = .false.
         call VLIDORT_Run (SCAT, radiance_VL_SURF(j,i),reflectance_VL_SURF(j,i),&
