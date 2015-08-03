@@ -1015,7 +1015,7 @@ end subroutine outfile_extname
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_angles()
     real, dimension(im,jm)     :: temp
-    real, allocateble          :: saa, vaa
+    real, allocateble          :: saa(:), vaa(:)
     integer                    :: i
     
     if (myid == 0) then
