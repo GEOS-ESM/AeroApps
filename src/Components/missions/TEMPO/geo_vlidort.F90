@@ -1015,16 +1015,37 @@ end subroutine outfile_extname
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_angles()
     real, dimension(im,jm)     :: temp
-
+    real, allocateble          :: saa, vaa
+    integer                    :: i
+    
     if (myid == 0) then
+      allocate (saa(clrm))
+      allocate (vaa(clrm))
+
+
       call readvar2D("solar_zenith", ANG_file, temp)
       SZA = pack(temp,clmask)
 
       call readvar2D("sensor_zenith", ANG_file, temp)
       VZA = pack(temp,clmask)
 
-      call readvar2D("relat_azimuth", ANG_file, temp)
-      RAA = pack(temp,clmask)
+      call readvar2D("solar_azimuth", ANG_file, temp)
+      saa = pack(temp,clmask)
+      ! define according to photon travel direction
+      saa = saa + 180.0
+      do i = 1, clrm
+        if (saa >= 360.0) then
+          saa(i) = 360.0 - saa(i)
+        end if
+      end do
+
+      call readvar2D("sensor_azimuth", ANG_file, temp)
+      vaa = pack(temp,clmask)
+
+      RAA = vaa - saa
+
+      deallocate (saa)
+      deallocate (vaa)
       write(*,*) '<> Read angle data to shared memory' 
     end if
 
