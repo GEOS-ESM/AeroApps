@@ -1015,7 +1015,7 @@ end subroutine outfile_extname
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_angles()
     real, dimension(im,jm)     :: temp
-    real, allocateble          :: saa(:), vaa(:)
+    real, allocatable          :: saa(:), vaa(:)
     integer                    :: i
     
     if (myid == 0) then
@@ -1034,7 +1034,7 @@ end subroutine outfile_extname
       ! define according to photon travel direction
       saa = saa + 180.0
       do i = 1, clrm
-        if (saa >= 360.0) then
+        if (saa(i) >= 360.0) then
           saa(i) = 360.0 - saa(i)
         end if
       end do
