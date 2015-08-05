@@ -53,7 +53,7 @@ program geo_vlidort
   real, allocatable                     :: channels(:)            ! channels to simulate
   integer                               :: nch                    ! number of channels  
   real                                  :: cldmax                 ! Cloud Filtering  
-  real                                  :: szamax                 ! Geomtry filtering
+  real                                  :: szamax, vzamax         ! Geomtry filtering
 
 ! Test flag
 ! -----------
@@ -153,6 +153,7 @@ program geo_vlidort
   real, allocatable                     :: CLDTOT(:,:)                               ! GEOS-5 cloud fraction
   real, allocatable                     :: FRLAND(:,:)                               ! GEOS-5 land fraction
   real, allocatable                     :: SOLAR_ZENITH(:,:)                         ! solar zenith angles used for data filtering
+  real, allocatable                     :: SENSOR_ZENITH(:,:)                        ! SENSOR zenith angles used for data filtering  
   logical, allocatable                  :: clmask(:,:)                               ! cloud-land mask
 
 ! netcdf variables
@@ -214,6 +215,7 @@ program geo_vlidort
     if (lower_to_upper(surfband) == 'INTERPOLATE') write(*,*) 'Using interpolated surface reflectance parameters' 
     write(*,*) 'Cloud Fraction <= ', cldmax
     write(*,*) 'SZA < ', szamax
+    write(*,*) 'VZA < ', vzamax
     if (scalar) write(*,*) 'Scalar calculations'
     if (.not. scalar) write(*,*) 'Vector calculations'
     write(*,*) ' '
@@ -247,6 +249,7 @@ program geo_vlidort
   call read_cloud()
   call read_land()
   call read_sza()
+  call read_vza()
 
 ! Create cloud-land mask
 ! ------------------------
@@ -267,6 +270,14 @@ program geo_vlidort
     GOTO 500
   end if
 
+  if (.not. ANY(SENSOR_ZENITH < vzamax)) then   
+    if (myid == 0) then
+      write(*,*) 'View angle too slant, nothing to do'
+      write(*,*) 'Exiting.....'
+    end if
+    GOTO 500
+  end if  
+
 ! Figure out how many indices to work on
 !------------------------------------------
   clrm = 0
@@ -275,8 +286,10 @@ program geo_vlidort
       if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99))  then
         if (CLDTOT(i,j) <= cldmax) then
           if (SOLAR_ZENITH(i,j) < szamax) then
-            clrm = clrm + 1
-            clmask(i,j) = .True.
+            if (SENSOR_ZENITH(i,j) < vzamax) then
+              clrm = clrm + 1
+              clmask(i,j) = .True.
+            end if
           end if
         end if
       end if 
@@ -285,7 +298,7 @@ program geo_vlidort
 
   if (clrm == 0) then
     if (myid == 0) then
-      write(*,*) 'no clear pixels over land, nothing to do'
+      write(*,*) 'No clear pixels over land, nothing to do'
       write(*,*) 'Exiting.....'
     end if
     GOTO 500
@@ -296,6 +309,7 @@ program geo_vlidort
   deallocate (CLDTOT)
   deallocate (FRLAND)
   deallocate (SOLAR_ZENITH)
+  deallocate (SENSOR_ZENITH)
 
   if (myid == 0) then
     write(*,*) '<> Created Cloud Mask'
@@ -706,6 +720,11 @@ subroutine read_sza()
   call readvar2D("solar_zenith", ANG_file, SOLAR_ZENITH)
 end subroutine read_sza
 
+subroutine read_vza()
+  allocate (SENSOR_ZENITH(im,jm))
+
+  call readvar2D("sensor_zenith", ANG_file, SENSOR_ZENITH)
+end subroutine read_vza
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -1889,7 +1908,8 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, surfname, label = 'SURFNAME:',default='MAIACRTLS')
     call ESMF_ConfigGetAttribute(cf, surfdate, label = 'SURFDATE:',__RC__)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
-    call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=90.0)
+    call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
+    call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, cldmax, label = 'CLDMAX:',default=0.01)
     call ESMF_ConfigGetAttribute(cf, surfband, label = 'SURFBAND:', default='INTERPOLATE')
     call ESMF_ConfigGetAttribute(cf, surfbandm, label = 'SURFBANDM:',__RC__)
