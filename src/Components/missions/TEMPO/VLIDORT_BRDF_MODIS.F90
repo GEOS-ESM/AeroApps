@@ -159,6 +159,14 @@ module VLIDORT_BRDF_MODIS
           cycle
         end if
 
+        if (BR(j,i) < 0)) then
+          radiance_VL(j,i)    = -500
+          reflectance_VL(j,i) = -500
+          BR(j,i)    = -500
+          ROT(:,j,i) = -500
+          cycle
+        end if
+
         if ( verbose > 0 ) then
           print *, 'now check for albedo'       
         end if
@@ -355,6 +363,16 @@ module VLIDORT_BRDF_MODIS
         if ( ier /= 0 ) then
           radiance_VL_SURF(j,i) = MISSING
           reflectance_VL_SURF(j,i) = MISSING               
+          cycle
+        end if
+
+        if (BR(j,i) < 0)) then
+          radiance_VL(j,i)    = -500
+          reflectance_VL(j,i) = -500
+          BR(j,i)    = -500
+          ROT(:,j,i) = -500
+          Q(j,i)     = -500
+          U(j,i)     = -500
           cycle
         end if
 
