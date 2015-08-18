@@ -42,7 +42,7 @@ if __name__ == "__main__":
     while (startdate <= enddate):
         make_rcfile(indir,outdir,startdate,instname)
 
-        runstring = './geo_angles.x geo_angles.rc'
+        runstring = 'mpirun -np 8 ./geo_angles.x geo_angles.rc'
         os.system(runstring)
 
         startdate = startdate + dt
