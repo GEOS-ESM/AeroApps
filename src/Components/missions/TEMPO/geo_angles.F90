@@ -475,11 +475,11 @@ end subroutine filenames
   subroutine shutdown()         
 
     ! shmem must deallocate shared memory arrays
-    ! call MAPL_DeallocNodeArray(CLON,rc=ierr)
-    ! call MAPL_DeallocNodeArray(CLAT,rc=ierr)
-    ! call MAPL_DeallocNodeArray(SCANTIME,rc=ierr)
+    call MAPL_DeallocNodeArray(CLON,rc=ierr)
+    call MAPL_DeallocNodeArray(CLAT,rc=ierr)
+    call MAPL_DeallocNodeArray(SCANTIME,rc=ierr)
 
-    !call MAPL_FinalizeShmem (rc=ierr)
+    call MAPL_FinalizeShmem (rc=ierr)
 
     call ESMF_ConfigDestroy(cf)
 
