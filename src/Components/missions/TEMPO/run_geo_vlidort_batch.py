@@ -77,6 +77,10 @@ def make_maiac_rcfile(dirname,indir,date,ch,code,interp,i_band=None):
     #figure out correct MODIS doy
     if (str(startdate.date()) == '2005-12-31'):
         rcfile.write('SURFDATE: 2006008\n')
+    elif ((str(startdate.year) == '2007') and (str(date.month).zfill(2) == '03')):
+        rcfile.write('SURFDATE: 2007072\n')
+    elif ((str(startdate.year) == '2007') and (str(date.month).zfill(2) == '04')):
+        rcfile.write('SURFDATE: 2007120\n')
     else:
         doy = date.toordinal() - datetime(date.year-1,12,31).toordinal()
         DOY = 8*(int(doy/8) + 1)
@@ -103,7 +107,7 @@ def make_maiac_rcfile(dirname,indir,date,ch,code,interp,i_band=None):
 
     rcfile.write('CHANNELS: '+ch+'\n')
     rcfile.write('CLDMAX: 0.01\n')
-    rcfile.write('SZAMAX: 90.0\n')
+#    rcfile.write('SZAMAX: 80.0\n')
     rcfile.close()
 
     os.chdir('../')
@@ -137,7 +141,7 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,i_band=None):
 
     rcfile.write('CHANNELS: ' + ch + '\n')
     rcfile.write('CLDMAX: 0.01\n')
-    rcfile.write('SZAMAX: 90.0\n')
+#    rcfile.write('SZAMAX: 90.0\n')
     rcfile.close()
 
     os.chdir('../')    
@@ -146,16 +150,16 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,i_band=None):
 
 if __name__ == "__main__":
     
-    startdate = '2005-12-31T00:00:00'
-    enddate   = '2005-12-31T23:00:00'
-    channels  = '550','670'
-    surface   = 'MAIACRTLS'
+    startdate = '2007-04-10T00:00:00'
+    enddate   = '2007-04-11T23:00:00'
+    channels  = '354','388'
+    surface   = 'LER'
     interp    = 'interpolate'
     i_band    = None
     nccs      = '/discover/nobackup'
     
     indir     = nccs + '/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA'
-    outdir    = nccs + '/pcastell/TEMPO/DATA'
+    outdir    = nccs + '/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA/LevelC'
     
     dt = timedelta(hours=1)
     startdate = parse(startdate)
@@ -163,6 +167,11 @@ if __name__ == "__main__":
 
     # Create working directories, SLURM scripts, and RC-files
     runstring = np.empty(0)
+    if type(channels) is str:
+        channels = channels.split()
+
+    if type(i_band) is str:
+        i_band = i_band.split()
     while (startdate <= enddate):
         for i, ch in enumerate(channels):
             band_i = None
@@ -203,7 +212,7 @@ if __name__ == "__main__":
 
     # Submite Jobs      
     runlen  = len(runstring)   
-    streams = min(24, runlen)
+    streams = min(48, runlen)
     drun    = np.array([runlen/streams for i in range(streams)])
     drun[streams-1] = drun[streams-1] + math.fmod(runlen,streams)
     for s,i in enumerate(np.linspace(0,streams*(runlen/streams),streams,endpoint=False)):
