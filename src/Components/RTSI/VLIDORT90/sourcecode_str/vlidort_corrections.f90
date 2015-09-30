@@ -5278,8 +5278,11 @@
 
       dtr    = DEG_TO_RAD
       !Pie   =
-      DoCrit = .FALSE. !set for now
-      Acrit  = ZERO    !set for now
+      ! DoCrit = .FALSE. !set for now
+      ! Acrit  = ZERO    !set for now
+      ! PC: Changed Sept 2015 on R. Spurr's suggestion
+      DoCrit = .TRUE. !set for now
+      Acrit  = 1e-10    !set for now
 
       !defined within VFO_MASTER now
       !if ( do_upwelling ) then
