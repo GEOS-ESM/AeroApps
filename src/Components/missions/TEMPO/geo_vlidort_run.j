@@ -4,7 +4,6 @@
 #                     Batch Parameters for Run Job
 #######################################################################
 #SBATCH --time=12:00:00
-#SBATCH --constraint=hasw
 #SBATCH --ntasks=28 --cpus-per-task=1 --ntasks-per-node=28
 #SBATCH --job-name=tempo_geo_vlidort
 #SBATCH -A s1412
