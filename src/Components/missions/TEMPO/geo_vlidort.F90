@@ -384,7 +384,7 @@ program geo_vlidort
   counti = nclr(myid+1)
   endi   = starti + counti - 1
 
-  do c = starti,starti !starti, endi
+  do c = starti,endi !starti, endi
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
@@ -646,10 +646,9 @@ function nn_interp(x,y,xint)
   integer                         :: below, above
   real                            :: top, bottom
 
-  below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LE. 0)
-  above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GT. 0)
+  above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LT. 0)
+  below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GE. 0)
 
-  
   if (.not. ANY((/y(above),y(below)/) == surf_missing)) then
     top = y(above) - y(below)
     bottom = x(above) - x(below)
@@ -657,6 +656,7 @@ function nn_interp(x,y,xint)
   else
     nn_interp  = surf_missing
   end if
+
 end function nn_interp
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
