@@ -5,7 +5,7 @@ pro dat2netcdf
 
 	; Read in binary GOES-R lat, lons, and area
 	; -----------------------------------------
-	dir='./'
+	dir='/nobackup/GOES-R/LevelG/invariant/Attic/'
 	openr,1,dir+'nxny_goes-r'
 	readf,1,npixels,nlines
 	close,1
@@ -104,6 +104,7 @@ pro dat2netcdf
 
 	; eye balling it here....using the hard limits cuts off too much of the domain
 	xmin = xmin -1000
+	xmax = xmax -1
 	ymin = 500 
 	goes_clat = goes_clat(xmin:xmax,ymin:ymax)
 	goes_clon = goes_clon(xmin:xmax,ymin:ymax)
