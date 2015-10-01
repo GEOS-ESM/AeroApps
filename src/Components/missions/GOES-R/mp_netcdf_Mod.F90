@@ -570,7 +570,7 @@ module mp_netcdf_Mod
     integer, dimension(:), intent(in)         ::  dim
     integer, intent(in)                       ::  n  !dimensions to read over in chunks
     integer, intent(in)                       ::  npet, myid    
-    real, dimension(:,:), intent(inout)     ::  var
+    real*8, dimension(:,:), intent(inout)     ::  var
 
     integer                       :: p, startl, countl, endl
     integer                       :: ncid, varid
@@ -647,7 +647,7 @@ module mp_netcdf_Mod
     integer, dimension(:), intent(in)         ::  dim
     integer, intent(in)                       ::  n  !dimensions to read over in chunks
     integer, intent(in)                       ::  npet, myid    
-    real, dimension(:), intent(inout)         ::  var
+    real*8, dimension(:), intent(inout)         ::  var
 
     integer                       :: p, startl, countl, endl
     integer                       :: ncid, varid
