@@ -81,6 +81,10 @@ def make_maiac_rcfile(dirname,indir,date,ch,code,interp,i_band=None):
         rcfile.write('SURFDATE: 2007072\n')
     elif ((str(startdate.year) == '2007') and (str(date.month).zfill(2) == '04')):
         rcfile.write('SURFDATE: 2007120\n')
+    elif ((str(startdate.year) == '2006') and (str(date.month).zfill(2) == '07')):
+        rcfile.write('SURFDATE: 2006216\n')
+    elif ((str(startdate.year) == '2006') and (str(date.month).zfill(2) == '08')):
+        rcfile.write('SURFDATE: 2006216\n')        
     else:
         doy = date.toordinal() - datetime(date.year-1,12,31).toordinal()
         DOY = 8*(int(doy/8) + 1)
@@ -150,8 +154,8 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,i_band=None):
 
 if __name__ == "__main__":
     
-    startdate = '2007-04-10T00:00:00'
-    enddate   = '2007-04-11T23:00:00'
+    startdate = '2006-07-31T00:00:00'
+    enddate   = '2006-07-31T23:00:00'
     channels  = '354','388'
     surface   = 'LER'
     interp    = 'interpolate'
