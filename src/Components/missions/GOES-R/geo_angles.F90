@@ -156,12 +156,9 @@ program geo_angles
   read(layout(1:1),*)  nX
   read(layout(2:2),*)  nY
 
-  write(*,*) 'nx, ny',nx, ny
   do tile = 0, nx*ny-1
     x_ = mod(tile,nX)
     y_ = (tile/nX)  
-
-    write(*,*) 'tile',tile,'myid',myid
 
     Xstart = x_*im/nX + 1
     Xend   = Xstart + im/nX - 1
@@ -264,21 +261,13 @@ subroutine get_geometry(Xstart,Xend,Xcount,Ystart,Yend,Ycount)
     endj   = endj - 1 + Ystart
 
     do j = startj, endj  
-      min = SCANTIME(i,j)/60
-      sec = SCANTIME(i,j) - min*60.0
-      if (CLAT(i,j) .ne. MISSING) then 
-        if (SCANTIME(i,j) .gt. 1e14) then      
-          write(*,*) myid, 'SCANTIME MISSING'
-        end if
-        ! write(*,*) 'SCANTIME', SCANTIME(i,j)
-        ! write(*,*) 'CLON, CLAT', CLON(i,j), CLAT(i,j)
-        ! if (tile .eq. 3) then
-        !   write(*,*)  dble(CLAT(i,j)),dble(CLON(i,j)),dble(sat_lat),dble(sat_lon),dble(sat_alt)
-        ! endif
+      if (.not. IS_MISSING(CLAT(i,j),dble(MISSING))) then
+        min = SCANTIME(i,j)/60
+        sec = SCANTIME(i,j) - min*60.0
+
         sat_angles = satellite_angles(yr,mo,day,hr,min,dble(sec),dble(0.0),dble(CLAT(i,j)),dble(CLON(i,j)),dble(sat_lat),dble(sat_lon),dble(sat_alt))
 
         ! Store in shared memeory
-        ! write(*,*) 'position',i-Xstart+1,j-startj+1
         SZA(i-Xstart+1,j-startj+1) = sat_angles(4)
         VZA(i-Xstart+1,j-startj+1) = sat_angles(2)
         SAA(i-Xstart+1,j-startj+1) = sat_angles(3)
@@ -288,7 +277,6 @@ subroutine get_geometry(Xstart,Xend,Xcount,Ystart,Yend,Ycount)
     end do
   end do
 
-  write(*,*) 'GOT OUT!  ','tile',tile,'myid',myid
   call MAPL_SyncSharedMemory(rc=ierr)
   if (MAPL_am_I_root()) then
     call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
@@ -523,6 +511,14 @@ end subroutine outfilenames
 
     call check( nf90_close(ncid), "close outfile" )
   end subroutine create_outfile  
+
+  logical function IS_MISSING(x,MISSING)
+    real*8, intent(in)     :: x
+    real*8, intent(in)     :: MISSING
+
+    IS_MISSING = abs(x/MISSING-1)<0.001
+    return
+  end function IS_MISSING
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
