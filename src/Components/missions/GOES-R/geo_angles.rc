@@ -1,0 +1,6 @@
+INDIR: /nobackup/GOES-R
+OUTDIR: /nobackup/GOES-R
+DATE: 20060101
+TIME: 23
+INSTNAME: goes-r
+LAYOUT: 41
