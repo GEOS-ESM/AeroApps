@@ -23,6 +23,7 @@ program geo_sync
   use MAPL_Mod
   use netcdf                       ! for reading the NR files
   use mp_netcdf_Mod
+  use netcdf_Mod
 
   implicit none
   include "mpif.h"
@@ -157,9 +158,9 @@ program geo_sync
 ! ---------------
   call mp_colreader("clon", INVb_file, nclr, CLONb)
   call mp_colreader("clat", INVb_file, nclr, CLATb)
-  call readvar2D("clon", INVa_file, CLONa)
-  call readvar2D("clat", INVa_file, CLATa)
-  call readvar1D("scanTime", TIME_file, TIME)
+  call mp_readvar2D("clon", INVa_file, CLONa)
+  call mp_readvar2D("clat", INVa_file, CLATa)
+  call mp_readvar1D("scanTime", TIME_file, TIME)
 ! Initialize outputs to be safe
 ! -------------------------------
   MISSING          = 1e15

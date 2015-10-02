@@ -24,6 +24,7 @@ program geo_angles
   use netcdf                       ! for reading the NR files
   !use mpi
   use mp_netcdf_Mod                ! Module with netcdf routines
+  use netcdf_Mod
   use GeoAngles                    ! Module with geostationary satellite algorithms for scene geometry
 
   implicit none
@@ -50,7 +51,7 @@ program geo_angles
 ! ---------------------------------------------
   real*8, pointer                       :: CLON(:,:) => null()
   real*8, pointer                       :: CLAT(:,:) => null()
-  real*8, pointer                       :: SCANTIME(:) => null()
+  real*8, pointer                       :: SCANTIME(:,:) => null()
   real, pointer                         :: SZA(:,:) => null()
   real, pointer                         :: VZA(:,:) => null()
   real, pointer                         :: SAA(:,:) => null()
@@ -160,8 +161,7 @@ program geo_angles
     x_ = mod(tile,nX)
     y_ = (tile/nX)  
 
-    write(*,*) 'tile', tile
-    write(*,*) 'x_,y_',x_, y_
+    write(*,*) 'tile',tile,'myid',myid
 
     Xstart = x_*im/nX + 1
     Xend   = Xstart + im/nX - 1
@@ -174,27 +174,27 @@ program geo_angles
   !-------------------------
     call outfilenames()
     if ( MAPL_am_I_root() ) call create_outfile(date,time,ncid,szaVarID, vzaVarID, saaVarID, vaaVarID)
+
+    ! Allocate the Global arrays using SHMEM
+    ! It will be available on all processors
+    ! ---------------------------------------------------------
+    call allocate_shared(im, jm, Xcount, Ycount)
+
+    ! Read in position data to shared memeory
+    ! --------------------------------------------
+    call mp_readvar2Dchunk('scanTime', TIME_file, (/im, jm/), 1, npet, myid, SCANTIME)
+    call mp_readvar2Dchunk('clon', INV_file, (/im, jm/), 1, npet, myid, CLON)
+    call mp_readvar2Dchunk('clat', INV_file, (/im, jm/), 1, npet, myid, CLAT)
+
+    ! Wait for everyone to finish reading 
+    ! ------------------------------------------------------------------  
+    call MAPL_SyncSharedMemory(rc=ierr)      
+
+    ! Calculate the viewing geometry - these are shared memory arrays
+    ! Distribute calculations over processors
+    !-----------------------------------------------
+    call get_geometry(Xstart,Xend,Xcount,Ystart,Yend,Ycount)
   end do
-! ! Allocate the Global arrays using SHMEM
-! ! It will be available on all processors
-! ! ---------------------------------------------------------
-!   call allocate_shared(im, jm)
-
-! ! Read in position data to shared memeory
-! ! --------------------------------------------
-!   call mp_readvar1D('scanTime', TIME_file, (/im/), 1, npet, myid, SCANTIME)
-!   call mp_readvar2D('clon', INV_file, (/im, jm/), 1, npet, myid, CLON)
-!   call mp_readvar2D('clat', INV_file, (/im, jm/), 1, npet, myid, CLAT)
-
-! ! Wait for everyone to finish reading 
-! ! ------------------------------------------------------------------  
-!   call MAPL_SyncSharedMemory(rc=ierr)  
-
-! ! Calculate the viewing geometry - these are shared memory arrays
-! ! Distribute calculations over processors
-! !-----------------------------------------------
-!   call get_geometry()
-
 
   if (MAPL_am_I_root()) then
     write(*,*) '<> Finished calculating sensor and solar angles for '//trim(lower_to_upper(instname))//' domain'
@@ -225,7 +225,8 @@ program geo_angles
 !  HISTORY
 !     29 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-subroutine get_geometry()
+subroutine get_geometry(Xstart,Xend,Xcount,Ystart,Yend,Ycount)
+  integer, intent(in)                  :: Xstart, Xend, Xcount, Ystart, Yend, Ycount
   integer                              :: yr, mo, day, hr, min 
   real                                 :: sec
   integer                              :: i, j, p, startj, countj, endj
@@ -243,17 +244,14 @@ subroutine get_geometry()
   ! Everyone Figure out how many indeces each PE has to read
   ! -----------------------------
   nchunk = 0
-  if (npet >= jm) then
+  if (npet >= Ycount) then
     nchunk(1:npet) = 1
-  else if (npet < jm) then
-    nchunk(1:npet) = jm/npet
-    nchunk(npet)   = nchunk(npet) + mod(jm,npet)
+  else if (npet < Ycount) then
+    nchunk(1:npet) = Ycount/npet
+    nchunk(npet)   = nchunk(npet) + mod(Ycount,npet)
   end if 
 
-
-  do i = 1, im
-    min = SCANTIME(i)/60
-    sec = SCANTIME(i) - min*60.0
+  do i = Xstart, Xend
     if (myid == 0) then
       startj = 1
     else
@@ -262,19 +260,35 @@ subroutine get_geometry()
     countj = nchunk(myid+1)
     endj   = startj + countj - 1
 
+    startj = startj -1 + Ystart
+    endj   = endj - 1 + Ystart
+
     do j = startj, endj  
-      if (CLAT(i,j) .ne. MISSING) then      
+      min = SCANTIME(i,j)/60
+      sec = SCANTIME(i,j) - min*60.0
+      if (CLAT(i,j) .ne. MISSING) then 
+        if (SCANTIME(i,j) .gt. 1e14) then      
+          write(*,*) myid, 'SCANTIME MISSING'
+        end if
+        ! write(*,*) 'SCANTIME', SCANTIME(i,j)
+        ! write(*,*) 'CLON, CLAT', CLON(i,j), CLAT(i,j)
+        ! if (tile .eq. 3) then
+        !   write(*,*)  dble(CLAT(i,j)),dble(CLON(i,j)),dble(sat_lat),dble(sat_lon),dble(sat_alt)
+        ! endif
         sat_angles = satellite_angles(yr,mo,day,hr,min,dble(sec),dble(0.0),dble(CLAT(i,j)),dble(CLON(i,j)),dble(sat_lat),dble(sat_lon),dble(sat_alt))
 
         ! Store in shared memeory
-        SZA(i,j) = sat_angles(4)
-        VZA(i,j) = sat_angles(2)
-        SAA(i,j) = sat_angles(3)
-        VAA(i,j) = sat_angles(1)
+        ! write(*,*) 'position',i-Xstart+1,j-startj+1
+        SZA(i-Xstart+1,j-startj+1) = sat_angles(4)
+        VZA(i-Xstart+1,j-startj+1) = sat_angles(2)
+        SAA(i-Xstart+1,j-startj+1) = sat_angles(3)
+        VAA(i-Xstart+1,j-startj+1) = sat_angles(1)
 
       end if
     end do
   end do
+
+  write(*,*) 'GOT OUT!  ','tile',tile,'myid',myid
   call MAPL_SyncSharedMemory(rc=ierr)
   if (MAPL_am_I_root()) then
     call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
@@ -380,16 +394,17 @@ end subroutine outfilenames
 !  HISTORY
 !     29 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine allocate_shared(im, jm)
+  subroutine allocate_shared(im, jm, Xcount, Ycount)
     integer, intent(in)    :: im, jm
+    integer, intent(in)    :: Xcount, Ycount
 
-    call MAPL_AllocNodeArray(SCANTIME,(/im/),rc=ierr)
+    call MAPL_AllocNodeArray(SCANTIME,(/im,jm/),rc=ierr)
     call MAPL_AllocNodeArray(CLON,(/im,jm/),rc=ierr)
     call MAPL_AllocNodeArray(CLAT,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(SZA,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(VZA,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(SAA,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(VAA,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(SZA,(/Xcount,Ycount/),rc=ierr)
+    call MAPL_AllocNodeArray(VZA,(/Xcount,Ycount/),rc=ierr)
+    call MAPL_AllocNodeArray(SAA,(/Xcount,Ycount/),rc=ierr)
+    call MAPL_AllocNodeArray(VAA,(/Xcount,Ycount/),rc=ierr)
 
   end subroutine allocate_shared
 
@@ -484,13 +499,11 @@ end subroutine outfilenames
     allocate (clat(im, jm))
     allocate (ew(im))
     allocate (ns(jm))
-write(*,*) 'ALLOCATED TEMP VARIABLES'
-    call readvar2D("scanTime", TIME_file, scantime)
-write(*,*) 'READ SCANTIME'    
+
+    call readvar2D("scanTime", TIME_file, scantime)    
     call check(nf90_put_var(ncid,timeVarID,scantime(Xstart:Xend,Ystart:Yend)), "writing out scantime")
-write(*,*) 'WROTE SCANTIME'
+
     call readvar1D("ew", INV_file, ew)
-write(*,*) 'READVAR1D'
     call check(nf90_put_var(ncid,ewVarID,ew(Xstart:Xend)), "writing out ew")
 
     call readvar1D("ns", INV_file, ns)
@@ -509,7 +522,6 @@ write(*,*) 'READVAR1D'
     deallocate (ew)
 
     call check( nf90_close(ncid), "close outfile" )
-    write(*,*) 'CLOSED OUTFILE'
   end subroutine create_outfile  
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

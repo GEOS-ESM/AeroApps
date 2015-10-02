@@ -75,7 +75,7 @@ THIS_GFIO = GMAO_gfio_r4
 #                  User Defined Targets
 #                  --------------------
 
-SRCS := mp_netcdf_Mod.F90
+SRCS := mp_netcdf_Mod.F90 netcdf_Mod.F90
 			   
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
 DEPS := $(addsuffix .d, $(basename $(SRCS))) 
@@ -92,7 +92,7 @@ $(LIB) lib : $(DEPS) $(OBJS)
                                  $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
 
                                  
-geo_angles.x: GeoAngles_py.o mp_netcdf_Mod.o geo_angles.o
+geo_angles.x: GeoAngles_py.o mp_netcdf_Mod.o netcdf_Mod.o geo_angles.o
 	$(FC) $(FOPTS) $^ -o $@   $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                             $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)  
                                                         
