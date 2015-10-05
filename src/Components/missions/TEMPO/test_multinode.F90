@@ -123,6 +123,7 @@ program test_multinode
   CoresPerNode = MAPL_CoresPerNodeGet(MPI_COMM_WORLD,rc=ierr) ! a must
   call MAPL_InitializeShmem(rc=ierr)
   amOnFirstNode = MAPL_ShmemAmOnFirstNode(comm=MPI_COMM_WORLD,rc=ierr)
+  if ( MAPL_am_I_root() ) write(*,'(A,I4,A)')'Using ',CoresPerNode, ' cores per node'
 
 ! Parse Resource file provided at command line for input info 
 ! -----------------------------------------------------------
@@ -157,8 +158,9 @@ program test_multinode
 
   call MAPL_SyncSharedMemory(rc=ierr)
 
-  clrm = 50000
+  clrm = 50
   clmask = .True.
+  allocate (nclr(npet-1))
 
 
 ! Allocate the Global arrays using SHMEM
@@ -224,56 +226,22 @@ program test_multinode
 ! Processors not on the root node need to ask for data
 ! -----------------------------------------------------
   ! if (.not. amOnFirstNode) then
-  !   call mpi_recv(msgr, 100, MPI_CHARACTER, pp, 1, MPI_COMM_WORLD, status_mpi, ierr)
-    !!! what arrays do I need
-    ! call MAPL_AllocNodeArray(AIRDENS,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(RH,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(DELP,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(DU001,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(DU002,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(DU003,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(DU004,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(DU005,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(SS001,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(SS002,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(SS003,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(SS004,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(SS005,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(BCPHOBIC,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(BCPHILIC,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(OCPHOBIC,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(OCPHILIC,(/clrm,km/),rc=ierr)
-    ! call MAPL_AllocNodeArray(SO4,(/clrm,km/),rc=ierr)
-    ! if (lower_to_upper(surfname) == 'MAIACRTLS') then
-    !   call MAPL_AllocNodeArray(KISO,(/clrm,surfbandm/),rc=ierr)
-    !   call MAPL_AllocNodeArray(KVOL,(/clrm,surfbandm/),rc=ierr)
-    !   call MAPL_AllocNodeArray(KGEO,(/clrm,surfbandm/),rc=ierr)
-    ! else
-    !   call MAPL_AllocNodeArray(LER,(/clrm,surfbandm/),rc=ierr)
-    ! end if 
-    ! call MAPL_AllocNodeArray(SZA,(/clrm/),rc=ierr)
-    ! call MAPL_AllocNodeArray(VZA,(/clrm/),rc=ierr)
-    ! call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
-
-    ! call MAPL_AllocNodeArray(TAU_,(/clrm,km,nch/),rc=ierr)
-    ! call MAPL_AllocNodeArray(SSA_,(/clrm,km,nch/),rc=ierr)
-    ! call MAPL_AllocNodeArray(G_,(/clrm,km,nch/),rc=ierr)
-    ! call MAPL_AllocNodeArray(ROT_,(/clrm,km,nch/),rc=ierr)
-    ! call MAPL_AllocNodeArray(ALBEDO_,(/clrm,nch/),rc=ierr)
-
-
-
+  !   call mpi_recv(AIRDENS, nclr(myid), MPI_FLOAT, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
   ! end if
 
+  ! if (MAPL_am_I_root()) then
+  !   do pp = 1,npet-1
   !     call mpi_send(msg, 100, MPI_CHARACTER, 0, 1, MPI_COMM_WORLD, ierr)
-  !   end if 
+  !   end do
+  ! end if 
 
+  if (.not. MAPL_am_I_root()) then
+    do c = starti,endi !starti, endi
 
-  do c = starti,endi !starti, endi
-
-    write(*,*) 'myid ',myid,'I am working'
-                
-  end do ! do clear pixels
+      write(*,*) 'myid ',myid,'airdens',AIRDENS(c,1),starti,endi
+                  
+    end do ! do clear pixels
+  end if
 
 ! Wait for everyone to finish calculations
 ! ----------------------------------------
