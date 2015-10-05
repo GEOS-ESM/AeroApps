@@ -235,7 +235,7 @@ program test_multinode
   !   end do
   ! end if 
 
-  if (.not. MAPL_am_I_root()) then
+  if (.not. MAPL_am_I_root() .and. amOnFirstNode) then
     do c = starti,endi !starti, endi
 
       write(*,*) 'myid ',myid,'airdens',AIRDENS(c,1),starti,endi
