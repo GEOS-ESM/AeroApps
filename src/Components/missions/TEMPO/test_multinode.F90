@@ -92,7 +92,7 @@ program test_multinode
   integer                               :: status_mpi(MPI_STATUS_SIZE)                 ! MPI status
   integer                               :: myid, npet, CoresPerNode                    ! MPI dimensions and processor id
   logical                               :: amOnFirstNode
-  integer                               :: p                                           ! i-processor
+  integer                               :: pp                                          ! i-processor
   character(len=100)                    :: msg                                         ! message to be printed
   real                                  :: progress                                    ! 
   real                                  :: g5nr_missing                                !
@@ -225,17 +225,25 @@ program test_multinode
 
 ! Processors not on the root node need to ask for data
 ! -----------------------------------------------------
-  ! if (.not. amOnFirstNode) then
-  !   call mpi_recv(AIRDENS, nclr(myid), MPI_FLOAT, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-  ! end if
+  if (MAPL_am_I_root()) then
+    do pp = CoresPerNode,npet-1
+      starti = sum(nclr(1:pp-1))+1
+      counti = nclr(pp)
+      endi   = starti + counti - 1  
+      call mpi_send(AIRDENS(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+    end do
+  end if 
 
-  ! if (MAPL_am_I_root()) then
-  !   do pp = 1,npet-1
-  !     call mpi_send(msg, 100, MPI_CHARACTER, 0, 1, MPI_COMM_WORLD, ierr)
-  !   end do
-  ! end if 
+  if (.not. amOnFirstNode) then
+    call mpi_recv(AIRDENS, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+  end if
 
-  if (.not. MAPL_am_I_root() .and. amOnFirstNode) then
+
+  if (.not. MAPL_am_I_root()) then
+    if (.not. amOnFirstNode) then
+      starti = 1
+      endi   = counti 
+    end if
     do c = starti,endi !starti, endi
 
       write(*,*) 'myid ',myid,'airdens',AIRDENS(c,1),starti,endi
@@ -589,8 +597,8 @@ end subroutine filenames
 
     if ( myid  == 0 ) then
       open (unit = 2, file="shmem_test.txt",position="append")
-      do p = 1,npet-1
-        call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status_mpi, ierr)
+      do pp = 1,npet-1
+        call mpi_recv(msg, 61, MPI_CHARACTER, pp, 1, MPI_COMM_WORLD, status_mpi, ierr)
         write(2,*) msg
       end do
       write(msg,'(A9,I4,E24.17,E24.17)') varname,myid,maxval(var),minval(var)
@@ -624,8 +632,8 @@ end subroutine filenames
 
     if ( myid  == 0 ) then
       open (unit = 2, file="shmem_test.txt",position="append")
-      do p = 1,npet-1
-        call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status_mpi, ierr)
+      do pp = 1,npet-1
+        call mpi_recv(msg, 61, MPI_CHARACTER, pp, 1, MPI_COMM_WORLD, status_mpi, ierr)
         write(2,*) msg
       end do
         write(msg,'(A9,I4,E24.17,E24.17)') varname,myid,maxval(var),minval(var)
