@@ -159,7 +159,7 @@ module VLIDORT_BRDF_MODIS
           cycle
         end if
 
-        if (BR(j,i) < 0)) then
+        if (BR(j,i) < 0) then
           radiance_VL(j,i)    = -500
           reflectance_VL(j,i) = -500
           BR(j,i)    = -500
@@ -366,7 +366,7 @@ module VLIDORT_BRDF_MODIS
           cycle
         end if
 
-        if (BR(j,i) < 0)) then
+        if (BR(j,i) < 0) then
           radiance_VL(j,i)    = -500
           reflectance_VL(j,i) = -500
           BR(j,i)    = -500
