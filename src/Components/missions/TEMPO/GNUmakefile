@@ -117,7 +117,14 @@ geo_lidort.x: netcdf_helper.o geo_lidort.o
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
-                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)                                                          
+                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)     
+
+test_multinode.x: netcdf_helper.o test_multinode.o 
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_CHEM_BASE) \
+                                 $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+                                 $(LIB_MAPL_BASE_STUBS2) \
+                                 $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
+                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)                                                                                           
 
 geo_vlidort_surface.x: netcdf_helper.o geo_vlidort_surface.o 
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_CHEM_BASE) \
