@@ -754,8 +754,8 @@ subroutine filenames()
   write(LAND_file,'(4A)') trim(indir),'/LevelB/invariant/',trim(instname),'-g5nr.lb2.asm_Nx.nc4' 
 
 ! OUTFILES
-  write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lb2.vlidort.'
-  write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lb2.vlidort_atmos.'
+  write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc.vlidort.'
+  write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc.vlidort_atmos.'
 
   call outfile_extname(OUT_file)
   call outfile_extname(ATMOS_file)
