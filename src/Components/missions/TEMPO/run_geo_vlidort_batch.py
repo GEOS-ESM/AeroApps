@@ -8,6 +8,7 @@ import subprocess
 from distutils.dir_util import mkpath
 import numpy as np
 import math
+from netCDF4 import Dataset
 
 def make_workspace(date,ch,code,outdir):
     dirname = str(date.date())+'T'+str(date.hour).zfill(2)+'.'+ch+'.'+code
@@ -149,12 +150,46 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,i_band=None):
     rcfile.close()
 
     os.chdir('../')    
+
+def prefilter(date,indir):
+    g5dir = indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
+    nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
+    hour  = str(date.hour).zfill(2)
+    met   = g5dir + '/tempo-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z.nc4'
+    geom  = g5dir + '/tempo.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
+
+    ncMet = Dataset(met)
+    Cld   = np.squeeze(ncMet.variables[u'CLDTOT'][:])
+    f     = np.where(Cld > 0.01)
+    ncMet.close()
+    if len(f[0]) == 0:
+        return False
+
+    ncGeom = Dataset(geom)
+    SZA    = np.squeeze(ncGeom.variables[u'solar_zenith'][:])
+    VZA    = np.squeeze(ncGeom.variables[u'sensor_zenith'][:])
+    ncGeom.close()
+
+    SZA = SZA[f]
+    VZA = VZA[f]
+
+    f   = np.where(VZA < 80)
+    if len(f[0]) == 0:
+        return False
+
+    SZA = SZA[f]
+    f   = np.where(VZA < 80)
+    if len(f[0]) == 0:
+        return False
+
+    return True
+
         
 #########################################################
 
 if __name__ == "__main__":
     
-    startdate = '2006-07-31T00:00:00'
+    startdate = '2006-07-31T01:00:00'
     enddate   = '2006-07-31T23:00:00'
     channels  = '354','388'
     surface   = 'LER'
@@ -177,56 +212,63 @@ if __name__ == "__main__":
     if type(i_band) is str:
         i_band = i_band.split()
     while (startdate <= enddate):
-        for i, ch in enumerate(channels):
-            band_i = None
-            if (i_band is not None):
-                band_i = i_band[i]
+        if (prefilter(startdate,indir)):
+            for i, ch in enumerate(channels):
+                band_i = None
+                if (i_band is not None):
+                    band_i = i_band[i]
 
-            # Vector Case
-            code = 'vector.'
-            if (interp.lower() == 'interpolate'):
-                code = code + 'i' 
-            
-            code = code + surface
-            workdir = make_workspace(startdate,ch,code,outdir)
+                # Vector Case
+                code = 'vector.'
+                if (interp.lower() == 'interpolate'):
+                    code = code + 'i' 
+                
 
-            if (surface.upper() == 'MAIACRTLS'):
-                make_maiac_rcfile(workdir,indir,startdate,ch,'vector',interp,i_band=band_i)
-            else:
-                make_ler_rcfile(workdir,indir,startdate,ch,'vector',interp,i_band=band_i)
+                
 
-            runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
+                code = code + surface
+                workdir = make_workspace(startdate,ch,code,outdir)
 
-            # # Scalar Case
-            # code = 'scalar.'
-            # if (interp.lower() == 'interpolate'):
-            #     code = code + 'i' 
-            
-            # code = code + surface
-            # workdir = make_workspace(startdate,ch,'scalar',outdir)
+                if (surface.upper() == 'MAIACRTLS'):
+                    make_maiac_rcfile(workdir,indir,startdate,ch,'vector',interp,i_band=band_i)
+                else:
+                    make_ler_rcfile(workdir,indir,startdate,ch,'vector',interp,i_band=band_i)
 
-            # if (surface.upper() == 'MAIACRTLS'):
-            #     make_maiac_rcfile(workdir,indir,startdate,ch,'scalar',interp,i_band=band_i)
-            # else:
-            #     make_ler_rcfile(workdir,indir,startdate,ch,'scalar',interp,i_band=i_band[i])
+                runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
 
-            # runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
+                # # Scalar Case
+                # code = 'scalar.'
+                # if (interp.lower() == 'interpolate'):
+                #     code = code + 'i' 
+                
+                # code = code + surface
+                # workdir = make_workspace(startdate,ch,'scalar',outdir)
+
+                # if (surface.upper() == 'MAIACRTLS'):
+                #     make_maiac_rcfile(workdir,indir,startdate,ch,'scalar',interp,i_band=band_i)
+                # else:
+                #     make_ler_rcfile(workdir,indir,startdate,ch,'scalar',interp,i_band=i_band[i])
+
+                # runstring = np.append(runstring,'./'+workdir+'/geo_vlidort_run.j')
        
         startdate = startdate + dt
 
     # Submite Jobs      
     runlen  = len(runstring)   
-    streams = min(48, runlen)
-    drun    = np.array([runlen/streams for i in range(streams)])
-    drun[streams-1] = drun[streams-1] + math.fmod(runlen,streams)
-    for s,i in enumerate(np.linspace(0,streams*(runlen/streams),streams,endpoint=False)):
-        for j in range(drun[s]):
-            if (j == 0 ):
-                jobid = int(subprocess.check_output(['qsub',runstring[i+j]]))
-                #print 'qsub '+runstring[i+j]
-            else:
-                jobid = int(subprocess.check_output(['qsub','-W','depend=afterok:'+str(jobid),runstring[i+j]]))
-                #print 'qsub -W depend=afterok:str(jobid)' +' '+runstring[i+j]
+    if runlen > 0:
+        streams = min(48, runlen)
+        drun    = np.array([runlen/streams for i in range(streams)])
+        drun[streams-1] = drun[streams-1] + math.fmod(runlen,streams)
+        for s,i in enumerate(np.linspace(0,streams*(runlen/streams),streams,endpoint=False)):
+            for j in range(drun[s]):
+                if (j == 0 ):
+                    jobid = int(subprocess.check_output(['qsub',runstring[i+j]]))
+                    #print 'qsub '+runstring[i+j]
+                else:
+                    jobid = int(subprocess.check_output(['qsub','-W','depend=afterok:'+str(jobid),runstring[i+j]]))
+                    #print 'qsub -W depend=afterok:str(jobid)' +' '+runstring[i+j]
+    else:
+        print 'No model hours to run'
 
     
 
