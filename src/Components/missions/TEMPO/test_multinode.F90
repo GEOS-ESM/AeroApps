@@ -1,10 +1,12 @@
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!    geo_vlidort
+!    geo_vlidort_multinode
 ! PURPOSE
 !     Reads in parallel the model data (in a netcdf file) interpolated to TEMPO grid 
 !     The variables are needed as input to vlidort
 !     A shared memory array created with a call to MAPL_ShmemMod is used for the variables
+!     If more than one node has been requested - root processors sends data to those nodes
+!     NOTE: NUMBER OF PROCESSORS MUST BE DIVSIBLE BY NUMBER OF NODES
 !     Do some filtering and run the vlidort code
 ! INPUT
 !     date  : string of variable name
