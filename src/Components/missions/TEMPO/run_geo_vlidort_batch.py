@@ -157,6 +157,7 @@ def prefilter(date,indir):
     hour  = str(date.hour).zfill(2)
     met   = g5dir + '/tempo-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z.nc4'
     geom  = g5dir + '/tempo.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
+    land  = indir + '/LevelB/invariant/tempo-g5nr.lb2.asm_Nx.nc4'  
 
     ncMet = Dataset(met)
     Cld   = np.squeeze(ncMet.variables[u'CLDTOT'][:])
@@ -168,17 +169,26 @@ def prefilter(date,indir):
     ncGeom = Dataset(geom)
     SZA    = np.squeeze(ncGeom.variables[u'solar_zenith'][:])
     VZA    = np.squeeze(ncGeom.variables[u'sensor_zenith'][:])
+    ncLand = Dataset(land)
+    FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
     ncGeom.close()
 
     SZA = SZA[f]
     VZA = VZA[f]
+    FRLAND = FRLAND[f]
 
     f   = np.where(VZA < 80)
     if len(f[0]) == 0:
         return False
 
-    SZA = SZA[f]
-    f   = np.where(VZA < 80)
+    SZA    = SZA[f]
+    FRLAND = FRLAND[f]
+    f      = np.where(VZA < 80)
+    if len(f[0]) == 0:
+        return False
+
+    FRLAND = FRLAND[f]
+    f      = np.where(FRLAND >= 0.99)
     if len(f[0]) == 0:
         return False
 
