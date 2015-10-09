@@ -172,6 +172,7 @@ program geo_vlidort_multinode
   character(len=100)                    :: msg                                         ! message to be printed
   real                                  :: progress                                    ! 
   real                                  :: g5nr_missing                                !
+  logical,allocatable,dimension(:)      :: FirstNode
 
 ! System tracking variables
 ! -----------------------------
@@ -199,6 +200,15 @@ program geo_vlidort_multinode
   CoresPerNode = MAPL_CoresPerNodeGet(MPI_COMM_WORLD,rc=ierr) ! a must
   call MAPL_InitializeShmem(rc=ierr)
   amOnFirstNode = MAPL_ShmemAmOnFirstNode(comm=MPI_COMM_WORLD,rc=ierr)
+
+  if (MAPL_am_I_root()) then
+    allocate (FirstNode(npet-1))
+    do pp = 1,npet-1
+      call mpi_recv(FirstNode(pp), 1, MPI_LOGICAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+    end do
+  else
+    call mpi_send(amOnFirstNode, 1, MPI_LOGICAL, 0, 2001, MPI_COMM_WORLD, ierr)
+  end if
 
 ! Parse Resource file provided at command line for input info 
 ! -----------------------------------------------------------
@@ -353,7 +363,7 @@ program geo_vlidort_multinode
 ! Root processor does not work!  Split up among npet-1 processors
 !-----------------------------------------------------------------
   if (npet-1 >= clrm) then
-    nclr(1:npet-1) = 1
+    nclr(1:clrm) = 1
   else if (npet-1 < clrm) then
     nclr(1:npet-1) = clrm/(npet-1)
     nclr(npet-1)   = nclr(npet-1) + mod(clrm,npet-1)
@@ -402,71 +412,79 @@ program geo_vlidort_multinode
 
 ! Processors not on the root node need to ask for data
 ! -----------------------------------------------------
+  
+
   if (MAPL_am_I_root()) then
-    do pp = CoresPerNode,npet-1
-      starti = sum(nclr(1:pp-1))+1
-      counti = nclr(pp)
-      endi   = starti + counti - 1  
-      call mpi_send(AIRDENS(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(RH(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(DELP(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(DU001(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(DU002(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(DU003(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(DU004(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(DU005(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(SS001(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(SS002(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(SS003(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(SS004(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(SS005(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)    
-      call mpi_send(BCPHOBIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
-      call mpi_send(BCPHILIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
-      call mpi_send(OCPHOBIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
-      call mpi_send(OCPHILIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(SO4(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)   
-      if (lower_to_upper(surfname) == 'MAIACRTLS') then
-        call mpi_send(KISO(starti:endi,:), counti*surfbandm, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
-        call mpi_send(KVOL(starti:endi,:), counti*surfbandm, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
-        call mpi_send(KGEO(starti:endi,:), counti*surfbandm, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
-      else
-        call mpi_send(LER(starti:endi,:), counti*surfbandm, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)   
-      end if
-      call mpi_send(SZA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
-      call mpi_send(VZA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
-      call mpi_send(RAA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)           
+    do pp = 1,npet-1
+      if (.not. FirstNode(pp)) then
+        starti = sum(nclr(1:pp-1))+1
+        counti = nclr(pp)
+        endi   = starti + counti - 1  
+        if (counti > 0) then
+          call mpi_send(AIRDENS(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(RH(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(DELP(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(DU001(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(DU002(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(DU003(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(DU004(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(DU005(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(SS001(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(SS002(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(SS003(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(SS004(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(SS005(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)    
+          call mpi_send(BCPHOBIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
+          call mpi_send(BCPHILIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
+          call mpi_send(OCPHOBIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
+          call mpi_send(OCPHILIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(SO4(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)   
+          if (lower_to_upper(surfname) == 'MAIACRTLS') then
+            call mpi_send(KISO(starti:endi,:), counti*surfbandm, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
+            call mpi_send(KVOL(starti:endi,:), counti*surfbandm, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
+            call mpi_send(KGEO(starti:endi,:), counti*surfbandm, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
+          else
+            call mpi_send(LER(starti:endi,:), counti*surfbandm, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)   
+          end if
+          call mpi_send(SZA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
+          call mpi_send(VZA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
+          call mpi_send(RAA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)          
+        end if
+      end if 
     end do
   end if 
 
   if (.not. amOnFirstNode) then
-    call mpi_recv(AIRDENS, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-    call mpi_recv(RH, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-    call mpi_recv(DELP, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-    call mpi_recv(DU001, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-    call mpi_recv(DU002, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-    call mpi_recv(DU003, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-    call mpi_recv(DU004, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-    call mpi_recv(DU005, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-    call mpi_recv(SS001, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-    call mpi_recv(SS002, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-    call mpi_recv(SS003, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-    call mpi_recv(SS004, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-    call mpi_recv(SS005, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)    
-    call mpi_recv(BCPHOBIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-    call mpi_recv(BCPHILIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)  
-    call mpi_recv(OCPHOBIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-    call mpi_recv(OCPHILIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-    call mpi_recv(SO4, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)      
-    if (lower_to_upper(surfname) == 'MAIACRTLS') then
-      call mpi_recv(KISO, counti*surfbandm, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)  
-      call mpi_recv(KVOL, counti*surfbandm, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-      call mpi_recv(KGEO, counti*surfbandm, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-    else
-      call mpi_recv(LER, counti*surfbandm, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+    if (counti > 0) then
+      call mpi_recv(AIRDENS, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(RH, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(DELP, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(DU001, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(DU002, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(DU003, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(DU004, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(DU005, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(SS001, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(SS002, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(SS003, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(SS004, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(SS005, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)    
+      call mpi_recv(BCPHOBIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+      call mpi_recv(BCPHILIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)  
+      call mpi_recv(OCPHOBIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+      call mpi_recv(OCPHILIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+      call mpi_recv(SO4, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)      
+      if (lower_to_upper(surfname) == 'MAIACRTLS') then
+        call mpi_recv(KISO, counti*surfbandm, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)  
+        call mpi_recv(KVOL, counti*surfbandm, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+        call mpi_recv(KGEO, counti*surfbandm, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+      else
+        call mpi_recv(LER, counti*surfbandm, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+      end if
+      call mpi_recv(SZA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)   
+      call mpi_recv(VZA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)   
+      call mpi_recv(RAA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)      
     end if
-    call mpi_recv(SZA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)   
-    call mpi_recv(VZA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)   
-    call mpi_recv(RAA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)      
   end if  
 
   if (.not. MAPL_am_I_root()) then
@@ -639,38 +657,43 @@ program geo_vlidort_multinode
 ! Processors not on root node need to send data back to be put into shared memory
 ! ----------------------------------------
   if (.not. amOnFirstNode) then
-    call mpi_send(TAU_, counti*km*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-    call mpi_send(SSA_, counti*km*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-    call mpi_send(G_, counti*km*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-    call mpi_send(ROT_, counti*km*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-    call mpi_send(ALBEDO_, counti*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-    if (.not. scalar) then
-      call mpi_send(Q_, counti*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(U_, counti*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-    end if
+    if (counti > 0) then
+      call mpi_send(TAU_, counti*km*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(SSA_, counti*km*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(G_, counti*km*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(ROT_, counti*km*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(ALBEDO_, counti*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      if (.not. scalar) then
+        call mpi_send(Q_, counti*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+        call mpi_send(U_, counti*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      end if
 
-    call mpi_send(radiance_VL, counti*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-    call mpi_send(reflectance_VL, counti*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(radiance_VL, counti*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(reflectance_VL, counti*nch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+    end if
   end if
 
   if (MAPL_am_I_root()) then
-    do pp = CoresPerNode,npet-1
-      starti = sum(nclr(1:pp-1))+1
-      counti = nclr(pp)
-      endi   = starti + counti - 1  
+    do pp = 1,npet-1
+      if (.not. FirstNode(pp)) then
+        starti = sum(nclr(1:pp-1))+1
+        counti = nclr(pp)
+        endi   = starti + counti - 1  
+        if (counti > 0) then
+          call mpi_recv(TAU_(starti:endi,:,:), counti*km*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(SSA_(starti:endi,:,:), counti*km*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(G_(starti:endi,:,:), counti*km*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(ROT_(starti:endi,:,:), counti*km*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(ALBEDO_(starti:endi,:), counti*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+          if (.not. scalar) then
+            call mpi_recv(Q_(starti:endi,:), counti*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+            call mpi_recv(U_(starti:endi,:), counti*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+          end if
 
-      call mpi_recv(TAU_(starti:endi,:,:), counti*km*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-      call mpi_recv(SSA_(starti:endi,:,:), counti*km*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-      call mpi_recv(G_(starti:endi,:,:), counti*km*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-      call mpi_recv(ROT_(starti:endi,:,:), counti*km*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-      call mpi_recv(ALBEDO_(starti:endi,:), counti*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-      if (.not. scalar) then
-        call mpi_recv(Q_(starti:endi,:), counti*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-        call mpi_recv(U_(starti:endi,:), counti*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+          call mpi_recv(radiance_VL(starti:endi,:), counti*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(reflectance_VL(starti:endi,:), counti*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+        end if
       end if
-
-      call mpi_recv(radiance_VL(starti:endi,:), counti*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-      call mpi_recv(reflectance_VL(starti:endi,:), counti*nch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
     end do
   end if
 
@@ -1274,49 +1297,50 @@ end subroutine outfile_extname
   subroutine allocate_multinode(clrm)
     integer, intent(in)    :: clrm
 
-    allocate (AIRDENS(clrm,km))
-    allocate (RH(clrm,km))
-    allocate (DELP(clrm,km))
-    allocate (DU001(clrm,km))
-    allocate (DU002(clrm,km))
-    allocate (DU003(clrm,km))
-    allocate (DU004(clrm,km))
-    allocate (DU005(clrm,km))
-    allocate (SS001(clrm,km))
-    allocate (SS002(clrm,km))
-    allocate (SS003(clrm,km))
-    allocate (SS004(clrm,km))
-    allocate (SS005(clrm,km))
-    allocate (BCPHOBIC(clrm,km))
-    allocate (BCPHILIC(clrm,km))
-    allocate (OCPHOBIC(clrm,km))
-    allocate (OCPHILIC(clrm,km))
-    allocate (SO4(clrm,km))
-    if (lower_to_upper(surfname) == 'MAIACRTLS') then
-      allocate (KISO(clrm,surfbandm))
-      allocate (KVOL(clrm,surfbandm))
-      allocate (KGEO(clrm,surfbandm))
-    else
-      allocate (LER(clrm,surfbandm))
-    end if 
-    allocate (SZA(clrm))
-    allocate (VZA(clrm))
-    allocate (RAA(clrm))
+    if (clrm > 0) then
+      allocate (AIRDENS(clrm,km))
+      allocate (RH(clrm,km))
+      allocate (DELP(clrm,km))
+      allocate (DU001(clrm,km))
+      allocate (DU002(clrm,km))
+      allocate (DU003(clrm,km))
+      allocate (DU004(clrm,km))
+      allocate (DU005(clrm,km))
+      allocate (SS001(clrm,km))
+      allocate (SS002(clrm,km))
+      allocate (SS003(clrm,km))
+      allocate (SS004(clrm,km))
+      allocate (SS005(clrm,km))
+      allocate (BCPHOBIC(clrm,km))
+      allocate (BCPHILIC(clrm,km))
+      allocate (OCPHOBIC(clrm,km))
+      allocate (OCPHILIC(clrm,km))
+      allocate (SO4(clrm,km))
+      if (lower_to_upper(surfname) == 'MAIACRTLS') then
+        allocate (KISO(clrm,surfbandm))
+        allocate (KVOL(clrm,surfbandm))
+        allocate (KGEO(clrm,surfbandm))
+      else
+        allocate (LER(clrm,surfbandm))
+      end if 
+      allocate (SZA(clrm))
+      allocate (VZA(clrm))
+      allocate (RAA(clrm))
 
-    allocate (TAU_(clrm,km,nch))
-    allocate (SSA_(clrm,km,nch))
-    allocate (G_(clrm,km,nch))
-    allocate (ROT_(clrm,km,nch))
-    allocate (ALBEDO_(clrm,nch))
-    
-    if (.not. scalar) then
-      allocate (Q_(clrm,nch))
-      allocate (U_(clrm,nch))
+      allocate (TAU_(clrm,km,nch))
+      allocate (SSA_(clrm,km,nch))
+      allocate (G_(clrm,km,nch))
+      allocate (ROT_(clrm,km,nch))
+      allocate (ALBEDO_(clrm,nch))
+      
+      if (.not. scalar) then
+        allocate (Q_(clrm,nch))
+        allocate (U_(clrm,nch))
+      end if
+
+      allocate (radiance_VL(clrm,nch))
+      allocate (reflectance_VL(clrm,nch))
     end if
-
-    allocate (radiance_VL(clrm,nch))
-    allocate (reflectance_VL(clrm,nch))
-
   end subroutine allocate_multinode
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
