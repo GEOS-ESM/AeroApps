@@ -26,6 +26,7 @@ program geo_vlidort_multinode
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
+  use Chem_MieMod
   use netcdf_helper                ! Module with netcdf routines
   use GeoAngles                    ! Module with geostationary satellite algorithms for scene geometry
 
@@ -141,6 +142,9 @@ program geo_vlidort_multinode
                                                                                     ! param2 = shape parameter (b/r)
   real                                  :: surf_missing                                                                 
 
+! Mie Table Stucture
+!---------------------
+  type(Chem_Mie)                        :: mieTables
 
 ! Satellite domain variables
 !------------------------------
@@ -400,6 +404,19 @@ program geo_vlidort_multinode
 ! Prepare inputs and run VLIDORT
 ! -----------------------------------
   call strarr_2_chararr(vnames_string,nq,16,vnames)
+
+! Create the Mie Tables
+! ---------------------
+  mieTables = Chem_MieCreate(rcfile,rc)
+  if ( rc /= 0 ) then
+    print *, 'Cannot create Mie tables from '//trim(rcfile)
+    GOTO 800
+  end if
+
+  if ( nMom > mieTables%nMom ) then ! mieTables%nMom is writen in Aod_EOS.rc file
+    print *, 'mieTables do not have enough moments', nMom, mieTables%nMom
+    GOTO 800
+  end if  
   
   if (myid == 1) then
     starti = 1
@@ -548,11 +565,11 @@ program geo_vlidort_multinode
   !   Aerosol Optical Properties
   !   --------------------------
       if (scalar) then
-        call getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
+        call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
                             qm, reshape(RH(c,:),(/km,nobs/)), &
                             tau, ssa, g, ierr )
       else
-        call getAOPvector ( km, nobs, nch, nq, rcfile, channels, vnames, verbose, &
+        call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
                             qm, reshape(RH(c,:),(/km,nobs/)),&
                             nMom,nPol, tau, ssa, g, pmom, ierr )
       end if
