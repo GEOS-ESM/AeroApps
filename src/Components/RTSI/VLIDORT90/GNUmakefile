@@ -76,13 +76,13 @@ MOD_DIRS := .
 # (Include first-order source files)
   -include $(FO_MAIN_PATH)/makefile.fo
 
- # For parallel install
+# For parallel install
 # --------------------
   -include $(ESMADIR)/Config/ESMA_post.mk  # ESMA additional targets, macros
 
 
 
-SRCS := VLIDORT_Mod.F VLIDORT_SurfaceMod.F90 VLIDORT_ScatMod.F90 VLIDORT_ScatMod_cd.F\
+SRCS := VLIDORT_Mod.F VLIDORT_SurfaceMod.F90 VLIDORT_ScatMod.F90 \
         $(foreach dir,$(SRC_DIRS), \
         $(wildcard $(dir)/*.[fFc]) $(wildcard $(dir)/*.[fF]90) )
 
