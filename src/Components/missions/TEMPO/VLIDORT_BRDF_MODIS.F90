@@ -100,8 +100,8 @@ module VLIDORT_BRDF_MODIS
            IS_MISSING(sensor_zenith(j),MISSING) .OR. &
            IS_MISSING(relat_azymuth(j),MISSING)  )  then
 
-        radiance_VL(j,:) = MISSING
-        reflectance_VL(j,:) = MISSING
+        radiance_VL_SURF(j,:) = MISSING
+        reflectance_VL_SURF(j,:) = MISSING
         cycle
       end if
         
@@ -154,14 +154,14 @@ module VLIDORT_BRDF_MODIS
         end if
 
         if ( ier /= 0 ) then
-          radiance_VL(j,i) = MISSING
-          reflectance_VL(j,i) = MISSING
+          radiance_VL_SURF(j,i) = MISSING
+          reflectance_VL_SURF(j,i) = MISSING
           cycle
         end if
 
         if (BR(j,i) < 0) then
-          radiance_VL(j,i)    = -500
-          reflectance_VL(j,i) = -500
+          radiance_VL_SURF(j,i)    = -500
+          reflectance_VL_SURF(j,i) = -500
           BR(j,i)    = -500
           ROT(:,j,i) = -500
           cycle
@@ -367,8 +367,8 @@ module VLIDORT_BRDF_MODIS
         end if
 
         if (BR(j,i) < 0) then
-          radiance_VL(j,i)    = -500
-          reflectance_VL(j,i) = -500
+          radiance_VL_SURF(j,i)    = -500
+          reflectance_VL_SURF(j,i) = -500
           BR(j,i)    = -500
           ROT(:,j,i) = -500
           Q(j,i)     = -500
