@@ -132,8 +132,8 @@
 !     thermodynamic conditions of the atm and varies with height, 
 !     product of the molecular number density of air by the total ray 
 !     scattering cross section).
-      real*8, dimension(MAXLAYERS+1)                     :: Vol 
-      real*8, dimension(MAXLAYERS+1)                     :: sect 
+      real*8, dimension(0:MAXLAYERS+1)                   :: Vol 
+      real*8, dimension(0:MAXLAYERS+1)                   :: sect 
       real*8, parameter                                  :: pi = 4.*atan(1.0)
       real*8, parameter                                  :: DEPOL_RATIO = 0.030
        
