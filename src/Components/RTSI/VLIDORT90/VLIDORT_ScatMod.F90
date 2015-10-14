@@ -45,14 +45,14 @@
          real*8     :: reflectance ! TOA reflectance
          real*8     :: U           ! U Stokes component
          real*8     :: Q           ! Q Stokes component
-         real*8     :: V          ! V Stokes component
+         real*8     :: V           ! V Stokes component
       end type VLIDORT_output_vector
 
        
       Contains
 !.............................................................................
       subroutine VLIDORT_Rayleigh (self, rc)
-! Computes Rayleigh optical thickness - populates rot vector in self.  Self contains atmospheric data  
+!     Computes Rayleigh optical thickness - populates rot vector in self.  Self contains atmospheric data  
 !     Rayleigh extinction profile from Bodhaine et al., (1999) 
 !     and Tomasi et al., (2005)
 !     (wavelength in micrometer, pressure in hpa)
