@@ -43,7 +43,7 @@
       Contains
 !.............................................................................
       subroutine VLIDORT_Run_Vector (self,radiance, reflectance, ROT,Q,U, &
-                                 scalar,aerosol,rc,NSTOKESin, V)
+                                 scalar,aerosol,rc, V)
 !
 !     Computes radiances for a single wavelength, pixel. Optical properties
 !     and met fields in self are assumed to have been updated with the
@@ -70,7 +70,6 @@
       logical,            intent(in)      :: scalar  ! If True, do scalar calculation
       logical,            intent(in)      :: aerosol ! if False, Rayleigh only
 
-      integer,            intent(in),optional  :: NSTOKESin  ! number of Stokes components
       real*8,             intent(out),optional :: V          ! V Stokes component
 
 
@@ -86,7 +85,6 @@
       integer                                            :: i, j, k, l, m, n
       integer                                            :: ncoeffs, k1, IDR, ierror
       integer                                            :: NLAYERS
-      integer                                            :: NSTOKES
       real*8                                             :: ray_l      
       real*8                                             :: tau_l 
       real*8                                             :: ssa_l 
@@ -153,18 +151,8 @@
       end if
 
 !                     Stokes/streams/layers/moments
-!                     -----------------------------
-      if ( vector ) then
-         NSTOKES = 3                                       ! Number of Stokes vector components
-      else
-         NSTOKES = 1        
-      end if
-
-      if (present(NSTOKESin)) NSTOKES = NSTOKESin
-
-      if ( NSTOKES  .GT. MAXSTOKES  )   rc = 2  
-
-      self%Surface%Base%VIO%VLIDORT_FixIn%Cont%TS_NSTOKES          = NSTOKES
+!                     -----------------------------  
+      self%Surface%Base%VIO%VLIDORT_FixIn%Cont%TS_NSTOKES          = self%NSTOKES
       
       if ( self%Surface%Base%VIO%VLIDORT_FixIn%Bool%TS_DO_UPWELLING ) then
          IDR = 1
