@@ -22,8 +22,6 @@
           
 
       type VLIDORT_scat
-
-!         logical         :: initialized = .false.
          integer         :: NSTOKES             ! Number of stokes vectors
          real*8          :: wavelength          ! in [nm]
          integer         :: nMom                ! number of momemts read (phase function) 
@@ -36,11 +34,20 @@
          real*8, pointer ::  pe(:)              ! pressure    at layer edges [Pa]
          real*8, pointer ::  ze(:)              ! height      at layer edges [m]
          real*8, pointer ::  te(:)              ! temperature at layer edges [K]
-         real*8, pointer:: pmom(:,:,:)          ! components of the scattering phase matrix
+         real*8, pointer :: pmom(:,:,:)          ! components of the scattering phase matrix
 
          type(VLIDORT_Surface) :: Surface
 
       end type VLIDORT_scat
+
+      type VLIDORT_output_vector
+         real*8     :: radiance    ! TOA radiance
+         real*8     :: reflectance ! TOA reflectance
+         real*8     :: U           ! U Stokes component
+         real*8     :: Q           ! Q Stokes component
+         real*8     :: V          ! V Stokes component
+      end type VLIDORT_output_vector
+
        
       Contains
 !.............................................................................
@@ -138,8 +145,7 @@
       end subroutine VLIDORT_Rayleigh
 
 !.............................................................................
-      subroutine VLIDORT_Run_Vector (self,radiance, reflectance, Q,U, &
-                                 aerosol,rc, V)
+      subroutine VLIDORT_Run_Vector (self, output, rc)
 !
 !     Computes radiances for a single wavelength, pixel. Optical properties
 !     and met fields in self are assumed to have been updated with the
@@ -155,15 +161,10 @@
       USE VLIDORT_MASTERS
      
 
-      type(VLIDORT_scat), intent(inout)   :: self        ! Contains most input
-      real*8,             intent(out)     :: radiance    ! TOA radiance
-      real*8,             intent(out)     :: reflectance ! TOA reflectance
-      real*8,             intent(out)     :: U           ! U Stokes component
-      real*8,             intent(out)     :: Q           ! Q Stokes component
-      integer,            intent(out)     :: rc
-      logical,            intent(in)      :: aerosol ! if False, Rayleigh only
+      type(VLIDORT_scat),          intent(inout)  :: self        ! Contains most input
+      type(VLIDORT_output_vector), intent(out)    :: output      ! contains output
+      integer,                     intent(out)    :: rc
 
-      real*8,             intent(out),optional :: V          ! V Stokes component
 
 
 !                           ----
@@ -176,7 +177,7 @@
 !     local variables
 !     ---------------
       integer                                            :: i, j, k, l, m, n
-      integer                                            :: ncoeffs, k1, IDR, ierror
+      integer                                            :: IDR, ierror
       integer                                            :: NLAYERS
       real*8                                             :: ray_l      
       real*8                                             :: tau_l 
@@ -192,17 +193,11 @@
       real*8                                             :: aerswt 
       real*8                                             :: rayswt
       real*8                                             :: factor      
-      real*8                                             :: COEF_DEPOL
       real*8                                             :: wmicron
-
-   
-      real*8                                             :: x
-      real*8, dimension(MAXLAYERS)                       :: Ray
-      real*8, dimension(0:MAXMOMENTS_INPUT)              :: aersmom 
+ 
       real*8, dimension(0:MAXMOMENTS_INPUT,MAXLAYERS,16) :: aervmoms 
       real*8, dimension(0:2, 16)                         :: rayvmoms
       real*8                                             :: difz
-      real*8                                             :: somray
       logical                                            :: DO_LAMBERTIAN_SURFACE
       real*8                                             :: LAMBERTIAN_ALBEDO
       integer                                            :: NGREEK_MOMENTS_INPUT
@@ -282,7 +277,6 @@
 !               Calculation of the Rayleigh-Scattering Optical Depth
 !               ----------------------------------------------------               
       call VLIDORT_Rayleigh (self, rc)
-      ray = self%rot
 
 !                Populate Scattering Phase Matrix
 !                ---------------------------------
@@ -424,27 +418,18 @@
       
 !     Return TOA radiance
 !     -------------------
-      RADIANCE = 0.0
-      REFLECTANCE = 0.0
-      Q = 0
-      U = 0
-      if (present(V)) V = 0
-      if ( .not. vector ) then
-         RADIANCE = STOKES(1, 1, 1, IDR)
-              
-         REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR ) 
-      
-      end if
-!      print*, 'compute radinaces'
-      if ( vector ) then
-         RADIANCE = STOKES(1, 1, 1, IDR)
-         Q = STOKES(1, 1, 2, IDR)
-         U = STOKES(1, 1, 3, IDR)
-         if (present(V))  V = STOKES(1, 1, 4, IDR)
+      output%RADIANCE    = 0.0
+      output%REFLECTANCE = 0.0
+      output%Q           = 0
+      output%U           = 0
+      output%V           = 0
 
-         REFLECTANCE = (pi * RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR )   
-      end if
+      output%RADIANCE = STOKES(1, 1, 1, IDR)
+      output%Q        = STOKES(1, 1, 2, IDR)
+      output%U        = STOKES(1, 1, 3, IDR)
+      if (self%NSTOKES == 4)  output%V = STOKES(1, 1, 4, IDR)
 
+      output%REFLECTANCE = (pi * output%RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR )   
     
       end subroutine VLIDORT_Run_Vector
 
