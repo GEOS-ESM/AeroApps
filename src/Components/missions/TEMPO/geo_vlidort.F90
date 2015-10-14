@@ -91,6 +91,7 @@ program geo_vlidort
   real, pointer                         :: SZA(:) => null()
   real, pointer                         :: VZA(:) => null()
   real, pointer                         :: RAA(:) => null()  
+  real, pointer                         :: temp3D(:,:,:) => null()
 
 ! VLIDORT input arrays
 ! ---------------------------
@@ -402,7 +403,7 @@ program geo_vlidort
   counti = nclr(myid+1)
   endi   = starti + counti - 1
 
-  do c = starti,endi !starti, endi
+  do c = starti,starti+1 !starti, endi
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
@@ -538,6 +539,11 @@ program geo_vlidort
     radiance_VL(c,:)    = radiance_VL_int(nobs,:)
     reflectance_VL(c,:) = reflectance_VL_int(nobs,:)
     ALBEDO_(c,:) = albedo(nobs,:)
+
+    if (myid == 5) then
+      write(*,*) myid, radiance_VL(c,:), reflectance_VL(c,:), ALBEDO_(c,:),ROT(1,nobs,1) 
+    end if
+
     do ch=1,nch      
         ROT_(c,:,ch) = ROT(:,nobs,ch)
     end do
@@ -898,66 +904,81 @@ end subroutine outfile_extname
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_aer_Nv()
-    real, dimension(im,jm,km)   :: temp
 
-    if (myid == 0) then
-      call readvar3D("AIRDENS", AER_file, temp)
-      call reduceProfile(temp,clmask,AIRDENS)      
+    call mp_readvar3D("AIRDENS", AER_file, (/im,jm,km/), 1, npet, myid, temp3D)  
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,AIRDENS) 
 
-      call readvar3D("RH", AER_file, temp)
-      call reduceProfile(temp,clmask,RH)
+    call mp_readvar3D("RH", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,RH) 
 
-      call readvar3D("DELP", AER_file, temp)
-      call reduceProfile(temp,clmask,DELP)
+    call mp_readvar3D("DELP", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,DELP)     
 
-      call readvar3D("DU001", AER_file, temp)
-      call reduceProfile(temp,clmask,DU001)
+    call mp_readvar3D("DU001", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,DU001) 
 
-      call readvar3D("DU002", AER_file, temp)
-      call reduceProfile(temp,clmask,DU002)
+    call mp_readvar3D("DU002", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,DU002) 
 
-      call readvar3D("DU003", AER_file, temp)
-      call reduceProfile(temp,clmask,DU003)
+    call mp_readvar3D("DU003", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,DU003) 
 
-      call readvar3D("DU004", AER_file, temp)
-      call reduceProfile(temp,clmask,DU004)
+    call mp_readvar3D("DU004", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,DU004) 
 
-      call readvar3D("DU005", AER_file, temp)
-      call reduceProfile(temp,clmask,DU005)
+    call mp_readvar3D("DU005", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,DU005)    
 
-      call readvar3D("SS001", AER_file, temp)
-      call reduceProfile(temp,clmask,SS001)
+    call mp_readvar3D("SS001", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,SS001) 
 
-      call readvar3D("SS002", AER_file, temp)
-      call reduceProfile(temp,clmask,SS002)
+    call mp_readvar3D("SS002", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,SS002) 
 
-      call readvar3D("SS003", AER_file, temp)
-      call reduceProfile(temp,clmask,SS003)
+    call mp_readvar3D("SS003", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,SS003) 
 
-      call readvar3D("SS004", AER_file, temp)
-      call reduceProfile(temp,clmask,SS004)
+    call mp_readvar3D("SS004", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,SS004) 
 
-      call readvar3D("SS005", AER_file, temp)
-      call reduceProfile(temp,clmask,SS005)
+    call mp_readvar3D("SS005", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,SS005) 
 
-      call readvar3D("BCPHOBIC", AER_file, temp)
-      call reduceProfile(temp,clmask,BCPHOBIC) 
+    call mp_readvar3D("BCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,BCPHOBIC) 
 
-      call readvar3D("BCPHILIC", AER_file, temp)
-      call reduceProfile(temp,clmask,BCPHILIC)
+    call mp_readvar3D("BCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,BCPHILIC) 
 
-      call readvar3D("OCPHOBIC", AER_file, temp)
-      call reduceProfile(temp,clmask,OCPHOBIC) 
+    call mp_readvar3D("OCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,OCPHOBIC) 
 
-      call readvar3D("OCPHILIC", AER_file, temp)
-      call reduceProfile(temp,clmask,OCPHILIC)  
+    call mp_readvar3D("OCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,OCPHILIC)   
 
-      call readvar3D("SO4", AER_file, temp)
-      call reduceProfile(temp,clmask,SO4)    
-  
+    call mp_readvar3D("SO4", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,SO4)             
 
-      write(*,*) '<> Read aeorosl data to shared memory'  
-    end if
+    if (MAPL_am_I_root()) write(*,*) '<> Read aeorosl data to shared memory'
+
   end subroutine read_aer_Nv
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1146,6 +1167,8 @@ end subroutine outfile_extname
 
     call MAPL_AllocNodeArray(radiance_VL,(/clrm,nch/),rc=ierr)
     call MAPL_AllocNodeArray(reflectance_VL,(/clrm,nch/),rc=ierr)
+
+    call MAPL_AllocNodeArray(temp3D,(/im,jm,km/),rc=ierr)
 
   end subroutine allocate_shared
 
