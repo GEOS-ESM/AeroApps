@@ -291,6 +291,7 @@ module VLIDORT_BRDF_MODIS
 
     
     type(VLIDORT_scat) :: SCAT
+    type(VLIDORT_output_vector)  :: output
 
     rc = 0
     ier = 0
@@ -298,8 +299,11 @@ module VLIDORT_BRDF_MODIS
     call VLIDORT_Init( SCAT%Surface%Base, km, rc)
     if ( rc /= 0 ) return
 
-    SCAT%nMom = nMom
-    SCAT%nPol = nPol
+    SCAT%nMom    = nMom
+    SCAT%nPol    = nPol
+    SCAT%NSTOKES = 3
+
+    if ( SCAT%NSTOKES  .GT. MAXSTOKES  )   return
 
     do j = 1, nobs
        
@@ -354,12 +358,15 @@ module VLIDORT_BRDF_MODIS
         SCAT%g => g(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
 
-        scalar = .false.
-        call VLIDORT_Run (SCAT, radiance_VL_SURF(j,i),reflectance_VL_SURF(j,i),&
-                          ROT(:,j,i), Q(j,i), U(j,i), scalar, aerosol, ier)
+        call VLIDORT_Run_Vector (SCAT, output, ier)
 
-        
-        BR(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
+        radiance_VL_SURF(j,i)    = output%radiance
+        reflectance_VL_SURF(j,i) = output%reflectance
+        Q(j,i)                   = output%Q
+        U(j,i)                   = output%U        
+        BR(j,i)    = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
+        ROT(:,j,i) = SCAT%rot
+
         if ( ier /= 0 ) then
           radiance_VL_SURF(j,i) = MISSING
           reflectance_VL_SURF(j,i) = MISSING               
