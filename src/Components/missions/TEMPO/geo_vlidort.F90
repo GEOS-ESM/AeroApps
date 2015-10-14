@@ -93,6 +93,7 @@ program geo_vlidort
   real, pointer                         :: RAA(:) => null()  
   real, pointer                         :: temp3D(:,:,:) => null()
   real, pointer                         :: tempSurf3D(:,:,:) => null()
+  real, pointer                         :: temp2D(:,:) => null()
 
 ! VLIDORT input arrays
 ! ---------------------------
@@ -1031,15 +1032,15 @@ end subroutine outfile_extname
     if (lower_to_upper(surfname) == 'MAIACRTLS') then
       call mp_readvar3D("Kiso", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, tempSurf3D) 
       call MAPL_SyncSharedMemory(rc=ierr)    
-      if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,KISO) 
+      if (MAPL_am_I_root())  call reduceProfile(tempSurf3D,clmask,KISO) 
 
       call mp_readvar3D("Kvol", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, tempSurf3D) 
       call MAPL_SyncSharedMemory(rc=ierr)    
-      if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,KVOL)   
+      if (MAPL_am_I_root())  call reduceProfile(tempSurf3D,clmask,KVOL)   
 
       call mp_readvar3D("Kgeo", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, tempSurf3D) 
       call MAPL_SyncSharedMemory(rc=ierr)    
-      if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,KGEO)       
+      if (MAPL_am_I_root())  call reduceProfile(tempSurf3D,clmask,KGEO)       
 
       if (MAPL_am_I_root())  write(*,*) '<> Read BRDF data to shared memory' 
     else
@@ -1080,17 +1081,19 @@ end subroutine outfile_extname
     real, dimension(im,jm)     :: temp
     real, allocatable          :: saa(:), vaa(:)
     integer                    :: i
+
+
+    call mp_readvar2D("solar_zenith", ANG_file, (/im,jm/), 1, npet, myid, temp2D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  SZA = pack(temp2D,clmask)
+
+    call mp_readvar2D("sensor_zenith", ANG_file, (/im,jm/), 1, npet, myid, temp2D) 
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root())  VZA = pack(temp2D,clmask)
     
     if (myid == 0) then
       allocate (saa(clrm))
       allocate (vaa(clrm))
-
-
-      call readvar2D("solar_zenith", ANG_file, temp)
-      SZA = pack(temp,clmask)
-
-      call readvar2D("sensor_zenith", ANG_file, temp)
-      VZA = pack(temp,clmask)
 
       call readvar2D("solar_azimuth", ANG_file, temp)
       saa = pack(temp,clmask)
@@ -1173,6 +1176,7 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(radiance_VL,(/clrm,nch/),rc=ierr)
     call MAPL_AllocNodeArray(reflectance_VL,(/clrm,nch/),rc=ierr)
 
+    call MAPL_AllocNodeArray(temp2D,(/im,jm/),rc=ierr)
     call MAPL_AllocNodeArray(temp3D,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(tempSurf3D,(/im,jm,surfbandm/),rc=ierr)
 
