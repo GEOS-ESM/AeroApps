@@ -92,6 +92,7 @@ program geo_vlidort
   real, pointer                         :: VZA(:) => null()
   real, pointer                         :: RAA(:) => null()  
   real, pointer                         :: temp3D(:,:,:) => null()
+  real, pointer                         :: tempSurf3D(:,:,:) => null()
 
 ! VLIDORT input arrays
 ! ---------------------------
@@ -1027,24 +1028,28 @@ end subroutine outfile_extname
   subroutine read_surf()
     real, dimension(im,jm,surfbandm)   :: temp
 
-    if (MAPL_am_I_root()) then
-      if (lower_to_upper(surfname) == 'MAIACRTLS') then
- 
-        call readvar3D("Kiso", SURF_file, temp)
-        call reduceProfile(temp,clmask,KISO)
+    if (lower_to_upper(surfname) == 'MAIACRTLS') then
+      call mp_readvar3D("Kiso", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, tempSurf3D) 
+      call MAPL_SyncSharedMemory(rc=ierr)    
+      if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,KISO) 
 
-        call readvar3D("Kvol", SURF_file, temp)
-        call reduceProfile(temp,clmask,KVOL)
+      call mp_readvar3D("Kvol", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, tempSurf3D) 
+      call MAPL_SyncSharedMemory(rc=ierr)    
+      if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,KVOL)   
 
-        call readvar3D("Kgeo", SURF_file, temp)
-        call reduceProfile(temp,clmask,KGEO)
+      call mp_readvar3D("Kgeo", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, tempSurf3D) 
+      call MAPL_SyncSharedMemory(rc=ierr)    
+      if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,KGEO)       
 
-        write(*,*) '<> Read BRDF data to shared memory' 
-      else
+      if (MAPL_am_I_root())  write(*,*) '<> Read BRDF data to shared memory' 
+    else
+      if (MAPL_am_I_root()) then
         call read_LER(temp)        
         call reduceProfile(temp,clmask,LER)
+        write(*,*) '<> Read LER data to shared memory'
       end if
-    end if 
+    end if
+
   end subroutine read_surf
 
   subroutine read_LER(indata)
@@ -1169,6 +1174,7 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(reflectance_VL,(/clrm,nch/),rc=ierr)
 
     call MAPL_AllocNodeArray(temp3D,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(tempSurf3D,(/im,jm,surfbandm/),rc=ierr)
 
   end subroutine allocate_shared
 
