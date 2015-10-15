@@ -30,7 +30,6 @@ module VLIDORT_BRDF_MODIS
 
     implicit NONE
 
-    logical, parameter            :: aerosol = .true.
     logical, parameter            :: scalar = .true.
     integer, parameter            :: nkernel = 3
     integer, parameter            :: nparam  = 2
@@ -191,7 +190,6 @@ module VLIDORT_BRDF_MODIS
      implicit NONE
  
     logical                                 :: scalar
-    logical ,parameter                      :: aerosol = .true.
     integer, parameter                      :: nkernel = 3   ! number of kernels
     integer, parameter                      :: nparam  = 2   ! number of kernel parameters
 
