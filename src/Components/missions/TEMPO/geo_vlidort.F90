@@ -516,7 +516,7 @@ program geo_vlidort
 !     ------------------------------
       if (scalar) then 
         ! Call to vlidort scalar code            
-        call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
+        call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nMom,  &
                 dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
                 kernel_wt, param, &
                 (/dble(SZA(c))/), &
@@ -526,7 +526,7 @@ program geo_vlidort
       else
         ! Call to vlidort vector code
         call VLIDORT_Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
-                nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+                nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), &
                 kernel_wt, param, &
                 (/dble(SZA(c))/), &
                 (/dble(abs(RAA(c)))/), &
