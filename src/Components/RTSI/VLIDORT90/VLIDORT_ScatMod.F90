@@ -48,6 +48,11 @@
          real*8     :: V           ! V Stokes component
       end type VLIDORT_output_vector
 
+      type VLIDORT_output_scalar
+         real*8     :: radiance    ! TOA radiance
+         real*8     :: reflectance ! TOA reflectance
+      end type VLIDORT_output_scalar      
+
        
       Contains
 !.............................................................................
@@ -165,12 +170,9 @@
       type(VLIDORT_output_vector), intent(out)    :: output      ! contains output
       integer,                     intent(out)    :: rc
 
-
-
 !                           ----
 
       integer              :: STATUS_INPUTCHECK, STATUS_CALCULATION 
-      logical, parameter   :: vector = .true.
 
 !                           ----
 
@@ -182,7 +184,6 @@
       real*8                                             :: ray_l      
       real*8                                             :: tau_l 
       real*8                                             :: ssa_l 
-      real*8                                             :: g_l 
       real*8                                             :: tau_ext
       real*8                                             :: tau_scat
       real*8                                             :: ssa_tot
@@ -192,17 +193,15 @@
       real*8                                             :: deltamom1 
       real*8                                             :: aerswt 
       real*8                                             :: rayswt
-      real*8                                             :: factor      
-      real*8                                             :: wmicron
  
       real*8, dimension(0:MAXMOMENTS_INPUT,MAXLAYERS,16) :: aervmoms 
       real*8, dimension(0:2, 16)                         :: rayvmoms
       real*8                                             :: difz
+
       logical                                            :: DO_LAMBERTIAN_SURFACE
       real*8                                             :: LAMBERTIAN_ALBEDO
-      integer                                            :: NGREEK_MOMENTS_INPUT
-      real*8, dimension(0:MAXMOMENTS_INPUT,MAXLAYERS,16) :: greekmat_total_input                     
 
+      real*8, dimension(0:MAXMOMENTS_INPUT,MAXLAYERS,16) :: greekmat_total_input                     
       real*8, dimension(MAXLAYERS)                       :: deltau_vert_input
       real*8, dimension(MAXLAYERS)                       :: omega_total_input
 
@@ -210,15 +209,11 @@
               MAXSTOKES, MAX_DIRECTIONS)                 :: STOKES
       real*8                                             :: FLUX_FACTOR
 
-!     Volume Rayleigh scattering coefficient (depends closely on the 
-!     thermodynamic conditions of the atm and varies with height, 
-!     product of the molecular number density of air by the total ray 
-!     scattering cross section).
       real*8, parameter                                  :: pi = 4.*atan(1.0)
       real*8, parameter                                  :: DEPOL_RATIO = 0.030
        
       
-       rc = 0
+      rc = 0
  
       if ( .not. self%Surface%Base%initialized ) then
         rc = 1
@@ -227,7 +222,18 @@
       
 !                     Stokes/streams/layers/moments
 !                     -----------------------------  
-      self%Surface%Base%VIO%VLIDORT_FixIn%Cont%TS_NSTOKES          = self%NSTOKES
+      self%Surface%Base%VIO%VLIDORT_FixIn%Cont%TS_NSTOKES                = self%NSTOKES
+      self%Surface%Base%VIO%VLIDORT_ModIn%MCont%TS_NGREEK_MOMENTS_INPUT  = self%nmom
+
+      if ( self%nmom .GT. MAXMOMENTS_INPUT)  then
+         rc = 5
+         return
+      end if
+      if ( self%NSTOKES  .GT. MAXSTOKES  )   then
+         rc = 2 
+         return
+      end if
+      NLAYERS                                                            = self%Surface%Base%VIO%VLIDORT_FixIn%Cont%TS_NLAYERS      
       
       if ( self%Surface%Base%VIO%VLIDORT_FixIn%Bool%TS_DO_UPWELLING ) then
          IDR = 1
@@ -265,10 +271,7 @@
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_LEVELS(1) = 0.0     ! This is TOA   
 
  
-                      
-      
-      NGREEK_MOMENTS_INPUT = self%Surface%Base%VIO%VLIDORT_ModIn%MCont%TS_NGREEK_MOMENTS_INPUT
-      NLAYERS = self%Surface%Base%VIO%VLIDORT_FixIn%Cont%TS_NLAYERS     
+           
      
       self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_height_grid(0:NLAYERS)      = self%ze * 1.E-3  ! en km
       self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_pressure_grid(0:NLAYERS)    = self%pe * 1.E-2  ! en hPa
@@ -325,7 +328,6 @@
          ray_l = self%rot(i)         ! indice l for  each layer      
          tau_l = self%tau(i)
          ssa_l = self%ssa(i) 
-         g_l   = self%g(i) 
         
 !        total optical depths for extinction and scattering 
 !        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -375,7 +377,7 @@
                greekmat_total_input(l,i,k) = rayvmoms(l,k) * rayswt + aervmoms(l,i,k) * aerswt
             end do
         
-            do l = 3, NGREEK_MOMENTS_INPUT
+            do l = 3, self%nmom
                greekmat_total_input(l,i,k) = aervmoms(l,i,k) * aerswt
             end do
                
@@ -432,6 +434,246 @@
       output%REFLECTANCE = (pi * output%RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR )   
     
       end subroutine VLIDORT_Run_Vector
+
+!.............................................................................
+      subroutine VLIDORT_Run_Scalar (self, output, rc)
+!
+!     Computes radiances for a single wavelength, pixel. Optical properties
+!     and met fields in self are assumed to have been updated with the
+!     apropriate values.
+!
+      USE VLIDORT_PARS
+         
+      USE VLIDORT_IO_DEFS
+      USE VBRDF_SUP_MOD
+      
+      USE VLIDORT_AUX
+      USE VLIDORT_INPUTS
+      USE VLIDORT_MASTERS
+     
+
+      type(VLIDORT_scat),          intent(inout)  :: self        ! Contains most input
+      type(VLIDORT_output_scalar), intent(out)    :: output      ! contains output
+      integer,                     intent(out)    :: rc
+
+!                           ----
+
+      integer              :: STATUS_INPUTCHECK, STATUS_CALCULATION 
+
+!                           ----
+
+!     local variables
+!     ---------------
+      integer                                            :: i, j, k, l, m, n
+      integer                                            :: IDR, ierror
+      integer                                            :: NLAYERS
+      real*8                                             :: ray_l      
+      real*8                                             :: tau_l 
+      real*8                                             :: ssa_l 
+      real*8                                             :: g_l 
+      real*8                                             :: tau_ext
+      real*8                                             :: tau_scat
+      real*8                                             :: ssa_tot
+      real*8                                             :: raysmom2
+      real*8                                             :: aerswt 
+      real*8                                             :: rayswt
+      real*8                                             :: factor      
+  
+      real*8, dimension(0:MAXMOMENTS_INPUT)              :: aersmom       
+      real*8                                             :: difz
+      logical                                            :: DO_LAMBERTIAN_SURFACE
+      real*8                                             :: LAMBERTIAN_ALBEDO
+      integer                                            :: NGREEK_MOMENTS_INPUT
+      real*8, dimension(0:MAXMOMENTS_INPUT,MAXLAYERS,16) :: greekmat_total_input                     
+
+      real*8, dimension(MAXLAYERS)                       :: deltau_vert_input
+      real*8, dimension(MAXLAYERS)                       :: omega_total_input
+
+      real*8, dimension(MAX_USER_LEVELS, MAX_GEOMETRIES, &
+              MAXSTOKES, MAX_DIRECTIONS)                 :: STOKES
+      real*8                                             :: FLUX_FACTOR
+
+!     Volume Rayleigh scattering coefficient (depends closely on the 
+!     thermodynamic conditions of the atm and varies with height, 
+!     product of the molecular number density of air by the total ray 
+!     scattering cross section).
+      real*8, parameter                                  :: pi = 4.*atan(1.0)
+      real*8, parameter                                  :: DEPOL_RATIO = 0.030
+       
+      
+       rc = 0
+ 
+      if ( .not. self%Surface%Base%initialized ) then
+        rc = 1
+        return
+      end if
+      
+!                     Stokes/streams/layers/moments
+!                     -----------------------------  
+      self%Surface%Base%VIO%VLIDORT_FixIn%Cont%TS_NSTOKES          = self%NSTOKES
+      self%Surface%Base%VIO%VLIDORT_ModIn%MCont%TS_NGREEK_MOMENTS_INPUT  = self%nmom
+
+      if ( self%nmom .GT. MAXMOMENTS_INPUT)  then
+         rc = 5
+         return
+      end if      
+
+      if ( self%NSTOKES  .GT. MAXSTOKES  )   then
+         rc = 2 
+         return
+      end if
+
+      NLAYERS = self%Surface%Base%VIO%VLIDORT_FixIn%Cont%TS_NLAYERS     
+
+      
+      if ( self%Surface%Base%VIO%VLIDORT_FixIn%Bool%TS_DO_UPWELLING ) then
+         IDR = 1
+      else
+         IDR = 2
+      end if
+     
+!                          Lambertian OR BRDF surface
+!                          --------------------------
+
+      if ( self%Surface%sfc_type == 1 ) then               ! Lambertian surface ?
+         DO_LAMBERTIAN_SURFACE = .true.        
+         LAMBERTIAN_ALBEDO = self%Surface%albedo           ! Lambertian (isotropic) input albedo
+      else                                   
+         DO_LAMBERTIAN_SURFACE = .false. 
+         LAMBERTIAN_ALBEDO = 0.0                           ! Use BRDF -> albedo set to 0
+ 
+      end if
+
+      self%Surface%Base%VIO%VLIDORT_Fixin%Bool%TS_DO_LAMBERTIAN_SURFACE = DO_LAMBERTIAN_SURFACE
+      self%Surface%Base%VIO%VLIDORT_FixIn%Optical%TS_LAMBERTIAN_ALBEDO = LAMBERTIAN_ALBEDO
+      self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_BRDF_F_0        = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_BRDF_F_0
+      self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_BRDF_F          = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_BRDF_F
+      self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_USER_BRDF_F_0   = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_USER_BRDF_F_0
+      self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_USER_BRDF_F     = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_USER_BRDF_F
+      self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_EXACTDB_BRDFUNC = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC
+      self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_EMISSIVITY      = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_EMISSIVITY
+      self%Surface%Base%VIO%VLIDORT_Sup%BRDF%TS_USER_EMISSIVITY = self%Surface%Base%VIO%VBRDF_Sup_Out%BS_USER_EMISSIVITY
+
+!                         Angles (SZA, viewing, relatuve azimuth), Level
+!                        ------------------------------------------------      
+      self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1) = self%Surface%solar_zenith
+      self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_RELAZMS(1) = self%Surface%relat_azimuth
+      self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_VZANGLES_INPUT(1) = self%Surface%sensor_zenith
+      self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_LEVELS(1) = 0.0     ! This is TOA   
+
+     
+      self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_height_grid(0:NLAYERS)      = self%ze * 1.E-3  ! en km
+      self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_pressure_grid(0:NLAYERS)    = self%pe * 1.E-2  ! en hPa
+      self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_temperature_grid(0:NLAYERS) = self%te
+
+!               Calculation of the Rayleigh-Scattering Optical Depth
+!               ----------------------------------------------------               
+      call VLIDORT_Rayleigh (self, rc)
+
+!                Populate Scattering Phase Matrix
+!                ---------------------------------
+! First initialize to zero to be safe
+      aersmom = 0.0      
+
+!                Greek moment for Rayleigh Scattering 
+!                The same for all layers because DEPOL_RATIO is
+!                taken as constant right now. 
+!                ----------------------------------------------
+      raysmom2 = (1.0 - DEPOL_RATIO)/(2.0 + DEPOL_RATIO) 
+
+!     Loop over the layers:
+!     ---------------------
+      do i = 1, NLAYERS  
+         ray_l = self%rot(i)         ! indice l for  each layer      
+         tau_l = self%tau(i)
+         ssa_l = self%ssa(i) 
+         g_l   = self%g(i) 
+        
+!        total optical depths for extinction and scattering 
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         tau_ext = ray_l + tau_l
+         tau_scat = ray_l +  ssa_l * tau_l
+
+!        single scattering albedo total
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         ssa_tot = tau_scat / tau_ext
+         if ( ssa_tot > 0.99999 ) then
+            ssa_tot = 0.99999
+         end if
+     
+         deltau_vert_input(i) = tau_ext
+         omega_total_input(i) = ssa_tot 
+
+
+!        Henyey-Greenstein phase function, including Rayleigh
+!        ------------------------------------------------------------
+
+!        SCALAR phase function moments (aerosol + Rayleigh)
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!        SCALAR testing Rayleigh second moment
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+!        Add together Aerosol and Rayleigh Parts weighting by scattering optical depth
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
+         aerswt = ssa_l * tau_l / tau_scat  
+         rayswt = ray_l / tau_scat    
+         aersmom(0) = 1.0
+         aersmom(1) = 3.0 * g_l
+         aersmom(2) = 5.0 * g_l * aersmom(1) / 3.0
+
+         greekmat_total_input(0,i,1) = 1.0
+         greekmat_total_input(1,i,1) = aersmom(1) * aerswt
+         greekmat_total_input(2,i,1) = raysmom2 * rayswt + aersmom(2) * aerswt
+      
+         do l = 3, self%nmom         
+            factor = REAL(2*l+1) / REAL(2*l-1) 
+            aersmom(l) = factor * g_l * aersmom(l-1)
+            greekmat_total_input(l,i,1) = aersmom(l) * aerswt
+         end do     
+           
+!     end layer loop
+!     ---------------
+      end do
+  
+      self%Surface%Base%VIO%VLIDORT_FixIn%Optical%TS_DELTAU_VERT_INPUT = deltau_vert_input
+      self%Surface%Base%VIO%VLIDORT_ModIn%MOptical%TS_OMEGA_TOTAL_INPUT = omega_total_input
+      self%Surface%Base%VIO%VLIDORT_FixIn%Optical%TS_GREEKMAT_TOTAL_INPUT = greekmat_total_input
+       
+!     Call the MASTER driver for doing the actual calculation
+!     -----------------------------------------------------------
+      call VLIDORT_MASTER (self%Surface%Base%VIO%VLIDORT_FixIn, &
+           self%Surface%Base%VIO%VLIDORT_ModIn, &
+           self%Surface%Base%VIO%VLIDORT_Sup, &
+           self%Surface%Base%VIO%VLIDORT_Out)
+  
+      if ( self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_INPUTCHECK /= 0 ) then
+         rc = 3
+         write(*,*) 'VLIDORT_MASTER STATUS_INPUTCHECK RETURNED ERROR'
+         write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_INPUTCHECK
+         write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_CHECKMESSAGES
+      end if
+
+      if ( self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_CALCULATION /= 0 ) then
+         write(*,*) 'VLIDORT_MASTER STATUS_CALCULATION RETURNED ERROR'
+         write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_CALCULATION
+         write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_MESSAGE
+         rc = 4
+      end if
+      if ( rc /= 0 ) return
+      
+      STOKES = self%Surface%Base%VIO%VLIDORT_Out%Main%TS_STOKES ! output of VLIDORT_MASTER subroutine
+      FLUX_FACTOR = self%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR
+      
+!     Return TOA radiance
+!     -------------------
+      output%RADIANCE    = 0.0
+      output%REFLECTANCE = 0.0
+
+      output%RADIANCE = STOKES(1, 1, 1, IDR)
+
+      output%REFLECTANCE = (pi * output%RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR )   
+    
+      end subroutine VLIDORT_Run_Scalar
+
 
 
 !.............................................................................
