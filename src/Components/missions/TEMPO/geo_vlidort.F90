@@ -55,6 +55,7 @@ program geo_vlidort
   integer                               :: nch                    ! number of channels  
   real                                  :: cldmax                 ! Cloud Filtering  
   real                                  :: szamax, vzamax         ! Geomtry filtering
+  logical                               :: additional_output      ! does user want additional output
 
 ! Test flag
 ! -----------
@@ -166,8 +167,7 @@ program geo_vlidort
 ! netcdf variables
 !----------------------  
   integer                               :: ncid                                           ! netcdf file id
-  integer,allocatable,dimension(:)      :: radVarID, refVarID, albVarID, qVarID, uVarID   ! netcdf OUT_file variable IDs
-  integer,allocatable,dimension(:)      :: tauVarID, gVarID, ssaVarID, rotVarID           ! netcdf ATMOS_file variable IDs
+  integer                               :: varid
 
 ! Miscellaneous
 ! -------------
@@ -248,8 +248,10 @@ program geo_vlidort
 
 ! Create OUTFILE
 ! --------------
-  if ( MAPL_am_I_root() )  call create_outfile(date, time, radVarID, refVarID, albVarID, qVarID, uVarID, &
-                                               ssaVarID, tauVarID, gVarID, rotVarID)
+  ! if ( MAPL_am_I_root() )  call create_outfile(date, time, radVarID, refVarID, albVarID, qVarID, uVarID, &
+  !                                              ssaVarID, tauVarID, gVarID, rotVarID)
+  if ( MAPL_am_I_root() )  call create_outfile(date, time)
+
   call MAPL_SyncSharedMemory(rc=ierr)
 ! Read the cloud, land, and angle data 
 ! -------------------------------------
@@ -484,7 +486,7 @@ program geo_vlidort
 !     -------------------------------
       if (scalar) then
         ! Call to vlidort scalar code       
-        call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels),        &
+        call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
                 dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), albedo,&
                 (/dble(SZA(c))/), &
                 (/dble(abs(RAA(c)))/), &
@@ -493,7 +495,7 @@ program geo_vlidort
       else
         ! Call to vlidort vector code
         call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
-               nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+               nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                (/dble(SZA(c))/), &
                (/dble(abs(RAA(c)))/), &
                (/dble(VZA(c))/), &
@@ -584,21 +586,28 @@ program geo_vlidort
 !                             Write to main OUT_File
 !                             ----------------------
     call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
-
     do ch = 1, nch
-      call check(nf90_put_var(ncid, radVarID(ch), unpack(reshape(radiance_VL(:,ch),(/clrm/)),clmask,field), &
+      write(msg,'(F10.2)') channels(ch)
+      call check(nf90_inq_varid(ncid, 'rad_' // trim(adjustl(msg)), varid), "get rad vaird")
+      call check(nf90_put_var(ncid, varid, unpack(reshape(radiance_VL(:,ch),(/clrm/)),clmask,field), &
                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
-      call check(nf90_put_var(ncid, refVarID(ch), unpack(reshape(reflectance_VL(:,ch),(/clrm/)),clmask,field), &
+      
+      call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
+      call check(nf90_put_var(ncid, varid, unpack(reshape(reflectance_VL(:,ch),(/clrm/)),clmask,field), &
                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
+
       if (.not. scalar) then
-        call check(nf90_put_var(ncid, qVarID(ch), unpack(reshape(Q_(:,ch),(/clrm/)),clmask,field), &
+        call check(nf90_inq_varid(ncid, 'q_' // trim(adjustl(msg)), varid), "get q vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(Q_(:,ch),(/clrm/)),clmask,field), &
                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
 
-        call check(nf90_put_var(ncid, uVarID(ch), unpack(reshape(U_(:,ch),(/clrm/)),clmask,field), &
+        call check(nf90_inq_varid(ncid, 'u_' // trim(adjustl(msg)), varid), "get u vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(U_(:,ch),(/clrm/)),clmask,field), &
                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
       endif
 
-      call check(nf90_put_var(ncid, albVarID(ch), unpack(reshape(ALBEDO_(:,ch),(/clrm/)),clmask,field), &
+      call check(nf90_inq_varid(ncid, 'albedo_' // trim(adjustl(msg)), varid), "get ref vaird")
+      call check(nf90_put_var(ncid, varid, unpack(reshape(ALBEDO_(:,ch),(/clrm/)),clmask,field), &
                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
     end do
     call check( nf90_close(ncid), "close outfile" )
@@ -607,17 +616,22 @@ program geo_vlidort
 !                             --------------------------------
     call check( nf90_open(ATMOS_file, nf90_write, ncid), "opening file " // ATMOS_file )
     do ch = 1, nch
+      write(msg,'(F10.2)') channels(ch)
       do k=1,km 
-        call check(nf90_put_var(ncid, tauVarID(ch), unpack(reshape(TAU_(:,k,ch),(/clrm/)),clmask,field), &
+        call check(nf90_inq_varid(ncid, 'aot_' // trim(adjustl(msg)), varid), "get aot vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(TAU_(:,k,ch),(/clrm/)),clmask,field), &
                   start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out tau")
 
-        call check(nf90_put_var(ncid, gVarID(ch), unpack(reshape(G_(:,k,ch),(/clrm/)),clmask,field), &
+        call check(nf90_inq_varid(ncid, 'g_' // trim(adjustl(msg)), varid), "get g vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(G_(:,k,ch),(/clrm/)),clmask,field), &
                   start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out g")
 
-        call check(nf90_put_var(ncid, ssaVarID(ch), unpack(reshape(SSA_(:,k,ch),(/clrm/)),clmask,field), &
+        call check(nf90_inq_varid(ncid, 'ssa_' // trim(adjustl(msg)), varid), "get ssa vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(SSA_(:,k,ch),(/clrm/)),clmask,field), &
                   start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ssa")
 
-        call check(nf90_put_var(ncid, rotVarID(ch), unpack(reshape(ROT_(:,k,ch),(/clrm/)),clmask,field), &
+        call check(nf90_inq_varid(ncid, 'rot_' // trim(adjustl(msg)), varid), "get rot vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(ROT_(:,k,ch),(/clrm/)),clmask,field), &
                   start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out rot")
       end do
     end do
@@ -1230,19 +1244,6 @@ end subroutine outfile_extname
     allocate(clmask(im,jm))
     clmask = .False.
 
-  ! Netcdf IDs
-  ! ----------
-    allocate (radVarID(nch))
-    allocate (refVarID(nch))
-    allocate (albVarID(nch))
-    allocate (qVarID(nch))
-    allocate (uVarID(nch))
-
-    allocate (tauVarID(nch))
-    allocate (rotVarID(nch))
-    allocate (ssaVarID(nch))
-    allocate (gVarID(nch))
-
   end subroutine allocate_unshared
 
 
@@ -1306,17 +1307,16 @@ end subroutine outfile_extname
 ! INPUT
 !     date, time  : from RC file
 ! OUTPUT
-!     ncid        : netcdf file id
-!     radVarID, refVarID : radiance and reflectance variable IDs
+!     None
 !  HISTORY
 !     6 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  subroutine create_outfile(date, time, radVarID, refVarID, albVarID, qVarID, uVarID, &
-                            ssaVarID, tauVarID, gVarID, rotVarID)
+  subroutine create_outfile(date, time)
     character(len=*) ,intent(in)       :: date, time
-    integer,dimension(:),intent(out)   :: radVarID, refVarID, qVarID, uVarID, albVarID  !OUT_file variables    
-    integer,dimension(:),intent(out)   :: ssaVarID, tauVarID, gVarID, rotVarID          !ATMOS_file variables
+
+    integer,dimension(nch)             :: radVarID, refVarID, qVarID, uVarID, albVarID  !OUT_file variables    
+    integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID, rotVarID          !ATMOS_file variables
     
     integer                            :: ncid
     integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID       
@@ -1964,6 +1964,7 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, cldmax, label = 'CLDMAX:',default=0.01)
     call ESMF_ConfigGetAttribute(cf, surfband, label = 'SURFBAND:', default='INTERPOLATE')
     call ESMF_ConfigGetAttribute(cf, surfbandm, label = 'SURFBANDM:',__RC__)
+    call ESMF_ConfigGetAttribute(cf, additional_output, label = 'ADDITIONAL_OUTPUT:',default=.false.)
 
     ! Check that LER configuration is correct
     !----------------------------------------
