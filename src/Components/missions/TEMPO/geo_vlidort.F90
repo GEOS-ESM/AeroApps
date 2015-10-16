@@ -131,7 +131,7 @@ program geo_vlidort
   real, pointer                         :: G_(:,:,:) => null()                    ! asymmetry factor
 
   real*8,allocatable                    :: field(:,:)                             ! Template for unpacking shared arrays
-
+  real*8,allocatable                    :: AOD(:)                                 ! Temporary variable to add up AOD
 ! VLIDORT working variables
 !------------------------------
   integer                               :: ch                                       ! i-channel  
@@ -225,6 +225,7 @@ program geo_vlidort
     write(*,*) 'VZA < ', vzamax
     if (scalar) write(*,*) 'Scalar calculations'
     if (.not. scalar) write(*,*) 'Vector calculations'
+    write(*,*) 'Additional Output: ',additional_output
     write(*,*) ' '
   end if 
 
@@ -248,8 +249,6 @@ program geo_vlidort
 
 ! Create OUTFILE
 ! --------------
-  ! if ( MAPL_am_I_root() )  call create_outfile(date, time, radVarID, refVarID, albVarID, qVarID, uVarID, &
-  !                                              ssaVarID, tauVarID, gVarID, rotVarID)
   if ( MAPL_am_I_root() )  call create_outfile(date, time)
 
   call MAPL_SyncSharedMemory(rc=ierr)
@@ -582,61 +581,73 @@ program geo_vlidort
    
     allocate (field(im,jm))
     field = g5nr_missing
+    allocate (AOD(clrm))
 
 !                             Write to main OUT_File
 !                             ----------------------
     call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
     do ch = 1, nch
       write(msg,'(F10.2)') channels(ch)
-      call check(nf90_inq_varid(ncid, 'rad_' // trim(adjustl(msg)), varid), "get rad vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(radiance_VL(:,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
       
       call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
       call check(nf90_put_var(ncid, varid, unpack(reshape(reflectance_VL(:,ch),(/clrm/)),clmask,field), &
                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
 
-      if (.not. scalar) then
-        call check(nf90_inq_varid(ncid, 'q_' // trim(adjustl(msg)), varid), "get q vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(Q_(:,ch),(/clrm/)),clmask,field), &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
-
-        call check(nf90_inq_varid(ncid, 'u_' // trim(adjustl(msg)), varid), "get u vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(U_(:,ch),(/clrm/)),clmask,field), &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
-      endif
-
-      call check(nf90_inq_varid(ncid, 'albedo_' // trim(adjustl(msg)), varid), "get ref vaird")
+      call check(nf90_inq_varid(ncid, 'surf_ref_' // trim(adjustl(msg)), varid), "get ref vaird")
       call check(nf90_put_var(ncid, varid, unpack(reshape(ALBEDO_(:,ch),(/clrm/)),clmask,field), &
+                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
+
+      AOD = 0
+      do k=1,km 
+        AOD = AOD + reshape(TAU_(:,k,ch),(/clrm/))
+      end do
+      call check(nf90_inq_varid(ncid, 'aod_ref_' // trim(adjustl(msg)), varid), "get aod vaird")
+      call check(nf90_put_var(ncid, varid, unpack(AOD,clmask,field), &
                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
     end do
     call check( nf90_close(ncid), "close outfile" )
 
-!                             Write to supplemental ATMOS_File
+    if (additional_output) then
+!                             Write to Additional Outputs File
 !                             --------------------------------
-    call check( nf90_open(ATMOS_file, nf90_write, ncid), "opening file " // ATMOS_file )
-    do ch = 1, nch
-      write(msg,'(F10.2)') channels(ch)
-      do k=1,km 
-        call check(nf90_inq_varid(ncid, 'aot_' // trim(adjustl(msg)), varid), "get aot vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(TAU_(:,k,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out tau")
+      call check( nf90_open(ATMOS_file, nf90_write, ncid), "opening file " // ATMOS_file )
+      do ch = 1, nch
+        write(msg,'(F10.2)') channels(ch)
+        call check(nf90_inq_varid(ncid, 'rad_' // trim(adjustl(msg)), varid), "get rad vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(radiance_VL(:,ch),(/clrm/)),clmask,field), &
+                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
 
-        call check(nf90_inq_varid(ncid, 'g_' // trim(adjustl(msg)), varid), "get g vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(G_(:,k,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out g")
+        if (.not. scalar) then
+          call check(nf90_inq_varid(ncid, 'q_' // trim(adjustl(msg)), varid), "get q vaird")
+          call check(nf90_put_var(ncid, varid, unpack(reshape(Q_(:,ch),(/clrm/)),clmask,field), &
+                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
 
-        call check(nf90_inq_varid(ncid, 'ssa_' // trim(adjustl(msg)), varid), "get ssa vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(SSA_(:,k,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ssa")
+          call check(nf90_inq_varid(ncid, 'u_' // trim(adjustl(msg)), varid), "get u vaird")
+          call check(nf90_put_var(ncid, varid, unpack(reshape(U_(:,ch),(/clrm/)),clmask,field), &
+                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
+        endif        
 
-        call check(nf90_inq_varid(ncid, 'rot_' // trim(adjustl(msg)), varid), "get rot vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(ROT_(:,k,ch),(/clrm/)),clmask,field), &
-                  start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out rot")
+        do k=1,km 
+
+          call check(nf90_inq_varid(ncid, 'aot_' // trim(adjustl(msg)), varid), "get aot vaird")
+          call check(nf90_put_var(ncid, varid, unpack(reshape(TAU_(:,k,ch),(/clrm/)),clmask,field), &
+                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out tau")
+
+          call check(nf90_inq_varid(ncid, 'g_' // trim(adjustl(msg)), varid), "get g vaird")
+          call check(nf90_put_var(ncid, varid, unpack(reshape(G_(:,k,ch),(/clrm/)),clmask,field), &
+                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out g")
+
+          call check(nf90_inq_varid(ncid, 'ssa_' // trim(adjustl(msg)), varid), "get ssa vaird")
+          call check(nf90_put_var(ncid, varid, unpack(reshape(SSA_(:,k,ch),(/clrm/)),clmask,field), &
+                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ssa")
+
+          call check(nf90_inq_varid(ncid, 'rot_' // trim(adjustl(msg)), varid), "get rot vaird")
+          call check(nf90_put_var(ncid, varid, unpack(reshape(ROT_(:,k,ch),(/clrm/)),clmask,field), &
+                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out rot")
+        end do
       end do
-    end do
-    call check( nf90_close(ncid), "close atmosfile" )
-  
+      call check( nf90_close(ncid), "close atmosfile" )
+    end if  !additional_output
     deallocate(field)
   end if
 
@@ -794,11 +805,12 @@ subroutine filenames()
   write(LAND_file,'(4A)') trim(indir),'/LevelB/invariant/',trim(instname),'-g5nr.lb2.asm_Nx.nc4' 
 
 ! OUTFILES
-  write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc.vlidort.'
-  write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc.vlidort_atmos.'
-
+  write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc2.vlidort.'
   call outfile_extname(OUT_file)
-  call outfile_extname(ATMOS_file)
+  if (additional_output) then
+    write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc.vlidort.'
+    call outfile_extname(ATMOS_file)
+  end if
 
 end subroutine filenames
 
@@ -1315,8 +1327,9 @@ end subroutine outfile_extname
   subroutine create_outfile(date, time)
     character(len=*) ,intent(in)       :: date, time
 
-    integer,dimension(nch)             :: radVarID, refVarID, qVarID, uVarID, albVarID  !OUT_file variables    
-    integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID, rotVarID          !ATMOS_file variables
+    integer,dimension(nch)             :: radVarID, refVarID, aotVarID   
+    integer,dimension(nch)             :: qVarID, uVarID, albVarID      
+    integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID, rotVarID     
     
     integer                            :: ncid
     integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID       
@@ -1329,8 +1342,8 @@ end subroutine outfile_extname
 
     character(len=2000)                :: comment
 
-!                                 OUT_FILE 
-!                                ----------
+!                                MAIN LevelC2 OUT_FILE 
+!                                ----------------------
     ! Open File
     call check(nf90_create(OUT_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // OUT_file)
 
@@ -1353,12 +1366,13 @@ end subroutine outfile_extname
     write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort.x'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'history',trim(comment)),"history attr")
 
-    write(comment,'(A)') trim(INV_file)  // CHAR(13) // &
-                         trim(ANG_file)  // CHAR(13) //  &
-                         trim(LAND_file) // CHAR(13) // &
-                         trim(MET_file)  // CHAR(13) //  &
-                         trim(AER_file)  // CHAR(13) //  &
-                         trim(SURF_file) 
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'grid_inputs',trim(INV_file)),"input files attr")
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'angle_inputs',trim(ANG_file)),"input files attr")
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'land_inputs',trim(LAND_file)),"input files attr")
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'met_inputs',trim(MET_file)),"input files attr")
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'aerosol_inputs',trim(AER_file)),"input files attr")
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(SURF_file)),"input files attr")
+
     call check(nf90_put_att(ncid,NF90_GLOBAL,'inputs',trim(comment)),"input files attr")
     write(comment,'(A)') 'n/a'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'references',trim(comment)),"references attr") 
@@ -1417,27 +1431,16 @@ end subroutine outfile_extname
 !                                     ----
     do ch=1,nch
       write(comment,'(F10.2)') channels(ch)
-      call check(nf90_def_var(ncid, 'rad_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),radVarID(ch)),"create radiance var")      
       call check(nf90_def_var(ncid, 'ref_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),refVarID(ch)),"create reflectance var")
-      call check(nf90_def_var(ncid, 'albedo_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),albVarID(ch)),"create albedo var")
-      if (.not. scalar) then
-        call check(nf90_def_var(ncid, 'q_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),qVarID(ch)),"create Q var")
-        call check(nf90_def_var(ncid, 'u_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),uVarID(ch)),"create U var")
-      end if
+      call check(nf90_def_var(ncid, 'surf_ref_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),albVarID(ch)),"create albedo var")
+      call check(nf90_def_var(ncid, 'aod_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),aotVarID(ch)),"create aot var")
+
     end do
 
     ! Variable Attributes
-!                                          Radiance and Reflectance
+!                                          Reflectance and AOD
 !                                          ------------------------  
     do ch=1,size(channels)
-      write(comment,'(F10.2,A)') channels(ch), ' nm TOA Radiance'
-      call check(nf90_put_att(ncid,radVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-      write(comment,'(F10.2,A)') channels(ch), ' nm Top of Atmosphere Radiance'
-      call check(nf90_put_att(ncid,radVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-      call check(nf90_put_att(ncid,radVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,radVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
-      call check(nf90_put_att(ncid,radVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
-
       write(comment,'(F10.2,A)') channels(ch), ' nm TOA Reflectance'
       call check(nf90_put_att(ncid,refVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
       write(comment,'(F10.2,A)') channels(ch), ' nm Top of Atmosphere Reflectance'
@@ -1446,7 +1449,7 @@ end subroutine outfile_extname
       call check(nf90_put_att(ncid,refVarID(ch),'units','None'),"units attr")
       call check(nf90_put_att(ncid,refVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
-      write(comment,'(F10.2,A)') channels(ch), ' nm Albedo'
+      write(comment,'(F10.2,A)') channels(ch), ' nm Surface Reflectance'
       call check(nf90_put_att(ncid,albVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
       write(comment,'(F10.2,A)') channels(ch), ' nm Bi-Directional Surface Reflectance'
       call check(nf90_put_att(ncid,albVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
@@ -1454,24 +1457,13 @@ end subroutine outfile_extname
       call check(nf90_put_att(ncid,albVarID(ch),'units','None'),"units attr")
       call check(nf90_put_att(ncid,albVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
-      if (.not. scalar) then
-        write(comment,'(F10.2,A)') channels(ch), ' nm TOA Q'
-        call check(nf90_put_att(ncid,qVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm TOA Q Component of the Stokes Vector'
-        call check(nf90_put_att(ncid,qVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-        call check(nf90_put_att(ncid,qVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-        call check(nf90_put_att(ncid,qVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
-        call check(nf90_put_att(ncid,qVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
-
-        write(comment,'(F10.2,A)') channels(ch), ' nm TOA U'
-        call check(nf90_put_att(ncid,uVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm TOA U Component of the Stokes Vector'
-        call check(nf90_put_att(ncid,uVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-        call check(nf90_put_att(ncid,uVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-        call check(nf90_put_att(ncid,uVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
-        call check(nf90_put_att(ncid,uVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
-      end if
-
+      write(comment,'(F10.2,A)') channels(ch), ' nm AOD'
+      call check(nf90_put_att(ncid,aotVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm Aerosol Optical Depth'
+      call check(nf90_put_att(ncid,aotVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+      call check(nf90_put_att(ncid,aotVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,aotVarID(ch),'units','None'),"units attr")
+      call check(nf90_put_att(ncid,aotVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")      
     end do
 
 !                                          scanTime
@@ -1550,193 +1542,231 @@ end subroutine outfile_extname
 
     call check( nf90_close(ncid), "close outfile" )
 
-!                           ATMOSPHERE OUTPUTS
-!
-    ! Open File
-    call check(nf90_create(ATMOS_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // ATMOS_file)
+    if (additional_output) then
+!                           ADDITIONAL OUTPUTS
+!                           ------------------
+      ! Open File
+      call check(nf90_create(ATMOS_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // ATMOS_file)
 
-    ! Create dimensions
-    call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
-    call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
-    call check(nf90_def_dim(ncid, "ew", im, ewDimID), "creating ew dimension") !im
-    call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
+      ! Create dimensions
+      call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
+      call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
+      call check(nf90_def_dim(ncid, "ew", im, ewDimID), "creating ew dimension") !im
+      call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
 
-    ! Global Attributes
-    write(comment,'(A)') 'Atmospheric inputs for VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler'
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'title',trim(comment)),"title attr")
+      ! Global Attributes
+      write(comment,'(A)') 'Atmospheric inputs for VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler'
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'title',trim(comment)),"title attr")
 
-    write(comment,'(A)') 'NASA/Goddard Space Flight Center'
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'institution',trim(comment)),"institution attr")
+      write(comment,'(A)') 'NASA/Goddard Space Flight Center'
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'institution',trim(comment)),"institution attr")
 
-    write(comment,'(A)') 'Global Model and Assimilation Office'
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'source',trim(comment)),"source attr")
+      write(comment,'(A)') 'Global Model and Assimilation Office'
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'source',trim(comment)),"source attr")
 
-    write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort.x'
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'history',trim(comment)),"history attr")
+      write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort.x'
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'history',trim(comment)),"history attr")
 
-    write(comment,'(A)') 'n/a'
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'references',trim(comment)),"references attr") 
+      write(comment,'(A)') 'n/a'
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'references',trim(comment)),"references attr") 
 
-    write(comment,'(A)') 'This file contains intermediate input data for the VLIDORT simulation'
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'comment',trim(comment)),"comment attr")   
+      write(comment,'(A)') 'This file contains intermediate input data for the VLIDORT simulation'
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'comment',trim(comment)),"comment attr")   
 
-    if ( scalar ) then
-      write(comment,'(A)') 'Scalar calculations'
-    else
-      write(comment,'(A)') 'Vector calculations'
-    end if
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'vlidort_comment',trim(comment)),"vlidort_comment")
+      if ( scalar ) then
+        write(comment,'(A)') 'Scalar calculations'
+      else
+        write(comment,'(A)') 'Vector calculations'
+      end if
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'vlidort_comment',trim(comment)),"vlidort_comment")
 
-    if (.not. scalar) then
-      write(comment,'(I1,A)') nPol, ' components of the scattering matrix '
-      call check(nf90_put_att(ncid,NF90_GLOBAL,'scat_comment',trim(comment)),"scat_comment") 
-    end if
+      if (.not. scalar) then
+        write(comment,'(I1,A)') nPol, ' components of the scattering matrix '
+        call check(nf90_put_att(ncid,NF90_GLOBAL,'scat_comment',trim(comment)),"scat_comment") 
+      end if
 
-    write(comment,'(I3,A)') nMom,' phase function moments'
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'mie_comment',trim(comment)),"mie_comment")
+      write(comment,'(I3,A)') nMom,' phase function moments'
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'mie_comment',trim(comment)),"mie_comment")
 
-    write(comment,*) channels
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'channels',trim(adjustl(comment))),"channels_comment") 
+      write(comment,*) channels
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'channels',trim(adjustl(comment))),"channels_comment") 
 
-    call check(nf90_put_att(ncid,NF90_GLOBAL,"contact","Patricia Castellanos <patricia.castellanos@nasa.gov>"),"contact attr")
-    call check(nf90_put_att(ncid,NF90_GLOBAL,"Conventions","cf"),"conventions attr")
+      call check(nf90_put_att(ncid,NF90_GLOBAL,"contact","Patricia Castellanos <patricia.castellanos@nasa.gov>"),"contact attr")
+      call check(nf90_put_att(ncid,NF90_GLOBAL,"Conventions","cf"),"conventions attr")
 
-    ! Define Variables
-!                                     Dimensions
-!                                     ----------    
-    call check(nf90_def_var(ncid,'time',nf90_int,(/timeDimID/),timeVarID),"create time var")
-    call check(nf90_def_var(ncid,'lev',nf90_float,(/levDimID/),levVarID),"create lev var")
-    call check(nf90_def_var(ncid,'ew',nf90_float,(/ewDimID/),ewVarID),"create ew var")
-    call check(nf90_def_var(ncid,'ns',nf90_float,(/nsDimID/),nsVarID),"create ns var")
+      ! Define Variables
+  !                                     Dimensions
+  !                                     ----------    
+      call check(nf90_def_var(ncid,'time',nf90_int,(/timeDimID/),timeVarID),"create time var")
+      call check(nf90_def_var(ncid,'lev',nf90_float,(/levDimID/),levVarID),"create lev var")
+      call check(nf90_def_var(ncid,'ew',nf90_float,(/ewDimID/),ewVarID),"create ew var")
+      call check(nf90_def_var(ncid,'ns',nf90_float,(/nsDimID/),nsVarID),"create ns var")
 
-    call check(nf90_def_var(ncid,'scanTime',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
-    call check(nf90_def_var(ncid,'clon',nf90_float,(/ewDimID,nsDimID/),clonVarID),"create clon var")
-    call check(nf90_def_var(ncid,'clat',nf90_float,(/ewDimID,nsDimID/),clatVarID),"create clat var")
+      call check(nf90_def_var(ncid,'scanTime',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
+      call check(nf90_def_var(ncid,'clon',nf90_float,(/ewDimID,nsDimID/),clonVarID),"create clon var")
+      call check(nf90_def_var(ncid,'clat',nf90_float,(/ewDimID,nsDimID/),clatVarID),"create clat var")
 
-!                                     Data
-!                                     ----
-    do ch=1,nch
-      write(comment,'(F10.2)') channels(ch)
-      call check(nf90_def_var(ncid, 'aot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),tauVarID(ch)),"create aot var")      
-      call check(nf90_def_var(ncid, 'rot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),rotVarID(ch)),"create rot var")
-      call check(nf90_def_var(ncid, 'ssa_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),ssaVarID(ch)),"create ssa var")
-      call check(nf90_def_var(ncid, 'g_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),gVarID(ch)),"create g var")
-    end do
+  !                                     Data
+  !                                     ----
+      do ch=1,nch
+        write(comment,'(F10.2)') channels(ch)
+        call check(nf90_def_var(ncid, 'rad_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),radVarID(ch)),"create radiance var")              
+        call check(nf90_def_var(ncid, 'aot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),tauVarID(ch)),"create aot var")      
+        call check(nf90_def_var(ncid, 'rot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),rotVarID(ch)),"create rot var")
+        call check(nf90_def_var(ncid, 'ssa_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),ssaVarID(ch)),"create ssa var")
+        call check(nf90_def_var(ncid, 'g_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),gVarID(ch)),"create g var")
+        if (.not. scalar) then
+          call check(nf90_def_var(ncid, 'q_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),qVarID(ch)),"create Q var")
+          call check(nf90_def_var(ncid, 'u_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),uVarID(ch)),"create U var")
+        end if        
+      end do
 
-    ! Variable Attributes
-!                                          Intermediate Data
-!                                          -----------------  
-    do ch=1,size(channels)
+      ! Variable Attributes
+  !                                          Additional Data
+  !                                          -----------------  
+      do ch=1,size(channels)
+        write(comment,'(F10.2,A)') channels(ch), ' nm TOA Radiance'
+        call check(nf90_put_att(ncid,radVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm Top of Atmosphere Radiance'
+        call check(nf90_put_att(ncid,radVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        write(comment,'(A)') 'only l=1 level contains data'
+        call check(nf90_put_att(ncid,radVarID(ch),'comment',trim(adjustl(comment))),"long_name attr")        
+        call check(nf90_put_att(ncid,radVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,radVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
+        call check(nf90_put_att(ncid,radVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
-      write(comment,'(F10.2,A)') channels(ch), ' nm AOT'
-      call check(nf90_put_att(ncid,tauVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-      write(comment,'(F10.2,A)') channels(ch), ' nm Aerosol Optical Thickness'
-      call check(nf90_put_att(ncid,tauVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-      call check(nf90_put_att(ncid,tauVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,tauVarID(ch),'units','none'),"units attr")
-      call check(nf90_put_att(ncid,tauVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm AOT'
+        call check(nf90_put_att(ncid,tauVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm layer Aerosol Optical Thickness'
+        call check(nf90_put_att(ncid,tauVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,tauVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,tauVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,tauVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
-      write(comment,'(F10.2,A)') channels(ch), ' nm ROT'
-      call check(nf90_put_att(ncid,rotVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-      write(comment,'(F10.2,A)') channels(ch), ' nm Rayliegh Optical Thickness'
-      call check(nf90_put_att(ncid,rotVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-      call check(nf90_put_att(ncid,rotVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,rotVarID(ch),'units','none'),"units attr")
-      call check(nf90_put_att(ncid,rotVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm ROT'
+        call check(nf90_put_att(ncid,rotVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm layer Rayliegh Optical Thickness'
+        call check(nf90_put_att(ncid,rotVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,rotVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,rotVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,rotVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
-      write(comment,'(F10.2,A)') channels(ch), ' nm SSA'
-      call check(nf90_put_att(ncid,ssaVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-      write(comment,'(F10.2,A)') channels(ch), ' nm Aerosol Single Scattering Albedo'
-      call check(nf90_put_att(ncid,ssaVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-      call check(nf90_put_att(ncid,ssaVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,ssaVarID(ch),'units','none'),"units attr")
-      call check(nf90_put_att(ncid,ssaVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")   
+        write(comment,'(F10.2,A)') channels(ch), ' nm SSA'
+        call check(nf90_put_att(ncid,ssaVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm layer Aerosol Single Scattering Albedo'
+        call check(nf90_put_att(ncid,ssaVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,ssaVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,ssaVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,ssaVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")   
 
-      write(comment,'(F10.2,A)') channels(ch), ' nm g'
-      call check(nf90_put_att(ncid,gVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-      write(comment,'(F10.2,A)') channels(ch), ' nm Aerosol Asymmetry Parameter'
-      call check(nf90_put_att(ncid,gVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-      call check(nf90_put_att(ncid,gVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,gVarID(ch),'units','none'),"units attr")
-      call check(nf90_put_att(ncid,gVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")         
-    end do
+        write(comment,'(F10.2,A)') channels(ch), ' nm g'
+        call check(nf90_put_att(ncid,gVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm layer Aerosol Asymmetry Parameter'
+        call check(nf90_put_att(ncid,gVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,gVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,gVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,gVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")  
 
-!                                          scanTime
-!                                          -------  
-    call check(nf90_put_att(ncid,scantimeVarID,'long_name','Initial Time of Scan'),"long_name attr")
-    call check(nf90_put_att(ncid,scantimeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
-                                                  time//':00:00'),"units attr")
+        if (.not. scalar) then
+          write(comment,'(F10.2,A)') channels(ch), ' nm TOA Q'
+          call check(nf90_put_att(ncid,qVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+          write(comment,'(F10.2,A)') channels(ch), ' nm TOA Q Component of the Stokes Vector'
+          call check(nf90_put_att(ncid,qVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+          write(comment,'(A)') 'only l=1 level contains data'
+          call check(nf90_put_att(ncid,qVarID(ch),'comment',trim(adjustl(comment))),"long_name attr")                
+          call check(nf90_put_att(ncid,qVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+          call check(nf90_put_att(ncid,qVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
+          call check(nf90_put_att(ncid,qVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
-!                                          EW, NS, LEV, TIME
-!                                          -----------------------  
-    call check(nf90_put_att(ncid,ewVarID,'long_name','pseudo longitude'),"long_name attr")
-    call check(nf90_put_att(ncid,ewVarID,'units','degrees_east'),"units attr")
-    call check(nf90_put_att(ncid,nsVarID,'long_name','pseudo latitude'),"long_name attr")
-    call check(nf90_put_att(ncid,nsVarID,'units','degrees_north'),"units attr")   
-    call check(nf90_put_att(ncid,timeVarID,'long_name','Initial Time of Scan'),"long_name attr")
-    call check(nf90_put_att(ncid,timeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
-                                                  time//':00:00'),"units attr")   
-    call check(nf90_put_att(ncid,levVarID,'long_name','Vertical Level'),"long_name attr")
-    call check(nf90_put_att(ncid,levVarID,'units','layer'),"units attr")
-    call check(nf90_put_att(ncid,levVarID,'positive','down'),"positive attr")
-    call check(nf90_put_att(ncid,levVarID,'axis','z'),"axis attr")
+          write(comment,'(F10.2,A)') channels(ch), ' nm TOA U'
+          call check(nf90_put_att(ncid,uVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+          write(comment,'(F10.2,A)') channels(ch), ' nm TOA U Component of the Stokes Vector'
+          call check(nf90_put_att(ncid,uVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+          write(comment,'(A)') 'only l=1 level contains data'
+          call check(nf90_put_att(ncid,uVarID(ch),'comment',trim(adjustl(comment))),"long_name attr")                          
+          call check(nf90_put_att(ncid,uVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+          call check(nf90_put_att(ncid,uVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
+          call check(nf90_put_att(ncid,uVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+        end if
 
-!                                          clon & clat
-!                                          -------  
-    call check(nf90_put_att(ncid,clonVarID,'long_name','pixel center longitude'),"long_name attr")
-    call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
-    call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
-    call check(nf90_put_att(ncid,clatVarID,'missing_value',real(MISSING)),"missing_value attr")
+      end do
 
-    call check(nf90_put_att(ncid,clonVarID,'long_name','pixel center longitude'),"long_name attr")
-    call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
-    call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
-    call check(nf90_put_att(ncid,clatVarID,'missing_value',real(MISSING)),"missing_value attr")  
-      
+  !                                          scanTime
+  !                                          -------  
+      call check(nf90_put_att(ncid,scantimeVarID,'long_name','Initial Time of Scan'),"long_name attr")
+      call check(nf90_put_att(ncid,scantimeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
+                                                    time//':00:00'),"units attr")
 
-    !Leave define mode
-    call check(nf90_enddef(ncid),"leaving define mode")
+  !                                          EW, NS, LEV, TIME
+  !                                          -----------------------  
+      call check(nf90_put_att(ncid,ewVarID,'long_name','pseudo longitude'),"long_name attr")
+      call check(nf90_put_att(ncid,ewVarID,'units','degrees_east'),"units attr")
+      call check(nf90_put_att(ncid,nsVarID,'long_name','pseudo latitude'),"long_name attr")
+      call check(nf90_put_att(ncid,nsVarID,'units','degrees_north'),"units attr")   
+      call check(nf90_put_att(ncid,timeVarID,'long_name','Initial Time of Scan'),"long_name attr")
+      call check(nf90_put_att(ncid,timeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
+                                                    time//':00:00'),"units attr")   
+      call check(nf90_put_att(ncid,levVarID,'long_name','Vertical Level'),"long_name attr")
+      call check(nf90_put_att(ncid,levVarID,'units','layer'),"units attr")
+      call check(nf90_put_att(ncid,levVarID,'positive','down'),"positive attr")
+      call check(nf90_put_att(ncid,levVarID,'axis','z'),"axis attr")
 
-    ! write out ew, ns, lev, time, clon, clat, & scantime
-    allocate (scantime(im))
-    allocate (clon(im, jm))
-    allocate (clat(im, jm))
-    allocate (ew(im))
-    allocate (ns(jm))    
-    allocate (lev(km))
-    allocate (tyme(tm))
+  !                                          clon & clat
+  !                                          -------  
+      call check(nf90_put_att(ncid,clonVarID,'long_name','pixel center longitude'),"long_name attr")
+      call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
+      call check(nf90_put_att(ncid,clatVarID,'missing_value',real(MISSING)),"missing_value attr")
 
-    call readvar1D("scanTime", MET_file, scantime)
-    call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
+      call check(nf90_put_att(ncid,clonVarID,'long_name','pixel center longitude'),"long_name attr")
+      call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
+      call check(nf90_put_att(ncid,clatVarID,'missing_value',real(MISSING)),"missing_value attr")  
+        
 
-    call readvar2D("clon", INV_file, clon)
-    call check(nf90_put_var(ncid,clonVarID,clon), "writing out clon")
+      !Leave define mode
+      call check(nf90_enddef(ncid),"leaving define mode")
 
-    call readvar2D("clat", INV_file, clat)
-    call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
+      ! write out ew, ns, lev, time, clon, clat, & scantime
+      allocate (scantime(im))
+      allocate (clon(im, jm))
+      allocate (clat(im, jm))
+      allocate (ew(im))
+      allocate (ns(jm))    
+      allocate (lev(km))
+      allocate (tyme(tm))
 
-    call readvar1D("time", MET_file, tyme)
-    call check(nf90_put_var(ncid,timeVarID,tyme), "writing out time")
+      call readvar1D("scanTime", MET_file, scantime)
+      call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
 
-    call readvar1D("lev", MET_file, lev)
-    call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
+      call readvar2D("clon", INV_file, clon)
+      call check(nf90_put_var(ncid,clonVarID,clon), "writing out clon")
 
-    call readvar1D("ew", MET_file, ew)
-    call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
+      call readvar2D("clat", INV_file, clat)
+      call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
-    call readvar1D("ns", MET_file, ns)
-    call check(nf90_put_var(ncid,nsVarID,ns), "writing out ns")   
+      call readvar1D("time", MET_file, tyme)
+      call check(nf90_put_var(ncid,timeVarID,tyme), "writing out time")
 
-    deallocate (clon)
-    deallocate (clat)  
-    deallocate (scantime)
-    deallocate (ns)
-    deallocate (ew)
-    deallocate (tyme)
-    deallocate (lev)
+      call readvar1D("lev", MET_file, lev)
+      call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
 
-    call check( nf90_close(ncid), "close atmosfile" )
+      call readvar1D("ew", MET_file, ew)
+      call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
 
+      call readvar1D("ns", MET_file, ns)
+      call check(nf90_put_var(ncid,nsVarID,ns), "writing out ns")   
+
+      deallocate (clon)
+      deallocate (clat)  
+      deallocate (scantime)
+      deallocate (ns)
+      deallocate (ew)
+      deallocate (tyme)
+      deallocate (lev)
+
+      call check( nf90_close(ncid), "close atmosfile" )
+    end if ! additional_output
   end subroutine create_outfile  
 
 
