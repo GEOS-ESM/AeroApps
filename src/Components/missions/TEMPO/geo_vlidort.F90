@@ -56,6 +56,8 @@ program geo_vlidort
   real                                  :: cldmax                 ! Cloud Filtering  
   real                                  :: szamax, vzamax         ! Geomtry filtering
   logical                               :: additional_output      ! does user want additional output
+  integer                               :: nodemax                ! number of nodes requested
+  integer                               :: nodenum                ! which node is this?
 
 ! Test flag
 ! -----------
@@ -156,7 +158,8 @@ program geo_vlidort
   integer                               :: i, j, k, n                                ! TEMPO domain working variable
   integer                               :: starti, counti, endi                      ! array indices and counts for each processor
   integer, allocatable                  :: nclr(:)                                   ! how many clear pixels each processor works on
-  integer                               :: clrm                                      ! number of clear pixels
+  integer                               :: clrm                                      ! number of clear pixels for this part of decomposed domain
+  integer                               :: clrm_total                                ! number of clear pixels 
   integer                               :: c                                         ! clear pixel working variable
   real, allocatable                     :: CLDTOT(:,:)                               ! GEOS-5 cloud fraction
   real, allocatable                     :: FRLAND(:,:)                               ! GEOS-5 land fraction
@@ -208,7 +211,7 @@ program geo_vlidort
 ! Parse Resource file provided at command line for input info 
 ! -----------------------------------------------------------
   call getarg(1, arg)
-  call get_config(arg)
+  call get_config(arg, nodenum)
 
 ! Write out settings to use
 ! --------------------------
@@ -228,7 +231,6 @@ program geo_vlidort
     write(*,*) 'Additional Output: ',additional_output
     write(*,*) ' '
   end if 
-
 
 ! Query for domain dimensions and missing value
 !----------------------------------------------
@@ -352,6 +354,18 @@ program geo_vlidort
     write(*,*) ' '
   end if   
 
+! Split up filtered domain among nodes
+! User must verify that there are not more nodes than pixels!
+!--------------------------------------
+  clrm_total = clrm
+  if (nodemax > 1) then
+    if (nodenum == nodemax) then
+      clrm = clrm/nodemax + mod(clrm,nodemax)
+    else
+      clrm = clrm/nodemax
+    end if
+  end if
+
 ! Split up filtered domain among processors
 !----------------------------------------------
   if (npet >= clrm) then
@@ -397,15 +411,14 @@ program geo_vlidort
     GOTO 500
   end if
 
-  
   if (myid == 0) then
-    starti = 1
+    starti = clrm*(nodenum-1) +  1
   else
-    starti = sum(nclr(1:myid))+1
-  end if
+    starti = sum(nclr(1:myid)) + clrm*(nodenum-1) + 1
+  end if    
   counti = nclr(myid+1)
-  endi   = starti + counti - 1
-
+  endi   = starti + counti - 1 
+  
   do c = starti, endi
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
@@ -577,7 +590,7 @@ program geo_vlidort
    
     allocate (field(im,jm))
     field = g5nr_missing
-    allocate (AOD(clrm))
+    allocate (AOD(clrm_total))
 
 !                             Write to main OUT_File
 !                             ----------------------
@@ -586,16 +599,16 @@ program geo_vlidort
       write(msg,'(F10.2)') channels(ch)
       
       call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(reflectance_VL(:,ch),(/clrm/)),clmask,field), &
+      call check(nf90_put_var(ncid, varid, unpack(reshape(reflectance_VL(:,ch),(/clrm_total/)),clmask,field), &
                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
 
       call check(nf90_inq_varid(ncid, 'surf_ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(ALBEDO_(:,ch),(/clrm/)),clmask,field), &
+      call check(nf90_put_var(ncid, varid, unpack(reshape(ALBEDO_(:,ch),(/clrm_total/)),clmask,field), &
                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
 
       AOD = 0
       do k=1,km 
-        AOD = AOD + reshape(TAU_(:,k,ch),(/clrm/))
+        AOD = AOD + reshape(TAU_(:,k,ch),(/clrm_total/))
       end do
       call check(nf90_inq_varid(ncid, 'aod_' // trim(adjustl(msg)), varid), "get aod vaird")
       call check(nf90_put_var(ncid, varid, unpack(AOD,clmask,field), &
@@ -610,35 +623,35 @@ program geo_vlidort
       do ch = 1, nch
         write(msg,'(F10.2)') channels(ch)
         call check(nf90_inq_varid(ncid, 'rad_' // trim(adjustl(msg)), varid), "get rad vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(radiance_VL(:,ch),(/clrm/)),clmask,field), &
+        call check(nf90_put_var(ncid, varid, unpack(reshape(radiance_VL(:,ch),(/clrm_total/)),clmask,field), &
                       start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
 
         if (.not. scalar) then
           call check(nf90_inq_varid(ncid, 'q_' // trim(adjustl(msg)), varid), "get q vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(Q_(:,ch),(/clrm/)),clmask,field), &
+          call check(nf90_put_var(ncid, varid, unpack(reshape(Q_(:,ch),(/clrm_total/)),clmask,field), &
                       start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
 
           call check(nf90_inq_varid(ncid, 'u_' // trim(adjustl(msg)), varid), "get u vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(U_(:,ch),(/clrm/)),clmask,field), &
+          call check(nf90_put_var(ncid, varid, unpack(reshape(U_(:,ch),(/clrm_total/)),clmask,field), &
                       start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
         endif        
 
         do k=1,km 
 
           call check(nf90_inq_varid(ncid, 'aot_' // trim(adjustl(msg)), varid), "get aot vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(TAU_(:,k,ch),(/clrm/)),clmask,field), &
+          call check(nf90_put_var(ncid, varid, unpack(reshape(TAU_(:,k,ch),(/clrm_total/)),clmask,field), &
                     start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out tau")
 
           call check(nf90_inq_varid(ncid, 'g_' // trim(adjustl(msg)), varid), "get g vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(G_(:,k,ch),(/clrm/)),clmask,field), &
+          call check(nf90_put_var(ncid, varid, unpack(reshape(G_(:,k,ch),(/clrm_total/)),clmask,field), &
                     start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out g")
 
           call check(nf90_inq_varid(ncid, 'ssa_' // trim(adjustl(msg)), varid), "get ssa vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(SSA_(:,k,ch),(/clrm/)),clmask,field), &
+          call check(nf90_put_var(ncid, varid, unpack(reshape(SSA_(:,k,ch),(/clrm_total/)),clmask,field), &
                     start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ssa")
 
           call check(nf90_inq_varid(ncid, 'rot_' // trim(adjustl(msg)), varid), "get rot vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(ROT_(:,k,ch),(/clrm/)),clmask,field), &
+          call check(nf90_put_var(ncid, varid, unpack(reshape(ROT_(:,k,ch),(/clrm_total/)),clmask,field), &
                     start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out rot")
         end do
       end do
@@ -841,11 +854,21 @@ subroutine outfile_extname(file)
   chmin(i:i) = 'd'
 
   if (nch == 1) then    
-    write(file,'(7A)') trim(file),date,'_',time,'z_',trim(adjustl(chmin)),'nm.nc4'
+    write(file,'(7A)') trim(file),date,'_',time,'z_',trim(adjustl(chmin)),'nm.'
   else 
-    write(file,'(9A)') trim(file),date,'_',time,'z_',trim(adjustl(chmin)),'-',trim(adjustl(chmax)),'nm.nc4'
+    write(file,'(9A)') trim(file),date,'_',time,'z_',trim(adjustl(chmin)),'-',trim(adjustl(chmax)),'nm.'
   end if
 
+  if (nodemax > 1) then
+    if (nodenum < 10) then
+      write(*,*) 'nodenum',nodenum
+      write(file,'(A,I1,A)') trim(file),nodenum,'.nc4'
+    else if (nodenum > 10 .and. nodenum < 100) then
+      write(file,'(A,I2,A)') trim(file),nodenum,'.nc4'
+    end if
+  else
+    write(file,'(2A)') trim(file),'nc4'
+  end if
 end subroutine outfile_extname
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1969,8 +1992,9 @@ end subroutine outfile_extname
 !  HISTORY
 !     29 May P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine get_config(rcfile)
+  subroutine get_config(rcfile, nodenum)
     character(len=*),intent(in)      :: rcfile
+    integer, intent(out)             :: nodenum
 
     cf = ESMF_ConfigCreate()
     call ESMF_ConfigLoadFile(cf, fileName=trim(rcfile), __RC__)
@@ -1991,6 +2015,7 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, surfband, label = 'SURFBAND:', default='INTERPOLATE')
     call ESMF_ConfigGetAttribute(cf, surfbandm, label = 'SURFBANDM:',__RC__)
     call ESMF_ConfigGetAttribute(cf, additional_output, label = 'ADDITIONAL_OUTPUT:',default=.false.)
+    call ESMF_ConfigGetAttribute(cf, nodemax, label = 'NODEMAX:',default=1)    
 
     ! Check that LER configuration is correct
     !----------------------------------------
@@ -2010,6 +2035,14 @@ end subroutine outfile_extname
     allocate (channels(nch))
     call ESMF_ConfigGetAttribute(cf, channels, label = 'CHANNELS:', default=550.)
 
+    ! Get the node number from the rcfile name
+    ! ----------------------------------------
+    if (nodemax > 1) then
+      call get_nodenum(rcfile,nodenum)
+    else
+      nodenum = 1
+    end if    
+
     ! INFILES & OUTFILE set names
     ! -------------------------------
     call filenames()
@@ -2025,6 +2058,31 @@ end subroutine outfile_extname
     call ESMF_ConfigDestroy(cf)
 
   end subroutine get_config
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    get_nodenum
+! PURPOSE
+!     extract node numder from rc filename
+! INPUT
+!     rcfile
+! OUTPUT
+!     nodenum
+!  HISTORY
+!     October 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  SUBROUTINE get_nodenum(rcfile, nodenum)
+    character(len=*),intent(in)      :: rcfile
+    integer, intent(out)             :: nodenum
+    integer                          :: index
+    character(len=256)               :: tempstring
+
+    index = SCAN(rcfile,'.',back=.true.)
+    tempstring = rcfile(1:index-1)
+    index = SCAN(tempstring,'.')
+    read(tempstring(index+1:),*)  nodenum
+
+  END SUBROUTINE get_nodenum
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
