@@ -42,6 +42,7 @@ program geo_vlidort
 ! Information to be retrieved from resource file 
 ! ------------------------------------------------
   character(len=256)                    :: arg                    ! command line rc file argument
+  character(len=256)                    :: nodenumarg             ! command line node number argument
   character(len=8)                      :: date         
   character(len=7)                      :: surfdate
   character(len=2)                      :: time 
@@ -211,7 +212,19 @@ program geo_vlidort
 ! Parse Resource file provided at command line for input info 
 ! -----------------------------------------------------------
   call getarg(1, arg)
-  call get_config(arg, nodenum)
+  call getarg(2, nodenumarg)
+  call get_config(arg, nodenumarg,ierr)
+  if (ierr /= 0) then 
+    if (MAPL_am_I_root()) then
+        write(*,*) 'Problem reading nodenum'
+        if (ierr == 1) then
+          write(*,*) 'NODEMAX is > 1.  Must provide nodenum at command line.  Exiting'       
+        else if (ierr == 2) then
+          write(*,*) 'nodenum > NODEMAX'
+        end if        
+        GOTO 500
+    end if
+  end if
 
 ! Write out settings to use
 ! --------------------------
@@ -419,7 +432,7 @@ program geo_vlidort
   counti = nclr(myid+1)
   endi   = starti + counti - 1 
   
-  do c = starti, endi
+  do c = starti,starti+1 !starti, endi
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
@@ -861,7 +874,6 @@ subroutine outfile_extname(file)
 
   if (nodemax > 1) then
     if (nodenum < 10) then
-      write(*,*) 'nodenum',nodenum
       write(file,'(A,I1,A)') trim(file),nodenum,'.nc4'
     else if (nodenum > 10 .and. nodenum < 100) then
       write(file,'(A,I2,A)') trim(file),nodenum,'.nc4'
@@ -1992,9 +2004,10 @@ end subroutine outfile_extname
 !  HISTORY
 !     29 May P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine get_config(rcfile, nodenum)
+  subroutine get_config(rcfile, nodenumarg, ierr)
     character(len=*),intent(in)      :: rcfile
-    integer, intent(out)             :: nodenum
+    character(len=*),intent(in)      :: nodenumarg
+    integer,intent(out)              :: ierr
 
     cf = ESMF_ConfigCreate()
     call ESMF_ConfigLoadFile(cf, fileName=trim(rcfile), __RC__)
@@ -2037,11 +2050,21 @@ end subroutine outfile_extname
 
     ! Get the node number from the rcfile name
     ! ----------------------------------------
-    if (nodemax > 1) then
-      call get_nodenum(rcfile,nodenum)
-    else
+    ierr = 0
+    if (nodemax == 1) then
       nodenum = 1
-    end if    
+    else if (trim(nodenumarg) == '') then
+      ierr = 1
+      return
+    else
+      read(nodenumarg,*) nodenum
+    end if
+
+    if (nodenum > nodemax) then
+      ierr = 2
+      return
+    end if
+
 
     ! INFILES & OUTFILE set names
     ! -------------------------------
