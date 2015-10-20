@@ -406,7 +406,7 @@ program geo_vlidort
   counti = nclr(myid+1)
   endi   = starti + counti - 1
 
-  do c = starti,starti+1 !starti, endi
+  do c = starti, endi
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
@@ -542,10 +542,6 @@ program geo_vlidort
     radiance_VL(c,:)    = radiance_VL_int(nobs,:)
     reflectance_VL(c,:) = reflectance_VL_int(nobs,:)
     ALBEDO_(c,:) = albedo(nobs,:)
-
-    if (myid == 5) then
-      write(*,*) myid, radiance_VL(c,:), reflectance_VL(c,:), ALBEDO_(c,:),ROT(1,nobs,1) 
-    end if
 
     do ch=1,nch      
         ROT_(c,:,ch) = ROT(:,nobs,ch)
