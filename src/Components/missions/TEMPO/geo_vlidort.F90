@@ -221,9 +221,10 @@ program geo_vlidort
           write(*,*) 'NODEMAX is > 1.  Must provide nodenum at command line.  Exiting'       
         else if (ierr == 2) then
           write(*,*) 'nodenum > NODEMAX'
-        end if        
-        GOTO 500
+        end if                
     end if
+    call MAPL_SyncSharedMemory(rc=ierr)
+    GOTO 500
   end if
 
 ! Write out settings to use
@@ -687,7 +688,6 @@ program geo_vlidort
 
 ! ! All done
 ! ! --------
-!  call MAPL_SyncSharedMemory(rc=ierr)
 !  call deallocate_shared()
 500  call MAPL_SyncSharedMemory(rc=ierr)
   call MAPL_FinalizeShmem (rc=ierr)
