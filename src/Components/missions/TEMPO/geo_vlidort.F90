@@ -224,7 +224,7 @@ program geo_vlidort
         end if                
     end if
     call MAPL_SyncSharedMemory(rc=ierr)
-    GOTO 500
+    call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
   end if
 
 ! Write out settings to use
@@ -417,12 +417,12 @@ program geo_vlidort
   mieTables = Chem_MieCreate(rcfile,rc)
   if ( rc /= 0 ) then
     print *, 'Cannot create Mie tables from '//trim(rcfile)
-    GOTO 500
+    call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
   end if
 
   if ( nMom > mieTables%nMom ) then ! mieTables%nMom is writen in Aod_EOS.rc file
     print *, 'mieTables do not have enough moments', nMom, mieTables%nMom
-    GOTO 500
+    call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
   end if
 
   if (myid == 0) then
