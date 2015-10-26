@@ -9,6 +9,8 @@ from distutils.dir_util import mkpath
 import numpy as np
 import math
 import time
+import glob
+import shutil
 from netCDF4 import Dataset
 
 def make_workspace(date,ch,code,outdir,runfile,prefix='workdir',nodemax=None,addoutdir=None):
@@ -121,7 +123,7 @@ def check_for_errors(dirname,jobid,nodemax=None):
     return error
 
 
-def destroy_workspace(dirname,outdir,addoutdir=None, nodemax=None):
+def destroy_workspace(jobid,dirname,outdir,addoutdir=None, nodemax=None):
     cwd     = os.getcwd()
     os.chdir(dirname)
 
@@ -133,7 +135,79 @@ def destroy_workspace(dirname,outdir,addoutdir=None, nodemax=None):
     os.remove('geo_vlidort.rc')
     os.remove('geo_vlidort_run_array.j')
 
+    if nodemax is not None and nodemax > 1:
+        for a in np.arange(nodemax):
+            a = a + 1
+            errfile = 'slurm_' +jobid + '_' + str(a) + '.err'
+            os.remove(errfile)
+            outfile = 'slurm_' +jobid + '_' + str(a) + '.out'
+            os.remove(outfile)
+        os.remove('slurm_%A_%a.out')
+
+    else:
+        errfile = 'slurm_' +jobid + '.err'
+        os.remove(errfile)        
+        outfile = 'slurm_' +jobid + '.out'
+        os.remove(outfile)        
+
+    def move_file(filelist,dest):
+        for movefile in filelist:
+            if os.path.exists(dest+'/'+movefile):
+                os.remove(dest+'/'+movefile)
+            shutil.move(movefile,dest)
+
+    #runscript to combine files
+    if nodemax is not None and nodemax > 1:
+        outfilelist = glob.glob('*.lc2.*.nc4')
+        combine_files(outfilelist)
+        outfilelist = glob.glob('*.lc2.*.nc4')
+        move_file(outfilelist,outdir)
+    else:
+        outfilelist = glob.glob('*.lc2.*.nc4')
+        move_file(outfilelist,outdir)
+
+
+    if (addoutdir is not None):
+        if nodemax is not None and nodemax > 1:
+            outfilelist = glob.glob('*.lc.*.nc4')
+            combine_files(outfilelist)
+            outfilelist = glob.glob('*.lc.*.nc4')
+            move_file(outfilelist,addoutdir)
+        else:
+            outfilelist = glob.glob('*.lc.*.nc4')
+            move_file(outfilelist,addoutdir)
+
     os.chdir(cwd)
+
+def combine_files(filelist):
+    mergedfile = filelist[0]
+    mergedfile = mergedfile[:-5] + 'nc4'
+
+    os.rename(filelist[0],mergedfile)
+    filelist = filelist[1:]
+
+    if type(filelist) is str:
+        filelist = filelist.split()
+
+    ncmergedfile = Dataset(mergedfile, mode='r+')
+    for filename in filelist:
+        ncfile = Dataset(filename)
+        for var in ncmergedfile.variables:
+            vardata = ncfile.variables[var][:]
+            mergedata = ncmergedfile.variables[var][:]
+            if (np.ma.is_masked(vardata)):
+                mergedata[~vardata.mask] = vardata[~vardata.mask]
+                ncmergedfile.variables[var] = mergedata
+        ncfile.close()
+        os.remove(filename)
+
+    ncmergedfile.close()
+
+
+
+
+
+
 
 def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output,nodemax=None,i_band=None):
     cwd = os.getcwd()
@@ -399,33 +473,42 @@ if __name__ == "__main__":
             # Clean things up
             for i,s in enumerate(jobid):
                 s = s.strip('\n')
-                if nodemax is not None and nodemax > 1:
-                    # Loop through the nodes working on this job
-                    finished = 0
-                    for a in np.arange(nodemax):
-                        a = a + 1
-                        stat = subprocess.check_output(['squeue','-j',s+'_'+ str(a)])
-                        if (s+'_'+ str(a) not in stat):
-                            print ' Job Not Found! '+s+'_'+ str(a)
-                            finished = finished + 1
-
-                    if (finished == nodemax):
-                        #all nodes done for this job
-                        #clean up work space!
-                        errcheck = check_for_errors(dirstring[i],s,nodemax=nodemax)
-                        if (errcheck is False):
-                            destroy_workspace(dirstring[i],outdirstring[i],
-                                              addoutdir=addoutdirstring[i],nodemax=nodemax)
-
+                errcheck = check_for_errors(dirstring[i],s,nodemax=nodemax)
+                if (errcheck is False):
+                    destroy_workspace(s,dirstring[i],outdirstring[i],
+                                      addoutdir=addoutdirstring[i],nodemax=nodemax)
                 else:
-                    stat = subprocess.call(['qstat',s], stdout=devnull)
-                    if (stat != 0):
-                        #all done for this job
-                        #clean up work space!
-                        errcheck = check_for_errors(dirstring[i],s,nodemax=nodemax)
-                        if (errcheck is False):
-                            destroy_workspace(dirstring[i],outdirstring[i],
-                                              addoutdir=addoutdirstring[i],nodemax=nodemax)                                  
+                    print 'Jobid ',s,' exited with errors'
+
+            # for i,s in enumerate(jobid):
+            #     s = s.strip('\n')
+            #     if nodemax is not None and nodemax > 1:
+            #         # Loop through the nodes working on this job
+            #         finished = 0
+            #         for a in np.arange(nodemax):
+            #             a = a + 1
+            #             stat = subprocess.check_output(['squeue','-j',s+'_'+ str(a)])
+            #             if (s+'_'+ str(a) not in stat):
+            #                 print ' Job Not Found! '+s+'_'+ str(a)
+            #                 finished = finished + 1
+
+            #         if (finished == nodemax):
+            #             #all nodes done for this job
+            #             #clean up work space!
+            #             errcheck = check_for_errors(dirstring[i],s,nodemax=nodemax)
+            #             if (errcheck is False):
+            #                 destroy_workspace(s,dirstring[i],outdirstring[i],
+            #                                   addoutdir=addoutdirstring[i],nodemax=nodemax)
+
+            #     else:
+            #         stat = subprocess.call(['qstat',s], stdout=devnull)
+            #         if (stat != 0):
+            #             #all done for this job
+            #             #clean up work space!
+            #             errcheck = check_for_errors(dirstring[i],s,nodemax=nodemax)
+            #             if (errcheck is False):
+            #                 destroy_workspace(s,dirstring[i],outdirstring[i],
+            #                                   addoutdir=addoutdirstring[i],nodemax=nodemax)                                  
         else:
             print 'too many jobs!  reduce run length'
 
