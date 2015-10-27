@@ -194,7 +194,6 @@ def combine_files(filelist):
     for filename in filelist:
         ncfile = Dataset(filename)
         for var in ncmergedfile.variables:
-            print var
             vardata = ncfile.variables[var][:]
             mergedata = ncmergedfile.variables[var][:]
             if (np.ma.is_masked(vardata)):
