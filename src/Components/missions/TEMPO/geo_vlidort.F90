@@ -99,6 +99,25 @@ program geo_vlidort
   real, pointer                         :: tempSurf3D(:,:,:) => null()
   real, pointer                         :: temp2D(:,:) => null()
 
+  real, pointer                         :: AIRDENS_(:,:,:) => null()
+  real, pointer                         :: RH_(:,:,:) => null()
+  real, pointer                         :: DELP_(:,:,:) => null()
+  real, pointer                         :: DU001_(:,:,:) => null()
+  real, pointer                         :: DU002_(:,:,:) => null()
+  real, pointer                         :: DU003_(:,:,:) => null()
+  real, pointer                         :: DU004_(:,:,:) => null()
+  real, pointer                         :: DU005_(:,:,:) => null()
+  real, pointer                         :: SS001_(:,:,:) => null()
+  real, pointer                         :: SS002_(:,:,:) => null()
+  real, pointer                         :: SS003_(:,:,:) => null()
+  real, pointer                         :: SS004_(:,:,:) => null()
+  real, pointer                         :: SS005_(:,:,:) => null()
+  real, pointer                         :: BCPHOBIC_(:,:,:) => null()
+  real, pointer                         :: BCPHILIC_(:,:,:) => null()
+  real, pointer                         :: OCPHOBIC_(:,:,:) => null()
+  real, pointer                         :: OCPHILIC_(:,:,:) => null()
+  real, pointer                         :: SO4_(:,:,:) => null()  
+
 ! VLIDORT input arrays
 ! ---------------------------
   real, allocatable                     :: pe(:,:)                ! edge pressure [Pa]
@@ -229,7 +248,7 @@ program geo_vlidort
 
 ! Write out settings to use
 ! --------------------------
-  if (myid == 0) then
+  if (MAPL_am_I_root()) then
     write(*,*) 'Simulating ', lower_to_upper(trim(instname)),' domain on ',date,' ', time, 'Z'
     write(*,*) 'Input directory: ',trim(indir)
     write(*,*) 'Output directory: ',trim(outdir)
@@ -279,7 +298,7 @@ program geo_vlidort
 ! ------------------------
   ! first check that you can do anything!!!!!  
   if (.not. ANY(CLDTOT <= cldmax)) then   
-    if (myid == 0) then
+    if (MAPL_am_I_root()) then
       write(*,*) 'The domain is too cloudy, nothing to do'
       write(*,*) 'Exiting.....'
     end if
@@ -287,7 +306,7 @@ program geo_vlidort
   end if
 
   if (.not. ANY(SOLAR_ZENITH < szamax)) then   
-    if (myid == 0) then
+    if (MAPL_am_I_root()) then
       write(*,*) 'The sun has set, nothing to do'
       write(*,*) 'Exiting.....'
     end if
@@ -295,7 +314,7 @@ program geo_vlidort
   end if
 
   if (.not. ANY(SENSOR_ZENITH < vzamax)) then   
-    if (myid == 0) then
+    if (MAPL_am_I_root()) then
       write(*,*) 'View angle too slant, nothing to do'
       write(*,*) 'Exiting.....'
     end if
@@ -321,7 +340,7 @@ program geo_vlidort
   end do
 
   if (clrm == 0) then
-    if (myid == 0) then
+    if (MAPL_am_I_root()) then
       write(*,*) 'No clear pixels over land, nothing to do'
       write(*,*) 'Exiting.....'
     end if
@@ -335,7 +354,7 @@ program geo_vlidort
   deallocate (SOLAR_ZENITH)
   deallocate (SENSOR_ZENITH)
 
-  if (myid == 0) then
+  if (MAPL_am_I_root()) then
     write(*,*) '<> Created Cloud Mask'
     write(*,'(A,I3,A)') '       ',nint(100.*clrm/(im*jm)),'% of the domain is clear and sunlit'
     write(*,'(A,I,A)')  '       Simulating ',clrm,' pixels'
@@ -359,7 +378,7 @@ program geo_vlidort
 ! ------------------------------------------------------------------  
   call MAPL_SyncSharedMemory(rc=ierr)
    
-  if (myid == 0) then 
+  if (MAPL_am_I_root()) then 
     write(*,*) 'Read all variables' 
     call sys_tracker()   
     write(*,*) ' '
@@ -426,14 +445,14 @@ program geo_vlidort
   end if
 
   if (myid == 0) then
-    starti = clrm*(nodenum-1) +  1
+    starti = (clrm_total/nodemax)*(nodenum-1) +  1
   else
-    starti = sum(nclr(1:myid)) + clrm*(nodenum-1) + 1
+    starti = sum(nclr(1:myid)) + (clrm_total/nodemax)*(nodenum-1) + 1
   end if    
   counti = nclr(myid+1)
   endi   = starti + counti - 1 
-  
-  do c = starti,starti+1 !starti, endi
+
+  do c = starti, endi
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
@@ -964,79 +983,48 @@ end subroutine outfile_extname
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_aer_Nv()
 
-    call mp_readvar3D("AIRDENS", AER_file, (/im,jm,km/), 1, npet, myid, temp3D)  
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,AIRDENS) 
+    call mp_readvar3D("AIRDENS", AER_file, (/im,jm,km/), 1, npet, myid, AIRDENS_)  
+    call mp_readvar3D("RH", AER_file, (/im,jm,km/), 1, npet, myid, RH_) 
+    call mp_readvar3D("DELP", AER_file, (/im,jm,km/), 1, npet, myid, DELP_) 
+    call mp_readvar3D("DU001", AER_file, (/im,jm,km/), 1, npet, myid, DU001_) 
+    call mp_readvar3D("DU002", AER_file, (/im,jm,km/), 1, npet, myid, DU002_) 
+    call mp_readvar3D("DU003", AER_file, (/im,jm,km/), 1, npet, myid, DU003_) 
+    call mp_readvar3D("DU004", AER_file, (/im,jm,km/), 1, npet, myid, DU004_) 
+    call mp_readvar3D("DU005", AER_file, (/im,jm,km/), 1, npet, myid, DU005_) 
+    call mp_readvar3D("SS001", AER_file, (/im,jm,km/), 1, npet, myid, SS001_) 
+    call mp_readvar3D("SS002", AER_file, (/im,jm,km/), 1, npet, myid, SS002_) 
+    call mp_readvar3D("SS003", AER_file, (/im,jm,km/), 1, npet, myid, SS003_) 
+    call mp_readvar3D("SS004", AER_file, (/im,jm,km/), 1, npet, myid, SS004_) 
+    call mp_readvar3D("SS005", AER_file, (/im,jm,km/), 1, npet, myid, SS005_) 
+    call mp_readvar3D("BCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, BCPHOBIC_) 
+    call mp_readvar3D("BCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, BCPHILIC_) 
+    call mp_readvar3D("OCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, OCPHOBIC_) 
+    call mp_readvar3D("OCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, OCPHILIC_) 
+    call mp_readvar3D("SO4", AER_file, (/im,jm,km/), 1, npet, myid, SO4_) 
 
-    call mp_readvar3D("RH", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
     call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,RH) 
-
-    call mp_readvar3D("DELP", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
+    if (MAPL_am_I_root()) then
+      call reduceProfile(AIRDENS_,clmask,AIRDENS) 
+      call reduceProfile(RH_,clmask,RH) 
+      call reduceProfile(DELP_,clmask,DELP) 
+      call reduceProfile(DU001_,clmask,DU001) 
+      call reduceProfile(DU002_,clmask,DU002)
+      call reduceProfile(DU003_,clmask,DU003) 
+      call reduceProfile(DU004_,clmask,DU004) 
+      call reduceProfile(DU005_,clmask,DU005)   
+      call reduceProfile(SS001_,clmask,SS001)  
+      call reduceProfile(SS002_,clmask,SS002) 
+      call reduceProfile(SS003_,clmask,SS003) 
+      call reduceProfile(SS004_,clmask,SS004) 
+      call reduceProfile(SS005_,clmask,SS005) 
+      call reduceProfile(BCPHOBIC_,clmask,BCPHOBIC) 
+      call reduceProfile(BCPHILIC_,clmask,BCPHILIC) 
+      call reduceProfile(OCPHOBIC_,clmask,OCPHOBIC) 
+      call reduceProfile(OCPHILIC_,clmask,OCPHILIC)  
+      call reduceProfile(SO4_,clmask,SO4)  
+      write(*,*) '<> Read aeorosl data to shared memory'
+    end if    
     call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,DELP)     
-
-    call mp_readvar3D("DU001", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,DU001) 
-
-    call mp_readvar3D("DU002", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,DU002) 
-
-    call mp_readvar3D("DU003", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,DU003) 
-
-    call mp_readvar3D("DU004", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,DU004) 
-
-    call mp_readvar3D("DU005", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,DU005)    
-
-    call mp_readvar3D("SS001", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,SS001) 
-
-    call mp_readvar3D("SS002", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,SS002) 
-
-    call mp_readvar3D("SS003", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,SS003) 
-
-    call mp_readvar3D("SS004", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,SS004) 
-
-    call mp_readvar3D("SS005", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,SS005) 
-
-    call mp_readvar3D("BCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,BCPHOBIC) 
-
-    call mp_readvar3D("BCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,BCPHILIC) 
-
-    call mp_readvar3D("OCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,OCPHOBIC) 
-
-    call mp_readvar3D("OCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,OCPHILIC)   
-
-    call mp_readvar3D("SO4", AER_file, (/im,jm,km/), 1, npet, myid, temp3D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  call reduceProfile(temp3D,clmask,SO4)             
-
-    if (MAPL_am_I_root()) write(*,*) '<> Read aeorosl data to shared memory'
 
   end subroutine read_aer_Nv
 
@@ -1148,7 +1136,7 @@ end subroutine outfile_extname
     call MAPL_SyncSharedMemory(rc=ierr)    
     if (MAPL_am_I_root())  VZA = pack(temp2D,clmask)
     
-    if (myid == 0) then
+    if (MAPL_am_I_root()) then
       allocate (saa(clrm))
       allocate (vaa(clrm))
 
@@ -1236,6 +1224,25 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(temp2D,(/im,jm/),rc=ierr)
     call MAPL_AllocNodeArray(temp3D,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(tempSurf3D,(/im,jm,surfbandm/),rc=ierr)
+
+    call MAPL_AllocNodeArray(AIRDENS_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(RH_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DELP_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU001_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU002_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU003_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU004_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU005_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS001_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS002_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS003_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS004_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS005_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(BCPHOBIC_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(BCPHILIC_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(OCPHOBIC_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(OCPHILIC_,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SO4_,(/im,jm,km/),rc=ierr)
 
   end subroutine allocate_shared
 
@@ -1330,7 +1337,7 @@ end subroutine outfile_extname
     character(len=100)                :: msgr
     integer                           :: pp
 
-    if ( myid  == 0 ) then
+    if ( MAPL_am_I_root() ) then
       do pp = 1,npet-1
         call mpi_recv(msgr, 100, MPI_CHARACTER, pp, 1, MPI_COMM_WORLD, status_mpi, ierr)
         write(*,*) trim(msgr)
@@ -1885,7 +1892,7 @@ end subroutine outfile_extname
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   subroutine do_testing()
 
-    if ( myid  == 0 ) then
+    if ( MAPL_am_I_root() ) then
       open (unit = 2, file="shmem_test.txt")
       write(2,'(A)') '--- Array Statistics ---'
     end if
@@ -1912,7 +1919,7 @@ end subroutine outfile_extname
     !   Wait for everyone to finish and print max memory used
     !   -----------------------------------------------------------  
     call MAPL_SyncSharedMemory(rc=ierr)
-    if (myid == 0) then  
+    if (MAPL_am_I_root()) then  
       write(*,*) 'Tested shared memory' 
       call sys_tracker()   
     end if   
@@ -1939,7 +1946,7 @@ end subroutine outfile_extname
     real,dimension(:,:,:)         :: var
     character(len=61)             :: msg
 
-    if ( myid  == 0 ) then
+    if ( MAPL_am_I_root() ) then
       open (unit = 2, file="shmem_test.txt",position="append")
       do p = 1,npet-1
         call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status_mpi, ierr)
@@ -1974,7 +1981,7 @@ end subroutine outfile_extname
     character(len=*), intent(in)  :: varname
     real,dimension(:,:)      :: var
 
-    if ( myid  == 0 ) then
+    if ( MAPL_am_I_root() ) then
       open (unit = 2, file="shmem_test.txt",position="append")
       do p = 1,npet-1
         call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status_mpi, ierr)
