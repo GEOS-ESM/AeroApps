@@ -178,6 +178,7 @@ def destroy_workspace(jobid,dirname,outdir,addoutdir=None, nodemax=None):
             move_file(outfilelist,addoutdir)
 
     os.chdir(cwd)
+    os.rmdir(dirname)
 
 def combine_files(filelist):
     mergedfile = filelist[0]
@@ -193,20 +194,16 @@ def combine_files(filelist):
     for filename in filelist:
         ncfile = Dataset(filename)
         for var in ncmergedfile.variables:
+            print var
             vardata = ncfile.variables[var][:]
             mergedata = ncmergedfile.variables[var][:]
             if (np.ma.is_masked(vardata)):
                 mergedata[~vardata.mask] = vardata[~vardata.mask]
-                ncmergedfile.variables[var] = mergedata
+                ncmergedfile.variables[var][:] = mergedata
         ncfile.close()
         os.remove(filename)
 
     ncmergedfile.close()
-
-
-
-
-
 
 
 def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output,nodemax=None,i_band=None):
@@ -359,14 +356,14 @@ def prefilter(date,indir):
 
 if __name__ == "__main__":
     
-    startdate         = '2006-08-05T00:00:00'
-    enddate           = '2006-08-05T00:00:00'
-    channels          = '470'
+    startdate         = '2005-12-31T17:00:00'
+    enddate           = '2005-12-31T17:00:00'
+    channels          = '550'
     surface           = 'MAIACRTLS'
     interp            = 'interpolate'
     i_band            = None    
-    additional_output = True
-    nodemax           = 2
+    additional_output = False
+    nodemax           = 6
 
     runfile           = 'geo_vlidort_run_array.j'
     nccs              = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA/'
@@ -464,8 +461,8 @@ if __name__ == "__main__":
             # Monitor jobs
             stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
             while (stat == 0):
-                print 'Waiting 5 minutes'
-                time.sleep(300)
+                print 'Waiting 1 minutes'
+                time.sleep(60)
                 stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
 
             print 'All jobs done'
@@ -475,8 +472,12 @@ if __name__ == "__main__":
                 s = s.strip('\n')
                 errcheck = check_for_errors(dirstring[i],s,nodemax=nodemax)
                 if (errcheck is False):
-                    destroy_workspace(s,dirstring[i],outdirstring[i],
+                    if (additional_output):
+                        destroy_workspace(s,dirstring[i],outdirstring[i],
                                       addoutdir=addoutdirstring[i],nodemax=nodemax)
+                    else:
+                        destroy_workspace(s,dirstring[i],outdirstring[i],
+                                      addoutdir=None,nodemax=nodemax)
                 else:
                     print 'Jobid ',s,' exited with errors'
 
