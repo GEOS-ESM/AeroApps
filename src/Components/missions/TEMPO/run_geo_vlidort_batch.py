@@ -18,8 +18,8 @@ def make_workspace(date,ch,code,outdir):
         os.makedirs(dirname)
     
     os.chdir(dirname)
-    if not os.path.isfile('geo_vlidort.x'):
-        os.symlink('../geo_vlidort.x','geo_vlidort.x')
+    if not os.path.isfile('geo_vlidort_multinode.x'):
+        os.symlink('../geo_vlidort_multinode.x','geo_vlidort_multinode.x')
     if not os.path.exists('ExtData'):
         os.symlink('../ExtData','ExtData')
     if not os.path.isfile('Chem_MieRegistry.rc'):
@@ -169,9 +169,10 @@ def prefilter(date,indir):
     ncGeom = Dataset(geom)
     SZA    = np.squeeze(ncGeom.variables[u'solar_zenith'][:])
     VZA    = np.squeeze(ncGeom.variables[u'sensor_zenith'][:])
+    ncGeom.close()
     ncLand = Dataset(land)
     FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
-    ncGeom.close()
+    ncLand.close()
 
     SZA = SZA[f]
     VZA = VZA[f]
@@ -183,7 +184,7 @@ def prefilter(date,indir):
 
     SZA    = SZA[f]
     FRLAND = FRLAND[f]
-    f      = np.where(VZA < 80)
+    f      = np.where(SZA < 80)
     if len(f[0]) == 0:
         return False
 
@@ -199,10 +200,10 @@ def prefilter(date,indir):
 
 if __name__ == "__main__":
     
-    startdate = '2006-07-31T01:00:00'
-    enddate   = '2006-07-31T23:00:00'
-    channels  = '354','388'
-    surface   = 'LER'
+    startdate = '2006-08-05T00:00:00'
+    enddate   = '2006-08-05T00:00:00'
+    channels  = '470'
+    surface   = 'MAIACRTLS'
     interp    = 'interpolate'
     i_band    = None
     nccs      = '/discover/nobackup'
