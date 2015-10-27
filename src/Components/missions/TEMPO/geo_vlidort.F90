@@ -96,9 +96,6 @@ program geo_vlidort
   real, pointer                         :: SZA(:) => null()
   real, pointer                         :: VZA(:) => null()
   real, pointer                         :: RAA(:) => null()  
-  real, pointer                         :: temp3D(:,:,:) => null()
-  real, pointer                         :: tempSurf3D(:,:,:) => null()
-  real, pointer                         :: temp2D(:,:) => null()
 
   real, pointer                         :: AIRDENS_(:,:,:) => null()
   real, pointer                         :: RH_(:,:,:) => null()
@@ -118,6 +115,14 @@ program geo_vlidort
   real, pointer                         :: OCPHOBIC_(:,:,:) => null()
   real, pointer                         :: OCPHILIC_(:,:,:) => null()
   real, pointer                         :: SO4_(:,:,:) => null()  
+  real, pointer                         :: KISO_(:,:,:) => null()
+  real, pointer                         :: KVOL_(:,:,:) => null()
+  real, pointer                         :: KGEO_(:,:,:) => null()  
+  real, pointer                         :: SZA_(:,:) => null()
+  real, pointer                         :: VZA_(:,:) => null()
+  real, pointer                         :: SAA_(:,:) => null()
+  real, pointer                         :: VAA_(:,:) => null()
+
 
 ! VLIDORT input arrays
 ! ---------------------------
@@ -1049,10 +1054,28 @@ end subroutine outfile_extname
       call reduceProfile(OCPHILIC_,clmask,OCPHILIC)  
       call reduceProfile(SO4_,clmask,SO4)  
       write(*,*) '<> Read aeorosl data to shared memory'
-    end if    
-    call MAPL_SyncSharedMemory(rc=ierr)    
+    end if      
 
+    call MAPL_DeallocNodeArray(AIRDENS_,rc=ierr)
+    call MAPL_DeallocNodeArray(RH_,rc=ierr)
+    call MAPL_DeallocNodeArray(DELP_,rc=ierr)
+    call MAPL_DeallocNodeArray(DU001_,rc=ierr)
+    call MAPL_DeallocNodeArray(DU002_,rc=ierr)
+    call MAPL_DeallocNodeArray(DU003_,rc=ierr)
+    call MAPL_DeallocNodeArray(DU004_,rc=ierr)                           
+    call MAPL_DeallocNodeArray(DU005_,rc=ierr)
+    call MAPL_DeallocNodeArray(SS001_,rc=ierr) 
+    call MAPL_DeallocNodeArray(SS002_,rc=ierr) 
+    call MAPL_DeallocNodeArray(SS003_,rc=ierr) 
+    call MAPL_DeallocNodeArray(SS004_,rc=ierr) 
+    call MAPL_DeallocNodeArray(SS005_,rc=ierr) 
+    call MAPL_DeallocNodeArray(BCPHOBIC_,rc=ierr) 
+    call MAPL_DeallocNodeArray(BCPHILIC_,rc=ierr) 
+    call MAPL_DeallocNodeArray(OCPHOBIC_,rc=ierr) 
+    call MAPL_DeallocNodeArray(OCPHILIC_,rc=ierr) 
+    call MAPL_DeallocNodeArray(SO4_,rc=ierr)         
   end subroutine read_aer_Nv
+
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -1101,19 +1124,23 @@ end subroutine outfile_extname
     real, dimension(im,jm,surfbandm)   :: temp
 
     if (lower_to_upper(surfname) == 'MAIACRTLS') then
-      call mp_readvar3D("Kiso", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, tempSurf3D) 
-      call MAPL_SyncSharedMemory(rc=ierr)    
-      if (MAPL_am_I_root())  call reduceProfile(tempSurf3D,clmask,KISO) 
+      call mp_readvar3D("Kiso", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KISO_) 
+      call mp_readvar3D("Kvol", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KVOL_) 
+      call mp_readvar3D("Kgeo", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KGEO_) 
 
-      call mp_readvar3D("Kvol", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, tempSurf3D) 
       call MAPL_SyncSharedMemory(rc=ierr)    
-      if (MAPL_am_I_root())  call reduceProfile(tempSurf3D,clmask,KVOL)   
 
-      call mp_readvar3D("Kgeo", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, tempSurf3D) 
-      call MAPL_SyncSharedMemory(rc=ierr)    
-      if (MAPL_am_I_root())  call reduceProfile(tempSurf3D,clmask,KGEO)       
+      if (MAPL_am_I_root()) then
+        call reduceProfile(KISO_,clmask,KISO) 
+        call reduceProfile(KVOL_,clmask,KVOL)
+        call reduceProfile(KGEO_,clmask,KGEO)  
+        write(*,*) '<> Read BRDF data to shared memory' 
+      end if 
 
-      if (MAPL_am_I_root())  write(*,*) '<> Read BRDF data to shared memory' 
+      call MAPL_DeallocNodeArray(KISO_,rc=ierr) 
+      call MAPL_DeallocNodeArray(KVOL_,rc=ierr) 
+      call MAPL_DeallocNodeArray(KGEO_,rc=ierr) 
+
     else
       if (MAPL_am_I_root()) then
         call read_LER(temp)        
@@ -1154,20 +1181,19 @@ end subroutine outfile_extname
     integer                    :: i
 
 
-    call mp_readvar2D("solar_zenith", ANG_file, (/im,jm/), 1, npet, myid, temp2D) 
+    call mp_readvar2D("solar_zenith",   ANG_file, (/im,jm/), 1, npet, myid, SZA_) 
+    call mp_readvar2D("sensor_zenith",  ANG_file, (/im,jm/), 1, npet, myid, VZA_) 
+    call mp_readvar2D("solar_azimuth",  ANG_file, (/im,jm/), 1, npet, myid, SAA_)
+    call mp_readvar2D("sensor_azimuth", ANG_file, (/im,jm/), 1, npet, myid, VAA_)
     call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  SZA = pack(temp2D,clmask)
-
-    call mp_readvar2D("sensor_zenith", ANG_file, (/im,jm/), 1, npet, myid, temp2D) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root())  VZA = pack(temp2D,clmask)
-    
     if (MAPL_am_I_root()) then
+      SZA = pack(SZA_,clmask)
+      VZA = pack(VZA_,clmask)
+        
       allocate (saa(clrm))
       allocate (vaa(clrm))
-
-      call readvar2D("solar_azimuth", ANG_file, temp)
-      saa = pack(temp,clmask)
+      
+      saa = pack(SAA_,clmask)
       ! define according to photon travel direction
       saa = saa + 180.0
       do i = 1, clrm
@@ -1176,15 +1202,19 @@ end subroutine outfile_extname
         end if
       end do
 
-      call readvar2D("sensor_azimuth", ANG_file, temp)
-      vaa = pack(temp,clmask)
+      vaa = pack(VAA_,clmask)
 
       RAA = vaa - saa
 
       deallocate (saa)
       deallocate (vaa)
       write(*,*) '<> Read angle data to shared memory' 
+
     end if
+    call MAPL_DeallocNodeArray(SZA_,rc=ierr) 
+    call MAPL_DeallocNodeArray(VZA_,rc=ierr) 
+    call MAPL_DeallocNodeArray(SAA_,rc=ierr) 
+    call MAPL_DeallocNodeArray(VAA_,rc=ierr) 
 
   end subroutine read_angles  
 
@@ -1247,10 +1277,6 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(radiance_VL,(/clrm,nch/),rc=ierr)
     call MAPL_AllocNodeArray(reflectance_VL,(/clrm,nch/),rc=ierr)
 
-    call MAPL_AllocNodeArray(temp2D,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(temp3D,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(tempSurf3D,(/im,jm,surfbandm/),rc=ierr)
-
     call MAPL_AllocNodeArray(AIRDENS_,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(RH_,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(DELP_,(/im,jm,km/),rc=ierr)
@@ -1269,7 +1295,16 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(OCPHOBIC_,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(OCPHILIC_,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(SO4_,(/im,jm,km/),rc=ierr)
+    if (lower_to_upper(surfname) == 'MAIACRTLS') then
+      call MAPL_AllocNodeArray(KISO_,(/im,jm,surfbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(KGEO_,(/im,jm,surfbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(KVOL_,(/im,jm,surfbandm/),rc=ierr)
+    end if
 
+    call MAPL_AllocNodeArray(SZA_,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(VZA_,(/im,jm/),rc=ierr)    
+    call MAPL_AllocNodeArray(SAA_,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(VAA_,(/im,jm/),rc=ierr) 
   end subroutine allocate_shared
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
