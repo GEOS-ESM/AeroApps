@@ -59,6 +59,7 @@ program geo_vlidort
   logical                               :: additional_output      ! does user want additional output
   integer                               :: nodemax                ! number of nodes requested
   integer                               :: nodenum                ! which node is this?
+  real                                  :: version
 
 ! Test flag
 ! -----------
@@ -750,6 +751,31 @@ function nn_interp(x,y,xint)
   end if
 
 end function nn_interp
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     when
+! PURPOSE
+!     return a string with current date nad time
+! INPUT
+!     NONE
+! OUTPUT
+!     when: date string with format Date 04/01/1995; time 14:07:40
+! HISTORY
+!     Oct 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+function when()
+      integer,dimension(3)      :: now
+      integer,dimension(4)      :: today
+      character(len=256)        :: when
+
+      call idate(today(1),today(2),today(3))   ! today(1)=month, (2)=day, (3)=year
+      call itime(now)     ! now(1)=hour, (2)=minute, (3)=second
+      write ( when, 1000 )  today(1), today(2), today(3), now
+      1000 format ( 'Date ', i2.2, '/', i2.2, '/', i2.2, '; time ',&
+                     i2.2, ':', i2.2, ':', i2.2 )
+
+end function when
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -1452,6 +1478,9 @@ end subroutine outfile_extname
 
     call check(nf90_put_att(ncid,NF90_GLOBAL,"contact","Patricia Castellanos <patricia.castellanos@nasa.gov>"),"contact attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,"Conventions","cf"),"conventions attr")
+    write(comment,'(F3.2)') version
+    call check(nf90_put_att(ncid,NF90_GLOBAL,"Version",comment),"version attr")
+    call check(nf90_put_att(ncid,NF90_GLOBAL,"Created",when()),"created attr")    
 
     ! Define Variables
 !                                     Dimensions
@@ -2035,7 +2064,8 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, surfband, label = 'SURFBAND:', default='INTERPOLATE')
     call ESMF_ConfigGetAttribute(cf, surfbandm, label = 'SURFBANDM:',__RC__)
     call ESMF_ConfigGetAttribute(cf, additional_output, label = 'ADDITIONAL_OUTPUT:',default=.false.)
-    call ESMF_ConfigGetAttribute(cf, nodemax, label = 'NODEMAX:',default=1)    
+    call ESMF_ConfigGetAttribute(cf, nodemax, label = 'NODEMAX:',default=1) 
+    call ESMF_ConfigGetAttribute(cf, version, label = 'VERSION:',default=1.0)    
 
     ! Check that LER configuration is correct
     !----------------------------------------
