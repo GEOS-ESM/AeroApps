@@ -123,7 +123,7 @@ def check_for_errors(dirname,jobid,nodemax=None):
     return error
 
 
-def destroy_workspace(jobid,dirname,outdir,addoutdir=None, nodemax=None):
+def destroy_workspace(jobid,dirname,outdir,addoutdir=None,nodemax=None,profile=False):
     cwd     = os.getcwd()
     os.chdir(dirname)
 
@@ -135,20 +135,21 @@ def destroy_workspace(jobid,dirname,outdir,addoutdir=None, nodemax=None):
     os.remove('geo_vlidort.rc')
     os.remove('geo_vlidort_run_array.j')
 
-    if nodemax is not None and nodemax > 1:
-        for a in np.arange(nodemax):
-            a = a + 1
-            errfile = 'slurm_' +jobid + '_' + str(a) + '.err'
-            os.remove(errfile)
-            outfile = 'slurm_' +jobid + '_' + str(a) + '.out'
-            os.remove(outfile)
-        os.remove('slurm_%A_%a.out')
+    if profile is False:
+        if nodemax is not None and nodemax > 1:
+            for a in np.arange(nodemax):
+                a = a + 1
+                errfile = 'slurm_' +jobid + '_' + str(a) + '.err'
+                os.remove(errfile)
+                outfile = 'slurm_' +jobid + '_' + str(a) + '.out'
+                os.remove(outfile)
+            os.remove('slurm_%A_%a.out')
 
-    else:
-        errfile = 'slurm_' +jobid + '.err'
-        os.remove(errfile)        
-        outfile = 'slurm_' +jobid + '.out'
-        os.remove(outfile)        
+        else:
+            errfile = 'slurm_' +jobid + '.err'
+            os.remove(errfile)        
+            outfile = 'slurm_' +jobid + '.out'
+            os.remove(outfile)        
 
     def move_file(filelist,dest):
         for movefile in filelist:
@@ -178,7 +179,8 @@ def destroy_workspace(jobid,dirname,outdir,addoutdir=None, nodemax=None):
             move_file(outfilelist,addoutdir)
 
     os.chdir(cwd)
-    os.rmdir(dirname)
+    if profile is False:
+        os.rmdir(dirname)
 
 def combine_files(filelist):
     mergedfile = filelist[0]
@@ -205,7 +207,8 @@ def combine_files(filelist):
     ncmergedfile.close()
 
 
-def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output,nodemax=None,i_band=None):
+def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output,
+                      nodemax=None,i_band=None,version=None,surf_version=None):
     cwd = os.getcwd()
     os.chdir(dirname)
 
@@ -261,11 +264,19 @@ def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output,nodema
         rcfile.write('ADDITIONAL_OUTPUT: true\n')
     else:
         rcfile.write('ADDITIONAL_OUTPUT: false\n')
+
+    if version is not None:
+        rcfile.write('VERSION: '+version+'\n')
+
+    if surf_version is not None:
+        rcfile.write('SURF_VERSION: '+surf_version+'\n')
+        
     rcfile.close()
 
     os.chdir(cwd)
 
-def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output,nodemax=None,i_band=None):
+def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output,
+                    nodemax=None,i_band=None,version=None,surf_version=None):
     cwd = os.getcwd()
     os.chdir(dirname)
 
@@ -302,6 +313,12 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output,nodemax=
         rcfile.write('ADDITIONAL_OUTPUT: true\n')
     else:
         rcfile.write('ADDITIONAL_OUTPUT: false\n')
+
+    if version is not None:
+        rcfile.write('VERSION: '+version+'\n')
+
+    if surf_version is not None:
+        rcfile.write('SURF_VERSION: '+surf_version+'\n')
     rcfile.close()
 
     os.chdir(cwd)    
@@ -354,7 +371,7 @@ def prefilter(date,indir):
 #########################################################
 
 if __name__ == "__main__":
-    
+    version           = '1.0'    
     startdate         = '2005-12-31T17:00:00'
     enddate           = '2005-12-31T17:00:00'
     channels          = '550'
@@ -363,6 +380,7 @@ if __name__ == "__main__":
     i_band            = None    
     additional_output = False
     nodemax           = 6
+    surf_version      = 'beta'
 
     runfile           = 'geo_vlidort_run_array.j'
     nccs              = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA/'
@@ -372,6 +390,8 @@ if __name__ == "__main__":
     #    End of uper inputs
     ###
     ################
+    profile           = True
+    runmode           = 'scalar'
     indir             = nccs 
     outdir            = nccs + 'LevelC2'
     if (additional_output):
@@ -409,7 +429,7 @@ if __name__ == "__main__":
                     band_i = i_band[i]
 
                 # Vector Case
-                code = 'vector.'
+                code = runmode + '.'
                 if (interp.lower() == 'interpolate'):
                     code = code + 'i'                 
 
@@ -423,11 +443,13 @@ if __name__ == "__main__":
                     workdir, outdir_ = dirlist
 
                 if (surface.upper() == 'MAIACRTLS'):
-                    make_maiac_rcfile(workdir,indir,startdate,ch,'vector',\
-                                      interp,additional_output,nodemax=nodemax,i_band=band_i)
+                    make_maiac_rcfile(workdir,indir,startdate,ch,runmode,
+                                      interp,additional_output,nodemax=nodemax,i_band=band_i,
+                                      version=version,surf_version=surf_version)
                 else:
-                    make_ler_rcfile(workdir,indir,startdate,ch,'vector',\
-                                    interp,additional_output,nodemax=nodemax,i_band=band_i)
+                    make_ler_rcfile(workdir,indir,startdate,ch,runmode,
+                                    interp,additional_output,nodemax=nodemax,i_band=band_i,
+                                    version=version,surf_version=surf_version)
                 
                 dirstring = np.append(dirstring,workdir)
                 outdirstring = np.append(outdirstring,outdir_)
@@ -473,10 +495,10 @@ if __name__ == "__main__":
                 if (errcheck is False):
                     if (additional_output):
                         destroy_workspace(s,dirstring[i],outdirstring[i],
-                                      addoutdir=addoutdirstring[i],nodemax=nodemax)
+                                      addoutdir=addoutdirstring[i],nodemax=nodemax,profile=profile)
                     else:
                         destroy_workspace(s,dirstring[i],outdirstring[i],
-                                      addoutdir=None,nodemax=nodemax)
+                                      addoutdir=None,nodemax=nodemax,profile=profile)
                 else:
                     print 'Jobid ',s,' exited with errors'
 
