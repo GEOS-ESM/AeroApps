@@ -116,9 +116,17 @@ program geo_vlidort
   real, pointer                         :: OCPHOBIC_(:,:,:) => null()
   real, pointer                         :: OCPHILIC_(:,:,:) => null()
   real, pointer                         :: SO4_(:,:,:) => null()  
+  real, pointer                         :: BAND1(:,:,:) => null()
+  real, pointer                         :: BAND2(:,:,:) => null()
+  real, pointer                         :: BAND3(:,:,:) => null()  
+  real, pointer                         :: BAND4(:,:,:) => null()
+  real, pointer                         :: BAND5(:,:,:) => null()
+  real, pointer                         :: BAND6(:,:,:) => null()  
+  real, pointer                         :: BAND7(:,:,:) => null()
+  real, pointer                         :: BAND8(:,:,:) => null()
   real, pointer                         :: KISO_(:,:,:) => null()
   real, pointer                         :: KVOL_(:,:,:) => null()
-  real, pointer                         :: KGEO_(:,:,:) => null()  
+  real, pointer                         :: KGEO_(:,:,:) => null()    
   real, pointer                         :: SZA_(:,:) => null()
   real, pointer                         :: VZA_(:,:) => null()
   real, pointer                         :: SAA_(:,:) => null()
@@ -279,7 +287,8 @@ program geo_vlidort
   call mp_readDim("lev", MET_file, km)
   call mp_readDim("time", MET_file,tm)
   if (lower_to_upper(surfname) == 'MAIACRTLS') then
-    call mp_readVattr("missing_value", SURF_file, "Kiso", surf_missing) 
+    call mp_readVattr("missing_value", SURF_file, "Band1", surf_missing) 
+    surf_missing = -99999.0
   else
     call mp_readVattr("missing_value", SURF_file, "SRFLER354", surf_missing) 
   end if
@@ -553,6 +562,7 @@ program geo_vlidort
                (/dble(VZA(c))/), &
                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, Q, U, ierr)
       end if
+
     else if ( ANY(kernel_wt == surf_missing) ) then
 !     Save code for pixels that were not gap filled
 !     ---------------------------------------------    
@@ -565,7 +575,7 @@ program geo_vlidort
         U = -500
       end if
       ierr = 0
-    else             
+    else   
 !     MODIS BRDF Surface Model
 !     ------------------------------
       if (scalar) then 
@@ -1126,13 +1136,49 @@ end subroutine outfile_extname
     real, dimension(im,jm,surfbandm)   :: temp
 
     if (lower_to_upper(surfname) == 'MAIACRTLS') then
-      call mp_readvar3D("Kiso", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KISO_) 
-      call mp_readvar3D("Kvol", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KVOL_) 
-      call mp_readvar3D("Kgeo", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KGEO_) 
+      call mp_readvar3D("Band1", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band1) 
+      call mp_readvar3D("Band2", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band2) 
+      call mp_readvar3D("Band3", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band3) 
+      call mp_readvar3D("Band4", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band4) 
+      call mp_readvar3D("Band5", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band5) 
+      call mp_readvar3D("Band6", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band6) 
+      call mp_readvar3D("Band7", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band7) 
+      call mp_readvar3D("Band8", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band8) 
+
+      ! call mp_readvar3D("Kiso", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KISO_) 
+      ! call mp_readvar3D("Kvol", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KVOL_) 
+      ! call mp_readvar3D("Kgeo", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KGEO_) 
 
       call MAPL_SyncSharedMemory(rc=ierr)    
 
       if (MAPL_am_I_root()) then
+        KISO_(:,:,1) = Band1(:,:,1)
+        KISO_(:,:,2) = Band2(:,:,1)
+        KISO_(:,:,3) = Band3(:,:,1)
+        KISO_(:,:,4) = Band4(:,:,1)
+        KISO_(:,:,5) = Band5(:,:,1)
+        KISO_(:,:,6) = Band6(:,:,1)
+        KISO_(:,:,7) = Band7(:,:,1)
+        KISO_(:,:,8) = Band8(:,:,1)
+
+        KVOL_(:,:,1) = Band1(:,:,2)
+        KVOL_(:,:,2) = Band2(:,:,2)
+        KVOL_(:,:,3) = Band3(:,:,2)
+        KVOL_(:,:,4) = Band4(:,:,2)
+        KVOL_(:,:,5) = Band5(:,:,2)
+        KVOL_(:,:,6) = Band6(:,:,2)
+        KVOL_(:,:,7) = Band7(:,:,2)
+        KVOL_(:,:,8) = Band8(:,:,2)
+
+        KGEO_(:,:,1) = Band1(:,:,3)
+        KGEO_(:,:,2) = Band2(:,:,3)
+        KGEO_(:,:,3) = Band3(:,:,3)
+        KGEO_(:,:,4) = Band4(:,:,3)
+        KGEO_(:,:,5) = Band5(:,:,3)
+        KGEO_(:,:,6) = Band6(:,:,3)
+        KGEO_(:,:,7) = Band7(:,:,3)
+        KGEO_(:,:,8) = Band8(:,:,3)
+
         call reduceProfile(KISO_,clmask,KISO) 
         call reduceProfile(KVOL_,clmask,KVOL)
         call reduceProfile(KGEO_,clmask,KGEO)  
@@ -1298,9 +1344,17 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(OCPHILIC_,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(SO4_,(/im,jm,km/),rc=ierr)
     if (lower_to_upper(surfname) == 'MAIACRTLS') then
+      call MAPL_AllocNodeArray(BAND1,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND2,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND3,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND4,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND5,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND6,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND7,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND8,(/im,jm,nkernel/),rc=ierr)
       call MAPL_AllocNodeArray(KISO_,(/im,jm,surfbandm/),rc=ierr)
-      call MAPL_AllocNodeArray(KGEO_,(/im,jm,surfbandm/),rc=ierr)
       call MAPL_AllocNodeArray(KVOL_,(/im,jm,surfbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(KGEO_,(/im,jm,surfbandm/),rc=ierr)
     end if
 
     call MAPL_AllocNodeArray(SZA_,(/im,jm/),rc=ierr)
