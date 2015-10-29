@@ -243,11 +243,11 @@ def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output,
 
     rcfile.write('SURFBAND: ' + interp +'\n')
     if (interp.upper() == 'INTERPOLATE'):
-        rcfile.write('SURFBAND_C: 645 858 469 555 1240 1640 2130\n')
+        rcfile.write('SURFBAND_C: 645 858 469 555 1240 1640 2130 412\n')
     else:
-        rcfile.write('SURFBAND_I: '+ i_band)
+        rcfile.write('SURFBAND_I: '+ i_band + '\n')
 
-    rcfile.write('SURFBANDM: 7 \n')
+    rcfile.write('SURFBANDM: 8 \n')
 
     if (code == 'scalar'):
         rcfile.write('SCALAR: true\n')
@@ -376,11 +376,11 @@ if __name__ == "__main__":
     enddate           = '2005-12-31T17:00:00'
     channels          = '550'
     surface           = 'MAIACRTLS'
-    interp            = 'interpolate'
-    i_band            = None    
+    interp            = 'exact'
+    i_band            = '4'    
     additional_output = False
     nodemax           = 6
-    surf_version      = 'beta'
+    surf_version      = '1.0'
 
     runfile           = 'geo_vlidort_run_array.j'
     nccs              = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA/'
