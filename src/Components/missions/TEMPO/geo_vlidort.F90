@@ -2,7 +2,7 @@
 ! NAME
 !    geo_vlidort
 ! PURPOSE
-!     Reads in parallel the model data (in a netcdf file) interpolated to TEMPO grid 
+!     Reads in parallel the model data (in a netcdf file) interpolated to satellite grid 
 !     The variables are needed as input to vlidort
 !     A shared memory array created with a call to MAPL_ShmemMod is used for the variables
 !     Do some filtering and run the vlidort code
@@ -189,8 +189,8 @@ program geo_vlidort
 
 ! Satellite domain variables
 !------------------------------
-  integer                               :: im, jm, km, tm                            ! size of TEMPO domain
-  integer                               :: i, j, k, n                                ! TEMPO domain working variable
+  integer                               :: im, jm, km, tm                            ! size of satellite domain
+  integer                               :: i, j, k, n                                ! satellite domain working variable
   integer                               :: starti, counti, endi                      ! array indices and counts for each processor
   integer, allocatable                  :: nclr(:)                                   ! how many clear pixels each processor works on
   integer                               :: clrm                                      ! number of clear pixels for this part of decomposed domain
@@ -882,7 +882,7 @@ subroutine filenames()
   if ( lower_to_upper(surfname) == 'MAIACRTLS' ) then
     write(SURF_file,'(8A)') trim(indir),'/BRDF/v',trim(surf_version),'/',trim(surfname),'.',surfdate,'.hdf'
   else
-    write(SURF_file,'(4A)') trim(indir),'/SurfLER/tempo-omi.SurfLER.',date(5:6),'.nc4'
+    write(SURF_file,'(6A)') trim(indir),'/SurfLER/',trim(instname),'-omi.SurfLER.',date(5:6),'.nc4'
   end if
 
   write(LAND_file,'(4A)') trim(indir),'/LevelB/invariant/',trim(instname),'-g5nr.lb2.asm_Nx.nc4' 
