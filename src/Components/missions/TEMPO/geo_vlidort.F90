@@ -59,7 +59,8 @@ program geo_vlidort
   logical                               :: additional_output      ! does user want additional output
   integer                               :: nodemax                ! number of nodes requested
   integer                               :: nodenum                ! which node is this?
-  real                                  :: version
+  character(len=256)                    :: version
+  character(len=256)                    :: surf_version
 
 ! Test flag
 ! -----------
@@ -869,7 +870,7 @@ subroutine filenames()
   write(ANG_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'.lb2.angles.',date,'_',time,'z.nc4'
   write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.nc4'
   if ( lower_to_upper(surfname) == 'MAIACRTLS' ) then
-    write(SURF_file,'(6A)') trim(indir),'/BRDF/',trim(surfname),'.',surfdate,'.hdf'
+    write(SURF_file,'(8A)') trim(indir),'/BRDF/v',trim(surf_version),'/',trim(surfname),'.',surfdate,'.hdf'
   else
     write(SURF_file,'(4A)') trim(indir),'/SurfLER/tempo-omi.SurfLER.',date(5:6),'.nc4'
   end if
@@ -1056,24 +1057,25 @@ end subroutine outfile_extname
       write(*,*) '<> Read aeorosl data to shared memory'
     end if      
 
-    call MAPL_DeallocNodeArray(AIRDENS_,rc=ierr)
-    call MAPL_DeallocNodeArray(RH_,rc=ierr)
-    call MAPL_DeallocNodeArray(DELP_,rc=ierr)
-    call MAPL_DeallocNodeArray(DU001_,rc=ierr)
-    call MAPL_DeallocNodeArray(DU002_,rc=ierr)
-    call MAPL_DeallocNodeArray(DU003_,rc=ierr)
-    call MAPL_DeallocNodeArray(DU004_,rc=ierr)                           
-    call MAPL_DeallocNodeArray(DU005_,rc=ierr)
-    call MAPL_DeallocNodeArray(SS001_,rc=ierr) 
-    call MAPL_DeallocNodeArray(SS002_,rc=ierr) 
-    call MAPL_DeallocNodeArray(SS003_,rc=ierr) 
-    call MAPL_DeallocNodeArray(SS004_,rc=ierr) 
-    call MAPL_DeallocNodeArray(SS005_,rc=ierr) 
-    call MAPL_DeallocNodeArray(BCPHOBIC_,rc=ierr) 
-    call MAPL_DeallocNodeArray(BCPHILIC_,rc=ierr) 
-    call MAPL_DeallocNodeArray(OCPHOBIC_,rc=ierr) 
-    call MAPL_DeallocNodeArray(OCPHILIC_,rc=ierr) 
-    call MAPL_DeallocNodeArray(SO4_,rc=ierr)         
+    ! call MAPL_DeallocNodeArray(AIRDENS_,rc=ierr)
+    ! call MAPL_DeallocNodeArray(RH_,rc=ierr)
+    ! call MAPL_DeallocNodeArray(DELP_,rc=ierr)
+    ! call MAPL_DeallocNodeArray(DU001_,rc=ierr)
+    ! call MAPL_DeallocNodeArray(DU002_,rc=ierr)
+    ! call MAPL_DeallocNodeArray(DU003_,rc=ierr)
+    ! call MAPL_DeallocNodeArray(DU004_,rc=ierr)                           
+    ! call MAPL_DeallocNodeArray(DU005_,rc=ierr)
+    ! call MAPL_DeallocNodeArray(SS001_,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(SS002_,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(SS003_,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(SS004_,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(SS005_,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(BCPHOBIC_,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(BCPHILIC_,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(OCPHOBIC_,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(OCPHILIC_,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(SO4_,rc=ierr)       
+    ! write(*,*) 'finished read_aer_Nv'  
   end subroutine read_aer_Nv
 
 
@@ -1137,9 +1139,9 @@ end subroutine outfile_extname
         write(*,*) '<> Read BRDF data to shared memory' 
       end if 
 
-      call MAPL_DeallocNodeArray(KISO_,rc=ierr) 
-      call MAPL_DeallocNodeArray(KVOL_,rc=ierr) 
-      call MAPL_DeallocNodeArray(KGEO_,rc=ierr) 
+      ! call MAPL_DeallocNodeArray(KISO_,rc=ierr) 
+      ! call MAPL_DeallocNodeArray(KVOL_,rc=ierr) 
+      ! call MAPL_DeallocNodeArray(KGEO_,rc=ierr) 
 
     else
       if (MAPL_am_I_root()) then
@@ -1211,10 +1213,10 @@ end subroutine outfile_extname
       write(*,*) '<> Read angle data to shared memory' 
 
     end if
-    call MAPL_DeallocNodeArray(SZA_,rc=ierr) 
-    call MAPL_DeallocNodeArray(VZA_,rc=ierr) 
-    call MAPL_DeallocNodeArray(SAA_,rc=ierr) 
-    call MAPL_DeallocNodeArray(VAA_,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(SZA_,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(VZA_,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(SAA_,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(VAA_,rc=ierr) 
 
   end subroutine read_angles  
 
@@ -1513,8 +1515,7 @@ end subroutine outfile_extname
 
     call check(nf90_put_att(ncid,NF90_GLOBAL,"contact","Patricia Castellanos <patricia.castellanos@nasa.gov>"),"contact attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,"Conventions","cf"),"conventions attr")
-    write(comment,'(F3.2)') version
-    call check(nf90_put_att(ncid,NF90_GLOBAL,"Version",comment),"version attr")
+    call check(nf90_put_att(ncid,NF90_GLOBAL,"Version",trim(version)),"version attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,"Created",when()),"created attr")    
 
     ! Define Variables
@@ -2100,7 +2101,8 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, surfbandm, label = 'SURFBANDM:',__RC__)
     call ESMF_ConfigGetAttribute(cf, additional_output, label = 'ADDITIONAL_OUTPUT:',default=.false.)
     call ESMF_ConfigGetAttribute(cf, nodemax, label = 'NODEMAX:',default=1) 
-    call ESMF_ConfigGetAttribute(cf, version, label = 'VERSION:',default=1.0)    
+    call ESMF_ConfigGetAttribute(cf, version, label = 'VERSION:',default='1.0') 
+    call ESMF_ConfigGetAttribute(cf, surf_version, label = 'SURF_VERSION:',default='1.0')    
 
     ! Check that LER configuration is correct
     !----------------------------------------
