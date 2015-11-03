@@ -622,7 +622,7 @@
       VERIFY_(STATUS)
 
       call c_f_pointer(Caddr, Ptr, Shp) ! C ptr to Fortran ptr
-      ASSERT_(size(Ptr)==len)
+!      ASSERT_(size(Ptr)==len)   ! Thomas Clune suggested that this ASSERT is unnecessary.
 
 !     if(present(lbd)) Ptr(lbd(1):) => Ptr
 
