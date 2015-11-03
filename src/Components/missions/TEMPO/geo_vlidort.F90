@@ -27,7 +27,9 @@ program geo_vlidort
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
   use Chem_MieMod
-  use netcdf_helper                ! Module with netcdf routines
+!  use netcdf_helper                ! Module with netcdf routines
+  use mp_netcdf_Mod
+  use netcdf_Mod
   use GeoAngles                    ! Module with geostationary satellite algorithms for scene geometry
 
   implicit none
@@ -61,6 +63,7 @@ program geo_vlidort
   integer                               :: nodenum                ! which node is this?
   character(len=256)                    :: version
   character(len=256)                    :: surf_version
+  character(len=256)                    :: layout 
 
 ! Test flag
 ! -----------
@@ -94,9 +97,9 @@ program geo_vlidort
   real, pointer                         :: KVOL(:,:) => null()
   real, pointer                         :: KGEO(:,:) => null()
   real, pointer                         :: LER(:,:) => null()
-  real, pointer                         :: SZA(:) => null()
-  real, pointer                         :: VZA(:) => null()
-  real, pointer                         :: RAA(:) => null()  
+  real*8, pointer                       :: SZA(:) => null()
+  real*8, pointer                       :: VZA(:) => null()
+  real*8, pointer                       :: RAA(:) => null()  
 
   real, pointer                         :: AIRDENS_(:,:,:) => null()
   real, pointer                         :: RH_(:,:,:) => null()
@@ -127,10 +130,10 @@ program geo_vlidort
   real, pointer                         :: KISO_(:,:,:) => null()
   real, pointer                         :: KVOL_(:,:,:) => null()
   real, pointer                         :: KGEO_(:,:,:) => null()    
-  real, pointer                         :: SZA_(:,:) => null()
-  real, pointer                         :: VZA_(:,:) => null()
-  real, pointer                         :: SAA_(:,:) => null()
-  real, pointer                         :: VAA_(:,:) => null()
+  real*8, pointer                       :: SZA_(:,:) => null()
+  real*8, pointer                       :: VZA_(:,:) => null()
+  real*8, pointer                       :: SAA_(:,:) => null()
+  real*8, pointer                       :: VAA_(:,:) => null()
 
 
 ! VLIDORT input arrays
@@ -196,10 +199,10 @@ program geo_vlidort
   integer                               :: clrm                                      ! number of clear pixels for this part of decomposed domain
   integer                               :: clrm_total                                ! number of clear pixels 
   integer                               :: c                                         ! clear pixel working variable
-  real, allocatable                     :: CLDTOT(:,:)                               ! GEOS-5 cloud fraction
-  real, allocatable                     :: FRLAND(:,:)                               ! GEOS-5 land fraction
-  real, allocatable                     :: SOLAR_ZENITH(:,:)                         ! solar zenith angles used for data filtering
-  real, allocatable                     :: SENSOR_ZENITH(:,:)                        ! SENSOR zenith angles used for data filtering  
+  real*8, allocatable                   :: CLDTOT(:,:)                               ! GEOS-5 cloud fraction
+  real*8, allocatable                   :: FRLAND(:,:)                               ! GEOS-5 land fraction
+  real*8, allocatable                   :: SOLAR_ZENITH(:,:)                         ! solar zenith angles used for data filtering
+  real*8,allocatable                    :: SENSOR_ZENITH(:,:)                        ! SENSOR zenith angles used for data filtering  
   logical, allocatable                  :: clmask(:,:)                               ! cloud-land mask
 
 ! netcdf variables
@@ -277,6 +280,7 @@ program geo_vlidort
     if (scalar) write(*,*) 'Scalar calculations'
     if (.not. scalar) write(*,*) 'Vector calculations'
     write(*,*) 'Additional Output: ',additional_output
+    if (trim(layout) /= '111') write(*,*) 'layout: ',trim(layout)
     write(*,*) ' '
   end if 
 
@@ -875,17 +879,32 @@ end subroutine read_vza
 subroutine filenames()
   
   ! INFILES
-  write(MET_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'-g5nr.lb2.met_Nv.',date,'_',time,'z.nc4'
-  write(AER_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'-g5nr.lb2.aer_Nv.',date,'_',time,'z.nc4'
-  write(ANG_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'.lb2.angles.',date,'_',time,'z.nc4'
-  write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.nc4'
+  if (trim(layout) == '111') then
+    write(MET_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
+                            trim(instname),'-g5nr.lb2.met_Nv.',date,'_',time,'z.nc4'
+    write(AER_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
+                            trim(instname),'-g5nr.lb2.aer_Nv.',date,'_',time,'z.nc4'
+    write(ANG_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
+                            trim(instname),'.lb2.angles.',date,'_',time,'z.nc4'
+
+    write(LAND_file,'(4A)') trim(indir),'/LevelB/invariant/',trim(instname),'-g5nr.lb2.asm_Nx.nc4'                                 
+  else
+    write(MET_file,'(16A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
+                            trim(instname),'-g5nr.lb2.met_Nv.',date,'_',time,'z_',trim(layout),'.nc4'
+    write(AER_file,'(16A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
+                            trim(instname),'-g5nr.lb2.aer_Nv.',date,'_',time,'z_',trim(layout),'.nc4'
+    write(ANG_file,'(16A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
+                            trim(instname),'.lb2.angles.',date,'_',time,'z_',trim(layout),'.nc4'
+    write(LAND_file,'(6A)') trim(indir),'/LevelB/invariant/',trim(instname),'-g5nr.lb2.asm_Nx_',trim(layout),'.nc4'
+  end if  
+
   if ( lower_to_upper(surfname) == 'MAIACRTLS' ) then
     write(SURF_file,'(8A)') trim(indir),'/BRDF/v',trim(surf_version),'/',trim(surfname),'.',surfdate,'.hdf'
   else
     write(SURF_file,'(6A)') trim(indir),'/SurfLER/',trim(instname),'-omi.SurfLER.',date(5:6),'.nc4'
   end if
 
-  write(LAND_file,'(4A)') trim(indir),'/LevelB/invariant/',trim(instname),'-g5nr.lb2.asm_Nx.nc4' 
+  write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.nc4'
 
 ! OUTFILES
   write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc2.vlidort.'
@@ -933,6 +952,10 @@ subroutine outfile_extname(file)
     write(file,'(9A)') trim(file),date,'_',time,'z_',trim(adjustl(chmin)),'-',trim(adjustl(chmax)),'nm.'
   end if
 
+  if (trim(layout) /= '111' ) then
+    write(file,'(3A)') trim(file),trim(layout),'.'
+  end if
+ 
   if (nodemax > 1) then
     if (nodenum < 10) then
       write(file,'(A,I1,A)') trim(file),nodenum,'.nc4'
@@ -1025,24 +1048,24 @@ end subroutine outfile_extname
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_aer_Nv()
 
-    call mp_readvar3D("AIRDENS", AER_file, (/im,jm,km/), 1, npet, myid, AIRDENS_)  
-    call mp_readvar3D("RH", AER_file, (/im,jm,km/), 1, npet, myid, RH_) 
-    call mp_readvar3D("DELP", AER_file, (/im,jm,km/), 1, npet, myid, DELP_) 
-    call mp_readvar3D("DU001", AER_file, (/im,jm,km/), 1, npet, myid, DU001_) 
-    call mp_readvar3D("DU002", AER_file, (/im,jm,km/), 1, npet, myid, DU002_) 
-    call mp_readvar3D("DU003", AER_file, (/im,jm,km/), 1, npet, myid, DU003_) 
-    call mp_readvar3D("DU004", AER_file, (/im,jm,km/), 1, npet, myid, DU004_) 
-    call mp_readvar3D("DU005", AER_file, (/im,jm,km/), 1, npet, myid, DU005_) 
-    call mp_readvar3D("SS001", AER_file, (/im,jm,km/), 1, npet, myid, SS001_) 
-    call mp_readvar3D("SS002", AER_file, (/im,jm,km/), 1, npet, myid, SS002_) 
-    call mp_readvar3D("SS003", AER_file, (/im,jm,km/), 1, npet, myid, SS003_) 
-    call mp_readvar3D("SS004", AER_file, (/im,jm,km/), 1, npet, myid, SS004_) 
-    call mp_readvar3D("SS005", AER_file, (/im,jm,km/), 1, npet, myid, SS005_) 
-    call mp_readvar3D("BCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, BCPHOBIC_) 
-    call mp_readvar3D("BCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, BCPHILIC_) 
-    call mp_readvar3D("OCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, OCPHOBIC_) 
-    call mp_readvar3D("OCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, OCPHILIC_) 
-    call mp_readvar3D("SO4", AER_file, (/im,jm,km/), 1, npet, myid, SO4_) 
+    call mp_readvar3Dchunk("AIRDENS", AER_file, (/im,jm,km/), 1, npet, myid, AIRDENS_)  
+    call mp_readvar3Dchunk("RH", AER_file, (/im,jm,km/), 1, npet, myid, RH_) 
+    call mp_readvar3Dchunk("DELP", AER_file, (/im,jm,km/), 1, npet, myid, DELP_) 
+    call mp_readvar3Dchunk("DU001", AER_file, (/im,jm,km/), 1, npet, myid, DU001_) 
+    call mp_readvar3Dchunk("DU002", AER_file, (/im,jm,km/), 1, npet, myid, DU002_) 
+    call mp_readvar3Dchunk("DU003", AER_file, (/im,jm,km/), 1, npet, myid, DU003_) 
+    call mp_readvar3Dchunk("DU004", AER_file, (/im,jm,km/), 1, npet, myid, DU004_) 
+    call mp_readvar3Dchunk("DU005", AER_file, (/im,jm,km/), 1, npet, myid, DU005_) 
+    call mp_readvar3Dchunk("SS001", AER_file, (/im,jm,km/), 1, npet, myid, SS001_) 
+    call mp_readvar3Dchunk("SS002", AER_file, (/im,jm,km/), 1, npet, myid, SS002_) 
+    call mp_readvar3Dchunk("SS003", AER_file, (/im,jm,km/), 1, npet, myid, SS003_) 
+    call mp_readvar3Dchunk("SS004", AER_file, (/im,jm,km/), 1, npet, myid, SS004_) 
+    call mp_readvar3Dchunk("SS005", AER_file, (/im,jm,km/), 1, npet, myid, SS005_) 
+    call mp_readvar3Dchunk("BCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, BCPHOBIC_) 
+    call mp_readvar3Dchunk("BCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, BCPHILIC_) 
+    call mp_readvar3Dchunk("OCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, OCPHOBIC_) 
+    call mp_readvar3Dchunk("OCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, OCPHILIC_) 
+    call mp_readvar3Dchunk("SO4", AER_file, (/im,jm,km/), 1, npet, myid, SO4_) 
 
     call MAPL_SyncSharedMemory(rc=ierr)    
     if (MAPL_am_I_root()) then
@@ -1134,17 +1157,53 @@ end subroutine outfile_extname
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_surf()
     real, dimension(im,jm,surfbandm)   :: temp
+    integer                            :: Nx, Ny, ntile
+    integer                            :: xstart, xend, ystart, yend
+    integer                            :: x, y
 
     if (lower_to_upper(surfname) == 'MAIACRTLS') then
-      call mp_readvar3D("Band1", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band1) 
-      call mp_readvar3D("Band2", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band2) 
-      call mp_readvar3D("Band3", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band3) 
-      call mp_readvar3D("Band4", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band4) 
-      call mp_readvar3D("Band5", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band5) 
-      call mp_readvar3D("Band6", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band6) 
-      call mp_readvar3D("Band7", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band7) 
-      call mp_readvar3D("Band8", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band8) 
 
+      if (trim(layout) == '111') then
+        call mp_readvar3Dchunk("Band1", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band1) 
+        call mp_readvar3Dchunk("Band2", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band2) 
+        call mp_readvar3Dchunk("Band3", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band3) 
+        call mp_readvar3Dchunk("Band4", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band4) 
+        call mp_readvar3Dchunk("Band5", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band5) 
+        call mp_readvar3Dchunk("Band6", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band6) 
+        call mp_readvar3Dchunk("Band7", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band7) 
+        call mp_readvar3Dchunk("Band8", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band8) 
+      else
+        !read only the chunk that belongs to the tile
+        read(layout(1:1),*) Nx
+        read(layout(2:2),*) Ny
+        read(layout(3:) ,*) ntile
+
+        ! figure out x,y position of tile
+        x = mod(ntile, Nx)
+        y = int(ntile/Nx)
+
+        xstart = x*(im) + 1
+        xend   = xstart + im - 1
+        ystart = y*(jm) + 1
+        yend   = ystart + jm - 1
+
+        call mp_readTilevar3Dchunk("Band1", SURF_file, (/im,jm,nkernel/), &
+                                  (/xstart,ystart,1/), 1, npet, myid, Band1) 
+        call mp_readTilevar3Dchunk("Band2", SURF_file, (/im,jm,nkernel/), &
+                                  (/xstart,ystart,1/), 1, npet, myid, Band2) 
+        call mp_readTilevar3Dchunk("Band3", SURF_file, (/im,jm,nkernel/), &
+                                  (/xstart,ystart,1/), 1, npet, myid, Band3) 
+        call mp_readTilevar3Dchunk("Band4", SURF_file, (/im,jm,nkernel/), &
+                                  (/xstart,ystart,1/), 1, npet, myid, Band4) 
+        call mp_readTilevar3Dchunk("Band5", SURF_file, (/im,jm,nkernel/), &
+                                  (/xstart,ystart,1/), 1, npet, myid, Band5) 
+        call mp_readTilevar3Dchunk("Band6", SURF_file, (/im,jm,nkernel/), &
+                                  (/xstart,ystart,1/), 1, npet, myid, Band6) 
+        call mp_readTilevar3Dchunk("Band7", SURF_file, (/im,jm,nkernel/), &
+                                  (/xstart,ystart,1/), 1, npet, myid, Band7) 
+        call mp_readTilevar3Dchunk("Band8", SURF_file, (/im,jm,nkernel/), &
+                                  (/xstart,ystart,1/), 1, npet, myid, Band8)
+      end if
       ! call mp_readvar3D("Kiso", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KISO_) 
       ! call mp_readvar3D("Kvol", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KVOL_) 
       ! call mp_readvar3D("Kgeo", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KGEO_) 
@@ -1229,10 +1288,10 @@ end subroutine outfile_extname
     integer                    :: i
 
 
-    call mp_readvar2D("solar_zenith",   ANG_file, (/im,jm/), 1, npet, myid, SZA_) 
-    call mp_readvar2D("sensor_zenith",  ANG_file, (/im,jm/), 1, npet, myid, VZA_) 
-    call mp_readvar2D("solar_azimuth",  ANG_file, (/im,jm/), 1, npet, myid, SAA_)
-    call mp_readvar2D("sensor_azimuth", ANG_file, (/im,jm/), 1, npet, myid, VAA_)
+    call mp_readvar2Dchunk("solar_zenith",   ANG_file, (/im,jm/), 1, npet, myid, SZA_) 
+    call mp_readvar2Dchunk("sensor_zenith",  ANG_file, (/im,jm/), 1, npet, myid, VZA_) 
+    call mp_readvar2Dchunk("solar_azimuth",  ANG_file, (/im,jm/), 1, npet, myid, SAA_)
+    call mp_readvar2Dchunk("sensor_azimuth", ANG_file, (/im,jm/), 1, npet, myid, VAA_)
     call MAPL_SyncSharedMemory(rc=ierr)    
     if (MAPL_am_I_root()) then
       SZA = pack(SZA_,clmask)
@@ -1307,6 +1366,7 @@ end subroutine outfile_extname
     else
       call MAPL_AllocNodeArray(LER,(/clrm,surfbandm/),rc=ierr)
     end if 
+
     call MAPL_AllocNodeArray(SZA,(/clrm/),rc=ierr)
     call MAPL_AllocNodeArray(VZA,(/clrm/),rc=ierr)
     call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
@@ -1492,8 +1552,8 @@ end subroutine outfile_extname
     integer                            :: timeVarID, levVarID, ewVarID, nsVarID
     integer                            :: ch
 
-    real,allocatable,dimension(:,:)    :: clon, clat, sza, vza, raa
-    real,allocatable,dimension(:)      :: scantime, ew, ns, tyme, lev
+    real*8,allocatable,dimension(:,:)  :: clon, clat, sza, vza, raa
+    real*8,allocatable,dimension(:)    :: scantime, ew, ns, tyme, lev
 
     character(len=2000)                :: comment
 
@@ -1671,10 +1731,10 @@ end subroutine outfile_extname
     call readvar1D("scanTime", MET_file, scantime)
     call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
 
-    call readvar2D("clon", INV_file, clon)
+    call readvar2D("clon", MET_file, clon)
     call check(nf90_put_var(ncid,clonVarID,clon), "writing out clon")
 
-    call readvar2D("clat", INV_file, clat)
+    call readvar2D("clat", MET_file, clat)
     call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
     call readvar1D("time", MET_file, tyme)
@@ -1896,10 +1956,10 @@ end subroutine outfile_extname
       call readvar1D("scanTime", MET_file, scantime)
       call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
 
-      call readvar2D("clon", INV_file, clon)
+      call readvar2D("clon", MET_file, clon)
       call check(nf90_put_var(ncid,clonVarID,clon), "writing out clon")
 
-      call readvar2D("clat", INV_file, clat)
+      call readvar2D("clat", MET_file, clat)
       call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
       call readvar1D("time", MET_file, tyme)
@@ -2157,6 +2217,8 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, nodemax, label = 'NODEMAX:',default=1) 
     call ESMF_ConfigGetAttribute(cf, version, label = 'VERSION:',default='1.0') 
     call ESMF_ConfigGetAttribute(cf, surf_version, label = 'SURF_VERSION:',default='1.0')    
+    call ESMF_ConfigGetAttribute(cf, layout, label = 'LAYOUT:',default='111')    
+
 
     ! Check that LER configuration is correct
     !----------------------------------------
@@ -2234,6 +2296,39 @@ end subroutine outfile_extname
     read(tempstring(index+1:),*)  nodenum
 
   END SUBROUTINE get_nodenum
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    shuffle
+! PURPOSE
+!     Implements Knuth Shuffle for array indices 1-N
+! INPUT
+!     N : max index
+! OUTPUT
+!     shuffle: array of shuffled indices
+!  HISTORY
+!     November 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  function shuffle(N)
+    integer, intent(in)                 :: N
+    integer,dimension(N)                :: shuffle
+    integer                             :: randpos, i, temp
+    real                                :: r
+
+    shuffle = (/(i,i=1,N)/)
+
+    do i = N, 2, -1
+      call random_number(r)
+      randpos = int(r*i) + 1
+      temp    = shuffle(randpos)
+      shuffle(randpos) = shuffle(i)
+      shuffle(i)       = temp
+    end do
+
+  end function shuffle
+
+
+
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
