@@ -13,13 +13,19 @@ import glob
 import shutil
 from netCDF4 import Dataset
 
-def make_workspace(date,ch,code,outdir,runfile,prefix='workdir',nodemax=None,addoutdir=None):
+def make_workspace(date,ch,code,outdir,runfile,instname,prefix='workdir',nodemax=None,
+                   addoutdir=None,layout=None):
     cwd     = os.getcwd()
-    dirname = prefix + '/'+str(date.date())+'T'+str(date.hour).zfill(2)+'.'+ch+'.'+code
-    jobname = str(date.date())+'T'+str(date.hour).zfill(2)+'.'+ch
+    dirname = prefix + '/'+ instname.lower() + '.' + str(date.date())+'T'+str(date.hour).zfill(2)+'.'+ch+'.'+code        
+    jobname = instname.lower() + '.' + str(date.date())+'T'+str(date.hour).zfill(2)+'.'+ch
+    if layout is not None:
+        dirname = dirname + '.' + layout
+        jobname = jobname + '.' + layout
+
     outdir = outdir + '/Y'+str(date.year)+'/M'+str(date.month).zfill(2)+'/D'+str(date.day).zfill(2)
     if addoutdir is not None:
         addoutdir = addoutdir + '/Y'+str(date.year)+'/M'+str(date.month).zfill(2)+'/D'+str(date.day).zfill(2)
+
     bindir = os.getcwd() + '/' + dirname
     if not os.path.exists(dirname):
         os.makedirs(dirname)
@@ -56,8 +62,8 @@ def make_workspace(date,ch,code,outdir,runfile,prefix='workdir',nodemax=None,add
             if (nodemax is not None and nodemax > 1):
                 destination.write('#SBATCH --array=1-'+str(nodemax)+'\n') 
 
-        elif (line[0:15] == 'setenv TEMPOBIN'):
-            destination.write('setenv TEMPOBIN '+bindir+'\n')
+        elif (line[0:13] == 'setenv GEOBIN'):
+            destination.write('setenv GEOBIN '+bindir+'\n')
 
         elif (line[0:13] == 'setenv OUTDIR'):            
             destination.write('setenv OUTDIR '+outdir+'\n')            
@@ -207,8 +213,9 @@ def combine_files(filelist):
     ncmergedfile.close()
 
 
-def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output,
-                      nodemax=None,i_band=None,version=None,surf_version=None):
+def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output, instname,
+                      nodemax=None,i_band=None,version=None,surf_version=None,
+                      layout=None):
     cwd = os.getcwd()
     os.chdir(dirname)
 
@@ -217,7 +224,7 @@ def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output,
     rcfile.write('OUTDIR: .\n')
     rcfile.write('DATE: '+str(date.year)+str(date.month).zfill(2)+str(date.day).zfill(2)+'\n')
     rcfile.write('TIME: '+str(date.hour).zfill(2)+'\n')
-    rcfile.write('INSTNAME: tempo\n')
+    rcfile.write('INSTNAME: ' + instname.lower() + '\n')
     rcfile.write('SURFNAME: MAIACRTLS\n')
 
     #figure out correct MODIS doy
@@ -270,12 +277,15 @@ def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output,
 
     if surf_version is not None:
         rcfile.write('SURF_VERSION: '+surf_version+'\n')
+
+    if layout is not None:
+        rcfile.write('LAYOUT: '+layout+'\n')
         
     rcfile.close()
 
     os.chdir(cwd)
 
-def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output,
+def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output, instname,
                     nodemax=None,i_band=None,version=None,surf_version=None):
     cwd = os.getcwd()
     os.chdir(dirname)
@@ -285,7 +295,7 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output,
     rcfile.write('OUTDIR: .\n')
     rcfile.write('DATE: ' + str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2) + '\n')
     rcfile.write('TIME: ' + str(date.hour).zfill(2) + '\n')
-    rcfile.write('INSTNAME: tempo\n')
+    rcfile.write('INSTNAME: ' + instname + '\n')
     rcfile.write('SURFNAME: LER\n')
 
     rcfile.write('SURFDATE: ' + str(date.month).zfill(2) +'\n')
@@ -319,17 +329,28 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output,
 
     if surf_version is not None:
         rcfile.write('SURF_VERSION: '+surf_version+'\n')
+
+    if layout is not None:
+        rcfile.write('LAYOUT: '+layout+'\n')
+
     rcfile.close()
 
     os.chdir(cwd)    
 
-def prefilter(date,indir):
+def prefilter(date,indir,instname,layout=None):
     g5dir = indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
     nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
     hour  = str(date.hour).zfill(2)
-    met   = g5dir + '/tempo-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z.nc4'
-    geom  = g5dir + '/tempo.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
-    land  = indir + '/LevelB/invariant/tempo-g5nr.lb2.asm_Nx.nc4'  
+
+    if layout is None:
+        met   = g5dir + '/' + instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z.nc4'
+        geom  = g5dir + '/' + instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
+        land  = indir + '/LevelB/invariant/' + instname.lower() + '-g5nr.lb2.asm_Nx.nc4'  
+    else:
+        met   = g5dir + '/' + instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z_' + laycode +'.nc4'
+        geom  = g5dir + '/' + instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z_' + laycode +'.nc4'
+        land  = indir + '/LevelB/invariant/' + instname.lower() + '-g5nr.lb2.asm_Nx_' + laycode + '.nc4'  
+
 
     ncMet = Dataset(met)
     Cld   = np.squeeze(ncMet.variables[u'CLDTOT'][:])
@@ -371,19 +392,22 @@ def prefilter(date,indir):
 #########################################################
 
 if __name__ == "__main__":
+    instname          = 'goes-r'
     version           = '1.0'    
-    startdate         = '2005-12-31T17:00:00'
-    enddate           = '2005-12-31T17:00:00'
+    startdate         = '2005-12-31T00:00:00'
+    enddate           = '2005-12-31T23:00:00'
     channels          = '550'
     surface           = 'MAIACRTLS'
-    interp            = 'exact'
-    i_band            = '4'    
-    additional_output = False
+    interp            = 'interpolate'
+    i_band            = None    
+    additional_output = True
     nodemax           = 6
     surf_version      = '1.0'
+    layout            = '41'
 
     runfile           = 'geo_vlidort_run_array.j'
-    nccs              = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA/'
+    nccs              = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/'+ \
+                         instname.upper() + '/DATA/'
 
     ################
     ###
@@ -391,7 +415,7 @@ if __name__ == "__main__":
     ###
     ################
     profile           = True
-    runmode           = 'scalar'
+    runmode           = 'vector'
     indir             = nccs 
     outdir            = nccs + 'LevelC2'
     if (additional_output):
@@ -416,50 +440,68 @@ if __name__ == "__main__":
     if type(i_band) is str:
         i_band = i_band.split()
 
+    # Loop over dates
     while (startdate <= enddate):
-        anypixels, numpixels = prefilter(startdate,indir) 
-        if (anypixels):
 
-            if (numpixels <= 1000 and nodemax is not None):
-                nodemax = 1
+        # check for layout keyword. 
+        # figure out number of tiles        
+        if layout is None:
+            ntiles = 1
+        else:
+            ntiles = int(layout[0])*int(layout[1])
 
-            for i, ch in enumerate(channels):
-                band_i = None
-                if (i_band is not None):
-                    band_i = i_band[i]
+        # loop through tiles
+        for tile in np.arange(ntiles):
+            if layout is not None:
+                laycode = layout + str(tile)
+            else:
+                laycode = None
 
-                # Vector Case
-                code = runmode + '.'
-                if (interp.lower() == 'interpolate'):
-                    code = code + 'i'                 
+            # check to see if there is any work to do
+            anypixels, numpixels = prefilter(startdate,indir,instname,layout=laycode) 
+            if (anypixels):
 
-                code = code + surface
-                
-                dirlist = make_workspace(startdate,ch,code,outdir,runfile,nodemax=nodemax,addoutdir=addoutdir)
+                if (numpixels <= 1000 and nodemax is not None):
+                    nodemax = 1
 
-                if (additional_output):
-                    workdir, outdir_, addoutdir_ = dirlist
-                else:
-                    workdir, outdir_ = dirlist
+                for i, ch in enumerate(channels):
+                    band_i = None
+                    if (i_band is not None):
+                        band_i = i_band[i]
 
-                if (surface.upper() == 'MAIACRTLS'):
-                    make_maiac_rcfile(workdir,indir,startdate,ch,runmode,
-                                      interp,additional_output,nodemax=nodemax,i_band=band_i,
-                                      version=version,surf_version=surf_version)
-                else:
-                    make_ler_rcfile(workdir,indir,startdate,ch,runmode,
-                                    interp,additional_output,nodemax=nodemax,i_band=band_i,
-                                    version=version,surf_version=surf_version)
-                
-                dirstring = np.append(dirstring,workdir)
-                outdirstring = np.append(outdirstring,outdir_)
-                if (additional_output):
-                    addoutdirstring = np.append(addoutdirstring, addoutdir_)
+                    # Vector Case
+                    code = runmode + '.'
+                    if (interp.lower() == 'interpolate'):
+                        code = code + 'i'                 
+
+                    code = code + surface
+
+                    dirlist = make_workspace(startdate,ch,code,outdir,runfile,instname,nodemax=nodemax,
+                                             addoutdir=addoutdir,layout=laycode)
+
+                    if (additional_output):
+                        workdir, outdir_, addoutdir_ = dirlist
+                    else:
+                        workdir, outdir_ = dirlist
+
+                    if (surface.upper() == 'MAIACRTLS'):
+                        make_maiac_rcfile(workdir,indir,startdate,ch,runmode, interp,additional_output,
+                                          instname, nodemax=nodemax,i_band=band_i,
+                                          version=version,surf_version=surf_version,layout=laycode)
+                    else:
+                        make_ler_rcfile(workdir,indir,startdate,ch,runmode, interp,additional_output,
+                                        instname, nodemax=nodemax,i_band=band_i,
+                                        version=version,surf_version=surf_version,layout=laycode)
+                    
+                    dirstring = np.append(dirstring,workdir)
+                    outdirstring = np.append(outdirstring,outdir_)
+                    if (additional_output):
+                        addoutdirstring = np.append(addoutdirstring, addoutdir_)
 
        
         startdate = startdate + dt
 
-    # Submite Jobs      
+    # Submit Jobs      
     runlen  = len(dirstring)   
     if nodemax is not None:
         numjobs = runlen*nodemax
