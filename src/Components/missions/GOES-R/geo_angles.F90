@@ -156,41 +156,48 @@ program geo_angles
   read(layout(1:1),*)  nX
   read(layout(2:2),*)  nY
 
+
+  ! Allocate the Global arrays using SHMEM
+  ! It will be available on all processors
+  ! ---------------------------------------------------------
+  call allocate_shared(im, jm, im/nX, jm/nY)
+
+  ! Read in position data to shared memeory
+  ! --------------------------------------------
+  call mp_readvar2Dchunk('scanTime', TIME_file, (/im, jm/), 1, npet, myid, SCANTIME)
+  call mp_readvar2Dchunk('clon', INV_file, (/im, jm/), 1, npet, myid, CLON)
+  call mp_readvar2Dchunk('clat', INV_file, (/im, jm/), 1, npet, myid, CLAT)
+  call MAPL_SyncSharedMemory(rc=ierr)
+
   do tile = 0, nx*ny-1
     x_ = mod(tile,nX)
-    y_ = (tile/nX)  
+    y_ = int(tile/nX)  
 
     Xstart = x_*im/nX + 1
     Xend   = Xstart + im/nX - 1
-    Xcount = Xend - Xstart + 1
+    Xcount = im/nX
     Ystart = y_*jm/nY + 1
     Yend   = Ystart + jm/nY - 1
-    Ycount = Yend - Ystart + 1
+    Ycount = jm/nY
 
   ! Create OUTFILE
   !-------------------------
     call outfilenames()
     if ( MAPL_am_I_root() ) call create_outfile(date,time,ncid,szaVarID, vzaVarID, saaVarID, vaaVarID)
 
-    ! Allocate the Global arrays using SHMEM
-    ! It will be available on all processors
-    ! ---------------------------------------------------------
-    call allocate_shared(im, jm, Xcount, Ycount)
-
-    ! Read in position data to shared memeory
-    ! --------------------------------------------
-    call mp_readvar2Dchunk('scanTime', TIME_file, (/im, jm/), 1, npet, myid, SCANTIME)
-    call mp_readvar2Dchunk('clon', INV_file, (/im, jm/), 1, npet, myid, CLON)
-    call mp_readvar2Dchunk('clat', INV_file, (/im, jm/), 1, npet, myid, CLAT)
-
-    ! Wait for everyone to finish reading 
+    ! Wait for everyone to finish 
     ! ------------------------------------------------------------------  
+    SZA = MISSING
+    VZA = MISSING
+    SAA = MISSING
+    VAA = MISSING    
     call MAPL_SyncSharedMemory(rc=ierr)      
 
     ! Calculate the viewing geometry - these are shared memory arrays
     ! Distribute calculations over processors
     !-----------------------------------------------
     call get_geometry(Xstart,Xend,Xcount,Ystart,Yend,Ycount)
+    call MAPL_SyncSharedMemory(rc=ierr)
   end do
 
   if (MAPL_am_I_root()) then
@@ -248,30 +255,31 @@ subroutine get_geometry(Xstart,Xend,Xcount,Ystart,Yend,Ycount)
     nchunk(npet)   = nchunk(npet) + mod(Ycount,npet)
   end if 
 
-  do i = Xstart, Xend
-    if (myid == 0) then
-      startj = 1
-    else
-      startj = sum(nchunk(1:myid))+1
-    end if
-    countj = nchunk(myid+1)
-    endj   = startj + countj - 1
+  if (myid == 0) then
+    startj = 1
+  else
+    startj = sum(nchunk(1:myid))+1
+  end if
+  countj = nchunk(myid+1)
+  endj   = startj + countj - 1
 
-    startj = startj -1 + Ystart
-    endj   = endj - 1 + Ystart
+  startj = startj -1 + Ystart
+  endj   = endj - 1 + Ystart
 
+  do i = Xstart, Xend  
     do j = startj, endj  
-      if (.not. IS_MISSING(CLAT(i,j),dble(MISSING))) then
+      if (.not. IS_MISSING(dble(CLAT(i,j)),dble(MISSING))) then
+      !if (CLAT(i,j) .ne. MISSING) then
         min = SCANTIME(i,j)/60
         sec = SCANTIME(i,j) - min*60.0
 
         sat_angles = satellite_angles(yr,mo,day,hr,min,dble(sec),dble(0.0),dble(CLAT(i,j)),dble(CLON(i,j)),dble(sat_lat),dble(sat_lon),dble(sat_alt))
 
         ! Store in shared memeory
-        SZA(i-Xstart+1,j-startj+1) = sat_angles(4)
-        VZA(i-Xstart+1,j-startj+1) = sat_angles(2)
-        SAA(i-Xstart+1,j-startj+1) = sat_angles(3)
-        VAA(i-Xstart+1,j-startj+1) = sat_angles(1)
+        SZA(i-Xstart+1,j-Ystart+1) = sat_angles(4)
+        VZA(i-Xstart+1,j-Ystart+1) = sat_angles(2)
+        SAA(i-Xstart+1,j-Ystart+1) = sat_angles(3)
+        VAA(i-Xstart+1,j-Ystart+1) = sat_angles(1)
 
       end if
     end do
@@ -286,7 +294,6 @@ subroutine get_geometry(Xstart,Xend,Xcount,Ystart,Yend,Ycount)
     call check(nf90_put_var(ncid,vaaVarID,VAA), "writing out vaa")
     call check( nf90_close(ncid), "close outfile" )
   end if
-
 end subroutine get_geometry
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
