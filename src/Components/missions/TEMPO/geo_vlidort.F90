@@ -134,6 +134,7 @@ program geo_vlidort
   real*8, pointer                       :: VZA_(:,:) => null()
   real*8, pointer                       :: SAA_(:,:) => null()
   real*8, pointer                       :: VAA_(:,:) => null()
+  integer, pointer                      :: carray(:) => null()
 
 
 ! VLIDORT input arrays
@@ -198,7 +199,7 @@ program geo_vlidort
   integer, allocatable                  :: nclr(:)                                   ! how many clear pixels each processor works on
   integer                               :: clrm                                      ! number of clear pixels for this part of decomposed domain
   integer                               :: clrm_total                                ! number of clear pixels 
-  integer                               :: c                                         ! clear pixel working variable
+  integer                               :: c, cc                                     ! clear pixel working variable
   real*8, allocatable                   :: CLDTOT(:,:)                               ! GEOS-5 cloud fraction
   real*8, allocatable                   :: FRLAND(:,:)                               ! GEOS-5 land fraction
   real*8, allocatable                   :: SOLAR_ZENITH(:,:)                         ! solar zenith angles used for data filtering
@@ -465,14 +466,24 @@ program geo_vlidort
   end if
 
   if (myid == 0) then
-    starti = (clrm_total/nodemax)*(nodenum-1) +  1
+    !starti = (clrm_total/nodemax)*(nodenum-1) +  1
+    starti  = 1
   else
-    starti = sum(nclr(1:myid)) + (clrm_total/nodemax)*(nodenum-1) + 1
+    !starti = sum(nclr(1:myid)) + (clrm_total/nodemax)*(nodenum-1) + 1
+    starti = sum(nclr(1:myid)) + 1
   end if    
   counti = nclr(myid+1)
   endi   = starti + counti - 1 
 
-  do c = starti, endi
+! Shuffle indeces to minimize load imbalance on the node
+  call MAPL_AllocNodeArray(carray,(/clrm/),rc=ierr)
+  if (MAPL_am_I_root())  carray = shuffle(clrm)
+  call MAPL_SyncSharedMemory(rc=ierr)
+
+  do cc = starti, endi
+    write(*,*) myid, cc, starti, endi, size(carray)
+    c = carray(cc)
+    c = c + (clrm_total/nodemax)*(nodenum-1)
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
@@ -624,8 +635,8 @@ program geo_vlidort
 
 !   Keep track of progress of each processor
 !   -----------------------------------------        
-    if (nint(100.*real(c-starti)/real(counti)) > progress) then
-      progress = nint(100.*real(c-starti)/real(counti))
+    if (nint(100.*real(cc-starti)/real(counti)) > progress) then
+      progress = nint(100.*real(cc-starti)/real(counti))
       write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',c,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
     end if
                 
@@ -2326,9 +2337,6 @@ end subroutine outfile_extname
     end do
 
   end function shuffle
-
-
-
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
