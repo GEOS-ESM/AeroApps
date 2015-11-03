@@ -134,7 +134,7 @@ program geo_vlidort
   real*8, pointer                       :: VZA_(:,:) => null()
   real*8, pointer                       :: SAA_(:,:) => null()
   real*8, pointer                       :: VAA_(:,:) => null()
-  integer, pointer                      :: carray(:) => null()
+  integer, pointer                      :: indices(:) => null()
 
 
 ! VLIDORT input arrays
@@ -475,15 +475,16 @@ program geo_vlidort
   counti = nclr(myid+1)
   endi   = starti + counti - 1 
 
-! Shuffle indeces to minimize load imbalance on the node
-  call MAPL_AllocNodeArray(carray,(/clrm/),rc=ierr)
-  if (MAPL_am_I_root())  carray = shuffle(clrm)
+! Shuffle indices 1-clrm to minimize load imbalance on the node
+  call MAPL_AllocNodeArray(indices,(/clrm/),rc=ierr)
+  if (MAPL_am_I_root())  indices = knuthshuffle(clrm)
   call MAPL_SyncSharedMemory(rc=ierr)
 
+! Main do loop over the part of the shuffled domain assinged to each processor
   do cc = starti, endi
-    write(*,*) myid, cc, starti, endi, size(carray)
-    c = carray(cc)
+    c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
+
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
@@ -2285,58 +2286,33 @@ end subroutine outfile_extname
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!    get_nodenum
-! PURPOSE
-!     extract node numder from rc filename
-! INPUT
-!     rcfile
-! OUTPUT
-!     nodenum
-!  HISTORY
-!     October 2015 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  SUBROUTINE get_nodenum(rcfile, nodenum)
-    character(len=*),intent(in)      :: rcfile
-    integer, intent(out)             :: nodenum
-    integer                          :: index
-    character(len=256)               :: tempstring
-
-    index = SCAN(rcfile,'.',back=.true.)
-    tempstring = rcfile(1:index-1)
-    index = SCAN(tempstring,'.')
-    read(tempstring(index+1:),*)  nodenum
-
-  END SUBROUTINE get_nodenum
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!    shuffle
+!    knuthshuffle
 ! PURPOSE
 !     Implements Knuth Shuffle for array indices 1-N
 ! INPUT
 !     N : max index
 ! OUTPUT
-!     shuffle: array of shuffled indices
+!     knuthshuffle: array of shuffled indices
 !  HISTORY
 !     November 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  function shuffle(N)
-    integer, intent(in)                 :: N
-    integer,dimension(N)                :: shuffle
-    integer                             :: randpos, i, temp
-    real                                :: r
+  function knuthshuffle(N)
+    integer, intent(in)               :: N
+    integer,dimension(N)              :: knuthshuffle
+    integer                           :: randpos, i, temp
+    real                              :: r
 
-    shuffle = (/(i,i=1,N)/)
+    knuthshuffle = (/(i,i=1,N)/)
 
     do i = N, 2, -1
       call random_number(r)
       randpos = int(r*i) + 1
-      temp    = shuffle(randpos)
-      shuffle(randpos) = shuffle(i)
-      shuffle(i)       = temp
+      temp    = knuthshuffle(randpos)
+      knuthshuffle(randpos) = knuthshuffle(i)
+      knuthshuffle(i)       = temp
     end do
 
-  end function shuffle
+  end function knuthshuffle
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
