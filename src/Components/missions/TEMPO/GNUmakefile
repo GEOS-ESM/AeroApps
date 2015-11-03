@@ -85,7 +85,9 @@ THIS_GFIO = GMAO_gfio_r4
 #                  --------------------
 
 SRCS := sys_tracker.c GeoAngles_py.F90 VLIDORT_LAMBERT.F90 VLIDORT_BRDF_MODIS.F90 \
-			  LIDORT_LAMBERT.F90 LIDORT_BRDF_MODIS.F90 VLIDORT_SURFACE.F90 SURFACE.F90 VLIDORT_MieMod.F90
+			  LIDORT_LAMBERT.F90 LIDORT_BRDF_MODIS.F90 VLIDORT_SURFACE.F90 SURFACE.F90 VLIDORT_MieMod.F90 \
+			  mp_netcdf_Mod.F90 netcdf_Mod.F90
+#			  netcdf_helper.F90
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
 DEPS := $(addsuffix .d, $(basename $(SRCS))) 
  
@@ -100,7 +102,7 @@ python: $(PY_EXTS)
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
 
-%.x: netcdf_helper.o %.o 
+%.x:  %.o 
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_CHEM_BASE) \
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
