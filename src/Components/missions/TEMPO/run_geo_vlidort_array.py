@@ -13,6 +13,7 @@ import glob
 import shutil
 from netCDF4 import Dataset
 
+
 def make_workspace(date,ch,code,outdir,runfile,instname,prefix='workdir',nodemax=None,
                    addoutdir=None,layout=None):
     cwd     = os.getcwd()
@@ -26,7 +27,7 @@ def make_workspace(date,ch,code,outdir,runfile,instname,prefix='workdir',nodemax
     if addoutdir is not None:
         addoutdir = addoutdir + '/Y'+str(date.year)+'/M'+str(date.month).zfill(2)+'/D'+str(date.day).zfill(2)
 
-    bindir = os.getcwd() + '/' + dirname
+    bindir = dirname
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     
@@ -190,7 +191,12 @@ def destroy_workspace(jobid,dirname,outdir,addoutdir=None,nodemax=None,profile=F
 
 def combine_files(filelist):
     mergedfile = filelist[0]
-    mergedfile = mergedfile[:-5] + 'nc4'
+    parts      = mergedfile.split('.')
+    mergedfile = ''
+    for p in parts[0:-2]:
+        mergedfile = mergedfile + p + '.'
+    mergedfile = mergedfile + 'nc4'
+    #mergedfile = mergedfile[:-5] + 'nc4'
 
     os.rename(filelist[0],mergedfile)
     filelist = filelist[1:]
@@ -395,13 +401,13 @@ if __name__ == "__main__":
     instname          = 'goes-r'
     version           = '1.0'    
     startdate         = '2005-12-31T00:00:00'
-    enddate           = '2005-12-31T23:00:00'
-    channels          = '550'
+    enddate           = '2005-12-31T12:00:00'
+    channels          = '860'
     surface           = 'MAIACRTLS'
     interp            = 'interpolate'
     i_band            = None    
-    additional_output = True
-    nodemax           = 6
+    additional_output = False
+    nodemax           = 9
     surf_version      = '1.0'
     layout            = '41'
 
@@ -409,12 +415,13 @@ if __name__ == "__main__":
     nccs              = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/'+ \
                          instname.upper() + '/DATA/'
 
+    prefix            = nccs + 'workdir/'
     ################
     ###
     #    End of uper inputs
     ###
     ################
-    profile           = True
+    profile           = False
     runmode           = 'vector'
     indir             = nccs 
     outdir            = nccs + 'LevelC2'
@@ -452,6 +459,7 @@ if __name__ == "__main__":
 
         # loop through tiles
         for tile in np.arange(ntiles):
+        #for tile in [2]:
             if layout is not None:
                 laycode = layout + str(tile)
             else:
@@ -477,7 +485,7 @@ if __name__ == "__main__":
                     code = code + surface
 
                     dirlist = make_workspace(startdate,ch,code,outdir,runfile,instname,nodemax=nodemax,
-                                             addoutdir=addoutdir,layout=laycode)
+                                             addoutdir=addoutdir,layout=laycode,prefix=prefix)
 
                     if (additional_output):
                         workdir, outdir_, addoutdir_ = dirlist
@@ -540,7 +548,7 @@ if __name__ == "__main__":
                                       addoutdir=addoutdirstring[i],nodemax=nodemax,profile=profile)
                     else:
                         destroy_workspace(s,dirstring[i],outdirstring[i],
-                                      addoutdir=None,nodemax=nodemax,profile=profile)
+                                      addoutdir=None,nodemax=nodemax,profile=profile)                       
                 else:
                     print 'Jobid ',s,' exited with errors'
 
