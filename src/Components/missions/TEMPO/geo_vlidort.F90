@@ -676,6 +676,10 @@ program geo_vlidort
       do k=1,km 
         AOD = AOD + reshape(TAU_(:,k,ch),(/clrm_total/))
       end do
+
+      where(reshape(ALBEDO_(:,ch),(/clrm_total/)) .eq. MISSING)  AOD = MISSING
+      
+
       call check(nf90_inq_varid(ncid, 'aod_' // trim(adjustl(msg)), varid), "get aod vaird")
       call check(nf90_put_var(ncid, varid, unpack(AOD,clmask,field), &
                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out aod")
