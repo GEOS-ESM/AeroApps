@@ -26,19 +26,255 @@
          integer         :: nMom                ! number of momemts read (phase function) 
          integer         :: nPol                ! number of components of the scattering matrix
          real*8          :: MISSING             ! MISSING VALUE
+         real*8, pointer :: rot(:)              ! rayleigh optical thickness  
          real*8, pointer :: tau(:)              ! aerosol tau
          real*8, pointer :: ssa(:)              ! aerosol ssa
          real*8, pointer ::   g(:)              ! aerosol asymmetry factor
          real*8, pointer ::  pe(:)              ! pressure    at layer edges [Pa]
          real*8, pointer ::  ze(:)              ! height      at layer edges [m]
          real*8, pointer ::  te(:)              ! temperature at layer edges [K]
-         real*8, pointer:: pmom(:,:,:)          ! components of the scattering phase matrix
+         real*8, pointer :: pmom(:,:,:)          ! components of the scattering phase matrix
 
          type(LIDORT_Surface) :: Surface
 
       end type LIDORT_scat
+
+      type LIDORT_output_scalar
+         real*8     :: radiance    ! TOA radiance
+         real*8     :: reflectance ! TOA reflectance
+      end type LIDORT_output_scalar      
+
        
       Contains
+
+!.............................................................................
+ 
+      subroutine LIDORT_Run_Scalar (self, output, rc)
+!
+!     Computes radiances for a single wavelength, pixel. Optical properties
+!     and met fields in self are assumed to have been updated with the
+!     apropriate values.
+!
+      USE LIDORT_PARS
+         
+      USE LIDORT_IO_DEFS
+      USE BRDF_SUP_MOD
+      
+      USE LIDORT_AUX
+      USE LIDORT_INPUTS
+      USE LIDORT_MASTERS
+     
+
+      type(LIDORT_scat),          intent(inout)   :: self        ! Contains most input
+      type(LIDORT_output_scalar), intent(out)     :: output      ! contains output
+      integer,                    intent(out)     :: rc
+
+
+!                           ----
+
+      integer :: STATUS_INPUTCHECK, STATUS_CALCULATION 
+
+!                           ----
+
+!     local variables
+!     ---------------
+      integer                                            :: i, j, k, l, m, n
+      integer                                            :: IDR, ierror
+      integer                                            :: NLAYERS
+      real*8                                             :: ray_l      
+      real*8                                             :: tau_l 
+      real*8                                             :: ssa_l 
+      real*8                                             :: g_l 
+      real*8                                             :: tau_ext
+      real*8                                             :: tau_scat
+      real*8                                             :: ssa_tot
+      real*8                                             :: raysmom2
+      real*8                                             :: aerswt 
+      real*8                                             :: rayswt
+      real*8                                             :: factor      
+   
+      real*8, dimension(0:MAXMOMENTS_INPUT)              :: aersmom 
+      real*8                                             :: difz
+      logical                                            :: DO_BRDF_SURFACE
+      real*8                                             :: LAMBERTIAN_ALBEDO
+      real*8, dimension(0:MAXMOMENTS_INPUT,MAXLAYERS)    :: greekmat_total_input
+
+      real*8, dimension(MAXLAYERS)                       :: deltau_vert_input
+      real*8, dimension(MAXLAYERS)                       :: omega_total_input
+
+      real*8,dimension(MAX_USER_LEVELS,MAX_GEOMETRIES,MAX_DIRECTIONS)  :: INTENSITY
+      real*8                                                           :: FLUX_FACTOR
+
+!     Volume Rayleigh scattering coefficient (depends closely on the 
+!     thermodynamic conditions of the atm and varies with height, 
+!     product of the molecular number density of air by the total ray 
+!     scattering cross section).
+      real*8, parameter                                  :: pi = 4.*atan(1.0)
+      real*8, parameter                                  :: DEPOL_RATIO = 0.030
+             
+      rc = 0
+ 
+      if ( .not. self%Surface%Base%initialized ) then
+        rc = 1
+        return
+      end if
+
+!                     Streams/layers/moments
+!                     ----------------------  
+      self%Surface%Base%VIO%LIDORT_ModIn%MCont%TS_NMOMENTS_INPUT  = self%nmom
+
+      if ( self%nmom .GT. MAXMOMENTS_INPUT)  then
+         rc = 5
+         return
+      end if      
+
+      NLAYERS = self%Surface%Base%VIO%LIDORT_FixIn%Cont%TS_NLAYERS     
+
+      if ( self%Surface%Base%VIO%LIDORT_FixIn%Bool%TS_DO_UPWELLING ) then
+         IDR = 1
+      else
+         IDR = 2
+      end if
+     
+!                          Lambertian OR BRDF surface
+!                          --------------------------
+
+      if ( self%Surface%sfc_type == 1 ) then               ! Lambertian surface ?
+         DO_BRDF_SURFACE = .false.        
+         LAMBERTIAN_ALBEDO = self%Surface%albedo           ! Lambertian (isotropic) input albedo
+      else                                   
+         DO_BRDF_SURFACE = .true. 
+         LAMBERTIAN_ALBEDO = 0.0                           ! Use BRDF -> albedo set to 0
+ 
+      end if
+
+      self%Surface%Base%VIO%LIDORT_Fixin%Bool%TS_DO_BRDF_SURFACE = DO_BRDF_SURFACE
+      self%Surface%Base%VIO%LIDORT_FixIn%Optical%TS_LAMBERTIAN_ALBEDO = LAMBERTIAN_ALBEDO
+      self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_BRDF_F_0        = self%Surface%Base%VIO%BRDF_Sup_Out%BS_BRDF_F_0
+      self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_BRDF_F          = self%Surface%Base%VIO%BRDF_Sup_Out%BS_BRDF_F
+      self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_USER_BRDF_F_0   = self%Surface%Base%VIO%BRDF_Sup_Out%BS_USER_BRDF_F_0
+      self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_USER_BRDF_F     = self%Surface%Base%VIO%BRDF_Sup_Out%BS_USER_BRDF_F
+      self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_EXACTDB_BRDFUNC = self%Surface%Base%VIO%BRDF_Sup_Out%BS_DBOUNCE_BRDFUNC
+      self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_EMISSIVITY      = self%Surface%Base%VIO%BRDF_Sup_Out%BS_EMISSIVITY
+      self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_USER_EMISSIVITY = self%Surface%Base%VIO%BRDF_Sup_Out%BS_USER_EMISSIVITY
+
+!                         Angles (SZA, viewing, relatuve azimuth), Level
+!                        ------------------------------------------------      
+      self%Surface%Base%VIO%LIDORT_ModIn%MSunRays%TS_BEAM_SZAS(1)           = self%Surface%solar_zenith
+      self%Surface%Base%VIO%LIDORT_ModIn%MUserVal%TS_USER_RELAZMS(1)        = self%Surface%relat_azimuth
+      self%Surface%Base%VIO%LIDORT_ModIn%MUserVal%TS_USER_ANGLES_INPUT(1)   = self%Surface%sensor_zenith
+      self%Surface%Base%VIO%LIDORT_ModIn%MUserVal%TS_USER_LEVELS(1)         = 0.0     ! This is TOA   
+
+      self%Surface%Base%VIO%LIDORT_FixIn%Chapman%TS_height_grid(0:NLAYERS)      = self%ze * 1.E-3  ! en km
+      self%Surface%Base%VIO%LIDORT_FixIn%Chapman%TS_pressure_grid(0:NLAYERS)    = self%pe * 1.E-2  ! en hPa
+      self%Surface%Base%VIO%LIDORT_FixIn%Chapman%TS_temperature_grid(0:NLAYERS) = self%te
+
+      
+!               Calculation of the Rayleigh-Scattering Optical Depth
+!               ----------------------------------------------------
+      call VLIDORT_Rayleigh (self, rc)
+
+!                Populate Scattering Phase Matrix
+!                ---------------------------------
+! First initialize to zero to be safe
+      aersmom = 0.0      
+
+!                Greek moment for Rayleigh Scattering 
+!                The same for all layers because DEPOL_RATIO is
+!                taken as constant right now. 
+!                ----------------------------------------------
+      raysmom2 = (1.0 - DEPOL_RATIO)/(2.0 + DEPOL_RATIO) 
+
+!     Loop over the layers:
+!     ---------------------
+      do i = 1, NLAYERS  
+         ray_l = self%rot(i)         ! indice l for  each layer      
+         tau_l = self%tau(i)
+         ssa_l = self%ssa(i) 
+         g_l   = self%g(i) 
+       
+!        total optical depths for extinction and scattering 
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         tau_ext = ray_l + tau_l
+         tau_scat = ray_l +  ssa_l * tau_l
+
+!        single scattering albedo total
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         ssa_tot = tau_scat / tau_ext
+         if ( ssa_tot > 0.99999 ) then
+            ssa_tot = 0.99999
+         end if
+     
+         deltau_vert_input(i) = tau_ext
+         omega_total_input(i) = ssa_tot 
+
+!        SCALAR phase function moments (aerosol + Rayleigh)
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!        raysmom(0) = 1
+!        raysmom(1) = 0
+!        raysmom(2) = raysmom2
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+!        Add together Aerosol and Rayleigh Parts weighting by scattering optical depth
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
+         aerswt = ssa_l * tau_l / tau_scat  
+         rayswt = ray_l / tau_scat    
+      
+         do l = 0, self%nmom-1        
+            aersmom(l) = self%pmom(i,l+1,1) ! P11             
+         end do    
+
+         greekmat_total_input(0,i) = 1.0
+         greekmat_total_input(1,i) = aersmom(1) * aerswt
+         greekmat_total_input(2,i) = raysmom2 * rayswt + aersmom(2) * aerswt
+
+         do l = 3, self%nmom
+            greekmat_total_input(l,i) = aersmom(l) * aerswt 
+         end do
+            
+!     end layer loop
+!     ---------------
+      end do
+  
+      self%Surface%Base%VIO%LIDORT_FixIn%Optical%TS_DELTAU_VERT_INPUT = deltau_vert_input
+      self%Surface%Base%VIO%LIDORT_ModIn%MOptical%TS_OMEGA_TOTAL_INPUT = omega_total_input
+      self%Surface%Base%VIO%LIDORT_FixIn%Optical%TS_PHASMOMS_TOTAL_INPUT = greekmat_total_input
+      
+!     Call the MASTER driver for doing the actual calculation
+!     -----------------------------------------------------------
+      call LIDORT_MASTER (self%Surface%Base%VIO%LIDORT_FixIn, &
+           self%Surface%Base%VIO%LIDORT_ModIn, &
+           self%Surface%Base%VIO%LIDORT_Sup, &
+           self%Surface%Base%VIO%LIDORT_Out)
+  
+      if ( self%Surface%Base%VIO%LIDORT_Out%Status%TS_STATUS_INPUTCHECK /= 0 ) then
+         rc = 3
+         write(*,*) 'LIDORT_MASTER STATUS_INPUTCHECK RETURNED ERROR'
+         write(*,*) self%Surface%Base%VIO%LIDORT_Out%Status%TS_STATUS_INPUTCHECK
+         write(*,*) self%Surface%Base%VIO%LIDORT_Out%Status%TS_CHECKMESSAGES
+      end if
+
+      if ( self%Surface%Base%VIO%LIDORT_Out%Status%TS_STATUS_CALCULATION /= 0 ) then
+         write(*,*) 'LIDORT_MASTER STATUS_CALCULATION RETURNED ERROR'
+         write(*,*) self%Surface%Base%VIO%LIDORT_Out%Status%TS_STATUS_CALCULATION
+         write(*,*) self%Surface%Base%VIO%LIDORT_Out%Status%TS_MESSAGE
+         rc = 4
+      end if
+      if ( rc /= 0 ) return
+      
+      FLUX_FACTOR = self%Surface%Base%VIO%LIDORT_FixIn%SunRays%TS_FLUX_FACTOR
+      INTENSITY   = self%Surface%Base%VIO%LIDORT_Out%Main%TS_INTENSITY ! output of LIDORT_MASTER subroutine
+      
+!     Return TOA radiance
+!     -------------------
+      output%RADIANCE = 0.0
+      output%REFLECTANCE = 0.0
+      
+      output%RADIANCE = INTENSITY(1, 1, IDR)
+           
+      output%REFLECTANCE = (pi * output%RADIANCE) / ( cos(self%Surface%Base%VIO%LIDORT_ModIn%MSunRays%TS_BEAM_SZAS(1)*pi/180.0) * FLUX_FACTOR ) 
+
+   end subroutine LIDORT_Run_Scalar
+
 !.............................................................................
  
       subroutine LIDORT_Run (self,radiance, reflectance, ROT, aerosol,rc)
@@ -491,5 +727,100 @@
      
       
       end subroutine LIDORT_AI
+
+!.............................................................................
+      subroutine LIDORT_Rayleigh (self, rc)
+!     Computes Rayleigh optical thickness - populates rot vector in self.  Self contains atmospheric data  
+!     Rayleigh extinction profile from Bodhaine et al., (1999) 
+!     and Tomasi et al., (2005)
+!     (wavelength in micrometer, pressure in hpa)
+!     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+
+      USE LIDORT_PARS
+
+      type(LIDORT_scat), intent(inout)    :: self        ! Contains most input
+      integer,            intent(out)     :: rc
+
+      real*8, dimension(0:MAXLAYERS)                     :: Vol    ! Volume coefficient for molecular scattering
+      real*8, target, dimension(MAXLAYERS)               :: Ray    ! Layer Rayleigh optical thickness
+
+      real*8, dimension(0:MAXLAYERS)                     :: height_grid                     
+      real*8, dimension(0:MAXLAYERS)                     :: pressure_grid 
+      real*8, dimension(0:MAXLAYERS)                     :: temperature_grid   
+      real*8                                             :: wmicron   
+      real*8                                             :: difz
+      integer                                            :: NLAYERS
+      integer                                            :: j
+
+
+      NLAYERS                     = self%Surface%Base%VIO%LIDORT_FixIn%Cont%TS_NLAYERS
+      height_grid(0:NLAYERS)      = self%ze * 1.E-3  ! en km
+      pressure_grid(0:NLAYERS)    = self%pe * 1.E-2 ! en hPa
+      temperature_grid(0:NLAYERS) = self%te   
+
+
+      wmicron = self%wavelength * 1.E-3  ! micrometer
+      
+      do j = 0, NLAYERS 
+         Vol(j) = 3.69296E-18 * A(wmicron) * pressure_grid(j) / temperature_grid(j)
+         Vol(j) = Vol(j) * 1.E5 ! en km-1
+      end do
+       
+!     Simple Interpolation of Volume Scattering Coefficient 
+!     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~     
+      do j = 0, NLAYERS-1
+         difz = height_grid(j) - height_grid(j+1)
+         ray(j+1) = difz * (Vol(j) + Vol(j+1))/2.
+      end do
+
+
+      self%rot => Ray
+
+      rc = 0
+
+      Contains
+
+!.................................................................................
+! determination of the function A(wmicron)
+!-----------------------------------      
+    
+      function A(X)
+!  pour le Rayleigh, X = lambda en micron
+          implicit none
+          real*8 :: A
+          real*8, intent(in) :: X
+          real*8 :: depol_ratio
+          real*8 :: XX, XX2, C
+          real*8 :: depol1, depol2, depol3, depol4
+          real*8 :: coef_depol
+          real*8 :: RI
+
+         XX=1./X
+
+         XX2=XX*XX
+        
+   !  ns-1  sans approximation
+         RI=8060.77+2481070/(132.274-XX2)+17456.3/(39.32957-XX2)
+
+
+   ! autre maniere de determiner coef_depol
+           depol1 = 1.034 + 3.17E-4 * XX2
+           depol2 = 1.096 + 1.385E-3 * XX2 + 1.448E-4 * XX2 * XX2
+           depol3 = 1.
+           depol4 = 1.15
+   !depol5 = 1.001 if we 
+           C = 0.030 ! for standard air , concentration of CO2 = 300 ppmv
+
+           coef_depol= (78.084 * depol1 + 20.946 * depol2 + 0.934 * depol3 +  C * depol4) / (78.084 + 20.946 + 0.934 + C)
+
+            
+         A=coef_depol * XX2 * XX2 * RI * RI
+         
+         return
+
+      end function A            
+
+      end subroutine LIDORT_Rayleigh
+
 !.........................................................................
       end module LIDORT_ScatMod
