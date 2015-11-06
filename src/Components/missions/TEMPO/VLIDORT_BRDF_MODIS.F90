@@ -20,7 +20,7 @@ module VLIDORT_BRDF_MODIS
   end function IS_MISSING
 
   subroutine VLIDORT_Scalar_LandMODIS (km, nch, nobs,channels, nMom, &
-                     tau, ssa, g, pe, he, te, kernel_wt, param, &
+                     nPol, tau, ssa, g, pmom, pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, rc )
   !
@@ -38,13 +38,17 @@ module VLIDORT_BRDF_MODIS
     integer,          intent(in)  :: nch              ! number of channels
     integer,          intent(in)  :: nobs             ! number of observations
                                         
-    integer, target,  intent(in)  :: nMom             ! number of phase function moments                 
+    integer, target,  intent(in)  :: nMom             ! number of phase function moments    
+    integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
+
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
     real*8, target,   intent(in)  :: ssa(km,nch,nobs) ! single scattering albedo
     real*8, target,   intent(in)  :: g(km,nch,nobs)   ! asymmetry factor
+    real*8, target,   intent(in)  :: pmom(km,nch,nobs,nMom,nPol) !components of the scat phase matrix
+
 
 
     real*8, target,   intent(in)  :: pe(km+1,nobs)    ! pressure at layer edges [Pa]
@@ -138,6 +142,7 @@ module VLIDORT_BRDF_MODIS
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%g => g(:,i,j)
+        SCAT%pmom => pmom(:,i,j,:,:)
          
         call VLIDORT_Run_Scalar (SCAT, output, ier)
 
