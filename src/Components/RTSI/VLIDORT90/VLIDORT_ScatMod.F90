@@ -483,7 +483,6 @@
       real*8                                             :: difz
       logical                                            :: DO_LAMBERTIAN_SURFACE
       real*8                                             :: LAMBERTIAN_ALBEDO
-      integer                                            :: NGREEK_MOMENTS_INPUT
       real*8, dimension(0:MAXMOMENTS_INPUT,MAXLAYERS,16) :: greekmat_total_input                     
 
       real*8, dimension(MAXLAYERS)                       :: deltau_vert_input
@@ -604,9 +603,6 @@
          deltau_vert_input(i) = tau_ext
          omega_total_input(i) = ssa_tot 
 
-
-!        Henyey-Greenstein phase function, including Rayleigh
-!        ------------------------------------------------------------
 
 !        SCALAR phase function moments (aerosol + Rayleigh)
 !        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
