@@ -4,8 +4,8 @@
 !
 !.............................................................................
 
-subroutine LIDORT_Scalar_Lambert (km, nch, nobs,channels,        &
-                   tau, ssa, g, pe, he, te, albedo,            &
+subroutine LIDORT_Scalar_Lambert (km, nch, nobs,channels, nMom, &
+                   nPol, tau, ssa, g, pmom, pe, he, te, albedo,            &
                    solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_L,reflectance_L, ROT, rc)
 !
@@ -15,20 +15,22 @@ subroutine LIDORT_Scalar_Lambert (km, nch, nobs,channels,        &
 
   implicit NONE
 
-  logical,parameter             :: aerosol = .true.   ! whether or not simulation contains aerosol
 ! !INPUT PARAMETERS:
 
   integer,          intent(in)  :: km    ! number of levels on file
   integer,          intent(in)  :: nch   ! number of channels
   integer,          intent(in)  :: nobs  ! number of observations
-                                      
-                  
+
+  integer, target,  intent(in)  :: nMom             ! number of phase function moments     
+  integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
+                                                        
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
   real*8, target,   intent(in)  :: ssa(km,nch,nobs) ! single scattering albedo
   real*8, target,   intent(in)  :: g(km,nch,nobs)   ! asymmetry factor
+  real*8, target,   intent(in)  :: pmom(km,nch,nobs,nMom,nPol) !components of the scat phase matrix
 
 
   real*8, target,   intent(in)  :: pe(km+1,nobs)    ! pressure at layer edges [Pa]
@@ -55,7 +57,8 @@ subroutine LIDORT_Scalar_Lambert (km, nch, nobs,channels,        &
 !                               ---  
   integer             :: i,j, ier
  
-  type(LIDORT_scat) :: SCAT
+  type(LIDORT_scat)            :: SCAT
+  type(LIDORT_output_scalar)   :: output  
 
 #define IS_MISSING(x) (abs(x/MISSING-1)<0.001)
   rc = 0
@@ -66,6 +69,8 @@ subroutine LIDORT_Scalar_Lambert (km, nch, nobs,channels,        &
     write(*,*) 'LIDORT_Init returning with error'
     return
   endif
+
+  SCAT%nMom    = nMom
 
   do j = 1, nobs
 
@@ -104,18 +109,18 @@ subroutine LIDORT_Scalar_Lambert (km, nch, nobs,channels,        &
            SCAT%tau => tau(:,i,j)
            SCAT%ssa => ssa(:,i,j)
            SCAT%g => g(:,i,j)
+           SCAT%pmom => pmom(:,i,j,:,:)
          
-           call LIDORT_Run (SCAT, radiance_L(j,i), reflectance_L(j,i), &
-                                 ROT(:,j,i), aerosol, ier)
+           call LIDORT_Run_Scalar (SCAT, output, ier)
+
+           radiance_L(j,i)    = output%radiance
+           reflectance_L(j,i) = output%reflectance
+           ROT(:,j,i) = SCAT%rot              
+
 
            if ( ier /= 0 ) then
-              if ( solar_zenith (j) > 89.9 ) then ! if SZA > 90
-              radiance_L(j,i) = 0.0
-              reflectance_L(j,i) = 0.0
-              else
               radiance_L(j,i) = MISSING
               reflectance_L(j,i) = MISSING
-              endif
               cycle
            end if
 
