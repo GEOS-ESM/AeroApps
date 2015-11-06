@@ -539,15 +539,15 @@ program geo_vlidort
 
 !   Aerosol Optical Properties
 !   --------------------------
-    if (scalar) then
-      call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
-                          qm, reshape(RH(c,:),(/km,nobs/)), &
-                          tau, ssa, g, ierr )
-    else
+    ! if (scalar) then
+    !   call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
+    !                       qm, reshape(RH(c,:),(/km,nobs/)), &
+    !                       tau, ssa, g, ierr )
+    ! else
       call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
                           qm, reshape(RH(c,:),(/km,nobs/)),&
                           nMom,nPol, tau, ssa, g, pmom, ierr )
-    end if
+    ! end if
 
     TAU_(c,:,:) = tau(:,:,nobs)
     SSA_(c,:,:) = ssa(:,:,nobs)
@@ -564,7 +564,7 @@ program geo_vlidort
       if (scalar) then
         ! Call to vlidort scalar code       
         call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
-                dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), albedo,&
+                nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                 (/dble(SZA(c))/), &
                 (/dble(abs(RAA(c)))/), &
                 (/dble(VZA(c))/), &
@@ -597,7 +597,7 @@ program geo_vlidort
       if (scalar) then 
         ! Call to vlidort scalar code            
         call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nMom,  &
-                dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
+                nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
                 kernel_wt, param, &
                 (/dble(SZA(c))/), &
                 (/dble(abs(RAA(c)))/), &
