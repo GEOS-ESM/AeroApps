@@ -610,25 +610,26 @@
 
 !        SCALAR phase function moments (aerosol + Rayleigh)
 !        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!        SCALAR testing Rayleigh second moment
+!        raysmom(0) = 1
+!        raysmom(1) = 0
+!        raysmom(2) = raysmom2
 !        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 !        Add together Aerosol and Rayleigh Parts weighting by scattering optical depth
 !        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
          aerswt = ssa_l * tau_l / tau_scat  
          rayswt = ray_l / tau_scat    
-         aersmom(0) = 1.0
-         aersmom(1) = 3.0 * g_l
-         aersmom(2) = 5.0 * g_l * aersmom(1) / 3.0
+      
+         do l = 0, self%nmom-1        
+            aersmom(l) = self%pmom(i,l+1,1) ! P11             
+         end do    
 
          greekmat_total_input(0,i,1) = 1.0
          greekmat_total_input(1,i,1) = aersmom(1) * aerswt
          greekmat_total_input(2,i,1) = raysmom2 * rayswt + aersmom(2) * aerswt
-      
-         do l = 3, self%nmom         
-            factor = REAL(2*l+1) / REAL(2*l-1) 
-            aersmom(l) = factor * g_l * aersmom(l-1)
-            greekmat_total_input(l,i,1) = aersmom(l) * aerswt
-         end do     
+
+         do l = 3, self%nmom
+            greekmat_total_input(l,i,1) = aersmom(l) * aerswt 
+         end do
            
 !     end layer loop
 !     ---------------
