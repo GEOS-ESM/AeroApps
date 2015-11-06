@@ -5,7 +5,7 @@
 !.............................................................................
 
 subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels, nMom, &
-                   tau, ssa, g, pe, he, te, albedo,             &
+                   nPol, tau, ssa, g, pmom, pe, he, te, albedo,             &
                    solar_zenith, relat_azymuth, sensor_zenith,  &
                    MISSING,verbose,radiance_VL,reflectance_VL, ROT, rc)
 !
@@ -22,13 +22,16 @@ subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels, nMom, &
   integer,          intent(in)  :: nch   ! number of channels
   integer,          intent(in)  :: nobs  ! number of observations
                                       
-  integer, target,  intent(in)  :: nMom             ! number of phase function moments                   
+  integer, target,  intent(in)  :: nMom             ! number of phase function moments     
+  integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
+
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
   real*8, target,   intent(in)  :: ssa(km,nch,nobs) ! single scattering albedo
   real*8, target,   intent(in)  :: g(km,nch,nobs)   ! asymmetry factor
+  real*8, target,   intent(in)  :: pmom(km,nch,nobs,nMom,nPol) !components of the scat phase matrix
 
 
   real*8, target,   intent(in)  :: pe(km+1,nobs)    ! pressure at layer edges [Pa]
@@ -104,6 +107,7 @@ subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels, nMom, &
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%g => g(:,i,j)
+        SCAT%pmom => pmom(:,i,j,:,:)
 
         call VLIDORT_Run_Scalar (SCAT, output, ier)
 
