@@ -26,7 +26,7 @@ endif
 
 THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
-BINS := geo_vlidort.x
+BINS := 
 
 PY_EXTS = GeoAngles_.$(F2PYEXT)
 PY_SCRP = geo_warp.py geo_sampler.py
@@ -64,13 +64,8 @@ esma_help help:
 #                  User Defined Targets
 #                  --------------------
 
-INC_VLIDORT90 = $(ESMAINC)/VLIDORT90
-LIB_VLIDORT90 = $(ESMALIB)/libVLIDORT90.a
 
-INC_LIDORT3p7 = $(ESMAINC)/LIDORT3p7
-LIB_LIDORT3p7 = $(ESMALIB)/libLIDORT3p7.a
-
-INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT90) $(INC_LIDORT3p7) /usr/include
+INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE)  /usr/include
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
@@ -84,10 +79,7 @@ THIS_GFIO = GMAO_gfio_r4
 #                  User Defined Targets
 #                  --------------------
 
-SRCS := sys_tracker.c GeoAngles_py.F90 VLIDORT_LAMBERT.F90 VLIDORT_BRDF_MODIS.F90 \
-			  LIDORT_LAMBERT.F90 LIDORT_BRDF_MODIS.F90 VLIDORT_SURFACE.F90 SURFACE.F90 VLIDORT_MieMod.F90 \
-			  mp_netcdf_Mod.F90 netcdf_Mod.F90
-#			  netcdf_helper.F90
+SRCS := GeoAngles_py.F90 mp_netcdf_Mod.F90 netcdf_Mod.F90
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
 DEPS := $(addsuffix .d, $(basename $(SRCS))) 
  
@@ -103,44 +95,17 @@ python: $(PY_EXTS)
 	$(F2PY) -c -m $* $(M). $< 
 
 %.x:  %.o 
-	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_CHEM_BASE) \
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
                                  $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
 
 
-geo_angles.x: GeoAngles_py.o netcdf_helper.o geo_angles.o
-	$(FC) $(FOPTS) $^ -o $@   $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+geo_angles.x: geo_angles.o
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                             $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)   
 
-geo_lidort.x: netcdf_helper.o geo_lidort.o 
-	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
-                                 $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
-                                 $(LIB_MAPL_BASE_STUBS2) \
-                                 $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
-                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)     
-
-geo_vlidort_multinode.x: netcdf_helper.o geo_vlidort_multinode.o 
-	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_CHEM_BASE) \
-                                 $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
-                                 $(LIB_MAPL_BASE_STUBS2) \
-                                 $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
-                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)                                                                                           
-
-geo_vlidort_surface.x: netcdf_helper.o geo_vlidort_surface.o 
-	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_CHEM_BASE) \
-                                 $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
-                                 $(LIB_MAPL_BASE_STUBS2) \
-                                 $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
-                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)  
-
-geo_surface.x: netcdf_helper.o geo_surface.o 
-	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_CHEM_BASE) \
-                                 $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
-                                 $(LIB_MAPL_BASE_STUBS2) \
-                                 $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
-                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)                                                                 
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------
