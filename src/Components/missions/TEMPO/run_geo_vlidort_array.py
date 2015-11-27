@@ -292,7 +292,7 @@ def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output, instn
     os.chdir(cwd)
 
 def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output, instname,
-                    nodemax=None,i_band=None,version=None,surf_version=None):
+                    nodemax=None,i_band=None,version=None,surf_version=None,layout=None):
     cwd = os.getcwd()
     os.chdir(dirname)
 
@@ -400,14 +400,15 @@ def prefilter(date,indir,instname,layout=None):
 if __name__ == "__main__":
     instname          = 'goes-r'
     version           = '1.0'    
-    startdate         = '2005-12-31T00:00:00'
-    enddate           = '2005-12-31T12:00:00'
-    channels          = '860'
+    startdate         = '2007-04-11T22:00:00'
+    enddate           = '2007-04-11T22:00:00'
+    episode           = None
+    channels          = '2250'
     surface           = 'MAIACRTLS'
-    interp            = 'interpolate'
-    i_band            = None    
+    interp            = 'exact'
+    i_band            = '7'    
     additional_output = False
-    nodemax           = 9
+    nodemax           = 1
     surf_version      = '1.0'
     layout            = '41'
 
@@ -431,13 +432,32 @@ if __name__ == "__main__":
         addoutdir         = None
     
 
+    if episode is not None:
+        if episode == 1:
+            startdate  = '2005-12-31T00:00:00Z'
+            enddate    = '2006-01-01T23:00:00Z'
+        elif episode == 2:
+            startdate  = '2006-07-27T00:00:00Z'
+            enddate    = '2006-08-09T23:00:00Z'
+        elif episode == 3:
+            startdate  = '2007-03-28T00:00:00Z'
+            enddate    = '2007-03-29T23:00:00Z'
+        elif episode == 4:
+            startdate  = '2007-04-10T00:00:00Z'
+            enddate    = '2007-04-11T23:00:00Z'
+
     dt = timedelta(hours=1)
     startdate = parse(startdate)
     enddate   = parse(enddate)
-
-    # Create working directories, SLURM scripts, and RC-files
-    dirstring = np.empty(0)
+    jobsmax   = 150
+    ##################################################
+    ####
+    #    Create working directories, SLURM scripts, and RC-files
+    ####
+    ##################################################
+    dirstring    = np.empty(0)
     outdirstring = np.empty(0)
+    nodemax_list = np.empty(0,dtype='int')
     if (additional_output):
         addoutdirstring = np.empty(0)
 
@@ -470,7 +490,9 @@ if __name__ == "__main__":
             if (anypixels):
 
                 if (numpixels <= 1000 and nodemax is not None):
-                    nodemax = 1
+                    nodemax_ = 1
+                else:
+                    nodemax_ = nodemax
 
                 for i, ch in enumerate(channels):
                     band_i = None
@@ -484,7 +506,7 @@ if __name__ == "__main__":
 
                     code = code + surface
 
-                    dirlist = make_workspace(startdate,ch,code,outdir,runfile,instname,nodemax=nodemax,
+                    dirlist = make_workspace(startdate,ch,code,outdir,runfile,instname,nodemax=nodemax_,
                                              addoutdir=addoutdir,layout=laycode,prefix=prefix)
 
                     if (additional_output):
@@ -494,95 +516,164 @@ if __name__ == "__main__":
 
                     if (surface.upper() == 'MAIACRTLS'):
                         make_maiac_rcfile(workdir,indir,startdate,ch,runmode, interp,additional_output,
-                                          instname, nodemax=nodemax,i_band=band_i,
+                                          instname, nodemax=nodemax_,i_band=band_i,
                                           version=version,surf_version=surf_version,layout=laycode)
                     else:
                         make_ler_rcfile(workdir,indir,startdate,ch,runmode, interp,additional_output,
-                                        instname, nodemax=nodemax,i_band=band_i,
+                                        instname, nodemax=nodemax_,i_band=band_i,
                                         version=version,surf_version=surf_version,layout=laycode)
                     
-                    dirstring = np.append(dirstring,workdir)
+                    dirstring    = np.append(dirstring,workdir)
                     outdirstring = np.append(outdirstring,outdir_)
+                    nodemax_list = np.append(nodemax_list,int(nodemax_))
                     if (additional_output):
                         addoutdirstring = np.append(addoutdirstring, addoutdir_)
 
        
         startdate = startdate + dt
 
-    # Submit Jobs      
+
+    ##################################################
+    ####
+    #    Submit & Handle Jobs  
+    ####
+    ##################################################
+
     runlen  = len(dirstring)   
     if nodemax is not None:
-        numjobs = runlen*nodemax
+        numjobs = sum(nodemax_list)
     else:
         numjobs = runlen
 
-    #submit first 250 jobs
-    #monitor qstat every hour until all jobs are done   
     cwd = os.getcwd()
     jobid = np.empty(0)
     devnull = open(os.devnull, 'w')
     if runlen > 0:
-        if numjobs <= 250:
-            # Submit all jobs
-            for i,s in enumerate(dirstring):
-                os.chdir(s)
-                jobid = np.append(jobid,subprocess.check_output(['qsub',runfile]))
-                os.chdir(cwd)
+        if numjobs <= jobsmax:   
+            countRun   = runlen    
+            node_tally   = numjobs  
+        else:
+            if nodemax is not None:
+                keep_adding = True
+                node_tally = 0
+                countRun = 0
+                while(keep_adding):
+                    if (node_tally + nodemax_list[countRun] <= jobsmax):
+                        node_tally = node_tally + nodemax_list[countRun]
+                        countRun = countRun + 1
+                    else:
+                        keep_adding = False                
+            else:
+                countRun = jobsmax
+                node_tally = jobsmax
 
-            # Monitor jobs
+        workingJobs = np.arange(countRun)
+
+        # Submit first JOBSMAX jobs
+        for i in workingJobs:
+            s = dirstring[i]
+            os.chdir(s)
+            jobid = np.append(jobid,subprocess.check_output(['qsub',runfile]))
+            
+        os.chdir(cwd)
+        # Monitor jobs 1-by-1 
+        # Add a new job when one finishes 
+        # Until they are all done
+        stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
+        while (stat == 0):
             stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
-            while (stat == 0):
-                print 'Waiting 1 minutes'
-                time.sleep(60)
+            finishedJobs = np.empty(0,dtype='int')
+            for ii,i in enumerate(workingJobs):
+                s = jobid[i]
+                s = s.strip('\n')
+                finished = False
+
+                # Check to see if this job is finished
+                if nodemax is not None and nodemax_list[i] > 1:
+                    # Loop through the nodes working on this job
+                    finishedCNT = 0
+                    for a in np.arange(nodemax_list[i]):
+                        a = a + 1
+
+                        try:
+                            result = subprocess.check_output(['squeue','-j',s+'_'+ str(a)],stderr=subprocess.STDOUT)
+                            if (s+'_'+ str(a) not in result):
+                                #print ' Job Not Found! '+s+'_'+ str(a)
+                                finishedCNT = finishedCNT + 1
+                        except subprocess.CalledProcessError as e:
+                            #print ' ERROR Job Not Found! '+s+'_'+ str(a)
+                            finishedCNT = finishedCNT + 1
+
+                    if (finishedCNT == nodemax_list[i]): 
+                        finished = True
+                else:
+                    result = subprocess.call(['qstat',s], stdout=devnull)
+                    if (result != 0):
+                        finished = True   
+
+                # if the job is finished clean up the workspace
+                if finished:
+                    #print 'Job finished, cleaning up', s, i 
+                    finishedJobs = np.append(finishedJobs,ii)
+                    errcheck = check_for_errors(dirstring[i],s,nodemax=nodemax_list[i])               
+                    if (errcheck is False):
+                        if (additional_output):
+                            destroy_workspace(s,dirstring[i],outdirstring[i],
+                                          addoutdir=addoutdirstring[i],nodemax=nodemax_list[i],profile=profile)
+                        else:
+                            destroy_workspace(s,dirstring[i],outdirstring[i],
+                                          addoutdir=None,nodemax=nodemax_list[i],profile=profile)                       
+                    else:
+                        print 'Jobid ',s,' exited with errors'
+
+            # finished checking up on all the jobs
+            # Remove finished jobs from the currently working list
+            if len(finishedJobs) != 0:
+                print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
+                if nodemax is not None:
+                    node_tally  = node_tally - sum(nodemax_list[workingJobs[finishedJobs]])
+                else:
+                    node_tally  = node_tally - len(finishedJobs)
+
+                workingJobs = np.delete(workingJobs,finishedJobs)
+
+            # Add more jobs if needed
+            # reinitialize stat variable
+            if (runlen > countRun) and (node_tally < jobsmax):
+                #print 'adding new jobs'
+                if nodemax is not None:
+                    keep_adding = True
+                    newRun      = 0
+                    while (keep_adding):
+                        if (node_tally + nodemax_list[countRun + newRun] <= jobsmax):
+                            node_tally = node_tally + nodemax_list[countRun + newRun]
+                            newRun = newRun + 1
+                            if (countRun + newRun == runlen):
+                                keep_adding = False
+                        else:
+                            keep_adding = False
+                else:
+                    newRun = jobsmax - node_tally
+                    node_tally = jobsmax
+
+                newjobs  = countRun + np.arange(newRun)
+                workingJobs = np.append(workingJobs, newjobs)
+                for i in newjobs:
+                    s = dirstring[i]
+                    os.chdir(s)
+                    jobid = np.append(jobid,subprocess.check_output(['qsub',runfile]))
+
+                os.chdir(cwd)
+                countRun = countRun + newRun
                 stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
 
-            print 'All jobs done'
-            # Check for errors
-            # Clean things up
-            for i,s in enumerate(jobid):
-                s = s.strip('\n')
-                errcheck = check_for_errors(dirstring[i],s,nodemax=nodemax)
-                if (errcheck is False):
-                    if (additional_output):
-                        destroy_workspace(s,dirstring[i],outdirstring[i],
-                                      addoutdir=addoutdirstring[i],nodemax=nodemax,profile=profile)
-                    else:
-                        destroy_workspace(s,dirstring[i],outdirstring[i],
-                                      addoutdir=None,nodemax=nodemax,profile=profile)                       
-                else:
-                    print 'Jobid ',s,' exited with errors'
 
-            # for i,s in enumerate(jobid):
-            #     s = s.strip('\n')
-            #     if nodemax is not None and nodemax > 1:
-            #         # Loop through the nodes working on this job
-            #         finished = 0
-            #         for a in np.arange(nodemax):
-            #             a = a + 1
-            #             stat = subprocess.check_output(['squeue','-j',s+'_'+ str(a)])
-            #             if (s+'_'+ str(a) not in stat):
-            #                 print ' Job Not Found! '+s+'_'+ str(a)
-            #                 finished = finished + 1
+            print 'Waiting 1 minutes'
+            time.sleep(60)
+            
 
-            #         if (finished == nodemax):
-            #             #all nodes done for this job
-            #             #clean up work space!
-            #             errcheck = check_for_errors(dirstring[i],s,nodemax=nodemax)
-            #             if (errcheck is False):
-            #                 destroy_workspace(s,dirstring[i],outdirstring[i],
-            #                                   addoutdir=addoutdirstring[i],nodemax=nodemax)
-
-            #     else:
-            #         stat = subprocess.call(['qstat',s], stdout=devnull)
-            #         if (stat != 0):
-            #             #all done for this job
-            #             #clean up work space!
-            #             errcheck = check_for_errors(dirstring[i],s,nodemax=nodemax)
-            #             if (errcheck is False):
-            #                 destroy_workspace(s,dirstring[i],outdirstring[i],
-            #                                   addoutdir=addoutdirstring[i],nodemax=nodemax)                                  
-        else:
-            print 'too many jobs!  reduce run length'
+        # Exited while loop
+        print 'All jobs done'
 
     else:
         print 'No model hours to run'
