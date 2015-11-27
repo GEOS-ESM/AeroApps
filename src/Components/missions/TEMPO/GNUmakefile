@@ -103,7 +103,7 @@ python: $(PY_EXTS)
 	$(F2PY) -c -m $* $(M). $< 
 
 %.x:  %.o 
-	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_CHEM_BASE) \
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
