@@ -26,6 +26,7 @@ program geo_vlidort
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
+  use lidort_brdf_modis
   use Chem_MieMod
 !  use netcdf_helper                ! Module with netcdf routines
   use mp_netcdf_Mod
@@ -64,6 +65,7 @@ program geo_vlidort
   character(len=256)                    :: version
   character(len=256)                    :: surf_version
   character(len=256)                    :: layout 
+  logical                               :: vlidort
 
 ! Test flag
 ! -----------
@@ -562,13 +564,22 @@ program geo_vlidort
 !     Simple lambertian surface model
 !     -------------------------------
       if (scalar) then
-        ! Call to vlidort scalar code       
-        call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
-                nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
-                (/dble(SZA(c))/), &
-                (/dble(abs(RAA(c)))/), &
-                (/dble(VZA(c))/), &
-                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
+        if (vlidort) then
+          ! Call to vlidort scalar code       
+          call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
+                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+                  (/dble(SZA(c))/), &
+                  (/dble(abs(RAA(c)))/), &
+                  (/dble(VZA(c))/), &
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
+        else 
+          call LIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
+                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+                  (/dble(SZA(c))/), &
+                  (/dble(abs(RAA(c)))/), &
+                  (/dble(VZA(c))/), &
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
+        end if 
       else
         ! Call to vlidort vector code
         call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
@@ -595,14 +606,25 @@ program geo_vlidort
 !     MODIS BRDF Surface Model
 !     ------------------------------
       if (scalar) then 
+        if (vlidort) then
+          ! Call to vlidort scalar code            
+          call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nMom,  &
+                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+                  kernel_wt, param, &
+                  (/dble(SZA(c))/), &
+                  (/dble(abs(RAA(c)))/), &
+                  (/dble(VZA(c))/), &
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
+        else
         ! Call to vlidort scalar code            
-        call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nMom,  &
-                nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
-                kernel_wt, param, &
-                (/dble(SZA(c))/), &
-                (/dble(abs(RAA(c)))/), &
-                (/dble(VZA(c))/), &
-                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
+          call LIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nMom,  &
+                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+                  kernel_wt, param, &
+                  (/dble(SZA(c))/), &
+                  (/dble(abs(RAA(c)))/), &
+                  (/dble(VZA(c))/), &
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
+        end if
       else
         ! Call to vlidort vector code
         call VLIDORT_Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
@@ -923,10 +945,19 @@ subroutine filenames()
   write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.nc4'
 
 ! OUTFILES
-  write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc2.vlidort.'
+  if (vlidort) then
+    write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc2.vlidort.'
+  else
+    write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc2.lidort.'
+  end if 
   call outfile_extname(OUT_file)
+
   if (additional_output) then
-    write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc.vlidort.'
+    if (vlidort) then
+      write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc.vlidort.'
+    else
+      write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc.lidort.'
+    end if
     call outfile_extname(ATMOS_file)
   end if
 
@@ -1321,7 +1352,7 @@ end subroutine outfile_extname
       saa = saa + 180.0
       do i = 1, clrm
         if (saa(i) >= 360.0) then
-          saa(i) = 360.0 - saa(i)
+          saa(i) = saa(i) - 360.0
         end if
       end do
 
@@ -1472,9 +1503,9 @@ end subroutine outfile_extname
     allocate (param(nparam,nch,nobs))
 
     allocate (ROT(km,nobs,nch))
+    allocate (pmom(km,nch,nobs,nMom,nPol))
 
-    if (.not. scalar) then
-      allocate (pmom(km,nch,nobs,nMom,nPol))
+    if (.not. scalar) then      
       allocate (Q(nobs, nch))
       allocate (U(nobs, nch))
     end if
@@ -2234,6 +2265,7 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, version, label = 'VERSION:',default='1.0') 
     call ESMF_ConfigGetAttribute(cf, surf_version, label = 'SURF_VERSION:',default='1.0')    
     call ESMF_ConfigGetAttribute(cf, layout, label = 'LAYOUT:',default='111')    
+    call ESMF_ConfigGetAttribute(cf, vlidort, label = 'VLIDORT:',default=.true.)        
 
 
     ! Check that LER configuration is correct
