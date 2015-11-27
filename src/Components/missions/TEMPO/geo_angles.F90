@@ -23,7 +23,8 @@ program geo_angles
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   !use mpi
-  use netcdf_helper                ! Module with netcdf routines
+  use mp_netcdf_Mod                ! Module with netcdf routines
+  use netcdf_Mod
   use GeoAngles                    ! Module with geostationary satellite algorithms for scene geometry
 
   implicit none
@@ -48,9 +49,9 @@ program geo_angles
 
 ! Global, 3D arrays to be allocated using SHMEM
 ! ---------------------------------------------
-  real, pointer                         :: CLON(:,:) => null()
-  real, pointer                         :: CLAT(:,:) => null()
-  real, pointer                         :: SCANTIME(:) => null()
+  real*8, pointer                       :: CLON(:,:) => null()
+  real*8, pointer                       :: CLAT(:,:) => null()
+  real*8, pointer                       :: SCANTIME(:) => null()
   real, pointer                         :: SZA(:,:) => null()
   real, pointer                         :: VZA(:,:) => null()
   real, pointer                         :: SAA(:,:) => null()
@@ -155,9 +156,9 @@ program geo_angles
 
 ! Read in position data to shared memeory
 ! --------------------------------------------
-  call mp_readvar1D('scanTime', MET_file, (/im/), 1, npet, myid, SCANTIME)
-  call mp_readvar2D('clon', INV_file, (/im, jm/), 1, npet, myid, CLON)
-  call mp_readvar2D('clat', INV_file, (/im, jm/), 1, npet, myid, CLAT)
+  call mp_readvar1Dchunk('scanTime', MET_file, (/im/), 1, npet, myid, SCANTIME)
+  call mp_readvar2Dchunk('clon', INV_file, (/im, jm/), 1, npet, myid, CLON)
+  call mp_readvar2Dchunk('clat', INV_file, (/im, jm/), 1, npet, myid, CLAT)
 
 ! Wait for everyone to finish reading 
 ! ------------------------------------------------------------------  
@@ -367,8 +368,8 @@ end subroutine filenames
     integer, dimension(4)              :: chunk_size
     integer                            :: ewDimID, nsDimID
     integer                            :: clonVarID, clatVarID, timeVarID, ewVarID, nsVarID
-    real,allocatable,dimension(:,:)    :: clon, clat
-    real,allocatable,dimension(:)      :: scantime, ew, ns
+    real*8,allocatable,dimension(:,:)  :: clon, clat
+    real*8,allocatable,dimension(:)    :: scantime, ew, ns
 
 
     call check(nf90_create(OUT_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // OUT_file)
