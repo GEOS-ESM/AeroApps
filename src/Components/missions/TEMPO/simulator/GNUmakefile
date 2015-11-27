@@ -109,11 +109,6 @@ python: $(PY_EXTS)
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
                                  $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
 
-
-geo_angles.x: GeoAngles_py.o netcdf_helper.o geo_angles.o
-	$(FC) $(FOPTS) $^ -o $@   $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
-                            $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)   
-
 geo_lidort.x: netcdf_helper.o geo_lidort.o 
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
