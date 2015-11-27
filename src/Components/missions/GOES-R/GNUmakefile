@@ -61,7 +61,7 @@ esma_help help:
 #                  User Defined Targets
 #                  --------------------
 
-INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF)  /usr/include
+INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF)  /usr/include ../TEMPO/simulator
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
@@ -74,8 +74,8 @@ THIS_GFIO = GMAO_gfio_r4
 #                  --------------------
 #                  User Defined Targets
 #                  --------------------
-
-SRCS := mp_netcdf_Mod.F90 netcdf_Mod.F90
+SIMULATOR = ../TEMPO/simulator
+SRCS := $(SIMULATOR)/GeoAngles_py.F90 $(SIMULATOR)/mp_netcdf_Mod.F90 $(SIMULATOR)/netcdf_Mod.F90
 			   
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
 DEPS := $(addsuffix .d, $(basename $(SRCS))) 
@@ -92,8 +92,8 @@ $(LIB) lib : $(DEPS) $(OBJS)
                                  $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
 
                                  
-geo_angles.x: GeoAngles_py.o mp_netcdf_Mod.o netcdf_Mod.o geo_angles.o
-	$(FC) $(FOPTS) $^ -o $@   $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+geo_angles.x: geo_angles.o
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                             $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)  
                                                         
 
