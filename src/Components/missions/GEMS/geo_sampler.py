@@ -110,9 +110,9 @@ def GEMSscanTimes(nNS,nEW,tBeg):
     """
     s     = 30*60./nEW
     tScan = array([tBeg + i * timedelta(seconds=s) for i in arange(nEW) ])
-    tScan = tScan[-1::-1] # flip times
-
     tScan[int(0.5*nEW):] = tScan[int(0.5*nEW):] + timedelta(seconds=30.*60)
+    tScan = tScan[-1::-1] # flip times
+   
     return tile(tScan,(nNS,1))
 
 #---
