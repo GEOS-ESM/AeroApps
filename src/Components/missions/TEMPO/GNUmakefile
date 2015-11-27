@@ -28,13 +28,13 @@ THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
 BINS := 
 
-PY_EXTS = GeoAngles_.$(F2PYEXT)
+PY_EXTS = 
 PY_SCRP = geo_warp.py geo_sampler.py
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
                  $(ESMAINC)/$(THIS) $(ESMABIN)
-	$(CP) -pr $(PY_EXTS)               $(ESMALIB)/Python 
+#	$(CP) -pr $(PY_EXTS)               $(ESMALIB)/Python 
 	$(CP) -p  $(BINS) $(PY_SCRP)       $(ESMABIN)
 
 esma_clean clean:
@@ -65,7 +65,7 @@ esma_help help:
 #                  --------------------
 
 
-INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE)  /usr/include
+INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE)  /usr/include simulator
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
@@ -79,7 +79,7 @@ THIS_GFIO = GMAO_gfio_r4
 #                  User Defined Targets
 #                  --------------------
 
-SRCS := GeoAngles_py.F90 mp_netcdf_Mod.F90 netcdf_Mod.F90
+SRCS := simulator/GeoAngles_py.F90 simulator/mp_netcdf_Mod.F90 simulator/netcdf_Mod.F90
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
 DEPS := $(addsuffix .d, $(basename $(SRCS))) 
  
