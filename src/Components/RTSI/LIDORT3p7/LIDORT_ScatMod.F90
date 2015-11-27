@@ -14,7 +14,8 @@
 
       implicit NONE
 
-      PUBLIC  LIDORT_Run      ! Run for each profile (pixel)
+      PUBLIC  LIDORT_Run_Scalar      ! Run for each profile (pixel)
+      PUBLIC  LIDORT_Run      ! Run for each profile (pixel) - old code
       PUBLIC  LIDORT_LER      ! Lambertian Equivalent Reflectivity
       PUBLIC  LIDORT_AI       ! Aerosol Index
           
@@ -172,7 +173,7 @@
       
 !               Calculation of the Rayleigh-Scattering Optical Depth
 !               ----------------------------------------------------
-      call VLIDORT_Rayleigh (self, rc)
+      call LIDORT_Rayleigh (self, rc)
 
 !                Populate Scattering Phase Matrix
 !                ---------------------------------
