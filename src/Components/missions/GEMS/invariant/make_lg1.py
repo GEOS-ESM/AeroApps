@@ -129,7 +129,7 @@ if __name__ == '__main__':
 	lonmax = 145
 	nEW   = 700   
 	nNS   = 2000
-	doVincenty = True
+	doVincenty = False
 
 	#-------
 	##  End of User Input
@@ -174,8 +174,6 @@ if __name__ == '__main__':
 			#elon[i,j], elat[i,j] = m(Xmin + j*dx, Ymin + i*dy, inverse=True)
 			elon[i,j], elat[i,j] = m(xes[j], yes[i], inverse=True)
 
-
-
 	pixel_top     = np.ma.masked_all([nNS,nEW])
 	pixel_bottom  = np.ma.masked_all([nNS,nEW])
 	pixel_left    = np.ma.masked_all([nNS,nEW])
@@ -211,6 +209,11 @@ if __name__ == '__main__':
 	pixel_left[np.where(clat == 1e30)] = np.ma.masked
 	pixel_right[np.where(clon == 1e30)] = np.ma.masked
 	pixel_right[np.where(clat == 1e30)] = np.ma.masked
+
+	clon.mask[clon == 1e30] = True
+	clat.mask[clat == 1e30] = True
+	elon.mask[elat == 1e30] = True
+	elat.mask[elat == 1e30] = True
 
 	# Save to netcdf file
 	ncOut 								 = Dataset('gems.lg1.invariant.nc4','w',format='NETCDF4_CLASSIC')
