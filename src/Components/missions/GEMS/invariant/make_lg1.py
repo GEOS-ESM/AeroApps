@@ -149,11 +149,11 @@ if __name__ == '__main__':
 	DY = Ymax - Ymin
 	dy = DY/nNS
 
-	xes = np.linspace(Xmin, Xmax, nEW+1)
+	xes = np.linspace(Xmin, Xmax, nEW+1) #edges
 	yes = np.linspace(Ymin, Ymax, nNS+1)
-	dx  = xes[1] - xes[0]
-	dy  = yes[1] - yes[0]
-	xes = xes[0:-1] + 0.5*dx
+	dx  = xes[1:] - xes[0:-1]
+	dy  = yes[1:] - yes[0:-1]
+	xes = xes[0:-1] + 0.5*dx  #centers
 	yes = yes[0:-1] + 0.5*dy
 
 	# Get lat/lon corner points in map projection coordinates
