@@ -130,19 +130,22 @@ if __name__ == '__main__':
 	satellite_height = 35785831.0
 	rsphere          = (6378137.00,6356752.3142)
 
-	latmin = 30
-	lonmin = -25
-	lonmax = 38
+
 	nEW   = 570   
 	nNS   = 530
 	doVincenty = False
 
-	latmax                = {}.fromkeys(season)
-	latmax['SUMMER']      = 65
-	latmax['SPRING/FALL'] = 60
-	latmax['WINTER']      = 55
+	# latmax                = {}.fromkeys(season)
+	# latmax['SUMMER']      = 65
+	# latmax['SPRING/FALL'] = 60
+	# latmax['WINTER']      = 55
 
 	latmax = 65
+	latmin = 30
+	# lonmin = -25
+	# lonmax = 38
+	lonmin = -9
+	lonmax = 38
 	#-------
 	##  End of User Input
 	#-------
@@ -319,7 +322,7 @@ if __name__ == '__main__':
 	# EW
 	# --
 	# define the bins and normalize
-	bounds = np.arange(7.5,14,0.5)
+	bounds = np.arange(5,12,0.5)
 	norm = colors.BoundaryNorm(bounds, cmap.N)
 	cmap.set_bad(color='w',alpha=0)
 
