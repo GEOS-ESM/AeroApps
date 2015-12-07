@@ -49,7 +49,8 @@ program geo_vlidort
   character(len=8)                      :: date         
   character(len=7)                      :: surfdate
   character(len=2)                      :: time 
-  character(len=256)                    :: instname, indir, outdir, surfname
+  character(len=256)                    :: instname, indir, outdir
+  character(len=256)                    :: surfname, surfmodel
   character(len=256)                    :: surfband               ! flag to use nearest-neighbor interpolation or an exact value given
   integer                               :: surfbandm              ! number of wavelength bands or channels in surface reflectance data file
   integer, allocatable                  :: surfband_i(:)          ! surface band indeces that overlap with vlidort channels
@@ -293,7 +294,7 @@ program geo_vlidort
   call mp_readDim("ns", MET_file, jm)
   call mp_readDim("lev", MET_file, km)
   call mp_readDim("time", MET_file,tm)
-  if (lower_to_upper(surfname) == 'MAIACRTLS') then
+  if (lower_to_upper(surfmodel) == 'RTLS') then
     call mp_readVattr("missing_value", SURF_file, "Band1", surf_missing) 
     surf_missing = -99999.0
   else
@@ -501,7 +502,7 @@ program geo_vlidort
 
 !   Surface Reflectance Parameters
 !   ----------------------------------
-    if ( (lower_to_upper(surfname) == 'MAIACRTLS') ) then
+    if ( (lower_to_upper(surfmodel) == 'RTLS') ) then
 !     Get BRDF Kernel Weights
 !     ----------------------------
       do ch = 1, nch
@@ -560,7 +561,7 @@ program geo_vlidort
 
 !   Call VlIDORT
 !   ------------
-    if ( (lower_to_upper(surfname) /= 'MAIACRTLS') ) then
+    if ( (lower_to_upper(surfmodel) /= 'RTLS') ) then
 !     Simple lambertian surface model
 !     -------------------------------
       if (scalar) then
@@ -936,7 +937,7 @@ subroutine filenames()
     write(LAND_file,'(6A)') trim(indir),'/LevelB/invariant/',trim(instname),'-g5nr.lb2.asm_Nx_',trim(layout),'.nc4'
   end if  
 
-  if ( lower_to_upper(surfname) == 'MAIACRTLS' ) then
+  if ( lower_to_upper(surfmodel) == 'RTLS' ) then
     write(SURF_file,'(8A)') trim(indir),'/BRDF/v',trim(surf_version),'/',trim(surfname),'.',surfdate,'.hdf'
   else
     write(SURF_file,'(6A)') trim(indir),'/SurfLER/',trim(instname),'-omi.SurfLER.',date(5:6),'.nc4'
@@ -975,14 +976,18 @@ subroutine outfile_extname(file)
     write(file,'(2A)') trim(file),'vector.'
   end if 
   
-  if (lower_to_upper(surfname) == 'MAIACRTLS' .and. lower_to_upper(surfband) == 'INTERPOLATE') then
-    write(file,'(2A)') trim(file),'iMAIACRTLS.'
-  else if (lower_to_upper(surfname) == 'MAIACRTLS' .and. lower_to_upper(surfband) == 'EXACT') then
-    write(file,'(2A)') trim(file),'MAIACRTLS.'
-  else if (lower_to_upper(surfname) /= 'MAIACRTLS' .and. lower_to_upper(surfband) == 'INTERPOLATE') then
-    write(file,'(2A)') trim(file),'ilambertian.'
-  else if (lower_to_upper(surfname) /= 'MAIACRTLS' .and. lower_to_upper(surfband) == 'EXACT') then
-    write(file,'(2A)') trim(file),'lambertian.'
+  if (lower_to_upper(surfmodel) /= 'RTLS')
+    if (lower_to_upper(surfband) == 'EXACT') then
+      write(file,'(2A)') trim(file),'lambertian.'
+    else
+      write(file,'(2A)') trim(file),'ilambertian.'
+    end if
+  else
+    if (lower_to_upper(surfband) == 'EXACT') then
+      write(file,'(3A)') trim(file),surfname,'.'
+    else
+      write(file,'(4A)') trim(file),'i',surfname,'.'
+    end if 
   end if
 
   write(chmax,'(F10.2)') maxval(channels)
@@ -1208,7 +1213,7 @@ end subroutine outfile_extname
     integer                            :: xstart, xend, ystart, yend
     integer                            :: x, y
 
-    if (lower_to_upper(surfname) == 'MAIACRTLS') then
+    if (lower_to_upper(surfmodel) == 'RTLS') then
 
       if (trim(layout) == '111') then
         call mp_readvar3Dchunk("Band1", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band1) 
@@ -1218,7 +1223,9 @@ end subroutine outfile_extname
         call mp_readvar3Dchunk("Band5", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band5) 
         call mp_readvar3Dchunk("Band6", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band6) 
         call mp_readvar3Dchunk("Band7", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band7) 
-        call mp_readvar3Dchunk("Band8", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band8) 
+        if (lower_to_upper(surfname) == 'MAIACRTLS') then
+          call mp_readvar3Dchunk("Band8", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band8) 
+        end if
       else
         !read only the chunk that belongs to the tile
         read(layout(1:1),*) Nx
@@ -1248,12 +1255,11 @@ end subroutine outfile_extname
                                   (/xstart,ystart,1/), 1, npet, myid, Band6) 
         call mp_readTilevar3Dchunk("Band7", SURF_file, (/im,jm,nkernel/), &
                                   (/xstart,ystart,1/), 1, npet, myid, Band7) 
-        call mp_readTilevar3Dchunk("Band8", SURF_file, (/im,jm,nkernel/), &
+        if (lower_to_upper(surfname) == 'MAIACRTLS') then
+          call mp_readTilevar3Dchunk("Band8", SURF_file, (/im,jm,nkernel/), &
                                   (/xstart,ystart,1/), 1, npet, myid, Band8)
+        end if
       end if
-      ! call mp_readvar3D("Kiso", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KISO_) 
-      ! call mp_readvar3D("Kvol", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KVOL_) 
-      ! call mp_readvar3D("Kgeo", SURF_file, (/im,jm,surfbandm/), 1, npet, myid, KGEO_) 
 
       call MAPL_SyncSharedMemory(rc=ierr)    
 
@@ -1265,7 +1271,7 @@ end subroutine outfile_extname
         KISO_(:,:,5) = Band5(:,:,1)
         KISO_(:,:,6) = Band6(:,:,1)
         KISO_(:,:,7) = Band7(:,:,1)
-        KISO_(:,:,8) = Band8(:,:,1)
+        if (lower_to_upper(surfname) == 'MAIACRTLS') then KISO_(:,:,8) = Band8(:,:,1)
 
         KVOL_(:,:,1) = Band1(:,:,2)
         KVOL_(:,:,2) = Band2(:,:,2)
@@ -1274,7 +1280,7 @@ end subroutine outfile_extname
         KVOL_(:,:,5) = Band5(:,:,2)
         KVOL_(:,:,6) = Band6(:,:,2)
         KVOL_(:,:,7) = Band7(:,:,2)
-        KVOL_(:,:,8) = Band8(:,:,2)
+        if (lower_to_upper(surfname) == 'MAIACRTLS') then KVOL_(:,:,8) = Band8(:,:,2)
 
         KGEO_(:,:,1) = Band1(:,:,3)
         KGEO_(:,:,2) = Band2(:,:,3)
@@ -1283,17 +1289,13 @@ end subroutine outfile_extname
         KGEO_(:,:,5) = Band5(:,:,3)
         KGEO_(:,:,6) = Band6(:,:,3)
         KGEO_(:,:,7) = Band7(:,:,3)
-        KGEO_(:,:,8) = Band8(:,:,3)
+        if (lower_to_upper(surfname) == 'MAIACRTLS') then KGEO_(:,:,8) = Band8(:,:,3)
 
         call reduceProfile(KISO_,clmask,KISO) 
         call reduceProfile(KVOL_,clmask,KVOL)
         call reduceProfile(KGEO_,clmask,KGEO)  
         write(*,*) '<> Read BRDF data to shared memory' 
       end if 
-
-      ! call MAPL_DeallocNodeArray(KISO_,rc=ierr) 
-      ! call MAPL_DeallocNodeArray(KVOL_,rc=ierr) 
-      ! call MAPL_DeallocNodeArray(KGEO_,rc=ierr) 
 
     else
       if (MAPL_am_I_root()) then
@@ -1406,7 +1408,7 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(OCPHOBIC,(/clrm,km/),rc=ierr)
     call MAPL_AllocNodeArray(OCPHILIC,(/clrm,km/),rc=ierr)
     call MAPL_AllocNodeArray(SO4,(/clrm,km/),rc=ierr)
-    if (lower_to_upper(surfname) == 'MAIACRTLS') then
+    if (lower_to_upper(surfmodel) == 'RTLS') then
       call MAPL_AllocNodeArray(KISO,(/clrm,surfbandm/),rc=ierr)
       call MAPL_AllocNodeArray(KVOL,(/clrm,surfbandm/),rc=ierr)
       call MAPL_AllocNodeArray(KGEO,(/clrm,surfbandm/),rc=ierr)
@@ -1450,7 +1452,7 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(OCPHOBIC_,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(OCPHILIC_,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(SO4_,(/im,jm,km/),rc=ierr)
-    if (lower_to_upper(surfname) == 'MAIACRTLS') then
+    if (lower_to_upper(surfmodel) == 'RTLS') then
       call MAPL_AllocNodeArray(BAND1,(/im,jm,nkernel/),rc=ierr)
       call MAPL_AllocNodeArray(BAND2,(/im,jm,nkernel/),rc=ierr)
       call MAPL_AllocNodeArray(BAND3,(/im,jm,nkernel/),rc=ierr)
@@ -1458,7 +1460,9 @@ end subroutine outfile_extname
       call MAPL_AllocNodeArray(BAND5,(/im,jm,nkernel/),rc=ierr)
       call MAPL_AllocNodeArray(BAND6,(/im,jm,nkernel/),rc=ierr)
       call MAPL_AllocNodeArray(BAND7,(/im,jm,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND8,(/im,jm,nkernel/),rc=ierr)
+      if (lower_to_upper(surfname) == 'MAIACRTLS') then
+        call MAPL_AllocNodeArray(BAND8,(/im,jm,nkernel/),rc=ierr)
+      end if
       call MAPL_AllocNodeArray(KISO_,(/im,jm,surfbandm/),rc=ierr)
       call MAPL_AllocNodeArray(KVOL_,(/im,jm,surfbandm/),rc=ierr)
       call MAPL_AllocNodeArray(KGEO_,(/im,jm,surfbandm/),rc=ierr)
@@ -1497,7 +1501,7 @@ end subroutine outfile_extname
     allocate (radiance_VL_int(nobs,nch))
     allocate (reflectance_VL_int(nobs, nch))    
 
-    if (lower_to_upper(surfname) == 'MAIACRTLS') then
+    if (lower_to_upper(surfmodel) == 'RTLS') then
       allocate (kernel_wt(nkernel,nch,nobs))
     end if
     allocate (param(nparam,nch,nobs))
@@ -1645,15 +1649,22 @@ end subroutine outfile_extname
                          ' on the '//lower_to_upper(trim(instname))//' geostationary grid '
     call check(nf90_put_att(ncid,NF90_GLOBAL,'comment',trim(comment)),"comment attr")   
 
-    if (lower_to_upper(surfname) == 'MAIACRTLS' .and. lower_to_upper(surfband) == 'INTERPOLATE') then
-      write(comment,'(A)') 'MAIAC RTLS surface BRDF kernel weights interpolated to channel'
-    else if (lower_to_upper(surfname) == 'MAIACRTLS' .and. lower_to_upper(surfband) == 'EXACT') then
-      write(comment,'(A)') 'MAIAC RTLS surface BRDF kernel weights without inerpolation to channel'
-    else if (lower_to_upper(surfname) /= 'MAIACRTLS' .and. lower_to_upper(surfband) == 'INTERPOLATE') then
-      write(comment,'(A)') 'Lambertian surface reflectance interpolated to channel'
-    else if (lower_to_upper(surfname) /= 'MAIACRTLS' .and. lower_to_upper(surfband) == 'EXACT') then
-      write(comment,'(A)') 'Lambertian surface reflectance without interpolation to channel'
+
+
+    if (lower_to_upper(surfmodel) /= 'RTLS') then
+      if (lower_to_upper(surfband) == 'INTERPOLATE') then
+        write(comment,'(A)') 'Lambertian surface reflectance interpolated to channel'
+      else
+        write(comment,'(A)') 'Lambertian surface reflectance without interpolation to channel'
+      end if
+    else
+      if (lower_to_upper(surfband) == 'INTERPOLATE') then
+        write(comment,'(2A)') surfname,' surface BRDF kernel weights interpolated to channel'
+      else
+        write(comment,'(2A)') surfname,' surface BRDF kernel weights without inerpolation to channel'
+      end if
     end if
+
     call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_comment',trim(comment)),"surface_comment")
 
     if ( scalar ) then
@@ -2253,6 +2264,7 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, indir, label = 'INDIR:',__RC__)
     call ESMF_ConfigGetAttribute(cf, outdir, label = 'OUTDIR:',default=indir)
     call ESMF_ConfigGetAttribute(cf, surfname, label = 'SURFNAME:',default='MAIACRTLS')
+    call ESMF_ConfigGetAttribute(cf, surfname, label = 'SURFMODEL:',default='RTLS')
     call ESMF_ConfigGetAttribute(cf, surfdate, label = 'SURFDATE:',__RC__)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
@@ -2270,11 +2282,11 @@ end subroutine outfile_extname
 
     ! Check that LER configuration is correct
     !----------------------------------------
-    if (lower_to_upper(surfname) /= 'MAIACRTLS' ) then
+    if (lower_to_upper(surfmodel) /= 'RTLS' ) then
       if (surfbandm /= 2) then
         surfbandm = 2
         if (MAPL_am_I_root()) then
-          write(*,*) 'Wrong number of surface bands.  If not MAIACRTLS, SURFBANDM must equal 2'
+          write(*,*) 'Wrong number of surface bands.  If not RTLS surface, SURFBANDM must equal 2'
           write(*,*) 'Forcing surfbandm = 2'          
         end if
       end if
@@ -2384,7 +2396,7 @@ end subroutine outfile_extname
     call MAPL_DeallocNodeArray(OCPHOBIC,rc=ierr) 
     call MAPL_DeallocNodeArray(OCPHILIC,rc=ierr) 
     call MAPL_DeallocNodeArray(SO4,rc=ierr) 
-    if (lower_to_upper(surfname) == 'MAIACRTLS') then
+    if (lower_to_upper(surfmodel) == 'RTLS') then
       call MAPL_DeallocNodeArray(KISO,rc=ierr) 
       call MAPL_DeallocNodeArray(KVOL,rc=ierr) 
       call MAPL_DeallocNodeArray(KGEO,rc=ierr) 
