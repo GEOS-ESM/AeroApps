@@ -67,8 +67,17 @@ def map_(fig,m,data,cmap,minval,maxval,title,norm=None,format=None,elon=None,ela
 		m.drawcountries(color='white')
 		m.drawstates(color='white')
 
-		m.drawparallels(np.arange(0.,40.,10.)) # draw parallels
-		m.drawmeridians(np.arange(0.,420.,10.)) # draw meridians    
+		meridian  = np.arange(75.,150.,5.)
+		parallels = np.arange(-10.,80.,5.)
+		m.drawparallels(parallels) # draw parallels
+		m.drawmeridians(meridian) # draw meridians    
+
+		meridian  = np.delete(meridian,len(meridian)*0.5)
+		for i in np.arange(len(meridian)):
+			plt.annotate(np.str(meridian[i]),xy=m(meridian[i],20),xycoords='data')
+		for i in np.arange(len(parallels)):
+			plt.annotate(np.str(parallels[i]),xy=m(110,parallels[i]),xycoords='data')
+  
 
 		if (m.projection == 'geos'):
 				if (fill_color is None):
@@ -127,7 +136,7 @@ if __name__ == '__main__':
 	latmin = -5
 	lonmin = 75
 	lonmax = 145
-	nEW   = 700   
+	nEW   = 900   
 	nNS   = 2000
 	doVincenty = False
 
@@ -140,21 +149,16 @@ if __name__ == '__main__':
 
 	Xmin, Ymin = m(lonmin,latmin)
 	Xmax, Ymin = m(lonmax,latmin)
-	DX = Xmax - Xmin
-	dx = DX/nEW
+	xese = np.linspace(Xmin, Xmax, nEW+1) #edges
+	dx  = xese[1:] - xese[0:-1]
+	xes = xese[0:-1] + 0.5*dx  #centers
 
-	Xmax, Ymax = m(lonmax,latmax)
-	Xmax, Ymin = m(lonmax,latmin)
 
-	DY = Ymax - Ymin
-	dy = DY/nNS
-
-	xes = np.linspace(Xmin, Xmax, nEW+1) #edges
-	yes = np.linspace(Ymin, Ymax, nNS+1)
-	dx  = xes[1:] - xes[0:-1]
-	dy  = yes[1:] - yes[0:-1]
-	xes = xes[0:-1] + 0.5*dx  #centers
-	yes = yes[0:-1] + 0.5*dy
+	Xmax, Ymax = m(lon_0,latmax)
+	Xmax, Ymin = m(lon_0,latmin)
+	yese = np.linspace(Ymin, Ymax, nNS+1)
+	dy  = yese[1:] - yese[0:-1]
+	yes = yese[0:-1] + 0.5*dy
 
 	# Get lat/lon corner points in map projection coordinates
 	clon = np.ma.masked_all([nNS,nEW])
@@ -164,14 +168,12 @@ if __name__ == '__main__':
 
 	for i in np.arange(nNS):
 		for j in np.arange(nEW):			
-			#clon[i,j], clat[i,j] = m(Xmin + j*dx + 0.5*dx, Ymin + i*dy + 0.5*dy, inverse=True)
 			clon[i,j], clat[i,j] = m(xes[j], yes[i], inverse=True)
 
-	xes = np.linspace(Xmin, Xmax, nEW+1)
-	yes = np.linspace(Ymin, Ymax, nNS+1)
+	xes = xese
+	yes = yese
 	for i in np.arange(nNS+1):  
 		for j in np.arange(nEW+1): 
-			#elon[i,j], elat[i,j] = m(Xmin + j*dx, Ymin + i*dy, inverse=True)
 			elon[i,j], elat[i,j] = m(xes[j], yes[i], inverse=True)
 
 	pixel_top     = np.ma.masked_all([nNS,nEW])
