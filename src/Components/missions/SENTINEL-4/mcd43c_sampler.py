@@ -262,7 +262,7 @@ if __name__ == "__main__":
   nccs = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/'+inst+'/DATA/LevelG/invariant/'
   if os.path.exists(calculon): 
       geoFile      = calculon + inst.lower()+'.lg1.invariant.nc4'
-      datadir      = '/nobackup/3/pcastell/MODIS/MCD34C1/'
+      datadir      = '/nobackup/3/pcastell/MODIS/MCD43C1/'
       landFile     = '/nobackup/'+inst+'/LevelB/invariant/'+inst.lower()+'-g5nr.lb2.asm_Nx.nc4'
   elif os.path.exists(nccs): 
       geoFile      = nccs  +inst.lower()+'.lg1.invariant.nc4'
