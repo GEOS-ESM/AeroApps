@@ -938,7 +938,11 @@ subroutine filenames()
   end if  
 
   if ( lower_to_upper(surfmodel) == 'RTLS' ) then
-    write(SURF_file,'(8A)') trim(indir),'/BRDF/v',trim(surf_version),'/',trim(surfname),'.',surfdate,'.hdf'
+    if ( lower_to_upper(surfname) == 'MAIACRTLS' ) then
+      write(SURF_file,'(8A)') trim(indir),'/BRDF/v',trim(surf_version),'/',trim(surfname),'.',surfdate,'.hdf'
+    else
+      write(SURF_file,'(8A)') trim(indir),'/BRDF/v',trim(surf_version),'/',trim(surfname),'.',surfdate,'.nc4'
+    end if
   else
     write(SURF_file,'(6A)') trim(indir),'/SurfLER/',trim(instname),'-omi.SurfLER.',date(5:6),'.nc4'
   end if
@@ -976,7 +980,7 @@ subroutine outfile_extname(file)
     write(file,'(2A)') trim(file),'vector.'
   end if 
   
-  if (lower_to_upper(surfmodel) /= 'RTLS')
+  if (lower_to_upper(surfmodel) /= 'RTLS') then
     if (lower_to_upper(surfband) == 'EXACT') then
       write(file,'(2A)') trim(file),'lambertian.'
     else
@@ -984,9 +988,9 @@ subroutine outfile_extname(file)
     end if
   else
     if (lower_to_upper(surfband) == 'EXACT') then
-      write(file,'(3A)') trim(file),surfname,'.'
+      write(file,'(3A)') trim(file),trim(surfname),'.'
     else
-      write(file,'(4A)') trim(file),'i',surfname,'.'
+      write(file,'(4A)') trim(file),'i',trim(surfname),'.'
     end if 
   end if
 
@@ -1271,7 +1275,7 @@ end subroutine outfile_extname
         KISO_(:,:,5) = Band5(:,:,1)
         KISO_(:,:,6) = Band6(:,:,1)
         KISO_(:,:,7) = Band7(:,:,1)
-        if (lower_to_upper(surfname) == 'MAIACRTLS') then KISO_(:,:,8) = Band8(:,:,1)
+        if (lower_to_upper(surfname) == 'MAIACRTLS') KISO_(:,:,8) = Band8(:,:,1)
 
         KVOL_(:,:,1) = Band1(:,:,2)
         KVOL_(:,:,2) = Band2(:,:,2)
@@ -1280,7 +1284,7 @@ end subroutine outfile_extname
         KVOL_(:,:,5) = Band5(:,:,2)
         KVOL_(:,:,6) = Band6(:,:,2)
         KVOL_(:,:,7) = Band7(:,:,2)
-        if (lower_to_upper(surfname) == 'MAIACRTLS') then KVOL_(:,:,8) = Band8(:,:,2)
+        if (lower_to_upper(surfname) == 'MAIACRTLS') KVOL_(:,:,8) = Band8(:,:,2)
 
         KGEO_(:,:,1) = Band1(:,:,3)
         KGEO_(:,:,2) = Band2(:,:,3)
@@ -1289,7 +1293,7 @@ end subroutine outfile_extname
         KGEO_(:,:,5) = Band5(:,:,3)
         KGEO_(:,:,6) = Band6(:,:,3)
         KGEO_(:,:,7) = Band7(:,:,3)
-        if (lower_to_upper(surfname) == 'MAIACRTLS') then KGEO_(:,:,8) = Band8(:,:,3)
+        if (lower_to_upper(surfname) == 'MAIACRTLS') KGEO_(:,:,8) = Band8(:,:,3)
 
         call reduceProfile(KISO_,clmask,KISO) 
         call reduceProfile(KVOL_,clmask,KVOL)
@@ -1659,9 +1663,9 @@ end subroutine outfile_extname
       end if
     else
       if (lower_to_upper(surfband) == 'INTERPOLATE') then
-        write(comment,'(2A)') surfname,' surface BRDF kernel weights interpolated to channel'
+        write(comment,'(2A)') lower_to_upper(surfname),' surface BRDF kernel weights interpolated to channel'
       else
-        write(comment,'(2A)') surfname,' surface BRDF kernel weights without inerpolation to channel'
+        write(comment,'(2A)') lower_to_upper(surfname),' surface BRDF kernel weights without inerpolation to channel'
       end if
     end if
 
@@ -2264,7 +2268,7 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, indir, label = 'INDIR:',__RC__)
     call ESMF_ConfigGetAttribute(cf, outdir, label = 'OUTDIR:',default=indir)
     call ESMF_ConfigGetAttribute(cf, surfname, label = 'SURFNAME:',default='MAIACRTLS')
-    call ESMF_ConfigGetAttribute(cf, surfname, label = 'SURFMODEL:',default='RTLS')
+    call ESMF_ConfigGetAttribute(cf, surfmodel, label = 'SURFMODEL:',default='RTLS')
     call ESMF_ConfigGetAttribute(cf, surfdate, label = 'SURFDATE:',__RC__)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
