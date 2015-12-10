@@ -473,10 +473,10 @@ def prefilter(date,indir,instname,layout=None):
 #########################################################
 
 if __name__ == "__main__":
-    instname          = 'gems'
+    instname          = 'sentinel-4'
     version           = '1.0'    
-    startdate         = '2006-07-11T22:00:00'
-    enddate           = '2006-07-11T22:00:00'
+    startdate         = '2007-04-11T22:00:00'
+    enddate           = '2007-04-11T22:00:00'
     episode           = None
     channels          = '550'
     surface           = 'MCD43C'
