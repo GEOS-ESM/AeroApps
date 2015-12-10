@@ -1663,9 +1663,9 @@ end subroutine outfile_extname
       end if
     else
       if (lower_to_upper(surfband) == 'INTERPOLATE') then
-        write(comment,'(2A)') lower_to_upper(surfname),' surface BRDF kernel weights interpolated to channel'
+        write(comment,'(2A)') lower_to_upper(trim(surfname)),' surface BRDF kernel weights interpolated to channel'
       else
-        write(comment,'(2A)') lower_to_upper(surfname),' surface BRDF kernel weights without inerpolation to channel'
+        write(comment,'(2A)') lower_to_upper(trim(surfname)),' surface BRDF kernel weights without inerpolation to channel'
       end if
     end if
 
