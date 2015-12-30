@@ -1,0 +1,50 @@
+ 
+Summary of "VLID-NS3 only" vs. "VLID-NS1/V2OS only" time checks I performed.
+
+VLID-NS1/V2OS looks to be ~6x faster for LPS and ~12X faster for LCS than VLID-NS3
+(not including OpenMP speedup)
+
+
+***********************************************************
+ Doing VLID-NS3 time check (no output files created)
+
+
+ Doing PROFILEWF part: Intensities + 60 profile Jacobians + 1 Surface Jacobian
+
+                Timing report
+ Numwvn # OMP Threads Time (sec)
+ ------ ------------- ----------
+     4        1         5.73
+     4        2         2.93
+
+
+ Doing COLUMNWF part: Intensities + 1 Column Jacobian + 1 Surface Jacobian
+
+                Timing report
+ Numwvn # OMP Threads Time (sec)
+ ------ ------------- ----------
+     4        1         3.69
+     4        2         1.86
+
+
+***********************************************************
+ Doing VLID-NS1/V2OS time check (no output files created)
+
+
+ Doing PROFILEWF part: Intensities + 60 profile Jacobians + 1 Surface Jacobian
+
+               Timing report
+ Numwvn # OMP Threads Time (sec)
+ ------ ------------- ----------
+     4        1         0.94
+     4        2         0.47
+
+
+ Doing COLUMNWF part: Intensities + 1 Column Jacobian + 1 Surface Jacobian
+
+               Timing report
+ Numwvn # OMP Threads Time (sec)
+ ------ ------------- ----------
+     4        1         0.30
+     4        2         0.16
+

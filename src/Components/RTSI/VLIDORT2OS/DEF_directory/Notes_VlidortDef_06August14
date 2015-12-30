@@ -1,0 +1,49 @@
+Conversion to 2.7
+=================
+
+These notes, 06 August 2014
+
+ALL FILES :
+-----------
+
+Add lines in header referencing Version 2.7 (Release date, function)
+
+
+PARS files :
+------------
+
+1. Add parameters TAYLOR_SMALL, TAYLOR_LARGE. Done 2013.
+2. Add parameter  MAXSTREAMS_SCALING = 24, this is for the new
+   Albedo scaling facility in the VBRDF supplement. April 2014
+3. Add new BRDF index for "NewCM" (Alternative Cox-Munk BRDF). May 2014
+4. Version Number character string updated to '2p7' (LEN=3)
+
+vlidort_inputs_def.f90
+----------------------
+
+1. Special LTE Inputs from Version 2.6 have been commented out. 
+   This is superseded by BBWF code introduced for version 2.7, March 2014
+
+vlidort_lin_inputs_def.f90
+--------------------------
+
+1.  These two flags have been superseded in Version 2.7, March 2014
+      LOGICAL  :: TS_DO_SURFBB_LINEARIZATION  !  REPLACED BY TS_DO_SURFACE_LBBF
+      LOGICAL  :: TS_DO_LTE_LINEARIZATION     !  REPLACED BY TS_DO_ATMOS_LBBF
+2.  Flag TS_DO_SIMULATION_ONLY has been moved from Fix Lin Control to Mod.
+
+vlidort_lin_outputs_def.f90
+---------------------------
+
+1. Old LTE_ATMOSWFS output in Version 2.6 now replaced by new BBWF output
+   TS_ABBWFS_JACOBIANS, TS_ABBWFS_FLUXES (atmospheric), and
+   TS_SBBWFS_JACOBIANS, TS_SBBWFS_FLUXES (surface), March 2014
+
+vlidort_work_def.f90. vlidort_lin_work_def
+------------------------------------------
+
+1. Completely new type structures for passing variables form Master to Fourier
+   so that certain Setup operations (Misc/thermal/Multipliers) are done now 
+   in the Master routines, rather than done for Fourier M = 0 and saved.
+   This was done as preparation for the OpenMP Threadsafe implementation.
+   August 05, 2014, by Mick Christi.

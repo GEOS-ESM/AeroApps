@@ -1,0 +1,8 @@
+Conversion to 2.7
+=================
+
+vlidort_sup_accessories.f90
+---------------------------
+
+1. Extra routine VBRDF_VSLEAVE_CHECKER added to ensure that inputs for
+   two supplements are consistent (only needed for the NewCOM option)

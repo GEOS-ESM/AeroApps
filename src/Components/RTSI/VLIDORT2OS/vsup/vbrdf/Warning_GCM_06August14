@@ -1,0 +1,5 @@
+Warning
+-------
+
+The Vector Cox-Munk routines (GISSCOXMUNK) are still in Flux, because
+it is not decided yet if the sine terms have the wrong sign.

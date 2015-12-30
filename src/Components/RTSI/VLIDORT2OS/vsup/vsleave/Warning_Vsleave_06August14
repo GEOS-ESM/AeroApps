@@ -1,0 +1,22 @@
+Warning
+=======
+
+Data Paths
+----------
+
+The user will have to change data-path statements in the routines
+vsleave_sup_routines.f90 and vsleave_lin_sup_routines.f90.
+
+Look for the following statements with hard-wired Paths
+
+  Fluofile = 'vlidort_v_test/data/fluor_data_2009_fortran.dat'
+  open(unit=50,file='vlidort_v_test/data/wehrli85.dat'
+  open(unit=50,file='vlidort_v_test/data/ref_solar_irradiance_whi-2008_ver2.dat'
+
+NAG Compiler
+------------
+
+Be aware of the following. (See User Guide for more)
+
+vsleave_sup_routines.f90:      !logical :: use_nag_compiler=.false.
+vsleave_sup_routines.f90:      logical :: use_nag_compiler=.true.
