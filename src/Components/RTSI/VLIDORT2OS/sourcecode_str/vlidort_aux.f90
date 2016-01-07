@@ -386,7 +386,7 @@
 
 !---4/18/08. Use 1.0d-12 (1.0d-24 has convergence issues in Rayleigh lay
 !      TOL = 0.0000001
-      TOL = 1.0D-12
+      TOL = 1.0D-10
 !      TOL = 1.0D-24
 !      TOL = 1.0D-20
 
