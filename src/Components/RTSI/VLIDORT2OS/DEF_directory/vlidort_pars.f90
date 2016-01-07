@@ -87,11 +87,11 @@
 
 !  Number of computational streams in the half-space
 
-      INTEGER, PARAMETER :: MAXSTREAMS = 10
+      INTEGER, PARAMETER :: MAXSTREAMS = 7
 
 !  Maximum number of computational layers
 
-      INTEGER, PARAMETER :: MAXLAYERS = 60
+      INTEGER, PARAMETER :: MAXLAYERS = 72
 
 !  Maximum number of fine layers used in single scattering corrections
 
@@ -100,7 +100,7 @@
 !  Maximum number of input moments.
 !    (Use full range for exact single scatter calculations)
 
-      INTEGER, PARAMETER :: MAXMOMENTS_INPUT = 200
+      INTEGER, PARAMETER :: MAXMOMENTS_INPUT = 300
 
 !  Max number of thermal coefficients
 !   --------- New for Version 2.4RT -----------------
@@ -112,29 +112,29 @@
 
 !  Maximum number of solar zenith angles
 
-      INTEGER, PARAMETER :: MAX_SZANGLES = 5
+      INTEGER, PARAMETER :: MAX_SZANGLES = 2
 
 !  maximum number of user-defined viewing zenith angles
 
-      INTEGER, PARAMETER :: MAX_USER_VZANGLES = 5
+      INTEGER, PARAMETER :: MAX_USER_VZANGLES = 2
 
 !  maximum number of user-defined output relative azimuth angles
 
-      INTEGER, PARAMETER :: MAX_USER_RELAZMS = 5
+      INTEGER, PARAMETER :: MAX_USER_RELAZMS = 2
 
 !  Maximum number of Observational Geometries
 !   New parameter, 25 October 2012
 
-      INTEGER, PARAMETER :: MAX_USER_OBSGEOMS = 5
+      INTEGER, PARAMETER :: MAX_USER_OBSGEOMS = 2
 
 !  Maximum number of output optical depths
 
-      INTEGER, PARAMETER :: MAX_USER_LEVELS = 6
+      INTEGER, PARAMETER :: MAX_USER_LEVELS = 2
 
 !  Maximum number of output optical depths away from layer boundaries
 !   This must be less than or equal to the previous entry
 
-      INTEGER, PARAMETER :: MAX_PARTLAYERS = 4
+      INTEGER, PARAMETER :: MAX_PARTLAYERS = 2
 
 !  Version 2p7. Maximum number of Terms for Taylor series expansions
 !    If you are retaining contributions of order EPS^n, 
