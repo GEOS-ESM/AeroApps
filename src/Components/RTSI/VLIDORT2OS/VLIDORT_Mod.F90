@@ -219,10 +219,10 @@
       DO_UPWELLING = .true.     ! Upwelling output?
       DO_DNWELLING = .false.    ! Downwelling output?
       DO_USER_VZANGLES = .true. ! User-defined Viewing zenith angles?
-      DO_OBSERVATION_GEOMETRY = .false. ! Do Observation Geometry?
+      DO_OBSERVATION_GEOMETRY = .true. ! Do Observation Geometry?
       
 
-      DO_ADDITIONAL_MVOUT = .true.  ! Generate mean value output additionally?
+      DO_ADDITIONAL_MVOUT = .false.  ! Generate mean value output additionally?
       DO_MVOUT_ONLY       = .false. ! Generate only mean value output?
       
 !                           Write Control
