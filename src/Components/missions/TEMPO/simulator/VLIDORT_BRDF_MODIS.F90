@@ -186,7 +186,7 @@ module VLIDORT_BRDF_MODIS
   subroutine VLIDORT_Vector_LandMODIS (km, nch, nobs, channels, nMom,  &
                      nPol,tau, ssa, pmom, pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc)
+                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc, DO_2OS_CORRECTION)
   !
   ! Place holder.
   !
@@ -239,6 +239,10 @@ module VLIDORT_BRDF_MODIS
     real*8,           intent(out)           :: BR(nobs,nch)                   ! bidirectional reflectance 
     real*8,           intent(out)           :: Q(nobs, nch)                   ! Stokes parameter Q
     real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
+
+  ! !OPTIONAL PARAMETERS
+    logical, optional, intent(in) :: DO_2OS_CORRECTION
+
   !                               ---
     
     integer             :: i,j,n,p,ier
@@ -255,7 +259,16 @@ module VLIDORT_BRDF_MODIS
 
     SCAT%nMom    = nMom
     SCAT%nPol    = nPol
-    SCAT%NSTOKES = 3
+    if (present(DO_2OS_CORRECTION)) then
+      SCAT%DO_2OS_CORRECTION = DO_2OS_CORRECTION
+      if (DO_2OS_CORRECTION) then
+        SCAT%NSTOKES = 1
+      else
+        SCAT%NSTOKES = 3
+      end if
+    else    
+      SCAT%NSTOKES = 3
+    end if
 
     if ( SCAT%NSTOKES  .GT. MAXSTOKES  )   return
 
