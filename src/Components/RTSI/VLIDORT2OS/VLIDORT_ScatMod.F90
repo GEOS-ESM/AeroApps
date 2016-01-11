@@ -23,6 +23,7 @@
 
       type VLIDORT_scat
          integer         :: NSTOKES             ! Number of stokes vectors
+         logical         :: DO_2OS_CORRECTION   ! Flag to control 2OS Correction 
          real*8          :: wavelength          ! in [nm]
          integer         :: nMom                ! number of momemts read (phase function) 
          integer         :: nPol                ! number of components of the scattering matrix
@@ -164,7 +165,7 @@
       USE VLIDORT_AUX
       USE VLIDORT_INPUTS
       USE VLIDORT_MASTERS
-     
+      USE VLIDORT_2OSCORR_MASTER_M     
 
       type(VLIDORT_scat),          intent(inout)  :: self        ! Contains most input
       type(VLIDORT_output_vector), intent(out)    :: output      ! contains output
@@ -223,6 +224,7 @@
 !                     Stokes/streams/layers/moments
 !                     -----------------------------  
       self%Surface%Base%VIO%VLIDORT_FixIn%Cont%TS_NSTOKES                = self%NSTOKES
+      self%Surface%Base%VIO%VLIDORT_ModIn%MBool%TS_DO_2OS_CORRECTION     = self%DO_2OS_CORRECTION        
       self%Surface%Base%VIO%VLIDORT_ModIn%MCont%TS_NGREEK_MOMENTS_INPUT  = self%nmom
 
       if ( self%nmom .GT. MAXMOMENTS_INPUT)  then
@@ -268,6 +270,10 @@
       self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1) = self%Surface%solar_zenith
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_RELAZMS(1) = self%Surface%relat_azimuth
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_VZANGLES_INPUT(1) = self%Surface%sensor_zenith
+      self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_N_USER_OBSGEOMS          = 1
+      self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_OBSGEOMS_INPUT(1,1) = self%Surface%solar_zenith
+      self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_OBSGEOMS_INPUT(1,2) = self%Surface%sensor_zenith
+      self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_OBSGEOMS_INPUT(1,3) = self%Surface%relat_azimuth      
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_LEVELS(1) = 0.0     ! This is TOA   
 
  
@@ -413,7 +419,28 @@
          write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_MESSAGE
          rc = 4
       end if
-      if ( rc /= 0 ) return
+      if ( rc /= 0 ) return 
+
+      if (self%DO_2OS_CORRECTION) then
+         self%Surface%Base%VIO%VLIDORT_FixIn%Cont%TS_nstokes = 3
+         CALL VLIDORT_2OSCORR_MASTER (self%Surface%Base%VIO%VLIDORT_FixIn, &
+           self%Surface%Base%VIO%VLIDORT_ModIn, &
+           self%Surface%Base%VIO%VLIDORT_Sup,   &
+           self%Surface%Base%VIO%VLIDORT_Out )
+         if (self%Surface%Base%VIO%VLIDORT_Out%Status%TS_2OSCORR_STATUS_INPUTCHECK /= 0) then
+            rc = 5
+            write(*,*) 'VLIDORT_2OSCORR_MASTER STATUS_INPUTCHECK RETURNED ERROR'
+            write(*,*) 'input check',self%Surface%Base%VIO%VLIDORT_Out%Status%TS_2OSCORR_STATUS_INPUTCHECK         
+            write(*,*) 'messages',self%Surface%Base%VIO%VLIDORT_Out%Status%TS_2OSCORR_CHECKMESSAGES
+         end if
+         if ( self%Surface%Base%VIO%VLIDORT_Out%Status%TS_2OSCORR_STATUS_CALCULATION /= 0 ) then
+            write(*,*) 'VLIDORT_MASTER STATUS_CALCULATION RETURNED ERROR'
+            write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_2OSCORR_STATUS_CALCULATION
+            write(*,*) self%Surface%Base%VIO%VLIDORT_Out%Status%TS_2OSCORR_MESSAGE
+            rc = 6
+         end if
+      end if
+      if ( rc /= 0 ) return         
       
       STOKES = self%Surface%Base%VIO%VLIDORT_Out%Main%TS_STOKES ! output of VLIDORT_MASTER subroutine
       FLUX_FACTOR = self%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR
@@ -450,7 +477,6 @@
       USE VLIDORT_AUX
       USE VLIDORT_INPUTS
       USE VLIDORT_MASTERS
-     
 
       type(VLIDORT_scat),          intent(inout)  :: self        ! Contains most input
       type(VLIDORT_output_scalar), intent(out)    :: output      ! contains output
@@ -509,7 +535,7 @@
       
 !                     Stokes/streams/layers/moments
 !                     -----------------------------  
-      self%Surface%Base%VIO%VLIDORT_FixIn%Cont%TS_NSTOKES          = self%NSTOKES
+      self%Surface%Base%VIO%VLIDORT_FixIn%Cont%TS_NSTOKES                = self%NSTOKES    
       self%Surface%Base%VIO%VLIDORT_ModIn%MCont%TS_NGREEK_MOMENTS_INPUT  = self%nmom
 
       if ( self%nmom .GT. MAXMOMENTS_INPUT)  then
@@ -558,6 +584,10 @@
       self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1) = self%Surface%solar_zenith
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_RELAZMS(1) = self%Surface%relat_azimuth
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_VZANGLES_INPUT(1) = self%Surface%sensor_zenith
+      self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_N_USER_OBSGEOMS          = 1
+      self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_OBSGEOMS_INPUT(1,1) = self%Surface%solar_zenith
+      self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_OBSGEOMS_INPUT(1,2) = self%Surface%sensor_zenith
+      self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_OBSGEOMS_INPUT(1,3) = self%Surface%relat_azimuth         
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_LEVELS(1) = 0.0     ! This is TOA   
 
      
@@ -656,7 +686,8 @@
          rc = 4
       end if
       if ( rc /= 0 ) return
-      
+
+
       STOKES = self%Surface%Base%VIO%VLIDORT_Out%Main%TS_STOKES ! output of VLIDORT_MASTER subroutine
       FLUX_FACTOR = self%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR
       
