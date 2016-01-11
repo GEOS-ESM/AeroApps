@@ -321,8 +321,8 @@ program geo_vlidort2OS_NNTestData
 ! Figure out how many indices to work on
 !------------------------------------------
   clrm = 0
-  do i=1,im
-    do j=1,jm
+  do i=1,im,10
+    do j=1,jm,10
       if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99))  then
         clrm = clrm + 1
         clmask(i,j) = .True.
@@ -452,7 +452,7 @@ program geo_vlidort2OS_NNTestData
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
 ! --------------------------------------------------------------
-  do cc = starti, starti+80 !endi
+  do cc = starti, endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
 
@@ -639,7 +639,7 @@ program geo_vlidort2OS_NNTestData
 !   -----------------------------------------        
     if (nint(100.*real(cc-starti)/real(counti)) > progress) then
       progress = nint(100.*real(cc-starti)/real(counti))
-      write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',c,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
+      write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',cc,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
     end if
                 
   end do ! do clear pixels
