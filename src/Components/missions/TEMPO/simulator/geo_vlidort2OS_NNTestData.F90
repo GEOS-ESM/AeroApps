@@ -101,9 +101,6 @@ program geo_vlidort2OS_NNTestData
   real, pointer                         :: KVOL(:,:) => null()
   real, pointer                         :: KGEO(:,:) => null()
   real, pointer                         :: LER(:,:) => null()
-  real*8, pointer                       :: SZA(:) => null()
-  real*8, pointer                       :: VZA(:) => null()
-  real*8, pointer                       :: RAA(:) => null()  
 
   real, pointer                         :: AIRDENS_(:,:,:) => null()
   real, pointer                         :: RH_(:,:,:) => null()
@@ -134,10 +131,6 @@ program geo_vlidort2OS_NNTestData
   real, pointer                         :: KISO_(:,:,:) => null()
   real, pointer                         :: KVOL_(:,:,:) => null()
   real, pointer                         :: KGEO_(:,:,:) => null()    
-  real*8, pointer                       :: SZA_(:,:) => null()
-  real*8, pointer                       :: VZA_(:,:) => null()
-  real*8, pointer                       :: SAA_(:,:) => null()
-  real*8, pointer                       :: VAA_(:,:) => null()
   integer, pointer                      :: indices(:) => null()
 
 
@@ -164,12 +157,12 @@ program geo_vlidort2OS_NNTestData
 
 !                                  Final Shared Arrays
 !                                  -------------------
-  real*8, pointer                       :: radiance_VL(:,:) => null()             ! TOA normalized radiance from VLIDORT
-  real*8, pointer                       :: reflectance_VL(:,:) => null()          ! TOA reflectance from VLIDORT
-  real*8, pointer                       :: Q_(:,:) => null()                      ! Q Stokes component
-  real*8, pointer                       :: U_(:,:) => null()                      ! U Stokes component
+  real*8, pointer                       :: radiance_VL(:,:,:,:,:) => null()       ! TOA normalized radiance from VLIDORT
+  real*8, pointer                       :: reflectance_VL(:,:,:,:,:) => null()    ! TOA reflectance from VLIDORT
+  real*8, pointer                       :: Q_(:,:,:,:,:) => null()                ! Q Stokes component
+  real*8, pointer                       :: U_(:,:,:,:,:) => null()                ! U Stokes component
   real*8, pointer                       :: ROT_(:,:,:) => null()                  ! rayleigh optical thickness
-  real*8, pointer                       :: ALBEDO_(:,:) => null()                 ! bi-directional surface reflectance
+  real*8, pointer                       :: ALBEDO_(:,:,:,:,:) => null()                 ! bi-directional surface reflectance
 
   real, pointer                         :: TAU_(:,:,:) => null()                  ! aerosol optical depth
   real, pointer                         :: SSA_(:,:,:) => null()                  ! single scattering albedo
@@ -204,11 +197,16 @@ program geo_vlidort2OS_NNTestData
   integer                               :: clrm                                      ! number of clear pixels for this part of decomposed domain
   integer                               :: clrm_total                                ! number of clear pixels 
   integer                               :: c, cc                                     ! clear pixel working variable
-  real*8, allocatable                   :: CLDTOT(:,:)                               ! GEOS-5 cloud fraction
   real*8, allocatable                   :: FRLAND(:,:)                               ! GEOS-5 land fraction
-  real*8, allocatable                   :: SOLAR_ZENITH(:,:)                         ! solar zenith angles used for data filtering
-  real*8,allocatable                    :: SENSOR_ZENITH(:,:)                        ! SENSOR zenith angles used for data filtering  
   logical, allocatable                  :: clmask(:,:)                               ! cloud-land mask
+
+  integer, parameter                    :: nsza = 9
+  integer, parameter                    :: nvza = 9
+  integer, parameter                    :: nraa = 12
+  real*8 , parameter, dimension(nsza)   :: SOLAR_ZENITH  = (/(I, I = 0,80,10)/) ! solar zenith angles 
+  real*8 , parameter, dimension(nvza)   :: SENSOR_ZENITH = (/(I, I = 0,80,10)/) ! sensor zenith angles   
+  real*8 , parameter, dimension(nraa)   :: RELATIVE_AZIMUTH = (/(I, I = 0,330,30)/)  ! relative azimuth angles  
+  integer                               :: sza, vza, raa
 
 ! netcdf variables
 !----------------------  
@@ -230,6 +228,7 @@ program geo_vlidort2OS_NNTestData
   integer*8                             :: t1, t2, clock_max
   real*8                                :: clock_rate
   character(len=*), parameter           :: Iam = 'geo_vlidort'
+
 
 !                               END OF VARIABLE DECLARATIONS
 !----------------------------------------------------------------------------------------------------------
@@ -279,9 +278,6 @@ program geo_vlidort2OS_NNTestData
     write(*,*) 'Channels [nm]: ',channels
     if (lower_to_upper(surfband) == 'EXACT') write(*,*) 'Using exact surface relflectance parameters on bands : ',surfband_i
     if (lower_to_upper(surfband) == 'INTERPOLATE') write(*,*) 'Using interpolated surface reflectance parameters' 
-    write(*,*) 'Cloud Fraction <= ', cldmax
-    write(*,*) 'SZA < ', szamax
-    write(*,*) 'VZA < ', vzamax
     if (DO_2OS_CORRECTION) then
       write(*,*) 'Scalar + 2OS Correction Calculations'
     else
@@ -316,76 +312,39 @@ program geo_vlidort2OS_NNTestData
   if ( MAPL_am_I_root() )  call create_outfile(date, time)
 
   call MAPL_SyncSharedMemory(rc=ierr)
-! Read the cloud, land, and angle data 
+! Read the land data 
 ! -------------------------------------
-  call read_cloud()
   call read_land()
-  call read_sza()
-  call read_vza()
 
-! Create cloud-land mask
+! Create land mask
 ! ------------------------
-  ! first check that you can do anything!!!!!  
-  if (.not. ANY(CLDTOT <= cldmax)) then   
-    if (MAPL_am_I_root()) then
-      write(*,*) 'The domain is too cloudy, nothing to do'
-      write(*,*) 'Exiting.....'
-    end if
-    GOTO 500
-  end if
-
-  if (.not. ANY(SOLAR_ZENITH < szamax)) then   
-    if (MAPL_am_I_root()) then
-      write(*,*) 'The sun has set, nothing to do'
-      write(*,*) 'Exiting.....'
-    end if
-    GOTO 500
-  end if
-
-  if (.not. ANY(SENSOR_ZENITH < vzamax)) then   
-    if (MAPL_am_I_root()) then
-      write(*,*) 'View angle too slant, nothing to do'
-      write(*,*) 'Exiting.....'
-    end if
-    GOTO 500
-  end if  
-
 ! Figure out how many indices to work on
 !------------------------------------------
   clrm = 0
   do i=1,im
     do j=1,jm
       if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99))  then
-        if (CLDTOT(i,j) <= cldmax) then
-          if (SOLAR_ZENITH(i,j) < szamax) then
-            if (SENSOR_ZENITH(i,j) < vzamax) then
-              clrm = clrm + 1
-              clmask(i,j) = .True.
-            end if
-          end if
-        end if
-      end if 
+        clrm = clrm + 1
+        clmask(i,j) = .True.
+      end if
     end do
   end do
 
   if (clrm == 0) then
     if (MAPL_am_I_root()) then
-      write(*,*) 'No clear pixels over land, nothing to do'
+      write(*,*) 'No pixels over land, nothing to do'
       write(*,*) 'Exiting.....'
     end if
     GOTO 500
   end if
 
-! Cloud and Land data no longer needed
+! Land data no longer needed
 !---------------------------------------
-  deallocate (CLDTOT)
   deallocate (FRLAND)
-  deallocate (SOLAR_ZENITH)
-  deallocate (SENSOR_ZENITH)
 
   if (MAPL_am_I_root()) then
-    write(*,*) '<> Created Cloud Mask'
-    write(*,'(A,I3,A)') '       ',nint(100.*clrm/(im*jm)),'% of the domain is clear and sunlit'
+    write(*,*) '<> Created Land Mask'
+    write(*,'(A,I3,A)') '       ',nint(100.*clrm/(im*jm)),'% of the domain land'
     write(*,'(A,I,A)')  '       Simulating ',clrm,' pixels'
     write(*,*) ' '
   end if   
@@ -400,7 +359,6 @@ program geo_vlidort2OS_NNTestData
 ! ------------------------------
  call read_aer_Nv()
  call read_surf()
- call read_angles()
 
 ! Wait for everyone to finish reading and print max memory used
 ! ******This needs to loop through all processors....
@@ -473,6 +431,8 @@ program geo_vlidort2OS_NNTestData
     call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
   end if
 
+! Figure out start and end indices for each processor
+! -----------------------------------------------------
   if (myid == 0) then
     !starti = (clrm_total/nodemax)*(nodenum-1) +  1
     starti  = 1
@@ -484,12 +444,15 @@ program geo_vlidort2OS_NNTestData
   endi   = starti + counti - 1 
 
 ! Shuffle indices 1-clrm to minimize load imbalance on the node
+! --------------------------------------------------------------
   call MAPL_AllocNodeArray(indices,(/clrm/),rc=ierr)
   if (MAPL_am_I_root())  indices = knuthshuffle(clrm)
   call MAPL_SyncSharedMemory(rc=ierr)
 
+
 ! Main do loop over the part of the shuffled domain assinged to each processor
-  do cc = starti, endi
+! --------------------------------------------------------------
+  do cc = starti, starti+80 !endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
 
@@ -566,100 +529,109 @@ program geo_vlidort2OS_NNTestData
 
 !   Call VlIDORT
 !   ------------
-    if ( (lower_to_upper(surfmodel) /= 'RTLS') ) then
-!     Simple lambertian surface model
-!     -------------------------------
-      if (scalar) then
-        if (vlidort) then
-          ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
-                  (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
-                  (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
-        else 
-          call LIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
-                  (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
-                  (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
-        end if 
-      else
-        ! Call to vlidort vector code
-        call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
-               nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
-               (/dble(SZA(c))/), &
-               (/dble(abs(RAA(c)))/), &
-               (/dble(VZA(c))/), &
-               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, Q, U, ierr, DO_2OS_CORRECTION)
-      end if
 
-    else if ( ANY(kernel_wt == surf_missing) ) then
-!     Save code for pixels that were not gap filled
-!     ---------------------------------------------    
-      radiance_VL_int(nobs,:) = -500
-      reflectance_VL_int(nobs,:) = -500
-      albedo = -500
-      ROT = -500
-      if (.not. scalar) then
-        Q = -500
-        U = -500
-      end if
-      ierr = 0
-    else   
-!     MODIS BRDF Surface Model
-!     ------------------------------
-      if (scalar) then 
-        if (vlidort) then
-          ! Call to vlidort scalar code            
-          call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nMom,  &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
-                  kernel_wt, param, &
-                  (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
-                  (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
-        else
-        ! Call to vlidort scalar code            
-          call LIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nMom,  &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
-                  kernel_wt, param, &
-                  (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
-                  (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
-        end if
-      else
-   
-        ! Call to vlidort vector code
-        call VLIDORT_Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
-                nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), &
-                kernel_wt, param, &
-                (/dble(SZA(c))/), &
-                (/dble(abs(RAA(c)))/), &
-                (/dble(VZA(c))/), &
-                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, Q, U, ierr, DO_2OS_CORRECTION )  
-      end if      
-    end if          
-    
-!   Check VLIDORT Status, Store Outputs in Shared Arrays
-!   ----------------------------------------------------    
-    call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
-    radiance_VL(c,:)    = radiance_VL_int(nobs,:)
-    reflectance_VL(c,:) = reflectance_VL_int(nobs,:)
-    ALBEDO_(c,:) = albedo(nobs,:)
+!   Loop through Geometries
+!   -----------------------
+    do sza = 1, nsza
+      do vza = 1, nvza
+        do raa = 1, nraa
 
-    do ch=1,nch      
-        ROT_(c,:,ch) = ROT(:,nobs,ch)
-    end do
+          if ( (lower_to_upper(surfmodel) /= 'RTLS') ) then
+      !     Simple lambertian surface model
+      !     -------------------------------
+            if (scalar) then
+              if (vlidort) then
+                ! Call to vlidort scalar code       
+                call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
+                        nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+                        (/dble(SOLAR_ZENITH(sza))/), &
+                        (/dble(RELATIVE_AZIMUTH(raa))/), &
+                        (/dble(SENSOR_ZENITH(sza))/), &               
+                        dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
+              else 
+                call LIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
+                        nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+                        (/dble(SOLAR_ZENITH(sza))/), &
+                        (/dble(RELATIVE_AZIMUTH(raa))/), &
+                        (/dble(SENSOR_ZENITH(sza))/), &  
+                        dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
+              end if 
+            else
+              ! Call to vlidort vector code
+              call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
+                     nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+                        (/dble(SOLAR_ZENITH(sza))/), &
+                        (/dble(RELATIVE_AZIMUTH(raa))/), &
+                        (/dble(SENSOR_ZENITH(sza))/), &  
+                     dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, Q, U, ierr, DO_2OS_CORRECTION)
+            end if
 
-    if (.not. scalar) then
-      Q_(c,:)      = Q(nobs,:)
-      U_(c,:)      = U(nobs,:)
-    end if
-    
+          else if ( ANY(kernel_wt == surf_missing) ) then
+      !     Save code for pixels that were not gap filled
+      !     ---------------------------------------------    
+            radiance_VL_int(nobs,:) = -500
+            reflectance_VL_int(nobs,:) = -500
+            albedo = -500
+            ROT = -500
+            if (.not. scalar) then
+              Q = -500
+              U = -500
+            end if
+            ierr = 0
+          else   
+      !     MODIS BRDF Surface Model
+      !     ------------------------------
+            if (scalar) then 
+              if (vlidort) then
+                ! Call to vlidort scalar code            
+                call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nMom,  &
+                        nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+                        kernel_wt, param, &
+                        (/dble(SOLAR_ZENITH(sza))/), &
+                        (/dble(RELATIVE_AZIMUTH(raa))/), &
+                        (/dble(SENSOR_ZENITH(sza))/), &  
+                        dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
+              else
+              ! Call to vlidort scalar code            
+                call LIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nMom,  &
+                        nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+                        kernel_wt, param, &
+                        (/dble(SOLAR_ZENITH(sza))/), &
+                        (/dble(RELATIVE_AZIMUTH(raa))/), &
+                        (/dble(SENSOR_ZENITH(sza))/), &  
+                        dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
+              end if
+            else
+         
+              ! Call to vlidort vector code
+              call VLIDORT_Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
+                      nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), &
+                      kernel_wt, param, &
+                        (/dble(SOLAR_ZENITH(sza))/), &
+                        (/dble(RELATIVE_AZIMUTH(raa))/), &
+                        (/dble(SENSOR_ZENITH(sza))/), &  
+                      dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, Q, U, ierr, DO_2OS_CORRECTION )  
+            end if      
+          end if          
+          
+      !   Check VLIDORT Status, Store Outputs in Shared Arrays
+      !   ----------------------------------------------------    
+          call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
+          radiance_VL(c,:,sza,vza,raa)    = radiance_VL_int(nobs,:)
+          reflectance_VL(c,:,sza,vza,raa) = reflectance_VL_int(nobs,:)
+          ALBEDO_(c,:,sza,vza,raa) = albedo(nobs,:)
+
+          do ch=1,nch      
+              ROT_(c,:,ch) = ROT(:,nobs,ch)
+          end do
+
+          if (.not. scalar) then
+            Q_(c,:,sza,vza,raa)      = Q(nobs,:)
+            U_(c,:,sza,vza,raa)      = U(nobs,:)
+          end if
+        end do ! raa
+      end do !vza
+    end do !sza
     write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
     call write_verbose(msg)
 
@@ -694,19 +666,31 @@ program geo_vlidort2OS_NNTestData
       write(msg,'(F10.2)') channels(ch)
       
       call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(reflectance_VL(:,ch),(/clrm_total/)),clmask,field), &
-                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
+      do sza = 1, nsza
+        do vza = 1, nvza
+          do raa = 1, nraa
+            call check(nf90_put_var(ncid, varid, unpack(reshape(reflectance_VL(:,ch,sza,vza,raa),(/clrm_total/)),clmask,field), &
+                  start = (/1,1,1,nobs,sza,vza,raa/), count = (/im,jm,1,nobs,1,1,1/)), "writing out reflectance")
+          end do
+        end do
+      end do
 
       call check(nf90_inq_varid(ncid, 'surf_ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(ALBEDO_(:,ch),(/clrm_total/)),clmask,field), &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
+      do sza = 1, nsza
+        do vza = 1, nvza
+          do raa = 1, nraa      
+            call check(nf90_put_var(ncid, varid, unpack(reshape(ALBEDO_(:,ch,sza,vza,raa),(/clrm_total/)),clmask,field), &
+                  start = (/1,1,1,nobs,sza,vza,raa/), count = (/im,jm,1,nobs,1,1,1/)), "writing out albedo")
+          end do
+        end do
+      end do
 
       AOD = 0
       do k=1,km 
         AOD = AOD + reshape(TAU_(:,k,ch),(/clrm_total/))
       end do
 
-      where(reshape(ALBEDO_(:,ch),(/clrm_total/)) .eq. MISSING)  AOD = MISSING
+      where(reshape(ROT_(:,1,ch),(/clrm_total/)) .eq. MISSING)  AOD = MISSING
       
 
       call check(nf90_inq_varid(ncid, 'aod_' // trim(adjustl(msg)), varid), "get aod vaird")
@@ -722,17 +706,35 @@ program geo_vlidort2OS_NNTestData
       do ch = 1, nch
         write(msg,'(F10.2)') channels(ch)
         call check(nf90_inq_varid(ncid, 'rad_' // trim(adjustl(msg)), varid), "get rad vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(radiance_VL(:,ch),(/clrm_total/)),clmask,field), &
-                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
+        do sza = 1, nsza
+          do vza = 1, nvza
+            do raa = 1, nraa 
+              call check(nf90_put_var(ncid, varid, unpack(reshape(radiance_VL(:,ch,sza,vza,raa),(/clrm_total/)),clmask,field), &
+                      start = (/1,1,1,nobs,sza,vza,raa/), count = (/im,jm,1,nobs,1,1,1/)), "writing out radiance")
+            end do
+          end do
+        end do
 
         if (.not. scalar) then
           call check(nf90_inq_varid(ncid, 'q_' // trim(adjustl(msg)), varid), "get q vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(Q_(:,ch),(/clrm_total/)),clmask,field), &
-                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
+          do sza = 1, nsza
+            do vza = 1, nvza
+              do raa = 1, nraa          
+                call check(nf90_put_var(ncid, varid, unpack(reshape(Q_(:,ch,sza,vza,raa),(/clrm_total/)),clmask,field), &
+                        start = (/1,1,1,nobs,sza,vza,raa/), count = (/im,jm,1,nobs,1,1,1/)), "writing out Q")
+              end do
+            end do
+          end do
 
           call check(nf90_inq_varid(ncid, 'u_' // trim(adjustl(msg)), varid), "get u vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(U_(:,ch),(/clrm_total/)),clmask,field), &
-                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
+          do sza = 1, nsza
+            do vza = 1, nvza
+              do raa = 1, nraa                
+                call check(nf90_put_var(ncid, varid, unpack(reshape(U_(:,ch,sza,vza,raa),(/clrm_total/)),clmask,field), &
+                      start = (/1,1,1,nobs,sza,vza,raa/), count = (/im,jm,1,nobs,1,1,1/)), "writing out U")
+              end do
+            end do
+          end do
         endif        
 
         do k=1,km 
@@ -844,23 +846,6 @@ function when()
       
 end function when
 
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     read_cloud
-! PURPOSE
-!     allocates cloud variables and reads in data
-! INPUT
-!     none
-! OUTPUT
-!     none
-!  HISTORY
-!     28 May 2015 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-subroutine read_cloud()
-  allocate (CLDTOT(im,jm))
-
-  call readvar2D("CLDTOT", MET_file, CLDTOT)
-end subroutine read_cloud
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -887,29 +872,6 @@ subroutine read_land()
 
 end subroutine read_land
 
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     read_sza
-! PURPOSE
-!     allocates sza variable and reads in data
-! INPUT
-!     none
-! OUTPUT
-!     none
-!  HISTORY
-!     28 May 2015 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-subroutine read_sza()
-  allocate (SOLAR_ZENITH(im,jm))
-
-  call readvar2D("solar_zenith", ANG_file, SOLAR_ZENITH)
-end subroutine read_sza
-
-subroutine read_vza()
-  allocate (SENSOR_ZENITH(im,jm))
-
-  call readvar2D("sensor_zenith", ANG_file, SENSOR_ZENITH)
-end subroutine read_vza
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -984,6 +946,8 @@ subroutine outfile_extname(file)
 
   if (scalar) then 
     write(file,'(2A)') trim(file),'scalar.'
+  else if (DO_2OS_CORRECTION) then
+    write(file,'(2A)') trim(file),'scalar+2OS.'
   else
     write(file,'(2A)') trim(file),'vector.'
   end if 
@@ -1331,61 +1295,6 @@ end subroutine outfile_extname
   end subroutine read_LER
 
 
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     read_angles
-! PURPOSE
-!     read in all the sensor and solar position angles
-! INPUT
-!     none
-! OUTPUT
-!     none
-!  HISTORY
-!     15 May 2015 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine read_angles()
-    real, dimension(im,jm)     :: temp
-    real, allocatable          :: saa(:), vaa(:)
-    integer                    :: i
-
-
-    call mp_readvar2Dchunk("solar_zenith",   ANG_file, (/im,jm/), 1, npet, myid, SZA_) 
-    call mp_readvar2Dchunk("sensor_zenith",  ANG_file, (/im,jm/), 1, npet, myid, VZA_) 
-    call mp_readvar2Dchunk("solar_azimuth",  ANG_file, (/im,jm/), 1, npet, myid, SAA_)
-    call mp_readvar2Dchunk("sensor_azimuth", ANG_file, (/im,jm/), 1, npet, myid, VAA_)
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root()) then
-      SZA = pack(SZA_,clmask)
-      VZA = pack(VZA_,clmask)
-        
-      allocate (saa(clrm))
-      allocate (vaa(clrm))
-      
-      saa = pack(SAA_,clmask)
-      ! define according to photon travel direction
-      saa = saa + 180.0
-      do i = 1, clrm
-        if (saa(i) >= 360.0) then
-          saa(i) = saa(i) - 360.0
-        end if
-      end do
-
-      vaa = pack(VAA_,clmask)
-
-      RAA = vaa - saa
-
-      deallocate (saa)
-      deallocate (vaa)
-      write(*,*) '<> Read angle data to shared memory' 
-
-    end if
-    ! call MAPL_DeallocNodeArray(SZA_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(VZA_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SAA_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(VAA_,rc=ierr) 
-
-  end subroutine read_angles  
-
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -1428,23 +1337,19 @@ end subroutine outfile_extname
       call MAPL_AllocNodeArray(LER,(/clrm,surfbandm/),rc=ierr)
     end if 
 
-    call MAPL_AllocNodeArray(SZA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(VZA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
-
     call MAPL_AllocNodeArray(TAU_,(/clrm,km,nch/),rc=ierr)
     call MAPL_AllocNodeArray(SSA_,(/clrm,km,nch/),rc=ierr)
     call MAPL_AllocNodeArray(G_,(/clrm,km,nch/),rc=ierr)
     call MAPL_AllocNodeArray(ROT_,(/clrm,km,nch/),rc=ierr)
-    call MAPL_AllocNodeArray(ALBEDO_,(/clrm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(ALBEDO_,(/clrm,nch,nsza,nvza,nraa/),rc=ierr)
     
     if (.not. scalar) then
-      call MAPL_AllocNodeArray(Q_,(/clrm,nch/),rc=ierr)
-      call MAPL_AllocNodeArray(U_,(/clrm,nch/),rc=ierr)
+      call MAPL_AllocNodeArray(Q_,(/clrm,nch,nsza,nvza,nraa/),rc=ierr)
+      call MAPL_AllocNodeArray(U_,(/clrm,nch,nsza,nvza,nraa/),rc=ierr)
     end if
 
-    call MAPL_AllocNodeArray(radiance_VL,(/clrm,nch/),rc=ierr)
-    call MAPL_AllocNodeArray(reflectance_VL,(/clrm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(radiance_VL,(/clrm,nch,nsza,nvza,nraa/),rc=ierr)
+    call MAPL_AllocNodeArray(reflectance_VL,(/clrm,nch,nsza,nvza,nraa/),rc=ierr)
 
     call MAPL_AllocNodeArray(AIRDENS_,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(RH_,(/im,jm,km/),rc=ierr)
@@ -1480,10 +1385,6 @@ end subroutine outfile_extname
       call MAPL_AllocNodeArray(KGEO_,(/im,jm,surfbandm/),rc=ierr)
     end if
 
-    call MAPL_AllocNodeArray(SZA_,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(VZA_,(/im,jm/),rc=ierr)    
-    call MAPL_AllocNodeArray(SAA_,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(VAA_,(/im,jm/),rc=ierr) 
   end subroutine allocate_shared
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1511,7 +1412,7 @@ end subroutine outfile_extname
     allocate (albedo(nobs,nch))
 
     allocate (radiance_VL_int(nobs,nch))
-    allocate (reflectance_VL_int(nobs, nch))    
+    allocate (reflectance_VL_int(nobs,nch))    
 
     if (lower_to_upper(surfmodel) == 'RTLS') then
       allocate (kernel_wt(nkernel,nch,nobs))
@@ -1610,12 +1511,14 @@ end subroutine outfile_extname
     integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID, rotVarID     
     
     integer                            :: ncid
-    integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID       
+    integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID  
+    integer                            :: szaDimID, vzaDimID, raaDimID     
     integer                            :: scantimeVarID, clonVarID, clatVarID
     integer                            :: timeVarID, levVarID, ewVarID, nsVarID
+    integer                            :: szaVarID, vzaVarID, raaVarID
     integer                            :: ch
 
-    real*8,allocatable,dimension(:,:)  :: clon, clat, sza, vza, raa
+    real*8,allocatable,dimension(:,:)  :: clon, clat
     real*8,allocatable,dimension(:)    :: scantime, ew, ns, tyme, lev
 
     character(len=2000)                :: comment
@@ -1630,9 +1533,12 @@ end subroutine outfile_extname
     call check(nf90_def_dim(ncid, "lev", 1, levDimID), "creating ns dimension") !km
     call check(nf90_def_dim(ncid, "ew", im, ewDimID), "creating ew dimension") !im
     call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
+    call check(nf90_def_dim(ncid, "sza",nsza, szaDimID), "creating sza dimension")
+    call check(nf90_def_dim(ncid, "vza",nvza, vzaDimID), "creating vza dimension")
+    call check(nf90_def_dim(ncid, "raa",nraa, raaDimID), "creating raa dimension")
 
     ! Global Attributes
-    write(comment,'(A)') 'VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler'
+    write(comment,'(A)') 'VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler - Testing Dataset'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'title',trim(comment)),"title attr")
 
     write(comment,'(A)') 'NASA/Goddard Space Flight Center'
@@ -1641,17 +1547,15 @@ end subroutine outfile_extname
     write(comment,'(A)') 'Global Model and Assimilation Office'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'source',trim(comment)),"source attr")
 
-    write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort.x'
+    write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort2OS_NNTestData.x'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'history',trim(comment)),"history attr")
 
     call check(nf90_put_att(ncid,NF90_GLOBAL,'grid_inputs',trim(INV_file)),"input files attr")
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'angle_inputs',trim(ANG_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'land_inputs',trim(LAND_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'met_inputs',trim(MET_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'aerosol_inputs',trim(AER_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(SURF_file)),"input files attr")
 
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'inputs',trim(comment)),"input files attr")
     write(comment,'(A)') 'n/a'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'references',trim(comment)),"references attr") 
 
@@ -1660,8 +1564,6 @@ end subroutine outfile_extname
                          'radiance and reflectance from GEOS-5 parameters sampled ' // &
                          ' on the '//lower_to_upper(trim(instname))//' geostationary grid '
     call check(nf90_put_att(ncid,NF90_GLOBAL,'comment',trim(comment)),"comment attr")   
-
-
 
     if (lower_to_upper(surfmodel) /= 'RTLS') then
       if (lower_to_upper(surfband) == 'INTERPOLATE') then
@@ -1681,6 +1583,8 @@ end subroutine outfile_extname
 
     if ( scalar ) then
       write(comment,'(A)') 'Scalar calculations'
+    else if (DO_2OS_CORRECTION) then
+      write(comment,'(A)') 'Scalar+2OS calculations'
     else
       write(comment,'(A)') 'Vector calculations'
     end if
@@ -1709,6 +1613,9 @@ end subroutine outfile_extname
     call check(nf90_def_var(ncid,'lev',nf90_float,(/levDimID/),levVarID),"create lev var")
     call check(nf90_def_var(ncid,'ew',nf90_float,(/ewDimID/),ewVarID),"create ew var")
     call check(nf90_def_var(ncid,'ns',nf90_float,(/nsDimID/),nsVarID),"create ns var")
+    call check(nf90_def_var(ncid,'sza',nf90_float,(/szaDimID/),szaVarID),"create sza var")
+    call check(nf90_def_var(ncid,'vza',nf90_float,(/vzaDimID/),vzaVarID),"create vza var")
+    call check(nf90_def_var(ncid,'raa',nf90_float,(/raaDimID/),raaVarID),"create raa var")
 
     call check(nf90_def_var(ncid,'scanTime',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
     call check(nf90_def_var(ncid,'clon',nf90_float,(/ewDimID,nsDimID/),clonVarID),"create clon var")
@@ -1718,10 +1625,9 @@ end subroutine outfile_extname
 !                                     ----
     do ch=1,nch
       write(comment,'(F10.2)') channels(ch)
-      call check(nf90_def_var(ncid, 'ref_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),refVarID(ch)),"create reflectance var")
-      call check(nf90_def_var(ncid, 'surf_ref_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),albVarID(ch)),"create albedo var")
-      call check(nf90_def_var(ncid, 'aod_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),aotVarID(ch)),"create aot var")
-
+      call check(nf90_def_var(ncid, 'ref_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,szaDimID,vzaDimID,raaDimID/),refVarID(ch)),"create reflectance var")
+      call check(nf90_def_var(ncid, 'surf_ref_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,szaDimID,vzaDimID,raaDimID/),albVarID(ch)),"create albedo var")
+      call check(nf90_def_var(ncid, 'aod_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,szaDimID,vzaDimID,raaDimID/),aotVarID(ch)),"create aot var")
     end do
 
     ! Variable Attributes
@@ -1784,12 +1690,22 @@ end subroutine outfile_extname
     call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
     call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
     call check(nf90_put_att(ncid,clatVarID,'missing_value',real(MISSING)),"missing_value attr")  
-      
+
+!                                         sza, vza, raa
+!                                         -------------
+    call check(nf90_put_att(ncid,szaVarID,'long_name','Solar Zenith Angle'),"long_name attr")
+    call check(nf90_put_att(ncid,szaVarID,'units','degrees'),"units attr")
+
+    call check(nf90_put_att(ncid,vzaVarID,'long_name','Viewing Zenith Angle'),"long_name attr")
+    call check(nf90_put_att(ncid,vzaVarID,'units','degrees'),"units attr")    
+
+    call check(nf90_put_att(ncid,raaVarID,'long_name','Relative Azimuth Angle'),"long_name attr")
+    call check(nf90_put_att(ncid,raaVarID,'units','degrees'),"units attr")    
 
     !Leave define mode
     call check(nf90_enddef(ncid),"leaving define mode")
 
-    ! write out ew, ns, lev, time, clon, clat, & scantime
+    ! write out ew, ns, lev, time, clon, clat, scantime, sza, vza, & raa
     allocate (scantime(im))
     allocate (clon(im, jm))
     allocate (clat(im, jm))
@@ -1817,7 +1733,11 @@ end subroutine outfile_extname
     call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
 
     call readvar1D("ns", MET_file, ns)
-    call check(nf90_put_var(ncid,nsVarID,ns), "writing out ns")   
+    call check(nf90_put_var(ncid,nsVarID,ns), "writing out ns") 
+
+    call check(nf90_put_var(ncid,szaVarID,SOLAR_ZENITH), "writing out sza") 
+    call check(nf90_put_var(ncid,vzaVarID,SENSOR_ZENITH), "writing out vza") 
+    call check(nf90_put_var(ncid,raaVarID,RELATIVE_AZIMUTH), "writing out raa") 
 
     deallocate (clon)
     deallocate (clat)  
@@ -1840,9 +1760,12 @@ end subroutine outfile_extname
       call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
       call check(nf90_def_dim(ncid, "ew", im, ewDimID), "creating ew dimension") !im
       call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
+      call check(nf90_def_dim(ncid, "sza",nsza, szaDimID), "creating sza dimension")
+      call check(nf90_def_dim(ncid, "vza",nvza, vzaDimID), "creating vza dimension")
+      call check(nf90_def_dim(ncid, "raa",nraa, raaDimID), "creating raa dimension")
 
       ! Global Attributes
-      write(comment,'(A)') 'Atmospheric inputs for VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler'
+      write(comment,'(A)') 'Atmospheric inputs for VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler - Testing Dataset'
       call check(nf90_put_att(ncid,NF90_GLOBAL,'title',trim(comment)),"title attr")
 
       write(comment,'(A)') 'NASA/Goddard Space Flight Center'
@@ -1862,6 +1785,8 @@ end subroutine outfile_extname
 
       if ( scalar ) then
         write(comment,'(A)') 'Scalar calculations'
+      else if (DO_2OS_CORRECTION) then
+        write(comment,'(A)') 'Scalar+2OS calculations'
       else
         write(comment,'(A)') 'Vector calculations'
       end if
@@ -1888,6 +1813,9 @@ end subroutine outfile_extname
       call check(nf90_def_var(ncid,'lev',nf90_float,(/levDimID/),levVarID),"create lev var")
       call check(nf90_def_var(ncid,'ew',nf90_float,(/ewDimID/),ewVarID),"create ew var")
       call check(nf90_def_var(ncid,'ns',nf90_float,(/nsDimID/),nsVarID),"create ns var")
+      call check(nf90_def_var(ncid,'sza',nf90_float,(/szaDimID/),szaVarID),"create sza var")
+      call check(nf90_def_var(ncid,'vza',nf90_float,(/vzaDimID/),vzaVarID),"create vza var")
+      call check(nf90_def_var(ncid,'raa',nf90_float,(/raaDimID/),raaVarID),"create raa var")
 
       call check(nf90_def_var(ncid,'scanTime',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
       call check(nf90_def_var(ncid,'clon',nf90_float,(/ewDimID,nsDimID/),clonVarID),"create clon var")
@@ -1897,14 +1825,14 @@ end subroutine outfile_extname
   !                                     ----
       do ch=1,nch
         write(comment,'(F10.2)') channels(ch)
-        call check(nf90_def_var(ncid, 'rad_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),radVarID(ch)),"create radiance var")              
+        call check(nf90_def_var(ncid, 'rad_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,szaDimID,vzaDimID,raaDimID/),radVarID(ch)),"create radiance var")              
         call check(nf90_def_var(ncid, 'aot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),tauVarID(ch)),"create aot var")      
         call check(nf90_def_var(ncid, 'rot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),rotVarID(ch)),"create rot var")
         call check(nf90_def_var(ncid, 'ssa_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),ssaVarID(ch)),"create ssa var")
         call check(nf90_def_var(ncid, 'g_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),gVarID(ch)),"create g var")
         if (.not. scalar) then
-          call check(nf90_def_var(ncid, 'q_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),qVarID(ch)),"create Q var")
-          call check(nf90_def_var(ncid, 'u_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),uVarID(ch)),"create U var")
+          call check(nf90_def_var(ncid, 'q_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,szaDimID,vzaDimID,raaDimID/),qVarID(ch)),"create Q var")
+          call check(nf90_def_var(ncid, 'u_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,szaDimID,vzaDimID,raaDimID/),uVarID(ch)),"create U var")
         end if        
       end do
 
@@ -2009,7 +1937,17 @@ end subroutine outfile_extname
       call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
       call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
       call check(nf90_put_att(ncid,clatVarID,'missing_value',real(MISSING)),"missing_value attr")  
-        
+
+!                                         sza, vza, raa
+!                                         -------------
+      call check(nf90_put_att(ncid,szaVarID,'long_name','Solar Zenith Angle'),"long_name attr")
+      call check(nf90_put_att(ncid,szaVarID,'units','degrees'),"units attr")
+
+      call check(nf90_put_att(ncid,vzaVarID,'long_name','Viewing Zenith Angle'),"long_name attr")
+      call check(nf90_put_att(ncid,vzaVarID,'units','degrees'),"units attr")    
+
+      call check(nf90_put_att(ncid,raaVarID,'long_name','Relative Azimuth Angle'),"long_name attr")
+      call check(nf90_put_att(ncid,raaVarID,'units','degrees'),"units attr")            
 
       !Leave define mode
       call check(nf90_enddef(ncid),"leaving define mode")
@@ -2042,7 +1980,11 @@ end subroutine outfile_extname
       call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
 
       call readvar1D("ns", MET_file, ns)
-      call check(nf90_put_var(ncid,nsVarID,ns), "writing out ns")   
+      call check(nf90_put_var(ncid,nsVarID,ns), "writing out ns")  
+
+      call check(nf90_put_var(ncid,szaVarID,SOLAR_ZENITH), "writing out sza") 
+      call check(nf90_put_var(ncid,vzaVarID,SENSOR_ZENITH), "writing out vza") 
+      call check(nf90_put_var(ncid,raaVarID,RELATIVE_AZIMUTH), "writing out raa")
 
       deallocate (clon)
       deallocate (clat)  
@@ -2305,6 +2247,18 @@ end subroutine outfile_extname
       end if
     end if
 
+    ! Check that MAICRTLS configuration is correct
+    !----------------------------------------------
+    if (lower_to_upper(surfname) /= 'MAIACRTLS' ) then
+      if (surfbandm /= 8) then
+        surfbandm = 8
+        if (MAPL_am_I_root()) then
+          write(*,*) 'Wrong number of surface bands.  If MAIACRTLS surface, SURFBANDM must equal 8'
+          write(*,*) 'Forcing surfbandm = 8'          
+        end if
+      end if
+    end if    
+
     ! Figure out number of channels and read into vector
     !------------------------------------------------------
     nch =  ESMF_ConfigGetLen(cf, label = 'CHANNELS:',__RC__)
@@ -2416,9 +2370,6 @@ end subroutine outfile_extname
     else
       call MAPL_DeallocNodeArray(LER,rc=ierr) 
     end if
-    call MAPL_DeallocNodeArray(SZA,rc=ierr) 
-    call MAPL_DeallocNodeArray(VZA,rc=ierr) 
-    call MAPL_DeallocNodeArray(RAA,rc=ierr) 
 
     call MAPL_DeallocNodeArray(TAU_,rc=ierr)
     call MAPL_DeallocNodeArray(SSA_,rc=ierr)
