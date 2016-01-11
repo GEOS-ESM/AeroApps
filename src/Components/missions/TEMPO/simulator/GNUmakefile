@@ -64,13 +64,16 @@ esma_help help:
 #                  User Defined Targets
 #                  --------------------
 
-INC_VLIDORT90 = $(ESMAINC)/VLIDORT90
-LIB_VLIDORT90 = $(ESMALIB)/libVLIDORT90.a
+INC_VLIDORT90  = $(ESMAINC)/VLIDORT90
+LIB_VLIDORT90  = $(ESMALIB)/libVLIDORT90.a
 
-INC_LIDORT3p7 = $(ESMAINC)/LIDORT3p7
-LIB_LIDORT3p7 = $(ESMALIB)/libLIDORT3p7.a
+INC_VLIDORT2OS = $(ESMAINC)/VLIDORT2OS
+LIB_VLIDORT2OS = $(ESMALIB)/libVLIDORT2OS.a
 
-INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT90) $(INC_LIDORT3p7) /usr/include
+INC_LIDORT3p7  = $(ESMAINC)/LIDORT3p7
+LIB_LIDORT3p7  = $(ESMALIB)/libLIDORT3p7.a
+
+INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT2OS) $(INC_LIDORT3p7) /usr/include
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
@@ -103,11 +106,18 @@ python: $(PY_EXTS)
 	$(F2PY) -c -m $* $(M). $< 
 
 %.x:  %.o 
-	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT2OS) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
                                  $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
+
+geo_vlidort2OS_NNTestData.x: geo_vlidort2OS_NNTestData.o 
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT2OS) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
+                                 $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+                                 $(LIB_MAPL_BASE_STUBS2) \
+                                 $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
+                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)    
 
 geo_lidort.x: netcdf_helper.o geo_lidort.o 
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
