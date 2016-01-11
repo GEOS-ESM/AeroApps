@@ -124,7 +124,7 @@
 !    IF you set it to MAX_Geometries, then there could be redundancy.
 !    To be set independently here, then checked against MAXBEAMS
 
-   integer, parameter :: MaxGeoms = 5
+   integer, parameter :: MaxGeoms = 2
 
 !  Boolean flags
 
