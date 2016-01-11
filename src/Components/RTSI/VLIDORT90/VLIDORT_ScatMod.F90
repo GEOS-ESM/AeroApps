@@ -23,6 +23,7 @@
 
       type VLIDORT_scat
          integer         :: NSTOKES             ! Number of stokes vectors
+         logical         :: DO_2OS_CORRECTION   ! Flag to control 2OS Correction          
          real*8          :: wavelength          ! in [nm]
          integer         :: nMom                ! number of momemts read (phase function) 
          integer         :: nPol                ! number of components of the scattering matrix
