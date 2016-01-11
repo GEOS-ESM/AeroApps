@@ -53,7 +53,7 @@ subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels, nMom, &
   integer,          intent(out) :: rc                          ! return code
   real*8,           intent(out) :: reflectance_VL(nobs, nch)   ! TOA reflectance from VLIDORT
   real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness 
- 
+
 !                               ---  
   integer                       :: i,j, ier
  
@@ -68,7 +68,7 @@ subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels, nMom, &
   if ( rc /= 0 ) return
 
   SCAT%nMom    = nMom
-  SCAT%NSTOKES = 1    
+  SCAT%NSTOKES = 1   
 
   do j = 1, nobs
 
@@ -138,7 +138,7 @@ end subroutine VLIDORT_Scalar_Lambert
 subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nMom,  &
                    nPol,tau, ssa, pmom, pe, he, te, albedo, &
                    solar_zenith, relat_azymuth, sensor_zenith, &
-                   MISSING,verbose, radiance_VL, reflectance_VL, ROT, Q ,U, rc)
+                   MISSING,verbose, radiance_VL, reflectance_VL, ROT, Q ,U, rc, DO_2OS_CORRECTION)
 !
 ! Place holder.
 !
@@ -186,6 +186,10 @@ subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nMom,  &
   real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness  
   real*8,           intent(out) :: Q(nobs, nch)   ! Q Stokes component
   real*8,           intent(out) :: U(nobs, nch)   ! U Stokes component
+
+! !OPTIONAL PARAMETERS
+  logical, optional, intent(in) :: DO_2OS_CORRECTION 
+  
 !                               ---
   
   integer             :: i,j, ier 
@@ -202,7 +206,16 @@ subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nMom,  &
 
   SCAT%nMom = nMom
   SCAT%nPol = nPol
-  SCAT%NSTOKES = 3  
+  if (present(DO_2OS_CORRECTION)) then
+    SCAT%DO_2OS_CORRECTION = DO_2OS_CORRECTION
+    if (DO_2OS_CORRECTION) then
+      SCAT%NSTOKES = 1
+    else
+      SCAT%NSTOKES = 3
+    end if
+  else   
+    SCAT%NSTOKES = 3  
+  end if
   do j = 1, nobs
      
      ! Make sure albedo and angles are available
