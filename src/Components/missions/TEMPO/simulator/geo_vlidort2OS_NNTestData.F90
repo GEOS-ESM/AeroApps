@@ -307,11 +307,6 @@ program geo_vlidort2OS_NNTestData
 ! -----------------------------------------------------------------
   call allocate_unshared()
 
-! Create OUTFILE
-! --------------
-  if ( MAPL_am_I_root() )  call create_outfile(date, time)
-
-  call MAPL_SyncSharedMemory(rc=ierr)
 ! Read the land data 
 ! -------------------------------------
   call read_land()
@@ -321,8 +316,8 @@ program geo_vlidort2OS_NNTestData
 ! Figure out how many indices to work on
 !------------------------------------------
   clrm = 0
-  do i=1,im,10
-    do j=1,jm,10
+  do i=1,im,50
+    do j=1,jm,50
       if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99))  then
         clrm = clrm + 1
         clmask(i,j) = .True.
@@ -341,6 +336,13 @@ program geo_vlidort2OS_NNTestData
 ! Land data no longer needed
 !---------------------------------------
   deallocate (FRLAND)
+
+! Create OUTFILE
+! --------------
+  if ( MAPL_am_I_root() )  call create_outfile(date, time)
+
+  call MAPL_SyncSharedMemory(rc=ierr)
+
 
   if (MAPL_am_I_root()) then
     write(*,*) '<> Created Land Mask'
@@ -446,7 +448,13 @@ program geo_vlidort2OS_NNTestData
 ! Shuffle indices 1-clrm to minimize load imbalance on the node
 ! --------------------------------------------------------------
   call MAPL_AllocNodeArray(indices,(/clrm/),rc=ierr)
-  if (MAPL_am_I_root())  indices = knuthshuffle(clrm)
+  if (MAPL_am_I_root()) then
+    if (clrm > 10*npet) then
+      indices = knuthshuffle(clrm)
+    else
+      indices = (/(i,i=1,clrm)/)
+    end if
+  end if
   call MAPL_SyncSharedMemory(rc=ierr)
 
 
@@ -666,24 +674,10 @@ program geo_vlidort2OS_NNTestData
       write(msg,'(F10.2)') channels(ch)
       
       call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-      do sza = 1, nsza
-        do vza = 1, nvza
-          do raa = 1, nraa
-            call check(nf90_put_var(ncid, varid, unpack(reshape(reflectance_VL(:,ch,sza,vza,raa),(/clrm_total/)),clmask,field), &
-                  start = (/1,1,1,nobs,sza,vza,raa/), count = (/im,jm,1,nobs,1,1,1/)), "writing out reflectance")
-          end do
-        end do
-      end do
+      call check(nf90_put_var(ncid, varid, reshape(reflectance_VL(:,ch,:,:,:),(/clrm_total,nsza,nvza,nraa/))), "writing out reflectance")
 
       call check(nf90_inq_varid(ncid, 'surf_ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-      do sza = 1, nsza
-        do vza = 1, nvza
-          do raa = 1, nraa      
-            call check(nf90_put_var(ncid, varid, unpack(reshape(ALBEDO_(:,ch,sza,vza,raa),(/clrm_total/)),clmask,field), &
-                  start = (/1,1,1,nobs,sza,vza,raa/), count = (/im,jm,1,nobs,1,1,1/)), "writing out albedo")
-          end do
-        end do
-      end do
+      call check(nf90_put_var(ncid, varid, reshape(ALBEDO_(:,ch,:,:,:),(/clrm_total,nsza,nvza,nraa/))), "writing out albedo")
 
       AOD = 0
       do k=1,km 
@@ -692,10 +686,8 @@ program geo_vlidort2OS_NNTestData
 
       where(reshape(ROT_(:,1,ch),(/clrm_total/)) .eq. MISSING)  AOD = MISSING
       
-
       call check(nf90_inq_varid(ncid, 'aod_' // trim(adjustl(msg)), varid), "get aod vaird")
-      call check(nf90_put_var(ncid, varid, unpack(AOD,clmask,field), &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out aod")
+      call check(nf90_put_var(ncid, varid, AOD), "writing out aod")
     end do
     call check( nf90_close(ncid), "close outfile" )
 
@@ -706,54 +698,29 @@ program geo_vlidort2OS_NNTestData
       do ch = 1, nch
         write(msg,'(F10.2)') channels(ch)
         call check(nf90_inq_varid(ncid, 'rad_' // trim(adjustl(msg)), varid), "get rad vaird")
-        do sza = 1, nsza
-          do vza = 1, nvza
-            do raa = 1, nraa 
-              call check(nf90_put_var(ncid, varid, unpack(reshape(radiance_VL(:,ch,sza,vza,raa),(/clrm_total/)),clmask,field), &
-                      start = (/1,1,1,nobs,sza,vza,raa/), count = (/im,jm,1,nobs,1,1,1/)), "writing out radiance")
-            end do
-          end do
-        end do
+        call check(nf90_put_var(ncid, varid, reshape(radiance_VL(:,ch,:,:,:),(/clrm_total,nsza,nvza,nraa/))), "writing out radiance")
 
         if (.not. scalar) then
           call check(nf90_inq_varid(ncid, 'q_' // trim(adjustl(msg)), varid), "get q vaird")
-          do sza = 1, nsza
-            do vza = 1, nvza
-              do raa = 1, nraa          
-                call check(nf90_put_var(ncid, varid, unpack(reshape(Q_(:,ch,sza,vza,raa),(/clrm_total/)),clmask,field), &
-                        start = (/1,1,1,nobs,sza,vza,raa/), count = (/im,jm,1,nobs,1,1,1/)), "writing out Q")
-              end do
-            end do
-          end do
+          call check(nf90_put_var(ncid, varid, reshape(Q_(:,ch,:,:,:),(/clrm_total,nsza,nvza,nraa/))), "writing out Q")
 
           call check(nf90_inq_varid(ncid, 'u_' // trim(adjustl(msg)), varid), "get u vaird")
-          do sza = 1, nsza
-            do vza = 1, nvza
-              do raa = 1, nraa                
-                call check(nf90_put_var(ncid, varid, unpack(reshape(U_(:,ch,sza,vza,raa),(/clrm_total/)),clmask,field), &
-                      start = (/1,1,1,nobs,sza,vza,raa/), count = (/im,jm,1,nobs,1,1,1/)), "writing out U")
-              end do
-            end do
-          end do
+          call check(nf90_put_var(ncid, varid, reshape(U_(:,ch,:,:,:),(/clrm_total,nsza,nvza,nraa/))), "writing out U")
         endif        
 
         do k=1,km 
 
           call check(nf90_inq_varid(ncid, 'aot_' // trim(adjustl(msg)), varid), "get aot vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(TAU_(:,k,ch),(/clrm_total/)),clmask,field), &
-                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out tau")
+          call check(nf90_put_var(ncid, varid, reshape(TAU_(:,:,ch),(/clrm_total,km/))), "writing out tau")
 
           call check(nf90_inq_varid(ncid, 'g_' // trim(adjustl(msg)), varid), "get g vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(G_(:,k,ch),(/clrm_total/)),clmask,field), &
-                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out g")
+          call check(nf90_put_var(ncid, varid, reshape(G_(:,:,ch),(/clrm_total,km/))), "writing out g")
 
           call check(nf90_inq_varid(ncid, 'ssa_' // trim(adjustl(msg)), varid), "get ssa vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(SSA_(:,k,ch),(/clrm_total/)),clmask,field), &
-                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ssa")
+          call check(nf90_put_var(ncid, varid, reshape(SSA_(:,:,ch),(/clrm_total,km/))), "writing out ssa")
 
           call check(nf90_inq_varid(ncid, 'rot_' // trim(adjustl(msg)), varid), "get rot vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(ROT_(:,k,ch),(/clrm_total/)),clmask,field), &
-                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out rot")
+          call check(nf90_put_var(ncid, varid, reshape(ROT_(:,:,ch),(/clrm_total,km/))), "writing out rot")
         end do
       end do
       call check( nf90_close(ncid), "close atmosfile" )
@@ -1511,15 +1478,14 @@ end subroutine outfile_extname
     integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID, rotVarID     
     
     integer                            :: ncid
-    integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID  
+    integer                            :: pixelDimID, ewDimID, nsDimID, levDimID  
     integer                            :: szaDimID, vzaDimID, raaDimID     
-    integer                            :: scantimeVarID, clonVarID, clatVarID
-    integer                            :: timeVarID, levVarID, ewVarID, nsVarID
+    integer                            :: maskVarID
+    integer                            :: levVarID
     integer                            :: szaVarID, vzaVarID, raaVarID
     integer                            :: ch
 
-    real*8,allocatable,dimension(:,:)  :: clon, clat
-    real*8,allocatable,dimension(:)    :: scantime, ew, ns, tyme, lev
+    real*8,allocatable,dimension(:)    :: lev
 
     character(len=2000)                :: comment
 
@@ -1529,8 +1495,7 @@ end subroutine outfile_extname
     call check(nf90_create(OUT_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // OUT_file)
 
     ! Create dimensions
-    call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
-    call check(nf90_def_dim(ncid, "lev", 1, levDimID), "creating ns dimension") !km
+    call check(nf90_def_dim(ncid, "pixel", clrm, pixelDimID), "creating pixel dimension") !km
     call check(nf90_def_dim(ncid, "ew", im, ewDimID), "creating ew dimension") !im
     call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
     call check(nf90_def_dim(ncid, "sza",nsza, szaDimID), "creating sza dimension")
@@ -1538,7 +1503,7 @@ end subroutine outfile_extname
     call check(nf90_def_dim(ncid, "raa",nraa, raaDimID), "creating raa dimension")
 
     ! Global Attributes
-    write(comment,'(A)') 'VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler - Testing Dataset'
+    write(comment,'(A)') 'VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler - Training Dataset'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'title',trim(comment)),"title attr")
 
     write(comment,'(A)') 'NASA/Goddard Space Flight Center'
@@ -1609,25 +1574,18 @@ end subroutine outfile_extname
     ! Define Variables
 !                                     Dimensions
 !                                     ----------    
-    call check(nf90_def_var(ncid,'time',nf90_int,(/timeDimID/),timeVarID),"create time var")
-    call check(nf90_def_var(ncid,'lev',nf90_float,(/levDimID/),levVarID),"create lev var")
-    call check(nf90_def_var(ncid,'ew',nf90_float,(/ewDimID/),ewVarID),"create ew var")
-    call check(nf90_def_var(ncid,'ns',nf90_float,(/nsDimID/),nsVarID),"create ns var")
     call check(nf90_def_var(ncid,'sza',nf90_float,(/szaDimID/),szaVarID),"create sza var")
     call check(nf90_def_var(ncid,'vza',nf90_float,(/vzaDimID/),vzaVarID),"create vza var")
     call check(nf90_def_var(ncid,'raa',nf90_float,(/raaDimID/),raaVarID),"create raa var")
-
-    call check(nf90_def_var(ncid,'scanTime',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
-    call check(nf90_def_var(ncid,'clon',nf90_float,(/ewDimID,nsDimID/),clonVarID),"create clon var")
-    call check(nf90_def_var(ncid,'clat',nf90_float,(/ewDimID,nsDimID/),clatVarID),"create clat var")
+    call check(nf90_def_var(ncid,'mask',nf90_int,(/ewDimID,nsDimID/),maskVarID),"create mask var")
 
 !                                     Data
 !                                     ----
     do ch=1,nch
       write(comment,'(F10.2)') channels(ch)
-      call check(nf90_def_var(ncid, 'ref_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,szaDimID,vzaDimID,raaDimID/),refVarID(ch)),"create reflectance var")
-      call check(nf90_def_var(ncid, 'surf_ref_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,szaDimID,vzaDimID,raaDimID/),albVarID(ch)),"create albedo var")
-      call check(nf90_def_var(ncid, 'aod_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,szaDimID,vzaDimID,raaDimID/),aotVarID(ch)),"create aot var")
+      call check(nf90_def_var(ncid, 'ref_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,szaDimID,vzaDimID,raaDimID/),refVarID(ch)),"create reflectance var")
+      call check(nf90_def_var(ncid, 'surf_ref_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,szaDimID,vzaDimID,raaDimID/),albVarID(ch)),"create albedo var")
+      call check(nf90_def_var(ncid, 'aod_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,szaDimID,vzaDimID,raaDimID/),aotVarID(ch)),"create aot var")
     end do
 
     ! Variable Attributes
@@ -1659,37 +1617,10 @@ end subroutine outfile_extname
       call check(nf90_put_att(ncid,aotVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")      
     end do
 
-!                                          scanTime
+
+!                                          mask
 !                                          -------  
-    call check(nf90_put_att(ncid,scantimeVarID,'long_name','Initial Time of Scan'),"long_name attr")
-    call check(nf90_put_att(ncid,scantimeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
-                                                  time//':00:00'),"units attr")
-
-!                                          EW, NS, LEV, TIME
-!                                          -----------------------  
-    call check(nf90_put_att(ncid,ewVarID,'long_name','pseudo longitude'),"long_name attr")
-    call check(nf90_put_att(ncid,ewVarID,'units','degrees_east'),"units attr")
-    call check(nf90_put_att(ncid,nsVarID,'long_name','pseudo latitude'),"long_name attr")
-    call check(nf90_put_att(ncid,nsVarID,'units','degrees_north'),"units attr")   
-    call check(nf90_put_att(ncid,timeVarID,'long_name','Initial Time of Scan'),"long_name attr")
-    call check(nf90_put_att(ncid,timeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
-                                                  time//':00:00'),"units attr")   
-    call check(nf90_put_att(ncid,levVarID,'long_name','Vertical Level'),"long_name attr")
-    call check(nf90_put_att(ncid,levVarID,'units','layer'),"units attr")
-    call check(nf90_put_att(ncid,levVarID,'positive','down'),"positive attr")
-    call check(nf90_put_att(ncid,levVarID,'axis','z'),"axis attr")
-
-!                                          clon & clat
-!                                          -------  
-    call check(nf90_put_att(ncid,clonVarID,'long_name','pixel center longitude'),"long_name attr")
-    call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
-    call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
-    call check(nf90_put_att(ncid,clatVarID,'missing_value',real(MISSING)),"missing_value attr")
-
-    call check(nf90_put_att(ncid,clonVarID,'long_name','pixel center longitude'),"long_name attr")
-    call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
-    call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
-    call check(nf90_put_att(ncid,clatVarID,'missing_value',real(MISSING)),"missing_value attr")  
+    call check(nf90_put_att(ncid,maskVarID,'long_name','grid mask'),"long_name attr")
 
 !                                         sza, vza, raa
 !                                         -------------
@@ -1705,47 +1636,11 @@ end subroutine outfile_extname
     !Leave define mode
     call check(nf90_enddef(ncid),"leaving define mode")
 
-    ! write out ew, ns, lev, time, clon, clat, scantime, sza, vza, & raa
-    allocate (scantime(im))
-    allocate (clon(im, jm))
-    allocate (clat(im, jm))
-    allocate (ew(im))
-    allocate (ns(jm))    
-    allocate (lev(1))
-    allocate (tyme(tm))
-
-    call readvar1D("scanTime", MET_file, scantime)
-    call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
-
-    call readvar2D("clon", MET_file, clon)
-    call check(nf90_put_var(ncid,clonVarID,clon), "writing out clon")
-
-    call readvar2D("clat", MET_file, clat)
-    call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
-
-    call readvar1D("time", MET_file, tyme)
-    call check(nf90_put_var(ncid,timeVarID,tyme), "writing out time")
-
-    call readvar1D("lev", MET_file, lev)
-    call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
-
-    call readvar1D("ew", MET_file, ew)
-    call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
-
-    call readvar1D("ns", MET_file, ns)
-    call check(nf90_put_var(ncid,nsVarID,ns), "writing out ns") 
-
+    ! write out mask, sza, vza, & raa
+    call check(nf90_put_var(ncid,maskVarID,logical2int(clmask)), "writing out mask")
     call check(nf90_put_var(ncid,szaVarID,SOLAR_ZENITH), "writing out sza") 
     call check(nf90_put_var(ncid,vzaVarID,SENSOR_ZENITH), "writing out vza") 
     call check(nf90_put_var(ncid,raaVarID,RELATIVE_AZIMUTH), "writing out raa") 
-
-    deallocate (clon)
-    deallocate (clat)  
-    deallocate (scantime)
-    deallocate (ns)
-    deallocate (ew)
-    deallocate (tyme)
-    deallocate (lev)
 
     call check( nf90_close(ncid), "close outfile" )
 
@@ -1756,7 +1651,7 @@ end subroutine outfile_extname
       call check(nf90_create(ATMOS_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // ATMOS_file)
 
       ! Create dimensions
-      call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
+      call check(nf90_def_dim(ncid, "pixel", clrm, pixelDimID), "creating pixel dimension")
       call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
       call check(nf90_def_dim(ncid, "ew", im, ewDimID), "creating ew dimension") !im
       call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
@@ -1765,7 +1660,7 @@ end subroutine outfile_extname
       call check(nf90_def_dim(ncid, "raa",nraa, raaDimID), "creating raa dimension")
 
       ! Global Attributes
-      write(comment,'(A)') 'Atmospheric inputs for VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler - Testing Dataset'
+      write(comment,'(A)') 'Atmospheric inputs for VLIDORT Simulation of GEOS-5 '//lower_to_upper(trim(instname))//' Sampler - Training Dataset'
       call check(nf90_put_att(ncid,NF90_GLOBAL,'title',trim(comment)),"title attr")
 
       write(comment,'(A)') 'NASA/Goddard Space Flight Center'
@@ -1809,30 +1704,24 @@ end subroutine outfile_extname
       ! Define Variables
   !                                     Dimensions
   !                                     ----------    
-      call check(nf90_def_var(ncid,'time',nf90_int,(/timeDimID/),timeVarID),"create time var")
       call check(nf90_def_var(ncid,'lev',nf90_float,(/levDimID/),levVarID),"create lev var")
-      call check(nf90_def_var(ncid,'ew',nf90_float,(/ewDimID/),ewVarID),"create ew var")
-      call check(nf90_def_var(ncid,'ns',nf90_float,(/nsDimID/),nsVarID),"create ns var")
       call check(nf90_def_var(ncid,'sza',nf90_float,(/szaDimID/),szaVarID),"create sza var")
       call check(nf90_def_var(ncid,'vza',nf90_float,(/vzaDimID/),vzaVarID),"create vza var")
       call check(nf90_def_var(ncid,'raa',nf90_float,(/raaDimID/),raaVarID),"create raa var")
-
-      call check(nf90_def_var(ncid,'scanTime',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
-      call check(nf90_def_var(ncid,'clon',nf90_float,(/ewDimID,nsDimID/),clonVarID),"create clon var")
-      call check(nf90_def_var(ncid,'clat',nf90_float,(/ewDimID,nsDimID/),clatVarID),"create clat var")
+      call check(nf90_def_var(ncid,'mask',nf90_int,(/ewDimID,nsDimID/),maskVarID),"create mask var")
 
   !                                     Data
   !                                     ----
       do ch=1,nch
         write(comment,'(F10.2)') channels(ch)
-        call check(nf90_def_var(ncid, 'rad_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,szaDimID,vzaDimID,raaDimID/),radVarID(ch)),"create radiance var")              
-        call check(nf90_def_var(ncid, 'aot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),tauVarID(ch)),"create aot var")      
-        call check(nf90_def_var(ncid, 'rot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),rotVarID(ch)),"create rot var")
-        call check(nf90_def_var(ncid, 'ssa_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),ssaVarID(ch)),"create ssa var")
-        call check(nf90_def_var(ncid, 'g_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),gVarID(ch)),"create g var")
+        call check(nf90_def_var(ncid, 'rad_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,szaDimID,vzaDimID,raaDimID/),radVarID(ch)),"create radiance var")              
+        call check(nf90_def_var(ncid, 'aot_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID/),tauVarID(ch)),"create aot var")      
+        call check(nf90_def_var(ncid, 'rot_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID/),rotVarID(ch)),"create rot var")
+        call check(nf90_def_var(ncid, 'ssa_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID/),ssaVarID(ch)),"create ssa var")
+        call check(nf90_def_var(ncid, 'g_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID/),gVarID(ch)),"create g var")
         if (.not. scalar) then
-          call check(nf90_def_var(ncid, 'q_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,szaDimID,vzaDimID,raaDimID/),qVarID(ch)),"create Q var")
-          call check(nf90_def_var(ncid, 'u_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID,szaDimID,vzaDimID,raaDimID/),uVarID(ch)),"create U var")
+          call check(nf90_def_var(ncid, 'q_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,szaDimID,vzaDimID,raaDimID/),qVarID(ch)),"create Q var")
+          call check(nf90_def_var(ncid, 'u_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,szaDimID,vzaDimID,raaDimID/),uVarID(ch)),"create U var")
         end if        
       end do
 
@@ -1906,21 +1795,9 @@ end subroutine outfile_extname
 
       end do
 
-  !                                          scanTime
-  !                                          -------  
-      call check(nf90_put_att(ncid,scantimeVarID,'long_name','Initial Time of Scan'),"long_name attr")
-      call check(nf90_put_att(ncid,scantimeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
-                                                    time//':00:00'),"units attr")
 
-  !                                          EW, NS, LEV, TIME
+  !                                                  LEV
   !                                          -----------------------  
-      call check(nf90_put_att(ncid,ewVarID,'long_name','pseudo longitude'),"long_name attr")
-      call check(nf90_put_att(ncid,ewVarID,'units','degrees_east'),"units attr")
-      call check(nf90_put_att(ncid,nsVarID,'long_name','pseudo latitude'),"long_name attr")
-      call check(nf90_put_att(ncid,nsVarID,'units','degrees_north'),"units attr")   
-      call check(nf90_put_att(ncid,timeVarID,'long_name','Initial Time of Scan'),"long_name attr")
-      call check(nf90_put_att(ncid,timeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
-                                                    time//':00:00'),"units attr")   
       call check(nf90_put_att(ncid,levVarID,'long_name','Vertical Level'),"long_name attr")
       call check(nf90_put_att(ncid,levVarID,'units','layer'),"units attr")
       call check(nf90_put_att(ncid,levVarID,'positive','down'),"positive attr")
@@ -1928,15 +1805,7 @@ end subroutine outfile_extname
 
   !                                          clon & clat
   !                                          -------  
-      call check(nf90_put_att(ncid,clonVarID,'long_name','pixel center longitude'),"long_name attr")
-      call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
-      call check(nf90_put_att(ncid,clatVarID,'missing_value',real(MISSING)),"missing_value attr")
-
-      call check(nf90_put_att(ncid,clonVarID,'long_name','pixel center longitude'),"long_name attr")
-      call check(nf90_put_att(ncid,clonVarID,'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,clatVarID,'long_name','pixel center latitude'),"long_name attr")
-      call check(nf90_put_att(ncid,clatVarID,'missing_value',real(MISSING)),"missing_value attr")  
+      call check(nf90_put_att(ncid,maskVarID,'long_name','grid mask'),"long_name attr")
 
 !                                         sza, vza, raa
 !                                         -------------
@@ -1953,45 +1822,17 @@ end subroutine outfile_extname
       call check(nf90_enddef(ncid),"leaving define mode")
 
       ! write out ew, ns, lev, time, clon, clat, & scantime
-      allocate (scantime(im))
-      allocate (clon(im, jm))
-      allocate (clat(im, jm))
-      allocate (ew(im))
-      allocate (ns(jm))    
       allocate (lev(km))
-      allocate (tyme(tm))
-
-      call readvar1D("scanTime", MET_file, scantime)
-      call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
-
-      call readvar2D("clon", MET_file, clon)
-      call check(nf90_put_var(ncid,clonVarID,clon), "writing out clon")
-
-      call readvar2D("clat", MET_file, clat)
-      call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
-
-      call readvar1D("time", MET_file, tyme)
-      call check(nf90_put_var(ncid,timeVarID,tyme), "writing out time")
 
       call readvar1D("lev", MET_file, lev)
       call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
 
-      call readvar1D("ew", MET_file, ew)
-      call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
-
-      call readvar1D("ns", MET_file, ns)
-      call check(nf90_put_var(ncid,nsVarID,ns), "writing out ns")  
+      call check(nf90_put_var(ncid,maskVarID,logical2int(clmask)), "writing out mask")  
 
       call check(nf90_put_var(ncid,szaVarID,SOLAR_ZENITH), "writing out sza") 
       call check(nf90_put_var(ncid,vzaVarID,SENSOR_ZENITH), "writing out vza") 
       call check(nf90_put_var(ncid,raaVarID,RELATIVE_AZIMUTH), "writing out raa")
 
-      deallocate (clon)
-      deallocate (clat)  
-      deallocate (scantime)
-      deallocate (ns)
-      deallocate (ew)
-      deallocate (tyme)
       deallocate (lev)
 
       call check( nf90_close(ncid), "close atmosfile" )
@@ -2328,6 +2169,38 @@ end subroutine outfile_extname
     end do
 
   end function knuthshuffle
+
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    logical2int
+! PURPOSE
+!     converts a logical array to int
+! INPUT
+!     array : 2D logical array 
+! OUTPUT
+!     logical2int: 2D int array 
+!  HISTORY
+!     January 2016 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  function logical2int(logical_array)
+    logical,intent(in),dimension(:,:)      :: logical_array
+    integer,allocatable,dimension(:,:)     :: logical2int
+    integer                                :: i,j
+    integer,dimension(2)                   :: dim
+
+    dim = shape(logical_array)
+    allocate(logical2int(dim(1),dim(2)))
+    logical2int = 0
+
+    do i=1,dim(1)
+      do j=1,dim(2)
+        if (logical_array(i,j)) logical2int(i,j) = 1
+      end do
+    end do
+
+  end function logical2int
+
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
