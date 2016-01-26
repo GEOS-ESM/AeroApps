@@ -83,12 +83,36 @@ class GFIO(object):
         self.vtitle = self.vtitle.split(':')[:-1]
         self.vunits = self.vunits.split(':')[:-1]
 
+#       Lats4d files lack proper variable attributes. For reasons not
+#       quite well understood, this causes vunits to come out blank.
+#       This is a quick workaround
+#       -----------------------------------------------------------
+        if len(self.vtitle)==0 or len(self.vunits)==0:
+            self._fixUnits(filename)
+
 #       Hash with number of levels by variable name
 #       -------------------------------------------
         self.kmvar_name = {}
 
         for i in range(len(self.vname)):
             self.kmvar_name[self.vname[i]] = self.kmvar[i]
+#---
+    def _fixUnits(self,filename):
+        """
+        Lats4d workaround.
+        """
+        try:
+            from netCDF4 import Dataset
+            n = Dataset(filename)
+            self.vtitle, self.vunits = ([], [])
+            for v in self.vname:
+                self.vtitle.append(str(n.variables[v].long_name)) 
+                self.vunits.append(str(n.variables[v].units))                
+        except: # in case netCDF4 is not available
+            if len(self.vtitle)==0:
+                self.vtitle = self.vname # vtitle is affected as well
+            if len(self.vunits)==0:
+                self.vunits = len(self.vname) * ['unkown',]
 
 #---
     def read(self,vname,nymd=None,nhms=None,kbeg=None,kount=None,squeeze=True):

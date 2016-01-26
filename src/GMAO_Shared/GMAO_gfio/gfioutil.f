@@ -288,7 +288,7 @@
 
       if ( t1 > 0 ) then
            ndays = t1 * unitDays
-           j0 = julday(1,1,1) + int(ndays)
+           j0 = julday(month,day,year) + int(ndays)
            call caldat(j0,month,day,year)
            !ams print *, 't1, t2, j0, ndays: ', t1, t2, j0, ndays
            begDate = year*10000+month*100+day
