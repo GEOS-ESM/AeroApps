@@ -85,7 +85,7 @@ integer :: catb(1:17)
 data catb/ &
            2, 1, 2, 2                 & !floresta tropical 2 and 4 / extra trop fores 1,3,5
          , 2, 3, 3, 3, 3              & !cerrado/woody savanna :6 a 9
-         , 4, 4, 4, 4, 4, 0, 4, 0     / !pastagem/lavouras: 10 ...
+         , 4, 4, 4, 4, 4, -15, 4, -17 / !pastagem/lavouras: 10 ...
 
 integer :: agreg(nfocos) ! local workspace
 
@@ -94,7 +94,7 @@ do ifoc=1,nfocos
    if ( j > 0 .and. j < 18 ) then 
       qveg_agreg(ifoc) = catb( j )
    else
-      qveg_agreg(ifoc) = -1
+      qveg_agreg(ifoc) = 0
    end if
 enddo
 

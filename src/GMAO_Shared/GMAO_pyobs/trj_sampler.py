@@ -20,7 +20,7 @@ from csv             import DictReader
 from MAPL           import Config, eta
 from MAPL.constants import *
 from pyobs.sgp4     import getTrack as getTrackTLE
-from pyobs          import ICARTT
+from pyobs          import ICARTT, NPZ
 
 class TleVar(object):
     """                                                                                  
@@ -102,6 +102,25 @@ def getTrackCSV(csvFile):
         
     return ( array(lon), array(lat), array(tyme) )
     
+def getTrackNPZ(npzFile):
+    """
+    Get trajectory from a NPZ with (lon,lat,time) coordinates.
+    Notice that *time* is a datetime object.
+
+    Note: These are simple NPZ usually generated during Neural
+          Net or other type of python based utility. Not meant
+          for general consumption, but could be since NPZ files
+          are much more compact than CSV.
+
+    """
+    n = NPZ(npzFile)
+    if 'time' in n.__dict__:
+        return ( n.lon, n.lat, n.time)
+    elif 'tyme' in n.__dict__:
+        return ( n.lon, n.lat, n.tyme)
+    else:
+        raise ValueError, 'NPZ file has neither *time* nor *tyme* attribut.e'
+
 def getVars(rcFile):
     """
     Parse reource file, create variable dictionary with relevant
@@ -244,8 +263,10 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
             else:
                 name = var.name
             if options.verbose:
-                print " [] Interpolating <%s>"%name.upper()        
-            Z = g.sample(name,lons,lats,tyme,Transpose=True,squeeze=True)
+                print " [] %s interpolating <%s>"%\
+                        (options.algo.capitalize(),name.upper())        
+            Z = g.sample(name,lons,lats,tyme,algorithm=options.algo,
+                         Transpose=True,squeeze=True)
             Z[abs(Z)>MAPL_UNDEF/1000.] = MAPL_UNDEF # detect undef contaminated interp
             this[:] = Z
             
@@ -374,11 +395,16 @@ if __name__ == "__main__":
     rcFile  = 'trj_sampler.rc'
     outFile = 'trj_sampler.nc'
     dt_secs = 60
+    algo = 'linear'
 
 #   Parse command line options
 #   --------------------------
-    parser = OptionParser(usage="Usage: %prog [OPTIONS] tleFile|ictFile|csvFile [iso_t1 iso_t2]",
-                          version='1.0.0' )
+    parser = OptionParser(usage="Usage: %prog [OPTIONS] tleFile|ictFile|csvFile|npzFile [iso_t1 iso_t2]",
+                          version='1.0.1' )
+
+    parser.add_option("-a", "--algorithm", dest="algo", default=algo,
+              help="Interpolation algorithm, one of linear, nearest (default=%s)"\
+                          %algo)
 
     parser.add_option("-r", "--rcFile", dest="rcFile", default=rcFile,
               help="Resource file defining parameters to sample (default=%s)"\
@@ -392,7 +418,7 @@ if __name__ == "__main__":
               help="Output file format: one of NETCDF4, NETCDF4_CLASSIC, NETCDF3_CLASSIC, NETCDF3_64BIT or EXCEL (default=%s)"%format )
 
     parser.add_option("-t", "--trajectory", dest="traj", default=None,
-              help="Trajectory file format: one of tle, ict, csv (default=trjFile extension)" )
+              help="Trajectory file format: one of tle, ict, csv, npz (default=trjFile extension)" )
 
     parser.add_option("-d", "--dt_secs", dest="dt_secs", default=dt_secs,
               type='int',
@@ -450,6 +476,8 @@ if __name__ == "__main__":
         lon, lat, tyme = getTrackICT(trjFile,options.dt_secs)
     elif options.traj == 'CSV':
         lon, lat, tyme = getTrackCSV(trjFile)
+    elif options.traj == 'NPZ':
+        lon, lat, tyme = getTrackNPZ(trjFile)
     else:
         raise ValueError, 'cannot handle trajectory file format <%s>'%options.traj
     # Make sure longitudes in [-180,180]
