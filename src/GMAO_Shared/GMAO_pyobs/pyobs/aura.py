@@ -31,7 +31,7 @@ SDS = dict (
 
       OMAERUV = {'HDFEOS/SWATHS/Aerosol NearUV Swath/Geolocation Fields':
                     ('Latitude','Longitude','RelativeAzimuthAngle','ViewingZenithAngle',
-                     'SolarZenithAngle','TerrainPressure','Time'),
+                     'SolarZenithAngle','TerrainPressure','Time','GroundPixelQualityFlags'),
                   'HDFEOS/SWATHS/Aerosol NearUV Swath/Data Fields':
                      ('FinalAerosolLayerHeight','FinalAerosolOpticalDepth',
                       'FinalAerosolAbsOpticalDepth',
@@ -63,6 +63,7 @@ ALIAS = dict (
                FinalAlgorithmFlags = 'qa_flag',
                      SurfaceAlbedo = 'albedo',
                       NormRadiance = 'radiance',
+           GroundPixelQualityFlags = 'qa_grd',
               )
 
 #........................................................................

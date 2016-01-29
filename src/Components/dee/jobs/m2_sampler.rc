@@ -1,0 +1,11 @@
+#
+# Example resource file for Trajectory Sampler.
+#
+
+ducmass,duexttau,dufluxu,dufluxv : /home/adasilva/GAAS/DEE/opendap/du_cm
+durm : /home/adasilva/GAAS/DEE/opendap/du_rm
+duem : /home/adasilva/GAAS/DEE/opendap/du_em
+w10m : /home/adasilva/GAAS/DEE/opendap/w10m
+#gwettop : /home/adasilva/GAAS/DEE/opendap/gwet
+
+
