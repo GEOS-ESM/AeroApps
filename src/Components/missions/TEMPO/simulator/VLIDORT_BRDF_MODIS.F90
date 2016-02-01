@@ -143,12 +143,20 @@ module VLIDORT_BRDF_MODIS
         SCAT%ssa => ssa(:,i,j)
         SCAT%g => g(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
+
+        BR(j,i)    = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
+        if (BR(j,i) < 0) then
+          radiance_VL_SURF(j,i)    = -500
+          reflectance_VL_SURF(j,i) = -500
+          BR(j,i)    = -500
+          ROT(:,j,i) = -500
+          cycle
+        end if
          
         call VLIDORT_Run_Scalar (SCAT, output, ier)
 
         radiance_VL_SURF(j,i)    = output%radiance
         reflectance_VL_SURF(j,i) = output%reflectance
-        BR(j,i)    = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
         ROT(:,j,i) = SCAT%rot      
 
         if ( verbose > 0 ) then
@@ -158,14 +166,6 @@ module VLIDORT_BRDF_MODIS
         if ( ier /= 0 ) then
           radiance_VL_SURF(j,i) = MISSING
           reflectance_VL_SURF(j,i) = MISSING
-          cycle
-        end if
-
-        if (BR(j,i) < 0) then
-          radiance_VL_SURF(j,i)    = -500
-          reflectance_VL_SURF(j,i) = -500
-          BR(j,i)    = -500
-          ROT(:,j,i) = -500
           cycle
         end if
 
@@ -324,21 +324,7 @@ module VLIDORT_BRDF_MODIS
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
 
-        call VLIDORT_Run_Vector (SCAT, output, ier)
-
-        radiance_VL_SURF(j,i)    = output%radiance
-        reflectance_VL_SURF(j,i) = output%reflectance
-        Q(j,i)                   = output%Q
-        U(j,i)                   = output%U        
         BR(j,i)    = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
-        ROT(:,j,i) = SCAT%rot
-
-        if ( ier /= 0 ) then
-          radiance_VL_SURF(j,i) = MISSING
-          reflectance_VL_SURF(j,i) = MISSING               
-          cycle
-        end if
-
         if (BR(j,i) < 0) then
           radiance_VL_SURF(j,i)    = -500
           reflectance_VL_SURF(j,i) = -500
@@ -346,6 +332,20 @@ module VLIDORT_BRDF_MODIS
           ROT(:,j,i) = -500
           Q(j,i)     = -500
           U(j,i)     = -500
+          cycle
+        end if
+
+        call VLIDORT_Run_Vector (SCAT, output, ier)
+
+        radiance_VL_SURF(j,i)    = output%radiance
+        reflectance_VL_SURF(j,i) = output%reflectance
+        Q(j,i)                   = output%Q
+        U(j,i)                   = output%U                
+        ROT(:,j,i) = SCAT%rot
+
+        if ( ier /= 0 ) then
+          radiance_VL_SURF(j,i) = MISSING
+          reflectance_VL_SURF(j,i) = MISSING               
           cycle
         end if
 
