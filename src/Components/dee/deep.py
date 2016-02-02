@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from pyobs.mxd04 import MxD04_L2, SDS, MISSING, ALIAS, CHANNELS
 from binObs_     import binobs2d, binobs3d
 
+from grads.gacore import gat2dt, dt2gat
 
 SDS['META'] = ('Longitude', 'Latitude', 'Scan_Start_Time',)
 
@@ -219,6 +220,28 @@ def GranulesSyn ( path, prod, syn_time, coll='006', nsyn=24):
     return Granules_(path,prod,coll,t1,t2)
 
 #....................................................................
+def mrange(year,month,gat=False):
+    """
+    Returns first and last time for a given month.
+    Assumes hourly time steps. Returns GrADS time if gat=True
+    """
+    day   = timedelta(seconds=24*60*60)
+    hour  = timedelta(seconds=60*60)
+    hhour = timedelta(seconds=30*60)
+
+    t1 = datetime(year,month,1)  # first of the month
+    if month==12:
+        t2 = datetime(year+1,1,1) - day
+    else:
+        t2 = datetime(year,month+1,1) - day
+    t1 += hhour              #  0:30Z
+    t2 += 23 * hour + hhour  # 23:30Z
+
+    if gat:
+        return (dt2gat(t1), dt2gat(t2))
+    else:
+        return (t1, t2)
+
 def GranulesMonth ( path, prod, year, month, coll='006'):
     """
     Returns a list of MxD04 granules for a given product at given synoptic time.
@@ -232,17 +255,18 @@ def GranulesMonth ( path, prod, year, month, coll='006'):
 
     """
 
-    # Determine time range
-    # --------------------
     t1 = datetime(year,month,1) # first of the month
     if month==12:
-        t2 = datetime(year+1,1,1)
+        t2 = datetime(year+1,1,1) 
     else:
-        t2 = datetime(year,month+1,1)
+        t2 = datetime(year,month+1,1) 
 
     return Granules_(path,prod,coll,t1,t2)
 
 def Granules_(path,prod,coll,t1,t2):
+    """
+    Find Granules in [t1,t2)
+    """
 
     # Find MODIS granules in synoptic time range
     # ------------------------------------------
@@ -302,13 +326,7 @@ def grid_dust(path,year1,year2,dirn='./DEE'):
                 dirm = dirn+'/Level3/%s/Y%d/M%02d'%(prod,year,month)
                 os.system('/bin/mkdir -p '+dirm)
 
-                t1 = datetime(year,month,1)  # first of the month
-                if month==12:
-                    t2 = datetime(year+1,1,1)
-                else:
-                    t2 = datetime(year,month+1,1)
-                t1 += hhour              #  0:30Z
-                t2 += 23 * hour + hhour  # 23:30Z
+                t1, t2 = mrange(year,month) # 0:30Z to 23:30Z 
 
                 t  = t1
                 while t <= t2:

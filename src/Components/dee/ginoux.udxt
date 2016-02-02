@@ -1,0 +1,19 @@
+#
+# Sample GrADS table for Dynamic User Defined Commands/Functions.
+# There are 2 types of extensions: 
+#
+#    udc   user defined commands
+#    udf   user defined functions
+#
+# This feature requires GrADS v2.0.a4.oga.3 or later.
+#.................................................................
+
+#      A
+#      P   GrADS     Library      Library                 Short
+# Type I  Function   Function      Path                Description
+# ---- - ---------- ---------- -------------- -------------------------------  
+  udf  0   " "       " "        " "           "Ginoux Dust Emission functions"
+  udf  0   ginoux5   f_gsudf    ^gsudf.gex    "Combined emission for 5 bins'
+  udf  0   ginoux1   f_gsudf    ^gsudf.gex    "Emissions for 1 bin'
+
+#.............................................................................
