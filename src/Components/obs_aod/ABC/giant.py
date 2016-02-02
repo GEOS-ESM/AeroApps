@@ -123,10 +123,10 @@ xDEEP = ( "mean_AOD0412dpbl-l",
 ALIAS = dict (
                  Latitude  = 'lat',
                 Longitude  = 'lon',
-                mean_AOD0470intrp = 'aTau470',
-                mean_AOD0550intrp = 'aTau550',
-                mean_AOD0660intrp = 'aTau660',
-                mean_AOD0870      = 'aTau870',
+                mean_AOD0470intrp = 'aTau0470',
+                mean_AOD0550intrp = 'aTau0550',
+                mean_AOD0660intrp = 'aTau0660',
+                mean_AOD0870      = 'aTau0870',
                 mean_AOD2100intrp = 'aTau2100',
              )
 
@@ -410,6 +410,6 @@ class DEEP(GIANT):
 
 if __name__ == "__main__":
 
-    #lnd = LAND('/Users/adasilva/workspace.local/Data_Analysis/C6/giant_C6_10km_9April2015.nc')
-    #ocn = OCEAN('/Users/adasilva/workspace.local/Data_Analysis/C6/giant_C6_10km_9April2015.nc')
-    blu = DEEP('/Users/adasilva/workspace.local/Data_Analysis/C6/giant_C6_10km_9April2015.nc')
+    lnd = LAND('/Users/adasilva/workspace.local/Data_Analysis/C6/giant_C6_10km_9April2015.nc')
+    ocn = OCEAN('/Users/adasilva/workspace.local/Data_Analysis/C6/giant_C6_10km_9April2015.nc')
+    #xblu = DEEP('/Users/adasilva/workspace.local/Data_Analysis/C6/giant_C6_10km_9April2015.nc')
