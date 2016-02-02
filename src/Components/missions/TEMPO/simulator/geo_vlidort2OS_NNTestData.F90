@@ -203,8 +203,8 @@ program geo_vlidort2OS_NNTestData
   integer, parameter                    :: nsza = 9
   integer, parameter                    :: nvza = 9
   integer, parameter                    :: nraa = 12
-  real*8 , parameter, dimension(nsza)   :: SOLAR_ZENITH  = (/(I, I = 0,80,10)/) ! solar zenith angles 
-  real*8 , parameter, dimension(nvza)   :: SENSOR_ZENITH = (/(I, I = 0,80,10)/) ! sensor zenith angles   
+  real*8 , parameter, dimension(nsza)   :: SOLAR_ZENITH  = (/1,10,20,30,40,50,60,70,80/) ! solar zenith angles SZA CANNOT == 0
+  real*8 , parameter, dimension(nvza)   :: SENSOR_ZENITH = (/0,10,20,30,40,50,60,70,80/) ! sensor zenith angles     
   real*8 , parameter, dimension(nraa)   :: RELATIVE_AZIMUTH = (/(I, I = 0,330,30)/)  ! relative azimuth angles  
   integer                               :: sza, vza, raa
 
@@ -232,7 +232,6 @@ program geo_vlidort2OS_NNTestData
 
 !                               END OF VARIABLE DECLARATIONS
 !----------------------------------------------------------------------------------------------------------
-  
 ! Start Timing
 ! ------------
   call system_clock ( t1, clock_rate, clock_max )
@@ -316,8 +315,8 @@ program geo_vlidort2OS_NNTestData
 ! Figure out how many indices to work on
 !------------------------------------------
   clrm = 0
-  do i=1,im,50
-    do j=1,jm,50
+  do i=1,im,10
+    do j=1,jm,10
       if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99))  then
         clrm = clrm + 1
         clmask(i,j) = .True.
@@ -460,6 +459,7 @@ program geo_vlidort2OS_NNTestData
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
 ! --------------------------------------------------------------
+
   do cc = starti, endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
@@ -554,23 +554,23 @@ program geo_vlidort2OS_NNTestData
                         nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                         (/dble(SOLAR_ZENITH(sza))/), &
                         (/dble(RELATIVE_AZIMUTH(raa))/), &
-                        (/dble(SENSOR_ZENITH(sza))/), &               
+                        (/dble(SENSOR_ZENITH(vza))/), &               
                         dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
               else 
                 call LIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
                         nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                         (/dble(SOLAR_ZENITH(sza))/), &
                         (/dble(RELATIVE_AZIMUTH(raa))/), &
-                        (/dble(SENSOR_ZENITH(sza))/), &  
+                        (/dble(SENSOR_ZENITH(vza))/), &  
                         dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
               end if 
-            else
+            else              
               ! Call to vlidort vector code
               call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
                      nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                         (/dble(SOLAR_ZENITH(sza))/), &
                         (/dble(RELATIVE_AZIMUTH(raa))/), &
-                        (/dble(SENSOR_ZENITH(sza))/), &  
+                        (/dble(SENSOR_ZENITH(vza))/), &  
                      dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, Q, U, ierr, DO_2OS_CORRECTION)
             end if
 
@@ -597,7 +597,7 @@ program geo_vlidort2OS_NNTestData
                         kernel_wt, param, &
                         (/dble(SOLAR_ZENITH(sza))/), &
                         (/dble(RELATIVE_AZIMUTH(raa))/), &
-                        (/dble(SENSOR_ZENITH(sza))/), &  
+                        (/dble(SENSOR_ZENITH(vza))/), &  
                         dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
               else
               ! Call to vlidort scalar code            
@@ -606,27 +606,29 @@ program geo_vlidort2OS_NNTestData
                         kernel_wt, param, &
                         (/dble(SOLAR_ZENITH(sza))/), &
                         (/dble(RELATIVE_AZIMUTH(raa))/), &
-                        (/dble(SENSOR_ZENITH(sza))/), &  
+                        (/dble(SENSOR_ZENITH(vza))/), &  
                         dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
               end if
             else
-         
+
               ! Call to vlidort vector code
               call VLIDORT_Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
                       nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), &
                       kernel_wt, param, &
                         (/dble(SOLAR_ZENITH(sza))/), &
                         (/dble(RELATIVE_AZIMUTH(raa))/), &
-                        (/dble(SENSOR_ZENITH(sza))/), &  
+                        (/dble(SENSOR_ZENITH(vza))/), &  
                       dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, Q, U, ierr, DO_2OS_CORRECTION )  
+
             end if      
           end if          
-          
+         
       !   Check VLIDORT Status, Store Outputs in Shared Arrays
       !   ----------------------------------------------------    
           call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
           radiance_VL(c,:,sza,vza,raa)    = radiance_VL_int(nobs,:)
           reflectance_VL(c,:,sza,vza,raa) = reflectance_VL_int(nobs,:)
+
           ALBEDO_(c,:,sza,vza,raa) = albedo(nobs,:)
 
           do ch=1,nch      
@@ -662,7 +664,7 @@ program geo_vlidort2OS_NNTestData
 ! Write output to correct position in file 
 ! -----------------------------------------
   if (MAPL_am_I_root()) then
-   
+
     allocate (field(im,jm))
     field = g5nr_missing
     allocate (AOD(clrm_total))
@@ -690,7 +692,7 @@ program geo_vlidort2OS_NNTestData
       call check(nf90_put_var(ncid, varid, AOD), "writing out aod")
     end do
     call check( nf90_close(ncid), "close outfile" )
-
+    
     if (additional_output) then
 !                             Write to Additional Outputs File
 !                             --------------------------------
@@ -1715,10 +1717,10 @@ end subroutine outfile_extname
       do ch=1,nch
         write(comment,'(F10.2)') channels(ch)
         call check(nf90_def_var(ncid, 'rad_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,szaDimID,vzaDimID,raaDimID/),radVarID(ch)),"create radiance var")              
-        call check(nf90_def_var(ncid, 'aot_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID/),tauVarID(ch)),"create aot var")      
-        call check(nf90_def_var(ncid, 'rot_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID/),rotVarID(ch)),"create rot var")
-        call check(nf90_def_var(ncid, 'ssa_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID/),ssaVarID(ch)),"create ssa var")
-        call check(nf90_def_var(ncid, 'g_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID/),gVarID(ch)),"create g var")
+        call check(nf90_def_var(ncid, 'aot_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),tauVarID(ch)),"create aot var")      
+        call check(nf90_def_var(ncid, 'rot_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),rotVarID(ch)),"create rot var")
+        call check(nf90_def_var(ncid, 'ssa_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),ssaVarID(ch)),"create ssa var")
+        call check(nf90_def_var(ncid, 'g_'   // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),gVarID(ch)),"create g var")
         if (.not. scalar) then
           call check(nf90_def_var(ncid, 'q_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,szaDimID,vzaDimID,raaDimID/),qVarID(ch)),"create Q var")
           call check(nf90_def_var(ncid, 'u_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,szaDimID,vzaDimID,raaDimID/),uVarID(ch)),"create U var")
@@ -2090,7 +2092,7 @@ end subroutine outfile_extname
 
     ! Check that MAICRTLS configuration is correct
     !----------------------------------------------
-    if (lower_to_upper(surfname) /= 'MAIACRTLS' ) then
+    if (lower_to_upper(surfname) == 'MAIACRTLS' ) then
       if (surfbandm /= 8) then
         surfbandm = 8
         if (MAPL_am_I_root()) then
