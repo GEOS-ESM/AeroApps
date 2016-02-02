@@ -3127,7 +3127,7 @@ c                           timeUnits: string is built below
      .     return
         call ncagtc (fid,i,'units',vunits(fV),LEN(vunits(fV)),rc)
         if ( rc .NE. 0 ) then 
-           print *, "Inquire: Cannot find variable units attribute"
+           !!! print *, "Inquire: Cannot find variable units attribute"
         endif
         
         ! Get packing ranges and valid ranges.  Errors are not fatal 

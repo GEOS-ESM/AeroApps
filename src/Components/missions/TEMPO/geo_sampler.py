@@ -71,7 +71,7 @@ def Open(filename,doNC4ctl=True):
         else:
             v = f.vname[i]
         var = TempoVar(v)
-        var.title = f.vtitle[i]
+        #var.title = f.vtitle[i]
         var.km = f.kmvar[i]
         if var.km>0:
             var.levunits = f.levunits[:]
@@ -136,7 +136,7 @@ def getVars(rcFile):
     return (Vars, levs, levUnits)
 
 #----
-def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,trim=False):
+def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False):
     """
     Create variable *name* in output file and copy its
     content over,
@@ -150,27 +150,14 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,trim=False):
     except:
         pass
     rank = len(x.shape)
-    if trim:
-        if rank == 1:
-            x_ = x[124:1374]
-            y[:] = x_[:]
-        elif rank == 2:
-            x_ = x[:,124:1374]
-            y[:,:] = x_[:,-1::-1]
-        elif rank == 3:
-            x_ = x[:,:,124:1374]
-            y[:,:,:] = x[:,:,-1::-1]
-        else:
-            raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
+    if rank == 1:
+        y[:] = x[:]
+    elif rank == 2:
+        y[:,:] = x[:,:]
+    elif rank == 3:
+        y[:,:,:] = x[:,:,:]
     else:
-        if rank == 1:
-            y[:] = x[:]
-        elif rank == 2:
-            y[:,:] = x[:,-1::-1]
-        elif rank == 3:
-            y[:,:,:] = x[:,:,-1::-1]
-        else:
-            raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
+        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
 
 #---
 def shave(q,options,undef=MISSING,has_undef=1,nbits=12):
@@ -269,8 +256,8 @@ def writeNC ( ncGeo, clon, clat, ctyme, tBeg, Vars, levs, levUnits, options,
     
     # Add pseudo dimensions for GrADS compatibility
     # -------------------------------------------
-    _copyVar(ncGeo,nc,u'ew',dtype='f4',zlib=False,trim=True)
-    _copyVar(ncGeo,nc,u'ns',dtype='f4',zlib=False,trim=False)
+    _copyVar(ncGeo,nc,u'ew',dtype='f4',zlib=False)
+    _copyVar(ncGeo,nc,u'ns',dtype='f4',zlib=False)
     dt = nc.createVariable('scanTime','f4',('ew',),zlib=False)
     dt.long_name = 'Time of Scan'
     dt.units = 'seconds since %s'%tBeg.isoformat(' ')
@@ -281,8 +268,8 @@ def writeNC ( ncGeo, clon, clat, ctyme, tBeg, Vars, levs, levUnits, options,
     # Save lon/lat if so desired
     # --------------------------
     if options.coords:
-        _copyVar(ncGeo,nc,u'clon',dtype='f4',zlib=False,trim=True)
-        _copyVar(ncGeo,nc,u'clat',dtype='f4',zlib=False,trim=True)
+        _copyVar(ncGeo,nc,u'clon',dtype='f4',zlib=False)
+        _copyVar(ncGeo,nc,u'clat',dtype='f4',zlib=False)
         
     # Loop over datasets, sample and write each variable
     # --------------------------------------------------
@@ -304,8 +291,10 @@ def writeNC ( ncGeo, clon, clat, ctyme, tBeg, Vars, levs, levUnits, options,
                                      zlib=options.zlib,
                                      chunksizes=chunks)
 
-            this.standard_name = var.title
-            this.long_name = var.title.replace('_',' ')
+            #this.standard_name = var.title
+            this.standard_name = var.name
+            #this.long_name = var.title.replace('_',' ')
+            this.long_name = ''
             this.missing_value = MAPL_UNDEF
             this.units = var.units
             if g.lower:

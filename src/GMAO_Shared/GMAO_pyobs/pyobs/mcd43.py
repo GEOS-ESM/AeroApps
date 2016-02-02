@@ -14,7 +14,7 @@ from bits import BITS
 from mpl_toolkits.basemap import Basemap
 from pylab import figure, show, plot
 
-MISSING = -999.999
+MISSING = -99999
 
 
 SDS = dict (
@@ -71,7 +71,7 @@ class McD43(object):
        # and dx, dy inside the tile
        # -------------------------------------  
        self.nobs = len(lon)
-       self._findTile(path,lon,lat)
+       self._findTile(Path,lon,lat)
        
        # Create empty lists for SDS to be read from file
        # -----------------------------------------------
@@ -116,7 +116,8 @@ class McD43(object):
           xdim = 1200.
        else :
           print "- %s:not MCD43B file--> check resolution"%tokens[0]
-       print 'xdim', xdim
+       if self.verb:
+          print 'xdim', xdim
        xdim_ = tile(xdim,len(x))
 
        int_h = [int(i) for i in self.h]
@@ -131,8 +132,8 @@ class McD43(object):
   
        self.h = int_h               # keep only real part
        self.v = int_v
-
-       print 'dx','dy', self.dx,self.dy
+       if self.verb:
+          print 'dx','dy', self.dx,self.dy
       
        # create a list of tiles name associated with each (lat, lon) and (h,v)
        # -------------------
@@ -166,7 +167,8 @@ class McD43(object):
         BRDF = MISSING * ones((self.nobs,nch)) 
         for fn,I in self.unique_fn:
               self._read_BRDF(fn,I[0])
-              print I
+              if self.verb:
+                print I
               BRDF
 #---
     def read_BRDF(self):
@@ -181,7 +183,8 @@ class McD43(object):
 
        for fn, I in self.unique_fn:
          index = I[0]
-         print index, type(index), len(index) 
+         if self.verb:
+            print index, type(index), len(index) 
           # Don't fuss if the file cannot be opened
           # ---------------------------------------
          try:
@@ -196,12 +199,14 @@ class McD43(object):
           # Read select variables (reshape to allow concatenation later)
           # ------------------------------------------------------------
          for sds in self.SDS:  
-            print 'sds',self.SDS.index(sds)                 
+            if self.verb:
+              print 'sds',self.SDS.index(sds)                 
             v = hfile.select(sds).get()           
             a = hfile.select(sds).attributes()
             if a['scale_factor']!=1.0 or a['add_offset']!=0.0:
                 v = a['scale_factor'] * v + a['add_offset']
-            print array(self.dx)[index], BRDF.shape, BRDF[self.SDS.index(sds),index], v.shape 
+            if self.verb:
+              print array(self.dx)[index], BRDF.shape, BRDF[self.SDS.index(sds),index], v.shape 
 
             BRDF[self.SDS.index(sds),index,:] = v[array(self.dx)[index], array(self.dy)[index], :]
 

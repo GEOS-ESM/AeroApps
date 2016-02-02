@@ -26,15 +26,15 @@ endif
 
 THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
-BINS := geo_vlidort.x
+BINS := 
 
-PY_EXTS = GeoAngles_.$(F2PYEXT)
+PY_EXTS = 
 PY_SCRP = geo_warp.py geo_sampler.py
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
                  $(ESMAINC)/$(THIS) $(ESMABIN)
-	$(CP) -pr $(PY_EXTS)               $(ESMALIB)/Python 
+#	$(CP) -pr $(PY_EXTS)               $(ESMALIB)/Python 
 	$(CP) -p  $(BINS) $(PY_SCRP)       $(ESMABIN)
 
 esma_clean clean:
@@ -64,10 +64,8 @@ esma_help help:
 #                  User Defined Targets
 #                  --------------------
 
-INC_VLIDORT90 = $(ESMAINC)/VLIDORT90
-LIB_VLIDORT90 = $(ESMALIB)/libVLIDORT90.a
 
-INC_DIRS = . $(INC_MAPL_BASE) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT90) /usr/include
+INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE)  /usr/include simulator
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
@@ -81,7 +79,7 @@ THIS_GFIO = GMAO_gfio_r4
 #                  User Defined Targets
 #                  --------------------
 
-SRCS := sys_tracker.c GeoAngles_py.F90 VLIDORT_LAMBERT.F90 VLIDORT_BRDF_MODIS.F90  
+SRCS := simulator/GeoAngles_py.F90 simulator/mp_netcdf_Mod.F90 simulator/netcdf_Mod.F90
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
 DEPS := $(addsuffix .d, $(basename $(SRCS))) 
  
@@ -96,18 +94,18 @@ python: $(PY_EXTS)
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
 
-%.x: geo_vlidort_netcdf.o %.o 
-	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_CHEM_BASE) \
+%.x:  %.o 
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_CHEM_BASE) \
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
-                                 $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)
+                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
 
 
-geo_angles.x: GeoAngles_py.o geo_vlidort_netcdf.o geo_angles.o
-	$(FC) $(FOPTS) $^ -o $@   $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
-                            $(LIB_MAPL_BASE_STUBS2) $(LIB_MPI) $(LIB_SYS)                                 
-                              
+geo_angles.x: geo_angles.o
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+                            $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)   
+
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------

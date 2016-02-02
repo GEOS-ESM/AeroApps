@@ -100,6 +100,8 @@ class Writer(object):
             res = 'Coarsened Horizontal Resolution'
         elif Name[3][0] == 'N':
             res = 'Full Horizontal Resolution'
+        elif Name[3][0] == 'M':
+            res = 'Full Horizontal Resolution On Cube'
         else:
             res = 'Unknown resolution'
         if Name[3][1] == 'v':
@@ -107,9 +109,11 @@ class Writer(object):
         elif Name[3][1] == 'e':
             level = 'Model-Edge-Level'
         elif Name[3][1] == 'p':
-            level = 'Pressurel-Level'
+            level = 'Pressure-Level'
         elif Name[3][1] == 'x':
             level = 'Single-Level'
+        elif Name[3][1] == 'z':
+            level = 'Height-Level'
         else:
             level = 'unknown'
             
@@ -478,7 +482,8 @@ if __name__ == "__main__":
         freq, dim, name, res = collname.split('_')
         if   freq == 'const': prefix = 'a'
         elif res[0] == 'N':   prefix = 'b'
-        else:                 prefix = 'c'
+        elif res[0] == 'M':   prefix = 'c'
+        else:                 prefix = 'd'
         name = prefix + collname 
         CollNames[name] = collname
 

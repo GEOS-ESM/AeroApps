@@ -52,15 +52,16 @@ SDS = dict (
                'Cloud_Fraction_Ocean',
                'Mean_Reflectance_Ocean',
                'Quality_Assurance_Ocean' ),
-      DEEP = ( 'Deep_Blue_Aerosol_Optical_Depth_Land',
-               'Deep_Blue_Aerosol_Optical_Depth_550_Land',
+      DEEP = ( 'Deep_Blue_Spectral_Aerosol_Optical_Depth_Land',
+               'Deep_Blue_Spectral_Single_Scattering_Albedo_Land',
+               'Deep_Blue_Spectral_Surface_Reflectance_Land',
+               'Deep_Blue_Spectral_TOA_Reflectance_Land',
                'Deep_Blue_Angstrom_Exponent_Land',
-               'Deep_Blue_Single_Scattering_Albedo_Land',
-               'Deep_Blue_Surface_Reflectance_Land',
-               'Deep_Blue_Mean_Reflectance_Land',
-               'Cloud_Fraction_Land',
-               'Quality_Assurance_Land')
-      )
+               'Deep_Blue_Aerosol_Optical_Depth_550_Land_Best_Estimate',
+               'Deep_Blue_Aerosol_Optical_Depth_550_Land_QA_Flag',
+               'Deep_Blue_Algorithm_Flag_Land',
+               'Cloud_Fraction_Land',)
+        )
 
 NEW_SDS = dict ( # New in Collection 6
           Cloud_Fraction_Land = 'Aerosol_Cloud_Fraction_Land',
@@ -90,10 +91,12 @@ ALIAS = dict (              Longitude = 'lon',
        Optical_Depth_Small_Best_Ocean = 'aod_fine',
                  Cloud_Fraction_Ocean = 'cloud',
                Mean_Reflectance_Ocean = 'reflectance',
- Deep_Blue_Aerosol_Optical_Depth_Land = 'aod3ch',
- Deep_Blue_Aerosol_Optical_Depth_550_Land = 'aod550',
-   Deep_Blue_Surface_Reflectance_Land = 'sfc_reflectance',
-      Deep_Blue_Mean_Reflectance_Land = 'reflectance',
+ Deep_Blue_Spectral_Aerosol_Optical_Depth_Land = 'aod3ch',
+ Deep_Blue_Aerosol_Optical_Depth_550_Land_Best_Estimate = 'aod550',
+   Deep_Blue_Spectral_Surface_Reflectance_Land = 'sfc_reflectance',
+      Deep_Blue_Spectral_TOA_Reflectance_Land = 'reflectance',
+Deep_Blue_Spectral_Single_Scattering_Albedo_Land = 'ssa',
+Deep_Blue_Algorithm_Flag_Land = 'atype',
      Deep_Blue_Angstrom_Exponent_Land = 'angstrom',
              )
 
@@ -102,7 +105,7 @@ BAD, MARGINAL, GOOD, BEST = ( 0, 1, 2, 3 ) # QA marks
 KX = dict ( TerraOCEAN = 301,
             TerraLAND  = 302,
             TerraDEEP  = 310,
-            AquaOCEAN  = 311,
+            AquaOCEAN  = 311, 
             AquaLAND   = 312,
             AquaDEEP   = 320,
           )
@@ -187,7 +190,7 @@ class MxD04_L2(object):
                print "Failed concatenating "+sds
            if "Quality_Assurance" in sds:
                if Algo == 'DEEP':
-                     self.__dict__['qa_flag'] = BITS(self.__dict__[sds][:,4])[1:3] # QA Flag
+                     pass
                else:
                      self.__dict__['qa_flag'] = BITS(self.__dict__[sds][:,0])[1:4] # QA Flag
 
@@ -198,6 +201,7 @@ class MxD04_L2(object):
        elif Algo == 'OCEAN':
            self.iGood = self.qa_flag>BAD
        elif Algo == 'DEEP':
+           self.qa_flag = self.Deep_Blue_Aerosol_Optical_Depth_550_Land_QA_Flag
            self.iGood = self.qa_flag>BAD # for now
        else:
            raise ValueError, 'invalid algorithm (very strange)'
@@ -254,11 +258,14 @@ class MxD04_L2(object):
        # Concatenate AOD channels for Deep Blue
        # --------------------------------------
        if Algo == 'DEEP':
-           self.aod = ones((self.nobs,4))
-           self.aod[:,0] = self.aod3ch[:,0]
-           self.aod[:,1] = self.aod3ch[:,1]
-           self.aod[:,2] = self.aod550[:]
-           self.aod[:,3] = self.aod3ch[:,2]
+           try: 
+               self.aod = ones((self.nobs,4))
+               self.aod[:,0] = self.aod3ch[:,0]
+               self.aod[:,1] = self.aod3ch[:,1]
+               self.aod[:,2] = self.aod550[:]
+               self.aod[:,3] = self.aod3ch[:,2]
+           except:
+               pass # don't fuss, aod3ch may not have been read
 
 #---
     def _readList(self,List):
@@ -339,6 +346,28 @@ class MxD04_L2(object):
 
 #---
 
+    def reduce(self,I):
+        """
+        Reduce observations according to index I. 
+        """
+        Nicknames = ALIAS.values()
+        for name in self.__dict__:
+            if name in Nicknames:
+                continue # alias do not get reduced
+            q = self.__dict__[name]
+            if type(q) is type(self.lon):
+                if len(q) == self.nobs:
+                    # print "{} Reducing "+name
+                    self.__dict__[name] = q[I]
+
+        Alias = ALIAS.keys()
+        for sds in self.SDS:
+            if sds in Alias:
+                self.__dict__[ALIAS[sds]] = self.__dict__[sds] # redefine aliases
+
+            self.nobs = len(self.lon)
+
+#---
     def write(self,filename=None,dir='.',expid=None,Verb=1):
         """
         Writes the un-gridded OMI object to a numpy npz file. 

@@ -79,7 +79,7 @@ else if ( ($node =~ jibb*) || ($node =~ jcc01*) ) then
 
 else if (($node =~ pfe*)  || ($node =~ p4fe*) || \
          ($node =~ r[0-9]*i[0-9]*n[0-9]*)     || \
-         ($node =~ bridge*)) then
+         ($node =~ bridge*) || ($node =~ maia*)) then
    set site = "NAS"
 
 else if ($node =~ janus*) then
@@ -88,8 +88,14 @@ else if ($node =~ janus*) then
 else if ( $node =~ bender* ) then
    set site = "ACDL.bender"
 
+else if ( $node =~ *niteroi* ) then
+   set site = "GMAO.niteroi"
+
 else if ( -d /ford1/share/gmao_SIteam/ && -d /ford1/local/ && $arch == Linux ) then
    set site = "GMAO.desktop"
+
+else
+   set site = $node
 
 endif
 
@@ -97,10 +103,7 @@ alias echo2  "echo \!* > /dev/stderr"
 
 # get values
 #-----------
-if ($arch == Linux) then
-   if ($mach == x86_64) goto X86_64
-   if ($mach == i686)   goto I686
-endif
+if ($mach == x86_64) goto X86_64
 
 # ERROR -- unknown architecture/machine
 #--------------------------------------
@@ -127,56 +130,63 @@ set usemodules = 0
 #=================#
 if ( $site == NCCS || $site == JIBB ) then
 
-   set mod1 = comp/intel-13.1.2.183
+   set mod1 = comp/intel-15.0.2.164
 
-   # For MVAPICH2 (recommended)
-   set mod2 = other/mpi/mvapich2-2.1a/intel-13.1.2.183
+   # For MVAPICH2 
+   #set basedir = /discover/swdev/mathomp4/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/ifort_15.0.2.164-mvapich2_2.1
+   #set mod2 = other/mpi/mvapich2-2.1/intel-15.0.2.164
 
+   # For IMPI 5.0 (recommended)
    if ( $site == NCCS ) then
-      set basedir = /discover/nobackup/projects/gmao/share/gmao_ops/Baselibs/v4.0.6_build1/x86_64-unknown-linux-gnu/ifort_13.1.2.183-mvapich2_2.1a
+      set basedir = /discover/nobackup/projects/gmao/share/gmao_ops/Baselibs/v4.0.6_build1/x86_64-unknown-linux-gnu/ifort_15.0.2.164-intelmpi_5.0.3.048
    else
-      set basedir = /jibb/nobackup/gmaosi/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/ifort_13.1.2.183-mvapich2_2.1a
-   endif
+      set basedir = /jibb/nobackup/gmaosi/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/ifort_15.0.2.164-intelmpi_5.0.3.048
+   endif 
+   set mod2 = mpi/impi-5.0.3.048
 
-   # For IMPI 4.0 (caveat)
-   # set basedir = /discover/swdev/mathomp4/Baselibs/GMAO-Baselibs-4_0_3/x86_64-unknown-linux-gnu/ifort_13.1.2.183-impi_4.0.3.008
-   # set mod2 = mpi/impi-4.0.3.008
+   # For MPT
+   #set basedir = /discover/nobackup/projects/gmao/share/gmao_ops/Baselibs/v4.0.6_build1/x86_64-unknown-linux-gnu/ifort_15.0.2.164-mpt_2.11
+   #set mod2 = mpi/sgi-mpt-2.11
 
-   set mod3 = lib/mkl-13.0.1.117
+   set mod3 = lib/mkl-15.0.2.164
    set mod4 = other/comp/gcc-4.6.3-sp1
-   set mod5 = other/SIVO-PyD/spd_1.15.0_gcc-4.6.3-sp1_mkl-13.0.1.117
+   set mod5 = other/SIVO-PyD/spd_1.20.0_gcc-4.6.3-sp1_mkl-15.0.0.090
+   set mod6 = other/git-2.3.1
 
-   set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 )
+   set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 $mod6)
    set modinit = /usr/share/modules/init/csh
    set loadmodules = 0
+   set usemodules = 0
 
 #=======#
 #  NAS  #
 #=======#
 else if ( $site == NAS ) then
 
-   set basedir = /nobackup/gmao_SIteam/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/ifort_2013.5.192-mpt_2.11r13
-   set mod1 = comp-intel/2013.5.192
-   set mod2 = mpi-sgi/mpt.2.11r13
-   set mod3 = x11-libs/32bit
+   set basedir = /nobackup/gmao_SIteam/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/ifort_2015.0.090-mpt_2.12r16
+   set mod1 = comp-intel/2015.0.090
+   set mod2 = mpi-sgi/mpt
+   set mod3 = python/2.7.9
    set mod4 = imagemagick/6.4.0-3
-   set mod5 = python/2.7.6
 
-   set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 )
+   set mods = ( $mod1 $mod2 $mod3 $mod4 )
    set modinit = /usr/share/modules/init/tcsh
    set loadmodules = 0
-   set usemodules = 1
+   set usemodules = 0
 
 #=========#
 #  JANUS  #
 #=========#
 else if ( $site == GMAO.janus ) then
-   set basedir=/ford1/share/gmao_SIteam/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/pgfortran_14.9-openmpi_1.8.2
-   set mod1 = comp/pgi/14.9.0
-   set mod2 = mpi/openmpi/1.8.2-pgi-14.9.0
-   set mod3 = other/python/canopy-1.2.0.1610.rh5-x86-64
+   set basedir=/ford1/share/gmao_SIteam/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/pgfortran_15.7-openmpi_1.8.7
+   set mod1 = comp/pgi/15.7.0
+   set mod2 = mpi/openmpi/1.8.7/pgi-15.7.0
+   set mod3 = other/python/canopy
+   set mod4 = lib/mkl/15.0.2.164
 
-   set mods = ( $mod1 $mod2 $mod3 )
+   setenv GPU_CC_REV cc20
+
+   set mods = ( $mod1 $mod2 $mod3 $mod4 )
    set modinit = /usr/share/Modules/init/tcsh
    set loadmodules = 0
    set usemodules = 1
@@ -191,6 +201,22 @@ else if ( $site == ACDL.bender ) then
     set IFCBIN = /opt/intel/composer_xe_2013.5.192/bin
     set MPIBIN = /ford1/share/gmao_SIteam/MPI/openmpi-1.8.1-ifort-13.1.1.163/bin 
     source $IFCBIN/ifortvars.csh intel64
+    setenv MKLPATH $MKLROOT/lib
+    set path = ( $BASEBIN $MPIBIN $PYBIN $path )
+    set loadmodules = 0
+    set usemodules = 0
+
+#===========#
+#  Niteroi  #
+#===========#
+else if ( $site == GMAO.niteroi ) then
+    set basedir = /Users/mathomp4/Baselibs/GMAO-Baselibs-4_0_6/x86_64-apple-darwin14.0.0/ifort_15.0.1.108-openmpi_1.8.3
+    set BASEBIN = $basedir/$arch/bin
+    set PYBIN   = /Library/Frameworks/EPD64.framework/Versions/7.3/bin
+    set IFCPATH = /opt/intel/composer_xe_2015.1.108
+    set MPIBIN  = /Users/mathomp4/MPI/openmpi/1.8.3/ifort-15.0.1.108
+    source $IFCPATH/bin/compilervars.csh intel64
+    setenv MKLPATH $MKLROOT/lib
     set path = ( $BASEBIN $MPIBIN $PYBIN $path )
     set loadmodules = 0
     set usemodules = 0
@@ -200,50 +226,19 @@ else if ( $site == ACDL.bender ) then
 #=================#
 else if ( $site == GMAO.desktop ) then
 
-   set basedir=/ford1/share/gmao_SIteam/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/ifort_13.1.1.163-openmpi_1.8.1
-   set mod1 = comp/intel/13.1.1.163
-   set mod2 = mpi/openmpi/1.8.1-intel-13.1.1.163
-   set mod3 = other/python/canopy-1.2.0.1610.rh5-x86-64
+   set basedir=/ford1/share/gmao_SIteam/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/ifort_15.0.2.164-openmpi_1.8.7-static
+   set mod1 = comp/intel/15.0.2.164
+   set mod2 = mpi/openmpi/1.8.7/intel-15.0.2.164-static
+   set mod3 = other/python/canopy
+   set mod4 = lib/mkl/15.0.2.164
 
-   set mods = ( $mod1 $mod2 $mod3 )
+   set mods = ( $mod1 $mod2 $mod3 $mod4 )
    set modinit = /usr/share/Modules/init/tcsh
    set loadmodules = 0
    set usemodules = 1
 
 endif
 
-goto ACTION
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                      I686 values (Linux)
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-I686:
-
-#================#
-#  I686 default  #
-#================#
-set basedir = $HOME/baselibs/v2_2_0rp2
-set modinit = DUMMY
-
-#===========================#
-#  LAKE (Atanas's machine)  #
-#===========================#
-if ($node == lake) then
-   set basedir = /home/trayanov/baselibs/v3_1_0rp1
-
-#============#
-#  CALCULON  #
-#============#
-else if ($node == calculon) then
-   set basedir = /home/dasilva/baselibs/v2_2rp2_nb2
-
-#===========#
-#  CEREBUS  #
-#===========#
-else if ($node == cerebus) then
-   set basedir = /home/trayanov/baselibs/v2_2_0rp2
-
-endif
 goto ACTION
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
