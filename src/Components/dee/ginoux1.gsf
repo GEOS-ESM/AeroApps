@@ -1,0 +1,18 @@
+function ginoux1 ( uthresh0, w10m, gwet )
+
+  if (uthresh0='uthresh0')
+      say 'usage:  ginoux1(uthresh0,w10m,gwet)'
+      return
+  endif
+
+*  Initialize local variables
+*  --------------------------
+   'gwet = if('gwet',<,1e-3,1e-3,'gwet')'
+
+   'uthresh = ' uthresh0 ' * (1.2+0.2*log10(gwet))'
+
+   'emis = if(gwet,<,0.5,1,0) * if('w10m',>,uthresh,1,0) * pow('w10m',2) * ('w10m'-uthresh)'
+
+   return 'emis'
+
+

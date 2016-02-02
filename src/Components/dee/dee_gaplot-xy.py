@@ -40,7 +40,8 @@ def plot_xy(path,expr,var,Var,clevs,cmin,scale,year1=2003,year2=2014):
 
     ga = myGrADS(Window=False)
 
-    for prod in ('MOD04', 'MYD04'):
+    #for prod in ('MOD04', 'MYD04', 'MxD04'):
+    for prod in ('MxD04', ):
 
         d['prod'] = prod
         d['sat'] = Sat[prod]
@@ -181,8 +182,6 @@ if __name__ == "__main__":
     fmin = 0.1 # foo threshold to set to undef
     plot_DEE_xy(path,var,Var,clevs,cmin,scale,fmin=fmin) 
 
-    """    
-
     # Direct Emission Estimate: 
     # Divergence Contribution
     # ------------------------
@@ -203,3 +202,4 @@ if __name__ == "__main__":
     fmin = 0.1 # foo threshold to set to undef
     plot_DEE_xy(path,var,Var,clevs,cmin,scale,fmin=fmin,cdiv=0) 
 
+    """

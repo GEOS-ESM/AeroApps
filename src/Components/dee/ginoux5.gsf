@@ -1,0 +1,25 @@
+*
+* Computes the dust emissions dependence on wind speed 
+* and soil wetness for one time step.
+* 
+*  bins         1             2            3           4           5
+* radius   [    0.73,         1.4,          2.4,         4.5,      8.0 )
+* uthresh0 [ 2.45283747,  1.50442517,  1.00359654,  0.62646651,  0.41012609
+* fraction [   0.1            0.25          0.25       0.25         0.25 )
+*
+
+function ginoux5 ( in_w10m, gwet )
+  if (in_w10m='in_w10m')
+      say 'usage:  ginoux5(w10m,gwet)'
+      return
+  endif
+  
+  'emis1 = 0.10 * ginoux1(2.45283747,'in_w10m','gwet')'
+  'emis2 = 0.25 * ginoux1(1.50442517,'in_w10m','gwet')'
+  'emis3 = 0.25 * ginoux1(1.00359654,'in_w10m','gwet')'
+  'emis4 = 0.25 * ginoux1(0.62646651,'in_w10m','gwet')'
+  'emis5 = 0.25 * ginoux1(0.41012609,'in_w10m','gwet')'
+
+  return 'emis1+emis2+emis3+emis4+emis5'
+
+

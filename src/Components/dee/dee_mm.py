@@ -151,7 +151,7 @@ def aod_o(path,filename,prod,gatime):
                 -o    $filename \
                 -vars aod \
                 -time $t1 $t1 \
-                -func 'ave(const(@.1,0,-u)+const(@.2,0,1)/(if(@.1,==,-u,0,1)+if(@.2,==,-u,0,1)),time=$t1,time=$t2)'
+                -func 'ave(const(@.1,0,-u)+const(@.2,0,-u)/(if(@.1,==,-u,0,1)+if(@.2,==,-u,0,1)),time=$t1,time=$t2)'
                """
     else:
         tmpl = """
@@ -200,9 +200,11 @@ def xxx_m(path,filename,prod,gatime,inFile,var):
 
     cmd = Template(tmpl).substitute(d)
 
-    rc = os.system(cmd)
-
-    if rc:
+    print 30*'-'
+    print cmd
+    print 30*'-'
+    
+    if os.system(cmd):
         raise RuntimeError, 'error on return from %s'%cmd
 
 #....................................................................
@@ -361,6 +363,8 @@ if __name__ == "__main__":
 
                 dirn = path+'/Level3/%s/Y%d/M%02d'%(prod,year,month)
 
+                os.system('/bin/mkdir -p '+dirn)
+
                 """
                 # Deep Blue Mass flux
                 # -------------------
@@ -382,12 +386,12 @@ if __name__ == "__main__":
                 filename = '%s/dee_%s.nobs.%d%02d.nc4'%(dirn,prod,year,month)
                 nobs(path,filename,prod,gatime)
 
-                """
-
                 # MERRA-2 Mass flux
                 # ------------------
                 filename = '%s/dee_%s.uqvq_m.%d%02d.nc4'%(dirn,prod,year,month)
-                mflux_m(path,filename,prod,gatime)
+                inFile, var = 'du_cm', 'dufluxu dufluxv'
+                xxx_m(path,filename,prod,gatime,inFile,var)
+
 
                 # MERRA-2 AOD
                 # -----------
@@ -418,8 +422,11 @@ if __name__ == "__main__":
                 filename = '%s/dee_%s.duwx.%d%02d.nc4'%(dirn,prod,year,month)
                 wx_modulation(path,filename,prod,gatime)
 
+                """
+
                 # Observed AOD
                 # ------------
                 filename = '%s/dee_%s.aod_o.%d%02d.nc4'%(dirn,prod,year,month)
                 aod_o(path,filename,prod,gatime)
+
 
