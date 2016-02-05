@@ -1587,7 +1587,7 @@ end subroutine outfile_extname
       write(comment,'(F10.2)') channels(ch)
       call check(nf90_def_var(ncid, 'ref_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,szaDimID,vzaDimID,raaDimID/),refVarID(ch)),"create reflectance var")
       call check(nf90_def_var(ncid, 'surf_ref_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,szaDimID,vzaDimID,raaDimID/),albVarID(ch)),"create albedo var")
-      call check(nf90_def_var(ncid, 'aod_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,szaDimID,vzaDimID,raaDimID/),aotVarID(ch)),"create aot var")
+      call check(nf90_def_var(ncid, 'aod_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID/),aotVarID(ch)),"create aot var")
     end do
 
     ! Variable Attributes
