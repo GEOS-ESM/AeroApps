@@ -1,3 +1,44 @@
+   subroutine ThreshVelocity (n, uthresh0, radius_microns)
+
+! !USES:
+
+  implicit NONE
+
+! !INPUT PARAMETERS:
+
+   real,    intent(in) :: radius_microns(n)        ! particle radius [micron]
+   integer, intent(in) :: n
+
+! !OUTPUT PARAMETERS:
+
+   real,    intent(out) :: uthresh0(n)             ! Local emission
+
+!EOP
+!-------------------------------------------------------------------------
+
+! !Local Variables
+   integer :: i
+   real, parameter ::  air_dens = 1.25       ! Air density = 1.25 kg m-3
+   real, parameter ::  soil_density = 2650. ! km m-3
+   real, parameter ::  grav = 9.80           ! this is what GEOS-5 uses, weird!
+   real            ::  diameter              ! dust effective diameter [m]
+ 
+!  Calculate the threshold velocity of wind erosion [m/s] for each radius
+!  for a dry soil, as in Marticorena et al. [1997].
+!  The parameterization includes the air density which is assumed 
+!  = 1.25 kg m-3 to speed the calculation.  The error in air density is
+!  small compared to errors in other parameters.
+!  ----------------------------------------------------------------------
+   do i = 1, n
+      diameter = 2. * radius_microns(i) * 1e-6 ! in meters
+      uthresh0(i) = 0.13 * sqrt(soil_density*grav*diameter/air_dens) &
+                    * sqrt(1.+6.e-7/(soil_density*grav*diameter**2.5)) &
+           / sqrt(1.928*(1331.*(100.*diameter)**1.56+0.38)**0.092 - 1.)
+   end do
+
+   return 
+   end subroutine ThreshVelocity
+
 !
 ! !IROUTINE:  DustEmissionGOCART - Compute the dust emissions
 !
@@ -23,7 +64,7 @@
 
    real,    intent(out) :: emissions(nobs)         ! Local emission
 
-! !DESCRIPTION: Computes the dust emissionsdependence on wind speed
+! !DESCRIPTION: Computes the dust emissions dependence on wind speed
 !               and soil wetness for one time step.
 !               GOCART-based dust emission scheme (modified from
 ! Ginoux et al., JGR, 2001) .Pass in a grid of wind speeds, surface
@@ -65,6 +106,8 @@
    u_thresh0 = 0.13 * sqrt(soil_density*grav*diameter/air_dens) &
                     * sqrt(1.+6.e-7/(soil_density*grav*diameter**2.5)) &
            / sqrt(1.928*(1331.*(100.*diameter)**1.56+0.38)**0.092 - 1.)
+   
+   print *, 'u_thresh0 = ',  u_thresh0 
 
 !  Spatially dependent part of calculation
 !  ---------------------------------------
