@@ -290,8 +290,8 @@ program geo_vlidort2OS_NNTestData
 ! Figure out how many indices to work on
 !------------------------------------------
   clrm = 0
-  do i=1,im,10
-    do j=1,jm,10
+  do i=1,im,50
+    do j=1,jm,50
       if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99))  then
         clrm = clrm + 1
         clmask(i,j) = .True.
@@ -768,6 +768,8 @@ subroutine outfile_extname(file)
       write(file,'(A,I1,A)') trim(file),nodenum,'.nc4'
     else if (nodenum >= 10 .and. nodenum < 100) then
       write(file,'(A,I2,A)') trim(file),nodenum,'.nc4'
+    else if (nodenum >= 100 .and. nodenum < 1000) then
+      write(file,'(A,I3,A)') trim(file),nodenum,'.nc4'      
     end if
   else
     write(file,'(2A)') trim(file),'nc4'
