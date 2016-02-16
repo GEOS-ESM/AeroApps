@@ -276,8 +276,10 @@
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_OBSGEOMS_INPUT(1,3) = self%Surface%relat_azimuth      
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_LEVELS(1) = 0.0     ! This is TOA   
 
- 
-           
+      if (self%Surface%solar_zenith == 0.0) then
+         self%Surface%Base%VIO%VLIDORT_ModIn%MBool%TS_DO_SSCORR_NADIR        = .true.
+         self%Surface%Base%VIO%VLIDORT_ModIn%MBool%TS_DO_SSCORR_OUTGOING     = .false.
+      end if           
      
       self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_height_grid(0:NLAYERS)      = self%ze * 1.E-3  ! en km
       self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_pressure_grid(0:NLAYERS)    = self%pe * 1.E-2  ! en hPa
@@ -590,6 +592,10 @@
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_OBSGEOMS_INPUT(1,3) = self%Surface%relat_azimuth         
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_LEVELS(1) = 0.0     ! This is TOA   
 
+      if (self%Surface%solar_zenith == 0.0) then
+         self%Surface%Base%VIO%VLIDORT_ModIn%MBool%TS_DO_SSCORR_NADIR        = .true.
+         self%Surface%Base%VIO%VLIDORT_ModIn%MBool%TS_DO_SSCORR_OUTGOING     = .false.
+      end if 
      
       self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_height_grid(0:NLAYERS)      = self%ze * 1.E-3  ! en km
       self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_pressure_grid(0:NLAYERS)    = self%pe * 1.E-2  ! en hPa
