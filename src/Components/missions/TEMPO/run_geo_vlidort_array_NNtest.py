@@ -41,6 +41,8 @@ def make_workspace(date,ch,code,outdir,runfile,instname,prefix='workdir',nodemax
         os.symlink(cwd+'/Chem_MieRegistry.rc','Chem_MieRegistry.rc')
     if not os.path.isfile('clean_mem.sh'):
         os.symlink(cwd+'/clean_mem.sh','clean_mem.sh')
+    if not os.path.isfile('test_angles_albedo.nc4'):
+        shutil.copyfile(cwd+'/test_angles_albedo.nc4','test_angles_albedo.nc4')        
         
     source = open(cwd+'/'+runfile,'r')
     destination = open(runfile,'w')
@@ -142,6 +144,7 @@ def destroy_workspace(jobid,dirname,outdir,addoutdir=None,nodemax=None,profile=F
     os.remove('ExtData')
     os.remove('geo_vlidort.rc')
     os.remove('geo_vlidort_run_array.j')
+    os.remove('test_angles_albedo.nc4')
 
     if profile is False:
         if nodemax is not None and nodemax > 1:
@@ -167,23 +170,23 @@ def destroy_workspace(jobid,dirname,outdir,addoutdir=None,nodemax=None,profile=F
 
     #runscript to combine files
     if nodemax is not None and nodemax > 1:
-        outfilelist = glob.glob('*.lc2.*.nc4')
+        outfilelist = glob.glob('*.inputs.*.nc4')
         combine_files(outfilelist)
-        outfilelist = glob.glob('*.lc2.*.nc4')
+        outfilelist = glob.glob('*.inputs.*.nc4')
         move_file(outfilelist,outdir)
     else:
-        outfilelist = glob.glob('*.lc2.*.nc4')
+        outfilelist = glob.glob('*.inputs.*.nc4')
         move_file(outfilelist,outdir)
 
 
     if (addoutdir is not None):
         if nodemax is not None and nodemax > 1:
-            outfilelist = glob.glob('*.lc.*.nc4')
+            outfilelist = glob.glob('*.outputs.*.nc4')
             combine_files(outfilelist)
-            outfilelist = glob.glob('*.lc.*.nc4')
+            outfilelist = glob.glob('*.outputs.*.nc4')
             move_file(outfilelist,addoutdir)
         else:
-            outfilelist = glob.glob('*.lc.*.nc4')
+            outfilelist = glob.glob('*.outputs.*.nc4')
             move_file(outfilelist,addoutdir)
 
     os.chdir(cwd)
@@ -411,15 +414,15 @@ def prefilter(date,indir,instname,layout=None):
 if __name__ == "__main__":
     instname          = 'tempo'
     version           = '1.0'    
-    startdate         = '2006-07-27T12:00:00'
-    enddate           = '2006-07-27T12:00:00'
+    startdate         = '2006-07-27T00:00:00'
+    enddate           = '2006-07-27T00:00:00'
     episode           = None
     channels          = '470'
     surface           = 'MAIACRTLS'
     interp            = 'interpolate'
     i_band            = '7'    
     additional_output = True
-    nodemax           = 10
+    nodemax           = 15
     surf_version      = '1.0'
     layout            = None
 
@@ -433,8 +436,8 @@ if __name__ == "__main__":
     #    End of uper inputs
     ###
     ################
-    profile           = False
-    runmode           = '2OS'
+    profile           = True
+    runmode           = 'vector'
     indir             = nccs 
     #outdir            = nccs + 'LevelC2'
     outdir            = '/discover/nobackup/pcastell/2OS_NN/'
@@ -459,7 +462,7 @@ if __name__ == "__main__":
             startdate  = '2007-04-10T00:00:00Z'
             enddate    = '2007-04-11T23:00:00Z'
 
-    dt = timedelta(hours=1)
+    dt = timedelta(hours=6)
     startdate = parse(startdate)
     enddate   = parse(enddate)
     jobsmax   = 150
