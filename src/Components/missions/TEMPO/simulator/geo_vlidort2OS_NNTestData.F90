@@ -139,6 +139,7 @@ program geo_vlidort2OS_NNTestData
   real*8, pointer                       :: Q_(:,:,:,:,:) => null()                ! Q Stokes component
   real*8, pointer                       :: U_(:,:,:,:,:) => null()                ! U Stokes component
   real*8, pointer                       :: ROT_(:,:,:) => null()                  ! rayleigh optical thickness
+  real*8, pointer                       :: PE_(:,:) => null()                   ! layer edge pressure [Pa]  
 
   real, pointer                         :: TAU_(:,:,:) => null()                  ! aerosol optical depth
   real, pointer                         :: SSA_(:,:,:) => null()                  ! single scattering albedo
@@ -381,6 +382,7 @@ program geo_vlidort2OS_NNTestData
   SSA_           = dble(MISSING)
   G_             = dble(MISSING)
   ROT_           = dble(MISSING)
+  PE_            = dble(MISSING)
   radiance_VL    = dble(MISSING)
   reflectance_VL = dble(MISSING)
   if (.not. scalar) then
@@ -518,7 +520,9 @@ program geo_vlidort2OS_NNTestData
 
             do ch=1,nch     
               ROT_(c,:,ch) = ROT(:,nobs,ch)      
-            end do      
+            end do   
+
+            PE_(c,:) = dble(pe(:,nobs))
 
             if (.not. scalar) then
               Q_(c,sza,vza,raa,alb)      = Q(nobs,nch)
@@ -599,6 +603,9 @@ program geo_vlidort2OS_NNTestData
           call check(nf90_put_var(ncid, varid, reshape(ROT_(:,:,ch),(/clrm_total,km/))), "writing out rot")
         end do
       end do
+
+      call check(nf90_inq_varid(ncid, 'pe', varid), "get pe vaird")
+      call check(nf90_put_var(ncid, varid, PE_), "writing out pe")
       call check( nf90_close(ncid), "close atmosfile" )
     end if  !additional_output
     deallocate(field)
@@ -990,6 +997,7 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(SSA_,(/clrm,km,nch/),rc=ierr)
     call MAPL_AllocNodeArray(G_,(/clrm,km,nch/),rc=ierr)
     call MAPL_AllocNodeArray(ROT_,(/clrm,km,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(PE_,(/clrm,km+1/),rc=ierr)
    
     if (.not. scalar) then
       call MAPL_AllocNodeArray(Q_,checkSizeR8((/clrm,nsza,nvza,nraa,nalbedo/)),rc=ierr)
@@ -1138,11 +1146,11 @@ end subroutine outfile_extname
     integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID, rotVarID     
     
     integer                            :: ncid
-    integer                            :: pixelDimID, ewDimID, nsDimID, levDimID  
+    integer                            :: pixelDimID, ewDimID, nsDimID, levDimID, elevDimID  
     integer                            :: szaDimID, vzaDimID, raaDimID, albedoDimID     
     integer                            :: maskVarID
     integer                            :: levVarID
-    integer                            :: szaVarID, vzaVarID, raaVarID, albedoVarID
+    integer                            :: szaVarID, vzaVarID, raaVarID, albedoVarID, peVarID
     integer                            :: ch
 
     real*8,allocatable,dimension(:)    :: lev
@@ -1323,6 +1331,7 @@ end subroutine outfile_extname
       ! Create dimensions
       call check(nf90_def_dim(ncid, "pixel", clrm, pixelDimID), "creating pixel dimension")
       call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
+      call check(nf90_def_dim(ncid, "elev", km+1, elevDimID), "creating ns dimension") !km + 1
       call check(nf90_def_dim(ncid, "ew", im, ewDimID), "creating ew dimension") !im
       call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
 
@@ -1384,6 +1393,8 @@ end subroutine outfile_extname
         call check(nf90_def_var(ncid, 'g_'   // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),gVarID(ch)),"create g var")
       end do
 
+      call check(nf90_def_var(ncid,'pe',nf90_float,(/pixelDimID,elevDimID/),peVarID),"create pe var")
+
       ! Variable Attributes
   !                                          Additional Data
   !                                          -----------------  
@@ -1423,6 +1434,10 @@ end subroutine outfile_extname
 
       end do
 
+      call check(nf90_put_att(ncid,peVarID,'standard_name','Edge Pressure'),"standard_name attr")
+      call check(nf90_put_att(ncid,peVarID,'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,peVarID,'units','Pa'),"units attr")
+      call check(nf90_put_att(ncid,peVarID,"_FillValue",real(MISSING)),"_Fillvalue attr") 
 
   !                                                  LEV
   !                                          -----------------------  
