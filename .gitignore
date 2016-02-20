@@ -38,6 +38,10 @@
 *.npz
 *.png
 *.mp4
+*.nc4
+*.nc
+*.hdf
+*.h5
  
 # Logs and databases #
 ######################
