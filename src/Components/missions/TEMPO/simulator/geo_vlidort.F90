@@ -486,7 +486,7 @@ program geo_vlidort
   call MAPL_SyncSharedMemory(rc=ierr)
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
-  do cc = starti, starti + 80 !endi
+  do cc = starti, endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
 
@@ -754,9 +754,10 @@ program geo_vlidort
       end do
 
       call check(nf90_inq_varid(ncid, 'pe', varid), "get pe vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(PE_(:,k),(/clrm_total/)),clmask,field), &
-                 start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out pe")
-
+      do k=1,km+1
+        call check(nf90_put_var(ncid, varid, unpack(reshape(PE_(:,k),(/clrm_total/)),clmask,field), &
+                   start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out pe")
+      end do
       call check( nf90_close(ncid), "close atmosfile" )
     end if  !additional_output
     deallocate(field)
