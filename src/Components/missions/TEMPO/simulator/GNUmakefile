@@ -112,7 +112,7 @@ python: $(PY_EXTS)
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
                                  $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
 
-geo_vlidort2OS_NNTestData.x: geo_vlidort2OS_NNTestData.o 
+geo_vlidort2OS_vnncLUT.x: geo_vlidort2OS_NNTestData.o 
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT2OS) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \

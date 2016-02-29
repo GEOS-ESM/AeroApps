@@ -19,7 +19,7 @@
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #  include "MAPL_Generic.h"
 #  include "MAPL_ErrLogMain.h"
-program geo_vlidort2OS_NNTestData
+program geo_vlidort_vnncLUT
 
   use ESMF                         ! ESMF modules
   use MAPL_Mod
@@ -291,8 +291,8 @@ program geo_vlidort2OS_NNTestData
 ! Figure out how many indices to work on
 !------------------------------------------
   clrm = 0
-  do i=1,im,50
-    do j=1,jm,50
+  do i=1,im,400
+    do j=1,jm,300
       if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99))  then
         clrm = clrm + 1
         clmask(i,j) = .True.
@@ -434,7 +434,7 @@ program geo_vlidort2OS_NNTestData
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
 ! --------------------------------------------------------------
-
+if (myid == 4) then
   do cc = starti, endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
@@ -543,7 +543,7 @@ program geo_vlidort2OS_NNTestData
     end if
                 
   end do ! do clear pixels
-
+end if ! if myid ==
 ! Wait for everyone to finish calculations
 ! ----------------------------------------
   call MAPL_SyncSharedMemory(rc=ierr)
@@ -1181,7 +1181,7 @@ end subroutine outfile_extname
     write(comment,'(A)') 'Global Model and Assimilation Office'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'source',trim(comment)),"source attr")
 
-    write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort2OS_NNTestData.x'
+    write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort_vnncLUT.x'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'history',trim(comment)),"history attr")
 
     call check(nf90_put_att(ncid,NF90_GLOBAL,'grid_inputs',trim(INV_file)),"input files attr")
@@ -1902,4 +1902,4 @@ end subroutine outfile_extname
   end subroutine deallocate_shared
 
 
-end program geo_vlidort2OS_NNTestData
+end program geo_vlidort_vnncLUT
