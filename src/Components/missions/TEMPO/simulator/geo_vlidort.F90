@@ -173,6 +173,7 @@ program geo_vlidort
   real, pointer                         :: TAU_(:,:,:) => null()                  ! aerosol optical depth
   real, pointer                         :: SSA_(:,:,:) => null()                  ! single scattering albedo
   real, pointer                         :: G_(:,:,:) => null()                    ! asymmetry factor
+  real, pointer                         :: PE_(:,:) => null()
 
   real*8,allocatable                    :: field(:,:)                             ! Template for unpacking shared arrays
   real*8,allocatable                    :: AOD(:)                                 ! Temporary variable to add up AOD
@@ -444,6 +445,7 @@ program geo_vlidort
   G_             = dble(MISSING)
   ALBEDO_        = dble(MISSING)
   ROT_           = dble(MISSING)
+  PE_            = dble(MISSING)
   radiance_VL    = dble(MISSING)
   reflectance_VL = dble(MISSING)
   if (.not. scalar) then
@@ -484,13 +486,15 @@ program geo_vlidort
   call MAPL_SyncSharedMemory(rc=ierr)
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
-  do cc = starti, endi
+  do cc = starti, starti + 80 !endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
 
     call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
+
+    PE_(c,:) = pe(:,nobs)
 
     write(msg,'(A,I)') 'getEdgeVars ', myid
     call write_verbose(msg)
@@ -748,6 +752,11 @@ program geo_vlidort
                     start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out rot")
         end do
       end do
+
+      call check(nf90_inq_varid(ncid, 'pe', varid), "get pe vaird")
+      call check(nf90_put_var(ncid, varid, unpack(reshape(PE_(:,k),(/clrm_total/)),clmask,field), &
+                 start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out pe")
+
       call check( nf90_close(ncid), "close atmosfile" )
     end if  !additional_output
     deallocate(field)
@@ -830,10 +839,12 @@ function when()
 
       call idate(today(1),today(2),today(3))   ! today(1)=month, (2)=day, (3)=year
       call itime(now)     ! now(1)=hour, (2)=minute, (3)=second
-      write ( when, 1000 )  today(1), today(2), today(3), now
-      1000 format ( 'Date ', i2.2, '/', i2.2, '/', i2.2, '; time ',&
-                     i2.2, ':', i2.2, ':', i2.2 )
+      write ( when, 1000 )  today(1), today(2), today(3)    !, now
+      ! 1000 format ( 'Date ', i2.2, '/', i2.2, '/', i2.2, '; time ',&
+      !                i2.2, ':', i2.2, ':', i2.2 )
 
+      1000 format ( 'Date ', i2.2, '/', i2.2, '/', i2.2)
+      
 end function when
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -959,9 +970,9 @@ subroutine filenames()
 
   if (additional_output) then
     if (vlidort) then
-      write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc.vlidort.'
+      write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.add.vlidort.'
     else
-      write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc.lidort.'
+      write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.add.lidort.'
     end if
     call outfile_extname(ATMOS_file)
   end if
@@ -1429,6 +1440,7 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(G_,(/clrm,km,nch/),rc=ierr)
     call MAPL_AllocNodeArray(ROT_,(/clrm,km,nch/),rc=ierr)
     call MAPL_AllocNodeArray(ALBEDO_,(/clrm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(PE_,(/clrm,km+1/),rc=ierr)
     
     if (.not. scalar) then
       call MAPL_AllocNodeArray(Q_,(/clrm,nch/),rc=ierr)
@@ -1599,7 +1611,8 @@ end subroutine outfile_extname
 
     integer,dimension(nch)             :: radVarID, refVarID, aotVarID   
     integer,dimension(nch)             :: qVarID, uVarID, albVarID      
-    integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID, rotVarID     
+    integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID, rotVarID
+    integer                            :: peVarID     
     
     integer                            :: ncid
     integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID       
@@ -1899,7 +1912,7 @@ end subroutine outfile_extname
           call check(nf90_def_var(ncid, 'u_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),uVarID(ch)),"create U var")
         end if        
       end do
-
+      call check(nf90_def_var(ncid,'pe',nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),peVarID),"create pe var")
       ! Variable Attributes
   !                                          Additional Data
   !                                          -----------------  
@@ -1969,6 +1982,11 @@ end subroutine outfile_extname
         end if
 
       end do
+
+      call check(nf90_put_att(ncid,peVarID,'standard_name','Edge Pressure'),"standard_name attr")
+      call check(nf90_put_att(ncid,peVarID,'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,peVarID,'units','Pa'),"units attr")
+      call check(nf90_put_att(ncid,peVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")  
 
   !                                          scanTime
   !                                          -------  
@@ -2416,6 +2434,7 @@ end subroutine outfile_extname
     call MAPL_DeallocNodeArray(G_,rc=ierr)
     call MAPL_DeallocNodeArray(ROT_,rc=ierr)
     call MAPL_DeallocNodeArray(ALBEDO_,rc=ierr)
+    call MAPL_DeallocNodeArray(PE_,rc=ierr)
     if (.not. scalar) then
       call MAPL_DeallocNodeArray(Q_,rc=ierr)
       call MAPL_DeallocNodeArray(U_,rc=ierr)
