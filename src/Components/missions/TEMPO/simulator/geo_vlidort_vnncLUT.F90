@@ -1696,7 +1696,7 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, layout, label = 'LAYOUT:',default='111')    
     call ESMF_ConfigGetAttribute(cf, vlidort, label = 'VLIDORT:',default=.true.)  
     call ESMF_ConfigGetAttribute(cf, DO_2OS_CORRECTION, label = 'DO_2OS_CORRECTION:',default=.false.)        
-    call ESMF_ConfigGetAttribute(cf, ANG_file, label = 'ANGLE_FILE:',default='test_angles_albedo.nc4')
+    call ESMF_ConfigGetAttribute(cf, ANG_file, label = 'ANGLE_FILE:',default='LUT_angles_albedo.nc4')
 
 
     ! Figure out number of channels and read into vector
