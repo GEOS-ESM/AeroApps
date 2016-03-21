@@ -223,7 +223,7 @@ class GOCI(object):
         tymes = self.tyme.ravel()
         #tymes[:] = self.gtime # use mean granule time
 
-        tymes[~isnan(tymes)] = self.gtime
+        tymes[~isnan(self.Observation_time_minute.ravel())] = self.gtime
                  
         # Loop over variables on file
         # ---------------------------
@@ -264,7 +264,7 @@ class GOCI(object):
         tymes = self.tyme.ravel()
         #tymes[:] = self.gtime # use mean granule time
 
-        tymes[~isnan(tymes)] = self.gtime
+        tymes[~isnan(self.Observation_time_minute.ravel())] = self.gtime
                  
         # Loop over variables on file
         # ---------------------------
@@ -373,11 +373,13 @@ class GOCI(object):
 
 if __name__ == "__main__":
 
-    gocifile = ['/discover/nobackup/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316001643.hdf']
-            #'/nobackup/3/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316011643.hdf']
+    if os.path.exists('/discover/nobackup/pcastell/GOCI/'):
+        gocifile = ['/discover/nobackup/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316001643.hdf']
+    else:
+        gocifile  = ['/nobackup/3/pcastell/GOCI/20160316/']
 
     g = GOCI(gocifile, Verb=1,only_good=False)
 
     #inFile = '/home/adasilva/opendap/fp/opendap/assim/inst1_2d_hwl_Nx'
     inFile  = '/discover/nobackup/pcastell/workspace/vis/GOCI/inst1_2d_hwl_Nx'
-    g.linearSampleFile(inFile,onlyVars=('TOTEXTTAU',))
+    #g.linearSampleFile(inFile,onlyVars=('TOTEXTTAU',))
