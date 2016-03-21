@@ -216,7 +216,7 @@ class GOCI(object):
         # ---------
         f = GFIOctl(inFile)
         if self.sample == None:
-            self.sample = MxD03Handle(inFile)
+            self.sample = GOCIHandle(inFile)
         if onlyVars is None:
             onlyVars = f.vname
 
@@ -255,7 +255,7 @@ class GOCI(object):
         # ----------------------------
         f = GFIOctl(inFile)
         if self.sample == None:
-            self.sample = MxD03Handle(inFile)
+            self.sample = GOCIHandle(inFile)
         if onlyVars is None:
             onlyVars = f.vname
 
@@ -297,7 +297,7 @@ class GOCI(object):
         # ----------------------------
         f = GFIOctl(inFile)
         if self.ica == None:
-            self.ica = MxD03Handle(inFile)
+            self.ica = GOCIHandle(inFile)
 
         # Handle grid indices for ICA algorithms
         # --------------------------------------
@@ -375,12 +375,15 @@ class GOCI(object):
 
 if __name__ == "__main__":
 
-    gocifile = ['/nobackup/3/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316001643.hdf',
-            '/nobackup/3/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316011643.hdf']
+    gocifile = ['/discover/nobackup/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316001643.hdf']
+            #'/nobackup/3/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316011643.hdf']
 
     g = GOCI(gocifile, Verb=1)
 
-    
+    inFile = 'inst1_2d_hwl_Nx'
+    g.linearSampleFile(inFile,onlyVars=('TOTTAUEXT'))
+
+
 #     m.getICAindx(asm_Nx)
      
 # def hold():
