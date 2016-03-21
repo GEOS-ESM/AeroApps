@@ -134,9 +134,9 @@ class GOCI(object):
 
         # Mean Granule Time
         # ---------------------
-        notNaN = ~isnan(self.Observation_time_minute)
-        dt = self.tyme[notNaN].max()-self.tyme[notNaN].min()
-        self.gtime = dt/2 + self.tyme[notNaN].min()
+        NaN = isnan(concatenate(self.Observation_time_minute))
+        dt = concatenate(self.tyme)[~NaN].max()-concatenate(self.tyme)[~NaN].min()
+        self.gtime = dt/2 + concatenate(self.tyme)[~NaN].min()
 
         # Make each attribute a single numpy array
         # ----------------------------------------        
