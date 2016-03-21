@@ -262,10 +262,10 @@ class GOCI(object):
         # Flatten coordinates
         # -------------------
         nt, nr = self.lon.shape
-        tyme = tile(self.tyme,(nr,1)).T
+        #tyme = tile(self.tyme,(nr,1)).T
         lons = self.lon.ravel()
         lats = self.lat.ravel()
-        tymes = tyme.ravel()
+        tymes = self.tyme.ravel()
         tymes[:] = self.gtime # use mean granule time
                  
         # Loop over variables on file
@@ -382,7 +382,7 @@ if __name__ == "__main__":
 
     #inFile = '/home/adasilva/opendap/fp/opendap/assim/inst1_2d_hwl_Nx'
     inFile  = '/discover/nobackup/pcastell/workspace/vis/GOCI/inst1_2d_hwl_Nx'
-    g.linearSampleFile(inFile,onlyVars=('TOTTAUEXT'))
+    g.linearSampleFile(inFile,onlyVars=('TOTTAUEXT',))
 
 
 #     m.getICAindx(asm_Nx)
