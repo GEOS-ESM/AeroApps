@@ -380,7 +380,7 @@ if __name__ == "__main__":
 
     g = GOCI(gocifile, Verb=1)
 
-    inFile = 'inst1_2d_hwl_Nx'
+    inFile = ' /home/adasilva/opendap/fp/opendap/assim/inst1_2d_hwl_Nx'
     g.linearSampleFile(inFile,onlyVars=('TOTTAUEXT'))
 
 
