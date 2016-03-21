@@ -132,6 +132,11 @@ class GOCI(object):
 
         self.SDS.append('tyme')
 
+        # Mean Granule Time
+        # ---------------------
+        dt = self.tyme.max()-self.tyme.min()
+        self.gtime = dt/2 + self.tyme.min()
+
         # Make each attribute a single numpy array
         # ----------------------------------------        
         for sds in self.SDS:
@@ -148,12 +153,6 @@ class GOCI(object):
             # ---------------------
             self._noNANs()
             self._qaFilter()
-
-            # Mean Granule Time
-            # ---------------------
-            dt = self.tyme.max()-self.tyme.min()
-            self.gtime = dt/2 + self.tyme.min()
-
 
 
         # Aliases for convenience
@@ -380,7 +379,7 @@ if __name__ == "__main__":
 
     g = GOCI(gocifile, Verb=1)
 
-    inFile = ' /home/adasilva/opendap/fp/opendap/assim/inst1_2d_hwl_Nx'
+    inFile = '/home/adasilva/opendap/fp/opendap/assim/inst1_2d_hwl_Nx'
     g.linearSampleFile(inFile,onlyVars=('TOTTAUEXT'))
 
 
