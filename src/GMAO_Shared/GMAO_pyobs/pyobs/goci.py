@@ -15,14 +15,8 @@ from numpy    import zeros, ones, concatenate, array, shape, arange, tile, isnan
 from datetime import date, datetime, timedelta
 from glob     import glob
 
-# from gfio      import GFIO
-
 from pyhdf.SD import SD, HDF4Error
-
 #---  
-
-#DATE_START = datetime(1993,1,1,0,0,0)
-
 
 SDS = ['Longitude', 
          'Latitude', 
@@ -227,7 +221,7 @@ class GOCI(object):
         lons = self.lon.ravel()
         lats = self.lat.ravel()
         tymes = self.tyme.ravel()
-        tymes[:] = self.gtime # use mean granule time
+        #tymes[:] = self.gtime # use mean granule time
                  
         # Loop over variables on file
         # ---------------------------
@@ -266,7 +260,7 @@ class GOCI(object):
         lons = self.lon.ravel()
         lats = self.lat.ravel()
         tymes = self.tyme.ravel()
-        tymes[:] = self.gtime # use mean granule time
+        #tymes[:] = self.gtime # use mean granule time
                  
         # Loop over variables on file
         # ---------------------------
@@ -383,16 +377,3 @@ if __name__ == "__main__":
     #inFile = '/home/adasilva/opendap/fp/opendap/assim/inst1_2d_hwl_Nx'
     inFile  = '/discover/nobackup/pcastell/workspace/vis/GOCI/inst1_2d_hwl_Nx'
     g.linearSampleFile(inFile,onlyVars=('TOTEXTTAU',))
-
-
-#     m.getICAindx(asm_Nx)
-     
-# def hold():
-
-#     m.linearSampleFile(asm_Nx,  onlyVars=('PS', 'T2M', 'SLP', 'U10M', 'V10M'))
-#     m.nearestSampleFile(asm_Nx, onlyVars=('QV2M',))
-
-#     m.linearSampleFile(asm_Nv, onlyVars=('T', 'DELP'))
-#     m.nearestSampleFile(asm_Nv, onlyVars=('O3','RH'))
-     
-                                
