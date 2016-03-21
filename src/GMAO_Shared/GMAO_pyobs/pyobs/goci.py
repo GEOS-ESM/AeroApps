@@ -134,8 +134,9 @@ class GOCI(object):
 
         # Mean Granule Time
         # ---------------------
-        dt = self.tyme.max()-self.tyme.min()
-        self.gtime = dt/2 + self.tyme.min()
+        notNaN = ~isnan(self.Observation_time_minute)
+        dt = self.tyme[notNaN].max()-self.tyme[notNaN].min()
+        self.gtime = dt/2 + self.tyme[notNaN].min()
 
         # Make each attribute a single numpy array
         # ----------------------------------------        
@@ -377,7 +378,7 @@ if __name__ == "__main__":
     gocifile = ['/discover/nobackup/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316001643.hdf']
             #'/nobackup/3/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316011643.hdf']
 
-    g = GOCI(gocifile, Verb=1)
+    g = GOCI(gocifile, Verb=1,only_good=False)
 
     inFile = '/home/adasilva/opendap/fp/opendap/assim/inst1_2d_hwl_Nx'
     g.linearSampleFile(inFile,onlyVars=('TOTTAUEXT'))
