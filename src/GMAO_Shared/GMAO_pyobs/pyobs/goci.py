@@ -10,7 +10,8 @@ import os
 import sys
 from types    import *
 
-from numpy    import zeros, ones, concatenate, array, shape, arange, tile, isnan, append, empty
+from numpy    import zeros, ones, concatenate, array, shape, arange, tile
+from numpy    import flipud, isnan, append, empty
 
 from datetime import date, datetime, timedelta
 from glob     import glob
@@ -356,7 +357,11 @@ class GOCI(object):
         for sds in self.SDS:
             sds_ = sds.replace(' ','_')
             v = hfile.select(sds).get()
-            self.__dict__[sds_].append(v) 
+            rank = len(v.shape)
+            if rank ==2:
+                self.__dict__[sds_].append(flipud(v))
+            else:
+                self.__dict__[sds_].append(v) 
 
         #       Satellite name
         #       --------------
