@@ -144,9 +144,16 @@ class GOCI(object):
 
         if only_good:
             # Strip NANs and Low QA
+            # Returns a 1-D array with only good obs
             # ---------------------
             self._noNANs()
             self._qaFilter()
+
+            # Mean Granule Time
+            # ---------------------
+            dt = self.tyme.max()-self.tyme.min()
+            self.gtime = dt/2 + self.tyme.min()
+
 
 
         # Aliases for convenience
@@ -160,10 +167,11 @@ class GOCI(object):
     def _qaFilter(self):
         data_sds = []
         for sds in self.SDS:
-            if 'Observation_time' in sds:
-                pass
-            elif 'minute' in sds:
+
+            if 'minute' in sds:
                 data_sds.append(sds)
+            elif 'Observation_time' in sds:
+                pass
             elif 'QA_AOD_550nm' in sds:
                 pass
             else:
@@ -171,7 +179,6 @@ class GOCI(object):
 
         # Loop through datasets, remove QA<3
         for sds in data_sds:
-            print sds
             sds_ = sds.replace(' ','_')
             self.__dict__[sds_] = self.__dict__[sds_][self.QA_AOD_550nm == 3]
 
@@ -220,7 +227,7 @@ class GOCI(object):
         lons = self.lon.ravel()
         lats = self.lat.ravel()
         tymes = tyme.ravel()
-        #tymes[:] = self.gtime # use mean granule time
+        tymes[:] = self.gtime # use mean granule time
                  
         # Loop over variables on file
         # ---------------------------
@@ -259,7 +266,7 @@ class GOCI(object):
         lons = self.lon.ravel()
         lats = self.lat.ravel()
         tymes = tyme.ravel()
-        #tymes[:] = self.gtime # use mean granule time
+        tymes[:] = self.gtime # use mean granule time
                  
         # Loop over variables on file
         # ---------------------------
@@ -372,6 +379,8 @@ if __name__ == "__main__":
             '/nobackup/3/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316011643.hdf']
 
     g = GOCI(gocifile, Verb=1)
+
+    
 #     m.getICAindx(asm_Nx)
      
 # def hold():
