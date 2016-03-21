@@ -382,7 +382,7 @@ if __name__ == "__main__":
 
     #inFile = '/home/adasilva/opendap/fp/opendap/assim/inst1_2d_hwl_Nx'
     inFile  = '/discover/nobackup/pcastell/workspace/vis/GOCI/inst1_2d_hwl_Nx'
-    g.linearSampleFile(inFile,onlyVars=('TOTTAUEXT',))
+    g.linearSampleFile(inFile,onlyVars=('TOTEXTTAU',))
 
 
 #     m.getICAindx(asm_Nx)
