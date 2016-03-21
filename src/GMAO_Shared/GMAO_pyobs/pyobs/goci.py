@@ -223,10 +223,10 @@ class GOCI(object):
         # Flatten coordinates
         # -------------------
         nt, nr = self.lon.shape
-        tyme = tile(self.tyme,(nr,1)).T
+        #tyme = tile(self.tyme,(nr,1)).T
         lons = self.lon.ravel()
         lats = self.lat.ravel()
-        tymes = tyme.ravel()
+        tymes = self.tyme.ravel()
         tymes[:] = self.gtime # use mean granule time
                  
         # Loop over variables on file
