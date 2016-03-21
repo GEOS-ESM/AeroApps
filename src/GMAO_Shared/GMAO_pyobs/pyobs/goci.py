@@ -262,7 +262,7 @@ class GOCI(object):
         tymes = self.tyme.ravel()
         #tymes[:] = self.gtime # use mean granule time
 
-        tymes[isnan(tymes)] = self.gtime
+        tymes[~isnan(tymes)] = self.gtime
                  
         # Loop over variables on file
         # ---------------------------
