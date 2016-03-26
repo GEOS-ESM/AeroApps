@@ -74,7 +74,7 @@ class GOCI(object):
         self.col  = None    # collection, e.g., 005
         self.sample = None  # will hold sampled variables later
         self.ica = None     # will hold ICA indices later
-        self.SDS = SDS      # name of data streams
+        self.SDS = list(SDS)      # name of data streams
         self.path = Path
         self.tyme = []      # Python time 
 
