@@ -623,6 +623,7 @@ subroutine pyods_putAll(filename, ftype, nymd,nhms, nsyn, nobs, &
   ods%meta%kx_names(323) = 'AERONET'
   ods%meta%kx_names(324) = 'AVHRR PATMOSX Aerosol Retrievals'
   ods%meta%kx_names(325) = 'OMSO2 (OMI Sulfer Dioxide)'
+  ods%meta%kx_names(326) = 'GOCI Aerosol Retrievals (Yonsei University)'
 
   call ods_put (filename, ftype, nymd, nhms, ods, rc)
   if ( rc .ne. 0 ) return
