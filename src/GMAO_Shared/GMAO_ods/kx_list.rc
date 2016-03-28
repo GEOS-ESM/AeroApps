@@ -334,6 +334,7 @@ kx_list::
   323 AERONET Aerosol Retrievals
   324 AVHRR PATMOSX Aerosol Retrievals
   325 OMSO2 (OMI SULFER DIOXIDE)
+  326 GOCI Aerosol Retrievals (Yonsei University)
 ::
 
 # Notes:
