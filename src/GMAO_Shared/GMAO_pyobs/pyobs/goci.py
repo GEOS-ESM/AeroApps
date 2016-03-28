@@ -109,15 +109,11 @@ class GOCI(object):
         for y,m,d,h,t in zip(year,month,day,hour,minute):
             DATE_START = datetime(y,m,d,h,0,0)
             Tyme = None
-            for s in t:
-                tyme = empty(0)
-                for ss in s:
-                    if isnan(ss):
-                        entry = float('NaN')
-                    else:
-                        entry = [DATE_START+timedelta(seconds=int(60*ss))]
-
-                    tyme = append(tyme,entry)
+            for minute in t:
+                tyme  = array((DATE_START,)*len(minute))
+                tyme[isnan(minute)] = float('NaN')
+                mins  = array([timedelta(seconds=int(60*mm)) for mm in minute[~isnan(minute)]])
+                tyme[~isnan(minute)] = tyme[~isnan(minute)] + mins
                 tyme.shape = (1,len(tyme))
                 if Tyme is None:
                     Tyme = tyme
