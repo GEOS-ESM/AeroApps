@@ -105,6 +105,7 @@ class GOCI(object):
 
         # Create python times
         # ----------------
+        print '[] Create Python Times'
         for y,m,d,h,t in zip(year,month,day,hour,minute):
             DATE_START = datetime(y,m,d,h,0,0)
             Tyme = None
@@ -147,6 +148,7 @@ class GOCI(object):
             # Strip NANs and Low QA
             # Returns a 1-D array with only good obs
             # ---------------------
+            print '[] Filter GOCI for only good'
             self._noNANs()
             self._qaFilter()
 
@@ -355,6 +357,7 @@ class GOCI(object):
         # Read select variables (reshape to allow concatenation later)
         # ------------------------------------------------------------
         for sds in self.SDS:
+
             sds_ = sds.replace(' ','_')
             v = hfile.select(sds).get()
             rank = len(v.shape)
