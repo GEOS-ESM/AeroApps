@@ -108,6 +108,7 @@ class GOCI(object):
         print '[] Create Python Times'
         for y,m,d,h,t in zip(year,month,day,hour,minute):
             DATE_START = datetime(y,m,d,h,0,0)
+            print 'GOCI DATE_START',DATE_START
             Tyme = None
             for minute in t:
                 tyme  = array((DATE_START,)*len(minute))
