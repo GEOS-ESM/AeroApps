@@ -108,7 +108,7 @@ class GOCI(object):
         print '[] Create Python Times'
         for y,m,d,h,t in zip(year,month,day,hour,minute):
             DATE_START = datetime(y,m,d,h,0,0)
-            print 'GOCI DATE_START',DATE_START
+
             Tyme = None
             for minute in t:
                 tyme  = array((DATE_START,)*len(minute))
@@ -381,7 +381,7 @@ if __name__ == "__main__":
     if os.path.exists('/discover/nobackup/pcastell/GOCI/'):
         gocifile = ['/discover/nobackup/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316001643.hdf']
     else:
-        gocifile  = ['/nobackup/3/pcastell/GOCI/20160316/']
+        gocifile  = ['/nobackup/3/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316001643.hdf']
 
     g = GOCI(gocifile, Verb=1,only_good=False)
 
