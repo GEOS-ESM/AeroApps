@@ -8,15 +8,16 @@ Arlindo.daSilva@nasa.gov
 
 import os
 import sys
-from types    import *
+from   types    import *
 
-from numpy    import zeros, ones, concatenate, array, shape, arange, tile
-from numpy    import flipud, isnan, append, empty
+from   numpy    import zeros, ones, concatenate, array, shape, arange, tile
+from   numpy    import flipud, isnan, append, empty
+import numpy    as np
 
-from datetime import date, datetime, timedelta
-from glob     import glob
+from   datetime import date, datetime, timedelta
+from   glob     import glob
 
-from pyhdf.SD import SD, HDF4Error
+from   pyhdf.SD import SD, HDF4Error
 #---  
 
 SDS = ['Longitude', 
@@ -48,7 +49,7 @@ class GOCI(object):
     This class implements the GOCI interface.
     """
 
-    def __init__ (self,Path,Verb=0,only_good=True):
+    def __init__ (self,Path,Verb=0,only_good=True,do_screen=False):
         """
         Reads individual 1-hour granules or a full day of GOCI files
         present on a given *Path* and returns a single object with
@@ -131,6 +132,16 @@ class GOCI(object):
         dt = concatenate(self.tyme)[~NaN].max()-concatenate(self.tyme)[~NaN].min()
         self.gtime = dt/2 + concatenate(self.tyme)[~NaN].min()
 
+        # Protection from cloud contamination
+        # Because we don't have cloud fraction data assume
+        # NaN corresponds to CF=1, otherwise CF=0
+        # If a neighboring observation is NaN - mark as NaN
+        # Eliminates AOD retrievals that could be next to a cloud 
+        # and have unrepresentative (of the grid box mean) high values
+        # --------------------------------------------------
+        if do_screen:
+            self._screenObs()
+
         # Make each attribute a single numpy array
         # ----------------------------------------        
         for sds in self.SDS:
@@ -139,7 +150,6 @@ class GOCI(object):
                 self.__dict__[sds_] = concatenate(self.__dict__[sds_])
             except:
                 print "Failed concatenating "+sds
-
 
         if only_good:
             # Strip NANs and Low QA
@@ -157,6 +167,18 @@ class GOCI(object):
           sds_ = sds.replace(' ','_')
           if sds_ in Alias:
                 self.__dict__[ALIAS[sds_]] = self.__dict__[sds_] 
+
+#---
+    def _screenObs(self):
+        from binObs_  import screenobs2d
+
+        MISSING = -999
+        for i,aod in enumerate(self.AOD_550nm):
+            aod[isnan(aod)] = MISSING        
+            aod = screenobs2d(aod,MISSING)
+            aod[np.abs(aod-MISSING) <= 0.01*abs(MISSING)] = float('NaN')
+            self.AOD_550nm[i] = aod
+
 #---
     def _qaFilter(self):
         data_sds = []
@@ -374,6 +396,61 @@ class GOCI(object):
             col = 1
             self.col = "%03d"%col
 
+def granules( path, syn_time, nsyn=8, Verbose=False ):
+    """
+    Returns a list of GOCI files at given synoptic time.
+    On input,
+
+    path      ---  mounting point for the MxD04 Level 2 files
+    syn_time  ---  synoptic time (timedate format)
+
+    nsyn      ---  number of synoptic times per day (optional)
+
+    """
+
+    # Determine synoptic time range
+    # -----------------------------
+    dt = timedelta(seconds = 12. * 60. * 60. / nsyn)
+    t1, t2 = (syn_time-dt,syn_time+dt)
+    if Verbose:
+        print "[] Synoptic window for granule ",t1,t2
+
+    today     = syn_time
+    yesterday = today - timedelta(hours=24)
+    tomorrow  = today + timedelta(hours=24)    
+
+    Files = []
+    for t in (yesterday,today,tomorrow):       
+        yy, mm, dd = (t.year,t.month,t.day)
+ 
+        dirn = "%s/%4d%02d%02d"%(path,yy,mm,dd)
+        Files += glob("%s/GOCI_YAER_AOP_%4d%02d%02d*.hdf"%(dirn,yy,mm,dd))
+
+    # if Verbose:
+    #     print "[] Possible Granule Files Found", Files
+
+    Granules = []
+    for f in Files:
+        dirn, filen = os.path.split(f)
+        tokens = filen.split('_')
+        beg_yy = int(tokens[3][0:4])
+        beg_mm = int(tokens[3][4:6])
+        beg_dd = int(tokens[3][6:8])
+        beg_h  = int(tokens[3][8:10])
+        beg_m  = int(tokens[3][10:12])
+        t_beg = datetime(beg_yy,beg_mm,beg_dd,beg_h,beg_m,0)
+        t_end = t_beg + timedelta(minutes=60)
+
+        # if Verbose:
+        #     print "[] t_beg, t_end ", t_beg, t_end, f
+        if (t_beg>=t1 and t_beg<t2) or (t_end>=t1 and t_end<t2):
+            #print "[x] ", t_beg, '|', t_end,f
+            Granules += [f,]
+            if Verbose:
+                print "[] ", f
+
+    return Granules
+
 #............................................................................
 
 if __name__ == "__main__":
@@ -381,9 +458,12 @@ if __name__ == "__main__":
     if os.path.exists('/discover/nobackup/pcastell/GOCI/'):
         gocifile = ['/discover/nobackup/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316001643.hdf']
     else:
-        gocifile  = ['/nobackup/3/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316001643.hdf']
+        gocifile  = ['/nobackup/3/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316001643.hdf',
+                     '/nobackup/3/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316011643.hdf']
 
-    g = GOCI(gocifile, Verb=1,only_good=False)
+    g = GOCI(gocifile, Verb=1,only_good=False,do_screen=True)
+
+    print granules('/nobackup/3/pcastell/GOCI/', datetime(2016,03,16,3), nsyn=8, Verbose=True )
 
     #inFile = '/home/adasilva/opendap/fp/opendap/assim/inst1_2d_hwl_Nx'
     inFile  = '/discover/nobackup/pcastell/workspace/vis/GOCI/inst1_2d_hwl_Nx'
