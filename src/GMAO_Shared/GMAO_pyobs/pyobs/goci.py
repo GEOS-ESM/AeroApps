@@ -36,6 +36,9 @@ ALIAS = dict ( Longitude = 'lon',
 
 MISSING = 999.999
 
+KX = 326 
+KT = dict ( AOD = 45, )
+
 #...........................................................................
 class GOCIHandle(object):
     """
@@ -158,6 +161,7 @@ class GOCI(object):
             print '[] Filter GOCI for only good'
             self._noNANs()
             self._qaFilter()
+            self.nobs = len(self.AOD_550nm)
 
 
         # Aliases for convenience
@@ -396,6 +400,64 @@ class GOCI(object):
             col = 1
             self.col = "%03d"%col
 
+    #---
+    def writeODS(self, syn_tyme, filename=None, dir='.', expid='goci', nsyn=8):
+        """
+        Writes filtered and screened GOCI obs to an ODS file.
+        """
+        from pyods import ODS
+        
+        nymd = syn_tyme.year*10000 + syn_tyme.month*100  + syn_tyme.day
+        nhms = syn_tyme.hour*10000 + syn_tyme.minute*100 + syn_tyme.second
+
+        if filename is None:
+            #filename = '%s/%s.obs.%d_%02dz.ods'%(dir,expid,nymd,nhms/10000)
+            filename = '%s/%s.obs.%d.ods'%(dir,expid,nymd)
+
+        # Stop here if there are no good obs available
+        # --------------------------------------------
+        if self.nobs == 0:
+            return (filename, self.nobs) # no data to work with
+
+        # Interval for this synoptic time
+        # -------------------------------
+        hdt = timedelta(seconds=60*60*int(24/nsyn)/2) # usually 3/2 hours
+        t1 = syn_tyme - hdt
+        t2 = syn_tyme + hdt
+        I = (self.tyme>=t1)&(self.tyme<t2)
+        
+        # Create and populate ODS object
+        # -------------------------------
+        lon = self.lon[I]
+        nobs = len(lon)
+
+        if nobs>0:
+
+            ods = ODS(nobs=nobs, kx=KX, kt=KT['AOD'])
+
+            ods.ks[:] = range(1,1+nobs)
+            ods.lat[:] = self.lat[I]
+            ods.lon[:] = self.lon[I]
+            ods.qch[:] = zeros(nobs).astype('int')
+            ods.qcx[:] = zeros(nobs).astype('int')
+
+            Dt = [ t-syn_tyme for t in self.tyme[I] ]
+            ods.time[:] = array([ dt.total_seconds()/60. for dt in Dt ]).astype('int') # in minutes
+            ods.lev[:] = 550. * ones(nobs)          # channel
+
+            ods.obs[:] = self.aod550[I].astype('float32')
+            ods.xvec[:] = zeros(nobs).astype('int')
+            ods.xm[:] = zeros(nobs).astype('int')
+            
+            if self.verb:
+                print "[w] Writing file <"+filename+"> with %d observations at %dZ"%\
+                   (ods.nobs,nhms/10000)
+
+            ods.write(filename,nymd,nhms,nsyn=nsyn)
+
+        return (filename, nobs)
+
+
 def granules( path, syn_time, nsyn=8, Verbose=False ):
     """
     Returns a list of GOCI files at given synoptic time.
@@ -461,9 +523,11 @@ if __name__ == "__main__":
         gocifile  = ['/nobackup/3/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316001643.hdf',
                      '/nobackup/3/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316011643.hdf']
 
-    g = GOCI(gocifile, Verb=1,only_good=False,do_screen=True)
+    syn_tyme = datetime(2016,03,16,3)
+    Files = granules('/nobackup/3/pcastell/GOCI/', syn_tyme, nsyn=8, Verbose=True )
+    g = GOCI(Files, Verb=1,only_good=True,do_screen=True)
 
-    print granules('/nobackup/3/pcastell/GOCI/', datetime(2016,03,16,3), nsyn=8, Verbose=True )
+    
 
     #inFile = '/home/adasilva/opendap/fp/opendap/assim/inst1_2d_hwl_Nx'
     inFile  = '/discover/nobackup/pcastell/workspace/vis/GOCI/inst1_2d_hwl_Nx'
