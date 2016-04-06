@@ -13,7 +13,7 @@ import glob
 import shutil
 from netCDF4 import Dataset
 
-binname = 'geo_vlidort_vnnc.x'
+binname = 'geo_vlidort_vnncLUT.x'
 
 def make_workspace(date,ch,code,outdir,runfile,instname,prefix='workdir',nodemax=None,
                    addoutdir=None,layout=None):
