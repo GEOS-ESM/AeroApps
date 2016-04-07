@@ -683,7 +683,7 @@ if __name__ == "__main__":
 
                 os.chdir(cwd)
                 countRun = countRun + newRun
-                stat = subprocess.check_output((['squeue -hu pcastell'], shell=True)
+                stat = subprocess.check_output(['squeue -hu pcastell'], shell=True)
 
 
             print 'Waiting 1 minutes'
