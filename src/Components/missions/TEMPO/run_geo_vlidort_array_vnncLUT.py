@@ -597,9 +597,9 @@ if __name__ == "__main__":
         # Monitor jobs 1-by-1 
         # Add a new job when one finishes 
         # Until they are all done
-        stat = subprocess.call(['squeue -hu pcastell'], shell=True, stdout=devnull)
-        while (stat == 0):
-            stat = subprocess.call(['squeue -hu pcastell'], shell=True, stdout=devnull)
+        stat = subprocess.check_output(['squeue -hu pcastell'], shell=True)
+        while (stat != ''):
+            stat = subprocess.check_output(['squeue -hu pcastell'], shell=True)
             finishedJobs = np.empty(0,dtype='int')
             for ii,i in enumerate(workingJobs):
                 s = jobid[i]
@@ -683,7 +683,7 @@ if __name__ == "__main__":
 
                 os.chdir(cwd)
                 countRun = countRun + newRun
-                stat = subprocess.call(['squeue -hu pcastell'], shell=True, stdout=devnull)
+                stat = subprocess.check_output((['squeue -hu pcastell'], shell=True)
 
 
             print 'Waiting 1 minutes'
