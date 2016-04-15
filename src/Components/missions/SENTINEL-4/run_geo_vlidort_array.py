@@ -435,7 +435,9 @@ def prefilter(date,indir,instname,layout=None):
 
     ncMet = Dataset(met)
     Cld   = np.squeeze(ncMet.variables[u'CLDTOT'][:])
-    f     = np.where(Cld > 0.01)
+    mask  = Cld.mask
+    Cld   = Cld[~mask]    
+    f     = np.where(Cld <= 0.01)
     ncMet.close()
     if len(f[0]) == 0:
         return False, 0
@@ -448,6 +450,9 @@ def prefilter(date,indir,instname,layout=None):
     FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
     ncLand.close()
 
+    SZA = SZA[~mask]
+    VZA = VZA[~mask]
+    FRLAND = FRLAND[~mask]
     SZA = SZA[f]
     VZA = VZA[f]
     FRLAND = FRLAND[f]
@@ -475,8 +480,8 @@ def prefilter(date,indir,instname,layout=None):
 if __name__ == "__main__":
     instname          = 'sentinel-4'
     version           = '1.0'    
-    startdate         = '2007-04-11T22:00:00'
-    enddate           = '2007-04-11T22:00:00'
+    startdate         = '2006-07-27T00:00:00'
+    enddate           = '2006-07-27T00:00:00'
     episode           = None
     channels          = '550'
     surface           = 'MCD43C'
@@ -498,7 +503,7 @@ if __name__ == "__main__":
     ###
     ################
     profile           = False
-    runmode           = 'vector'
+    runmode           = 'scalar'
     indir             = nccs 
     outdir            = nccs + 'LevelC2'
     if (additional_output):
@@ -589,8 +594,12 @@ if __name__ == "__main__":
                     else:
                         workdir, outdir_ = dirlist
 
-                    if (surface.upper() == 'MAIACRTLS'):
+                    if surface.upper() == 'MAIACRTLS':
                         make_maiac_rcfile(workdir,indir,startdate,ch,runmode, interp,additional_output,
+                                          instname, nodemax=nodemax_,i_band=band_i,
+                                          version=version,surf_version=surf_version,layout=laycode)
+                    elif surface.upper() == 'MCD43C':
+                        make_mcd43c_rcfile(workdir,indir,startdate,ch,runmode, interp,additional_output,
                                           instname, nodemax=nodemax_,i_band=band_i,
                                           version=version,surf_version=surf_version,layout=laycode)
                     else:
