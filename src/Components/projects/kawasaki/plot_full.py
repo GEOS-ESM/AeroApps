@@ -1,7 +1,7 @@
 import os
 import sys
 
-from numpy    import linspace, array, savez
+from numpy    import load, linspace, array, savez
 from glob     import glob
 from datetime import datetime, timedelta
 from string   import Template
@@ -21,14 +21,38 @@ class myGrADS(GrADS):
         #print Template(tmpl).substitute(d)
         self.__call__(Template(tmpl).substitute(d))
 
+#...................................................
+
+def _getTime(y1,y2):
+    Tyme = []
+    for year in range(y1,y2+1):
+        for month in range(1,13):
+            Tyme.append(year + float(month-1)/12.)
+    return array(Tyme)
+     
 def _getTyme(y1,y2):
     Tyme = []
     for year in range(y1,y2+1):
         for month in range(1,13):
-            #Tyme.append(datetime(year,month,15))
-            Tyme.append(year + float(month-1)/12.)
+            Tyme.append(datetime(year,month,15))
     return array(Tyme)
      
+def _toYearly(Year,q):
+    Q = []
+    for year in range(Year[0],Year[-1]+1):
+        I = (Year==year)
+        Q.append(q[I].mean())
+    return array(Q)
+
+def _getYearly(y1,y2):
+    n = load('NPZ/m2_japan.monthly.%d-%d.npz'%(y1,y2))
+    tyme = _getTyme(y1,y2)
+    Year = array([t.year for t in tyme])
+    clm = dict()
+    for q in n:
+        print "[] working on <%s>"%q
+        clm[q] = _toYearly(Year,n[q])
+    return clm
 
 def plot_Japan(trange,clm,showKD=True):
 
@@ -105,16 +129,26 @@ def plot_Japan(trange,clm,showKD=True):
 
     savefig('clm2.aod.'+trange+'.png',dpi=120,bbox_inches='tight')
 
-def plot_Japan_stack(trange,clm,showKD=True):
+def plot_Japan_stack(trange,clm,showKD=True,Yearly=False):
 
     y1, y2 = trange.split('-')
     y1, y2 = int(y1), int(y2)
-    tyme = _getTyme(y1,y2) 
+    if Yearly:
+        tyme = range(y1,y2+1)
+        tag = 'yy'
+    else:
+        tag = 'mm'
+        tyme = _getTime(y1,y2) # monthly
 
     if showKD:
-        c = NPZ('NPZ/kawasaki_japan.monthly.1969-2010.npz')
-        c.tyme = _getTyme(1969,2010)
-        I = (c.tyme>=tyme[0])
+        if Yearly:
+            c = NPZ('NPZ/kawasaki_japan.yearly.01-12.npz')
+            c.tyme = array(range(1969,2011))
+            I = (c.tyme>=y1)
+        else:
+            c = NPZ('NPZ/kawasaki_japan.monthly.1969-2010.npz')
+            c.tyme = _getTime(1969,2010)
+            I = (c.tyme>=tyme[0])
 
     # 16:9 Figure
     # -----------
@@ -145,18 +179,21 @@ def plot_Japan_stack(trange,clm,showKD=True):
     ylabel(r'$\mu$g/m$^3$')
     title('Surface PM2.5 Concentration over Japan')
     grid()
-    #axis([0,11,0,18])
-    legend(loc='upper right',prop={'size':10})
+    if Yearly:
+        axis([y1,y2,0,16])
+        legend(loc='upper center',prop={'size':10})
+    else:
+        legend(loc='upper right',prop={'size':10})
 
     if showKD:
         ax2 = twinx()
         p = c.all.astype('float')/1000.
         ax2.plot(c.tyme[I],p[I],'k-',linewidth=1,label='KD Cases')
-        ylabel('Average No. KD Cases per Month [K]')
-        #axis([0,11,6,12])
+        ylabel('Average No. KD Cases [K]')
+        axis([y1,y2,0,1.5])
         legend(loc='upper left',prop={'size':10})
 
-    savefig('m2.mm.sfc_s.'+trange+'.png',dpi=120,bbox_inches='tight')
+    savefig('m2.%s.sfc_s.'%tag+trange+'.png',dpi=120,bbox_inches='tight')
 
     # AOD
     # ---
@@ -192,15 +229,23 @@ def plot_Japan_stack(trange,clm,showKD=True):
         ax2 = twinx()
         p = c.all.astype('float')/1000.
         ax2.plot(c.tyme[I],p[I],'k-',linewidth=1,label='KD Cases')
-        ylabel('Average No. KD Cases per Month [K]')
-        #axis([0,11,6,12])
+        ylabel('Average No. KD Cases [K]')
+        axis([y1,y2,0,1.5])
         legend(loc='upper left',prop={'size':10})
 
-    savefig('m2.mm.aod_s.'+trange+'.png',dpi=120,bbox_inches='tight')
+    savefig('m2.%s.aod_s.'%tag+trange+'.png',dpi=120,bbox_inches='tight')
 
 #....................................................................
 
 if __name__ == "__main__":
+
+    y1, y2 = (1980,2015)
+    trange = '%d-%d'%(y1,y2)
+    
+    clm = _getYearly(y1,y2)
+    plot_Japan_stack(trange,clm,showKD=True,Yearly=True)
+
+else:
 
     # Instantiate GrADS
     # -----------------
