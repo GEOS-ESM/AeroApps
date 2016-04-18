@@ -26,6 +26,7 @@ program geo_vlidort_vnncLUT
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
+  use vlidort_lambert              ! Module to run VLIDORT with lambertian surface
   use lidort_brdf_modis
   use Chem_MieMod
 !  use netcdf_helper                ! Module with netcdf routines
@@ -291,8 +292,8 @@ program geo_vlidort_vnncLUT
 ! Figure out how many indices to work on
 !------------------------------------------
   clrm = 0
-  do i=1,im,400
-    do j=1,jm,300
+  do i=1,im,50
+    do j=1,jm,50
       if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99))  then
         clrm = clrm + 1
         clmask(i,j) = .True.
@@ -434,7 +435,7 @@ program geo_vlidort_vnncLUT
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
 ! --------------------------------------------------------------
-if (myid == 4) then
+!if (myid == 4) then
   do cc = starti, endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
@@ -543,7 +544,7 @@ if (myid == 4) then
     end if
                 
   end do ! do clear pixels
-end if ! if myid ==
+!end if ! if myid ==
 ! Wait for everyone to finish calculations
 ! ----------------------------------------
   call MAPL_SyncSharedMemory(rc=ierr)
