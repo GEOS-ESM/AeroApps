@@ -26,6 +26,7 @@ program geo_vlidort
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
+  use vlidort_lambert              ! Module to run VLIDORT with lambertian surface  
   use lidort_brdf_modis
   use Chem_MieMod
 !  use netcdf_helper                ! Module with netcdf routines
