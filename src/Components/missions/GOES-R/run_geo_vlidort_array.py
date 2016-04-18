@@ -360,7 +360,7 @@ def prefilter(date,indir,instname,layout=None):
 
     ncMet = Dataset(met)
     Cld   = np.squeeze(ncMet.variables[u'CLDTOT'][:])
-    f     = np.where(Cld > 0.01)
+    f     = np.where(Cld <= 0.01)
     ncMet.close()
     if len(f[0]) == 0:
         return False, 0
@@ -402,8 +402,8 @@ if __name__ == "__main__":
     version           = '1.0'    
     startdate         = '2006-07-31T17:00:00'
     enddate           = '2006-08-09T23:00:00'
-    episode           = None
-    channels          = '470','640'
+    episode           = 1
+    channels          = '640'
     surface           = 'MAIACRTLS'
     interp            = 'interpolate'
     i_band            = None    
