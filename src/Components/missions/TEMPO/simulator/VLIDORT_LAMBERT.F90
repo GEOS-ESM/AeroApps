@@ -214,14 +214,11 @@ module VLIDORT_LAMBERT
   
     rc = 0
     ier = 0
-  write(*,*) 'call VLIDORT_Init' 
     call VLIDORT_Init( SCAT%Surface%Base, km, rc)
     if ( rc /= 0 ) return
 
     SCAT%nMom = nMom
     SCAT%nPol = nPol
-  write(*,*) 'nMom,nPol',nMom,nPol
-  write(*,*) 'Present',present(DO_2OS_CORRECTION)
     if (present(DO_2OS_CORRECTION)) then
       SCAT%DO_2OS_CORRECTION = DO_2OS_CORRECTION
       if (DO_2OS_CORRECTION) then
@@ -233,7 +230,6 @@ module VLIDORT_LAMBERT
       SCAT%NSTOKES = 3  
     end if
 
-  write(*,*) 'NSTOKES',SCAT%NSTOKES
     do j = 1, nobs
        
        ! Make sure albedo and angles are available
@@ -262,7 +258,7 @@ module VLIDORT_LAMBERT
                 U(j,i) = MISSING
                 cycle
          end if
-  write(*,*) 'call VLIDORT_SurfaceLamb'
+
          call VLIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i),solar_zenith (j),sensor_zenith(j),&
                                  relat_azymuth(j),scalar)
 
