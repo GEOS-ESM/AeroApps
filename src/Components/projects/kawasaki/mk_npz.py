@@ -199,7 +199,7 @@ def yearly(m1=1,m2=12,npzWrite=True):
 
     return (tyme, all)
 
-if __name__ == "__main__":
+if __name__ == "__xmain__":
 
      yearly()
     

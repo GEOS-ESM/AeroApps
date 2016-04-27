@@ -84,7 +84,10 @@ if __name__ == "__main__":
     #for varcoll in ( 'tavgM_2d_slv_Nx:ts,slp,u10m,v10m',  \
     #                 'tavgM_2d_aer_Nx:ducmass,dufluxu,dufluxv' ):
     ###for varcoll in ( 'tavgM_2d_aer_Nx:ducmass,so4cmass,bccmass,occmass,so2cmass,dusmass,so4smass,bcsmass,ocsmass,so2smass,duexttau,suexttau,bcexttau,ocexttau', ):
-    for varcoll in ( 'tavgM_2d_aer_Nx:sscmass,sssmass,ssexttau',):
+    # for varcoll in ( 'tavgM_2d_aer_Nx:sscmass,sssmass,ssexttau',):
+    ##for varcoll in ( 'tavgM_2d_aer_Nx:ducmass25,dusmass25,sscmass25,sssmass25,totexttau',):
+    for varcoll in ( 'tavgM_2d_aer_Nx:dusmass25,sscmass25,sssmass25,ssexttau,totexttau',):
+    #for varcoll in ( 'tavgM_2d_aer_Nx:ducmass,so4cmass,bccmass,occmass,so2cmass,dusmass,so4smass,bcsmass,ocsmass,so2smass,ducmass25,dusmass25,sscmass25,sssmass25,totexttau,duexttau,suexttau,bcexttau,ocexttau,sscmass,sssmass,ssexttau', ):
 
         coll,Vars = varcoll.split(':')
         Vars = Vars.split(',')

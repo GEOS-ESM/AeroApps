@@ -13,7 +13,7 @@ import glob
 import shutil
 from netCDF4 import Dataset
 
-binname = 'geo_vlidort2OS_NNTestData.x'
+binname = 'geo_vlidort_vnncLUT.x'
 
 def make_workspace(date,ch,code,outdir,runfile,instname,prefix='workdir',nodemax=None,
                    addoutdir=None,layout=None):
@@ -41,8 +41,8 @@ def make_workspace(date,ch,code,outdir,runfile,instname,prefix='workdir',nodemax
         os.symlink(cwd+'/Chem_MieRegistry.rc','Chem_MieRegistry.rc')
     if not os.path.isfile('clean_mem.sh'):
         os.symlink(cwd+'/clean_mem.sh','clean_mem.sh')
-    if not os.path.isfile('test_angles_albedo.nc4'):
-        shutil.copyfile(cwd+'/test_angles_albedo.nc4','test_angles_albedo.nc4')        
+    if not os.path.isfile('LUT_angles_albedo.nc4'):
+        shutil.copyfile(cwd+'/LUT_angles_albedo.nc4','LUT_angles_albedo.nc4')        
         
     source = open(cwd+'/'+runfile,'r')
     destination = open(runfile,'w')
@@ -144,7 +144,7 @@ def destroy_workspace(jobid,dirname,outdir,addoutdir=None,nodemax=None,profile=F
     os.remove('ExtData')
     os.remove('geo_vlidort.rc')
     os.remove('geo_vlidort_run_array.j')
-    os.remove('test_angles_albedo.nc4')
+    os.remove('LUT_angles_albedo.nc4')
 
     if profile is False:
         if nodemax is not None and nodemax > 1:
@@ -440,7 +440,7 @@ if __name__ == "__main__":
     runmode           = 'vector'
     indir             = nccs 
     #outdir            = nccs + 'LevelC2'
-    outdir            = '/discover/nobackup/pcastell/2OS_NN/'
+    outdir            = '/discover/nobackup/pcastell/vnncLUT/'
     if (additional_output):
         #addoutdir         = nccs + 'LevelC'
         addoutdir          = outdir
@@ -597,9 +597,9 @@ if __name__ == "__main__":
         # Monitor jobs 1-by-1 
         # Add a new job when one finishes 
         # Until they are all done
-        stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
-        while (stat == 0):
-            stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
+        stat = subprocess.check_output(['squeue -hu pcastell'], shell=True)
+        while (stat != ''):
+            stat = subprocess.check_output(['squeue -hu pcastell'], shell=True)
             finishedJobs = np.empty(0,dtype='int')
             for ii,i in enumerate(workingJobs):
                 s = jobid[i]
@@ -625,7 +625,7 @@ if __name__ == "__main__":
                     if (finishedCNT == nodemax_list[i]): 
                         finished = True
                 else:
-                    result = subprocess.call(['qstat',s], stdout=devnull)
+                    result = subprocess.call(['squeue -j '+ s],shell=True,stdout=devnull,stderr=subprocess.STDOUT)
                     if (result != 0):
                         finished = True   
 
@@ -683,7 +683,7 @@ if __name__ == "__main__":
 
                 os.chdir(cwd)
                 countRun = countRun + newRun
-                stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
+                stat = subprocess.check_output(['squeue -hu pcastell'], shell=True)
 
 
             print 'Waiting 1 minutes'

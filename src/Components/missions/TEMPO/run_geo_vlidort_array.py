@@ -177,12 +177,12 @@ def destroy_workspace(jobid,dirname,outdir,addoutdir=None,nodemax=None,profile=F
 
     if (addoutdir is not None):
         if nodemax is not None and nodemax > 1:
-            outfilelist = glob.glob('*.lc.*.nc4')
+            outfilelist = glob.glob('*.add.*.nc4')
             combine_files(outfilelist)
-            outfilelist = glob.glob('*.lc.*.nc4')
+            outfilelist = glob.glob('*.add.*.nc4')
             move_file(outfilelist,addoutdir)
         else:
-            outfilelist = glob.glob('*.lc.*.nc4')
+            outfilelist = glob.glob('*.add.*.nc4')
             move_file(outfilelist,addoutdir)
 
     os.chdir(cwd)
@@ -427,7 +427,7 @@ if __name__ == "__main__":
     indir             = nccs 
     outdir            = nccs + 'LevelC2'
     if (additional_output):
-        addoutdir         = nccs + 'LevelC'
+        addoutdir         = nccs + 'LevelC2'
     else:
         addoutdir         = None
     

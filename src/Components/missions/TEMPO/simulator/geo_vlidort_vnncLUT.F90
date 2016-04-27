@@ -19,13 +19,14 @@
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #  include "MAPL_Generic.h"
 #  include "MAPL_ErrLogMain.h"
-program geo_vlidort2OS_NNTestData
+program geo_vlidort_vnncLUT
 
   use ESMF                         ! ESMF modules
   use MAPL_Mod
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
+  use vlidort_lambert              ! Module to run VLIDORT with lambertian surface
   use lidort_brdf_modis
   use Chem_MieMod
 !  use netcdf_helper                ! Module with netcdf routines
@@ -434,7 +435,7 @@ program geo_vlidort2OS_NNTestData
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
 ! --------------------------------------------------------------
-
+!if (myid == 4) then
   do cc = starti, endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
@@ -543,7 +544,7 @@ program geo_vlidort2OS_NNTestData
     end if
                 
   end do ! do clear pixels
-
+!end if ! if myid ==
 ! Wait for everyone to finish calculations
 ! ----------------------------------------
   call MAPL_SyncSharedMemory(rc=ierr)
@@ -1181,7 +1182,7 @@ end subroutine outfile_extname
     write(comment,'(A)') 'Global Model and Assimilation Office'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'source',trim(comment)),"source attr")
 
-    write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort2OS_NNTestData.x'
+    write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort_vnncLUT.x'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'history',trim(comment)),"history attr")
 
     call check(nf90_put_att(ncid,NF90_GLOBAL,'grid_inputs',trim(INV_file)),"input files attr")
@@ -1696,7 +1697,7 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, layout, label = 'LAYOUT:',default='111')    
     call ESMF_ConfigGetAttribute(cf, vlidort, label = 'VLIDORT:',default=.true.)  
     call ESMF_ConfigGetAttribute(cf, DO_2OS_CORRECTION, label = 'DO_2OS_CORRECTION:',default=.false.)        
-    call ESMF_ConfigGetAttribute(cf, ANG_file, label = 'ANGLE_FILE:',default='test_angles_albedo.nc4')
+    call ESMF_ConfigGetAttribute(cf, ANG_file, label = 'ANGLE_FILE:',default='LUT_angles_albedo.nc4')
 
 
     ! Figure out number of channels and read into vector
@@ -1902,4 +1903,4 @@ end subroutine outfile_extname
   end subroutine deallocate_shared
 
 
-end program geo_vlidort2OS_NNTestData
+end program geo_vlidort_vnncLUT
