@@ -55,6 +55,8 @@ def Open(filename):
     # Create variable dictionary
     # --------------------------
     Vars = dict()
+    if len(f.vtitle)<len(f.vname):
+        f.vtitle = f.vname[:]      # In case vtitle is not filled (hack)
     for i in range(len(f.vname)):
         if f.lower:
             v = f.vname[i].upper()
@@ -135,7 +137,11 @@ def getVars(rcFile):
         path = cf(V)
         f = Open(path)
         varList = []
-        for v in V.split(','):
+        if '*' in V:
+            VARS = f.Vars.keys()
+        else:
+            VARS = V.split(',') 
+        for v in VARS:
             var = f.Vars[v.strip()]
             if var.km>0:
                 levUnits = var.levunits
