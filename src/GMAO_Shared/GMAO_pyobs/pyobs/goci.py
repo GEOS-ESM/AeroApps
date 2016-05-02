@@ -28,7 +28,8 @@ SDS = ['Longitude',
          'Observation_time_month',
          'Observation_time_year',
          'QA_AOD_550nm',
-         'AOD_550nm']
+         'AOD_550nm',
+         'Turbid_index']
 
 ALIAS = dict ( Longitude = 'lon', 
                Latitude = 'lat', 
@@ -74,13 +75,13 @@ class GOCI(object):
         #      Initially are lists of numpy arrays for each granule
         #      ------------------------------------------------
         self.verb = Verb
-        self.sat  = None    # Satellite name
-        self.col  = None    # collection, e.g., 005
-        self.sample = None  # will hold sampled variables later
-        self.ica = None     # will hold ICA indices later
+        self.sat  = None          # Satellite name
+        self.col  = None          # collection, e.g., 005
+        self.sample = None        # will hold sampled variables later
+        self.ica = None           # will hold ICA indices later
         self.SDS = list(SDS)      # name of data streams
         self.path = Path
-        self.tyme = []      # Python time 
+        self.tyme = []            # Python time 
 
         # Create empty lists for SDS to be read from file
         # -----------------------------------------------
@@ -135,6 +136,12 @@ class GOCI(object):
         dt = concatenate(self.tyme)[~NaN].max()-concatenate(self.tyme)[~NaN].min()
         self.gtime = dt/2 + concatenate(self.tyme)[~NaN].min()
 
+        # turbid water pixel screening, is done before 
+        # additional cloud screening
+        if only_good:
+            self._screenTurbid()
+
+
         # Protection from cloud contamination
         # Because we don't have cloud fraction data assume
         # NaN corresponds to CF=1, otherwise CF=0
@@ -171,6 +178,13 @@ class GOCI(object):
           sds_ = sds.replace(' ','_')
           if sds_ in Alias:
                 self.__dict__[ALIAS[sds_]] = self.__dict__[sds_] 
+# ---
+    def _screenTurbid(self):
+        for i,aod in enumerate(self.AOD_550nm):
+            I = self.Turbid_index[i] > -0.01
+            aod[I] = float('NaN')
+            self.AOD_550nm[i] = aod
+
 
 #---
     def _screenObs(self):
@@ -382,7 +396,15 @@ class GOCI(object):
         for sds in self.SDS:
 
             sds_ = sds.replace(' ','_')
-            v = hfile.select(sds).get()
+
+            if sds == 'Turbid_index':
+                try:
+                    v = hfile.select(sds).get()
+                except HDF4Error: 
+                    v = np.full(hfile.select('AOD_550nm').get().shape,-999)
+            else:
+                v = hfile.select(sds).get()
+
             rank = len(v.shape)
             if rank ==2:
                 self.__dict__[sds_].append(flipud(v))
@@ -411,8 +433,8 @@ class GOCI(object):
         nhms = syn_tyme.hour*10000 + syn_tyme.minute*100 + syn_tyme.second
 
         if filename is None:
-            #filename = '%s/%s.obs.%d_%02dz.ods'%(dir,expid,nymd,nhms/10000)
-            filename = '%s/%s.obs.%d.ods'%(dir,expid,nymd)
+            filename = '%s/%s.obs.%d_%02dz.ods'%(dir,expid,nymd,nhms/10000)
+            #filename = '%s/%s.obs.%d.ods'%(dir,expid,nymd)
 
         # Stop here if there are no good obs available
         # --------------------------------------------
@@ -523,12 +545,12 @@ if __name__ == "__main__":
         gocifile  = ['/nobackup/3/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316001643.hdf',
                      '/nobackup/3/pcastell/GOCI/20160316/GOCI_YAER_AOP_20160316011643.hdf']
 
-    syn_tyme = datetime(2016,03,16,3)
-    Files = granules('/nobackup/3/pcastell/GOCI/', syn_tyme, nsyn=8, Verbose=True )
+    syn_tyme = datetime(2016,04,24,3)
+    Files = granules('/nobackup/3/pcastell/GOCI/data/', syn_tyme, nsyn=8, Verbose=True )
     g = GOCI(Files, Verb=1,only_good=True,do_screen=True)
-
+    g.writeODS(syn_time, filename=None, dir='.', expid='goci', nsyn=8)
     
 
     #inFile = '/home/adasilva/opendap/fp/opendap/assim/inst1_2d_hwl_Nx'
-    inFile  = '/discover/nobackup/pcastell/workspace/vis/GOCI/inst1_2d_hwl_Nx'
+    #inFile  = '/discover/nobackup/pcastell/workspace/vis/GOCI/inst1_2d_hwl_Nx'
     #g.linearSampleFile(inFile,onlyVars=('TOTEXTTAU',))
