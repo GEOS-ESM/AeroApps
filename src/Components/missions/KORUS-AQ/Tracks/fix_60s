@@ -1,0 +1,4 @@
+#!/bin/csh -f
+
+repl AltGPS_60s AltGPS *.ICT
+repl repl _60s, , *.ICT

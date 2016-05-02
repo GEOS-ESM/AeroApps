@@ -1,0 +1,10 @@
+#
+# Resource file for Trajectory Sampler. Aerosol/carbon parameters.
+#
+
+* : http://opendap.nccs.nasa.gov:80/dods/GEOS-5/fp/0.25_deg/assim/inst3_3d_aer_Nv
+* : http://opendap.nccs.nasa.gov:9090/dods/GEOS-5/fp/0.25_deg/assim/tavg3_2d_aer_Nx
+* : http://opendap.nccs.nasa.gov:80/dods/GEOS-5/fp/0.25_deg/assim/tavg3_2d_adg_Nx
+#
+* : http://opendap.nccs.nasa.gov:80/dods/GEOS-5/fp/0.25_deg/assim/inst3_3d_chm_Nv
+* : http://opendap.nccs.nasa.gov:80/dods/GEOS-5/fp/0.25_deg/assim/tavg3_2d_chm_Nx
