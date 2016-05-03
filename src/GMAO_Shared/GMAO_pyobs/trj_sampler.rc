@@ -12,4 +12,6 @@
 #gwettop : /home/adasilva/GAAS/DEE/opendap/gwet
 #w10m : /home/adasilva/GAAS/DEE/opendap/w10m
 
-* : http://opendap.nccs.nasa.gov:80/dods/GEOS-5/fp/0.25_deg/fcast/inst1_2d_hwl_Nx/inst1_2d_hwl_Nx.20160430_12
+# Note that 1), 2) is needed to make what preceeds the : unique.
+1) * : http://opendap.nccs.nasa.gov:80/dods/GEOS-5/fp/0.25_deg/fcast/inst1_2d_hwl_Nx/inst1_2d_hwl_Nx.20160430_12
+2) * : http://opendap.nccs.nasa.gov:80/dods/GEOS-5/fp/0.25_deg/fcast/inst1_2d_hwl_Nx/inst1_2d_asm_Nx.20160430_12

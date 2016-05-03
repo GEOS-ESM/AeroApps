@@ -131,6 +131,7 @@ def getVars(rcFile):
 
     cf = Config(rcFile)
     Vars = dict()
+    AllVars = dict()
     levUnits = 'none'
     levs = []
     for V in cf.keys():
@@ -142,10 +143,18 @@ def getVars(rcFile):
         else:
             VARS = V.split(',') 
         for v in VARS:
-            var = f.Vars[v.strip()]
+            v = v.strip()
+            var = f.Vars[v]
+            if AllVars.__contains__(v): # unique variable names for output
+                print " >< Skipping duplicate variable <%s> in %s"%(v,path)
+                continue
+            elif v.upper() == "TAITIME":
+                continue # annoying HDFEOS crap
+            else:
+                AllVars[v] = True
             if var.km>0:
                 levUnits = var.levunits
-                levs = var.levs
+                levs = var.levs  
             varList += [var,]
         Vars[path] = varList
         
