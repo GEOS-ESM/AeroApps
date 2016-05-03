@@ -2,9 +2,9 @@
 # Resource file for Trajectory Sampler. Meteorological parameters.
 #
 
-* : http://opendap.nccs.nasa.gov:9090/dods/GEOS-5/fp/0.25_deg/assim/tavg1_2d_slv_Nx
-* : http://opendap.nccs.nasa.gov:80/dods/GEOS-5/fp/0.25_deg/assim/tavg1_2d_flx_Nx
-* : http://opendap.nccs.nasa.gov/dods/GEOS-5/fp/0.25_deg/assim/tavg1_2d_rad_Nx
-* : http://opendap.nccs.nasa.gov/dods/GEOS-5/fp/0.25_deg/assim/inst3_3d_asm_Nv
+1) * : http://opendap.nccs.nasa.gov:9090/dods/GEOS-5/fp/0.25_deg/assim/tavg1_2d_slv_Nx
+2) * : http://opendap.nccs.nasa.gov:80/dods/GEOS-5/fp/0.25_deg/assim/tavg1_2d_flx_Nx
+3) * : http://opendap.nccs.nasa.gov/dods/GEOS-5/fp/0.25_deg/assim/tavg1_2d_rad_Nx
+4) * : http://opendap.nccs.nasa.gov/dods/GEOS-5/fp/0.25_deg/assim/inst3_3d_asm_Nv
 
 
