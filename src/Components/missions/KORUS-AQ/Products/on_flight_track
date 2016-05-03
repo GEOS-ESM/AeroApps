@@ -1,0 +1,29 @@
+#!/bin/csh -fx
+#
+# Given an ICT with a flight path, sample GEOS-products of interest.
+#
+
+
+set rc = ../RC
+set sampler = $ESMADIR/`uname`/bin/trj_sampler.py
+set dest = /home/adasilva/iesa/kaq/sampled
+
+
+if ( $#argv < 1 ) then
+   echo "usage: $ flight_track.ict"
+   exit 1
+else
+    set ict = $1
+endif
+
+foreach prod ( meteo chem )
+
+   set basen = `basename $ict`
+   set date = `echo $basen:r | awk -F_ '{print $3}'`
+   set loc = `echo $basen | awk -F- '{print $2}' | sed -e 's/TRK//'`
+   set nc = $dest/KORUSAQ-GEOS5-$prod-${loc}_MODEL_R0.nc4
+
+   $sampler -f NETCDF4 -I -v -r $rc/trj.assim.$prod.rc -o $nc $ict
+
+end
+
