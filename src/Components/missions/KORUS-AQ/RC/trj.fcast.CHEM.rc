@@ -1,0 +1,10 @@
+#
+# Resource file for Trajectory Sampler. Aerosol/carbon parameters.
+#
+
+* : /home/adasilva/opendap/kaq/fcast/inst3_3d_aer_Nv.latest
+* : /home/adasilva/opendap/kaq/fcast/tavg3_2d_aer_Nx.latest
+* : /home/adasilva/opendap/kaq/fcast/tavg3_2d_adg_Nx.latest
+#
+* : /home/adasilva/opendap/kaq/fcast/inst3_3d_chm_Nv.latest
+* : /home/adasilva/opendap/kaq/fcast/tavg3_2d_chm_Nx.latest
