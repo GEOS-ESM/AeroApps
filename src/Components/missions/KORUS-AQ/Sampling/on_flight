@@ -7,11 +7,11 @@
 set rc = ../RC
 set sampler = $ESMADIR/`uname`/bin/trj_sampler.py
 set esampler = $ESMADIR/`uname`/bin/ext_sampler.py
-set dest = /home/adasilva/iesa/kaq/sampled
+set dest = /home/adasilva/iesa/kaq/sampled/flight
 
 
 if ( $#argv < 1 ) then
-   echo "usage: $0 flight_track.ict"
+   echo "usage: $0 KORUSAQ-DC8TRK_MODEL_20160426_RA.ICT"
    exit 1
 else
     set ict = $1
