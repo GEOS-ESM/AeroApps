@@ -17,7 +17,8 @@ else
     set ict = $1
 endif
 
-foreach prod ( CHEM METEO )
+#foreach prod ( CHEM METEO )
+foreach prod ( METEO )
 
    set basen = `basename $ict`
    set date = `echo $basen:r | awk -F_ '{print $3}'`

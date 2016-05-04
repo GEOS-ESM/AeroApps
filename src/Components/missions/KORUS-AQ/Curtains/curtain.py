@@ -5,7 +5,6 @@ Plot extinction curtains.
 """
 
 from pyobs      import ICARTT
-from nav        import DC8, ER2
 
 from numpy             import tile, linspace, array, ma
 from matplotlib.pyplot import contourf, xlabel, ylabel, title, grid, plot, \
@@ -14,68 +13,83 @@ from types import *
 import sys
 import unicodedata
 
+from grads import GrADS
+
+from datetime import datetime, timedelta
+
+
 UNDEF = 1.0E+10
 
 class Curtain(object):
-
-    def addVar(self,url,Vars=None,Verbose=True,Levels=None):
-        """
-        Sample variable along flight path.
-        """
-        from grads import GrADS
-        ga = GrADS(Window=False,Echo=False)
-        fh = ga.open(url)
-        if Levels is not None:
-            ga('set lev %s'%Levels)
-
-        if Vars is None:
-            Vars = ga.query('file').vars
-        elif type(Vars) is StringType:
-            Vars = [Vars,]
-        for var in Vars:
-            if Verbose:
-                print ' Working on <%s>'%var
-            q = ga.sampleXYT(var,self.Longitude,self.Latitude,self.Tyme,Verbose=Verbose).data
-            self.__dict__[var] = ma.MaskedArray(q,mask=q>=UNDEF)
-               
-    def sampleExt(self,asm_Np,asm_Nv,ext_Np,flx_Nx):
-        """
-        Sample GEOS-5 Variables at flight path.
-        """
-        # Retrieve the data & interpolate to flight path
-        # -----------------
-        self.addVar(flx_Nx,('pblh',))
-        self.addVar(asm_Nv,('phis',))
-        self.addVar(asm_Np,('h',),Levels='1000 150')
-        self.addVar(ext_Np,('duext','ssext','bcext','ocext','suext'),Levels='1000 150')
-
-        # Derived quantities
-        # ------------------
-        self.pblz = (self.phis/9.8 + self.pblh)/1000.
-        self.ext  = self.duext+self.ssext+self.bcext+self.ocext+self.suext
-    
-    def sampleAer(self,asm_Nv,aer_Nv,flx_Nx):
-        """
-        Sample GEOS-5 Variables at flight path.
-        """
-        # Retrieve the data & interpolate to flight path
-        # -----------------
-        self.addVar(flx_Nx,('pblh',))
-        self.addVar(asm_Nv,('phis',))
-        self.addVar(asm_Nv,('h',),Levels='72 40')
-        self.addVar(aer_Nv,Levels='72 40')
-
-        # Derived quantities
-        # ------------------
-        self.pblz = (self.phis/9.8 + self.pblh)/1000.
-
-        ####self.ext  = self.duext+self.ssext+self.bcext+self.ocext+self.suext
-    
-class CurtainDC8(DC8,Curtain):
     """
     Produce Curtain plots from ASCII Flight Plans.
     """
-    def contourf(self,q,Title=None,Alt=False,N=None,figFile=None,**kwopts):
+
+    def __init__(self,meteo,chem,ict,aircraft='Aircraft'):
+        """
+        Load 
+        """
+
+        # Opengrads
+        # ---------
+        ga = GrADS(Echo=False,Window=False)
+        self.ga = ga # save for later
+
+        # Load Vertical coordinates
+        # -------------------------
+        fh_met = ga.open(meteo)
+        fh_chm = ga.open(chem)
+        ga('set t 1 %d'%fh_met.nt)
+        ga('set z 1 %d'%fh_met.nz)   # met has 26 levs
+        self.h = ga.expr('h')
+        ga('set dfile 2')
+        ga('set z 1 %d'%fh_chm.nz)
+
+ 
+        # Flight path
+        # -----------
+        f = ICARTT(ict)
+        self.Longitude, self.Latitude, self.tyme = f.Lon, f.Lat, f.tyme
+        try:
+            self.Altitude = f.AltP   # real flight, in km (from 60s nav)
+        except:
+            self.Altitude = 1000*f.Alt_km # Flight plan
+        t0 = self.tyme[-1]
+        t0 = datetime(t0.year,t0.month,t0.day)
+        self.Hour = array([(t-t0).total_seconds()/(60.*60.) for t in self.tyme])
+
+        self.takeoff = self.tyme[0]
+        self.landing = self.tyme[1]
+        self.aircraft = aircraft
+
+#---
+    def loadExt(self):
+
+        ga = self.ga
+        self.duext = ga.expr('duext')
+        self.ssext = ga.expr('ssext')
+        self.bcext = ga.expr('bcext')
+        self.ocext = ga.expr('ocext')
+        self.suext = ga.expr('suext')
+
+        self.ccext = self.bcext+self.ocext
+        self.ext  = self.duext+self.ssext+self.bcext+self.ocext+self.suext
+
+#---
+    def loadConc(self):
+
+        ga = self.ga
+        self.du = ga.expr('airdens*du')
+        self.ss = ga.expr('airdens*ss')
+        self.bc = ga.expr('airdens*bc')
+        self.oc = ga.expr('airdens*oc')
+        self.su = ga.expr('airdens*so4')
+        self.so2 = ga.expr('airdens*so2')
+
+        self.cc = self.bc+self.oc
+
+#---
+    def contourf(self,q,Title=None,Alt=False,N=None,figFile=None,hmax=8,**kwopts):
         """
         Plots a curtain contour plot of time vs. height.
         Input data assumed to be in pressure coordinates
@@ -84,35 +98,34 @@ class CurtainDC8(DC8,Curtain):
         nt, nz = q.shape
         nh = self.h.shape[1]
         
-        if self.aircraft == 'DC8':
-            Alt = True # Always plot altitude for DC8
-        
         clf()
         ax = gca()
         ax.set_axis_bgcolor('black') 
         
-        h = self.h.mean(axis=0)/1000
+        h = self.h.mean(axis=0)/1000.
+        h[0] = 0.
 
         # Hack to cope with the fact that asm_Np has 42 levs while
         # ext_Np has 26.
         # --------------------------------------------------------
         if nh > nz:
             h = _fixLev(h)
+            I = h<=hmax
         
         if N is None:
-            contourf(self.Hour,h,q.T,**kwopts)
+            contourf(self.Hour,h[I],q[:,I].T,**kwopts)
         else:
-            contourf(self.Hour,h,q.T,N,**kwopts)
+            contourf(self.Hour,h[I],q[:,I].T,N,**kwopts)
 
         _colorbar()
-        if Alt:
-            plot(self.Hour,self.Altitude,'k',linewidth=2,label=self.aircraft+' Altitude')
+        
+        plot(self.Hour,self.Altitude,'m',linewidth=2,label=self.aircraft+' Altitude')
         if 'pblz' in self.__dict__.keys():
             plot(self.Hour,self.pblz,'k--',linewidth=2,label='PBL Height')
         legend(loc='upper right')
             
         grid()
-        xlabel('UTC Hour on %s'%self.takeoff.date().ctime().replace('00:00:00 ',''))
+        xlabel('UTC Hour on %s'%self.landing.date().ctime().replace('00:00:00 ',''))
         ylabel(' Altitude (km)')
         if Title is not None:
             title(Title)
@@ -157,6 +170,11 @@ def _fixLev(h):
             
 #---------------------------------------------------------------------------------------
 
+if __name__ == "__main__":
 
+    sdir = '/home/adasilva/iesa/kaq/sampled/plan'
+    meteo =  sdir + '/KORUSAQ-GEOS5-METEO-DC8_PLAN_20160503_R0.nc'
+    chem  =  sdir + '/KORUSAQ-GEOS5-CHEM-DC8_PLAN_20160503_R0.nc'
+    ict = '../Plans/fltplan_dc8_20160503.ict'
 
-
+    c = Curtain(meteo,chem,ict)
