@@ -22,7 +22,7 @@ def plot_aod(ga,tit,vname,fname,tyme,sub=None,
     # clf()
     ga('reinit')
     ga.open(fname)
-    ga('set lon -130 -70')
+    ga('set lon 110 135')
     ga('set lat 5 55')
     # ga('set lon -120 -80')
     # ga('set lat 25 50')

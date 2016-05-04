@@ -1,4 +1,4 @@
-#!/bin/csh -fx
+#!/bin/csh -f
 #
 # Given an ICT with a flight path, sample GEOS-products of interest.
 #
@@ -6,24 +6,35 @@
 
 set rc = ../RC
 set sampler = $ESMADIR/`uname`/bin/trj_sampler.py
+set esampler = $ESMADIR/`uname`/bin/ext_sampler.py
 set dest = /home/adasilva/iesa/kaq/sampled
 
 
 if ( $#argv < 1 ) then
-   echo "usage: $ flight_track.ict"
+   echo "usage: $0 flight_track.ict"
    exit 1
 else
     set ict = $1
 endif
 
-foreach prod ( meteo chem )
+foreach prod ( CHEM METEO )
 
    set basen = `basename $ict`
    set date = `echo $basen:r | awk -F_ '{print $3}'`
-   set loc = `echo $basen | awk -F- '{print $2}' | sed -e 's/TRK//'`
-   set nc = $dest/KORUSAQ-GEOS5-$prod-${loc}_MODEL_R0.nc4
+   set loc = `echo $basen | awk -F- '{print $2}' | awk -F_ '{print $1}' | sed -e 's/TRK//'`
+   echo $loc
+   set nc = $dest/KORUSAQ-GEOS5-$prod-${loc}_MODEL_${date}_R0.nc
 
-   $sampler -f NETCDF4 -I -v -r $rc/trj.assim.$prod.rc -o $nc $ict
+   $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $ict
+
+   if ( $prod == "CHEM" ) then
+
+      set inFile = $nc
+      set enc = `echo $inFile | sed -e 's/CHEM/EXT532/'`
+
+      $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_532nm.rc -o $enc 
+
+   endif
 
 end
 
