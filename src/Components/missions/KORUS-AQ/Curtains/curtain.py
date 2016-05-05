@@ -59,8 +59,8 @@ class Curtain(object):
         self.Hour = array([(t-t0).total_seconds()/(60.*60.) for t in self.tyme])
 
         self.takeoff = self.tyme[0]
-        self.landing = self.tyme[1]
-        self.aircraft = aircraft
+        self.landing = self.tyme[-1]
+        self.aircraft = aircraft.upper()
 
 #---
     def loadExt(self):
@@ -88,8 +88,14 @@ class Curtain(object):
 
         self.cc = self.bc+self.oc
 
+        self.co2 = ga.expr('airdens*co2')
+        self.co = ga.expr('airdens*co')
+        self.coffas = ga.expr('airdens*conbas')
+        self.cobbae = ga.expr('airdens*cobbae')
+        self.cobbot = ga.expr('airdens*(cobbgl-cobbae)')
+        
 #---
-    def contourf(self,q,Title=None,Alt=False,N=None,figFile=None,hmax=8,**kwopts):
+    def contourf(self,q,Title=None,Alt=False,N=None,figFile=None,hmax=9,**kwopts):
         """
         Plots a curtain contour plot of time vs. height.
         Input data assumed to be in pressure coordinates
@@ -144,11 +150,13 @@ def _colorbar():
     cax = axes([l+w+0.01, b, 0.04, h]) # setup colorbar axes.
     cbar = colorbar(cax=cax)
     labels = [unicodedata.normalize('NFKD', item.get_text()).encode('ascii','ignore') for item in cbar.ax.get_yticklabels()]
-    labels = ['%3.3f' % float(item) for item in labels]
+    #labels = ['%3.3f' % float(item) for item in labels]
+    labels = ['%g' % float(item) for item in labels]
     
     cbar.ax.set_yticklabels(labels)        
     axes(ax)  # make the original axes current again
 
+    #---
 def _fixLev(h):
     
     lev26 = [1000, 975, 950, 925, 900,      850,      800,      750,      700, 650,
