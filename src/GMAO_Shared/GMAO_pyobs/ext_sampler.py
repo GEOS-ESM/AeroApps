@@ -28,7 +28,7 @@ from pyobs.sgp4     import getTrack
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
-VNAMES_SS = ['SS001','SS002','SS003','SS004','SS004']
+VNAMES_SS = ['SS001','SS002','SS003','SS004','SS005']
 VNAMES_BC = ['BCPHOBIC','BCPHILIC']
 VNAMES_OC = ['OCPHOBIC','OCPHILIC']
 VNAMES_SU = ['SO4']
@@ -72,7 +72,7 @@ def computeMie(Vars, channel, varnames, rcFile):
     """
 #    Computes optical quantities and combines into a dictionary
 #   """
-    
+
     #STN Sampled?
     if options.station:
         NAMES = VNAMES + ['PS','DELP','RH','AIRDENS']
@@ -115,8 +115,7 @@ def computeMie(Vars, channel, varnames, rcFile):
         tau,ssa,g = getAOPscalar(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
         ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
         ext2back = ext/backscat
-        MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}
-
+        MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}       
     return MieVars
 
 #---
@@ -224,7 +223,7 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
     isotime = nc.createVariable('isotime','S1',('time','ls'),zlib=zlib)
     isotime.long_name = 'Time (ISO Format)'
     isotime[:] = isotimeIn[:]
-      
+
     # Write each variable
     # --------------------------------------------------
     for n, name in enumerate(MieVarsNames):
@@ -265,7 +264,7 @@ if __name__ == "__main__":
     format = 'NETCDF3_CLASSIC'
     inFile  = 'trj_sampler.nc'
     outFile = 'ext_sampler.nc'
-    channel = (532,)
+    channel = (532)
     rcFile = 'Aod3d_532nm.rc'
 
 #   Parse command line options
@@ -331,8 +330,7 @@ if __name__ == "__main__":
         options.outFile = name + '.xls'
     else:
         raise ValueError, 'invalid extension <%s>'%ext
- 
-
+    
     # Get Variables
     # --------------------------
     Vars = getVars(options.inFile)
