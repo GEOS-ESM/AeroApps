@@ -25,7 +25,7 @@ foreach prod ( CHEM METEO )
    set loc = `echo $basen | awk -F_ '{print toupper($2)}'`
    set nc = $dest/KORUSAQ-GEOS5-$prod-${loc}_PLAN_${date}_R0.nc
 
-   $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.fcast.$prod.rc -o $nc $ict
+   $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.fcast2.$prod.rc -o $nc $ict
 
 end
 
