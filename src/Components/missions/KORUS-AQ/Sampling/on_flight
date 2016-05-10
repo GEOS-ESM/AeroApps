@@ -14,10 +14,11 @@ if ( $#argv < 1 ) then
    echo "usage: $0 KORUSAQ-DC8TRK_MODEL_20160426_RA.ICT"
    exit 1
 else
-    set ict = $1
+    set ICT = ( $argv )
 endif
 
-foreach prod ( CHEM METEO )
+foreach ict ( $ICT ) 
+ foreach prod ( CHEM METEO )
 
    set basen = `basename $ict`
    set date = `echo $basen:r | awk -F_ '{print $3}'`
@@ -35,6 +36,6 @@ foreach prod ( CHEM METEO )
       $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_532nm.rc -o $enc 
 
    endif
-
+ end
 end
 

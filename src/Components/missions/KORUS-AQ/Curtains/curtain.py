@@ -6,7 +6,7 @@ Plot extinction curtains.
 
 from pyobs      import ICARTT
 
-from numpy             import tile, linspace, array, ma
+from numpy             import tile, linspace, array, ma, ones, zeros, interp, NaN
 from matplotlib.pyplot import contourf, xlabel, ylabel, title, grid, plot, \
                               figure, gca, clf, cm, savefig, axes, colorbar, legend
 from types import *
@@ -25,7 +25,7 @@ class Curtain(object):
     Produce Curtain plots from ASCII Flight Plans.
     """
 
-    def __init__(self,meteo,chem,ict,aircraft='Aircraft'):
+    def __init__(self,meteo,chem,ict,aircraft='Aircraft',zmax=8,nz=160):
         """
         Load 
         """
@@ -41,9 +41,16 @@ class Curtain(object):
         fh_chm = ga.open(chem)
         ga('set t 1 %d'%fh_met.nt)
         ga('set z 1 %d'%fh_met.nz)   # met has 26 levs
-        self.h = ga.expr('h')
+        self.H = ga.expr('h')
         ga('set dfile 2')
         ga('set z 1 %d'%fh_chm.nz)
+
+        # Constant height grid
+        # --------------------
+        self.z = linspace(0,zmax,nz)
+        self.nz = nz
+
+        self.nt, nh5 = self.H.shape
 
  
         # Flight path
@@ -51,7 +58,7 @@ class Curtain(object):
         f = ICARTT(ict)
         self.Longitude, self.Latitude, self.tyme = f.Lon, f.Lat, f.tyme
         try:
-            self.Altitude = f.AltP   # real flight, in km (from 60s nav)
+            self.Altitude = 1000*f.AltP   # real flight, in km (from 60s nav)
         except:
             self.Altitude = 1000*f.Alt_km # Flight plan
         t0 = self.tyme[-1]
@@ -94,38 +101,62 @@ class Curtain(object):
         self.cobbae = ga.expr('airdens*cobbae')
         self.cobbot = ga.expr('airdens*(cobbgl-cobbae)')
         
+#--
+    def zInterp(self,v5):
+        """
+        Vertically interpolates the GEOS-5 variable v5
+        to the DIAL heights.
+        """
+        
+        if len(v5.shape) != 2:
+            raise ValueError, 'variable to be interpolated must have rank 2'
+
+        nt, nh5 = v5.shape
+
+        # Hack to cope with the fact that asm_Np has 42 levs while
+        # ext_Np has 26.
+        # --------------------------------------------------------
+        h = self.H
+        nh = h.shape[1]        
+        if nh > nh5:        
+            h_ = ones((nt,nh5))
+            for t in range(self.nt):
+                h_[t,:] = _fixLev(h[t,:])
+            h = h_
+
+        if h[0,0] > h[0,1]:
+            reverse = True
+        else:
+            reverse = False
+             
+        v = ones((self.nt,self.nz)) # same size as DIAL arrays
+        for t in range(self.nt):
+            if reverse:
+                v[t,:] = interp(self.z,h[t,-1::-1],v5[t,-1::-1],left=NaN)
+            else:
+                v[t,:] = interp(self.z,h[t,:],v5[t,:],left=NaN)
+
+        return v.T
+
 #---
-    def contourf(self,q,Title=None,Alt=False,N=None,figFile=None,hmax=9,**kwopts):
+    def contourf(self,q,Title=None,Alt=False,N=None,figFile=None,**kwopts):
         """
         Plots a curtain contour plot of time vs. height.
         Input data assumed to be in pressure coordinates
         """
 
-        nt, nz = q.shape
-        nh = self.h.shape[1]
-        
         clf()
         ax = gca()
         ax.set_axis_bgcolor('black') 
         
-        h = self.h.mean(axis=0)/1000.
-        h[0] = 0.
-
-        # Hack to cope with the fact that asm_Np has 42 levs while
-        # ext_Np has 26.
-        # --------------------------------------------------------
-        if nh > nz:
-            h = _fixLev(h)
-            I = h<=hmax
-        
         if N is None:
-            contourf(self.Hour,h[I],q[:,I].T,**kwopts)
+            contourf(self.Hour,self.z,self.zInterp(q),**kwopts)
         else:
-            contourf(self.Hour,h[I],q[:,I].T,N,**kwopts)
+            contourf(self.Hour,self.z,self.zInterp(q),N,**kwopts)
 
         _colorbar()
         
-        plot(self.Hour,self.Altitude,'m',linewidth=2,label=self.aircraft+' Altitude')
+        plot(self.Hour,self.Altitude/1000.,'m',linewidth=2,label=self.aircraft+' Altitude')
         if 'pblz' in self.__dict__.keys():
             plot(self.Hour,self.pblz,'k--',linewidth=2,label='PBL Height')
         legend(loc='upper right')
@@ -181,8 +212,8 @@ def _fixLev(h):
 if __name__ == "__main__":
 
     sdir = '/home/adasilva/iesa/kaq/sampled/plan'
-    meteo =  sdir + '/KORUSAQ-GEOS5-METEO-DC8_PLAN_20160503_R0.nc'
-    chem  =  sdir + '/KORUSAQ-GEOS5-CHEM-DC8_PLAN_20160503_R0.nc'
-    ict = '../Plans/fltplan_dc8_20160503.ict'
+    meteo =  sdir + '/KORUSAQ-GEOS5-METEO-DC8_PLAN_20160507_R0.nc'
+    chem  =  sdir + '/KORUSAQ-GEOS5-CHEM-DC8_PLAN_20160507_R0.nc'
+    ict = '../Plans/fltplan_dc8_20160507.ict'
 
     c = Curtain(meteo,chem,ict)
