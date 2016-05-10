@@ -53,7 +53,7 @@ class GOCI(object):
     This class implements the GOCI interface.
     """
 
-    def __init__ (self,Path,Verb=0,only_good=True,do_screen=False):
+    def __init__ (self,Path,Verb=0,only_good=True,do_turbid=True,do_screen=False):
         """
         Reads individual 1-hour granules or a full day of GOCI files
         present on a given *Path* and returns a single object with
@@ -138,7 +138,7 @@ class GOCI(object):
 
         # turbid water pixel screening, is done before 
         # additional cloud screening
-        if only_good:
+        if do_turbid:
             self._screenTurbid()
 
 
@@ -547,7 +547,7 @@ if __name__ == "__main__":
 
     syn_tyme = datetime(2016,04,24,3)
     Files = granules('/nobackup/3/pcastell/GOCI/data/', syn_tyme, nsyn=8, Verbose=True )
-    g = GOCI(Files, Verb=1,only_good=True,do_screen=True)
+    g = GOCI(Files, Verb=1,only_good=True,do_turbid=True,do_screen=True)
     g.writeODS(syn_time, filename=None, dir='.', expid='goci', nsyn=8)
     
 
