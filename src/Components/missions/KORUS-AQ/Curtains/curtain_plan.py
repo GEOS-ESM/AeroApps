@@ -50,28 +50,28 @@ if __name__ == "__main__":
     f.loadConc()
 
     # Plot them
-    f.contourf(1e9*f.du,r'GEOS-5 Dust Aerosol Concentration [$\mu$g/m$^2$]    ',
+    f.contourf(1e9*f.du,r'GEOS-5 Dust Aerosol Concentration [$\mu$g/m$^3$]    ',
                cmap=gacm.jet_l,figFile='du'+figTail, N=32, extend='max')
-    f.contourf(1e9*f.bc,r'GEOS-5 Black Carbon Aerosol Concentration [$\mu$g/m$^2$]',
+    f.contourf(1e9*f.bc,r'GEOS-5 Black Carbon Aerosol Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='bc'+figTail,N=32, extend='max')
-    f.contourf(1e9*f.oc,r'GEOS-5 Organic Aerosol Concentration [$\mu$g/m$^2$]',
+    f.contourf(1e9*f.oc,r'GEOS-5 Organic Aerosol Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='oc'+figTail,N=32, end='max')
-    f.contourf(1e9*f.su,r'GEOS-5 Sulfate Aerosol Concentration [$\mu$g/m$^2$]',
+    f.contourf(1e9*f.su,r'GEOS-5 Sulfate Aerosol Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='su'+figTail, N=32, extend='max')
-    f.contourf(1e9*f.so2,r'GEOS-5 Sulfer Dioxide Concentration [$\mu$g/m$^2$]',
+    f.contourf(1e9*f.so2,r'GEOS-5 Sulfer Dioxide Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='so2'+figTail, N=32, extend='max')
 
 
-    f.contourf(1e9*f.co2,r'GEOS-5 CO$_2$ Concentration [$\mu$g/m$^2$]',
+    f.contourf(1e9*f.co2,r'GEOS-5 CO$_2$ Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='co2'+figTail, N=32, extend='max')
 
-    f.contourf(1e9*f.co,r'GEOS-5 CO Concentration [$\mu$g/m$^2$]',
+    f.contourf(1e9*f.co,r'GEOS-5 CO Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='co'+figTail, N=32, extend='max')
-    f.contourf(1e9*f.coffas,r'GEOS-5 CO FF Asia Concentration [$\mu$g/m$^2$]',
+    f.contourf(1e9*f.coffas,r'GEOS-5 CO FF Asia Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='coffas'+figTail, N=32, extend='max')
-    f.contourf(1e9*f.cobbae,r'GEOS-5 CO BB N Asia+Europe Concentration [$\mu$g/m$^2$]',
+    f.contourf(1e9*f.cobbae,r'GEOS-5 CO BB N Asia+Europe Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='cobbae'+figTail, N=32, extend='max')
-    f.contourf(1e9*f.cobbot,r'GEOS-5 CO BB Other Concentration [$\mu$g/m$^2$]',
+    f.contourf(1e9*f.cobbot,r'GEOS-5 CO BB Other Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='cobbot'+figTail, N=32, extend='max')
 
  
