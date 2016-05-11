@@ -45,6 +45,19 @@ if __name__ == "__main__":
     clevs=linspace(0,0.2,32)
     clevs2 = linspace(0,0.7,32)
 
+    # Pre-load meteorology
+    # --------------------
+    f.loadMet()
+    f.contourf(f.T,r'GEOS-5 Temperature [K]',
+               cmap=cm.hot,figFile='tmpu'+figTail, N=32, extend='max')
+    f.contourf(f.RH,r'GEOS-5 Relative Humidity',
+               cmap=cm.RdBu_r,figFile='rh'+figTail, N=32, extend='max', vmin=0,vmax=100)
+    try:
+        f.contourf(f.CLOUD,r'GEOS-5 Cloud Fraction [%]',
+                   cmap=cm.RdBu,figFile='cld'+figTail, N=32, extend='max')
+    except:
+        pass
+        
     # Pre-load concentration
     # ----------------------
     f.loadConc()
@@ -52,6 +65,7 @@ if __name__ == "__main__":
     # Plot them
     f.contourf(1e9*f.du,r'GEOS-5 Dust Aerosol Concentration [$\mu$g/m$^3$]    ',
                cmap=gacm.jet_l,figFile='du'+figTail, N=32, extend='max')
+
     f.contourf(1e9*f.bc,r'GEOS-5 Black Carbon Aerosol Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='bc'+figTail,N=32, extend='max')
     f.contourf(1e9*f.oc,r'GEOS-5 Organic Aerosol Concentration [$\mu$g/m$^3$]',
@@ -60,7 +74,6 @@ if __name__ == "__main__":
                cmap=gacm.jet_l,figFile='su'+figTail, N=32, extend='max')
     f.contourf(1e9*f.so2,r'GEOS-5 Sulfer Dioxide Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='so2'+figTail, N=32, extend='max')
-
 
     f.contourf(1e9*f.co2,r'GEOS-5 CO$_2$ Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='co2'+figTail, N=32, extend='max')

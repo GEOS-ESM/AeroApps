@@ -4,9 +4,10 @@ Plot extinction curtains.
 
 """
 
-from pyobs      import ICARTT
+from pyobs import ICARTT
 
-from numpy             import tile, linspace, array, ma
+from numpy import tile, linspace, array, ma, ones, zeros, interp, \
+                        isnan, NaN, savez
 from matplotlib.pyplot import contourf, xlabel, ylabel, title, grid, plot, \
                               figure, gca, clf, cm, savefig, axes, colorbar, legend
 from types import *
@@ -20,12 +21,50 @@ from datetime import datetime, timedelta
 
 UNDEF = 1.0E+10
 
+def _subsetLev(h42):
+    
+    lev26 = [1000, 975, 950, 925, 900,      850,      800,      750,      700, 650,
+              600, 550, 500, 450, 400, 350, 300, 250, 200, 150, 100, 70, 50,     30, 20, 10 ]
+
+    lev42 = [1000, 975, 950, 925, 900, 875, 850, 825, 800, 775, 750, 725, 700, 650, 
+              600, 550, 500, 450, 400, 350, 300, 250, 200, 150, 100, 70, 50, 40, 30, 20, 10,
+              7, 5, 4, 3, 2, 1, 0.7, 0.5, 0.4, 0.3, 0.1 ]
+
+    nt = h42.shape[0]
+    h26 = ma.ones((nt,26),fill_value=UNDEF)
+    
+    j = 0
+    for i in range(42):
+        if lev42[i] in lev26:
+            h26[:,j] = h42[:,i]
+            j += 1
+
+    return h26
+
+def _zInterp(z,h,v):
+        nz = len(z)
+        nt, nh = h.shape
+        x = zeros((nt,nz))+UNDEF
+        x = ma.masked_array(x,isnan(x),fill_value=UNDEF)
+        for t in range(nt):
+            hmin = h[t,:].min()
+            #I = z>hmin
+            J = v.mask[t,:]==False
+            #x.data[t,I] = interp(z[I],h[t,J],v[t,J],left=UNDEF)
+            x.data[t,:] = interp(z,h[t,J],v[t,J],left=UNDEF)
+            #print t, hmin, x[t,:].min(), v[t,:].min()
+
+        x.mask[x.data==UNDEF] = True
+
+        return x.T
+            
+
 class Curtain(object):
     """
     Produce Curtain plots from ASCII Flight Plans.
     """
 
-    def __init__(self,meteo,chem,ict,aircraft='Aircraft'):
+    def __init__(self,meteo,chem,ict,aircraft='Aircraft',zmax=8,nz=160):
         """
         Load 
         """
@@ -35,27 +74,46 @@ class Curtain(object):
         ga = GrADS(Echo=False,Window=False)
         self.ga = ga # save for later
 
+        # Open files
+        # ----------
+        self.fh_met = ga.open(meteo)
+        self.fh_chm = ga.open(chem)
+        self.fh_ext = self.fh_chm
+        
         # Load Vertical coordinates
         # -------------------------
-        fh_met = ga.open(meteo)
-        fh_chm = ga.open(chem)
-        ga('set t 1 %d'%fh_met.nt)
+        ga('set t 1 %d'%self.fh_met.nt)
         ga('set z 1')
         self.pblz = ga.expr('(pblh + phis/9.81)/1000.') # in km, ASL 
-        ga('set z 1 %d'%fh_met.nz)   # met has 26 levs
-        self.h = ga.expr('h')
+        self.hs = ga.expr('(phis/9.81)/1000.') # in km, ASL 
+        ga('set z 1 %d'%self.fh_met.nz)   # met has 26 levs
+        self.H_met = ga.expr('h/1000.')
         ga('set dfile 2')
-        ga('set z 1 %d'%fh_chm.nz)
+        ga('set z 1 %d'%self.fh_chm.nz)
 
+        self.nt, self.nh_met = self.fh_met.nt, self.fh_met.nz
+        self.nh_chm = self.fh_chm.nz
+
+        # Created reduced H for chem file
+        # -------------------------------
+        self.H_chm = _subsetLev(self.H_met)
+
+        # Constant height grid
+        # --------------------
+        self.z = linspace(0,zmax,nz)
+        self.nz = nz
  
-        # Flight path
-        # -----------
+        # Flight coordinates
+        # ------------------
         f = ICARTT(ict)
         self.Longitude, self.Latitude, self.tyme = f.Lon, f.Lat, f.tyme
         try:
-            self.Altitude = f.AltP   # real flight, in km (from 60s nav)
+            self.Altitude = self.hs + 1000*f.AltP   # in km
         except:
-            self.Altitude = 1000*f.Alt_km # Flight plan
+            self.Altitude = self.hs + 1000*f.Alt_km # in km
+
+        # UTC hour
+        # --------
         t0 = self.tyme[-1]
         t0 = datetime(t0.year,t0.month,t0.day)
         self.Hour = array([(t-t0).total_seconds()/(60.*60.) for t in self.tyme])
@@ -65,9 +123,24 @@ class Curtain(object):
         self.aircraft = aircraft.upper()
 
 #---
+    def loadMet(self):
+
+        ga = self.ga
+        ga('set dfile %d'%self.fh_met.fid)
+        ga('set z 1 %d'%self.fh_met.nz)
+        self.T  = ga.expr('T')
+        self.RH = ga.expr('100*RH')
+        try:
+            self.CLOUD = ga.expr('cloud')
+        except:
+            pass
+        
+#---
     def loadExt(self):
 
         ga = self.ga
+        ga('set dfile %d'%self.fh_ext.fid)
+        ga('set z 1 %d'%self.fh_ext.nz)
         self.duext = ga.expr('duext')
         self.ssext = ga.expr('ssext')
         self.bcext = ga.expr('bcext')
@@ -81,6 +154,8 @@ class Curtain(object):
     def loadConc(self):
 
         ga = self.ga
+        ga('set dfile %d'%self.fh_chm.fid)
+        ga('set z 1 %d'%self.fh_chm.nz)
         self.du = ga.expr('airdens*du')
         self.ss = ga.expr('airdens*ss')
         self.bc = ga.expr('airdens*bc')
@@ -96,39 +171,35 @@ class Curtain(object):
         self.cobbae = ga.expr('airdens*cobbae')
         self.cobbot = ga.expr('airdens*(cobbgl-cobbae)')
         
+#--
+    def zInterp(self,v5):
+        """
+        Vertically interpolates the GEOS-5 variable v5
+        to fixed heights.
+        """
+        nh = v5.shape[1]
+        if nh == self.nh_chm:
+            return _zInterp(self.z,self.H_chm,v5)
+        elif nh == self.nh_met:
+            return _zInterp(self.z,self.H_met,v5)
+        else:
+            raise ValueError, "invalid vertical dimension, nh=%d"%nh
+            
 #---
-    def contourf(self,q,Title=None,Alt=False,N=None,figFile=None,hmax=9,**kwopts):
+    def contourf(self,q,Title=None,Alt=False,N=None,figFile=None,**kwopts):
         """
         Plots a curtain contour plot of time vs. height.
         Input data assumed to be in pressure coordinates
         """
 
-        # UNDEF safeguard
-        I = q.data>0.01*UNDEF # hackish
-        q.data[I] = UNDEF
-        q.mask[I] = True
-        
-        nt, nz = q.shape
-        nh = self.h.shape[1]
-        
         clf()
         ax = gca()
         ax.set_axis_bgcolor('black') 
         
-        h = self.h.mean(axis=0)/1000.
-        h[0] = 0.
-
-        # Hack to cope with the fact that asm_Np has 42 levs while
-        # ext_Np has 26.
-        # --------------------------------------------------------
-        if nh > nz:
-            h = _fixLev(h)
-            I = h<=hmax
-        
         if N is None:
-            contourf(self.Hour,h[I],q[:,I].T,**kwopts)
+            contourf(self.Hour,self.z,self.zInterp(q),**kwopts)
         else:
-            contourf(self.Hour,h[I],q[:,I].T,N,**kwopts)
+            contourf(self.Hour,self.z,self.zInterp(q),N,**kwopts)
 
         _colorbar()
         
@@ -164,26 +235,8 @@ def _colorbar():
     axes(ax)  # make the original axes current again
 
     #---
-def _fixLev(h):
-    
-    lev26 = [1000, 975, 950, 925, 900,      850,      800,      750,      700, 650,
-              600, 550, 500, 450, 400, 350, 300, 250, 200, 150, 100, 70, 50,     30, 20, 10 ]
 
-    lev42 = [1000, 975, 950, 925, 900, 875, 850, 825, 800, 775, 750, 725, 700, 650, 
-              600, 550, 500, 450, 400, 350, 300, 250, 200, 150, 100, 70, 50, 40, 30, 20, 10,
-              7, 5, 4, 3, 2, 1, 0.7, 0.5, 0.4, 0.3, 0.1 ]
-
-    h_ = []
-
-    for i in range(len(h)):
-        if lev42[i] in lev26:
-            h_ += [h[i],]
-
-    h_ = array(h_)
-
-    return h_
-            
-#---------------------------------------------------------------------------------------
+    #---------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
 
