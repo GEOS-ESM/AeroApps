@@ -1,28 +1,28 @@
 35,1001
-GeoTASO Team
-NASA GSFC
-B-200 (N817NA) GeoTASO
+Hanseo King Air HL5200 Navigation System
+NIER
+Hanseo King Air HL5200
 KORUS-AQ 2016
 1,1
-2016,05,04,2016,05,06
+2016,05,02,2016,05,03
 1
 UTC_mid,seconds, mid time UTC from midnight of the starting data collecting day 
 3
 1,1,1
 -9999,-9999,-9999
-Lat_60s, degN, 60 second average of latitude
-Lon_60s, degE, 60 second average of longitude
-AltGPS_60s, km, 60 second average of GPS altitude
+Lat, degN, 60 second average of latitude
+Lon, degE, 60 second average of longitude
+AltGPS, km, 60 second average of GPS altitude
 1
 Data from GeoTASO instrument
 17
-PI_CONTACT_INFO: Scott Janz
-Platform: B-200 King Air
+PI_CONTACT_INFO: Jinsoo Park
+Platform: Hanseo King Air HL 5200
 LOCATION: Included in data records
 ASSOCIATED_DATA: N/A
-INSTRUMENT_INFO:http://www.nserc.und.edu/PDFs/ExperimenterHandbook.pdf
+INSTRUMENT_INFO:Garmin GPS
 DATA_INFO: data averaged into 60s intervals
-UNCERTAINTY: Reference DC-8 Experimenter Handbook located at https://airbornescience.nasa.gov/sites/default/files/DC8_Experimenter_Handbook_Jan2011v2.pdf
+UNCERTAINTY: TBD
 ULOD_FLAG: -7777
 ULOD_VALUE: N/A
 LLOD_FLAG: -8888
@@ -32,7 +32,7 @@ PROJECT_INFO: N/A
 STIPULATIONS_ON_USE: N/A
 OTHER_COMMENTS: N/A
 REVISION: RA
-UTC_mid,Lat_60s,Lon_60s,AltGPS_60s
+UTC_mid,Lat,Lon,AltGPS
 16970,37.08792,127.0292,0.031778
 17030,37.08793,127.0292,0.032495
 17090,37.0879,127.0292,0.032267
