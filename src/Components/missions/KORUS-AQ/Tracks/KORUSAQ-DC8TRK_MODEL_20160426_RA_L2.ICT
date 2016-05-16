@@ -10,9 +10,9 @@ UTC_mid,seconds, mid time UTC from midnight of the starting data collecting day
 3
 1,1,1
 -9999,-9999,-9999
-Lat_60s, degN, 60 second average of IWG1 latitude
-Lon_60s, degE, 60 second average of IWG1 longitude
-AltP_60s, km, 60 second average of IWG1 pressure altitude
+Lat, degN, 60 second average of IWG1 latitude
+Lon, degE, 60 second average of IWG1 longitude
+AltP, km, 60 second average of IWG1 pressure altitude
 1
 Data from IWG1 file posted on: http://asp-archive.arc.nasa.gov
 17
@@ -32,7 +32,7 @@ PROJECT_INFO: N/A
 STIPULATIONS_ON_USE: N/A
 OTHER_COMMENTS: N/A
 REVISION: RA
-UTC_mid,Lat_60s,Lon_60s,AltP_60s
+UTC_mid,Lat,Lon,AltP_60s
 71160,61.19945,-150.015,0.213213
 71220,61.23955,-150.069,0.508681
 71280,61.28283,-150.17,0.894862
