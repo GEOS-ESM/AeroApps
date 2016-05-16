@@ -26,14 +26,22 @@ foreach ict ( $ICT )
    echo $loc
    set nc = $dest/KORUSAQ-GEOS5-$prod-${loc}_MODEL_${date}_R0.nc
 
-   $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $ict
+   if ( -e $nc ) then
+        echo "<> Skipping $nc, already there there"
+   else
+        $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $ict
+   endif
 
    if ( $prod == "CHEM" ) then
 
       set inFile = $nc
       set enc = `echo $inFile | sed -e 's/CHEM/EXT532/'`
 
-      $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_532nm.rc -o $enc 
+      if ( -e $enc ) then
+        echo "<> Skipping $nc, already there there"
+      else
+        $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_532nm.rc -o $enc 
+      endif
 
    endif
  end
