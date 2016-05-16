@@ -10,9 +10,9 @@ UTC_mid,seconds, mid time UTC from midnight of the starting data collecting day
 3
 1,1,1
 -9999,-9999,-9999
-Lat_60s, degN, 60 second average of latitude
-Lon_60s, degE, 60 second average of longitude
-AltGPS_60s, km, 60 second average of GPS altitude
+Lat, degN, 60 second average of latitude
+Lon, degE, 60 second average of longitude
+AltGPS, km, 60 second average of GPS altitude
 1
 Data from GeoTASO instrument
 17
@@ -32,7 +32,7 @@ PROJECT_INFO: N/A
 STIPULATIONS_ON_USE: N/A
 OTHER_COMMENTS: N/A
 REVISION: RA
-UTC_mid,Lat_60s,Lon_60s,AltGPS_60s
+UTC_mid,Lat,Lon,AltGPS
 76760,37.08789842,127.0292449,0.034702579
 76820,37.08790439,127.0292484,0.034592381
 76880,37.08791261,127.0292481,0.03379054
