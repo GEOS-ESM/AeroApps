@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Plot curtain from FlightPlan text files.
+Plot curtain from actual aircraft tracks given in ICARTT files.
 """
 
 import sys
@@ -10,16 +10,17 @@ from grads import gacm
 
 if __name__ == "__main__":
 
-    sdir = '/Users/adasilva/iesa/kaq/sampled/plan'
-    meteo =  sdir + '/KORUSAQ-GEOS5-METEO-AIRCRAFT_PLAN_DATE_R0.nc'
-    chem  =  sdir + '/KORUSAQ-GEOS5-CHEM-AIRCRAFT_PLAN_DATE_R0.nc'
-    ict = '../Plans/fltplan_aircraft_DATE.ict'
+    sdir = '/Users/adasilva/iesa/kaq/sampled/flight'
+    meteo =  sdir + '/KORUSAQ-GEOS5-METEO-AIRCRAFT_MODEL_DATE_R0.nc'
+    chem  =  sdir + '/KORUSAQ-GEOS5-CHEM-AIRCRAFT_MODEL_DATE_R0.nc'
+    ext   =  sdir + '/KORUSAQ-GEOS5-EXT532-AIRCRAFT_MODEL_DATE_R0.nc'
+    ict = '../Tracks/KORUSAQ-AIRCRAFTTRK_MODEL_DATE_RA.ICT'
 
     if len(sys.argv) < 3:
         print "Usage: "
-        print "       curtain_plan aircraft date"
+        print "       curtain_flight aircraft date"
         print "Example:" 
-        print "       curtain_plan DC8 20160503"
+        print "       curtain_flight DC8 20160503"
         raise SystemExit, "Error: not enough arguments"
     else:
         aircraft = sys.argv[1]
@@ -27,23 +28,20 @@ if __name__ == "__main__":
 
     figTail = '.'+aircraft+'.'+ date + '.png'
 
-    # figTail = '.%s.%s.png'%(f.aircraft,str(f.Tyme[0]).split()[0])
-     
     # Dataset location
     # ----------------
     meteo = meteo.replace('AIRCRAFT',aircraft).replace('DATE',date)
     chem = chem.replace('AIRCRAFT',aircraft).replace('DATE',date)
-    ict = ict.replace('aircraft',aircraft.lower()).replace('DATE',date)
+    ext = ext.replace('AIRCRAFT',aircraft).replace('DATE',date)
+    ict = ict.replace('AIRCRAFT',aircraft.lower()).replace('DATE',date)
 
     # Load flight path and sampled data
     # ---------------------------------
-    f = Curtain(meteo,chem,chem,ict,aircraft=aircraft)
+    f = Curtain(meteo,chem,ext,ict,aircraft=aircraft,prs=False)
 
     # Plot them
     # ---------
     figure(figsize=(11,5.5))
-    clevs=linspace(0,0.2,32)
-    clevs2 = linspace(0,0.7,32)
 
     # Pre-load meteorology
     # --------------------
@@ -57,7 +55,9 @@ if __name__ == "__main__":
                    cmap=cm.RdBu,figFile='cld'+figTail, N=32, extend='max')
     except:
         pass
-        
+
+def later():
+    
     # Concentration
     # -------------
     f.load(f.fh_chm,['du','ss','bc','oc','so4','so2','co2','co','conbas','cobbgl','cobbae'],

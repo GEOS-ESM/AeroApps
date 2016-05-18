@@ -64,7 +64,7 @@ class Curtain(object):
     Produce Curtain plots from ASCII Flight Plans.
     """
 
-    def __init__(self,meteo,chem,ict,aircraft='Aircraft',zmax=8,nz=160):
+    def __init__(self,meteo,chem,ext,ict,aircraft='Aircraft',zmax=8,nz=160,prs=True):
         """
         Load 
         """
@@ -78,7 +78,7 @@ class Curtain(object):
         # ----------
         self.fh_met = ga.open(meteo)
         self.fh_chm = ga.open(chem)
-        self.fh_ext = self.fh_chm
+        self.fh_ext = ga.open(ext)
         
         # Load Vertical coordinates
         # -------------------------
@@ -96,8 +96,11 @@ class Curtain(object):
 
         # Created reduced H for chem file
         # -------------------------------
-        self.H_chm = _subsetLev(self.H_met)
-
+        if prs:
+            self.H_chm = _subsetLev(self.H_met)
+        else:
+            self.H_chm = self.H_met # native vertical coords
+            
         # Constant height grid
         # --------------------
         self.z = linspace(0,zmax,nz)
@@ -134,43 +137,20 @@ class Curtain(object):
             self.CLOUD = ga.expr('cloud')
         except:
             pass
-        
-#---
-    def loadExt(self):
 
+    def load(self,fh,Vars,factor=None):
+        """
+        Load a list of variables:
+        """
         ga = self.ga
-        ga('set dfile %d'%self.fh_ext.fid)
-        ga('set z 1 %d'%self.fh_ext.nz)
-        self.duext = ga.expr('duext')
-        self.ssext = ga.expr('ssext')
-        self.bcext = ga.expr('bcext')
-        self.ocext = ga.expr('ocext')
-        self.suext = ga.expr('suext')
-
-        self.ccext = self.bcext+self.ocext
-        self.ext  = self.duext+self.ssext+self.bcext+self.ocext+self.suext
-
-#---
-    def loadConc(self):
-
-        ga = self.ga
-        ga('set dfile %d'%self.fh_chm.fid)
-        ga('set z 1 %d'%self.fh_chm.nz)
-        self.du = ga.expr('airdens*du')
-        self.ss = ga.expr('airdens*ss')
-        self.bc = ga.expr('airdens*bc')
-        self.oc = ga.expr('airdens*oc')
-        self.su = ga.expr('airdens*so4')
-        self.so2 = ga.expr('airdens*so2')
-
-        self.cc = self.bc+self.oc
-
-        self.co2 = ga.expr('airdens*co2')
-        self.co = ga.expr('airdens*co')
-        self.coffas = ga.expr('airdens*conbas')
-        self.cobbae = ga.expr('airdens*cobbae')
-        self.cobbot = ga.expr('airdens*(cobbgl-cobbae)')
-        
+        ga('set dfile %d'%fh.fid)
+        ga('set z 1 %d'%fh.nz)
+        for v in Vars:
+            if factor is not None:
+                self.__dict__[v] = ga.expr(factor+'*'+v)
+            else:
+                self.__dict__[v] = ga.expr(v)
+                        
 #--
     def zInterp(self,v5):
         """
@@ -208,7 +188,7 @@ class Curtain(object):
             plot(self.Hour,self.pblz,'k-',linewidth=2,label='PBL Height')
         legend(loc='upper right')
             
-        grid()
+        #grid(color='w')
         xlabel('UTC Hour on %s'%self.landing.date().ctime().replace('00:00:00 ',''))
         ylabel(' Altitude (km)')
         if Title is not None:
@@ -232,6 +212,7 @@ def _colorbar():
     labels = ['%g' % float(item) for item in labels]
     
     cbar.ax.set_yticklabels(labels)        
+    cbar.ax.set_axis_bgcolor('black') 
     axes(ax)  # make the original axes current again
 
     #---
