@@ -166,10 +166,9 @@ class Curtain(object):
             raise ValueError, "invalid vertical dimension, nh=%d"%nh
             
 #---
-    def contourf(self,q,Title=None,Alt=False,N=None,figFile=None,**kwopts):
+    def contourf(self,q,Title=None,Alt=False,N=None,figFile=None,pblc='k',**kwopts):
         """
         Plots a curtain contour plot of time vs. height.
-        Input data assumed to be in pressure coordinates
         """
 
         clf()
@@ -185,7 +184,7 @@ class Curtain(object):
         
         plot(self.Hour,self.Altitude,'m',linewidth=2,label=self.aircraft+' Altitude')
         if 'pblz' in self.__dict__.keys():
-            plot(self.Hour,self.pblz,'k-',linewidth=2,label='PBL Height')
+            plot(self.Hour,self.pblz,pblc+'-',linewidth=2,label='PBL Height')
         legend(loc='upper right')
             
         #grid(color='w')

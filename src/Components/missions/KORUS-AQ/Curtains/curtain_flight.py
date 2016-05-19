@@ -26,7 +26,7 @@ if __name__ == "__main__":
         aircraft = sys.argv[1]
         date = sys.argv[2]
 
-    figTail = '.'+aircraft+'.'+ date + '.png'
+    figTail = '.flight.'+aircraft+'.'+ date + '.png'
 
     # Dataset location
     # ----------------
@@ -50,27 +50,26 @@ if __name__ == "__main__":
                cmap=cm.hot,figFile='tmpu'+figTail, N=32, extend='max')
     f.contourf(f.RH,r'GEOS-5 Relative Humidity',
                cmap=cm.RdBu_r,figFile='rh'+figTail, N=32, extend='max', vmin=0,vmax=100)
-    try:
-        f.contourf(f.CLOUD,r'GEOS-5 Cloud Fraction [%]',
-                   cmap=cm.RdBu,figFile='cld'+figTail, N=32, extend='max')
-    except:
-        pass
+    #f.contourf(100*f.CLOUD,r'GEOS-5 Cloud Fraction [%]',
+    #           cmap=gacm.Bone_l,figFile='cld'+figTail,pblc='w', N=32, extend='max')
 
-def later():
-    
     # Concentration
     # -------------
-    f.load(f.fh_chm,['du','ss','bc','oc','so4','so2','co2','co','conbas','cobbgl','cobbae'],
+    f.load(f.fh_chm,['du001','du002','du003','du004','du005',
+                     'ocphilic','ocphobic','bcphilic','bcphobic',
+                     'so4','so2','co2','co'], #,'conbas','cobbgl','cobbae'],
            factor='airdens')
-    f.cobbot = f.cobbgl-f.cobbae
-
+    #f.cobbot = f.cobbgl-f.cobbae
+    
     # Plot them
-    f.contourf(1e9*f.du,r'GEOS-5 Dust Aerosol Concentration [$\mu$g/m$^3$]    ',
+    f.contourf(1e9*(f.du001+f.du002+f.du003+f.du004+f.du005),
+               r'GEOS-5 Dust Aerosol Concentration [$\mu$g/m$^3$]    ',
                cmap=gacm.jet_l,figFile='du'+figTail, N=32, extend='max')
-
-    f.contourf(1e9*f.bc,r'GEOS-5 Black Carbon Aerosol Concentration [$\mu$g/m$^3$]',
+    f.contourf(1e9*(f.bcphobic+f.bcphilic),
+               r'GEOS-5 Black Carbon Aerosol Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='bc'+figTail,N=32, extend='max')
-    f.contourf(1e9*f.oc,r'GEOS-5 Organic Aerosol Concentration [$\mu$g/m$^3$]',
+    f.contourf(1e9*(f.ocphobic+f.ocphilic),
+               r'GEOS-5 Organic Aerosol Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='oc'+figTail,N=32, end='max')
     f.contourf(1e9*f.so4,r'GEOS-5 Sulfate Aerosol Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='su'+figTail, N=32, extend='max')
@@ -82,27 +81,25 @@ def later():
 
     f.contourf(1e9*f.co,r'GEOS-5 CO Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='co'+figTail, N=32, extend='max')
+
+    """
     f.contourf(1e9*f.conbas,r'GEOS-5 CO FF Asia Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='coffas'+figTail, N=32, extend='max')
     f.contourf(1e9*f.cobbae,r'GEOS-5 CO BB N Asia+Europe Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='cobbae'+figTail, N=32, extend='max')
     f.contourf(1e9*f.cobbot,r'GEOS-5 CO BB Other Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='cobbot'+figTail, N=32, extend='max')
+    """
 
- 
     # Extinction
     # ----------
-    f.load(f.fh_ext,['duext','ssext','bcext','ocext','suext'])
-    f.ext  = f.duext+f.ssext+f.bcext+f.ocext+f.suext
-
-    f.contourf(1000*f.ext,  'GEOS-5 Total Aerosol Extinction [1/km]',
+    f.load(f.fh_ext,['ext','backscat','depol','ext2back'])
+    f.contourf(1000*f.ext,  'GEOS-5 Aerosol 532nm Extinction [1/km]',
                cmap=gacm.jet_l,figFile='ext'+figTail,N=32, extend='max')
-    f.contourf(1000*f.duext,'GEOS-5 Dust Aerosol Extinction [1/km]',
-               cmap=gacm.jet_l,figFile='duext'+figTail, N=32, extend='max')
-    f.contourf(1000*f.bcext,'GEOS-5 Black Carbon Aerosol Extinction [1/km]',
-               cmap=gacm.jet_l,figFile='bcext'+figTail,N=32, extend='max')
-    f.contourf(1000*f.ocext,'GEOS-5 Organic Aerosol Extinction [1/km]',
-               cmap=gacm.jet_l,figFile='ocext'+figTail,N=32, extend='max')
-    f.contourf(1000*f.suext,'GEOS-5 Sulfate Aerosol Extinction [1/km]',
-               cmap=gacm.jet_l,figFile='suext'+figTail, N=32, extend='max')
+    f.contourf(1000*f.backscat,'GEOS-5 Aerosol 532nm Backscatter [1/km]',
+               cmap=gacm.jet_l,figFile='bacscat'+figTail, N=32, extend='max')
+    f.contourf(f.depol,'GEOS-5 Aerosol Depolarization',
+               cmap=gacm.jet_l,figFile='depol'+figTail,N=32, extend='max')
+    f.contourf(f.ext2back,'GEOS-5 Extinction:Backscatter Ratio',
+               cmap=gacm.jet_l,figFile='ext2back'+figTail,N=32, extend='max')
 

@@ -25,10 +25,8 @@ if __name__ == "__main__":
         aircraft = sys.argv[1]
         date = sys.argv[2]
 
-    figTail = '.'+aircraft+'.'+ date + '.png'
+    figTail = '.plan.'+aircraft+'.'+ date + '.png'
 
-    # figTail = '.%s.%s.png'%(f.aircraft,str(f.Tyme[0]).split()[0])
-     
     # Dataset location
     # ----------------
     meteo = meteo.replace('AIRCRAFT',aircraft).replace('DATE',date)
