@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 #
-# Creates a stn_sampler resource file for a given bounding box.
+# Creates a trj_sampler resource file for a given bounding box.
+# Some named cross-sections are defined internally for consistency.
+# Aircraft speed hardwired for now, but should eventually be turned into
+# an option.
 #
+# Arlindo da Silva, May 2016.
 
 import os
 import sys

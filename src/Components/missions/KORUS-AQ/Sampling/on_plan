@@ -3,7 +3,6 @@
 # Given an ICT with a flight path, sample GEOS-products of interest.
 #
 
-
 set rc = ../RC
 set sampler = $ESMADIR/`uname`/bin/trj_sampler.py
 set esampler = $ESMADIR/`uname`/bin/ext_sampler.py
@@ -11,35 +10,35 @@ set dest = /home/adasilva/iesa/kaq/sampled/plan
 
 
 if ( $#argv < 1 ) then
-   echo "usage: $0 fltplan_dc8_20160503.ict"
+   echo "usage:    $0 fltplan_dc8_20160503.ict  [fcst_DTG]"
+   echo "examples: $0 fltplan_dc8_20160503.ict  "
+   echo "          $0 fltplan_dc8_20160503.ict  20160502_12"
    exit 1
 else if ( $#argv == 2 ) then
     set ict  = $1
-    set DATE = $2
-
+    set DTG  = $2
     foreach prod ( CHEM METEO )
-        cp $rc/trj.fcastDATE.$prod.rc  $rc/trj.fcast3.$prod.rc
-	repl DATE $DATE $rc/trj.fcast3.$prod.rc
+        cp $rc/trj.fcast2.$prod.rc  /tmp/trj.fcast.$prod.$$.rc
+	repl DTG $DTG /tmp/trj.fcast.$prod.$$.rc
     end
 else
     set ict = $1
+    foreach prod ( CHEM METEO )
+       cp $rc/trj.fcast.$prod.rc  /tmp/trj.fcast.$prod.$$.rc
+    end
 endif
-
+        
 foreach prod ( CHEM METEO )
-#foreach prod ( METEO )
 
    set basen = `basename $ict`
    set date = `echo $basen:r | awk -F_ '{print $3}'`
    set loc = `echo $basen | awk -F_ '{print toupper($2)}'`
    set nc = $dest/KORUSAQ-GEOS5-$prod-${loc}_PLAN_${date}_R0.nc
 
-   $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.fcast3.$prod.rc -o $nc $ict
+    $sampler -f NETCDF3_CLASSIC  -I -v \
+             -r /tmp/trj.fcast.$prod.$$.rc -o $nc $ict
 
+    rm -rf /tmp/trj.fcast.$prod.$$.rc*
+             
 end
 
-if ( $#argv == 2 ) then
-    foreach prod ( CHEM METEO )
-	rm $rc/trj.fcast3.$prod.rc
-	rm $rc/trj.fcast3.$prod.rc*~
-    end
-endif

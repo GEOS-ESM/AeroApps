@@ -1,0 +1,52 @@
+#!/bin/csh -f
+#
+# Given an ICT with a flight path, sample GEOS-products of interest.
+#
+
+set rc = ../RC
+set sampler = $ESMADIR/`uname`/bin/trj_sampler.py
+set xsect = $ESMADIR/`uname`/bin/trj_xsect.py
+set csv = /tmp/trj_sampler.$$.csv 
+set dest = /home/adasilva/iesa/kaq/sampled/plan
+
+
+if ( $#argv < 2 ) then
+   echo "usage:    $0 section_name isoT0  [fcst_DTG]"
+   echo "examples: $0 westsea    2016-05-10T03:00:00 "
+   echo "          $0 jeju2seoul 2016-05-03T00:00:00 20160502_12"
+   exit 1
+else if ( $#argv == 3 ) then
+    set section  = $1
+    set isoT0 = $2
+    set DTG  = $3
+    foreach prod ( CHEM METEO )
+        cp $rc/trj.fcast2.$prod.rc  /tmp/trj.fcast.$prod.$$.rc
+	repl DTG $DTG /tmp/trj.fcast.$prod.$$.rc
+    end
+else
+    set section = $1
+    set isoT0 = $2
+    foreach prod ( CHEM METEO )
+       cp $rc/trj.fcast.$prod.rc  /tmp/trj.fcast.$prod.$$.rc
+    end
+endif
+
+# Generate CSV trajectory for this cross-section
+# ----------------------------------------------    
+  $xsect $csv $isoT0 $section # create trajectory
+
+# Sample each product
+# -------------------    
+  foreach prod ( CHEM METEO )
+
+    set nc = $dest/KORUSAQ-GEOS5-$prod-${section}_PLAN_${isoT0}_R0.nc
+
+    $sampler -f NETCDF3_CLASSIC  -I -v \
+             -r /tmp/trj.fcast.$prod.$$.rc -o $nc $csv
+
+  end
+
+# Remove temp files
+# -----------------
+  rm -rf /tmp/trj.fcast.*.$$.rc*             
+  rm -rf $csv
