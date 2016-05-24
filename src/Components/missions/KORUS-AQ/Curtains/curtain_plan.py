@@ -35,7 +35,7 @@ if __name__ == "__main__":
     meteo = meteo.replace('AIRCRAFT',aircraft).replace('DATE',date)
     chem = chem.replace('AIRCRAFT',aircraft).replace('DATE',date)
     if 'T' in date:
-        coords = csv.replace('aircraft',aircraft.replace('DATE',date)
+        coords = csv.replace('SECTION',aircraft).replace('isoT0',date)
     else:
         coords = ict.replace('aircraft',aircraft.lower()).replace('DATE',date)
 

@@ -18,7 +18,7 @@ from csv import DictReader
 from grads import GrADS
 
 from datetime import datetime, timedelta
-
+from dateutil.parser import parse as isoparser
 
 UNDEF = 1.0E+10
 
