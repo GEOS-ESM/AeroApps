@@ -14,12 +14,15 @@ if __name__ == "__main__":
     meteo =  sdir + '/KORUSAQ-GEOS5-METEO-AIRCRAFT_PLAN_DATE_R0.nc'
     chem  =  sdir + '/KORUSAQ-GEOS5-CHEM-AIRCRAFT_PLAN_DATE_R0.nc'
     ict = '../Plans/fltplan_aircraft_DATE.ict'
+    csv = '../Plans/xsect_SECTION_isoT0.csv'
 
     if len(sys.argv) < 3:
         print "Usage: "
         print "       curtain_plan aircraft date"
+        print "       curtain_plan section  iso_time"
         print "Example:" 
         print "       curtain_plan DC8 20160503"
+        print "       curtain_plan jeju2seoul 2016-05-24T00:00:00"
         raise SystemExit, "Error: not enough arguments"
     else:
         aircraft = sys.argv[1]
@@ -31,11 +34,14 @@ if __name__ == "__main__":
     # ----------------
     meteo = meteo.replace('AIRCRAFT',aircraft).replace('DATE',date)
     chem = chem.replace('AIRCRAFT',aircraft).replace('DATE',date)
-    ict = ict.replace('aircraft',aircraft.lower()).replace('DATE',date)
+    if 'T' in date:
+        coords = csv.replace('aircraft',aircraft.replace('DATE',date)
+    else:
+        coords = ict.replace('aircraft',aircraft.lower()).replace('DATE',date)
 
     # Load flight path and sampled data
     # ---------------------------------
-    f = Curtain(meteo,chem,chem,ict,aircraft=aircraft)
+    f = Curtain(meteo,chem,chem,coords,aircraft=aircraft)
 
     # Plot them
     # ---------
