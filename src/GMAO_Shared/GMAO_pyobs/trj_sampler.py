@@ -183,7 +183,7 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
     nc.source = 'Global Model and Assimilation Office'
     nc.history = 'Created from GEOS-5 standard collections by trj_sampler.py'
     nc.references = 'n/a'
-    nc.comment = 'This file contains GEOS-5 cloud related parameters along a satellite or aircraft track.'
+    nc.comment = 'This file contains GEOS-5 related parameters along a satellite or aircraft track.'
     nc.contact = 'Arlindo da Silva <arlindo.dasilva@nasa.gov>'
     nc.Conventions = 'CF'
     nc.trjFile = trjFile
