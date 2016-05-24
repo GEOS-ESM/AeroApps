@@ -6,7 +6,6 @@
 set rc = ../RC
 set sampler = $ESMADIR/`uname`/bin/trj_sampler.py
 set xsect = $ESMADIR/`uname`/bin/trj_xsect.py
-set csv = /tmp/trj_sampler.$$.csv 
 set dest = /home/adasilva/iesa/kaq/sampled/plan
 
 
@@ -31,6 +30,8 @@ else
     end
 endif
 
+set csv = ../Plans/xsect_${section}_$isoT0.csv # trajectory
+
 # Generate CSV trajectory for this cross-section
 # ----------------------------------------------    
   $xsect $csv $isoT0 $section # create trajectory
@@ -49,4 +50,3 @@ endif
 # Remove temp files
 # -----------------
   rm -rf /tmp/trj.fcast.*.$$.rc*             
-  rm -rf $csv
