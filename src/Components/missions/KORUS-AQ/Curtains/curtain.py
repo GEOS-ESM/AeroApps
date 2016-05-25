@@ -13,11 +13,12 @@ from matplotlib.pyplot import contourf, xlabel, ylabel, title, grid, plot, \
 from types import *
 import sys
 import unicodedata
+from csv import DictReader
 
 from grads import GrADS
 
 from datetime import datetime, timedelta
-
+from dateutil.parser import parse as isoparser
 
 UNDEF = 1.0E+10
 
@@ -58,13 +59,29 @@ def _zInterp(z,h,v):
 
         return x.T
             
+def _getTrackCSV(csvFile):
+    """
+    Get trajectory from a CSV with (lon,lat,time) coordinates.
+    Notice that *time* must be specified in ISO format, e.g.,
+
+                  2014-02-05T12:30:45
+    """
+    CSV = DictReader(open(csvFile))
+    lon, lat, tyme = [], [], []
+    for row in CSV:
+        lon  += [float(row['lon']),]
+        lat  += [float(row['lat']),]
+        tyme  += [isoparser(row['time']),]
+        
+    return ( array(lon), array(lat), array(tyme) )
+
 
 class Curtain(object):
     """
     Produce Curtain plots from ASCII Flight Plans.
     """
 
-    def __init__(self,meteo,chem,ext,ict,aircraft='Aircraft',zmax=8,nz=160,prs=True):
+    def __init__(self,meteo,chem,ext,coords,aircraft='Aircraft',zmax=8,nz=160,prs=True):
         """
         Load 
         """
@@ -108,12 +125,18 @@ class Curtain(object):
  
         # Flight coordinates
         # ------------------
-        f = ICARTT(ict)
-        self.Longitude, self.Latitude, self.tyme = f.Lon, f.Lat, f.tyme
-        try:
-            self.Altitude = self.hs + 1000*f.AltP   # in km
-        except:
-            self.Altitude = self.hs + 1000*f.Alt_km # in km
+        if coords[-4:] == '.ict':
+            f = ICARTT(coords)
+            self.Longitude, self.Latitude, self.tyme = f.Lon, f.Lat, f.tyme
+            try:
+                self.Altitude = self.hs + 1000*f.AltP   # in km
+            except:
+                self.Altitude = self.hs + 1000*f.Alt_km # in km
+        elif coords[-4:] == '.csv':
+            self.Longitude, self.Latitude, self.tyme = _getTrackCSV(coords)
+            self.Altitude = self.hs
+        else:
+            raise ValueError, 'invalid coords file %s'%coords
 
         # UTC hour
         # --------

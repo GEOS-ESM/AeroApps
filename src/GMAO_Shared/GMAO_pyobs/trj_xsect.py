@@ -122,7 +122,7 @@ if __name__ == "__main__":
     # Write out stn rc file
     # ---------------------
     f = open(filename,'w')
-    f.write('#lon,lat,time\n')
+    f.write('lon,lat,time\n')
     for i in range(N):
         f.write('%f,%f,%s\n'%(Lons[i],Lats[i],tyme[i].isoformat()))
     f.close()

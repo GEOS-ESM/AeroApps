@@ -28,7 +28,7 @@ THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
 
 PY_EXTS = pyobs/binObs_.$(F2PYEXT) pyobs/IGBP_.$(F2PYEXT) pyobs/sgp4_.$(F2PYEXT)
-PY_SCRP = stn_sampler.py trj_sampler.py ext_sampler.py
+PY_SCRP = stn_sampler.py trj_sampler.py ext_sampler.py trj_xsect.py
 
 esma_install install python_install: $(DEPS) $(LIB) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
