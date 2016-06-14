@@ -1,0 +1,63 @@
+#!/bin/csh -f
+#
+# Given an ICT with a flight path, sample GEOS-products of interest.
+#
+
+
+set rc = ../RC
+set sampler = $ESMADIR/`uname`/bin/trj_sampler.py
+set esampler = $ESMADIR/`uname`/bin/ext_sampler.py
+set dest = ./sampled/flight
+
+
+if ( $#argv < 1 ) then
+   echo "usage: $0 KORUSAQ-DC8TRK_MODEL_20160426_RA.ICT"
+   exit 1
+else if ( $#argv > 1) then
+    set force = 1
+    set ICT = $1
+else
+    set force = 0
+    set ICT = ( $argv )
+endif
+
+
+
+foreach ict ( $ICT ) 
+  foreach prod ( CHEM METEO )
+
+    set basen = `basename $ict`
+    set date = `echo $basen:r | awk -F_ '{print $3}'`
+    set loc = `echo $basen | awk -F- '{print $2}' | awk -F_ '{print $1}' | sed -e 's/TRK//'`
+    echo $loc
+    set nc = $dest/ORACLES-GEOS5-$prod-${loc}_MODEL_${date}_R0.nc
+
+    if ( $force == 1) then 
+	    $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $ict
+    else
+	    if ( -e $nc ) then
+	      echo "<> Skipping $nc, already there there"
+	    else
+	      $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $ict
+	    endif
+    endif
+
+    if ( $prod == "CHEM" ) then
+
+      set inFile = $nc
+      set enc = `echo $inFile | sed -e 's/CHEM/EXT532/'`
+
+      if ( $force == 1) then
+	      $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_532nm.rc -o $enc
+      else
+	      if ( -e $enc ) then
+	        echo "<> Skipping $nc, already there there"
+	      else
+	        $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_532nm.rc -o $enc 
+      	endif
+      endif
+
+   endif
+ end
+end
+
