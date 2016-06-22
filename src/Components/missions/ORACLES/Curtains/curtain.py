@@ -200,7 +200,7 @@ class Curtain(object):
 
         clf()
         ax = gca()
-        ax.set_axis_bgcolor('white') 
+        ax.set_axis_bgcolor('black') 
         
 
         if N is None:
