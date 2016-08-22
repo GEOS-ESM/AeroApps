@@ -394,23 +394,26 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         # _copyVar(ncGeo,nc,u'ns',dtype='f4',zlib=False)
 
         dt = nc.createVariable('scanTime','f4',('cell_along_swath','cell_across_swath',),zlib=False)
-        dt.long_name = 'Time of Scan'
-        dt.units = 'seconds since %s'%DATE_START.isoformat(' ')
-        dt[:] = mxd.Scan_Start_Time[i]
+        dt.long_name     = 'Time of Scan'
+        dt.units         = 'seconds since %s'%DATE_START.isoformat(' ')
+        dt._FillValue    = MISSING
+        dt[:]            = mxd.Scan_Start_Time[i]
 
         
         # Save lon/lat if so desired
         # --------------------------
         if options.coords:
             clon = nc.createVariable('clon','f4',('cell_along_swath','cell_across_swath',),zlib=False)
-            clon.long_name = 'pixel center longitude'
+            clon.long_name     = 'pixel center longitude'
             clon.missing_value = MISSING
-            clon[:] = mxd.Longitude[i]
+            clon._FillValue    = MISSING
+            clon[:]            = mxd.Longitude[i]
 
             clat = nc.createVariable('clon','f4',('cell_along_swath','cell_across_swath',),zlib=False)
-            clat.long_name = 'pixel center latitude'
+            clat.long_name     = 'pixel center latitude'
             clat.missing_value = MISSING
-            clat[:] = mxd.Latitude[i]
+            clat._FillValue    = MISSING
+            clat[:]            = mxd.Latitude[i]
 
 
         # # Loop over datasets, sample and write each variable
