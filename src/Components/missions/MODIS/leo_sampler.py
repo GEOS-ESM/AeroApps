@@ -461,8 +461,8 @@ if __name__ == "__main__":
 
     # MODIS Level 2 default
     # -------------------
-    calculon = '/nobackup/MODIS/{}/Level2/'.format(options.coll)
-    nccs = '/discover/nobackup/projects/gmao/iesa/aerosol/Data/MODIS/Level2/{}/'.format(options.coll)
+    calculon = '/nobackup/MODIS/{}/Level2/'.format(coll)
+    nccs = '/discover/nobackup/projects/gmao/iesa/aerosol/Data/MODIS/Level2/{}/'.format(coll)
     if os.path.exists(nccs): 
         L2Root = nccs
     elif os.path.exists(calculon): 
