@@ -46,6 +46,20 @@ class MODIS(object):
     """
 
     def __init__(self, Path,verb=False):
+
+        # Read each granule, appending them to the list
+        # ---------------------------------------------
+        if type(Path) is list:
+            if len(Path) == 0:
+               self.nobs = 0
+               print "WARNING: Empty MxD04_L2 object created"
+               return
+            else:
+                self.nobs = len(Path)
+        else:
+           Path = [Path, ]
+           self.nobs = 1
+
         # Create empty lists for SDS to be read from file
         # -----------------------------------------------
         self.verb = verb
@@ -54,8 +68,8 @@ class MODIS(object):
         for name in self.SDS:
            self.__dict__[name] = []
 
-        # Read in SDSs
-        # ------------
+        # Read each granule, appending them to the list
+        # ---------------------------------------------
         self._readList(Path)
 
         # Create corresponding python time
@@ -65,8 +79,6 @@ class MODIS(object):
             tyme = np.ma.masked_array([DATE_START+timedelta(seconds=s) for s in array(start_time).ravel()]).reshape(start_time.shape)
             tyme.mask = start_time.mask
             self.tyme.append(tyme)
-
-
                     
 
     def _readList(self,List):
@@ -130,30 +142,6 @@ class MODIS(object):
 
 class NC4ctl_(NC4ctl):
     interpXY = NC4ctl.interpXY_LatLon # select this as the default XY interpolation
-
-# ............................................................................
-def getCoords(options):
-    """
-    Returns lats, lons, and times, value from MODIS Level 2 granules
-    """
-
-    # Read each granule, appending them to the list
-    # ---------------------------------------------
-    if type(options.granules) is list:
-        if len(options.granules) == 0:
-           self.nobs = 0
-           print "WARNING: Empty MxD04_L2 object created"
-           return
-        else:
-            Path = options.granules
-    else:
-       Path = [options.granules, ]
-
-    # Initialize class to hold data
-    # -----------------------------------------------       
-    mxd = MODIS(Path)
-
-    return mxd
 
 
 # ---
@@ -552,11 +540,11 @@ if __name__ == "__main__":
 
     # Create (x,y,t) coordinates
     # --------------------------
-    mxd = getCoords(options)
+    mxd = MODIS(options.granules)
 
-    # Get Variables and Metadata
-    # --------------------------
-    Vars, levs, levUnits = getVars(options.rcFile)
+    # # Get Variables and Metadata
+    # # --------------------------
+    # Vars, levs, levUnits = getVars(options.rcFile)
 
 
     # # Write output file
