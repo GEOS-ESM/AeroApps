@@ -28,7 +28,7 @@ from MAPL.ShaveMantissa_ import shave32
 from glob                import glob
 
 from pyhdf.SD            import SD, HDF4Error
-MISSING = 1E15
+MISSING = -999
 
 SDS = ('Longitude', 'Latitude', 'Scan_Start_Time' )
 DATE_START = datetime(1993,1,1,0,0,0)
@@ -132,7 +132,7 @@ class MODIS(object):
             fill = a['_FillValue']
             if sds == 'Scan_Start_Time':
                 fill = -9999  #error in MODIS files
-            v = np.ma.masked_array(v,fill_value=-999)
+            v = np.ma.masked_array(v,fill_value=MISSING)
             v.mask = np.abs(v-fill) < 0.001            
             if a['scale_factor']!=1.0 or a['add_offset']!=0.0:
                 v = a['scale_factor'] * v + a['add_offset']
@@ -393,18 +393,26 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         # _copyVar(ncGeo,nc,u'ew',dtype='f4',zlib=False)
         # _copyVar(ncGeo,nc,u'ns',dtype='f4',zlib=False)
 
-        # dt = nc.createVariable('scanTime','f4',('cell_along_swath','cell_across_swath',),zlib=False)
-        # dt.long_name = 'Time of Scan'
-        # dt.units = 'seconds since %s'%DATE_START.isoformat(' ')
-        # dt[:] = mxd.Scan_Start_Time[i]
+        dt = nc.createVariable('scanTime','f4',('cell_along_swath','cell_across_swath',),zlib=False)
+        dt.long_name = 'Time of Scan'
+        dt.units = 'seconds since %s'%DATE_START.isoformat(' ')
+        dt[:] = mxd.Scan_Start_Time[i]
 
         
-        # # Save lon/lat if so desired
-        # # --------------------------
-        # if options.coords:
-        #     _copyVar(ncGeo,nc,u'clon',dtype='f4',zlib=False)
-        #     _copyVar(ncGeo,nc,u'clat',dtype='f4',zlib=False)
-            
+        # Save lon/lat if so desired
+        # --------------------------
+        if options.coords:
+            clon = nc.createVariable('clon','f4',('cell_along_swath','cell_across_swath',),zlib=False)
+            clon.long_name = 'pixel center longitude'
+            clon.missing_value = MISSING
+            clon[:] = mxd.Longitude[i]
+
+            clat = nc.createVariable('clon','f4',('cell_along_swath','cell_across_swath',),zlib=False)
+            clat.long_name = 'pixel center latitude'
+            clat.missing_value = MISSING
+            clat[:] = mxd.Latitude[i]
+
+
         # # Loop over datasets, sample and write each variable
         # # --------------------------------------------------
         # for path in Vars:
