@@ -62,6 +62,7 @@ class MODIS(object):
 
         # Create empty lists for SDS to be read from file
         # -----------------------------------------------
+        self.granules = Path
         self.verb = verb
         self.SDS  = SDS
 
@@ -316,138 +317,142 @@ def shave(q,options,undef=MISSING,has_undef=1,nbits=12):
     return qs.reshape(shp)
 
 #---
-def writeNC ( ncGeo, clon, clat, ctyme, tBeg, Vars, levs, levUnits, options,
+def writeNC ( mxd, Vars, levs, levUnits, options,
               xchunk=150, ychunk=200, zchunk=1,
               doAkBk=False):
+
+
     """
     Write a NetCDF file with sampled GEOS-5 variables pn geostationary grid
     described by (clon,clat,tyme).
     """
+    for path in mxd.granules:
+        # Gridded Dimensions
+        # ------------------
+        km = len(levs)
+        nNS, nEW = clon.shape
 
-    # Gridded Dimensions
-    # ------------------
-    km = len(levs)
-    nNS, nEW = clon.shape
+        # Open NC file
+        # ------------
+        filename = path.split('/')[-1].split('.')[:-1]
+        filename = '.'.join(filename + [options.ext])
+        nc = Dataset(options.outdir+'/'+filename,'w',format=options.format)
 
-    # Open NC file
-    # ------------
-    nc = Dataset(options.outFile,'w',format=options.format)
+        # Set global attributes
+        # ---------------------
+        nc.title = options.title
+        nc.institution = 'NASA/Goddard Space Flight Center'
+        nc.source = 'Global Model and Assimilation Office'
+        nc.history = 'Created from GEOS-5 standard collections by leo_sampler.py'
+        nc.references = 'n/a'
+        nc.comment = 'This file contains GEOS-5 parameters sampled on a Geostationary grid'
+        nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
+        nc.Conventions = 'CF'
+     
+        # # Create dimensions
+        # # -----------------
+        # nt = nc.createDimension('time',1) # one time per file for now
+        # if km>0:
+        #     nz = nc.createDimension('lev',km)
+        #     if doAkBk:
+        #         ne = nc.createDimension('ne',km+1)
+        # x = nc.createDimension('ew',nEW)
+        # y = nc.createDimension('ns',nNS)
 
-    # Set global attributes
-    # ---------------------
-    nc.title = options.title
-    nc.institution = 'NASA/Goddard Space Flight Center'
-    nc.source = 'Global Model and Assimilation Office'
-    nc.history = 'Created from GEOS-5 standard collections by tempo_sampler.py'
-    nc.references = 'n/a'
-    nc.comment = 'This file contains GEOS-5 parameters sampled on a Geostationary grid'
-    nc.contact = 'Arlindo da Silva <arlindo.dasilva@nasa.gov>'
-    nc.Conventions = 'CF'
- 
-    # Create dimensions
-    # -----------------
-    nt = nc.createDimension('time',1) # one time per file for now
-    if km>0:
-        nz = nc.createDimension('lev',km)
-        if doAkBk:
-            ne = nc.createDimension('ne',km+1)
-    x = nc.createDimension('ew',nEW)
-    y = nc.createDimension('ns',nNS)
+        # # Coordinate variables
+        # # --------------------
+        # time = nc.createVariable('time','i4',('time',),zlib=False)
+        # time.long_name = 'Initial Time of Scan'
+        # time.units = 'seconds since %s'%tBeg.isoformat(' ')
+        # time[0] = 0
+        # if km > 0: # pressure level not supported yet
+        #     lev = nc.createVariable('lev','f4',('lev',),zlib=False)
+        #     lev.long_name = 'Vertical Level'
+        #     lev.units = levUnits.strip()
+        #     lev.positive = 'down'
+        #     lev.axis = 'z'
+        #     lev[:] = levs[:]
 
-    # Coordinate variables
-    # --------------------
-    time = nc.createVariable('time','i4',('time',),zlib=False)
-    time.long_name = 'Initial Time of Scan'
-    time.units = 'seconds since %s'%tBeg.isoformat(' ')
-    time[0] = 0
-    if km > 0: # pressure level not supported yet
-        lev = nc.createVariable('lev','f4',('lev',),zlib=False)
-        lev.long_name = 'Vertical Level'
-        lev.units = levUnits.strip()
-        lev.positive = 'down'
-        lev.axis = 'z'
-        lev[:] = levs[:]
-
-        if doAkBk:
-            ae, be = eta.getEdge(km) # Coefficients for Hybrid coordinates
-            ak = nc.createVariable('ak','f4',('ne',),zlib=False)
-            ak.long_name = 'Eta coordinate coefficient ak (p = ak + bk * ps)'
-            ak.units = 'Pa'
-            ak = ae[:]
-            bk = nc.createVariable('bk','f4',('ne',),zlib=False)
-            bk.long_name = 'Eta coordinate coefficient bk (p = ak + bk * ps)'
-            bk.units = '1'
-            bk = be[:]
-    
-    # Add pseudo dimensions for GrADS compatibility
-    # -------------------------------------------
-    _copyVar(ncGeo,nc,u'ew',dtype='f4',zlib=False)
-    _copyVar(ncGeo,nc,u'ns',dtype='f4',zlib=False)
-    dt = nc.createVariable('scanTime','f4',('ew',),zlib=False)
-    dt.long_name = 'Time of Scan'
-    dt.units = 'seconds since %s'%tBeg.isoformat(' ')
-    DT = ctyme[0,:] - tBeg
-    dt[:] = array([ds.total_seconds() for ds in DT])
-
-    
-    # Save lon/lat if so desired
-    # --------------------------
-    if options.coords:
-        _copyVar(ncGeo,nc,u'clon',dtype='f4',zlib=False)
-        _copyVar(ncGeo,nc,u'clat',dtype='f4',zlib=False)
+        #     if doAkBk:
+        #         ae, be = eta.getEdge(km) # Coefficients for Hybrid coordinates
+        #         ak = nc.createVariable('ak','f4',('ne',),zlib=False)
+        #         ak.long_name = 'Eta coordinate coefficient ak (p = ak + bk * ps)'
+        #         ak.units = 'Pa'
+        #         ak = ae[:]
+        #         bk = nc.createVariable('bk','f4',('ne',),zlib=False)
+        #         bk.long_name = 'Eta coordinate coefficient bk (p = ak + bk * ps)'
+        #         bk.units = '1'
+        #         bk = be[:]
         
-    # Loop over datasets, sample and write each variable
-    # --------------------------------------------------
-    for path in Vars:
+        # # Add pseudo dimensions for GrADS compatibility
+        # # -------------------------------------------
+        # _copyVar(ncGeo,nc,u'ew',dtype='f4',zlib=False)
+        # _copyVar(ncGeo,nc,u'ns',dtype='f4',zlib=False)
+        # dt = nc.createVariable('scanTime','f4',('ew',),zlib=False)
+        # dt.long_name = 'Time of Scan'
+        # dt.units = 'seconds since %s'%tBeg.isoformat(' ')
+        # DT = ctyme[0,:] - tBeg
+        # dt[:] = array([ds.total_seconds() for ds in DT])
+
+        
+        # # Save lon/lat if so desired
+        # # --------------------------
+        # if options.coords:
+        #     _copyVar(ncGeo,nc,u'clon',dtype='f4',zlib=False)
+        #     _copyVar(ncGeo,nc,u'clat',dtype='f4',zlib=False)
+            
+        # # Loop over datasets, sample and write each variable
+        # # --------------------------------------------------
+        # for path in Vars:
+        #     if options.verbose:
+        #         print " <> opening "+path
+        #     g = Open(path)
+        #     for var in Vars[path]:
+        #         if var.km == 0:
+        #             dim = ('time','ns','ew')
+        #             chunks = (1, ychunk, xchunk)
+        #             W = MISSING * ones((nNS,nEW))
+        #         else:
+        #             dim = ('time','lev','ns','ew')
+        #             chunks = (1,zchunk,ychunk, xchunk)
+        #             W = MISSING * ones((var.km,nNS,nEW))
+        #         rank = len(dim)
+        #         this = nc.createVariable(var.name,'f4',dim,
+        #                                  zlib=options.zlib,
+        #                                  chunksizes=chunks)
+
+        #         #this.standard_name = var.title
+        #         this.standard_name = var.name
+        #         #this.long_name = var.title.replace('_',' ')
+        #         this.long_name = ''
+        #         this.missing_value = MAPL_UNDEF
+        #         this.units = var.units
+        #         if g.lower:
+        #             name = var.name.lower() # GDS always uses lower case
+        #         else:
+        #             name = var.name
+        #         if options.verbose:
+        #             print " [] Interpolating <%s>"%name.upper()
+
+        #         # Use NC4ctl for linear interpolation
+        #         # -----------------------------------
+        #         I = (clon<0.1*MISSING)&(clat<0.1*MISSING)
+        #         Z = g.nc4.sample(name,clon[I],clat[I],ctyme[I],
+        #                          Transpose=False,squeeze=True,Verbose=options.verbose)
+        #         if options.verbose: print " <> Writing <%s> "%name
+        #         if rank == 3:
+        #            W[I] = Z
+        #            this[0,:,:] = shave(W[:,:],options)
+        #         elif rank == 4:
+        #            W[:,I] = Z
+        #            this[0,:,:,:] = shave(W[:,:,:],options)
+
+        # Close the file
+        # --------------
+        nc.close()
+
         if options.verbose:
-            print " <> opening "+path
-        g = Open(path)
-        for var in Vars[path]:
-            if var.km == 0:
-                dim = ('time','ns','ew')
-                chunks = (1, ychunk, xchunk)
-                W = MISSING * ones((nNS,nEW))
-            else:
-                dim = ('time','lev','ns','ew')
-                chunks = (1,zchunk,ychunk, xchunk)
-                W = MISSING * ones((var.km,nNS,nEW))
-            rank = len(dim)
-            this = nc.createVariable(var.name,'f4',dim,
-                                     zlib=options.zlib,
-                                     chunksizes=chunks)
-
-            #this.standard_name = var.title
-            this.standard_name = var.name
-            #this.long_name = var.title.replace('_',' ')
-            this.long_name = ''
-            this.missing_value = MAPL_UNDEF
-            this.units = var.units
-            if g.lower:
-                name = var.name.lower() # GDS always uses lower case
-            else:
-                name = var.name
-            if options.verbose:
-                print " [] Interpolating <%s>"%name.upper()
-
-            # Use NC4ctl for linear interpolation
-            # -----------------------------------
-            I = (clon<0.1*MISSING)&(clat<0.1*MISSING)
-            Z = g.nc4.sample(name,clon[I],clat[I],ctyme[I],
-                             Transpose=False,squeeze=True,Verbose=options.verbose)
-            if options.verbose: print " <> Writing <%s> "%name
-            if rank == 3:
-               W[I] = Z
-               this[0,:,:] = shave(W[:,:],options)
-            elif rank == 4:
-               W[:,I] = Z
-               this[0,:,:,:] = shave(W[:,:,:],options)
-
-    # Close the file
-    # --------------
-    nc.close()
-
-    if options.verbose:
-        print " <> wrote %s file %s"%(options.format,options.outFile)
+            print " <> wrote %s file %s"%(options.format,options.outFile)
     
 #------------------------------------ M A I N ------------------------------------
 
@@ -456,7 +461,7 @@ if __name__ == "__main__":
     title   = 'GEOS-5 MODIS Sampler'
     format  = 'NETCDF4_CLASSIC'
     rcFile  = 'modis_sampler.rc'
-    outFile = 'modis_sampler.nc4'
+    outdir  = './'
     coll    = '051'
 
     # MODIS Level 2 default
@@ -495,9 +500,9 @@ if __name__ == "__main__":
                       action="store_true", dest="nozip",
                       help="Do not shave/compress output files.")
 
-    parser.add_option("-o", "--output", dest="outFile", default=outFile,
-              help="Output NetCDF file (default=%s)"\
-                          %outFile )
+    parser.add_option("-o", "--outdir", dest="outdir", default=outdir,
+              help="Output NetCDF file in (default=%s)"\
+                          %outdir )
 
     parser.add_option("-r", "--rcFile", dest="rcFile", default=rcFile,
               help="Resource file defining parameters to sample (default=%s)"\
@@ -526,11 +531,10 @@ if __name__ == "__main__":
 
     # Create consistent file name extension
     # -------------------------------------
-    name, ext = os.path.splitext(options.outFile)
     if 'NETCDF4' in options.format:
-        options.outFile = name + '.nc4'
+        options.ext = '.nc4'
     elif 'NETCDF3' in options.format:
-        options.outFile = name + '.nc'
+        options.ext = '.nc'
     else:
         raise ValueError, 'invalid extension <%s>'%ext
     options.zlib = not options.nozip
@@ -543,16 +547,12 @@ if __name__ == "__main__":
     # --------------------------
     mxd = MODIS(options.granules)
 
-    # # Get Variables and Metadata
-    # # --------------------------
-    # Vars, levs, levUnits = getVars(options.rcFile)
+    if mxd.nobs > 0:
+        # Get Variables and Metadata
+        # --------------------------
+        Vars, levs, levUnits = getVars(options.rcFile)
 
 
-    # # Write output file
-    # # -----------------
-    # writeNC ( mxd, Vars, levs, levUnits, options,
-    #           doAkBk=False)
-
-    # # All done
-    # # --------
-    # ncGeo.close()
+        # Write output file
+        # -----------------
+        writeNC ( mxd, Vars, levs, levUnits, options, doAkBk=False)
