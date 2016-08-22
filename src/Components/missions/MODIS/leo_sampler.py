@@ -536,7 +536,7 @@ if __name__ == "__main__":
 
     # Get Granules to work on
     # -----------------------
-    options.granules = granules ( L2Root, prod, t1, t2, coll=coll)
+    options.granules = granules ( L2Root, prod, t1, t2, coll=options.coll)
 
     # Create (x,y,t) coordinates
     # --------------------------
