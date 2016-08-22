@@ -459,17 +459,6 @@ if __name__ == "__main__":
     outFile = 'modis_sampler.nc4'
     coll    = '006'
 
-    # MODIS Level 2 default
-    # -------------------
-    calculon = '/nobackup/MODIS/{}/Level2/'.format(coll)
-    nccs = '/discover/nobackup/projects/gmao/iesa/aerosol/Data/MODIS/Level2/{}/'.format(coll)
-    if os.path.exists(calculon): 
-        L2Root = calculon
-    elif os.path.exists(nccs): 
-        L2Root = nccs
-    else:
-        L2Root = './Level2/'
-
     dt_hours = 24 # hard-wire one-day for now
 
 #   Parse command line options
@@ -522,6 +511,19 @@ if __name__ == "__main__":
         t2     = t1 + timedelta(hours=dt_hours)
     else:
         parser.error("must have 2 or 3 arguments: prod iso_t1 [iso_t2]")
+
+
+    # MODIS Level 2 default
+    # -------------------
+    calculon = '/nobackup/MODIS/{}/Level2/'.format(options.coll)
+    nccs = '/discover/nobackup/projects/gmao/iesa/aerosol/Data/MODIS/Level2/{}/'.format(options.coll)
+    if os.path.exists(calculon): 
+        L2Root = calculon
+    elif os.path.exists(nccs): 
+        L2Root = nccs
+    else:
+        L2Root = './Level2/'
+
 
     # Create consistent file name extension
     # -------------------------------------
