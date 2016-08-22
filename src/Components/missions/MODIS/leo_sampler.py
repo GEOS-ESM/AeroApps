@@ -364,7 +364,7 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         scandate = filename.split('.')[1]
         scantime = filename.split('.')[2]
         scandate = datetime(int(scandate[1:5]),1,1) + timedelta(int(scandate[5:])-1)
-        scandate = datetime(scandate.year,scandate.month,scandate.day,int(scantime[0:2]),int(scantime[2:])
+        scandate = datetime(scandate.year,scandate.month,scandate.day,int(scantime[0:2]),int(scantime[2:]))
         time = nc.createVariable('time','i4',('time',),zlib=False)
         time.long_name = 'Initial Time of Scan'
         time.units = 'seconds since %s'%scandate.isoformat(' ')
