@@ -461,18 +461,18 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
                 # Use NC4ctl for linear interpolation
                 # -----------------------------------
                 I = (~mxd.Longitude[i].mask)&(~mxd.Latitude[i].mask)&(~mxd.tyme[i].mask)
-                Z = g.nc4.sample(name,mxd.Longitude[i][I],mxd.Latitude[i][I],mxd.tyme[i][I],
+                Z = g.nc4.sample(name,array(mxd.Longitude[i][I]),array(mxd.Latitude[i][I]),array(mxd.tyme[i][I]),
                                  Transpose=False,squeeze=True,Verbose=options.verbose)
                 if options.verbose: print " <> Writing <%s> "%name
                 if rank == 3:
                    W[I] = Z
                    W = np.ma.masked_array(shave(W[:,:],options))
-                   W.mask = W<0.1*MAPL_UNDEF
+                   W.mask = W>0.1*MAPL_UNDEF
                    this[0,:,:] = W
                 elif rank == 4:
                    W[:,I] = Z
                    W = np.ma.masked_array(shave(W[:,:,:],options))
-                   W.mask = W<0.1*MAPL_UNDEF
+                   W.mask = W>0.1*MAPL_UNDEF
                    this[0,:,:,:] = W
 
         # Close the file
