@@ -397,10 +397,10 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         ew[:]           = mxd.Longitude[i][int(nAtrack*0.5),:]
 
         ns = nc.createVariable('ns','f4',('cell_along_swath',),
-                                fill_value=MISSING,zlib=False))
+                                fill_value=MISSING,zlib=False)
         ns.long_name    = 'pseudo latitude'
         ns.units        = 'degrees_north'
-        ns[:]           = mxd.Latitude[i][:,int(nXtrack*0,5)]
+        ns[:]           = mxd.Latitude[i][:,int(nXtrack*0.5)]
 
         dt = nc.createVariable('scanTime','f4',('cell_along_swath','cell_across_swath',),
                                 fill_value=MISSING,zlib=False)
@@ -425,38 +425,38 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
             clat[:]            = mxd.Latitude[i]
 
 
-        # # Loop over datasets, sample and write each variable
-        # # --------------------------------------------------
-        # for path in Vars:
-        #     if options.verbose:
-        #         print " <> opening "+path
-        #     g = Open(path)
-        #     for var in Vars[path]:
-        #         if var.km == 0:
-        #             dim = ('time','ns','ew')
-        #             chunks = (1, ychunk, xchunk)
-        #             W = MISSING * ones((nNS,nEW))
-        #         else:
-        #             dim = ('time','lev','ns','ew')
-        #             chunks = (1,zchunk,ychunk, xchunk)
-        #             W = MISSING * ones((var.km,nNS,nEW))
-        #         rank = len(dim)
-        #         this = nc.createVariable(var.name,'f4',dim,
-        #                                  zlib=options.zlib,
-        #                                  chunksizes=chunks)
+        # Loop over datasets, sample and write each variable
+        # --------------------------------------------------
+        for path in Vars:
+            if options.verbose:
+                print " <> opening "+path
+            g = Open(path)
+            for var in Vars[path]:
+                if var.km == 0:
+                    dim = ('time','cell_along_swath','cell_across_swath')
+                    chunks = (1, ychunk, xchunk)
+                    W = MISSING * ones((nAtrack,nXtrack))
+                else:
+                    dim = ('time','lev','cell_along_swath','cell_across_swath')
+                    chunks = (1,zchunk,ychunk, xchunk)
+                    W = MISSING * ones((var.km,nAtrack,nXtrack))
+                rank = len(dim)
+                this = nc.createVariable(var.name,'f4',dim,
+                                         zlib=options.zlib,
+                                         chunksizes=chunks)
 
-        #         #this.standard_name = var.title
-        #         this.standard_name = var.name
-        #         #this.long_name = var.title.replace('_',' ')
-        #         this.long_name = ''
-        #         this.missing_value = MAPL_UNDEF
-        #         this.units = var.units
-        #         if g.lower:
-        #             name = var.name.lower() # GDS always uses lower case
-        #         else:
-        #             name = var.name
-        #         if options.verbose:
-        #             print " [] Interpolating <%s>"%name.upper()
+                #this.standard_name = var.title
+                this.standard_name = var.name
+                #this.long_name = var.title.replace('_',' ')
+                this.long_name = ''
+                this.missing_value = MAPL_UNDEF
+                this.units = var.units
+                if g.lower:
+                    name = var.name.lower() # GDS always uses lower case
+                else:
+                    name = var.name
+                if options.verbose:
+                    print " [] Interpolating <%s>"%name.upper()
 
         #         # Use NC4ctl for linear interpolation
         #         # -----------------------------------
