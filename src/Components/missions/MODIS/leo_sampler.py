@@ -460,8 +460,8 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
 
                 # Use NC4ctl for linear interpolation
                 # -----------------------------------
-                I = (~mxd.Longitude[i].mask)&(~mxd.Latitude[i].mask)&(~mxd.Scan_Start_Time[i].mask)
-                Z = g.nc4.sample(name,mxd.Longitude[i][I],mxd.Latitude[i][I],mxd.Scan_Start_Time[i][I],
+                I = (~mxd.Longitude[i].mask)&(~mxd.Latitude[i].mask)&(~mxd.tyme[i].mask)
+                Z = g.nc4.sample(name,mxd.Longitude[i][I],mxd.Latitude[i][I],mxd.tyme[i][I],
                                  Transpose=False,squeeze=True,Verbose=options.verbose)
                 if options.verbose: print " <> Writing <%s> "%name
                 if rank == 3:
