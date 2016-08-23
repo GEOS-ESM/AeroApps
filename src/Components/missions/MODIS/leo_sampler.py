@@ -409,7 +409,7 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
             clon.missing_value = MISSING
             clon[:]            = mxd.Longitude[i]
 
-            clat = nc.createVariable('clon','f4',('cell_along_swath','cell_across_swath',),
+            clat = nc.createVariable('clat','f4',('cell_along_swath','cell_across_swath',),
                                      fill_value=MISSING,zlib=False)
             clat.long_name     = 'pixel center latitude'
             clat.missing_value = MISSING
