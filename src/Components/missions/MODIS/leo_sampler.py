@@ -431,32 +431,32 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
             if options.verbose:
                 print " <> opening "+path
             g = Open(path)
-            for var in Vars[path]:
-                if var.km == 0:
-                    dim = ('time','cell_along_swath','cell_across_swath')
-                    chunks = (1, ychunk, xchunk)
-                    W = MISSING * ones((nAtrack,nXtrack))
-                else:
-                    dim = ('time','lev','cell_along_swath','cell_across_swath')
-                    chunks = (1,zchunk,ychunk, xchunk)
-                    W = MISSING * ones((var.km,nAtrack,nXtrack))
-                rank = len(dim)
-                this = nc.createVariable(var.name,'f4',dim,
-                                         zlib=options.zlib,
-                                         chunksizes=chunks)
+            # for var in Vars[path]:
+            #     if var.km == 0:
+            #         dim = ('time','cell_along_swath','cell_across_swath')
+            #         chunks = (1, ychunk, xchunk)
+            #         W = MISSING * ones((nAtrack,nXtrack))
+            #     else:
+            #         dim = ('time','lev','cell_along_swath','cell_across_swath')
+            #         chunks = (1,zchunk,ychunk, xchunk)
+            #         W = MISSING * ones((var.km,nAtrack,nXtrack))
+            #     rank = len(dim)
+            #     this = nc.createVariable(var.name,'f4',dim,
+            #                              zlib=options.zlib,
+            #                              chunksizes=chunks)
 
-                #this.standard_name = var.title
-                this.standard_name = var.name
-                #this.long_name = var.title.replace('_',' ')
-                this.long_name = ''
-                this.missing_value = MAPL_UNDEF
-                this.units = var.units
-                if g.lower:
-                    name = var.name.lower() # GDS always uses lower case
-                else:
-                    name = var.name
-                if options.verbose:
-                    print " [] Interpolating <%s>"%name.upper()
+            #     #this.standard_name = var.title
+            #     this.standard_name = var.name
+            #     #this.long_name = var.title.replace('_',' ')
+            #     this.long_name = ''
+            #     this.missing_value = MAPL_UNDEF
+            #     this.units = var.units
+            #     if g.lower:
+            #         name = var.name.lower() # GDS always uses lower case
+            #     else:
+            #         name = var.name
+            #     if options.verbose:
+            #         print " [] Interpolating <%s>"%name.upper()
 
         #         # Use NC4ctl for linear interpolation
         #         # -----------------------------------
@@ -476,7 +476,7 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         nc.close()
 
         if options.verbose:
-            print " <> wrote %s file %s"%(options.format,options.outFile)
+            print " <> wrote %s file %s"%(options.format,options.outdir+'/'+filename)
     
 #------------------------------------ M A I N ------------------------------------
 
