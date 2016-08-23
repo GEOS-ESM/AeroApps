@@ -318,7 +318,7 @@ def shave(q,options,undef=MISSING,has_undef=1,nbits=12):
 
 #---
 def writeNC ( mxd, Vars, levs, levUnits, options,
-              xchunk=150, ychunk=200, zchunk=1,
+              xchunk=50, ychunk=100, zchunk=1,
               doAkBk=False):
 
 
@@ -431,45 +431,45 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
             if options.verbose:
                 print " <> opening "+path
             g = Open(path)
-            # for var in Vars[path]:
-            #     if var.km == 0:
-            #         dim = ('time','cell_along_swath','cell_across_swath')
-            #         chunks = (1, ychunk, xchunk)
-            #         W = MISSING * ones((nAtrack,nXtrack))
-            #     else:
-            #         dim = ('time','lev','cell_along_swath','cell_across_swath')
-            #         chunks = (1,zchunk,ychunk, xchunk)
-            #         W = MISSING * ones((var.km,nAtrack,nXtrack))
-            #     rank = len(dim)
-            #     this = nc.createVariable(var.name,'f4',dim,
-            #                              zlib=options.zlib,
-            #                              chunksizes=chunks)
+            for var in Vars[path]:
+                if var.km == 0:
+                    dim = ('time','cell_along_swath','cell_across_swath')
+                    chunks = (1, ychunk, xchunk)
+                    W = MISSING * ones((nAtrack,nXtrack))
+                else:
+                    dim = ('time','lev','cell_along_swath','cell_across_swath')
+                    chunks = (1,zchunk,ychunk, xchunk)
+                    W = MISSING * ones((var.km,nAtrack,nXtrack))
+                rank = len(dim)
+                this = nc.createVariable(var.name,'f4',dim,
+                                         zlib=options.zlib,
+                                         chunksizes=chunks)
 
-            #     #this.standard_name = var.title
-            #     this.standard_name = var.name
-            #     #this.long_name = var.title.replace('_',' ')
-            #     this.long_name = ''
-            #     this.missing_value = MAPL_UNDEF
-            #     this.units = var.units
-            #     if g.lower:
-            #         name = var.name.lower() # GDS always uses lower case
-            #     else:
-            #         name = var.name
-            #     if options.verbose:
-            #         print " [] Interpolating <%s>"%name.upper()
+                #this.standard_name = var.title
+                this.standard_name = var.name
+                #this.long_name = var.title.replace('_',' ')
+                this.long_name = ''
+                this.missing_value = MAPL_UNDEF
+                this.units = var.units
+                if g.lower:
+                    name = var.name.lower() # GDS always uses lower case
+                else:
+                    name = var.name
+                if options.verbose:
+                    print " [] Interpolating <%s>"%name.upper()
 
-        #         # Use NC4ctl for linear interpolation
-        #         # -----------------------------------
-        #         I = (clon<0.1*MISSING)&(clat<0.1*MISSING)
-        #         Z = g.nc4.sample(name,clon[I],clat[I],ctyme[I],
-        #                          Transpose=False,squeeze=True,Verbose=options.verbose)
-        #         if options.verbose: print " <> Writing <%s> "%name
-        #         if rank == 3:
-        #            W[I] = Z
-        #            this[0,:,:] = shave(W[:,:],options)
-        #         elif rank == 4:
-        #            W[:,I] = Z
-        #            this[0,:,:,:] = shave(W[:,:,:],options)
+            #     # Use NC4ctl for linear interpolation
+            #     # -----------------------------------
+            #     I = (clon<0.1*MISSING)&(clat<0.1*MISSING)
+            #     Z = g.nc4.sample(name,clon[I],clat[I],ctyme[I],
+            #                      Transpose=False,squeeze=True,Verbose=options.verbose)
+            #     if options.verbose: print " <> Writing <%s> "%name
+            #     if rank == 3:
+            #        W[I] = Z
+            #        this[0,:,:] = shave(W[:,:],options)
+            #     elif rank == 4:
+            #        W[:,I] = Z
+            #        this[0,:,:,:] = shave(W[:,:,:],options)
 
         # Close the file
         # --------------
