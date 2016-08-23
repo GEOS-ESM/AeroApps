@@ -388,10 +388,19 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
                 bk.units = '1'
                 bk = be[:]
         
-        # # Add pseudo dimensions for GrADS compatibility
-        # # -------------------------------------------
-        # _copyVar(ncGeo,nc,u'ew',dtype='f4',zlib=False)
-        # _copyVar(ncGeo,nc,u'ns',dtype='f4',zlib=False)
+        # Add pseudo dimensions for GrADS compatibility
+        # -------------------------------------------
+        ew = nc.createVariable('ew','f4',('cell_across_swath',),
+                                fill_value=MISSING,zlib=False)
+        ew.long_name    = 'pseudo longitude'
+        ew.units        = 'degrees_east'
+        ew[:]           = mxd.Longitude[i][int(nAtrack*0.5),:]
+
+        ns = nc.createVariable('ns','f4',('cell_along_swath',),
+                                fill_value=MISSING,zlib=False))
+        ns.long_name    = 'pseudo latitude'
+        ns.units        = 'degrees_north'
+        ns[:]           = mxd.Latitude[i][:,int(nXtrack*0,5)]
 
         dt = nc.createVariable('scanTime','f4',('cell_along_swath','cell_across_swath',),
                                 fill_value=MISSING,zlib=False)
@@ -477,7 +486,7 @@ if __name__ == "__main__":
     format  = 'NETCDF4_CLASSIC'
     rcFile  = 'modis_sampler.rc'
     outdir  = './'
-    coll    = '051'
+    coll    = '006'
 
     # MODIS Level 2 default
     # -------------------
