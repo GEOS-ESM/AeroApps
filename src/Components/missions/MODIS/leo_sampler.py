@@ -28,7 +28,7 @@ from MAPL.ShaveMantissa_ import shave32
 from glob                import glob
 
 from pyhdf.SD            import SD, HDF4Error
-MISSING = -999
+
 
 SDS = ('Longitude', 'Latitude', 'Scan_Start_Time' )
 DATE_START = datetime(1993,1,1,0,0,0)
@@ -132,7 +132,7 @@ class MODIS(object):
             fill = a['_FillValue']
             if sds == 'Scan_Start_Time':
                 fill = -9999  #error in MODIS files
-            v = np.ma.masked_array(v,fill_value=MISSING)
+            v = np.ma.masked_array(v,fill_value=MAPL_UNDEF)
             v.mask = np.abs(v-fill) < 0.001            
             if a['scale_factor']!=1.0 or a['add_offset']!=0.0:
                 v = a['scale_factor'] * v + a['add_offset']
@@ -286,7 +286,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False):
         raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
 
 #---
-def shave(q,options,undef=MISSING,has_undef=1,nbits=12):
+def shave(q,options,undef=MAPL_UNDEF,has_undef=1,nbits=12):
     """
     Shave variable. On input, nbits is the number of mantissa bits to keep
     out of maximum of 24.
@@ -391,19 +391,19 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         # Add pseudo dimensions for GrADS compatibility
         # -------------------------------------------
         ew = nc.createVariable('ew','f4',('cell_across_swath',),
-                                fill_value=MISSING,zlib=False)
+                                fill_value=MAPL_UNDEF,zlib=False)
         ew.long_name    = 'pseudo longitude'
         ew.units        = 'degrees_east'
         ew[:]           = mxd.Longitude[i][int(nAtrack*0.5),:]
 
         ns = nc.createVariable('ns','f4',('cell_along_swath',),
-                                fill_value=MISSING,zlib=False)
+                                fill_value=MAPL_UNDEF,zlib=False)
         ns.long_name    = 'pseudo latitude'
         ns.units        = 'degrees_north'
         ns[:]           = mxd.Latitude[i][:,int(nXtrack*0.5)]
 
         dt = nc.createVariable('scanTime','f4',('cell_along_swath','cell_across_swath',),
-                                fill_value=MISSING,zlib=False)
+                                fill_value=MAPL_UNDEF,zlib=False)
         dt.long_name     = 'Time of Scan'
         dt.units         = 'seconds since %s'%DATE_START.isoformat(' ')
         dt[:]            = mxd.Scan_Start_Time[i]
@@ -413,15 +413,15 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         # --------------------------
         if options.coords:
             clon = nc.createVariable('clon','f4',('cell_along_swath','cell_across_swath',),
-                                     fill_value=MISSING,zlib=False)
+                                     fill_value=MAPL_UNDEF,zlib=False)
             clon.long_name     = 'pixel center longitude'
-            clon.missing_value = MISSING
+            clon.missing_value = MAPL_UNDEF
             clon[:]            = mxd.Longitude[i]
 
             clat = nc.createVariable('clat','f4',('cell_along_swath','cell_across_swath',),
-                                     fill_value=MISSING,zlib=False)
+                                     fill_value=MAPL_UNDEF,zlib=False)
             clat.long_name     = 'pixel center latitude'
-            clat.missing_value = MISSING
+            clat.missing_value = MAPL_UNDEF
             clat[:]            = mxd.Latitude[i]
 
 
@@ -435,15 +435,15 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
                 if var.km == 0:
                     dim = ('time','cell_along_swath','cell_across_swath')
                     chunks = (1, ychunk, xchunk)
-                    W = MISSING * ones((nAtrack,nXtrack))
+                    W = MAPL_UNDEF * ones((nAtrack,nXtrack))
                 else:
                     dim = ('time','lev','cell_along_swath','cell_across_swath')
                     chunks = (1,zchunk,ychunk, xchunk)
-                    W = MISSING * ones((var.km,nAtrack,nXtrack))
+                    W = MAPL_UNDEF * ones((var.km,nAtrack,nXtrack))
                 rank = len(dim)
                 this = nc.createVariable(var.name,'f4',dim,
                                          zlib=options.zlib,
-                                         chunksizes=chunks)
+                                         chunksizes=chunks, fill_value=MAPL_UNDEF)
 
                 #this.standard_name = var.title
                 this.standard_name = var.name
@@ -458,18 +458,22 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
                 if options.verbose:
                     print " [] Interpolating <%s>"%name.upper()
 
-            #     # Use NC4ctl for linear interpolation
-            #     # -----------------------------------
-            #     I = (clon<0.1*MISSING)&(clat<0.1*MISSING)
-            #     Z = g.nc4.sample(name,clon[I],clat[I],ctyme[I],
-            #                      Transpose=False,squeeze=True,Verbose=options.verbose)
-            #     if options.verbose: print " <> Writing <%s> "%name
-            #     if rank == 3:
-            #        W[I] = Z
-            #        this[0,:,:] = shave(W[:,:],options)
-            #     elif rank == 4:
-            #        W[:,I] = Z
-            #        this[0,:,:,:] = shave(W[:,:,:],options)
+                # Use NC4ctl for linear interpolation
+                # -----------------------------------
+                I = (~mxd.Longitude[i].mask)&(~mxd.Latitude[i].mask)&(~mxd.Scan_Start_Time[i].mask)
+                Z = g.nc4.sample(name,mxd.Longitude[i][I],mxd.Latitude[i][I],mxd.Scan_Start_Time[i][I],
+                                 Transpose=False,squeeze=True,Verbose=options.verbose)
+                if options.verbose: print " <> Writing <%s> "%name
+                if rank == 3:
+                   W[I] = Z
+                   W = np.ma.masked_array(shave(W[:,:],options))
+                   W.mask = W<0.1*MAPL_UNDEF
+                   this[0,:,:] = W
+                elif rank == 4:
+                   W[:,I] = Z
+                   W = np.ma.masked_array(shave(W[:,:,:],options))
+                   W.mask = W<0.1*MAPL_UNDEF
+                   this[0,:,:,:] = W
 
         # Close the file
         # --------------
