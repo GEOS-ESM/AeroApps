@@ -336,7 +336,11 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         # ------------
         filename = path.split('/')[-1].split('.')[:-1]
         filename = '.'.join(filename + [options.ext])
-        nc = Dataset(options.outdir+'/'+filename,'w',format=options.format)
+
+        year = path.split('/')[-1].split('.')[:-3]
+        doy  = path.split('/')[-1].split('.')[:-2]
+        outdir = options.outdir + '/' + year + '/' + doy
+        nc = Dataset(outdir+'/'+filename,'w',format=options.format)
 
         # Set global attributes
         # ---------------------
@@ -566,6 +570,12 @@ if __name__ == "__main__":
     else:
         raise ValueError, 'invalid extension <%s>'%ext
     options.zlib = not options.nozip
+
+    if ~os.path.exists(options.outdir): 
+        print 'outdir does not exist:',options.outdir
+        print 'check path. exiting'
+        raise
+
 
     # Get Granules to work on
     # -----------------------
