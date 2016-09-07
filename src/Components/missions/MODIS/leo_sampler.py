@@ -337,8 +337,8 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         filename = path.split('/')[-1].split('.')[:-1]
         filename = '.'.join(filename + [options.ext])
 
-        year = path.split('/')[-1].split('.')[-3]
-        doy  = path.split('/')[-1].split('.')[-2]
+        year = path.split('/')[-1].split('.')[1][1:5]
+        doy  = path.split('/')[-1].split('.')[1][5:]
         print 'total',path.split('/')[-1].split('.')
         print 'year',year
         print 'doy', doy
