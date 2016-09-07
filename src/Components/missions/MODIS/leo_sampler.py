@@ -339,152 +339,155 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
 
         year = path.split('/')[-1].split('.')[:-3]
         doy  = path.split('/')[-1].split('.')[:-2]
-        outdir = options.outdir + '/' + year + '/' + doy
-        nc = Dataset(outdir+'/'+filename,'w',format=options.format)
+        print 'year',year
+        print 'doy', doy
+        
+        # outdir = options.outdir + '/' + year + '/' + doy
+        # nc = Dataset(outdir+'/'+filename,'w',format=options.format)
 
-        # Set global attributes
-        # ---------------------
-        nc.title = options.title
-        nc.institution = 'NASA/Goddard Space Flight Center'
-        nc.source = 'Global Model and Assimilation Office'
-        nc.history = 'Created from GEOS-5 standard collections by leo_sampler.py'
-        nc.references = 'n/a'
-        nc.comment = 'This file contains GEOS-5 parameters sampled on a MODIS granule'
-        nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
-        nc.Conventions = 'CF'
+        # # Set global attributes
+        # # ---------------------
+        # nc.title = options.title
+        # nc.institution = 'NASA/Goddard Space Flight Center'
+        # nc.source = 'Global Model and Assimilation Office'
+        # nc.history = 'Created from GEOS-5 standard collections by leo_sampler.py'
+        # nc.references = 'n/a'
+        # nc.comment = 'This file contains GEOS-5 parameters sampled on a MODIS granule'
+        # nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
+        # nc.Conventions = 'CF'
      
-        # Create dimensions
-        # -----------------
-        nt = nc.createDimension('time',1) # one 5-minute granule per file for now
-        if km>0:
-            nz = nc.createDimension('lev',km)
-            if doAkBk:
-                ne = nc.createDimension('ne',km+1)
-        x = nc.createDimension('cell_across_swath',nXtrack)
-        y = nc.createDimension('cell_along_swath',nAtrack)
+        # # Create dimensions
+        # # -----------------
+        # nt = nc.createDimension('time',1) # one 5-minute granule per file for now
+        # if km>0:
+        #     nz = nc.createDimension('lev',km)
+        #     if doAkBk:
+        #         ne = nc.createDimension('ne',km+1)
+        # x = nc.createDimension('cell_across_swath',nXtrack)
+        # y = nc.createDimension('cell_along_swath',nAtrack)
 
-        # Coordinate variables
-        # --------------------
-        scandate = filename.split('.')[1]
-        scantime = filename.split('.')[2]
-        scandate = datetime(int(scandate[1:5]),1,1) + timedelta(int(scandate[5:])-1)
-        scandate = datetime(scandate.year,scandate.month,scandate.day,int(scantime[0:2]),int(scantime[2:]))
-        time = nc.createVariable('time','i4',('time',),zlib=False)
-        time.long_name = 'Initial Time of Scan'
-        time.units = 'seconds since %s'%scandate.isoformat(' ')
-        time[0] = 0
-        if km > 0: # pressure level not supported yet
-            lev = nc.createVariable('lev','f4',('lev',),zlib=False)
-            lev.long_name = 'Vertical Level'
-            lev.units = levUnits.strip()
-            lev.positive = 'down'
-            lev.axis = 'z'
-            lev[:] = levs[:]
+        # # Coordinate variables
+        # # --------------------
+        # scandate = filename.split('.')[1]
+        # scantime = filename.split('.')[2]
+        # scandate = datetime(int(scandate[1:5]),1,1) + timedelta(int(scandate[5:])-1)
+        # scandate = datetime(scandate.year,scandate.month,scandate.day,int(scantime[0:2]),int(scantime[2:]))
+        # time = nc.createVariable('time','i4',('time',),zlib=False)
+        # time.long_name = 'Initial Time of Scan'
+        # time.units = 'seconds since %s'%scandate.isoformat(' ')
+        # time[0] = 0
+        # if km > 0: # pressure level not supported yet
+        #     lev = nc.createVariable('lev','f4',('lev',),zlib=False)
+        #     lev.long_name = 'Vertical Level'
+        #     lev.units = levUnits.strip()
+        #     lev.positive = 'down'
+        #     lev.axis = 'z'
+        #     lev[:] = levs[:]
 
-            if doAkBk:
-                ae, be = eta.getEdge(km) # Coefficients for Hybrid coordinates
-                ak = nc.createVariable('ak','f4',('ne',),zlib=False)
-                ak.long_name = 'Eta coordinate coefficient ak (p = ak + bk * ps)'
-                ak.units = 'Pa'
-                ak = ae[:]
-                bk = nc.createVariable('bk','f4',('ne',),zlib=False)
-                bk.long_name = 'Eta coordinate coefficient bk (p = ak + bk * ps)'
-                bk.units = '1'
-                bk = be[:]
+        #     if doAkBk:
+        #         ae, be = eta.getEdge(km) # Coefficients for Hybrid coordinates
+        #         ak = nc.createVariable('ak','f4',('ne',),zlib=False)
+        #         ak.long_name = 'Eta coordinate coefficient ak (p = ak + bk * ps)'
+        #         ak.units = 'Pa'
+        #         ak = ae[:]
+        #         bk = nc.createVariable('bk','f4',('ne',),zlib=False)
+        #         bk.long_name = 'Eta coordinate coefficient bk (p = ak + bk * ps)'
+        #         bk.units = '1'
+        #         bk = be[:]
         
-        # Add pseudo dimensions for GrADS compatibility
-        # -------------------------------------------
-        ew = nc.createVariable('ew','f4',('cell_across_swath',),
-                                fill_value=MAPL_UNDEF,zlib=False)
-        ew.long_name    = 'pseudo longitude'
-        ew.units        = 'degrees_east'
-        ew[:]           = mxd.Longitude[i][int(nAtrack*0.5),:]
+        # # Add pseudo dimensions for GrADS compatibility
+        # # -------------------------------------------
+        # ew = nc.createVariable('ew','f4',('cell_across_swath',),
+        #                         fill_value=MAPL_UNDEF,zlib=False)
+        # ew.long_name    = 'pseudo longitude'
+        # ew.units        = 'degrees_east'
+        # ew[:]           = mxd.Longitude[i][int(nAtrack*0.5),:]
 
-        ns = nc.createVariable('ns','f4',('cell_along_swath',),
-                                fill_value=MAPL_UNDEF,zlib=False)
-        ns.long_name    = 'pseudo latitude'
-        ns.units        = 'degrees_north'
-        ns[:]           = mxd.Latitude[i][:,int(nXtrack*0.5)]
+        # ns = nc.createVariable('ns','f4',('cell_along_swath',),
+        #                         fill_value=MAPL_UNDEF,zlib=False)
+        # ns.long_name    = 'pseudo latitude'
+        # ns.units        = 'degrees_north'
+        # ns[:]           = mxd.Latitude[i][:,int(nXtrack*0.5)]
 
-        dt = nc.createVariable('scanTime','f4',('cell_along_swath','cell_across_swath',),
-                                fill_value=MAPL_UNDEF,zlib=False)
-        dt.long_name     = 'Time of Scan'
-        dt.units         = 'seconds since %s'%DATE_START.isoformat(' ')
-        dt[:]            = mxd.Scan_Start_Time[i]
+        # dt = nc.createVariable('scanTime','f4',('cell_along_swath','cell_across_swath',),
+        #                         fill_value=MAPL_UNDEF,zlib=False)
+        # dt.long_name     = 'Time of Scan'
+        # dt.units         = 'seconds since %s'%DATE_START.isoformat(' ')
+        # dt[:]            = mxd.Scan_Start_Time[i]
 
         
-        # Save lon/lat if so desired
-        # --------------------------
-        if options.coords:
-            clon = nc.createVariable('clon','f4',('cell_along_swath','cell_across_swath',),
-                                     fill_value=MAPL_UNDEF,zlib=False)
-            clon.long_name     = 'pixel center longitude'
-            clon.missing_value = MAPL_UNDEF
-            clon[:]            = mxd.Longitude[i]
+        # # Save lon/lat if so desired
+        # # --------------------------
+        # if options.coords:
+        #     clon = nc.createVariable('clon','f4',('cell_along_swath','cell_across_swath',),
+        #                              fill_value=MAPL_UNDEF,zlib=False)
+        #     clon.long_name     = 'pixel center longitude'
+        #     clon.missing_value = MAPL_UNDEF
+        #     clon[:]            = mxd.Longitude[i]
 
-            clat = nc.createVariable('clat','f4',('cell_along_swath','cell_across_swath',),
-                                     fill_value=MAPL_UNDEF,zlib=False)
-            clat.long_name     = 'pixel center latitude'
-            clat.missing_value = MAPL_UNDEF
-            clat[:]            = mxd.Latitude[i]
+        #     clat = nc.createVariable('clat','f4',('cell_along_swath','cell_across_swath',),
+        #                              fill_value=MAPL_UNDEF,zlib=False)
+        #     clat.long_name     = 'pixel center latitude'
+        #     clat.missing_value = MAPL_UNDEF
+        #     clat[:]            = mxd.Latitude[i]
 
 
-        # Loop over datasets, sample and write each variable
-        # --------------------------------------------------
-        for path in Vars:
-            if options.verbose:
-                print " <> opening "+path
-            g = Open(path)
-            for var in Vars[path]:
-                if var.km == 0:
-                    dim = ('time','cell_along_swath','cell_across_swath')
-                    chunks = (1, ychunk, xchunk)
-                    W = MAPL_UNDEF * ones((nAtrack,nXtrack))
-                else:
-                    dim = ('time','lev','cell_along_swath','cell_across_swath')
-                    chunks = (1,zchunk,ychunk, xchunk)
-                    W = MAPL_UNDEF * ones((var.km,nAtrack,nXtrack))
-                rank = len(dim)
-                this = nc.createVariable(var.name,'f4',dim,
-                                         zlib=options.zlib,
-                                         chunksizes=chunks, fill_value=MAPL_UNDEF)
+        # # Loop over datasets, sample and write each variable
+        # # --------------------------------------------------
+        # for path in Vars:
+        #     if options.verbose:
+        #         print " <> opening "+path
+        #     g = Open(path)
+        #     for var in Vars[path]:
+        #         if var.km == 0:
+        #             dim = ('time','cell_along_swath','cell_across_swath')
+        #             chunks = (1, ychunk, xchunk)
+        #             W = MAPL_UNDEF * ones((nAtrack,nXtrack))
+        #         else:
+        #             dim = ('time','lev','cell_along_swath','cell_across_swath')
+        #             chunks = (1,zchunk,ychunk, xchunk)
+        #             W = MAPL_UNDEF * ones((var.km,nAtrack,nXtrack))
+        #         rank = len(dim)
+        #         this = nc.createVariable(var.name,'f4',dim,
+        #                                  zlib=options.zlib,
+        #                                  chunksizes=chunks, fill_value=MAPL_UNDEF)
 
-                #this.standard_name = var.title
-                this.standard_name = var.name
-                #this.long_name = var.title.replace('_',' ')
-                this.long_name = ''
-                this.missing_value = MAPL_UNDEF
-                this.units = var.units
-                if g.lower:
-                    name = var.name.lower() # GDS always uses lower case
-                else:
-                    name = var.name
-                if options.verbose:
-                    print " [] Interpolating <%s>"%name.upper()
+        #         #this.standard_name = var.title
+        #         this.standard_name = var.name
+        #         #this.long_name = var.title.replace('_',' ')
+        #         this.long_name = ''
+        #         this.missing_value = MAPL_UNDEF
+        #         this.units = var.units
+        #         if g.lower:
+        #             name = var.name.lower() # GDS always uses lower case
+        #         else:
+        #             name = var.name
+        #         if options.verbose:
+        #             print " [] Interpolating <%s>"%name.upper()
 
-                # Use NC4ctl for linear interpolation
-                # -----------------------------------
-                I = (~mxd.Longitude[i].mask)&(~mxd.Latitude[i].mask)&(~mxd.tyme[i].mask)
-                Z = g.nc4.sample(name,array(mxd.Longitude[i][I]),array(mxd.Latitude[i][I]),array(mxd.tyme[i][I]),
-                                 Transpose=False,squeeze=True,Verbose=options.verbose)
-                if options.verbose: print " <> Writing <%s> "%name
-                if rank == 3:
-                   W[I] = Z
-                   W = np.ma.masked_array(shave(W[:,:],options))
-                   W.mask = W>0.1*MAPL_UNDEF
-                   this[0,:,:] = W
-                elif rank == 4:
-                   W[:,I] = Z
-                   W = np.ma.masked_array(shave(W[:,:,:],options))
-                   W.mask = W>0.1*MAPL_UNDEF
-                   this[0,:,:,:] = W
+        #         # Use NC4ctl for linear interpolation
+        #         # -----------------------------------
+        #         I = (~mxd.Longitude[i].mask)&(~mxd.Latitude[i].mask)&(~mxd.tyme[i].mask)
+        #         Z = g.nc4.sample(name,array(mxd.Longitude[i][I]),array(mxd.Latitude[i][I]),array(mxd.tyme[i][I]),
+        #                          Transpose=False,squeeze=True,Verbose=options.verbose)
+        #         if options.verbose: print " <> Writing <%s> "%name
+        #         if rank == 3:
+        #            W[I] = Z
+        #            W = np.ma.masked_array(shave(W[:,:],options))
+        #            W.mask = W>0.1*MAPL_UNDEF
+        #            this[0,:,:] = W
+        #         elif rank == 4:
+        #            W[:,I] = Z
+        #            W = np.ma.masked_array(shave(W[:,:,:],options))
+        #            W.mask = W>0.1*MAPL_UNDEF
+        #            this[0,:,:,:] = W
 
-        # Close the file
-        # --------------
-        nc.close()
+        # # Close the file
+        # # --------------
+        # nc.close()
 
-        if options.verbose:
-            print " <> wrote %s file %s"%(options.format,options.outdir+'/'+filename)
+        # if options.verbose:
+        #     print " <> wrote %s file %s"%(options.format,options.outdir+'/'+filename)
     
 #------------------------------------ M A I N ------------------------------------
 
@@ -571,7 +574,7 @@ if __name__ == "__main__":
         raise ValueError, 'invalid extension <%s>'%ext
     options.zlib = not options.nozip
 
-    if ~os.path.exists(options.outdir): 
+    if not os.path.exists(options.outdir): 
         print 'outdir does not exist:',options.outdir
         print 'check path. exiting'
         raise
