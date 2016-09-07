@@ -339,6 +339,7 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
 
         year = path.split('/')[-1].split('.')[-3]
         doy  = path.split('/')[-1].split('.')[-2]
+        print 'total',path.split('/')[-1].split('.')
         print 'year',year
         print 'doy', doy
 
