@@ -337,11 +337,11 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         filename = path.split('/')[-1].split('.')[:-1]
         filename = '.'.join(filename + [options.ext])
 
-        year = path.split('/')[-1].split('.')[:-3]
-        doy  = path.split('/')[-1].split('.')[:-2]
+        year = path.split('/')[-1].split('.')[-3]
+        doy  = path.split('/')[-1].split('.')[-2]
         print 'year',year
         print 'doy', doy
-        
+
         # outdir = options.outdir + '/' + year + '/' + doy
         # nc = Dataset(outdir+'/'+filename,'w',format=options.format)
 
