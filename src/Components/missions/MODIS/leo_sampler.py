@@ -485,7 +485,7 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         nc.close()
 
         if options.verbose:
-            print " <> wrote %s file %s"%(options.format,options.outdir+'/'+filename)
+            print " <> wrote %s file %s"%(options.format,outdir+'/'+filename)
     
 #------------------------------------ M A I N ------------------------------------
 
