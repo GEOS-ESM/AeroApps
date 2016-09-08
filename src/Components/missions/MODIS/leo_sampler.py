@@ -341,6 +341,8 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         doy  = path.split('/')[-1].split('.')[1][5:]
 
         outdir = options.outdir + '/' + year + '/' + doy
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
         nc = Dataset(outdir+'/'+filename,'w',format=options.format)
 
         # Set global attributes
