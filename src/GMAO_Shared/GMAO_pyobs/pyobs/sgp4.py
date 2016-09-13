@@ -125,7 +125,12 @@ if __name__ == "__main__":
     dt_secs = 30
 
 #    lon, lat, tyme = getTrack ( 'TLE/quikscat_2005.tle', T(2000,1,1), T(2000,2,15), dt_secs=dt_secs )
-    lon, lat, tyme = getTrack ( 'TLE/terra_2005.tle', T(2012,1,1), T(2012,2,15), dt_secs=dt_secs )
+    (lon, lat, tyme) = getTrack ( 'ISS-2016257.tle', T(2016,9,14,10,30), T(2016,9,14,11,30), dt_secs=dt_secs )
+
+    for i in range(len(lon)):
+        print "%f,%f,%02d:%02d"%(lon[i],lat[i],tyme[i].hour,tyme[i].minute)
+     
+def hold():
 
     tlocal = array([ tyme[i] + timedelta(seconds=int(240*lon[i])) for i in range(tyme.size) ])
 
@@ -139,8 +144,6 @@ if __name__ == "__main__":
     meq = array([ t.minute for t in teq ])
     heq = array([ t.hour   for t in teq ]) + meq/60.
     
-def hold():
-
     day = 24 * 60 * 60 / dt_secs # minutes in a day
 
     n1, n2 = (int(15.8*day), int(16.2*day) )
