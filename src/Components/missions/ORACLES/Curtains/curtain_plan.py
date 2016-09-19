@@ -10,34 +10,42 @@ from grads import gacm
 
 if __name__ == "__main__":
 
-    sdir = '/nobackup/3/pcastell/iesa/kaq/sampled/plan'
-    meteo =  sdir + '/KORUSAQ-GEOS5-METEO-AIRCRAFT_PLAN_DATE_R0.nc'
-    chem  =  sdir + '/KORUSAQ-GEOS5-CHEM-AIRCRAFT_PLAN_DATE_R0.nc'
-    ict = '../Plans/fltplan_aircraft_DATE.ict'
-    csv = '../Plans/xsect_SECTION_isoT0.csv'
+    home = os.environ['HOME'] 
+    sdir = home + '/iesa/oracles/sampled/plan' # make symlinks here for sampled files
+    meteo =  sdir + '/ORACLES-GEOS5-METEO-AIRCRAFT_PLAN_DATE_REV.nc'
+    chem  =  sdir + '/ORACLES-GEOS5-CHEM-AIRCRAFT_PLAN_DATE_REV.nc'
+    ict = '../Plans/ORACLES-Flt-plan_AIRCRAFT_DATE_REV.ict'
+    csv = '../Plans/xsect_SECTION_isoT0.csv' # not implemented yet
 
     if len(sys.argv) < 3:
         print "Usage: "
-        print "       curtain_plan aircraft date"
+        print "       curtain_plan aircraft date [rev]"
         print "       curtain_plan section  iso_time"
-        print "Example:" 
-        print "       curtain_plan DC8 20160503"
-        print "       curtain_plan jeju2seoul 2016-05-24T00:00:00"
+        print "Revision rev defaults to R0."
+        print "Examples:" 
+        print "       curtain_plan p3  20160503"
+        print "       curtain_plan er2 20160918 R1"
+#        print "       curtain_plan jeju2seoul 2016-05-24T00:00:00"
         raise SystemExit, "Error: not enough arguments"
     else:
         aircraft = sys.argv[1]
         date = sys.argv[2]
+        if len(sys.argv) > 3:
+            rev = sys.argv[3]
+        else:
+            rev = 'R0'
 
-    figTail = '.plan.'+aircraft+'.'+ date + '.png'
+    figTail = '.plan.'+aircraft+'.'+ date + '.' + rev + '.png'
 
     # Dataset location
     # ----------------
-    meteo = meteo.replace('AIRCRAFT',aircraft).replace('DATE',date)
-    chem = chem.replace('AIRCRAFT',aircraft).replace('DATE',date)
+    meteo = meteo.replace('AIRCRAFT',aircraft).replace('DATE',date).replace('REV',rev)
+    chem = chem.replace('AIRCRAFT',aircraft).replace('DATE',date).replace('REV',rev)
     if 'T' in date:
         coords = csv.replace('SECTION',aircraft).replace('isoT0',date)
     else:
-        coords = ict.replace('aircraft',aircraft.lower()).replace('DATE',date)
+        coords = ict.replace('AIRCRAFT',aircraft.lower()).replace('DATE',date)\
+                    .replace('REV',rev)
 
     # Load flight path and sampled data
     # ---------------------------------
@@ -58,23 +66,26 @@ if __name__ == "__main__":
     f.RH.mask[abs(f.RH)>400.] = True # detect undef contaminated interp
     f.contourf(f.RH,r'GEOS-5 Relative Humidity',
                cmap=cm.RdBu_r,figFile='rh'+figTail, N=32, extend='max', vmin=0,vmax=100)
-    try:
-        f.CLOUD.mask[abs(f.CLOUD)>400.] = True # detect undef contaminated interp
-        f.contourf(f.CLOUD,r'GEOS-5 Cloud Fraction [%]',
-                   cmap=cm.RdBu,figFile='cld'+figTail, N=32, extend='max')
-    except:
-        pass
+   # try:
+   #     f.CLOUD.mask[abs(f.CLOUD)>400.] = True # detect undef contaminated interp
+   #     #f.contourf(f.CLOUD,r'GEOS-5 Cloud Fraction [%]',
+   #     #           cmap=cm.RdBu,figFile='cld'+figTail, N=32, extend='max')
+   # except:
+   #     pass
         
     # Concentration
     # -------------
-    f.load(f.fh_chm,['du','ss','bc','oc','so4','so2','co2','co','conbas','cobbgl','cobbae'],
-           factor='airdens')
-    f.cobbot = f.cobbgl-f.cobbae
+    f.load(f.fh_chm,['du','ss','bc','oc','so4','so2','co2','co',
+                     'cobbgl', 'conbgl','cobbaf'],factor='airdens')
 
-    for spec in ['du','ss','bc','oc','so4','so2','co2','co','conbas','cobbgl','cobbae','cobbot']:
-        f.__dict__[spec].mask[abs(f.__dict__[spec])>1e10] = True    # detect undef contaminated interp
+    # detect undef contaminated interp
+    # --------------------------------
+    for spec in ['du','ss','bc','oc','so4','so2','co2','co',
+                 'cobbgl','cobbaf','conbgl']:
+        f.__dict__[spec].mask[abs(f.__dict__[spec])>1e10] = True    
 
     # Plot them
+    # ---------
     f.contourf(1e9*f.du,r'GEOS-5 Dust Aerosol Concentration [$\mu$g/m$^3$]    ',
                cmap=gacm.jet_l,figFile='du'+figTail, N=32, extend='max')
 
@@ -92,22 +103,23 @@ if __name__ == "__main__":
 
     f.contourf(1e9*f.co,r'GEOS-5 CO Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='co'+figTail, N=32, extend='max')
-    f.contourf(1e9*f.conbas,r'GEOS-5 CO FF Asia Concentration [$\mu$g/m$^3$]',
-               cmap=gacm.jet_l,figFile='coffas'+figTail, N=32, extend='max')
-    f.contourf(1e9*f.cobbae,r'GEOS-5 CO BB N Asia+Europe Concentration [$\mu$g/m$^3$]',
-               cmap=gacm.jet_l,figFile='cobbae'+figTail, N=32, extend='max')
-    f.contourf(1e9*f.cobbot,r'GEOS-5 CO BB Other Concentration [$\mu$g/m$^3$]',
-               cmap=gacm.jet_l,figFile='cobbot'+figTail, N=32, extend='max')
+    f.contourf(1e9*f.conbgl,r'GEOS-5 CO Non-BB Concentration [$\mu$g/m$^3$]',
+               cmap=gacm.jet_l,figFile='conbgl'+figTail, N=32, extend='max')
+    f.contourf(1e9*f.cobbgl,r'GEOS-5 CO Biomass Burning Concentration [$\mu$g/m$^3$]',
+               cmap=gacm.jet_l,figFile='cobbgl'+figTail, N=32, extend='max')
+    f.contourf(1e9*f.cobbaf,r'GEOS-5 CO African BB Concentration [$\mu$g/m$^3$]',
+               cmap=gacm.jet_l,figFile='cobbaf'+figTail, N=32, extend='max')
 
- 
     # Extinction
     # ----------
     f.load(f.fh_ext,['duext','ssext','bcext','ocext','suext'])
+
+    # Detect undef contaminated interp
+    # --------------------------------
     for spec in ['duext','ssext','bcext','ocext','suext']:
-        f.__dict__[spec].mask[abs(f.__dict__[spec])>1e10] = True    # detect undef contaminated interp
+        f.__dict__[spec].mask[abs(f.__dict__[spec])>1e10] = True    
 
     f.ext  = f.duext+f.ssext+f.bcext+f.ocext+f.suext
-
 
     f.contourf(1000*f.ext,  'GEOS-5 Total Aerosol Extinction [1/km]',
                cmap=gacm.jet_l,figFile='ext'+figTail,N=32, extend='max')
