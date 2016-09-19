@@ -1028,7 +1028,7 @@ subroutine outfile_extname(file)
   if (nodemax > 1) then
     if (nodenum < 10) then
       write(file,'(A,I1,A)') trim(file),nodenum,'.nc4'
-    else if (nodenum > 10 .and. nodenum < 100) then
+    else if (nodenum >= 10 .and. nodenum < 100) then
       write(file,'(A,I2,A)') trim(file),nodenum,'.nc4'
     end if
   else
