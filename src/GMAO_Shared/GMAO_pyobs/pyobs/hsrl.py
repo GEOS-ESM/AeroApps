@@ -4,30 +4,12 @@
 """
 
 import h5py
-from   numpy    import ones, zeros, interp, NaN, isnan
+from   numpy    import ones, zeros, interp, NaN, isnan, array
 from   datetime import datetime, timedelta
 
-class HSRL(object):
-
-      """Implements the HSRL class."""
-
-
-      def __init__ (self,hsrl_filename,verbose=True,freq=3.0):
-        """
-        Creates an HSRL object defining the following attributes:
-
-             lon            ---  longitudes in degrees        (nobs)
-             lat            ---  latitudes in degrees         (nobs)
-
-        """
-
-        self.verb = verbose
-                   
-#       SDS to Keep
-#       -----------
-        SDS = {'Nav_Data':
+SDS_DIAL = {'Nav_Data':
                   ('gps_alt','gps_date','gps_lat','gps_lon','gps_time'),
-               'Data_Products':
+            'Data_Products':
                   ('1064_bsc_cloud_screened',
                    '1064_ext',
                    '1064_total_attn_bsc_cloud_screened',
@@ -43,18 +25,43 @@ class HSRL(object):
                    'SO4_Mixing_Ratio',
                    'OC_Mixing_Ratio',  
                    'BC_Mixing_Ratio'  ),
-               'State_Parameters':
+              'State_Parameters':
                   ( 'Pressure',
                     'Temperature',          
                     'Relative_Humidity',
                   )
                }
 
-        # Short names
-        # -----------
-        Short_Name = dict(
+SDS_HSRL2 = {'header': ('date',),
+             'ER2_IMU':
+                        ('gps_alt','gps_lat','gps_lon','gps_time'),
+             'DataProducts':
+                         (
+                          'Altitude',
+                          '1064_bsc_cloud_screened',
+                         '1064_ext',
+                         '1064_aer_dep',
+                         '532_bsc_cloud_screened',
+                         '532_ext',
+                         '532_aer_dep',
+                         '355_bsc_cloud_screened',
+                         '355_ext',
+                         '355_aer_dep',
+                         ),
+              'State':
+                         ( 'Pressure',
+                           'Temperature',          
+                           'Relative_Humidity',
+                         )
+               }
+
+NAV = ( 'Altitude','date', 'gps_date','gps_lat','gps_lon','gps_time')
+
+# Short names
+# -----------
+Short_Name = dict(
                       gps_alt = 'lev',
-                     gps_date = 'date',
+                     gps_date = 'datex',
                       gps_lat = 'lat',
                       gps_lon = 'lon',
                      gps_time = 'time',
@@ -62,15 +69,40 @@ class HSRL(object):
               ground_altitude = 'zs',
                      )
 
-        Short_Name['1064_bsc_cloud_screened'] = 'bsc_1064'
-        Short_Name['1064_ext'] = 'ext_1064'
-        Short_Name['1064_total_attn_bsc_cloud_screened'] = 'absc_1064'
-        Short_Name['1064_Single_Scattering_Albedo'] = 'ssa_1064'
-        Short_Name['532_bsc_cloud_screened'] = 'bsc_532'
-        Short_Name['532_ext'] = 'ext_532'
-        Short_Name['532_total_attn_bsc_cloud_screened'] = 'absc_532'
-        Short_Name['532_Single_Scattering_Albedo'] = 'ssa_532'
+Short_Name['1064_bsc_cloud_screened'] = 'bsc_1064'
+Short_Name['1064_ext'] = 'ext_1064'
+Short_Name['1064_aer_dep'] = 'dep_1064'
+Short_Name['1064_total_attn_bsc_cloud_screened'] = 'absc_1064'
+Short_Name['1064_Single_Scattering_Albedo'] = 'ssa_1064'
 
+Short_Name['532_bsc_cloud_screened'] = 'bsc_532'
+Short_Name['532_ext'] = 'ext_532'
+Short_Name['532_aer_dep'] = 'dep_532'
+Short_Name['532_total_attn_bsc_cloud_screened'] = 'absc_532'
+Short_Name['532_Single_Scattering_Albedo'] = 'ssa_532'
+
+Short_Name['355_bsc_cloud_screened'] = 'bsc_355'
+Short_Name['355_ext'] = 'ext_355'
+Short_Name['355_aer_dep'] = 'dep_355'
+
+
+class HSRL(object):
+
+      """Implements the HSRL class."""
+
+
+      def __init__ (self,hsrl_filename,Nav_only=False,verbose=True,freq=3.0,
+                    SDS=SDS_HSRL2):
+        """
+        Creates an HSRL object defining the following attributes:
+
+             lon            ---  longitudes in degrees        (nobs)
+             lat            ---  latitudes in degrees         (nobs)
+
+        """
+
+        self.verb = verbose
+                           
         # Open the HSRL file and loop over the datasets,
         # extracting navigation and data
         # ----------------------------------------------
@@ -80,6 +112,8 @@ class HSRL(object):
         for sds in SDS.keys():
           g = f.get(sds)
           for v in SDS[sds]:
+            if Nav_only and v not in NAV:
+              continue
             if self.verb:
                   print "   + Reading <%s>"%v
             data = g.get(v)
@@ -99,14 +133,26 @@ class HSRL(object):
         self.nt = self.lat.shape[0]
         self.nz = self.z.shape[0]
 
+        # Handle incosistency of date across SRL datasets
+        # -----------------------------------------------
+        if self.nt != self.date.shape[0]:
+          date_ = self.date[0,0]
+          yy = int(date_)/10000
+          mm = (int(date_) - yy * 10000)/100
+          dd = int(date_) - yy*10000 - mm*100
+          dates = '%02d/%02d/%4d'%(mm,dd,yy)
+          self.date = array([dates for i in range(self.nt)])
+          
         # Create datetime
         # ---------------
         self.Time = []
         for i in range(self.nt):
-          dt = timedelta(seconds = int(self.time[i] * 60. * 60.) )
-          mm, dd, yy = self.date[i].split('/')
-          self.Time += [datetime(int(yy), int(mm), int(dd)) + dt,]
-
+           dt = timedelta(seconds = int(self.time[i]* 60. * 60.+0.5))
+           mm, dd, yy = self.date[i].split('/')
+           self.Time += [datetime(int(yy), int(mm), int(dd)) + dt,]
+        self.Time = array(self.Time)
+        self.tyme = self.Time.reshape((self.nt,1))
+        
         # Find bracketing synoptic times
         # ------------------------------
         dt = timedelta(seconds=int(freq * 60. * 60.)) # 3 hour
@@ -357,6 +403,11 @@ class HSRL(object):
 
 if __name__ == "__main__":
 
+    h = HSRL('/Users/adasilva/iesa/oracles/hsrl/HSRL2_ER2_20160916_R0.h5',
+             Nav_only=True)
+    
+def Hold():
+
 #    print "Loading HSRL:"
 #    h = HSRL('discoveraq-HSRL_UC12_20110705_RA_L2_sub.h5')
     print "Loading GEOS-5:"
@@ -366,8 +417,6 @@ if __name__ == "__main__":
             'e572_fp.inst3_3d_aer_Nv.%y4%m2%d2_%h200z.nc4',
             'e572_fp.inst3_3d_ext532_Nv.%y4%m2%d2_%h200z.nc4',
             'e572_fp.inst3_3d_ext1064_Nv.%y4%m2%d2_%h200z.nc4' )
-
-def Hold():
 
     g.simul('e572_fp.inst3_3d_asm_Nv.20110705_1800z.nc4',
             'e572_fp.inst3_3d_aer_Nv.20110705_1800z.nc4',

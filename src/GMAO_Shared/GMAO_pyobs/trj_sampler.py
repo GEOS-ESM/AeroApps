@@ -20,7 +20,7 @@ from csv             import DictReader
 from MAPL           import Config, eta
 from MAPL.constants import *
 from pyobs.sgp4     import getTrack as getTrackTLE
-from pyobs          import ICARTT, NPZ
+from pyobs          import ICARTT, NPZ, HSRL
 
 class TleVar(object):
     """                                                                                  
@@ -84,10 +84,24 @@ def getTrackICT(ictFile,dt_secs):
     """
     m = ICARTT(ictFile)
     lon, lat, tyme = m.Nav['Longitude'], m.Nav['Latitude'], m.Nav['Time']
-    dt = tyme[1] - tyme[0] # in seconds
+    dt = h.tyme[1] - h.tyme[0] # in seconds
     idt = int(dt_secs/dt.total_seconds()+0.5)
     return (lon[::idt], lat[::idt], tyme[::idt])
 
+def getTrackHSRL(hsrlFile,dt_secs=-1):
+    """
+    Get trajectory from HSRL HDF-5 file.
+    """
+    h = HSRL(ictFile,Nav_only=True)
+    lon, lat, tyme = h.lon[:].ravel(), h.lat[:].ravel(), h.tyme[:].ravel()
+    if dt_secs > 0:
+        dt = h.time[1] - h.time[0] # in seconds
+        idt = int(dt_secs/dt.total_seconds()+0.5)
+        return (lon[::idt], lat[::idt], tyme[::idt])
+    else:
+        idt = 1
+    return (lon[::idt], lat[::idt], tyme[::idt])
+    
 def getTrackCSV(csvFile):
     """
     Get trajectory from a CSV with (lon,lat,time) coordinates.
@@ -433,7 +447,7 @@ if __name__ == "__main__":
               help="Output file format: one of NETCDF4, NETCDF4_CLASSIC, NETCDF3_CLASSIC, NETCDF3_64BIT or EXCEL (default=%s)"%format )
 
     parser.add_option("-t", "--trajectory", dest="traj", default=None,
-              help="Trajectory file format: one of tle, ict, csv, npz (default=trjFile extension)" )
+              help="Trajectory file format: one of tle, ict, csv, npz, hsrl (default=trjFile extension)" )
 
     parser.add_option("-d", "--dt_secs", dest="dt_secs", default=dt_secs,
               type='int',
@@ -493,6 +507,8 @@ if __name__ == "__main__":
         lon, lat, tyme = getTrackCSV(trjFile)
     elif options.traj == 'NPZ':
         lon, lat, tyme = getTrackNPZ(trjFile)
+    elif options.traj == 'HSRL' or options.traj == 'H5':
+        lon, lat, tyme = getTrackHSRL(trjFile)
     else:
         raise ValueError, 'cannot handle trajectory file format <%s>'%options.traj
     # Make sure longitudes in [-180,180]
