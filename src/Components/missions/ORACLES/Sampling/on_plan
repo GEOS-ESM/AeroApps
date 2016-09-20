@@ -6,7 +6,7 @@
 set rc = ../RC
 set sampler = $ESMADIR/`uname`/bin/trj_sampler.py
 set esampler = $ESMADIR/`uname`/bin/ext_sampler.py
-set dest = /home/adasilva/iesa/ORACLES/sampled/plan
+set dest = /home/adasilva/iesa/oracles/sampled/plan
 
 if ( $#argv < 1 ) then
    echo "usage:    $0 [-r REV] fltplan_dc8_20160503.ict  [fcst_DTG]"
