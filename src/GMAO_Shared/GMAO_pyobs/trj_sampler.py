@@ -84,7 +84,7 @@ def getTrackICT(ictFile,dt_secs):
     """
     m = ICARTT(ictFile)
     lon, lat, tyme = m.Nav['Longitude'], m.Nav['Latitude'], m.Nav['Time']
-    dt = h.tyme[1] - h.tyme[0] # in seconds
+    dt = tyme[1] - tyme[0] # in seconds
     idt = int(dt_secs/dt.total_seconds()+0.5)
     return (lon[::idt], lat[::idt], tyme[::idt])
 
