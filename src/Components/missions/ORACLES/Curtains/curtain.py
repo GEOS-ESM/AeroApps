@@ -211,7 +211,7 @@ class Curtain(object):
         _colorbar()
 
         if self.aircraft.upper() != 'ER2':
-            plot(self.Hour,self.Altitude,'m',linewidth=2,label=self.aircraft+' Altitude')
+            plot(self.Hour,self.Altitude,'b',linewidth=2,label=self.aircraft+' Altitude')
         if 'pblz' in self.__dict__.keys():
             plot(self.Hour,self.pblz,pblc+'-',linewidth=2,label='PBL Height')
         legend(loc='upper right')
