@@ -81,7 +81,7 @@ class Curtain(object):
     Produce Curtain plots from ASCII Flight Plans.
     """
 
-    def __init__(self,meteo,chem,ext,coords,aircraft='Aircraft',zmax=10,nz=160,prs=True):
+    def __init__(self,meteo,chem,ext,coords,aircraft='Aircraft',zmax=8,nz=160,prs=True):
         """
         Load 
         """
