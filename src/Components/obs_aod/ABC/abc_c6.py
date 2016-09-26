@@ -5,33 +5,54 @@
 
 """
 
-import os
+import os, sys
+sys.path.insert(0,'/home/pcastell/Enthought/Canopy_64bit/System/lib/python2.7/site-packages')
+from   matplotlib.pyplot import  cm, imshow, plot, figure
+from   matplotlib.pyplot import  xlabel, ylabel, title, grid, savefig, legend
+import matplotlib.pyplot as      plt
+from   matplotlib.ticker import  MultipleLocator
+from   numpy             import  c_ as cat
+from   numpy             import  random, sort, pi, load, cos, log, std, exp
+from   numpy             import  reshape, arange, ones, zeros, interp, sqrt
+from   numpy             import  meshgrid, concatenate, squeeze
+import numpy             as      np
+from   giant             import  MISSING, LAND, OCEAN
+from   nn                import  NN, _plotKDE
+import itertools
+from   sklearn.linear_model import LinearRegression
+from   multiprocessing    import cpu_count
+# ------
+MODVARNAMES = {'mRef470': 'MOD04 470 nm Reflectance',
+               'mRef550': 'MOD04 550 nm Reflectance',
+               'mRef660': 'MOD04 660 nm Reflectance',
+               'mRef870': 'MOD04 870 nm Reflectance',
+               'mRef1200': 'MOD04 1200 nm Reflectance',
+               'mRef1600': 'MOD04 1600 nm Reflectance',
+               'mRef2100': 'MOD04 2100 nm Reflectance'}
 
-from matplotlib.pyplot import  cm, imshow, plot, figure
-from matplotlib.pyplot import  xlabel, ylabel, title, grid, savefig, legend
-from matplotlib        import  ticker
-from numpy             import  c_ as cat
-from numpy             import  random, sort, pi, load, cos, log, std, exp
-from numpy             import  reshape, arange, ones, zeros, interp
-from numpy             import  meshgrid, concatenate
-from scipy             import  stats, mgrid
-from giant             import  MISSING, LAND, OCEAN
-from nn                import NN
+MYDVARNAMES = {'mRef470': 'MYD04 470 nm Reflectance',
+               'mRef550': 'MYD04 550 nm Reflectance',
+               'mRef660': 'MYD04 660 nm Reflectance',
+               'mRef870': 'MYD04 870 nm Reflectance',
+               'mRef1200': 'MYD04 1200 nm Reflectance',
+               'mRef1600': 'MYD04 1600 nm Reflectance',
+               'mRef2100': 'MYD04 2100 nm Reflectance'}
 
-#..............................................................
-class aodFormat(ticker.Formatter):
-    def __call__(self,x,pos=None):
-        y = exp(x)-0.01
-        return '%4.2f'%y
-
+VARNAMES    = {'cloud': 'MOD04 Cloud Fraction',
+               'ScatteringAngle': 'Scattering Angle',
+               'Albedo': 'Cox-Munk White Sky Albedo',
+               'BRF': 'Cox-Munk Bidirectional Surface Reflectance',
+               'fdu': 'MERRA2 Fraction Dust Aerosol',
+               'fcc': 'MERRA2 Fraction Carbonaceous Aerosol',
+               'fsu': 'MERRA2 Fraction Sulfate Aerosol'}
 #----------------------------------------------------------------------------    
 
 class ABC_Ocean (OCEAN,NN):
 
-    def __init__ (self,fname, Wind=None,
+    def __init__ (self,fname, 
                   coxmunk_lut='/nobackup/NNR/Misc/coxmunk_lut.npz',
                   outliers=3., laod=True, verbose=0,
-                  cloud_thresh=0.70, csvVersion = 1,
+                  cloud_thresh=0.70,
                   Input = ['mTAU550','mTAU470','mTAU660','mTAU870',
                            'ScatteringAngle','GlintAngle',
                            'SolarAzimuth','SolarZenith',
@@ -45,50 +66,62 @@ class ABC_Ocean (OCEAN,NN):
 
         fname   ---  file name for the CSV file with the co-located MODIS/AERONET
                      data (see class OCEAN)
-        Wind    ---  Type of wind related parameter to be read from a NPZ file. Typical
-                     values are:
-                                  merra_ustar
-                                  merra_wind
-                     Requires a NPZ file with the data.
         outliers --  number of standard deviations for outlinear removal.
         laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
+
+        Reads in two Albedo variables
+              albedo - cox munk lut that parameterizes albedo with wind speed
+                                        Requires coxmunk_lut npz file.
+              BRF - cox munk bidirection reflectance computed with VLIDORT
+                                        and stored in npz
+                                        Requires a NPZ file with the data.
+              Both require a wind speed npz file.
         """
 
-        self.Input = Input
-        self.Target = Target
+        self.Input   = Input
+        self.Target  = Target
         self.verbose = verbose
-        self.laod = laod
-        self.Wind = Wind
+        self.laod    = laod
+        #self.Albedo  = 'CoxMunk'
 
-        OCEAN.__init__(self,fname,csvVersion=csvVersion) # initialize superclass
+        OCEAN.__init__(self,fname) # initialize superclass
+        if self.sat == 'Aqua':
+            fnameRoot = 'myd_' + fname.split('/')[-1].split('.')[0]
+        elif self.sat == 'Terra':
+            fnameRoot = 'mod_' + fname.split('/')[-1].split('.')[0]
 
-        # Read in wind if desired
+
+        # Read in wind
         # ------------------------
-        if Wind != None:
-            if csvVersion==1:
-                self.wind = load(self.ident + "_" + Wind + ".npz")['var']
-            else:
-                self.wind = load(self.ident + "2_" + Wind + ".npz")['var']
-        else:
-            self.wind = zeros(self.N)
-            print "WARNING: No longer using *ncep_windspd* because of too many undefs" 
-            print "WARNING: wind attribute being set to zero"
+        self.wind = load(fnameRoot + "_MERRA2.npz")['wind']
+        self.Wind = '' #need this for backwards compatibility
 
         # Define wind speed dependent ocean albedo
         # ----------------------------------------
         self.getCoxMunk(coxmunk_lut)
+        self.BRF = squeeze(load(fnameRoot+'_CoxMunkAlbedo.npz')["albedo"])
+
+        # Read in Aerosol Fractional Composition
+        # --------------------------------------
+        names = ('fdu','fss','fcc','fsu')
+        for name in names:
+            self.__dict__[name] = load(fnameRoot + "_MERRA2.npz")[name]
+
 
         # Q/C
         # ---
-        self.iValid =  (self.qa>0) & \
-                      (self.aTau470 > 0.0) & (self.aTau550 > 0.0) &  \
-                      (self.aTau660 > 0.0) & (self.aTau870 > 0.0) &  \
-                      (self.mTau470 > 0.0) & (self.mTau550 > 0.0) &  \
-                      (self.mTau660 > 0.0) & (self.mTau870 > 0.0) &  \
-                      (self.mtau470 > 0.0) & (self.mtau550 > 0.0) &  \
-                      (self.mtau660 > 0.0) & (self.mtau870 > 0.0) &  \
-                      (self.cloud <cloud_thresh) & (self.wind>=0.0) &  \
-                      (self.GlintAngle != MISSING )
+        self.iValid = (self.qa>0) & \
+                      (self.aTau470 > -0.01) & (self.aTau550 > -0.01) &  \
+                      (self.aTau660 > -0.01) & (self.aTau870 > -0.01) &  \
+                      (self.mTau470 > -0.01) & (self.mTau550 > -0.01) &  \
+                      (self.mTau660 > -0.01) & (self.mTau870 > -0.01) &  \
+                      (self.mRef470 > 0.0) & (self.mRef550 > 0.0) &  \
+                      (self.mRef660 > 0.0) & (self.mRef870 > 0.0) &  \
+                      (self.mRef1200 > 0.0) & (self.mRef1600 > 0.0) &  \
+                      (self.mRef2100 > 0.0) &  \
+                      (self.cloud <cloud_thresh) & (self.cloud > 0) &\
+                      (self.wind>=0.0) &  (self.GlintAngle != MISSING )
+
 
         # Outlier removal based on log-transformed AOD
         # --------------------------------------------
@@ -102,6 +135,11 @@ class ABC_Ocean (OCEAN,NN):
                 if self.verbose>0:
                     dg = d[self.iValid]
                     print "Outlier removal: %d   sig_d = %f  nGood=%d "%(iter,std(dg),dg.size)
+
+        # Reduce the Dataset
+        # --------------------
+        self.reduce(self.iValid)                    
+        self.iValid = ones(self.lon.shape).astype(bool)
             
         # Angle transforms: for NN work we work with cosine of angles
         # -----------------------------------------------------------
@@ -111,6 +149,7 @@ class ABC_Ocean (OCEAN,NN):
         self.SolarAzimuth    = cos(self.SolarAzimuth*pi/180.0)    
         self.SolarZenith     = cos(self.SolarZenith*pi/180.0)     
         self.GlintAngle      = cos(self.GlintAngle*pi/180.0)      
+        self.AMF             = (1/self.SolarZenith) + (1/self.SensorZenith)
 
 #----------------------------------------------------------------------------    
 
@@ -123,7 +162,6 @@ class ABC_Land (LAND,NN):
                   laod=True,
                   verbose=0,
                   cloud_thresh=0.70,
-                  csvVersion = 1,
                   Input = ['mTau550','mTau470','mTau660',
                            'mTAU550','mTAU470','mTAU660',
                            'ScatteringAngle',
@@ -145,19 +183,17 @@ class ABC_Land (LAND,NN):
         laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
         """
 
-        if csvVersion != 1:
-            raise ValueError, 'must use CVS Version 1 for land because of QA flags'
-
         self.Input = Input
         self.Target = Target
         self.verbose = verbose
         self.laod = laod
 
-        LAND.__init__(self,fname,csvVersion=csvVersion) # initialize superclass
+        LAND.__init__(self,fname)  # initialize superclass
+
 
         # Read in wind if desired
         # ------------------------
-        self.albedo = load(self.ident + "_" + Albedo + ".npz")['var']
+        self.albedo = load(self.ident + "_" + Albedo + ".npz")['albedo']
 
         # Q/C: enforce QA=3 and albedo in (0,0.25), scattering angle<170
         # --------------------------------------------------------------
@@ -209,45 +245,222 @@ class ABC_Land (LAND,NN):
         ga('open albedo_clim.ctl')
         self.addVar(ga,npz_file,expr='albedo',clmYear=2000)
 
-#---------------------------------------------------------------------------------
-def _cat2 (X, Y):
+#---------------------------------------------------------------------
+class STATS(object):
+
+  def __init__ (self,comblist,K):
+    c = max([len(comblist),1])
+    if K is None:
+      k = 1
+    else:
+      k = K
+
+    self.slope     = np.ones(c,k)*-999.
+    self.intercept = np.ones(c,k)*-999.
+    self.R         = np.ones(c,k)*-999.
+    self.rmse      = np.ones(c,k)*-999.
+    self.mae       = np.ones(c,k)*-999.
+    self.me        = np.ones(c,k)*-999.
+#---------------------------------------------------------------------
+
+def boxplot_imshow(data,blocks,masterlist,title,filename,
+                   vseps=None, yrange=None,ylabel=None):
+    nvars,ncomb = blocks.shape
+
+    fig = plt.figure()
+    ax  = plt.subplot(211)
+    params = {'mathtext.default': 'regular' }          
+    plt.rcParams.update(params)
+
+    plt.boxplot(data,showfliers=False,showbox=False,whis='range',
+                whiskerprops={'linestyle':'-'})
+    ax.set_xticks(np.arange(ncomb)+0.5)
+    ax.set_xticklabels([])    
+
+
+    if yrange is not None:
+        ax.set_ylim(yrange)
+
+    yticks = ax.yaxis.get_major_ticks()
+    yticks[0].set_visible(False)
+
+    # Minor Y Tick Marks    
+    # ylim = ax.get_ylim()
+    # dy   = (ylim[1] - ylim[0])/(len(yticks)-1)
+    # minorLocator = MultipleLocator(0.5*dy)
+    # ax.yaxis.set_minor_locator(minorLocator)
+
+    if ylabel is not None:
+      ax.set_ylabel(ylabel,fontsize=14)
+    # Make vertical lines to separate bins of number of inputvars
+    if vseps is not None:
+        for v in vseps:
+            ax.plot([v,v],np.array(ax.get_ylim()),'k-')
+
+    plt.title(title)
+    #ax.minorticks_on()
+    plt.grid(True,axis='y',which='both')
+    plt.tick_params(
+        axis='y',          # changes apply to the y-axis
+        which='major',     # major ticks are affected
+        direction='out',
+        right='off') 
+
+
+    axblocks = plt.subplot(212)
+    plt.imshow(blocks,interpolation='none',aspect='auto')
+    axblocks.set_yticks(np.arange(nvars))
+    axblocks.set_yticklabels(masterlist)
+    axblocks.set_yticks(np.arange(nvars)+0.5,minor=True)
+    axblocks.set_xticks(np.arange(ncomb)+0.5,minor=True)
+    # plt.draw()  # this is needed because get_window_extent needs a renderer to work
+    # yax = axblocks.get_yaxis()
+    # # find the maximum width of the label on the major ticks
+    # pad = max(T.label.get_window_extent().width for T in yax.majorTicks)
+    # yax.set_tick_params(pad=pad)
+
+    plt.tick_params(
+        axis='both',          # changes apply to both
+        which='major',     # major ticks are affected
+        bottom='off',      # ticks along the bottom edge are off
+        top='off',         # ticks along the top edge are off
+        left='off',
+        right='off',
+        labelbottom='off') # labels along the bottom edge are off 
+    plt.grid(True,which='minor')
+    
+    plt.tight_layout()
+    plt.subplots_adjust(right=0.99,hspace=0.001)
+    fig.set_size_inches(10.5, 5.5)   
+    plt.savefig(filename, transparent='true',dpi=300)
+    #plt.show()
+    plt.close(fig)
+
+# ---
+def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='slope'):
     """
-    Given 2 arrays of same shape, returns array of shape (2,N),
-    where N = X.size = Y.size
+    Create summary plot
     """
-    xy = concatenate((X.ravel(),Y.ravel())) # shape is (N+N)
-    return reshape(xy,(2,X.size))         # shape is (2,N)
+    expid = '.'.join(Input_nnr)
+    ident = mxd.ident
+    nvars = len(Input_nnr)
+    ncomb = len(mxd.comblist)
+    blocks = np.zeros([nvars,ncomb])
+    masterlist = np.array(tuple(Input_nnr))
 
-def _plotKDE(x_values,y_values,x_bins=None,y_bins=None,
-             x_label='AERONET', y_label='MODIS',formatter=None):
-        """
-        Plot Target vs Model using a 2D Kernel Density Estimate.
-        """
+    for c,comb in enumerate(comblist):
+        blocks[:,c] = np.array([v == masterlist for v in comb]).sum(axis=0)
 
-        if x_bins == None: x_bins = arange(-5., 1., 0.1 )
-        if y_bins == None: y_bins = x_bins
+    blocks = np.insert(blocks,0,np.zeros(nvars),axis=1)  #for the original MODIS data
 
-        Nx = len(x_bins)
-        Ny = len(y_bins)
+    newlist = []
+    for var in masterlist:
+        if mxd.sat == 'Terra':
+          newlist.append(dict(MODVARNAMES,**VARNAMES)[var])
+        else:
+          newlist.append(dict(MYDVARNAMES,**VARNAMES)[var])
 
-        print "Evaluating 2D kernel on grid with (Nx,Ny)=(%d,%d) ..."%(Nx,Ny)
-        kernel = stats.kde.gaussian_kde(_cat2(x_values,y_values))
-        X, Y = meshgrid(x_bins,y_bins)   # each has shape (Ny,Nx)
-        Z = kernel(_cat2(X,Y))           # shape is (Ny*Nx)
-        Z = reshape(Z,X.shape)
+    masterlist = np.array(newlist)
 
-        fig = figure()
-        # ax = fig.add_axes([0.1,0.1,0.75,0.75])
-        ax = fig.add_axes([0.1,0.1,0.75,0.75])
-        if formatter != None:
-            ax.xaxis.set_major_formatter(formatter)
-            ax.yaxis.set_major_formatter(formatter)
-        imshow(Z, cmap=cm.gist_earth_r, origin='lower', 
-               extent=(x_bins[0],x_bins[-1],y_bins[0],y_bins[-1]) )
-        plot([x_bins[0],x_bins[-1]],[y_bins[0],y_bins[-1]],'k')
-        xlabel(x_label)
-        ylabel(y_label)
-        grid()
+    nblocks = blocks.sum(axis=0)
+    print "MASTERLIST", masterlist
+
+    #--------------
+    # Default sort by mean SLOPE
+    #------------------
+    sortvalue = mxd.nnr.__dict__[sortname]
+    # for MXD in mxd:
+    #   sortvalue.append(MXD.nnr.__dict__[sortname])
+
+    sortvalue  = np.array(sortvalue).T
+    sortvalue  = np.insert(sortvalue,0,np.array(mxd[0].orig.__dict__[sortname]),axis=1)
+    sortmetric = np.median(sortvalue, axis=0)
+    isort = np.empty(0,dtype='int')
+    vseps = np.empty(0,dtype='int')
+    for i in np.arange(nblocks.min(),nblocks.max()+1):
+        istart  = np.where(nblocks == i)[0].min()
+        vseps   = np.append(vseps,istart+0.5)
+        isort   = np.append(isort,istart + np.argsort(sortmetric[nblocks == i]))
+    blocks = blocks[:,isort]
+
+    for i in np.arange(nvars):
+        blocks[i,blocks[i,:] == 1] = i+1
+
+    blocks = np.ma.masked_array(blocks)
+    blocks.mask = [blocks == 0]
+
+
+    def getplotdata(mxd,varname):
+      vardata = []
+      for MXD in mxd:
+        vardata.append(MXD.nnr.__dict__[varname])
+
+      vardata = np.array(vardata).T
+      vardata = np.insert(vardata,0,np.array(mxd[0].orig.__dict__[varname]),axis=1)
+      vardata = vardata[:,isort]
+      
+      if vardata.shape[0] == 1:
+        vardata = np.append(vardata,vardata,axis=0)
+
+      return vardata
+    boxplot_imshow(getplotdata(mxd,'slope'),
+                   blocks,masterlist,
+                   'Slope',
+                   './Slope.{}.{}.png'.format(expid,ident),
+                   vseps = vseps,
+                   yrange=[0,1])
+
+    boxplot_imshow(getplotdata(mxd,'R'),
+                   blocks,masterlist,
+                   'R',
+                   './R.{}.{}.png'.format(expid,ident),
+                   vseps = vseps,
+                   yrange=[0,1])
+
+    boxplot_imshow(getplotdata(mxd,'intercept'),
+                   blocks,masterlist,
+                   'Intercept',
+                   './Intercept.{}.{}.png'.format(expid,ident),
+                   vseps = vseps,
+                   yrange=yrange)
+
+    boxplot_imshow(getplotdata(mxd,'rmse'),
+                   blocks,masterlist,
+                   'RMSE',
+                   './RMSE.{}.{}.png'.format(expid,ident),
+                   vseps = vseps,
+                   yrange=yrange)
+
+    boxplot_imshow(getplotdata(mxd,'me'),
+                   blocks,masterlist,
+                   'Mean Error',
+                   './ME.{}.{}.png'.format(expid,ident),
+                   vseps = vseps,
+                   yrange=yrange)
+
+    boxplot_imshow(getplotdata(mxd,'mae'),
+                   blocks,masterlist,
+                   'Mean Absolute Error',
+                   './MAE.{}.{}.png'.format(expid,ident),
+                   vseps = vseps,
+                   yrange=yrange)    
+
+    # # vectornet.rmse_o.shape = (vectornet.K,1)
+    # # vectornet.rsd_o.shape = (vectornet.K,1)
+    # boxplot_imshow(100.-100.*vectornet.rmse[:,isort]/vectornet.rmse_o.repeat(vectornet.ncomb,axis=1),
+    #                blocks,masterlist,
+    #                'Reduction in RMSE [%]',
+    #                outdir + '/RMSE_ratio.png',
+    #                vseps = vseps,
+    #                yrange=yrange,
+    #                ylabel=r'$\frac{100*(RMSE_{test} - RMSE_{corected})}{RMSE_{test}}$')
+
+    # boxplot_imshow(100.-100.*vectornet.rsd[:,isort]/vectornet.rsd_o.repeat(vectornet.ncomb,axis=1),
+    #                blocks,masterlist,
+    #                'Reduction in Residual Standard Deviation[%]',
+    #                outdir + '/RSD_ratio.png',
+    #                vseps = vseps,
+    #                yrange=yrange)
 
 #--------------------------------------------------------------------------------------
 
@@ -285,76 +498,164 @@ def _remove1():
 
 #--------------------------------------------------------------------------------------
 
-def _testOcean(filename):
+def train_test(mxd,expid,Input,Target,K,plotting=True,c=None):
 
-    Input_nnc = ['mTau550','mTau470','mTau660','mTau870',
-                 'mTAU550','mTAU470','mTAU660','mTAU870',
-                 'ScatteringAngle','GlintAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'wind' ]
+  ident = mxd.ident
 
-    Input_nnr1 = ['mRef470','mRef550','mRef660', 'mRef870',
-                 'mRef1200','mRef1600','mRef2100',
-                 'ScatteringAngle', 'GlintAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'wind' ]
+  nHidden = len(Input)
+  topology = (len(Input), nHidden, len(Target))
+  
+  print "-"*80
+  print "--> nHidden = ", nHidden
+  print "-->  Inputs = ", Input
+  
+  n = cpu_count()
+  kwargs = {'nproc' : n}
+  if K is None:
+    # Split into training and testing sets
+    # ------------------------------------
+    mxd.split()
 
-    Input_nnr2 = ['mRef470','mRef550','mRef660', 'mRef870',
-                 'mRef1200','mRef1600','mRef2100',
-                 'ScatteringAngle', 'GlintAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'albedo' ]
+    mxd.train(Input=Input,Target=Target,nHidden=nHidden,topology=topology,**kwargs)
+    mxd.savenet(expid+"."+ident+'_Tau.net')
+    TestStats(mxd,c,K)
+    if plotting: make_plots(mxd,expid,ident)
+    
+  else:
+    mxd.kfold(K=K)
+    k = 1
+    for iTrain, iTest in mxd.kf:
+      I = arange(mxd.nobs)
+      iValid = I[mxd.iValid]
+      mxd.iTrain = iValid[iTrain]
+      mxd.iTest  = iValid[iTest]
 
-    Input_min = ['mTau550','mTAU550',
-                 'GlintAngle', 'cloud', 'wind' ]
+      mxd.train(Input=['albedo' if x=='BRF' else x for x in Input],Target=Target,nHidden=nHidden,topology=topology,**kwargs)
+      mxd.savenet(expid+"."+ident+'.k={}_Tau.net'.format(str(k)))
+      TestStats(mxd,c,k)
+      if plotting: make_plots(mxd,expid,ident+'.k={}'.format(str(k)))
+      k = k + 1
+  return mxd
 
-#    Target=['aTau_c',]
-    Target=['aTau550',]
-#    Target = [ 'aTau550','aTau470','aTau660', 'aTau870' ]
+#--------------------------------------------------------------------------------------
 
-    # Read and split dataset in training/testing subsets
-    # --------------------------------------------------
-    mxdo = ABC_Ocean(filename,Wind='merra_wind',
-                     verbose=1,csvVersion=2)
-    mxdo.split()
-    ident = mxdo.ident
+def _testOcean(filename,expid,
+               combinations=False,
+               Input_nnr  = ['mRef470','mRef550','mRef660', 'mRef870',
+                              'mRef1200','mRef1600','mRef2100',
+                              'ScatteringAngle', 'GlintAngle',
+                              'AMF', 'SolarZenith',
+                              'cloud', 'albedo','fdu','fcc','fsu' ],
+               Target = ['aTau550',],
+               K=None):
 
-    expid = 'nnr_002'
-    for Input in (Input_nnr2,):
 
-        nHidden = len(Input)
-        topology = (len(Input), nHidden, len(Target))
-        
-        print "-"*80
-        print "--> nHidden = ", nHidden
-        print "-->  Inputs = ", Input
-        
-        mxdo.train(Input=Input,Target=Target,nHidden=nHidden,topology=topology)
-        out, reg = mxdo.test()
+  #------------------------------------------------------------
+  # Read in data
+  # --------------------------------------------------
+  mxdo = ABC_Ocean(filename,Albedo=albedo,verbose=1)
+    
+  # Balance the dataset before splitting
+  # No aerosol type should make up more that 35% 
+  # of the total number of obs
+  # --------------------------------------
+  mxdo.iValid = mxdo.balance(mxdo.nobs*0.35)
 
-        mxdo.savenet(expid+"."+ident+'_Tau.net')
 
-        # Plot KDE of corrected AOD
-        # -------------------------
-        mxdo.plotKDE(figfile=expid+"."+ident+"_kde-"+Target[0][1:]+"-corrected.png")
+  # Create list of combinations
+  # ---------------------------
+  comblist = []
+  if combinations:
+    for n in arange(len(Input_nnr)):
+      for invars in itertools.combinations(Input_nnr,n+1):
+        #don't do both kinds of abledo together
+        if not (('BRF' in invars) and ('albedo' in invars)):
+          comblist.append(invars)
 
-        # Plot KDE of uncorrected AOD
-        # ---------------------------
-        targets = mxdo.getTargets(mxdo.iValid).squeeze()
-        original = log(mxdo.mTau550[mxdo.iValid]+0.01)
-        _plotKDE(targets,original,y_label='Original MODIS')
-        title("Log("+Target[0][1:]+"+0.01)- "+ident)
-        savefig(expid+"."+ident+"_kde-"+Target[0][1:]+'.png')
+  mxdo.comblist = comblist
 
-        # Scatter diagram for testing
-        # ---------------------------
-        mxdo.plotScat(figfile=expid+"."+ident+"_scat-"+Target[0][1:]+'.png')
+  # Initialize arrays to hold stats
+  # ------------------------------
+  mxdo.nnr  = STATS(comblist,K)
+  mxdo.orig = STATS(comblist,K)
 
-    return mxdo
+  if not combinations:
+    train_test(mxdo,expid,Input_nnr,Target,K)
+  else:
+    for c,Input in enumerate(comblist):
+      train_test(mxdo,'.'.join(Input),Input,Target,K,c=c,plotting=True)
 
+    SummarizeCombinations(mxdo,Input_nnr,yrange=None,sortname='slope')
+  
+  return mxdo
+
+#---------------------------------------------------------------------
+def make_plots(mxd,expid,ident,I=None):  
+  if I is None:
+    I = ones(mxd.lon.shape).astype(bool)
+  # Plot KDE of corrected AOD
+  # -------------------------
+  mxd.plotKDE(I=I,figfile=expid+"."+ident+"_kde-"+mxd.Target[0][1:]+"-corrected.png")
+
+  # Plot KDE of uncorrected AOD
+  # ---------------------------  
+  targets  = mxd.getTargets(I).squeeze()
+  original = log(mxd.mTau550[I]+0.01)
+  _plotKDE(targets,original,y_label='Original MODIS')
+  title("Log("+mxd.Target[0][1:]+"+0.01)- "+ident)
+  savefig(expid+"."+ident+"_kde-"+mxd.Target[0][1:]+'.png')
+
+  # Scatter diagram for testing
+  # ---------------------------
+  mxd.plotScat(I=I,figfile=expid+"."+ident+"_scat-"+mxd.Target[0][1:]+'.png')
+
+
+#---------------------------------------------------------------------
+def TestStats(mxd,C,K):
+    if K is None:
+      k = 0
+    else:
+      k = K
+
+    if C is None:
+      c = 0
+    else:
+      c = C
+
+    # regression[0,2] = slope, intercept, r-value
+    out, reg = mxd.test(iprint=False)
+
+    mxd.nnr.slope[c,k]     = reg[0][0]
+    mxd.nnr.intercept[c,k] = reg[0][1]
+    mxd.nnr.R[c,k]         = reg[0][2]
+
+    targets  = mxd.getTargets(mxd.iTest).squeeze()
+    original = log(mxd.mTau550[mxd.iTest]+0.01)
+
+    mxd.nnr.rmse[c,k] = rmse(out,targets)
+    mxd.nnr.mae[c,k]  = mae(out,targets)
+    mxd.nnr.me[c,k]   = me(out,targets)
+
+    lm = LinearRegression()
+    targets.shape = targets.shape + (1,)
+    lm.fit(targets,original)
+    mxd.orig.slope[c,k]     = lm.coef_[0]
+    mxd.orig.intercept[c,k] = lm.intercept_
+    mxd.orig.R[c,k]         = sqrt(lm.score(targets,original))
+
+    mxd.orig.rmse[c,k] = rmse(original,targets)
+    mxd.orig.mae[c,k]  = mae(original,targets)
+    mxd.orig.me[c,k]   = me(original,targets)
+    
+# ---
+def rmse(predictions, targets):
+    return sqrt(((predictions - targets) ** 2).mean())
+# ---
+def mae(predictions, targets):
+    return np.abs(predictions-targets).mean()
+# ---
+def me(predictions, targets):
+    return (predictions-targets).mean()    
 #---------------------------------------------------------------------
 def _testLand(filename):
 
@@ -391,7 +692,7 @@ def _testLand(filename):
 
     # Read and split dataset in training/testing subsets
     # --------------------------------------------------
-    mxdl = ABC_Land(filename,alb_min=0.25,verbose=1,csvVersion=1)
+    mxdl = ABC_Land(filename,alb_min=0.25,verbose=1)
     mxdl.split()
 
     ident = mxdl.ident
@@ -464,7 +765,7 @@ def _svrLand(filename):
 
     # Read and split dataset in training/testing subsets
     # --------------------------------------------------
-    mxdl = ABC_Land(filename,alb_min=0.25,verbose=1,csvVersion=1)
+    mxdl = ABC_Land(filename,alb_min=0.25,verbose=1)
     mxdl.split()
 
     ident = mxdl.ident
@@ -525,11 +826,19 @@ def doWind():
   
 if __name__ == "__main__":
 
-    modl = _svrLand('SUPER_land.Terra.csv')
+    #modl = _svrLand('SUPER_land.Terra.csv')
 
     # modo = _testOcean('SUPER2_combo.Terra.csv')
-    # mydo = _testOcean('SUPER2_combo.Aqua.csv')
-    # mydl = _testLand('SUPER_land.Aqua.csv')
+    mydo = _testOcean('/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc','AllInputsLUT',
+                      combinations=True,
+                      Input_nnr  = ['mRef470','mRef550','mRef660', 'mRef870',
+                                    'mRef1200','mRef1600','mRef2100',
+                                    'ScatteringAngle', 'GlintAngle',
+                                    'AMF', 'SolarZenith',
+                                    'cloud', 'albedo','BRF','fdu','fcc','fsu' ],                    
+                      Target = ['aTau550',],
+                      K=None)
+    # mydl = _testLand('/nobackup/6/NNR/Training/giant_C6_10km_9April2015.nc')
     # modl = _testLand('SUPER_land.Terra.csv')
 
 def hold():
@@ -548,4 +857,4 @@ def hold():
 
     mxdx = _testLand('SUPER_land.Aqua.csv')
 
-    
+
