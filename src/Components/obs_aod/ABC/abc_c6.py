@@ -751,32 +751,6 @@ def mae(predictions, targets):
 # ---
 def me(predictions, targets):
     return (predictions-targets).mean()    
-
-def doAlbedo():
-    from anet import LAND
-    from grads import GrADS
-    ga = GrADS(Echo=False,Window=False)
-    ga('open albedo_clim.ctl')
-
-    modl = LAND('SUPER_land.Terra.csv')
-    modl.addVar(ga,'modl_albedo.npz',expr='albedo',clmYear=2000)
-        
-    mydl = LAND('SUPER_land.Aqua.csv')
-    mydl.addVar(ga,'mydl_albedo.npz',expr='albedo',clmYear=2000)
-        
-def doWind():
-    from anet import OCEAN
-    from grads import GrADS
-    ga = GrADS(Echo=False,Window=False)
-
-    ga('xdfopen merra_slv-hourly.ddf')
-
-    modo = OCEAN('SUPER2_combo.Terra.csv',)
-    modo.addVar(ga,'modo2_merra_wind.npz',expr='mag(u10m,v10m)',vname='wind')
-
-#    mydo = OCEAN('SUPER2_combo.Aqua.csv')
-#    mydo.addVar(ga,'mydo2_merra_wind.npz',expr='mag(u10m,v10m)',vname='wind')
-
         
 #------------------------------------------------------------------
   
