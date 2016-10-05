@@ -608,78 +608,6 @@ def _testOcean(filename,expid,
   return mxdo
 
 #---------------------------------------------------------------------
-def make_plots(mxd,expid,ident,I=None):  
-  outdir = mxd.outdir
-  if I is None:
-    I = ones(mxd.lon.shape).astype(bool)
-  # Plot KDE of corrected AOD
-  # -------------------------
-  # mxd.plotKDE(I=I,figfile=expid+"."+ident+"_kde-"+mxd.Target[0][1:]+"-corrected.png")
-  targets  = mxd.getTargets(I).squeeze()
-  results = mxd.eval(I).squeeze()
-  _plotKDE(targets,results,y_label='NNR')
-  title("Log("+mxd.Target[0][1:]+"+0.01)- "+ident)
-  savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[0][1:]+'-corrected.png')
-
-  # Plot KDE of uncorrected AOD
-  # ---------------------------   
-  original = log(mxd.mTau550[I]+0.01)
-  _plotKDE(targets,original,y_label='Original MODIS')
-  title("Log("+mxd.Target[0][1:]+"+0.01)- "+ident)
-  savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[0][1:]+'.png')
-
-  # Scatter diagram for testing
-  # ---------------------------
-  mxd.plotScat(I=I,figfile=outdir+"/"+expid+"."+ident+"_scat-"+mxd.Target[0][1:]+'.png')
-
-
-#---------------------------------------------------------------------
-def TestStats(mxd,K,C):
-    if K is None:
-      k = 0
-    else:
-      k = K
-
-    if C is None:
-      c = 0
-    else:
-      c = C
-
-    # regression[0,2] = slope, intercept, r-value
-    out, reg = mxd.test(iprint=False)
-
-    mxd.nnr.slope[k,c]     = reg[0][0]
-    mxd.nnr.intercept[k,c] = reg[0][1]
-    mxd.nnr.R[k,c]         = reg[0][2]
-
-    targets  = mxd.getTargets(mxd.iTest).squeeze()
-    original = log(mxd.mTau550[mxd.iTest]+0.01)
-
-    mxd.nnr.rmse[k,c] = rmse(out,targets)
-    mxd.nnr.mae[k,c]  = mae(out,targets)
-    mxd.nnr.me[k,c]   = me(out,targets)
-
-    lm = LinearRegression()
-    targets.shape = targets.shape + (1,)
-    lm.fit(targets,original)
-    mxd.orig.slope[k,c]     = lm.coef_[0]
-    mxd.orig.intercept[k,c] = lm.intercept_
-    mxd.orig.R[k,c]         = sqrt(lm.score(targets,original))
-
-    mxd.orig.rmse[k,c] = rmse(original,targets)
-    mxd.orig.mae[k,c]  = mae(original,targets)
-    mxd.orig.me[k,c]   = me(original,targets)
-    
-# ---
-def rmse(predictions, targets):
-    return sqrt(((predictions - targets) ** 2).mean())
-# ---
-def mae(predictions, targets):
-    return np.abs(predictions-targets).mean()
-# ---
-def me(predictions, targets):
-    return (predictions-targets).mean()    
-#---------------------------------------------------------------------
 def _testLand(filename):
 
     Input_nnc = ['mTau550','mTau470','mTau660', 'mTau2100',
@@ -751,6 +679,78 @@ def _testLand(filename):
 
     return mxdl
 
+#---------------------------------------------------------------------
+def make_plots(mxd,expid,ident,I=None):  
+  outdir = mxd.outdir
+  if I is None:
+    I = ones(mxd.lon.shape).astype(bool)
+  # Plot KDE of corrected AOD
+  # -------------------------
+  # mxd.plotKDE(I=I,figfile=expid+"."+ident+"_kde-"+mxd.Target[0][1:]+"-corrected.png")
+  targets  = mxd.getTargets(I).squeeze()
+  results = mxd.eval(I).squeeze()
+  _plotKDE(targets,results,y_label='NNR')
+  title("Log("+mxd.Target[0][1:]+"+0.01)- "+ident)
+  savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[0][1:]+'-corrected.png')
+
+  # Plot KDE of uncorrected AOD
+  # ---------------------------   
+  original = log(mxd.mTau550[I]+0.01)
+  _plotKDE(targets,original,y_label='Original MODIS')
+  title("Log("+mxd.Target[0][1:]+"+0.01)- "+ident)
+  savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[0][1:]+'.png')
+
+  # Scatter diagram for testing
+  # ---------------------------
+  mxd.plotScat(I=I,figfile=outdir+"/"+expid+"."+ident+"_scat-"+mxd.Target[0][1:]+'.png')
+
+
+#---------------------------------------------------------------------
+def TestStats(mxd,K,C):
+    if K is None:
+      k = 0
+    else:
+      k = K
+
+    if C is None:
+      c = 0
+    else:
+      c = C
+
+    # regression[0,2] = slope, intercept, r-value
+    out, reg = mxd.test(iprint=False)
+
+    mxd.nnr.slope[k,c]     = reg[0][0]
+    mxd.nnr.intercept[k,c] = reg[0][1]
+    mxd.nnr.R[k,c]         = reg[0][2]
+
+    targets  = mxd.getTargets(mxd.iTest).squeeze()
+    original = log(mxd.mTau550[mxd.iTest]+0.01)
+
+    mxd.nnr.rmse[k,c] = rmse(out,targets)
+    mxd.nnr.mae[k,c]  = mae(out,targets)
+    mxd.nnr.me[k,c]   = me(out,targets)
+
+    lm = LinearRegression()
+    targets.shape = targets.shape + (1,)
+    lm.fit(targets,original)
+    mxd.orig.slope[k,c]     = lm.coef_[0]
+    mxd.orig.intercept[k,c] = lm.intercept_
+    mxd.orig.R[k,c]         = sqrt(lm.score(targets,original))
+
+    mxd.orig.rmse[k,c] = rmse(original,targets)
+    mxd.orig.mae[k,c]  = mae(original,targets)
+    mxd.orig.me[k,c]   = me(original,targets)
+    
+# ---
+def rmse(predictions, targets):
+    return sqrt(((predictions - targets) ** 2).mean())
+# ---
+def mae(predictions, targets):
+    return np.abs(predictions-targets).mean()
+# ---
+def me(predictions, targets):
+    return (predictions-targets).mean()    
 
 def doAlbedo():
     from anet import LAND
