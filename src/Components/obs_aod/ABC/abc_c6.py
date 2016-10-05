@@ -464,40 +464,6 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='slope'):
 
 #--------------------------------------------------------------------------------------
 
-def _remove1():
-
-    Input_all = ['mTau550','mTau470','mTau660','mTau870',
-                 'mTAU550','mTAU470','mTAU660','mTAU870',
-                 'ScatteringAngle','GlintAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'ustar']
-
-    Target=['aTau550',]
-
-    mydo = ABC_Ocean('SUPER_ocean.Aqua.csv',ustar=False,verbose=1)
-    mydo.split()
-
-    for i in [-1,]+range(len(Input_all)):
-
-        print "------------------------------------------------------------------------------"
-        Input = Input_all[:] # make a copy of it
-        if i<0:
-            print "--> Excluding: (nothing)"
-        else:
-            print "--> Excluding: ", Input_all[i]
-            del Input[i]         # delete ith item
-
-        nHidden = len(Input)
-
-        print "--> nHidden = ", nHidden
-        print "-->  Inputs = ", Input
-        
-        mydo.train(Input=Input,Target=Target,nHidden=nHidden)
-        out, reg = mydo.test()
-
-#--------------------------------------------------------------------------------------
-
 def train_test(mxd,expid,Input,Target,K,plotting=True,c=None):
 
   ident  = mxd.ident
