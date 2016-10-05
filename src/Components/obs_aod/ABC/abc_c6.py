@@ -756,9 +756,7 @@ def me(predictions, targets):
   
 if __name__ == "__main__":
 
-    #modl = _svrLand('SUPER_land.Terra.csv')
 
-    # modo = _testOcean('SUPER2_combo.Terra.csv')
     modo = _testOcean('/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc','SA_GA_870_2100',
                       nHidden=None,
                       nHLayers=1,
@@ -773,22 +771,5 @@ if __name__ == "__main__":
                       Target = ['aTau550',],
                       K=3)
     # mydl = _testLand('/nobackup/6/NNR/Training/giant_C6_10km_9April2015.nc')
-    # modl = _testLand('SUPER_land.Terra.csv')
-
-def hold():
-
-    doWind()
-    doAlbedo()
-
-    mxdx = _testOcean('SUPER2_combo.Terra.csv')
-
-    mydo = _testOcean('SUPER2_combo.Aqua.csv')
-        
-    mxdl = _testLand('SUPER_land.Aqua.csv')
-
-#    mxdx = _testOcean('SUPER2_combo.Aqua.csv')
-    mxdx = _testOcean('SUPER2_combo.Terra.csv')
-
-    mxdx = _testLand('SUPER_land.Aqua.csv')
 
 
