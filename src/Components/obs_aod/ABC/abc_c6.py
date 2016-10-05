@@ -87,14 +87,13 @@ class ABC_Ocean (OCEAN,NN):
         self.Target  = Target
         self.verbose = verbose
         self.laod    = laod
-        #self.Albedo  = 'CoxMunk'
 
         OCEAN.__init__(self,fname) # initialize superclass
         if self.sat == 'Aqua':
             fnameRoot = 'myd_' + fname.split('/')[-1].split('.')[0]
         elif self.sat == 'Terra':
             fnameRoot = 'mod_' + fname.split('/')[-1].split('.')[0]
-            
+
         # Read in wind
         # ------------------------
         self.wind = load(fnameRoot + "_MERRA2.npz")['wind']
@@ -204,7 +203,7 @@ class ABC_Land (LAND,NN):
         LAND.__init__(self,fname)  # initialize superclass
 
 
-        # Read in wind if desired
+        # Read in desired albedo
         # ------------------------
         self.albedo = load(self.ident + "_" + Albedo + ".npz")['albedo']
 
@@ -225,8 +224,6 @@ class ABC_Land (LAND,NN):
                       (self.ScatteringAngle<170.) & \
                       (self.albedo>0)             & \
                       (self.albedo<alb_min)
-
-        print self.qa[self.iValid].shape
         
         # Outlier removal based on log-transformed AOD
         # --------------------------------------------
@@ -251,12 +248,7 @@ class ABC_Land (LAND,NN):
         self.SolarAzimuth    = cos(self.SolarAzimuth*pi/180.0)    
         self.SolarZenith     = cos(self.SolarZenith*pi/180.0)     
         self.GlintAngle      = cos(self.GlintAngle*pi/180.0)      
-
-    def getAlbedo(self,npz_file):
-        from grads import GrADS
-        ga = GrADS(Echo=False,Window=False)
-        ga('open albedo_clim.ctl')
-        self.addVar(ga,npz_file,expr='albedo',clmYear=2000)
+        self.AMF             = (1/self.SolarZenith) + (1/self.SensorZenith)
 
 #---------------------------------------------------------------------
 class STATS(object):
