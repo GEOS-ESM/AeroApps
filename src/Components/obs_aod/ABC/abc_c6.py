@@ -507,9 +507,8 @@ def train_test(mxd,expid,Input,Target,K,plotting=True,c=None):
   ident  = mxd.ident
   outdir = mxd.outdir
 
-  nHidden = len(Input)
-  nHidden = 20
-  topology = (len(Input), nHidden, nHidden, len(Target))
+  nHidden  = mxd.nHidden
+  topology = mxd.topology
   
   print "-"*80
   print "--> nHidden = ", nHidden
@@ -546,6 +545,8 @@ def train_test(mxd,expid,Input,Target,K,plotting=True,c=None):
 #--------------------------------------------------------------------------------------
 
 def _testOcean(filename,expid,
+               nHidden=None,
+               nHLayers=1,
                combinations=False,
                Input_nnr  = ['mRef470','mRef550','mRef660', 'mRef870',
                               'mRef1200','mRef1600','mRef2100',
@@ -618,9 +619,23 @@ def _testOcean(filename,expid,
   mxdo.orig = STATS(K,comblist)
 
   if not combinations:
+    if nHidden is None:
+      mxdo.nHidden  = len(input_nnr)
+    else:
+      mxdo.nHidden = nHidden
+
+    mxdo.topology = (len(input_nnr),) + (mxdo.nHidden,)*nHLayers + (len(Target),)
+
     train_test(mxdo,expid,input_nnr,Target,K)
   else:
     for c,Input in enumerate(comblist):
+      if nHidden is None:
+        mxdo.nHidden  = len(Input)
+      else:
+        mxdo.nHidden = nHidden
+
+      mxdo.topology = (len(Input),) + (mxdo.nHidden,)*nHLayers + (len(Target),)
+
       train_test(mxdo,'.'.join(Input),Input,Target,K,c=c,plotting=False)
 
     if Input_const is not None:
@@ -808,7 +823,9 @@ if __name__ == "__main__":
     #modl = _svrLand('SUPER_land.Terra.csv')
 
     # modo = _testOcean('SUPER2_combo.Terra.csv')
-    modo = _testOcean('/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc','SA_GA_870_2100_nH20_2L',
+    modo = _testOcean('/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc','SA_GA_870_2100',
+                      nHidden=None,
+                      nHLayers=1,
                       combinations=True,
                       Input_nnr  =  ['mRef2100'],
                                     #['mRef470','mRef550','mRef660', 'mRef870',
