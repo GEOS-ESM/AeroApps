@@ -40,11 +40,15 @@ MYDVARNAMES = {'mRef470': 'MYD04 470 nm Reflectance',
 
 VARNAMES    = {'cloud': 'MOD04 Cloud Fraction',
                'ScatteringAngle': 'Scattering Angle',
-               'Albedo': 'Cox-Munk White Sky Albedo',
+               'GlintAngle': 'Glint Angle',
+               'AMF': 'Air Mass Factor',
+               'SolarZenith': 'Solar Zenith Angle',
+               'albedo': 'Cox-Munk White Sky Albedo',
                'BRF': 'Cox-Munk Bidirectional Surface Reflectance',
                'fdu': 'MERRA2 Fraction Dust Aerosol',
                'fcc': 'MERRA2 Fraction Carbonaceous Aerosol',
-               'fsu': 'MERRA2 Fraction Sulfate Aerosol'}
+               'fsu': 'MERRA2 Fraction Sulfate Aerosol',
+               'year': 'Year'}
 #----------------------------------------------------------------------------    
 
 class ABC_Ocean (OCEAN,NN):
@@ -151,6 +155,10 @@ class ABC_Ocean (OCEAN,NN):
         self.GlintAngle      = cos(self.GlintAngle*pi/180.0)      
         self.AMF             = (1/self.SolarZenith) + (1/self.SensorZenith)
 
+        # Year
+        #-------
+        self.year = np.array([t.year for t in self.tyme])
+
 #----------------------------------------------------------------------------    
 
 class ABC_Land (LAND,NN):
@@ -248,19 +256,19 @@ class ABC_Land (LAND,NN):
 #---------------------------------------------------------------------
 class STATS(object):
 
-  def __init__ (self,comblist,K):
+  def __init__ (self,K,comblist):
     c = max([len(comblist),1])
     if K is None:
       k = 1
     else:
       k = K
 
-    self.slope     = np.ones(c,k)*-999.
-    self.intercept = np.ones(c,k)*-999.
-    self.R         = np.ones(c,k)*-999.
-    self.rmse      = np.ones(c,k)*-999.
-    self.mae       = np.ones(c,k)*-999.
-    self.me        = np.ones(c,k)*-999.
+    self.slope     = np.ones([k,c])*-999.
+    self.intercept = np.ones([k,c])*-999.
+    self.R         = np.ones([k,c])*-999.
+    self.rmse      = np.ones([k,c])*-999.
+    self.mae       = np.ones([k,c])*-999.
+    self.me        = np.ones([k,c])*-999.
 #---------------------------------------------------------------------
 
 def boxplot_imshow(data,blocks,masterlist,title,filename,
@@ -341,14 +349,28 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='slope'):
     """
     Create summary plot
     """
-    expid = '.'.join(Input_nnr)
-    ident = mxd.ident
-    nvars = len(Input_nnr)
-    ncomb = len(mxd.comblist)
-    blocks = np.zeros([nvars,ncomb])
-    masterlist = np.array(tuple(Input_nnr))
+    outdir = mxd.outdir
 
-    for c,comb in enumerate(comblist):
+    # Flatten Input_nnr into one list
+    # -------------------------------
+    Input = ()
+    for i in Input_nnr:
+      if type(i) is list:
+        Input = Input + tuple(i)
+      else:
+        Input = Input + (i,)
+
+    input_nnr = list(Input)
+
+    expid      = '.'.join(input_nnr)
+    ident      = mxd.ident
+    nvars      = len(input_nnr)
+    ngroups    = len(Input_nnr)
+    ncomb      = len(mxd.comblist)
+    blocks     = np.zeros([nvars,ncomb])
+    masterlist = np.array(tuple(input_nnr))
+
+    for c,comb in enumerate(mxd.comblist):
         blocks[:,c] = np.array([v == masterlist for v in comb]).sum(axis=0)
 
     blocks = np.insert(blocks,0,np.zeros(nvars),axis=1)  #for the original MODIS data
@@ -362,22 +384,22 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='slope'):
 
     masterlist = np.array(newlist)
 
-    nblocks = blocks.sum(axis=0)
+    #nblocks = blocks.sum(axis=0)
+    nblocks = [len(group) for group in mxd.combgroups]
+    nblocks.insert(0,0)
+    print 'nblocks',nblocks
     print "MASTERLIST", masterlist
 
     #--------------
     # Default sort by mean SLOPE
     #------------------
     sortvalue = mxd.nnr.__dict__[sortname]
-    # for MXD in mxd:
-    #   sortvalue.append(MXD.nnr.__dict__[sortname])
-
-    sortvalue  = np.array(sortvalue).T
-    sortvalue  = np.insert(sortvalue,0,np.array(mxd[0].orig.__dict__[sortname]),axis=1)
+    sortvalue  = np.insert(sortvalue,0,np.array(mxd.orig.__dict__[sortname][:,0]),axis=1)
     sortmetric = np.median(sortvalue, axis=0)
     isort = np.empty(0,dtype='int')
     vseps = np.empty(0,dtype='int')
-    for i in np.arange(nblocks.min(),nblocks.max()+1):
+    for i in np.sort(np.unique(nblocks)):
+        print 'i',i
         istart  = np.where(nblocks == i)[0].min()
         vseps   = np.append(vseps,istart+0.5)
         isort   = np.append(isort,istart + np.argsort(sortmetric[nblocks == i]))
@@ -391,76 +413,57 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='slope'):
 
 
     def getplotdata(mxd,varname):
-      vardata = []
-      for MXD in mxd:
-        vardata.append(MXD.nnr.__dict__[varname])
-
-      vardata = np.array(vardata).T
-      vardata = np.insert(vardata,0,np.array(mxd[0].orig.__dict__[varname]),axis=1)
+      vardata = mxd.nnr.__dict__[varname]
+      vardata = np.insert(vardata,0,np.array(mxd.orig.__dict__[varname][:,0]),axis=1)
       vardata = vardata[:,isort]
       
       if vardata.shape[0] == 1:
         vardata = np.append(vardata,vardata,axis=0)
 
       return vardata
+
     boxplot_imshow(getplotdata(mxd,'slope'),
                    blocks,masterlist,
                    'Slope',
-                   './Slope.{}.{}.png'.format(expid,ident),
+                   '{}/Slope.{}.{}.png'.format(outdir,expid,ident),
                    vseps = vseps,
                    yrange=[0,1])
 
     boxplot_imshow(getplotdata(mxd,'R'),
                    blocks,masterlist,
                    'R',
-                   './R.{}.{}.png'.format(expid,ident),
+                   '{}/R.{}.{}.png'.format(outdir,expid,ident),
                    vseps = vseps,
                    yrange=[0,1])
 
     boxplot_imshow(getplotdata(mxd,'intercept'),
                    blocks,masterlist,
                    'Intercept',
-                   './Intercept.{}.{}.png'.format(expid,ident),
+                   '{}/Intercept.{}.{}.png'.format(outdir,expid,ident),
                    vseps = vseps,
                    yrange=yrange)
 
     boxplot_imshow(getplotdata(mxd,'rmse'),
                    blocks,masterlist,
                    'RMSE',
-                   './RMSE.{}.{}.png'.format(expid,ident),
+                   '{}/RMSE.{}.{}.png'.format(outdir,expid,ident),
                    vseps = vseps,
                    yrange=yrange)
 
     boxplot_imshow(getplotdata(mxd,'me'),
                    blocks,masterlist,
-                   'Mean Error',
-                   './ME.{}.{}.png'.format(expid,ident),
+                   'Mean Bias',
+                   '{}/ME.{}.{}.png'.format(outdir,expid,ident),
                    vseps = vseps,
                    yrange=yrange)
 
     boxplot_imshow(getplotdata(mxd,'mae'),
                    blocks,masterlist,
                    'Mean Absolute Error',
-                   './MAE.{}.{}.png'.format(expid,ident),
+                   '{}/MAE.{}.{}.png'.format(outdir,expid,ident),
                    vseps = vseps,
                    yrange=yrange)    
 
-    # # vectornet.rmse_o.shape = (vectornet.K,1)
-    # # vectornet.rsd_o.shape = (vectornet.K,1)
-    # boxplot_imshow(100.-100.*vectornet.rmse[:,isort]/vectornet.rmse_o.repeat(vectornet.ncomb,axis=1),
-    #                blocks,masterlist,
-    #                'Reduction in RMSE [%]',
-    #                outdir + '/RMSE_ratio.png',
-    #                vseps = vseps,
-    #                yrange=yrange,
-    #                ylabel=r'$\frac{100*(RMSE_{test} - RMSE_{corected})}{RMSE_{test}}$')
-
-    # boxplot_imshow(100.-100.*vectornet.rsd[:,isort]/vectornet.rsd_o.repeat(vectornet.ncomb,axis=1),
-    #                blocks,masterlist,
-    #                'Reduction in Residual Standard Deviation[%]',
-    #                outdir + '/RSD_ratio.png',
-    #                vseps = vseps,
-    #                yrange=yrange)
 
 #--------------------------------------------------------------------------------------
 
@@ -500,10 +503,12 @@ def _remove1():
 
 def train_test(mxd,expid,Input,Target,K,plotting=True,c=None):
 
-  ident = mxd.ident
+  ident  = mxd.ident
+  outdir = mxd.outdir
 
   nHidden = len(Input)
-  topology = (len(Input), nHidden, len(Target))
+  nHidden = 20
+  topology = (len(Input), nHidden, nHidden, len(Target))
   
   print "-"*80
   print "--> nHidden = ", nHidden
@@ -517,8 +522,8 @@ def train_test(mxd,expid,Input,Target,K,plotting=True,c=None):
     mxd.split()
 
     mxd.train(Input=Input,Target=Target,nHidden=nHidden,topology=topology,**kwargs)
-    mxd.savenet(expid+"."+ident+'_Tau.net')
-    TestStats(mxd,c,K)
+    mxd.savenet(outdir+"/"+expid+"."+ident+'_Tau.net')
+    TestStats(mxd,K,c)
     if plotting: make_plots(mxd,expid,ident)
     
   else:
@@ -531,8 +536,8 @@ def train_test(mxd,expid,Input,Target,K,plotting=True,c=None):
       mxd.iTest  = iValid[iTest]
 
       mxd.train(Input=['albedo' if x=='BRF' else x for x in Input],Target=Target,nHidden=nHidden,topology=topology,**kwargs)
-      mxd.savenet(expid+"."+ident+'.k={}_Tau.net'.format(str(k)))
-      TestStats(mxd,c,k)
+      mxd.savenet(outdir+"/"+expid+"."+ident+'.k={}_Tau.net'.format(str(k)))
+      TestStats(mxd,k-1,c)
       if plotting: make_plots(mxd,expid,ident+'.k={}'.format(str(k)))
       k = k + 1
   return mxd
@@ -546,6 +551,7 @@ def _testOcean(filename,expid,
                               'ScatteringAngle', 'GlintAngle',
                               'AMF', 'SolarZenith',
                               'cloud', 'albedo','fdu','fcc','fsu' ],
+               Input_const = None,
                Target = ['aTau550',],
                K=None):
 
@@ -553,7 +559,10 @@ def _testOcean(filename,expid,
   #------------------------------------------------------------
   # Read in data
   # --------------------------------------------------
-  mxdo = ABC_Ocean(filename,Albedo=albedo,verbose=1)
+  mxdo = ABC_Ocean(filename,verbose=1,outliers=3)
+  mxdo.outdir = "./{}/".format(expid)
+  if not os.path.exists(mxdo.outdir):
+    os.makedirs(mxdo.outdir)
     
   # Balance the dataset before splitting
   # No aerosol type should make up more that 35% 
@@ -565,53 +574,89 @@ def _testOcean(filename,expid,
   # Create list of combinations
   # ---------------------------
   comblist = []
+  combgroups = []
   if combinations:
     for n in arange(len(Input_nnr)):
-      for invars in itertools.combinations(Input_nnr,n+1):
+      for invars in itertools.combinations(Input_nnr,n+1):        
+        b = ()
+        for c in invars:
+          if type(c) is list:
+            b = b + tuple(c)
+          else:
+            b = b + (c,)
         #don't do both kinds of abledo together
-        if not (('BRF' in invars) and ('albedo' in invars)):
-          comblist.append(invars)
+        if not (('BRF' in b) and ('albedo' in b)):
+          if Input_const is not None:
+            comblist.append(tuple(Input_const)+b)
+            combgroups.append((Input_const,)+invars)
+          else:
+            comblist.append(b)
+            combgroups.append(invars)
+
+  if Input_const is not None:
+    comblist.insert(0,tuple(Input_const))
+    combgroups.insert(0,(Input_const,))
 
   mxdo.comblist = comblist
+  mxdo.combgroups = combgroups
+
+  # Flatten Input_nnr into one list
+  # -------------------------------
+  Input = ()
+  for i in Input_nnr:
+    if type(i) is list:
+      Input = Input + tuple(i)
+    else:
+      Input = Input + (i,)
+
+  input_nnr = list(Input)
 
   # Initialize arrays to hold stats
   # ------------------------------
-  mxdo.nnr  = STATS(comblist,K)
-  mxdo.orig = STATS(comblist,K)
+  mxdo.nnr  = STATS(K,comblist)
+  mxdo.orig = STATS(K,comblist)
 
   if not combinations:
-    train_test(mxdo,expid,Input_nnr,Target,K)
+    train_test(mxdo,expid,input_nnr,Target,K)
   else:
     for c,Input in enumerate(comblist):
-      train_test(mxdo,'.'.join(Input),Input,Target,K,c=c,plotting=True)
+      train_test(mxdo,'.'.join(Input),Input,Target,K,c=c,plotting=False)
 
-    SummarizeCombinations(mxdo,Input_nnr,yrange=None,sortname='slope')
+    if Input_const is not None:
+      SummarizeCombinations(mxdo,list((Input_const,) + tuple(Input_nnr)),yrange=None,sortname='slope')
+    else:
+      SummarizeCombinations(mxdo,Input_nnr,yrange=None,sortname='slope')
   
   return mxdo
 
 #---------------------------------------------------------------------
 def make_plots(mxd,expid,ident,I=None):  
+  outdir = mxd.outdir
   if I is None:
     I = ones(mxd.lon.shape).astype(bool)
   # Plot KDE of corrected AOD
   # -------------------------
-  mxd.plotKDE(I=I,figfile=expid+"."+ident+"_kde-"+mxd.Target[0][1:]+"-corrected.png")
+  # mxd.plotKDE(I=I,figfile=expid+"."+ident+"_kde-"+mxd.Target[0][1:]+"-corrected.png")
+  targets  = mxd.getTargets(I).squeeze()
+  results = mxd.eval(I).squeeze()
+  _plotKDE(targets,results,y_label='NNR')
+  title("Log("+mxd.Target[0][1:]+"+0.01)- "+ident)
+  savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[0][1:]+'-corrected.png')
 
   # Plot KDE of uncorrected AOD
-  # ---------------------------  
-  targets  = mxd.getTargets(I).squeeze()
+  # ---------------------------   
   original = log(mxd.mTau550[I]+0.01)
   _plotKDE(targets,original,y_label='Original MODIS')
   title("Log("+mxd.Target[0][1:]+"+0.01)- "+ident)
-  savefig(expid+"."+ident+"_kde-"+mxd.Target[0][1:]+'.png')
+  savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[0][1:]+'.png')
 
   # Scatter diagram for testing
   # ---------------------------
-  mxd.plotScat(I=I,figfile=expid+"."+ident+"_scat-"+mxd.Target[0][1:]+'.png')
+  mxd.plotScat(I=I,figfile=outdir+"/"+expid+"."+ident+"_scat-"+mxd.Target[0][1:]+'.png')
 
 
 #---------------------------------------------------------------------
-def TestStats(mxd,C,K):
+def TestStats(mxd,K,C):
     if K is None:
       k = 0
     else:
@@ -625,27 +670,27 @@ def TestStats(mxd,C,K):
     # regression[0,2] = slope, intercept, r-value
     out, reg = mxd.test(iprint=False)
 
-    mxd.nnr.slope[c,k]     = reg[0][0]
-    mxd.nnr.intercept[c,k] = reg[0][1]
-    mxd.nnr.R[c,k]         = reg[0][2]
+    mxd.nnr.slope[k,c]     = reg[0][0]
+    mxd.nnr.intercept[k,c] = reg[0][1]
+    mxd.nnr.R[k,c]         = reg[0][2]
 
     targets  = mxd.getTargets(mxd.iTest).squeeze()
     original = log(mxd.mTau550[mxd.iTest]+0.01)
 
-    mxd.nnr.rmse[c,k] = rmse(out,targets)
-    mxd.nnr.mae[c,k]  = mae(out,targets)
-    mxd.nnr.me[c,k]   = me(out,targets)
+    mxd.nnr.rmse[k,c] = rmse(out,targets)
+    mxd.nnr.mae[k,c]  = mae(out,targets)
+    mxd.nnr.me[k,c]   = me(out,targets)
 
     lm = LinearRegression()
     targets.shape = targets.shape + (1,)
     lm.fit(targets,original)
-    mxd.orig.slope[c,k]     = lm.coef_[0]
-    mxd.orig.intercept[c,k] = lm.intercept_
-    mxd.orig.R[c,k]         = sqrt(lm.score(targets,original))
+    mxd.orig.slope[k,c]     = lm.coef_[0]
+    mxd.orig.intercept[k,c] = lm.intercept_
+    mxd.orig.R[k,c]         = sqrt(lm.score(targets,original))
 
-    mxd.orig.rmse[c,k] = rmse(original,targets)
-    mxd.orig.mae[c,k]  = mae(original,targets)
-    mxd.orig.me[c,k]   = me(original,targets)
+    mxd.orig.rmse[k,c] = rmse(original,targets)
+    mxd.orig.mae[k,c]  = mae(original,targets)
+    mxd.orig.me[k,c]   = me(original,targets)
     
 # ---
 def rmse(predictions, targets):
@@ -829,15 +874,17 @@ if __name__ == "__main__":
     #modl = _svrLand('SUPER_land.Terra.csv')
 
     # modo = _testOcean('SUPER2_combo.Terra.csv')
-    mydo = _testOcean('/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc','AllInputsLUT',
+    modo = _testOcean('/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc','SA_GA_870_2100_nH20_2L',
                       combinations=True,
-                      Input_nnr  = ['mRef470','mRef550','mRef660', 'mRef870',
-                                    'mRef1200','mRef1600','mRef2100',
-                                    'ScatteringAngle', 'GlintAngle',
-                                    'AMF', 'SolarZenith',
-                                    'cloud', 'albedo','BRF','fdu','fcc','fsu' ],                    
+                      Input_nnr  =  ['mRef2100'],
+                                    #['mRef470','mRef550','mRef660', 'mRef870',
+                                    #'mRef1200','mRef1600','mRef2100'],
+                                    #['ScatteringAngle', 'GlintAngle',
+                                    #'AMF', 'SolarZenith'],
+                                    #'cloud', 'albedo','BRF',['fdu','fcc','fsu'] ],  
+                      Input_const = ['ScatteringAngle', 'GlintAngle', 'mRef870'],                  
                       Target = ['aTau550',],
-                      K=None)
+                      K=3)
     # mydl = _testLand('/nobackup/6/NNR/Training/giant_C6_10km_9April2015.nc')
     # modl = _testLand('SUPER_land.Terra.csv')
 
