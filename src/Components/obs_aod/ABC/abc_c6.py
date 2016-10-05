@@ -57,6 +57,7 @@ class ABC_Ocean (OCEAN,NN):
                   coxmunk_lut='/nobackup/NNR/Misc/coxmunk_lut.npz',
                   outliers=3., laod=True, verbose=0,
                   cloud_thresh=0.70,
+                  glint_thresh=40.0,
                   Input = ['mTAU550','mTAU470','mTAU660','mTAU870',
                            'ScatteringAngle','GlintAngle',
                            'SolarAzimuth','SolarZenith',
@@ -89,27 +90,22 @@ class ABC_Ocean (OCEAN,NN):
         #self.Albedo  = 'CoxMunk'
 
         OCEAN.__init__(self,fname) # initialize superclass
-        if self.sat == 'Aqua':
-            fnameRoot = 'myd_' + fname.split('/')[-1].split('.')[0]
-        elif self.sat == 'Terra':
-            fnameRoot = 'mod_' + fname.split('/')[-1].split('.')[0]
-
 
         # Read in wind
         # ------------------------
-        self.wind = load(fnameRoot + "_MERRA2.npz")['wind']
+        self.wind = load(self.ident + "_MERRA2.npz")['wind']
         self.Wind = '' #need this for backwards compatibility
 
         # Define wind speed dependent ocean albedo
         # ----------------------------------------
         self.getCoxMunk(coxmunk_lut)
-        self.BRF = squeeze(load(fnameRoot+'_CoxMunkAlbedo.npz')["albedo"])
+        self.BRF = squeeze(load(self.ident+'_CoxMunkAlbedo.npz')["albedo"])
 
         # Read in Aerosol Fractional Composition
         # --------------------------------------
         names = ('fdu','fss','fcc','fsu')
         for name in names:
-            self.__dict__[name] = load(fnameRoot + "_MERRA2.npz")[name]
+            self.__dict__[name] = load(self.ident + "_MERRA2.npz")[name]
 
 
         # Q/C
@@ -124,7 +120,12 @@ class ABC_Ocean (OCEAN,NN):
                       (self.mRef1200 > 0.0) & (self.mRef1600 > 0.0) &  \
                       (self.mRef2100 > 0.0) &  \
                       (self.cloud <cloud_thresh) & (self.cloud > 0) &\
-                      (self.wind>=0.0) &  (self.GlintAngle != MISSING )
+                      (self.GlintAngle != MISSING ) & (self.GlintAngle > glint_thresh) &\
+                      (self.wind>=0.0) 
+
+        # glint_thresh > 40 is a bit redundant b/c MOD04 should already give these a qa==0 or
+        # does not retrieve.  However, there are a few cases (~200) where this does not happen.
+        # the GlingAngle is very close to 40, greater than 38.  Not sure why these get through.
 
 
         # Outlier removal based on log-transformed AOD
@@ -559,7 +560,7 @@ def _testOcean(filename,expid,
   #------------------------------------------------------------
   # Read in data
   # --------------------------------------------------
-  mxdo = ABC_Ocean(filename,verbose=1,outliers=3)
+  mxdo = ABC_Ocean(filename,verbose=1)
   mxdo.outdir = "./{}/".format(expid)
   if not os.path.exists(mxdo.outdir):
     os.makedirs(mxdo.outdir)
