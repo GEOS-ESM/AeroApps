@@ -90,22 +90,26 @@ class ABC_Ocean (OCEAN,NN):
         #self.Albedo  = 'CoxMunk'
 
         OCEAN.__init__(self,fname) # initialize superclass
-
+        if self.sat == 'Aqua':
+            fnameRoot = 'myd_' + fname.split('/')[-1].split('.')[0]
+        elif self.sat == 'Terra':
+            fnameRoot = 'mod_' + fname.split('/')[-1].split('.')[0]
+            
         # Read in wind
         # ------------------------
-        self.wind = load(self.ident + "_MERRA2.npz")['wind']
+        self.wind = load(fnameRoot + "_MERRA2.npz")['wind']
         self.Wind = '' #need this for backwards compatibility
 
         # Define wind speed dependent ocean albedo
         # ----------------------------------------
         self.getCoxMunk(coxmunk_lut)
-        self.BRF = squeeze(load(self.ident+'_CoxMunkAlbedo.npz')["albedo"])
+        self.BRF = squeeze(load(fnameRoot+'_CoxMunkAlbedo.npz')["albedo"])
 
         # Read in Aerosol Fractional Composition
         # --------------------------------------
         names = ('fdu','fss','fcc','fsu')
         for name in names:
-            self.__dict__[name] = load(self.ident + "_MERRA2.npz")[name]
+            self.__dict__[name] = load(fnameRoot + "_MERRA2.npz")[name]
 
 
         # Q/C
