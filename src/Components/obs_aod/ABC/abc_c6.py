@@ -511,7 +511,7 @@ def train_test(mxd,expid,Input,Target,K,plotting=True,c=None):
 
 #--------------------------------------------------------------------------------------
 
-def _testOcean(filename,expid,
+def _testMODIS(filename,retrieval,expid,
                nHidden=None,
                nHLayers=1,
                combinations=False,
@@ -528,24 +528,28 @@ def _testOcean(filename,expid,
   #------------------------------------------------------------
   # Read in data
   # --------------------------------------------------
-  mxdo = ABC_Ocean(filename,verbose=1)
-  mxdo.outdir = "./{}/".format(expid)
-  if not os.path.exists(mxdo.outdir):
-    os.makedirs(mxdo.outdir)
+  if retrieval.upper() == 'OCEAN':
+    mxdx = ABC_Ocean(filename,verbose=1)
+  elif retrieval.upper() == 'LAND':
+    mxdx = ABC_Land(filename,alb_max=0.25,verbose=1)
+
+  mxdx.outdir = "./{}/".format(expid)
+  if not os.path.exists(mxdx.outdir):
+    os.makedirs(mxdx.outdir)
     
   # Balance the dataset before splitting
   # No aerosol type should make up more that 35% 
   # of the total number of obs
   # --------------------------------------
-  mxdo.iValid = mxdo.balance(mxdo.nobs*0.35)
+  mxdx.iValid = mxdx.balance(mxdx.nobs*0.35)
 
 
   # Create list of combinations
   # ---------------------------
   if combinations:
-    mxdo.comblist, mxdo.combgroups = get_combinations(Input_nnr,Input_const)
+    mxdx.comblist, mxdx.combgroups = get_combinations(Input_nnr,Input_const)
   else:
-    mxdo.comblist = []
+    mxdx.comblist = []
         
   # Flatten Input_nnr into one list
   # -------------------------------
@@ -553,112 +557,36 @@ def _testOcean(filename,expid,
 
   # Initialize arrays to hold stats
   # ------------------------------
-  mxdo.nnr  = STATS(K,mxdo.comblist)
-  mxdo.orig = STATS(K,mxdo.comblist)
+  mxdx.nnr  = STATS(K,mxdx.comblist)
+  mxdx.orig = STATS(K,mxdx.comblist)
 
   if not combinations:
     if nHidden is None:
-      mxdo.nHidden  = len(input_nnr)
+      mxdx.nHidden  = len(input_nnr)
     else:
-      mxdo.nHidden = nHidden
+      mxdx.nHidden = nHidden
 
-    mxdo.topology = (len(input_nnr),) + (mxdo.nHidden,)*nHLayers + (len(Target),)
+    mxdx.topology = (len(input_nnr),) + (mxdx.nHidden,)*nHLayers + (len(Target),)
 
-    train_test(mxdo,expid,input_nnr,Target,K)
+    train_test(mxdx,expid,input_nnr,Target,K)
   else:
-    for c,Input in enumerate(mxdo.comblist):
+    for c,Input in enumerate(mxdx.comblist):
       if nHidden is None:
-        mxdo.nHidden  = len(Input)
+        mxdx.nHidden  = len(Input)
       else:
-        mxdo.nHidden = nHidden
+        mxdx.nHidden = nHidden
 
-      mxdo.topology = (len(Input),) + (mxdo.nHidden,)*nHLayers + (len(Target),)
+      mxdx.topology = (len(Input),) + (mxdx.nHidden,)*nHLayers + (len(Target),)
 
-      train_test(mxdo,'.'.join(Input),Input,Target,K,c=c,plotting=False)
+      train_test(mxdx,'.'.join(Input),Input,Target,K,c=c,plotting=False)
 
     if Input_const is not None:
-      SummarizeCombinations(mxdo,list((Input_const,) + tuple(Input_nnr)),yrange=None,sortname='slope')
+      SummarizeCombinations(mxdx,list((Input_const,) + tuple(Input_nnr)),yrange=None,sortname='slope')
     else:
-      SummarizeCombinations(mxdo,Input_nnr,yrange=None,sortname='slope')
+      SummarizeCombinations(mxdx,Input_nnr,yrange=None,sortname='slope')
   
-  return mxdo
+  return mxdx
 
-#---------------------------------------------------------------------
-def _testLand(filename,expid,
-               nHidden=None,
-               nHLayers=1,
-               combinations=False,
-               Input_nnr = ['mRef550','mRef470','mRef660', 'mRef870',
-                             'mRef1200','mRef1600','mRef2100',
-                              'mSre470','mSre660', 'mSre2100',
-                              'ScatteringAngle',
-                              'SolarAzimuth', 'SolarZenith',
-                              'SensorAzimuth','SensorZenith',
-                              'cloud', 'albedo' ],
-               Input_const = None,
-               Target = ['aTau550',],
-               K=None):
-
-
-  # -------------
-  # Read in data
-  # -------------
-  mxdl = ABC_Land(filename,alb_max=0.25,verbose=1)
-  mxdl.outdir = "./{}/".format(expid)
-  if not os.path.exists(mxdl.outdir):
-    os.makedirs(mxdl.outdir)
-
-  # Balance the dataset before splitting
-  # No aerosol type should make up more that 35% 
-  # of the total number of obs
-  # --------------------------------------
-  mxdl.iValid = mxdl.balance(mxdo.nobs*0.35)
-
-  # Create list of combinations
-  # ---------------------------
-  if combinations:
-    comblist, combgroups = get_combinations(Input_nnr,Input_const)
-  else:
-    comblist = []
-    combgroups = []    
-
-  mxdl.comblist = comblist
-  mxdl.combgroups = combgroups
-
-  mxdl.split()
-
-  ident = mxdl.ident
-  expid = 'nnr_002'
-  for Input in (Input_nnr2,):
-
-      nHidden = len(Input)
-      
-      print "-"*80
-      print "--> nHidden = ", nHidden
-      print "-->  Inputs = ", Input
-      
-      mxdl.train(Input=Input,Target=Target,nHidden=nHidden)
-      out, reg = mxdl.test()
-
-      mxdl.savenet(expid+"."+ident+'_Tau.net')
-
-      # Plot KDE of corrected AOD
-      # -------------------------
-      mxdl.plotKDE(figfile=expid+"."+ident+"_kde-"+Target[0][1:]+"-corrected.png")
-
-      # Plot KDE of uncorrected AOD
-      # ---------------------------
-      targets = mxdl.getTargets(mxdl.iValid).squeeze()
-      original = log(mxdl.mTau550[mxdl.iValid]+0.01)
-      _plotKDE(targets,original,y_label='Original MODIS')
-      title("Log("+Target[0][1:]+"+0.01)- "+ident)
-      savefig(expid+"."+ident+"_kde-"+Target[0][1:]+'.png')
-
-      # Scatter diagram for testing
-      # ---------------------------
-      mxdl.plotScat(figfile=expid+"."+ident+"_scat-"+Target[0][1:]+'.png')
-
-  return mxdl
 #---------------------------------------------------------------------
 def get_combinations(Input_nnr,Input_const):
   comblist   = []
