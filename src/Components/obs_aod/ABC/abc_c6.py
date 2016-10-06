@@ -542,48 +542,19 @@ def _testOcean(filename,expid,
 
   # Create list of combinations
   # ---------------------------
-  comblist = []
-  combgroups = []
   if combinations:
-    for n in arange(len(Input_nnr)):
-      for invars in itertools.combinations(Input_nnr,n+1):        
-        b = ()
-        for c in invars:
-          if type(c) is list:
-            b = b + tuple(c)
-          else:
-            b = b + (c,)
-        #don't do both kinds of abledo together
-        if not (('BRF' in b) and ('albedo' in b)):
-          if Input_const is not None:
-            comblist.append(tuple(Input_const)+b)
-            combgroups.append((Input_const,)+invars)
-          else:
-            comblist.append(b)
-            combgroups.append(invars)
-
-  if Input_const is not None:
-    comblist.insert(0,tuple(Input_const))
-    combgroups.insert(0,(Input_const,))
-
-  mxdo.comblist = comblist
-  mxdo.combgroups = combgroups
-
+    mxdo.comblist, mxdo.combgroups = get_combinations(Input_nnr,Input_const)
+  else:
+    mxdo.comblist = []
+        
   # Flatten Input_nnr into one list
   # -------------------------------
-  Input = ()
-  for i in Input_nnr:
-    if type(i) is list:
-      Input = Input + tuple(i)
-    else:
-      Input = Input + (i,)
-
-  input_nnr = list(Input)
+  input_nnr = flatten_list(Input_nnr)
 
   # Initialize arrays to hold stats
   # ------------------------------
-  mxdo.nnr  = STATS(K,comblist)
-  mxdo.orig = STATS(K,comblist)
+  mxdo.nnr  = STATS(K,mxdo.comblist)
+  mxdo.orig = STATS(K,mxdo.comblist)
 
   if not combinations:
     if nHidden is None:
@@ -595,7 +566,7 @@ def _testOcean(filename,expid,
 
     train_test(mxdo,expid,input_nnr,Target,K)
   else:
-    for c,Input in enumerate(comblist):
+    for c,Input in enumerate(mxdo.comblist):
       if nHidden is None:
         mxdo.nHidden  = len(Input)
       else:
@@ -629,48 +600,101 @@ def _testLand(filename,expid,
                K=None):
 
 
-    # -------------
-    # Read in data
-    # -------------
-    mxdl = ABC_Land(filename,alb_max=0.25,verbose=1)
-    mxdl.outdir = "./{}/".format(expid)
-    if not os.path.exists(mxdl.outdir):
-      os.makedirs(mxdl.outdir)
+  # -------------
+  # Read in data
+  # -------------
+  mxdl = ABC_Land(filename,alb_max=0.25,verbose=1)
+  mxdl.outdir = "./{}/".format(expid)
+  if not os.path.exists(mxdl.outdir):
+    os.makedirs(mxdl.outdir)
 
-    mxdl.split()
+  # Balance the dataset before splitting
+  # No aerosol type should make up more that 35% 
+  # of the total number of obs
+  # --------------------------------------
+  mxdl.iValid = mxdl.balance(mxdo.nobs*0.35)
 
-    ident = mxdl.ident
-    expid = 'nnr_002'
-    for Input in (Input_nnr2,):
+  # Create list of combinations
+  # ---------------------------
+  if combinations:
+    comblist, combgroups = get_combinations(Input_nnr,Input_const)
+  else:
+    comblist = []
+    combgroups = []    
 
-        nHidden = len(Input)
-        
-        print "-"*80
-        print "--> nHidden = ", nHidden
-        print "-->  Inputs = ", Input
-        
-        mxdl.train(Input=Input,Target=Target,nHidden=nHidden)
-        out, reg = mxdl.test()
+  mxdl.comblist = comblist
+  mxdl.combgroups = combgroups
 
-        mxdl.savenet(expid+"."+ident+'_Tau.net')
+  mxdl.split()
 
-        # Plot KDE of corrected AOD
-        # -------------------------
-        mxdl.plotKDE(figfile=expid+"."+ident+"_kde-"+Target[0][1:]+"-corrected.png")
+  ident = mxdl.ident
+  expid = 'nnr_002'
+  for Input in (Input_nnr2,):
 
-        # Plot KDE of uncorrected AOD
-        # ---------------------------
-        targets = mxdl.getTargets(mxdl.iValid).squeeze()
-        original = log(mxdl.mTau550[mxdl.iValid]+0.01)
-        _plotKDE(targets,original,y_label='Original MODIS')
-        title("Log("+Target[0][1:]+"+0.01)- "+ident)
-        savefig(expid+"."+ident+"_kde-"+Target[0][1:]+'.png')
+      nHidden = len(Input)
+      
+      print "-"*80
+      print "--> nHidden = ", nHidden
+      print "-->  Inputs = ", Input
+      
+      mxdl.train(Input=Input,Target=Target,nHidden=nHidden)
+      out, reg = mxdl.test()
 
-        # Scatter diagram for testing
-        # ---------------------------
-        mxdl.plotScat(figfile=expid+"."+ident+"_scat-"+Target[0][1:]+'.png')
+      mxdl.savenet(expid+"."+ident+'_Tau.net')
 
-    return mxdl
+      # Plot KDE of corrected AOD
+      # -------------------------
+      mxdl.plotKDE(figfile=expid+"."+ident+"_kde-"+Target[0][1:]+"-corrected.png")
+
+      # Plot KDE of uncorrected AOD
+      # ---------------------------
+      targets = mxdl.getTargets(mxdl.iValid).squeeze()
+      original = log(mxdl.mTau550[mxdl.iValid]+0.01)
+      _plotKDE(targets,original,y_label='Original MODIS')
+      title("Log("+Target[0][1:]+"+0.01)- "+ident)
+      savefig(expid+"."+ident+"_kde-"+Target[0][1:]+'.png')
+
+      # Scatter diagram for testing
+      # ---------------------------
+      mxdl.plotScat(figfile=expid+"."+ident+"_scat-"+Target[0][1:]+'.png')
+
+  return mxdl
+#---------------------------------------------------------------------
+def get_combinations(Input_nnr,Input_const):
+  comblist   = []
+  combgroups = []
+  for n in arange(len(Input_nnr)):
+    for invars in itertools.combinations(Input_nnr,n+1):        
+      b = ()
+      for c in invars:
+        if type(c) is list:
+          b = b + tuple(c)
+        else:
+          b = b + (c,)
+      #don't do both kinds of abledo together
+      if not (('BRF' in b) and ('albedo' in b)):
+        if Input_const is not None:
+          comblist.append(tuple(Input_const)+b)
+          combgroups.append((Input_const,)+invars)
+        else:
+          comblist.append(b)
+          combgroups.append(invars)
+
+  if Input_const is not None:
+    comblist.insert(0,tuple(Input_const))
+    combgroups.insert(0,(Input_const,))
+
+  return comblist,combgroups
+#---------------------------------------------------------------------
+def flatten_list(Input_nnr):
+  Input = ()
+  for i in Input_nnr:
+    if type(i) is list:
+      Input = Input + tuple(i)
+    else:
+      Input = Input + (i,)
+
+  return list(Input)
 
 #---------------------------------------------------------------------
 def make_plots(mxd,expid,ident,I=None):  
