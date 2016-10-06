@@ -43,8 +43,9 @@ VARNAMES    = {'cloud': 'MOD04 Cloud Fraction',
                'GlintAngle': 'Glint Angle',
                'AMF': 'Air Mass Factor',
                'SolarZenith': 'Solar Zenith Angle',
-               'albedo': 'Cox-Munk White Sky Albedo',
-               'BRF': 'Cox-Munk Bidirectional Surface Reflectance',
+               'CoxMunkLUT': 'Cox-Munk White Sky Albedo',
+               'COxMunkBRF': 'Cox-Munk Bidirectional Surface Reflectance',
+               'MOD43BClimAlbedo': 'MOD43B Albedo Climatology',
                'fdu': 'MERRA2 Fraction Dust Aerosol',
                'fcc': 'MERRA2 Fraction Carbonaceous Aerosol',
                'fsu': 'MERRA2 Fraction Sulfate Aerosol',
@@ -58,6 +59,7 @@ class ABC_Ocean (OCEAN,NN):
                   outliers=3., laod=True, verbose=0,
                   cloud_thresh=0.70,
                   glint_thresh=40.0,
+                  Albedo=['CoxMunkLUT'],
                   Input = ['mTAU550','mTAU470','mTAU660','mTAU870',
                            'ScatteringAngle','GlintAngle',
                            'SolarAzimuth','SolarZenith',
@@ -101,8 +103,11 @@ class ABC_Ocean (OCEAN,NN):
 
         # Define wind speed dependent ocean albedo
         # ----------------------------------------
-        self.getCoxMunk(coxmunk_lut)
-        self.BRF = squeeze(load(fnameRoot+'_CoxMunkAlbedo.npz')["albedo"])
+        for albedo in Albedo:
+          if abledo == 'CoxMunkLUT':
+            self.getCoxMunk(coxmunk_lut)
+          else:
+            self.__ditct__[albedo] = squeeze(load(fnameRoot+'_'+albedo+'.npz')["albedo"])
 
         # Read in Aerosol Fractional Composition
         # --------------------------------------
@@ -168,7 +173,7 @@ class ABC_Ocean (OCEAN,NN):
 class ABC_Land (LAND,NN):
 
     def __init__ (self, fname,
-                  Albedo='albedo',
+                  Albedo=['MOD43BClimAlbedo'],
                   alb_max = 0.25,
                   outliers=3.,
                   laod=True,
@@ -202,10 +207,22 @@ class ABC_Land (LAND,NN):
 
         LAND.__init__(self,fname)  # initialize superclass
 
+        if self.sat == 'Aqua':
+            fnameRoot = 'myd_' + fname.split('/')[-1].split('.')[0]
+        elif self.sat == 'Terra':
+            fnameRoot = 'mod_' + fname.split('/')[-1].split('.')[0]
+
 
         # Read in desired albedo
         # ------------------------
-        self.albedo = load(self.ident + "_" + Albedo + ".npz")['albedo']
+        for albedo in Albedo:
+          self.__dict__[albedo] = load(fnameRoot + "_" + albedo + ".npz")['albedo']
+
+        # Read in Aerosol Fractional Composition
+        # --------------------------------------
+        names = ('fdu','fss','fcc','fsu')
+        for name in names:
+            self.__dict__[name] = load(fnameRoot + "_MERRA2.npz")[name]        
 
         # Q/C: enforce QA=3 and albedo in (0,0.25), scattering angle<170
         # --------------------------------------------------------------
@@ -222,8 +239,8 @@ class ABC_Land (LAND,NN):
                       (self.mSre2100>  0.0)       & \
                       (self.cloud<cloud_thresh)   & \
                       (self.ScatteringAngle<170.) & \
-                      (self.albedo>0)             & \
-                      (self.albedo<alb_max)
+                      (self.__dict__[Albedo[0]]>0)             & \
+                      (self.__dict__[Albedo[0]]<alb_max)
         
         # Outlier removal based on log-transformed AOD
         # --------------------------------------------
@@ -380,9 +397,15 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='slope'):
     newlist = []
     for var in masterlist:
         if mxd.sat == 'Terra':
-          newlist.append(dict(MODVARNAMES,**VARNAMES)[var])
+          try:
+            newlist.append(dict(MODVARNAMES,**VARNAMES)[var])
+          except:
+            newlist.append(var)
         else:
-          newlist.append(dict(MYDVARNAMES,**VARNAMES)[var])
+          try:
+            newlist.append(dict(MYDVARNAMES,**VARNAMES)[var])
+          except:
+            new.append(var)
 
     masterlist = np.array(newlist)
 
@@ -522,6 +545,7 @@ def _testMODIS(filename,retrieval,expid,
                               'cloud', 'albedo','fdu','fcc','fsu' ],
                Input_const = None,
                Target = ['aTau550',],
+               Albedo=['CoxMunkLUT'],
                K=None):
 
 
@@ -529,9 +553,9 @@ def _testMODIS(filename,retrieval,expid,
   # Read in data
   # --------------------------------------------------
   if retrieval.upper() == 'OCEAN':
-    mxdx = ABC_Ocean(filename,verbose=1)
+    mxdx = ABC_Ocean(filename,Albedo=Albedo,verbose=1)
   elif retrieval.upper() == 'LAND':
-    mxdx = ABC_Land(filename,alb_max=0.25,verbose=1)
+    mxdx = ABC_Land(filename,Albedo=Albedo,alb_max=0.25,verbose=1)
 
   mxdx.outdir = "./{}/".format(expid)
   if not os.path.exists(mxdx.outdir):
@@ -702,19 +726,39 @@ def me(predictions, targets):
 if __name__ == "__main__":
 
 
-    modo = _testOcean('/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc','SA_GA_870_2100',
+    # modo = _testMODIS('/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc',
+    #                   'OCEAN',
+    #                   'SA_GA_870_2100',
+    #                   nHidden=None,
+    #                   nHLayers=1,
+    #                   combinations=True,
+    #                   Input_nnr  =  ['mRef2100'],
+    #                                 #['mRef470','mRef550','mRef660', 'mRef870',
+    #                                 #'mRef1200','mRef1600','mRef2100'],
+    #                                 #['ScatteringAngle', 'GlintAngle',
+    #                                 #'AMF', 'SolarZenith'],
+    #                                 #'cloud', 'CoxMunkLUT','CoxMunkBRF',['fdu','fcc','fsu'] ],  
+    #                   Input_const = ['ScatteringAngle', 'GlintAngle', 'mRef870'],                  
+    #                   Target = ['aTau550',],
+    #                   Albedo=['CoxMunkLUT','CoxMunkBRF'],
+    #                   K=3)
+
+
+    modo = _testMODIS('/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc',
+                      'LAND',
+                      'LAND_AllInputsTest',
                       nHidden=None,
                       nHLayers=1,
-                      combinations=True,
-                      Input_nnr  =  ['mRef2100'],
-                                    #['mRef470','mRef550','mRef660', 'mRef870',
-                                    #'mRef1200','mRef1600','mRef2100'],
-                                    #['ScatteringAngle', 'GlintAngle',
-                                    #'AMF', 'SolarZenith'],
-                                    #'cloud', 'albedo','BRF',['fdu','fcc','fsu'] ],  
-                      Input_const = ['ScatteringAngle', 'GlintAngle', 'mRef870'],                  
+                      combinations=False,
+                      Input_nnr  =  [['mRef412','mRef440','mRef470',
+                                    'mRef550','mRef660', 'mRef870',
+                                    'mRef1200','mRef1600','mRef2100'],
+                                    ['ScatteringAngle', 'GlintAngle',
+                                    'AMF', 'SolarZenith'],
+                                    'cloud', 'MOD43BClimAlbedo',['fdu','fcc','fsu'] ],  
+                      Input_const = None,                  
                       Target = ['aTau550',],
-                      K=3)
-    # mydl = _testLand('/nobackup/6/NNR/Training/giant_C6_10km_9April2015.nc')
+                      Albedo=['MOD43BClimAlbedo'],
+                      K=None)
 
 
