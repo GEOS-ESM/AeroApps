@@ -169,7 +169,7 @@ class ABC_Land (LAND,NN):
 
     def __init__ (self, fname,
                   Albedo='albedo',
-                  alb_min = 0.25,
+                  alb_max = 0.25,
                   outliers=3.,
                   laod=True,
                   verbose=0,
@@ -223,7 +223,7 @@ class ABC_Land (LAND,NN):
                       (self.cloud<cloud_thresh)   & \
                       (self.ScatteringAngle<170.) & \
                       (self.albedo>0)             & \
-                      (self.albedo<alb_min)
+                      (self.albedo<alb_max)
         
         # Outlier removal based on log-transformed AOD
         # --------------------------------------------
@@ -249,6 +249,11 @@ class ABC_Land (LAND,NN):
         self.SolarZenith     = cos(self.SolarZenith*pi/180.0)     
         self.GlintAngle      = cos(self.GlintAngle*pi/180.0)      
         self.AMF             = (1/self.SolarZenith) + (1/self.SensorZenith)
+
+        # Reduce the Dataset
+        # --------------------
+        self.reduce(self.iValid)                    
+        self.iValid = ones(self.lon.shape).astype(bool)        
 
 #---------------------------------------------------------------------
 class STATS(object):
@@ -608,42 +613,30 @@ def _testOcean(filename,expid,
   return mxdo
 
 #---------------------------------------------------------------------
-def _testLand(filename):
-
-    Input_nnc = ['mTau550','mTau470','mTau660', 'mTau2100',
-                 'mSre470','mSre660', 'mSre2100',
-                 'ScatteringAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'albedo' ]
-
-    Input_nnr1 = ['mRef550','mRef470','mRef660', 'mRef870',
-                 'mRef1200','mRef1600','mRef2100',
-#                 'mSre470','mSre660', 'mSre2100',
-                 'ScatteringAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'albedo' ]
-
-    Input_nnr2 = ['mRef550','mRef470','mRef660', 'mRef870',
-                 'mRef1200','mRef1600','mRef2100',
-                 'mSre470','mSre660', 'mSre2100',
-                 'ScatteringAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'albedo' ]
-
-    Input_min = ['mTau550',
-                 'ScatteringAngle', 'cloud', 'albedo' ]
-
-#    Target=['aTau_c',]
-    Target=['aTau550',]
-#    Target = [ 'aTau550', 'aTau470', 'aTau660', ]
+def _testLand(filename,expid,
+               nHidden=None,
+               nHLayers=1,
+               combinations=False,
+               Input_nnr = ['mRef550','mRef470','mRef660', 'mRef870',
+                             'mRef1200','mRef1600','mRef2100',
+                              'mSre470','mSre660', 'mSre2100',
+                              'ScatteringAngle',
+                              'SolarAzimuth', 'SolarZenith',
+                              'SensorAzimuth','SensorZenith',
+                              'cloud', 'albedo' ],
+               Input_const = None,
+               Target = ['aTau550',],
+               K=None):
 
 
-    # Read and split dataset in training/testing subsets
-    # --------------------------------------------------
-    mxdl = ABC_Land(filename,alb_min=0.25,verbose=1)
+    # -------------
+    # Read in data
+    # -------------
+    mxdl = ABC_Land(filename,alb_max=0.25,verbose=1)
+    mxdl.outdir = "./{}/".format(expid)
+    if not os.path.exists(mxdl.outdir):
+      os.makedirs(mxdl.outdir)
+
     mxdl.split()
 
     ident = mxdl.ident
