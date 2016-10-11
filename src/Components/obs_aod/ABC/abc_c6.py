@@ -725,39 +725,6 @@ def make_error_pdfs(mxd,expid,ident,I=None):
   savefig(outdir+"/error_pdf-"+expid+"."+ident+"-"+mxd.Target[0][1:]+'.png')
 
 #---------------------------------------------------------------------
-def _plotPDF(data,x_bins=None,y_bins=None,
-             x_label='AERONET', y_label='MODIS',formatter=None):
-        """
-        Plot Target vs Model using a 2D Kernel Density Estimate.
-        """
-
-        if x_bins is None: x_bins = arange(-5., 1., 0.1 )
-        if y_bins is None: y_bins = x_bins
-
-        Nx = len(x_bins)
-        Ny = len(y_bins)
-
-        print "Evaluating 2D kernel on grid with (Nx,Ny)=(%d,%d) ..."%(Nx,Ny)
-        kernel = stats.kde.gaussian_kde(_cat2(x_values,y_values))
-        X, Y = meshgrid(x_bins,y_bins)   # each has shape (Ny,Nx)
-        Z = kernel(_cat2(X,Y))           # shape is (Ny*Nx)
-        Z = reshape(Z,X.shape)
-
-        fig = figure()
-        # ax = fig.add_axes([0.1,0.1,0.75,0.75])
-        ax = fig.add_axes([0.1,0.1,0.75,0.75])
-        if formatter != None:
-            ax.xaxis.set_major_formatter(formatter)
-            ax.yaxis.set_major_formatter(formatter)
-        imshow(Z, cmap=cm.gist_earth_r, origin='lower', 
-               extent=(x_bins[0],x_bins[-1],y_bins[0],y_bins[-1]) )
-        plot([x_bins[0],x_bins[-1]],[y_bins[0],y_bins[-1]],'k')
-        xlabel(x_label)
-        ylabel(y_label)
-        grid()
-
-
-#---------------------------------------------------------------------
 def TestStats(mxd,K,C):
     if K is None:
       k = 0
@@ -843,37 +810,37 @@ if __name__ == "__main__":
         SummarizeCombinations(mxdo,Input_nnr,yrange=None,sortname='slope')
 
 
-    # LAND
-    filename     = '/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc'
-    retrieval    = 'LAND'
-    expid        = 'LAND_AllInputsTest'
-    nHidden      = None
-    nHLayers     = 1
-    combinations = True
-    Input_const  = None 
-    Input_nnr    = ['mRef550'],
-                  #[['mRef412','mRef440','mRef470',
-                  #'mRef550','mRef660', 'mRef870',
-                  #'mRef1200','mRef1600','mRef2100'],
-                  #['ScatteringAngle', 'GlintAngle',
-                  #'AMF', 'SolarZenith']],
-                  #'cloud', 'MOD43BClimAlbedo',['fdu','fcc','fsu'] ],  
-    Target      = ['aTau550',]
-    Albedo      = ['MOD43BClimAlbedo']
-    K           = 2
+    # # LAND
+    # filename     = '/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc'
+    # retrieval    = 'LAND'
+    # expid        = 'LAND_AllInputsTest'
+    # nHidden      = None
+    # nHLayers     = 1
+    # combinations = True
+    # Input_const  = None 
+    # Input_nnr    = ['mRef550'],
+    #               #[['mRef412','mRef440','mRef470',
+    #               #'mRef550','mRef660', 'mRef870',
+    #               #'mRef1200','mRef1600','mRef2100'],
+    #               #['ScatteringAngle', 'GlintAngle',
+    #               #'AMF', 'SolarZenith']],
+    #               #'cloud', 'MOD43BClimAlbedo',['fdu','fcc','fsu'] ],  
+    # Target      = ['aTau550',]
+    # Albedo      = ['MOD43BClimAlbedo']
+    # K           = 2
 
-    mxdl = _testMODIS(filename, retrieval, expid,
-                      nHidden      = nHidden,
-                      nHLayers     = nHLayers,
-                      combinations = combinations,
-                      Input_const  = Input_const,
-                      Input_nnr    = Input_nnr,                                         
-                      Target       = Target,
-                      Albedo       = Albedo,
-                      K            = K)
+    # mxdl = _testMODIS(filename, retrieval, expid,
+    #                   nHidden      = nHidden,
+    #                   nHLayers     = nHLayers,
+    #                   combinations = combinations,
+    #                   Input_const  = Input_const,
+    #                   Input_nnr    = Input_nnr,                                         
+    #                   Target       = Target,
+    #                   Albedo       = Albedo,
+    #                   K            = K)
 
-    if combinations:
-      if Input_const is not None:
-        SummarizeCombinations(mxdl,list((Input_const,) + tuple(Input_nnr)),yrange=None,sortname='slope')      
-      else:
-        SummarizeCombinations(mxdl,Input_nnr,yrange=None,sortname='slope')
+    # if combinations:
+    #   if Input_const is not None:
+    #     SummarizeCombinations(mxdl,list((Input_const,) + tuple(Input_nnr)),yrange=None,sortname='slope')      
+    #   else:
+    #     SummarizeCombinations(mxdl,Input_nnr,yrange=None,sortname='slope')
