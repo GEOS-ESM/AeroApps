@@ -104,10 +104,10 @@ class ABC_Ocean (OCEAN,NN):
         # Define wind speed dependent ocean albedo
         # ----------------------------------------
         for albedo in Albedo:
-          if abledo == 'CoxMunkLUT':
+          if albedo == 'CoxMunkLUT':
             self.getCoxMunk(coxmunk_lut)
           else:
-            self.__ditct__[albedo] = squeeze(load(fnameRoot+'_'+albedo+'.npz')["albedo"])
+            self.__dict__[albedo] = squeeze(load(fnameRoot+'_'+albedo+'.npz')["albedo"])
 
         # Read in Aerosol Fractional Composition
         # --------------------------------------
@@ -290,7 +290,7 @@ class STATS(object):
     self.me        = np.ones([k,c])*-999.
 #---------------------------------------------------------------------
 
-def boxplot_imshow(data,blocks,masterlist,title,filename,
+def boxplot_imshow(data,plottype,blocks,masterlist,title,filename,
                    vseps=None, yrange=None,ylabel=None):
     nvars,ncomb = blocks.shape
 
@@ -299,11 +299,27 @@ def boxplot_imshow(data,blocks,masterlist,title,filename,
     params = {'mathtext.default': 'regular' }          
     plt.rcParams.update(params)
 
-    plt.boxplot(data,showfliers=False,showbox=False,whis='range',
+    if plottype is 'box':
+      bp = plt.boxplot(data,showfliers=False,showbox=True,whis='range',
                 whiskerprops={'linestyle':'-'})
+      plt.setp(bp['boxes'], color='black')
+      plt.setp(bp['whiskers'], color='black')
+      plt.plot([0,ncomb+0.5],[np.median(data[:,0]),np.median(data[:,0])],color='b',ls='--',zorder=5)
+    elif plottype is 'scatter':
+      scat = np.mean(data,axis=0)
+      plt.plot(np.arange(ncomb)+1,scat,'rD')
+      plt.plot([0,ncomb+0.5],[np.mean(data[:,0]),np.mean(data[:,0])],color='b',ls='--',zorder=5)
+    elif plottype is 'errorbar':
+      scat = np.mean(data,axis=0)
+      yerr_max = np.abs(np.max(data,axis=0)-scat)
+      yerr_min = np.abs(np.min(data,axis=0)-scat)
+      plt.errorbar(np.arange(ncomb)+1,scat,yerr=[yerr_min,yerr_max], ls='none',marker='D',color='r',ecolor='k')   
+      plt.plot([0,ncomb+0.5],[np.mean(data[:,0]),np.mean(data[:,0])],color='b',ls='--',zorder=5)
+
+
+    ax.set_xlim(0.5,ncomb+0.5)
     ax.set_xticks(np.arange(ncomb)+0.5)
     ax.set_xticklabels([])    
-
 
     if yrange is not None:
         ax.set_ylim(yrange)
@@ -326,7 +342,8 @@ def boxplot_imshow(data,blocks,masterlist,title,filename,
 
     plt.title(title)
     #ax.minorticks_on()
-    plt.grid(True,axis='y',which='both')
+    plt.grid(True,axis='y',which='both',color='0.5',linestyle='-')
+    ax.set_axisbelow(True)  #Grid lines go to the back.
     plt.tick_params(
         axis='y',          # changes apply to the y-axis
         which='major',     # major ticks are affected
@@ -354,7 +371,12 @@ def boxplot_imshow(data,blocks,masterlist,title,filename,
         left='off',
         right='off',
         labelbottom='off') # labels along the bottom edge are off 
-    plt.grid(True,which='minor')
+    plt.grid(True,which='minor',color='0.5',linestyle='-')
+    axblocks.set_axisbelow(True)  #Grid lines go to the back.
+    if vseps is not None:
+        for v in vseps:
+            axblocks.plot([v-1,v-1],np.array(axblocks.get_ylim()),'k-')
+
     
     plt.tight_layout()
     plt.subplots_adjust(right=0.99,hspace=0.001)
@@ -424,7 +446,6 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='slope'):
     isort = np.empty(0,dtype='int')
     vseps = np.empty(0,dtype='int')
     for i in np.sort(np.unique(nblocks)):
-        print 'i',i
         istart  = np.where(nblocks == i)[0].min()
         vseps   = np.append(vseps,istart+0.5)
         isort   = np.append(isort,istart + np.argsort(sortmetric[nblocks == i]))
@@ -447,42 +468,50 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='slope'):
 
       return vardata
 
-    boxplot_imshow(getplotdata(mxd,'slope'),
+    if mxd.nnr.slope.shape[0] == 1:
+      plottype = 'scatter'
+    elif mxd.nnr.slope.shape[0] >= 5:
+      plottype = 'box'
+    else:
+      plottype = 'errorbar'
+
+
+    boxplot_imshow(getplotdata(mxd,'slope'),plottype,
                    blocks,masterlist,
                    'Slope',
                    '{}/Slope.{}.{}.png'.format(outdir,expid,ident),
                    vseps = vseps,
                    yrange=[0,1])
 
-    boxplot_imshow(getplotdata(mxd,'R'),
+    boxplot_imshow(getplotdata(mxd,'R'),plottype,
                    blocks,masterlist,
                    'R',
                    '{}/R.{}.{}.png'.format(outdir,expid,ident),
                    vseps = vseps,
                    yrange=[0,1])
 
-    boxplot_imshow(getplotdata(mxd,'intercept'),
+    boxplot_imshow(getplotdata(mxd,'intercept'),plottype,
                    blocks,masterlist,
                    'Intercept',
                    '{}/Intercept.{}.{}.png'.format(outdir,expid,ident),
                    vseps = vseps,
                    yrange=yrange)
 
-    boxplot_imshow(getplotdata(mxd,'rmse'),
+    boxplot_imshow(getplotdata(mxd,'rmse'),plottype,
                    blocks,masterlist,
                    'RMSE',
                    '{}/RMSE.{}.{}.png'.format(outdir,expid,ident),
                    vseps = vseps,
                    yrange=yrange)
 
-    boxplot_imshow(getplotdata(mxd,'me'),
+    boxplot_imshow(getplotdata(mxd,'me'),plottype,
                    blocks,masterlist,
                    'Mean Bias',
                    '{}/ME.{}.{}.png'.format(outdir,expid,ident),
                    vseps = vseps,
                    yrange=yrange)
 
-    boxplot_imshow(getplotdata(mxd,'mae'),
+    boxplot_imshow(getplotdata(mxd,'mae'),plottype,
                    blocks,masterlist,
                    'Mean Absolute Error',
                    '{}/MAE.{}.{}.png'.format(outdir,expid,ident),
@@ -603,11 +632,7 @@ def _testMODIS(filename,retrieval,expid,
       mxdx.topology = (len(Input),) + (mxdx.nHidden,)*nHLayers + (len(Target),)
 
       train_test(mxdx,'.'.join(Input),Input,Target,K,c=c,plotting=False)
-
-    if Input_const is not None:
-      SummarizeCombinations(mxdx,list((Input_const,) + tuple(Input_nnr)),yrange=None,sortname='slope')
-    else:
-      SummarizeCombinations(mxdx,Input_nnr,yrange=None,sortname='slope')
+      make_error_pdfs(mxdx,'.'.join(Input),mxdx.ident,I=None)
   
   return mxdx
 
@@ -673,6 +698,64 @@ def make_plots(mxd,expid,ident,I=None):
   # ---------------------------
   mxd.plotScat(I=I,figfile=outdir+"/"+expid+"."+ident+"_scat-"+mxd.Target[0][1:]+'.png')
 
+#---------------------------------------------------------------------
+def make_error_pdfs(mxd,expid,ident,I=None):  
+  outdir = mxd.outdir
+  if I is None:
+    I = ones(mxd.lon.shape).astype(bool)
+  # Plot PDF of Error
+  # -------------------------
+  targets  = mxd.getTargets(I).squeeze()
+  results  = mxd.eval(I).squeeze()
+  original = log(mxd.mTau550[I]+0.01)
+
+  eorig = original - targets
+  ecorr = results  - targets
+
+  emax  = max([eorig.max(),ecorr.max()])
+  emin  = min([eorig.min(),ecorr.min()])
+
+  nbins        = 100
+  corrected, x = np.histogram(ecorr,bins=np.linspace(emin,emax,nbins+1))
+  orig, x      = np.histogram(eorig,bins=np.linspace(emin,emax,nbins+1))
+  plt.bar(x[:-1],orig,hold=True)
+  plt.bar(x[:-1],corrected)
+
+  title("Error Log("+mxd.Target[0][1:]+"+0.01)")
+  savefig(outdir+"/error_pdf-"+expid+"."+ident+"-"+mxd.Target[0][1:]+'.png')
+
+#---------------------------------------------------------------------
+def _plotPDF(data,x_bins=None,y_bins=None,
+             x_label='AERONET', y_label='MODIS',formatter=None):
+        """
+        Plot Target vs Model using a 2D Kernel Density Estimate.
+        """
+
+        if x_bins is None: x_bins = arange(-5., 1., 0.1 )
+        if y_bins is None: y_bins = x_bins
+
+        Nx = len(x_bins)
+        Ny = len(y_bins)
+
+        print "Evaluating 2D kernel on grid with (Nx,Ny)=(%d,%d) ..."%(Nx,Ny)
+        kernel = stats.kde.gaussian_kde(_cat2(x_values,y_values))
+        X, Y = meshgrid(x_bins,y_bins)   # each has shape (Ny,Nx)
+        Z = kernel(_cat2(X,Y))           # shape is (Ny*Nx)
+        Z = reshape(Z,X.shape)
+
+        fig = figure()
+        # ax = fig.add_axes([0.1,0.1,0.75,0.75])
+        ax = fig.add_axes([0.1,0.1,0.75,0.75])
+        if formatter != None:
+            ax.xaxis.set_major_formatter(formatter)
+            ax.yaxis.set_major_formatter(formatter)
+        imshow(Z, cmap=cm.gist_earth_r, origin='lower', 
+               extent=(x_bins[0],x_bins[-1],y_bins[0],y_bins[-1]) )
+        plot([x_bins[0],x_bins[-1]],[y_bins[0],y_bins[-1]],'k')
+        xlabel(x_label)
+        ylabel(y_label)
+        grid()
+
 
 #---------------------------------------------------------------------
 def TestStats(mxd,K,C):
@@ -725,40 +808,72 @@ def me(predictions, targets):
   
 if __name__ == "__main__":
 
+    # OCEAN
+    filename     = '/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc'
+    retrieval    = 'OCEAN'
+    expid        = 'OCEAN_TEST'
+    nHidden      = None    
+    nHLayers     = 1
+    combinations = True
+    Input_const  = ['ScatteringAngle', 'GlintAngle', 'mRef870']
+    Input_nnr    = ['mRef2100'],
+                  #['mRef470','mRef550','mRef660', 'mRef870',
+                  #'mRef1200','mRef1600','mRef2100'],
+                  #['ScatteringAngle', 'GlintAngle',
+                  #'AMF', 'SolarZenith'],
+                  #'cloud', 'CoxMunkLUT','CoxMunkBRF',['fdu','fcc','fsu'] ], 
+    Target       = ['aTau550',] 
+    Albedo       = ['CoxMunkLUT','CoxMunkBRF']      
+    K            = 2           
 
-    # modo = _testMODIS('/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc',
-    #                   'OCEAN',
-    #                   'SA_GA_870_2100',
-    #                   nHidden=None,
-    #                   nHLayers=1,
-    #                   combinations=True,
-    #                   Input_nnr  =  ['mRef2100'],
-    #                                 #['mRef470','mRef550','mRef660', 'mRef870',
-    #                                 #'mRef1200','mRef1600','mRef2100'],
-    #                                 #['ScatteringAngle', 'GlintAngle',
-    #                                 #'AMF', 'SolarZenith'],
-    #                                 #'cloud', 'CoxMunkLUT','CoxMunkBRF',['fdu','fcc','fsu'] ],  
-    #                   Input_const = ['ScatteringAngle', 'GlintAngle', 'mRef870'],                  
-    #                   Target = ['aTau550',],
-    #                   Albedo=['CoxMunkLUT','CoxMunkBRF'],
-    #                   K=3)
+    mxdo = _testMODIS(filename, retrieval, expid,
+                      nHidden      = nHidden,
+                      nHLayers     = nHLayers,
+                      combinations = combinations,
+                      Input_const  = Input_const,
+                      Input_nnr    = Input_nnr,                                         
+                      Target       = Target,
+                      Albedo       = Albedo,
+                      K            = K)
 
-
-    modo = _testMODIS('/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc',
-                      'LAND',
-                      'LAND_AllInputsTest',
-                      nHidden=None,
-                      nHLayers=1,
-                      combinations=False,
-                      Input_nnr  =  [['mRef412','mRef440','mRef470',
-                                    'mRef550','mRef660', 'mRef870',
-                                    'mRef1200','mRef1600','mRef2100'],
-                                    ['ScatteringAngle', 'GlintAngle',
-                                    'AMF', 'SolarZenith'],
-                                    'cloud', 'MOD43BClimAlbedo',['fdu','fcc','fsu'] ],  
-                      Input_const = None,                  
-                      Target = ['aTau550',],
-                      Albedo=['MOD43BClimAlbedo'],
-                      K=None)
+    if combinations:
+      if Input_const is not None:
+        SummarizeCombinations(mxdo,list((Input_const,) + tuple(Input_nnr)),yrange=None,sortname='slope')      
+      else:
+        SummarizeCombinations(mxdo,Input_nnr,yrange=None,sortname='slope')
 
 
+    # LAND
+    filename     = '/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc'
+    retrieval    = 'LAND'
+    expid        = 'LAND_AllInputsTest'
+    nHidden      = None
+    nHLayers     = 1
+    combinations = True
+    Input_const  = None 
+    Input_nnr    = ['mRef550'],
+                  #[['mRef412','mRef440','mRef470',
+                  #'mRef550','mRef660', 'mRef870',
+                  #'mRef1200','mRef1600','mRef2100'],
+                  #['ScatteringAngle', 'GlintAngle',
+                  #'AMF', 'SolarZenith']],
+                  #'cloud', 'MOD43BClimAlbedo',['fdu','fcc','fsu'] ],  
+    Target      = ['aTau550',]
+    Albedo      = ['MOD43BClimAlbedo']
+    K           = 2
+
+    mxdl = _testMODIS(filename, retrieval, expid,
+                      nHidden      = nHidden,
+                      nHLayers     = nHLayers,
+                      combinations = combinations,
+                      Input_const  = Input_const,
+                      Input_nnr    = Input_nnr,                                         
+                      Target       = Target,
+                      Albedo       = Albedo,
+                      K            = K)
+
+    if combinations:
+      if Input_const is not None:
+        SummarizeCombinations(mxdl,list((Input_const,) + tuple(Input_nnr)),yrange=None,sortname='slope')      
+      else:
+        SummarizeCombinations(mxdl,Input_nnr,yrange=None,sortname='slope')
