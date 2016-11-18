@@ -1052,7 +1052,7 @@ def _train(mxd,expid,c):
   kwargs = {'nproc' : n}
   if mxd.K is None:
     mxd.train(Input=Input,Target=Target,nHidden=nHidden,topology=topology,**kwargs)
-    mxd.savenet(outdir+"/"+expid+"."+ident+'_Tau.net')    
+    mxd.savenet(outdir+"/"+expid+'_Tau.net')    
   else:
     k = 1
     for iTrain, iTest in mxd.kf:
