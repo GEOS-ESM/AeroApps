@@ -1070,13 +1070,13 @@ def _test(mxd,expid,c,plotting=True):
   ident  = mxd.ident
   outdir = mxd.outdir    
   if mxd.K is None:
-    if mxdx.combinations:
+    if mxd.combinations:
       inputs = expid.split('.')
       found = False
       for invars in itertools.permutations(inputs):
         try: 
           netFile = outdir+"/"+".".join(invars)+'_Tau.net'
-          mxdx.loadnet(netFile)
+          mxd.loadnet(netFile)
           found = True
           break
         except:
