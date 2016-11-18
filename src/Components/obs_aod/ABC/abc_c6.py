@@ -112,7 +112,10 @@ class SETUP(object):
 
     # Initialize K-folding
     # --------------------
-    if K is not None:
+    if K is None:
+      self.iTest = ones([self.nobs]).astype(bool)
+      self.iTrain = self.iValid
+    else:
       self.kfold(K=K)
 
     # Create list of topologies
@@ -1089,7 +1092,7 @@ def _test(mxd,expid,c,plotting=True):
     mxd.net = mxd.loadnet(netFile)
     mxd.Input = mxd.comblist[0]
     TestStats(mxd,mxd.K,c)
-    if plotting: make_plots(mxd,expid,ident)
+    if plotting: make_plots(mxd,expid,ident,I=mxd.iTest)
   else:
     k = 1
     for iTrain, iTest in mxd.kf:
@@ -1121,7 +1124,7 @@ def _test(mxd,expid,c,plotting=True):
       mxd.net = mxd.loadnet(netFile)
       mxd.Input = mxd.comblist[c]      
       TestStats(mxd,k-1,c)
-      if plotting: make_plots(mxd,expid,'.k={}'.format(str(k)))
+      if plotting: make_plots(mxd,expid,'.k={}'.format(str(k)),I=mxd.iTest)
       k = k + 1    
 
 #---------------------------------------------------------------------
