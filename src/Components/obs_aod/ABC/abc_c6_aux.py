@@ -490,7 +490,7 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
   orig_patch      = mpatches.Patch(color='k', label='MOD04 RMSE={:1.2F}'.format(mod04RMSE))
   corrected_patch = mpatches.Patch(color='r', label='NNR RMSE={:1.2F}'.format(nnrRMSE) )
   ax.legend(handles=[orig_patch,corrected_patch])
-  plt.grid(True, which='major',axis='x',color='0.50',linestyle='-')
+  plt.grid(True, which='major',axis='both',color='0.50',linestyle='-')
 
   if Title is None:
     title("Error Log("+mxd.Target[0][1:]+"+0.01)")
@@ -652,7 +652,7 @@ def make_error_pdfs_int(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRo
   dborig_patch      = mpatches.Patch(color='g', label='MOD04 DB RMSE={:1.2F}'.format(dbmod04RMSE))  
   corrected_patch   = mpatches.Patch(color='r', label='NNR RMSE={:1.2F}'.format(nnrRMSE) )
   ax.legend(handles=[orig_patch,dborig_patch,corrected_patch])
-  plt.grid(True, which='major',axis='x',color='0.50',linestyle='-')
+  plt.grid(True, which='major',axis='both',color='0.50',linestyle='-')
 
   if Title is None:
     title("Error Log("+mxd.Target[0][1:]+"+0.01)")
@@ -847,7 +847,7 @@ def make_error_pdfs_dbdt(mxd,mxd2,Input,expid,ident,K=None,I=None,Title=None,
   corrected_patch   = mpatches.Patch(color='r', label='9-Ch NNR RMSE={:1.2F}'.format(nnrRMSE) )
   corrected_patch2   = mpatches.Patch(color='c', label='3-Ch NNR RMSE={:1.2F}'.format(nnrRMSE2) )  
   ax.legend(handles=[orig_patch,dborig_patch,corrected_patch,corrected_patch2])
-  plt.grid(True, which='major',axis='x',color='0.50',linestyle='-')
+  plt.grid(True, which='major',axis='both',color='0.50',linestyle='-')
 
   if Title is None:
     title("Error Log("+mxd.Target[0][1:]+"+0.01)")
