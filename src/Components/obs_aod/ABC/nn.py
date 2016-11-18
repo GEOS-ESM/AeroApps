@@ -8,17 +8,27 @@
 import os
 import pyobs.sknet as nn
 
-from matplotlib.pyplot import  cm, imshow, plot, figure
-from matplotlib.pyplot import  xlabel, ylabel, title, grid, savefig, legend
-from numpy             import  c_ as cat
-from numpy             import  random, sort, pi, load, cos, log, std, exp
-from numpy             import  reshape, arange, ones, zeros, interp
-from numpy             import  meshgrid, concatenate
+from   matplotlib.pyplot import  cm, imshow, plot, figure
+from   matplotlib.pyplot import  xlabel, ylabel, title, grid, savefig, legend
+from   numpy             import  c_ as cat
+from   numpy             import  random, sort, pi, load, cos, log, std, exp
+from   numpy             import  reshape, arange, ones, zeros, interp
+from   numpy             import  meshgrid, concatenate
+import numpy             as      np
+from   matplotlib        import  ticker
+from   scipy             import  stats, mgrid
+from   sklearn.cross_validation import KFold
+#..............................................................
+class aodFormat(ticker.Formatter):
+    def __call__(self,x,pos=None):
+        y = exp(x)-0.01
+        return '%4.2f'%y
+#..............................................................
 
 class NN(object):
 
     def train (self,Input=None,Target=None,nHidden=200,maxfun=2550,biases=True,
-               topology=None, **kwargs):
+               topology=None,bounds=[-100,100], **kwargs):
         """
         Train the Neural Net, using a maximum of *maxfun* iterations.
         On input,
@@ -74,10 +84,11 @@ class NN(object):
 
         # Train
         # -----
+        bounds = [bounds]*self.net.get_params()['conec'].shape[0]
         if self.verbose>0:
             print "Starting training with %s inputs and %s targets"\
                   %(str(inputs.shape),str(targets.shape))
-        self.net.train_tnc(inputs,targets, maxfun=maxfun, **kwargs)
+        self.net.train_tnc(inputs,targets, maxfun=maxfun,bounds=bounds,**kwargs)
 #        self.net.train_bfgs(inputs,targets, maxfun=maxfun)
 
 
@@ -98,17 +109,21 @@ class NN(object):
         return self.net.test(inputs,targets,iprint=iprint,filename=fname)
         
     def eval(self,I=None):
-        if I == None: I = self.iValid
-        return self.net(self.getInputs(I))
+        if I is None: I = self.iValid
+        inputs = self.getInputs(I)
+        return self.net(inputs)
 
     __call__ = eval
 
     def derivative(self,I=None):
-        if I == None: I = self.iValid
+        if I is None: I = self.iValid
         return self.net.derivative(self.getInputs(I))
     
     def savenet(self,fname):
         nn.savenet(self.net,fname)
+
+    def loadnet(self,fname):
+        return nn.loadnet(fname)    
 
     def exportnet(self,fname):
         nn.exportnet(self.net,fname)
@@ -128,6 +143,15 @@ class NN(object):
         iValid = self.iValid[i]
         self.iTrain = i[0:nTrain][iValid[0:nTrain]] # Keep only good obs
         self.iTest  = i[nTrain:][iValid[nTrain:]]   # Keep only good obs
+
+    def kfold(self,K=3):
+        """
+        Splits input dataset into K training and testing subsets.
+        Only data with an iValid Q/C flag is considered.
+        """
+        n = self.lon.size
+        self.kf = KFold(np.sum(self.iValid), n_folds=K, shuffle=True, random_state=n)
+
 
     def getInputs(self,I,Input=None):
         """
@@ -152,6 +176,9 @@ class NN(object):
         if self.verbose:
             print "  ------------------  -------  -------"
             print ""
+
+        if len(inputs.shape) == 1:
+            inputs.shape = (inputs.shape[0],1)            
         return inputs
     
     def getTargets(self,I):
@@ -172,7 +199,7 @@ class NN(object):
         """
         Plot Target vs Model using a 2D Kernel Density Estime.
         """
-        if I==None: I = self.iValid # All data by default
+        if I is None: I = self.iValid # All data by default
         results = self.eval(I)
         targets = self.getTargets(I)
         if self.laod:
@@ -202,7 +229,7 @@ class NN(object):
         """
         Plot Target vs Model using a 2D Kernel Density Estime.
         """
-        if I==None: I = self.iTest # Testing data by default
+        if I is None: I = self.iTest # Testing data by default
         results = self.eval(I)
         targets = self.getTargets(I)
         original = log(self.__dict__['m'+self.Target[0][1:]][I] + 0.01)
@@ -220,4 +247,42 @@ class NN(object):
         title("Log("+self.Target[0][1:]+"+0.01) - "+self.ident)
         if figfile != None:
             savefig(figfile)
-            
+#---------------------------------------------------------------------------------
+def _cat2 (X, Y):
+    """
+    Given 2 arrays of same shape, returns array of shape (2,N),
+    where N = X.size = Y.size
+    """
+    xy = concatenate((X.ravel(),Y.ravel())) # shape is (N+N)
+    return reshape(xy,(2,X.size))         # shape is (2,N)
+    
+def _plotKDE(x_values,y_values,x_bins=None,y_bins=None,
+             x_label='AERONET', y_label='MODIS',formatter=None):
+        """
+        Plot Target vs Model using a 2D Kernel Density Estimate.
+        """
+
+        if x_bins is None: x_bins = arange(-5., 1., 0.1 )
+        if y_bins is None: y_bins = x_bins
+
+        Nx = len(x_bins)
+        Ny = len(y_bins)
+
+        print "Evaluating 2D kernel on grid with (Nx,Ny)=(%d,%d) ..."%(Nx,Ny)
+        kernel = stats.kde.gaussian_kde(_cat2(x_values,y_values))
+        X, Y = meshgrid(x_bins,y_bins)   # each has shape (Ny,Nx)
+        Z = kernel(_cat2(X,Y))           # shape is (Ny*Nx)
+        Z = reshape(Z,X.shape)
+
+        fig = figure()
+        # ax = fig.add_axes([0.1,0.1,0.75,0.75])
+        ax = fig.add_axes([0.1,0.1,0.75,0.75])
+        if formatter != None:
+            ax.xaxis.set_major_formatter(formatter)
+            ax.yaxis.set_major_formatter(formatter)
+        imshow(Z, cmap=cm.gist_earth_r, origin='lower', 
+               extent=(x_bins[0],x_bins[-1],y_bins[0],y_bins[-1]) )
+        plot([x_bins[0],x_bins[-1]],[y_bins[0],y_bins[-1]],'k')
+        xlabel(x_label)
+        ylabel(y_label)
+        grid()
