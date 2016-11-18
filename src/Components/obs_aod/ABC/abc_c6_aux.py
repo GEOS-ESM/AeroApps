@@ -20,7 +20,7 @@ import itertools
 from   sklearn.linear_model import LinearRegression
 from   glob                 import glob
 from   scipy                import stats
-# ------
+from   nn                   import _plotKDE
 
 
 #---------------------------------------------------------------------
