@@ -18,6 +18,8 @@ from   numpy                import  meshgrid, concatenate, squeeze
 import numpy                as      np
 import itertools
 from   sklearn.linear_model import LinearRegression
+from   glob                 import glob
+from   scipy                import stats
 # ------
 
 
@@ -124,8 +126,9 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='rmse'):
     """
     Create summary plot
     """
-    outdir = mxd.outdir
-
+    outdir = mxd.plotdir
+    if not os.path.exists(outdir):
+      os.makedirs(outdir)
     # Flatten Input_nnr into one list
     # -------------------------------
     Input = ()
@@ -138,6 +141,7 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='rmse'):
     input_nnr = list(Input)
 
     expid      = '.'.join(input_nnr)
+    retrieval  = mxd.retrieval
     ident      = mxd.ident
     nvars      = len(input_nnr)
     ngroups    = len(Input_nnr)
@@ -161,7 +165,7 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='rmse'):
           try:
             newlist.append(dict(MYDVARNAMES,**VARNAMES)[var])
           except:
-            new.append(var)
+            newlist.append(var)
 
     masterlist = np.array(newlist)
 
@@ -213,48 +217,48 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='rmse'):
     boxplot_imshow(getplotdata(mxd,'slope'),plottype,
                    blocks,masterlist,
                    'Slope',
-                   '{}/Slope.{}.{}.png'.format(outdir,expid,ident),
+                   '{}/Slope.{}.{}.png'.format(outdir,retrieval,ident),
                    vseps = vseps,
                    yrange=[0,1])
 
     boxplot_imshow(getplotdata(mxd,'R'),plottype,
                    blocks,masterlist,
                    'R',
-                   '{}/R.{}.{}.png'.format(outdir,expid,ident),
+                   '{}/R.{}.{}.png'.format(outdir,retrieval,ident),
                    vseps = vseps,
                    yrange=[0,1])
 
     boxplot_imshow(getplotdata(mxd,'intercept'),plottype,
                    blocks,masterlist,
                    'Intercept',
-                   '{}/Intercept.{}.{}.png'.format(outdir,expid,ident),
+                   '{}/Intercept.{}.{}.png'.format(outdir,retrieval,ident),
                    vseps = vseps,
                    yrange=yrange)
 
     boxplot_imshow(getplotdata(mxd,'rmse'),plottype,
                    blocks,masterlist,
                    'RMSE',
-                   '{}/RMSE.{}.{}.png'.format(outdir,expid,ident),
+                   '{}/RMSE.{}.{}.png'.format(outdir,retrieval,ident),
                    vseps = vseps,
                    yrange=yrange)
 
     boxplot_imshow(getplotdata(mxd,'me'),plottype,
                    blocks,masterlist,
                    'Mean Bias',
-                   '{}/ME.{}.{}.png'.format(outdir,expid,ident),
+                   '{}/ME.{}.{}.png'.format(outdir,retrieval,ident),
                    vseps = vseps,
                    yrange=yrange)
 
     boxplot_imshow(getplotdata(mxd,'mae'),plottype,
                    blocks,masterlist,
                    'Mean Absolute Error',
-                   '{}/MAE.{}.{}.png'.format(outdir,expid,ident),
+                   '{}/MAE.{}.{}.png'.format(outdir,retrieval,ident),
                    vseps = vseps,
                    yrange=yrange)    
 
 #--------------------------------------------------------------------------------------
 
-def get_Iquartiles(mxd,I=None):
+def get_Iquartiles(mxd,I=None,var=None):
 
 
   if I is None:
@@ -266,7 +270,10 @@ def get_Iquartiles(mxd,I=None):
   I3 = []
   I4 = []
   for iTest in I:
-    targets  = mxd.getTargets(iTest)
+    if var is None:
+      targets  = mxd.getTargets(iTest)
+    else:
+      targets = mxd.__dict__[var][iTest].squeeze()
     if len(targets.shape) > 1:
       targets = targets[:,0]
 
@@ -281,7 +288,9 @@ def get_Iquartiles(mxd,I=None):
     I4.append(iTest[(targets>p75)])
 
   return I1, I2, I3, I4
+
 #---------------------------------------------------------------------
+
 def get_Ispecies(mxd,I=None):
 
   if I is None:
@@ -327,7 +336,9 @@ def get_ImRef(mxd,refName,refmin,refmax,I=None):
 #---------------------------------------------------------------------
 
 def make_plots(mxd,expid,ident,I=None):  
-  outdir = mxd.outdir
+  outdir = mxd.plotdir
+  if not os.path.exists(outdir):
+    os.makedirs(outdir)  
   if I is None:
     I = ones(mxd.lon.shape).astype(bool)
   # Plot KDE of corrected AOD
@@ -354,7 +365,10 @@ def make_plots(mxd,expid,ident,I=None):
 #---------------------------------------------------------------------
 def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=None,
                     emin=-1.5,emax=2.5):  
-  outdir = mxd.outdir
+  outdir = mxd.plotdir + '/{}/'.format('.'.join(Input))
+  if not os.path.exists(outdir):
+    os.makedirs(outdir)
+
   if I is None:
     I = mxd.iValid
 
@@ -365,7 +379,13 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
     if len(targets[0].shape) > 1:
       targets[0] = targets[0][:,0]
 
-    results  = [mxd.eval(I)[:,0]]
+    # results  = [mxd.eval(I)[:,0]]
+    inputs = mxd.getInputs(mxd.iTest,Input=Input)
+    knet = mxd.loadnet(netfileRoot+'.k={}_Tau.net'.format(str(k+1)))
+    out = knet(inputs)[:,0]
+    results.append(out)
+
+
     original = [mxd.mTau550[I]]
 
     if mxd.laod:
@@ -422,16 +442,30 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
   nbins        = 100
   corrected = []
   orig      = []
+  x = np.linspace(emin,emax,nbins+1)
+  xcen = x[:-1] + 0.5*(x[1:] - x[:-1])
   if K is None:
-    cc, x = np.histogram(ecorr[0],bins=np.linspace(emin,emax,nbins+1),density=True)
-    oo, x = np.histogram(eorig[0],bins=np.linspace(emin,emax,nbins+1),denstiry=True)
+    # cc, x = np.histogram(ecorr[0],bins=np.linspace(emin,emax,nbins+1),density=True)
+    # oo, x = np.histogram(eorig[0],bins=np.linspace(emin,emax,nbins+1),denstiry=True)
 
-    corrected.append(c)
-    orig.append(o)
+    kernel = stats.gaussian_kde(ecorr[0])
+    cc     = kernel(xcen)
+
+    kernel = stats.gaussian_kde(eorig[0])
+    oo     = kernel(xcen)    
+
+    corrected.append(cc)
+    orig.append(oo)
   else:
     for k,iTest in enumerate(I):
-      cc, x = np.histogram(ecorr[k],bins=np.linspace(emin,emax,nbins+1),density=True)
-      oo, x = np.histogram(eorig[k],bins=np.linspace(emin,emax,nbins+1),density=True)
+      # cc, x = np.histogram(ecorr[k],bins=np.linspace(emin,emax,nbins+1),density=True)
+      # oo, x = np.histogram(eorig[k],bins=np.linspace(emin,emax,nbins+1),density=True)
+
+      kernel = stats.gaussian_kde(ecorr[k])
+      cc     = kernel(xcen)
+
+      kernel = stats.gaussian_kde(eorig[k])
+      oo     = kernel(xcen)          
 
       corrected.append(cc)
       orig.append(oo)
@@ -439,7 +473,7 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
     corrected = np.array(corrected).T
     orig      = np.array(orig).T
 
-  xcen = x[:-1] + 0.5*(x[1:] - x[:-1])
+
   if K is not None:
     xcen = np.tile(xcen,(K,1)).T
 
@@ -448,7 +482,11 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
   ax.plot(xcen,orig,color='k')
   ax.plot(xcen,corrected,color='r')
   ax.set_xlim(emin,emax)
-  ax.set_ylim(0,3.5)
+
+  if mxd.surface == 'ocean':
+    ax.set_ylim(0,3.5)
+  else:
+    ax.set_ylim(0,2.0)
   orig_patch      = mpatches.Patch(color='k', label='MOD04 RMSE={:1.2F}'.format(mod04RMSE))
   corrected_patch = mpatches.Patch(color='r', label='NNR RMSE={:1.2F}'.format(nnrRMSE) )
   ax.legend(handles=[orig_patch,corrected_patch])
@@ -461,7 +499,363 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
   savefig(outdir+"/error_pdf-"+expid+"."+ident+"-"+mxd.Target[0][1:]+'.png')  
   plt.close(fig)
 #---------------------------------------------------------------------  
+#---------------------------------------------------------------------
+def make_error_pdfs_int(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=None,
+                    emin=-1.5,emax=2.5):  
+  outdir = mxd.plotdir + '/{}/'.format('.'.join(Input))
+  if not os.path.exists(outdir):
+    os.makedirs(outdir)
 
+  if I is None:
+    I = mxd.iValid
+
+  # Plot PDF of Error
+  # -------------------------
+  if K is None:
+    targets  = [mxd.getTargets(I)]
+    if len(targets[0].shape) > 1:
+      targets[0] = targets[0][:,0]
+
+    # results    = [mxd.eval(I)[:,0]]
+    inputs = mxd.getInputs(mxd.iTest,Input=Input)
+    knet = mxd.loadnet(netfileRoot+'.k={}_Tau.net'.format(str(k+1)))
+    out = knet(inputs)[:,0]
+    results.append(out)
+
+
+    original   = [mxd.mTau550[I]]
+    dboriginal = [mxd.dbmTau550[I]]    
+
+    if mxd.laod:
+      original[0]   = log(original[0] + 0.01)
+      dboriginal[0] = log(dboriginal[0] + 0.01)
+
+    mod04RMSE   = rmse(original,targets)
+    dbmod04RMSE = rmse(dboriginal,targets)
+    nnrRMSE     = rmse(results,targets)
+  else:
+    targets     = []
+    original    = []
+    dboriginal    = []
+    results     = []
+    mod04RMSE   = []
+    dbmod04RMSE = []
+    nnrRMSE     = []
+    for k,iTest in enumerate(I):
+      # Irange     = arange(mxd.nobs)
+      # iValid     = Irange[mxd.iValid]
+      # mxd.iTest  = iValid[iTest]
+      mxd.iTest    = iTest
+
+      targets.append(mxd.getTargets(mxd.iTest))
+      if len(targets[k].shape) > 1:
+            targets[k] = targets[k][:,0]
+
+      original.append(mxd.mTau550[mxd.iTest])
+      dboriginal.append(mxd.dbmTau550[mxd.iTest])
+
+      inputs = mxd.getInputs(mxd.iTest,Input=Input)
+
+      knet = mxd.loadnet(netfileRoot+'.k={}_Tau.net'.format(str(k+1)))
+      out = knet(inputs)[:,0]
+      results.append(out)
+
+      if mxd.laod:
+        original[k]   = log(original[k] + 0.01)
+        dboriginal[k] = log(dboriginal[k] + 0.01)
+
+      mod04RMSE.append(rmse(original[k],targets[k]))
+      dbmod04RMSE.append(rmse(dboriginal[k],targets[k]))
+      nnrRMSE.append(rmse(results[k],targets[k]))
+
+    print 'mod04RMSE',mod04RMSE
+    print 'dbmod04RMSE',dbmod04RMSE
+    print 'nnrRMSE',nnrRMSE
+    mod04RMSE   = np.mean(mod04RMSE)
+    dbmod04RMSE = np.mean(dbmod04RMSE)
+    nnrRMSE     = np.mean(nnrRMSE)
+
+  eorig   = []
+  edborig = []
+  ecorr   = []
+  for o,dbo,t,r in zip(original,dboriginal,targets,results):
+    eorig.append(o - t)
+    edborig.append(dbo - t)
+    ecorr.append(r - t)
+
+  if emax is None:
+    emax  = np.array([[e.max() for e in eorig],[e.max() for e in edborig],[e.max() for e in ecorr]]).max()
+  if emin is None:
+    emin  = np.array([[e.min() for e in eorig],[e.min() for e in edborig],[e.min() for e in ecorr]]).min()
+
+  nbins        = 100
+  corrected   = []
+  orig        = []
+  dborig      = []
+  x = np.linspace(emin,emax,nbins+1)
+  xcen = x[:-1] + 0.5*(x[1:] - x[:-1])  
+  if K is None:
+    # cc, x   = np.histogram(ecorr[0],bins=np.linspace(emin,emax,nbins+1),density=True)
+    # oo, x   = np.histogram(eorig[0],bins=np.linspace(emin,emax,nbins+1),denstiry=True)
+    # dboo, x = np.histogram(edborig[0],bins=np.linspace(emin,emax,nbins+1),denstiry=True)
+
+    kernel = stats.gaussian_kde(ecorr[0])
+    cc     = kernel(xcen)
+
+    kernel = stats.gaussian_kde(eorig[0])
+    oo     = kernel(xcen)    
+
+    kernel = stats.gaussian_kde(edborig[0])
+    dboo   = kernel(xcen)    
+
+    corrected.append(cc)
+    orig.append(oo)
+    dborig.append(dboo)
+  else:
+    for k,iTest in enumerate(I):
+      # cc, x   = np.histogram(ecorr[k],bins=np.linspace(emin,emax,nbins+1),density=True)
+      # oo, x   = np.histogram(eorig[k],bins=np.linspace(emin,emax,nbins+1),density=True)
+      # dboo, x = np.histogram(edborig[k],bins=np.linspace(emin,emax,nbins+1),density=True)
+
+      kernel = stats.gaussian_kde(ecorr[k])
+      cc     = kernel(xcen)
+
+      kernel = stats.gaussian_kde(eorig[k])
+      oo     = kernel(xcen)    
+
+      kernel = stats.gaussian_kde(edborig[k])
+      dboo   = kernel(xcen)    
+
+      corrected.append(cc)
+      orig.append(oo)
+      dborig.append(dboo)
+
+    corrected   = np.array(corrected).T
+    orig        = np.array(orig).T
+    dborig      = np.array(dborig).T
+
+
+  if K is not None:
+    xcen = np.tile(xcen,(K,1)).T
+
+  fig = plt.figure()
+  ax  = plt.subplot(111)  
+  ax.plot(xcen,orig,color='k')
+  ax.plot(xcen,dborig,color='g')
+  ax.plot(xcen,corrected,color='r')
+  ax.set_xlim(emin,emax)
+  if mxd.surface == 'ocean':
+    ax.set_ylim(0,3.5)
+  else:
+    ax.set_ylim(0,2.0)
+  orig_patch        = mpatches.Patch(color='k', label='MOD04 DT RMSE={:1.2F}'.format(mod04RMSE))
+  dborig_patch      = mpatches.Patch(color='g', label='MOD04 DB RMSE={:1.2F}'.format(dbmod04RMSE))  
+  corrected_patch   = mpatches.Patch(color='r', label='NNR RMSE={:1.2F}'.format(nnrRMSE) )
+  ax.legend(handles=[orig_patch,dborig_patch,corrected_patch])
+  plt.grid(True, which='major',axis='x',color='0.50',linestyle='-')
+
+  if Title is None:
+    title("Error Log("+mxd.Target[0][1:]+"+0.01)")
+  else:
+    title(Title)
+  savefig(outdir+"/error_int_pdf-"+expid+"."+ident+"-"+mxd.Target[0][1:]+'.png')  
+  plt.close(fig)
+#---------------------------------------------------------------------  
+#---------------------------------------------------------------------
+def make_error_pdfs_dbdt(mxd,mxd2,Input,expid,ident,K=None,I=None,Title=None,
+                         netfileRoot=None,netfileRoot2=None,Input2=None,
+                         emin=-1.5,emax=2.5):  
+  outdir = mxd.plotdir + '/{}/'.format('.'.join(Input))
+  if not os.path.exists(outdir):
+    os.makedirs(outdir)
+
+  if I is None:
+    I = mxd.iValid
+
+  # Plot PDF of Error
+  # -------------------------
+  if K is None:
+    targets  = [mxd.getTargets(I)]
+    if len(targets[0].shape) > 1:
+      targets[0] = targets[0][:,0]
+
+    # results    = [mxd.eval(I)[:,0]]
+    # results2    = [mxd2.eval(I)[:,0]]
+    inputs = mxd.getInputs(mxd.iTest,Input=Input)
+    knet = mxd.loadnet(netfileRoot+'.k={}_Tau.net'.format(str(k+1)))
+    out = knet(inputs)[:,0]
+    results.append(out)
+
+    inputs = mxd2.getInputs(mxd.iTest,Input=Input2)
+    knet = mxd2.loadnet(netfileRoot2+'.k={}_Tau.net'.format(str(k+1)))
+    out = knet(inputs)[:,0]
+    results2.append(out)
+
+    original   = [mxd.mTau550[I]]
+    dboriginal = [mxd.dbmTau550[I]]    
+
+    if mxd.laod:
+      original[0]   = log(original[0] + 0.01)
+      dboriginal[0] = log(dboriginal[0] + 0.01)
+
+    mod04RMSE   = rmse(original,targets)
+    dbmod04RMSE = rmse(dboriginal,targets)
+    nnrRMSE     = rmse(results,targets)
+    nnrRMSE2     = rmse(results2,targets)
+  else:
+    targets     = []
+    original    = []
+    dboriginal    = []
+    results     = []
+    results2     = []
+    mod04RMSE   = []
+    dbmod04RMSE = []
+    nnrRMSE     = []
+    nnrRMSE2     = []
+    for k,iTest in enumerate(I):
+      # Irange     = arange(mxd.nobs)
+      # iValid     = Irange[mxd.iValid]
+      # mxd.iTest  = iValid[iTest]
+      mxd.iTest    = iTest
+
+      targets.append(mxd.getTargets(mxd.iTest))
+      if len(targets[k].shape) > 1:
+            targets[k] = targets[k][:,0]
+
+      original.append(mxd.mTau550[mxd.iTest])
+      dboriginal.append(mxd.dbmTau550[mxd.iTest])
+
+      inputs = mxd.getInputs(mxd.iTest,Input=Input)
+
+      knet = mxd.loadnet(netfileRoot+'.k={}_Tau.net'.format(str(k+1)))
+      out = knet(inputs)[:,0]
+      results.append(out)
+
+      inputs = mxd2.getInputs(mxd.iTest,Input=Input2)
+      knet = mxd2.loadnet(netfileRoot2+'.k={}_Tau.net'.format(str(k+1)))
+      out = knet(inputs)[:,0]
+      results2.append(out)
+
+      if mxd.laod:
+        original[k]   = log(original[k] + 0.01)
+        dboriginal[k] = log(dboriginal[k] + 0.01)
+
+      mod04RMSE.append(rmse(original[k],targets[k]))
+      dbmod04RMSE.append(rmse(dboriginal[k],targets[k]))
+      nnrRMSE.append(rmse(results[k],targets[k]))
+      nnrRMSE2.append(rmse(results2[k],targets[k]))
+
+    print 'mod04RMSE',mod04RMSE
+    print 'dbmod04RMSE',dbmod04RMSE
+    print 'nnrRMSE',nnrRMSE
+    print 'nnrRMSE2',nnrRMSE2
+    mod04RMSE   = np.mean(mod04RMSE)
+    dbmod04RMSE = np.mean(dbmod04RMSE)
+    nnrRMSE     = np.mean(nnrRMSE)
+    nnrRMSE2     = np.mean(nnrRMSE2)
+
+  eorig   = []
+  edborig = []
+  ecorr   = []
+  ecorr2   = []
+  for o,dbo,t,r,r2 in zip(original,dboriginal,targets,results,results2):
+    eorig.append(o - t)
+    edborig.append(dbo - t)
+    ecorr.append(r - t)
+    ecorr2.append(r2 - t)
+
+  if emax is None:
+    emax  = np.array([[e.max() for e in eorig],[e.max() for e in edborig],[e.max() for e in ecorr],[e.max() for e in ecorr2]]).max()
+  if emin is None:
+    emin  = np.array([[e.min() for e in eorig],[e.min() for e in edborig],[e.min() for e in ecorr],[e.min() for e in ecorr2]]).min()
+
+  nbins        = 100
+  corrected   = []
+  corrected2   = []
+  orig        = []
+  dborig      = []
+  x = np.linspace(emin,emax,nbins+1)
+  xcen = x[:-1] + 0.5*(x[1:] - x[:-1])    
+  if K is None:
+    # cc, x   = np.histogram(ecorr[0],bins=np.linspace(emin,emax,nbins+1),density=True)
+    # cc2, x   = np.histogram(ecorr2[0],bins=np.linspace(emin,emax,nbins+1),density=True)
+    # oo, x   = np.histogram(eorig[0],bins=np.linspace(emin,emax,nbins+1),denstiry=True)
+    # dboo, x = np.histogram(edborig[0],bins=np.linspace(emin,emax,nbins+1),denstiry=True)
+
+    kernel = stats.gaussian_kde(ecorr[0])
+    cc     = kernel(xcen)
+
+    kernel = stats.gaussian_kde(ecorr2[0])
+    cc2    = kernel(xcen)
+
+    kernel = stats.gaussian_kde(eorig[0])
+    oo     = kernel(xcen)
+
+    kernel = stats.gaussian_kde(edborig[0])
+    dboo   = kernel(xcen)
+
+    corrected.append(cc)
+    corrected2.append(cc2)
+    orig.append(oo)
+    dborig.append(dboo)
+  else:
+    for k,iTest in enumerate(I):
+      # cc, x   = np.histogram(ecorr[k],bins=np.linspace(emin,emax,nbins+1),density=True)
+      # cc2, x   = np.histogram(ecorr2[k],bins=np.linspace(emin,emax,nbins+1),density=True)
+      # oo, x   = np.histogram(eorig[k],bins=np.linspace(emin,emax,nbins+1),density=True)
+      # dboo, x = np.histogram(edborig[k],bins=np.linspace(emin,emax,nbins+1),density=True)
+
+      kernel = stats.gaussian_kde(ecorr[k])
+      cc     = kernel(xcen)
+
+      kernel = stats.gaussian_kde(ecorr2[k])
+      cc2    = kernel(xcen)
+
+      kernel = stats.gaussian_kde(eorig[k])
+      oo     = kernel(xcen)
+
+      kernel = stats.gaussian_kde(edborig[k])
+      dboo   = kernel(xcen)
+
+      corrected.append(cc)
+      corrected2.append(cc2)
+      orig.append(oo)
+      dborig.append(dboo)
+
+    corrected   = np.array(corrected).T
+    corrected2   = np.array(corrected2).T
+    orig        = np.array(orig).T
+    dborig      = np.array(dborig).T
+
+
+  if K is not None:
+    xcen = np.tile(xcen,(K,1)).T
+
+  fig = plt.figure()
+  ax  = plt.subplot(111)  
+  ax.plot(xcen,orig,color='k')
+  ax.plot(xcen,dborig,color='g')
+  ax.plot(xcen,corrected,color='r')
+  ax.plot(xcen,corrected2,color='c')  
+  ax.set_xlim(emin,emax)
+  if mxd.surface == 'ocean':
+    ax.set_ylim(0,3.5)
+  else:
+    ax.set_ylim(0,2.0)
+  orig_patch        = mpatches.Patch(color='k', label='MOD04 DT RMSE={:1.2F}'.format(mod04RMSE))
+  dborig_patch      = mpatches.Patch(color='g', label='MOD04 DB RMSE={:1.2F}'.format(dbmod04RMSE))  
+  corrected_patch   = mpatches.Patch(color='r', label='9-Ch NNR RMSE={:1.2F}'.format(nnrRMSE) )
+  corrected_patch2   = mpatches.Patch(color='c', label='3-Ch NNR RMSE={:1.2F}'.format(nnrRMSE2) )  
+  ax.legend(handles=[orig_patch,dborig_patch,corrected_patch,corrected_patch2])
+  plt.grid(True, which='major',axis='x',color='0.50',linestyle='-')
+
+  if Title is None:
+    title("Error Log("+mxd.Target[0][1:]+"+0.01)")
+  else:
+    title(Title)
+  savefig(outdir+"/error_int_pdf-"+expid+"."+ident+"-"+mxd.Target[0][1:]+'.png')  
+  plt.close(fig)
+#---------------------------------------------------------------------  
 def TestStats(mxd,K,C):
     if K is None:
       k = 0
@@ -515,15 +909,33 @@ def mae(predictions, targets):
 # ---
 def me(predictions, targets):
     return (predictions-targets).mean()    
+
+# ----
+def MAKE_ERROR_PDFS(mxdx,Input,expid,ident,K=None,I=None,Title=None,
+                    netfileRoot=None,netfileRoot2=None,Input2=None,
+                    emin=-1.5,emax=2.5,doInt=False,mxdx2=None):
+
+  if mxdx2 is None:
+    if not doInt:
+      make_error_pdfs(mxdx,Input,expid,ident,K=K,I=I,Title=Title,netfileRoot=netfileRoot,
+                      emin=emin,emax=emax)
+    else:
+      make_error_pdfs_int(mxdx,Input,expid,ident,K=K,I=I,Title=Title,netfileRoot=netfileRoot,
+                      emin=emin,emax=emax)    
+  else:
+    make_error_pdfs_dbdt(mxdx,mxdx2,Input,expid,ident,K=K,I=I,Title=Title,
+                    netfileRoot=netfileRoot,netfileRoot2=netfileRoot2,Input2=Input2,
+                    emin=emin,emax=emax)        
+
 #---------------------------------------------------------------------
-def SummaryPDFs(mxdx):
+def SummaryPDFs(mxdx,mxdx2=None,varnames=['mRef870','mSre470'],doInt=False):
     K = mxdx.K
+    Irange     = arange(mxdx.nobs)
+    iValid     = Irange[mxdx.iValid]
     if K is None:
-      I = [mxdx.iTest]
+      I = [iValid]
     else:
       I = []
-      Irange     = arange(mxdx.nobs)
-      iValid     = Irange[mxdx.iValid]
       for iTrain, iTest in mxdx.kf:          
         I.append(iValid[iTest])
 
@@ -542,74 +954,139 @@ def SummaryPDFs(mxdx):
 
     for c,Input in enumerate(mxdx.comblist):
       for invars in itertools.permutations(Input):
-        netfileRoot = mxdx.outdir+"/"+'.'.join(invars)+"."+mxdx.ident
+        netfileRoot = mxdx.outdir+"/"+'.'.join(invars)
         filelist = glob(netfileRoot+'*.net')
-        if len(filelist > 0):
+        if len(filelist) > 0:
           Input = invars
           break
 
-      if len(filelist == 0):
-        print '{} not found.  Need to train this combinatin of inputs'.format(netfileRoot+'*.net')
-        raise
-        
-      make_error_pdfs(mxdx,Input,'.'.join(Input),mxdx.ident,K=K,I=I,netfileRoot=netfileRoot)
+      if len(filelist) == 0:
+        raise Exception('{} not found.  Need to train this combinatin of inputs'.format(netfileRoot+'*.net'))
 
-      make_error_pdfs(mxdx,Input,'.'.join(Input)+'.q25',mxdx.ident,K=K,I=I1,
+      # Only works if combinations are in the same order
+      Input2 = None
+      netfileRoot2 = None
+      if mxdx2 is not None:
+        Input2 = mxdx2.comblist[c]
+        for invars in itertools.permutations(Input2):
+          netfileRoot2 = mxdx2.outdir+"/"+'.'.join(invars)
+          filelist = glob(netfileRoot2+'*.net')
+          if len(filelist) > 0:
+            Input2 = invars
+            break
+
+        if len(filelist) == 0:
+          raise Exception('{} not found.  Need to train this combinatin of inputs'.format(netfileRoot2+'*.net'))
+
+
+      MAKE_ERROR_PDFS(mxdx,Input,'AllTest',mxdx.ident,K=K,I=I,
+                     netfileRoot=netfileRoot,
+                     netfileRoot2=netfileRoot2,
+                     Input2=Input2,
+                     doInt=doInt,
+                     mxdx2=mxdx2)
+
+      MAKE_ERROR_PDFS(mxdx,Input,'q25',mxdx.ident,K=K,I=I1,
                      Title="Q1 Error Log("+mxdx.Target[0][1:]+"+0.01)",
-                     netfileRoot=netfileRoot)
-      make_error_pdfs(mxdx,Input,'.'.join(Input)+'.q50',mxdx.ident,K=K,I=I2,
+                     netfileRoot=netfileRoot,
+                     netfileRoot2=netfileRoot2,
+                     Input2=Input2,
+                     doInt=doInt,
+                     mxdx2=mxdx2)
+      MAKE_ERROR_PDFS(mxdx,Input,'q50',mxdx.ident,K=K,I=I2,
                       Title="Q2 Error Log("+mxdx.Target[0][1:]+"+0.01)",
-                     netfileRoot=netfileRoot)
-      make_error_pdfs(mxdx,Input,'.'.join(Input)+'.q75',mxdx.ident,K=K,I=I3,
+                     netfileRoot=netfileRoot,
+                     netfileRoot2=netfileRoot2,
+                     Input2=Input2,
+                     doInt=doInt,
+                     mxdx2=mxdx2)
+      MAKE_ERROR_PDFS(mxdx,Input,'q75',mxdx.ident,K=K,I=I3,
                       Title="Q3 Error Log("+mxdx.Target[0][1:]+"+0.01)",
-                     netfileRoot=netfileRoot)
-      make_error_pdfs(mxdx,Input,'.'.join(Input)+'.q100',mxdx.ident,K=K,I=I4,
+                     netfileRoot=netfileRoot,
+                     netfileRoot2=netfileRoot2,
+                     Input2=Input2,                     
+                     doInt=doInt,
+                     mxdx2=mxdx2)
+      MAKE_ERROR_PDFS(mxdx,Input,'q100',mxdx.ident,K=K,I=I4,
                       Title="Q4 Error Log("+mxdx.Target[0][1:]+"+0.01)",
-                     netfileRoot=netfileRoot)
+                     netfileRoot=netfileRoot,
+                     netfileRoot2=netfileRoot2,
+                     Input2=Input2,
+                     doInt=doInt,
+                     mxdx2=mxdx2)
 
-      make_error_pdfs(mxdx,Input,'.'.join(Input)+'.fdu',mxdx.ident,K=K,I=Ifdu,
+      MAKE_ERROR_PDFS(mxdx,Input,'fdu',mxdx.ident,K=K,I=Ifdu,
                      Title="Dust Error Log("+mxdx.Target[0][1:]+"+0.01)",
-                     netfileRoot=netfileRoot)
-      make_error_pdfs(mxdx,Input,'.'.join(Input)+'.fss',mxdx.ident,K=K,I=Ifss,
+                     netfileRoot=netfileRoot,
+                     netfileRoot2=netfileRoot2,
+                     Input2=Input2,
+                     doInt=doInt,
+                     mxdx2=mxdx2)
+      MAKE_ERROR_PDFS(mxdx,Input,'fss',mxdx.ident,K=K,I=Ifss,
                       Title="Sea Salt Error Log("+mxdx.Target[0][1:]+"+0.01)",
-                     netfileRoot=netfileRoot)
-      make_error_pdfs(mxdx,Input,'.'.join(Input)+'.fcc',mxdx.ident,K=K,I=Ifcc,
+                     netfileRoot=netfileRoot,
+                     netfileRoot2=netfileRoot2,
+                     Input2=Input2,
+                     doInt=doInt,
+                     mxdx2=mxdx2)
+      MAKE_ERROR_PDFS(mxdx,Input,'fcc',mxdx.ident,K=K,I=Ifcc,
                       Title="BC+OC Error Log("+mxdx.Target[0][1:]+"+0.01)",
-                     netfileRoot=netfileRoot)
-      make_error_pdfs(mxdx,Input,'.'.join(Input)+'.fsu',mxdx.ident,K=K,I=Ifsu,
+                     netfileRoot=netfileRoot,
+                     netfileRoot2=netfileRoot2,
+                     Input2=Input2,
+                     doInt=doInt,
+                     mxdx2=mxdx2)
+      MAKE_ERROR_PDFS(mxdx,Input,'fsu',mxdx.ident,K=K,I=Ifsu,
                       Title="Sulfate Error Log("+mxdx.Target[0][1:]+"+0.01)",
-                     netfileRoot=netfileRoot)   
+                     netfileRoot=netfileRoot,
+                     netfileRoot2=netfileRoot2,
+                     Input2=Input2,
+                     doInt=doInt,
+                     mxdx2=mxdx2)   
 
-      make_error_pdfs(mxdx,Input,'.'.join(Input)+'.fna',mxdx.ident,K=K,I=Ifna,
+      MAKE_ERROR_PDFS(mxdx,Input,'fna',mxdx.ident,K=K,I=Ifna,
                       Title="No Dominant Species Error Log("+mxdx.Target[0][1:]+"+0.01)",
-                     netfileRoot=netfileRoot)                               
+                     netfileRoot=netfileRoot,
+                     netfileRoot2=netfileRoot2,
+                     Input2=Input2,
+                     doInt=doInt,
+                     mxdx2=mxdx2)                            
 
-    if mxdx.surface == 'ocean':
-      varname  = 'mRef870'
-      ImRefLow = get_ImRef(mxdx,varname,0,0.02,I=I)
-      ImRefMed = get_ImRef(mxdx,varname,0.02,0.05,I=I)      
-      ImRefHigh = get_ImRef(mxdx,varname,0.05,None,I=I)
-    elif mxdx.surface == 'land':
-      varname  = 'mRef870'
-      ImRefLow = get_ImRef(mxdx,varname,0,0.2,I=I)
-      ImRefMed = get_ImRef(mxdx,varname,0.2,0.30,I=I)      
-      ImRefHigh = get_ImRef(mxdx,varname,0.30,None,I=I)
-    elif mxdx.surface == 'dbl':
-      varname  = 'mRef660'
-      ImRefLow = get_ImRef(mxdx,'ScatteringAngle',-1.0,-0.8,I=I)
-      ImRefMed = get_ImRef(mxdx,'ScatteringAngle',-0.8,-0.5,I=I)      
-      ImRefHigh = get_ImRef(mxdx,'ScatteringAngle',-0.50,None,I=I)      
+      if varnames is not None:
+        for varname in varnames:
 
-    for c,Input in enumerate(mxdx.comblist):
-      netfileRoot = mxdx.outdir+"/"+'.'.join(Input)+"."+mxdx.ident
-      make_error_pdfs(mxdx,Input,'.'.join(Input)+'.mRef870',mxdx.ident,K=K,I=ImRefLow,
-                     Title="Low Reflectance Error Log("+mxdx.Target[0][1:]+"+0.01)",
-                     netfileRoot=netfileRoot)
+          I1, I2, I3, I4 = get_Iquartiles(mxdx,I=I,var=varname)
 
-      make_error_pdfs(mxdx,Input,'.'.join(Input)+'.mRef870',mxdx.ident,K=K,I=ImRefMed,
-                     Title="Med Reflectance Error Log("+mxdx.Target[0][1:]+"+0.01)",
-                     netfileRoot=netfileRoot)        
+          # for c,Input in enumerate(mxdx.comblist):
+          #   netfileRoot = mxdx.outdir+"/"+'.'.join(Input)
+          MAKE_ERROR_PDFS(mxdx,Input,'{}Q1'.format(varname),mxdx.ident,K=K,I=I1,
+                         Title="Q1 {} Error Log({}+0.01)".format(varname,mxdx.Target[0][1:]),
+                         netfileRoot=netfileRoot,
+                         netfileRoot2=netfileRoot2,
+                         Input2=Input2,                       
+                         doInt=doInt,
+                         mxdx2=mxdx2)
 
-      make_error_pdfs(mxdx,Input,'.'.join(Input)+'.mRef870',mxdx.ident,K=K,I=ImRefHigh,
-                     Title="High Reflectance Error Log("+mxdx.Target[0][1:]+"+0.01)",
-                     netfileRoot=netfileRoot)            
+          MAKE_ERROR_PDFS(mxdx,Input,'{}Q2'.format(varname),mxdx.ident,K=K,I=I2,
+                         Title="Q2 {} Error Log({}+0.01)".format(varname,mxdx.Target[0][1:]),
+                         netfileRoot=netfileRoot,
+                         netfileRoot2=netfileRoot2,
+                         Input2=Input2,     
+                         doInt=doInt,
+                         mxdx2=mxdx2)      
+
+          MAKE_ERROR_PDFS(mxdx,Input,'{}Q3'.format(varname),mxdx.ident,K=K,I=I3,
+                         Title="Q3 {} Error Log({}+0.01)".format(varname,mxdx.Target[0][1:]),
+                         netfileRoot=netfileRoot,
+                         netfileRoot2=netfileRoot2,
+                         Input2=Input2,     
+                         doInt=doInt,
+                         mxdx2=mxdx2)            
+
+          MAKE_ERROR_PDFS(mxdx,Input,'{}Q4'.format(varname),mxdx.ident,K=K,I=I4,
+                         Title="Q4 {} Error Log({}+0.01)".format(varname,mxdx.Target[0][1:]),
+                         netfileRoot=netfileRoot,
+                         netfileRoot2=netfileRoot2,
+                         Input2=Input2,     
+                         doInt=doInt,
+                         mxdx2=mxdx2)                    
