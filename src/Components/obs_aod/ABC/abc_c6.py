@@ -1048,10 +1048,6 @@ def _train(mxd,expid,c):
   n = cpu_count()
   kwargs = {'nproc' : n}
   if mxd.K is None:
-    # Split into training and testing sets
-    # ------------------------------------
-    mxd.split()
-
     mxd.train(Input=Input,Target=Target,nHidden=nHidden,topology=topology,**kwargs)
     mxd.savenet(outdir+"/"+expid+"."+ident+'_Tau.net')    
   else:
