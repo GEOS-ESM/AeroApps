@@ -1,0 +1,113 @@
+dset /nobackup/2/MERRA2/tavg1_2d_aer_Nx/Y%y4/M%m2/merra2.tavg1_2d_aer_Nx.%y4%m2%d2.nc4
+OPTIONS template
+title MERRA2 tavg1_2d_aer_Nx: 2d,1-Hourly,Time-averaged,Single-Level,Assimilation,Aerosol Diagnostics
+undef 1e+15
+dtype netcdf
+CHSUB 1 87648 MERRA2_300
+CHSUB 87649 166536 MERRA2_400
+xdef 576 linear -180.000000 0.625000
+ydef 361 linear -90.000000 0.500000
+zdef 1 linear 0 1
+tdef 166536 linear 00:30Z01JAN2000 1hr
+vars 50
+BCANGSTR=>bcangstr 0 t,y,x Black Carbon Angstrom parameter [470-870 nm] (1)
+BCCMASS=>bccmass 0 t,y,x Black Carbon Column Mass Density (kg m-2)
+BCEXTTAU=>bcexttau 0 t,y,x Black Carbon Extinction AOT [550 nm] (1)
+BCFLUXU=>bcfluxu 0 t,y,x Black Carbon column u-wind mass flux (kg m-1 s-1)
+BCFLUXV=>bcfluxv 0 t,y,x Black Carbon column v-wind mass flux (kg m-1 s-1)
+BCSCATAU=>bcscatau 0 t,y,x Black Carbon Scattering AOT [550 nm] (1)
+BCSMASS=>bcsmass 0 t,y,x Black Carbon Surface Mass Concentration (kg m-3)
+DMSCMASS=>dmscmass 0 t,y,x DMS Column Mass Density __ENSEMBLE__ (kg m-2)
+DMSSMASS=>dmssmass 0 t,y,x DMS Surface Mass Concentration __ENSEMBLE__ (kg m-3)
+DUANGSTR=>duangstr 0 t,y,x Dust Angstrom parameter [470-870 nm] (1)
+DUCMASS=>ducmass 0 t,y,x Dust Column Mass Density (kg m-2)
+DUCMASS25=>ducmass25 0 t,y,x Dust Column Mass Density - PM 2.5 (kg m-2)
+DUEXTT25=>duextt25 0 t,y,x Dust Extinction AOT [550 nm] - PM 2.5 (1)
+DUEXTTAU=>duexttau 0 t,y,x Dust Extinction AOT [550 nm] (1)
+DUFLUXU=>dufluxu 0 t,y,x Dust column u-wind mass flux (kg m-1 s-1)
+DUFLUXV=>dufluxv 0 t,y,x Dust column v-wind mass flux (kg m-1 s-1)
+DUSCAT25=>duscat25 0 t,y,x Dust Scattering AOT [550 nm] - PM 2.5 (1)
+DUSCATAU=>duscatau 0 t,y,x Dust Scattering AOT [550 nm] (1)
+DUSMASS=>dusmass 0 t,y,x Dust Surface Mass Concentration (kg m-3)
+DUSMASS25=>dusmass25 0 t,y,x Dust Surface Mass Concentration - PM 2.5 (kg m-3)
+OCANGSTR=>ocangstr 0 t,y,x Organic Carbon Angstrom parameter [470-870 nm] __ENSEMBLE__ (1)
+OCCMASS=>occmass 0 t,y,x Organic Carbon Column Mass Density __ENSEMBLE__ (kg m-2)
+OCEXTTAU=>ocexttau 0 t,y,x Organic Carbon Extinction AOT [550 nm] __ENSEMBLE__ (1)
+OCFLUXU=>ocfluxu 0 t,y,x Organic Carbon column u-wind mass flux __ENSEMBLE__ (kg m-1 s-1)
+OCFLUXV=>ocfluxv 0 t,y,x Organic Carbon column v-wind mass flux __ENSEMBLE__ (kg m-1 s-1)
+OCSCATAU=>ocscatau 0 t,y,x Organic Carbon Scattering AOT [550 nm] __ENSEMBLE__ (1)
+OCSMASS=>ocsmass 0 t,y,x Organic Carbon Surface Mass Concentration __ENSEMBLE__ (kg m-3)
+SO2CMASS=>so2cmass 0 t,y,x SO2 Column Mass Density __ENSEMBLE__ (kg m-2)
+SO2SMASS=>so2smass 0 t,y,x SO2 Surface Mass Concentration __ENSEMBLE__ (kg m-3)
+SO4CMASS=>so4cmass 0 t,y,x SO4 Column Mass Density __ENSEMBLE__ (kg m-2)
+SO4SMASS=>so4smass 0 t,y,x SO4 Surface Mass Concentration __ENSEMBLE__ (kg m-3)
+SSANGSTR=>ssangstr 0 t,y,x Sea Salt Angstrom parameter [470-870 nm] (1)
+SSCMASS=>sscmass 0 t,y,x Sea Salt Column Mass Density (kg m-2)
+SSCMASS25=>sscmass25 0 t,y,x Sea Salt Column Mass Density - PM 2.5 (kg m-2)
+SSEXTT25=>ssextt25 0 t,y,x Sea Salt Extinction AOT [550 nm] - PM 2.5 (1)
+SSEXTTAU=>ssexttau 0 t,y,x Sea Salt Extinction AOT [550 nm] (1)
+SSFLUXU=>ssfluxu 0 t,y,x Sea Salt column u-wind mass flux (kg m-1 s-1)
+SSFLUXV=>ssfluxv 0 t,y,x Sea Salt column v-wind mass flux (kg m-1 s-1)
+SSSCAT25=>ssscat25 0 t,y,x Sea Salt Scattering AOT [550 nm] - PM 2.5 (1)
+SSSCATAU=>ssscatau 0 t,y,x Sea Salt Scattering AOT [550 nm] (1)
+SSSMASS=>sssmass 0 t,y,x Sea Salt Surface Mass Concentration (kg m-3)
+SSSMASS25=>sssmass25 0 t,y,x Sea Salt Surface Mass Concentration - PM 2.5 (kg m-3)
+SUANGSTR=>suangstr 0 t,y,x SO4 Angstrom parameter [470-870 nm] __ENSEMBLE__ (1)
+SUEXTTAU=>suexttau 0 t,y,x SO4 Extinction AOT [550 nm] __ENSEMBLE__ (1)
+SUFLUXU=>sufluxu 0 t,y,x SO4 column u-wind mass flux __ENSEMBLE__ (kg m-1 s-1)
+SUFLUXV=>sufluxv 0 t,y,x SO4 column v-wind mass flux __ENSEMBLE__ (kg m-1 s-1)
+SUSCATAU=>suscatau 0 t,y,x SO4 Scattering AOT [550 nm] __ENSEMBLE__ (1)
+TOTANGSTR=>totangstr 0 t,y,x Total Aerosol Angstrom parameter [470-870 nm] (1)
+TOTEXTTAU=>totexttau 0 t,y,x Total Aerosol Extinction AOT [550 nm] (1)
+TOTSCATAU=>totscatau 0 t,y,x Total Aerosol Scattering AOT [550 nm] (1)
+endvars
+@ bcangstr String units 1
+@ bccmass String units kg m-2
+@ bcexttau String units 1
+@ bcfluxu String units kg m-1 s-1
+@ bcfluxv String units kg m-1 s-1
+@ bcscatau String units 1
+@ bcsmass String units kg m-3
+@ dmscmass String units kg m-2
+@ dmssmass String units kg m-3
+@ duangstr String units 1
+@ ducmass String units kg m-2
+@ ducmass25 String units kg m-2
+@ duextt25 String units 1
+@ duexttau String units 1
+@ dufluxu String units kg m-1 s-1
+@ dufluxv String units kg m-1 s-1
+@ duscat25 String units 1
+@ duscatau String units 1
+@ dusmass String units kg m-3
+@ dusmass25 String units kg m-3
+@ ocangstr String units 1
+@ occmass String units kg m-2
+@ ocexttau String units 1
+@ ocfluxu String units kg m-1 s-1
+@ ocfluxv String units kg m-1 s-1
+@ ocscatau String units 1
+@ ocsmass String units kg m-3
+@ so2cmass String units kg m-2
+@ so2smass String units kg m-3
+@ so4cmass String units kg m-2
+@ so4smass String units kg m-3
+@ ssangstr String units 1
+@ sscmass String units kg m-2
+@ sscmass25 String units kg m-2
+@ ssextt25 String units 1
+@ ssexttau String units 1
+@ ssfluxu String units kg m-1 s-1
+@ ssfluxv String units kg m-1 s-1
+@ ssscat25 String units 1
+@ ssscatau String units 1
+@ sssmass String units kg m-3
+@ sssmass25 String units kg m-3
+@ suangstr String units 1
+@ suexttau String units 1
+@ sufluxu String units kg m-1 s-1
+@ sufluxv String units kg m-1 s-1
+@ suscatau String units 1
+@ totangstr String units 1
+@ totexttau String units 1
+@ totscatau String units 1
