@@ -370,29 +370,29 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
     os.makedirs(outdir)
 
   if I is None:
-    I = mxd.iValid
+    I = [mxd.iValid]
 
   # Plot PDF of Error
   # -------------------------
   if K is None:
-    targets  = [mxd.getTargets(I)]
+    targets  = [mxd.getTargets(I[0])]
     if len(targets[0].shape) > 1:
       targets[0] = targets[0][:,0]
 
     # results  = [mxd.eval(I)[:,0]]
-    inputs = mxd.getInputs(mxd.iTest,Input=Input)
-    knet = mxd.loadnet(netfileRoot+'.k={}_Tau.net'.format(str(k+1)))
+    inputs = mxd.getInputs(I[0],Input=Input)
+    knet = mxd.loadnet(netfileRoot)
     out = knet(inputs)[:,0]
-    results.append(out)
+    results = [out]
 
 
-    original = [mxd.mTau550[I]]
+    original = [mxd.mTau550[I[0]]]
 
     if mxd.laod:
       original[0] = log(original[0] + 0.01)
 
-    mod04RMSE = rmse(original,targets)
-    nnrRMSE   = rmse(results,targets)
+    mod04RMSE = rmse(original[0],targets[0])
+    nnrRMSE   = rmse(results[0],targets[0])
   else:
     targets   = []
     original  = []
@@ -470,8 +470,8 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
       corrected.append(cc)
       orig.append(oo)
 
-    corrected = np.array(corrected).T
-    orig      = np.array(orig).T
+  corrected = np.array(corrected).T
+  orig      = np.array(orig).T
 
 
   if K is not None:
@@ -507,32 +507,32 @@ def make_error_pdfs_int(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRo
     os.makedirs(outdir)
 
   if I is None:
-    I = mxd.iValid
+    I = [mxd.iValid]
 
   # Plot PDF of Error
   # -------------------------
   if K is None:
-    targets  = [mxd.getTargets(I)]
+    targets  = [mxd.getTargets(I[0])]
     if len(targets[0].shape) > 1:
       targets[0] = targets[0][:,0]
 
     # results    = [mxd.eval(I)[:,0]]
-    inputs = mxd.getInputs(mxd.iTest,Input=Input)
-    knet = mxd.loadnet(netfileRoot+'.k={}_Tau.net'.format(str(k+1)))
+    inputs = mxd.getInputs(I[0],Input=Input)
+    knet = mxd.loadnet(netfileRoot)
     out = knet(inputs)[:,0]
-    results.append(out)
+    results = [out]
 
 
-    original   = [mxd.mTau550[I]]
-    dboriginal = [mxd.dbmTau550[I]]    
+    original   = [mxd.mTau550[I[0]]]
+    dboriginal = [mxd.dbmTau550[I[0]]]    
 
     if mxd.laod:
       original[0]   = log(original[0] + 0.01)
       dboriginal[0] = log(dboriginal[0] + 0.01)
 
-    mod04RMSE   = rmse(original,targets)
-    dbmod04RMSE = rmse(dboriginal,targets)
-    nnrRMSE     = rmse(results,targets)
+    mod04RMSE   = rmse(original[0],targets[0])
+    dbmod04RMSE = rmse(dboriginal[0],targets[0])
+    nnrRMSE     = rmse(results[0],targets[0])
   else:
     targets     = []
     original    = []
@@ -630,9 +630,9 @@ def make_error_pdfs_int(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRo
       orig.append(oo)
       dborig.append(dboo)
 
-    corrected   = np.array(corrected).T
-    orig        = np.array(orig).T
-    dborig      = np.array(dborig).T
+  corrected   = np.array(corrected).T
+  orig        = np.array(orig).T
+  dborig      = np.array(dborig).T
 
 
   if K is not None:
@@ -670,38 +670,38 @@ def make_error_pdfs_dbdt(mxd,mxd2,Input,expid,ident,K=None,I=None,Title=None,
     os.makedirs(outdir)
 
   if I is None:
-    I = mxd.iValid
+    I = [mxd.iValid]
 
   # Plot PDF of Error
   # -------------------------
   if K is None:
-    targets  = [mxd.getTargets(I)]
+    targets  = [mxd.getTargets(I[0])]
     if len(targets[0].shape) > 1:
       targets[0] = targets[0][:,0]
 
     # results    = [mxd.eval(I)[:,0]]
     # results2    = [mxd2.eval(I)[:,0]]
-    inputs = mxd.getInputs(mxd.iTest,Input=Input)
-    knet = mxd.loadnet(netfileRoot+'.k={}_Tau.net'.format(str(k+1)))
+    inputs = mxd.getInputs(I[0],Input=Input)
+    knet = mxd.loadnet(netfileRoot)
     out = knet(inputs)[:,0]
-    results.append(out)
+    results = [out]
 
-    inputs = mxd2.getInputs(mxd.iTest,Input=Input2)
-    knet = mxd2.loadnet(netfileRoot2+'.k={}_Tau.net'.format(str(k+1)))
+    inputs = mxd2.getInputs(I[0],Input=Input2)
+    knet = mxd2.loadnet(netfileRoot2)
     out = knet(inputs)[:,0]
-    results2.append(out)
+    results2 = [out]
 
-    original   = [mxd.mTau550[I]]
-    dboriginal = [mxd.dbmTau550[I]]    
+    original   = [mxd.mTau550[I[0]]]
+    dboriginal = [mxd.dbmTau550[I[0]]]    
 
     if mxd.laod:
       original[0]   = log(original[0] + 0.01)
       dboriginal[0] = log(dboriginal[0] + 0.01)
 
-    mod04RMSE   = rmse(original,targets)
-    dbmod04RMSE = rmse(dboriginal,targets)
-    nnrRMSE     = rmse(results,targets)
-    nnrRMSE2     = rmse(results2,targets)
+    mod04RMSE   = rmse(original[0],targets[0])
+    dbmod04RMSE = rmse(dboriginal[0],targets[0])
+    nnrRMSE     = rmse(results[0],targets[0])
+    nnrRMSE2     = rmse(results2[0],targets[0])
   else:
     targets     = []
     original    = []
@@ -822,10 +822,10 @@ def make_error_pdfs_dbdt(mxd,mxd2,Input,expid,ident,K=None,I=None,Title=None,
       orig.append(oo)
       dborig.append(dboo)
 
-    corrected   = np.array(corrected).T
-    corrected2   = np.array(corrected2).T
-    orig        = np.array(orig).T
-    dborig      = np.array(dborig).T
+  corrected   = np.array(corrected).T
+  corrected2   = np.array(corrected2).T
+  orig        = np.array(orig).T
+  dborig      = np.array(dborig).T
 
 
   if K is not None:
@@ -933,7 +933,7 @@ def SummaryPDFs(mxdx,mxdx2=None,varnames=['mRef870','mSre470'],doInt=False):
     Irange     = arange(mxdx.nobs)
     iValid     = Irange[mxdx.iValid]
     if K is None:
-      I = [iValid]
+      I = [Irange]
     else:
       I = []
       for iTrain, iTest in mxdx.kf:          
@@ -953,30 +953,36 @@ def SummaryPDFs(mxdx,mxdx2=None,varnames=['mRef870','mSre470'],doInt=False):
       Ifna   = [Irange[~Ifna]]*K
 
     for c,Input in enumerate(mxdx.comblist):
-      for invars in itertools.permutations(Input):
-        netfileRoot = mxdx.outdir+"/"+'.'.join(invars)
-        filelist = glob(netfileRoot+'*.net')
-        if len(filelist) > 0:
-          Input = invars
-          break
+      if len(mxdx.comblist) == 1:
+        netfileRoot = mxdx.outdir+"/"+mxdx.expid+'_Tau.net'
+      else:
+        for invars in itertools.permutations(Input):
+          netfileRoot = mxdx.outdir+"/"+'.'.join(invars)
+          filelist = glob(netfileRoot+'*.net')
+          if len(filelist) > 0:
+            Input = invars
+            break
 
-      if len(filelist) == 0:
-        raise Exception('{} not found.  Need to train this combinatin of inputs'.format(netfileRoot+'*.net'))
+        if len(filelist) == 0:
+          raise Exception('{} not found.  Need to train this combinatin of inputs'.format(netfileRoot+'*.net'))
 
       # Only works if combinations are in the same order
       Input2 = None
       netfileRoot2 = None
       if mxdx2 is not None:
-        Input2 = mxdx2.comblist[c]
-        for invars in itertools.permutations(Input2):
-          netfileRoot2 = mxdx2.outdir+"/"+'.'.join(invars)
-          filelist = glob(netfileRoot2+'*.net')
-          if len(filelist) > 0:
-            Input2 = invars
-            break
+        if len(mxdx.comblist) == 1:
+          netfileRoot2 = mxdx2.outdir+"/"+mxdx2.expid+'_Tau.net'
+        else:        
+          Input2 = mxdx2.comblist[c]
+          for invars in itertools.permutations(Input2):
+            netfileRoot2 = mxdx2.outdir+"/"+'.'.join(invars)
+            filelist = glob(netfileRoot2+'*.net')
+            if len(filelist) > 0:
+              Input2 = invars
+              break
 
-        if len(filelist) == 0:
-          raise Exception('{} not found.  Need to train this combinatin of inputs'.format(netfileRoot2+'*.net'))
+          if len(filelist) == 0:
+            raise Exception('{} not found.  Need to train this combinatin of inputs'.format(netfileRoot2+'*.net'))
 
 
       MAKE_ERROR_PDFS(mxdx,Input,'AllTest',mxdx.ident,K=K,I=I,
