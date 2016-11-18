@@ -582,7 +582,7 @@
       integer :: idel_, jdel_, i, j, i_, j_, i1, i2, j1, j2, n
       real*8  :: accum
 
-#define VALID(x) (abs(x-missing) > 0.01*missing)
+#define VALID(x) (abs(x-missing) > 0.01*abs(missing))
 
       rc = 0
 

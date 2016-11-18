@@ -7,21 +7,29 @@
 set rc = ../RC
 set sampler = $ESMADIR/`uname`/bin/trj_sampler.py
 set esampler = $ESMADIR/`uname`/bin/ext_sampler.py
-set dest = ./sampled/flight
+set dest = $HOME/iesa/oracles/sampled/flight
 
 
 if ( $#argv < 1 ) then
-   echo "usage: $0 KORUSAQ-DC8TRK_MODEL_20160426_RA.ICT"
+   echo "usage: $0 [-r REV] ORACLES-ER2_MODEL_20160426_RA.ICT [force]
    exit 1
-else if ( $#argv > 1) then
+endif
+    
+if ( "$1" == "-r" ) then
+     set rev = $2
+     shift
+     shift
+else
+     set rev = R0
+endif
+
+if ( $#argv > 1) then
     set force = 1
     set ICT = $1
 else
     set force = 0
     set ICT = ( $argv )
 endif
-
-
 
 foreach ict ( $ICT ) 
   foreach prod ( CHEM METEO )
@@ -30,7 +38,7 @@ foreach ict ( $ICT )
     set date = `echo $basen:r | awk -F_ '{print $3}'`
     set loc = `echo $basen | awk -F- '{print $2}' | awk -F_ '{print $1}' | sed -e 's/TRK//'`
     echo $loc
-    set nc = $dest/ORACLES-GEOS5-$prod-${loc}_MODEL_${date}_R0.nc
+    set nc = $dest/ORACLES-flight_track_${date}_$rev.nc
 
     if ( $force == 1) then 
 	    $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $ict

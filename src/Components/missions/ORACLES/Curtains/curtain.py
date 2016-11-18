@@ -81,7 +81,7 @@ class Curtain(object):
     Produce Curtain plots from ASCII Flight Plans.
     """
 
-    def __init__(self,meteo,chem,ext,coords,aircraft='Aircraft',zmax=10,nz=160,prs=True):
+    def __init__(self,meteo,chem,ext,coords,aircraft='Aircraft',zmax=8,nz=160,prs=True):
         """
         Load 
         """
@@ -140,7 +140,7 @@ class Curtain(object):
         else:
             raise ValueError, 'invalid coords file %s'%coords
 
-        print 'Altitude',self.Altitude
+        #print 'Altitude',self.Altitude
 
         # UTC hour
         # --------
@@ -193,7 +193,7 @@ class Curtain(object):
             raise ValueError, "invalid vertical dimension, nh=%d"%nh
             
 #---
-    def contourf(self,q,Title=None,Alt=False,N=None,figFile=None,pblc='k',**kwopts):
+    def contourf(self,q,Title=None,Alt=False,N=None,figFile=None,pblc='m',**kwopts):
         """
         Plots a curtain contour plot of time vs. height.
         """
@@ -209,8 +209,9 @@ class Curtain(object):
             contourf(self.Hour,self.z,self.zInterp(q),N,**kwopts)
 
         _colorbar()
-        
-        plot(self.Hour,self.Altitude,'m',linewidth=2,label=self.aircraft+' Altitude')
+
+        if self.aircraft.upper() != 'ER2':
+            plot(self.Hour,self.Altitude,'b',linewidth=2,label=self.aircraft+' Altitude')
         if 'pblz' in self.__dict__.keys():
             plot(self.Hour,self.pblz,pblc+'-',linewidth=2,label='PBL Height')
         legend(loc='upper right')

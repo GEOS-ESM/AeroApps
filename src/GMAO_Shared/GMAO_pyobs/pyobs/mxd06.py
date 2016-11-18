@@ -1,6 +1,9 @@
 """
-Reads Level 2 MOD04/MYD04 granules for a single day and returns a
-single object with the relevant data.
+Reads MODIS Level 2 MOD06/MYD06 Cloud Product granules and returns
+a single object with the relevant data. Can read a single granule,
+a directory of granules (such as for a whole day of data), or a list
+of either or both of the above. Directory reads proceed recursively
+to subdirectories.
 
 This software is hereby placed in the public domain.
 Arlindo.daSilva@nasa.gov
@@ -24,8 +27,11 @@ from bits import BITS
 
 #---  
 
+# Time Reference used by MODIS granules
 DATE_START = datetime(1993,1,1,0,0,0)
 
+# Scientific Data Sets 
+# COP = Cloud Optical Properties
 SDS = dict (
       META = ('Longitude', 'Latitude', 'Scan_Start_Time',
 #             'Sensor_Zenith', 'Sensor_Azimuth',
@@ -70,7 +76,7 @@ ALIAS = dict (              Longitude = 'lon',
    Cloud_Effective_Radius_Uncertainty = 'eRE',
              )
 
-BAD, MARGINAL, GOOD, BEST = ( 0, 1, 2, 3 ) # QA marks
+BAD, MARGINAL, GOOD, BEST = ( 0, 1, 2, 3 )  # QA marks
 
 MISSING = -999.999
 
@@ -91,52 +97,49 @@ class MxD06Error(Exception):
   
 class MxD06_L2(object):
     """
-    This class implements the MODIS Level 2 CLOUDS products, usually
+    This class implements the MODIS Level 2 CLOUD product, usually
     referred to as MOD06 (TERRA satellite) and MYD06 (AQUA satellite).
     """
 
     def __init__ (self,Path,decimate='thinning',Verb=0,only_good=True):
        """
-       Reads individual granules or a full day of Level 2 MOD06/MYD06 files
-       present on a given *Path* and returns a single object with
-       all data concatenated for 5 km and 1 km. On input, 
+       Reads all Level 2 MOD06/MYD06 granules present on a given *Path*
+       and returns a single object with all data concatenated for 5 km
+       and 1 km. On input, 
 
        Required parameters:
          Path -- can be a single file, a single directory, of a list
-                 of files and directories.  Directories are
-                 transversed recursively. If a non MOD06/MYD06 Level 2
-                 file is encountered, it is simply ignored.
+                 of files and directories. Directories are transversed
+                 recursively. If a non MOD06/MYD06 Level 2 file is
+                 encountered, it is simply ignored.
 
        Optional parameters:
          decimate  --- decimate 1 km data, 'binning' or 'thinning' it to 5 km
          only_good --- keep only *good* observations
          Verb      --- Verbose level:
                        0 - really quiet (default)
-                       1 - Warns if invalid file is found
-                       2 - Prints out non-zero number of aerosols in each file.
-
+                       1 - basic commentary, warns if invalid file is found
+                       2 - detailed commentary
        """
 
-#      Initially are lists of numpy arrays for each granule
-#      ------------------------------------------------
        self.verb = Verb
        self.nobs = 0
        self.sat  = None # Satellite name
-       self.col  = None # collection, e.g., 005
+       self.coll = None # collection, e.g., 005
        self.SDS = SDS['META'] + SDS['DATA'] + SDS['COP']
        self.decimate = decimate
-       self.iFilter = None # used to filter I/O
+       self.iFilter = None  # used to filter I/O
 
        # Resolution dependent containers
        # -------------------------------
        self.COP = MxD06Handle('1km')
 
-       # Create empty lists for SDS to be read from file
-       # -----------------------------------------------
+       # Create an empty list for each SDS
+       # ---------------------------------
        for name in self.SDS:
            self._setName(name,[])
 
-       # Read each granule, appending them to the list
+       # Read each granule, appending to the SDS lists
        # ---------------------------------------------
        if type(Path) is ListType:
            if len(Path) == 0:
@@ -146,13 +149,13 @@ class MxD06_L2(object):
            Path = [Path, ]
        self._readList(Path)
 
-       # Make each attribute a single numpy array
-       # ----------------------------------------
+       # Concatenate each SDS list along swath to a single numpy array
+       # -------------------------------------------------------------
        for sds in self.SDS:
            try:
                self._catName(sds)
                if self.verb>1:
-                        print "() Concatenated <%s>"%sds
+                   print "() Concatenated <%s>"%sds
            except:
                print "WARNING: Failed concatenating "+sds
 
@@ -170,7 +173,7 @@ class MxD06_L2(object):
        for sds in self.SDS:
            if sds in Alias:
                if self.verb>1:
-                        print ">< Aliasing %16s --> %s"%(sds,ALIAS[sds])
+                        print ">< Aliasing %s --> %s"%(sds,ALIAS[sds])
                self._aliasName(sds)
 
        # Create corresponding python time
@@ -182,42 +185,47 @@ class MxD06_L2(object):
 
 #---
     def _setName(self,name,value):
+        """Assign the value to SDS 'name'."""
+
         if name in SDS['COP']:
               self.COP.__dict__[name] = value
         else:
               self.__dict__[name] = value
+
 #---
     def _appendName(self,name,value):
+        """Append the value to SDS 'name'."""
+
         if name in SDS['COP']:
               self.COP.__dict__[name].append(value)
         else:
               self.__dict__[name].append(value)
+
 #---
     def _catName(self,name):
+        """Concatenate the granules in 'name' along swath to a single numpy array."""
 
+        # reference the SDS 'name' as V
+        # V is a list of the SDS for many granules
         if name in SDS['COP']:
               b = self.COP
         else:
               b = self
-              
         V = b.__dict__[name]
-        if len(V[0].shape)==2:
-              b.__dict__[name] = concatenate(V)
-        elif len(V[0].shape)==3:
-              w = None # will hold 3D array: (channel,along,cross)
-              nc = V[0].shape[0]
-              for c in range(nc):
-                    U = []  # 2D list
-                    for v in V:
-                          U.append(v[c])
-                    u = concatenate(U) # concatenated 2D array
-                    if w is None:
-                          w = ones((nc,) + u.shape) # only now know shape
-                    w[c] = u # 3D array
-              b.__dict__[name] = w
+ 
+        # find the *along* swath axis of the SDS
+        rank = V[0].ndim
+        if rank==2:
+              # (along,across)
+              along = 0
+        elif rank==3:
+              # ("channel",along,across)
+              along = 1
         else:
-              raise MxD06Error, 'Invalid SDS rank=%d for <%s> '%(len(v.shape),name)
-        
+              raise MxD06Error, 'Invalid SDS rank=%d for <%s> '%(rank,name)
+
+        # concatenate along swath to a single numpy array
+        b.__dict__[name] = concatenate(V,axis=along)
 
 #---
     def _aliasName(self,name):
@@ -233,19 +241,20 @@ class MxD06_L2(object):
         be files or directories.
         """
         for item in List:
-            if os.path.isdir(item):      self._readDir(item)
+            if   os.path.isdir(item):    self._readDir(item)
             elif os.path.isfile(item):   self._readGranule(item)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print "%s is not a valid file or directory, ignoring it" % item
+
 #---
     def _readDir(self,dir):
         """Recursively, look for files in directory."""
         for item in os.listdir(dir):
             path = dir + os.sep + item
-            if os.path.isdir(path):      self._readDir(path)
+            if   os.path.isdir(path):    self._readDir(path)
             elif os.path.isfile(path):   self._readGranule(path)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print "%s is not a valid file or directory, ignoring it" % item
 
 #---
     def _readGranule(self,filename):
@@ -254,72 +263,104 @@ class MxD06_L2(object):
         # Don't fuss if the file cannot be opened
         # ---------------------------------------
         try:
-            if self.verb:
-                print " [] Working on "+filename
+            if self.verb > 0:
+                print " [] Working on " + filename
             hfile = SD(filename)
         except HDF4Error:
-            if self.verb > 2:
-                print "- %s: not recognized as an HDF file"%filename
+            if self.verb > 0:
+                print "- %s: not recognized as an HDF file" % filename
             return 
 
-        # Read select variables (reshape to allow concatenation later)
-        # ------------------------------------------------------------
+        # Read selected variables
+        # -----------------------
         for sds in self.SDS:
-            # print ' <> Doing %s'%sds
+            if self.verb > 1:
+                print ' <> Doing %s' % sds
             v = hfile.select(sds).get()
             a = hfile.select(sds).attributes()
-            I = (v!=a['_FillValue'])
-            if a['scale_factor']!=1 or a['add_offset']!=0:
-                  # print ' <> Scaling %s'%sds
-                v[I] = a['scale_factor'] * (v[I] - a['add_offset']) # strange
-            v[I==False] = MISSING
+            iOK = (v != a['_FillValue'])
+            if a['scale_factor'] != 1 or a['add_offset'] != 0:
+                if self.verb > 1:
+                    print ' <> Scaling %s' % sds
+                v[iOK] = a['scale_factor'] * (v[iOK] - a['add_offset'])
+                # PS: I know that looks strange.
+                #     The add_offset is what was used to get the HDF stored values within range.
+                #     So in backing out the physical value, it must actually be subtracted!
+            v[iOK==False] = MISSING
             self._appendName(sds,v) 
 
-        # Decimate 1km data (Needs better Q/C)
-        # ------------------------------------
+        # Decimate 1km data to lower 5km resolution (Needs better Q/C)
+        # ------------------------------------------------------------
+        # Note: [-1] below gets the current granule (that we just appended above)
+        # TODO: Only 2D SDSs are currently implemented for decimation. This should
+        #   be all we need, but otherwise add a 3D case with a "channel" loop.
+
         if self.decimate == 'binning':
-            b = self.COP
-            im, jm = self.Longitude[-1].shape
-            idel = 5
+            # average 5x5 1km pixel blocks ...
+
+            im, jm = self.Longitude[-1].shape  # lower 5km resoln
             for name in SDS['COP']:
                   v = self.COP.__dict__[name][-1]
-                  a, rc = decimateswath(im,jm,v,idel,MISSING)
-                  if rc:
-                        raise MxD06Error, 'ERROR: cannot decimate %s'%name
+                  if v.ndim != 2:
+                    raise MxD06Error, 'Only 2D SDSs implemented for decimation'
+                  a, rc = decimateswath(im,jm,v,5,MISSING)
+                  if rc: raise MxD06Error, 'ERROR: cannot decimate %s' % name
                   self.COP.__dict__[name][-1] = a
+
         elif self.decimate == 'thinning':
+            # thin 5x5 1km pixel blocks to central pixel ...
+
             im, jm = self.Longitude[-1].shape
             im1 = None
             for name in SDS['COP']:
                   v = self.COP.__dict__[name][-1]
+                  if v.ndim != 2:
+                    raise MxD06Error, 'Only 2D SDSs implemented for decimation'
                   if im1 is None:
                         im1, jm1 = v.shape
                         I, J = (range(2,im1,5),range(2,jm1,5))
-                        I, J = I[:im], J[:jm] # trimm rough edges
+                        I, J = I[:im], J[:jm] # trim rough edges
                   a = v[I]
-                  self.COP.__dict__[name][-1] = a[:,J] # TO DO: check for rank
+                  self.COP.__dict__[name][-1] = a[:,J]
 
         # Core Metadata
         # -------------
         cm = hfile.attributes()['CoreMetadata.0']
 
-#       Satellite name
-#       --------------
+        # Satellite name
+        # --------------
+        sat = cm.split('ASSOCIATEDPLATFORMSHORTNAME')[1].split('\n')[3].split('=')[1]
+        sat = sat.lstrip().replace('"','')
         if self.sat is None:
-            sat = cm.split('ASSOCIATEDPLATFORMSHORTNAME')[1].split('\n')[3].split('=')[1]
-            self.sat = sat.lstrip().replace('"','')
-            
-#       Collection
-#       ----------
-        if self.col is None:
-            col = int(cm.split('COLLECTION')[1].split('VERSIONID')[1].split('\n')[2].split('=')[1])
-            self.col = "%03d"%col
+          self.sat = sat
+        else:
+          if sat != self.sat:
+            raise MxD06Error, 'ERROR: Mixed satellites encountered'
+ 
+        # Collection
+        # ----------
+        coll = int(cm.split('COLLECTION')[1].split('VERSIONID')[1].split('\n')[2].split('=')[1])
+        coll = "%03d"%coll
+        if self.coll is None:
+            self.coll = coll
+        else:
+          if coll != self.coll:
+            raise MxD06Error, 'ERROR: Mixed collections encountered'
         
 #---
-    def write(self,filename, syn_time, iFilter=None, 
-              refine=8,res=None, Verb=1):
+    def write(self, filename, syn_time,
+              dir='.', iFilter=None, refine=8, res=None, Verb=1):
        """
         Writes gridded MODIS measurements to file.
+
+         filename -- full path of filename to write to,
+                       or None to use the standardized filename:
+                           <dir>/<prod>_c<coll>.cld_Nx.yyyymmdd_hhmmz.nc4
+                       In that case, provide the directory <dir> (default '.').
+                       <prod> = [MOD06|MYD06] is obtained from the object's recorded satellite.
+                       The collection <coll> is the object's recorded collection.
+
+         syn_time -- python datetime appropriate for the MXD06_L2 object
 
          refine  -- refinement level for a base 4x5 GEOS-5 grid
                        refine=1  produces a   4  x  5    grid
@@ -340,9 +381,8 @@ class MxD06_L2(object):
                    NOTE: *res*, if specified, supersedes *refine*.
 
          Verb -- Verbose level:
-                 0 - really quiet (default)
-                 1 - Warns if invalid file is found
-                 2 - Prints out non-zero number of fires in each file.
+                 0 - really quiet
+                 1 - basic commentary (default)
 
 
        """
@@ -372,7 +412,7 @@ class MxD06_L2(object):
        glat = linspace(-90.,90.,jm)
 
        nch = 7
-       levs = linspace(1,7,7) # for now
+       levs = linspace(1,7,7) # for now   ## <<<< needs fixing and levunits below
 
        t = syn_time
        Y, M, D, h, m, s = (t.year,t.month,t.day,t.hour,t.minute,t.second)
@@ -389,16 +429,26 @@ class MxD06_L2(object):
                   'Cloud_Water_Path',
                  ]
 
-       vname  = ['CTP', 'CTT', 'BT', 'F', 'RE',     'TAU', 'CWP'   ]
-       vunits = [ 'Pa',   'K',   'K',  '1', 'micron', '1',   'g m-2' ]
-       kmvar  = [  0,      0,    nch,   0,   0,        0,     0      ]
+       vname  = ['CTP', 'CTT',  'BT', 'F', 'RE',     'TAU', 'CWP'   ]
+       vunits = ['Pa',  'K',    'K',  '1', 'micron', '1',   'g m-2' ]
+       kmvar  = [ 0,     0,     nch,   0,   0,        0,     0      ]
+
+       if self.sat.lower() == 'terra':
+         prod = 'MOD06'
+       elif self.sat.lower() == 'aqua':
+         prod = 'MYD06'
+       else:
+         raise MxD06Error, 'Unknown satellite <%s>' % self.sat
+
+       if self.coll is None: raise MxD06Error, 'Missing collection'
 
        title = 'Gridded MODIS Cloud Retrievals'
-       source = 'MODIS PG06 gridded at NASA/GSFC/GMAO'
+       source = '%s_L2 collection %s gridded at NASA/GSFC/GMAO' % (prod, self.coll)
        contact = 'arlindo.dasilva@nasa.gov'
 
        if filename is None:
-           filename = '%s/%s.sfc.%d_%02dz.nc4'%(dir,expid,self.nymd,self.nhms/10000)
+           filename = os.sep.join((dir,
+             '%s_c%s.cld_Nx.%08d_%04dz.nc4' % (prod,self.coll,nymd,nhms/100)))
 
        # Create the file
        # ---------------
@@ -424,36 +474,39 @@ class MxD06_L2(object):
        # ------------
        self.iFilter = None
 
-       if Verb >=1:
+       if Verb > 0:
            print "[w] Wrote file "+filename
 
     def _binobs2d(self,q,im,jm):
         """Remove UNDEFs and bin it. Inout array is 2D."""
-        I = (q!=MISSING)
+        iOK = (q!=MISSING)
         if self.iFilter is not None:
-            I = I & self.iFilter 
-        return binobs2d(self.lon[I],self.lat[I],q[I],im,jm,MISSING) 
+            iOK = iOK & self.iFilter 
+        return binobs2d(self.lon[iOK],self.lat[iOK],q[iOK],im,jm,MISSING) 
 
     def _binobs3d(self,q,im,jm):
-        """Remove UNDEFs and bin it. Inout array is 3D."""
+        """
+        Remove UNDEFs and bin it. Inout array is 3D.
+        Every channel must be defined for the the pixel to be gridded.
+        """
         nc = q.shape[0]
-        J = (q[0]==MISSING)
+        iBAD = (q[0]==MISSING)
         for n in range(1,nc):
-            J = J | (q[n]==MISSING)
-        I = (J==False) # indices of good obs
+            iBAD = iBAD | (q[n]==MISSING)
+        iOK = (iBAD==False) # indices of good obs
         if self.iFilter is not None:
-            I = I & self.iFilter 
-        N = len(q[0][I])
-        u = zeros((nc,N))
+            iOK = iOK & self.iFilter 
+        numOK = len(q[0][iOK])
+        u = zeros((nc,numOK))
         for n in range(nc):
-            u[n,:] = q[n][I]
-        return binobs3d(self.lon[I],self.lat[I],u.T,im,jm,MISSING) 
+            u[n,:] = q[n][iOK]
+        return binobs3d(self.lon[iOK],self.lat[iOK],u.T,im,jm,MISSING) 
 
 #---
     def addVar(self,ctlfile,vname,**kwds):
         """
-        Interpolates *var* to obs location and saves it as an attribute
-        named *vname*.
+        Interpolates variable <vname> in <ctlfile> to pixel locations
+        and saves it as an attribute named <vname>.
         """
         from gfio import GFIOctl
         f = GFIOctl(ctlfile)
@@ -478,12 +531,12 @@ def granules ( path, prod, syn_time, coll='051', nsyn=8 ):
 
     # Determine synoptic time range
     # -----------------------------
-    dt = timedelta(seconds = 12. * 60. * 60. / nsyn)
-    t1, t2 = (syn_time-dt,syn_time+dt)
+    dt = timedelta(seconds = 12. * 60. * 60. / nsyn)  # half of time window
+    t1, t2 = (syn_time-dt,syn_time+dt)  # time window boundaries
 
     # Find MODIS granules in synoptic time range
     # ------------------------------------------
-    dt = timedelta(minutes=5)
+    dtGranule = timedelta(minutes=5)
     t = datetime(t1.year,t1.month,t1.day,t1.hour,0,0)
     Granules = []
     while t < t2:
@@ -492,75 +545,40 @@ def granules ( path, prod, syn_time, coll='051', nsyn=8 ):
             basen = "%s/%s/%04d/%03d/%s_L2.A%04d%03d.%02d%02d.%s.*.hdf"\
                      %(path,prod,t.year,doy,prod,t.year,doy,t.hour,t.minute,coll)
             try:
-
                 filen = glob(basen)[0]
                 Granules += [filen,]
 #               print " [x] Found "+filen
             except:
                 pass
-        t += dt
+        t += dtGranule
 
     if len(Granules) == 0:
-        print "WARNING: no %s collection %s granules found for"%(prod,coll), syn_time
+        print "WARNING: no %s collection %s granules found for time" % (prod, coll), syn_time
 
     return Granules
 
-#--
-
-def print_stats(name,x=None):
-    "Prints simple stats"
-    from pylab import prctile
-    if type(name) is not StringType:
-        x = name
-        name = 'mean,stdv,rms,min,25%,median,75%,max: '
-    if name == '__header__':
-        print ''
-        n = (80 - len(x))/2
-        print n * ' ' + x
-        print n * ' ' + len(x) * '-'
-        print ''
-        print '   Name       mean      stdv      rms      min     25%    median     75%      max'
-        print ' ---------  -------  -------  -------  -------  -------  -------  -------  -------'
-    elif name == '__sep__':
-        print ' ---------  -------  -------  -------  -------  -------  -------  -------  -------'
-    elif name == '__footer__':
-        print ' ---------  -------  -------  -------  -------  -------  -------  -------  -------'
-        print ''
-    else:
-        ave = x.mean()
-        std = x.std()
-        rms = sqrt(ave*ave+std*std)
-        prc = prctile(x)
-        print '%10s  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  '%\
-            (name,ave,std,rms,prc[0],prc[1],prc[2],prc[3],prc[4])
-
-#--
-
-def _gatime(nymd,nhms):
-        Months = ('jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec')
-        cymd = "%08d"%int(nymd)
-        chms = "%06d"%int(nhms)
-        t = chms[0:2]+":"+chms[2:4]+"Z"+\
-            cymd[6:8]+Months[int(cymd[4:6])-1]+cymd[0:4]
-        return t
-    
 #............................................................................
 
 if __name__ == "__main__":
 
-      syn_time = datetime(2012,8,15,12,0,0)
-      Files = granules('./Level2','MOD06',syn_time,coll='051')
-      m = MxD06_L2(Files,Verb=1)
-
-      aer_Nv = '/nobackup/fp/opendap/aer_Nv.ddf'
-      #m.addVar(aer_Nv,'DU001',kbeg=36,kount=36)
+      Collection = '051'
+      syn_time = datetime(2011,7,1,12,0,0)
+      L2mount = os.sep.join((os.environ['NOBACKUP'],'MODIS',Collection,'Level2'))
+      Files = granules(L2mount,'MOD06',syn_time,nsyn=24,coll=Collection)
+#     m = MxD06_L2(Files,Verb=1)
+      m = MxD06_L2(Files,Verb=1,decimate='binning')
+      m.write(None, syn_time)
 
 def hold():
+
       m = MxD06_L2('/nobackup/MODIS/051/Level2/MOD06/2012/228',Verb=1)
 
       Files = sorted(glob('/nobackup/MODIS/051/Level2/MOD06/2012/228/*.hdf'))
       Files = '/nobackup/MODIS/051/Level2/MOD06/2012/228/MOD06_L2.A2012228.1200.051.2012228213410.hdf'
       m = MxD06_L2(Files,decimate='thinning',Verb=1)
       m = MxD06_L2(Files,decimate='binning',Verb=1)
+
+      aer_Nv = '/nobackup/fp/opendap/aer_Nv.ddf'
+      m.addVar(aer_Nv,'DU001',kbeg=36,kount=36)
 
     
