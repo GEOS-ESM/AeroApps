@@ -1187,9 +1187,9 @@ def flatten_list(Input_nnr):
   
 if __name__ == "__main__":
 
-"""
-  Example Training/testing
-"""
+  """
+    Example Training/testing
+  """
   from   abc_c6_aux           import SummarizeCombinations, SummaryPDFs
 
   sat          = 'Aqua'
