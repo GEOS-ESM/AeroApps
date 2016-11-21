@@ -326,7 +326,7 @@ if __name__ == "__main__":
     l2_path = '/nobackup/MODIS/Level2/'
     algo = 'DEEP'
     prod = 'MYD04'
-    coll = '051'
+    coll = '006'
     syn_time = datetime(2008,6,30,12,0,0)
     albedo_file = '/nobackup/MODIS/Level3/ALBEDO/albedo_clim.ctl'
 

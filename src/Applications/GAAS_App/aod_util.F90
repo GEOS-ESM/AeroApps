@@ -39,6 +39,8 @@
 ! !REVISION HISTORY: 
 !
 !  12nov1999 da Silva First crack.
+!  12sep2016 Todling  Replaced peanut extinctions with total extinction.
+!  01oct2016 Todling  Backward-compatible read for extinctions.
 !
 !EOP
 !--------------------------------------------------------------------------
@@ -529,9 +531,13 @@ subroutine AOD_GetTau1ch ( filename, im, jm, km, nymd, nhms, verbose, w_tau, rc 
   integer :: nch = 1
   real :: channels(1) = (/ 550. /) ! this is hardwired for hyperwall files
 
-  integer, parameter :: NQ = 5
-  character(len=8) :: vname(NQ) = (/ 'DUEXTTAU', 'SSEXTTAU', 'SUEXTTAU', &
-                                     'BCEXTTAU', 'OCEXTTAU' /)
+  integer, parameter :: NQ = 1
+  character(len=9) :: vname(NQ) = (/ 'TOTEXTTAU' /)
+
+  integer, parameter :: NQori = 5
+  character(len=8) :: vname_ori(NQori) = (/ 'DUEXTTAU', 'SSEXTTAU', 'SUEXTTAU', &
+                                            'BCEXTTAU', 'OCEXTTAU' /)
+
 
   integer, parameter  :: READ_ONLY=1
 
@@ -585,15 +591,32 @@ subroutine AOD_GetTau1ch ( filename, im, jm, km, nymd, nhms, verbose, w_tau, rc 
 ! read tau for individual species and sum them up
 ! -----------------------------------------------
   do n = 1, nq
-     if (verbose) &
-          print *, '[+] Adding '//trim(vname(n))//' contribution at ', nymd, nhms
      call GFIO_GetVar ( fid, vname(n), nymd, nhms, im, jm, 0, 1, tau, rc )
-     if ( rc /= 0 ) then
-        print *, 'cannot read hyperwall variable ', vname(n)
-        return
+     if ( rc == 0 ) then
+        if (verbose) &
+             print *, '[+] Adding '//trim(vname(n))//' contribution at ', nymd, nhms
+        w_tau%qa(1)%data3d(:,:,1) = w_tau%qa(1)%data3d(:,:,1) + tau
+     else
+        print *, 'warning cannot read hyperwall variable ', vname(n)
+        print *, 'will try reading old wired-in specifies ...'
      end if
-     w_tau%qa(1)%data3d(:,:,1) = w_tau%qa(1)%data3d(:,:,1) + tau
   end do
+
+! try reading originally wired-in species
+! ---------------------------------------
+  if ( rc/=0 ) then
+     rc=0 ! reset error code
+     do n = 1, nqori
+        call GFIO_GetVar ( fid, vname_ori(n), nymd, nhms, im, jm, 0, 1, tau, rc )
+        if ( rc /= 0 ) then
+           print *, 'warning cannot read hyperwall variable ', vname_ori(n)
+           return
+        end if
+        if (verbose) &
+             print *, '[+] Adding '//trim(vname(n))//' contribution at ', nymd, nhms
+        w_tau%qa(1)%data3d(:,:,1) = w_tau%qa(1)%data3d(:,:,1) + tau
+     end do
+  endif
 
 ! All done
 ! --------

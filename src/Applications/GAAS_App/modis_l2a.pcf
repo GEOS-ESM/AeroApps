@@ -18,7 +18,7 @@ MODIS_L2A_ALBEDO_FILE     = /share/dasilva/fvInput/g5chem/sfc/modis_albedo/albed
 MODIS_L2A_WIND_FILE       = %s.gaas_bkg.sfc.%y4%m2%d2_%h2z.nc4
 
 MODIS_L2A_NN_FILE         = /share/dasilva/fvInput/g5chem/x/NN/nnr_002.%ident_Tau.net
-MODIS_L2A_BLANK_ODS       = /share/dasilva/fvInput/g5chem/x/blank.ods
+MODIS_L2A_BLANK_ODS       = /share/dasilva/fvInput/g5chem/x/blank_syn8.ods
 MODIS_L2A_COXMUNK_LUT     = /share/dasilva/fvInput/g5chem/x/coxmunk_lut.npz
 
 #END MODIS_L2A  processing
