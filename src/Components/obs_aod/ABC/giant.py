@@ -216,6 +216,14 @@ ALIAS = {
 MISSING = 1.E20
 
 # ..................................................................................
+class CX_ALBEDO(object):
+  """
+    Container for Cox-Munk albedo 
+  """
+  def __init__(self,s_channels):
+    for ch in s_channels:
+      self.__dict__['CxAlbedo' + ch] = []
+
 
 class GIANT(object):
 
@@ -367,7 +375,8 @@ class GIANT(object):
 
     self.CoxMunkLUT = albedo
 
-  def calcCoxMunk(self,channels=550.,windFile=None,npzFile=None):
+
+  def calcCoxMunk(self,channels=[470. ,550. ,660. ,870. ,1200.,1600.,2100.],windFile=None,npzFile=None):
     """
     Calls VLIDORT wrapper to calculate CoxMunk Bidirectional Surface Reflectance.
     """
@@ -383,19 +392,33 @@ class GIANT(object):
     v10m = wind['v10m'].astype('float64')
     sza = self.SolarZenith.astype('float64')
     vza = self.SensorZenith.astype('float64')
-    raa = np.abs(self.SensorAzimuth - self.SolarAzimuth).astype('float64')
+
+    # needs to be photon travel direction.  raa = 0 is forward scattering
+    saa = self.SolarAzimuth.astype('float64')
+    saa = saa + 180.0
+    saa[saa>=360.0] = saa[saa>=360.0] - 360.0
+    raa = np.abs(self.SensorAzimuth - saa).astype('float64')
+
+    if type(channels) is list:
+      channels = np.array(channels)
 
     try:
       some_object_iterator = iter(channels)
     except:
       channels = np.array([channels])
 
+    strch = [str(int(ch)) for ch in channels]
     m  = interp(channels,channeli,mr)
     
-    self.albedo, rc = VLIDORT_BRDF_.coxmunk(1,channels,u10m,v10m,m,sza,raa,vza,-999,1)
+    albedos, rc = VLIDORT_BRDF_.coxmunk(1,channels,u10m,v10m,m,sza,raa,vza,-999,1)
+
+    self.sample = CX_ALBEDO(strch)
+    for i,ch in enumerate(strch):
+      self.sample.__dict__['CxAlbedo' + ch] = albedos[:,i]
+
 
     if npzFile is not None:
-      savez(npzFile,albedo=self.albedo) 
+      savez(npzFile,**self.sample.__dict__)
 
 #---
   def speciate(self,aer_x,FineMode=False,Verbose=False):
