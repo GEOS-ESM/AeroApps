@@ -972,6 +972,7 @@ def SummaryPDFs(mxdx,mxdx2=None,varnames=['mRef870','mSre470'],doInt=False):
       if mxdx2 is not None:
         if len(mxdx.comblist) == 1:
           netfileRoot2 = mxdx2.outdir+"/"+mxdx2.expid+'_Tau.net'
+          Input2 = mxdx2.comblist[0]
         else:        
           Input2 = mxdx2.comblist[c]
           for invars in itertools.permutations(Input2):
