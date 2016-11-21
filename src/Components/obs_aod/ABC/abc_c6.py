@@ -180,6 +180,8 @@ class ABC(object):
               self.giantList.append(albedo)    
             elif albedo == 'MCD43C1':
               self.setBRDF()     
+            elif 'CxAlbedo' in albedo :
+              self.setCoxMunkBRF(albedo)
             else:
               self.__dict__[albedo] = squeeze(load(self.fnameRoot+'_'+albedo+'.npz')["albedo"])
               self.giantList.append(albedo)
@@ -191,6 +193,12 @@ class ABC(object):
         for name in names:
             self.__dict__[name] = load(self.fnameRoot + "_MERRA2.npz")[name]
             self.giantList.append(name)
+
+    def setCoxMunkBRF(self,albedo):
+        # Read in Cox Munk Bidirectional surface reflectance
+        # --------------------------------------------------
+        self.__dict__[albedo] = squeeze(load(self.fnameRoot+'_CoxMunkBRF.npz')[albedo])
+        self.giantList.append(albedo)
 
     def setBRDF(self):
         # Read in MCD43C1 BRDF
