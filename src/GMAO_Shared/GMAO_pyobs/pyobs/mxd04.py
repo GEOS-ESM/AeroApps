@@ -152,6 +152,9 @@ class MxD04_L2(object):
                  0 - really quiet (default)
                  1 - Warns if invalid file is found
                  2 - Prints out non-zero number of aerosols in each file.
+         SDS      --- Variables to be read from MODIS hdf files.  Must 
+                      be a dictionary with keys 'META' and Algo
+         ALIAS    --- dictionary of alises for SDSs
 
        """
 
