@@ -130,7 +130,8 @@ class MxD04_L2(object):
     referred to as MOD04 (TERRA satellite) and MYD04 (AQUA satellite).
     """
 
-    def __init__ (self,Path,Algo,syn_time=None,nsyn=8,Verb=0,only_good=True):
+    def __init__ (self,Path,Algo,syn_time=None,nsyn=8,Verb=0,
+                  only_good=True,SDS=SDS,ALIAS=ALIAS):
        """
        Reads individual granules or a full day of Level 2 MOD04/MYD04 files
        present on a given *Path* and returns a single object with
