@@ -93,9 +93,7 @@ class MxD04_NNR(MxD04_L2):
     """
 
     def __init__(self,l2_path,prod,algo,syn_time,
-                 ga,expr='mag(u10m,v10m)',vname='wind',
-                 coxmunk_lut='coxmunk_lut.npz',
-                 cloud_thresh=0.70,alb_min=0.25,coll='051',verbose=0):
+                 cloud_thresh=0.70,coll='006',verbose=0):
         """
         Contructs a MXD04 object from MODIS Aerosol Level 2
         granules. On input,
