@@ -720,7 +720,7 @@ def granules ( path, prod, syn_time, coll='051', nsyn=8 ):
         if t >= t1:
             doy = t.timetuple()[7]
             basen = "%s/%s/%s/%04d/%03d/%s_L2.A%04d%03d.%02d%02d.%s.*.hdf"\
-                     %(path,prod,coll,t.year,doy,prod,t.year,doy,t.hour,t.minute,coll)
+                     %(path,coll,prod,t.year,doy,prod,t.year,doy,t.hour,t.minute,coll)
             try:
                 filen = glob(basen)[0]
                 Granules += [filen,]
@@ -778,8 +778,8 @@ def _gatime(nymd,nhms):
 if __name__ == "__main__":
 
 #    syn_time = datetime(2008,6,30,0,0,0)
-    syn_time = datetime(2011,2,5,12,0,0)
-    Files = granules('./Level2','MYD04',syn_time,coll='051')
+    syn_time = datetime(2002,12,10,21,0,0)
+    Files = granules('/nobackup/MODIS/Level2/','MYD04',syn_time,coll='006')
 
 #    ocean = MxD04_L2(Files,'OCEAN',syn_time,Verb=1)
     land  = MxD04_L2(Files,'LAND',syn_time,Verb=1)
