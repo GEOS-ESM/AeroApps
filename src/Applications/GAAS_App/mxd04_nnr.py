@@ -89,7 +89,7 @@ class MxD04_NNR(MxD04_L2):
     """
     This class extends MODIS by adding methods for producing
     NNR AOD retrievals based on the Neural Net model developed
-    with class *abc_modis*.
+    with class *abc_c6*.
     """
 
     def __init__(self,l2_path,prod,algo,syn_time,
@@ -105,20 +105,17 @@ class MxD04_NNR(MxD04_L2):
                       Deep Blue)
         syn_time --- synoptic time
 
-              ga --- GrADS object for wind parameter
-            expr --- *wind* variable expression
-           vname --- name of wind variable
-     cloud_tresh --- cloud fraction treshhold
-         alb_min --- dark target will consider albedos < alb_min,
-                     while deep blue will consider albedos > alb_bin
+        cloud_tresh --- cloud fraction treshhold
               
         The following attributes are also defined:
-           GlintAngle
+           fractions dust, sea salt, BC+OC, sulfate
            aod_coarse
            wind
            
         It also performs Q/C, setting attribute iGood. On,
         input, *cloud_thresh* is the cloud fraction limit.
+        When DEEP BLUE algorithm is requested, filters for 
+        land retrievals where DARK TARGET obs are unavailable.
         """
 
         self.verbose = verbose
