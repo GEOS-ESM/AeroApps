@@ -6,7 +6,8 @@ abc_modis.
   This version works from MODIS MOD04/MYD04 Level 2 files.
 
 """
-
+import os, sys
+sys.path.insert(0,'/home/pcastell/Enthought/Canopy_64bit/System/lib/python2.7/site-packages')
 import warnings
 from pyobs.mxd04 import MxD04_L2, MISSING, granules
 
@@ -14,35 +15,66 @@ from ffnet import loadnet
 from numpy import  c_ as cat
 from numpy import  copy, ones, sin, cos, exp, arccos, pi, any, log
 
-# Translate Inputs between ANET and MODIS classes
+# SDS to be read in
+# ------------
+SDS = dict( META =    ( "Scan_Start_Time",
+                        "Latitude",
+                        "Longitude",
+                        "Solar_Zenith",
+                        "Solar_Azimuth",
+                        "Sensor_Zenith",
+                        "Sensor_Azimuth",
+                        "Scattering_Angle",
+                        "Glint_Angle"),
+
+            LAND =    ( 'Mean_Reflectance_Land',
+                        'Surface_Reflectance_Land',
+                        'Aerosol_Cloud_Fraction_Land',
+                        'Quality_Assurance_Land'),
+
+            OCEAN =   ( 'Mean_Reflectance_Ocean',
+                        'Aerosol_Cloud_Fraction_Ocean',               
+                        'Quality_Assurance_Ocean'),
+
+            DEEP =    ( 'Deep_Blue_Spectral_TOA_Reflectance_Land',
+                        'Deep_Blue_Spectral_Surface_Reflectance_Land',
+                        'Deep_Blue_Cloud_Fraction_Land',
+                        'Deep_Blue_Aerosol_Optical_Depth_550_Land_QA_Flag'))
+
+# Translate Inputs between NNR and MODIS classes
 # -----------------------------------------------
-TranslateInput = dict ( mTau470 = ( 'aod', 470 ),
-                        mTau550 = ( 'aod', 550 ),
-                        mTau660 = ( 'aod', 660 ),
-                        mTau870 = ( 'aod', 870 ),
-                        mTAU470 = ( 'aod_coarse', 470),
-                        mTAU550 = ( 'aod_coarse', 550),
-                        mTAU660 = ( 'aod_coarse', 660),
-                        mTAU870 = ( 'aod_coarse', 870),
-                        mSre470  = ('Surface_Reflectance_Land',470),
-                        mSre660  = ('Surface_Reflectance_Land',660),
-                        mSre2100 = ('Surface_Reflectance_Land',2100),
-                        mRef470  = ('reflectance',470),
-                        mRef550  = ('reflectance',550),
-                        mRef660  = ('reflectance',660),
-                        mRef870  = ('reflectance',870),
-                        mRef1200 = ('reflectance',1200),
-                        mRef1600 = ('reflectance',1600),
-                        mRef2100 = ('reflectance',2100),
-                        sRef412 =  ('Deep_Blue_Surface_Reflectance_Land',412),
-                        sRef470 =  ('Deep_Blue_Surface_Reflectance_Land',470),
-                        dRef412 =  ('Deep_Blue_Mean_Reflectance_Land',412),
-                        dRef470 =  ('Deep_Blue_Mean_Reflectance_Land',470),
-                        )
+TranslateInput = dict ( OCEAN = dict( mRef470  = ('reflectance',470),
+                                      mRef550  = ('reflectance',550),
+                                      mRef660  = ('reflectance',660),
+                                      mRef870  = ('reflectance',870),
+                                      mRef1200 = ('reflectance',1200),
+                                      mRef1600 = ('reflectance',1600),
+                                      mRef2100 = ('reflectance',2100)),
+                                      
+                        LAND =  dict( mSre470  = ('sfc_reflectance',470),
+                                      mSre660  = ('sfc_reflectance',660),
+                                      mSre2100 = ('sfc_reflectance',2100),
+                                      mRef412  = ('reflectance',412),
+                                      mRef440  = ('reflectance',440),
+                                      mRef470  = ('reflectance',470),
+                                      mRef550  = ('reflectance',550),
+                                      mRef660  = ('reflectance',660),
+                                      mRef870  = ('reflectance',870),
+                                      mRef1200 = ('reflectance',1200),
+                                      mRef1600 = ('reflectance',1600),
+                                      mRef2100 = ('reflectance',2100)),
+
+                        DEEP =  dict( mSre412  = ('sfc_reflectance',412),
+                                      mSre470  = ('sfc_reflectance',470),
+                                      mSre660  = ('sfc_reflectance',660),
+                                      mRef412  = ('reflectance',470),
+                                      mRef470  = ('reflectance',550),
+                                      mRef660  = ('reflectance',660)))
+
 for var in ( 'ScatteringAngle','GlintAngle',
              'SolarAzimuth', 'SolarZenith',
              'SensorAzimuth','SensorZenith',
-             'cloud', 'wind', 'ustar', 'albedo', 'angstrom' ):
+             'cloud','qa_flag'  ):
     TranslateInput[var] = (var,)
 
 # Translate Targets between ANET and MODIS classes
