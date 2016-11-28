@@ -132,7 +132,7 @@ class MxD04_L2(object):
     """
 
     def __init__ (self,Path,Algo,syn_time=None,nsyn=8,Verb=0,
-                  only_good=True,SDS=SDS,ALIAS=ALIAS):
+                  only_good=True,SDS=SDS,alias=None):
        """
        Reads individual granules or a full day of Level 2 MOD04/MYD04 files
        present on a given *Path* and returns a single object with
@@ -169,6 +169,11 @@ class MxD04_L2(object):
        self.col  = None # collection, e.g., 005
        self.algo = Algo
        self.SDS = SDS['META'] + SDS[Algo]
+
+       # Add/Substitute some aliases if given
+       # ------------------------------------
+       if alias is not None:
+           for a in alias: ALIAS[a] = alias[a]  
 
        # Create empty lists for SDS to be read from file
        # -----------------------------------------------
