@@ -420,36 +420,17 @@ class MxD04_NNR(MxD04_L2):
                 result = exp(targets[:,i]) - 0.01 # inverse
             else:
                 result = targets[:,i]
-            result = self.inflate(result) # inflate results, if desired
             self.__dict__[name][self.iGood,k] = result
 
             i += 1 
 
         return result
 
-#---
-    def inflate(self,result):
-        """
-        If desired, inflate the AOD estimate.
-        """
-        if 'inflation' in self.net.__dict__.keys():
-            how_much, tau0, dtau = self.net.inflation
-            result = inflate(result,how_much=how_much,tau0=tau0,dtau=dtau)
-            print "- Inflating AOD by %4.2f with tau0=%4.2f and dtau=%4.2f"%(how_much,tau0,dtau)
-        else:
-            print "- No inflation being applied, skipping..."
-
-        return result
 
 #---
         
     __call__= apply
 
-#---
-def inflate(tau,how_much=0.5,tau0=0.35,dtau=0.1):
-    a = (tau-tau0)/dtau
-    f = (1+how_much/(1.+exp(-a)))
-    return tau*f
 
 #---
 
