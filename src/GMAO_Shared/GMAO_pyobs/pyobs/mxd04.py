@@ -82,6 +82,7 @@ ALIAS = dict (  Longitude = 'lon',
                 Solar_Zenith = 'SolarZenith',
                 Solar_Azimuth = 'SolarAzimuth',
                 Scattering_Angle = 'ScatteringAngle',
+                Glint_Angle = 'GlintAngle',
                 Mean_Reflectance_Land = 'reflectance',
                 Surface_Reflectance_Land = 'sfc_reflectance',
                 Corrected_Optical_Depth_Land = 'aod',
@@ -174,6 +175,7 @@ class MxD04_L2(object):
        # ------------------------------------
        if alias is not None:
            for a in alias: ALIAS[a] = alias[a]  
+       self.ALIAS = ALIAS
 
        # Create empty lists for SDS to be read from file
        # -----------------------------------------------
