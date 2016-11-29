@@ -26,7 +26,6 @@ from optparse        import OptionParser   # Command-line args
 from dateutil.parser import parse as isoparse
 from mxd04_nnr       import MxD04_NNR
 from MAPL            import strTemplate
-from grads           import GrADS
 
 Ident = dict( modo = ('MOD04','ocean'),
               modl = ('MOD04','land'),
@@ -114,15 +113,15 @@ if __name__ == "__main__":
                            %out_tmpl )
 
     parser.add_option("-u", "--uncompressed",
-                      action="store_true", dest="uncompressed",
+                      action="store_true", dest="uncompressed",default=False,
                       help="Do not use n4zip to compress gridded/ODS output file (default=False)")
 
     parser.add_option("-F", "--force",
-                      action="store_true", dest="force",
+                      action="store_true", dest="force",default=False,
                       help="Overwrites output file")
 
     parser.add_option("-v", "--verbose",
-                      action="store_true", dest="verbose",
+                      action="store_true", dest="verbose",default=False,
                       help="Turn on verbosity.")
 
     (options, args) = parser.parse_args()
@@ -145,18 +144,20 @@ if __name__ == "__main__":
 #   Time variables
 #   --------------
     syn_time = isoparse(isotime)
+    nymd     = str(syn_time.date()).replace('-','')
+    nhms     = str(syn_time.time()).replace(':','')
             
 #   Form output gridded file name
 #   -----------------------------
     out_tmpl = options.out_dir+'/'+options.out_tmpl
-    out_tmpl = out_tmpl.replace('%prod',prod).replace('%algo',algo).replace('%lev','3').replace('%ext','nc4')
+    out_tmpl = out_tmpl.replace('%coll',coll).replace('%prod',prod).replace('%algo',algo).replace('%lev','3').replace('%ext','nc4')
     out_file = strTemplate(out_tmpl,expid=options.expid,nymd=nymd,nhms=nhms)
     name, ext = os.path.splitext(out_file)
 
 #   Form ODS file name
 #   ------------------
     ods_tmpl = options.out_dir+'/'+options.out_tmpl
-    ods_tmpl = ods_tmpl.replace('%prod',prod).replace('%algo',algo).replace('%lev','2').replace('%ext','ods')
+    ods_tmpl = ods_tmpl.replace('%coll',coll).replace('%prod',prod).replace('%algo',algo).replace('%lev','2').replace('%ext','ods')
     ods_file = strTemplate(ods_tmpl,expid=options.expid,nymd=nymd,nhms=nhms)
     if os.path.exists(ods_file) and (options.force is not True):
         print "mxd04_l2a: Output ODS file <%s> exists --- cannot proceed."%ods_file
@@ -179,7 +180,7 @@ if __name__ == "__main__":
         if options.verbose:
             print 'WARNING: no GOOD observation for this time in file <%s>'%ods_file
         modis.nobs = 0
-    m.speciate(aer_x,Verbose=options.verbose)
+    modis.speciate(aer_x,Verbose=options.verbose)
     nn_file = options.nn_file.replace('%ident',ident)
     modis.apply(nn_file)
 
@@ -207,7 +208,7 @@ if __name__ == "__main__":
 #    npz_file = name.replace('Level3','Level2') + '.npz'
 #    makethis_dir(npz_file)
 #    modis.write(npz_file)
-
+    
 #   Compress nc output unless the user disabled it
 #   ----------------------------------------------
     if modis.nobs>0:
