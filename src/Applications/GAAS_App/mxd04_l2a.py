@@ -161,24 +161,6 @@ if __name__ == "__main__":
     if os.path.exists(ods_file) and (options.force is not True):
         print "mxd04_l2a: Output ODS file <%s> exists --- cannot proceed."%ods_file
         raise IOError, "Specify --force to overwrite existing output file."
-
-#   Gather Auxiliary data
-#   ---------------------
-    ga = GrADS(Echo=False,Window=False)
-    if algo == 'ocean':
-        if options.wind_file[-3:] == 'nc4':
-            wind_file = strTemplate(options.wind_file,expid=options.expid,nymd=nymd,nhms=nhms)
-            ga('sdfopen %s'%wind_file)
-        else:
-            ga('open %s'%options.wind_file)
-        expr='mag(u10m,v10m)'
-        vname = 'wind'
-    elif (algo == 'land') or (algo == 'deep'):
-        ga('open %s'%options.albedo_file)
-        expr='albedo'
-        vname = 'albedo'
-    else:
-        raise ValueError, 'unknown algo <%s>'%algo
         
 #   MODIS Level 2 NNR Aerosol Retrievals
 #   ------------------------------------
@@ -186,8 +168,8 @@ if __name__ == "__main__":
         print "NNR Retrieving %s %s on "%(prod,algo.upper()),syn_time
 
     modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,
-                      ga,expr=expr,vname=vname,coll=options.coll,
-                      cloud_thresh=0.7,coxmunk_lut=options.coxmunk_lut,
+                      coll=options.coll,
+                      cloud_thresh=0.7,
                       verbose=options.verbose)
     if modis.nobs < 1:
         if options.verbose:
@@ -197,7 +179,7 @@ if __name__ == "__main__":
         if options.verbose:
             print 'WARNING: no GOOD observation for this time in file <%s>'%ods_file
         modis.nobs = 0
-    
+    m.speciate(aer_x,Verbose=options.verbose)
     nn_file = options.nn_file.replace('%ident',ident)
     modis.apply(nn_file)
 
