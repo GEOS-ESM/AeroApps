@@ -40,6 +40,7 @@ SDS = dict( META =    ( "Scan_Start_Time",
                         'Quality_Assurance_Ocean'),
 
             DEEP =    ( 'Deep_Blue_Aerosol_Optical_Depth_550_Land',
+                        'Deep_Blue_Spectral_Aerosol_Optical_Depth_Land',
                         'Deep_Blue_Spectral_TOA_Reflectance_Land',
                         'Deep_Blue_Spectral_Surface_Reflectance_Land',
                         'Deep_Blue_Cloud_Fraction_Land',
@@ -49,7 +50,7 @@ SDS = dict( META =    ( "Scan_Start_Time",
                         'Aerosol_Cloud_Fraction_Land',
                         'Quality_Assurance_Land'))
 
-ALIAS = dict( Deep_Blue_Aerosol_Optical_Depth_550_Land = 'aod',
+ALIAS = dict( Deep_Blue_Aerosol_Optical_Depth_550_Land = 'aod550',
               Mean_Reflectance_Land = 'reflectance_lnd',
               Surface_Reflectance_Land = 'sfc_reflectance_lnd',
               Aerosol_Cloud_Fraction_Land = 'cloud_lnd',
@@ -205,8 +206,9 @@ class MxD04_NNR(MxD04_L2):
 
 
             self.qa_flag = self.qa_flag[m]
-            self.iGood = self.iGood[m] 
-            self.nobs = self.Longitude.shape[0]         
+            self.aod     = self.aod[m,:]
+            self.iGood   = self.iGood[m] 
+            self.nobs    = self.Longitude.shape[0]         
 
             if self.nobs < 1:
                 return # no obs, nothing to do             
@@ -234,11 +236,11 @@ class MxD04_NNR(MxD04_L2):
 
         # Create attribute for holding NNR predicted AOD
         # ----------------------------------------------
-        self.aod_ = MISSING * ones((self.nobs,1))
+        self.aod_ = MISSING * ones((self.nobs,len(self.channels)))
 
         # Make sure same good AOD is kept for gridding
         # --------------------------------------------
-        if algo == "DEEP":
+        if len(self.aod.shape) == 1:
             self.aod.shape = self.aod.shape + (1,)
         self.aod[self.iGood==False,:] = MISSING
 
@@ -420,6 +422,7 @@ class MxD04_NNR(MxD04_L2):
                 result = exp(targets[:,i]) - 0.01 # inverse
             else:
                 result = targets[:,i]
+
             self.__dict__[name][self.iGood,k] = result
 
             i += 1 
