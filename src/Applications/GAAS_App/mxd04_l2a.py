@@ -21,13 +21,12 @@ warnings.simplefilter('always',UserWarning)
 import os
 import sys
 
-from time         import clock
-from optparse     import OptionParser   # Command-line args  
-from datetime     import datetime
-
-from mxd04_nnr    import MxD04_NNR
-from MAPL         import strTemplate
-from grads        import GrADS
+from time            import clock
+from optparse        import OptionParser   # Command-line args  
+from dateutil.parser import parse as isoparse
+from mxd04_nnr       import MxD04_NNR
+from MAPL            import strTemplate
+from grads           import GrADS
 
 Ident = dict( modo = ('MOD04','ocean'),
               modl = ('MOD04','land'),
@@ -57,28 +56,24 @@ if __name__ == "__main__":
 #   ----------------------------------
     if os.path.exists('/nobackup/MODIS/Level2/'): # New calculon
         l2_path = '/nobackup/MODIS/Level2/'
-        out_dir = '/nobackup/NNR/Level%lev/%prod/Y%y4/M%m2'
-        nn_file = '/nobackup/NNR/Net/nnr_002.%ident_Tau.net'
+        out_dir = '/nobackup/NNR/%coll/Level%lev/%prod/Y%y4/M%m2'
+        nn_file = '/nobackup/NNR/Net/nnr_003.%ident_Tau.net'
         blank_ods = '/nobackup/NNR/Misc/blank.ods'
-        coxmunk_lut = '/nobackup/NNR/Misc/coxmunk_lut.npz'
-#    elif os.path.exists('/discover/nobackup/projects/gmao/iesa/'): # Discover
-#        raise ValueError, 'not setup yet'
+        aer_x   = '/nobackup/NNR/Misc/tavg1_2d_aer_Nx'
     else: # Must be somewhere else, no good defaults
         out_dir      = './'
         l2_path = './'
         nn_file = '%ident_Tau.net'
         blank_ods = 'blank.ods'
-        coxmunk_lut = 'cox-munk_lut.npz'
+        aer_x   = 'tavg1_2d_aer_Nx'        
 
     out_tmpl = '%s.%prod_l%leva.%algo.%y4%m2%d2_%h2%n2z.%ext'
-    wind_file = 'merra_slv-hourly.ddf'
-    albedo_file = 'albedo_clim.ctl'
-    coll = '051'
+    coll = '006'
     res = 'c'
     
 #   Parse command line options
 #   --------------------------
-    parser = OptionParser(usage="Usage: %prog [options] ident nymd nhms",
+    parser = OptionParser(usage="Usage: %prog [options] ident isotime",
                           version='mxd04_l2a-1.0.0' )
 
 
@@ -90,9 +85,9 @@ if __name__ == "__main__":
                       help="Output directory (default=%s)"\
                            %out_dir )
 
-    parser.add_option("-A", "--albedo", dest="albedo_file", default=albedo_file,
-                      help="GrADS ctl for Albedo file (default=%s)"\
-                           %albedo_file )
+    parser.add_option("-A", "--aer_x", dest="aer_x", default=aer_x,
+                      help="GrADS ctl for speciated AOD file (default=%s)"\
+                           %aer_x )
 
     parser.add_option("-B", "--blank_ods", dest="blank_ods", default=blank_ods,
                       help="Blank ODS file name for fillers  (default=%s)"\
@@ -109,17 +104,10 @@ if __name__ == "__main__":
     parser.add_option("-L", "--l2_dir", dest="l2_path", default=l2_path,
                       help="Top directory for MODIS Level 2 files (default=%s)"\
                            %l2_path )
-    parser.add_option("-M", "--coxmunk", dest="coxmunk_lut", default=coxmunk_lut,
-                      help="Blank ODS file name for fillers  (default=%s)"\
-                           %coxmunk_lut )
 
     parser.add_option("-N", "--net", dest="nn_file", default=nn_file,
                       help="Neural net file template  (default=%s)"\
                            %nn_file )
-
-    parser.add_option("-W", "--wind", dest="wind_file", default=wind_file,
-                      help="GrADS ctl for Wind file (default=%s)"\
-                           %wind_file )
 
     parser.add_option("-r", "--res", dest="res", default=res,
                       help="Resolution for gridded output (default=%s)"\
@@ -139,8 +127,8 @@ if __name__ == "__main__":
 
     (options, args) = parser.parse_args()
     
-    if len(args) == 3:
-        ident, nymd, nhms = args
+    if len(args) == 2:
+        ident, isotime = args
         prod, algo = Ident[ident]
     else:
         parser.error("must have 3 arguments: ident, date and time")
@@ -156,10 +144,7 @@ if __name__ == "__main__":
 
 #   Time variables
 #   --------------
-    nymd_, nhms_ = ( int(nymd), int(nhms) )
-    year, month, day = (nymd_/10000, (nymd_%10000)/100, nymd_%100)
-    hour = nhms_/10000
-    syn_time = datetime(year,month,day,hour,0,0) # no munte, second
+    syn_time = isoparse(isotime)
             
 #   Form output gridded file name
 #   -----------------------------
