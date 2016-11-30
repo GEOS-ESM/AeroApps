@@ -2,23 +2,21 @@
 
 MODIS_L2A_VERBOSE         = YES
 
-MODIS_L2A_EXPID           = ${EXPID}
-MODIS_L2A_IDENTS          = mydl,mydo,modl,modo
-MODIS_L2A_COLLECTION      = 051,051,005,005
+MODIS_L2A_EXPID           = nnr
+MODIS_L2A_IDENTS          = mydl,mydo,mydd,modl,modo,modd
+MODIS_L2A_COLLECTION      = 006,006,006,006,006,006
 
-MODIS_L2A_L2_DIR          = /discover/nobackup/dao_ops/intermediate/flk/modis
-MODIS_L2A_OUT_DIR         = /discover/nobackup/dao_ops/intermediate/flk/modis/Level%lev/%prod/Y%y4/M%m2
-MODIS_L2A_OUT_DIR         = ${FVHOME}/obs/Level%lev/%prod/Y%y4/M%m2
+MODIS_L2A_L2_DIR          = /nobackup/MODIS/Level2
+MODIS_L2A_OUT_DIR         = /nobackup/NNR/%coll/Level%lev/%prod/Y%y4/M%m2
 
 MODIS_L2A_OVERWRITE       = YES
 MODIS_L2A_OUT_TEMPLATE    = '%s.%prod_L%leva.%algo.%y4%m2%d2_%h2%n2z.%ext'
 MODIS_L2A_RESOLUTION      = e
 
-MODIS_L2A_ALBEDO_FILE     = /share/dasilva/fvInput/g5chem/sfc/modis_albedo/albedo_clim.ctl
-MODIS_L2A_WIND_FILE       = %s.gaas_bkg.sfc.%y4%m2%d2_%h2z.nc4
+MODIS_L2A_AER_X           = /nobackup/NNR/Misc/tavg1_2d_aer_Nx
 
-MODIS_L2A_NN_FILE         = /share/dasilva/fvInput/g5chem/x/NN/nnr_002.%ident_Tau.net
-MODIS_L2A_BLANK_ODS       = /share/dasilva/fvInput/g5chem/x/blank.ods
-MODIS_L2A_COXMUNK_LUT     = /share/dasilva/fvInput/g5chem/x/coxmunk_lut.npz
+
+MODIS_L2A_NN_FILE         = /nobackup/NNR/Net/nnr_003.%ident_Tau.net
+MODIS_L2A_BLANK_ODS       = /nobackup/NNR/Misc/blank.ods
 
 #END MODIS_L2A  processing
