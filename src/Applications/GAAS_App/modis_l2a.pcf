@@ -10,7 +10,7 @@ MODIS_L2A_L2_DIR          = /nobackup/MODIS/Level2
 MODIS_L2A_OUT_DIR         = /nobackup/NNR/%coll/Level%lev/%prod/Y%y4/M%m2
 
 MODIS_L2A_OVERWRITE       = YES
-MODIS_L2A_OUT_TEMPLATE    = '%s.%prod_L%leva.%algo.%y4%m2%d2_%h2%n2z.%ext'
+MODIS_L2A_OUT_TEMPLATE    = '%s.%prod_l%leva.%algo.%y4%m2%d2_%h2%n2z.%ext'
 MODIS_L2A_RESOLUTION      = e
 
 MODIS_L2A_AER_X           = /nobackup/NNR/Misc/tavg1_2d_aer_Nx
