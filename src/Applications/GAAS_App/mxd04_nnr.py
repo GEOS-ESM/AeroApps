@@ -154,9 +154,6 @@ class MxD04_NNR(MxD04_L2):
                               alias=ALIAS,
                               Verb=verbose)
 
-            # Get DARK TARGET qa_flag
-            self.qa_flag_lnd = BITS(self.Quality_Assurance_Land[:,0])[1:4]
-
         if self.nobs < 1:
             return # no obs, nothing to do
 
@@ -175,6 +172,8 @@ class MxD04_NNR(MxD04_L2):
         # --------------------------------------------------------------
 
         if algo == "DEEP":
+            # Get DARK TARGET qa_flag
+            self.qa_flag_lnd = BITS(self.Quality_Assurance_Land[:,0])[1:4]            
             lndGood = self.qa_flag_lnd == BEST
             lndGood = lndGood & (self.cloud_lnd < cloud_thresh)
             rChannels = CHANNELS["LAND"]
@@ -303,6 +302,7 @@ class MxD04_NNR(MxD04_L2):
         else:
           fh = GFIOctl(inFile)  # open timeseries
           timeInterp = True     # perform time interpolation
+          tymes = np.array([self.syn_time]*self.nobs)
 
         self.sample = GFIOHandle(inFile)
         if onlyVars is None:
@@ -311,7 +311,7 @@ class MxD04_NNR(MxD04_L2):
         lons = self.lon
         lats = self.lat
 
-        tymes = np.array([self.syn_time]*self.nobs)
+        
 
         # Loop over variables on file
         # ---------------------------
