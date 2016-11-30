@@ -168,7 +168,7 @@ if __name__ == "__main__":
     if options.verbose:
         print "NNR Retrieving %s %s on "%(prod,algo.upper()),syn_time
 
-    modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,
+    modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,aer_x,
                       coll=options.coll,
                       cloud_thresh=0.7,
                       verbose=options.verbose)
@@ -180,7 +180,7 @@ if __name__ == "__main__":
         if options.verbose:
             print 'WARNING: no GOOD observation for this time in file <%s>'%ods_file
         modis.nobs = 0
-    modis.speciate(aer_x,Verbose=options.verbose)
+
     nn_file = options.nn_file.replace('%ident',ident)
     modis.apply(nn_file)
 
