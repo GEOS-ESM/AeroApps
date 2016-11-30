@@ -7,7 +7,7 @@ abc_modis.
 
 """
 import os, sys
-sys.path.insert(0,'/home/pcastell/Enthought/Canopy_64bit/System/lib/python2.7/site-packages')
+#sys.path.insert(0,'/home/pcastell/Enthought/Canopy_64bit/System/lib/python2.7/site-packages')
 import warnings
 from   pyobs.mxd04 import MxD04_L2, MISSING, granules, BEST 
 from   ffnet       import loadnet
@@ -108,7 +108,7 @@ class MxD04_NNR(MxD04_L2):
     with class *abc_c6*.
     """
 
-    def __init__(self,l2_path,prod,algo,syn_time,
+    def __init__(self,l2_path,prod,algo,syn_time,aer_x,
                  cloud_thresh=0.70,
                  glint_thresh=40.0,
                  scat_thresh=170.0,
@@ -254,6 +254,10 @@ class MxD04_NNR(MxD04_L2):
         self.SolarZenith     = cos(self.SolarZenith*pi/180.0)     
         self.GlintAngle      = cos(self.GlintAngle*pi/180.0)
 
+        # Get fractional composition
+        # ------------------------------
+        self.speciate(aer_x,Verbose=verbose)
+
 
     def speciate(self,aer_x,Verbose=False):
         """
@@ -318,6 +322,8 @@ class MxD04_NNR(MxD04_L2):
               var = fh.sample(v,lons,lats,tymes,Verbose=Verbose)
             else:
               var = fh.interp(v,lons,lats)
+            if (var.size == 1) & (len(var.shape) == 0):
+                var.shape = (1,)  #protect against when only one value is returned and shape=()
             if len(var.shape) == 1:
                 self.sample.__dict__[v] = var
             elif len(var.shape) == 2:
@@ -349,7 +355,6 @@ class MxD04_NNR(MxD04_L2):
                 iName = TranslateInput[inputName]
             except:
                 iName = inputName
-            print 'iName',iName
 
             if self.verbose>0:
                 print 'Getting NN input ',iName
@@ -445,23 +450,22 @@ if __name__ == "__main__":
     algo    = 'OCEAN'
     prod    = 'MYD04'
     coll    = '006'
-    aer_x   = '/home/pcastell/workspace/GAAS/src/Components/obs_aod/ABC/tavg1_2d_aer_Nx'
+    aer_x   = '/nobackup/NNR/Misc/tavg1_2d_aer_Nx'
 
     syn_time = datetime(2008,6,30,12,0,0)
+    syn_time = datetime(2008,1,1,0,0,0)
 
     if algo == 'OCEAN':
         nn_file = '/nobackup/NNR/Net/nnr_003.mydo_Tau.net'
     elif algo == 'LAND':
-        nn_file = '/nobackup/NNR/Net/nnr_003a.mydl_Tau.net'
+        nn_file = '/nobackup/NNR/Net/nnr_003.mydl_Tau.net'
     elif algo == 'DEEP':
-        nn_file = '/nobackup/NNR/Net/nnr_003a.mydd_Tau.net'
+        nn_file = '/nobackup/NNR/Net/nnr_003.mydd_Tau.net'
 
-    m = MxD04_NNR(l2_path,prod,algo.upper(),syn_time,
+    m = MxD04_NNR(l2_path,prod,algo.upper(),syn_time,aer_x,
                   coll=coll,
                   cloud_thresh=0.7,
                   verbose=True)
-
-    m.speciate(aer_x,Verbose=True)
 
     laod = m.apply(nn_file)
     aod = exp(laod) - 0.01
