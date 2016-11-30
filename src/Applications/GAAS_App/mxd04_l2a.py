@@ -20,6 +20,7 @@ warnings.simplefilter('always',UserWarning)
 
 import os
 import sys
+import subprocess
 
 from time            import clock
 from optparse        import OptionParser   # Command-line args  
@@ -153,6 +154,11 @@ if __name__ == "__main__":
     out_tmpl = out_tmpl.replace('%coll',coll).replace('%prod',prod).replace('%algo',algo).replace('%lev','3').replace('%ext','nc4')
     out_file = strTemplate(out_tmpl,expid=options.expid,nymd=nymd,nhms=nhms)
     name, ext = os.path.splitext(out_file)
+    if os.path.exists(out_file) and (options.force is not True):
+        print "mxd04_l2a: Output Gridded file <%s> exists --- cannot proceed."%out_file
+        raise IOError, "Specify --force to overwrite existing output file."    
+    if os.path.exists(out_file) and options.force:
+        os.remove(out_file)    
 
 #   Form ODS file name
 #   ------------------
@@ -162,13 +168,15 @@ if __name__ == "__main__":
     if os.path.exists(ods_file) and (options.force is not True):
         print "mxd04_l2a: Output ODS file <%s> exists --- cannot proceed."%ods_file
         raise IOError, "Specify --force to overwrite existing output file."
+    if os.path.exists(ods_file) and options.force:
+        os.remove(ods_file)
         
 #   MODIS Level 2 NNR Aerosol Retrievals
 #   ------------------------------------
     if options.verbose:
         print "NNR Retrieving %s %s on "%(prod,algo.upper()),syn_time
 
-    modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,aer_x,
+    modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,options.aer_x,
                       coll=options.coll,
                       cloud_thresh=0.7,
                       verbose=options.verbose)
@@ -213,7 +221,7 @@ if __name__ == "__main__":
 #   ----------------------------------------------
     if modis.nobs>0:
         if not options.uncompressed:
-            if os.system("n4zip "+out_file):
+            if subprocess.call("n4zip " + out_file,shell=True):
                 warnings.warn('cannot compress output file <%s>'%out_file)
-            if os.system("n4zip "+ods_file):
+            if subprocess.call("n4zip " + ods_file,shell=True):
                 warnings.warn('cannot compress output ods file <%s>'%ods_file)
