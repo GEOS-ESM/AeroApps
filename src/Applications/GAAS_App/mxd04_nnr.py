@@ -7,7 +7,7 @@ abc_modis.
 
 """
 import os, sys
-#sys.path.insert(0,'/home/pcastell/Enthought/Canopy_64bit/System/lib/python2.7/site-packages')
+sys.path.insert(0,'/home/pcastell/Enthought/Canopy_64bit/System/lib/python2.7/site-packages')
 import warnings
 from   pyobs.mxd04 import MxD04_L2, MISSING, granules, BEST 
 from   ffnet       import loadnet
@@ -224,7 +224,7 @@ class MxD04_NNR(MxD04_L2):
                 self.iGood = self.iGood & (self.sfc_reflectance[:,i]>0)
 
         if algo == "OCEAN":
-            self.iGood = self.iGood & (self.Glint_Angle < glint_thresh)
+            self.iGood = self.iGood & (self.GlintAngle > glint_thresh)
 
         if algo != "OCEAN":
             self.iGood = self.iGood & (self.ScatteringAngle < scat_thresh)
