@@ -13,7 +13,7 @@ MODIS_L2A_OVERWRITE       = YES
 MODIS_L2A_OUT_TEMPLATE    = '%s.%prod_l%leva.%algo.%y4%m2%d2_%h2%n2z.%ext'
 MODIS_L2A_RESOLUTION      = e
 
-MODIS_L2A_AER_X           = /nobackup/NNR/Misc/tavg1_2d_aer_Nx
+MODIS_L2A_AER_X           = %s.gaas_bkg.sfc.%y4%m2%d2_%h2z.nc4
 
 
 MODIS_L2A_NN_FILE         = /nobackup/NNR/Net/nnr_003.%ident_Tau.net
