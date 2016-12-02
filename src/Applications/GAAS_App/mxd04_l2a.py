@@ -173,7 +173,7 @@ if __name__ == "__main__":
 
 #   Aerosol composition file name
 #   -----------------------------
-    if options.aer_x[-3:] == 'nc4'
+    if options.aer_x[-3:] == 'nc4':
       aer_x = strTemplate(options.aer_x,expid=options.expid,nymd=nymd,nhms=nhms)
     else:
       aer_x = options.aer_x
