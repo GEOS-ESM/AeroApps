@@ -170,13 +170,21 @@ if __name__ == "__main__":
         raise IOError, "Specify --force to overwrite existing output file."
     if os.path.exists(ods_file) and options.force:
         os.remove(ods_file)
+
+#   Aerosol composition file name
+#   -----------------------------
+    if options.aer_x[-3:] == 'nc4'
+      aer_x = strTemplate(options.aer_x,expid=options.expid,nymd=nymd,nhms=nhms)
+    else:
+      aer_x = options.aer_x
+
         
 #   MODIS Level 2 NNR Aerosol Retrievals
 #   ------------------------------------
     if options.verbose:
         print "NNR Retrieving %s %s on "%(prod,algo.upper()),syn_time
 
-    modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,options.aer_x,
+    modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,aer_x,
                       coll=options.coll,
                       cloud_thresh=0.7,
                       verbose=options.verbose)
