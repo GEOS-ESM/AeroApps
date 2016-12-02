@@ -2,15 +2,14 @@
 # -W ignore::DeprecationWarning
 
 """
-  A Python script to create Revised MODIS Level 3a files.
+  A Python script to create NNR retrievals.
   It now uses class MXD04 to directly read MODIS Aerosol Level 2 
-  Files (MOD04/MYD04.
+  Files (MOD04/MYD04).
 
   This utility reads MODIS Level2 files and creates an ODS file with
-  the revised (read: NN bias corrected), as well as a *gritas* type
-  gridded output.
+  NNR retrievals, as well as a *gritas* type gridded output.
   
-  February 2011.
+  February 2011, revised Novembre 2016 for MODIS Collection 6.
   arlindo.dasilva@nasa.gov
 """
 
@@ -49,7 +48,7 @@ def makethis_dir(filename):
 
 if __name__ == "__main__":
 
-    expid = 'nnr'
+    expid = 'nnr3'
     ident = 'modo'
     
 #   Defaults may be platform dependent

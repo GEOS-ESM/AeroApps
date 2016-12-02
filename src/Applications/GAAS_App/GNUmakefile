@@ -28,6 +28,7 @@ THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
 
 BINS   = mpana_aod.x ana_aod.x 
+CSSCRP = get_aero_obs.csh run_gaas_ana.csh
 PYSCRP = modis_l2a.py mxd04_l2a.py avhrr_l2a.py patmosx_l2a.py
 PYMODS = mxd04_nnr.py avhrr_nnr.py
 
@@ -38,6 +39,7 @@ esma_install install: $(DEPS) $(LIB) $(BINS) $(PYMODS)
 	$(CP) -p *.rc *.pcf *.tmpl $(ESMAETC)
 	$(CP) -p *.mod             $(ESMAINC)/$(THIS)
 	$(CP) -p $(BINS) $(PYSCRP) $(ESMABIN)
+	$(CP) -p $(CSSCRP)         $(ESMABIN)
 
 esma_clean clean:
 	$(RM) *~ *.[aox] *.[Mm][Oo][Dd] *.x
