@@ -193,6 +193,13 @@ class MxD04_L2(object):
            Path = [Path, ]
        self._readList(Path)
 
+       #Protect against empty MXD04 files
+       # --------------------------------
+       if len(self.Longitude) == 0:
+           self.nobs = 0
+           print "WARNING: Empty MxD04_L2 object created"
+           return           
+
        # Make each attribute a single numpy array
        # ----------------------------------------
        for sds in self.SDS:
