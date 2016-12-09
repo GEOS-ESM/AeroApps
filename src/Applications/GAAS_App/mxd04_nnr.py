@@ -1,9 +1,7 @@
 """
-This module implements the unbiasing of MODIS AOD retrievals based
-on the (Neural Net) AOD Bias Correction model developed in module
-abc_modis.
+This module implements the MODIS NNR AOD retrievals.
 
-  This version works from MODIS MOD04/MYD04 Level 2 files.
+This version works from MODIS MOD04/MYD04 Level 2 files.
 
 """
 import os, sys
@@ -270,6 +268,7 @@ class MxD04_NNR(MxD04_L2):
                                         'OCEXTTAU',
                                         'SUEXTTAU',
                                         ),Verbose=Verbose)
+
         s = self.sample
         I = (s.TOTEXTTAU<=0)
         s.TOTEXTTAU[I] = 1.E30
@@ -279,6 +278,14 @@ class MxD04_NNR(MxD04_L2):
         self.foc  = s.OCEXTTAU / s.TOTEXTTAU
         self.fcc  = self.fbc + self.foc
         self.fsu  = s.SUEXTTAU / s.TOTEXTTAU
+
+        # Special handle nitrate (treat it as it were sulfate)
+        # ----------------------------------------------------
+        try:
+            self.sampleFile(aer_x,onlyVars=('NIEXTTAU',),Verbose=Verbose)
+            self.fsu += self.sample.NIEXTTAU / s.TOTEXTTAU
+        except:
+            pass   # ignore it for systems without nitrates
 
         del self.sample
 
@@ -420,7 +427,10 @@ class MxD04_NNR(MxD04_L2):
         for targetName in self.net.TargetNames:
             name, ch = TranslateTarget[targetName]
             if self.verbose>0:
-                print "Ubiasing ", name, ch, 'Log-AOD = ',self.net.laod 
+                if self.net.laod:
+                    print "NN Retrieving log(AOD+0.01) at %dnm "%ch
+                else:
+                    print "NN Retrieving AOD at %dnm "%ch
             k = list(self.channels).index(ch) # index of channel            
             self.channels_ = self.channels_ + [ch,]
             if self.net.laod:

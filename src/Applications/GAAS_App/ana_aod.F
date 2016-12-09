@@ -25,7 +25,7 @@
 
       use  m_ana
       use  m_ods
-      use  m_odsmeta, only: X_PASSIVE, ktAOD
+      use  m_odsmeta, only: X_PASSIVE, ktAOD, ktLogAOD
       use  m_obs
       use  m_simul
 
@@ -66,6 +66,7 @@
       integer :: im_so, jm_so    ! dimension of superob space
       integer :: rc, nobs, nobs_good, nODS, i
       integer :: nymd=0, nhms=0, nymd_b, nhms_b
+      integer :: myKTobs
 
       real*8  :: alpha         ! bias update coefficient
       real*8  :: chAOD(2)      ! Range of AOD waenumbers (nm) to analyze
@@ -243,8 +244,12 @@
       if ( rc /= 0 ) then
          call die ( myname, 'could not read ODS files')
       end if
+      myKTobs=ktAOD
+      if (nODS==1.and.(ftypes(1)(1:3)/='pre')) then
+         myKTobs=ktLogAOD
+      endif
       call ods_select( ods_, ods_%data%nobs, nobs, rc, 
-     &                 qcexcl=0, kt=ktAOD, odss = ods ) ! keep what we need
+     &                 qcexcl=0, kt=myKTobs, odss = ods ) ! keep what we need
       if ( rc .eq. 0 ) then
          call ods_clean(ods_,rc) ! get rid of what we don't need
          nobs =  ods%data%nobs
@@ -263,7 +268,7 @@
 !     Call observer for this date/time
 !     --------------------------------
       call zeit_ci ( 'Observer' )
-      call Observer ( nymd, nhms, y_f, nobs, ods, nobs_good )
+      call Observer ( nymd, nhms, y_f, nobs, ods, nobs_good, convertOb2AOD=(myKTobs==ktLogAOD) )
                                                                                call zeit_co ( 'Observer' )
                                                                               
 !     Move all QC'ed data to front
@@ -393,11 +398,13 @@
 
 !     Write AOD analysis increment file
 !     ---------------------------------
-      call StrTemplate ( fname, aod_d, xid=expid, nymd=nymd, nhms=nhms )
-      call Chem_BundleWrite ( fname, nymd, nhms, 0, dy_a, rc, verbose=.true. )
-      if ( rc .ne. 0 ) 
-     &     call die ( myname, 'could not write AOD analysis increment file '
-     &                        //trim(fname) )
+      if ( .not. skipPSAS ) then
+         call StrTemplate ( fname, aod_d, xid=expid, nymd=nymd, nhms=nhms )
+         call Chem_BundleWrite ( fname, nymd, nhms, 0, dy_a, rc, verbose=.true. )
+         if ( rc .ne. 0 ) 
+     &        call die ( myname, 'could not write AOD analysis increment file '
+     &                           //trim(fname) )
+      endif
 
 !     Write Averaging Kernel
 !     ----------------------
@@ -512,7 +519,8 @@
 ! !DESCRIPTION: parses command line.
 !
 ! !REVISION HISTORY:
-!       12deb2010  da Silva  Initial code based on GEOS-4 implementation.
+!       12dec2010  da Silva  Initial code based on GEOS-4 implementation.
+!       21oct2016  Todling   Allow user to specify alternative rc-file
 !
 !EOP
 !-----------------------------------------------------------------------
@@ -601,6 +609,10 @@
             if ( iarg+1 .gt. argc ) call usage_()
             iarg = iarg + 1
             call GetArg ( iArg, pos_ods )
+         else if (index(argv(1:3),'-rc' ) .gt. 0 ) then
+            if ( iarg+1 .gt. argc ) call usage_()
+            iarg = iarg + 1
+            call GetArg ( iArg, rcfile )
          else if (index(argv(1:4),'-sbc' ) .gt. 0 ) then
             if ( iarg+1 .gt. argc ) call usage_()
             do_sbc = .true.
@@ -647,7 +659,15 @@
 !     Load resource
 !     -------------
       call i90_loadf ( rcfile, ier )
-      if ( ier .ne. 0 ) call die(myname, 'could not read rc file '//trim(rcfile) )
+      if ( ier .eq. 0 ) then
+         if (trim(rcfile)/='ana.rc') then
+            print *
+            print *, 'Reading user-specified rc-file: ',trim(rcfile)
+            print *
+         endif
+      else
+         call die(myname, 'could not read rc file '//trim(rcfile) )
+      endif
 
 !     Read resource file if pre-analysis ODS files have not been specified
 !     --------------------------------------------------------------------
