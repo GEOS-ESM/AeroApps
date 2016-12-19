@@ -1,17 +1,30 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 """ Runscript for geo_vlidort episodes"""
-from datetime import datetime, timedelta 
-from dateutil.parser import parse
+from   datetime           import datetime, timedelta 
+from   dateutil.parser    import parse
 import os
 import subprocess
-from distutils.dir_util import mkpath
-import numpy as np
+from   distutils.dir_util import mkpath
+import numpy              as np
 import math
 import time
 import glob
 import shutil
-from netCDF4 import Dataset
+from   netCDF4           import Dataset
+from   optparse        import OptionParser   # Command-line args
+
+
+class WORKSPACE(object):
+    def __init__(self,startdate,enddate,options):
+
+        for oo in options.__dict__:
+            self.__dict__[oo] = options.__dict___[oo]
+
+        self.runfile = 'geo_vlidort_run_array.j'
+        self.nccs    = self.nccs + self.instname.upper() + '/DATA/' 
+        self.prefix  = self.nccs + 'workdir/'
+      
 
 
 def make_workspace(date,ch,code,outdir,runfile,instname,prefix='workdir',nodemax=None,
@@ -400,11 +413,10 @@ def prefilter(date,indir,instname,CLDMAX,layout=None):
 #########################################################
 
 if __name__ == "__main__":
+    # Defaults
+    # ------------
     instname          = 'tempo'
     version           = '1.0'    
-    startdate         = '2006-07-27T21:00:00'
-    enddate           = '2006-07-27T21:00:00'
-    episode           = None
     channels          = '388'
     surface           = 'lambertian' #'lambertian' or 'MAIACRTLS'
     interp            = 'exact'  #'interpolate' or 'exact'
@@ -414,18 +426,90 @@ if __name__ == "__main__":
     surf_version      = '1.0'
     layout            = None
     CLDMAX            = '0.01'
+    nccs              = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/'
 
-    runfile           = 'geo_vlidort_run_array.j'
-    nccs              = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/'+ \
-                         instname.upper() + '/DATA/'
+    profile           = False
 
-    prefix            = nccs + 'workdir/'
+    # Parse command line options
+    # ------------------------------
+    parser = OptionParser(usage="Usage: %prog [options] startdate enddate",
+                          version='geo_vlidort_lc2-1.0.0')
+
+
+    parser.add_option("-I", "--instname", dest="instname", default=instname,
+                      help="Instrument name (default=%s)"\
+                      %instname )
+
+    parser.add_option("-v", "--version", dest="version", default=version,
+                      help="Version name (default=%s)"\
+                      %version )    
+
+    parser.add_option("-c", "--channels", dest="channels", default=channels,
+                      help="Channels (default=%s)"\
+                      %channels )  
+
+    parser.add_option("-s", "--surface", dest="surface", default=surface,
+                      help="Surface Reflectance Dataset.  Choose from 'lambertian' or 'MAIACRTLS' "\
+                      "(default=%s)"\
+                      %surface )      
+
+    parser.add_option("-S", "--surfversion", dest="surf_version", 
+                      help="Surface Reflectance Dataset version.  Required if surface==MAIACRTLS' " )          
+
+    parser.add_option("-i", "--interp", dest="interp", default=interp,
+                      help="Surface reflectance channel interpolation. Choose from 'interpolate' or 'exact' "\
+                      "(default=%s)"\
+                      %interp )      
+
+    parser.add_option("-b", "--band", dest="i_band",
+                      help="Surface reflectance band index. Required if interp=='exact'" )  
+
+    parser.add_option("-a", "--additional",
+                      action="store_true", dest="additional_output",default=False,
+                      help="Turn on writing additional_output. (default=False)")                           
+
+    parser.add_option("-n", "--nodemax", dest="nodemax", default=nodemax,
+                      help="Max number of nodes to use. "\
+                      "(default=%s)"\
+                      %nodemax )    
+
+    parser.add_option("-l", "--layout", dest="layout", default=layout,
+                      help="Layout of domain. Used for breaking up high-res domains (e.g. GOES-R)"\
+                      "(default=%s)"\
+                      %layout )  
+
+    parser.add_option("-C", "--cldmax", dest="CLDMAX", default=CLDMAX,
+                      help="Maximum cloud fraction allowed. "\
+                      "(default=%s)"\
+                      %CLDMAX )   
+
+    parser.add_option("-d", "--dir", dest="nccs", default=nccs,
+                      help="Root level directory for inputs/outputs "\
+                      "(default=%s)"\
+                      %nccs )                                 
+
+    parser.add_option("-p", "--profile", 
+                      action="store_true",dest="profile", default=False,
+                      help="Leave slurm output files in working directory."\
+                      "(default=%s)"\
+                      %profile )   
+
+    (options, args) = parser.parse_args()
+
+    if len(args) == 2:
+        startdate, enddate = args
+    else:
+        parser.error("must have 2 arguments: startdate and enddate")    
+
+    # Setup workspace and runscript
+    # ------------------------------
+    workspace = WORKSPACE(startdate,enddate,options)
+
     ################
     ###
     #    End of uper inputs
     ###
     ################
-    profile           = False
     runmode           = 'vector'
     indir             = nccs 
     outdir            = nccs + 'LevelC2'
