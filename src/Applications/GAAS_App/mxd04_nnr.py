@@ -5,7 +5,6 @@ This version works from MODIS MOD04/MYD04 Level 2 files.
 
 """
 import os, sys
-sys.path.insert(0,'/home/pcastell/Enthought/Canopy_64bit/System/lib/python2.7/site-packages')
 import warnings
 from   pyobs.mxd04 import MxD04_L2, MISSING, granules, BEST 
 from   ffnet       import loadnet
@@ -204,6 +203,7 @@ class MxD04_NNR(MxD04_L2):
 
             self.qa_flag = self.qa_flag[m]
             self.aod     = self.aod[m,:]
+            self.time    = self.time[m]
             self.iGood   = self.iGood[m] 
             self.nobs    = self.Longitude.shape[0]         
 
