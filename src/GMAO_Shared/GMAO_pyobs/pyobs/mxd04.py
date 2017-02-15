@@ -489,7 +489,7 @@ class MxD04_L2(object):
 
         # Exclusion flag
         # --------------
-        iGood = (ods.qch>0) & (ods.obs<10.)
+        iGood = (ods.qch>0) & (ods.obs<10.) & (ods.qcx==0)
         ods.qcx[:] = 1     # All bad...
         ods.qcx[iGood] = 0 # ... unless good
 
@@ -793,10 +793,11 @@ def _gatime(nymd,nhms):
 if __name__ == "__main__":
 
 #    syn_time = datetime(2008,6,30,0,0,0)
-    syn_time = datetime(2002,12,10,21,0,0)
-    Files = granules('/nobackup/MODIS/Level2/','MYD04',syn_time,coll='006')
+    syn_time = datetime(2016,10,26,10,0,0)
+#    Files = granules('/nobackup/MODIS/Level2/','MYD04',syn_time,coll='006')
+    Files = granules('/discover/nobackup/dao_ops/intermediate/flk/modis','MOD04',syn_time,coll='006')
 
-#    ocean = MxD04_L2(Files,'OCEAN',syn_time,Verb=1)
-    land  = MxD04_L2(Files,'LAND',syn_time,Verb=1)
+    ocean = MxD04_L2(Files,'OCEAN',syn_time,Verb=1,only_good=True)
+#    land  = MxD04_L2(Files,'LAND',syn_time,Verb=1)
 #    deep  = MxD04_L2(Files,'DEEP',syn_time,Verb=1)
     
