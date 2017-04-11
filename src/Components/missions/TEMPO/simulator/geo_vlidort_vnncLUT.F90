@@ -395,6 +395,11 @@ program geo_vlidort_vnncLUT
 ! Initialize outputs to be safe
 ! -------------------------------
   TAU_           = dble(MISSING)
+  TAUdu_         = dble(MISSING)
+  TAUss_         = dble(MISSING)
+  TAUoc_         = dble(MISSING)
+  TAUbc_         = dble(MISSING)
+  TAUsu_         = dble(MISSING)
   SSA_           = dble(MISSING)
   G_             = dble(MISSING)
   ROT_           = dble(MISSING)
@@ -481,10 +486,10 @@ program geo_vlidort_vnncLUT
                           tau_du, ssa, g, ierr )
     TAUdu_(c,:,:) = tau_du(:,:,nobs)
 
-    call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, 5, channels, vnames_su, verbose, &
-                          qm_su, reshape(RH(c,:),(/km,nobs/)), &
-                          tau_su, ssa, g, ierr )
-    TAUsu_(c,:,:) = tau_su(:,:,nobs)
+    call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, 5, channels, vnames_ss, verbose, &
+                          qm_ss, reshape(RH(c,:),(/km,nobs/)), &
+                          tau_ss, ssa, g, ierr )
+    TAUss_(c,:,:) = tau_ss(:,:,nobs)
 
     call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, 2, channels, vnames_bc, verbose, &
                           qm_bc, reshape(RH(c,:),(/km,nobs/)), &
