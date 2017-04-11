@@ -30,7 +30,18 @@
                                                              'ss001', 'ss002', 'ss003', 'ss004', 'ss005', &
                                                              'BCphobic', 'BCphilic',                      &
                                                              'OCphobic', 'OCphilic','SO4'/) ! array of variable name strings
+  character(len=16), parameter          :: vnames_stringDU(5) = (/'du001', 'du002', 'du003', 'du004', 'du005'/)
+  character(len=16), parameter          :: vnames_stringSS(5) = (/'ss001', 'ss002', 'ss003', 'ss004', 'ss005'/)
+  character(len=16), parameter          :: vnames_stringBC(2) = (/'BCphobic', 'BCphilic'/)
+  character(len=16), parameter          :: vnames_stringOC(2) = (/'OCphobic', 'OCphilic'/) 
+  character(len=16), parameter          :: vnames_stringSU(1) = (/'SO4'/)   
   character                             :: vnames(nq,16)          ! character array of variable names
+  character                             :: vnames_du(5,16)          ! character array of variable names  
+  character                             :: vnames_ss(5,16)          ! character array of variable names  
+  character                             :: vnames_bc(2,16)          ! character array of variable names  
+  character                             :: vnames_oc(2,16)          ! character array of variable names 
+  character                             :: vnames_su(1,16)          ! character array of variable names    
+
 
   ! Physical constants
   real, parameter       								:: grav = 9.81               ! gravity

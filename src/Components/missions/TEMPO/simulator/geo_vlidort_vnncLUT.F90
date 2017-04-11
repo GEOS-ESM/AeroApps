@@ -119,7 +119,17 @@ program geo_vlidort_vnncLUT
   real, allocatable                     :: ze(:,:)                ! edge height above sfc [m]
   real, allocatable                     :: te(:,:)                ! edge Temperature [K]
   real, allocatable                     :: qm(:,:,:)              ! (mixing ratio) * delp/g
+  real, allocatable                     :: qm_du(:,:,:)              ! (mixing ratio) * delp/g
+  real, allocatable                     :: qm_ss(:,:,:)              ! (mixing ratio) * delp/g
+  real, allocatable                     :: qm_oc(:,:,:)              ! (mixing ratio) * delp/g  
+  real, allocatable                     :: qm_bc(:,:,:)              ! (mixing ratio) * delp/g  
+  real, allocatable                     :: qm_su(:,:,:)              ! (mixing ratio) * delp/g  
   real, allocatable                     :: tau(:,:,:)             ! aerosol optical depth
+  real, allocatable                     :: tau_du(:,:,:)          ! dust aerosol optical depth  
+  real, allocatable                     :: tau_ss(:,:,:)          ! sea salt aerosol optical depth  
+  real, allocatable                     :: tau_su(:,:,:)          ! sulfate aerosol optical depth  
+  real, allocatable                     :: tau_oc(:,:,:)          ! organic carbon aerosol optical depth  
+  real, allocatable                     :: tau_bc(:,:,:)          ! black carbon aerosol optical depth  
   real, allocatable                     :: ssa(:,:,:)             ! single scattering albedo
   real, allocatable                     :: g(:,:,:)               ! asymmetry factor
 
@@ -143,6 +153,11 @@ program geo_vlidort_vnncLUT
   real*8, pointer                       :: PE_(:,:) => null()                   ! layer edge pressure [Pa]  
 
   real, pointer                         :: TAU_(:,:,:) => null()                  ! aerosol optical depth
+  real, pointer                         :: TAUdu_(:,:,:) => null()                  ! aerosol optical depth
+  real, pointer                         :: TAUss_(:,:,:) => null()                  ! aerosol optical depth
+  real, pointer                         :: TAUbc_(:,:,:) => null()                  ! aerosol optical depth  
+  real, pointer                         :: TAUoc_(:,:,:) => null()                  ! aerosol optical depth  
+  real, pointer                         :: TAUsu_(:,:,:) => null()                  ! aerosol optical depth  
   real, pointer                         :: SSA_(:,:,:) => null()                  ! single scattering albedo
   real, pointer                         :: G_(:,:,:) => null()                    ! asymmetry factor
 
@@ -394,6 +409,11 @@ program geo_vlidort_vnncLUT
 ! Prepare inputs and run VLIDORT
 ! -----------------------------------
   call strarr_2_chararr(vnames_string,nq,16,vnames)
+  call strarr_2_chararr(vnames_stringDU,5,16,vnames_du)
+  call strarr_2_chararr(vnames_stringSS,5,16,vnames_ss)
+  call strarr_2_chararr(vnames_stringOC,2,16,vnames_oc)
+  call strarr_2_chararr(vnames_stringBC,2,16,vnames_bc)  
+  call strarr_2_chararr(vnames_stringSU,1,16,vnames_su)    
 
 ! Create the Mie Tables
 ! ---------------------
@@ -454,19 +474,45 @@ program geo_vlidort_vnncLUT
 
 !   Aerosol Optical Properties
 !   --------------------------
-    ! if (scalar) then
-    !   call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
-    !                       qm, reshape(RH(c,:),(/km,nobs/)), &
-    !                       tau, ssa, g, ierr )
-    ! else
-      call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
+!   Speciate
+!   ----------
+    call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, 5, channels, vnames_du, verbose, &
+                          qm_du, reshape(RH(c,:),(/km,nobs/)), &
+                          tau_du, ssa, g, ierr )
+    TAUdu_(c,:,:) = tau_du(:,:,nobs)
+
+    call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, 5, channels, vnames_su, verbose, &
+                          qm_su, reshape(RH(c,:),(/km,nobs/)), &
+                          tau_su, ssa, g, ierr )
+    TAUsu_(c,:,:) = tau_su(:,:,nobs)
+
+    call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, 2, channels, vnames_bc, verbose, &
+                          qm_bc, reshape(RH(c,:),(/km,nobs/)), &
+                          tau_bc, ssa, g, ierr )
+    TAUbc_(c,:,:) = tau_bc(:,:,nobs)
+
+    call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, 2, channels, vnames_oc, verbose, &
+                          qm_oc, reshape(RH(c,:),(/km,nobs/)), &
+                          tau_oc, ssa, g, ierr )
+    TAUoc_(c,:,:) = tau_oc(:,:,nobs)
+
+    call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, 1, channels, vnames_su, verbose, &
+                          qm_su, reshape(RH(c,:),(/km,nobs/)), &
+                          tau_su, ssa, g, ierr )
+    TAUsu_(c,:,:) = tau_su(:,:,nobs)
+
+!   Total
+!   -----
+    call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
                           qm, reshape(RH(c,:),(/km,nobs/)),&
                           nMom,nPol, tau, ssa, g, pmom, ierr )
-    ! end if
+
 
     TAU_(c,:,:) = tau(:,:,nobs)
     SSA_(c,:,:) = ssa(:,:,nobs)
     G_(c,:,:)   = g(:,:,nobs)
+
+
 
     write(msg,*) 'getAOP ', myid
     call write_verbose(msg)
@@ -593,6 +639,21 @@ program geo_vlidort_vnncLUT
 
           call check(nf90_inq_varid(ncid, 'aot_' // trim(adjustl(msg)), varid), "get aot vaird")
           call check(nf90_put_var(ncid, varid, reshape(TAU_(:,:,ch),(/clrm_total,km/))), "writing out tau")
+
+          call check(nf90_inq_varid(ncid, 'aot_du_' // trim(adjustl(msg)), varid), "get dust aot vaird")
+          call check(nf90_put_var(ncid, varid, reshape(TAUdu_(:,:,ch),(/clrm_total,km/))), "writing out dust tau")   
+
+          call check(nf90_inq_varid(ncid, 'aot_ss_' // trim(adjustl(msg)), varid), "get sea salt aot vaird")
+          call check(nf90_put_var(ncid, varid, reshape(TAUss_(:,:,ch),(/clrm_total,km/))), "writing out sea salt tau")   
+
+          call check(nf90_inq_varid(ncid, 'aot_bc_' // trim(adjustl(msg)), varid), "get black carbon aot vaird")
+          call check(nf90_put_var(ncid, varid, reshape(TAUbc_(:,:,ch),(/clrm_total,km/))), "writing out black carbon tau")             
+
+          call check(nf90_inq_varid(ncid, 'aot_oc_' // trim(adjustl(msg)), varid), "get organic carbon aot vaird")
+          call check(nf90_put_var(ncid, varid, reshape(TAUoc_(:,:,ch),(/clrm_total,km/))), "writing out organic carbon tau")             
+
+          call check(nf90_inq_varid(ncid, 'aot_su_' // trim(adjustl(msg)), varid), "get sulfate aot vaird")
+          call check(nf90_put_var(ncid, varid, reshape(TAUsu_(:,:,ch),(/clrm_total,km/))), "writing out sulfate tau")             
 
           call check(nf90_inq_varid(ncid, 'g_' // trim(adjustl(msg)), varid), "get g vaird")
           call check(nf90_put_var(ncid, varid, reshape(G_(:,:,ch),(/clrm_total,km/))), "writing out g")
@@ -995,6 +1056,11 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(SO4,(/clrm,km/),rc=ierr)
 
     call MAPL_AllocNodeArray(TAU_,checkSizeR4((/clrm,km,nch/)),rc=ierr)
+    call MAPL_AllocNodeArray(TAUdu_,checkSizeR4((/clrm,km,nch/)),rc=ierr)
+    call MAPL_AllocNodeArray(TAUss_,checkSizeR4((/clrm,km,nch/)),rc=ierr)
+    call MAPL_AllocNodeArray(TAUbc_,checkSizeR4((/clrm,km,nch/)),rc=ierr)
+    call MAPL_AllocNodeArray(TAUoc_,checkSizeR4((/clrm,km,nch/)),rc=ierr)
+    call MAPL_AllocNodeArray(TAUsu_,checkSizeR4((/clrm,km,nch/)),rc=ierr)
     call MAPL_AllocNodeArray(SSA_,(/clrm,km,nch/),rc=ierr)
     call MAPL_AllocNodeArray(G_,(/clrm,km,nch/),rc=ierr)
     call MAPL_AllocNodeArray(ROT_,(/clrm,km,nch/),rc=ierr)
@@ -1048,7 +1114,17 @@ end subroutine outfile_extname
     allocate (ze(km+1,nobs))
     allocate (te(km+1,nobs))
     allocate (qm(km,nq,nobs))
+    allocate (qm_du(km,5,nobs))
+    allocate (qm_ss(km,5,nobs))
+    allocate (qm_oc(km,2,nobs))
+    allocate (qm_bc(km,2,nobs))
+    allocate (qm_su(km,1,nobs))
     allocate (tau(km,nch,nobs))
+    allocate (tau_du(km,nch,nobs))
+    allocate (tau_ss(km,nch,nobs))
+    allocate (tau_su(km,nch,nobs))
+    allocate (tau_oc(km,nch,nobs))
+    allocate (tau_bc(km,nch,nobs))
     allocate (ssa(km,nch,nobs))
     allocate (g(km,nch,nobs))
 
@@ -1144,7 +1220,8 @@ end subroutine outfile_extname
 
     integer,dimension(nch)             :: radVarID, refVarID, aotVarID   
     integer,dimension(nch)             :: qVarID, uVarID, albVarID      
-    integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID, rotVarID     
+    integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID, rotVarID    
+    integer,dimension(nch)             :: tau_duVarID, tau_ssVarID, tau_suVarID, tau_ocVarID, tau_bcVarID
     
     integer                            :: ncid
     integer                            :: pixelDimID, ewDimID, nsDimID, levDimID, elevDimID  
@@ -1388,7 +1465,12 @@ end subroutine outfile_extname
   !                                     ----
       do ch=1,nch
         write(comment,'(F10.2)') channels(ch)
-        call check(nf90_def_var(ncid, 'aot_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),tauVarID(ch)),"create aot var")      
+        call check(nf90_def_var(ncid, 'aot_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),tauVarID(ch)),"create aot var")     
+        call check(nf90_def_var(ncid, 'aot_du_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),tau_duVarID(ch)),"create aot_du var")     
+        call check(nf90_def_var(ncid, 'aot_su_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),tau_suVarID(ch)),"create aot_su var") 
+        call check(nf90_def_var(ncid, 'aot_ss_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),tau_ssVarID(ch)),"create aot_ss var")   
+        call check(nf90_def_var(ncid, 'aot_oc_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),tau_ocVarID(ch)),"create aot_oc var")    
+        call check(nf90_def_var(ncid, 'aot_bc_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),tau_bcVarID(ch)),"create aot_bc var") 
         call check(nf90_def_var(ncid, 'rot_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),rotVarID(ch)),"create rot var")
         call check(nf90_def_var(ncid, 'ssa_' // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),ssaVarID(ch)),"create ssa var")
         call check(nf90_def_var(ncid, 'g_'   // trim(adjustl(comment)) ,nf90_float,(/pixelDimID,levDimID/),gVarID(ch)),"create g var")
@@ -1408,6 +1490,46 @@ end subroutine outfile_extname
         call check(nf90_put_att(ncid,tauVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
         call check(nf90_put_att(ncid,tauVarID(ch),'units','none'),"units attr")
         call check(nf90_put_att(ncid,tauVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm DUST AOT'
+        call check(nf90_put_att(ncid,tau_duVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm layer Dust Aerosol Optical Thickness'
+        call check(nf90_put_att(ncid,tau_duVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,tau_duVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,tau_duVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,tau_duVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")    
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm SEA SALT AOT'
+        call check(nf90_put_att(ncid,tau_ssVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm layer Sea Salt Aerosol Optical Thickness'
+        call check(nf90_put_att(ncid,tau_ssVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,tau_ssVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,tau_ssVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,tau_ssVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")    
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm SULFATE AOT'
+        call check(nf90_put_att(ncid,tau_suVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm layer Sulfate Aerosol Optical Thickness'
+        call check(nf90_put_att(ncid,tau_suVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,tau_suVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,tau_suVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,tau_suVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")    
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm ORGANIC CARBON AOT'
+        call check(nf90_put_att(ncid,tau_ocVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm layer Organic Carbon Aerosol Optical Thickness'
+        call check(nf90_put_att(ncid,tau_ocVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,tau_ocVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,tau_ocVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,tau_ocVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")    
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm BLACK CARBON AOT'
+        call check(nf90_put_att(ncid,tau_bcVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm layer Black Carbon Aerosol Optical Thickness'
+        call check(nf90_put_att(ncid,tau_bcVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,tau_bcVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,tau_bcVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,tau_bcVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")    
 
         write(comment,'(F10.2,A)') channels(ch), ' nm ROT'
         call check(nf90_put_att(ncid,rotVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
@@ -1504,6 +1626,27 @@ end subroutine outfile_extname
       qm(k,13,nobs) = OCPHOBIC(c,k)*DELP(c,k)/grav
       qm(k,14,nobs) = OCPHILIC(c,k)*DELP(c,k)/grav
       qm(k,15,nobs) = SO4(c,k)*DELP(c,k)/grav
+
+      qm_du(k,1,nobs) = DU001(c,k)*DELP(c,k)/grav
+      qm_du(k,2,nobs) = DU002(c,k)*DELP(c,k)/grav
+      qm_du(k,3,nobs) = DU003(c,k)*DELP(c,k)/grav
+      qm_du(k,4,nobs) = DU004(c,k)*DELP(c,k)/grav
+      qm_du(k,5,nobs) = DU005(c,k)*DELP(c,k)/grav
+
+      qm_ss(k,1,nobs) = SS001(c,k)*DELP(c,k)/grav
+      qm_ss(k,2,nobs) = SS002(c,k)*DELP(c,k)/grav
+      qm_ss(k,3,nobs) = SS003(c,k)*DELP(c,k)/grav
+      qm_ss(k,4,nobs) = SS004(c,k)*DELP(c,k)/grav
+      qm_ss(k,5,nobs) = SS005(c,k)*DELP(c,k)/grav   
+
+      qm_bc(k,1,nobs) = BCPHOBIC(c,k)*DELP(c,k)/grav
+      qm_bc(k,2,nobs) = BCPHILIC(c,k)*DELP(c,k)/grav
+
+      qm_oc(k,1,nobs) = OCPHOBIC(c,k)*DELP(c,k)/grav
+      qm_oc(k,2,nobs) = OCPHILIC(c,k)*DELP(c,k)/grav      
+
+      qm_su(k,1,nobs) = SO4(c,k)*DELP(c,k)/grav      
+
     end do
    end subroutine calc_qm
 
@@ -1889,6 +2032,11 @@ end subroutine outfile_extname
     call MAPL_DeallocNodeArray(SO4,rc=ierr) 
 
     call MAPL_DeallocNodeArray(TAU_,rc=ierr)
+    call MAPL_DeallocNodeArray(TAUdu_,rc=ierr)
+    call MAPL_DeallocNodeArray(TAUss_,rc=ierr)
+    call MAPL_DeallocNodeArray(TAUbc_,rc=ierr)
+    call MAPL_DeallocNodeArray(TAUoc_,rc=ierr)
+    call MAPL_DeallocNodeArray(TAUsu_,rc=ierr)
     call MAPL_DeallocNodeArray(SSA_,rc=ierr)
     call MAPL_DeallocNodeArray(G_,rc=ierr)
     call MAPL_DeallocNodeArray(ROT_,rc=ierr)
