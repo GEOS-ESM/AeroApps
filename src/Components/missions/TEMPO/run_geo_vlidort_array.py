@@ -219,7 +219,7 @@ def combine_files(filelist):
     ncmergedfile.close()
 
 
-def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output, instname,
+def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output, instname,CLDMAX,
                       nodemax=None,i_band=None,version=None,surf_version=None,
                       layout=None):
     cwd = os.getcwd()
@@ -232,6 +232,7 @@ def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output, instn
     rcfile.write('TIME: '+str(date.hour).zfill(2)+'\n')
     rcfile.write('INSTNAME: ' + instname.lower() + '\n')
     rcfile.write('SURFNAME: MAIACRTLS\n')
+    rcfile.write('SURFMODEL: RTLS\n')
 
     #figure out correct MODIS doy
     if (str(startdate.date()) == '2005-12-31'):
@@ -269,7 +270,7 @@ def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output, instn
 
 
     rcfile.write('CHANNELS: '+ch+'\n')
-    rcfile.write('CLDMAX: 0.01\n')
+    rcfile.write('CLDMAX: '+CLDMAX+'\n')
     if nodemax is not None:
         rcfile.write('NODEMAX: '+ str(nodemax) + '\n')
 
@@ -291,7 +292,7 @@ def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output, instn
 
     os.chdir(cwd)
 
-def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output, instname,
+def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output, instname,CLDMAX,
                     nodemax=None,i_band=None,version=None,surf_version=None,layout=None):
     cwd = os.getcwd()
     os.chdir(dirname)
@@ -303,6 +304,7 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output, instnam
     rcfile.write('TIME: ' + str(date.hour).zfill(2) + '\n')
     rcfile.write('INSTNAME: ' + instname + '\n')
     rcfile.write('SURFNAME: LER\n')
+    rcfile.write('SURFMODEL: LER\n')
 
     rcfile.write('SURFDATE: ' + str(date.month).zfill(2) +'\n')
 
@@ -321,7 +323,7 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output, instnam
 
 
     rcfile.write('CHANNELS: ' + ch + '\n')
-    rcfile.write('CLDMAX: 0.01\n')
+    rcfile.write('CLDMAX: '+CLDMAX+' \n')
     if nodemax is not None:
         rcfile.write('NODEMAX: '+ str(nodemax) + '\n')
 
@@ -343,7 +345,7 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output, instnam
 
     os.chdir(cwd)    
 
-def prefilter(date,indir,instname,layout=None):
+def prefilter(date,indir,instname,CLDMAX,layout=None):
     g5dir = indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
     nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
     hour  = str(date.hour).zfill(2)
@@ -360,7 +362,7 @@ def prefilter(date,indir,instname,layout=None):
 
     ncMet = Dataset(met)
     Cld   = np.squeeze(ncMet.variables[u'CLDTOT'][:])
-    f     = np.where(Cld > 0.01)
+    f     = np.where(Cld <= float(CLDMAX))
     ncMet.close()
     if len(f[0]) == 0:
         return False, 0
@@ -398,19 +400,20 @@ def prefilter(date,indir,instname,layout=None):
 #########################################################
 
 if __name__ == "__main__":
-    instname          = 'goes-r'
+    instname          = 'tempo'
     version           = '1.0'    
-    startdate         = '2007-04-11T22:00:00'
-    enddate           = '2007-04-11T22:00:00'
+    startdate         = '2006-07-27T21:00:00'
+    enddate           = '2006-07-27T21:00:00'
     episode           = None
-    channels          = '2250'
-    surface           = 'MAIACRTLS'
-    interp            = 'exact'
-    i_band            = '7'    
-    additional_output = False
-    nodemax           = 1
+    channels          = '388'
+    surface           = 'lambertian' #'lambertian' or 'MAIACRTLS'
+    interp            = 'exact'  #'interpolate' or 'exact'
+    i_band            = '2'    
+    additional_output = True
+    nodemax           = 10
     surf_version      = '1.0'
-    layout            = '41'
+    layout            = None
+    CLDMAX            = '0.01'
 
     runfile           = 'geo_vlidort_run_array.j'
     nccs              = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/'+ \
@@ -486,7 +489,7 @@ if __name__ == "__main__":
                 laycode = None
 
             # check to see if there is any work to do
-            anypixels, numpixels = prefilter(startdate,indir,instname,layout=laycode) 
+            anypixels, numpixels = prefilter(startdate,indir,instname,CLDMAX,layout=laycode) 
             if (anypixels):
 
                 if (numpixels <= 1000 and nodemax is not None):
@@ -516,11 +519,11 @@ if __name__ == "__main__":
 
                     if (surface.upper() == 'MAIACRTLS'):
                         make_maiac_rcfile(workdir,indir,startdate,ch,runmode, interp,additional_output,
-                                          instname, nodemax=nodemax_,i_band=band_i,
+                                          instname, CLDMAX, nodemax=nodemax_,i_band=band_i,
                                           version=version,surf_version=surf_version,layout=laycode)
                     else:
                         make_ler_rcfile(workdir,indir,startdate,ch,runmode, interp,additional_output,
-                                        instname, nodemax=nodemax_,i_band=band_i,
+                                        instname, CLDMAX, nodemax=nodemax_,i_band=band_i,
                                         version=version,surf_version=surf_version,layout=laycode)
                     
                     dirstring    = np.append(dirstring,workdir)
@@ -538,7 +541,6 @@ if __name__ == "__main__":
     #    Submit & Handle Jobs  
     ####
     ##################################################
-
     runlen  = len(dirstring)   
     if nodemax is not None:
         numjobs = sum(nodemax_list)
