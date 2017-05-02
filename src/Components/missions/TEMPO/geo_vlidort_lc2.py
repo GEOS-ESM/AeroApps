@@ -185,13 +185,14 @@ class WORKSPACE(JOBS):
     """ Create Working Directories and RC files """
     def __init__(self,startdate,enddate,options):
 
+        self.runfile = 'geo_vlidort_run_array.j'
+        self.nccs    = self.nccs + self.instname.upper() + '/DATA/' 
+        self.prefix  = self.nccs + 'workdir/'
+
         for oo in options.__dict__:
             print oo
             self.__dict__[oo] = options.__dict___[oo]
 
-        self.runfile = 'geo_vlidort_run_array.j'
-        self.nccs    = self.nccs + self.instname.upper() + '/DATA/' 
-        self.prefix  = self.nccs + 'workdir/'
 
         self.indir   = nccs 
         self.outdir  = nccs + 'LevelC2'
