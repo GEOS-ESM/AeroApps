@@ -188,7 +188,7 @@ class WORKSPACE(JOBS):
         self.runfile = 'geo_vlidort_run_array.j'
 
         for oo in options.__dict__:
-            print oo
+            print oo,options.__dict___[oo]
             self.__dict__[oo] = options.__dict___[oo]
 
         self.nccs    = self.nccs + self.instname.upper() + '/DATA/' 
