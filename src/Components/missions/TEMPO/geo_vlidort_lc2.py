@@ -17,8 +17,171 @@ from   optparse        import OptionParser   # Command-line args
 jobsmax   = 150
 dt = timedelta(hours=1)
 
+class JOBS(object):
+    def handle_jobs(self):
+        # Figure out how many jobs you need to submit
+        runlen  = len(self.dirstring)   
 
-class WORKSPACE(object):
+        if self.nodemax is not None:
+            numjobs = sum(self.nodemax_list)
+        else:
+            numjobs = runlen
+        
+        devnull = open(os.devnull, 'w')
+        if numjobs <= jobsmax:   
+            countRun   = runlen    
+            node_tally   = numjobs  
+        else:
+            if self.nodemax is not None:
+                keep_adding = True
+                node_tally = 0
+                countRun = 0
+                while(keep_adding):
+                    if (node_tally + self.nodemax_list[countRun] <= jobsmax):
+                        node_tally = node_tally + self.nodemax_list[countRun]
+                        countRun = countRun + 1
+                    else:
+                        keep_adding = False                
+            else:
+                countRun = jobsmax
+                node_tally = jobsmax
+
+        workingJobs = np.arange(countRun)
+
+
+        # Submit first JOBSMAX jobs
+        jobid = np.empty(0)
+        for i in workingJobs:
+            s = self.dirstring[i]
+            os.chdir(s)
+            jobid = np.append(jobid,subprocess.check_output(['qsub',self.runfile]))
+            
+        os.chdir(self.cwd)
+
+
+        # Monitor jobs 1-by-1 
+        # Add a new job when one finishes 
+        # Until they are all done
+        stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
+        while (stat == 0):
+            stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
+            finishedJobs = np.empty(0,dtype='int')
+            for ii,i in enumerate(workingJobs):
+                s = jobid[i]
+                s = s.strip('\n')
+                finished = False
+
+                # Check to see if this job is finished
+                if self.nodemax is not None and self.nodemax_list[i] > 1:
+                    # Loop through the nodes working on this job
+                    finishedCNT = 0
+                    for a in np.arange(nodemax_list[i]):
+                        a = a + 1
+
+                        try:
+                            result = subprocess.check_output(['squeue','-j',s+'_'+ str(a)],stderr=subprocess.STDOUT)
+                            if (s+'_'+ str(a) not in result):
+                                #print ' Job Not Found! '+s+'_'+ str(a)
+                                finishedCNT = finishedCNT + 1
+                        except subprocess.CalledProcessError as e:
+                            #print ' ERROR Job Not Found! '+s+'_'+ str(a)
+                            finishedCNT = finishedCNT + 1
+
+                    if (finishedCNT == self.nodemax_list[i]): 
+                        finished = True
+                else:
+                    result = subprocess.call(['qstat',s], stdout=devnull)
+                    if (result != 0):
+                        finished = True   
+
+                # if the job is finished clean up the workspace
+                if finished:
+                    #print 'Job finished, cleaning up', s, i 
+                    finishedJobs = np.append(finishedJobs,ii)
+                    errcheck = self.check_for_errors(i,s)               
+                    if (errcheck is False):
+                        self.destroy_workspace(i,s)
+                    else:
+                        print 'Jobid ',s,' exited with errors'
+
+            # finished checking up on all the jobs
+            # Remove finished jobs from the currently working list
+            if len(finishedJobs) != 0:
+                print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
+                if self.nodemax is not None:
+                    node_tally  = node_tally - sum(self.nodemax_list[workingJobs[finishedJobs]])
+                else:
+                    node_tally  = node_tally - len(finishedJobs)
+
+                workingJobs = np.delete(workingJobs,finishedJobs)
+
+            # Add more jobs if needed
+            # reinitialize stat variable
+            if (runlen > countRun) and (node_tally < jobsmax):
+                #print 'adding new jobs'
+                if self.nodemax is not None:
+                    keep_adding = True
+                    newRun      = 0
+                    while (keep_adding):
+                        if (node_tally + self.nodemax_list[countRun + newRun] <= jobsmax):
+                            node_tally = node_tally + self.nodemax_list[countRun + newRun]
+                            newRun = newRun + 1
+                            if (countRun + newRun == runlen):
+                                keep_adding = False
+                        else:
+                            keep_adding = False
+                else:
+                    newRun = jobsmax - node_tally
+                    node_tally = jobsmax
+
+                newjobs  = countRun + np.arange(newRun)
+                workingJobs = np.append(workingJobs, newjobs)
+                for i in newjobs:
+                    s = dirstring[i]
+                    os.chdir(s)
+                    jobid = np.append(jobid,subprocess.check_output(['qsub',runfile]))
+
+                os.chdir(cwd)
+                countRun = countRun + newRun
+                stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
+
+
+            print 'Waiting 1 minutes'
+            time.sleep(60)
+            
+
+        # Exited while loop
+        print 'All jobs done'
+
+
+    def check_for_errors(self,i,jobid):
+        os.chdir(self.dirstring[i])  
+
+        error = False  
+        if self.nodemax is None:
+            nodemax = None
+        else:
+            nodemax = self.nodemax_list[i]
+
+
+        if self.nodemax is not None and nodemax > 1:
+            for a in np.arange(nodemax):
+                a = a + 1
+                errfile = 'slurm_' +jobid + '_' + str(a) + '.err'
+                statinfo = os.stat(errfile)
+                if (statinfo.st_size != 0):
+                    error = True
+        else:
+            errfile = 'slurm_' +jobid + '.err'
+            statinfo = os.stat(errfile)
+            if (statinfo.st_size != 0):
+                error = True
+
+        os.chdir(self.cwd)
+        return error
+    
+
+class WORKSPACE(JOBS):
     """ Create Working Directories and RC files """
     def __init__(self,startdate,enddate,options):
 
@@ -407,167 +570,6 @@ class WORKSPACE(object):
 
         os.chdir(self.cwd)    
 
-    def handle_jobs(self):
-        # Figure out how many jobs you need to submit
-        runlen  = len(self.dirstring)   
-
-        if self.nodemax is not None:
-            numjobs = sum(self.nodemax_list)
-        else:
-            numjobs = runlen
-        
-        devnull = open(os.devnull, 'w')
-        if numjobs <= jobsmax:   
-            countRun   = runlen    
-            node_tally   = numjobs  
-        else:
-            if self.nodemax is not None:
-                keep_adding = True
-                node_tally = 0
-                countRun = 0
-                while(keep_adding):
-                    if (node_tally + self.nodemax_list[countRun] <= jobsmax):
-                        node_tally = node_tally + self.nodemax_list[countRun]
-                        countRun = countRun + 1
-                    else:
-                        keep_adding = False                
-            else:
-                countRun = jobsmax
-                node_tally = jobsmax
-
-        workingJobs = np.arange(countRun)
-
-
-        # Submit first JOBSMAX jobs
-        jobid = np.empty(0)
-        for i in workingJobs:
-            s = self.dirstring[i]
-            os.chdir(s)
-            jobid = np.append(jobid,subprocess.check_output(['qsub',self.runfile]))
-            
-        os.chdir(self.cwd)
-
-
-        # Monitor jobs 1-by-1 
-        # Add a new job when one finishes 
-        # Until they are all done
-        stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
-        while (stat == 0):
-            stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
-            finishedJobs = np.empty(0,dtype='int')
-            for ii,i in enumerate(workingJobs):
-                s = jobid[i]
-                s = s.strip('\n')
-                finished = False
-
-                # Check to see if this job is finished
-                if self.nodemax is not None and self.nodemax_list[i] > 1:
-                    # Loop through the nodes working on this job
-                    finishedCNT = 0
-                    for a in np.arange(nodemax_list[i]):
-                        a = a + 1
-
-                        try:
-                            result = subprocess.check_output(['squeue','-j',s+'_'+ str(a)],stderr=subprocess.STDOUT)
-                            if (s+'_'+ str(a) not in result):
-                                #print ' Job Not Found! '+s+'_'+ str(a)
-                                finishedCNT = finishedCNT + 1
-                        except subprocess.CalledProcessError as e:
-                            #print ' ERROR Job Not Found! '+s+'_'+ str(a)
-                            finishedCNT = finishedCNT + 1
-
-                    if (finishedCNT == self.nodemax_list[i]): 
-                        finished = True
-                else:
-                    result = subprocess.call(['qstat',s], stdout=devnull)
-                    if (result != 0):
-                        finished = True   
-
-                # if the job is finished clean up the workspace
-                if finished:
-                    #print 'Job finished, cleaning up', s, i 
-                    finishedJobs = np.append(finishedJobs,ii)
-                    errcheck = self.check_for_errors(i,s)               
-                    if (errcheck is False):
-                        self.destroy_workspace(i,s)
-                    else:
-                        print 'Jobid ',s,' exited with errors'
-
-            # finished checking up on all the jobs
-            # Remove finished jobs from the currently working list
-            if len(finishedJobs) != 0:
-                print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
-                if self.nodemax is not None:
-                    node_tally  = node_tally - sum(self.nodemax_list[workingJobs[finishedJobs]])
-                else:
-                    node_tally  = node_tally - len(finishedJobs)
-
-                workingJobs = np.delete(workingJobs,finishedJobs)
-
-            # Add more jobs if needed
-            # reinitialize stat variable
-            if (runlen > countRun) and (node_tally < jobsmax):
-                #print 'adding new jobs'
-                if self.nodemax is not None:
-                    keep_adding = True
-                    newRun      = 0
-                    while (keep_adding):
-                        if (node_tally + self.nodemax_list[countRun + newRun] <= jobsmax):
-                            node_tally = node_tally + self.nodemax_list[countRun + newRun]
-                            newRun = newRun + 1
-                            if (countRun + newRun == runlen):
-                                keep_adding = False
-                        else:
-                            keep_adding = False
-                else:
-                    newRun = jobsmax - node_tally
-                    node_tally = jobsmax
-
-                newjobs  = countRun + np.arange(newRun)
-                workingJobs = np.append(workingJobs, newjobs)
-                for i in newjobs:
-                    s = dirstring[i]
-                    os.chdir(s)
-                    jobid = np.append(jobid,subprocess.check_output(['qsub',runfile]))
-
-                os.chdir(cwd)
-                countRun = countRun + newRun
-                stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
-
-
-            print 'Waiting 1 minutes'
-            time.sleep(60)
-            
-
-        # Exited while loop
-        print 'All jobs done'
-
-
-    def check_for_errors(self,i,jobid):
-        os.chdir(self.dirstring[i])  
-
-        error = False  
-        if self.nodemax is None:
-            nodemax = None
-        else:
-            nodemax = self.nodemax_list[i]
-
-
-        if self.nodemax is not None and nodemax > 1:
-            for a in np.arange(nodemax):
-                a = a + 1
-                errfile = 'slurm_' +jobid + '_' + str(a) + '.err'
-                statinfo = os.stat(errfile)
-                if (statinfo.st_size != 0):
-                    error = True
-        else:
-            errfile = 'slurm_' +jobid + '.err'
-            statinfo = os.stat(errfile)
-            if (statinfo.st_size != 0):
-                error = True
-
-        os.chdir(self.cwd)
-        return error
 
 
     def destroy_workspace(self,i,jobid):
