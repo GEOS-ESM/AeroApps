@@ -298,6 +298,8 @@ class WORKSPACE(JOBS):
 
 
     def prefilter(self,date,layout=None):
+        if self.verbose:
+            print '++Checking for good pixels in prefilter'
         g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
         nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
         hour  = str(date.hour).zfill(2)
@@ -311,7 +313,8 @@ class WORKSPACE(JOBS):
             geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
             land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx_' + layout + '.nc4'  
 
-
+        if self.verbose:
+            print '++Opening metfile ',met
         ncMet = Dataset(met)
         Cld   = np.squeeze(ncMet.variables[u'CLDTOT'][:])
         f     = np.where(Cld <= float(self.CLDMAX))
@@ -689,7 +692,7 @@ if __name__ == "__main__":
     surface           = 'lambertian' #'lambertian' or 'MAIACRTLS'
     interp            = 'exact'  #'interpolate' or 'exact'
     i_band            = '2'    
-    additional_output = True
+    
     nodemax           = 10
     surf_version      = '1.0'
     layout            = None
@@ -698,11 +701,14 @@ if __name__ == "__main__":
 
     profile           = False
     runmode           = 'vector'
+    
+    #Flags
+    # verbose           = False
+    # additional_output = False
 
     # Parse command line options
     # ------------------------------
-    parser = OptionParser(usage="Usage: %prog [options] startdate enddate",
-                          version='geo_vlidort_lc2-1.0.0')
+    parser = OptionParser(usage="Usage: %prog [options] startdate enddate")
 
 
     parser.add_option("-I", "--instname", dest="instname", default=instname,
@@ -711,7 +717,7 @@ if __name__ == "__main__":
 
     parser.add_option("-V", "--version_string", dest="version", default=version,
                       help="Version name (default=%s)"\
-                      %version )    
+                      %version )        
 
     parser.add_option("-c", "--channels", dest="channels", default=channels,
                       help="Channels (default=%s)"\
@@ -736,6 +742,11 @@ if __name__ == "__main__":
     parser.add_option("-a", "--additional",
                       action="store_true", dest="additional_output",default=False,
                       help="Turn on writing additional_output. (default=False)")                           
+
+    parser.add_option("-v", "--verbose",action="store_true",
+                      dest="verbose", default=False,
+                      help="Verbose (default=False)" )    
+
 
     parser.add_option("-n", "--nodemax", dest="nodemax", default=nodemax,
                       help="Max number of nodes to use. "\
