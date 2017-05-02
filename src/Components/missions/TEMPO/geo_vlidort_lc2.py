@@ -18,7 +18,7 @@ jobsmax   = 150
 dt = timedelta(hours=1)
 
 
-class WORKSPACE(JOBS):
+class WORKSPACE(object):
     """ Create Working Directories and RC files """
     def __init__(self,startdate,enddate,options):
 
