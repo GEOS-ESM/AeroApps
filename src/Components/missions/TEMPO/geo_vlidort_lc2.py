@@ -4,6 +4,7 @@
 from   datetime           import datetime, timedelta 
 from   dateutil.parser    import parse
 import os
+import shutil
 import subprocess
 from   distutils.dir_util import mkpath
 import numpy              as np
@@ -363,8 +364,11 @@ class WORKSPACE(JOBS):
             jobname = jobname + '.' + layout
 
         bindir = dirname
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)            
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        else:
+            os.makedirs(dirname)    
+
 
         # outdirname
         outdir = '{}/Y{}/M{}/D{}'.format(self.outdir,date.year,str(date.month).zfill(2),str(date.day).zfill(2))
