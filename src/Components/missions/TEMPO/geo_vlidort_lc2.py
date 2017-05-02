@@ -232,7 +232,7 @@ class WORKSPACE(JOBS):
         ##################################################
 
         # save run directory
-        self.rundir     = os.getcwd()
+        self.cwd     = os.getcwd()
 
         #initialize arrays to hold directory names
         self.dirstring    = []
