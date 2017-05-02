@@ -262,9 +262,9 @@ class WORKSPACE(JOBS):
                         nodemax = self.nodemax
 
                     for i, ch in enumerate(self.channels):
-                        try:
+                        if self.interp == 'exact':
                             i_band = self.i_band[i]
-                        except:
+                        else:
                             i_band = None
 
                         # Create working directories for intermediate outputs
@@ -737,7 +737,7 @@ if __name__ == "__main__":
                       "(default=%s)"\
                       %interp )      
 
-    parser.add_option("-b", "--band", dest="i_band",
+    parser.add_option("-b", "--band", dest="i_band", default=i_band,
                       help="Surface reflectance band index. Required if interp=='exact'" )  
 
     parser.add_option("-a", "--additional",
