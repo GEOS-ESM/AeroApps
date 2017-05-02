@@ -75,7 +75,7 @@ class JOBS(object):
                 if self.nodemax is not None and self.nodemax_list[i] > 1:
                     # Loop through the nodes working on this job
                     finishedCNT = 0
-                    for a in np.arange(nodemax_list[i]):
+                    for a in np.arange(self.nodemax_list[i]):
                         a = a + 1
 
                         try:
