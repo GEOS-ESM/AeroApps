@@ -603,9 +603,12 @@ class WORKSPACE(JOBS):
             if nodemax is not None and nodemax > 1:
                 for a in np.arange(nodemax):
                     a = a + 1
-                    errfile = 'slurm_' +jobid + '_' + str(a) + '.err'
-                    os.remove(errfile)
+                    errfile = 'slurm_' +jobid + '_' + str(a) + '.err'                    
                     outfile = 'slurm_' +jobid + '_' + str(a) + '.out'
+                    if self.verbose:
+                        print '++cleaning up errfile', errfile
+                        print '++cleaning up outfile', outfile
+                    os.remove(errfile)
                     os.remove(outfile)
                 os.remove('slurm_%A_%a.out')
 
