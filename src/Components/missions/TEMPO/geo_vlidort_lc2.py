@@ -352,7 +352,7 @@ class WORKSPACE(JOBS):
         return len(f[0])
 
 
-    def make_workspace(date,ch,nodemax=None,layout=None):
+    def make_workspace(self,date,ch,nodemax=None,layout=None):
 
         # creating working directory
         dirname = '{}/{}.{}T{}.{}'.format(self.prefix,self.instname.lower(),date.date(),str(date.hour).zfill(2),ch,self.code)
@@ -452,7 +452,7 @@ class WORKSPACE(JOBS):
         else:
             return dirname, outdir 
 
-    def make_maiac_rcfile(dirname,date,ch,nodemax=None,i_band=None,layout=None):
+    def make_maiac_rcfile(self,dirname,date,ch,nodemax=None,i_band=None,layout=None):
         os.chdir(dirname)
 
         rcfile = open('geo_vlidort.rc','w')
@@ -523,7 +523,7 @@ class WORKSPACE(JOBS):
         os.chdir(self.cwd)
 
 
-    def make_ler_rcfile(dirname,date,ch,nodemax=None,i_band=None,layout=None):
+    def make_ler_rcfile(self,dirname,date,ch,nodemax=None,i_band=None,layout=None):
         os.chdir(dirname)
 
         rcfile = open('geo_vlidort.rc','w')
