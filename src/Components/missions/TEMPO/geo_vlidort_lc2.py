@@ -186,6 +186,7 @@ class WORKSPACE(JOBS):
     def __init__(self,startdate,enddate,options):
 
         for oo in options.__dict__:
+            print oo
             self.__dict__[oo] = options.__dict___[oo]
 
         self.runfile = 'geo_vlidort_run_array.j'
