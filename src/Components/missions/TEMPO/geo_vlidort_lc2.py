@@ -602,8 +602,7 @@ class WORKSPACE(JOBS):
         return error
 
 
-    def destroy_workspace(self,i,jobid)
-        jobid,dirname,outdir,addoutdir=None,nodemax=None,profile=False):
+    def destroy_workspace(self,i,jobid):
         os.chdir(self.dirstring[i])
 
         os.remove('Aod_EOS.rc')
