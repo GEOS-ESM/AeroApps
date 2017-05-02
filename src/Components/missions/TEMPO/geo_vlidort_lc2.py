@@ -17,38 +17,6 @@ from   optparse        import OptionParser   # Command-line args
 jobsmax   = 150
 dt = timedelta(hours=1)
 
-class JOBS(object):
-    """Submit and Handle Jobs"""
-    def __init__(self):
-        runlen  = len(self.dirstring)   
-        if self.nodemax is not None:
-            numjobs = sum(self.nodemax_list)
-        else:
-            numjobs = runlen
-
-        jobid = np.empty(0)
-        devnull = open(os.devnull, 'w')
-        if runlen > 0:
-            if numjobs <= jobsmax:   
-                countRun   = runlen    
-                node_tally   = numjobs  
-            else:
-                if self.nodemax is not None:
-                    keep_adding = True
-                    node_tally = 0
-                    countRun = 0
-                    while(keep_adding):
-                        if (node_tally + nodemax_list[countRun] <= jobsmax):
-                            node_tally = node_tally + nodemax_list[countRun]
-                            countRun = countRun + 1
-                        else:
-                            keep_adding = False                
-                else:
-                    countRun = jobsmax
-                    node_tally = jobsmax
-
-            workingJobs = np.arange(countRun)
-
 
 class WORKSPACE(JOBS):
     """ Create Working Directories and RC files """
@@ -579,10 +547,10 @@ class WORKSPACE(JOBS):
         os.chdir(self.dirstring[i])  
 
         error = False  
-        try:
-            nodemax = self.nodemax_list[i]
-        except:
+        if self.nodemax is None:
             nodemax = None
+        else:
+            nodemax = self.nodemax_list[i]
 
 
         if self.nodemax is not None and nodemax > 1:
@@ -613,12 +581,12 @@ class WORKSPACE(JOBS):
         os.remove('geo_vlidort.rc')
         os.remove('geo_vlidort_run_array.j')
 
-        try:
-            nodemax = self.nodemax_list[i]
-        except:
+        if self.nodemax is None:
             nodemax = None
+        else:
+            nodemax = self.nodemax_list[i]
 
-        try:
+        if self.additional_output:
             addoutdir = self.addoutdirstring[i]
         else:
             addoutdir = None
