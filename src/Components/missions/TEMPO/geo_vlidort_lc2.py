@@ -179,7 +179,7 @@ class JOBS(object):
 
         os.chdir(self.cwd)
         return error
-    
+
 
 class WORKSPACE(JOBS):
     """ Create Working Directories and RC files """
@@ -708,7 +708,7 @@ if __name__ == "__main__":
                       help="Instrument name (default=%s)"\
                       %instname )
 
-    parser.add_option("-v", "--version", dest="version", default=version,
+    parser.add_option("-V", "--version_string", dest="version", default=version,
                       help="Version name (default=%s)"\
                       %version )    
 
