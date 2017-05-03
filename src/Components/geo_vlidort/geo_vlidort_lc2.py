@@ -372,7 +372,7 @@ class WORKSPACE(JOBS):
     def make_workspace(self,date,ch,nodemax=None,layout=None):
 
         # creating working directory
-        dirname = '{}/{}.{}T{}.{}'.format(self.prefix,self.instname.lower(),date.date(),str(date.hour).zfill(2),ch,self.code)
+        dirname = '{}/{}.{}T{}.{}.{}'.format(self.prefix,self.instname.lower(),date.date(),str(date.hour).zfill(2),ch,self.code)
         jobname = '{}.{}T{}.{}'.format(instname.lower(),date.date(),str(date.hour).zfill(2),ch)
 
         if layout is not None:
