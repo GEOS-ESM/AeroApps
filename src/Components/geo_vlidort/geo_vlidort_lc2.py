@@ -18,6 +18,7 @@ from   optparse        import OptionParser   # Command-line args
 jobsmax   = 150
 dt = timedelta(hours=1)
 
+
 class JOBS(object):
     def handle_jobs(self):
         # Figure out how many jobs you need to submit
@@ -190,7 +191,6 @@ class WORKSPACE(JOBS):
         for oo in options.__dict__:
             self.__dict__[oo] = options.__dict__[oo]
 
-        self.runfile = 'geo_vlidort_run_array.j'
         self.nccs    = self.nccs + self.instname.upper() + '/DATA/' 
         self.prefix  = self.nccs + 'workdir/'
 
@@ -589,7 +589,7 @@ class WORKSPACE(JOBS):
         os.remove('clean_mem.sh')
         os.remove('ExtData')
         os.remove('geo_vlidort.rc')
-        os.remove('geo_vlidort_run_array.j')
+        os.remove(self.runfile)
 
         if self.nodemax is None:
             nodemax = None
@@ -709,6 +709,7 @@ if __name__ == "__main__":
 
     profile           = False
     runmode           = 'vector'
+    runfile           = 'geo_vlidort_lc2.j'
     
     #Flags
     # verbose           = False
@@ -785,7 +786,12 @@ if __name__ == "__main__":
     parser.add_option("-r", "--runmode", dest="runmode", default=runmode,
                       help="VLIDORT run mode. Either 'scalar' or 'vector' "\
                       "(default=%s)"\
-                      %runmode )          
+                      %runmode )       
+
+    parser.add_option("-f", "--runfile", dest="runfile", default=runfile,
+                      help="slurm script template "\
+                      "(default=%s)"\
+                      %runfile )                                
 
 
     ################
