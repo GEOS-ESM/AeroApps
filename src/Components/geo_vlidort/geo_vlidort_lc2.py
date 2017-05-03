@@ -793,9 +793,7 @@ if __name__ == "__main__":
 
     parser.add_option("-p", "--profile", 
                       action="store_true",dest="profile", default=False,
-                      help="Leave slurm output files in working directory."\
-                      "(default=%s)"\
-                      %profile )   
+                      help="Leave slurm output files in working directory. (default=False)")   
 
     parser.add_option("-r", "--runmode", dest="runmode", default=runmode,
                       help="VLIDORT run mode. Either 'scalar' or 'vector' "\
