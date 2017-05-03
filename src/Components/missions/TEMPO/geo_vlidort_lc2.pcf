@@ -23,7 +23,7 @@ LC2_NODEMAX = 10
 LC2_LAYOUT = None
 
 LC2_CLDMAX = 0.01
-LC2_DIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA/
+LC2_DIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/
 LC2_RUNFILE = geo_vlidort_lc2.j
 
 LC2_PROFILE = No
