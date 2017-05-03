@@ -205,8 +205,8 @@ class WORKSPACE(JOBS):
         self.nccs    = self.nccs + '/' + self.instname.upper() + '/DATA/' 
         self.prefix  = self.nccs + 'workdir/'
 
-        self.indir   = nccs 
-        self.outdir  = nccs + 'LevelC2'
+        self.indir   = self.nccs 
+        self.outdir  = self.nccs + 'LevelC2'
         if (self.additional_output):
             self.addoutdir         = self.nccs + 'LevelC2'
         else:
