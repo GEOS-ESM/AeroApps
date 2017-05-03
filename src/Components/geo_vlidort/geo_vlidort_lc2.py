@@ -1,6 +1,13 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
-""" Runscript for geo_vlidort episodes"""
+""" 
+Runscript for running geo_vlidort.x on NCCS
+
+
+May 2017
+patricia.castellanos@nasa.gov
+"""
+
 from   datetime           import datetime, timedelta 
 from   dateutil.parser    import parse
 import os
