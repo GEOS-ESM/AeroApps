@@ -713,14 +713,14 @@ if __name__ == "__main__":
     CLDMAX            = '0.01'
     nccs              = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/'+ \
                          instname.upper() + '/DATA/'
-
-    profile           = False
+    
     runmode           = 'vector'
     runfile           = 'geo_vlidort_lc2.j'
     
     #Flags
     # verbose           = False
     # additional_output = False
+    # profile           = False
 
     # Parse command line options
     # ------------------------------
