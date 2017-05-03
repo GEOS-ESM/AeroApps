@@ -720,11 +720,11 @@ if __name__ == "__main__":
     surf_version      = '1.0'
     layout            = None
     CLDMAX            = '0.01'
-    nccs              = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/'+ \
-                         instname.upper() + '/DATA/'
+    nccs              = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/'
     
     runmode           = 'vector'
     runfile           = 'geo_vlidort_lc2.j'
+    execFile          = '/discover/nobackup/pcastell/workspace/GAAS/src/Components/geo_vlidort/geo_vlidort.x'
     
     #Flags
     # verbose           = False
