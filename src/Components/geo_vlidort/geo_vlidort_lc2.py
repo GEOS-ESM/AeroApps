@@ -196,7 +196,7 @@ class WORKSPACE(JOBS):
 
 
         for oo in options.__dict__:
-            if options.__dict__[oo].lower() == 'none':
+            if (type(options.__dict__[oo]) is str) and (options.__dict__[oo].lower() == 'none'):
                 self.__dict__[oo] = None
             else:
                 self.__dict__[oo] = options.__dict__[oo]
