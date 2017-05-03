@@ -1,5 +1,5 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
+#!/usr/bin/end python
+# -W ignore::DeprecationWarning
 """ 
 Runscript for running geo_vlidort.x on NCCS
 
