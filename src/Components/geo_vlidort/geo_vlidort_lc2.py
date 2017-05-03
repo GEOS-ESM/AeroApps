@@ -393,8 +393,8 @@ class WORKSPACE(JOBS):
 
         # create some symlinks to shared files
         os.chdir(dirname)
-        if not os.path.isfile('geo_vlidort.x'):
-            os.symlink(self.cwd+'/geo_vlidort.x','geo_vlidort.x')
+        if not os.path.isfile(os.path.basename(self.execFile)):
+            os.symlink(self.execFile,os.path.basename(self.execFile))
         if not os.path.exists('ExtData'):
             os.symlink(self.cwd+'/ExtData','ExtData')
         if not os.path.isfile('Chem_MieRegistry.rc'):
@@ -443,9 +443,9 @@ class WORKSPACE(JOBS):
 
             elif (line[0:8] == '$RUN_CMD'):
                 if (nodemax is not None and nodemax > 1):     
-                    destination.write('$RUN_CMD  ./geo_vlidort.x geo_vlidort.rc ${SLURM_ARRAY_TASK_ID}'+'\n')    
+                    destination.write('$RUN_CMD  ./'+ os.path.basename(self.execFile) +' geo_vlidort.rc ${SLURM_ARRAY_TASK_ID}'+'\n')    
                 else:
-                    destination.write('$RUN_CMD  ./geo_vlidort.x geo_vlidort.rc'+'\n')   
+                    destination.write('$RUN_CMD  ./'+ os.path.basename(self.execFile) + ' geo_vlidort.rc'+'\n')   
 
             else:
                 destination.write(line)        
@@ -601,7 +601,7 @@ class WORKSPACE(JOBS):
 
         os.remove('Aod_EOS.rc')
         os.remove('Chem_MieRegistry.rc')
-        os.remove('geo_vlidort.x')
+        os.remove(os.path.basename(self.execFile))
         os.remove('clean_mem.sh')
         os.remove('ExtData')
         os.remove('geo_vlidort.rc')
@@ -805,7 +805,12 @@ if __name__ == "__main__":
     parser.add_option("-f", "--runfile", dest="runfile", default=runfile,
                       help="slurm script template "\
                       "(default=%s)"\
-                      %runfile )                                
+                      %runfile )       
+
+    parser.add_option("-e", "--execfile", dest="execFile", default=execFile,
+                      help="geo_vlidort executable "\
+                      "(default=%s)"\
+                      %execFile )                                                      
 
 
     ################
