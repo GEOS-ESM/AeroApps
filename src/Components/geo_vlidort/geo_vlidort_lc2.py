@@ -196,7 +196,10 @@ class WORKSPACE(JOBS):
 
 
         for oo in options.__dict__:
-            self.__dict__[oo] = options.__dict__[oo]
+            if options.__dict__[oo].lower() == 'none':
+                self.__dict__[oo] = None
+            else:
+                self.__dict__[oo] = options.__dict__[oo]
 
         self.nccs    = self.nccs + self.instname.upper() + '/DATA/' 
         self.prefix  = self.nccs + 'workdir/'
