@@ -216,7 +216,10 @@ class WORKSPACE(JOBS):
             self.ntiles = int(layout[0])*int(layout[1])
 
         if type(self.channels) is str:
-            self.channels = self.channels.split()
+            if ',' in self.channels:
+                self.channels = self.channels.replace(' ','').split(',')
+            else:
+                self.channels = self.channels.split()
 
         if type(self.i_band) is str:
             self.i_band = self.i_band.split()
