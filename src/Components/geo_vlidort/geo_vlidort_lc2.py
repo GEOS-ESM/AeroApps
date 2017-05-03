@@ -247,6 +247,8 @@ class WORKSPACE(JOBS):
         ##################################################
 
         # save run directory
+        if self.verbose:
+            print '++Saving run directory',os.getcwd()
         self.cwd     = os.getcwd()
 
         #initialize arrays to hold directory names
