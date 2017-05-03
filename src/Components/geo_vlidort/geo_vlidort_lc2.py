@@ -1,4 +1,4 @@
-#!/usr/bin/end python
+#!/usr/bin/env python
 # -W ignore::DeprecationWarning
 """ 
 Runscript for running geo_vlidort.x on NCCS
