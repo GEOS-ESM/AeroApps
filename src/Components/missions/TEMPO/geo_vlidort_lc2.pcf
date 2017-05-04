@@ -30,3 +30,4 @@ LC2_RUNFILE = geo_vlidort_lc2.j
 LC2_PROFILE = No
 LC2_VERBOSE = Yes
 LC2_ADDOUTPUT = No
+LC2_KEEP      = No
