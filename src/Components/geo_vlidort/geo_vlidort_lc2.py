@@ -12,6 +12,7 @@ from   datetime           import datetime, timedelta
 from   dateutil.parser    import parse
 import os
 import shutil
+import sys
 import subprocess
 from   distutils.dir_util import mkpath
 import numpy              as np
@@ -24,6 +25,7 @@ from   optparse        import OptionParser   # Command-line args
 
 jobsmax   = 150
 dt = timedelta(hours=1)
+archive = '/archive/u/rgovinda/osse2/c1440_NR/OBS'
 
 
 class JOBS(object):
@@ -308,10 +310,30 @@ class WORKSPACE(JOBS):
                         else:
                             self.make_ler_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
                                                  layout=laycode)
-                        
+
 
             self.nodemax_list = np.array(self.nodemax_list)
             startdate = startdate + dt
+
+    def get_from_archive(self,path):
+        filename = os.path.basename(path)
+        try:
+            shutil.copyfile(self.archive+'/'+filename,path) 
+        except IOError:
+            print 'Could not find '+filename+' in archive ',self.archive
+            sys.exit()
+
+    def put_in_archive(self,path):
+        filename = os.path.basename(path)
+        if not os.path.exists(self.archive+'/'+filename):""
+            try:
+                shutil.copyfile(path,self.archive+'/'+filename) 
+            except IOError:
+                print 'Could not put '+filename+' in archive ',self.archive
+                sys.exit()
+        else:
+            os.remove(path)
+
 
 
     def prefilter(self,date,layout=None):
@@ -332,17 +354,26 @@ class WORKSPACE(JOBS):
 
         if self.verbose:
             print '++Opening metfile ',met
+
+        if not os.path.exists(met):
+            self.get_from_archive(met)
         ncMet = Dataset(met)
         Cld   = np.squeeze(ncMet.variables[u'CLDTOT'][:])
         f     = np.where(Cld <= float(self.CLDMAX))
         ncMet.close()
         if len(f[0]) == 0:
+            self.put_in_archive(met)
             return False, 0
 
+        if not os.path.exists(geom):
+            self.get_from_archive(geom)
         ncGeom = Dataset(geom)
         SZA    = np.squeeze(ncGeom.variables[u'solar_zenith'][:])
         VZA    = np.squeeze(ncGeom.variables[u'sensor_zenith'][:])
         ncGeom.close()
+
+        if not os.path.exists(land):
+            self.get_from_archive(land)        
         ncLand = Dataset(land)
         FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
         ncLand.close()
@@ -351,25 +382,52 @@ class WORKSPACE(JOBS):
         VZA = VZA[f]
         FRLAND = FRLAND[f]
 
+
+        def clean_up(self,met,geom,land):
+            self.put_in_archive(met)
+            self.put_in_archive(geom)
+            self.put_in_archive(land)
+
+
         f   = np.where(VZA < 80)
         if len(f[0]) == 0:
+            clean_up(self,met,geom,land)
             return 0
 
         SZA    = SZA[f]
         FRLAND = FRLAND[f]
         f      = np.where(SZA < 80)
         if len(f[0]) == 0:
+            clean_up(self,met,geom,land)
             return 0
 
         FRLAND = FRLAND[f]
         f      = np.where(FRLAND >= 0.99)
         if len(f[0]) == 0:
+            clean_up(self,met,geom,land)
             return 0
 
         return len(f[0])
 
 
     def make_workspace(self,date,ch,nodemax=None,layout=None):
+
+        # Get necessary files from archive if needed
+        g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
+        nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
+        hour  = str(date.hour).zfill(2)
+
+        if layout is None:
+            chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z.nc4'
+            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'            
+        else:
+            chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
+            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
+
+        if not os.path.exists(chm):
+            self.get_from_archive(chm)
+        if not os.path.exists(aer):
+            self.get_from_archive(aer)        
 
         # creating working directory
         dirname = '{}/{}.{}T{}.{}.{}'.format(self.prefix,self.instname.lower(),date.date(),str(date.hour).zfill(2),ch,self.code)
@@ -597,6 +655,31 @@ class WORKSPACE(JOBS):
 
 
     def destroy_workspace(self,i,jobid):
+        # put LevelB files in archive or remove
+        if not self.keep:
+            g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
+            nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
+            hour  = str(date.hour).zfill(2)
+
+            if layout is None:
+                met   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z.nc4'
+                chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z.nc4'
+                aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'                            
+                geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
+                land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx.nc4'  
+            else:
+                met   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
+                chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
+                aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
+                geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
+                land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx_' + layout + '.nc4'  
+
+            self.put_in_archive(met)
+            self.put_in_archive(geom)
+            self.put_in_archive(land)
+            self.put_in_archive(aer)
+            self.put_in_archive(chm)
+
         os.chdir(self.dirstring[i])
 
         os.remove('Aod_EOS.rc')
@@ -730,6 +813,7 @@ if __name__ == "__main__":
     # verbose           = False
     # additional_output = False
     # profile           = False
+    # keep              = False
 
     # Parse command line options
     # ------------------------------
@@ -772,6 +856,10 @@ if __name__ == "__main__":
                       dest="verbose", default=False,
                       help="Verbose (default=False)" )    
 
+    parser.add_option("-k", "--keep",action="store_true",
+                      dest="keep", default=False,
+                      help="keep LevelB files - do not archive (default=False)" )    
+
 
     parser.add_option("-n", "--nodemax", dest="nodemax", default=nodemax,
                       help="Max number of nodes to use. "\
@@ -810,7 +898,12 @@ if __name__ == "__main__":
     parser.add_option("-e", "--execfile", dest="execFile", default=execFile,
                       help="geo_vlidort executable "\
                       "(default=%s)"\
-                      %execFile )                                                      
+                      %execFile )     
+
+    parser.add_option("-A", "--archive", dest="archive", default=archive,
+                      help="where to look for missing data on archive"\
+                      "(default=%s)"\
+                      %archive )                                                                            
 
 
     ################
