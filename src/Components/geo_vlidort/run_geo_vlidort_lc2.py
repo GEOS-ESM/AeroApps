@@ -47,12 +47,14 @@ if __name__ == "__main__":
                           " --cldmax=" + cf('LC2_CLDMAX')       + \
                              " --dir=" + cf('LC2_DIR')          + \
                          " --runmode=" + cf('LC2_RUNMODE')       + \
-                         " --runfile=" + cf('LC2_RUNFILE')
+                         " --runfile=" + cf('LC2_RUNFILE')      + \
+                          " --execfile=" + cf('LC2_EXECFILE') 
 
 
     if cf('LC2_PROFILE').upper()   == 'YES': Options += " --profile"
     if cf('LC2_VERBOSE').upper()   == 'YES': Options += " --verbose"
     if cf('LC2_ADDOUTPUT').upper() == 'YES': Options += " --additional"
+    if cf('LC2_KEEP').upper()      == 'YES': Options += " --keep"
 
 
     # Generate LC2 products
