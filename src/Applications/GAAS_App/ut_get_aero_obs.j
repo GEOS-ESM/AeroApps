@@ -1,24 +1,26 @@
 #!/bin/csh
 
-setenv EXPID  f513a_rt
-setenv FVHOME /discover/nobackup/$user/$EXPID
-setenv FVROOT /discover/nobackup/projects/gmao/advda/$user/4OPS/g5151/GEOSadas/Linux
-setenv FVWORK /discover/nobackup/$user/AODOBS
+setenv EXPID  prePP_rt
+setenv FVHOME /discover/nobackup/projects/gmao/advda/$user/$EXPID
+setenv FVROOT `cat $FVHOME/.FVROOT`
+setenv FVWORK /discover/nobackup/$user/AODWORK
 setenv GID g0613
+setenv MODIS_L2_HDF 1
 setenv group_list "SBATCH -A $GID"
 
 setenv NCPUS_AOD   8
-setenv MPIRUN_AOD  "mpirun "
+setenv MPIRUN_AOD  "mpiexec_mpt "
 
 set path = ( . $FVROOT/bin $path )
+source $FVROOT/bin/g5_modules
 
 if (! -d $FVWORK ) mkdir -p $FVWORK
 cd $FVWORK
 
 /bin/cp $FVHOME/run/obsys-gaas.rc .
 
-get_aero_obs.csh  20151128 180000 1
-get_aero_obs.csh  20151128 210000 1
+get_aero_obs.csh  20160604 180000 1
+get_aero_obs.csh  20160604 210000 1
 
-run_gaas_ana.csh  $EXPID 20151128 180000 1 
+run_gaas_ana.csh  $EXPID 20160604 180000 1  $FVWORK
 

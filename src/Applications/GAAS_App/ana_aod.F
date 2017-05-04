@@ -25,7 +25,7 @@
 
       use  m_ana
       use  m_ods
-      use  m_odsmeta, only: X_PASSIVE, ktAOD, ktLogAOD
+      use  m_odsmeta, only: X_PASSIVE, X_BUDDY, ktAOD, ktLogAOD
       use  m_obs
       use  m_simul
 
@@ -54,6 +54,7 @@
 !  03Feb2003  Todling   Updated init of PSAS 
 !  04Mar2003  Todling   Moved psas_init call after init.
 !  09feb2010  da Silva  Adapt for AOD.
+!  19mar2017  Todling   Handle for Log(AOD) in ODS files.
 !
 !EOP
 !-----------------------------------------------------------------------
@@ -245,14 +246,20 @@
          call die ( myname, 'could not read ODS files')
       end if
       myKTobs=ktAOD
-      if (nODS==1.and.(ftypes(1)(1:3)/='pre')) then
-         myKTobs=ktLogAOD
-      endif
       call ods_select( ods_, ods_%data%nobs, nobs, rc, 
      &                 qcexcl=0, kt=myKTobs, odss = ods ) ! keep what we need
       if ( rc .eq. 0 ) then
-         call ods_clean(ods_,rc) ! get rid of what we don't need
          nobs =  ods%data%nobs
+         if ( nobs==0 ) then
+            call ods_clean(ods,rc)
+            ! try reading log(AOD)
+            print *, myname//': could not find obs with kt = ', myKTobs
+            myKTobs=ktLogAOD
+            print *, myname//': trying kt = ', myKTobs, ' ... '
+            call ods_select( ods_, ods_%data%nobs, nobs, rc, 
+     &                       qcexcl=0, kt=myKTobs, odss = ods ) ! keep what we need
+         endif
+         call ods_clean(ods_,rc) ! get rid of what we don't need
          print *, myname//': read ODS files'
          print *, myname//': nobs = ', nobs
          print *
@@ -267,14 +274,14 @@
 
 !     Call observer for this date/time
 !     --------------------------------
-      call zeit_ci ( 'Observer' )
+                                                                               call zeit_ci ( 'Observer' )
       call Observer ( nymd, nhms, y_f, nobs, ods, nobs_good, convertOb2AOD=(myKTobs==ktLogAOD) )
                                                                                call zeit_co ( 'Observer' )
                                                                               
 !     Move all QC'ed data to front
 !     ----------------------------
       call ODS_Select ( ods, nobs, nobs_good, rc, 
-     &                  qcexcl_list=(/ 0, X_PASSIVE /))
+     &                  qcexcl_list=(/ 0, X_PASSIVE, X_BUDDY /))
       ods%data%nobs = nobs_good
 
       call ODS_Tally ( 6, ods, nobs, rc )
@@ -451,6 +458,12 @@
 !     Finalize PSAS
 !     -------------
       call psas_end()
+
+!     Signal completion
+!     -----------------
+      close(999)
+      open (999,file='ANAAOD_EGRESS',form='formatted')
+      close(999)
 
       call exit(0)
 

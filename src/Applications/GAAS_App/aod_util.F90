@@ -104,6 +104,7 @@
 ! !REVISION HISTORY: 
 !
 !  06oct1999  da Silva  First crack based on Guo's rdPars().
+!  11mar2017  Todling   Add Nitrates check when handling extinctions.
 !
 !EOP
 !-------------------------------------------------------------------------
@@ -386,12 +387,23 @@ end subroutine i90_gtab
               end if
            end do
       end if
+      if ( w_f%reg%doing_NI ) then
+           do iq = w_f%reg%i_NI, w_f%reg%j_NI
+              if ( trim(w_f%reg%vname(iq)) .eq. 'NO3an1' .or. &
+                   trim(w_f%reg%vname(iq)) .eq. 'NO3an2' .or. &
+                   trim(w_f%reg%vname(iq)) .eq. 'NO3an3'      &
+                 ) then
+                 tau = tau + w_f%qa(iq)%data3d
+                 call vect_stat ( myname, trim(w_f%reg%vname(iq)), tau(:,:,:), n )
+              end if
+           end do
+      end if
 
 !     Deallocate all tracers but the first
 !     ------------------------------------
       do iq = 2, w_f%reg%nq
          deallocate(w_f%qa(iq)%data3d, stat=ios)
-         if ( ios .ne. 0 ) call die(myname,'cannot alocate memory for vname, etc.')
+         if ( ios .ne. 0 ) call die(myname,'cannot allocate memory for vname, etc.')
       end do
 
 !     First tracer takes the total AOD
@@ -404,7 +416,7 @@ end subroutine i90_gtab
       if ( rc .ne.0 ) call die(myname,'cannot destroy chem registry')
       allocate ( w_f%reg%vname(1), w_f%reg%vtitle(1), w_f%reg%vunits(1), &
                  w_f%reg%fscav(1), stat=ios )
-      if ( ios .ne. 0 ) call die(myname,'cannot alocate memory for vname, etc.')
+      if ( ios .ne. 0 ) call die(myname,'cannot allocate memory for vname, etc.')
       w_f%reg%nq = 1
       w_f%reg%doing_XX = .true.
       w_f%reg%n_XX = 1
