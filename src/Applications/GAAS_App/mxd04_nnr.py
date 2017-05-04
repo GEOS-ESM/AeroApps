@@ -29,7 +29,8 @@ SDS = dict( META =    ( "Scan_Start_Time",
                         'Mean_Reflectance_Land',
                         'Surface_Reflectance_Land',
                         'Cloud_Fraction_Land',
-                        'Quality_Assurance_Land'),
+                        'Quality_Assurance_Land',
+                        'Deep_Blue_Cloud_Fraction_Land'),
 
             OCEAN =   ( 'Effective_Optical_Depth_Best_Ocean',
                         'Mean_Reflectance_Ocean',
@@ -212,8 +213,13 @@ class MxD04_NNR(MxD04_L2):
 
 
         # Q/C
-        # ---        
-        self.iGood = self.cloud<cloud_thresh 
+        # ---      
+        self.iGood = self.cloud<cloud_thresh  
+        if algo == "LAND":
+            self.iGood = self.iGood & (self.Deep_Blue_Cloud_Fraction_Land<cloud_thresh)
+        elif algo == "DEEP":
+            self.iGood = self.iGood & (self.cloud_lnd<cloud_thresh)
+
         for i,c in enumerate(self.rChannels):
             self.iGood = self.iGood & (self.reflectance[:,i]>0)
 
@@ -457,13 +463,13 @@ if __name__ == "__main__":
     from datetime import datetime
 
     l2_path = '/nobackup/MODIS/Level2/'
-    algo    = 'OCEAN'
-    prod    = 'MYD04'
+    algo    = 'DEEP'
+    prod    = 'MOD04'
     coll    = '006'
     aer_x   = '/nobackup/NNR/Misc/tavg1_2d_aer_Nx'
 
     syn_time = datetime(2008,6,30,12,0,0)
-    syn_time = datetime(2008,1,1,0,0,0)
+    syn_time = datetime(2016,12,19,15,0,0)
 
     if algo == 'OCEAN':
         nn_file = '/nobackup/NNR/Net/nnr_003.mydo_Tau.net'
