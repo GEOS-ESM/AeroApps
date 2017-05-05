@@ -328,6 +328,7 @@ class WORKSPACE(JOBS):
     def put_in_archive(self,path,date):
         filename = os.path.basename(path)
         archive = self.archive + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
+        print 'checking if this exists',os.path.exists(self.archive+'/'+filename), self.archive+'/'+filename
         if not os.path.exists(self.archive+'/'+filename):
             try:
                 shutil.copyfile(path,self.archive+'/'+filename) 
