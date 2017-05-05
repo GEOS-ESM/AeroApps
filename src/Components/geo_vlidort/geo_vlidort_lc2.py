@@ -320,7 +320,7 @@ class WORKSPACE(JOBS):
         filename = os.path.basename(path)
         archive = self.archive + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
         try:
-            shutil.copyfile(self.archive+filename,path) 
+            shutil.copyfile(self.archive+'/'+filename,path) 
         except IOError:
             print 'Could not find '+filename+' in archive ',archive
             sys.exit()
@@ -328,9 +328,9 @@ class WORKSPACE(JOBS):
     def put_in_archive(self,path,date):
         filename = os.path.basename(path)
         archive = self.archive + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
-        if not os.path.exists(self.archive+filename):
+        if not os.path.exists(self.archive+'/'+filename):
             try:
-                shutil.copyfile(path,self.archive+filename) 
+                shutil.copyfile(path,self.archive+'/'+filename) 
             except IOError:
                 print 'Could not put '+filename+' in archive ',archive
                 sys.exit()
