@@ -316,21 +316,23 @@ class WORKSPACE(JOBS):
             self.nodemax_list = np.array(self.nodemax_list)
             startdate = startdate + dt
 
-    def get_from_archive(self,path):
+    def get_from_archive(self,path,date):
         filename = os.path.basename(path)
+        archive = self.archive + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
         try:
-            shutil.copyfile(self.archive+ '/LevelB/'+filename,path) 
+            shutil.copyfile(self.archive+filename,path) 
         except IOError:
-            print 'Could not find '+filename+' in archive ',self.archive+ '/LevelB/'
+            print 'Could not find '+filename+' in archive ',archive
             sys.exit()
 
-    def put_in_archive(self,path):
+    def put_in_archive(self,path,date):
         filename = os.path.basename(path)
-        if not os.path.exists(self.archive+ '/LevelB/'+filename):
+        archive = self.archive + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
+        if not os.path.exists(self.archive+filename):
             try:
-                shutil.copyfile(path,self.archive+ '/LevelB/'+filename) 
+                shutil.copyfile(path,self.archive+filename) 
             except IOError:
-                print 'Could not put '+filename+' in archive ',self.archive+ '/LevelB/'
+                print 'Could not put '+filename+' in archive ',archive
                 sys.exit()
         else:
             os.remove(path)
@@ -357,24 +359,24 @@ class WORKSPACE(JOBS):
             print '++Opening metfile ',met
 
         if not os.path.exists(met):
-            self.get_from_archive(met)
+            self.get_from_archive(met,date)
         ncMet = Dataset(met)
         Cld   = np.squeeze(ncMet.variables[u'CLDTOT'][:])
         f     = np.where(Cld <= float(self.CLDMAX))
         ncMet.close()
         if len(f[0]) == 0:
-            self.put_in_archive(met)
+            self.put_in_archive(met,date)
             return False, 0
 
         if not os.path.exists(geom):
-            self.get_from_archive(geom)
+            self.get_from_archive(geom,date)
         ncGeom = Dataset(geom)
         SZA    = np.squeeze(ncGeom.variables[u'solar_zenith'][:])
         VZA    = np.squeeze(ncGeom.variables[u'sensor_zenith'][:])
         ncGeom.close()
 
         if not os.path.exists(land):
-            self.get_from_archive(land)        
+            self.get_from_archive(land,date)        
         ncLand = Dataset(land)
         FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
         ncLand.close()
@@ -384,28 +386,28 @@ class WORKSPACE(JOBS):
         FRLAND = FRLAND[f]
 
 
-        def clean_up(self,met,geom,land):
-            self.put_in_archive(met)
-            self.put_in_archive(geom)
-            self.put_in_archive(land)
+        def clean_up(self,met,geom,land,date):
+            self.put_in_archive(met,date)
+            self.put_in_archive(geom,date)
+            self.put_in_archive(land,date)
 
 
         f   = np.where(VZA < 80)
         if len(f[0]) == 0:
-            clean_up(self,met,geom,land)
+            clean_up(self,met,geom,land,date)
             return 0
 
         SZA    = SZA[f]
         FRLAND = FRLAND[f]
         f      = np.where(SZA < 80)
         if len(f[0]) == 0:
-            clean_up(self,met,geom,land)
+            clean_up(self,met,geom,land,date)
             return 0
 
         FRLAND = FRLAND[f]
         f      = np.where(FRLAND >= 0.99)
         if len(f[0]) == 0:
-            clean_up(self,met,geom,land)
+            clean_up(self,met,geom,land,date)
             return 0
 
         return len(f[0])
@@ -426,9 +428,9 @@ class WORKSPACE(JOBS):
             aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
 
         if not os.path.exists(chm):
-            self.get_from_archive(chm)
+            self.get_from_archive(chm,date)
         if not os.path.exists(aer):
-            self.get_from_archive(aer)        
+            self.get_from_archive(aer,date)        
 
         # creating working directory
         dirname = '{}/{}.{}T{}.{}.{}'.format(self.prefix,self.instname.lower(),date.date(),str(date.hour).zfill(2),ch,self.code)
@@ -677,11 +679,11 @@ class WORKSPACE(JOBS):
                 geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
                 land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx_' + layout + '.nc4'  
 
-            self.put_in_archive(met)
-            self.put_in_archive(geom)
-            self.put_in_archive(land)
-            self.put_in_archive(aer)
-            self.put_in_archive(chm)
+            self.put_in_archive(met,date)
+            self.put_in_archive(geom,date)
+            self.put_in_archive(land,date)
+            self.put_in_archive(aer,date)
+            self.put_in_archive(chm,date)
 
         os.chdir(self.dirstring[i])
 
