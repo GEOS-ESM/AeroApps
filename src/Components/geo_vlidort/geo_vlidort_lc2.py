@@ -657,6 +657,9 @@ class WORKSPACE(JOBS):
     def destroy_workspace(self,i,jobid):
         # put LevelB files in archive or remove
         if not self.keep:
+            #parse date from distring
+            date = parse(os.path.basename(self.dirstring[i]).split('.')[1])
+
             g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
             nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
             hour  = str(date.hour).zfill(2)
