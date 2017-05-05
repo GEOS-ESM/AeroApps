@@ -755,7 +755,7 @@ class WORKSPACE(JOBS):
                 move_file(outfilelist,addoutdir)
 
         os.chdir(self.cwd)
-        if profile is False:
+        if self.profile is False:
             os.rmdir(self.dirstring[i])
 
     def combine_files(self,filelist):
