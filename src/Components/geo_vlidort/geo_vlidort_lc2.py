@@ -328,7 +328,7 @@ class WORKSPACE(JOBS):
     def put_in_archive(self,path,date):
         filename = os.path.basename(path)
         archive = self.archive + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
-        print 'checking if this exists',os.path.exists(self.archive+'/'+filename), self.archive+'/'+filename
+        print 'checking if this exists',os.path.exists(archive+'/'+filename), self.archive+'/'+filename
         if not os.path.exists(archive+'/'+filename):
             try:
                 shutil.copyfile(path,archive+'/'+filename) 
@@ -366,7 +366,7 @@ class WORKSPACE(JOBS):
         f     = np.where(Cld <= float(self.CLDMAX))
         ncMet.close()
         if len(f[0]) == 0:
-            self.put_in_archive(met,date)
+            #self.put_in_archive(met,date)
             return False, 0
 
         if not os.path.exists(geom):
@@ -395,20 +395,20 @@ class WORKSPACE(JOBS):
 
         f   = np.where(VZA < 80)
         if len(f[0]) == 0:
-            clean_up(self,met,geom,land,date)
+            #clean_up(self,met,geom,land,date)
             return 0
 
         SZA    = SZA[f]
         FRLAND = FRLAND[f]
         f      = np.where(SZA < 80)
         if len(f[0]) == 0:
-            clean_up(self,met,geom,land,date)
+            #clean_up(self,met,geom,land,date)
             return 0
 
         FRLAND = FRLAND[f]
         f      = np.where(FRLAND >= 0.99)
         if len(f[0]) == 0:
-            clean_up(self,met,geom,land,date)
+            #clean_up(self,met,geom,land,date)
             return 0
 
         return len(f[0])
@@ -680,11 +680,11 @@ class WORKSPACE(JOBS):
                 geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
                 land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx_' + layout + '.nc4'  
 
-            self.put_in_archive(met,date)
-            self.put_in_archive(geom,date)
-            self.put_in_archive(land,date)
-            self.put_in_archive(aer,date)
-            self.put_in_archive(chm,date)
+            #self.put_in_archive(met,date)
+            #self.put_in_archive(geom,date)
+            #self.put_in_archive(land,date)
+            #self.put_in_archive(aer,date)
+            #self.put_in_archive(chm,date)
 
         os.chdir(self.dirstring[i])
 
