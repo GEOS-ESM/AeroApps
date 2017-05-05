@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 """
-    Utility to compute optical properties along a sampled file.
+    Calculates polarized TOA radiance for a multiangle polarimeter on a lidar track
 
-    Ed Nowottnick, January, 2015.
+    Adapted from ext_sampler.py
+    Patricia Castellanos, May, 2017
 
 """
 
