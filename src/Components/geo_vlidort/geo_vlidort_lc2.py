@@ -325,7 +325,7 @@ class WORKSPACE(JOBS):
 
     def put_in_archive(self,path):
         filename = os.path.basename(path)
-        if not os.path.exists(self.archive+'/'+filename):""
+        if not os.path.exists(self.archive+'/'+filename):
             try:
                 shutil.copyfile(path,self.archive+'/'+filename) 
             except IOError:
