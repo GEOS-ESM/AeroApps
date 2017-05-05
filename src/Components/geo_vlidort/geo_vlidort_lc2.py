@@ -440,8 +440,7 @@ class WORKSPACE(JOBS):
         bindir = dirname
         if os.path.exists(dirname):
             shutil.rmtree(dirname)
-        else:
-            os.makedirs(dirname)    
+        os.makedirs(dirname)    
 
 
         # outdirname
