@@ -205,6 +205,7 @@ class WORKSPACE(JOBS):
 
         if self.nodemax is not None: self.nodemax = int(self.nodemax)
         self.nccs    = self.nccs + '/' + self.instname.upper() + '/DATA/' 
+        self.archive    = self.archive + '/' + self.instname.upper() + '/DATA/' 
         self.prefix  = self.nccs + 'workdir/'
 
         self.indir   = self.nccs 
@@ -318,18 +319,18 @@ class WORKSPACE(JOBS):
     def get_from_archive(self,path):
         filename = os.path.basename(path)
         try:
-            shutil.copyfile(self.archive+'/'+filename,path) 
+            shutil.copyfile(self.archive+ '/LevelB/'+filename,path) 
         except IOError:
-            print 'Could not find '+filename+' in archive ',self.archive
+            print 'Could not find '+filename+' in archive ',self.archive+ '/LevelB/'
             sys.exit()
 
     def put_in_archive(self,path):
         filename = os.path.basename(path)
-        if not os.path.exists(self.archive+'/'+filename):
+        if not os.path.exists(self.archive+ '/LevelB/'+filename):
             try:
-                shutil.copyfile(path,self.archive+'/'+filename) 
+                shutil.copyfile(path,self.archive+ '/LevelB/'+filename) 
             except IOError:
-                print 'Could not put '+filename+' in archive ',self.archive
+                print 'Could not put '+filename+' in archive ',self.archive+ '/LevelB/'
                 sys.exit()
         else:
             os.remove(path)
