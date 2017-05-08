@@ -1,0 +1,6 @@
+# LIDAR SAMPLING
+INSTNAME = calipso
+TLEFILE  = /discover/nobackup/pcastell/POLAR_LIDAR/CALIPSO/calipso.tle
+RCFILES  = aer_Nv.rc, chm_Nv.rc, met_Nv.rc
+OUTDIR   = /discover/nobackup/pcastell/POLAR_LIDAR/CALIPSO/LevelB
+# LIDAR SAMPLING
