@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 """
-    Calculates polarized TOA radiance for a multiangle polarimeter on a lidar track
+    Calculates polarized TOA radiance for a multiangle polarimeter on a lidar track.
+    Model fields have already been sampled using trj_sampler
 
     Adapted from ext_sampler.py
     Patricia Castellanos, May, 2017
@@ -10,22 +11,16 @@
 
 import os
 import MieObs_
-from types import *
-from netCDF4 import Dataset
-from mieobs import VNAMES, getAOPext, getAOPscalar
-from numpy import zeros, arange, array, ones, zeros, interp, isnan, ma, NaN, squeeze, transpose, shape, asarray
-from math import pi, sin, cos, asin, acos
+from   netCDF4 import Dataset
+from   mieobs  import  getAOPvector
+import numpy   as np
+from   math    import pi, sin, cos, asin, acos
 
-from types           import *
 from optparse        import OptionParser
 from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
-from csv             import DictReader
 
-from MAPL           import Config, eta
 from MAPL.constants import *
-from pyobs          import ICARTT
-from pyobs.sgp4     import getTrack 
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
@@ -36,88 +31,71 @@ VNAMES_SU = ['SO4']
 MieVarsNames = ['ext','scatext','backscat','aback_sfc','aback_toa','depol','ext2back','tau','ssa','g']
 MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitless','unitless','unitless']
 
+META = ['DELP','RH','AIRDENS','CLDTOT','LONGITUDE','LATITUDE','tyme']
+
+SDS = META + VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
+
+class VLIDORT(object):
+    """
+    Everything needed for calling VLIDORT
+    GEOS-5 has already been sampled on lidar track
+    """
+    def __init__(self,path):
+        self.SDS = SDS
+
+        # initialize empty lists
+        for sds in SDS:
+            self.__dict__[sds] = []
+
+        # Read in data from path
+        self.readSampledTrack(path)
+
+        # Make lists into array
+        for sds in SDS:
+            self.__dict__[sds] = np.array(self.__dict_[sds])
+
+        # Calculate aerosol optical properties
+
+
+    #---
+    def readSampledTrack(self,inFile):
+        """
+        Read in model sampled track
+        """
+        nc       = Dataset(inFile)
+
+        for sds in SDS:
+            if sds == 'LONGITUDE':
+                sds = 'trjLon'
+            if sds == 'LATITUDE':
+                sds = 'trjLat'
+            if sds == 'tyme':
+                sds = 'isotime'
+
+            var = nc.variables[sds][:]
+            self.__dict__[name].append(var)
+
+
+    #---
+    def computeMie(self,Vars, channel, varnames, rcFile):
+        """
+        Computes optical quantities 
+        """
+        tau,ssa,g = getAOPvector(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+        ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+        ext2back = ext/backscat
+        MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}       
+        return MieVars
+
+
 class MieCalc(object):
     pass
     """                                                                                  
     Generic container for Variables
     """
 
-#---
-def getVars(inFile):
-    """
-#    Parse input file, create variable dictionary
-#    """
 
-    Vars       = MieCalc()
-    file       = Dataset(inFile)
-    names      = file.variables.keys()
-    MIENAMES   = names
-    for n, name in enumerate(MIENAMES):
-        var = file.variables[name]
-        if (name == 'trjLon') or (name == 'stnLon'):
-            name = 'LONGITUDE'
-        if (name == 'trjLat') or (name == 'stnLat'):
-            name = 'LATITUDE'
-        name = name.upper()
-        size = len(var.shape)
-        if size == 3:
-            setattr(Vars,name,var[:,:,:])
-        if size == 2:
-            setattr(Vars,name,var[:,:])
-        if size == 1:
-            setattr(Vars,name,var[:])
-    return Vars        
 
-#---
-def computeMie(Vars, channel, varnames, rcFile):
-    """
-#    Computes optical quantities and combines into a dictionary
-#   """
-
-    #STN Sampled?
-    if options.station:
-        NAMES = VNAMES + ['PS','DELP','RH','AIRDENS']
-        nstn = len(Vars.STATION)
-        nobs = len(Vars.TIME)
-        for v in range(nstn):
-            VarsIn = MieCalc()
-            for n, name in enumerate(NAMES):
-                Var = getattr(Vars,name)
-                size = len(Var.shape)
-                if (size == 2):
-                    #1D Variables, ex. PS
-                    setattr(VarsIn,name,Var[v,:])
-                if size == 3:
-                    #2D Variables, ex. DU001
-                    setattr(VarsIn,name,Var[v,:,:])
-  
-            if (v==0):
-                tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-                ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-                ext2back = ext/backscat
-                MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}
-            else:
-                tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-                ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-                ext2back = ext/backscat
-                MieVars['ext'].append(ext)
-                MieVars['scatext'].append(sca)
-                MieVars['backscat'].append(backscat)
-                MieVars['aback_sfc'].append(aback_sfc)
-                MieVars['aback_toa'].append(aback_toa)
-                MieVars['depol'].append(depol) 
-                MieVars['ext2back'].append(ext2back)
-                MieVars['tau'].append(tau)
-                MieVars['ssa'].append(ssa)
-                MieVars['g'].append(g)
-
-    #TRJ Sampled?
-    else:
-        tau,ssa,g = getAOPscalar(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-        ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-        ext2back = ext/backscat
-        MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}       
-    return MieVars
 
 #---
 def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
