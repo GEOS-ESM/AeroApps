@@ -79,7 +79,7 @@ def getAOPscalar(aer,channels,vnames=VNAMES,vtypes=None,Verbose=False,rcfile='Ao
     # Variable type for mie calculation
     # ---------------------------------
     if vtypes is None:
-        vtypes = vname     # to be used in mie calculation
+        vtypes = vnames     # to be used in mie calculation
 
     # Make sure channels is a numpy array
     # -------------------------------------
@@ -130,7 +130,7 @@ def getAOPvector(aer,channels,I=None,vnames=VNAMES,vtypes=None,
     # Variable type for mie calculation
     # ---------------------------------
     if vtypes is None:
-        vtypes = vname     # to be used in mie calculation
+        vtypes = vnames     # to be used in mie calculation
 
     # Make sure channels is a numpy array
     # -------------------------------------
@@ -187,7 +187,7 @@ def getAOPext(aer,channels,I=None,vnames=VNAMES,vtypes=None,Verbose=False,rcfile
     # Variable type for mie calculation
     # ---------------------------------
     if vtypes is None:
-        vtypes = vname     # to be used in mie calculation
+        vtypes = vnames     # to be used in mie calculation
 
     # Make sure channels is a numpy array
     # -------------------------------------
