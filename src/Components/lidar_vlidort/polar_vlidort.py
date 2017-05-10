@@ -14,9 +14,7 @@ import MieObs_
 from   netCDF4 import Dataset
 from   mieobs  import  getAOPvector
 import numpy   as np
-from   math    import pi, sin, cos, asin, acos
 
-from optparse        import OptionParser
 from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 
@@ -31,68 +29,84 @@ VNAMES_SU = ['SO4']
 MieVarsNames = ['ext','scatext','backscat','aback_sfc','aback_toa','depol','ext2back','tau','ssa','g']
 MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitless','unitless','unitless']
 
-META = ['DELP','RH','AIRDENS','CLDTOT','LONGITUDE','LATITUDE','tyme']
+META    = ['DELP','RH','AIRDENS','LONGITUDE','LATITUDE','tyme']
+AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
+SDS_AER = META + AERNAMES
+SDS_MET = ['CLDTOT','PS']
 
-SDS = META + VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
+ncALIAS = {'LONGITUDE': 'trjLon',
+           'LATITUDE': 'trjLat',
+           'tyme' : 'isotime'}
 
-class VLIDORT(object):
+class POLAR_VLIDORT(object):
     """
     Everything needed for calling VLIDORT
     GEOS-5 has already been sampled on lidar track
     """
-    def __init__(self,path):
-        self.SDS = SDS
+    def __init__(self,inFile,outFile,rcFile,channel):
+        self.SDS_AER = SDS_AER
+        self.SDS_MET = SDS_MET
+        self.AERNAMES = AERNAMES
+        self.inFile  = inFile
+        self.outFile = outFile
+        self.rcFile  = rcFile
+        self.channel = channel
+
 
         # initialize empty lists
-        for sds in SDS:
+        for sds in self.SDS_AER+self.SDS_MET:
             self.__dict__[sds] = []
 
         # Read in data from path
-        self.readSampledTrack(path)
+        self.readSampledTrack()
 
-        # Make lists into array
+        # Make lists into arrays
         for sds in SDS:
             self.__dict__[sds] = np.array(self.__dict_[sds])
 
         # Calculate aerosol optical properties
+        self.computeMie()
 
 
     #---
-    def readSampledTrack(self,inFile):
+    def readSampledTrack(self):
         """
         Read in model sampled track
         """
-        nc       = Dataset(inFile)
+        col = 'aer_Nv'
+        nc       = Dataset(self.inFile.replace('%col',col))
 
-        for sds in SDS:
-            if sds == 'LONGITUDE':
-                sds = 'trjLon'
-            if sds == 'LATITUDE':
-                sds = 'trjLat'
-            if sds == 'tyme':
-                sds = 'isotime'
-
+        for sds in self.SDS_AER:
+            if sds in ncALIAS:
+                sds = ncALIAS[sds]
             var = nc.variables[sds][:]
             self.__dict__[name].append(var)
 
+        col = 'met_Nv'
+        nc       = Dataset(self.inFile.replace('%col',col))
+
+        for sds in self.SDS_MET:
+            if sds in ncALIAS:
+                sds = ncALIAS[sds]
+            var = nc.variables[sds][:]
+            self.__dict__[name].append(var)
 
     #---
-    def computeMie(self,Vars, channel, varnames, rcFile):
+    def computeMie(self):
         """
-        Computes optical quantities 
+        Computes aerosol optical quantities 
         """
-        tau,ssa,g = getAOPvector(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-        ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-        ext2back = ext/backscat
-        MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}       
-        return MieVars
+        tau,ssa,g,pmom = getAOPvector(self,self.channel,
+                                 vnames=self.AERNAMES,
+                                 Verbose=True,
+                                 rcfile=self.rcFile)
+        self.tau = tau
+        self.ssa = ssa
+        self.g   = g
+        self.pmom = pmom
 
 
-class MieCalc(object):
-    pass
-    """                                                                                  
-    Generic container for Variables
-    """
+
 
 
 
@@ -239,114 +253,18 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
 #------------------------------------ M A I N ------------------------------------
 
 if __name__ == "__main__":
+    date     = datetime(2006,01,01,00)
+    nymd     = str(date.date()).replace('-','')
+    hour     = str(date.hour).zfill(2)
+    format   = 'NETCDF4_CLASSIC'
+    inFile   = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelB/calipso-g5nr.lb2.%col.rc.{}_{}z.nc4'.format(nymd,hour)
+    outFile  = 'polar_vlidort.nc'
+    channel = 532
+    rcFile = 'Aod_EOS.rc'
+
     
-    format = 'NETCDF3_CLASSIC'
-    inFile  = 'trj_sampler.nc'
-    outFile = 'ext_sampler.nc'
-    channel = (532)
-    rcFile = 'Aod3d_532nm.rc'
+    # Initialize VLIDORT class getting aerosol optical properties
+    # -----------------------------------------------------------
+    vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,channel)
 
-#   Parse command line options
-#   --------------------------
-    parser = OptionParser()
-
-    parser.add_option("-i", "--input", dest="inFile", default=inFile,
-              help="Sampled input file")
-
-    parser.add_option("-o", "--output", dest="outFile", default=outFile,
-              help="Output file containing optical properties")
-
-    parser.add_option("-r", "--rc", dest="rcFile", default=rcFile,
-              help="Resource file pointing to optical tables")
-
-    parser.add_option("-f", "--format", dest="format", default=format,
-              help="Output file format: one of NETCDF4, NETCDF4_CLASSIC, NETCDF3_CLASSIC, NETCDF3_64BIT or EXCEL (default=%s)"%format )
-
-    parser.add_option("-c", "--channel", dest="channel", default=channel,
-              help="Channel for Mie calculation")
-
-    parser.add_option("-v", "--verbose",
-                      action="store_true", dest="verbose",
-                      help="Verbose mode")
-
-    parser.add_option("--du",
-                      action="store_true", dest="dust",
-                      help="Dust Only")
-
-    parser.add_option("--ss",
-                      action="store_true", dest="seasalt",
-                      help="Seasalt Only")
-
-    parser.add_option("--su",
-                      action="store_true", dest="sulfate",
-                      help="Sulfate Only")
-
-    parser.add_option("--bc",
-                      action="store_true", dest="bcarbon",
-                      help="Black Carbon Only")
-
-    parser.add_option("--oc",
-                      action="store_true", dest="ocarbon",
-                      help="Organic Carbon Only")
-
-    parser.add_option("--stn",
-                      action="store_true", dest="station",
-                      help="Input File is from stn_sampler.py")
-
-    (options, args) = parser.parse_args()
-
-         
-    # Create consistent file name extension
-    # -------------------------------------
-    name, ext = os.path.splitext(options.outFile)
-    if ext.upper() == '.XLS':
-        options.format = 'EXCEL'
-    if 'NETCDF4' in options.format:
-        options.outFile = name + '.nc4'
-    elif 'NETCDF3' in options.format:
-        options.outFile = name + '.nc'
-    elif 'EXCEL' in options.format:
-        options.outFile = name + '.xls'
-    else:
-        raise ValueError, 'invalid extension <%s>'%ext
-    
-    # Get Variables
-    # --------------------------
-    Vars = getVars(options.inFile)
-
-    # Run Mie Calculator and Write Output Files
-    # --------------------------
-    if options.station:
-        StnNames = Vars.STNNAME
-    else:
-        StnNames = ''
-
-    channelIn = float(options.channel)
-    MieVars = computeMie(Vars,channelIn,VNAMES,options.rcFile)
-    writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,options.outFile)
-
-    if options.dust:
-        outFile = options.outFile+'.dust'
-        MieVars = computeMie(Vars,channelIn,VNAMES_DU,options.rcFile)
-        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
-
-    if options.seasalt:
-        outFile = options.outFile+'.ss'
-        MieVars = computeMie(Vars,channelIn,VNAMES_SS,options.rcFile)
-        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
-
-    if options.sulfate:
-        outFile = options.outFile+'.su'
-        MieVars = computeMie(Vars,channelIn,VNAMES_SU,options.rcFile)
-        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
-
-    if options.bcarbon:
-        outFile = options.outFile+'.bc'
-        MieVars = computeMie(Vars,channelIn,VNAMES_BC,options.rcFile)
-        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
-
-    if options.ocarbon:
-        outFile = options.outFile+'.oc'
-        MieVars = computeMie(Vars,channelIn,VNAMES_OC,options.rcFile)
-        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
    
