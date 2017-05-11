@@ -38,12 +38,18 @@ ncALIAS = {'LONGITUDE': 'trjLon',
            'LATITUDE': 'trjLat',
            'tyme' : 'isotime'}
 
+
+nMom     = 300
+
+VZAdic = {'POLDER': np.array([3.66, 11., 18.33, 25.66, 33, 40.33, 47.66, 55.0])}
+
+
 class POLAR_VLIDORT(object):
     """
     Everything needed for calling VLIDORT
     GEOS-5 has already been sampled on lidar track
     """
-    def __init__(self,inFile,outFile,rcFile,channel):
+    def __init__(self,inFile,outFile,rcFile,channel,VZA,verbose=False):
         self.SDS_AER = SDS_AER
         self.SDS_MET = SDS_MET
         self.AERNAMES = AERNAMES
@@ -51,6 +57,8 @@ class POLAR_VLIDORT(object):
         self.outFile = outFile
         self.rcFile  = rcFile
         self.channel = channel
+        self.verbose = verbose
+        self.nMom    = nMom
 
 
         # initialize empty lists
@@ -61,11 +69,15 @@ class POLAR_VLIDORT(object):
         self.readSampledTrack()
 
         # Make lists into arrays
-        for sds in SDS:
-            self.__dict__[sds] = np.array(self.__dict_[sds])
+        for sds in self.SDS_AER+self.SDS_MET:
+            self.__dict__[sds] = np.concatenate(self.__dict__[sds])
 
         # Calculate aerosol optical properties
         self.computeMie()
+
+        # Calculate Scene Geometry
+        self.VZA = VZA
+
 
 
     #---
@@ -74,22 +86,28 @@ class POLAR_VLIDORT(object):
         Read in model sampled track
         """
         col = 'aer_Nv'
+        if self.verbose: 
+            print 'opening file',self.inFile.replace('%col',col)
         nc       = Dataset(self.inFile.replace('%col',col))
 
         for sds in self.SDS_AER:
+            sds_ = sds
             if sds in ncALIAS:
-                sds = ncALIAS[sds]
-            var = nc.variables[sds][:]
-            self.__dict__[name].append(var)
+                sds_ = ncALIAS[sds]
+            var = nc.variables[sds_][:]
+            self.__dict__[sds].append(var)
 
         col = 'met_Nv'
+        if self.verbose: 
+            print 'opening file',self.inFile.replace('%col',col)        
         nc       = Dataset(self.inFile.replace('%col',col))
 
         for sds in self.SDS_MET:
+            sds_ = sds
             if sds in ncALIAS:
-                sds = ncALIAS[sds]
-            var = nc.variables[sds][:]
-            self.__dict__[name].append(var)
+                sds_ = ncALIAS[sds]
+            var = nc.variables[sds_][:]
+            self.__dict__[sds].append(var)
 
     #---
     def computeMie(self):
@@ -99,11 +117,12 @@ class POLAR_VLIDORT(object):
         tau,ssa,g,pmom = getAOPvector(self,self.channel,
                                  vnames=self.AERNAMES,
                                  Verbose=True,
-                                 rcfile=self.rcFile)
-        self.tau = tau
-        self.ssa = ssa
-        self.g   = g
-        self.pmom = pmom
+                                 rcfile=self.rcFile,
+                                 nMom=self.nMom)
+        self.tau = tau  #(km,nch,nobs)
+        self.ssa = ssa  #(km,nch,nobs)
+        self.g   = g    #(km,nch,nobs)
+        self.pmom = pmom  #(km,nch,nobs,nMom,nPol)
 
 
 
@@ -257,14 +276,16 @@ if __name__ == "__main__":
     nymd     = str(date.date()).replace('-','')
     hour     = str(date.hour).zfill(2)
     format   = 'NETCDF4_CLASSIC'
-    inFile   = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelB/calipso-g5nr.lb2.%col.rc.{}_{}z.nc4'.format(nymd,hour)
+    inFile   = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelB/Y2006/M01/calipso-g5nr.lb2.%col.rc.{}_{}z.nc4'.format(nymd,hour)
     outFile  = 'polar_vlidort.nc'
-    channel = 532
-    rcFile = 'Aod_EOS.rc'
+    channel  = 470
+    rcFile   = 'Aod_EOS.rc'
+    polarname = 'POLDER'
+    direction = 'A'
+    verbose  = True
 
-    
     # Initialize VLIDORT class getting aerosol optical properties
     # -----------------------------------------------------------
-    vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,channel)
+    vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,channel,VZAdic[polarname],verbose=verbose)
 
    
