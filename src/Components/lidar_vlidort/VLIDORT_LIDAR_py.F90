@@ -1,6 +1,6 @@
 !
 !  Simple fortran wrapper for the Python interface to VLIDORT 
-!  using a MODIS RTLS BRDF surface
+!  
 !
 !  Patricia Castellanos
 !  May 2017
