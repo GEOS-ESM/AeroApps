@@ -12,13 +12,14 @@
 import os
 import MieObs_
 from   netCDF4 import Dataset
-from   mieobs  import  getAOPvector
+from   mieobs  import  getAOPvector, getEdgeVars
 import numpy   as np
 
 from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 
 from MAPL.constants import *
+import LidarAngles_     
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
@@ -29,19 +30,21 @@ VNAMES_SU = ['SO4']
 MieVarsNames = ['ext','scatext','backscat','aback_sfc','aback_toa','depol','ext2back','tau','ssa','g']
 MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitless','unitless','unitless']
 
-META    = ['DELP','RH','AIRDENS','LONGITUDE','LATITUDE','tyme']
+META    = ['DELP','RH','AIRDENS','LONGITUDE','LATITUDE','isotime']
 AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
 SDS_AER = META + AERNAMES
 SDS_MET = ['CLDTOT','PS']
 
 ncALIAS = {'LONGITUDE': 'trjLon',
-           'LATITUDE': 'trjLat',
-           'tyme' : 'isotime'}
+           'LATITUDE': 'trjLat'}
 
 
 nMom     = 300
 
 VZAdic = {'POLDER': np.array([3.66, 11., 18.33, 25.66, 33, 40.33, 47.66, 55.0])}
+
+HGTdic = {'LEO': 705,
+          'ISS': 400}
 
 
 class POLAR_VLIDORT(object):
@@ -49,7 +52,7 @@ class POLAR_VLIDORT(object):
     Everything needed for calling VLIDORT
     GEOS-5 has already been sampled on lidar track
     """
-    def __init__(self,inFile,outFile,rcFile,channel,VZA,verbose=False):
+    def __init__(self,inFile,outFile,rcFile,channel,VZA,hgtss,verbose=False):
         self.SDS_AER = SDS_AER
         self.SDS_MET = SDS_MET
         self.AERNAMES = AERNAMES
@@ -72,13 +75,79 @@ class POLAR_VLIDORT(object):
         for sds in self.SDS_AER+self.SDS_MET:
             self.__dict__[sds] = np.concatenate(self.__dict__[sds])
 
+        # convert isotime to datetime
+        self.tyme = []
+        for isotime in self.isotime:
+            self.tyme.append(isoparser(''.join(isotime)))
+
+        self.tyme = np.array(self.tyme)
+
+
         # Calculate aerosol optical properties
         self.computeMie()
 
+        # Calculate atmospheric profile properties needed for Rayleigh calc
+        self.computeAtmos()
+
         # Calculate Scene Geometry
         self.VZA = VZA
+        self.hgtss = hgtss
+        self.calcAngles()
+
+    # --
+    def computeAtmos(self):
+
+        pe, ze, te = getEdgeVars(self)
+
+        self.pe = pe # (km,nobs)
+        self.ze = ze 
+        self.te = te
+
+    # --
+    def calcAngles(self):
+        SZA   = []
+        SAA   = []
+        VAAf  = []
+        VAAb  = []
+        for i,tyme in enumerate(self.tyme):
+            if i == len(self.tyme)-1:
+                CLAT = self.LATITUDE[i-1]
+                CLON = self.LONGITUDE[i-1]
+            else:
+                CLAT = self.LATITUDE[i+1]
+                CLON = self.LONGITUDE[i+1]
+            
+            SLAT = self.LATITUDE[i]
+            SLON = self.LONGITUDE[i]
+            sat_angles = LidarAngles_.satangles(tyme.year,tyme.month,tyme.day,
+                                                tyme.hour,tyme.minute,tyme.second,
+                                                CLAT,CLON,
+                                                SLAT,SLON,
+                                                0.0,
+                                                self.hgtss)
+
+            SZA.append(sat_angles[3][0])
+            SAA.append(sat_angles[2][0])
+
+            if i == len(self.tyme)-1:
+                VAAb.append(sat_angles[0][0])
+                vaaf = sat_angles[0][0] - 180.0
+                if vaaf < 0:
+                    vaaf = vaaf + 360.
+                VAAf.append(vaaf)
+
+            else:
+                VAAf.append(sat_angles[0][0])
+                vaab = sat_angles[0][0]+180
+                if vaab > 360.:
+                    vaab = vaab - 360.
+                VAAb.append(vaab)
 
 
+        self.SZA = np.array(SZA)
+        self.SAA = np.array(SAA)
+        self.VAAf = np.array(VAAf)
+        self.VAAb = np.array(VAAb)
 
     #---
     def readSampledTrack(self):
@@ -281,11 +350,11 @@ if __name__ == "__main__":
     channel  = 470
     rcFile   = 'Aod_EOS.rc'
     polarname = 'POLDER'
-    direction = 'A'
+    orbit     = 'LEO'
     verbose  = True
 
     # Initialize VLIDORT class getting aerosol optical properties
     # -----------------------------------------------------------
-    vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,channel,VZAdic[polarname],verbose=verbose)
+    vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,channel,VZAdic[polarname],HGTdic[orbit],verbose=verbose)
 
    
