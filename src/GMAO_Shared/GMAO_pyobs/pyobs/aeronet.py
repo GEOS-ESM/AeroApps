@@ -460,6 +460,25 @@ def aodInterpAngs(lambda_,tau1,tau2,lambda1,lambda2):
 
 
 #.......................................................................................
+def retrieve( filename='aeronet.csv',
+              request='year=2016&month=9&day=1&year2=2016&month2=9&day2=30&AOD15=1&AVG=10',
+              verbose=True):
+    """
+    Use wget to retrieve aeronet data using the Version 3 webservice.'
+    """
+
+    cmd = 'wget --no-check-certificate -q -O %s' \
+        + ' "https://aeronet.gsfc.nasa.gov/cgi-bin/print_web_data_v3?%s&if_no_html=1"' \
+        %(filename,request)
+
+    if verbose:
+        print cmd
+        
+    if os.system(cmd):
+        raise ValueError, "Cannot retrieve request <%cmd>"
+
+        
+#.......................................................................................
 def granules( tyme,
               bracket=None,
               Version = '20',
