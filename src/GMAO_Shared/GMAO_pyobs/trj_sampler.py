@@ -514,7 +514,7 @@ if __name__ == "__main__":
     # Make sure longitudes in [-180,180]
     # ----------------------------------
     if lon.max()>180.:
-        lon[lon>180] = lon - 360.
+        lon[lon>180] = lon[lon>180] - 360.
 
     # Write output file
     # -----------------

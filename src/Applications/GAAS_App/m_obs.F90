@@ -100,7 +100,8 @@ CONTAINS
 !
 ! !INTERFACE:
 !
-    subroutine Observer ( nymd, nhms, w_f, nobs, ods, nobs_good )
+    subroutine Observer ( nymd, nhms, w_f, nobs, ods, nobs_good, &
+                          convertOb2AOD ) ! optionals
 
 ! !USES:
 !
@@ -116,6 +117,8 @@ CONTAINS
     type(Chem_Bundle), intent(in) :: w_f     ! first guess fields
 
     integer,        intent(in)   :: nobs     ! total no. of obs
+
+    logical,optional,intent(in)  :: convertOb2AOD  ! allow handling log(AOD) in input obs
 
 !
 ! !INPUT/OUTPUT PARAMETERS:
@@ -192,6 +195,13 @@ CONTAINS
 !   Initialize this package
 !   -----------------------
     call Init_()
+
+    if (present(convertOb2AOD)) then
+       if ( convertOb2AOD ) then
+          ods%data%obs = max(eps,exp(ods%data%obs)-eps)
+          ods%data%kt  = ktAOD
+       endif
+    endif
 
 !   Standardize channels
 !   --------------------

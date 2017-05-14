@@ -75,29 +75,31 @@ CHANNELS = dict (
                    SREF = ( 470, 660, 2100 ),
                 )
 
-ALIAS = dict (              Longitude = 'lon',
-                             Latitude = 'lat',
-                        Sensor_Zenith = 'SensorZenith',
-                       Sensor_Azimuth = 'SensorAzimuth',
-                         Solar_Zenith = 'SolarZenith',
-                        Solar_Azimuth = 'SolarAzimuth',
-                     Scattering_Angle = 'ScatteringAngle',
+ALIAS = dict (  Longitude = 'lon',
+                Latitude = 'lat',
+                Sensor_Zenith = 'SensorZenith',
+                Sensor_Azimuth = 'SensorAzimuth',
+                Solar_Zenith = 'SolarZenith',
+                Solar_Azimuth = 'SolarAzimuth',
+                Scattering_Angle = 'ScatteringAngle',
+                Glint_Angle = 'GlintAngle',
                 Mean_Reflectance_Land = 'reflectance',
-             Surface_Reflectance_Land = 'sfc_reflectance',
-         Corrected_Optical_Depth_Land = 'aod',
-             Optical_Depth_Small_Land = 'aod_fine',
-                  Cloud_Fraction_Land = 'cloud',
-   Effective_Optical_Depth_Best_Ocean = 'aod',
-       Optical_Depth_Small_Best_Ocean = 'aod_fine',
-                 Cloud_Fraction_Ocean = 'cloud',
-               Mean_Reflectance_Ocean = 'reflectance',
- Deep_Blue_Spectral_Aerosol_Optical_Depth_Land = 'aod3ch',
- Deep_Blue_Aerosol_Optical_Depth_550_Land_Best_Estimate = 'aod550',
-   Deep_Blue_Spectral_Surface_Reflectance_Land = 'sfc_reflectance',
-      Deep_Blue_Spectral_TOA_Reflectance_Land = 'reflectance',
-Deep_Blue_Spectral_Single_Scattering_Albedo_Land = 'ssa',
-Deep_Blue_Algorithm_Flag_Land = 'atype',
-     Deep_Blue_Angstrom_Exponent_Land = 'angstrom',
+                Surface_Reflectance_Land = 'sfc_reflectance',
+                Corrected_Optical_Depth_Land = 'aod',
+                Optical_Depth_Small_Land = 'aod_fine',
+                Cloud_Fraction_Land = 'cloud',
+                Effective_Optical_Depth_Best_Ocean = 'aod',
+                Optical_Depth_Small_Best_Ocean = 'aod_fine',
+                Cloud_Fraction_Ocean = 'cloud',
+                Mean_Reflectance_Ocean = 'reflectance',
+                Deep_Blue_Spectral_Aerosol_Optical_Depth_Land = 'aod3ch',
+                Deep_Blue_Aerosol_Optical_Depth_550_Land_Best_Estimate = 'aod550',
+                Deep_Blue_Spectral_Surface_Reflectance_Land = 'sfc_reflectance',
+                Deep_Blue_Spectral_TOA_Reflectance_Land = 'reflectance',
+                Deep_Blue_Spectral_Single_Scattering_Albedo_Land = 'ssa',
+                Deep_Blue_Algorithm_Flag_Land = 'atype',
+                Deep_Blue_Angstrom_Exponent_Land = 'angstrom',
+                Deep_Blue_Cloud_Fraction_Land = 'cloud'
              )
 
 BAD, MARGINAL, GOOD, BEST = ( 0, 1, 2, 3 ) # QA marks
@@ -130,7 +132,8 @@ class MxD04_L2(object):
     referred to as MOD04 (TERRA satellite) and MYD04 (AQUA satellite).
     """
 
-    def __init__ (self,Path,Algo,syn_time=None,nsyn=8,Verb=0,only_good=True):
+    def __init__ (self,Path,Algo,syn_time=None,nsyn=8,Verb=0,
+                  only_good=True,SDS=SDS,alias=None):
        """
        Reads individual granules or a full day of Level 2 MOD04/MYD04 files
        present on a given *Path* and returns a single object with
@@ -151,6 +154,9 @@ class MxD04_L2(object):
                  0 - really quiet (default)
                  1 - Warns if invalid file is found
                  2 - Prints out non-zero number of aerosols in each file.
+         SDS      --- Variables to be read from MODIS hdf files.  Must 
+                      be a dictionary with keys 'META' and Algo
+         ALIAS    --- dictionary of alises for SDSs
 
        """
 
@@ -164,6 +170,12 @@ class MxD04_L2(object):
        self.col  = None # collection, e.g., 005
        self.algo = Algo
        self.SDS = SDS['META'] + SDS[Algo]
+
+       # Add/Substitute some aliases if given
+       # ------------------------------------
+       if alias is not None:
+           for a in alias: ALIAS[a] = alias[a]  
+       self.ALIAS = ALIAS
 
        # Create empty lists for SDS to be read from file
        # -----------------------------------------------
@@ -180,6 +192,13 @@ class MxD04_L2(object):
        else:
            Path = [Path, ]
        self._readList(Path)
+
+       #Protect against empty MXD04 files
+       # --------------------------------
+       if len(self.Longitude) == 0:
+           self.nobs = 0
+           print "WARNING: Empty MxD04_L2 object created"
+           return           
 
        # Make each attribute a single numpy array
        # ----------------------------------------
@@ -470,7 +489,7 @@ class MxD04_L2(object):
 
         # Exclusion flag
         # --------------
-        iGood = (ods.qch>0) & (ods.obs<10.)
+        iGood = (ods.qch>0) & (ods.obs<10.) & (ods.qcx==0)
         ods.qcx[:] = 1     # All bad...
         ods.qcx[iGood] = 0 # ... unless good
 
@@ -478,7 +497,7 @@ class MxD04_L2(object):
         if Verb >=1:
             print "[w] Writing file <"+filename+"> with %d observations"%ods_.nobs
 
-        ods_.write(filename,self.nymd,self.nhms,nsyn=8)
+        ods_.write(filename,self.nymd,self.nhms,nsyn=8,ftype='pre_anal')
         
 #---
     def writeg(self,filename=None,dir='.',expid=None,refine=8,res=None,
@@ -716,7 +735,7 @@ def granules ( path, prod, syn_time, coll='051', nsyn=8 ):
         if t >= t1:
             doy = t.timetuple()[7]
             basen = "%s/%s/%s/%04d/%03d/%s_L2.A%04d%03d.%02d%02d.%s.*.hdf"\
-                     %(path,prod,coll,t.year,doy,prod,t.year,doy,t.hour,t.minute,coll)
+                     %(path,coll,prod,t.year,doy,prod,t.year,doy,t.hour,t.minute,coll)
             try:
                 filen = glob(basen)[0]
                 Granules += [filen,]
@@ -774,10 +793,11 @@ def _gatime(nymd,nhms):
 if __name__ == "__main__":
 
 #    syn_time = datetime(2008,6,30,0,0,0)
-    syn_time = datetime(2011,2,5,12,0,0)
-    Files = granules('./Level2','MYD04',syn_time,coll='051')
+    syn_time = datetime(2016,10,26,10,0,0)
+#    Files = granules('/nobackup/MODIS/Level2/','MYD04',syn_time,coll='006')
+    Files = granules('/discover/nobackup/dao_ops/intermediate/flk/modis','MOD04',syn_time,coll='006')
 
-#    ocean = MxD04_L2(Files,'OCEAN',syn_time,Verb=1)
-    land  = MxD04_L2(Files,'LAND',syn_time,Verb=1)
+    ocean = MxD04_L2(Files,'OCEAN',syn_time,Verb=1,only_good=True)
+#    land  = MxD04_L2(Files,'LAND',syn_time,Verb=1)
 #    deep  = MxD04_L2(Files,'DEEP',syn_time,Verb=1)
     

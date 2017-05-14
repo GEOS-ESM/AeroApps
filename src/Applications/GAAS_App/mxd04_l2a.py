@@ -19,14 +19,13 @@ warnings.simplefilter('always',UserWarning)
 
 import os
 import sys
+import subprocess
 
-from time         import clock
-from optparse     import OptionParser   # Command-line args  
-from datetime     import datetime
-
-from mxd04_nnr    import MxD04_NNR
-from MAPL         import strTemplate
-from grads        import GrADS
+from time            import clock
+from optparse        import OptionParser   # Command-line args  
+from dateutil.parser import parse as isoparse
+from mxd04_nnr       import MxD04_NNR
+from MAPL            import strTemplate
 
 Ident = dict( modo = ('MOD04','ocean'),
               modl = ('MOD04','land'),
@@ -56,28 +55,24 @@ if __name__ == "__main__":
 #   ----------------------------------
     if os.path.exists('/nobackup/MODIS/Level2/'): # New calculon
         l2_path = '/nobackup/MODIS/Level2/'
-        out_dir = '/nobackup/NNR/Level%lev/%prod/Y%y4/M%m2'
-        nn_file = '/nobackup/NNR/Net/nnr_002.%ident_Tau.net'
+        out_dir = '/nobackup/NNR/%coll/Level%lev/%prod/Y%y4/M%m2'
+        nn_file = '/nobackup/NNR/Net/nnr_003.%ident_Tau.net'
         blank_ods = '/nobackup/NNR/Misc/blank.ods'
-        coxmunk_lut = '/nobackup/NNR/Misc/coxmunk_lut.npz'
-#    elif os.path.exists('/discover/nobackup/projects/gmao/iesa/'): # Discover
-#        raise ValueError, 'not setup yet'
+        aer_x   = '/nobackup/NNR/Misc/tavg1_2d_aer_Nx'
     else: # Must be somewhere else, no good defaults
         out_dir      = './'
         l2_path = './'
         nn_file = '%ident_Tau.net'
         blank_ods = 'blank.ods'
-        coxmunk_lut = 'cox-munk_lut.npz'
+        aer_x   = 'tavg1_2d_aer_Nx'        
 
     out_tmpl = '%s.%prod_l%leva.%algo.%y4%m2%d2_%h2%n2z.%ext'
-    wind_file = 'merra_slv-hourly.ddf'
-    albedo_file = 'albedo_clim.ctl'
     coll = '006'
-    res = 'e'
+    res = 'c'
     
 #   Parse command line options
 #   --------------------------
-    parser = OptionParser(usage="Usage: %prog [options] ident nymd nhms",
+    parser = OptionParser(usage="Usage: %prog [options] ident isotime",
                           version='mxd04_l2a-1.0.0' )
 
 
@@ -89,9 +84,9 @@ if __name__ == "__main__":
                       help="Output directory (default=%s)"\
                            %out_dir )
 
-    parser.add_option("-A", "--albedo", dest="albedo_file", default=albedo_file,
-                      help="GrADS ctl for Albedo file (default=%s)"\
-                           %albedo_file )
+    parser.add_option("-A", "--aer_x", dest="aer_x", default=aer_x,
+                      help="GrADS ctl for speciated AOD file (default=%s)"\
+                           %aer_x )
 
     parser.add_option("-B", "--blank_ods", dest="blank_ods", default=blank_ods,
                       help="Blank ODS file name for fillers  (default=%s)"\
@@ -108,38 +103,31 @@ if __name__ == "__main__":
     parser.add_option("-L", "--l2_dir", dest="l2_path", default=l2_path,
                       help="Top directory for MODIS Level 2 files (default=%s)"\
                            %l2_path )
-    parser.add_option("-M", "--coxmunk", dest="coxmunk_lut", default=coxmunk_lut,
-                      help="Blank ODS file name for fillers  (default=%s)"\
-                           %coxmunk_lut )
 
     parser.add_option("-N", "--net", dest="nn_file", default=nn_file,
                       help="Neural net file template  (default=%s)"\
                            %nn_file )
-
-    parser.add_option("-W", "--wind", dest="wind_file", default=wind_file,
-                      help="GrADS ctl for Wind file (default=%s)"\
-                           %wind_file )
 
     parser.add_option("-r", "--res", dest="res", default=res,
                       help="Resolution for gridded output (default=%s)"\
                            %out_tmpl )
 
     parser.add_option("-u", "--uncompressed",
-                      action="store_true", dest="uncompressed",
+                      action="store_true", dest="uncompressed",default=False,
                       help="Do not use n4zip to compress gridded/ODS output file (default=False)")
 
     parser.add_option("-F", "--force",
-                      action="store_true", dest="force",
+                      action="store_true", dest="force",default=False,
                       help="Overwrites output file")
 
     parser.add_option("-v", "--verbose",
-                      action="store_true", dest="verbose",
+                      action="store_true", dest="verbose",default=False,
                       help="Turn on verbosity.")
 
     (options, args) = parser.parse_args()
     
-    if len(args) == 3:
-        ident, nymd, nhms = args
+    if len(args) == 2:
+        ident, isotime = args
         prod, algo = Ident[ident]
     else:
         parser.error("must have 3 arguments: ident, date and time")
@@ -155,53 +143,49 @@ if __name__ == "__main__":
 
 #   Time variables
 #   --------------
-    nymd_, nhms_ = ( int(nymd), int(nhms) )
-    year, month, day = (nymd_/10000, (nymd_%10000)/100, nymd_%100)
-    hour = nhms_/10000
-    syn_time = datetime(year,month,day,hour,0,0) # no munte, second
+    syn_time = isoparse(isotime)
+    nymd     = str(syn_time.date()).replace('-','')
+    nhms     = str(syn_time.time()).replace(':','')
             
 #   Form output gridded file name
 #   -----------------------------
     out_tmpl = options.out_dir+'/'+options.out_tmpl
-    out_tmpl = out_tmpl.replace('%prod',prod).replace('%algo',algo).replace('%lev','3').replace('%ext','nc4')
+    out_tmpl = out_tmpl.replace('%coll',coll).replace('%prod',prod).replace('%algo',algo).replace('%lev','3').replace('%ext','nc4')
     out_file = strTemplate(out_tmpl,expid=options.expid,nymd=nymd,nhms=nhms)
     name, ext = os.path.splitext(out_file)
+    if os.path.exists(out_file) and (options.force is not True):
+        print "mxd04_l2a: Output Gridded file <%s> exists --- cannot proceed."%out_file
+        raise IOError, "Specify --force to overwrite existing output file."    
+    if os.path.exists(out_file) and options.force:
+        os.remove(out_file)    
 
 #   Form ODS file name
 #   ------------------
     ods_tmpl = options.out_dir+'/'+options.out_tmpl
-    ods_tmpl = ods_tmpl.replace('%prod',prod).replace('%algo',algo).replace('%lev','2').replace('%ext','ods')
+    ods_tmpl = ods_tmpl.replace('%coll',coll).replace('%prod',prod).replace('%algo',algo).replace('%lev','2').replace('%ext','ods')
     ods_file = strTemplate(ods_tmpl,expid=options.expid,nymd=nymd,nhms=nhms)
     if os.path.exists(ods_file) and (options.force is not True):
         print "mxd04_l2a: Output ODS file <%s> exists --- cannot proceed."%ods_file
         raise IOError, "Specify --force to overwrite existing output file."
+    if os.path.exists(ods_file) and options.force:
+        os.remove(ods_file)
 
-#   Gather Auxiliary data
-#   ---------------------
-    ga = GrADS(Echo=False,Window=False)
-    if algo == 'ocean':
-        if options.wind_file[-3:] == 'nc4':
-            wind_file = strTemplate(options.wind_file,expid=options.expid,nymd=nymd,nhms=nhms)
-            ga('sdfopen %s'%wind_file)
-        else:
-            ga('open %s'%options.wind_file)
-        expr='mag(u10m,v10m)'
-        vname = 'wind'
-    elif (algo == 'land') or (algo == 'deep'):
-        ga('open %s'%options.albedo_file)
-        expr='albedo'
-        vname = 'albedo'
+#   Aerosol composition file name
+#   -----------------------------
+    if options.aer_x[-3:] == 'nc4':
+      aer_x = strTemplate(options.aer_x,expid=options.expid,nymd=nymd,nhms=nhms)
     else:
-        raise ValueError, 'unknown algo <%s>'%algo
+      aer_x = options.aer_x
+
         
 #   MODIS Level 2 NNR Aerosol Retrievals
 #   ------------------------------------
     if options.verbose:
         print "NNR Retrieving %s %s on "%(prod,algo.upper()),syn_time
 
-    modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,
-                      ga,expr=expr,vname=vname,coll=options.coll,
-                      cloud_thresh=0.7,coxmunk_lut=options.coxmunk_lut,
+    modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,aer_x,
+                      coll=options.coll,
+                      cloud_thresh=0.7,
                       verbose=options.verbose)
     if modis.nobs < 1:
         if options.verbose:
@@ -211,7 +195,7 @@ if __name__ == "__main__":
         if options.verbose:
             print 'WARNING: no GOOD observation for this time in file <%s>'%ods_file
         modis.nobs = 0
-    
+
     nn_file = options.nn_file.replace('%ident',ident)
     modis.apply(nn_file)
 
@@ -239,12 +223,12 @@ if __name__ == "__main__":
 #    npz_file = name.replace('Level3','Level2') + '.npz'
 #    makethis_dir(npz_file)
 #    modis.write(npz_file)
-
+    
 #   Compress nc output unless the user disabled it
 #   ----------------------------------------------
     if modis.nobs>0:
         if not options.uncompressed:
-            if os.system("n4zip "+out_file):
+            if subprocess.call("n4zip " + out_file,shell=True):
                 warnings.warn('cannot compress output file <%s>'%out_file)
-            if os.system("n4zip "+ods_file):
+            if subprocess.call("n4zip " + ods_file,shell=True):
                 warnings.warn('cannot compress output ods file <%s>'%ods_file)

@@ -29,7 +29,7 @@ LIB   = lib$(THIS).a
 BINS := geo_vlidort.x
 
 PY_EXTS = GeoAngles_.$(F2PYEXT)
-PY_SCRP = 
+PY_SCRP = run_geo_vlidort_lc2.py geo_vlidort_lc2.py geo_warp.py 
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
@@ -145,7 +145,11 @@ geo_surface.x: netcdf_helper.o geo_surface.o
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
-                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)                                                                 
+                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)  
+
+geo_angles.x: geo_angles.o
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+                            $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)                                                                                                   
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------

@@ -6,12 +6,13 @@
 # !REVISION HISTORY:
 #
 #  23Jun2016  Todling   Created from Joe Stassi original GEOSdas.csm code
+#  03Mar2017  Todling   Consistent w/ GEOSdas.csm in GEOSadas-5_16_5
 #
 #############################################################################
 
 setenv MYNAME run_gaas_ana.csh
 
-if ( $#argv < 3 ) then
+if ( $#argv < 6 ) then
    echo " "
    echo " \\begin{verbatim} "
    echo " "
@@ -24,16 +25,18 @@ if ( $#argv < 3 ) then
    echo "  $MYNAME expid nymd nhms nstep"
    echo " "
    echo " where"
-   echo "   expid  -  experiment name"
-   echo "   nymd   -  initial date of forecast, as in YYYYMMDD "
-   echo "   nhms   -  initial time of forecast, as HHMMSS"
-   echo "   nstep  -  THIS WILL BE MADE OBSOLETE"
+   echo "   expid   -  experiment name"
+   echo "   nymd    -  initial date of forecast, as in YYYYMMDD "
+   echo "   nhms    -  initial time of forecast, as HHMMSS"
+   echo "   nstep   -  THIS WILL BE MADE OBSOLETE"
+   echo "   workdir -  directory where work takes place"
+   echo "   egressfn-  egress file name"
    echo " "
    echo " DESCRIPTION "
    echo " "
    echo " "
    echo " Example of valid command line:"
-   echo " $MYNAME d512a 20151118 000000 1 "
+   echo " $MYNAME d512a 20151118 000000 1 workdir egressfn"
    echo " "
    echo " REQUIRED RESOURCE FILES"
    echo " "
@@ -46,12 +49,13 @@ if ( $#argv < 3 ) then
    echo "    FVBCS         - location of fvInput               "
    echo "    FVHOME        - location of experiment            "
    echo "    FVROOT        - location of DAS build             "
-   echo "    FVWORK        - location of work directory        "
    echo "    GID           - group ID to run job under         "
    echo "    TIMEINC       - analysis frequency (minutes)      "
    echo " "
    echo " OPTIONAL ENVIRONMENT VARIABLES"
    echo " "
+   echo "   AODBLOCKJOB        - allows blocking batch jobs and halt "
+   echo "                        before proceeding                   "
    echo " "
    echo " REMARKS"
    echo " "
@@ -68,6 +72,8 @@ set expid = $1
 set nymd  = $2
 set nhms  = $3
 set nstep = $4
+set workdir  = $5
+set egressfn = $6
 
 set hh =  `echo $nhms | cut -c1-2`
 set yyyymmddhh = ${nymd}${hh}
@@ -76,11 +82,10 @@ setenv FAILED 0
 
 if ( !($?FVHOME)        ) setenv FAILED 1
 if ( !($?FVROOT)        ) setenv FAILED 1
-if ( !($?FVWORK)        ) setenv FAILED 1
 if ( !($?GID)           ) setenv FAILED 1
-if ( !($?group_list)    ) setenv FAILED 1
 if ( !($?MPIRUN_AOD)    ) setenv FAILED 1
 
+setenv FVWORK $workdir
 if ( -e $FVWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
    echo "${MYNAME}: Already done."
    exit(0)
@@ -91,6 +96,7 @@ if ( $FAILED ) then
   exit 1
 endif
 
+if ( !($?AODBLOCKJOB)  )  setenv AODBLOCKJOB   0
 if ( !($?AERO_OBSDBRC) )  setenv AERO_OBSDBRC  obsys-gaas.rc
 if ( !($?DATA_QUEUE)   )  setenv DATA_QUEUE    datamove
 if ( !($?DO_DMGET)     )  setenv DO_DMGET      1
@@ -98,6 +104,7 @@ if ( !($?IGNORE_0)     )  setenv IGNORE_0      0
 if ( !($?MODIS_L2_HDF) )  setenv MODIS_L2_HDF  0
 if ( !($?NCPUS_AOD)    )  setenv NCPUS_AOD     1
 if ( !($?PBS_BIN)      )  setenv PBS_BIN       "/usr/slurm/bin"
+if ( !($?group_list)   )  setenv group_list    "SBATCH -A $GID"
 
 if ( $?FVSPOOL ) then
    set spool = "-s $FVSPOOL "
@@ -157,44 +164,22 @@ cd $FVWORK
   mkdir $AODWORK
   touch $AODWORK/.no_archiving
 
-  # write avhrr_pcf, modis_pcf, and ana_rc to AODWORK
-  #--------------------------------------------------
-  set avhrr_pcf_tmpl = $FVHOME/run/gaas/avhrr_l2a.pcf.tmpl
-  set avhrr_pcf = $AODWORK/avhrr_l2a.pcf
-  vED -env $avhrr_pcf_tmpl -o $avhrr_pcf
-  echo "cat $avhrr_pcf"
-  cat $avhrr_pcf
-
-  set idents = ""
-  if ($MOD04_NNR && $MYD04_NNR) then
-      set idents = mydl,mydo,modl,modo
-
-  else if ($MOD04_NNR) then
-      set idents = modl,modo
-
-  else if ($MYD04_NNR) then
-      set idents = mydl,mydo
-
-  endif
-
-  if ($idents != "") then
-     set idflag = "-vv MODIS_L2A_IDENTS=$idents"
-  else
-     set idflag = ""
-  endif
-
-  set modis_pcf_tmpl = $FVHOME/run/gaas/modis_l2a.pcf.tmpl
-  set modis_pcf = $AODWORK/modis_l2a.pcf
-  vED -env $modis_pcf_tmpl $idflag -o $modis_pcf
-  echo "cat $modis_pcf"
-  cat $modis_pcf
-
+  # Copy over pcf files for NNR
+  # ---------------------------
+  /bin/cp $FVHOME/run/gaas/avhrr_l2a.pcf $AODWORK
+  /bin/cp $FVHOME/run/gaas/modis_l2a.pcf $AODWORK
+ 
+  # Prepare ana.rc from template
+  # ----------------------------
   set ana_rc_tmpl = $FVHOME/run/gaas/ana.rc.tmpl
   set ana_rc = $AODWORK/ana.rc
   vED -env $ana_rc_tmpl -o $ana_rc
 
   if ($PATMOSX)      sed -i "s/#___AVHRR___//" $ana_rc
-  if ($MODIS_L2_HDF) sed -i "s/#___MODIS___//" $ana_rc
+  if ($MODIS_L2_HDF) then
+      sed -i "s/#___TERRA_NRT___//" $ana_rc
+      sed -i "s/#___AQUA_NRT___//" $ana_rc
+  endif
   if ($MOD04_NNR)    sed -i "s/#___TERRA___//" $ana_rc
   if ($MYD04_NNR)    sed -i "s/#___AQUA___//" $ana_rc
   if ($MISR_BRIGHT)  sed -i "s/#___MISR___//" $ana_rc
@@ -217,6 +202,10 @@ cd $FVWORK
      set aer_f = `echorc.x $flg1 $flg2`
 
      echo $aer_f
+     if($aer_f == "") then  # this test is to catch funk behavior under MPT where sometime env not correct
+        echo "file $aer_f not found in $AODWORK, aborting ... "
+        exit 1
+     endif
      /bin/cp $aer_f $AODWORK
   end
 
@@ -259,13 +248,16 @@ cd $FVWORK
   sed -i "s|>>>NHMS<<<|${aod_time}|" $jobf
  
   echo "cat $jobf"
+  if ($status) then
+     exit 1
+  endif
   #cat $jobf
 
   setenv aod_parallel_flag 0 
   if ($aod_parallel_flag) then
-     cp $FVWORK/AOD_list $AODWORK
+     /bin/cp $FVWORK/AOD_list $AODWORK
 
-     # launch parallel job
+     # run at command line
      #--------------------
      chmod 744 $jobf
      $jobf $aod_parallel_flag >&! $gaasLOG &
@@ -274,7 +266,11 @@ cd $FVWORK
 
      # submit job and save job ID
      #---------------------------
-     set jobID = `$PBS_BIN/qsub -V -j oe -o $gaasLOG $jobf`
+     if ( $AODBLOCKJOB ) then
+        set jobID = `$PBS_BIN/qsub -W block=true -V -o $gaasLOG $jobf`
+     else
+        set jobID = `$PBS_BIN/qsub -V -o $gaasLOG $jobf`
+     endif
 
      if ($?aodJobIDs) then
         setenv aodJobIDs "${aodJobIDs}:$jobID"
@@ -286,7 +282,16 @@ cd $FVWORK
 
 # if made it here, all good
 # -------------------------
-touch $FVWORK/.DONE_${MYNAME}.$yyyymmddhh
-echo " ${MYNAME}: Complete "
+if ( $egressfn == "DEFAULT" ) then
+  echo " ${MYNAME}: Complete "
+  touch $FVWORK/.DONE_${MYNAME}.$yyyymmddhh
+else
+  if ( -e $AODWORK/ANAAOD_EGRESS ) then
+     echo " ${MYNAME}: Complete "
+     touch $egressfn
+  else
+     exit (1)
+  endif
+endif
 exit(0)
 

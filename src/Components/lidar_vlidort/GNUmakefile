@@ -28,14 +28,14 @@ THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
 BINS := 
 
-PY_EXTS = 
-PY_SCRP = geo_warp.py geo_sampler.py
+PY_EXTS = LidarAngles_.$(F2PYEXT)
+PY_SCRP =  
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
                  $(ESMAINC)/$(THIS) $(ESMABIN)
-#	$(CP) -pr $(PY_EXTS)               $(ESMALIB)/Python 
-	$(CP) -p  $(BINS) $(PY_SCRP)       $(ESMABIN)
+	$(CP) -pr $(PY_EXTS)               $(ESMALIB)/Python 
+#	$(CP) -p  $(BINS) $(PY_SCRP)       $(ESMABIN)
 
 esma_clean clean:
 	$(RM) -rf *~ *.[aox] *.[Mm][Oo][Dd] *.pyc *.$(F2PYEXT) 
@@ -64,8 +64,7 @@ esma_help help:
 #                  User Defined Targets
 #                  --------------------
 
-
-INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE)  /usr/include simulator
+INC_DIRS = . /usr/include
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
@@ -79,7 +78,8 @@ THIS_GFIO = GMAO_gfio_r4
 #                  User Defined Targets
 #                  --------------------
 
-SRCS := simulator/GeoAngles_py.F90 simulator/mp_netcdf_Mod.F90 simulator/netcdf_Mod.F90
+SRCS := LidarAngles_py.F90 
+
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
 DEPS := $(addsuffix .d, $(basename $(SRCS))) 
  
@@ -93,18 +93,6 @@ python: $(PY_EXTS)
 
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
-
-%.x:  %.o 
-	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_CHEM_BASE) \
-                                 $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
-                                 $(LIB_MAPL_BASE_STUBS2) \
-                                 $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
-                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
-
-
-geo_angles.x: geo_angles.o
-	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
-                            $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)   
 
 
 # Hack to prevent remaking dep files during cleaning

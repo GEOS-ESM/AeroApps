@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/csh -x
 
 #############################################################################
 # get_aero_obs.csh - retrieve observations for aerosol analysis
@@ -192,14 +192,14 @@ set path = ( . $FVHOME/run $FVROOT/bin $path )
                 # NOTE: ana_aod.j script accesses MODIS L2 HDF data directly
                 #       from intermediate directory (see modis_l2.pcf)
                 #-----------------------------------------------------------
-                #--if ($MODIS_L2_HDF) then
-                #--   set bdtgaas = (`tick $bnymd $bnhms -5400`)
-                #--   @ mstep = $nstep * 72
-                #--   fname2 "acquire_obsys -v -d $FVWORK $spool -ssh \"
-                #--   fname2 "      $bdtgaas[1] $bdtgaas[2] 000500 $mstep \"
-                #--   fname2 "      mod04_051_flk,myd04_051_flk"
-                #--   fname2 "setup_gaas_obs.pl $FVWORK -v -modis"
-                #--endif
+                if ($MODIS_L2_HDF) then
+                   set bdtgaas = (`tick $bnymd $bnhms -5400`)
+                   @ mstep = $nstep * 72
+                   fname2 "acquire_obsys -v -d $FVWORK $spool -ssh \"
+                   fname2 "      $bdtgaas[1] $bdtgaas[2] 000500 $mstep \"
+                   fname2 "      mod04_051_flk,myd04_051_flk"
+                   fname2 "setup_gaas_obs.pl $FVWORK -v -modis"
+                endif
                 #-----------------------------------------------------------
                 if ($MISR_BRIGHT) then
                    @ mstep = 1

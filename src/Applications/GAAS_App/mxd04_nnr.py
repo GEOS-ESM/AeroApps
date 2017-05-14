@@ -1,32 +1,77 @@
 """
-This module implements the unbiasing of MODIS AOD retrievals based
-on the (Neural Net) AOD Bias Correction model developed in module
-abc_modis.
+This module implements the MODIS NNR AOD retrievals.
 
-  This version works from MODIS MOD04/MYD04 Level 2 files.
+This version works from MODIS MOD04/MYD04 Level 2 files.
 
 """
-
+import os, sys
 import warnings
-from pyobs.mxd04 import MxD04_L2, MISSING, granules
+from   pyobs.mxd04 import MxD04_L2, MISSING, granules, BEST 
+from   ffnet       import loadnet
+from   numpy       import c_ as cat
+from   numpy       import copy, ones, sin, cos, exp, arccos, pi, any, log
+import numpy       as     np
+from   pyobs.bits  import BITS
 
-from ffnet import loadnet
-from numpy import  c_ as cat
-from numpy import  copy, ones, sin, cos, exp, arccos, pi, any, log
+# SDS to be read in
+# ------------
+SDS = dict( META =    ( "Scan_Start_Time",
+                        "Latitude",
+                        "Longitude",
+                        "Solar_Zenith",
+                        "Solar_Azimuth",
+                        "Sensor_Zenith",
+                        "Sensor_Azimuth",
+                        "Scattering_Angle",
+                        "Glint_Angle"),
 
-# Translate Inputs between ANET and MODIS classes
+            LAND =    ( 'Corrected_Optical_Depth_Land',
+                        'Mean_Reflectance_Land',
+                        'Surface_Reflectance_Land',
+                        'Cloud_Fraction_Land',
+                        'Quality_Assurance_Land',
+                        'Deep_Blue_Cloud_Fraction_Land'),
+
+            OCEAN =   ( 'Effective_Optical_Depth_Best_Ocean',
+                        'Mean_Reflectance_Ocean',
+                        'Cloud_Fraction_Ocean',               
+                        'Quality_Assurance_Ocean'),
+
+            DEEP =    ( 'Deep_Blue_Aerosol_Optical_Depth_550_Land',
+                        'Deep_Blue_Spectral_Aerosol_Optical_Depth_Land',
+                        'Deep_Blue_Spectral_TOA_Reflectance_Land',
+                        'Deep_Blue_Spectral_Surface_Reflectance_Land',
+                        'Deep_Blue_Cloud_Fraction_Land',
+                        'Deep_Blue_Aerosol_Optical_Depth_550_Land_QA_Flag',
+                        'Mean_Reflectance_Land',
+                        'Surface_Reflectance_Land',
+                        'Aerosol_Cloud_Fraction_Land',
+                        'Quality_Assurance_Land'))
+
+ALIAS = dict( Deep_Blue_Aerosol_Optical_Depth_550_Land = 'aod550',
+              Mean_Reflectance_Land = 'reflectance_lnd',
+              Surface_Reflectance_Land = 'sfc_reflectance_lnd',
+              Aerosol_Cloud_Fraction_Land = 'cloud_lnd',
+              Quality_Assurance_Land = 'qa_lnd' )
+
+# Channels for TOA reflectance 
+# -----------------------------
+CHANNELS  = dict (
+                   LAND  = ( 470, 550, 660, 870, 1200, 1600, 2100, 412, 440),
+                   OCEAN = ( 470, 550, 660, 870, 1200, 1600, 2100 ),
+                   DEEP  = ( 412, 470, 660 ),
+                 )
+
+SCHANNELS = dict (
+                   LAND = ( 470, 660, 2100 ),
+                   DEEP = ( 412, 470, 660 ),
+                )
+
+
+# Translate Inputs between NNR and MODIS classes
 # -----------------------------------------------
-TranslateInput = dict ( mTau470 = ( 'aod', 470 ),
-                        mTau550 = ( 'aod', 550 ),
-                        mTau660 = ( 'aod', 660 ),
-                        mTau870 = ( 'aod', 870 ),
-                        mTAU470 = ( 'aod_coarse', 470),
-                        mTAU550 = ( 'aod_coarse', 550),
-                        mTAU660 = ( 'aod_coarse', 660),
-                        mTAU870 = ( 'aod_coarse', 870),
-                        mSre470  = ('Surface_Reflectance_Land',470),
-                        mSre660  = ('Surface_Reflectance_Land',660),
-                        mSre2100 = ('Surface_Reflectance_Land',2100),
+TranslateInput = dict ( mRef412  = ('reflectance',412),
+                        mRef440  = ('reflectance',440),
                         mRef470  = ('reflectance',470),
                         mRef550  = ('reflectance',550),
                         mRef660  = ('reflectance',660),
@@ -34,15 +79,16 @@ TranslateInput = dict ( mTau470 = ( 'aod', 470 ),
                         mRef1200 = ('reflectance',1200),
                         mRef1600 = ('reflectance',1600),
                         mRef2100 = ('reflectance',2100),
-                        sRef412 =  ('Deep_Blue_Surface_Reflectance_Land',412),
-                        sRef470 =  ('Deep_Blue_Surface_Reflectance_Land',470),
-                        dRef412 =  ('Deep_Blue_Mean_Reflectance_Land',412),
-                        dRef470 =  ('Deep_Blue_Mean_Reflectance_Land',470),
-                        )
+                        mSre412  = ('sfc_reflectance',412),
+                        mSre470  = ('sfc_reflectance',470),
+                        mSre660  = ('sfc_reflectance',660),
+                        mSre2100 = ('sfc_reflectance',2100),                                    
+                      )
+
 for var in ( 'ScatteringAngle','GlintAngle',
              'SolarAzimuth', 'SolarZenith',
              'SensorAzimuth','SensorZenith',
-             'cloud', 'wind', 'ustar', 'albedo', 'angstrom' ):
+             'cloud','qa_flag'  ):
     TranslateInput[var] = (var,)
 
 # Translate Targets between ANET and MODIS classes
@@ -57,13 +103,14 @@ class MxD04_NNR(MxD04_L2):
     """
     This class extends MODIS by adding methods for producing
     NNR AOD retrievals based on the Neural Net model developed
-    with class *abc_modis*.
+    with class *abc_c6*.
     """
 
-    def __init__(self,l2_path,prod,algo,syn_time,
-                 ga,expr='mag(u10m,v10m)',vname='wind',
-                 coxmunk_lut='coxmunk_lut.npz',
-                 cloud_thresh=0.70,alb_min=0.25,coll='051',verbose=0):
+    def __init__(self,l2_path,prod,algo,syn_time,aer_x,
+                 cloud_thresh=0.70,
+                 glint_thresh=40.0,
+                 scat_thresh=170.0,
+                 coll='006',verbose=0):
         """
         Contructs a MXD04 object from MODIS Aerosol Level 2
         granules. On input,
@@ -75,118 +122,131 @@ class MxD04_NNR(MxD04_L2):
                       Deep Blue)
         syn_time --- synoptic time
 
-              ga --- GrADS object for wind parameter
-            expr --- *wind* variable expression
-           vname --- name of wind variable
-     cloud_tresh --- cloud fraction treshhold
-         alb_min --- dark target will consider albedos < alb_min,
-                     while deep blue will consider albedos > alb_bin
+        cloud_tresh --- cloud fraction treshhold
               
         The following attributes are also defined:
-           GlintAngle
+           fractions dust, sea salt, BC+OC, sulfate
            aod_coarse
            wind
            
         It also performs Q/C, setting attribute iGood. On,
         input, *cloud_thresh* is the cloud fraction limit.
+        When DEEP BLUE algorithm is requested, filters for 
+        land retrievals where DARK TARGET obs are unavailable.
         """
 
         self.verbose = verbose
-        self.vname = vname
         
         # Initialize superclass
         # ---------------------
         Files = granules(l2_path,prod,syn_time,coll=coll)
-        MxD04_L2.__init__(self,Files,algo,syn_time,only_good=True,Verb=verbose)
+        if algo != "DEEP":
+            MxD04_L2.__init__(self,Files,algo,syn_time,
+                              only_good=True,
+                              SDS=SDS,
+                              Verb=verbose)            
+        else:        
+            MxD04_L2.__init__(self,Files,algo,syn_time,
+                              only_good=False,
+                              SDS=SDS,                            
+                              alias=ALIAS,
+                              Verb=verbose)
 
         if self.nobs < 1:
             return # no obs, nothing to do
 
-        # Create attribute for holding the revised AOD
-        # --------------------------------------------
-        self.aod_ = MISSING * ones(self.aod.shape)
+        # Reorganize Reflectance Arrays
+        # -----------------------------
+        self.rChannels = CHANNELS[algo]
+        if algo in SCHANNELS:
+            self.sChannels = SCHANNELS[algo]
 
-        # Compute coarse mode AOD
-        # -----------------------
-        if algo == "LAND" or algo == "DEEP":
-            # self.aod_fine = self.aod_fine[:,0:3] # Drop 2100 nm
-            self.aod_fine = MISSING * ones(self.aod.shape) # no longer provided in col. 6
-        
-        i = (self.aod<MISSING)&(self.aod_fine<MISSING)
-        self.aod_coarse = MISSING * ones(self.aod.shape)
-        self.aod_coarse[i] = self.aod[i] - self.aod_fine[i]
+        if algo == "OCEAN":
+            self.reflectance = self.reflectance[:,0:7]  #not using 412, 443, and 745 for now
+        if algo == "LAND":
+            self.reflectance = self.reflectance[:,0:-1]  #not using 745 for now
 
-        # Add wind or albedo variable
-        # ---------------------------
-        if vname == 'albedo':
-            self.addVar(ga,expr=expr,vname='albedo',clmYear=2000)
-        else:
-            self.addVar(ga,expr=expr,vname=vname)
-            self.getCoxMunk(coxmunk_lut) # ocean albedo
+        # 3-Ch Algorithm only used when Dark Target data is unavailable
+        # --------------------------------------------------------------
+
+        if algo == "DEEP":
+            # Get DARK TARGET qa_flag
+            self.qa_flag_lnd = BITS(self.Quality_Assurance_Land[:,0])[1:4]            
+            lndGood = self.qa_flag_lnd == BEST
+            lndGood = lndGood & (self.cloud_lnd < cloud_thresh)
+            rChannels = CHANNELS["LAND"]
+            sChannels = SCHANNELS["LAND"]
+            for i,c in enumerate(rChannels):
+                lndGood = lndGood & (self.reflectance_lnd[:,i]>0)
+
+            for i,c in enumerate(sChannels):
+                lndGood = lndGood & (self.sfc_reflectance_lnd[:,i]>0)
+
+            self.iGood = (self.qa_flag == BEST) & ~lndGood
+
+            # Keep only "good" observations
+            # -----------------------------
+            m = self.iGood
+            for sds in self.SDS:
+                rank = len(self.__dict__[sds].shape)
+                if rank == 1:
+                    self.__dict__[sds] = self.__dict__[sds][m]
+                elif rank == 2:
+                    self.__dict__[sds] = self.__dict__[sds][m,:]
+                else:
+                    raise IndexError, 'invalid rank=%d'%rank
+
+            # Reset aliases
+            for sds in self.SDS:
+                if sds in self.ALIAS:
+                    self.__dict__[self.ALIAS[sds]] = self.__dict__[sds] 
+
+
+            self.qa_flag = self.qa_flag[m]
+            self.aod     = self.aod[m,:]
+            self.time    = self.time[m]
+            self.iGood   = self.iGood[m] 
+            self.nobs    = self.Longitude.shape[0]         
+
+            if self.nobs < 1:
+                return # no obs, nothing to do             
+
 
         # Q/C
-        # ---
-        self.iGood = (self.qa_flag>0)             & \
-                     (self.cloud<cloud_thresh) 
+        # ---      
+        self.iGood = self.cloud<cloud_thresh  
+        if algo == "LAND":
+            self.iGood = self.iGood & (self.Deep_Blue_Cloud_Fraction_Land<cloud_thresh)
+        elif algo == "DEEP":
+            self.iGood = self.iGood & (self.cloud_lnd<cloud_thresh)
 
-        if vname == 'albedo':
-#            print "ALBEDO: ", len(self.albedo), len(self.lat)
-#            print "ALBEDO: ", self.albedo.min(), self.albedo.max()
-            if algo == 'LAND': # Dark Target (albedo<0.15)
-                self.iGood = self.iGood           & \
-                    (self.qa_flag==3)             & \
-                    (self.ScatteringAngle<170.)   & \
-                    (self.albedo>0)               & \
-                    (self.albedo<=alb_min)
-            else: # Deep Blue (Bright Target, albedo>0.15)
-                sRef412 = self.Deep_Blue_Surface_Reflectance_Land[:,0]
-                sRef470 = self.Deep_Blue_Surface_Reflectance_Land[:,1]
-                dRef412 = self.Deep_Blue_Mean_Reflectance_Land[:,0]
-                dRef470 = self.Deep_Blue_Mean_Reflectance_Land[:,1]
-                self.orig = self.Deep_Blue_Aerosol_Optical_Depth_Land[:,2] # AOD 550
-                self.iGood = self.iGood           & \
-                    (self.ScatteringAngle<170.)   & \
-                    (sRef412>0) & (sRef412<0.5) & \
-                    (sRef470>0) & (sRef470<0.5) & \
-                    (dRef412>0) & (dRef412<0.5) & \
-                    (dRef470>0) & (dRef470<0.5) & \
-                    (self.albedo>alb_min)
-                    
-        if vname == 'wind':
-            self.iGood = self.iGood               & \
-                         (self.wind>0)             
+        for i,c in enumerate(self.rChannels):
+            self.iGood = self.iGood & (self.reflectance[:,i]>0)
+
+        if algo in SCHANNELS:
+            for i,c in enumerate(self.sChannels):
+                self.iGood = self.iGood & (self.sfc_reflectance[:,i]>0)
+
+        if algo == "OCEAN":
+            self.iGood = self.iGood & (self.GlintAngle > glint_thresh)
+
+        if algo != "OCEAN":
+            self.iGood = self.iGood & (self.ScatteringAngle < scat_thresh)
 
         if any(self.iGood) == False:
-            print "WARNING: Strange, no good obs left to work with; make sure wind speed/albedo is available."
+            print "WARNING: Strange, no good obs left to work with"
             return
+
+        # Create attribute for holding NNR predicted AOD
+        # ----------------------------------------------
+        self.aod_ = MISSING * ones((self.nobs,len(self.channels)))
 
         # Make sure same good AOD is kept for gridding
         # --------------------------------------------
+        if len(self.aod.shape) == 1:
+            self.aod.shape = self.aod.shape + (1,)
         self.aod[self.iGood==False,:] = MISSING
 
-        # Redefine Angstrom exponent for Deep Blue
-        # ----------------------------------------
-        if algo == "DEEP":
-            I, J = (self.iGood==True, self.iGood==False)
-            i470 = self.dChannels.index(470)
-            i660 = self.dChannels.index(660)
-            self.angstrom[I] = - log(self.aod[I,i660]/self.aod[I,i470])/log(660./470.)
-            self.angstrom[J] = MISSING
-            print "- Redefined angstrom exponent for 660/470: min=%4.2f, max=%4.2f"%\
-                (self.angstrom[I].min(), self.angstrom[I].max())
-
-        # Glint Angle
-        # -----------
-        d2r = pi / 180.
-        r2d = 180. / pi
-        RelativeAzimuth = abs(self.SolarAzimuth - self.SensorAzimuth - 180.)
-        cosGlintAngle = cos(self.SolarZenith*d2r) * cos(self.SensorZenith*d2r) + \
-                        sin(self.SolarZenith*d2r) * sin(self.SensorZenith*d2r) * \
-                        cos(RelativeAzimuth*d2r)
-        
-#        i = (abs(cosGlintAngle)<=1.0)
-#        self.GlintAngle = MISSING * ones(self.SolarZenith.shape)
-#        self.GlintAngle[i] = arccos(cosGlintAngle[i])*r2d
 
         # Angle transforms: for NN calculations we work with cosine of angles
         # -------------------------------------------------------------------
@@ -195,7 +255,99 @@ class MxD04_NNR(MxD04_L2):
         self.SensorZenith    = cos(self.SensorZenith*pi/180.0)    
         self.SolarAzimuth    = cos(self.SolarAzimuth*pi/180.0)    
         self.SolarZenith     = cos(self.SolarZenith*pi/180.0)     
-        self.GlintAngle      = cosGlintAngle
+        self.GlintAngle      = cos(self.GlintAngle*pi/180.0)
+
+        # Get fractional composition
+        # ------------------------------
+        self.speciate(aer_x,Verbose=verbose)
+
+
+    def speciate(self,aer_x,Verbose=False):
+        """
+        Use GAAS to derive fractional composition.
+        """
+
+        self.sampleFile(aer_x,onlyVars=('TOTEXTTAU',
+                                        'DUEXTTAU',
+                                        'SSEXTTAU',
+                                        'BCEXTTAU',
+                                        'OCEXTTAU',
+                                        'SUEXTTAU',
+                                        ),Verbose=Verbose)
+
+        s = self.sample
+        I = (s.TOTEXTTAU<=0)
+        s.TOTEXTTAU[I] = 1.E30
+        self.fdu  = s.DUEXTTAU / s.TOTEXTTAU
+        self.fss  = s.SSEXTTAU / s.TOTEXTTAU
+        self.fbc  = s.BCEXTTAU / s.TOTEXTTAU
+        self.foc  = s.OCEXTTAU / s.TOTEXTTAU
+        self.fcc  = self.fbc + self.foc
+        self.fsu  = s.SUEXTTAU / s.TOTEXTTAU
+
+        # Special handle nitrate (treat it as it were sulfate)
+        # ----------------------------------------------------
+        try:
+            self.sampleFile(aer_x,onlyVars=('NIEXTTAU',),Verbose=Verbose)
+            self.fsu += self.sample.NIEXTTAU / s.TOTEXTTAU
+        except:
+            pass   # ignore it for systems without nitrates
+
+        del self.sample
+
+#---
+    def sampleFile(self, inFile, npzFile=None, onlyVars=None, Verbose=False):
+        """
+        Interpolates all variables of inFile and optionally
+        save them to file *npzFile*
+        """
+        from gfio import GFIO, GFIOctl, GFIOHandle
+
+        # Instantiate grads and open file
+        # -------------------------------
+        name, ext = os.path.splitext(inFile)
+        if ext in ( '.nc4', '.nc', '.hdf'):
+          fh = GFIO(inFile)     # open single file
+          if fh.lm == 1:
+            timeInterp = False    # no time interpolation in this case
+          else:
+            raise ValueError, "cannot handle files with more tha 1 time, use ctl instead"
+        else:
+          fh = GFIOctl(inFile)  # open timeseries
+          timeInterp = True     # perform time interpolation
+          tymes = np.array([self.syn_time]*self.nobs)
+
+        self.sample = GFIOHandle(inFile)
+        if onlyVars is None:
+            onlyVars = fh.vname
+
+        lons = self.lon
+        lats = self.lat
+
+        
+
+        # Loop over variables on file
+        # ---------------------------
+        for v in onlyVars:
+            if Verbose:
+                print "<> Sampling ", v
+            if timeInterp:
+              var = fh.sample(v,lons,lats,tymes,Verbose=Verbose)
+            else:
+              var = fh.interp(v,lons,lats)
+            if (var.size == 1) & (len(var.shape) == 0):
+                var.shape = (1,)  #protect against when only one value is returned and shape=()
+            if len(var.shape) == 1:
+                self.sample.__dict__[v] = var
+            elif len(var.shape) == 2:
+                var = var.T # shape should be (nobs,nz)
+                self.sample.__dict__[v] = var
+            else:
+                raise IndexError, 'variable <%s> has rank = %d'%(v,len(var.shape))
+
+        if npzFile is not None:
+            savez(npzFile,**self.sample.__dict__)            
+
 
     def _loadNet(self,nnFile):
         """
@@ -212,29 +364,32 @@ class MxD04_NNR(MxD04_L2):
         # ----------------
         first = True
         for inputName in self.net.InputNames:
-            iName = TranslateInput[inputName]
+            try:
+                iName = TranslateInput[inputName]
+            except:
+                iName = inputName
 
             if self.verbose>0:
                 print 'Getting NN input ',iName
 
             # Retrieve input
             # --------------
-            if len(iName) == 2:
+            if type(iName) is str:
+                input = self.__dict__[iName][:]
+
+            elif len(iName) == 2:
                 name, ch = iName
-                if 'mSre' in inputName: # LAND, surface reflectivity
-                    k = list(self.sChannels).index(ch) # index of channel (all 7)
-                elif 'mRef' in inputName: # LAND/OCEAN reflectances
-                    k = list(self.Channels).index(ch) # index of channel (all 7)
-                elif ('dRef' in inputName) or 'sRef' in inputName: # deep blue toa/sfc reflectance 
-                    k = list(self.dChannels).index(ch) # index of channel (all 7)
-                else:
-                    k = list(self.channels).index(ch)  # algorithm specific channels
+                if 'mSre' in inputName: # LAND or DEEP, surface reflectivity
+                    k = list(self.sChannels).index(ch) # index of channel 
+                elif 'mRef' in inputName: # MOD04 reflectances
+                    k = list(self.rChannels).index(ch) # index of channel 
+
                 input = self.__dict__[name][:,k]
-                self.iGood = self.iGood & (input!=MISSING) # Q/C
+                
             elif len(iName) == 1:
                 name = iName[0]
                 input = self.__dict__[name][:]
-                self.iGood = self.iGood & (input!=MISSING) # Q/C
+                
             else:
                 raise ValueError, "strange, len(iName)=%d"%len(iName)
 
@@ -278,67 +433,55 @@ class MxD04_NNR(MxD04_L2):
         for targetName in self.net.TargetNames:
             name, ch = TranslateTarget[targetName]
             if self.verbose>0:
-                print "Ubiasing ", name, ch, 'Log-AOD = ',self.net.laod 
+                if self.net.laod:
+                    print "NN Retrieving log(AOD+0.01) at %dnm "%ch
+                else:
+                    print "NN Retrieving AOD at %dnm "%ch
             k = list(self.channels).index(ch) # index of channel            
             self.channels_ = self.channels_ + [ch,]
             if self.net.laod:
                 result = exp(targets[:,i]) - 0.01 # inverse
             else:
                 result = targets[:,i]
-            result = self.inflate(result) # inflate results, if desired
+
             self.__dict__[name][self.iGood,k] = result
 
             i += 1 
 
         return result
 
-#---
-    def inflate(self,result):
-        """
-        If desired, inflate the AOD estimate.
-        """
-        if 'inflation' in self.net.__dict__.keys():
-            how_much, tau0, dtau = self.net.inflation
-            result = inflate(result,how_much=how_much,tau0=tau0,dtau=dtau)
-            print "- Inflating AOD by %4.2f with tau0=%4.2f and dtau=%4.2f"%(how_much,tau0,dtau)
-        else:
-            print "- No inflation being applied, skipping..."
-
-        return result
 
 #---
         
     __call__= apply
 
-#---
-def inflate(tau,how_much=0.5,tau0=0.35,dtau=0.1):
-    a = (tau-tau0)/dtau
-    f = (1+how_much/(1.+exp(-a)))
-    return tau*f
 
 #---
 
 if __name__ == "__main__":
 
     from datetime import datetime
-    from grads import GrADS
 
     l2_path = '/nobackup/MODIS/Level2/'
-    algo = 'DEEP'
-    prod = 'MYD04'
-    coll = '006'
+    algo    = 'DEEP'
+    prod    = 'MOD04'
+    coll    = '006'
+    aer_x   = '/nobackup/NNR/Misc/tavg1_2d_aer_Nx'
+
     syn_time = datetime(2008,6,30,12,0,0)
-    albedo_file = '/nobackup/MODIS/Level3/ALBEDO/albedo_clim.ctl'
+    syn_time = datetime(2016,12,19,15,0,0)
 
-    ga = GrADS(Echo=False,Window=False)
-    ga('open %s'%albedo_file)
-    expr='albedo'
-    vname = 'albedo'
+    if algo == 'OCEAN':
+        nn_file = '/nobackup/NNR/Net/nnr_003.mydo_Tau.net'
+    elif algo == 'LAND':
+        nn_file = '/nobackup/NNR/Net/nnr_003.mydl_Tau.net'
+    elif algo == 'DEEP':
+        nn_file = '/nobackup/NNR/Net/nnr_003.mydd_Tau.net'
 
-    m = MxD04_NNR(l2_path,prod,algo.upper(),syn_time,
-                  ga,expr=expr,vname=vname,coll=coll,
+    m = MxD04_NNR(l2_path,prod,algo.upper(),syn_time,aer_x,
+                  coll=coll,
                   cloud_thresh=0.7,
                   verbose=True)
 
-    laod = m.apply('/nobackup/NNR/Net/nnr_002.mydd_Tau.net')
+    laod = m.apply(nn_file)
     aod = exp(laod) - 0.01
