@@ -3,8 +3,8 @@
 tuning of innovation statistics as in Dee and da Silva (1999).
 
 """
-
-from matplotlib.pyplot import *
+from numpy import *
+from numpy.linalg.linalg import cholesky
 from scipy.optimize    import fmin 
 
 import pyods
