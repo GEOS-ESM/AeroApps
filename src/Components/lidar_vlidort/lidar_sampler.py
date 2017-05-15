@@ -73,7 +73,7 @@ if __name__ == "__main__":
         if not os.path.exists(outpath):
             os.makedirs(outpath)
         for rc in rcFiles:
-            colname = '_'.join(rc.split('_')[0:2])
+            colname = '_'.join(rc[:-3].split('_')[0:2])
 
             outFile = '{}/{}-g5nr.lb2.{}.{}_{}z.nc4'.format(outpath,instname,colname,nymd,hour)
 
