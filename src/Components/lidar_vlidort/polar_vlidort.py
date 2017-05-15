@@ -19,7 +19,8 @@ from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 
 from MAPL.constants import *
-import LidarAngles_     
+import LidarAngles_    
+import VLIDORT_LIDAR_ 
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
@@ -69,7 +70,8 @@ class POLAR_VLIDORT(object):
             self.__dict__[sds] = []
 
         # Read in data from path
-        self.readSampledTrack()
+        self.readSampledGEOS()
+
 
         # Make lists into arrays
         for sds in self.SDS_AER+self.SDS_MET:
@@ -149,8 +151,16 @@ class POLAR_VLIDORT(object):
         self.VAAf = np.array(VAAf)
         self.VAAb = np.array(VAAb)
 
+        # define RAA according to photon travel direction
+        saa = self.SAA + 180.0
+        I = saa >= 360.
+        saa[I] = saa[I] - 360.
+
+        self.RAAb = self.VAAb - saa
+        self.RAAf = self.VAAf - saa
+
     #---
-    def readSampledTrack(self):
+    def readSampledGEOS(self):
         """
         Read in model sampled track
         """
@@ -178,6 +188,9 @@ class POLAR_VLIDORT(object):
             var = nc.variables[sds_][:]
             self.__dict__[sds].append(var)
 
+    # --- 
+    def readSampledBRDF            
+
     #---
     def computeMie(self):
         """
@@ -194,7 +207,16 @@ class POLAR_VLIDORT(object):
         self.pmom = pmom  #(km,nch,nobs,nMom,nPol)
 
 
-
+    def brdfVLIDORT(self):
+        """
+        Calls VLIDORT with BRDF surface
+        """
+        radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc = VLIDORT_LIDAR_.vector_brdf_modis(self.tau, self.ssa, self.pmom, 
+                                                                                                    self.pe, self.ze, self.te, 
+                                                                                                    self.kernel_wt, self.param, 
+                                                                                                    self.SZA, self.RAAf, self.VZA, 
+                                                                                                    MISSING,
+                                                                                                    self.verbose)        
 
 
 
@@ -358,3 +380,8 @@ if __name__ == "__main__":
     vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,channel,VZAdic[polarname],HGTdic[orbit],verbose=verbose)
 
    
+    # Read in Surface Dataset
+    vlidort.readSampledBRDF()
+
+    # Run VLIDORT
+    vlidort.brdfVLIDORT()
