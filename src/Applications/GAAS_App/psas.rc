@@ -118,14 +118,15 @@ DataSourceTable::
 
     7  RAOBV_NA    -100  Rawinsonde
   301  MODO        -100  MODIS/TERRA-Ocean
-  302  MODL        -100  MODIS/TERRA-Land
+  302  MODL        -100  MODIS/TERRA-Land (Dark Target)
+  310  MODD        -100  MODIS/TERRA-Land (Deep Blue)
   311  MYDO        -100  MODIS/AQUA-Ocean
-  312  MYDL        -100  MODIS/AQUA-Land
+  312  MYDL        -100  MODIS/AQUA-Land (Dark Target)
   313  MISR        -100  MISR
   314  OMI         -100  OMI
   316  PARO        -100  PARASOL-Ocean
   317  PARL        -100  PARASOL-Land
-  320  DEEP        -100  DeepBlue
+  320  MYDD        -100  MODIS/AQUA-Land (Deep Blue)
   323  ANET        -100  AERONET
   324  AVHRR       -100  AVHRR NNR Retrievals
 
@@ -164,6 +165,10 @@ ObsErr*MODL::   # kx = 302 --- For now, same as MODO
   q_UprAir.u  0.19   0.19   0.18   0.18 
 ::
 
+ObsErr*MODD::   # kx = 310 --- For now, same as MYDO
+  q_UprAir.u  0.22   0.21   0.20   0.19 
+::
+
 ObsErr*MYDO::   # kx = 311
   q_UprAir.u  0.22   0.21   0.20   0.19 
 ::
@@ -188,7 +193,7 @@ ObsErr*PARL::   # kx = 317
   q_UprAir.u   0.99  0.99  0.99 
 ::
 
-ObsErr*DEEP::   # kx = 320 --- For now, same as MYDO
+ObsErr*MYDD::   # kx = 320 --- For now, same as MYDO
   q_UprAir.u  0.22   0.21   0.20   0.19 
 ::
 

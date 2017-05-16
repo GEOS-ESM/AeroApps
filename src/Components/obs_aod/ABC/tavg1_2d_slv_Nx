@@ -1,0 +1,109 @@
+dset /nobackup/MERRA-2/tavg1_2d_slv_Nx/Y%y4/M%m2/merra2.tavg1_2d_slv_Nx.%y4%m2%d2.nc4
+OPTIONS template
+title MERRA2 tavg1_2d_slv_Nx: 2d,1-Hourly,Time-Averaged,Single-Level,Assimilation,Single-Level Diagnostics
+undef 1e+15
+dtype netcdf
+CHSUB 1 105192 MERRA2_100
+CHSUB 105193 184104 MERRA2_200
+CHSUB 184105 271752 MERRA2_300
+CHSUB 271753 350640 MERRA2_400
+xdef 576 linear -180.000000 0.625000
+ydef 361 linear -90.000000 0.500000
+zdef 1 linear 0 1
+tdef 350640 linear 00:30Z01JAN1980 1hr
+vars 47
+CLDPRS=>cldprs 0 t,y,x cloud_top_pressure (Pa)
+CLDTMP=>cldtmp 0 t,y,x cloud_top_temperature (K)
+DISPH=>disph 0 t,y,x zero_plane_displacement_height (m)
+H1000=>h1000 0 t,y,x height_at_1000_mb (m)
+H250=>h250 0 t,y,x height_at_250_hPa (m)
+H500=>h500 0 t,y,x height_at_500_hPa (m)
+H850=>h850 0 t,y,x height_at_850_hPa (m)
+OMEGA500=>omega500 0 t,y,x omega_at_500_hPa (Pa s-1)
+PBLTOP=>pbltop 0 t,y,x pbltop_pressure (Pa)
+PS=>ps 0 t,y,x surface_pressure (Pa)
+Q250=>q250 0 t,y,x specific_humidity_at_250_hPa (kg kg-1)
+Q500=>q500 0 t,y,x specific_humidity_at_500_hPa (kg kg-1)
+Q850=>q850 0 t,y,x specific_humidity_at_850_hPa (kg kg-1)
+QV10M=>qv10m 0 t,y,x 10-meter_specific_humidity (kg kg-1)
+QV2M=>qv2m 0 t,y,x 2-meter_specific_humidity (kg kg-1)
+SLP=>slp 0 t,y,x sea_level_pressure (Pa)
+T10M=>t10m 0 t,y,x 10-meter_air_temperature (K)
+T250=>t250 0 t,y,x air_temperature_at_250_hPa (K)
+T2M=>t2m 0 t,y,x 2-meter_air_temperature (K)
+T2MDEW=>t2mdew 0 t,y,x dew_point_temperature_at_2_m (K)
+T2MWET=>t2mwet 0 t,y,x wet_bulb_temperature_at_2_m (K)
+T500=>t500 0 t,y,x air_temperature_at_500_hPa (K)
+T850=>t850 0 t,y,x air_temperature_at_850_hPa (K)
+TO3=>to3 0 t,y,x total_column_ozone (Dobsons)
+TOX=>tox 0 t,y,x total_column_odd_oxygen (kg m-2)
+TQI=>tqi 0 t,y,x total_precipitable_ice_water (kg m-2)
+TQL=>tql 0 t,y,x total_precipitable_liquid_water (kg m-2)
+TQV=>tqv 0 t,y,x total_precipitable_water_vapor (kg m-2)
+TROPPB=>troppb 0 t,y,x tropopause_pressure_based_on_blended_estimate (Pa)
+TROPPT=>troppt 0 t,y,x tropopause_pressure_based_on_thermal_estimate (Pa)
+TROPPV=>troppv 0 t,y,x tropopause_pressure_based_on_EPV_estimate (Pa)
+TROPQ=>tropq 0 t,y,x tropopause_specific_humidity_using_blended_TROPP_estimate (kg kg-1)
+TROPT=>tropt 0 t,y,x tropopause_temperature_using_blended_TROPP_estimate (K)
+TS=>ts 0 t,y,x surface_skin_temperature (K)
+U10M=>u10m 0 t,y,x 10-meter_eastward_wind (m s-1)
+U250=>u250 0 t,y,x eastward_wind_at_250_hPa (m s-1)
+U2M=>u2m 0 t,y,x 2-meter_eastward_wind (m s-1)
+U500=>u500 0 t,y,x eastward_wind_at_500_hPa (m s-1)
+U50M=>u50m 0 t,y,x eastward_wind_at_50_meters (m s-1)
+U850=>u850 0 t,y,x eastward_wind_at_850_hPa (m s-1)
+V10M=>v10m 0 t,y,x 10-meter_northward_wind (m s-1)
+V250=>v250 0 t,y,x northward_wind_at_250_hPa (m s-1)
+V2M=>v2m 0 t,y,x 2-meter_northward_wind (m s-1)
+V500=>v500 0 t,y,x northward_wind_at_500_hPa (m s-1)
+V50M=>v50m 0 t,y,x northward_wind_at_50_meters (m s-1)
+V850=>v850 0 t,y,x northward_wind_at_850_hPa (m s-1)
+ZLCL=>zlcl 0 t,y,x lifting_condensation_level (m)
+endvars
+@ cldprs String units Pa
+@ cldtmp String units K
+@ disph String units m
+@ h1000 String units m
+@ h250 String units m
+@ h500 String units m
+@ h850 String units m
+@ omega500 String units Pa s-1
+@ pbltop String units Pa
+@ ps String units Pa
+@ q250 String units kg kg-1
+@ q500 String units kg kg-1
+@ q850 String units kg kg-1
+@ qv10m String units kg kg-1
+@ qv2m String units kg kg-1
+@ slp String units Pa
+@ t10m String units K
+@ t250 String units K
+@ t2m String units K
+@ t2mdew String units K
+@ t2mwet String units K
+@ t500 String units K
+@ t850 String units K
+@ to3 String units Dobsons
+@ tox String units kg m-2
+@ tqi String units kg m-2
+@ tql String units kg m-2
+@ tqv String units kg m-2
+@ troppb String units Pa
+@ troppt String units Pa
+@ troppv String units Pa
+@ tropq String units kg kg-1
+@ tropt String units K
+@ ts String units K
+@ u10m String units m s-1
+@ u250 String units m s-1
+@ u2m String units m s-1
+@ u500 String units m s-1
+@ u50m String units m s-1
+@ u850 String units m s-1
+@ v10m String units m s-1
+@ v250 String units m s-1
+@ v2m String units m s-1
+@ v500 String units m s-1
+@ v50m String units m s-1
+@ v850 String units m s-1
+@ zlcl String units m

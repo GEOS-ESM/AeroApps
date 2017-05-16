@@ -447,7 +447,10 @@ CONTAINS
       call zeit_co    ( 'ana_aod' )
 
       if ( MAPL_am_I_root() ) then
-          call zeit_flush ( 6 )
+         call zeit_flush ( 6 )
+         close(999)
+         open (999,file='ANAAOD_EGRESS',form='formatted')
+         close(999)
       end if
 
 !     Finalize PSAS

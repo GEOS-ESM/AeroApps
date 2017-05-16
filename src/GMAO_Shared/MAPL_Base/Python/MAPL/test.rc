@@ -18,7 +18,7 @@ MODIS_L2A_ALBEDO_FILE     = ExtData/g5chem/sfc/modis_albedo/albedo_clim.ctl
 MODIS_L2A_WIND_FILE       = %s.gaas_bkg.sfc.%y4%m2%d2_%h2z.nc4
 
 MODIS_L2A_NN_FILE         = ExtData/g5chem/x/NN/nnr_002.%ident_Tau.net
-MODIS_L2A_BLANK_ODS       = ExtData/g5chem/x/blank.ods
+MODIS_L2A_BLANK_ODS       = ExtData/g5chem/x/blank_syn8.ods
 MODIS_L2A_COXMUNK_LUT     = ExtData/g5chem/x/coxmunk_lut.npz
 
 #END MODIS_L2A  processing

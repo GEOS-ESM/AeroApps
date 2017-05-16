@@ -972,13 +972,13 @@ Subroutine satname2int(name, satnum, rc)
        rc = 0
        if ((name.EQ."AQUA").or.(name.EQ."aqua").or.(name.EQ."Aqua") .or. (name.EQ."02022A") ) then         
            satnum = 1
-       elseif ((name.EQ." calipso").or.(name.EQ."CALIPSO").or.(name.EQ."Calipso")) then         
+       elseif ((name.EQ."calipso").or.(name.EQ."CALIPSO").or.(name.EQ."Calipso")) then         
            satnum = 2
-       elseif ((name.EQ." cloudsat").or.(name.EQ."CLOUDSAT").or.(name.EQ."CloudSat")) then         
+       elseif ((name.EQ."cloudsat").or.(name.EQ."CLOUDSAT").or.(name.EQ."CloudSat")) then         
            satnum = 3
-       elseif ((name.EQ." aura").or.(name.EQ."AURA").or.(name.EQ."Aura")) then         
+       elseif ((name.EQ."aura").or.(name.EQ."AURA").or.(name.EQ."Aura")) then         
            satnum = 4
-       elseif ((name.EQ." terra").or.(name.EQ."TERRA").or.(name.EQ."Terra")) then         
+       elseif ((name.EQ."terra").or.(name.EQ."TERRA").or.(name.EQ."Terra")) then         
            satnum = 5
        else 
           rc =99

@@ -5,104 +5,247 @@
 
 """
 
-import os
+import os, sys
+sys.path.insert(0,'/home/pcastell/Enthought/Canopy_64bit/System/lib/python2.7/site-packages')
+from   matplotlib.pyplot    import  cm, imshow, plot, figure
+from   matplotlib.pyplot    import  xlabel, ylabel, title, grid, savefig, legend
+import matplotlib.pyplot    as      plt
+from   matplotlib.ticker    import  MultipleLocator
+import matplotlib.patches   as      mpatches
+from   numpy                import  c_ as cat
+from   numpy                import  random, sort, pi, load, cos, log, std, exp
+from   numpy                import  reshape, arange, ones, zeros, interp, sqrt
+from   numpy                import  meshgrid, concatenate, squeeze
+import numpy                as      np
+from   giant                import  MISSING, LAND, OCEAN, DEEP
+from   nn                   import  NN, _plotKDE
+import itertools
+from   sklearn.linear_model import LinearRegression
+from   multiprocessing      import cpu_count
+from   abc_c6_aux           import SummarizeCombinations, get_Iquartiles, get_Ispecies, get_ImRef
+from   abc_c6_aux           import make_plots, make_error_pdfs, TestStats, SummaryPDFs
+from   brdf                 import rtlsReflectance
+from   mcd43c               import BRDF
 
-from matplotlib.pyplot import  cm, imshow, plot, figure
-from matplotlib.pyplot import  xlabel, ylabel, title, grid, savefig, legend
-from matplotlib        import  ticker
-from numpy             import  c_ as cat
-from numpy             import  random, sort, pi, load, cos, log, std, exp
-from numpy             import  reshape, arange, ones, zeros, interp
-from numpy             import  meshgrid, concatenate
-from scipy             import  stats, mgrid
-from giant             import  MISSING, LAND, OCEAN
-from nn                import NN
+# ------
+MODVARNAMES = {'mRef470': 'MOD04 470 nm Reflectance',
+               'mRef550': 'MOD04 550 nm Reflectance',
+               'mRef660': 'MOD04 660 nm Reflectance',
+               'mRef870': 'MOD04 870 nm Reflectance',
+               'mRef1200': 'MOD04 1200 nm Reflectance',
+               'mRef1600': 'MOD04 1600 nm Reflectance',
+               'mRef2100': 'MOD04 2100 nm Reflectance'}
 
-#..............................................................
-class aodFormat(ticker.Formatter):
-    def __call__(self,x,pos=None):
-        y = exp(x)-0.01
-        return '%4.2f'%y
+MYDVARNAMES = {'mRef470': 'MYD04 470 nm Reflectance',
+               'mRef550': 'MYD04 550 nm Reflectance',
+               'mRef660': 'MYD04 660 nm Reflectance',
+               'mRef870': 'MYD04 870 nm Reflectance',
+               'mRef1200': 'MYD04 1200 nm Reflectance',
+               'mRef1600': 'MYD04 1600 nm Reflectance',
+               'mRef2100': 'MYD04 2100 nm Reflectance'}
+
+VARNAMES    = {'cloud': 'MOD04 Cloud Fraction',
+               'ScatteringAngle': 'Scattering Angle',
+               'GlintAngle': 'Glint Angle',
+               'AMF': 'Air Mass Factor',
+               'SolarZenith': 'Solar Zenith Angle',
+               'CoxMunkLUT': 'Cox-Munk White Sky Albedo',
+               'COxMunkBRF': 'Cox-Munk Bidirectional Surface Reflectance',
+               'MOD43BClimAlbedo': 'MOD43B Albedo Climatology',
+               'fdu': 'MERRA2 Fraction Dust Aerosol',
+               'fcc': 'MERRA2 Fraction Carbonaceous Aerosol',
+               'fsu': 'MERRA2 Fraction Sulfate Aerosol',
+               'year': 'Year'}
+#--------------------------------------------------------------------------------------
+class SETUP(object):
+  def setupNN(self,retrieval,expid,
+                 nHidden=None,
+                 nHLayers=1,
+                 combinations=False,
+                 Input_nnr  = ['mRef470','mRef550','mRef660', 'mRef870',
+                                'mRef1200','mRef1600','mRef2100',
+                                'ScatteringAngle', 'GlintAngle',
+                                'AMF', 'SolarZenith',
+                                'cloud', 'albedo','fdu','fcc','fsu' ],
+                 Input_const = None,
+                 Target = ['aTau550',],
+                 K=None):
+       
+    
+    self.retrieval = retrieval
+    # Create outdir if it doesn't exist
+    # ---------------------------------
+    self.outdir = "./{}/".format(expid)
+    if not os.path.exists(self.outdir):
+      os.makedirs(self.outdir)
+
+    self.plotdir = self.outdir
+
+    # save some inputs
+    # -----------------
+    self.expid   = expid
+    self.Target  = Target
+    self.K       = K
+    self.nHidden = nHidden
+      
+    # Balance the dataset before splitting
+    # No aerosol type should make up more that 35% 
+    # of the total number of obs
+    # --------------------------------------
+    self.iValid = self.balance(self.nobs*0.35)
+
+    # Flatten Input_nnr into one list
+    # -------------------------------
+    input_nnr = flatten_list(Input_nnr)
+
+    # Create list of combinations
+    # ---------------------------
+    if combinations:
+      self.comblist, self.combgroups = get_combinations(Input_nnr,Input_const)
+    else:
+      self.comblist = [input_nnr]
+          
+    # Initialize arrays to hold stats
+    # ------------------------------
+    self.nnr  = STATS(K,self.comblist)
+    self.orig = STATS(K,self.comblist)
+
+    # Initialize K-folding
+    # --------------------
+    if K is None:
+      self.iTest = ones([self.nobs]).astype(bool)
+      self.iTrain = self.iValid
+    else:
+      self.kfold(K=K)
+
+    # Create list of topologies
+    # -------------------------  
+    self.topology = []
+    if not combinations:
+      if self.nHidden is None:
+        self.nHidden  = len(input_nnr)
+      else:
+        self.nHidden = nHidden
+
+      self.topology.append((len(input_nnr),) + (self.nHidden,)*nHLayers + (len(Target),))
+
+    else:
+      for c,Input in enumerate(self.comblist):
+        if nHidden is None:
+          self.nHidden  = len(Input)
+        else:
+          self.nHidden = nHidden
+
+        self.topology.append((len(Input),) + (self.nHidden,)*nHLayers + (len(Target),))
+
+    self.combinations = combinations
 
 #----------------------------------------------------------------------------    
+class ABC(object):
 
-class ABC_Ocean (OCEAN,NN):
+    """
+    Common Subroutines to all the ABC Classes
+    """
 
-    def __init__ (self,fname, Wind=None,
-                  coxmunk_lut='/nobackup/NNR/Misc/coxmunk_lut.npz',
-                  outliers=3., laod=True, verbose=0,
-                  cloud_thresh=0.70, csvVersion = 1,
-                  Input = ['mTAU550','mTAU470','mTAU660','mTAU870',
-                           'ScatteringAngle','GlintAngle',
-                           'SolarAzimuth','SolarZenith',
-                           'SensorAzimuth','SensorZenith',
-                           'cloud', 'wind'],
-                  Target = [ 'aTau470', 'aTau550', 'aTau660', 'aTau870' ]):
-        """
-        Initializes the AOD Bias Correction (ABC) for the MODIS Ocean algorithm.
+    def __init__(self,fname,Albedo,coxmunk_lut=None):
 
-        On Input,
+        # Get Auxiliary Data
+        self.setfnameRoot(fname)
+        self.setWind()
+        self.setAlbedo(Albedo,coxmunk_lut=coxmunk_lut)
+        self.setSpec()
+        self.setNDVI()
 
-        fname   ---  file name for the CSV file with the co-located MODIS/AERONET
-                     data (see class OCEAN)
-        Wind    ---  Type of wind related parameter to be read from a NPZ file. Typical
-                     values are:
-                                  merra_ustar
-                                  merra_wind
-                     Requires a NPZ file with the data.
-        outliers --  number of standard deviations for outlinear removal.
-        laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
-        """
+    def setfnameRoot(self,fname):
+        if self.sat == 'Aqua':
+            self.fnameRoot = 'myd_' + fname.split('/')[-1].split('.')[0]
+        elif self.sat == 'Terra':
+            self.fnameRoot = 'mod_' + fname.split('/')[-1].split('.')[0]
+        
 
-        self.Input = Input
-        self.Target = Target
-        self.verbose = verbose
-        self.laod = laod
-        self.Wind = Wind
-
-        OCEAN.__init__(self,fname,csvVersion=csvVersion) # initialize superclass
-
-        # Read in wind if desired
+    def setWind(self):
+        # Read in wind
         # ------------------------
-        if Wind != None:
-            if csvVersion==1:
-                self.wind = load(self.ident + "_" + Wind + ".npz")['var']
-            else:
-                self.wind = load(self.ident + "2_" + Wind + ".npz")['var']
-        else:
-            self.wind = zeros(self.N)
-            print "WARNING: No longer using *ncep_windspd* because of too many undefs" 
-            print "WARNING: wind attribute being set to zero"
+        self.wind = load(self.fnameRoot + "_MERRA2.npz")['wind']
+        self.giantList.append('wind')
+        self.Wind = '' #need this for backwards compatibility
 
+    def setAlbedo(self,Albedo,coxmunk_lut=None):
         # Define wind speed dependent ocean albedo
         # ----------------------------------------
-        self.getCoxMunk(coxmunk_lut)
+        if Albedo is not None:
+          for albedo in Albedo:
+            if albedo == 'CoxMunkLUT':
+              self.getCoxMunk(coxmunk_lut) 
+              self.giantList.append(albedo)    
+            elif albedo == 'MCD43C1':
+              self.setBRDF()     
+            elif 'CxAlbedo' in albedo :
+              self.setCoxMunkBRF(albedo)
+            else:
+              self.__dict__[albedo] = squeeze(load(self.fnameRoot+'_'+albedo+'.npz')["albedo"])
+              self.giantList.append(albedo)
 
-        # Q/C
-        # ---
-        self.iValid =  (self.qa>0) & \
-                      (self.aTau470 > 0.0) & (self.aTau550 > 0.0) &  \
-                      (self.aTau660 > 0.0) & (self.aTau870 > 0.0) &  \
-                      (self.mTau470 > 0.0) & (self.mTau550 > 0.0) &  \
-                      (self.mTau660 > 0.0) & (self.mTau870 > 0.0) &  \
-                      (self.mtau470 > 0.0) & (self.mtau550 > 0.0) &  \
-                      (self.mtau660 > 0.0) & (self.mtau870 > 0.0) &  \
-                      (self.cloud <cloud_thresh) & (self.wind>=0.0) &  \
-                      (self.GlintAngle != MISSING )
+    def setSpec(self):
+        # Read in Aerosol Fractional Composition
+        # --------------------------------------
+        names = ('fdu','fss','fcc','fsu')
+        for name in names:
+            self.__dict__[name] = load(self.fnameRoot + "_MERRA2.npz")[name]
+            self.giantList.append(name)
 
-        # Outlier removal based on log-transformed AOD
-        # --------------------------------------------
+    def setCoxMunkBRF(self,albedo):
+        # Read in Cox Munk Bidirectional surface reflectance
+        # --------------------------------------------------
+        self.__dict__[albedo] = squeeze(load(self.fnameRoot+'_CoxMunkBRF.npz')[albedo])
+        self.giantList.append(albedo)
+
+    def setBRDF(self):
+        # Read in MCD43C1 BRDF
+        # Calculate bidirectional surface reflectance
+        # ---------------------------------------------
+        brdf = BRDF(self.nobs)
+        names = ('BRDFvis','BRDFnir','BRDF470','BRDF550',
+                 'BRDF650','BRDF850','BRDF1200','BRDF1600',
+                 'BRDF2100')
+        for name in brdf.__dict__:
+            brdf.__dict__[name] = load(self.fnameRoot + "_MCD43C1.npz")[name]
+
+        for name in names:
+            ch = name[4:]
+            Kiso = brdf.__dict__['Riso'+ch]
+            Kvol = brdf.__dict__['Rvol'+ch]
+            Kgeo = brdf.__dict__['Rgeo'+ch]
+            self.__dict__[name] = rtlsReflectance(Kiso,Kgeo,Kvol,
+                                                  self.SolarZenith,self.SensorZenith,
+                                                  self.SolarAzimuth,self.SensorAzimuth)
+            self.giantList.append(name)    
+
+
+    def setNDVI(self):
+        # Read in NDVI
+        # -------------
+        names = ('NDVI','EVI','NIRref')
+        for name in names:
+          self.__dict__[name] = load(self.fnameRoot + "_NDVI.npz")[name]
+          self.giantList.append(name)
+
+    def outlierRemoval(self,outliers):
+
+        # # Outlier removal based on log-transformed AOD
+        # # --------------------------------------------
         if outliers > 0.:
-            d = log(self.mTau550+0.01) - log(self.aTau550+0.01)
-            dg = d[self.iValid]
+            d = log(self.mTau550[self.iValid]+0.01) - log(self.aTau550[self.iValid]+0.01)
             if self.verbose>0:
-                print "Outlier removal: %d   sig_d = %f  nGood=%d "%(-1,std(dg),dg.size)
+                print "Outlier removal: %d   sig_d = %f  nGood=%d "%(-1,std(d),d.size)
             for iter in range(3):
-                self.iValid = self.iValid & (abs(d)<outliers*std(d[self.iValid]))
+                iValid = (abs(d)<outliers*std(d))
+                self.iValid[self.iValid] = iValid
+                d = log(self.mTau550[self.iValid]+0.01) - log(self.aTau550[self.iValid]+0.01)
                 if self.verbose>0:
-                    dg = d[self.iValid]
-                    print "Outlier removal: %d   sig_d = %f  nGood=%d "%(iter,std(dg),dg.size)
-            
+                    print "Outlier removal: %d   sig_d = %f  nGood=%d "%(iter,std(d),d.size)
+              
+    def angleTranform(self):            
         # Angle transforms: for NN work we work with cosine of angles
         # -----------------------------------------------------------
         self.ScatteringAngle = cos(self.ScatteringAngle*pi/180.0) 
@@ -111,26 +254,123 @@ class ABC_Ocean (OCEAN,NN):
         self.SolarAzimuth    = cos(self.SolarAzimuth*pi/180.0)    
         self.SolarZenith     = cos(self.SolarZenith*pi/180.0)     
         self.GlintAngle      = cos(self.GlintAngle*pi/180.0)      
+        self.AMF             = (1/self.SolarZenith) + (1/self.SensorZenith)
+        self.giantList.append('AMF')
+
+    def setYear(self):
+        # Year
+        #-------
+        self.year = np.array([t.year for t in self.tyme])
+        self.giantList.append('year')
+
+    def addFilter(self,aFilter):
+        if aFilter is not None:
+          filters = []
+          for f in aFilter:
+            filters.append(self.__dict__[f]>0)
+            
+          oiValid = reduce(lambda x,y: x&y,filters)
+          self.iValid = self.iValid & oiValid
+
+#---------------------------------------------------------------------------- 
+class ABC_Ocean (OCEAN,NN,SETUP,ABC):
+
+    def __init__ (self,fname, 
+                  coxmunk_lut='/nobackup/NNR/Misc/coxmunk_lut.npz',
+                  outliers=3., 
+                  laod=True, 
+                  verbose=0,
+                  cloud_thresh=0.70,
+                  glint_thresh=40.0,
+                  Albedo=None,
+                  aFilter=None):
+        """
+        Initializes the AOD Bias Correction (ABC) for the MODIS Ocean algorithm.
+
+        On Input,
+
+        fname   ---  file name for the CSV file with the co-located MODIS/AERONET
+                     data (see class OCEAN)
+        outliers --  number of standard deviations for outlinear removal.
+        laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
+
+        Reads in two Albedo variables
+              albedo - cox munk lut that parameterizes albedo with wind speed
+                                        Requires coxmunk_lut npz file.
+              BRF - cox munk bidirection reflectance computed with VLIDORT
+                                        and stored in npz
+                                        Requires a NPZ file with the data.
+              Both require a wind speed npz file.
+        """
+
+        self.verbose = verbose
+        self.laod    = laod
+
+        OCEAN.__init__(self,fname) # initialize superclass
+
+        # Get Auxiliary Data
+        ABC.__init__(self,fname,Albedo,coxmunk_lut=coxmunk_lut)
+
+        # Q/C
+        # ---
+        self.iValid = (self.qa>0) & \
+                      (self.aTau470 > -0.01) &\
+                      (self.aTau550 > -0.01) &\
+                      (self.aTau660 > -0.01) &\
+                      (self.aTau870 > -0.01) &\
+                      (self.mTau470 > -0.01) &\
+                      (self.mTau550 > -0.01) &\
+                      (self.mTau660 > -0.01) &\
+                      (self.mTau870 > -0.01) &\
+                      (self.mRef470 > 0.0)   &\
+                      (self.mRef550 > 0.0)   &\
+                      (self.mRef660 > 0.0)   &\
+                      (self.mRef870 > 0.0)   &\
+                      (self.mRef1200 > 0.0)  &\
+                      (self.mRef1600 > 0.0)  &\
+                      (self.mRef2100 > 0.0)  &\
+                      (self.cloud <cloud_thresh) &\
+                      (self.cloud > 0)           &\
+                      (self.GlintAngle != MISSING ) &\
+                      (self.GlintAngle > glint_thresh) 
+
+        # Filter by additional variables
+        # ------------------------------
+        self.addFilter(aFilter)
+
+        # glint_thresh > 40 is a bit redundant b/c MOD04 should already give these a qa==0 or
+        # does not retrieve.  However, there are a few cases (~200) where this does not happen.
+        # the GlingAngle is very close to 40, greater than 38.  Not sure why these get through.
+
+        # Outlier removal based on log-transformed AOD
+        # --------------------------------------------
+        self.outlierRemoval(outliers)
+              
+        # Reduce the Dataset
+        # --------------------
+        self.reduce(self.iValid)                    
+        self.iValid = ones(self.lon.shape).astype(bool)
+            
+        # Angle transforms: for NN work we work with cosine of angles
+        # -----------------------------------------------------------
+        self.angleTranform()
+
+        # Year
+        #-------
+        self.setYear()
 
 #----------------------------------------------------------------------------    
 
-class ABC_Land (LAND,NN):
+class ABC_Land (LAND,NN,SETUP,ABC):
 
     def __init__ (self, fname,
-                  Albedo='albedo',
-                  alb_min = 0.25,
+                  Albedo=None,
+                  alb_max = 0.25,
                   outliers=3.,
                   laod=True,
                   verbose=0,
                   cloud_thresh=0.70,
-                  csvVersion = 1,
-                  Input = ['mTau550','mTau470','mTau660',
-                           'mTAU550','mTAU470','mTAU660',
-                           'ScatteringAngle',
-                           'SolarAzimuth','SolarZenith',
-                           'SensorAzimuth','SensorZenith',
-                           'cloud' ],
-                  Target = [ 'aTau470', 'aTau550', 'aTau660' ]):
+                  aFilter=None):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
 
@@ -145,23 +385,17 @@ class ABC_Land (LAND,NN):
         laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
         """
 
-        if csvVersion != 1:
-            raise ValueError, 'must use CVS Version 1 for land because of QA flags'
-
-        self.Input = Input
-        self.Target = Target
         self.verbose = verbose
         self.laod = laod
 
-        LAND.__init__(self,fname,csvVersion=csvVersion) # initialize superclass
+        LAND.__init__(self,fname)  # initialize superclass
 
-        # Read in wind if desired
-        # ------------------------
-        self.albedo = load(self.ident + "_" + Albedo + ".npz")['var']
+        # Get Auxiliary Data
+        ABC.__init__(self,fname,Albedo)
 
         # Q/C: enforce QA=3 and albedo in (0,0.25), scattering angle<170
         # --------------------------------------------------------------
-        self.iValid =  (self.qa==3)                & \
+        self.iValid = (self.qa==3)                & \
                       (self.aTau470 > -0.01)      & \
                       (self.aTau550 > -0.01)      & \
                       (self.aTau660 > -0.01)      & \
@@ -169,383 +403,853 @@ class ABC_Land (LAND,NN):
                       (self.mTau550 > -0.01)      & \
                       (self.mTau660 > -0.01)      & \
                       (self.mTau2100> -0.01)      & \
+                      (self.cloud<cloud_thresh)   & \
+                      (self.cloud > 0)            &\
+                      (self.ScatteringAngle<170.) & \
+                      (self.mRef412 > 0)          & \
+                      (self.mRef440 > 0)          & \
+                      (self.mRef470 > 0)          & \
+                      (self.mRef550 > 0)          & \
+                      (self.mRef660 > 0)          & \
+                      (self.mRef870 > 0)          & \
+                      (self.mRef1200 > 0)         & \
+                      (self.mRef1600 > 0)         & \
+                      (self.mRef2100 > 0)         & \
                       (self.mSre470 >  0.0)       & \
                       (self.mSre660 >  0.0)       & \
-                      (self.mSre2100>  0.0)       & \
-                      (self.cloud<cloud_thresh)   & \
-                      (self.ScatteringAngle<170.) & \
-                      (self.albedo>0)             & \
-                      (self.albedo<alb_min)
+                      (self.mSre2100>  0.0)       
 
-        print self.qa[self.iValid].shape
+        # Filter by additional variables
+        # ------------------------------
+        self.addFilter(aFilter)
+
         
         # Outlier removal based on log-transformed AOD
         # --------------------------------------------
-        if outliers > 0.:
-            d = log(self.mTau550+0.01) - log(self.aTau550+0.01)
-            dg = d[self.iValid]
-            if self.verbose>0:
-                print "Outlier removal: %d   sig_d = %f  nGood=%d "%\
-                      (-1,std(dg),dg.size)
-            for iter in range(3):
-                self.iValid = self.iValid & (abs(d)<outliers*std(d[self.iValid]))
-                if self.verbose>0:
-                    dg = d[self.iValid]
-                    print "Outlier removal: %d   sig_d = %f  nGood=%d "\
-                          %(iter,std(dg),dg.size)
+        self.outlierRemoval(outliers)
+
+        # Reduce the Dataset
+        # --------------------
+        self.reduce(self.iValid)                    
+        self.iValid = ones(self.lon.shape).astype(bool)        
+
+        # Angle transforms: for NN work we work with cosine of angles
+        # -----------------------------------------------------------
+        self.angleTranform()    
+#----------------------------------------------------------------------------    
+
+class ABC_Deep (DEEP,NN,SETUP,ABC):
+
+    def __init__ (self, fname,
+                  useLAND=False,
+                  Albedo=None,
+                  outliers=3.,
+                  laod=True,
+                  verbose=0,
+                  cloud_thresh=0.70,
+                  aFilter=None):
+        """
+        Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
+
+        On Input,
+
+        fname   ---  file name for the CSV file with the co-located MODIS/AERONET
+                     data (see class OCEAN)
+
+        Albedo  ---  albedo file name identifier; albedo file will be created
+                     from this identifier (See below).
+        outliers --  number of standard deviations for outlinear removal.
+        laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
+        """
+
+        self.verbose = verbose
+        self.laod = laod
+
+        DEEP.__init__(self,fname)  # initialize superclass
+
+        # Get Auxiliary Data
+        ABC.__init__(self,fname,Albedo)
+
+        # Q/C: enforce QA=3 and albedo in (0,0.25), scattering angle<170
+        # --------------------------------------------------------------
+        self.iValid = (self.qa==3)                & \
+                      (self.aTau470 > -0.01)      & \
+                      (self.aTau550 > -0.01)      & \
+                      (self.aTau660 > -0.01)      & \
+                      (self.mTau412 > -0.01)      & \
+                      (self.mTau470 > -0.01)      & \
+                      (self.mTau550 > -0.01)      & \
+                      (self.mTau660 > -0.01)      & \
+                      (self.cloud<cloud_thresh)   & \
+                      (self.cloud > 0)            &\
+                      (self.ScatteringAngle<170.) & \
+                      (self.mRef412 > 0)          & \
+                      (self.mRef470 > 0)          & \
+                      (self.mRef660 > 0)          & \
+                      (self.mSre412 >  0.0)       & \
+                      (self.mSre470 >  0.0)       & \
+                      (self.mSre660 >  0.0)      
+
+        LANDref     = (self.mRef440 > 0)          & \
+                      (self.mRef550 > 0)          & \
+                      (self.mRef870 > 0)          & \
+                      (self.mRef1200 > 0)         & \
+                      (self.mRef1600 > 0)         & \
+                      (self.mRef2100 > 0)         
+
+        if useLAND:
+          self.iValid = self.iValid & LANDref
+
+        # Filter by additional variables
+        # ------------------------------
+        self.addFilter(aFilter)
+        
+        # Outlier removal based on log-transformed AOD
+        # --------------------------------------------
+        self.outlierRemoval(outliers)
+
+        # Reduce the Dataset
+        # --------------------
+        self.reduce(self.iValid)                    
+        self.iValid = ones(self.lon.shape).astype(bool)        
+
             
         # Angle transforms: for NN work we work with cosine of angles
         # -----------------------------------------------------------
-        self.ScatteringAngle = cos(self.ScatteringAngle*pi/180.0) 
-        self.SensorAzimuth   = cos(self.SensorAzimuth*pi/180.0)   
-        self.SensorZenith    = cos(self.SensorZenith*pi/180.0)    
-        self.SolarAzimuth    = cos(self.SolarAzimuth*pi/180.0)    
-        self.SolarZenith     = cos(self.SolarZenith*pi/180.0)     
-        self.GlintAngle      = cos(self.GlintAngle*pi/180.0)      
+        self.angleTranform()    
 
-    def getAlbedo(self,npz_file):
-        from grads import GrADS
-        ga = GrADS(Echo=False,Window=False)
-        ga('open albedo_clim.ctl')
-        self.addVar(ga,npz_file,expr='albedo',clmYear=2000)
+#----------------------------------------------------------------------------    
 
-#---------------------------------------------------------------------------------
-def _cat2 (X, Y):
-    """
-    Given 2 arrays of same shape, returns array of shape (2,N),
-    where N = X.size = Y.size
-    """
-    xy = concatenate((X.ravel(),Y.ravel())) # shape is (N+N)
-    return reshape(xy,(2,X.size))         # shape is (2,N)
+class ABC_DBDT (LAND,NN,SETUP,ABC):
 
-def _plotKDE(x_values,y_values,x_bins=None,y_bins=None,
-             x_label='AERONET', y_label='MODIS',formatter=None):
+    def __init__ (self, fname,
+                  useDEEP = False,
+                  Albedo=None,
+                  outliers=3.,
+                  laod=True,
+                  verbose=0,
+                  cloud_thresh=0.70,
+                  aFilter=None):
         """
-        Plot Target vs Model using a 2D Kernel Density Estimate.
+        Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
+
+        On Input,
+
+        fname   ---  file name for the CSV file with the co-located MODIS/AERONET
+                     data (see class OCEAN)
+
+        Albedo  ---  albedo file name identifier; albedo file will be created
+                     from this identifier (See below).
+        outliers --  number of standard deviations for outlinear removal.
+        laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
         """
 
-        if x_bins == None: x_bins = arange(-5., 1., 0.1 )
-        if y_bins == None: y_bins = x_bins
+        self.verbose = verbose
+        self.laod = laod
 
-        Nx = len(x_bins)
-        Ny = len(y_bins)
+        LAND.__init__(self,fname)  # initialize superclass
+        dbl = DEEP(fname)
 
-        print "Evaluating 2D kernel on grid with (Nx,Ny)=(%d,%d) ..."%(Nx,Ny)
-        kernel = stats.kde.gaussian_kde(_cat2(x_values,y_values))
-        X, Y = meshgrid(x_bins,y_bins)   # each has shape (Ny,Nx)
-        Z = kernel(_cat2(X,Y))           # shape is (Ny*Nx)
-        Z = reshape(Z,X.shape)
+        # Get Auxiliary Data
+        ABC.__init__(self,fname,Albedo)
 
-        fig = figure()
-        # ax = fig.add_axes([0.1,0.1,0.75,0.75])
-        ax = fig.add_axes([0.1,0.1,0.75,0.75])
-        if formatter != None:
-            ax.xaxis.set_major_formatter(formatter)
-            ax.yaxis.set_major_formatter(formatter)
-        imshow(Z, cmap=cm.gist_earth_r, origin='lower', 
-               extent=(x_bins[0],x_bins[-1],y_bins[0],y_bins[-1]) )
-        plot([x_bins[0],x_bins[-1]],[y_bins[0],y_bins[-1]],'k')
-        xlabel(x_label)
-        ylabel(y_label)
-        grid()
+        # Q/C: enforce QA=3 and scattering angle<170
+        # Combines deep blue and dark target
+        # --------------------------------------------------------------
+        LANDiValid =  (self.qa==3)                & \
+                      (self.aTau470 > -0.01)      & \
+                      (self.aTau550 > -0.01)      & \
+                      (self.aTau660 > -0.01)      & \
+                      (self.mTau470 > -0.01)      & \
+                      (self.mTau550 > -0.01)      & \
+                      (self.mTau660 > -0.01)      & \
+                      (self.cloud<cloud_thresh)   & \
+                      (self.cloud > 0)            & \
+                      (self.ScatteringAngle<170.) & \
+                      (self.mRef412 > 0)          & \
+                      (self.mRef440 > 0)          & \
+                      (self.mRef470 > 0)          & \
+                      (self.mRef550 > 0)          & \
+                      (self.mRef660 > 0)          & \
+                      (self.mRef870 > 0)          & \
+                      (self.mRef1200 > 0)         & \
+                      (self.mRef1600 > 0)         & \
+                      (self.mRef2100 > 0)         & \
+                      (self.mSre470 >  0.0)       & \
+                      (self.mSre660>  0.0)        &\
+                      (self.mSre2100 > 0.0)   
 
-#--------------------------------------------------------------------------------------
+        DEEPiValid =  (dbl.qa==3)                & \
+                      (dbl.aTau470 > -0.01)      & \
+                      (dbl.aTau550 > -0.01)      & \
+                      (dbl.aTau660 > -0.01)      & \
+                      (dbl.mTau412 > -0.01)      & \
+                      (dbl.mTau470 > -0.01)      & \
+                      (dbl.mTau550 > -0.01)      & \
+                      (dbl.mTau660 > -0.01)      & \
+                      (dbl.cloud<cloud_thresh)   & \
+                      (dbl.cloud > 0)           & \
+                      (dbl.ScatteringAngle<170.) & \
+                      (dbl.mRef412 > 0)          & \
+                      (dbl.mRef440 > 0)          & \
+                      (dbl.mRef470 > 0)          & \
+                      (dbl.mRef550 > 0)          & \
+                      (dbl.mRef660 > 0)          & \
+                      (dbl.mRef870 > 0)          & \
+                      (dbl.mRef1200 > 0)         & \
+                      (dbl.mRef1600 > 0)         & \
+                      (dbl.mRef2100 > 0)         & \
+                      (dbl.mSre412 >  0.0)       & \
+                      (dbl.mSre470 >  0.0)       & \
+                      (dbl.mSre660>  0.0)       
 
-def _remove1():
 
-    Input_all = ['mTau550','mTau470','mTau660','mTau870',
-                 'mTAU550','mTAU470','mTAU660','mTAU870',
-                 'ScatteringAngle','GlintAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'ustar']
+        LANDref    =  (self.mRef412 > 0)          & \
+                      (self.mRef440 > 0)          & \
+                      (self.mRef470 > 0)          & \
+                      (self.mRef550 > 0)          & \
+                      (self.mRef660 > 0)          & \
+                      (self.mRef870 > 0)          & \
+                      (self.mRef1200 > 0)         & \
+                      (self.mRef1600 > 0)         & \
+                      (self.mRef2100 > 0)         & \
+                      (self.mSre470 >  0.0)       & \
+                      (self.mSre660>  0.0)        &\
+                      (self.mSre2100 > 0.0)  
+       
+        addiValid = (LANDiValid == False) & (DEEPiValid) & (LANDref)
 
-    Target=['aTau550',]
-
-    mydo = ABC_Ocean('SUPER_ocean.Aqua.csv',ustar=False,verbose=1)
-    mydo.split()
-
-    for i in [-1,]+range(len(Input_all)):
-
-        print "------------------------------------------------------------------------------"
-        Input = Input_all[:] # make a copy of it
-        if i<0:
-            print "--> Excluding: (nothing)"
+        if useDEEP:
+          replace = ['mRef412','mRef470','mRef660','mSre470','mSre660','mTau550']          
         else:
-            print "--> Excluding: ", Input_all[i]
-            del Input[i]         # delete ith item
+          replace = ['mTau550']
+        for name in replace:
+          self.__dict__[name][addiValid] = dbl.__dict__[name][addiValid]
 
-        nHidden = len(Input)
+        self.iValid = LANDiValid
+        self.iValid[addiValid] = True
 
-        print "--> nHidden = ", nHidden
-        print "-->  Inputs = ", Input
+        # Filter by additional variables
+        # ------------------------------
+        self.addFilter(aFilter)
         
-        mydo.train(Input=Input,Target=Target,nHidden=nHidden)
-        out, reg = mydo.test()
+        # Outlier removal based on log-transformed AOD
+        # --------------------------------------------
+        self.outlierRemoval(outliers)
 
+        # Reduce the Dataset
+        # --------------------
+        self.reduce(self.iValid)                    
+        self.iValid = ones(self.lon.shape).astype(bool)        
+
+            
+        # Angle transforms: for NN work we work with cosine of angles
+        # -----------------------------------------------------------
+        self.angleTranform()    
+
+#----------------------------------------------------------------------------    
+
+class ABC_DBDT_INT (LAND,NN,SETUP,ABC):
+
+    def __init__ (self, fname,
+                  useDEEP = False,
+                  testDEEP= False,
+                  Albedo=['MOD43BClimAlbedo'],
+                  outliers=3.,
+                  laod=True,
+                  verbose=0,
+                  cloud_thresh=0.70,
+                  aFilter=None):
+        """
+        Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
+
+        On Input,
+
+        fname   ---  file name for the CSV file with the co-located MODIS/AERONET
+                     data (see class OCEAN)
+
+        Albedo  ---  albedo file name identifier; albedo file will be created
+                     from this identifier (See below).
+        outliers --  number of standard deviations for outlinear removal.
+        laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
+        """
+
+        self.verbose = verbose
+        self.laod = laod
+
+        LAND.__init__(self,fname)  # initialize superclass
+        dbl = DEEP(fname)
+
+        # Get Auxiliary Data
+        ABC.__init__(self,fname,Albedo)        
+
+        # Q/C: enforce QA=3 and scattering angle<170
+        # Combines deep blue and dark target
+        # --------------------------------------------------------------
+        LANDiValid =  (self.qa==3)                & \
+                      (self.aTau470 > -0.01)      & \
+                      (self.aTau550 > -0.01)      & \
+                      (self.aTau660 > -0.01)      & \
+                      (self.mTau470 > -0.01)      & \
+                      (self.mTau550 > -0.01)      & \
+                      (self.mTau660 > -0.01)      & \
+                      (self.cloud<cloud_thresh)   & \
+                      (self.cloud > 0)            & \
+                      (self.ScatteringAngle<170.) & \
+                      (self.mRef412 > 0)          & \
+                      (self.mRef440 > 0)          & \
+                      (self.mRef470 > 0)          & \
+                      (self.mRef550 > 0)          & \
+                      (self.mRef660 > 0)          & \
+                      (self.mRef870 > 0)          & \
+                      (self.mRef1200 > 0)         & \
+                      (self.mRef1600 > 0)         & \
+                      (self.mRef2100 > 0)         & \
+                      (self.mSre470 >  0.0)       & \
+                      (self.mSre660>  0.0)        &\
+                      (self.mSre2100 > 0.0)  
+
+        DEEPiValid =  (dbl.qa==3)                & \
+                      (dbl.aTau470 > -0.01)      & \
+                      (dbl.aTau550 > -0.01)      & \
+                      (dbl.aTau660 > -0.01)      & \
+                      (dbl.mTau412 > -0.01)      & \
+                      (dbl.mTau470 > -0.01)      & \
+                      (dbl.mTau550 > -0.01)      & \
+                      (dbl.mTau660 > -0.01)      & \
+                      (dbl.cloud<cloud_thresh)   & \
+                      (dbl.cloud > 0)            & \
+                      (dbl.ScatteringAngle<170.) & \
+                      (dbl.mRef412 > 0)          & \
+                      (dbl.mRef470 > 0)          & \
+                      (dbl.mRef660 > 0)          & \
+                      (dbl.mSre412 >  0.0)       & \
+                      (dbl.mSre470 >  0.0)       & \
+                      (dbl.mSre660>  0.0)       
+
+        # Where both LAND and DEEP decide to retrieve
+        intiValid = LANDiValid & DEEPiValid
+
+        if useDEEP:
+          replace = ['mRef412','mRef470','mRef660','mSre470','mSre660']
+          add     = ['mSre412']
+          for name in replace:
+            self.__dict__[name][intiValid] = dbl.__dict__[name][intiValid]
+          for name in add:
+            self.__dict__[name] = dbl.__dict__[name]
+            self.giantList.append(name)  
+
+        if testDEEP:
+          replace = ['mTau550']
+          for name in replace:
+            self.__dict__[name][intiValid] = dbl.__dict__[name][intiValid]          
+
+        self.iValid = intiValid
+
+        self.dbmTau550 = dbl.mTau550
+        self.giantList.append('dbmTau550')  
+
+        # Filter by additional variables
+        # ------------------------------
+        self.addFilter(aFilter)
+        
+        # Outlier removal based on log-transformed AOD
+        # --------------------------------------------
+        self.outlierRemoval(outliers)
+
+        # Reduce the Dataset
+        # --------------------
+        self.reduce(self.iValid)                    
+        self.iValid = ones(self.lon.shape).astype(bool)        
+
+            
+        # Angle transforms: for NN work we work with cosine of angles
+        # -----------------------------------------------------------
+        self.angleTranform()    
+
+#----------------------------------------------------------------------------    
+
+class ABC_LAND_COMP (LAND,NN,SETUP,ABC):
+
+    def __init__ (self, fname,
+                  useDEEP = False,
+                  Albedo=['MOD43BClimAlbedo'],
+                  outliers=3.,
+                  laod=True,
+                  verbose=0,
+                  cloud_thresh=0.70,
+                  aFilter=None):
+        """
+        Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
+
+        On Input,
+
+        fname   ---  file name for the CSV file with the co-located MODIS/AERONET
+                     data (see class OCEAN)
+
+        Albedo  ---  albedo file name identifier; albedo file will be created
+                     from this identifier (See below).
+        outliers --  number of standard deviations for outlinear removal.
+        laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
+        """
+
+        self.verbose = verbose
+        self.laod = laod
+
+        LAND.__init__(self,fname)  # initialize superclass
+        dbl = DEEP(fname)
+
+        # Get Auxiliary Data
+        ABC.__init__(self,fname,Albedo)                
+
+        # Q/C: enforce QA=3 and scattering angle<170
+        # Combines deep blue and dark target
+        # --------------------------------------------------------------
+        LANDiValid =  (self.qa==3)                & \
+                      (self.aTau470 > -0.01)      & \
+                      (self.aTau550 > -0.01)      & \
+                      (self.aTau660 > -0.01)      & \
+                      (self.mTau470 > -0.01)      & \
+                      (self.mTau550 > -0.01)      & \
+                      (self.mTau660 > -0.01)      & \
+                      (self.cloud<cloud_thresh)   & \
+                      (self.cloud > 0)            & \
+                      (self.ScatteringAngle<170.) & \
+                      (self.mRef412 > 0)          & \
+                      (self.mRef440 > 0)          & \
+                      (self.mRef470 > 0)          & \
+                      (self.mRef550 > 0)          & \
+                      (self.mRef660 > 0)          & \
+                      (self.mRef870 > 0)          & \
+                      (self.mRef1200 > 0)         & \
+                      (self.mRef1600 > 0)         & \
+                      (self.mRef2100 > 0)         & \
+                      (self.mSre470 >  0.0)       & \
+                      (self.mSre660>  0.0)        &\
+                      (self.mSre2100 > 0.0)  
+
+        DEEPiValid =  (dbl.qa==3)                & \
+                      (dbl.aTau470 > -0.01)      & \
+                      (dbl.aTau550 > -0.01)      & \
+                      (dbl.aTau660 > -0.01)      & \
+                      (dbl.mTau412 > -0.01)      & \
+                      (dbl.mTau470 > -0.01)      & \
+                      (dbl.mTau550 > -0.01)      & \
+                      (dbl.mTau660 > -0.01)      & \
+                      (dbl.cloud<cloud_thresh)   & \
+                      (dbl.cloud > 0)           & \
+                      (dbl.ScatteringAngle<170.) & \
+                      (dbl.mRef412 > 0)          & \
+                      (dbl.mRef470 > 0)          & \
+                      (dbl.mRef660 > 0)          & \
+                      (dbl.mSre412 >  0.0)       & \
+                      (dbl.mSre470 >  0.0)       & \
+                      (dbl.mSre660>  0.0)       
+
+        DEEPref    =  (dbl.mRef412 > 0)          & \
+                      (dbl.mRef470 > 0)          & \
+                      (dbl.mRef660 > 0)          & \
+                      (dbl.mSre412 >  0.0)       & \
+                      (dbl.mSre470 >  0.0)       & \
+                      (dbl.mSre660>  0.0)       
+
+        # Where LAND retrieves, and DEEP does not
+        # The LAND Complement
+        compiValid = LANDiValid & ~DEEPiValid
+
+        if useDEEP:
+          compiValid = compiValid & DEEPref
+          replace = ['mRef412','mRef470','mRef660','mSre470','mSre660']
+          add     = ['mSre412']
+          for name in replace:
+            self.__dict__[name][compiValid] = dbl.__dict__[name][compiValid]
+          for name in add:
+            self.__dict__[name] = dbl.__dict__[name]
+            self.giantList.append(name)  
+
+        self.iValid = compiValid
+
+
+        # Filter by additional variables
+        # ------------------------------
+        self.addFilter(aFilter)
+        
+        # Outlier removal based on log-transformed AOD
+        # --------------------------------------------
+        self.outlierRemoval(outliers)
+
+        # Reduce the Dataset
+        # --------------------
+        self.reduce(self.iValid)                    
+        self.iValid = ones(self.lon.shape).astype(bool)        
+
+            
+        # Angle transforms: for NN work we work with cosine of angles
+        # -----------------------------------------------------------
+        self.angleTranform()    
+#----------------------------------------------------------------------------    
+
+
+class ABC_DEEP_COMP (DEEP,NN,SETUP,ABC):
+
+    def __init__ (self, fname,
+                  useLAND = False,
+                  DBDT=False,
+                  noLANDref=False,
+                  Albedo=['MOD43BClimAlbedo'],
+                  outliers=3.,
+                  laod=True,
+                  verbose=0,
+                  cloud_thresh=0.70,
+                  aFilter=None):
+        """
+        Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
+
+        On Input,
+
+        fname   ---  file name for the CSV file with the co-located MODIS/AERONET
+                     data (see class OCEAN)
+
+        Albedo  ---  albedo file name identifier; albedo file will be created
+                     from this identifier (See below).
+        outliers --  number of standard deviations for outlinear removal.
+        laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
+        """
+
+        self.verbose = verbose
+        self.laod = laod
+
+        DEEP.__init__(self,fname)  # initialize superclass
+        lnd = LAND(fname)
+
+        # Get Auxiliary Data
+        ABC.__init__(self,fname,Albedo)           
+
+
+        # Q/C: enforce QA=3 and scattering angle<170
+        # Combines deep blue and dark target
+        # --------------------------------------------------------------
+        LANDiValid =  (lnd.qa==3)                & \
+                      (lnd.aTau470 > -0.01)      & \
+                      (lnd.aTau550 > -0.01)      & \
+                      (lnd.aTau660 > -0.01)      & \
+                      (lnd.mTau470 > -0.01)      & \
+                      (lnd.mTau550 > -0.01)      & \
+                      (lnd.mTau660 > -0.01)      & \
+                      (lnd.cloud<cloud_thresh)   & \
+                      (lnd.cloud > 0)            & \
+                      (lnd.ScatteringAngle<170.) & \
+                      (lnd.mRef412 > 0)          & \
+                      (lnd.mRef440 > 0)          & \
+                      (lnd.mRef470 > 0)          & \
+                      (lnd.mRef550 > 0)          & \
+                      (lnd.mRef660 > 0)          & \
+                      (lnd.mRef870 > 0)          & \
+                      (lnd.mRef1200 > 0)         & \
+                      (lnd.mRef1600 > 0)         & \
+                      (lnd.mRef2100 > 0)         & \
+                      (lnd.mSre470 >  0.0)       & \
+                      (lnd.mSre660>  0.0)        &\
+                      (lnd.mSre2100 > 0.0)  
+
+        DEEPiValid =  (self.qa==3)                & \
+                      (self.aTau470 > -0.01)      & \
+                      (self.aTau550 > -0.01)      & \
+                      (self.aTau660 > -0.01)      & \
+                      (self.mTau412 > -0.01)      & \
+                      (self.mTau470 > -0.01)      & \
+                      (self.mTau550 > -0.01)      & \
+                      (self.mTau660 > -0.01)      & \
+                      (self.cloud<cloud_thresh)   & \
+                      (self.cloud > 0)           & \
+                      (self.ScatteringAngle<170.) & \
+                      (self.mRef412 > 0)          & \
+                      (self.mRef470 > 0)          & \
+                      (self.mRef660 > 0)          & \
+                      (self.mSre412 >  0.0)       & \
+                      (self.mSre470 >  0.0)       & \
+                      (self.mSre660>  0.0)       
+
+        LANDref    =  (lnd.mRef412 > 0)          & \
+                      (lnd.mRef440 > 0)          & \
+                      (lnd.mRef470 > 0)          & \
+                      (lnd.mRef550 > 0)          & \
+                      (lnd.mRef660 > 0)          & \
+                      (lnd.mRef870 > 0)          & \
+                      (lnd.mRef1200 > 0)         & \
+                      (lnd.mRef1600 > 0)         & \
+                      (lnd.mRef2100 > 0)         & \
+                      (lnd.mSre470 >  0.0)       & \
+                      (lnd.mSre660>  0.0)        &\
+                      (lnd.mSre2100 > 0.0)  
+
+        # Where DEEP retrieves, and LAND does not
+        # The DEEP Complement
+        compiValid = ~LANDiValid & DEEPiValid
+
+        if useLAND:
+          compiValid = compiValid & LANDref
+          replace = ['mRef412','mRef440','mRef470','mRef550','mRef660','mRef870',
+                     'mRef1200','mRef1600','mRef2100','mSre470','mSre660']
+          add     = ['mSre2100']
+
+          for name in add:
+            self.__dict__[name] = lnd.__dict__[name]
+            self.giantList.append(name)  
+          if not DBDT:
+            for name in replace:
+              self.__dict__[name][compiValid] = lnd.__dict__[name][compiValid]
+        elif noLANDref:
+          compiValid = compiValid & ~LANDref
+
+
+        self.iValid = compiValid
+
+        # Filter by additional variables
+        # ------------------------------
+        self.addFilter(aFilter)
+        
+        # Outlier removal based on log-transformed AOD
+        # --------------------------------------------
+        self.outlierRemoval(outliers)
+
+        # Reduce the Dataset
+        # --------------------
+        self.reduce(self.iValid)                    
+        self.iValid = ones(self.lon.shape).astype(bool)        
+
+            
+        # Angle transforms: for NN work we work with cosine of angles
+        # -----------------------------------------------------------
+        self.angleTranform()    
+#--------------------------------------------------------------------------
+
+class STATS(object):
+
+  def __init__ (self,K,comblist):
+    c = max([len(comblist),1])
+    if K is None:
+      k = 1
+    else:
+      k = K
+
+    self.slope     = np.ones([k,c])*-999.
+    self.intercept = np.ones([k,c])*-999.
+    self.R         = np.ones([k,c])*-999.
+    self.rmse      = np.ones([k,c])*-999.
+    self.mae       = np.ones([k,c])*-999.
+    self.me        = np.ones([k,c])*-999.
+
+#---------------------------------------------------------------------
+def _train(mxd,expid,c):
+
+  ident  = mxd.ident
+  outdir = mxd.outdir
+
+  nHidden  = mxd.nHidden
+  topology = mxd.topology[c]
+
+  Input    = mxd.comblist[c]
+  Target   = mxd.Target
+  
+  print "-"*80
+  print "--> nHidden = ", nHidden
+  print "-->  Inputs = ", Input
+  
+  n = cpu_count()
+  kwargs = {'nproc' : n}
+  if mxd.K is None:
+    mxd.train(Input=Input,Target=Target,nHidden=nHidden,topology=topology,**kwargs)
+    mxd.savenet(outdir+"/"+expid+'_Tau.net')    
+  else:
+    k = 1
+    for iTrain, iTest in mxd.kf:
+      I = arange(mxd.nobs)
+      iValid = I[mxd.iValid]
+      mxd.iTrain = iValid[iTrain]
+      mxd.iTest  = iValid[iTest]
+
+      mxd.train(Input=Input,Target=Target,nHidden=nHidden,topology=topology,**kwargs)
+      mxd.savenet(outdir+"/"+expid+'.k={}_Tau.net'.format(str(k)))
+      k = k + 1
 #--------------------------------------------------------------------------------------
 
-def _testOcean(filename):
+def _test(mxd,expid,c,plotting=True):
+  ident  = mxd.ident
+  outdir = mxd.outdir    
+  if mxd.K is None:
+    if mxd.combinations:
+      inputs = expid.split('.')
+      found = False
+      for invars in itertools.permutations(inputs):
+        try: 
+          netFile = outdir+"/"+".".join(invars)+'_Tau.net'
+          mxd.loadnet(netFile)
+          found = True
+          break
+        except:
+          pass
+        if found: break
 
-    Input_nnc = ['mTau550','mTau470','mTau660','mTau870',
-                 'mTAU550','mTAU470','mTAU660','mTAU870',
-                 'ScatteringAngle','GlintAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'wind' ]
+      if not found:
+        print '{} not found.  Need to train this combinatin of inputs'.format(netFile)
+        raise
+    else:
+      netFile = outdir+"/"+expid+'_Tau.net'
 
-    Input_nnr1 = ['mRef470','mRef550','mRef660', 'mRef870',
-                 'mRef1200','mRef1600','mRef2100',
-                 'ScatteringAngle', 'GlintAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'wind' ]
+    mxd.net = mxd.loadnet(netFile)
+    mxd.Input = mxd.comblist[0]
+    TestStats(mxd,mxd.K,c)
+    if plotting: make_plots(mxd,expid,ident,I=mxd.iTest)
+  else:
+    k = 1
+    for iTrain, iTest in mxd.kf:
+      I = arange(mxd.nobs)
+      iValid = I[mxd.iValid]
+      mxd.iTrain = iValid[iTrain]
+      mxd.iTest  = iValid[iTest]
 
-    Input_nnr2 = ['mRef470','mRef550','mRef660', 'mRef870',
-                 'mRef1200','mRef1600','mRef2100',
-                 'ScatteringAngle', 'GlintAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'albedo' ]
+      if mxd.combinations:
+        inputs = expid.split('.')
+        found = False
+        for invars in itertools.permutations(inputs):
+          try: 
+            netFile = outdir+"/"+".".join(invars)+'.k={}_Tau.net'.format(str(k))
+            mxd.loadnet(netFile)
+            found = True
+            print 'found file',netFile
+            break
+          except:
+            pass
 
-    Input_min = ['mTau550','mTAU550',
-                 'GlintAngle', 'cloud', 'wind' ]
+        if not found:
+          print '{} not found.  Need to train this combinatin of inputs'.format(netFile)
+          raise
+      else:
+        netFile = outdir+"/"+expid+'.k={}_Tau.net'.format(str(k))
 
-#    Target=['aTau_c',]
-    Target=['aTau550',]
-#    Target = [ 'aTau550','aTau470','aTau660', 'aTau870' ]
 
-    # Read and split dataset in training/testing subsets
-    # --------------------------------------------------
-    mxdo = ABC_Ocean(filename,Wind='merra_wind',
-                     verbose=1,csvVersion=2)
-    mxdo.split()
-    ident = mxdo.ident
-
-    expid = 'nnr_002'
-    for Input in (Input_nnr2,):
-
-        nHidden = len(Input)
-        topology = (len(Input), nHidden, len(Target))
-        
-        print "-"*80
-        print "--> nHidden = ", nHidden
-        print "-->  Inputs = ", Input
-        
-        mxdo.train(Input=Input,Target=Target,nHidden=nHidden,topology=topology)
-        out, reg = mxdo.test()
-
-        mxdo.savenet(expid+"."+ident+'_Tau.net')
-
-        # Plot KDE of corrected AOD
-        # -------------------------
-        mxdo.plotKDE(figfile=expid+"."+ident+"_kde-"+Target[0][1:]+"-corrected.png")
-
-        # Plot KDE of uncorrected AOD
-        # ---------------------------
-        targets = mxdo.getTargets(mxdo.iValid).squeeze()
-        original = log(mxdo.mTau550[mxdo.iValid]+0.01)
-        _plotKDE(targets,original,y_label='Original MODIS')
-        title("Log("+Target[0][1:]+"+0.01)- "+ident)
-        savefig(expid+"."+ident+"_kde-"+Target[0][1:]+'.png')
-
-        # Scatter diagram for testing
-        # ---------------------------
-        mxdo.plotScat(figfile=expid+"."+ident+"_scat-"+Target[0][1:]+'.png')
-
-    return mxdo
+      mxd.net = mxd.loadnet(netFile)
+      mxd.Input = mxd.comblist[c]      
+      TestStats(mxd,k-1,c)
+      if plotting: make_plots(mxd,expid,'.k={}'.format(str(k)),I=mxd.iTest)
+      k = k + 1    
 
 #---------------------------------------------------------------------
-def _testLand(filename):
+def _trainMODIS(mxdx):
 
-    Input_nnc = ['mTau550','mTau470','mTau660', 'mTau2100',
-                 'mSre470','mSre660', 'mSre2100',
-                 'ScatteringAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'albedo' ]
+  if not mxdx.combinations:
+    _train(mxdx,mxdx.expid,0)
+  else:
+    for c,Input in enumerate(mxdx.comblist):
+      _train(mxdx,'.'.join(Input),c)
 
-    Input_nnr1 = ['mRef550','mRef470','mRef660', 'mRef870',
-                 'mRef1200','mRef1600','mRef2100',
-#                 'mSre470','mSre660', 'mSre2100',
-                 'ScatteringAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'albedo' ]
+# -------------------------------------------------------------------
+def _testMODIS(mxdx):
 
-    Input_nnr2 = ['mRef550','mRef470','mRef660', 'mRef870',
-                 'mRef1200','mRef1600','mRef2100',
-                 'mSre470','mSre660', 'mSre2100',
-                 'ScatteringAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'albedo' ]
+  if not mxdx.combinations:
+    _test(mxdx,mxdx.expid,0,plotting=True)
+  else:
+    for c,Input in enumerate(mxdx.comblist):
+      _test(mxdx,'.'.join(Input),c,plotting=False)
 
-    Input_min = ['mTau550',
-                 'ScatteringAngle', 'cloud', 'albedo' ]
-
-#    Target=['aTau_c',]
-    Target=['aTau550',]
-#    Target = [ 'aTau550', 'aTau470', 'aTau660', ]
-
-
-    # Read and split dataset in training/testing subsets
-    # --------------------------------------------------
-    mxdl = ABC_Land(filename,alb_min=0.25,verbose=1,csvVersion=1)
-    mxdl.split()
-
-    ident = mxdl.ident
-    expid = 'nnr_002'
-    for Input in (Input_nnr2,):
-
-        nHidden = len(Input)
-        
-        print "-"*80
-        print "--> nHidden = ", nHidden
-        print "-->  Inputs = ", Input
-        
-        mxdl.train(Input=Input,Target=Target,nHidden=nHidden)
-        out, reg = mxdl.test()
-
-        mxdl.savenet(expid+"."+ident+'_Tau.net')
-
-        # Plot KDE of corrected AOD
-        # -------------------------
-        mxdl.plotKDE(figfile=expid+"."+ident+"_kde-"+Target[0][1:]+"-corrected.png")
-
-        # Plot KDE of uncorrected AOD
-        # ---------------------------
-        targets = mxdl.getTargets(mxdl.iValid).squeeze()
-        original = log(mxdl.mTau550[mxdl.iValid]+0.01)
-        _plotKDE(targets,original,y_label='Original MODIS')
-        title("Log("+Target[0][1:]+"+0.01)- "+ident)
-        savefig(expid+"."+ident+"_kde-"+Target[0][1:]+'.png')
-
-        # Scatter diagram for testing
-        # ---------------------------
-        mxdl.plotScat(figfile=expid+"."+ident+"_scat-"+Target[0][1:]+'.png')
-
-    return mxdl
 
 #---------------------------------------------------------------------
-def _svrLand(filename):
-    from sklearn.svm import SVR
-    
-    Input_nnc = ['mTau550','mTau470','mTau660', 'mTau2100',
-                 'mSre470','mSre660', 'mSre2100',
-                 'ScatteringAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'albedo' ]
+def get_combinations(Input_nnr,Input_const):
+  comblist   = []
+  combgroups = []
+  for n in arange(len(Input_nnr)):
+    for invars in itertools.combinations(Input_nnr,n+1):        
+      b = ()
+      for c in invars:
+        if type(c) is list:
+          b = b + tuple(c)
+        else:
+          b = b + (c,)
+      #don't do both kinds of abledo together
+      if not (('BRF' in b) and ('albedo' in b)):
+        if Input_const is not None:
+          comblist.append(tuple(Input_const)+b)
+          combgroups.append((Input_const,)+invars)
+        else:
+          comblist.append(b)
+          combgroups.append(invars)
 
-    Input_nnr1 = ['mRef550','mRef470','mRef660', 'mRef870',
-                 'mRef1200','mRef1600','mRef2100',
-#                 'mSre470','mSre660', 'mSre2100',
-                 'ScatteringAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'albedo' ]
+  if Input_const is not None:
+    comblist.insert(0,tuple(Input_const))
+    combgroups.insert(0,(Input_const,))
 
-    Input_nnr2 = ['mRef550','mRef470','mRef660', 'mRef870',
-                 'mRef1200','mRef1600','mRef2100',
-                 'mSre470','mSre660', 'mSre2100',
-                 'ScatteringAngle',
-                 'SolarAzimuth', 'SolarZenith',
-                 'SensorAzimuth','SensorZenith',
-                 'cloud', 'albedo' ]
+  return comblist,combgroups
+#---------------------------------------------------------------------
+def flatten_list(Input_nnr):
+  Input = ()
+  for i in Input_nnr:
+    if type(i) is list:
+      Input = Input + tuple(i)
+    else:
+      Input = Input + (i,)
 
-    Input_min = ['mTau550',
-                 'ScatteringAngle', 'cloud', 'albedo' ]
-
-#    Target=['aTau_c',]
-    Target=['aTau550',]
-#    Target = [ 'aTau550', 'aTau470', 'aTau660', ]
-
-
-    # Read and split dataset in training/testing subsets
-    # --------------------------------------------------
-    mxdl = ABC_Land(filename,alb_min=0.25,verbose=1,csvVersion=1)
-    mxdl.split()
-
-    ident = mxdl.ident
-    expid = 'svr_002'
-    for Input in (Input_nnr2,):
-
-        X = mxdl.getInputs(I=mxdl.iValid,Input=Input)
-        y = log(mxdl.aTau550[mxdl.iValid]+0.01)
-
-        print X.shape, y.shape
-
-        # SVR fitting
-        # -----------
-        svr = SVR(kernel='rbf', C=1e3, gamma=0.1,verbose=True)
-        svr = svr.fit(X, y)
-
-        # Plot KDE of corrected AOD
-        # -------------------------
-        targets = y
-        results = svr.predict(X)
-        _plotKDE(targets,results,y_label='SVR Fit')
-        title("SVR Log("+Target[0][1:]+"+0.01)- "+ident)
-        savefig(expid+"."+ident+"_kde-"+Target[0][1:]+'.png')
-
-        # Scatter diagram for testing
-        # ---------------------------
-        #mxdl.plotScat(figfile=expid+"."+ident+"_scat-"+Target[0][1:]+'.png')
-
-    return mxdl
-
-def doAlbedo():
-    from anet import LAND
-    from grads import GrADS
-    ga = GrADS(Echo=False,Window=False)
-    ga('open albedo_clim.ctl')
-
-    modl = LAND('SUPER_land.Terra.csv')
-    modl.addVar(ga,'modl_albedo.npz',expr='albedo',clmYear=2000)
-        
-    mydl = LAND('SUPER_land.Aqua.csv')
-    mydl.addVar(ga,'mydl_albedo.npz',expr='albedo',clmYear=2000)
-        
-def doWind():
-    from anet import OCEAN
-    from grads import GrADS
-    ga = GrADS(Echo=False,Window=False)
-
-    ga('xdfopen merra_slv-hourly.ddf')
-
-    modo = OCEAN('SUPER2_combo.Terra.csv',)
-    modo.addVar(ga,'modo2_merra_wind.npz',expr='mag(u10m,v10m)',vname='wind')
-
-#    mydo = OCEAN('SUPER2_combo.Aqua.csv')
-#    mydo.addVar(ga,'mydo2_merra_wind.npz',expr='mag(u10m,v10m)',vname='wind')
-
+  return list(Input)
         
 #------------------------------------------------------------------
   
 if __name__ == "__main__":
 
-    modl = _svrLand('SUPER_land.Terra.csv')
+  """
+    Example Training/testing
+  """
+  from   abc_c6_aux           import SummarizeCombinations, SummaryPDFs
 
-    # modo = _testOcean('SUPER2_combo.Terra.csv')
-    # mydo = _testOcean('SUPER2_combo.Aqua.csv')
-    # mydl = _testLand('SUPER_land.Aqua.csv')
-    # modl = _testLand('SUPER_land.Terra.csv')
+  sat          = 'Aqua'
+  nHidden      = None
+  nHLayers     = 1
+  combinations = True
+  Target       = ['aTau550',]
+  Albedo       = ['CoxMunkBRF']
+  K            = 2
 
-def hold():
+  if sat is 'Terra':
+    filename     = '/nobackup/6/NNR/Training/giant_C6_10km_Terra_20150921.nc'
+    retrieval    = 'MOD_OCEAN'
+  if sat is 'Aqua':
+    filename     = '/nobackup/6/NNR/Training/giant_C6_10km_Aqua_20151005.nc'
+    retrieval    = 'MYD_OCEAN'
 
-    doWind()
-    doAlbedo()
 
-    mxdx = _testOcean('SUPER2_combo.Terra.csv')
+  doTrain      = True
+  doTest       = True
+  expid        = 'CoxMunkTest_wSZA'
+  Input_const  = ['SolarZenith','ScatteringAngle', 'GlintAngle','mRef470','mRef550','mRef660', 'mRef870','mRef1200','mRef1600','mRef2100']
+  Input_nnr    = ['CoxMunkBRF',['fdu','fcc','fsu']]
+  aFilter      = ['CoxMunkBRF']
+ 
+  expid        = '{}_{}'.format(retrieval,expid)
 
-    mydo = _testOcean('SUPER2_combo.Aqua.csv')
-        
-    mxdl = _testLand('SUPER_land.Aqua.csv')
+  ocean = ABC_Ocean(filename,Albedo=Albedo,verbose=1,aFilter=aFilter)  
+  # Initialize class for training/testing
+  # ---------------------------------------------
+  ocean.setupNN(retrieval, expid,
+                      nHidden      = nHidden,
+                      nHLayers     = nHLayers,
+                      combinations = combinations,
+                      Input_const  = Input_const,
+                      Input_nnr    = Input_nnr,                                         
+                      Target       = Target,                      
+                      K            = K)
 
-#    mxdx = _testOcean('SUPER2_combo.Aqua.csv')
-    mxdx = _testOcean('SUPER2_combo.Terra.csv')
+  if Input_const is not None:
+    InputMaster = list((Input_const,) + tuple(Input_nnr))      
+  else:
+    InputMaster = Input_nnr
 
-    mxdx = _testLand('SUPER_land.Aqua.csv')
+  # Do Training and Testing
+  # ------------------------
+  if doTrain:
+    _trainMODIS(ocean)
 
-    
+  if doTest:
+    _testMODIS(ocean)
+
+    if combinations:
+      SummarizeCombinations(ocean,InputMaster,yrange=None,sortname='slope')
+      SummaryPDFs(ocean,varnames=['mRef870','mRef660'])  

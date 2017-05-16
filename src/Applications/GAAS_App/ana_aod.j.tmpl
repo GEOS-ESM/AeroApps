@@ -3,6 +3,7 @@
 #PBS -l walltime=1:00:00
 #PBS -S /bin/csh
 #PBS -j eo
+#SBATCH --constraint=hasw
 #------------------------------
 if ($#argv > 0) then
    setenv aod_parallel_flag $1
@@ -15,6 +16,12 @@ endif
 #------------------------------
 setenv FVHOME >>>FVHOME<<<
 source $FVHOME/run/FVDAS_Run_Config
+#------------------------------
+# Odd variables that offend MPT-built execs
+unsetenv PMI_RANK
+unsetenv PMI_FD
+unsetenv PMI_JOBID
+unsetenv PMI_SIZE
 #------------------------------
 setenv PATMOSX        >>>PATMOSX<<<
 setenv MODIS_L2_HDF   >>>MODIS_L2_HDF<<<
@@ -41,20 +48,25 @@ cat $AODWORK/ana.rc
 
 # external data directory
 #------------------------
-setenv EXTDATA $AODWORK/ExtData
-/bin/mkdir -p $EXTDATA
-touch $EXTDATA/.no_archiving
-/bin/rm -f $EXTDATA/g5chem
-/bin/ln -s $FVBCS/g5chem $EXTDATA/
+if ( !($?EXTDATA) ) then
+   echo "ana_aod.j: missing EXTDATA env definition, aborting ..."
+   exit (1)
+else
+  ln -s $EXTDATA .
+endif
  
 # use AOD_list nodes for parallel runs which need to share nodes
 #---------------------------------------------------------------
 if ($aod_parallel_flag) then
-   setenv AOD_NODEFILE "$AODWORK/AOD_list"
+   setenv AOD_NODEFILE "PBS_NODEFILE=$AODWORK/AOD_list;"
 else
-   setenv AOD_NODEFILE $PBS_NODEFILE
+   if ( $?PBS_NODEFILE ) then
+       setenv AOD_NODEFILE "PBS_NODEFILE=${PBS_NODEFILE};"
+   else
+       setenv AOD_NODEFILE 
+   endif
 endif
-setenv MPIRUN "PBS_NODEFILE=$AOD_NODEFILE;$MPIRUN_AOD -np $NCPUS_AOD"
+setenv MPIRUN "$AOD_NODEFILE $MPIRUN_AOD -np $NCPUS_AOD"
 
 # loop for two time steps
 #------------------------
@@ -65,6 +77,7 @@ foreach time_offset ( 000000 030000 )
    set hms  = $gaastime[2]
    set yyyy = `echo $ymd | cut -c1-4`
    set mm   = `echo $ymd | cut -c5-6`
+   set dd   = `echo $ymd | cut -c7-8`
    set hh   = `echo $hms | cut -c1-2`
 
    # check existence of aerosol bkg file
@@ -90,7 +103,8 @@ foreach time_offset ( 000000 030000 )
    #---------------
    @ errcnt = 0
    if ($MODIS_L2_HDF) then
-      modis_l2a.py $aod_modis_pcf $ymd $hms
+      set isotime = "${yyyy}-${mm}-${dd}T${hh}:00:00"
+      modis_l2a.py $aod_modis_pcf $isotime
       @ errcnt = $errcnt + $status
    endif
 
@@ -103,7 +117,9 @@ foreach time_offset ( 000000 030000 )
    #--------------
    set flags = "-a $aod_a -d $aod_d -f $aod_f -k $aod_k"
    ana_aod.x -v -x $EXPID $flags -o $ods_a $aer_f
-   @ errcnt = $errcnt + $status
+   if(! -e ANAAOD_EGRESS) then
+      @ errcnt = $errcnt + 1
+   endif
 
    # zip AOD analysis files
    #-----------------------

@@ -309,26 +309,26 @@ kx_list::
   298 Cloud Track Wind - TERRA Modis IR -NESDIS
   299 Cloud Track Wind - AQUA Modis Water Vapor-NESDIS
   300 Cloud Track Wind - AQUA Modis IR -NESDIS
-  301 TERRA MODIS Aerosol (Ocean Algorithm)
-  302 TERRA MODIS Aerosol (Land Algorithm)
+  301 TERRA MODIS Aerosol (Dark Target Ocean Algorithm)
+  302 TERRA MODIS Aerosol (Dark Target Land Algorithm)
   303 EPTOMS Aerosol (Ocean Algorithm)
   304 EPTOMS Aerosol (Land Algorithm)
   305 MSG Cloud track wind - Infrared channel
   306 MSG Cloud track wind - Water vapor channel
   307 MSG Cloud track wind - Visible channel
   308 MSG Clear sky Water Vapor channel wind
-  309 TERRA MODIS Deep Blue Aerosol (Ocean Algorithm)
-  310 TERRA MODIS Deep Blue Aerosol (Land Algorithm)
-  311 AQUA MODIS Aerosol (Ocean Algorithm)
-  312 AQUA MODIS Aerosol (Land Algorithm)
+  309 TERRA MODIS Aerosol (Deep Blue Ocean Algorithm)
+  310 TERRA MODIS Aerosol (Deep Blue Land Algorithm)
+  311 AQUA MODIS Aerosol (Dark Target Ocean Algorithm)
+  312 AQUA MODIS Aerosol (Dark Target Land Algorithm)
   313 MISR (Multi-angle Imaging SpectroRadiometer)
   314 OMI (Ozone Monitoring Instrument)
   315 Mozaic Aircraft Data
   316 Parasol  (Ocean Algorithm)
   317 Parasol  (Land Algorithm)
   318 MOPITT (Measurements Of Pollution In The Troposphere)  
-  319 AQUA MODIS Deep Blue Aerosol (Ocean Algorithm)
-  320 AQUA MODIS Deep Blue Aerosol (Land Algorithm)
+  319 AQUA MODIS Aerosol (Deep Blue Ocean Algorithm)
+  320 AQUA MODIS Aerosol (Deep Blue Land Algorithm)
   321 TERRA MODIS pixFire 
   322 AQUA MODIS Pixfire 
   323 AERONET Aerosol Retrievals

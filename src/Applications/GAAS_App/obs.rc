@@ -89,8 +89,8 @@ INSIDE    # Exclude data which are inside these boxes
 # PARASOL is passive
    1      316 317   45  45    -90 +90     -180 +180    0  2100    -180 +180
 
-# Deep-blue is passive
-   1      320 320   45  45    -90 +90     -180 +180    0  2100    -180 +180
+# Deep-blue is NOT passive
+#   1      320 320   45  45    -90 +90     -180 +180    0  2100    -180 +180
 
 # AERONET is passive
 #   1      323 323   45  45    -90 +90     -180 +180    0  2100    -180 +180

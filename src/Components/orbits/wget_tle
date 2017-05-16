@@ -1,0 +1,85 @@
+#!/bin/csh 
+#
+# Script to download latest TLE for select satellites.
+#
+#    For a new user:
+#        1) Register on https://www.space-track.org; obtain
+#            user name (idendity) and password
+#        2) Enter your identidy and password on the "Get
+#            Cookies for Login" line below
+#        3) Update dirTLE, outTLE, wget below
+#        4) Update SatIds with your satellites of choice
+#        5) Test it with "wget_tle -v"    
+#     
+# Arlindo da Silva, September 2016.
+#---------------------------------------------------------    
+    
+
+# Sat Ids to include in sat.tle: get these by searching www.space-track.org catalog
+# ---------------------------------------------------------------------------------
+  set SatIds = ( 25544 25994 27424 28376 29107 29108 37849 40059 ) 
+  set dirTLE = $HOME/workspace/TLE # Work dir, where this script resides
+  set outTLE = /Library/Webserver/Documents/TLE # final destination, say webserver
+  set wget = /opt/local/bin/wget # full path to make script cron safe
+
+# Use -v for testing, therwise it runs quiet for cron
+# ---------------------------------------------------    
+  set verb = 0
+  if ( $#argv > 0 ) then
+        if ( "$1" == "-v" ) set verb = 1
+        endif
+  endif
+    
+# TLE directory
+# -------------
+  cd $dirTLE
+
+# Get Cookies for Login
+# ---------------------
+  $wget --post-data='identity=dasilva&password=0racl3s*123456789' \
+        --cookies=on --keep-session-cookies --save-cookies=.cookies.txt \
+        'https://www.space-track.org/ajaxauth/login' -O /dev/null -o .log
+
+  if ( $status ) then
+      echo "wget_tle: cannot login"
+      exit 1
+  endif
+
+# Loop over satellites
+# --------------------
+  set today = `date -u +%C%y%j` # UTC
+  echo "# TLEs retrieved on `date -u` from www.space-track.org" > sat.tle
+  foreach satId ( $SatIds )
+
+    #  Get latest TLE for this bird
+    #  ----------------------------
+       $wget  -o .log -O this.tle --limit-rate=100K --keep-session-cookies \
+            --load-cookies=.cookies.txt \
+            https://www.space-track.org/basicspacedata/query/class/tle_latest/ORDINAL/1/NORAD_CAT_ID/$satId/orderby/TLE_LINE1%20ASC/format/3le 
+
+       if ( $status ) then
+          echo "wget_tle: cannot retrieve TLE for sat Id $satId"
+          exit 1
+       endif
+
+    if ( $verb ) cat this.tle
+       
+    # Append to master tle
+    # --------------------
+      cat this.tle >> sat.tle
+
+   end
+
+   cp sat.tle sat-$today.tle # today is in UTC
+
+   # Save to Webserver
+   # ----------------- 
+   if ( -e $outTLE ) then
+     cp sat-$today.tle $outTLE
+     cp sat.tle $outTLE/sat.tle.txt
+   endif
+
+# All done
+# --------
+  /bin/rm -r this.tle
+  

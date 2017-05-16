@@ -39,6 +39,8 @@
 ! !REVISION HISTORY: 
 !
 !  12nov1999 da Silva First crack.
+!  12sep2016 Todling  Replaced peanut extinctions with total extinction.
+!  01oct2016 Todling  Backward-compatible read for extinctions.
 !
 !EOP
 !--------------------------------------------------------------------------
@@ -102,6 +104,7 @@
 ! !REVISION HISTORY: 
 !
 !  06oct1999  da Silva  First crack based on Guo's rdPars().
+!  11mar2017  Todling   Add Nitrates check when handling extinctions.
 !
 !EOP
 !-------------------------------------------------------------------------
@@ -384,12 +387,23 @@ end subroutine i90_gtab
               end if
            end do
       end if
+      if ( w_f%reg%doing_NI ) then
+           do iq = w_f%reg%i_NI, w_f%reg%j_NI
+              if ( trim(w_f%reg%vname(iq)) .eq. 'NO3an1' .or. &
+                   trim(w_f%reg%vname(iq)) .eq. 'NO3an2' .or. &
+                   trim(w_f%reg%vname(iq)) .eq. 'NO3an3'      &
+                 ) then
+                 tau = tau + w_f%qa(iq)%data3d
+                 call vect_stat ( myname, trim(w_f%reg%vname(iq)), tau(:,:,:), n )
+              end if
+           end do
+      end if
 
 !     Deallocate all tracers but the first
 !     ------------------------------------
       do iq = 2, w_f%reg%nq
          deallocate(w_f%qa(iq)%data3d, stat=ios)
-         if ( ios .ne. 0 ) call die(myname,'cannot alocate memory for vname, etc.')
+         if ( ios .ne. 0 ) call die(myname,'cannot allocate memory for vname, etc.')
       end do
 
 !     First tracer takes the total AOD
@@ -402,7 +416,7 @@ end subroutine i90_gtab
       if ( rc .ne.0 ) call die(myname,'cannot destroy chem registry')
       allocate ( w_f%reg%vname(1), w_f%reg%vtitle(1), w_f%reg%vunits(1), &
                  w_f%reg%fscav(1), stat=ios )
-      if ( ios .ne. 0 ) call die(myname,'cannot alocate memory for vname, etc.')
+      if ( ios .ne. 0 ) call die(myname,'cannot allocate memory for vname, etc.')
       w_f%reg%nq = 1
       w_f%reg%doing_XX = .true.
       w_f%reg%n_XX = 1
@@ -529,9 +543,13 @@ subroutine AOD_GetTau1ch ( filename, im, jm, km, nymd, nhms, verbose, w_tau, rc 
   integer :: nch = 1
   real :: channels(1) = (/ 550. /) ! this is hardwired for hyperwall files
 
-  integer, parameter :: NQ = 5
-  character(len=8) :: vname(NQ) = (/ 'DUEXTTAU', 'SSEXTTAU', 'SUEXTTAU', &
-                                     'BCEXTTAU', 'OCEXTTAU' /)
+  integer, parameter :: NQ = 1
+  character(len=9) :: vname(NQ) = (/ 'TOTEXTTAU' /)
+
+  integer, parameter :: NQori = 5
+  character(len=8) :: vname_ori(NQori) = (/ 'DUEXTTAU', 'SSEXTTAU', 'SUEXTTAU', &
+                                            'BCEXTTAU', 'OCEXTTAU' /)
+
 
   integer, parameter  :: READ_ONLY=1
 
@@ -585,15 +603,32 @@ subroutine AOD_GetTau1ch ( filename, im, jm, km, nymd, nhms, verbose, w_tau, rc 
 ! read tau for individual species and sum them up
 ! -----------------------------------------------
   do n = 1, nq
-     if (verbose) &
-          print *, '[+] Adding '//trim(vname(n))//' contribution at ', nymd, nhms
      call GFIO_GetVar ( fid, vname(n), nymd, nhms, im, jm, 0, 1, tau, rc )
-     if ( rc /= 0 ) then
-        print *, 'cannot read hyperwall variable ', vname(n)
-        return
+     if ( rc == 0 ) then
+        if (verbose) &
+             print *, '[+] Adding '//trim(vname(n))//' contribution at ', nymd, nhms
+        w_tau%qa(1)%data3d(:,:,1) = w_tau%qa(1)%data3d(:,:,1) + tau
+     else
+        print *, 'warning cannot read hyperwall variable ', vname(n)
+        print *, 'will try reading old wired-in specifies ...'
      end if
-     w_tau%qa(1)%data3d(:,:,1) = w_tau%qa(1)%data3d(:,:,1) + tau
   end do
+
+! try reading originally wired-in species
+! ---------------------------------------
+  if ( rc/=0 ) then
+     rc=0 ! reset error code
+     do n = 1, nqori
+        call GFIO_GetVar ( fid, vname_ori(n), nymd, nhms, im, jm, 0, 1, tau, rc )
+        if ( rc /= 0 ) then
+           print *, 'warning cannot read hyperwall variable ', vname_ori(n)
+           return
+        end if
+        if (verbose) &
+             print *, '[+] Adding '//trim(vname(n))//' contribution at ', nymd, nhms
+        w_tau%qa(1)%data3d(:,:,1) = w_tau%qa(1)%data3d(:,:,1) + tau
+     end do
+  endif
 
 ! All done
 ! --------
@@ -1190,26 +1225,26 @@ subroutine fix_odsmeta(ods)
   ods%meta%kx_names(298) = 'Cloud Track Wind - TERRA Modis IR'
   ods%meta%kx_names(299) = 'Cloud Track Wind - AQUA Modis Water'
   ods%meta%kx_names(300) = 'Cloud Track Wind - AQUA Modis IR'
-  ods%meta%kx_names(301) = 'TERRA MODIS Aerosol (Ocean Algorithm)  '
-  ods%meta%kx_names(302) = 'TERRA MODIS Aerosol (Land Algorithm)  '
+  ods%meta%kx_names(301) = 'TERRA MODIS Aerosol (Dark Target Ocean Algorithm)  '
+  ods%meta%kx_names(302) = 'TERRA MODIS Aerosol (Dark Target Land Algorithm)  '
   ods%meta%kx_names(303) = 'EPTOMS Aerosol (Ocean Algorithm)   '
   ods%meta%kx_names(304) = 'EPTOMS Aerosol (Land Algorithm)   '
   ods%meta%kx_names(305) = 'MSG Cloud track wind - Infrared channel'
   ods%meta%kx_names(306) = 'MSG Cloud track wind - Water vapor'
   ods%meta%kx_names(307) = 'MSG Cloud track wind - Visible channel'
   ods%meta%kx_names(308) = 'MSG Clear sky Water Vapor channel wind'
-  ods%meta%kx_names(309) = 'TERRA MODIS Deep Blue Aerosol (Ocean Algorithm)'
-  ods%meta%kx_names(310) = 'TERRA MODIS Deep Blue Aerosol (Land Algorithm)'
-  ods%meta%kx_names(311) = 'AQUA MODIS Aerosol (Ocean Algorithm)  '
-  ods%meta%kx_names(312) = 'AQUA MODIS Aerosol (Land Algorithm)  '
+  ods%meta%kx_names(309) = 'TERRA MODIS Aerosol (Deep Blue Ocean Algorithm)'
+  ods%meta%kx_names(310) = 'TERRA MODIS Aerosol (Deep Blue Land Algorithm)'
+  ods%meta%kx_names(311) = 'AQUA MODIS Aerosol (Dark Target Ocean Algorithm)  '
+  ods%meta%kx_names(312) = 'AQUA MODIS Aerosol (Dark Target Land Algorithm)  '
   ods%meta%kx_names(313) = 'MISR (Multi-angle Imaging SpectroRadiometer)   '
   ods%meta%kx_names(314) = 'OMI (Ozone Monitoring Instrument)   '
   ods%meta%kx_names(315) = 'Mozaic Aircraft Data    '
   ods%meta%kx_names(316) = 'Parasol (Ocean Algorithm)    '
   ods%meta%kx_names(317) = 'Parasol (Land Algorithm)    '
   ods%meta%kx_names(318) = 'MOPITT (Measurements Of Pollution In The Troposphere)'
-  ods%meta%kx_names(319) = 'AQUA MODIS Deep Blue Aerosol (Ocean Algorithm)'
-  ods%meta%kx_names(320) = 'AQUA MODIS Deep Blue Aerosol (Land Algorithm)'
+  ods%meta%kx_names(319) = 'AQUA MODIS Aerosol (Deep Blue Ocean Algorithm)'
+  ods%meta%kx_names(320) = 'AQUA MODIS Aerosol (Deep Blue Land Algorithm)'
   ods%meta%kx_names(321) = 'TERRA MODIS pixFire    '
   ods%meta%kx_names(322) = 'AQUA MODIS Pixfire    '
   ods%meta%kx_names(323) = 'AERONET'

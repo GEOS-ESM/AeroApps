@@ -7,23 +7,24 @@ to subdirectories.
 
 This software is hereby placed in the public domain.
 Arlindo.daSilva@nasa.gov
+
+08/??/16 PMN General improvements
+09/26/16 PMN 'f' grid capability
+09/27/16 PMN Collection 6 version, also uses masked array intermediates
 """
 
 import os
 import sys
-from types     import *
-from numpy     import zeros, ones, sqrt, std, mean, unique,\
-                      concatenate, where, array, linspace,\
-                      shape, arange, interp
-from datetime  import date, datetime, timedelta
-from glob      import glob
+import numpy as np
+import numpy.ma as ma
 
-from pyobs.npz import NPZ
-from binObs_   import binobs2d, binobs3d, decimateswath
+from types     import *
+from datetime  import datetime, timedelta
+from glob      import glob
 
 from pyhdf.SD import SD, HDF4Error
 
-from bits import BITS
+#from bits import BITS
 
 #---  
 
@@ -40,20 +41,20 @@ SDS = dict (
       DATA = ( 'Cloud_Top_Pressure', 
                'Cloud_Top_Temperature',
                'Brightness_Temperature',
-#              'Cloud_Phase_Infrared',
-               'Cloud_Height_Method',
                'Cloud_Fraction',
-               'Cloud_Mask_5km',
-               'Surface_Type',
+#              'Cloud_Phase_Infrared',	# byte
+#              'Cloud_Height_Method',	# byte
+#              'Cloud_Mask_5km', 	# byte	# 3D, 3rd dimension is #bytes in mask
+#              'Surface_Type', 		# not in c006, in Cloud_Mask???
             ),
       COP = ( 'Cloud_Effective_Radius',
               'Cloud_Optical_Thickness',
               'Cloud_Water_Path',
-              'Cloud_Phase_Optical_Properties',
-              'Cloud_Multi_Layer_Flag',
-              'Cloud_Effective_Radius_Uncertainty',
- #            'Cloud_Mask_1km',
- #            'Quality_Assurance_1km',
+#             'Cloud_Phase_Optical_Properties',		# byte
+#             'Cloud_Multi_Layer_Flag',			# byte
+#             'Cloud_Effective_Radius_Uncertainty',
+#             'Cloud_Mask_1km',				# byte  # 3D, 3rd dimension is #bytes in mask
+#             'Quality_Assurance_1km',			# byte  # 3D, 3rd dimension is #bytes in flag
             ),
       )
 
@@ -129,6 +130,7 @@ class MxD06_L2(object):
        self.SDS = SDS['META'] + SDS['DATA'] + SDS['COP']
        self.decimate = decimate
        self.iFilter = None  # used to filter I/O
+       self.missing = MISSING
 
        # Resolution dependent containers
        # -------------------------------
@@ -147,6 +149,9 @@ class MxD06_L2(object):
                return
        else:
            Path = [Path, ]
+
+       # read all the granules,
+       #   (doing decimation in the process, if requested)
        self._readList(Path)
 
        # Concatenate each SDS list along swath to a single numpy array
@@ -159,9 +164,9 @@ class MxD06_L2(object):
            except:
                print "WARNING: Failed concatenating "+sds
 
-       # If decimating, keep attributes flat
-       # -----------------------------------
-       if decimate in ( 'thinning', 'binning' ):
+       # If decimating to 5km, provide access in 5km section
+       # ---------------------------------------------------
+       if decimate is not None:
              for name in SDS['COP']:
                    self.__dict__[name] = self.COP.__dict__[name] 
                    if self.verb>1:
@@ -180,7 +185,7 @@ class MxD06_L2(object):
        # --------------------------------
        im, jm = self.Scan_Start_Time.shape
        T = self.Scan_Start_Time[:,0]
-       Time = array([DATE_START+timedelta(seconds=s) for s in T])
+       Time = np.array([DATE_START+timedelta(seconds=s) for s in T])
        self.Time = Time.repeat(jm).reshape((im,jm)) # just like Scan_Start_Time
 
 #---
@@ -213,6 +218,9 @@ class MxD06_L2(object):
               b = self
         V = b.__dict__[name]
  
+# needs fixing for some multi-byte flags, where multi-byte dimension comes last
+# would be better to detect along swath dimension from dimension attributes
+
         # find the *along* swath axis of the SDS
         rank = V[0].ndim
         if rank==2:
@@ -224,8 +232,8 @@ class MxD06_L2(object):
         else:
               raise MxD06Error, 'Invalid SDS rank=%d for <%s> '%(rank,name)
 
-        # concatenate along swath to a single numpy array
-        b.__dict__[name] = concatenate(V,axis=along)
+        # concatenate along swath to a single numpy.ma array
+        b.__dict__[name] = ma.concatenate(V,axis=along)
 
 #---
     def _aliasName(self,name):
@@ -271,23 +279,62 @@ class MxD06_L2(object):
                 print "- %s: not recognized as an HDF file" % filename
             return 
 
+        # default 5km sampling if require decimation
+        # ------------------------------------------
+        if self.decimate is not None:
+          sampFound = False
+          lSamp = [3, 2028, 5]
+          xSamp = [3, 1348, 5]
+
         # Read selected variables
         # -----------------------
         for sds in self.SDS:
-            if self.verb > 1:
-                print ' <> Doing %s' % sds
+            if self.verb > 1: print ' <> Doing %s' % sds
+
+            # read and scale the current SDS
+            # (uses masked array as best way to preserve data type)
             v = hfile.select(sds).get()
             a = hfile.select(sds).attributes()
-            iOK = (v != a['_FillValue'])
+            v = ma.masked_equal(v,a['_FillValue'])
             if a['scale_factor'] != 1 or a['add_offset'] != 0:
-                if self.verb > 1:
-                    print ' <> Scaling %s' % sds
-                v[iOK] = a['scale_factor'] * (v[iOK] - a['add_offset'])
+                if self.verb > 1: print ' <> Scaling %s' % sds
+                v = a['scale_factor'] * (v - a['add_offset'])
                 # PS: I know that looks strange.
-                #     The add_offset is what was used to get the HDF stored values within range.
-                #     So in backing out the physical value, it must actually be subtracted!
-            v[iOK==False] = MISSING
+                #   The add_offset is what was used to get the HDF stored values within range.
+                #   So in backing out the physical value, it must actually be subtracted!
+
+            # append the current SDS to its list of granules
             self._appendName(sds,v) 
+
+            # preparation for decimation
+            if self.decimate is not None:
+
+              # recorded SDS sampling
+              lSamp_ = a['Cell_Along_Swath_Sampling']
+              xSamp_ = a['Cell_Across_Swath_Sampling']
+
+              # try to detect a common 5-km sampling
+              if sds in SDS['META'] or sds in SDS['DATA']:
+                if lSamp_[2] == 5 and xSamp_[2] == 5:
+                  if not sampFound:
+                    # overwrite default
+                    lSamp = lSamp_
+                    xSamp = xSamp_
+                    sampFound = True
+                  else:
+                    if lSamp_ != lSamp or xSamp_ != xSamp:
+                      print '  WARNING: mixed 5-km Sampling found'
+                      print '     along:', lSamp, lSamp_
+                      print '    across:', xSamp, xSamp_
+                      print '    Will use first'
+
+              # also verify that COP 1-km sampling starts from 1
+              #   otherwise it will mess up decimation assumptions
+              if sds in SDS['COP']:
+                if lSamp_[0] != 1 or lSamp_[2] != 1:
+                  raise MxD06Error, 'Bad 1-km  along sampling for ' + sds + lSamp_
+                if xSamp_[0] != 1 or xSamp_[2] != 1:
+                  raise MxD06Error, 'Bad 1-km across sampling for ' + sds + xSamp_
 
         # Decimate 1km data to lower 5km resolution (Needs better Q/C)
         # ------------------------------------------------------------
@@ -295,33 +342,47 @@ class MxD06_L2(object):
         # TODO: Only 2D SDSs are currently implemented for decimation. This should
         #   be all we need, but otherwise add a 3D case with a "channel" loop.
 
-        if self.decimate == 'binning':
-            # average 5x5 1km pixel blocks ...
+        if self.decimate is not None:
 
-            im, jm = self.Longitude[-1].shape  # lower 5km resoln
+          # report 5km sampling
+          if self.verb > 1:
+            print ' 5km sampling:',
+            if sampFound: print 'detected:',
+            else:         print 'default:',
+            print 'along', lSamp, 'across', xSamp
+
+          # verify assumed 5-km sampling, since binning
+          #   currently hardwired for -2:+2 for simplicity
+          if lSamp[2] != 5 or xSamp[2] != 5:
+            raise MxD06Error, 'Not 5-km sampling as assumed!'
+
+          # adjust to python zero-based indexing
+          lSamp[0] -= 1; lSamp[1] -= 1
+          xSamp[0] -= 1; xSamp[1] -= 1
+
+          if self.decimate == 'thinning':
+            # thin 1-km data to 5-km
             for name in SDS['COP']:
-                  v = self.COP.__dict__[name][-1]
-                  if v.ndim != 2:
-                    raise MxD06Error, 'Only 2D SDSs implemented for decimation'
-                  a, rc = decimateswath(im,jm,v,5,MISSING)
-                  if rc: raise MxD06Error, 'ERROR: cannot decimate %s' % name
-                  self.COP.__dict__[name][-1] = a
+              v = self.COP.__dict__[name][-1]
+              if v.ndim != 2:
+                raise MxD06Error, 'Only 2D SDSs implemented for decimation'
+              self.COP.__dict__[name][-1] = v[lSamp[0]:lSamp[1]+1:5,
+                                              xSamp[0]:xSamp[1]+1:5]
 
-        elif self.decimate == 'thinning':
-            # thin 5x5 1km pixel blocks to central pixel ...
-
-            im, jm = self.Longitude[-1].shape
-            im1 = None
+          elif self.decimate == 'binning':
+            # average 5x5 1-km pixel blocks
             for name in SDS['COP']:
-                  v = self.COP.__dict__[name][-1]
-                  if v.ndim != 2:
-                    raise MxD06Error, 'Only 2D SDSs implemented for decimation'
-                  if im1 is None:
-                        im1, jm1 = v.shape
-                        I, J = (range(2,im1,5),range(2,jm1,5))
-                        I, J = I[:im], J[:jm] # trim rough edges
-                  a = v[I]
-                  self.COP.__dict__[name][-1] = a[:,J]
+              v = self.COP.__dict__[name][-1]
+              if v.ndim != 2:
+                raise MxD06Error, 'Only 2D SDSs implemented for decimation'
+              # calculate number of 5x5 boxes
+              nl = (lSamp[1]-lSamp[0])//5+1
+              nx = (xSamp[1]-xSamp[0])//5+1
+              # assume all 5x5 boxes are complete
+              v = v[lSamp[0]-2:lSamp[1]+3,xSamp[0]-2:xSamp[1]+3]
+              # mean over 5x5 boxes
+              self.COP.__dict__[name][-1] = \
+                v.reshape(nl,5,nx,5).swapaxes(1,2).reshape(nl,nx,-1).mean(axis=-1)
 
         # Core Metadata
         # -------------
@@ -335,17 +396,17 @@ class MxD06_L2(object):
           self.sat = sat
         else:
           if sat != self.sat:
-            raise MxD06Error, 'ERROR: Mixed satellites encountered'
+            raise MxD06Error, 'Mixed satellites encountered'
  
         # Collection
         # ----------
         coll = int(cm.split('COLLECTION')[1].split('VERSIONID')[1].split('\n')[2].split('=')[1])
         coll = "%03d"%coll
         if self.coll is None:
-            self.coll = coll
+          self.coll = coll
         else:
           if coll != self.coll:
-            raise MxD06Error, 'ERROR: Mixed collections encountered'
+            raise MxD06Error, 'Mixed collections encountered'
         
 #---
     def write(self, filename, syn_time,
@@ -363,27 +424,30 @@ class MxD06_L2(object):
          syn_time -- python datetime appropriate for the MXD06_L2 object
 
          refine  -- refinement level for a base 4x5 GEOS-5 grid
-                       refine=1  produces a   4  x  5    grid
-                       refine=2  produces a   2  x2.50   grid
-                       refine=4  produces a   1  x1,25   grid
-                       refine=8  produces a  0.50x0.625  grid
-                       refine=16 produces a  0.25x0.3125 grid
+                       refine=1  produces a  4     x 5      grid
+                       refine=2  produces a  2     x 2.5    grid
+                       refine=4  produces a  1     x 1.25   grid
+                       refine=8  produces a  0.5   x 0.625  grid
+                       refine=16 produces a  0.25  x 0.3125 grid
+                       refine=32 produces a  0.125 x 0.125  grid <- NB!
+                   NOTE: starting refine=32 the base grid is a 4x4.
+
         Alternatively, one can specify the grid resolution with a
         single letter:
 
          res     -- single letter denoting GEOS-5 resolution,
-                       res='a'  produces a   4  x  5    grid
-                       res='b'  produces a   2  x2.50   grid
-                       res='c'  produces a   1  x1,25   grid
-                       res='d'  produces a  0.50x0.625  grid
-                       res='e'  produces a  0.25x0.3125 grid
+                       res='a'  produces a  4     x 5      grid
+                       res='b'  produces a  2     x 2.5    grid
+                       res='c'  produces a  1     x 1.25   grid
+                       res='d'  produces a  0.5   x 0.625  grid
+                       res='e'  produces a  0.25  x 0.3125 grid
+                       res='f'  produces a  0.125 x 0.125  grid <- NB!
 
                    NOTE: *res*, if specified, supersedes *refine*.
 
          Verb -- Verbose level:
                  0 - really quiet
                  1 - basic commentary (default)
-
 
        """
        from gfio import GFIO
@@ -392,27 +456,34 @@ class MxD06_L2(object):
        # ---------------
        self.iFilter = iFilter
        
-#      Output grid resolution
-#      ----------------------
+       # Output grid resolution
+       # ----------------------
        if res is not None:
            if res=='a': refine = 1 
            if res=='b': refine = 2
            if res=='c': refine = 4
            if res=='d': refine = 8
            if res=='e': refine = 16
+           if res=='f': refine = 32
 
-#      Lat lon grid
-#      ------------
-       dx = 5. / refine
-       dy = 4. / refine
+       # Lat lon grid
+       # ------------
+       if refine >= 32:
+         dx = 4. / refine
+         dy = 4. / refine
+       else:
+         dx = 5. / refine
+         dy = 4. / refine
        im = int(360. / dx)
        jm = int(180. / dy + 1)
 
-       glon = linspace(-180.,180.,im,endpoint=False)
-       glat = linspace(-90.,90.,jm)
+       glon = np.linspace(-180.,180.,im,endpoint=False)
+       glat = np.linspace(-90.,90.,jm)
 
+       # file details
+       # ------------
        nch = 7
-       levs = linspace(1,7,7) # for now   ## <<<< needs fixing and levunits below
+       levs = np.linspace(1,7,7) # for now   ## <<<< needs fixing and levunits below
 
        t = syn_time
        Y, M, D, h, m, s = (t.year,t.month,t.day,t.hour,t.minute,t.second)
@@ -444,11 +515,16 @@ class MxD06_L2(object):
 
        title = 'Gridded MODIS Cloud Retrievals'
        source = '%s_L2 collection %s gridded at NASA/GSFC/GMAO' % (prod, self.coll)
-       contact = 'arlindo.dasilva@nasa.gov'
+       contact = 'peter.norris@nasa.gov'
 
+       # filename
+       # --------
        if filename is None:
            filename = os.sep.join((dir,
              '%s_c%s.cld_Nx.%08d_%04dz.nc4' % (prod,self.coll,nymd,nhms/100)))
+
+       if Verb > 0:
+           print "[w] Writing", filename
 
        # Create the file
        # ---------------
@@ -460,13 +536,9 @@ class MxD06_L2(object):
 
        # Grid variables and write to file
        # -------------------------------
-       f.write ('CTP', nymd, nhms, self._binobs2d(self.CTP,im,jm) )
-       f.write ('CTT', nymd, nhms, self._binobs2d(self.CTT,im,jm) )
-       f.write ('BT',  nymd, nhms, self._binobs3d(self.BT, im,jm) )
-       f.write ('F',   nymd, nhms, self._binobs2d(self.F,  im,jm) )
-       f.write ('RE',  nymd, nhms, self._binobs2d(self.RE, im,jm) )
-       f.write ('TAU', nymd, nhms, self._binobs2d(self.TAU,im,jm) )
-       f.write ('CWP', nymd, nhms, self._binobs2d(self.CWP,im,jm) )
+       for oVar in ('CTP','CTT','BT','F','RE','TAU','CWP'):
+         if Verb > 1: print ' [] writing variable', oVar
+         f.write (oVar, nymd, nhms, self._binObs(self.__dict__[oVar],im,jm))
 
        f.close()
 
@@ -474,33 +546,80 @@ class MxD06_L2(object):
        # ------------
        self.iFilter = None
 
-       if Verb > 0:
-           print "[w] Wrote file "+filename
+    def _binObs(self,q,im,jm):
+      """
+      Bins observations. Assumes a global GEOS-5 A-Grid: Lons in [-180,10) Lats in [-90,90].
+      q can be 2D or 3D. If 3D, channel is first dimension and each channel must be valid to include in binning.
+      """
 
-    def _binobs2d(self,q,im,jm):
-        """Remove UNDEFs and bin it. Inout array is 2D."""
-        iOK = (q!=MISSING)
-        if self.iFilter is not None:
-            iOK = iOK & self.iFilter 
-        return binobs2d(self.lon[iOK],self.lat[iOK],q[iOK],im,jm,MISSING) 
-
-    def _binobs3d(self,q,im,jm):
-        """
-        Remove UNDEFs and bin it. Inout array is 3D.
-        Every channel must be defined for the the pixel to be gridded.
-        """
+      # detect 3D channel variable
+      if q.ndim == 3:
         nc = q.shape[0]
-        iBAD = (q[0]==MISSING)
-        for n in range(1,nc):
-            iBAD = iBAD | (q[n]==MISSING)
-        iOK = (iBAD==False) # indices of good obs
-        if self.iFilter is not None:
-            iOK = iOK & self.iFilter 
-        numOK = len(q[0][iOK])
-        u = zeros((nc,numOK))
+      else:
+        nc = None
+
+      # remove any masked values or out-of-range values
+      # a. acceptable lat, lon
+      mask = self.lon.mask | self.lat.mask
+      mask |= np.abs(self.lon)>180.
+      mask |= np.abs(self.lat)> 90.
+      # b. apply optional pass filter
+      if self.iFilter is not None:
+        mask |= np.logical_not(self.iFilter)
+      # c. mask out missing obs
+      if nc is None:
+        mask |= q.mask
+      else:
+        # all chamnels must be valid to pass
         for n in range(nc):
-            u[n,:] = q[n][iOK]
-        return binobs3d(self.lon[iOK],self.lat[iOK],u.T,im,jm,MISSING) 
+          mask |= q[n].mask
+      # d. mask out and make 1D
+      lon = ma.array(self.lon, mask=mask, keep_mask=False).compressed()
+      lat = ma.array(self.lat, mask=mask, keep_mask=False).compressed()
+      if nc is None:
+        obs = ma.array(q, mask=mask, keep_mask=False).compressed()
+      else:
+        # form a list of the masked channels, each 1D
+        obs = []
+        for n in range(nc):
+          obs.append(ma.array(q[n], mask=mask, keep_mask=False).compressed())
+        # put 1D index first, channels second
+        obs = np.array(obs).T
+
+      # bins
+      lon[lon>=180.] -= 360.
+      dLon = 360. / im
+      dLat = 180. / (jm - 1)
+      ivals = np.rint((lon + 180.) / dLon)
+      jvals = np.rint((lat +  90.) / dLat)
+      ivals[ivals>=im] -= im
+      ivals[ivals< 0 ] += im
+
+      # do the binnning
+      cnts = np.zeros((im,jm),dtype=int)
+      if nc is None:
+        gObs = np.zeros((im,jm))
+        for i,j,v in zip(ivals,jvals,obs):
+          gObs[i,j] += v
+          cnts[i,j] += 1
+      else:
+        gObs = np.zeros((im,jm,nc))
+        for i,j,channels in zip(ivals,jvals,obs):
+          gObs[i,j] += channels
+          cnts[i,j] += 1
+
+      # normalize & return
+      hasData = (cnts > 0)
+      if nc is None:
+        gObs[hasData] /= cnts[hasData]
+        gObs[~hasData] = self.missing
+      else:
+        gObs = np.transpose(gObs,(2,0,1)) # now (nc,im,jm)
+        for n in range(nc):
+          gObs[n][hasData] /= cnts[hasData]
+          gObs[n][~hasData] = self.missing
+        gObs = np.transpose(gObs,(1,2,0)) # now (im,jm,nc)
+      return gObs
 
 #---
     def addVar(self,ctlfile,vname,**kwds):
@@ -515,7 +634,7 @@ class MxD06_L2(object):
         
 #............................................................................
 
-def granules ( path, prod, syn_time, coll='051', nsyn=8 ):
+def granules ( path, prod, syn_time, coll='006', nsyn=8 ):
     """
     Returns a list of MxD06 granules for a given product at given synoptic time.
     On input,
@@ -524,7 +643,7 @@ def granules ( path, prod, syn_time, coll='051', nsyn=8 ):
     prod      ---  either MOD06 or MYD06
     syn_time  ---  synoptic time (timedate format)
 
-    coll      ---  collection: 005, 051 (optional)
+    coll      ---  collection: 005, 051, 006 (optional)
     nsyn      ---  number of synoptic times per day (optional)
 
     """
@@ -547,7 +666,6 @@ def granules ( path, prod, syn_time, coll='051', nsyn=8 ):
             try:
                 filen = glob(basen)[0]
                 Granules += [filen,]
-#               print " [x] Found "+filen
             except:
                 pass
         t += dtGranule
@@ -561,13 +679,12 @@ def granules ( path, prod, syn_time, coll='051', nsyn=8 ):
 
 if __name__ == "__main__":
 
-      Collection = '051'
+      Collection = '006'
       syn_time = datetime(2011,7,1,12,0,0)
       L2mount = os.sep.join((os.environ['NOBACKUP'],'MODIS',Collection,'Level2'))
       Files = granules(L2mount,'MOD06',syn_time,nsyn=24,coll=Collection)
-#     m = MxD06_L2(Files,Verb=1)
-      m = MxD06_L2(Files,Verb=1,decimate='binning')
-      m.write(None, syn_time)
+      m = MxD06_L2(Files,Verb=2,decimate='binning')
+      m.write(None,syn_time,res='f',Verb=2)
 
 def hold():
 
@@ -580,5 +697,7 @@ def hold():
 
       aer_Nv = '/nobackup/fp/opendap/aer_Nv.ddf'
       m.addVar(aer_Nv,'DU001',kbeg=36,kount=36)
+#     m = MxD06_L2(Files,Verb=1,decimate='binning')
+#     m.write(None, syn_time)
 
     
