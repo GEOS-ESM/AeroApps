@@ -57,7 +57,6 @@ if __name__ == "__main__":
         hour = str(date.hour).zfill(2)
         outpath = '{}/Y{}/M{}'.format(outdir,date.year,str(date.month).zfill(2))
         inpath  = '{}/Y{}/M{}'.format(indir,date.year,str(date.month).zfill(2))
-        datapath  = '{}/Y{}/M{}'.format(datadir,date.year,str(date.month).zfill(2))
         if not os.path.exists(outpath):
             os.makedirs(outpath)
 
@@ -68,8 +67,8 @@ if __name__ == "__main__":
         # Read in trajectory lat/lon
         # Interpolate BRDF 
 
-        brdf = MCD43C(datapath)
-        brdf.sample(inFile,outFile)
+        brdf = MCD43C(datadir)
+        brdf.sample(inFile,outFile,Verbose=args.verbose)
 
         date += timedelta(hours=args.DT_hours)
 
