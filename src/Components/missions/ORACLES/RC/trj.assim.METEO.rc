@@ -2,9 +2,14 @@
 # Resource file for Trajectory Sampler. Meteorological parameters.
 #
 
-1) * : /home/adasilva/opendap/kaq/assim/tavg1_2d_slv_Nx
-2) * : /home/adasilva/opendap/kaq/assim/tavg1_2d_flx_Nx
-3) * : /home/adasilva/opendap/kaq/assim/tavg1_2d_rad_Nx
-4) * : /home/adasilva/opendap/kaq/assim/inst3_3d_asm_Nv
+1) * : /home/adasilva/opendap/fp/opendap/assim/tavg1_2d_slv_Nx
+2) * : /home/adasilva/opendap/fp/opendap/assim/tavg1_2d_flx_Nx
+3) * : /home/adasilva/opendap/fp/opendap/assim/tavg1_2d_rad_Nx
+4) * : /home/adasilva/opendap/fp/opendap/assim/inst3_3d_asm_Nv
+
+#1) * : /home/adasilva/opendap/kaq/assim/tavg1_2d_slv_Nx
+#2) * : /home/adasilva/opendap/kaq/assim/tavg1_2d_flx_Nx
+#3) * : /home/adasilva/opendap/kaq/assim/tavg1_2d_rad_Nx
+#4) * : /home/adasilva/opendap/kaq/assim/inst3_3d_asm_Nv
 
 
