@@ -2,6 +2,7 @@
 # Resource file for GEO sampler
 #
 
+PS: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_2d_met1_Nx
 AIRDENS: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_AIRDENS_Nv
 DELP: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_DELP_Nv
 RH:     /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_RH_Nv
