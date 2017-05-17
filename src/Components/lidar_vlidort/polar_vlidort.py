@@ -93,6 +93,11 @@ class POLAR_VLIDORT(object):
 
         self.tyme = np.array(self.tyme)
 
+        # Start out with all good obs
+        self.nobs  = len(self.tyme)
+        self.iGood = np.ones([self.nobs]).astype(bool)
+
+
         # Read in surface data
         albedoReader = getattr(self,SurfaceFuncs[albedoType])
         albedoReader()
@@ -130,6 +135,10 @@ class POLAR_VLIDORT(object):
                 sds_ = ncALIAS[sds]
             var = nc.variables[sds_][:]
             self.__dict__[sds].append(var)   
+
+        # Make lists into arrays
+        for sds in self.SDS_INV:
+            self.__dict__[sds] = np.concatenate(self.__dict__[sds])            
 
         if self.albedoType in LandAlbedos:
             iGood = self.FRLAND >= 0.99
@@ -285,6 +294,30 @@ class POLAR_VLIDORT(object):
         self.ssa = ssa  #(km,nch,nobs)
         self.g   = g    #(km,nch,nobs)
         self.pmom = pmom  #(km,nch,nobs,nMom,nPol)
+
+    # --
+    def runExt(self):
+        """
+        run ext_sampler.py 
+        """
+        col = 'aer_Nv'
+        if self.verbose: 
+            print 'running ext_sampler on file',self.inFile.replace('%col',col)
+
+        outDir = os.path.dirname(self.outFile)
+        instname = os.path.basename(self.inFile).split('.')[0]
+        date_ch   = os.path.basename(self.inFile).split('.')[-2]
+        outFile = '{}/{}.lc2.ext.{}.nc'.format(outDir,instname,date_ch)
+        Options =     " --input=" + self.inFile.replace('%col',col)      + \
+                      " --output=" + outFile       + \
+                      " --rc=" + self.rcFile      + \
+                      " --format=NETCDF4_CLASSIC"      + \
+                      " --channel=%d" %self.channel     
+                      
+
+        cmd = 'ext_sampler.py {} '.format(Options)  
+
+        self.cmd = cmd      
 
 
     def runVLIDORT(self):
@@ -468,6 +501,10 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
     if options.verbose:
         print " <> wrote %s file %s"%(options.format,options.outFile)
     
+
+def get_chd(channel):
+    chd = '%.2f'%channel
+    chd = chd.replace('.','d')
     
 #------------------------------------ M A I N ------------------------------------
 
@@ -482,8 +519,12 @@ if __name__ == "__main__":
     albedoDir = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BRDF/MCD43C1/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     albedoFile   = '{}/calipso-g5nr.lb2.brdf.{}_{}z.nc4'.format(albedoDir,nymd,hour)
     albedoType = 'MODIS_BRDF'
-    outFile  = 'polar_vlidort.nc'
+
     channel  = 470
+    chd      = get_chd(channel)
+    outDir    = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelC2/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    outFile   = '{}/calipso-g5nr.vlidort.vector.MCD43C.{}_{}z_{}nm.nc4'.format(outDir,nymd,hour,chd)
+    
     rcFile   = 'Aod_EOS.rc'
     polarname = 'POLDER'
     orbit     = 'LEO'
@@ -499,6 +540,8 @@ if __name__ == "__main__":
                             verbose=verbose)
 
    
+    # Run ext_sampler
+    vlidort.runExt()
 
     # Run VLIDORT
     # if vlidort.nobs > 0:
