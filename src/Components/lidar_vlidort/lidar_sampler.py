@@ -87,8 +87,8 @@ if __name__ == "__main__":
             if args.verbose:
                 Options += " --verbose" 
 
-
-            cmd = 'trj_sampler.py {} {} {} {}'.format(Options,tleFile,date.isoformat(),(date+timedelta(hours=args.DT_hours)).isoformat())
+            edate = date + timedelta(hours=args.DT_hours) - timedelta(seconds=args.dt_secs)
+            cmd = 'trj_sampler.py {} {} {} {}'.format(Options,tleFile,date.isoformat(),edate.isoformat())
             print cmd
             if not args.dryrun:
                 if os.system(cmd):
