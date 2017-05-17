@@ -234,7 +234,7 @@ class MCD43C(object):
                     inFile = self.downloadFile(ut)
                     self.readFile(inFile)
 
-                    Ityme = tyme == ut
+                    Ityme = dtyme == ut
 
                     lat = trjLat[Ityme]
                     lon = trjLon[Ityme]
@@ -251,7 +251,7 @@ class MCD43C(object):
                 inFile = self.downloadFile(ut)
                 self.readFile(inFile)
 
-                Ityme = tyme == ut
+                Ityme = dtyme == ut
 
                 lat = trjLat[Ityme]
                 lon = trjLon[Ityme]
