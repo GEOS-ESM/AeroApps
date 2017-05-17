@@ -35,6 +35,7 @@ META    = ['DELP','RH','AIRDENS','LONGITUDE','LATITUDE','isotime']
 AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
 SDS_AER = META + AERNAMES
 SDS_MET = ['CLDTOT','PS']
+SDS_INV = ['FRLAND']
 
 ncALIAS = {'LONGITUDE': 'trjLon',
            'LATITUDE': 'trjLat'}
@@ -48,17 +49,26 @@ HGTdic = {'LEO': 705,
           'ISS': 400}
 
 
+SurfaceFuncs = {'MODIS_BRDF': 'readSampledMODISBRDF'}
+LandAlbedos  = 'MODIS_BRDF',
+
+
+MISSING = -1.e+20
+
 class POLAR_VLIDORT(object):
     """
     Everything needed for calling VLIDORT
     GEOS-5 has already been sampled on lidar track
     """
-    def __init__(self,inFile,outFile,rcFile,channel,VZA,hgtss,verbose=False):
+    def __init__(self,inFile,outFile,rcFile,albedoFile,albedoType,channel,VZA,hgtss,verbose=False):
         self.SDS_AER = SDS_AER
         self.SDS_MET = SDS_MET
+        self.SDS_INV = SDS_INV
         self.AERNAMES = AERNAMES
         self.inFile  = inFile
         self.outFile = outFile
+        self.albedoFile = albedoFile
+        self.albedoType = albedoType
         self.rcFile  = rcFile
         self.channel = channel
         self.verbose = verbose
@@ -66,12 +76,11 @@ class POLAR_VLIDORT(object):
 
 
         # initialize empty lists
-        for sds in self.SDS_AER+self.SDS_MET:
+        for sds in self.SDS_AER+self.SDS_MET+self.SDS_INV:
             self.__dict__[sds] = []
 
-        # Read in data from path
+        # Read in data model data
         self.readSampledGEOS()
-
 
         # Make lists into arrays
         for sds in self.SDS_AER+self.SDS_MET:
@@ -84,6 +93,10 @@ class POLAR_VLIDORT(object):
 
         self.tyme = np.array(self.tyme)
 
+        # Read in surface data
+        albedoReader = getattr(self,SurfaceFuncs[albedoType])
+        albedoReader()
+
 
         # Calculate aerosol optical properties
         self.computeMie()
@@ -95,6 +108,36 @@ class POLAR_VLIDORT(object):
         self.VZA = VZA
         self.hgtss = hgtss
         self.calcAngles()
+
+        if self.nobs > 0:
+            # Land-Sea Mask
+            self.LandSeaMask()
+
+
+    # ---
+    def LandSeaMask(self):
+        """
+        Read in invariant dataset
+        """
+        col = 'asm_Nx'
+        if self.verbose: 
+            print 'opening file',self.inFile.replace('%col',col)
+        nc       = Dataset(self.inFile.replace('%col',col))
+
+        for sds in self.SDS_INV:
+            sds_ = sds
+            if sds in ncALIAS:
+                sds_ = ncALIAS[sds]
+            var = nc.variables[sds_][:]
+            self.__dict__[sds].append(var)   
+
+        if self.albedoType in LandAlbedos:
+            iGood = self.FRLAND >= 0.99
+        else:
+            iGood = self.FRLAND < 0.99
+
+        self.iGood = self.iGood & iGood
+        self.nobs  = np.sum(self.iGood)
 
     # --
     def computeAtmos(self):
@@ -159,6 +202,10 @@ class POLAR_VLIDORT(object):
         self.RAAb = self.VAAb - saa
         self.RAAf = self.VAAf - saa
 
+        # Limit SZAs
+        self.iGood = self.SZA < 80
+        self.nobs = np.sum(self.iGood)     
+
     #---
     def readSampledGEOS(self):
         """
@@ -189,7 +236,40 @@ class POLAR_VLIDORT(object):
             self.__dict__[sds].append(var)
 
     # --- 
-    def readSampledBRDF            
+    def readSampledMODISBRDF(self):
+        """
+        Read in MODIS BRDF kernel weights
+        that have already been sampled on lidar track
+        """
+        chs = str(int(self.channel))
+        SDS = 'Riso'+chs,'Rgeo'+chs,'Rvol'+chs
+
+        if self.verbose:
+            print 'opening abledo file ',self.albedoFile
+        nc = Dataset(self.albedoFile)
+
+        for sds in SDS:
+            self.__dict__[sds] = nc.variables[sds][:]
+
+        nc.close()
+
+        
+        nobs = len(self.__dict__[sds])
+        for sds in SDS:
+            self.__dict__[sds].shape = (1,1,nobs)
+
+        # [nkernel,nch,nobs]
+        self.kernel_wt = np.append(self.__dict__['Riso'+chs],self.__dict__['Rgeo'+chs],axis=0)
+        self.kernel_wt = np.append(self.kernel_wt,self.__dict__['Rvol'+chs],axis=0)
+
+        param1 = np.array([2]*nobs)
+        param2 = np.array([1]*nobs)
+
+        param1.shape = (1,1,nobs)
+        param2.shape = (1,1,nobs)
+
+        # [nparam,nch,nobs]
+        self.param = np.append(param1,param2,axis=0)
 
     #---
     def computeMie(self):
@@ -207,17 +287,46 @@ class POLAR_VLIDORT(object):
         self.pmom = pmom  #(km,nch,nobs,nMom,nPol)
 
 
-    def brdfVLIDORT(self):
+    def runVLIDORT(self):
         """
-        Calls VLIDORT with BRDF surface
+        Calls VLIDORT 
         """
-        radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc = VLIDORT_LIDAR_.vector_brdf_modis(self.tau, self.ssa, self.pmom, 
-                                                                                                    self.pe, self.ze, self.te, 
-                                                                                                    self.kernel_wt, self.param, 
-                                                                                                    self.SZA, self.RAAf, self.VZA, 
-                                                                                                    MISSING,
-                                                                                                    self.verbose)        
+        sza  = self.SZA[self.iGood]
+        raaf = self.RAAf[self.iGood]
+        raab = self.RAAb[self.iGood]
 
+        tau = self.tau[:,:,self.iGood]
+        ssa = self.ssa[:,:,self.iGood]
+        pmom = self.pmom[:,:,self.iGood,:,:]
+        pe   = self.pe[:,self.iGood]
+        ze   = self.ze[:,self.iGood]
+        te   = self.te[:,self.iGood]
+
+        kernel_wt = self.kernel_wt[:,:,self.iGood]
+        param     = self.param[:,:,self.iGood]
+
+        nangles = len(self.VZA)
+        #for i in range(nangles):
+        i = 0
+
+        vza  = [self.VZA[i]]*self.nobs
+
+
+        # with BRDF surface
+        if self.albedoType == 'MODIS_BRDF':
+            
+            result = VLIDORT_LIDAR_.vector_brdf_modis(self.channel,tau, ssa, pmom, 
+                                                      pe, ze, te, 
+                                                      kernel_wt, param, 
+                                                      SZA, RAAf, vza, 
+                                                      MISSING,
+                                                      self.verbose)        
+
+            #radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc = result
+        
+
+
+        return result
 
 
 
@@ -367,7 +476,12 @@ if __name__ == "__main__":
     nymd     = str(date.date()).replace('-','')
     hour     = str(date.hour).zfill(2)
     format   = 'NETCDF4_CLASSIC'
-    inFile   = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelB/Y2006/M01/calipso-g5nr.lb2.%col.rc.{}_{}z.nc4'.format(nymd,hour)
+
+    inDir    = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelB/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    inFile   = '{}/calipso-g5nr.lb2.%col.{}_{}z.nc4'.format(inDir,nymd,hour)
+    albedoDir = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BRDF/MCD43C1/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    albedoFile   = '{}/calipso-g5nr.lb2.brdf.{}_{}z.nc4'.format(albedoDir,nymd,hour)
+    albedoType = 'MODIS_BRDF'
     outFile  = 'polar_vlidort.nc'
     channel  = 470
     rcFile   = 'Aod_EOS.rc'
@@ -377,11 +491,15 @@ if __name__ == "__main__":
 
     # Initialize VLIDORT class getting aerosol optical properties
     # -----------------------------------------------------------
-    vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,channel,VZAdic[polarname],HGTdic[orbit],verbose=verbose)
+    vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,
+                            albedoFile,albedoType,
+                            channel,
+                            VZAdic[polarname],
+                            HGTdic[orbit],
+                            verbose=verbose)
 
    
-    # Read in Surface Dataset
-    vlidort.readSampledBRDF()
 
     # Run VLIDORT
-    vlidort.brdfVLIDORT()
+    # if vlidort.nobs > 0:
+    #     radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc = vlidort.runVLIDORT()
