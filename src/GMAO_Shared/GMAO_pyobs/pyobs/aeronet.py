@@ -17,7 +17,7 @@ MISSING = -999.
 
 BAD, MARGINAL, GOOD, BEST = range(4)
 
-VARS = ( 'AERONET_Site_Name',
+VARS = ( 'AERONET_Site',
          'Longitude',
          'Latitude',
          'Elevation',
@@ -39,15 +39,15 @@ VARS = ( 'AERONET_Site_Name',
          'AOT_412', 
          'AOT_380', 
          'AOT_340',
-         'Water',
+         'Precipitable_Water',
          'Solar_Zenith_Angle',
          )
 
  
-ALIAS = dict (         Longitude = 'lon',
+ALIAS = dict (          Longitude = 'lon',
                         Latitude = 'lat',
                       Julian_Day = 'doy',
-               AERONET_Site_Name = 'Location', 
+                    AERONET_Site = 'Location', 
               )
 
 KX = 323 
@@ -126,7 +126,7 @@ class AERONET_L2(object):
         
         # Create timedate
         # ---------------
-        self.tyme = array([ isoparse(d+'T'+t) for d,t in zip(self.Date,self.Time) ])
+        self.tyme = array([ isoparse('-'.join(d.split(':')[-1::-1])+'T'+t) for d,t in zip(self.Date,self.Time) ])
 
         # Unique list of locations
         # ------------------------
@@ -173,13 +173,16 @@ class AERONET_L2(object):
         # -------------
         if self.columns == None: # once per file
             i = 0
-            for line in open(filename).readlines(): 
-                if 'AERONET_Site_Name' in line:
+            for line in open(filename).readlines():
+                if 'AERONET_Site' in line:
                     self.skip = i + 1 # number of rows to skip for data
                     columns = line[0:-1].split(',') # remove \n at end of line
                     self.columns = [] # sanitize variable names
                     for c in columns:                    
-                        self.columns += [c.replace('%','').replace('-','_').replace(' ','').split('(')[0],]
+                        self.columns += [c.replace('%','').replace('-','_').replace(' ','')\
+                                          .replace('AOD','AOT').replace('nm','')\
+                                          .replace('Site_','')\
+                                          .split('(')[0],]
                     break
                 i += 1
 
@@ -201,7 +204,7 @@ class AERONET_L2(object):
                     self.formats += ('S10',)
                 elif name=='Time':
                     self.formats += ('S8',)
-                elif name=='AERONET_Site_Name':
+                elif name=='AERONET_Site':
                     self.formats += ('S20',)
                 else:
                     self.converters[i] = _convert2Float
@@ -456,6 +459,25 @@ def aodInterpAngs(lambda_,tau1,tau2,lambda1,lambda2):
     return tau
 
 
+#.......................................................................................
+def retrieve( filename='aeronet.csv',
+              request='year=2016&month=9&day=1&year2=2016&month2=9&day2=30&AOD15=1&AVG=10',
+              verbose=True):
+    """
+    Use wget to retrieve aeronet data using the Version 3 webservice.'
+    """
+
+    cmd = 'wget --no-check-certificate -q -O %s' \
+        + ' "https://aeronet.gsfc.nasa.gov/cgi-bin/print_web_data_v3?%s&if_no_html=1"' \
+        %(filename,request)
+
+    if verbose:
+        print cmd
+        
+    if os.system(cmd):
+        raise ValueError, "Cannot retrieve request <%cmd>"
+
+        
 #.......................................................................................
 def granules( tyme,
               bracket=None,

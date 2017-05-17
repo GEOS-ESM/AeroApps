@@ -37,8 +37,8 @@ SDS_HSRL2 = {'header': ('date',),
                         ('gps_alt','gps_lat','gps_lon','gps_time'),
              'DataProducts':
                          (
-                          'Altitude',
-                          '1064_bsc_cloud_screened',
+                         'Altitude',
+                         '1064_bsc_cloud_screened',
                          '1064_ext',
                          '1064_aer_dep',
                          '532_bsc_cloud_screened',
@@ -92,7 +92,7 @@ class HSRL(object):
 
 
       def __init__ (self,hsrl_filename,Nav_only=False,verbose=True,freq=3.0,
-                    SDS=SDS_HSRL2):
+                    zmax=10,SDS=SDS_HSRL2):
         """
         Creates an HSRL object defining the following attributes:
 
@@ -102,13 +102,17 @@ class HSRL(object):
         """
 
         self.verb = verbose
-                           
+
+        
         # Open the HSRL file and loop over the datasets,
         # extracting navigation and data
         # ----------------------------------------------
         f = h5py.File(hsrl_filename,mode='r+')
         if self.verb:
            print "[] Opening HSRL file <%s>"%hsrl_filename
+
+        # Read the variables proper
+        # -------------------------
         for sds in SDS.keys():
           g = f.get(sds)
           for v in SDS[sds]:
@@ -123,16 +127,21 @@ class HSRL(object):
               name = v
             self.__dict__[name] = data
 
-        # Read data and make these numpy arrays
-        # -------------------------------------
-        self.lon  = self.lon[:]
-        self.lat  = self.lat[:]
-        self.z    = self.z[:]
-        self.time = self.time[:]
+        # Read coords and make these numpy arrays
+        # ---------------------------------------
+        self.lon  = self.lon[:].flatten()
+        self.lat  = self.lat[:].flatten()
+        self.z = self.z[:].flatten()
+        self.time = self.time[:].flatten()
 
         self.nt = self.lat.shape[0]
         self.nz = self.z.shape[0]
 
+        # Reduce vertical levels
+        # ----------------------
+        self.K = self.z/1000 <= zmax
+        self.z = self.z[self.K]
+        
         # Handle incosistency of date across SRL datasets
         # -----------------------------------------------
         if self.nt != self.date.shape[0]:
@@ -272,18 +281,25 @@ class HSRL(object):
             self.h5.close()
 
 #--
-      def curtain(self,v, tit=None, vmin=None, vmax=None,
-                  mask=None, mask_as=None, Log=False,
-                  ticks=None, format=None):
+      def curtain(self,v, tit=None, vmin=None, vmax=None,figFile=None,
+                  mask=None, mask_as=None, Log=False,xlab='Time (Hours UTC)',
+
+                  ticks=None, format=None, aspect=0.205):
             """Plots a 2D curtain plot."""
 
-            from pylab import imshow, xlabel, ylabel, title, colorbar, gca
+            from matplotlib.pyplot import imshow, xlabel, ylabel, title, gca, savefig
             from matplotlib.colors import LogNorm
 
             z = self.z / 1000.
             t = self.time
             ext = ( t[0], t[-1], z[0], z[-1] )
-            v_ = v[:,:]
+
+            nt, nz = v.shape
+            if nz==len(self.K):
+                  v_ = v[:,self.K]
+            else:
+                  v_ = v[:,:]
+
             if mask_as != None:
                   mask = isnan(mask_as[:,:])
             if mask != None:
@@ -297,19 +313,24 @@ class HSRL(object):
             gca().set_axis_bgcolor('black')
 
             if Log:
-                  imshow(v_.T,origin='lower',extent=ext,aspect=0.3,
+                  imshow(v_.T,origin='lower',extent=ext,aspect=aspect,
                          norm=LogNorm(vmin=vmin,vmax=vmax))
             else:
-                  imshow(v_.T,origin='lower',extent=ext,aspect=0.3,vmin=vmin,vmax=vmax)
+                  imshow(v_.T,origin='lower',extent=ext,aspect=aspect,vmin=vmin,vmax=vmax)
 
             # Labels
             # ------
-            xlabel('Time (Hours UTC)')
+            xlabel(xlab)
             ylabel('Height (km)')
             if tit != None: 
                   title(tit)
-            colorbar(shrink=0.78,ticks=ticks,format=format)
 
+            _colorbar()
+            # colorbar(shrink=0.78,ticks=ticks,format=format)
+
+            if figFile is not None:
+                  savefig(figFile,dpi=180)
+            
 #--
       def coords(self,text_filename):
           """Prints lat/lon to a text file."""
@@ -399,14 +420,48 @@ class HSRL(object):
 
            self.__dict__[var] = v
                
-#....................................................................
+#---------------------------------------------------------------------------------
+def _colorbar():                                                                
+    """ Draw a colorbar """                                                     
+                                                                                
+    from matplotlib.pyplot import gca, colorbar, axes
+    import unicodedata
+    
+    ax = gca()                                                                  
+    bbox = ax.get_position()                                                    
+    l,b,w,h = bbox.bounds # mpl >= 0.98                                         
+    cax = axes([l+w, b, 0.04, h]) # setup colorbar axes.
+    cbar = colorbar(cax=cax)
+    labels = [unicodedata.normalize('NFKD', item.get_text()).encode('ascii','ignore') for item in cbar.ax.get_yticklabels()]
+    #labels = ['%3.3f' % float(item) for item in labels]
+    labels = ['%g' % float(item) for item in labels]
+    
+    cbar.ax.set_yticklabels(labels)        
+    cbar.ax.set_axis_bgcolor('white') 
+    axes(ax)  # make the original axes current again
+
+    #....................................................................
 
 if __name__ == "__main__":
 
-    h = HSRL('/Users/adasilva/iesa/oracles/hsrl/HSRL2_ER2_20160916_R0.h5',
-             Nav_only=True)
-    
+    from matplotlib.pyplot import clf, subplot, figure, show
+
+    h = HSRL('/Users/adasilva/iesa/oracles/hsrl/HSRL2_ER2_20160916_R1.h5',
+             zmax=8,
+             Nav_only=False)
+
 def Hold():
+
+    figure(figsize=(11,5.5))
+    subplot(211)
+    h.curtain(h.ext_532,Log=False,vmin=0.05,tit='Aerosol Extinction at 532nm',
+              figFile='test.png',xlab=' ' )
+    subplot(212)
+    h.curtain(h.ext_532,Log=False,vmin=0.05,tit='Aerosol Extinction at 532nm',
+              figFile='test.png' )
+    show()
+    
+def Hold2():
 
 #    print "Loading HSRL:"
 #    h = HSRL('discoveraq-HSRL_UC12_20110705_RA_L2_sub.h5')
