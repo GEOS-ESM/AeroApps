@@ -72,6 +72,9 @@ if __name__ == "__main__":
         outpath = '{}/Y{}/M{}'.format(outdir,date.year,str(date.month).zfill(2))
         if not os.path.exists(outpath):
             os.makedirs(outpath)
+
+        edate = date + timedelta(hours=args.DT_hours) - timedelta(seconds=int(args.dt_secs))
+        # run trajectory sampler on model fields
         for rc in rcFiles:
             colname = '_'.join(rc[:-3].split('_')[0:2])
 
@@ -87,12 +90,13 @@ if __name__ == "__main__":
             if args.verbose:
                 Options += " --verbose" 
 
-            edate = date + timedelta(hours=args.DT_hours) - timedelta(seconds=int(args.dt_secs))
             cmd = 'trj_sampler.py {} {} {} {}'.format(Options,tleFile,date.isoformat(),edate.isoformat())
             print cmd
             if not args.dryrun:
                 if os.system(cmd):
-                    raise ValueError, "trj_sampler.py failed for %s on %s"%(rc, date)            
+                    raise ValueError, "trj_sampler.py failed for %s on %s"%(rc, date)       
+
+
 
 
         date += timedelta(hours=args.DT_hours)
