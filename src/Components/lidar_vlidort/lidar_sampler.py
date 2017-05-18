@@ -54,9 +54,9 @@ if __name__ == "__main__":
 
     rcFiles = cf('RCFILES')
     if ',' in rcFiles:
-        rcFiles = rcFiles.split(',')
+        rcFiles = rcFiles.replace(' ','').split(',')
     else:
-        rcFiles = (rcFiles,)
+        rcFiles = (rcFiles.replace(' ',''),)
 
 
     outdir = cf('OUTDIR')
