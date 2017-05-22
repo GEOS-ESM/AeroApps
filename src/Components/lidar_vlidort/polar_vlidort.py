@@ -32,10 +32,10 @@ VNAMES_SU = ['SO4']
 MieVarsNames = ['ext','scatext','backscat','aback_sfc','aback_toa','depol','ext2back','tau','ssa','g']
 MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitless','unitless','unitless']
 
-META    = ['DELP','RH','AIRDENS','LONGITUDE','LATITUDE','isotime']
+META    = ['DELP','PS','RH','AIRDENS','LONGITUDE','LATITUDE','isotime']
 AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
 SDS_AER = META + AERNAMES
-SDS_MET = ['CLDTOT','PS']
+SDS_MET = ['CLDTOT']
 SDS_INV = ['FRLAND']
 
 ncALIAS = {'LONGITUDE': 'trjLon',
@@ -316,9 +316,13 @@ class POLAR_VLIDORT(object):
                       " --channel=%d" %self.channel     
                       
 
+        if not os.path.exists(os.path.dirname(outFile)):
+            os.makedirs(os.path.dirname(outFile))
+
         cmd = 'ext_sampler.py {} '.format(Options)  
 
-        self.cmd = cmd      
+        if os.system(cmd):
+            raise ValueError, "ext_sampler.py failed for %s "%(self.inFile.replace('%col',col))       
 
 
     def runVLIDORT(self):
@@ -340,31 +344,77 @@ class POLAR_VLIDORT(object):
         param     = self.param[:,:,self.iGood]
 
         nangles = len(self.VZA)
-        #for i in range(nangles):
-        i = 0
+        ntime   = len(self.tyme)
+        nlev    = tau.shape[0]
+        I = np.ones([ntime,2*nangles])*MISSING
+        Q = np.ones([ntime,2*nangles])*MISSING
+        U = np.ones([ntime,2*nangles])*MISSING
+        reflectance = np.ones([ntime,2*nangles])*MISSING
+        surf_reflectance = np.ones([ntime,2*nangles])*MISSING
+        ROT = np.ones([ntime,nlev])*MISSING
+        for i in range(nangles):
+            ## Forward directions
+            vza  = [self.VZA[i]]*self.nobs
+            # with BRDF surface
+            if self.albedoType == 'MODIS_BRDF':
+                
+                result = VLIDORT_LIDAR_.vector_brdf_modis(self.channel,tau, ssa, pmom, 
+                                                          pe, ze, te, 
+                                                          kernel_wt, param, 
+                                                          sza, raaf, vza, 
+                                                          MISSING,
+                                                          self.verbose)        
 
-        vza  = [self.VZA[i]]*self.nobs
-
-
-        # with BRDF surface
-        if self.albedoType == 'MODIS_BRDF':
-            
-            result = VLIDORT_LIDAR_.vector_brdf_modis(self.channel,tau, ssa, pmom, 
-                                                      pe, ze, te, 
-                                                      kernel_wt, param, 
-                                                      SZA, RAAf, vza, 
-                                                      MISSING,
-                                                      self.verbose)        
+                # radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc = result
 
         
-        self.writenc(result)
+            ii = i + nangles
+            I[self.iGood,ii] = np.squeeze(result[0])
+            reflectance[self.iGood,ii] = np.squeeze(result[1])
+            if i == 0:
+                ROT[self.iGood,:] = np.squeeze(result[2]).T
+            surf_reflectance[self.iGood,ii] = np.squeeze(result[3])
+            Q[self.iGood,ii] = np.squeeze(result[4])
+            U[self.iGood,ii] = np.squeeze(result[5])
+
+            ## Backward direction
+            vza  = [self.VZA[::-1][i]]*self.nobs
+
+            # with BRDF surface
+            if self.albedoType == 'MODIS_BRDF':
+                
+                result = VLIDORT_LIDAR_.vector_brdf_modis(self.channel,tau, ssa, pmom, 
+                                                          pe, ze, te, 
+                                                          kernel_wt, param, 
+                                                          sza, raab, vza, 
+                                                          MISSING,
+                                                          self.verbose)        
+
+                # radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc = result
+
+       
+            I[self.iGood,i] = np.squeeze(result[0])
+            reflectance[self.iGood,i] = np.squeeze(result[1])
+            surf_reflectance[self.iGood,i] = np.squeeze(result[3])
+            Q[self.iGood,i] = np.squeeze(result[4])
+            U[self.iGood,i] = np.squeeze(result[5])  
+
+
+            self.I = I
+            self.reflectance = reflectance
+            self.surf_reflectance = surf_reflectance
+            self.Q = Q
+            self.U = U
+            self.ROT = ROT          
+
+
+        self.writeNC()
         
     #---
-    def writeNC (self,result,zlib=True):
+    def writeNC (self,zlib=True):
         """
         Write a NetCDF file vlidort output
         """
-        radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc = result
         km = 72
 
         # Open NC file
@@ -377,6 +427,7 @@ class POLAR_VLIDORT(object):
         nc.institution = 'NASA/Goddard Space Flight Center'
         nc.source = 'Global Model and Assimilation Office'
         nc.history = 'VLIDORT simulation run on sampled GEOS-5'
+        nc.satangles  = self.VZA
         nc.references = 'n/a'
         nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
         nc.Conventions = 'CF'
@@ -406,80 +457,82 @@ class POLAR_VLIDORT(object):
         nctrj.close()
 
 
-        vza = nc.createVariable('seonsor_zenith','f4',('time','view_angles',),zlib=zlib)
-        vza.long_name = "sensor viewing zenith angle (VZA)"
+        vza = nc.createVariable('seonsor_zenith','f4',('view_angles',),zlib=zlib)
+        vza.long_name     = "sensor viewing zenith angle (VZA)"
         vza.missing_value = MISSING
-        vza.units = "degrees (positive forward view)"
+        vza.units         = "degrees (positive forward view)"
+        vza[:]            = np.append(-1.*self.VZA[::-1],self.VZA)
 
         vaa = nc.createVariable('sensor_azimuth','f4',('time','view_angles',),zlib=zlib)
-        vaa.long_name = "sensor viewing azimuth angle (VAA)"
+        vaa.long_name     = "sensor viewing azimuth angle (VAA)"
         vaa.missing_value = MISSING
-        vaa.units = "degrees clockwise from North"
+        vaa.units         = "degrees clockwise from North"
+        
+        vaaf = self.VAAf
+        vaaf.shape = vaaf.shape + (1,)
+        vaaf = np.repeat(vaaf,len(self.VZA),axis=1)
+        
+        
+        vaab = self.VAAb
+        vaab.shape = vaab.shape + (1,)        
+        vaab = np.repeat(vaab,len(self.VZA),axis=1)
 
-        sza = nc.createVariable('seonsor_zenith','f4',('time',),zlib=zlib)
-        sza.long_name = "solar zenith angle (SZA)"
+        vaa[:]            = np.append(vaab,vaaf,axis=1)
+
+        sza = nc.createVariable('solar_zenith','f4',('time',),zlib=zlib)
+        sza.long_name     = "solar zenith angle (SZA)"
         sza.missing_value = MISSING
-        sza.units = "degrees"
+        sza.units         = "degrees"
+        sza[:]            = self.SZA  
 
         saa = nc.createVariable('solar_azimuth','f4',('time',),zlib=zlib)
-        saa.long_name = "solar azimuth angle (SAA)"
+        saa.long_name     = "solar azimuth angle (SAA)"
         saa.missing_value = MISSING
-        saa.units = "degrees clockwise from North"
+        saa.units         = "degrees clockwise from North"
+        saa[:]            = self.SAA
 
 
         # Write VLIDORT Outputs
         # ---------------------
-        ref = nc.createVariable('I','f4',('time','view_angles',),zlib=zlib)
+        ref = nc.createVariable('toa_reflectance','f4',('time','view_angles',),zlib=zlib)
         ref.standard_name = '%.2f nm TOA Reflectance' %self.channel
-        ref.long_name     = '%.2f nm Top of the Atmosphere Reflectance' %self.channel
+        ref.long_name     = '%.2f nm reflectance at the top of the atmosphere' %self.channel
         ref.missing_value = MISSING
         ref.units         = "None"
         ref._FillValue    = MISSING
+        ref[:]            = self.reflectance
 
-        q = nc.createVariable('I','f4',('time','view_angles',),zlib=zlib)
-        q.standard_name = '%.2f nm TOA Reflectance' %self.channel
-        q.long_name     = '%.2f nm Top of the Atmosphere Reflectance' %self.channel
+        i = nc.createVariable('I','f4',('time','view_angles',),zlib=zlib,fill_value=MISSING)
+        i.standard_name = '%.2f nm TOA I' %self.channel
+        i.long_name     = '%.2f nm intensity at the top of the atmosphere' %self.channel
+        i.missing_value = MISSING
+        i.units         = "W m-2 sr-1 nm-1"
+        i[:]            = self.I
+
+        q = nc.createVariable('Q','f4',('time','view_angles',),zlib=zlib,fill_value=MISSING)
+        q.standard_name = '%.2f nm TOA Q' %self.channel
+        q.long_name     = '%.2f nm Q-component of the stokes vector at the top of the atmopshere' %self.channel
         q.missing_value = MISSING
-        q.units         = "None"
-        q._FillValue    = MISSING        
+        q.units         = "W m-2 sr-1 nm-1"
+        q[:]            = self.Q    
 
-        sref = nc.createVariable('surf_reaf','f4',('time','view_angles',),zlib=zlib)
-        ref.standard_name = '%.2f nm Surface Reflectance' %self.channel
-        ref.long_name     = '%.2f nm Bi-Directional Surface Reflectance' %self.channel
-        ref.missing_value = MISSING
-        ref.units         = "None"
-        ref._FillValue    = MISSING
+        u = nc.createVariable('U','f4',('time','view_angles',),zlib=zlib,fill_value=MISSING)
+        u.standard_name = '%.2f nm TOA U' %self.channel
+        u.long_name     = '%.2f nm U-component of the stokes vector at the top of the atmopshere' %self.channel
+        u.missing_value = MISSING
+        u.units         = "W m-2 sr-1 nm-1"
+        u[:]            = self.U
 
-        rot = nc.createVariable('ROT','f4',('time',),zlib=zlib)
+        sref = nc.createVariable('surf_reflectance','f4',('time','view_angles',),zlib=zlib,fill_value=MISSING)
+        sref.standard_name = '%.2f nm Surface Reflectance' %self.channel
+        sref.long_name     = '%.2f nm Bi-Directional Surface Reflectance' %self.channel
+        sref.missing_value = MISSING
+        sref.units         = "None"
+
+        rot = nc.createVariable('ROT','f4',('time','lev',),zlib=zlib,fill_value=MISSING)
         rot.long_name = '%.2f nm Rayleigh Optical Thickness' %self.channel
         rot.missing_value = MISSING
         rot.units         = "None"
-        rot._FillValue    = MISSING
-
-
-
-        for n, name in enumerate(MieVarsNames):
-
-            var = squeeze(MieVars[name])
-            size = len(var.shape)
-            if options.station:
-                if size == 2:
-                    var = asarray([var])
-                    size = len(var.shape)
-            if size == 3:
-                dim = ('station','time','lev')
-            if size == 2:
-                dim = ('time','lev')
-            if size == 1:
-                dim = ('time')
-            this = nc.createVariable(name,'f4',dim,zlib=zlib)
-            this.standard_name = name
-            this.units = MieVarsUnits[n]
-            this.missing_value = MAPL_UNDEF
-            if options.station:
-                this[:] = transpose(var,(0,2,1))
-            else:
-                this[:] = transpose(var)
 
         # Close the file
         # --------------
@@ -528,8 +581,8 @@ if __name__ == "__main__":
 
    
     # Run ext_sampler
-    #vlidort.runExt()
+    # vlidort.runExt()
 
     # Run VLIDORT
-    # if vlidort.nobs > 0:
-    #     radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc = vlidort.runVLIDORT()
+    if vlidort.nobs > 0:
+        vlidort.runVLIDORT()
