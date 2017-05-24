@@ -50,8 +50,13 @@ HGTdic = {'LEO': 705,
           'ISS': 400}
 
 
-SurfaceFuncs = {'MODIS_BRDF': 'readSampledMODISBRDF'}
-LandAlbedos  = 'MODIS_BRDF',
+SurfaceFuncs = {'MODIS_BRDF'     : 'readSampledMODISBRDF',
+                'MODIS_BRDF_BPDF': 'readSampledMODISBRDF'}
+
+WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_LIDAR_.vector_brdf_modis,
+                'MODIS_BRDF_BPDF': VLIDORT_LIDAR_.vector_brdf_modis_bpdf}   
+
+LandAlbedos  = 'MODIS_BRDF','MODIS_BRDF_BPDF'
 
 
 MISSING = -1.e+20
@@ -100,8 +105,13 @@ class POLAR_VLIDORT(object):
 
 
         # Read in surface data
+        # Intensity
         albedoReader = getattr(self,SurfaceFuncs[albedoType])
         albedoReader()
+
+        # Polarization
+        if 'BPDF' in albedoType:
+            self.BPDFinputs()
 
 
         # Calculate aerosol optical properties
@@ -119,6 +129,14 @@ class POLAR_VLIDORT(object):
             # Land-Sea Mask
             self.LandSeaMask()
 
+    # --
+    def BPDFinputs(self):
+        """
+        Read in NDVI and Landuse - should have been sampled already
+        Determine correct coefficient value
+        """
+
+        pass
 
     # ---
     def LandSeaMask(self):
@@ -279,7 +297,7 @@ class POLAR_VLIDORT(object):
         param2.shape = (1,1,nobs)
 
         # [nparam,nch,nobs]
-        self.param = np.append(param1,param2,axis=0)
+        self.RTLSparam = np.append(param1,param2,axis=0)
 
     #---
     def computeMie(self):
@@ -329,6 +347,10 @@ class POLAR_VLIDORT(object):
         """
         Calls VLIDORT 
         """
+
+        # Only do good obs
+        self.iGood = np.arange(len(self.iGood))[self.iGood][0:1]
+        self.nobs  = 1
         sza  = self.SZA[self.iGood]
         raaf = self.RAAf[self.iGood]
         raab = self.RAAb[self.iGood]
@@ -340,9 +362,7 @@ class POLAR_VLIDORT(object):
         ze   = self.ze[:,self.iGood]
         te   = self.te[:,self.iGood]
 
-        kernel_wt = self.kernel_wt[:,:,self.iGood]
-        param     = self.param[:,:,self.iGood]
-
+        # Initiate output arrays
         nangles = len(self.VZA)
         ntime   = len(self.tyme)
         nlev    = tau.shape[0]
@@ -352,60 +372,81 @@ class POLAR_VLIDORT(object):
         reflectance = np.ones([ntime,2*nangles])*MISSING
         surf_reflectance = np.ones([ntime,2*nangles])*MISSING
         ROT = np.ones([ntime,nlev])*MISSING
-        for i in range(nangles):
-            ## Forward directions
-            vza  = [self.VZA[i]]*self.nobs
-            # with BRDF surface
-            if self.albedoType == 'MODIS_BRDF':
-                
-                result = VLIDORT_LIDAR_.vector_brdf_modis(self.channel,tau, ssa, pmom, 
-                                                          pe, ze, te, 
-                                                          kernel_wt, param, 
-                                                          sza, raaf, vza, 
-                                                          MISSING,
-                                                          self.verbose)        
 
-                # radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc = result
+        #backward directions, forward directions
+        VZA = np.append(self.VZA[::-1],self.VZA)
 
+        raaf.shape = raaf.shape + (1,)
+        raaf = np.repeat(raaf,len(self.VZA),axis=1)
         
-            ii = i + nangles
-            I[self.iGood,ii] = np.squeeze(result[0])
-            reflectance[self.iGood,ii] = np.squeeze(result[1])
+        raab.shape = raab.shape + (1,)        
+        raab = np.repeat(raab,len(self.VZA),axis=1)
+
+        RAA = np.append(raab,raaf,axis=1)
+        
+        # Get VLIDORT wrapper name from dictionary
+        vlidortWrapper = WrapperFuncs[self.albedoType]
+
+        # loop through viewing angles and run VLIDORT
+        for i in range(2*nangles):
+            vza  = VZA[i]*self.nobs
+            raa  = RAA[:,i]
+            
+            # get args list for each surface model
+            if self.albedoType == 'MODIS_BRDF':
+                kernel_wt = self.kernel_wt[:,:,self.iGood]
+                param     = self.RTLSparam[:,:,self.iGood]                
+                
+
+                args = [self.channel,tau, ssa, pmom, 
+                        pe, ze, te, 
+                        kernel_wt, param, 
+                        sza, raa, vza, 
+                        MISSING,
+                        self.verbose]
+                
+            elif self.albedoType == 'MODIS_BRDF_BPDF':
+                kernel_wt = self.kernel_wt[:,:,self.iGood]
+                param     = self.RTLSparam[:,:,self.iGood]  
+
+                # For BPDF
+                #BPDFparam(nparam,nch,nobs)
+                BPDFparam = np.zeros([3,1,1])
+                BPDFparam[0,0,0] = 1.5
+                BPDFparam[1,0,0] = 0.2
+                BPDFparam[2,0,0] = 4.71
+
+                RTLSparam = np.zeros([3,1,1])
+                RTLSparam[0:2,0,0] = param[:,0,0]                
+
+                args = [self.channel,tau, ssa, pmom, 
+                        pe, ze, te, 
+                        kernel_wt, RTLSparam, BPDFparam, 
+                        sza, raa, vza, 
+                        MISSING,
+                        self.verbose]
+
+
+            # Call VLIDORT wrapper function
+            # radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc = result
+            result = vlidortWrapper(*args)
+        
             if i == 0:
                 ROT[self.iGood,:] = np.squeeze(result[2]).T
-            surf_reflectance[self.iGood,ii] = np.squeeze(result[3])
-            Q[self.iGood,ii] = np.squeeze(result[4])
-            U[self.iGood,ii] = np.squeeze(result[5])
-
-            ## Backward direction
-            vza  = [self.VZA[::-1][i]]*self.nobs
-
-            # with BRDF surface
-            if self.albedoType == 'MODIS_BRDF':
-                
-                result = VLIDORT_LIDAR_.vector_brdf_modis(self.channel,tau, ssa, pmom, 
-                                                          pe, ze, te, 
-                                                          kernel_wt, param, 
-                                                          sza, raab, vza, 
-                                                          MISSING,
-                                                          self.verbose)        
-
-                # radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc = result
-
-       
             I[self.iGood,i] = np.squeeze(result[0])
             reflectance[self.iGood,i] = np.squeeze(result[1])
             surf_reflectance[self.iGood,i] = np.squeeze(result[3])
             Q[self.iGood,i] = np.squeeze(result[4])
-            U[self.iGood,i] = np.squeeze(result[5])  
+            U[self.iGood,i] = np.squeeze(result[5]) 
 
 
-            self.I = I
-            self.reflectance = reflectance
-            self.surf_reflectance = surf_reflectance
-            self.Q = Q
-            self.U = U
-            self.ROT = ROT          
+
+        self.I = I
+        self.reflectance = reflectance
+        self.surf_reflectance = surf_reflectance
+        self.Q = Q
+        self.U = U
+        self.ROT = ROT          
 
 
         self.writeNC()
@@ -559,7 +600,7 @@ if __name__ == "__main__":
     inFile   = '{}/calipso-g5nr.lb2.%col.{}_{}z.nc4'.format(inDir,nymd,hour)
     albedoDir = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BRDF/MCD43C1/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     albedoFile   = '{}/calipso-g5nr.lb2.brdf.{}_{}z.nc4'.format(albedoDir,nymd,hour)
-    albedoType = 'MODIS_BRDF'
+    albedoType = 'MODIS_BRDF_BPDF'
 
     channel  = 470
     chd      = get_chd(channel)
