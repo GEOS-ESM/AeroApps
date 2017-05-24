@@ -457,7 +457,7 @@ class POLAR_VLIDORT(object):
         nctrj.close()
 
 
-        vza = nc.createVariable('seonsor_zenith','f4',('view_angles',),zlib=zlib)
+        vza = nc.createVariable('sensor_zenith','f4',('view_angles',),zlib=zlib)
         vza.long_name     = "sensor viewing zenith angle (VZA)"
         vza.missing_value = MISSING
         vza.units         = "degrees (positive forward view)"
@@ -494,12 +494,11 @@ class POLAR_VLIDORT(object):
 
         # Write VLIDORT Outputs
         # ---------------------
-        ref = nc.createVariable('toa_reflectance','f4',('time','view_angles',),zlib=zlib)
+        ref = nc.createVariable('toa_reflectance','f4',('time','view_angles',),zlib=zlib,fill_value=MISSING)
         ref.standard_name = '%.2f nm TOA Reflectance' %self.channel
         ref.long_name     = '%.2f nm reflectance at the top of the atmosphere' %self.channel
         ref.missing_value = MISSING
         ref.units         = "None"
-        ref._FillValue    = MISSING
         ref[:]            = self.reflectance
 
         i = nc.createVariable('I','f4',('time','view_angles',),zlib=zlib,fill_value=MISSING)
@@ -538,13 +537,15 @@ class POLAR_VLIDORT(object):
         # --------------
         nc.close()
 
-        if options.verbose:
-            print " <> wrote %s file %s"%(options.format,options.outFile)
+        if self.verbose:
+            print " <> wrote %s"%(self.outFile)
     
 
 def get_chd(channel):
     chd = '%.2f'%channel
     chd = chd.replace('.','d')
+
+    return chd
     
 #------------------------------------ M A I N ------------------------------------
 
