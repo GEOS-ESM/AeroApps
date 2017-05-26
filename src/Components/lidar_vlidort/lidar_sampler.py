@@ -21,6 +21,7 @@ if __name__ == "__main__":
     # Defaults
     DT_hours = 24
     dt_secs = "60"
+    algo    = "linear"
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",
@@ -31,7 +32,9 @@ if __name__ == "__main__":
     parser.add_argument("prep_config",
                         help="prep config filename")
 
-
+    parser.add_argument("-a", "--algo", default=algo,
+              help="Interpolation algorithm, one of linear, nearest (default=%s)"\
+                          %algo)
     parser.add_argument("-D","--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
 
@@ -58,6 +61,11 @@ if __name__ == "__main__":
     else:
         rcFiles = (rcFiles.replace(' ',''),)
 
+    colNames = cf('COLNAMES')
+    if ',' in colNames:
+        colNames = colNames.replace(' ','').split(',')
+    else:
+        colNames = (colNames.replace(' ',''),)
 
     outdir = cf('OUTDIR')
     instname = cf('INSTNAME')
@@ -65,6 +73,7 @@ if __name__ == "__main__":
 
     date = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
+
 
     while date < enddate:
         nymd = str(date.date()).replace('-','')
@@ -75,8 +84,7 @@ if __name__ == "__main__":
 
         edate = date + timedelta(hours=args.DT_hours) - timedelta(seconds=int(args.dt_secs))
         # run trajectory sampler on model fields
-        for rc in rcFiles:
-            colname = '_'.join(rc[:-3].split('_')[0:2])
+        for rc,colname in zip(rcFiles,colNames):
 
             outFile = '{}/{}-g5nr.lb2.{}.{}_{}z.nc4'.format(outpath,instname,colname,nymd,hour)
 
@@ -85,7 +93,8 @@ if __name__ == "__main__":
                           " --format=NETCDF4_CLASSIC"      + \
                           " --dt_secs=" + args.dt_secs      + \
                           " --isoTime"  +\
-                          " --trajectory=tle"
+                          " --trajectory=tle"  +\
+                          " --algorithm=" + args.algo
 
             if args.verbose:
                 Options += " --verbose" 
