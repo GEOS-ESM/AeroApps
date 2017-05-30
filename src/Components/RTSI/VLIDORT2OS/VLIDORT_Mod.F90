@@ -56,7 +56,7 @@
 
 !.............................................................................
 
-      subroutine VLIDORT_Init (self, km, rc)
+      subroutine VLIDORT_Init (self, km, rc, DO_BOA)
                                    
       USE VLIDORT_PARS
       USE VLIDORT_Inputs_def
@@ -67,7 +67,9 @@
 
       integer,                    intent(in)    :: km     ! number of atmospheric layers
       integer,                    intent(out)   :: rc     ! error code
-      
+
+    ! !OPTIONAL PARAMETERS
+      logical, optional, intent(in) :: DO_BOA      
 !                     ---
 
       logical :: vector
@@ -184,6 +186,12 @@
       !    Customize those parameters that do not vary from pixel to pixel
 !     ---------------------------------------------------------------
 
+!     Increase N_USER_LEVELS if BOA Calculation is requested
+      if (present(DO_BOA)) then
+        if (DO_BOA) then
+          self%N_USER_LEVELS = 2
+        end if
+      end if
 
 !                         Modes of Operation
 !                         ------------------
