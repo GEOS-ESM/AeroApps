@@ -328,6 +328,8 @@ class POLAR_VLIDORT(object):
                     Y = np.array([self.__dict__[R+chmin][i],self.__dict__[R+chmax][i]])
                     f = interpolate.interp1d(X, Y)
                     self.__dict__[sds][i] = f([int(chs)])
+
+            SDS = 'Riso'+chs,'Rgeo'+chs,'Rvol'+chs
         
         
         for sds in SDS:
