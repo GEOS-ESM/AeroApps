@@ -708,8 +708,8 @@ if __name__ == "__main__":
     outFile   = '{}/calipso-g5nr.vlidort.vector.MCD43C.{}_{}z_{}nm.nc4'.format(outDir,nymd,hour,chd)
     
     rcFile   = 'Aod_EOS.rc'
-    polarname = 'POLDER'
-    orbit     = 'LEO'
+    VZAname  = 'POLDER'
+    orbit    = 'LEO'
     verbose  = True
 
     # Initialize VLIDORT class getting aerosol optical properties
@@ -717,7 +717,7 @@ if __name__ == "__main__":
     vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,
                             albedoFile,albedoType,
                             channel,
-                            VZAdic[polarname],
+                            VZAdic[VZAname],
                             HGTdic[orbit],
                             ndviFile=ndviFile,
                             lcFile=lcFile,
