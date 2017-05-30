@@ -13,7 +13,7 @@ import argparse
 from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 from MAPL            import Config
-from polar_vlidort   import POLAR_VLIDORT
+from polar_vlidort   import POLAR_VLIDORT, get_chd
 
 #------------------------------------ M A I N ------------------------------------
 
@@ -44,25 +44,79 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--dryrun",action="store_true",
                         help="do a dry run (default=False).")    
 
-    parser.add("-c", "--channel", dest="channel", default=channel,type="int",
-              help="Channel for Mie calculation")
+    args = parser.parse_args()
 
-    parser.add_option("-v", "--verbose",
-                      action="store_true", dest="verbose",
-                      help="Verbose mode")
+    # Parse prep config
+    # -----------------
+    cf             = Config(args.prep_config,delim=' = ')
+    inTemplate     = cf('inDir')     + '/' + cf('inFile')        
+    albedoTemplate = cf('albedoDir') + '/' + cf('albedoFile')  
+    outTemplate    = cf('outDir')    + '/' + cf('outFile')
+    channel        = int(cf('channel'))
+    rcFile         = cf('rcFile')
 
-    (options, args) = parser.parse_args()
+    VZA           = cf('VZA')
+    VZA = np.array(VZA.replace(' ','').split(',')).astype('float')
 
-
-    # edit Aod_Eos.rc
-
-         
-    # Create consistent file name extension
-    # -------------------------------------
-    name, ext = os.path.splitext(options.outFile)
-    if 'NETCDF4' in options.format:
-        options.outFile = name + '.nc4'
-    elif 'NETCDF3' in options.format:
-        options.outFile = name + '.nc'
+    if cf('ndviDir').upper() == 'NONE':
+        ndviTemplate = None
+        lcTemplate   = None
     else:
-        raise ValueError, 'invalid extension <%s>'%ext
+        ndviTemplate   = cf('ndviDir')   + '/' + cf('ndviFile')
+        lcTemplate     = cf('lcDir')     + '/' + cf('lcFile')
+
+
+
+    # Change wavelength number in Aod_EOS.rc
+    # ---------------------------------------
+    source = open(rcFile,'r')
+    destination = open(rcFile+'.tmp','w')
+    a = float(channel)*1e-3
+    for line in source:
+        if (line[0:11] == 'r_channels:'):
+            destination.write('r_channels: '+'{:0.3f}e-6'.format(a)+'\n')
+        else:
+            destination.write(line) 
+    source.close()
+    destination.close()
+    rcFile = rcFile+'.tmp'
+
+    # Loop through dates, running VLIDORT
+    # ------------------------------------
+    date      = isoparser(args.iso_t1)
+    enddate   = isoparser(args.iso_t2)
+    Dt        = timedelta(hours=args.DT_hours)
+
+    while date < enddate:
+        nymd = str(date.date()).replace('-','')
+        year = str(date.year)
+        month = str(date.month).zfill(2)
+        hour = str(date.hour).zfill(2)    
+
+        inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
+        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
+        albedoFile = albedoTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
+        
+        if ndviTemplate is None:
+            ndviFile = None
+            lcFile   = None
+        else:
+            ndviFile   = ndviTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
+            lcFile     = lcTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
+
+        # Initialize VLIDORT class getting aerosol optical properties
+        # -----------------------------------------------------------
+        vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,
+                                albedoFile,cf('albedoType'),
+                                channel,
+                                VZA,
+                                float(cf('HGT')),
+                                ndviFile=ndviFile,
+                                lcFile=lcFile,
+                                verbose=args.verbose)
+
+        # Run VLIDORT
+        if vlidort.nobs > 0:
+            vlidort.runVLIDORT()
+
+        date += Dt
