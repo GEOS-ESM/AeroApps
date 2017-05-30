@@ -10,10 +10,11 @@
 
 import os
 import argparse
-from datetime        import datetime, timedelta
-from dateutil.parser import parse         as isoparser
-from MAPL            import Config
-from polar_vlidort   import POLAR_VLIDORT, get_chd
+from   datetime        import datetime, timedelta
+from   dateutil.parser import parse         as isoparser
+from   MAPL            import Config
+from   polar_vlidort   import POLAR_VLIDORT, get_chd
+import numpy  as np
 
 #------------------------------------ M A I N ------------------------------------
 
@@ -24,7 +25,6 @@ if __name__ == "__main__":
 
 #   Parse command line options
 #   --------------------------
-    parser = OptionParser()
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",
