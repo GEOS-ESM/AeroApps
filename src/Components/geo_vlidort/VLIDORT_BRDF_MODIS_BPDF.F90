@@ -165,7 +165,8 @@ module VLIDORT_BRDF_MODIS_BPDF
         SCAT%pmom => pmom(:,i,j,:,:)
 
         BR(j,i)    = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
-        if (BR(j,i) < 0 .or. BR(j,i) > 1) then
+        ! Check to make sure kernel combination is not unphysical
+        if (BR(j,i) < 0) then
           radiance_VL_SURF(j,i)    = -500
           reflectance_VL_SURF(j,i) = -500
           BR(j,i)    = -500
