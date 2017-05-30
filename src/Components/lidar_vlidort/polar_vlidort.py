@@ -158,6 +158,9 @@ class POLAR_VLIDORT(object):
         BPDFcoef[I] = MISSING
         nc.close()
 
+        self.iGood = self.iGood & (NDVI != MISSING)
+        self.nobs  = np.sum(self.iGood)
+
         #BPDFparam(nparam,nch,nobs)
         self.BPDFparam = np.zeros([3,1,len(self.tyme)])
         self.BPDFparam[0,0,:] = 1.5
@@ -315,6 +318,7 @@ class POLAR_VLIDORT(object):
         for sds in SDS:
             self.__dict__[sds] = nc.variables[sds][:]
 
+        missing_value = nc.variables[sds].missing_value
         nc.close()
 
         nobs = len(self.__dict__[sds])
@@ -331,7 +335,14 @@ class POLAR_VLIDORT(object):
 
             SDS = 'Riso'+chs,'Rgeo'+chs,'Rvol'+chs
         
-        
+        # Check for missing kernel weights
+        Riso = self.__dict__['Riso'+chs]
+        Rgeo = self.__dict__['Rgeo'+chs]
+        Rvol = self.__dict__['Rvol'+chs]
+        iGood = (Riso != missing_value) & (Rgeo != missing_value) & (Rvol != missing_value)
+        self.iGood = self.iGood & iGood
+        self.nobs = np.sum(self.iGood)
+
         for sds in SDS:
             self.__dict__[sds].shape = (1,1,nobs)
 
