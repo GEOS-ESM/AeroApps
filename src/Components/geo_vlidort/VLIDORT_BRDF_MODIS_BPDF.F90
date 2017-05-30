@@ -21,7 +21,7 @@ module VLIDORT_BRDF_MODIS_BPDF
   subroutine VLIDORT_Vector_LandMODIS_BPDF (km, nch, nobs, channels, nMom,  &
                      nPol,tau, ssa, pmom, pe, he, te, kernel_wt, RTLSparam, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc, DO_2OS_CORRECTION)
+                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc, DO_BOA)
   !
   ! Place holder.
   !
@@ -30,7 +30,7 @@ module VLIDORT_BRDF_MODIS_BPDF
      implicit NONE
  
     logical                                 :: scalar
-    integer, parameter                      :: nkernel = 4   ! number of kernels
+    integer, parameter                      :: nkernel = 3   ! number of kernels
     integer, parameter                      :: nparam  = 3   ! number of kernel parameters
 
   ! !INPUT PARAMETERS:
@@ -80,8 +80,7 @@ module VLIDORT_BRDF_MODIS_BPDF
     real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
 
   ! !OPTIONAL PARAMETERS
-    logical, optional, intent(in) :: DO_2OS_CORRECTION
-
+    logical, optional, intent(in) :: DO_BOA
   !                               ---
     
     integer             :: i,j,n,p,ier
@@ -92,24 +91,17 @@ module VLIDORT_BRDF_MODIS_BPDF
 
     rc = 0
     ier = 0
+    if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
    
-    call VLIDORT_Init( SCAT%Surface%Base, km, rc)
+    call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
     SCAT%nMom    = nMom
     SCAT%nPol    = nPol
-    if (present(DO_2OS_CORRECTION)) then
-      SCAT%DO_2OS_CORRECTION = DO_2OS_CORRECTION
-      if (DO_2OS_CORRECTION) then
-        SCAT%NSTOKES = 1
-      else
-        SCAT%NSTOKES = 3
-      end if
-    else    
-      SCAT%NSTOKES = 3
-    end if
+    SCAT%NSTOKES = 3
 
     if ( SCAT%NSTOKES  .GT. MAXSTOKES  )   return
+
 
     do j = 1, nobs
        
@@ -132,13 +124,16 @@ module VLIDORT_BRDF_MODIS_BPDF
 
       do i = 1, nch
         ! Make sure kernel weights and parameters are defined
+        
         do n = 1, nkernel
+          
           if (IS_MISSING(kernel_wt(n,i,j),MISSING)) then
             radiance_VL_SURF(j,i) = MISSING
             reflectance_VL_SURF(j,i) = MISSING
             cycle
           end if
         end do
+        
         do p = 1, nparam
           if (IS_MISSING(RTLSparam(p,i,j),MISSING)) then
             radiance_VL_SURF(j,i) = MISSING
@@ -157,22 +152,12 @@ module VLIDORT_BRDF_MODIS_BPDF
           print*, 'DO MODIS BRDF + BPDF'
         end if
 
-        if (DO_2OS_CORRECTION) then
-          scalar = .true.
-          call VLIDORT_LANDMODIS(SCAT%Surface,solar_zenith(j),&
-                                 sensor_zenith(j),relat_azymuth(j),&
-                                 kernel_wt(1,i,j),kernel_wt(2,i,j),kernel_wt(3,i,j),&
-                                 reshape(RTLSparam(:,i,j),(/nparam/)),&
-                                 scalar,rc)
-        else
-          scalar = .false.
-          call VLIDORT_LANDMODIS_BPDF(SCAT%Surface,solar_zenith(j),&
-                                 sensor_zenith(j),relat_azymuth(j),&
-                                 kernel_wt(1,i,j),kernel_wt(2,i,j),kernel_wt(3,i,j),&
-                                 reshape(RTLSparam(:,i,j),(/nparam/)),reshape(BPDFparam(:,i,j),(/nparam/)),&
-                                 scalar,rc)
-        end if
-
+        scalar = .false.
+        call VLIDORT_LANDMODIS_BPDF(SCAT%Surface,solar_zenith(j),&
+                               sensor_zenith(j),relat_azymuth(j),&
+                               kernel_wt(1,i,j),kernel_wt(2,i,j),kernel_wt(3,i,j),&
+                               reshape(RTLSparam(:,i,j),(/nparam/)),reshape(BPDFparam(:,i,j),(/nparam/)),&
+                               scalar,rc)
 
         SCAT%wavelength = channels(i)        
         SCAT%tau => tau(:,i,j)
