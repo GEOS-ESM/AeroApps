@@ -22,6 +22,7 @@ from MAPL.constants import *
 import LidarAngles_    
 import VLIDORT_LIDAR_ 
 from copyvar  import _copyVar
+from scipy import interpolate
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
@@ -66,7 +67,11 @@ class POLAR_VLIDORT(object):
     Everything needed for calling VLIDORT
     GEOS-5 has already been sampled on lidar track
     """
-    def __init__(self,inFile,outFile,rcFile,albedoFile,albedoType,channel,VZA,hgtss,verbose=False):
+    def __init__(self,inFile,outFile,rcFile,albedoFile,albedoType,
+                channel,VZA,hgtss,
+                ndviFile=None,
+                lcFile=None,
+                verbose=False):
         self.SDS_AER = SDS_AER
         self.SDS_MET = SDS_MET
         self.SDS_INV = SDS_INV
@@ -79,6 +84,8 @@ class POLAR_VLIDORT(object):
         self.channel = channel
         self.verbose = verbose
         self.nMom    = nMom
+        self.lcFile = lcFile
+        self.ndviFile = ndviFile
 
 
         # initialize empty lists
@@ -132,11 +139,30 @@ class POLAR_VLIDORT(object):
     # --
     def BPDFinputs(self):
         """
-        Read in NDVI and Landuse - should have been sampled already
-        Determine correct coefficient value
+        Read in NDVI and Landuse Coefficient- should have been sampled already
         """
+        if self.verbose:
+            print 'opening file',self.ndviFile
 
-        pass
+        nc = Dataset(self.ndviFile)
+        NDVI = nc.variables['NDVI'][:]
+        I = NDVI < -900
+        NDVI[I] = MISSING
+        nc.close()
+
+        if self.verbose:
+            print 'opening file',self.lcFile
+        nc = Dataset(self.lcFile)
+        BPDFcoef = nc.variables['BPDFcoef'][:]
+        I = BPDFcoef < -900
+        BPDFcoef[I] = MISSING
+        nc.close()
+
+        #BPDFparam(nparam,nch,nobs)
+        self.BPDFparam = np.zeros([3,1,len(self.tyme)])
+        self.BPDFparam[0,0,:] = 1.5
+        self.BPDFparam[1,0,:] = NDVI
+        self.BPDFparam[2,0,:] = BPDFcoef        
 
     # ---
     def LandSeaMask(self):
@@ -269,8 +295,18 @@ class POLAR_VLIDORT(object):
         Read in MODIS BRDF kernel weights
         that have already been sampled on lidar track
         """
+        MODIS_channels = np.array(['470','550','650','850','1200','1600','2100'])
         chs = str(int(self.channel))
-        SDS = 'Riso'+chs,'Rgeo'+chs,'Rvol'+chs
+        if chs in MODIS_channels:
+            SDS = 'Riso'+chs,'Rgeo'+chs,'Rvol'+chs
+        else:
+            dch = self.channel - np.array(MODIS_channels).astype('int')
+            chmin = np.argmax(dch[dch<0])
+            chmin = MODIS_channels[dch<0][chmin]
+            chmax = np.argmin(dch[dch>0])
+            chmax = MODIS_channels[dch>0][chmax]
+
+            SDS = 'Riso'+chmin,'Rgeo'+chmin,'Rvol'+chmin,'Riso'+chmax,'Rgeo'+chmax,'Rvol'+chmax
 
         if self.verbose:
             print 'opening abledo file ',self.albedoFile
@@ -281,8 +317,19 @@ class POLAR_VLIDORT(object):
 
         nc.close()
 
-        
         nobs = len(self.__dict__[sds])
+        # Interpolate if necessary
+        if chs not in MODIS_channels:
+            X = np.array([chmin,chmax]).astype('int')
+            for R in ['Riso','Rgeo','Rvol']:
+                sds = R + chs
+                self.__dict__[sds] = np.empty([nobs])
+                for i in range(nobs):
+                    Y = np.array([self.__dict__[R+chmin][i],self.__dict__[R+chmax][i]])
+                    f = interpolate.interp1d(X, Y)
+                    self.__dict__[sds][i] = f([int(chs)])
+        
+        
         for sds in SDS:
             self.__dict__[sds].shape = (1,1,nobs)
 
@@ -349,8 +396,8 @@ class POLAR_VLIDORT(object):
         """
 
         # Only do good obs
-        self.iGood = np.arange(len(self.iGood))[self.iGood][0:1]
-        self.nobs  = 1
+        # self.iGood = np.arange(len(self.iGood))[self.iGood][0:1]
+        # self.nobs  = 1
         sza  = self.SZA[self.iGood]
         raaf = self.RAAf[self.iGood]
         raab = self.RAAb[self.iGood]
@@ -366,12 +413,12 @@ class POLAR_VLIDORT(object):
         nangles = len(self.VZA)
         ntime   = len(self.tyme)
         nlev    = tau.shape[0]
-        I = np.ones([ntime,2*nangles])*MISSING
-        Q = np.ones([ntime,2*nangles])*MISSING
-        U = np.ones([ntime,2*nangles])*MISSING
-        reflectance = np.ones([ntime,2*nangles])*MISSING
-        surf_reflectance = np.ones([ntime,2*nangles])*MISSING
-        ROT = np.ones([ntime,nlev])*MISSING
+        self.I = np.ones([ntime,2*nangles])*MISSING
+        self.Q = np.ones([ntime,2*nangles])*MISSING
+        self.U = np.ones([ntime,2*nangles])*MISSING
+        self.reflectance = np.ones([ntime,2*nangles])*MISSING
+        self.surf_reflectance = np.ones([ntime,2*nangles])*MISSING
+        self.ROT = np.ones([ntime,nlev])*MISSING
 
         #backward directions, forward directions
         VZA = np.append(self.VZA[::-1],self.VZA)
@@ -389,7 +436,7 @@ class POLAR_VLIDORT(object):
 
         # loop through viewing angles and run VLIDORT
         for i in range(2*nangles):
-            vza  = VZA[i]*self.nobs
+            vza  = np.array([VZA[i]]*self.nobs)
             raa  = RAA[:,i]
             
             # get args list for each surface model
@@ -404,49 +451,85 @@ class POLAR_VLIDORT(object):
                         sza, raa, vza, 
                         MISSING,
                         self.verbose]
+
+                # Call VLIDORT wrapper function
+                I, reflectance, ROT, surf_reflectance, Q, U, rc = vlidortWrapper(*args)                        
                 
             elif self.albedoType == 'MODIS_BRDF_BPDF':
+                # For albedo
                 kernel_wt = self.kernel_wt[:,:,self.iGood]
-                param     = self.RTLSparam[:,:,self.iGood]  
+                RTLSparam = self.RTLSparam[:,:,self.iGood] 
+                RTLSparam = np.append(RTLSparam,np.zeros([1,1,self.nobs]),axis=0) 
 
                 # For BPDF
-                #BPDFparam(nparam,nch,nobs)
-                BPDFparam = np.zeros([3,1,1])
-                BPDFparam[0,0,0] = 1.5
-                BPDFparam[1,0,0] = 0.2
-                BPDFparam[2,0,0] = 4.71
+                BPDFparam = self.BPDFparam[:,:,self.iGood]
 
-                RTLSparam = np.zeros([3,1,1])
-                RTLSparam[0:2,0,0] = param[:,0,0]                
+                # Loop through one by one
+                # Some land covers do not have polarization (i.e. urban)
+                I = np.zeros([self.nobs,1])
+                Q = np.zeros([self.nobs,1])
+                U = np.zeros([self.nobs,1])
+                reflectance = np.zeros([self.nobs,1])
+                surf_reflectance = np.zeros([self.nobs,1])
+                ROT = np.zeros([nlev,self.nobs,1])
 
-                args = [self.channel,tau, ssa, pmom, 
-                        pe, ze, te, 
-                        kernel_wt, RTLSparam, BPDFparam, 
-                        sza, raa, vza, 
-                        MISSING,
-                        self.verbose]
+                for p in range(self.nobs):
+                    if BPDFparam[2,0,p] == MISSING: 
+                        args = [self.channel,
+                                tau[:,:,p:p+1], 
+                                ssa[:,:,p:p+1], 
+                                pmom[:,:,p:p+1,:,:], 
+                                pe[:,p:p+1], 
+                                ze[:,p:p+1], 
+                                te[:,p:p+1], 
+                                kernel_wt[:,:,p:p+1], 
+                                RTLSparam[:,:,p:p+1], 
+                                sza[p:p+1], 
+                                raa[p:p+1], 
+                                vza[p:p+1], 
+                                MISSING,
+                                self.verbose]
 
+                        BRDFvlidortWrapper = WrapperFuncs['MODIS_BRDF']
+                        # Call VLIDORT wrapper function
+                        I_, reflectance_, ROT_, surf_reflectance_, Q_, U_, rc = BRDFvlidortWrapper(*args)                         
 
-            # Call VLIDORT wrapper function
+                    else:
+                        args = [self.channel,
+                                tau[:,:,p:p+1], 
+                                ssa[:,:,p:p+1], 
+                                pmom[:,:,p:p+1,:,:], 
+                                pe[:,p:p+1], 
+                                ze[:,p:p+1], 
+                                te[:,p:p+1], 
+                                kernel_wt[:,:,p:p+1], 
+                                RTLSparam[:,:,p:p+1], 
+                                BPDFparam[:,:,p:p+1],
+                                sza[p:p+1], 
+                                raa[p:p+1], 
+                                vza[p:p+1], 
+                                MISSING,
+                                self.verbose]
+
+                        # Call VLIDORT wrapper function
+                        I_, reflectance_, ROT_, surf_reflectance_, Q_, U_, rc = vlidortWrapper(*args)
+            
+                    I[p:p+1,:] = I_
+                    Q[p:p+1,:] = Q_
+                    U[p:p+1,:] = U_
+                    reflectance[p:p+1,:] = reflectance_
+                    surf_reflectance[p:p+1,:] = surf_reflectance_
+                    ROT[:,p:p+1,:] = ROT_
+            
+            
             # radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc = result
-            result = vlidortWrapper(*args)
-        
             if i == 0:
-                ROT[self.iGood,:] = np.squeeze(result[2]).T
-            I[self.iGood,i] = np.squeeze(result[0])
-            reflectance[self.iGood,i] = np.squeeze(result[1])
-            surf_reflectance[self.iGood,i] = np.squeeze(result[3])
-            Q[self.iGood,i] = np.squeeze(result[4])
-            U[self.iGood,i] = np.squeeze(result[5]) 
-
-
-
-        self.I = I
-        self.reflectance = reflectance
-        self.surf_reflectance = surf_reflectance
-        self.Q = Q
-        self.U = U
-        self.ROT = ROT          
+                self.ROT[self.iGood,:] = np.squeeze(ROT).T
+            self.I[self.iGood,i] = np.squeeze(I)
+            self.reflectance[self.iGood,i] = np.squeeze(reflectance)
+            self.surf_reflectance[self.iGood,i] = np.squeeze(surf_reflectance)
+            self.Q[self.iGood,i] = np.squeeze(Q)
+            self.U[self.iGood,i] = np.squeeze(U) 
 
 
         self.writeNC()
@@ -596,13 +679,17 @@ if __name__ == "__main__":
     hour     = str(date.hour).zfill(2)
     format   = 'NETCDF4_CLASSIC'
 
-    inDir    = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelB/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
-    inFile   = '{}/calipso-g5nr.lb2.%col.{}_{}z.nc4'.format(inDir,nymd,hour)
-    albedoDir = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BRDF/MCD43C1/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    inDir        = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelB/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    inFile       = '{}/calipso-g5nr.lb2.%col.{}_{}z.nc4'.format(inDir,nymd,hour)
+    albedoDir    = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BRDF/MCD43C1/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     albedoFile   = '{}/calipso-g5nr.lb2.brdf.{}_{}z.nc4'.format(albedoDir,nymd,hour)
-    albedoType = 'MODIS_BRDF_BPDF'
+    ndviDir      = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BPDF/NDVI/MYD13C2/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    ndviFile     = '{}/calipso-g5nr.lb2.ndvi.{}_{}z.nc4'.format(ndviDir,nymd,hour)
+    lcDir        = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BPDF/LAND_COVER/MCD12C1/051/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    lcFile       = '{}/calipso-g5nr.lb2.land_cover.{}_{}z.nc4'.format(lcDir,nymd,hour)    
+    albedoType   = 'MODIS_BRDF_BPDF'
 
-    channel  = 470
+    channel  = 477
     chd      = get_chd(channel)
     outDir    = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelC2/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     outFile   = '{}/calipso-g5nr.vlidort.vector.MCD43C.{}_{}z_{}nm.nc4'.format(outDir,nymd,hour,chd)
@@ -619,6 +706,8 @@ if __name__ == "__main__":
                             channel,
                             VZAdic[polarname],
                             HGTdic[orbit],
+                            ndviFile=ndviFile,
+                            lcFile=lcFile,
                             verbose=verbose)
 
    
