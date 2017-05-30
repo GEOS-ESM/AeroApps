@@ -158,7 +158,7 @@
 
 !  Maximum number of BRDF kernels
 
-      INTEGER, PARAMETER :: MAX_BRDF_KERNELS = 3
+      INTEGER, PARAMETER :: MAX_BRDF_KERNELS = 4
 
 !  Maximum number of BRDF parameters per kernel
 
