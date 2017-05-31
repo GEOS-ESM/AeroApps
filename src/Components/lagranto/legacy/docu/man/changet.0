@@ -1,0 +1,22 @@
+.TH changet
+.SH NAME 
+.B changet - change time on a netCDF file with filename P{YYYYMMDD_HH} or S{YYYYMMDD_HH} 
+.SH SYNOPSIS 
+.B changet 
+.I startdate
+.I file
+.SH DESCRIPTION
+Change the time value of a netCDF file with filename P{YYYYMMDD_HH} or S{YYYYMMDD_HH}; the time is set in hours relative to the startdate (in format YYYYMMDD_HH).
+.SH PARAMETERS
+.TP 15
+.B startdate 
+reference date in format YYYYMMDD_HH.
+.TP 15
+.B file
+name of the netCDF file with filename P{YYYYMMDD_HH} or S{YYYYMMDD_HH}.
+.SH EXAMPLES
+.TP 5
+.B [1] changet 20110102_00 P20110102_18
+sets the time of the netCDF file "P20110102_18" to 18 h.
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)

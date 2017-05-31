@@ -1,0 +1,48 @@
+Some notes for GEOS & MERRA-2 por
+
+Building:
+--------
+
+1) Modified lib/ioinp_cdo.f so that it handles GEOS-5 asm_Nv files. Started with lagtranto.ecmwf
+   and made mods to handle asm_Nv files:
+
+   * hardwired hybrid sigmna-pressure coordinates; should handle ECMWF file sin pressure coordinates
+   * hardwired ak, bk for 72 layers
+   * hardwired scaling of PS (from Pa to hPa)
+
+   NOTE: This needs reflactoring so that it becomes a 
+
+2) Hardwired baselibs in install.csh, especially additional; made ifort defualt compiler
+
+3) Some formats in tracal.f needed tweaks as it had non standard constructs.
+
+4) Built on a mac with:
+
+install.ch lib
+install.ch core
+install.ch links
+install.ch docu
+
+Running:
+-------
+
+1) First split the asm_Nv files one time step per file:
+
+ncks -h -d time,7,7 MERRA2_400.inst3_3d_asm_Nv.20160902.nc4 P20160902_21
+
+2) Create start file
+
+create_startf 20160902_00 startf.2 'line(10,10,-25,0,100) @ level(200) @ hPa,agl @ nil'
+
+Notice that with agl, level is a delta in hPa above surface
+
+3) Calculate
+
+caltra 20160902_00 20160902_18 startf.2 traj.4 -j -o 15
+
+NOTES: 
+    a) -o 15 means that you write data every 15 minutes (although manual says that it should be 15 hours.)
+    b) on a mac needed to make these visible:
+       libimf.dylib* 
+       libintlc.dylib*
+       libirc.dylib

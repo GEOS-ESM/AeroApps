@@ -1,0 +1,99 @@
+#!/bin/csh
+
+# ---------------------------------------------------------------------------
+# Set parameters - handle arguments 
+# ---------------------------------------------------------------------------
+
+set dir    = ${LAGRANTO}/docu/
+set viewer = okular
+set nargv  = ${#argv}
+
+if ( (${#argv} == 0) ) then
+    nroff -man ${dir}/man/lagrantohelp.0 | less
+    exit 0
+endif
+
+if ( "${nargv}" == "1" ) then
+   set mode = "$1"
+   set verb = "long"
+else if ( "${nargv}" == "2" ) then
+   set mode = "$1"
+   set verb = "$2"
+endif
+
+# ---------------------------------------------------------------------------
+# Tutorial, Reference, Presentation, Future Plans
+# ---------------------------------------------------------------------------
+
+if ( "$mode" == "future" ) then
+    nroff -man ${dir}/man/futureplans.0 | less
+    exit 0
+endif
+
+if ( "$mode" == "tutorial" ) then
+    ${viewer} ${dir}/tutorial/tutorial.pdf 
+    exit 0
+endif
+
+if ( "$mode" == "reference" ) then
+    ${viewer} ${dir}/reference/reference.pdf
+    exit 0
+endif
+
+if ( "$mode" == "presentation" ) then
+    ${viewer} ${dir}/presentation/presentation.pdf
+    exit 0
+endif
+
+# ---------------------------------------------------------------------------
+# Manual
+# ---------------------------------------------------------------------------
+
+if ( "${verb}" == "long" ) then
+    nroff -man ${dir}/man/${mode}.0 | less
+    exit 0
+endif
+
+if ( "${verb}" == "short" ) then
+    echo
+    nroff -man ${dir}/man/${mode}.0 | grep -A 1 SYNOPSIS
+    echo
+    set i0 = `nroff -man ${dir}/man/${mode}.0 | grep -n EXAMPLES | awk -F ":" '{print $1}'`
+    set i1 = `nroff -man ${dir}/man/${mode}.0 | grep -n AUTHOR   | awk -F ":" '{print $1}'`
+    set i1 = `echo "$i1 - 1" | bc`  
+    if ( ( "$i0" != "" ) &  ( "$i1" != "" ) ) then
+        nroff -man ${dir}/man/${mode}.0 | sed -ne ${i0},${i1}p
+    endif
+endif
+
+if ( "${verb}" == "synopsis" ) then
+    echo
+    nroff -man ${dir}/man/${mode}.0 | grep -A 1 SYNOPSIS
+    echo
+    exit 0
+endif
+
+if ( "${verb}" == "parameter" ) then
+    set i0 = `nroff -man ${dir}/man/${mode}.0 | grep -n PARAMETERS | awk -F ":" '{print $1}'`
+    set i1 = `nroff -man ${dir}/man/${mode}.0 | grep -n EXAMPLES   | awk -F ":" '{print $1}'`
+    set i1 = `echo "$i1 - 1" | bc`
+    echo $i0
+    echo $i1
+    if ( ( "$i0" != "" ) &  ( "$i1" != "" ) ) then
+        nroff -man ${dir}/man/${mode}.0 | sed -ne ${i0},${i1}p
+    endif
+    exit 0
+endif
+
+if ( "${verb}" == "examples" ) then
+    set i0 = `nroff -man ${dir}/man/${mode}.0 | grep -n EXAMPLES | awk -F ":" '{print $1}'`
+    set i1 = `nroff -man ${dir}/man/${mode}.0 | grep -n AUTHOR   | awk -F ":" '{print $1}'`
+    set i1 = `echo "$i1 - 1" | bc`  
+    if ( ( "$i0" != "" ) &  ( "$i1" != "" ) ) then
+        nroff -man ${dir}/man/${mode}.0 | sed -ne ${i0},${i1}p
+    endif
+    exit 0
+endif
+
+
+exit 0

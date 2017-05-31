@@ -1,0 +1,22 @@
+.TH changecst
+.SH NAME 
+.B changecst - change constants file name on the netCDF file
+.SH SYNOPSIS 
+.B changecst 
+.I filename
+.I new_cst_file
+.SH DESCRIPTION
+Change the name of the constants file for "filename" to the new name "new_cst_file"
+.SH PARAMETERS
+.TP 15
+.B filename 
+name of the netCDF file 
+.TP 15
+.B new_cst_file
+name of the new constants file name
+.SH EXAMPLES
+.TP 5
+.B [1] changecst P20110102_18 ml_cst
+change the constants filename for P20110102_18 to its new name "ml_cst".
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)

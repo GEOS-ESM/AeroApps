@@ -1,0 +1,80 @@
+.TH Lagrantohelp
+.SH NAME 
+.B Lagranto - 
+calculate trajectories for ECMWF analyses and forecasts
+.SH SYNOPSIS
+.B lagrantohelp [topic|tutorial|reference|future] - 
+show this man page or the one corresponding to a specific topic. All 
+.I
+underlined
+names in this document have their own man page. If "tutorial" is chosen,
+a detailed tutorial for Lagranto is opened. For "reference" a PDF document with all man pages is opened. Finally, with option "future" plans for additional features will be listed.
+.SH DESCRIPTION 
+Lagranto is a software tool (UNIX shell-scripts and Fortran programs) to analyze
+Lagrangian aspects of atmospheric phenomena. It requires a time-series of
+3-dimensional wind fields (and if necessary further variables) on netCDF files.
+.SH CORE PROGRAMS
+.TP 15
+.I create_startf
+create starting files
+.TP 15
+.I caltra
+calculate trajectory positions
+.TP 15
+.I trace
+trace meteorological fields along trajectories
+.TP 15
+.I select
+select trajectories based on several criteria 
+.TP 15
+.I density
+create netCDF files with trajectory densities
+.SH TRAJECTORY TOOLS
+.TP 15
+.I extract
+extract single trajectories, times or columns from a trajectory file
+.TP 15
+.I list2lsl
+transform a (longitude,latitude,pressure) list into a trajectory file
+.TP 15
+.I lsl2list
+transform a trajectory file into a (longitude,latitude,pressure) list 
+.TP 15
+.I mergetra
+merge two trajectory files
+.TP 15
+.I reformat
+change the format of a trajectory file
+.TP 15
+.I timeres
+change the time resolution of a trajectory file with interpolation
+.TP 15
+.I trainfo
+write some information about a trajectory file
+.TP 15
+.I difference
+calculate the difference between two trajectory files
+.SH NETCDF TOOLS
+.TP 15
+.I changecst 
+change the constants filename on a netCDF file
+.TP 15
+.I changet
+change the time on a netCDF file
+.TP 15
+.I getmima
+get the minimum and maximum value of a field on a netCDF file
+.TP 15
+.I getvars 
+get a list of fields on a netCDF file
+.SH GENERAL TOOLS
+.TP 15
+.I newtime
+get a new date from an initial date and an offset in hours
+.TP 15
+.I gettidiff
+get the time difference between two dates
+.SH VISUALISATION
+Lagranto comes with two packages for visualisation of trajectories: one based on Matlab (www.mathworks.com) and one based on NCL (www.ncl.ucar.edu). Examples are provided in folder "figure" of the Lagranto installation.  
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)

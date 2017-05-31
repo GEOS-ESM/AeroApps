@@ -1,0 +1,294 @@
+.TH select
+.SH NAME
+.B select -
+select trajectories
+.SH SYNOPSIS
+.B select
+.I inptra
+.I outtra
+.I criterion
+.SH DESCRIPTION
+Select trajectories from the input trajectories in "inptra" based upon meteorological conditions specified in "criterion" (to be described below). The selected trajectories are then written to a new trajectory file "outtra".
+.SH PARAMETERS
+.TP 15
+.I inptra 
+input trajectory file
+.TP 15
+.I outtra 
+output trajectory file
+.TP 15
+.I criterion 
+specification of the selection criterion; the specification is either an explicit criterion or a file containing the specification. Each selection criterion has the following form:
+.br
+.B COMMAND
+:
+.B FIELD
+:
+.B  ARGUMENTS
+:
+.B [ TIME ].
+.br
+Several selection criteria can be combined with logical operator & (AND) and | (OR), the AND having higher priority than the OR. 
+.SH  OPTIONAL  ARGUMENTS
+.TP 5
+.I -noclean 
+keep temporary files for debugging.
+.TP 5
+.I -boolean
+Write a boolean list (0/1) instead of a trajectory file; the file has #trajectories entries, each line corresponding to an input trajectory /1=trajectory selected, 0=not selected).
+.TP 5
+.I -index
+Write an index list instead of a trajectory file: the index of all selected trajectories is written to the output file - the index ranges from 1 to  #trajectories. 
+.TP 5
+.I -count
+Write only the number of selected trajectories to the output file.
+.TP 5
+.I -startf
+Write only the starting positions of selected trajectories to the output file.
+.TP 5
+.I -regionf filename
+change the region file from its default value "regionf" to a new file name: the syntax is "-regionf filename".
+.SH COMMAND
+.TP 5
+.B - GT
+greater than: e.g. 
+.B GT:PV:2 
+selects trajectories with first potential vorticity (PV) larger than 2 PVU.
+.TP 5
+.B - LT 
+less than: e.g. 
+.B LT:RH:70 
+selects trajectories with first relative humidity (RH) below 70 %.
+.TP 5
+.B - IN
+within: e.g. 
+.B IN:lon:30,40 
+selects trajectories with first longitude between 30 and 40 deg.
+.TP 5
+.B - OUT
+outside: e.g. 
+.B OUT:lat:-30,30 
+selects trajectories with first latitude outside -30 and 30 deg - neglecting an equatoriual/subtropical band.
+.TP 5
+.B - EQ
+equal: e.g.  
+.B EQ:p:460 
+selects trajectories with first pressure equal to 460 hPa. 
+.TP 5
+.B - TRUE
+check whether value is different from zero (logical TRUE): e.g.
+.B TRUE:CYCL::ALL(ANY)
+checks whether the trajectory passes through a cycclone, which is marked as 0/1 field, at any time. Note that the command 'TRUE' has no arguments of its own!
+.TP 5
+.B - FALSE
+check whether value is equal to zero (logical FALSE): e.g.
+.B FALSE:CYCL::ALL(ALL)
+checks whether the trajectory never passes through a cycclone, which is marked as 0/1 field. Note that the command 'TRUE' has no arguments of its own!
+.TP 5
+.B - ALL, ANY, NONE
+these are special commands which only apply for the TRIGGER field. Further explanations are given below in section TRIGGER.
+.SH FIELD
+.TP 5
+.B - VALUE
+take value of the field: e.g.
+.B GT:PV(VALUE):2
+selects the trajectories with first potential vorticity (PV) value greater than 2 PVU. This selection criterion is equivalent to 
+.B GT:PV:2,
+i.e. the VALUE argument is taken as default.
+.TP 5
+.B - ABS
+take absolute value of the field: e.g.
+.B GT:PV(ABS):2
+selects the trajectories with absolute value of potential vorticity (PV) value greater than 2 PVU. 
+.TP 5
+.B - MEAN
+take the mean over the selected times: e.g. 
+.B GT:RH(MEAN):70:ALL
+selects all trajectories for which the mean relative humidity (RH) over all times (ALL) is greater than 70 %.
+.TP 5
+.B - VAR
+take the variance over the selected times: e.g. 
+.B GT:lat(VAR):10:ALL
+selects all trajectories for which the variance of latitude (lat) over all times (ALL) is greater than 10.
+.TP 5
+.B - MIN
+take the minimum of the selected times: e.g.
+.B LT:p(MIN):300:ALL
+select all trajectories which have a minium pressure (p) less than 300 hPa over all times (ALL).
+.TP 5
+.B - MAX
+take the maximum of the selected times: e.g.
+.B LT:p(MAX):300:ALL
+select all trajectories which have a maximum pressure (p) less than 300 hPa over all times (ALL).
+.TP 5
+.B - SUM
+take the sum over the selected times: e.g. 
+.B GT:LHR(SUM):2:ALL
+selects all trajectories for which the sum over all latent heating rates (LHR) over all times (ALL) is greater than 2 K.
+.TP 5
+.B - CHANGE
+take change between two times: e.g. 
+.B GT:p(CHANGE):600:FIRST,LAST
+selects all trajectories wich have a pressure difference |p(FIRST)-p(LAST)| greater than 600 hPa between the first and last time or vice versa. Note that the change can be positive or negative, i.e. it is not clear whether it is ascent or descent. 
+.TP 5
+.B - DIFF
+take difference between two times: e.g. 
+.B GT:p(DIFF):600:FIRST,LAST
+selects all trajectories wich have a pressure difference p(FIRST)-p(LAST) greater than 600 hPa between the first and last time - corresponding to an ascending air stream. Correspondingly
+.B GT:p(DIFF):600:LAST,FIRST
+finds a descending air stream.
+.SH TIME MODE
+The command are applied to a set of trajectory times; if no time is specified, the the command is only applied to the first time. Most generally, the time mode consists of two parts: time list( time mode), where the first specifies a list of times and the second how to apply the criterion to the selected times.
+.TP 5
+.B - FIRST
+first time: e.g. 
+.B IN:lat:-20,20:FIRST
+selects all trajectories with first latitude between 20 S to 20 N, i.e. wich start in an equatorial band.
+.TP 5
+.B - LAST
+last time: e.g. 
+.B IN:lat:-20,20:LAST
+selects all trajectories with last latitude between 20 S to 20 N, i.e. which end in an equatorial band.
+.TP 5
+.B - T1,T2,T3
+an explict list of times: e.g. 
+.B IN:lat:-20,20:6,12
+selects all trajectories which are in the equatorial band at times 6 h and 12 h. The criterion must apply at both times (see below ALL, ANY, NONE).
+.TP 5
+.B - T1 to T2
+a time range: e.g. 
+.B IN:lat:-20,20:6 to 18
+selects all trajectories which are in the equatorial band from 6 h to 18 h.  The criterion must apply at all times between 6 h and 18 h (see below ALL, ANY, NONE).
+.TP 5
+.B - ALL
+all times: e.g.
+.B IN:lat:-20,20:ALL
+selects all trajectories which stay at all times in the equatorial band. This time mode is the same as 
+.B ALL(ALL),
+i.e. all times are selected and the criterion must apply to all times. With 
+.B  IN:lat:-20,20:12-24(ALL)
+the criterion must apply for all times between 12 h and 24 h.
+.TP 5
+.B - ANY
+any times: e.g.
+.B IN:lat:-20,20:ALL(ANY)
+selects all trajectories which stay at any times in the equatorial band. Note that with the first "ALL" the times are selected, i.e. all times in this case, and with the second "ANY" it is specified that the criterion must only apply to at least one of the selected times.
+.TP 5
+.B - NONE
+at no time: e.g.
+.B IN:lat:-20,20:ALL(NONE)
+selects all trajectories which never stay in the equatorial band. 
+.B OUT:lat:-20,20:FIRST(NONE) 
+selects the trajectories which are not outside the equatorial time at the first time: they must be inside.
+.TP 5
+.B - TRIGGER
+the trajectory is automatically selected, but the trigger column is updated. A selection of trajectories might then e accomplished based on this trigger column: e.g 
+.B GT:p:700:1(TRIGGER)
+would set the trigger 1 for all trajectory times where the pressure (p) is greater than 700 hPa. Similarly, 
+.B GT:p:800:1(TRIGGER) & GT:lat:50:2(TRIGGER)
+would set the trigger 1 for all times where the pressure (p) is larger than 800 hPa and set the trigger 2 for all times where the latitude (lat) is larger than 50 degrees north. Note, that both eents might apply: then the rsulting trigger is 3. The triggers are internally saved as the bits of an integer variable, i.e. trigger 1 corresponds to value 1=2^0, trigger 2 to 2=2^1, trigger 3 to 4=2^2...  
+.SH LOGICAL OPERATORS
+.TP 5
+.B - &
+logical and: e.g.
+.B GT:lat:34:FIRST & GT:lon:50:FIRST
+selects the trajectories to the north of 34 N and to the east of 50 E at first time. Several selection criteria can be combined with '&'. 
+.TP 5
+.B - |
+logical or: e.g.
+.B GT:lat:34:FIRST | GT:lon:50:FIRST
+selects the trajectories to the north of 34 N or to the east of 50 E at first time. Several selection criteria can be combined with '|'. Note that locical OR has a lower priority than logical AND, i.e. in an expression like T1 | T2 & T3 first the expression T2 & T3 is evaluated and only then logically OR-combined with T1. 
+.SH IMPLICIT FIELDS
+Implicit variables can be used in the selection criteria, although they do not explicitely appear as a column in the trajectory file. They are calculated on-the-fly during the selection.
+.TP 5
+.B - DIST
+length of the trajectory (in km), integrated along great circle sections between the trajectory vertices: e.g. 
+.B GT:DIST:1000:LAST
+tests whether the total path length of the trajectory (DIST) exceeds 1000 km. 
+.TP 5
+.B - DIST0
+distance of the trajectory (in km) from its starting position: e.g. 
+.B GT:DIST0:1000:18,24(ANY)
+tests whether the air parcel is more than 1000 km away from its starting position, either at time 18 h or at time 24 h.
+.TP 5
+.B - INPOLYGON
+specification of a polygon: e.g.  
+.B TRUE:INPOLYGON:filename:ALL(ANY)
+selects all trajectories which pass through the polygon specified in "filename". The polygon is specified as described in 
+.B create_startf 
+(see comments there). With
+.B FALSE:INPOLYGON:filename:ALL(ALL)
+all trajectories are selected which never pass through the polygon. Note that for every call of 
+.B select
+only one polygon can be used in the criteria!
+.TP 5
+.B - INBOX
+specification of a longitude/latitude rectangle <lonw,lone,lats,latn>: e.g.
+.B TRUE:INBOX:20,40,30,60:ALL(ANY)
+selects all trajectories which pass through the longitude/latitude rectangle with lower-left corner at 20 E / 30 N and the upper-right corner at 40 E / 60 N. Correspondingly, with 
+.B TRUE:INBOX:20,40,30,60:ALL(NONE)
+the trajectories are selected which never pass through the rectangle.
+.TP 5
+.B - INCIRCLE
+specification of circle around a specified point: e.g. 
+.B TRUE:INCIRCLE:40,50,500:LAST
+select all trajectories which have their final position (LAST) in the circle centred at 40 E / 50 N and with a radius of 500 km.
+.TP 5
+.B - INREGION
+specification of target regions in a region file (default "regionf") - please consider the documentation of "create_startf" for details concerning the format of the region file. As an example, if a region 1 is defined on the region file, the criterion
+.B TRUE:INREGION:1:18
+selects all trejactories which are within region 1 at time 18 h.
+.SH SPECIAL CRITERIA
+Special criteria are and can be implemented into 
+.B select. 
+The call to the special criteria is of the following form:
+.B SPECIAL:command:parameters,
+where "command" is a command string (e.g. WCB) and "parameters" is a list of parameter values. 
+.TP 5
+.B - WCB
+identification of Warm Conveyor Belts (WCB): e.g.
+.B SPECIAL:WCB:300,0,24
+selects trajectories which ascend more than 300 hPa between time 0 and 24 h. Note, the ascent is determined as min{p(0...24)}-p(0), i.e. the first pressure p(0) is fixed whereas the lowest pressure can occur at any time between 0...24 h.
+.SH TRIGGER FIELD
+A trigger (or flag) field can be defined in select. This special column of the trajectory file allows to mark specified events for each trajectory and its times. As an example, you would like to select all trajectories which are below 700 hPa at a certain time and have relative humidity above 80 %
+.B at the same times:
+Then you could set a first trigger for the pressure criterion and a second one for the relative humidity, and then you would check for the simultaneous occurence of the two triggers. More specifically,
+.TP 5
+.B GT:p:700:1(TRIGGER) & GT:RH:80:2(TRIGGER)
+this will define the triggers for the two events. Note that both events might be fulfilled, in which case both triggers are set. The value of the trigger is: 1 if only the first criterion is fulfilled (binary 01); 2 if only the second is fulfilled (binary 10) and 3 if both are fulfilled (binary 11).
+.TP 5
+.B ALL:TRIGGER:1,2:ALL(ANY)
+this will select all trajectories for which both triggers 1 and 2 are set - they can be set at any time of all the trajectory times; if, for instance, you would like to test whether the two triggers are set at the two times 6 and 12, the command would be
+.B ALL:TRIGGER:1,2:6,12(ALL).
+.TP 5
+.B ALL:TRIGGER:1,2:ALL(ANY)
+will only check whether one of the two triggers 1 and 2 is set
+.TP 5
+.B NONE:TRIGGER:1,2:ALL(ANY)
+will check whether none of the two triggers 1 and 2 is set
+.SH IMPLEMENTING COMPLEX CRITERIA
+New special criteria can easily be implemented into the code - to this aim the following steps must be taken:
+.TP 5
+.B [1] <special.f>
+in directory "${LAGRANTO}/select/" must be modified. Take the example "WCB" to see how the Fortran code must be changed.
+.TP 5
+.B [2] <install.sh select>
+must be invoked to recompile the program "select". For successful compilation, the executable "select" will be listed.
+.TP 0
+Type <select -special> to get a list of all special commands and a detailed description.
+.SH EXAMPLES
+.TP 5
+.B [1] select trainp traout 'GT:PV:2:LAST' 
+selects all trajectories with PV>2 PVU for the last time step. The input trajectories are given in trainp, the selected ones are written to traout. If the two filenames are the same, the input file is overwritten.
+.TP 5
+.B [2] select trainp traout 'IN:lat:-20,20:6,12'
+ selects all trajectories which are in the equatorial band at times 6 h and  12 h.  The  criterion  must  apply at both times.
+.TP 5
+.B [3] select trainp traout 'GT:lat:34:FIRST & GT:lon:50:FIRST'
+selects  the trajectories to the north of 34 N and to the east of 50 E at first
+time. Several selection criteria can be combined with '&'.
+.TP 5
+.B [4] select trainp traout  'LT:p(MIN):300:ALL'
+select all trajectories which have a minium pressure (p) less than 300 hPa over all times (ALL).
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)

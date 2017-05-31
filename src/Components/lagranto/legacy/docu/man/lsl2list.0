@@ -1,0 +1,22 @@
+.TH lsl2list
+.SH NAME 
+.B lsl2list - convert a trajectory file into a list of longitude, latituden and pressure 
+.SH SYNOPSIS 
+.B lsl2list
+.I inpfile
+.I outfile
+.SH DESCRIPTION
+Convert an input trajectory file "inpfile" into a list of longitude, latitude and pressure; all times are included in this list.
+.SH PARAMETERS
+.TP 15
+.I inpfile
+input trajectory file
+.TP 15
+.I outfile
+output file (a list of longitude, latitude and pressure)
+.SH EXAMPLES
+.TP 5
+.B lsl2list trafile listfile
+converts all entries of the trajectory file "trafile" into a listfile with longitude, latitude and pressure.
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)

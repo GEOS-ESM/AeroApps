@@ -1,0 +1,79 @@
+.TH datelist
+.SH NAME 
+.B datelist - handling of datelists
+.SH SYNOPSIS
+.B datelist 
+.I filename
+.I mode
+.I [ parameters ]
+.SH DESCRIPTION
+A date list is a file of dates in the format {YYYYMMDD_HH}, e.g. 19900101_00 for 00 UTC, 1 January 1990. This command offers several ways how to create date lists and to work with them.
+.SH PARAMETERS
+.TP 10
+.I filename
+name of the date list file. If the name 
+.B 'stdout' 
+or 
+.B 'screen' 
+is given, the output will be directed to standardoutput: no file will be created.
+.TP 10
+.I mode
+one of several modes (see below).
+.SH CREATING DATE LISTS
+.TP 5 
+.B -create stardate enddate
+create a datelist from startdate (in format {YYYYMMDD_HHMM}) to enddate; the time interval is per default 6 h (see option -interval). If the start and end date do not match with the analysis times, the date list will contain the enclosing analysis times: for instance, for 
+.B -create 20100201_04 20100201_19
+the date list will contain the following dates: 20100201_00, 20100201_06, 20100201_12, 20100201_18, 20100202_00.
+.TP 5
+.B -indir dirname
+search for dates (in format {YYYYMMDD_HH}) in the direcory given with {dirname} - the dates are written in ascending order to the datelist file and repeating dates are removed. 
+.TP 5 
+.B -interval value
+change the interval to {value} hours, instead of the default 6 hours.
+.SH INFO ABOUT DATE LISTS
+.TP 5
+.B -ndates
+write the number of dates in the list
+.TP 5
+.B -timerange
+write the time range {last date} - {first date} [in hours]. 
+.TP 5
+.B -isin date
+check whether the date is in the list (1) or not (0).
+.SH STEPPING THROUGH DATE LISTS
+.TP 5
+.B -first
+write the first date of the date list
+.TP 5
+.B -last
+write the last date of the date list
+.TP 5
+.B -next date
+find the date {date} in the list and write the 
+.B next 
+date to screen; if no next date is in the list, i.e. the end of the list is reached, 'nil' will be returned.
+.TP 5
+.B -prev date
+find the date {date} in the list and write the 
+.B previous 
+date to screen; if no previous date is in the list, i.e. the beginning of the list is reached, 'nil' will be returned.
+.SH COMPARING DATE LISTS
+.TP 5
+.B -overlap file1 file1
+determine the overlap of two date lists.
+.TP 5
+.B -onlyin1 file1 file1
+determine the dates which only occur in date list 1, but not in datelist 2
+.TP 5
+.B -onlyin2 file1 file1
+determine the dates which only occur in date list 2, but not in datelist 1
+.SH Examples
+.TP 5
+.B [1] datelist screen -indir ./
+look for dates in the current directory and write them to screen
+.TP 5
+.B [2] datelist dates -create 19890101_00 20110101_00 -interval 2
+creates dates from 00 UTC, 1 January 1989 to 00 UTC, 1 January 2011 with an interval of 2 hours. The output will be written to the file 'dates'. 
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)

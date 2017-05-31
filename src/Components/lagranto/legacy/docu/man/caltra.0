@@ -1,0 +1,97 @@
+.TH caltra
+.SH NAME 
+.B caltra - 
+calculate air parcel trajectories
+.SH SYNOPSIS 
+.B caltra
+.I startdate
+.I enddate
+.I startfile
+.I filename 
+[ 
+.I optional arguments 
+] 
+.SH DESCRIPTION
+Calculate trajectories for the air parcels starting at the positions specified in 
+.I startfile.
+The trajectories cover the time period from 
+.I startdate
+to 
+.I enddate
+and the trajectories are saved in the output file 
+.I filename.
+Forward and backward trajectories can be calculated according to the order of the start and end date.
+.SH PARAMETERS
+.TP 15
+.I startdate
+start time of the air parcels in the format YYYYMMDD_HH(MM) (e.g. 20100101_00 or 20100101_0030 for 1 January 2010, 00 UTC and 00:30 UTC). Note that the minutes (MM) are optional.
+.TP 15
+.I enddate
+end time of the air parcels (same format as the 
+.I startdate
+). If the end time is after the start time, forward trajectories are calculated; otherwise, i.e. for end date before the start date, backward trajectories result. 
+.TP 15
+.I startfile
+file with the starting positions of the trajectories (possibly created with 
+.B
+create_strartf
+). Different formats for the "startfile" are supported (see 
+.B reformat
+for details). If no format specifier (appendix .[1234]) is given, a simple (longitude,latitude,pressure) list is expected. 
+.TP 15
+.I filename    
+output trajectory file with trajectories. Different formats are supported (see 
+.B reformat
+for details).
+.SH OPTIONAL
+.br
+.TP 15
+.I -j 
+Jumping flag: if a trajectory crosses the lower boundary, it is raised a little and hence is allowed to move on. Otherwise, i.e. no "-j" flag set, the trajectory would stick at the same position. The default is that "-j" is
+.B not
+set.
+.TP 15
+.I -i hours
+time increments (in hours) for input P and  S files. If not explicitely specified, this is determined from the P and S files in the current directory.
+.TP 15
+.I -t min
+time step (in minutes) for trajcetory calculation. Per default, the time step is 1/12 the time increment of the input files. For instance, 6-h input P and S files result in a time step of 5 min. The time step must be consisten with the output interval (see next optional parameter "-o").
+.TP 15
+.I -o hours
+Output interval (in minutes) of the air parcel positions. Per default it is the same as the time increment between the input P and S files (see option "-i"). Note that the output interval must be a multiple of the time step for trajectory calculation (see optional argument "-t").
+.TP 15
+.I -p
+Periodicity flag. If set, a periodic domain is assumed in zonal direction. Per default, the flag is
+.B not
+set.
+.TP 15
+.I -changet
+flag whether the times of the P and S files should be changed or not before a calculation; the default is that the
+times are 
+.B not 
+changed. 
+.TP 15
+.I -noclean
+flag whether parameter and criterion files should be kept; this is particularly helpful for debugging.
+.TP 15
+.I -timecheck
+enforce a time check on the data file
+.SH EXAMPLES
+.TP 5
+.B [1] caltra 19891020_00 19891020_18 startf OUT.1
+Calculate forward trajectories from 20/10/1989 00 UTC to 20/10/1989 18 UTC. The starting starting positions are given on the file "startf" as a list of (longitude,latitude,pressure) values. The output trajectories are written to the file "OUT.1", where the appendix 1 denotes ASCII format..B 
+.TP 5
+.B [2] caltra 19891020_18 19891020_00 startf OUT.1
+As in example  1, but backward trajectories from 20/10/1989 18 UTC to 20/10/1989 00 UTC. 
+.TP 5
+.B [3] caltra 19891020_00 19891020_18 startf OUT -j
+As in example [1], but with jumping flag set: if a trajectory crosses the lower boundary (topography), it is raised a little and then is allowed to move on.
+.TP 5
+.B [4] caltra 19891020_00 19891020_18 startf OUT -j -o 15 -t 15
+As in example [3], but the output interval is set to 15 min with the optional argument "-o". Note that the output interval (15 min) must be a multiple of the time step, which is here set explicitely to 15 min with "-t".
+.TP 5
+.B [5] caltra 19891020_0130 19891020_1730 startf1 OUT -j -o 15 -t 15 -changet
+Start from non-analysis time 01:30 UTC to non-analysis time 17:30 UTC. Furthermore, the times on the prinmary netCDF files are changed accordingly. 
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)
+

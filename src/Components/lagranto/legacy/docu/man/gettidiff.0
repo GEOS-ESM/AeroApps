@@ -1,0 +1,22 @@
+.TH gettidiff
+.SH NAME 
+.B gettidiff - get the difference (in hours) between two dates
+.SH SYNOPSIS 
+.B gettidiff
+.I date1 
+.I date2
+.SH DESCRIPTION
+Get the time difference (in hours) between two dates ( in form YYYYMMDD_HH(MM), i.e. the minutes are optional): date1 - date2. The output is in format HH or HH.MM
+.SH PARAMETERS
+.TP 15
+.B date1 
+first date ( in form YYYYMMDD_HH(MM) )
+.TP 15
+.B date2 
+second date ( in form YYYYMMDD_HH(MM) )
+.SH EXAMPLES
+.TP 5
+.B  [1] gettidiff 20110102_18 20110205_00
+gives the time difference between 20110102_18 and 20110205_00; the result is -798 h.
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)
