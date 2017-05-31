@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-    Wrapper for trj_sampler.py
+    Wrapper for stn_sampler.py
     Samples G5NR collections for the data we need to run vlidort simulator
 
     Patricia Castellanos, May, 2017
@@ -20,7 +20,6 @@ if __name__ == "__main__":
 
     # Defaults
     DT_hours = 24
-    dt_secs = "60"
     algo    = "linear"
 
     parser = argparse.ArgumentParser()
@@ -37,9 +36,6 @@ if __name__ == "__main__":
                           %algo)
     parser.add_argument("-D","--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
-
-    parser.add_argument("-d", "--dt_secs", default=dt_secs,
-                        help="Timesetp in seconds for TLE sampling (default=%s)"%dt_secs )    
 
     parser.add_argument("-v", "--verbose",action="store_true",
                         help="Verbose mode (default=False).")
@@ -88,10 +84,8 @@ if __name__ == "__main__":
 
             outFile = '{}/{}-g5nr.lb2.{}.{}_{}z.nc4'.format(outpath,instname,colname,nymd,hour)
 
-            Options =     " --rcFile=" + rc      + \
-                          " --output=" + outFile       + \
+            Options =     " --output=" + outFile       + \
                           " --format=NETCDF4_CLASSIC"      + \
-                          " --dt_secs=" + args.dt_secs      + \
                           " --isoTime"  +\
                           " --trajectory=tle"  +\
                           " --algorithm=" + args.algo
@@ -99,11 +93,11 @@ if __name__ == "__main__":
             if args.verbose:
                 Options += " --verbose" 
 
-            cmd = './lidar_sampler.py {} {} {} {}'.format(Options,tleFile,date.isoformat(),edate.isoformat())
+            cmd = 'stn_sampler.py {} {} {} {}'.format(Options,stnFile,rc,date.isoformat(),edate.isoformat())
             print cmd
             if not args.dryrun:
                 if os.system(cmd):
-                    raise ValueError, "./lidar_sampler.py failed for %s on %s"%(rc, date)       
+                    raise ValueError, "./stn_sampler.py failed for %s on %s"%(rc, date)       
 
 
 
