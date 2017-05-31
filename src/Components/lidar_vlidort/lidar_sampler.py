@@ -14,11 +14,11 @@
 import os
 import sys
 if os.path.exists('/discover/nobackup'):
-    sys.path.append(os.environ["HOME"]+'/workspace/GAAS/src/GMAO_Shared/GMAO_pyobs')
-else:
     sys.path.append(os.environ["NOBACKUP"]+'/workspace/GAAS/src/GMAO_Shared/GMAO_pyobs')
+else:
+    sys.path.append(os.environ["HOME"]+'/workspace/GAAS/src/GMAO_Shared/GMAO_pyobs')
 
-from   trj_sampler     import getVars, getTrackICT, getTrackCSV, getTrackNPZ, getTrackHSRL, writeXLS
+from   trj_sampler     import Open, getVars, getTrackICT, getTrackCSV, getTrackNPZ, getTrackHSRL, writeXLS
 from   optparse        import OptionParser
 from   dateutil.parser import parse         as isoparser
 from   pyobs.sgp4      import getTrack as getTrackTLE
