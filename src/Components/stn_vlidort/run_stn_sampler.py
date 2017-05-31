@@ -78,7 +78,7 @@ if __name__ == "__main__":
         if not os.path.exists(outpath):
             os.makedirs(outpath)
 
-        edate = date + timedelta(hours=args.DT_hours) - timedelta(seconds=int(args.dt_secs))
+        edate = date + timedelta(hours=args.DT_hours) 
         # run trajectory sampler on model fields
         for rc,colname in zip(rcFiles,colNames):
 
