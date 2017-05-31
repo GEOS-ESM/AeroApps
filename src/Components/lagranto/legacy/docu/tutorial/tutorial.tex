@@ -1,0 +1,832 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8x]{inputenc}
+
+\usepackage{graphicx}
+\graphicspath{{/home/sprenger/lagranto/docu/tutorial/}}
+
+\textwidth16cm
+\textheight22.5cm
+\oddsidemargin0.5cm
+\evensidemargin0cm
+\topmargin0.cm
+\headsep0cm
+\topskip-0.5cm
+
+\title{Lagranto - Tutorial}
+\author{Michael Sprenger and Heini Wernli}
+
+\begin{document}
+
+\maketitle
+
+\section{Definition of the Problem}
+
+In this tutorial we consider a simple way how to find airstreams which transport air from the surface into the upper troposphere and lower stratosphere, i.e. the UTLS region. More specifically, we intend
+\begin{itemize}
+\item[1)] to initialize starting positions over the North Atlantic and Europe (80 W to 20 E, 40 N to 80 N) for 00 UTC, 20 October 1989. The starting positions are horizontally equidistant with 80 km horizontal spacing and are set 100 hPa above ground level.
+\item[2)] to calculate trajectories 72 hours forward in time.
+\item[3)] to select trajectories which ascend to levels above 400 hPa within 48 hours and are found at starting time below 700 hPa.
+\item[4)] to trace several meteorological fields along the trajectories: potential vorticity (PV), potential temperature (TH), relative (RH) and specific humidity (Q).
+\item[4] to select subsamples of trajectories: a) those reaching the stratosphere; b) those travelling at most 2000 km; ... 
+\item[5)] to show the densities of the trajectories on a geographical map.
+\end{itemize}
+
+\section{Meteorological Data}
+
+The following dates and netCDF files are needed for a Lagranto calculation covering the time period from 00\,UTC 20 October 1989 to 00\,UTC 23 October 1989. 
+\begin{verbatim}
+> datelist stdout -create 19891020_00 19891023_00
+ 19891020_00
+ 19891020_06
+ 19891020_12
+ ...
+ 19891022_06
+ 19891022_12
+ 19891022_18
+ 19891023_00
+\end{verbatim}
+
+\noindent
+There are two different files involved, the P and the S files. Lagranto expects them to be in the running directory:
+
+\begin{verbatim}
+> ls -1
+ P19891020_00 P19891020_06 P19891020_12 P19891020_18 
+ P19891021_00 P19891021_06 P19891021_12 P19891021_18
+ ... 
+ S19891020_00 S19891020_06 S19891020_12 S19891020_18 
+ S19891021_00 S19891021_06 S19891021_12 S19891021_18
+ ...
+\end{verbatim}
+
+\noindent
+The meteorological fields on the primary P files are at least: zonal wind (U, in m/s); meridional wind (V, in m/s); vertical wind (OMEGA, in Pa/s); 
+surface pressure (PS, in hPa). Additional fields might be available on the P files, e.g. temperature (T), specific
+humidity (Q),... Secondary fields can be saved in the S files, which must have the same grid structure as the P files.
+In the example the following fields are saved on the S files: potential temperature (TH, in K); Ertel potential vorticity (PV, in pvu); relative humidity (in \%). 
+Furthermore, the surface pressure (PS) is also saved on the S files; it must be exactly identical to the one in the P files.\\
+
+\noindent
+If the P and S files are stored at another place, they might be linked with a simple Shell script (in csh), usimg the command {\em datelist}:
+\begin{verbatim}
+> foreach date ( `datelist stdout -create 19891020_00 19891023_00` )
+>   ln -s {SOURCE DIR}/P${date} {DEST DIR}/P${date}
+>   ln -s {SOURCE DIR}/S${date} {DEST DIR}/S${date}
+> end
+\end{verbatim}
+Note that the command {\em datelist} offers several options how to work with date list - creating, stepping through, comparing.
+
+\section{Starting Positions}
+
+In a first step the starting positions must be specified. To this aim a file {\em regionf} must be created with the definition of the region. The file is in the same directory as the meteorological data (section 1):
+
+\begin{verbatim}
+> more regionf 
+"1 -80 20 40 80"
+\end{verbatim}
+  
+\noindent
+The first number specifies a region ID (here 1) and the other values are: west boundary (80 W), east boundary (20 E), southern boundary (20 N) and northern boundary (80 N). The starting positions are then created with
+
+\begin{verbatim}
+> create_startf 19891020_00 startf.2 'region.eqd(1,80) ...
+                             ... @ level(100) @ hPa,agl' -changet
+\end{verbatim}
+
+\noindent
+The starting positions are written to {\em startf.2}, i.e. in format 2, and cover the region 1 specified in {\em regionf}. The horizontal start points are equidistantly distributed with 80 km spacing, and they are all at 100 hPa above ground. All points refer to the starting date 00 UTC, 20 October 1989.
+In total, 3750 starting positions are written to {\em startf.2}. The first few lines of the file look as follows:
+
+\begin{verbatim}
+> head -10 startf.2
+Reference date 19891020_0000 / Time range       0 min
+
+  time      lon     lat     p     level
+---------------------------------------
+
+   0.00   -79.61   40.45   862   100.000
+   0.00   -78.66   40.45   860   100.000
+   0.00   -77.71   40.45   873   100.000
+   0.00   -76.76   40.45   886   100.000
+   0.00   -75.82   40.45   893   100.000
+\end{verbatim}
+
+\noindent
+The different columns are: time, longitude, latitude, pressure (in hPa) and level (in hPa,agl). Note that the 'same' starting file could have been created without a region file. In this case, the command would have been:
+
+\begin{verbatim}
+> create_startf 19891020_00 startf.2 'box.eqd(-80,20,40,80,80) ...
+                             ... @ level(100) @ hPa,agl' -changet
+\end{verbatim}
+
+\noindent
+However, note that the starting positions are not exactly the same as with the previous command: it is only guaranteed that the starting points are equidistantly distributed within the region.
+
+
+\section{Trajectory Calculation}
+
+In a next step, the trajectories are calculated 72 h forward in time, with starting date 00 UTC, 20 October 1989. The command is:
+
+\begin{verbatim}
+> caltra 19891020_00 19891023_00 startf.2 traj.4 -j
+\end{verbatim}
+
+\noindent
+The taring positions are taken from{\em startf.2} and the output is written to {\em traj.4}. Furthermore, the jumping flag {\em -j} is set, i.e. if trajectories run into the ground they are lifted a little and allowed to move on.\\
+
+\noindent
+Note that the output file {\em traj.4} is not in ASCII format. To look at the file, use the command {\em trainfo}, for instance:
+
+\begin{verbatim}
+> trainfo traj.4 vars
+time lon lat p 
+
+> trainfo traj.4 dim
+3750           13            4
+
+> trainfo trai.4 startdate
+19891020_0000
+\end{verbatim}
+ 
+\noindent
+It is also possible to convert the trajectory file into ASCII format with the command {\em reformat}:
+
+\begin{verbatim}
+> reformat traj.4 traj.1
+> more traj.1
+Reference date 19891020_0000 / Time range    4320 min
+
+  time      lon     lat     p
+-----------------------------
+
+   0.00   -79.61   40.45   862
+   6.00   -80.57   43.23   791
+  12.00   -82.23   45.89   782
+  18.00   -84.94   47.07   744
+\end{verbatim}
+
+\noindent
+The command {\em trafinfo} cna also be used to look at the trajectory tables, i.e. without a conversion to ASCII format. To this aim, use
+
+\begin{verbatim}
+> trainfo traj.4 list
+\end{verbatim}
+
+\noindent
+Whereas the ASCII format is most convenient for visual inspection, it is the least compact format. In particular, if the output of {\em caltra} should be further processed, e.g. with {\em trace} or {\em select}, the binary formats should be used (see documentation for {\em reformat}).
+
+\section{Pre-Selection of Trajectories}
+
+Quite often, the position of the air parcels is sufficient to select trajectories. It is then most efficient to pre-select these trajectories and do the tracing of additional fields along the trajectories only on the pre-selected ones. In the example, airstreams should be identified which ascend from below 700 hPa at initial time to levels above 300 hPa. The ascent has to take place within 48 h. This selection can be achieved with the command:
+
+\begin{verbatim}
+> select traj.4 wcb.1 'GT:p:700:FIRST & LT:p(MIN):400:0 to 48'
+\end{verbatim}
+
+\noindent
+The first criterion selects all trajectories for which the pressure (p) at the initial time (FIRST) is greater than (GT) 700 hPa. This criterison is logically AND-combined with the second criteron: consider all times between 0 and 48 h and take the minimum pressure, i.e. p(MIN), over this time interval; if the minium pressure is less than (LT) 400 hPa, the trajectory is selected. A sample trajectory looks like:
+
+\begin{verbatim}
+> trainfo wcb.1 list 
+Reference date 19891020_0000 / Time range    4320 min
+
+  time      lon     lat     p
+-----------------------------
+
+   0.00   -72.98   40.45   918
+   6.00   -76.45   43.14   879
+  12.00   -78.53   46.69   808
+  18.00   -80.08   48.70   770
+  24.00   -84.49   48.71   563
+  30.00   -87.89   43.32   377
+  36.00   -80.69   37.24   396
+  42.00   -73.05   39.00   477
+  48.00   -67.62   47.21   488
+  54.00   -63.53   54.61   455
+  60.00   -53.79   58.53   447
+  66.00   -38.79   59.08   452
+  72.00   -27.72   55.51   493
+\end{verbatim}
+
+\noindent
+In total, 99 trajectories are selected. Further Lagrangian selection criteria might be reasonable. For instance, it could be of interest whether the air parcels are far away from their initial position after 48 h:
+
+\begin{verbatim}
+> select traj.4 wcb.1 'GT:p:700:FIRST & LT:p(MIN):400:0 to 48 & GT:DIST0:5000:48'
+\end{verbatim}
+
+\noindent
+The last criterion test whether the spherical distance from the initial position exceeds 5000 km at 48 h (only met by 4 trajectories). Note that the field {\em DIST0} is not available on the trajectory file {\em traj.4}, but is implicitely calculated. \\
+
+\noindent
+Similarly, it can be tested whether a trajectory passes through a target region (e.g. 20E-30E,50N-60N). Such a region might be defined in the region file {\em regionf}:
+
+\begin{verbatim}
+> more regionf 
+# Starting positions
+"1 -80  20 40 80"
+# Target region
+"2 20 30 50 60"
+\end{verbatim}
+
+\noindent
+The call to {\em select} now looks as follows:
+
+\begin{verbatim}
+> select traj.4 wcb.1 'GT:p:700:FIRST & LT:p(MIN):400:0 to 48 & ...
+                       ... TRUE:INREGION:2:42 to 54(ANY)'
+\end{verbatim}
+ 
+\noindent
+The last criterion is interpreted in the following way: consider the times from 42 h to 48 h (42 to 54) and check whether a trajectory is at any of these times (ANY) in the traget region 2, as specified in {\em regionf}. A sample trajectory is given below:
+
+\begin{verbatim}
+> more wcb.1
+Reference date 19891020_0000 / Time range    4320 min
+
+  time      lon     lat     p
+-----------------------------
+
+   0.00   -44.56   40.45   914
+   6.00   -41.22   38.95   885
+  12.00   -37.50   37.59   849
+  18.00   -33.54   36.76   823
+  24.00   -29.45   36.45   770
+  30.00   -24.56   37.44   622
+  36.00   -18.89   41.17   429
+  42.00   -10.48   49.48   349
+  48.00     8.75   57.02   355
+  54.00    28.74   56.97   354
+  60.00    37.14   53.71   320
+  66.00    38.99   49.75   334
+  72.00    37.57   45.94   349
+\end{verbatim}
+
+\section{Tracing Meteorological Fields}
+
+Meteorological fields can be traced along the trajectories with the command {\em trace}. Most often, a list of fields to trace will be listed in a file {\em tracevars}:
+
+\begin{verbatim}
+> more tracevars 
+PS    1.  0 P
+Q  1000.  0 P
+TH    1.  0 S
+RH    1.  1 *
+\end{verbatim}
+
+\noindent
+The following fields are to be traced: surface pressure (PS), specific humidity (Q), potential temperature (TH) and relative humidity (RH). PS and Q are available on the P files and need not to be calculated; Q will be scaled by a factor 1000 to convert from Kg/kg to g/kg. TH is found on the S file and need not to be calculated. Finally, RH is found neither on the P nor on the S file and must becomputed - the flag 1 in the third column.\\
+
+\noindent
+With the {\em tracevars} file ready, the tracing is started with:
+
+\begin{verbatim}
+> trace wcb.1 wcb.1
+\end{verbatim}
+
+\noindent
+Note that the input and output file are allowed to have the same name. The following table shows the first few lines of the new trajectory file:
+
+\begin{verbatim}
+> more wcb.1 
+Reference date 19891020_0000 / Time range    4320 min
+
+  time      lon     lat     p        PS         Q        TH        RH
+---------------------------------------------------------------------
+
+   0.00   -44.56   40.45   914  1014.093     9.664   294.921    86.667
+   6.00   -41.22   38.95   885  1012.965     8.380   296.549    77.992
+  12.00   -37.50   37.59   849  1014.056     8.565   299.122    81.321
+  18.00   -33.54   36.76   823  1012.074     8.720   300.798    85.407
+  24.00   -29.45   36.45   770  1012.254     7.666   303.487    85.262
+\end{verbatim}
+
+\noindent
+If it is later found that additional fields should be traced, this can be done with a new {\em tracevars} file or for a single field with (the second number being the scaling factor):
+
+\begin{verbatim}
+> trace wcb.1 wcb.1 -f PV 1.
+\end{verbatim}
+
+\noindent
+Note that several fields are allowed for online computation, i.e. with the computation flag set in {\em tracevars}. This is convenient for interactive mode and for few trajectories. However, if tracing is needed for many trajectories, a pre-calculation and saving on the S files is much more efficient! A list of fields for online computation is found in the reference guide for {\em trace}. \\
+
+\noindent
+It is also possible to trace the surrounding of a trajectory position, i.e. to get for instance not the temperature at the air parcel's position, but at 50 hPa above or below it. This is done with:
+
+\begin{verbatim}
+> trace wcb.1 wcb.1 -f T:-50HPA 1.
+> trace wcb.1 wcb.1 -f T:+50HPA 1.
+\end{verbatim}
+
+\noindent
+Finally, if it is decided that a field is no longer needed in the trajectory file, or if it has to be corrected, it is possible to remove columns from the trajectory file. This can be achieved with {\em extract} - for instance if only PS, TH and RH should be kept:
+
+\begin{verbatim}
+> extract wcb.1 wcb.1 -var PS TH RH
+\end{verbatim}
+
+\noindent
+Note that {\em extract} can also be used to extract different times or starting positions (see the reference documentation). 
+
+
+\section{Final Selection of Trajectories}
+
+In this section the selection of trajectories should be refined, i.e. it is not only based on positional information but also on further meteorological parameters. We look at several questions:\\
+
+\begin{itemize}
+\item[a)] Is there a trajectory which reaches saturation ($RH>99$\%)? The trajectories should be saved in a new trajectory file.
+\begin{verbatim}
+> select wcb.1 sat.1 'GT:RH:99:0 to 72(ANY)'
+> more sat.1
+Reference date 19891020_0000 / Time range    4320 min
+
+  time      lon     lat     p        PS         Q        TH        RH        PV   
+---------------------------------------------------------------------------------
+   0.00   -72.98   40.45   918  1018.161     9.503   292.020   100.722     0.920    
+   6.00   -76.45   43.14   879   986.319     8.723   294.933    92.837     1.101    
+  12.00   -78.53   46.69   808   972.550     7.621   297.875    97.737     0.794    
+  18.00   -80.08   48.70   770   973.957     6.147   297.914    97.912     1.078    
+  24.00   -84.49   48.71   563   962.279     2.327   307.548    87.923     1.034    
+  30.00   -87.89   43.32   377   977.415     0.319   314.210    65.759     0.108    
+  36.00   -80.69   37.24   396   939.606     0.303   312.705    52.845     0.323    
+  42.00   -73.05   39.00   477  1013.693     0.298   314.614    16.248     0.309    
+  48.00   -67.62   47.21   488   970.025     0.442   312.975    23.890     0.463    
+  54.00   -63.53   54.61   455   950.011     0.386   313.047    30.182     0.479    
+  60.00   -53.79   58.53   447  1007.039     0.392   311.951    36.578     0.487    
+  66.00   -38.79   59.08   452  1006.532     0.319   311.316    29.286     0.443    
+  72.00   -27.72   55.51   493  1009.871     0.279   311.428    15.950     0.513    
+\end{verbatim}
+
+\item[b)] Get a list of all trajectories which pass through a circle around 20\,W/40\,N and radius 500\,km.
+\begin{verbatim}
+> select wcb.1 indlist 'TRUE:INCIRCLE:-20,40,500:ALL(ANY)' -index
+> more indlist
+            4
+            5
+            6
+           11
+           12
+           13
+           14
+           19
+           20
+           21
+           22
+           47
+\end{verbatim}
+Hence, the trajectories 4,5,... pass through the circle. The trajectories themselves can be extracted in a second step with
+\begin{verbatim}
+> extract wcb.1 pass.1 -index indlist
+\end{verbatim}
+where now the selected trajectories are written to the trajectory file {\em pass.1}.
+
+\item[c)] Select all trajectories which are in the stratosphere after 48 h. The dynamical tropopause is defined as the 2-PVU isosurface?
+\begin{verbatim}
+> select wcb.1 out 'GT:PV:2:48 to 72(ALL) & LT:P:500:48 to 72(ALL)' 
+\end{verbatim}
+The second criterion guarantees that the air parcel is at a height above 500 hPa; indeed, low-level high-PV regions might mimick a stratosphere, although they are of diabatic origin.  
+
+\item[d)] Select all trajectories which are within 2000 km distance of their starting position after 72 h.
+\begin{verbatim}
+> select wcb.1 sel.1 'LT:DIST0:2000:LAST'
+\end{verbatim}
+Note that the fields {\em DIST0} needs not to be available on the trajectory file - it is calculated during the selection. {\em DIST0} refers to the spherical distance (in km) from the strting position. If the path length (in km) is needed, {\em DIST} can be used instead.
+
+\item[e)] How many trajectories ascend more than 550 hPa between 12 h and 54 h? We are only interested in the number of selected trajectories.
+\begin{verbatim}
+> select wcb.1 count 'GT:P(DIFF):550:12,54' -count
+> more count
+3
+\end{verbatim}
+
+\item[f)] We would like to select all trajectories which reach potential vorticity (PV) greather than 2 PVU at levels above 500 hPa. In a first attempt, this might be accomplished with the criterion
+\begin{verbatim}
+> select wcb.1 wcb.1 'GT:PV:2:ALL(ANY) & LT:p:500:ALL(ANY)' 
+\end{verbatim} 
+But note that this is not exactly what we want - the first criterion might be fulfilled at a time 48 h, for instance, whereas the second criterion is fulfilled at another time, say 72 h. Hence they are not both fulfilled at the same time! A way around this problem is possible if a TRIGGER column is used to mark the two events. The original trajectory file looks as follows:
+\begin{verbatim}
+> more wcb.1
+Reference date 19891020_0000 / Time range    4320 min
+
+  time      lon     lat     p        PS          RH        PV
+------------------------------------------------------------
+
+   0.00   -19.56   46.94   905  1005.242     83.514     0.291
+   6.00   -14.72   48.17   892   999.182     88.325     0.242
+  12.00   -10.58   50.53   862   993.145     97.718     0.293
+  18.00    -7.22   53.02   792   972.076     99.216     0.738
+  24.00    -3.71   55.89   724   956.135     93.218     1.076
+  30.00    -0.19   58.87   629   971.334     70.088     1.076
+  36.00     1.46   61.62   452   966.406     66.056     0.558
+  42.00     0.01   62.49   328   977.209     65.319     1.754
+  48.00    -1.54   63.41   313   983.930     56.822     2.727
+  54.00    -3.59   64.77   322   984.627     58.328     1.874
+  60.00    -9.91   66.07   323   988.185     57.894     2.052
+  66.00   -20.91   66.02   316   976.560     57.989     2.565
+  72.00   -28.89   66.19   319  1007.175     54.477     2.693
+\end{verbatim}
+Then we mark the two events with a TRIGGER:
+\begin{verbatim}
+> select wcb.1 wcb.1 'GT:PV:2:1(TRIGGER) & LT:p:500:2(TRIGGER)' -trigger
+\end{verbatim}
+The first criterion (PV) gets the trigger 1 (in binary system 01), the second one (pressure) get the trigger 2 (in binary system 10). If both criteria are fulfilled, the trigger column becomes 3, which corresponds in the binary system to 11 - i.e. each flag corresponds to a bit in the trigger value. With the option '-trigger' the trigger column is written to the output trajectory file:
+\begin{verbatim}
+> more wcb.1
+Reference date 19891020_0000 / Time range    4320 min
+
+  time      lon     lat     p        PS         RH        PV     TRIGGER
+-------------------------------------------------------------------------
+
+   0.00   -19.56   46.94   905  1005.242    83.514     0.291      0.000
+   6.00   -14.72   48.17   892   999.182    88.325     0.242      0.000
+  12.00   -10.58   50.53   862   993.145    97.718     0.293      0.000
+  18.00    -7.22   53.02   792   972.076    99.216     0.738      0.000
+  24.00    -3.71   55.89   724   956.135    93.218     1.076      0.000
+  30.00    -0.19   58.87   629   971.334    70.088     1.076      0.000
+  36.00     1.46   61.62   452   966.406    66.056     0.558      2.000
+  42.00     0.01   62.49   328   977.200    65.319     1.754      2.000
+  48.00    -1.54   63.41   313   983.930    56.822     2.727      3.000
+  54.00    -3.59   64.77   322   984.627    58.328     1.874      2.000
+  60.00    -9.91   66.07   323   988.185    57.894     2.052      3.000
+  66.00   -20.91   66.02   316   976.560    57.989     2.565      3.000
+  72.00   -28.89   66.19   319  1007.175    54.477     2.693      3.000
+\end{verbatim}
+Now the selection can be achieved by refering to the TRIGGER column:
+\begin{verbatim}
+> select wcb.1 wcb.1 'ALL:TRIGGER:1,2:ALL(ANY)'
+\end{verbatim}
+This selection means that the trigger values 1 and 2 must be set - the operator ALL (first term) guaranteeing that all selected triggers are set. The time specification ALL(ANY) is as before, i.e. the check is performed for all times and he criterion must be fulfilled at any of these times.\\
+
+\item[g)] Select all trajectories which pass at time 60 h over Switzerland! The coordinates of the Swiss boundary are listed in a file {\em borders.dat}:
+\begin{verbatim}
+> more borders.dat
+8.55 47.45
+7.942863 46.002075
+7.949024 46.001195
+7.956945 46.000022
+7.984226 46.000022
+7.989800 46.001489
+8.000068 46.007356
+8.011508 46.018503
+...
+\end{verbatim}
+The first line is a point (longitude, latitude) within Switzerland (Zurich), the other lines define the boundary of Switzerland (as 1373 points). With this polygon file, the selection command becomes
+\begin{verbatim}
+> select wcb.1 out.1 'TRUE:INPOLYGON:borders.dat:60'
+\end{verbatim} 
+Note that in a criterion only one polygon can be specified.
+
+\item[g)] New criteria can easily be implemented into the Fortran code; to this aim the file {\em special.f} in directory {\em select} must be edited. The following example shows the implementation of an identification for warm conveyor belts (WCB). The calling sequence for the criterion is {\em SPECIAL:WCB:ascent,first,last}, the air stream must ascend at least {\em ascent} hPa between time {\em first} and time {\em last}. The corresponding Fortran looks as follows:
+\begin{small}
+\begin{verbatim}
+> more select/special.f
+
+      SUBROUTINE special (flag,cmd,tra,ntim,ncol,
+     >                    vars,times,param,nparam)
+
+c     ***************************************************************************
+c     *                                                                         *
+c     * OUTPUT:  flag           -> 1 if trajectory is selected, 0 if not        *
+c     *                                                                         *
+c     * INPUT:   cmd            <- command string (e.g. WCB)                    *
+c     *          tra(ntim,ncol) <- single trajectory: indices time,column       *
+c     *          ntim           <- number of times                              *
+c     *          ncol           <- number of columns (including time,lon,lat,p) *
+c     *          vars(ncol)     <- names of columns                             *
+c     *          times(ntim)    <- List of times
+c     *          param(nparam)  <- parameter values                             *
+c     *          nparam         <- number of parameters                         *
+c     *                                                                         *
+c     ***************************************************************************
+
+      implicit none
+      
+c     ---------------------------------------------------------------------------
+c     Declaration of subroutine parameters
+c     ---------------------------------------------------------------------------
+
+      integer       flag           ! Boolean flag whether trajectory is selected
+      character*80  cmd            ! Command string
+      integer       ntim,ncol      ! Dimension of single trajectory
+      real          tra(ntim,ncol) ! Single trajectory
+      character*80  vars(ncol)     ! Name of columns
+      real          times(ntim)    ! List of times
+      integer       nparam         ! # parameters
+      real          param(nparam)  ! List of parameters
+
+c     ---------------------------------------------------------------------------
+c     Declaration of local variables
+c     ---------------------------------------------------------------------------
+
+      integer       i
+      integer       ip,i0,i1
+
+c     --------------------------------------------------------------------------  %)
+c     SPECIAL:WCB:ascent,first,last                                               %)
+c         : Detect Warm Conveyor Belts (WCB); the air stream must ascend at least %)
+c         : <ascent=param(1)> hPa between the two times <first=param(2)> and      %)
+c         : <last=param(3)>. Note, the lowest pressure is allowed to occur at any %)
+c         : time between <first> and <last>.                                      %)
+c     --------------------------------------------------------------------------- %)
+
+      if ( cmd.eq.'WCB' ) then
+
+c        Reset the flag for selection
+         flag = 0
+
+c        Pressure is in the 4th column
+         ip = 4
+
+c        Get indices for times <first> and <last>
+         i0 = 0
+         i1 = 0
+         do i=1,ntim
+            if ( param(2).eq.times(i) ) i0 = i
+            if ( param(3).eq.times(i) ) i1 = i
+         enddo
+         if ( (i0.eq.0).or.(i1.eq.0) ) then
+            print*,' ERROR: invalid times in SPECIAL:WCB... Stop'
+            stop
+         endif
+
+c        Check for ascent 
+         do i=i0+1,i1
+            if ( ( tra(1,ip)-tra(i,ip) ) .gt. param(1) ) flag = 1
+         enddo
+
+      endif
+
+c     ---------------------------------------------------------------------------
+
+      end
+\end{verbatim}
+\end{small}
+
+\end{itemize}
+
+\section{Trajectory Densities}
+Single trajectories can be visualised e.g. with Matlab or wit NCL (see template scripts in the Lagranto folder). If many trajectories should be visualised instead, it is much more convenient to show trajectory densities. The easiiest way to get trajectory densities is:
+\begin{verbatim}
+> density wcb.1 densisty
+> ncview density 
+\end{verbatim}
+This will project the trajectories in the trajectory file {\em wcb.1} onto a global longitude/latitude grid with 1 degree horizontal resolution. A filter radius of 100 km will be used
+
+\includegraphics[width=0.9\textwidth]{screen1.ps}
+
+\noindent
+The CF-netCDF file contains several fields: a) the number of trajectory points associated to each grid point (COUNT); b) the residence time of the trajectories (in hours) associated to each grid point - the residence time being the time a trajectory stays at a certain grid cell (RESIDENCE); c) the area (im $km^2$) associated with each grid cell. The area allows to change the unit of the gridded trajectory from counts per grid point to counts per $km^2$.\\
+
+\noindent
+Often the trajectories do not spread over the whole globe; then the subdomain can be specified with
+\begin{verbatim}
+> density traj.1 density -latlon 300 150 -100 10 0.5 0.5 -create
+\end{verbatim}
+where the new grid has 300x150 grid points in zonal and meridional direction with south-eastern corner at 100\,W/10\,S and resolution of 0.5 degree in zonal and 0.5 degree in meridional direction. The flag {\em create} forces the netCDF file to be created anew, even if it already exists.
+
+\includegraphics[width=0.9\textwidth]{screen2.ps}
+
+\noindent
+It is also possible to re-parameterise the trajectories before they are gridded. For instance, the following command interpolates the positions to a 1-h time interval and then performs the grissing. This results in a smoother density plot:
+\begin{verbatim}
+> density traj.1 density -latlon 300 150 -100 10 0.5 0.5 -create -interp 1 h
+\end{verbatim}
+
+\includegraphics[width=0.9\textwidth]{screen3.ps}
+
+\noindent
+In addition to a gridding of the complete trajectories, the single trajectory times can be gridded. 
+\begin{verbatim}
+> density traj.1 density -create -time  0.00 -create
+> density traj.1 density -create -time  6.00 
+> density traj.1 density -create -time 12.00 
+> density traj.1 density -create -time 18.00 
+> density traj.1 density -create -time 24.00 
+\end{verbatim}
+
+\noindent
+In the previous figures, the density of the trajectories was determined - i.e. the number of trajectories associated with a grid point or the residence associated with a grid cell was determined. In addition to this most basic information, it is also possible to perform a gridding of any trajectory field. For instance, the trajectory file contains
+
+\begin{verbatim}
+Reference date 19891020_0000 / Time range    4320 min
+
+  time      lon     lat     p
+-----------------------------
+
+   0.00   -79.61   40.45   862
+   6.00   -80.57   43.23   791
+  12.00   -82.23   45.89   782
+  18.00   -84.94   47.07   744
+\end{verbatim}
+
+\noindent
+and we would like to know at what height the trajectories typically (in the mean) are at a specific grid point. Then we would grid the pressure ``p'' instead of the position:
+
+\begin{verbatim}
+> density traj.1 density -create -latlon 300 150 -100 10 0.5 0.5 -field p -time 0.00
+> density traj.1 density  -field p -time 24.00
+> density traj.1 density  -field p -time 48.00
+\end{verbatim}
+
+\noindent
+The following figures show the gridded pressure at time 0.00 and 24.00 h; note that the trajectories were initialised 100 hPa above ground.
+
+\noindent
+\begin{center}
+\includegraphics[width=0.8\textwidth]{screen4.ps}
+\\
+\includegraphics[width=0.8\textwidth]{screen5.ps}
+\end{center}
+
+\section{Interface Script}
+
+\subsection{Start from local directory}
+
+In addition to the programs {\em create\_startf}, {\em caltra}, {\em trace}, {\em select}, Lagranto offers a ``master'' script which combines the call to the individual programs into one single call. For instance,
+\begin{verbatim}
+> lagranto local 19891020_00 19891024_18 startf nil -changet
+\end{verbatim}
+will start a Lagranto run starting from 00,UTC 20 Octiober 2010 to  18,UTC 24 Octiober 2010, based upon the starting positions in the file {\em startf}. No selection of trajectories is applied, as specified with the flag {\em nil}, and the times on the netCDF P and S files are set relative to the starting date prior  to the Lagranto run. Finally, {\em local} means that all input files are expected in the directory where Lagranto was called.\\
+
+\noindent
+The output for the above Lagranto call is saved in a newly created directory, which is located in the calling directory:
+\begin{verbatim}
+> ls -l ntr_19891020_00_f114_local_startf_nil/
+-rw-r--r-- 1 michaesp wheel 5328945 2011-03-21 14:03 lsl_19891020_00
+-rw-r--r-- 1 michaesp wheel   68195 2011-03-21 14:03 runscript.logfile
+-rwxr--r-- 1 michaesp wheel    1025 2011-03-21 14:02 runscript.sh*
+\end{verbatim}
+The three different files are:
+\begin{itemize}
+\item[a)]  {\bf lsl\_19891020\_00}: the output trajectory file -the file name starts with {\em lsl} and contains the starting date of the Lagranto run:
+\begin{verbatim}
+> more lsl_19891020_00
+Reference date 19891020_0000 / Time range    6840 min
+
+  time      lon     lat     p        PS         Q        TH        RH
+---------------------------------------------------------------------
+
+   0.00   -79.61   40.45   862   961.659     6.434   290.838    97.722
+   6.00   -80.57   43.23   791   980.984     5.334   293.824    98.773
+   ...
+\end{verbatim}
+Note that additional fields have been traced along the trajectories, as specified in the tracing file {\em tracevars}:
+\begin{verbatim}
+> more tracevars
+PS    1.  0 P
+Q  1000.  0 P
+TH    1.  0 S
+RH    1.  1 *
+\end{verbatim}
+\item[b)] {\bf runscript.logfile}: a log file with all status and error information of the Lagranto run. If the flag {\em -log} is set in a Lagranto call, the log will be written to screen.
+\item[c)] {\bf runscript.sh}: the calling script for the programs {\em create\_startf}, {\em caltra}, {\em trace} and {\em select}. The basic idea of {\em lagranto} is to create the output directory, to prepare all netCDF and other files in this output directory and to create a Shell script with name {\em runscript.sh}. If all these preparations were successfull, Lagranto will change into the output directory and launch {\em runscript.sh}. The {\em runscript.sh} for the previous Lagranto call looks as follows:
+\begin{small}
+\begin{verbatim}
+#!/bin/csh
+#
+#----- Calling command
+#
+# lagranto local 19891020_00 19891024_18 startf nil -changet -log 
+#
+#----- Output file    
+#
+# lsl_19891020_00                
+#
+#------ Abort if no startf is available
+#
+if ( ! -f startf ) then
+  echo " ERROR: no start file available .... Stop"
+  exit 1
+endif
+#
+#------ Remove existing trajectory files
+#
+if ( -f lsl_19891020_00.4 ) then
+  \rm -f lsl_19891020_00.4
+endif
+if ( -f lsl_19891020_00 ) then
+  \rm -f lsl_19891020_00
+endif
+#
+#------ Run <caltra>
+#
+/home/sprenger/lagranto//bin/caltra.sh 19891020_00 19891024_18 startf lsl_19891020_00.4
+#
+#------ Abort if caltra was not successful
+#
+if ( ! -f lsl_19891020_00.4 ) then
+  echo " ERROR: caltra failed .... Stop"
+  exit 1
+endif
+#
+#------ Run <trace>
+#
+/home/sprenger/lagranto//bin/trace.sh lsl_19891020_00.4 lsl_19891020_00 -v tracevars
+#
+#------ Abort if trace was not successful
+#
+if ( ! -f lsl_19891020_00 ) then
+  echo " ERROR: trace failed .... Stop"
+  exit 1
+endif
+\end{verbatim}
+\end{small}
+\end{itemize}
+
+\noindent
+Note that you are free to change to the output directory and manually launch {\em runscript.sh}, possibly after having modified it to your needs. This way of working is uspported by the optional flag {\em -prep} which will only prepare all files and then changes to the output directory:
+\begin{verbatim}
+> lagranto local 19891020_00 19891024_18 startf nil -changet -prep
+\end{verbatim}
+At the end of this call you will be asked to change to the output directory, which -after having agreed- will open a new {\em xterm} window. Note that you can always easily change to a output directory by calling
+\begin{verbatim}
+> lagranto -open local 
+\end{verbatim}
+If several trajectory runs are available in the local directory, you are asked to select one. Often, you would like to see the outcome of a run without changing to the output directory. This is most easily accomplished with the following call:
+\begin{verbatim}
+> lagranto -show local 
+\end{verbatim}
+
+\subsection{Start from case directory}
+
+In this calling sequence, for instance
+\begin{verbatim}
+> lagranto tutorial 19891020_00 19891024_18 startf nil -changet
+\end{verbatim}
+the input files are not expected in the local directory, but are specified by means of a case identifier. For instance, a case has the identifier {\em tutorial}. Then Lagranto will expect the input netCDF P and S files to be located in
+\begin{verbatim}
+> ls -l ${HOME}/cdf/tutorial
+/home/sprenger/cdf/tutorial/P19891020_00
+/home/sprenger/cdf/tutorial/P19891020_06
+/home/sprenger/cdf/tutorial/P19891020_12
+/home/sprenger/cdf/tutorial/P19891020_18
+/home/sprenger/cdf/tutorial/P19891021_00
+/home/sprenger/cdf/tutorial/P19891021_06
+/home/sprenger/cdf/tutorial/P19891021_12
+/hom
+\end{verbatim}
+and all the other input files (starting positions, tracing file, region file, polygon specification) are expected in 
+\begin{verbatim}
+> ls -l ${HOME}/tra/tutorial
+startf
+tracevars
+\end{verbatim}
+The output of the trajectory calculation will be written to the following output directory, where now the case identifier {\em tutorial} is part of the directory name:
+\begin{verbatim}
+> cd /home/michaesp/tra/tutorial/ntr_19891020_00_f114_tutorial_startf_nil
+> ls -1
+-rw-r--r-- 1 michaesp wheel 5328945 2011-03-21 14:03 lsl_19891020_00
+-rw-r--r-- 1 michaesp wheel   68195 2011-03-21 14:03 runscript.logfile
+-rwxr--r-- 1 michaesp wheel    1025 2011-03-21 14:02 runscript.sh*
+\end{verbatim}
+All other aspects are identical to the ones described in the previous section. 
+
+
+\section{Installation}
+
+In this section you will find some hints how to install Lagranto on a Linux platform. Everthing is handled with the installation script {\em install.sh} which comes with the Lagranto distribution:
+\begin{verbatim}
+> install.csh 
+install.sh [lib|core|goodies|links|all]
+\end{verbatim}
+The installation should proceed in several distinct steps:
+\begin{itemize}
+\item[a)] Find the place of the netCDF (http://www.unidata.ucar.edu/software/netcdf/) installation on your system - note that the netCDF comes as a pre-compiled package for many Linux distributions and most often can be installed with the Linux software management. Define an environmental variable {\em NETCDF} which directs to your installation, e.g.
+\begin{verbatim}
+> setenv NETCDF /usr/local/netcdf/
+\end{verbatim}
+\item[b)] Set the environmental variable {\em LAGRANTO} to the place where you have stored the Lagranto source code and include Lagranto in your search path. In {\em csh} this might look as follows:
+\begin{verbatim}
+> setenv LAGRANTO   /home/michaesp/lagranto/
+> set isLAGRANTO=`echo $PATH | grep $LAGRANTO | wc -l`
+> if ( $isLAGRANTO == 0 ) then
+>   setenv PATH $LAGRANTO/bin:${PATH}
+> endif
+\end{verbatim}
+You might include these statements also in your {\em .cshrc} file. If successful, you will then be able to open the lagranto help, e.g. with
+\begin{verbatim}
+> lagrantohelp
+\end{verbatim} 
+\item[c)] Install the different components of Lagranto and create links - proceed step by step to ensure that each one was successfully completed:
+\begin{verbatim}
+> install lib
+> install core
+> install goodies
+> install links
+\end{verbatim} 
+\end{itemize}
+Lagranto should now be ready to run! As a next step you might want to consider the tutorial, which can be invoked with the command:
+\begin{verbatim}
+> lagrantohelp tutorial
+\end{verbatim}
+If you are familiar with the most basic aspects of Lagranto, please refer to the reference guide which enlists all options of Lagranto:
+\begin{verbatim}
+> lagrantohelp refernce
+\end{verbatim}
+The contents of the reference guide can also be called from within the Linux shell, e.g. the documentation of {\em caltra} can be seen in man page format with:
+\begin{verbatim}
+> lagrantohelp caltra 
+\end{verbatim}
+
+\end{document}

@@ -1,0 +1,41 @@
+.TH difference
+.SH NAME 
+.B difference - calculate the difference of two trajecrtory files
+.SH SYNOPSIS 
+.B difference 
+.I inpfil1
+.I inpfile2
+.I outfile 
+.I field 
+.I [ -single|-max ]
+.SH DESCRIPTION
+Calculate the difference of two trajectory files "inpfile1" and "inpfile2" and write it to a new trajectory file "outfile". The difference is calculated of the field "field", which must be available on both input files. If the field "LATLON" is specified, the spherical distance between the two trajectories is taken. Furthermore, with "-single" the difference is written at all times, with "-max" only the time of maximum difference is written.
+.SH PARAMETERS
+.TP 15
+.I inpfile1
+first trajectory file 
+.TP 15
+.I inpfile2
+second trajectory file 
+.TP 15
+.I outfile
+output trajectory file - note that this is not a standard trajectory file which can be further processed! The position of both trajectories are listed and also the field for both trajectories and their difference. 
+.TP 15
+.I field
+Name of field for which the difference should be calculated. It must be available in both trajectory files. IF "LATLON" is specified, the spherical distance between the trajectory positions is calculated.
+.SH OPTIONAL PARAMETERS
+.TP 15
+.I -single 
+the difference is written to "outfile" for all trajectory times
+.TP 15
+.I -max
+the difference is written to "outfile" only for the trajectory time with maximum difference.
+.SH EXAMPLES
+.TP 5
+.B [1] difference tra1 tra2 out LATLON -single
+gives the speherical distance (LATLON) between trajectories in "tra1" and "tra2". The difference is written for all trajectory times.
+.TP 5
+.B [2] difference tra1 tra2 out TH -max
+gives the difference of potential temperature (TH) between trajectory file "ra1" and "tra2" and writes the maximum difference ("-max") to the output file "out".
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)

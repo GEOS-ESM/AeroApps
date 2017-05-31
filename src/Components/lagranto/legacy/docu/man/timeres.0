@@ -1,0 +1,36 @@
+.TH timeres
+.SH NAME 
+.B timeres - change the time resolution of a trajectory 
+.SH SYNOPSIS 
+.B timeres
+.I inpfile
+.I outfile
+.I -[h|min] value
+.I [-cubic|-linear]
+.SH DESCRIPTION
+Change the time resolution of an input trajectory file "inpfile" through interpolation and write a new trajectory file "outfile". The new time resolution "value" is given either in hours "-h" or in minutes "-min". The interpolation is performed on the trajectory file either in linear mode ("-linear") or in cubic spline mode ("-cubic"). The default is "-cubic".
+.SH PARAMETERS
+.TP 15
+.I inpfile
+input trajectory file
+.TP 15
+.I outfile
+output trajectory file (can be the same as inpfile).
+.TP 15
+.I -h value
+new time resolution in hours (e.g. "-h 1").
+.TP 15
+.I -min value
+new time resolution in minutes (e.g. "-min 15").
+.TP 15
+.I -linear
+linear interpolation between two trajectory times; note that this mode conserves the sign between two trajectory times - possibly of important for specific humidity, relative humidity,...
+.TP 15
+.I -linear
+subic spline interpolation between two trajectory times; note that this mode conserves can change the sign between two trajectory times!
+.SH EXAMPLES
+.TP 5
+.B [1] timeres trafile trafile -min 15 -linear
+changes the time resolution to 15 minutes, using linear interpolation, and overwrites the old trajectory file.
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011

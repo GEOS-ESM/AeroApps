@@ -1,0 +1,30 @@
+.TH list2lsl
+.SH NAME 
+.B list2lsl - convert a list of longitude, latitude and pressure into a trajectory file. 
+.SH SYNOPSIS 
+.B list2lsl
+.I inpfile
+.I outfile
+.I [ optional arguments ]
+.SH DESCRIPTION
+Convert an input file "inpfile" wqith  a list of longitude, latitude and pressure into a trajectory file.
+.SH PARAMETERS
+.TP 15
+.I inpfile
+input file (a list of longitude, latitude and pressure)
+.TP 15
+.I outfile
+output trajectory file
+.SH OPTIONAL PARAMETERS 
+.TP 5
+.B -ref refdate
+set the reference date of the trajectory file to "refdate", e.g. "-ref 20110102_00".
+.TP 5
+.B -time value
+set the time of the trajectory file to "value" (in format HH.MM): e.g. "-time 6" sets the time to 6 h. 
+.SH EXAMPLES
+.TP 5
+.B [1] list2lsl listfile trafile -refdate 20110101_00 -time 6 
+converts the list "listfile" into a trajectory file "trafile", where the reference date is 20110101_00 and the time is 6 h.
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)

@@ -1,0 +1,58 @@
+.TH trainfo
+.SH NAME
+.B trainfo - write meta-information for a trajectory file
+.SH SYNOPSIS
+.B trainfo 
+.I trafile 
+[
+.I option
+].
+.SH DESCRIPTION
+Write meta-information for a trajectory file 
+.I trafile
+to screen. If no option is given, all meta-information is written, otherwise the specific piece of information is passed with 
+.I option.
+.SH PARAMETERS
+.TP 5
+.I trafile 
+name of the input trajectory file 
+.SH OPTIONAL ARGUMENTS
+.TP 5
+.B - dim 
+dimensions of the trajectory file: #tra, #ntimes, #ncolumns.
+.TP 5 
+.B - ntra
+number of trajectories.
+.TP 5
+.B - ntim
+number of times.
+.TP 5
+.B - ncol
+number of columns (including time, longitude, latitude, pressure). 
+.TP 5
+.B - vars
+list of field names (columns) on the trajectory file.
+.TP 5
+.B - refdate 
+reference date in format (YYYYMMDD_HHMM). 
+.TP 5
+.B - times
+list of times (relative to the referencec date). Times are given in format: HH.MM.
+.TP 5
+.B - startdate
+starting date for the trajectory calculation (in format YYYYMMD_HHMM).
+.TP 5
+.B - enddate
+end date for the trajectory calculation (in format YYYYMMD_HHMM).
+.TP 5
+.B - timerange 
+time range (in minutes) of the trajectories.
+.TP 5
+.B - list
+list all trajectories.
+.SH EXAMPLES
+.TP 5
+.B [1] trainfo file dim
+Given a trajectory file with name "file", write the three dimensions of the file to screen. The dimensions are: number of trajectories, number of times and number of columns.
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)

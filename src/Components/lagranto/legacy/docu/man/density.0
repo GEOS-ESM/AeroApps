@@ -1,0 +1,125 @@
+.TH density
+.SH NAME 
+.B density - 
+gridding of trajectory files: either single trajectories or trajectory densities
+.SH SYNOPSIS 
+.B density
+.I inpfile
+.I outfile
+[ 
+.I optional arguments 
+] 
+.SH DESCRIPTION
+Gridding of a trajectory file "inpfile"; the output is written to a netCDF file "outfile). The trajectories can be interpolated to equal-distance intervals or to a higher time resolution; furthermore, an interpolation is provided to give a continuous line in a longitude/latitude grid. Besides densities of trajectories, possibly at different times, gridding of traced meteorological fields is accepted.
+.SH PARAMETERS
+.TP 15
+.B inpfile
+input trajectory file (in one of the accepted formats, see 
+.B reformat 
+for details)
+.TP 15
+.B outfile 
+output netCDF file with a regular or rotated longitude/latitude grid. The output can be either in IVE or in CF netCDF format (see switches below).
+.SH OPTIONAL PARAMETERS
+.TP 5
+.B - field name
+Field name (according to the column names of the trajectory file) which should be gridded. If no field is specified, it is assumed that the trajectory density (counts per grid point) should be gridded. 
+.TP 5
+.B - create
+determines the behaviour if the output file already exists: 1) if the file does NOT exist, it will be created; 2) if the file already exists, it will be overwritten, i.e. newly created. If the flag is not set and the file already exists, the output of the new gridding will appended to the existing file. As a typical scenario: density TRAJECTORY DENSITY; density TRAJECTORY DENSITY -field p; density TRAJECORY DENSITY -field PV;... -> all fields (p, PV,...) will be written to the same output file "DENSITY". 
+.TP 5
+.B - index filename
+perform only a gridding of the trajectories in the index list "filename"; an index list is just a list of the indices of the single trajectories - it can easily be created with
+.B select
+and also is used in
+.B extract.
+.TP 5
+.B - boolean filename
+perform only a gridding of the trajectories in the boolean list "filename"; a boolean list has for each trajectory an entry 1 (trajectory selected) or 0 (not selected)  - it can easily be created with
+.B select
+and also is used in
+.B extract.
+.TP 5
+.B - interp val unit
+interpolate the trajectories to new positions before the gridding; different modes are accepted: 
+.B 1) "-interp 1 h" 
+interpolates the trajectories to a new time resolution (here 1 h);
+.B 2) "-interp 20 km"
+interpolates the trajectories to a new space resolution (here 20 km). Note that nearly stationary trajectories will be reduced in their influence considerably if this mode is applied;
+.B 3) "-interp 2 deg"
+interpolates to a new resolution, expressed in deg lon/lat. This mode is particularly helpful if a "line" should be drawn on a lon/lat grid.
+.TP 5
+.B - radius val unit
+set the filtering radius for the smoothing (default is 100 km); this radius determines over which radius each trajectory point is smeared out during the gridding. It should be adapted to the grid resolution: if it is too small, and no grid point falls into the circle with this radius, an error message is written. A good choice might be 
+.B -radius <dlat|dlon [in km]>. 
+Further Examples: 
+.B "-radius 2 deg" 
+for smoothing over 2 degrees lat/lon;
+.B "-radius 20 km"
+for a 20 km smoothing.
+.TP 5
+.B - latlon [ nlon nlat lonmin latmin dlon dlat | dynamic ]
+specification of the regular output lon/lat grid; the default output grid has parameters: nlon = 360, nlat = 180, lonmin = -180, lonmax = 180, dlon =1, dlat = 1 (global). If the option 
+.B dynamic 
+is chosen, the grid is automatically adapted to the trajectory file: the longitude and latitude boundaries are determined and the resulting ranges divided in 400 grid pixel in each direction. In a second step the grid distance is set equal in zonal and meridional direction, and the other grid parameters correspondingly adjusted.
+.TP 5
+.B - rotated clon clat nlonlat dlonlat
+specification of the rotated output lon/lat grid; the centre of the rotated grid is given with the central longitude (clon) and latitude (clat) - this point corresponds to 0/0 in the new coordinate system. The horizontal resolution (dlonlat) of the new grid is equal in rotated longitude and latitude. The final domain extensions are: -(nlonlat-1)/2*dlonlat, +(nlonlat-1)/2*dlonlat and correspondingle for rotated latitude. 
+.TP 5
+.B -time value
+do only a gridding of the time specified; e.g. -time 18.00 would perform a gridding of the trajectory time 18 h. If the netCDF already exists, and if the "-create" flag is not set, the new time will be added to the already existing file - the grid parameters will automatically be taken from the netCDF file. 
+.SH OUTPUT FIELDS
+.TP 5
+.B - COUNT
+number of trajectory points attributed to grid points; the integration of this field over the whole domain is equal to the total number of gridded trajectory points, i.e. equal to the product #trajectories x #times.
+.TP 5
+.B - RESIDENCE
+residence time of trajectory points attributed to grid points; the integration of this field over the whole domain is equal to the total time of all trajectories, i.e. equal to the product #trajectories x #time x time interval.
+.TP 5
+.B - AREA
+area (in square kilometers) attributed to each grid point, i.e. dlat x dlon x coslatitude). This field can be used to convert the units of COUNT and RESIDENCE to grid-independent values. For instance, 
+.B RESIDENCE/AREA 
+is the residence time per square kilometer. 
+.TP 5
+.B - FILED
+gridded field: e.g gridded pressure, temperature, potential vorticity.
+.SH EXAMPLES
+.TP 5
+.B [1] density TRAJECTORY DENSITY
+bring the TRAJECTORY file into a netCDF file DENSITY with gloabl coverage (longitude/latitude grid). The netCDF file is in CF format and the all trajectory points are gridded, based on a smoothing radius of 100 km. 
+.TP 5
+.B [2] density TRAJECTORY DENSITY -latlon dynamic
+as in example [1], but now the lon/lat grid is automatically adapted to the range of the trajectory file.
+.TP 5
+.B [3] density TRAJECTORY DENSITY -interp 1 h
+as in exaxmple [1], but the trajectories are interpolated to a 1-h time interval. This gives smoother trajectories. 
+.TP 5
+.B [4] density TRAJECTORY DENSITY -interp 20 km
+as in exaxmple [1], but the trajectories are interpolated to a 20-km distance interval. 
+.TP 5
+.B [5] density TRAJECTORY DENSITY -interp 1 deg
+as in exaxmple [1], but the trajectories are interpolated to a 1 deg distance interval. If the output grid (as specified in option "-latlon" or "-rotated") has the same spacing (1 deg) as given in "-interp 1 deg", a continuous line is drawn.  
+.TP 5
+.B [6] density TRAJECTORY DENSITY -radius 100 km
+the trajectory points are spread out over a circle with radius 100 km; this is equivalent to a smoothing of the resulting density field. Note that in a equidistant cylindrical projection, the circles become distorted towards the pole. If this is not appropriate, the option 
+.B "-radius 2 deg" 
+can be given, which is independent of geographical latitude.
+.TP 5
+.B [7] density VALID DENS -time 18.00
+only gridding of the trajectory points corresponding to time 18 h; if no time is specified or if 
+.B "-time all",
+then all trajectory times are included. Note that interpolation with "-interp" (see above) is not allowed, if only one time step is selected, i.e. "-interp" works only with "-time all".
+.TP 5
+.B [8] density TRAJECTORY DENSITY -rotated 30 50 401 0.1 -interp 0.2 deg
+all trajectory times are gridded, but this time onto a rotated lon/lat grid; for instance, an interesting feature was found at (lon=30,lat=50). The new coordinate system, a rotated lon/lat grid, is centered at this point and spreads from 20 W to 20 W and from 20 S to 20 N, comprising 401 grid points in rotated longitude and latitude direction. The new grid resolution is 0.1 degrees, which was taken into account in the interpolation to 0.2 deg intervals between trajectory points.
+.TP 5
+.B [9] density TRAJECTORY DENSITY -index filename
+all trajectories in the trajecrtory file TRAJECTORY are gridded which are listed in the index file "filename".
+.TP 5
+.B [10] density TRAJECTORY DENSITY -field p -time 0.00 -latlon dynamic
+in addition of positional gridding (COUNT, RESIDENCE), do also a gridding of the pressure (p). This gives the pressure at the grid points, averaged over all trajectories passing over the grid point.
+.TP 5
+.B [11] density TRAJECTORY DENSITY -time 0.00; density TRAJECTORY DENSITY -time 6.00
+the trajectory density for "TRAJECTORY" is first written to "OUTPUT" for time 0; then, with the second call, the densities are written for the time 6 h and included into the already existing netCDF file "DENSITY". Similarly, additional fiels can be added to a already existing netCDF file, e.g. with the second call "density TRAJECTOR DENSITY -field p -time 0.00".
+.SH AUTHOR 
+Written by Michael Sprenger and Heini Wernli (January 2011)

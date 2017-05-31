@@ -1,0 +1,866 @@
+#!/bin/csh
+
+# ---------------------------------------------------------------------
+# Usage
+# ---------------------------------------------------------------------
+
+# Write usage information
+if ( (${#argv} == 0) ) then
+  echo 
+  ${LAGRANTO}/bin/lagrantohelp lagranto short 
+  echo
+  exit 0
+endif
+
+# Check whether LAGRANTO was set with setenv
+set test = `setenv | grep LAGRANTO` 
+if ( "${test}" == "" ) then
+   echo "---------------------------------------------------------------------"
+   echo "Please set environmental variable <LAGRANTO> to your source directory"
+   echo 'csh > setenv LAGRANTO ${TO_YOUR_LAGRANTO_INSTALLATION}'
+   echo "---------------------------------------------------------------------"
+   exit 1
+endif
+  
+# ---------------------------------------------------------------------
+# Set some general parameters
+# ---------------------------------------------------------------------
+
+# Set the prefix of the primary and secondary data files
+set charp = 'P'
+set chars = 'S'
+
+# Set the name of the run script
+set runscript = "runscript"
+
+# Remember the calling directory
+set calldir = $PWD
+
+# ---------------------------------------------------------------------
+# Parameter handling
+# ---------------------------------------------------------------------
+
+# Write title
+echo
+echo '========================================================='
+echo '             *** START OF LAGRANTO ***             '
+echo
+
+# Save the complete argument list
+set lagranto_call = "$*"
+
+echo '---- HANDLE ARGUMENTS -----------------------------------'
+echo
+
+# Get fixed arguments
+if (${#argv} == 1) then
+  set mode = '-open'
+  set caseid    = "$1"
+  shift
+
+else if (${#argv} == 2) then
+  set mode      = "$1"
+  set caseid    = "$2"
+  shift
+  shift
+
+else
+  set caseid    = "$1"
+  set startdate = "$2"
+  set enddate   = "$3"
+  set startf    = "$4"
+  set select    = "$5"
+  set mode      = "runlagranto"
+  shift
+  shift
+  shift
+  shift
+  shift
+
+endif
+
+# Split <caseid> into base and appendix 
+set casebase = `(echo $caseid | awk -F "." '{print $1}')`   
+set appendix = `(echo $caseid | awk -F "." '{print $2}')`   
+if ( "${appendix}" != "" ) then
+  set appendix = ".${appendix}"
+endif
+
+# Set the directories (depending on <caseid>)
+if ( "${casebase}" == "local" ) then
+  set cdfdir = $PWD
+  set tradir = $PWD
+
+else if ( "${casebase}" == "interim" ) then
+  set cdfdir = /net/dansgaard/atmosdyn/erainterim/cdf/
+  set tradir = $PWD
+
+else if ( "${casebase}" == "analysis" ) then
+  set cdfdir = 'TO_BE_SPECIFIED'
+  set tradir = $PWD
+  echo "ERROR: caseid (analysis) not yet implemented"
+  exit 1  
+
+else if ( "${casebase}" == "forecast" ) then
+  set cdfdir = 'TO_BE_SPECIFIED'
+  set tradir = $PWD
+  echo "ERROR: caseid (forecast) not yet implemented"
+  exit 1  
+
+else
+  set cdfdir = ${HOME}/cdf/${casebase}
+  set tradir = ${HOME}/tra/${casebase}
+endif
+
+# Change to the run directory if requested
+if ( "${mode}" == "-open" ) then
+   set count = 0   
+   foreach folder ( ${tradir}/ntr_*_${caseid}_* )
+     @ count = ${count} + 1
+     echo "[${count}] ${folder}"
+   end
+   echo
+   echo "Please select directory [0...${count}]"
+   set id = $<
+   set count = 0   
+   foreach folder ( ${tradir}/ntr_*_${caseid}_* )
+     @ count = ${count} + 1
+     if ( "${count}" == "${id}" ) then 
+        cd ${folder}
+        xterm &
+     endif
+   end
+   exit 0
+endif
+
+# Remove the whole run directory if requested
+if ( "${mode}" == "-remove" ) then
+   set count = 0   
+   foreach folder ( ${tradir}/ntr_*_${caseid}_* )
+     @ count = ${count} + 1
+     echo "[${count}] ${folder}"
+   end
+   echo
+   echo "Please select directory [0...${count}, all]"
+   set id = $<
+   set count = 0   
+   foreach folder ( ${tradir}/ntr_*_${caseid}_* )
+     @ count = ${count} + 1
+     if ( ( "${count}" == "${id}" ) | ( "${id}" == "all" ) ) then 
+        \rm -r ${folder}
+     endif
+   end
+   exit 0
+endif
+
+# Show the trajectory file
+if ( "${mode}" == "-show" ) then
+   set count = 0   
+   foreach folder ( ${tradir}/ntr_*_${caseid}_* )
+     @ count = ${count} + 1
+     echo "[${count}] ${folder}"
+   end
+   echo
+   echo "Please select directory [0...${count}]"
+   set id = $<
+   set count = 0   
+   foreach folder ( ${tradir}/ntr_*_${caseid}_* )
+     @ count = ${count} + 1
+     if ( "${count}" == "${id}" ) then 
+        cd ${folder}
+        set filename = ` sed -ne '9,9p' runscript.sh | cut -c 2-` 
+	${LAGRANTO}/goodies/trainfo.sh ${filename} list | less
+     endif
+   end
+   exit 0
+endif
+
+# Decide whether <select> is a file or an explicit criterion
+set flag_select = 'file'
+set test = `echo ${select} | grep ':' | wc -c`
+if ( "${test}" != "0" ) then 
+  set flag_select = 'criterion'
+endif
+
+# Decide whether <startf> is a file or an explicit criterion
+set flag_startf = 'file'
+
+set test = `echo ${startf} | grep ' ' | wc -c`
+if ( "${test}" != "0" ) then 
+  set flag_startf = 'point'
+endif
+
+set test = `echo ${startf} | grep '@' | wc -c`
+if ( "${test}" != "0" ) then 
+  set flag_startf = 'criterion'
+endif
+
+
+# Write some status information
+echo " Case ID       : ${caseid}"
+echo " Start date    : ${startdate}"
+echo " End date      : ${enddate}"
+
+if ( "${flag_startf}" == "criterion" ) then
+    echo " Start file    : ${startf} [criterion] -> startf.criterion [file]"
+else if ( "${flag_startf}" == "file" ) then
+    echo " Start points  : ${startf} [file]"
+else if ( "${flag_startf}" == "point" ) then
+    echo " Start points  : ${startf} [point] -> startf [file]"
+endif
+
+if ( "${flag_select}" == "criterion" ) then
+    echo " Selection     : ${select} [criterion] -> selectf.criterion [file]"
+else
+    echo " Selection     : ${select} [file]"
+endif    
+
+echo
+
+# Set defaults for flags
+set jumpflag   = ""
+set tracefile  = "tracevars"
+set outfile    = "lsl_${startdate}"
+set keepflag   = ""
+set prepflag   = ""
+set logfile    = "${runscript}.logfile"
+set regionf    = "regionf"
+set changet    = "false"
+
+# Handle flags
+while ( $#argv > 0 )
+
+  switch ( $argv[1] )
+
+  echo $argv[1]
+
+   case -j
+     set jumpflag = "-j"
+     echo " Flag '-j [jump]'             -> True "
+     echo
+   breaksw
+
+   case -prep
+     set prepflag = "prep"
+     echo " Flag '-prep [prepare only]'  -> ${prepflag} "
+     echo
+   breaksw
+
+   case -noclean
+    set keepflag = "keep"
+     echo " Flag '-noclean [no cleaning]' -> ${keepflag} "
+     echo
+   breaksw
+
+   case -o
+     set outfile =  $argv[2]
+     echo " Flag '-o [output]'            -> ${outfile} "
+     echo
+   breaksw
+
+   case -v
+     set tracefile = $argv[2]
+     echo " Flag '-v [tracevars]'         -> ${tracefile} "
+     echo
+     shift
+   breaksw
+
+   case -r
+     set regionfile = $argv[2]
+     echo " Flag '-r [regionfile]'        -> ${regionfile} "
+     echo
+     shift
+   breaksw
+
+   case -log
+     set logfile = "/dev/stdout"
+     echo " Flag '-v [log]'               -> ${logfile} "
+   breaksw
+
+   case -changet
+     set changet = "true"
+     echo " Flag '-changet [change times]'-> True "
+     echo
+   breaksw
+
+  endsw
+
+  shift;
+
+end
+
+# Decide whether a tracevars file is given or not
+if ( -f ${tradir}/${tracefile} ) then
+   set flag_tracevars = 'file'
+else
+   set flag_tracevars = 'nil'
+endif
+
+echo
+if ( "${flag_tracevars}" == "file" ) then
+    echo " Trace Vars    : ${tracefile} [file]"
+else
+    echo " Trace Vars    : [no fields are traced]"
+endif    
+echo
+
+# Set the name of the run directory (forward/backward distinction)
+set dir   = 'f'
+set range = `${LAGRANTO}/bin/gettidiff.sh ${enddate} ${startdate}`
+if ( ${range} < 0 ) then
+  set dir   = 'b'
+  set range = `${LAGRANTO}/bin/gettidiff.sh ${startdate} ${enddate}`
+endif
+set rundir = ${tradir}/ntr_${startdate}_${dir}${range}_${caseid}
+
+if ( "${flag_startf}" == "criterion" ) then
+  set rundir = "${rundir}_startf"
+else if ( "${flag_startf}" == "point" ) then
+  set rundir = "${rundir}_startf"
+else if ( "${flag_startf}" == "file" ) then
+  set rundir = "${rundir}_${startf}"
+endif
+
+if (  "${flag_select}" != "file" ) then
+  set rundir = "${rundir}_selectf"
+else
+ set rundir = "${rundir}_${select}"
+endif
+
+# Write directory names
+echo '---- DIRECTORIES ----------------------------------------'
+echo
+echo " CDF = ${cdfdir}"
+echo " TRA = ${tradir}"
+echo " RUN = ${rundir}"
+
+# Check whether CDF and TRA directories exist
+if ( ! -d ${cdfdir} ) then
+    echo 'Cannot find CDF directory ... Stop'
+    exit 1
+endif
+if ( ! -d ${tradir} ) then
+    echo 'Cannot find TRA directory ... Stop'
+    exit 1
+endif
+
+# Create the run directory
+if ( ! -d ${rundir} ) then
+   mkdir ${rundir}
+endif 
+if ( ! -d ${rundir} ) then
+    echo 'Cannot create RUN directory ... Stop'
+    exit 1
+endif 
+
+# ---------------------------------------------------------------------
+# Handle the time specifier - startdate, enddate
+# ---------------------------------------------------------------------
+
+echo
+echo '---- TIME RANGE -----------------------------------------'
+echo
+
+# Check format of start and end date - must be the same
+set ns=`echo $startdate | sed -e 's/_[0-9]*//' | wc -c`
+set ne=`echo $enddate   | sed -e 's/_[0-9]*//' | wc -c`
+if ( $ns != $ne ) then
+  echo " ERROR: start and end date must be in the same format ***"
+  exit 1
+endif
+if ( $ns != 9 ) then
+  echo " ERROR: Date format must be yyyymmdd ***"
+  exit 1
+endif
+set ns=`echo $startdate | sed -e 's/[0-9]*_//' | wc -c`
+set ne=`echo $enddate   | sed -e 's/[0-9]*_//' | wc -c`
+if ( $ns != $ne ) then
+  echo " ERROR: start and end date must be in the same format ***"
+  exit 1
+endif
+if ( ( $ns != 5 ) & ( $ns != 3 ) ) then
+  echo " ERROR: Time format must be hh(mm) ***"
+  exit 1
+endif
+
+# Split the start and end date into <yymmdd_hh and mm>
+set startdate_ymdh = `echo $startdate | cut -c 1-11`
+set startdate_min  = `echo $startdate | cut -c 12-13`
+if ( $startdate_min == "" ) set startdate_min = 00
+ 
+set enddate_ymdh = `echo $enddate | cut -c 1-11`
+set enddate_min  = `echo $enddate | cut -c 12-13`
+if ( $enddate_min == "" ) set enddate_min = 00
+
+# Get the time difference between <start_ymdh> and <end_ymdh> date
+# Decide whether trajectoriesare forward or backward
+set timediff_hh = `${LAGRANTO}/goodies/gettidiff ${enddate_ymdh} ${startdate_ymdh}`
+
+if ( $timediff_hh == 0 ) then
+  if ( $enddate_min > $startdate_min ) then
+    set direction = f
+    set idir      = 1
+  else
+    set direction = b
+    set idir      = -1
+  endif
+else if ( $timediff_hh > 0 ) then
+  set direction = f
+  set idir      = 1
+else
+  set direction = b
+  set idir      = -1
+  @ timediff_hh = $idir * $timediff_hh
+endif
+
+# Get also minutes for time difference, if <start_min> or <end_min> != 0
+set timediff_mm=
+
+if ( $startdate_min != 00 || $enddate_min != 00 ) then
+  @ min = ( $enddate_min - $startdate_min )
+  if ( $min == 0 ) then
+    set timediff_mm=
+  else if ( $min > 0 ) then
+    if ( $idir == 1 ) then
+      set timediff_mm=$min
+    else
+      @ timediff_hh --
+      @ timediff_mm = 60 - $min
+    endif
+  else
+    if ( $idir == 1 ) then
+      @ timediff_hh --
+      @ timediff_mm = 60 + $min
+    else
+      @ timediff_mm = 0 - $min
+    endif
+  endif
+endif
+
+# Set the reference date equal to the startdate
+set refdate=${startdate}
+
+# Write status information
+echo "Time range      : ${startdate} -> ${enddate}"
+if ( ${timediff_mm} !=  "" ) then
+   echo "Time difference : ${timediff_hh} h ${timediff_mm} min"
+else
+   echo "Time difference : ${timediff_hh} h"
+endif
+echo "Direction       : ${direction} (${idir})"
+echo "Reference date  : ${refdate}"
+
+# ---------------------------------------------------------------------
+# Decide which files are needed and check availability
+# ---------------------------------------------------------------------
+
+echo
+echo '---- INPUT FILES ----------------------------------------'
+echo
+
+# Change to input data (cdf) directory
+cd ${cdfdir}
+echo
+
+# Take the time increment from flag list ('nil', if not defined)
+set timeinc = 'nil'
+
+# Find a first data file (if possible corresponding to start/end date
+# If starttime is not a data time, take the first file in the direectory
+if ( $direction == "f" ) then
+  set file=${charp}${startdate_ymdh}
+else
+  set file=${charp}${enddate_ymdh}
+endif
+if ( ! -f $file ) then
+  set file=`ls ${charp}[0-9_]*[0-9] | head -1 | sed -e 's/@//'`
+endif
+
+# Determine timeinc (the time difference in hours between two data file)
+# if not already defined with option -i
+if ( ${timeinc} == "nil" ) then
+  set date1=`echo $file | cut -c 2-12`
+  set n=`ls ${charp}[0-9_]*[0-9] | grep -n $date1 | awk -F: '{print $1}'`
+  @ n ++
+  set date2=`ls ${charp}[0-9_]*[0-9] | head -$n | tail -1 | cut -c 2-12`
+  set timeinc=`${LAGRANTO}/goodies/gettidiff $date2 $date1`
+endif
+if ( $timeinc == 0 ) then
+    echo " ERROR: cannot set the time increment between input files ***"
+    exit 1
+endif
+
+# Search the first file to use
+set flag=0
+set td=
+foreach i ( ${charp}????????_?? )
+
+  set date = `echo $i | cut -c 2-12`
+  set td1  = `${LAGRANTO}/goodies/gettidiff ${startdate_ymdh} ${date}`
+  set td2  = `${LAGRANTO}/goodies/gettidiff ${enddate_ymdh}   ${date}`
+
+  if (( $td1 < $timeinc || $td2 < $timeinc ) && ( $td1 >= 0 || $td2 >= 0 )) then
+      set datfiles=$date
+      if ( $td1 < $timeinc    ) set td=$td1
+      if ( $td2 < $timeinc    ) set td=$td2
+      if ( ( $startdate_min > 0 ) || ( $enddate_min > 0 ) ) @ td ++ 
+      goto label2
+  endif
+
+end
+
+# if no P/T-files are available for the specified time period, then $td is
+# still undefined
+if ( $td == "" ) then
+  echo " ERROR: no data files available for the specified time period"
+  exit 1
+endif
+
+# Everything is fine so far: proceed
+label2:
+
+# Calculate the number of further files
+@ num = ( $timediff_hh + $td ) / $timeinc + 1
+@ dum1 = ( $num - 1 ) * $timeinc
+@ dum2 = $timediff_hh + $td
+if ( $dum1 != $dum2 ) @ num ++
+
+# Get a list of all needed files
+set numfiles=$num
+set sfiles=1
+while ( $num > 1 )
+  set date=`${LAGRANTO}/goodies/newtime $date $timeinc`
+  if ( ! -f ${charp}${date} ) then
+    echo " ERROR: file with primary data is missing for $date"
+    exit 1
+  else if ( ! -f ${chars}${date} ) then
+    set sfiles=0
+    set datfiles=`echo $datfiles $date`
+  else
+    set datfiles=`echo $datfiles $date`
+  endif
+  @ num --
+end
+
+# Write some status information
+echo "Primary file prefix            : ${charp}"
+echo "Secondary file prefix          : ${chars}"
+echo "Time increment for input files : ${timeinc}"
+echo "# input files                  : ${numfiles}"
+echo "${charp} files availability           : 1"  
+echo "${chars} files availability           : ${sfiles}"     
+echo "First input file               : $datfiles[1] " 
+echo "Last input file                : $datfiles[$numfiles] " 
+
+
+# ---------------------------------------------------------------------
+# Prepare run directory - copy all needed files
+# ---------------------------------------------------------------------
+
+echo
+echo '---- PREPARE RUN DIRECTORY ------------------------------'
+echo
+
+# Change to run directory
+cd ${rundir}
+echo
+
+
+# Link cdf input files
+foreach date ( $datfiles )
+  if ( -f ${cdfdir}/${charp}${date} ) then
+     if ( ! -f  ${charp}${date} ) then
+        ln -s  ${cdfdir}/${charp}${date}  ${charp}${date}
+        echo "Linking  ${date} "
+     else
+        echo "Existing ${date} "
+     endif
+  endif
+  if ( -f ${cdfdir}/${chars}${date} ) then
+     if ( ! -f  ${chars}${date} ) then
+        ln -sf  ${cdfdir}/${chars}${date}  ${chars}${date}
+     endif
+  endif
+end
+
+# Change times on netCDF files relative to reference date
+if ( "${changet}" == "true" ) then
+ echo
+ foreach i ( $datfiles )
+   ${LAGRANTO}/goodies/changet.sh ${refdate} ${charp}${i}
+ end
+ if ( ${sfiles} == 1 ) then
+   echo
+   foreach i ( $datfiles )
+     ${LAGRANTO}/goodies/changet.sh ${refdate} ${chars}${i}
+   end
+ endif
+endif
+
+# Get the constants file for each file
+set first = 1
+foreach date ( $datfiles )
+  set cstname = `ncdump -h ${charp}${date} | grep constants_file_name`
+  set cstname = `echo \'${cstname}\' |   awk -F\" '{print $2}'`
+  if ( -f ${cdfdir}/${cstname} ) then
+    if ( ! -f ${cstname} ) then
+       ln -s  ${cdfdir}/${cstname}  ${cstname}
+       echo "Linking  constants file ${cstname}"
+       set first = 0
+    else if ( "${first}" == "1" ) then
+       echo "Existing constants file ${cstname}"
+       set first = 0
+    endif
+  endif
+end
+
+# Copy the tracevars file
+if ( "${flag_tracevars}" == "file" ) then
+   if ( -f ${tradir}/${tracefile} ) then
+      \cp ${tradir}/${tracefile} .
+   endif
+endif
+
+# Copy the start file/criterion
+if ( "${flag_startf}" == "criterion" ) then
+   \rm -f startf.criterion
+   echo ${startf} > startf.criterion
+   set startf =  "startf.criterion"
+else if ( "${flag_startf}" == "file" ) then
+   if ( -f ${tradir}/${startf} ) then
+     \cp ${tradir}/${startf} .
+   endif
+else if ( "${flag_startf}" == "point" ) then
+   \rm -f startf
+   echo ${startf}  > startf
+   set startf      =  "startf"
+   set flag_startf = "file"
+endif 
+
+# Copy the select file/criterion
+if ( "${flag_select}" == "criterion" ) then
+   \rm -f select.criterion
+   echo ${select} > select.criterion
+   set select = "select.criterion"
+else
+   if ( -f ${tradir}/${select} ) then
+     \cp ${tradir}/${select} .
+   endif
+endif 
+
+
+# ---------------------------------------------------------------------
+# Prepare the run script
+# ---------------------------------------------------------------------
+
+echo
+echo '---- PREPARE RUN SCRIPT ---------------------------------'
+echo
+
+# Remove runscript if it already exists
+if ( -f ${runscript}.sh ) then
+   \rm -f ${runscript}.sh
+endif 
+
+# Write header
+echo '#\!/bin/csh'                    >! ${runscript}.sh
+echo "#"                              >> ${runscript}.sh
+echo "#----- Calling command"         >> ${runscript}.sh
+echo "#"                              >> ${runscript}.sh
+echo "# lagranto ${lagranto_call} "   >> ${runscript}.sh
+echo "#"                              >> ${runscript}.sh 
+echo "#----- Output file    "         >> ${runscript}.sh
+echo "#"                              >> ${runscript}.sh
+echo "# ${outfile}                "   >> ${runscript}.sh
+echo "#"                              >> ${runscript}.sh 
+
+# Decide whether <create_startf> has to be run
+if ( "${flag_startf}" == "criterion" ) then
+  echo "#------ Run <create_startf>"                                                                                       >> ${runscript}.sh
+  echo "#"                                                                                                                 >> ${runscript}.sh
+  echo ${LAGRANTO}/bin/create_startf.sh ${startdate} startf \"`cat startf.criterion`\" -t ${tracefile} -regionf ${regionf} >> ${runscript}.sh 
+  echo "#"                                                                                                                 >> ${runscript}.sh
+  set startf = "startf"
+endif
+
+# Check whether startfile is ready
+cat >> ${runscript}.sh <<EOF 
+#------ Abort if no startf is available
+#
+if ( ! -f ${startf} ) then
+  echo " ERROR: no start file available .... Stop"
+  exit 1
+endif
+EOF
+
+# Decide wich intermediate format is used (needed for efficient communication between different programs)
+set iform1 = ""
+set iform2 = ""
+if ( "${tracefile}" != ""    ) set iform1 = ".4"
+if ( "${select}"    != "nil" ) set iform2 = ".4"
+
+# Remove all trajectory files which might already be there
+cat >> ${runscript}.sh <<EOF 
+#
+#------ Remove existing trajectory files
+#
+if ( -f ${outfile}${iform1} ) then
+  \rm -f ${outfile}${iform1}
+endif
+if ( -f ${outfile}${iform2} ) then
+  \rm -f ${outfile}${iform2}
+endif
+if ( -f ${outfile} ) then
+  \rm -f ${outfile}
+endif
+
+EOF
+
+# Write call to <caltra> into runscript
+echo "#"                                                                                      >> ${runscript}.sh
+echo "#------ Run <caltra>"                                                                   >> ${runscript}.sh
+echo "#"                                                                                      >> ${runscript}.sh
+echo ${LAGRANTO}/bin/caltra.sh ${startdate} ${enddate} ${startf} ${outfile}${iform1} ${jumpflag} >> ${runscript}.sh  
+
+# Check whether caltra was successful
+cat >> ${runscript}.sh <<EOF 
+#
+#------ Abort if caltra was not successful
+#
+if ( ! -f ${outfile}${iform1} ) then
+  echo " ERROR: caltra failed .... Stop"
+  exit 1
+endif
+EOF
+
+#  Decide whether <trace> has to be run
+if ( "${tracefile}" != "" ) then
+  echo "#"                                                                                    >> ${runscript}.sh
+  echo "#------ Run <trace>"                                                                  >> ${runscript}.sh
+  echo "#"                                                                                    >> ${runscript}.sh
+  echo ${LAGRANTO}/bin/trace.sh ${outfile}${iform1} ${outfile}${iform2} -v ${tracefile}       >> ${runscript}.sh 
+
+endif
+
+# Check whether trace was successful
+cat >> ${runscript}.sh <<EOF 
+#
+#------ Abort if trace was not successful
+#
+if ( ! -f ${outfile}${iform2} ) then
+  echo " ERROR: trace failed .... Stop"
+  exit 1
+endif
+EOF
+
+#  Decide whether <select> has to be run
+if ( "${select}" != "nil" ) then                        
+  echo "#"                                                                                               >> ${runscript}.sh
+  echo "#------ Run <select>"                                                                            >> ${runscript}.sh
+  echo "#"                                                                                               >> ${runscript}.sh
+  echo ${LAGRANTO}/bin/select.sh ${outfile}${iform2} ${outfile}  \"`cat ${select}`\" -regionf ${regionf} >> ${runscript}.sh 
+  echo "#"                                                                                               >> ${runscript}.sh
+endif
+
+# Show runscript on screen
+cat ${runscript}.sh
+
+# Change runscript to executable
+chmod u+x ${runscript}.sh
+
+# Decide whether to stop at this place (only preparation for Lagranto run)
+if ( "${prepflag}" == "prep" ) then
+  echo
+  echo '---- READY TO RUN ----- ---------------------------------'
+  echo
+  echo " Would you like to change to the rundirectory [y/n] "
+
+  set id = $<
+  if ( ( "${id}" == "y" ) | ( "${id}" == "Y" ) ) then
+     cd ${rundir}
+     xterm &
+  endif
+
+  exit 0
+
+endif  
+
+# Define environment variable for the case
+echo
+echo '---- REMEMBER MOST RECENT CALL --------------------------'
+echo
+cd ${calldir}
+if ( -f lagranto.param ) \rm lagranto.param
+echo "${rundir}"  >! lagranto.param
+echo "${outfile}" >> lagranto.param
+cd ${rundir}
+echo
+echo " run directory + output file -> lagranto.param"
+
+# ---------------------------------------------------------------------
+# Run lagranto
+# ---------------------------------------------------------------------
+
+echo
+echo '---- RUN LAGRANTO ---------------------------------------'
+echo
+
+if ( "${logfile}" != "/dev/stdout" ) then
+    echo "log goes to ${logfile}"
+endif
+
+# Remove logfile
+if ( "${logfile}" != "/dev/stdout" ) then
+    \rm -f    ${logfile}
+endif
+
+# Run it
+${rundir}/${runscript}.sh > ${logfile}
+
+# Check for errors in logfile
+if ( "${logfile}" != "/dev/stdout" ) then
+   grep ERROR ${logfile} 
+endif
+
+# ---------------------------------------------------------------------
+# Make clean and finish lagranto run
+# ---------------------------------------------------------------------
+
+# Remove unneeded files
+\rm -f fort.9
+
+# Remove files if requested
+if ( "${keepflag}" != "keep" ) then
+
+   echo 
+   echo '---- MAKING CLEAN ---------------------------------------'
+   echo
+
+   cd ${rundir}
+
+       
+   set runscript = "${runscript}.sh"
+
+   foreach file ( `\ls -L1` )
+    
+      set id = "0"
+
+      if ( "${file}" == "${outfile}"   ) set id="1" 
+      if ( "${file}" == "${runscript}" ) set id="1" 
+      if ( "${file}" == "${logfile}"   ) set id="1" 
+  
+      if ( "${id}" == "0" ) \rm -f ${file}      
+
+   end
+  
+endif
+
+# Everything is fine!
+echo
+echo '             *** END OF LAGRANTO ***             '
+echo '========================================================='
+echo
+
+exit 0 
+   
+   

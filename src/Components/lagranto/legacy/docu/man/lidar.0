@@ -1,0 +1,113 @@
+.TH trace
+.SH NAME
+.B lidar - lidar of meteorological fields along trajectories
+.SH SYNOPSIS
+.B trace
+.I inpfile
+.I outfile
+[
+.I optional arguments
+]
+.SH DESCRIPTION
+Get pseudo-lidar of meteorological fields along the trajectories given in the input file 
+.I inpfile
+and write the field to a netCDF file
+.I outfile.
+The horizontal axis in the netCDF file corresponds to the trajectory times, the vertical axis gives the pressure in hPa (by default, from 100 to 1000 hPa: it can be changet with optional argument '-pmin', '-pmax', '-centering'). By default, the pseudo lidar is taken at a fixed set of pressure levels between 100 and 1000 hPa. If the option '-centering' is selected, the pressure levels are relative to the trajectory position.
+The meteorological fields for the pseudo lidar are listed in a 
+.I
+tracing file 
+(default: tracevars).  Note that the tracevars file has the same format as for 
+.I trace
+but that all online calculations in the tracing file are neglected.
+.SH PARAMETERS
+.TP 15
+.I inpfile
+input trajectory file; the appendix determines the format (see
+.B reformat 
+for details).
+.TP 15
+.I  outfile
+output netCDF file for the pseudo-lidar fields. 
+.SH OUTPUT FIELDS
+.TP 5
+.B - [ FIELD_SUM | FIELD_MEAN ]
+Sum or mean of the lidar field FIELD, depending on the optional parameter '-sum' (default) or '-mean'. For instance, if potential temperature TH is passed as a lidar field, then TH_MEAN would contain the mean over all trajectories. The horizontal axis coincides with the times on the trajectory file; the vertical axis depends on the mode. By default, it goes from 100 hPa to 1000 hPa, within 100 steps. If '-centering' is passed as argument, the pressure levels are always relative to the trajectory position.
+.TP 5
+.B - FIELD_CNT
+Number of values contributing to FIELD_SUM and FIELD_MEAN. This value is variable because the following cases do not contribute to the output field FIELD_SUM/MEAN: (a) if the position is outside the data domain of the input P files; (b) if the position falls below topography; (c) if the trajectory position is invalid; and (d) if the lidar field has a missing value flag set.
+.TP 5
+.B - POSITION
+Position of all trajectories contributing to the lidar composite. By default, the vertical position of the trajectories between 100 hPA and 1000 hPa can be visualised in this way. If '-centering' is selected, the POSITION corresponds to a single line because then all pressure positions are relative to the trajectory height, i.e. a pressure of 0 hPa on tghe vertical axis corresponds to the trajectory position.
+.SH TRACING FILE
+Normally the meteorological fields for tracing are listed in a file with name 
+.B "tracevars". 
+The name of the tracing file can be changed with the optional argument "-v" (see below). The format of the tracing file is as follows:
+.br
+.TP 5
+Format
+.I field
+.I scale
+.I computation 
+.I prefix  
+.TP 5 
+Examples
+.B - TH 1. 0 S : 
+pseudo lidar of potential temperature (TH), scale it with 1 (no scaling); it is available on the S file (no computation is needed: 0).
+.br
+.B - Q 1000. 0 P :
+pseudo lidar of specific humidity (Q), scale it with 1000 to have g/kg; it is available on the P file (no computation is needed: 0).
+.SH OPTIONAL ARGUMENTS
+.TP 15
+.TP 15
+.I -i hours
+time increments (in hours) for input P and  S files. If not explicitely specified, this is determined from the P and S files i
+n the current directory.
+.TP 15
+.I -v varfile
+Change the name of the tracing file from its default value "tracevars" to "varfile".
+.TP 15
+.I -f field scale
+Trace field (with scaling scale) along the trajectories; the computation flag and the prefix for the data file is automatically set. This options allows the quick tracing of a field, without specifying a tracing file.
+.TP 15
+.I -changet
+flag whether the times of the P and S files should be changed or not before a calculation; the default is that the
+times are 
+.B not 
+changed. 
+.TP 15
+.I -noclean
+flag whether parameter and criterion files should be kept; this is particularly helpful for debugging.
+.TP 15
+.I -timecheck
+enforce a time check on the data files
+.TP 15
+.I -nearest
+Do no interpolation between grid points; just take the nearest neighbor! This option is useful, if a discrete input field is given (e.g. labels), where interpolated values are meaningless.
+.TP 15
+.I [-sum|-mean]
+If '-sum' (the default) is chosen and several trajectories are on the input file, then the sum of all pseudo lidar fields is written to the output file; otherwise, for '-mean', the mean of all pseudo lidar fields is written.
+.TP 15
+.I -pmin value
+Set the lower pressure limit for the pseudo lidar. Default is 100 hPa.
+.TP 15
+.I -pmax value
+Set the upper pressure limit for the pseudo lidar. Default is 1000 hPa.
+.TP 15
+.I -npre value
+Set the number of pressure levels between 'pmin' and 'pmax. Default is 100.
+.TP 15
+.I -centering
+Select the pressure levels relative to the trajectory position; by default the pressure levels are given as absolute heights between 100 and 1000 hPa. If '-centering' is chosen and no explicit limits are specified with 'pmin' and 'pmax', the limits are set to pmin=-500 hPa and pmax=500 hPa.
+.SH EXAMPLES
+.TP 5
+.B [1] lidar TRAJECTORY.1 LIDAR 
+Read the trajectory file TRAJECTORY.1 and get a composite pseudo-lidar from 100 to 1000 hPa along the the trajectories. If there are several trajectories on TRAJECTORY.1, the sum is written to the netCDF file LIDAR. The fields of which a pseudo lidar is calculated are listed in the file 'tracevars'. 
+.TP 5
+.B [2] lidar TRAJECTORY.1 LIDAR -pmin 200 -pmax 500
+As in [1], but the upper and lower limits of the pseudo lidar are set to 200 and 500 hPa.
+.TP 5
+.B [2] lidar TRAJECTORY.1 LIDAR -centering 
+As in [1], but the lidar pressure levels are not fixed: They are taken relative to the trajectory height.
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (April 2012).

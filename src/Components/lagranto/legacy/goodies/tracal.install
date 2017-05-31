@@ -1,0 +1,52 @@
+#!/bin/csh
+
+# ----- Load modules --------------------------
+
+module load netcdf/4.2.1-pgf90
+module list 
+
+set tool = tracal
+
+# ----- Set libraries and includes ------------
+
+set libs   = "${LAGRANTO}/lib/iotra.a"
+set libs   = "${libs} -L ${LAGRANTO}/lib"
+set libs   = "${libs} -lcdfio" 
+set libs   = "${libs} -lcdfplus" 
+
+set ncdf_incs  = `nc-config --fflags`
+set ncdf_libs  = "`nc-config --flibs` -L/opt/mpi/ifort/12.1/bin//../lib -lmpi -lmpi_cxx -lmpi_f77 -limf -lm"
+
+
+# ---- Modules ---------------------------------
+
+\rm -f precmod.o precision.mod
+echo ${FORTRAN} -c precmod.f90
+${FORTRAN} -c precmod.f90
+
+\rm -f stringmod.o strings.mod
+echo ${FORTRAN} -c stringmod.f90
+${FORTRAN} -c stringmod.f90
+
+\rm -f evalmod.o evaluate.mod
+echo ${FORTRAN} -c evalmod.f90
+${FORTRAN} -c evalmod.f90
+
+set mods = " evalmod.o precmod.o stringmod.o " 
+
+# ----- Compile --------------------- ----------
+
+\rm -f ${tool}.o
+\rm -f ${tool}
+
+echo "${FORTRAN} -c ${tool}.f ${ncdf_incs}"  
+      ${FORTRAN} -c ${tool}.f ${ncdf_incs}   
+echo "${FORTRAN} -o ${tool} ${tool}.o ${mods} ${libs} ${ncdf_libs}"        
+      ${FORTRAN} -o ${tool} ${tool}.o ${mods} ${libs} ${ncdf_libs}
+
+if ( ! -f ${tool} ) then
+  echo "ERROR: compilation of <tool> failed... exit"
+  exit 1
+endif
+
+exit 0

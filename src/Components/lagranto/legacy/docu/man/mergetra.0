@@ -1,0 +1,38 @@
+.TH mergetra
+.SH NAME 
+.B mergetra - 
+combine two trajectory files
+.SH SYNOPSIS 
+.B mergetra
+.I inpfile1
+.I inpfile2
+.I outfile
+.SH DESCRIPTION
+Combines two input trajectory files "inpfile1" and "inpfile2" and writes a new combined trajectory file "outfile". Three different modes for combination are supported (see below).
+.SH PARAMETERS
+.TP 15
+.I inpfile1
+first input trajectory file
+.TP 15
+.I inpfile2
+second input trajectory file
+.TP 15
+.I outfile
+output trajectory file
+.SH MODES FOR COMBINATION
+Three different combination modes are supported. They are tested for sequentially and the first mode which is accepted, based on the criteria listed below, is performed. The three modes are:
+.TP 5
+.B - column
+The input files have the same trajectory times, longitudes, latitudes and pressures, and both files contain the same number of trajectories. The new trajectory file contains all columns from both input files, duplicate columns only included once, e.g. if "inpfile1" has columns "time,lon,lat,p,TH,PV" and "inpfile2" columns "time,lon,lat,p,PV,Q", the output file will have "time,lon,lat,p,TH,PV,Q". 
+.TP 5
+.B - append
+The input files have the same trajectory times and the same columns, but differ in the number of trajectories. Then the second file is appended to the first one and written as a new trajectory file.
+.TP 5
+.B - times
+The input files differ only in the time values, e.g. the first file might contain times -96 h to 0 h and the second the times from 0 h to 96 hours. Then the new combined file will contain the time -96 h to 96 h. Note that duplicate times are eliminated. Furthermore, the output times are sorted in increasing order.
+.SH EXAMPLES
+.TP 5
+.B [1] mergetra file1 file2 newfile
+combines the two trajectory files "file1" and "file2" and writes a new trajectory file; the mode for combination is automatically detected.
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)

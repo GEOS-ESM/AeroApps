@@ -1,0 +1,24 @@
+.TH newtime
+.SH NAME 
+.B newtime - 
+get a new date string from an initial date and an offset in hours
+.SH SYNOPSIS 
+.B newtime 
+.I date 
+.I offset
+.SH DESCRIPTION
+Given an initial date string in format "YYYYMMDD_HH" and an offset in hours, create a new date string - agin in the form "YYYYMMDD_HH".
+.SH PARAMETERS
+.TP 15
+.I date
+initial date in form "YYYYMMDD_HH", e.g. 20110102_18 for 18 UTC, 2nd January 2011.
+.TP 15
+.I offset
+Offset in hours; the offset can be positive (into the future) or negative (into the past).
+.SH EXAMPLES
+.TP 5
+.B [1] newtime 20110101_00 45
+gives 20110102_21, the datestring 45 h after 20110101_00.
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)
+

@@ -1,0 +1,180 @@
+.TH lagranto.ecmwf
+.SH NAME 
+.B lagranto - 
+master script for a trajectory calculation, including definition of the starting positions, tracing of meteorological fields and selection of trajectories
+.SH SYNOPSIS
+.B lagranto 
+.I caseid[.label] 
+.I startdate 
+.I enddate 
+.I startf 
+.I select 
+.I [ optional flags ]
+.SH DESCRIPTION 
+Calculate trajectories for the time period  
+.I startdate
+to 
+.I enddate
+for the starting positions given in 
+.I
+startf,
+either as position file or as criteria for starting positions. Furthermore, some selection criteria can be applied to the trajectory file, as given either in a selection file or an explicit seclection criterion (given in
+.I select
+). Each tracjectory calculation is given a case identifier
+.I caseid
+which determines where the input data and output files are located.
+.SH PARAMETERS
+.TP 10
+.B caseid
+identifier for a trajectory calculation; "caseid" determines where the input netCDF files are found and where the output trajectory file is written. The different options are: 
+.B 1) local
+(the input P and S files must be ready in the directory where Lagranto is called; the output directory is also written to the local directory);
+.B 2) casename
+(the input files are found in "${HOME}/cdf/casename/" and the output is written to "${HOME}/tra/casename/";
+.B 3) interim
+(the input files are taken from the ERA-Interim archive, the output is written to the local directory);
+.B 4) analysis
+(as in 3), but for the ECMWF operational analysis);
+.B 5) forecast
+(as in 3), but for the ECMWF deterministic forecast).
+.TP 10
+.B caseid.label
+the specification of "label" is optional; it allows to attribute to the output directory name this label and hence to distinguish between several Lagranto runs. Note that "label" has no influence where the input files are found and where the output directory is writtem to. It only is added to the output directory name!
+.TP 10
+.B startdate
+starting date for the trajectory calculation in format YYYYMMDD_HH(MM). This date defines the reference date and time for the trajectory output, i.e. it corresponds to time 0.
+.TP 10
+.B enddate
+end date for the trajectory calculation in format YYYYMMDD_HH(MM); if "enddate" is later than "startdate", a forward trajectory calculation is performed, otherwise a backward calculation. As an example: "20100101_00 20100105_00" is forward, and 20100105_00 20100101_00" is backward in time. 
+.TP 10
+.B startf
+definition of the starting positions; they can be either available as a 
+.B 1) (lon/lat/pressure)-list 
+in a file; as an
+.B 2) explicit criterion
+(e.g. "point(50,40) @ list(100,200,300,400) @ hPa') - for details, see documentation of
+.B startf;
+or as
+.B 3) a single point 
+in the format "longitude latitude pressure".
+.TP 10
+.B select
+definition of selection criterion; it can be passed either in a file or as an explicit selection criterion (e.g. "GT:PV:2:LAST'). For further details, see documentation of command
+.B select.
+.SH OPTIONAL PARAMETERS
+.TP 10
+.B -o filename
+name of the output trajectory file; default filename is "lsl_{startdate}".
+.TP 10
+.B -j 
+jumping flag; if the trajectory runs into the ground, it is lifted a little and allowed to move on. This flag is directly passed to the command
+.B caltra.
+See documentation for "caltra" for further details.
+.TP 10
+.B -v tracefile
+name of the tracing file which enlists all fields to be traced along the trajectories; the tracing file is directly passed to
+.B create_startf
+and 
+.B trace
+(see documentation of these two commands for further details). 
+.TP 10
+.B -r regionfile
+name of the region file which enlists all regions; the region file is directly passed to
+.B create_startf
+and 
+.B select
+(see documentation of these two commands for further details). 
+.TP 10
+.B -changet
+change the times on the netCDF files relative to the starting date; Lagranto expects the netCDF times to be relative to the starting date. The default value of "-changet" is false. 
+.TP 10
+.B -noclean
+do no cleaning after a trajectory run; the default is that the output directory will be cleaned. If cleaning is requested (the default), the following files will be kept in the outputdirectory: 
+.B 1) the output trajectory file; 
+.B 2) the log file of the trajectory run; 
+.B 3) the run script. 
+All other files are deleted.
+.TP 10
+.B -log
+write log of Lagranto run on screen instead into a file. No log file will be created with this option.
+.TP 10
+.B -prep
+create the run directory, prepare all files and build the run script - but do not run it. Hence, everything is ready for the Lagranto run, but it is not launched. It can be launched manually, possibly after some manual modifications to the run script, with the following steps:
+.B 1) change to run directory 
+(for instance with "lagranto -open caseid.label");
+.B 2) start the run script
+(with ./runscript.sh, where you have to pass the name of your runscript name).  
+.SH INPUT FILES
+A sucessful Lagranto runs needs several input files; the following list shows all mandatory and optional input files
+.TP 10
+.B P and S files [mandatory]
+input netCDF files; at least the following meteeorological fields must be available on the P files: U=zonal wind [m/s]; V=meridional wind [m/s]; OMEGA=vertical wind [Pa/s]; PS=surface pressure [hPa]. Secondary field can be made available on the S file. Both P and S files have the following format: [P|S]YYYYMMDD_HH, e.g. P20100101_00 for 1st January 2010, 00 UTC. 
+.TP 10
+.B tracevars [optional]
+tracing file where all meteorological fields are listed which should be traced along the trajectories. The tracing file is needed by the program 
+.B create_startf
+and particularly
+.B trace
+(for further details about the format of the file, consider the documentation for these two commands). If no tracing of meteorological fields is needed, no tracing file must be specified. Furthermore, the name of the file can be changed from its default (tracevars) with the optional parameter "-v filename" (see above).
+.TP 10
+.B regionf [optional]
+region specification for definition of strting positions (with
+.B create_startf
+) or application of Lagrangian selection criteria (with
+.B select
+). If no region is used in either "select" or "create_startf", no region file must be specified. The name of the region file can be changed from its default (regionf) with the option "-r filename". 
+.TP 10
+.B startf [optional]
+definition of the starting positions, either as an explicit list of longitude, latitude, pressure; or as a criterion saved on the file. If the specification of the starting positions is done with an explicit specification in
+.B create_startf
+(e.g. "point(50,40) @ list(100,200,300) @ hPa") no starting file is needed.
+.TP 10 
+.B select [optional]
+definition of a selection criterion for command
+.B select.
+If the selection criterion is given explicitely in the Lagranto call (e.g. GT:PV:2), no selection file is needed.
+.SH OUTPUT FILES AND STRUCTURE
+For a Lagranto run a new directory will be created where all needed files are prepared. The name of the directory and the file within it (if cleaning is invoked) are:
+.TP 10
+.B ntr_${startdate}_{dir}${timerange}_{startf}_{select}
+for instance, the Lagranto call "lagranto local 20100101_00 20100102_00 startf selectf" will create the directory "ntr_19891020_00_f24_local_startf_selectf". Correspondingly, for a backward calculation the name would be "ntr_19891021_00_b24_local_startf_selectf", i.e. the {dir} is set to 'b'.
+.TP 10
+.B ls_${startdate}
+default name of the output trajectory file placed in the ntr directory. The name can be changed with the option "-o filename". Note further that different output formats are supported, as described  in the documentation for command 
+.B reformat.
+.TP 10
+.B runscript.sh
+name of the run script, i.e. the script within the ntr directory which calls all Fortran programs. It cn be manually started with "./runscript.sh".
+.TP 10
+.B runscript.logfile
+name of the log file; all status information is written to this file. If a Lagranto run fails, this is the place where to start loking for the reason!
+.SH SPECIAL COMMANDS
+The main focus of 
+.B lagranto
+is to combine the calls to "create_startf", "caltra", "trace" and "select" into one convenient call. In addition to this, "lagranto" offers some handy special commands which allow more efficient working. 
+.TP 10
+.B -open caseid.label
+open a new 
+.B xterm 
+window and change to the run directory. If several directories with the same case ID are found, the user is interactively asked to choose one.
+.TP 10
+.B -remove caseid.label
+remove a run directory. If several directories with the same case ID are found, the user is interactively asked to choose one.
+.TP 10
+.B -show caseid.label
+show the contents of the trajectory file as a list. If several directories with the same case ID are found, the user is interactively asked to choose one.
+.SH EXAMPLES
+.TP 5
+.B [1] lagranto local 19891020_00 19891021_00 startf nil -changet
+a forward trajectory calculation from 00 UTC, 20 October 2010 to 00 UTC, 21 October 2010. The starting positions are taken from the file "startf". No selection criterion is applied (nil), and the times on the input netCDF files are set relative to the starting date in advance.  
+.TP 5
+.B [2] lagranto local 19891020_00 19891021_00 startf 'GT:PV:2:LAST' -changet
+as in example [1], but now an explicit selection criterion is applied (GT:PV:2:LAST) - the potential vorticity at the end date (19891021_00) must be larger than 2 PVU.
+.TP 5
+.B [3] lagranto local 19891020_00 19891021_00 startf 'GT:PV:2:LAST' -changet -prep
+as in the previous two examples, but now only the files and runscript are prepared: no Lagranto run is launched! To do so, you might change to the run directory with
+.B lagranto -open local
+and then start it manually with
+.B ./runscript.sh.
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)

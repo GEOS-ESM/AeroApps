@@ -1,0 +1,18 @@
+.TH getvars
+.SH NAME 
+.B getvars - get a list of a fields on a netCDF file
+.SH SYNOPSIS 
+.B getvars
+.I filename
+.SH DESCRIPTION
+Get a list of all fields on a netCDF file - the names of the fields are listed line-by-line.
+.SH PARAMETERS
+.TP 15
+.B filename
+name of the netCDF file (e.g. P20110102_00).
+.SH EXAMPLES
+.TP 5
+.B [1] getvars P20110102_00
+gives a list of all fields on the netCDF file P20110102_00; the results is:  time, Q, LWC, IWC, T, U, V, OMEGA, PS, SLP  
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)
