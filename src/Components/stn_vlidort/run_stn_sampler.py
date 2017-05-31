@@ -87,7 +87,6 @@ if __name__ == "__main__":
             Options =     " --output=" + outFile       + \
                           " --format=NETCDF4_CLASSIC"      + \
                           " --isoTime"  +\
-                          " --trajectory=tle"  +\
                           " --algorithm=" + args.algo
 
             if args.verbose:
