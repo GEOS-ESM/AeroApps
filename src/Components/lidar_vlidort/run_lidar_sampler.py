@@ -99,11 +99,11 @@ if __name__ == "__main__":
             if args.verbose:
                 Options += " --verbose" 
 
-            cmd = 'trj_sampler.py {} {} {} {}'.format(Options,tleFile,date.isoformat(),edate.isoformat())
+            cmd = './lidar_sampler.py {} {} {} {}'.format(Options,tleFile,date.isoformat(),edate.isoformat())
             print cmd
             if not args.dryrun:
                 if os.system(cmd):
-                    raise ValueError, "trj_sampler.py failed for %s on %s"%(rc, date)       
+                    raise ValueError, "./lidar_sampler.py failed for %s on %s"%(rc, date)       
 
 
 
