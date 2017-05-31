@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     outdir = cf('OUTDIR')
     instname = cf('INSTNAME')
-    tleFile  = cf('TLEFILE')
+    stnFile  = cf('STNFILE')
 
     date = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
