@@ -70,7 +70,7 @@ if __name__ == "__main__":
     # Change wavelength number in Aod_EOS.rc
     # ---------------------------------------
     source = open(rcFile,'r')
-    destination = open(rcFile+'.tmp','w')
+    destination = open(rcFile+'.'+cf('channel')+'.tmp','w')
     a = float(channel)*1e-3
     for line in source:
         if (line[0:11] == 'r_channels:'):
@@ -79,7 +79,7 @@ if __name__ == "__main__":
             destination.write(line) 
     source.close()
     destination.close()
-    rcFile = rcFile+'.tmp'
+    rcFile = rcFile+'.'+cf('channel')+'.tmp'
 
     # Loop through dates, running VLIDORT
     # ------------------------------------
@@ -106,17 +106,33 @@ if __name__ == "__main__":
 
         # Initialize VLIDORT class getting aerosol optical properties
         # -----------------------------------------------------------
-        vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,
-                                albedoFile,cf('albedoType'),
-                                channel,
-                                VZA,
-                                float(cf('HGT')),
-                                ndviFile=ndviFile,
-                                lcFile=lcFile,
-                                verbose=args.verbose)
+        print '++++Running VLIDORT with the following arguments+++'
+        print 'inFile:',inFile
+        print 'outFile:',outFile
+        print 'rcFile:',rcFile
+        print 'albedoFile:',albedoFile
+        print 'albedoType:',cf('albedoType')
+        print 'channel:',channel
+        print 'VZA:',VZA
+        print 'HGT:',float(cf('HGT'))
+        print 'ndviFile:',ndviFile,
+        print 'lcFile:',lcFile,
+        print 'verbose:',args.verbose
+        if not args.dryrun:
+            vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,
+                                    albedoFile,cf('albedoType'),
+                                    channel,
+                                    VZA,
+                                    float(cf('HGT')),
+                                    ndviFile=ndviFile,
+                                    lcFile=lcFile,
+                                    verbose=args.verbose)
 
-        # Run VLIDORT
-        if vlidort.nobs > 0:
-            vlidort.runVLIDORT()
+            # Run VLIDORT
+            if vlidort.nobs > 0:
+                if cf('DO_VLIDORT').upper() == 'YES':
+                    vlidort.runVLIDORT()
+                if cf('DO_EXT').upper() == 'YES':
+                    vlidort.runExt()
 
         date += Dt
