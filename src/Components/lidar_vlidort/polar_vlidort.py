@@ -386,7 +386,7 @@ class POLAR_VLIDORT(object):
         outDir = os.path.dirname(self.outFile)
         instname = os.path.basename(self.inFile).split('.')[0]
         date_ch   = os.path.basename(self.inFile).split('.')[-2]
-        outFile = '{}/{}.lc2.ext.{}.nc'.format(outDir,instname,date_ch)
+        outFile = '{}/{}.lc2.ext.{}_{}nm.nc'.format(outDir,instname,date_ch,get_chd(self.channel))
         Options =     " --input=" + self.inFile.replace('%col',col)      + \
                       " --output=" + outFile       + \
                       " --rc=" + self.rcFile      + \
@@ -585,12 +585,12 @@ class POLAR_VLIDORT(object):
         if self.verbose: 
             print 'opening file',self.inFile.replace('%col',col)
         nctrj       = Dataset(self.inFile.replace('%col',col))        
-        _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=verbose)   
+        _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)   
         nctrj.close()
 
 
