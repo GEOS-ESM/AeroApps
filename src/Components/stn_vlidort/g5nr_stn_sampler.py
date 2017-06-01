@@ -102,12 +102,6 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     nc.Contact = 'Arlindo da Silva <arlindo.dasilva@nasa.gov>'
     nc.Conventions = 'CF'
 
-    # Because of GrADS limitations on attribute size, break Station list into
-    # multiple attributes. This is Hackish, but necessary
-    # ------------------------------------------------------------------------
-    for i in range(ns_):
-        setattr(nc,'Station_%03d'%(i+1),stnName[i])
-
     # Create dimensions
     # -----------------
     ns = nc.createDimension('station', ns_ )
@@ -161,7 +155,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
         lev.units = levUnits.rstrip()
         lev.positive = 'down'
         lev.axis = 'z'
-        lev[:] = f.levs[:]
+        lev[:] = levs[:]
 
     time = nc.createVariable('time','i4',('time',),zlib=zlib)
     time.long_name = 'Time'
