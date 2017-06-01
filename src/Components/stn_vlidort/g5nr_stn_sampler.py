@@ -21,6 +21,7 @@ from csv             import DictReader
 
 from MAPL           import Config
 from MAPL.constants import *
+from   pyobs.nc4ctl    import NC4ctl
 
 class StnVar(object):
     """                                                                                  
@@ -29,7 +30,8 @@ class StnVar(object):
     def __init__(self,name):
         self.name = name
 
-
+class NC4ctl_(NC4ctl):
+    interpXY = NC4ctl.interpXY # select this as the default XY interpolation
 #---
 def Open(filename):
     """
@@ -113,8 +115,10 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
     n = 0
     for t in tyme:
         try:
-            z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
-                         Transpose=True,squeeze=squeeze)
+            z = f.nc4.interpXY(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
+                         Transpose=True,squeeze=squeeze)            
+            # z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
+            #              Transpose=True,squeeze=squeeze)
         except:
             print "    - Interpolation failed for <%s> on %s"%(V.name,str(t))
             if nz>0:
@@ -239,6 +243,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
         if options.verbose:
             print " <> opening "+path
         f = Open(path) 
+        f.nc4 = NC4ctl_(path)
         for var in Vars[path]:
             if var.km == 0:
                 dim = ('station','time',)
