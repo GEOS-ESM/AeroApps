@@ -12,7 +12,7 @@ if os.path.exists('/discover/nobackup'):
     sys.path.append(os.environ["NOBACKUP"]+'/workspace/GAAS/src/GMAO_Shared/GMAO_pyobs')
 else:
     sys.path.append(os.environ["HOME"]+'/workspace/GAAS/src/GMAO_Shared/GMAO_pyobs')
-from stn_sampler  import getVars, Open, StnVar, getStations, 
+from stn_sampler  import getVars, Open, StnVar, getStations
 from numpy import zeros, ones, arange, array
 
 from optparse        import OptionParser
