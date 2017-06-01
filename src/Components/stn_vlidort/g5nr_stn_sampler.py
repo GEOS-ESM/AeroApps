@@ -27,12 +27,12 @@ from   pyobs.nc4ctl    import NC4ctl
 
 
 class NC4ctl_(NC4ctl):
-    interpXY = NC4ctl.interpXY # select this as the default XY interpolation
+    interpXY = NC4ctl.interpXY_LatLon # select this as the default XY interpolation
 
 def getTyme(Dt,t1,t2):
     t = t1
     tyme = [t,]
-    while t < t2:
+    while t < t2-Dt:
         t += Dt
         tyme += [t,]
     tyme = array(tyme)
@@ -57,7 +57,7 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
     n = 0
     for t in tyme:
         try:
-            z = f.nc4.interpXY(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
+            z = f.nc4.interpXY(name,stnLon,stnLat,t,algorithm=options.algo,
                          Transpose=True,squeeze=squeeze)            
             # z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
             #              Transpose=True,squeeze=squeeze)
