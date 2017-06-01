@@ -297,7 +297,7 @@ if __name__ == "__main__":
 
     # Get Variables and Metadata
     # --------------------------
-    Vars, levs, levUnits = getVars(options.rcFile)
+    Vars, levs, levUnits = getVars(g5File)
     
     # Write output file
     # -----------------
