@@ -7,6 +7,7 @@
 """
 
 import os
+import sys
 if os.path.exists('/discover/nobackup'):
     sys.path.append(os.environ["NOBACKUP"]+'/workspace/GAAS/src/GMAO_Shared/GMAO_pyobs')
 else:
