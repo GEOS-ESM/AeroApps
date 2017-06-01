@@ -111,19 +111,17 @@ if __name__ == "__main__":
                 print cmd
                 if not args.dryrun:
                     processes.add(subprocess.Popen(cmd, shell=True))
-                    if len(processes) >= args.nproc:
-                        os.wait()
-                        processes.difference_update([p for p in processes if p.poll() is not None])
 
                 filelist.append(outFile)
 
-            #Check if all the child processes were closed
+            #Wait till all the processes are finished
             for p in processes:
                 if p.poll() is None:
                     p.wait()
 
-            #Concatenate outfiles into one
-            cmd = nccat + ' -d time -H -h -c -A ' + ' '.join(filelist) +' -o ' + filelist[0]
+            if not args.dryrun:
+                #Concatenate outfiles into one
+                cmd = nccat + ' -d time -H -h -c -A ' + ' '.join(filelist) +' -o ' + filelist[0]
 
         Date += timedelta(hours=args.DT_hours)
 
