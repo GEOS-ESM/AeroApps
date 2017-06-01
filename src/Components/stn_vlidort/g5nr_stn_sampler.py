@@ -7,11 +7,12 @@
 """
 
 import os
+import sys
 if os.path.exists('/discover/nobackup'):
     sys.path.append(os.environ["NOBACKUP"]+'/workspace/GAAS/src/GMAO_Shared/GMAO_pyobs')
 else:
     sys.path.append(os.environ["HOME"]+'/workspace/GAAS/src/GMAO_Shared/GMAO_pyobs')
-from stn_sampler  import getVars
+from stn_sampler  import getVars, Open, StnVar, getStations, 
 from numpy import zeros, ones, arange, array
 
 from optparse        import OptionParser
@@ -23,69 +24,9 @@ from MAPL           import Config
 from MAPL.constants import *
 from   pyobs.nc4ctl    import NC4ctl
 
-class StnVar(object):
-    """                                                                                  
-    Generic container for Variables
-    """
-    def __init__(self,name):
-        self.name = name
 
 class NC4ctl_(NC4ctl):
     interpXY = NC4ctl.interpXY # select this as the default XY interpolation
-#---
-def Open(filename):
-    """
-    Uses GFIO or GFIOctl to open either a NetCDF-4 or a control file.
-    Very heuristic.
-    """
-    from gfio import GFIOurl, GFIOctl
-    name, ext = os.path.splitext(filename)
-
-    # Open the GFIO dataset
-    # ---------------------
-    f = None
-    if 'HTTP://' == name[:7].upper():
-        f = GFIOurl(filename)
-        f.lower = True # force variable names to be lower case when sampling.
-    elif ext.upper() in ('.NC4','.NC','.HDF','.H5'):
-        f = GFIOurl(filename)
-        f.lower = False
-    else:
-        f = GFIOctl(filename)
-        f.lower = False
-
-    # Create variable dictionary
-    # --------------------------
-    Vars = dict()
-    for i in range(len(f.vname)):
-        if f.lower:
-            v = f.vname[i].upper()
-        else:
-            v = f.vname[i]
-        var = StnVar(v)
-        var.title = f.vtitle[i]
-        var.km = f.kmvar[i]
-        try:
-            var.units = f.vunits[i]
-        except:
-            var.units = 'unknown'  # opendap currently lacks units
-        Vars[v] = var
-
-    f.Vars = Vars
-
-    return f
-
-def getStations(csvFile):
-    """
-    Parse CSV file.
-    """
-    CSV = DictReader(open(csvFile))
-    name, lon, lat = [], [], []
-    for row in CSV:
-        name += [row['name'],]
-        lon  += [float(row['lon']),]
-        lat  += [float(row['lat']),]
-    return ( array(name), array(lon), array(lat) )
 
 def getTyme(Dt,t1,t2):
     t = t1
