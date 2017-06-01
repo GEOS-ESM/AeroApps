@@ -9,10 +9,16 @@
 """
 
 import os
+import subprocess
 import argparse
 from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 from MAPL            import Config
+
+if os.path.exists('/discover/nobackup'):
+    nccat = '/usr/local/other/SLES11.1/nco/4.4.4/intel-12.1.0.233/bin/ncrcat'
+else:
+    nccat = '/ford1/share/dasilva/bin/ncrcat'
 
 #------------------------------------ M A I N ------------------------------------
 
@@ -20,7 +26,8 @@ if __name__ == "__main__":
 
     # Defaults
     DT_hours = 24
-    algo    = "linear"
+    algo     = "linear"
+    nproc    = 4
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",
@@ -43,7 +50,8 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--dryrun",action="store_true",
                         help="do a dry run (default=False).")    
 
-
+    parser.add_argument("-n", "--nproc",default=nproc,type=int,
+                        help="Number of processors (default=%i)."%nproc)    
 
     args = parser.parse_args()
 
@@ -67,39 +75,55 @@ if __name__ == "__main__":
     instname = cf('INSTNAME')
     stnFile  = cf('STNFILE')
 
-    date = isoparser(args.iso_t1)
+    Date = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
 
+    pdt  = timedelta(hours=args.DT_hours/args.nproc)
 
-    while date < enddate:
-        nymd = str(date.date()).replace('-','')
-        hour = str(date.hour).zfill(2)
-        outpath = '{}/Y{}/M{}'.format(outdir,date.year,str(date.month).zfill(2))
+
+    while Date < enddate:
+        outpath = '{}/Y{}/M{}'.format(outdir,Date.year,str(Date.month).zfill(2))
         if not os.path.exists(outpath):
             os.makedirs(outpath)
 
-        edate = date + timedelta(hours=args.DT_hours) 
         # run trajectory sampler on model fields
+        # split across multiple processors by date
+        datelist = [Date + p*pdt for p in range(args.nproc)]
+        filelist = []
         for rc,colname in zip(rcFiles,colNames):
+            processes = set()
+            for date in datelist:
+                nymd = str(date.date()).replace('-','')
+                hour = str(date.hour).zfill(2)
+                edate = date + pdt
+            
+                outFile = '{}/{}-g5nr.lb2.{}.{}_{}z.nc4'.format(outpath,instname,colname,nymd,hour)
 
-            outFile = '{}/{}-g5nr.lb2.{}.{}_{}z.nc4'.format(outpath,instname,colname,nymd,hour)
+                Options =     " --output=" + outFile       + \
+                              " --format=NETCDF4_CLASSIC"      + \
+                              " --isoTime"  +\
+                              " --algorithm=" + args.algo
 
-            Options =     " --output=" + outFile       + \
-                          " --format=NETCDF4_CLASSIC"      + \
-                          " --isoTime"  +\
-                          " --algorithm=" + args.algo
+                if args.verbose:
+                    Options += " --verbose" 
 
-            if args.verbose:
-                Options += " --verbose" 
+                cmd = './g5nr_stn_sampler.py {} {} {} {} {}'.format(Options,stnFile,rc,date.isoformat(),edate.isoformat())
+                print cmd
+                if not args.dryrun:
+                    processes.add(subprocess.Popen(cmd, shell=True))
+                    if len(processes) >= args.nproc:
+                        os.wait()
+                        processes.difference_update([p for p in processes if p.poll() is not None])
 
-            cmd = './g5nr_stn_sampler.py {} {} {} {} {}'.format(Options,stnFile,rc,date.isoformat(),edate.isoformat())
-            print cmd
-            if not args.dryrun:
-                if os.system(cmd):
-                    raise ValueError, "./stn_sampler.py failed for %s on %s"%(rc, date)       
+                filelist.append(outFile)
 
+            #Check if all the child processes were closed
+            for p in processes:
+                if p.poll() is None:
+                    p.wait()
 
+            #Concatenate outfiles into one
+            cmd = nccat + ' -d time -H -h -c -A ' + ' '.join(filelist) +' -o ' + filelist[0]
 
-
-        date += timedelta(hours=args.DT_hours)
+        Date += timedelta(hours=args.DT_hours)
 
