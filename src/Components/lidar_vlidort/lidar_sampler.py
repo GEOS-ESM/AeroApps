@@ -59,7 +59,7 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
  
     # Create dimensions
     # -----------------
-    nt = nc.createDimension('time',len(tyme))
+    nt = nc.createDimension('time',None) #len(tyme)
     ls = nc.createDimension('ls',19)
     if km>0:
         nz = nc.createDimension('lev',km)
