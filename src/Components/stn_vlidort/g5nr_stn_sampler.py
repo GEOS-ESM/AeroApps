@@ -114,13 +114,13 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
      
     # Station names
     # -------------
-    # stnName_ = nc.createVariable('stnName','S1',('station','ls',),zlib=zlib)
-    # stnName_.long_name = 'Station Names'
-    # #stnName_.axis = 'e'
-    # stntmp = zeros((ns_,19),dtype='S1')
-    # for i in range(ns_):
-    #     stntmp[i][:] = list('%-19s'%stnName[i])
-    # stnName_[:] = stntmp[:]
+    stnName_ = nc.createVariable('stnName','S1',('station','ls',),zlib=zlib)
+    stnName_.long_name = 'Station Names'
+    stnName_.axis = 'e'
+    stntmp = zeros((ns_,19),dtype='S1')
+    for i in range(ns_):
+        stntmp[i][:] = list('%-19s'%stnName[i])
+    stnName_[:] = stntmp[:]
 
     # Coordinate variables
     # --------------------
@@ -146,11 +146,13 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     x_.long_name = 'Fake Longitude for GrADS Compatibility'
     x_.units = 'degrees_east'
     x_[:] = zeros(1)
+
     y_ = nc.createVariable('y','f4',('y',),zlib=zlib)
     y_.long_name = 'Fake Latitude for GrADS Compatibility'
     y_.units = 'degrees_north'
     y_[:] = zeros(1)
-    en = nc.createVariable('station','i4',('station',),zlib=zlib)
+
+    en = nc.createVariable('station','i4',('y',),zlib=zlib)
     # e.long_name = 'Station Ensemble Dimension'
     # e.axis = 'e'
     # e.grads_dim = 'e'
