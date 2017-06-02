@@ -138,11 +138,13 @@ if __name__ == "__main__":
                 # make time units all the same
                 fix_time(filelist,Date)
                 #Concatenate outfiles into one
-                cmd = nccat + ' -F -d time,1,-1 -H -h -A ' + ' '.join(filelist) +' -o ' + filelist[0]
+                cmd = nccat + ' -h -A ' + ' '.join(filelist) +' -o ' + filelist[0]
                 print cmd
-                # if os.system(cmd):
-                #     raise ValueError, "nccat failed for {}".format(nymd)
+                if os.system(cmd):
+                    raise ValueError, "nccat failed for {}".format(nymd)
 
+                for filename in filelist[1:]
+                    os.remove(filename)
 
         Date += timedelta(hours=args.DT_hours)
 
