@@ -152,11 +152,11 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     y_.units = 'degrees_north'
     y_[:] = zeros(1)
 
-    en = nc.createVariable('station','i4',('station',),zlib=zlib)
+    e = nc.createVariable('other','i4',('station',),zlib=zlib)
     # e.long_name = 'Station Ensemble Dimension'
     # e.axis = 'e'
     # e.grads_dim = 'e'
-    # e[:] = range(ns_)
+    e[:] = range(ns_)
     
     if nz_ > 0:
         lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
