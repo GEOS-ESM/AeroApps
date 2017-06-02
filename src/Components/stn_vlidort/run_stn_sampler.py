@@ -123,8 +123,8 @@ if __name__ == "__main__":
                 #Concatenate outfiles into one
                 cmd = nccat + ' -F -d time,1,-1 -H -h -A ' + ' '.join(filelist) +' -o ' + filelist[0]
                 print cmd
-                if os.system(cmd):
-                    raise ValueError, "nccat failed for {}".format(nymd)
+                # if os.system(cmd):
+                #     raise ValueError, "nccat failed for {}".format(nymd)
 
 
         Date += timedelta(hours=args.DT_hours)
