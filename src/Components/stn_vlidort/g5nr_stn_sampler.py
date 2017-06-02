@@ -86,7 +86,6 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     from netCDF4 import Dataset
 
     ns_, nt_, nz_ = ( len(stnLon), len(tyme), len(levs) )
-    print '****************',ns_, nt_, nz_, levs
 
     # Open NC file
     # ------------
@@ -145,62 +144,62 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     y_.long_name = 'Fake Latitude for GrADS Compatibility'
     y_.units = 'degrees_north'
     y_[:] = zeros(1)
-    e = nc.createVariable('station','i4',('station',),zlib=zlib)
-    e.long_name = 'Station Ensemble Dimension'
-    e.axis = 'e'
-    e.grads_dim = 'e'
-    e[:] = range(ns_)
+    # e = nc.createVariable('station','i4',('station',),zlib=zlib)
+    # e.long_name = 'Station Ensemble Dimension'
+    # e.axis = 'e'
+    # e.grads_dim = 'e'
+    # e[:] = range(ns_)
     
-    if nz_ > 0:
-        lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
-        lev.long_name = 'Vertical Level'
-        lev.units = levUnits.rstrip()
-        lev.positive = 'down'
-        lev.axis = 'z'
-        lev[:] = levs[:]
+    # if nz_ > 0:
+    #     lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
+    #     lev.long_name = 'Vertical Level'
+    #     lev.units = levUnits.rstrip()
+    #     lev.positive = 'down'
+    #     lev.axis = 'z'
+    #     lev[:] = levs[:]
 
-    time = nc.createVariable('time','i4',('time',),zlib=zlib)
-    time.long_name = 'Time'
-    t0 = tyme[0]
-    time.units = 'seconds since %s'%t0.isoformat(' ')
-    time[:] = array([(t-t0).total_seconds() for t in tyme])
+    # time = nc.createVariable('time','i4',('time',),zlib=zlib)
+    # time.long_name = 'Time'
+    # t0 = tyme[0]
+    # time.units = 'seconds since %s'%t0.isoformat(' ')
+    # time[:] = array([(t-t0).total_seconds() for t in tyme])
 
-    # Time in ISO format if so desired
-    # ---------------------------------
-    if options.isoTime:
-        isotime = nc.createVariable('isotime','S1',('time','ls',),zlib=zlib)
-        isotime.long_name = 'Time (ISO Format)'
-        isotmp = zeros((nt_,19),dtype='S1')
-        for i in range(nt_):
-            isotmp[i][:] = list(tyme[i].isoformat())
-        isotime[:] = isotmp[:]
+    # # Time in ISO format if so desired
+    # # ---------------------------------
+    # if options.isoTime:
+    #     isotime = nc.createVariable('isotime','S1',('time','ls',),zlib=zlib)
+    #     isotime.long_name = 'Time (ISO Format)'
+    #     isotmp = zeros((nt_,19),dtype='S1')
+    #     for i in range(nt_):
+    #         isotmp[i][:] = list(tyme[i].isoformat())
+    #     isotime[:] = isotmp[:]
       
-    # Loop over variables on GFIO file.
-    # --------------------------------
-    for path in Vars:
-        if options.verbose:
-            print " <> opening "+path
-        f = Open(path) 
-        f.nc4 = NC4ctl_(path)
-        for var in Vars[path]:
-            if var.km == 0:
-                dim = ('station','time',)
-                shp = ( ns_, nt_)
-            else:
-                dim = ('station','time','lev',)
-                shp = ( ns_, nt_, nz_)
-            this = nc.createVariable(var.name,'f4',dim,zlib=zlib)
-            this.standard_name = var.title
-            this.long_name = var.title.replace('_',' ')
-            this.missing_value = MAPL_UNDEF
-            this.units = var.units
-            if options.dryrun:
-                this_ = zeros(shp)
-                if options.verbose:
-                    print "[] Zero-filling <%s>"%var.name
-            else:
-                this_ = stnSample(f,var,stnLon,stnLat,tyme,options)
-            this[:] = this_[:]
+    # # Loop over variables on GFIO file.
+    # # --------------------------------
+    # for path in Vars:
+    #     if options.verbose:
+    #         print " <> opening "+path
+    #     f = Open(path) 
+    #     f.nc4 = NC4ctl_(path)
+    #     for var in Vars[path]:
+    #         if var.km == 0:
+    #             dim = ('station','time',)
+    #             shp = ( ns_, nt_)
+    #         else:
+    #             dim = ('station','time','lev',)
+    #             shp = ( ns_, nt_, nz_)
+    #         this = nc.createVariable(var.name,'f4',dim,zlib=zlib)
+    #         this.standard_name = var.title
+    #         this.long_name = var.title.replace('_',' ')
+    #         this.missing_value = MAPL_UNDEF
+    #         this.units = var.units
+    #         if options.dryrun:
+    #             this_ = zeros(shp)
+    #             if options.verbose:
+    #                 print "[] Zero-filling <%s>"%var.name
+    #         else:
+    #             this_ = stnSample(f,var,stnLon,stnLat,tyme,options)
+    #         this[:] = this_[:]
             
     # Close the file
     # --------------
