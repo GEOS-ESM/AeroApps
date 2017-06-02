@@ -38,5 +38,5 @@ cd $BIN
 ######         Do Sampling
 ######
 ##################################################################
-./run_stn_sampler.py -v --nproc 24 --DT_hours 24 2006-01-01T00 2006-01-02T00 stn_sampler.pcf
+python -u run_stn_sampler.py -v --nproc 24 --DT_hours 24 2006-01-01T00 2006-01-02T00 stn_sampler.pcf > run_stn_sampler_%j.out
 
