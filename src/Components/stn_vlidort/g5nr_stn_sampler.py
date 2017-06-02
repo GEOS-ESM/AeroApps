@@ -111,7 +111,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     nt = nc.createDimension('time', nt_ )
     ls = nc.createDimension('ls',19)
     x = nc.createDimension('x',1)
-    y = nc.createDimension('y',1)
+    y = nc.createDimension('y',10)
      
     # Station names
     # -------------
@@ -144,7 +144,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     y_ = nc.createVariable('blah','f4',('y',),zlib=zlib)
     # y_.long_name = 'Fake Latitude for GrADS Compatibility'
     # y_.units = 'degrees_north'
-    y_[:] = zeros(1)
+    y_[:] = 0
     e = nc.createVariable('station','i4',('station',),zlib=zlib)
     e.long_name = 'Station Ensemble Dimension'
     e.axis = 'e'
