@@ -86,6 +86,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     from netCDF4 import Dataset
 
     ns_, nt_, nz_ = ( len(stnLon), len(tyme), len(levs) )
+    print '****************',ns_, nt_, nz_
 
     # Open NC file
     # ------------
