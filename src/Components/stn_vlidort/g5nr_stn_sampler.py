@@ -159,11 +159,11 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
         lev.axis = 'z'
         lev[:] = levs[:]
 
-    time = nc.createVariable('time','i4',('time',),zlib=zlib)
-    time.long_name = 'Time'
-    t0 = tyme[0]
-    time.units = 'seconds since %s'%t0.isoformat(' ')
-    time[:] = array([(t-t0).total_seconds() for t in tyme])
+    # time = nc.createVariable('time','i4',('time',),zlib=zlib)
+    # time.long_name = 'Time'
+    # t0 = tyme[0]
+    # time.units = 'seconds since %s'%t0.isoformat(' ')
+    # time[:] = array([(t-t0).total_seconds() for t in tyme])
 
     # # Time in ISO format if so desired
     # # ---------------------------------
