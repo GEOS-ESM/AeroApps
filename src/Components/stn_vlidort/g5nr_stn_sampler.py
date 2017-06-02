@@ -104,36 +104,17 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
 
     # Create dimensions
     # -----------------
-    if nz_>0:
-        nz = nc.createDimension('lev', nz_ )
     nt = nc.createDimension('time', nt_ )
-    ls = nc.createDimension('ls',19)
     x = nc.createDimension('x',1)
     y = nc.createDimension('y',1)
     ns = nc.createDimension('station', ns_ )    
-     
-    # Station names
-    # -------------
-    stnName_ = nc.createVariable('stnName','S1',('station','ls',),zlib=zlib)
-    stnName_.long_name = 'Station Names'
-    stnName_.axis = 'e'
-    stntmp = zeros((ns_,19),dtype='S1')
-    for i in range(ns_):
-        stntmp[i][:] = list('%-19s'%stnName[i])
-    stnName_[:] = stntmp[:]
+    if nz_>0:
+        nz = nc.createDimension('lev', nz_ )
+    ls = nc.createDimension('ls',19)
+
 
     # Coordinate variables
     # --------------------
-    lon = nc.createVariable('stnLon','f4',('station',),zlib=zlib)
-    lon.long_name = 'Longitude'
-    lon.units = 'degrees_east'
-    lon[:] = stnLon[:]
-    
-    lat = nc.createVariable('stnLat','f4',('station',),zlib=zlib)
-    lat.long_name = 'Latitude'
-    lat.units = 'degrees_north'
-    lat[:] = stnLat[:]
-
     time = nc.createVariable('time','i4',('time',),zlib=zlib)
     time.long_name = 'Time'
     t0 = tyme[0]
@@ -157,14 +138,35 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     # e.axis = 'e'
     # e.grads_dim = 'e'
     e[:] = range(ns_)
-    
+
     if nz_ > 0:
         lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
         lev.long_name = 'Vertical Level'
         lev.units = levUnits.rstrip()
         lev.positive = 'down'
         lev.axis = 'z'
-        lev[:] = levs[:]
+        lev[:] = levs[:]    
+
+    lon = nc.createVariable('stnLon','f4',('station',),zlib=zlib)
+    lon.long_name = 'Longitude'
+    lon.units = 'degrees_east'
+    lon[:] = stnLon[:]
+    
+    lat = nc.createVariable('stnLat','f4',('station',),zlib=zlib)
+    lat.long_name = 'Latitude'
+    lat.units = 'degrees_north'
+    lat[:] = stnLat[:]    
+    
+    # Station names
+    # -------------
+    stnName_ = nc.createVariable('stnName','S1',('station','ls',),zlib=zlib)
+    stnName_.long_name = 'Station Names'
+    stnName_.axis = 'e'
+    stntmp = zeros((ns_,19),dtype='S1')
+    for i in range(ns_):
+        stntmp[i][:] = list('%-19s'%stnName[i])
+    stnName_[:] = stntmp[:]
+
 
 
     # Time in ISO format if so desired
