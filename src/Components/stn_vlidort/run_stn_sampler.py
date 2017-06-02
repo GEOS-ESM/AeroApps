@@ -42,7 +42,7 @@ if __name__ == "__main__":
     # Defaults
     DT_hours = 24
     algo     = "linear"
-    nproc    = 4
+    nproc    = 8
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",
