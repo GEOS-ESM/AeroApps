@@ -104,13 +104,13 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
 
     # Create dimensions
     # -----------------
-    ns = nc.createDimension('station', ns_ )
     if nz_>0:
         nz = nc.createDimension('lev', nz_ )
     nt = nc.createDimension('time', nt_ )
     ls = nc.createDimension('ls',19)
     x = nc.createDimension('x',1)
     y = nc.createDimension('y',1)
+    ns = nc.createDimension('station', ns_ )    
      
     # Station names
     # -------------
@@ -152,7 +152,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     y_.units = 'degrees_north'
     y_[:] = zeros(1)
 
-    e = nc.createVariable('other','i4',('station',),zlib=zlib)
+    e = nc.createVariable('station','i4',('station',),zlib=zlib)
     # e.long_name = 'Station Ensemble Dimension'
     # e.axis = 'e'
     # e.grads_dim = 'e'
