@@ -14,6 +14,8 @@ import argparse
 from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 from MAPL            import Config
+from netCDF4         import Dataset
+import numpy         as np
 
 if os.path.exists('/discover/nobackup'):
     nccat = '/usr/local/other/SLES11.1/nco/4.4.4/intel-12.1.0.233/bin/ncrcat'
@@ -21,6 +23,19 @@ else:
     nccat = '/ford1/share/dasilva/bin/ncrcat'
 
 #------------------------------------ M A I N ------------------------------------
+def fix_time(filelist,tbeg):
+    for filename in filelist:
+        nc = Dataset(filename,'r+')
+        time - nc.variables['time']
+        time.units = 'seconds since %s'%tbeg.isoformat(' ')
+        tyme = nc.variables['isotime'][:]
+        tyme = np.array([isoparser(''.join(t)) for t in tyme])
+        time[:] = np.array([(t-tbeg).total_seconds() for t in tyme])
+
+        nc.close()
+
+
+
 
 if __name__ == "__main__":
 
@@ -120,6 +135,8 @@ if __name__ == "__main__":
                     p.wait()
 
             if not args.dryrun:
+                # make time units all the same
+                fix_time(filelist)
                 #Concatenate outfiles into one
                 cmd = nccat + ' -F -d time,1,-1 -H -h -A ' + ' '.join(filelist) +' -o ' + filelist[0]
                 print cmd
