@@ -116,7 +116,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     # -------------
     stnName_ = nc.createVariable('stnName','S1',('station','ls',),zlib=zlib)
     stnName_.long_name = 'Station Names'
-    stnName_.axis = 'e'
+    #stnName_.axis = 'e'
     stntmp = zeros((ns_,19),dtype='S1')
     for i in range(ns_):
         stntmp[i][:] = list('%-19s'%stnName[i])
