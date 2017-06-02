@@ -154,7 +154,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     # e.long_name = 'Station Ensemble Dimension'
     # e.axis = 'e'
     # e.grads_dim = 'e'
-    e_[:] = range(ns_)
+    e[:] = range(ns_)
     
     # if nz_ > 0:
     #     lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
