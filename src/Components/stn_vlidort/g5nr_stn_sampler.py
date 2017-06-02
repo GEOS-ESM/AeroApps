@@ -123,17 +123,17 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
         stntmp[i][:] = list('%-19s'%stnName[i])
     stnName_[:] = stntmp[:]
 
-    # # Coordinate variables
-    # # --------------------
-    # lon = nc.createVariable('stnLon','f4',('station',),zlib=zlib)
-    # lon.long_name = 'Longitude'
-    # lon.units = 'degrees_east'
-    # lon[:] = stnLon[:]
+    # Coordinate variables
+    # --------------------
+    lon = nc.createVariable('stnLon','f4',('station',),zlib=zlib)
+    lon.long_name = 'Longitude'
+    lon.units = 'degrees_east'
+    lon[:] = stnLon[:]
     
-    # lat = nc.createVariable('stnLat','f4',('station',),zlib=zlib)
-    # lat.long_name = 'Latitude'
-    # lat.units = 'degrees_north'
-    # lat[:] = stnLat[:]
+    lat = nc.createVariable('stnLat','f4',('station',),zlib=zlib)
+    lat.long_name = 'Latitude'
+    lat.units = 'degrees_north'
+    lat[:] = stnLat[:]
 
     # # Add fake dimensions for GrADS compatibility
     # # ------------------------------------------
