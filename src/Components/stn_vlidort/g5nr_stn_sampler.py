@@ -115,7 +115,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
      
     # Station names
     # -------------
-    stnName_ = nc.createVariable('stnName','S1',('station','ls'),zlib=zlib)
+    stnName_ = nc.createVariable('stnName','S1',('station','ls',),zlib=zlib)
     stnName_.long_name = 'Station Names'
     stnName_.axis = 'e'
     stntmp = zeros((ns_,19),dtype='S1')
@@ -168,7 +168,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     # Time in ISO format if so desired
     # ---------------------------------
     if options.isoTime:
-        isotime = nc.createVariable('isotime','S1',('time','ls'),zlib=zlib)
+        isotime = nc.createVariable('isotime','S1',('time','ls',),zlib=zlib)
         isotime.long_name = 'Time (ISO Format)'
         isotmp = zeros((nt_,19),dtype='S1')
         for i in range(nt_):
@@ -187,7 +187,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
                 dim = ('station','time',)
                 shp = ( ns_, nt_)
             else:
-                dim = ('station','time','lev')
+                dim = ('station','time','lev',)
                 shp = ( ns_, nt_, nz_)
             this = nc.createVariable(var.name,'f4',dim,zlib=zlib)
             this.standard_name = var.title
