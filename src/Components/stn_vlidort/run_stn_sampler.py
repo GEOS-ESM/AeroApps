@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
             if not args.dryrun:
                 #Concatenate outfiles into one
-                cmd = nccat + ' -d time -H -h -c -A ' + ' '.join(filelist) +' -o ' + filelist[0]
+                cmd = nccat + ' -d time,0, -H -h -c -A ' + ' '.join(filelist) +' -o ' + filelist[0]
                 print cmd
                 if os.system(cmd):
                     raise ValueError, "nccat failed for {}".format(nymd)
