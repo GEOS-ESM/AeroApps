@@ -143,7 +143,7 @@ if __name__ == "__main__":
                 if os.system(cmd):
                     raise ValueError, "nccat failed for {}".format(nymd)
 
-                for filename in filelist[1:]
+                for filename in filelist[1:]:
                     os.remove(filename)
 
         Date += timedelta(hours=args.DT_hours)
