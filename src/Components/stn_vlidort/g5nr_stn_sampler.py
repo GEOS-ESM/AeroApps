@@ -137,10 +137,10 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
 
     # Add fake dimensions for GrADS compatibility
     # ------------------------------------------
-    # x = nc.createVariable('x','f4',('x',),zlib=zlib)
-    # x.long_name = 'Fake Longitude for GrADS Compatibility'
-    # x.units = 'degrees_east'
-    # x[:] = zeros(1)
+    x = nc.createVariable('x','f4',('x',),zlib=zlib)
+    x.long_name = 'Fake Longitude for GrADS Compatibility'
+    x.units = 'degrees_east'
+    x[:] = zeros(1)
     # y = nc.createVariable('y','f4',('y',),zlib=zlib)
     # y.long_name = 'Fake Latitude for GrADS Compatibility'
     # y.units = 'degrees_north'
@@ -151,13 +151,13 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     e.grads_dim = 'e'
     e[:] = range(ns_)
     
-    # if nz_ > 0:
-    #     lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
-    #     lev.long_name = 'Vertical Level'
-    #     lev.units = levUnits.rstrip()
-    #     lev.positive = 'down'
-    #     lev.axis = 'z'
-    #     lev[:] = levs[:]
+    if nz_ > 0:
+        lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
+        lev.long_name = 'Vertical Level'
+        lev.units = levUnits.rstrip()
+        lev.positive = 'down'
+        lev.axis = 'z'
+        lev[:] = levs[:]
 
     # time = nc.createVariable('time','i4',('time',),zlib=zlib)
     # time.long_name = 'Time'
