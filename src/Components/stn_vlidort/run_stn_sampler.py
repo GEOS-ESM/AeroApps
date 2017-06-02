@@ -26,7 +26,7 @@ else:
 def fix_time(filelist,tbeg):
     for filename in filelist:
         nc = Dataset(filename,'r+')
-        time - nc.variables['time']
+        time = nc.variables['time']
         time.units = 'seconds since %s'%tbeg.isoformat(' ')
         tyme = nc.variables['isotime'][:]
         tyme = np.array([isoparser(''.join(t)) for t in tyme])
