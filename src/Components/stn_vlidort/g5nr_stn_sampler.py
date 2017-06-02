@@ -150,30 +150,30 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     y_.long_name = 'Fake Latitude for GrADS Compatibility'
     y_.units = 'degrees_north'
     y_[:] = zeros(1)
-    e = nc.createVariable('station','i4',('station',),zlib=zlib)
+    # e = nc.createVariable('station','i4',('station',),zlib=zlib)
     # e.long_name = 'Station Ensemble Dimension'
     # e.axis = 'e'
     # e.grads_dim = 'e'
-    e[:] = range(ns_)
+    # e[:] = range(ns_)
     
-    # if nz_ > 0:
-    #     lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
-    #     lev.long_name = 'Vertical Level'
-    #     lev.units = levUnits.rstrip()
-    #     lev.positive = 'down'
-    #     lev.axis = 'z'
-    #     lev[:] = levs[:]
+    if nz_ > 0:
+        lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
+        lev.long_name = 'Vertical Level'
+        lev.units = levUnits.rstrip()
+        lev.positive = 'down'
+        lev.axis = 'z'
+        lev[:] = levs[:]
 
 
-    # # Time in ISO format if so desired
-    # # ---------------------------------
-    # if options.isoTime:
-    #     isotime = nc.createVariable('isotime','S1',('time','ls',),zlib=zlib)
-    #     isotime.long_name = 'Time (ISO Format)'
-    #     isotmp = zeros((nt_,19),dtype='S1')
-    #     for i in range(nt_):
-    #         isotmp[i][:] = list(tyme[i].isoformat())
-    #     isotime[:] = isotmp[:]
+    # Time in ISO format if so desired
+    # ---------------------------------
+    if options.isoTime:
+        isotime = nc.createVariable('isotime','S1',('time','ls',),zlib=zlib)
+        isotime.long_name = 'Time (ISO Format)'
+        isotmp = zeros((nt_,19),dtype='S1')
+        for i in range(nt_):
+            isotmp[i][:] = list(tyme[i].isoformat())
+        isotime[:] = isotmp[:]
       
     # # Loop over variables on GFIO file.
     # # --------------------------------
