@@ -165,15 +165,15 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     time.units = 'seconds since %s'%t0.isoformat(' ')
     time[:] = array([(t-t0).total_seconds() for t in tyme])
 
-    # Time in ISO format if so desired
-    # ---------------------------------
-    if options.isoTime:
-        isotime = nc.createVariable('isotime','S1',('time','ls'),zlib=zlib)
-        isotime.long_name = 'Time (ISO Format)'
-        isotmp = zeros((nt_,19),dtype='S1')
-        for i in range(nt_):
-            isotmp[i][:] = list(tyme[i].isoformat())
-        isotime[:] = isotmp[:]
+    # # Time in ISO format if so desired
+    # # ---------------------------------
+    # if options.isoTime:
+    #     isotime = nc.createVariable('isotime','S1',('time','ls'),zlib=zlib)
+    #     isotime.long_name = 'Time (ISO Format)'
+    #     isotmp = zeros((nt_,19),dtype='S1')
+    #     for i in range(nt_):
+    #         isotmp[i][:] = list(tyme[i].isoformat())
+    #     isotime[:] = isotmp[:]
       
     # # Loop over variables on GFIO file.
     # # --------------------------------
