@@ -141,7 +141,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     # x_.long_name = 'Fake Longitude for GrADS Compatibility'
     # x_.units = 'degrees_east'
     # x_[:] = zeros(1)
-    y_ = nc.createVariable('y','f4',('y',),zlib=zlib)
+    # y_ = nc.createVariable('y','f4',('y',),zlib=zlib)
     # y_.long_name = 'Fake Latitude for GrADS Compatibility'
     # y_.units = 'degrees_north'
     # y_[:] = zeros(1)
