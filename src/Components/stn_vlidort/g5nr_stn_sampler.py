@@ -150,7 +150,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     y_.long_name = 'Fake Latitude for GrADS Compatibility'
     y_.units = 'degrees_north'
     y_[:] = zeros(1)
-    # e = nc.createVariable('station','i4',('station',),zlib=zlib)
+    en = nc.createVariable('station','i4',('station',),zlib=zlib)
     # e.long_name = 'Station Ensemble Dimension'
     # e.axis = 'e'
     # e.grads_dim = 'e'
