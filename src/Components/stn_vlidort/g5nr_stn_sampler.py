@@ -104,7 +104,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
 
     # Create dimensions
     # -----------------
-    nt = nc.createDimension('time', nt_ )
+    nt = nc.createDimension('time', None )
     x = nc.createDimension('x',1)
     y = nc.createDimension('y',1)
     ns = nc.createDimension('station', ns_ )    
