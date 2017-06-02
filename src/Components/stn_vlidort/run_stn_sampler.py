@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
             if not args.dryrun:
                 # make time units all the same
-                fix_time(filelist)
+                fix_time(filelist,Date)
                 #Concatenate outfiles into one
                 cmd = nccat + ' -F -d time,1,-1 -H -h -A ' + ' '.join(filelist) +' -o ' + filelist[0]
                 print cmd
