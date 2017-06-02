@@ -134,6 +134,12 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     lat.units = 'degrees_north'
     lat[:] = stnLat[:]
 
+    time = nc.createVariable('time','i4',('time',),zlib=zlib)
+    time.long_name = 'Time'
+    t0 = tyme[0]
+    time.units = 'seconds since %s'%t0.isoformat(' ')
+    time[:] = array([(t-t0).total_seconds() for t in tyme])    
+
     # Add fake dimensions for GrADS compatibility
     # ------------------------------------------
     x_ = nc.createVariable('x','f4',('x',),zlib=zlib)
@@ -144,8 +150,8 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     y_.long_name = 'Fake Latitude for GrADS Compatibility'
     y_.units = 'degrees_north'
     y_[:] = zeros(1)
-    e = nc.createVariable('station','i4',('station',),zlib=zlib)
-    e.long_name = 'Station Ensemble Dimension'
+    # e = nc.createVariable('station','i4',('station',),zlib=zlib)
+    # e.long_name = 'Station Ensemble Dimension'
     # e.axis = 'e'
     # e.grads_dim = 'e'
     #e_[:] = range(ns_)
@@ -158,11 +164,6 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     #     lev.axis = 'z'
     #     lev[:] = levs[:]
 
-    # time = nc.createVariable('time','i4',('time',),zlib=zlib)
-    # time.long_name = 'Time'
-    # t0 = tyme[0]
-    # time.units = 'seconds since %s'%t0.isoformat(' ')
-    # time[:] = array([(t-t0).total_seconds() for t in tyme])
 
     # # Time in ISO format if so desired
     # # ---------------------------------
