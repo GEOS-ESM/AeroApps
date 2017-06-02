@@ -134,7 +134,7 @@ if __name__ == "__main__":
                 if p.poll() is None:
                     p.wait()
 
-            if not args.dryrun:
+            if (not args.dryrun) & (args.nproc > 1):
                 # make time units all the same
                 fix_time(filelist,Date)
                 #Concatenate outfiles into one
