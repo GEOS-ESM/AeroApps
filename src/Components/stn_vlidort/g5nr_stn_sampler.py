@@ -135,45 +135,45 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     lat.units = 'degrees_north'
     lat[:] = stnLat[:]
 
-    # # Add fake dimensions for GrADS compatibility
-    # # ------------------------------------------
-    # x = nc.createVariable('x','f4',('x',),zlib=zlib)
-    # x.long_name = 'Fake Longitude for GrADS Compatibility'
-    # x.units = 'degrees_east'
-    # x[:] = zeros(1)
-    # y = nc.createVariable('y','f4',('y',),zlib=zlib)
-    # y.long_name = 'Fake Latitude for GrADS Compatibility'
-    # y.units = 'degrees_north'
-    # y[:] = zeros(1)
-    # e = nc.createVariable('station','i4',('station',),zlib=zlib)
-    # e.long_name = 'Station Ensemble Dimension'
-    # e.axis = 'e'
-    # e.grads_dim = 'e'
-    # e[:] = range(ns_)
+    # Add fake dimensions for GrADS compatibility
+    # ------------------------------------------
+    x = nc.createVariable('x','f4',('x',),zlib=zlib)
+    x.long_name = 'Fake Longitude for GrADS Compatibility'
+    x.units = 'degrees_east'
+    x[:] = zeros(1)
+    y = nc.createVariable('y','f4',('y',),zlib=zlib)
+    y.long_name = 'Fake Latitude for GrADS Compatibility'
+    y.units = 'degrees_north'
+    y[:] = zeros(1)
+    e = nc.createVariable('station','i4',('station',),zlib=zlib)
+    e.long_name = 'Station Ensemble Dimension'
+    e.axis = 'e'
+    e.grads_dim = 'e'
+    e[:] = range(ns_)
     
-    # if nz_ > 0:
-    #     lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
-    #     lev.long_name = 'Vertical Level'
-    #     lev.units = levUnits.rstrip()
-    #     lev.positive = 'down'
-    #     lev.axis = 'z'
-    #     lev[:] = levs[:]
+    if nz_ > 0:
+        lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
+        lev.long_name = 'Vertical Level'
+        lev.units = levUnits.rstrip()
+        lev.positive = 'down'
+        lev.axis = 'z'
+        lev[:] = levs[:]
 
-    # time = nc.createVariable('time','i4',('time',),zlib=zlib)
-    # time.long_name = 'Time'
-    # t0 = tyme[0]
-    # time.units = 'seconds since %s'%t0.isoformat(' ')
-    # time[:] = array([(t-t0).total_seconds() for t in tyme])
+    time = nc.createVariable('time','i4',('time',),zlib=zlib)
+    time.long_name = 'Time'
+    t0 = tyme[0]
+    time.units = 'seconds since %s'%t0.isoformat(' ')
+    time[:] = array([(t-t0).total_seconds() for t in tyme])
 
-    # # Time in ISO format if so desired
-    # # ---------------------------------
-    # if options.isoTime:
-    #     isotime = nc.createVariable('isotime','S1',('time','ls'),zlib=zlib)
-    #     isotime.long_name = 'Time (ISO Format)'
-    #     isotmp = zeros((nt_,19),dtype='S1')
-    #     for i in range(nt_):
-    #         isotmp[i][:] = list(tyme[i].isoformat())
-    #     isotime[:] = isotmp[:]
+    # Time in ISO format if so desired
+    # ---------------------------------
+    if options.isoTime:
+        isotime = nc.createVariable('isotime','S1',('time','ls'),zlib=zlib)
+        isotime.long_name = 'Time (ISO Format)'
+        isotmp = zeros((nt_,19),dtype='S1')
+        for i in range(nt_):
+            isotmp[i][:] = list(tyme[i].isoformat())
+        isotime[:] = isotmp[:]
       
     # # Loop over variables on GFIO file.
     # # --------------------------------
