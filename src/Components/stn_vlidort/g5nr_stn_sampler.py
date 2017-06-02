@@ -137,10 +137,10 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
 
     # Add fake dimensions for GrADS compatibility
     # ------------------------------------------
-    # x_ = nc.createVariable('x','f4',('x',),zlib=zlib)
-    # x_.long_name = 'Fake Longitude for GrADS Compatibility'
-    # x_.units = 'degrees_east'
-    # x_[:] = zeros(1)
+    x_ = nc.createVariable('x','f4',('x',),zlib=zlib)
+    x_.long_name = 'Fake Longitude for GrADS Compatibility'
+    x_.units = 'degrees_east'
+    x_[:] = zeros(10)
     # y_ = nc.createVariable('y','f4',('y',),zlib=zlib)
     # y_.long_name = 'Fake Latitude for GrADS Compatibility'
     # y_.units = 'degrees_north'
