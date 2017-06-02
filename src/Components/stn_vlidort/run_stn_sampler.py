@@ -122,6 +122,9 @@ if __name__ == "__main__":
             if not args.dryrun:
                 #Concatenate outfiles into one
                 cmd = nccat + ' -d time -H -h -c -A ' + ' '.join(filelist) +' -o ' + filelist[0]
+                if os.system(cmd):
+                    raise ValueError, "nccat failed for {}".format(nymd)
+
 
         Date += timedelta(hours=args.DT_hours)
 
