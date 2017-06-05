@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     cwd = os.getcwd()
     while Date < enddate:
-        edate = Date + DT
+        edate = Date + Dt
 
         # copy template to temp
         outfile = '{}_{}.j'.format(args.slurm[:-2],Date.date())
