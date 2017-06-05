@@ -4,7 +4,7 @@
 #                     Batch Parameters for Run Job
 #######################################################################
 #SBATCH --time=02:00:00
-#SBATCH --ntasks=24 --cpus-per-task=1 --ntasks-per-node=24
+#SBATCH --ntasks=12 --cpus-per-task=1 --ntasks-per-node=12
 #SBATCH --job-name=stn_sampler
 #SBATCH -A s1412
 #SBATCH --mail-type=FAIL
@@ -38,5 +38,5 @@ cd $BIN
 ######         Do Sampling
 ######
 ##################################################################
-python -u run_lidar_sampler.py -v --nproc 24 --DT_hours 24 2006-01-01T00 2006-01-02T00 lidar.pcf > run_lidar_sampler_%j.out
+python -u run_lidar_sampler.py -v --nproc 24 --DT_hours 24 2006-01-01T00 2006-01-02T00 lidar.pcf > run_lidar_sampler_$SLURM_JOBID.out
 
