@@ -10,6 +10,7 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=patricia.castellanos@nasa.gov
 #SBATCH --output=slurm_%j.out
+#SBATCH --constraint=sand
 #######################################################################
 #                  System Environment Variables
 #######################################################################
@@ -38,5 +39,5 @@ cd $BIN
 ######         Do Sampling
 ######
 ##################################################################
-python -u run_lidar_sampler.py -v --nproc 12 --DT_hours 24 2006-01-01T00 2006-01-02T00 lidar.pcf > slurm_$SLURM_JOBID_py.out
+python -u run_lidar_sampler.py -v --nproc 12 --DT_hours 24 2006-01-01T00 2006-01-02T00 lidar.pcf > slurm_${SLURM_JOBID}_py.out
 
