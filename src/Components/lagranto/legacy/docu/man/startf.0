@@ -1,0 +1,195 @@
+.TH create_startf
+.SH NAME 
+.B create_startf - 
+create starting files for Lagranto
+.SH SYNOPSIS 
+.B create_startf 
+.I date 
+.I filename 
+.I specifier 
+[ 
+.I optional arguments 
+] 
+.SH DESCRIPTION
+Create starting files
+for a Lagranto calculation. The staring positions are based on the P and S files for 
+.I date
+and are as specified in a 
+.I specifier.
+The starting coordinates (longitude, latitude, pressure [in hPa]) are written to the file 
+.I filename.
+.SH PARAMETERS
+.TP 15
+.I date        
+date of input P and S file (e.g. 20100101_00). If the date is between two P and S files, 
+linear interpolation is used between the two times.
+.TP 15
+.I filename    
+output file with starting points (e.g. startf). Different formats are supported (see 
+.B reformat
+for details)
+.TP 15
+.I specifier   
+detailed description of starting positions. The specifier has the following format:
+.B 
+.I <horizontal> 
+@ 
+.I <vertical> 
+@ 
+.I
+<unit> 
+@ 
+.I <selection>.
+The components of the specifier are described in greater detail in the following sections.
+.SH HORIZONTAL
+.TP 15
+.B - file[filename] 
+read lat/lon from file "filename"; each line contains one lat/lon pair.
+.TP 15
+.B - line[lon1,lon2,lat1,lat2,n] 
+n points from (lon1,la1) to (lon2,lat2); the points are linearly interpolated in lat/lon space.
+.TP 15
+.B - box.eqd[lon1,lon2,lat1,lat2,ds] 
+lat/lon box bounded with south-western point (lon1,lat1) and north-eastern point (lon2,lat2); the equdistant points within the box have a horizontal distance ds (in [km]).
+.TP 15
+.B - box.grid[lon1,lon2,lat1,lat2,] 
+lat/lon box with south-western point (lon1,lat1) and north-eastern point (lon2,lat2 grid points; all grid points within this box are taken as staring points.
+.TP 15
+.B - point[lon,lat] 
+single lon/lat point.
+.TP 15
+.B - shift[lon,lat,dlon,dlat] 
+lon/at points and dlon/dlat shifhted ones, i.e. in total five points: central one and four shifted ones: (lon,lat), (lon+dlon,lat), (lon-dlon,lat), (lon,lat+dlat), (lon,lat-dlat).
+.TP 15
+.B - polygon.eqd[filename,ds] 
+equidistant within arbirtrary polygon (ds in [km]). The file with the polygon points has the following format: 1st line a lon/lat point within the polygon; further lines lon/lat points of the vertices (max 500) of the polygon.
+.TP 15
+.B - polygon.grid[filename] 
+grid points within arbirtrary polygon. The file with the polygon points has the following format: 1st line a lon/lat point within the polygon; further lines lon/lat points of the vertices (max 500) of the polygon.
+.TP 15
+.B - circle.eqd[lonc,latc,radius,ds] 
+circle with centre at (lonc,latc) and radius "radius" (in km); the equdistant points within the circle have a horizontal distance ds (in [km]).
+.TP 15
+.B - circle.grid[lonc,latc,radius]
+circle with centre at (lonc,latc) and radius "radius" (in km); all rid points within the circle are selected.
+.TP 15
+.B - region.eqd[id,ds] 
+Read region specification from region file ("default regionf", to be changed with option "-regionf") and fill it equidistantly with starting points (ds in km). The region identification is "id", see below in section REGION FILE.
+.TP 15
+.B - region.grid[id]
+Read region specification from region file ("default regionf", to be changed with option "-regionf") and fill it  with starting points on the input grid. The region identification is "id", see below in section REGION FILE.
+.SH VERTICAL
+.TP 15
+.B - file[filename] 
+read levels from file "filename"; each line in the file contains one level.
+.TP 15
+.B - level[lev]
+a single level
+.TP 15
+.B - list[lev1,lev2,lev3,...] 
+a list of levels; if many levels are needed they are better passed to "create_startf" with the option "file[filename]".
+.TP 15
+.B - profile[lev1,lev2,n]  
+n equdistant levels between lev1 and lev2.
+.TP 15
+.B - grid[lev1,lev2]
+all grid points within layer (lev1,lev2) are selected
+.SH UNIT
+.TP 15
+.B - hPa
+pressure (in hPa).
+.TP 15
+.B - hPa,agl
+pressure (in hPa) above ground level.
+.TP 15
+.B - K
+potential temperature (in K).
+.TP 15
+.B - PVU
+potential vorticty (in PVU). Note that potential vorticity (PV) might not be unique as a vertical coordinate; if several levels have a given PV value, the highest one is chosen.
+.TP 15
+.B - INDEX
+index of model level (1=surface). 
+.SH SELECTION
+.TP 15
+.B - criterion
+Selection criteria based on meteorological fields applied to the starting position; The criteria follow the syntax of the program 
+.B select.
+.TP 15
+.B - nil
+If no selection criteria should be invoked, the argument "nil" should be given.
+.SH REGION FILE
+Several starting regions can be defined for every case in a region file (default filename is "regionf"; to be changed with optional parameter "-regionf filename"). There are two possible formats for specifying a region (they require either a line with 5 or 9 entries): 
+.TP 5
+.B "regnum lonw lone lats latn" 
+a regular latitude-longitude square: regnum=integer region number; lonw=westernmost longitude of starting region; lone=easternmost longitude; lats=southernmost latitude; latnNorthernmost latitude. 
+.TP 5
+.B "regnum lon1 lat1 lon2 lat2 lon3 lat3 lon4 lat4" 
+an irregular latitude-longitude square: regnum=integer region number; lon{x},lat{x} = longitude and latitude of the x-th corner. Note that the 4 corners must be arranged counterclockwise. For a triangle the 4th corner can be specified identically to the 3rd.
+.TP 5
+.B Note: (1) if a line starts with '#' it is regarded as comment and not further considered; (2) each line in the region file must start with '"!
+.TP 5 
+.B "101 -40. -24. 52. 60.": 
+region in the central Atlantic from 40 W to 24 W and 52 N to 60 N; the region identifier is 101.
+.TP 5
+.B "250 -30. 43. -24. 36. -18. 50.2 -35.2 50.2": 
+irregular square in the central Atlantic; the region identifier is 250.
+.SH OPTIONAL
+.br
+.TP 15
+.I -t tracefile 
+tracing file with variables for selection criteria (see
+.B trace
+for format of the file). If no file is specified, the default 
+"tracevars" is used. Further, if no selection criterion is invoked, no
+tracing file is necessary.
+.TP 15
+.I -changet
+flag whether the times of the P and S files should be changed or not before a calculation; the default is that the
+times are not changed. 
+.TP 15
+.I -noclean
+flag whether parameter and criterion files should be kept; this is particularly helpfuld for debugging.
+.TP 15
+.I -regionf filename
+change the region file from its default value "regionf" to a new file name: the syntax is "-regionf filename".
+.TP 15
+.I -timecheck
+enforce a time check on the data files
+.SH EXAMPLES
+.TP 5
+.B [1] create_startf 19891020_00 startf 'point(-10,50) @ list(450,500,550) @ hPa' 
+Starting points are (longitude, latitude, pressure in hPa): (-10,50,450); (-10,50,500); (-10,50,550). No selection criterion is applied; the positions are written to file "startf".
+.TP 5
+.B [2] create_startf 19891020_00 startf 'line(-10,-5,40,50,10) @ level(450) @ hPa,agl'
+10 points are equidistantly specified between lon/lat point (-10,40) and (-5,50); all trajectories start at 450 hPa above ground level - the surface pressure is taken from the primary file P19891020_00. The positions are saved in "startf".
+.TP 5
+.B [3] create_startf 19891020_00 startf 'box.grid(-10,-5,40,50) @ list(300,320) @ K'
+All grid points in the box with the south-eastern lon/lat point (-10,40) and the north-eastern one (-5,50) are taken - the horizontal grid spacing is specfified in the primary file P19891020_00. In the vertical, two isentropic levels are chosen: 300 K and 320 K. The potential temperature for the calculation is taken from the secondary file S19891020_00.
+.TP 5
+.B [4] create_startf 19891020_00 startf 'shift(-10,40,1,1) @ profile(1000,200,100) @ hPa'
+A profile of 100 equidistant levels between 1000 hPa and 200 hPa; in the horizontal the central lon/lat point (-10,40) is taken and four horizontally displaced ones, the diplacement being 1 degree in zonal and meridional direction. 
+.TP 5
+.B [5] create_startf 19891020_00 startf.1 'shift(-10,40,1,1) @ profile(1000,200,100) @ hPa'
+As in the previous example [4], but the starting positions are saved as a trajectory file instead of a (lon,lat,p)-list. 
+.TP 5
+.B [6] create_startf 19891020_00 startf.1 criterion
+As in the previous example [5], but the criterion is saved on a file with filename "criterion". 
+.TP 5
+.B [7] create_startf 19891020_00 startf 'polygon.grid(polygon) @ level(500) @ hPa
+A polygon is specified in the file "polygon"; the different lines in the file are:  -5. 45. / -10. 40. / 10. 40. / 10  50. / -10. 45. The first lon/lat point lies within the polygon, all other lon/lat points are the vertices of the polygon. All grid points within the polygon are taken as starting point, at level 500 hPa.
+.TP 5
+.B [8] create_startf 19891020_00 startf 'polygon.eqd(polygon,50) @ level(500) @ hPa
+As in the previous example [7], except that the starting points are distributed equidistantly within the polygon. The horizontal distance between the starting points is 50 km in zonal and meridional direction.
+.TP 5
+.B [9] create_startf 19891020_00 startf 'shift(-10,40,1,1) @ profile(1000,200,100) @ hPa @ GT:TH:310'
+As in example [4], but a selection criterion is additionally applied: only starting positions with potential temperature (TH) greater than (GT) 310 K are kept. Potential temperature must be available on the secondary file S19891020_00 and the file "tracevars" must have a line with "TH     1.  0   S". Further examples for selection criteria can be seen in 
+.B
+select.
+.TP 5
+.B [10] create_startf 19891020_00 START.1 'region.eqd(3,10) @ level(500) @ hPa'
+get equidistant starting points (10 km distance) in the region with identifier 3, as listed in the region file "regionf" (the default).
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)
+
+

@@ -1,0 +1,158 @@
+#!/usr/bin/env python
+
+"""
+    Wrapper for trj_sampler.py
+    Samples G5NR collections for the data we need to run vlidort simulator
+
+    Patricia Castellanos, May, 2017
+
+"""
+
+import os
+import subprocess
+import argparse
+from datetime        import datetime, timedelta
+from dateutil.parser import parse         as isoparser
+from MAPL            import Config
+from netCDF4         import Dataset
+import numpy         as np
+
+if os.path.exists('/discover/nobackup'):
+    nccat = '/usr/local/other/SLES11.1/nco/4.4.4/intel-12.1.0.233/bin/ncrcat'
+else:
+    nccat = '/ford1/share/dasilva/bin/ncrcat'
+
+#------------------------------------ M A I N ------------------------------------
+def fix_time(filelist,tbeg):
+    for filename in filelist:
+        nc = Dataset(filename,'r+')
+        time = nc.variables['time']
+        time.units = 'seconds since %s'%tbeg.isoformat(' ')
+        tyme = nc.variables['isotime'][:]
+        tyme = np.array([isoparser(''.join(t)) for t in tyme])
+        time[:] = np.array([(t-tbeg).total_seconds() for t in tyme])
+
+        nc.close()
+
+
+if __name__ == "__main__":
+
+    # Defaults
+    DT_hours = 24
+    dt_secs = "60"
+    algo    = "linear"
+    nproc    = 8
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("iso_t1",
+                        help="starting iso time")
+    parser.add_argument("iso_t2",
+                        help="ending iso time")
+
+    parser.add_argument("prep_config",
+                        help="prep config filename")
+
+    parser.add_argument("-a", "--algo", default=algo,
+              help="Interpolation algorithm, one of linear, nearest (default=%s)"\
+                          %algo)
+    parser.add_argument("-D","--DT_hours", default=DT_hours, type=int,
+                        help="Timestep in hours for each file (default=%i)"%DT_hours)
+
+    parser.add_argument("-d", "--dt_secs", default=dt_secs,
+                        help="Timesetp in seconds for TLE sampling (default=%s)"%dt_secs )    
+
+    parser.add_argument("-v", "--verbose",action="store_true",
+                        help="Verbose mode (default=False).")
+
+    parser.add_argument("-r", "--dryrun",action="store_true",
+                        help="do a dry run (default=False).")    
+
+    parser.add_argument("-n", "--nproc",default=nproc,type=int,
+                        help="Number of processors (default=%i)."%nproc)    
+
+    args = parser.parse_args()
+
+    # Parse prep config
+    # -----------------
+    cf = Config(args.prep_config,delim=' = ')
+
+    rcFiles = cf('RCFILES')
+    if ',' in rcFiles:
+        rcFiles = rcFiles.replace(' ','').split(',')
+    else:
+        rcFiles = (rcFiles.replace(' ',''),)
+
+    colNames = cf('COLNAMES')
+    if ',' in colNames:
+        colNames = colNames.replace(' ','').split(',')
+    else:
+        colNames = (colNames.replace(' ',''),)
+
+    outdir = cf('OUTDIR')
+    instname = cf('INSTNAME')
+    tleFile  = cf('TLEFILE')
+
+    Date = isoparser(args.iso_t1)
+    enddate   = isoparser(args.iso_t2)
+
+    pdt  = timedelta(hours=args.DT_hours/args.nproc)
+
+    while Date < enddate:
+        outpath = '{}/Y{}/M{}'.format(outdir,Date.year,str(Date.month).zfill(2))
+        if not os.path.exists(outpath):
+            os.makedirs(outpath)
+
+        # run trajectory sampler on model fields
+        # split across multiple processors by date
+        datelist = [Date + p*pdt for p in range(args.nproc)]
+        
+        # run trajectory sampler on model fields
+        for rc,colname in zip(rcFiles,colNames):
+            processes = set()
+            filelist = []
+            for date in datelist:
+                nymd = str(date.date()).replace('-','')
+                hour = str(date.hour).zfill(2)
+
+                edate = date + pdt - timedelta(seconds=int(args.dt_secs))
+
+                outFile = '{}/{}-g5nr.lb2.{}.{}_{}z.nc4'.format(outpath,instname,colname,nymd,hour)
+
+                Options =     " --rcFile=" + rc      + \
+                              " --output=" + outFile       + \
+                              " --format=NETCDF4_CLASSIC"      + \
+                              " --dt_secs=" + args.dt_secs      + \
+                              " --isoTime"  +\
+                              " --trajectory=tle"  +\
+                              " --algorithm=" + args.algo
+
+                if args.verbose:
+                    Options += " --verbose" 
+
+                cmd = './lidar_sampler.py {} {} {} {}'.format(Options,tleFile,date.isoformat(),edate.isoformat())
+                print cmd
+                if not args.dryrun:
+                    processes.add(subprocess.Popen(cmd, shell=True))
+
+                filelist.append(outFile)
+
+            #Wait till all the processes are finished
+            for p in processes:
+                if p.poll() is None:
+                    p.wait()            
+
+
+            if (not args.dryrun) & (args.nproc > 1):
+                # make time units all the same
+                fix_time(filelist,Date)
+                #Concatenate outfiles into one
+                cmd = nccat + ' -h -A ' + ' '.join(filelist) +' -o ' + filelist[0]
+                print cmd
+                if os.system(cmd):
+                    raise ValueError, "nccat failed for {}".format(nymd)
+
+                for filename in filelist[1:]:
+                    os.remove(filename)
+
+        Date += timedelta(hours=args.DT_hours)
+

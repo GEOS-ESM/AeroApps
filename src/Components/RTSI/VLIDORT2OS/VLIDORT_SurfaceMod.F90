@@ -464,4 +464,245 @@ module VLIDORT_SurfaceMod
 !       print*, 'ok BRDF', self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)             
    end subroutine VLIDORT_LANDMODIS
 
+!.................................................................................
+
+   Subroutine VLIDORT_LANDMODIS_BPDF(self, solar_zenith, sensor_zenith, relative_azimuth, &
+                                fiso,fgeo,fvol, RTLSparam, BPDFparam, scalar,rc) 
+ 
+      USE VLIDORT_PARS
+      USE VLIDORT_AUX
+      USE VBRDF_SUP_MOD
+
+      implicit NONE
+      type(VLIDORT_Surface), intent(inout)  :: self
+      real*8, intent(in)                    :: solar_zenith
+      real*8, intent(in)                    :: sensor_zenith
+      real*8, intent(in)                    :: relative_azimuth 
+      real*8, intent(in)                    :: fiso
+      real*8, intent(in)                    :: fgeo
+      real*8, intent(in)                    :: fvol
+      real*8, intent(in), dimension(:)      :: RTLSparam
+      real*8, intent(in), dimension(:)      :: BPDFparam      
+      logical, intent(in)                   :: scalar
+      integer, intent(out)                  :: rc     ! error code
+!      real*8, intent(out)                   :: BRDF     
+
+      !Input parameters for VLIDORT BRDF supplement:
+      TYPE VLIDORT_BRDF
+       !  BRDF input structures
+         TYPE(VBRDF_Sup_Inputs)                :: VBRDF_Sup_In
+         TYPE(VBRDF_Input_Exception_Handling)  :: VBRDF_Sup_InputStatus
+      
+       !  VLIDORT BRDF output of the supp but input for VLIDORT scat
+       !  TYPE(VBRDF_Sup_Outputs)               :: VBRDF_Sup_Out
+      END TYPE VLIDORT_BRDF
+
+      type(VLIDORT_BRDF)   :: VBRDF
+
+       
+!     Local variables 
+!     ---------------
+!      BRDF variables
+!     ---------------
+      integer                             ::   NSTOKES
+      logical                             ::   DO_BRDF_SURFACE
+      logical                             ::   DO_USER_STREAMS
+      logical,dimension(MAX_BRDF_KERNELS) ::   LAMBERTIAN_KERNEL_FLAG
+      logical                             ::   DO_SURFACE_EMISSION 
+      logical                             ::   DO_SOLAR_SOURCES
+      logical                             ::   DO_USER_OBSGEOMS
+
+      integer                                       ::   N_BRDF_KERNELS 
+      integer                                       ::   NSTREAMS_BRDF
+      character(len=10),dimension(MAX_BRDF_KERNELS) ::   BRDF_NAMES
+      integer,dimension(MAX_BRDF_KERNELS)           ::   WHICH_BRDF
+      double precision, dimension(MAX_BRDF_KERNELS) ::   BRDF_FACTORS
+      integer, dimension(MAX_BRDF_KERNELS)          ::   N_BRDF_PARAMETERS
+      double precision, dimension(MAX_BRDF_KERNELS, MAX_BRDF_PARAMETERS)  ::   BRDF_PARAMETERS
+      logical                                       ::   DO_DEBUG_RESTORATION
+      integer                                       ::   N_MOMENTS_INPUT
+      integer                                       ::   i
+      CHARACTER (LEN=120)                           :: MESSAGES ( 0:MAX_MESSAGES )
+      CHARACTER (LEN=120)                           :: ACTIONS ( 0:MAX_MESSAGES )
+
+      rc = 0
+
+      self%sfc_type      = 3
+      self%solar_zenith  = solar_zenith
+      self%sensor_zenith = sensor_zenith
+      self%relat_azimuth = relative_azimuth  
+      self%scalar = scalar     
+             
+
+      if ( scalar ) then
+         rc = 9                 ! Vector only for this BRDF
+      else
+         NSTOKES = 3
+      end if
+
+      DO_BRDF_SURFACE  = .true. 
+      DO_USER_STREAMS  = .true.      ! Use user-defined viewing zenith angles
+      DO_SOLAR_SOURCES = .true.      ! TRUE for sunlight, may be TRUE or FALSE in thermal regime
+      DO_USER_OBSGEOMS = .true.      ! BRDF is only calculated for specific azimuth angle
+
+      DO_SURFACE_EMISSION = .false.  ! Calculation of surface thermal emission
+
+
+      N_BRDF_KERNELS = 4             ! Number of BRDF kernels (max 4)
+      NSTREAMS_BRDF = 50             ! Number of azimuth quadrature streams for BRDF
+                                     ! Not really needed for radiance calc if DO_USER_OBSGEOMS is TRUE 
+          
+
+      ! For each BRDF_KERNELS specify the name, factor and parameter  
+      !-------------------------------------------------------------   
+      BRDF_NAMES(1) = 'Lambertian'   ! 0 free parameter
+      WHICH_BRDF(1) =  1             ! specified in vlidort.pars.f90
+      BRDF_FACTORS(1) =  fiso        ! From MODIS MOD43
+      N_BRDF_PARAMETERS(1) = 0
+      BRDF_PARAMETERS(1,1) = 0.0
+      BRDF_PARAMETERS(1,2) = 0.0
+      BRDF_PARAMETERS(1,3) = 0.0
+      LAMBERTIAN_KERNEL_FLAG(1) = .true. ! set .true. if BRDF_NAME(I) = 'Lambertian'
+      
+      BRDF_NAMES(2) = 'Ross-thick'   ! 0 free parameter
+      WHICH_BRDF(2) =  3             ! specified in vlidort.pars.f90
+      BRDF_FACTORS(2) =  fvol        ! From MODIS
+      N_BRDF_PARAMETERS(2) = 0
+      BRDF_PARAMETERS(2,1) = 0.0
+      BRDF_PARAMETERS(2,2) = 0.0
+      BRDF_PARAMETERS(2,3) = 0.0
+      LAMBERTIAN_KERNEL_FLAG(2) = .false. 
+
+      BRDF_NAMES(3) = 'Li-sparse'   ! 2 free parameters
+      WHICH_BRDF(3) =  4            ! specified in vlidort.pars.f90
+      BRDF_FACTORS(3) =  fgeo       ! From MODIS
+      N_BRDF_PARAMETERS(3) = 2  
+      BRDF_PARAMETERS(3,1) = RTLSparam(1)    ! h/b (relative height) -> (h is the height-to-center 
+                                         ! of the spheroids from the ground, b is the vertical 
+                                         !  and r the horizontal spheroid radius
+      BRDF_PARAMETERS(3,2) = RTLSparam(2)    ! b/r (crown shape) (MODIS values and Wanner et al., 1995 Sect 5.1)
+      BRDF_PARAMETERS(3,3) = 0.0
+      LAMBERTIAN_KERNEL_FLAG(3) = .false. 
+
+      BRDF_NAMES(4) = 'BPDF-NDVI'    ! 3 free parameters
+      WHICH_BRDF(4) =  14            ! specified in vlidort.pars.f90
+      BRDF_FACTORS(4) =  1.0         ! No kernel factor
+      N_BRDF_PARAMETERS(4) = 3  
+      BRDF_PARAMETERS(4,1) = BPDFparam(1)    ! Refractive index of water = 1.5 
+      BRDF_PARAMETERS(4,2) = BPDFparam(2)    ! NDVI, must be <=1 or >=1
+      BRDF_PARAMETERS(4,3) = BPDFparam(3)    ! Scaling factor C
+                                             ! From Table 1 Maignan 2009 RSE, differs by IGBP land use
+      LAMBERTIAN_KERNEL_FLAG(4) = .false. 
+
+
+
+      ! Copy in data structure
+      ! ---------------------
+
+      VBRDF%VBRDF_Sup_In%BS_DO_USER_STREAMS     = DO_USER_STREAMS
+      VBRDF%VBRDF_Sup_In%BS_DO_BRDF_SURFACE     = DO_BRDF_SURFACE
+      VBRDF%VBRDF_Sup_In%BS_DO_SURFACE_EMISSION = DO_SURFACE_EMISSION
+      VBRDF%VBRDF_Sup_In%BS_DO_SOLAR_SOURCES    = DO_SOLAR_SOURCES   
+      VBRDF%VBRDF_Sup_In%BS_DO_USER_OBSGEOMS    = DO_USER_OBSGEOMS   
+
+      ! Angles
+
+      VBRDF%VBRDF_Sup_In%BS_NSTOKES              = NSTOKES
+      VBRDF%VBRDF_Sup_In%BS_NSTREAMS             = self%Base%NSTREAMS
+      VBRDF%VBRDF_Sup_In%BS_NBEAMS               = self%Base%NBEAMS
+      VBRDF%VBRDF_Sup_In%BS_BEAM_SZAS(1)         = solar_zenith
+      VBRDF%VBRDF_Sup_In%BS_N_USER_RELAZMS       = self%Base%N_USER_RELAZMS
+      VBRDF%VBRDF_Sup_In%BS_USER_RELAZMS(1)      = relative_azimuth
+      VBRDF%VBRDF_Sup_In%BS_N_USER_STREAMS       = self%Base%N_USER_STREAMS
+      VBRDF%VBRDF_Sup_In%BS_USER_ANGLES_INPUT(1) = sensor_zenith
+      VBRDF%VBRDF_Sup_In%BS_N_USER_OBSGEOMS      = self%Base%N_USER_OBSGEOMS 
+      VBRDF%VBRDF_Sup_In%BS_USER_OBSGEOMS(1,1)   = solar_zenith
+      VBRDF%VBRDF_Sup_In%BS_USER_OBSGEOMS(1,2)   = sensor_zenith
+      VBRDF%VBRDF_Sup_In%BS_USER_OBSGEOMS(1,3)   = relative_azimuth                       
+    
+      ! BRDF inputs
+
+      VBRDF%VBRDF_Sup_In%BS_N_BRDF_KERNELS         = N_BRDF_KERNELS
+      VBRDF%VBRDF_Sup_In%BS_BRDF_NAMES             = BRDF_NAMES
+      VBRDF%VBRDF_Sup_In%BS_WHICH_BRDF             = WHICH_BRDF
+      VBRDF%VBRDF_Sup_In%BS_N_BRDF_PARAMETERS      = N_BRDF_PARAMETERS
+      VBRDF%VBRDF_Sup_In%BS_BRDF_PARAMETERS        = BRDF_PARAMETERS
+      VBRDF%VBRDF_Sup_In%BS_LAMBERTIAN_KERNEL_FLAG = LAMBERTIAN_KERNEL_FLAG
+      VBRDF%VBRDF_Sup_In%BS_BRDF_FACTORS           = BRDF_FACTORS
+      VBRDF%VBRDF_Sup_In%BS_NSTREAMS_BRDF          = NSTREAMS_BRDF
+
+
+      VBRDF%VBRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = .false.
+
+      ! The following is needed for Cox-munck type only
+      ! set to initialization values
+      !-----------------------------------------------
+      VBRDF%VBRDF_Sup_In%BS_DO_SHADOW_EFFECT          = .false.  
+
+      VBRDF%VBRDF_Sup_In%BS_DO_GLITTER_MSRCORR        = .false.
+      VBRDF%VBRDF_Sup_In%BS_DO_GLITTER_MSRCORR_DBONLY = .false. 
+      VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_ORDER     = 0
+      VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_NMUQUAD   = 0
+      VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_NPHIQUAD  = 0
+
+      VBRDF%VBRDF_Sup_In%BS_DO_NewCMGLINT             = .false.
+      VBRDF%VBRDF_Sup_In%BS_SALINITY                  = 0
+      VBRDF%VBRDF_Sup_In%BS_WAVELENGTH                = 0
+
+      VBRDF%VBRDF_Sup_In%BS_WINDSPEED                 = 0
+      VBRDF%VBRDF_Sup_In%BS_WINDDIR                   = 0
+
+      VBRDF%VBRDF_Sup_In%BS_DO_GlintShadow            = .false.
+      VBRDF%VBRDF_Sup_In%BS_DO_FoamOption             = .false.
+      VBRDF%VBRDF_Sup_In%BS_DO_FacetIsotropy          = .false.
+
+      ! WSA and BSA scaling options.
+      ! WSA = White-sky albedo. BSA = Black-sky albedo.
+      ! Not implemented for now.  Could be tested
+      !--------------------------------------------
+      VBRDF%VBRDF_Sup_In%BS_DO_WSABSA_OUTPUT = .true.
+      VBRDF%VBRDF_Sup_In%BS_DO_WSA_SCALING   = .false.
+      VBRDF%VBRDF_Sup_In%BS_DO_BSA_SCALING   = .false.
+      VBRDF%VBRDF_Sup_In%BS_WSA_VALUE        = 0
+      VBRDF%VBRDF_Sup_In%BS_BSA_VALUE        = 0
+
+      !  Exception handling
+      ! ----------------------------
+      MESSAGES(0)     = 'Successful Read of VLIDORT Input file'
+      ACTIONS(0)      = 'No Action required for this Task'
+
+      VBRDF%VBRDF_Sup_InputStatus%BS_STATUS_INPUTREAD = VLIDORT_SUCCESS
+
+      VBRDF%VBRDF_Sup_InputStatus%BS_NINPUTMESSAGES   = 0
+      VBRDF%VBRDF_Sup_InputStatus%BS_INPUTMESSAGES    = MESSAGES
+      VBRDF%VBRDF_Sup_InputStatus%BS_INPUTACTIONS     = ACTIONS
+      
+     
+      ! Do some checks to make sure parameters are not out of range
+      !------------------------------------------------------------
+      if ( N_BRDF_KERNELS .GT. MAX_BRDF_KERNELS )       rc = 1
+      if ( NSTREAMS_BRDF .GT. MAXSTREAMS_BRDF )         rc = 2
+      if ( NSTOKES  .GT. MAXSTOKES  )                   rc = 3
+
+      do i =1, N_BRDF_KERNELS
+         if ( WHICH_BRDF(i) .GT. MAXBRDF_IDX )          rc = 4
+      end do
+ 
+      ! Debug flag for restoration
+      DO_DEBUG_RESTORATION = .false.
+      ! Number of moments (only used for restoration debug)
+      N_MOMENTS_INPUT = 2 * VBRDF%VBRDF_Sup_In%BS_NSTREAMS - 1
+
+      ! Run the VLIDORT Surface Module
+      ! -------------------------------------------------
+      call VBRDF_MAINMASTER (DO_DEBUG_RESTORATION, &                ! Inputs
+                             N_MOMENTS_INPUT, &                     ! Inputs
+                             VBRDF%VBRDF_Sup_In, &                  ! Inputs
+                             self%Base%VIO%VBRDF_Sup_Out, &         ! Outputs
+                             self%Base%VIO%VBRDF_Sup_OutputStatus)          ! Outputs
+!       BRDF = self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)     
+!       print*, 'ok BRDF', self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)             
+   end subroutine VLIDORT_LANDMODIS_BPDF
+
+
    end module VLIDORT_SurfaceMod

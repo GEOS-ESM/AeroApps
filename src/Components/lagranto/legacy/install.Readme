@@ -1,0 +1,117 @@
+1. Code retrieval
+------------------
+
+Download the latest Lagranto version from SVN repository <https://svn.iac.ethz.ch/websvn/pub/wsvn/>.
+
+Then create a directory where you want Lagranto to be installed; place the whole source code in this
+directory and set an environment variable {LAGRANTO} pointing to this directory.
+
+> setenv LAGRANTO {PATH TO YOUR LAGRANTO INSTALLATION}
+
+
+2. Compiling the Lagranto code
+-------------------------------
+
+Choose the correct Fortran compiler in <install.csh>. At the moment, PGI is set. I have sucessfully 
+compiled the code with <ifort> and <gfortran>, so you might want to use one of these two compilers.
+You additonally have to set in <install.csh> the environment variable <NETCDF> which point to the
+installstion of the netCDF libraries.
+
+> setenv NETCDF  {PATH TO YOUR NETCDF LIBRARY}
+
+> cd ${LAGRANTO}/
+> ./install.csh clean
+> ./install.csh lib
+> ./install.csh create_startf
+> ./install.csh caltra
+> ./install.csh trace
+> ./install.csh select
+> ./install.csh density
+> ./install.csh lidar
+> ./install.csh goodies
+> ./install.csh docu
+> ./install.csh links
+
+Add the end of the installation, it's best to add the following directory to your PATH variable. In <bash> 
+this should look like
+
+>  export PATH=${LAGRANTO}/bin/:$PATH
+
+If the <LAGRANTO/bin> directory is in your PATH, then you will be able to run Lagranto from any directory. 
+Otherwise, you will always to give the full path to your Lagranto commands, e.g.
+
+> ${LAGRANTO}/bin/caltra
+
+
+
+3. Compiling the Grib-netCDF converter
+--------------------------------------
+
+In the subdirectory <convert/fgrb2cdf> you find the program you find the Fortran program which we use to
+convert the Grib files from ECMWF into netCDF. Note that we use a somewhat 'strange' netCDF format; therefore
+you have to use this converter. In the near future, I will make available a conversion tool based on the CDO
+tools...
+
+You will have to set some paths to compile the program; in particular, a reference must be made to the
+GRIB_API.
+
+
+4. Lagranto documentation
+-------------------------
+
+Lagranto comes with a detailed documentation; you can start it with one of the following calls:
+
+> lagrantohelp
+> lagrantohelp tutorial
+> lagrantohelp reference
+
+The most important program for you will be <caltra> which calculates the trajectories...
+
+> lagrantohelp caltra
+
+
+5. Test data set
+-----------------
+
+On our FTP server you find a sample data set which allows you to run Lagranto without bothering about the
+Grib-netCDF conversion.
+
+ftp://iacftp.ethz.ch/pub_read/sprenger/lagranto.ecmwf.test/
+
+
+6. Minimal test run
+--------------------
+
+a) Define a starting position in a file <startf>; the format is <longitude latitude pressure>.
+
+> more startf
+  8.0 46.0 500.
+-10.0 30.0 850.
+
+Each line corresponds to a single starting position. Note that longitudes must be within -180 ... +180 deg.
+
+
+b) Start the trajectory
+
+It is a forward trajectory starting at 00 UTC 1 Jan 2012. The time span is 18 UTC. Starting positions are
+taken from <startf>, the output is written to <trajectory>. For details about the optional flag <-j> and
+<-notimecheck>, please consult the Lagranto help <lagrantohelp caltra>.
+
+> caltra 20120101_00 20120101_18 startf trajectory -j
+> more trajectory
+Reference date 20120101_0000 / Time range    1080 min
+
+  time      lon     lat     p
+-----------------------------
+
+    .00     8.00   46.00   500
+   6.00    10.02   44.07   480
+  12.00    11.64   42.13   504
+  18.00    12.66   40.17   514
+
+    .00   -10.00   30.00   850
+   6.00   -10.42   30.14   866
+  12.00   -10.40   30.25   885
+  18.00   -10.46   29.93   906
+
+================================. 

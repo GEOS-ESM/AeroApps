@@ -1,0 +1,193 @@
+.TH trace
+.SH NAME
+.B trace - trace meteorological fields along trajectories
+.SH SYNOPSIS
+.B trace
+.I inpfile
+.I outfile
+[
+.I optional arguments
+]
+.SH DESCRIPTION
+Trace meteorological fields along the trajectories given in the input file 
+.I inpfile
+and write a new trajectory file
+.I outfile
+. The meteorological fields to trace are listed in a 
+.I
+tracing file 
+(default: tracevars). Partly they can be computed "online" (see ONLINE CALCULATIONS below), normally they are availbale on the primary and secondary P and S files.
+.SH PARAMETERS
+.TP 15
+.I inpfile
+input trajectory file; the appendix determines the format (see
+.B reformat 
+for details).
+.TP 15
+.I  outfile
+output trajectory file; the appendix determines the format (see
+.B reformat 
+for details).
+.SH TRACING FILE
+Normally the meteorological fields for tracing are listed in a file with name 
+.B "tracevars". 
+The name of the tracing file can be changed with the optional argument "-v" (see below). The format of the tracing file is as follows:
+.br
+.TP 5
+Format
+.I field[:shift]
+.I scale
+.I computation 
+.I prefix  
+.TP 5
+Shifts (optional)
+.B - field:+100km[lat] 
+- get field at trajectory position + 100 km shifted to north. A shift to south is obtained with field:-100km[lat].
+.br
+.B - field:+100km[lon] 
+- get field at trajectory position + 100 km shifted to east. A shift to west is obtained with field:-100km[lon].
+.br
+.B - field:+2[dlat] 
+- get field at trajectory position + 2 grid spacings dlat shifted to north. A shift to south is obtained with field:-2[dlat].
+.br 
+.B - field:+2[dlon] 
+- get field at trajectory position + 2 grid spacings dlon shifted to east. A shift to west is obtained with field:-2[dlon].
+.br 
+.B - field:+50hPa 
+- get field at trajectory position + 50 hPa shifted in vertical. A shift to lower pressures is obtained with field:-50hPa.
+.br 
+.B - field:+1dp 
+- get field at trajectory position + 1 grid spacing DP shifted in vertical. A shift to lower pressures is obtained with field:-1dp. Note that DP is not fixed but varies with height.
+.br 
+.B - field:+6h 
+- get field at trajectory position, but 6 h in the future. Shifts to the past are poeeible with field:-6h. In addition to hours (h), the time shift can be specified in minutes (min).
+.TP 5 
+Examples
+.B - TH 1. 0 S : 
+trace potential temperature (TH), scale it with 1 (no scaling); it is available on the S file (no computation is needed: 0).
+.br
+.B - Q 1000. 0 P :
+trace specific humidity (Q), scale it with 1000 to have g/kg; it is available on the P file (no computation is needed: 0).
+.br
+.B - RH 1. 1 * :
+trace relative humidity (RH), no scaling is needed (1.); relative humidity is not available on either P or S file and must be computed (1). 
+.br
+.B - TH:100hPa 1. 0 S :
+As in the first example, but now the potential temperature is taken 100 hPa below the air parcel position.
+.SH OPTIONAL ARGUMENTS
+.TP 15
+.TP 15
+.I -i hours
+time increments (in hours) for input P and  S files. If not explicitely specified, this is determined from the P and S files i
+n the current directory.
+.TP 15
+.I -v varfile
+Change the name of the tracing file from its default value "tracevars" to "varfile".
+.TP 15
+.I -f field scale
+Trace field (with scaling scale) along the trajectories; the computation flag and the prefix for the data file is automatically set. This options allows the quick tracing of a field, without specifying a tracing file.
+.TP 15
+.I -changet
+flag whether the times of the P and S files should be changed or not before a calculation; the default is that the
+times are 
+.B not 
+changed. 
+.TP 15
+.I -noclean
+flag whether parameter and criterion files should be kept; this is particularly helpful for debugging.
+.TP 15
+.I -timecheck
+enforce a time check for the data file  
+.SH SPECIAL INTERPOLATION MODES
+.TP 15
+.I -nearest
+Do no interpolation between grid points; just take the nearest neighbor! This option is useful, if a discrete input field is given (e.g. labels), where interpolated values are meaningless.
+.TP 15
+.I -circle_avg radius
+calculate area-weighted average over all grid points within a circle of the specified radius [km]. e.g. -circle_avg 200; note that the tracing of fields within a circle is quite slow.
+.TP 15
+.I -circle_max radius
+calculate maximum within a circle of a radius [km]. e.g. -circle_max 200
+.TP 15
+.I -circle_min radius
+calculate minimum within a circle of a radius [km]. e.g. -circle_min 200
+.TP 15
+.I -clustering
+special mode to trace strat/trop label; the labels are attributed according to the program (tropopause), which clusters the atmosphere into five distinct classes according to the definition of the tropopause: PV (2 PVU) and potential temperature (380 K). The clustering mode is a refined version of the nearest mode, where all surrounding eight grid points vote for the final value.
+.SH ONLINE CALCULATIONS
+If the computation flag in the tracing file is set to 1, a meteorological field is calculated based upon the already traced fields and/or based on the fields on the primary and secondary P and S files. The following fields are implemented for online calculations:
+.TP 5
+.B - TH
+potential temperature (in K).
+.TP 5
+.B - RHO
+density (in kg/m^-3).
+.TP 5
+.B - RH
+relative humidity (in %).
+.TP 5
+.B - THE
+equivalent-potential temperature (in K).
+.TP 5
+.B - LHR
+latent heating rate (K per input time step, typically K/6h). 
+.TP 5
+.B - D[U,V,T,TH]DX
+horizontal derivative d[U,V,T,TH]/dx in west-east direction along pressure surfaces - zonal distance in m. U=zonal wind component (m/s), V=meridional wind component (m/s), T=temperature (deg C or K), TH=potential temperature (K). 
+.TP 5
+.B - D[U,V,T,TH]DY
+horizontal derivative d[U,V,T,TH]/dy in south-north direction along pressure surfaces -meridional distance in m.  
+.TP 5
+.B - D[U,V,T,TH]DP
+vertical derivative d[U,V,T,TH]/dp - pressure p in Pa.
+.TP 5
+.B - NSQ
+squared Brunt-Vaisala frequence (in m^-2).
+.TP 5
+.B - RELVORT
+relative vorticity (in s^-1) - RELVORT = DVDX - DUDY.
+.TP 5
+.B - ABSVORT
+absolute vorticity (in s^-1) - ABSVORT = DVDX - DUDY + F, F being the Coriolis parameter.
+.TP 5
+.B - DIV
+horizontal divergence of the velocity field (in s^-1) - DIV = DUDX + DVDY.
+.TP 5
+.B - DEF
+horizontal deformation of the velocity field (in s^-1) - DEF = SQRT( ( DVDX + DUDY )^2 + (DUDX-DVDY)^2 ).
+.TP 5
+.B - PV
+Ertel potential vorticity (in PVU) - PV = g * ( ABSVORT * DTHDP + DUDP * DTHDY - DVDP * DTHDX ).
+.TP 5
+.B - RI
+Richardson number - RI = NSQ / (DUDP^2 + DVDP^2 ).
+.TP 5
+.B - TI
+tubulence indicator according to Ellrod & Knapp - TI = DEF * SQRT( DUDP^2 + DVDP^2 ) * ( RHO * G).
+.TP 5
+.B - DIR
+wind direction relative to zonal flow: (U,V)=(1,1) -> 45 deg; (U,V)=(1,-1) -> -45 deg; (U,V)=(-1,-1) -> -135 deg; (U,V)=(-1,1) -> 135 deg. A westerly flow has 0 deg, a southerly flow 90 deg, and a northerly one -90 deg. 
+.TP 5
+.B - DIST0
+spherical distance (in km) from starting position.
+.TP 5
+.B - DIST
+length of the trajectory (in km): integrated along great circle sections between the trajectory vertices.
+.TP 5
+.B - HEAD
+heading of the trajectory: (DX,DY)=(1,1) -> 45 deg; (DX,DY)=(1,-1) -> -45 deg; (DX,DY)=(-1,-1) -> -135 deg; (DX,DY)=(-1,1) -> 135 deg. A path increment to east has heading of 0 deg; to the north 90 deg; to the south -90 deg; and to the west -180 deg. 
+.SH EXAMPLES
+.TP 5
+.B [1] trace TRAJECTORY.1 TRAJECTORY.1 -changet
+Read the trajectory file TRAJECTORY.1, trace all fields in the file "tracevars" along the trajectories and overwrite the existing trajectory file. In preparation, all times on the P and S files are changed prior to the tracing.
+.TP 5
+.B [2] trace INPTRA.1 OUTTRA.1 -f PV 1.
+Trace PV (with scaling factor 1.) along the trajectories in trajectory file "INPTRA.1" and write a new trajectory file "OUTTRA.1".
+.TP 5
+.B [3] trace INPTRA.1 OUTTRA.1 -f PV:-100HPA 1.
+As in example [2], but the PV is taken at a position 100 hPa higher (lower pressure) than the air parcel's position.
+.TP 5
+.B [4] trace INPTRA.1 OUTTRA.1 -f DIST0 1.
+Get the spherical distance (in km) of the air parcel from its starting position.
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011).

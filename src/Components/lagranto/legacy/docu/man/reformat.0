@@ -1,0 +1,42 @@
+.TH reformat
+.SH NAME 
+.B reformat - convert trajectory files between different formats
+.SH SYNOPSIS 
+.B reformat
+.I inpfile
+.I outfile
+.SH DESCRIPTION
+Convert a Lagranto trajectory file 
+.I inpfile
+from one format to another format; the new file is written to 
+.I outfile. 
+The formats are specified with an appendix to the filename, e.g. "trajectory.1" specifies format 1. If no appendix is given, format 1 is chosen.
+.SH PARAMETERS
+.TP 15
+.I inpfile
+input trajectory file
+.TP 15
+.I outfile
+output trajectory file (can be the same as inpfile).
+.SH FORMATS
+Formats must be specified with an appendix to the filename. If no appendix is given, format 1 is chosen.
+.TP 5
+.B .1
+ASCII file; the trajectories are sorted according to their starting positions. Different trajectories are separated by a blank line. This format is the only one supported
+by the Matlab and NCL visualisation scripts (see
+.B lagrantohelp/visualisation).
+.TP 5
+.B .2
+ASCII file; the trajectories are sorted according to their times. Different times are separated with a blank line.
+.TP 5
+.B .3 
+unformatted Fortran; this is the most efficient format, but least portable one.
+.TP 5
+.B .4 
+netCDF; portable and compact data format.
+.SH EXAMPLES
+.TP 5
+.B [1] reformat trainp.1 trainp.4
+Convert the input trajectory file in format 1 (ASCII) to format 4 (netCDF).
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)

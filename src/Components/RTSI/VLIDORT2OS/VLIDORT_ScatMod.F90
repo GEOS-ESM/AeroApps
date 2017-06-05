@@ -23,7 +23,8 @@
 
       type VLIDORT_scat
          integer         :: NSTOKES             ! Number of stokes vectors
-         logical         :: DO_2OS_CORRECTION   ! Flag to control 2OS Correction 
+         logical         :: DO_2OS_CORRECTION = .false.   ! Flag to control 2OS Correction 
+         logical         :: DO_BOA = .false.       ! Flag to control whether to do additional down welling calc at BOA 
          real*8          :: wavelength          ! in [nm]
          integer         :: nMom                ! number of momemts read (phase function) 
          integer         :: nPol                ! number of components of the scattering matrix
@@ -47,6 +48,12 @@
          real*8     :: U           ! U Stokes component
          real*8     :: Q           ! Q Stokes component
          real*8     :: V           ! V Stokes component
+
+         real*8     :: BOA_radiance    ! BOA radiance
+         real*8     :: BOA_reflectance ! BOA reflectance
+         real*8     :: BOA_U           ! U Stokes component
+         real*8     :: BOA_Q           ! Q Stokes component
+         real*8     :: BOA_V           ! V Stokes component         
       end type VLIDORT_output_vector
 
       type VLIDORT_output_scalar
@@ -242,7 +249,7 @@
       else
          IDR = 2
       end if
-     
+
 !                          Lambertian OR BRDF surface
 !                          --------------------------
 
@@ -275,6 +282,10 @@
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_OBSGEOMS_INPUT(1,2) = self%Surface%sensor_zenith
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_OBSGEOMS_INPUT(1,3) = self%Surface%relat_azimuth      
       self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_LEVELS(1) = 0.0     ! This is TOA   
+      if ( self%DO_BOA ) then
+         self%Surface%Base%VIO%VLIDORT_FixIn%Bool%TS_DO_DNWELLING     = .true.
+         self%Surface%Base%VIO%VLIDORT_ModIn%MUserVal%TS_USER_LEVELS(2) = 1.0 
+      end if
 
       if (self%Surface%solar_zenith == 0.0) then
          self%Surface%Base%VIO%VLIDORT_ModIn%MBool%TS_DO_SSCORR_NADIR        = .true.
@@ -461,6 +472,23 @@
       if (self%NSTOKES == 4)  output%V = STOKES(1, 1, 4, IDR)
 
       output%REFLECTANCE = (pi * output%RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR )   
+
+      if ( self%DO_BOA ) then
+         output%BOA_RADIANCE    = 0.0
+         output%BOA_REFLECTANCE = 0.0
+         output%BOA_Q           = 0
+         output%BOA_U           = 0
+         output%BOA_V           = 0
+
+         output%BOA_RADIANCE = STOKES(2, 1, 1, 2)
+         output%Q        = STOKES(2, 1, 2, 2)
+         output%U        = STOKES(2, 1, 3, 2)
+         if (self%NSTOKES == 4)  output%BOA_V = STOKES(2, 1, 4, 2)
+
+         output%BOA_REFLECTANCE = (pi * output%BOA_RADIANCE) / ( cos(self%Surface%Base%VIO%VLIDORT_ModIn%MSunRays%TS_SZANGLES(1)*pi/180.0) * FLUX_FACTOR )   
+      end if
+
+
     
       end subroutine VLIDORT_Run_Vector
 

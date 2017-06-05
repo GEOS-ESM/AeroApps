@@ -1,0 +1,55 @@
+.TH extract
+.SH extract
+.B extract - extract columns, times, single trajectories and starting positions 
+.SH SYNOPSIS
+.B extract 
+.I inptra
+.I outtra
+.I mode
+.SH DESCRIPTION
+Extract columns, times, single trajectories or starting positions from an input trajectory file 
+.I inptra
+and write output to a new trajectory file
+.I outtra. 
+The different extraction modes are specified with 
+.I mode.
+Note: the time, longitude, latitude and pressure need not be extracted beacuse they are an integral part of every trajectory file - they are extracted by default.
+.SH EXTRACTION MODE 
+.TP 5
+.B -var
+extract columns of a trajectory file; the columns can be listed by name (e.g. -var TH PV RH) or a range of columns can be specified by the "to" operator (e.g. -var TH to PV). The two modes can also be combined: "-var TH to PV RH" extracts all columns between TH and PV, and additionally RH.
+.TP 5
+.B -time 
+extract trajectory times; the times can be given as a list of times (e.g. -time 6 12) or as a time range (e.g. -time 6 to 18). 
+.TP 5
+.B -tra
+extract single trajectories; the index of the trajectories can be specified as a list (e.g. -tra 10 12 14) or as a range of trajectories (e.g. -tra 10 to 20).
+.TP 5
+.B -startf
+extract list (longitude, latitude, pressure) of starting positions ofvthe trajectory file (corresponding to time 0).
+.TP 5
+.B -index
+extract single trajectories - the trajectory indices (from 1 to #trajectories) are given on a file (e.g. -index filename).
+.TP 5
+.B -boolean
+extract single trajectories - the trajectory are specified on a boolean (0/1) file (e.g. -boolean filename).
+.TP 5
+.B -pattern
+extract all trajectories which match the pattern given; the pattern is a list of numbers. It is then checked whether
+these numbers occur in a trajectory (all at one time).
+.SH EXAMPLES
+.TP 5
+.B [1] extract inptra outtra -time 6 to 36 72
+read input trajectory file "inptra", extract times 6 to 36 and additionally time 72, and write output to trajectory file "outtra".
+.TP 5
+.B [2] extract inptra outtra -index indfile
+reads input trajectories from "inptra" and write all trajectories to "outtra" which are listed in the file "indfile". In "infile" the indices of selected trajectories are listed line-by-line.
+.TP 5
+.B [3] extract inptra outtra -pattern -999.99 
+extracts all trajectories which have a missing data (-999.99) entry.
+.TP 5
+.B [4] extract inptra outtra -pattern 0.00   -44.25  -28.47   140
+extracts all trajectories which have the numbers '0.00   -44.25  -28.47   140' in their list. This options
+is convenient to search for specific times and positions, and then to see the complete trajectory.
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)

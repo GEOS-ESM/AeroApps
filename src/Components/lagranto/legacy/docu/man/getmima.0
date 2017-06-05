@@ -1,0 +1,32 @@
+.TH getmima
+.SH NAME 
+.B getmima - get the mimimum and maximum of a field on a netCDF file, interpolated either to a pressure or an isentropic surface.
+.SH SYNOPSIS 
+.B getmima
+.I filename
+.I field
+.I [ Pval | Tval ]
+.SH DESCRIPTION
+Interpolate the field "field" of a netCDF file "filename" either onto a pressure surface "Pval" or onto an isentropic surface "Tval", where the level is given in hPa or K, respectively. The output is in the format: min.max, lonmin, latmin, pmin, tmin, lonmax, latmax, pmax, tmax.
+.SH PARAMETERS
+.TP 15
+.B filename 
+input netCDF file (e.g. P20110102_00)
+.TP 15
+.B field
+name of the field on the netCDF file (as obtained from
+.B getvars).
+.TP 15
+.B Pval
+specification of a pressure surface at height "val" in hPa (e.g. "P500" for 500 hPa).
+.B Tval
+specification of an isentropic surface at height "val" in K (e.g. "T320" for 320 K).
+.SH EXAMPLES
+.TP 5
+.B [1] getmima P20110201_00 T P500
+gives the mimimum and maximum temperature on the 500 hPa surface - the output is:  -49.155    -2.606   80.00  -88.00   500   0.0 -143.00    9.00   500   0.0, i.e. the minium temperture is -49.155 deg C at (lon,lat,p,time)=(80, -88, 500, 0) and correspondingly for the maximum temperature.
+.TP 5
+.B [2] getmima S20110201_00 PV P320
+gives the minium and maximum potential vorticity (PV) on the 320-K isentropic surface.
+.SH AUTHOR
+Written by Michael Sprenger and Heini Wernli (January 2011)

@@ -1,0 +1,6 @@
+# BRDF SAMPLING
+INSTNAME = calipso
+INDIR   = /nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelB
+OUTDIR    = /nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BRDF/MCD43C1/006
+DATADIR   = /nobackup/3/pcastell/MODIS/MCD43C1/
+# BRDF SAMPLING

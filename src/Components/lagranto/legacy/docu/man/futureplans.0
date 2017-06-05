@@ -1,0 +1,55 @@
+.TH development
+.SH NAME
+future plans for Lagranto
+.SH MAJOR
+.TP 5
+.B [1] CF netCDF [until 1 April 2011]
+interface to CF netCDF format
+.TP 5
+.B [2] GRIB 
+interface to GRIB format
+.TP 5
+.B [3] box tracing
+Instead of tracing point meteorological fields, trace the mean,maximum, minimum, median, variance,... within a box around the trajectory position 
+.TP 5
+.B [4] stochastic trajectories
+allow in caltra the addition of a random noise to the velocities; option "-random 0.01" would allow random variations of U, V and OMEGA in the range of 1 %. As a further step, a physical based "parameterisation" of turbulence could be included (based on Ri, DEF, TKE,...). This would allow to calculate an ensemble of trajectories, e.g. for one receptor point. 
+.TP 5
+.B [5] Parallelisation
+parallelisation of caltra, and possibly also of trace and select.
+.TP 5
+.B [6] webLagranto
+web interface to Lagranto - in analogy to the HYSPLIT model
+.TP 5
+.B [7] cosmoLagranto
+new version of COSMO Lagranto
+.SH MINOR
+.TP 5
+.SH [1] SPECIAL
+remeber the settings for a SPECIAL command in the parameter list; this will make the evaluation of SPECIAL commands more efficient.
+.TP 5
+.SH [2] offset in K
+allow vertical offsets in K for tracing, e.g. 'PV:+5K' traces PV 5 K above the trajectory position
+.TP 5
+.B [3] SPECIAL:STE
+special criterion for STE, STT and TST in the form SPECIAL:STE:380,2,0,24,48; tropopause 2 PVU/380 K, STE within time 0-24 h, residence before and after the exchange at least 48 h.
+.TP 5
+.B [4] compact data format
+additional formats for trajectory files: 1) compressed format; 2) FLEXPART format.
+.TP 5
+.B [5] Goody: residence
+calculate the residence time in a specified region for all trajectories in a file
+.TP 5 
+.B [6] Goody: distance
+calculate the mimimum distance from a lon/lat/p point for all trajectories in a file.
+.TP 5
+.B [6] Extension of Lagranto run
+extend forward and backward in time an existing Lagranto run
+.TP 5
+.B [7] Definition of polygons
+Matlab tool for the definition of polygon files. 
+.TP 5
+.B [8] datelist
+Goody for handling of datelists: 1) datelist file -create start end; 2) datelist file -len; 3) datelist file -first|last; 4) datelist file -sort; 5) datelist file1 file2 -onlyin1|onlyin2|overlap|difference 
+.SH REPORT FOR NEW IDEAS
+Please report new ideas to <michael.sprenger@env.ethz.ch>.

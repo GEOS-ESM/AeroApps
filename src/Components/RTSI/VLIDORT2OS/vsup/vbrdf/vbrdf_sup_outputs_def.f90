@@ -96,9 +96,9 @@ type VBRDF_Sup_Outputs
 
 !  9/27/14.  Add WSA and BSA output (one SZA only for the latter)
 !  10/16/14. Added the Kernel output
-
-      REAL(fpk) :: BS_WSA_CALCULATED, BS_WSA_KERNELS(3)
-      REAL(fpk) :: BS_BSA_CALCULATED, BS_BSA_KERNELS(3)
+!  PC: changed hardwired shape of *_KERNELS from 3 to MAX_BRDF_KERNELS
+      REAL(fpk) :: BS_WSA_CALCULATED, BS_WSA_KERNELS(MAX_BRDF_KERNELS)
+      REAL(fpk) :: BS_BSA_CALCULATED, BS_BSA_KERNELS(MAX_BRDF_KERNELS)
 
 end type VBRDF_Sup_Outputs
 

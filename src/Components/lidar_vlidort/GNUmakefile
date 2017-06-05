@@ -26,9 +26,9 @@ endif
 
 THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
-BINS := 
 
-PY_EXTS = LidarAngles_.$(F2PYEXT)
+
+PY_EXTS = LidarAngles_.$(F2PYEXT) VLIDORT_LIDAR_.$(F2PYEXT)
 PY_SCRP =  
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
@@ -63,8 +63,19 @@ esma_help help:
 #                  --------------------
 #                  User Defined Targets
 #                  --------------------
+INC_VLIDORT90  = $(ESMAINC)/VLIDORT90
+LIB_VLIDORT90  = $(ESMALIB)/libVLIDORT90.a
 
-INC_DIRS = . /usr/include
+INC_VLIDORT2OS = $(ESMAINC)/VLIDORT2OS
+LIB_VLIDORT2OS = $(ESMALIB)/libVLIDORT2OS.a
+
+INC_LIDORT3p7  = $(ESMAINC)/LIDORT3p7
+LIB_LIDORT3p7  = $(ESMALIB)/libLIDORT3p7.a
+
+INC_GEOVLIDORT = ../geo_vlidort
+LIB_GEOVLIDORT = ../geo_vlidort/libgeo_vlidort.a
+
+INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT2OS) $(INC_LIDORT3p7) $(INC_GEOVLIDORT)) /usr/include
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
@@ -74,12 +85,17 @@ FREAL = $(FREAL4)
 THIS_CFIO = MAPL_cfio_r4
 THIS_GFIO = GMAO_gfio_r4
 
+LIBS = $(LIB_GEOVLIDORT) $(LIB_VLIDORT2OS) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
+       $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+       $(LIB_MAPL_BASE_STUBS2) \
+       $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
+       $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
+
 #                  --------------------
 #                  User Defined Targets
 #                  --------------------
 
-SRCS := LidarAngles_py.F90 
-
+SRCS =  #
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
 DEPS := $(addsuffix .d, $(basename $(SRCS))) 
  
@@ -87,9 +103,18 @@ $(LIB) lib : $(DEPS) $(OBJS)
 	$(RM) $(LIB)
 	$(AR) $(AR_FLAGS) $(LIB) $(OBJS)
 
+%.x : $(LIB) %.F90
+	$(FC) $(LDFLAGS) -o $@ $(D)TEST $*.F90 $(LIBS)	
+
+
 # Python extension modules
 # ------------------------
 python: $(PY_EXTS)
+
+VLIDORT_LIDAR_.$(F2PYEXT): VLIDORT_LIDAR_py.F90 
+	$(F2PY) -c -m VLIDORT_LIDAR_ $(M). $(M)$(INC_GEOVLIDORT) \
+                 VLIDORT_LIDAR_py.F90 $(LIBS)                  
+# 	$(CP) -p VLIDORT_LIDAR_.$(F2PYEXT) $(ESMALIB)/Python 	
 
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
