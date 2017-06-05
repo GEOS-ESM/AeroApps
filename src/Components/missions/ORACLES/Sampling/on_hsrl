@@ -5,8 +5,8 @@
 #
 
 set rc = ../RC
-set sampler = "echo $ESMADIR/`uname`/bin/trj_sampler.py"
-set esampler = "echo $ESMADIR/`uname`/bin/ext_sampler.py"
+set sampler = "$ESMADIR/`uname`/bin/trj_sampler.py"
+set esampler = "$ESMADIR/`uname`/bin/ext_sampler.py"
 set dest = $HOME/iesa/oracles/sampled/hsrl
 
 if ( $#argv < 1 ) then
@@ -45,7 +45,7 @@ foreach hsrl ( $HSRL )
 	    if ( -e $nc ) then
 	      echo "<> Skipping $nc, already there there"
 	    else
-	      $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $hsrl
+	      $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $hsrl 60
 	    endif
     endif
 

@@ -150,7 +150,9 @@ if ( $site == NCCS || $site == JIBB ) then
 
    set mod3 = lib/mkl-15.0.2.164
    set mod4 = other/comp/gcc-4.6.3-sp1
-   set mod5 = other/SIVO-PyD/spd_1.20.0_gcc-4.6.3-sp1_mkl-15.0.0.090
+###   set mod5 = other/SIVO-PyD/spd_1.20.0_gcc-4.6.3-sp1_mkl-15.0.0.090
+###   set mod5 = /discover/nobackup/jkouatch/SApd_4.0.0_py2.7_gcc-5.3-sp3
+   set mod5 = ""
    set mod6 = other/git-2.3.1
 
    set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 $mod6)

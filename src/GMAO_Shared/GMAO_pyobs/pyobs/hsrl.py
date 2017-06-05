@@ -32,6 +32,28 @@ SDS_DIAL = {'Nav_Data':
                   )
                }
 
+SDS_HSRL_daq = {'Engineering/header': ('date',), 
+             'ApplanixIMU':
+                        ('gps_alt','gps_lat','gps_lon','gps_time'),
+             'DataProducts' : (
+                         'Altitude',
+                         '1064_bsc_cloud_screened',
+                         '1064_ext',
+                         '1064_aer_dep',
+                         '532_bsc_cloud_screened',
+                         '532_ext',
+                         '532_aer_dep',
+                         '355_bsc_cloud_screened',
+                         '355_ext',
+                         '355_aer_dep',
+                         ),
+              'State':
+                         ( 'Pressure',
+                           'Temperature',          
+                           'Relative_Humidity',
+                         )
+               }
+
 SDS_HSRL2 = {'header': ('date',),
              'ER2_IMU':
                         ('gps_alt','gps_lat','gps_lon','gps_time'),
@@ -142,7 +164,7 @@ class HSRL(object):
         self.K = self.z/1000 <= zmax
         self.z = self.z[self.K]
         
-        # Handle incosistency of date across SRL datasets
+        # Handle incosistency of date across HSRL datasets
         # -----------------------------------------------
         if self.nt != self.date.shape[0]:
           date_ = self.date[0,0]
@@ -333,10 +355,10 @@ class HSRL(object):
             
 #--
       def coords(self,text_filename):
-          """Prints lat/lon to a text file."""
+          """Prints lat/lon/time to a text file."""
           f = open(text_filename,'w')
           for i in range(self.lon.shape[0]):
-                f.write("%f %f\n"%(self.lon[i],self.lat[i]))
+                f.write("%f,%f,%s\n"%(self.lon[i],self.lat[i],self.Time[i].isoformat()))
           f.close()
 
 #--
