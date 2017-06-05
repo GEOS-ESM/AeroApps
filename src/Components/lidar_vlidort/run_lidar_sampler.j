@@ -38,5 +38,5 @@ cd $BIN
 ######         Do Sampling
 ######
 ##################################################################
-python -u run_lidar_sampler.py -v --nproc 12 --DT_hours 24 2006-01-01T00 2006-01-02T00 lidar.pcf > slurm_$SLURM_JOBID.out
+python -u run_lidar_sampler.py -v --nproc 12 --DT_hours 24 2006-01-01T00 2006-01-02T00 lidar.pcf > slurm_$SLURM_JOBID_py.out
 
