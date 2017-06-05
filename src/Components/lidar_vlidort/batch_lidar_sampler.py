@@ -58,11 +58,11 @@ if __name__ == '__main__':
         iso1 = Date.isoformat()
         iso2 = edate.isoformat()
         newline = 'python -u run_lidar_sampler.py -v --nproc 12 --DT_hours 24 {} {} lidar.pcf > slurm_$SLURM_JOBID_py.out\n'.format(iso1,iso2)
-        a[-2] = newline
+        text[-2] = newline
         f.close()
 
         f = open(outpath,'w')
-        f.write(a)
+        f.write(text)
         f.close()
 
 
