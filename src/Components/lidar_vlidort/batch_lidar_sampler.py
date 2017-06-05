@@ -62,7 +62,8 @@ if __name__ == '__main__':
         f.close()
 
         f = open(outpath,'w')
-        f.write(text)
+        for l in text:
+            f.write(l)
         f.close()
 
 
