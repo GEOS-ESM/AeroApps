@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
         iso1 = Date.isoformat()
         iso2 = edate.isoformat()
-        newline = 'python -u run_lidar_sampler.py -v --nproc 12 --DT_hours 24 {} {} lidar.pcf > slurm_${SLURM_JOBID}_py.out\n'.format(iso1,iso2)
+        newline = 'python -u run_lidar_sampler.py -v --nproc 12 --DT_hours 24 {} {} lidar.pcf >'.format(iso1,iso2) + ' slurm_${SLURM_JOBID}_py.out\n'
         text[-2] = newline
         f.close()
 
