@@ -128,7 +128,7 @@ if __name__ == "__main__":
         # run trajectory sampler on model fields
         # split across multiple processors by date
         #datelist = [Date + p*pdt for p in range(args.nproc)]
-        datelist = [Date + p*pdf for p in range(args.DT_hours)]
+        datelist = [Date + p*pdt for p in range(args.DT_hours)]
         lendate  = len(datelist)
         # run trajectory sampler on model fields
         for rc,colname in zip(rcFiles,colNames):
