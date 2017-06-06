@@ -49,7 +49,7 @@ def StartNew(processes,cmds,nextdate,lendate):
 def CheckRunning(processes,cmds,nextdate,lendate,args):
    """ Check any running processes and start new ones if there are spare slots."""
 
-   for p in range(len(processes):0:-1): # Check the processes in reverse order
+   for p in range(len(processes))[::-1]: # Check the processes in reverse order
       if processes[p].poll() is not None: # If the process hasn't finished will return None
          del processes[p] # Remove from list - this is why we needed reverse order
 
