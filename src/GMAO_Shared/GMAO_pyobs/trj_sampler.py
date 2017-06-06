@@ -92,7 +92,7 @@ def getTrackHSRL(hsrlFile,dt_secs=-1):
     """
     Get trajectory from HSRL HDF-5 file.
     """
-    h = HSRL(ictFile,Nav_only=True)
+    h = HSRL(hsrlFile,Nav_only=True)
     lon, lat, tyme = h.lon[:].ravel(), h.lat[:].ravel(), h.tyme[:].ravel()
     if dt_secs > 0:
         dt = h.time[1] - h.time[0] # in seconds

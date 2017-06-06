@@ -11,7 +11,7 @@ set dest = $HOME/iesa/oracles/sampled/flight
 
 
 if ( $#argv < 1 ) then
-   echo "usage: $0 [-r REV] ORACLES-ER2_MODEL_20160426_RA.ICT [force]
+   echo "usage: $0 [-r REV] ORACLES-ER2_MODEL_20160426_RA.ICT [force]"
    exit 1
 endif
     
