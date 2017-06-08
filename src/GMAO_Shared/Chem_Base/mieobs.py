@@ -238,6 +238,75 @@ def getAOPext(aer,channels,I=None,vnames=VNAMES,vtypes=None,Verbose=False,rcfile
     return (ext,sca,backscat,aback_sfc,aback_toa,depol)
 
 #........................................................................
+#---
+def getAOPint(aer,channels,I=None,vnames=VNAMES,vtypes=None,Verbose=False,rcfile='Aod3d_532nm.rc'):
+    """
+    Compute (area,vol,refi,refr,reff) given aer object.
+
+    Input arrays can be (nobs,km) or (km,nobs).
+    It always returns arrays that are (km,nobs).
+    
+    I --- index of subset of observations to process
+
+    P. Castellanos : optics tables must have additional info, otherwise will return fill values    
+    """
+
+    # Variable type for mie calculation
+    # ---------------------------------
+    if vtypes is None:
+        vtypes = vnames     # to be used in mie calculation
+
+    # Make sure channels is a numpy array
+    # -------------------------------------
+    channels = _toArray(channels)
+
+    # Pack inputs
+    # -----------
+    nq, nch = len(vnames), len(channels) 
+
+    if I is None:
+        nobs = size(aer.PS)
+        I = range(0,nobs)
+    else :
+        nobs = len(I)
+    
+    if needs_transpose(aer): # aer is (nobs,km)
+        km = aer.DELP.shape[1]
+        
+        qc = ones((km,nq,nobs),dtype=float32)
+        qm = ones((km,nq,nobs),dtype=float32)
+        rh = aer.RH[I].T
+#        rh = zeros((km,nobs))
+        for n, v in zip(range(nq),vnames):
+            V = v.upper()
+            qc[:,n,:] = aer.__dict__[V][I].T * aer.AIRDENS[I].T 
+            qm[:,n,:] = aer.__dict__[V][I].T * aer.DELP[I].T / 9.81 
+    else:                    # aer is (km,nobs)
+        km = aer.DELP.shape[0]
+        
+        qc = ones((km,nq,nobs),dtype=float32)
+        qm = ones((km,nq,nobs),dtype=float32)
+        rh = aer.RH[I]
+#        rh = zeros((km,nobs))
+        for n, v in zip(range(nq),vnames):
+            V = v.upper()
+            qc[:,n,:] = aer.__dict__[V][:,I] * aer.AIRDENS[:,I] 
+            qm[:,n,:] = aer.__dict__[V][:,I] * aer.DELP[:,I] / 9.81 
+
+    # Do the Mie calculation
+    # ----------------------
+    vol, area, refr, refi, reff, rc = \
+        MieObs_.getint(rcfile,channels,pad(vtypes),Verbose,qc,qm,rh)
+
+    if rc!=0:
+        print "<<<ERROR>>> on return from MieObs_.getaopvector, rc = ", rc
+        raise ValueError, 'cannot get Aerosol Optical Properties (vector version)'
+
+    return (vol, area, refr, refi, reff)
+
+#........................................................................
+
+
 def pad(names):
     """
     Make all strings in list *names* the same size for f2py's benefit.

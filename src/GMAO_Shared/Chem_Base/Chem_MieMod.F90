@@ -151,7 +151,8 @@ contains
    type(Chem_Registry), pointer :: reg
    integer        :: ios, n, iq
    real, pointer  :: rh_table(:), lambda_table(:), &
-                     bext(:,:,:), bsca(:,:,:), reff(:,:)
+                     bext(:,:,:), bsca(:,:,:), reff(:,:), gf(:,:), &
+                     rhop(:,:), rhod(:)
    logical :: fexists
 
    rc = 0
@@ -692,7 +693,8 @@ end subroutine Chem_MieDestroy
 !
    subroutine Chem_MieQueryByInt ( this, idx, channel, q_mass, rh,     &
                                    tau, ssa, gasym, bext, bsca, bbck,  &
-                                   reff, pmom, p11, p22, rc )
+                                   reff, pmom, p11, p22, gf, rhop, rhod, &
+                                   vol, area, refr, refi, rc )
 
 ! !INPUT PARAMETERS:
 
@@ -714,6 +716,13 @@ end subroutine Chem_MieDestroy
    real,    optional,      intent(out) :: pmom(:,:)
    real,    optional,      intent(out) :: p11   ! P11 phase function at backscatter
    real,    optional,      intent(out) :: p22   ! P22 phase function at backscatter
+   real,    optional,      intent(out) :: gf    ! Growth factor (ratio of wet to dry radius)
+   real,    optional,      intent(out) :: rhop  ! Wet particle density [kg m-3]
+   real,    optional,      intent(out) :: rhod  ! Dry particle density [kg m-3]
+   real,    optional,      intent(out) :: vol   ! Wet particle volume [m3 kg-1]
+   real,    optional,      intent(out) :: area  ! Wet particle cross section [m2 kg-1]
+   real,    optional,      intent(out) :: refr  ! Wet particle real part of ref. index
+   real,    optional,      intent(out) :: refi  ! Wet particle imag. part of ref. index   
    integer, optional,      intent(out) :: rc    ! error code
 
 ! !DESCRIPTION:
@@ -735,7 +744,9 @@ end subroutine Chem_MieDestroy
       integer                      :: ICHANNEL, TYPE, iq
       integer                      :: irh, irhp1, isnap
       real                         :: rhUse, arh
-      real                         :: bextIn, bscaIn, bbckIn, gasymIn, p11In, p22In
+      real                         :: bextIn, bscaIn, bbckIn, gasymIn, p11In, p22In, &
+                                      gfIn, rhopIn, rhodIn, volIn, areaIn, &
+                                      refrIn, refiIn
       type(Chem_MieTable), pointer :: TABLE
 
       character(len=*), parameter  :: Iam = 'Chem_MieQueryByInt'
@@ -804,6 +815,35 @@ end subroutine Chem_MieDestroy
                  + TABLE%pback(irhp1,ichannel,TYPE,5) * arh
       endif
 
+      if(present(gf) ) then
+         gfIn =     TABLE%gf(irh  ,TYPE) * (1.-arh) &
+                  + TABLE%gf(irhp1,TYPE) * arh
+      endif
+
+      if(present(rhod) ) then
+         rhodIn =   TABLE%rhod(1  ,TYPE)
+      endif
+
+      if(present(vol) ) then
+         volIn  =   TABLE%vol(irh  ,TYPE) * (1.-arh) &
+                  + TABLE%vol(irhp1,TYPE) * arh
+      endif
+
+      if(present(area) ) then
+         areaIn  =   TABLE%area(irh  ,TYPE) * (1.-arh) &
+                  + TABLE%area(irhp1,TYPE) * arh
+      endif
+
+      if(present(refr) .or. present(tau) .or. present(ssa) ) then
+         refrIn =   TABLE%refr(irh  ,ichannel,TYPE) * (1.-arh) &
+                  + TABLE%refr(irhp1,ichannel,TYPE) * arh
+      endif
+
+      if(present(refi) .or. present(tau) .or. present(ssa) ) then
+         refiIn =   TABLE%refi(irh  ,ichannel,TYPE) * (1.-arh) &
+                  + TABLE%refi(irhp1,ichannel,TYPE) * arh
+      endif      
+
 !     Fill the requested outputs
 
       if(present(tau  )) tau   = bextIn * q_mass
@@ -814,6 +854,13 @@ end subroutine Chem_MieDestroy
       if(present(gasym)) gasym = gasymIn
       if(present(p11  )) p11   = p11In
       if(present(p22  )) p22   = p22In
+      if(present(gf   )) gf    = gfIn
+      if(present(rhop )) rhop  = rhopIn
+      if(present(rhod )) rhod  = rhodIn
+      if(present(vol ))  vol   = volIn
+      if(present(area )) area  = areaIn
+      if(present(refr )) refr  = refrIn
+      if(present(refi )) refi  = refiIn      
 
 !  All Done
 !----------

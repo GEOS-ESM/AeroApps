@@ -171,31 +171,31 @@ end subroutine getEdgeVars
 ! Loop over aerosol species
 ! -------------------------
   do iq = 1,nq
-     idxTable = Chem_MieQueryIdx(mieTables,vname_(iq),rc)
-     if(idxTable == -1) cycle
-     if ( rc/=0 ) then
+      idxTable = Chem_MieQueryIdx(mieTables,vname_(iq),rc)
+      if(idxTable == -1) cycle
+      if ( rc/=0 ) then
         print *, 'cannot get Mie index for '//vname_(iq)
         return
-     end if
+      end if
 
-     if (verbose==1) &
+      if (verbose==1) &
           print *, '[+] Adding '//trim(vname_(iq))//' contribution'
 
-!    Loop over nobs, km, nch
-!    --------------------------
-     do i = 1, nobs
+!     Loop over nobs, km, nch
+!     --------------------------
+      do i = 1, nobs
         do n = 1, nch
-           do k =1, km
-        
-            call Chem_MieQuery(mieTables, idxTable, idxChannel(n), &
-                               qm(k,iq,i), rh(k,i), tau=tau_, ssa=ssa_, gasym=g_)
- 
-                            tau(k,n,i) = tau(k,n,i) + tau_
-                            ssa(k,n,i) = ssa(k,n,i) + ssa_ * tau_ 
-                              g(k,n,i) =   g(k,n,i) +   g_ * ssa_ * tau_
+          do k =1, km
 
-            end do  ! end nch
-         end do ! end km
+            call Chem_MieQuery(mieTables, idxTable, idxChannel(n), &
+                               qm(k,iq,i), rh(k,i), tau=tau_, ssa=ssa_, gasym=g_)            
+         
+            tau(k,n,i) = tau(k,n,i) + tau_
+            ssa(k,n,i) = ssa(k,n,i) + ssa_ * tau_ 
+            g(k,n,i) =   g(k,n,i) +   g_ * ssa_ * tau_
+
+          end do  ! end km
+        end do ! end nch
       end do  ! end nobs
   end do ! end tracers
 
@@ -637,4 +637,134 @@ end subroutine getEdgeVars
  
 end subroutine getExt
 
+!...................................................................................
 
+  subroutine getInt ( km, nobs, nch, nq, rcfile, channels, vname, verbose, &
+                      qc,qm, rh, vol, area, refr, refi, reff, rc )
+
+! Returns aerosol extinction profile.
+
+  use Chem_MieMod
+  implicit NONE
+
+  integer,          intent(in)  :: km               ! number vertical layers
+  integer,          intent(in)  :: nobs             ! number of profiles
+
+  integer,          intent(in)  :: nch              ! number of channels
+  real,             intent(in)  :: channels(nch)
+
+  integer,          intent(in)  :: nq               ! number of tracers
+  character(len=*), intent(in)  :: rcfile           ! resource file, e.g., Aod_EOS.rc
+
+  character,        intent(in)  :: vname(nq,16)     ! variable name
+
+  integer,          intent(in)  :: verbose
+
+  real,             intent(in)  :: qc(km,nq,nobs)   ! (mixing ratio) * (air density)
+  real,             intent(in)  :: qm(km,nq,nobs)   ! (mixing ratio) * delp/g
+  real,             intent(in)  :: rh(km,nobs)      ! relative humidity
+
+  real,             intent(out) :: vol(km,nch,nobs)  ! Wet particle volume per volume of air [m3 m-3]
+  real,             intent(out) :: area(km,nch,nobs) ! Wet particle cross section per volume of air [m2 m-3]
+  real,             intent(out) :: refr(km,nch,nobs) ! Wet particle real part of ref. index
+  real,             intent(out) :: refi(km,nch,nobs) ! Wet particle imag. part of ref. index
+  real,             intent(out) :: reff(km,nch,nobs) ! Wet particle effective radius [m]
+
+  integer,          intent(out) :: rc
+
+!                               ---
+  type(Chem_Mie)      :: mieTables
+  real                :: idxChannel(nch) ! this should have been integer
+  integer             :: idxTable
+  character(len=16)   :: vname_(nq)
+
+  integer :: iq, n, m, i, k, l
+  real :: gf_, rhop_, rhod_, vol_, area_, refr_, refi_
+
+  rc = 0
+
+! Deal with f2py strange handling of strings
+! ------------------------------------------
+  do iq = 1, nq
+     do n = 1, 16
+        vname_(iq)(n:n) = vname(iq,n)
+     end do
+  end do
+
+! Create the Mie Tables
+! ---------------------
+  mieTables = Chem_MieCreate(rcfile,rc)
+  if ( rc /= 0 ) then
+     print *, 'Cannot create Mie tables from ' // trim(rcfile)
+     return
+  end if
+
+! Determine channel indices
+! -------------------------
+  do n = 1, nch
+     idxChannel(n) = -1 ! this is really the channel index
+     do m = 1, mieTables%nch
+        if ( abs(channels(n) - (1.e9)*mieTables%channels(m)) < 1. ) then
+           idxChannel(n) = m
+           exit
+         end if
+      end do
+   end do
+   if ( any(idxChannel<0) ) then
+        print *, 'Mie resource files does not set the required channel'
+        print *, 'Channels requested:  ', channels
+        print *, 'Channels on RC file: ', 1.e+9 * mieTables%channels
+        rc = 99
+        return
+   end if
+
+! Initialize output arrays to zero
+! --------------------------------
+  vol  = 0
+  area = 0
+  refr = 0
+  refi = 0
+  reff = 0
+
+! Loop over aerosol species
+! -------------------------
+  do iq = 1,nq
+     idxTable = Chem_MieQueryIdx(mieTables,vname_(iq),rc)
+     if(idxTable == -1) cycle
+     if ( rc/=0 ) then
+        print *, 'cannot get Mie index for '//vname_(iq)
+        return
+     end if
+
+     if (verbose==1) &
+          print *, '[+] Adding '//trim(vname_(iq))//' contribution'
+
+!    Loop over nobs, km, nch
+!    --------------------------
+     do i = 1, nobs
+        do n = 1, nch
+            do k =1, km
+
+              call Chem_MieQuery(mieTables, idxTable, idxChannel(n), &  
+                                 qm(k,iq,i), rh(k,i), area=area_, vol=vol_, &
+                                 refr=refr_, refi=refi_ )   
+              vol(k,n,i) = vol(k,n,i) + vol_*qc(k,iq,i)
+              area(k,n,i) = area(k,n,i) + area_*qc(k,iq,i)
+              refr(k,n,i) = refr(k,n,i) + refr_*vol_*qc(k,iq,i)
+              refi(k,n,i) = refi(k,n,i) + refi_*vol_*qc(k,iq,i)  
+
+            end do  ! end nch
+        end do ! end km
+     end do  ! end nobs
+  end do ! end tracers
+
+  ! Calculate effective radius from volume and area
+  ! ------------------------------------------------
+  reff = 3./4.*vol/area
+
+  ! Normalize refractive index
+  ! ---------------------------
+  refr = refr/vol
+  refi = refi/vol
+ 
+end subroutine getInt
