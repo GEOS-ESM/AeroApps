@@ -119,7 +119,6 @@ if __name__ == "__main__":
     Date = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
 
-    #pdt  = timedelta(hours=args.DT_hours/args.nproc)
     pdt   = timedelta(hours=1)
     while Date < enddate:
         outpath = '{}/Y{}/M{}'.format(outdir,Date.year,str(Date.month).zfill(2))
@@ -128,12 +127,10 @@ if __name__ == "__main__":
 
         # run trajectory sampler on model fields
         # split across multiple processors by date
-        #datelist = [Date + p*pdt for p in range(args.nproc)]
         datelist = [Date + p*pdt for p in range(args.DT_hours)]
         lendate  = len(datelist)
-        # run trajectory sampler on model fields
+
         for rc,colname in zip(rcFiles,colNames):
-            #processes = set()
             processes = []
             cmds      = []
             filelist  = []
@@ -157,23 +154,15 @@ if __name__ == "__main__":
                     Options += " --verbose" 
 
                 cmd = './lidar_sampler.py {} {} {} {}'.format(Options,tleFile,date.isoformat(),edate.isoformat())
-                #print cmd
                 cmds.append(cmd)
-                #if not args.dryrun:
-                #    processes.add(subprocess.Popen(cmd, shell=True))
-
                 filelist.append(outFile)
-
-            #Wait till all the processes are finished
-            #for p in processes:
-            #    if p.poll() is None:
-            #        p.wait()            
 
             # Manage processes
             # This will start the max processes running    
             processes, nextdate = CheckRunning(processes,cmds,0,lendate,args)
             while len(processes)>0: # Some things still going on
-                time.sleep(10)
+                time.sleep(10)      # Wait
+                # add more processes as other ones finish
                 processes, nextdate = CheckRunning(processes,cmds,nextdate,lendate,args)
 
             if (not args.dryrun) & (args.nproc > 1):

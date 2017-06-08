@@ -34,6 +34,28 @@ def fix_time(filelist,tbeg):
 
         nc.close()
 
+def StartNew(processes,cmds,nextdate,lendate):
+   """ Start a new subprocess if there is work to do """
+
+   if nextdate < lendate:
+      proc = subprocess.Popen(cmds[nextdate], shell=True)
+      print cmds[nextdate]
+      nextdate += 1
+      processes.append(proc)
+
+   return processes,nextdate
+
+def CheckRunning(processes,cmds,nextdate,lendate,args):
+   """ Check any running processes and start new ones if there are spare slots."""
+
+   for p in range(len(processes))[::-1]: # Check the processes in reverse order
+      if processes[p].poll() is not None: # If the process hasn't finished will return None
+         del processes[p] # Remove from list - this is why we needed reverse order
+
+   while (len(processes) < args.nproc) and (nextdate < lendate): # More to do and some spare slots
+      processes, nextdate = StartNew(processes,cmds,nextdate,lendate)
+
+   return processes,nextdate
 
 
 
@@ -93,9 +115,7 @@ if __name__ == "__main__":
     Date = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
 
-    pdt  = timedelta(hours=args.DT_hours/args.nproc)
-
-
+    pdt   = timedelta(hours=1)
     while Date < enddate:
         outpath = '{}/Y{}/M{}'.format(outdir,Date.year,str(Date.month).zfill(2))
         if not os.path.exists(outpath):
@@ -103,11 +123,13 @@ if __name__ == "__main__":
 
         # run trajectory sampler on model fields
         # split across multiple processors by date
-        datelist = [Date + p*pdt for p in range(args.nproc)]
-        
+        datelist = [Date + p*pdt for p in range(args.DT_hours)]
+        lendate  = len(datelist)        
+
         for rc,colname in zip(rcFiles,colNames):
-            processes = set()
-            filelist = []
+            processes = []
+            cmds      = []            
+            filelist  = []
             for date in datelist:
                 nymd = str(date.date()).replace('-','')
                 hour = str(date.hour).zfill(2)
@@ -124,16 +146,16 @@ if __name__ == "__main__":
                     Options += " --verbose" 
 
                 cmd = './g5nr_stn_sampler.py {} {} {} {} {}'.format(Options,stnFile,rc,date.isoformat(),edate.isoformat())
-                print cmd
-                if not args.dryrun:
-                    processes.add(subprocess.Popen(cmd, shell=True))
-
+                cmds.append(cmd)
                 filelist.append(outFile)
 
-            #Wait till all the processes are finished
-            for p in processes:
-                if p.poll() is None:
-                    p.wait()
+            # Manage processes
+            # This will start the max processes running    
+            processes, nextdate = CheckRunning(processes,cmds,0,lendate,args)
+            while len(processes)>0: # Some things still going on
+                time.sleep(10)      # Wait
+                # add more processes as other ones finish
+                processes, nextdate = CheckRunning(processes,cmds,nextdate,lendate,args)
 
             if (not args.dryrun) & (args.nproc > 1):
                 # make time units all the same
