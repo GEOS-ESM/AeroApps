@@ -5,6 +5,9 @@
 
     Ed Nowottnick, January, 2015.
 
+    Modified to return lidar intensive properties
+    P. Castellanos June 2017
+
 """
 
 import os
@@ -34,6 +37,12 @@ VNAMES_OC = ['OCPHOBIC','OCPHILIC']
 VNAMES_SU = ['SO4']
 MieVarsNames = ['ext','scatext','backscat','aback_sfc','aback_toa','depol','ext2back','tau','ssa','g']
 MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitless','unitless','unitless']
+
+IntVarsUnits = {'area':'m2 m-3', 
+                'vol': 'm3 m-3',
+                'refi':'unitless',
+                'refr':'unitless',
+                'reff':'m'}
 
 class MieCalc(object):
     pass
@@ -68,7 +77,7 @@ def getVars(inFile):
     return Vars        
 
 #---
-def computeMie(Vars, channel, varnames, rcFile):
+def computeMie(Vars, channel, varnames, rcFile, options):
     """
 #    Computes optical quantities and combines into a dictionary
 #   """
@@ -78,6 +87,7 @@ def computeMie(Vars, channel, varnames, rcFile):
         NAMES = VNAMES + ['PS','DELP','RH','AIRDENS']
         nstn = len(Vars.STATION)
         nobs = len(Vars.TIME)
+
         for v in range(nstn):
             VarsIn = MieCalc()
             for n, name in enumerate(NAMES):
@@ -89,12 +99,21 @@ def computeMie(Vars, channel, varnames, rcFile):
                 if size == 3:
                     #2D Variables, ex. DU001
                     setattr(VarsIn,name,Var[v,:,:])
+
   
             if (v==0):
                 tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
                 ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
                 ext2back = ext/backscat
                 MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}
+
+                if options.intensive:
+                    vol, area, refr, refi, reff = getAOPint(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                    MieVars['vol']  = [vol]
+                    MieVars['area'] = [area]
+                    MieVars['refr'] = [refr]
+                    MieVars['refi'] = [refi]
+                    MieVars['reff'] = [reff]
             else:
                 tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
                 ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
@@ -110,17 +129,33 @@ def computeMie(Vars, channel, varnames, rcFile):
                 MieVars['ssa'].append(ssa)
                 MieVars['g'].append(g)
 
+                if options.intensive:
+                    vol, area, refr, refi, reff = getAOPint(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                    MieVars['vol'].append(vol)
+                    MieVars['area'].append(area)
+                    MieVars['refr'].append(refr)
+                    MieVars['refi'].append(refi)
+                    MieVars['reff'].append(reff)                    
+
     #TRJ Sampled?
     else:
-        tau,ssa,g = getAOPscalar(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+        tau,ssa,g = getAOPscalar(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile,intensive=options.intensive)
         ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
         ext2back = ext/backscat
         MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}       
+        if options.intensive:
+            vol, area, refr, refi, reff  = getAOPint(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+            MieVars['vol']  = [vol]
+            MieVars['area'] = [area]
+            MieVars['refr'] = [refr]
+            MieVars['refi'] = [refi]
+            MieVars['reff'] = [reff]
+
     return MieVars
 
 #---
 def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
-              MieVarsUnits, inFile, outFile, zlib=False):
+              MieVarsUnits, inFile, outFile, options, zlib=False):
     """
     Write a NetCDF file with sampled GEOS-5 variables along the satellite track
     described by (lon,lat,tyme).
@@ -249,6 +284,29 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
         else:
             this[:] = transpose(var)
 
+    if options.intensive:
+        for name in IntVarsUnits:
+            var = squeeze(MieVars[name])
+            size = len(var.shape)
+            if options.station:
+                if size == 2:
+                    var = asarray([var])
+                    size = len(var.shape)
+            if size == 3:
+                dim = ('station','time','lev')
+            if size == 2:
+                dim = ('time','lev')
+            if size == 1:
+                dim = ('time')
+            this = nc.createVariable(name,'f4',dim,zlib=zlib)
+            this.standard_name = name
+            this.units = IntVarsUnits[name]
+            this.missing_value = MAPL_UNDEF
+            if options.station:
+                this[:] = transpose(var,(0,2,1))
+            else:
+                this[:] = transpose(var)            
+
     # Close the file
     # --------------
     nc.close()
@@ -266,6 +324,7 @@ if __name__ == "__main__":
     outFile = 'ext_sampler.nc'
     channel = (532)
     rcFile = 'Aod3d_532nm.rc'
+    intensive = False
 
 #   Parse command line options
 #   --------------------------
@@ -285,6 +344,10 @@ if __name__ == "__main__":
 
     parser.add_option("-c", "--channel", dest="channel", default=channel,
               help="Channel for Mie calculation")
+
+    parser.add_option("-I", "--intensive",default=intensive,
+                      action="store_true", dest="intensive",
+                      help="return intensive variables")
 
     parser.add_option("-v", "--verbose",
                       action="store_true", dest="verbose",
@@ -343,31 +406,37 @@ if __name__ == "__main__":
         StnNames = ''
 
     channelIn = float(options.channel)
-    MieVars = computeMie(Vars,channelIn,VNAMES,options.rcFile)
-    writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,options.outFile)
+    MieVars = computeMie(Vars,channelIn,VNAMES,options.rcFile,options)
+    writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
+            MieVars,MieVarsNames,MieVarsUnits,options.inFile,options.outFile,options)
 
     if options.dust:
         outFile = options.outFile+'.dust'
         MieVars = computeMie(Vars,channelIn,VNAMES_DU,options.rcFile)
-        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
+                MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.seasalt:
         outFile = options.outFile+'.ss'
         MieVars = computeMie(Vars,channelIn,VNAMES_SS,options.rcFile)
-        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
+                MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.sulfate:
         outFile = options.outFile+'.su'
         MieVars = computeMie(Vars,channelIn,VNAMES_SU,options.rcFile)
-        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
+                MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.bcarbon:
         outFile = options.outFile+'.bc'
         MieVars = computeMie(Vars,channelIn,VNAMES_BC,options.rcFile)
-        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
+                MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.ocarbon:
         outFile = options.outFile+'.oc'
         MieVars = computeMie(Vars,channelIn,VNAMES_OC,options.rcFile)
-        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
+                MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile,options)
    
