@@ -57,10 +57,10 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
     n = 0
     for t in tyme:
         try:
-            z = f.nc4.interpXY(name,stnLon,stnLat,t,algorithm=options.algo,
-                         Transpose=True,squeeze=squeeze)            
-            # z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
-            #              Transpose=True,squeeze=squeeze)
+            # z = f.nc4.interpXY(name,stnLon,stnLat,t,algorithm=options.algo,
+            #              Transpose=True,squeeze=squeeze)            
+            z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
+                         Transpose=True,squeeze=squeeze)
         except:
             print "    - Interpolation failed for <%s> on %s"%(V.name,str(t))
             if nz>0:
