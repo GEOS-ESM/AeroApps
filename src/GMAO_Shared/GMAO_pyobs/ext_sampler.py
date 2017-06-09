@@ -139,7 +139,7 @@ def computeMie(Vars, channel, varnames, rcFile, options):
 
     #TRJ Sampled?
     else:
-        tau,ssa,g = getAOPscalar(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile,intensive=options.intensive)
+        tau,ssa,g = getAOPscalar(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
         ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
         ext2back = ext/backscat
         MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}       
