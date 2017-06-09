@@ -14,7 +14,7 @@ import os
 import MieObs_
 from types import *
 from netCDF4 import Dataset
-from mieobs import VNAMES, getAOPext, getAOPscalar
+from mieobs import VNAMES, getAOPext, getAOPscalar, getAOPint
 from numpy import zeros, arange, array, ones, zeros, interp, isnan, ma, NaN, squeeze, transpose, shape, asarray
 from math import pi, sin, cos, asin, acos
 
