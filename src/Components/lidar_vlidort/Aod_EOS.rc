@@ -32,11 +32,11 @@ r_channels: 0.470e-6
 # --------------------------------------------------------------
 #filename_optical_properties_DU: ExtData/g5chem/x.OLD/optics_DU.v1_pmom.nc
 #filename_optical_properties_DU: ExtData/g5chem/x/optics_DU.v5.nc
-filename_optical_properties_DU: ExtData/optics_DU.v14_2.nc
-filename_optical_properties_SS: ExtData/optics_SS.v3_3.nc
-filename_optical_properties_BC: ExtData/optics_BC.v1_3.nc
-filename_optical_properties_OC: ExtData/optics_OC.v1_3.nc
-filename_optical_properties_SU: ExtData/optics_SU.v1_3.nc
+filename_optical_properties_DU: ExtData/optics_DU.v15_5.nc
+filename_optical_properties_SS: ExtData/optics_SS.v3_5.nc
+filename_optical_properties_BC: ExtData/optics_BC.v1_5.nc
+filename_optical_properties_OC: ExtData/optics_OC.v1_5.nc
+filename_optical_properties_SU: ExtData/optics_SU.v1_5.nc
 
 #filename_optical_properties_DU: ExtData/g5chem/x.OLD/optics_DU.v4.nc
 #filename_optical_properties_SS: ExtData/g5chem/x.OLD/optics_SS.v3.nc
