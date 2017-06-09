@@ -136,3 +136,7 @@ if __name__ == "__main__":
                     vlidort.runExt()
 
         date += Dt
+
+
+    # clean up rcFile
+    os.remove(rcFile)
