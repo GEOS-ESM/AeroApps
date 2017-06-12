@@ -75,7 +75,7 @@ if __name__ == "__main__":
 
         Options =     " --output=" + outFile       + \
                       " --format=NETCDF4_CLASSIC"      + \
-                      " --isoTime"  +
+                      " --isoTime"  +     \
                       " --dt_secs=3600"  +\
                       " --algorithm=" + args.algo
 
