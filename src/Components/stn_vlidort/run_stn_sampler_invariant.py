@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     # run station sampler on model fields
     for rc,colname in zip(rcFiles,colNames):       
-        outFile = '{}/{}-g5nr.lb2.{}.nc4'.format(outpath,instname,colname)
+        outFile = '{}/{}-g5nr.lb2.{}.nc4'.format(outdir,instname,colname)
 
         Options =     " --output=" + outFile       + \
                       " --format=NETCDF4_CLASSIC"      + \
