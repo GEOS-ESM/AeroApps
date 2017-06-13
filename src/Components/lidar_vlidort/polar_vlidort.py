@@ -36,7 +36,7 @@ MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitles
 META    = ['DELP','PS','RH','AIRDENS','LONGITUDE','LATITUDE','isotime']
 AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
 SDS_AER = META + AERNAMES
-SDS_MET = ['CLDTOT']
+SDS_MET = []#['CLDTOT']
 SDS_INV = ['FRLAND']
 
 ncALIAS = {'LONGITUDE': 'trjLon',
@@ -52,12 +52,14 @@ HGTdic = {'LEO': 705,
 
 
 SurfaceFuncs = {'MODIS_BRDF'     : 'readSampledMODISBRDF',
-                'MODIS_BRDF_BPDF': 'readSampledMODISBRDF'}
+                'MODIS_BRDF_BPDF': 'readSampledMODISBRDF',
+                'LAMBERTIAN'     : 'readSampledLER'}
 
 WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_LIDAR_.vector_brdf_modis,
-                'MODIS_BRDF_BPDF': VLIDORT_LIDAR_.vector_brdf_modis_bpdf}   
+                'MODIS_BRDF_BPDF': VLIDORT_LIDAR_.vector_brdf_modis_bpdf,
+                'LAMBERTIAN'     : VLIDORT_LIDAR_.vector_lambert}   
 
-LandAlbedos  = 'MODIS_BRDF','MODIS_BRDF_BPDF'
+LandAlbedos  = 'MODIS_BRDF','MODIS_BRDF_BPDF','LAMBERTIAN'
 
 
 MISSING = -1.e+20
@@ -71,7 +73,9 @@ class POLAR_VLIDORT(object):
                 channel,VZA,hgtss,
                 ndviFile=None,
                 lcFile=None,
-                verbose=False):
+                lerFile=None,
+                verbose=False,
+                extOnly=False):
         self.SDS_AER = SDS_AER
         self.SDS_MET = SDS_MET
         self.SDS_INV = SDS_INV
@@ -86,7 +90,7 @@ class POLAR_VLIDORT(object):
         self.nMom    = nMom
         self.lcFile = lcFile
         self.ndviFile = ndviFile
-
+        self.lerFile  = lerFile
 
         # initialize empty lists
         for sds in self.SDS_AER+self.SDS_MET+self.SDS_INV:
@@ -110,22 +114,25 @@ class POLAR_VLIDORT(object):
         self.nobs  = len(self.tyme)
         self.iGood = np.ones([self.nobs]).astype(bool)
 
+        if not extOnly:
+            # Read in surface data
+            # Intensity
+            if (self.channel < 470) & ("MODIS_BRDF" in albedoType):
+                albedoReader = getattr(self,'readHybridMODISBRDF')
+            else:
+                albedoReader = getattr(self,SurfaceFuncs[albedoType])
+            albedoReader()
 
-        # Read in surface data
-        # Intensity
-        albedoReader = getattr(self,SurfaceFuncs[albedoType])
-        albedoReader()
-
-        # Polarization
-        if 'BPDF' in albedoType:
-            self.BPDFinputs()
+            # Polarization
+            if 'BPDF' in albedoType:
+                self.BPDFinputs()
 
 
-        # Calculate aerosol optical properties
-        self.computeMie()
+            # Calculate aerosol optical properties
+            self.computeMie()
 
-        # Calculate atmospheric profile properties needed for Rayleigh calc
-        self.computeAtmos()
+            # Calculate atmospheric profile properties needed for Rayleigh calc
+            self.computeAtmos()
 
         # Calculate Scene Geometry
         self.VZA = VZA
@@ -280,17 +287,17 @@ class POLAR_VLIDORT(object):
             var = nc.variables[sds_][:]
             self.__dict__[sds].append(var)
 
-        col = 'met_Nv'
-        if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)        
-        nc       = Dataset(self.inFile.replace('%col',col))
+        # col = 'met_Nv'
+        # if self.verbose: 
+        #     print 'opening file',self.inFile.replace('%col',col)        
+        # nc       = Dataset(self.inFile.replace('%col',col))
 
-        for sds in self.SDS_MET:
-            sds_ = sds
-            if sds in ncALIAS:
-                sds_ = ncALIAS[sds]
-            var = nc.variables[sds_][:]
-            self.__dict__[sds].append(var)
+        # for sds in self.SDS_MET:
+        #     sds_ = sds
+        #     if sds in ncALIAS:
+        #         sds_ = ncALIAS[sds]
+        #     var = nc.variables[sds_][:]
+        #     self.__dict__[sds].append(var)
 
     # --- 
     def readSampledMODISBRDF(self):
@@ -330,8 +337,11 @@ class POLAR_VLIDORT(object):
                 self.__dict__[sds] = np.empty([nobs])
                 for i in range(nobs):
                     Y = np.array([self.__dict__[R+chmin][i],self.__dict__[R+chmax][i]])
-                    f = interpolate.interp1d(X, Y)
-                    self.__dict__[sds][i] = f([int(chs)])
+                    if missing_value in Y:
+                        self.__dict__[sds][i] = missing_value
+                    else:
+                        f = interpolate.interp1d(X, Y)
+                        self.__dict__[sds][i] = f([int(chs)])
 
             SDS = 'Riso'+chs,'Rgeo'+chs,'Rvol'+chs
         
@@ -358,6 +368,145 @@ class POLAR_VLIDORT(object):
 
         # [nparam,nch,nobs]
         self.RTLSparam = np.append(param1,param2,axis=0)
+
+    # --- 
+    def readHybridMODISBRDF(self):
+        """
+        Read in MODIS BRDF kernel weights
+        that have already been sampled on lidar track
+        for wavelngths between 388 and 470
+        """
+        MODIS_channels = np.array(['470','550','650','850','1200','1600','2100'])
+        LER_channels   = np.array(['354','388'])
+        MODISchs = '470' 
+        mSDS = 'Riso'+MODISchs,'Rgeo'+MODISchs,'Rvol'+MODISchs
+        LERchs = '388'
+        lSDS = 'SRFLER' + LERchs
+        chs = str(int(self.channel))
+
+        if self.verbose:
+            print 'opening BRDF abledo file ',self.albedoFile
+        nc = Dataset(self.albedoFile)
+
+        for sds in mSDS:
+            self.__dict__[sds] = nc.variables[sds][:]
+
+        missing_value = nc.variables[sds].missing_value
+        nc.close()
+
+        if self.verbose:
+            print 'opening LER albedo file ',self.lerFile
+        nc = Dataset(self.lerFile)
+
+        self.__dict__[lSDS] = nc.variables[lSDS][:]
+        nc.close()
+
+        nobs = len(self.__dict__[sds])
+        # Interpolate 
+        X = np.array([388,470])
+        #Riso
+        sds = 'Riso' + chs
+        R   = 'Riso' + MODISchs
+        self.__dict__[sds] = np.empty([nobs])
+        for i in range(nobs):
+            Y = np.array([self.__dict__[lSDS][i],self.__dict__[R][i]])
+            if missing_value in Y:
+                self.__dict__[sds][i] = missing_value
+            else:
+                f = interpolate.interp1d(X, Y)
+                self.__dict__[sds][i] = f([int(chs)])
+
+        #Rgeo and Rvol
+        for R in 'Rgeo','Rvol':
+            sds = R + chs
+            self.__dict__[sds] = np.empty([nobs])
+            for i in range(nobs):
+                Y = np.array([0.0,self.__dict__[R+MODISchs][i]])
+                if missing_value in Y:
+                    self.__dict__[sds][i] = missing_value
+                else:
+                    f = interpolate.interp1d(X, Y)
+                    self.__dict__[sds][i] = f([int(chs)])
+
+        SDS = 'Riso'+chs,'Rgeo'+chs,'Rvol'+chs
+        
+        # Check for missing kernel weights
+        Riso = self.__dict__['Riso'+chs]
+        Rgeo = self.__dict__['Rgeo'+chs]
+        Rvol = self.__dict__['Rvol'+chs]
+        iGood = (Riso != missing_value) & (Rgeo != missing_value) & (Rvol != missing_value)
+        self.iGood = self.iGood & iGood
+        self.nobs = np.sum(self.iGood)
+
+        for sds in SDS:
+            self.__dict__[sds].shape = (1,1,nobs)
+
+        # [nkernel,nch,nobs]
+        self.kernel_wt = np.append(self.__dict__['Riso'+chs],self.__dict__['Rgeo'+chs],axis=0)
+        self.kernel_wt = np.append(self.kernel_wt,self.__dict__['Rvol'+chs],axis=0)
+
+        param1 = np.array([2]*nobs)
+        param2 = np.array([1]*nobs)
+
+        param1.shape = (1,1,nobs)
+        param2.shape = (1,1,nobs)
+
+        # [nparam,nch,nobs]
+        self.RTLSparam = np.append(param1,param2,axis=0)
+
+    def readSampledLER(self):
+        """
+        Read in sampler LER files.
+        Fill albedo attribute
+        """
+        LER_channels   = np.array(['354','388'])   
+        chs = str(int(self.channel))
+
+        SDS = []
+        for lchs in LER_channels:
+            SDS.append('SRFLER'+lchs)
+
+        if self.verbose:
+            print 'opening LER albedo file ',self.lerFile
+        nc = Dataset(self.lerFile)
+
+        for sds in SDS:
+            self.__dict__[sds] = np.squeeze(nc.variables[sds][:])
+
+        missing_value = nc.variables[sds].missing_value
+        nobs = len(self.__dict__[sds])
+        nc.close()
+
+        sds = 'SRFLER'+chs
+        # interpolate if needed
+        if chs not in LER_channels:
+            dch   = self.channel - np.array(LER_channels).astype('int')
+            chmin = np.argmax(dch[dch<0])
+            chmin = LER_channels[dch<0][chmin]
+            chmax = np.argmin(dch[dch>0])
+            chmax = LER_channels[dch>0][chmax]            
+            X = np.array([chmin,chmax]).astype('int')
+
+            self.__dict__[sds] = np.empty([nobs])
+            for i in range(nobs):
+                Y = np.array([self.__dict__['SRFLER'+chmin][i],self.__dict__['SRFLER'+chmax][i]])
+                if missing_value in Y:
+                    self.__dict__[sds][i] = missing_value
+                else:
+                    f = interpolate.interp1d(X, Y)
+                    self.__dict__[sds][i] = f([int(chs)]) 
+
+
+        # Check for missing values
+        iGood = (self.__dict__[sds] != missing_value) 
+        self.iGood = self.iGood & iGood
+        self.nobs = np.sum(self.iGood)
+
+        # (nobs,nch)
+        self.__dict__[sds].shape = (nobs,1) 
+
+
+        self.albedo = self.__dict__[sds]     
 
     #---
     def computeMie(self):
@@ -391,7 +540,8 @@ class POLAR_VLIDORT(object):
                       " --output=" + outFile       + \
                       " --rc=" + self.rcFile      + \
                       " --format=NETCDF4_CLASSIC"      + \
-                      " --channel=%d" %self.channel     
+                      " --channel=%d" %self.channel + \
+                      " --intensive"     
                       
 
         if not os.path.exists(os.path.dirname(outFile)):
@@ -534,8 +684,19 @@ class POLAR_VLIDORT(object):
                     surf_reflectance[p:p+1,:] = surf_reflectance_
                     ROT[:,p:p+1,:] = ROT_
             
-            
-            # radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc = result
+            elif self.albedoType == 'LAMBERTIAN':
+                albedo = self.albedo[self.iGood,:]
+                
+                args = [self.channel,tau, ssa, pmom, 
+                        pe, ze, te, 
+                        albedo, 
+                        sza, raa, vza, 
+                        MISSING,
+                        self.verbose]
+
+                # Call VLIDORT wrapper function
+                I, reflectance, ROT, Q, U, rc = vlidortWrapper(*args)  
+                surf_reflectance = albedo
             if i == 0:
                 self.ROT[self.iGood,:] = np.squeeze(ROT).T
             self.I[self.iGood,i] = np.squeeze(I)
