@@ -12,6 +12,7 @@ from dateutil.parser import parse         as isoparser
 from netCDF4 import Dataset as Dataset_
 
 from binObs_ import interpxy3d
+from dateutil.relativedelta import relativedelta
 
 class NC4ctlHandle(object):
     """
@@ -126,9 +127,15 @@ class NC4ctl(object):
             secs = int(dt.replace('mn','')) * 60
         elif 'dy' in dt:
             secs = int(dt.replace('dy','')) * 24 * 60 * 60
+        elif 'mo' in dt:
+            mons = int(dt.replace('mo',''))            
         else:
             raise ValueError, 'invalid time step <%s>'%dt 
-        dt = timedelta(seconds=secs)
+
+        if 'mo' in dt:
+            dt = relativedelta(months=+mons)
+        else:
+            dt = timedelta(seconds=secs)
 
         # Save this
         # ---------
@@ -167,10 +174,18 @@ class NC4ctl(object):
         elif t>self.tend:
             raise ValueError, '%s after %s'%(str(t),str(self.tend))
 
-        dt = t - self.tbeg
-        i = int(dt.total_seconds() / self.dt.total_seconds())
-        t1 = self.tbeg + i * self.dt
+        # dt = t - self.tbeg
+        # i = int(dt.total_seconds() / self.dt.total_seconds())
+        # t1 = self.tbeg + i * self.dt
+        # t2 = t1 + self.dt
+
+        t1 = self.tbeg
+        while t1 <= t:
+          t1 = t1 + self.dt
+
+        t1 = t1 - self.dt
         t2 = t1 + self.dt
+
         return (t1,t2)
     
 #---
@@ -313,14 +328,15 @@ class NC4ctl(object):
         # Find times bracketing the input time array
         # ------------------------------------------
         Times = self.trange(time.min(),time.max())
-        dt, dt_secs = (self.dt, self.dt.total_seconds())
+        # dt, dt_secs = (self.dt, self.dt.total_seconds())
+        dt = self.dt
 
         # Loop over time, producing XY interpolation at each time
         # -------------------------------------------------------
         V, I = [], []
         for now in Times:
             if Verbose: print " [] XY Interpolating <%s> at "%vname,now
-            i = (time>=now-dt) & (time<=now+dt)
+            i = (time>=now-dt) & (time<=now+dt)            
             if any(i):
                 v = self.interpXY(vname, lon[i], lat[i],tyme=now,
 				  Transpose=True, # shape will be (nobs,km)
@@ -349,6 +365,7 @@ class NC4ctl(object):
         for now in Times[:-1]:
             v1[I[n]], v2[I[n+1]] = V[n], V[n+1]
             j = (time>=now) & (time<=now+dt)
+            dt_secs = ((now+dt)-now).total_seconds()
             if any(j): 
                 a = array([r.total_seconds()/dt_secs for r in time[j]-now],dtype=float32) 
                 if len(shp)==2: # has vertical levels
