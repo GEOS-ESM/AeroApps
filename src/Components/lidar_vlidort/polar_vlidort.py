@@ -20,7 +20,7 @@ from dateutil.parser import parse         as isoparser
 
 from MAPL.constants import *
 import LidarAngles_    
-import VLIDORT_LIDAR_ 
+import VLIDORT_ 
 from copyvar  import _copyVar
 from scipy import interpolate
 
@@ -55,9 +55,9 @@ SurfaceFuncs = {'MODIS_BRDF'     : 'readSampledMODISBRDF',
                 'MODIS_BRDF_BPDF': 'readSampledMODISBRDF',
                 'LAMBERTIAN'     : 'readSampledLER'}
 
-WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_LIDAR_.vector_brdf_modis,
-                'MODIS_BRDF_BPDF': VLIDORT_LIDAR_.vector_brdf_modis_bpdf,
-                'LAMBERTIAN'     : VLIDORT_LIDAR_.vector_lambert}   
+WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_.vector_brdf_modis,
+                'MODIS_BRDF_BPDF': VLIDORT_.vector_brdf_modis_bpdf,
+                'LAMBERTIAN'     : VLIDORT_.vector_lambert}   
 
 LandAlbedos  = 'MODIS_BRDF','MODIS_BRDF_BPDF','LAMBERTIAN'
 
@@ -267,7 +267,7 @@ class POLAR_VLIDORT(object):
         self.RAAf = self.VAAf - saa
 
         # Limit SZAs
-        self.iGood = self.SZA < 80
+        self.iGood = self.iGood & (self.SZA < 80)
         self.nobs = np.sum(self.iGood)     
 
     #---
@@ -749,6 +749,7 @@ class POLAR_VLIDORT(object):
         _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'lev', dtype='S1',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)   
@@ -825,11 +826,13 @@ class POLAR_VLIDORT(object):
         sref.long_name     = '%.2f nm Bi-Directional Surface Reflectance' %self.channel
         sref.missing_value = MISSING
         sref.units         = "None"
+        sref[:]            = self.surf_reflectance
 
         rot = nc.createVariable('ROT','f4',('time','lev',),zlib=zlib,fill_value=MISSING)
         rot.long_name = '%.2f nm Rayleigh Optical Thickness' %self.channel
         rot.missing_value = MISSING
         rot.units         = "None"
+        rot[:]            = self.ROT
 
         # Close the file
         # --------------
@@ -863,7 +866,7 @@ if __name__ == "__main__":
     lcFile       = '{}/calipso-g5nr.lb2.land_cover.{}_{}z.nc4'.format(lcDir,nymd,hour)    
     albedoType   = 'MODIS_BRDF_BPDF'
 
-    channel  = 477
+    channel  = 470
     chd      = get_chd(channel)
     outDir    = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelC2/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     outFile   = '{}/calipso-g5nr.vlidort.vector.MCD43C.{}_{}z_{}nm.nc4'.format(outDir,nymd,hour,chd)
