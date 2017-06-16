@@ -21,6 +21,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
     parser.add_argument("iso_t2",help='ending iso time')
+    parser.add_argument("prep_config",
+                        help="prep config filename")
 
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
@@ -57,7 +59,7 @@ if __name__ == '__main__':
 
         iso1 = Date.isoformat()
         iso2 = edate.isoformat()
-        newline = 'python -u run_stn_sampler.py -v --nproc 12 --DT_hours 24 {} {} stn_sampler.pcf >'.format(iso1,iso2) + ' slurm_${SLURM_JOBID}_py.out\n'
+        newline = 'python -u run_stn_sampler.py -v --nproc 12 --DT_hours 24 {} {} {} >'.format(iso1,iso2,args.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
         text[-2] = newline
         f.close()
 
