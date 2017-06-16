@@ -49,14 +49,18 @@ if __name__ == "__main__":
     # Parse prep config
     # -----------------
     cf             = Config(args.prep_config,delim=' = ')
-    inTemplate     = cf('inDir')     + '/' + cf('inFile')        
-    albedoTemplate = cf('albedoDir') + '/' + cf('albedoFile')  
+    inTemplate     = cf('inDir')     + '/' + cf('inFile')         
     outTemplate    = cf('outDir')    + '/' + cf('outFile')
     channel        = int(cf('channel'))
     rcFile         = cf('rcFile')
 
     VZA           = cf('VZA')
     VZA = np.array(VZA.replace(' ','').split(',')).astype('float')
+
+    try:
+        brdfTemplate = cf('brdfDir') + '/' + cf('brdfFile') 
+    except:
+        brdfTemplate = None
 
     try:
         ndviTemplate   = cf('ndviDir')   + '/' + cf('ndviFile')
@@ -105,7 +109,11 @@ if __name__ == "__main__":
 
         inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
         outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
-        albedoFile = albedoTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
+
+        if brdfTemplate is None:
+            brdfFile = None
+        else:
+            brdfFile = brdfTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
         
         if ndviTemplate is None:
             ndviFile = None
@@ -122,25 +130,26 @@ if __name__ == "__main__":
         # Initialize VLIDORT class getting aerosol optical properties
         # -----------------------------------------------------------
         print '++++Running VLIDORT with the following arguments+++'
-        print '>>>inFile:',inFile
-        print '>>>outFile:',outFile
-        print '>>>rcFile:',rcFile
-        print '>>>albedoFile:',albedoFile
+        print '>>>inFile:    ',inFile
+        print '>>>outFile:   ',outFile
+        print '>>>rcFile:    ',rcFile
         print '>>>albedoType:',cf('albedoType')
-        print '>>>channel:',channel
-        print '>>>VZA:',VZA
-        print '>>>HGT:',float(cf('HGT'))
-        print '>>>ndviFile:',ndviFile,
-        print '>>>lcFile:',lcFile,
-        print '>>>lerFile',lerFile,
-        print '>>>verbose:',args.verbose
+        print '>>>channel:   ',channel
+        print '>>>VZA:       ',VZA
+        print '>>>HGT:       ',float(cf('HGT'))
+        print '>>>brdfFile:  ',brdfFile
+        print '>>>ndviFile:  ',ndviFile,
+        print '>>>lcFile:    ',lcFile,
+        print '>>>lerFile    ',lerFile,
+        print '>>>verbose:   ',args.verbose
         print '++++End of arguments+++'
         if not args.dryrun:
             vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,
-                                    albedoFile,cf('albedoType'),
+                                    cf('albedoType'),
                                     channel,
                                     VZA,
                                     float(cf('HGT')),
+                                    brdfFile=brdfFile,
                                     ndviFile=ndviFile,
                                     lcFile=lcFile,
                                     lerFile=lerFile,

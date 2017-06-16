@@ -69,8 +69,9 @@ class POLAR_VLIDORT(object):
     Everything needed for calling VLIDORT
     GEOS-5 has already been sampled on lidar track
     """
-    def __init__(self,inFile,outFile,rcFile,albedoFile,albedoType,
+    def __init__(self,inFile,outFile,rcFile,albedoType,
                 channel,VZA,hgtss,
+                brdfFile=None,
                 ndviFile=None,
                 lcFile=None,
                 lerFile=None,
@@ -82,12 +83,12 @@ class POLAR_VLIDORT(object):
         self.AERNAMES = AERNAMES
         self.inFile  = inFile
         self.outFile = outFile
-        self.albedoFile = albedoFile
         self.albedoType = albedoType
         self.rcFile  = rcFile
         self.channel = channel
         self.verbose = verbose
         self.nMom    = nMom
+        self.brdfFile = brdfFile
         self.lcFile = lcFile
         self.ndviFile = ndviFile
         self.lerFile  = lerFile
@@ -319,8 +320,8 @@ class POLAR_VLIDORT(object):
             SDS = 'Riso'+chmin,'Rgeo'+chmin,'Rvol'+chmin,'Riso'+chmax,'Rgeo'+chmax,'Rvol'+chmax
 
         if self.verbose:
-            print 'opening abledo file ',self.albedoFile
-        nc = Dataset(self.albedoFile)
+            print 'opening BRDF file ',self.brdfFile
+        nc = Dataset(self.brdfFile)
 
         for sds in SDS:
             self.__dict__[sds] = nc.variables[sds][:]
@@ -385,8 +386,8 @@ class POLAR_VLIDORT(object):
         chs = str(int(self.channel))
 
         if self.verbose:
-            print 'opening BRDF abledo file ',self.albedoFile
-        nc = Dataset(self.albedoFile)
+            print 'opening BRDF abledo file ',self.brdfFile
+        nc = Dataset(self.brdfFile)
 
         for sds in mSDS:
             self.__dict__[sds] = nc.variables[sds][:]
@@ -858,8 +859,8 @@ if __name__ == "__main__":
 
     inDir        = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelB/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     inFile       = '{}/calipso-g5nr.lb2.%col.{}_{}z.nc4'.format(inDir,nymd,hour)
-    albedoDir    = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BRDF/MCD43C1/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
-    albedoFile   = '{}/calipso-g5nr.lb2.brdf.{}_{}z.nc4'.format(albedoDir,nymd,hour)
+    brdfDir      = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BRDF/MCD43C1/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    brdfFile     = '{}/calipso-g5nr.lb2.brdf.{}_{}z.nc4'.format(albedoDir,nymd,hour)
     ndviDir      = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BPDF/NDVI/MYD13C2/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     ndviFile     = '{}/calipso-g5nr.lb2.ndvi.{}_{}z.nc4'.format(ndviDir,nymd,hour)
     lcDir        = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BPDF/LAND_COVER/MCD12C1/051/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
@@ -879,10 +880,11 @@ if __name__ == "__main__":
     # Initialize VLIDORT class getting aerosol optical properties
     # -----------------------------------------------------------
     vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,
-                            albedoFile,albedoType,
+                            albedoType,
                             channel,
                             VZAdic[VZAname],
                             HGTdic[orbit],
+                            brdfFile=brdfFile,
                             ndviFile=ndviFile,
                             lcFile=lcFile,
                             verbose=verbose)
