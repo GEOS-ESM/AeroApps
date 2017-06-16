@@ -74,8 +74,9 @@ class STN_VLIDORT(object):
     Everything needed for calling VLIDORT
     GEOS-5 has already been sampled on lidar track
     """
-    def __init__(self,inFile,invFile,outFile,rcFile,albedoFile,albedoType,
+    def __init__(self,inFile,invFile,outFile,rcFile,albedoType,
                 channel,
+                brdfFile=None,
                 ndviFile=None,
                 lcFile=None,
                 lerFile=None,
@@ -88,12 +89,12 @@ class STN_VLIDORT(object):
         self.inFile  = inFile
         self.invFile = invFile
         self.outFile = outFile
-        self.albedoFile = albedoFile
         self.albedoType = albedoType
         self.rcFile  = rcFile
         self.channel = channel
         self.verbose = verbose
         self.nMom    = nMom
+        self.brdfFile = brdfFile        
         self.lcFile = lcFile
         self.ndviFile = ndviFile
         self.lerFile  = lerFile
@@ -311,8 +312,8 @@ class STN_VLIDORT(object):
             SDS = 'Riso'+chmin,'Rgeo'+chmin,'Rvol'+chmin,'Riso'+chmax,'Rgeo'+chmax,'Rvol'+chmax
 
         if self.verbose:
-            print 'opening abledo file ',self.albedoFile
-        nc = Dataset(self.albedoFile)
+            print 'opening BRDF file ',self.brdfFile
+        nc = Dataset(self.brdfFile)
 
         for sds in SDS:
             self.__dict__[sds] = nc.variables[sds][:]
@@ -382,8 +383,8 @@ class STN_VLIDORT(object):
         chs = str(int(self.channel))
 
         if self.verbose:
-            print 'opening BRDF abledo file ',self.albedoFile
-        nc = Dataset(self.albedoFile)
+            print 'opening BRDF file ',self.brdfFile
+        nc = Dataset(self.brdfFile)
 
         for sds in mSDS:
             self.__dict__[sds] = nc.variables[sds][:]
@@ -586,7 +587,7 @@ class STN_VLIDORT(object):
         #     processes.append(p)
 
         # [x.start() for x in processes]
-        pool = multiprocessing.Pool(multiprocessing.cpu_count())     
+        pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5))     
         args = zip([self]*self.nstations,range(self.nstations))
         result = pool.map(unwrap_self_doMie,args)
         
@@ -610,10 +611,10 @@ class STN_VLIDORT(object):
 
         tau,ssa,g,pmom = getAOPvector(inVars,self.channel,
                                  vnames=self.AERNAMES,
-                                 Verbose=True,
+                                 Verbose=False,
                                  rcfile=self.rcFile,
                                  nMom=self.nMom)
-
+        print 'S',s,self.nstations
         return tau,ssa,g,pmom
 
     # --
@@ -932,8 +933,8 @@ if __name__ == "__main__":
     inFile       = '{}/aeronet-g5nr.lb2.%col.{}_{}z.nc4'.format(inDir,nymd,hour)
     invDir       = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelB/invariant'
     invFile      = '{}/aeronet-g5nr.lb2.%col.nc4'.format(invDir)
-    albedoDir    = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/BRDF/MCD43C1/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
-    albedoFile   = '{}/aeronet-g5nr.lb2.brdf.{}_{}z.nc4'.format(albedoDir,nymd,hour)
+    brdfDir      = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/BRDF/MCD43C1/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    brdfFile     = '{}/aeronet-g5nr.lb2.brdf.{}_{}z.nc4'.format(albedoDir,nymd,hour)
     ndviDir      = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/BPDF/NDVI/MYD13C2/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     ndviFile     = '{}/aeronet-g5nr.lb2.ndvi.{}_{}z.nc4'.format(ndviDir,nymd,hour)
     lcDir        = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/BPDF/LAND_COVER/MCD12C1/051/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
@@ -952,8 +953,9 @@ if __name__ == "__main__":
     # Initialize VLIDORT class getting aerosol optical properties
     # -----------------------------------------------------------
     vlidort = STN_VLIDORT(inFile,invFile,outFile,rcFile,
-                            albedoFile,albedoType,
+                            albedoType,
                             channel,
+                            brdfFile=brdfFile,
                             ndviFile=ndviFile,
                             lcFile=lcFile,
                             verbose=verbose,
