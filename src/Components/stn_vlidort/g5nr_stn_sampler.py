@@ -58,9 +58,19 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
     for t in tyme:
         try:
             # z = f.nc4.interpXY(name,stnLon,stnLat,t,algorithm=options.algo,
-            #              Transpose=True,squeeze=squeeze)            
-            z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
+            #              Transpose=True,squeeze=squeeze) 
+            dtF = (f.dt+f.tbeg-f.tbeg).total_seconds()
+            if (dtF == options.dt_secs):
+      
+                z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
                          Transpose=True,squeeze=squeeze)
+            else:
+                z = []
+                for lon,lat in zip(stnLon,stnLat):
+                    zz = f.sample(name,array([lon]),array([lat]),array([t]),algorithm=options.algo,
+                         Transpose=True,squeeze=True)     
+                    z.append(zz)  
+                z = array(z) 
         except:
             print "    - Interpolation failed for <%s> on %s"%(V.name,str(t))
             if nz>0:
