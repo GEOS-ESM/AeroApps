@@ -1,0 +1,6 @@
+# BRDF SAMPLING
+INSTNAME  = aeronet
+INDIR     = /nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelB
+OUTDIR    = /nobackup/3/pcastell/STN_VLIDORT/AERONET/BRDF/MCD43C1/006
+DATADIR   = /nobackup/3/pcastell/MODIS/MCD43C1/
+# BRDF SAMPLING
