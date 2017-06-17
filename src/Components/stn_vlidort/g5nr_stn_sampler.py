@@ -51,9 +51,9 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
     else:
         name = V.name
     if nz>0:
-        Z = zeros((ns,nt,nz))
+        Z = zeros((nt,nz,ns))
     else:
-        Z = zeros((ns,nt))
+        Z = zeros((nt,ns))
     n = 0
     for t in tyme:
         try:
@@ -79,9 +79,9 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
                 z = MAPL_UNDEF * ones(ns)
 
         if nz>0:
-            Z[:,n,:] = z
+            Z[n,:,:] = z
         else:
-            Z[:,n] = z
+            Z[n,:] = z
         n += 1
         Z[abs(Z)>MAPL_UNDEF/1000.] = MAPL_UNDEF # detect undef contaminated interp
     return Z
@@ -95,7 +95,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     """
     from netCDF4 import Dataset
 
-    ns_, nt_, nz_ = ( len(stnLon), len(tyme), len(levs) )
+    nt_, nz_, ns_ = ( len(tyme), len(levs), len(stnLon) )
 
     # Open NC file
     # ------------
@@ -116,12 +116,11 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     # -----------------
     nt = nc.createDimension('time', None )
     x = nc.createDimension('x',1)
-    y = nc.createDimension('y',1)
-    ns = nc.createDimension('station', ns_ )    
+    y = nc.createDimension('y',1)    
     if nz_>0:
         nz = nc.createDimension('lev', nz_ )
     ls = nc.createDimension('ls',19)
-
+    ns = nc.createDimension('station', ns_ )
 
     # Coordinate variables
     # --------------------
@@ -143,12 +142,6 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     y_.units = 'degrees_north'
     y_[:] = zeros(1)
 
-    e = nc.createVariable('station','i4',('station',),zlib=zlib)
-    e.long_name = 'Station Ensemble Dimension'
-    e.axis = 'e'
-    e.grads_dim = 'e'
-    e[:] = range(ns_)
-
     if nz_ > 0:
         lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
         lev.long_name = 'Vertical Level'
@@ -156,6 +149,12 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
         lev.positive = 'down'
         lev.axis = 'z'
         lev[:] = levs[:]    
+
+    e = nc.createVariable('station','i4',('station',),zlib=zlib)
+    e.long_name = 'Station Ensemble Dimension'
+    e.axis = 'e'
+    e.grads_dim = 'e'
+    e[:] = range(ns_)
 
     lon = nc.createVariable('stnLon','f4',('station',),zlib=zlib)
     lon.long_name = 'Longitude'
@@ -198,11 +197,11 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
         f.nc4 = NC4ctl_(path)
         for var in Vars[path]:
             if var.km == 0:
-                dim = ('station','time',)
-                shp = ( ns_, nt_)
+                dim = ('time','station',)
+                shp = ( nt_, ns_)
             else:
-                dim = ('station','time','lev',)
-                shp = ( ns_, nt_, nz_)
+                dim = ('time','lev','station',)
+                shp = ( nt_, nz_, ns_)
             this = nc.createVariable(var.name,'f4',dim,zlib=zlib)
             this.standard_name = var.title
             this.long_name = var.title.replace('_',' ')
