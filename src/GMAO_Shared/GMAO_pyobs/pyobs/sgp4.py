@@ -25,7 +25,7 @@ def getTrack ( tleFile, t_beg, t_end, dt_secs=60):
 
     lon, lat, rc = sgp4_.sgp4track(n, tleFile, nymd, nhms, dt_secs)
 
-    if rc:
+    if rc>1:
         raise ValueError, 'Error on return from sgp4Track: <%d>'%rc
 
     return (lon,lat,tyme)
