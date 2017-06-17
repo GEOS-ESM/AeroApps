@@ -133,7 +133,7 @@ class MCD12C(object):
 
         # Write land cover to file
         #---------------------------------------
-        dim = ('time','station',)
+        dim = ('station','time',)
         for sds in SDS:
           this = nc.createVariable(SDS[sds],'i2',dim)  
 
@@ -191,11 +191,11 @@ class MCD12C(object):
                 interpFunc = RegularGridInterpolator((self.lat, self.lon), self.__dict__[SDS[sds]],
                                 method='nearest',bounds_error=False,fill_value=None)
                 for t in Ityme:
-                    self.__dict__['stn'+SDS[sds]][t,:] = interpFunc(pts)      
+                    self.__dict__['stn'+SDS[sds]][:,t] = interpFunc(pts)      
 
-        self.BPDFcoef = np.empty([len(tyme),nstations])
+        self.BPDFcoef = np.empty([nstations,len(tyme)])
         for s in range(nstations):
-            self.BPDFcoef[:,s] = np.array([COEF[lc] for lc in self.stnIGBPlc[:,s]])
+            self.BPDFcoef[s,:] = np.array([COEF[lc] for lc in self.stnIGBPlc[s,:]])
         self.writenc(ncstn,outFile,verbose=Verbose) 
         ncstn.close()     
 

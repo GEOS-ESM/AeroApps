@@ -48,10 +48,10 @@ class BRDF(object):
         if omp:      
             import pymp      
             for sds in SDS:
-                self.__dict__[SDS[sds]] = pymp.shared.array((nobs,nstations,))                
+                self.__dict__[SDS[sds]] = pymp.shared.array((nstations,nobs,))                
         else:
             for sds in SDS:
-                self.__dict__[SDS[sds]] = np.zeros((nobs,nstations,))
+                self.__dict__[SDS[sds]] = np.zeros((nstations,nobs,))
 
 
 class MCD43C(object):
@@ -161,7 +161,7 @@ class MCD43C(object):
 
         # Loop over Bands writing each dataset
         #---------------------------------------
-        dim = ('time','station',)
+        dim = ('station','time',)
         for sds in SDS:
           this = nc.createVariable(SDS[sds],'f4',dim)  
 
@@ -221,7 +221,7 @@ class MCD43C(object):
                         interpFunc = RegularGridInterpolator((self.lat, self.lon), self.__dict__[SDS[sds]],
                                         method='nearest',bounds_error=False,fill_value=None)
                         for t in Ityme:
-                            self.brdf.__dict__[SDS[sds]][t,:] = interpFunc(pts)
+                            self.brdf.__dict__[SDS[sds]][:,t] = interpFunc(pts)
         else:
             for ut in utyme:
                 if Verbose:
@@ -236,7 +236,7 @@ class MCD43C(object):
                     interpFunc = RegularGridInterpolator((self.lat, self.lon), self.__dict__[SDS[sds]],
                                     method='nearest',bounds_error=False,fill_value=None)
                     for t in Ityme:
-                        self.brdf.__dict__[SDS[sds]][t,:] = interpFunc(pts)      
+                        self.brdf.__dict__[SDS[sds]][:,t] = interpFunc(pts)      
 
 
         self.writenc(ncstn,outFile,verbose=Verbose) 
