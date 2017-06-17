@@ -24,6 +24,35 @@ else:
     nccat = '/ford1/share/dasilva/bin/ncrcat'
 
 #------------------------------------ M A I N ------------------------------------
+def NCconcatenate(filelist):
+    ncbeg = Dataset(filelist[0],'a')
+
+    # Get var list
+    dims = [u'time',u'x',u'y',u'station',u'lev',u'stnLon',u'stnLat',u'stnName']
+    vars = variables.keys()
+    avars = []
+    for v in vars:
+        if v not in dims:
+            avars.append(v)
+
+    for v in avars:
+        data = ncbeg.variables[v][:]
+        for f in filelist[1:]:
+            ncnow = Dataset(f)
+            datanow = ncnow.variables[v][:]
+            if len(data.shape) == 1:
+                data = np.append(data,datanow,axis=0)
+            else:
+                data = np.append(data,datanow,axis=1)
+            ncnow.close()
+
+        ncbeg.variables[v][:] = data
+
+    ncbeg.close()
+
+
+
+
 def fix_time(filelist,tbeg):
     for filename in filelist:
         nc = Dataset(filename,'r+')
@@ -162,10 +191,12 @@ if __name__ == "__main__":
                 # make time units all the same
                 fix_time(filelist,Date)
                 #Concatenate outfiles into one
-                cmd = nccat + ' -h -A ' + ' '.join(filelist) +' -o ' + filelist[0]
-                print cmd
-                if os.system(cmd):
-                    raise ValueError, "nccat failed for {}".format(nymd)
+                #cmd = nccat + ' -h -A ' + ' '.join(filelist) +' -o ' + filelist[0]
+                #print cmd
+                #if os.system(cmd):
+                #    raise ValueError, "nccat failed for {}".format(nymd)
+
+                NCconcatenate(filelist)
 
                 for filename in filelist[1:]:
                     os.remove(filename)
