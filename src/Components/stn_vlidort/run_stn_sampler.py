@@ -29,7 +29,7 @@ def NCconcatenate(filelist):
 
     # Get var list
     dims = [u'time',u'x',u'y',u'station',u'lev',u'stnLon',u'stnLat',u'stnName']
-    vars = variables.keys()
+    vars = ncbeg.variables.keys()
     avars = []
     for v in vars:
         if v not in dims:
