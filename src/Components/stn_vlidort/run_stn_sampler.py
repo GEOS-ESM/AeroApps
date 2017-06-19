@@ -28,25 +28,35 @@ def NCconcatenate(filelist):
     ncbeg = Dataset(filelist[0],'a')
 
     # Get var list
-    dims = [u'time',u'x',u'y',u'station',u'lev',u'stnLon',u'stnLat',u'stnName']
+    dims = [u'x',u'y',u'station',u'lev',u'stnLon',u'stnLat',u'stnName']
     vars = ncbeg.variables.keys()
     avars = []
     for v in vars:
         if v not in dims:
             avars.append(v)
 
-    for v in avars:
-        data = ncbeg.variables[v][:]
-        for f in filelist[1:]:
-            ncnow = Dataset(f)
+    data = ncbeg.variables['time'][:]
+    nt = len(data)
+    for f in filelist[1:]:
+        ncnow   = Dataset(f)
+        datanow = ncnow.variables['time'][:]
+        ntnow   = len(datanow)        
+        for v in avars:
             datanow = ncnow.variables[v][:]
-            if len(data.shape) == 1:
-                data = np.append(data,datanow,axis=0)
-            else:
-                data = np.append(data,datanow,axis=1)
-            ncnow.close()
+            if len(datanow.shape) == 1:
+                print v,nt,ntnow,datanow.shape
+                ncbeg.variables[v][nt:nt+ntnow] = datanow
+            elif len(datanow.shape) == 2:
+                if v == 'isotime':
+                    for t in range(ntnow):
+                        ncbeg.variables[v][nt:nt+ntnow,:] = datanow
+                else:
+                    ncbeg.variables[v][:,nt:nt+ntnow] = datanow
+            elif len(datanow.shape) == 3:
+                ncbeg.variables[v][:,nt:nt+ntnow,:] = datanow 
 
-        ncbeg.variables[v][:] = data
+        ncnow.close()
+        nt   = nt+ntnow
 
     ncbeg.close()
 
