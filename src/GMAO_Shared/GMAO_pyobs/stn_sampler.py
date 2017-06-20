@@ -50,6 +50,8 @@ def Open(filename):
     # Create variable dictionary
     # --------------------------
     Vars = dict()
+    if len(f.vtitle)<len(f.vname):
+        f.vtitle = f.vname[:]      # In case vtitle is not filled (hack)    
     for i in range(len(f.vname)):
         if f.lower:
             v = f.vname[i].upper()
