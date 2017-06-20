@@ -3,5 +3,5 @@ INSTNAME = aeronet
 STNFILE  = aeronet_master_locations.txt
 RCFILES  = myd13c2.rc
 COLNAMES = ndvi
-OUTDIR   = /nobackup/3/pcastell/STN_VLIDORT/AERONET/BPDF/NDVI/MYD13C2/006
+OUTDIR   = /nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelB/surface/BPDF/NDVI/MYD13C2/006
 # STN SAMPLING
