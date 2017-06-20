@@ -1,0 +1,6 @@
+# BRDF SAMPLING
+INSTNAME  = aeronet
+INDIR     = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelB
+OUTDIR    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelB/surface/BRDF/MCD43C1/006
+DATADIR   = /discover/nobackup/pcastell/MODIS/MCD43C1/
+# BRDF SAMPLING

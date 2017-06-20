@@ -1,0 +1,6 @@
+#
+# Resource file for LIDAR sampler
+#
+
+NDVI: /discover/nobackup/pcastell/MODIS-NDVI/MYD13C2.006.monthly.ctl
+
