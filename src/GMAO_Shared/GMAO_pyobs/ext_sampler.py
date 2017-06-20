@@ -37,12 +37,22 @@ VNAMES_OC = ['OCPHOBIC','OCPHILIC']
 VNAMES_SU = ['SO4']
 MieVarsNames = ['ext','scatext','backscat','aback_sfc','aback_toa','depol','ext2back','tau','ssa','g']
 MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitless','unitless','unitless']
+MieVarsLongNames = ['total aerosol extinction','scattering extinction','total aerosol backscatter',
+                    'attenuated aerosol backscatter at the surface','attenuated aerosol backscatter at TOA',
+                    'depolarization ratio','extinction to backscatter ratio','aerosol optical depth',
+                    'single scattering albedo','assymetry parameter']
 
 IntVarsUnits = {'area':'m2 m-3', 
                 'vol': 'm3 m-3',
                 'refi':'unitless',
                 'refr':'unitless',
                 'reff':'m'}
+
+IntVarsLongNames = {'area':'aerosol surface area',
+                    'vol' :'aerosol volume',
+                    'refi':'imaginary refractive index',
+                    'refr':'real refractive index',
+                    'reff':'aerosol effective raidus'}                
 
 class MieCalc(object):
     pass
@@ -154,7 +164,7 @@ def computeMie(Vars, channel, varnames, rcFile, options):
     return MieVars
 
 #---
-def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
+def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieVarsLongNames,
               MieVarsUnits, inFile, outFile, options, zlib=False):
     """
     Write a NetCDF file with sampled GEOS-5 variables along the satellite track
@@ -277,6 +287,7 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
             dim = ('time')
         this = nc.createVariable(name,'f4',dim,zlib=zlib)
         this.standard_name = name
+        this.long_name = MieVarsLongNames[n]
         this.units = MieVarsUnits[n]
         this.missing_value = MAPL_UNDEF
         if options.station:
@@ -300,6 +311,7 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
                 dim = ('time')
             this = nc.createVariable(name,'f4',dim,zlib=zlib)
             this.standard_name = name
+            this.long_name     = IntVarsLongNames[name]
             this.units = IntVarsUnits[name]
             this.missing_value = MAPL_UNDEF
             if options.station:
@@ -408,35 +420,35 @@ if __name__ == "__main__":
     channelIn = float(options.channel)
     MieVars = computeMie(Vars,channelIn,VNAMES,options.rcFile,options)
     writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
-            MieVars,MieVarsNames,MieVarsUnits,options.inFile,options.outFile,options)
+            MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,options.outFile,options)
 
     if options.dust:
         outFile = options.outFile+'.dust'
         MieVars = computeMie(Vars,channelIn,VNAMES_DU,options.rcFile)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
-                MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile,options)
+                MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.seasalt:
         outFile = options.outFile+'.ss'
         MieVars = computeMie(Vars,channelIn,VNAMES_SS,options.rcFile)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
-                MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile,options)
+                MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.sulfate:
         outFile = options.outFile+'.su'
         MieVars = computeMie(Vars,channelIn,VNAMES_SU,options.rcFile)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
-                MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile,options)
+                MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.bcarbon:
         outFile = options.outFile+'.bc'
         MieVars = computeMie(Vars,channelIn,VNAMES_BC,options.rcFile)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
-                MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile,options)
+                MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.ocarbon:
         outFile = options.outFile+'.oc'
         MieVars = computeMie(Vars,channelIn,VNAMES_OC,options.rcFile)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
-                MieVars,MieVarsNames,MieVarsUnits,options.inFile,outFile,options)
+                MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
    
