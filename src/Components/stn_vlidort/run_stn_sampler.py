@@ -196,7 +196,7 @@ if __name__ == "__main__":
                 # add more processes as other ones finish
                 processes, nextdate = CheckRunning(processes,cmds,nextdate,lendate,args)
 
-            if (not args.dryrun) & (args.nproc > 1):
+            if (not args.dryrun) & (args.nproc > 1) & (args.DT_hours > 1):
                 # make time units all the same
                 fix_time(filelist,Date)
                 #Concatenate outfiles into one
