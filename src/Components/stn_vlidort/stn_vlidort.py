@@ -217,12 +217,15 @@ class STN_VLIDORT(object):
         self.pe = []
         self.ze = []
         self.te = []
-        NAMES = ['AIRDENS','DELP']
+        NAMES = ['AIRDENS','DELP','PS']
         for s in range(self.nstations):
             inVars = MieVARS()
             for sds in NAMES:
                 var = self.__dict__[sds]
-                inVars.__dict__[sds] = var[s,:,:]
+                if len(var.shape) == 3:
+                    inVars.__dict__[sds] = var[s,:,:]
+                elif len(var.shape) == 2:
+                    inVars.__dict__[sds] = var[s,:]
 
             pe, ze, te = getEdgeVars(inVars)
 
@@ -524,69 +527,7 @@ class STN_VLIDORT(object):
         self.ssa = []
         self.g   = []
         self.pmom = []
-        # NAMES = self.AERNAMES + ['PS','DELP','RH','AIRDENS']        
-        # for s in range(self.nstations):
-        #     inVars = MieVARS()
-        #     for sds in NAMES:
-        #         var = self.__dict__[sds]
-        #         if len(var.shape)==3:
-        #             inVars.__dict__[sds] = var[s,:,:]
-        #         elif len(var.shape) ==2:
-        #             inVars.__dict__[sds] = var[s,:]
 
-        #     tau,ssa,g,pmom = getAOPvector(inVars,self.channel,
-        #                              vnames=self.AERNAMES,
-        #                              Verbose=True,
-        #                              rcfile=self.rcFile,
-        #                              nMom=self.nMom)
-
-        #     self.tau.append(tau)  #(km,nch,nobs)
-        #     self.ssa.append(ssa)  #(km,nch,nobs)
-        #     self.g.append(g)    #(km,nch,nobs)
-        #     self.pmom.append(pmom)  #(km,nch,nobs,nMom,nPol)
-
-        # class holder(object):
-        #     pass
-
-        # def doMie(args):
-        #     s = args
-        #     #NAMES = data.AERNAMES + ['PS','DELP','RH','AIRDENS']
-        #     # inVars = MieVARS()
-        #     # for sds in NAMES:
-        #     #     var = getattr(data,sds)
-        #     #     if len(var.shape)==3:
-        #     #         inVars.__dict__[sds] = var[s,:,:]
-        #     #     elif len(var.shape) ==2:
-        #     #         inVars.__dict__[sds] = var[s,:]
-
-        #     # tau,ssa,g,pmom = getAOPvector(inVars,data.channel,
-        #     #                          vnames=data.AERNAMES,
-        #     #                          Verbose=True,
-        #     #                          rcfile=data.rcFile,
-        #     #                          nMom=data.nMom)
-
-        #     # return tau,ssa,g,pmom
-        #     return s
-
-        # inVars = holder()
-        # inVars.a = 1
-        # NAMES = self.AERNAMES + ['PS','DELP','RH','AIRDENS']
-        # for sds in NAMES:
-        #     inVars.__dict__[sds] = self.__dict__[sds]
-        # inVars.AERNAMES = self.AERNAMES
-        # inVars.channel  = self.channel
-        # inVars.rcFile   = self.rcFile
-        # inVars.nMom     = self.nMom
-        # print dir(inVars)
-        # args = [(s,inVars) for s in range(self.nstations)]  
-        # args = range(self.nstations)
-        # processes = []
-        # self.result = [-999]*self.nstations
-        # for s in range(self.nstations):
-        #     p = multiprocessing.Process(target=self.doMie,args=(s,))
-        #     processes.append(p)
-
-        # [x.start() for x in processes]
         pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5))     
         args = zip([self]*self.nstations,range(self.nstations))
         result = pool.map(unwrap_self_doMie,args)
@@ -614,7 +555,6 @@ class STN_VLIDORT(object):
                                  Verbose=False,
                                  rcfile=self.rcFile,
                                  nMom=self.nMom)
-        print 'S',s,self.nstations
         return tau,ssa,g,pmom
 
     # --
@@ -642,7 +582,7 @@ class STN_VLIDORT(object):
         if not os.path.exists(os.path.dirname(outFile)):
             os.makedirs(os.path.dirname(outFile))
 
-        cmd = 'ext_sampler.py {} '.format(Options)  
+        cmd = './ext_sampler.py {} '.format(Options)  
 
         if os.system(cmd):
             raise ValueError, "ext_sampler.py failed for %s "%(self.inFile.replace('%col',col))       
@@ -934,7 +874,7 @@ if __name__ == "__main__":
     invDir       = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelB/invariant'
     invFile      = '{}/aeronet-g5nr.lb2.%col.nc4'.format(invDir)
     brdfDir      = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/BRDF/MCD43C1/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
-    brdfFile     = '{}/aeronet-g5nr.lb2.brdf.{}_{}z.nc4'.format(albedoDir,nymd,hour)
+    brdfFile     = '{}/aeronet-g5nr.lb2.brdf.{}_{}z.nc4'.format(brdfDir,nymd,hour)
     ndviDir      = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/BPDF/NDVI/MYD13C2/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     ndviFile     = '{}/aeronet-g5nr.lb2.ndvi.{}_{}z.nc4'.format(ndviDir,nymd,hour)
     lcDir        = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/BPDF/LAND_COVER/MCD12C1/051/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
@@ -948,7 +888,7 @@ if __name__ == "__main__":
     
     rcFile   = 'Aod_EOS.rc'
     verbose  = True
-    extOnly  = True
+    extOnly  = False
 
     # Initialize VLIDORT class getting aerosol optical properties
     # -----------------------------------------------------------
@@ -963,8 +903,8 @@ if __name__ == "__main__":
 
    
     # Run ext_sampler
-    # vlidort.runExt()
+    vlidort.runExt()
 
     # Run VLIDORT
-    # if any(vlidort.nobs):
-    #     vlidort.runVLIDORT()
+    if any(vlidort.nobs):
+        vlidort.runVLIDORT()
