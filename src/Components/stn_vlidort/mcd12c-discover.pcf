@@ -2,5 +2,5 @@
 INSTNAME  = aeronet
 INDIR     = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelB
 OUTDIR    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051
-DATADIR   = /discover/nobackup/pcastell/MODIS/MCD12C1/
+DATADIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/LevelA/MCD12C1/
 # LAND COVER SAMPLING
