@@ -149,12 +149,12 @@ class MCD43C(object):
 
         # Save lon/lat
         # --------------------------
-        _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=verbose)
         _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=verbose)
         _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=verbose)
         _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=verbose)            
+        _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=verbose)
 
         # Loop over Bands writing each dataset
         #---------------------------------------
