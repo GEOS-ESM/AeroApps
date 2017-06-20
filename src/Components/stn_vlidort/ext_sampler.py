@@ -54,7 +54,7 @@ IntVarsLongNames = {'area':'aerosol surface area',
                     'refi':'imaginary refractive index',
                     'refr':'real refractive index',
                     'reff':'aerosol effective raidus'}                
-                
+
 
 class MieCalc(object):
     pass
@@ -105,7 +105,7 @@ def doMie(Vars,v,NAMES,channel,varnames,rcFile):
         if size == 3:
             #2D Variables, ex. DU001
             setattr(VarsIn,name,Var[v,:,:])    
-    tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+    tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=False,rcfile=rcFile)
     ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=False,rcfile=rcFile)
     ext2back = ext/backscat
     print 'v',v
