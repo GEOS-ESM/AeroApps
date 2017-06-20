@@ -44,7 +44,6 @@ def NCconcatenate(filelist):
         for v in avars:
             datanow = ncnow.variables[v][:]
             if len(datanow.shape) == 1:
-                print v,nt,ntnow,datanow.shape
                 ncbeg.variables[v][nt:nt+ntnow] = datanow
             elif len(datanow.shape) == 2:
                 if v == 'isotime':
@@ -201,11 +200,6 @@ if __name__ == "__main__":
                 # make time units all the same
                 fix_time(filelist,Date)
                 #Concatenate outfiles into one
-                #cmd = nccat + ' -h -A ' + ' '.join(filelist) +' -o ' + filelist[0]
-                #print cmd
-                #if os.system(cmd):
-                #    raise ValueError, "nccat failed for {}".format(nymd)
-
                 NCconcatenate(filelist)
 
                 for filename in filelist[1:]:
