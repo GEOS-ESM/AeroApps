@@ -123,13 +123,13 @@ class MCD12C(object):
 
         # Save lon/lat
         # --------------------------
-        _copyVar(ncstn,nc,u'stnLon',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(ncstn,nc,u'stnLat',dtype='f4',zlib=False,verbose=verbose)
         _copyVar(ncstn,nc,u'time', dtype='i4',zlib=False,verbose=verbose)
-        _copyVar(ncstn,nc,u'isotime', dtype='S1',zlib=False,verbose=verbose)
         _copyVar(ncstn,nc,u'x',dtype='f4',zlib=False,verbose=verbose)
         _copyVar(ncstn,nc,u'y',dtype='f4',zlib=False,verbose=verbose)   
         _copyVar(ncstn,nc,u'station',dtype='f4',zlib=False,verbose=verbose)          
+        _copyVar(ncstn,nc,u'stnLon',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(ncstn,nc,u'stnLat',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(ncstn,nc,u'isotime', dtype='S1',zlib=False,verbose=verbose)
 
         # Write land cover to file
         #---------------------------------------
