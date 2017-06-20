@@ -1,0 +1,7 @@
+# LIDAR SAMPLING
+INSTNAME = calipso
+TLEFILE  = calipso
+RCFILES  = omi_ler.rc
+COLNAMES = omi_ler
+OUTDIR   = /nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/SurfLER
+# LIDAR SAMPLING
