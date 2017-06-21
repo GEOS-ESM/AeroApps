@@ -24,9 +24,9 @@ import numpy         as np
 if __name__ == "__main__":
 
     # Defaults
-    DT_hours = 1
+    DT_hours = '1'
     algo     = "linear"
-    nproc    = 1
+    nproc    = '1'
 
     parser = argparse.ArgumentParser()
 
