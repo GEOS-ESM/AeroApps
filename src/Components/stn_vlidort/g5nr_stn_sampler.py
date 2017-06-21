@@ -60,6 +60,7 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
             # z = f.nc4.interpXY(name,stnLon,stnLat,t,algorithm=options.algo,
             #              Transpose=True,squeeze=squeeze) 
             dtF = (f.dt+f.tbeg-f.tbeg).total_seconds()
+            print 'dtF',dtF,options.dt_secs
             if (dtF == options.dt_secs):
       
                 z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
