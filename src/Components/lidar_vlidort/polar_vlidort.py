@@ -93,29 +93,29 @@ class POLAR_VLIDORT(object):
         self.ndviFile = ndviFile
         self.lerFile  = lerFile
 
-        # initialize empty lists
-        for sds in self.SDS_AER+self.SDS_MET+self.SDS_INV:
-            self.__dict__[sds] = []
-
-        # Read in data model data
-        self.readSampledGEOS()
-
-        # Make lists into arrays
-        for sds in self.SDS_AER+self.SDS_MET:
-            self.__dict__[sds] = np.concatenate(self.__dict__[sds])
-
-        # convert isotime to datetime
-        self.tyme = []
-        for isotime in self.isotime:
-            self.tyme.append(isoparser(''.join(isotime)))
-
-        self.tyme = np.array(self.tyme)
-
-        # Start out with all good obs
-        self.nobs  = len(self.tyme)
-        self.iGood = np.ones([self.nobs]).astype(bool)
-
         if not extOnly:
+            # initialize empty lists
+            for sds in self.SDS_AER+self.SDS_MET+self.SDS_INV:
+                self.__dict__[sds] = []
+
+            # Read in data model data
+            self.readSampledGEOS()
+
+            # Make lists into arrays
+            for sds in self.SDS_AER+self.SDS_MET:
+                self.__dict__[sds] = np.concatenate(self.__dict__[sds])
+
+            # convert isotime to datetime
+            self.tyme = []
+            for isotime in self.isotime:
+                self.tyme.append(isoparser(''.join(isotime)))
+
+            self.tyme = np.array(self.tyme)
+
+            # Start out with all good obs
+            self.nobs  = len(self.tyme)
+            self.iGood = np.ones([self.nobs]).astype(bool)
+        
             # Read in surface data
             # Intensity
             if (self.channel < 470) & ("MODIS_BRDF" in albedoType):
@@ -135,14 +135,14 @@ class POLAR_VLIDORT(object):
             # Calculate atmospheric profile properties needed for Rayleigh calc
             self.computeAtmos()
 
-        # Calculate Scene Geometry
-        self.VZA = VZA
-        self.hgtss = hgtss
-        self.calcAngles()
+            # Calculate Scene Geometry
+            self.VZA = VZA
+            self.hgtss = hgtss
+            self.calcAngles()
 
-        if self.nobs > 0:
-            # Land-Sea Mask
-            self.LandSeaMask()
+            if self.nobs > 0:
+                # Land-Sea Mask
+                self.LandSeaMask()
 
     # --
     def BPDFinputs(self):
@@ -594,6 +594,7 @@ class POLAR_VLIDORT(object):
         raab = np.repeat(raab,len(self.VZA),axis=1)
 
         RAA = np.append(raab,raaf,axis=1)
+        RAA[RAA < 0] = RAA[RAA<0]+360.0
         
         # Get VLIDORT wrapper name from dictionary
         vlidortWrapper = WrapperFuncs[self.albedoType]
@@ -869,7 +870,7 @@ if __name__ == "__main__":
 
     channel  = 470
     chd      = get_chd(channel)
-    outDir    = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelC2/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    outDir    = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelC/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     outFile   = '{}/calipso-g5nr.vlidort.vector.MCD43C.{}_{}z_{}nm.nc4'.format(outDir,nymd,hour,chd)
     
     rcFile   = 'Aod_EOS.rc'

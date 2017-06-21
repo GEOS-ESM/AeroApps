@@ -55,7 +55,10 @@ if __name__ == "__main__":
     rcFile         = cf('rcFile')
 
     VZA           = cf('VZA')
-    VZA = np.array(VZA.replace(' ','').split(',')).astype('float')
+    try:
+        VZA = np.array(VZA.replace(' ','').split(',')).astype('float')
+    except:
+        VZA = None
 
     try:
         brdfTemplate = cf('brdfDir') + '/' + cf('brdfFile') 
@@ -74,6 +77,11 @@ if __name__ == "__main__":
         lerTemplate    = cf('lerDir')    + '/' + cf('lerFile')
     except:
         lerTemplate    = None
+
+    try:
+        HGT = float(cf('HGT'))
+    except:
+        HGT = None
 
 
 
@@ -108,7 +116,7 @@ if __name__ == "__main__":
         hour = str(date.hour).zfill(2)    
 
         inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
-        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
+        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel))
 
         if brdfTemplate is None:
             brdfFile = None
@@ -136,11 +144,11 @@ if __name__ == "__main__":
         print '>>>albedoType:',cf('albedoType')
         print '>>>channel:   ',channel
         print '>>>VZA:       ',VZA
-        print '>>>HGT:       ',float(cf('HGT'))
+        print '>>>HGT:       ',HGT
         print '>>>brdfFile:  ',brdfFile
-        print '>>>ndviFile:  ',ndviFile,
-        print '>>>lcFile:    ',lcFile,
-        print '>>>lerFile    ',lerFile,
+        print '>>>ndviFile:  ',ndviFile
+        print '>>>lcFile:    ',lcFile
+        print '>>>lerFile    ',lerFile
         print '>>>verbose:   ',args.verbose
         print '++++End of arguments+++'
         if not args.dryrun:
@@ -148,7 +156,7 @@ if __name__ == "__main__":
                                     cf('albedoType'),
                                     channel,
                                     VZA,
-                                    float(cf('HGT')),
+                                    HGT,
                                     brdfFile=brdfFile,
                                     ndviFile=ndviFile,
                                     lcFile=lcFile,
@@ -157,11 +165,12 @@ if __name__ == "__main__":
                                     extOnly=extOnly)
 
             # Run VLIDORT
-            if vlidort.nobs > 0:
-                if cf('DO_VLIDORT').upper() == 'YES':
-                    vlidort.runVLIDORT()
-                if cf('DO_EXT').upper() == 'YES':
-                    vlidort.runExt()
+            if not extOnly:
+                if vlidort.nobs > 0:
+                    if cf('DO_VLIDORT').upper() == 'YES':
+                        vlidort.runVLIDORT()
+            if cf('DO_EXT').upper() == 'YES':
+                vlidort.runExt()
 
         date += Dt
 
