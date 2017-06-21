@@ -101,14 +101,14 @@ def doMie(Vars,v,NAMES,channel,varnames,rcFile):
         size = len(Var.shape)
         if (size == 2):
             #1D Variables, ex. PS
-            setattr(VarsIn,name,Var[v,:])
+            setattr(VarsIn,name,Var[:,v])
         if size == 3:
             #2D Variables, ex. DU001
-            setattr(VarsIn,name,Var[v,:,:])    
+            setattr(VarsIn,name,Var[:,v,:])    
     tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=False,rcfile=rcFile)
     ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=False,rcfile=rcFile)
     ext2back = ext/backscat
-    print 'v',v
+    
     return tau,ssa,g,ext,sca,backscat,aback_sfc,aback_toa,depol,ext2back
 
 
@@ -119,13 +119,13 @@ def doMieInt(Vars,v,NAMES,channel,varnames,rcFile):
         size = len(Var.shape)
         if (size == 2):
             #1D Variables, ex. PS
-            setattr(VarsIn,name,Var[v,:])
+            setattr(VarsIn,name,Var[:,v])
         if size == 3:
             #2D Variables, ex. DU001
-            setattr(VarsIn,name,Var[v,:,:])    
+            setattr(VarsIn,name,Var[:,v,:])    
 
     vol, area, refr, refi, reff = getAOPint(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=False,rcfile=rcFile)
-    print 'v-int',v
+    
     return vol, area, refr, refi, reff
 
 #---
@@ -152,7 +152,7 @@ def computeMie(Vars, channel, varnames, rcFile, options):
         MieVars['g']         = []
         
         pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5))     
-        args = zip([Vars]*nstn,range(nstn),[NAMES]*nstn,[channel]*nstn,[varnames]*nstn,[rcFile]*nstn)
+        args = zip([Vars]*nobs,range(nobs),[NAMES]*nobs,[channel]*nobs,[varnames]*nobs,[rcFile]*nobs)
         result = pool.map(unwrap_Vars_doMie,args)
 
         for r in result:
@@ -169,9 +169,15 @@ def computeMie(Vars, channel, varnames, rcFile, options):
             MieVars['g'].append(g)     
             
         if options.intensive:
+            MieVars['vol'] = []
+            MieVars['area'] = []
+            MieVars['refr'] = []
+            MieVars['refi'] = []
+            MieVars['reff'] = []    
+
             pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5))   
-            args = zip([Vars]*nstn,range(nstn),[NAMES]*nstn,[channel]*nstn,[varnames]*nstn,[rcFile]*nstn) 
-            result = pool.map(unwrap_Vars_doInt,args) 
+            args = zip([Vars]*nobs,range(nstn),[NAMES]*nobs,[channel]*nobs,[varnames]*nobs,[rcFile]*nobs) 
+            result = pool.map(unwrap_Vars_doMieInt,args) 
 
             for r in result:
                 vol, area, refr, refi, reff = r
@@ -325,7 +331,7 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
         this.units = MieVarsUnits[n]
         this.missing_value = MAPL_UNDEF
         if options.station:
-            this[:] = transpose(var,(0,2,1))
+            this[:] = transpose(var,(2,0,1))
         else:
             this[:] = transpose(var)
 
@@ -348,7 +354,7 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
             this.units = IntVarsUnits[name]
             this.missing_value = MAPL_UNDEF
             if options.station:
-                this[:] = transpose(var,(0,2,1))
+                this[:] = transpose(var,(2,0,1))
             else:
                 this[:] = transpose(var)            
 

@@ -119,8 +119,9 @@ class STN_VLIDORT(object):
 
         # Start out with all good obs        
         self.nstations = len(self.LONGITUDE)
-        self.nobs  = [len(self.tyme)]*self.nstations
-        self.iGood = [np.ones([len(self.tyme)]).astype(bool)]*self.nstations
+        self.ntyme    = len(self.tyme)
+        self.nobs  = [self.nstations]*self.ntyme
+        self.iGood = [np.ones([self.nstations]).astype(bool)]*self.ntyme
 
         if not extOnly:
             # Read in surface data
@@ -145,8 +146,8 @@ class STN_VLIDORT(object):
         # Calculate Scene Geometry
         self.calcAngles()
 
-        if self.nobs > 0:
-            # Land-Sea Mask
+        if any(self.nobs):
+            #Land-Sea Mask
             self.LandSeaMask()
 
     # --
@@ -171,16 +172,16 @@ class STN_VLIDORT(object):
         BPDFcoef[I] = MISSING
         nc.close()
 
-        for s in range(self.nstations):
-            self.iGood[s] = self.iGood[s] & (NDVI[s,:] != MISSING)
+        for s in range(self.ntyme):
+            self.iGood[s] = self.iGood[s] & (NDVI[:,s] != MISSING)
             self.nobs[s]  = np.sum(self.iGood[s])
 
         #BPDFparam(nparam,nch,nobs)
-        self.BPDFparam = [np.zeros([3,1,len(self.tyme)])]*self.nstations
-        for s in range(self.nstations):
-            self.BPDFparam[s][0,0,:] = 1.5
-            self.BPDFparam[s][1,0,:] = NDVI[s,:]
-            self.BPDFparam[s][2,0,:] = BPDFcoef[s,:]        
+        self.BPDFparam = [np.zeros([3,1,self.nstations])]*self.ntyme
+        for t in range(self.ntyme):
+            self.BPDFparam[t][0,0,:] = 1.5
+            self.BPDFparam[t][1,0,:] = NDVI[:,t]
+            self.BPDFparam[t][2,0,:] = BPDFcoef[:,t]        
 
     # ---
     def LandSeaMask(self):
@@ -203,14 +204,14 @@ class STN_VLIDORT(object):
         for sds in self.SDS_INV:
             self.__dict__[sds] = np.concatenate(self.__dict__[sds])            
 
-        for s in range(self.nstations):
+        for t in range(self.ntyme):
             if self.albedoType in LandAlbedos:
-                iGood = self.FRLAND[s,:] >= 0.99
+                iGood = self.FRLAND[:,0] >= 0.99
             else:
-                iGood = self.FRLAND[s,:] < 0.99
+                iGood = self.FRLAND[:,0] < 0.99
 
-            self.iGood[s] = self.iGood[s] & iGood
-            self.nobs[s]  = np.sum(self.iGood[s])
+            self.iGood[t] = self.iGood[t] & iGood
+            self.nobs[t]  = np.sum(self.iGood[t])
 
     # --
     def computeAtmos(self):
@@ -218,14 +219,14 @@ class STN_VLIDORT(object):
         self.ze = []
         self.te = []
         NAMES = ['AIRDENS','DELP','PS']
-        for s in range(self.nstations):
+        for t in range(self.ntyme):
             inVars = MieVARS()
             for sds in NAMES:
                 var = self.__dict__[sds]
                 if len(var.shape) == 3:
-                    inVars.__dict__[sds] = var[s,:,:]
+                    inVars.__dict__[sds] = var[:,t,:]
                 elif len(var.shape) == 2:
-                    inVars.__dict__[sds] = var[s,:]
+                    inVars.__dict__[sds] = var[:,t]
 
             pe, ze, te = getEdgeVars(inVars)
 
@@ -237,34 +238,38 @@ class STN_VLIDORT(object):
     def calcAngles(self):
         self.SZA   = []
         self.SAA   = []
-        nobs  = len(self.tyme)
-        for s in range(self.nstations):
-            CLAT = [self.LATITUDE[s]]*nobs
-            CLON = [self.LONGITUDE[s]]*nobs
-            
-            year  = [t.year for t in self.tyme]
-            month = [t.month for t in self.tyme]
-            day   = [t.day for t in self.tyme]
-            hour  = [t.hour for t in self.tyme]
-            minute = [t.minute for t in self.tyme]
-            second = [t.second for t in self.tyme]            
+        for t in self.tyme:
+            SZA = []
+            SAA = []
+            for s in range(self.nstations):
+                CLAT = self.LATITUDE[s]
+                CLON = self.LONGITUDE[s]
+                
+                year  = t.year 
+                month = t.month 
+                day   = t.day 
+                hour  = t.hour 
+                minute = t.minute 
+                second = t.second             
 
-            saa, sza = stnAngles_.sunangles(year,month,day,hour,minute,second,
-                                              CLAT,CLON,
-                                              0.0)
+                saa, sza = stnAngles_.sunangles(year,month,day,hour,minute,second,
+                                                  CLAT,CLON,
+                                                  0.0)
+                SZA.append(sza[0])
+                SAA.append(saa[0])
 
-            self.SZA.append(sza)
-            self.SAA.append(saa)
+            self.SZA.append(np.array(SZA))
+            self.SAA.append(np.array(SAA))
 
 
         # RAA is zero when pointing at the sun
-        self.RAA = [np.zeros([nobs])]*self.nstations
+        self.RAA = [np.zeros([self.nstations])]*self.ntyme
 
         # Limit SZAs
-        for s in range(self.nstations):
-            iGood = self.SZA[s] < 80
-            self.iGood[s] = self.iGood[s] & iGood
-            self.nobs[s] = np.sum(self.iGood[s])     
+        for t in range(self.ntyme):
+            iGood = self.SZA[t] < 80
+            self.iGood[t] = self.iGood[t] & iGood
+            self.nobs[t] = np.sum(self.iGood[t])     
 
     #---
     def readSampledGEOS(self):
@@ -323,16 +328,15 @@ class STN_VLIDORT(object):
 
         missing_value = nc.variables[sds].missing_value
         nc.close()
-
-        nobs = len(self.tyme)
+        
         # Interpolate if necessary
         if chs not in MODIS_channels:
             X = np.array([chmin,chmax]).astype('int')
             for R in ['Riso','Rgeo','Rvol']:
                 sds = R + chs
-                self.__dict__[sds] = np.empty([self.nstations,nobs])
+                self.__dict__[sds] = np.empty([self.nstations,self.ntyme])
                 for s in range(self.nstations):
-                    for i in range(nobs):
+                    for i in range(self.ntyme):
                         Y = np.array([self.__dict__[R+chmin][s,i],self.__dict__[R+chmax][s,i]])
                         if missing_value in Y:
                             self.__dict__[sds][s,i] = missing_value
@@ -346,29 +350,29 @@ class STN_VLIDORT(object):
         Riso = self.__dict__['Riso'+chs]
         Rgeo = self.__dict__['Rgeo'+chs]
         Rvol = self.__dict__['Rvol'+chs]
-        for s in range(self.nstations):
-            iGood = (Riso[s,:] != missing_value) & (Rgeo[s,:] != missing_value) & (Rvol[s,:] != missing_value)
-            self.iGood[s] = self.iGood[s] & iGood
-            self.nobs[s] = np.sum(self.iGood[s])
+        for t in range(self.ntyme):
+            iGood = (Riso[:,t] != missing_value) & (Rgeo[:,t] != missing_value) & (Rvol[:,t] != missing_value)
+            self.iGood[t] = self.iGood[t] & iGood
+            self.nobs[t] = np.sum(self.iGood[t])
 
         for sds in SDS:
-            self.__dict__[sds].shape = (1,1,self.nstations,nobs)
+            self.__dict__[sds].shape = (1,1,self.nstations,self.ntyme)
 
         # [nkernel,nch,nobs]
         self.kernel_wt = []
-        for s in range(self.nstations):
-            kernel_wt = np.append(self.__dict__['Riso'+chs][:,:,s,:],self.__dict__['Rgeo'+chs][:,:,s,:],axis=0)
-            kernel_wt = np.append(kernel_wt,self.__dict__['Rvol'+chs][:,:,s,:],axis=0)
+        for t in range(self.ntyme):
+            kernel_wt = np.append(self.__dict__['Riso'+chs][:,:,:,t],self.__dict__['Rgeo'+chs][:,:,:,t],axis=0)
+            kernel_wt = np.append(kernel_wt,self.__dict__['Rvol'+chs][:,:,:,t],axis=0)
             self.kernel_wt.append(kernel_wt)
 
-        param1 = np.array([2]*nobs)
-        param2 = np.array([1]*nobs)
+        param1 = np.array([2]*self.nstations)
+        param2 = np.array([1]*self.nstations)
 
-        param1.shape = (1,1,nobs)
-        param2.shape = (1,1,nobs)
+        param1.shape = (1,1,self.nstations)
+        param2.shape = (1,1,self.nstations)
 
         # [nparam,nch,nobs]
-        self.RTLSparam = [np.append(param1,param2,axis=0)]*self.nstations
+        self.RTLSparam = [np.append(param1,param2,axis=0)]*self.ntyme
 
     # --- 
     def readHybridMODISBRDF(self):
@@ -402,15 +406,14 @@ class STN_VLIDORT(object):
         self.__dict__[lSDS] = nc.variables[lSDS][:]
         nc.close()
 
-        nobs = len(self.tyme)
         # Interpolate 
         X = np.array([388,470])
         #Riso
         sds = 'Riso' + chs
         R   = 'Riso' + MODISchs
-        self.__dict__[sds] = np.empty([nstations,nobs])
+        self.__dict__[sds] = np.empty([nstations,self.ntyme])
         for s in range(self.nstations):
-            for i in range(nobs):
+            for i in range(self.ntyme):
                 Y = np.array([self.__dict__[lSDS][s,i],self.__dict__[R][s,i]])
                 if missing_value in Y:
                     self.__dict__[sds][s,i] = missing_value
@@ -421,9 +424,9 @@ class STN_VLIDORT(object):
         #Rgeo and Rvol
         for R in 'Rgeo','Rvol':
             sds = R + chs
-            self.__dict__[sds] = np.empty([self.nstations,nobs])
+            self.__dict__[sds] = np.empty([self.nstations,self.ntyme])
             for s in range(self.nstations):
-                for i in range(nobs):
+                for i in range(self.ntyme):
                     Y = np.array([0.0,self.__dict__[R+MODISchs][s,i]])
                     if missing_value in Y:
                         self.__dict__[sds][s,i] = missing_value
@@ -437,29 +440,29 @@ class STN_VLIDORT(object):
         Riso = self.__dict__['Riso'+chs]
         Rgeo = self.__dict__['Rgeo'+chs]
         Rvol = self.__dict__['Rvol'+chs]
-        for s in range(self.nstations):
-            iGood = (Riso[s,:] != missing_value) & (Rgeo[s,:] != missing_value) & (Rvol[s,:] != missing_value)
-            self.iGood[s] = self.iGood[s] & iGood
-            self.nobs[s] = np.sum(self.iGood[s])
+        for t in range(self.ntyme):
+            iGood = (Riso[:,t] != missing_value) & (Rgeo[:,t] != missing_value) & (Rvol[:,t] != missing_value)
+            self.iGood[t] = self.iGood[t] & iGood
+            self.nobs[t] = np.sum(self.iGood[t])
 
         for sds in SDS:
-            self.__dict__[sds].shape = (1,1,nstations,nobs)
+            self.__dict__[sds].shape = (1,1,nstations,self.ntyme)
 
         # [nkernel,nch,nobs]
         self.kernel_wt = []
-        for s in range(self.nstations):
-            kernel_wt = np.append(self.__dict__['Riso'+chs][:,:,s,:],self.__dict__['Rgeo'+chs][:,:,s,:],axis=0)
-            kernel_wt = np.append(kernel_wt,self.__dict__['Rvol'+chs][:,:,s,:],axis=0)
+        for t in range(self.ntyme):
+            kernel_wt = np.append(self.__dict__['Riso'+chs][:,:,:,t],self.__dict__['Rgeo'+chs][:,:,:,t],axis=0)
+            kernel_wt = np.append(kernel_wt,self.__dict__['Rvol'+chs][:,:,:,t],axis=0)
             self.kernel_wt.append(kernel_wt)
 
-        param1 = np.array([2]*nobs)
-        param2 = np.array([1]*nobs)
+        param1 = np.array([2]*self.nstations)
+        param2 = np.array([1]*self.nstations)
 
-        param1.shape = (1,1,nobs)
-        param2.shape = (1,1,nobs)
+        param1.shape = (1,1,self.nstations)
+        param2.shape = (1,1,self.nstations)
 
         # [nparam,nch,nobs]
-        self.RTLSparam = [np.append(param1,param2,axis=0)]*self.nstations
+        self.RTLSparam = [np.append(param1,param2,axis=0)]*self.ntyme
 
     def readSampledLER(self):
         """
@@ -481,7 +484,6 @@ class STN_VLIDORT(object):
             self.__dict__[sds] = np.squeeze(nc.variables[sds][:])
 
         missing_value = nc.variables[sds].missing_value
-        nobs = len(self.tyme)
         nc.close()
 
         sds = 'SRFLER'+chs
@@ -494,9 +496,9 @@ class STN_VLIDORT(object):
             chmax = LER_channels[dch>0][chmax]            
             X = np.array([chmin,chmax]).astype('int')
 
-            self.__dict__[sds] = np.empty([self.nstations,nobs])
+            self.__dict__[sds] = np.empty([self.nstations,self.ntyme])
             for s in range(self.nstations):
-                for i in range(nobs):
+                for i in range(self.ntyme):
                     Y = np.array([self.__dict__['SRFLER'+chmin][s,i],self.__dict__['SRFLER'+chmax][s,i]])
                     if missing_value in Y:
                         self.__dict__[sds][s,i] = missing_value
@@ -506,17 +508,17 @@ class STN_VLIDORT(object):
 
 
         # Check for missing values
-        for s in range(self.nstations):
-            iGood = (self.__dict__[sds][s,:] != missing_value) 
-            self.iGood[s] = self.iGood[s] & iGood
-            self.nobs[s] = np.sum(self.iGood[s])
+        for t in range(self.ntyme):
+            iGood = (self.__dict__[sds][:,t] != missing_value) 
+            self.iGood[t] = self.iGood[t] & iGood
+            self.nobs[t] = np.sum(self.iGood[t])
 
         # (nobs,nch)
-        self.__dict__[sds].shape = (self.nstations,nobs,1) 
+        self.__dict__[sds].shape = (self.nstations,self.ntyme,1) 
 
         self.albedo = []
-        for s in range(self.nstations):
-            self.albedo.append(self.__dict__[sds][s,:,:])
+        for t in range(self.ntyme):
+            self.albedo.append(self.__dict__[sds][:,t,:])
 
     #---
     def computeMie(self):
@@ -529,7 +531,7 @@ class STN_VLIDORT(object):
         self.pmom = []
 
         pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5))     
-        args = zip([self]*self.nstations,range(self.nstations))
+        args = zip([self]*self.ntyme,range(self.ntyme))
         result = pool.map(unwrap_self_doMie,args)
         
         for r in result:
@@ -540,15 +542,15 @@ class STN_VLIDORT(object):
             self.pmom.append(pmom)  #(km,nch,nobs,nMom,nPol)
         
 
-    def doMie(self,s):
+    def doMie(self,t):
         NAMES = self.AERNAMES + ['PS','DELP','RH','AIRDENS']
         inVars = MieVARS()
         for sds in NAMES:
             var = self.__dict__[sds]
             if len(var.shape)==3:
-                inVars.__dict__[sds] = var[s,:,:]
+                inVars.__dict__[sds] = var[:,t,:]
             elif len(var.shape) ==2:
-                inVars.__dict__[sds] = var[s,:]
+                inVars.__dict__[sds] = var[:,t]
 
         tau,ssa,g,pmom = getAOPvector(inVars,self.channel,
                                  vnames=self.AERNAMES,
@@ -583,7 +585,7 @@ class STN_VLIDORT(object):
             os.makedirs(os.path.dirname(outFile))
 
         cmd = './ext_sampler.py {} '.format(Options)  
-
+        print cmd
         if os.system(cmd):
             raise ValueError, "ext_sampler.py failed for %s "%(self.inFile.replace('%col',col))       
 
@@ -595,7 +597,7 @@ class STN_VLIDORT(object):
 
         # index of stations with good obs
         self.nobs = np.array(self.nobs)
-        stations  = range(self.nstations)[self.nobs>0]
+        tymes     = np.arange(self.ntyme)[self.nobs>0]
 
         self.I = []
         self.Q = []
@@ -603,27 +605,26 @@ class STN_VLIDORT(object):
         self.reflectance = []
         self.surf_reflectance = []
         self.ROT = []
-        for s in stations:
-            sza  = self.SZA[s][self.iGood[s]]
+        for t in tymes:            
+            sza  = self.SZA[t][self.iGood[t]]
             vza  = sza
-            raa  = self.RAA[s][self.iGood[s]]
+            raa  = self.RAA[t][self.iGood[t]]
 
-            tau = self.tau[s][:,:,self.iGood[s]]
-            ssa = self.ssa[s][:,:,self.iGood[s]]
-            pmom = self.pmom[s][:,:,self.iGood[s],:,:]
-            pe   = self.pe[s][:,self.iGood[s]]
-            ze   = self.ze[s][:,self.iGood[s]]
-            te   = self.te[s][:,self.iGood[s]]
+            tau = self.tau[t][:,:,self.iGood[t]]
+            ssa = self.ssa[t][:,:,self.iGood[t]]
+            pmom = self.pmom[t][:,:,self.iGood[t],:,:]
+            pe   = self.pe[t][:,self.iGood[t]]
+            ze   = self.ze[t][:,self.iGood[t]]
+            te   = self.te[t][:,self.iGood[t]]
 
             # Initiate output arrays
-            ntime   = len(self.tyme)
             nlev    = tau.shape[0]
-            self.I_ = np.ones([ntime])*MISSING
-            self.Q_ = np.ones([ntime])*MISSING
-            self.U_ = np.ones([ntime])*MISSING
-            self.reflectance_ = np.ones([ntime])*MISSING
-            self.surf_reflectance_ = np.ones([ntime])*MISSING
-            self.ROT_ = np.ones([ntime,nlev])*MISSING
+            self.I_ = np.ones([self.nstations])*MISSING
+            self.Q_ = np.ones([self.nstations])*MISSING
+            self.U_ = np.ones([self.nstations])*MISSING
+            self.reflectance_ = np.ones([self.nstations])*MISSING
+            self.surf_reflectance_ = np.ones([self.nstations])*MISSING
+            self.ROT_ = np.ones([self.nstations,nlev])*MISSING
             
             # Get VLIDORT wrapper name from dictionary
             vlidortWrapper = WrapperFuncs[self.albedoType]
@@ -631,8 +632,8 @@ class STN_VLIDORT(object):
             # run VLIDORT                
             # get args list for each surface model
             if self.albedoType == 'MODIS_BRDF':
-                kernel_wt = self.kernel_wt[s][:,:,self.iGood[s]]
-                param     = self.RTLSparam[s][:,:,self.iGood[s]]                
+                kernel_wt = self.kernel_wt[t][:,:,self.iGood[t]]
+                param     = self.RTLSparam[t][:,:,self.iGood[t]]                
                 
                 args = [self.channel,tau, ssa, pmom, 
                         pe, ze, te, 
@@ -646,23 +647,23 @@ class STN_VLIDORT(object):
                 
             elif self.albedoType == 'MODIS_BRDF_BPDF':
                 # For albedo
-                kernel_wt = self.kernel_wt[s][:,:,self.iGood[s]]
-                RTLSparam = self.RTLSparam[s][:,:,self.iGood[s]] 
-                RTLSparam = np.append(RTLSparam,np.zeros([1,1,self.nobs[s]]),axis=0) 
+                kernel_wt = self.kernel_wt[t][:,:,self.iGood[t]]
+                RTLSparam = self.RTLSparam[t][:,:,self.iGood[t]] 
+                RTLSparam = np.append(RTLSparam,np.zeros([1,1,self.nobs[t]]),axis=0) 
 
                 # For BPDF
-                BPDFparam = self.BPDFparam[s][:,:,self.iGood[s]]
+                BPDFparam = self.BPDFparam[t][:,:,self.iGood[t]]
 
                 # Loop through one by one
                 # Some land covers do not have polarization (i.e. urban)
-                I = np.zeros([self.nobs[s],1])
-                Q = np.zeros([self.nobs[s],1])
-                U = np.zeros([self.nobs[s],1])
-                reflectance = np.zeros([self.nobs[s],1])
-                surf_reflectance = np.zeros([self.nobs[s],1])
-                ROT = np.zeros([nlev,self.nobs[s],1])
+                I = np.zeros([self.nobs[t],1])
+                Q = np.zeros([self.nobs[t],1])
+                U = np.zeros([self.nobs[t],1])
+                reflectance = np.zeros([self.nobs[t],1])
+                surf_reflectance = np.zeros([self.nobs[t],1])
+                ROT = np.zeros([nlev,self.nobs[t],1])
 
-                for p in range(self.nobs[s]):
+                for p in range(self.nobs[t]):
                     if BPDFparam[2,0,p] == MISSING: 
                         args = [self.channel,
                                 tau[:,:,p:p+1], 
@@ -711,7 +712,7 @@ class STN_VLIDORT(object):
                     ROT[:,p:p+1,:] = ROT_
             
             elif self.albedoType == 'LAMBERTIAN':
-                albedo = self.albedo[s][self.iGood[s],:]
+                albedo = self.albedo[t][self.iGood[t],:]
                 
                 args = [self.channel,tau, ssa, pmom, 
                         pe, ze, te, 
@@ -725,12 +726,12 @@ class STN_VLIDORT(object):
                 surf_reflectance = albedo
 
             # Store values in initialized arrays
-            self.ROT_[self.iGood[s],:] = np.squeeze(ROT).T
-            self.I_[self.iGood[s]] = np.squeeze(I)
-            self.reflectance_[self.iGood[s]] = np.squeeze(reflectance)
-            self.surf_reflectance_[self.iGood[s]] = np.squeeze(surf_reflectance)
-            self.Q_[self.iGood[s]] = np.squeeze(Q)
-            self.U_[self.iGood[s]] = np.squeeze(U) 
+            self.ROT_[self.iGood[t],:] = np.squeeze(ROT).T
+            self.I_[self.iGood[t]] = np.squeeze(I)
+            self.reflectance_[self.iGood[t]] = np.squeeze(reflectance)
+            self.surf_reflectance_[self.iGood[t]] = np.squeeze(surf_reflectance)
+            self.Q_[self.iGood[t]] = np.squeeze(Q)
+            self.U_[self.iGood[t]] = np.squeeze(U) 
 
             self.I.append(self.I_)
             self.Q.append(self.Q_)
@@ -758,7 +759,6 @@ class STN_VLIDORT(object):
         nc.institution = 'NASA/Goddard Space Flight Center'
         nc.source = 'Global Model and Assimilation Office'
         nc.history = 'VLIDORT simulation run on sampled GEOS-5'
-        nc.satangles  = self.VZA
         nc.references = 'n/a'
         nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
         nc.Conventions = 'CF'
@@ -786,7 +786,7 @@ class STN_VLIDORT(object):
         _copyVar(nctrj,nc,u'lev',dtype='f4',zlib=False,verbose=self.verbose)       
         _copyVar(nctrj,nc,u'stnLon',dtype='f4',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'stnLat',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'stnName',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'stnName',dtype='S1',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
 
         nctrj.close()
@@ -795,13 +795,13 @@ class STN_VLIDORT(object):
         sza.long_name     = "solar zenith angle (SZA)"
         sza.missing_value = MISSING
         sza.units         = "degrees"
-        sza[:]            = np.array(self.SZA)
+        sza[:]            = np.array(self.SZA).T
 
         saa = nc.createVariable('solar_azimuth','f4',('station','time',),zlib=zlib)
         saa.long_name     = "solar azimuth angle (SAA)"
         saa.missing_value = MISSING
         saa.units         = "degrees clockwise from North"
-        saa[:]            = np.array(self.SAA)
+        saa[:]            = np.array(self.SAA).T
 
 
         # Write VLIDORT Outputs
@@ -811,41 +811,44 @@ class STN_VLIDORT(object):
         ref.long_name     = '%.2f nm reflectance at the top of the atmosphere' %self.channel
         ref.missing_value = MISSING
         ref.units         = "None"
-        ref[:]            = np.array(self.reflectance)
+        ref[:]            = np.array(self.reflectance).T
 
         i = nc.createVariable('I','f4',('station','time',),zlib=zlib,fill_value=MISSING)
         i.standard_name = '%.2f nm TOA I' %self.channel
         i.long_name     = '%.2f nm intensity at the top of the atmosphere' %self.channel
         i.missing_value = MISSING
         i.units         = "W m-2 sr-1 nm-1"
-        i[:]            = np.array(self.I)
+        i[:]            = np.array(self.I).T
 
         q = nc.createVariable('Q','f4',('station','time',),zlib=zlib,fill_value=MISSING)
         q.standard_name = '%.2f nm TOA Q' %self.channel
         q.long_name     = '%.2f nm Q-component of the stokes vector at the top of the atmopshere' %self.channel
         q.missing_value = MISSING
         q.units         = "W m-2 sr-1 nm-1"
-        q[:]            = np.array(self.Q)
+        q[:]            = np.array(self.Q).T
 
         u = nc.createVariable('U','f4',('station','time',),zlib=zlib,fill_value=MISSING)
         u.standard_name = '%.2f nm TOA U' %self.channel
         u.long_name     = '%.2f nm U-component of the stokes vector at the top of the atmopshere' %self.channel
         u.missing_value = MISSING
         u.units         = "W m-2 sr-1 nm-1"
-        u[:]            = np.array(self.U)
+        u[:]            = np.array(self.U).T
 
         sref = nc.createVariable('surf_reflectance','f4',('station','time',),zlib=zlib,fill_value=MISSING)
         sref.standard_name = '%.2f nm Surface Reflectance' %self.channel
         sref.long_name     = '%.2f nm Bi-Directional Surface Reflectance' %self.channel
         sref.missing_value = MISSING
         sref.units         = "None"
-        sref[:]            = np.array(self.surf_reflectance)
+        sref[:]            = np.array(self.surf_reflectance).T
 
         rot = nc.createVariable('ROT','f4',('station','time','lev',),zlib=zlib,fill_value=MISSING)
         rot.long_name = '%.2f nm Rayleigh Optical Thickness' %self.channel
         rot.missing_value = MISSING
         rot.units         = "None"
-        rot[:]            = np.array(self.ROT)
+        b = np.empty([self.nstations,self.ntyme,km])
+        for t in range(self.ntyme):
+            b[:,t,:] = self.ROT[t]
+        rot[:]            = b
 
         # Close the file
         # --------------
@@ -873,17 +876,17 @@ if __name__ == "__main__":
     inFile       = '{}/aeronet-g5nr.lb2.%col.{}_{}z.nc4'.format(inDir,nymd,hour)
     invDir       = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelB/invariant'
     invFile      = '{}/aeronet-g5nr.lb2.%col.nc4'.format(invDir)
-    brdfDir      = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/BRDF/MCD43C1/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    brdfDir      = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelB/surface/BRDF/MCD43C1/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     brdfFile     = '{}/aeronet-g5nr.lb2.brdf.{}_{}z.nc4'.format(brdfDir,nymd,hour)
-    ndviDir      = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/BPDF/NDVI/MYD13C2/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    ndviDir      = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelB/surface/BPDF/NDVI/MYD13C2/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     ndviFile     = '{}/aeronet-g5nr.lb2.ndvi.{}_{}z.nc4'.format(ndviDir,nymd,hour)
-    lcDir        = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/BPDF/LAND_COVER/MCD12C1/051/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    lcDir        = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     lcFile       = '{}/aeronet-g5nr.lb2.land_cover.{}_{}z.nc4'.format(lcDir,nymd,hour)    
     albedoType   = 'MODIS_BRDF_BPDF'
 
     channel  = 470
     chd      = get_chd(channel)
-    outDir    = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelC2/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    outDir    = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelC/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     outFile   = '{}/aeronet-g5nr.vlidort.vector.MCD43C.{}_{}z_{}nm.nc4'.format(outDir,nymd,hour,chd)
     
     rcFile   = 'Aod_EOS.rc'

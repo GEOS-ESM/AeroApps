@@ -24,9 +24,9 @@ import numpy         as np
 if __name__ == "__main__":
 
     # Defaults
-    DT_hours = 24
+    DT_hours = 1
     algo     = "linear"
-    nproc    = 8
+    nproc    = 1
 
     parser = argparse.ArgumentParser()
 
@@ -77,7 +77,9 @@ if __name__ == "__main__":
                       " --format=NETCDF4_CLASSIC"      + \
                       " --isoTime"  +     \
                       " --dt_secs=3600"  +\
-                      " --algorithm=" + args.algo
+                      " --algorithm=" + args.algo +\
+                      " --DT_hours=" + DT_hours +\
+                      " --nproc=" + nproc
 
         if args.verbose:
             Options += " --verbose" 
