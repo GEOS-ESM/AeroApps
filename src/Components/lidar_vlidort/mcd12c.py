@@ -185,7 +185,8 @@ class MCD12C(object):
             for LAT,LON in zip(lat,lon): pts.append([LAT,LON])
 
             for sds in SDS:
-                interpFunc = RegularGridInterpolator((self.lat, self.lon), self.__dict__[SDS[sds]],method='nearest')
+                interpFunc = RegularGridInterpolator((self.lat, self.lon), self.__dict__[SDS[sds]],
+                                method='nearest',bounds_error=False,fill_value=None)
                 self.__dict__['trj'+SDS[sds]][Ityme] = interpFunc(pts)      
 
 
