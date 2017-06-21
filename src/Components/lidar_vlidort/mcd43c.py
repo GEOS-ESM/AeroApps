@@ -217,7 +217,8 @@ class MCD43C(object):
                     for LAT,LON in zip(lat,lon): pts.append([LAT,LON])
 
                     for sds in SDS:
-                        interpFunc = RegularGridInterpolator((self.lat, self.lon), self.__dict__[SDS[sds]],method='nearest')
+                        interpFunc = RegularGridInterpolator((self.lat, self.lon), self.__dict__[SDS[sds]],
+                                        method='nearest',bounds_error=False,fill_value=None)
                         self.brdf.__dict__[SDS[sds]][Ityme] = interpFunc(pts)
         else:
             for ut in utyme:
@@ -234,7 +235,8 @@ class MCD43C(object):
                 for LAT,LON in zip(lat,lon): pts.append([LAT,LON])
 
                 for sds in SDS:
-                    interpFunc = RegularGridInterpolator((self.lat, self.lon), self.__dict__[SDS[sds]],method='nearest')
+                    interpFunc = RegularGridInterpolator((self.lat, self.lon), self.__dict__[SDS[sds]],
+                                    method='nearest',bounds_error=False,fill_value=None)
                     self.brdf.__dict__[SDS[sds]][Ityme] = interpFunc(pts)      
 
 
