@@ -65,17 +65,28 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
       
                 z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
                          Transpose=True,squeeze=squeeze)
-            elif (options.doNC4):
-                tt = array([t]*len(stnLon))
-                z = f.nc4.sample(name,stnLon,stnLat,tt,algorithm=options.algo,
-                         Transpose=True,squeeze=True)                 
             else:
-                z = []
-                for lon,lat in zip(stnLon,stnLat):
-                    zz = f.sample(name,array([lon]),array([lat]),array([t]),algorithm=options.algo,
-                         Transpose=True,squeeze=True)     
-                    z.append(zz)  
-                z = array(z) 
+                tt = array([t]*len(stnLon))
+                # hack for out of bounds
+                lonmin,lonmax = f.lon.min(),f.lon.max()
+                latmin,latmax = f.lat.min(),f.lat.max()
+                I = (stnLon >= lonmin) & (stnLon <= lonmax) & (stnLat >= latmin) & (stnLat <= latmax)
+                zz = f.nc4.sample(name,stnLon[I],stnLat[I],tt[I],algorithm=options.algo,
+                         Transpose=True,squeeze=True)      
+                if nz>1:
+                    z = MAPL_UNDEF * ones((ns,nz))
+                    z[I,:] = zz
+                else:
+                    z = MAPL_UNDEF * ones(ns)
+                    z[I] = zz
+
+            # else:
+            #     z = []
+            #     for lon,lat in zip(stnLon,stnLat):
+            #         zz = f.sample(name,array([lon]),array([lat]),array([t]),algorithm=options.algo,
+            #              Transpose=True,squeeze=True)     
+            #         z.append(zz)  
+            #     z = array(z) 
         except:
             print "    - Interpolation failed for <%s> on %s"%(V.name,str(t))
             if nz>1:
