@@ -776,20 +776,24 @@ class GFIOctl(object):
             shp = [N,kount]
         else:
             shp = [N,]
-        v  = zeros(shp,dtype=float32)
-        v1, v2 = v.copy(), v.copy() # scratch space
-        n = 0
-        for now in Times[:-1]:
-            v1[I[n]], v2[I[n+1]] = V[n], V[n+1]
-            j = (time>=now) & (time<=now+dt)
-            dt_secs = ((now+dt)-now).total_seconds()
-            if any(j): 
-                a = array([r.total_seconds()/dt_secs for r in time[j]-now],dtype=float32) 
-                if len(shp)==2: # has vertical levels
-                    a = tile(a,(shp[1],1)).T # replicate array
-                v[j] = (1-a) * v1[j] + a * v2[j]
-            n += 1
-
+        if len(Times) > 1:
+          v  = zeros(shp,dtype=float32)
+          v1, v2 = v.copy(), v.copy() # scratch space
+          n = 0
+          for now in Times[:-1]:
+              v1[I[n]], v2[I[n+1]] = V[n], V[n+1]
+              j = (time>=now) & (time<=now+dt)
+              dt_secs = ((now+dt)-now).total_seconds()
+              if any(j): 
+                  a = array([r.total_seconds()/dt_secs for r in time[j]-now],dtype=float32) 
+                  if len(shp)==2: # has vertical levels
+                      a = tile(a,(shp[1],1)).T # replicate array
+                  v[j] = (1-a) * v1[j] + a * v2[j]
+              n += 1
+        else:
+          v = V[0]
+          v.shape = shp
+          
 	if Transpose == False: v = v.T # back to GFIO's (km,nobs)
         if squeeze == True:    v = v.squeeze()
 
