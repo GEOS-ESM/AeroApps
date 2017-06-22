@@ -127,7 +127,10 @@ if __name__ == "__main__":
                         help="do a dry run (default=False).")    
 
     parser.add_argument("-n", "--nproc",default=nproc,type=int,
-                        help="Number of processors (default=%i)."%nproc)    
+                        help="Number of processors (default=%i)."%nproc)   
+
+    parser.add_argument("-N", "--doNC4",action="store_true", 
+                        help="use NC4 sampler")                             
 
     args = parser.parse_args()
 
@@ -183,6 +186,8 @@ if __name__ == "__main__":
 
                 if args.verbose:
                     Options += " --verbose" 
+                if args.doNC4:
+                    Options += " --doNC4" 
 
                 cmd = './g5nr_stn_sampler.py {} {} {} {} {}'.format(Options,stnFile,rc,date.isoformat(),edate.isoformat())
                 cmds.append(cmd)
