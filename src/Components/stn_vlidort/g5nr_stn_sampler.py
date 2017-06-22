@@ -58,8 +58,6 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
     n = 0
     for t in tyme:
         try:
-            # z = f.nc4.interpXY(name,stnLon,stnLat,t,algorithm=options.algo,
-            #              Transpose=True,squeeze=squeeze) 
             dtF = (f.dt+f.tbeg-f.tbeg).total_seconds()
             if (dtF == options.dt_secs):
       
@@ -80,13 +78,6 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
                     z = MAPL_UNDEF * ones(ns)
                     z[I] = zz
 
-            # else:
-            #     z = []
-            #     for lon,lat in zip(stnLon,stnLat):
-            #         zz = f.sample(name,array([lon]),array([lat]),array([t]),algorithm=options.algo,
-            #              Transpose=True,squeeze=True)     
-            #         z.append(zz)  
-            #     z = array(z) 
         except:
             print "    - Interpolation failed for <%s> on %s"%(V.name,str(t))
             if nz>1:
@@ -285,11 +276,6 @@ if __name__ == "__main__":
     parser.add_option("-n", "--dryrun",
                       action="store_true", dest="dryrun",
                       help="Dry-run mode: fill variables with zeros.")
-
-    parser.add_option("-N", "--doNC4",
-                      action="store_true", dest="doNC4",
-                      help="use NC4 sampler")    
-
 
     (options, args) = parser.parse_args()
     
