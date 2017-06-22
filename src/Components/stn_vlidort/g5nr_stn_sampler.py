@@ -15,6 +15,7 @@ else:
 from trj_sampler  import getVars
 from stn_sampler  import StnVar, Open, getStations
 from numpy import zeros, ones, arange, array
+import numpy as np
 
 from optparse        import OptionParser
 from datetime        import datetime, timedelta
@@ -50,7 +51,7 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
         name = V.name.lower() # GDS always uses lower case
     else:
         name = V.name
-    if nz>0:
+    if nz>1:
         Z = zeros((ns,nt,nz))
     else:
         Z = zeros((ns,nt))
@@ -64,6 +65,10 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
       
                 z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
                          Transpose=True,squeeze=squeeze)
+            elif (options.doNC4):
+                tt = array([t]*len(stnLon))
+                z = f.nc4.sample(name,stnLon,stnLat,tt,algorithm=options.algo,
+                         Transpose=True,squeeze=True)                 
             else:
                 z = []
                 for lon,lat in zip(stnLon,stnLat):
@@ -73,16 +78,19 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
                 z = array(z) 
         except:
             print "    - Interpolation failed for <%s> on %s"%(V.name,str(t))
-            if nz>0:
+            if nz>1:
                 z = MAPL_UNDEF * ones((ns,nz))
             else:
                 z = MAPL_UNDEF * ones(ns)
 
-        if nz>0:
+        if nz>1:
             Z[:,n,:] = z
         else:
             Z[:,n] = z
         n += 1
+
+        if np.isnan(Z).any():
+            Z[np.isnan(Z)] = MAPL_UNDEF
         Z[abs(Z)>MAPL_UNDEF/1000.] = MAPL_UNDEF # detect undef contaminated interp
     return Z
 
@@ -266,6 +274,10 @@ if __name__ == "__main__":
     parser.add_option("-n", "--dryrun",
                       action="store_true", dest="dryrun",
                       help="Dry-run mode: fill variables with zeros.")
+
+    parser.add_option("-N", "--doNC4",
+                      action="store_true", dest="doNC4",
+                      help="use NC4 sampler")    
 
 
     (options, args) = parser.parse_args()
