@@ -93,7 +93,9 @@ for var in ( 'ScatteringAngle','GlintAngle',
 
 # Translate Targets between ANET and MODIS classes
 # ------------------------------------------------
-TranslateTarget = dict ( aTau470 = ( 'aod_', 470 ),
+TranslateTarget = dict ( aTau440 = ( 'aod_', 440 ),
+                         aTau470 = ( 'aod_', 470 ),
+                         aTau500 = ( 'aod_', 500 ),
                          aTau550 = ( 'aod_', 550 ),
                          aTau660 = ( 'aod_', 660 ),
                          aTau870 = ( 'aod_', 870 ),
@@ -426,11 +428,22 @@ class MxD04_NNR(MxD04_L2):
         # ---------------------
         targets = self.net(self._getInputs())
 
+        # Targets do not have to be in MODIS retrieval
+        # ----------------------------------------------
+        for i,targetName in enumerate(self.net.TargetNames):
+            name, ch = TranslateTarget[targetName]
+            try:
+                k = list(self.channels).index(ch) # index of channel            
+            except:
+                # add new target channel to end
+                self.channels += (ch,)
+                self.aod  = np.append(self.aod,MISSING*ones((self.nobs,1)),axis=1)
+                self.aod_ = np.append(self.aod_,MISSING*ones((self.nobs,1)),axis=1)
+
         # Replace targets with unbiased values
         # ------------------------------------
-        i = 0
         self.channels_ = [] # channels being revised
-        for targetName in self.net.TargetNames:
+        for i,targetName in enumerate(self.net.TargetNames):
             name, ch = TranslateTarget[targetName]
             if self.verbose>0:
                 if self.net.laod:
@@ -446,7 +459,6 @@ class MxD04_NNR(MxD04_L2):
 
             self.__dict__[name][self.iGood,k] = result
 
-            i += 1 
 
         return result
 
