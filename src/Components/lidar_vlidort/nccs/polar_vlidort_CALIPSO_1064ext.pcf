@@ -1,0 +1,18 @@
+# MULTIANGLE POLARIMETER SIMULATION
+    inDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/CALIPSO/LevelB/Y%year/M%month
+    inFile       = calipso-g5nr.lb2.%col.%nymd_%hourz.nc4
+
+    albedoType   = None
+
+    outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/CALIPSO/LevelC/Y%year/M%month
+    outFile      = None
+
+    channel      = 1064    
+    rcFile       = Aod_EOS.rc
+
+    VZA          = None
+    HGT          = None
+    
+    DO_VLIDORT   = NO
+    DO_EXT       = YES
+# MULTIANGLE POLARIMETER SIMULATION
