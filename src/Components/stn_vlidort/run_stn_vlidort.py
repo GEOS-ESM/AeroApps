@@ -49,7 +49,8 @@ if __name__ == "__main__":
     # Parse prep config
     # -----------------
     cf             = Config(args.prep_config,delim=' = ')
-    inTemplate     = cf('inDir')     + '/' + cf('inFile')         
+    inTemplate     = cf('inDir')     + '/' + cf('inFile')    
+    invFile        = cf('invDir')    + '/' + cf('invFile')         
     outTemplate    = cf('outDir')    + '/' + cf('outFile')
     channel        = int(cf('channel'))
     rcFile         = cf('rcFile')
@@ -105,7 +106,7 @@ if __name__ == "__main__":
         hour = str(date.hour).zfill(2)    
 
         inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
-        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
+        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel))
 
         if brdfTemplate is None:
             brdfFile = None
@@ -133,13 +134,13 @@ if __name__ == "__main__":
         print '>>>albedoType:',cf('albedoType')
         print '>>>channel:   ',channel
         print '>>>brdfFile:  ',brdfFile
-        print '>>>ndviFile:  ',ndviFile,
-        print '>>>lcFile:    ',lcFile,
-        print '>>>lerFile    ',lerFile,
+        print '>>>ndviFile:  ',ndviFile
+        print '>>>lcFile:    ',lcFile
+        print '>>>lerFile    ',lerFile
         print '>>>verbose:   ',args.verbose
         print '++++End of arguments+++'
         if not args.dryrun:
-            vlidort = STN_VLIDORT(inFile,outFile,rcFile,
+            vlidort = STN_VLIDORT(inFile,invFile,outFile,rcFile,
                                     cf('albedoType'),
                                     channel,
                                     brdfFile=brdfFile,
@@ -150,11 +151,12 @@ if __name__ == "__main__":
                                     extOnly=extOnly)
 
             # Run VLIDORT
-            if vlidort.nobs > 0:
-                if cf('DO_VLIDORT').upper() == 'YES':
-                    vlidort.runVLIDORT()
-                if cf('DO_EXT').upper() == 'YES':
-                    vlidort.runExt()
+            if not extOnly:
+                if vlidort.nobs > 0:
+                    if cf('DO_VLIDORT').upper() == 'YES':
+                        vlidort.runVLIDORT()
+            if cf('DO_EXT').upper() == 'YES':
+                vlidort.runExt()
 
         date += Dt
 
