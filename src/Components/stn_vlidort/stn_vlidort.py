@@ -159,8 +159,11 @@ class STN_VLIDORT(object):
             print 'opening file',self.ndviFile
 
         nc = Dataset(self.ndviFile)
-        NDVI = nc.variables['NDVI'][:]
+        NDVI = np.array(nc.variables['NDVI'][:])
+        missing_value = nc.variables['NDVI'].missing_value
         I = NDVI < -900
+        NDVI[I] = MISSING
+        I = NDVI == missing_value
         NDVI[I] = MISSING
         nc.close()
 
@@ -403,7 +406,7 @@ class STN_VLIDORT(object):
             print 'opening LER albedo file ',self.lerFile
         nc = Dataset(self.lerFile)
 
-        self.__dict__[lSDS] = nc.variables[lSDS][:]
+        self.__dict__[lSDS] = np.array(np.squeeze(nc.variables[lSDS][:]))
         nc.close()
 
         # Interpolate 
@@ -411,7 +414,7 @@ class STN_VLIDORT(object):
         #Riso
         sds = 'Riso' + chs
         R   = 'Riso' + MODISchs
-        self.__dict__[sds] = np.empty([nstations,self.ntyme])
+        self.__dict__[sds] = np.empty([self.nstations,self.ntyme])
         for s in range(self.nstations):
             for i in range(self.ntyme):
                 Y = np.array([self.__dict__[lSDS][s,i],self.__dict__[R][s,i]])
@@ -446,7 +449,7 @@ class STN_VLIDORT(object):
             self.nobs[t] = np.sum(self.iGood[t])
 
         for sds in SDS:
-            self.__dict__[sds].shape = (1,1,nstations,self.ntyme)
+            self.__dict__[sds].shape = (1,1,self.nstations,self.ntyme)
 
         # [nkernel,nch,nobs]
         self.kernel_wt = []
@@ -481,7 +484,7 @@ class STN_VLIDORT(object):
         nc = Dataset(self.lerFile)
 
         for sds in SDS:
-            self.__dict__[sds] = np.squeeze(nc.variables[sds][:])
+            self.__dict__[sds] = np.array(np.squeeze(nc.variables[sds][:]))
 
         missing_value = nc.variables[sds].missing_value
         nc.close()
@@ -489,21 +492,28 @@ class STN_VLIDORT(object):
         sds = 'SRFLER'+chs
         # interpolate if needed
         if chs not in LER_channels:
-            dch   = self.channel - np.array(LER_channels).astype('int')
-            chmin = np.argmax(dch[dch<0])
-            chmin = LER_channels[dch<0][chmin]
-            chmax = np.argmin(dch[dch>0])
-            chmax = LER_channels[dch>0][chmax]            
+            dch   = self.channel - LER_channels.astype('int')
+            try:
+                chmin = np.argmax(dch[dch<0])
+                chmin = LER_channels[dch<0][chmin]
+            except:
+                chmin = str(LER_channels.astype('int').min())
+            try:
+                chmax = np.argmin(dch[dch>0])
+                chmax = LER_channels[dch>0][chmax]            
+            except:                
+                chmax = str(LER_channels.astype('int').max())
+
             X = np.array([chmin,chmax]).astype('int')
 
             self.__dict__[sds] = np.empty([self.nstations,self.ntyme])
             for s in range(self.nstations):
                 for i in range(self.ntyme):
                     Y = np.array([self.__dict__['SRFLER'+chmin][s,i],self.__dict__['SRFLER'+chmax][s,i]])
-                    if missing_value in Y:
+                    if missing_value in Y:                        
                         self.__dict__[sds][s,i] = missing_value
                     else:
-                        f = interpolate.interp1d(X, Y)
+                        f = interpolate.interp1d(X, Y,fill_value='extrapolate')
                         self.__dict__[sds][s,i] = f([int(chs)]) 
 
 
