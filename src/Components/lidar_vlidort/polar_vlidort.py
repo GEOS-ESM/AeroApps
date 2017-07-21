@@ -20,7 +20,7 @@ from dateutil.parser import parse         as isoparser
 
 from MAPL.constants import *
 import LidarAngles_    
-import VLIDORT_ 
+import VLIDORT_POLAR_ 
 from copyvar  import _copyVar
 from scipy import interpolate
 
@@ -55,9 +55,9 @@ SurfaceFuncs = {'MODIS_BRDF'     : 'readSampledMODISBRDF',
                 'MODIS_BRDF_BPDF': 'readSampledMODISBRDF',
                 'LAMBERTIAN'     : 'readSampledLER'}
 
-WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_.vector_brdf_modis,
-                'MODIS_BRDF_BPDF': VLIDORT_.vector_brdf_modis_bpdf,
-                'LAMBERTIAN'     : VLIDORT_.vector_lambert}   
+WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_POLAR_.vector_brdf_modis,
+                'MODIS_BRDF_BPDF': VLIDORT_POLAR_.vector_brdf_modis_bpdf,
+                'LAMBERTIAN'     : VLIDORT_POLAR_.vector_lambert}   
 
 LandAlbedos  = 'MODIS_BRDF','MODIS_BRDF_BPDF','LAMBERTIAN'
 
