@@ -111,7 +111,7 @@ $(LIB) lib : $(DEPS) $(OBJS)
 # ------------------------
 python: $(PY_EXTS)
 
-VLIDORT_.$(F2PYEXT): VLIDORT_STN_py.F90 
+VLIDORT_STN_.$(F2PYEXT): VLIDORT_STN_py.F90 
 	$(F2PY) -c -m VLIDORT_STN_ $(M). $(M)$(INC_GEOVLIDORT) \
                  VLIDORT_STN_py.F90 $(LIBS)                  
 # 	$(CP) -p VLIDORT_.$(F2PYEXT) $(ESMALIB)/Python 	
