@@ -770,6 +770,7 @@ class STN_VLIDORT(object):
         nc.source = 'Global Model and Assimilation Office'
         nc.history = 'VLIDORT simulation run on sampled GEOS-5'
         nc.references = 'n/a'
+        nc.note = 'Sun normalized output.  Solar flux set equal to 1.'
         nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
         nc.Conventions = 'CF'
         nc.inFile = self.inFile
@@ -816,30 +817,30 @@ class STN_VLIDORT(object):
 
         # Write VLIDORT Outputs
         # ---------------------
-        ref = nc.createVariable('toa_reflectance','f4',('station','time',),zlib=zlib,fill_value=MISSING)
-        ref.standard_name = '%.2f nm TOA Reflectance' %self.channel
-        ref.long_name     = '%.2f nm reflectance at the top of the atmosphere' %self.channel
+        ref = nc.createVariable('I_normalized','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+        ref.standard_name = '%.2f nm BOA normalized I' %self.channel
+        ref.long_name     = '%.2f nm normalized intensity at the bottom of the atmosphere (pi*I/cosSZA*SOLAR_FLUX)' %self.channel
         ref.missing_value = MISSING
         ref.units         = "None"
         ref[:]            = np.array(self.reflectance).T
 
         i = nc.createVariable('I','f4',('station','time',),zlib=zlib,fill_value=MISSING)
-        i.standard_name = '%.2f nm TOA I' %self.channel
-        i.long_name     = '%.2f nm intensity at the top of the atmosphere' %self.channel
+        i.standard_name = '%.2f nm BOA I' %self.channel
+        i.long_name     = '%.2f nm intensity at the bottom of the atmosphere' %self.channel
         i.missing_value = MISSING
         i.units         = "W m-2 sr-1 nm-1"
         i[:]            = np.array(self.I).T
 
         q = nc.createVariable('Q','f4',('station','time',),zlib=zlib,fill_value=MISSING)
-        q.standard_name = '%.2f nm TOA Q' %self.channel
-        q.long_name     = '%.2f nm Q-component of the stokes vector at the top of the atmopshere' %self.channel
+        q.standard_name = '%.2f nm BOA Q' %self.channel
+        q.long_name     = '%.2f nm Q-component of the stokes vector at the bottom of the atmopshere' %self.channel
         q.missing_value = MISSING
         q.units         = "W m-2 sr-1 nm-1"
         q[:]            = np.array(self.Q).T
 
         u = nc.createVariable('U','f4',('station','time',),zlib=zlib,fill_value=MISSING)
-        u.standard_name = '%.2f nm TOA U' %self.channel
-        u.long_name     = '%.2f nm U-component of the stokes vector at the top of the atmopshere' %self.channel
+        u.standard_name = '%.2f nm BOA U' %self.channel
+        u.long_name     = '%.2f nm U-component of the stokes vector at the bottom of the atmopshere' %self.channel
         u.missing_value = MISSING
         u.units         = "W m-2 sr-1 nm-1"
         u[:]            = np.array(self.U).T
