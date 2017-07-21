@@ -152,7 +152,8 @@ module VLIDORT_LAMBERT
   subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nMom,  &
                      nPol,tau, ssa, pmom, pe, he, te, albedo, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL, reflectance_VL, ROT, Q ,U, rc, DO_2OS_CORRECTION)
+                     MISSING,verbose, radiance_VL, reflectance_VL, ROT, Q ,U, rc, &
+                     DO_2OS_CORRECTION, DO_BOA)
   !
   ! Place holder.
   !
@@ -203,6 +204,7 @@ module VLIDORT_LAMBERT
 
   ! !OPTIONAL PARAMETERS
     logical, optional, intent(in) :: DO_2OS_CORRECTION 
+    logical, optional, intent(in) :: DO_BOA
     
   !                               ---
     
@@ -214,7 +216,9 @@ module VLIDORT_LAMBERT
   
     rc = 0
     ier = 0
-    call VLIDORT_Init( SCAT%Surface%Base, km, rc)
+    if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
+
+    call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
     SCAT%nMom = nMom
@@ -269,11 +273,18 @@ module VLIDORT_LAMBERT
 
           call VLIDORT_Run_Vector (SCAT, output, ier)
 
-          radiance_VL(j,i)         = output%radiance
-          reflectance_VL(j,i)      = output%reflectance
-          Q(j,i)                   = output%Q
-          U(j,i)                   = output%U        
           ROT(:,j,i) = SCAT%rot
+          if (SCAT%DO_BOA) then
+            radiance_VL(j,i)         = output%BOA_radiance
+            reflectance_VL(j,i)      = output%BOA_reflectance
+            Q(j,i)                   = output%BOA_Q
+            U(j,i)                   = output%BOA_U                          
+          else
+            radiance_VL(j,i)         = output%radiance
+            reflectance_VL(j,i)      = output%reflectance
+            Q(j,i)                   = output%Q
+            U(j,i)                   = output%U                
+          end if
 
           if ( ier /= 0 ) then
             radiance_VL(j,i) = MISSING
