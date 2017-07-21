@@ -28,7 +28,7 @@ THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
 
 
-PY_EXTS = stnAngles_.$(F2PYEXT) VLIDORT_.$(F2PYEXT)
+PY_EXTS = stnAngles_.$(F2PYEXT) VLIDORT_STN_.$(F2PYEXT)
 PY_SCRP =  
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
