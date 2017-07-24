@@ -759,6 +759,9 @@ class STN_VLIDORT(object):
         """
         km = 72
 
+        if not os.path.exists(os.path.dirname(self.outFile)):
+            os.makedirs(os.path.dirname(self.outFile))
+
         # Open NC file
         # ------------
         nc = Dataset(self.outFile,'w',format='NETCDF4_CLASSIC')
