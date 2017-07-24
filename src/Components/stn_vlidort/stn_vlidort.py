@@ -327,7 +327,7 @@ class STN_VLIDORT(object):
         nc = Dataset(self.brdfFile)
 
         for sds in SDS:
-            self.__dict__[sds] = nc.variables[sds][:]
+            self.__dict__[sds] = np.array(nc.variables[sds][:])
 
         missing_value = nc.variables[sds].missing_value
         nc.close()

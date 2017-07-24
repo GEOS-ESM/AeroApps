@@ -166,7 +166,7 @@ class MCD43C(object):
           this = nc.createVariable(SDS[sds],'f4',dim)  
 
           this.long_name = SDS[sds][4:] + ' BRDF Kernel weight'
-          this.missing_value = -99999
+          this.missing_value = -999.0
           this.unit = 'none'  
           this[:] = self.brdf.__dict__[SDS[sds]]
 
