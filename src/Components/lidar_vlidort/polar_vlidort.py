@@ -324,7 +324,7 @@ class POLAR_VLIDORT(object):
         nc = Dataset(self.brdfFile)
 
         for sds in SDS:
-            self.__dict__[sds] = nc.variables[sds][:]
+            self.__dict__[sds] = np.array(nc.variables[sds][:])
 
         missing_value = nc.variables[sds].missing_value
         nc.close()
@@ -716,6 +716,9 @@ class POLAR_VLIDORT(object):
         Write a NetCDF file vlidort output
         """
         km = 72
+
+        if not os.path.exists(os.path.dirname(self.outFile)):
+            os.makedirs(os.path.dirname(self.outFile))
 
         # Open NC file
         # ------------
