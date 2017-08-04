@@ -1,0 +1,6 @@
+# LAND COVER SAMPLING
+INSTNAME  = pace_675
+INDIR     = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/PACE_675/LevelB
+OUTDIR    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/PACE_675/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051
+DATADIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/LevelA/MCD12C1/
+# LAND COVER SAMPLING

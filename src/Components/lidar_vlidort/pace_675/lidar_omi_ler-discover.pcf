@@ -1,0 +1,7 @@
+# LIDAR SAMPLING
+INSTNAME = pace_675
+TLEFILE  = pace_675/pace_675.tle
+RCFILES  = omi_ler-discover.rc
+COLNAMES = omi_ler
+OUTDIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/PACE_675/LevelB/surface/SurfLER
+# LIDAR SAMPLING
