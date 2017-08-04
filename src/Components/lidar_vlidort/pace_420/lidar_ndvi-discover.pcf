@@ -1,0 +1,7 @@
+# LIDAR SAMPLING
+INSTNAME = pace_420
+TLEFILE  = pace_420/pace_420.tle
+RCFILES  = myd13c2-discover.rc
+COLNAMES = ndvi
+OUTDIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/PACE_420/LevelB/surface/BPDF/NDVI/MYD13C2/006
+# LIDAR SAMPLING
