@@ -1,0 +1,7 @@
+# LIDAR SAMPLING
+INSTNAME = iss
+TLEFILE  = iss/iss.tle
+RCFILES  = omi_ler-discover.rc
+COLNAMES = omi_ler
+OUTDIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/ISS/LevelB/surface/SurfLER
+# LIDAR SAMPLING
