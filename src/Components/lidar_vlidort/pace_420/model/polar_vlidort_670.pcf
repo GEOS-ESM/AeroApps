@@ -1,0 +1,25 @@
+# MULTIANGLE POLARIMETER SIMULATION
+    inDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/PACE_420/LevelB/Y%year/M%month
+    inFile       = pace_420-g5nr.lb2.%col.%nymd_%hourz.nc4
+
+    brdfDir    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/PACE_420/LevelB/surface/BRDF/MCD43C1/006/Y%year/M%month
+    brdfFile     = pace_420-g5nr.lb2.brdf.%nymd_%hourz.nc4
+
+    ndviDir      = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/PACE_420/LevelB/surface/BPDF/NDVI/MYD13C2/006/Y%year/M%month
+    ndviFile     = pace_420-g5nr.lb2.ndvi.%nymd_%hourz.nc4
+
+    lcDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/PACE_420/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051/Y%year/M%month
+    lcFile       = pace_420-g5nr.lb2.land_cover.%nymd_%hourz.nc4    
+
+    albedoType   = MODIS_BRDF_BPDF
+
+    outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/PACE_420/LevelC/Y%year/M%month
+    outFile      = pace_420-g5nr.vlidort.vector.MCD43C.%nymd_%hourz_%chdnm.nc4
+
+    channel      = 670    
+    rcFile       = Aod_EOS.rc
+    VZA          = 3.66, 11., 18.33, 25.66, 33, 40.33, 47.66, 55.0
+    HGT          = 420
+    DO_VLIDORT   = YES
+    DO_EXT       = NO
+# MULTIANGLE POLARIMETER SIMULATION
