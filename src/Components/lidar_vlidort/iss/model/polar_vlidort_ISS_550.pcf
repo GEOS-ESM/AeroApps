@@ -19,7 +19,7 @@
     channel      = 550    
     rcFile       = Aod_EOS.rc
     VZA          = 3.66, 11., 18.33, 25.66, 33, 40.33, 47.66, 55.0
-    HGT          = 705
+    HGT          = 400
     DO_VLIDORT   = YES
     DO_EXT       = NO
 # MULTIANGLE POLARIMETER SIMULATION
