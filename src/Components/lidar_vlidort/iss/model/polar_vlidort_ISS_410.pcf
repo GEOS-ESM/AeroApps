@@ -1,17 +1,17 @@
 # MULTIANGLE POLARIMETER SIMULATION
-    inDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/CALIPSO/LevelB/Y%year/M%month
-    inFile       = calipso-g5nr.lb2.%col.%nymd_%hourz.nc4
+    inDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/ISS/LevelB/Y%year/M%month
+    inFile       = iss-g5nr.lb2.%col.%nymd_%hourz.nc4
 
-    brdfDir    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/CALIPSO/LevelB/surface/BRDF/MCD43C1/006/Y%year/M%month
-    brdfFile     = calipso-g5nr.lb2.brdf.%nymd_%hourz.nc4
+    brdfDir    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/ISS/LevelB/surface/BRDF/MCD43C1/006/Y%year/M%month
+    brdfFile     = iss-g5nr.lb2.brdf.%nymd_%hourz.nc4
 
-    lerFile      = calipso-g5nr.lb2.omi_ler.%nymd_%hourz.nc4
-    lerDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/CALIPSO/LevelB/surface/SurfLER/Y%year/M%month
+    lerFile      = iss-g5nr.lb2.omi_ler.%nymd_%hourz.nc4
+    lerDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/ISS/LevelB/surface/SurfLER/Y%year/M%month
 
     albedoType   = MODIS_BRDF
 
-    outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/CALIPSO/LevelC/Y%year/M%month
-    outFile      = calipso-g5nr.vlidort.vector.MCD43C.%nymd_%hourz_%chdnm.nc4
+    outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/ISS/LevelC/Y%year/M%month
+    outFile      = iss-g5nr.vlidort.vector.MCD43C.%nymd_%hourz_%chdnm.nc4
 
     channel      = 410    
     rcFile       = Aod_EOS.rc
