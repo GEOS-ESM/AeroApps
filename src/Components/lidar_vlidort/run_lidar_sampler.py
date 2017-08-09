@@ -9,6 +9,7 @@
 """
 
 import os
+import errno
 import subprocess
 import argparse
 import time
@@ -24,6 +25,15 @@ else:
     nccat = '/ford1/share/dasilva/bin/ncrcat'
 
 #------------------------------------ M A I N ------------------------------------
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
 def fix_time(filelist,tbeg):
     for filename in filelist:
         nc = Dataset(filename,'r+')
@@ -122,8 +132,7 @@ if __name__ == "__main__":
     pdt   = timedelta(hours=1)
     while Date < enddate:
         outpath = '{}/Y{}/M{}'.format(outdir,Date.year,str(Date.month).zfill(2))
-        if not os.path.exists(outpath):
-            os.makedirs(outpath)
+        mkdir_p(outpath)
 
         # run trajectory sampler on model fields
         # split across multiple processors by date
