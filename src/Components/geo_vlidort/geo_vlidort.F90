@@ -1617,9 +1617,11 @@ end subroutine outfile_extname
     integer                            :: peVarID     
     
     integer                            :: ncid
-    integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID       
+    integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID  
+    integer                            :: leveDimID     
     integer                            :: scantimeVarID, clonVarID, clatVarID
     integer                            :: timeVarID, levVarID, ewVarID, nsVarID
+    integer                            :: leveVarID, e
     integer                            :: ch
 
     real*8,allocatable,dimension(:,:)  :: clon, clat, sza, vza, raa
@@ -1845,6 +1847,7 @@ end subroutine outfile_extname
       ! Create dimensions
       call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
       call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
+      call check(nf90_def_dim(ncid, "leve", km+1, leveDimID), "creating edge level dimension") !km+1
       call check(nf90_def_dim(ncid, "ew", im, ewDimID), "creating ew dimension") !im
       call check(nf90_def_dim(ncid, "ns", jm, nsDimID), "creating ns dimension") !jm
 
@@ -1893,6 +1896,7 @@ end subroutine outfile_extname
   !                                     ----------    
       call check(nf90_def_var(ncid,'time',nf90_int,(/timeDimID/),timeVarID),"create time var")
       call check(nf90_def_var(ncid,'lev',nf90_float,(/levDimID/),levVarID),"create lev var")
+      call check(nf90_def_var(ncid,'leve',nf90_float,(/leveDimID/),leveVarID),"create leve var")
       call check(nf90_def_var(ncid,'ew',nf90_float,(/ewDimID/),ewVarID),"create ew var")
       call check(nf90_def_var(ncid,'ns',nf90_float,(/nsDimID/),nsVarID),"create ns var")
 
@@ -1914,7 +1918,7 @@ end subroutine outfile_extname
           call check(nf90_def_var(ncid, 'u_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),uVarID(ch)),"create U var")
         end if        
       end do
-      call check(nf90_def_var(ncid,'pe',nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),peVarID),"create pe var")
+      call check(nf90_def_var(ncid,'pe',nf90_float,(/ewDimID,nsDimID,leveDimID,timeDimID/),peVarID),"create pe var")
       ! Variable Attributes
   !                                          Additional Data
   !                                          -----------------  
@@ -2049,6 +2053,8 @@ end subroutine outfile_extname
 
       call readvar1D("lev", MET_file, lev)
       call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
+
+      call check(nf90_put_var(ncid,leveVarID,(/(real(e), e = 1, km+1)/)), "writing out leve")
 
       call readvar1D("ew", MET_file, ew)
       call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
