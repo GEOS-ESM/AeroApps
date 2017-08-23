@@ -573,14 +573,14 @@ program geo_vlidort
         if (vlidort) then
           ! Call to vlidort scalar code       
           call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+                  nPol, dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), albedo,&
                   (/dble(SZA(c))/), &
                   (/dble(abs(RAA(c)))/), &
                   (/dble(VZA(c))/), &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
         else 
           call LIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+                  nPol, dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), albedo,&
                   (/dble(SZA(c))/), &
                   (/dble(abs(RAA(c)))/), &
                   (/dble(VZA(c))/), &
@@ -615,7 +615,7 @@ program geo_vlidort
         if (vlidort) then
           ! Call to vlidort scalar code            
           call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nMom,  &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+                  nPol, dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
                   kernel_wt, param, &
                   (/dble(SZA(c))/), &
                   (/dble(abs(RAA(c)))/), &
@@ -624,7 +624,7 @@ program geo_vlidort
         else
         ! Call to vlidort scalar code            
           call LIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nMom,  &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+                  nPol, dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
                   kernel_wt, param, &
                   (/dble(SZA(c))/), &
                   (/dble(abs(RAA(c)))/), &
