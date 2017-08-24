@@ -7,6 +7,8 @@
 set rc = ../RC
 set sampler = "$ESMADIR/`uname`/bin/trj_sampler.py"
 set esampler = "$ESMADIR/`uname`/bin/ext_sampler.py"
+
+set orig = $HOME/iesa/oracles/hsrl
 set dest = $HOME/iesa/oracles/sampled/hsrl
 
 if ( $#argv < 1 ) then
@@ -30,7 +32,10 @@ else
     set HSRL = ( $argv )
 endif
 
-foreach hsrl ( $HSRL ) 
+foreach hsrl_ ( $HSRL ) 
+  set hsrl = $orig/$hsrl_
+  echo "<> Processing $hsrl"
+#  foreach prod ( CHEM AERO )
   foreach prod ( AERO )
 
     set basen = `basename $hsrl`
@@ -39,20 +44,22 @@ foreach hsrl ( $HSRL )
     echo $loc
     set nc = $dest/GEOS5-${prod}_HSRL2_${date}_$rev.nc
 
+    if ( $prod == "CHEM" ) then
     if ( $force == 1) then 
 	    $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $hsrl
     else
 	    if ( -e $nc ) then
 	      echo "<> Skipping $nc, already there there"
 	    else
-	      $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $hsrl 60
+	      $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $hsrl 
 	    endif
+    endif
     endif
 
     if ( $prod == "AERO" ) then
 
-      set inFile = $nc
-      set enc = `echo $inFile | sed -e 's/AERO/EXT532/'`
+      set inFile = $dest/GEOS5-CHEM_HSRL2_${date}_$rev.nc
+      set enc = `echo $inFile | sed -e 's/CHEM/EXT532/'`
 
       if ( $force == 1) then
 	      $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_532nm.rc -o $enc
@@ -60,6 +67,7 @@ foreach hsrl ( $HSRL )
 	      if ( -e $enc ) then
 	        echo "<> Skipping $nc, already there there"
 	      else
+                echo  $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_532nm.rc -o $enc 
 	        $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_532nm.rc -o $enc 
       	endif
       endif
