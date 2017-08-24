@@ -38,11 +38,14 @@ ODS_files::
 
 #___MISR___${FVWORK}/misr_F12_0022.bright_tc8.obs.%y4%m2%d2.ods
 
-#___AERONET___${FVWORK}/aeronet.obs.%y4%m2%d2.ods
+#___AERONET___${FVWORK}/aeronet.obs.%y4%m2%d2_%h2z.ods
 
 # Passive data
 #/nobackup/3/PARASOL/Level2/ODS/Y%y4/M%m2/PARASOL_L2.aero_tc8.obs.%y4%m2%d2.ods
 #/nobackup/3/OMI/Level2/ODS/Y%y4/M%m2/omi.aero_tc8.obs.%y4%m2%d2.ods
+
+# Hardwired Aeronet data.  Added as passive on 2017-06-16 @ 12z.
+/discover/nobackup/dao_ops/intermediate/flk/stage/aeronet/aeronet.obs.%y4%m2%d2_%h2z.ods
 ::
 
 do_statistical_bias_correction: no # yes or no
