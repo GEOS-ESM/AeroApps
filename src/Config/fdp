@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 #
 # Simple script for automatic dependency generation of (primarily) FORTRAN
 # and C programs. See usage() for more info.
@@ -22,8 +22,12 @@
 #                      for efficiency
 # 17Jul2008  Stassi    Divided code into subs; use strict standards
 # 17May2011  Stassi    Simplified .mod.o dependency
+# 24Feb2012  Stassi    Added addkey() to handle file with variable named "use"
+# 03Feb2014  Thompson  Remove standard C libraries from dependency checks.
+#                      If the compiler can't find them, we are in trouble.
 #........................................................................
 use strict;
+use warnings;
 
 # global variables
 #-----------------
@@ -32,6 +36,8 @@ my ($script, $srcfn, $infile);
 my (%deps, $mstring);
 my ($base, $suffix);
 my ($ncase, $mcase);
+my (@stdcinc);
+my (@stdfinc);
 
 # main program
 #-------------
@@ -101,6 +107,29 @@ sub init {
     #----------------------------
     %deps = ();
     $mstring = "";   # string of space-delimited mod names
+
+    # stdfinc is an array of standard Fortran modules
+    # -----------------------------------------------
+    @stdfinc = ("iso_fortran_env.mod",
+                "ieee_arithmetic.mod",
+                "ieee_exceptions.mod",
+                "ieee_features.mod",
+                "iso_c_binding.mod");
+
+    # stdcinc is an array of Standard C include files
+    # as retrieved on 2014-Feb-03 from:
+    # http://en.cppreference.com/w/c/header
+    # -----------------------------------------------
+    @stdcinc = ("assert.h",      "complex.h",  "ctype.h",
+                "errno.h",       "fenv.h",     "float.h",
+                "inttypes.h",    "iso646.h",   "limits.h",
+                "locale.h",      "math.h",     "setjmp.h",
+                "signal.h",      "stdalign.h", "stdarg.h",
+                "stdatomic.h",   "stdbool.h",  "stddef.h",
+                "stdint.h",      "stdio.h",    "stdlib.h",
+                "stdnoreturn.h", "string.h",   "tgmath.h",
+                "threads.h",     "time.h",     "uchar.h", 
+                "wchar.h",       "wctype.h");
 }
 
 #=======================================================================
@@ -129,20 +158,20 @@ sub read_input {
             $name =~ s/<//g;
             $name =~ s/>//g;
             #--print $name;
-            $deps{$name} = 1;
+            addkey(\%deps, $name);
 
         } elsif (/^[Ii][Nn][Cc][Ll][Uu][Dd][Ee]\s/ and $name) {
             $name =~ s/\"//g;
             $name =~ s/\'//g;
             #--print $name;
-            $deps{$name} = 1;
+            addkey(\%deps, $name);
 
         } elsif (/^[Uu][Ss][Ee]\s/ and $name) {
             $name =~ s/;//g;
             $name =~ s/,.*//gi;
             $name = fix_mod("$name");
             #--print $name;
-            $deps{$name} = 1;
+            addkey(\%deps, $name);
 
         } elsif (/^[Mm][Oo][Dd][Uu][Ll][Ee]\s/ and $name) {
             if (uc $name ne "PROCEDURE") {
@@ -161,12 +190,28 @@ sub read_input {
 }        
 
 #=======================================================================
+# name - addkey
+# purpose - add key to hash if key's value begins with \w character.
+#=======================================================================
+sub addkey {
+    my ($hashAddr, $key, $first);
+    ($hashAddr, $key) = @_;
+    
+    if ($key) {
+        $first = substr($key, 0, 1);
+        $$hashAddr{$key} = 1 unless $first =~ /\W/;
+    }
+}
+
+#=======================================================================
 # name - write_output
 # purpose - write the dependency file to disk or standard output
 #
 # note:
 # => The semi-colon at the end of the $mstring line explicitly tells the
-#    system to do nothing, over-riding any implicit instructions
+#    system to do nothing, i.e. there are no instructions for building the
+#    target from the dependencies; this over-rides any implicit instructions
+#    that may exist.
 #=======================================================================
 sub write_output {
     my $dep;
@@ -185,11 +230,29 @@ sub write_output {
     print OUTFL "$base.d : $srcfn\n";
     if ($mstring) { print OUTFL "$mstring : $base.o;\n" }
     print OUTFL "$base.o : $srcfn";
-    foreach $dep ( keys %deps ) { 
-        print OUTFL " $dep" unless ( $mstring =~ /\b$dep\b/ ); 
+    foreach $dep ( keys %deps ) {
+        print OUTFL " $dep" unless ( $mstring =~ /\b$dep\b/ 
+                                     or  $dep =~ /^esmf\.mod/
+                                     or  $dep =~ /^netcdf\.mod/
+                                     or  $dep =~ /^netcdf\.inc/
+                                     #or  $dep ~~ @stdcinc       # Is the dep a standard C library?
+                                     or  smart_match($dep, \@stdcinc)       # Is the dep a standard C library?
+                                     or  smart_match($dep, \@stdfinc)       # Is the dep a standard Fortran library?
+                                     or  $dep =~ /^sys\//       # Is the dep in the sys/ folder?
+                                     or  $dep =~ /^omp_lib/     # Is the dep omp_lib?
+                                     or  $dep =~ /^mpif.*h$/ ); # Is the dep an included mpif-/_ file?
     }
     print OUTFL "\n";
     close OUTFL;
+}
+
+# smart match ~~ not supported in all  versions of Perl...
+sub smart_match {
+    my ($dep, $array) = @_;
+    foreach (@{$array}){
+        return 1 if($dep =~ $_);
+    }
+    return 0;
 }
 
 #=======================================================================

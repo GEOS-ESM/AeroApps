@@ -30,9 +30,9 @@ LINE:
 	    $assertLine{$_} ++;
 	}
 
-        if ( /^gmake/ &&  /: Entering/ ) {
+        if ( /^gmake\[(\d+)]: Entering/ ) {
 
-            $lev = substr($tokens[0],6,1); # assume 1-digit for now
+            $lev = $1;
             $dirn  = $tokens[3];
             $name = basename("$dirn");       
 

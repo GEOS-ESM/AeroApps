@@ -62,6 +62,12 @@
 # 28Oct2014  Thompson  Remove references to Intel 11 and 12. Alter the
 #                      "high optimization" FOPT flags for Intel 15 to add
 #                      support for Haswell.
+# 23Apr2015  Thompson  Initial support for Intel 16.
+# 23Jul2015  Thompson  Per suggestions of Max Suarez, have Intel act like
+#                      GNU and PGI and put automatics on the heap rather
+#                      than the stack. Current behavior is like GNU: all
+#                      automatics smaller than 32k on the stack, the rest
+#                      on the heap.
 #
 #--------------------------------------------------------------------------
 
@@ -81,6 +87,9 @@
   endif
   ifdef ESMA_F2PY
      F2PY := $(ESMA_F2PY)
+  endif
+  ifdef ESMA_F2PY_FLAGS
+     F2PY_FLAGS += $(ESMA_F2PY_FLAGS)
   endif
 
 #                               -----
@@ -124,6 +133,13 @@ ifeq ($(ARCH),Linux)
      LIB_HDF5 += -lgpfs
   endif
 
+# When building for profiling, use BOPT=Og
+# ----------------------------------------
+  ifeq ("$(DOING_APROF)","yes")
+     BOPT = Og
+     LIB_APROF = -Wl,@$(BASELIB)/allinea-profiler.ld
+  endif
+
 #
 #                    Linux Compiler Specific
 #                    -----------------------
@@ -163,7 +179,7 @@ ifeq ($(ARCH),Linux)
     PP  := -fpp
     BIG_ENDIAN := -convert big_endian
     BYTERECLEN := -assume byterecl
-    FPE = -fpe0
+    FPE = -fpe0 -fp-model source -heap-arrays 32
     ALIGNCOM = -align dcommons
     MCMODEL = -mcmodel medium  -shared-intel
     FREAL4 =
@@ -171,6 +187,9 @@ ifeq ($(ARCH),Linux)
     FOPT2 += 
     ifeq ("$(BOPT)","g")
        FOPT = $(FOPTG) -O0 -ftz -align all -fno-alias -traceback -debug -nolib-inline -fno-inline-functions -assume protect_parens,minus0 -prec-div -prec-sqrt -check bounds -check uninit -fp-stack-check -ftrapuv -warn unused
+       ifeq ($(IFORT_MAJOR),16)
+          FOPT += -init=snan,arrays
+       endif
     else
        ifeq ($(IFORT_MAJOR),13)
           FOPT = $(FOPT3) -vec-report0 -ftz -align all -fno-alias
@@ -181,8 +200,12 @@ ifeq ($(ARCH),Linux)
 #         FOPT = $(FOPT3) -axAVX -xSSE4.1 -vec-report0 -ftz -align all -fno-alias
        else
        ifeq ($(IFORT_MAJOR),15)
-          FOPT = $(FOPT3) -qopt-report0 -ftz -align all -fno-alias 
-#         FOPT = $(FOPT3) -axCORE-AVX2,AVX -xSSE4.2 -qopt-report0 -ftz -align all -fno-alias
+          FOPT = $(FOPT3) -qopt-report0 -ftz -align all -fno-alias
+#         FOPT = $(FOPT3) -axCORE-AVX2,AVX -xSSE4.2 -qopt-report0 -ftz -align all -fno-alias -align array32byte
+          
+#         For lower precision, but possibly better performance from AVX instructions, enable this
+#         FPE := -fpe3 -fp-model fast=2 -no-prec-div
+ 
 #         -openmp is deprecated in 15
           OMPFLAG := -qopenmp
 
@@ -197,20 +220,52 @@ ifeq ($(ARCH),Linux)
           endif
 
        else
+       ifeq ($(IFORT_MAJOR),16)
+          FOPT = $(FOPT3) -qopt-report0 -ftz -align all -fno-alias
+#         FOPT = $(FOPT3) -axCORE-AVX2,AVX -xSSE4.2 -qopt-report0 -ftz -align all -fno-alias -align array32byte
+          
+#         For lower precision, but possibly better performance from AVX instructions, enable this
+#         FPE := -fpe3 -fp-model fast=2 -no-prec-div
+
+          # Intel 16 seems to require -fimf-arch-consistency=true to allow zero-diff on Haswell and Sandy
+          FPE += -fimf-arch-consistency=true
+
+#         -openmp is deprecated in 16
+          OMPFLAG := -qopenmp
+
+          ifeq ("$(BOPT)","MIC")
+             MICOPT += $(OMPFLAG)
+             #MICOPT += $(OMPFLAG) -no-fma
+             #MICOPT += $(OMPFLAG) -qopt-report-phase=offload -watch=mic-cmd
+             AR := xiar
+             AR_FLAGS += -qoffload-build
+          else
+             FOPT += -qno-offload
+          endif
+
+       else
           FOPT = $(FOPT3)
+       endif # IFORT 16
        endif # IFORT 15
        endif # IFORT 14
        endif # IFORT 13
     endif # BOPT=g
 
+    # Always add traceback to FOPT on Intel
+    FOPT += -traceback
+
     ifeq ("$(BOPT)","Og")
-       FOPT += -g -traceback
+       FOPT += -g
     endif
 
     LIB_ESMF = $(BASELIB)/libesmf.a
 
     CC  = gcc
     CXX = g++
+
+    ifdef ESMA_CC
+       CC := $(ESMA_CC)
+    endif
 
 #   Handle MPI on x86_64
 #   --------------------
@@ -247,6 +302,12 @@ ifeq ($(ARCH),Linux)
         INC_MPI := $(MPI_HOME)/include
         LIB_MPI := -L$(MPI_HOME)/lib  -lmpich
     else
+    # This detects the MPT setup at NCCS
+    ifdef MPT_VERSION
+        FC := mpif90
+        INC_MPI := $(MPI_ROOT)/include
+        LIB_MPI := -L$(MPI_ROOT)/lib  -lmpi -lmpi++
+    else
     ifdef FPATH
         FPATHS := $(subst :, ,$(FPATH))
         ifeq ($(MACH), x86_64) 
@@ -257,6 +318,7 @@ ifeq ($(ARCH),Linux)
           LIB_MPI := -L$(subst include,lib,$(INC_MPI)) -lmpi -lmpi++
         endif
     endif # FPATH
+    endif # MPT_VERSION
     endif # MPI_HOME
     endif # M_MPI_ROOT
     endif # MVAPICH2
@@ -265,25 +327,7 @@ ifeq ($(ARCH),Linux)
 
 #   Define LIB_SYS
 #   --------------
-    LIB_SCI := 
-    LIB_SYS := -ldl -lc -lpthread -lrt 
-
-    ifeq ($(IFORT_MAJOR), 13)
-          LIB_SYS := -lirc $(LIB_SYS)
-          FPE += -fp-model source
-    else
-    ifeq ($(IFORT_MAJOR), 14)
-          LIB_SYS := -lirc $(LIB_SYS)
-          FPE += -fp-model source
-    else
-    ifeq ($(IFORT_MAJOR), 15)
-          LIB_SYS := -lirc $(LIB_SYS)
-          FPE += -fp-model source
-    else
-          LIB_SYS +=  # This should not be used; better to handle Major verison
-    endif # Intel 15
-    endif # Intel 14
-    endif # Intel 13
+    LIB_SYS := -lirc -ldl -lc -lpthread -lrt 
 
 #   MKL math library
 #   ----------------
@@ -382,6 +426,7 @@ ifeq ($(ARCH),Linux)
       FIXED_SOURCE = -ffixed-form
       FREAL4   := 
       FREAL8   := -fdefault-real-8 -fdefault-double-8
+      FINT8    := -fdefault-integer-8
       # This is needed for m_fpe.F90
       NO_RANGE_CHECK   := -fno-range-check 
       FPIC   := -fPIC
@@ -429,7 +474,17 @@ ifeq ($(ARCH),Linux)
       endif
       endif
 
-#      LIB_SCI  = -llapackmt -lblasmt 
+#     MKL math library
+#     ----------------
+      ifeq ($(wildcard $(ESMABIN)/mklpath.pl),$(ESMABIN)/mklpath.pl)
+          MKLPATH = $(shell $(ESMABIN)/mklpath.pl)
+      endif
+      ifneq ($(MKLPATH),)
+      ifdef MKLPATH
+          LIB_SCI += -L$(MKLPATH) -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm
+      endif
+      endif
+    
       LIB_SYS = -ldl -lc -lpthread -lrt -lstdc++
 
   endif
@@ -514,22 +569,20 @@ ifeq ($(ARCH),Linux)
          ifeq ($(PGI_MAJOR),14)
             GPU_CUDA_VER := 5.5
          endif
+         ifeq ($(PGI_MAJOR),15)
+            GPU_CUDA_VER := 6.5
+         endif
 
-         #FERMI To use the Fermis, compile with this:
-         GPU_TARGET := -Mcuda=nofma,ptxinfo,$(GPU_CUDA_VER),cc20 -acc -ta=nvidia:nofma,$(GPU_CUDA_VER),cc20 -Minfo=accel,par,ccff
+         ifndef GPU_CC_REV
+            GPU_CC_REV := cc35
+         endif
 
-         #K10 To use the K10 Keplers, compile with this:
-         #K10 GPU_TARGET := -Mcuda=nofma,ptxinfo,$(GPU_CUDA_VER),cc30 -acc -ta=nvidia:wait,nofma,$(GPU_CUDA_VER),cc30 -Minfo=accel,par,ccff
-
-         #K20 To use the K20 Keplers, compile with this:
-         #K20 GPU_TARGET := -Mcuda=nofma,ptxinfo,$(GPU_CUDA_VER),cc35,maxregcount:72 -acc -ta=nvidia:wait,nofma,$(GPU_CUDA_VER),cc35,maxregcount:72 -Minfo=accel,par,ccff
+         GPU_TARGET := -Mcuda=nofma,ptxinfo,$(GPU_CUDA_VER),$(GPU_CC_REV),maxregcount:72 -acc -ta=nvidia:wait,nofma,$(GPU_CUDA_VER),$(GPU_CC_REV),maxregcount:72 -Minfo=accel,ccff
 
          FOPT = -fast -Kieee $(GPU_TARGET)
          USER_FDEFS += $(D)GPU_PRECISION=MAPL_R8 # Select precision for GPU Code that can be double prec (DQSAT, deledd)
-         USER_FDEFS += $(D)GPU_MAXLEVS=72        # Select max level for GPU Code (could save space with this)
-         USER_FDEFS += $(D)GPU_NUMAERO=15        # Select number of aerosols for GPU Code
+         USER_FDEFS += $(D)GPU_MAXLEVS=137       # Select max level for GPU Code (could save space with this)
          USER_FDEFS += $(D)_CUDA                 # Set this always so the GEOS-5 dependency builder can use it.
-         USER_FDEFS += $(D)CUDAFOR               # Deprecated flag kept here for safety's sake. Move to _CUDA
       else
          GPU_TARGET :=
          FOPT = -fast -Kieee -g
@@ -542,7 +595,10 @@ ifeq ($(ARCH),Linux)
       # we default to a generic target processor (=px-64). This allows for good layout
       # regression as well as reproducible results. Note: speed does not seem to be
       # affected by this, but a specific target can always be selected.
-      FOPT += -tp=px-64
+      #
+      # Note: We append this to FPE since not every file obeys FOPT. But nearly all
+      #       obey FPE
+      FPE += -tp=px-64
 
       ifeq ("$(BOPT)","Og")
          FOPT += -g -traceback
@@ -574,6 +630,9 @@ ifeq ($(ARCH),Linux)
       ifeq ($(findstring mvapich2,$(INC_MPI)),mvapich2)
          LIB_MPI := -L$(subst include,lib,$(INC_MPI)) -lmpich
       else
+      ifeq ($(findstring mvapich,$(INC_MPI)),mvapich)
+         LIB_MPI := -L$(subst include,lib,$(INC_MPI)) -lmpich
+      else
       # Test if we are using mpt at NAS
       ifdef FPATH
           FPATHS := $(subst :, ,$(FPATH))
@@ -584,14 +643,12 @@ ifeq ($(ARCH),Linux)
       else
          LIB_MPI := -L$(subst include,lib,$(INC_MPI)) -lmpich
       endif # FPATH
+      endif # mvapich
       endif # mvapich2
       endif # openmpi
       endif # openMpi
 
       LIB_SYS = -ldl -lstd -lrt -lC $(GPU_TARGET)
-
-      INC_SCI = 
-      LIB_SCI = 
 
 #     MKL math library
 #     ----------------
@@ -644,10 +701,221 @@ ifeq ($(ARCH),Darwin)
   INC_MPI := $(dir $(shell which mpif90))../include
   LIB_MPI := -L$(dir $(shell which mpif90))../lib -lmpi -lmpi_cxx -lmpi_f77
 
+  MAC_VER := $(subst ., ,$(word 3,$(shell sw_vers -productVersion)))
+  MAC_MAJOR := $(word 1,$(MAC_VER))
+  MAC_MINOR := $(word 2,$(MAC_VER))
+
+  # MAT INC_SYS doesn't seem used in GEOS-5. But this was added...commenting out for now
+  #     pending further testing
+  #INC_SYS := $(shell xcodebuild -version -sdk macosx$(MAC_MAJOR).$(MAC_MINOR) Path)/usr/include
+
 #                    Darwin Compiler Specific
 #                    -----------------------
 
-      LIB_SCI = -lblas -llapack
+# Linux default compilers
+# -----------------------
+  ifndef ESMA_FC
+     FC := ifort
+  endif
+  CC  = cc
+  CXX = c++
+  CPP = cpp
+
+  ifdef ESMA_DEVEL_BOPT
+     ifeq ($(ESMA_DEVEL_BOPT),Og)
+        BOPT = Og
+     endif
+     ifeq ($(ESMA_DEVEL_BOPT),g)
+        BOPT = g
+     endif
+  endif
+
+  RANLIB_FLAGS = -c
+
+
+# Intel Fortran Compiler (ifort or mpiifort)
+# ------------------------------------------
+  ifeq ($(word 1,$(shell $(FC) --version)), ifort)
+
+#   Determine compiler version
+#   --------------------------
+    IFORT_VER := $(subst ., ,$(word 3,$(shell ifort --version)))
+    IFORT_MAJOR := $(word 1,$(IFORT_VER))
+    IFORT_MINOR := $(word 2,$(IFORT_VER))
+    FPIC := -fPIC
+    EXTENDED_SOURCE := -extend_source
+    FREE_SOURCE := -free
+    FIXED_SOURCE := -fixed
+    OMPFLAG  := -openmp
+    PP  := -fpp
+    BIG_ENDIAN := -convert big_endian
+    BYTERECLEN := -assume byterecl
+    FPE = -fpe0
+    ALIGNCOM = -align dcommons
+    MCMODEL = -mcmodel medium  -shared-intel
+    FREAL4 =
+    FREAL8 = -r8
+    FOPT2 += 
+    ifeq ("$(BOPT)","g")
+       FOPT = $(FOPTG) -O0 -ftz -align all -fno-alias -traceback -debug -nolib-inline -fno-inline-functions -assume protect_parens,minus0 -prec-div -prec-sqrt -check bounds -check uninit -fp-stack-check -ftrapuv -warn unused
+    else
+       ifeq ($(IFORT_MAJOR),13)
+          FOPT = $(FOPT3) -vec-report0 -ftz -align all -fno-alias
+#         FOPT = $(FOPT3) -axAVX -xSSE4.1 -vec-report0 -ftz -align all -fno-alias
+       else
+       ifeq ($(IFORT_MAJOR),14)
+          FOPT = $(FOPT3) -vec-report0 -ftz -align all -fno-alias
+#         FOPT = $(FOPT3) -axAVX -xSSE4.1 -vec-report0 -ftz -align all -fno-alias
+       else
+       ifeq ($(IFORT_MAJOR),15)
+          FOPT = $(FOPT3) -qopt-report0 -ftz -align all -fno-alias -m64
+#         FOPT = $(FOPT3) -axCORE-AVX2,AVX -xSSE4.2 -qopt-report0 -ftz -align all -fno-alias -align array32byte
+#         -openmp is deprecated in 15
+          OMPFLAG := -qopenmp
+       ifeq ($(IFORT_MAJOR),16)
+          FOPT = $(FOPT3) -qopt-report0 -ftz -align all -fno-alias -m64
+#         FOPT = $(FOPT3) -axCORE-AVX2,AVX -xSSE4.2 -qopt-report0 -ftz -align all -fno-alias -align array32byte
+#         -openmp is deprecated in 15
+          OMPFLAG := -qopenmp
+       else
+          FOPT = $(FOPT3)
+       endif # IFORT 16
+       endif # IFORT 15
+       endif # IFORT 14
+       endif # IFORT 13
+    endif # BOPT=g
+
+    ifeq ("$(BOPT)","Og")
+       FOPT += -g -traceback
+    endif
+
+    LIB_ESMF = $(BASELIB)/libesmf.a
+
+    CC  = gcc
+    CXX = g++
+
+    F2PY += --fcompiler=intelem
+
+    # This makes the archiver ifort
+    #AR := $(FC)
+    #AR_FLAGS := -staticlib -o 
+
+#   Handle MPI on x86_64
+#   --------------------
+    ifdef I_MPI_ROOT
+        FC := mpiifort
+        ifeq ($(MACH), x86_64) 
+          INC_MPI := $(I_MPI_ROOT)/include64
+          LIB_MPI := -L$(I_MPI_ROOT)/lib64  -lmpi -lmpiif # Intel MPI
+          LIB_MPI_OMP := -L$(I_MPI_ROOT)/lib64  -lmpi_mt -lmpiif # Intel MPI
+        else
+          INC_MPI := $(I_MPI_ROOT)/include
+          LIB_MPI := -L$(I_MPI_ROOT)/lib  -lmpi -lmpiif # Intel MPI
+          LIB_MPI_OMP := -L$(I_MPI_ROOT)/lib  -lmpi_mt -lmpiif # Intel MPI
+        endif
+    else
+    ifdef OPENMPI
+        FC := mpif90
+        INC_MPI := $(OPENMPI)/include
+        OPENMPI_LINK_FLAGS := $(shell mpif90 -showme:link) -lmpi_cxx
+        LIB_MPI := -L$(OPENMPI)/lib $(OPENMPI_LINK_FLAGS)
+    else
+    ifdef MVAPICH2
+        FC := mpif90
+        INC_MPI := $(MVAPICH2)/include
+        LIB_MPI := -L$(MVAPICH2)/lib  -lmpich
+    else
+    ifdef M_MPI_ROOT
+        FC := mpif90
+        INC_MPI := $(M_MPI_ROOT)/include
+        LIB_MPI := -L$(M_MPI_ROOT)/lib  -lmpich
+    else
+    ifdef MPI_HOME
+        FC := mpif90
+        INC_MPI := $(MPI_HOME)/include
+        LIB_MPI := -L$(MPI_HOME)/lib  -lmpich
+    else
+    ifdef FPATH
+        FPATHS := $(subst :, ,$(FPATH))
+        ifeq ($(MACH), x86_64) 
+          FC := mpif90 
+          INC_MPI := $(filter /nasa/sgi/mpt%,$(FPATHS)) \
+                     $(filter /opt/scali%,$(FPATHS))
+          INC_MPI := $(word 1,$(INC_MPI))
+          LIB_MPI := -L$(subst include,lib,$(INC_MPI)) -lmpi -lmpi++
+        endif
+    endif # FPATH
+    endif # MPI_HOME
+    endif # M_MPI_ROOT
+    endif # MVAPICH2
+    endif # OPENMPI
+    endif # I_MPI_ROOT
+
+#   Define LIB_SYS
+#   --------------
+    LIB_SCI := 
+    #LIB_SYS := -ldl -lc -lpthread -lrt 
+	 # librt does not exist on Darwin
+    LIB_SYS := -ldl -lc -lpthread 
+
+    ifeq ($(IFORT_MAJOR), 13)
+          LIB_SYS := -lirc $(LIB_SYS)
+          FPE += -fp-model source
+    else
+    ifeq ($(IFORT_MAJOR), 14)
+          LIB_SYS := -lirc $(LIB_SYS)
+          FPE += -fp-model source
+    else
+    ifeq ($(IFORT_MAJOR), 15)
+          LIB_SYS := -lirc $(LIB_SYS)
+          FPE += -fp-model source
+    else
+          LIB_SYS +=  # This should not be used; better to handle Major verison
+    endif # Intel 15
+    endif # Intel 14
+    endif # Intel 13
+
+#   MKL math library
+#   ----------------
+    ifeq ($(wildcard $(ESMABIN)/mklpath.pl),$(ESMABIN)/mklpath.pl)
+       MKLPATH = $(shell $(ESMABIN)/mklpath.pl)
+    endif
+    ifdef MKLPATH
+       ifeq ($(wildcard $(MKLPATH)/libmkl_intel_lp64.so),)
+           LIB_SCI += -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
+       else
+           LIB_SCI += -L$(MKLPATH) -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
+       endif
+    endif
+
+#   Customize for each MACH
+#   -----------------------
+    GCC_DIR = $(shell dirname `gcc --print-libgcc-file-name`)
+    ifeq ($(MACH), x86_64) 
+       OVERRIDE_LIMITS =
+       LOOP_VECT =
+       FDEFS += $(D)HAVE_SHMEM
+    endif # x86_64
+
+    LIB_SYS += -L$(GCC_DIR) -lstdc++
+    #LIB_SYS += -L$(GCC_DIR) -lc++
+
+    CFLAGS += $(FPIC)
+    fFLAGS += $(FPIC) $(EXTENDED_SOURCE) $(FPE) $(OVERRIDE_LIMITS) $(ALIGNCOM)
+    FFLAGS += $(FPIC) $(EXTENDED_SOURCE) $(FPE) $(OVERRIDE_LIMITS) $(ALIGNCOM)
+    f90FLAGS += $(FPIC) $(FPE) $(OVERRIDE_LIMITS) $(ALIGNCOM)
+    F90FLAGS += $(FPIC) $(FPE) $(OVERRIDE_LIMITS) $(ALIGNCOM)
+
+#   Some safeguards
+#   ---------------
+    ifeq ($(INC_MPI),)
+      FC := mpif90
+      INC_MPI := $(dir $(shell which mpif90))../include
+      LIB_MPI := -L$(dir $(shell which mpif90))../lib -lmpi -lmpi_cxx # -lmpi_f77
+    endif
+
+  endif
+
 
 # GNU Fortran Compiler
 # --------------------
@@ -687,26 +955,6 @@ ifeq ($(ARCH),Darwin)
       F90FLAGS +=  -ffree-line-length-huge
 
   endif # g95
-
-# Intel Fortran Compiler
-# ----------------------
-  ifeq ($(FC), ifort) 
-
-      EXTENDED_SOURCE := -extend-source
-      FREE_SOURCE = -free
-      FIXED_SOURCE = -fixed
-      FREAL4 := 
-      FREAL8 := -r8 -i4
-
-      fFLAGS += $(EXTENDED_SOURCE)
-      FFLAGS += $(EXTENDED_SOURCE)
-
-#      LIB_SYS = -limf -lm -ldl -lirc -lguide -lstdc++ -lgcc_s.1
-      LIB_SYS = -limf -lm -ldl -lirc -lstdc++ -lgcc_s.1
-
-      override FC = mpif90
-
-  endif # ifort
 
 endif  #    Darwin
 

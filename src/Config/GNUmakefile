@@ -20,7 +20,7 @@ ifndef ESMADIR
 endif
 
   BINS    = # f90aib.x f90split.x
-  SCRIPTS = mklpath.pl endiantest.pl OScheck.pl
+  SCRIPTS = mklpath.pl endiantest.pl OScheck.pl esma_timer.sh esma_tgraph.pl
 
 # User can provide their own assert script
 # ----------------------------------------
@@ -82,7 +82,7 @@ ifdef ASSERT
 endif
 	./install_fdp ./fdp $(FDP)
 	./CVSTAG_install.pl $(ESMAETC)
-	./OScheck.pl -cp $(ESMAETC)
+	./OScheck.pl -q -cp $(ESMAETC)
 
 esma_clean clean:
 	-$(RM) *~ *.[aox] *.[Mm][Oo][Dd]
@@ -94,6 +94,13 @@ esma_doc doc:
 	@echo "Target $@ not implemented yet in `pwd`"
 
 FOPT =
+
+# If ESMA_TIMER is enabled, fdp.o can't use the "standard"
+# .f90.o rule since it gets compiled before esma_timer.sh is
+# copied into ESMABIN. Easiest solution, just undefine ESMA_TIMER
+# locally.
+
+ESMA_TIMER =
 
 %.x : %.F90
 	$(FC) -o $@ $(F90FLAGS) $<

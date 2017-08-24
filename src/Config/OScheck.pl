@@ -120,7 +120,7 @@ sub copyfile {
         exit;
     }
     copy $sysfile, $myfile or die "Error. cp $sysfile $myfile;";
-    print "$sysfile copied to $myfile\n" unless $quiet;
+    print "$sysfile copied to $myfile\n";
     exit;
 }
 
@@ -179,7 +179,7 @@ sub check {
 
     elsif ($type eq "d") {
         unless (-d $name) {
-            warn "Warning. directory not found: $name;" unless $quiet;
+            warn "Warning. directory not found: $name;";
             return;
         }    
     }

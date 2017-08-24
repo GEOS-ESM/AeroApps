@@ -19,23 +19,12 @@ use strict;
 # main program
 #-------------
 {
-    my ($fpath, @lib, $mklpath, $mklroot,@tmp);
+    my ($fpath, @lib, $mklpath);
 
     # first check to see if MKLPATH environment variable is defined
     #--------------------------------------------------------------
     $mklpath = $ENV{"MKLPATH"};
     if ($mklpath) {
-        print "$mklpath";
-        exit;
-    }
-
-    # Use linktool
-    # ------------
-    $mklroot = $ENV{"MKLROOT"};
-    if ($mklroot) {
-        @tmp = split /-L/, `$mklroot/tools/mkl_link_tool -libs 2>/dev/null`;
-        @tmp = split / /, $tmp[1];
-        $mklpath = $tmp[0];
         print "$mklpath";
         exit;
     }
@@ -48,7 +37,7 @@ use strict;
     foreach (@lib) {
         ($mklpath = $_) =~ s/include/lib\/em64t/;
         last if -d $mklpath;
-        $mklpath = ".";
+        $mklpath = "";
     }
     print "$mklpath";
 }
