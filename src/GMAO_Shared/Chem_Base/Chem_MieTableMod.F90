@@ -69,13 +69,6 @@
      real, pointer    :: g(:,:,:) => null()        ! asymmetry parameter
      real, pointer    :: pback(:,:,:,:) => null()  ! Backscatter phase function
      real, pointer    :: pmom(:,:,:,:,:) => null( )  ! moments of phase function
-     real, pointer    :: gf(:,:) => null()         ! hygroscopic growth factor
-     real, pointer    :: rhop(:,:) => null()       ! wet particle density [kg m-3]
-     real, pointer    :: rhod(:,:) => null()       ! wet particle density [kg m-3]
-     real, pointer    :: vol(:,:) => null()        ! wet particle volume [m3 kg-1]
-     real, pointer    :: area(:,:) => null()       ! wet particle cross section [m2 kg-1]
-     real, pointer    :: refr(:,:,:) => null()     ! real part of refractive index
-     real, pointer    :: refi(:,:,:) => null()     ! imaginary part of refractive index
 
      integer          :: rhi(991)        ! pointer to rh map
      real             :: rha(991)        ! slope on rh map
@@ -209,20 +202,6 @@ CONTAINS
   VERIFY_(rc)
   if ( associated(this%pmom) )   deallocate(this%pmom, stat=rc)
   VERIFY_(rc)
-  if ( associated(this%gf) )    deallocate(this%gf, stat=rc)
-  VERIFY_(rc)
-  if ( associated(this%rhop) )  deallocate(this%rhop, stat=rc)
-  VERIFY_(rc)
-  if ( associated(this%rhod) )  deallocate(this%rhod, stat=rc)
-  VERIFY_(rc)
-  if ( associated(this%vol) )   deallocate(this%vol, stat=rc)
-  VERIFY_(rc)
-  if ( associated(this%area) )  deallocate(this%area, stat=rc)
-  VERIFY_(rc)
-  if ( associated(this%refr) )  deallocate(this%refr, stat=rc)
-  VERIFY_(rc)
-  if ( associated(this%refi) )  deallocate(this%refi, stat=rc)
-  VERIFY_(rc)
 
 end subroutine Chem_MieTableDestroy 
 
@@ -267,11 +246,7 @@ end subroutine Chem_MieTableDestroy
       real*8, pointer :: channels_table(:), rh_table(:), reff_table(:,:), &
                          bext_table(:,:,:), bsca_table(:,:,:), &
                          bbck_table(:,:,:), g_table(:,:,:), &
-                         pmom_table(:,:,:,:,:), pback_table(:,:,:,:), &
-                         gf_table(:,:), rhop_table(:,:), rhod_table(:,:), &
-                         vol_table(:,:), area_table(:,:), &
-                         refr_table(:,:,:), refi_table(:,:,:)
-
+                         pmom_table(:,:,:,:,:), pback_table(:,:,:,:)
       real :: yerr
       integer :: nmom_, imom, ipol
 
@@ -363,20 +338,6 @@ end subroutine Chem_MieTableDestroy
       VERIFY_(rc)
       allocate(pback_table(nch_table,nrh_table,nbin_table,nPol_table), stat = rc )
       VERIFY_(rc)
-      allocate(gf_table(nrh_table,nbin_table),stat = rc )
-      VERIFY_(rc)
-      allocate(rhop_table(nrh_table,nbin_table),stat = rc )
-      VERIFY_(rc)
-      allocate(rhod_table(nrh_table,nbin_table),stat = rc )
-      VERIFY_(rc)
-      allocate(vol_table(nrh_table,nbin_table),stat = rc )
-      VERIFY_(rc)
-      allocate(area_table(nrh_table,nbin_table),stat = rc )
-      VERIFY_(rc)
-      allocate(refr_table(nch_table,nrh_table,nbin_table), stat = rc )
-      VERIFY_(rc)
-      allocate(refi_table(nch_table,nrh_table,nbin_table), stat = rc )
-      VERIFY_(rc)
 
       if ( nmom_ > 0 ) then
          allocate(pmom_table(nch_table,nrh_table,nbin_table,nmom_table,nPol_table), stat = rc )
@@ -429,66 +390,6 @@ end subroutine Chem_MieTableDestroy
          VERIFY_(rc)
       end if
 
-!     Aerosol optical properties not necessarily stored in all versions of the tables
-!     ----------------------
-!     Particle growth factor
-      rc = nf_inq_varid(ncid,'growth_factor',ivarid)
-      if(rc .ne. NF_NOERR) then   ! not in table, fill in dummy variable
-        gf_table = -999.
-      else
-        rc = nf_get_var_double(ncid,ivarid,gf_table)
-        VERIFY_(rc)
-      endif
-
-!     Wet particle density
-      rc = nf_inq_varid(ncid,'rhop',ivarid)
-      if(rc .ne. NF_NOERR) then   ! not in table, fill in dummy variable
-        rhop_table = -999.
-      else
-        rc = nf_get_var_double(ncid,ivarid,rhop_table)
-        VERIFY_(rc)
-      endif
-
-!     Dry particle density (will be pulled from wet particle radius)
-      rc = nf_inq_varid(ncid,'rhop',ivarid)
-      if(rc .ne. NF_NOERR) then   ! not in table, fill in dummy variable
-        rhod_table = -999.
-      else
-        rc = nf_get_var_double(ncid,ivarid,rhod_table)
-        do i = 1, nrh_table
-          rhod_table(i,:) = rhod_table(1,:)
-        enddo        
-        VERIFY_(rc)
-      endif
-
-!     Wet particle real part of refractive index
-      rc = nf_inq_varid(ncid,'refreal',ivarid)
-      if(rc .ne. NF_NOERR) then   ! not in table, fill in dummy variable
-        refr_table = -999.
-      else
-        rc = nf_get_var_double(ncid,ivarid,refr_table)
-        VERIFY_(rc)
-      endif
-
-!     Wet particle imaginary part of refractive index (ensure positive)
-      rc = nf_inq_varid(ncid,'refimag',ivarid)
-      if(rc .ne. NF_NOERR) then   ! not in table, fill in dummy variable
-        refi_table = -999.
-      else
-        rc = nf_get_var_double(ncid,ivarid,refi_table)
-        VERIFY_(rc)
-        refi_table = abs(refi_table)
-      endif
-
-!     Wet particle radius [m3 kg-1] (wet particle volume/dry particle mass)
-!     Ratio of wet to dry volume is gf^3, hence the following
-      vol_table = gf_table**3 / rhod_table
-
-!     Wet particle cross sectional area [m2 kg-1]
-!     Assume area is volume divided by (4./3.*reff)
-      area_table = vol_table / (4./3.*reff_table)
-
-
 !     Close the table file
 !     -------------------------------------
       rc = nf_close(ncid)
@@ -530,20 +431,6 @@ end subroutine Chem_MieTableDestroy
          allocate (this%pmom(this%nrh,this%nLambda,this%nbin,this%nMom,this%nPol),   stat = rc )
          VERIFY_(rc)
       end if
-      allocate (this%gf(this%nrh,this%nbin),   stat = rc )
-      VERIFY_(rc)
-      allocate (this%rhop(this%nrh,this%nbin),   stat = rc )
-      VERIFY_(rc)
-      allocate (this%rhod(this%nrh,this%nbin),   stat = rc )
-      VERIFY_(rc)
-      allocate (this%vol(this%nrh,this%nbin),   stat = rc )
-      VERIFY_(rc)
-      allocate (this%area(this%nrh,this%nbin),   stat = rc )
-      VERIFY_(rc)
-      allocate (this%refr(this%nrh,this%nLambda,this%nbin),stat = rc )
-      VERIFY_(rc)
-      allocate (this%refi(this%nrh,this%nLambda,this%nbin),stat = rc )
-      VERIFY_(rc)
 
 !     Preserve the full RH structure of the input table
       this%rh(:) = rh_table(:)
@@ -567,10 +454,6 @@ end subroutine Chem_MieTableDestroy
                      this%lambda(n),this%bbck(i,n,j),yerr)
          call polint(channels_table,g_table(:,i,j),nch_table, &
                      this%lambda(n),this%g(i,n,j),yerr)
-         call polint(channels_table,refr_table(:,i,j),nch_table, &
-                     this%lambda(n),this%refr(i,n,j),yerr)
-         call polint(channels_table,refi_table(:,i,j),nch_table, &
-                     this%lambda(n),this%refi(i,n,j),yerr)         
          do ipol = 1, this%nPol
                   call polint(channels_table,pback_table(:,i,j,ipol),nch_table, &
                        this%lambda(n),this%pback(i,n,j,ipol),yerr)
@@ -586,22 +469,6 @@ end subroutine Chem_MieTableDestroy
         enddo
        enddo
       enddo
-
-!     Insert growth factor
-      this%gf(:,:) = gf_table(:,:)
-
-!     Wet particle density [kg m-3]
-      this%rhop(:,:) = rhop_table(:,:)
-
-!     Dry particle density [kg m-3]
-      this%rhod(:,:) = rhod_table(:,:)
-
-!     Volume [m3 kg-1]
-      this%vol(:,:) = vol_table(:,:)
-
-!     Area [m2 kg-1]
-      this%area(:,:) = area_table(:,:)
-
 
 !     Now we do a mapping of the RH from the input table to some high
 !     resolution representation.  This is to spare us the need to
@@ -648,20 +515,6 @@ end subroutine Chem_MieTableDestroy
          deallocate (pmom_table, stat = rc )
          VERIFY_(rc)
       endif
-      deallocate (gf_table, stat = rc )
-      VERIFY_(rc)
-      deallocate (rhop_table, stat = rc )
-      VERIFY_(rc)
-      deallocate (rhod_table, stat = rc )
-      VERIFY_(rc)
-      deallocate (vol_table, stat = rc )
-      VERIFY_(rc)
-      deallocate (area_table, stat = rc )
-      VERIFY_(rc)
-      deallocate (refr_table, stat = rc )
-      VERIFY_(rc)
-      deallocate (refi_table, stat = rc )
-      VERIFY_(rc)      
 
 return
 

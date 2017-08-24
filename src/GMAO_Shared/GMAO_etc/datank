@@ -37,6 +37,8 @@ my (@nonFL, %DTlist);
     if ($admin) {
         if ($cmd eq "checkout") { checkout(); exit }
         if ($cmd eq "flimp")    { flncvs();   exit }
+        if ($cmd eq "fladd")    { flncvs();   exit }
+        if ($cmd eq "flcommit") { flncvs();   exit }
         if ($cmd eq "import")   { importdt(); exit }
         if ($cmd eq "help")     { help();     exit }
     }
@@ -122,6 +124,8 @@ sub init {
         $descr{"help"    } = "Display help information";
         $descr{"import"  } = "Import files and directories into DataTank";
         $descr{"stage"   } = "Stage data links from a tree of flexlinks";
+        $descr{"fladd"   } = "Wrapper for CVS add and commit of new FlexLinks";
+        $descr{"flcommit"} = "Wrapper for CVS commit of existing FlexLinks";
     }
     else {
         $descr{"add"     } = "Add file to be imported to DataTank";
@@ -145,7 +149,7 @@ sub init {
     #-----------------------------------------------------------
     $msgtype = 0;
     $msgtype = "fdsc" if $cmd eq "add"   or $cmd eq "annotate";
-    $msgtype = "lmsg" if $cmd eq "flimp" or $cmd eq "commit" or $cmd eq "import";
+    $msgtype = "lmsg" if $cmd eq "flimp" or $cmd eq "commit" or $cmd eq "import" or $cmd eq "fladd" or $cmd eq "flcommit";
     $message{$msgtype} = $user_message if defined($user_message);
 
     # create label to use in abort messages
@@ -580,6 +584,9 @@ sub flncvs {
     #----------------
     $cvscmd = "checkout" if $cmd eq "flco";
     $cvscmd = "import"   if $cmd eq "flimp";
+    $cvscmd = "add"      if $cmd eq "fladd";
+    $cvscmd = "commit"   if $cmd eq "flcommit";
+ 
     die "$Xlabel: unrecognizable flncvs command: $cmd;" unless $cvscmd;
 
     # special handling for cvs import command
@@ -605,6 +612,12 @@ sub flncvs {
     $str = "Import flexlinks from local directory to FlexLinks CVS repository"
         if $cvscmd eq "import";
 
+    $str = "Add user specified flexlinks to FlexLinks CVS repository"
+        if $cvscmd eq "add";
+  
+    $str = "Commit new version of specified flexlinks to FlexLinks CVS repository"
+        if $cvscmd eq "commit";
+
     verify($str);
     if ($cvscmd eq "import") { @nonFL = (); check_fl_import(cwd) }
 
@@ -614,11 +627,21 @@ sub flncvs {
     $pre_add  = "-m \"$message{$msgtype}\"" if $message{$msgtype};
     unshift @ARGV, $pre_add if $pre_add;
 
-    # send CVS command
-    #-----------------
-    $lcmd = "cvs -d $datankroot $cvscmd @ARGV";
-    print "$lcmd\n";
-    system $lcmd;
+    if ($cvscmd eq "checkout" or $cvscmd eq "import" or $cvscmd eq "commit") {
+       # send CVS command
+       #-----------------
+       $lcmd = "cvs -d $datankroot $cvscmd @ARGV";
+       print "$lcmd\n";
+       system $lcmd;
+    }
+    if ($cvscmd eq "add") {
+       $lcmd = "cvs -d $datankroot $cvscmd @ARGV";
+       print "$lcmd\n";
+       system $lcmd;
+       $lcmd = "cvs -d $datankroot commit @ARGV";
+       print "$lcmd\n";
+       system $lcmd;
+    }
 }
 
 #......................................................................
@@ -1445,8 +1468,8 @@ sub clean_name {
 
     # remove all /./'s from path name
     #--------------------------------
-    while ($cleanname =~ /\/.\//) {
-        $cleanname =~ s/\/.\//\//;
+    while ($cleanname =~ /\/\.\//) {
+        $cleanname =~ s/\/\.\//\//;
         die "$Xlabel: endless loop" if ++$cnt > 100;
     }
     return $cleanname;
@@ -2124,6 +2147,14 @@ sub helpme {
         .    "         -b               batch mode; do not ask user to verify\n"
         .    "other options: use cvs import command options\n"
         .    "Example: $script flimp -m'import dir into CVS repository'";
+    $help{"fladd"} = "[options]\n"
+        .    "         -b               batch mode; do not ask user to verify\n"
+        .    "other options: use cvs add command options\n"
+        .    "Example: $script fladd -m'import dir into CVS repository'";
+    $help{"flcommit"} = "[options]\n"
+        .    "         -b               batch mode; do not ask user to verify\n"
+        .    "other options: use cvs commit command options\n"
+        .    "Example: $script flcommit -m'import dir into CVS repository'";
     $help{"help"} = "[command]";
     $help{"import"} = "repository [options]\n"
         .    "Options: -D \$DATANKROOT   location of DATANKROOT\n"

@@ -55,7 +55,8 @@ SDS_HSRL_daq = {'Engineering/header': ('date',),
                }
 
 SDS_HSRL2 = {'header': ('date',),
-             'ER2_IMU':
+             'ApplanixIMU':
+#             'ER2_IMU':
                         ('gps_alt','gps_lat','gps_lon','gps_time'),
              'DataProducts':
                          (

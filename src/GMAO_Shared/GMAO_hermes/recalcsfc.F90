@@ -34,6 +34,7 @@
 !  24Nov2009  RT/Zhang    Updated interface to dyn_get for GEOS-5; d2a handled accordingly
 !  25Jun2010  RT/Meta     Adjust so upperair and surface longitudes are consistent,
 !                           calculations are made in g4 [0-360] coordinates
+!  13Jul2016  RT/Meta     Pass dyntype to insitu init
 !
 !EOP
 !-----------------------------------------------------------------------
@@ -220,7 +221,7 @@ subroutine eta_set_(w,x)      ! set needed quantities from analysis
    real :: zmin, alpha, ptop, pi, d2r
    if ( debug ) print *, ' [] Setting analysis fields...'
     ncount = 0
-    call Insitu_Init ( w, w_s, rc )
+    call Insitu_Init ( w, w_s, rc, dyntype=dyntype )
     if ( rc .ne. 0 ) call die ( myname, 'cannot create simulator vector' )
     do j = 1, jm
        do i = 1, im                        ! determine bottom layer

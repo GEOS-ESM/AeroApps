@@ -1,4 +1,4 @@
-! $Id: Chem_MieMod.F90,v 1.51.28.1.2.1 2017/05/17 19:17:34 pcolarco Exp $
+! $Id: Chem_MieMod.F90,v 1.51 2015/12/15 20:10:58 pcolarco Exp $
 
 #include "MAPL_Exceptions.h"
 
@@ -74,20 +74,18 @@
      character(len=255) :: ss_optics_file
      character(len=255) :: bc_optics_file
      character(len=255) :: oc_optics_file
-     character(len=255) :: brc_optics_file
      character(len=255) :: su_optics_file
      character(len=255) :: ni_optics_file
      character(len=255) :: sm_optics_file
 
                                            ! mie tables -- dim(nch,nrh,nbin)
-     type(Chem_MieTable), pointer :: mie_DU  => null()
-     type(Chem_MieTable), pointer :: mie_SS  => null()
-     type(Chem_MieTable), pointer :: mie_BC  => null()
-     type(Chem_MieTable), pointer :: mie_OC  => null()
-     type(Chem_MieTable), pointer :: mie_BRC => null()
-     type(Chem_MieTable), pointer :: mie_SU  => null()
-     type(Chem_MieTable), pointer :: mie_NI  => null()
-     type(Chem_MieTable), pointer :: mie_SM  => null()
+     type(Chem_MieTable), pointer :: mie_DU => null()
+     type(Chem_MieTable), pointer :: mie_SS => null()
+     type(Chem_MieTable), pointer :: mie_BC => null()
+     type(Chem_MieTable), pointer :: mie_OC => null()
+     type(Chem_MieTable), pointer :: mie_SU => null()
+     type(Chem_MieTable), pointer :: mie_NI => null()
+     type(Chem_MieTable), pointer :: mie_SM => null()
 
      integer :: nq                                ! number of tracers
      character(len=255), pointer  :: vname(:)  => null()
@@ -155,8 +153,7 @@ contains
    type(Chem_Registry), pointer :: reg
    integer        :: ios, n, iq, iiq
    real, pointer  :: rh_table(:), lambda_table(:), &
-                     bext(:,:,:), bsca(:,:,:), reff(:,:), gf(:,:), &
-                     rhop(:,:), rhod(:)
+                     bext(:,:,:), bsca(:,:,:), reff(:,:)
    logical :: fexists
    character(len=255) :: name
 
@@ -287,14 +284,6 @@ contains
       if ( ios /= 0 ) call die(myname,'could not parse NI filename')
      end if
 
-    call i90_label ( 'filename_optical_properties_BRC:', ios )
-     if ( ios /= 0 ) then
-      call die(myname, 'could not parse BRC filename label')
-     else
-      call i90_gtoken ( this%brc_optics_file, ios )
-      if ( ios /= 0 ) call die(myname,'could not parse BRC filename')
-     end if
-
 
 !   Close resource file
     call I90_Release()
@@ -306,7 +295,7 @@ contains
    if ( rc /= 0 ) return
    allocate(this%mie_BC, this%mie_OC, stat = rc )
    if ( rc /= 0 ) return
-   allocate(this%mie_NI, this%mie_BRC, stat = rc )
+   allocate(this%mie_NI, stat = rc )
    if ( rc /= 0 ) return
    this%mie_DU = Chem_MieTableCreate(this%du_optics_file, rc)
    if ( rc /= 0 ) call die(myname, 'could not create table for dust')
@@ -320,8 +309,6 @@ contains
    if ( rc /= 0 ) call die(myname, 'could not create table for black carbon')
    this%mie_NI = Chem_MieTableCreate(this%ni_optics_file, rc)
    if ( rc /= 0 ) call die(myname, 'could not create table for nitrates')
-   this%mie_BRC = Chem_MieTableCreate(this%brc_optics_file, rc)
-   if ( rc /= 0 ) call die(myname, 'could not create table for brown carbon')
 
    call Chem_MieTableRead(this%mie_DU,this%nch,this%channels,rc,nmom=this%nmom)
    if ( rc /= 0 ) call die(myname, 'could not read table for dust')
@@ -335,8 +322,6 @@ contains
    if ( rc /= 0 ) call die(myname, 'could not read table for black carbon')
    call Chem_MieTableRead(this%mie_NI,this%nch,this%channels,rc,nmom=this%nmom)
    if ( rc /= 0 ) call die(myname, 'could not read table for nitrates')
-   call Chem_MieTableRead(this%mie_BRC,this%nch,this%channels,rc,nmom=this%nmom)
-   if ( rc /= 0 ) call die(myname, 'could not read table for brown carbon')
 
    this%nPol = this%mie_DU%nPol
 
@@ -359,12 +344,6 @@ contains
     do iq = reg%i_OC, reg%j_OC
      this%vindex(iq) = iq-reg%i_OC + 1
      this%vtable(iq)  = this%mie_OC
-    enddo
-   endif
-   if(reg%doing_BRC) then
-    do iq = reg%i_BRC, reg%j_BRC
-     this%vindex(iq) = iq-reg%i_BRC + 1
-     this%vtable(iq)  = this%mie_BRC
     enddo
    endif
    if(reg%doing_BC) then
@@ -459,8 +438,7 @@ contains
    integer        :: iq, rcs(32)
    integer        :: i, itick, iiq
    real, pointer  :: rh_table(:), lambda_table(:), &
-                     bext(:,:,:), bsca(:,:,:), reff(:,:), gf(:,:), &
-                     rhop(:,:), rhod(:)
+                     bext(:,:,:), bsca(:,:,:), reff(:,:)
    character(len=255) :: reg_filename, name
    logical :: fexists
 
@@ -519,9 +497,6 @@ contains
    call ESMF_ConfigGetAttribute( CF, this%ni_optics_file, Label="NI_OPTICS:" , &
                                  default='ExtData/g5chem/x/opticsBands_NI.nc4', &
                                  __RC__ )
-   call ESMF_ConfigGetAttribute( CF, this%brc_optics_file, Label="BRC_OPTICS:" , &
-                                 default='ExtData/g5chem/x/opticsBands_BRC.nc4', &
-                                 __RC__ )
    call ESMF_ConfigGetAttribute( CF, this%nch           , Label= "NUM_BANDS:" , &
                                  default=18, __RC__)
 
@@ -539,17 +514,16 @@ contains
       end do
    end if
 
-   allocate(this%mie_DU, this%mie_SS, this%mie_SU, this%mie_BRC, &
+   allocate(this%mie_DU, this%mie_SS, this%mie_SU, &
             this%mie_BC, this%mie_OC, this%mie_NI, stat=rc)
    if ( rc /= 0 ) return 
 
-   this%mie_DU  = Chem_MieTableCreate(this%du_optics_file, __RC__ )
-   this%mie_SS  = Chem_MieTableCreate(this%ss_optics_file, __RC__ )
-   this%mie_SU  = Chem_MieTableCreate(this%su_optics_file, __RC__ )
-   this%mie_OC  = Chem_MieTableCreate(this%oc_optics_file, __RC__ )
-   this%mie_BC  = Chem_MieTableCreate(this%bc_optics_file, __RC__ )
-   this%mie_NI  = Chem_MieTableCreate(this%ni_optics_file, __RC__ )
-   this%mie_BRC = Chem_MieTableCreate(this%brc_optics_file, __RC__ )
+   this%mie_DU = Chem_MieTableCreate(this%du_optics_file, __RC__ )
+   this%mie_SS = Chem_MieTableCreate(this%ss_optics_file, __RC__ )
+   this%mie_SU = Chem_MieTableCreate(this%su_optics_file, __RC__ )
+   this%mie_OC = Chem_MieTableCreate(this%oc_optics_file, __RC__ )
+   this%mie_BC = Chem_MieTableCreate(this%bc_optics_file, __RC__ )
+   this%mie_NI = Chem_MieTableCreate(this%ni_optics_file, __RC__ )
 
    call Chem_MieTableRead(this%mie_DU,this%nch,this%channels, __RC__)
    call Chem_MieTableRead(this%mie_SS,this%nch,this%channels, __RC__)
@@ -557,7 +531,6 @@ contains
    call Chem_MieTableRead(this%mie_OC,this%nch,this%channels, __RC__)
    call Chem_MieTableRead(this%mie_BC,this%nch,this%channels, __RC__)
    call Chem_MieTableRead(this%mie_NI,this%nch,this%channels, __RC__)
-   call Chem_MieTableRead(this%mie_BRC,this%nch,this%channels, __RC__)
 
 !  Now map the mie tables to the hash table for the registry
 !  This part is hard-coded for now!
@@ -579,12 +552,6 @@ contains
     do iq = reg%i_OC, reg%j_OC
      this%vindex(iq) = iq-reg%i_OC + 1
      this%vtable(iq)  = this%mie_OC
-    enddo
-   endif
-   if(reg%doing_BRC) then
-    do iq = reg%i_BRC, reg%j_BRC
-     this%vindex(iq) = iq-reg%i_BRC + 1
-     this%vtable(iq)  = this%mie_BRC
     enddo
    endif
    if(reg%doing_BC) then
@@ -679,8 +646,6 @@ contains
    if ( rc /= 0 ) return
    call Chem_MieTableDestroy(this%mie_NI, rc=rc)
    if ( rc /= 0 ) return
-   call Chem_MieTableDestroy(this%mie_BRC, rc=rc)
-   if ( rc /= 0 ) return
 
    if ( associated(this%channels) )  deallocate(this%channels, stat=rc)
    if ( rc /= 0 ) return
@@ -701,8 +666,6 @@ contains
    if ( associated(this%mie_BC) )    deallocate(this%mie_BC, stat=rc)
    if ( rc /= 0 ) return
    if ( associated(this%mie_NI) )    deallocate(this%mie_NI, stat=rc)
-   if ( rc /= 0 ) return
-   if ( associated(this%mie_BRC) )   deallocate(this%mie_BRC, stat=rc)
    if ( rc /= 0 ) return
 
 end subroutine Chem_MieDestroy 
@@ -789,8 +752,7 @@ end subroutine Chem_MieDestroy
 !
    subroutine Chem_MieQueryByInt ( this, idx, channel, q_mass, rh,     &
                                    tau, ssa, gasym, bext, bsca, bbck,  &
-                                   reff, pmom, p11, p22, gf, rhop, rhod, &
-                                   vol, area, refr, refi, rc )
+                                   reff, pmom, p11, p22, rc )
 
 ! !INPUT PARAMETERS:
 
@@ -812,13 +774,6 @@ end subroutine Chem_MieDestroy
    real,    optional,      intent(out) :: pmom(:,:)
    real,    optional,      intent(out) :: p11   ! P11 phase function at backscatter
    real,    optional,      intent(out) :: p22   ! P22 phase function at backscatter
-   real,    optional,      intent(out) :: gf    ! Growth factor (ratio of wet to dry radius)
-   real,    optional,      intent(out) :: rhop  ! Wet particle density [kg m-3]
-   real,    optional,      intent(out) :: rhod  ! Dry particle density [kg m-3]
-   real,    optional,      intent(out) :: vol   ! Wet particle volume [m3 kg-1]
-   real,    optional,      intent(out) :: area  ! Wet particle cross section [m2 kg-1]
-   real,    optional,      intent(out) :: refr  ! Wet particle real part of ref. index
-   real,    optional,      intent(out) :: refi  ! Wet particle imag. part of ref. index
    integer, optional,      intent(out) :: rc    ! error code
 
 ! !DESCRIPTION:
@@ -840,9 +795,7 @@ end subroutine Chem_MieDestroy
       integer                      :: ICHANNEL, TYPE, iq
       integer                      :: irh, irhp1, isnap
       real                         :: rhUse, arh
-      real                         :: bextIn, bscaIn, bbckIn, gasymIn, p11In, p22In, &
-                                      gfIn, rhopIn, rhodIn, volIn, areaIn, &
-                                      refrIn, refiIn
+      real                         :: bextIn, bscaIn, bbckIn, gasymIn, p11In, p22In
       type(Chem_MieTable), pointer :: TABLE
 
       character(len=*), parameter  :: Iam = 'Chem_MieQueryByInt'
@@ -911,37 +864,8 @@ end subroutine Chem_MieDestroy
                  + TABLE%pback(irhp1,ichannel,TYPE,5) * arh
       endif
 
-      if(present(gf) ) then
-         gfIn =     TABLE%gf(irh  ,TYPE) * (1.-arh) &
-                  + TABLE%gf(irhp1,TYPE) * arh
-      endif
-
-      if(present(rhod) ) then
-         rhodIn =   TABLE%rhod(1  ,TYPE)
-      endif
-
-      if(present(vol) ) then
-         volIn  =   TABLE%vol(irh  ,TYPE) * (1.-arh) &
-                  + TABLE%vol(irhp1,TYPE) * arh
-      endif
-
-      if(present(area) ) then
-         areaIn  =   TABLE%area(irh  ,TYPE) * (1.-arh) &
-                  + TABLE%area(irhp1,TYPE) * arh
-      endif
-
-      if(present(refr) .or. present(tau) .or. present(ssa) ) then
-         refrIn =   TABLE%refr(irh  ,ichannel,TYPE) * (1.-arh) &
-                  + TABLE%refr(irhp1,ichannel,TYPE) * arh
-      endif
-
-      if(present(refi) .or. present(tau) .or. present(ssa) ) then
-         refiIn =   TABLE%refi(irh  ,ichannel,TYPE) * (1.-arh) &
-                  + TABLE%refi(irhp1,ichannel,TYPE) * arh
-      endif
-
-
 !     Fill the requested outputs
+
       if(present(tau  )) tau   = bextIn * q_mass
       if(present(ssa  )) ssa   = bscaIn/bextIn
       if(present(bext )) bext  = bextIn
@@ -950,13 +874,6 @@ end subroutine Chem_MieDestroy
       if(present(gasym)) gasym = gasymIn
       if(present(p11  )) p11   = p11In
       if(present(p22  )) p22   = p22In
-      if(present(gf   )) gf    = gfIn
-      if(present(rhop )) rhop  = rhopIn
-      if(present(rhod )) rhod  = rhodIn
-      if(present(vol ))  vol   = volIn
-      if(present(area )) area  = areaIn
-      if(present(refr )) refr  = refrIn
-      if(present(refi )) refi  = refiIn
 
 !  All Done
 !----------

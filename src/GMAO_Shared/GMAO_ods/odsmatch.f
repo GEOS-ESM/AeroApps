@@ -21,9 +21,11 @@
       use m_MergeSorts
       use m_ods
       use m_odsmeta, only : KXMAX
+      use m_odsmeta, only : KTMAX
       use m_odsmeta, only : X_ODSMATCH
       use m_inpak90, only : i90_loadf
       use m_inpak90, only : i90_label
+      use m_inpak90, only : i90_Gline
       use m_inpak90, only : i90_Gtoken
       use m_inpak90, only : i90_release
 
@@ -57,7 +59,7 @@
 
 !     Local variables
 !     ---------------
-      integer, parameter :: MAXHKX = 200  ! max no. of kx's using height for lev assignment 
+      integer, parameter :: MAXHOBS = 200  ! max no. of kx's using height for lev assignment 
       integer i, j, ii, jj, jt, k, nx, ny, m, nh
       integer ierr, isyn, nymd, nhms, synhour
       real    d
@@ -68,6 +70,7 @@
       character*255 odsfilex  ! master ods file
       character*255 odsfiley  ! matching ods file
       character*255 odsfilez  ! output ods file
+      character*255 odsunmatch! output for unmatched data
       character*80  ftype 
 
 
@@ -75,7 +78,8 @@
 !     ---------------
       type ( ods_vect ) odsx, odsy
       integer, allocatable :: is(:), js(:)
-      integer :: lsthkx(MAXHKX)
+      integer :: lsthkx(MAXHOBS)
+      integer :: lsthkt(MAXHOBS)
 
       real   , pointer :: latx(:), laty(:)
       real   , pointer :: lonx(:), lony(:)
@@ -104,11 +108,11 @@
 !     Parse command line and load resources
 !     -------------------------------------
       call init ( addimp, obsimp, sigoimp, hassens, sclimp, imp0hr, dfs, enorm, esigo, so2xmsn2so,
-     .            rcfname, odsfilex, odsfiley, odsfilez )
+     .            rcfname, odsfilex, odsfiley, odsfilez, odsunmatch )
       
 !     Read RC file
 !     ------------
-      call getRC_ ( lsthkx )
+      call getRC_ ( lsthkx, lsthkt )
       
 !     Loop over all synoptic times on the master file
 !     -----------------------------------------------
@@ -162,7 +166,7 @@
             endif
          xlev(1:nx) = levx(1:nx)
          do i = 1, nh
-            where(lsthkx(i)==kxx) xlev=xmx
+            where(lsthkt(i)==ktx.and.lsthkx(i)==kxx) xlev=xmx
          end do
 
 	 
@@ -202,7 +206,7 @@
             endif
          ylev(1:ny) = levy(1:ny)
          do i = 1, nh
-            where(lsthkx(i)==kxy) ylev=xmy
+            where(lsthkt(i)==kty.and.lsthkx(i)==kxy) ylev=xmy
          end do
 	 
 !        Sort according to matching attributes
@@ -348,15 +352,17 @@
 	 
 	 print *, '              Number of matched obs = ', k
 	 
-         deallocate(is,js)
-         deallocate(ylev)
-         deallocate(xlev)
-
          if ( sclimp ) then
             where(odsx%data%xvec==obs_missing) odsx%data%qcexcl=X_ODSMATCH
          endif
       
          call ODS_Put ( odsfilez, ftype, nymd, nhms, odsx, ierr )
+
+         call unmatched_()
+
+         deallocate(is,js)
+         deallocate(ylev)
+         deallocate(xlev)
 
       end do  ! loop over synoptic times
 
@@ -371,11 +377,16 @@
 
       contains
 
-      subroutine getRC_ ( lsthkx )
+      subroutine getRC_ ( lsthkx, lsthkt )
 
-      integer i, i1, lt, kx1, kx2, kxnext, iret
-      character*255 token
-      integer :: lsthkx(1)
+      integer :: lsthkx(:)
+      integer :: lsthkt(:)
+
+      character,parameter :: myname_ = myname//"::getRC_"
+      integer i, i1, lt, k1, k2, iret, jret
+      integer kxnext, ktnext, irow, icnt
+      character*255 token,tablename
+      logical allkxkts 
 
 !     load resource file
 !     ------------------
@@ -385,45 +396,227 @@
               call exit(7)
           endif
 
+!     Read table with instruments types
+!     ---------------------------------
       nh = 0
-      call i90_label('list_kx_height_based:', iret)
-         if (iret/=0) then
-              print*, 'Error, cannot find kx height-based list'
-              call exit(7)
-         else
-           do while (iret==0)
-             call i90_GToken(token,iret); if(iret/=0) exit 
-             i1 = index(token,':') ! token is single kx or range of kx's
-             lt = len_trim(token)
-             if (i1==0) then       ! no colon, therefore single kx
-                 read(token,*) kx1
-                 kx2 = kx1
-             else                  ! colon, therefore kx1:kx2
-                 read(token(1:i1-1),*) kx1
-                 read(token(i1+1:lt),*) kx2
-             end if
-             if (kx1>kx2) then      ! range error
-                 write(6,'(2a,i5)') myname, ': Invalid range: ', token
-                 call exit(7)
-             end if
-             do kxnext = kx1, kx2
-                if (nh==KXMAX) then    ! check space
-                    write(6,'(2a,i5)') myname,': increase KXMAX'
-                    call exit(7)
-                else if (iret==0) then
-                    nh = nh + 1
-                    lsthkx(nh) = kxnext
-                end if
-             end do ! <kxnext>
-           end do ! <do while>
-         endif
-         print *, ' KX''s treated as height assigned:', lsthkx(1:nh)
+      allkxkts = .false.
+      tablename = 'list_height_based::'
+      call I90_label(trim(tablename), iret)
+      if (iret/=0) then
+         write(6,'(4a)') myname_, ': table ', trim(tablename),
+     .                        'not found in RC file ... will take all KXs'
+         allkxkts = .true.
+      end if
+      if ( .not. allkxkts ) then
+        irow = 0; icnt = 0
+        do while (iret==0)                     ! read table entries
+           call I90_GLine ( iret )             ! iret=-1: end of file; +1: end of table
+           if (iret==0.and.irow<MAXHOBS) then    ! OK, we have next row of table
+               irow = irow + 1
+  
+               call I90_GToken ( token, jret ) ! obs data type (kt)
+               if (jret/=0) then
+                   write(6,'(2a,i5)') myname_, ': I90_GToken error, jret=', jret
+               end if
+               read(token,*) ktnext
+  
+               jret=0
+               do  j = 1, kxmax
+                 call I90_GToken(token, jret )
+                 if(jret/=0) exit
+                 ii = index(token,':') ! token is single entry or range of entries
+                 lt = len_trim(token)
+                 if (ii==0) then       ! no colon, therefore single entry
+                     read(token,*) kxnext
+                     icnt = icnt + 1
+                     if (icnt==MAXHOBS) then    ! check space
+                         write(6,'(2a,i5)') myname,': increase MAXHOBS'
+                         stop(999)
+                     else if (jret==0) then
+                         lsthkx(icnt) = kxnext
+                         lsthkt(icnt) = ktnext ! same kt for all kx's in this row
+                     end if
+                 else                  ! colon, therefore k1:k2
+                     read(token(1:ii-1),*) k1
+                     read(token(ii+1:lt),*) k2
+                     do kxnext = k1, k2
+                        icnt = icnt + 1
+                        if (icnt==MAXHOBS) then    ! check space
+                            write(6,'(2a,i5)') myname,': increase MAXHOBS'
+                            stop(999)
+                        else if (jret==0) then
+                            lsthkx(icnt) = kxnext
+                            lsthkt(icnt) = ktnext ! same kt for all kx's in this row
+                        end if
+                     end do
+                 end if
+               enddo
+
+           end if
+        end do
+        nh = icnt
+        print *, 'Will process the following data as height-based obs:'
+        print *, '          kt                 kx  '
+        do j = 1, nh
+           print *, lsthkt(j), lsthkx(j)
+        enddo
+      endif ! < all KXs >
+
 
 !     release resource file
 !     ---------------------
       call i90_release()
 
       end subroutine getRC_
+
+      subroutine unmatched_
+
+      integer ni,nj,it,ntot,iii,jjj
+      type ( ods_vect ) odsu
+
+      if ( trim(odsunmatch) == 'NONE' ) return
+
+!     Take 1st file as master (odsx) ...
+!     ----------------------------------
+         i = 1
+         j = 1
+         k = 0
+         nj= 0
+         do while (i .le. nx) ! for each obs in odsx:
+            ii = is(i)
+            do jt = j, ny     ! look for a match in odsy
+               jj = js(jt)
+               do
+                  d = kxx (ii)-kxy (jj); if (d /= 0) exit
+                  d = ktx (ii)-kty (jj); if (d /= 0) exit
+                  d = timx(ii)-timy(jj); if (d /= 0) exit
+                  d = xlev(ii)-ylev(jj); if (d /= 0) exit
+                  d = lonx(ii)-lony(jj); if (d /= 0) exit
+                  d = latx(ii)-laty(jj);             exit
+               end do 
+               if (d==0) then   ! all attributes match
+                  j = min(jt + 1,ny)
+                  i = i + 1
+                  k = k + 1
+                  exit         ! stop looking in odsy
+               elseif (d<0 .OR. jt==ny) then  ! no match exists for this obs
+                  j = jt
+                  i = i + 1
+                  nj= nj+ 1
+                  qchx(ii) = 28
+                  exit         ! stop looking in odsy	       
+               endif
+            end do
+         end do
+
+!     Take 2nd file as master (odsx) ...
+!     ----------------------------------
+         i = 1
+         j = 1
+         k = 0
+         ni= 0
+         do while (j .le. ny) ! for each obs in odsy:
+            jj = js(j)
+            do it = i, nx     ! look for a match in odsy
+               ii = is(it)
+               do
+                  d = kxy (jj)-kxx (ii); if (d /= 0) exit
+                  d = kty (jj)-ktx (ii); if (d /= 0) exit
+                  d = timy(jj)-timx(ii); if (d /= 0) exit
+                  d = ylev(jj)-xlev(ii); if (d /= 0) exit
+                  d = lony(jj)-lonx(ii); if (d /= 0) exit
+                  d = laty(jj)-latx(ii);             exit
+               end do 
+               if (d==0) then   ! all attributes match
+                  i = min(it + 1,nx)
+                  j = j + 1
+                  k = k + 1
+                  exit         ! stop looking in odsx
+               elseif (d<0 .OR. it==nx) then  ! no match exists for this obs
+                  i = it
+                  j = j + 1
+                  ni= ni+ 1
+                  qchy(jj) = 29
+                  exit         ! stop looking in odsx	       
+               endif
+            end do
+         end do
+      print *, 'number of obs in 2nd file not in 1st: ',ni
+      print *, 'number of obs in 1st file not in 2nd: ',nj
+
+!     Initialized output ods structure
+!     --------------------------------
+      ntot=ni+nj
+      call ODS_Init ( odsu, ntot, ierr, 
+     .                odsx%meta%nkt, odsx%meta%nkx, odsx%meta%nqc, odsx%meta%ncr, nsyn=odsx%meta%nsyn )
+
+!     copy metadata from input ODS
+!     ----------------------------
+      odsu%meta%kt_names  = odsx%meta%kt_names
+      odsu%meta%kt_units  = odsx%meta%kt_units
+      odsu%meta%kx_names  = odsx%meta%kx_names
+      odsu%meta%kx_meta   = odsx%meta%kx_meta
+      odsu%meta%qcx_names = odsx%meta%qcx_names
+
+      ii=0
+      do i=1,nx
+         iii = is(i)
+         if(qchx(iii)==28) then
+           ii=ii+1
+           odsu%data%kid(ii)=ii
+           odsu%data%kx(ii)=odsx%data%kx(iii)
+           odsu%data%kt(ii)=odsx%data%kt(iii)
+           odsu%data%ks(ii)=odsx%data%ks(iii)
+           odsu%data%xm(ii)=odsx%data%xm(iii)
+           odsu%data%lat(ii)=odsx%data%lat(iii)
+           odsu%data%lon(ii)=odsx%data%lon(iii)
+           odsu%data%lev(ii)=odsx%data%lev(iii)
+           odsu%data%obs(ii)=odsx%data%obs(iii)
+           odsu%data%omf(ii)=odsx%data%omf(iii)
+           odsu%data%oma(ii)=odsx%data%oma(iii)
+           odsu%data%xvec(ii)=odsx%data%xvec(iii)
+           odsu%data%time(ii)=odsx%data%time(iii)
+           odsu%data%qcexcl(ii)=odsx%data%qcexcl(iii)
+           odsu%data%qchist(ii)=odsx%data%qchist(iii)
+         endif
+      enddo
+      jj=ii
+      do j=1,ny
+         jjj = js(j)
+         if(qchy(jjj)==29) then
+           jj=jj+1
+           odsu%data%kid(jj)=jj
+           odsu%data%kx(jj)=odsy%data%kx(jjj)
+           odsu%data%kt(jj)=odsy%data%kt(jjj)
+           odsu%data%ks(jj)=odsy%data%ks(jjj)
+           odsu%data%xm(jj)=odsy%data%xm(jjj)
+           odsu%data%lat(jj)=odsy%data%lat(jjj)
+           odsu%data%lon(jj)=odsy%data%lon(jjj)
+           odsu%data%lev(jj)=odsy%data%lev(jjj)
+           odsu%data%obs(jj)=odsy%data%obs(jjj)
+           odsu%data%omf(jj)=odsy%data%omf(jjj)
+           odsu%data%oma(jj)=odsy%data%oma(jjj)
+           odsu%data%xvec(jj)=odsy%data%xvec(jjj)
+           odsu%data%time(jj)=odsy%data%time(jjj)
+           odsu%data%qcexcl(jj)=odsy%data%qcexcl(jjj)
+           odsu%data%qchist(jj)=odsy%data%qchist(jjj)
+         endif
+      enddo
+      if(jj/=odsu%data%nobs) then
+         print*, 'Something is amiss, aborting ...'
+         stop
+      endif
+      print*, 'odd data pieces ',jj-count(odsu%data%qchist==28)-count(odsu%data%qchist==29)
+      if ( odsu%data%nobs>0 ) then
+         print*, 'total number of unmatched observations: ',odsu%data%nobs
+         print*, 'qch = 28: data found in 2nd file but absent in 1st file '
+         print*, 'qch = 29: data found in 1st file but absent in 2nd file '
+         call ODS_Put ( trim(odsunmatch), ftype, nymd, nhms, odsu, ierr )
+      else
+         print*, 'all data matched, no unmatched output to write'
+      endif
+
+      end subroutine unmatched_
 
       end ! program odsmatch
 
@@ -549,7 +742,7 @@
 !
       subroutine init ( addimp, obsimp, sigoimp, hassens, sclimp, imp0hr, dfs, enorm, esigo, 
      .                  so2xmsn2so, rcfname,
-     .                  odsfilex, odsfiley, odsfilez )
+     .                  odsfilex, odsfiley, odsfilez, odsunmatch )
 
       implicit NONE
 !
@@ -569,6 +762,7 @@
       character*255, intent(out) :: odsfilex
       character*255, intent(out) :: odsfiley
       character*255, intent(out) :: odsfilez
+      character*255, intent(out) :: odsunmatch
 !
 !
 ! !REVISION HISTORY:
@@ -602,6 +796,7 @@
       esigo   = .false.
       so2xmsn2so = .false.
       rcfname = RCfile
+      odsunmatch = 'NONE'
       
 !     Parse command line
 !     ------------------
@@ -633,6 +828,9 @@
              esigo = .true.
          else if (index(argv,'-so2xmsn2so' ) .gt. 0 ) then
              so2xmsn2so = .true.
+         else if (index(argv,'-unmatched' ) .gt. 0 ) then
+             iarg = iarg + 1
+             call GetArg ( iArg, odsunmatch )
          else if (index(argv,'-rc' ) .gt. 0 ) then
              iarg = iarg + 1
              call GetArg ( iArg, rcfname )
@@ -704,6 +902,7 @@
       print *, '              to sigo slot of master; leave oma slot untouched; '
       print *, '              CAUTION:  this only applies in special cases'
       print *, ' -rc RCfile   name of resource file (default: odsmatch.rc)'
+      print *, ' -unmatched   filename to write out unmatched data to (default: NONE)'
       print *
       print *, ' odsfilex      master ODS file, oma to be redefined'
       print *, ' odsfiley      matching ODS file, to be searched for matching entries'

@@ -158,8 +158,10 @@
 !        ---------------------
          if ( trim(RCfile)=='NONE' ) then
 
-              call dyn2dyn_do ( dynfile, lwifile, w_e, nymd, nhms, prec, freq, nstep,   &
+              call dyn2dyn_do ( w_e,  &
                                 in, jn, kn, verbose, ier, &
+                                dynfile=dynfile, lwifile=lwifile, &
+                                nymd=nymd, nhms=nhms, prec=prec, freq=freq, nstep=nstep,   &
                                 dophys=dophys, force=force, dgrid=dgrid, vectype=vectype )
 
          else
@@ -248,6 +250,7 @@ CONTAINS
 !       05Jan2006  Todling            Added fakedate option
 !       21Apr2009  Todling            Updated default hor/ver resolutions of GEOS-5
 !       20Feb2014  Todling            Knob for non-complaint file
+!       27Jan2015  Todling            Add 137-level option
 !
 !EOP
 !BOC
@@ -255,15 +258,23 @@ CONTAINS
       character*4, parameter :: myname = 'init'
 
       integer iret, i, iarg, argc, iargc
-      integer uprec, iprec, ires
-      logical verb, setres, geos4res
+      integer uprec, iprec, ires, jcapusr
+      logical verb, setres, geos4res, setjcap
       character(len=255) :: etafile, argv, res
       character*10 str
 
-      integer, dimension(5), parameter :: IMS4 = (/ 72, 144, 288, 576, 1152 /)
-      integer, dimension(5), parameter :: IMS5 = (/ 72, 144, 288, 576, 1152 /)
-      integer, dimension(5), parameter :: JMS = (/ 46,  91, 181, 361,  721 /)
-      integer, dimension(6), parameter :: KMS = (/ 18,  32, 55, 64, 72, 91 /)
+      integer, dimension(6), parameter :: IMS4 = (/ 72, 144, 288, 576, 1152, 2304 /)
+      integer, dimension(6), parameter :: IMS5 = (/ 72, 144, 288, 576, 1152, 2304 /)
+      integer, dimension(6), parameter :: JMSG = (/ 46,  91, 181, 361,  721, 1441 /)
+
+      ! in most cases ...
+      ! nlat=(jcap+2)+2
+      ! nlon=(jcap+2)*2
+      integer, dimension(6), parameter :: JCAP = (/ 62,  188, 254, 382,  574, 1150 /)
+      integer, dimension(6), parameter :: IMSN = (/ 192, 376, 512, 768, 1152, 2304 /)
+      integer, dimension(6), parameter :: JMSN = (/  96, 192, 258, 386,  578, 1154 /)
+
+      integer, dimension(7), parameter :: KMS  = (/ 18,  32,  55,  64,   72,   91, 137 /)
 
 !     Defaults
 !     --------
@@ -286,6 +297,7 @@ CONTAINS
       expid='NONE'         ! default name of experiment
       RCfile='NONE'        ! default not to use an RCfile
       setres=.false.       ! default no horizontal resolution change
+      setjcap=.false.      ! default no handling of NCEP-like resolutions
       geos4res=.false.     ! default use geos-5 horizontal resolution defs
       vectype = 4          ! default: assume vector is GEOS-4-type
       dgrid   = .true.     ! default: in GEOS-4 dyn-vector winds are on D-grid
@@ -340,11 +352,36 @@ CONTAINS
                      ires=4
                case ("e")
                      ires=5
+               case ("f")
+                     ires=6
                case default
                      print *, 'Sorry this resolution not supported'
                      call exit(1)
              end select
              setres = .true.
+           case ("-jcap")
+             if ( iarg+1 .gt. argc ) call usage()
+             iarg = iarg + 1
+             call GetArg ( iarg, argv )
+             read(argv,*) jcapusr
+             select case (jcapusr)
+               case (62)
+                     ires=1
+               case (188)
+                     ires=2
+               case (254)
+                     ires=3
+               case (382)
+                     ires=4
+               case (574)
+                     ires=5
+               case (1150)
+                     ires=6
+               case default
+                     print *, 'Sorry this resolution not supported'
+                     call exit(1)
+             end select
+             setjcap = .true.
            case ('-verb')
             verbose = .true.
            case ('-force')
@@ -421,14 +458,24 @@ CONTAINS
          end if
       end if
 
+      if (setres .and. setjcap ) then
+         print *
+         print *, 'Invalid resolution options, aborting ...'
+         print *
+         stop(999)
+      endif
       if ( setres ) then
            if ( geos4res ) then
              in = ims4(ires)
-             jn = jms (ires)
+             jn = jmsg(ires)
            else
              in = ims5(ires)
-             jn = jms (ires)
+             jn = jmsg(ires)
            endif
+      endif
+      if ( setjcap ) then
+          in = imsn(ires)
+          jn = jmsn(ires)
       endif
 
       if (verbose) then
@@ -497,8 +544,11 @@ CONTAINS
       print *, '              hybrid (eta) coordinates'
       print *, '-g5           specify when using GEOS-5 vector (not all transforms work)'
       print *, '              (default: GEOS-4 vector-type)'
+      print *, '-ncf          non-compliant dyn-vector (see NOTES)'
+      print *, '-pncf         non-compliant dyn-vector perturbation (see NOTES)'
       print *
-      print *, ' NOTE: For the time being, in order to do horizontal'
+      print *, ' NOTES:'
+      print *, '   1)  For the time being, in order to do horizontal'
       print *, '       interpolation the user can supply the '
       print *, '       land-water-ice (LWI) mask array via a binary'
       print *, '       unformatted sequential file at the resolution'
@@ -506,7 +556,15 @@ CONTAINS
       print *, '       restart (p_rst) file from FVGCM will do it.'
       print *, '       If this file is not specified, a crude nearest neighbor'
       print *, '       interpolation is implemented which is good enough'
-      print *, '       if you do not need LWI, say for replay' 
+      print *, '       if you do not need LWI, say for replay.' 
+      print *
+      print *, '   2)  ncf converts files containing a sub-set of variables'
+      print *, '       used in the dyn-vector to a full dyn-vector; these files '
+      print *, '       typically come from ncep2gmao.pl (and ec2gmao.pl).'
+      print *
+      print *, '   3)  pncf converts files containing a sub-set of perturbation'
+      print *, '       fields typically generated by GSI when putting out '
+      print *, '       increments from a minimization (4dvar/4densvar).'
       print *
       print *, ' Last updated: 05 Jan 2006; Todling '
       print *

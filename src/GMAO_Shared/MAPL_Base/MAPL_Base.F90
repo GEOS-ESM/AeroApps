@@ -1,4 +1,4 @@
-! $Id: MAPL_Base.F90,v 1.43.2.6.2.1.2.2 2013-12-19 17:06:56 bmauer Exp $
+! $Id: MAPL_Base.F90,v 1.49.10.4 2016/07/01 18:45:28 bmauer Exp $
 
 #include "MAPL_ErrLog.h"
 
@@ -54,8 +54,11 @@ public MAPL_FieldDestroy
 public MAPL_FieldBundleDestroy
 public MAPL_GetHorzIJIndex
 public MAPL_GenGridName
+public MAPL_GenXYOffset
 public MAPL_GeosNameNew
 public MAPL_Communicators
+public MAPL_BundleCreate
+public MAPL_FieldCopy
 
 ! !PUBLIC PARAMETERS
 !
@@ -66,7 +69,8 @@ integer, public, parameter :: MAPL_CplNOTNEEDED      = 4
 integer, public, parameter :: MAPL_FriendlyVariable  = 8
 integer, public, parameter :: MAPL_FieldItem         = 8
 integer, public, parameter :: MAPL_BundleItem        = 16
-integer, public, parameter :: MAPL_NoRestart         = 32        
+integer, public, parameter :: MAPL_StateItem         = 32
+integer, public, parameter :: MAPL_NoRestart         = 64
 
 integer, public, parameter :: MAPL_Write2Disk        = 0
 integer, public, parameter :: MAPL_Write2RAM         = 1
@@ -81,6 +85,7 @@ integer, public, parameter :: MAPL_DimsHorzOnly    = 2
 integer, public, parameter :: MAPL_DimsHorzVert    = 3
 integer, public, parameter :: MAPL_DimsTileOnly    = 4
 integer, public, parameter :: MAPL_DimsTileTile    = 5
+integer, public, parameter :: MAPL_DimsNone        = 6
 
 integer, public, parameter :: MAPL_ScalarField     = 1
 integer, public, parameter :: MAPL_VectorField     = 2
@@ -119,10 +124,22 @@ integer, public, parameter :: MAPL_Vegetated          = 101
 
 integer, public, parameter :: MAPL_NumVegTypes        = 6
 
+integer, public, parameter :: MAPL_AGrid = 0
+integer, public, parameter :: MAPL_CGrid = 1
+integer, public, parameter :: MAPL_DGrid = 2
+
+integer, public, parameter :: MAPL_RotateLL = 0
+integer, public, parameter :: MAPL_RotateCube = 1
+
 
 integer, public, parameter :: MAPL_HorzTransOrderBinning  = 0
 integer, public, parameter :: MAPL_HorzTransOrderBilinear = 1
+integer, public, parameter :: MAPL_HorzTransOrderFraction = 98
 integer, public, parameter :: MAPL_HorzTransOrderSample   = 99
+
+integer, public, parameter :: MAPL_RestartOptional = 0
+integer, public, parameter :: MAPL_RestartSkip = 1
+integer, public, parameter :: MAPL_RestartRequired = 2
 
 character(len=ESMF_MAXSTR), public, parameter :: MAPL_StateItemOrderList = 'MAPL_StateItemOrderList'
 character(len=ESMF_MAXSTR), public, parameter :: MAPL_BundleItemOrderList = 'MAPL_BundleItemOrderList'
@@ -133,12 +150,12 @@ type MAPL_Communicators
    integer :: ioComm
    integer :: maplCommSize
    integer :: esmfCommSize
+   integer :: globalCommSize
    integer :: ioCommSize
    integer :: ioCommRoot
    integer :: myGlobalRank
    integer :: myIoRank
-   integer :: CoresPerNode
-   integer :: maxMem ! maximum memory per node in megabytes
+   integer :: maxMem
 end type MAPL_Communicators
 
 #ifdef __PROTEX__
@@ -157,6 +174,7 @@ utilities and constants used throughout the MAPL Library.
 interface MAPL_FieldCreate
    module procedure MAPL_FieldCreateRename
    module procedure MAPL_FieldCreateNewgrid
+   module procedure MAPL_FieldCreateR4
 end interface
 
 interface MAPL_FieldGetTime
@@ -212,6 +230,22 @@ end interface
 
 interface MAPL_FieldBundleGet
   module procedure MAPL_FieldBundleGetByIndex
+end interface
+
+interface MAPL_GetHorzIJIndex
+  module procedure MAPL_GetHorzIJIndex
+end interface
+
+#define R8  8
+interface
+  subroutine AppCSEdgeCreateF(IM_World, LonEdge, LatEdge, LonCenter, LatCenter, rc)
+    integer,            intent(in   ) :: IM_World
+    real(R8), intent(inout) :: LonEdge(IM_World+1,IM_World+1,6)
+    real(R8), intent(inout) :: LatEdge(IM_World+1,IM_World+1,6)
+    real(R8), intent(inout), optional :: LonCenter(IM_World,IM_World,6)
+    real(R8), intent(inout), optional :: LatCenter(IM_World,IM_World,6)
+    integer, optional,  intent(out  ) :: rc
+  end subroutine AppCSEdgeCreateF
 end interface
 
 contains
@@ -357,6 +391,46 @@ contains
 ! Horizontal and vertical
 ! -----------------------
 
+    case(MAPL_DimsNone)
+       szungrd = 0
+       if (present(UNGRID)) then
+          szungrd = size(UNGRID)
+       end if
+       rank = szungrd
+
+       !ALT: This is special case - array does not map any gridded dims
+       gridToFieldMap= 0 
+       if (typekind == ESMF_KIND_R4) then
+          select case (rank)
+          case (1)
+             allocate(VAR_1D(UNGRID(1)), STAT=STATUS)
+             VERIFY_(STATUS)
+             VAR_1D = INIT_VALUE
+             call ESMF_FieldEmptyComplete(FIELD, farrayPtr=VAR_1D,    &
+                  datacopyFlag = ESMF_DATACOPY_REFERENCE,             &
+                  gridToFieldMap=gridToFieldMap,                      &
+                  rc = status)
+          case default
+             ASSERT_(.FALSE.) !ALT for now
+          end select
+          
+       else
+          select case (rank)
+          case (1)
+             allocate(VR8_1D(UNGRID(1)), STAT=STATUS)
+             VERIFY_(STATUS)
+             VR8_1D = INIT_VALUE
+             call ESMF_FieldEmptyComplete(FIELD, farrayPtr=VR8_1D,    &
+                  datacopyFlag = ESMF_DATACOPY_REFERENCE,             &
+                  gridToFieldMap=gridToFieldMap,                      &
+                  rc = status)
+          case default
+             ASSERT_(.FALSE.) !ALT for now
+          end select
+          
+       endif
+       VERIFY_(STATUS)
+       
     case(MAPL_DimsHorzVert)
        rank = 3
        
@@ -1580,13 +1654,109 @@ real    :: IIR(NT*COUNT), JJR(NT*COUNT)
       RETURN_(ESMF_SUCCESS)
     end function MAPL_FieldCreateNewgrid
 
+    function MAPL_FieldCreateR4(FIELD, RC) RESULT(F)
+      type (ESMF_Field), intent(INOUT) :: FIELD !ALT: IN
+      integer, optional, intent(  OUT) :: RC
+      type (ESMF_Field)                :: F
+
+!   we are creating new field so that we can change the name of the field;
+!   the important thing is that the data (ESMF_Array) and the grid (ESMF_Grid) 
+!   are the SAME as the one in the original Field, if DoCopy flag is present
+!   and set to true we create a new array and copy the data, not just reference it
+
+      type(ESMF_Grid)                  :: grid
+      character(len=ESMF_MAXSTR)       :: fieldName
+      integer, allocatable    :: gridToFieldMap(:)
+      integer                 :: fieldRank
+      integer                 :: gridRank
+      integer                 :: status
+      character(len=ESMF_MAXSTR), parameter :: Iam='MAPL_FieldCreateR4'
+      type(ESMF_DataCopy_Flag):: datacopy
+      real, pointer           :: var_1d(:)
+      real, pointer           :: var_2d(:,:)
+      real, pointer           :: var_3d(:,:,:)
+      real*8, pointer           :: vr8_1d(:)
+      real*8, pointer           :: vr8_2d(:,:)
+      real*8, pointer           :: vr8_3d(:,:,:)
+      type(ESMF_TypeKind_Flag)  :: tk
+
+      call ESMF_FieldGet(FIELD, grid=GRID, dimCount=fieldRank, &
+           name=fieldName, typekind=tk, RC=STATUS)
+      VERIFY_(STATUS)
+      ASSERT_(tk == ESMF_TypeKind_R8)
+      call ESMF_GridGet(GRID, dimCount=gridRank, rc=status)
+      VERIFY_(STATUS)
+      allocate(gridToFieldMap(gridRank), stat=status)
+      VERIFY_(STATUS)
+      call ESMF_FieldGet(FIELD, gridToFieldMap=gridToFieldMap, RC=STATUS)
+      VERIFY_(STATUS)
+
+      datacopy = ESMF_DATACOPY_REFERENCE
+
+      select case (fieldRank)
+      case (1)
+         call ESMF_FieldGet(field, farrayPtr=vr8_1d, rc=status)
+         VERIFY_(STATUS)
+         allocate(var_1d(lbound(vr8_1d,1):ubound(vr8_1d,1)), stat=status)
+         VERIFY_(STATUS)
+         var_1d=vr8_1d
+         f = MAPL_FieldCreateEmpty(name=fieldNAME, grid=grid, rc=status)
+         VERIFY_(STATUS)
+         call ESMF_FieldEmptyComplete(F, farrayPtr=VAR_1D,    &
+              gridToFieldMap=gridToFieldMap,                      &
+              datacopyFlag = datacopy,             &
+              rc = status)
+         VERIFY_(STATUS)
+      case (2)
+         call ESMF_FieldGet(field, farrayPtr=vr8_2d, rc=status)
+         VERIFY_(STATUS)
+         allocate(var_2d(lbound(vr8_2d,1):ubound(vr8_2d,1), &
+                         lbound(vr8_2d,2):ubound(vr8_2d,2)), &
+                         stat=status)
+         VERIFY_(STATUS)
+         var_2d=vr8_2d
+         f = MAPL_FieldCreateEmpty(name=fieldNAME, grid=grid, rc=status)
+         VERIFY_(STATUS)
+         call ESMF_FieldEmptyComplete(F, farrayPtr=VAR_2D,    &
+              gridToFieldMap=gridToFieldMap,                      &
+              datacopyFlag = datacopy,             &
+              rc = status)
+         VERIFY_(STATUS)
+      case (3)
+         call ESMF_FieldGet(field, farrayPtr=vr8_3d, rc=status)
+         VERIFY_(STATUS)
+         allocate(var_3d(lbound(vr8_3d,1):ubound(vr8_3d,1), &
+                         lbound(vr8_3d,2):ubound(vr8_3d,2), &
+                         lbound(vr8_3d,3):ubound(vr8_3d,3)), &
+                         stat=status)
+         VERIFY_(STATUS)
+         var_3d=vr8_3d
+         f = MAPL_FieldCreateEmpty(name=fieldNAME, grid=grid, rc=status)
+         VERIFY_(STATUS)
+         call ESMF_FieldEmptyComplete(F, farrayPtr=VAR_3D,    &
+              gridToFieldMap=gridToFieldMap,                      &
+              datacopyFlag = datacopy,             &
+              rc = status)
+         VERIFY_(STATUS)
+      case default
+         ASSERT_(.false.)
+      end select
+
+      deallocate(gridToFieldMap)
+
+      call MAPL_FieldCopyAttributes(FIELD_IN=field, FIELD_OUT=f, RC=status)
+      VERIFY_(STATUS)
+
+      RETURN_(ESMF_SUCCESS)
+    end function MAPL_FieldCreateR4
+
     function MAPL_FieldCreateEmpty(NAME, GRID, RC) RESULT(FIELD)
       character(len=*),  intent(IN   ) :: NAME
       type (ESMF_Grid),  intent(INout) :: GRID
       integer, optional, intent(  OUT) :: RC
       type (ESMF_Field)                :: FIELD
 
-      character(len=ESMF_MAXSTR),parameter   :: IAm=" MAPL_CreateFieldEmpty"
+      character(len=ESMF_MAXSTR),parameter   :: IAm=" MAPL_FieldCreateEmpty"
       integer                                :: STATUS
 
       FIELD = ESMF_FieldEmptyCreate(name=name, rc=status)
@@ -1664,6 +1834,70 @@ real    :: IIR(NT*COUNT), JJR(NT*COUNT)
       end do
       RETURN_(ESMF_SUCCESS)
     end subroutine MAPL_FieldCopyAttributes
+
+    subroutine MAPL_FieldCopy(from, to, RC)
+      type (ESMF_Field), intent(INOUT) :: FROM !ALT: IN
+      type (ESMF_Field), intent(INOUT) :: TO !ALT: OUT
+      integer, optional, intent(  OUT) :: RC
+
+!   we are creating new field so that we can change the name of the field;
+!   the important thing is that the data (ESMF_Array) and the grid (ESMF_Grid) 
+!   are the SAME as the one in the original Field, if DoCopy flag is present
+!   and set to true we create a new array and copy the data, not just reference it
+
+      integer                 :: fieldRank
+      integer                 :: status
+      character(len=ESMF_MAXSTR), parameter :: Iam='MAPL_FieldCopy'
+      real, pointer           :: var_1d(:)
+      real, pointer           :: var_2d(:,:)
+      real, pointer           :: var_3d(:,:,:)
+      real*8, pointer           :: vr8_1d(:)
+      real*8, pointer           :: vr8_2d(:,:)
+      real*8, pointer           :: vr8_3d(:,:,:)
+      type(ESMF_TypeKind_Flag)  :: tk
+
+      call ESMF_FieldGet(from, dimCount=fieldRank, &
+           typekind=tk, RC=STATUS)
+      VERIFY_(STATUS)
+      ASSERT_(tk == ESMF_TypeKind_R8)
+
+      select case (fieldRank)
+      case (1)
+         call ESMF_FieldGet(from, farrayPtr=vr8_1d, rc=status)
+         VERIFY_(STATUS)
+         call ESMF_FieldGet(to, dimCount=fieldRank, typekind=tk, RC=STATUS)
+         VERIFY_(STATUS)
+         ASSERT_(tk == ESMF_TypeKind_R4)
+         ASSERT_(fieldRank==1)
+         call ESMF_FieldGet(to, farrayPtr=var_1d, rc=status)
+         VERIFY_(STATUS)
+         var_1d = vr8_1d
+      case (2)
+         call ESMF_FieldGet(from, farrayPtr=vr8_2d, rc=status)
+         VERIFY_(STATUS)
+         call ESMF_FieldGet(to, dimCount=fieldRank, typekind=tk, RC=STATUS)
+         VERIFY_(STATUS)
+         ASSERT_(tk == ESMF_TypeKind_R4)
+         ASSERT_(fieldRank==2)
+         call ESMF_FieldGet(to, farrayPtr=var_2d, rc=status)
+         VERIFY_(STATUS)
+         var_2d = vr8_2d
+      case (3)
+         call ESMF_FieldGet(from, farrayPtr=vr8_3d, rc=status)
+         VERIFY_(STATUS)
+         call ESMF_FieldGet(to, dimCount=fieldRank, typekind=tk, RC=STATUS)
+         VERIFY_(STATUS)
+         ASSERT_(tk == ESMF_TypeKind_R4)
+         ASSERT_(fieldRank==3)
+         call ESMF_FieldGet(to, farrayPtr=var_3d, rc=status)
+         VERIFY_(STATUS)
+         var_3d = vr8_3d
+      case default
+         ASSERT_(.false.)
+      end select
+
+      RETURN_(ESMF_SUCCESS)
+    end subroutine MAPL_FieldCopy
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       function MAPL_RemapBoundsFull_3dr4(A,I1,IM,J1,JM,L1,LM)
@@ -1882,7 +2116,11 @@ and so on.
     real(ESMF_KIND_R8), allocatable :: cornerX(:)
     real(ESMF_KIND_R8), allocatable :: cornerY(:)
 
-    real, parameter                 :: D2R = MAPL_PI / 180.
+!    real, parameter                 :: D2R = MAPL_PI / 180.
+    real*8, parameter                 :: D2R = MAPL_PI_R8 / 180.d0
+    real                            :: FirstOut(2)
+    real                            :: LastOut(2)
+    integer                         :: ig
 
     integer                         :: STATUS
     character(len=ESMF_MAXSTR)      :: IAm='MAPL_LatLonGridCreate'
@@ -2101,15 +2339,32 @@ and so on.
    
    call MAPL_GridGetInterior (Grid,i1,in,j1,jn)
    
-   do i = 1,size(centerX,1)
-      centerX(i,:) = 0.5d0*(cornerX(i+i1-1)+cornerX(i+i1))
+!   do i = 1,size(centerX,1)
+!      centerX(i,:) = 0.5d0*(cornerX(i+i1-1)+cornerX(i+i1))
+!   end do
+   
+!   do j = 1,size(centerY,2)
+!      centerY(:,j) = 0.5d0*(cornerY(j+j1-1)+cornerY(j+j1))
+!   enddo
+
+!-begin-of-proof-of-concept-section------------------------
+   FirstOut(1)=BegLon_
+   FirstOut(2)=-90.
+   LastOut(1)=360.+BegLon_ - 360./im_world_
+   LastOut(2)=90. 
+   do i=1,size(centerX,1)
+      ig = i + i1 - 1
+      centerX(i,:) = FirstOut(1) + (ig-1)*(LastOut(1)-FirstOut(1))/(im_world_-1)
+   end do
+   do i=1,size(centerY,2)
+      ig = i + j1 - 1
+      centerY(:,i) = FirstOut(2) + (ig-1)*(LastOut(2)-FirstOut(2))/(jm_world_-1)
    end do
    
-   do j = 1,size(centerY,2)
-      centerY(:,j) = 0.5d0*(cornerY(j+j1-1)+cornerY(j+j1))
-   enddo
-   
-   
+   centerX = D2R*centerX
+   centerY = D2R*centerY
+!-end-of-proof-of-concept-section------------------------
+ 
 !  Make sure we've got it right
 !  ----------------------------
    call ESMF_GridValidate(Grid,rc=status)
@@ -2642,15 +2897,18 @@ and so on.
     integer                               :: STATUS
 
  
-    call ESMF_FieldBundleGet(BUNDLE, FieldCount=FIELDCOUNT, RC=STATUS)
-    VERIFY_(STATUS)
+    call ESMF_FieldBundleValidate(bundle,rc=status)
+    if(STATUS == ESMF_SUCCESS) then
+       call ESMF_FieldBundleGet(BUNDLE, FieldCount=FIELDCOUNT, RC=STATUS)
+       VERIFY_(STATUS)
 
-    do I = 1, FIELDCOUNT
-       call ESMF_FieldBundleGet(BUNDLE, I, FIELD, RC=STATUS)
-       VERIFY_(STATUS)
-       call MAPL_FieldDestroy(FIELD, RC=status)
-       VERIFY_(STATUS)
-    end do
+       do I = 1, FIELDCOUNT
+          call ESMF_FieldBundleGet(BUNDLE, I, FIELD, RC=STATUS)
+          VERIFY_(STATUS)
+          call MAPL_FieldDestroy(FIELD, RC=status)
+          VERIFY_(STATUS)
+       end do
+    end if
 
     RETURN_(ESMF_SUCCESS)
 
@@ -2881,19 +3139,26 @@ and so on.
 !  !IROUTINE: MAPL_GetHorzIJIndex -- Get indexes on destributed ESMF grid for an arbitary lat and lon
 
 !  !INTERFACE:
-  subroutine MAPL_GetHorzIJIndex(lon,lat,npts,Grid,II,JJ,rc)
+  subroutine MAPL_GetHorzIJIndex(npts,II,JJ,lon,lat,lonR8,latR8,Grid,IMGlob,JMGlob,CenterLons,CenterLats,rc)
      implicit none
      !ARGUMENTS:
-     real,              intent(in   ) :: lon(:) ! array of longitudes in radians
-     real,              intent(in   ) :: lat(:) ! array of latitudes in radians
-     integer,           intent(in   ) :: npts ! number of points in lat and lon arrays
-     type(ESMF_Grid),   intent(inout) :: Grid ! ESMF grid 
-     integer,           intent(inout) :: II(:) ! array of the first index for each lat and lon
-     integer,           intent(inout) :: JJ(:) ! array of the second index for each lat and lon
-     integer, optional, intent(out  ) :: rc  ! return code
+     integer,                      intent(in   ) :: npts ! number of points in lat and lon arrays
+     integer,                      intent(inout) :: II(npts) ! array of the first index for each lat and lon
+     integer,                      intent(inout) :: JJ(npts) ! array of the second index for each lat and lon
+     real, optional,               intent(in   ) :: lon(npts) ! array of longitudes in radians
+     real, optional,               intent(in   ) :: lat(npts) ! array of latitudes in radians
+     real(ESMF_KIND_R8), optional, intent(in   ) :: lonR8(npts) ! array of longitudes in radians
+     real(ESMF_KIND_R8), optional, intent(in   ) :: latR8(npts) ! array of latitudes in radians
+     type(ESMF_Grid),    optional, intent(inout) :: Grid ! ESMF grid
+     integer,            optional, intent(in   ) :: IMGlob
+     integer,            optional, intent(in   ) :: JMGlob
+     real(ESMF_KIND_R8), optional, intent(inout) :: CenterLons(:,:) ! array of longitudes in radians
+     real(ESMF_KIND_R8), optional, intent(inout) :: CenterLats(:,:) ! array of latitudes in radians
+     integer,            optional, intent(out  ) :: rc  ! return code
   
      !DESCRIPTION
-!    For a set of longitudes and latitudes in radians this routine will return the indexes for the distributed domain. 
+!    For a set of longitudes and latitudes in radians this routine will return the indexes for the domain
+!    Depending on how it is invoked these will be the local domain or the global indices. 
 !    If the Lat/Lon pair is not in the domain -1 is returned. 
 !    The routine works for both the gmao cube and lat/lon grids.
 !    Currently the lat/lon grid is asumed to go from -180 to 180
@@ -2914,95 +3179,159 @@ and so on.
      real(ESMF_KIND_R8), allocatable :: ey(:)
      real(ESMF_KIND_R8), allocatable :: EdgeX(:,:)
      real(ESMF_KIND_R8), allocatable :: EdgeY(:,:)
-     real(ESMF_KIND_R8), allocatable :: EdgeLats(:,:)
-     real(ESMF_KIND_R8), allocatable :: EdgeLons(:,:)
+     real(ESMF_KIND_R8), allocatable :: EdgeLats(:,:,:)
+     real(ESMF_KIND_R8), allocatable :: EdgeLons(:,:,:)
      real                    :: lonloc,latloc,x_loc,y_loc
      logical                 :: isCubed, switch
      integer                 :: face_pnt,face,imp1,jmp1,itmp
-     integer                 :: im_1d, jm_1d, IIloc, JJloc, i
+     integer                 :: im_1d, jm_1d, IIloc, JJloc, i, j
      real(kind=8), parameter :: PI_R8     = 3.14159265358979323846
+     logical                 :: localSearch
+     integer                 :: fStart,fEnd
 
-     call MAPL_GridGet(grid, localCellCountPerDim=counts,globalCellCountPerDim=dims,rc=status)
-     VERIFY_(STATUS)
-     IM_World = dims(1)
-     JM_World = dims(2)
-     IM = counts(1)
-     JM = counts(2)
- 
+     ! if the grid is present then we can just get the prestored edges and the dimensions of the grid
+     ! this also means we are running on a distributed grid
+     ! if grid not present then the we just be running outside of ESMF and the user must
+     ! pass in the the dimensions of the grid and we must compute them 
+     ! and assume search on the global domain
+     if (present(Grid)) then
+        call MAPL_GridGet(grid, localCellCountPerDim=counts,globalCellCountPerDim=dims,rc=status)
+        VERIFY_(STATUS)
+        IM_World = dims(1)
+        JM_World = dims(2)
+        IM = counts(1)
+        JM = counts(2)
+        localSearch = .true.
+     else
+        ASSERT_(present(IMGlob))
+        ASSERT_(present(JMGlob))
+        IM_World = IMGlob
+        JM_World = JMGlob
+        IM = IM_World
+        JM = IM_World
+        localSearch = .false.
+     end if   
+
      if (JM_World == 6*IM_World) then
         isCubed = .true.
      else
         isCubed = .false.
      end if
-
-     call ESMF_GridGetCoord(grid,coordDim=1, localDe=0, &
-        staggerloc=ESMF_STAGGERLOC_CENTER, fArrayPtr = lons, rc=status)
-     VERIFY_(STATUS)
-     call ESMF_GridGetCoord(grid,coordDim=2, localDe=0, &
-        staggerloc=ESMF_STAGGERLOC_CENTER, fArrayPtr = lats, rc=status)
-     VERIFY_(STATUS)
+     ii = -1
+     jj = -1
      if (isCubed) then
-        allocate(EdgeLats(IM+1,JM+1),stat=status)
-        VERIFY_(STATUS)
-        allocate(EdgeLons(IM+1,JM+1),stat=status)
-        VERIFY_(STATUS)
-        call MAPL_GridGet(Grid,gridCornerLons=EdgeLons,gridCornerLats=EdgeLats,rc=status)
-        VERIFY_(STATUS)
-        allocate(EdgeX(IM+1,JM+1),stat=status)
-        VERIFY_(STATUS)
-        allocate(EdgeY(IM+1,JM+1),stat=status)
-        VERIFY_(STATUS)
-        call check_face(IM+1,JM+1,EdgeLons,EdgeLats,FACE)
-        ASSERT_(FACE > 0 .and. FACE <= 6) 
-        call cube_xy(IM+1,JM+1,EdgeX,EdgeY,EdgeLons,EdgeLats,face)
-        switch = .false.
-        if (abs(EdgeX(1,1)-EdgeX(2,1)) < 0.0001) switch = .true.
-        
-        if (switch) then
-           allocate(ex(jm+1),ey(im+1), stat = status)
+        if (localSearch) then
+           allocate(EdgeLats(IM+1,JM+1,1),stat=status)
            VERIFY_(STATUS)
-           imp1=im+1
-           jmp1=jm+1
-           im_1d = jm+1
-           jm_1d = im+1
+           allocate(EdgeLons(IM+1,JM+1,1),stat=status)
+           VERIFY_(STATUS)
+           call MAPL_GridGet(Grid,gridCornerLons=EdgeLons(:,:,1),gridCornerLats=EdgeLats(:,:,1),rc=status)
+           VERIFY_(STATUS)
+           allocate(EdgeX(IM+1,JM+1),stat=status)
+           VERIFY_(STATUS)
+           allocate(EdgeY(IM+1,JM+1),stat=status)
+           VERIFY_(STATUS)
         else
-           allocate(ex(im+1),ey(jm+1), stat=status)
-           VERIFY_(status)
-           imp1=im+1
-           jmp1=jm+1
-           im_1d = im+1
-           jm_1d = jm+1
+           allocate(EdgeLats(IM+1,IM+1,6),stat=status)
+           VERIFY_(STATUS)
+           allocate(EdgeLons(IM+1,IM+1,6),stat=status)
+           VERIFY_(STATUS)
+           call AppCSEdgeCreateF(IM_World, EdgeLons, EdgeLats, rc=status)
+           allocate(EdgeX(IM+1,IM+1),stat=status)
+           VERIFY_(STATUS)
+           allocate(EdgeY(IM+1,IM+1),stat=status)
+           VERIFY_(STATUS)
         end if
-        call flatten_xy(EdgeX,EdgeY,ex,ey,imp1,jmp1,im_1d,jm_1d,switch)
-        do i=1,npts
-           ! CS grid 0 to 360 shift if we must
-           lonloc = lon(i)
-           latloc = lat(i)
-           if (lonloc < 0.) lonloc = lonloc + 2.0*MAPL_PI
-           call check_face_pnt(lonloc,latloc,face_pnt)
-           if (face_pnt == face) then
-              call cube_xy_point(x_loc,y_loc,latloc,lonloc,face_pnt)
-              IIloc = ijsearch(ex,im_1d,x_loc,.false.)
-              JJloc = ijsearch(ey,jm_1d,y_loc,.false.)
-              if (switch) then
-                 itmp = IIloc
-                 IIloc = JJloc
-                 JJloc = itmp
-              endif
+
+        if (localSearch) then
+           fStart = 1
+           fEnd   = 1
+        else
+           fStart = 1
+           fEnd   = 6
+        end if
+
+        do j = fStart, fEnd
+           if (localSearch) then
+              call check_face(IM+1,JM+1,EdgeLons(:,:,1),EdgeLats(:,:,1),FACE)
+              ASSERT_(FACE > 0 .and. FACE <= 6)
+              call cube_xy(IM+1,JM+1,EdgeX,EdgeY,EdgeLons(:,:,j),EdgeLats(:,:,j),face)
            else
-              IIloc = -1
-              JJloc = -1
+              call check_face(IM+1,JM+1,EdgeLons(:,:,j),EdgeLats(:,:,j),FACE)
+              ASSERT_(FACE > 0 .and. FACE <= 6)
+              call cube_xy(IM+1,JM+1,EdgeX,EdgeY,EdgeLons(:,:,j),EdgeLats(:,:,j),face)
            end if
-           II(i) = IIloc
-           JJ(i) = JJloc
+           switch = .false.
+           if (abs(EdgeX(1,1)-EdgeX(2,1)) < 0.0001) switch = .true.
+
+           if (switch) then
+              allocate(ex(jm+1),ey(im+1), stat = status)
+              VERIFY_(STATUS)
+              imp1=im+1
+              jmp1=jm+1
+              im_1d = jm+1
+              jm_1d = im+1
+           else
+              allocate(ex(im+1),ey(jm+1), stat=status)
+              VERIFY_(status)
+              imp1=im+1
+              jmp1=jm+1
+              im_1d = im+1
+              jm_1d = jm+1
+           end if
+           call flatten_xy(EdgeX,EdgeY,ex,ey,imp1,jmp1,im_1d,jm_1d,switch)
+           do i=1,npts
+              ! CS grid 0 to 360 shift if we must
+              ! if this is a global search and we have not found point, search this face
+              ! otherwise always do search
+              if ( (.not.localSearch .and. II(i) <0 .and. JJ(i) < 0) .or. localSearch) then
+                 if (present(lon) .and. present(lat)) then
+                    lonloc = lon(i)
+                    latloc = lat(i)
+                 else if (present(lonR8) .and. present(latR8)) then
+                    lonloc = lonR8(i)
+                    latloc = latR8(i)
+                 end if
+                 if (lonloc < 0.) lonloc = lonloc + 2.0*MAPL_PI
+                 call check_face_pnt(lonloc,latloc,face_pnt)
+                 if (face_pnt == face) then
+                    call cube_xy_point(x_loc,y_loc,latloc,lonloc,face_pnt)
+                    IIloc = ijsearch(ex,im_1d,x_loc,.false.)
+                    JJloc = ijsearch(ey,jm_1d,y_loc,.false.)
+                    if (switch) then
+                       itmp = IIloc
+                       IIloc = JJloc
+                       JJloc = itmp
+                    endif
+                    if (.not.localSearch) JJloc = IM_World*(j-1)+JJloc
+                 else
+                    IIloc = -1
+                    JJloc = -1
+                 end if
+                 II(i) = IIloc
+                 JJ(i) = JJloc
+              end if
+           end do
+           deallocate(ex)
+           deallocate(ey)
         end do
-        deallocate(ex)
-        deallocate(ey)
+
+
         deallocate(EdgeY)
         deallocate(EdgeX)
         deallocate(EdgeLats)
         deallocate(EdgeLons)
      else
+        if (localSearch) then
+           call ESMF_GridGetCoord(grid,coordDim=1, localDe=0, &
+              staggerloc=ESMF_STAGGERLOC_CENTER, fArrayPtr = lons, rc=status)
+           VERIFY_(STATUS)
+           call ESMF_GridGetCoord(grid,coordDim=2, localDe=0, &
+              staggerloc=ESMF_STAGGERLOC_CENTER, fArrayPtr = lats, rc=status)
+           VERIFY_(STATUS)
+        else
+           ASSERT_(.false.)
+        end if
         allocate(lons_1d(im),stat=status)
         VERIFY_(STATUS)
         allocate(lats_1d(jm),stat=status)
@@ -3018,8 +3347,13 @@ and so on.
         ! lat-lon grid goes from -180 to 180 shift if we must
         ! BMA this -180 to 180 might change at some point
         do i=1,npts
-           lonloc = lon(i)
-           latloc = lat(i)
+           if (present(lon) .and. present(lat)) then
+              lonloc = lon(i)
+              latloc = lat(i)
+           else if (present(lonR8) .and. present(latR8)) then
+              lonloc = lonR8(i)
+              latloc = latR8(i)
+           end if
            if (lonloc > MAPL_PI) lonloc = lonloc - 2.0*MAPL_PI
            IIloc = ijsearch(elons,im+1,lonloc,.false.)
            JJloc = ijsearch(elats,jm+1,latloc,.false.)
@@ -3352,7 +3686,7 @@ and so on.
           case (2)
              dateline='DC'
              pole='PE'
-          case (4)
+          case (3)
              dateline='DE'
              pole='PE'             
           end select
@@ -3382,6 +3716,35 @@ and so on.
     end if
 
   end subroutine MAPL_GenGridName
+
+  function MAPL_GenXYOffset(lon, lat) result(xy)
+    real        :: lon(:), lat(:)
+    integer     :: xy
+
+    integer           :: I
+    integer           :: p, d
+    real, parameter   :: eps=1.0e-4
+
+    p = 0 ! default
+    d = 0 ! default
+
+    if(abs(LAT(1) + 90.0) < eps) then
+       p=0 ! 'PC'
+    else if (abs(LAT(1) + 90.0 - 0.5*(LAT(2)-LAT(1))) < eps) then
+       p=1 ! 'PE'
+    end if
+    do I=0,1
+       if(abs(LON(1) + 180.0*I) < eps) then
+          d=0 ! 'DC'
+          exit
+       else if (abs(LON(1) + 180.0*I - 0.5*(LON(2)-LON(1))) < eps) then
+          d=1 ! 'DE'
+          exit
+       end if
+    end do
+    xy = 2*p + d
+    return
+  end function MAPL_GenXYOffset
 
   subroutine MAPL_GeosNameNew(name)
     character(len=*) :: name
@@ -3419,6 +3782,142 @@ and so on.
        end if
     end if
   end subroutine MAPL_GeosNameNew
+
+  ! From a grid and a list of fields create an allocated ESMF bundle with
+  ! these fields. By Default variables will be 3D at the center location
+  ! unless 2 optional arguements are passed in. Can also pass in a list
+  ! of long names and units if desired
+  function MAPL_BundleCreate(name,grid,fieldNames,is2D,isEdge,long_names,units,rc) result(B)
+  character(len=*),           intent(in   ) :: name
+  type(ESMF_Grid),            intent(inout) :: grid
+  character(len=*),           intent(in   ) :: fieldNames(:)
+  logical, optional,          intent(in   ) :: is2D(:)
+  logical, optional,          intent(in   ) :: isEdge(:)
+  character(len=*), optional, intent(in   ) :: long_names(:)
+  character(len=*), optional, intent(in   ) :: units(:)
+  integer, optional, intent(out  ) :: rc
+  type(ESMF_FieldBundle) :: B
+
+  character(len=ESMF_MAXSTR), parameter :: IAm='MAPL_BundleCreate'
+  integer :: status
+  integer :: i
+  logical, allocatable :: localIs2D(:)
+  logical, allocatable :: localIsEdge(:)
+  real, pointer :: PTR2(:,:) => null()
+  real, pointer :: PTR3(:,:,:) => null()
+  integer :: counts(5)
+  integer :: dims(3)
+  integer, allocatable :: gridToFieldMap(:)
+  integer :: gridRank
+  type(ESMF_Field) :: field
+
+  allocate(localIs2D(size(fieldNames)),stat=status)
+  VERIFY_(STATUS)
+  if (present(is2D)) then
+     ASSERT_(size(fieldNames) == size(is2D))
+     localIs2D = is2D
+  else
+     localIs2D = .false. 
+  end if
+  allocate(localIsEdge(size(fieldNames)),stat=status)
+  VERIFY_(STATUS)
+  if (present(isEdge)) then
+     ASSERT_(size(fieldNames) == size(isEdge))
+     localIsEdge = isEdge
+  else
+     localIsEdge = .false. 
+  end if
+  if (present(long_names)) then
+     ASSERT_(size(fieldNames) == size(long_names))
+  end if
+  if (present(units)) then
+     ASSERT_(size(fieldNames) == size(units))
+  end if
+
+  B = ESMF_FieldBundleCreate ( name=name, rc=STATUS )
+  VERIFY_(STATUS)
+  call ESMF_FieldBundleSet ( B, grid=GRID, rc=STATUS )
+  VERIFY_(STATUS)
+  call MAPL_GridGet(GRID, globalCellCountPerDim=COUNTS, &
+       localCellCountPerDim=DIMS, RC=STATUS)
+  VERIFY_(STATUS)
+  do i=1,size(fieldnames)
+     if (localIs2D(i)) then
+
+        allocate(PTR2(DIMS(1),DIMS(2)),stat=STATUS)
+        VERIFY_(STATUS)
+        PTR2  = 0.0
+        call ESMF_GridGet(GRID, dimCount=gridRank, rc=status)
+        VERIFY_(STATUS)
+        allocate(gridToFieldMap(gridRank), stat=status)
+        VERIFY_(STATUS)
+        if(gridRank == 2) then
+           gridToFieldMap(1) = 1
+           gridToFieldMap(2) = 2
+        else if (gridRank == 3) then
+           gridToFieldMap(1) = 1
+           gridToFieldMap(2) = 2
+           gridToFieldMap(3) = 0
+        else
+           RETURN_(ESMF_FAILURE)
+        end if
+        FIELD = ESMF_FieldCreate(grid=GRID, &
+                datacopyFlag = ESMF_DATACOPY_REFERENCE,   &
+                farrayPtr=PTR2, gridToFieldMap=gridToFieldMap, &
+                name=fieldNames(i), RC=STATUS)
+        VERIFY_(STATUS)
+        deallocate(gridToFieldMap)
+        call ESMF_AttributeSet(FIELD, NAME='DIMS', VALUE=MAPL_DimsHorzOnly, RC=STATUS)
+        VERIFY_(STATUS)
+        call ESMF_AttributeSet(FIELD, NAME='VLOCATION', VALUE=MAPL_VLocationNone, RC=STATUS)
+        VERIFY_(STATUS)
+
+     else
+        if (localIsEdge(i)) then
+           allocate(PTR3(Dims(1),Dims(2),0:counts(3)),stat=status)
+           VERIFY_(STATUS)
+        else
+           allocate(PTR3(Dims(1),Dims(2),counts(3)),stat=status)
+           VERIFY_(STATUS)
+        end if
+        PTR3 = 0.0
+        FIELD = ESMF_FieldCreate(grid=GRID, &
+                datacopyFlag = ESMF_DATACOPY_REFERENCE,   &
+                farrayPtr=PTR3, name=fieldNames(i), RC=STATUS)
+        call ESMF_AttributeSet(FIELD, NAME='DIMS', VALUE=MAPL_DimsHorzVert, RC=STATUS)
+        VERIFY_(STATUS)
+        if (localIsEdge(i)) then
+              call ESMF_AttributeSet(FIELD, NAME='VLOCATION', VALUE=MAPL_VLocationEdge, RC=STATUS)
+              VERIFY_(STATUS)
+           else
+              call ESMF_AttributeSet(FIELD, NAME='VLOCATION', VALUE=MAPL_VLocationCenter, RC=STATUS)
+              VERIFY_(STATUS)
+        end if
+
+     end if
+     if (present(long_names)) then
+        call ESMF_AttributeSet(FIELD, NAME='LONG_NAME', VALUE=long_names(i), RC=STATUS)
+        VERIFY_(STATUS)
+     else
+        call ESMF_AttributeSet(FIELD, NAME='LONG_NAME', VALUE="UNKNOWN", RC=STATUS)
+        VERIFY_(STATUS)
+     end if
+     if (present(units)) then
+        call ESMF_AttributeSet(FIELD, NAME='LONG_NAME', VALUE=units(i), RC=STATUS)
+        VERIFY_(STATUS)
+     else
+        call ESMF_AttributeSet(FIELD, NAME='LONG_NAME', VALUE="UNKNOWN", RC=STATUS)
+        VERIFY_(STATUS)
+     end if
+     call MAPL_FieldBundleAdd(B, FIELD, RC=STATUS)
+     VERIFY_(STATUS)
+  enddo
+ 
+  deallocate(localIs2D)
+  deallocate(localIsEdge)
+  RETURN_(ESMF_SUCCESS)
+
+  end function MAPL_BundleCreate
 
 end module MAPL_BaseMod
 

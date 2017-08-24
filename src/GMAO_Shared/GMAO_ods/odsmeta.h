@@ -310,7 +310,7 @@
      7                 'ODSmatch could not find match   '/)
 
 
-      integer, parameter :: nsats = 38
+      integer, parameter :: nsats = 40
       character(len=*), parameter :: sats(nsats)=(/
      .                 'hirs2           ', 'hirs3           ', 'hirs4           ',
      .                 'msu             ', 'ssu             ', 'sndr            ',
@@ -324,7 +324,8 @@
      .                 'atms            ', 'cris            ', 'omieff          ',
      .                 'o3lev           ', 'tomseff         ', 'gome            ',
      .                 'mls             ', 'mls20           ', 'mls22           ',
-     .                 'mls30           ', 'mls55           '/)
+     .                 'mls30           ', 'mls55           ', 'tmi             ',
+     .                 'gmi             '/)
 ! note: numbers below were made up for MHS, and SSU
 ! note: CRIS and ATMS numbers assigned at will
 ! note: omieff number assigned as omi
@@ -342,7 +343,8 @@
      .                 900               , 950               , 449               ,
      .                 304               , 440               , 445               ,
      .                 310               , 315               , 320               ,
-     .                 325               , 330               /)
+     .                 325               , 330               , 705               ,
+     .                 706 /)
 
       integer, parameter :: npcp = 4
       character(len=*), parameter :: pcpt(npcp)=(/

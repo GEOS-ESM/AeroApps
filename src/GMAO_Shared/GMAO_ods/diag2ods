@@ -39,6 +39,8 @@
 #  25Mar2013  Todling  Add 0-hr observation impacts
 #  06Feb2014  Todling  Add -sens as opt to allow getting sensitivities instead of impacts
 #  02Apr2014  Todling  Add -psigo as opt to allow writing out ods files w/ prescribed sigo
+#  04Nov2015  Todling  Correct handling of omf files
+#  18Dec2016  Todling  Add handle for reduced-diag files from GSI (ensemble observers)
 #-----------------------------------------------------------------------------
 
 use Env;                 # make env vars readily available
@@ -55,7 +57,7 @@ use lib ( "$FindBin::Bin", "$FVROOT/bin", "$ESMADIR/$ARCH/bin" );
  
 # Command line options
 # --------------------
-  GetOptions( "h", "i=s", "o=s", "m=s", "omf", "sens", "psigo", "type=s", "log=s", "res=s", "dir=s", "single", "ncpus=i", "rc=s" );
+  GetOptions( "h", "i=s", "o=s", "m=s", "omf", "sens", "reduce_diag", "psigo", "type=s", "log=s", "res=s", "dir=s", "single", "ncpus=i", "rc=s" );
 
   usage() if $opt_h;
 
@@ -155,11 +157,14 @@ sub d2o {
 # --------------------------------------------------
 my ( $file, $xxcmd, $xres ) = @_;
        if ( -e $file && !(-z $file) ) {
-         $cmd = $fvroot . "/bin/odsselect $prepsigo $doobsens $xxcmd -ncf -rmdupl -qc ALL -o $expid.${grp}_${xres}.${nymdhh} $file";
+         $cmd = $fvroot . "/bin/odsselect $reduced $prepsigo $doobsens $xxcmd -ncf -rmdupl -qc ALL -o $expid.${grp}_${xres}.${nymdhh} $file";
          print " $cmd\n";
          $gesrc = System($cmd, "$log",$MAX, "odsselect");
          print " $0: odsselect \$rc =  $rc\n";
          die ">>>> ERROR <<< running odsselect" if ( $rc );
+         if ( $opt_omf ) {
+            rename("$expid.${grp}_${xres}.${nymdhh}.ods","${odsfnbase}_${grp}_${xres}.${nymdhh}.ods");
+         }
        }
 }
 
@@ -454,6 +459,10 @@ sub init {
 
   $do_0hr_imp = $ENV{"DO_0HR_IMP"};
 
+  $reduced = "";
+  if( $opt_reduce_diag ) {
+     $reduced = "-reduce_diag";
+  }
   if( $opt_o ) {
       $odsfnbase = $opt_o;
       $ods0hbase = "${opt_o}_imp0hr";
@@ -559,14 +568,22 @@ sub unique_instruments {
     if ( $opt_m ) {
        @names = (<$filepath/*diag_*_ans_*.*bin>);
     } else {
-       @names = (<$filepath/*diag_*anl.*bin>);
+       if ( $opt_omf ) {
+          @names = (<$filepath/*diag_*ges.*bin>);
+       } else {
+          @names = (<$filepath/*diag_*anl.*bin>);
+       }
     }
     foreach (@names) {
         $type = "";
         if ( $opt_m ) {
           $type = $1 if /diag_(\S*)_ans/;
         } else {
-          $type = $1 if /diag_(\S*)_anl/;
+          if ( $opt_omf ) {
+             $type = $1 if /diag_(\S*)_ges/;
+          } else {
+             $type = $1 if /diag_(\S*)_anl/;
+          }
         }
         if ($type) {
             push @list, $type unless included(@list, $type);

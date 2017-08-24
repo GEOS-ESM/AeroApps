@@ -1,4 +1,4 @@
-!  $Id: MAPL_Cap.F90,v 1.37.12.4.14.6 2014-04-01 18:08:20 bmauer Exp $
+!  $Id: MAPL_Cap.F90,v 1.54.2.1 2016/06/22 18:54:59 mathomp4 Exp $
 
 #include "MAPL_Generic.h"
 
@@ -24,7 +24,9 @@ module MAPL_CapMod
   use MAPL_HistoryGridCompMod, only : Hist_SetServices => SetServices
   use MAPL_HistoryGridCompMod, only : HISTORY_ExchangeListWrap
   use MAPL_ExtDataGridCompMod, only : ExtData_SetServices => SetServices
+  use MAPL_ExtDataGridCompMod, only : T_EXTDATA_STATE, EXTDATA_WRAP
   use MAPL_CFIOServerMod
+  use m_inpak90
 
   implicit none
   private
@@ -32,6 +34,7 @@ module MAPL_CapMod
 ! !PUBLIC MEMBER FUNCTIONS:
 
   public MAPL_Cap
+  public MAPL_ConfigSetAttribute
 
 ! !DESCRIPTION: 
 
@@ -58,7 +61,7 @@ contains
 
 ! !INTERFACE:
 
-  subroutine MAPL_CAP(ROOT_SetServices, Name, AmIRoot, FinalFile, RC)
+  subroutine MAPL_CAP(ROOT_SetServices, Name, AmIRoot, FinalFile, CommIn, RC)
 
 ! !ARGUMENTS:
 
@@ -66,6 +69,7 @@ contains
     character*(*), optional, intent(IN ) :: Name
     logical,       optional, intent(OUT) :: AmIRoot
     character*(*), optional, intent(IN ) :: FinalFile
+    integer,       optional, intent(IN ) :: CommIn
     integer,       optional, intent(OUT) :: rc
 
 !EOPI
@@ -141,83 +145,176 @@ contains
    integer*8, pointer           :: LSADDR(:) => null()
    type(HISTORY_ExchangeListWrap) :: lswrap
 
-   integer                               :: i, itemcount, comm
+   integer                               :: i, j, itemcount, comm
    type (ESMF_StateItem_Flag), pointer   :: ITEMTYPES(:)
    character(len=ESMF_MAXSTR ), pointer  :: ITEMNAMES(:)
    type (ESMF_Field)                     :: field
    type (ESMF_FieldBundle)               :: bundle
    integer                               :: useShmem
-   integer                               :: esmfcommsize,MaxMem,nnodes
-   integer                               :: myRank, ioColor, esmfColor, key, esmfComm, ioComm,intercomm
+   integer                               :: esmfcommsize
+   integer                               :: myRank, ioColor, esmfColor, esmfComm, ioComm, tmpioCommRoot,tRank
    type(MAPL_Communicators)              :: mapl_Comm
-   integer                               :: ioMyRank,IOnPes,IOcounter
-   logical                               :: lexist
-   namelist / ioserver / nnodes, CoresPerNode, maxMem
    character(len=ESMF_MAXSTR )           :: DYCORE
    integer                               :: snglcol
+   integer                               :: NX, NY
+   integer                               :: CommCap
+   integer                               :: NX1,NY1,commCnt,lastNode,ioCommSize,useIOServer
+   logical                               :: esmfNodesDone
+   character(len=ESMF_MAXSTR)            :: replayMode
+   type(ESMF_GridComp)                   :: GCMGC
+   type (T_ExtData_STATE), pointer       :: ExtData_internal_state => null()
+   type (ExtData_wrap)                   :: wrap
+   type (ESMF_VM)                        :: gcmVM
+   character(len=ESMF_MAXSTR )           :: timerModeStr
+   integer                               :: timerMode
 
+   integer                               :: modelDuration
+   integer(kind=MAPL_I8)                 :: cr, cm
+   real(kind=MAPL_R8)                    :: rate
+   integer(kind=MAPL_I8)                 :: modelStart, modelEnd, modelTime
+   real(kind=MAPL_R8)                    :: modelTimeInDays, modelDurationInDays, modelDaysPerDay
+   integer, parameter                    :: SecondsPerDay = 86400
 
 ! Begin
 !------
 
+   call system_clock(count_rate=cr, count_max=cm)
+   rate = real(cr, kind=MAPL_R8)
+
+   call system_clock(modelStart)
+
 !  Initialize ESMF
 !-----------------
 
-   call mpi_init(status)
-   VERIFY_(STATUS) 
-   call mpi_comm_size(MPI_COMM_WORLD,nPes,status)
+   if (present(CommIn)) then
+       CommCap = CommIn
+   else
+       CommCap = MPI_COMM_WORLD
+   end if
+
+   if (.not.present(CommIn)) then
+      call mpi_init(status)
+      VERIFY_(STATUS) 
+   end if
+   call mpi_comm_size(CommCap,nPes,status)
    VERIFY_(STATUS)
-   call mpi_comm_rank(MPI_COMM_WORLD,myRank,status)
+   call mpi_comm_rank(CommCap,myRank,status)
    VERIFY_(STATUS)
    mapl_comm%myGlobalRank = myRank
 
-   if (myRank == 0) then
-      inquire(file="ioserver.nml",exist=lexist)
-      if (lexist) then
-         open(99,file="ioserver.nml",status='old')
-         read(unit=99,NML=ioserver)
-         close(99)
-         write(*,'(A,I5,A,I5,A,I6)')'Running ioserver on ',(nPes/CoresPerNode)-nnodes,' nodes with ',CoresPerNode,' CoresPerNode and maxMem ',MaxMem
-         write(*,'(A,I5,A)')'Runing model on ',nnodes,' nodes'
-         esmfcommsize = nnodes*CoresPerNode
-      else
-         esmfcommsize = nPes
-         coresPerNode = 0
-         maxMem = 0
-      end if
-   end if
-   call MPI_BCAST(esmfcommsize, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, status)
-   VERIFY_(STATUS)
-   call MPI_BCAST(corespernode, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, status)
-   VERIFY_(STATUS)
-   call MPI_BCAST(maxMem, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, status)
-   VERIFY_(STATUS)
-   mapl_comm%maxMem = maxMem
-   mapl_comm%corespernode = corespernode
    ioColor = MPI_UNDEFINED
    esmfColor = MPI_UNDEFINED
-   if (myRank < esmfcommsize) then
-      esmfColor = 0
-   else
-      ioColor = 0
+   useIOServer = 0
+   NX1=0
+   NY1=0
+   esmfCommSize=0
+   if (myRank == 0) then
+      call i90_loadf("CAP.rc",status)
+      VERIFY_(STATUS)
+      call i90_label("USE_IOSERVER:",status)
+      if (status ==  0) then
+         useIOServer = i90_gint(status)
+         VERIFY_(STATUS)
+      endif
+      if (useIOServer /=0 ) then
+         call i90_label("ROOT_CF:",status)
+         VERIFY_(STATUS)
+         call i90_gstr(root_cf,status)
+         VERIFY_(STATUS)
+         call i90_release()
+         call i90_loadf(root_cf,status)
+         VERIFY_(STATUS)
+         call i90_label("NX:",status)
+         VERIFY_(STATUS)
+         NX1 = i90_gint(status)
+         VERIFY_(STATUS)
+         call i90_label("NY:",status)
+         VERIFY_(STATUS)
+         NY1 = i90_gint(status)
+         call i90_release()
+         esmfcommsize = NX1*NY1
+      else
+         call i90_release()
+         esmfcommsize = nPes
+      endif
    end if
-   mapl_comm%ioCommSize = nPes-esmfcommsize
- 
-   call mpi_comm_split(MPI_COMM_WORLD,esmfColor,myRank,esmfComm,status)
+   call MPI_BCAST(useIOServer, 1, MPI_INTEGER, 0, CommCap, status)
    VERIFY_(STATUS)
-   call mpi_comm_split(MPI_COMM_WORLD,ioColor,myRank,ioComm,status)
+   call MPI_BCAST(NX1, 1, MPI_INTEGER, 0, CommCap, status)
+   VERIFY_(STATUS)
+   call MPI_BCAST(NY1, 1, MPI_INTEGER, 0, CommCap, status)
+   VERIFY_(STATUS)
+   call MPI_BCAST(esmfcommsize, 1, MPI_INTEGER, 0, CommCap, status)
+   VERIFY_(STATUS)
+   ioCommSize=0
+
+   if (useIOServer /= 0) then 
+      call MAPL_GetNodeInfo (comm=commCap, rc=status)
+      VERIFY_(STATUS)
+      commCnt = 0
+      esmfNodesDone = .false.
+      do i=1,size(MAPL_NodeRankList)
+         do j=1,size(MAPL_NodeRankList(i)%rank)
+            commCnt = commCnt + 1
+            if (myRank == MAPL_NodeRankList(i)%rank(j)) esmfColor = 0
+            if (commCnt == NX1*NY1) then
+               esmfNodesDone = .true.
+               exit
+            end if
+         enddo
+         if (esmfNodesDone) then
+            lastNode = i
+            exit
+         endif
+      enddo
+      ASSERT_(lastNode < size(MAPL_NodeRankList))
+      tmpioCommRoot = MAPL_NodeRankList(lastNode+1)%rank(1)
+      do i=lastNode+1,size(MAPL_NodeRankList)
+         ioCommSize = ioCommSize + size(MAPL_NodeRankList(i)%rank)
+         do j=1,size(MAPL_NodeRankList(i)%rank)
+            if (myRank == MAPL_NodeRankList(i)%rank(j)) ioColor = 0
+         enddo
+      enddo
+   else
+      commCnt = nPes
+      esmfColor =0 
+   endif
+
+   mapl_comm%globalCommSize = npes
+   mapl_comm%ioCommSize = ioCommSize
+ 
+   call mpi_comm_split(CommCap,esmfColor,myRank,esmfComm,status)
+   VERIFY_(STATUS)
+   call mpi_comm_split(CommCap,ioColor,myRank,ioComm,status)
    VERIFY_(STATUS)
 
    mapl_comm%esmfCommSize = esmfcommsize
    mapl_comm%MaplCommSize = nPes
 
-   mapl_Comm%maplComm = MPI_COMM_WORLD
+   mapl_Comm%maplComm = CommCap
    mapl_comm%esmfComm = esmfComm
    mapl_comm%ioComm = ioComm
-   mapl_comm%ioCommRoot=esmfcommsize 
- 
+
+   tRank = myRank
+   if (ioComm /= MPI_COMM_NULL) then
+      call MPI_BCast(tRank,1, MPI_INTEGER, 0, ioComm, status)
+      VERIFY_(STATUS)
+   endif
+   ! now everyone in iocomm knows the global rank of root
+   ! broadcast from any rank in the IOComm to everyone knows it
+   if (useIOServer /= 0) then
+      call MPI_Bcast(tRank,1,MPI_INTEGER,tmpIOCommRoot,commCap,status)
+      VERIFY_(STATUS)
+      mapl_comm%ioCommRoot = tRank
+   end if
+
    call MAPL_CFIOServerInitMpiTypes()
-  
+
+   if (useIOServer /= 0) then 
+      call MAPL_FinalizeShmem(rc=status)
+      VERIFY_(STATUS)
+   endif
+
    ESMFCOMMIF: if (esmfComm /= MPI_COMM_NULL) then
 #if defined(ENABLE_ESMF_ERR_LOGGING)
       call ESMF_Initialize (vm=vm, mpiCommunicator=esmfComm, rc=status)
@@ -304,7 +401,7 @@ contains
       VERIFY_(STATUS)
 
 
-      PERPETUAL = ESMF_AlarmCreate( clock=clock_HIST, name='PERPETUAL', ringinterval=Frequency, rc=status )
+      PERPETUAL = ESMF_AlarmCreate( clock=clock_HIST, name='PERPETUAL', ringinterval=Frequency, sticky=.false., rc=status )
       VERIFY_(STATUS)
       call ESMF_AlarmRingerOff( PERPETUAL, rc=status )
       VERIFY_(STATUS)
@@ -377,18 +474,40 @@ contains
       call MAPL_GetResource(MAPLOBJ, enableMemUtils, "MAPL_ENABLE_MEMUTILS:", default='NO',             RC=STATUS )
       VERIFY_(STATUS)
    !EOR
-      if (enableTimers /= 'YES' .and. enableTimers /= 'yes') then
+      call ESMF_StringUpperCase(enableTimers)
+      if (enableTimers /= 'YES') then
          call MAPL_ProfDisable( rc=STATUS )
          VERIFY_(STATUS)
+      else
+         call MAPL_GetResource(MAPLOBJ, timerModeStr, "MAPL_TIMER_MODE:", &
+                               default='MAX', RC=STATUS )
+         VERIFY_(STATUS)
+         call ESMF_StringUpperCase(timerModeStr)
+
+         TestTimerMode: select case(timerModeStr)
+         case("OLD")
+            timerMode = MAPL_TimerModeOld      ! this has barriers
+         case("ROOTONLY")
+            timerMode = MAPL_TimerModeRootOnly ! this is the fastest
+         case("MAX")
+            timerMode = MAPL_TimerModeMax      ! this is the default
+         case("MINMAX")
+            timerMode = MAPL_TimerModeMinMax      ! this is the default
+         case default
+            ASSERT_(.false.)
+         end select TestTimerMode
+         call MAPL_TimerModeSet(timerMode, RC=status)
+         VERIFY_(status)
       end if
 
-     if (enableMemUtils /= 'YES' .and. enableMemUtils /= 'yes') then
-        call MAPL_MemUtilsDisable( rc=STATUS )
-        VERIFY_(STATUS)
-     else
-        call MAPL_MemUtilsInit( rc=STATUS )
-        VERIFY_(STATUS)
-     end if
+      call ESMF_StringUpperCase(enableMemUtils)
+      if (enableMemUtils /= 'YES') then
+         call MAPL_MemUtilsDisable( rc=STATUS )
+         VERIFY_(STATUS)
+      else
+         call MAPL_MemUtilsInit( rc=STATUS )
+         VERIFY_(STATUS)
+      end if
 
       call MAPL_GetResource( MAPLOBJ, printSpec, label='PRINTSPEC:', default = 0, rc=STATUS )
       VERIFY_(STATUS)
@@ -452,6 +571,12 @@ contains
          VERIFY_(STATUS)
       end if
 
+   ! Detect if this a regular replay in the AGCM.rc
+   ! ----------------------------------------------
+     call ESMF_ConfigGetAttribute(cf_root, value=ReplayMode, Label="REPLAY_MODE:", default="NoReplay", rc=status)
+     VERIFY_(STATUS)
+     
+
    ! Register the children with MAPL
    !--------------------------------
 
@@ -507,6 +632,18 @@ contains
            name       = 'EXTDATA',           &
            SS         = ExtData_SetServices, &
                                 rc=STATUS )  
+      VERIFY_(STATUS)
+
+   ! Add NX and NY from AGCM.rc to ExtData.rc as well as name of ExtData rc file
+      call ESMF_ConfigGetAttribute(cf_root, value = NX, Label="NX:", rc=status)
+      VERIFY_(STATUS)
+      call ESMF_ConfigGetAttribute(cf_root, value = NY, Label="NY:", rc=status)
+      VERIFY_(STATUS)
+      call MAPL_ConfigSetAttribute(cf_ext, value=NX,  Label="NX:",  rc=status)
+      VERIFY_(STATUS)
+      call MAPL_ConfigSetAttribute(cf_ext, value=NY,  Label="NY:",  rc=status)
+      VERIFY_(STATUS)
+      call MAPL_ConfigSetAttribute(cf_ext, value=EXTDATA_CF,  Label="CF_EXTDATA:",  rc=status)
       VERIFY_(STATUS)
 
    !  Query MAPL for the the children's for GCS, IMPORTS, EXPORTS
@@ -598,6 +735,22 @@ contains
            exportState=EXPORTS(EXTDATA), & 
            clock=CLOCK,  userRC=STATUS )
       VERIFY_(STATUS)
+
+   ! Finally check is this is a regular replay
+   ! If so stuff gc and input state for ExtData in GCM internal state
+   ! -----------------------------------------------------------------
+   if (trim(replayMode)=="Regular") then
+      call MAPL_GCGet(GCS(ROOT),"GCM",gcmGC,rc=status)
+      VERIFY_(STATUS)
+      call ESMF_GridCompGet(gcmGC,vm=gcmVM,rc=status)
+      VERIFY_(STATUS)
+      ASSERT_(vm==gcmVM)
+      call ESMF_UserCompGetInternalState(gcmGC,'ExtData_state',wrap,status)
+      VERIFY_(STATUS)
+      ExtData_internal_state => wrap%ptr
+      ExtData_internal_state%gc = GCS(EXTDATA)
+      ExtData_internal_state%expState = EXPORTS(EXTDATA) 
+   end if
     
    ! Time Loop starts by checking for Segment Ending Time
    !-----------------------------------------------------
@@ -612,20 +765,20 @@ contains
               if ( DONE ) exit
          endif
 
-   ! Call Record for intermediate checkpoint (if desired)
-   !  Note that we are not doing a Record for History.
-   ! ------------------------------------------------------
-
-         call ESMF_GridCompWriteRestart( GCS(ROOT), importState=IMPORTS(ROOT), &
-              exportState=EXPORTS(ROOT), clock=CLOCK_HIST, userRC=STATUS )
-         VERIFY_(STATUS)
-
    ! Run the ExtData Component
    ! --------------------------
 
          call ESMF_GridCompRun     ( GCS(EXTDATA), importState=IMPORTS(EXTDATA), &
                                      exportState=EXPORTS(EXTDATA), &
                                      clock=CLOCK, userRC=STATUS )
+         VERIFY_(STATUS)
+
+   ! Call Record for intermediate checkpoint (if desired)
+   !  Note that we are not doing a Record for History.
+   ! ------------------------------------------------------
+
+         call ESMF_GridCompWriteRestart( GCS(ROOT), importState=IMPORTS(ROOT), &
+              exportState=EXPORTS(ROOT), clock=CLOCK_HIST, userRC=STATUS )
          VERIFY_(STATUS)
 
    ! Run the Gridded Component
@@ -731,11 +884,12 @@ contains
       VERIFY_(STATUS)
    end if IOCOMMIF
 
-   call MPI_Barrier(MPI_COMM_WORLD,status)
+   call MPI_Barrier(CommCap,status)
    VERIFY_(STATUS) 
 !  Finalize framework
 !  ------------------
-   
+
+   if (.not.present(CommIn)) then   
 #if 0
 !ALT due to a bug in MAPL (or in the garbage collection of ESMF_VMFinalize)
 !we have to bypass next line
@@ -744,8 +898,25 @@ contains
 #else
    call mpi_finalize(status)
    VERIFY_(STATUS)
-
 #endif
+   end if
+
+   ! Calculate Model Throughput
+   ! --------------------------
+
+   call system_clock(modelEnd)
+   modelTime = (modelEnd-modelStart)/rate
+
+   modelDuration = nsteps * heartbeat_dt
+
+   modelTimeInDays     = real(modelTime,     kind=MAPL_R8) / real(SecondsPerDay, kind=MAPL_R8)
+   modelDurationInDays = real(modelDuration, kind=MAPL_R8) / real(SecondsPerDay, kind=MAPL_R8)
+
+   modelDaysPerDay = modelDurationInDays/modelTimeInDays
+
+   if (enableTimers == 'YES') then
+      if (AmIRoot_) write(6,'("Model Throughput:",X,F12.3,X,"days per day")') modelDaysPerDay
+   end if
 
    RETURN_(ESMF_SUCCESS)
 
@@ -1366,7 +1537,7 @@ contains
 ! EOPI -------------------------------------------------------------------
 
        integer,   parameter :: LSZ = 256  ! Maximum line size
-       integer,   parameter :: MSZ = 512  ! Used to size buffer; this is
+       integer,   parameter :: MSZ = 16384  ! Used to size buffer; this is
                                           ! usually *less* than the number
                                           ! of non-blank/comment lines
                                           ! (because most lines are shorter
@@ -1547,7 +1718,7 @@ contains
 ! EOPI -------------------------------------------------------------------
 
        integer,   parameter :: LSZ = 256  ! Maximum line size
-       integer,   parameter :: MSZ = 512  ! Used to size buffer; this is
+       integer,   parameter :: MSZ = 16384  ! Used to size buffer; this is
                                           ! usually *less* than the number
                                           ! of non-blank/comment lines
                                           ! (because most lines are shorter

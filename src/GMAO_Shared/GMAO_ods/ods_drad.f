@@ -7,7 +7,7 @@
 ! !INTERFACE:
 !      
       subroutine ods_drad ( obstype, isat, iuse, iinfo, pinfo, pdata,
-     .                      varchn,
+     .                      varchn, nuchan,
      .                      ndiag, iint, ireal, ipchan, npred, nchanl,
      .  		    ods, mobs, kobs, iks, ioff, rc )
       use m_odsmeta
@@ -29,6 +29,7 @@
       integer,          intent(in)    :: iinfo(iint)
       real(4),          intent(in)    :: pinfo(ireal)
       real(4),          intent(in)    :: pdata(ndiag,nchanl)
+      integer,          intent(in)    :: nuchan(nchanl)
       real(4),          intent(in)    :: varchn(nchanl)
              
 ! !INPUT/OUTPUT PARAMETERS:
@@ -61,6 +62,8 @@
 !       08Mar2012 - Todling     - Use pdata(5,i)<0 to identify passive data
 !       29Mar2012 - Bloom/RT    - bug; sigo's were getting sqrt'd twice!
 !       02Apr2014 - Todling     - when desired, write out table sigo to file
+!       16Dec2016 - Todling     - add lreduced to indicate reduced diag
+!                                 (use real chan number)
 !EOP
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~      
             
@@ -70,7 +73,7 @@
       real(r_single)  zero_single,tiny_single
       real small_num,nlomx,tlomx
 
-      logical satknown,lobsdiagsave,passed,ladjsigo
+      logical satknown,lobsdiagsave,passed,ladjsigo,lreduced
       integer i, n, kidsat, kobs0, miter
 
       real, parameter :: undef = 1.e15
@@ -129,6 +132,7 @@
               return
            endif
       endif
+      call ods_obsdiags_getparam ( 'reduce_diag', lreduced )
 
       satknown = .false.
       kidsat   = isat
@@ -163,7 +167,12 @@
   
         lat(kobs)  = pinfo(1)
         lon(kobs)  = pinfo(2)
-        lev(kobs)  = i
+        if (lreduced) then
+           lev(kobs)  = nuchan(i) ! in case of reduced diag output, need to use 
+                                  ! true channel number
+        else
+           lev(kobs)  = i ! nuchan(i) ---> back to index for now (RTodling)
+        endif
         time(kobs) = pinfo(4) * 60	  ! time
         obs(kobs)  = pdata(1,i)           ! observed brightness temperature
         omf(kobs)  = pdata(2,i)   	  ! bias-corrected omf

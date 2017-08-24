@@ -6,6 +6,7 @@
    use esmf
    use ESMF_CFIOUtilMod
    use MAPL_MemUtilsMod
+   use MAPL_ShmemMod
    use netcdf
 
    implicit none
@@ -51,6 +52,7 @@
       integer             :: date
       integer             :: time
       integer             :: markdone
+      logical             :: useFaceDim
    end type MAPL_CFIOServerIOinfo
   
    include "mpif.h"
@@ -65,21 +67,30 @@
    character(len=ESMF_MAXSTR)        :: Iam
    integer                    :: status
 
-   integer :: ioRank
+   integer :: ioRank,ioSize
    real    :: lmem, gmem
 
    Iam = "MAPL_CFIOServerStart"
    call MPI_comm_rank(mapl_comm%iocomm,ioRank,status)
    VERIFY_(STATUS)
+   call MPI_comm_size(mapl_comm%iocomm,ioSize,status)
+   VERIFY_(STATUS)
+
+   if (ioRank == 0) then
+      write(*,*)"Starting CFIO Server on ",ioSize," cores"
+   end if
 
    ! check that we have enough memory on each node
    call MAPL_MemUtilsFree(lmem)
-   call MPI_Allreduce(lmem, gmem, 1, MPI_REAL, MPI_MAX, mapl_comm%iocomm,status)
+   call MPI_Allreduce(lmem, gmem, 1, MPI_REAL, MPI_MIN, mapl_comm%iocomm,status)
    VERIFY_(STATUS)
+   mapl_comm%maxmem=gmem
 
    ! The next assert is a check that you are not requesting more than the available memory
-   ASSERT_(gmem > mapl_comm%maxmem) 
+   !ASSERT_(gmem > mapl_comm%maxmem) 
 
+   call MAPL_GetNodeInfo(comm=mapl_comm%iocomm,rc=status)
+   VERIFY_(STATUS)
    if (ioRank == 0) then
       call MAPL_CFIOServerMaster(mapl_comm,rc=status)
       VERIFY_(STATUS)
@@ -103,36 +114,56 @@
     integer :: source, tag
     integer :: stat(MPI_STATUS_SIZE)
     integer :: current_work_load
-    integer,allocatable :: globalRank(:)
+    integer,allocatable :: globalRank(:),localRank(:)
+    integer,allocatable :: globalRank_gcomsize(:), localRank_gcomsize(:)
     integer :: incomingRank
     integer :: rank
     integer :: queueExit(1)
     integer, allocatable :: workQueue(:)
     integer, allocatable :: workQueueSize(:)
     integer :: n_workers, CoresPerNode,num_nodes,MAX_WORK_REQUESTS
-    integer :: i,j,k
+    integer :: i,j,k,i0
     integer :: num_q_exit, num_q_workRequests,sender
     logical, allocatable :: freeWorkers(:)
     integer, allocatable :: loadPerNode(:) ! amount of memory being used per node in megabyte
     integer, allocatable :: WorkerNode(:) ! node id of each worker
     integer :: wsize,maxMem,worker,workerGlobalId
     integer :: lastNodeUsed
+    integer :: globalGroup,IOGroup
    
    Iam = "MAPL_CFIOServerMaster"
 
     n_workers = mapl_comm%iocommSize-1
     allocate(globalRank(0:n_workers),stat=status)
     VERIFY_(STATUS)
-    CoresPerNode = mapl_comm%corespernode
-    num_nodes = mapl_comm%iocommsize/corespernode
+    allocate(localRank(0:n_workers),stat=status)
+    VERIFY_(STATUS)
+    num_nodes = size(MAPL_NodeRankList)
     MAX_WORK_REQUESTS = 50
     maxMem = mapl_comm%maxMem
     lastNodeUsed = 0
 
     ! translation table between 1-n_workers in global comm
     do i=0,n_workers
-       globalRank(i)=mapl_comm%esmfcommsize+i
+       localRank(i)=i
     enddo
+    call MPI_COMM_GROUP(mapl_comm%maplComm,globalGroup,status)
+    VERIFY_(STATUS)
+    call MPI_COMM_GROUP(mapl_comm%ioComm,ioGroup,status)
+    VERIFY_(STATUS)
+    call MPI_GROUP_TRANSLATE_RANKS(ioGroup,mapl_comm%iocommSize,localRank,globalGroup,globalRank,status)
+    VERIFY_(STATUS)
+  
+    ! now get opposite translation table 
+    allocate(globalRank_gcomsize(0:mapl_comm%maplCommSize-1),stat=status)
+    VERIFY_(STATUS)
+    allocate(localRank_gcomsize(0:mapl_comm%maplCommSize-1),stat=status)
+    VERIFY_(STATUS)
+    do i=0,mapl_comm%maplCommSize-1
+       globalRank_gcomsize(i)=i
+    enddo
+    call MPI_GROUP_TRANSLATE_RANKS(globalGroup,mapl_comm%maplCommsize,globalRank_gcomsize,ioGroup,localRank_gcomsize,status)
+    VERIFY_(STATUS)
 
     globalComm = mapl_comm%maplcomm ! we should change it to the global communicator that has been passed
 
@@ -155,15 +186,17 @@
 
     allocate(WorkerNode(n_workers),stat=status)
     VERIFY_(STATUS)
-    do i=1,CoresPerNode-1
+    i0=0
+    do i=1,size(MAPL_NodeRankList(1)%rank)-1
        WorkerNode(i)=1
+       i0=i0+1
     enddo
     k=0
     if (num_nodes > 1) then
-       do i=1,num_nodes-1
-          do j=1,CoresPerNode
+       do i=1,size(MAPL_NodeRankList)-1
+          do j=1,size(MAPL_NodeRankList(i+1)%rank)
              k=k+1
-             WorkerNode(CoresPerNode-1+k)=i+1
+             WorkerNode(i0+k)=i+1
           enddo
        enddo
     endif
@@ -194,10 +227,10 @@
            end if
 
         case (MAPL_TAG_WORKERDONE)
-           incomingRank = source-mapl_comm%esmfCommSize
+           incomingRank = localRank_gcomsize(source)
            ! return resources
            freeWorkers(incomingRank) = .true.
-           loadPerNode(workerNode(incomingRank)) = loadPerNode(workerNode(incomingRank)) - wsize 
+           loadPerNode(workerNode(incomingRank)) = loadPerNode(workerNode(incomingRank)) - wsize
            ! decrement current_work_load
            current_work_load = current_work_load - 1
            ! check if there are any queued work requests, fullfill as many as possible
@@ -237,6 +270,9 @@
   deallocate(workQueuesize)
   deallocate(freeWorkers)
   deallocate(globalRank)
+  deallocate(localRank)
+  deallocate(globalRank_gcomsize)
+  deallocate(localRank_gcomsize)
   deallocate(loadPerNode)
 
 contains
@@ -314,13 +350,6 @@ contains
             globalRank(i), MAPL_TAG_WORKEREXIT, globalComm, status)
        VERIFY_(status)
     end do
-    ! wait for their reply
-    do i = 1, n_workers
-       call MPI_Recv(rank, 1, MPI_INTEGER, &
-            globalRank(i), MAPL_TAG_WORKEREXITED, globalComm, &
-            MPI_STATUS_IGNORE, status)
-       VERIFY_(status)
-    end do
 
     DONE = .true.
     ! reply to HISTORY, send to root?
@@ -377,6 +406,7 @@ contains
    real                             :: rwsize
    integer :: globalComm
    integer, allocatable :: krank(:)
+   logical :: useFaceDim
 
    Iam = "MAPL_CFIOServerIOWorker"
  
@@ -438,9 +468,10 @@ contains
          status = nf90_open(trim(ioinfo%filename),NF90_WRITE,ncid)
          VERIFY_(STATUS)
 
+         useFaceDim = ioinfo%useFaceDim
          do i=1,ioinfo%nlevs
             call CFIO_PutVar(ncid,trim(vnames(i)),nymd,nhms, &
-                 IM,JM,levs(i),1,buffer(:,:,i),status)
+                 IM,JM,levs(i),1,buffer(:,:,i),useFaceDim,status)
             VERIFY_(STATUS)
          enddo
         
@@ -455,16 +486,13 @@ contains
          deallocate(krank)
 
          ! send message to acknowledge we are done, will send my rank in io communicator
-         rwsize = ioinfo%nlevs*levsize*4/1024/1024
+         rwsize = real(ioinfo%nlevs)*levsize*4/1024/1024
          wsize = ceiling(rwsize)
          call MPI_SEND(wsize,1,MPI_INTEGER,mapl_comm%iocommroot,MAPL_TAG_WORKERDONE,globalComm,status)
          VERIFY_(STATUS)
 
       else if (mpistatus(MPI_TAG) == MAPL_TAG_WORKEREXIT) then
 
-         rank = mapl_comm%myIoRank
-         call MPI_Send(rank,1,MPI_INTEGER,mapl_comm%iocommroot,MAPL_TAG_WORKEREXITED,globalComm,status)
-         VERIFY_(STATUS)
          exit
 
       end if 
@@ -481,13 +509,13 @@ contains
    
    character(len=ESMF_MAXSTR) :: Iam
 
-   integer :: icount,csize,status
+   integer :: icount,csize,status,isize
    integer, allocatable, dimension(:) :: iblock, itype
    integer(KIND=MPI_ADDRESS_KIND), allocatable, dimension(:) :: idisp
 
    Iam = "MAPL_CFIOServerInitMpiTypes"
 
-   icount =2
+   icount =3
 
    allocate(iblock(icount),stat=status)
    VERIFY_(STATUS)
@@ -498,14 +526,19 @@ contains
 
    itype(1)  = MPI_CHARACTER
    itype(2)  = MPI_INTEGER
+   itype(3)  = MPI_LOGICAL
 
    iblock(1) = ESMF_MAXSTR
    iblock(2) = 6
+   iblock(3) = 1
 
    call MPI_TYPE_SIZE(MPI_CHARACTER,csize,status)
    VERIFY_(STATUS)
+   call MPI_TYPE_SIZE(MPI_INTEGER,isize,status)
+   VERIFY_(STATUS)
    idisp(1)=0
    idisp(2)=idisp(1) + iblock(1)*csize
+   idisp(3)=idisp(2) + iblock(2)*isize
 
    call MPI_TYPE_CREATE_STRUCT(icount,iblock,idisp,itype,mpi_io_server_info_type,status)
    VERIFY_(STATUS)
@@ -539,7 +572,7 @@ contains
 
    dest = mapl_comm%ioCommRoot
    comm = mapl_comm%maplcomm
-   rwsize = nslices*IM*JM*4/1024/1024
+   rwsize = real(nslices)*IM*JM*4/1024/1024
    wsize = ceiling(rwsize)
    call MPI_Send(wsize,1,MPI_INTEGER,dest, &
        MAPL_TAG_GETWORK,comm,status)

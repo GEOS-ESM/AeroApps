@@ -1,4 +1,4 @@
-! $Id: arrayscatter.H,v 1.8.124.1 2012-11-08 21:23:04 atrayano Exp $
+! $Id: arrayscatter.H,v 1.9.2.1.22.1 2015/08/05 15:58:03 atrayano Exp $
 
 #ifdef NAME_
 #undef NAME_
@@ -94,7 +94,10 @@
          minIndexPDe=AL, maxIndexPDe=AU, rc=status)
     VERIFY_(STATUS)
 
-    ISZ = size(GLOBAL_ARRAY,1)
+! Compute count to be sent to each PE
+
+    if(present(mask)) then
+       ISZ = size(mask)
 
 #if (RANK_ == 2)
        JSZ = size(GLOBAL_ARRAY,2)
@@ -102,9 +105,6 @@
        JSZ = 1
 #endif
 
-! Compute count to be sent to each PE
-
-    if(present(mask)) then
        sendcounts = 0
        do II = 1,ISZ
           sendcounts(mask(ii)) = sendcounts(mask(ii)) + 1
@@ -149,6 +149,8 @@
        
 #if (RANK_ == 2)
        if (myhw > 0) then
+          ISZ = size(GLOBAL_ARRAY,1)
+          JSZ = size(GLOBAL_ARRAY,2)
           allocate(myglob(1-myhw:isz+myhw,1-myhw:jsz+myhw), stat=status)
           VERIFY_(STATUS)
           myglob(1:isz,1:jsz) = GLOBAL_ARRAY
@@ -166,8 +168,8 @@
 
 ! Fill the VAR vector
        
-       alloc_var = .true.
        if (present(mask)) then
+          alloc_var = .true.
           allocate(VAR(0:displs(nDEs)-1), stat=status)
           VERIFY_(STATUS)
           allocate(KK (0:nDEs-1        ), stat=status)
@@ -194,9 +196,10 @@
        else
 
 #if (RANK_ == 1)
-          var => myglob
           alloc_var = .false.
+          var => myglob
 #else
+          alloc_var = .true.
           allocate(VAR(0:displs(nDEs)-1), stat=status)
           VERIFY_(STATUS)
 
@@ -230,6 +233,7 @@
        end if
     
      else
+        alloc_var = .true.
         allocate(var(0:1), stat=status)
         VERIFY_(STATUS)
         allocate(DISPLS(0:nDEs), stat=status)

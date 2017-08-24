@@ -35,17 +35,19 @@
 !     15Aug2013 Todling/Daescu  Implement calc of imp from sensitvity
 !     19Feb2014 Todling/Daescu  Implement calc of oma * xvec 
 !     24Feb2014 Todling  Revisit Write_AccumStats (now to file and/or screen)
+!     05Aug2014 Todling  - Replace oma * xvec w/ amo * xvec (more meaningful)
+!                        - Ability to write out R-scaling factors based on amo*xvec 
 !
 !EOP
 !BOC
 
       character(len=*), parameter :: myname = 'odsstats'
 
-      integer, parameter :: NFILES_MAX = 150 ! Max number of input files
+      integer, parameter :: NFILES_MAX = 1488! Max number of input files
 
       integer, parameter ::  NOMAX = 5       ! max no. of operations
       integer, parameter ::  NCMAX = 800     ! max no. of classes
-      integer, parameter ::  NTMAX = 31 * 4  ! 4 syn times a day, for a month
+      integer, parameter ::  NTMAX = 12*31*4 ! 4 syn times a day, for a year (roughly)
       integer, parameter ::  LVMAX = 800     ! Max number of levels/channels
 
       logical, parameter :: debug = .false.
@@ -107,6 +109,11 @@
 !     Read in resource file
 !     ---------------------
       call ObsOperSet_ ( RCfile, ierr )
+      if(ierr>0) then
+         print *, 'Trouble handling RC file tables, ierr = ', ierr
+         print *, 'Aborting ...'
+         stop(1)
+      endif
 
 !     Figure out range of synoptic time loop
 !     --------------------------------------
@@ -266,6 +273,12 @@
              endif
              fileout = trim(outfile) // '_' // trim(opers(nop)) // '.txt'
              call Write_Stats ( fileout, ptr, obsnum, oclass, ncfound, ncmax, nt, nymda, nhmsa, verb, ierr ) 
+
+             if(opers(nop)=='sum') then
+                fileout = trim(outfile) // '.' // 'rcov4gsi'
+                call Write_gsiRfactor ( RCfile, fileout, obssum, oclass, ncfound, ncmax, nt, 
+     .                                  nymda, nhmsa, verb, ierr ) 
+             endif
           enddo
              if(verb) print *, 'completed Write_Stats'
 
@@ -283,6 +296,7 @@
       fileout = trim(outfile) // '_' // 'all.txt'
       call Write_AccumStats ( fileout, accum_obssum, accum_obsgms, accum_obsnum, accum_obsneg, 
      .                        oclass, ncfound, ncmax, nymdb, nhmsb, lstdv, verb, ierr ) 
+
 
       CONTAINS
 
@@ -643,12 +657,28 @@
             sum=sum+ods%data%xvec(i)*ods%data%omf(i) ! calculate impact
          enddo
       endif
-      if ( trim(attr) == 'xvecxoma' ) then  ! this handles the case when xvec holds sensitivities
+      if ( trim(attr) == 'xvecxamo' ) then  ! this handles the case when xvec holds sensitivities
                                             ! rather than impacts themselves
          do i=1,nobs
-            sum=sum+ods%data%xvec(i)*ods%data%oma(i) ! calculate impact
+            sum=sum-ods%data%xvec(i)*ods%data%oma(i) ! calculate impact to sigO
          enddo
       endif
+      if ( trim(attr) == 'omfxomf' ) then
+         do i=1,nobs
+            sum=sum+ods%data%omf(i)*ods%data%omf(i)
+         enddo
+      endif
+      if ( trim(attr) == 'omaxoma' ) then
+         do i=1,nobs
+            sum=sum+ods%data%oma(i)*ods%data%oma(i)
+         enddo
+      endif
+      if ( trim(attr) == 'xmxxm' ) then
+         do i=1,nobs
+            sum=sum+ods%data%xm(i)*ods%data%xm(i)
+         enddo
+      endif
+
       if ( verb ) then
           print *, 'Obs impact(sum):      ', sum
           print *, 'Obs impact(sum)/Nobs: ', sum/nobs
@@ -768,6 +798,174 @@
 
       end subroutine Write_Stats
 
+      subroutine Write_gsiRfactor ( RCfile, outfile, obssum, oclass, ncfound, ncmax, nt, 
+     .                              nymd, nhms, verb, stat ) 
+
+      use m_ioutil, only: luavail
+      use m_chars,  only: lowercase
+      use m_stdio, only : stdout,stderr
+      use m_inpak90
+      use m_die, only: die
+      implicit none
+      integer, intent(in)          :: ncfound, ncmax, nt
+      integer, intent(in)          :: nymd(nt), nhms(nt)
+      character(len=*), intent(in) :: RCfile
+      character(len=*), intent(in) :: outfile
+      character(len=*), intent(in) :: oclass(ncfound)
+      real,    intent(in)          :: obssum(ncmax,nt)
+      logical, intent(in)          :: verb
+      integer, intent(out)         :: stat
+
+      character(len=*), parameter :: myname = 'Write_gsiRfactor'
+      character(len=255) fname, token, obsoperrc
+      integer i,j,ios,lu,nc,iret
+      integer igsiRfacPrec  ! precision to writeout GSI "Rcov"
+      integer,allocatable :: ichan(:)
+      real    rn, alpha
+      real    snrm2
+      real,   allocatable :: osum_nrmzd(:)
+      real(4),allocatable :: R4(:,:)
+      real(8),allocatable :: R8(:,:)
+
+      stat = 0
+
+!     Load resources file
+!     -------------------
+      obsoperrc = ' '
+      call getenv('obs_opers.rc',OBSOPERRC)     ! Unix binding
+      if(obsoperrc.eq.' ') obsoperrc=RCfile     ! default name
+      call i90_loadf (trim(obsoperrc), iret)
+      if( iret .ne. 0) then
+          write(stderr,'(2a,i5)') myname,': I90_loadf error, iret =',iret
+          stat = 1
+          return
+      end if
+
+!     Inquire about norm only
+!     ---------------------------------------------
+      rn = -1.0
+      call I90_label('GSI*Rsens*Norm:', iret)
+      if (iret .eq. 0) then
+          call I90_Gtoken ( token, iret )
+          if ( iret==0 ) then
+               read(token,*) rn
+          endif
+      else
+          call I90_release()
+          return   ! nothing to do
+      end if
+
+!     In case doing more than simply recovering norm of sensitivity vector ...
+!     ------------------------------------------------------------------------
+      if ( rn > 0.0 ) then
+
+!         Read scaling factor for sensitivities to sigO
+!         ---------------------------------------------
+          call I90_label('GSI*Rsens*Scale:', iret)
+          if (iret .eq. 0) then
+              call I90_Gtoken ( token, iret )
+              if ( iret==0 ) then
+                   read(token,*) alpha
+              endif
+          else
+              call I90_release()
+              return   ! nothing to do
+          end if
+          write(stdout,'(a,1p,e9.2)') ' Will scale R-sensitivities with this factor: ',alpha
+
+!         Read option to write out GSI-ready R matrix re-scaling factor
+!         -------------------------------------------------------------
+          igsiRfacPrec = 8  ! 4 = real(4)
+                            ! 8 = real(8) (used for testing)
+          call I90_label('GSI*Rfactor*Precision:', iret)
+          if (iret .eq. 0) then
+              call I90_Gtoken ( token, iret )
+              if ( iret==0 ) then
+                   read(token,*) igsiRfacPrec
+              endif
+          end if
+          write(stdout,'(a,i3)') ' Will write out GSI R-scaling factor based on sens, prec= ',igsiRfacPrec
+
+      endif ! norm check
+    
+!     release resource file:
+!     ---------------------
+      call I90_release()
+
+!     Handle R matrix
+!     ---------------
+      lu=luavail()
+      do j = 1, nt ! loop over times
+
+         nc=len_trim(oclass(1))
+
+         ! Normalize sensitivity vector
+         if (rn<0.0) then
+             rn = dot_product(obssum(:,j),obssum(:,j))
+             write(stdout,'(a,a10,a,1p,e10.3)') ' Obsclass: ', trim(oclass(1)(1:nc-3)) , 
+     .                                          ' norm square of sensitivity vector: ', rn  
+             return ! all done
+         endif
+         allocate(osum_nrmzd(ncmax))
+         osum_nrmzd = obssum(:,j)/rn
+    
+         ! open file for this time ...
+         write(fname,'(2a,i8.8,a,i2.2,a)') trim(outfile), '.', nymd(j), '_', nhms(j)/10000, 'z.bin'
+         open(lu, file=trim(fname), form='unformatted', convert='little_endian', iostat=ios)
+         if ( ios .ne. 0 ) then
+              print *, 'Cannot open file ', trim(fname)
+              stat = 1
+              return
+         else
+              if(verb) print *, 'Writing BIN file ', trim(fname)
+         end if
+
+         ! extract last three digits in name class (supposedly channel indexes)
+         allocate(ichan(ncfound))
+         do i=1,ncfound
+            read(oclass(i)(nc-2:nc),'(i3)') ichan(i)
+         enddo
+
+         ! create R matrix and copy factors to its diagonal
+         write(lu) ncfound, igsiRfacPrec
+         write(lu) ichan
+         if (igsiRfacPrec==4) then
+             allocate(R4(ncfound,ncfound))
+             R4=0.0
+             do i=1,ncfound
+                R4(i,i)=1.0-2.0*alpha*osum_nrmzd(i)
+                if ( R4(i,i)<0.0 ) then
+                   R4(i,i)=0.5
+                endif
+                R4(i,i)=R4(i,i)*R4(i,i)
+                if(verb) print *, R4(i,i)
+             enddo
+             write(lu) R4
+             deallocate(R4)
+         endif
+         if (igsiRfacPrec==8) then
+             allocate(R8(ncfound,ncfound))
+             R8=0.d0
+             do i=1,ncfound
+                R8(i,i)=1.d0-2.d0*alpha*osum_nrmzd(i)
+                if ( R8(i,i)<0.d0 ) then
+                   R8(i,i)=0.5d0
+                endif
+                R8(i,i)=R8(i,i)*R8(i,i)
+                if(verb) print *, R8(i,i)
+             enddo
+             write(lu) R8
+             deallocate(R8)
+         endif
+         deallocate(ichan)
+
+         ! wrap it up
+         close(lu)
+         deallocate(osum_nrmzd)
+      enddo
+
+      end subroutine Write_gsiRfactor
+
       subroutine Write_AccumStats ( fname, obssum, obsgms, obsnum, obsneg, oclass, ncfound, ncmax, nymd, nhms, lstdev, 
      .                              verb, stat )
       use m_ioutil, only : luavail
@@ -832,7 +1030,6 @@
       deallocate(lu)
 
       end subroutine Write_AccumStats
-
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -1027,8 +1224,8 @@
       print *, '     numneg  - sum all non-negative variables '
       print *
       print *, '  2. Known OBS*Variable: (default: xvec)'
-      print *, '     obs,omf,oma,xm,xvec,xvecXomf,xvecXoma '
-      print *, '     2a. xvecXomf,xvecXoma are only meaningful when xvec holds '
+      print *, '     obs,omf,oma,xm,xvec,xvecxomf,xvecxamo '
+      print *, '     2a. xvecxomf,xvecxamo are only meaningful when xvec holds '
       print *, '         the sensitivities instead of the impacts.'
       print *
       stop

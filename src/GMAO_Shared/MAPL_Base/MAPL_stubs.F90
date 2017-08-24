@@ -23,8 +23,8 @@ subroutine GetWeightsC2C(npx, npy, npxout, npyout, index, weight, &
   implicit none
   integer,  intent(in   ) :: npx,  npy
   integer,  intent(in   ) :: npxout, npyout
-  integer,  intent(  out) :: index(:,:,:)
-  real(8),  intent(  out) :: weight(:,:,:)
+  integer,  intent(  out) :: index(:,:,:,:)
+  real(8),  intent(  out) :: weight(:,:,:,:)
   real(8),  intent(  out) :: ee1(:,:,:)
   real(8),  intent(  out) :: ee2(:,:,:)
   real(8),  intent(  out) :: ff1(:,:,:)
@@ -125,3 +125,45 @@ subroutine GetWeights(npx, npy, nlat, nlon, &
   logical , optional      :: AmNodeRoot
   logical , optional      :: WriteNetcdf
 end subroutine GetWeights
+
+subroutine A2D2C(U, V, lm, getC)
+   real,    intent(INOUT)           :: U(:,:,:)
+   real,    intent(INOUT)           :: V(:,:,:)
+   integer, intent(   IN)           :: lm
+   logical, intent(   IN), optional :: getC
+end subroutine A2D2C
+
+subroutine AppCSEdgeCreateF(IM_WORLD, LonEdge, LatEdge, LonCenter, LatCenter, rc)
+#include "MAPL_Generic.h"
+
+  use ESMF
+  use MAPL_BaseMod
+
+  implicit none
+
+! !ARGUMENTS:
+    integer,           intent(IN)     :: IM_WORLD
+    integer, optional, intent(OUT)    :: rc
+    real(ESMF_KIND_R8), intent(inout) :: LonEdge(IM_World+1,IM_World+1,6)
+    real(ESMF_KIND_R8), intent(inout) :: LatEdge(IM_World+1,IM_World+1,6)
+    real(ESMF_KIND_R8), optional, intent(inout) :: LonCenter(IM_World,IM_World)
+    real(ESMF_KIND_R8), optional, intent(inout) :: LatCenter(IM_World,IM_World)
+
+! ErrLog variables
+!-----------------
+
+ integer                      :: STATUS
+ character(len=ESMF_MAXSTR), parameter :: Iam="AppCSEdgeCreateF"
+
+  RETURN_(STATUS)
+end subroutine AppCSEdgeCreateF
+
+subroutine CubeHaloInit(comm, im_world, npes, nx, ny, domainIdx)
+  integer :: comm, im_world, npes, nx, ny
+  integer :: domainIdx
+end subroutine CubeHaloInit
+
+subroutine CubeHalo(domainIdx, input)
+  integer :: domainIdx
+  real *4 :: input(:,:)
+end subroutine CubeHalo

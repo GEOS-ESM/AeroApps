@@ -476,19 +476,13 @@ sub symlink_ {
 #           == 0 : turn verbose off for this call
 #           != 0 : turn verbose on  for this call
 #
-# Notes:
-# 1. Use open3() to capture STDOUT, STDERR, and $status
-# 2. This routine should not be used to call programs which require
+# Note:
+#    This routine should not be used to call programs which require
 #    interactive input (use perl system() instead).
-# 3. If $cmd produces "too much" output, then this subroutine will
-#    overload and freeze without giving any output. A reasonable
-#    amount of output can be handled, but beware of diagnostic prints
-#    which print everything and the kitchen sink.
 #=======================================================================
 sub system_ {
-    use IPC::Open3 qw(open3);
     my ($cmd, $vFLG);
-    my ($pid, $in, $status);
+    my (@output, $status);
 
     $cmd  = shift @_;
     $vFLG = shift @_;
@@ -497,11 +491,10 @@ sub system_ {
     strip_CRs(\$cmd, $vFLG);
     print_("$cmd\n") if $vFLG;
 
-    $pid = open3($in, *OUT, *OUT, $cmd);
-    waitpid($pid, 0);
+    @output = `$cmd 2>&1`;
     $status = $? >> 8;    
 
-    if ($vFLG) { foreach (<OUT>) { print_($_) } }
+    if ($vFLG) { foreach (@output) { print_($_) } }
     return $status;
 }
 

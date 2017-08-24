@@ -66,16 +66,19 @@ Program GFIO_remap
    integer  :: irflag                       ! Monthly Mean flag
 
    real big
+   real zero
    real, allocatable :: lon(:)              ! longitudes in deg (im)
    real, allocatable :: lat(:)              ! latitudes in deg (jm)
    real, allocatable :: lev(:)              ! levels in hPa (km)
+   real, allocatable :: lev0(:)             ! levels in hPa (km)
    real              :: rair,cpair,akap,pr
 
    integer           :: nLevs = 0           ! total number of levels
    real, pointer     :: Levs(:) => NULL()   ! vertical levels
+   real, allocatable :: Levs0(:)            ! vertical levels
    character(len=25) :: cLevs(mLevs)        ! Character reprsentation of levels
 
-   integer           :: nVars               ! Actual number of variables
+   integer           :: nVars,nVars0        ! Actual number of variables
    character(len=64) :: inVars(mVars)       ! Input  variable names (nVars)
    character(len=64) :: outVars(mVars)      ! output variable names (nVars)
    character(len=64) :: uvar                ! output variable names (nVars)
@@ -205,6 +208,7 @@ Program GFIO_remap
    real, allocatable :: gaus_ps(:,:)        ! working array          
    real, allocatable :: gaus_delp(:,:,:)    ! working array          
    real, allocatable :: gaus_inField(:,:,:) ! working array          
+   real, allocatable :: gaus_inField0(:,:,:) ! working array          
    real, allocatable :: pe3(:,:,:)          ! Output Pressure edges
    real, allocatable :: pe0(:,:)            ! Input Pressure edges (im,kn)
    real, allocatable :: pe1(:,:)            ! Input Pressure edges (im,kn)
@@ -213,20 +217,26 @@ Program GFIO_remap
    real, allocatable :: pk0(:,:)            ! Input p ** kappa  (im,km)
    real, allocatable :: pk1(:,:)            ! Output p ** kappa (im,kn)
    real, allocatable :: ps(:,:)             ! Surface Pressure
+   real, allocatable :: ps0(:,:,:)             ! Surface Pressure
    real, allocatable :: delp(:,:,:)         ! Pressure delta
+   real, allocatable :: delp0(:,:,:)         ! Pressure delta
+   real, allocatable :: dln0(:,:,:)         ! Pressure delta
    real*8, allocatable   :: lev_e(:)        ! levels in eta (km)
    integer, allocatable  :: kmVar_e(:)      ! Number of vertical levels for variables
 
    character(len=256) :: vtitle_in(mVars)   ! output title
    real              :: valid_range(2, mVars)
    real              :: packing_range(2, mVars)
-   real              :: p,bkh
+   real              :: p,bkh, pref_in
    integer           :: km_e1,kn1
    integer           :: ngatts              ! Number of attributes for GFIO
+   integer           :: nkl,nkls            ! index
    integer           :: gaussian
    logical           :: initial,file_exist,hintrp
    logical           :: qaflag,ptflag,udflag,vdflag,ucflag,vcflag
    logical           :: sphflag,shftlon,lon_shift
+   logical           :: shaveFlag,clim_flag,add_delp
+   integer           :: prefProvided
 !.................................................................................
 
 
@@ -241,7 +251,8 @@ Program GFIO_remap
          in, jn, km, nLevs, Levs,kn,ndate,ntime,                  &
          mVars, nVars, inVars,nqaVars,nptVars,nsphVars,nudVars,   &
          nvdVars,nucVars,nvcVars,outVars,qaVars,ptVars,sphVars,   &
-         udVars,vdVars,ucVars,vcVars,outPrec,append,shftlon,inc_hhmmss) 
+         udVars,vdVars,ucVars,vcVars,outPrec,append,shftlon,      &
+         shaveFlag,prefProvided,clim_flag,add_delp,inc_hhmmss) 
 
    uv_flag = .false.
    u_flag  = .false.
@@ -293,6 +304,7 @@ Program GFIO_remap
    cpair = 1004.64
    akap = rair/cpair
    big  = 1.e+10
+   zero  = 0.0
    pi = 4.d0 * datan(1.d0)
 
 
@@ -440,14 +452,12 @@ Program GFIO_remap
 
       if(kn < 0) kn = km_e
 
-      if(kn /= km_e) then
-         if(gaussian == 0) then
-            if(allocated(pe3d_m)) deallocate(pe3d_m)
-            allocate(pe3d_m(im_e,jm_e,km_e+1))
-         else
-            if(allocated(pe3d_m)) deallocate(pe3d_m)
-            allocate(pe3d_m(im_e,jm_e,km_e+1))
-         endif
+      if(gaussian == 0) then
+         if(allocated(pe3d_m)) deallocate(pe3d_m)
+         allocate(pe3d_m(im_e,jm_e,km_e+1))
+      else
+         if(allocated(pe3d_m)) deallocate(pe3d_m)
+         allocate(pe3d_m(im_e,jm_e,km_e+1))
       endif
 
       if(gaussian == 0) then
@@ -485,25 +495,25 @@ Program GFIO_remap
          call set_eta ( kn1, ks32, ptop32, pint32, ak32, bk32 )
 !!!          print *,' out from set_eta ks32'
 
-         if(kn /= km_e) then
+!!!     if(kn /= km_e ) then
+        if(kn /= km_e .or. (add_delp)) then
+         if(allocated(dpref)) deallocate(dpref)
+         if(allocated(pe2)) deallocate(pe2)
+         if(allocated(pk1)) deallocate(pk1)
+         if(allocated(pe4)) deallocate(pe4)
+         if(allocated(pe3)) deallocate(pe3)
+         if(allocated(pe1)) deallocate(pe1)
+         if(allocated(pe0)) deallocate(pe0)
+         if(allocated(pk0)) deallocate(pk0)
 
-            if(allocated(dpref)) deallocate(dpref)
-            if(allocated(pe2)) deallocate(pe2)
-            if(allocated(pk1)) deallocate(pk1)
-            if(allocated(pe4)) deallocate(pe4)
-            if(allocated(pe3)) deallocate(pe3)
-            if(allocated(pe1)) deallocate(pe1)
-            if(allocated(pe0)) deallocate(pe0)
-            if(allocated(pk0)) deallocate(pk0)
-
-            allocate(pk0(im_e,km_e+1))
-            allocate(pe0(im_e,km_e+1))
-            allocate(pe1(im_e,km_e+1))
-            allocate(pe3(im_e,jm_e,kn+1))
-            allocate(pe4(im_e,kn+1))
-            allocate(pk1(im_e,kn+1))
-            allocate(pe2(im_e,kn+1))
-            allocate(dpref(kn+1))
+         allocate(pk0(im_e,km_e+1))
+         allocate(pe0(im_e,km_e+1))
+         allocate(pe1(im_e,km_e+1))
+         allocate(pe3(im_e,jm_e,kn+1))
+         allocate(pe4(im_e,kn+1))
+         allocate(pk1(im_e,kn+1))
+         allocate(pe2(im_e,kn+1))
+         allocate(dpref(kn+1))
 
 
 !        ---------------------------------------------------------
@@ -511,81 +521,101 @@ Program GFIO_remap
 !           variables or from the input file. Exit when not found.
 !        ---------------------------------------------------------
 
-            ps_found = .false.
-            delp_found = .false.
+         ps_found = .false.
+         delp_found = .false.
 
-            do iv = 1, nVars_e
-               if ( vname(iv) == 'SURFP' .or. vname(iv) == 'PS' .or. &
-                     vname(iv) == 'surfp' .or. vname(iv) == 'ps' ) then
-                  ps_found = .true.
-                  if(allocated(gaus_ps)) deallocate(gaus_ps)
-                  allocate(gaus_ps(im_e,jm_e))
-                  call GFIO_GetVar ( fid, vname(iv), yyyymmdd(it), hhmmss(it), &
-                        im_e, jme_tmp, 0, 1, gaus_ps, rc )
-                  if ( rc /= 0 ) then
-                     call die (myname, 'can not GetVar gaus_ps')
-                  endif
-                  ps = 0.0
-                  ps = gaus_ps
-                  if(allocated(gaus_ps)) deallocate(gaus_ps) 
+         do iv = 1, nVars_e
+            if ( vname(iv) == 'SURFP' .or. vname(iv) == 'PS' .or. &
+                  vname(iv) == 'surfp' .or. vname(iv) == 'ps' ) then
+               ps_found = .true.
+               if(allocated(gaus_ps)) deallocate(gaus_ps)
+               allocate(gaus_ps(im_e,jm_e))
+               call GFIO_GetVar ( fid, vname(iv), yyyymmdd(it), hhmmss(it), &
+                     im_e, jme_tmp, 0, 1, gaus_ps, rc )
+               if ( rc /= 0 ) then
+                  call die (myname, 'can not GetVar gaus_ps')
                endif
-
-               if ( vname(iv) == 'DELP' .or. vname(iv) == 'delp' ) then
-                  delp_found = .true.
-                  if(allocated(gaus_delp)) deallocate(gaus_delp)
-                  allocate(gaus_delp(im_e,jme_tmp,km_e))
-                  call GFIO_GetVar ( fid, vname(iv), yyyymmdd(it), hhmmss(it), &
-                        im_e, jme_tmp, 1, km_e, gaus_delp, rc )
-                  if ( rc /= 0 )  call die (myname, 'can not GetVar gaus_delp ')
-
-                  delp = gaus_delp
-                  if(allocated(gaus_delp)) deallocate(gaus_delp)
-               endif
-            end do
-
-            call GFIO_GetRealAtt ( fid, 'ptop',   1, ptop, rc )
-            if ( rc /= 0 ) then 
-               print *,'  ', myname, 'can not GFIO_GetRealAtt ptop' 
-               ptop_found = .false.
-            else
-               ptop_found = .true.
+               ps = 0.0
+               ps = gaus_ps
+               if(allocated(gaus_ps)) deallocate(gaus_ps) 
             endif
+
+            if ( vname(iv) == 'DELP' .or. vname(iv) == 'delp' ) then
+               delp_found = .true.
+               if(allocated(gaus_delp)) deallocate(gaus_delp)
+               allocate(gaus_delp(im_e,jme_tmp,km_e))
+               call GFIO_GetVar ( fid, vname(iv), yyyymmdd(it), hhmmss(it), &
+                     im_e, jme_tmp, 1, km_e, gaus_delp, rc )
+               if ( rc /= 0 )  call die (myname, 'can not GetVar gaus_delp ')
+
+               if(lev_e(1) > lev_e(km_e)) then
+                 print *,  vname(iv), ' lev_e are surface to top ',lev_e(1),lev_e(km_e), ' flipping the data'
+                 do nkl = 1,km_e
+                   nkls = km_e-nkl+1
+                   delp(:,:,nkls) = gaus_delp(:,:,nkl)
+                 end do
+               else
+                 delp = gaus_delp
+                 if(allocated(gaus_delp)) deallocate(gaus_delp)
+               endif
+            endif
+         end do
+
+         call GFIO_GetRealAtt ( fid, 'ptop',   1, ptop, rc )
+         if ( rc /= 0 ) then 
+            print *,'  ', myname, 'can not GFIO_GetRealAtt ptop' 
+            ptop_found = .false.
+         else
+            ptop_found = .true.
+         endif
 
 !           print *,' ps_found, delp_found ', ps_found,' ', delp_found
 !        if(.not. ps_found) then
-            if(.not. delp_found) then
-               print *,' **** PS OR SURFP DOES NOT EXIST in ',trim(inFiles(iff)),' *****' 
-               print *,' **** TRYING TO READ THE PS FROM ',trim(psFile), ' *****'
+         if(.not. delp_found) then
+            print *,' **** DELP  DOES NOT EXIST in ',trim(inFiles(iff)),' *****' 
+            print *,' **** TRYING constuct DELP FROM ',trim(psFile), ' *****'
 
-               call get_surfp(psFile,lm_e,km_e,it,yyyymmdd(it), hhmmss(it),ptop,ptop55,ak55,bk55,ps,delp, &
-                     ps_found,delp_found,ptop_found) 
-               print *,' Out from get_surfp '
-            endif
-            call get_pe(im_e,jm_e,km_e,ptop,delp,   &
-                  akap,pe3d_m)
-
-            call cmp_pe(im_e,jm_e,km_e,ks_e,ptop, delp,           &
-                  ptop32,kn,ks32,ak32,bk32,pe3d_m,pe3)
-
-            nLevs = kn
-
-!         Reference pressure thickness assuming ps ~ 984 hPa
-!         ---------------------------------------------------
-            do  k = 1,nLevs
-               dpref(k) = (ak32(k+1) - ak32(k)) + (bk32(k+1)-bk32(k)) * 98400.
-            end do
-
-            p = ptop32 + 0.5 * dpref(1)
-!         levs(1) = p/100.0
-            levs(1) = p
-            do k = 2,kn
-               p = p + 0.5 * ( dpref(k-1) + dpref(k) )
-!           levs(k) = p/100.0
-               levs(k) = p
-!!!          print *,levs(k-1),dpref(k-1),dpref(k),levs(k)
-            end do
-            levs(1:nLevs) = levs(1:nLevs)/100.
+            call get_surfp(psFile,lm_e,km_e,it,yyyymmdd(it), hhmmss(it),ptop,ptop55,ak55,bk55,ps,delp, &
+                  ps_found,delp_found,ptop_found,clim_flag) 
+            print *,' Out from get_surfp '
          endif
+
+         call get_pe(im_e,jm_e,km_e,ptop,delp,   &
+               akap,pe3d_m)
+
+         call cmp_pe(im_e,jm_e,km_e,ks_e,ptop, delp,           &
+               ptop32,kn,ks32,ak32,bk32,pe3d_m,pe3)
+
+         nLevs = kn
+
+         if (prefProvided == 0) then
+            ! MAT Use calculated pref_in from input ak bk
+            pref_in = ( ( 2 * lev_e(km_e) - (ak55(km_e+1)+ak55(km_e)) ) / (bk55(km_e+1) + bk55(km_e)) ) * 100.
+         else
+            ! Use the provided value for pref_in. Note, before this was hardcoded to either
+            ! 98400. or 100000.
+            pref_in = real(prefProvided)
+         endif
+
+!         Reference pressure thickness
+!         ----------------------------
+         do  k = 1,nLevs
+
+            dpref(k) = (ak32(k+1) - ak32(k)) + (bk32(k+1)-bk32(k)) * pref_in
+
+         end do
+
+         p = ptop32 + 0.5 * dpref(1)
+!         levs(1) = p/100.0
+         levs(1) = p
+         do k = 2,kn
+            p = p + 0.5 * ( dpref(k-1) + dpref(k) )
+!           levs(k) = p/100.0
+            levs(k) = p
+!!!          print *,levs(k-1),dpref(k-1),dpref(k),levs(k)
+         end do
+         levs(1:nLevs) = levs(1:nLevs)/100.
+        endif
 
 !        if ( nLevs .le. 0 )  then
 !           nLevs = km_e
@@ -666,11 +696,44 @@ Program GFIO_remap
 
 !!!           print *, 'timinc = ', timinc
 
-!
+           
+            if ( km_e  == kn1 .and. lev_e(1) > lev_e(nLevs)) then
+             if (associated(Levs)) deallocate(Levs)
+             allocate(Levs(nLevs),stat=rc)
+             do nkl = 1,kn_e
+              nkls = kn_e - nkl + 1
+              Levs(nkls) = lev_e(nkl)
+             end do
+            else
+              if(km_e == kn1 .and. lev_e(1) == 1) then
+               Levs = lev_e
+              endif
+            endif
+
+            if(add_delp) then
+             nVars0 = nVars + 1
+             outVars(nVars0)           = 'DELP'
+             vtitle_in(nVars0)         = "pressure_thickness"
+             outUnits(nVars0)          = "pressure_thickness"
+             outKm(nVars0)             = kn_e
+             valid_range_prs(1,nVars0) = -1.e+30
+             valid_range_prs(2,nVars0) = 1.e+30
+             nVars0 = nVars0 + 1
+             outVars(nVars0)           = 'PS'
+             vtitle_in(nVars0)         = "Surface Pressure"
+             outUnits(nVars0)          = "Pa"
+             outKm(nVars0)             = 0
+             valid_range_prs(1,nVars0) = -1.e+30
+             valid_range_prs(2,nVars0) = 1.e+30
+            else
+             nVars0 = nVars
+            endif
+
+
             call GFIO_Create ( outFile, title, source, contact, undef,         &
                   in_e, jn_e, kn_e, lon, lat, Levs, levunits,     &
                   yyyymmdd,hhmmss,timinc,                         &
-                  nVars, outVars, vtitle_in, outUnits, outKm,     &
+                  nVars0, outVars, vtitle_in, outUnits, outKm,    &
                   valid_range_prs, packing_range_prs, outPrec,    &
                   out_fid, rc )
 
@@ -684,7 +747,6 @@ Program GFIO_remap
             endif
 
             if ( rc /= 0 )  call die (myname, 'wrong in GFIO_Create')
-
          endif
 
 
@@ -774,8 +836,19 @@ Program GFIO_remap
 !!!               print *,' GFIO_GetVar:  yyyymmdd,hhmmss ',yyyymmdd(it),hhmmss(it),outVars(iv)
                call GFIO_GetVar ( fid, outVars(iv), yyyymmdd(it), hhmmss(it), &
                      im_e, jme_tmp, 1, km_e,gaus_inField, rc )
-!              print *,' gaus_inField: ',outVars(iv)
-!              call minmaxpe(gaus_inField,im_e,jme_tmp,kn_e)
+
+                if(lev_e(1) > lev_e(km_e)) then
+                  if(allocated(gaus_inField0)) deallocate(gaus_inField0)
+                  allocate (gaus_inField0(im_e,jme_tmp,km_e),stat=rc )
+                   print *,  outVars(iv), ' lev_e are surface to top ',lev_e(1),lev_e(km_e), ' flipping the data'
+
+
+                   do nkl = 1,km_e
+                    nkls = km_e-nkl+1
+                    gaus_inField0(:,:,nkls) = gaus_inField(:,:,nkl)
+                   end do
+                   gaus_inField = gaus_inField0
+               endif
 
 !
 !             --------------------------------------------------------------------
@@ -890,22 +963,25 @@ Program GFIO_remap
                if ( rc /= 0 )  call die (myname, 'can not allocate  outField')
 
                lon_shift = .false.
-               if(kn /= km_e) then
+!              if(kn /= km_e) then
+               if(kn /= km_e  .or. (add_delp)) then
 
-!                 print *,' ptop,im_e,jme_new,km_e,in,jn,kn ',ptop,im_e,jme_new,km_e,in,jn,kn
+                  print *,' ptop,im_e,jme_new,km_e,in,jn,kn ',ptop,im_e,jme_new,km_e,in,jn,kn
 
-                  call z_interp(outVars(iv),inField,pe3d_m,ptop,im_e,jme_new,km_e,    &
-                        qaflag,ptflag,sphflag,udflag,vdflag,ucflag,vcflag, &
-                        ptop32,ks32,ak32,bk32,pe3,in,jn,kn, outField)
+                   
+                  if(add_delp) then
+                    if(allocated(delp0)) deallocate(delp0)
+                    allocate(delp0(in,jn,kn))
 
-!                 print *,' Out from z_interp ',trim(outVars(iv)),kount
+                   call z_interp("DELP",delp,pe3d_m,ptop,im_e,jme_new,km_e,            &
+                                 qaflag,ptflag,sphflag,udflag,vdflag,ucflag,vcflag,    &
+                                 ptop32,ks32,ak32,bk32,pe3,in,jn,kn, delp0)
 
-!                 if(kount == 5) then
-!                  call minmaxpe(inField,im_e,jme_new,km_e)
-!                  print *,  ' '
-!                  print *,  ' '
-!                  call minmaxpe(outField,im_e,jme_new,kn)
-!                 endif
+                  endif
+                   
+                   call z_interp(outVars(iv),inField,pe3d_m,ptop,im_e,jme_new,km_e,    &
+                                 qaflag,ptflag,sphflag,udflag,vdflag,ucflag,vcflag,    &
+                                 ptop32,ks32,ak32,bk32,pe3,in,jn,kn, outField)
 
                else  
                   outField = inField
@@ -940,6 +1016,11 @@ Program GFIO_remap
                   ofn = 0.0
 
 !                  print *,' h_interp: ig,is: ',ig,is
+                  if (add_delp) then
+                    if(allocated(dln0)) deallocate(dln0)
+                    allocate(dln0(in_e,jn_e,kn_e))
+                    call h_interp(delp0,im_e,jme_new,lat_e2,gaussian,ig,is,kn_e,in_e,jn_e,dln0)
+                  endif
                   call h_interp(outField,im_e,jme_new,lat_e2,gaussian,ig,is,kn_e,in_e,jn_e,ofn)
 
 !                  if((shftlon) .and. (.not. lon_shift)) then
@@ -956,10 +1037,23 @@ Program GFIO_remap
                         call pole_tq(in_e,jn_e,kn_e,ofn,0)
 
                         if(shftlon) then
+                           if(add_delp) then
+                             call shift_field(dln0,in_e,jn_e,kn_e)
+                           endif
                            call shift_field(ofn,in_e,jn_e,kn_e)
                         endif
 
-                        call Shave_field(ofn,in_e,jn_e,kn_e,undef=undef)
+                        if(shaveFlag) then
+                           if(add_delp) then
+                             call Shave_field(dln0,in_e,jn_e,kn_e,undef=undef)
+                           endif
+                           call Shave_field(ofn,in_e,jn_e,kn_e,undef=undef)
+                        endif
+
+                        if(add_delp) then
+                           call GFIO_PutVar (out_fid,"DELP",yyyymmdd(it),hhmmss(it),  &
+                                             in_e, jn_e, 1, kn_e, dln0, rc )
+                        endif
 
                         call GFIO_PutVar (out_fid,outVars(iv),yyyymmdd(it),hhmmss(it),  &
                               in_e, jn_e, 1, kn_e, ofn, rc )
@@ -976,16 +1070,32 @@ Program GFIO_remap
                         print *,' **** Calling ploe_uv:ofn **** '
 !                     call pole_uv (in_e,jn_e,kn_e,uofn,vofn,0)
                         ofn = uofn
-                        call Shave_field(ofn,in_e,jn_e,kn_e,undef=undef)
+
+                        if(shaveFlag) then
+                           if(add_delp) then
+                             call Shave_field(dln0,in_e,jn_e,kn_e,undef=undef)
+                           endif
+                           call Shave_field(ofn,in_e,jn_e,kn_e,undef=undef)
+                        endif
 
                         if(shftlon) then
+                           if(add_delp) then
+                             call shift_field(dln0,in_e,jn_e,kn_e)
+                           endif
                            call shift_field(ofn,in_e,jn_e,kn_e)
                         endif
 
+                        if(add_delp) then
+                          call GFIO_PutVar (out_fid,"DELP",yyyymmdd(it),hhmmss(it),  &
+                                            in_e, jn_e, 1, kn_e, dln0, rc )
+                        endif
                         call GFIO_PutVar (out_fid,uvar,yyyymmdd(it),hhmmss(it),  &
                               in_e, jn_e, 1, kn_e, ofn, rc )
                         ofn = vofn
-                        call Shave_field(ofn,in_e,jn_e,kn_e,undef=undef)
+
+                        if(shaveFlag) then
+                           call Shave_field(ofn,in_e,jn_e,kn_e,undef=undef)
+                        endif
 
                         if(shftlon) then
                            call shift_field(ofn,in_e,jn_e,kn_e)
@@ -1000,10 +1110,23 @@ Program GFIO_remap
                      endif
                   else
 !                   print *,' udflag: ',udflag,' vdflag: ',vdflag
-                     call Shave_field(ofn,in_e,jn_e,kn_e,undef=undef)
+                     if(shaveFlag) then
+                      if(add_delp) then
+                        call Shave_field(dln0,in_e,jn_e,kn_e,undef=undef)
+                      endif
+                        call Shave_field(ofn,in_e,jn_e,kn_e,undef=undef)
+                     endif
 
                      if(shftlon) then
+                      if(add_delp) then
+                        call shift_field(dln0,in_e,jn_e,kn_e)
+                      endif
                         call shift_field(ofn,in_e,jn_e,kn_e)
+                     endif
+
+                     if(add_delp) then
+                       call GFIO_PutVar (out_fid,"DELP",yyyymmdd(it),hhmmss(it),  &
+                                         in_e, jn_e, 1, kn_e, dln0, rc )
                      endif
 
                      call GFIO_PutVar (out_fid,outVars(iv),yyyymmdd(it),hhmmss(it),  &
@@ -1020,6 +1143,21 @@ Program GFIO_remap
                   in_e = im_e
                   jn_e = jm_e
                   kn_e = kn
+
+                  if(add_delp) then
+                   if(allocated(dln0)) deallocate(dln0)
+                   allocate(dln0(in_e,jn_e,kn_e),stat = rc )
+                   dln0 = delp0
+                   if(shaveFlag) then
+                     call Shave_field(dln0,in_e,jn_e,kn_e,undef=undef)
+                   endif
+
+                   if(shftlon) then
+                     call shift_field(dln0,in_e,jn_e,kn_e)
+                   endif
+
+                  endif
+
                   if(allocated(ofn)) deallocate(ofn)
                   allocate(ofn(in_e,jn_e,kn_e),stat = rc )
                   if ( rc /= 0 )  call die (myname, 'Can not allocate ofn ' )
@@ -1034,7 +1172,9 @@ Program GFIO_remap
 !                 --------------------------------------------------------
 
 !                 call minmaxpe(ofn,in_e,jn_e,kn_e)
-                  call Shave_field(ofn,in_e,jn_e,kn_e,undef=undef)
+                  if(shaveFlag) then
+                     call Shave_field(ofn,in_e,jn_e,kn_e,undef=undef)
+                  endif
 
                   if(shftlon) then
                      call shift_field(ofn,in_e,jn_e,kn_e)
@@ -1043,6 +1183,24 @@ Program GFIO_remap
                   call GFIO_PutVar (out_fid,outVars(iv),yyyymmdd(it),hhmmss(it),  &
                         in_e, jn_e, 1, kn_e, ofn, rc )
                   if ( rc /= 0 )  call die (myname, 'something wrong in GFIO_PutVarT for 3D file')
+
+                  if(add_delp) then
+                   print *,' *** We are here *** '
+                   call GFIO_PutVar (out_fid,"DELP",yyyymmdd(it),hhmmss(it),  &
+                                     in_e, jn_e, 1, kn_e, dln0, rc )
+
+!                  print *, ' *** Writing PS *** '
+
+!                  call minmaxps(ps,in_e,jn_e,1)
+
+                   call GFIO_PutVar (out_fid,"PS",yyyymmdd(it),hhmmss(it),  &
+                                     in_e, jn_e, 0, 1, ps, rc )
+                   if(rc /= 0 )  then
+                     print *, ' rc: ',rc
+                     call die (myname, 'something wrong in GFIO_PutVarT for 2D Array PS' )
+                   endif
+                 endif
+                  
                endif                 !hintrp
             else                                       ! 2D file
                if(allocated(gaus_inField)) deallocate(gaus_inField)
@@ -1124,21 +1282,27 @@ Program GFIO_remap
                   hhmmss(it) = ntime
                endif
 
-               call Shave_field(ofn,in_e,jn_e,1,undef=undef)
+               if(shaveFlag) then
+                  call Shave_field(ofn,in_e,jn_e,1,undef=undef)
+               endif
 
                if(shftlon) then
                   call shift_field(ofn,in_e,jn_e,1)
                endif
 
+               print *,' outVars(',iv,'): ',outVars(iv)
                call GFIO_PutVar (out_fid,outVars(iv),yyyymmdd(it),hhmmss(it),  &
                      in_e, jn_e, 0, 1, ofn, rc )
                if ( rc /= 0 )  call die (myname, 'something wrong in GFIO_PutVarT for 2D file')
             endif
 
             if(allocated(ofn))      deallocate( ofn)
+            if(allocated(dln0))      deallocate( dln0)
             if(allocated(outField)) deallocate(outField)
             if(allocated(inField))  deallocate( inField)
             if(allocated(gaus_inField))  deallocate(gaus_inField)
+            if(allocated(gaus_inField0))  deallocate(gaus_inField0)
+            if(allocated(Levs0))  deallocate(Levs0)
 
             if(ndate /= 999999) then
                yyyymmdd(it) = ndate_old
@@ -1235,6 +1399,7 @@ Program GFIO_remap
    if(allocated(pk0))  deallocate(pk0,stat=rc)
    if ( rc /= 0 )  call die (myname, 'something wrong in deallocate pk0')
    if(allocated(delp)) deallocate(delp,stat=rc)
+   if(allocated(delp0)) deallocate(delp0)
    if ( rc /= 0 )  call die (myname, 'something wrong in deallocate delp')
    if(allocated(ps))   deallocate(ps,stat=rc)
    if ( rc /= 0 )  call die (myname, 'something wrong in deallocate ps')
@@ -1396,7 +1561,7 @@ CONTAINS
 !
 
    subroutine get_surfp(psFile,lm_e,kmre,it,ndate, nhms,ptop,ptop55,ak55,bk55,ps,delp, &
-         ps_found,delp_found,ptop_found) 
+         ps_found,delp_found,ptop_found,clim_flag) 
 
 !
 ! !USES:
@@ -1442,8 +1607,8 @@ CONTAINS
       real, allocatable  :: pe_ec(:,:,:)       ! EC Pressure edges.
       real*8, allocatable  :: lev_e(:)         ! levels in eta (km)
 
-      integer, allocatable :: yyyymmdd(:)      ! Date
-      integer, allocatable :: hhmmss(:)        !
+      integer, allocatable :: yyyymmdd0(:)      ! Date
+      integer, allocatable :: hhmmss0(:)        !
       integer, allocatable :: kmVar_e(:)       ! Number of vertical levels for variables
       integer            :: rc,fidps,timinc
       integer            :: ps_fmode = 1       ! non-zero for READ-ONLY
@@ -1456,6 +1621,7 @@ CONTAINS
 !
       real               :: ps(:,:)
       real               :: delp(:,:,:),ptop
+      logical            :: clim_flag
 
 ! !DESCRIPTION: This routine constructs the surface file and extracts the surface pressure.
 !
@@ -1471,7 +1637,7 @@ CONTAINS
 !             Construct or confirm psFile.
 !          ------------------------------------------
 
-      call get_psfile(psFile,surfFile,ndate,nhms,it)
+      call get_psfile(psFile,surfFile,ndate,nhms,clim_flag,it)
       print *,' out from get_psfile '
 
 !          Open GFIO file
@@ -1490,9 +1656,9 @@ CONTAINS
       if(allocated(pe_ec)) deallocate(pe_ec)
       allocate(pe_ec(im_e,jm_e,kmre+1),stat=rc)
 
-      allocate ( yyyymmdd(lm_e1),hhmmss(lm_e1),lon_e(im_e),lat_e(jme_tmp),lev_e(km_e), &
+      allocate ( yyyymmdd0(lm_e1),hhmmss0(lm_e1),lon_e(im_e),lat_e(jme_tmp),lev_e(km_e), &
             kmVar_e(mVars), stat = rc )
-      if ( rc /= 0 )  call die (myname, 'can not allocate yyyymmdd,hhmmss,lon_e,lat_e,lev')
+      if ( rc /= 0 )  call die (myname, 'can not allocate yyyymmdd0,hhmmss0,lon_e,lat_e,lev')
 
       print *,' get_surfp: allocation is completed'
 
@@ -1504,12 +1670,12 @@ CONTAINS
       call GFIO_Inquire ( fidps, im_e, jme_tmp, km_e, lm_e1, nVars_e,  &
             title, source, contact, undef,           &
             lon_e, lat_e, lev_e, levunits,           &
-            yyyymmdd, hhmmss, timinc,                &
+            yyyymmdd0, hhmmss0, timinc,                &
             vname, vtitle, vunits, kmVar_e,          &
             valid_range , packing_range, rc)
 
       print *,' get_surfp: inquire is completed'
-      if ( rc /= 0 )  call die (myname, 'can not do GFIO_Inquire ')
+      if ( rc /= 0 )  call die (myname, ' can not do GFIO_Inquire ')
 
 !        ps_found = .false.
       jm_old = jme_tmp
@@ -1522,9 +1688,9 @@ CONTAINS
                if(allocated(gaus_ps)) deallocate(gaus_ps)
                allocate(gaus_ps(im_e,jm_old))
                print *,' ',trim(vname(iv))
-               call GFIO_GetVar ( fidps, vname(iv), yyyymmdd(1), hhmmss(1),   &
+               call GFIO_GetVar ( fidps, vname(iv), yyyymmdd0(1), hhmmss0(1),   &
                      im_e, jm_old, 0, 1,gaus_ps, rc )
-               if ( rc /= 0 )  call die (myname, 'can not GetVar ps ')
+               if ( rc /= 0 )  call die (myname, ' can not GetVar ps ')
 
 !
 !                 If the input grid is on gaussian then adjust the pole points.
@@ -1539,9 +1705,11 @@ CONTAINS
                   ps = 0.0
                   ps = gaus_ps
                else
+                  ps = 0.0
+                  ps = gaus_ps
 
                   if ( lon_e(1) .lt. 0 ) then ! [-180,180] to [0,360]
-                     allocate(ps1(im_e,jm_e))
+                     allocate(ps1(im_e,jme_tmp))
                      do i =1, im_e/2
                         do j = 1, jme_tmp
                            ps1(i,j) = ps(i+im_e/2,j)
@@ -1553,6 +1721,7 @@ CONTAINS
                            ps1(i,j) = ps(i-im_e/2,j)
                         end do
                      end do
+                     ps = ps1
                      deallocate (ps1)
                   endif
                endif
@@ -1563,12 +1732,12 @@ CONTAINS
          if(.not. delp_found) then
             jme_tmp = jm_old
             if(allocated(gaus_delp)) deallocate(gaus_delp)
-            allocate(gaus_delp(im_e,jm_old,km_e))
+            allocate(gaus_delp(im_e,jm_old,kmre))
             if ( vname(iv) == 'DELP' .or. vname(iv) == 'delp' ) then
-               call GFIO_GetVar ( fidps, vname(iv), yyyymmdd(1), hhmmss(1), &
-                     im_e, jm_old, 1, km_e, gaus_delp, rc )
+               call GFIO_GetVar ( fidps, vname(iv), yyyymmdd0(1), hhmmss0(1), &
+                     im_e, jm_old, 1, kmre, gaus_delp, rc )
 
-               if ( rc /= 0 ) call die (myname, 'can not GetVar gaus_delp')
+               if ( rc /= 0 ) call die (myname, ' can not GetVar gaus_delp')
 
                delp = 0.0
                delp = gaus_delp
@@ -1580,17 +1749,21 @@ CONTAINS
       end do
 
       if(.not. delp_found) then
-         print *,' ** Constructing delp **'
+         print *,' ** Constructing delp **',kmre
+         if(allocated(pe_ec)) deallocate(pe_ec)
+         allocate(pe_ec(im_e,jm_old,kmre+1),stat=rc)
 
          do k = 1,kmre+1
             pe_ec(:,:,k) = ak55(k) + bk55(k) * ps
          end do
+         print *,' *** pe_ec is constructed *** ',jme_tmp,im_e
 
          do j = 1,jme_tmp
             do i = 1,im_e
                if(pe_ec(i,j,1) <= 0.0) pe_ec(i,j,1) = 0.00001
             end do
          end do
+         print *,' *** pe_ec is constructed *** '
 
          do k = 1,kmre
             delp(:,:,k) = pe_ec(:,:,k+1)-pe_ec(:,:,k)
@@ -1626,6 +1799,23 @@ CONTAINS
          endif
       endif
 
+!     In case ps needed in original shape.
+
+      allocate(ps1(im_e,jme_tmp))
+      do i =1, im_e/2
+       do j = 1, jme_tmp
+        ps1(i,j) = ps(i+im_e/2,j)
+       end do
+      end do
+
+      do i =im_e/2+1, im_e
+       do j = 1, jme_tmp
+         ps1(i,j) = ps(i-im_e/2,j)
+       end do
+     end do
+!    ps = ps1
+     deallocate (ps1)
+
       if((.not. ps_found) .and. (.not. delp_found)) then
          print *,' **** PS OR SURFP DOES NOT EXIST in ',trim(psFile),' *****' 
          call die(myname,'exiting...')
@@ -1637,8 +1827,8 @@ CONTAINS
       deallocate(lev_e,stat=rc)
       deallocate(lat_e,stat=rc)
       deallocate(lon_e,stat=rc)
-      deallocate(hhmmss,stat=rc)
-      deallocate(yyyymmdd,stat=rc)
+      deallocate(hhmmss0,stat=rc)
+      deallocate(yyyymmdd0,stat=rc)
       if(allocated(pe_ec))  deallocate(pe_ec,stat=rc)
       if(allocated(gaus_ps))  deallocate(gaus_ps,stat=rc)
       if(allocated(gaus_delp))  deallocate(gaus_delp,stat=rc)
@@ -1657,7 +1847,7 @@ CONTAINS
 !
 
 
-   subroutine get_psfile(psFile,surfFile,ndate,nhms,it)
+   subroutine get_psfile(psFile,surfFile,ndate,nhms,clim_flag,it)
 !
 ! !USES:
 !
@@ -1670,12 +1860,13 @@ CONTAINS
       integer           :: ndate,nhms,ihms
 
 ! WORK AREAS
-      character * 14    :: label
-      character(len=8)  :: cdate              ! Date in character form
+      character(len=8)  :: cdate0              ! Date in character form
+      character(len=6)  :: cdate              ! Date in character form
       character(len=8)  :: ctime              ! Time in character form
       character(len=4)  :: syyyy
-      character(len=2)  :: smm
+      character(len=2)  :: smm,cmm
       integer           :: i,it
+      logical           :: clim_flag
 
 !
 ! !OUTPUT PARAMETERS:
@@ -1695,9 +1886,7 @@ CONTAINS
 !                ----------------------------------------------------
 
       i = max(0,index ( psFile, '.', back=.true. ))
-!               print *,' ',trim(psFile)
-      label = psFile(i+1:i+3)
-      print *,' i,label ',i, trim(label)
+                print *,' ',trim(psFile)
 !
 !                 ----------------------------
 !                  Confirm  the "hdf" tag.
@@ -1705,36 +1894,26 @@ CONTAINS
 
 
 !
-      if(label /= 'hdf') then
 !
 !                 -------------------------------------------------------
 !                   Construct the dataset with the date and time tags.
 !                 -------------------------------------------------------
 !
-         write(cdate,'(i8)') ndate
-         ihms = nhms /10000
-         if(ihms < 10) then
-            write(ctime,'("0",i1)') ihms
+!        write(cdate,'(i8)') ndate
+         write(cdate0,'(i8)') ndate
+         cdate = cdate0(1:6)
+         cmm = cdate0(5:6)
+!        ihms = nhms /10000
+!        write(ctime,'("0",i4)') nhms
+
+         if (clim_flag) then
+           surfFile = trim(psFile) // trim(cmm) // 'clm.nc4'
          else
-            write(ctime,'(i2)') ihms
-         endif
 !                   print *,' date,time,ihms ',ndate,nhms,ihms
 !                   print *,' cdate,ctime ',cdate,ctime
-         surfFile = trim(psFile) // '.' // trim(cdate) // '_' // trim(ctime) // 'z.nc4'
-      else
-!                  -----------------------------------
-!                   Use the user given dataset.
-!                  -----------------------------------
-
-         syyyy   = psFile(22:25)
-         smm     = psFile(26:27)
-         if(it < 10 ) then
-            write(smm,"('0',i1)") it
-         else
-            write(smm,"(i2)") it
+!          surfFile = trim(psFile) // '.' // trim(cdate) // '_' // trim(ctime) // 'z.nc4'
+           surfFile = trim(psFile)
          endif
-         surfFile =  'terra_c32_a.delp.eta.'//syyyy//smm//'clm.hdf'
-      endif
 
       print *,'  ',trim(surfFile)
       inquire ( file=trim(surfFile), exist=file_exist )
@@ -1758,7 +1937,8 @@ CONTAINS
          im, jm, km, nLevs, Levs,kn,ndate,ntime,                  &
          mVars, nVars, inVars, nqaVars,nptVars,nsphVars,nudVars,  &
          nvdVars,nucVars,nvcVars,outVars,qaVars,ptVars,sphVars,   &
-         udVars,vdVars,ucVars,vcVars,outPrec,append,shftlon,inc_hhmmss) 
+         udVars,vdVars,ucVars,vcVars,outPrec,append,shftlon,      &
+         shaveFlag,prefProvided,clim_flag,add_delp,inc_hhmmss) 
 
 !
 ! !USES:
@@ -1818,8 +1998,14 @@ CONTAINS
 
       integer, intent(out)          :: outPrec    ! Output file precision:
                                                   !  0 = 32 bits,  1 = 64 bits
-      logical                       :: shftlon    ! Flag to shift Longitude (-180,180)
+      logical, intent(out)          :: shftlon    ! Flag to shift Longitude (-180,180)
                                                   !  to (0,360)
+      logical, intent(out)          :: shaveFlag  ! Flag to enable shaving of output
+      integer, intent(out)          :: prefProvided  ! Provided reference pressure
+      logical, intent(out)          :: clim_flag  ! Flag for ps_file 
+      logical, intent(out)          :: add_delp  ! Flag for ps_file 
+                                                  ! climatology or synoptic  ps file.
+
 
 ! !DESCRIPTION: This routine initializes and parses the command.
 !
@@ -1831,7 +2017,7 @@ CONTAINS
 !-------------------------------------------------------------------------
 
       integer             iarg, argc
-      integer, external :: iargc
+
       character(len=2048)  argv
 
       integer, parameter :: mKm = 256  ! max no of levels
@@ -1847,7 +2033,7 @@ CONTAINS
       print *, "-------------------------------------------------------------------"
       print *
 
-      argc = iargc()
+      argc = command_argument_count()
       if ( argc < 1 ) call usage_()
 
 !  Defaults
@@ -1863,7 +2049,11 @@ CONTAINS
       nsphVars = 0
       outFile = 'GFIO_remap.eta.nc4'
       psFile  = 'NONE'
+      clim_flag = .false.
+      add_delp = .false.
       kn = -1
+      shaveFlag = .false.
+      prefProvided = 0
 
       outPrec = 0
       km = -1
@@ -1896,6 +2086,8 @@ CONTAINS
             if ( iarg+1 .gt. argc ) call usage_()
             iarg = iarg + 1
             call GetArg ( iArg, psFile )
+         else if(index(argv,'-clim') .gt. 0 ) then
+            clim_flag = .true.
          else if(index(argv,'-inc') .gt. 0 ) then
             if ( iarg+1 .gt. argc ) call usage_()
             iarg = iarg + 1
@@ -1958,6 +2150,14 @@ CONTAINS
             iarg = iarg + 1
             call GetArg ( iArg, argv )
             read(argv,*) resolution
+         else if(index(argv,'-pref') .gt. 0 ) then
+            if ( iarg+1 .gt. argc ) call usage_()
+            iarg = iarg + 1
+            call GetArg ( iArg, argv )
+            read(argv,*) prefProvided
+            if (prefProvided < 1000) then
+               call die (myname, "prefProvided should be in Pascals. Your value seems a bit low. Is it in millibars?")
+            end if
          else if(index(argv,'-levels') .gt. 0 ) then
             if ( iarg+1 .gt. argc ) call usage_()
             iarg = iarg + 1
@@ -1978,6 +2178,10 @@ CONTAINS
             read(argv,*) outPrec
          else if(index(argv,'-debug') .gt. 0 ) then
             debug = .true.
+         else if(index(argv,'-shave') .gt. 0 ) then
+            shaveFlag = .true.
+         else if(index(argv,'-add_delp') .gt. 0 ) then
+            add_delp = .true.
          else
             nFiles = nFiles + 1
             inFiles(nFiles) = argv
@@ -2010,12 +2214,37 @@ CONTAINS
          im = 1152
          jm = 721
       endif
+      if(resolution == 'F' .or. resolution == 'f') then
+         im = 2304
+         jm = 1441
+      endif
+
       if(resolution == '1') then
+         im =  90
+         jm =  46
+      endif
+
+      if(resolution == '2') then
+         im = 180
+         jm =  91
+      endif
+
+      if(resolution == '3') then
          im = 360
          jm = 181
       endif
 
       if(resolution == '4') then
+         im = 720
+         jm = 361
+      endif
+
+      if(resolution == '5') then
+         im = 1440
+         jm = 721
+      endif
+
+      if(resolution == '6') then
          im = 540
          jm = 361
       endif
@@ -2086,6 +2315,11 @@ CONTAINS
 !   print *, 'Output   File: ', trim(outFile), ', prec = ', outPrec
 !   print *
 
+      if ( prefProvided .gt. 0 ) then
+         write (*,*)
+         write (*,'(X,A,X,I6,X,A)') "Using a provided reference pressure of", prefProvided, "Pascals."
+      end if
+
       if ( nLevs .gt. 0 ) then
          write(*,'(a,i3,/(10x,6f10.2))') '        Levels: ', nLevs,Levs
       end if
@@ -2116,38 +2350,72 @@ CONTAINS
       print *, "  -like_q-agrid     varn    default (A- grid) "
       print *, "  -like_pt          Vertical interpolation as Potential Temperature "
       print *, "  -like_sph         Vertical interpolation as Specific Humidity     "
-      print *, "  -like_u-dgrid     Treate the variables as U in D-grid. "
-      print *, "  -like_v-dgrid     Treate the variables as V in D-grid. "
-      print *, "  -like_u-cgrid     Treate the variables as U in C-grid (not yet implemented)."
-      print *, "  -like_v-cgrid     Treate the variables as V in C-grid (not yet implemented)."
+      print *, "  -like_u-dgrid     Treat the variables as U in D-grid. "
+      print *, "  -like_v-dgrid     Treat the variables as V in D-grid. "
+      print *, "  -like_u-cgrid     Treat the variables as U in C-grid (not yet implemented)."
+      print *, "  -like_v-cgrid     Treat the variables as V in C-grid (not yet implemented)."
       print *, "  -date      ndate  Date to be intialized for the monthly mean (if not given"
       print *, "                    will be computed)."
       print *, "  -time      ntime  Time to be intialized for the monthly mean (if not given."
       print *, "                    will be computed)."
-      print *, "  -inc       hhmmss Output Time Increment (defaulut from the Inputput file)."
+      print *, "  -inc       hhmmss Output Time Increment (default from the Input file)."
       print *, "  -nlev      kn     Number of output vertical levels (to be interpolated)"
-      print *, "  -res       res    The Output horizontal resolution; a   72x46 "
-      print *, "                                                        b   144x91 "
-      print *, "                                                        c   288x181"
-      print *, "                                                        d   576x361"
-      print *, "                                                        e  1152x721"
-      print *, "                                                        1   360x181"
-      print *, "                                                        4   540x361"
+      print *, "  -res       res    The Output horizontal resolution; a   72x46        4x5   "  
+      print *, "                                                      b   144x91      2.5x2.5"
+      print *, "                                                      c   288x181     1.25x1 "
+      print *, "                                                      d   576x361     0.625x0.5"
+      print *, "                                                      e  1152x721     0.3125x0.25"
+
+      print *, "                                                      1    90x046      4x4  "
+      print *, "                                                      2   180x091      2x2  "
+      print *, "                                                      3   360x181      1x1  "
+      print *, "                                                      4   720x361    0.5x0.5"
+      print *, "                                                      5  1440x721   0.25x0.25"
+      print *, "                                                      6   540x361   0.66667x0.5:"   
       print * 
       print *, "  -levels           vertical levels (default: all levels in the input file)"
       print *, "  -psfile    psFile ana.eta file name (Needed only when the delp is missing "
       print *, "                    from the input file -- Provide an eta file where the delp"
       print *, "                    resides.) "
+      print *, "  -clim      psFile is a climatology file ( Individual monthly climatology file"
+      print *, "                       otherwise individual synoptic file   default) "
+      print *, "  -shave            shave bits from output (default: do not shave output)"
+      print *, "  -pref      press  integer value in Pascals of reference pressure (default: "
+      print *, "                    use ak's and bk's to calculate reference pressure)"
       print *
       print *, "DESCRIPTION"
       print *, "  Remaps the input data to user specified resolution."
       print *
       print *, "   ex:  GFIO_remap.x -o outfile input_file"
+      print *, "   ex:  GFIO_remap.x -psfile expno.psfile.yyyy -clim -o output_file input_file"
+      print *, "                         mmclm.nc4 will be internally added to the psfile." 
+      print *, "   ex:  GFIO_remap.x -psfile expno.psfile -o output_file input_file"
+      print *, "                 yymmmdd_hhmmz.nc4 will be internally added to the psfile." 
       print * 
 
       call die ( myname, 'exiting' )
 
    end subroutine Usage_
+
+!............................................................................
+
+!  subroutine split_ ( tok, str, mList, List, nList )
+!     implicit NONE
+!     character(len=1), intent(in)  :: tok  ! delimitter
+!     character(len=*), intent(in)  :: str  ! string
+!     integer,          intent(in)  :: mList
+!     character(len=*), intent(out) :: List(mList)
+!     integer,          intent(out) :: nList
+
+!     integer i, l, n, j
+
+!     i = 1
+!     l = len_trim(str)
+!     print * 
+
+!     call die ( myname, 'exiting' )
+
+!  end subroutine Usage_
 
 !............................................................................
 
@@ -2346,7 +2614,7 @@ CONTAINS
                endif
             end do
          end do
-!      print *,' k,pemin,pemax ',k,pemin,pemax
+       print *,' k,pemin,pemax ',k,pemin,pemax
       end do
    end subroutine minmaxpe
 ! ---------------------------------------------------------------
@@ -2402,7 +2670,7 @@ CONTAINS
             endif
          end do
       end do
-!      print *,' pemin,pemax ',pemin,pemax
+       print *,' pemin,pemax ',pemin,pemax
    end subroutine minmaxps
 ! ----------------------------------------------------------------------------------------
 
@@ -2501,7 +2769,7 @@ CONTAINS
             dy1 = dyr * (pi/180.0)
             sin1(j) = sin( -0.5*pi + dy1*(-0.5+float(j-1)) )
 !         write(6,1000) j,lat_e2(j),lat_e2(j-1),dyr,dy1,sin1(j) 
-1000        format(2x,i4,5(2x,e10.4))
+!1000        format(2x,i4,5(2x,e10.4))
 2000        format(/2x,'  j ',2x,'  lat(j)  ',2x,' lat(j-1) ',2x,'dlat(deg) ',2x,'dlat(rad) ',2x,' sin1 ',/)
          enddo
       endif
@@ -2824,14 +3092,14 @@ CONTAINS
 !!!                print *,' z_interp: calling map1_ppm'
                call map1_ppm( km_e,   pk0,   inField,                  &
                      kn,     pk1,   outField,                 &
-                     im_e, 1, im_e, j, 1, jm_e, 1, 3, undef)
+                     im_e, 1, im_e, j, 1, jm_e, 1, 7, undef)
 !!!                print *,' z_interp: Out from map1_ppm'
             endif
 ! map pt
             if(ptflag) then
                call map1_ppm( km_e,   pk0,   inField,                  &
                      kn,     pk1,   outField,                 &
-                     im_e, 1, im_e, j, 1, jm_e, 1, 3, undef)
+                     im_e, 1, im_e, j, 1, jm_e, 1, 7, undef)
                ig = 0
                is = 0
                kn_e = kn
@@ -2851,7 +3119,7 @@ CONTAINS
             if(sphflag) then
                call map1_ppm( km_e,   pe1,   inField,                  &
                      kn,     pe2,   outField,                 &
-                     im_e, 1, im_e, j, 1, jm_e, 0, 3, undef)
+                     im_e, 1, im_e, j, 1, jm_e, 0, 7, undef)
                ig = 0
                is = 0
                kn_e = kn
@@ -2865,6 +3133,37 @@ CONTAINS
 !                        endif
 !                       enddo
 !                     enddo
+
+! For like specific humidity, fix values that go negative by setting to level
+! above.
+
+               do k= 1,kn
+                  do i=1,im_e
+                     if( outField(i,j,k) .lt. zero ) then
+                        !print *,'Found less than zero constituent!'
+                        !print *,'outVar: ', trim(outVar)
+                        !print *,'i,j,k: ', i,j,k
+                        !print *,'outField(i,j,k-1): ',outField(i,j,k-1)
+                        !print *,'outField(i,j,k  ): ',outField(i,j,k)
+                        !print *,''
+                        !print *,'Setting value to previous value'
+                        if (k > 1) then
+                           outField(i,j,k) = outField(i,j,k-1)
+                        else
+                           outField(i,j,k) = 0.
+                        endif
+                        !print *,'outField(i,j,k-2): ',outField(i,j,k-2)
+                        !print *,'outField(i,j,k-1): ',outField(i,j,k-1)
+                        !print *,'outField(i,j,k  ): ',outField(i,j,k)
+                        !if (k < kn) then
+                           !print *,'outField(i,j,k+1): ',outField(i,j,k+1)
+                        !endif
+                        !print *,''
+                        !print *,''
+                     endif
+                  enddo
+               enddo
+
             endif
 
 ! map u
@@ -2887,7 +3186,7 @@ CONTAINS
 
                   call map1_ppm( km_e,   pe0,   inField,                  &
                         kn,     pe4,   outField,                 &
-                        im_e, 1, im_e, j, 1, jm_e, 1, 3, undef)
+                        im_e, 1, im_e, j, 1, jm_e, 1, 7, undef)
 
 ! Fix out of bound (beyond original ptop)
 
@@ -2932,7 +3231,7 @@ CONTAINS
 
                   call map1_ppm( km_e,   pe0,   inField,                      &
                         kn,     pe4,   outField,                     &
-                        im_e, 1, im_e, j, 1, jm_e, 1, 3, undef)
+                        im_e, 1, im_e, j, 1, jm_e, 1, 7, undef)
 ! Fix out of bound (beyond original ptop)
 
 !                      do k=ks32,1,-1

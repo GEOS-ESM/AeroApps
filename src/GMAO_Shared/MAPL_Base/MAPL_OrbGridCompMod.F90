@@ -445,6 +445,9 @@ CONTAINS
        imsize.le.1600      ) call ESMF_ConfigGetAttribute(self%CF,swath(3),LABEL='INTERPOLATION_WIDTH:', DEFAULT=  1.0 ,RC=STATUS)
    if( imsize.gt.1600      ) call ESMF_ConfigGetAttribute(self%CF,swath(3),LABEL='INTERPOLATION_WIDTH:', DEFAULT=  0.5 ,RC=STATUS)
 
+   call ESMF_ConfigDestroy( self%CF, rc=status)
+   VERIFY_(STATUS)
+
 !  define undef
    undef=MAPL_UNDEF
 

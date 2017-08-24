@@ -18,6 +18,7 @@
 # 13May2010  Stassi     Extended fix to work on NAS nodes as well as NCCS
 # 27Jul2010  Stassi     Modified to work with either intel-mpi or mvapich
 # 18May2011  Stassi     Capture status of cmd and die if not success
+# 18May2016  Thompson   Add support for MPT
 #============================================================================
 use strict;
 use warnings;
@@ -92,6 +93,13 @@ sub get_mpi_type {
         elsif ( $MPIHOME =~ m[/intel/mpi/] ) { $mpi_type = "intel"    }
     }
 
+    # check $MPI_ROOT env variable
+    #-----------------------------
+    elsif ( $MPIHOME = $ENV{"MPI_ROOT"} ) {
+        if    ( $MPIHOME =~ m[mvapich2] )    { $mpi_type = "mvapich2" }
+        elsif ( $MPIHOME =~ m[/intel/mpi/] ) { $mpi_type = "intel"    }
+        elsif ( $MPIHOME =~ m[/sgi/mpi/] )   { $mpi_type = "mpt"    }
+    }
     print "$scriptname: mpi_type = $mpi_type\n";
     return;
 }
@@ -138,11 +146,11 @@ sub parse_command_line {
 sub which_mpi_cmd {
     my ($progname, $status);
 
-    # check for existence of mpirun or mpiexec command
-    #-------------------------------------------------
+    # check for existence of mpirun, mpiexec, or mpiexec_mpt command
+    #---------------------------------------------------------------
     $mpicmd = "notfound";
 
-    foreach $progname ( "mpirun", "mpiexec" ) {
+    foreach $progname ( "mpiexec_mpt", "mpirun", "mpiexec" ) {
         $status = system "which $progname >& /dev/null";
         next if $status;
 
@@ -171,7 +179,7 @@ sub get_xtraflags {
     use FindBin qw($Bin);
     use lib ("$Bin");
     use GMAO_utils qw(get_siteID pbs_env);
-    my ($pbs_nodefile, $numnodes, $siteID);
+    my ($cpus_per_node, $numnodes, $siteID, $label);
     $xtraflags = "";
 
     # flags needed for mvapich2 mpi
@@ -184,7 +192,10 @@ sub get_xtraflags {
 
         # perhost value
         #--------------
+        $perhost = $ENV{SLURM_NTASKS_PER_NODE} unless $perhost;
         $perhost = pbs_env("cpus_per_node") unless $perhost;
+        die "Error; no value for perhost;" unless $perhost;
+
         $siteID = get_siteID();
 
         # nas site
@@ -193,11 +204,18 @@ sub get_xtraflags {
             if ($mpi_type eq "intel") {
                 $numnodes = pbs_env("num_nodes");
                 $xtraflags .= " --totalnum=$numnodes";
-                $xtraflags .= " --file=$pbs_nodefile";
+                $xtraflags .= " --file=\$PBS_NODEFILE";
                 $xtraflags .= " --rsh=ssh";
             }
         }
         $xtraflags .= " -perhost $perhost";
+    }
+
+    # MPT can respect perhost as well. Note that it will
+    # die if the perhost number does not divide evenly
+    # --------------------------------------------------
+    if ($perhost) {
+       $xtraflags .= " -perhost $perhost" if $mpi_type eq "mpt";
     }
 
     # flags needed for scali mpi

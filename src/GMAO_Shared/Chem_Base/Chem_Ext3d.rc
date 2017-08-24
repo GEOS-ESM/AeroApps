@@ -38,9 +38,10 @@ ext_filename: ext.nc4
 NUM_BANDS: 1
 BANDS: 532E-9
 
-DU_OPTICS: ExtData/g5chem/x/optics_DU.v4.nc
-SS_OPTICS: ExtData/g5chem/x/optics_SS.v3.nc
-SU_OPTICS: ExtData/g5chem/x/optics_SU.v3.nc
-OC_OPTICS: ExtData/g5chem/x/optics_OC.nc
-BC_OPTICS: ExtData/g5chem/x/optics_BC.nc
+DU_OPTICS: ExtData/g5chem/x/optics_DU.v15_3.nc
+SS_OPTICS: ExtData/g5chem/x/optics_SS.v3_3.nc
+SU_OPTICS: ExtData/g5chem/x/optics_SU.v1_3.nc
+NI_OPTICS: ExtData/g5chem/x/optics_NI.v2_5.nc
+OC_OPTICS: ExtData/g5chem/x/optics_OC.v1_3.nc
+BC_OPTICS: ExtData/g5chem/x/optics_BC.v1_3.nc
 

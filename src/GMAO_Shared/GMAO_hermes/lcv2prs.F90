@@ -767,6 +767,10 @@
                       call ESMF_CFIOVarReadT2(cfio_in, 'delp', curDate, curTime, delp, rc= rc, cfio2=cfio_in2)
                   else
                       call ESMF_CFIOVarReadT2(cfio_in, 'DELP', curDate, curTime, delp, rc= rc, cfio2=cfio_in2)
+                      if (rc/=0) then
+                         print *, 'Cannot find delp/DELP, trying dp ...'
+                         call ESMF_CFIOVarReadT2(cfio_in, 'dp', curDate, curTime, delp, rc= rc, cfio2=cfio_in2)
+                      endif
                   end if
                   if ( rc /= 0 )  call die (myNewName, 'can not read DELP')
                else
@@ -778,7 +782,7 @@
                   end if
                   if ( rc /= 0 )  call die (myNewName, 'can not read DELP')
                end if
-               if (lon_e(1) < 0 ) call lon_shift(delp, im_e, jm_e, km_e)
+               if (lon_e(1) < 0 .and. .not. doSubset ) call lon_shift(delp, im_e, jm_e, km_e)
                call Interp_Init(im_e, jm_e, km_e, ptop, grid, rc, delp=delp)
          end if
          if  ( onEdges ) then
@@ -790,7 +794,7 @@
             else
                call ESMF_CFIOVarReadT2(cfio_in, 'ple', curDate, curTime, ple, rc= rc, cfio2=cfio_in2)
             end if
-            if (lon_e(1) < 0 ) call lon_shift(ple, im_e, jm_e, km_e)
+            if (lon_e(1) < 0 .and. .not. doSubset ) call lon_shift(ple, im_e, jm_e, km_e)
             call Interp_Init(im_e, jm_e, km_e-1, ptop, grid, rc, pe=ple*0.01)
          end if
 
@@ -874,7 +878,7 @@
                      call ESMF_CFIOVarReadT2(cfio_in, uWind, curDate, curTime, inField, rc=rc, cfio2=cfio_in2)
                      allocate ( vField(im_e,jm_e,km_e), stat=rc )
                      call ESMF_CFIOVarReadT2(cfio_in, vWind, curDate, curTime, vField, rc=rc, cfio2=cfio_in2)
-                     if ( lon_e(1) < 0 ) call lon_shift(vField, im_e, jm_e, km_e)
+                     if ( lon_e(1) < 0 .and. .not. doSubset ) call lon_shift(vField, im_e, jm_e, km_e)
                   else   
                      if ( rc /= 0 .and. (trim(outVars(iv)) .eq. 'QC' .or. trim(outVars(iv)) .eq. 'qc') ) then
                         allocate ( tql(im_e,jm_e,km_e), stat=rc )
@@ -915,7 +919,7 @@
                      call ESMF_CFIOVarReadT2(cfio_in, uWind, curDate, curTime, inField, rc=rc, cfio2=cfio_in2)
                      allocate ( vField(im_e,jm_e,1), stat=rc )
                      call ESMF_CFIOVarReadT2(cfio_in, vWind, curDate, curTime, vField, rc=rc, cfio2=cfio_in2)
-                     if ( lon_e(1) < 0 ) call lon_shift(vField, im_e, jm_e, 1)
+                     if ( lon_e(1) < 0 .and. .not. doSubset ) call lon_shift(vField, im_e, jm_e, 1)
                   else
                      if ( rc /= 0 .and. (trim(outVars(iv)) .eq. 'TQC' .or. trim(outVars(iv)) .eq. 'tqc') ) then
                         allocate ( tql(im_e,jm_e,1), stat=rc )
@@ -2520,6 +2524,10 @@ subroutine compHght(cfio_in, curDate, curTime, delp, im, jm, km, lon_min, wz, sl
 
 ! HISTORY:
 !  04Dec2009 Todling  fix dims on wz and peln
+!  10Jun2016 Todling  truncate rh similarly with how GCM truncates so-called
+!                     rh2, but instead of allow rh to reach values up to 1.02 do 
+!                     not allow it to be larger than 1.0 (as done in files we get
+!                     from ECMWF)
 !
      character(len=*), parameter :: myname_ = 'compHght'
 
@@ -2554,7 +2562,7 @@ subroutine compHght(cfio_in, curDate, curTime, delp, im, jm, km, lon_min, wz, sl
 
      allocate(phis(im,jm), phis3d(im,jm,1), theta(im,jm,km), sphu(im,jm,km))
      call ESMF_CFIOVarReadT2(cfio_in, 'phis', curDate, curTime, phis3d, rc=rc,cfio2=cfio_in2)
-     if (lon_min < 0) call lon_shift(phis3d, im, jm, 1)
+     if (lon_min < 0 .and. .not. doSubset ) call lon_shift(phis3d, im, jm, 1)
      phis = phis3d(:,:,1)
      deallocate(phis3d)
      call ESMF_CFIOVarReadT2(cfio_in, 'theta', curDate, curTime, theta, rc=rc,cfio2=cfio_in2)
@@ -2566,7 +2574,13 @@ subroutine compHght(cfio_in, curDate, curTime, delp, im, jm, km, lon_min, wz, sl
          print*,'... found TV instead'
      endif
      call ESMF_CFIOVarReadT2(cfio_in, 'sphu', curDate, curTime, sphu, rc=rc,cfio2=cfio_in2)
-     if (lon_min < 0) then
+     if (rc/=0) then
+        print*,'cannot find sphu ...'
+        call ESMF_CFIOVarReadT2(cfio_in, 'qv', curDate, curTime, sphu, rc=rc,cfio2=cfio_in2)
+        if(rc/=0) call die(myname_,'cannot find sphu/qv in file')
+        print*,'... found qv instead'
+     endif
+     if (lon_min < 0 .and. .not. doSubset ) then
         call lon_shift(theta, im, jm, km)
         call lon_shift(sphu, im, jm, km)
      end if
@@ -2589,7 +2603,6 @@ subroutine compHght(cfio_in, curDate, curTime, delp, im, jm, km, lon_min, wz, sl
             end do
          end do
                           
-!         call vqsat ( tfield, pmk, qsfield, im*jm, undef )
           qsfield = GEOS_Qsat(tfield, pmk, PASCALS=.true.)
                           
          do j = 1, jm
@@ -2599,8 +2612,7 @@ subroutine compHght(cfio_in, curDate, curTime, delp, im, jm, km, lon_min, wz, sl
          end do
      end do
                           
-     rh = 100 * sphu / rh
-!     rh = 100 * sphu*(1.-rh) / (rh*(1.-sphu))
+     rh = 100 * MAX(MIN( sphu/rh , 1.00 ),0.0) ! note: GEOS uses 1.02 instead of 1.0
      call comp_slp(im,jm,km,theta,phis,delp,            &
                   grid%pe,grid%pm,kappa,grav,pkz,slp)
      call comp_hght(ptop,im,jm,km,kappa,cpm,grav,delp, phis, theta, wz)

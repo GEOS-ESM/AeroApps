@@ -73,7 +73,6 @@
      logical :: doing_CFC   ! CFCs
      logical :: doing_BC    ! black carbon
      logical :: doing_OC    ! organic carbon
-     logical :: doing_BRC   ! brown carbon
      logical :: doing_Rn    ! radon
      logical :: doing_CH4   ! Methane
      logical :: doing_SC    ! stratospheric chemistry
@@ -98,7 +97,6 @@
      integer :: n_CFC,i_CFC,j_CFC    ! CFCs
      integer :: n_BC, i_BC, j_BC     ! black carbon
      integer :: n_OC, i_OC, j_OC     ! organic carbon
-     integer :: n_BRC, i_BRC, j_BRC  ! brown carbon
      integer :: n_Rn, i_Rn, j_Rn     ! radon
      integer :: n_CH4,i_CH4,j_CH4    ! Methane
      integer :: n_SC, i_SC, j_SC     ! stratospheric chemistry
@@ -125,7 +123,6 @@
      character(len=nch) :: units_CFC   ! CFCs
      character(len=nch) :: units_BC    ! black carbon
      character(len=nch) :: units_OC    ! organic carbon
-     character(len=nch) :: units_BRC   ! brown carbon
      character(len=nch) :: units_Rn    ! radon
      character(len=nch) :: units_CH4   ! Methane
      character(len=nch) :: units_SC    ! stratospheric chemistry
@@ -226,7 +223,6 @@ CONTAINS
    call parserc_ ( 'CFC', this%doing_CFC, this%n_CFC, this%units_CFC )
    call parserc_ ( 'BC', this%doing_BC, this%n_BC, this%units_BC )
    call parserc_ ( 'OC', this%doing_OC, this%n_OC, this%units_OC )
-   call parserc_ ( 'BRC', this%doing_BRC, this%n_BRC, this%units_BRC )
    call parserc_ ( 'Rn', this%doing_Rn, this%n_Rn, this%units_Rn )
    call parserc_ ( 'CH4', this%doing_CH4, this%n_CH4, this%units_CH4 )
    call parserc_ ( 'SC', this%doing_SC, this%n_SC, this%units_SC )
@@ -250,7 +246,6 @@ CONTAINS
    call setidx_ ( this%doing_CFC, this%n_CFC, this%i_CFC, this%j_CFC )
    call setidx_ ( this%doing_BC, this%n_BC, this%i_BC, this%j_BC )
    call setidx_ ( this%doing_OC, this%n_OC, this%i_OC, this%j_OC )
-   call setidx_ ( this%doing_BRC, this%n_BRC, this%i_BRC, this%j_BRC )
    call setidx_ ( this%doing_Rn, this%n_Rn, this%i_Rn, this%j_Rn )
    call setidx_ ( this%doing_CH4, this%n_CH4, this%i_CH4, this%j_CH4 )
    call setidx_ ( this%doing_SC, this%n_SC, this%i_SC, this%j_SC )
@@ -305,8 +300,6 @@ CONTAINS
                    this%units_BC,  this%i_BC, this%j_BC )
    call setmeta_ ( this%doing_OC,  'oc', 'Organic Carbon Mixing Ratio', &
                    this%units_OC,  this%i_OC, this%j_OC )
-   call setmeta_ ( this%doing_BRC,  'brc', 'Brown Carbon Mixing Ratio', &
-                   this%units_BRC,  this%i_BRC, this%j_BRC )
    call setmeta_ ( this%doing_Rn,  'Rn', 'Radon Mixing Ratio', &
                    this%units_Rn,  this%i_Rn, this%j_Rn )
    call setmeta_ ( this%doing_CH4,  'CH4', 'Methane Mixing Ratio', &
@@ -465,7 +458,6 @@ CONTAINS
    this%doing_CFC = .false.   ! CFCs
    this%doing_BC = .false.    ! black carbon
    this%doing_OC = .false.    ! organic carbon
-   this%doing_BRC = .false.   ! brown carbon
    this%doing_Rn = .false.    ! radon
    this%doing_CH4 = .false.   ! Methane
    this%doing_SC = .false.    ! stratospheric chemistry
@@ -538,7 +530,6 @@ end subroutine Chem_RegistryDestroy
    IF ( reg%doing_SU ) ActiveList = TRIM(ActiveList)//'  SU'
    IF ( reg%doing_CFC ) ActiveList = TRIM(ActiveList)//'  CFC'
    IF ( reg%doing_BC ) ActiveList = TRIM(ActiveList)//'  BC'
-   IF ( reg%doing_BRC ) ActiveList = TRIM(ActiveList)//'  BRC'
    IF ( reg%doing_OC ) ActiveList = TRIM(ActiveList)//'  OC'
    IF ( reg%doing_Rn ) ActiveList = TRIM(ActiveList)//'  Rn'
    IF ( reg%doing_CH4 ) ActiveList = TRIM(ActiveList)//'  CH4'
@@ -564,7 +555,6 @@ end subroutine Chem_RegistryDestroy
    IF ( reg%doing_CFC ) CALL reg_prt_( 'CFC', reg%n_CFC, reg%i_CFC, reg%j_CFC )
    IF ( reg%doing_BC ) CALL reg_prt_( 'BC', reg%n_BC, reg%i_BC, reg%j_BC )
    IF ( reg%doing_OC ) CALL reg_prt_( 'OC', reg%n_OC, reg%i_OC, reg%j_OC )
-   IF ( reg%doing_BRC ) CALL reg_prt_( 'BRC', reg%n_BRC, reg%i_BRC, reg%j_BRC )
    IF ( reg%doing_Rn ) CALL reg_prt_( 'Rn', reg%n_Rn, reg%i_Rn, reg%j_Rn )
    IF ( reg%doing_CH4 ) CALL reg_prt_( 'CH4', reg%n_CH4, reg%i_CH4, reg%j_CH4 )
    IF ( reg%doing_SC ) CALL reg_prt_( 'SC', reg%n_SC, reg%i_SC, reg%j_SC )
@@ -629,7 +619,6 @@ END SUBROUTINE Chem_RegistryPrint
      if ( chemReg%doing_SS )  isGOCART(chemReg%i_SS :chemReg%j_SS)  = .true.
      if ( chemReg%doing_BC )  isGOCART(chemReg%i_BC :chemReg%j_BC)  = .true.
      if ( chemReg%doing_OC )  isGOCART(chemReg%i_OC :chemReg%j_OC)  = .true.
-     if ( chemReg%doing_BRC ) isGOCART(chemReg%i_BRC :chemReg%j_BRC)  = .true.
      if ( chemReg%doing_SU )  isGOCART(chemReg%i_SU :chemReg%j_SU)  = .true.
      if ( chemReg%doing_CFC ) isGOCART(chemReg%i_CFC:chemReg%j_CFC) = .true.
      if ( chemReg%doing_Rn )  isGOCART(chemReg%i_Rn :chemReg%j_Rn)  = .true.

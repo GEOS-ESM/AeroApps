@@ -14,7 +14,7 @@
 
 OBS*Operations: sum numneg # stdev
 #OBS*Variable: xvecxomf
-#OBS*Variable: xvecxoma
+#OBS*Variable: xvecxamo
 
 OBS*Class*Kts:: 
    LandSfc    4 5 11 33 44

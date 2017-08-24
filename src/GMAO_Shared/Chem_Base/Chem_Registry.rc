@@ -14,7 +14,11 @@
 #    - specifies variable names and units for each constituent
 #
 #  NOTES: The water vapor and ozone tracers are not really being used
-#        in GEOS-5. They are still kept for compatibility with GEOS-4.
+#         in GEOS-5. They are still kept for compatibility with GEOS-4.
+#
+#         Beginning with Heracles-1_0, four TR tracers are enabled in the 
+#         default configuration. For the complete list of TR tracers, see 
+#         Chem_MieRegistry.rc.
 #
 #         XX lists GMIchem's non-transported species.  See Chem_MieRegistry.rc
 #         for Stratchem's XX (inferred) species list.
@@ -43,12 +47,15 @@ doing_SU:  yes  # &YesNo Include sulfates?
 doing_CFC: yes  # &YesNo Include CFCs?
 doing_BC:  yes  # &YesNo Include black carbon?
 doing_OC:  yes  # &YesNo Include organic carbon?
+doing_NI:  yes  # &YesNo Include nitrate?
 doing_Rn:  no   # &YesNo include Radon?
 doing_CH4: no   # &YesNo include Methane?
 doing_SC:  no   # &YesNo Include stratospheric chemistry?
 doing_GMI: no   # &YesNo GMI chemistry (GEOS-5)
 doing_XX:  no   # &YesNo generic tracer
 doing_PC:  yes  # parameterized chemistry (GEOS-5)
+doing_OCS: no   # ACHEM chemistry (OCS)
+doing_TR:  yes  # &YesNo run passive tracers?
 
 # You can select the number of bins (e.g., particle size)
 # for each of the constituents. Note nbins>1 may not be
@@ -64,12 +71,15 @@ nbins_SU:   4   # sulfates
 nbins_CFC:  2   # CFCs
 nbins_BC:   2   # black carbon
 nbins_OC:   2   # organic carbon
+nbins_NI:   5   # nitrate
 nbins_Rn:   1   # radon
 nbins_CH4: 15   # methane
-nbins_SC:  34   # stratospheric chemistry
+nbins_SC:  52   # stratospheric chemistry
 nbins_XX:  51   # generic tracer
 nbins_PC:   1   # parameterized chemistry (GEOS-5)
 nbins_GMI: 72   # GMI chemistry (GEOS-5)
+nbins_OCS:  1   # ACHEM chemistry (OCS)
+nbins_TR:   4   # passive tracers
 
 # Units for each constituent
 # --------------------------
@@ -83,12 +93,15 @@ units_SU:  'kg kg-1'     # sulfates
 units_CFC: 'mol mol-1'   # CFCs
 units_BC:  'kg kg-1'     # black carbon
 units_OC:  'kg kg-1'     # organic carbon
+units_NI:  'kg kg-1'     # nitrate
 units_Rn:  'mol mol-1'   # radon
 units_CH4: 'mol mol-1'   # methane
 units_SC:  'mol mol-1'   # stratospheric chemistry
 units_XX:  'mol mol-1'   # generic tracer
 units_PC:  'kg kg-1'     # parameterized chemistry (GEOS-5)
 units_GMI: 'mol mol-1'   # GMI chemistry (GEOS-5)
+units_OCS: 'kg kg-1'     # ACHEM chemistry (OCS)
+units_TR:  'mol mol-1'   # passive tracers
 
 # Variable names to override defaults.  Optional.  Name and Units must 
 # be 1 token. Long names can be more than one token.
@@ -194,6 +207,17 @@ CH4bf	       'mol mol-1'  Methane from biofuel
 CH4tot         'mol mol-1'  Methane
 ::
 
+variable_table_NI::
+
+# Name     Units        Long Name
+# -----    ------       --------------------------------
+NH3        'kg kg-1'    Ammonia (NH3, gas phase)
+NH4a       'kg kg-1'    Ammonium ion (NH4+, aerosol phase)
+NO3an1     'kg kg-1'    Nitrate size bin 001
+NO3an2     'kg kg-1'    Nitrate size bin 002
+NO3an3     'kg kg-1'    Nitrate size bin 003
+::
+
 variable_table_SC::
 
 # Name     Units        Long Name
@@ -223,15 +247,33 @@ HNO3COND   'mol mol-1'  Condensed nitric acid
 CFC11      'mol mol-1'  CFC-11 (CCl3F)
 CFC12      'mol mol-1'  CFC-12 (CCl2F2)
 CFC113     'mol mol-1'  CFC-113 (CCl2FCClF2)
-HCFC       'mol mol-1'  HCFC
+CFC114     'mol mol-1'  CFC-114 (C2Cl2F4)
+CFC115     'mol mol-1'  CFC-115 (C2ClF5)
 HCFC22     'mol mol-1'  HCFC-22 (CHClF2)
+HCFC141B   'mol mol-1'  HCFC-141b (CH3CCl2F)
+HCFC142B   'mol mol-1'  HCFC-142b (CH3CClF2)
 CCL4       'mol mol-1'  Carbon tetrachloride
 CH3CCL3    'mol mol-1'  Methyl chloroform
 CH3CL      'mol mol-1'  Methyl chloride
 CH3BR      'mol mol-1'  Methyl bromide
 H1301      'mol mol-1'  Halon 1301 (CBrF3)
-H12_24     'mol mol-1'  Halon 12_24
-AOADAYS    days         Age-of-air
+H1211      'mol mol-1'  Halon 1211 (CBrClF2)
+H1202      'mol mol-1'  Halon 1202 (CBrF3)
+H2402      'mol mol-1'  Halon 2402 (C2Br2F4)
+CHBR3      'mol mol-1'  Bromoform
+CH2BR2     'mol mol-1'  Dibromomethane
+CH2BRCL    'mol mol-1'  CH2BRCL
+CHBRCL2    'mol mol-1'  CHBRCL2 
+CHBR2CL    'mol mol-1'  CHBR2CL
+HFC23      'mol mol-1'  CHF3  
+HFC32      'mol mol-1'  CH2F2
+HFC125     'mol mol-1'  CHF2CF3
+HFC134A    'mol mol-1'  CH2FCF3
+HFC143A    'mol mol-1'  CF3CH3
+HFC152A    'mol mol-1'  CH2CHF2
+CO2B       'mol mol-1'  Lat-depedent CO2  
+SF6        'mol mol-1'  Sulfur hexafluoride
+AOADAYS     days        Age-of-air
 ::
 
 variable_table_GMI::
@@ -365,9 +407,26 @@ VRO2       'mol mol-1'  RO2 (C4H7O4) from MVK+OH
 VRP        'mol mol-1'  Peroxide (C4H8O4) from VRO2
 ACET       'mol mol-1'  Acetone
 O2          m-3         Molecular oxygen
-NUMDENS     m-3         Total number density
+NUMDENS     cm-3        Total number density
 T2M15d      K           Daily T2M time average
 ::
+
+variable_table_TR::
+
+# Name     Units        Long Name
+# -----    ------       --------------------------------
+aoa          days       Age of air (uniform source) tracer
+e90       'mol mol-1'   Constant emission 90 day tracer
+Rn222     'mol mol-1'   Radon-222
+CH3I      'mol mol-1'   Methyl iodide
+Pb210     'mol mol-1'   Lead-210
+st80_25   'mol mol-1'   Stratosphere source 25 day tracer
+CO_50_na  'mol mol-1'   Anthro CO North America 50 day tracer
+SF6       'mol mol-1'   Sulfur Hexafluoride tracer
+Be7       'mol mol-1'   Beryllium radionuclide 7(Be)
+Be10      'mol mol-1'   Beryllium radionuclide 10(Be)
+::
+
 
 #........................................................................
 
@@ -387,12 +446,15 @@ advect_SU:  yes  # sulfates
 advect_CFC: yes  # CFCs
 advect_BC:  yes  # black carbon
 advect_OC:  yes  # organic carbon
+advect_NI:  yes  # nitrate
 advect_Rn:  yes  # radon
 advect_CH4: yes  # methane
 advect_SC:  yes  # stratospheric chemistry
 advect_XX:  no   # generic tracer
 advect_PC:  yes  # parameterized chemistry (GEOS-5)
 advect_GMI: yes  # GMI chemistry (GEOS-5)
+advect_OCS: yes  # ACHEM chemistry (OCS)
+advect_TR:  yes  # passive tracers
 
 # Whether to diffuse the constituent
 # ----------------------------------
@@ -407,10 +469,13 @@ diffuse_SU:  yes  # sulfates
 diffuse_CFC: yes  # CFCs
 diffuse_BC:  yes  # black carbon
 diffuse_OC:  yes  # organic carbon
+diffuse_NI:  yes  # nitrate
 diffuse_Rn:  yes  # radon
 diffuse_CH4: yes  # methane
 diffuse_SC:  yes  # stratospheric chemistry
 diffuse_XX:  yes  # generic tracer
 diffuse_PC:  yes  # parameterized chemistry (GEOS-5)
 diffuse_GMI: yes  # GMI chemistry (GEOS-5)
+diffuse_OCS: yes  # ACHEM chemistry (OCS)
+diffuse_TR:  yes  # passive tracers
 

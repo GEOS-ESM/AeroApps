@@ -1,4 +1,4 @@
-! $Id: sun.H,v 1.8.98.2 2013-03-16 00:04:19 atrayano Exp $
+! $Id: sun.H,v 1.14 2015/04/02 14:22:22 mathomp4 Exp $
 
 
       type(MAPL_SunOrbit),               intent(IN ) :: ORBIT
@@ -57,12 +57,29 @@
          VERIFY_(STATUS)
       end if
 
+!#define DP_SUN
+#ifdef DP_SUN
+! WMP- Hack for Doubly Period Constant Solar Insolation
+            call WRITE_PARALLEL('--- WARNING --- sun.H --- Doubly Periodic Using Daily Mean Solar Insolation')
+            TIME_=MAPL_SunDailyMean
+! WMP- Hack for Doubly Period Constant Solar Insolation
+#endif
+
       MEAN_OR_INST: if(.not.present(INTV) .or. TIME_==MAPL_SunDailyMean &
                        .or.  TIME_==MAPL_SunAnnualMean) then
 
          call ESMF_TimeGet(CURRENTTIME, YY=YEAR, S=SEC_OF_DAY, &
               dayOfYear=DAY_OF_YEAR, RC=STATUS)
          VERIFY_(STATUS)
+
+#ifdef DP_SUN
+! WMP- Hack for Doubly Period Constant Solar Insolation
+         TIME_=10
+         YEAR=2005
+         SEC_OF_DAY=86400/2
+         DAY_OF_YEAR=31*7
+! WMP- Hack for Doubly Period Constant Solar Insolation
+#endif
 
          YEAR = mod(YEAR-1,ORBIT%YEARS_PER_CYCLE)
          IDAY = YEAR*int(ORBIT%YEARLEN)+DAY_OF_YEAR
@@ -88,24 +105,20 @@
 
          case(MAPL_SunAnnualMean)
 
-            if(YEAR==0) then
-               L=1
-            else
-               L=0
-            endif
             SLR  = 0.0
             ZTH  = 0.0
-            do IDAY = YEAR*ORBIT%DAYS_PER_CYCLE+(2-L),(YEAR+1)*ORBIT%DAYS_PER_CYCLE+L
+
+            do IDAY = 1,ORBIT%DAYS_PER_CYCLE
                SLT  = sin(LATS)*ORBIT%ZS(IDAY)
                ZTT  = cos(LATS)*ORBIT%ZC(IDAY)
                Y    =  max(-1.0,-SLT/ZTT)
                where (Y < 1.0)
                   Y   = ACOS(Y)
-                  SLT = (4.0*ORBIT%PP(IDAY)/MAPL_PI) * (Y *SLR + SIN(Y)*ZTH)
+                  SLT = (4.0*ORBIT%PP(IDAY)/MAPL_PI) * (Y *SLT + SIN(Y)*ZTT)
                   ZTT = SLR*MAPL_PI / (4.0*Y)
                elsewhere
                   SLT = 0.0
-                  ZTH = 0.0
+                  ZTT = 0.0
                endwhere
                SLR = SLR + SLT
                ZTH = ZTH + ZTT

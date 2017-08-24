@@ -29,7 +29,7 @@ FREAL = $(FREAL4)
 LIB  = lib$(THIS).a
 
 BIN_DOTX_SRC = dconv2ods.f  ods_blank.f90  ods_maker.f90  ods_sample.f  \
-               ods_scan.f   ods_tally.f90  saber2ods.f
+               ods_scan.f   ods_tally.f90  saber2ods.f ods_synX2Y.f90
 BIN_NODX_SRC = odslist.f  odsmatch.f  odsselect.f  odsshuffle.f odsstats.f
 
 BIN_DOTX = $(addsuffix .x, $(basename $(BIN_DOTX_SRC)))
@@ -170,7 +170,7 @@ $(LIB) lib : $(DEPS) $(OBJS)
 
 odslist odsselect odsshuffle odsmatch odsstats: $(LIB) $(LIB_MPEU) \
                               odslist.o odsselect.o odsshuffle.o odsmatch.o odsstats.o
-	$(LD) $(LDFLAGS) -o $@ $@.o $(LIB) $(LIB_MPEU) $(LIB_SDF) $(LIB_SYS)
+	$(LD) $(LDFLAGS) -o $@ $@.o $(LIB) $(LIB_MPEU) $(LIB_SDF) $(LIB_SCI) $(LIB_SYS)
 
 sample1.nc : sample1.cdl
 	$(NCGEN) -o sample1.nc sample1.cdl
