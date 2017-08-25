@@ -29,7 +29,7 @@ dt = timedelta(hours=1)
 archive = '/archive/u/rgovinda/osse2/c1440_NR/OBS'
 
 
-class CLD_WORKSPACE(JOBS,WORKSPACE):
+class CLD_WORKSPACE(WORKSPACE):
     """ Create Working Directories and RC files """
     def __init__(self,startdate,enddate,options):
 
