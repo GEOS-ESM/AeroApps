@@ -168,7 +168,8 @@ class CLD_WORKSPACE(WORKSPACE):
             land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx_' + layout + '.nc4'  
 
         if self.verbose:
-            print '++Opening metfile ',met
+            print '++Opening geometry file ',geom
+            print '++Opening land file', land
 
         if not os.path.exists(geom):
             self.get_from_archive(geom,date)
