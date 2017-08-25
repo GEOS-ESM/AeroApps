@@ -220,7 +220,7 @@ class WORKSPACE(JOBS):
         if self.layout is None:
             self.ntiles = 1
         else:
-            self.ntiles = int(layout[0])*int(layout[1])
+            self.ntiles = int(self.layout[0])*int(self.layout[1])
 
         if type(self.channels) is str:
             if ',' in self.channels:
