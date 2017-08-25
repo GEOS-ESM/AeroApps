@@ -51,21 +51,21 @@ if __name__ == "__main__":
 
     isoStartTime = options.isoStartTime
     isoEndTime   = options.isoEndTime
-    episode      = int(options.episode)
+    episode      = options.episode
     dryrun       = options.dryrun
     bin          = options.bin
 
     if episode is not None:
-        if episode == 1:
+        if int(episode) == 1:
             isoStartTime  = '2005-12-31T00:00:00Z'
             isoEndTime    = '2006-01-01T23:00:00Z'
-        elif episode == 2:
+        elif int(episode) == 2:
             isoStartTime  = '2006-07-27T00:00:00Z'
             isoEndTime    = '2006-08-09T23:00:00Z'
-        elif episode == 3:
+        elif int(episode) == 3:
             isoStartTime  = '2007-03-28T00:00:00Z'
             isoEndTime    = '2007-03-29T23:00:00Z'
-        elif episode == 4:
+        elif int(episode)e == 4:
             isoStartTime  = '2007-04-10T00:00:00Z'
             isoEndTime    = '2007-04-11T23:00:00Z'
 
