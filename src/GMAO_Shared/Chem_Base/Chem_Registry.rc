@@ -47,6 +47,7 @@ doing_SU:  yes  # &YesNo Include sulfates?
 doing_CFC: yes  # &YesNo Include CFCs?
 doing_BC:  yes  # &YesNo Include black carbon?
 doing_OC:  yes  # &YesNo Include organic carbon?
+doing_BRC: no   # &YesNo Include brown carbon?
 doing_NI:  yes  # &YesNo Include nitrate?
 doing_Rn:  no   # &YesNo include Radon?
 doing_CH4: no   # &YesNo include Methane?
@@ -71,6 +72,7 @@ nbins_SU:   4   # sulfates
 nbins_CFC:  2   # CFCs
 nbins_BC:   2   # black carbon
 nbins_OC:   2   # organic carbon
+nbins_BRC:  2   # brown carbon
 nbins_NI:   5   # nitrate
 nbins_Rn:   1   # radon
 nbins_CH4: 15   # methane
@@ -93,6 +95,7 @@ units_SU:  'kg kg-1'     # sulfates
 units_CFC: 'mol mol-1'   # CFCs
 units_BC:  'kg kg-1'     # black carbon
 units_OC:  'kg kg-1'     # organic carbon
+units_BRC: 'kg kg-1'     # brown carbon
 units_NI:  'kg kg-1'     # nitrate
 units_Rn:  'mol mol-1'   # radon
 units_CH4: 'mol mol-1'   # methane
@@ -177,6 +180,14 @@ OCphobicbbbo   'kg kg-1'    Hydrophobic Organic Carbon (Boreal Biomass Burning, 
 OCphilicbbbo   'kg kg-1'    Hydrophilic Organic Carbon (Boreal Biomass Burning, Particulate Matter)
 OCphobicbbnb   'kg kg-1'    Hydrophobic Organic Carbon (Non-Boreal Biomass Burning, Particulate Matter)
 OCphilicbbnb   'kg kg-1'    Hydrophilic Organic Carbon (Non-Boreal Biomass Burning, Particulate Matter)
+::
+
+variable_table_BRC::
+
+# Name     Units        Long Name
+# -----    ------       --------------------------------
+BRCphobic  'kg kg-1'    Hydrophobic Brown Carbon (Particulate Matter)
+BRCphilic  'kg kg-1'    Hydrophilic Brown Carbon (Particulate Matter)
 ::
 
 variable_table_RN::
@@ -350,7 +361,7 @@ PRPE       'mol mol-1'  Propene (C3H6)
 R4N2       'mol mol-1'  C4-C5 alkylnitrates (C4H9O3N)
 RCHO       'mol mol-1'  C2 aldehydes (C3H6O)
 RCOOH      'mol mol-1'  C2 organic acids
-N2          m-3         Molecular nitrogen
+N2          cm-3        Molecular nitrogen
 HNO3COND   'mol mol-1'  Condensed nitric acid
 ::
 
@@ -406,7 +417,7 @@ RP         'mol mol-1'  Methacrolein peroxy acid (C4H6O3)
 VRO2       'mol mol-1'  RO2 (C4H7O4) from MVK+OH
 VRP        'mol mol-1'  Peroxide (C4H8O4) from VRO2
 ACET       'mol mol-1'  Acetone
-O2          m-3         Molecular oxygen
+O2          cm-3        Molecular oxygen
 NUMDENS     cm-3        Total number density
 T2M15d      K           Daily T2M time average
 ::
@@ -416,13 +427,23 @@ variable_table_TR::
 # Name     Units        Long Name
 # -----    ------       --------------------------------
 aoa          days       Age of air (uniform source) tracer
-e90       'mol mol-1'   Constant emission 90 day tracer
+e90       'mol mol-1'   Constant burden 90 day tracer
 Rn222     'mol mol-1'   Radon-222
 CH3I      'mol mol-1'   Methyl iodide
 Pb210     'mol mol-1'   Lead-210
-st80_25   'mol mol-1'   Stratosphere source 25 day tracer
-CO_50_na  'mol mol-1'   Anthro CO North America 50 day tracer
+nh_5      'mol mol-1'   Northern Hemisphere 5 day tracer
+nh_50     'mol mol-1'   Northern Hemisphere 50 day tracer
+aoa_nh       days       Age of air northern hemisphere tracer
+st80_25   'mol mol-1'   Stratospheric source 25 day tracer
+CO_25     'mol mol-1'   Anthro CO 25 day tracer
+CO_50     'mol mol-1'   Anthro CO 50 day tracer
+CO_50_ea  'mol mol-1'   Anthro CO 50 day tracer East Asia
+CO_50_na  'mol mol-1'   Anthro CO 50 day tracer North America
+CO_50_eu  'mol mol-1'   Anthro CO 50 day tracer Europe
+CO_50_sa  'mol mol-1'   Anthro CO 50 day tracer South Asia
 SF6       'mol mol-1'   Sulfur Hexafluoride tracer
+e90_n     'mol mol-1'   Constant burden 90 day tracer 40N-pole emiss
+e90_s     'mol mol-1'   Constant burden 90 day tracer 40S-pole emiss
 Be7       'mol mol-1'   Beryllium radionuclide 7(Be)
 Be10      'mol mol-1'   Beryllium radionuclide 10(Be)
 ::
@@ -446,6 +467,7 @@ advect_SU:  yes  # sulfates
 advect_CFC: yes  # CFCs
 advect_BC:  yes  # black carbon
 advect_OC:  yes  # organic carbon
+advect_BRC: yes  # brown carbon
 advect_NI:  yes  # nitrate
 advect_Rn:  yes  # radon
 advect_CH4: yes  # methane
@@ -469,6 +491,7 @@ diffuse_SU:  yes  # sulfates
 diffuse_CFC: yes  # CFCs
 diffuse_BC:  yes  # black carbon
 diffuse_OC:  yes  # organic carbon
+diffuse_BRC: yes  # brown carbon
 diffuse_NI:  yes  # nitrate
 diffuse_Rn:  yes  # radon
 diffuse_CH4: yes  # methane

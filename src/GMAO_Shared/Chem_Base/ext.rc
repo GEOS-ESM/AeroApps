@@ -38,10 +38,11 @@ ext_filename: ext.nc4
 NUM_BANDS: 1
 BANDS: 532E-9
 
-DU_OPTICS: ExtData/PIESA/x/optics_DU.v15_3.nc
-SS_OPTICS: ExtData/PIESA/x/optics_SS.v3_3.nc
-SU_OPTICS: ExtData/PIESA/x/optics_SU.v1_3.nc
-NI_OPTICS: ExtData/PIESA/x/optics_NI.v2_5.nc
-OC_OPTICS: ExtData/PIESA/x/optics_OC.v1_3.nc
-BC_OPTICS: ExtData/PIESA/x/optics_BC.v1_3.nc
+DU_OPTICS:  ExtData/PIESA/x/optics_DU.v15_3.nc
+SS_OPTICS:  ExtData/PIESA/x/optics_SS.v3_3.nc
+SU_OPTICS:  ExtData/PIESA/x/optics_SU.v1_3.nc
+NI_OPTICS:  ExtData/PIESA/x/optics_NI.v2_5.nc
+OC_OPTICS:  ExtData/PIESA/x/optics_OC.v1_3.nc
+BRC_OPTICS: ExtData/PIESA/x/optics_BRC.v1_5.nc
+BC_OPTICS:  ExtData/PIESA/x/optics_BC.v1_3.nc
 

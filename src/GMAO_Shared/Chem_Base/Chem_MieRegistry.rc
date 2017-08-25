@@ -45,6 +45,7 @@ doing_SU:  yes  # sulfates
 doing_CFC: no   # CFCs
 doing_BC:  yes  # black carbon
 doing_OC:  yes  # organic carbon
+doing_BRC: no   # brown carbon
 doing_NI:  yes  # nitrate
 doing_Rn:  no   # radon
 doing_CH4: no   # methane
@@ -69,6 +70,7 @@ nbins_SU:  4    # sulfates
 nbins_CFC: 2    # CFCs
 nbins_BC:  2    # black carbon
 nbins_OC:  2    # organic carbon
+nbins_BRC: 2    # brown carbon
 nbins_NI:  5    # nitrate
 nbins_Rn:  1    # radon
 nbins_CH4: 15   # methane
@@ -91,6 +93,7 @@ units_SU:    'kg kg-1'     # sulfates
 units_CFC:   'mol mol-1'   # CFCs
 units_BC:    'kg kg-1'     # black carbon
 units_OC:    'kg kg-1'     # organic carbon
+units_BRC:   'kg kg-1'     # brown carbon
 units_NI:    'kg kg-1'     # nitrate
 units_Rn:    'mol mol-1'   # radon
 units_CH4:   'mol mol-1'   # methane
@@ -171,6 +174,14 @@ variable_table_OC::
 # -----    ------       --------------------------------
 OCphobic   'kg kg-1'    Hydrophobic Organic Carbon (Particulate Matter)
 OCphilic   'kg kg-1'    Hydrophilic Organic Carbon (Particulate Matter)
+::
+
+variable_table_BRC::
+
+# Name     Units        Long Name
+# -----    ------       --------------------------------
+BRCphobic  'kg kg-1'    Hydrophobic Brown Carbon (Particulate Matter)
+BRCphilic  'kg kg-1'    Hydrophilic Brown Carbon (Particulate Matter)
 ::
 
 variable_table_RN::
@@ -408,6 +419,7 @@ advect_SU:  yes  # sulfates
 advect_CFC: yes  # CFCs
 advect_BC:  yes  # black carbon
 advect_OC:  yes  # organic carbon
+advect_BRC: yes  # brown carbon
 advect_NI:  yes  # nitrate
 advect_Rn:  yes  # radon
 advect_CH4: yes  # methane
@@ -431,6 +443,7 @@ diffuse_SU:  yes  # sulfates
 diffuse_CFC: yes  # CFCs
 diffuse_BC:  yes  # black carbon
 diffuse_OC:  yes  # organic carbon
+diffuse_BRC: yes  # brown carbon
 diffuse_NI:  yes  # nitrate
 diffuse_Rn:  yes  # radon
 diffuse_CH4: yes  # methane

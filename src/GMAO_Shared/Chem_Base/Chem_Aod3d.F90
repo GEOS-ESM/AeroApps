@@ -31,7 +31,7 @@
   type(Chem_Bundle)   :: w_taubc     ! output black carbon tau chemistry bundle
   type(Chem_Bundle)   :: w_taucc     ! output total carbon tau chemistry bundle
   type(Chem_Bundle)   :: w_tausu     ! output sulfate tau chemistry bundle
-  integer :: i, j, k, im, jm, km, idx, n, ndx
+  integer :: i, j, k, im, jm, km, idx, n
   integer :: i1, i2, ig, j1, j2, jg, ik, iq, iz, kk
   integer :: nymd, nhms, timidx, freq, rc, ier, fid
   integer :: idxTable
@@ -200,13 +200,14 @@
 ! ------------------------------------------------------------------
   mie_tables = Chem_MieCreate(rcfile,ier)
 
-! Call subroutine to check the number of times and frequency on
-! input file; output will have same information
+! This part needs some work: in GEOS-4 the chemistry bundle input 
+! files generally had 4 times per file, and in GEOS-5 they generally
+! have 1 time per file.  The loop over IDX below is the number of
+! times on the file.  In the future this should come from the
+! chemistry bundle and not have to be hardwired.
 ! ------------------------------------------------------------------
-  call check_infile  ! returns ndx and freq
-
   new = .true.
-  do idx = 1, ndx
+  do idx = 1, 1
 
 !  Read the input chemistry bundle from the infile
 !  -------------------------------------------------
@@ -446,48 +447,48 @@
     filename = trim(outfile(1:lenfile)//trim(chstr))
     w_tau%rh = w_c%rh
     call Chem_BundleWrite( filename, nymd, nhms, 0, w_tau, rc, &
-                           verbose=.true., new=new, freq=freq)
+                           verbose=.true., new=new)
     if(doing_dust) then 
      filename = trim(outfile(1:lenfile)//trim(chstr)//'.dust')
      w_taudu%rh = w_c%rh
      call Chem_BundleWrite( filename, nymd, nhms, 0, w_taudu, rc, &
-                            verbose=.true., new=new, freq=freq)
+                            verbose=.true., new=new)
     endif
     if(doing_ss) then 
      filename = trim(outfile(1:lenfile)//trim(chstr)//'.ss')
      w_tauss%rh = w_c%rh
      call Chem_BundleWrite( filename, nymd, nhms, 0, w_tauss, rc, &
-                            verbose=.true., new=new, freq=freq)
+                            verbose=.true., new=new)
     endif
     if(doing_su) then 
      filename = trim(outfile(1:lenfile)//trim(chstr)//'.su')
      w_tausu%rh = w_c%rh
      call Chem_BundleWrite( filename, nymd, nhms, 0, w_tausu, rc, &
-                            verbose=.true., new=new, freq=freq)
+                            verbose=.true., new=new)
     endif
     if(doing_oc) then 
      filename = trim(outfile(1:lenfile)//trim(chstr)//'.oc')
      w_tauoc%rh = w_c%rh
      call Chem_BundleWrite( filename, nymd, nhms, 0, w_tauoc, rc, &
-                            verbose=.true., new=new, freq=freq)
+                            verbose=.true., new=new)
     endif
     if(doing_bc) then 
      filename = trim(outfile(1:lenfile)//trim(chstr)//'.bc')
      w_taubc%rh = w_c%rh
      call Chem_BundleWrite( filename, nymd, nhms, 0, w_taubc, rc, &
-                            verbose=.true., new=new, freq=freq)
+                            verbose=.true., new=new)
     endif
     if(doing_cc) then 
      filename = trim(outfile(1:lenfile)//trim(chstr)//'.cc')
      w_taucc%rh = w_c%rh
      call Chem_BundleWrite( filename, nymd, nhms, 0, w_taucc, rc, &
-                            verbose=.true., new=new, freq=freq)
+                            verbose=.true., new=new)
     endif
     if(doing_anthro) then 
      filename = trim(outfile(1:lenfile)//trim(chstr)//'.anthro')
      w_tauant%rh = w_c%rh
      call Chem_BundleWrite( filename, nymd, nhms, 0, w_tauant, rc, &
-                            verbose=.true., new=new, freq=freq)
+                            verbose=.true., new=new)
     endif
 
 
@@ -512,7 +513,7 @@
 !  ==================================================================================
 
    call Chem_BundleDestroy(w_c,rc)
-   new = .false.
+
   enddo   ! idx (time increment in input file)
 
 ! Destroy Mie tables
@@ -688,28 +689,5 @@
 
   end subroutine delz_
 
-
-  subroutine check_infile
-   ! This will die non-gracefully if any problems reading file
-   integer fid, err, hour, min, timInc
-   integer l_im, l_jm, l_km, l_lm, l_nvars, l_ngatts, incsecs, yyyymmdd_beg, hhmmss_beg
-   integer, parameter :: READ_ONLY = 1
-
-   !  Open the file
-   !  -------------
-   call GFIO_Open ( infile, READ_ONLY, fid, err )
-   call GFIO_DimInquire ( fid, l_im, l_jm, l_km, l_lm, l_nvars, l_ngatts, err)
-   call GetBegDateTime ( fid, yyyymmdd_beg, hhmmss_beg, incSecs, err )
-   timInc = 000100   ! default: 1 minute
-   if ( l_lm .ge. 1 ) then   !ams: changed lm.gt.1 to lm.ge.1
-           hour = incSecs/3600
-           if (hour == 0) hour=1
-           min = mod(incSecs,3600*hour)/60
-           timInc = incSecs/3600*10000 + mod(incSecs,3600)/60*100 + mod(incSecs,60)
-   end if
-   call GFIO_close ( fid, err )
-   ndx = l_lm
-   freq = timInc
-  end subroutine check_infile
 
 end

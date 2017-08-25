@@ -50,7 +50,7 @@
 ! 12Aug2005  da Silva  Fixed bug in SetPtr routne (now it checks whether
 !                      array is associated before pointing to it).
 ! 15Jan2008  Nielsen   Added lon_min=-180.0 for GEOS5.
-! 16Jun2016  Buchard   Added option to do concentration instead of MR if needed (read airdens) 
+!
 !EOP
 !-------------------------------------------------------------------------
 
@@ -115,14 +115,12 @@
       logical :: did_allocation = .false.
       logical :: has_rh = .false.            ! for backward compatibility
       logical :: diurnal_bb = .false.        ! whether using diurnal biomass burning
-      logical :: do_concentration = .false.  ! using concentration: MR * airdens instead of MR alone
       real    :: missing_value = MAPL_UNDEF
 
 !     Tracer array
 !     ------------
       real, pointer :: delp(:,:,:) => null()! Layer thickness [Pa] (not ghosted)
       real, pointer :: rh(:,:,:) => null()  ! Layer thickness [Pa] (not ghosted)
-      real, pointer :: airdens(:,:,:) => null() ! Air density
 
       type(chem_array), pointer :: qa(:) => null()
                                             ! access 4D array in q as a 
@@ -163,8 +161,7 @@
                                    w_c, rc,             &
                                    skipAlloc, lat, lon, &
                                    cell_area,           &
-                                   lev, levUnits, ptop, &
-                                   do_Conc )  ! Optional
+                                   lev, levUnits, ptop )  ! Optional
 !
 ! !USES:
 !
@@ -191,7 +188,7 @@
   real,    OPTIONAL, intent(in) :: lev(1:km)    ! levels
   character(len=*), OPTIONAL, intent(in) :: levUnits ! level units
   real,    OPTIONAL, intent(in) :: ptop         ! top pressure in Pa
-  logical, OPTIONAL, intent(in) :: do_Conc ! Do_concentration: In case you need MR*airdens instead of MR alone
+
 !
 ! !OUTPUT PARAMETERS:
 !
@@ -213,15 +210,14 @@
 !  20Sep2001 da Silva  Initial code based on m_dyn.
 !  05Sep2003 da Silva  Revised ESMF-like design.
 !  14mar2003 da Silva  Added rh, lat, lon 
-!  16Jun2016 Buchard   Added do_concentration option
+!
 !EOP
 !-------------------------------------------------------------------------
 
      character(len=*), parameter ::  myname = 'Chem_BundleCreate_'
 
-     integer err, i, j, n, nq, ios, ios1, ios2, ios3, ios4
+     integer err, i, j, n, nq, ios, ios1, ios2, ios3
      logical :: do_allocation
-     logical :: do_concentration
      real*8 :: delta
 
 !    Sanity check
@@ -243,16 +239,6 @@
      else
           do_allocation = .true.
      end if
-
-!   Whether or not read airdens to be able to work with concentration instead  of MR
-!   -----------------------------------------------
-     if ( present(do_Conc) ) then
-          do_concentration = do_Conc
-     else
-          do_concentration = .false.
-     end if
-
-
 
 !    Initialize dimensional attributes
 !    ---------------------------------
@@ -330,7 +316,6 @@
 
      w_c%did_allocation = .false.
      w_c%has_rh = .false.       ! will be set to TRUE when set
-     w_c%do_concentration = .false.
 
      allocate(w_c%qa(nq),stat=ios2)
 
@@ -342,26 +327,18 @@
            ios2 = ios2 + ios1
         end do
         allocate(w_c%rh(i1:i2,j1:j2,km),stat=ios3 )
-            
         if ( ios + ios2 + ios3 == 0 ) then 
              w_c%did_allocation = .true.
              w_c%delp = 0.0
              do n = 1, nq
                 w_c%qa(n)%data3d = 0.0
              end do
-             w_c%rh = 0.0             
+             w_c%rh = 0.0
         else
              w_c%did_allocation = .false.
              rc = 4
         end if
-
-        if (do_concentration ) then
-           w_c%do_concentration = .true.
-           allocate(w_c%airdens(i1:i2,j1:j2,km),stat=ios4 )
-           if ( ios4 == 0 ) w_c%airdens = 0.0
-        endif
-
-         
+  
      end if
 
 !    Set array of pointers: may be null() if no allocation took place
@@ -483,7 +460,7 @@
 !
 !  20Jul1999 da Silva  Initial code.
 !  26oct1999 da Silva  Added hs_stdv, ts, lwi, a, b
-!  16Jun2016 Buchard   Added do_concentration option
+!
 !EOP
 !-------------------------------------------------------------------------
 
@@ -495,39 +472,23 @@
 
       if ( associated(w_c%delp) ) deallocate(w_c%delp, stat=ier)
       if ( associated(w_c%rh)  )  deallocate(w_c%rh, stat=ier)
-
-       
-     
     
       do n = 1, w_c%reg%nq 
          if ( associated(w_c%qa(n)%data3d)  ) &
               deallocate(w_c%qa(n)%data3d, stat=ier)
       end do
-      if(associated(w_c%grid%lon)) deallocate( w_c%grid%lon )
-      if(associated(w_c%grid%lat)) deallocate( w_c%grid%lat )
-      if(associated(w_c%grid%lev)) deallocate( w_c%grid%lev )
-      if(associated(w_c%qa))       deallocate( w_c%qa )
-
-
-      if ( w_c%do_concentration ) then
-          if ( associated(w_c%airdens)  )  deallocate(w_c%airdens, stat=ier)
-      endif
-
+      deallocate( w_c%grid%lon, w_c%grid%lat, w_c%grid%lev, w_c%qa, stat=ier) 
       
    else
 
       if ( associated(w_c%delp) ) nullify(w_c%delp)
       if ( associated(w_c%rh) )   nullify(w_c%rh)
-            
+      
       do n = 1, w_c%reg%nq 
          if ( associated(w_c%qa(n)%data3d)  ) nullify(w_c%qa(n)%data3d)
       end do
       deallocate( w_c%grid%lon, w_c%grid%lat, w_c%grid%lev,w_c%qa, stat=ier)  
 
-      if ( w_c%do_concentration ) then
-          if ( associated(w_c%airdens)  )  nullify(w_c%airdens)
-      endif
- 
    end if
 
 
@@ -545,7 +506,7 @@
 ! !INTERFACE:
 !
   subroutine  Chem_BundleWrite ( fname, nymd, nhms, prec, w_c, rc, &
-                                 verbose, new, freq, gfio_prec )   ! optional
+                                 verbose, new, freq  )   ! optional
 !
 ! !USES:
 !
@@ -568,8 +529,6 @@
   integer, intent(in), OPTIONAL     :: freq    ! time frequency (HHMMSS) for
                                                ! multiple instance files
                                                ! (default: 060000)
-  integer, OPTIONAL,   intent(in)   :: gfio_prec    ! specify user precision
-
 !
 ! !OUTPUT PARAMETERS:
 !
@@ -586,8 +545,6 @@
 ! !REVISION HISTORY: 
 !
 !  20Sep2002 da Silva  Initial code based dyn_put()
-!  04Nov2015 Todling/Buchard add underlying gfio precision as option
-!  16Jun2016 Buchard Even if do_concentration option is True, the file contains only MR
 !
 !EOP
 !-------------------------------------------------------------------------
@@ -599,16 +556,10 @@
    real,    allocatable :: valid_range(:,:), packing_range(:,:)
    integer, allocatable :: kmvar(:)
 
-   real(8),allocatable :: lon8(:),lat8(:),lev8(:)
-   real(8),allocatable :: valid_range8(:,:), packing_range8(:,:)
-   real(8),allocatable,dimension(:,:,:)::rank3
-
    integer :: i1, i2, j1, j2, im, jm, km, lm, nq, nvars
    real    :: p, ptop, pint
    integer :: i, j, k, l, timeinc
    integer :: fid, err
-   integer :: gfio_prec_
-
 
    logical verb, creating, fexists
 
@@ -656,12 +607,6 @@
       creating = .false.
    end if
 
-   gfio_prec_ = 32 ! default precision
-   if ( present(gfio_prec) ) then
-      gfio_prec_= gfio_prec
-   end if
-
-
 ! Check whether file exists
 ! -------------------------
   inquire ( file=trim(fname), exist=fexists )
@@ -680,23 +625,15 @@
 
 !  Create coordinate variables
 !  ---------------------------
-
-   if ( gfio_prec_==64 ) then
-      lat8 = w_c%grid%lat(1,:)
-      lon8 = w_c%grid%lon(:,1)
-   else
-      lat = w_c%grid%lat(1,:)
-      lon = w_c%grid%lon(:,1)
-   endif
+   lat = w_c%grid%lat(1,:)
+   lon = w_c%grid%lon(:,1)
 
 !  Vertical coordinates: fake something for GrADS sake
 !  ---------------------------------------------------
-  
-
-  if ( associated(w_c%grid%lev) ) then
-      lev =  w_c%grid%lev
-      levUnits = w_c%grid%levUnits
-  else
+   if ( associated(w_c%grid%lev) ) then
+        lev = w_c%grid%lev
+        levUnits = w_c%grid%levUnits
+   else
       ptop = w_c%grid%ptop
       i = im / 2
       j = jm / 2
@@ -709,9 +646,6 @@
       lev(1:km) = lev(1:km) / 100.
       levunits = 'hPa'
    end if
-   if ( gfio_prec_==64 ) then
-      lev8 = lev
-    endif
    
    kmvar = km
 
@@ -723,21 +657,13 @@
 
 !  For now, do not exercise packing/valid range feature
 !  -----------------------------------------------------
-   if ( gfio_prec_== 64 ) then
-      do j = 1, nvars
-         do i = 1, 2
-            valid_range8(i,j) = w_c%missing_value
-            packing_range8(i,j) = w_c%missing_value
-         end do
+   do j = 1, nvars
+      do i = 1, 2
+         valid_range(i,j) = w_c%missing_value
+         packing_range(i,j) = w_c%missing_value
       end do
-   else
-      do j = 1, nvars
-         do i = 1, 2
-            valid_range(i,j) = w_c%missing_value
-            packing_range(i,j) = w_c%missing_value
-         end do
-      end do
-   endif
+   end do
+
 !  Time attributes
 !  ---------------
    if ( present(freq) ) then
@@ -749,25 +675,16 @@
 !  Create new GFIO file ...
 !  ------------------------
    if ( creating ) then
-      if (verb) print *, '	[] creating GFIO file ', trim(fname)
-        if ( gfio_prec_ == 64 ) then
-         call GFIO_Create ( fname, title, source, contact, &
-                            real(w_c%missing_value,8),  &
-                            im, jm, km, lon8, lat8, lev8, levunits,      & 
-                            nymd, nhms, timeinc,                         &
-                            nvars, vname, vtitle, vunits,                &
-                            kmvar, valid_range8, packing_range8, prec,   &
-                            fid, err )
-       else
-        call GFIO_Create ( fname, title, source, contact, &
+
+    if (verb) print *, '	[] creating GFIO file ', trim(fname)
+    call GFIO_Create ( fname, title, source, contact, &
                        w_c%missing_value,  &
                        im, jm, km, lon, lat, lev, levunits,         & 
                        nymd, nhms, timeinc,                         &
                        nvars, vname, vtitle, vunits,                &
                        kmvar, valid_range, packing_range, prec,     &
                        fid, err )
-       endif
-      
+
 !  ... or open existing GFIO file ...
 !  ----------------------------------
    else
@@ -786,61 +703,20 @@
 
 !   Write the data to GFIO file
 !   ---------------------------
-    if  ( gfio_prec_ == 64 ) then
-        if (verb) print *, '	[] writing ', trim(vname(1))
-           rank3 = w_c%delp
-           call GFIO_PutVar ( fid, vname(1), nymd, nhms, im, jm, 1, km, &
-                       rank3, err )
-           if ( err .ne. 0 ) rc = 101
-
-        if (verb) print *, '	[] writing ', trim(vname(2))
-           rank3 = w_c%rh
-           call GFIO_PutVar ( fid, vname(2), nymd, nhms, im, jm, 1, km, &
-                       rank3, err )
-           if ( err .ne. 0 ) rc = 102
-
-        do i = 3, nvars
-        if (verb) print *, '	[] writing ', trim(vname(i))
-           rank3 = w_c%qa(i-2)%data3d(:,:,:)
-           call GFIO_PutVar ( fid, vname(i), nymd, nhms, im, jm, 1, km, &
-                          rank3, err )
-           if ( err .ne. 0 ) rc = 100 + i-1
-
-           if (w_c%do_concentration) then
-           rank3 = w_c%qa(i-2)%data3d(:,:,:)/w_c%airdens
-           call GFIO_PutVar ( fid, vname(i), nymd, nhms, im, jm, 1, km, &
-                          rank3, err )
-           if ( err .ne. 0 ) rc = 100 + i-1
-           endif
-        end do
-        
-    else
-
-        if (verb) print *, '	[] writing ', trim(vname(1))
-           call GFIO_PutVar ( fid, vname(1), nymd, nhms, im, jm, 1, km, &
+    if (verb) print *, '	[] writing ', trim(vname(1))
+    call GFIO_PutVar ( fid, vname(1), nymd, nhms, im, jm, 1, km, &
                        w_c%delp, err )
-           if ( err .ne. 0 ) rc = 101
-   
-        if (verb) print *, '	[] writing ', trim(vname(2))
-           call GFIO_PutVar ( fid, vname(2), nymd, nhms, im, jm, 1, km, &
+    if ( err .ne. 0 ) rc = 101
+    if (verb) print *, '	[] writing ', trim(vname(2))
+    call GFIO_PutVar ( fid, vname(2), nymd, nhms, im, jm, 1, km, &
                        w_c%rh, err )
-           if ( err .ne. 0 ) rc = 102
-
-        do i = 3, nvars
-        if (verb) print *, '	[] writing ', trim(vname(i))
-           call GFIO_PutVar ( fid, vname(i), nymd, nhms, im, jm, 1, km, &
+    if ( err .ne. 0 ) rc = 102
+    do i = 3, nvars
+       if (verb) print *, '	[] writing ', trim(vname(i))
+       call GFIO_PutVar ( fid, vname(i), nymd, nhms, im, jm, 1, km, &
                           w_c%qa(i-2)%data3d(:,:,:), err )
-           if ( err .ne. 0 ) rc = 100 + i-1
-
-           if (w_c%do_concentration) then
-           call GFIO_PutVar ( fid, vname(i), nymd, nhms, im, jm, 1, km, &
-                          w_c%qa(i-2)%data3d(:,:,:)/w_c%airdens, err )
-           if ( err .ne. 0 ) rc = 100 + i-1
-           endif 
-
-        end do
-
-    endif
+       if ( err .ne. 0 ) rc = 100 + i-1
+    end do
 
 !   Now save vertical grid info as attributes
 !   -----------------------------------------
@@ -868,15 +744,6 @@
      allocate ( kmvar(nvars), vname(nvars), vtitle(nvars), stat=err2 )
      allocate ( vunits(nvars), stat=err3 )
      allocate ( packing_range(2,nvars), valid_range(2,nvars), stat=err4 )
-     if (gfio_prec_==64) then
-        allocate(lon8(im))
-        allocate(lat8(jm))
-        allocate(lev8(km))
-        allocate(packing_range8(2,nvars))
-        allocate(valid_range8(2,nvars))
-        allocate(rank3(im,jm,km))
-     end if
-
      err = err1 + err2 + err3 + err4 
      if ( err /= 0 ) return
      vname(1) = 'delp'
@@ -895,15 +762,6 @@
      subroutine clean_()             ! de-allocates local memory
      deallocate ( lat, lon, lev, kmvar, vname, vtitle, vunits, stat=err )
      deallocate ( valid_range, packing_range, stat=err )
-     if (gfio_prec_==64) then
-        deallocate(rank3)
-        deallocate(lon8)
-        deallocate(lat8)
-        deallocate(lev8)
-        deallocate(packing_range8)
-        deallocate(valid_range8)
-     endif
-
      end subroutine clean_
 
   end Subroutine Chem_BundleWrite
@@ -918,7 +776,7 @@
 ! !INTERFACE:
 !
   subroutine  Chem_BundleRead ( fname, nymd, nhms, w_c, rc, &
-                                timidx, freq, chemReg, gfio_prec, do_Conc )         ! optional
+                                timidx, freq, chemReg )         ! optional
 !
 ! !USES:
 !
@@ -929,11 +787,6 @@
   character(len=*),    intent(in)   :: fname  ! output file name
   integer, OPTIONAL,   intent(in)   :: timidx ! time index; by default
                                               ! last time index is returned
-  integer, OPTIONAL,   intent(in)   :: gfio_prec   ! specify user precision
-                                                   ! 32 or 64 bits
-  logical, OPTIONAL,   intent(in)   :: do_Conc     ! True if you want MR*airdens
-                                                   
-                                              
   type(Chem_Registry), OPTIONAL, intent(in) :: chemReg ! Chemistry Registry
 !
 ! !INPUT/OUTPUT PARAMETERS:
@@ -971,8 +824,6 @@
 ! !REVISION HISTORY: 
 !
 !  20Sep2001 da Silva  Initial code.
-!  04Nov2015 Todling/Buchard - add underlying gfio precision as option
-!                              all bug fix in lat/lon handle to BundleCreate
 !
 !EOP
 !-------------------------------------------------------------------------
@@ -982,31 +833,21 @@
    character(len=nch) :: vname_
 
    real,    allocatable :: lat(:), lon(:), lev(:)
-   real,    allocatable :: lat2d(:,:), lon2d(:,:)
    real,    allocatable :: valid_range(:,:), packing_range(:,:)
    integer, allocatable :: kmvar(:), yyyymmdd(:), hhmmss(:), ivar(:)
 
    integer :: im, jm, km, lm, nvars, nq
-   integer :: i1, i2, ig, j1, j2, jg
+    integer :: i1, i2, ig, j1, j2, jg
    integer :: l, timinc, i, j, n
-   real    :: amiss, ptop, buf(1), buf8(1)
+   real    :: amiss, ptop, buf(1)
 
    integer, parameter :: READ_ONLY = 1
-   integer :: gfio_prec_
    integer :: fid, err, ngatts
 
-   real(8) amiss8
-   real(8),allocatable :: lon8(:),lat8(:),lev8(:)
-   real(8),allocatable :: valid_range8(:,:), packing_range8(:,:)
-   real(8),allocatable,dimension(:,:,:)::rank3
    type(Chem_registry) :: Reg
    logical :: all_upper ! whether all variables are upper case
 
    rc = 0
-   gfio_prec_ = 32 ! default precision
-   if ( present(gfio_prec) ) then
-      gfio_prec_= gfio_prec
-   end if
 
 !  Open the file
 !  -------------
@@ -1041,22 +882,12 @@
 
 !  Get file attributes
 !  -------------------
-   if ( gfio_prec_== 64 ) then
-      call GFIO_Inquire ( fid, im, jm, km, lm, nvars,     &
-                          title, source, contact, amiss8, &
-                          lon8, lat8, lev8, levunits,     &
-                          yyyymmdd, hhmmss, timinc,       &
-                          vname, vtitle, vunits,          &
-                          kmvar, valid_range8, packing_range8, err )
-      amiss=amiss8;lon=lon8;lat=lat8;lev=lev8
-   else
-      call GFIO_Inquire ( fid, im, jm, km, lm, nvars,     &
-                          title, source, contact, amiss,  &
-                          lon, lat, lev, levunits,        &
-                          yyyymmdd, hhmmss, timinc,       &
-                          vname, vtitle, vunits,          &
-                          kmvar, valid_range , packing_range, err )
-   end if
+   call GFIO_Inquire ( fid, im, jm, km, lm, nvars,     &
+                       title, source, contact, amiss,  &
+                       lon, lat, lev, levunits,        &
+                       yyyymmdd, hhmmss, timinc,       &
+                       vname, vtitle, vunits,          &
+                       kmvar, valid_range , packing_range, err )
    if ( err .ne. 0 ) then
       call clean_()
       rc = 5
@@ -1107,28 +938,10 @@
 !  ----------------------------
    i1 = 1;  i2 = im; ig = 0
    j1 = 1;  j2 = jm; jg = 0 
-   allocate( lat2d(i1:i2,j1:j2), lon2d(i1:i2,j1:j2), stat=err)
-   if(err .ne. 0) then
-    call clean_()
-    rc = 11
-    return
-   endif
-   do i = i1, i2
-    lat2d(i,:) = lat
-   enddo
-   do j = j1, j2
-    lon2d(:,j) = lon
-   enddo
    call Chem_BundleCreate_ ( reg, i1, i2, ig, im, j1, j2, jg, jm, km, &
                              w_c, err,    &
-                             lat=lat2d, lon=lon2d, lev=lev,  &
-                             levUnits = levUnits, do_Conc = do_Conc)
-   deallocate(lat2d, lon2d, stat=err)
-   if(err .ne. 0) then
-    call clean_()
-    rc = 12
-    return
-   endif
+                             lon = lon, lat=lat, lev=lev,  &
+                             levUnits = levUnits )
    if ( err .eq. 1 ) then                     ! already allocated
         if ( w_c%grid%im .ne. im  .OR.  &
              w_c%grid%jm .ne. jm  .OR.  &
@@ -1173,81 +986,27 @@
 
 !  retrieve the variables
 !  ----------------------
-   if ( gfio_prec_== 64 ) then
-      if ( all_upper ) then 
-         call GFIO_GetVar ( fid, 'DELP', nymd, nhms,     &
-                            im, jm, 1, km, rank3, err )
-      else
-         call GFIO_GetVar ( fid, 'delp', nymd, nhms,     &
-                            im, jm, 1, km, rank3, err )
-      endif
-      if ( err .ne. 0 ) then
-         rc = 101
-      else
-         w_c%delp=rank3
-      end if
-
-      call GFIO_GetVar ( fid, 'RH', nymd, nhms,     &
-                         im, jm, 1, km, rank3, err )
-      if ( err .ne. 0 ) then
-         call GFIO_GetVar ( fid, 'rh', nymd, nhms,     &
-                            im, jm, 1, km, rank3, err )
-      end if
-      if ( err .ne. 0 ) then
-           w_c%rh = w_c%missing_value
-        w_c%has_rh = .false.
-      else
-           w_c%has_rh = .true.  ! for backward compatibility
-           w_c%rh = rank3
-      end if
-
-      if (w_c%do_concentration) then 
-         if (all_upper) then 
-            call GFIO_GetVar ( fid, 'AIRDENS', nymd, nhms,     &
-                            im, jm, 1, km, rank3, err )
-         else
-            call GFIO_GetVar ( fid, 'airdens', nymd, nhms,     &
-                            im, jm, 1, km, rank3, err )
-         endif
-      if ( err .ne. 0 ) then
-         rc = 101
-      else
-         w_c%airdens=rank3
-      end if
-      endif         
+   if ( all_upper ) then 
+      call GFIO_GetVar ( fid, 'DELP', nymd, nhms,     &
+                         im, jm, 1, km, w_c%delp, err )
    else
-      if ( all_upper ) then 
-         call GFIO_GetVar ( fid, 'DELP', nymd, nhms,     &
-                            im, jm, 1, km, w_c%delp, err )
-      else
-         call GFIO_GetVar ( fid, 'delp', nymd, nhms,     &
-                            im, jm, 1, km, w_c%delp, err )
-      endif
+      call GFIO_GetVar ( fid, 'delp', nymd, nhms,     &
+                         im, jm, 1, km, w_c%delp, err )
+   endif
 
-      if ( err .ne. 0 )                                        rc = 101
-      call GFIO_GetVar ( fid, 'RH', nymd, nhms,     &
+   if ( err .ne. 0 )                                        rc = 101
+   call GFIO_GetVar ( fid, 'RH', nymd, nhms,     &
+                      im, jm, 1, km, w_c%rh, err )
+   if ( err .ne. 0 ) then
+      call GFIO_GetVar ( fid, 'rh', nymd, nhms,     &
                          im, jm, 1, km, w_c%rh, err )
-      if ( err .ne. 0 ) then
-         call GFIO_GetVar ( fid, 'rh', nymd, nhms,     &
-                            im, jm, 1, km, w_c%rh, err )
-      end if
-      if ( err .ne. 0 ) then
-           w_c%rh = w_c%missing_value
+   end if
+   if ( err .ne. 0 ) then
+        w_c%rh = w_c%missing_value
         w_c%has_rh = .false.
-      else
-           w_c%has_rh = .true.  ! for backward compatibility
-      end if
-      
-      if (w_c%do_concentration) then
-         if ( all_upper ) then 
-            call GFIO_GetVar ( fid, 'AIRDENS', nymd, nhms,     &
-                            im, jm, 1, km, w_c%airdens, err )
-         else
-            call GFIO_GetVar ( fid, 'airdens', nymd, nhms,     &
-                            im, jm, 1, km, w_c%airdens, err )
-         endif
-      endif
-   end if ! <prec_>
+   else
+        w_c%has_rh = .true.  ! for backward compatibility
+   end if
    do n = 1, reg%nq
         l = ivar(n)
         if ( all_upper ) then
@@ -1255,44 +1014,16 @@
         else
              vname_ = trim(vname(l))
         end if
-        if ( gfio_prec_== 64 ) then
-
-           if ( w_c%do_concentration ) then
-
-              call GFIO_GetVar ( fid, vname_, nymd, nhms,         & 
-                              im, jm, 1, km, rank3, err )
-               w_c%qa(n)%data3d(:,:,:)=rank3*w_c%airdens
-
-           else
-              call GFIO_GetVar ( fid, vname_, nymd, nhms,         & 
-                              im, jm, 1, km, rank3, err )
-              w_c%qa(n)%data3d(:,:,:)=rank3
-           endif
-
-        else
-
-           if ( w_c%do_concentration ) then
-
-              call GFIO_GetVar ( fid, vname_, nymd, nhms,         & 
-                              im, jm, 1, km, w_c%qa(n)%data3d(:,:,:)*w_c%airdens, err )
-           else
-              call GFIO_GetVar ( fid, vname_, nymd, nhms,         & 
-                              im, jm, 1, km, w_c%qa(n)%data3d(:,:,:), err )
-           endif                   
-        endif
-        if ( err .ne. 0 )                                  rc = 100 + l
+        call GFIO_GetVar ( fid, vname_, nymd, nhms,         & 
+                           im, jm, 1, km, w_c%qa(n)%data3d(:,:,:), err )
+         if ( err .ne. 0 )                                  rc = 100 + l
    end do
 
 
 !  Retrieve vertical grid attributes
 !  ---------------------------------
-    if ( gfio_prec_==64 ) then
-       call GFIO_GetRealAtt ( fid, 'ptop',   1, buf8, err )
-       w_c%grid%ptop = buf8(1)
-    else
-       call GFIO_GetRealAtt ( fid, 'ptop',   1, buf , err )
-       w_c%grid%ptop = buf(1)
-    endif
+    call GFIO_GetRealAtt ( fid, 'ptop',   1, buf, err )
+    w_c%grid%ptop = buf(1)
     if ( err .ne. 0 ) then
        w_c%grid%ptop = 1. ! do not fuss about this
        rc = 0
@@ -1315,28 +1046,12 @@
      allocate( hhmmss(lm),vname(nvars), vunits(nvars), stat=err2 )
      allocate( vtitle(nvars),kmvar(nvars),valid_range(2,nvars),stat=err3 )
      allocate( packing_range(2,nvars),ivar(nvars),stat=err4) 
-     if (gfio_prec_==64) then
-        allocate(lon8(im))
-        allocate(lat8(jm))
-        allocate(lev8(km))
-        allocate(packing_range8(2,nvars))
-        allocate(valid_range8(2,nvars))
-        allocate(rank3(im,jm,km))
-     end if
      err = err1 + err2 + err3 + err4 
      end subroutine init_
 
      subroutine clean_()             ! de-allocates local memory
      deallocate (lat,lon,lev, yyyymmdd, hhmmss, vname, vunits, stat=err)
      deallocate (vtitle,kmvar,valid_range,packing_range, ivar, stat=err)
-     if (gfio_prec_==64) then
-        deallocate(rank3)
-        deallocate(lon8)
-        deallocate(lat8)
-        deallocate(lev8)
-        deallocate(packing_range8)
-        deallocate(valid_range8)
-     endif
      end subroutine clean_
 
    end subroutine Chem_BundleRead
