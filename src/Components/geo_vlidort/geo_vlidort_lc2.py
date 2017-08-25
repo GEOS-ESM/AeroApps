@@ -435,7 +435,7 @@ class WORKSPACE(JOBS):
 
         # creating working directory
         dirname = '{}/{}.{}T{}.{}.{}'.format(self.prefix,self.instname.lower(),date.date(),str(date.hour).zfill(2),ch,self.code)
-        jobname = '{}.{}T{}.{}'.format(instname.lower(),date.date(),str(date.hour).zfill(2),ch)
+        jobname = '{}.{}T{}.{}'.format(self.instname.lower(),date.date(),str(date.hour).zfill(2),ch)
 
         if layout is not None:
             dirname = dirname + '.' + layout
