@@ -127,7 +127,7 @@ class CLD_WORKSPACE(WORKSPACE):
                         # Create working directories for intermediate outputs
                         # create output directories
                         # save directory names
-                        dirlist = self.make_workspace(startdate,ch,nodemax=nodemax,layout=laycode)
+                        dirlist = self.make_workspace(startdate,ch,nodemax=nodemax,layout=laycode,cloud=True)
 
                         if (self.additional_output):
                             workdir, outdir, addoutdir_ = dirlist
