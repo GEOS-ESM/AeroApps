@@ -162,10 +162,10 @@ class CLD_WORKSPACE(WORKSPACE):
 
         if layout is None:
             geom  = g5dir + '/' + self.instname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
-            land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx.nc4'  
+            land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.nc4' 
         else:
             geom  = g5dir + '/' + self.instname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
-            land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx.' + layout + '.nc4'  
+            land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.' + layout +'.nc4' 
 
         if self.verbose:
             print '++Opening geometry file ',geom
