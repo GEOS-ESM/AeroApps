@@ -916,7 +916,7 @@ subroutine filenames()
                           trim(instname),'.cloud.lb2.angles.',date,'_',time,'z.nc4'
   else
     write(CLD_file,'(16A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
-                            trim(instname),'-g5nr-icacl-TOTWPDF-GCOP-SKEWT.',date,'_',time,'z_',trim(layout),'.nc4'  
+                            trim(instname),'-g5nr-icacl-TOTWPDF-GCOP-SKEWT.',date,'_',time,'z.',trim(layout),'.nc4'  
     write(ANG_file,'(16A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
                           trim(instname),'.cloud.lb2.angles.',date,'_',time,'z.',trim(layout),'.nc4'                              
   end if  
