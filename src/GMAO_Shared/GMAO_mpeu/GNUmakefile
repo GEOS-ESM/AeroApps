@@ -34,7 +34,7 @@ LIBeu  = $(subst mpeu,eu,$(LIB))
 esma_install install: $(LIB) $(LIBeu)
 	$(MKDIR) $(ESMALIB) $(ESMAETC) $(ESMAINC)/$(THIS) $(ESMABIN)
 	$(CP) -p *.a    $(ESMALIB)
-#	$(CP) -p *.[Hh] $(ESMAINC)/$(THIS)
+	$(CP) -p *.[Hh] $(ESMAINC)/$(THIS)
 	$(CP) -p *.[Mm][Oo][Dd] $(ESMAINC)/$(THIS)
 
 esma_clean clean:
