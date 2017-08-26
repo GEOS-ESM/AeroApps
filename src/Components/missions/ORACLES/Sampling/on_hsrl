@@ -35,16 +35,15 @@ endif
 foreach hsrl_ ( $HSRL ) 
   set hsrl = $orig/$hsrl_
   echo "<> Processing $hsrl"
-#  foreach prod ( CHEM AERO )
-  foreach prod ( AERO )
 
+    # Sample basic GEOS-5 CHEM Fields
+    # -------------------------------
     set basen = `basename $hsrl`
     set date = `echo $basen:r | awk -F_ '{print $3}'`
     set loc = `echo $basen | awk -F- '{print $2}' | awk -F_ '{print $1}' | sed -e 's/TRK//'`
     echo $loc
-    set nc = $dest/GEOS5-${prod}_HSRL2_${date}_$rev.nc
+    set nc = $dest/GEOS5-CHEM_HSRL2_${date}_$rev.nc
 
-    if ( $prod == "CHEM" ) then
     if ( $force == 1) then 
 	    $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $hsrl
     else
@@ -54,25 +53,27 @@ foreach hsrl_ ( $HSRL )
 	      $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $hsrl 
 	    endif
     endif
-    endif
 
-    if ( $prod == "AERO" ) then
+    # Next, calculate extinction, etc on the sampled datasets
+    # -------------------------------------------------------
+    set inFile = $nc # CHEM file generated above
 
-      set inFile = $dest/GEOS5-CHEM_HSRL2_${date}_$rev.nc
-      set enc = `echo $inFile | sed -e 's/CHEM/EXT532/'`
-
-      if ( $force == 1) then
-	      $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_532nm.rc -o $enc
-      else
+    # Loop over channels
+    # ------------------
+    foreach ch ( 532 )
+       set enc = `echo $inFile | sed -e 's/CHEM/EXT${ch}/'`
+    
+       if ( $force == 1) then
+	      $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_${ch}nm.rc -o $enc
+       else
 	      if ( -e $enc ) then
 	        echo "<> Skipping $nc, already there there"
 	      else
-                echo  $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_532nm.rc -o $enc 
-	        $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_532nm.rc -o $enc 
-      	endif
-      endif
+	        $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_${ch}nm.rc -o $enc 
+       endif
 
-   endif
- end
-end
+    end # ch
+       
+end # hsrl
+    
 
