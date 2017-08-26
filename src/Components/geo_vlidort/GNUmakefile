@@ -29,7 +29,7 @@ LIB   = lib$(THIS).a
 BINS := geo_vlidort.x
 
 PY_EXTS = GeoAngles_.$(F2PYEXT)
-PY_SCRP = run_geo_vlidort_lc2.py geo_vlidort_lc2.py geo_warp.py 
+PY_SCRP = run_geo_vlidort_lc2.py geo_vlidort_lc2.py geo_warp.py run_geo_vlidort_cloud_lc2.py geo_vlidort_cloud_lc2.py
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
@@ -140,6 +140,13 @@ geo_vlidort_surface.x: netcdf_helper.o geo_vlidort_surface.o
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
                                  $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)  
 
+geo_vlidort_cloud.x:  cloud_MieMod.o geo_vlidort_cloud.o
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT2OS) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
+                                 $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+                                 $(LIB_MAPL_BASE_STUBS2) \
+                                 $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
+                                 $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)                                
+
 geo_surface.x: netcdf_helper.o geo_surface.o 
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_CHEM_BASE) \
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
@@ -149,7 +156,11 @@ geo_surface.x: netcdf_helper.o geo_surface.o
 
 geo_angles.x: geo_angles.o
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
-                            $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)                                                                                                   
+                            $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)
+
+geo_angles_cloud.x: geo_angles_cloud.o
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+                            $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)                                                                                                                               
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------

@@ -15,6 +15,7 @@
       implicit NONE
 
       PUBLIC  LIDORT_Run_Scalar      ! Run for each profile (pixel)
+      PUBLIC  LIDORT_Run_Scalar_cloud      ! Run for each profile (pixel)      
       PUBLIC  LIDORT_Run      ! Run for each profile (pixel) - old code
       PUBLIC  LIDORT_LER      ! Lambertian Equivalent Reflectivity
       PUBLIC  LIDORT_AI       ! Aerosol Index
@@ -35,6 +36,14 @@
          real*8, pointer ::  ze(:)              ! height      at layer edges [m]
          real*8, pointer ::  te(:)              ! temperature at layer edges [K]
          real*8, pointer :: pmom(:,:,:)          ! components of the scattering phase matrix
+         real*8, pointer :: tauI(:)             ! ice cloud tau
+         real*8, pointer :: ssaI(:)             ! ice cloud ssa
+         real*8, pointer ::   gI(:)             ! ice cloud asymmetry factor 
+         real*8, pointer :: pmomI(:,:,:)        ! ice cloud components of the scattering phase matrix  
+         real*8, pointer :: tauL(:)             ! liquid cloud tau
+         real*8, pointer :: ssaL(:)             ! liquid cloud ssa
+         real*8, pointer ::   gL(:)             ! liquid cloud asymmetry factor 
+         real*8, pointer :: pmomL(:,:,:)        ! liquid cloud components of the scattering phase matrix           
 
          type(LIDORT_Surface) :: Surface
 
@@ -822,6 +831,257 @@
       end function A            
 
       end subroutine LIDORT_Rayleigh
+
+!.............................................................................
+ 
+      subroutine LIDORT_Run_Scalar_Cloud (self, output, rc)
+!
+!     Computes radiances for a single wavelength, pixel. Optical properties
+!     and met fields in self are assumed to have been updated with the
+!     apropriate values.
+!
+      USE LIDORT_PARS
+         
+      USE LIDORT_IO_DEFS
+      USE BRDF_SUP_MOD
+      
+      USE LIDORT_AUX
+      USE LIDORT_INPUTS
+      USE LIDORT_MASTERS
+     
+
+      type(LIDORT_scat),          intent(inout)   :: self        ! Contains most input
+      type(LIDORT_output_scalar), intent(out)     :: output      ! contains output
+      integer,                    intent(out)     :: rc
+
+
+!                           ----
+
+      integer :: STATUS_INPUTCHECK, STATUS_CALCULATION 
+
+!                           ----
+
+!     local variables
+!     ---------------
+      integer                                            :: i, j, k, l, m, n
+      integer                                            :: IDR, ierror
+      integer                                            :: NLAYERS
+      real*8                                             :: ray_l      
+      real*8                                             :: tau_l 
+      real*8                                             :: ssa_l 
+      real*8                                             :: g_l 
+      real*8                                             :: ssaL_l 
+      real*8                                             :: tauL_l 
+      real*8                                             :: gL_l
+      real*8                                             :: ssaI_l 
+      real*8                                             :: tauI_l          
+      real*8                                             :: gI_l      
+      real*8                                             :: tau_ext
+      real*8                                             :: tau_scat
+      real*8                                             :: ssa_tot
+      real*8                                             :: raysmom2
+      real*8                                             :: aerswt 
+      real*8                                             :: rayswt
+      real*8                                             :: clIswt
+      real*8                                             :: clLswt
+      real*8                                             :: factor      
+   
+      real*8, dimension(0:MAXMOMENTS_INPUT)              :: aersmom
+      real*8, dimension(0:MAXMOMENTS_INPUT)              :: clLsmom   
+      real*8, dimension(0:MAXMOMENTS_INPUT)              :: clIsmom        
+
+      real*8                                             :: difz
+      logical                                            :: DO_BRDF_SURFACE
+      real*8                                             :: LAMBERTIAN_ALBEDO
+      real*8, dimension(0:MAXMOMENTS_INPUT,MAXLAYERS)    :: greekmat_total_input
+
+      real*8, dimension(MAXLAYERS)                       :: deltau_vert_input
+      real*8, dimension(MAXLAYERS)                       :: omega_total_input
+
+      real*8,dimension(MAX_USER_LEVELS,MAX_GEOMETRIES,MAX_DIRECTIONS)  :: INTENSITY
+      real*8                                                           :: FLUX_FACTOR
+
+!     Volume Rayleigh scattering coefficient (depends closely on the 
+!     thermodynamic conditions of the atm and varies with height, 
+!     product of the molecular number density of air by the total ray 
+!     scattering cross section).
+      real*8, parameter                                  :: pi = 4.*atan(1.0)
+      real*8, parameter                                  :: DEPOL_RATIO = 0.030
+             
+      rc = 0
+ 
+      if ( .not. self%Surface%Base%initialized ) then
+        rc = 1
+        return
+      end if
+
+!                     Streams/layers/moments
+!                     ----------------------  
+      self%Surface%Base%VIO%LIDORT_ModIn%MCont%TS_NMOMENTS_INPUT  = self%nmom
+
+      if ( self%nmom .GT. MAXMOMENTS_INPUT)  then
+         rc = 5
+         return
+      end if      
+
+      NLAYERS = self%Surface%Base%VIO%LIDORT_FixIn%Cont%TS_NLAYERS     
+
+      if ( self%Surface%Base%VIO%LIDORT_FixIn%Bool%TS_DO_UPWELLING ) then
+         IDR = 1
+      else
+         IDR = 2
+      end if
+     
+!                          Lambertian OR BRDF surface
+!                          --------------------------
+
+      if ( self%Surface%sfc_type == 1 ) then               ! Lambertian surface ?
+         DO_BRDF_SURFACE = .false.        
+         LAMBERTIAN_ALBEDO = self%Surface%albedo           ! Lambertian (isotropic) input albedo
+      else                                   
+         DO_BRDF_SURFACE = .true. 
+         LAMBERTIAN_ALBEDO = 0.0                           ! Use BRDF -> albedo set to 0
+ 
+      end if
+
+      self%Surface%Base%VIO%LIDORT_Fixin%Bool%TS_DO_BRDF_SURFACE = DO_BRDF_SURFACE
+      self%Surface%Base%VIO%LIDORT_FixIn%Optical%TS_LAMBERTIAN_ALBEDO = LAMBERTIAN_ALBEDO
+      self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_BRDF_F_0        = self%Surface%Base%VIO%BRDF_Sup_Out%BS_BRDF_F_0
+      self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_BRDF_F          = self%Surface%Base%VIO%BRDF_Sup_Out%BS_BRDF_F
+      self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_USER_BRDF_F_0   = self%Surface%Base%VIO%BRDF_Sup_Out%BS_USER_BRDF_F_0
+      self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_USER_BRDF_F     = self%Surface%Base%VIO%BRDF_Sup_Out%BS_USER_BRDF_F
+      self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_EXACTDB_BRDFUNC = self%Surface%Base%VIO%BRDF_Sup_Out%BS_DBOUNCE_BRDFUNC
+      self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_EMISSIVITY      = self%Surface%Base%VIO%BRDF_Sup_Out%BS_EMISSIVITY
+      self%Surface%Base%VIO%LIDORT_Sup%BRDF%TS_USER_EMISSIVITY = self%Surface%Base%VIO%BRDF_Sup_Out%BS_USER_EMISSIVITY
+
+!                         Angles (SZA, viewing, relatuve azimuth), Level
+!                        ------------------------------------------------      
+      self%Surface%Base%VIO%LIDORT_ModIn%MSunRays%TS_BEAM_SZAS(1)           = self%Surface%solar_zenith
+      self%Surface%Base%VIO%LIDORT_ModIn%MUserVal%TS_USER_RELAZMS(1)        = self%Surface%relat_azimuth
+      self%Surface%Base%VIO%LIDORT_ModIn%MUserVal%TS_USER_ANGLES_INPUT(1)   = self%Surface%sensor_zenith
+      self%Surface%Base%VIO%LIDORT_ModIn%MUserVal%TS_USER_LEVELS(1)         = 0.0     ! This is TOA   
+
+      self%Surface%Base%VIO%LIDORT_FixIn%Chapman%TS_height_grid(0:NLAYERS)      = self%ze * 1.E-3  ! en km
+      self%Surface%Base%VIO%LIDORT_FixIn%Chapman%TS_pressure_grid(0:NLAYERS)    = self%pe * 1.E-2  ! en hPa
+      self%Surface%Base%VIO%LIDORT_FixIn%Chapman%TS_temperature_grid(0:NLAYERS) = self%te
+
+      
+!               Calculation of the Rayleigh-Scattering Optical Depth
+!               ----------------------------------------------------
+      call LIDORT_Rayleigh (self, rc)
+
+!                Populate Scattering Phase Matrix
+!                ---------------------------------
+! First initialize to zero to be safe
+      aersmom = 0.0      
+      clLsmom = 0.0
+      clIsmom = 0.0     
+!                Greek moment for Rayleigh Scattering 
+!                The same for all layers because DEPOL_RATIO is
+!                taken as constant right now. 
+!                ----------------------------------------------
+      raysmom2 = (1.0 - DEPOL_RATIO)/(2.0 + DEPOL_RATIO) 
+
+!     Loop over the layers:
+!     ---------------------
+      do i = 1, NLAYERS  
+         ray_l = self%rot(i)         ! indice l for  each layer      
+         tau_l = self%tau(i)
+         ssa_l = self%ssa(i) 
+         g_l   = self%g(i) 
+         tauL_l = self%tauL(i)
+         ssaL_l = self%ssaL(i)
+         gL_l   = self%gL(i)
+         tauI_l = self%tauI(i)
+         ssaI_l = self%ssaI(i)
+         gI_l   = self%gI(i)
+
+!        total optical depths for extinction and scattering 
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         tau_ext = ray_l + tau_l + tauL_l + tauI_l
+         tau_scat = ray_l +  ssa_l * tau_l + ssaL_l * tauL_l + ssaI_l * tauI_l
+
+!        single scattering albedo total
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         ssa_tot = tau_scat / tau_ext
+         if ( ssa_tot > 0.99999 ) then
+            ssa_tot = 0.99999
+         end if
+     
+         deltau_vert_input(i) = tau_ext
+         omega_total_input(i) = ssa_tot 
+
+!        SCALAR phase function moments (aerosol + Rayleigh)
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!        raysmom(0) = 1
+!        raysmom(1) = 0
+!        raysmom(2) = raysmom2
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+!        Add together Aerosol and Rayleigh Parts weighting by scattering optical depth
+!        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
+         aerswt = ssa_l * tau_l / tau_scat  
+         rayswt = ray_l / tau_scat    
+         clLswt = ssaL_l * tauL_l/ tau_scat
+         clIswt = ssaI_l * tauI_l/ tau_scat
+
+         do l = 0, self%nmom-1        
+            aersmom(l) = self%pmom(i,l+1,1) ! P11  
+            clLsmom(l) = self%pmomL(i,l+1,1) 
+            clIsmom(l) = self%pmomI(i,l+1,1)               
+         end do    
+
+         greekmat_total_input(0,i) = 1.0
+         greekmat_total_input(1,i) = aersmom(1) * aerswt + clLsmom(1) * clLswt + clIsmom(1) * clIswt
+         greekmat_total_input(2,i) = raysmom2 * rayswt + aersmom(2) * aerswt + clLsmom(2) * clLswt + clIsmom(2) * clIswt
+
+         do l = 3, self%nmom
+            greekmat_total_input(l,i) = aersmom(l) * aerswt + clLsmom(l) * clLswt + clIsmom(l) * clIswt
+         end do
+            
+!     end layer loop
+!     ---------------
+      end do
+  
+      self%Surface%Base%VIO%LIDORT_FixIn%Optical%TS_DELTAU_VERT_INPUT = deltau_vert_input
+      self%Surface%Base%VIO%LIDORT_ModIn%MOptical%TS_OMEGA_TOTAL_INPUT = omega_total_input
+      self%Surface%Base%VIO%LIDORT_FixIn%Optical%TS_PHASMOMS_TOTAL_INPUT = greekmat_total_input
+      
+!     Call the MASTER driver for doing the actual calculation
+!     -----------------------------------------------------------
+      call LIDORT_MASTER (self%Surface%Base%VIO%LIDORT_FixIn, &
+           self%Surface%Base%VIO%LIDORT_ModIn, &
+           self%Surface%Base%VIO%LIDORT_Sup, &
+           self%Surface%Base%VIO%LIDORT_Out)
+  
+      if ( self%Surface%Base%VIO%LIDORT_Out%Status%TS_STATUS_INPUTCHECK /= 0 ) then
+         rc = 3
+         write(*,*) 'LIDORT_MASTER STATUS_INPUTCHECK RETURNED ERROR'
+         write(*,*) self%Surface%Base%VIO%LIDORT_Out%Status%TS_STATUS_INPUTCHECK
+         write(*,*) self%Surface%Base%VIO%LIDORT_Out%Status%TS_CHECKMESSAGES
+      end if
+
+      if ( self%Surface%Base%VIO%LIDORT_Out%Status%TS_STATUS_CALCULATION /= 0 ) then
+         write(*,*) 'LIDORT_MASTER STATUS_CALCULATION RETURNED ERROR'
+         write(*,*) self%Surface%Base%VIO%LIDORT_Out%Status%TS_STATUS_CALCULATION
+         write(*,*) self%Surface%Base%VIO%LIDORT_Out%Status%TS_MESSAGE
+         rc = 4
+      end if
+      if ( rc /= 0 ) return
+      
+      FLUX_FACTOR = self%Surface%Base%VIO%LIDORT_FixIn%SunRays%TS_FLUX_FACTOR
+      INTENSITY   = self%Surface%Base%VIO%LIDORT_Out%Main%TS_INTENSITY ! output of LIDORT_MASTER subroutine
+      
+!     Return TOA radiance
+!     -------------------
+      output%RADIANCE = 0.0
+      output%REFLECTANCE = 0.0
+      
+      output%RADIANCE = INTENSITY(1, 1, IDR)
+           
+      output%REFLECTANCE = (pi * output%RADIANCE) / ( cos(self%Surface%Base%VIO%LIDORT_ModIn%MSunRays%TS_BEAM_SZAS(1)*pi/180.0) * FLUX_FACTOR ) 
+
+   end subroutine LIDORT_Run_Scalar_Cloud
+
 
 !.........................................................................
       end module LIDORT_ScatMod

@@ -16,10 +16,11 @@
 !     None
 !  HISTORY
 !     27 April 2015 P. Castellanos adapted from A. da Silva shmem_reader.F90
+!     Aug 2017 P. Castellanos add clouds
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #  include "MAPL_Generic.h"
 #  include "MAPL_ErrLogMain.h"
-program geo_vlidort
+program geo_vlidort_cloud
 
   use ESMF                         ! ESMF modules
   use MAPL_Mod
@@ -33,6 +34,7 @@ program geo_vlidort
   use mp_netcdf_Mod
   use netcdf_Mod
   use GeoAngles                    ! Module with geostationary satellite algorithms for scene geometry
+  use cloud_MieMod
 
   implicit none
   include "geo_vlidort_pars.F90"
@@ -59,7 +61,6 @@ program geo_vlidort
   logical                               :: scalar
   real, allocatable                     :: channels(:)            ! channels to simulate
   integer                               :: nch                    ! number of channels  
-  real                                  :: cldmax                 ! Cloud Filtering  
   real                                  :: szamax, vzamax         ! Geomtry filtering
   logical                               :: additional_output      ! does user want additional output
   integer                               :: nodemax                ! number of nodes requested
@@ -68,6 +69,8 @@ program geo_vlidort
   character(len=256)                    :: surf_version
   character(len=256)                    :: layout 
   logical                               :: vlidort
+  character(len=256)                    :: IcldTable, LcldTable
+  integer                               :: idxCld
 
 ! Test flag
 ! -----------
@@ -75,54 +78,28 @@ program geo_vlidort
 
 ! File names
 ! ----------
-  character(len=256)                    :: MET_file, AER_file, ANG_file, INV_file, SURF_file, LAND_file, OUT_file, ATMOS_file 
+  character(len=256)                    :: MET_file, AER_file, ANG_file, INV_file, SURF_file, OUT_file, ATMOS_file, CLD_file 
 
 ! Global, 3D inputs to be allocated using SHMEM
 ! ---------------------------------------------
-  real, pointer                         :: AIRDENS(:,:) => null()
-  real, pointer                         :: RH(:,:) => null()
-  real, pointer                         :: DELP(:,:) => null()
-  real, pointer                         :: DU001(:,:) => null()
-  real, pointer                         :: DU002(:,:) => null()
-  real, pointer                         :: DU003(:,:) => null()
-  real, pointer                         :: DU004(:,:) => null()
-  real, pointer                         :: DU005(:,:) => null()
-  real, pointer                         :: SS001(:,:) => null()
-  real, pointer                         :: SS002(:,:) => null()
-  real, pointer                         :: SS003(:,:) => null()
-  real, pointer                         :: SS004(:,:) => null()
-  real, pointer                         :: SS005(:,:) => null()
-  real, pointer                         :: BCPHOBIC(:,:) => null()
-  real, pointer                         :: BCPHILIC(:,:) => null()
-  real, pointer                         :: OCPHOBIC(:,:) => null()
-  real, pointer                         :: OCPHILIC(:,:) => null()
-  real, pointer                         :: SO4(:,:) => null()
-  real, pointer                         :: KISO(:,:) => null()
-  real, pointer                         :: KVOL(:,:) => null()
-  real, pointer                         :: KGEO(:,:) => null()
-  real, pointer                         :: LER(:,:) => null()
-  real*8, pointer                       :: SZA(:) => null()
-  real*8, pointer                       :: VZA(:) => null()
-  real*8, pointer                       :: RAA(:) => null()  
-
-  real, pointer                         :: AIRDENS_(:,:,:) => null()
-  real, pointer                         :: RH_(:,:,:) => null()
-  real, pointer                         :: DELP_(:,:,:) => null()
-  real, pointer                         :: DU001_(:,:,:) => null()
-  real, pointer                         :: DU002_(:,:,:) => null()
-  real, pointer                         :: DU003_(:,:,:) => null()
-  real, pointer                         :: DU004_(:,:,:) => null()
-  real, pointer                         :: DU005_(:,:,:) => null()
-  real, pointer                         :: SS001_(:,:,:) => null()
-  real, pointer                         :: SS002_(:,:,:) => null()
-  real, pointer                         :: SS003_(:,:,:) => null()
-  real, pointer                         :: SS004_(:,:,:) => null()
-  real, pointer                         :: SS005_(:,:,:) => null()
-  real, pointer                         :: BCPHOBIC_(:,:,:) => null()
-  real, pointer                         :: BCPHILIC_(:,:,:) => null()
-  real, pointer                         :: OCPHOBIC_(:,:,:) => null()
-  real, pointer                         :: OCPHILIC_(:,:,:) => null()
-  real, pointer                         :: SO4_(:,:,:) => null()  
+  real, pointer                         :: AIRDENS(:,:,:) => null()
+  real, pointer                         :: RH(:,:,:) => null()
+  real, pointer                         :: DELP(:,:,:) => null()
+  real, pointer                         :: DU001(:,:,:) => null()
+  real, pointer                         :: DU002(:,:,:) => null()
+  real, pointer                         :: DU003(:,:,:) => null()
+  real, pointer                         :: DU004(:,:,:) => null()
+  real, pointer                         :: DU005(:,:,:) => null()
+  real, pointer                         :: SS001(:,:,:) => null()
+  real, pointer                         :: SS002(:,:,:) => null()
+  real, pointer                         :: SS003(:,:,:) => null()
+  real, pointer                         :: SS004(:,:,:) => null()
+  real, pointer                         :: SS005(:,:,:) => null()
+  real, pointer                         :: BCPHOBIC(:,:,:) => null()
+  real, pointer                         :: BCPHILIC(:,:,:) => null()
+  real, pointer                         :: OCPHOBIC(:,:,:) => null()
+  real, pointer                         :: OCPHILIC(:,:,:) => null()
+  real, pointer                         :: SO4(:,:,:) => null()  
   real, pointer                         :: BAND1(:,:,:) => null()
   real, pointer                         :: BAND2(:,:,:) => null()
   real, pointer                         :: BAND3(:,:,:) => null()  
@@ -131,26 +108,39 @@ program geo_vlidort
   real, pointer                         :: BAND6(:,:,:) => null()  
   real, pointer                         :: BAND7(:,:,:) => null()
   real, pointer                         :: BAND8(:,:,:) => null()
-  real, pointer                         :: KISO_(:,:,:) => null()
-  real, pointer                         :: KVOL_(:,:,:) => null()
-  real, pointer                         :: KGEO_(:,:,:) => null()    
-  real*8, pointer                       :: SZA_(:,:) => null()
-  real*8, pointer                       :: VZA_(:,:) => null()
-  real*8, pointer                       :: SAA_(:,:) => null()
-  real*8, pointer                       :: VAA_(:,:) => null()
+  real, pointer                         :: KISO(:,:,:) => null()
+  real, pointer                         :: KVOL(:,:,:) => null()
+  real, pointer                         :: KGEO(:,:,:) => null() 
+  real, pointer                         :: LER(:,:,:) => null()     
+  real*8, pointer                       :: SZA(:,:) => null()
+  real*8, pointer                       :: VZA(:,:) => null()
+  real*8, pointer                       :: SAA(:,:) => null()
+  real*8, pointer                       :: VAA(:,:) => null()
+  real*8, pointer                       :: RAA(:,:) => null()
+  real, pointer                         :: REI(:,:,:) => null()  
+  real, pointer                         :: REL(:,:,:) => null()  
+  real, pointer                         :: TAUI(:,:,:) => null()  
+  real, pointer                         :: TAUL(:,:,:) => null()  
   integer, pointer                      :: indices(:) => null()
 
 
 ! VLIDORT input arrays
 ! ---------------------------
-  real, allocatable                     :: pe(:,:)                ! edge pressure [Pa]
-  real, allocatable                     :: ze(:,:)                ! edge height above sfc [m]
-  real, allocatable                     :: te(:,:)                ! edge Temperature [K]
-  real, allocatable                     :: qm(:,:,:)              ! (mixing ratio) * delp/g
-  real, allocatable                     :: tau(:,:,:)             ! aerosol optical depth
-  real, allocatable                     :: ssa(:,:,:)             ! single scattering albedo
-  real, allocatable                     :: g(:,:,:)               ! asymmetry factor
-  real*8, allocatable                   :: albedo(:,:)            ! surface albedo
+  real, allocatable                     :: Vpe(:,:)                ! edge pressure [Pa]
+  real, allocatable                     :: Vze(:,:)                ! edge height above sfc [m]
+  real, allocatable                     :: Vte(:,:)                ! edge Temperature [K]
+  real, allocatable                     :: Vqm(:,:,:)              ! (mixing ratio) * delp/g
+  real, allocatable                     :: Vtau(:,:,:)             ! aerosol optical depth
+  real, allocatable                     :: Vssa(:,:,:)             ! single scattering albedo
+  real, allocatable                     :: Vg(:,:,:)               ! asymmetry factor
+  real*8, allocatable                   :: Valbedo(:,:)            ! surface albedo
+
+  real, allocatable                     :: VtauLcl(:,:,:)          ! cloud aerosol optical depth
+  real, allocatable                     :: VssaIcl(:,:,:)          ! cloud aerosol optical depth
+  real, allocatable                     :: VssaLcl(:,:,:)          ! cloud single scattering albedo
+  real, allocatable                     :: VtauIcl(:,:,:)          ! cloud single scattering albedo
+  real, allocatable                     :: VgLcl(:,:,:)            ! cloud asymmetry factor  
+  real, allocatable                     :: VgIcl(:,:,:)            ! cloud asymmetry factor    
 
 ! VLIDORT output arrays
 !-------------------------------
@@ -158,31 +148,32 @@ program geo_vlidort
 !                                  -----------------------------
   real*8, allocatable                   :: radiance_VL_int(:,:)                   ! TOA normalized radiance from VLIDORT
   real*8, allocatable                   :: reflectance_VL_int(:,:)                ! TOA reflectance from VLIDORT  
-  real*8, allocatable                   :: Q(:,:)                                 ! Q Stokes component
-  real*8, allocatable                   :: U(:,:)                                 ! U Stokes component
-  real*8, allocatable                   :: ROT(:,:,:)                             ! rayleigh optical thickness
+  real*8, allocatable                   :: Q_int(:,:)                                 ! Q Stokes component
+  real*8, allocatable                   :: U_int(:,:)                                 ! U Stokes component
+  real*8, allocatable                   :: ROT_int(:,:,:)                             ! rayleigh optical thickness
 
 !                                  Final Shared Arrays
 !                                  -------------------
   real*8, pointer                       :: radiance_VL(:,:) => null()             ! TOA normalized radiance from VLIDORT
   real*8, pointer                       :: reflectance_VL(:,:) => null()          ! TOA reflectance from VLIDORT
-  real*8, pointer                       :: Q_(:,:) => null()                      ! Q Stokes component
-  real*8, pointer                       :: U_(:,:) => null()                      ! U Stokes component
-  real*8, pointer                       :: ROT_(:,:,:) => null()                  ! rayleigh optical thickness
-  real*8, pointer                       :: ALBEDO_(:,:) => null()                 ! bi-directional surface reflectance
+  real*8, pointer                       :: Q(:,:) => null()                      ! Q Stokes component
+  real*8, pointer                       :: U(:,:) => null()                      ! U Stokes component
+  real*8, pointer                       :: ROT(:,:,:) => null()                  ! rayleigh optical thickness
+  real*8, pointer                       :: ALBEDO(:,:) => null()                 ! bi-directional surface reflectance
 
-  real, pointer                         :: TAU_(:,:,:) => null()                  ! aerosol optical depth
-  real, pointer                         :: SSA_(:,:,:) => null()                  ! single scattering albedo
-  real, pointer                         :: G_(:,:,:) => null()                    ! asymmetry factor
-  real, pointer                         :: PE_(:,:) => null()
+  real, pointer                         :: TAU(:,:,:) => null()                  ! aerosol optical depth
+  real, pointer                         :: SSA(:,:,:) => null()                  ! single scattering albedo
+  real, pointer                         :: G(:,:,:) => null()                    ! asymmetry factor
+  real, pointer                         :: PE(:,:,:) => null()
 
-  real*8,allocatable                    :: field(:,:)                             ! Template for unpacking shared arrays
-  real*8,allocatable                    :: AOD(:)                                 ! Temporary variable to add up AOD
+  real*8,allocatable                    :: AOD(:,:)                                 ! Temporary variable to add up AOD
 ! VLIDORT working variables
 !------------------------------
   integer                               :: ch                                       ! i-channel  
   integer                               :: iband                                    ! i-surfaceband
-  real,allocatable                      :: pmom(:,:,:,:,:)                          ! elements of scattering phase matrix for vector calculations
+  real,allocatable                      :: Vpmom(:,:,:,:,:)                         ! elements of scattering phase matrix for vector calculations
+  real,allocatable                      :: VpmomIcl(:,:,:,:,:)                      ! elements of scattering phase matrix for vector calculations
+  real,allocatable                      :: VpmomLcl(:,:,:,:,:)                      ! elements of scattering phase matrix for vector calculations
 
 ! MODIS Kernel variables
 !--------------------------
@@ -199,17 +190,20 @@ program geo_vlidort
 ! Satellite domain variables
 !------------------------------
   integer                               :: im, jm, km, tm                            ! size of satellite domain
+  integer                               :: imC, jmC                                  ! size of coarse satellite domain  
   integer                               :: i, j, k, n                                ! satellite domain working variable
+  integer                               :: iC, jC                                    ! coarse satellite domain working variable
   integer                               :: starti, counti, endi                      ! array indices and counts for each processor
   integer, allocatable                  :: nclr(:)                                   ! how many clear pixels each processor works on
   integer                               :: clrm                                      ! number of clear pixels for this part of decomposed domain
   integer                               :: clrm_total                                ! number of clear pixels 
-  integer                               :: c, cc                                     ! clear pixel working variable
+  integer                               :: c, cc                                 ! clear pixel working variable
   real*8, allocatable                   :: CLDTOT(:,:)                               ! GEOS-5 cloud fraction
   real*8, allocatable                   :: FRLAND(:,:)                               ! GEOS-5 land fraction
   real*8, allocatable                   :: SOLAR_ZENITH(:,:)                         ! solar zenith angles used for data filtering
   real*8,allocatable                    :: SENSOR_ZENITH(:,:)                        ! SENSOR zenith angles used for data filtering  
   logical, allocatable                  :: clmask(:,:)                               ! cloud-land mask
+  integer, allocatable                  :: iIndex(:),jIndex(:)                       ! indices of pixels to run
 
 ! netcdf variables
 !----------------------  
@@ -230,14 +224,11 @@ program geo_vlidort
 ! -----------------------------
   integer*8                             :: t1, t2, clock_max
   real*8                                :: clock_rate
-  character(len=*), parameter           :: Iam = 'geo_vlidort'
+  character(len=*), parameter           :: Iam = 'geo_vlidort_cloud'
 
 !                               END OF VARIABLE DECLARATIONS
 !----------------------------------------------------------------------------------------------------------
   
-! Start Timing
-! ------------
-  call system_clock ( t1, clock_rate, clock_max )
   progress = -1
 
 ! Initialize MPI with ESMF
@@ -280,7 +271,6 @@ program geo_vlidort
     write(*,*) 'Channels [nm]: ',channels
     if (lower_to_upper(surfband) == 'EXACT') write(*,*) 'Using exact surface relflectance parameters on bands : ',surfband_i
     if (lower_to_upper(surfband) == 'INTERPOLATE') write(*,*) 'Using interpolated surface reflectance parameters' 
-    write(*,*) 'Cloud Fraction <= ', cldmax
     write(*,*) 'SZA < ', szamax
     write(*,*) 'VZA < ', vzamax
     if (scalar) write(*,*) 'Scalar calculations'
@@ -292,10 +282,13 @@ program geo_vlidort
 
 ! Query for domain dimensions and missing value
 !----------------------------------------------
-  call mp_readDim("ew", MET_file, im)
-  call mp_readDim("ns", MET_file, jm)
-  call mp_readDim("lev", MET_file, km)
-  call mp_readDim("time", MET_file,tm)
+  call mp_readDim("ew", CLD_file, im)
+  call mp_readDim("ns", CLD_file, jm)
+  call mp_readDim("lev", CLD_file, km)
+  call mp_readDim("time", AER_file,tm)
+  call mp_readDim("ew", AER_file, imC)
+  call mp_readDim("ns", AER_file, jmC)
+
   if (lower_to_upper(surfmodel) == 'RTLS') then
     call mp_readVattr("missing_value", SURF_file, "Band1", surf_missing) 
     surf_missing = -99999.0
@@ -313,9 +306,8 @@ program geo_vlidort
   if ( MAPL_am_I_root() )  call create_outfile(date, time)
 
   call MAPL_SyncSharedMemory(rc=ierr)
-! Read the cloud, land, and angle data 
+! Read the land and angle data 
 ! -------------------------------------
-  call read_cloud()
   call read_land()
   call read_sza()
   call read_vza()
@@ -323,14 +315,6 @@ program geo_vlidort
 ! Create cloud-land mask
 ! ------------------------
   ! first check that you can do anything!!!!!  
-  if (.not. ANY(CLDTOT <= cldmax)) then   
-    if (MAPL_am_I_root()) then
-      write(*,*) 'The domain is too cloudy, nothing to do'
-      write(*,*) 'Exiting.....'
-    end if
-    GOTO 500
-  end if
-
   if (.not. ANY(SOLAR_ZENITH < szamax)) then   
     if (MAPL_am_I_root()) then
       write(*,*) 'The sun has set, nothing to do'
@@ -353,12 +337,10 @@ program geo_vlidort
   do i=1,im
     do j=1,jm
       if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99))  then
-        if (CLDTOT(i,j) <= cldmax) then
-          if (SOLAR_ZENITH(i,j) < szamax) then
-            if (SENSOR_ZENITH(i,j) < vzamax) then
-              clrm = clrm + 1
-              clmask(i,j) = .True.
-            end if
+        if (SOLAR_ZENITH(i,j) < szamax) then
+          if (SENSOR_ZENITH(i,j) < vzamax) then
+            clrm = clrm + 1
+            clmask(i,j) = .True.
           end if
         end if
       end if 
@@ -367,22 +349,34 @@ program geo_vlidort
 
   if (clrm == 0) then
     if (MAPL_am_I_root()) then
-      write(*,*) 'No clear pixels over land, nothing to do'
+      write(*,*) 'No good pixels over land, nothing to do'
       write(*,*) 'Exiting.....'
     end if
     GOTO 500
   end if
 
-! Cloud and Land data no longer needed
+  allocate(iIndex(clrm))
+  allocate(jIndex(clrm))
+  k = 1
+  do i=1,im
+    do j=1,jm
+      if (clmask(i,j)) then
+        iIndex(k) = i
+        jIndex(k) = j
+        k = k + 1
+      end if
+    end do
+  end do
+
+! Land data and unshared angles no longer needed
 !---------------------------------------
-  deallocate (CLDTOT)
   deallocate (FRLAND)
   deallocate (SOLAR_ZENITH)
   deallocate (SENSOR_ZENITH)
 
   if (MAPL_am_I_root()) then
-    write(*,*) '<> Created Cloud Mask'
-    write(*,'(A,I3,A)') '       ',nint(100.*clrm/(im*jm)),'% of the domain is clear and sunlit'
+    write(*,*) '<> Created Land Mask'
+    write(*,'(A,I3,A)') '       ',nint(100.*clrm/(im*jm)),'% of the domain is land and sunlit'
     write(*,'(A,I,A)')  '       Simulating ',clrm,' pixels'
     write(*,*) ' '
   end if   
@@ -390,7 +384,7 @@ program geo_vlidort
 ! Allocate the Global arrays using SHMEM
 ! It will be available on all processors
 ! ---------------------------------------------------------
- call allocate_shared(clrm)
+ call allocate_shared()
  call MAPL_SyncSharedMemory(rc=ierr)
   
 ! Read in the global arrays
@@ -398,20 +392,12 @@ program geo_vlidort
  call read_aer_Nv()
  call read_surf()
  call read_angles()
+ call read_cld_Tau()
 
-! Wait for everyone to finish reading and print max memory used
-! ******This needs to loop through all processors....
+! Wait for everyone to finish reading 
 ! ------------------------------------------------------------------  
   call MAPL_SyncSharedMemory(rc=ierr)
    
-  if (MAPL_am_I_root()) then 
-    write(*,*) 'Read all variables' 
-    call sys_tracker()   
-    write(*,*) ' '
-    call system_clock ( t2, clock_rate, clock_max )
-    write ( *, * ) 'Elapsed real time = ', real ( t2 - t1 ) / real ( clock_rate )
-    write(*,*) ' '
-  end if   
 
 ! Split up filtered domain among nodes
 ! User must verify that there are not more nodes than pixels!
@@ -434,24 +420,19 @@ program geo_vlidort
     nclr(npet)   = nclr(npet) + mod(clrm,npet)
   end if 
 
-! Although read on individual PEs, all shared variables should have the same
-! data in all PEs. Let's verify that.
-! ----------------------------------------------------------- 
-  if (test_shmem) call do_testing()
-
 ! Initialize outputs to be safe
 ! -------------------------------
-  TAU_           = dble(MISSING)
-  SSA_           = dble(MISSING)
-  G_             = dble(MISSING)
-  ALBEDO_        = dble(MISSING)
-  ROT_           = dble(MISSING)
-  PE_            = dble(MISSING)
+  TAU           = dble(MISSING)
+  SSA           = dble(MISSING)
+  G             = dble(MISSING)
+  ALBEDO        = dble(MISSING)
+  ROT           = dble(MISSING)
+  PE            = dble(MISSING)
   radiance_VL    = dble(MISSING)
   reflectance_VL = dble(MISSING)
   if (.not. scalar) then
-    Q_ = dble(MISSING)
-    U_ = dble(MISSING)
+    Q = dble(MISSING)
+    U = dble(MISSING)
   end if
   call MAPL_SyncSharedMemory(rc=ierr)
 ! Prepare inputs and run VLIDORT
@@ -472,10 +453,8 @@ program geo_vlidort
   end if
 
   if (myid == 0) then
-    !starti = (clrm_total/nodemax)*(nodenum-1) +  1
     starti  = 1
   else
-    !starti = sum(nclr(1:myid)) + (clrm_total/nodemax)*(nodenum-1) + 1
     starti = sum(nclr(1:myid)) + 1
   end if    
   counti = nclr(myid+1)
@@ -487,15 +466,19 @@ program geo_vlidort
   call MAPL_SyncSharedMemory(rc=ierr)
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
-  do cc = starti, endi
+  do cc = starti, starti !endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
 
-    call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
-                       reshape(DELP(c,:),(/km,nobs/)), ptop, &
-                       pe, ze, te )   
+    i  = iIndex(c)
+    j  = jIndex(c)
+    iC = iCoarse(i,layout,im,imC)
+    jC = jCoarse(j,layout,jm,jmC)
 
-    PE_(c,:) = pe(:,nobs)
+    call getEdgeVars ( km, nobs, reshape(AIRDENS(i,j,:),(/km,nobs/)), &
+                       reshape(DELP(i,j,:),(/km,nobs/)), ptop, &
+                       Vpe, Vze, Vte )   
+    PE(i,j,:) = Vpe(:,nobs)
 
     write(msg,'(A,I)') 'getEdgeVars ', myid
     call write_verbose(msg)
@@ -512,24 +495,24 @@ program geo_vlidort
 !     ----------------------------
       do ch = 1, nch
         if (lower_to_upper(surfband) == 'EXACT') then
-          kernel_wt(:,ch,nobs) = (/dble(KISO(c,surfband_i(ch))),&
-                              dble(KGEO(c,surfband_i(ch))),&
-                              dble(KVOL(c,surfband_i(ch)))/)
+          kernel_wt(:,ch,nobs) = (/dble(KISO(iC,jC,surfband_i(ch))),&
+                              dble(KGEO(iC,jC,surfband_i(ch))),&
+                              dble(KVOL(iC,jC,surfband_i(ch)))/)
         else
           ! > 2130 uses highest MODIS wavelength band     
           if (channels(ch) >= 2130) then  
             iband = minloc(abs(surfband_c - channels(ch)), dim = 1)
-            kernel_wt(:,ch,nobs) = (/dble(KISO(c,iband)),&
-                              dble(KGEO(c,iband)),&
-                              dble(KVOL(c,iband))/)
+            kernel_wt(:,ch,nobs) = (/dble(KISO(iC,jC,iband)),&
+                              dble(KGEO(iC,jC,iband)),&
+                              dble(KVOL(iC,jC,iband))/)
           end if
           
           if (channels(ch) < 2130) then
             ! nearest neighbor interpolation of kernel weights to wavelength
             ! ******channel has to fall above available range, user is responsible to verify
-            kernel_wt(1,ch,nobs) = dble(nn_interp(surfband_c,reshape(KISO(c,:),(/surfbandm/)),channels(ch)))
-            kernel_wt(2,ch,nobs) = dble(nn_interp(surfband_c,reshape(KGEO(c,:),(/surfbandm/)),channels(ch)))
-            kernel_wt(3,ch,nobs) = dble(nn_interp(surfband_c,reshape(KVOL(c,:),(/surfbandm/)),channels(ch)))          
+            kernel_wt(1,ch,nobs) = dble(nn_interp(surfband_c,reshape(KISO(iC,jC,:),(/surfbandm/)),channels(ch)))
+            kernel_wt(2,ch,nobs) = dble(nn_interp(surfband_c,reshape(KGEO(iC,jC,:),(/surfbandm/)),channels(ch)))
+            kernel_wt(3,ch,nobs) = dble(nn_interp(surfband_c,reshape(KVOL(iC,jC,:),(/surfbandm/)),channels(ch)))          
           end if
         end if
         param(:,ch,nobs)     = (/dble(2),dble(1)/)
@@ -538,31 +521,31 @@ program geo_vlidort
       ! Use a provided albedo file
       do ch = 1, nch
         if (lower_to_upper(surfband) == 'EXACT') then
-          albedo(nobs,ch) = dble(LER(c,surfband_i(ch)))
+          Valbedo(nobs,ch) = dble(LER(iC,jC,surfband_i(ch)))
         else
-          albedo(nobs,ch) = dble(nn_interp(surfband_c,reshape(LER(c,:),(/surfbandm/)),channels(ch)))
+          Valbedo(nobs,ch) = dble(nn_interp(surfband_c,reshape(LER(iC,jC,:),(/surfbandm/)),channels(ch)))
         end if
       end do
     end if 
 
 !   Aerosol Optical Properties
 !   --------------------------
-    ! if (scalar) then
-    !   call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
-    !                       qm, reshape(RH(c,:),(/km,nobs/)), &
-    !                       tau, ssa, g, ierr )
-    ! else
-      call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
-                          qm, reshape(RH(c,:),(/km,nobs/)),&
-                          nMom,nPol, tau, ssa, g, pmom, ierr )
-    ! end if
+    call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
+                        Vqm, reshape(RH(i,j,:),(/km,nobs/)),&
+                        nMom,nPol, Vtau, Vssa, Vg, Vpmom, ierr )
 
-    TAU_(c,:,:) = tau(:,:,nobs)
-    SSA_(c,:,:) = ssa(:,:,nobs)
-    G_(c,:,:)   = g(:,:,nobs)
+!   Cloud Optical Properties
+!   ------------------------
+    call getCOPvector(IcldTable, km, nobs, nch, nMom, nPol, idxCld, REI(i,j,:), VssaIcl, VgIcl, VpmomIcl)
+    call getCOPvector(LcldTable, km, nobs, nch, nMom, nPol, idxCld, REL(i,j,:), VssaLcl, VgLcl, VpmomLcl)
+
+    TAU(i,j,:) = Vtau(:,nch,nobs)
+    SSA(i,j,:) = Vssa(:,nch,nobs)
+    G(i,j,:)   = Vg(:,nch,nobs)
 
     write(msg,*) 'getAOP ', myid
     call write_verbose(msg)
+
 
 !   Call VlIDORT
 !   ------------
@@ -572,28 +555,37 @@ program geo_vlidort
       if (scalar) then
         if (vlidort) then
           ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
-                  (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
-                  (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
+          call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,      &
+                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
+                  dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
+                  dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
+                  dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
+                  (/dble(SZA(i,j))/), &
+                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(VZA(i,j))/), &
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, ierr)
         else 
-          call LIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
-                  (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
-                  (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
+          call LIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,      &
+                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
+                  dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
+                  dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
+                  dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
+                  (/dble(SZA(i,j))/), &
+                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(VZA(i,j))/), &
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, ierr)
         end if 
       else
         ! Call to vlidort vector code
-        call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
-               nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
-               (/dble(SZA(c))/), &
-               (/dble(abs(RAA(c)))/), &
-               (/dble(VZA(c))/), &
-               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, Q, U, ierr)
+        call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,   &
+               nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+               dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
+               dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
+               dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
+               (/dble(SZA(i,j))/), &
+               (/dble(abs(RAA(i,j)))/), &
+               (/dble(VZA(i,j))/), &
+               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, ierr)
       end if
 
     else if ( ANY(kernel_wt == surf_missing) ) then
@@ -601,11 +593,11 @@ program geo_vlidort
 !     ---------------------------------------------    
       radiance_VL_int(nobs,:) = -500
       reflectance_VL_int(nobs,:) = -500
-      albedo = -500
-      ROT = -500
+      Valbedo = -500
+      ROT_int = -500
       if (.not. scalar) then
-        Q = -500
-        U = -500
+        Q_int = -500
+        U_int = -500
       end if
       ierr = 0
     else   
@@ -614,49 +606,56 @@ program geo_vlidort
       if (scalar) then 
         if (vlidort) then
           ! Call to vlidort scalar code            
-          call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nMom,  &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+          call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
+                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                  dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
+                  dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
+                  dble(Vpe), dble(Vze), dble(Vte), &
                   kernel_wt, param, &
-                  (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
-                  (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
+                  (/dble(SZA(i,j))/), &
+                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(VZA(i,j))/), &
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr )  
         else
         ! Call to vlidort scalar code            
-          call LIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nMom,  &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+          call LIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
+                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                  dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
+                  dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &                  
+                  dble(Vpe), dble(Vze), dble(Vte), &
                   kernel_wt, param, &
-                  (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
-                  (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
+                  (/dble(SZA(i,j))/), &
+                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(VZA(i,j))/), &
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr )  
         end if
       else
         ! Call to vlidort vector code
-        call VLIDORT_Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
-                nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), &
+        call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nMom, &
+                nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
+                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
+                dble(Vpe), dble(Vze), dble(Vte), &
                 kernel_wt, param, &
-                (/dble(SZA(c))/), &
-                (/dble(abs(RAA(c)))/), &
-                (/dble(VZA(c))/), &
-                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, Q, U, ierr )  
+                (/dble(SZA(i,j))/), &
+                (/dble(abs(RAA(i,j)))/), &
+                (/dble(VZA(i,j))/), &
+                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, Q_int, U_int, ierr )  
       end if      
     end if          
     
 !   Check VLIDORT Status, Store Outputs in Shared Arrays
 !   ----------------------------------------------------    
     call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
-    radiance_VL(c,:)    = radiance_VL_int(nobs,:)
-    reflectance_VL(c,:) = reflectance_VL_int(nobs,:)
-    ALBEDO_(c,:) = albedo(nobs,:)
+    radiance_VL(i,j)    = radiance_VL_int(nobs,nch)
+    reflectance_VL(i,j) = reflectance_VL_int(nobs,nch)
+    ALBEDO(i,j) = Valbedo(nobs,nch)
 
-    do ch=1,nch      
-        ROT_(c,:,ch) = ROT(:,nobs,ch)
-    end do
-
+    ROT(i,j,:) = ROT(:,nobs,nch)
+    
     if (.not. scalar) then
-      Q_(c,:)      = Q(nobs,:)
-      U_(c,:)      = U(nobs,:)
+      Q(i,j)      = Q_int(nobs,nch)
+      U(i,j)      = U_int(nobs,nch)
     end if
     
     write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
@@ -677,14 +676,10 @@ program geo_vlidort
 
 
 ! Write to OUT_file and ATMOS_file
-! Expand radiance to im x jm using mask
-! Write output to correct position in file 
 ! -----------------------------------------
   if (MAPL_am_I_root()) then
    
-    allocate (field(im,jm))
-    field = g5nr_missing
-    allocate (AOD(clrm_total))
+    allocate (AOD(im,jm))
 
 !                             Write to main OUT_File
 !                             ----------------------
@@ -693,23 +688,23 @@ program geo_vlidort
       write(msg,'(F10.2)') channels(ch)
       
       call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(reflectance_VL(:,ch),(/clrm_total/)),clmask,field), &
+      call check(nf90_put_var(ncid, varid, reflectance_VL, &
                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
 
       call check(nf90_inq_varid(ncid, 'surf_ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(ALBEDO_(:,ch),(/clrm_total/)),clmask,field), &
+      call check(nf90_put_var(ncid, varid, ALBEDO, &
                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
 
       AOD = 0
       do k=1,km 
-        AOD = AOD + reshape(TAU_(:,k,ch),(/clrm_total/))
+        AOD = AOD + TAU(:,:,k)
       end do
 
-      where(reshape(ALBEDO_(:,ch),(/clrm_total/)) .eq. MISSING)  AOD = MISSING
+      where(ALBEDO .eq. MISSING)  AOD = MISSING
       
 
       call check(nf90_inq_varid(ncid, 'aod_' // trim(adjustl(msg)), varid), "get aod vaird")
-      call check(nf90_put_var(ncid, varid, unpack(AOD,clmask,field), &
+      call check(nf90_put_var(ncid, varid, AOD, &
                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out aod")
     end do
     call check( nf90_close(ncid), "close outfile" )
@@ -721,47 +716,46 @@ program geo_vlidort
       do ch = 1, nch
         write(msg,'(F10.2)') channels(ch)
         call check(nf90_inq_varid(ncid, 'rad_' // trim(adjustl(msg)), varid), "get rad vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(radiance_VL(:,ch),(/clrm_total/)),clmask,field), &
+        call check(nf90_put_var(ncid, varid, radiance_VL, &
                       start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
 
         if (.not. scalar) then
           call check(nf90_inq_varid(ncid, 'q_' // trim(adjustl(msg)), varid), "get q vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(Q_(:,ch),(/clrm_total/)),clmask,field), &
+          call check(nf90_put_var(ncid, varid, Q, &
                       start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
 
           call check(nf90_inq_varid(ncid, 'u_' // trim(adjustl(msg)), varid), "get u vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(U_(:,ch),(/clrm_total/)),clmask,field), &
+          call check(nf90_put_var(ncid, varid, U, &
                       start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
         endif        
 
         do k=1,km 
 
           call check(nf90_inq_varid(ncid, 'aot_' // trim(adjustl(msg)), varid), "get aot vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(TAU_(:,k,ch),(/clrm_total/)),clmask,field), &
+          call check(nf90_put_var(ncid, varid, TAU(:,:,k), &
                     start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out tau")
 
           call check(nf90_inq_varid(ncid, 'g_' // trim(adjustl(msg)), varid), "get g vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(G_(:,k,ch),(/clrm_total/)),clmask,field), &
+          call check(nf90_put_var(ncid, varid, G(:,:,k), &
                     start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out g")
 
           call check(nf90_inq_varid(ncid, 'ssa_' // trim(adjustl(msg)), varid), "get ssa vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(SSA_(:,k,ch),(/clrm_total/)),clmask,field), &
+          call check(nf90_put_var(ncid, varid, SSA(:,:,k), &
                     start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ssa")
 
           call check(nf90_inq_varid(ncid, 'rot_' // trim(adjustl(msg)), varid), "get rot vaird")
-          call check(nf90_put_var(ncid, varid, unpack(reshape(ROT_(:,k,ch),(/clrm_total/)),clmask,field), &
+          call check(nf90_put_var(ncid, varid, ROT(:,:,k), &
                     start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out rot")
         end do
       end do
 
       call check(nf90_inq_varid(ncid, 'pe', varid), "get pe vaird")
       do k=1,km+1
-        call check(nf90_put_var(ncid, varid, unpack(reshape(PE_(:,k),(/clrm_total/)),clmask,field), &
+        call check(nf90_put_var(ncid, varid, PE(:,:,k), &
                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out pe")
       end do
       call check( nf90_close(ncid), "close atmosfile" )
     end if  !additional_output
-    deallocate(field)
   end if
 
 ! Sync processors before shutting down
@@ -769,10 +763,6 @@ program geo_vlidort
   call MAPL_SyncSharedMemory(rc=ierr)
   if (MAPL_am_I_root()) then
     write(*,*) '<> Finished VLIDORT Simulation of '//trim(lower_to_upper(instname))//' domain'
-    call sys_tracker()
-    write(*,*) ' '
-    call system_clock ( t2, clock_rate, clock_max )
-    write ( *, * ) 'Elapsed real time = ', real ( t2 - t1 ) / real ( clock_rate )
     write(*,*) ' '
   end if
 
@@ -849,23 +839,6 @@ function when()
       
 end function when
 
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     read_cloud
-! PURPOSE
-!     allocates cloud variables and reads in data
-! INPUT
-!     none
-! OUTPUT
-!     none
-!  HISTORY
-!     28 May 2015 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-subroutine read_cloud()
-  allocate (CLDTOT(im,jm))
-
-  call readvar2D("CLDTOT", MET_file, CLDTOT)
-end subroutine read_cloud
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -887,7 +860,7 @@ subroutine read_land()
 
 !  call mp_colreadvar("FROCEAN", LAND_file, npet, myid, FROCEAN)
 !  call mp_colreadvar("FRLAKE", LAND_file,  npet, myid, FRLAKE)
-  call readvar2D("FRLAND", LAND_file, FRLAND)
+  call readvar2D("FRLAND", CLD_file, FRLAND)
 !  call mp_colreadvar("FRLANDICE", LAND_file,  npet, myid, FRLANDICE)  
 
 end subroutine read_land
@@ -931,23 +904,21 @@ end subroutine read_vza
 subroutine filenames()
   
   ! INFILES
-  if (trim(layout) == '111') then
-    write(MET_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
-                            trim(instname),'-g5nr.lb2.met_Nv.',date,'_',time,'z.nc4'
-    write(AER_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
-                            trim(instname),'-g5nr.lb2.aer_Nv.',date,'_',time,'z.nc4'
-    write(ANG_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
-                            trim(instname),'.lb2.angles.',date,'_',time,'z.nc4'
+  write(MET_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
+                          trim(instname),'-g5nr.lb2.met_Nv.',date,'_',time,'z.nc4'
+  write(AER_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
+                          trim(instname),'-g5nr.lb2.aer_Nv.',date,'_',time,'z.nc4'
 
-    write(LAND_file,'(4A)') trim(indir),'/LevelB/invariant/',trim(instname),'-g5nr.lb2.asm_Nx.nc4'                                 
+  if (trim(layout) == '111') then
+    write(CLD_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
+                            trim(instname),'-g5nr-icacl-TOTWPDF-GCOP-SKEWT.',date,'_',time,'z.nc4'                                     
+    write(ANG_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
+                          trim(instname),'.cloud.lb2.angles.',date,'_',time,'z.nc4'
   else
-    write(MET_file,'(16A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
-                            trim(instname),'-g5nr.lb2.met_Nv.',date,'_',time,'z_',trim(layout),'.nc4'
-    write(AER_file,'(16A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
-                            trim(instname),'-g5nr.lb2.aer_Nv.',date,'_',time,'z_',trim(layout),'.nc4'
+    write(CLD_file,'(16A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
+                            trim(instname),'-g5nr-icacl-TOTWPDF-GCOP-SKEWT.',date,'_',time,'z.',trim(layout),'.nc4'  
     write(ANG_file,'(16A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
-                            trim(instname),'.lb2.angles.',date,'_',time,'z_',trim(layout),'.nc4'
-    write(LAND_file,'(6A)') trim(indir),'/LevelB/invariant/',trim(instname),'-g5nr.lb2.asm_Nx_',trim(layout),'.nc4'
+                          trim(instname),'.cloud.lb2.angles.',date,'_',time,'z.',trim(layout),'.nc4'                              
   end if  
 
   if ( lower_to_upper(surfmodel) == 'RTLS' ) then
@@ -959,22 +930,25 @@ subroutine filenames()
   else
     write(SURF_file,'(6A)') trim(indir),'/SurfLER/',trim(instname),'-omi.SurfLER.',date(5:6),'.nc4'
   end if
-
-  write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.nc4'
+  if (trim(layout) == '111') then
+    write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.cld.invariant.nc4'
+  else
+    write(INV_file,'(6A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.cld.invariant.',trim(layout),'.nc4'
+  end if
 
 ! OUTFILES
   if (vlidort) then
-    write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc2.vlidort.'
+    write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.cloud.lc2.vlidort.'
   else
-    write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.lc2.lidort.'
+    write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.cloud.lc2.lidort.'
   end if 
   call outfile_extname(OUT_file)
 
   if (additional_output) then
     if (vlidort) then
-      write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.add.vlidort.'
+      write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.cloud.add.vlidort.'
     else
-      write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.add.lidort.'
+      write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.cloud.add.lidort.'
     end if
     call outfile_extname(ATMOS_file)
   end if
@@ -1117,68 +1091,57 @@ end subroutine outfile_extname
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_aer_Nv()
 
-    call mp_readvar3Dchunk("AIRDENS", AER_file, (/im,jm,km/), 1, npet, myid, AIRDENS_)  
-    call mp_readvar3Dchunk("RH", AER_file, (/im,jm,km/), 1, npet, myid, RH_) 
-    call mp_readvar3Dchunk("DELP", AER_file, (/im,jm,km/), 1, npet, myid, DELP_) 
-    call mp_readvar3Dchunk("DU001", AER_file, (/im,jm,km/), 1, npet, myid, DU001_) 
-    call mp_readvar3Dchunk("DU002", AER_file, (/im,jm,km/), 1, npet, myid, DU002_) 
-    call mp_readvar3Dchunk("DU003", AER_file, (/im,jm,km/), 1, npet, myid, DU003_) 
-    call mp_readvar3Dchunk("DU004", AER_file, (/im,jm,km/), 1, npet, myid, DU004_) 
-    call mp_readvar3Dchunk("DU005", AER_file, (/im,jm,km/), 1, npet, myid, DU005_) 
-    call mp_readvar3Dchunk("SS001", AER_file, (/im,jm,km/), 1, npet, myid, SS001_) 
-    call mp_readvar3Dchunk("SS002", AER_file, (/im,jm,km/), 1, npet, myid, SS002_) 
-    call mp_readvar3Dchunk("SS003", AER_file, (/im,jm,km/), 1, npet, myid, SS003_) 
-    call mp_readvar3Dchunk("SS004", AER_file, (/im,jm,km/), 1, npet, myid, SS004_) 
-    call mp_readvar3Dchunk("SS005", AER_file, (/im,jm,km/), 1, npet, myid, SS005_) 
-    call mp_readvar3Dchunk("BCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, BCPHOBIC_) 
-    call mp_readvar3Dchunk("BCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, BCPHILIC_) 
-    call mp_readvar3Dchunk("OCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, OCPHOBIC_) 
-    call mp_readvar3Dchunk("OCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, OCPHILIC_) 
-    call mp_readvar3Dchunk("SO4", AER_file, (/im,jm,km/), 1, npet, myid, SO4_) 
+    call mp_readvar3Dchunk("DU001", AER_file, (/imC,jmC,km/), 1, npet, myid, DU001) 
+    call mp_readvar3Dchunk("DU002", AER_file, (/imC,jmC,km/), 1, npet, myid, DU002) 
+    call mp_readvar3Dchunk("DU003", AER_file, (/imC,jmC,km/), 1, npet, myid, DU003) 
+    call mp_readvar3Dchunk("DU004", AER_file, (/imC,jmC,km/), 1, npet, myid, DU004) 
+    call mp_readvar3Dchunk("DU005", AER_file, (/imC,jmC,km/), 1, npet, myid, DU005) 
+    call mp_readvar3Dchunk("SS001", AER_file, (/imC,jmC,km/), 1, npet, myid, SS001) 
+    call mp_readvar3Dchunk("SS002", AER_file, (/imC,jmC,km/), 1, npet, myid, SS002) 
+    call mp_readvar3Dchunk("SS003", AER_file, (/imC,jmC,km/), 1, npet, myid, SS003) 
+    call mp_readvar3Dchunk("SS004", AER_file, (/imC,jmC,km/), 1, npet, myid, SS004) 
+    call mp_readvar3Dchunk("SS005", AER_file, (/imC,jmC,km/), 1, npet, myid, SS005) 
+    call mp_readvar3Dchunk("BCPHOBIC", AER_file, (/imC,jmC,km/), 1, npet, myid, BCPHOBIC) 
+    call mp_readvar3Dchunk("BCPHILIC", AER_file, (/imC,jmC,km/), 1, npet, myid, BCPHILIC) 
+    call mp_readvar3Dchunk("OCPHOBIC", AER_file, (/imC,jmC,km/), 1, npet, myid, OCPHOBIC) 
+    call mp_readvar3Dchunk("OCPHILIC", AER_file, (/imC,jmC,km/), 1, npet, myid, OCPHILIC) 
+    call mp_readvar3Dchunk("SO4", AER_file, (/imC,jmC,km/), 1, npet, myid, SO4) 
 
     call MAPL_SyncSharedMemory(rc=ierr)    
     if (MAPL_am_I_root()) then
-      call reduceProfile(AIRDENS_,clmask,AIRDENS) 
-      call reduceProfile(RH_,clmask,RH) 
-      call reduceProfile(DELP_,clmask,DELP) 
-      call reduceProfile(DU001_,clmask,DU001) 
-      call reduceProfile(DU002_,clmask,DU002)
-      call reduceProfile(DU003_,clmask,DU003) 
-      call reduceProfile(DU004_,clmask,DU004) 
-      call reduceProfile(DU005_,clmask,DU005)   
-      call reduceProfile(SS001_,clmask,SS001)  
-      call reduceProfile(SS002_,clmask,SS002) 
-      call reduceProfile(SS003_,clmask,SS003) 
-      call reduceProfile(SS004_,clmask,SS004) 
-      call reduceProfile(SS005_,clmask,SS005) 
-      call reduceProfile(BCPHOBIC_,clmask,BCPHOBIC) 
-      call reduceProfile(BCPHILIC_,clmask,BCPHILIC) 
-      call reduceProfile(OCPHOBIC_,clmask,OCPHOBIC) 
-      call reduceProfile(OCPHILIC_,clmask,OCPHILIC)  
-      call reduceProfile(SO4_,clmask,SO4)  
       write(*,*) '<> Read aeorosl data to shared memory'
     end if      
 
-    ! call MAPL_DeallocNodeArray(AIRDENS_,rc=ierr)
-    ! call MAPL_DeallocNodeArray(RH_,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DELP_,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DU001_,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DU002_,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DU003_,rc=ierr)
-    ! call MAPL_DeallocNodeArray(DU004_,rc=ierr)                           
-    ! call MAPL_DeallocNodeArray(DU005_,rc=ierr)
-    ! call MAPL_DeallocNodeArray(SS001_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SS002_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SS003_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SS004_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SS005_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(BCPHOBIC_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(BCPHILIC_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(OCPHOBIC_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(OCPHILIC_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SO4_,rc=ierr)       
-    ! write(*,*) 'finished read_aer_Nv'  
   end subroutine read_aer_Nv
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     read_cld_Tau
+! PURPOSE
+!     read in cloud optical depth
+! INPUT
+!     none
+! OUTPUT
+!     none
+!  HISTORY
+!     August 2017 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+  subroutine read_cld_Tau()
+
+    call mp_readvar3Dchunk("AIRDENS", CLD_file, (/im,jm,km/), 1, npet, myid, AIRDENS)  
+    call mp_readvar3Dchunk("RH"     , CLD_file, (/im,jm,km/), 1, npet, myid, RH) 
+    call mp_readvar3Dchunk("DELP"   , CLD_file, (/im,jm,km/), 1, npet, myid, DELP) 
+    call mp_readvar3Dchunk("REI"    , CLD_file, (/im,jm,km/), 1, npet, myid, REI) 
+    call mp_readvar3Dchunk("REL"    , CLD_file, (/im,jm,km/), 1, npet, myid, REL) 
+    call mp_readvar3Dchunk("TAUI"   , CLD_file, (/im,jm,km/), 1, npet, myid, TAUI) 
+    call mp_readvar3Dchunk("TAUL"   , CLD_file, (/im,jm,km/), 1, npet, myid, TAUL) 
+
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root()) then
+      write(*,*) '<> Read cloud data to shared memory'
+    end if      
+
+  end subroutine read_cld_Tau
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1232,92 +1195,53 @@ end subroutine outfile_extname
 
     if (lower_to_upper(surfmodel) == 'RTLS') then
 
-      if (trim(layout) == '111') then
-        call mp_readvar3Dchunk("Band1", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band1) 
-        call mp_readvar3Dchunk("Band2", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band2) 
-        call mp_readvar3Dchunk("Band3", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band3) 
-        call mp_readvar3Dchunk("Band4", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band4) 
-        call mp_readvar3Dchunk("Band5", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band5) 
-        call mp_readvar3Dchunk("Band6", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band6) 
-        call mp_readvar3Dchunk("Band7", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band7) 
-        if (lower_to_upper(surfname) == 'MAIACRTLS') then
-          call mp_readvar3Dchunk("Band8", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band8) 
-        end if
-      else
-        !read only the chunk that belongs to the tile
-        read(layout(1:1),*) Nx
-        read(layout(2:2),*) Ny
-        read(layout(3:) ,*) ntile
-
-        ! figure out x,y position of tile
-        x = mod(ntile, Nx)
-        y = int(ntile/Nx)
-
-        xstart = x*(im) + 1
-        xend   = xstart + im - 1
-        ystart = y*(jm) + 1
-        yend   = ystart + jm - 1
-
-        call mp_readTilevar3Dchunk("Band1", SURF_file, (/im,jm,nkernel/), &
-                                  (/xstart,ystart,1/), 1, npet, myid, Band1) 
-        call mp_readTilevar3Dchunk("Band2", SURF_file, (/im,jm,nkernel/), &
-                                  (/xstart,ystart,1/), 1, npet, myid, Band2) 
-        call mp_readTilevar3Dchunk("Band3", SURF_file, (/im,jm,nkernel/), &
-                                  (/xstart,ystart,1/), 1, npet, myid, Band3) 
-        call mp_readTilevar3Dchunk("Band4", SURF_file, (/im,jm,nkernel/), &
-                                  (/xstart,ystart,1/), 1, npet, myid, Band4) 
-        call mp_readTilevar3Dchunk("Band5", SURF_file, (/im,jm,nkernel/), &
-                                  (/xstart,ystart,1/), 1, npet, myid, Band5) 
-        call mp_readTilevar3Dchunk("Band6", SURF_file, (/im,jm,nkernel/), &
-                                  (/xstart,ystart,1/), 1, npet, myid, Band6) 
-        call mp_readTilevar3Dchunk("Band7", SURF_file, (/im,jm,nkernel/), &
-                                  (/xstart,ystart,1/), 1, npet, myid, Band7) 
-        if (lower_to_upper(surfname) == 'MAIACRTLS') then
-          call mp_readTilevar3Dchunk("Band8", SURF_file, (/im,jm,nkernel/), &
-                                  (/xstart,ystart,1/), 1, npet, myid, Band8)
-        end if
+      call mp_readvar3Dchunk("Band1", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band1) 
+      call mp_readvar3Dchunk("Band2", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band2) 
+      call mp_readvar3Dchunk("Band3", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band3) 
+      call mp_readvar3Dchunk("Band4", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band4) 
+      call mp_readvar3Dchunk("Band5", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band5) 
+      call mp_readvar3Dchunk("Band6", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band6) 
+      call mp_readvar3Dchunk("Band7", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band7) 
+      if (lower_to_upper(surfname) == 'MAIACRTLS') then
+        call mp_readvar3Dchunk("Band8", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band8) 
       end if
 
       call MAPL_SyncSharedMemory(rc=ierr)    
 
       if (MAPL_am_I_root()) then
-        KISO_(:,:,1) = Band1(:,:,1)
-        KISO_(:,:,2) = Band2(:,:,1)
-        KISO_(:,:,3) = Band3(:,:,1)
-        KISO_(:,:,4) = Band4(:,:,1)
-        KISO_(:,:,5) = Band5(:,:,1)
-        KISO_(:,:,6) = Band6(:,:,1)
-        KISO_(:,:,7) = Band7(:,:,1)
-        if (lower_to_upper(surfname) == 'MAIACRTLS') KISO_(:,:,8) = Band8(:,:,1)
+        KISO(:,:,1) = Band1(:,:,1)
+        KISO(:,:,2) = Band2(:,:,1)
+        KISO(:,:,3) = Band3(:,:,1)
+        KISO(:,:,4) = Band4(:,:,1)
+        KISO(:,:,5) = Band5(:,:,1)
+        KISO(:,:,6) = Band6(:,:,1)
+        KISO(:,:,7) = Band7(:,:,1)
+        if (lower_to_upper(surfname) == 'MAIACRTLS') KISO(:,:,8) = Band8(:,:,1)
 
-        KVOL_(:,:,1) = Band1(:,:,2)
-        KVOL_(:,:,2) = Band2(:,:,2)
-        KVOL_(:,:,3) = Band3(:,:,2)
-        KVOL_(:,:,4) = Band4(:,:,2)
-        KVOL_(:,:,5) = Band5(:,:,2)
-        KVOL_(:,:,6) = Band6(:,:,2)
-        KVOL_(:,:,7) = Band7(:,:,2)
-        if (lower_to_upper(surfname) == 'MAIACRTLS') KVOL_(:,:,8) = Band8(:,:,2)
+        KVOL(:,:,1) = Band1(:,:,2)
+        KVOL(:,:,2) = Band2(:,:,2)
+        KVOL(:,:,3) = Band3(:,:,2)
+        KVOL(:,:,4) = Band4(:,:,2)
+        KVOL(:,:,5) = Band5(:,:,2)
+        KVOL(:,:,6) = Band6(:,:,2)
+        KVOL(:,:,7) = Band7(:,:,2)
+        if (lower_to_upper(surfname) == 'MAIACRTLS') KVOL(:,:,8) = Band8(:,:,2)
 
-        KGEO_(:,:,1) = Band1(:,:,3)
-        KGEO_(:,:,2) = Band2(:,:,3)
-        KGEO_(:,:,3) = Band3(:,:,3)
-        KGEO_(:,:,4) = Band4(:,:,3)
-        KGEO_(:,:,5) = Band5(:,:,3)
-        KGEO_(:,:,6) = Band6(:,:,3)
-        KGEO_(:,:,7) = Band7(:,:,3)
-        if (lower_to_upper(surfname) == 'MAIACRTLS') KGEO_(:,:,8) = Band8(:,:,3)
+        KGEO(:,:,1) = Band1(:,:,3)
+        KGEO(:,:,2) = Band2(:,:,3)
+        KGEO(:,:,3) = Band3(:,:,3)
+        KGEO(:,:,4) = Band4(:,:,3)
+        KGEO(:,:,5) = Band5(:,:,3)
+        KGEO(:,:,6) = Band6(:,:,3)
+        KGEO(:,:,7) = Band7(:,:,3)
+        if (lower_to_upper(surfname) == 'MAIACRTLS') KGEO(:,:,8) = Band8(:,:,3)
 
-        call reduceProfile(KISO_,clmask,KISO) 
-        call reduceProfile(KVOL_,clmask,KVOL)
-        call reduceProfile(KGEO_,clmask,KGEO)  
         write(*,*) '<> Read BRDF data to shared memory' 
       end if 
 
     else
       if (MAPL_am_I_root()) then
-        call read_LER(temp)        
-        call reduceProfile(temp,clmask,LER)
+        call read_LER(LER)        
         write(*,*) '<> Read LER data to shared memory'
       end if
     end if
@@ -1325,8 +1249,8 @@ end subroutine outfile_extname
   end subroutine read_surf
 
   subroutine read_LER(indata)
-    real, intent(inout),dimension(im,jm,surfbandm)         :: indata
-    real, dimension(im,jm,1,1)                             :: temp
+    real, intent(inout),dimension(imC,jmC,surfbandm)         :: indata
+    real, dimension(imC,jmC,1,1)                             :: temp
 
     call readvar4d("SRFLER354", SURF_file, temp)
     indata(:,:,1) = temp(:,:,1,1)
@@ -1350,44 +1274,38 @@ end subroutine outfile_extname
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_angles()
     real, dimension(im,jm)     :: temp
-    real, allocatable          :: saa(:), vaa(:)
-    integer                    :: i
+    real, allocatable          :: saa_(:,:)
+    integer                    :: i,j
 
 
-    call mp_readvar2Dchunk("solar_zenith",   ANG_file, (/im,jm/), 1, npet, myid, SZA_) 
-    call mp_readvar2Dchunk("sensor_zenith",  ANG_file, (/im,jm/), 1, npet, myid, VZA_) 
-    call mp_readvar2Dchunk("solar_azimuth",  ANG_file, (/im,jm/), 1, npet, myid, SAA_)
-    call mp_readvar2Dchunk("sensor_azimuth", ANG_file, (/im,jm/), 1, npet, myid, VAA_)
+    call mp_readvar2Dchunk("solar_zenith",   ANG_file, (/im,jm/), 1, npet, myid, SZA) 
+    call mp_readvar2Dchunk("sensor_zenith",  ANG_file, (/im,jm/), 1, npet, myid, VZA) 
+    call mp_readvar2Dchunk("solar_azimuth",  ANG_file, (/im,jm/), 1, npet, myid, SAA)
+    call mp_readvar2Dchunk("sensor_azimuth", ANG_file, (/im,jm/), 1, npet, myid, VAA)
     call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root()) then
-      SZA = pack(SZA_,clmask)
-      VZA = pack(VZA_,clmask)
-        
-      allocate (saa(clrm))
-      allocate (vaa(clrm))
+    if (MAPL_am_I_root()) then        
+      allocate (saa_(im,jm))
       
-      saa = pack(SAA_,clmask)
       ! define according to photon travel direction
-      saa = saa + 180.0
-      do i = 1, clrm
-        if (saa(i) >= 360.0) then
-          saa(i) = saa(i) - 360.0
-        end if
+      saa_ = SAA + 180.0
+      do i = 1, im
+        do j = 1, jm
+          if (saa_(i,j) >= 360.0) then
+            saa_(i,j) = saa_(i,j) - 360.0
+          end if
+        end do
       end do
 
-      vaa = pack(VAA_,clmask)
+      RAA = VAA - saa_
 
-      RAA = vaa - saa
-
-      deallocate (saa)
-      deallocate (vaa)
+      deallocate (saa_)
       write(*,*) '<> Read angle data to shared memory' 
 
     end if
-    ! call MAPL_DeallocNodeArray(SZA_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(VZA_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(SAA_,rc=ierr) 
-    ! call MAPL_DeallocNodeArray(VAA_,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(SZA,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(VZA,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(SAA,rc=ierr) 
+    ! call MAPL_DeallocNodeArray(VAA,rc=ierr) 
 
   end subroutine read_angles  
 
@@ -1404,92 +1322,74 @@ end subroutine outfile_extname
 !  HISTORY
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine allocate_shared(clrm)
-    integer, intent(in)    :: clrm
-
-    call MAPL_AllocNodeArray(AIRDENS,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(RH,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DELP,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU001,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU002,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU003,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU004,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU005,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS001,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS002,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS003,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS004,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS005,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(BCPHOBIC,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(BCPHILIC,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(OCPHOBIC,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(OCPHILIC,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SO4,(/clrm,km/),rc=ierr)
+  subroutine allocate_shared()
+    if (MAPL_am_I_root()) then
+      write(*,*) '<> Allocating shared memory variables'
+    end if
+    call MAPL_AllocNodeArray(AIRDENS,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(RH,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DELP,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(REI,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(REL,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(TAUI,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(TAUL,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU001,(/imC,jmC,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU002,(/imC,jmC,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU003,(/imC,jmC,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU004,(/imC,jmC,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU005,(/imC,jmC,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS001,(/imC,jmC,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS002,(/imC,jmC,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS003,(/imC,jmC,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS004,(/imC,jmC,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS005,(/imC,jmC,km/),rc=ierr)
+    call MAPL_AllocNodeArray(BCPHOBIC,(/imC,jmC,km/),rc=ierr)
+    call MAPL_AllocNodeArray(BCPHILIC,(/imC,jmC,km/),rc=ierr)
+    call MAPL_AllocNodeArray(OCPHOBIC,(/imC,jmC,km/),rc=ierr)
+    call MAPL_AllocNodeArray(OCPHILIC,(/imC,jmC,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SO4,(/imC,jmC,km/),rc=ierr)
     if (lower_to_upper(surfmodel) == 'RTLS') then
-      call MAPL_AllocNodeArray(KISO,(/clrm,surfbandm/),rc=ierr)
-      call MAPL_AllocNodeArray(KVOL,(/clrm,surfbandm/),rc=ierr)
-      call MAPL_AllocNodeArray(KGEO,(/clrm,surfbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(KISO,(/imC,jmC,surfbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(KVOL,(/imC,jmC,surfbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(KGEO,(/imC,jmC,surfbandm/),rc=ierr)
     else
-      call MAPL_AllocNodeArray(LER,(/clrm,surfbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(LER,(/imC,jmC,surfbandm/),rc=ierr)
     end if 
 
-    call MAPL_AllocNodeArray(SZA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(VZA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(SZA,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(VZA,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(RAA,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(SAA,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(VAA,(/im,jm/),rc=ierr) 
 
-    call MAPL_AllocNodeArray(TAU_,(/clrm,km,nch/),rc=ierr)
-    call MAPL_AllocNodeArray(SSA_,(/clrm,km,nch/),rc=ierr)
-    call MAPL_AllocNodeArray(G_,(/clrm,km,nch/),rc=ierr)
-    call MAPL_AllocNodeArray(ROT_,(/clrm,km,nch/),rc=ierr)
-    call MAPL_AllocNodeArray(ALBEDO_,(/clrm,nch/),rc=ierr)
-    call MAPL_AllocNodeArray(PE_,(/clrm,km+1/),rc=ierr)
+    call MAPL_AllocNodeArray(TAU,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SSA,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(G,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(ROT,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(ALBEDO,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(PE,(/im,jm,km+1/),rc=ierr)
     
     if (.not. scalar) then
-      call MAPL_AllocNodeArray(Q_,(/clrm,nch/),rc=ierr)
-      call MAPL_AllocNodeArray(U_,(/clrm,nch/),rc=ierr)
+      call MAPL_AllocNodeArray(Q,(/im,jm,nch/),rc=ierr)
+      call MAPL_AllocNodeArray(U,(/im,jm,nch/),rc=ierr)
     end if
 
-    call MAPL_AllocNodeArray(radiance_VL,(/clrm,nch/),rc=ierr)
-    call MAPL_AllocNodeArray(reflectance_VL,(/clrm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(radiance_VL,(/im,jm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(reflectance_VL,(/im,jm,nch/),rc=ierr)
 
-    call MAPL_AllocNodeArray(AIRDENS_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(RH_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DELP_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU001_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU002_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU003_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU004_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU005_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS001_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS002_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS003_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS004_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS005_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(BCPHOBIC_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(BCPHILIC_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(OCPHOBIC_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(OCPHILIC_,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SO4_,(/im,jm,km/),rc=ierr)
     if (lower_to_upper(surfmodel) == 'RTLS') then
-      call MAPL_AllocNodeArray(BAND1,(/im,jm,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND2,(/im,jm,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND3,(/im,jm,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND4,(/im,jm,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND5,(/im,jm,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND6,(/im,jm,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND7,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND1,(/imC,jmC,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND2,(/imC,jmC,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND3,(/imC,jmC,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND4,(/imC,jmC,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND5,(/imC,jmC,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND6,(/imC,jmC,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND7,(/imC,jmC,nkernel/),rc=ierr)
       if (lower_to_upper(surfname) == 'MAIACRTLS') then
-        call MAPL_AllocNodeArray(BAND8,(/im,jm,nkernel/),rc=ierr)
+        call MAPL_AllocNodeArray(BAND8,(/imC,jmC,nkernel/),rc=ierr)
       end if
-      call MAPL_AllocNodeArray(KISO_,(/im,jm,surfbandm/),rc=ierr)
-      call MAPL_AllocNodeArray(KVOL_,(/im,jm,surfbandm/),rc=ierr)
-      call MAPL_AllocNodeArray(KGEO_,(/im,jm,surfbandm/),rc=ierr)
     end if
 
-    call MAPL_AllocNodeArray(SZA_,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(VZA_,(/im,jm/),rc=ierr)    
-    call MAPL_AllocNodeArray(SAA_,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(VAA_,(/im,jm/),rc=ierr) 
   end subroutine allocate_shared
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1507,14 +1407,20 @@ end subroutine outfile_extname
   subroutine allocate_unshared()
   ! Needed for vlidort
   ! -----------------------
-    allocate (pe(km+1,nobs))
-    allocate (ze(km+1,nobs))
-    allocate (te(km+1,nobs))
-    allocate (qm(km,nq,nobs))
-    allocate (tau(km,nch,nobs))
-    allocate (ssa(km,nch,nobs))
-    allocate (g(km,nch,nobs))
-    allocate (albedo(nobs,nch))
+    allocate (Vpe(km+1,nobs))
+    allocate (Vze(km+1,nobs))
+    allocate (Vte(km+1,nobs))
+    allocate (Vqm(km,nq,nobs))
+    allocate (Vtau(km,nch,nobs))
+    allocate (Vssa(km,nch,nobs))
+    allocate (Vg(km,nch,nobs))
+    allocate (VtauIcl(km,nch,nobs))
+    allocate (VtauLcl(km,nch,nobs))
+    allocate (VssaIcl(km,nch,nobs))
+    allocate (VssaLcl(km,nch,nobs))    
+    allocate (VgIcl(km,nch,nobs))    
+    allocate (VgLcl(km,nch,nobs))    
+    allocate (Valbedo(nobs,nch))
 
     allocate (radiance_VL_int(nobs,nch))
     allocate (reflectance_VL_int(nobs, nch))    
@@ -1524,12 +1430,14 @@ end subroutine outfile_extname
     end if
     allocate (param(nparam,nch,nobs))
 
-    allocate (ROT(km,nobs,nch))
-    allocate (pmom(km,nch,nobs,nMom,nPol))
+    allocate (ROT_int(km,nobs,nch))
+    allocate (Vpmom(km,nch,nobs,nMom,nPol))
+    allocate (VpmomLcl(km,nch,nobs,nMom,nPol))
+    allocate (VpmomIcl(km,nch,nobs,nMom,nPol))
 
     if (.not. scalar) then      
-      allocate (Q(nobs, nch))
-      allocate (U(nobs, nch))
+      allocate (Q_int(nobs, nch))
+      allocate (U_int(nobs, nch))
     end if
 
   ! Needed for reading
@@ -1617,8 +1525,8 @@ end subroutine outfile_extname
     integer                            :: peVarID     
     
     integer                            :: ncid
-    integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID  
-    integer                            :: leveDimID     
+    integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID 
+    integer                            :: leveDimID      
     integer                            :: scantimeVarID, clonVarID, clatVarID
     integer                            :: timeVarID, levVarID, ewVarID, nsVarID
     integer                            :: leveVarID, e
@@ -1650,15 +1558,15 @@ end subroutine outfile_extname
     write(comment,'(A)') 'Global Model and Assimilation Office'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'source',trim(comment)),"source attr")
 
-    write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort.x'
+    write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort_cloud.x'
     call check(nf90_put_att(ncid,NF90_GLOBAL,'history',trim(comment)),"history attr")
 
     call check(nf90_put_att(ncid,NF90_GLOBAL,'grid_inputs',trim(INV_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'angle_inputs',trim(ANG_file)),"input files attr")
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'land_inputs',trim(LAND_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'met_inputs',trim(MET_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'aerosol_inputs',trim(AER_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(SURF_file)),"input files attr")
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'cloud_inputs',trim(CLD_file)),"input files attr")
 
     call check(nf90_put_att(ncid,NF90_GLOBAL,'inputs',trim(comment)),"input files attr")
     write(comment,'(A)') 'n/a'
@@ -1669,8 +1577,6 @@ end subroutine outfile_extname
                          'radiance and reflectance from GEOS-5 parameters sampled ' // &
                          ' on the '//lower_to_upper(trim(instname))//' geostationary grid '
     call check(nf90_put_att(ncid,NF90_GLOBAL,'comment',trim(comment)),"comment attr")   
-
-
 
     if (lower_to_upper(surfmodel) /= 'RTLS') then
       if (lower_to_upper(surfband) == 'INTERPOLATE') then
@@ -1807,13 +1713,13 @@ end subroutine outfile_extname
     allocate (lev(1))
     allocate (tyme(tm))
 
-    call readvar1D("scanTime", MET_file, scantime)
+    call readvar1D("scanTime", INV_file, scantime)
     call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
 
-    call readvar2D("clon", MET_file, clon)
+    call readvar2D("clon", INV_file, clon)
     call check(nf90_put_var(ncid,clonVarID,clon), "writing out clon")
 
-    call readvar2D("clat", MET_file, clat)
+    call readvar2D("clat", INV_file, clat)
     call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
     call readvar1D("time", MET_file, tyme)
@@ -1822,10 +1728,10 @@ end subroutine outfile_extname
     call readvar1D("lev", MET_file, lev)
     call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
 
-    call readvar1D("ew", MET_file, ew)
+    call readvar1D("ew", INV_file, ew)
     call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
 
-    call readvar1D("ns", MET_file, ns)
+    call readvar1D("ns", INV_file, ns)
     call check(nf90_put_var(ncid,nsVarID,ns), "writing out ns")   
 
     deallocate (clon)
@@ -1861,7 +1767,7 @@ end subroutine outfile_extname
       write(comment,'(A)') 'Global Model and Assimilation Office'
       call check(nf90_put_att(ncid,NF90_GLOBAL,'source',trim(comment)),"source attr")
 
-      write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort.x'
+      write(comment,'(A)') 'VLIDORT simulation run from geo_vlidort_cloud.x'
       call check(nf90_put_att(ncid,NF90_GLOBAL,'history',trim(comment)),"history attr")
 
       write(comment,'(A)') 'n/a'
@@ -2039,13 +1945,13 @@ end subroutine outfile_extname
       allocate (lev(km))
       allocate (tyme(tm))
 
-      call readvar1D("scanTime", MET_file, scantime)
+      call readvar1D("scanTime", INV_file, scantime)
       call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
 
-      call readvar2D("clon", MET_file, clon)
+      call readvar2D("clon", INV_file, clon)
       call check(nf90_put_var(ncid,clonVarID,clon), "writing out clon")
 
-      call readvar2D("clat", MET_file, clat)
+      call readvar2D("clat", INV_file, clat)
       call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
       call readvar1D("time", MET_file, tyme)
@@ -2054,12 +1960,12 @@ end subroutine outfile_extname
       call readvar1D("lev", MET_file, lev)
       call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
 
-      call check(nf90_put_var(ncid,leveVarID,(/(real(e), e = 1, km+1)/)), "writing out leve")
+      call check(nf90_put_var(ncid,leveVarID,(/(real(e), e = 1, km+1)/)), "writing out leve")      
 
-      call readvar1D("ew", MET_file, ew)
+      call readvar1D("ew", INV_file, ew)
       call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
 
-      call readvar1D("ns", MET_file, ns)
+      call readvar1D("ns", INV_file, ns)
       call check(nf90_put_var(ncid,nsVarID,ns), "writing out ns")   
 
       deallocate (clon)
@@ -2095,21 +2001,21 @@ end subroutine outfile_extname
     integer                                :: k
 
     do k = 1, km
-      qm(k,1,nobs) = DU001(c,k)*DELP(c,k)/grav
-      qm(k,2,nobs) = DU002(c,k)*DELP(c,k)/grav
-      qm(k,3,nobs) = DU003(c,k)*DELP(c,k)/grav
-      qm(k,4,nobs) = DU004(c,k)*DELP(c,k)/grav
-      qm(k,5,nobs) = DU005(c,k)*DELP(c,k)/grav
-      qm(k,6,nobs) = SS001(c,k)*DELP(c,k)/grav
-      qm(k,7,nobs) = SS002(c,k)*DELP(c,k)/grav
-      qm(k,8,nobs) = SS003(c,k)*DELP(c,k)/grav
-      qm(k,9,nobs) = SS004(c,k)*DELP(c,k)/grav
-      qm(k,10,nobs) = SS005(c,k)*DELP(c,k)/grav
-      qm(k,11,nobs) = BCPHOBIC(c,k)*DELP(c,k)/grav
-      qm(k,12,nobs) = BCPHILIC(c,k)*DELP(c,k)/grav
-      qm(k,13,nobs) = OCPHOBIC(c,k)*DELP(c,k)/grav
-      qm(k,14,nobs) = OCPHILIC(c,k)*DELP(c,k)/grav
-      qm(k,15,nobs) = SO4(c,k)*DELP(c,k)/grav
+      Vqm(k,1,nobs) = DU001(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,2,nobs) = DU002(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,3,nobs) = DU003(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,4,nobs) = DU004(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,5,nobs) = DU005(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,6,nobs) = SS001(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,7,nobs) = SS002(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,8,nobs) = SS003(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,9,nobs) = SS004(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,10,nobs) = SS005(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,11,nobs) = BCPHOBIC(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,12,nobs) = BCPHILIC(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,13,nobs) = OCPHOBIC(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,14,nobs) = OCPHILIC(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,15,nobs) = SO4(i,j,k)*DELP(i,j,k)/grav
     end do
    end subroutine calc_qm
 
@@ -2164,24 +2070,24 @@ end subroutine outfile_extname
       write(2,'(A)') '--- Array Statistics ---'
     end if
 
-    call shmem_test2D('RH',RH)
-    call shmem_test2D('AIRDENS',AIRDENS)
-    call shmem_test2D('DELP',DELP)
-    call shmem_test2D('DU001',DU001)
-    call shmem_test2D('DU002',DU002)
-    call shmem_test2D('DU003',DU003)
-    call shmem_test2D('DU004',DU004)
-    call shmem_test2D('DU005',DU005)
-    call shmem_test2D('SS001',SS001)
-    call shmem_test2D('SS002',SS002)
-    call shmem_test2D('SS003',SS003)
-    call shmem_test2D('SS004',SS004)
-    call shmem_test2D('SS005',SS005)
-    call shmem_test2D('BCPHOBIC',BCPHOBIC)
-    call shmem_test2D('BCPHILIC',BCPHILIC)
-    call shmem_test2D('OCPHOBIC',OCPHOBIC)
-    call shmem_test2D('OCPHILIC',OCPHILIC)
-    call shmem_test2D('SO4',OCPHILIC)
+    call shmem_test3D('RH',RH)
+    call shmem_test3D('AIRDENS',AIRDENS)
+    call shmem_test3D('DELP',DELP)
+    call shmem_test3D('DU001',DU001)
+    call shmem_test3D('DU002',DU002)
+    call shmem_test3D('DU003',DU003)
+    call shmem_test3D('DU004',DU004)
+    call shmem_test3D('DU005',DU005)
+    call shmem_test3D('SS001',SS001)
+    call shmem_test3D('SS002',SS002)
+    call shmem_test3D('SS003',SS003)
+    call shmem_test3D('SS004',SS004)
+    call shmem_test3D('SS005',SS005)
+    call shmem_test3D('BCPHOBIC',BCPHOBIC)
+    call shmem_test3D('BCPHILIC',BCPHILIC)
+    call shmem_test3D('OCPHOBIC',OCPHOBIC)
+    call shmem_test3D('OCPHILIC',OCPHILIC)
+    call shmem_test3D('SO4',SO4)
 
     !   Wait for everyone to finish and print max memory used
     !   -----------------------------------------------------------  
@@ -2299,7 +2205,6 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
-    call ESMF_ConfigGetAttribute(cf, cldmax, label = 'CLDMAX:',default=0.01)
     call ESMF_ConfigGetAttribute(cf, surfband, label = 'SURFBAND:', default='INTERPOLATE')
     call ESMF_ConfigGetAttribute(cf, surfbandm, label = 'SURFBANDM:',__RC__)
     call ESMF_ConfigGetAttribute(cf, additional_output, label = 'ADDITIONAL_OUTPUT:',default=.false.)
@@ -2307,8 +2212,10 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, version, label = 'VERSION:',default='1.0') 
     call ESMF_ConfigGetAttribute(cf, surf_version, label = 'SURF_VERSION:',default='1.0')    
     call ESMF_ConfigGetAttribute(cf, layout, label = 'LAYOUT:',default='111')    
-    call ESMF_ConfigGetAttribute(cf, vlidort, label = 'VLIDORT:',default=.true.)        
-
+    call ESMF_ConfigGetAttribute(cf, vlidort, label = 'VLIDORT:',default=.true.) 
+    call ESMF_ConfigGetAttribute(cf, IcldTable, label = 'ICLDTABLE:',__RC__)       
+    call ESMF_ConfigGetAttribute(cf, LcldTable, label = 'LCLDTABLE:',__RC__)
+    call ESMF_ConfigGetAttribute(cf, idxCld, label = 'IDXCLD:',__RC__)
 
     ! Check that LER configuration is correct
     !----------------------------------------
@@ -2394,6 +2301,69 @@ end subroutine outfile_extname
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
+!    iCoarse
+! PURPOSE
+!     Finds i-index of high-res tiled cloud data on coarse domain
+! INPUT
+!     layout : layout of tiles
+!     i      : index on high-res tile
+! OUTPUT
+!     iC     : coarse domain indices
+!  HISTORY
+!     August 2017 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  function iCoarse(i,layout,im,imC)
+    integer, intent(in)               :: i, im, imC
+    character(len=*)                  :: layout 
+    integer                           :: iCoarse
+    integer                           :: Nx, ntile
+    integer                           :: i_, ifactor
+
+    read(layout(1:1),*) Nx
+    read(layout(3:) ,*) ntile
+
+    ifactor = Nx*im/imC
+
+    i_ = mod(ntile,nX)
+
+    iCoarse = int((i + im*i_+1)/ifactor)
+
+  end function iCoarse
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    jCoarse
+! PURPOSE
+!     Finds j-index of high-res tiled cloud data on coarse domain
+! INPUT
+!     layout : layout of tiles
+!     j      : index on high-res tile
+! OUTPUT
+!     jC     : coarse domain indices
+!  HISTORY
+!     August 2017 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  function jCoarse(j,layout,jm,jmC)
+    integer, intent(in)               :: j, jm, jmC
+    character(len=*)                  :: layout 
+    integer                           :: jCoarse
+    integer                           :: Nx, Ny, ntile
+    integer                           :: j_, jfactor
+
+    read(layout(1:1),*) Nx
+    read(layout(2:2),*) Ny
+    read(layout(3:) ,*) ntile
+
+    jfactor = Ny*jm/jmC
+
+    j_ = int(ntile/nX) 
+
+    jCoarse = int((j + jm*j_+1)/jfactor)
+
+  end function jCoarse
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
 !    deallocate_shared
 ! PURPOSE
 !     Clean up allocated arrays 
@@ -2437,15 +2407,15 @@ end subroutine outfile_extname
     call MAPL_DeallocNodeArray(VZA,rc=ierr) 
     call MAPL_DeallocNodeArray(RAA,rc=ierr) 
 
-    call MAPL_DeallocNodeArray(TAU_,rc=ierr)
-    call MAPL_DeallocNodeArray(SSA_,rc=ierr)
-    call MAPL_DeallocNodeArray(G_,rc=ierr)
-    call MAPL_DeallocNodeArray(ROT_,rc=ierr)
-    call MAPL_DeallocNodeArray(ALBEDO_,rc=ierr)
-    call MAPL_DeallocNodeArray(PE_,rc=ierr)
+    call MAPL_DeallocNodeArray(TAU,rc=ierr)
+    call MAPL_DeallocNodeArray(SSA,rc=ierr)
+    call MAPL_DeallocNodeArray(G,rc=ierr)
+    call MAPL_DeallocNodeArray(ROT,rc=ierr)
+    call MAPL_DeallocNodeArray(ALBEDO,rc=ierr)
+    call MAPL_DeallocNodeArray(PE,rc=ierr)
     if (.not. scalar) then
-      call MAPL_DeallocNodeArray(Q_,rc=ierr)
-      call MAPL_DeallocNodeArray(U_,rc=ierr)
+      call MAPL_DeallocNodeArray(Q,rc=ierr)
+      call MAPL_DeallocNodeArray(U,rc=ierr)
     end if
 
     call MAPL_DeallocNodeArray(radiance_VL,rc=ierr) 
@@ -2454,4 +2424,4 @@ end subroutine outfile_extname
   end subroutine deallocate_shared
 
 
-end program geo_vlidort
+end program geo_vlidort_cloud

@@ -13,12 +13,13 @@ from os       import system
 from optparse        import OptionParser
 
 if __name__ == "__main__":
-    # Defaults
-    #pcfFile   = 'geo_vlidort_lc2.pcf'
-    #isoStartTime = '2005-12-31T15:00:00Z'
-    #isoEndTime   = '2005-12-31T15:00:00Z'
-    #episode   = None
-    bin = 'run_geo_vlidort_lc2.py'
+
+    # pcfFile   = 'geo_vlidort_cloud_lc2.pcf'
+    isoStartTime = '2005-12-31T18:00:00Z'
+    isoEndTime   = '2005-12-31T18:00:00Z'
+    # episode   = None
+    # dryrun    = False
+    bin = 'run_geo_vlidort_cloud_lc2.py'
 
 #   Parse command line options
 #   --------------------------
@@ -28,10 +29,10 @@ if __name__ == "__main__":
     parser.add_option("-b", "--bin", dest="bin",default=bin, 
               help="executable for run (default=%s)" %bin ) 
 
-    parser.add_option("-s", "--isoStartTime", dest="isoStartTime", 
+    parser.add_option("-s", "--isoStartTime", dest="isoStartTime", default=isoStartTime,
               help="start isotime" ) 
 
-    parser.add_option("-e", "--isoEndTime", dest="isoEndTime", 
+    parser.add_option("-e", "--isoEndTime", dest="isoEndTime", default=isoEndTime,
               help="end isotime" )                  
 
     parser.add_option("-E", "--episode", dest="episode",
@@ -47,13 +48,13 @@ if __name__ == "__main__":
     if len(args) == 1:
         pcfFile = args[0]
     else:
-        parser.error("must have 1 arguments: pcfFile")    
+        parser.error("must have 1 arguments: pcfFile")  
 
     isoStartTime = options.isoStartTime
     isoEndTime   = options.isoEndTime
     episode      = options.episode
     dryrun       = options.dryrun
-    bin          = options.bin
+    bin          = options.bin        
 
     if episode is not None:
         if int(episode) == 1:
@@ -65,7 +66,7 @@ if __name__ == "__main__":
         elif int(episode) == 3:
             isoStartTime  = '2007-03-28T00:00:00Z'
             isoEndTime    = '2007-03-29T23:00:00Z'
-        elif int(episode)e == 4:
+        elif int(episode) == 4:
             isoStartTime  = '2007-04-10T00:00:00Z'
             isoEndTime    = '2007-04-11T23:00:00Z'
 
@@ -78,4 +79,4 @@ if __name__ == "__main__":
 
     print command
     if system(command):
-        raise ValueError, "run_geo_vlidort_lc2.py failed for %s to %s "%(isoStartTime,isoEndTime)
+        raise ValueError, "%s failed for %s to %s "%(bin,isoStartTime,isoEndTime)

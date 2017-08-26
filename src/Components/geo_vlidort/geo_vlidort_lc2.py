@@ -220,7 +220,7 @@ class WORKSPACE(JOBS):
         if self.layout is None:
             self.ntiles = 1
         else:
-            self.ntiles = int(layout[0])*int(layout[1])
+            self.ntiles = int(self.layout[0])*int(self.layout[1])
 
         if type(self.channels) is str:
             if ',' in self.channels:
@@ -414,14 +414,14 @@ class WORKSPACE(JOBS):
         return len(f[0])
 
 
-    def make_workspace(self,date,ch,nodemax=None,layout=None):
+    def make_workspace(self,date,ch,nodemax=None,layout=None,cloud=False):
 
         # Get necessary files from archive if needed
         g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
         nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
         hour  = str(date.hour).zfill(2)
 
-        if layout is None:
+        if (layout is None) or (cloud is True) :
             chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z.nc4'
             aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'            
         else:
@@ -435,7 +435,7 @@ class WORKSPACE(JOBS):
 
         # creating working directory
         dirname = '{}/{}.{}T{}.{}.{}'.format(self.prefix,self.instname.lower(),date.date(),str(date.hour).zfill(2),ch,self.code)
-        jobname = '{}.{}T{}.{}'.format(instname.lower(),date.date(),str(date.hour).zfill(2),ch)
+        jobname = '{}.{}T{}.{}'.format(self.instname.lower(),date.date(),str(date.hour).zfill(2),ch)
 
         if layout is not None:
             dirname = dirname + '.' + layout
