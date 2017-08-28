@@ -279,7 +279,7 @@ class WORKSPACE(JOBS):
                     if (numpixels <= 1000 and self.nodemax is not None):
                         nodemax = 1
                     else:
-                        nodemax = self.nodemax
+                        nodemax = int(self.nodemax)
 
                     for i, ch in enumerate(self.channels):
                         if self.interp == 'exact':
@@ -299,7 +299,7 @@ class WORKSPACE(JOBS):
 
                         self.dirstring.append(workdir)
                         self.outdirstring.append(outdir)
-                        self.nodemax_list.append(int(nodemax))
+                        self.nodemax_list.append(nodemax)
                         if (self.additional_output):
                             self.addoutdirstring.append(addoutdir)
 
