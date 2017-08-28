@@ -115,8 +115,10 @@ class CLD_WORKSPACE(WORKSPACE):
 
                     if (numpixels <= 1000 and self.nodemax is not None):
                         nodemax = 1
-                    else:
+                    elif self.nodemax is not None:
                         nodemax = int(self.nodemax)
+                    else
+                        nodemax = None
 
                     for i, ch in enumerate(self.channels):
                         if self.interp == 'exact':
