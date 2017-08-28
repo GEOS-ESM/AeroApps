@@ -117,7 +117,7 @@ class CLD_WORKSPACE(WORKSPACE):
                         nodemax = 1
                     elif self.nodemax is not None:
                         nodemax = int(self.nodemax)
-                    else
+                    else:
                         nodemax = None
 
                     for i, ch in enumerate(self.channels):
