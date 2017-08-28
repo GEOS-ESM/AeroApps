@@ -10,6 +10,7 @@
 #
 #  16Apr2013  Todling   Initial code
 #  24Feb2014  Todling   Expand capability to provide instrument (or other) summary
+#  19Dec2016  Todling   Add totals
 #
 #-----------------------------------------------------------------------------
 
@@ -58,7 +59,7 @@ sub imp_summary {
 
       @obscount = (0,0,0,0,0,0,0,0,0);
       @obsimp   = (0,0,0,0,0,0,0,0,0);
-      @typs     = glob("spr temp uv hum spd pcp oz gps rad");
+      @typs     = glob("spr temp uv hum spd pcp oz o3l gps rad");
       foreach $fn ( @files ) {
 
         $cmd = "$fvroot/bin/odsstats -rc $rcfile -verbose $fn > /dev/null";
@@ -79,11 +80,16 @@ sub imp_summary {
       } # imp files
    
       $ic = 0;
+      $nobstot = 0;
+      $oimptot = 0;
       print " obs-var     count      impact \n"; 
       foreach $typ ( @typs ) {
+           $nobstot = $nobstot + $obscount[$ic];
+           $oimptot = $oimptot + $obsimp[$ic];
            printf " %8s %8d %11.4e \n", $typ, $obscount[$ic], $obsimp[$ic];
            $ic = $ic + 1;
       }
+      printf "Total Impact %8s %8d %11.4e \n", "tot", $nobstot, $oimptot;
 
    } else { # not kt-summary
       $cmd = "$fvroot/bin/odsstats -rc $rcfile @files  > /dev/null";

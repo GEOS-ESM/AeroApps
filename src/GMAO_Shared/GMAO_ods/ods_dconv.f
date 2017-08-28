@@ -71,6 +71,7 @@
 !                                   to temperature diags
 !       21Jan2014 - Todling    - option to choose type of sigo to go into ODS file
 !       28Jan2014 - Todling    - use sensitivity slot (idia) from header
+!       18Mar2015 - Meta       - fill in 'lev' value for pres=0.0 from GPS
 !
 !EOP
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~      
@@ -171,7 +172,7 @@
 
 	      if (data(16,i)>small_num) then
                  sigo(kobs) = 1.0/data(isigo_slot,i) ! sigo used in analysis
-                 if(data(13,i)<1) qcx(kobs) = X_NCEP_NLNQC
+                 if(data(13,i)<1.and.qcx(kobs)==0) qcx(kobs) = X_NCEP_NLNQC
 	      else                                ! rejected by QC
 	         sigo(kobs) = undef
 		 qcx(kobs) = 2   
@@ -237,7 +238,7 @@
 
 	      if (data(16,i)>small_num) then
                  sigo(kobs) = 1.0/data(isigo_slot,i) ! sigo (hPa)
-                 if(data(13,i)<1) qcx(kobs) = X_NCEP_NLNQC
+                 if(data(13,i)<1.and.qcx(kobs)==0) qcx(kobs) = X_NCEP_NLNQC
 	      else                                ! rejected by QC
 	         sigo(kobs) = undef
 		 qcx(kobs) = 2   
@@ -293,7 +294,7 @@
 
 	      if (data(16,i)>small_num) then
                  sigo(kobs) = 1.0/data(isigo_slot,i) ! sigo (hPa)
-                 if(data(13,i)<1) qcx(kobs) = X_NCEP_NLNQC
+                 if(data(13,i)<1.and.qcx(kobs)==0) qcx(kobs) = X_NCEP_NLNQC
 	      else                                ! rejected by QC
 	         sigo(kobs) = undef
 		 qcx(kobs) = 2   
@@ -359,7 +360,7 @@
 
 	      if (data(16,i)>small_num) then
                  sigo(kobs) = 1e3/data(isigo_slot,i) ! actual sigo used in analysis (for sp hum, in g/kg)
-                 if(data(13,i)<1) qcx(kobs) = X_NCEP_NLNQC
+                 if(data(13,i)<1.and.qcx(kobs)==0) qcx(kobs) = X_NCEP_NLNQC
 	      else                                ! rejected by QC
 	         sigo(kobs) = undef
 		 qcx(kobs) = 2   
@@ -416,7 +417,7 @@
 
 	      if (data(16,i)>small_num) then
                  sigo(kobs) = 1.0/data(isigo_slot,i) ! sigo used in analysis
-                 if(data(13,i)<1) qcx(kobs) = X_NCEP_NLNQC
+                 if(data(13,i)<1.and.qcx(kobs)==0) qcx(kobs) = X_NCEP_NLNQC
 	      else                                ! rejected by QC
 	         sigo(kobs) = undef
 		 qcx(kobs) = 2   
@@ -485,7 +486,7 @@
 
 	      if (data(16,i)>small_num) then
                  sigo(kobs) = 1.0/data(isigo_slot,i) ! sigo used in analysis
-                 if(data(13,i)<1) qcx(kobs) = X_NCEP_NLNQC
+                 if(data(13,i)<1.and.qcx(kobs)==0) qcx(kobs) = X_NCEP_NLNQC
 	      else                                ! rejected by QC
 	         sigo(kobs) = undef
 		 qcx(kobs) = 2   
@@ -588,7 +589,7 @@
 	     if (data(16,i)>small_num) then
                 sigo(iu) = 1.0/data(isigo_slot,i) ! sigo
                 sigo(iv) = 1.0/data(isigo_slot,i) ! sigo
-                 if(data(13,i)<1) then
+                 if(data(13,i)<1.and.qcx(iu)==0.and.qcx(iv)==0) then
                     qcx(iu) = X_NCEP_NLNQC
                     qcx(iv) = X_NCEP_NLNQC
                  endif
@@ -648,7 +649,7 @@
 
 	      if (data(16,i)>small_num) then
                  sigo(kobs) = 1.0/data(isigo_slot,i) ! sigo used in analysis
-                 if(data(13,i)<1) qcx(kobs) = X_NCEP_NLNQC
+                 if(data(13,i)<1.and.qcx(kobs)==0) qcx(kobs) = X_NCEP_NLNQC
 	      else                                ! rejected by QC
 	         sigo(kobs) = undef
 		 qcx(kobs) = 2   
@@ -848,10 +849,16 @@
               qch(kobs)    = 0                    ! no info available
               qcx(kobs)    = 0
 
-              if (ninfo >= 12) then
-                 if (data(12,i) <  0. ) then
-                    qcx(kobs) = X_PASSIVE
+              if (data(6,i) == 0.0) then           ! fix for pressure = 0.
+                 if (data(19,i) < 1.) then
+                    lev(kobs) = 1050.             ! obs below model sfc
+                 else
+                    lev(kobs) = 0.01              ! obs above model top
                  endif
+              endif
+
+              if (data(12,i) <  0. ) then
+                 qcx(kobs) = X_PASSIVE
               endif
 
               if (data(16,i)>small_num) then

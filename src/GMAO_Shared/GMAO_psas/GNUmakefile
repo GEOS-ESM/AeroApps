@@ -30,7 +30,7 @@ LIB  = lib$(THIS).a
 esma_install install: $(LIB) solve.x
 	$(MKDIR) $(ESMALIB) $(ESMAETC) $(ESMAINC)/$(THIS) $(ESMABIN)
 	$(CP) -p *.a         $(ESMALIB)
-	$(CP) -p psas.rc.sample        $(ESMAETC)/psas.rc
+	#$(CP) -p psas.rc.sample $(ESMAETC)/psas.rc
 	$(CP) -p *.mod       $(ESMAINC)/$(THIS)
 	$(CP) -p solve.x $(ESMABIN)
 
@@ -199,7 +199,6 @@ m_mvcorF_nsep_bldr.F90	\
 m_normCor.F90		\
 m_ob_Operators.F90	\
 m_output.F90		\
-m_parDOT.F90		\
 m_psas.F90              \
 m_psasrc.F90		\
 m_psasversion.F90	\
@@ -290,7 +289,7 @@ m_mvcorF_nsep_bmop___.F90
 SRCS_c	 = mp_assign_to_cpu.c
 
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
-DEPS := $(addsuffix .d, $(basename $(SRCS)))
+DEPS := $(addsuffix .d, $(basename $(SRCS))) solve.d
 
 OBJS_special := $(addsuffix .o, $(basename $(SRCS_special)))
 
@@ -308,7 +307,7 @@ USER_FDEFS  = $(D)NDEBUG $(D)LANGUAGE_FORTRAN $(D)TUNE_COSTS $(D)USE_MPI_1 $(D)_
 vpath % $(INC_DIRS) # $(MOD_DIRS)
 
 #LIB_SCI = -llapack -lblas
-LIB_SCI = -L$(SHARE)/dasilva/lib -llapack -lblas
+#LIB_SCI = -L$(SHARE)/dasilva/lib -llapack -lblas
 
 $(LIB) lib : $(DEPS) $(OBJS)
 	$(RM) $(LIB)

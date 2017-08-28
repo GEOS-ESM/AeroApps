@@ -1,13 +1,13 @@
-!  $Id: CubeToLatLon.F90,v 1.2.12.5.2.6.4.5 2014-07-14 16:08:43 bmauer Exp $
+!  $Id: CubeToLatLon.F90,v 1.16 2016/12/14 22:46:05 atrayano Exp $
 
 #define SUCCESS 0
 #define VERIFY_(A) if((A)/=0) then; if(present(rc)) rc=A; PRINT *, Iam, __LINE__; return; endif
 #define ASSERT_(A) if(.not.(A)) then; if(present(rc)) rc=1; PRINT *, Iam, __LINE__; return; endif
 #define RETURN_(A) if(present(rc)) rc=A; return
 
-#define DEALOC_(A) if(associated(A)) then;A=0;call MAPL_DeAllocNodeArray(A,rc=STATUS);if(STATUS==MAPL_NoShm) deallocate(A,stat=STATUS);VERIFY_(STATUS);NULLIFY(A);endif
+#define DEALLOCGLOB_(A) if(associated(A)) then;A=0;call MAPL_DeAllocNodeArray(A,rc=STATUS);if(STATUS==MAPL_NoShm) deallocate(A,stat=STATUS);VERIFY_(STATUS);NULLIFY(A);endif
 
-#define DEALOC2_(A) if(associated(A)) then; deallocate(A, stat=STATUS); VERIFY_(STATUS); NULLIFY(A); endif
+#define DEALLOCLOCL_(A) if(associated(A)) then; deallocate(A, stat=STATUS); VERIFY_(STATUS); NULLIFY(A); endif
 
 #ifdef TAU_PROFILE
 #undef ASSERT_
@@ -60,20 +60,32 @@ Module CubeLatLonTransformMod
 
  type T_CubeLatLonTransform
      private
-     real(R8),pointer    :: weight(:,:,:),l2c(:,:,:)  
-     integer, pointer    :: index (:,:,:)
-     integer, pointer    :: id1(:,:), id2(:,:), jdc(:,:)
+     real(R8),pointer    :: weight(:,:,:) => null()
+     real(R8),pointer    :: l2c(:,:,:)   => null()
+     integer, pointer    :: index (:,:,:) => null()
+     integer, pointer    :: id1(:,:) => null()
+     integer, pointer    :: id2(:,:) => null()
+     integer, pointer    :: jdc(:,:) => null()
      logical             :: Created=.false.
      character(len=120)  :: name
      integer             :: npx, npy, nlon, nlat
-     real(R8), pointer   :: ee1(:,:,:) 
-     real(R8), pointer   :: ee2(:,:,:) 
-     real(R8), pointer   :: ff1(:,:,:) 
-     real(R8), pointer   :: ff2(:,:,:) 
-     real(R8), pointer   :: gg1(:,:,:) 
-     real(R8), pointer   :: gg2(:,:,:) 
-     real(R8), pointer   :: elon(:,:,:)
-     real(R8), pointer   :: elat(:,:,:)
+! global
+     real(R8), pointer   :: ee1(:,:,:)  => null()
+     real(R8), pointer   :: ee2(:,:,:)  => null()
+     real(R8), pointer   :: ff1(:,:,:)  => null()
+     real(R8), pointer   :: ff2(:,:,:)  => null()
+     real(R8), pointer   :: gg1(:,:,:)  => null()
+     real(R8), pointer   :: gg2(:,:,:)  => null()
+! local
+     real(R8), pointer   :: e1(:,:,:)  => null()
+     real(R8), pointer   :: e2(:,:,:)  => null()
+     real(R8), pointer   :: f1(:,:,:)  => null()
+     real(R8), pointer   :: f2(:,:,:)  => null()
+     real(R8), pointer   :: g1(:,:,:)  => null()
+     real(R8), pointer   :: g2(:,:,:)  => null()
+!
+     real(R8), pointer   :: elon(:,:,:) => null()
+     real(R8), pointer   :: elat(:,:,:) => null()
 !
      logical             :: lsCreated = .false.
      type(MAPL_LocStream) :: locStIn
@@ -85,8 +97,8 @@ Module CubeLatLonTransformMod
 
  type T_CubeCubeTransform
      private
-     real(R8),pointer    :: weight(:,:,:) => NULL()
-     integer, pointer    :: index (:,:,:) => NULL()
+     real(R8),pointer    :: weight(:,:,:,:) => NULL()
+     integer, pointer    :: index (:,:,:,:) => NULL()
      real(R8), pointer   :: ee1(:,:,:) => NULL()
      real(R8), pointer   :: ee2(:,:,:) => NULL()
      real(R8), pointer   :: ff1(:,:,:) => NULL()
@@ -166,8 +178,8 @@ Module CubeLatLonTransformMod
          ee1, ee2, ff1, ff2)
        integer,  intent(in   ) :: npx,  npy
        integer,  intent(in   ) :: npxout, npyout
-       integer,  intent(  out) :: index(:,:,:)
-       real(R8), intent(  out) :: weight(:,:,:)
+       integer,  intent(  out) :: index(:,:,:,:)
+       real(R8), intent(  out) :: weight(:,:,:,:)
        real(R8), intent(  out) :: ee1(:,:,:)
        real(R8), intent(  out) :: ee2(:,:,:)
        real(R8), intent(  out) :: ff1(:,:,:)
@@ -194,20 +206,27 @@ contains
 
     call MAPL_SyncSharedMemory(rc=STATUS)
     VERIFY_(STATUS)
-    DEALOC_(Tr%index)
-    DEALOC_(Tr%weight)
-    DEALOC_(Tr%l2c)
-    DEALOC_(Tr%id1)
-    DEALOC_(Tr%id2)
-    DEALOC_(Tr%jdc)
-    DEALOC2_(Tr%elon)
-    DEALOC2_(Tr%elat)
-    DEALOC2_(Tr%ee1)
-    DEALOC2_(Tr%ee2)
-    DEALOC2_(Tr%ff1)
-    DEALOC2_(Tr%ff2)
-    DEALOC2_(Tr%gg1)
-    DEALOC2_(Tr%gg2)
+    DEALLOCGLOB_(Tr%index)
+    DEALLOCGLOB_(Tr%weight)
+    DEALLOCGLOB_(Tr%l2c)
+    DEALLOCGLOB_(Tr%id1)
+    DEALLOCGLOB_(Tr%id2)
+    DEALLOCGLOB_(Tr%jdc)
+    DEALLOCGLOB_(Tr%ee1)
+    DEALLOCGLOB_(Tr%ee2)
+    DEALLOCGLOB_(Tr%ff1)
+    DEALLOCGLOB_(Tr%ff2)
+    DEALLOCGLOB_(Tr%gg1)
+    DEALLOCGLOB_(Tr%gg2)
+
+    DEALLOCLOCL_(Tr%elon)
+    DEALLOCLOCL_(Tr%elat)
+    DEALLOCLOCL_(Tr%e1)
+    DEALLOCLOCL_(Tr%e2)
+    DEALLOCLOCL_(Tr%f1)
+    DEALLOCLOCL_(Tr%f2)
+    DEALLOCLOCL_(Tr%g1)
+    DEALLOCLOCL_(Tr%g2)
 
     Tr%Created = .false.
 
@@ -242,6 +261,22 @@ contains
     type(T_CubeLatLonTransform)              :: Tr
     integer, optional,           intent(out) :: rc
 
+
+! npx      : inner dimension of global cube arrays (number of cells along cube edge) 
+! npy      : outer dimension of global cube arrays ( 6*npx )
+! nlon     : inner dimension of global LL arrays (Number of longitude points)
+! nlat     : outer dimension of global LL arrays (Number of latitude points)
+! lons     : the local nlon longitudes of LL grid, in radians
+! lats     : the local nlat latitudes of LL grid, in radians
+! doSubset : 
+! Tr       : The structure that holds the output transform
+! rc       : return code
+
+! Creates all necessary data to transform fields between Cube and LatLon grids,
+! in bothe directions.  Data is stored in the output transform Tr. The transform
+! can be limited to a subset of the given grids. The transforms, Tr,is 
+! transposable by the MAPL transforming routines.
+
 ! Locals
 !-------
 
@@ -251,15 +286,12 @@ contains
     real(R8), allocatable :: clon(:), clat(:)
 
 ! global vector rotations to be copied into local Tr versions
-    real(R8), pointer   :: ee1(:,:,:)
-    real(R8), pointer   :: ee2(:,:,:)
-    real(R8), pointer   :: ff1(:,:,:)
-    real(R8), pointer   :: ff2(:,:,:)
-    real(R8), pointer   :: gg1(:,:,:)
-    real(R8), pointer   :: gg2(:,:,:)
-
-! Real*8 are needed to make fv calls.
-!-----------------------------------
+!    real(R8), pointer   :: ee1(:,:,:) => null()
+!    real(R8), pointer   :: ee2(:,:,:) => null()
+!    real(R8), pointer   :: ff1(:,:,:) => null()
+!    real(R8), pointer   :: ff2(:,:,:) => null()
+!    real(R8), pointer   :: gg1(:,:,:) => null()
+!    real(R8), pointer   :: gg2(:,:,:) => null()
 
 ! Begin
 !------
@@ -279,20 +311,21 @@ contains
   ! allocate storage for weights and indeces for C2L
   !-------------------------------------------------
 
-    DEALOC_(Tr%index)
-    DEALOC_(Tr%weight)
-    DEALOC_(Tr%l2c)
-    DEALOC_(Tr%id1)
-    DEALOC_(Tr%id2)
-    DEALOC_(Tr%jdc)
-    DEALOC2_(Tr%elon)
-    DEALOC2_(Tr%elat)
-    DEALOC2_(Tr%ee1)
-    DEALOC2_(Tr%ee2)
-    DEALOC2_(Tr%ff1)
-    DEALOC2_(Tr%ff2)
-    DEALOC2_(Tr%gg1)
-    DEALOC2_(Tr%gg2)
+    DEALLOCGLOB_(Tr%index)
+    DEALLOCGLOB_(Tr%weight)
+    DEALLOCGLOB_(Tr%l2c)
+    DEALLOCGLOB_(Tr%id1)
+    DEALLOCGLOB_(Tr%id2)
+    DEALLOCGLOB_(Tr%jdc)
+
+    DEALLOCLOCL_(Tr%elon)
+    DEALLOCLOCL_(Tr%elat)
+    DEALLOCLOCL_(Tr%e1)
+    DEALLOCLOCL_(Tr%e2)
+    DEALLOCLOCL_(Tr%f1)
+    DEALLOCLOCL_(Tr%f2)
+    DEALLOCLOCL_(Tr%g1)
+    DEALLOCLOCL_(Tr%g2)
 
     call MAPL_AllocNodeArray(Tr%index,(/3,nlon,nlat/),rc=STATUS)
     if(STATUS==MAPL_NoShm) allocate(Tr%index(3,nlon,nlat),stat=status)
@@ -324,28 +357,28 @@ contains
     allocate(Tr%elat(size(lons),size(lats),3),stat=STATUS)
     VERIFY_(STATUS)
 
-    call MAPL_AllocNodeArray(ee1,(/npx,npy,3/),rc=STATUS)
-    if(STATUS==MAPL_NoShm) allocate(ee1(npx,npy,3),stat=status)
+    call MAPL_AllocNodeArray(Tr%ee1,(/npx,npy,3/),rc=STATUS)
+    if(STATUS==MAPL_NoShm) allocate(Tr%ee1(npx,npy,3),stat=status)
     VERIFY_(STATUS)
 
-    call MAPL_AllocNodeArray(ee2,(/npx,npy,3/),rc=STATUS)
-    if(STATUS==MAPL_NoShm) allocate(ee2(npx,npy,3),stat=status)
+    call MAPL_AllocNodeArray(Tr%ee2,(/npx,npy,3/),rc=STATUS)
+    if(STATUS==MAPL_NoShm) allocate(Tr%ee2(npx,npy,3),stat=status)
     VERIFY_(STATUS)
 
-    call MAPL_AllocNodeArray(ff1,(/npx,npy,3/),rc=STATUS)
-    if(STATUS==MAPL_NoShm) allocate(ff1(npx,npy,3),stat=status)
+    call MAPL_AllocNodeArray(Tr%ff1,(/npx,npy,3/),rc=STATUS)
+    if(STATUS==MAPL_NoShm) allocate(Tr%ff1(npx,npy,3),stat=status)
     VERIFY_(STATUS)
 
-    call MAPL_AllocNodeArray(ff2,(/npx,npy,3/),rc=STATUS)
-    if(STATUS==MAPL_NoShm) allocate(ff2(npx,npy,3),stat=status)
+    call MAPL_AllocNodeArray(Tr%ff2,(/npx,npy,3/),rc=STATUS)
+    if(STATUS==MAPL_NoShm) allocate(Tr%ff2(npx,npy,3),stat=status)
     VERIFY_(STATUS)
 
-    call MAPL_AllocNodeArray(gg1,(/npx,npy,3/),rc=STATUS)
-    if(STATUS==MAPL_NoShm) allocate(gg1(npx,npy,3),stat=status)
+    call MAPL_AllocNodeArray(Tr%gg1,(/npx,npy,3/),rc=STATUS)
+    if(STATUS==MAPL_NoShm) allocate(Tr%gg1(npx,npy,3),stat=status)
     VERIFY_(STATUS)
 
-    call MAPL_AllocNodeArray(gg2,(/npx,npy,3/),rc=STATUS)
-    if(STATUS==MAPL_NoShm) allocate(gg2(npx,npy,3),stat=status)
+    call MAPL_AllocNodeArray(Tr%gg2,(/npx,npy,3/),rc=STATUS)
+    if(STATUS==MAPL_NoShm) allocate(Tr%gg2(npx,npy,3),stat=status)
     VERIFY_(STATUS)
 
 ! Argument AmNodeRoot passed to GetWeights identifies if we're using SHMEM
@@ -354,8 +387,8 @@ contains
      if (doSubSet) then
        call GetWeights(npx, npy, nlat, nlon, Tr%index, Tr%weight, &
             Tr%id1, Tr%id2, Tr%jdc, Tr%l2c,  &
-               ee1,    ee2,    ff1,    ff2,    gg1,    gg2, &
-            Tr%ee1, Tr%ee2, Tr%ff1, Tr%ff2, Tr%gg1, Tr%gg2, lons, lats, &
+            Tr%ee1, Tr%ee2, Tr%ff1, Tr%ff2,  Tr%gg1, Tr%gg2, &
+            Tr%e1, Tr%e2, Tr%f1, Tr%f2, Tr%g1, Tr%g2, lons, lats, &
             AmNodeRoot = (MAPL_AmNodeRoot .or. (.not. MAPL_ShmInitialized))   &
 #ifdef WRITE_WEIGHTS_TO_FILE
             , WriteNetcdf = MAPL_am_I_root() &
@@ -364,8 +397,8 @@ contains
      else
        call GetWeights(npx, npy, nlat, nlon, Tr%index, Tr%weight, &
             Tr%id1, Tr%id2, Tr%jdc, Tr%l2c,  &
-               ee1,    ee2,    ff1,    ff2,    gg1,    gg2, &
             Tr%ee1, Tr%ee2, Tr%ff1, Tr%ff2, Tr%gg1, Tr%gg2, &
+            Tr%e1, Tr%e2, Tr%f1, Tr%f2, Tr%g1, Tr%g2, &
             AmNodeRoot = (MAPL_AmNodeRoot .or. (.not. MAPL_ShmInitialized))   &
 #ifdef WRITE_WEIGHTS_TO_FILE
             , WriteNetcdf = MAPL_am_I_root() &
@@ -374,16 +407,18 @@ contains
      endif
 
 ! Deallocate large global vector rotation transforms
+
     call MAPL_SyncSharedMemory(rc=STATUS)
     VERIFY_(STATUS)
-    DEALOC_(ee1)
-    DEALOC_(ee2)
-    DEALOC_(ff1)
-    DEALOC_(ff2)
-    DEALOC_(gg1)
-    DEALOC_(gg2)
 
-!cartesian to latlon spherical on latlon grid
+!    DEALLOCGLOB_(Tr%ee1)
+!    DEALLOCGLOB_(Tr%ee2)
+!    DEALLOCGLOB_(Tr%ff1)
+!    DEALLOCGLOB_(Tr%ff2)
+!    DEALLOCGLOB_(Tr%gg1)
+!    DEALLOCGLOB_(Tr%gg2)
+
+! Cartesian to latlon spherical on latlon grid
 
        allocate(slat(size(lats)),clat(size(lats)))
        allocate(slon(size(lons)),clon(size(lons)))
@@ -422,12 +457,12 @@ contains
 
     integer :: status
 
-    DEALOC_(Tr%weight)
-    DEALOC_(Tr%index)
-    DEALOC_(Tr%ee1)
-    DEALOC_(Tr%ee2)
-    DEALOC_(Tr%ff1)
-    DEALOC_(Tr%ff2)
+    DEALLOCGLOB_(Tr%weight)
+    DEALLOCGLOB_(Tr%index)
+    DEALLOCGLOB_(Tr%ee1)
+    DEALLOCGLOB_(Tr%ee2)
+    DEALLOCGLOB_(Tr%ff1)
+    DEALLOCGLOB_(Tr%ff2)
 
     Tr%Created = .false.
 
@@ -477,20 +512,20 @@ contains
   ! allocate storage for weights and indeces for C2C
   !-------------------------------------------------
 
-    DEALOC_(Tr%weight)
-    DEALOC_(Tr%index)
-    DEALOC_(Tr%ee1)
-    DEALOC_(Tr%ee2)
-    DEALOC_(Tr%ff1)
-    DEALOC_(Tr%ff2)
+    DEALLOCGLOB_(Tr%weight)
+    DEALLOCGLOB_(Tr%index)
+    DEALLOCGLOB_(Tr%ee1)
+    DEALLOCGLOB_(Tr%ee2)
+    DEALLOCGLOB_(Tr%ff1)
+    DEALLOCGLOB_(Tr%ff2)
     
     ! ALT: index and weight are allocated at the output grid resolution
-    call MAPL_AllocNodeArray(Tr%weight,(/4,npxout,npyout/),rc=STATUS)
-    if(STATUS==MAPL_NoShm) allocate(Tr%weight(4,npxout,npyout),stat=status)
+    call MAPL_AllocNodeArray(Tr%weight,(/4,npxout,npyout/6,6/),rc=STATUS)
+    if(STATUS==MAPL_NoShm) allocate(Tr%weight(4,npxout,npyout/6,6),stat=status)
     VERIFY_(STATUS)
 
-    call MAPL_AllocNodeArray(Tr%index,(/3,npxout,npyout/),rc=STATUS)
-    if(STATUS==MAPL_NoShm) allocate(Tr%index(3,npxout,npyout),stat=status)
+    call MAPL_AllocNodeArray(Tr%index,(/3,npxout,npyout/6,6/),rc=STATUS)
+    if(STATUS==MAPL_NoShm) allocate(Tr%index(3,npxout,npyout/6,6),stat=status)
     VERIFY_(STATUS)
 
     ! ALT: ff1 and ff2 are allocated at the input grid resolution
@@ -511,8 +546,12 @@ contains
     if(STATUS==MAPL_NoShm) allocate(Tr%ee2(npxout,npyout,3),stat=status)
     VERIFY_(STATUS)
 
-    call GetWeightsC2C(npx, npy, npxout, npyout, Tr%index, Tr%weight, &
-         Tr%ee1, Tr%ee2, Tr%ff1, Tr%ff2)
+    if (MAPL_AmNodeRoot .or. (.not. MAPL_ShmInitialized)) then
+       call GetWeightsC2C(npx, npy, npxout, npyout, Tr%index, Tr%weight, &
+            Tr%ee1, Tr%ee2, Tr%ff1, Tr%ff2)
+    end if
+    call MAPL_SyncSharedMemory(rc=STATUS)
+    VERIFY_(STATUS)
 
        
     Tr%Created=.true.
@@ -581,14 +620,14 @@ contains
 
     real(R8), dimension(0:,0:,:), intent(inout) :: var_in
     real(R8), dimension(0:,0:,:), intent(inout) :: var_out
-    real(R8), dimension(:,:,:),   intent(in   ) :: weight_c2c
-    integer,  dimension(:,:,:),   intent(in   ) :: index_c2c
+    real(R8), dimension(:,:,:,:), intent(in   ) :: weight_c2c
+    integer,  dimension(:,:,:,:), intent(in   ) :: index_c2c
 
     !------------------------------------------------------------------!
     ! local variables                                                  !
     !------------------------------------------------------------------!
 
-    integer           :: i, j, l, jx, ic, jc, lc, nx, ny
+    integer           :: i, j, l, ic, jc, lc, nx, ny
 
     nx   = size(var_out,1)-2
     ny   = size(var_out,2)-2
@@ -597,17 +636,16 @@ contains
     call GhostCube(var_in)
 
     FACES: do l=1,ntiles
-       JLOOP: do jx=1,ny
-          j  = (l-1)*ny + jx
+       JLOOP: do j=1,ny
           ILOOP: do i=1,nx
-             ic=index_c2c(1,i,j)
-             jc=index_c2c(2,i,j)
-             lc=index_c2c(3,i,j)
+             ic=index_c2c(1,i,j,l)
+             jc=index_c2c(2,i,j,l)
+             lc=index_c2c(3,i,j,l)
 
-             var_out(i,jx,l)=weight_c2c(1,i,j)*var_in(ic  ,jc  , lc)  &
-                            +weight_c2c(2,i,j)*var_in(ic  ,jc+1, lc)  &
-                            +weight_c2c(3,i,j)*var_in(ic+1,jc+1, lc)  &
-                            +weight_c2c(4,i,j)*var_in(ic+1,jc  , lc)
+             var_out(i,j,l)=weight_c2c(1,i,j,l)*var_in(ic  ,jc  , lc)  &
+                           +weight_c2c(2,i,j,l)*var_in(ic  ,jc+1, lc)  &
+                           +weight_c2c(3,i,j,l)*var_in(ic+1,jc+1, lc)  &
+                           +weight_c2c(4,i,j,l)*var_in(ic+1,jc  , lc)
           enddo ILOOP
        enddo JLOOP
     enddo FACES
@@ -703,15 +741,7 @@ contains
     integer               :: npx,npy,nlon,nlat
     integer               :: nx,j1,j2,status,itile
     real(R8), allocatable :: var_cs(:,:,:)
-    real(R8)              :: misval_
-
     ASSERT_(Tr%Created)
-
-    if(present(misval)) then
-       misval_ = misval
-    else
-       misval_ = 1.0
-    end if
 
     nx   = Tr%npx
 
@@ -722,7 +752,7 @@ contains
     allocate ( var_cs(0:nx+1,0:nx+1,ntiles),stat=status)
     VERIFY_(STATUS)
 
-    ASSERT_(.not.transpose .or. misval_==1.0)
+    ASSERT_(.not. (transpose .and. present(misval)))
 
     var_cs=0.0
 
@@ -736,7 +766,7 @@ contains
     end if
 
     call C2LInterp(var_cs, data_ll, Tr%index, Tr%weight,&
-                   misval_,  Tr%subset, transpose)
+                   misval,  Tr%subset, transpose)
 
     if(transpose) then
        do itile=1,ntiles
@@ -767,19 +797,12 @@ contains
     integer               :: npx,npy,nlon,nlat
     integer               :: nx,j1,j2,status,itile
     real(R8), allocatable :: var_cs(:,:,:), data_ll8(:,:)
-    real(R8)              :: misval_
 
 !JK patch for conservative interp---------------
     real(R8), allocatable :: data_cs8(:,:)
 
 
     ASSERT_(Tr%Created)
-
-    if(present(misval)) then
-       misval_ = misval
-    else
-       misval_ = 1.0
-    end if
 
     nx   = Tr%npx
 
@@ -797,7 +820,7 @@ contains
        VERIFY_(STATUS)
     endif
 
-    ASSERT_(.not.transpose .or. misval_==1.0)
+    ASSERT_(.not. (transpose .and. present(misval)))
 
     var_cs=0.0
 
@@ -825,7 +848,7 @@ contains
     else                       !JK for conservative interp---
 
     call C2LInterp(var_cs, data_ll8, Tr%index, Tr%weight,&
-                   misval_,  Tr%subset, transpose)
+                   misval,  Tr%subset, transpose)
 
     endif                      !JK for conservative interp---
 
@@ -861,15 +884,8 @@ contains
 
     integer               :: nx,j1,j2,status,itile
     real(R8), allocatable :: var_cs(:,:,:)
-    real(R8)              :: misval_
 
     ASSERT_(Tr%Created)
-
-    if(present(misval)) then
-       misval_ = misval
-    else
-       misval_ = 1.0
-    end if
 
     nx   = Tr%npx
 
@@ -892,7 +908,7 @@ contains
     end if
 
     call L2CInterp(data_ll, var_cs, Tr%id1,  Tr%id2,  Tr%jdc, &
-                   Tr%l2c, misval_, transpose)
+                   Tr%l2c, misval, transpose)
 
     if(.not.transpose) then
        do itile=1,ntiles
@@ -921,7 +937,6 @@ contains
 !-------
 
     integer               :: nx,j1,j2,status,itile
-    real(R8)              :: misval_
 
     real(R8), allocatable :: data_cs8(:,:,:), data_ll8(:,:)
 !JK for conservative interp--------------
@@ -930,12 +945,6 @@ contains
 
 
     ASSERT_(Tr%Created)
-
-    if(present(misval)) then
-       misval_ = misval
-    else
-       misval_ = 1.0
-    end if
 
     nx   = Tr%npx
 
@@ -984,7 +993,7 @@ contains
     else                     !JK for conservative interp---
 
     call L2CInterp(data_ll8, data_cs8, Tr%id1,  Tr%id2,  Tr%jdc, &
-                   Tr%l2c, misval_, transpose)
+                   Tr%l2c, misval, transpose)
 
     endif                    !JK for conservative interp---
 
@@ -1022,7 +1031,7 @@ contains
     real(R8), dimension(:,:),     intent(inout) :: latlon
     real(R8), dimension(:,:,:),   intent(in)    :: weight
     integer,  dimension(:,:,:),   intent(in)    :: index
-    real(R8),                     intent(in)    :: misval 
+    real,     optional,           intent(in)    :: misval 
     logical,                      intent(in)    :: subset
     logical,                      intent(in)    :: transpose
 
@@ -1032,11 +1041,6 @@ contains
 
     integer           :: i, j, ic, jc, nx, ny, nlon, nlat, tile, ii
     real(R8)          :: ww
-
-    if(transpose .and. misval/=1) then
-       print *, 'Trying to do C2L-transpose with missing value'
-       return
-    end if
 
     nx   = size(cubsph,1)-2
     ny   = size(cubsph,2)-2
@@ -1076,7 +1080,7 @@ contains
                 jc=index(2,i,j)
 
                 ADJOINT: if(.not.transpose) then
-                   UNDEF: if(misval==1.D0) then
+                   UNDEF: if(.not. present(misval)) then
                       latlon(ii,j) = weight(1,i,j)*cubsph(ic  ,jc  ,tile)  &
                                    + weight(2,i,j)*cubsph(ic  ,jc+1,tile)  &
                                    + weight(3,i,j)*cubsph(ic+1,jc+1,tile)  &
@@ -1145,7 +1149,7 @@ contains
     real(R8), dimension(:,:),   intent(inout) :: latlon
     real(R8), dimension(:,:,:), intent(in)    :: weight
     integer,  dimension(:,:),   intent(in)    :: id1, id2, jdc
-    real(R8),                   intent(in)    :: misval 
+    real,  optional,            intent(in)    :: misval 
     logical,                    intent(in)    :: transpose
 
     !------------------------------------------------------------------!
@@ -1174,7 +1178,7 @@ contains
 
              ADJOINT: if(.not.transpose) then    
 
-                UNDEF: if(misval==1.D0) then
+                UNDEF: if(.not. present(misval)) then
                    cubsph(i,jx,k) = weight(1,i,j)*latlon(i1,j1  )   &
                                   + weight(2,i,j)*latlon(i2,j1  )   &
                                   + weight(3,i,j)*latlon(i2,j1+1)   &
@@ -1191,12 +1195,12 @@ contains
                       cubsph(i,jx,k) = cubsph(i,jx,k) + weight(2,i,j)*latlon(i2,j1  )
                       ww             = ww             + weight(2,i,j)
                    end if
-                   if(latlon(i1,j1+1)/=misval) then
-                      cubsph(i,jx,k) = cubsph(i,jx,k) + weight(3,i,j)*latlon(i1,j1+1)
+                   if(latlon(i2,j1+1)/=misval) then
+                      cubsph(i,jx,k) = cubsph(i,jx,k) + weight(3,i,j)*latlon(i2,j1+1)
                       ww             = ww             + weight(3,i,j)
                    end if
-                   if(latlon(i2,j1+1)/=misval) then
-                      cubsph(i,jx,k) = cubsph(i,jx,k) + weight(4,i,j)*latlon(i2,j1+1)
+                   if(latlon(i1,j1+1)/=misval) then
+                      cubsph(i,jx,k) = cubsph(i,jx,k) + weight(4,i,j)*latlon(i1,j1+1)
                       ww             = ww             + weight(4,i,j)
                    end if
 
@@ -1263,7 +1267,8 @@ contains
     x(0,1:ny,   6) = x(nx,1:ny,   5)
     x(nx+1,1:ny,6) = x(nx:1:-1,1, 2)
 
-!  Zero corners
+!  Set ghost corners to zero (to prevent "uninitialized" error). 
+!  These values should not be used in any calculation
 
     x(0,   ny+1,:) = 0.0
     x(0,      0,:) = 0.0
@@ -1330,69 +1335,131 @@ contains
 ! and the other is lat-lon.
 
 
-  subroutine SphericalToCartesianR4(Tr, U, V, Uxyz, Transpose, SphIsLL)
+  subroutine SphericalToCartesianR4(Tr, U, V, Uxyz, Transpose, SphIsLL, Rotate, RC)
     type(T_CubeLatLonTransform), intent(IN ) :: Tr
     real,                        intent(IN ) :: U(:,:,:), V(:,:,:)
     real,                        intent(OUT) :: Uxyz(:,:,:)
     logical,                     intent(IN ) :: Transpose
     logical,                     intent(IN ) :: SphIsLL
+    logical,                     intent(IN ) :: Rotate
+    integer, optional,           intent(OUT) :: RC
 
     integer           :: K, LM
     real(R8), pointer :: e1(:,:,:), e2(:,:,:) 
+
+    if(.not.Rotate) then
+       ASSERT_(.not.Transpose .and. .not.SphIsLL)
+    end if
 
     if(SphIsLL) then
        e1=>Tr%elon
        e2=>Tr%elat
     else
-       if(.not.Transpose) then
-          e1=>Tr%ff1
-          e2=>Tr%ff2
+       if(.not.Rotate) then
+          if (size(U,1) == size(Tr%gg1,1) .and. &
+              size(U,2) == size(Tr%gg1,2) .and. &
+              size(V,1) == size(Tr%gg2,1) .and. &
+              size(V,2) == size(Tr%gg2,2)) then
+             e1=>Tr%gg1
+             e2=>Tr%gg2
+          else
+             e1=>Tr%g1
+             e2=>Tr%g2
+          end if
+       elseif(.not.Transpose) then
+          if (size(U,1) == size(Tr%ff1,1) .and. &
+              size(U,2) == size(Tr%ff1,2) .and. &
+              size(V,1) == size(Tr%ff2,1) .and. &
+              size(V,2) == size(Tr%ff2,2)) then
+             e1=>Tr%ff1
+             e2=>Tr%ff2
+          else
+             e1=>Tr%f1
+             e2=>Tr%f2
+          endif
        else
-          e1=>Tr%ee1
-          e2=>Tr%ee2
+          e1=>Tr%e1
+          e2=>Tr%e2
        end if
     end if
 
     LM = size(U,3)
 
     do k=1,LM
-       Uxyz(:,:,k     ) = U(:,:,k)*e1(:,:,1) + V(:,:,k)*e2(:,:,1)
-       Uxyz(:,:,k+  LM) = U(:,:,k)*e1(:,:,2) + V(:,:,k)*e2(:,:,2)
-       Uxyz(:,:,k+2*LM) = U(:,:,k)*e1(:,:,3) + V(:,:,k)*e2(:,:,3)
+       where(U(:,:,k) == MAPL_UNDEF .or. V(:,:,k) == MAPL_UNDEF)
+          Uxyz(:,:,k     ) = MAPL_UNDEF
+          Uxyz(:,:,k+  LM) = MAPL_UNDEF
+          Uxyz(:,:,k+2*LM) = MAPL_UNDEF
+       elsewhere
+          Uxyz(:,:,k     ) = U(:,:,k)*e1(:,:,1) + V(:,:,k)*e2(:,:,1)
+          Uxyz(:,:,k+  LM) = U(:,:,k)*e1(:,:,2) + V(:,:,k)*e2(:,:,2)
+          Uxyz(:,:,k+2*LM) = U(:,:,k)*e1(:,:,3) + V(:,:,k)*e2(:,:,3)
+       end where
     end do
 
     return
   end subroutine SphericalToCartesianR4
 
-  subroutine SphericalToCartesianR8(Tr, U, V, Uxyz, Transpose, SphIsLL)
+  subroutine SphericalToCartesianR8(Tr, U, V, Uxyz, Transpose, SphIsLL, Rotate, RC)
     type(T_CubeLatLonTransform), intent(IN ) :: Tr
     real(R8),                    intent(IN ) :: U(:,:,:), V(:,:,:)
-    real(R8),                   intent(OUT) :: Uxyz(:,:,:)
+    real(R8),                    intent(OUT) :: Uxyz(:,:,:)
     logical,                     intent(IN ) :: Transpose
     logical,                     intent(IN ) :: SphIsLL
+    logical,                     intent(IN ) :: Rotate
+    integer, optional,           intent(OUT) :: RC
 
     integer           :: K, LM
     real(R8), pointer :: e1(:,:,:), e2(:,:,:) 
+
+    if(.not.Rotate) then
+       ASSERT_(.not.Transpose .and. .not.SphIsLL)
+    end if
 
     if(SphIsLL) then
        e1=>Tr%elon
        e2=>Tr%elat
     else
-       if(.not.Transpose) then
-          e1=>Tr%ff1
-          e2=>Tr%ff2
+       if(.not.Rotate) then
+          if (size(U,1) == size(Tr%gg1,1) .and. &
+              size(U,2) == size(Tr%gg1,2) .and. &
+              size(V,1) == size(Tr%gg2,1) .and. &
+              size(V,2) == size(Tr%gg2,2)) then
+             e1=>Tr%gg1
+             e2=>Tr%gg2
+          else
+             e1=>Tr%g1
+             e2=>Tr%g2
+          end if
+       elseif(.not.Transpose) then
+          if (size(U,1) == size(Tr%ff1,1) .and. &
+              size(U,2) == size(Tr%ff1,2) .and. &
+              size(V,1) == size(Tr%ff2,1) .and. &
+              size(V,2) == size(Tr%ff2,2)) then
+             e1=>Tr%ff1
+             e2=>Tr%ff2
+          else
+             e1=>Tr%f1
+             e2=>Tr%f2
+          endif
        else
-          e1=>Tr%ee1
-          e2=>Tr%ee2
+          e1=>Tr%e1
+          e2=>Tr%e2
        end if
     end if
 
     LM = size(U,3)
 
     do k=1,LM
-       Uxyz(:,:,k     ) = U(:,:,k)*e1(:,:,1) + V(:,:,k)*e2(:,:,1)
-       Uxyz(:,:,k+  LM) = U(:,:,k)*e1(:,:,2) + V(:,:,k)*e2(:,:,2)
-       Uxyz(:,:,k+2*LM) = U(:,:,k)*e1(:,:,3) + V(:,:,k)*e2(:,:,3)
+       where(U(:,:,k) == MAPL_UNDEF .or. V(:,:,k) == MAPL_UNDEF)
+          Uxyz(:,:,k     ) = MAPL_UNDEF
+          Uxyz(:,:,k+  LM) = MAPL_UNDEF
+          Uxyz(:,:,k+2*LM) = MAPL_UNDEF
+       elsewhere
+          Uxyz(:,:,k     ) = U(:,:,k)*e1(:,:,1) + V(:,:,k)*e2(:,:,1)
+          Uxyz(:,:,k+  LM) = U(:,:,k)*e1(:,:,2) + V(:,:,k)*e2(:,:,2)
+          Uxyz(:,:,k+2*LM) = U(:,:,k)*e1(:,:,3) + V(:,:,k)*e2(:,:,3)
+       end where
     end do
 
     return
@@ -1404,47 +1471,65 @@ contains
     real,                        intent(IN ) :: Uxyz(:,:,:)
     logical,                     intent(IN ) :: Transpose
     logical,                     intent(IN ) :: SphIsLL
-    logical, optional,           intent(IN ) :: Rotate
+    logical,                     intent(IN ) :: Rotate
     integer, optional,           intent(OUT) :: RC
 
-    logical           :: Rotate_
     integer           :: K, LM
     real(R8), pointer :: e1(:,:,:), e2(:,:,:) 
 
-    Rotate_ = .true.
-    if(present(Rotate)) then
-       if(.not.Rotate) then
-          ASSERT_(.not.Transpose .and. .not.SphIsLL)
-          Rotate_ = Rotate
-       end if
+    if(.not.Rotate) then
+       ASSERT_(.not.Transpose .and. .not.SphIsLL)
     end if
 
     if(SphIsLL) then
        e1=>Tr%elon
        e2=>Tr%elat
     else
-       if(.not.Rotate_) then
-          e1=>Tr%gg1
-          e2=>Tr%gg2
+       if(.not.Rotate) then
+          if (size(Uxyz,1) == size(Tr%gg1,1) &
+               .and. size(Uxyz,2) == size(Tr%gg1,2) &
+               .and. size(Uxyz,1) == size(Tr%gg2,1) &
+               .and. size(Uxyz,2) == size(Tr%gg2,2)) then
+             e1=>Tr%gg1
+             e2=>Tr%gg2
+          else
+             e1=>Tr%g1
+             e2=>Tr%g2
+          endif
        elseif(Transpose) then
-          e1=>Tr%ff1
-          e2=>Tr%ff2
+          e1=>Tr%f1
+          e2=>Tr%f2
        else
-          e1=>Tr%ee1
-          e2=>Tr%ee2
+          if (size(Uxyz,1) == size(Tr%ee1,1) &
+               .and. size(Uxyz,2) == size(Tr%ee1,2) &
+               .and. size(Uxyz,1) == size(Tr%ee2,1) &
+               .and. size(Uxyz,2) == size(Tr%ee2,2)) then
+             e1=>Tr%ee1
+             e2=>Tr%ee2
+          else
+             e1=>Tr%e1
+             e2=>Tr%e2
+          end if
        end if
     end if
 
     LM = size(U,3)
     
     do k=1,LM
-       U(:,:,k) = Uxyz(:,:,k     )*e1(:,:,1) + &
-                  Uxyz(:,:,k+  LM)*e1(:,:,2) + &
-                  Uxyz(:,:,k+2*LM)*e1(:,:,3)
+       where (Uxyz(:,:,k) == MAPL_UNDEF .or. Uxyz(:,:,k+LM) == MAPL_UNDEF &
+            .or. Uxyz(:,:,k+2*LM) == MAPL_UNDEF)
+          U(:,:,k) = MAPL_UNDEF
+          V(:,:,k) = MAPL_UNDEF
+       elsewhere
+ 
+          U(:,:,k) = Uxyz(:,:,k     )*e1(:,:,1) + &
+                     Uxyz(:,:,k+  LM)*e1(:,:,2) + &
+                     Uxyz(:,:,k+2*LM)*e1(:,:,3)
 
-       V(:,:,k) = Uxyz(:,:,k     )*e2(:,:,1) + &
-                  Uxyz(:,:,k+  LM)*e2(:,:,2) + &
-                  Uxyz(:,:,k+2*LM)*e2(:,:,3)
+          V(:,:,k) = Uxyz(:,:,k     )*e2(:,:,1) + &
+                     Uxyz(:,:,k+  LM)*e2(:,:,2) + &
+                     Uxyz(:,:,k+2*LM)*e2(:,:,3)
+       end where
     end do
 
     return
@@ -1459,44 +1544,62 @@ contains
     logical, optional,           intent(IN ) :: Rotate
     integer, optional,           intent(OUT) :: RC
 
-    logical           :: Rotate_
     integer           :: K, LM
     real(R8), pointer :: e1(:,:,:), e2(:,:,:) 
 
-    Rotate_ = .true.
-    if(present(Rotate)) then
-       if(.not.Rotate) then
-          ASSERT_(.not.Transpose .and. .not.SphIsLL)
-          Rotate_ = Rotate
-       end if
+    if(.not.Rotate) then
+       ASSERT_(.not.Transpose .and. .not.SphIsLL)
     end if
 
     if(SphIsLL) then
        e1=>Tr%elon
        e2=>Tr%elat
     else
-       if(.not.Rotate_) then
-          e1=>Tr%gg1
-          e2=>Tr%gg2
+       if(.not.Rotate) then
+          if (size(Uxyz,1) == size(Tr%gg1,1) &
+               .and. size(Uxyz,2) == size(Tr%gg1,2) &
+               .and. size(Uxyz,1) == size(Tr%gg2,1) &
+               .and. size(Uxyz,2) == size(Tr%gg2,2)) then
+             e1=>Tr%gg1
+             e2=>Tr%gg2
+          else
+             e1=>Tr%g1
+             e2=>Tr%g2
+          endif
        elseif(Transpose) then
-          e1=>Tr%ff1
-          e2=>Tr%ff2
+          e1=>Tr%f1
+          e2=>Tr%f2
        else
-          e1=>Tr%ee1
-          e2=>Tr%ee2
+          if (size(Uxyz,1) == size(Tr%ee1,1) &
+               .and. size(Uxyz,2) == size(Tr%ee1,2) &
+               .and. size(Uxyz,1) == size(Tr%ee2,1) &
+               .and. size(Uxyz,2) == size(Tr%ee2,2)) then
+             e1=>Tr%ee1
+             e2=>Tr%ee2
+          else
+             e1=>Tr%e1
+             e2=>Tr%e2
+          end if
        end if
     end if
 
     LM = size(U,3)
     
     do k=1,LM
-       U(:,:,k) = Uxyz(:,:,k     )*e1(:,:,1) + &
-                  Uxyz(:,:,k+  LM)*e1(:,:,2) + &
-                  Uxyz(:,:,k+2*LM)*e1(:,:,3)
+       where (Uxyz(:,:,k) == MAPL_UNDEF .or. Uxyz(:,:,k+LM) == MAPL_UNDEF &
+            .or. Uxyz(:,:,k+2*LM) == MAPL_UNDEF)
+          U(:,:,k) = MAPL_UNDEF
+          V(:,:,k) = MAPL_UNDEF
+       elsewhere
+ 
+          U(:,:,k) = Uxyz(:,:,k     )*e1(:,:,1) + &
+                     Uxyz(:,:,k+  LM)*e1(:,:,2) + &
+                     Uxyz(:,:,k+2*LM)*e1(:,:,3)
 
-       V(:,:,k) = Uxyz(:,:,k     )*e2(:,:,1) + &
-                  Uxyz(:,:,k+  LM)*e2(:,:,2) + &
-                  Uxyz(:,:,k+2*LM)*e2(:,:,3)
+          V(:,:,k) = Uxyz(:,:,k     )*e2(:,:,1) + &
+                     Uxyz(:,:,k+  LM)*e2(:,:,2) + &
+                     Uxyz(:,:,k+2*LM)*e2(:,:,3)
+       end where
     end do
 
     return
@@ -1898,12 +2001,12 @@ end subroutine ReStaggerWindsCube
        v(2:nx,0,   6) =  u(nx,ny:2:-1,4)
        ! fill these edges (on first cell/row) around corner
        u(0,   1,   1) =  v(1,ny,6)
-       v(1,   ny+1,1) = -u(1,ny,5)
+       v(1,   ny+1,1) = -v(1,ny,5)
        u(nx+1,   1,2) = -u(nx,1,6)
        v(1,   0,   2) =  u(nx,1,1)
        u(0,   1,   3) =  v(1,ny,2)
        v(1,   ny+1,3) = -v(1,ny,1)
-       u(nx+1,1,   4) = -v(nx,1,2)
+       u(nx+1,1,   4) = -u(nx,1,2)
        v(1,   0,   4) =  u(nx,1,3)
        u(0,   1,   5) =  v(1,ny,4)
        v(1,   ny+1,5) = -v(1,ny,3)
@@ -1924,7 +2027,8 @@ end subroutine ReStaggerWindsCube
        v(1:nx,0,   6) =  u(nx,ny:1:-1,4)
     end if
 
-!  Zero corners
+!  Set ghost corners to zero (to prevent "uninitialized" error). 
+!  These values should not be used in any calculation
 
     u(0,   ny+1,:) = 0.0
     u(0,      0,:) = 0.0

@@ -1,4 +1,4 @@
-! $Id: recv.H,v 1.2 2008-12-11 14:45:02 trayanov Exp $
+! $Id: recv.H,v 1.2 2008/12/11 14:45:02 trayanov Exp $
 
 #ifdef NAME_
 #undef NAME_

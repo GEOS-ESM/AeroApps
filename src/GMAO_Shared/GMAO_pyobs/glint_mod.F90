@@ -1,4 +1,4 @@
-!  $Id: glint_mod.F90,v 1.1 2014-02-09 21:34:51 adasilva Exp $
+!  $Id: glint_mod.F90,v 1.2 2017/08/24 15:08:03 adasilva Exp $
 
   MODULE glint_mod 
 !BOP

@@ -54,11 +54,12 @@ else
    BINS_MAPL = GFIO_remap.x GFIO_Shave.x lcv2prs.x $(LCV2PRS_EOS)
 endif
 
-BINS =  ana5sfc.x diag2dyn.x drs2dyn.x dyn2drs.x dyn2dyn.x \
+BINS =  ana5sfc.x diag2dyn.x drs2dyn.x dyn2drs.x dyn2dyn.x dyn_boot.x \
 	dyn2prs.x dyn2rs5.x dyn52dyn.x dyndiff.x dyndims.x dynp.x echorc.x \
 	fvsubset.x getgfiodim.x ibc_upd.x maph.x maph_pert.x mapz.x \
 	recalcsfc.x reset_time.x rs52dyn.x gcmbkg2ana.x dyndot.x \
-        dyn_pert_remap.x dyn_recenter.x dyn_rankhist.x dyn2real_eta.x $(BINS_MAPL)
+        dyn_pert_remap.x dyn_recenter.x dyn_rankhist.x dyn2real_eta.x \
+        dyn_ncf2dyn.x dyn_iupd.x $(BINS_MAPL)
 
 UT = ut_ana2dyn.x ut_fread.x ut_insitu.x ut_lp.x ut_ocean.x ut_sst.x \
 	blendq.x geos2fv.x rout2prs.x 

@@ -14,10 +14,11 @@
 
     type(ods_vect) ods
     integer rc, nymd, nhms, nymd_, nhms_
+    integer ihours,syn_incr,nhms_check
     character(len=256) ifname, ftype, ofname
 
     integer, external :: iargc, ods_caldat
-    integer argc, jbeg, jend
+    integer argc, jbeg, jend,nsyn
     character(len=256) argv
 
 !....................................................................
@@ -54,6 +55,20 @@
 !   Create empty file (Note: not RUC friendly)
 !   ------------------------------------------
 !   do nhms = 0, 060000, 120000, 180000
+      nsyn = ods%meta%nsyn
+      ihours = 240000
+      syn_incr = ihours/nsyn
+      nhms_check = mod(nhms,syn_incr)
+      if(nhms_check .ne. 0) then
+       print *, "============================================================"
+       print *, "     ******        ERROR    ******                       "
+       print *, " Input blank ods file contains ",nsyn," synoptic times " 
+       print *, " and trying to write ",nymd,nhms
+       print *, "============================================================"
+       call exit(100)
+      endif
+
+
     print *, 'Writing ods at ', nymd, nhms
        call ODS_Put ( ofname, ftype, nymd, nhms, ods, rc )
        if ( rc .ne. 0 ) then

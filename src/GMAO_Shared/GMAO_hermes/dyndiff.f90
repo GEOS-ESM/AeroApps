@@ -48,6 +48,7 @@
 
 !     Locals
 !     ------
+      character(len=255) :: egress
       integer, parameter :: READ_ONLY = 1
       integer fid, nvars, ngatts
       integer ios, rc, iopt, ifile
@@ -59,7 +60,7 @@
       
 !  Initialize
 !  ----------     
-   call Init_ ( dyntype, mfiles, files, dominmax, verb )
+   call Init_ ( dyntype, mfiles, files, dominmax, verb, egress )
    nfiles = 1
 !  Loop over input eta files
 !  -------------------------
@@ -97,6 +98,14 @@
             call die(myname,'cannot read dynamics vector file')
          end if
 
+         ! check dims
+         if ( dyn(1)%grid%im/=dyn(2)%grid%im .or. &
+              dyn(1)%grid%jm/=dyn(2)%grid%jm .or. &
+              dyn(1)%grid%km/=dyn(2)%grid%km ) then
+            write(6,'(a,3(i6,2x))') 'dyn-1:', dyn(1)%grid%im,dyn(1)%grid%jm,dyn(1)%grid%km
+            write(6,'(a,3(i6,2x))') 'dyn-2:', dyn(2)%grid%im,dyn(2)%grid%jm,dyn(2)%grid%km
+            call die(myname,'error, incompatible dims')
+         endif
          print *, "> nymd, nhms: ", nymd, nhms, " (diff)"
          lm = min(dyn(1)%grid%lm,dyn(2)%grid%lm)
          if ( .not. dominmax ) then
@@ -154,7 +163,7 @@
 !  All done
 !  --------
    close(999)
-   open (999,file='DYNDIFF_EGRESS',form='formatted')
+   open (999,file=trim(egress),form='formatted')
    close(999)
    call exit(0)
 
@@ -170,14 +179,15 @@ CONTAINS
 !
 ! !INTERFACE:
 !
-      subroutine Init_ ( dyntype, mfiles, files, dominmax, verb )
+      subroutine Init_ ( dyntype, mfiles, files, dominmax, verb, egress )
 
       implicit NONE
 
       integer,       intent(out) :: dyntype ! 4=geos4, 5=geos5
       integer,       intent(in)  :: mfiles  ! max. number of eta files
                                             ! dynamics file names (eta)
-      character*255, intent(out) :: files(mfiles) 
+      character(len=*), intent(out) :: files(mfiles) 
+      character(len=*), intent(out) :: egress
       logical, intent(out) :: dominmax
       logical, intent(out) :: verb
       
@@ -202,6 +212,7 @@ CONTAINS
       dyntype  = 4        ! default is GEOS-4 files
       dominmax = .false.
       acoeff = 1.0
+      egress = 'DYNDIFF_EGRESS'
 
 
       print *
@@ -233,6 +244,10 @@ CONTAINS
              iarg = iarg + 1
              call GetArg ( iArg, argv )
              read(argv,*) acoeff
+           case ("-egress")
+             if ( iarg+1 .gt. argc ) call usage()
+             iarg = iarg + 1
+             call GetArg ( iArg, egress )
            case ("-o")
              dout = .true.
              if ( iarg+1 .gt. argc ) call usage()
@@ -282,6 +297,7 @@ CONTAINS
       print *, '-verb       Echo different to standard out'
       print *, '              (default: FALSE) '
       print *, '-g5         Treats files as GEOS-5 files'
+      print *, '-egress     Name of EGRESS file for successful finalization'
       print *, '-a  coeff   Scale difference by this coefficient (see note)'
       print *
       print *

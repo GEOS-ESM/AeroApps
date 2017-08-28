@@ -1,4 +1,4 @@
-!  $Id: MAPL_LocStreamMod.F90,v 1.56.12.2.2.5 2014-07-09 19:36:14 atrayano Exp $
+!  $Id: MAPL_LocStreamMod.F90,v 1.61 2016/04/21 15:12:11 atrayano Exp $
 
 #include "MAPL_ErrLog.h"
 
@@ -204,13 +204,25 @@ contains
 
     character(len=ESMF_MAXSTR) :: IAm='MAPL_LocStreamGet'
     integer                    :: STATUS
+    integer                    :: n_ele, i
+    integer, pointer           :: tmp_iptr(:) => null()
+    real,    pointer           :: tmp_rptr(:) => null()
+    character(len=ESMF_MAXSTR), pointer       :: tmp_strptr(:) => null()
 
     if (present(NT_LOCAL)) then
        NT_LOCAL = locstream%Ptr%NT_LOCAL
     end if
 
     if (present(tiletype)) then
+#ifdef __GFORTRAN__
+       allocate(tmp_iptr(lbound(locstream%Ptr%Local_GeoLocation,1):ubound(locstream%Ptr%Local_GeoLocation,1)))
+       do i = lbound(locstream%Ptr%Local_GeoLocation,1), ubound(locstream%Ptr%Local_GeoLocation,1)
+         tmp_iptr(i) = locstream%Ptr%Local_GeoLocation(i)%t
+       enddo
+       tiletype => tmp_iptr
+#else
        tiletype => locstream%Ptr%Local_GeoLocation(:)%t
+#endif
     end if
 
     if (present(tilekind)) then
@@ -220,27 +232,67 @@ contains
     end if
 
     if (present(tilelons)) then
+#ifdef __GFORTRAN__
+       allocate(tmp_rptr(lbound(locstream%Ptr%Local_GeoLocation,1):ubound(locstream%Ptr%Local_GeoLocation,1)))
+       do i = lbound(locstream%Ptr%Local_GeoLocation,1), ubound(locstream%Ptr%Local_GeoLocation,1)
+         tmp_rptr(i) = locstream%Ptr%Local_GeoLocation(i)%x
+       enddo
+       tilelons => tmp_rptr
+#else
        tilelons => locstream%Ptr%Local_GeoLocation(:)%x
+#endif
     end if
 
     if (present(tilelats)) then
+#ifdef __GFORTRAN__
+       allocate(tmp_rptr(lbound(locstream%Ptr%Local_GeoLocation,1):ubound(locstream%Ptr%Local_GeoLocation,1)))
+       do i = lbound(locstream%Ptr%Local_GeoLocation,1), ubound(locstream%Ptr%Local_GeoLocation,1)
+         tmp_rptr(i) = locstream%Ptr%Local_GeoLocation(i)%y
+       enddo
+       tilelats => tmp_rptr
+#else
        tilelats => locstream%Ptr%Local_GeoLocation(:)%y
+#endif
     end if
 
     if (present(tilearea)) then
        if (locstream%Ptr%IsTileAreaValid) then
+#ifdef __GFORTRAN__
+          allocate(tmp_rptr(lbound(locstream%Ptr%Local_GeoLocation,1):ubound(locstream%Ptr%Local_GeoLocation,1)))
+          do i = lbound(locstream%Ptr%Local_GeoLocation,1), ubound(locstream%Ptr%Local_GeoLocation,1)
+            tmp_rptr(i) = locstream%Ptr%Local_GeoLocation(i)%a
+          enddo
+          tilearea => tmp_rptr
+#else
           tilearea => locstream%Ptr%Local_GeoLocation(:)%a
+#endif
        else
           tilearea => null()
        end if
     end if
 
     if (present(gridim)) then
+#ifdef __GFORTRAN__
+       allocate(tmp_iptr(lbound(locstream%Ptr%tiling,1):ubound(locstream%Ptr%tiling,1)))
+       do i = lbound(locstream%Ptr%tiling,1), ubound(locstream%Ptr%tiling,1)
+         tmp_iptr(i) = locstream%Ptr%tiling(i)%im
+       enddo
+       gridim => tmp_iptr
+#else
        gridim => locstream%Ptr%tiling(:)%im
+#endif
     end if
 
     if (present(gridjm)) then
+#ifdef __GFORTRAN__
+       allocate(tmp_iptr(lbound(locstream%Ptr%tiling,1):ubound(locstream%Ptr%tiling,1)))
+       do i = lbound(locstream%Ptr%tiling,1), ubound(locstream%Ptr%tiling,1)
+         tmp_iptr(i) = locstream%Ptr%tiling(i)%jm
+       enddo
+       gridjm => tmp_iptr
+#else
        gridjm => locstream%Ptr%tiling(:)%jm
+#endif
     end if
 
     if (present(local_id)) then
@@ -248,7 +300,15 @@ contains
     end if
 
     if (present(gridnames)) then
+#ifdef __GFORTRAN__
+       allocate(tmp_strptr(lbound(locstream%Ptr%tiling,1):ubound(locstream%Ptr%tiling,1)))
+       do i = lbound(locstream%Ptr%tiling,1), ubound(locstream%Ptr%tiling,1)
+         tmp_strptr(i) = locstream%Ptr%tiling(i)%name
+       enddo
+       gridnames => tmp_strptr
+#else
        gridnames => locstream%Ptr%tiling(:)%name
+#endif
     end if
 
     if (present(attachedgrid)) then
@@ -323,6 +383,14 @@ contains
     type(MAPL_Tiling       ), pointer :: TILING
     type (ESMF_VM)                            :: vm
     logical                           :: NewGridNames_
+
+#ifdef NEW_INTERP_CODE
+    integer           :: isc, iec, jsc, jec
+    integer           :: isd, ied, jsd, jed
+    real              :: lon, lat
+    real, pointer     :: lons(:,:), lats(:,:)
+    real, allocatable :: hlons(:,:), hlats(:,:)
+#endif
 
 ! Begin
 !------
@@ -929,10 +997,59 @@ contains
           DoCoeffs = .false.
        end if
 
+#ifdef NEW_INTERP_CODE
+       DoCoeffs = .true.
+#endif
        if(DoCoeffs) then
-          call ESMF_GRID_INTERIOR  (GRID, I1,IN,J1,JN)
+#ifdef NEW_INTERP_CODE
+          call ESMFL_GridCoordGet(GRID, LATS       , &
+               Name     = "Latitude"              , &
+               Location = ESMF_STAGGERLOC_CENTER  , &
+               Units    = ESMFL_UnitsRadians      , &
+               RC       = STATUS                    )
+          VERIFY_(STATUS)
 
+          call ESMFL_GridCoordGet(GRID, LONS       , &
+               Name     = "Longitude"             , &
+               Location = ESMF_STAGGERLOC_CENTER  , &
+               Units    = ESMFL_UnitsRadians      , &
+               RC       = STATUS                    )
+          VERIFY_(STATUS)
+          isc = lbound(LATS,1)
+          iec = ubound(LATS,1)
+          jsc = lbound(LATS,2)
+          jec = ubound(LATS,2)
+          isd = isc - 1
+          ied = iec + 1
+          jsd = jsc - 1
+          jed = jec + 1
+
+          allocate(hlats(isd:ied,jsd:jed), stat=status)
+          VERIFY_(STATUS)
+          allocate(hlons(isd:ied,jsd:jed), stat=status)
+          VERIFY_(STATUS)
+
+          hlats(isc:iec,jsc:jec) = lats
+          hlons(isc:iec,jsc:jec) = lons
+
+          call ESMFL_Halo(grid, hlats, rc=status)
+          VERIFY_(STATUS)
+          call ESMFL_Halo(grid, hlons, rc=status)
+          VERIFY_(STATUS)
+#else
+          call ESMF_GRID_INTERIOR  (GRID, I1,IN,J1,JN)
+#endif
           do I = 1, size(STREAM%LOCAL_IndexLocation)
+#ifdef NEW_INTERP_CODE
+             lon  = STREAM%LOCAL_GeoLocation(I)%X
+             lat  = STREAM%LOCAL_GeoLocation(I)%Y
+             II = STREAM%LOCAL_IndexLocation(I)%I
+             JJ = STREAM%LOCAL_IndexLocation(I)%J
+             call GetBilinearCoeffs(hlons(ii-1:ii+1,jj-1:jj+1),&
+                                    hlats(ii-1:ii+1,jj-1:jj+1),&
+                                    lon,lat,Stream%D(:,:,I),RC=STATUS)
+             VERIFY_(STATUS)
+#else
              X  = STREAM%LOCAL_GeoLocation(I)%X*(180./MAPL_PI)
              if(X>XE) X = X - 360.0
              Y  = STREAM%LOCAL_GeoLocation(I)%Y*(180./MAPL_PI)
@@ -940,7 +1057,13 @@ contains
              JJ = STREAM%LOCAL_IndexLocation(I)%J + J1 - 1
              call GetBilinearCoeffs(X0,Y0,DX,DY,X,Y,II,JJ, &
                   Stream%D(:,:,I),RC=STATUS)
+#endif
+
           end do
+#ifdef NEW_INTERP_CODE
+          deallocate(lats, lons)
+          deallocate(hlats, hlons)
+#endif
        else
           do I = 1, size(STREAM%LOCAL_IndexLocation)
              Stream%D(:,:,I) = 0.0
@@ -960,7 +1083,8 @@ contains
 
   contains
 
-    subroutine GetBilinearCoeffs(X0,Y0,DX,DY,X,Y,II,JJ,D,RC)
+#ifndef NEW_INTERP_CODE
+   subroutine GetBilinearCoeffs(X0,Y0,DX,DY,X,Y,II,JJ,D,RC)
       real,              intent(IN   )  :: X, Y, X0, Y0, DX, DY
       integer,           intent(IN   )  :: II, JJ
       real,              intent(  OUT)  :: D(-1:,-1:)
@@ -1008,6 +1132,127 @@ contains
 
       RETURN_(ESMF_SUCCESS)
    end subroutine GetBilinearCoeffs
+#else
+  subroutine GetBilinearCoeffs(lons,lats,lon,lat,D,RC)
+    real,              intent(IN   )  :: lons(-1:1,-1:1), lats(-1:1,-1:1)
+    real,              intent(IN   )  :: lon,lat
+    real,              intent(  OUT)  :: D(-1:,-1:)
+    integer, optional, intent(  OUT)  :: RC
+    
+    character(len= ESMF_MAXSTR) :: IAm='GetBilinearCoeffs'
+    integer                    :: STATUS
+    
+    real, dimension(3)         :: pp, p0, dp, dpx, dpy
+    real :: DX0, DY0
+
+    D = 0.0
+
+#define ToXYZ(lon,lat) (/ cos(lat)*sin(lon), cos(lat)*cos(lon), sin(lat) /)
+
+    p0  = ToXYZ(lons(0,0), lats(0,0))
+    
+    dp  = ToXYZ(lon      , lat      ) - p0
+    dpx = ToXYZ(lons(1,0), lats(1,0)) - p0
+    dpy = ToXYZ(lons(0,1), lats(0,1)) - p0
+    
+    DX0 = dot_product(dp,dpx)
+    DY0 = dot_product(dp,dpy)
+  
+    if(DX0 >= 0.0 ) then
+     
+       if (DY0 >= 0.0) then
+        
+          if (DX0 /= 0.0) DX0 = DX0/dot_product(dpx,dpx)
+          if (DY0 /= 0.0) DY0 = DY0/dot_product(dpy,dpy)
+        
+          if(lons(1,1) /= MAPL_UNDEF) then
+             D( 0, 0) = (1.0-DX0)*(1.0-DY0)
+             D( 1, 0) = DX0*(1.0-DY0)
+             D( 0, 1) = DY0*(1.0-DX0)
+             D( 1, 1) = DX0*DY0
+          else
+             D( 0, 0) = (1.0-DX0-DY0)
+             D( 1, 0) = DX0
+             D( 0, 1) = DY0
+             D( 1, 1) = 0.
+          endif
+        
+       else
+
+          dpy = ToXYZ(lons(0,-1), lats(0,-1)) - p0
+          
+          DY0 = dot_product(dp,dpy)
+          
+          if (DX0 /= 0.0) DX0 = DX0/dot_product(dpx,dpx)
+          if (DY0 /= 0.0) DY0 = DY0/dot_product(dpy,dpy)
+          
+          if(lons(1,-1) /= MAPL_UNDEF) then
+             D( 0, 0) = (1.0-DX0)*(1.0-DY0)
+             D( 1, 0) = DX0*(1.0-DY0)
+             D( 0,-1) = DY0*(1.0-DX0)
+             D( 1,-1) = DX0*DY0
+          else
+             D( 0,  0) = (1.0-DX0-DY0)
+             D( 1,  0) = DX0
+             D( 0, -1) = DY0
+             D( 1, -1) = 0.
+          end if
+
+       end if
+
+    else
+
+       dpx = ToXYZ(lons(-1,0), lats(-1,0)) - p0
+       
+       DX0 = dot_product(dp,dpx)
+     
+       if(DY0 >= 0.0) then
+          
+          if (DX0 /= 0.0) DX0 = DX0/dot_product(dpx,dpx)
+          if (DY0 /= 0.0) DY0 = DY0/dot_product(dpy,dpy)
+          
+          if(lons(-1,1) /= MAPL_UNDEF) then
+             D( 0, 0) = (1.0-DX0)*(1.0-DY0)
+             D(-1, 0) = DX0*(1.0-DY0)
+             D( 0, 1) = DY0*(1.0-DX0)
+             D(-1, 1) = DX0*DY0
+          else
+             D( 0, 0) = (1.0-DX0-DY0)
+             D(-1, 0) = DX0
+             D( 0, 1) = DY0
+             D(-1, 1) = 0.
+          end if
+
+       else
+           
+          dpy = ToXYZ(lons(0,-1), lats(0,-1)) - p0
+          DY0 = dot_product(dp,dpy)
+        
+          if (DX0 /= 0.0) DX0 = DX0/dot_product(dpx,dpx)
+          if (DY0 /= 0.0) DY0 = DY0/dot_product(dpy,dpy)
+           
+          if(lons(-1,-1) /= MAPL_UNDEF) then
+             D( 0, 0) = (1.0-DX0)*(1.0-DY0)
+             D(-1, 0) = DX0*(1.0-DY0)
+             D( 0,-1) = DY0*(1.0-DX0)
+             D(-1,-1) = DX0*DY0
+          else
+             D( 0, 0) = (1.0-DX0-DY0)
+             D(-1, 0) = DX0
+             D( 0,-1) = DY0
+             D(-1,-1) = 0.
+          end if
+
+       end if
+
+    end if
+
+#undef ToXYZ
+
+     RETURN_(ESMF_SUCCESS)
+   end subroutine GetBilinearCoeffs
+
+#endif
 
    subroutine GenOldGridName_(name)
      character(len=*) :: name
@@ -2200,7 +2445,7 @@ subroutine MAPL_LocStreamCreateXform ( Xform, LocStreamOut, LocStreamIn, NAME, M
   integer                     :: lNumReceivers
   integer                     :: K, myId
   integer                     :: MyLen(1)
-  integer                     :: SizeOfReal
+  INTEGER(KIND = MPI_ADDRESS_KIND):: LB, SizeOfReal
   integer, allocatable        :: allSenders(:,:)
   integer, allocatable        :: iReq(:,:)
 
@@ -2280,6 +2525,7 @@ subroutine MAPL_LocStreamCreateXform ( Xform, LocStreamOut, LocStreamIn, NAME, M
   VERIFY_(STATUS)
 
   Xform%Ptr%Local = all(isdone)
+  deallocate(IsDone)
 
   NEED_COMM: if(.not.Xform%Ptr%Local) then
 
@@ -2290,7 +2536,7 @@ subroutine MAPL_LocStreamCreateXform ( Xform, LocStreamOut, LocStreamIn, NAME, M
      allocate(Xform%Ptr%Len(NDES), stat=status)
      VERIFY_(STATUS)
 
-     CALL MPI_TYPE_EXTENT(MPI_REAL, SizeOfReal, status)
+     CALL MPI_TYPE_GET_EXTENT(MPI_REAL, lb, SizeOfReal, status)
      VERIFY_(STATUS)
 
      call mpi_Win_Create(Xform%Ptr%Buff,LocStreamIn%Ptr%NT_LOCAL*SizeOfReal, &
@@ -2327,7 +2573,7 @@ subroutine MAPL_LocStreamCreateXform ( Xform, LocStreamOut, LocStreamIn, NAME, M
 ! Make a Hash of the tile locations by input order
 !-------------------------------------------------
 
-     Hash  = MAPL_HashCreate(80*1024)
+     Hash  = MAPL_HashCreate(8*1024)
      do M = 1, LocStreamIn%Ptr%NT_global
         n = MAPL_HashIncrement(Hash,Global_IdByPe(M))
         ASSERT_(N==M)

@@ -1,0 +1,99 @@
+!Conventional data types 
+!     kx       Description                      obs types
+      120      RAWINSONDE                         Tv,z,q
+      126      RASS Profiler                      Tv
+      130      AIREP/PIREP                        T 
+      131      AMDAR                              T 
+      132      FLT LVL RECON AND DROPSONDE        Tv,q,ps
+      133      MDCRS (ACARS)                      T,q
+      134      TAMDAR AIRCRAFT                    T,q
+      135      CANADIAN AMDAR                     T
+      152      SSM/I SUPEROB NN3                  PW
+      153      GPS Integrated precip water        PW
+      180      SFC OCEAN with stn P               Tv,q,ps,SST
+      181      Surface land/METAR with stn pres   Tv,q,ps,SST
+      182      Splash lvl dropwinsonde            Tv,q,ps
+      183      Sfc land,ocean,METAR w/o stn pres  Tv,q,ps,SST
+      187      Sfc METAR  with altimeter setting  Tv,q,ps,SST
+      188      SURFACE MESONET                    Tv,q,ps,SST
+      191      AUST PAOB MEAN SLP BOGUS           ps
+      192      Sfc land synoptic missing SLP,ps   Tv,q,ps
+      193      Sfc land METAR missing SLP,altim.  Tv,q,ps
+      194      Sfc marine missing SLP,stnP        Tv,q,ps
+      195      Sfc mesonet missing ps, altim.     Tv,q,ps
+      199      Drifting buoy                      Tv,q,ps
+
+      210      Synthetic tropical cyclone         U,V
+      220      Rawinsonde                         U,V
+      221      Pibal wind                         U,V
+      222      CLASS sounding                     U,V
+      223      Wind profiler                      U,V
+      224      NEXRAD VAD                         U,V
+      227      MAP/CAP profiler                   U,V
+      228      JMA wind profiler U,V
+      229      Wind profiler from PIBAL bulletins U,V
+      230      AIREP/PIREP                        U,V
+      231      AMDAR                              U,V
+      232      Recon/Dropwisonde                  U,V
+      233      MDCRS (ACARS)                      U,V
+      234      TAMDAR aircraft                    U,V
+      235      Canadian AMDAR                     U,V
+      240      NESDIS short wave IR CTW           U,V
+      241      INDIAN IR/VIS CTW                  U,V
+      242      JMA VIS CTW                        U,V
+      243      EUMETSAT VIS CTW                   U,V
+      244      AVHRR/POES IR CTW                  U,V
+      245      NESDIS IR CTW                      U,V
+      246      NESDIS imager cloud top            U,V
+      247      NESDIS imager deep layer           U,V
+      248      NESDIS sounder cloud top           U,V
+      249      NESDIS sounder deep layer          U,V
+      250      JMA WV CTW                         U,V
+      251      NESDIS VIS CTW                     U,V
+      252      JMA IR CTW                         U,V
+      253      EUMETSAT IR CTW                    U,V
+      254      EUMETSAT WV cloud top              U,V
+      255      NESDIS picture triplet CTW         U,V
+      256      Indian WV CTW                      U,V
+      257      MODIS IR CTW                       U,V
+      258      MODIS cloud top WV CTW             U,V
+      259      MODIS deep layer WV CTW            U,V
+      260      VIIRS IR CTW                       U,V
+      280      Surface marine with stn pres       U,V
+      281      Surface land/METAR with stn pres   U,V
+      282      Atlas buoy                         U,V
+      283      SSM/I neural net  wind speed       spd
+      284      Surface ocn/land METAR w/o sfcP    U,V
+      285      Quikscat scatterometer wind        U,V
+      286      ERS scatterometer wind             U,V
+      287      Sfc METAR with altimeter setting   U,V
+      288      Sfc Mesonet                        U,V
+      289      WINDSAT scatterometer wind         U,V
+      290      ASCAT nonsuperobed scatterometer   U,V
+      291      OSCAT nonsuperobed scatterometer   U,V
+      292      Sfc land synoptic missing SLP,ps   U,V
+      293      Sfc land METAR missing SLP,altim.  U,V
+      294      Sfc marine missing SLP,stnP        U,V
+      295      Sfc mesonet missing ps, altim.     U,V
+      299      Drifting buoy                      U,V
+
+!
+!  GPS KX are assigned by satellite ID
+        3      MetOp-B GRAS
+        4      MetOp-A GRAS
+       41      CHAMP      
+       42      TerraSAR-X
+       43      TanDEM-X
+      421      Oceansat-2
+      440      Megha-Tropiques
+      722      GRACE-A
+      723      GRACE-B
+      740      COSMIC-1
+      741      COSMIC-2
+      742      COSMIC-3
+      743      COSMIC-4
+      744      COSMIC-5
+      745      COSMIC-6
+      786      C/NOFS CORISS
+      820      SAC-C
+      821      SAC-D

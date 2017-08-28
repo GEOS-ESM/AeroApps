@@ -22,6 +22,7 @@ logical, save :: initialized_  = .false.
 logical, save :: lobsdiagsave_ = .false.
 logical, save :: lobssens_     = .false.
 logical, save :: ladjsigo_     = .false.
+logical, save :: lreduced_     = .false.
 
 interface ods_obsdiags_setparam
    module procedure setgsi_paramI_
@@ -220,6 +221,10 @@ CONTAINS
            ladjsigo_     = value
            found = .true.
       endif
+      if ( trim(descript) == 'reduce_diag'  ) then
+           lreduced_    = value
+           found = .true.
+      endif
       if(.not.found)then
         print*, 'm_ods_obsdiags: option(L) ',trim(descript), ' cannot be set'
         print*, 'Aborting ...'
@@ -270,6 +275,10 @@ CONTAINS
            value = ladjsigo_
            found = .true.
       endif
+      if ( trim(descript) == 'reduce_diag'  ) then
+           value = lreduced_
+           found = .true.
+      endif
       if(.not.found)then
         print*, 'm_ods_obsdiags: option ',trim(descript), ' not found'
         print*, 'Aborting ...'
@@ -283,6 +292,7 @@ CONTAINS
       lobsdiagsave_ = .true.
       lobssens_     = .true.
       ladjsigo_     = .true.
+      lreduced_     = .false.
       end subroutine init_
 
       subroutine clean_ 
@@ -291,5 +301,6 @@ CONTAINS
       lobsdiagsave_ = .false.
       lobssens_     = .false.
       ladjsigo_     = .false.
+      lreduced_     = .false.
       end subroutine clean_
 end module m_ods_obsdiags

@@ -88,14 +88,14 @@ def getTrackICT(ictFile,dt_secs):
     idt = int(dt_secs/dt.total_seconds()+0.5)
     return (lon[::idt], lat[::idt], tyme[::idt])
 
-def getTrackHSRL(hsrlFile,dt_secs=-1):
+def getTrackHSRL(hsrlFile,dt_secs=60):
     """
     Get trajectory from HSRL HDF-5 file.
     """
     h = HSRL(hsrlFile,Nav_only=True)
     lon, lat, tyme = h.lon[:].ravel(), h.lat[:].ravel(), h.tyme[:].ravel()
     if dt_secs > 0:
-        dt = h.time[1] - h.time[0] # in seconds
+        dt = tyme[1] - tyme[0] 
         idt = int(dt_secs/dt.total_seconds()+0.5)
         return (lon[::idt], lat[::idt], tyme[::idt])
     else:

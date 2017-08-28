@@ -75,8 +75,9 @@ MAKE        = gmake
 MKDIR       = /bin/mkdir -p
 PERL        = /usr/bin/perl
 RANLIB      = /usr/bin/ranlib
+RANLIB_FLAGS= 
 RM          = /bin/rm -f
-SED         = /bin/sed                       
+SED         = sed                       
 TAR         = /bin/tar
 GZIP        = gzip -v
 BOPT        = O
@@ -99,7 +100,7 @@ F2PYEXT     = so     # extension for python extensions
 PROTEX       = $(ESMABIN)/protex
 PROTEX_FLAGS = -g -b -f
 LATEX        = latex
-PDFLATEX     = pdflatex
+PDFLATEX     = pdflatex -interaction=batchmode
 MKINDX       = makeindex
 DVIPS        = dvips -Ppdf -G0 -f 
 PS2PDF       = ps2pdf
@@ -118,7 +119,10 @@ ESMA_TIMER_CO  = # command to end   timer (for user to backet code segments)
 #                         Libraries
 #                     -----------------
 
+INC_SCI =
 LIB_SCI =
+
+INC_SYS =
 LIB_SYS =
 
 DIR_HDF5 = $(BASEDIR)/$(ARCH)
@@ -158,13 +162,15 @@ else
      endif
      ifneq ($(shell grep -c 'define H5_HAVE_PARALLEL 1' $(INC_HDF5)/H5pubconf.h),0)
         DEF_SDF += $(D)H5_HAVE_PARALLEL
-        F2PY += --f77exec=$(FC) --f90exec=$(FC)
+        F2PY_FLAGS += --f77exec=$(FC) --f90exec=$(FC)
      endif
      ifneq ($(wildcard $(INC_SDF)/netcdf_par.h), )
         DEF_SDF += $(D)NETCDF_NEED_NF_MPIIO
      endif
    endif
 endif
+
+F2PY += $(F2PY_FLAGS)
 
 LIB_GCTP   = $(BASELIB)/libGctp.a
 LIB_HDFEOS = $(BASELIB)/libhdfeos.a
@@ -181,6 +187,12 @@ LIB_MPI = -lmpi
 DIR_THIS := $(shell basename `pwd`)
 INC_THIS = $(ESMAINC)/$(DIR_THIS)
 LIB_THIS = $(ESMALIB)/lib$(DIR_THIS).a
+
+# This lines control linking in the Allinea 
+# profiling libraries. By default, they are not linked in.
+
+DOING_APROF = no
+LIB_APROF = 
 
 #                     -----------------------
 #                     C Compiler/Loader Flags
@@ -293,7 +305,7 @@ LDFLAGS = $(LDPATH) $(USER_LDFLAGS)
 	$(ESMA_TIMER) $(FC) -c $(F90FLAGS) $<
 
 .P90.o:
-	@sed -e "/\!.*'/s/'//g" $< | $(CPP) -C -ansi -DANSI_CPP $(FPPFLAGS) > $*___.s90
+	@sed -e "/\!.*'/s/'//g" $< | $(CPP) -C -nostdinc -std=c99 -DANSI_CPP $(FPPFLAGS) > $*___.s90
 	@sed -e "s/ ## //g" -e '/IAm=#/ s/\(^.*IAm=\)\(# \)\(.*\)/\1"\3"/g' $*___.s90 > $*___.f90
 	$(ESMA_TIMER) $(FC) -c $(f90FLAGS) -o $*.o $*___.f90
 	@$(RM) $*___.s90

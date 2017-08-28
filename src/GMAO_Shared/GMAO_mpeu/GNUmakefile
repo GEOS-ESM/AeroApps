@@ -34,7 +34,7 @@ LIBeu  = $(subst mpeu,eu,$(LIB))
 esma_install install: $(LIB) $(LIBeu)
 	$(MKDIR) $(ESMALIB) $(ESMAETC) $(ESMAINC)/$(THIS) $(ESMABIN)
 	$(CP) -p *.a    $(ESMALIB)
-#	$(CP) -p *.[Hh] $(ESMAINC)/$(THIS)
+	$(CP) -p *.[Hh] $(ESMAINC)/$(THIS)
 	$(CP) -p *.[Mm][Oo][Dd] $(ESMAINC)/$(THIS)
 
 esma_clean clean:
@@ -159,7 +159,7 @@ MODS_OBJ        = m_chars.o		\
 
 USER_FINCS  = $(I). $(I)$(INC_MPI)
 USER_CINCS  = $(I). $(I)$(INC_MPI)
-USER_FFLAGS = $(BIG_ENDIAN) $(M). 
+USER_FFLAGS = $(BIG_ENDIAN) $(M). $(PP)
 
 MOD_DIRS = . $(INC_MPI)
 FREAL = $(FREAL4)

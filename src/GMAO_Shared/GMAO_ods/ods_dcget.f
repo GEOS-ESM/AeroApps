@@ -77,6 +77,7 @@
       integer  nymdf, nhmsf                  ! date and time found in file
       logical  conv
       logical  lobsdiagsave
+      logical  lextra
       integer  nobs_ods, nqcmax
       character(len=10) satype
       character(len=10) pcptype             ! shorter string for precip data
@@ -88,7 +89,9 @@
       integer                                  :: nchar,ninfo,nobs,nlevs,mype
       integer                                  :: isat,nchanl,npred,iint,ireal,ipchan,iextra,jextra,jiter,ndiag
       real(4)                                  :: freq4,pol4,wave4,tlap4
-      integer                                  :: nuchan,ich,miter
+      integer                                  :: miter
+      integer,     allocatable, dimension(:)   :: nuchan
+      integer,     allocatable, dimension(:)   :: ich
       integer,     allocatable, dimension(:)   :: iuse_rad
       real(4),     allocatable, dimension(:)   :: weight
       character(8),allocatable, dimension(:)   :: cdiagbuf
@@ -98,6 +101,7 @@
       real(4),     allocatable, dimension(:)   :: varch4
       real(4),     allocatable, dimension(:)   :: diagbuf
       real(4),     allocatable, dimension(:,:) :: diagbuf2
+      real(4),     allocatable, dimension(:,:) :: diagbufex
       real(4),     allocatable, dimension(:,:,:) :: diagbuf3
       integer,     allocatable, dimension(:)   :: iouse
       real(4),     allocatable, dimension(:)   :: pobs,gross,tnoise
@@ -357,6 +361,7 @@
          read (lu,iostat=ios) isis,dplat,satype,jiter,nchanl,npred,idate,ireal,ipchan,iextra,jextra,
      &                        idiag,angord,iversion_radiag,inewpc,ioff
 	 
+         lextra=iextra>0
          if (ios==0) then
 
 	    call getsatid_(isat)
@@ -367,27 +372,32 @@
             ndiag = ipchan+npred+2
             if (lobsdiagsave) ndiag=ndiag+4*miter+1
             allocate ( iuse_rad(nchanl), idiagbuf(iint), diagbuf(ireal), diagbuf2(ndiag,nchanl),
-     &                 varch4(nchanl), stat=ier )	       
+     &                 varch4(nchanl), nuchan(nchanl), ich(nchanl), stat=ier )	       
       	    if (ier/=0) then
                rc = 3
                print *, myname_, 'cannot alloc()'
                return
             end if
+            if (lextra) allocate(diagbufex(iextra,jextra))
 	    
 	    do i = 1, nchanl
-               read (lu) freq4,pol4,wave4,varch4(i),tlap4,iuse_rad(i),nuchan,ich
+               read (lu) freq4,pol4,wave4,varch4(i),tlap4,iuse_rad(i),nuchan(i),ich(i)
 	    end do
 
 	    do while (ios==0)        ! read data records until eof
 	    
-	       read (lu,iostat=ios) diagbuf,diagbuf2 
+               if (lextra) then
+	          read (lu,iostat=ios) diagbuf,diagbuf2 
+               else
+	          read (lu,iostat=ios) diagbuf,diagbuf2,diagbufex
+               endif
 	       
 	       if (ios==0) then
 		  iks = iks + 1
                   idiagbuf = 0  ! dummy array in this case
 
                   call ods_drad ( satype, isat, iuse_rad, 
-     .                            idiagbuf, diagbuf, diagbuf2, varch4, ndiag, iint,
+     .                            idiagbuf, diagbuf, diagbuf2, varch4, nuchan, ndiag, iint,
      .                            ireal, ipchan, npred, nchanl,
      .   	                  ods, mobs, nobs_ods, iks, ioff, ier )
                   if (ier/=0) then
@@ -398,7 +408,8 @@
 	       end if
 	    end do
 	    
-	    deallocate ( iuse_rad, idiagbuf, diagbuf, diagbuf2, varch4 )
+	    deallocate ( iuse_rad, idiagbuf, diagbuf, diagbuf2, varch4, ich )
+            if (lextra) deallocate(diagbufex)
 	    
 	 end if
 	 

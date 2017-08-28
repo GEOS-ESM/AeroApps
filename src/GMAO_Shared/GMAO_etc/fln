@@ -603,6 +603,7 @@ sub update_flexlinks {
 
             if ($ans eq "y") {
                 $fName = $fHash{$fKey};
+                $dTarget = substitute_patterns($dTarget);
                 writefl($fName, $dTarget);
                 print "file updates\n";
             } else {

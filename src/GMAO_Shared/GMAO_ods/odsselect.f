@@ -55,7 +55,7 @@
 !     Local variables
 !     ---------------
       integer nfiles, ifile, lf, isyn, ksyn, nymd, nhms, nkt, nkx, nqcx
-      integer i, j, ierr, ierr_att(13), nobs, synhour, is
+      integer i, j, ierr, ierr_att(13), nobs, synhour, is, ihr
       integer miter, jiter
       logical post_anal, append_mode, eof, verbose, daily
       logical kxselect, ktselect, levselect, qcselect
@@ -333,7 +333,8 @@
           print *, 'calling ODS_Put'
 
 	  if ( daily ) then
-	       write(outfile,'(2a,i8.8)') trim(prefix), '.ods.t', nymd
+               ihr = nhms/10000
+	       write(outfile,'(2a,i8.8,a,i2.2,a)') trim(prefix), '.', nymd, '_', ihr, 'z.ods'
 	  else
 	       write(outfile,'(a,''.ods'')') trim(prefix)
 	  end if
@@ -461,13 +462,14 @@
       real swap
       character*255 argv
       character*255 SS
-      logical osens,adjsigo
+      logical osens,adjsigo,reduced
 
 !     Parse command line
 !     ------------------
 
       osens = .false.
       adjsigo = .true.
+      reduced = .false.
       argc =  iargc()
       if ( argc .lt. 1 ) call usage()
       nfiles = 0
@@ -657,6 +659,8 @@
 	    daily = .TRUE.
          elseif (index(argv,'-prepsigo') .gt. 0 ) then
 	    adjsigo = .FALSE.
+         elseif (index(argv,'-reduce_diag') .gt. 0 ) then
+	    reduced = .TRUE.
          else
             nfiles = nfiles + 1
             if ( nfiles .gt. nfiles_max ) then
@@ -673,6 +677,7 @@
 !     -----------------
       if (ncf) then
           call ods_obsdiags_setparam('ladjsigo',adjsigo)
+          call ods_obsdiags_setparam('reduce_diag',reduced)
       endif
       if ( miter>0 .or. jiter>0 ) then
         if (ncf) then

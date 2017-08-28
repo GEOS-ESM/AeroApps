@@ -11,6 +11,7 @@ Arlindo.daSilva@nasa.gov
 08/??/16 PMN General improvements
 09/26/16 PMN 'f' grid capability
 09/27/16 PMN Collection 6 version, also uses masked array intermediates
+10/24/16 PMN timinc for GFIO, im and jm options to write
 """
 
 import os
@@ -40,21 +41,22 @@ SDS = dict (
             ),
       DATA = ( 'Cloud_Top_Pressure', 
                'Cloud_Top_Temperature',
-               'Brightness_Temperature',
-               'Cloud_Fraction',
-#              'Cloud_Phase_Infrared',	# byte
-#              'Cloud_Height_Method',	# byte
-#              'Cloud_Mask_5km', 	# byte	# 3D, 3rd dimension is #bytes in mask
-#              'Surface_Type', 		# not in c006, in Cloud_Mask???
+#               'Brightness_Temperature',
+#               'Cloud_Fraction',
+##              'Cloud_Phase_Infrared',	# byte
+##              'Cloud_Height_Method',	# byte
+##              'Cloud_Mask_5km', 	# byte	# 3D, 3rd dimension is #bytes in mask
+##              'Surface_Type', 		# not in c006, in Cloud_Mask???
             ),
-      COP = ( 'Cloud_Effective_Radius',
-              'Cloud_Optical_Thickness',
-              'Cloud_Water_Path',
-#             'Cloud_Phase_Optical_Properties',		# byte
-#             'Cloud_Multi_Layer_Flag',			# byte
-#             'Cloud_Effective_Radius_Uncertainty',
-#             'Cloud_Mask_1km',				# byte  # 3D, 3rd dimension is #bytes in mask
-#             'Quality_Assurance_1km',			# byte  # 3D, 3rd dimension is #bytes in flag
+      COP = ( 
+#              'Cloud_Effective_Radius',
+#              'Cloud_Optical_Thickness',
+#              'Cloud_Water_Path',
+##             'Cloud_Phase_Optical_Properties',		# byte
+##             'Cloud_Multi_Layer_Flag',			# byte
+##             'Cloud_Effective_Radius_Uncertainty',
+##             'Cloud_Mask_1km',				# byte  # 3D, 3rd dimension is #bytes in mask
+##             'Quality_Assurance_1km',			# byte  # 3D, 3rd dimension is #bytes in flag
             ),
       )
 
@@ -409,8 +411,9 @@ class MxD06_L2(object):
             raise MxD06Error, 'Mixed collections encountered'
         
 #---
-    def write(self, filename, syn_time,
-              dir='.', iFilter=None, refine=8, res=None, Verb=1):
+    def write(self, filename, syn_time, dt=timedelta(hours=6),
+              dir='.', iFilter=None, refine=8, res=None, im=None, jm=None,
+              Verb=1):
        """
         Writes gridded MODIS measurements to file.
 
@@ -422,6 +425,7 @@ class MxD06_L2(object):
                        The collection <coll> is the object's recorded collection.
 
          syn_time -- python datetime appropriate for the MXD06_L2 object
+         dt       -- a timedelta used to set GFIO timinc
 
          refine  -- refinement level for a base 4x5 GEOS-5 grid
                        refine=1  produces a  4     x 5      grid
@@ -445,6 +449,10 @@ class MxD06_L2(object):
 
                    NOTE: *res*, if specified, supersedes *refine*.
 
+         Alternatively, one can specify the grid resolution directly
+         with explicit im and jm. In that case, both must be present,
+         and *both res and refine are superceeded*.
+
          Verb -- Verbose level:
                  0 - really quiet
                  1 - basic commentary (default)
@@ -452,13 +460,22 @@ class MxD06_L2(object):
        """
        from gfio import GFIO
 
+       if self.sat is None:
+         # nothing to write
+         return
+
        # Optional filter
        # ---------------
        self.iFilter = iFilter
        
        # Output grid resolution
        # ----------------------
-       if res is not None:
+       if im is None and jm is None:
+
+         # neither im or jm provided, so use refine, 
+         # possibly superceeded by res.
+
+         if res is not None:
            if res=='a': refine = 1 
            if res=='b': refine = 2
            if res=='c': refine = 4
@@ -466,17 +483,24 @@ class MxD06_L2(object):
            if res=='e': refine = 16
            if res=='f': refine = 32
 
+         if refine >= 32:
+           dx = 4. / refine
+           dy = 4. / refine
+         else:
+           dx = 5. / refine
+           dy = 4. / refine
+
+         im = int(360. / dx)
+         jm = int(180. / dy + 1)
+
+       else:
+
+         # both im and jm must be explicitly provided
+         if im is None or jm is None:
+           raise MxD06Error, 'Must provide both im and jm is either is provided!'
+
        # Lat lon grid
        # ------------
-       if refine >= 32:
-         dx = 4. / refine
-         dy = 4. / refine
-       else:
-         dx = 5. / refine
-         dy = 4. / refine
-       im = int(360. / dx)
-       jm = int(180. / dy + 1)
-
        glon = np.linspace(-180.,180.,im,endpoint=False)
        glat = np.linspace(-90.,90.,jm)
 
@@ -487,22 +511,28 @@ class MxD06_L2(object):
 
        t = syn_time
        Y, M, D, h, m, s = (t.year,t.month,t.day,t.hour,t.minute,t.second)
-
        nymd = Y*10000+M*100+D
        nhms = h*10000+m*100+s
 
+       ds = dt.seconds
+       dh = ds//3600; ds -= dh*3600
+       dm = ds//60;   ds -= dm*60
+       timinc = dh*10000+dm*100+ds
+
        vtitle = [ 'Cloud_Top_Pressure', 
                   'Cloud_Top_Temperature',
-                  'Brightness_Temperature',
-                  'Cloud_Fraction',
-                  'Cloud_Effective_Radius',
-                  'Cloud_Optical_Thickness',
-                  'Cloud_Water_Path',
-                 ]
+                ]
+#                 'Brightness_Temperature',
+#                 'Cloud_Fraction',
+#                 'Cloud_Effective_Radius',
+#                 'Cloud_Optical_Thickness',
+#                 'Cloud_Water_Path',
+#                ]
 
-       vname  = ['CTP', 'CTT',  'BT', 'F', 'RE',     'TAU', 'CWP'   ]
-       vunits = ['Pa',  'K',    'K',  '1', 'micron', '1',   'g m-2' ]
-       kmvar  = [ 0,     0,     nch,   0,   0,        0,     0      ]
+       vname  = ['CTP', 'CTT',] #  'BT', 'F', 'RE',     'TAU', 'CWP'   ]
+       vunits = ['Pa',  'K',  ] #  'K',  '1', 'micron', '1',   'g m-2' ]
+       kmvar  = [ 0,     0,   ] #  nch,   0,   0,        0,     0      ]
+#should use dictionaries
 
        if self.sat.lower() == 'terra':
          prod = 'MOD06'
@@ -529,14 +559,14 @@ class MxD06_L2(object):
        # Create the file
        # ---------------
        f = GFIO()
-       f.create(filename, vname, nymd, nhms,
+       f.create(filename, vname, nymd, nhms, timinc=timinc,
                 lon=glon, lat=glat, levs=levs, levunits='nm',
                 vtitle=vtitle, vunits=vunits,kmvar=kmvar,amiss=MISSING,
                 title=title, source=source, contact=contact)
 
        # Grid variables and write to file
        # -------------------------------
-       for oVar in ('CTP','CTT','BT','F','RE','TAU','CWP'):
+       for oVar in ('CTP','CTT',): #'BT','F','RE','TAU','CWP'):
          if Verb > 1: print ' [] writing variable', oVar
          f.write (oVar, nymd, nhms, self._binObs(self.__dict__[oVar],im,jm))
 
@@ -682,7 +712,7 @@ if __name__ == "__main__":
       Collection = '006'
       syn_time = datetime(2011,7,1,12,0,0)
       L2mount = os.sep.join((os.environ['NOBACKUP'],'MODIS',Collection,'Level2'))
-      Files = granules(L2mount,'MOD06',syn_time,nsyn=24,coll=Collection)
+      Files = granules(L2mount,'MOD06',syn_time,nsyn=nsyn,coll=Collection)
       m = MxD06_L2(Files,Verb=2,decimate='binning')
       m.write(None,syn_time,res='f',Verb=2)
 
@@ -697,7 +727,6 @@ def hold():
 
       aer_Nv = '/nobackup/fp/opendap/aer_Nv.ddf'
       m.addVar(aer_Nv,'DU001',kbeg=36,kount=36)
-#     m = MxD06_L2(Files,Verb=1,decimate='binning')
-#     m.write(None, syn_time)
+#     m.write(None,syn_time)
 
     

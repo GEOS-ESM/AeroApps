@@ -111,7 +111,8 @@ SRCS :=  ESMFL_Mod.P90            MAPL_HeapMod.F90       MAPL_VarSpecMod.F90\
          memuse.c                 MAPL_MemUtils.F90      MAPL_Hash.F90 \
          CubeToLatLon.F90         MAPL_MaxMinMod.F90     MAPL_SimpleBundleMod.F90 \
          MAPL_OrbGridCompMod.F90  MAPL_NominalOrbitsMod.F90 MAPL_ExtDataGridCompMod.F90 \
-         MAPL_NewArthParser.F90   MAPL_ShmemMod.F90      MAPL_LoadBalance.F90 MAPL_CFIOServer.F90
+         MAPL_NewArthParser.F90   MAPL_ShmemMod.F90      MAPL_LoadBalance.F90 MAPL_CFIOServer.F90 \
+         MAPL_DefGridName.F90
 
 SRC_STUBS :=  MAPL_stubs.F90
 
@@ -151,6 +152,16 @@ endif
 
 ifdef GPU_TARGET
   INC_DIRS += $(INC_PGI) # Needed to pick up CUDA libraries
+endif
+
+# MAT Apparently, if you compile MAPL_Generic with optimization -O2, it will
+#     cause a SegFault. Until this is figured out, we compile it at -O0.
+#     Note, for some reason this also affects GenericCplComp, Profiler, and Sun.
+#     Not sure why.
+ifneq ("$(BOPT)","g")
+ifeq ($(ESMA_FC),gfortran)
+MAPL_Generic.o: FOPT := $(FOPT0)
+endif
 endif
 
 vpath % $(MOD_DIRS) tests TeX

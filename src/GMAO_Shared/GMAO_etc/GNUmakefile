@@ -77,7 +77,7 @@ ALLSRC = argopt.c rst_date.f
 ALLSRCX = fresolv.f90 gethdftinc.f mkdrstdate.f  \
           zeit_ci.f zeit_co.f zeit_pr.f
 
-OTHERBIN = Functions.csh pyrob
+OTHERBIN = Functions.csh pyrob RmShmKeys_sshmpi.csh rmshmkeyhere.sh
 
 ALLETC =  pesto.arc obsys*.rc *.tmpl \
           PUBLICTAG
