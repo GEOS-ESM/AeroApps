@@ -15,7 +15,7 @@
 n_channels: 1
 n_moments: 300
 #r_channels: .355e-6 .532e-6 1.064e-6
-r_channels: .550e-6   
+r_channels: 0.388e-6   
 
 # --------------------------------------------------------------
 #
@@ -37,7 +37,8 @@ filename_optical_properties_SS: ExtData/optics_SS.v3_3.nc
 filename_optical_properties_BC: ExtData/optics_BC.v1_3.nc
 filename_optical_properties_OC: ExtData/optics_OC.v1_3.nc
 filename_optical_properties_SU: ExtData/optics_SU.v1_3.nc
-
+filename_optical_properties_NI:  ExtData/optics_NI.v2_5.nc
+filename_optical_properties_BRC: ExtData/optics_BRC.v1_5.nc
 #filename_optical_properties_DU: ExtData/g5chem/x.OLD/optics_DU.v4.nc
 #filename_optical_properties_SS: ExtData/g5chem/x.OLD/optics_SS.v3.nc
 #filename_optical_properties_OC: ExtData/g5chem/x.OLD/optics_OC.nc
