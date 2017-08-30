@@ -59,6 +59,25 @@ LandAlbedos  = 'MODIS_BRDF','MODIS_BRDF_BPDF','LAMBERTIAN'
 MISSING = -1.e+20
 
 
+def extrap1d(interpolator):
+    """ extrapolator wrapper for an interpolator"""
+    xs = interpolator.x
+    ys = interpolator.y
+
+    def pointwise(x):
+        if x < xs[0]:
+            return ys[0]+(x-xs[0])*(ys[1]-ys[0])/(xs[1]-xs[0])
+        elif x > xs[-1]:
+            return ys[-1]+(x-xs[-1])*(ys[-1]-ys[-2])/(xs[-1]-xs[-2])
+        else:
+            return interpolator(x)
+
+    def ufunclike(xs):
+        return np.array(map(pointwise, array(xs)))
+
+    return ufunclike
+
+
 def unwrap_self_doMie(arg, **kwarg):
     return STN_VLIDORT.doMie(*arg, **kwarg)
  
@@ -513,8 +532,12 @@ class STN_VLIDORT(object):
                     if missing_value in Y:                        
                         self.__dict__[sds][s,i] = missing_value
                     else:
-                        f = interpolate.interp1d(X, Y,fill_value='extrapolate')
-                        self.__dict__[sds][s,i] = f([int(chs)]) 
+                        try:
+                            f = interpolate.interp1d(X, Y,fill_value='extrapolate')
+                            self.__dict__[sds][s,i] = f([int(chs)]) 
+                        except:
+                            f = extrap1d(interpolate.interp1d(X, Y))
+                            self.__dict__[sds][s,i] = f([int(chs)]) 
 
 
         # Check for missing values
