@@ -73,7 +73,7 @@ def extrap1d(interpolator):
             return interpolator(x)
 
     def ufunclike(xs):
-        return np.array(map(pointwise, array(xs)))
+        return np.array(map(pointwise, np.array(xs)))
 
     return ufunclike
 
