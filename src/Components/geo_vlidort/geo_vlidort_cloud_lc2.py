@@ -33,7 +33,7 @@ class CLD_WORKSPACE(WORKSPACE):
     """ Create Working Directories and RC files """
     def __init__(self,startdate,enddate,options):
 
-
+        self.cloud = True
         for oo in options.__dict__:
             if (type(options.__dict__[oo]) is str) and (options.__dict__[oo].lower() == 'none'):
                 self.__dict__[oo] = None
@@ -129,7 +129,7 @@ class CLD_WORKSPACE(WORKSPACE):
                         # Create working directories for intermediate outputs
                         # create output directories
                         # save directory names
-                        dirlist = self.make_workspace(startdate,ch,nodemax=nodemax,layout=laycode,cloud=True)
+                        dirlist = self.make_workspace(startdate,ch,nodemax=nodemax,layout=laycode)
 
                         if (self.additional_output):
                             workdir, outdir, addoutdir_ = dirlist
