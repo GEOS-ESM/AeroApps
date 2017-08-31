@@ -21,7 +21,7 @@ LC2_SURF_VERSION = 1.0
 
 ## Array mode info
 # None or an integer
-LC2_NODEMAX = None
+LC2_NODEMAX = 5
 
 ## Domain decomposition
 # None or layout code (nXnY)
@@ -29,7 +29,7 @@ LC2_LAYOUT = 41
 
 LC2_DIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS
 LC2_EXECFILE   = /discover/nobackup/pcastell/workspace/GAAS/src/Components/geo_vlidort/geo_vlidort_cloud.x
-LC2_RUNFILE = geo_vlidort_lc2.j
+LC2_RUNFILE = geo_vlidort_cloud_lc2.j
 
 LC2_PROFILE = No
 LC2_VERBOSE = Yes

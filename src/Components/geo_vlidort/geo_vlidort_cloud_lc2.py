@@ -41,8 +41,8 @@ class CLD_WORKSPACE(WORKSPACE):
                 self.__dict__[oo] = options.__dict__[oo]
 
         if self.nodemax is not None: self.nodemax = int(self.nodemax)
-        self.nccs    = self.nccs + '/' + self.instname.upper() + '/DATA/' 
-        self.archive    = self.archive + '/' + self.instname.upper() + '/DATA/' 
+        self.nccs    = self.nccs + '/' + self.instname.upper() + '/CLD_DATA/' 
+        self.archive    = self.archive + '/' + self.instname.upper() + '/CLD_DATA/' 
         self.prefix  = self.nccs + 'workdir/'
 
         self.indir   = self.nccs 
