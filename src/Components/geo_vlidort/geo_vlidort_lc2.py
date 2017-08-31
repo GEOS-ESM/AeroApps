@@ -460,6 +460,9 @@ class WORKSPACE(JOBS):
             os.symlink(self.execFile,os.path.basename(self.execFile))
         if not os.path.exists('ExtData'):
             os.symlink(self.cwd+'/ExtData','ExtData')
+        if cloud is True:
+            if not os.path.exists('ExtDataCloud'):
+                os.symlink(self.cwd+'/ExtDataCloud','ExtDataCloud')            
         if not os.path.isfile('Chem_MieRegistry.rc'):
             os.symlink(self.cwd+'/Chem_MieRegistry.rc','Chem_MieRegistry.rc')
         if not os.path.isfile('clean_mem.sh'):
