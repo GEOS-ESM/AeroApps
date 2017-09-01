@@ -334,6 +334,7 @@ program geo_vlidort_cloud
 ! Figure out how many indices to work on
 !------------------------------------------
   clrm = 0
+  clmask = .False.
   do i=1,im
     do j=1,jm
       if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99))  then
@@ -413,6 +414,7 @@ program geo_vlidort_cloud
 
 ! Split up filtered domain among processors
 !----------------------------------------------
+  nclr = 0
   if (npet >= clrm) then
     nclr(1:clrm) = 1
   else if (npet < clrm) then
@@ -2326,7 +2328,7 @@ end subroutine outfile_extname
 
     i_ = mod(ntile,nX)
 
-    iCoarse = int((i + im*i_+1)/ifactor)
+    iCoarse = int((i + im*i_ - 1)/ifactor) + 1
 
   end function iCoarse
 
@@ -2358,7 +2360,7 @@ end subroutine outfile_extname
 
     j_ = int(ntile/nX) 
 
-    jCoarse = int((j + jm*j_+1)/jfactor)
+    jCoarse = int((j + jm*j_ - 1)/jfactor) + 1
 
   end function jCoarse
 
