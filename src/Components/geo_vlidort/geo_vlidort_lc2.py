@@ -754,7 +754,7 @@ class WORKSPACE(JOBS):
         if (addoutdir is not None):
             if nodemax is not None and nodemax > 1:
                 outfilelist = glob.glob('*.add.*.nc4')
-                combine_files(outfilelist)
+                self.combine_files(outfilelist)
                 outfilelist = glob.glob('*.add.*.nc4')
                 move_file(outfilelist,addoutdir)
             else:
