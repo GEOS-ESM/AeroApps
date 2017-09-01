@@ -140,7 +140,7 @@ class CLD_WORKSPACE(WORKSPACE):
                         self.outdirstring.append(outdir)
                         self.nodemax_list.append(nodemax)
                         if (self.additional_output):
-                            self.addoutdirstring.append(addoutdir)
+                            self.addoutdirstring.append(addoutdir_)
 
 
                         # Create rcfiles - different for different surface types
