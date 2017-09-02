@@ -2003,21 +2003,21 @@ end subroutine outfile_extname
     integer                                :: k
 
     do k = 1, km
-      Vqm(k,1,nobs) = DU001(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,2,nobs) = DU002(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,3,nobs) = DU003(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,4,nobs) = DU004(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,5,nobs) = DU005(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,6,nobs) = SS001(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,7,nobs) = SS002(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,8,nobs) = SS003(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,9,nobs) = SS004(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,10,nobs) = SS005(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,11,nobs) = BCPHOBIC(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,12,nobs) = BCPHILIC(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,13,nobs) = OCPHOBIC(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,14,nobs) = OCPHILIC(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,15,nobs) = SO4(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,1,nobs) = DU001(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,2,nobs) = DU002(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,3,nobs) = DU003(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,4,nobs) = DU004(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,5,nobs) = DU005(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,6,nobs) = SS001(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,7,nobs) = SS002(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,8,nobs) = SS003(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,9,nobs) = SS004(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,10,nobs) = SS005(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,11,nobs) = BCPHOBIC(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,12,nobs) = BCPHILIC(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,13,nobs) = OCPHOBIC(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,14,nobs) = OCPHILIC(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,15,nobs) = SO4(iC,jC,k)*DELP(i,j,k)/grav
     end do
    end subroutine calc_qm
 
