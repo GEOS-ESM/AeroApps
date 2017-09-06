@@ -147,6 +147,9 @@ class CLD_WORKSPACE(WORKSPACE):
                         if (self.surface.upper() == 'MAIACRTLS'):
                             self.make_maiac_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
                                                    layout=laycode)
+                        elif (self.surface.upper() == 'MCD43C'):
+                            self.make_mcd43c_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
+                                                   layout=laycode)                            
                         else:
                             self.make_ler_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
                                                  layout=laycode)
@@ -339,6 +342,63 @@ class CLD_WORKSPACE(WORKSPACE):
         rcfile.close()
 
         os.chdir(self.cwd)    
+
+
+    def make_mcd43c_rcfile(self,dirname,date,ch,nodemax=None,i_band=None,layout=None):
+        os.chdir(dirname)
+
+        rcfile = open('geo_vlidort.rc','w')
+        rcfile.write('INDIR: '+self.indir+'\n')
+        rcfile.write('OUTDIR: .\n')
+        rcfile.write('DATE: '+str(date.year)+str(date.month).zfill(2)+str(date.day).zfill(2)+'\n')
+        rcfile.write('TIME: '+str(date.hour).zfill(2)+'\n')
+        rcfile.write('INSTNAME: ' + self.instname.lower() + '\n')
+        rcfile.write('SURFNAME: MCD43C\n')
+        rcfile.write('SURFMODEL: RTLS\n')
+
+        doy = date.toordinal() - datetime(date.year-1,12,31).toordinal()
+        rcfile.write('SURFDATE: '+str(date.year+1)+str(doy).zfill(3)+'\n')
+
+        rcfile.write('SURFBAND: ' + self.interp +'\n')
+        if (self.interp.upper() == 'INTERPOLATE'):
+            rcfile.write('SURFBAND_C: 645 858 469 555 1240 1640 2130\n')
+        else:
+            rcfile.write('SURFBAND_I: '+ i_band + '\n')
+
+        rcfile.write('SURFBANDM: 7 \n')
+
+        if (self.code == 'scalar'):
+            rcfile.write('SCALAR: true\n')
+        else:
+            rcfile.write('SCALAR: false\n')
+
+
+        rcfile.write('CHANNELS: '+ch+'\n')
+        if nodemax is not None:
+            rcfile.write('NODEMAX: '+ str(nodemax) + '\n')
+
+        if self.additional_output:
+            rcfile.write('ADDITIONAL_OUTPUT: true\n')
+        else:
+            rcfile.write('ADDITIONAL_OUTPUT: false\n')
+
+        if self.version is not None:
+            rcfile.write('VERSION: '+self.version+'\n')
+
+        if self.surf_version is not None:
+            rcfile.write('SURF_VERSION: '+self.surf_version+'\n')
+
+        if layout is not None:
+            rcfile.write('LAYOUT: '+layout+'\n')
+
+        rcfile.write('ICLDTABLE:'+self.icldtable+'\n') 
+        rcfile.write('LCLDTABLE:'+self.lcldtable+'\n') 
+        rcfile.write('IDXCLD:'+self.idxcld+'\n')   
+            
+        rcfile.close()
+
+        os.chdir(self.cwd)
+
 
 
         
