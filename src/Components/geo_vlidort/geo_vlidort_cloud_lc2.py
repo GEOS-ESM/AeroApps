@@ -73,7 +73,7 @@ class CLD_WORKSPACE(WORKSPACE):
         if (self.interp.lower() == 'interpolate'):
             self.code += 'i'                 
 
-        self.code += surface
+        self.code += self.surface
 
 
         self.startdate = startdate
@@ -147,8 +147,8 @@ class CLD_WORKSPACE(WORKSPACE):
                         if (self.surface.upper() == 'MAIACRTLS'):
                             self.make_maiac_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
                                                    layout=laycode)
-                        elif (self.surface.upper() == 'MCD43C'):
-                            self.make_mcd43c_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
+                        elif ('MCD43' in self.surface.upper()):
+                            self.make_mcd43_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
                                                    layout=laycode)                            
                         else:
                             self.make_ler_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
@@ -224,6 +224,7 @@ class CLD_WORKSPACE(WORKSPACE):
         rcfile.write('DATE: '+str(date.year)+str(date.month).zfill(2)+str(date.day).zfill(2)+'\n')
         rcfile.write('TIME: '+str(date.hour).zfill(2)+'\n')
         rcfile.write('INSTNAME: ' + self.instname.lower() + '\n')
+        rcfile.write('ANGNAME:' +self.angname+'\n')  
         rcfile.write('SURFNAME: MAIACRTLS\n')
         rcfile.write('SURFMODEL: RTLS\n')
 
@@ -298,6 +299,7 @@ class CLD_WORKSPACE(WORKSPACE):
         rcfile.write('DATE: ' + str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2) + '\n')
         rcfile.write('TIME: ' + str(date.hour).zfill(2) + '\n')
         rcfile.write('INSTNAME: ' + self.instname + '\n')
+        rcfile.write('ANGNAME:' +self.angname+'\n')  
         rcfile.write('SURFNAME: LER\n')
         rcfile.write('SURFMODEL: LER\n')
 
@@ -344,7 +346,7 @@ class CLD_WORKSPACE(WORKSPACE):
         os.chdir(self.cwd)    
 
 
-    def make_mcd43c_rcfile(self,dirname,date,ch,nodemax=None,i_band=None,layout=None):
+    def make_mcd43_rcfile(self,dirname,date,ch,nodemax=None,i_band=None,layout=None):
         os.chdir(dirname)
 
         rcfile = open('geo_vlidort.rc','w')
@@ -353,11 +355,12 @@ class CLD_WORKSPACE(WORKSPACE):
         rcfile.write('DATE: '+str(date.year)+str(date.month).zfill(2)+str(date.day).zfill(2)+'\n')
         rcfile.write('TIME: '+str(date.hour).zfill(2)+'\n')
         rcfile.write('INSTNAME: ' + self.instname.lower() + '\n')
-        rcfile.write('SURFNAME: MCD43C\n')
+        rcfile.write('ANGNAME:' +self.angname+'\n')  
+        rcfile.write('SURFNAME: '+self.surface+'\n')
         rcfile.write('SURFMODEL: RTLS\n')
 
         doy = date.toordinal() - datetime(date.year-1,12,31).toordinal()
-        rcfile.write('SURFDATE: '+str(date.year+1)+str(doy).zfill(3)+'\n')
+        rcfile.write('SURFDATE: '+str(date.year)+str(doy).zfill(3)+'\n')
 
         rcfile.write('SURFBAND: ' + self.interp +'\n')
         if (self.interp.upper() == 'INTERPOLATE'):
@@ -393,7 +396,7 @@ class CLD_WORKSPACE(WORKSPACE):
 
         rcfile.write('ICLDTABLE:'+self.icldtable+'\n') 
         rcfile.write('LCLDTABLE:'+self.lcldtable+'\n') 
-        rcfile.write('IDXCLD:'+self.idxcld+'\n')   
+        rcfile.write('IDXCLD:'+self.idxcld+'\n')        
             
         rcfile.close()
 
@@ -442,6 +445,10 @@ if __name__ == "__main__":
                       help="Instrument name (default=%s)"\
                       %instname )
 
+    parser.add_option("--angname", dest="angname", default=instname,
+                      help="Instrument name for angles (default=%s)"\
+                      %instname )    
+
     parser.add_option("-V", "--version_string", dest="version", default=version,
                       help="Version name (default=%s)"\
                       %version )        
@@ -463,7 +470,7 @@ if __name__ == "__main__":
                       %idxcld )                                                 
 
     parser.add_option("-s", "--surface", dest="surface", default=surface,
-                      help="Surface Reflectance Dataset.  Choose from 'lambertian' or 'MAIACRTLS' "\
+                      help="Surface Reflectance Dataset.  Choose from 'lambertian' or 'MAIACRTLS' or 'MCD43X' "\
                       "(default=%s)"\
                       %surface )      
 
