@@ -1,6 +1,7 @@
 # GEO_VLIDORT_LC2_CLOUD processing
 
 LC2_INSTNAME = tempo
+LC2_ANGNAME  = tempo
 LC2_VERSION  = 1.0
 LC2_CHANNELS = 388
 LC2_RUNMODE  = vector
