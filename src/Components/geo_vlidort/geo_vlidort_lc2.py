@@ -236,7 +236,7 @@ class WORKSPACE(JOBS):
         if (self.interp.lower() == 'interpolate'):
             self.code += 'i'                 
 
-        self.code += surface
+        self.code += self.surface
 
 
         self.startdate = startdate
