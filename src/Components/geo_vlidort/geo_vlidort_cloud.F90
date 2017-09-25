@@ -1197,7 +1197,7 @@ end subroutine outfile_extname
     integer                            :: x, y
 
     if (lower_to_upper(surfmodel) == 'RTLS') then
-
+      
       call mp_readvar3Dchunk("Band1", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band1) 
       call mp_readvar3Dchunk("Band2", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band2) 
       call mp_readvar3Dchunk("Band3", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band3) 
@@ -1352,9 +1352,9 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(OCPHILIC,(/imC,jmC,km/),rc=ierr)
     call MAPL_AllocNodeArray(SO4,(/imC,jmC,km/),rc=ierr)
     if (lower_to_upper(surfmodel) == 'RTLS') then
-      call MAPL_AllocNodeArray(KISO,(/imC,jmC,surfbandm/),rc=ierr)
-      call MAPL_AllocNodeArray(KVOL,(/imC,jmC,surfbandm/),rc=ierr)
-      call MAPL_AllocNodeArray(KGEO,(/imC,jmC,surfbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(KISO,(/im,jm,surfbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(KVOL,(/im,jm,surfbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(KGEO,(/im,jm,surfbandm/),rc=ierr)
     else
       call MAPL_AllocNodeArray(LER,(/imC,jmC,surfbandm/),rc=ierr)
     end if 
@@ -1381,15 +1381,15 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(reflectance_VL,(/im,jm,nch/),rc=ierr)
 
     if (lower_to_upper(surfmodel) == 'RTLS') then
-      call MAPL_AllocNodeArray(BAND1,(/imC,jmC,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND2,(/imC,jmC,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND3,(/imC,jmC,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND4,(/imC,jmC,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND5,(/imC,jmC,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND6,(/imC,jmC,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND7,(/imC,jmC,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND1,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND2,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND3,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND4,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND5,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND6,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND7,(/im,jm,nkernel/),rc=ierr)
       if (lower_to_upper(surfname) == 'MAIACRTLS') then
-        call MAPL_AllocNodeArray(BAND8,(/imC,jmC,nkernel/),rc=ierr)
+        call MAPL_AllocNodeArray(BAND8,(/im,jm,nkernel/),rc=ierr)
       end if
     end if
 
