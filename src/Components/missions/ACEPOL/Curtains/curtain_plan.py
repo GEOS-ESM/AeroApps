@@ -11,10 +11,10 @@ from grads import gacm
 if __name__ == "__main__":
 
     home = os.environ['HOME'] 
-    sdir = home + '/iesa/oracles/sampled/plan' # make symlinks here for sampled files
-    meteo =  sdir + '/ORACLES-GEOS5-METEO-AIRCRAFT_PLAN_DATE_REV.nc'
-    chem  =  sdir + '/ORACLES-GEOS5-CHEM-AIRCRAFT_PLAN_DATE_REV.nc'
-    ict = '../Plans/ORACLES-Flt-plan_AIRCRAFT_DATE_REV.ict'
+    sdir = home + '/iesa/acepol/sampled/plan' # make symlinks here for sampled files
+    meteo =  sdir + '/ACEPOL-GEOS5-METEO-AIRCRAFT_PLAN_DATE_REV.nc'
+    chem  =  sdir + '/ACEPOL-GEOS5-CHEM-AIRCRAFT_PLAN_DATE_REV.nc'
+    ict = '../Plans/ACEPOL-Flt-plan_AIRCRAFT_DATE_REV.ict'
     csv = '../Plans/xsect_SECTION_isoT0.csv' # not implemented yet
 
     if len(sys.argv) < 3:
