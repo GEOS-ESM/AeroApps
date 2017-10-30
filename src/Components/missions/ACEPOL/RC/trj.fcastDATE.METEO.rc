@@ -1,0 +1,12 @@
+#
+# Resource file for Trajectory Sampler. Meteorological parameters.
+#
+
+1) * : /home/adasilva/opendap/kaq/fcast/tavg1_2d_slv_Nx/tavg1_2d_slv_Nx.DATE_12
+2) * : /home/adasilva/opendap/kaq/fcast/tavg1_2d_flx_Nx/tavg1_2d_flx_Nx.DATE_12
+3) * : /home/adasilva/opendap/kaq/fcast/tavg1_2d_rad_Nx/tavg1_2d_rad_Nx.DATE_12
+4) * : /home/adasilva/opendap/kaq/fcast/inst3_3d_asm_Np/inst3_3d_asm_Np.DATE_12
+
+
+
+

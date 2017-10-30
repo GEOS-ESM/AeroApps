@@ -36,6 +36,7 @@ if __name__ == "__main__":
     cf = Config(prep_config,delim=' = ')
  
     Options =           " --instname=" + cf('LC2_INSTNAME')     + \
+                         " --angname=" + cf('LC2_ANGNAME')     + \
                   " --version_string=" + cf('LC2_VERSION')      + \
                         " --channels=" + cf('LC2_CHANNELS')     + \
                         " --icldtable="+ cf('LC2_ICLDTABLE')    + \

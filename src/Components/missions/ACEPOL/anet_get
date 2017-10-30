@@ -1,0 +1,8 @@
+#!/bin/csh -f
+
+    set url = "https://aeronet.gsfc.nasa.gov/cgi-bin/print_web_data_v3"
+    set bbox = "lon1=-123.0&lon2=-111.0&lat1=32.0&lat2=40.0"
+    set tbox = "year=2017&month=10&day=15&year2=2017&month2=10&day2=22"
+    
+     echo wget --no-check-certificate -q -O aeronet.csv "${url}?${bbox}&${tbox}&AOD15=1&AVG=10"
+     wget --no-check-certificate -q -O aeronet.csv "${url}?if_no_html=1&${bbox}&${tbox}&AOD15=1&AVG=10"

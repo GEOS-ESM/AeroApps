@@ -236,7 +236,7 @@ class WORKSPACE(JOBS):
         if (self.interp.lower() == 'interpolate'):
             self.code += 'i'                 
 
-        self.code += surface
+        self.code += self.surface
 
 
         self.startdate = startdate
@@ -278,8 +278,10 @@ class WORKSPACE(JOBS):
 
                     if (numpixels <= 1000 and self.nodemax is not None):
                         nodemax = 1
+                    elif self.nodemax is not None:
+                        nodemax = int(self.nodemax)
                     else:
-                        nodemax = self.nodemax
+                        nodemax = None
 
                     for i, ch in enumerate(self.channels):
                         if self.interp == 'exact':
@@ -299,9 +301,9 @@ class WORKSPACE(JOBS):
 
                         self.dirstring.append(workdir)
                         self.outdirstring.append(outdir)
-                        self.nodemax_list.append(int(nodemax))
+                        self.nodemax_list.append(nodemax)
                         if (self.additional_output):
-                            self.addoutdirstring.append(addoutdir)
+                            self.addoutdirstring.append(addoutdir_)
 
 
                         # Create rcfiles - different for different surface types
@@ -414,14 +416,14 @@ class WORKSPACE(JOBS):
         return len(f[0])
 
 
-    def make_workspace(self,date,ch,nodemax=None,layout=None,cloud=False):
+    def make_workspace(self,date,ch,nodemax=None,layout=None):
 
         # Get necessary files from archive if needed
         g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
         nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
         hour  = str(date.hour).zfill(2)
 
-        if (layout is None) or (cloud is True) :
+        if (layout is None) or (self.cloud is True) :
             chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z.nc4'
             aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'            
         else:
@@ -458,6 +460,9 @@ class WORKSPACE(JOBS):
             os.symlink(self.execFile,os.path.basename(self.execFile))
         if not os.path.exists('ExtData'):
             os.symlink(self.cwd+'/ExtData','ExtData')
+        if self.cloud is True:
+            if not os.path.exists('ExtDataCloud'):
+                os.symlink(self.cwd+'/ExtDataCloud','ExtDataCloud')            
         if not os.path.isfile('Chem_MieRegistry.rc'):
             os.symlink(self.cwd+'/Chem_MieRegistry.rc','Chem_MieRegistry.rc')
         if not os.path.isfile('clean_mem.sh'):
@@ -693,6 +698,8 @@ class WORKSPACE(JOBS):
         os.remove(os.path.basename(self.execFile))
         os.remove('clean_mem.sh')
         os.remove('ExtData')
+        if self.cloud is True:
+            os.remove('ExtDataCloud')
         os.remove('geo_vlidort.rc')
         os.remove(self.runfile)
 
@@ -747,7 +754,7 @@ class WORKSPACE(JOBS):
         if (addoutdir is not None):
             if nodemax is not None and nodemax > 1:
                 outfilelist = glob.glob('*.add.*.nc4')
-                combine_files(outfilelist)
+                self.combine_files(outfilelist)
                 outfilelist = glob.glob('*.add.*.nc4')
                 move_file(outfilelist,addoutdir)
             else:

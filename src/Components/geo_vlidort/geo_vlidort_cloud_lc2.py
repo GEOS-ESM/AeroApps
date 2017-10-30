@@ -33,7 +33,7 @@ class CLD_WORKSPACE(WORKSPACE):
     """ Create Working Directories and RC files """
     def __init__(self,startdate,enddate,options):
 
-
+        self.cloud = True
         for oo in options.__dict__:
             if (type(options.__dict__[oo]) is str) and (options.__dict__[oo].lower() == 'none'):
                 self.__dict__[oo] = None
@@ -41,8 +41,8 @@ class CLD_WORKSPACE(WORKSPACE):
                 self.__dict__[oo] = options.__dict__[oo]
 
         if self.nodemax is not None: self.nodemax = int(self.nodemax)
-        self.nccs    = self.nccs + '/' + self.instname.upper() + '/DATA/' 
-        self.archive    = self.archive + '/' + self.instname.upper() + '/DATA/' 
+        self.nccs    = self.nccs + '/' + self.instname.upper() + '/CLD_DATA/' 
+        self.archive    = self.archive + '/' + self.instname.upper() + '/CLD_DATA/' 
         self.prefix  = self.nccs + 'workdir/'
 
         self.indir   = self.nccs 
@@ -73,7 +73,7 @@ class CLD_WORKSPACE(WORKSPACE):
         if (self.interp.lower() == 'interpolate'):
             self.code += 'i'                 
 
-        self.code += surface
+        self.code += self.surface
 
 
         self.startdate = startdate
@@ -115,8 +115,10 @@ class CLD_WORKSPACE(WORKSPACE):
 
                     if (numpixels <= 1000 and self.nodemax is not None):
                         nodemax = 1
+                    elif self.nodemax is not None:
+                        nodemax = int(self.nodemax)
                     else:
-                        nodemax = self.nodemax
+                        nodemax = None
 
                     for i, ch in enumerate(self.channels):
                         if self.interp == 'exact':
@@ -127,7 +129,7 @@ class CLD_WORKSPACE(WORKSPACE):
                         # Create working directories for intermediate outputs
                         # create output directories
                         # save directory names
-                        dirlist = self.make_workspace(startdate,ch,nodemax=nodemax,layout=laycode,cloud=True)
+                        dirlist = self.make_workspace(startdate,ch,nodemax=nodemax,layout=laycode)
 
                         if (self.additional_output):
                             workdir, outdir, addoutdir_ = dirlist
@@ -136,15 +138,18 @@ class CLD_WORKSPACE(WORKSPACE):
 
                         self.dirstring.append(workdir)
                         self.outdirstring.append(outdir)
-                        self.nodemax_list.append(int(nodemax))
+                        self.nodemax_list.append(nodemax)
                         if (self.additional_output):
-                            self.addoutdirstring.append(addoutdir)
+                            self.addoutdirstring.append(addoutdir_)
 
 
                         # Create rcfiles - different for different surface types
                         if (self.surface.upper() == 'MAIACRTLS'):
                             self.make_maiac_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
                                                    layout=laycode)
+                        elif ('MCD43' in self.surface.upper()):
+                            self.make_mcd43_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
+                                                   layout=laycode)                            
                         else:
                             self.make_ler_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
                                                  layout=laycode)
@@ -219,6 +224,7 @@ class CLD_WORKSPACE(WORKSPACE):
         rcfile.write('DATE: '+str(date.year)+str(date.month).zfill(2)+str(date.day).zfill(2)+'\n')
         rcfile.write('TIME: '+str(date.hour).zfill(2)+'\n')
         rcfile.write('INSTNAME: ' + self.instname.lower() + '\n')
+        rcfile.write('ANGNAME:' +self.angname+'\n')  
         rcfile.write('SURFNAME: MAIACRTLS\n')
         rcfile.write('SURFMODEL: RTLS\n')
 
@@ -293,6 +299,7 @@ class CLD_WORKSPACE(WORKSPACE):
         rcfile.write('DATE: ' + str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2) + '\n')
         rcfile.write('TIME: ' + str(date.hour).zfill(2) + '\n')
         rcfile.write('INSTNAME: ' + self.instname + '\n')
+        rcfile.write('ANGNAME:' +self.angname+'\n')  
         rcfile.write('SURFNAME: LER\n')
         rcfile.write('SURFMODEL: LER\n')
 
@@ -339,6 +346,64 @@ class CLD_WORKSPACE(WORKSPACE):
         os.chdir(self.cwd)    
 
 
+    def make_mcd43_rcfile(self,dirname,date,ch,nodemax=None,i_band=None,layout=None):
+        os.chdir(dirname)
+
+        rcfile = open('geo_vlidort.rc','w')
+        rcfile.write('INDIR: '+self.indir+'\n')
+        rcfile.write('OUTDIR: .\n')
+        rcfile.write('DATE: '+str(date.year)+str(date.month).zfill(2)+str(date.day).zfill(2)+'\n')
+        rcfile.write('TIME: '+str(date.hour).zfill(2)+'\n')
+        rcfile.write('INSTNAME: ' + self.instname.lower() + '\n')
+        rcfile.write('ANGNAME:' +self.angname+'\n')  
+        rcfile.write('SURFNAME: '+self.surface+'\n')
+        rcfile.write('SURFMODEL: RTLS\n')
+
+        doy = date.toordinal() - datetime(date.year-1,12,31).toordinal()
+        rcfile.write('SURFDATE: '+str(date.year)+str(doy).zfill(3)+'\n')
+
+        rcfile.write('SURFBAND: ' + self.interp +'\n')
+        if (self.interp.upper() == 'INTERPOLATE'):
+            rcfile.write('SURFBAND_C: 645 858 469 555 1240 1640 2130\n')
+        else:
+            rcfile.write('SURFBAND_I: '+ i_band + '\n')
+
+        rcfile.write('SURFBANDM: 7 \n')
+
+        if (self.code == 'scalar'):
+            rcfile.write('SCALAR: true\n')
+        else:
+            rcfile.write('SCALAR: false\n')
+
+
+        rcfile.write('CHANNELS: '+ch+'\n')
+        if nodemax is not None:
+            rcfile.write('NODEMAX: '+ str(nodemax) + '\n')
+
+        if self.additional_output:
+            rcfile.write('ADDITIONAL_OUTPUT: true\n')
+        else:
+            rcfile.write('ADDITIONAL_OUTPUT: false\n')
+
+        if self.version is not None:
+            rcfile.write('VERSION: '+self.version+'\n')
+
+        if self.surf_version is not None:
+            rcfile.write('SURF_VERSION: '+self.surf_version+'\n')
+
+        if layout is not None:
+            rcfile.write('LAYOUT: '+layout+'\n')
+
+        rcfile.write('ICLDTABLE:'+self.icldtable+'\n') 
+        rcfile.write('LCLDTABLE:'+self.lcldtable+'\n') 
+        rcfile.write('IDXCLD:'+self.idxcld+'\n')        
+            
+        rcfile.close()
+
+        os.chdir(self.cwd)
+
+
+
         
 #########################################################
 
@@ -380,6 +445,10 @@ if __name__ == "__main__":
                       help="Instrument name (default=%s)"\
                       %instname )
 
+    parser.add_option("--angname", dest="angname", default=instname,
+                      help="Instrument name for angles (default=%s)"\
+                      %instname )    
+
     parser.add_option("-V", "--version_string", dest="version", default=version,
                       help="Version name (default=%s)"\
                       %version )        
@@ -401,7 +470,7 @@ if __name__ == "__main__":
                       %idxcld )                                                 
 
     parser.add_option("-s", "--surface", dest="surface", default=surface,
-                      help="Surface Reflectance Dataset.  Choose from 'lambertian' or 'MAIACRTLS' "\
+                      help="Surface Reflectance Dataset.  Choose from 'lambertian' or 'MAIACRTLS' or 'MCD43X' "\
                       "(default=%s)"\
                       %surface )      
 

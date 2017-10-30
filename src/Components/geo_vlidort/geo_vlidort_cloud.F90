@@ -52,7 +52,7 @@ program geo_vlidort_cloud
   character(len=8)                      :: date         
   character(len=7)                      :: surfdate
   character(len=2)                      :: time 
-  character(len=256)                    :: instname, indir, outdir
+  character(len=256)                    :: instname, angname, indir, outdir
   character(len=256)                    :: surfname, surfmodel
   character(len=256)                    :: surfband               ! flag to use nearest-neighbor interpolation or an exact value given
   integer                               :: surfbandm              ! number of wavelength bands or channels in surface reflectance data file
@@ -267,6 +267,7 @@ program geo_vlidort_cloud
     write(*,*) 'Simulating ', lower_to_upper(trim(instname)),' domain on ',date,' ', time, 'Z'
     write(*,*) 'Input directory: ',trim(indir)
     write(*,*) 'Output directory: ',trim(outdir)
+    write(*,*) 'Instrument geometry: ',trim(angname)
     write(*,*) 'BRDF dataset: ',trim(surfname),' ',trim(surfdate)
     write(*,*) 'Channels [nm]: ',channels
     if (lower_to_upper(surfband) == 'EXACT') write(*,*) 'Using exact surface relflectance parameters on bands : ',surfband_i
@@ -334,6 +335,7 @@ program geo_vlidort_cloud
 ! Figure out how many indices to work on
 !------------------------------------------
   clrm = 0
+  clmask = .False.
   do i=1,im
     do j=1,jm
       if ((FRLAND(i,j) .ne. g5nr_missing) .and. (FRLAND(i,j) >= 0.99))  then
@@ -413,6 +415,7 @@ program geo_vlidort_cloud
 
 ! Split up filtered domain among processors
 !----------------------------------------------
+  nclr = 0
   if (npet >= clrm) then
     nclr(1:clrm) = 1
   else if (npet < clrm) then
@@ -466,7 +469,7 @@ program geo_vlidort_cloud
   call MAPL_SyncSharedMemory(rc=ierr)
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
-  do cc = starti, starti !endi
+  do cc = starti, endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
 
@@ -495,24 +498,24 @@ program geo_vlidort_cloud
 !     ----------------------------
       do ch = 1, nch
         if (lower_to_upper(surfband) == 'EXACT') then
-          kernel_wt(:,ch,nobs) = (/dble(KISO(iC,jC,surfband_i(ch))),&
-                              dble(KGEO(iC,jC,surfband_i(ch))),&
-                              dble(KVOL(iC,jC,surfband_i(ch)))/)
+          kernel_wt(:,ch,nobs) = (/dble(KISO(i,j,surfband_i(ch))),&
+                              dble(KGEO(i,j,surfband_i(ch))),&
+                              dble(KVOL(i,j,surfband_i(ch)))/)
         else
           ! > 2130 uses highest MODIS wavelength band     
           if (channels(ch) >= 2130) then  
             iband = minloc(abs(surfband_c - channels(ch)), dim = 1)
-            kernel_wt(:,ch,nobs) = (/dble(KISO(iC,jC,iband)),&
-                              dble(KGEO(iC,jC,iband)),&
-                              dble(KVOL(iC,jC,iband))/)
+            kernel_wt(:,ch,nobs) = (/dble(KISO(i,j,iband)),&
+                              dble(KGEO(i,j,iband)),&
+                              dble(KVOL(i,j,iband))/)
           end if
           
           if (channels(ch) < 2130) then
             ! nearest neighbor interpolation of kernel weights to wavelength
             ! ******channel has to fall above available range, user is responsible to verify
-            kernel_wt(1,ch,nobs) = dble(nn_interp(surfband_c,reshape(KISO(iC,jC,:),(/surfbandm/)),channels(ch)))
-            kernel_wt(2,ch,nobs) = dble(nn_interp(surfband_c,reshape(KGEO(iC,jC,:),(/surfbandm/)),channels(ch)))
-            kernel_wt(3,ch,nobs) = dble(nn_interp(surfband_c,reshape(KVOL(iC,jC,:),(/surfbandm/)),channels(ch)))          
+            kernel_wt(1,ch,nobs) = dble(nn_interp(surfband_c,reshape(KISO(i,j,:),(/surfbandm/)),channels(ch)))
+            kernel_wt(2,ch,nobs) = dble(nn_interp(surfband_c,reshape(KGEO(i,j,:),(/surfbandm/)),channels(ch)))
+            kernel_wt(3,ch,nobs) = dble(nn_interp(surfband_c,reshape(KVOL(i,j,:),(/surfbandm/)),channels(ch)))          
           end if
         end if
         param(:,ch,nobs)     = (/dble(2),dble(1)/)
@@ -913,19 +916,19 @@ subroutine filenames()
     write(CLD_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
                             trim(instname),'-g5nr-icacl-TOTWPDF-GCOP-SKEWT.',date,'_',time,'z.nc4'                                     
     write(ANG_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
-                          trim(instname),'.cloud.lb2.angles.',date,'_',time,'z.nc4'
+                          trim(angname),'.cloud.lb2.angles.',date,'_',time,'z.nc4'
   else
     write(CLD_file,'(16A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
                             trim(instname),'-g5nr-icacl-TOTWPDF-GCOP-SKEWT.',date,'_',time,'z.',trim(layout),'.nc4'  
     write(ANG_file,'(16A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
-                          trim(instname),'.cloud.lb2.angles.',date,'_',time,'z.',trim(layout),'.nc4'                              
+                          trim(angname),'.cloud.lb2.angles.',date,'_',time,'z.',trim(layout),'.nc4'                              
   end if  
 
   if ( lower_to_upper(surfmodel) == 'RTLS' ) then
     if ( lower_to_upper(surfname) == 'MAIACRTLS' ) then
       write(SURF_file,'(8A)') trim(indir),'/BRDF/v',trim(surf_version),'/',trim(surfname),'.',surfdate,'.hdf'
     else
-      write(SURF_file,'(8A)') trim(indir),'/BRDF/v',trim(surf_version),'/',trim(surfname),'.',surfdate,'.nc4'
+      write(SURF_file,'(10A)') trim(indir),'/BRDF/v',trim(surf_version),'/',trim(surfname),'.',surfdate,'.',trim(layout),'.nc4'
     end if
   else
     write(SURF_file,'(6A)') trim(indir),'/SurfLER/',trim(instname),'-omi.SurfLER.',date(5:6),'.nc4'
@@ -938,17 +941,17 @@ subroutine filenames()
 
 ! OUTFILES
   if (vlidort) then
-    write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.cloud.lc2.vlidort.'
+    write(OUT_file,'(4A)') trim(outdir),'/',trim(angname),'-g5nr.cloud.lc2.vlidort.'
   else
-    write(OUT_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.cloud.lc2.lidort.'
+    write(OUT_file,'(4A)') trim(outdir),'/',trim(angname),'-g5nr.cloud.lc2.lidort.'
   end if 
   call outfile_extname(OUT_file)
 
   if (additional_output) then
     if (vlidort) then
-      write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.cloud.add.vlidort.'
+      write(ATMOS_file,'(4A)') trim(outdir),'/',trim(angname),'-g5nr.cloud.add.vlidort.'
     else
-      write(ATMOS_file,'(4A)') trim(outdir),'/',trim(instname),'-g5nr.cloud.add.lidort.'
+      write(ATMOS_file,'(4A)') trim(outdir),'/',trim(angname),'-g5nr.cloud.add.lidort.'
     end if
     call outfile_extname(ATMOS_file)
   end if
@@ -1194,16 +1197,16 @@ end subroutine outfile_extname
     integer                            :: x, y
 
     if (lower_to_upper(surfmodel) == 'RTLS') then
-
-      call mp_readvar3Dchunk("Band1", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band1) 
-      call mp_readvar3Dchunk("Band2", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band2) 
-      call mp_readvar3Dchunk("Band3", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band3) 
-      call mp_readvar3Dchunk("Band4", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band4) 
-      call mp_readvar3Dchunk("Band5", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band5) 
-      call mp_readvar3Dchunk("Band6", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band6) 
-      call mp_readvar3Dchunk("Band7", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band7) 
+      
+      call mp_readvar3Dchunk("Band1", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band1) 
+      call mp_readvar3Dchunk("Band2", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band2) 
+      call mp_readvar3Dchunk("Band3", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band3) 
+      call mp_readvar3Dchunk("Band4", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band4) 
+      call mp_readvar3Dchunk("Band5", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band5) 
+      call mp_readvar3Dchunk("Band6", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band6) 
+      call mp_readvar3Dchunk("Band7", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band7) 
       if (lower_to_upper(surfname) == 'MAIACRTLS') then
-        call mp_readvar3Dchunk("Band8", SURF_file, (/imC,jmC,nkernel/), 1, npet, myid, Band8) 
+        call mp_readvar3Dchunk("Band8", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band8) 
       end if
 
       call MAPL_SyncSharedMemory(rc=ierr)    
@@ -1349,9 +1352,9 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(OCPHILIC,(/imC,jmC,km/),rc=ierr)
     call MAPL_AllocNodeArray(SO4,(/imC,jmC,km/),rc=ierr)
     if (lower_to_upper(surfmodel) == 'RTLS') then
-      call MAPL_AllocNodeArray(KISO,(/imC,jmC,surfbandm/),rc=ierr)
-      call MAPL_AllocNodeArray(KVOL,(/imC,jmC,surfbandm/),rc=ierr)
-      call MAPL_AllocNodeArray(KGEO,(/imC,jmC,surfbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(KISO,(/im,jm,surfbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(KVOL,(/im,jm,surfbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(KGEO,(/im,jm,surfbandm/),rc=ierr)
     else
       call MAPL_AllocNodeArray(LER,(/imC,jmC,surfbandm/),rc=ierr)
     end if 
@@ -1378,15 +1381,15 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(reflectance_VL,(/im,jm,nch/),rc=ierr)
 
     if (lower_to_upper(surfmodel) == 'RTLS') then
-      call MAPL_AllocNodeArray(BAND1,(/imC,jmC,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND2,(/imC,jmC,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND3,(/imC,jmC,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND4,(/imC,jmC,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND5,(/imC,jmC,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND6,(/imC,jmC,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND7,(/imC,jmC,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND1,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND2,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND3,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND4,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND5,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND6,(/im,jm,nkernel/),rc=ierr)
+      call MAPL_AllocNodeArray(BAND7,(/im,jm,nkernel/),rc=ierr)
       if (lower_to_upper(surfname) == 'MAIACRTLS') then
-        call MAPL_AllocNodeArray(BAND8,(/imC,jmC,nkernel/),rc=ierr)
+        call MAPL_AllocNodeArray(BAND8,(/im,jm,nkernel/),rc=ierr)
       end if
     end if
 
@@ -2001,21 +2004,21 @@ end subroutine outfile_extname
     integer                                :: k
 
     do k = 1, km
-      Vqm(k,1,nobs) = DU001(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,2,nobs) = DU002(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,3,nobs) = DU003(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,4,nobs) = DU004(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,5,nobs) = DU005(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,6,nobs) = SS001(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,7,nobs) = SS002(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,8,nobs) = SS003(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,9,nobs) = SS004(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,10,nobs) = SS005(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,11,nobs) = BCPHOBIC(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,12,nobs) = BCPHILIC(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,13,nobs) = OCPHOBIC(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,14,nobs) = OCPHILIC(i,j,k)*DELP(i,j,k)/grav
-      Vqm(k,15,nobs) = SO4(i,j,k)*DELP(i,j,k)/grav
+      Vqm(k,1,nobs) = DU001(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,2,nobs) = DU002(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,3,nobs) = DU003(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,4,nobs) = DU004(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,5,nobs) = DU005(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,6,nobs) = SS001(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,7,nobs) = SS002(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,8,nobs) = SS003(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,9,nobs) = SS004(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,10,nobs) = SS005(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,11,nobs) = BCPHOBIC(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,12,nobs) = BCPHILIC(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,13,nobs) = OCPHOBIC(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,14,nobs) = OCPHILIC(iC,jC,k)*DELP(i,j,k)/grav
+      Vqm(k,15,nobs) = SO4(iC,jC,k)*DELP(i,j,k)/grav
     end do
    end subroutine calc_qm
 
@@ -2197,6 +2200,7 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, date, label = 'DATE:',__RC__)
     call ESMF_ConfigGetAttribute(cf, time, label = 'TIME:',__RC__)
     call ESMF_ConfigGetAttribute(cf, instname, label = 'INSTNAME:',__RC__)
+    call ESMF_ConfigGetAttribute(cf, angname, label = 'ANGNAME:',default='NONE')
     call ESMF_ConfigGetAttribute(cf, indir, label = 'INDIR:',__RC__)
     call ESMF_ConfigGetAttribute(cf, outdir, label = 'OUTDIR:',default=indir)
     call ESMF_ConfigGetAttribute(cf, surfname, label = 'SURFNAME:',default='MAIACRTLS')
@@ -2216,6 +2220,12 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, IcldTable, label = 'ICLDTABLE:',__RC__)       
     call ESMF_ConfigGetAttribute(cf, LcldTable, label = 'LCLDTABLE:',__RC__)
     call ESMF_ConfigGetAttribute(cf, idxCld, label = 'IDXCLD:',__RC__)
+
+  ! angname is instname if not given in the rcfile
+  !------------------------------------------
+    if (trim(lower_to_upper(angname)) == 'NONE') then
+      angname = instname
+    end if
 
     ! Check that LER configuration is correct
     !----------------------------------------
@@ -2326,7 +2336,7 @@ end subroutine outfile_extname
 
     i_ = mod(ntile,nX)
 
-    iCoarse = int((i + im*i_+1)/ifactor)
+    iCoarse = int((i + im*i_ - 1)/ifactor) + 1
 
   end function iCoarse
 
@@ -2358,7 +2368,7 @@ end subroutine outfile_extname
 
     j_ = int(ntile/nX) 
 
-    jCoarse = int((j + jm*j_+1)/jfactor)
+    jCoarse = int((j + jm*j_ - 1)/jfactor) + 1
 
   end function jCoarse
 

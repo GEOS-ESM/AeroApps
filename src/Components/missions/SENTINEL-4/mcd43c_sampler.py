@@ -234,7 +234,7 @@ def gap_fill(mcdData, clon, clat, FRLAND, season, ncClim):
   nNS, nEW = clon.shape 
   for b in bands:
     bdata = getattr(mcdData,b)
-    sdata = ncClim.variables[s + '_' + b][:]
+    sdata = ncClim.variables[season + '_' + b][:]
 
     data  = np.ma.masked_all([nNS,nEW])
     data[~clon.mask] = bdata    
