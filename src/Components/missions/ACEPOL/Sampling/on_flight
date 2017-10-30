@@ -2,7 +2,7 @@
 #
 # Given an ICT with a flight path, sample GEOS-products of interest.
 #
-# PC: modified to work for ORACLES
+# PC: modified to work for ACEPOL
 
 set rc = ../RC
 set sampler = $ESMADIR/`uname`/bin/trj_sampler.py
@@ -11,7 +11,7 @@ set dest = $HOME/iesa/oracles/sampled/flight
 
 
 if ( $#argv < 1 ) then
-   echo "usage: $0 [-r REV] ORACLES-ER2_MODEL_20160426_RA.ICT [force]"
+   echo "usage: $0 [-r REV] ACEPOL-ER2_MODEL_20160426_RA.ICT [force]"
    exit 1
 endif
     
@@ -38,7 +38,7 @@ foreach ict ( $ICT )
     set date = `echo $basen:r | awk -F_ '{print $3}'`
     set loc = `echo $basen | awk -F- '{print $2}' | awk -F_ '{print $1}' | sed -e 's/TRK//'`
     echo $loc
-    set nc = $dest/ORACLES-flight_track_${date}_$rev.nc
+    set nc = $dest/ACEPOL-flight_track_${date}_$rev.nc
 
     if ( $force == 1) then 
 	    $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $ict
