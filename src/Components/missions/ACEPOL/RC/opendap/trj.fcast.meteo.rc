@@ -1,0 +1,12 @@
+#
+# Resource file for Trajectory Sampler. Meteorological parameters.
+#
+
+* : http://opendap.nccs.nasa.gov:9090/dods/GEOS-5/fp/0.25_deg/fcast/tavg1_2d_slv_Nx.latest
+* : http://opendap.nccs.nasa.gov:80/dods/GEOS-5/fp/0.25_deg/fcast/tavg1_2d_flx_Nx.latest
+* : http://opendap.nccs.nasa.gov/dods/GEOS-5/fp/0.25_deg/fcast/tavg1_2d_rad_Nx.latest
+* : http://opendap.nccs.nasa.gov/dods/GEOS-5/fp/0.25_deg/fcast/inst3_3d_asm_Nv.latest
+
+
+
+

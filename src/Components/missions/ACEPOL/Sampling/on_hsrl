@@ -1,0 +1,79 @@
+#!/bin/csh -f
+#
+# Given an HSRL file with a flight path, sample GEOS-products of interest.
+#
+#
+
+set rc = ../RC
+set sampler = "$ESMADIR/`uname`/bin/trj_sampler.py"
+set esampler = "$ESMADIR/`uname`/bin/ext_sampler.py"
+
+set orig = $HOME/iesa/oracles/hsrl
+set dest = $HOME/iesa/oracles/sampled/hsrl
+
+if ( $#argv < 1 ) then
+   echo "usage: $0 [-r REV]  HSRL2_ER2_20160912_R1.h5  [force]"
+   exit 1
+endif
+    
+if ( "$1" == "-r" ) then
+     set rev = $2
+     shift
+     shift
+else
+     set rev = R1
+endif
+
+if ( $#argv > 1) then
+    set force = 1
+    set HSRL = $1
+else
+    set force = 0
+    set HSRL = ( $argv )
+endif
+
+foreach hsrl_ ( $HSRL ) 
+  set hsrl = $orig/$hsrl_
+  echo "<> Processing $hsrl"
+
+    # Sample basic GEOS-5 CHEM Fields
+    # -------------------------------
+    set basen = `basename $hsrl`
+    set date = `echo $basen:r | awk -F_ '{print $3}'`
+    set loc = `echo $basen | awk -F- '{print $2}' | awk -F_ '{print $1}' | sed -e 's/TRK//'`
+    echo $loc
+    set nc = $dest/GEOS5-CHEM_HSRL2_${date}_$rev.nc
+
+    if ( $force == 1) then 
+	    $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $hsrl
+    else
+	    if ( -e $nc ) then
+	      echo "<> Skipping $nc, already there there"
+	    else
+	      $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $hsrl 
+	    endif
+    endif
+
+    # Next, calculate extinction, etc on the sampled datasets
+    # -------------------------------------------------------
+    set inFile = $nc # CHEM file generated above
+
+    # Loop over channels
+    # ------------------
+    foreach ch ( 532 )
+       set enc = `echo $inFile | sed -e 's/CHEM/EXT${ch}/'`
+    
+       if ( $force == 1) then
+	      $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_${ch}nm.rc -o $enc
+       else
+	      if ( -e $enc ) then
+	        echo "<> Skipping $nc, already there there"
+	      else
+	        $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_${ch}nm.rc -o $enc 
+       endif
+
+    end # ch
+       
+end # hsrl
+    
+
