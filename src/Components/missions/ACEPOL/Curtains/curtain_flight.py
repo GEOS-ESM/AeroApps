@@ -11,10 +11,10 @@ from grads import gacm
 if __name__ == "__main__":
 
     sdir = '../Sampling/sampled/flight/'
-    meteo =  sdir + '/ORACLES-GEOS5-METEO-AIRCRAFT_MODEL_DATE_R0.nc'
-    chem  =  sdir + '/ORACLES-GEOS5-CHEM-AIRCRAFT_MODEL_DATE_R0.nc'
-    ext   =  sdir + '/ORACLES-GEOS5-EXT532-AIRCRAFT_MODEL_DATE_R0.nc'
-    ict = '../Tracks/ORACLES-AIRCRAFT_PLAN_DATE_RA.ict'
+    meteo =  sdir + '/ACEPOL-GEOS5-METEO-AIRCRAFT_MODEL_DATE_R0.nc'
+    chem  =  sdir + '/ACEPOL-GEOS5-CHEM-AIRCRAFT_MODEL_DATE_R0.nc'
+    ext   =  sdir + '/ACEPOL-GEOS5-EXT532-AIRCRAFT_MODEL_DATE_R0.nc'
+    ict = '../Tracks/ACEPOL-AIRCRAFT_PLAN_DATE_RA.ict'
 
     if len(sys.argv) < 3:
         print "Usage: "

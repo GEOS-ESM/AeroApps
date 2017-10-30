@@ -11,9 +11,9 @@ from grads import gacm
 if __name__ == "__main__":
 
     sdir = '../Sampling/sampled/flight/'
-    chem  =  sdir + '/ORACLES-GEOS5-AERO-AIRCRAFT_MODEL_DATE_R0.nc'
-    ext   =  sdir + '/ORACLES-GEOS5-EXT532-AIRCRAFT_MODEL_DATE_R0.nc'
-    ict = '../Tracks/ORACLES-AIRCRAFT_PLAN_DATE_RA.ict'
+    chem  =  sdir + '/ACEPOL-GEOS5-AERO-AIRCRAFT_MODEL_DATE_R0.nc'
+    ext   =  sdir + '/ACEPOL-GEOS5-EXT532-AIRCRAFT_MODEL_DATE_R0.nc'
+    ict = '../Tracks/ACEPOL-AIRCRAFT_PLAN_DATE_RA.ict'
 
     if len(sys.argv) < 3:
         print "Usage: "
