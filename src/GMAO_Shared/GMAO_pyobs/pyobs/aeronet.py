@@ -11,7 +11,7 @@ from   datetime import datetime, timedelta
 from   dateutil.parser import parse as isoparse
 from   glob     import glob
 
-from pyobs.npz  import NPZ
+from npz  import NPZ
 
 MISSING = -999.
 
@@ -209,7 +209,7 @@ class AERONET_L2(object):
                 else:
                     self.converters[i] = _convert2Float
                     self.formats += ('f4',)
-
+                    
 #       Read the data
 #       -------------
         data = loadtxt(filename, delimiter=',',
@@ -429,6 +429,26 @@ class AERONET_L2(object):
 
         self.nobs = self.lon.size
 
+    def bin_hourly(self,x,stn):
+        """
+        Plot attribute x, first binning by hourly.
+        """
+        I = self.Location==stn
+
+        # create time grid
+        # ----------------
+        dt = timedelta(seconds=60) # one hour
+        t_ = a.tyme[I]
+        t0, tf = t_.min(), t_.max()
+        t0 = datetime(t0.year,t0.month,t0.day,t0.hour)
+        tf = datetime(tf.year,tf.month,tf.day,tf.hour)
+        n = int(0.5+(tf-t0).total_seconds()/60.)
+        t = array([t0 + i*dt for i in range(n)])
+
+        print t0, tf
+        return t
+
+        
 #---
 def _convert2Float(s,missing=MISSING):
    if s in ('N/A', 'NA','','NaN',None):
@@ -528,6 +548,10 @@ def granules( tyme,
 
 if __name__ == "__main__":
 
+        a = AERONET_L2('aeronet.csv')
+    
+def __test__():
+    
     t = datetime(2008,07,01)
     one_hour = timedelta(seconds=60*60) # synoptic dt =  3 hours
 

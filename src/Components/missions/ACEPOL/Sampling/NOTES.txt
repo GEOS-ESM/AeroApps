@@ -1,0 +1,14 @@
+    94	11:26	on_plan ../Plans/ORACLES-Flt-plan_er2_20160920_20160920_ABlegs.ict 20160918_00
+    96	11:27	cat /home/adasilva/opendap/kaq/fcast/inst1_2d_hwl_Nx/inst1_2d_hwl_Nx.20160918_00
+    98	11:28	on_plan ../Plans/ORACLES-Flt-plan_er2_20160920_20160920_ABlegs.ict 20160918_00
+   100	11:30	on_plan ../Plans/ORACLES-Flt-plan_er2_20160920_20160920_ABlegs.ict 20160918_00
+   119	12:03	on_plan ../Plans/ORACLES-Flt-plan_er2_20160920_ABlegs.ict 20160918_00
+   121	12:06	on_plan ../Plans/ORACLES-Flt-plan_er2_20160920_ABlegs.ict 20160918_00
+   127	12:07	on_plan ../Plans/ORACLES-Flt-plan_er2_20160920_ABlegs.ict 20160918_00
+   133	12:33	on_plan ../Plans/ORACLES-Flt-plan_er2_20160920_ABlegs.ict 20160918_00
+   134	12:33	on_plan -r 1 ../Plans/ORACLES-Flt-plan_er2_20160920_ABlegs.ict 20160918_00
+   138	12:37	on_plan -r 1 ../Plans/ORACLES-Flt-plan_er2_20160920_AClegs.ict 20160918_00
+   140	12:51	history | grep 20160918_00
+   144	12:52	on_plan -r 2 ../Plans/ORACLES-Flt-plan_er2_20160920_BClegs.ict 20160918_00
+   145	12:53	history | grep 20160918_00
+   146	12:53	history | grep 20160918_00 > NOTES.txt
