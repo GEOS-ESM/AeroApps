@@ -39,7 +39,7 @@ VARS = ( 'AERONET_Site',
          'AOT_412', 
          'AOT_380', 
          'AOT_340',
-         'Precipitable_Water',
+         'Water',
          'Solar_Zenith_Angle',
          )
 
@@ -181,7 +181,7 @@ class AERONET_L2(object):
                     for c in columns:                    
                         self.columns += [c.replace('%','').replace('-','_').replace(' ','')\
                                           .replace('AOD','AOT').replace('nm','')\
-                                          .replace('Site_','')\
+                                          .replace('_Name','').replace('Precipitable_','')\
                                           .split('(')[0],]
                     break
                 i += 1
