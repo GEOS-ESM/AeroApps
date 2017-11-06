@@ -36,32 +36,32 @@ foreach hsrl_ ( $HSRL )
   set hsrl = $orig/$hsrl_
   echo "<> Processing $hsrl"
 
-    # Sample basic GEOS-5 CHEM Fields
+    # Sample basic GEOS-5 AERO Fields
     # -------------------------------
     set basen = `basename $hsrl`
     set date = `echo $basen:r | awk -F_ '{print $3}'`
     set loc = `echo $basen | awk -F- '{print $2}' | awk -F_ '{print $1}' | sed -e 's/TRK//'`
     echo $loc
-    set nc = $dest/GEOS5-CHEM_HSRL2_${date}_$rev.nc
+    set nc = $dest/GEOS5-AERO_HSRL2_${date}_$rev.nc
 
     if ( $force == 1) then 
-	    $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $hsrl
+	    $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.AERO.rc -o $nc $hsrl
     else
 	    if ( -e $nc ) then
 	      echo "<> Skipping $nc, already there there"
 	    else
-	      $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $hsrl 
+	      $sampler -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.AERO.rc -o $nc $hsrl 
 	    endif
     endif
 
     # Next, calculate extinction, etc on the sampled datasets
     # -------------------------------------------------------
-    set inFile = $nc # CHEM file generated above
+    set inFile = $nc # AERO file generated above
 
     # Loop over channels
     # ------------------
     foreach ch ( 532 )
-       set enc = `echo $inFile | sed -e 's/CHEM/EXT${ch}/'`
+       set enc = `echo $inFile | sed -e 's/AERO/EXT${ch}/'`
     
        if ( $force == 1) then
 	      $esampler -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_${ch}nm.rc -o $enc
