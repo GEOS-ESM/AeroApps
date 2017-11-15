@@ -288,6 +288,9 @@ if __name__ == "__main__":
   parser.add_option("-g", "--geolocation", dest="geoFile", default=geoFile,
             help='Level G1 geo-location file (default=%s)'%geoFile)
 
+  parser.add_option("-d", "--datadir", dest="datadir", default=datadir,
+            help='MCD43D data directory (default=%s)'%datadir)  
+
   parser.add_option("-o", "--output", dest="outFile", default=outFile,
             help="Output NetCDF file (default=%s)"\
                         %outFile )
@@ -361,7 +364,7 @@ if __name__ == "__main__":
  
   for t in t1:
     dates = season_dic(t.year)
-    inDir = datadir + 'Y{}/M{}/'.format(t.year,str(t.month).zfill(2))
+    inDir = options.datadir + 'Y{}/M{}/'.format(t.year,str(t.month).zfill(2))
     path = glob(inDir + '*' + t.strftime('%Y%j') + '*')
     qpath = glob(inDir + 'MCD43D31*' + t.strftime('%Y%j') + '*')
     for fn in path: assert os.path.exists(fn), fn + ' DOES NOT EXIST' 
