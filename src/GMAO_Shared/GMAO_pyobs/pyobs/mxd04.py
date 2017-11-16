@@ -173,9 +173,10 @@ class MxD04_L2(object):
 
        # Add/Substitute some aliases if given
        # ------------------------------------
+       self.ALIAS = ALIAS.copy()
        if alias is not None:
-           for a in alias: ALIAS[a] = alias[a]  
-       self.ALIAS = ALIAS
+           for a in alias: self.ALIAS[a] = alias[a]  
+       
 
        # Create empty lists for SDS to be read from file
        # -----------------------------------------------
