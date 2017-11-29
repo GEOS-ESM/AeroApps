@@ -215,6 +215,9 @@ if __name__ == "__main__":
 #   -------------------------------------------------
     makethis_dir(out_file)
     if modis.nobs>0:
+      if str.isdigit(options.res):
+        modis.writeg(filename=out_file,refine=int(options.res),channels=modis.channels_)
+      else:
         modis.writeg(filename=out_file,res=options.res,channels=modis.channels_)
 
 #   Write ungridded data
