@@ -511,6 +511,7 @@ if __name__ == "__main__":
         lon, lat, tyme = getTrackHSRL(trjFile)
     else:
         raise ValueError, 'cannot handle trajectory file format <%s>'%options.traj
+
     # Make sure longitudes in [-180,180]
     # ----------------------------------
     if lon.max()>180.:
