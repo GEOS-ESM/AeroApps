@@ -287,9 +287,18 @@ class CLD_WORKSPACE(WORKSPACE):
         if layout is not None:
             rcfile.write('LAYOUT: '+layout+'\n')
 
+        # Set up cloud configuration
         rcfile.write('ICLDTABLE:'+self.icldtable+'\n') 
         rcfile.write('LCLDTABLE:'+self.lcldtable+'\n') 
-        rcfile.write('IDXCLD:'+self.idxcld+'\n')   
+        cld_band = np.array(self.cld_band.split(',')).astype('float')
+        if ch >= cld_band.max():
+            idxcld = np.argmax(cld_band)
+        elif ch <= cld_band.min():
+            idxcld = np.argmin(cld_band)
+        else:
+            idxcld = np.argmin(np.abs((ch-cld_band) ))
+
+        rcfile.write('IDXCLD:'+ str(idxcld) +'\n')   
             
         rcfile.close()
 
@@ -357,8 +366,15 @@ class CLD_WORKSPACE(WORKSPACE):
 
         rcfile.write('ICLDTABLE:'+self.icldtable+'\n') 
         rcfile.write('LCLDTABLE:'+self.lcldtable+'\n') 
-        rcfile.write('IDXCLD:'+self.idxcld+'\n')               
+        cld_band = np.array(self.cld_band.split(',')).astype('float')
+        if ch >= cld_band.max():
+            idxcld = np.argmax(cld_band)
+        elif ch <= cld_band.min():
+            idxcld = np.argmin(cld_band)
+        else:
+            idxcld = np.argmin(np.abs((ch-cld_band) ))
 
+        rcfile.write('IDXCLD:'+ str(idxcld) +'\n')   
         rcfile.close()
 
         os.chdir(self.cwd)    
@@ -426,8 +442,15 @@ class CLD_WORKSPACE(WORKSPACE):
 
         rcfile.write('ICLDTABLE:'+self.icldtable+'\n') 
         rcfile.write('LCLDTABLE:'+self.lcldtable+'\n') 
-        rcfile.write('IDXCLD:'+self.idxcld+'\n')        
-            
+        cld_band = np.array(self.cld_band.split(',')).astype('float')
+        if ch >= cld_band.max():
+            idxcld = np.argmax(cld_band)
+        elif ch <= cld_band.min():
+            idxcld = np.argmin(cld_band)
+        else:
+            idxcld = np.argmin(np.abs((ch-cld_band) ))
+
+        rcfile.write('IDXCLD:'+ str(idxcld) +'\n')               
         rcfile.close()
 
         os.chdir(self.cwd)
@@ -458,7 +481,11 @@ if __name__ == "__main__":
     
     icldtable         = 'ExtDataCloud/IceLegendreCoeffs.nc4'
     lcldtable         = 'ExtDataCloud/WaterLegendreCoeffs.nc4'
-    idxcld            = 8
+    cld_band          = '650, 860, 470, 550, 1240, 1630, 2130, ' + \
+                        '410, 440, 910, 936, 940, 3700, 3900, ' + \
+                        '380, 6200, 7300, 8500, 11000, 12000, ' + \
+                        '13200, 13400, 13800, 14200'
+    cld_band          = cld_band.replace(' ','')
     #Flags
     # verbose           = False
     # additional_output = False
@@ -494,9 +521,9 @@ if __name__ == "__main__":
                       help="Liquid cloud optics table (default=%s)"\
                       %lcldtable ) 
 
-    parser.add_option("--idxcld", dest="idxcld", default=idxcld,
-                      help="Band in optics table(default=%s)"\
-                      %idxcld )                                                 
+    parser.add_option("--cld_band", dest="cld_band", default=cld_band,
+                      help="Bands in cloud optics table(default=%s)"\
+                      %cld_band )                                                 
 
     parser.add_option("-s", "--surface", dest="surface", default=surface,
                       help="Surface Reflectance Dataset.  Choose from 'lambertian' or 'MAIACRTLS' or 'MCD43X' "\
@@ -511,7 +538,7 @@ if __name__ == "__main__":
                       "(default=%s)"\
                       %interp )      
 
-    parser.add_option("-b", "--c_band", dest="c_band", default=c_band,
+    parser.add_option("-b", "--c_band", dest="c_band",
                       help="Surface reflectance bands." )  
 
     parser.add_option("-a", "--additional",

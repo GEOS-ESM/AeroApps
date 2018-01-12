@@ -9,7 +9,6 @@ LC2_RUNMODE  = vector
 ## Cloud optics
 LC2_ICLDTABLE  = ExtDataCloud/IceLegendreCoeffs.nc4
 LC2_LCLDTABLE  = ExtDataCloud/WaterLegendreCoeffs.nc4
-LC2_IDXCLD     = 8
 
 ## Surface info
 # lambertian or MAIACRTLS
