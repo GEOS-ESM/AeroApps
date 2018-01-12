@@ -482,8 +482,8 @@ if __name__ == "__main__":
                       "(default=%s)"\
                       %interp )      
 
-    parser.add_option("-b", "--i_band", dest="i_band", default=i_band,
-                      help="Surface reflectance band index. Required if interp=='exact'" )  
+    parser.add_option("-b", "--c_band", dest="c_band", default=c_band,
+                      help="Surface reflectance bands." )  
 
     parser.add_option("-a", "--additional",
                       action="store_true", dest="additional_output",default=False,
