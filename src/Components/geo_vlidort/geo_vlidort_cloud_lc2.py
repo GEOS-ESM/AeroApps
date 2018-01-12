@@ -65,8 +65,8 @@ class CLD_WORKSPACE(WORKSPACE):
             else:
                 self.channels = self.channels.split()
 
-        if type(self.i_band) is str:
-            self.i_band = self.i_band.split()
+        if type(self.c_band) is str:
+            self.c_band.replace(',',' ')
 
         # Runmode code
         self.code = self.runmode + '.'
@@ -121,11 +121,6 @@ class CLD_WORKSPACE(WORKSPACE):
                         nodemax = None
 
                     for i, ch in enumerate(self.channels):
-                        if self.interp == 'exact':
-                            i_band = self.i_band[i]
-                        else:
-                            i_band = None
-
                         # Create working directories for intermediate outputs
                         # create output directories
                         # save directory names
@@ -145,13 +140,13 @@ class CLD_WORKSPACE(WORKSPACE):
 
                         # Create rcfiles - different for different surface types
                         if (self.surface.upper() == 'MAIACRTLS'):
-                            self.make_maiac_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
+                            self.make_maiac_rcfile(workdir,startdate,ch,nodemax=nodemax,
                                                    layout=laycode)
                         elif ('MCD43' in self.surface.upper()):
-                            self.make_mcd43_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
+                            self.make_mcd43_rcfile(workdir,startdate,ch,nodemax=nodemax,
                                                    layout=laycode)                            
                         else:
-                            self.make_ler_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
+                            self.make_ler_rcfile(workdir,startdate,ch,nodemax=nodemax,
                                                  layout=laycode)
 
 
@@ -215,7 +210,7 @@ class CLD_WORKSPACE(WORKSPACE):
         return np.sum(f)
 
 
-    def make_maiac_rcfile(self,dirname,date,ch,nodemax=None,i_band=None,layout=None):
+    def make_maiac_rcfile(self,dirname,date,ch,nodemax=None,layout=None):
         os.chdir(dirname)
 
         rcfile = open('geo_vlidort.rc','w')
@@ -228,6 +223,7 @@ class CLD_WORKSPACE(WORKSPACE):
         rcfile.write('SURFNAME: MAIACRTLS\n')
         rcfile.write('SURFMODEL: RTLS\n')
 
+        # Set Surface Configuration
         #figure out correct MODIS doy
         if (str(startdate.date()) == '2005-12-31'):
             rcfile.write('SURFDATE: 2006008\n')
@@ -248,14 +244,24 @@ class CLD_WORKSPACE(WORKSPACE):
             else:
                 rcfile.write('SURFDATE: '+str(date.year)+str(DOY).zfill(3)+'\n')
 
+        if self.c_band is None:
+            self.c_band = "645 858 469 555 1240 1640 2130 412"
+
+        rcfile.write('SURFBANDM: '+ str(len(self.c_band.split(' '))) + '\n')
 
         rcfile.write('SURFBAND: ' + self.interp +'\n')
         if (self.interp.upper() == 'INTERPOLATE'):
-            rcfile.write('SURFBAND_C: 645 858 469 555 1240 1640 2130 412\n')
+            rcfile.write('SURFBAND_C: ' + self.c_band + '\n')
         else:
-            rcfile.write('SURFBAND_I: '+ i_band + '\n')
-
-        rcfile.write('SURFBANDM: 8 \n')
+            #figure out index
+            c_band = np.array(self.c_band.split(' ')).astype('float')
+            if ch >= c_band.max():
+                i_band = np.argmax(c_band)
+            elif ch <= c_band.min():
+                i_band = np.argmin(c_band)
+            else:
+                i_band = np.argmin(np.abs((ch-c_band) ))
+            rcfile.write('SURFBAND_I: '+ str(i_band)  + '\n')
 
         if (self.code == 'scalar'):
             rcfile.write('SCALAR: true\n')
@@ -290,7 +296,7 @@ class CLD_WORKSPACE(WORKSPACE):
         os.chdir(self.cwd)
 
 
-    def make_ler_rcfile(self,dirname,date,ch,nodemax=None,i_band=None,layout=None):
+    def make_ler_rcfile(self,dirname,date,ch,nodemax=None,layout=None):
         os.chdir(dirname)
 
         rcfile = open('geo_vlidort.rc','w')
@@ -303,15 +309,27 @@ class CLD_WORKSPACE(WORKSPACE):
         rcfile.write('SURFNAME: LER\n')
         rcfile.write('SURFMODEL: LER\n')
 
+        # Set Surface Configuration
         rcfile.write('SURFDATE: ' + str(date.month).zfill(2) +'\n')
+
+        if self.c_band is None:
+            self.c_band = "354 388"
+
+        rcfile.write('SURFBANDM: '+ str(len(self.c_band.split(' '))) + '\n')
 
         rcfile.write('SURFBAND: ' + self.interp + '\n')
         if (self.interp.upper() == 'INTERPOLATE'):
-            rcfile.write('SURFBAND_C: 354 388\n')
+            rcfile.write('SURFBAND_C: ' + self.c_band + '\n')
         else:
-            rcfile.write('SURFBAND_I: ' + i_band + '\n')
-
-        rcfile.write('SURFBANDM: 2 \n')
+            #figure out index
+            c_band = np.array(self.c_band.split(' ')).astype('float')
+            if ch >= c_band.max():
+                i_band = np.argmax(c_band)
+            elif ch <= c_band.min():
+                i_band = np.argmin(c_band)
+            else:
+                i_band = np.argmin(np.abs((ch-c_band) ))
+            rcfile.write('SURFBAND_I: '+ str(i_band) + '\n')
 
         if (self.code == 'scalar'):
             rcfile.write('SCALAR: true\n')
@@ -346,7 +364,7 @@ class CLD_WORKSPACE(WORKSPACE):
         os.chdir(self.cwd)    
 
 
-    def make_mcd43_rcfile(self,dirname,date,ch,nodemax=None,i_band=None,layout=None):
+    def make_mcd43_rcfile(self,dirname,date,ch,nodemax=None,layout=None):
         os.chdir(dirname)
 
         rcfile = open('geo_vlidort.rc','w')
@@ -359,16 +377,28 @@ class CLD_WORKSPACE(WORKSPACE):
         rcfile.write('SURFNAME: '+self.surface+'\n')
         rcfile.write('SURFMODEL: RTLS\n')
 
+        # Set Surface Configuration
         doy = date.toordinal() - datetime(date.year-1,12,31).toordinal()
         rcfile.write('SURFDATE: '+str(date.year)+str(doy).zfill(3)+'\n')
 
+        if self.c_band is None:
+            self.c_band = "645 858 469 555 1240 1640 2130"
+
+        rcfile.write('SURFBANDM: '+ str(len(self.c_band.split(' '))) + '\n')
+
         rcfile.write('SURFBAND: ' + self.interp +'\n')
         if (self.interp.upper() == 'INTERPOLATE'):
-            rcfile.write('SURFBAND_C: 645 858 469 555 1240 1640 2130\n')
+            rcfile.write('SURFBAND_C: ' + self.c_band + '\n')
         else:
-            rcfile.write('SURFBAND_I: '+ i_band + '\n')
-
-        rcfile.write('SURFBANDM: 7 \n')
+            #figure out index
+            c_band = np.array(self.c_band.split(' ')).astype('float')
+            if ch >= c_band.max():
+                i_band = np.argmax(c_band)
+            elif ch <= c_band.min():
+                i_band = np.argmin(c_band)
+            else:
+                i_band = np.argmin(np.abs((ch-c_band) ))
+            rcfile.write('SURFBAND_I: '+ str(i_band) + '\n')
 
         if (self.code == 'scalar'):
             rcfile.write('SCALAR: true\n')
@@ -415,7 +445,6 @@ if __name__ == "__main__":
     channels          = '388'
     surface           = 'lambertian' #'lambertian' or 'MAIACRTLS'
     interp            = 'exact'  #'interpolate' or 'exact'
-    i_band            = '2'    
     
     nodemax           = 10
     surf_version      = '1.0'
