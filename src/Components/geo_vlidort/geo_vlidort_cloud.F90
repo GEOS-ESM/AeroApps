@@ -17,6 +17,12 @@
 !  HISTORY
 !     27 April 2015 P. Castellanos adapted from A. da Silva shmem_reader.F90
 !     Aug 2017 P. Castellanos add clouds
+! NOTE
+!     VLIDORT should be configured to run with the same number of streams found 
+!     in the ice cloud optical properties file.  This is because a truncation
+!     factor is used to scale ice optical thickness.  This truncation factor corrects
+!     for the loss of the forward peak in the ice cloud scatterimg matrix introduced by
+!     using a finite number of streams.
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #  include "MAPL_Generic.h"
 #  include "MAPL_ErrLogMain.h"
@@ -174,7 +180,8 @@ program geo_vlidort_cloud
   real,allocatable                      :: Vpmom(:,:,:,:,:)                         ! elements of scattering phase matrix for vector calculations
   real,allocatable                      :: VpmomIcl(:,:,:,:,:)                      ! elements of scattering phase matrix for vector calculations
   real,allocatable                      :: VpmomLcl(:,:,:,:,:)                      ! elements of scattering phase matrix for vector calculations
-
+  real,allocatable                      :: betaIcl(:,:,:), betaLcl(:,:,:)           ! cloud optical thickness scaling factors 
+  real,allocatable                      :: truncIcl(:,:,:), truncLcl(:,:,:)          ! cloud optical thickness scaling factors
 ! MODIS Kernel variables
 !--------------------------
   real*8, allocatable                   :: kernel_wt(:,:,:)                         ! kernel weights (/fiso,fgeo,fvol/)
@@ -197,7 +204,7 @@ program geo_vlidort_cloud
   integer, allocatable                  :: nclr(:)                                   ! how many clear pixels each processor works on
   integer                               :: clrm                                      ! number of clear pixels for this part of decomposed domain
   integer                               :: clrm_total                                ! number of clear pixels 
-  integer                               :: c, cc                                 ! clear pixel working variable
+  integer                               :: c, cc                                     ! clear pixel working variable
   real*8, allocatable                   :: CLDTOT(:,:)                               ! GEOS-5 cloud fraction
   real*8, allocatable                   :: FRLAND(:,:)                               ! GEOS-5 land fraction
   real*8, allocatable                   :: SOLAR_ZENITH(:,:)                         ! solar zenith angles used for data filtering
@@ -539,9 +546,23 @@ program geo_vlidort_cloud
 
 !   Cloud Optical Properties
 !   ------------------------
-    call getCOPvector(IcldTable, km, nobs, nch, nMom, nPol, idxCld, REI(i,j,:), VssaIcl, VgIcl, VpmomIcl)
-    call getCOPvector(LcldTable, km, nobs, nch, nMom, nPol, idxCld, REL(i,j,:), VssaLcl, VgLcl, VpmomLcl)
+    call getCOPvector(IcldTable, km, nobs, nch, nMom, nPol, idxCld, REI(i,j,:), VssaIcl, VgIcl, VpmomIcl, betaIcl, truncIcl)
+    call getCOPvector(LcldTable, km, nobs, nch, nMom, nPol, idxCld, REL(i,j,:), VssaLcl, VgLcl, VpmomLcl, betaLcl, truncLcl)
 
+!   Scale Cloud Optical Thickness from reference wavelength of 0.65um
+!   ------------------------
+    VtauIcl = VtauIcl*betaIcl
+    VtauLcl = VtauLcl*betaLcl
+
+!   Scale Cloud optical thickness for phase function truncation            
+!   ------------------------
+    VtauIcl = VtauIcl*(1. - truncIcl*VssaIcl)
+    VtauLcl = VtauLcl*(1. - truncLcl*VssaLcl)
+    VssaIcl = VssaIcl*(1. - truncIcl)/(1. - VssaIcl*truncIcl)
+    VssaLcl = VssaLcl*(1. - truncLcl)/(1. - VssaLcl*truncLcl)
+
+!   Save some variables on the 2D Grid for Writing Later
+!   ------------------------
     TAU(i,j,:) = Vtau(:,nch,nobs)
     SSA(i,j,:) = Vssa(:,nch,nobs)
     G(i,j,:)   = Vg(:,nch,nobs)
@@ -1437,6 +1458,10 @@ end subroutine outfile_extname
     allocate (Vpmom(km,nch,nobs,nMom,nPol))
     allocate (VpmomLcl(km,nch,nobs,nMom,nPol))
     allocate (VpmomIcl(km,nch,nobs,nMom,nPol))
+    allocate (betaIcl(km,nch,nobs))
+    allocate (betaLcl(km,nch,nobs))
+    allocate (truncIcl(km,nch,nobs))
+    allocate (truncLcl(km,nch,nobs))
 
     if (.not. scalar) then      
       allocate (Q_int(nobs, nch))
