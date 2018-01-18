@@ -11,7 +11,7 @@ LC2_VERSION  = 1.0
 # lambertian or MAIACRTLS 
 LC2_SURFACE  = lambertian
 # exact or interpolate
-LC2_INTERP   = exact
+LC2_SURF_INTERP   = exact
 # only used when LC2_SURFACE is not lambertian
 LC2_SURF_VERSION = 1.0
 
