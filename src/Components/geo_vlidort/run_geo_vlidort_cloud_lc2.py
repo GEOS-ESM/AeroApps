@@ -65,8 +65,8 @@ if __name__ == "__main__":
     if cf('LC2_PROFILE').upper()   == 'YES': Options += " --profile"
     if cf('LC2_VERBOSE').upper()   == 'YES': Options += " --verbose"
     if cf('LC2_ADDOUTPUT').upper() == 'YES': Options += " --additional"
-    if cf('LC2_KEEP').upper()      == 'YES': Options += " --keep"
-
+    if cf('LC2_KEEP_LB').upper()     == 'YES': Options += " --keep_lb"
+    if cf('LC2_ARCHIVE_LB').upper()  == 'YES': Options += " --archive_lb"
 
 
     # Generate LC2 products
