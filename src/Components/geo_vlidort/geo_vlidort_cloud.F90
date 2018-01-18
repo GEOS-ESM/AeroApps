@@ -84,7 +84,7 @@ program geo_vlidort_cloud
 
 ! File names
 ! ----------
-  character(len=256)                    :: MET_file, AER_file, ANG_file, INV_file, SURF_file, OUT_file, ATMOS_file, CLD_file 
+  character(len=256)                    :: AER_file, ANG_file, INV_file, SURF_file, OUT_file, ATMOS_file, CLD_file 
 
 ! Global, 3D inputs to be allocated using SHMEM
 ! ---------------------------------------------
@@ -303,7 +303,7 @@ program geo_vlidort_cloud
   else
     call mp_readVattr("missing_value", SURF_file, "SRFLER354", surf_missing) 
   end if
-  call mp_readVattr("missing_value", MET_FILE, "CLDTOT", g5nr_missing)
+  call mp_readVattr("missing_value", AER_FILE, "DELP", g5nr_missing)
 
 ! Allocate arrays that will be copied on each processor - unshared
 ! -----------------------------------------------------------------
@@ -928,8 +928,6 @@ end subroutine read_vza
 subroutine filenames()
   
   ! INFILES
-  write(MET_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
-                          trim(instname),'-g5nr.lb2.met_Nv.',date,'_',time,'z.nc4'
   write(AER_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
                           trim(instname),'-g5nr.lb2.aer_Nv.',date,'_',time,'z.nc4'
 
@@ -1591,7 +1589,6 @@ end subroutine outfile_extname
 
     call check(nf90_put_att(ncid,NF90_GLOBAL,'grid_inputs',trim(INV_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'angle_inputs',trim(ANG_file)),"input files attr")
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'met_inputs',trim(MET_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'aerosol_inputs',trim(AER_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(SURF_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'cloud_inputs',trim(CLD_file)),"input files attr")
@@ -1750,10 +1747,10 @@ end subroutine outfile_extname
     call readvar2D("clat", INV_file, clat)
     call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
-    call readvar1D("time", MET_file, tyme)
+    call readvar1D("time", AER_file, tyme)
     call check(nf90_put_var(ncid,timeVarID,tyme), "writing out time")
 
-    call readvar1D("lev", MET_file, lev)
+    call readvar1D("lev", AER_file, lev)
     call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
 
     call readvar1D("ew", INV_file, ew)
@@ -1982,10 +1979,10 @@ end subroutine outfile_extname
       call readvar2D("clat", INV_file, clat)
       call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
-      call readvar1D("time", MET_file, tyme)
+      call readvar1D("time", AER_file, tyme)
       call check(nf90_put_var(ncid,timeVarID,tyme), "writing out time")
 
-      call readvar1D("lev", MET_file, lev)
+      call readvar1D("lev", AER_file, lev)
       call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
 
       call check(nf90_put_var(ncid,leveVarID,(/(real(e), e = 1, km+1)/)), "writing out leve")      

@@ -26,7 +26,7 @@ from   geo_vlidort_lc2   import JOBS, WORKSPACE
 
 jobsmax   = 150
 dt = timedelta(hours=1)
-archive = '/archive/u/rgovinda/osse2/c1440_NR/OBS'
+archive = '/archive/u/rgovinda/osse2/'
 
 
 class CLD_WORKSPACE(WORKSPACE):
@@ -161,11 +161,14 @@ class CLD_WORKSPACE(WORKSPACE):
         hour  = str(date.hour).zfill(2)
 
         if layout is None:
-            geom  = g5dir + '/' + self.instname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
+            geom  = g5dir + '/' + self.angname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
             land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.nc4' 
+            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'
         else:
-            geom  = g5dir + '/' + self.instname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
-            land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.' + layout +'.nc4' 
+            geom  = g5dir + '/' + self.angname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
+            land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
+            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'
+ 
 
         if self.verbose:
             print '++Opening geometry file ',geom
@@ -184,30 +187,136 @@ class CLD_WORKSPACE(WORKSPACE):
         FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
         ncLand.close()
 
-        def clean_up(self,met,geom,land,date):
-            self.put_in_archive(geom,date)
-            self.put_in_archive(land,date)
-
+        def clean_up(self,geom,land,aer):
+            self.put_in_archive(geom)
+            self.put_in_archive(land)
+            self.put_in_archive(aer)
 
         f   = VZA < 80
         if np.sum(f) == 0:
-            #clean_up(self,met,geom,land,date)
+            clean_up(self,geom,land,aer)
             return 0
 
         SZA    = SZA[f]
         FRLAND = FRLAND[f]
         f      = SZA < 80
         if np.sum(f) == 0:
-            #clean_up(self,met,geom,land,date)
+            clean_up(self,geom,land,aer)
             return 0
 
         FRLAND = FRLAND[f]
         f      = FRLAND >= 0.99
         if np.sum(f) == 0:
-            #clean_up(self,met,geom,land,date)
+            clean_up(self,geom,land,aer)
             return 0
 
         return np.sum(f)
+
+
+    def destroy_workspace(self,i,jobid):
+        # put LevelB files in archive or remove
+        # --------------------
+
+        #parse date from distring
+        date = parse(os.path.basename(self.dirstring[i]).split('.')[1])
+
+        g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
+        nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
+        hour  = str(date.hour).zfill(2)
+
+        if layout is None:
+            geom  = g5dir + '/' + self.angname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
+            land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.nc4' 
+            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'
+        else:
+            geom  = g5dir + '/' + self.angname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
+            land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
+            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'
+
+
+        if self.archive_lb:
+            self.put_in_archive(aer)
+            self.put_in_archive(geom)
+            self.put_in_archive(land)
+            
+        if not self.keep_lb:
+            os.remove(aer)
+            os.remove(geom)
+            os.remove(land)
+
+
+        os.chdir(self.dirstring[i])
+
+        os.remove('Aod_EOS.rc')
+        os.remove('Chem_MieRegistry.rc')
+        os.remove(os.path.basename(self.execFile))
+        os.remove('clean_mem.sh')
+        os.remove('ExtData')
+        os.remove('ExtDataCloud')
+        os.remove('geo_vlidort.rc')
+        os.remove(self.runfile)
+
+        if self.nodemax is None:
+            nodemax = None
+        else:
+            nodemax = self.nodemax_list[i]
+
+        if self.additional_output:
+            addoutdir = self.addoutdirstring[i]
+        else:
+            addoutdir = None
+
+        outdir = self.outdirstring[i]
+
+        if self.profile is False:
+            if nodemax is not None and nodemax > 1:
+                for a in np.arange(nodemax):
+                    a = a + 1
+                    errfile = 'slurm_' +jobid + '_' + str(a) + '.err'                    
+                    outfile = 'slurm_' +jobid + '_' + str(a) + '.out'
+                    if self.verbose:
+                        print '++cleaning up errfile', errfile
+                        print '++cleaning up outfile', outfile
+                    os.remove(errfile)
+                    os.remove(outfile)
+                os.remove('slurm_%A_%a.out')
+
+            else:
+                errfile = 'slurm_' +jobid + '.err'
+                os.remove(errfile)        
+                outfile = 'slurm_' +jobid + '.out'
+                os.remove(outfile)        
+
+        def move_file(filelist,dest):
+            for movefile in filelist:
+                if os.path.exists(dest+'/'+movefile):
+                    os.remove(dest+'/'+movefile)
+                shutil.move(movefile,dest)
+
+        #runscript to combine files
+        if nodemax is not None and nodemax > 1:
+            outfilelist = glob.glob('*.lc2.*.nc4')
+            self.combine_files(outfilelist)
+            outfilelist = glob.glob('*.lc2.*.nc4')
+            move_file(outfilelist,outdir)
+        else:
+            outfilelist = glob.glob('*.lc2.*.nc4')
+            move_file(outfilelist,outdir)
+
+
+        if (addoutdir is not None):
+            if nodemax is not None and nodemax > 1:
+                outfilelist = glob.glob('*.add.*.nc4')
+                self.combine_files(outfilelist)
+                outfilelist = glob.glob('*.add.*.nc4')
+                move_file(outfilelist,addoutdir)
+            else:
+                outfilelist = glob.glob('*.add.*.nc4')
+                move_file(outfilelist,addoutdir)
+
+        os.chdir(self.cwd)
+        if self.profile is False:
+            os.rmdir(self.dirstring[i])
 
 
     def make_maiac_rcfile(self,dirname,date,ch,nodemax=None,layout=None):
@@ -490,7 +599,8 @@ if __name__ == "__main__":
     # verbose           = False
     # additional_output = False
     # profile           = False
-    # keep              = False
+    # keep_lb           = False
+    # archive_lb        = False
 
     # Parse command line options
     # ------------------------------
@@ -549,10 +659,13 @@ if __name__ == "__main__":
                       dest="verbose", default=False,
                       help="Verbose (default=False)" )    
 
-    parser.add_option("-k", "--keep",action="store_true",
-                      dest="keep", default=False,
-                      help="keep LevelB files - do not archive (default=False)" )    
+    parser.add_option("--keep_lb",action="store_true",
+                      dest="keep_lb", default=False,
+                      help="keep LevelB files - do not remove after geo_vlidort is finished (default=False)" )    
 
+    parser.add_option("--archive_lb",action="store_true",
+                      dest="archive_lb", default=False,
+                      help="archive LevelB files - copy to archive dir after geo_vlidort is finished (default=False)" )    
 
     parser.add_option("-n", "--nodemax", dest="nodemax", default=nodemax,
                       help="Max number of nodes to use. "\

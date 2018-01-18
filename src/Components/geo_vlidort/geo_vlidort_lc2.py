@@ -25,7 +25,7 @@ from   optparse        import OptionParser   # Command-line args
 
 jobsmax   = 150
 dt = timedelta(hours=1)
-archive = '/archive/u/rgovinda/osse2/c1440_NR/OBS'
+archive = '/archive/u/rgovinda/osse2/'
 
 
 class JOBS(object):
@@ -319,27 +319,24 @@ class WORKSPACE(JOBS):
             startdate = startdate + dt
 
     def get_from_archive(self,path,date):
-        filename = os.path.basename(path)
-        archive = self.archive + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
+        ii = path.find('/c1440_NR/')
+        archive = self.archive + path[ii:]
+        # Copy from archive.  Note: overwrites file if it exists.
         try:
-            shutil.copyfile(archive+'/'+filename,path) 
+            shutil.copyfile(archive,path) 
         except IOError:
-            print 'Could not find '+filename+' in archive ',archive
+            print 'Could not find archive ',archive, ' to put in ', path
             sys.exit()
 
-    def put_in_archive(self,path,date):
-        filename = os.path.basename(path)
-        archive = self.archive + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
-        print 'checking if this exists',os.path.exists(archive+'/'+filename), self.archive+'/'+filename
-        if not os.path.exists(archive+'/'+filename):
-            try:
-                shutil.copyfile(path,archive+'/'+filename) 
-            except IOError:
-                print 'Could not put '+filename+' in archive ',archive
-                sys.exit()
-        else:
-            os.remove(path)
-
+    def put_in_archive(self,path):
+        ii = path.find('/c1440_NR/')
+        archive = self.archive + path[ii:]
+        # Copy to archive.  Note: overwrites file if it exists.
+        try:
+            shutil.copyfile(path,archive) 
+        except IOError:
+            print 'Could not put '+path+' in archive ',archive
+            sys.exit()
 
 
     def prefilter(self,date,layout=None):
@@ -352,11 +349,17 @@ class WORKSPACE(JOBS):
         if layout is None:
             met   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z.nc4'
             geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
-            land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx.nc4'  
+            land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx.nc4' 
+            chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z.nc4'
+            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'            
+
         else:
             met   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
             geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
             land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx_' + layout + '.nc4'  
+            chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
+            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
+
 
         if self.verbose:
             print '++Opening metfile ',met
@@ -389,28 +392,35 @@ class WORKSPACE(JOBS):
         FRLAND = FRLAND[f]
 
 
-        def clean_up(self,met,geom,land,date):
-            self.put_in_archive(met,date)
-            self.put_in_archive(geom,date)
-            self.put_in_archive(land,date)
+        def clean_up(self,met,geom,land,chm,aer):
+            if self.archive_lb:
+                self.put_in_archive(met)
+                self.put_in_archive(geom)
+                self.put_in_archive(land)
+                self.put_in_archive(chm)
+                self.put_in_archive(aer)
+
+            os.remove(met)
+            os.remove(geom)
+            os.remove(land)
 
 
         f   = np.where(VZA < 80)
         if len(f[0]) == 0:
-            #clean_up(self,met,geom,land,date)
+            clean_up(self,met,geom,land,chm,aer)
             return 0
 
         SZA    = SZA[f]
         FRLAND = FRLAND[f]
         f      = np.where(SZA < 80)
         if len(f[0]) == 0:
-            #clean_up(self,met,geom,land,date)
+            clean_up(self,met,geom,land,chm,aer)
             return 0
 
         FRLAND = FRLAND[f]
         f      = np.where(FRLAND >= 0.99)
         if len(f[0]) == 0:
-            #clean_up(self,met,geom,land,date)
+            clean_up(self,met,geom,land,chm,aer)
             return 0
 
         return len(f[0])
@@ -430,10 +440,10 @@ class WORKSPACE(JOBS):
             chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
             aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
 
-        if not os.path.exists(chm):
-            self.get_from_archive(chm,date)
+        if (not os.path.exists(chm)) and (self.cloud is False):
+            self.get_from_archive(chm)
         if not os.path.exists(aer):
-            self.get_from_archive(aer,date)        
+            self.get_from_archive(aer)        
 
         # creating working directory
         dirname = '{}/{}.{}T{}.{}.{}'.format(self.prefix,self.instname.lower(),date.date(),str(date.hour).zfill(2),ch,self.code)
@@ -664,32 +674,42 @@ class WORKSPACE(JOBS):
 
     def destroy_workspace(self,i,jobid):
         # put LevelB files in archive or remove
-        if not self.keep:
-            #parse date from distring
-            date = parse(os.path.basename(self.dirstring[i]).split('.')[1])
+        # --------------------
 
-            g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
-            nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
-            hour  = str(date.hour).zfill(2)
+        #parse date from distring
+        date = parse(os.path.basename(self.dirstring[i]).split('.')[1])
 
-            if layout is None:
-                met   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z.nc4'
-                chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z.nc4'
-                aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'                            
-                geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
-                land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx.nc4'  
-            else:
-                met   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
-                chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
-                aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
-                geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
-                land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx_' + layout + '.nc4'  
+        g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
+        nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
+        hour  = str(date.hour).zfill(2)
 
-            #self.put_in_archive(met,date)
-            #self.put_in_archive(geom,date)
-            #self.put_in_archive(land,date)
-            #self.put_in_archive(aer,date)
-            #self.put_in_archive(chm,date)
+        if layout is None:
+            met   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z.nc4'
+            chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z.nc4'
+            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'                            
+            geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
+            land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx.nc4'  
+        else:
+            met   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
+            chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
+            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
+            geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
+            land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx_' + layout + '.nc4'  
+
+        if self.archive_lb:
+            self.put_in_archive(met)
+            self.put_in_archive(chm)
+            self.put_in_archive(aer)
+            self.put_in_archive(geom)
+            self.put_in_archive(land)
+            
+        if not self.keep_lb:
+            os.remove(met)
+            os.remove(chm)
+            os.remove(aer)
+            os.remove(geom)
+            os.remove(land)
+
 
         os.chdir(self.dirstring[i])
 
@@ -698,8 +718,6 @@ class WORKSPACE(JOBS):
         os.remove(os.path.basename(self.execFile))
         os.remove('clean_mem.sh')
         os.remove('ExtData')
-        if self.cloud is True:
-            os.remove('ExtDataCloud')
         os.remove('geo_vlidort.rc')
         os.remove(self.runfile)
 
@@ -826,7 +844,8 @@ if __name__ == "__main__":
     # verbose           = False
     # additional_output = False
     # profile           = False
-    # keep              = False
+    # keep_lb           = False
+    # archive_lb        = False
 
     # Parse command line options
     # ------------------------------
@@ -869,10 +888,13 @@ if __name__ == "__main__":
                       dest="verbose", default=False,
                       help="Verbose (default=False)" )    
 
-    parser.add_option("-k", "--keep",action="store_true",
-                      dest="keep", default=False,
-                      help="keep LevelB files - do not archive (default=False)" )    
+    parser.add_option("--keep_lb",action="store_true",
+                      dest="keep_lb", default=False,
+                      help="keep LevelB files - do not remove after geo_vlidort is finished (default=False)" )    
 
+    parser.add_option("--archive_lb",action="store_true",
+                      dest="archive_lb", default=False,
+                      help="archive LevelB files - copy to archive dir after geo_vlidort is finished (default=False)" )    
 
     parser.add_option("-n", "--nodemax", dest="nodemax", default=nodemax,
                       help="Max number of nodes to use. "\
