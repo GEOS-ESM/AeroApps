@@ -327,6 +327,8 @@ class WORKSPACE(JOBS):
         ii = path.find('/c1440_NR/')
         archive = self.archive + path[ii:]
         # Copy to archive.  Note: overwrites file if it exists.
+        if not os.path.exists(os.path.dirname(archive)):
+            os.makedirs(os.path.dirname(archive))
         try:
             shutil.copyfile(path,archive) 
         except IOError:
