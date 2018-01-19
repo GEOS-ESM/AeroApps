@@ -205,7 +205,6 @@ class WORKSPACE(JOBS):
 
         if self.nodemax is not None: self.nodemax = int(self.nodemax)
         self.nccs    = self.nccs + '/' + self.instname.upper() + '/DATA/' 
-        self.archive    = self.archive + '/' + self.instname.upper() + '/DATA/' 
         self.prefix  = self.nccs + 'workdir/'
 
         self.indir   = self.nccs 
