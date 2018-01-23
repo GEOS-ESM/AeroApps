@@ -699,7 +699,7 @@ class WORKSPACE(JOBS):
 
         if self.layout is not None:
             # parse layout code
-            layout = parse(os.path.basename(self.dirstring[i]).split('.')[-1])
+            layout = os.path.basename(self.dirstring[i]).split('.')[-1]
         else:
             layout = None
 
