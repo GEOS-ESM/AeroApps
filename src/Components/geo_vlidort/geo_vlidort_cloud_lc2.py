@@ -219,6 +219,12 @@ class CLD_WORKSPACE(WORKSPACE):
         #parse date from distring
         date = parse(os.path.basename(self.dirstring[i]).split('.')[1])
 
+        if self.layout is not None:
+            # parse layout code
+            layout = parse(os.path.basename(self.dirstring[i]).split('.')[-1])
+        else:
+            layout = None        
+
         g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
         nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
         hour  = str(date.hour).zfill(2)
