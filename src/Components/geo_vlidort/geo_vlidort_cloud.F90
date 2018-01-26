@@ -551,8 +551,10 @@ program geo_vlidort_cloud
 
 !   Scale Cloud Optical Thickness from reference wavelength of 0.65um
 !   ------------------------
-    VtauIcl = VtauIcl*betaIcl
-    VtauLcl = VtauLcl*betaLcl
+    VtauIcl(:,nch,nobs) = TAUI(i,j,:)
+    VtauIcl             = VtauIcl*betaIcl
+    VtauLcl(:,nch,nobs) = TAUL(i,j,:)
+    VtauLcl             = VtauLcl*betaLcl
 
 !   Scale Cloud optical thickness for phase function truncation            
 !   ------------------------
@@ -689,7 +691,7 @@ program geo_vlidort_cloud
 !   -----------------------------------------        
     if (nint(100.*real(cc-starti)/real(counti)) > progress) then
       progress = nint(100.*real(cc-starti)/real(counti))
-      write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',c,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
+      write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',cc,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
     end if
                 
   end do ! do clear pixels
