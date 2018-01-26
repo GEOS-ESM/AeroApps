@@ -212,6 +212,28 @@ class CLD_WORKSPACE(WORKSPACE):
         return np.sum(f)
 
 
+    def final_cleanup(self):
+        # put LevelB aer files in archive or remove
+        # --------------------
+        # Loop over dates
+        date = self.startdate
+        while (date <= self.enddate):
+            g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
+            nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
+            hour  = str(date.hour).zfill(2)
+
+            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'
+
+            if self.archive_lb:
+                self.put_in_archive(aer)
+                
+            if not self.keep_lb:
+                os.remove(aer)
+
+            date += dt
+
+
+
     def destroy_workspace(self,i,jobid):
         # put LevelB files in archive or remove
         # --------------------
@@ -232,20 +254,15 @@ class CLD_WORKSPACE(WORKSPACE):
         if layout is None:
             geom  = g5dir + '/' + self.angname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
             land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.nc4' 
-            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'
         else:
             geom  = g5dir + '/' + self.angname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
             land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
-            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'
-
 
         if self.archive_lb:
-            self.put_in_archive(aer)
             self.put_in_archive(geom)
             self.put_in_archive(land)
             
         if not self.keep_lb:
-            os.remove(aer)
             os.remove(geom)
             os.remove(land)
 
@@ -735,6 +752,8 @@ if __name__ == "__main__":
     # -----------------------------
     if (workspace.dirstring) > 0:
         workspace.handle_jobs()
+        if workspace.layout is not None:
+            workspace.final_cleanup()
     else:
         print 'No model hours to run'
 
