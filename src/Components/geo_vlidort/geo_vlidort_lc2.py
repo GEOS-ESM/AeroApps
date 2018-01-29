@@ -547,6 +547,7 @@ class WORKSPACE(JOBS):
 
     def make_maiac_rcfile(self,dirname,date,ch,nodemax=None,layout=None):
         os.chdir(dirname)
+        fch = float(ch)
 
         rcfile = open('geo_vlidort.rc','w')
         rcfile.write('INDIR: '+self.indir+'\n')
@@ -588,12 +589,12 @@ class WORKSPACE(JOBS):
         else:
             #figure out index
             c_band = np.array(self.c_band.split(' ')).astype('float')
-            if ch >= c_band.max():
+            if fch >= c_band.max():
                 i_band = np.argmax(c_band)
-            elif ch <= c_band.min():
+            elif fch <= c_band.min():
                 i_band = np.argmin(c_band)
             else:
-                i_band = np.argmin(np.abs((ch-c_band) ))
+                i_band = np.argmin(np.abs((fch-c_band) ))
             rcfile.write('SURFBAND_I: '+ str(i_band)  + '\n')
 
         if (self.code == 'scalar'):
@@ -628,6 +629,7 @@ class WORKSPACE(JOBS):
 
     def make_ler_rcfile(self,dirname,date,ch,nodemax=None,layout=None):
         os.chdir(dirname)
+        fch = float(ch)
 
         rcfile = open('geo_vlidort.rc','w')
         rcfile.write('INDIR: ' + self.indir + '\n')
@@ -651,12 +653,12 @@ class WORKSPACE(JOBS):
         else:
             #figure out index
             c_band = np.array(self.c_band.split(' ')).astype('float')
-            if ch >= c_band.max():
+            if fch >= c_band.max():
                 i_band = np.argmax(c_band)
-            elif ch <= c_band.min():
+            elif fch <= c_band.min():
                 i_band = np.argmin(c_band)
             else:
-                i_band = np.argmin(np.abs((ch-c_band) ))
+                i_band = np.argmin(np.abs((fch-c_band) ))
             rcfile.write('SURFBAND_I: '+ str(i_band) + '\n')
 
         if (self.code == 'scalar'):
