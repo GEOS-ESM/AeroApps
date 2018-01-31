@@ -590,11 +590,11 @@ class WORKSPACE(JOBS):
             #figure out index
             c_band = np.array(self.c_band.split(' ')).astype('float')
             if fch >= c_band.max():
-                i_band = np.argmax(c_band)
+                i_band = np.argmax(c_band) + 1
             elif fch <= c_band.min():
-                i_band = np.argmin(c_band)
+                i_band = np.argmin(c_band) + 1
             else:
-                i_band = np.argmin(np.abs((fch-c_band) ))
+                i_band = np.argmin(np.abs((fch-c_band) )) + 1
             rcfile.write('SURFBAND_I: '+ str(i_band)  + '\n')
 
         if (self.code == 'scalar'):
@@ -654,11 +654,11 @@ class WORKSPACE(JOBS):
             #figure out index
             c_band = np.array(self.c_band.split(' ')).astype('float')
             if fch >= c_band.max():
-                i_band = np.argmax(c_band)
+                i_band = np.argmax(c_band) + 1
             elif fch <= c_band.min():
-                i_band = np.argmin(c_band)
+                i_band = np.argmin(c_band) + 1
             else:
-                i_band = np.argmin(np.abs((fch-c_band) ))
+                i_band = np.argmin(np.abs((fch-c_band) )) + 1
             rcfile.write('SURFBAND_I: '+ str(i_band) + '\n')
 
         if (self.code == 'scalar'):
