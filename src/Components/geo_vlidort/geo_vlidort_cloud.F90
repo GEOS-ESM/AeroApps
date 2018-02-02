@@ -955,9 +955,9 @@ subroutine filenames()
     write(SURF_file,'(6A)') trim(indir),'/SurfLER/',trim(instname),'-omi.SurfLER.',date(5:6),'.nc4'
   end if
   if (trim(layout) == '111') then
-    write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.cld.invariant.nc4'
+    write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.nc4'
   else
-    write(INV_file,'(6A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.cld.invariant.',trim(layout),'.nc4'
+    write(INV_file,'(6A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.',trim(layout),'.nc4'
   end if
 
 ! OUTFILES
