@@ -10,7 +10,7 @@ import numpy as np
 from dateutil.relativedelta import relativedelta
 
 instname = 'TEMPO'
-nccs     = '/discover/nobackup'
+nccs     = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA/'
 calculon = '/nobackup/{}'.format(instname)
 
 class SCENARIO(object):
@@ -22,11 +22,7 @@ class SCENARIO(object):
         self.dt        = dt
         self.rootDir   = rootDir
         self.layout    = layout
-
-        if os.path.exists(nccs):
-            self.rootDir = nccs + '/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA/'
-        else:
-            self.rootDir = rootDir
+        self.rootDir   = rootDir
 
         if type(varlist) is str:
             varlist = [varlist]
@@ -51,7 +47,10 @@ class SCENARIO(object):
             outdir   = '{}/LevelB/{}/'.format(self.rootDir,date.strftime('Y%Y/M%m/D%d'))
             outfile   = '{}/tempo-g5nr.lb2.aer_Nv.{}_{}z.nc4'.format(outdir,date.strftime('%Y%m%d'),date.strftime('%H'))
 
-            command = './geo_sampler.py -v -C -g {} -o {} -r {} {} {}'.format(invariant,outfile,rcfile,date.isoformat(),date.isoformat)
+            command = './geo_sampler.py -v -C -g {} -o {} -r {} {} {}'.format(invariant,outfile,rcfile,date.isoformat(),date.isoformat())
+
+            print command
+            os.system(command)              
 
             date += self.dt
 
@@ -81,12 +80,12 @@ class SCENARIO(object):
 
 if __name__ == "__main__":
     
-    startdate = '2006-01-15T00:00:00'
-    enddate   = '2006-12-15T00:00:00'
+    startdate = '2006-01-15T21:00:00'
+    enddate   = '2006-12-15T21:00:00'
     dt        = relativedelta(months=1)
     layout    = '41'
-    rootDir   = calculon
-    varlist   = ['SurfLER','aer_Nv']
+    rootDir   = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/CLD_DATA/'
+    varlist   = ['aer_Nv']
 
     scen = SCENARIO(startdate,enddate,dt,layout,rootDir,varlist)
     scen.sample()
