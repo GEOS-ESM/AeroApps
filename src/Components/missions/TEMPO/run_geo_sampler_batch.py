@@ -35,7 +35,47 @@ class SCENARIO(object):
                 self.do_SurfLER()
             if dataname == 'aer_Nv':
                 self.do_aerNv()
+            if dataname == 'MCD43D':
+                self.do_MCD43D()
 
+
+    def do_MCD43D(self):
+        if self.layout is not None:
+            ntiles = int(self.layout[0])*int(self.layout[1])
+            for tile in range(ntiles):
+                laycode = self.layout + str(tile)
+                
+                invariant = '{}/LevelG/invariant/tempo.lg1.invariant.{}.nc4'.format(self.rootDir,laycode)
+                outdir    = '{}/BRDF/vMCD43D'.format(self.rootDir)
+                date = self.startdate
+                while date <= self.enddate: 
+                    outfile   = '{}/MCD43D.{}.{}.nc4'.format(outdir,date.strftime('%Y%j'),laycode)
+                    landdir   = '{}/LevelB/{}/'.format(self.rootDir,date.strftime('Y%Y/M%m/D%d'))
+                    landfile  = '{}/tempo-g5nr-icacl-TOTWPDF-GCOP-SKEWT.{}_{}z.{}.nc4'.format(landdir,date.strftime('%Y%m%d'),date.strftime('%H'),laycode)
+                    climdir   = '{}/BRDF/vMCD43C'.format(self.rootDir)
+                    climfile  = '{}/tempo.mcd43c1_climatology.{}.nc4'.format(climdir,laycode)
+                    command = './mcd43d_sampler.py -v -C -g {} -o {} -l {} -i TEMPO -c {} {}'.format(invariant,outfile,landfile,climfile,date.strftime('%Y%j'))
+
+                    print command
+                    os.system(command)
+
+                    date += self.dt
+        else:            
+            invariant = '{}/LevelG/invariant/tempo.lg1.invariant.nc4'.format(self.rootDir)
+            outdir    = '{}/BRDF/vMCD43D'.format(self.rootDir)
+            date = self.startdate
+            while date <= self.enddate:                
+                outfile   = '{}/MCD43D.{}.nc4'.format(outdir,date.strftime('%Y%j'))
+                landdir   = '{}/LevelB/{}/'.format(self.rootDir,date.strftime('Y%Y/M%m/D%d'))
+                landfile  = '{}/tempo-g5nr-icacl-TOTWPDF-GCOP-SKEWT.{}_{}z.nc4'.format(landdir,date.strftime('%Y%m%d'),date.strftime('%H'))
+                climdir   = '{}/BRDF/vMCD43C'.format(self.rootDir)
+                climfile  = '{}/tempo.mcd43c1_climatology.nc4'.format(climdir)
+                command = './mcd43d_sampler.py -v -C -g {} -o {} -l {} -i TEMPO -c {} {}'.format(invariant,outfile,landfile,climfile,date.strftime('%Y%j'))
+
+                print command
+                os.system(command)
+
+                date += self.dt
 
 
     def do_aerNv(self):
@@ -80,12 +120,12 @@ class SCENARIO(object):
 
 if __name__ == "__main__":
     
-    startdate = '2006-01-15T21:00:00'
+    startdate = '2006-02-15T21:00:00'
     enddate   = '2006-12-15T21:00:00'
     dt        = relativedelta(months=1)
     layout    = '41'
-    rootDir   = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/CLD_DATA/'
-    varlist   = ['aer_Nv']
+    rootDir   = '/nobackup/3/pcastell/TEMPO/CLD_DATA/'
+    varlist   = ['MCD43D']
 
     scen = SCENARIO(startdate,enddate,dt,layout,rootDir,varlist)
     scen.sample()
