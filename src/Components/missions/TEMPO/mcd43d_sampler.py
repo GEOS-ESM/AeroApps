@@ -55,6 +55,26 @@ outbands = ('b1_645',
 bandname = {}
 for i, b in enumerate(outbands):
   bandname[b] = 'Band'+str(i+1)
+#---
+def download_data(inDir,date,options,version=6):
+
+  varlist = range(7,22) + [31]
+
+  # Get data
+  commandhttp = 'https://ladsweb.modaps.eosdis.nasa.gov/archive/allData'
+  commandRoot = 'wget -r -np -nd -e robots=off -R index.html -P {} {}'.format(inDir,commandhttp)
+
+  if not os.path.exists(inDir):
+    os.makedirs(inDir)
+
+  for var in varlist:
+    prefix  = inDir
+    command = '{}/{}/MCD43D{}/{}/{}/'.format(commandRoot,version,str(var).zfill(2),date.year,date.strftime('%j')) 
+    print command
+
+    os.system(command)
+
+
 
 #---
 def getCoords(geoFile,verbose):
@@ -364,9 +384,12 @@ if __name__ == "__main__":
  
   for t in t1:
     dates = season_dic(t.year)
-    inDir = options.datadir + 'Y{}/M{}/'.format(t.year,str(t.month).zfill(2))
+    inDir = options.datadir + 'Y{}/M{}/{}/'.format(t.year,str(t.month).zfill(2),t.strftime('%j'))
     path = glob(inDir + '*' + t.strftime('%Y%j') + '*')
     qpath = glob(inDir + 'MCD43D31*' + t.strftime('%Y%j') + '*')
+
+    if len(path) != 16:
+      download_data(inDir,t,options)
     for fn in path: assert os.path.exists(fn), fn + ' DOES NOT EXIST' 
     mcdData = mcd43d.McD43D(path,qpath,clon[~clon.mask],clat[~clat.mask],Verb=0)
 
@@ -380,48 +403,5 @@ if __name__ == "__main__":
 
     writenc(mcdData,ncGeo,clon,clat,options)
 
-  #ncClim.close()
-  #ncGeo.close()
-
-"""
-elon = ncGeo.variables[u'elon'][:,:]
-elat = ncGeo.variables[u'elat'][:,:]
-projection = 'geos'
-m = set_basemap(projection,clon,clat,elon,elat)
-a = mcdData.KISO_b1_645
-nNS, nEW = clon.shape
-data = np.ma.masked_all([nNS,nEW])
-data[~clon.mask] = a
-data[data>32] = np.ma.masked
-norm = None
-minval = 0
-maxval = 1
-cmap = cm.jet
-cmap.set_bad(color='w',alpha=0)
-fig = plt.figure()
-fig.set_size_inches(18.5, 10.5)
-fig.set_dpi(100)
-im = m.imshow(data,cmap=cmap,vmin=minval,vmax=maxval,norm=norm)
-m.drawcoastlines(color='purple')
-m.drawcountries(color='purple')
-m.drawstates(color='purple')
-plt.savefig('test_mcd43.png')
-
-from matplotlib import cm, colors
-cmap = cm.jet
-cmap.set_bad(color='w',alpha=0)
-lon = np.arange(-180,180,1)
-lat = np.arange(-90,90,1)
-lon,lat = np.meshgrid(lon,lat)
-mcdData = mcd43c.McD43C(path,lon.flatten(),lat.flatten(),Verb=0)
-a = mcdData.BRDF_Albedo_Parameter1_Band1
-a = np.ma.array(a)
-a[a>32] = np.ma.masked
-import matplotlib.pyplot as plt
-plt.contourf(a.reshape(lon.shape))
-
-from mpl_toolkits.basemap import Basemap
-m = Basemap()
-m.contourf(lon,lat,a.reshape(lon.shape),latlon=True)
-m.drawcoastlines(color='purple')
-"""
+  ncClim.close()
+  ncGeo.close()
