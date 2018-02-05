@@ -158,10 +158,6 @@ geo_angles.x: geo_angles.o
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                             $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)
 
-geo_angles_cloud.x: geo_angles_cloud.o
-	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
-                            $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)                                                                                                                               
-
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------
   ifneq ($(findstring clean,$(MAKECMDGOALS)),clean)
