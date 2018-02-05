@@ -279,16 +279,16 @@ subroutine filenames()
 
   ! INFILES
     if (trim(layout) == '111') then
-      write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.cld.invariant.nc4'
+      write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.nc4'
     else
-      write(INV_file,'(6A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.cld.invariant.',trim(layout),'.nc4' 
+      write(INV_file,'(6A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.',trim(layout),'.nc4' 
     end if
 
 ! OUTFILES
   if (trim(layout) == '111') then
-    write(OUT_file,'(14A)') trim(outdir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'.cloud.lb2.angles.',date,'_',time,'z.nc4'
+    write(OUT_file,'(14A)') trim(outdir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'.lb2.angles.',date,'_',time,'z.nc4'
   else
-    write(OUT_file,'(16A)') trim(outdir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'.cloud.lb2.angles.',date,'_',time,'z.',trim(layout),'.nc4'
+    write(OUT_file,'(16A)') trim(outdir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'.lb2.angles.',date,'_',time,'z.',trim(layout),'.nc4'
   end if
 end subroutine filenames
 
