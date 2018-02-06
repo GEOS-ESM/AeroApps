@@ -160,11 +160,11 @@ class CLD_WORKSPACE(WORKSPACE):
         hour  = str(date.hour).zfill(2)
 
         if layout is None:
-            geom  = g5dir + '/' + self.angname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
+            geom  = g5dir + '/' + self.angname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
             land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.nc4' 
             aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'
         else:
-            geom  = g5dir + '/' + self.angname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
+            geom  = g5dir + '/' + self.angname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
             land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
             aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'
  
@@ -252,10 +252,10 @@ class CLD_WORKSPACE(WORKSPACE):
         hour  = str(date.hour).zfill(2)
 
         if layout is None:
-            geom  = g5dir + '/' + self.angname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
+            geom  = g5dir + '/' + self.angname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
             land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.nc4' 
         else:
-            geom  = g5dir + '/' + self.angname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
+            geom  = g5dir + '/' + self.angname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
             land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
 
         if self.archive_lb:
