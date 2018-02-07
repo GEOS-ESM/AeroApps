@@ -543,6 +543,10 @@ program geo_vlidort_cloud
     call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
                         Vqm, reshape(RH(i,j,:),(/km,nobs/)),&
                         nMom,nPol, Vtau, Vssa, Vg, Vpmom, ierr )
+    if ( ierr /= 0 ) then
+      print *, 'cannot get aerosol optical properties'
+      call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)      
+    end if
 
 !   Cloud Optical Properties
 !   ------------------------
@@ -554,14 +558,14 @@ program geo_vlidort_cloud
     VtauIcl(:,nch,nobs) = TAUI(i,j,:)
     VtauIcl             = VtauIcl*betaIcl
     VtauLcl(:,nch,nobs) = TAUL(i,j,:)
-    VtauLcl             = VtauLcl*betaLcl
+    VtauLcl             = VtauLcl*betaLcl 
 
 !   Scale Cloud optical thickness for phase function truncation            
 !   ------------------------
     VtauIcl = VtauIcl*(1. - truncIcl*VssaIcl)
     VtauLcl = VtauLcl*(1. - truncLcl*VssaLcl)
     VssaIcl = VssaIcl*(1. - truncIcl)/(1. - VssaIcl*truncIcl)
-    VssaLcl = VssaLcl*(1. - truncLcl)/(1. - VssaLcl*truncLcl)
+    VssaLcl = VssaLcl*(1. - truncLcl)/(1. - VssaLcl*truncLcl)    
 
 !   Save some variables on the 2D Grid for Writing Later
 !   ------------------------

@@ -557,6 +557,11 @@ program geo_vlidort
                           nMom,nPol, tau, ssa, g, pmom, ierr )
     ! end if
 
+    if ( ierr /= 0 ) then
+      print *, 'cannot get aerosol optical properties'
+      call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)      
+    end if
+
     TAU_(c,:,:) = tau(:,:,nobs)
     SSA_(c,:,:) = ssa(:,:,nobs)
     G_(c,:,:)   = g(:,:,nobs)
