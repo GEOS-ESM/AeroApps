@@ -68,7 +68,6 @@ def download_data(inDir,date,options,version=6):
     os.makedirs(inDir)
 
   for var in varlist:
-    prefix  = inDir
     command = '{}/{}/MCD43D{}/{}/{}/'.format(commandRoot,version,str(var).zfill(2),date.year,date.strftime('%j')) 
     print command
 
@@ -386,11 +385,13 @@ if __name__ == "__main__":
     dates = season_dic(t.year)
     inDir = options.datadir + 'Y{}/M{}/{}/'.format(t.year,str(t.month).zfill(2),t.strftime('%j'))
     path = glob(inDir + '*' + t.strftime('%Y%j') + '*')
-    qpath = glob(inDir + 'MCD43D31*' + t.strftime('%Y%j') + '*')
 
     if len(path) != 16:
       download_data(inDir,t,options)
-    for fn in path: assert os.path.exists(fn), fn + ' DOES NOT EXIST' 
+      path = glob(inDir + '*' + t.strftime('%Y%j') + '*')
+
+    qpath = glob(inDir + 'MCD43D31*' + t.strftime('%Y%j') + '*')
+
     mcdData = mcd43d.McD43D(path,qpath,clon[~clon.mask],clat[~clat.mask],Verb=0)
 
     # Gap Fill Data
