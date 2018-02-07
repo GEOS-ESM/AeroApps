@@ -1006,6 +1006,7 @@ module mp_netcdf_Mod
     if(status /= NF90_NOERR) then
       write (*,*) "Error at ", loc
       write (*,*) NF90_STRERROR(status)
+      stop 2
     end if
 
   end subroutine mp_check
