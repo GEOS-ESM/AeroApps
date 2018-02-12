@@ -527,7 +527,7 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
           cycle
         end if
          
-        call VLIDORT_Run_Scalar (SCAT, output, ier)
+        call VLIDORT_Run_Scalar_Cloud (SCAT, output, ier)
 
         radiance_VL_SURF(j,i)    = output%radiance
         reflectance_VL_SURF(j,i) = output%reflectance
@@ -728,7 +728,7 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
           cycle
         end if
 
-        call VLIDORT_Run_Vector (SCAT, output, ier)
+        call VLIDORT_Run_Vector_Cloud (SCAT, output, ier)
 
         ROT(:,j,i) = SCAT%rot
         if (SCAT%DO_BOA) then
