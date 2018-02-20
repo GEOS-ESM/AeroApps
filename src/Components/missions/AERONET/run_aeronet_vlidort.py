@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-    Wrapper for polar_vlidort.py
+    Wrapper for aeronet_vlidort.py
     Runs vlidort simulator
 
     Patricia Castellanos, May, 2017
