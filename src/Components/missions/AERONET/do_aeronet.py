@@ -75,5 +75,5 @@ if __name__ == "__main__":
 
 
         print command
-        #os.system(command)
+        os.system(command)
 
