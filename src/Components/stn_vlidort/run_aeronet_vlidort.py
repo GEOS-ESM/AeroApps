@@ -112,7 +112,7 @@ if __name__ == "__main__":
         outFile.insert(1,'al')
         outFileAL  = '.'.join(outFile)
         outFile[1] = 'pp'
-        outFilePP  = '.'join(outFile)
+        outFilePP  = '.'.join(outFile)
 
         if brdfTemplate is None:
             brdfFile = None
