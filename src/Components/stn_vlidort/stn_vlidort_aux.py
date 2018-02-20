@@ -55,7 +55,15 @@ def extrap1d(interpolator):
     def ufunclike(xs):
         return np.array(map(pointwise, np.array(xs)))
 
-    return ufunclike  
+    return ufunclike
+
+ 
+class MieVARS(object):
+    """
+    container for mie vars calculations
+    """
+    pass
+
 
 def get_chd(channel):
     chd = '%.2f'%channel
