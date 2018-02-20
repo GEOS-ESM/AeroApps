@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-    Calculates polarized BOA radiance at ground stations.
+    Calculates polarized BOA direct sun radiance at ground stations.
     Model fields have already been sampled using stn_sampler
 
     Adapted from polar_vlidort.py
@@ -284,8 +284,10 @@ class STN_VLIDORT(object):
             self.SAA.append(np.array(SAA))
 
 
-        # RAA is zero when pointing at the sun
-        self.RAA = [np.zeros([self.nstations])]*self.ntyme
+        # RAA is 180 when pointing at the sun, 
+        # Note that we take the photon travel direction 
+        # definition for SAA
+        self.RAA = [180.0*np.ones([self.nstations])]*self.ntyme
 
         # Limit SZAs
         for t in range(self.ntyme):
@@ -791,7 +793,7 @@ class STN_VLIDORT(object):
 
         # Set global attributes
         # ---------------------
-        nc.title = 'VLIDORT Simulation of GEOS-5 multiangle polarized reflectance'
+        nc.title = 'VLIDORT Simulation of GEOS-5 bottom of the atmosphere reflectance'
         nc.institution = 'NASA/Goddard Space Flight Center'
         nc.source = 'Global Model and Assimilation Office'
         nc.history = 'VLIDORT simulation run on sampled GEOS-5'
