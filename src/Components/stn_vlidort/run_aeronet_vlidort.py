@@ -108,6 +108,12 @@ if __name__ == "__main__":
         inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
         outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel))
 
+        outFile    = outFile.split('.')
+        outFile.insert(1,'al')
+        outFileAL  = '.'.join(outFile)
+        outFile[1] = 'pp'
+        outFilePP  = .join(outFile)
+
         if brdfTemplate is None:
             brdfFile = None
         else:
@@ -129,7 +135,8 @@ if __name__ == "__main__":
         # -----------------------------------------------------------
         print '++++Running VLIDORT with the following arguments+++'
         print '>>>inFile:    ',inFile
-        print '>>>outFile:   ',outFile
+        print '>>>outFileAL:   ',outFileAL
+        print '>>>outFilePP:   ',outFilePP
         print '>>>rcFile:    ',rcFile
         print '>>>albedoType:',cf('albedoType')
         print '>>>channel:   ',channel
@@ -140,7 +147,7 @@ if __name__ == "__main__":
         print '>>>verbose:   ',args.verbose
         print '++++End of arguments+++'
         if not args.dryrun:
-            vlidort = STN_VLIDORT(inFile,invFile,outFile,rcFile,
+            vlidort = AERONET_VLIDORT(inFile,invFile,outFileAL,outFilePP,rcFile,
                                     cf('albedoType'),
                                     channel,
                                     brdfFile=brdfFile,
