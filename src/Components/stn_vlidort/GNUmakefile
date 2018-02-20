@@ -29,7 +29,7 @@ LIB   = lib$(THIS).a
 BINS := 
 
 PY_EXTS = 
-PY_SCRP = stn_vlidort.py aeronet_vlidort.py
+PY_SCRP = directsun_vlidort.py aeronet_vlidort.py
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
