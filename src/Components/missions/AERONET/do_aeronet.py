@@ -58,25 +58,22 @@ if __name__ == "__main__":
 
     # Loop through dates and channels
     # ------------------------------------
-    date      = isoparser(args.iso_t1)
-    enddate   = isoparser(args.iso_t2)
-    Dt        = timedelta(hours=args.DT_hours)
+    bin = './run_aeronet_vlidort.py'
 
-    while date < enddate:
-        for ch in args.channels:
-            # Initialize VLIDORT class getting aerosol optical properties
-            # -----------------------------------------------------------
-            print '++++Running VLIDORT {} {} nm+++'.format(date.strftime('%Y%m%d %H'),ch)
+    for ch in args.channels:
+        # Initialize VLIDORT class getting aerosol optical properties
+        # -----------------------------------------------------------
+        print '++++Running VLIDORT {} nm+++'.format(ch)
 
-            command = './run_aeronet_vlidort.py -D {} '.format(args.DT_hours)
-            if args.dryrun:
-                command = command + '-r '
+        if args.dryrun:
+            command = bin + '-r '
+        else:
+            command = bin
 
 
-            command = command + '{} {} {}/stn_vlidort_{}.pcf'.format(date.isoformat(),date.isoformat(),args.platform,ch)
+        command = command + ' -D {} {} {} {}/stn_vlidort_{}.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform,ch)
 
 
-            print command
-            os.system(command)
+        print command
+        #os.system(command)
 
-        date += Dt
