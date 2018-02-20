@@ -11,19 +11,19 @@
 
 import os
 import MieObs_
-from   netCDF4 import Dataset
-from   mieobs  import  getAOPvector, getEdgeVars
-import numpy   as np
+from   netCDF4         import Dataset
+from   mieobs          import  getAOPvector, getEdgeVars
+import numpy           as np
 
-from datetime        import datetime, timedelta
-from dateutil.parser import parse         as isoparser
+from datetime          import datetime, timedelta
+from dateutil.parser   import parse         as isoparser
 
-from MAPL.constants import *
+from MAPL.constants    import *
 import stnAngles_    
 import VLIDORT_STN_ 
-from copyvar  import _copyVar
-from scipy import interpolate
+from scipy             import interpolate
 import multiprocessing
+from   stn_vlidort_aux import _copyVar, extrap1d, MieVARS, get_chd 
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
@@ -76,34 +76,10 @@ al_angles = [   0,  -6,   -5,   -4,  -3.5,    -3,  -2.5,
                -5,  -4, -3.5,   -3,  -2.5,    -2,     2,
               2.5,   3,  3.5,    4,     5,     6]              
 
-def extrap1d(interpolator):
-    """ extrapolator wrapper for an interpolator"""
-    xs = interpolator.x
-    ys = interpolator.y
-
-    def pointwise(x):
-        if x < xs[0]:
-            return ys[0]+(x-xs[0])*(ys[1]-ys[0])/(xs[1]-xs[0])
-        elif x > xs[-1]:
-            return ys[-1]+(x-xs[-1])*(ys[-1]-ys[-2])/(xs[-1]-xs[-2])
-        else:
-            return interpolator(x)
-
-    def ufunclike(xs):
-        return np.array(map(pointwise, np.array(xs)))
-
-    return ufunclike
-
 
 def unwrap_self_doMie(arg, **kwarg):
     return AERONET_VLIDORT.doMie(*arg, **kwarg)
  
-
-class MieVARS(object):
-    """
-    container for mie vars calculations
-    """
-    pass
 
 class AERONET_VLIDORT(object):
     """
@@ -1359,14 +1335,6 @@ class AERONET_VLIDORT(object):
 
         if self.verbose:
             print " <> wrote %s"%(self.outFilepp)
-
-
-
-def get_chd(channel):
-    chd = '%.2f'%channel
-    chd = chd.replace('.','d')
-
-    return chd
     
 #------------------------------------ M A I N ------------------------------------
 
