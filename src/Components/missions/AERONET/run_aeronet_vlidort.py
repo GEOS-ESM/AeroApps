@@ -159,7 +159,7 @@ if __name__ == "__main__":
 
             # Run VLIDORT
             if not extOnly:
-                if vlidort.nobs > 0:
+                if any(vlidort.nobs) > 0:
                     if cf('DO_VLIDORT').upper() == 'YES':
                         vlidort.runALMUCANTAR()
                         vlidort.runPRINCIPLE()
