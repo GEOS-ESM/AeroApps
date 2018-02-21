@@ -951,7 +951,7 @@ class AERONET_VLIDORT(object):
 
                         # Call VLIDORT wrapper function
                         I, reflectance, ROT, Q, U, rc = vlidortWrapper(*args)  
-                        surf_reflectance = albedo
+                        surf_reflectance = albedo[iGood,:]
 
                     # Store values in initialized arrays
                     II = np.arange(self.nstations)
