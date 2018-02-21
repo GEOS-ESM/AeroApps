@@ -165,7 +165,7 @@ class WORKSPACE(JOBS):
             workdir = self.make_workspace(startdate)
             self.dirstring.append(workdir)
 
-            startdate = startdate + dt
+            startdate = startdate + self.dt
 
 
     def make_workspace(self,date):
