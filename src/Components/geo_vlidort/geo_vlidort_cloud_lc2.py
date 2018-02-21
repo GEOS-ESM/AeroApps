@@ -174,14 +174,14 @@ class CLD_WORKSPACE(WORKSPACE):
             print '++Opening land file', land
 
         if not os.path.exists(geom):
-            self.get_from_archive(geom,date)
+            self.get_from_archive(geom)
         ncGeom = Dataset(geom)
         SZA    = np.squeeze(ncGeom.variables[u'solar_zenith'][:])
         VZA    = np.squeeze(ncGeom.variables[u'sensor_zenith'][:])
         ncGeom.close()
 
         if not os.path.exists(land):
-            self.get_from_archive(land,date)        
+            self.get_from_archive(land)        
         ncLand = Dataset(land)
         FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
         ncLand.close()

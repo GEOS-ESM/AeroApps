@@ -313,9 +313,13 @@ class WORKSPACE(JOBS):
             self.nodemax_list = np.array(self.nodemax_list)
             startdate = startdate + dt
 
-    def get_from_archive(self,path,date):
+    def get_from_archive(self,path):
         ii = path.find('/c1440_NR/')
         archive = self.archive + path[ii:]
+
+        if not os.path.exists(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path))
+
         # Copy from archive.  Note: overwrites file if it exists.
         try:
             shutil.copyfile(archive,path) 
@@ -362,7 +366,7 @@ class WORKSPACE(JOBS):
             print '++Opening metfile ',met
 
         if not os.path.exists(met):
-            self.get_from_archive(met,date)
+            self.get_from_archive(met)
         ncMet = Dataset(met)
         Cld   = np.squeeze(ncMet.variables[u'CLDTOT'][:])
         f     = np.where(Cld <= float(self.CLDMAX))
@@ -372,14 +376,14 @@ class WORKSPACE(JOBS):
             return False, 0
 
         if not os.path.exists(geom):
-            self.get_from_archive(geom,date)
+            self.get_from_archive(geom)
         ncGeom = Dataset(geom)
         SZA    = np.squeeze(ncGeom.variables[u'solar_zenith'][:])
         VZA    = np.squeeze(ncGeom.variables[u'sensor_zenith'][:])
         ncGeom.close()
 
         if not os.path.exists(land):
-            self.get_from_archive(land,date)        
+            self.get_from_archive(land)        
         ncLand = Dataset(land)
         FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
         ncLand.close()
