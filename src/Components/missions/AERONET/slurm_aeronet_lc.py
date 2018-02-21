@@ -235,7 +235,7 @@ class WORKSPACE(JOBS):
         # Go back to original run directory 
         os.chdir(self.cwd) 
         
-        return dirname, outdir 
+        return dirname
 
 
 
