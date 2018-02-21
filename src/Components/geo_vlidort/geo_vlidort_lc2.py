@@ -196,7 +196,7 @@ class WORKSPACE(JOBS):
     """ Create Working Directories and RC files """
     def __init__(self,startdate,enddate,options):
 
-
+        self.cloud = False
         for oo in options.__dict__:
             if (type(options.__dict__[oo]) is str) and (options.__dict__[oo].lower() == 'none'):
                 self.__dict__[oo] = None
@@ -497,8 +497,6 @@ class WORKSPACE(JOBS):
             elif (line[0:15] == '#SBATCH --array'):
                 if (nodemax is not None and nodemax > 1):
                     destination.write('#SBATCH --array=1-'+str(nodemax)+'\n') 
-                else:
-                    pass
 
             elif (line[0:13] == 'setenv GEOBIN'):
                 destination.write('setenv GEOBIN '+bindir+'\n')
