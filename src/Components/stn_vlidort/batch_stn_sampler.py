@@ -43,7 +43,7 @@ if __name__ == '__main__':
         os.makedirs(args.tmp)
 
     cwd = os.getcwd()
-    while Date < enddate:
+    while Date <= enddate:
         edate = Date + Dt
 
         # copy template to temp

@@ -52,7 +52,7 @@ if __name__ == "__main__":
     date = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
 
-    while date < enddate:
+    while date <= enddate:
         nymd = str(date.date()).replace('-','')
         hour = str(date.hour).zfill(2)
         outpath = '{}/Y{}/M{}'.format(outdir,date.year,str(date.month).zfill(2))

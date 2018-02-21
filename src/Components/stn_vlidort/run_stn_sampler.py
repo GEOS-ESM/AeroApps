@@ -156,7 +156,7 @@ if __name__ == "__main__":
     enddate   = isoparser(args.iso_t2)
 
     pdt   = timedelta(hours=1)
-    while Date < enddate:
+    while Date <= enddate:
         outpath = '{}/Y{}/M{}'.format(outdir,Date.year,str(Date.month).zfill(2))
         if not os.path.exists(outpath):
             os.makedirs(outpath)
