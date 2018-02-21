@@ -51,6 +51,11 @@ if __name__ == "__main__":
     parser.add_argument("-p","--platform", default=platform,
                         help="options are 'calculon' or 'nccs'")  
 
+    parser.add_argument("--norad",action="store_true",
+                        help="No radiance calculations (default=False).")
+
+    parser.add_argument("--noext",action="store_true",
+                        help="No extinctions calculations (default=False).")
 
 
     args = parser.parse_args()
@@ -60,20 +65,40 @@ if __name__ == "__main__":
     # ------------------------------------
     bin = './run_aeronet_vlidort.py'
 
-    for ch in args.channels:
-        # Initialize VLIDORT class getting aerosol optical properties
-        # -----------------------------------------------------------
-        print '++++Running VLIDORT {} nm+++'.format(ch)
+    if not args.norad:
+        for ch in args.channels:
+            # Run aeronet_vlidort
+            # -----------------------------------------------------------
+            print '++++Running VLIDORT {} nm+++'.format(ch)
 
-        if args.dryrun:
-            command = bin + '-r '
-        else:
-            command = bin
-
-
-        command = command + ' -D {} {} {} {}/stn_vlidort_{}.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform,ch)
+            if args.dryrun:
+                command = bin + '-r '
+            else:
+                command = bin
 
 
-        print command
-        os.system(command)
+            command = command + ' -D {} {} {} {}/stn_vlidort_{}.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform,ch)
+
+
+            print command
+            os.system(command)
+
+    if not args.noext:
+        for ch in args.extch:
+            # Run extinction sampler
+            # -----------------------------------------------------------
+            print '++++Running EXT_SAMPLER {} nm+++'.format(ch)
+
+            if args.dryrun:
+                command = bin + '-r '
+            else:
+                command = bin
+
+
+            command = command + ' -D {} {} {} {}/stn_vlidort_{}ext.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform,ch)
+
+
+            print command
+            os.system(command)
+
 
