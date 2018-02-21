@@ -217,8 +217,7 @@ class WORKSPACE(JOBS):
                 destination.write('setenv START '+date.isoformat()+'\n')
 
             elif (line[0:10] == 'setenv END'):
-                edate = date + self.dt
-                destination.write('setenv END '+edate.isoformat()+'\n')
+                destination.write('setenv END '+date.isoformat()+'\n')
 
             elif (line[0:14] == 'setenv OPTIONS'):
                 destination.write('setenv OPTIONS "'+options+'"\n')
