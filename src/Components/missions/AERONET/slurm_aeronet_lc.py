@@ -138,7 +138,7 @@ class WORKSPACE(JOBS):
             else:
                 self.__dict__[oo] = options.__dict__[oo]
 
-        self.nccs    = self.nccs + '/' + self.instname.upper() + '/DATA/' 
+        self.nccs    = self.nccs + '/' + self.instname.upper() + '/' 
         self.prefix  = self.nccs + 'workdir/'
         self.execFile = 'aeronet_lc.py'
 
@@ -181,7 +181,7 @@ class WORKSPACE(JOBS):
         # create some symlinks to shared files
         os.chdir(dirname)
         if not os.path.isfile(os.path.basename(self.execFile)):
-            os.symlink(self.execFile,os.path.basename(self.execFile))
+            os.symlink(self.cwd+'/'+self.execFile,os.path.basename(self.execFile))
         if not os.path.exists('ExtData'):
             os.symlink(self.cwd+'/ExtData','ExtData')
         if not os.path.isfile('Chem_MieRegistry.rc'):
