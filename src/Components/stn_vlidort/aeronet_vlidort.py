@@ -58,11 +58,12 @@ LandAlbedos  = 'MODIS_BRDF','MODIS_BRDF_BPDF','LAMBERTIAN'
 
 MISSING = -1.e+20
 
-pp_angles = [ -6,  -5, -4, -3.5, -3, -2.5, -2,  0,
-               2, 2.5,  3,  3.5,  4,    5,  6,  8,
-              10,  12, 14,   16, 20,   25, 30, 35,  
-              40,  45, 50,   55, 60,   65, 70, 80,
-              90, 100,110,  120,130,  140,150]
+pp_angles = [  -6,  -5,  -4, -3.5,   -3, -2.5,  -2,  
+                0,   2, 2.5,    3,  3.5,    4,   5,  
+                6,   8,  10,   12,   14,   16,  20,   
+               25,  30,  35,   40,   45,   50,  55, 
+               60,  65,  70,   80,   90,  100, 110,  
+              120, 130, 140,  150]
 
 al_angles = [   0,  -6,   -5,   -4,  -3.5,    -3,  -2.5,
                -2,   2,  2.5,    3,   3.5,     4,     5,
@@ -75,6 +76,19 @@ al_angles = [   0,  -6,   -5,   -4,  -3.5,    -3,  -2.5,
               -14, -12,  -10,   -8,    -7,    -6,    -6,
                -5,  -4, -3.5,   -3,  -2.5,    -2,     2,
               2.5,   3,  3.5,    4,     5,     6]              
+
+
+pp_angles = [   0,   2, 2.5,    3,  3.5,    4,   5,  
+                6,   8,  10,   12,   14,   16,  20,   
+               25,  30,  35,   40,   45,   50,  55, 
+               60,  65,  70,   80,   90,  100, 110,  
+              120, 130, 140,  150]
+
+al_angles = [   0,   2,  2.5,    3,   3.5,     4,     5,
+                6,   7,    8,   10,    12,    14,    16,
+               18,  20,   25,   30,    35,    40,    45,
+               50,  60,   70,   80,    90,   100,   120,
+              140, 160,  180]              
 
 
 def unwrap_self_doMie(arg, **kwarg):
@@ -412,7 +426,7 @@ class AERONET_VLIDORT(object):
         nc = Dataset(self.brdfFile)
 
         for sds in mSDS:
-            self.__dict__[sds] = nc.variables[sds][:]
+            self.__dict__[sds] = np.array(nc.variables[sds][:])
 
         missing_value = nc.variables[sds].missing_value
         nc.close()
@@ -422,7 +436,13 @@ class AERONET_VLIDORT(object):
         nc = Dataset(self.lerFile)
 
         self.__dict__[lSDS] = np.array(np.squeeze(nc.variables[lSDS][:]))
+        missing_value_l = nc.variables[lSDS].missing_value
         nc.close()
+
+        if missing_value != missing_value_l:
+            I = self.__dict__[lSDS] == missing_value_l
+            self.__dict__[lSDS][I] = missing_value
+
 
         # Interpolate 
         X = np.array([388,470])
@@ -432,7 +452,7 @@ class AERONET_VLIDORT(object):
         self.__dict__[sds] = np.empty([self.nstations,self.ntyme])
         for s in range(self.nstations):
             for i in range(self.ntyme):
-                Y = np.array([self.__dict__[lSDS][s,i],self.__dict__[R][s,i]])
+                Y = np.array([self.__dict__[lSDS][s,i],self.__dict__[R][s,i]])                
                 if missing_value in Y:
                     self.__dict__[sds][s,i] = missing_value
                 else:
