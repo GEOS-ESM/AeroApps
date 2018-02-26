@@ -15,6 +15,7 @@ if __name__ == '__main__':
     
     #Defaults
     DT_hours = 24
+    DT_jobs  = 1    #days
     slurm    = 'aeronet_g5nr_sampler.j'
     tmp      = './tmp'
 
@@ -27,6 +28,9 @@ if __name__ == '__main__':
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
 
+    parser.add_argument("--DT_jobs", default=DT_jobs, type=int,
+                        help="Timestep in days for each job (default=%i)"%DT_jobs)    
+
     parser.add_argument('-s',"--slurm",default=slurm,
                         help="slurm script template")           
 
@@ -38,13 +42,15 @@ if __name__ == '__main__':
     Date    = isoparser(args.iso_t1)
     enddate = isoparser(args.iso_t2)
     Dt      = timedelta(hours=args.DT_hours)
+    Djobs   = timedelta(days=args.DT_jobs)
 
     if not os.path.exists(args.tmp):
         os.makedirs(args.tmp)
 
     cwd = os.getcwd()
     while Date <= enddate:
-        edate = Date + Dt
+        edate = Date + Djobs
+        if edate > enddate: edate = enddate
 
         # copy template to temp
         outfile = '{}_{}.j'.format(args.slurm[:-2],Date.date())
