@@ -53,7 +53,7 @@ if __name__ == '__main__':
         if edate > enddate: edate = enddate
 
         # copy template to temp
-        outfile = '{}_{}.j'.format(args.slurm[:-2],Date.date())
+        outfile = '{}_{}.j'.format(args.slurm[:-2],Date.isoformat())
         outpath = '{}/{}'.format(args.tmp,outfile)
 
         shutil.copyfile(args.slurm,outpath)
@@ -79,5 +79,5 @@ if __name__ == '__main__':
         subprocess.call('sbatch {}'.format(outfile),shell=True)
         os.chdir(cwd)
 
-        Date += Dt
+        Date += Djobs
 
