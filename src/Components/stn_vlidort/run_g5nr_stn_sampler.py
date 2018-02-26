@@ -151,6 +151,7 @@ if __name__ == "__main__":
     outdir = cf('OUTDIR')
     instname = cf('INSTNAME')
     stnFile  = cf('STNFILE')
+    dt_secs  = cf('DT_SECS')
 
     Date = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
@@ -180,7 +181,8 @@ if __name__ == "__main__":
                 Options =     " --output=" + outFile       + \
                               " --format=NETCDF4_CLASSIC"      + \
                               " --isoTime"  +\
-                              " --algorithm=" + args.algo
+                              " --algorithm=" + args.algo  +\
+                              " --dt_secs=" + dt_secs
 
                 if args.verbose:
                     Options += " --verbose" 
