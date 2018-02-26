@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
     cwd = os.getcwd()
     while Date <= enddate:
-        edate = Date + Djobs
+        edate = Date + Djobs - Dt
         if edate > enddate: edate = enddate
 
         # copy template to temp
