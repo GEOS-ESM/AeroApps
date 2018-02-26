@@ -28,14 +28,16 @@ THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
 BINS := 
 
-PY_EXTS = 
-PY_SCRP = 
-PY_LIBS = directsun_vlidort.py aeronet_vlidort.py stn_vlidort_aux.py
+PY_EXTS = stnAngles_.$(F2PYEXT) VLIDORT_STN_.$(F2PYEXT)
+PY_SCRP = g5nr_stn_sampler.py mcd12c_stn_sampler.py mcd43c_stn_sampler.py run_g5nr_stn_sampler_invariant.py run_g5nr_stn_sampler.py
+PY_LIBS = directsun_vlidort.py aeronet_vlidort.py stn_vlidort_aux.py pystn
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
                  $(ESMAINC)/$(THIS) $(ESMABIN)
+	$(CP) -pr $(PY_EXTS)            $(ESMALIB)/Python                 
 	$(CP) -pr $(PY_LIBS)            $(ESMALIB)/Python
+	$(CP) -p  $(BINS) $(PY_SCRP)    $(ESMABIN)
 
 esma_clean clean:
 	$(RM) -rf *~ *.[aox] *.[Mm][Oo][Dd] *.pyc *.$(F2PYEXT) 
