@@ -14,7 +14,7 @@ import argparse
 from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 from MAPL            import Config
-from mcd12c          import MCD12C
+from pystn.mcd12c          import MCD12C
 
 #------------------------------------ M A I N ------------------------------------
 
