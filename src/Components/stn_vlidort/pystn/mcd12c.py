@@ -11,7 +11,7 @@ import numpy                  as     np
 from   glob                   import glob
 from   scipy.interpolate      import RegularGridInterpolator
 from   netCDF4                import Dataset
-from   copyvar                import _copyVar
+from   stn_vlidort_aux        import _copyVar
 
 nkernels = 3
 SDS = { 'Majority_Land_Cover_Type_1'                 : 'IGBPlc'}   
