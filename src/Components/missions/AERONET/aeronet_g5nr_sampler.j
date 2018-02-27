@@ -24,7 +24,8 @@ limit stacksize unlimited
 #           Architecture Specific Environment Variables
 #######################################################################
 setenv G5DIR /discover/nobackup/pcastell/workspace/GAAS/src
-setenv BIN /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/AERONET
+setenv RUNDIR /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/AERONET
+setenv BIN /discover/nobackup/pcastell/workspace/GAAS/Linux/bin/run_g5nr_stn_sampler.py
 
 source $HOME/.cshrc
 cd $G5DIR
@@ -33,12 +34,12 @@ source g5_modules
 #######################################################################
 #   Move to Run Directory
 #######################################################################
-cd $BIN
+cd $RUNDIR
 
 ##################################################################
 ######
 ######         Do Sampling
 ######
 ##################################################################
-python -u run_g5nr_stn_sampler.py -v --nproc 12 --DT_hours 24 2006-01-01T00 2006-01-02T00 stn_sampler.pcf > slurm_${SLURM_JOBID}_py.out
+python -u $BIN -v --nproc 12 --DT_hours 24 2006-01-01T00 2006-01-02T00 stn_sampler.pcf > slurm_${SLURM_JOBID}_py.out
 
