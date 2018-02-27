@@ -65,7 +65,7 @@ if __name__ == '__main__':
 
         iso1 = Date.isoformat()
         iso2 = edate.isoformat()
-        newline = 'python -u run_g5nr_stn_sampler.py -v --nproc 6 --DT_hours {} {} {} {} >'.format(args.DT_hours,iso1,iso2,args.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
+        newline = 'python -u $BIN -v --nproc 6 --DT_hours {} {} {} {} >'.format(args.DT_hours,iso1,iso2,args.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
         text[-2] = newline
         f.close()
 
