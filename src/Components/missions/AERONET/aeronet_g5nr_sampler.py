@@ -66,10 +66,10 @@ if __name__ == '__main__':
         iso1 = Date.isoformat()
         iso2 = edate.isoformat()
 
-        newline = "#SBATCH --output=slurm_{}_%j.out".format(iso1)
+        newline = "#SBATCH --output=slurm_{}_%j.out\n".format(iso1)
         text[11] = newline
 
-        newline = "#SBATCH --error=slurm_{}_%j.err".format(iso1)
+        newline = "#SBATCH --error=slurm_{}_%j.err\n".format(iso1)
         text[12] = newline
 
         newline = 'python -u $BIN -v --nproc 6 --DT_hours {} {} {} {} >'.format(args.DT_hours,iso1,iso2,args.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
