@@ -41,5 +41,5 @@ cd $RUNDIR
 ######         Do Sampling
 ######
 ##################################################################
-python -u $BIN -v --nproc 12 --DT_hours 24 2006-01-01T00 2006-01-02T00 stn_sampler.pcf > tmp/slurm_${SLURM_JOBID}_py.out
+python -u $BIN -v --nproc 12 --DT_hours 24 2006-01-01T00 2006-01-02T00 stn_sampler.pcf > tmp/slurm_2006-01-01T00_${SLURM_JOBID}_py.out
 
