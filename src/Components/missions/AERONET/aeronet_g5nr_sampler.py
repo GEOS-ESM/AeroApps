@@ -138,9 +138,9 @@ class WORKSPACE(JOBS):
             if os.path.exists(outpath):
                 shutil.rmtree(outpath)
             os.makedirs(outpath)    
-            shutil.copyfile(self.runfile,outpath)
-
             outfile = '{}/{}'.format(outpath,self.runfile)
+            shutil.copyfile(self.runfile,outfile)
+
             self.dirstring.append(outpath)
 
             # Read file first - this is the copied template
