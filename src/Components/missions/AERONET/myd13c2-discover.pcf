@@ -1,7 +1,8 @@
 # STN SAMPLING
 INSTNAME = aeronet
-STNFILE  = aeronet_master_locations.txt
+STNFILE  = aeronet_locations_v3.txt
 RCFILES  = myd13c2-discover.rc
 COLNAMES = ndvi
 OUTDIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelB/surface/BPDF/NDVI/MYD13C2/006
+DT_SECS  = 3600
 # STN SAMPLING
