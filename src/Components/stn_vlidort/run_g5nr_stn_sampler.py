@@ -174,7 +174,7 @@ if __name__ == "__main__":
             for date in datelist:
                 nymd = str(date.date()).replace('-','')
                 hour = str(date.hour).zfill(2)
-                edate = date + pdt
+                edate = date 
             
                 outFile = '{}/{}-g5nr.lb2.{}.{}_{}z.nc4'.format(outpath,instname,colname,nymd,hour)
 

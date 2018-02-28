@@ -33,7 +33,7 @@ class NC4ctl_(NC4ctl):
 def getTyme(Dt,t1,t2):
     t = t1
     tyme = [t,]
-    while t <= t2:
+    while t < t2:
         t += Dt
         tyme += [t,]
     tyme = array(tyme)
