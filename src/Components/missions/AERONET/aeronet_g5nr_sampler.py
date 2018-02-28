@@ -10,6 +10,7 @@ import shutil
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
 import argparse
+import numpy           as np
 
 jobsmax   = 150
 class JOBS(object):
