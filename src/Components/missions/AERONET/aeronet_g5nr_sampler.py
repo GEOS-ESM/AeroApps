@@ -133,6 +133,11 @@ class WORKSPACE(JOBS):
         self.dirstring = []
         while Date <= enddate:
             edate = Date + Djobs - Dt
+
+            print 'Date',Date
+            print 'enddate',enddate
+            print 'edate',edate
+
             if edate > enddate: edate = enddate
 
             # copy template to temp
@@ -195,8 +200,8 @@ class WORKSPACE(JOBS):
 if __name__ == '__main__':
     
     #Defaults
-    DT_hours = 24
-    DT_jobs  = 24    #hours
+    DT_hours = 1
+    DT_jobs  = 1    #hours
     slurm    = 'aeronet_g5nr_sampler.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/workdir'
 
