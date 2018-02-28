@@ -81,7 +81,7 @@ if __name__ == "__main__":
         if args.verbose:
             Options += " --verbose" 
 
-        cmd = './g5nr_stn_sampler.py {} {} {} {} {}'.format(Options,stnFile,rc,Date.isoformat(),Date.isoformat())
+        cmd = 'g5nr_stn_sampler.py {} {} {} {} {}'.format(Options,stnFile,rc,Date.isoformat(),Date.isoformat())
 
         if not args.dryrun:
             if os.system(cmd):
