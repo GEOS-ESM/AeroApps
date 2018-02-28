@@ -72,7 +72,7 @@ if __name__ == '__main__':
         newline = "#SBATCH --error=slurm_{}_%j.err\n".format(iso1)
         text[12] = newline
 
-        newline = 'python -u $BIN -v --nproc 6 --DT_hours {} {} {} {} >'.format(args.DT_hours,iso1,iso2,args.prep_config) + ' tmp/slurm_{}_${SLURM_JOBID}_py.out\n'.format(iso1)
+        newline = 'python -u $BIN -v --nproc 6 --DT_hours {} {} {} {} >'.format(args.DT_hours,iso1,iso2,args.prep_config) + ' tmp/slurm_{}_'.format(iso1)+'${SLURM_JOBID}_py.out\n'
         text[-2] = newline
         f.close()
 
