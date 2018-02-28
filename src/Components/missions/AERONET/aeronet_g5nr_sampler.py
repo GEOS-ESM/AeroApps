@@ -145,6 +145,11 @@ class WORKSPACE(JOBS):
 
             self.dirstring.append(outpath)
 
+            print 'Date',Date
+            print 'enddate',enddate
+            print 'edate',edate
+            print 'outpath',outpath
+
             # Read file first - this is the copied template
             f = open(outfile)
             text = []
