@@ -103,9 +103,6 @@ class JOBS(object):
         os.chdir(self.dirstring[i])  
 
         error = False  
-        nodemax = self.nodemax_list[i]
-
-
         errfile = 'slurm_' +jobid + '.err'
         statinfo = os.stat(errfile)
         if (statinfo.st_size != 0):
@@ -133,11 +130,6 @@ class WORKSPACE(JOBS):
         self.dirstring = []
         while Date <= enddate:
             edate = Date + Djobs - Dt
-
-            print 'Date',Date
-            print 'enddate',enddate
-            print 'edate',edate
-
             if edate > enddate: edate = enddate
 
             # copy template to temp
@@ -149,11 +141,6 @@ class WORKSPACE(JOBS):
             shutil.copyfile(self.runfile,outfile)
 
             self.dirstring.append(outpath)
-
-            print 'Date',Date
-            print 'enddate',enddate
-            print 'edate',edate
-            print 'outpath',outpath
 
             # Read file first - this is the copied template
             f = open(outfile)
