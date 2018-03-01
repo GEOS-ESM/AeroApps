@@ -36,8 +36,8 @@ class JOBS(object):
             s = self.dirstring[i]
             os.chdir(s)
             jobid = np.append(jobid,subprocess.check_output(['qsub',self.runfile]))
-        os.chdir(cwd)
-          
+        os.chdir(self.cwd)
+
         # Monitor jobs 1-by-1 
         # Add a new job when one finishes 
         # Until they are all done
@@ -87,7 +87,7 @@ class JOBS(object):
                     os.chdir(s)
                     jobid = np.append(jobid,subprocess.check_output(['qsub',self.runfile]))
 
-                os.chdir(cwd)
+                os.chdir(self.cwd)
                 countRun = countRun + newRun
                 stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
 
