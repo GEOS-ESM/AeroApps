@@ -34,9 +34,10 @@ class JOBS(object):
         jobid = np.empty(0)
         for i in workingJobs:
             s = self.dirstring[i]
-            runfile = '{}/{}'.format(s,self.runfile)
-            jobid = np.append(jobid,subprocess.check_output(['qsub',runfile]))
-            
+            os.chdir(s)
+            jobid = np.append(jobid,subprocess.check_output(['qsub',self.runfile]))
+        os.chdir(cwd)
+          
         # Monitor jobs 1-by-1 
         # Add a new job when one finishes 
         # Until they are all done
@@ -84,7 +85,7 @@ class JOBS(object):
                 for i in newjobs:
                     s = dirstring[i]
                     os.chdir(s)
-                    jobid = np.append(jobid,subprocess.check_output(['qsub',runfile]))
+                    jobid = np.append(jobid,subprocess.check_output(['qsub',self.runfile]))
 
                 os.chdir(cwd)
                 countRun = countRun + newRun
