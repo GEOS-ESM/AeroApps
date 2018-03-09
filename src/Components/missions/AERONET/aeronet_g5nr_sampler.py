@@ -83,7 +83,7 @@ class JOBS(object):
                 newjobs  = countRun + np.arange(newRun)
                 workingJobs = np.append(workingJobs, newjobs)
                 for i in newjobs:
-                    s = dirstring[i]
+                    s = self.dirstring[i]
                     os.chdir(s)
                     jobid = np.append(jobid,subprocess.check_output(['qsub',self.runfile]))
 
@@ -92,8 +92,8 @@ class JOBS(object):
                 stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
 
 
-            print 'Waiting 1 minutes'
-            time.sleep(60)
+            print 'Waiting 20 minutes'
+            time.sleep(60*20)
             
 
         # Exited while loop
