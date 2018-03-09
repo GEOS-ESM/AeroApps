@@ -12,7 +12,7 @@
 import os
 import MieObs_
 from   netCDF4         import Dataset
-from   mieobs          import  getAOPvector, getEdgeVars
+from   mieobs          import  getAOPvector, getEdgeVars, getAOPint
 import numpy           as np
 
 from datetime          import datetime, timedelta
@@ -24,6 +24,7 @@ import VLIDORT_STN_
 from scipy             import interpolate
 import multiprocessing
 from   stn_vlidort_aux import _copyVar, extrap1d, MieVARS, get_chd 
+from   MAPL  import config
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
@@ -91,6 +92,14 @@ al_angles = [   0,   2,  2.5,    3,   3.5,     4,     5,
               140, 160,  180]              
 
 
+aeronet_r = [0.05,        0.065604,    0.086077,    0.112939,    0.148184,
+             0.194429,    0.255105,    0.334716,    0.439173,    0.576227,
+             0.756052,    0.991996,    1.301571,    1.707757,    2.240702,    
+             2.939966,    3.857452,    5.06126,     6.640745,    8.713145,    
+             11.432287,   15]  # microns
+
+aeronet_r = np.array(aeronet_r)*1e-6  # meters
+
 def unwrap_self_doMie(arg, **kwarg):
     return AERONET_VLIDORT.doMie(*arg, **kwarg)
  
@@ -107,7 +116,9 @@ class AERONET_VLIDORT(object):
                 lcFile=None,
                 lerFile=None,
                 verbose=False,
-                extOnly=False):
+                extOnly=False,
+                aeronet_r=aeronet_r,
+                outFileadd=None):
         self.SDS_AER = SDS_AER
         self.SDS_MET = SDS_MET
         self.SDS_INV = SDS_INV
@@ -116,6 +127,7 @@ class AERONET_VLIDORT(object):
         self.invFile = invFile
         self.outFileal = outFileal
         self.outFilepp = outFilepp
+        self.outFileadd = outFileadd
         self.albedoType = albedoType
         self.rcFile  = rcFile
         self.channel = channel
@@ -129,6 +141,7 @@ class AERONET_VLIDORT(object):
         self.pp_angles = pp_angles
         self.nal       = len(self.al_angles)
         self.npp       = len(self.pp_angles)
+        self.aeronet_r = aeronet_r
 
         # initialize empty lists
         for sds in self.SDS_AER+self.SDS_MET+self.SDS_INV:
@@ -155,24 +168,32 @@ class AERONET_VLIDORT(object):
         self.iGood = [np.ones([self.nstations]).astype(bool)]*self.ntyme
 
         if not extOnly:
-            # Read in surface data
-            # Intensity
-            if (self.channel < 470) & ("MODIS_BRDF" in albedoType):
-                albedoReader = getattr(self,'readHybridMODISBRDF')
-            else:
-                albedoReader = getattr(self,SurfaceFuncs[albedoType])
-            albedoReader()
+            if self.outFileadd is None:
+                # Read in surface data
+                # Intensity
+                if (self.channel < 470) & ("MODIS_BRDF" in albedoType):
+                    albedoReader = getattr(self,'readHybridMODISBRDF')
+                else:
+                    albedoReader = getattr(self,SurfaceFuncs[albedoType])
+                albedoReader()
 
-            # Polarization
-            if 'BPDF' in albedoType:
-                self.BPDFinputs()
+                # Polarization
+                if 'BPDF' in albedoType:
+                    self.BPDFinputs()
 
 
-            # Calculate aerosol optical properties
-            self.computeMie()
+                # Calculate aerosol optical properties
+                self.computeMie()
 
             # Calculate atmospheric profile properties needed for Rayleigh calc
             self.computeAtmos()
+
+            if self.outFileadd is not None:
+                # Calculate column aerosol size distributions
+                self.sizeDistribution()
+
+                # get 440-870 angstrom exponent
+                self.computeAE()
 
         # Calculate Scene Geometry
         self.calcAngles()
@@ -180,6 +201,7 @@ class AERONET_VLIDORT(object):
         if any(self.nobs):
             #Land-Sea Mask
             self.LandSeaMask()
+
 
         self.nobs = np.array(self.nobs)
 
@@ -303,6 +325,10 @@ class AERONET_VLIDORT(object):
             self.iGood[t] = self.iGood[t] & iGood
             self.nobs[t] = np.sum(self.iGood[t])     
 
+            iGood = self.SZA[t] >= 80
+            self.SZA[t][iGood] = MISSING
+            self.SAA[t][iGood] = MISSING
+
     #---
     def readSampledGEOS(self):
         """
@@ -331,6 +357,671 @@ class AERONET_VLIDORT(object):
         #         sds_ = ncALIAS[sds]
         #     var = nc.variables[sds_][:]
         #     self.__dict__[sds].append(var)
+
+    def sizeDistribution(self):
+        """ 
+        Get size aerosol size distribution from 
+        GEOS-5 aerosol mixing ratios
+
+        Based on P. Colarco's optics table calculations.
+        Note: hard coded for these versions of the optics tables.
+        May not work for other versions.
+
+        filename_optical_properties_DU: ExtData/optics_DU.v15_5.nc
+        filename_optical_properties_SS: ExtData/optics_SS.v3_5.nc
+        filename_optical_properties_BC: ExtData/optics_BC.v1_5.nc
+        filename_optical_properties_OC: ExtData/optics_OC.v1_5.nc
+        filename_optical_properties_SU: ExtData/optics_SU.v1_5.nc
+        """
+
+        # Create master bins for all levels
+        # ---------------------------------
+        rmin      = 0.005e-6   #meters 
+        rmax      = self.getRMAX()
+        R, DR, RLOW, RUP = self.logBins(0.5*rmin,1.1*rmax)
+        self.R = R
+        self.DR = DR
+        self.RLOW = RLOW
+        self.RUP  = RUP
+
+
+        # # try higher res bins
+        # dr     = 0.01 
+        # RMIN   = RLOW[0]
+        # RMAX   = RUP[-1]
+        # deltaR = np.log(RMAX) - np.log(RMIN)
+        # nbin   = int(np.ceil(deltaR/dr))
+        # R = np.zeros(nbin)
+        # DR = np.zeros(nbin)
+        # RLOW = np.zeros(nbin)
+        # RUP  = np.zeros(nbin)
+
+        # RLOW[0] = RMIN
+        # RUP[0]  = np.exp(np.log(RLOW[0]) + dr)
+        # R[0]    = np.exp(np.log(RLOW[0]) + 0.5*dr)
+        # for i in range(1,nbin):
+        #     RLOW[i] = np.exp(np.log(RLOW[i-1]) + dr)
+        #     RUP[i]  = np.exp(np.log(RLOW[i]) + dr)
+        #     R[i]    = np.exp(np.log(RLOW[i]) + 0.5*dr)
+
+        # self.R = R
+        # self.DR = RUP - RLOW
+        # self.RLOW = RLOW
+        # self.RUP  = RUP
+
+
+
+        # Lognormal Species: BC, OC, and SU
+        # ---------------------------------
+    
+        # BC
+        r0        = 0.0118e-6  #meters
+        rmax0     = 0.3e-6     #meters
+        sigma     = 2.00
+
+        spc = 'BCPHOBIC'
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma)
+        spc = 'BCPHILIC'
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma)
+
+        # OC
+        r0        = 0.0212e-6  #meters
+        rmax0     = 0.3e-6     #meters
+        sigma     = 2.20
+
+        spc = 'OCPHOBIC'
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma)
+        spc = 'OCPHILIC'
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma)
+
+        # SU
+        r0        = 0.0695e-6  #meters
+        rmax0     = 0.3e-6     #meters
+        sigma     = 2.03
+
+        spc = 'SU'
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma)
+
+        # Dust
+        # ----------
+        self.dustDistribution()
+
+        # Sea Salt
+        # ------------
+        self.seasaltDistribution()
+
+        # Mixture Distribution
+        # -------------
+        self.TOTdist = []
+        for st in range(self.nstations):
+            TOTdist = self.BCPHILICdist[st] 
+            TOTdist = TOTdist + self.BCPHOBICdist[st] 
+            TOTdist = TOTdist + self.OCPHILICdist[st] 
+            TOTdist = TOTdist + self.OCPHOBICdist[st] 
+            TOTdist = TOTdist + self.SUdist[st] 
+            TOTdist = TOTdist + self.DUdist[st] 
+            TOTdist = TOTdist + self.SSdist[st]
+
+            self.TOTdist.append(TOTdist)
+
+        # Interpolate to AERONET radius
+        self.AERdist = []
+        for st in range(self.nstations):
+            TOTdist = self.TOTdist[st]
+            AERdist = np.zeros([self.ntyme,len(self.aeronet_r)])
+            for t in range(self.ntyme):
+                fTable = interpolate.interp1d(self.R,TOTdist[t,:])
+                AERdist[t,:]   = fTable(self.aeronet_r)*self.aeronet_r*1e6
+
+            self.AERdist.append(AERdist)
+
+
+    def getRMAX(self):
+        cf = config.Config(self.rcFile)
+
+        #lognormals
+        spclist = 'BC','OC','SU'
+        rmax0   = 0.3e-6
+        RMAX    = 0
+        for spc in spclist:
+            # Read optics table            
+            optable = cf('filename_optical_properties_{}'.format(spc))
+            nc      = Dataset(optable)
+            if spc == 'SU':
+                gfTable = nc.variables['growth_factor'][0,:]
+            else:
+                gfTable = nc.variables['growth_factor'][1,:]
+
+            rhTable = nc.variables['rh'][:]
+            nc.close()
+            fTable = interpolate.interp1d(rhTable, gfTable)            
+            gf = fTable(rhTable[-1])
+            rmax  = gf*rmax0
+            if rmax > RMAX: RMAX = rmax
+
+        # Sea-salt
+        c1 = 0.7674
+        c2 = 3.079
+        c3 = 2.573e-11
+        c4 = -1.424        
+        rhUse = 0.95
+        # read optics table
+        optable = cf('filename_optical_properties_SS')
+        nc      = Dataset(optable)
+        rUp     = nc.variables['rUp'][:]
+        nc.close()
+        rMaxUse = rUp[-1]
+        rMaxCM  = rMaxUse*100.
+        rmax    = (c1*rMaxCM**c2 /(c3*rMaxCM**c4 - np.log10(rhUse))+rMaxCM**3.)**(1./3.)/100.
+        if rmax > RMAX: RMAX = rmax
+
+        # Dust
+        # read optics table
+        optable = cf('filename_optical_properties_DU')
+        nc      = Dataset(optable)
+        rUp     = nc.variables['rUp'][:]
+        nc.close()
+        rmax    = rUp[-1]
+        if rmax > RMAX: RMAX = rmax
+
+        return RMAX
+
+
+    def seasaltDistribution(self):
+        # Density of dry particles [kg m-3]
+        rhop0 = 2200.
+
+        #constants for adjusting size bins for RH
+        c1 = 0.7674
+        c2 = 3.079
+        c3 = 2.573e-11
+        c4 = -1.424        
+
+
+        # master bins
+        R    = self.R
+        DR   = self.DR
+        RLOW = self.RLOW
+        RUP  = self.RUP
+
+        # Read optics table
+        cf = config.Config(self.rcFile)
+        optable = cf('filename_optical_properties_SS')
+
+        # Read in growth factors and rh tables
+        nc = Dataset(optable)
+        rhTable = nc.variables['rh'][:]
+        gfTable = nc.variables['growth_factor'][:]
+
+        # Major bins
+        rMaxMaj = nc.variables['rUp'][:]
+        rMinMaj = nc.variables['rLow'][:]
+
+        nc.close()
+
+        # number of major bins
+        nbinMaj = len(rMaxMaj)
+
+        #number of minor bins
+        nbinMin = 40
+
+        # initiate output variables
+        self.__dict__['SSdist'] = []
+
+        # loop through stations
+        # mr (mixing ratio) dims are [ntyme,nlev]  
+        nlev = 72      
+        for ss001,ss002,ss003,ss004,ss005,rh,air in zip(self.SS001,self.SS002,self.SS003,self.SS004,self.SS005,self.RH,self.AIRDENS):
+            # set up empty column size distribution array
+            SPCdist = np.zeros((self.ntyme,)+R.shape)
+
+            # put all sea-salt mixing ratios in one array for convenience
+            SS = np.empty([self.ntyme,nlev,5])
+            SS[:,:,0] = ss001
+            SS[:,:,1] = ss002
+            SS[:,:,2] = ss003
+            SS[:,:,3] = ss004
+            SS[:,:,4] = ss005
+
+
+            # 0 <= rh <= 0.95
+            # this is what is done in Chem_MieMod.F90
+            rh[rh < 0] = 0
+            rh[rh > 0.95] = 0.95   
+
+            # loop throuhg time steps
+            for t in range(self.ntyme):    
+                # loop through major bins
+                for iBin in range(nbinMaj):
+                    # get the radii of the bin
+                    rmin = rMinMaj[iBin]
+                    rmax = rMaxMaj[iBin]
+                    rMinCM = rmin*100.
+                    rMaxCM = rmax*100.                    
+
+                    # get growth factors table for this bin
+                    fTable = interpolate.interp1d(rhTable, gfTable[iBin,:])
+                    gf = fTable(rh[t,:])  
+
+                    # loop through layers 
+                    # get size distribution for each layer
+                    for k in range(nlev):
+
+                        #adjust bin edges for humidified particles
+                        rhUse = rh[t,k]
+                        rMinUse = (c1*rMinCM**c2 /(c3*rMinCM**c4 - np.log10(rhUse))+rMinCM**3.)**(1./3.)/100.                                      
+                        rMaxUse = (c1*rMaxCM**c2 /(c3*rMaxCM**c4 - np.log10(rhUse))+rMaxCM**3.)**(1./3.)/100.  
+
+                        # get the bins
+                        r, dr, rlow, rup = self.logBins(rMinUse,rMaxUse,nbin=nbinMin)
+
+                        # Determine the dNdr of the particle size distribution using the
+                        # Gong 2003 particle sub-bin distribution
+                        rrat = rmin/rMinUse
+                        r80Rat = 1.65*rrat      # ratio of the r80 radius to the wet radius
+                        r80  = R*r80Rat * 1.e6  # radius in r80 space in um
+                        dr80 = DR*r80Rat * 1.e6
+
+                        aFac = 4.7*(1.+30.*r80)**(-0.017*r80**(-1.44))
+                        bFac = (0.433-np.log10(r80))/0.433
+                        dndr80 = 1.373*r80**(-aFac)*(1.+0.057*r80**3.45)*10.**(1.607*np.exp(-bFac**2.))
+                        dndr = dndr80 * r80Rat
+
+                        # Truncate distribution according to rlow and rup
+                        ii = RUP <= rMinUse
+                        dndr[ii] = 0
+
+                        ii = RLOW >= rMaxUse
+                        dndr[ii] = 0
+
+                        # deal with lowest bin
+                        # number concentration is scaled to the 
+                        # fraction of the bin that is covered by
+                        # the aerosol distribution
+                        bini = np.arange(len(R))
+                        i = bini[RLOW < rMinUse][-1]
+                        drtilda = RUP[i] - rMinUse
+                        dndr[i] = dndr[i]*drtilda/DR[i]
+
+                        #deal with the highest bin
+                        # number concentration is scaled to the 
+                        # fraction of the bin that is covered by
+                        # the aerosol distribution                    
+                        i = bini[RLOW < rMaxUse][-1]
+                        drtilda = rMaxUse - RLOW[i]
+                        dndr[i] = dndr[i]*drtilda/DR[i]
+
+                        # Now get the volume distribution
+                        # dvdr
+                        dvdr = 4./3.*np.pi*R**3.*dndr
+
+                        # Get aerosol DRY! volume concentration
+                        mr = SS[t,k,iBin]
+                        M0 = mr*air[t,k]
+                        V0 = M0/rhop0
+
+                        # Get the Wet volume
+                        Vwet = V0*gf[k]**3
+
+                        # normalize dvdr so the integral is equal to the 
+                        # wet volume
+                        dvdr = dvdr*Vwet/np.sum(dvdr*DR)
+
+                        # add this aerosol distribution to the master
+                        SPCdist[t,:] = SPCdist[t,:] + dvdr
+
+            self.__dict__['SSdist'].append(SPCdist)
+        
+
+    def dustDistribution(self):
+        # master bins
+        R    = self.R
+        DR   = self.DR
+        RLOW = self.RLOW
+        RUP  = self.RUP
+
+        # read optics table
+        cf = config.Config(self.rcFile)
+        optable = cf('filename_optical_properties_DU')
+        nc      = Dataset(optable)
+        # Major bins
+        rMaxMaj = nc.variables['rUp'][:]
+        rMinMaj = nc.variables['rLow'][:]
+        # density
+        rhop0   = nc.variables['rhop'][:,0]
+
+        nc.close()
+
+        # number of major bins
+        nbinMaj = len(rMaxMaj)
+
+        #number of minor bins
+        nbinMin = 10
+
+        # initiate output variables
+        self.__dict__['DUdist'] = []
+
+        # loop through stations
+        # mr (mixing ratio) dims are [ntyme,nlev]  
+        nlev = 72      
+        for du001,du002,du003,du004,du005,air  in zip(self.DU001,self.DU002,self.DU003,self.DU004,self.DU005,self.AIRDENS):
+            # set up empty column size distribution array
+            SPCdist = np.zeros((self.ntyme,)+R.shape)
+
+            # put all dust mixing ratios in one array for convenience
+            DU = np.empty([self.ntyme,nlev,5])
+            DU[:,:,0] = du001
+            DU[:,:,1] = du002
+            DU[:,:,2] = du003
+            DU[:,:,3] = du004
+            DU[:,:,4] = du005
+
+            # loop through time steps
+            for t in range(self.ntyme):    
+
+                #do first bin
+                iBin = 0
+                nBinFirst = 4
+                rMinFirst = np.array([0.1,0.18,0.3,0.6])*1.e-6
+                rMaxFirst = np.array([0.18,0.3,0.6,1.])*1.e-6
+                fMass = [0.009, 0.081, 0.234, 0.676]   
+
+                for iBinfirst in range(nBinFirst):
+                    # get the radii of the bin
+                    rmin = rMinFirst[iBinfirst]
+                    rmax = rMaxFirst[iBinfirst]
+                    r, dr, rlow, rup = self.logBins(rmin,rmax,nbin=nbinMin)
+
+                    dndr = R**(-4.)
+
+                    # Truncate distribution according to rlow and rup
+                    ii = RUP <= rmin
+                    dndr[ii] = 0
+
+                    ii = RLOW >= rmax
+                    dndr[ii] = 0
+
+                    # deal with lowest bin
+                    # number concentration is scaled to the 
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution
+                    bini = np.arange(len(R))
+                    i = bini[RLOW < rmin][-1]
+                    drtilda = RUP[i] - rmin
+                    dndr[i] = dndr[i]*drtilda/DR[i]
+
+                    #deal with the highest bin
+                    # number concentration is scaled to the 
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution                    
+                    i = bini[RLOW < rmax][-1]
+                    drtilda = rmax - RLOW[i]
+                    dndr[i] = dndr[i]*drtilda/DR[i]
+
+                    # Now get the volume distribution
+                    # dvdr
+                    # this is not quite right because
+                    # dust is ellipsoid, but close enough
+                    dvdr = 4./3.*np.pi*R**3.*dndr
+                    
+                    # Get aerosol DRY! volume concentration
+                    mr = DU[t,:,iBin]
+                    M0 = mr*air[t,:]
+                    M0 = M0*fMass[iBinfirst]
+                    V0 = M0.sum()/rhop0[iBin]
+
+                    # Get the Wet volume
+                    # same as dry because dust is hydrophobic
+                    Vwet = V0
+
+                    # normalize dvdr so the integral is equal to the 
+                    # wet volume
+                    dvdr = dvdr*Vwet/np.sum(dvdr*DR)
+
+                    # # use the fact that for a log-normal distribution
+                    # # volume = 4/3*pi*N0*rmode^3*exp(9/2*ln(sigma)^2)
+                    # C = (4./3.)*np.pi*np.exp((9./2.)*lsigma**2)
+                    # N0   = Vwet/(C*rNum**3)
+
+                    # add this aerosol distribution to the master
+                    SPCdist[t,:] = SPCdist[t,:] + dvdr
+
+
+
+                # do last 4 bins - they are easy
+                for iBin in range(1,nbinMaj):
+                    # get the radii of the bin
+                    rmin = rMinMaj[iBin]
+                    rmax = rMaxMaj[iBin]
+                    r, dr, rlow, rup = self.logBins(rmin,rmax,nbin=nbinMin)
+
+                    dndr = R**(-4.)
+
+                    # Truncate distribution according to rlow and rup
+                    ii = RUP <= rmin
+                    dndr[ii] = 0
+
+                    ii = RLOW >= rmax
+                    dndr[ii] = 0
+
+                    # deal with lowest bin
+                    # number concentration is scaled to the 
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution
+                    bini = np.arange(len(R))
+                    i = bini[RLOW < rmin][-1]
+                    drtilda = RUP[i] - rmin
+                    dndr[i] = dndr[i]*drtilda/DR[i]
+
+                    #deal with the highest bin
+                    # number concentration is scaled to the 
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution                    
+                    i = bini[RLOW < rmax][-1]
+                    drtilda = rmax - RLOW[i]
+                    dndr[i] = dndr[i]*drtilda/DR[i]
+        
+
+                    # Now get the volume distribution
+                    # dvdr
+                    # this is not quite right because
+                    # dust is ellipsoid, but close enough
+                    dvdr = 4./3.*np.pi*R**3.*dndr
+                    
+                    # Get aerosol DRY! volume concentration
+                    mr = DU[t,:,iBin]
+                    M0 = mr*air[t,:]
+                    V0 = M0.sum()/rhop0[iBin]
+
+                    # Get the Wet volume
+                    # same as dry because dust is hydrophobic
+                    Vwet = V0
+
+                    # normalize dvdr so the integral is equal to the 
+                    # wet volume
+                    dvdr = dvdr*Vwet/np.sum(dvdr*DR)
+
+                    # # use the fact that for a log-normal distribution
+                    # # volume = 4/3*pi*N0*rmode^3*exp(9/2*ln(sigma)^2)
+                    # C = (4./3.)*np.pi*np.exp((9./2.)*lsigma**2)
+                    # N0   = Vwet/(C*rNum**3)
+
+                    # add this aerosol distribution to the master
+                    SPCdist[t,:] = SPCdist[t,:] + dvdr
+
+            self.__dict__['DUdist'].append(SPCdist)
+
+
+
+    def logNormalDistribution(self,spc,r0,rmin,rmax0,sigma):
+        # Density of dry particles [kg m-3]
+        rhop0 = 1800.
+
+        # master bins
+        R    = self.R
+        DR   = self.DR
+        RLOW = self.RLOW
+        RUP  = self.RUP
+
+        # Read optics table
+        cf = config.Config(self.rcFile)
+        optable = cf('filename_optical_properties_{}'.format(spc[0:2]))
+
+        # Read in growth factors and rh tables
+        nc = Dataset(optable)
+        rhTable = nc.variables['rh'][:]
+        if 'PHOBIC' in spc:
+            gfTable = nc.variables['growth_factor'][0,:]
+        elif 'PHILIC' in spc:
+            gfTable = nc.variables['growth_factor'][1,:]
+        else:
+            gfTable = nc.variables['growth_factor'][0,:]
+
+        nc.close()
+        fTable = interpolate.interp1d(rhTable, gfTable)
+
+        # loop through stations
+        # rh dims are [ntyme,nlev]
+        # mr (mixing ratio) dims are [ntyme,nlev]
+        nlev = 72
+        self.__dict__[spc+'dist'] = []
+        if spc == 'SU': 
+            spc_ = 'SO4'
+        else:
+            spc_ = spc
+
+        for rh,mr,air  in zip(self.RH,self.__dict__[spc_],self.AIRDENS):
+            # 0 <= rh <= 0.99
+            # this is what is done in Chem_MieMod.F90
+            rh[rh < 0] = 0
+            rh[rh > 0.99] = 0.99   
+
+            # set up empty column size distribution array
+            SPCdist = np.zeros((self.ntyme,)+R.shape)
+            # loop throuhg time steps
+            for t in range(self.ntyme):        
+                gf = fTable(rh[t,:])
+
+                #  Now create the particle properties for this humidified particle
+                rmode = gf*r0
+                rmax  = gf*rmax0   
+
+                # loop through layers 
+                # get size distribution for each layer
+                for k in range(nlev):
+                    # Get the bins
+                    # r, dr, rlow, rup = self.logBins(rmin,rmax[k])
+
+                    # Now get the aeorosl number distribution
+                    # dndr
+                    rNum = rmode[k]
+                    lsigma = np.log(sigma)
+                    C      = np.sqrt(2.*np.pi)
+                    dndr = (1./(R*lsigma*C))*np.exp(-(np.log(R/rNum)**2.)/(2.*lsigma**2.)) 
+
+                    # Truncate distribution according to rlow and rup
+                    ii = RUP <= rmin
+                    dndr[ii] = 0
+
+                    ii = RLOW >= rmax[k]
+                    dndr[ii] = 0
+
+                    # deal with lowest bin
+                    # number concentration is scaled to the 
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution
+                    bini = np.arange(len(R))
+                    i = bini[RLOW < rmin][-1]
+                    drtilda = RUP[i] - rmin
+                    dndr[i] = dndr[i]*drtilda/DR[i]
+
+                    #deal with the highest bin
+                    # number concentration is scaled to the 
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution                    
+                    i = bini[RLOW < rmax[k]][-1]
+                    drtilda = rmax[k] - RLOW[i]
+                    dndr[i] = dndr[i]*drtilda/DR[i]
+
+                    # Now get the volume distribution
+                    # dvdr
+                    dvdr = 4./3.*np.pi*R**3.*dndr
+
+                    
+                    # Get aerosol DRY! volume concentration
+                    M0 = mr[t,k]*air[t,k]
+                    V0 = M0/rhop0
+
+                    # Get the Wet volume
+                    Vwet = V0*gf[k]**3
+
+                    # normalize dvdr so the integral is equal to the 
+                    # wet volume                    
+                    dvdr = dvdr*Vwet/np.sum(dvdr*DR)
+
+                    # # use the fact that for a log-normal distribution
+                    # # volume = 4/3*pi*N0*rmode^3*exp(9/2*ln(sigma)^2)
+                    # C = (4./3.)*np.pi*np.exp((9./2.)*lsigma**2)
+                    # N0   = Vwet/(C*rNum**3)
+
+                    # add this aerosol distribution to the master
+                    SPCdist[t,:] = SPCdist[t,:] + dvdr
+
+            self.__dict__[spc+'dist'].append(SPCdist)
+
+
+    def logBins(self,rmin,rmax,nbin=None):
+        """ Get size bins for lognormal distribution """
+        # From P. Colarco's runmie_lognormal.pro
+        # Now we want to set up the aerosol bins.  
+        # We impose a cutoff on the maximum radius to consider.
+        # We consider a minimum radius of 0.005 um (following GADS) 
+        # and use a number of bins equal to at
+        # least 20 bins per decade of the ratio rmax/rmin.
+
+        # The bins are centered in volume betwen rlow and rup
+        # That is...r^3-rlow^3 = rup^3-r^3
+        # rup^3 = rlow^3*rmrat, which can be solved to find r given rmrat
+        # and a desired rlow, e.g. rmin = 1.d-6*((1.+rmrat)/2.)^(1.d/3)
+        # where the desired rlow = 1.d-6 in this example.
+        # The meaning of r is that it is the radius of the particle with 
+        # the average volume of the bin.        
+
+        if nbin is None:
+            decade = np.floor(np.log10(rmax/rmin)+1)
+            nbin   = int(20*decade)
+        rat    = rmax/rmin
+        rmRat  = (rat**3.0)**(1.0/nbin)
+        rMinUse = rmin*((1.+rmRat)/2.)**(1.0/3.0)  
+
+        cpi = np.pi*4./3.
+        rvolmin = cpi*rMinUse**3.
+        vrfact = ( (3./2./np.pi / (rmRat+1))**(1./3.))*(rmRat**(1./3.) - 1.)  
+
+        rvol     = np.zeros(nbin)
+        rvolup   = np.zeros(nbin)
+        r        = np.zeros(nbin)
+        rup      = np.zeros(nbin)
+        dr       = np.zeros(nbin)
+        rlow     = np.zeros(nbin)
+        for ibin in range(nbin):
+            rvol[ibin]   = rvolmin*rmRat**float(ibin)
+            rvolup[ibin] = 2.*rmRat/(rmRat+1.)*rvol[ibin]
+            r[ibin]       = (rvol[ibin]/cpi)**(1./3.)
+            rup[ibin]     = (rvolup[ibin]/cpi)**(1./3.)
+            dr[ibin]      = vrfact*rvol[ibin]**(1./3.)
+            rlow[ibin]    = rup[ibin] - dr[ibin]
+        
+        return r, dr, rlow, rup
+
+
+
+
+    def DU_distribution(self):
+        pass
+
+    def SS_distribution(self):
+        pass
 
     # --- 
     def readSampledMODISBRDF(self):
@@ -570,6 +1261,46 @@ class AERONET_VLIDORT(object):
             self.albedo.append(self.__dict__[sds][:,t,:])
 
     #---
+    def computeAE(self):
+        """
+        Computes angstrom exponent between 440 and 870 nm
+        """
+        self.ae = []
+
+        # get 440 tau
+        self.channel = 440
+        self.rcFile = 'Aod_EOS.440.rc'
+        pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5))     
+        args = zip([self]*self.ntyme,range(self.ntyme))
+        result = pool.map(unwrap_self_doMie,args)
+
+        tau440 = []        
+        for r in result:
+            tau, ssa, g, pmom,refi,refr,vol = r
+            tau = np.squeeze(tau)
+            tau440.append(tau.sum(axis=0))  #(nobs)
+
+        # # get 870 tau
+        self.channel = 870
+        self.rcFile = 'Aod_EOS.870.rc'
+        pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5))     
+        args = zip([self]*self.ntyme,range(self.ntyme))
+        result = pool.map(unwrap_self_doMie,args)
+
+        tau870 = []        
+        for r in result:
+            tau, ssa, g, pmom,refi,refr,vol = r
+            tau = np.squeeze(tau)
+            tau870.append(tau.sum(axis=0))  #(nobs)
+
+        ratio = np.log(870./440.)
+        for t870,t440 in zip(tau870,tau440):
+            ae = -1.*np.log(t870/t440)/ratio
+            self.ae.append(ae)
+
+
+
+    #---
     def computeMie(self):
         """
         Computes aerosol optical quantities 
@@ -578,17 +1309,23 @@ class AERONET_VLIDORT(object):
         self.ssa = []
         self.g   = []
         self.pmom = []
+        self.refi = []
+        self.refr = []
+        self.vol  = []
 
         pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5))     
         args = zip([self]*self.ntyme,range(self.ntyme))
         result = pool.map(unwrap_self_doMie,args)
         
         for r in result:
-            tau, ssa, g, pmom = r
+            tau, ssa, g, pmom,refi,refr,vol = r
             self.tau.append(tau)  #(km,nch,nobs)
             self.ssa.append(ssa)  #(km,nch,nobs)
             self.g.append(g)    #(km,nch,nobs)
             self.pmom.append(pmom)  #(km,nch,nobs,nMom,nPol)
+            self.refi.append(refi) #(km,nch,nobs)
+            self.refr.append(refr) #(km,nch,nobs)
+            self.vol.append(vol) #(km,nch,nobs)
         
 
     def doMie(self,t):
@@ -606,7 +1343,13 @@ class AERONET_VLIDORT(object):
                                  Verbose=False,
                                  rcfile=self.rcFile,
                                  nMom=self.nMom)
-        return tau,ssa,g,pmom
+
+        vol, area, refr, refi, reff = getAOPint(inVars,self.channel,
+                                 vnames=self.AERNAMES,
+                                 Verbose=False,
+                                 rcfile=self.rcFile)
+
+        return tau,ssa,g,pmom,refr,refi,vol
 
     # --
     def runExt(self):
@@ -1033,7 +1776,6 @@ class AERONET_VLIDORT(object):
         ns = nc.createDimension('station',self.nstations)
         na = nc.createDimension('angle',self.nal)        
         nz = nc.createDimension('lev',km)
-        ne = nc.createDimension('leve',km+1)
         ls = nc.createDimension('ls',19)
 
         # Coordinate variables
@@ -1053,31 +1795,12 @@ class AERONET_VLIDORT(object):
         aa[:]            = np.array(self.al_angles)
 
         _copyVar(nctrj,nc,u'lev',dtype='f4',zlib=False,verbose=self.verbose)       
-
-        leve = nc.createVariable('leve','f4',('leve',),zlib=False)
-        leve.long_name   = 'Vertical Level Edge'
-        leve.units        = 'layer'
-        leve[:]          = np.arange(km+1)
-
         _copyVar(nctrj,nc,u'stnLon',dtype='f4',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'stnLat',dtype='f4',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'stnName',dtype='S1',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
 
         nctrj.close()
-
-        sza = nc.createVariable('solar_zenith','f4',('station','time',),zlib=zlib)
-        sza.long_name     = "solar zenith angle (SZA)"
-        sza.missing_value = MISSING
-        sza.units         = "degrees"
-        sza[:]            = np.array(self.SZA).T
-
-        saa = nc.createVariable('solar_azimuth','f4',('station','time',),zlib=zlib)
-        saa.long_name     = "solar azimuth angle (SAA)"
-        saa.missing_value = MISSING
-        saa.units         = "degrees clockwise from North"
-        saa[:]            = np.array(self.SAA).T
-
 
         # Write VLIDORT Outputs
         # ---------------------
@@ -1130,6 +1853,93 @@ class AERONET_VLIDORT(object):
             b[:,:,t] = self.surf_reflectance[t]
         sref[:]            = b
 
+        # SSA
+        ssa = nc.createVariable('ssa','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+        ssa.standard_name = '%.2f nm aerosol SSA' %self.channel
+        ssa.long_name     = '%.2f nm aerosol single scattering albedo' %self.channel
+        ssa.missing_value = MISSING
+        ssa.units         = "None"
+        b = np.empty([self.nstations,self.ntyme])
+        for t in range(self.ntyme):
+            ssatemp  = np.squeeze(self.ssa[t])
+            tau      = np.squeeze(self.tau[t])
+            b[:,t] = (ssatemp*tau).sum(axis=0)/tau.sum(axis=0)
+        ssa[:]            = b
+
+        # AOD
+        aod = nc.createVariable('aod','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+        aod.standard_name = '%.2f nm AOD' %self.channel
+        aod.long_name     = '%.2f nm aerosol optical depth' %self.channel
+        aod.missing_value = MISSING
+        aod.units         = "None"
+        b = np.empty([self.nstations,self.ntyme])
+        for t in range(self.ntyme):
+            tau      = np.squeeze(self.tau[t])
+            b[:,t]   = tau.sum(axis=0)
+        aod[:]            = b
+
+        # Refractive Index
+        # Get column refractive index
+        b = np.empty([self.nstations,self.ntyme])
+        for t in range(self.ntyme):    
+            vol = np.squeeze(self.vol[t])
+            refi = np.squeeze(self.refi[t])
+            b[:,t] = (vol*refi).sum(axis=0)/vol.sum(axis=0)
+
+        
+        refi = nc.createVariable('refi','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+        refi.standard_name = '%.2f aerosol imaginary refractive index' %self.channel
+        refi.long_name     = '%.2f aerosol imaginary refractive index' %self.channel
+        refi.missing_value = MISSING
+        refi.units         = "None"
+        refi[:]            = b
+
+        b = np.empty([self.nstations,self.ntyme])
+        for t in range(self.ntyme):    
+            vol = np.squeeze(self.vol[t])
+            refr = np.squeeze(self.refi[t])
+            b[:,t] = (vol*refr).sum(axis=0)/vol.sum(axis=0)
+
+        
+        refr = nc.createVariable('refr','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+        refr.standard_name = '%.2f aerosol real refractive index' %self.channel
+        refr.long_name     = '%.2f aerosol real refractive index' %self.channel
+        refr.missing_value = MISSING
+        refr.units         = "None"
+        refr[:]            = b
+
+
+
+
+        if "MODIS_BRDF" in self.albedoType:
+            # BRDF Params
+            chs = str(int(self.channel))
+
+            riso = nc.createVariable('riso','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+            riso.standard_name = '%.2f nm RISO' %self.channel
+            riso.long_name     = '%.2f nm isotropic BRDF kernel' %self.channel
+            riso.missing_value = MISSING
+            riso.units         = "None"
+            riso[:]            = self.__dict__[Riso+chs][0,0,:,:]
+
+
+            rgeo = nc.createVariable('rgeo','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+            rgeo.standard_name = '%.2f nm RGEO' %self.channel
+            rgeo.long_name     = '%.2f nm geometric BRDF kernel' %self.channel
+            rgeo.missing_value = MISSING
+            rgeo.units         = "None"
+            rgeo[:]            = self.__dict__[Rgeo+chs][0,0,:,:]
+
+            rvol = nc.createVariable('rvol','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+            rvol.standard_name = '%.2f nm RVOL' %self.channel
+            rvol.long_name     = '%.2f nm volumetric BRDF kernel' %self.channel
+            rvol.missing_value = MISSING
+            rvol.units         = "None"
+            rvol[:]            = self.__dict__[Rvol+chs][0,0,:,:]
+
+
+
+
         # Vertical Profile Variables
         # dummy array to hold data
         b = np.empty([self.nstations,self.ntyme,km])
@@ -1141,33 +1951,6 @@ class AERONET_VLIDORT(object):
         for t in range(self.ntyme):
             b[:,t,:] = self.ROT[t]
         rot[:]            = b
-
-        # dummy array to hold data
-        b = np.empty([self.nstations,self.ntyme,km+1])
-
-        te = nc.createVariable('temperature','f4',('station','time','leve',),zlib=zlib,fill_value=MISSING)
-        te.long_name = 'Temperature at Layer Edge' 
-        te.missing_value = MISSING
-        te.units         = "K"
-        for t in range(self.ntyme):
-            b[:,t,:] = self.te[t].T
-        te[:]            = b
-
-        pe = nc.createVariable('pressure','f4',('station','time','leve',),zlib=zlib,fill_value=MISSING)
-        pe.long_name = 'Layer Edge Pressure' 
-        pe.missing_value = MISSING
-        pe.units         = "Pa"
-        for t in range(self.ntyme):
-            b[:,t,:] = self.pe[t].T
-        pe[:]            = b
-
-        ze = nc.createVariable('altitude','f4',('station','time','leve',),zlib=zlib,fill_value=MISSING)
-        ze.long_name = 'Layer Edge Height Above Surface' 
-        ze.missing_value = MISSING
-        ze.units         = "m"
-        for t in range(self.ntyme):
-            b[:,t,:] = self.ze[t].T
-        ze[:]            = b
 
 
         # Close the file
@@ -1212,7 +1995,6 @@ class AERONET_VLIDORT(object):
         ns = nc.createDimension('station',self.nstations)
         na = nc.createDimension('angle',self.npp)        
         nz = nc.createDimension('lev',km)
-        ne = nc.createDimension('leve',km+1)
         ls = nc.createDimension('ls',19)
 
         # Coordinate variables
@@ -1232,31 +2014,12 @@ class AERONET_VLIDORT(object):
         aa[:]            = np.array(self.pp_angles)
 
         _copyVar(nctrj,nc,u'lev',dtype='f4',zlib=False,verbose=self.verbose)       
-
-        leve = nc.createVariable('leve','f4',('leve',),zlib=False)
-        leve.long_name   = 'Vertical Level Edge'
-        leve.units        = 'layer'
-        leve[:]          = np.arange(km+1)
-
         _copyVar(nctrj,nc,u'stnLon',dtype='f4',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'stnLat',dtype='f4',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'stnName',dtype='S1',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
 
         nctrj.close()
-
-        sza = nc.createVariable('solar_zenith','f4',('station','time',),zlib=zlib)
-        sza.long_name     = "solar zenith angle (SZA)"
-        sza.missing_value = MISSING
-        sza.units         = "degrees"
-        sza[:]            = np.array(self.SZA).T
-
-        saa = nc.createVariable('solar_azimuth','f4',('station','time',),zlib=zlib)
-        saa.long_name     = "solar azimuth angle (SAA)"
-        saa.missing_value = MISSING
-        saa.units         = "degrees clockwise from North"
-        saa[:]            = np.array(self.SAA).T
-
 
         # Write VLIDORT Outputs
         # ---------------------
@@ -1309,6 +2072,87 @@ class AERONET_VLIDORT(object):
             b[:,:,t] = self.surf_reflectance[t]
         sref[:]            = b
 
+        ssa = nc.createVariable('ssa','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+        ssa.standard_name = '%.2f nm aerosol single scattering albedo' %self.channel
+        ssa.long_name     = '%.2f nm aerosol single scattering albedo' %self.channel
+        ssa.missing_value = MISSING
+        ssa.units         = "None"
+        b = np.empty([self.nstations,self.ntyme])
+        for t in range(self.ntyme):
+            ssatemp  = np.squeeze(self.ssa[t])
+            tau      = np.squeeze(self.tau[t])
+            b[:,t] = (ssatemp*tau).sum(axis=0)/tau.sum(axis=0)
+        ssa[:]            = b
+
+        aod = nc.createVariable('aod','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+        aod.standard_name = '%.2f nm AOD' %self.channel
+        aod.long_name     = '%.2f nm aerosol optical depth' %self.channel
+        aod.missing_value = MISSING
+        aod.units         = "None"
+        b = np.empty([self.nstations,self.ntyme])
+        for t in range(self.ntyme):
+            tau      = np.squeeze(self.tau[t])
+            b[:,t]   = tau.sum(axis=0)
+        aod[:]            = b
+
+        # Refractive Index
+        # Get column refractive index
+        b = np.empty([self.nstations,self.ntyme])
+        for t in range(self.ntyme):    
+            vol = np.squeeze(self.vol[t])
+            refi = np.squeeze(self.refi[t])
+            b[:,t] = (vol*refi).sum(axis=0)/vol.sum(axis=0)
+
+        
+        refi = nc.createVariable('refi','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+        refi.standard_name = '%.2f aerosol imaginary refractive index' %self.channel
+        refi.long_name     = '%.2f aerosol imaginary refractive index' %self.channel
+        refi.missing_value = MISSING
+        refi.units         = "None"
+        refi[:]            = b
+
+        b = np.empty([self.nstations,self.ntyme])
+        for t in range(self.ntyme):    
+            vol = np.squeeze(self.vol[t])
+            refr = np.squeeze(self.refi[t])
+            b[:,t] = (vol*refr).sum(axis=0)/vol.sum(axis=0)
+
+        
+        refr = nc.createVariable('refr','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+        refr.standard_name = '%.2f aerosol real refractive index' %self.channel
+        refr.long_name     = '%.2f aerosol real refractive index' %self.channel
+        refr.missing_value = MISSING
+        refr.units         = "None"
+        refr[:]            = b
+
+
+        if "MODIS_BRDF" in self.albedoType:
+            # BRDF Params
+            chs = str(int(self.channel))
+
+            riso = nc.createVariable('riso','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+            riso.standard_name = '%.2f nm RISO' %self.channel
+            riso.long_name     = '%.2f nm isotropic BRDF kernel' %self.channel
+            riso.missing_value = MISSING
+            riso.units         = "None"
+            riso[:]            = self.__dict__[Riso+chs][0,0,:,:]
+
+
+            rgeo = nc.createVariable('rgeo','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+            rgeo.standard_name = '%.2f nm RGEO' %self.channel
+            rgeo.long_name     = '%.2f nm geometric BRDF kernel' %self.channel
+            rgeo.missing_value = MISSING
+            rgeo.units         = "None"
+            rgeo[:]            = self.__dict__[Rgeo+chs][0,0,:,:]
+
+            rvol = nc.createVariable('rvol','f4',('station','time',),zlib=zlib,fill_value=MISSING)
+            rvol.standard_name = '%.2f nm RVOL' %self.channel
+            rvol.long_name     = '%.2f nm volumetric BRDF kernel' %self.channel
+            rvol.missing_value = MISSING
+            rvol.units         = "None"
+            rvol[:]            = self.__dict__[Rvol+chs][0,0,:,:]
+
+
         # Vertical Profile Variables
         # dummy array to hold data
         b = np.empty([self.nstations,self.ntyme,km])
@@ -1321,6 +2165,102 @@ class AERONET_VLIDORT(object):
             b[:,t,:] = self.ROT[t]
         rot[:]            = b
 
+        # Close the file
+        # --------------
+        nc.close()
+
+        if self.verbose:
+            print " <> wrote %s"%(self.outFilepp)
+
+
+    #---
+    def writeNCadd (self,zlib=True):
+        """
+        Write a NetCDF file of additional data 
+        this is all wavelength independent stuff
+        """
+        km = 72
+
+        if not os.path.exists(os.path.dirname(self.outFileadd)):
+            os.makedirs(os.path.dirname(self.outFileadd))
+
+        # Open NC file
+        # ------------
+        nc = Dataset(self.outFileadd,'w',format='NETCDF4_CLASSIC')
+
+        # Set global attributes
+        # ---------------------
+        nc.title = 'VLIDORT Simulation of GEOS-5 - Additinal Data'
+        nc.institution = 'NASA/Goddard Space Flight Center'
+        nc.source = 'Global Model and Assimilation Office'
+        nc.history = 'VLIDORT simulation run on sampled GEOS-5'
+        nc.references = 'n/a'
+        nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
+        nc.Conventions = 'CF'
+        nc.inFile = self.inFile
+     
+        # Create dimensions
+        # -----------------
+        nt = nc.createDimension('time',len(self.tyme))
+        x  = nc.createDimension('x',1)
+        y  = nc.createDimension('y',1)
+        ns = nc.createDimension('station',self.nstations)
+        nz = nc.createDimension('lev',km)
+        ne = nc.createDimension('leve',km+1)
+        ls = nc.createDimension('ls',19)
+        nr = nc.createDimension('radius',len(self.aeronet_r))
+
+        # Coordinate variables
+        # --------------------
+        col = 'aer_Nv'
+        if self.verbose: 
+            print 'opening file',self.inFile.replace('%col',col)
+        nctrj       = Dataset(self.inFile.replace('%col',col))     
+        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)   
+        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)  
+        _copyVar(nctrj,nc,u'station',dtype='f4',zlib=False,verbose=self.verbose)   
+        _copyVar(nctrj,nc,u'lev',dtype='f4',zlib=False,verbose=self.verbose)       
+
+        leve = nc.createVariable('leve','f4',('leve',),zlib=False)
+        leve.long_name   = 'Vertical Level Edge'
+        leve.units        = 'layer'
+        leve[:]          = np.arange(km+1)
+
+        rad = nc.createVariable('radius','f4',('radius',),zlib=False)
+        rad.long_name   = 'aerosol radius'
+        rad.units       = 'microns'
+        rad[:]          = self.aeronet_r*1e6
+
+
+        _copyVar(nctrj,nc,u'stnLon',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'stnLat',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'stnName',dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
+
+        nctrj.close()
+
+        # Sun angles
+        sza = nc.createVariable('solar_zenith','f4',('station','time',),zlib=zlib)
+        sza.long_name     = "solar zenith angle (SZA)"
+        sza.missing_value = MISSING
+        sza.units         = "degrees"
+        sza[:]            = np.array(self.SZA).T
+
+        saa = nc.createVariable('solar_azimuth','f4',('station','time',),zlib=zlib)
+        saa.long_name     = "solar azimuth angle (SAA)"
+        saa.missing_value = MISSING
+        saa.units         = "degrees clockwise from North"
+        saa[:]            = np.array(self.SAA).T
+
+        ae = nc.createVariable('angstrom_exponent','f4',('station','time',),zlib=zlib)
+        ae.long_name     = "aerosol angstrom exponent between 440 and 870 nm"
+        ae.missing_value = MISSING
+        ae.units         = "None"
+        ae[:]            = np.array(self.ae).T
+
+
+        # Vertical Profile Variables
         # dummy array to hold data
         b = np.empty([self.nstations,self.ntyme,km+1])
 
@@ -1348,13 +2288,23 @@ class AERONET_VLIDORT(object):
             b[:,t,:] = self.ze[t].T
         ze[:]            = b
 
+        # Aerosol size distribution
+        dist = nc.createVariable('aero_dist','f4',('station','time','radius',),zlib=zlib,fill_value=MISSING)
+        dist.long_name     = 'aerosol size distribution (dV/dlnr)' 
+        dist.missing_value = MISSING
+        dist.units         = "microns^3/microns^2"
+        dist[:]            = np.array(self.AERdist)
+
 
         # Close the file
         # --------------
         nc.close()
 
         if self.verbose:
-            print " <> wrote %s"%(self.outFilepp)
+            print " <> wrote %s"%(self.outFileadd)
+
+
+
     
 #------------------------------------ M A I N ------------------------------------
 
@@ -1381,6 +2331,7 @@ if __name__ == "__main__":
     outDir    = '/nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelC/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     outFileal   = '{}/aeronet-g5nr.al.vlidort.vector.MCD43C.{}_{}z_{}nm.nc4'.format(outDir,nymd,hour,chd)
     outFilepp   = '{}/aeronet-g5nr.pp.vlidort.vector.MCD43C.{}_{}z_{}nm.nc4'.format(outDir,nymd,hour,chd)
+    outFileadd   = '{}/aeronet-g5nr.add.vlidort.vector.MCD43C.{}_{}z.nc4'.format(outDir,nymd,hour)
     
     rcFile   = 'Aod_EOS.rc'
     verbose  = True
@@ -1395,13 +2346,15 @@ if __name__ == "__main__":
                             ndviFile=ndviFile,
                             lcFile=lcFile,
                             verbose=verbose,
-                            extOnly=extOnly)
+                            extOnly=extOnly,
+                            outFileadd=None)
 
    
     # # Run ext_sampler
     # vlidort.runExt()
 
     # Run VLIDORT
-    if any(vlidort.nobs):
+    # if any(vlidort.nobs):
+    #     vlidort.writeNCadd()
         #vlidort.runALMUCANTAR()
-        vlidort.runPRINCIPLE()
+        #vlidort.runPRINCIPLE()
