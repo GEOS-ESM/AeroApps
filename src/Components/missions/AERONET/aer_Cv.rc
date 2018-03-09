@@ -1,0 +1,24 @@
+#
+# Resource file for GEO sampler
+#
+
+PS: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_2d_met1_Cx
+AIRDENS: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_AIRDENS_Cv
+DELP: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_DELP_Cv
+RH:     /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_RH_Cv
+DU001:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_DU001_Cv
+DU002:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_DU002_Cv
+DU003:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_DU003_Cv
+DU004:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_DU004_Cv
+DU005:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_DU005_Cv
+SS001:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_SS001_Cv
+SS002:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_SS002_Cv
+SS003:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_SS003_Cv
+SS004:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_SS004_Cv
+SS005:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_SS005_Cv
+SO2:    /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_SO2_Cv
+SO4:    /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_SO4_Cv
+BCPHOBIC: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_BCPHOBIC_Cv
+BCPHILIC: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_BCPHILIC_Cv
+OCPHOBIC: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_OCPHOBIC_Cv
+OCPHILIC: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.5000_deg/inst/inst01hr_3d_OCPHILIC_Cv
