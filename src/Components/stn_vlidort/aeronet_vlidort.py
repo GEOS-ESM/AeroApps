@@ -1217,7 +1217,7 @@ class AERONET_VLIDORT(object):
         nc = Dataset(self.lerFile)
 
         for sds in SDS:
-            self.__dict__[sds] = np.array(np.squeeze(nc.variables[sds][:]))
+            self.__dict__[sds] = np.array(nc.variables[sds][:,:,0])
 
         missing_value = nc.variables[sds].missing_value
         nc.close()
