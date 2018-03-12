@@ -65,6 +65,23 @@ if __name__ == "__main__":
     # ------------------------------------
     bin = './run_aeronet_vlidort.py'
 
+
+    # Run additional output calculation
+    #------------------------------------
+    print '++++Running VLIDORT Additional Output+++'
+
+    if args.dryrun:
+        command = bin + '-r '
+    else:
+        command = bin
+
+
+    command = command + ' -D {} {} {} {}/stn_vlidort_add.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform)
+
+    print command
+    os.system(command)
+
+
     if not args.norad:
         for ch in args.channels:
             # Run aeronet_vlidort
@@ -78,7 +95,7 @@ if __name__ == "__main__":
 
 
             command = command + ' -D {} {} {} {}/stn_vlidort_{}.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform,ch)
-
+            command = command + ' -D {} {} {} {}/stn_vlidort_{}extC.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform,ch)
 
             print command
             os.system(command)
