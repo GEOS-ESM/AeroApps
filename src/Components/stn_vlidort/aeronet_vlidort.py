@@ -1133,7 +1133,7 @@ class AERONET_VLIDORT(object):
             print 'opening LER albedo file ',self.lerFile
         nc = Dataset(self.lerFile)
 
-        self.__dict__[lSDS] = np.array(nc.variables[sds][:,:,0])
+        self.__dict__[lSDS] = np.array(nc.variables[lSDS][:,:,0])
         missing_value_l = nc.variables[lSDS].missing_value
         nc.close()
 
