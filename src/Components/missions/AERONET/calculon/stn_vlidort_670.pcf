@@ -17,7 +17,7 @@
     albedoType   = MODIS_BRDF_BPDF
 
     outDir       = /nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelC/Y%year/M%month
-    outFile      = aeronet-g5nr.vlidort.vector.%nymd_%hourz_%chdnm.nc4
+    outFile      = aeronet-g5nr.lc2.vlidort.vector.%nymd_%hourz_%chdnm.nc4
 
     channel      = 670   
     rcFile       = Aod_EOS.rc
