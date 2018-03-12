@@ -210,14 +210,17 @@ if __name__ == "__main__":
                                     extOnly=extOnly,
                                     extcol=extcol)
 
-            # # Run VLIDORT
-            # if not extOnly:
-            #     if any(vlidort.nobs) > 0:
-            #         if cf('DO_VLIDORT').upper() == 'YES':
-            #             vlidort.runALMUCANTAR()
-            #             vlidort.runPRINCIPLE()
-            # if cf('DO_EXT').upper() == 'YES':
-            #     vlidort.runExt()
+            # Run VLIDORT
+            if not extOnly:
+                if any(vlidort.nobs) > 0:
+                    if cf('DO_VLIDORT').upper() == 'YES':
+                        vlidort.runALMUCANTAR()
+                        vlidort.runPRINCIPLE()
+
+                    if outFileADD is not None:
+                        vlidort.writeNCadd()
+            if cf('DO_EXT').upper() == 'YES':
+                vlidort.runExt()
 
         date += Dt
 
