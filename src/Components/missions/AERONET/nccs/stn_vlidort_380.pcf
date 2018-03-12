@@ -11,7 +11,7 @@
     albedoType   = LAMBERTIAN
 
     outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelC/Y%year/M%month
-    outFile      = aeronet-g5nr.vlidort.vector.%nymd_%hourz_%chdnm.nc4
+    outFile      = aeronet-g5nr.lc2.vlidort.vector.%nymd_%hourz_%chdnm.nc4
 
     channel      = 380
     rcFile       = Aod_EOS.rc
