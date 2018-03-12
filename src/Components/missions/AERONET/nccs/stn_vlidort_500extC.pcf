@@ -5,8 +5,8 @@
     outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelC/Y%year/M%month
     outFileEXT   = aeronet-g5nr.lc2.%col.ext.%nymd_%hourz_%chdnm.nc4
 
-    extcol       = aer_Nv
-    channel      = 532   
+    extcol       = aer_Cv
+    channel      = 500   
     rcFile       = Aod_EOS.rc
     DO_VLIDORT   = NO
     DO_EXT       = YES
