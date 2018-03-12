@@ -1378,10 +1378,10 @@ class AERONET_VLIDORT(object):
         if not os.path.exists(os.path.dirname(self.outFileext)):
             os.makedirs(os.path.dirname(self.outFileext))
 
-        cmd = './ext_sampler.py {} '.format(Options)  
+        cmd = 'ext_stn_vlidort_sampler.py {} '.format(Options)  
         print cmd
         if os.system(cmd):
-            raise ValueError, "ext_sampler.py failed for %s "%(self.inFile.replace('%col',self.extcol))       
+            raise ValueError, "ext_stn_vlidort_sampler.py failed for %s "%(self.inFile.replace('%col',self.extcol))       
 
 
     def runALMUCANTAR(self):

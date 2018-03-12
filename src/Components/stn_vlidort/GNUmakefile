@@ -29,7 +29,8 @@ LIB   = lib$(THIS).a
 BINS := 
 
 PY_EXTS = stnAngles_.$(F2PYEXT) VLIDORT_STN_.$(F2PYEXT)
-PY_SCRP = g5nr_stn_sampler.py mcd12c_stn_sampler.py mcd43c_stn_sampler.py run_g5nr_stn_sampler_invariant.py run_g5nr_stn_sampler.py
+PY_SCRP = g5nr_stn_sampler.py mcd12c_stn_sampler.py mcd43c_stn_sampler.py run_g5nr_stn_sampler_invariant.py \
+			run_g5nr_stn_sampler.py ext_stn_vlidort_sampler.py
 PY_LIBS = directsun_vlidort.py aeronet_vlidort.py stn_vlidort_aux.py pystn
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
