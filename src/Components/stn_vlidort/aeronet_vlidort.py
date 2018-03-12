@@ -1366,7 +1366,6 @@ class AERONET_VLIDORT(object):
         if self.verbose: 
             print 'running ext_sampler on file',self.inFile.replace('%col',self.extcol)
 
-        outDir = os.path.dirname(self.outFileext)
         Options =     " --input=" + self.inFile.replace('%col',self.extcol)      + \
                       " --output=" + self.outFileext.replace('%col',self.extcol)       + \
                       " --rc=" + self.rcFile      + \
@@ -1376,8 +1375,8 @@ class AERONET_VLIDORT(object):
                       " --stn"    
                       
 
-        if not os.path.exists(os.path.dirname(outFile)):
-            os.makedirs(os.path.dirname(outFile))
+        if not os.path.exists(os.path.dirname(self.outFileext)):
+            os.makedirs(os.path.dirname(self.outFileext))
 
         cmd = './ext_sampler.py {} '.format(Options)  
         print cmd
