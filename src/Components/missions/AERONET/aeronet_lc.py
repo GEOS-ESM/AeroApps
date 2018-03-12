@@ -95,10 +95,19 @@ if __name__ == "__main__":
 
 
             command = command + ' -D {} {} {} {}/stn_vlidort_{}.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform,ch)
-            command = command + ' -D {} {} {} {}/stn_vlidort_{}extC.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform,ch)
 
             print command
             os.system(command)
+
+            if args.dryrun:
+                command = bin + '-r '
+            else:
+                command = bin
+
+            command = command + ' -D {} {} {} {}/stn_vlidort_{}extC.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform,ch)
+            print command
+            os.system(command)
+
 
     if not args.noext:
         for ch in args.extch:
