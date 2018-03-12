@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     try: 
         invFile        = cf('invDir')    + '/' + cf('invFile')         
-    except
+    except:
         invFile        = None
 
     try:
