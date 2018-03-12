@@ -1366,7 +1366,7 @@ class AERONET_VLIDORT(object):
         if self.verbose: 
             print 'running ext_sampler on file',self.inFile.replace('%col',self.extcol)
 
-        outDir = os.path.dirname(self.outFile)
+        outDir = os.path.dirname(self.outFileext)
         Options =     " --input=" + self.inFile.replace('%col',self.extcol)      + \
                       " --output=" + self.outFileext.replace('%col',self.extcol)       + \
                       " --rc=" + self.rcFile      + \
