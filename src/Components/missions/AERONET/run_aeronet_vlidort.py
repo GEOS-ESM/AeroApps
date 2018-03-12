@@ -49,11 +49,24 @@ if __name__ == "__main__":
     # Parse prep config
     # -----------------
     cf             = Config(args.prep_config,delim=' = ')
-    inTemplate     = cf('inDir')     + '/' + cf('inFile')    
-    invFile        = cf('invDir')    + '/' + cf('invFile')         
-    outTemplate    = cf('outDir')    + '/' + cf('outFile')
+    inTemplate     = cf('inDir')     + '/' + cf('inFile')   
     channel        = int(cf('channel'))
     rcFile         = cf('rcFile')
+
+    try: 
+        invFile        = cf('invDir')    + '/' + cf('invFile')         
+    except
+        invFile        = None
+
+    try:
+        outTemplate    = cf('outDir')    + '/' + cf('outFile')
+    except
+        outTemplate    = None
+
+    try:
+        outTemplateEXT    = cf('outDir')    + '/' + cf('outFileEXT')
+    except
+        outTemplateEXT    = None
 
     try:
         brdfTemplate = cf('brdfDir') + '/' + cf('brdfFile') 
@@ -72,6 +85,16 @@ if __name__ == "__main__":
         lerTemplate    = cf('lerDir')    + '/' + cf('lerFile')
     except:
         lerTemplate    = None
+
+    try:
+        albedoType     = cf('albedoType')
+    except:
+        albedoType     = None
+
+    try:
+        extcol         = cf('extcol')
+    except:
+        extcol         = None
 
 
 
@@ -106,13 +129,24 @@ if __name__ == "__main__":
         hour = str(date.hour).zfill(2)    
 
         inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
-        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel))
 
-        outFile    = outFile.split('.')
-        outFile.insert(1,'al')
-        outFileAL  = '.'.join(outFile)
-        outFile[1] = 'pp'
-        outFilePP  = '.'.join(outFile)
+        if outTemplate is not None:
+            outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel))
+
+            outFile    = outFile.split('.')
+            outFile.insert(1,'al')
+            outFileAL  = '.'.join(outFile)
+            outFile[1] = 'pp'
+            outFilePP  = '.'.join(outFile)
+        else:
+            outFileAL  = None
+            outFilePP  = None
+
+        if outTemplateEXT is not None:
+            outFileEXT    = outTemplateEXT.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel))
+        else:
+            outFileEXT  = None
+
 
         if brdfTemplate is None:
             brdfFile = None
@@ -137,34 +171,40 @@ if __name__ == "__main__":
         print '>>>inFile:    ',inFile
         print '>>>outFileAL:   ',outFileAL
         print '>>>outFilePP:   ',outFilePP
+        print '>>>outFileEXT:   ',outFileEXT
         print '>>>rcFile:    ',rcFile
-        print '>>>albedoType:',cf('albedoType')
+        print '>>>albedoType:',albedoType
         print '>>>channel:   ',channel
         print '>>>brdfFile:  ',brdfFile
         print '>>>ndviFile:  ',ndviFile
         print '>>>lcFile:    ',lcFile
-        print '>>>lerFile    ',lerFile
+        print '>>>lerFile:    ',lerFile
+        print '>>>extcol:    ',extcol
         print '>>>verbose:   ',args.verbose
         print '++++End of arguments+++'
         if not args.dryrun:
-            vlidort = AERONET_VLIDORT(inFile,invFile,outFileAL,outFilePP,rcFile,
-                                    cf('albedoType'),
-                                    channel,
+            vlidort = AERONET_VLIDORT(inFile,rcFile,channel,
+                                    invFile=invFile,
+                                    outFileAL=outFileAL,
+                                    outFilePP=outFilePP,
+                                    outFileEXT=outFileEXT,
+                                    albedoType=albedoType,
                                     brdfFile=brdfFile,
                                     ndviFile=ndviFile,
                                     lcFile=lcFile,
                                     lerFile=lerFile,
                                     verbose=args.verbose,
-                                    extOnly=extOnly)
+                                    extOnly=extOnly,
+                                    extcol=extcol)
 
-            # Run VLIDORT
-            if not extOnly:
-                if any(vlidort.nobs) > 0:
-                    if cf('DO_VLIDORT').upper() == 'YES':
-                        vlidort.runALMUCANTAR()
-                        vlidort.runPRINCIPLE()
-            if cf('DO_EXT').upper() == 'YES':
-                vlidort.runExt()
+            # # Run VLIDORT
+            # if not extOnly:
+            #     if any(vlidort.nobs) > 0:
+            #         if cf('DO_VLIDORT').upper() == 'YES':
+            #             vlidort.runALMUCANTAR()
+            #             vlidort.runPRINCIPLE()
+            # if cf('DO_EXT').upper() == 'YES':
+            #     vlidort.runExt()
 
         date += Dt
 
