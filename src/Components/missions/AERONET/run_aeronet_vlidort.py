@@ -69,6 +69,11 @@ if __name__ == "__main__":
         outTemplateEXT    = None
 
     try:
+        outTemplateADD    = cf('outDir')    + '/' + cf('outFileADD')
+    except:
+        outTemplateADD    = None        
+
+    try:
         brdfTemplate = cf('brdfDir') + '/' + cf('brdfFile') 
     except:
         brdfTemplate = None
@@ -138,8 +143,6 @@ if __name__ == "__main__":
             outFileAL  = '.'.join(outFile)
             outFile[1] = 'pp'
             outFilePP  = '.'.join(outFile)
-            outFile[1] = 'add'
-            outFileADD  = '.'.join(outFile)            
         else:
             outFileAL  = None
             outFilePP  = None
@@ -148,6 +151,12 @@ if __name__ == "__main__":
             outFileEXT    = outTemplateEXT.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel))
         else:
             outFileEXT  = None
+
+        if outTemplateADD is not None:
+            outFileADD    = outTemplateADD.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel))
+        else:
+            outFileADD  = None
+
 
 
         if brdfTemplate is None:
