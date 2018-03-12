@@ -60,12 +60,12 @@ if __name__ == "__main__":
 
     try:
         outTemplate    = cf('outDir')    + '/' + cf('outFile')
-    except
+    except:
         outTemplate    = None
 
     try:
         outTemplateEXT    = cf('outDir')    + '/' + cf('outFileEXT')
-    except
+    except:
         outTemplateEXT    = None
 
     try:
