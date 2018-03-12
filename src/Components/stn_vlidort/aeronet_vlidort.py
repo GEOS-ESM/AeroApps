@@ -1920,7 +1920,7 @@ class AERONET_VLIDORT(object):
             riso.long_name     = '%.2f nm isotropic BRDF kernel' %self.channel
             riso.missing_value = MISSING
             riso.units         = "None"
-            riso[:]            = self.__dict__[Riso+chs][0,0,:,:]
+            riso[:]            = self.__dict__['Riso'+chs][0,0,:,:]
 
 
             rgeo = nc.createVariable('rgeo','f4',('station','time',),zlib=zlib,fill_value=MISSING)
@@ -1928,14 +1928,14 @@ class AERONET_VLIDORT(object):
             rgeo.long_name     = '%.2f nm geometric BRDF kernel' %self.channel
             rgeo.missing_value = MISSING
             rgeo.units         = "None"
-            rgeo[:]            = self.__dict__[Rgeo+chs][0,0,:,:]
+            rgeo[:]            = self.__dict__['Rgeo'+chs][0,0,:,:]
 
             rvol = nc.createVariable('rvol','f4',('station','time',),zlib=zlib,fill_value=MISSING)
             rvol.standard_name = '%.2f nm RVOL' %self.channel
             rvol.long_name     = '%.2f nm volumetric BRDF kernel' %self.channel
             rvol.missing_value = MISSING
             rvol.units         = "None"
-            rvol[:]            = self.__dict__[Rvol+chs][0,0,:,:]
+            rvol[:]            = self.__dict__['Rvol'+chs][0,0,:,:]
 
 
 
@@ -2135,7 +2135,7 @@ class AERONET_VLIDORT(object):
             riso.long_name     = '%.2f nm isotropic BRDF kernel' %self.channel
             riso.missing_value = MISSING
             riso.units         = "None"
-            riso[:]            = self.__dict__[Riso+chs][0,0,:,:]
+            riso[:]            = self.__dict__['Riso'+chs][0,0,:,:]
 
 
             rgeo = nc.createVariable('rgeo','f4',('station','time',),zlib=zlib,fill_value=MISSING)
@@ -2143,14 +2143,14 @@ class AERONET_VLIDORT(object):
             rgeo.long_name     = '%.2f nm geometric BRDF kernel' %self.channel
             rgeo.missing_value = MISSING
             rgeo.units         = "None"
-            rgeo[:]            = self.__dict__[Rgeo+chs][0,0,:,:]
+            rgeo[:]            = self.__dict__['Rgeo'+chs][0,0,:,:]
 
             rvol = nc.createVariable('rvol','f4',('station','time',),zlib=zlib,fill_value=MISSING)
             rvol.standard_name = '%.2f nm RVOL' %self.channel
             rvol.long_name     = '%.2f nm volumetric BRDF kernel' %self.channel
             rvol.missing_value = MISSING
             rvol.units         = "None"
-            rvol[:]            = self.__dict__[Rvol+chs][0,0,:,:]
+            rvol[:]            = self.__dict__['Rvol'+chs][0,0,:,:]
 
 
         # Vertical Profile Variables
