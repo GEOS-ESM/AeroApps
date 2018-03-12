@@ -77,8 +77,13 @@ class JOBS(object):
             # reinitialize stat variable
             if (runlen > countRun) and (node_tally < jobsmax):
                 #print 'adding new jobs'
-                newRun = jobsmax - node_tally
+                newRun     = jobsmax - node_tally
                 node_tally = jobsmax
+
+                if (newRun + countRun) > runlen:
+                    newRun = runlen - countRun
+                    node_tally = node_tally + newRun
+                
 
                 newjobs  = countRun + np.arange(newRun)
                 workingJobs = np.append(workingJobs, newjobs)
