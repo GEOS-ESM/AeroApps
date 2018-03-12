@@ -205,7 +205,7 @@ class AERONET_VLIDORT(object):
             # Calculate Scene Geometry
             self.calcAngles()
 
-            if any(self.nobs):
+            if any(self.nobs) and (self.outFileadd is None):
                 #Land-Sea Mask
                 self.LandSeaMask()
 
