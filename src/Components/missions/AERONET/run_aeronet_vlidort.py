@@ -138,6 +138,8 @@ if __name__ == "__main__":
             outFileAL  = '.'.join(outFile)
             outFile[1] = 'pp'
             outFilePP  = '.'.join(outFile)
+            outFile[1] = 'add'
+            outFileADD  = '.'.join(outFile)            
         else:
             outFileAL  = None
             outFilePP  = None
@@ -172,6 +174,7 @@ if __name__ == "__main__":
         print '>>>outFileAL:   ',outFileAL
         print '>>>outFilePP:   ',outFilePP
         print '>>>outFileEXT:   ',outFileEXT
+        print '>>>outFileADD:   ',outFileADD
         print '>>>rcFile:    ',rcFile
         print '>>>albedoType:',albedoType
         print '>>>channel:   ',channel
@@ -185,9 +188,10 @@ if __name__ == "__main__":
         if not args.dryrun:
             vlidort = AERONET_VLIDORT(inFile,rcFile,channel,
                                     invFile=invFile,
-                                    outFileAL=outFileAL,
-                                    outFilePP=outFilePP,
-                                    outFileEXT=outFileEXT,
+                                    outFileal=outFileAL,
+                                    outFilepp=outFilePP,
+                                    outFileext=outFileEXT,
+                                    outFileadd=outFileADD,
                                     albedoType=albedoType,
                                     brdfFile=brdfFile,
                                     ndviFile=ndviFile,
