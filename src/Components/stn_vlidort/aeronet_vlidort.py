@@ -109,16 +109,21 @@ class AERONET_VLIDORT(object):
     Everything needed for calling VLIDORT
     GEOS-5 has already been sampled on lidar track
     """
-    def __init__(self,inFile,invFile,outFileal,outFilepp,rcFile,albedoType,
-                channel,
+    def __init__(self,inFile,rcFile,channel,
+                invFile=None,
+                outFileal=None,
+                outFilepp=None,
+                outFileext=None,
+                outFileadd=None,
+                albedoType=None,
                 brdfFile=None,
                 ndviFile=None,
                 lcFile=None,
                 lerFile=None,
                 verbose=False,
                 extOnly=False,
-                aeronet_r=aeronet_r,
-                outFileadd=None):
+                extcol='aer_Nv',
+                aeronet_r=aeronet_r):
         self.SDS_AER = SDS_AER
         self.SDS_MET = SDS_MET
         self.SDS_INV = SDS_INV
@@ -127,6 +132,7 @@ class AERONET_VLIDORT(object):
         self.invFile = invFile
         self.outFileal = outFileal
         self.outFilepp = outFilepp
+        self.outFileext = outFileext
         self.outFileadd = outFileadd
         self.albedoType = albedoType
         self.rcFile  = rcFile
@@ -142,6 +148,7 @@ class AERONET_VLIDORT(object):
         self.nal       = len(self.al_angles)
         self.npp       = len(self.pp_angles)
         self.aeronet_r = aeronet_r
+        self.extcol    = extcol
 
         # initialize empty lists
         for sds in self.SDS_AER+self.SDS_MET+self.SDS_INV:
@@ -1356,16 +1363,12 @@ class AERONET_VLIDORT(object):
         """
         run ext_sampler.py 
         """
-        col = 'aer_Nv'
         if self.verbose: 
-            print 'running ext_sampler on file',self.inFile.replace('%col',col)
+            print 'running ext_sampler on file',self.inFile.replace('%col',self.extcol)
 
         outDir = os.path.dirname(self.outFile)
-        instname = os.path.basename(self.inFile).split('.')[0]
-        date_ch   = os.path.basename(self.inFile).split('.')[-2]
-        outFile = '{}/{}.lc2.ext.{}_{}nm.nc'.format(outDir,instname,date_ch,get_chd(self.channel))
-        Options =     " --input=" + self.inFile.replace('%col',col)      + \
-                      " --output=" + outFile       + \
+        Options =     " --input=" + self.inFile.replace('%col',self.extcol)      + \
+                      " --output=" + self.outFileext.replace('%col',self.extcol)       + \
                       " --rc=" + self.rcFile      + \
                       " --format=NETCDF4_CLASSIC"      + \
                       " --channel=%d" %self.channel + \
@@ -1379,7 +1382,7 @@ class AERONET_VLIDORT(object):
         cmd = './ext_sampler.py {} '.format(Options)  
         print cmd
         if os.system(cmd):
-            raise ValueError, "ext_sampler.py failed for %s "%(self.inFile.replace('%col',col))       
+            raise ValueError, "ext_sampler.py failed for %s "%(self.inFile.replace('%col',self.extcol))       
 
 
     def runALMUCANTAR(self):
