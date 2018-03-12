@@ -2342,9 +2342,11 @@ if __name__ == "__main__":
 
     # Initialize VLIDORT class getting aerosol optical properties
     # -----------------------------------------------------------
-    vlidort = AERONET_VLIDORT(inFile,invFile,outFileal,outFilepp,rcFile,
-                            albedoType,
-                            channel,
+    vlidort = AERONET_VLIDORT(inFile,rcFile,channel,
+                            invFile=invFile,
+                            outFileal=outFileal,
+                            outFilepp=outFilepp,
+                            albedoType=albedoType,
                             brdfFile=brdfFile,
                             ndviFile=ndviFile,
                             lcFile=lcFile,
