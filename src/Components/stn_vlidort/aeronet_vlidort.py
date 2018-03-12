@@ -202,12 +202,12 @@ class AERONET_VLIDORT(object):
                 # get 440-870 angstrom exponent
                 self.computeAE()
 
-        # Calculate Scene Geometry
-        self.calcAngles()
+            # Calculate Scene Geometry
+            self.calcAngles()
 
-        if any(self.nobs):
-            #Land-Sea Mask
-            self.LandSeaMask()
+            if any(self.nobs):
+                #Land-Sea Mask
+                self.LandSeaMask()
 
 
         self.nobs = np.array(self.nobs)
