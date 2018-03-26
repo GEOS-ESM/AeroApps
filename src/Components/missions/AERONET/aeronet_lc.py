@@ -68,6 +68,7 @@ if __name__ == "__main__":
 
     # Run additional output calculation
     #------------------------------------
+    print ' '
     print '++++Running VLIDORT Additional Output+++'
 
     if args.dryrun:
@@ -79,7 +80,8 @@ if __name__ == "__main__":
     command = command + ' -D {} {} {} {}/stn_vlidort_add.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform)
 
     print command
-    os.system(command)
+    if os.system(command):
+        raise ValueError, "%s failed "%(bin)
 
 
     if not args.norad:
@@ -97,7 +99,8 @@ if __name__ == "__main__":
             command = command + ' -D {} {} {} {}/stn_vlidort_{}.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform,ch)
 
             print command
-            os.system(command)
+            if os.system(command):
+                raise ValueError, "%s failed "%(bin)
 
             if args.dryrun:
                 command = bin + '-r '
@@ -106,7 +109,8 @@ if __name__ == "__main__":
 
             command = command + ' -D {} {} {} {}/stn_vlidort_{}extC.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform,ch)
             print command
-            os.system(command)
+            if os.system(command):
+                raise ValueError, "%s failed "%(bin)
 
 
     if not args.noext:
@@ -125,6 +129,7 @@ if __name__ == "__main__":
 
 
             print command
-            os.system(command)
+            if os.system(command):
+                raise ValueError, "%s failed "%(bin)
 
 
