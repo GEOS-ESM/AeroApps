@@ -33,7 +33,7 @@ limit stacksize unlimited
 #           Architecture Specific Environment Variables
 #######################################################################
 setenv G5DIR /discover/nobackup/pcastell/workspace/GAAS/src
-setenv RUN_CMD  "./aeronet_lc.py"
+setenv RUN_CMD  "./aeronet_vlidort_lc.py"
 
 source $HOME/.cshrc
 cd $G5DIR

@@ -119,7 +119,7 @@ class JOBS(object):
 
 
 class WORKSPACE(JOBS):
-    """ Create slurm scripts for running aeronet_lc.py """
+    """ Create slurm scripts for running aeronet_vlidort_lc.py """
     def __init__(self,args):
         Date    = isoparser(args.iso_t1)
         enddate = isoparser(args.iso_t2)
@@ -194,7 +194,7 @@ class WORKSPACE(JOBS):
 
             # link over some scripts and files
             source = ['nccs','Aod_EOS.rc','Aod_EOS.440.rc','Aod_EOS.870.rc',
-                      'run_aeronet_vlidort.py','aeronet_lc.py','ExtData',
+                      'run_aeronet_vlidort.py','aeronet_vlidort_lc.py','ExtData',
                       'Chem_MieRegistry.rc']
             for src in source:
                 os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(outpath,src))
@@ -218,7 +218,7 @@ class WORKSPACE(JOBS):
 
         # remove symlinks
         source = ['nccs','Aod_EOS.rc','Aod_EOS.440.rc','Aod_EOS.870.rc',
-                  'run_aeronet_vlidort.py','aeronet_lc.py','ExtData',
+                  'run_aeronet_vlidort.py','aeronet_vlidort_lc.py','ExtData',
                   'Chem_MieRegistry.rc']
         for src in source:
             os.remove(src)
