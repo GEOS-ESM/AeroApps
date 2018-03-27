@@ -252,7 +252,7 @@ if __name__ == '__main__':
                         help="slurm script template (default=%s)"%slurm)           
 
     parser.add_argument('-t','--tmp',default=tmp,
-                        help="temp directory (default=%s)"tmp)
+                        help="temp directory (default=%s)"%tmp)
 
     parser.add_argument("-p", "--profile",action="store_true",
                         help="Don't cleanup slurm files (default=False).")    
