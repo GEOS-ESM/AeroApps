@@ -180,7 +180,7 @@ class WORKSPACE(JOBS):
             if args.noext:
                 options += ' --noext'
 
-            newline  = 'setenv OPTIONS {}\n'.format(options)
+            newline  = 'setenv OPTIONS "{}"\n'.format(options)
             text[20] = newline
 
             newline  = 'setenv AEROBIN {}\n'.format(outpath)
