@@ -1022,14 +1022,6 @@ class AERONET_VLIDORT(object):
         return r, dr, rlow, rup
 
 
-
-
-    def DU_distribution(self):
-        pass
-
-    def SS_distribution(self):
-        pass
-
     # --- 
     def readSampledMODISBRDF(self):
         """
