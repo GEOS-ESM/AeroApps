@@ -180,7 +180,7 @@ class WORKSPACE(JOBS):
             if args.noext:
                 options += ' --noext'
 
-            newline  = 'setenv OPTIONS {}'.format(options)
+            newline  = 'setenv OPTIONS {}\n'.format(options)
             text[20] = newline
 
             newline  = 'setenv AEROBIN {}\n'.format(outpath)
@@ -197,7 +197,7 @@ class WORKSPACE(JOBS):
                       'run_aeronet_vlidort.py','aeronet_lc.py','ExtData',
                       'Chem_MieRegistry.rc']
             for src in source:
-                os.symlink(src,'{}/{}'.format(outpath,src))
+                os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(outpath,src))
 
 
             Date += Djobs
