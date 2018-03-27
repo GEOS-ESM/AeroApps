@@ -193,8 +193,9 @@ class WORKSPACE(JOBS):
             f.close()
 
             # link over some scripts and files
-            source = 'nccs','Aod_EOS.rc','Aod_EOS.440.rc','Aod_EOS.870.rc',
-                     'run_aeronet_vlidort.py','aeronet_lc.py','ExtData','Chem_MieRegistry.rc'
+            source = ['nccs','Aod_EOS.rc','Aod_EOS.440.rc','Aod_EOS.870.rc',
+                      'run_aeronet_vlidort.py','aeronet_lc.py','ExtData',
+                      'Chem_MieRegistry.rc']
             for src in source:
                 os.symlink(src,'{}/{}'.format(outpath,src))
 
@@ -216,8 +217,9 @@ class WORKSPACE(JOBS):
             os.remove(self.runfile)
 
         # remove symlinks
-        source = 'nccs','Aod_EOS.rc','Aod_EOS.440.rc','Aod_EOS.870.rc',
-                 'run_aeronet_vlidort.py','aeronet_lc.py','ExtData','Chem_MieRegistry.rc'
+        source = ['nccs','Aod_EOS.rc','Aod_EOS.440.rc','Aod_EOS.870.rc',
+                  'run_aeronet_vlidort.py','aeronet_lc.py','ExtData',
+                  'Chem_MieRegistry.rc']
         for src in source:
             os.remove(src)
 
