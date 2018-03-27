@@ -165,6 +165,24 @@ class WORKSPACE(JOBS):
             newline  = 'setenv END  {}\n'.format(iso2)
             text[19] = newline
 
+            # Create options string
+            options = "-D {}".format(args.DT_hours)
+            if args.verbose:
+                options += ' --verbose'
+            if args.dryrun:
+                options += ' --dryrun'
+            if args.channels is not None:
+                options += ' --channels {}'.format(' '.join(self.channels))
+            if args.extch is not None:
+                options += ' --extch {}'.format(' '.join(self.extch))
+            if args.norad:
+                options += ' --norad'
+            if args.noext:
+                options += ' --noext'
+
+            newline  = 'setenv OPTIONS {}'.format(options)
+            text[20] = newline
+
             newline  = 'setenv AEROBIN {}\n'.format(outpath)
             text[21] = newline
 
@@ -175,7 +193,8 @@ class WORKSPACE(JOBS):
             f.close()
 
             # link over some scripts and files
-            source = 'nccs','Aod_EOS.rc','Aod_EOS.440.rc','Aod_EOS.870.rc','run_aeronet_vlidort.py','aeronet_lc.py'
+            source = 'nccs','Aod_EOS.rc','Aod_EOS.440.rc','Aod_EOS.870.rc',
+                     'run_aeronet_vlidort.py','aeronet_lc.py','ExtData','Chem_MieRegistry.rc'
             for src in source:
                 os.symlink(src,'{}/{}'.format(outpath,src))
 
@@ -195,6 +214,12 @@ class WORKSPACE(JOBS):
             os.remove(pyfile)        
 
             os.remove(self.runfile)
+
+        # remove symlinks
+        source = 'nccs','Aod_EOS.rc','Aod_EOS.440.rc','Aod_EOS.870.rc',
+                 'run_aeronet_vlidort.py','aeronet_lc.py','ExtData','Chem_MieRegistry.rc'
+        for src in source:
+            os.remove(src)
 
         os.chdir(self.cwd)
         if self.profile is False:
@@ -229,6 +254,24 @@ if __name__ == '__main__':
 
     parser.add_argument("-p", "--profile",action="store_true",
                         help="Don't cleanup slurm files (default=False).")    
+
+    parser.add_argument("-v", "--verbose",action="store_true",
+                        help="Verbose mode (default=False).")
+
+    parser.add_argument("-r", "--dryrun",action="store_true",
+                        help="do a dry run (default=False).")   
+
+    parser.add_argument("-c","--channels", default=None,nargs='+',
+                        help="channels to get BOA radiance")                            
+
+    parser.add_argument("-e","--extch", default=None,nargs='+',
+                        help="channels to run extinction sampler")  
+
+    parser.add_argument("--norad",action="store_true",
+                        help="No radiance calculations (default=False).")
+
+    parser.add_argument("--noext",action="store_true",
+                        help="No extinctions calculations (default=False).")
 
 
     args = parser.parse_args()
