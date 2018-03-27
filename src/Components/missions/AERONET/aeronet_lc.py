@@ -249,10 +249,10 @@ if __name__ == '__main__':
                         help="Timestep in days for each job (default=%i)"%DT_jobs)    
 
     parser.add_argument('-s',"--slurm",default=slurm,
-                        help="slurm script template")           
+                        help="slurm script template (default=%s)"%slurm)           
 
     parser.add_argument('-t','--tmp',default=tmp,
-                        help="temp directory")
+                        help="temp directory (default=%s)"tmp)
 
     parser.add_argument("-p", "--profile",action="store_true",
                         help="Don't cleanup slurm files (default=False).")    
@@ -264,10 +264,10 @@ if __name__ == '__main__':
                         help="do a dry run (default=False).")   
 
     parser.add_argument("-c","--channels", default=None,nargs='+',
-                        help="channels to get BOA radiance")                            
+                        help="channels to get BOA radiance (default=None)")                            
 
     parser.add_argument("-e","--extch", default=None,nargs='+',
-                        help="channels to run extinction sampler")  
+                        help="channels to run extinction sampler (default=None)")  
 
     parser.add_argument("--norad",action="store_true",
                         help="No radiance calculations (default=False).")
