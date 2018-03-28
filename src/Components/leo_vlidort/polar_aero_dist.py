@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
         inFile      = inTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
         outFile     = None
-        outFileDist = outTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour))
+        outFileDist = outTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
 
         brdfFile    = None
         ndviFile    = None
