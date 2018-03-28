@@ -425,29 +425,32 @@ class AERONET_VLIDORT(object):
         r0        = 0.0118e-6  #meters
         rmax0     = 0.3e-6     #meters
         sigma     = 2.00
+        rhop0     = 1000       # Density of dry particles [kg m-3]
 
         spc = 'BCPHOBIC'
-        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma)
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
         spc = 'BCPHILIC'
-        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma)
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
 
         # OC
         r0        = 0.0212e-6  #meters
         rmax0     = 0.3e-6     #meters
         sigma     = 2.20
+        rhop0     = 1800       #[kg m-3]
 
         spc = 'OCPHOBIC'
-        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma)
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
         spc = 'OCPHILIC'
-        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma)
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
 
         # SU
         r0        = 0.0695e-6  #meters
         rmax0     = 0.3e-6     #meters
         sigma     = 2.03
+        rhop0     = 1700       #[kg m-3]
 
         spc = 'SU'
-        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma)
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
 
         # Dust
         # ----------
@@ -593,6 +596,7 @@ class AERONET_VLIDORT(object):
 
             # 0 <= rh <= 0.95
             # this is what is done in Chem_MieMod.F90
+            rh = rh.copy()
             rh[rh < 0] = 0
             rh[rh > 0.95] = 0.95   
 
@@ -860,9 +864,7 @@ class AERONET_VLIDORT(object):
 
 
 
-    def logNormalDistribution(self,spc,r0,rmin,rmax0,sigma):
-        # Density of dry particles [kg m-3]
-        rhop0 = 1800.
+    def logNormalDistribution(self,spc,r0,rmin,rmax0,sigma,rhop0):
 
         # master bins
         R    = self.R
@@ -900,6 +902,7 @@ class AERONET_VLIDORT(object):
         for rh,mr,air  in zip(self.RH,self.__dict__[spc_],self.AIRDENS):
             # 0 <= rh <= 0.99
             # this is what is done in Chem_MieMod.F90
+            rh = rh.copy()
             rh[rh < 0] = 0
             rh[rh > 0.99] = 0.99   
 
