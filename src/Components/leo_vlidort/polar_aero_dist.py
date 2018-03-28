@@ -120,7 +120,7 @@ if __name__ == "__main__":
                                     outFileDist=outFileDist)
 
             # Run size distribution calculator
-            vliort.sizeDistribution()
+            vlidort.sizeDistribution()
             vlidort.writeNCdist()
 
         date += Dt
