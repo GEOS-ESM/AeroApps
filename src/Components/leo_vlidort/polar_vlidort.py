@@ -23,6 +23,7 @@ import LidarAngles_
 import VLIDORT_POLAR_ 
 from copyvar  import _copyVar
 from scipy import interpolate
+from   MAPL  import config
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
@@ -76,13 +77,16 @@ class POLAR_VLIDORT(object):
                 lcFile=None,
                 lerFile=None,
                 verbose=False,
-                extOnly=False):
+                extOnly=False,
+                distOnly=False,
+                outFileDist=None):
         self.SDS_AER = SDS_AER
         self.SDS_MET = SDS_MET
         self.SDS_INV = SDS_INV
         self.AERNAMES = AERNAMES
         self.inFile  = inFile
         self.outFile = outFile
+        self.outFileDist = outFileDist
         self.albedoType = albedoType
         self.rcFile  = rcFile
         self.channel = channel
@@ -115,34 +119,35 @@ class POLAR_VLIDORT(object):
             # Start out with all good obs
             self.nobs  = len(self.tyme)
             self.iGood = np.ones([self.nobs]).astype(bool)
-        
-            # Read in surface data
-            # Intensity
-            if (self.channel < 470) & ("MODIS_BRDF" in albedoType):
-                albedoReader = getattr(self,'readHybridMODISBRDF')
-            else:
-                albedoReader = getattr(self,SurfaceFuncs[albedoType])
-            albedoReader()
+            
+            if not distOnly:
+                # Read in surface data
+                # Intensity
+                if (self.channel < 470) & ("MODIS_BRDF" in albedoType):
+                    albedoReader = getattr(self,'readHybridMODISBRDF')
+                else:
+                    albedoReader = getattr(self,SurfaceFuncs[albedoType])
+                albedoReader()
 
-            # Polarization
-            if 'BPDF' in albedoType:
-                self.BPDFinputs()
+                # Polarization
+                if 'BPDF' in albedoType:
+                    self.BPDFinputs()
 
 
-            # Calculate aerosol optical properties
-            self.computeMie()
+                # Calculate aerosol optical properties
+                self.computeMie()
 
-            # Calculate atmospheric profile properties needed for Rayleigh calc
-            self.computeAtmos()
+                # Calculate atmospheric profile properties needed for Rayleigh calc
+                self.computeAtmos()
 
-            # Calculate Scene Geometry
-            self.VZA = VZA
-            self.hgtss = hgtss
-            self.calcAngles()
+                # Calculate Scene Geometry
+                self.VZA = VZA
+                self.hgtss = hgtss
+                self.calcAngles()
 
-            if self.nobs > 0:
-                # Land-Sea Mask
-                self.LandSeaMask()
+                if self.nobs > 0:
+                    # Land-Sea Mask
+                    self.LandSeaMask()
 
     # --
     def BPDFinputs(self):
@@ -299,6 +304,620 @@ class POLAR_VLIDORT(object):
         #         sds_ = ncALIAS[sds]
         #     var = nc.variables[sds_][:]
         #     self.__dict__[sds].append(var)
+
+
+
+    def sizeDistribution(self):
+        """ 
+        Get size aerosol size distribution from 
+        GEOS-5 aerosol mixing ratios
+
+        Based on P. Colarco's optics table calculations.
+        Note: hard coded for these versions of the optics tables.
+        May not work for other versions.
+
+        filename_optical_properties_DU: ExtData/optics_DU.v15_5.nc
+        filename_optical_properties_SS: ExtData/optics_SS.v3_5.nc
+        filename_optical_properties_BC: ExtData/optics_BC.v1_5.nc
+        filename_optical_properties_OC: ExtData/optics_OC.v1_5.nc
+        filename_optical_properties_SU: ExtData/optics_SU.v1_5.nc
+        """
+
+        # Create master bins for all levels
+        # ---------------------------------
+        rmin      = 0.005e-6   #meters 
+        rmax      = self.getRMAX()
+        R, DR, RLOW, RUP = self.logBins(0.5*rmin,1.1*rmax)
+        self.R = R
+        self.DR = DR
+        self.RLOW = RLOW
+        self.RUP  = RUP
+
+
+        # Lognormal Species: BC, OC, and SU
+        # ---------------------------------
+    
+        # BC
+        r0        = 0.0118e-6  #meters
+        rmax0     = 0.3e-6     #meters
+        sigma     = 2.00
+        rhop0     = 1000       # Density of dry particles [kg m-3]
+
+        spc = 'BCPHOBIC'
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
+        spc = 'BCPHILIC'
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
+
+        # OC
+        r0        = 0.0212e-6  #meters
+        rmax0     = 0.3e-6     #meters
+        sigma     = 2.20
+        rhop0     = 1800       #[kg m-3]
+
+        spc = 'OCPHOBIC'
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
+        spc = 'OCPHILIC'
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
+
+        # SU
+        r0        = 0.0695e-6  #meters
+        rmax0     = 0.3e-6     #meters
+        sigma     = 2.03
+        rhop0     = 1700       #[kg m-3]
+
+        spc = 'SU'
+        self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
+
+        # Dust
+        # ----------
+        self.dustDistribution()
+
+        # Sea Salt
+        # ------------
+        self.seasaltDistribution()
+
+        # Mixture Distribution
+        # -------------
+        TOTdist = self.BCPHILICdist 
+        TOTdist = TOTdist + self.BCPHOBICdist
+        TOTdist = TOTdist + self.OCPHILICdist 
+        TOTdist = TOTdist + self.OCPHOBICdist 
+        TOTdist = TOTdist + self.SUdist
+        TOTdist = TOTdist + self.DUdist 
+        TOTdist = TOTdist + self.SSdist
+
+        self.TOTdist = TOTdist
+
+        # convert to dV/dlnR [microns^3/microns^2] 
+        for i,r in enumerate(self.R):
+            self.TOTdist[:,:,i] = self.TOTdist[:,:,i]*self.R[i]*1e6
+
+
+    def getRMAX(self):
+        cf = config.Config(self.rcFile)
+
+        #lognormals
+        spclist = 'BC','OC','SU'
+        rmax0   = 0.3e-6
+        RMAX    = 0
+        for spc in spclist:
+            # Read optics table            
+            optable = cf('filename_optical_properties_{}'.format(spc))
+            nc      = Dataset(optable)
+            if spc == 'SU':
+                gfTable = nc.variables['growth_factor'][0,:]
+            else:
+                gfTable = nc.variables['growth_factor'][1,:]
+
+            rhTable = nc.variables['rh'][:]
+            nc.close()
+            fTable = interpolate.interp1d(rhTable, gfTable)            
+            gf = fTable(rhTable[-1])
+            rmax  = gf*rmax0
+            if rmax > RMAX: RMAX = rmax
+
+        # Sea-salt
+        c1 = 0.7674
+        c2 = 3.079
+        c3 = 2.573e-11
+        c4 = -1.424        
+        rhUse = 0.95
+        # read optics table
+        optable = cf('filename_optical_properties_SS')
+        nc      = Dataset(optable)
+        rUp     = nc.variables['rUp'][:]
+        nc.close()
+        rMaxUse = rUp[-1]
+        rMaxCM  = rMaxUse*100.
+        rmax    = (c1*rMaxCM**c2 /(c3*rMaxCM**c4 - np.log10(rhUse))+rMaxCM**3.)**(1./3.)/100.
+        if rmax > RMAX: RMAX = rmax
+
+        # Dust
+        # read optics table
+        optable = cf('filename_optical_properties_DU')
+        nc      = Dataset(optable)
+        rUp     = nc.variables['rUp'][:]
+        nc.close()
+        rmax    = rUp[-1]
+        if rmax > RMAX: RMAX = rmax
+
+        return RMAX
+
+
+    def seasaltDistribution(self):
+        # Density of dry particles [kg m-3]
+        rhop0 = 2200.
+
+        #constants for adjusting size bins for RH
+        c1 = 0.7674
+        c2 = 3.079
+        c3 = 2.573e-11
+        c4 = -1.424        
+
+
+        # master bins
+        R    = self.R
+        DR   = self.DR
+        RLOW = self.RLOW
+        RUP  = self.RUP
+
+        # Read optics table
+        cf = config.Config(self.rcFile)
+        optable = cf('filename_optical_properties_SS')
+
+        # Read in growth factors and rh tables
+        nc = Dataset(optable)
+        rhTable = nc.variables['rh'][:]
+        gfTable = nc.variables['growth_factor'][:]
+
+        # Major bins
+        rMaxMaj = nc.variables['rUp'][:]
+        rMinMaj = nc.variables['rLow'][:]
+
+        nc.close()
+
+        # number of major bins
+        nbinMaj = len(rMaxMaj)
+
+        #number of minor bins
+        nbinMin = 40
+
+        # set up empty column size distribution array
+        nlev = 72
+        SPCdist = np.empty([self.nobs,nlev,len(R)])
+
+        # rh (relative humidity) dims are [ntyme,nlev]
+        # mr (mixing ratio) dims are [ntyme,nlev]
+        # air (air density) dims are [ntyme,nlev]
+        rh = self.RH.copy()
+        ss001,ss002,ss003,ss004,ss005 = self.SS001,self.SS002,self.SS003,self.SS004,self.SS005
+        air = self.AIRDENS
+
+        # put all sea-salt mixing ratios in one array for convenience
+        SS = np.zeros([self.nobs,nlev,5])
+        SS[:,:,0] = ss001
+        SS[:,:,1] = ss002
+        SS[:,:,2] = ss003
+        SS[:,:,3] = ss004
+        SS[:,:,4] = ss005
+
+
+        # 0 <= rh <= 0.95
+        # this is what is done in Chem_MieMod.F90
+        rh[rh < 0] = 0
+        rh[rh > 0.95] = 0.95   
+
+        # loop throuhg time steps
+        for t in range(self.nobs):    
+            # loop through major bins
+            for iBin in range(nbinMaj):
+                # get the radii of the bin
+                rmin = rMinMaj[iBin]
+                rmax = rMaxMaj[iBin]
+                rMinCM = rmin*100.
+                rMaxCM = rmax*100.                    
+
+                # get growth factors table for this bin
+                fTable = interpolate.interp1d(rhTable, gfTable[iBin,:])
+                gf = fTable(rh[t,:])  
+
+                # loop through layers 
+                # get size distribution for each layer
+                for k in range(nlev):
+
+                    #adjust bin edges for humidified particles
+                    rhUse = rh[t,k]
+                    rMinUse = (c1*rMinCM**c2 /(c3*rMinCM**c4 - np.log10(rhUse))+rMinCM**3.)**(1./3.)/100.                                      
+                    rMaxUse = (c1*rMaxCM**c2 /(c3*rMaxCM**c4 - np.log10(rhUse))+rMaxCM**3.)**(1./3.)/100.  
+
+                    # Determine the dNdr of the particle size distribution using the
+                    # Gong 2003 particle sub-bin distribution
+                    rrat = rmin/rMinUse
+                    r80Rat = 1.65*rrat      # ratio of the r80 radius to the wet radius
+                    r80  = R*r80Rat * 1.e6  # radius in r80 space in um
+                    dr80 = DR*r80Rat * 1.e6
+
+                    aFac = 4.7*(1.+30.*r80)**(-0.017*r80**(-1.44))
+                    bFac = (0.433-np.log10(r80))/0.433
+                    dndr80 = 1.373*r80**(-aFac)*(1.+0.057*r80**3.45)*10.**(1.607*np.exp(-bFac**2.))
+                    dndr = dndr80 * r80Rat
+
+                    # Truncate distribution according to rlow and rup
+                    ii = RUP <= rMinUse
+                    dndr[ii] = 0
+
+                    ii = RLOW >= rMaxUse
+                    dndr[ii] = 0
+
+                    # deal with lowest bin
+                    # number concentration is scaled to the 
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution
+                    bini = np.arange(len(R))
+                    i = bini[RLOW < rMinUse][-1]
+                    drtilda = RUP[i] - rMinUse
+                    dndr[i] = dndr[i]*drtilda/DR[i]
+
+                    #deal with the highest bin
+                    # number concentration is scaled to the 
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution                    
+                    i = bini[RLOW < rMaxUse][-1]
+                    drtilda = rMaxUse - RLOW[i]
+                    dndr[i] = dndr[i]*drtilda/DR[i]
+
+                    # Now get the volume distribution
+                    # dvdr
+                    dvdr = 4./3.*np.pi*R**3.*dndr
+
+                    # Get aerosol DRY! volume concentration
+                    mr = SS[t,k,iBin]
+                    M0 = mr*air[t,k]
+                    V0 = M0/rhop0
+
+                    # Get the Wet volume
+                    Vwet = V0*gf[k]**3
+
+                    # normalize dvdr so the integral is equal to the 
+                    # wet volume
+                    dvdr = dvdr*Vwet/np.sum(dvdr*DR)
+
+                    # add this aerosol distribution to the master
+                    SPCdist[t,k,:] = SPCdist[t,k,:] + dvdr
+
+        self.__dict__['SSdist'] = SPCdist
+        
+
+    def dustDistribution(self):
+        # master bins
+        R    = self.R
+        DR   = self.DR
+        RLOW = self.RLOW
+        RUP  = self.RUP
+
+        # read optics table
+        cf = config.Config(self.rcFile)
+        optable = cf('filename_optical_properties_DU')
+        nc      = Dataset(optable)
+        # Major bins
+        rMaxMaj = nc.variables['rUp'][:]
+        rMinMaj = nc.variables['rLow'][:]
+        # density
+        rhop0   = nc.variables['rhop'][:,0]
+
+        nc.close()
+
+        # number of major bins
+        nbinMaj = len(rMaxMaj)
+
+        #number of minor bins
+        nbinMin = 10
+
+        # set up empty column size distribution array
+        nlev = 72
+        SPCdist = np.zeros([self.nobs,nlev,len(R)])
+
+        # mr (mixing ratio) dims are [ntyme,nlev]
+        # air (air density) dims are [ntyme,nlev]
+        du001,du002,du003,du004,du005  = self.DU001,self.DU002,self.DU003,self.DU004,self.DU005
+        air = self.AIRDENS
+
+        # put all dust mixing ratios in one array for convenience
+        DU = np.empty([self.nobs,nlev,5])
+        DU[:,:,0] = du001
+        DU[:,:,1] = du002
+        DU[:,:,2] = du003
+        DU[:,:,3] = du004
+        DU[:,:,4] = du005
+
+        # loop through orbit
+        for t in range(self.nobs):    
+            # loop through layers
+            for k in range(nlev):
+
+                #do first bin
+                iBin = 0
+                nBinFirst = 4
+                rMinFirst = np.array([0.1,0.18,0.3,0.6])*1.e-6
+                rMaxFirst = np.array([0.18,0.3,0.6,1.])*1.e-6
+                fMass = [0.009, 0.081, 0.234, 0.676] 
+
+                for iBinfirst in range(nBinFirst):
+                    # get the radii of the bin
+                    rmin = rMinFirst[iBinfirst]
+                    rmax = rMaxFirst[iBinfirst]
+
+                    dndr = R**(-4.)
+
+                    # Truncate distribution according to rlow and rup
+                    ii = RUP <= rmin
+                    dndr[ii] = 0
+
+                    ii = RLOW >= rmax
+                    dndr[ii] = 0
+
+                    # deal with lowest bin
+                    # number concentration is scaled to the 
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution
+                    bini = np.arange(len(R))
+                    i = bini[RLOW < rmin][-1]
+                    drtilda = RUP[i] - rmin
+                    dndr[i] = dndr[i]*drtilda/DR[i]
+
+                    #deal with the highest bin
+                    # number concentration is scaled to the 
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution                    
+                    i = bini[RLOW < rmax][-1]
+                    drtilda = rmax - RLOW[i]
+                    dndr[i] = dndr[i]*drtilda/DR[i]
+
+                    # Now get the volume distribution
+                    # dvdr
+                    # this is not quite right because
+                    # dust is ellipsoid, but close enough
+                    dvdr = 4./3.*np.pi*R**3.*dndr
+                    
+                    # Get aerosol DRY! volume concentration
+                    mr = DU[t,k,iBin]
+                    M0 = mr*air[t,k]
+                    M0 = M0*fMass[iBinfirst]
+                    V0 = M0/rhop0[iBin]
+
+                    # Get the Wet volume
+                    # same as dry because dust is hydrophobic
+                    Vwet = V0
+
+                    # normalize dvdr so the integral is equal to the 
+                    # wet volume
+                    dvdr = dvdr*Vwet/np.sum(dvdr*DR)
+
+                    # add this aerosol distribution to the master
+                    SPCdist[t,k,:] = SPCdist[t,k,:] + dvdr
+
+
+
+                # do last 4 bins - they are easy
+                for iBin in range(1,nbinMaj):
+                    # get the radii of the bin
+                    rmin = rMinMaj[iBin]
+                    rmax = rMaxMaj[iBin]
+
+                    dndr = R**(-4.)
+
+                    # Truncate distribution according to rlow and rup
+                    ii = RUP <= rmin
+                    dndr[ii] = 0
+
+                    ii = RLOW >= rmax
+                    dndr[ii] = 0
+
+                    # deal with lowest bin
+                    # number concentration is scaled to the 
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution
+                    bini = np.arange(len(R))
+                    i = bini[RLOW < rmin][-1]
+                    drtilda = RUP[i] - rmin
+                    dndr[i] = dndr[i]*drtilda/DR[i]
+
+                    #deal with the highest bin
+                    # number concentration is scaled to the 
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution                    
+                    i = bini[RLOW < rmax][-1]
+                    drtilda = rmax - RLOW[i]
+                    dndr[i] = dndr[i]*drtilda/DR[i]
+        
+
+                    # Now get the volume distribution
+                    # dvdr
+                    # this is not quite right because
+                    # dust is ellipsoid, but close enough
+                    dvdr = 4./3.*np.pi*R**3.*dndr
+                    
+                    # Get aerosol DRY! volume concentration
+                    mr = DU[t,k,iBin]
+                    M0 = mr*air[t,k]
+                    V0 = M0/rhop0[iBin]
+
+                    # Get the Wet volume
+                    # same as dry because dust is hydrophobic
+                    Vwet = V0
+
+                    # normalize dvdr so the integral is equal to the 
+                    # wet volume
+                    dvdr = dvdr*Vwet/np.sum(dvdr*DR)
+
+                    # add this aerosol distribution to the master
+                    SPCdist[t,k,:] = SPCdist[t,k,:] + dvdr
+
+        self.__dict__['DUdist'] = SPCdist
+
+
+
+    def logNormalDistribution(self,spc,r0,rmin,rmax0,sigma,rhop0):
+
+        # master bins
+        R    = self.R
+        DR   = self.DR
+        RLOW = self.RLOW
+        RUP  = self.RUP
+
+        # Read optics table
+        cf = config.Config(self.rcFile)
+        optable = cf('filename_optical_properties_{}'.format(spc[0:2]))
+
+        # Read in growth factors and rh tables
+        nc = Dataset(optable)
+        rhTable = nc.variables['rh'][:]
+        if 'PHOBIC' in spc:
+            gfTable = nc.variables['growth_factor'][0,:]
+        elif 'PHILIC' in spc:
+            gfTable = nc.variables['growth_factor'][1,:]
+        else:
+            gfTable = nc.variables['growth_factor'][0,:]
+
+        nc.close()
+        fTable = interpolate.interp1d(rhTable, gfTable)
+
+        # set up empty column size distribution array
+        nlev = 72
+        SPCdist = np.empty([self.nobs,nlev,len(R)])
+        if spc == 'SU': 
+            spc_ = 'SO4'
+        else:
+            spc_ = spc
+
+        # rh dims are [ntyme,nlev]
+        # mr (mixing ratio) dims are [ntyme,nlev]
+        # air (air density) dims are [ntyme,nlev]
+        rh  = self.RH.copy()
+        mr  = self.__dict__[spc_]
+        air = self.AIRDENS
+
+        # 0 <= rh <= 0.99
+        # this is what is done in Chem_MieMod.F90
+        rh[rh < 0] = 0
+        rh[rh > 0.99] = 0.99   
+
+        # loop throuhg orbit
+        for t in range(self.nobs):        
+            gf = fTable(rh[t,:])
+
+            #  Now create the particle properties for this humidified particle
+            rmode = gf*r0
+            rmax  = gf*rmax0   
+
+            # loop through layers 
+            # get size distribution for each layer
+            for k in range(nlev):
+                # Get the bins
+                # r, dr, rlow, rup = self.logBins(rmin,rmax[k])
+
+                # Now get the aeorosl number distribution
+                # dndr
+                rNum = rmode[k]
+                lsigma = np.log(sigma)
+                C      = np.sqrt(2.*np.pi)
+                dndr = (1./(R*lsigma*C))*np.exp(-(np.log(R/rNum)**2.)/(2.*lsigma**2.)) 
+
+                # Truncate distribution according to rlow and rup
+                ii = RUP <= rmin
+                dndr[ii] = 0
+
+                ii = RLOW >= rmax[k]
+                dndr[ii] = 0
+
+                # deal with lowest bin
+                # number concentration is scaled to the 
+                # fraction of the bin that is covered by
+                # the aerosol distribution
+                bini = np.arange(len(R))
+                i = bini[RLOW < rmin][-1]
+                drtilda = RUP[i] - rmin
+                dndr[i] = dndr[i]*drtilda/DR[i]
+
+                #deal with the highest bin
+                # number concentration is scaled to the 
+                # fraction of the bin that is covered by
+                # the aerosol distribution                    
+                i = bini[RLOW < rmax[k]][-1]
+                drtilda = rmax[k] - RLOW[i]
+                dndr[i] = dndr[i]*drtilda/DR[i]
+
+                # Now get the volume distribution
+                # dvdr
+                dvdr = 4./3.*np.pi*R**3.*dndr
+
+                
+                # Get aerosol DRY! volume concentration
+                M0 = mr[t,k]*air[t,k]
+                V0 = M0/rhop0
+
+                # Get the Wet volume
+                Vwet = V0*gf[k]**3
+
+                # normalize dvdr so the integral is equal to the 
+                # wet volume                    
+                dvdr = dvdr*Vwet/np.sum(dvdr*DR)
+
+                # # use the fact that for a log-normal distribution
+                # # volume = 4/3*pi*N0*rmode^3*exp(9/2*ln(sigma)^2)
+                # C = (4./3.)*np.pi*np.exp((9./2.)*lsigma**2)
+                # N0   = Vwet/(C*rNum**3)
+
+                # add this aerosol distribution to the master
+                SPCdist[t,k,:] = dvdr
+
+        self.__dict__[spc+'dist'] = SPCdist
+
+
+    def logBins(self,rmin,rmax,nbin=None):
+        """ Get size bins for lognormal distribution """
+        # From P. Colarco's runmie_lognormal.pro
+        # Now we want to set up the aerosol bins.  
+        # We impose a cutoff on the maximum radius to consider.
+        # We consider a minimum radius of 0.005 um (following GADS) 
+        # and use a number of bins equal to at
+        # least 20 bins per decade of the ratio rmax/rmin.
+
+        # The bins are centered in volume betwen rlow and rup
+        # That is...r^3-rlow^3 = rup^3-r^3
+        # rup^3 = rlow^3*rmrat, which can be solved to find r given rmrat
+        # and a desired rlow, e.g. rmin = 1.d-6*((1.+rmrat)/2.)^(1.d/3)
+        # where the desired rlow = 1.d-6 in this example.
+        # The meaning of r is that it is the radius of the particle with 
+        # the average volume of the bin.        
+
+        if nbin is None:
+            decade = np.floor(np.log10(rmax/rmin)+1)
+            nbin   = int(20*decade)
+        rat    = rmax/rmin
+        rmRat  = (rat**3.0)**(1.0/nbin)
+        rMinUse = rmin*((1.+rmRat)/2.)**(1.0/3.0)  
+
+        cpi = np.pi*4./3.
+        rvolmin = cpi*rMinUse**3.
+        vrfact = ( (3./2./np.pi / (rmRat+1))**(1./3.))*(rmRat**(1./3.) - 1.)  
+
+        rvol     = np.zeros(nbin)
+        rvolup   = np.zeros(nbin)
+        r        = np.zeros(nbin)
+        rup      = np.zeros(nbin)
+        dr       = np.zeros(nbin)
+        rlow     = np.zeros(nbin)
+        for ibin in range(nbin):
+            rvol[ibin]   = rvolmin*rmRat**float(ibin)
+            rvolup[ibin] = 2.*rmRat/(rmRat+1.)*rvol[ibin]
+            r[ibin]       = (rvol[ibin]/cpi)**(1./3.)
+            rup[ibin]     = (rvolup[ibin]/cpi)**(1./3.)
+            dr[ibin]      = vrfact*rvol[ibin]**(1./3.)
+            rlow[ibin]    = rup[ibin] - dr[ibin]
+        
+        return r, dr, rlow, rup
+
 
     # --- 
     def readSampledMODISBRDF(self):
@@ -845,6 +1464,75 @@ class POLAR_VLIDORT(object):
 
         if self.verbose:
             print " <> wrote %s"%(self.outFile)
+
+    #---
+    def writeNCdist (self,zlib=True):
+        """
+        Write a NetCDF file of aerosol size distribution
+        """
+        km = 72
+
+        if not os.path.exists(os.path.dirname(self.outFileDist)):
+            os.makedirs(os.path.dirname(self.outFileDist))
+
+        # Open NC file
+        # ------------
+        nc = Dataset(self.outFileDist,'w',format='NETCDF4_CLASSIC')
+
+        # Set global attributes
+        # ---------------------
+        nc.title = 'GEOS-5 - Aerosol size distribution'
+        nc.institution = 'NASA/Goddard Space Flight Center'
+        nc.source = 'Global Model and Assimilation Office'
+        nc.history = 'Aerosol size distribution of LEO satellite sampled on GEOS-5'
+        nc.references = 'n/a'
+        nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
+        nc.Conventions = 'CF'
+        nc.inFile = self.inFile
+     
+        # Create dimensions
+        # -----------------
+        nt = nc.createDimension('time',len(self.tyme))
+        ls = nc.createDimension('ls',19)
+        nz = nc.createDimension('lev',km)
+        x  = nc.createDimension('x',1)
+        y  = nc.createDimension('y',1)
+        nr = nc.createDimension('radius',len(self.R))
+
+        # Coordinate variables
+        # --------------------
+        col = 'aer_Nv'
+        if self.verbose: 
+            print 'opening file',self.inFile.replace('%col',col)
+        nctrj       = Dataset(self.inFile.replace('%col',col))        
+        _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'lev', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)   
+        nctrj.close()
+
+        rad = nc.createVariable('radius','f4',('radius',),zlib=False)
+        rad.long_name   = 'aerosol radius'
+        rad.units       = 'microns'
+        rad[:]          = self.R*1e6
+
+        # Aerosol size distribution
+        dist = nc.createVariable('aero_dist','f4',('time','lev','radius',),zlib=zlib,fill_value=MISSING)
+        dist.long_name     = 'aerosol size distribution (dV/dlnr)' 
+        dist.missing_value = MISSING
+        dist.units         = "microns^3/microns^2"
+        dist[:]            = self.TOTdist
+
+
+        # Close the file
+        # --------------
+        nc.close()
+
+        if self.verbose:
+            print " <> wrote %s"%(self.outFileDist)
     
 
 def get_chd(channel):
@@ -864,7 +1552,7 @@ if __name__ == "__main__":
     inDir        = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelB/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     inFile       = '{}/calipso-g5nr.lb2.%col.{}_{}z.nc4'.format(inDir,nymd,hour)
     brdfDir      = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BRDF/MCD43C1/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
-    brdfFile     = '{}/calipso-g5nr.lb2.brdf.{}_{}z.nc4'.format(albedoDir,nymd,hour)
+    brdfFile     = '{}/calipso-g5nr.lb2.brdf.{}_{}z.nc4'.format(brdfDir,nymd,hour)
     ndviDir      = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BPDF/NDVI/MYD13C2/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
     ndviFile     = '{}/calipso-g5nr.lb2.ndvi.{}_{}z.nc4'.format(ndviDir,nymd,hour)
     lcDir        = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BPDF/LAND_COVER/MCD12C1/051/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
@@ -891,12 +1579,13 @@ if __name__ == "__main__":
                             brdfFile=brdfFile,
                             ndviFile=ndviFile,
                             lcFile=lcFile,
-                            verbose=verbose)
+                            verbose=verbose,
+                            distOnly=True)
 
    
     # Run ext_sampler
     # vlidort.runExt()
 
     # Run VLIDORT
-    if vlidort.nobs > 0:
-        vlidort.runVLIDORT()
+    # if vlidort.nobs > 0:
+    #     vlidort.runVLIDORT()
