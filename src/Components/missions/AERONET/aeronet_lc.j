@@ -49,4 +49,4 @@ cd $AEROBIN
 ######         Perform single iteration of VLIDORT Run
 ######
 ##################################################################
-$RUN_CMD $OPTIONS $START $END slurm_${SLURM_JOBID}_py.out
+$RUN_CMD $OPTIONS $START $END > slurm_${SLURM_JOBID}_py.out
