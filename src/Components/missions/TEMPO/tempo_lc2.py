@@ -65,7 +65,7 @@ if __name__ == "__main__":
         elif int(episode) == 3:
             isoStartTime  = '2007-03-28T00:00:00Z'
             isoEndTime    = '2007-03-29T23:00:00Z'
-        elif int(episode)e == 4:
+        elif int(episode) == 4:
             isoStartTime  = '2007-04-10T00:00:00Z'
             isoEndTime    = '2007-04-11T23:00:00Z'
 
