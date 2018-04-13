@@ -1161,7 +1161,8 @@ class POLAR_VLIDORT(object):
                       " --rc=" + self.rcFile      + \
                       " --format=NETCDF4_CLASSIC"      + \
                       " --channel=%d" %self.channel + \
-                      " --intensive"     
+                      " --intensive"  +\
+                      " --du --su --ss --oc --bc"    
                       
 
         if not os.path.exists(os.path.dirname(outFile)):
@@ -1171,23 +1172,6 @@ class POLAR_VLIDORT(object):
 
         if os.system(cmd):
             raise ValueError, "ext_sampler.py failed for %s "%(self.inFile.replace('%col',col))      
-
-        # Do each species separately
-        for spc in ['du','ss','su','oc','bc']:
-            outFile = '{}/{}.lc2.ext.{}_{}nm.{}.nc'.format(outDir,instname,date_ch,get_chd(self.channel),spc)
-            Options =     " --input=" + self.inFile.replace('%col',col)      + \
-                          " --output=" + outFile       + \
-                          " --rc=" + self.rcFile      + \
-                          " --format=NETCDF4_CLASSIC"      + \
-                          " --channel=%d" %self.channel + \
-                          " --intensive"  +\
-                          " --%s" %spc   
-
-            cmd = 'ext_sampler.py {} '.format(Options) 
-     
-            if os.system(cmd):
-                raise ValueError, "ext_sampler.py failed for %s "%spc       
-
 
 
     def runVLIDORT(self):
