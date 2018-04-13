@@ -309,9 +309,10 @@ class WORKSPACE(JOBS):
                             self.make_ler_rcfile(workdir,startdate,ch,nodemax=nodemax,
                                                  layout=laycode)
 
-
-            self.nodemax_list = np.array(self.nodemax_list)
+            
             startdate = startdate + dt
+
+        self.nodemax_list = np.array(self.nodemax_list)
 
     def get_from_archive(self,path):
         ii = path.find('/c1440_NR/')
