@@ -424,31 +424,31 @@ if __name__ == "__main__":
 
     if options.dust:
         outFile = options.outFile+'.dust'
-        MieVars = computeMie(Vars,channelIn,VNAMES_DU,options.rcFile)
+        MieVars = computeMie(Vars,channelIn,VNAMES_DU,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.seasalt:
         outFile = options.outFile+'.ss'
-        MieVars = computeMie(Vars,channelIn,VNAMES_SS,options.rcFile)
+        MieVars = computeMie(Vars,channelIn,VNAMES_SS,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.sulfate:
         outFile = options.outFile+'.su'
-        MieVars = computeMie(Vars,channelIn,VNAMES_SU,options.rcFile)
+        MieVars = computeMie(Vars,channelIn,VNAMES_SU,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.bcarbon:
         outFile = options.outFile+'.bc'
-        MieVars = computeMie(Vars,channelIn,VNAMES_BC,options.rcFile)
+        MieVars = computeMie(Vars,channelIn,VNAMES_BC,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.ocarbon:
         outFile = options.outFile+'.oc'
-        MieVars = computeMie(Vars,channelIn,VNAMES_OC,options.rcFile)
+        MieVars = computeMie(Vars,channelIn,VNAMES_OC,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
    
