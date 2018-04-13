@@ -1181,7 +1181,7 @@ class POLAR_VLIDORT(object):
                           " --format=NETCDF4_CLASSIC"      + \
                           " --channel=%d" %self.channel + \
                           " --intensive"  +\
-                          ' --%s' + %spc   
+                          " --%s" %spc   
 
             cmd = 'ext_sampler.py {} '.format(Options) 
      
