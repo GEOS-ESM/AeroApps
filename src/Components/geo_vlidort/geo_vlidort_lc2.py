@@ -352,14 +352,12 @@ class WORKSPACE(JOBS):
             met   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z.nc4'
             geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
             land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx.nc4' 
-            chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z.nc4'
             aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'            
 
         else:
             met   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
             geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
             land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx_' + layout + '.nc4'  
-            chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
             aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
 
 
@@ -373,7 +371,6 @@ class WORKSPACE(JOBS):
         f     = np.where(Cld <= float(self.CLDMAX))
         ncMet.close()
         if len(f[0]) == 0:
-            #self.put_in_archive(met,date)
             return False, 0
 
         if not os.path.exists(geom):
@@ -391,38 +388,24 @@ class WORKSPACE(JOBS):
 
         SZA = SZA[f]
         VZA = VZA[f]
-        FRLAND = FRLAND[f]
-
-
-        def clean_up(self,met,geom,land,chm,aer):
-            if self.archive_lb:
-                self.put_in_archive(met)
-                self.put_in_archive(geom)
-                self.put_in_archive(land)
-                self.put_in_archive(chm)
-                self.put_in_archive(aer)
-
-            os.remove(met)
-            os.remove(geom)
-            os.remove(land)
-
+        FRLAND = FRLAND[f]            
 
         f   = np.where(VZA < 80)
         if len(f[0]) == 0:
-            clean_up(self,met,geom,land,chm,aer)
+            clean_up(self,met,geom,land,aer)
             return 0
 
         SZA    = SZA[f]
         FRLAND = FRLAND[f]
         f      = np.where(SZA < 80)
         if len(f[0]) == 0:
-            clean_up(self,met,geom,land,chm,aer)
+            clean_up(self,met,geom,land,aer)
             return 0
 
         FRLAND = FRLAND[f]
         f      = np.where(FRLAND >= 0.99)
         if len(f[0]) == 0:
-            clean_up(self,met,geom,land,chm,aer)
+            clean_up(self,met,geom,land,aer)
             return 0
 
         return len(f[0])
@@ -695,53 +678,65 @@ class WORKSPACE(JOBS):
 
         os.chdir(self.cwd)    
 
+    def final_cleanup(self):
+        # put LevelB aer files in archive or remove
+        # --------------------
+        # Loop over dates
+        date = self.startdate
+        while (date <= self.enddate):
+            g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
+            nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
+            hour  = str(date.hour).zfill(2)
+
+            if self.layout is not None:
+                # loop through tiles
+                for tile in np.arange(self.ntiles):
+                    laycode = self.layout + str(tile)
+                    met   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z_' + laycode +'.nc4'
+                    chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z_' + laycode +'.nc4'
+                    aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z_' + laycode +'.nc4'
+                    geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z_' + laycode +'.nc4'
+                    land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx_' + laycode + '.nc4'  
+
+                    if self.archive_lb:
+                        self.put_in_archive(met)
+                        self.put_in_archive(chm)
+                        self.put_in_archive(aer)
+                        self.put_in_archive(geom)
+                        self.put_in_archive(land)
+                        
+                    if not self.keep_lb:
+                        os.remove(met)
+                        os.remove(chm)
+                        os.remove(aer)
+                        os.remove(geom)
+                        os.remove(land)
+
+            else:
+                met   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z.nc4'
+                chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z.nc4'
+                aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'                            
+                geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
+                land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx.nc4'  
+
+                if self.archive_lb:
+                    self.put_in_archive(met)
+                    self.put_in_archive(chm)
+                    self.put_in_archive(aer)
+                    self.put_in_archive(geom)
+                    self.put_in_archive(land)
+                    
+                if not self.keep_lb:
+                    os.remove(met)
+                    os.remove(chm)
+                    os.remove(aer)
+                    os.remove(geom)
+                    os.remove(land)
+
+            date += dt
 
 
     def destroy_workspace(self,i,jobid):
-        # put LevelB files in archive or remove
-        # --------------------
-
-        #parse date from distring
-        date = parse(os.path.basename(self.dirstring[i]).split('.')[1])
-
-        if self.layout is not None:
-            # parse layout code
-            layout = os.path.basename(self.dirstring[i]).split('.')[-1]
-        else:
-            layout = None
-
-        g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
-        nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
-        hour  = str(date.hour).zfill(2)
-
-        if layout is None:
-            met   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z.nc4'
-            chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z.nc4'
-            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'                            
-            geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
-            land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx.nc4'  
-        else:
-            met   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.met_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
-            chm   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.chm_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
-            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
-            geom  = g5dir + '/' + self.instname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z_' + layout +'.nc4'
-            land  = self.indir + '/LevelB/invariant/' + self.instname.lower() + '-g5nr.lb2.asm_Nx_' + layout + '.nc4'  
-
-        if self.archive_lb:
-            self.put_in_archive(met)
-            self.put_in_archive(chm)
-            self.put_in_archive(aer)
-            self.put_in_archive(geom)
-            self.put_in_archive(land)
-            
-        if not self.keep_lb:
-            os.remove(met)
-            os.remove(chm)
-            os.remove(aer)
-            os.remove(geom)
-            os.remove(land)
-
-
         os.chdir(self.dirstring[i])
 
         os.remove('Aod_EOS.rc')
@@ -994,6 +989,7 @@ if __name__ == "__main__":
     # -----------------------------
     if (workspace.dirstring) > 0:
         workspace.handle_jobs()
+        workspace.final_cleanup()
     else:
         print 'No model hours to run'
 

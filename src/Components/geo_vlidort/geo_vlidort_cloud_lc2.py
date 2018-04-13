@@ -186,27 +186,20 @@ class CLD_WORKSPACE(WORKSPACE):
         FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
         ncLand.close()
 
-        def clean_up(self,geom,land,aer):
-            self.put_in_archive(geom)
-            self.put_in_archive(land)
-            self.put_in_archive(aer)
 
         f   = VZA < 80
         if np.sum(f) == 0:
-            clean_up(self,geom,land,aer)
             return 0
 
         SZA    = SZA[f]
         FRLAND = FRLAND[f]
         f      = SZA < 80
         if np.sum(f) == 0:
-            clean_up(self,geom,land,aer)
             return 0
 
         FRLAND = FRLAND[f]
         f      = FRLAND >= 0.99
         if np.sum(f) == 0:
-            clean_up(self,geom,land,aer)
             return 0
 
         return np.sum(f)
@@ -230,43 +223,37 @@ class CLD_WORKSPACE(WORKSPACE):
             if not self.keep_lb:
                 os.remove(aer)
 
+            if self.layout is not None:
+                # loop through tiles
+                for tile in np.arange(self.ntiles):
+                    laycode = self.layout + str(tile)
+                    geom  = g5dir + '/' + self.angname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.' + laycode +'.nc4'
+                    land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.' + laycode +'.nc4'
+                    if self.archive_lb:
+                        self.put_in_archive(geom)
+                        self.put_in_archive(land)
+                        
+                    if not self.keep_lb:
+                        os.remove(geom)
+                        os.remove(land)
+            else:
+                geom  = g5dir + '/' + self.angname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
+                land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.nc4' 
+
+                if self.archive_lb:
+                    self.put_in_archive(geom)
+                    self.put_in_archive(land)
+                    
+                if not self.keep_lb:
+                    os.remove(geom)
+                    os.remove(land)
+
             date += dt
 
 
 
+
     def destroy_workspace(self,i,jobid):
-        # put LevelB files in archive or remove
-        # --------------------
-
-        #parse date from distring
-        date = parse(os.path.basename(self.dirstring[i]).split('.')[1])
-
-        if self.layout is not None:
-            # parse layout code
-            layout = os.path.basename(self.dirstring[i]).split('.')[-1]
-        else:
-            layout = None        
-
-        g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
-        nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
-        hour  = str(date.hour).zfill(2)
-
-        if layout is None:
-            geom  = g5dir + '/' + self.angname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
-            land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.nc4' 
-        else:
-            geom  = g5dir + '/' + self.angname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
-            land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
-
-        if self.archive_lb:
-            self.put_in_archive(geom)
-            self.put_in_archive(land)
-            
-        if not self.keep_lb:
-            os.remove(geom)
-            os.remove(land)
-
-
         os.chdir(self.dirstring[i])
 
         os.remove('Aod_EOS.rc')
@@ -755,8 +742,7 @@ if __name__ == "__main__":
     # -----------------------------
     if (workspace.dirstring) > 0:
         workspace.handle_jobs()
-        if workspace.layout is not None:
-            workspace.final_cleanup()
+        workspace.final_cleanup()
     else:
         print 'No model hours to run'
 
