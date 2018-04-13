@@ -392,20 +392,17 @@ class WORKSPACE(JOBS):
 
         f   = np.where(VZA < 80)
         if len(f[0]) == 0:
-            clean_up(self,met,geom,land,aer)
             return 0
 
         SZA    = SZA[f]
         FRLAND = FRLAND[f]
         f      = np.where(SZA < 80)
         if len(f[0]) == 0:
-            clean_up(self,met,geom,land,aer)
             return 0
 
         FRLAND = FRLAND[f]
         f      = np.where(FRLAND >= 0.99)
         if len(f[0]) == 0:
-            clean_up(self,met,geom,land,aer)
             return 0
 
         return len(f[0])
