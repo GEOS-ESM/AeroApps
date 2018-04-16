@@ -148,7 +148,7 @@ class JOBS(object):
                 newjobs  = countRun + np.arange(newRun)
                 workingJobs = np.append(workingJobs, newjobs)
                 for i in newjobs:
-                    s = dirstring[i]
+                    s = self.dirstring[i]
                     os.chdir(s)
                     jobid = np.append(jobid,subprocess.check_output(['qsub',runfile]))
 
