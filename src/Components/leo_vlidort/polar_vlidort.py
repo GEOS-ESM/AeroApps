@@ -378,19 +378,18 @@ class POLAR_VLIDORT(object):
 
         # Mixture Distribution
         # -------------
-        TOTdist = self.BCPHILICdist 
-        TOTdist = TOTdist + self.BCPHOBICdist
-        TOTdist = TOTdist + self.OCPHILICdist 
-        TOTdist = TOTdist + self.OCPHOBICdist 
-        TOTdist = TOTdist + self.SUdist
-        TOTdist = TOTdist + self.DUdist 
-        TOTdist = TOTdist + self.SSdist
-
-        self.TOTdist = TOTdist
+        self.TOTdist = self.BCPHILICdist + self.BCPHOBICdist + self.OCPHILICdist + self.OCPHOBICdist + self.SUdist + self.DUdist + self.SSdist
+        self.BCdist  = self.BCPHILICdist + self.BCPHOBICdist
+        self.OCdist  = self.OCPHILICdist + self.OCPHOBICdist
 
         # convert to dV/dlnR [microns^3/microns^2] 
         for i,r in enumerate(self.R):
             self.TOTdist[:,:,i] = self.TOTdist[:,:,i]*self.R[i]*1e6
+            self.BCdist[:,:,i] = self.BCdist[:,:,i]*self.R[i]*1e6
+            self.OCdist[:,:,i] = self.OCdist[:,:,i]*self.R[i]*1e6
+            self.SUdist[:,:,i] = self.SUdist[:,:,i]*self.R[i]*1e6
+            self.SSdist[:,:,i] = self.SSdist[:,:,i]*self.R[i]*1e6
+            self.DUdist[:,:,i] = self.DUdist[:,:,i]*self.R[i]*1e6
 
 
     def getRMAX(self):
@@ -1521,12 +1520,17 @@ class POLAR_VLIDORT(object):
         rad[:]          = self.R*1e6
 
         # Aerosol size distribution
-        dist = nc.createVariable('aero_dist','f4',('time','lev','radius',),zlib=zlib,fill_value=MISSING)
-        dist.long_name     = 'aerosol size distribution (dV/dlnr)' 
-        dist.missing_value = MISSING
-        dist.units         = "microns^3/microns^2"
-        dist[:]            = self.TOTdist
-
+        for spc in ['TOT','BC','OC','DU','SS','SU']:
+            varname = spc + 'dist'
+            if spc == 'TOT':
+                longname = 'total'
+            else:
+                longname = spc
+            dist = nc.createVariable(varname,'f4',('time','lev','radius',),zlib=zlib,fill_value=MISSING)
+            dist.long_name     = '{} aerosol size distribution (dV/dlnr)'.format(longname)
+            dist.missing_value = MISSING
+            dist.units         = "microns^3/microns^2"
+            dist[:]            = self.__dict__[varname]
 
         # Close the file
         # --------------
