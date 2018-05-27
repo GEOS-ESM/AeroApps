@@ -582,7 +582,7 @@ class WORKSPACE(JOBS):
                 i_band = np.argmin(np.abs((fch-c_band) )) + 1
             rcfile.write('SURFBAND_I: '+ str(i_band)  + '\n')
 
-        if (self.code == 'scalar'):
+        if (self.runmode == 'scalar'):
             rcfile.write('SCALAR: true\n')
         else:
             rcfile.write('SCALAR: false\n')
@@ -646,7 +646,7 @@ class WORKSPACE(JOBS):
                 i_band = np.argmin(np.abs((fch-c_band) )) + 1
             rcfile.write('SURFBAND_I: '+ str(i_band) + '\n')
 
-        if (self.code == 'scalar'):
+        if (self.runmode == 'scalar'):
             rcfile.write('SCALAR: true\n')
         else:
             rcfile.write('SCALAR: false\n')
