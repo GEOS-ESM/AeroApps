@@ -398,8 +398,6 @@ if __name__ == "__main__":
     if type(channels) is str:
         channels = channels.split()
 
-    if type(i_band) is str:
-        i_band = i_band.split()
 
     # Loop over dates
     while (startdate <= enddate):
@@ -431,9 +429,6 @@ if __name__ == "__main__":
                     nodemax_ = nodemax
 
                 for i, ch in enumerate(channels):
-                    band_i = None
-                    if (i_band is not None):
-                        band_i = i_band[i]
 
                     # Vector Case
                     code = runmode + '.'
