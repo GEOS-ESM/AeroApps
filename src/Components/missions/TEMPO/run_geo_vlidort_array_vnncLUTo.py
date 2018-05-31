@@ -13,7 +13,15 @@ import glob
 import shutil
 from netCDF4 import Dataset
 
-binname = 'geo_vlidort_vnncLUT.x'
+binname = 'geo_vlidort_vnncLUTo.x'
+
+mr =  [1.396,1.362,1.349,1.345,1.339,1.335,1.334,1.333,1.332,1.331,1.329,1.326,
+      1.323,1.318,1.312,1.306,1.292,1.261]
+
+mr_ch = [200,250,300,337,400,488,515,550,633,694,860,1060,1300,1536,1800,2000,2250,2500]     
+
+mr = np.array(mr)
+mr_ch = np.array(mr_ch)
 
 def make_workspace(date,ch,code,outdir,runfile,instname,prefix='workdir',nodemax=None,
                    addoutdir=None,layout=None):
@@ -41,8 +49,8 @@ def make_workspace(date,ch,code,outdir,runfile,instname,prefix='workdir',nodemax
         os.symlink(cwd+'/Chem_MieRegistry.rc','Chem_MieRegistry.rc')
     if not os.path.isfile('clean_mem.sh'):
         os.symlink(cwd+'/clean_mem.sh','clean_mem.sh')
-    if not os.path.isfile('LUT_angles_albedo.nc4'):
-        shutil.copyfile(cwd+'/LUT_angles_albedo.nc4','LUT_angles_albedo.nc4')        
+    if not os.path.isfile('LUT_angles_wind.nc4'):
+        shutil.copyfile(cwd+'/LUT_angles_wind.nc4','LUT_angles_wind.nc4')        
         
     source = open(cwd+'/'+runfile,'r')
     destination = open(runfile,'w')
@@ -143,8 +151,8 @@ def destroy_workspace(jobid,dirname,outdir,addoutdir=None,nodemax=None,profile=F
     os.remove('clean_mem.sh')
     os.remove('ExtData')
     os.remove('geo_vlidort.rc')
-    os.remove('geo_vlidort_run_array.j')
-    os.remove('LUT_angles_albedo.nc4')
+    os.remove('geo_vlidort_lc2 .j')
+    os.remove('LUT_angles_wind.nc4')
 
     if profile is False:
         if nodemax is not None and nodemax > 1:
@@ -223,85 +231,8 @@ def combine_files(filelist):
     ncmergedfile.close()
 
 
-def make_maiac_rcfile(dirname,indir,date,ch,code,interp,additional_output, instname,
-                      nodemax=None,i_band=None,version=None,surf_version=None,
-                      layout=None):
-    cwd = os.getcwd()
-    os.chdir(dirname)
-
-    rcfile = open('geo_vlidort.rc','w')
-    rcfile.write('INDIR: '+indir+'\n')
-    rcfile.write('OUTDIR: .\n')
-    rcfile.write('DATE: '+str(date.year)+str(date.month).zfill(2)+str(date.day).zfill(2)+'\n')
-    rcfile.write('TIME: '+str(date.hour).zfill(2)+'\n')
-    rcfile.write('INSTNAME: ' + instname.lower() + '\n')
-    rcfile.write('SURFNAME: MAIACRTLS\n')
-
-    #figure out correct MODIS doy
-    if (str(startdate.date()) == '2005-12-31'):
-        rcfile.write('SURFDATE: 2006008\n')
-    elif ((str(startdate.year) == '2007') and (str(date.month).zfill(2) == '03')):
-        rcfile.write('SURFDATE: 2007072\n')
-    elif ((str(startdate.year) == '2007') and (str(date.month).zfill(2) == '04')):
-        rcfile.write('SURFDATE: 2007120\n')
-    elif ((str(startdate.year) == '2006') and (str(date.month).zfill(2) == '07')):
-        rcfile.write('SURFDATE: 2006216\n')
-    elif ((str(startdate.year) == '2006') and (str(date.month).zfill(2) == '08')):
-        rcfile.write('SURFDATE: 2006216\n')        
-    else:
-        doy = date.toordinal() - datetime(date.year-1,12,31).toordinal()
-        DOY = 8*(int(doy/8) + 1)
-        if (DOY > 365):
-            DOY = 8
-            rcfile.write('SURFDATE: '+str(date.year+1)+str(DOY).zfill(3)+'\n')
-        else:
-            rcfile.write('SURFDATE: '+str(date.year)+str(DOY).zfill(3)+'\n')
-
-
-    rcfile.write('SURFBAND: ' + interp +'\n')
-    if (interp.upper() == 'INTERPOLATE'):
-        rcfile.write('SURFBAND_C: 645 858 469 555 1240 1640 2130 412\n')
-    else:
-        rcfile.write('SURFBAND_I: '+ i_band + '\n')
-
-    rcfile.write('SURFBANDM: 8 \n')
-
-    if (code.lower() == 'scalar'):
-        rcfile.write('SCALAR: true\n')
-        rcfile.write('DO_2OS_CORRECTION: false\n')
-    elif (code.upper() == '2OS'):
-        rcfile.write('SCALAR: false\n')
-        rcfile.write('DO_2OS_CORRECTION: true\n')        
-    else:
-        rcfile.write('SCALAR: false\n')
-        rcfile.write('DO_2OS_CORRECTION: false\n')
-
-
-    rcfile.write('CHANNELS: '+ch+'\n')
-    rcfile.write('CLDMAX: 0.01\n')
-    if nodemax is not None:
-        rcfile.write('NODEMAX: '+ str(nodemax) + '\n')
-
-    if additional_output:
-        rcfile.write('ADDITIONAL_OUTPUT: true\n')
-    else:
-        rcfile.write('ADDITIONAL_OUTPUT: false\n')
-
-    if version is not None:
-        rcfile.write('VERSION: '+version+'\n')
-
-    if surf_version is not None:
-        rcfile.write('SURF_VERSION: '+surf_version+'\n')
-
-    if layout is not None:
-        rcfile.write('LAYOUT: '+layout+'\n')
-        
-    rcfile.close()
-
-    os.chdir(cwd)
-
-def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output, instname,
-                    nodemax=None,i_band=None,version=None,surf_version=None,layout=None):
+def make_cx_rcfile(dirname,indir,date,ch,code,additional_output, instname,
+                    nodemax=None,version=None,layout=None):
     cwd = os.getcwd()
     os.chdir(dirname)
 
@@ -311,17 +242,10 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output, instnam
     rcfile.write('DATE: ' + str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2) + '\n')
     rcfile.write('TIME: ' + str(date.hour).zfill(2) + '\n')
     rcfile.write('INSTNAME: ' + instname + '\n')
-    rcfile.write('SURFNAME: LER\n')
+    rcfile.write('SURFNAME: GCX\n')
 
-    rcfile.write('SURFDATE: ' + str(date.month).zfill(2) +'\n')
-
-    rcfile.write('SURFBAND: ' + interp + '\n')
-    if (interp.upper() == 'INTERPOLATE'):
-        rcfile.write('SURFBAND_C: 354 388\n')
-    else:
-        rcfile.write('SURFBAND_I: ' + i_band + '\n')
-
-    rcfile.write('SURFBANDM: 2 \n')
+    mruse = np.interp(ch,mr_ch,mr)
+    rcfile.write('SURFMR: {}\n'.format(mruse))
 
     if (code == 'scalar'):
         rcfile.write('SCALAR: true\n')
@@ -335,7 +259,6 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output, instnam
 
 
     rcfile.write('CHANNELS: ' + ch + '\n')
-    rcfile.write('CLDMAX: 0.01\n')
     if nodemax is not None:
         rcfile.write('NODEMAX: '+ str(nodemax) + '\n')
 
@@ -347,8 +270,6 @@ def make_ler_rcfile(dirname,indir,date,ch,code,interp,additional_output, instnam
     if version is not None:
         rcfile.write('VERSION: '+version+'\n')
 
-    if surf_version is not None:
-        rcfile.write('SURF_VERSION: '+surf_version+'\n')
 
     if layout is not None:
         rcfile.write('LAYOUT: '+layout+'\n')
@@ -418,15 +339,12 @@ if __name__ == "__main__":
     enddate           = '2006-07-27T00:00:00'
     episode           = None
     channels          = '470'
-    surface           = 'MAIACRTLS'
-    interp            = 'interpolate'
-    i_band            = '7'    
+    surface           = 'GCX'
     additional_output = True
     nodemax           = 15
-    surf_version      = '1.0'
     layout            = None
 
-    runfile           = 'geo_vlidort_run_array.j'
+    runfile           = 'geo_vlidort_lc2.j'
     nccs              = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/'+ \
                          instname.upper() + '/DATA/'
 
@@ -519,27 +437,19 @@ if __name__ == "__main__":
 
                     # Vector Case
                     code = runmode + '.'
-                    if (interp.lower() == 'interpolate'):
-                        code = code + 'i'                 
-
                     code = code + surface
 
                     dirlist = make_workspace(startdate,ch,code,outdir+ch+'/',runfile,instname,nodemax=nodemax_,
-                                             addoutdir=addoutdir,layout=laycode,prefix=prefix)
+                                             addoutdir=addoutdir+ch+'/',layout=laycode,prefix=prefix)
 
                     if (additional_output):
                         workdir, outdir_, addoutdir_ = dirlist
                     else:
                         workdir, outdir_ = dirlist
 
-                    if (surface.upper() == 'MAIACRTLS'):
-                        make_maiac_rcfile(workdir,indir,startdate,ch,runmode, interp,additional_output,
-                                          instname, nodemax=nodemax_,i_band=band_i,
-                                          version=version,surf_version=surf_version,layout=laycode)
-                    else:
-                        make_ler_rcfile(workdir,indir,startdate,ch,runmode, interp,additional_output,
-                                        instname, nodemax=nodemax_,i_band=band_i,
-                                        version=version,surf_version=surf_version,layout=laycode)
+                    make_cx_rcfile(workdir,indir,startdate,ch,runmode, additional_output,
+                                        instname, nodemax=nodemax_,
+                                        version=version,layout=laycode)
                     
                     dirstring    = np.append(dirstring,workdir)
                     outdirstring = np.append(outdirstring,outdir_)
