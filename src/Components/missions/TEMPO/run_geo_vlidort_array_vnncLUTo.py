@@ -244,7 +244,7 @@ def make_cx_rcfile(dirname,indir,date,ch,code,additional_output, instname,
     rcfile.write('INSTNAME: ' + instname + '\n')
     rcfile.write('SURFNAME: GCX\n')
 
-    mruse = np.interp(ch,mr_ch,mr)
+    mruse = np.interp(float(ch),mr_ch,mr)
     rcfile.write('SURFMR: {}\n'.format(mruse))
 
     if (code == 'scalar'):
