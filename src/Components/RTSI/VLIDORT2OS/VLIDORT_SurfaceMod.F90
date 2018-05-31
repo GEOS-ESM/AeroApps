@@ -52,7 +52,7 @@ module VLIDORT_SurfaceMod
    end subroutine VLIDORT_SurfaceLamb
 !.........................................................................
    Subroutine VLIDORT_GissCoxMunk(self,U10m,V10m,m, solar_zenith, &
-                                  sensor_zenith, relative_azimuth, scalar, BRDF,rc) 
+                                  sensor_zenith, relative_azimuth, scalar,rc) 
  
       USE VLIDORT_PARS
       USE VLIDORT_AUX
@@ -69,7 +69,6 @@ module VLIDORT_SurfaceMod
       real*8, intent(in)                     :: m
       logical, intent(in)                    :: scalar
       integer, intent(out)                   :: rc     ! error code
-      real*8, intent(out)                    :: BRDF     
     
       !Input parameters BRDF supplement VLIDORT:
       TYPE VLIDORT_BRDF
@@ -233,8 +232,6 @@ module VLIDORT_SurfaceMod
                              VBRDF%VBRDF_Sup_In, &           ! Inputs
                              self%Base%VIO%VBRDF_Sup_Out, &  ! Outputs
                            self%Base%VIO%VBRDF_Sup_OutputStatus)          ! Outputs
-       BRDF = self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)     
-       print*, 'ok BRDF', self%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)       
    end subroutine VLIDORT_GissCoxMunk
 
 !.................................................................................
