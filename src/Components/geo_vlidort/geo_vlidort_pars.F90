@@ -1,17 +1,17 @@
 
-!	----------------------
-!	This is an include file to define some constants and variables 
+! ----------------------
+! This is an include file to define some constants and variables 
 ! used in the geo_vlidort program and subroutines
 !-------------------------
 
-	! VLIDORT array sizes
-	integer, parameter                    :: nobs = 1               ! number of profiles VLIDORT will work on
+  ! VLIDORT array sizes
+  integer, parameter                    :: nobs = 1               ! number of profiles VLIDORT will work on
   real, parameter                       :: ptop = 1.0             ! top (edge) pressure [Pa]
   integer, parameter                    :: nq   = 15                ! number of tracers
 
   ! Vector calculation constants
-  integer, parameter 										:: nPol = 6                ! number of components of the scattering matrix
-  integer, parameter 										:: nMom = 300 						 ! number of phase function moments - 300 is max for dust
+  integer, parameter                    :: nPol = 6                ! number of components of the scattering matrix
+  integer, parameter                    :: nMom = 300              ! number of phase function moments - 300 is max for dust
 
   ! Verbose
   integer, parameter                    :: verbose    = 0
@@ -44,7 +44,7 @@
 
 
   ! Physical constants
-  real, parameter       								:: grav = 9.81               ! gravity
+  real, parameter                       :: grav = 9.81               ! gravity
 
 
 
