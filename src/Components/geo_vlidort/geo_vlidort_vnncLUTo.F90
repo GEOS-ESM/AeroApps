@@ -293,7 +293,7 @@ program geo_vlidort_vnncLUTo
   call mp_readDim("sza", ANG_file, nsza)
   call mp_readDim("vza", ANG_file, nvza)
   call mp_readDim("raa", ANG_file, nraa)
-  call mp_readDim("u10m", ANG_file, nwind)
+  call mp_readDim("wind", ANG_file, nwind)
   allocate (SOLAR_ZENITH(nsza))
   allocate (SENSOR_ZENITH(nvza))
   allocate (RELATIVE_AZIMUTH(nraa))
