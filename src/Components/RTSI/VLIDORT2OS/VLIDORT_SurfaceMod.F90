@@ -12,6 +12,7 @@ module VLIDORT_SurfaceMod
    PUBLIC  VLIDORT_SurfaceLamb
    PUBLIC  VLIDORT_GissCoxMunk
    PUBLIC  VLIDORT_LANDMODIS
+   PUBLIC  VLIDORT_LANDMODIS_BPDF
        
    TYPE VLIDORT_Surface
 
@@ -76,8 +77,6 @@ module VLIDORT_SurfaceMod
          TYPE(VBRDF_Sup_Inputs)                :: VBRDF_Sup_In
          TYPE(VBRDF_Input_Exception_Handling)  :: VBRDF_Sup_InputStatus
       
-       !  VLIDORT BRDF output of the supp but input for VLIDORT scat
-       !  TYPE(VBRDF_Sup_Outputs)               :: VBRDF_Sup_Out
       END TYPE VLIDORT_BRDF
 
       type(VLIDORT_BRDF)   :: VBRDF
@@ -91,8 +90,18 @@ module VLIDORT_SurfaceMod
       logical                                         ::   DO_USER_STREAMS
       logical,dimension(MAX_BRDF_KERNELS)             ::   LAMBERTIAN_KERNEL_FLAG
       logical                                         ::   DO_SURFACE_EMISSION 
+      logical                                         ::   DO_SOLAR_SOURCES 
+      logical                                         ::   DO_USER_OBSGEOMS  
+
       logical                                         ::   DO_SHADOW_EFFECT    ! Only for Cox-Munk type kernels
       logical                                         ::   DO_COXMUNK_DBMS     ! Only for Cox-Munk type kernels
+      logical                                         ::   DO_GLITTER_MSRCORR
+      logical                                         ::   DO_GLITTER_MSRCORR_DBONLY  
+      integer                                         ::   GLITTER_MSRCORR_ORDER
+      integer                                         ::   GLITTER_MSRCORR_NMUQUAD
+      integer                                         ::   GLITTER_MSRCORR_NPHIQUAD
+
+
       integer                                         ::   N_BRDF_KERNELS 
       integer                                         ::   NSTREAMS_BRDF
       character(len=10),dimension(MAX_BRDF_KERNELS)   ::   BRDF_NAMES
@@ -101,17 +110,13 @@ module VLIDORT_SurfaceMod
       integer, dimension(MAX_BRDF_KERNELS)            ::   N_BRDF_PARAMETERS
       double precision, dimension(MAX_BRDF_KERNELS, MAX_BRDF_PARAMETERS)    ::   BRDF_PARAMETERS
       logical                                         ::   DO_DEBUG_RESTORATION
-      logical                                         ::   DO_EXACTONLY
       integer                                         ::   N_MOMENTS_INPUT
-      logical                                         ::   DO_MSRCORR
-      logical                                         ::   DO_MSRCORR_DBONLY  
-      integer                                         ::   GLITTER_MSRCORR_ORDER
-      integer                                         ::   GLITTER_MSRCORR_NMUQUAD
-      integer                                         ::   GLITTER_MSRCORR_NPHIQUAD
 
       double precision                                ::  sigma2
-!      double precision                               ::  m
       double precision                                ::  W10m
+
+      CHARACTER (LEN=120)                           :: MESSAGES ( 0:MAX_MESSAGES )
+      CHARACTER (LEN=120)                           :: ACTIONS ( 0:MAX_MESSAGES )
 
       rc = 0
 
@@ -128,8 +133,11 @@ module VLIDORT_SurfaceMod
          NSTOKES = 3
       end if
 
-      DO_USER_STREAMS     = .true.       ! Use user-defined viewing zenith angles
-      DO_BRDF_SURFACE     = .true. 
+      DO_BRDF_SURFACE  = .true. 
+      DO_USER_STREAMS  = .true.       ! Use user-defined viewing zenith angles
+      DO_SOLAR_SOURCES = .true.      ! TRUE for sunlight, may be TRUE or FALSE in thermal regime
+      DO_USER_OBSGEOMS = .true.      ! BRDF is only calculated for specific azimuth angle
+
       DO_SURFACE_EMISSION = .false.  ! Calculation of surface thermal emission
 
       N_BRDF_KERNELS            = 1             ! Number of BRDF kernels (max 3)
@@ -142,11 +150,7 @@ module VLIDORT_SurfaceMod
       if (W10m<0)   W10m= 0
       if (W10m>50)  W10m= 50
       sigma2 = 0.003 + 0.00512 * W10m
-!      print*, 'sigma2', sigma2
 
-      ! air-water refractive index m
-      ! -------------------
-!      m = 1.33   
 
       ! For each BRDF_KERNELS specify the name, factor and parameter  
       !-------------------------------------------------------------   
@@ -164,19 +168,16 @@ module VLIDORT_SurfaceMod
       DO_SHADOW_EFFECT = .true.      ! Shadow effect for glitter kernels
 !      DO_DBONLY = .false.        ! only direct bounce BRDF (no Fourier terms calc)
 
-      DO_MSRCORR         = .true.  ! Do multiple reflectance correction for glitter kernels
-      DO_MSRCORR_DBONLY  = .false. ! Do multiple reflectance correction 
+      DO_GLITTER_MSRCORR         = .true.  ! Do multiple reflectance correction for glitter kernels
+      DO_GLITTER_MSRCORR_DBONLY  = .false. ! Do multiple reflectance correction 
                                                !for only the exact term of glitter kernels
 
-      GLITTER_MSRCORR_ORDER    = 0   !Order of correction for multiple reflectance computations
+      GLITTER_MSRCORR_ORDER    = 1   !Order of correction for multiple reflectance computations
                                     !(0 = no corr), 1,,2,3 ...
       GLITTER_MSRCORR_NMUQUAD  = 40    ! Number of angles used in zenith integration
                                     ! during  multiple corr
       GLITTER_MSRCORR_NPHIQUAD = 100   ! Number of angles used in azimuthal integration
                                     ! during  multiple corr
-
-      DO_USER_STREAMS          = .true.       ! Use user-defined viewing zenith angles
-
                                            
       ! Copy in data structure
       ! ---------------------
@@ -184,6 +185,8 @@ module VLIDORT_SurfaceMod
       VBRDF%VBRDF_Sup_In%BS_DO_USER_STREAMS     = DO_USER_STREAMS
       VBRDF%VBRDF_Sup_In%BS_DO_BRDF_SURFACE     = DO_BRDF_SURFACE
       VBRDF%VBRDF_Sup_In%BS_DO_SURFACE_EMISSION = DO_SURFACE_EMISSION
+      VBRDF%VBRDF_Sup_In%BS_DO_SOLAR_SOURCES    = DO_SOLAR_SOURCES   
+      VBRDF%VBRDF_Sup_In%BS_DO_USER_OBSGEOMS    = DO_USER_OBSGEOMS   
 
       ! Angles
 
@@ -195,6 +198,11 @@ module VLIDORT_SurfaceMod
       VBRDF%VBRDF_Sup_In%BS_USER_RELAZMS(1)      = relative_azimuth
       VBRDF%VBRDF_Sup_In%BS_N_USER_STREAMS       = self%Base%N_USER_STREAMS
       VBRDF%VBRDF_Sup_In%BS_USER_ANGLES_INPUT(1) = sensor_zenith
+      VBRDF%VBRDF_Sup_In%BS_N_USER_OBSGEOMS      = self%Base%N_USER_OBSGEOMS 
+      VBRDF%VBRDF_Sup_In%BS_USER_OBSGEOMS(1,1)   = solar_zenith
+      VBRDF%VBRDF_Sup_In%BS_USER_OBSGEOMS(1,2)   = sensor_zenith
+      VBRDF%VBRDF_Sup_In%BS_USER_OBSGEOMS(1,3)   = relative_azimuth                       
+
 
       ! BRDF inputs
 
@@ -206,26 +214,66 @@ module VLIDORT_SurfaceMod
       VBRDF%VBRDF_Sup_In%BS_LAMBERTIAN_KERNEL_FLAG = LAMBERTIAN_KERNEL_FLAG
       VBRDF%VBRDF_Sup_In%BS_BRDF_FACTORS           = BRDF_FACTORS
       VBRDF%VBRDF_Sup_In%BS_NSTREAMS_BRDF          = NSTREAMS_BRDF
-      VBRDF%VBRDF_Sup_In%BS_DO_SHADOW_EFFECT       = DO_SHADOW_EFFECT
-!      VBRDF%VBRDF_Sup_In%BS_DO_EXACTONLY           = DO_EXACTONLY
-     
 
-      VBRDF%VBRDF_Sup_In%BS_DO_GLITTER_MSRCORR           = DO_MSRCORR
-      VBRDF%VBRDF_Sup_In%BS_DO_GLITTER_MSRCORR_DBONLY = DO_MSRCORR_DBONLY
+      VBRDF%VBRDF_Sup_In%BS_DO_SHADOW_EFFECT             = DO_SHADOW_EFFECT
+      VBRDF%VBRDF_Sup_In%BS_DO_GLITTER_MSRCORR           = DO_GLITTER_MSRCORR
+      VBRDF%VBRDF_Sup_In%BS_DO_GLITTER_MSRCORR_DBONLY    = DO_GLITTER_MSRCORR_DBONLY
       VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_ORDER        = GLITTER_MSRCORR_ORDER
       VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_NMUQUAD      = GLITTER_MSRCORR_NMUQUAD
       VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_NPHIQUAD     = GLITTER_MSRCORR_NPHIQUAD
 
+      VBRDF%VBRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = .false.   ! only direct bounce BRDF (no Fourier terms calc)
 
+      ! The following is needed for New Cox-munck type only
+      ! set to initialization values
+      !-----------------------------------------------
+      VBRDF%VBRDF_Sup_In%BS_DO_NewCMGLINT             = .false.
+      VBRDF%VBRDF_Sup_In%BS_SALINITY                  = 0
+      VBRDF%VBRDF_Sup_In%BS_WAVELENGTH                = 0
+
+      VBRDF%VBRDF_Sup_In%BS_WINDSPEED                 = 0
+      VBRDF%VBRDF_Sup_In%BS_WINDDIR                   = 0
+
+      VBRDF%VBRDF_Sup_In%BS_DO_GlintShadow            = .false.
+      VBRDF%VBRDF_Sup_In%BS_DO_FoamOption             = .false.
+      VBRDF%VBRDF_Sup_In%BS_DO_FacetIsotropy          = .false.
+
+      ! WSA and BSA scaling options.
+      ! WSA = White-sky albedo. BSA = Black-sky albedo.
+      ! Not implemented for now.  Could be tested
+      !--------------------------------------------
+      VBRDF%VBRDF_Sup_In%BS_DO_WSABSA_OUTPUT = .true.
+      VBRDF%VBRDF_Sup_In%BS_DO_WSA_SCALING   = .false.
+      VBRDF%VBRDF_Sup_In%BS_DO_BSA_SCALING   = .false.
+      VBRDF%VBRDF_Sup_In%BS_WSA_VALUE        = 0
+      VBRDF%VBRDF_Sup_In%BS_BSA_VALUE        = 0
+
+      !  Exception handling
+      ! ----------------------------
+      MESSAGES(0)     = 'Successful Read of VLIDORT Input file'
+      ACTIONS(0)      = 'No Action required for this Task'
+
+      VBRDF%VBRDF_Sup_InputStatus%BS_STATUS_INPUTREAD = VLIDORT_SUCCESS
+
+      VBRDF%VBRDF_Sup_InputStatus%BS_NINPUTMESSAGES   = 0
+      VBRDF%VBRDF_Sup_InputStatus%BS_INPUTMESSAGES    = MESSAGES
+      VBRDF%VBRDF_Sup_InputStatus%BS_INPUTACTIONS     = ACTIONS
+
+
+      ! Do some checks to make sure parameters are not out of range
+      !------------------------------------------------------------
       if ( N_BRDF_KERNELS .GT. MAX_BRDF_KERNELS )       rc = 1
       if ( NSTREAMS_BRDF .GT. MAXSTREAMS_BRDF )         rc = 2
       if ( NSTOKES  .GT. MAXSTOKES  )                   rc = 3      
       if ( WHICH_BRDF(1) .GT. MAXBRDF_IDX )             rc = 4
 
 
-     
+      ! Debug flag for restoration
       DO_DEBUG_RESTORATION = .false.
+      ! Number of moments (only used for restoration debug)
       N_MOMENTS_INPUT = 2 * VBRDF%VBRDF_Sup_In%BS_NSTREAMS - 1
+
+
 
       call VBRDF_MAINMASTER (DO_DEBUG_RESTORATION, &         ! Inputs
                              N_MOMENTS_INPUT, &              ! Inputs
@@ -233,7 +281,6 @@ module VLIDORT_SurfaceMod
                              self%Base%VIO%VBRDF_Sup_Out, &  ! Outputs
                            self%Base%VIO%VBRDF_Sup_OutputStatus)          ! Outputs
    end subroutine VLIDORT_GissCoxMunk
-
 !.................................................................................
 
    Subroutine VLIDORT_LANDMODIS(self, solar_zenith, sensor_zenith, relative_azimuth, &
@@ -254,7 +301,6 @@ module VLIDORT_SurfaceMod
       real*8, intent(in), dimension(:)      :: param
       logical, intent(in)                   :: scalar
       integer, intent(out)                  :: rc     ! error code
-!      real*8, intent(out)                   :: BRDF     
 
       !Input parameters for VLIDORT BRDF supplement:
       TYPE VLIDORT_BRDF
@@ -262,8 +308,6 @@ module VLIDORT_SurfaceMod
          TYPE(VBRDF_Sup_Inputs)                :: VBRDF_Sup_In
          TYPE(VBRDF_Input_Exception_Handling)  :: VBRDF_Sup_InputStatus
       
-       !  VLIDORT BRDF output of the supp but input for VLIDORT scat
-       !  TYPE(VBRDF_Sup_Outputs)               :: VBRDF_Sup_Out
       END TYPE VLIDORT_BRDF
 
       type(VLIDORT_BRDF)   :: VBRDF
@@ -389,7 +433,7 @@ module VLIDORT_SurfaceMod
       VBRDF%VBRDF_Sup_In%BS_NSTREAMS_BRDF          = NSTREAMS_BRDF
 
 
-      VBRDF%VBRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = .false.
+      VBRDF%VBRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = .false.  ! only direct bounce BRDF (no Fourier terms calc)
 
       ! The following is needed for Cox-munck type only
       ! set to initialization values
@@ -490,8 +534,6 @@ module VLIDORT_SurfaceMod
          TYPE(VBRDF_Sup_Inputs)                :: VBRDF_Sup_In
          TYPE(VBRDF_Input_Exception_Handling)  :: VBRDF_Sup_InputStatus
       
-       !  VLIDORT BRDF output of the supp but input for VLIDORT scat
-       !  TYPE(VBRDF_Sup_Outputs)               :: VBRDF_Sup_Out
       END TYPE VLIDORT_BRDF
 
       type(VLIDORT_BRDF)   :: VBRDF
@@ -629,7 +671,7 @@ module VLIDORT_SurfaceMod
       VBRDF%VBRDF_Sup_In%BS_NSTREAMS_BRDF          = NSTREAMS_BRDF
 
 
-      VBRDF%VBRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = .false.
+      VBRDF%VBRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = .false.   ! only direct bounce BRDF (no Fourier terms calc)
 
       ! The following is needed for Cox-munck type only
       ! set to initialization values
