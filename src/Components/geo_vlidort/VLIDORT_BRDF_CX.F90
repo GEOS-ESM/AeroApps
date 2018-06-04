@@ -190,7 +190,7 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
   real*8, target,   intent(in)  :: ssa(km,nch,nobs) ! single scattering albedo
-  real*8, target,   intent(in)  :: pmom(km,nMom,nPol,nch,nobs) !components of the scat phase matrix
+  real*8, target,   intent(in)  :: pmom(km,nch,nobs,nMom,nPol) !components of the scat phase matrix
 
   real*8, target,   intent(in)  :: MISSING          ! MISSING VALUE
   real*8, target,   intent(in)  :: pe(km+1,nobs)    ! pressure at layer edges [Pa]
@@ -267,16 +267,30 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
 
           if ( verbose > 0 ) then
             print*, 'DO COX MUNK'
+            print*,U10m(j),V10m(j),mr(i),solar_zenith (j),&
+                                    sensor_zenith(j),relat_azymuth(j)
           end if
           scalar = .false.
           call VLIDORT_GissCoxMunk(SCAT%Surface,U10m(j),V10m(j),mr(i),solar_zenith (j),&
                                     sensor_zenith(j),relat_azymuth(j),scalar,rc)
-           if ( rc /= 0 ) return
 
-           SCAT%wavelength = channels(i)
-           SCAT%tau => tau(:,i,j)
-           SCAT%ssa => ssa(:,i,j)
-           SCAT%pmom => pmom(:,i,j,:,:)
+          if ( verbose > 0 ) then
+            print*, 'FINISHED COX MUNK'
+          end if
+
+
+          if ( rc /= 0 ) return
+
+          SCAT%wavelength = channels(i)
+          SCAT%tau => tau(:,i,j)
+          SCAT%ssa => ssa(:,i,j)
+          SCAT%pmom => pmom(:,i,j,:,:)
+
+          if ( verbose > 0 ) then
+            print *,'brdf output1', SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1) 
+            print *,'brdf output2', SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(2,1,1,1) 
+            print *,'brdf output3', SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(3,1,1,1) 
+          end if
 
           BRDF(1,j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1) 
           BRDF(2,j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(2,1,1,1) 
