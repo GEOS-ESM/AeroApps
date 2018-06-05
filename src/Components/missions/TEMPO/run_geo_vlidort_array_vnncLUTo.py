@@ -151,7 +151,7 @@ def destroy_workspace(jobid,dirname,outdir,addoutdir=None,nodemax=None,profile=F
     os.remove('clean_mem.sh')
     os.remove('ExtData')
     os.remove('geo_vlidort.rc')
-    os.remove('geo_vlidort_lc2 .j')
+    os.remove('geo_vlidort_lc2.j')
     os.remove('LUT_angles_wind.nc4')
 
     if profile is False:
@@ -242,7 +242,6 @@ def make_cx_rcfile(dirname,indir,date,ch,code,additional_output, instname,
     rcfile.write('DATE: ' + str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2) + '\n')
     rcfile.write('TIME: ' + str(date.hour).zfill(2) + '\n')
     rcfile.write('INSTNAME: ' + instname + '\n')
-    rcfile.write('SURFNAME: GCX\n')
 
     mruse = np.interp(float(ch),mr_ch,mr)
     rcfile.write('SURFMR: {}\n'.format(mruse))
