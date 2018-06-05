@@ -360,7 +360,7 @@ program geo_vlidort_vnncLUTo
   end if
   call MAPL_SyncSharedMemory(rc=ierr)
 
-  clrm = 1
+  clrm = 50
   clmask = .False.
   do k=1,clrm
     i = clmaski(indicesBIG(k))
