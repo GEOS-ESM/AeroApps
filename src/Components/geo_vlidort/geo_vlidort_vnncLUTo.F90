@@ -610,7 +610,9 @@ program geo_vlidort_vnncLUTo
               call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
               radiance_VL(c,sza,vza,raa,uwind,vwind)    = radiance_VL_int(nobs,nch)
               reflectance_VL(c,sza,vza,raa,uwind,vwind) = reflectance_VL_int(nobs,nch)
-              brdf_cx(:,sza,vza,raa,uwind,vwind) = brdf_cx_int(:,nobs,nch)
+              if (MAPL_am_I_root()) then
+                brdf_cx(:,sza,vza,raa,uwind,vwind) = brdf_cx_int(:,nobs,nch)
+              end if
 
               do ch=1,nch     
                 ROT_(c,:,ch) = ROT(:,nobs,ch)      
