@@ -576,7 +576,7 @@ program geo_vlidort_vnncLUTo
     do uwind = 1, nuwind
       do vwind = 1, nvwind
         do sza = 1, nsza
-          do vza = nvza-1,nvza-1 !1, nvza
+          do vza = 1, nvza
             do raa = 1, nraa
 
               ! Prescribed Surface Reflectance
