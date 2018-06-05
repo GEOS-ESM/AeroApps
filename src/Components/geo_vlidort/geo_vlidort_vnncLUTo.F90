@@ -189,7 +189,8 @@ program geo_vlidort_vnncLUTo
   integer                               :: nsza 
   integer                               :: nvza 
   integer                               :: nraa 
-  integer                               :: nwind
+  integer                               :: nuwind
+  integer                               :: nvwind  
   real*8 , allocatable                  :: SOLAR_ZENITH(:)                           ! solar zenith angles 
   real*8 , allocatable                  :: SENSOR_ZENITH(:)                          ! sensor zenith angles     
   real*8 , allocatable                  :: RELATIVE_AZIMUTH(:)                       ! relative azimuth angles  
@@ -293,12 +294,13 @@ program geo_vlidort_vnncLUTo
   call mp_readDim("sza", ANG_file, nsza)
   call mp_readDim("vza", ANG_file, nvza)
   call mp_readDim("raa", ANG_file, nraa)
-  call mp_readDim("wind", ANG_file, nwind)
+  call mp_readDim("uwind", ANG_file, nuwind)
+  call mp_readDim("vwind", ANG_file, nvwind)
   allocate (SOLAR_ZENITH(nsza))
   allocate (SENSOR_ZENITH(nvza))
   allocate (RELATIVE_AZIMUTH(nraa))
-  allocate (U10M(nwind))
-  allocate (V10M(nwind))
+  allocate (U10M(nuwind))
+  allocate (V10M(nvwind))
   call readvar1D("sza", ANG_file, SOLAR_ZENITH)
   call readvar1D("vza", ANG_file, SENSOR_ZENITH)
   call readvar1D("raa", ANG_file, RELATIVE_AZIMUTH)
@@ -358,7 +360,7 @@ program geo_vlidort_vnncLUTo
   end if
   call MAPL_SyncSharedMemory(rc=ierr)
 
-  clrm = 50
+  clrm = 1
   clmask = .False.
   do k=1,clrm
     i = clmaski(indicesBIG(k))
@@ -571,10 +573,10 @@ program geo_vlidort_vnncLUTo
 
 !   Loop through Geometries and Albedos
 !   -----------------------------------
-    do uwind = 1, nwind
-      do vwind = 1, nwind
+    do uwind = 1, nuwind
+      do vwind = 1, nvwind
         do sza = 1, nsza
-          do vza = 1, nvza
+          do vza = nvza-1,nvza-1 !1, nvza
             do raa = 1, nraa
 
               ! Prescribed Surface Reflectance
@@ -658,21 +660,21 @@ program geo_vlidort_vnncLUTo
       write(msg,'(F10.2)') channels(ch)
       
       call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, reshape(reflectance_VL(:,:,:,:,:,:),(/clrm_total,nsza,nvza,nraa,nwind,nwind/))), "writing out reflectance")
+      call check(nf90_put_var(ncid, varid, reshape(reflectance_VL(:,:,:,:,:,:),(/clrm_total,nsza,nvza,nraa,nuwind,nvwind/))), "writing out reflectance")
 
       call check(nf90_inq_varid(ncid, 'rad_' // trim(adjustl(msg)), varid), "get rad vaird")
-      call check(nf90_put_var(ncid, varid, reshape(radiance_VL(:,:,:,:,:,:),(/clrm_total,nsza,nvza,nraa,nwind,nwind/))), "writing out radiance")
+      call check(nf90_put_var(ncid, varid, reshape(radiance_VL(:,:,:,:,:,:),(/clrm_total,nsza,nvza,nraa,nuwind,nvwind/))), "writing out radiance")
 
       call check(nf90_inq_varid(ncid, 'surf_ref_' // trim(adjustl(msg)), varid), "get surf_ref vaird")
-      call check(nf90_put_var(ncid, varid, reshape(brdf_cx(:,:,:,:,:,:),(/nstokes,nsza,nvza,nraa,nwind,nwind/))), "writing out BRDF")
+      call check(nf90_put_var(ncid, varid, reshape(brdf_cx(:,:,:,:,:,:),(/nstokes,nsza,nvza,nraa,nuwind,nvwind/))), "writing out BRDF")
 
 
       if (.not. scalar) then
         call check(nf90_inq_varid(ncid, 'q_' // trim(adjustl(msg)), varid), "get q vaird")
-        call check(nf90_put_var(ncid, varid, reshape(Q_(:,:,:,:,:,:),(/clrm_total,nsza,nvza,nraa,nwind,nwind/))), "writing out Q")
+        call check(nf90_put_var(ncid, varid, reshape(Q_(:,:,:,:,:,:),(/clrm_total,nsza,nvza,nraa,nuwind,nvwind/))), "writing out Q")
 
         call check(nf90_inq_varid(ncid, 'u_' // trim(adjustl(msg)), varid), "get u vaird")
-        call check(nf90_put_var(ncid, varid, reshape(U_(:,:,:,:,:,:),(/clrm_total,nsza,nvza,nraa,nwind,nwind/))), "writing out U")
+        call check(nf90_put_var(ncid, varid, reshape(U_(:,:,:,:,:,:),(/clrm_total,nsza,nvza,nraa,nuwind,nvwind/))), "writing out U")
       endif        
 
     end do
@@ -1117,13 +1119,13 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(PE_,(/clrm,km+1/),rc=ierr)
    
     if (.not. scalar) then
-      call MAPL_AllocNodeArray(Q_,checkSizeR8((/clrm,nsza,nvza,nraa,nwind,nwind/)),rc=ierr)
-      call MAPL_AllocNodeArray(U_,(/clrm,nsza,nvza,nraa,nwind,nwind/),rc=ierr)
+      call MAPL_AllocNodeArray(Q_,checkSizeR8((/clrm,nsza,nvza,nraa,nuwind,nvwind/)),rc=ierr)
+      call MAPL_AllocNodeArray(U_,(/clrm,nsza,nvza,nraa,nuwind,nvwind/),rc=ierr)
     end if
 
-    call MAPL_AllocNodeArray(radiance_VL,checkSizeR8((/clrm,nsza,nvza,nraa,nwind,nwind/)),rc=ierr)
-    call MAPL_AllocNodeArray(reflectance_VL,(/clrm,nsza,nvza,nraa,nwind,nwind/),rc=ierr)
-    call MAPL_AllocNodeArray(brdf_cx,(/nstokes,nsza,nvza,nraa,nwind,nwind/),rc=ierr)
+    call MAPL_AllocNodeArray(radiance_VL,checkSizeR8((/clrm,nsza,nvza,nraa,nuwind,nvwind/)),rc=ierr)
+    call MAPL_AllocNodeArray(reflectance_VL,(/clrm,nsza,nvza,nraa,nuwind,nvwind/),rc=ierr)
+    call MAPL_AllocNodeArray(brdf_cx,(/nstokes,nsza,nvza,nraa,nuwind,nvwind/),rc=ierr)
 
 
     call MAPL_AllocNodeArray(AIRDENS_,checkSizeR4((/im,jm,km/)),rc=ierr)
@@ -1300,8 +1302,8 @@ end subroutine outfile_extname
     call check(nf90_def_dim(ncid, "sza",nsza, szaDimID), "creating sza dimension")
     call check(nf90_def_dim(ncid, "vza",nvza, vzaDimID), "creating vza dimension")
     call check(nf90_def_dim(ncid, "raa",nraa, raaDimID), "creating raa dimension")
-    call check(nf90_def_dim(ncid, "uwind",nwind, uwindDimID), "creating uwind dimension") 
-    call check(nf90_def_dim(ncid, "vwind",nwind, vwindDimID), "creating vwind dimension")   
+    call check(nf90_def_dim(ncid, "uwind",nuwind, uwindDimID), "creating uwind dimension") 
+    call check(nf90_def_dim(ncid, "vwind",nvwind, vwindDimID), "creating vwind dimension")   
     call check(nf90_def_dim(ncid, "stokes",nstokes, stokesDimID), "creating vwind dimension")    
 
     ! Global Attributes
