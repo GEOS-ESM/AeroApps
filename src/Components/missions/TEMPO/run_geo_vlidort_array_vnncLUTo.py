@@ -381,9 +381,10 @@ if __name__ == "__main__":
 
     dt = timedelta(hours=6)
 
-    for Ld,startdate in enumerate(startdateL):
-        enddate = enddateL[Ld]
-        for runmode in runmodeL:
+    for runmode in runmodeL:
+        for Ld,startdate in enumerate(startdateL):
+            enddate = enddateL[Ld]
+        
 
             startdate = parse(startdate)
             enddate   = parse(enddate)
