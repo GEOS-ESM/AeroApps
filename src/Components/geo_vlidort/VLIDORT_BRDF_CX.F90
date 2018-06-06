@@ -88,6 +88,10 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
+  SCAT%nMom    = nMom
+  SCAT%NSTOKES = 1    
+
+
   do j = 1,nobs
 
      ! Make sure albedo and angles are available
@@ -123,6 +127,9 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
 
           if ( verbose > 0 ) then
             print*, 'DO COX MUNK'
+            print*,U10m(j),V10m(j),mr(i),solar_zenith (j),&
+                                    sensor_zenith(j),relat_azymuth(j),scalar
+
           end if
           call VLIDORT_GissCoxMunk(SCAT%Surface,U10m(j),V10m(j),mr(i),solar_zenith (j),&
                                     sensor_zenith(j),relat_azymuth(j),scalar,rc)
@@ -134,7 +141,16 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
           SCAT%g => g(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)
 
-          BRDF(1,j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)     
+          if ( verbose > 0 ) then
+            print *,'brdf output1', SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1) 
+          end if
+
+          BRDF(1,j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1) 
+
+          if ( verbose > 0 ) then
+            print *, 'VLIDORT inputs'
+            print*,channels(i),tau(1,i,j),ssa(1,i,j),g(1,i,j),pmom(1,i,j,1,1)
+          end if
 
           call VLIDORT_Run_Scalar (SCAT, output, ier)
 
