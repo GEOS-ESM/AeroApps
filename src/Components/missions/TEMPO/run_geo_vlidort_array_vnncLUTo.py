@@ -381,84 +381,83 @@ if __name__ == "__main__":
 
     dt = timedelta(hours=6)
 
-    for L,startdate in enumerate(startdateL):
-        enddate = enddateL[L]
-        runmode = runmodeL[L]
+    for Ld,startdate in enumerate(startdateL):
+        enddate = enddateL[Ld]
+        for runmode in runmodeL:
+
+            startdate = parse(startdate)
+            enddate   = parse(enddate)
+            jobsmax   = 150
+            ##################################################
+            ####
+            #    Create working directories, SLURM scripts, and RC-files
+            ####
+            ##################################################
+            dirstring    = np.empty(0)
+            outdirstring = np.empty(0)
+            nodemax_list = np.empty(0,dtype='int')
+            if (additional_output):
+                addoutdirstring = np.empty(0)
+
+            if type(channels) is str:
+                channels = channels.split()
 
 
-        startdate = parse(startdate)
-        enddate   = parse(enddate)
-        jobsmax   = 150
-        ##################################################
-        ####
-        #    Create working directories, SLURM scripts, and RC-files
-        ####
-        ##################################################
-        dirstring    = np.empty(0)
-        outdirstring = np.empty(0)
-        nodemax_list = np.empty(0,dtype='int')
-        if (additional_output):
-            addoutdirstring = np.empty(0)
+            # Loop over dates
+            while (startdate <= enddate):
 
-        if type(channels) is str:
-            channels = channels.split()
-
-
-        # Loop over dates
-        while (startdate <= enddate):
-
-            # check for layout keyword. 
-            # figure out number of tiles        
-            if layout is None:
-                ntiles = 1
-            else:
-                ntiles = int(layout[0])*int(layout[1])
-
-            # loop through tiles
-            for tile in np.arange(ntiles):
-            #for tile in [2]:
-                if layout is not None:
-                    laycode = layout + str(tile)
+                # check for layout keyword. 
+                # figure out number of tiles        
+                if layout is None:
+                    ntiles = 1
                 else:
-                    laycode = None
+                    ntiles = int(layout[0])*int(layout[1])
 
-                # check to see if there is any work to do
-                #anypixels, numpixels = prefilter(startdate,indir,instname,layout=laycode) 
-                anypixels = True
-                numpixels = 10000
-                if (anypixels):
-
-                    if (numpixels <= 1000 and nodemax is not None):
-                        nodemax_ = 1
+                # loop through tiles
+                for tile in np.arange(ntiles):
+                #for tile in [2]:
+                    if layout is not None:
+                        laycode = layout + str(tile)
                     else:
-                        nodemax_ = nodemax
+                        laycode = None
 
-                    for i, ch in enumerate(channels):
+                    # check to see if there is any work to do
+                    #anypixels, numpixels = prefilter(startdate,indir,instname,layout=laycode) 
+                    anypixels = True
+                    numpixels = 10000
+                    if (anypixels):
 
-                        # Vector Case
-                        code = runmode + '.'
-                        code = code + surface
-
-                        dirlist = make_workspace(startdate,ch,code,outdir+ch+'/',runfile,instname,nodemax=nodemax_,
-                                                 addoutdir=addoutdir+ch+'/',layout=laycode,prefix=prefix)
-
-                        if (additional_output):
-                            workdir, outdir_, addoutdir_ = dirlist
+                        if (numpixels <= 1000 and nodemax is not None):
+                            nodemax_ = 1
                         else:
-                            workdir, outdir_ = dirlist
+                            nodemax_ = nodemax
 
-                        make_cx_rcfile(workdir,indir,startdate,ch,runmode, additional_output,
-                                            instname, nodemax=nodemax_,
-                                            version=version,layout=laycode)
-                        
-                        dirstring    = np.append(dirstring,workdir)
-                        outdirstring = np.append(outdirstring,outdir_)
-                        nodemax_list = np.append(nodemax_list,int(nodemax_))
-                        if (additional_output):
-                            addoutdirstring = np.append(addoutdirstring, addoutdir_)
+                        for i, ch in enumerate(channels):
 
-           
-            startdate = startdate + dt
+                            # Vector Case
+                            code = runmode + '.'
+                            code = code + surface
+
+                            dirlist = make_workspace(startdate,ch,code,outdir+ch+'/',runfile,instname,nodemax=nodemax_,
+                                                     addoutdir=addoutdir+ch+'/',layout=laycode,prefix=prefix)
+
+                            if (additional_output):
+                                workdir, outdir_, addoutdir_ = dirlist
+                            else:
+                                workdir, outdir_ = dirlist
+
+                            make_cx_rcfile(workdir,indir,startdate,ch,runmode, additional_output,
+                                                instname, nodemax=nodemax_,
+                                                version=version,layout=laycode)
+                            
+                            dirstring    = np.append(dirstring,workdir)
+                            outdirstring = np.append(outdirstring,outdir_)
+                            nodemax_list = np.append(nodemax_list,int(nodemax_))
+                            if (additional_output):
+                                addoutdirstring = np.append(addoutdirstring, addoutdir_)
+
+               
+                startdate = startdate + dt
 
 
     ##################################################
