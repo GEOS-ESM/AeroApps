@@ -512,7 +512,7 @@ program geo_vlidort
 !   Call VlIDORT
 !   ------------
 
-    if ( (lower_to_upper(surfmodel) /= 'CX') ) then
+    if ( (lower_to_upper(surfmodel) .eq. 'CX') ) then
 !     GISS Cox Munk Model
 !     -------------------------------
       if (scalar) then
