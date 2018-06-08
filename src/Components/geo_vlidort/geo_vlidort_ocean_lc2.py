@@ -27,6 +27,13 @@ jobsmax   = 150
 dt = timedelta(hours=1)
 archive = '/archive/u/rgovinda/osse2/'
 
+mr =  [1.396,1.362,1.349,1.345,1.339,1.335,1.334,1.333,1.332,1.331,1.329,1.326,
+      1.323,1.318,1.312,1.306,1.292,1.261]
+
+mr_ch = [200,250,300,337,400,488,515,550,633,694,860,1060,1300,1536,1800,2000,2250,2500]
+
+mr = np.array(mr)
+mr_ch = np.array(mr_ch)
 
 class JOBS(object):
     def handle_jobs(self):
@@ -542,6 +549,9 @@ class WORKSPACE(JOBS):
         rcfile.write('INSTNAME: ' + self.instname.lower() + '\n')
         rcfile.write('SURFNAME: GISS_CoxMunk\n')
         rcfile.write('SURFMODEL: CX\n')
+
+        mruse = np.interp(float(ch),mr_ch,mr)
+        rcfile.write('SURFMR: {}\n'.format(mruse))
 
         if (self.runmode == 'scalar'):
             rcfile.write('SCALAR: true\n')
