@@ -1480,7 +1480,7 @@ end subroutine outfile_extname
       end if
       call check(nf90_def_var(ncid, 'aod_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),aotVarID(ch)),"create aot var")
     end do
-    call check(nf90_def_var(ncid, 'wind_speed' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),windVarID),"create wind var")
+    call check(nf90_def_var(ncid, 'wind_speed',nf90_float,(/ewDimID,nsDimID,timeDimID/),windVarID),"create wind var")
 
     ! Variable Attributes
 !                                          Reflectance and AOD
