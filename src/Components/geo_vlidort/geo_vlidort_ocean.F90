@@ -1513,11 +1513,11 @@ end subroutine outfile_extname
 
 !                                          Wind Speed
 !                                          ------------------------  
-      call check(nf90_put_att(ncid,aotVarID(ch),'standard_name','wind speed'),"standard_name attr")
-      call check(nf90_put_att(ncid,aotVarID(ch),'long_name','10-meter wind speed'),"long_name attr")
-      call check(nf90_put_att(ncid,aotVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,aotVarID(ch),'units','m/s'),"units attr")
-      call check(nf90_put_att(ncid,aotVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")      
+      call check(nf90_put_att(ncid,windVarID,'standard_name','wind speed'),"standard_name attr")
+      call check(nf90_put_att(ncid,windVarID,'long_name','10-meter wind speed'),"long_name attr")
+      call check(nf90_put_att(ncid,windVarID,'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,windVarID,'units','m/s'),"units attr")
+      call check(nf90_put_att(ncid,windVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")      
 
 !                                          scanTime
 !                                          -------  
