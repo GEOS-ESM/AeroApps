@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     outTemplate = '{}/Y{}/M{}/D{}/tempo-g5nr.lb2.{}.{}_{}z.nc4'
     while startdate <= enddate:
-        Y = startdate.year
+        Y = str(startdate.year)
         M = str(startdate.month).zfill(2)
         D = str(startdate.day).zfill(2)
         H = str(startdate.hour).zfill(2)
