@@ -47,9 +47,9 @@ if __name__ == "__main__":
     bin          = options.bin
 
     if dryrun:
-        command = bin + ' --dryrun'
+        command = './' + bin + ' --dryrun'
     else:
-        command = bin
+        command = './' + bin
 
 
 
