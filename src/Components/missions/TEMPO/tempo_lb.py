@@ -14,7 +14,7 @@ from datetime        import timedelta
 from dateutil.parser import parse         as isoparser
 if __name__ == "__main__":
     # Defaults
-    bin = 'geo_samplery.py'
+    bin = 'geo_sampler.py'
     levelBdir = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/DATA/LevelB/'
 
 #   Parse command line options
