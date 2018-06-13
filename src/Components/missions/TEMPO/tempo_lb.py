@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
 
 
-    command += '-v -C -r ' + rcFile 
+    command += ' -v -C -r ' + rcFile 
 
     startdate = isoparser(isoStartTime)
     enddate   = isoparser(isoEndTime)
