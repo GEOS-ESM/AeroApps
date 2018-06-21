@@ -281,8 +281,7 @@ class WORKSPACE(JOBS):
                         for runmode in self.runmodeL:
                             # Runmode code
                             self.runmode = runmode
-                            self.code = runmode + '.'
-                            self.code += self.surface
+                            self.code = runmode 
 
                             for i, ch in enumerate(self.channels):
 

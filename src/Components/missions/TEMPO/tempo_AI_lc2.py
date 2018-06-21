@@ -73,4 +73,4 @@ if __name__ == "__main__":
 
     print command
     if system(command):
-        raise ValueError, "run_geo_vlidort_lc2_AI.py failed for %s to %s "%(isoStartTime,isoEndTime)
+        raise ValueError, "run_geo_vlidort_AI_lc2.py failed for %s to %s "%(isoStartTime,isoEndTime)
