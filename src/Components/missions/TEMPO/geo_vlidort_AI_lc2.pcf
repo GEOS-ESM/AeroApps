@@ -1,0 +1,30 @@
+# GEO_VLIDORT_LC2 processing
+
+LC2_INSTNAME = tempo
+LC2_CHANNELS = 388
+LC2_RUNMODE  = vector
+
+# used for file naming
+LC2_VERSION  = 1.0
+
+## Array mode info
+# None or an integer
+LC2_NODEMAX = 10
+
+## Domain decomposition
+# None or layout code (nXnY)
+LC2_LAYOUT = None
+
+LC2_CLDMAX = 0.01
+LC2_DIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS
+LC2_EXECFILE   = /discover/nobackup/pcastell/workspace/GAAS/src/Components/geo_vlidort/geo_vlidort_AI.x
+LC2_RUNFILE = geo_vlidort_lc2.j
+
+## Don't delete slurm log files after run is complete
+LC2_PROFILE = No
+## Run in Verbose Mode
+LC2_VERBOSE = Yes
+## keep LevelB Files on Local Disk
+LC2_KEEP_LB      = No
+## Copy LB Files over to archive after run is complete
+LC2_ARCHIVE_LB  = Yes
