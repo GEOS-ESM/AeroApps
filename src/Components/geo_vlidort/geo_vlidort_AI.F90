@@ -213,7 +213,6 @@ program geo_vlidort
     write(*,*) 'VZA < ', vzamax
     if (scalar) write(*,*) 'Scalar calculations'
     if (.not. scalar) write(*,*) 'Vector calculations'
-    write(*,*) 'Additional Output: ',additional_output
     if (trim(layout) /= '111') write(*,*) 'layout: ',trim(layout)
     write(*,*) ' '
   end if 
@@ -363,7 +362,6 @@ program geo_vlidort
 ! Initialize outputs to be safe
 ! -------------------------------
   ROT_           = dble(MISSING)
-  PE_            = dble(MISSING)
   radiance_VL    = dble(MISSING)
   reflectance_VL = dble(MISSING)
   if (.not. scalar) then
@@ -398,7 +396,6 @@ program geo_vlidort
                        reshape(DELP(c,:),(/km,nobs/)), ptop, &
                        pe, ze, te )   
 
-    PE_(c,:) = pe(:,nobs)
 
     write(msg,'(A,I)') 'getEdgeVars ', myid
     call write_verbose(msg)
@@ -479,7 +476,6 @@ program geo_vlidort
    
     allocate (field(im,jm))
     field = g5nr_missing
-    allocate (AOD(clrm_total))
 
 !                             Write to main OUT_File
 !                             ----------------------
@@ -896,7 +892,6 @@ end subroutine outfile_extname
     call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
 
     call MAPL_AllocNodeArray(ROT_,(/clrm,km,nch/),rc=ierr)
-    call MAPL_AllocNodeArray(PE_,(/clrm,km+1/),rc=ierr)
     
     if (.not. scalar) then
       call MAPL_AllocNodeArray(Q_,(/clrm,nch/),rc=ierr)
@@ -1071,7 +1066,6 @@ end subroutine outfile_extname
     call check(nf90_put_att(ncid,NF90_GLOBAL,'land_inputs',trim(LAND_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'met_inputs',trim(MET_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'aerosol_inputs',trim(AER_file)),"input files attr")
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(SURF_file)),"input files attr")
 
     call check(nf90_put_att(ncid,NF90_GLOBAL,'inputs',trim(comment)),"input files attr")
     write(comment,'(A)') 'n/a'
@@ -1336,7 +1330,6 @@ end subroutine outfile_extname
     call MAPL_DeallocNodeArray(RAA,rc=ierr) 
 
     call MAPL_DeallocNodeArray(ROT_,rc=ierr)
-    call MAPL_DeallocNodeArray(PE_,rc=ierr)
     if (.not. scalar) then
       call MAPL_DeallocNodeArray(Q_,rc=ierr)
       call MAPL_DeallocNodeArray(U_,rc=ierr)
