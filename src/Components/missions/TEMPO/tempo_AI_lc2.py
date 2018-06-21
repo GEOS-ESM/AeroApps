@@ -13,7 +13,7 @@ from os       import system
 from optparse        import OptionParser
 
 if __name__ == "__main__":
-    bin = 'run_geo_vlidort_lc2_AI.py'
+    bin = 'run_geo_vlidort_AI_lc2.py'
 
 #   Parse command line options
 #   --------------------------

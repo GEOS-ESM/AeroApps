@@ -59,11 +59,11 @@ if __name__ == "__main__":
 
     # Generate LC2 products
     # ---------------------
-    cmd = "geo_vlidort_lc2_AI.py %s %s %s "%(Options,start_isotime,end_isotime)
+    cmd = "geo_vlidort_AI_lc2.py %s %s %s "%(Options,start_isotime,end_isotime)
     print cmd
     if not options.dryrun:
         if system(cmd):
-            raise ValueError, "geo_vlidort_lc2_AI.py failed for %s to %s "%(start_isotime, end_isotime)
+            raise ValueError, "geo_vlidort_AI_lc2.py failed for %s to %s "%(start_isotime, end_isotime)
 
     
 
