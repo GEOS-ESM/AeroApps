@@ -285,10 +285,7 @@ class WORKSPACE(JOBS):
                                 # save directory names
                                 dirlist = self.make_workspace(startdate,ch,nodemax=nodemax,layout=laycode)
 
-                                if (self.additional_output):
-                                    workdir, outdir, addoutdir_ = dirlist
-                                else:
-                                    workdir, outdir = dirlist
+                                workdir, outdir = dirlist
 
                                 self.dirstring.append(workdir)
                                 self.outdirstring.append(outdir)
@@ -507,10 +504,7 @@ class WORKSPACE(JOBS):
         # Go back to original run directory 
         os.chdir(self.cwd) 
         
-        if (self.addoutdir is not None):
-            return dirname, outdir, addoutdir
-        else:
-            return dirname, outdir 
+        return dirname, outdir 
 
     def make_rcfile(self,dirname,date,ch,nodemax=None,layout=None):
         os.chdir(dirname)
