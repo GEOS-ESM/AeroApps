@@ -32,7 +32,8 @@ PY_EXTS = GeoAngles_.$(F2PYEXT)
 PY_SCRP = run_geo_vlidort_lc2.py geo_vlidort_lc2.py geo_warp.py \
           run_geo_vlidort_cloud_lc2.py geo_vlidort_cloud_lc2.py \
           run_geo_vlidort_ocean_lc2.py geo_vlidort_ocean_lc2.py \
-          run_geo_vlidort_AI_lc2.py geo_vlidort_AI_lc2.py
+          run_geo_vlidort_AI_lc2.py geo_vlidort_AI_lc2.py \
+          geo_vlidort_blksurf_lc2.py run_geo_vlidort_blksurf_lc2.py
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
