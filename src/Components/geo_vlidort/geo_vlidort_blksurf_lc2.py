@@ -551,7 +551,7 @@ class WORKSPACE(JOBS):
         # put LevelB aer files in archive or remove
         # --------------------
         # Loop over dates
-        for startdate,enddate in zip(self.startdateL,self,enddateL)
+        for startdate,enddate in zip(self.startdateL,self,enddateL):
             date = startdate
             while (date <= enddate):
                 g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
