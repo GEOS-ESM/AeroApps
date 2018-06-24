@@ -616,10 +616,7 @@ class WORKSPACE(JOBS):
         else:
             nodemax = self.nodemax_list[i]
 
-        if self.additional_output:
-            addoutdir = self.addoutdirstring[i]
-        else:
-            addoutdir = None
+        addoutdir = None
 
         outdir = self.outdirstring[i]
 
