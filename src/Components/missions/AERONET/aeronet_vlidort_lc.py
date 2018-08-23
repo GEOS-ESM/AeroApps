@@ -22,8 +22,6 @@ if __name__ == "__main__":
     DT_hours = 24
     channels = ['340','380','440','500','670','870','1020','1640']
     extch    = ['355','532','1064']
-    channels += extch
-    extch    = channels
     platform = 'nccs'
 
 #   Parse command line options
