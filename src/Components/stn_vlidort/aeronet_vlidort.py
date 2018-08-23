@@ -1894,7 +1894,7 @@ class AERONET_VLIDORT(object):
         b = np.empty([self.nstations,self.ntyme])
         for t in range(self.ntyme):    
             vol = np.squeeze(self.vol[t])
-            refr = np.squeeze(self.refi[t])
+            refr = np.squeeze(self.refr[t])
             b[:,t] = (vol*refr).sum(axis=0)/vol.sum(axis=0)
 
         
