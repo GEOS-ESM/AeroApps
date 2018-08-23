@@ -1367,7 +1367,12 @@ class AERONET_VLIDORT(object):
                       " --format=NETCDF4_CLASSIC"      + \
                       " --channel=%d" %self.channel + \
                       " --intensive"   +\
-                      " --stn"    
+                      " --stn" +\
+                      " --oc" +\
+                      " --bc" +\
+                      " --ss" +\
+                      " --su" +\
+                      " --du"    
                       
 
         if not os.path.exists(os.path.dirname(self.outFileext)):
