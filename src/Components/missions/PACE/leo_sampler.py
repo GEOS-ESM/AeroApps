@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
 """
-    Utility to create GEOS-5 Collections on MODIS Level 2 granule.
+    Utility to create GEOS-5 Collections on PACE L1B granule.
     Based on trj_sampler.py and geo_sampler.py
 
     Arlindo da Silva, November 2014.
     P. Castellanos, Aug 2016 - Modified from GEO to LEO
+    P. Castellanos, 2018 - Modified from MODIS to PACE
 """
 
 import os
@@ -30,8 +31,15 @@ from glob                import glob
 from pyhdf.SD            import SD, HDF4Error
 
 
-SDS = ('Longitude', 'Latitude', 'Scan_Start_Time' )
-DATE_START = datetime(1993,1,1,0,0,0)
+SDS = {'longitude'  : 'geolocation_data',
+       'latitude'   : 'geolocation_data',
+       'ev_mid_time': 'scan_line_attributes' }
+
+
+ALIAS = {'longitude': 'lon',
+         'latitude' : 'lat',
+         'ev_mid_time': 'midTime'}
+
 
 class SampleVar(object):
     """                                                                                  
@@ -40,9 +48,9 @@ class SampleVar(object):
     def __init__(self,name):
         self.name = name
 
-class MODIS(object):
+class PACE(object):
     """
-    Generic container for MODIS SDS
+    Generic container for PACE SDS
     """
 
     def __init__(self, Path,verb=False):
@@ -52,7 +60,7 @@ class MODIS(object):
         if type(Path) is list:
             if len(Path) == 0:
                self.nobs = 0
-               print "WARNING: Empty MxD04_L2 object created"
+               print "WARNING: Empty PACE_L1B object created"
                return
             else:
                 self.nobs = len(Path)
@@ -64,22 +72,31 @@ class MODIS(object):
         # -----------------------------------------------
         self.granules = Path
         self.verb = verb
-        self.SDS  = SDS
+        self.SDS  = SDS.keys()
+        self.SDSg = SDS
 
         for name in self.SDS:
            self.__dict__[name] = []
+
+        self.scanStart = []
 
         # Read each granule, appending them to the list
         # ---------------------------------------------
         self._readList(Path)
 
+        # Alias
+        for sds in self.SDS:
+            self.__dict__[ALIAS[sds]] = self.__dict__[sds]
+
         # Create corresponding python time
         # --------------------------------
-        self.tyme = []        
-        for start_time in self.Scan_Start_Time:
-            tyme = np.ma.masked_array([DATE_START+timedelta(seconds=s) for s in array(start_time).ravel()]).reshape(start_time.shape)
-            tyme.mask = start_time.mask
-            self.tyme.append(tyme)
+        nscan,npixel = self.lon[0].shape
+        self.scanTime = []        
+        for scanStart,midTime in zip(self.scanStart,self.midTime):
+            tyme       = np.array([scanStart.date() + timedelta(seconds=t) for t in midTime])    
+            tyme.shape = (nscan,1)
+            tyme       = np.repeat(tyme,npixel,axis=1)
+            self.scanTime.append(tyme)
                     
 
     def _readList(self,List):
@@ -105,39 +122,26 @@ class MODIS(object):
 
 #---
     def _readGranule(self,filename):
-        """Reads one MOD04/MYD04 granule with Level 2 aerosol data."""
+        """Reads one PACE granule."""
 
         # Don't fuss if the file cannot be opened
         # ---------------------------------------
         try:
             if self.verb:
                 print "[] Working on "+filename
-            hfile = SD(filename)
-        except HDF4Error:
+            nc = Dataset(filename)
+        except:
             if self.verb > 2:
-                print "- %s: not recognized as an HDF file"%filename
+                print "- %s: not recognized as an netCDF file"%filename
             return 
 
         # Read select variables (do not reshape)
         # --------------------------------------
-        for sds_ in self.SDS:
-            sds = sds_
-            try:
-                v = hfile.select(sds).get()
-            except:
-                if sds in NEW_SDS: # cope with new names in Coll. 6
-                    sds = NEW_SDS[sds_]
-                    v = hfile.select(sds).get()
-            a = hfile.select(sds).attributes()
-            fill = a['_FillValue']
-            if sds == 'Scan_Start_Time':
-                fill = -9999  #error in MODIS files
-            v = np.ma.masked_array(v,fill_value=MAPL_UNDEF)
-            v.mask = np.abs(v-fill) < 0.001            
-            if a['scale_factor']!=1.0 or a['add_offset']!=0.0:
-                v = a['scale_factor'] * v + a['add_offset']
-
-            self.__dict__[sds_].append(v) # Keep Collection 5 names!
+        self.scanStart.append(isoparser(nc.time_coverage_start))
+        for sds in self.SDS:            
+            group = self.SDSg[sds]
+            v = nc.groups[group].variables[sds][:]
+            self.__dict__[sds].append(v) 
 
             
 
@@ -146,18 +150,14 @@ class NC4ctl_(NC4ctl):
 
 
 # ---
-def granules ( path, prod, t1, t2, coll='006'):
+def granules ( path, t1, t2):
     """
-    Returns a list of MxD04 granules for a given product at given time.
+    Returns a list of PACE granules for a given product at given time.
     On input,
 
-    path      ---  mounting point for the MxD04 Level 2 files
-    prod      ---  either MOD04 or MYD04
+    path      ---  mounting point for the PACE files
     t1        ---  starting time (timedate format)
     t2        ---  ending time (timedate format)
-
-    coll      ---  collection: 005, 051 (optional)
-
     """
 
     # Find MODIS granules in the time range
@@ -168,8 +168,8 @@ def granules ( path, prod, t1, t2, coll='006'):
     while t < t2:
         if t >= t1:
             doy = t.timetuple()[7]
-            basen = "%s/%s/%04d/%03d/%s_L2.A%04d%03d.%02d%02d.%s.*.hdf"\
-                     %(path,prod,t.year,doy,prod,t.year,doy,t.hour,t.minute,coll)
+            basen = "%s/Y%04d/%03d/OCI%04d%03d%02d%02d00.L1B_PACE.nc"\
+                     %(path,t.year,doy,t.year,doy,t.hour,t.minute)
             
             try:
                 filen = glob(basen)[0]
@@ -180,7 +180,7 @@ def granules ( path, prod, t1, t2, coll='006'):
         t += dt
 
     if len(Granules) == 0:
-        print "WARNING: no %s collection %s granules found for %s through %s"%(prod,coll, str(t1), str(t2))
+        print "WARNING: no PACE granules found for %s through %s"%(str(t1), str(t2))
 
     return Granules
 
@@ -323,7 +323,7 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
 
 
     """
-    Write a NetCDF file with sampled GEOS-5 variables pn geostationary grid
+    Write a NetCDF file with sampled GEOS-5 variables on PACE grid
     described by (clon,clat,tyme).
     """
     for i, path in enumerate(mxd.granules):
@@ -493,29 +493,26 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
 
 if __name__ == "__main__":
     
-    title   = 'GEOS-5 MODIS Sampler'
+    title   = 'GEOS-5 PACE Sampler'
     format  = 'NETCDF4_CLASSIC'
-    rcFile  = 'modis_sampler.rc'
+    rcFile  = 'leo_sampler.rc'
     outdir  = './'
-    coll    = '006'
 
     # MODIS Level 2 default
     # -------------------
-    calculon = '/nobackup/MODIS/{}/Level2/'.format(coll)
-    nccs = '/discover/nobackup/projects/gmao/iesa/aerosol/Data/MODIS/Level2/{}/'.format(coll)
+    calculon = '/nobackup/3/pcastell/PACE/L1B'
+    nccs = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/L1B'
     if os.path.exists(nccs): 
-        L2Root = nccs
+        L1Root = nccs
     elif os.path.exists(calculon): 
-        L2Root = calculon
-    else:
-        L2Root = './Level2/'
+        L1Root = calculon
 
 
-    dt_hours = 24 # hard-wire one-day for now
+    dt_minutes = 5 #  5 minutes for now
 
 #   Parse command line options
 #   --------------------------
-    parser = OptionParser(usage="Usage: %prog [OPTIONS] prod iso_t1 [iso_t2]",
+    parser = OptionParser(usage="Usage: %prog [OPTIONS] iso_t1 [iso_t2]",
                           version='1.0.0' )
 
     parser.add_option("-C", "--coords",
@@ -525,11 +522,8 @@ if __name__ == "__main__":
     parser.add_option("-f", "--format", dest="format", default=format,
               help="Output file format: one of NETCDF4, NETCDF4_CLASSIC, NETCDF3_CLASSIC or NETCDF3_64BIT (default=%s)"%format )
 
-    parser.add_option("-p", "--path", dest="L2Root", default=L2Root,
-              help='MODIS Level2 path (default=%s)'%L2Root)
-
-    parser.add_option("-c", "--coll", dest="coll", default=coll,
-              help='MODIS collection code (default=%s)'%coll)    
+    parser.add_option("-p", "--path", dest="L1Root", default=L1Root,
+              help='PACE L1B path (default=%s)'%L1Root)    
 
     parser.add_option("-N", "--nozip",
                       action="store_true", dest="nozip",
@@ -543,6 +537,10 @@ if __name__ == "__main__":
               help="Resource file defining parameters to sample (default=%s)"\
                           %rcFile )
 
+    parser.add_option("--dt_minutes", dest="dt_minutes", default=dt_minutes,
+              help="if no iso_t2, time from iso_t1 (default=%d)"\
+                          %dt_minutes )    
+
     parser.add_option("-t", "--title", dest="title", default=title,
               help="Output file title, typically the collection name (default=%s)"\
                           %title )
@@ -553,16 +551,16 @@ if __name__ == "__main__":
 
     (options, args) = parser.parse_args()
     
-    if len(args) == 3:
-        prod, iso_t1, iso_t2 = args
+    if len(args) == 2:
+        iso_t1, iso_t2 = args
         t1, t2 = (isoparser(iso_t1), isoparser(iso_t2))
-    elif len(args) == 2:
-        prod, iso_t1 = args
+    elif len(args) == 1:
+        iso_t1 = args[0]
         iso_t2 = None
         t1     = isoparser(iso_t1)
-        t2     = t1 + timedelta(hours=dt_hours)
+        t2     = t1 + timedelta(minutes=options.dt_minutes)
     else:
-        parser.error("must have 2 or 3 arguments: prod iso_t1 [iso_t2]")
+        parser.error("must have 1 or 2 arguments: iso_t1 [iso_t2]")
 
     # Create consistent file name extension
     # -------------------------------------
@@ -582,18 +580,17 @@ if __name__ == "__main__":
 
     # Get Granules to work on
     # -----------------------
-    options.granules = granules ( L2Root, prod, t1, t2, coll=options.coll)
+    options.granules = granules (options.L1Root, t1, t2)
 
     # Create (x,y,t) coordinates
     # --------------------------
-    mxd = MODIS(options.granules)
+    pace = PACE(options.granules)
 
-    if mxd.nobs > 0:
-        # Get Variables and Metadata
-        # --------------------------
-        Vars, levs, levUnits = getVars(options.rcFile)
+    # Get Variables and Metadata
+    # --------------------------
+    Vars, levs, levUnits = getVars(options.rcFile)
 
 
-        # Write output file
-        # -----------------
-        writeNC ( mxd, Vars, levs, levUnits, options, doAkBk=False)
+    # # Write output file
+    # # -----------------
+    # writeNC ( mxd, Vars, levs, levUnits, options, doAkBk=False)
