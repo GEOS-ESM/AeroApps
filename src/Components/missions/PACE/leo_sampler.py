@@ -91,12 +91,15 @@ class PACE(object):
         # Create corresponding python time
         # --------------------------------
         nscan,npixel = self.lon[0].shape
-        self.scanTime = []        
-        for scanStart,midTime in zip(self.scanStart,self.midTime):
+        self.tyme = []        
+        for scanStart,midTime,lon in zip(self.scanStart,self.midTime,self.lon):
+            scanStart  = isoparser(scanStart.strftime('2006-%m-%dT%H:%M:00'))
             tyme       = np.array([scanStart.date() + timedelta(seconds=t) for t in midTime])    
             tyme.shape = (nscan,1)
             tyme       = np.repeat(tyme,npixel,axis=1)
-            self.scanTime.append(tyme)
+            tyme       = np.ma.array(tyme)
+            tyme.mask  = lon.mask
+            self.tyme.append(tyme)
                     
 
     def _readList(self,List):
@@ -141,6 +144,9 @@ class PACE(object):
         for sds in self.SDS:            
             group = self.SDSg[sds]
             v = nc.groups[group].variables[sds][:]
+            if not hasattr(v,'mask'):
+                v = np.ma.array(v)
+                v.mask = np.zeros(v.shape).astype('bool')
             self.__dict__[sds].append(v) 
 
             
@@ -262,12 +268,12 @@ def getVars(rcFile):
     return (Vars, levs, levUnits)
 
 #----
-def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False):
+def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False):
     """
     Create variable *name* in output file and copy its
     content over,
     """
-    x = ncIn.variables[name]
+    x = ncIn.group[group[name]].variables[name]
     y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
     y.long_name = x.long_name
     y.units = x.units 
@@ -317,7 +323,7 @@ def shave(q,options,undef=MAPL_UNDEF,has_undef=1,nbits=12):
     return qs.reshape(shp)
 
 #---
-def writeNC ( mxd, Vars, levs, levUnits, options,
+def writeNC ( pace, Vars, levs, levUnits, options,
               xchunk=50, ychunk=100, zchunk=1,
               doAkBk=False):
 
@@ -326,24 +332,32 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
     Write a NetCDF file with sampled GEOS-5 variables on PACE grid
     described by (clon,clat,tyme).
     """
-    for i, path in enumerate(mxd.granules):
+    for i, path in enumerate(pace.granules):
         # Gridded Dimensions
         # ------------------
         km = len(levs)
-        nAtrack, nXtrack = mxd.Longitude[i].shape
+        nAtrack, nXtrack = pace.longitude[i].shape
 
-        # Open NC file
-        # ------------
-        filename = path.split('/')[-1].split('.')[:-1]
-        filename = '.'.join(filename + [options.ext])
+        scanStart = pace.scanStart[i]
+        scanStart  = isoparser(scanStart.strftime('2006-%m-%dT%H:%M:00'))
+        year = scanStart.year
+        doy  = scanStart.strftime('%j')
+        hhmmss = scanStart.strftime('%H%M00')
 
-        year = path.split('/')[-1].split('.')[1][1:5]
-        doy  = path.split('/')[-1].split('.')[1][5:]
-
+        # Root name for outfile
+        # -------------------------
         outdir = options.outdir + '/' + year + '/' + doy
         if not os.path.exists(outdir):
             os.makedirs(outdir)
-        nc = Dataset(outdir+'/'+filename,'w',format=options.format)
+
+
+        coll = options.rcFile[:-3]
+        outFile = '{}/pace-g5nr.lb.{}{}_{}.{}'.format(outdir,coll,year,doy,hhmmss,options.ext)
+
+        # Open NC file
+        # ------------
+        nc = Dataset(outFile,'w',format=options.format)
+        ncIn = Dataset(path)
 
         # Set global attributes
         # ---------------------
@@ -352,9 +366,10 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         nc.source = 'Global Model and Assimilation Office'
         nc.history = 'Created from GEOS-5 standard collections by leo_sampler.py'
         nc.references = 'n/a'
-        nc.comment = 'This file contains GEOS-5 parameters sampled on a MODIS granule'
+        nc.comment = 'This file contains GEOS-5 parameters sampled on a PACE granule'
         nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
         nc.Conventions = 'CF'
+        nc.time_coverage_start = scanStart.isoformat()
      
         # Create dimensions
         # -----------------
@@ -363,19 +378,15 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
             nz = nc.createDimension('lev',km)
             if doAkBk:
                 ne = nc.createDimension('ne',km+1)
-        x = nc.createDimension('cell_across_swath',nXtrack)
-        y = nc.createDimension('cell_along_swath',nAtrack)
+        x = nc.createDimension('ccd_pixels',nXtrack)
+        y = nc.createDimension('number_of_scans',nAtrack)
 
-        # Coordinate variables
-        # --------------------
-        scandate = filename.split('.')[1]
-        scantime = filename.split('.')[2]
-        scandate = datetime(int(scandate[1:5]),1,1) + timedelta(int(scandate[5:])-1)
-        scandate = datetime(scandate.year,scandate.month,scandate.day,int(scantime[0:2]),int(scantime[2:]))
-        time = nc.createVariable('time','i4',('time',),zlib=False)
-        time.long_name = 'Initial Time of Scan'
-        time.units = 'seconds since %s'%scandate.isoformat(' ')
-        time[0] = 0
+        # Save lon/lat if so desired
+        # --------------------------
+        if options.coords:
+            for sds in pace.SDS:
+                _copyVar(ncIn,nc,sds,pace.SDSg,dtype='f4',zlib=False):
+
         if km > 0: # pressure level not supported yet
             lev = nc.createVariable('lev','f4',('lev',),zlib=False)
             lev.long_name = 'Vertical Level'
@@ -397,39 +408,17 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         
         # Add pseudo dimensions for GrADS compatibility
         # -------------------------------------------
-        ew = nc.createVariable('ew','f4',('cell_across_swath',),
+        ew = nc.createVariable('ew','f4',('ccd_pixels',),
                                 fill_value=MAPL_UNDEF,zlib=False)
         ew.long_name    = 'pseudo longitude'
         ew.units        = 'degrees_east'
-        ew[:]           = mxd.Longitude[i][int(nAtrack*0.5),:]
+        ew[:]           = pace.Longitude[i][int(nAtrack*0.5),:]
 
-        ns = nc.createVariable('ns','f4',('cell_along_swath',),
+        ns = nc.createVariable('ns','f4',('number_of_scans',),
                                 fill_value=MAPL_UNDEF,zlib=False)
         ns.long_name    = 'pseudo latitude'
         ns.units        = 'degrees_north'
-        ns[:]           = mxd.Latitude[i][:,int(nXtrack*0.5)]
-
-        dt = nc.createVariable('scanTime','f4',('cell_along_swath','cell_across_swath',),
-                                fill_value=MAPL_UNDEF,zlib=False)
-        dt.long_name     = 'Time of Scan'
-        dt.units         = 'seconds since %s'%DATE_START.isoformat(' ')
-        dt[:]            = mxd.Scan_Start_Time[i]
-
-        
-        # Save lon/lat if so desired
-        # --------------------------
-        if options.coords:
-            clon = nc.createVariable('clon','f4',('cell_along_swath','cell_across_swath',),
-                                     fill_value=MAPL_UNDEF,zlib=False)
-            clon.long_name     = 'pixel center longitude'
-            clon.missing_value = MAPL_UNDEF
-            clon[:]            = mxd.Longitude[i]
-
-            clat = nc.createVariable('clat','f4',('cell_along_swath','cell_across_swath',),
-                                     fill_value=MAPL_UNDEF,zlib=False)
-            clat.long_name     = 'pixel center latitude'
-            clat.missing_value = MAPL_UNDEF
-            clat[:]            = mxd.Latitude[i]
+        ns[:]           = pace.Latitude[i][:,int(nXtrack*0.5)]
 
 
         # Loop over datasets, sample and write each variable
@@ -440,11 +429,11 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
             g = Open(path)
             for var in Vars[path]:
                 if var.km == 0:
-                    dim = ('time','cell_along_swath','cell_across_swath')
+                    dim = ('time','number_of_scans','ccd_pixels')
                     chunks = (1, ychunk, xchunk)
                     W = MAPL_UNDEF * ones((nAtrack,nXtrack))
                 else:
-                    dim = ('time','lev','cell_along_swath','cell_across_swath')
+                    dim = ('time','lev','number_of_scans','ccd_pixels')
                     chunks = (1,zchunk,ychunk, xchunk)
                     W = MAPL_UNDEF * ones((var.km,nAtrack,nXtrack))
                 rank = len(dim)
@@ -467,8 +456,8 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
 
                 # Use NC4ctl for linear interpolation
                 # -----------------------------------
-                I = (~mxd.Longitude[i].mask)&(~mxd.Latitude[i].mask)&(~mxd.tyme[i].mask)
-                Z = g.nc4.sample(name,array(mxd.Longitude[i][I]),array(mxd.Latitude[i][I]),array(mxd.tyme[i][I]),
+                I = (~pace.longitude[i].mask)&(~pace.latitude[i].mask)&(~pace.tyme[i].mask)
+                Z = g.nc4.sample(name,array(pace.longitude[i][I]),array(pace.latitude[i][I]),array(pace.tyme[i][I]),
                                  Transpose=False,squeeze=True,Verbose=options.verbose)
                 if options.verbose: print " <> Writing <%s> "%name
                 if rank == 3:
@@ -496,16 +485,17 @@ if __name__ == "__main__":
     title   = 'GEOS-5 PACE Sampler'
     format  = 'NETCDF4_CLASSIC'
     rcFile  = 'leo_sampler.rc'
-    outdir  = './'
 
     # MODIS Level 2 default
     # -------------------
     calculon = '/nobackup/3/pcastell/PACE/L1B'
-    nccs = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/L1B'
+    nccs = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE'
     if os.path.exists(nccs): 
-        L1Root = nccs
+        L1Root = nccs + '/L1B'
+        outdir = nccs + '/LevelB'
     elif os.path.exists(calculon): 
-        L1Root = calculon
+        L1Root = calculon + '/L1B'
+        outdir = calculon + '/LevelB'
 
 
     dt_minutes = 5 #  5 minutes for now
@@ -590,7 +580,6 @@ if __name__ == "__main__":
     # --------------------------
     Vars, levs, levUnits = getVars(options.rcFile)
 
-
-    # # Write output file
-    # # -----------------
-    # writeNC ( mxd, Vars, levs, levUnits, options, doAkBk=False)
+    # Write output file
+    # -----------------
+    writeNC ( pace, Vars, levs, levUnits, options, doAkBk=False)
