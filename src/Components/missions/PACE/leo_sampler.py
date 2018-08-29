@@ -348,7 +348,7 @@ def writeNC ( pace, Vars, levs, levUnits, options,
 
         # Root name for outfile
         # -------------------------
-        outdir = options.outdir + '/Y{}/M{}/D{}'.format(year,month.day)
+        outdir = options.outdir + '/Y{}/M{}/D{}'.format(year,month,day)
         if not os.path.exists(outdir):
             os.makedirs(outdir)
 
