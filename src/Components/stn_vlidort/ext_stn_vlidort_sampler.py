@@ -107,7 +107,9 @@ def doMie(Vars,v,NAMES,channel,varnames,rcFile):
             setattr(VarsIn,name,Var[:,v,:])    
     tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=False,rcfile=rcFile)
     ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=False,rcfile=rcFile)
-    ext2back = ext/backscat
+    ext2back = zeros(ext.shape)
+    I = backscat > 0
+    ext2back[I] = ext[I]/backscat[I]
     
     return tau,ssa,g,ext,sca,backscat,aback_sfc,aback_toa,depol,ext2back
 
