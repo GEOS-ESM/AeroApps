@@ -385,7 +385,7 @@ def writeNC ( pace, Vars, levs, levUnits, options,
         # --------------------------
         if options.coords:
             for sds in pace.SDS:
-                _copyVar(ncIn,nc,sds,pace.SDSg,dtype='f4',zlib=False):
+                _copyVar(ncIn,nc,sds,pace.SDSg,dtype='f4',zlib=False)
 
         if km > 0: # pressure level not supported yet
             lev = nc.createVariable('lev','f4',('lev',),zlib=False)
