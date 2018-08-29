@@ -174,8 +174,8 @@ def granules ( path, t1, t2):
     while t < t2:
         if t >= t1:
             doy = t.timetuple()[7]
-            basen = "%s/Y%04d/%03d/OCI%04d%03d%02d%02d00.L1B_PACE.nc"\
-                     %(path,t.year,doy,t.year,doy,t.hour,t.minute)
+            basen = "%s/Y%04d/M%02d/D%02d/OCI%04d%03d%02d%02d00.L1B_PACE.nc"\
+                     %(path,t.year,t.month,t.day,t.year,doy,t.hour,t.minute)
             
             try:
                 filen = glob(basen)[0]
@@ -342,11 +342,13 @@ def writeNC ( pace, Vars, levs, levUnits, options,
         scanStart  = isoparser(scanStart.strftime('2006-%m-%dT%H:%M:00'))
         year = scanStart.year
         doy  = scanStart.strftime('%j')
+        month = scanStart.strftime('%m')
+        day = scanStart.strftime('%d')
         hhmmss = scanStart.strftime('%H%M00')
 
         # Root name for outfile
         # -------------------------
-        outdir = options.outdir + '/{}/{}'.format(year,doy)
+        outdir = options.outdir + '/Y{}/M{}/D{}'.format(year,month.day)
         if not os.path.exists(outdir):
             os.makedirs(outdir)
 
@@ -476,7 +478,7 @@ def writeNC ( pace, Vars, levs, levUnits, options,
         nc.close()
 
         if options.verbose:
-            print " <> wrote %s file %s"%(options.format,outdir+'/'+filename)
+            print " <> wrote %s file %s"%(options.format,outFile)
     
 #------------------------------------ M A I N ------------------------------------
 
