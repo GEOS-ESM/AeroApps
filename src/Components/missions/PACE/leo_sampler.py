@@ -93,8 +93,8 @@ class PACE(object):
         nscan,npixel = self.lon[0].shape
         self.tyme = []        
         for scanStart,midTime,lon in zip(self.scanStart,self.midTime,self.lon):
-            scanStart  = isoparser(scanStart.strftime('2006-%m-%dT%H:%M:00'))
-            tyme       = np.array([scanStart.date() + timedelta(seconds=t) for t in midTime])    
+            scanStart  = isoparser(scanStart.strftime('2006-%m-%dT00:00:00'))
+            tyme       = np.array([scanStart + timedelta(seconds=t) for t in midTime])    
             tyme.shape = (nscan,1)
             tyme       = np.repeat(tyme,npixel,axis=1)
             tyme       = np.ma.array(tyme)
@@ -412,13 +412,13 @@ def writeNC ( pace, Vars, levs, levUnits, options,
                                 fill_value=MAPL_UNDEF,zlib=False)
         ew.long_name    = 'pseudo longitude'
         ew.units        = 'degrees_east'
-        ew[:]           = pace.Longitude[i][int(nAtrack*0.5),:]
+        ew[:]           = pace.longitude[i][int(nAtrack*0.5),:]
 
         ns = nc.createVariable('ns','f4',('number_of_scans',),
                                 fill_value=MAPL_UNDEF,zlib=False)
         ns.long_name    = 'pseudo latitude'
         ns.units        = 'degrees_north'
-        ns[:]           = pace.Latitude[i][:,int(nXtrack*0.5)]
+        ns[:]           = pace.latitude[i][:,int(nXtrack*0.5)]
 
 
         # Loop over datasets, sample and write each variable
