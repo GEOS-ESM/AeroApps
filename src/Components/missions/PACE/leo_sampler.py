@@ -346,7 +346,7 @@ def writeNC ( pace, Vars, levs, levUnits, options,
 
         # Root name for outfile
         # -------------------------
-        outdir = options.outdir + '/' + year + '/' + doy
+        outdir = options.outdir + '/{}/{}'.format(year,doy)
         if not os.path.exists(outdir):
             os.makedirs(outdir)
 
@@ -564,8 +564,7 @@ if __name__ == "__main__":
 
     if not os.path.exists(options.outdir): 
         print 'outdir does not exist:',options.outdir
-        print 'check path. exiting'
-        raise
+        raise ValueError, 'check path. exiting'
 
 
     # Get Granules to work on
