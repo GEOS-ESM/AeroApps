@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    bin = "leo_sampler.py"
+    bin = "./leo_sampler.py"
 
     # Parse prep config
     # -----------------
