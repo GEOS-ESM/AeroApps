@@ -132,6 +132,7 @@ def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False):
                 d += ('ccd_pixels',)
             else:
                 d += (i,)
+        x.dimensions = d
     y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
     y.long_name = x.long_name
     y.units = x.units 
