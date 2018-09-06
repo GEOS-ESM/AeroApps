@@ -1,0 +1,4 @@
+ISO_T1  = 2020-03-24T00:50:00
+ISO_T2  = 2020-03-24T00:50:00
+RCFILES = aer_Nv.rc, chm_Nv.rc, met_Nv.rc, asm_Nx.rc, cld_nearest.rc
+ALGO    = linear, linear, linear, linear, nearest

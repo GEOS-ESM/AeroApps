@@ -1,0 +1,11 @@
+#
+# Resource file for GEO sampler: chm_Nv
+#
+
+CO:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_CO_Nv
+CO2:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_CO2_Nv
+O3:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_O3_Nv
+SO2:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_SO2_Nv
+AIRDENS: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_AIRDENS_Nv
+DELP: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_DELP_Nv
+

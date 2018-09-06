@@ -205,7 +205,10 @@ def writeNC ( pace, Vars, levs, levUnits, options,
 
 
         coll = options.rcFile[:-3]
-        outFile = '{}/pace-g5nr.lb.{}{}_{}.{}'.format(outdir,coll,year,doy,hhmmss,options.ext)
+        if options.algo == 'linear':
+            outFile = '{}/pace-g5nr.lb.{}.{}{}{}_{}.{}'.format(outdir,coll,year,month,day,hhmmss,options.ext)
+        else:
+            outFile = '{}/pace-g5nr.lb-{}.{}.{}{}{}_{}.{}'.format(outdir,options.algo,coll,year,month,day,hhmmss,options.ext)
 
         # Open NC file
         # ------------
@@ -310,8 +313,13 @@ def writeNC ( pace, Vars, levs, levUnits, options,
                 # Use NC4ctl for linear interpolation
                 # -----------------------------------
                 I = (~pace.longitude[i].mask)&(~pace.latitude[i].mask)&(~pace.tyme[i].mask)
-                Z = g.nc4.sample(name,np.array(pace.longitude[i][I]),np.array(pace.latitude[i][I]),np.array(pace.tyme[i][I]),
+                if options.algo == 'linear':
+                    Z = g.nc4.sample(name,np.array(pace.longitude[i][I]),np.array(pace.latitude[i][I]),np.array(pace.tyme[i][I]),
                                  Transpose=False,squeeze=True,Verbose=options.verbose)
+                else:
+                    Z = g.nc4.sample(name,np.array(pace.longitude[i][I]),np.array(pace.latitude[i][I]),np.array(pace.tyme[i][I]),
+                                 Transpose=False,squeeze=True,Verbose=options.verbose,algorithm=options.algo)
+
                 if options.verbose: print " <> Writing <%s> "%name
                 if rank == 3:
                    W[I] = Z
@@ -338,6 +346,7 @@ if __name__ == "__main__":
     title   = 'GEOS-5 PACE Sampler'
     format  = 'NETCDF4_CLASSIC'
     rcFile  = 'leo_sampler.rc'
+    algo    = 'linear'
 
     # PACE default
     # -------------------
@@ -367,6 +376,9 @@ if __name__ == "__main__":
 
     parser.add_option("-p", "--path", dest="L1Root", default=L1Root,
               help='PACE L1B path (default=%s)'%L1Root)    
+
+    parser.add_option("-a", "--algo", dest="algo", default=algo,
+              help='interpolation algorithm (default=%s)'%algo)    
 
     parser.add_option("-N", "--nozip",
                       action="store_true", dest="nozip",
