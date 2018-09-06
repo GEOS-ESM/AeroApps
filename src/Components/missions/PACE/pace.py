@@ -149,7 +149,7 @@ def granules ( path, t1, t2):
     dt = timedelta(minutes=5)
     t = datetime(t1.year,t1.month,t1.day,t1.hour,0,0)
     Granules = []
-    while t < t2:
+    while t <= t2:
         if t >= t1:
             doy = t.timetuple()[7]
             basen = "%s/Y%04d/M%02d/D%02d/OCI%04d%03d%02d%02d00.L1B_PACE.nc"\

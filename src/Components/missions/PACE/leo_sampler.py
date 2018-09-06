@@ -124,7 +124,7 @@ def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False):
     Create variable *name* in output file and copy its
     content over,
     """
-    x = ncIn.group[group[name]].variables[name]
+    x = ncIn.groups[group[name]].variables[name]
     y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
     y.long_name = x.long_name
     y.units = x.units 
@@ -413,7 +413,7 @@ if __name__ == "__main__":
         iso_t1 = args[0]
         iso_t2 = None
         t1     = isoparser(iso_t1)
-        t2     = t1 + timedelta(minutes=options.dt_minutes)
+        t2     = t1 
     else:
         parser.error("must have 1 or 2 arguments: iso_t1 [iso_t2]")
 
