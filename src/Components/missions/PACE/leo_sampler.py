@@ -125,6 +125,7 @@ def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False):
     content over,
     """
     x = ncIn.groups[group[name]].variables[name]
+    d = x.dimensions
     if 'SWIR_pixels' in x.dimensions:
         d = ()
         for i in x.dimensions:
@@ -132,8 +133,8 @@ def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False):
                 d += ('ccd_pixels',)
             else:
                 d += (i,)
-        x.dimensions = d
-    y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
+
+    y = ncOut.createVariable(name,dtype,d,zlib=zlib)
     y.long_name = x.long_name
     y.units = x.units 
     try:
