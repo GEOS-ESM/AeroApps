@@ -178,9 +178,9 @@ class LEVELBCS(PACE):
                 tyme       = np.ma.array(tyme)
                 tyme.mask  = lon.mask
                 self.tyme.append(tyme)
+            self.tyme = np.ma.concatenate(self.tyme)
 
-        # convert lists to arrays
-        self.tyme = np.ma.concatenate(self.tyme)
+        # convert lists to arrays        
         for sds in self.SDS:
             if sds in ALIAS:
                 sds = ALIAS[sds]
