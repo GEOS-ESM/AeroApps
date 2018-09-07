@@ -164,6 +164,7 @@ class LEVELBCS(PACE):
             if sds in ALIAS:
                 self.__dict__[ALIAS[sds]] = self.__dict__[sds]
 
+
         # Create corresponding python time
         # --------------------------------
         if hasattr(self,'midTime'):
@@ -177,6 +178,14 @@ class LEVELBCS(PACE):
                 tyme       = np.ma.array(tyme)
                 tyme.mask  = lon.mask
                 self.tyme.append(tyme)
+
+        # convert lists to arrays
+        self.tyme = np.ma.concatenate(self.tyme)
+        for sds in self.SDS:
+            if sds in ALIAS:
+                sds = ALIAS[sds]
+
+            self.__dict__[sds] = np.ma.concatenate(self.__dict__[sds])
 
 #---
     def _readGranule(self,filename):
