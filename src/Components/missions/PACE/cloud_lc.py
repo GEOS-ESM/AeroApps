@@ -1,12 +1,14 @@
 """
-Geostationary Cloud Simulator for VLIDORT.
+Cloud Simulator for PACE
 """
-
+from optparse        import OptionParser
 import numpy as np
 from numpy import savez, ones, zeros, array, size, sort, sum, \
                   linspace, any, log, mean, tile, amin, amax, exp, squeeze
+from   dateutil.parser import parse  as isoparser
 
-from   pyobs.gcs03  import GCS03, GCS03Handle
+from   pace  import granulesLB, granulesLBN, LEVELBCS
+from   pyobs.gcs03 import GCS03
 from   pyobs        import NPZ
 
 from datetime import datetime, timedelta
@@ -33,6 +35,18 @@ MODES = \
    'HOMOCLD-COSP':       'homogeneous clouds, COSP overlap',
    'TOTWPDF-GCOP-SKEWT': 'total water PDF, Gaussian copula overlap, Skewed-Triangle PDF'
   }
+
+# Variables Names to read in
+lSDS = ['PHIS','PS','TS','U10M','V10M','DELP','AIRDENS','O3','T','U']
+nSDS = ['FRLAND','DELP','T','QV','QL','QI','CLOUD']
+mSDS = ['longitude', 'latitude', 'ev_mid_time']
+
+class HOLDER(LEVELBCS):
+    """
+    Generic container.
+    """
+    def __init__(self):
+        pass
 
 
 def unwrap_CallgenICAClump(arg, **kwarg):
@@ -83,106 +97,31 @@ class GCSError(Exception):
     def __str__(self):
         return repr(self.value)
   
-class GCS(GCS03):
+class PCS(LEVELBCS,GCS03):
     """
-    Implements the Geostationary Cloud Simulator for VLIDORT.
+    Implements the PACE Cloud Simulator for VLIDORT.
     """
+    def __init__(self,linearFiles,nearestFiles,const_x):
 
-    def getGEOS(self, rootdir, tyme, npzLinear=None, npzNearest=None):
-        """
-        Sample GEOS-5 variables on geostationary image.        
-        """
-
-        const_x   = rootdir + '/const_2d_asm_x'
-        met1_x    = rootdir + '/inst_2d_met1_x'
-        DELP_v    = rootdir + '/inst_3d_DELP_v'
-        AIRDENS_v = rootdir + '/inst_3d_AIRDENS_v'
-        O3_v      = rootdir + '/inst_3d_O3_v'
-        T_v       = rootdir + '/inst_3d_T_v'
-        U_v       = rootdir + '/inst_3d_U_v'
-        QV_v      = rootdir + '/inst_3d_QV_v'
-        QL_v      = rootdir + '/inst_3d_QL_v'
-        QI_v      = rootdir + '/inst_3d_QI_v'
-        CLOUD_v   = rootdir + '/inst_3d_CLOUD_v'
-
-#T      cld_v = rootdir + '/tavg3_3d_cld_v'
+        # Read in sampled data
+        LEVELBCS.__init__(self,nearestFiles,mSDS)
+        self.linear = HOLDER()
+        self.nearest = HOLDER()
+        LEVELBCS.__init__(self.linear,linearFiles,lSDS)
+        LEVELBCS.__init__(self.nearest,nearestFiles,nSDS)
 
         self.getICAindx(const_x)
 
-        # Linear interpolation
-        # --------------------
-        self.linearSampleFile(  const_x,tyme,onlyVars=(   'PHIS',))
-        self.linearSampleFile(   met1_x,tyme,onlyVars=(     'PS', 'TS', 'U10M', 'V10M',))
-        self.linearSampleFile(   DELP_v,tyme,onlyVars=(   'DELP',))
-        self.linearSampleFile(AIRDENS_v,tyme,onlyVars=('AIRDENS',))
-        self.linearSampleFile(     O3_v,tyme,onlyVars=(     'O3',))
-        self.linearSampleFile(      T_v,tyme,onlyVars=(      'T',))
-        self.linearSampleFile(      U_v,tyme,onlyVars=(      'U',))
-
-        self.linear = self.sample
-        self.sample = None
-
-        # Nearest neighbors
-        # -----------------
-        self.nearestSampleFile(const_x,tyme,onlyVars=('FRLAND',))
-        self.nearestSampleFile( DELP_v,tyme,onlyVars=(  'DELP',))
-        self.nearestSampleFile(    T_v,tyme,onlyVars=(     'T',))
-        self.nearestSampleFile(   QV_v,tyme,onlyVars=(    'QV',))
-        self.nearestSampleFile(   QL_v,tyme,onlyVars=(    'QL',))
-        self.nearestSampleFile(   QI_v,tyme,onlyVars=(    'QI',))
-        self.nearestSampleFile(CLOUD_v,tyme,onlyVars=( 'CLOUD',))
-
-#T r    self.nearestSampleFile(cld_v,tyme,onlyVars=('QILS','QIAN'))
-        print 'warning: QILS, QIAN not available in NatureRun output'			#T
-        print '         Disabling anvil specific effective radii weighting'		#T
-        # see reff() in mod_reff: setting QILS=QIAN=0 disables anvil Re weighting	#T
-        self.sample.QILS = np.zeros_like(self.sample.QI)				#T
-        self.sample.QIAN = np.zeros_like(self.sample.QI)				#T
-
-        self.nearest = self.sample
-        self.sample = None
+        print 'warning: QILS, QIAN not available in NatureRun output'           
+        print '         Disabling anvil specific effective radii weighting'     
+        # see reff() in mod_reff: setting QILS=QIAN=0 disables anvil Re weighting   
+        self.nearest.QILS = np.zeros_like(self.nearest.QI)                
+        self.nearest.QIAN = np.zeros_like(self.nearest.QI)                
 
         # Hack: to avoid extrapolation issues, pretend the GEOS-5 top is
         #       highter then it actually is
         # --------------------------------------------------------------
         self._fixPTOP()
-
-        # Save NPZ files, if desired
-        # --------------------------
-        if npzLinear is not None:
-            if self.verb: print "Saving Linear NPZ file ",npzLinear
-            self.linear.PTOP = self.PTOP
-            savez(npzLinear,**self.linear.__dict__)
-
-        if npzNearest is not None:
-            if self.verb: print "Saving Nearest NPZ file ",npzNearest
-            self.nearest.PTOP = self.PTOP
-            savez(npzNearest,**self.nearest.__dict__)
-
-    def getGEOS_readFromNPZ(self, rootdir, npzLinear, npzNearest):
-        """
-        Read previously sampled GEOS-5 variables (on GCS image).        
-        """
-
-        # index pixels to GEOS grid
-        const_x = rootdir + '/const_2d_asm_x'
-        self.getICAindx(const_x)
-
-        # read npz files from earlier run
-        if self.verb:
-            print " <> Retrieving previously saved interpolation files"
-        self.linear  = NPZ(npzLinear)
-        self.nearest = NPZ(npzNearest)
-
-        # just to remind user again
-        print 'warning: QILS, QIAN not available in NatureRun output'		#T
-        print '         Disabling anvil specific effective radii weighting'	#T
-
-        # validate and store globals
-        if not (self.linear.PTOP == self.nearest.PTOP):
-          raise ValueError, 'inconsistent <PTOP> between NPZ files'
-        else:
-          self.PTOP = self.linear.PTOP
 
 #---
     def genICA(self, mode, clump=True, **kwopts):
@@ -554,62 +493,66 @@ def showdict(d,name):
 if __name__ == "__main__":
 
     # setup
-    rootdir   = '/home/pcastell/NatureRun/data/GCS/opendap/native'
-    starttime = datetime(2006,04,01,17,0,0)
-    endtime   = datetime(2006,9,01,17,0,0)
-    #dt        = timedelta(hours=1)
-    dt        = relativedelta(months=1)
-    layout    = '41'
-    outroot   = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/CLD_DATA/'
-    #outroot   = '/discover/nobackup/pcastell/GCS/output-start-hour_20051231_18z_tempo.lg1.cld.invariant.410'
+    # starttime = '2006-03-24T00:50'
+    # endtime   = '2006-03-24T00:50'
+    dt        = relativedelta(minutes=5)
+    # levelB    = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB'
+    # levelC    = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelC'
+    levelB = '/nobackup/3/pcastell/PACE/LevelB'
+    levelC = '/nobackup/3/pcastell/PACE/LevelC'
+    const_x = 'const_2d_asm_x'
 
-    groot     = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/TEMPO/CLD_DATA/'
+    # mode of ICA? (from MODES)
+    #   mode = 'HOMOCLD-MAXRAN' 
+    #   mode = 'HOMOCLD-COSP' 
+    mode = 'TOTWPDF-GCOP-SKEWT'
 
-    #  END OF USER INPUT
-    # --------------------
-    ntiles = int(layout[0])*int(layout[1])
-    #ntiles = 1
+
+#   Parse command line options
+#   --------------------------
+    parser = OptionParser(usage="Usage: %prog [OPTIONS] iso_t1 [iso_t2]",
+                          version='1.0.0' )
+
+    parser.add_option("--levelB", dest="levelB", default=levelB,
+              help="levelB directory (default=%s)"%levelB )
+
+    parser.add_option("--levelC", dest="levelC", default=levelC,
+              help='LevelC (output) directory (default=%s)'%levelC)    
+
+    (options, args) = parser.parse_args()
+    
+    if len(args) == 2:
+        iso_t1, iso_t2 = args
+        starttime, endtime = (isoparser(iso_t1), isoparser(iso_t2))
+    elif len(args) == 1:
+        iso_t1 = args[0]
+        iso_t2 = None
+        starttime    = isoparser(iso_t1)
+        endtime      = isoparser(iso_t1)
+    else:
+        parser.error("must have 1 or 2 arguments: iso_t1 [iso_t2]")
+
+
     tyme   = starttime
     while tyme <= endtime:
-        outdir  = os.sep.join((outroot,'LevelB/Y'+tyme.strftime('%Y'),'M'+tyme.strftime('%m'),'D'+tyme.strftime('%d')))
-        #outdir  = outroot
+        outdir  = os.sep.join((levelC,'Y'+tyme.strftime('%Y'),'M'+tyme.strftime('%m'),'D'+tyme.strftime('%d')))
         if not os.path.exists(outdir): os.makedirs(outdir)
 
-        #for ll in [2,3]:
-        for ll in range(ntiles):
-            laycode = '{}{}'.format(layout,ll)
+        print '<> Working on ',tyme
 
-            print '<> Working on ',tyme,laycode
-
-            gcs03   = '{}/LevelG/invariant/tempo.lg1.invariant.{}.nc4'.format(outroot,laycode)
-
-            # instantiate Geostationary granule
-            g = GCS(gcs03, varTime=True, Verb=1)
-
-            # associate GEOS fields with granule
-            # optionally write npz files for future bypass of this step
-            # OR ... read sampled GEOS fields from old npz files
-            try:
-                g.getGEOS_readFromNPZ(rootdir,
-                  os.sep.join((outdir,'geos-linear.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.npz')),
-                  os.sep.join((outdir,'geos-nearest.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.npz')))
-            except:
-                g.getGEOS(rootdir, tyme,
-                    npzLinear =os.sep.join((outdir,'geos-linear.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.npz')),
-                    npzNearest=os.sep.join((outdir,'geos-nearest.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.npz')))
-
-
-            # mode of ICA? (from MODES)
-        #   mode = 'HOMOCLD-MAXRAN' 
-        #   mode = 'HOMOCLD-COSP' 
-            mode = 'TOTWPDF-GCOP-SKEWT'
+        # instantiate PACE granule
+        coll = 'aer_Nv','asm_Nx','met_Nv'
+        granules = granulesLB(levelB,tyme,tyme,coll)
+        coll = 'cld_nearest'
+        granulesN = granulesLBN(levelB,tyme,tyme,coll)
+        g = PCS(granules,granulesN,const_x)
 
         #     # do the simulation and write out results
             ofile = os.sep.join((outdir,'tempo-g5nr-icacl-'+mode+'.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.nc4'))
             print '<> creating ',ofile
             g.doICA(ofile,mode,clump=True)
 
-            os.remove(os.sep.join((outdir,'geos-linear.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.npz')))
-            os.remove(os.sep.join((outdir,'geos-nearest.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.npz')))
+        #     os.remove(os.sep.join((outdir,'geos-linear.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.npz')))
+        #     os.remove(os.sep.join((outdir,'geos-nearest.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.npz')))
 
         tyme += dt
