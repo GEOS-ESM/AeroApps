@@ -246,11 +246,6 @@ def writeNC ( pace, Vars, levs, levUnits, options,
         x = nc.createDimension('ccd_pixels',nXtrack)
         y = nc.createDimension('number_of_scans',nAtrack)
 
-        # Save lon/lat if so desired
-        # --------------------------
-        if options.coords:
-            for sds in pace.SDS:
-                _copyVar(ncIn,nc,sds,pace.SDSg,dtype='f4',zlib=False)
 
         if km > 0: # pressure level not supported yet
             lev = nc.createVariable('lev','f4',('lev',),zlib=False)
@@ -270,6 +265,13 @@ def writeNC ( pace, Vars, levs, levUnits, options,
                 bk.long_name = 'Eta coordinate coefficient bk (p = ak + bk * ps)'
                 bk.units = '1'
                 bk = be[:]
+
+
+        # Save lon/lat if so desired
+        # --------------------------
+        if options.coords:
+            for sds in pace.SDS:
+                _copyVar(ncIn,nc,sds,pace.SDSg,dtype='f4',zlib=False)
         
         # Add pseudo dimensions for GrADS compatibility
         # -------------------------------------------
@@ -422,7 +424,7 @@ if __name__ == "__main__":
         iso_t1 = args[0]
         iso_t2 = None
         t1     = isoparser(iso_t1)
-        t2     = t1 
+        t2     = isoparser(iso_t1)
     else:
         parser.error("must have 1 or 2 arguments: iso_t1 [iso_t2]")
 
