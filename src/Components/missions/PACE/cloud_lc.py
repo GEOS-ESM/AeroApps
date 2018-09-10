@@ -107,8 +107,9 @@ class PCS(LEVELBCS,GCS03):
         # Read in sampled data
         LEVELBCS.__init__(self,nearestFiles,mSDS)
         self.clon = self.lon
-        selr.clat = self.lat
+        self.clat = self.lat
         self.offview = self.clon.mask
+        self.nobs = np.sum(self.offview)
         #store flattened lon/lat
         self.lon = self.clon[~self.offview]
         self.lat = self.clat[~self.offview]
@@ -120,6 +121,30 @@ class PCS(LEVELBCS,GCS03):
         self.nearest = HOLDER()
         LEVELBCS.__init__(self.linear,linearFiles,lSDS)
         LEVELBCS.__init__(self.nearest,nearestFiles,nSDS)
+
+        # Reshape arrays to (nobs,nz)
+        for sds in lSDS:
+            v = self.linear.__dict__[sds]
+            if len(v.shape) == 2:
+                self.linear.__dict__[sds] = v[~self.offview]
+            else:
+                self.linear.__dict__[sds] = np.zeros(v.shape[0],self.nobs)
+                for k in v.shape[0]:
+                    self.linear.__dict__[sds][k,:] = v[k,:,:][self.offview]
+
+                self.linear.__dict__[sds] = self.linear.__dict__[sds].T
+
+        for sds in nSDS:
+            v = self.nearest.__dict__[sds]
+            if len(v.shape) == 2:
+                self.nearest.__dict__[sds] = v[~self.offview]
+            else:
+                self.nearest.__dict__[sds] = np.zeros(v.shape[0],self.nobs)
+                for k in v.shape[0]:
+                    self.nearest.__dict__[sds][k,:] = v[k,:,:][self.offview]
+
+                self.nearest.__dict__[sds] = self.nearest.__dict__[sds].T
+
 
         self.getICAindx(const_x)
 
@@ -249,9 +274,9 @@ class PCS(LEVELBCS,GCS03):
         
         # Write the output file
         # ---------------------
-        self.writeNC(filename, 
-         title = 'GEOS-5 Geostationary Cloud Simulator for VLIDORT' 
-           + ' with ICA sampling (%s)' % MODES[mode])
+        #self.writeNC(filename, 
+        # title = 'GEOS-5 Geostationary Cloud Simulator for VLIDORT' 
+        #   + ' with ICA sampling (%s)' % MODES[mode])
 
 #---
     def writeNC ( self, filename, format='NETCDF4', zlib=True,
@@ -507,10 +532,10 @@ if __name__ == "__main__":
     # starttime = '2006-03-24T00:50'
     # endtime   = '2006-03-24T00:50'
     dt        = relativedelta(minutes=5)
-    # levelB    = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB'
-    # levelC    = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelC'
-    levelB = '/nobackup/3/pcastell/PACE/LevelB'
-    levelC = '/nobackup/3/pcastell/PACE/LevelC'
+    levelB    = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB'
+    levelC    = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelC'
+    # levelB = '/nobackup/3/pcastell/PACE/LevelB'
+    # levelC = '/nobackup/3/pcastell/PACE/LevelC'
     const_x = 'const_2d_asm_x'
 
     # mode of ICA? (from MODES)
