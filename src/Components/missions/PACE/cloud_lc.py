@@ -103,8 +103,19 @@ class PCS(LEVELBCS,GCS03):
     """
     def __init__(self,linearFiles,nearestFiles,const_x):
 
+        self.ica = None
         # Read in sampled data
         LEVELBCS.__init__(self,nearestFiles,mSDS)
+        self.clon = self.lon
+        selr.clat = self.lat
+        self.offview = self.clon.mask
+        #store flattened lon/lat
+        self.lon = self.clon[~self.offview]
+        self.lat = self.clat[~self.offview]
+        self.scanTime = self.tyme[~self.offview]
+
+
+
         self.linear = HOLDER()
         self.nearest = HOLDER()
         LEVELBCS.__init__(self.linear,linearFiles,lSDS)
@@ -541,16 +552,16 @@ if __name__ == "__main__":
         print '<> Working on ',tyme
 
         # instantiate PACE granule
-        coll = 'aer_Nv','asm_Nx','met_Nv'
+        coll = 'aer_Nv','asm_Nx','met_Nv','chm_Nv'
         granules = granulesLB(levelB,tyme,tyme,coll)
         coll = 'cld_nearest'
         granulesN = granulesLBN(levelB,tyme,tyme,coll)
         g = PCS(granules,granulesN,const_x)
 
-        #     # do the simulation and write out results
-            ofile = os.sep.join((outdir,'tempo-g5nr-icacl-'+mode+'.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.nc4'))
-            print '<> creating ',ofile
-            g.doICA(ofile,mode,clump=True)
+        # #     # do the simulation and write out results
+        # ofile = os.sep.join((outdir,'tempo-g5nr-icacl-'+mode+'.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.nc4'))
+        # print '<> creating ',ofile
+        # g.doICA(ofile,mode,clump=True)
 
         #     os.remove(os.sep.join((outdir,'geos-linear.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.npz')))
         #     os.remove(os.sep.join((outdir,'geos-nearest.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.npz')))

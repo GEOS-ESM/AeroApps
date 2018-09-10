@@ -184,8 +184,11 @@ class LEVELBCS(PACE):
         for sds in self.SDS:
             if sds in ALIAS:
                 sds = ALIAS[sds]
-
+            print 'Concatenating ',sds
             self.__dict__[sds] = np.ma.concatenate(self.__dict__[sds])
+            if len(self.__dict__[sds].mask.shape) == 0:
+                self.__dict__[sds].mask = np.zeros(self.__dict__[sds].shape).astype(bool)
+
 
 #---
     def _readGranule(self,filename):
