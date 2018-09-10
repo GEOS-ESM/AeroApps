@@ -328,7 +328,7 @@ def writeNC ( pace, Vars, levs, levUnits, options,
                     Z = g.nc4.sample(name,np.array(pace.longitude[i][I]),np.array(pace.latitude[i][I]),np.array(pace.tyme[i][I]),
                                  Transpose=False,squeeze=True,Verbose=options.verbose)
                 else:
-                    Z = g.nc4.sample(name,np.array(pace.longitude[i][I]),np.array(pace.latitude[i][I]),np.array(pace.tyme[i][I]),
+                    Z = g.sample(name,np.array(pace.longitude[i][I]),np.array(pace.latitude[i][I]),np.array(pace.tyme[i][I]),
                                  Transpose=False,squeeze=True,Verbose=options.verbose,algorithm=options.algo)
 
                 if options.verbose: print " <> Writing <%s> "%name
