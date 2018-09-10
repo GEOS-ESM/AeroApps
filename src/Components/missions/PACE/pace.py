@@ -168,8 +168,7 @@ class LEVELBCS(PACE):
         # Create corresponding python time
         # --------------------------------
         if hasattr(self,'midTime'):
-            nscan,npixel = self.lon[0].shape
-            self.tyme = []        
+            nscan,npixel = self.lon.shape                   
             scanStart,midTime,lon = self.scanStart,self.midTime,self.lon
             scanStart  = isoparser(scanStart.strftime('2006-%m-%dT00:00:00'))
             tyme       = np.array([scanStart + timedelta(seconds=int(t)) for t in midTime])    
@@ -205,6 +204,7 @@ class LEVELBCS(PACE):
                         v = np.ma.array(v)
                         v.mask = np.zeros(v.shape).astype('bool')
                     self.__dict__[sds] = v
+                    print 'Read ',sds
                 except:
                     pass
             
