@@ -109,7 +109,7 @@ class PCS(LEVELBCS,GCS03):
         self.clon = self.lon
         self.clat = self.lat
         self.offview = self.clon.mask
-        self.nobs = np.sum(self.offview)
+        self.nobs = np.sum(~self.offview)
         #store flattened lon/lat
         self.lon = self.clon[~self.offview]
         self.lat = self.clat[~self.offview]
@@ -124,24 +124,26 @@ class PCS(LEVELBCS,GCS03):
 
         # Reshape arrays to (nobs,nz)
         for sds in lSDS:
+            print 'reshaping lnear ', sds
             v = self.linear.__dict__[sds]
             if len(v.shape) == 2:
                 self.linear.__dict__[sds] = v[~self.offview]
             else:
-                self.linear.__dict__[sds] = np.zeros(v.shape[0],self.nobs)
-                for k in v.shape[0]:
-                    self.linear.__dict__[sds][k,:] = v[k,:,:][self.offview]
+                self.linear.__dict__[sds] = np.zeros([v.shape[0],self.nobs])
+                for k in range(v.shape[0]):
+                    self.linear.__dict__[sds][k,:] = v[k,:,:][~self.offview]
 
                 self.linear.__dict__[sds] = self.linear.__dict__[sds].T
 
         for sds in nSDS:
+            print 'reshaping nearest ', sds
             v = self.nearest.__dict__[sds]
             if len(v.shape) == 2:
                 self.nearest.__dict__[sds] = v[~self.offview]
             else:
-                self.nearest.__dict__[sds] = np.zeros(v.shape[0],self.nobs)
-                for k in v.shape[0]:
-                    self.nearest.__dict__[sds][k,:] = v[k,:,:][self.offview]
+                self.nearest.__dict__[sds] = np.zeros([v.shape[0],self.nobs])
+                for k in range(v.shape[0]):
+                    self.nearest.__dict__[sds][k,:] = v[k,:,:][~self.offview]
 
                 self.nearest.__dict__[sds] = self.nearest.__dict__[sds].T
 
