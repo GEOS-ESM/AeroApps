@@ -194,7 +194,7 @@ class LEVELBCS(PACE):
         # Read select variables (do not reshape)
         # --------------------------------------
         if len(self.scanStart) == 0:
-            self.scanStart.append(isoparser(nc.time_coverage_start))
+            self.scanStart = isoparser(nc.time_coverage_start)
         for sds in self.SDS:            
             if len(self.__dict__[sds]) == 0:
                 # Don't fuss if you can't find it
