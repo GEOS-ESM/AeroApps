@@ -211,7 +211,7 @@ class LEVELBCS(PACE):
             if len(self.__dict__[sds]) == 0:
                 # Don't fuss if you can't find it
                 try:
-                    v = nc.variables[sds][:]
+                    v = np.squeeze(nc.variables[sds][:])
                     if not hasattr(v,'mask'):
                         v = np.ma.array(v)
                         v.mask = np.zeros(v.shape).astype('bool')
