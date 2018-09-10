@@ -170,25 +170,14 @@ class LEVELBCS(PACE):
         if hasattr(self,'midTime'):
             nscan,npixel = self.lon[0].shape
             self.tyme = []        
-            for scanStart,midTime,lon in zip(self.scanStart,self.midTime,self.lon):
-                scanStart  = isoparser(scanStart.strftime('2006-%m-%dT00:00:00'))
-                tyme       = np.array([scanStart + timedelta(seconds=int(t)) for t in midTime])    
-                tyme.shape = (nscan,1)
-                tyme       = np.repeat(tyme,npixel,axis=1)
-                tyme       = np.ma.array(tyme)
-                tyme.mask  = lon.mask
-                self.tyme.append(tyme)
-            self.tyme = np.ma.concatenate(self.tyme)
-
-        # convert lists to arrays        
-        for sds in self.SDS:
-            if sds in ALIAS:
-                sds = ALIAS[sds]
-            print 'Concatenating ',sds
-            self.__dict__[sds] = np.ma.concatenate(self.__dict__[sds])
-            if len(self.__dict__[sds].mask.shape) == 0:
-                self.__dict__[sds].mask = np.zeros(self.__dict__[sds].shape).astype(bool)
-
+            scanStart,midTime,lon = self.scanStart,self.midTime,self.lon
+            scanStart  = isoparser(scanStart.strftime('2006-%m-%dT00:00:00'))
+            tyme       = np.array([scanStart + timedelta(seconds=int(t)) for t in midTime])    
+            tyme.shape = (nscan,1)
+            tyme       = np.repeat(tyme,npixel,axis=1)
+            tyme       = np.ma.array(tyme)
+            tyme.mask  = lon.mask
+            self.tyme  = tyme
 
 #---
     def _readGranule(self,filename):
@@ -215,7 +204,7 @@ class LEVELBCS(PACE):
                     if not hasattr(v,'mask'):
                         v = np.ma.array(v)
                         v.mask = np.zeros(v.shape).astype('bool')
-                    self.__dict__[sds].append(v) 
+                    self.__dict__[sds] = v
                 except:
                     pass
             
