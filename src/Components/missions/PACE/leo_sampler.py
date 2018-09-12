@@ -266,13 +266,6 @@ def writeNC ( pace, Vars, levs, levUnits, options,
                 bk.units = '1'
                 bk = be[:]
 
-
-        # Save lon/lat if so desired
-        # --------------------------
-        if options.coords:
-            for sds in pace.SDS:
-                _copyVar(ncIn,nc,sds,pace.SDSg,dtype='f4',zlib=False)
-        
         # Add pseudo dimensions for GrADS compatibility
         # -------------------------------------------
         ew = nc.createVariable('ccd_pixels','f4',('ccd_pixels',),
@@ -287,6 +280,13 @@ def writeNC ( pace, Vars, levs, levUnits, options,
         ns.units        = 'degrees_north'
         ns[:]           = pace.latitude[i][:,int(nXtrack*0.5)]
 
+
+        # Save lon/lat if so desired
+        # --------------------------
+        if options.coords:
+            for sds in pace.SDS:
+                _copyVar(ncIn,nc,sds,pace.SDSg,dtype='f4',zlib=False)
+        
 
         # Loop over datasets, sample and write each variable
         # --------------------------------------------------
