@@ -198,11 +198,26 @@ class LEVELBCS(PACE):
         for sds in self.SDS:            
             if len(self.__dict__[sds]) == 0:
                 # Don't fuss if you can't find it
-                try:
-                    v = np.squeeze(nc.variables[sds][:])
-                    if not hasattr(v,'mask'):
-                        v = np.ma.array(v)
-                        v.mask = np.zeros(v.shape).astype('bool')
+                try:                    
+                    if hasattr(self,'offview'):
+                        var = nc.variables[sds]
+                        if len(var.shape) == 3:
+                            v = var[0,:,:][~self.offview]  #(nobs)
+                        else:
+                            v_ = np.zeros([var.shape[1],self.nobs])
+                            for k in range(var.shape[1]):
+                                v_[k,:] = var[0,k,:,:][~self.offview]
+
+                            v = v_.T  #(nobs,nz)
+                            
+                    else:
+                        v = np.squeeze(nc.variables[sds][:])
+                        if not hasattr(v,'mask'):
+                            v = np.ma.array(v)
+                            v.mask = np.zeros(v.shape).astype('bool')
+
+
+
                     self.__dict__[sds] = v
                     print 'Read ',sds
                 except:
