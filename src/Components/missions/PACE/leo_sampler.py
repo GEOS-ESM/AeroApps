@@ -275,13 +275,13 @@ def writeNC ( pace, Vars, levs, levUnits, options,
         
         # Add pseudo dimensions for GrADS compatibility
         # -------------------------------------------
-        ew = nc.createVariable('ew','f4',('ccd_pixels',),
+        ew = nc.createVariable('ccd_pixels','f4',('ccd_pixels',),
                                 fill_value=MAPL_UNDEF,zlib=False)
         ew.long_name    = 'pseudo longitude'
         ew.units        = 'degrees_east'
         ew[:]           = pace.longitude[i][int(nAtrack*0.5),:]
 
-        ns = nc.createVariable('ns','f4',('number_of_scans',),
+        ns = nc.createVariable('number_of_scans','f4',('number_of_scans',),
                                 fill_value=MAPL_UNDEF,zlib=False)
         ns.long_name    = 'pseudo latitude'
         ns.units        = 'degrees_north'
