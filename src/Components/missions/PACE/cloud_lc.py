@@ -113,39 +113,49 @@ class PCS(LEVELBCS,GCS03):
         #store flattened lon/lat
         self.lon = self.clon[~self.offview]
         self.lat = self.clat[~self.offview]
-        self.scanTime = self.tyme[~self.offview]
+        scanTime       = self.midTime
+        scanTime.shape += (1,)
+        nscan,npixel = self.clon.shape   
+        scanTime       = np.repeat(scanTime,npixel,axis=1)        
+        self.scanTime = scanTime[~self.offview]
 
 
 
         self.linear = HOLDER()
         self.nearest = HOLDER()
-        LEVELBCS.__init__(self.linear,linearFiles,lSDS)
+        self.linear.offview = self.offview
+        self.nearest.offview = self.offview
+        self.linear.nobs = self.nobs
+        self.nearest.nobs = self.nobs
+        print 'Reading Linear...'
+        LEVELBCS.__init__(self.linear,linearFiles,lSDS,)
+        print 'Reading Nearest...'
         LEVELBCS.__init__(self.nearest,nearestFiles,nSDS)
 
-        # Reshape arrays to (nobs,nz)
-        for sds in lSDS:
-            print 'reshaping lnear ', sds
-            v = self.linear.__dict__[sds]
-            if len(v.shape) == 2:
-                self.linear.__dict__[sds] = v[~self.offview]
-            else:
-                self.linear.__dict__[sds] = np.zeros([v.shape[0],self.nobs])
-                for k in range(v.shape[0]):
-                    self.linear.__dict__[sds][k,:] = v[k,:,:][~self.offview]
+        # # Reshape arrays to (nobs,nz)
+        # for sds in lSDS:
+        #     print 'reshaping lnear ', sds
+        #     v = self.linear.__dict__[sds]
+        #     if len(v.shape) == 2:
+        #         self.linear.__dict__[sds] = v[~self.offview]
+        #     else:
+        #         self.linear.__dict__[sds] = np.zeros([v.shape[0],self.nobs])
+        #         for k in range(v.shape[0]):
+        #             self.linear.__dict__[sds][k,:] = v[k,:,:][~self.offview]
 
-                self.linear.__dict__[sds] = self.linear.__dict__[sds].T
+        #         self.linear.__dict__[sds] = self.linear.__dict__[sds].T
 
-        for sds in nSDS:
-            print 'reshaping nearest ', sds
-            v = self.nearest.__dict__[sds]
-            if len(v.shape) == 2:
-                self.nearest.__dict__[sds] = v[~self.offview]
-            else:
-                self.nearest.__dict__[sds] = np.zeros([v.shape[0],self.nobs])
-                for k in range(v.shape[0]):
-                    self.nearest.__dict__[sds][k,:] = v[k,:,:][~self.offview]
+        # for sds in nSDS:
+        #     print 'reshaping nearest ', sds
+        #     v = self.nearest.__dict__[sds]
+        #     if len(v.shape) == 2:
+        #         self.nearest.__dict__[sds] = v[~self.offview]
+        #     else:
+        #         self.nearest.__dict__[sds] = np.zeros([v.shape[0],self.nobs])
+        #         for k in range(v.shape[0]):
+        #             self.nearest.__dict__[sds][k,:] = v[k,:,:][~self.offview]
 
-                self.nearest.__dict__[sds] = self.nearest.__dict__[sds].T
+        #         self.nearest.__dict__[sds] = self.nearest.__dict__[sds].T
 
 
         self.getICAindx(const_x)
@@ -267,23 +277,23 @@ class PCS(LEVELBCS,GCS03):
         Read and write variables doing ICA sampling.
         """
 
-        if self.linear == None:
+        if self.linear is None:
           raise RuntimeError, 'must sample first using getGEOS()'
 
         # Calulate TAU and RE
         # -------------------
         self.genICA(mode,clump=clump)
         
-        # Write the output file
-        # ---------------------
-        #self.writeNC(filename, 
-        # title = 'GEOS-5 Geostationary Cloud Simulator for VLIDORT' 
+        # # Write the output file
+        # # ---------------------
+        # self.writeNC(filename, 
+        # title = 'GEOS-5 PACE Cloud Simulator for VLIDORT' 
         #   + ' with ICA sampling (%s)' % MODES[mode])
 
 #---
     def writeNC ( self, filename, format='NETCDF4', zlib=True,
                   linearNames=LINEAR_NAMES, nearestNames=NEAREST_NAMES, icaNames=ICA_NAMES,
-                  title='GEOS-5 Geostationary Cloud Simulator for VLIDORT',
+                  title='GEOS-5 PACE Cloud Simulator for VLIDORT',
                   rcVars='variablesGCS.rc', Verbose=True):
         """
         Write a NetCDF file with simulated GEOS-5 variables on the swath grid.
@@ -303,29 +313,30 @@ class PCS(LEVELBCS,GCS03):
         hf.title = title
         hf.institution = 'NASA'
         hf.source = 'Global Model and Assimilation Office'
-        hf.history = 'Created from GEOS-5 standard collections by gcs_vlidort.py'
+        hf.history = 'Created from GEOS-5 standard collections by cloud_lc.py'
         hf.references = 'n/a'
-        hf.comment = 'This file contains GEOS-5 cloud related parameters sampled on a Geostationary image.'
-        hf.contact = 'Arlindo da Silva <arlindo.dasilva@nasa.gov>'
+        hf.comment = 'This file contains GEOS-5 cloud related parameters sampled on a PACE granule.'
+        hf.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
         hf.Conventions = 'CF'
-        hf.fgeom = self.fgeom
+
 
         # Dimension sizes
         # ---------------
+        self.orgshape = self.clon.shape
         NS, EW = self.orgshape
         NK = self.nearest.T.shape[1]
 
         # Create dimensions
-        # -----------------
-        ns = hf.createDimension( 'ns',NS)
-        ew = hf.createDimension( 'ew',EW)
+        # -----------------        
+        ew = hf.createDimension( 'ccd_pixels',EW)
+        ns = hf.createDimension( 'number_of_scans',NS)
         nk = hf.createDimension('lev',NK)
 
         # Coordinate variables
         # --------------------
 
         # fake horizontal coords
-        lons = hf.createVariable('ew','f4',('ew',),fill_value=MAPL_UNDEF)
+        lons = hf.createVariable('ccd_pixels','f4',('ccd_pixels',),fill_value=MAPL_UNDEF)
         lons.long_name = 'Fake GrADS Longitude'
         lons.comment = 'For use in GrADS, use the 2D "longitude" for coordinates'
         lons.units = 'degrees_east'
@@ -338,34 +349,13 @@ class PCS(LEVELBCS,GCS03):
                 lon1 = tmp
         lons[:] = linspace(lon1,lon2,EW)
 
-        lats = hf.createVariable('ns','f4',('ns',),fill_value=MAPL_UNDEF)
+        lats = hf.createVariable('number_of_scans','f4',('number_of_scans',),fill_value=MAPL_UNDEF)
         lats.long_name = 'Fake GrADS Latitude'
         lats.comment = 'For use in GrADS, use the 2D "latitude" for coordinates'
         lats.missing_value = MAPL_UNDEF
         lats.units = 'degrees_north'
         lat1, lat2 = min(self.lat[0],self.lat[-1]), max(self.lat[0], self.lat[-1])
         lats[:] = linspace(lat1,lat2,NS)
-
-        # actual horizontal coords
-        longitude = hf.createVariable('longitude','f4',('ns','ew'),fill_value=MAPL_UNDEF)
-        longitude.standard_name = 'longitude'
-        longitude.long_name = 'Pixel Longitude'
-        longitude.units = 'degrees_east'
-        longitude.missing_value = MAPL_UNDEF
-        tmp = np.zeros(self.orgshape)
-        tmp[~self.offview] = self.lon
-        tmp[ self.offview] = MAPL_UNDEF
-        longitude[:,:] = tmp
-
-        latitude = hf.createVariable('latitude','f4',('ns','ew'),fill_value=MAPL_UNDEF)
-        latitude.standard_name = 'latitude'
-        latitude.long_name = 'Pixel Latitude'
-        latitude.units = 'degrees_north'
-        latitude.missing_value = MAPL_UNDEF
-        tmp = np.zeros(self.orgshape)
-        tmp[~self.offview] = self.lat
-        tmp[ self.offview] = MAPL_UNDEF
-        latitude[:,:] = tmp
 
         # eta levels
         lev = hf.createVariable('lev','f4',('lev',),fill_value=MAPL_UNDEF)
@@ -377,11 +367,32 @@ class PCS(LEVELBCS,GCS03):
         lev.coordinate = 'eta'
         lev[:] = np.arange(1,NK+1)
 
+        # actual horizontal coords
+        longitude = hf.createVariable('longitude','f4',('number_of_scans','ccd_pixels'),fill_value=MAPL_UNDEF)
+        longitude.standard_name = 'longitude'
+        longitude.long_name = "Longitudes of pixel locations"
+        longitude.units = 'degrees_east'
+        longitude.missing_value = MAPL_UNDEF
+        tmp = np.zeros(self.orgshape)
+        tmp[~self.offview] = self.lon
+        tmp[ self.offview] = MAPL_UNDEF
+        longitude[:,:] = tmp
+
+        latitude = hf.createVariable('latitude','f4',('number_of_scans','ccd_pixels'),fill_value=MAPL_UNDEF)
+        latitude.standard_name = 'latitude'
+        latitude.long_name = "Latitudes of pixel locations"
+        latitude.units = 'degrees_north'
+        latitude.missing_value = MAPL_UNDEF
+        tmp = np.zeros(self.orgshape)
+        tmp[~self.offview] = self.lat
+        tmp[ self.offview] = MAPL_UNDEF
+        latitude[:,:] = tmp
+
+
         # actual time in seconds past hour
-        time = hf.createVariable('scanTime','f4',('ns','ew'),fill_value=MAPL_UNDEF)
-        time.standard_name = 'scanTime'
-        time.long_name = 'scan time'
-        time.units = 'seconds past start hour'
+        time = hf.createVariable('ev_mid_time','f4',('number_of_scans','ccd_pixels'),fill_value=MAPL_UNDEF)
+        time.long_name = "Earth view mid time (seconds of day)"
+        time.units = 'seconds'
         time.missing_value = MAPL_UNDEF
         tmp = np.zeros(self.orgshape)
         tmp[~self.offview] = self.scanTime
@@ -420,10 +431,10 @@ class PCS(LEVELBCS,GCS03):
             rank = len(data.__dict__[var].shape)
             long_name, units = cf(var).split(';')
             if rank == 1:
-                v = hf.createVariable(var,'f4',('ns','ew',),
+                v = hf.createVariable(var,'f4',('number_of_scans','ccd_pixels',),
                                       fill_value=MAPL_UNDEF,zlib=zlib)
             elif rank == 2:
-                v = hf.createVariable(var,'f4',('lev','ns','ew'),
+                v = hf.createVariable(var,'f4',('lev','number_of_scans','ccd_pixels'),
                                       fill_value=MAPL_UNDEF,zlib=zlib)
             else:
                 raise GCSError, 'Invalid rank for variable <%s>'%var
@@ -470,15 +481,6 @@ class PCS(LEVELBCS,GCS03):
 
 #........................................................................
 
-def _secondsSince(tyme, t_ref):
-    """
-    Return array with elapsed seconds since t_ref.
-    """
-    dt = tyme - t_ref
-    for n in range(size(dt)):
-        dt[n] = dt[n].total_seconds()
-
-    return dt
     
 def albedo_dE_cons(tauc,mu0,g,f):
   """
@@ -494,38 +496,6 @@ def albedo_dE_cons(tauc,mu0,g,f):
   cmu0 = 1.5*mu0; efac = exp(-tauc*(1.-f)/mu0)
   return 1. - 2.*((1+cmu0)+(1-cmu0)*efac)/(4.+3.*(1.-g)*tauc)
 
-#.......................... D E G U G ......................................
-
-def showdict(d,name):
-    print '<<<<<< dictionary', name, 'begin >>>>>>'
-    for key in d:
-      t = type(d[key])
-      print '>>', key, t
-      if t in (int, float, str, np.float32, np.float64):
-        print '  scalar:', d[key]
-      elif t in (tuple, list):
-        print '  sequence:', d[key]
-      elif t in (np.ndarray, np.ma.core.MaskedArray):
-        v = d[key]
-        print '  numpy.ndarray: shape', v.shape, v.dtype
-        if v.ndim == 0:
-          print '  scalar:', v
-        elif v.ndim == 1:
-          print '  vect: first 5 vals:', v[:min(5,v.size)]
-          print '  min, max:', np.amin(v), np.amax(v)
-        elif v.ndim == 2:
-          print '  array: first column:', v[0]
-          print '  min, max:', np.amin(v), np.amax(v)
-      print
-    print '<<<<<< dictionary', name, 'end >>>>>>'
-    print
-    print
-
-#   # debug
-#   showdict(g.__dict__, 'g')
-#   showdict(g.linear .__dict__, 'g.linear')
-#   showdict(g.nearest.__dict__, 'g.nearest')
-#   showdict(g.ica    .__dict__, 'g.ica')
 
 
 if __name__ == "__main__":
@@ -534,11 +504,12 @@ if __name__ == "__main__":
     # starttime = '2006-03-24T00:50'
     # endtime   = '2006-03-24T00:50'
     dt        = relativedelta(minutes=5)
-    levelB    = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB'
-    levelC    = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelC'
-    # levelB = '/nobackup/3/pcastell/PACE/LevelB'
-    # levelC = '/nobackup/3/pcastell/PACE/LevelC'
-    const_x = 'const_2d_asm_x'
+    # levelB    = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB'
+    # levelC    = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelC'
+    # const_x = 'const_2d_asm_x'
+    levelB = '/nobackup/3/pcastell/PACE/LevelB'
+    levelC = '/nobackup/3/pcastell/PACE/LevelC'
+    const_x = 'const_2d_asm_x_C'
 
     # mode of ICA? (from MODES)
     #   mode = 'HOMOCLD-MAXRAN' 
@@ -573,24 +544,21 @@ if __name__ == "__main__":
 
     tyme   = starttime
     while tyme <= endtime:
-        outdir  = os.sep.join((levelC,'Y'+tyme.strftime('%Y'),'M'+tyme.strftime('%m'),'D'+tyme.strftime('%d')))
+        outdir  = os.sep.join((options.levelC,'Y'+tyme.strftime('%Y'),'M'+tyme.strftime('%m'),'D'+tyme.strftime('%d')))
         if not os.path.exists(outdir): os.makedirs(outdir)
 
         print '<> Working on ',tyme
 
         # instantiate PACE granule
         coll = 'aer_Nv','asm_Nx','met_Nv','chm_Nv'
-        granules = granulesLB(levelB,tyme,tyme,coll)
+        granules = granulesLB(options.levelB,tyme,tyme,coll)
         coll = 'cld_nearest'
-        granulesN = granulesLBN(levelB,tyme,tyme,coll)
+        granulesN = granulesLBN(options.levelB,tyme,tyme,coll)
         g = PCS(granules,granulesN,const_x)
 
-        # #     # do the simulation and write out results
-        # ofile = os.sep.join((outdir,'tempo-g5nr-icacl-'+mode+'.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.nc4'))
-        # print '<> creating ',ofile
-        # g.doICA(ofile,mode,clump=True)
-
-        #     os.remove(os.sep.join((outdir,'geos-linear.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.npz')))
-        #     os.remove(os.sep.join((outdir,'geos-nearest.'+tyme.strftime('%Y%m%d_%H')+'z.'+laycode+'.npz')))
+        # do the simulation and write out results
+        ofile = os.sep.join((outdir,'pace-g5nr.'+mode+'.'+tyme.strftime('%Y%m%d_%H%M00')+'.nc4'))
+        print '<> creating ',ofile
+        g.doICA(ofile,mode,clump=True)
 
         tyme += dt
