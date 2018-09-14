@@ -179,7 +179,6 @@ if __name__ == "__main__":
                 outFile = '{}/{}-g5nr.lb2.{}.{}_{}z.nc4'.format(outpath,instname,colname,nymd,hour)
 
                 Options =     " --output=" + outFile       + \
-                              " --format=NETCDF4_CLASSIC"      + \
                               " --isoTime"  +\
                               " --algorithm=" + args.algo  +\
                               " --dt_secs=" + dt_secs
