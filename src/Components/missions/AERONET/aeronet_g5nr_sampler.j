@@ -11,7 +11,6 @@
 #SBATCH --mail-user=patricia.castellanos@nasa.gov
 #SBATCH --output=slurm_%j.out
 #SBATCH --error=slurm_%j.err
-#SBATCH --constraint=sand
 #######################################################################
 #                  System Environment Variables
 #######################################################################
