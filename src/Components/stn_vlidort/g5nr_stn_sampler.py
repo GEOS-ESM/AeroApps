@@ -291,16 +291,7 @@ if __name__ == "__main__":
     # Create consistent file name extension
     # -------------------------------------
     name, ext = os.path.splitext(options.outFile)
-    if ext.upper() == '.XLS':
-        options.format = 'EXCEL'
-    if 'NETCDF4' in options.format:
-        options.outFile = name + '.nc4'
-    elif 'NETCDF3' in options.format:
-        options.outFile = name + '.nc'
-    elif 'EXCEL' in options.format:
-        options.outFile = name + '.xls'
-    else:
-        raise ValueError, 'invalid extension <%s>'%ext
+    options.outFile = name + '.nc4'
             
     # Station Locations
     # -----------------
