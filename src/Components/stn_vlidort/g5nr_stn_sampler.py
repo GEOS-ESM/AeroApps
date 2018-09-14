@@ -290,6 +290,7 @@ if __name__ == "__main__":
 
     # Create consistent file name extension
     # -------------------------------------
+    options.format = format
     name, ext = os.path.splitext(options.outFile)
     options.outFile = name + '.nc4'
             
