@@ -237,7 +237,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
 
 if __name__ == "__main__":
     
-    format = 'NETCDF3_CLASSIC'
+    format = 'NETCDF4'
     outFile = 'stn_sampler.nc'
     algo = 'linear'
     dt_secs = 60*30  #30 minutes
@@ -258,9 +258,6 @@ if __name__ == "__main__":
     parser.add_option("-V", "--vars", dest="Vars", default=None,
               help="Variables to sample (default=All)")
     
-    parser.add_option("-f", "--format", dest="format", default=format,
-              help="Output file format: one of NETCDF4, NETCDF4_CLASSIC, NETCDF3_CLASSIC, NETCDF3_64BIT (default=%s)"%format )
-
     parser.add_option("-d", "--dt_secs", dest="dt_secs", default=dt_secs,
               type='int',
               help="Timesetp in seconds for sampling (default=%s)"%dt_secs )    
