@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Cloud Simulator for PACE
 """
@@ -25,8 +26,6 @@ import multiprocessing
 from MAPL.ShaveMantissa_ import shave32
 
 # Variable names for output file
-LINEAR_NAMES = ('PHIS','PS','U10M','V10M','TS','DELP','AIRDENS','O3')
-NEAREST_NAMES = ('FRLAND',)
 ICA_NAMES = ('TAUL','TAUI','REL','REI','RH')
 
 # dictionary of possible modes and their description
@@ -37,8 +36,9 @@ MODES = \
   }
 
 # Variables Names to read in
-lSDS = ['PHIS','PS','TS','U10M','V10M','DELP','AIRDENS','O3','T','U']
-nSDS = ['FRLAND','DELP','T','QV','QL','QI','CLOUD']
+#lSDS = ['PHIS','PS','TS','U10M','V10M','DELP','AIRDENS','O3','T','U']
+lSDS = ['DELP','T','U']
+nSDS = ['DELP','T','QV','QL','QI','CLOUD']
 mSDS = ['longitude', 'latitude', 'ev_mid_time']
 
 class HOLDER(LEVELBCS):
@@ -101,15 +101,17 @@ class PCS(LEVELBCS,GCS03):
     """
     Implements the PACE Cloud Simulator for VLIDORT.
     """
-    def __init__(self,linearFiles,nearestFiles,const_x):
-
-        self.ica = None
-        # Read in sampled data
+    def __init__(self,linearFiles,nearestFiles,const_x,nproc):
+        self.nproc = nproc
+        
+        # Read in geometry data data
+        # ----------------------------
         LEVELBCS.__init__(self,nearestFiles,mSDS)
         self.clon = self.lon
         self.clat = self.lat
         self.offview = self.clon.mask
         self.nobs = np.sum(~self.offview)
+
         #store flattened lon/lat
         self.lon = self.clon[~self.offview]
         self.lat = self.clat[~self.offview]
@@ -119,157 +121,162 @@ class PCS(LEVELBCS,GCS03):
         scanTime       = np.repeat(scanTime,npixel,axis=1)        
         self.scanTime = scanTime[~self.offview]
 
-
-
-        self.linear = HOLDER()
-        self.nearest = HOLDER()
-        self.linear.offview = self.offview
-        self.nearest.offview = self.offview
-        self.linear.nobs = self.nobs
-        self.nearest.nobs = self.nobs
-        print 'Reading Linear...'
-        LEVELBCS.__init__(self.linear,linearFiles,lSDS,)
-        print 'Reading Nearest...'
-        LEVELBCS.__init__(self.nearest,nearestFiles,nSDS)
-
-        # # Reshape arrays to (nobs,nz)
-        # for sds in lSDS:
-        #     print 'reshaping lnear ', sds
-        #     v = self.linear.__dict__[sds]
-        #     if len(v.shape) == 2:
-        #         self.linear.__dict__[sds] = v[~self.offview]
-        #     else:
-        #         self.linear.__dict__[sds] = np.zeros([v.shape[0],self.nobs])
-        #         for k in range(v.shape[0]):
-        #             self.linear.__dict__[sds][k,:] = v[k,:,:][~self.offview]
-
-        #         self.linear.__dict__[sds] = self.linear.__dict__[sds].T
-
-        # for sds in nSDS:
-        #     print 'reshaping nearest ', sds
-        #     v = self.nearest.__dict__[sds]
-        #     if len(v.shape) == 2:
-        #         self.nearest.__dict__[sds] = v[~self.offview]
-        #     else:
-        #         self.nearest.__dict__[sds] = np.zeros([v.shape[0],self.nobs])
-        #         for k in range(v.shape[0]):
-        #             self.nearest.__dict__[sds][k,:] = v[k,:,:][~self.offview]
-
-        #         self.nearest.__dict__[sds] = self.nearest.__dict__[sds].T
-
-
+        # Get ICA index
+        # ------------------
+        self.ica = None
         self.getICAindx(const_x)
 
-        print 'warning: QILS, QIAN not available in NatureRun output'           
-        print '         Disabling anvil specific effective radii weighting'     
-        # see reff() in mod_reff: setting QILS=QIAN=0 disables anvil Re weighting   
-        self.nearest.QILS = np.zeros_like(self.nearest.QI)                
-        self.nearest.QIAN = np.zeros_like(self.nearest.QI)                
+        # Effective radius -- use linear interp fields
+        # --------------------------------------------
+        self.linear = HOLDER()
+        self.linear.offview = self.offview
+        self.linear.nobs = self.nobs
+        print 'Reading Linear...'
+        LEVELBCS.__init__(self.linear,linearFiles,lSDS,)
 
         # Hack: to avoid extrapolation issues, pretend the GEOS-5 top is
         #       highter then it actually is
         # --------------------------------------------------------------
-        self._fixPTOP()
+        self._fixPTOP('linear')
+
+
+        print 'warning: QILS, QIAN not available in NatureRun output'           
+        print '         Disabling anvil specific effective radii weighting'     
+        # see reff() in mod_reff: setting QILS=QIAN=0 disables anvil Re weighting  
+        # if available, these should be nearest neighbor sampled 
+        QILS = np.zeros_like(self.linear.T)                
+        QIAN = np.zeros_like(self.linear.T)                
+
+
+        # calculate REL and REI
+        l = self.linear
+        self.ica.REL, self.ica.REI = getRe(l.DELP,l.T,l.U,QILS,QIAN,self.PTOP)
+
+
+        # clean up some memeory
+        self.ica.DELP = self.linear.DELP
+        self.linear = None
+        QILS = None
+        QIAN = None
+
+        # Read in nearest neighbor sampled data
+        # used to cloud simulation
+        # ----------------------------------------
+        self.nearest = HOLDER()
+        self.nearest.offview = self.offview 
+        self.nearest.nobs = self.nobs
+        print 'Reading Nearest...'
+        LEVELBCS.__init__(self.nearest,nearestFiles,nSDS)
+
+
+        # Hack: to avoid extrapolation issues, pretend the GEOS-5 top is
+        #       highter then it actually is
+        # --------------------------------------------------------------
+        self._fixPTOP('nearest')
 
 #---
     def genICA(self, mode, clump=True, **kwopts):
         """
         Calculate TAU, RE, and RH using ICA generated subcolumns.
         """
+        if self.verb:
+            print " <> Performing ICA calculations"
+
         n = self.nearest
-        l = self.linear
         ica = self.ica
         ica.Indices = OrderedDict(ica.Indices)
 
-        # Space for optical properties
+        # Space for downscaled arrays
         # ----------------------------
         shp = n.T.shape
         for v in ( 'QV', 'QL', 'QI', 'RH', 'TAUL', 'TAUI' ):
             ica.__dict__[v] = MAPL_UNDEF * ones(shp)
         # REL, REI currently generated for all pixels below
         # if this changes, add above and use [ok] for them like TAUs
-        
-        DELP  = []
-        T     = []
-        QV    = []
-        QL    = []
-        QI    = []
-        CLOUD = []
-        ncols = []
-        PTOP  = []
-        modeList = []
-        lon      = []
-        lat      = []
 
         # subcolumn generation defaults to failure
         # ----------------------------------------
         ok = np.zeros(shp[0],dtype=bool)
- 
-        if self.verb:
-            print " <> Performing ICA calculations"
+
 
         # Loop over unique gridboxes
         # --------------------------
-        for gckey in ica.Indices:            
-            ipxs = ica.Indices[gckey]
-            # each pixel gets a generated subcolumn
-            ncols.append(len(ipxs))
+        for skey in np.arange(0,len(ica.Indices),self.nproc):   
 
-            # Select profile
-            # --------------
-            # can use GEOS profile for any pixel for "nearest" quantities
-            # here we just use the first pixel
-            ip = ipxs[0]
-            DELP.append(n.DELP[ip,:])
-            T.append(n.T[ip,:])
-            QV.append(n.QV[ip,:])
-            QL.append(n.QL[ip,:])
-            QI.append(n.QI[ip,:])
-            CLOUD.append(n.CLOUD[ip,:])
-            PTOP.append(self.PTOP)
-            modeList.append(mode)
-            lon.append(self.lon[ipxs])
-            lat.append(self.lat[ipxs])
+            ekey = skey + self.nproc 
+            if ekey > len(ica.Indices):
+                ekey = len(ica.Indices)
 
-
-        #pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5)) 
-        pool = multiprocessing.Pool(4) 
-
-        if clump:
-            args = zip(ncols,DELP,T,QV,QL,QI,CLOUD,PTOP,modeList,lon,lat)
-            result = pool.map(unwrap_CallgenICAClump,args)
-        else:
-            args = zip(ncols,DELP,T,QV,QL,QI,CLOUD,PTOP,modeList)
-            result = pool.map(unwrap_CallgenICA,args)
-
-        pool.close()
-        pool.join()
+            keys = ica.Indices.keys()[skey:ekey]
+            nkeys = len(keys)
+        
+            DELP  = []
+            T     = []
+            QV    = []
+            QL    = []
+            QI    = []
+            CLOUD = []
+            ncols = []
+            PTOP  = []
+            modeList = []
+            lon      = []
+            lat      = []
 
 
-        # load subcolumns if success and generate relative humidities
-        # -----------------------------------------------------------
-        for ii,gckey in enumerate(ica.Indices): 
-            ipxs = ica.Indices[gckey]
+            # Loop over unique gridboxes
+            # --------------------------
+            for gckey in keys:            
+                ipxs = ica.Indices[gckey]
+                # each pixel gets a generated subcolumn
+                ncols.append(len(ipxs))
 
-            QV_, QL_, QI_, rc = result[ii]
-            if not rc:
-              ok[ipxs] = True
-              ica.QV[ipxs], ica.QL[ipxs], ica.QI[ipxs] = QV_, QL_, QI_
-              ica.RH[ipxs] = QV_ / tile(getQsat(self.PTOP,DELP[ii],T[ii]),(ncols[ii],1))
+                # Select profile
+                # --------------
+                # can use GEOS profile for any pixel for "nearest" quantities
+                # here we just use the first pixel
+                ip = ipxs[0]
+                DELP.append(n.DELP[ip,:])
+                T.append(n.T[ip,:])
+                QV.append(n.QV[ip,:])
+                QL.append(n.QL[ip,:])
+                QI.append(n.QI[ip,:])
+                CLOUD.append(n.CLOUD[ip,:])
+                PTOP.append(self.PTOP)
+                modeList.append(mode)
+                lon.append(self.lon[ipxs])
+                lat.append(self.lat[ipxs])
+
+            # launch on multiple processors
+            if clump:
+                args = zip(ncols,DELP,T,QV,QL,QI,CLOUD,PTOP,modeList,lon,lat)
+                result = pool.map(unwrap_CallgenICAClump,args)
+            else:
+                args = zip(ncols,DELP,T,QV,QL,QI,CLOUD,PTOP,modeList)
+                result = pool.map(unwrap_CallgenICA,args)
+
+
+            # load subcolumns if success and generate relative humidities
+            # -----------------------------------------------------------
+            for ii,gckey in enumerate(keys): 
+                ipxs = ica.Indices[gckey]
+
+                QV_, QL_, QI_, rc = result[ii]
+                if not rc:
+                    ok[ipxs] = True
+                    ica.QV[ipxs], ica.QL[ipxs], ica.QI[ipxs] = QV_, QL_, QI_
+                    ica.RH[ipxs] = QV_ / tile(getQsat(self.PTOP,DELP[ii],T[ii]),(ncols[ii],1))
 
         # warning
         # -------
-        if any(~ok): print 'warning: ICA procedure failed to generate some subcolumns'
+        if any(~ok): print 'warning: ICA procedure failed to generate {} subcolumns'.format(np.sum(~ok))
 
-        # Effective radius -- use linear interp fields
-        # --------------------------------------------
-        # currently, these are valid for all columns even if some had generation failure
-        ica.REL, ica.REI = getRe(l.DELP,l.T,l.U,n.QILS,n.QIAN,self.PTOP)
 
         # Tau -- use ICA sampled QL/QI with linear interp RE
         # --------------------------------------------------
         ica.TAUL[ok],ica.TAUI[ok] = getTau(
-          l.DELP[ok],ica.REL[ok],ica.REI[ok],ica.QL[ok],ica.QI[ok])
+          ica.DELP[ok],ica.REL[ok],ica.REI[ok],ica.QL[ok],ica.QI[ok])
+
+        self.ok = ok
 
 #---
     def doICA(self,filename,mode,clump=True):
@@ -277,22 +284,22 @@ class PCS(LEVELBCS,GCS03):
         Read and write variables doing ICA sampling.
         """
 
-        if self.linear is None:
+        if self.nearest is None:
           raise RuntimeError, 'must sample first using getGEOS()'
 
         # Calulate TAU and RE
         # -------------------
         self.genICA(mode,clump=clump)
         
-        # # Write the output file
-        # # ---------------------
-        # self.writeNC(filename, 
-        # title = 'GEOS-5 PACE Cloud Simulator for VLIDORT' 
-        #   + ' with ICA sampling (%s)' % MODES[mode])
+        # Write the output file
+        # ---------------------
+        self.writeNC(filename, 
+        title = 'GEOS-5 PACE Cloud Simulator for VLIDORT' 
+          + ' with ICA sampling (%s)' % MODES[mode])
 
 #---
     def writeNC ( self, filename, format='NETCDF4', zlib=True,
-                  linearNames=LINEAR_NAMES, nearestNames=NEAREST_NAMES, icaNames=ICA_NAMES,
+                  icaNames=ICA_NAMES,
                   title='GEOS-5 PACE Cloud Simulator for VLIDORT',
                   rcVars='variablesGCS.rc', Verbose=True):
         """
@@ -399,17 +406,6 @@ class PCS(LEVELBCS,GCS03):
         tmp[ self.offview] = MAPL_UNDEF
         time[:,:] = tmp
 
-        # Linear variables
-        # ----------------
-        self._writeVars(hf,cf,linearNames,self.linear,
-                        comment='Linearly sampled variable',
-                        Verbose=Verbose,zlib=zlib)
-        
-        # Nearest variables
-        # -----------------
-        self._writeVars(hf,cf,nearestNames,self.nearest,
-                        comment='Nearest neighbor sampled variable',
-                        Verbose=Verbose,zlib=zlib)
 
         # ICA variables
         # -------------
@@ -464,7 +460,7 @@ class PCS(LEVELBCS,GCS03):
 
                 v[:] = shave(tmp)
 
-    def _fixPTOP(self):
+    def _fixPTOP(self,name):
         """
         To avoid extrapolation issues, pretend the GEOS-5 top is
         highter then it actually is
@@ -473,11 +469,7 @@ class PCS(LEVELBCS,GCS03):
         pTop_ = 0.001                     # extended top pressure in hPa
         dTOP  = (pTop - pTop_) * 100.     # in Pa
         self.PTOP = pTop_ * 100           # in Pa
-        self.linear.DELP[:,0] += dTOP
-        try:
-            self.nearest.DELP[:,0] += dTOP
-        except:
-            pass # it may not be there, no fuss
+        self.__dict__[name].DELP[:,0] += dTOP
 
 #........................................................................
 
@@ -499,6 +491,12 @@ def albedo_dE_cons(tauc,mu0,g,f):
 
 
 if __name__ == "__main__":
+
+    # start fork here so large data is not copied to children
+    nproc = 4
+    # nproc = int(multiprocessing.cpu_count()*0.5)    
+    pool = multiprocessing.Pool(nproc) 
+
 
     # setup
     # starttime = '2006-03-24T00:50'
@@ -554,7 +552,7 @@ if __name__ == "__main__":
         granules = granulesLB(options.levelB,tyme,tyme,coll)
         coll = 'cld_nearest'
         granulesN = granulesLBN(options.levelB,tyme,tyme,coll)
-        g = PCS(granules,granulesN,const_x)
+        g = PCS(granules,granulesN,const_x,nproc)
 
         # do the simulation and write out results
         ofile = os.sep.join((outdir,'pace-g5nr.'+mode+'.'+tyme.strftime('%Y%m%d_%H%M00')+'.nc4'))
@@ -562,3 +560,7 @@ if __name__ == "__main__":
         g.doICA(ofile,mode,clump=True)
 
         tyme += dt
+
+    pool.close()
+    pool.join()
+
