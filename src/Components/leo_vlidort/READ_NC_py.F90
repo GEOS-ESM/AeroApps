@@ -74,3 +74,72 @@ subroutine py_mp_readvar4D(varname, filename, var)
 
 end subroutine py_mp_readvar4D
 
+subroutine py_readvar1D(varname, filename, var)
+
+    use netcdf_Mod, only: readvar1d  
+    implicit None
+
+  ! !INPUT PARAMETERS:
+
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  filename
+    real*8, dimension(:), intent(inout)      ::  var
+
+
+    call readvar1d (varname, filename, var )  
+
+
+end subroutine py_readvar1D
+
+subroutine py_readvar2D(varname, filename, var)
+
+    use netcdf_Mod, only: readvar2d  
+    implicit None
+
+  ! !INPUT PARAMETERS:
+
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  filename
+    real*8, dimension(:,:), intent(inout)    ::  var
+
+
+    call readvar2d (varname, filename, var )  
+
+
+end subroutine py_readvar2D
+
+subroutine py_readvar3D(varname, filename, var)
+
+    use netcdf_Mod, only: readvar3d  
+    implicit None
+
+  ! !INPUT PARAMETERS:
+
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  filename
+    real, dimension(:,:,:), intent(inout)  ::  var
+
+
+    call readvar3d (varname, filename, var )  
+
+
+end subroutine py_readvar3D
+
+subroutine py_readvar4D(varname, filename, var)
+
+    use netcdf_Mod, only: readvar4d  
+    implicit None
+
+  ! !INPUT PARAMETERS:
+
+    character(len=*), intent(in)             ::  varname
+    character(len=*), intent(in)             ::  filename
+    real, dimension(:,:,:,:), intent(inout)  ::  var
+
+
+    call readvar4d (varname, filename, var )  
+
+
+end subroutine py_readvar4D
+
+
