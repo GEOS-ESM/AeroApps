@@ -20,7 +20,6 @@ from   netCDF4         import Dataset
 from   glob            import glob
 
 
-
 SDS = {'longitude'  : 'geolocation_data',
        'latitude'   : 'geolocation_data',
        'ev_mid_time': 'scan_line_attributes' }
@@ -36,7 +35,7 @@ class PACE(object):
     Generic container for PACE SDS
     """
 
-    def __init__(self, Path,verb=False):
+    def __init__(self, Path,SDS=SDS,ALIAS=ALIAS,verb=False):
 
         # Read each granule, appending them to the list
         # ---------------------------------------------
@@ -69,20 +68,22 @@ class PACE(object):
 
         # Alias
         for sds in self.SDS:
-            self.__dict__[ALIAS[sds]] = self.__dict__[sds]
+            if sds in ALIAS:
+                self.__dict__[ALIAS[sds]] = self.__dict__[sds]
 
         # Create corresponding python time
         # --------------------------------
         nscan,npixel = self.lon[0].shape
         self.tyme = []        
-        for scanStart,midTime,lon in zip(self.scanStart,self.midTime,self.lon):
-            scanStart  = isoparser(scanStart.strftime('2006-%m-%dT00:00:00'))
-            tyme       = np.array([scanStart + timedelta(seconds=t) for t in midTime])    
-            tyme.shape = (nscan,1)
-            tyme       = np.repeat(tyme,npixel,axis=1)
-            tyme       = np.ma.array(tyme)
-            tyme.mask  = lon.mask
-            self.tyme.append(tyme)
+        if hasattr(self,'midTIme'):
+            for scanStart,midTime,lon in zip(self.scanStart,self.midTime,self.lon):
+                scanStart  = isoparser(scanStart.strftime('2006-%m-%dT00:00:00'))
+                tyme       = np.array([scanStart + timedelta(seconds=t) for t in midTime])    
+                tyme.shape = (nscan,1)
+                tyme       = np.repeat(tyme,npixel,axis=1)
+                tyme       = np.ma.array(tyme)
+                tyme.mask  = lon.mask
+                self.tyme.append(tyme)
                     
 
     def _readList(self,List):
@@ -191,7 +192,7 @@ class LEVELBCS(PACE):
         except:
             raise Exception("- %s: not recognized as an netCDF file"%filename)
 
-        # Read select variables (do not reshape)
+        # Read select variables 
         # --------------------------------------
         if type(self.scanStart) is list:
             self.scanStart = isoparser(nc.time_coverage_start)
@@ -200,7 +201,7 @@ class LEVELBCS(PACE):
                 # Don't fuss if you can't find it
                 try:                    
                     if hasattr(self,'offview'):
-                        var = nc.variables[sds]
+                        var = nc.variables[sds][:]
                         if len(var.shape) == 3:
                             v = var[0,:,:][~self.offview]  #(nobs)
                         else:
@@ -215,8 +216,6 @@ class LEVELBCS(PACE):
                         if not hasattr(v,'mask'):
                             v = np.ma.array(v)
                             v.mask = np.zeros(v.shape).astype('bool')
-
-
 
                     self.__dict__[sds] = v
                     print 'Read ',sds
