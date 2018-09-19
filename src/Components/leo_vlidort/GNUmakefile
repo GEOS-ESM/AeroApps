@@ -28,8 +28,8 @@ THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
 
 
-PY_EXTS = LidarAngles_.$(F2PYEXT) VLIDORT_POLAR_.$(F2PYEXT)
-PY_SCRP =  
+PY_EXTS = LidarAngles_.$(F2PYEXT) VLIDORT_POLAR_.$(F2PYEXT) READ_PAR_.$(F2PYEXT) leo_vlidort.py
+PY_SCRP = 
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
@@ -115,6 +115,10 @@ VLIDORT_POLAR_.$(F2PYEXT): VLIDORT_POLAR_py.F90
 	$(F2PY) -c -m VLIDORT_POLAR_ $(M). $(M)$(INC_GEOVLIDORT) \
                  VLIDORT_POLAR_py.F90 $(LIBS)                  
 # 	$(CP) -p VLIDORT_.$(F2PYEXT) $(ESMALIB)/Python 	
+
+READ_PAR_.$(F2PYEXT): READ_PAR_py.F90 
+	$(F2PY) -c -m READ_PAR_ $(M). $(M)$(INC_GEOVLIDORT) \
+                 READ_PAR_py.F90 $(LIBS)
 
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
