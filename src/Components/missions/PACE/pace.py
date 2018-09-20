@@ -201,14 +201,12 @@ class LEVELBCS(PACE):
                 # Don't fuss if you can't find it
                 try:                    
                     if hasattr(self,'offview'):
-                        var = nc.variables[sds][:]
-                        if len(var.shape) == 3:
-                            v = var[0,:,:][~self.offview]  #(nobs)
+                        var = np.squeeze(nc.variables[sds][:])
+                        if len(var.shape) == 2:
+                            v = var[~self.offview]  #(nobs)
                         else:
-                            v_ = np.zeros([var.shape[1],self.nobs])
-                            for k in range(var.shape[1]):
-                                v_[k,:] = var[0,k,:,:][~self.offview]
-
+                            v_ = var[~self.offview3d]  #(nz,nobs)
+                            v_ = var.reshape([self.km,self.nobs])
                             v = v_.T  #(nobs,nz)
                             
                     else:
