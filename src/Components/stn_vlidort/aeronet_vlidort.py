@@ -1282,6 +1282,10 @@ class AERONET_VLIDORT(object):
             tau = np.squeeze(tau)
             tau440.append(tau.sum(axis=0))  #(nobs)
 
+        pool.close()
+        pool.join()
+
+
         # # get 870 tau
         self.channel = 870
         self.rcFile = 'Aod_EOS.870.rc'
@@ -1300,6 +1304,8 @@ class AERONET_VLIDORT(object):
             ae = -1.*np.log(t870/t440)/ratio
             self.ae.append(ae)
 
+        pool.close()
+        pool.join()
 
 
     #---
@@ -1328,6 +1334,10 @@ class AERONET_VLIDORT(object):
             self.refi.append(refi) #(km,nch,nobs)
             self.refr.append(refr) #(km,nch,nobs)
             self.vol.append(vol) #(km,nch,nobs)
+
+        pool.close()
+        pool.join()
+
         
 
     def doMie(self,t):
