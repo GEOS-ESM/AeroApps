@@ -41,6 +41,8 @@ lSDS = ['DELP','T','U']
 nSDS = ['DELP','T','QV','QL','QI','CLOUD']
 mSDS = ['longitude', 'latitude', 'ev_mid_time']
 
+km = 72
+
 class HOLDER(LEVELBCS):
     """
     Generic container.
@@ -109,7 +111,11 @@ class PCS(LEVELBCS,GCS03):
         LEVELBCS.__init__(self,nearestFiles,mSDS)
         self.clon = self.lon
         self.clat = self.lat
+        self.km   = km
         self.offview = self.clon.mask
+        self.offview.shape = (1,) + self.offview.shape 
+        self.offview3d = np.repeat(self.offview,self.km,axis=0)
+        self.offview.shape = self.offview.shape[1:]        
         self.nobs = np.sum(~self.offview)
 
         #store flattened lon/lat
@@ -129,8 +135,10 @@ class PCS(LEVELBCS,GCS03):
         # Effective radius -- use linear interp fields
         # --------------------------------------------
         self.linear = HOLDER()
-        self.linear.offview = self.offview
+        self.linear.offview   = self.offview
+        self.linear.offview3d = self.offview3d
         self.linear.nobs = self.nobs
+        self.linear.km   = self.km
         print 'Reading Linear...'
         LEVELBCS.__init__(self.linear,linearFiles,lSDS,)
 
@@ -164,7 +172,9 @@ class PCS(LEVELBCS,GCS03):
         # ----------------------------------------
         self.nearest = HOLDER()
         self.nearest.offview = self.offview 
+        self.nearest.offview3d = self.offview3d 
         self.nearest.nobs = self.nobs
+        self.nearest.km   = self.km
         print 'Reading Nearest...'
         LEVELBCS.__init__(self.nearest,nearestFiles,nSDS)
 
@@ -505,8 +515,8 @@ if __name__ == "__main__":
     # levelB    = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB'
     # levelC    = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelC'
     # const_x = 'const_2d_asm_x'
-    levelB = '/nobackup/3/pcastell/PACE/LevelB'
-    levelC = '/nobackup/3/pcastell/PACE/LevelC'
+    levelB = '/nobackup/PACE/LevelB'
+    levelC = '/nobackup/PACE/LevelC'
     const_x = 'const_2d_asm_x_C'
 
     # mode of ICA? (from MODES)
