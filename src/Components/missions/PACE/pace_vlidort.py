@@ -97,14 +97,11 @@ class PACE_VLIDORT(LEO_VLIDORT,LEVELBCS,PACE):
         PACE.__init__(self.geom,self.LGinFile,SDS=SDS_GEOM)
 
         self.offview = self.geom.lon[0].mask
-
-        self.offview = ~self.offview
-        self.ixs = 0
-        self.ixe = 100
-        self.offview[self.ixs:self.ixe,self.ixs:self.ixe] = False
-
         self.nobs = np.sum(~self.offview)
         self.km   = 72
+        self.offview.shape = (1,) + self.offview.shape 
+        self.offview3d = np.repeat(self.offview,self.km,axis=0)
+        self.offview.shape = self.offview.shape[1:]
         self.shape = self.geom.lon[0].shape
 
         # Store flattened arrays
@@ -122,21 +119,24 @@ class PACE_VLIDORT(LEO_VLIDORT,LEVELBCS,PACE):
         AERFile = self.LBinFile.replace('%col',col)
         if self.verbose: 
             print 'opening file',AERFile
-        nc       = Dataset(AERFile)
-
+ 
         for sds in self.SDS_AER:
-            var = nc.variables[sds]
-            # v_ = np.zeros([var.shape[0],self.nobs])
-            # for k in range(var.shape[0]):   
-            #     v_[k,:] = var[k,:,:][~self.offview]   
+            if sds == 'PS':
+                var = np.zeros([self.shape[1],self.shape[0],1],dtype=np.float32,order='F')
+                READ_NC_.py_readvar3d(sds,AERFile,var)
+                v = np.squeeze(var).T
+                v = v[~self.offview]
 
-            if len(var.shape) == 3:
-                v_ = var[0,self.ixs:self.ixe,self.ixs:self.ixe].reshape(self.nobs) 
             else:
-                v_ = var[0,:,self.ixs:self.ixe,self.ixs:self.ixe].reshape([self.km,self.nobs]) 
-                v_ = v_.T
+                var = np.zeros([self.shape[1],self.shape[0],self.km,1],dtype=np.float32,order='F')
+                READ_NC_.py_readvar4d(sds,AERFile,var)
 
-            self.__dict__[sds] = v_  #(nobs,nz)
+                v = np.squeeze(var).T
+                v = v[~self.offview3d]
+                v = v.reshape([self.km,self.nobs])
+                v = v.T
+
+            self.__dict__[sds] = v  #(nobs,nz)
 
             if self.verbose: 
                 print 'Read ',sds
@@ -144,21 +144,22 @@ class PACE_VLIDORT(LEO_VLIDORT,LEVELBCS,PACE):
 
         if self.verbose: 
             print 'opening file',self.LCinFile
-        nc       = Dataset(self.LCinFile)
 
         for sds in self.SDS_CLD:
-            # var = nc.variables[sds]
-            # v_ = np.zeros([var.shape[0],self.nobs])
-            # for k in range(var.shape[0]):   
-            #     v_[k,:] = var[k,:,:][~self.offview]   
+            var = np.zeros([self.shape[1],self.shape[0],self.km],dtype=np.float32,order='F')
+            READ_NC_.py_readvar3d(sds,LCinFile,var)
 
-            v_ = nc.variables[sds][:,self.ixs:self.ixe,self.ixs:self.ixe].reshape([self.km,self.nobs])            
-            self.__dict__[sds] = v_.T  #(nobs,nz)
+            v = np.squeeze(var).T
+            v = v[~self.offview3d]
+            v = v.reshape([self.km,self.nobs])
+            v = v.T
+
+            self.__dict__[sds] = v  #(nobs,nz)
 
             if self.verbose: 
                 print 'Read ',sds
 
-        nc.close()          
+              
 
 
 #------------------------------------ M A I N ------------------------------------
@@ -172,11 +173,11 @@ if __name__ == "__main__":
     hour     = date.strftime('%H')
     format   = 'NETCDF4_CLASSIC'
 
-    LGinDir      = '/nobackup/3/pcastell/PACE/L1B/{}'.format(gdate.strftime('Y%Y/M%m/D%d'))
+    LGinDir      = '/nobackup/PACE/L1B/{}'.format(gdate.strftime('Y%Y/M%m/D%d'))
     LGinFile     = '{}/OCI{}00.L1B_PACE.nc'.format(LGinDir,gdate.strftime('%Y%j%H%M'))
-    LBinDir      = '/nobackup/3/pcastell/PACE/LevelB/{}'.format(date.strftime('Y%Y/M%m/D%d'))
+    LBinDir      = '/nobackup/PACE/LevelB/{}'.format(date.strftime('Y%Y/M%m/D%d'))
     LBinFile     = '{}/pace-g5nr.lb.%col.{}_{}00.nc4'.format(LBinDir,nymd,hhmm)
-    LCinDir      = '/nobackup/3/pcastell/PACE/LevelC/{}'.format(date.strftime('Y%Y/M%m/D%d'))
+    LCinDir      = '/nobackup/PACE/LevelC/{}'.format(date.strftime('Y%Y/M%m/D%d'))
     LCinFile     = '{}/pace-g5nr.TOTWPDF-GCOP-SKEWT.{}_{}00.nc4'.format(LCinDir,nymd,hhmm)
 
 
