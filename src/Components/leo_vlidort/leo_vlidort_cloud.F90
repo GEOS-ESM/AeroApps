@@ -1667,9 +1667,6 @@ end function nn_interp
     call check(nf90_put_att(ncid,ewVarID,'units','degrees_east'),"units attr")
     call check(nf90_put_att(ncid,nsVarID,'long_name','pseudo latitude'),"long_name attr")
     call check(nf90_put_att(ncid,nsVarID,'units','degrees_north'),"units attr")   
-    call check(nf90_put_att(ncid,timeVarID,'long_name','Initial Time of Scan'),"long_name attr")
-    call check(nf90_put_att(ncid,timeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
-                                                  time//':00:00'),"units attr")   
     call check(nf90_put_att(ncid,levVarID,'long_name','Vertical Level'),"long_name attr")
     call check(nf90_put_att(ncid,levVarID,'units','layer'),"units attr")
     call check(nf90_put_att(ncid,levVarID,'positive','down'),"positive attr")
@@ -1857,9 +1854,6 @@ end function nn_interp
       call check(nf90_put_att(ncid,ewVarID,'units','degrees_east'),"units attr")
       call check(nf90_put_att(ncid,nsVarID,'long_name','pseudo latitude'),"long_name attr")
       call check(nf90_put_att(ncid,nsVarID,'units','degrees_north'),"units attr")   
-      call check(nf90_put_att(ncid,timeVarID,'long_name','Initial Time of Scan'),"long_name attr")
-      call check(nf90_put_att(ncid,timeVarID,'units','seconds since '//date(1:4)//'-'//date(5:6)//'-'//date(7:8)//' '// &
-                                                    time//':00:00'),"units attr")   
       call check(nf90_put_att(ncid,levVarID,'long_name','Vertical Level'),"long_name attr")
       call check(nf90_put_att(ncid,levVarID,'units','layer'),"units attr")
       call check(nf90_put_att(ncid,levVarID,'positive','down'),"positive attr")
@@ -1903,10 +1897,10 @@ end function nn_interp
 
       call check(nf90_put_var(ncid,leveVarID,(/(real(e), e = 1, km+1)/)), "writing out leve")      
 
-      call readvar1D("ew", INV_file, ew)
+      call readvar1D("ccd_pixels", INV_file, ew)
       call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
 
-      call readvar1D("ns", INV_file, ns)
+      call readvar1D("number_of_scans", INV_file, ns)
       call check(nf90_put_var(ncid,nsVarID,ns), "writing out ns")   
 
       deallocate (clon)
