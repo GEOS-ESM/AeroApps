@@ -26,16 +26,16 @@ endif
 
 THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
-
+BINS := leo_vlidort_cloud.x
 
 PY_EXTS = LidarAngles_.$(F2PYEXT) VLIDORT_POLAR_.$(F2PYEXT) READ_NC_.$(F2PYEXT) leo_vlidort.py
-PY_SCRP = 
+PY_SCRP = leo_vlidort_lc.py
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
                  $(ESMAINC)/$(THIS) $(ESMABIN)
 	$(CP) -pr $(PY_EXTS)               $(ESMALIB)/Python 
-#	$(CP) -p  $(BINS) $(PY_SCRP)       $(ESMABIN)
+	$(CP) -p  $(BINS) $(PY_SCRP)       $(ESMABIN)
 
 esma_clean clean:
 	$(RM) -rf *~ *.[aox] *.[Mm][Oo][Dd] *.pyc *.$(F2PYEXT) 
@@ -75,7 +75,7 @@ LIB_LIDORT3p7  = $(ESMALIB)/libLIDORT3p7.a
 INC_GEOVLIDORT = ../geo_vlidort
 LIB_GEOVLIDORT = ../geo_vlidort/libgeo_vlidort.a
 
-INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT2OS) $(INC_LIDORT3p7) $(INC_GEOVLIDORT)) /usr/include
+INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT2OS) $(INC_GEOVLIDORT) /usr/include
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
@@ -103,8 +103,11 @@ $(LIB) lib : $(DEPS) $(OBJS)
 	$(RM) $(LIB)
 	$(AR) $(AR_FLAGS) $(LIB) $(OBJS)
 
-%.x : $(LIB) %.F90
-	$(FC) $(LDFLAGS) -o $@ $(D)TEST $*.F90 $(LIBS)	
+#%.x : $(LIB) %.F90
+#	$(FC) $(LDFLAGS) -o $@ $(D)TEST $*.F90 $(LIBS)	
+
+%.x:  ../geo_vlidort/cloud_MieMod.o %.o
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIBS)	
 
 
 # Python extension modules
