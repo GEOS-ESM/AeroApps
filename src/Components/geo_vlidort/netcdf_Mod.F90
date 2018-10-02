@@ -9,12 +9,21 @@ module netcdf_Mod
   public :: readvar4D
   public :: readvar3D
   public :: readvar2D
+  public :: readvar2Dgrp  
   public :: readvar1D
   public :: readGattr
   public :: readGattr_char  
   public :: readVattr
+  public :: readVattrgrp
   public :: readDim
   public :: check
+
+  interface readvar2Dgrp
+       module procedure readvar2DgrpR4
+       module procedure readvar2DgrpR8
+  end interface
+
+  
   contains
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -132,6 +141,67 @@ module netcdf_Mod
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
+!    readvar2DgrpR4
+! PURPOSE
+!     reads a 2D variable from a netcdf file all at once
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine readvar2DgrpR4(varname, groupname, filename, var)
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  groupname
+    character(len=*), intent(in)           ::  filename
+    real, dimension(:,:), intent(inout)    ::  var
+
+    integer                                :: ncid, grp_ncid, varid
+
+
+    call check( nf90_open(filename,nf90_nowrite,ncid), "opening file " // filename)
+    call check( nf90_inq_ncid(ncid,groupname,grp_ncid), "getting ncid for " // groupname)    
+    call check( nf90_inq_varid(grp_ncid,varname,varid), "getting varid for " // varname)
+    call check( nf90_get_var(grp_ncid,varid,var), "reading " // varname)
+    call check( nf90_close(ncid), "closing " // filename)
+
+  end subroutine readvar2DgrpR4
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    readvar2DgrpR8
+! PURPOSE
+!     reads a 2D variable from a netcdf file all at once
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine readvar2DgrpR8(varname, groupname, filename, var)
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  groupname
+    character(len=*), intent(in)           ::  filename
+    real*8, dimension(:,:), intent(inout)    ::  var
+
+    integer                                :: ncid, grp_ncid, varid
+
+
+    call check( nf90_open(filename,nf90_nowrite,ncid), "opening file " // filename)
+    call check( nf90_inq_ncid(ncid,groupname,grp_ncid), "getting ncid for " // groupname)    
+    call check( nf90_inq_varid(grp_ncid,varname,varid), "getting varid for " // varname)
+    call check( nf90_get_var(grp_ncid,varid,var), "reading " // varname)
+    call check( nf90_close(ncid), "closing " // filename)
+
+  end subroutine readvar2DgrpR8
+
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
 !    readvar1D
 ! PURPOSE
 !     reads a 1D variable from a netcdf file all at once
@@ -239,6 +309,38 @@ module netcdf_Mod
     call check( nf90_get_att(ncid, varid, attrname, attrvar), "getting value for variable attribute" // attrname)
     call check( nf90_close(ncid), "closing " // filename)
   end subroutine readVattr  
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    readVattrgrp
+! PURPOSE
+!     reads a variable attribute from a netcdf file
+! INPUT
+!     attrname  : string of attribute name
+!     filename  : file to be read
+!     varname   : variable to be read
+!     attrvar   : the output variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine readVattrgrp(attrname, groupname, filename, varname, attrvar)
+    character(len=*), intent(in)           ::  attrname
+    character(len=*), intent(in)           ::  groupname    
+    character(len=*), intent(in)           ::  filename
+    character(len=*), intent(in)           ::  varname
+    real,  intent(inout)                   ::  attrvar
+
+    integer                                :: ncid, grp_ncid, varid
+
+    call check( nf90_open(filename,nf90_nowrite,ncid), "opening file " // filename)
+    call check( nf90_inq_ncid(ncid,groupname,grp_ncid), "getting ncid for " // groupname)   
+    call check( nf90_inq_varid(grp_ncid, varname, varid), "getting varid for " // varname)
+    call check( nf90_get_att(grp_ncid, varid, attrname, attrvar), "getting value for variable attribute" // attrname)
+    call check( nf90_close(ncid), "closing " // filename)
+  end subroutine readVattrgrp  
+
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
