@@ -1,0 +1,6 @@
+# BRDF SAMPLING
+INSTNAME = pace
+INDIR   = /nobackup/PACE/LevelB
+OUTDIR    = /nobackup/PACE/LevelB/surface/BRDF/MCD43C1/006
+DATADIR   = /nobackup/3/pcastell/MODIS/MCD43C1/
+# BRDF SAMPLING
