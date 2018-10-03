@@ -61,6 +61,7 @@ program leo_vlidort_cloud
   real, allocatable                     :: surfband_c(:)          ! modis band center wavelength
   logical                               :: scalar
   real, allocatable                     :: channels(:)            ! channels to simulate
+  real, allocatable                     :: mr(:)                  ! water real refractive index    
   integer                               :: nch                    ! number of channels  
   real                                  :: szamax, vzamax         ! Geomtry filtering
   logical                               :: additional_output      ! does user want additional output
@@ -78,7 +79,7 @@ program leo_vlidort_cloud
 
 ! File names
 ! ----------
-  character(len=256)                    :: AER_file, ANG_file, INV_file, SURF_file, OUT_file, ATMOS_file, CLD_file, MET_file 
+  character(len=256)                    :: AER_file, ANG_file, INV_file, SURF_file, OUT_file, ADD_file, CLD_file, MET_file 
 
 ! Global, 3D inputs to be allocated using SHMEM
 ! ---------------------------------------------
@@ -151,9 +152,12 @@ program leo_vlidort_cloud
 !                                  -----------------------------
   real*8, allocatable                   :: radiance_VL_int(:,:)                   ! TOA normalized radiance from VLIDORT
   real*8, allocatable                   :: reflectance_VL_int(:,:)                ! TOA reflectance from VLIDORT  
-  real*8, allocatable                   :: Q_int(:,:)                                 ! Q Stokes component
-  real*8, allocatable                   :: U_int(:,:)                                 ! U Stokes component
-  real*8, allocatable                   :: ROT_int(:,:,:)                             ! rayleigh optical thickness
+  real*8, allocatable                   :: Q_int(:,:)                             ! Q Stokes component
+  real*8, allocatable                   :: U_int(:,:)                             ! U Stokes component
+  real*8, allocatable                   :: ROT_int(:,:,:)                         ! rayleigh optical thickness
+  real*8, allocatable                   :: BR_Q_int(:,:)                          ! surface albedo Q
+  real*8, allocatable                   :: BR_U_int(:,:)                          ! surface albedo U
+
 
 !                                  Final Shared Arrays
 !                                  -------------------
@@ -163,6 +167,9 @@ program leo_vlidort_cloud
   real*8, pointer                       :: U(:,:) => null()                      ! U Stokes component
   real*8, pointer                       :: ROT(:,:,:) => null()                  ! rayleigh optical thickness
   real*8, pointer                       :: ALBEDO(:,:) => null()                 ! bi-directional surface reflectance
+  real*8, pointer                       :: BR_Q(:,:) => null()                   ! bi-directional surface reflectance Q
+  real*8, pointer                       :: BR_U(:,:) => null()                   ! bi-directional surface reflectance U
+
 
   real, pointer                         :: TAU(:,:,:) => null()                  ! aerosol optical depth
   real, pointer                         :: SSA(:,:,:) => null()                  ! single scattering albedo
@@ -435,6 +442,8 @@ program leo_vlidort_cloud
   if (.not. scalar) then
     Q = dble(MISSING)
     U = dble(MISSING)
+    BR_Q = dble(MISSING)
+    BR_U = dble(MISSING)    
   end if
   call MAPL_SyncSharedMemory(rc=ierr)
 ! Prepare inputs and run VLIDORT
@@ -568,103 +577,28 @@ Valbedo = 0
     call write_verbose(msg)
 
 
-! !   Call VlIDORT
-! !   ------------
-!     if ( (lower_to_upper(surfmodel) /= 'RTLS') ) then
-! !     Simple lambertian surface model
-! !     -------------------------------
-!       if (scalar) then
-!           ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
-                  dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
-                  dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
-                  dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
-                  (/dble(SZA(i,j))/), &
-                  (/dble(abs(RAA(i,j)))/), &
-                  (/dble(VZA(i,j))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, ierr)
-!       else
-!         ! Call to vlidort vector code
-!         call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,   &
-!                nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-!                dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
-!                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
-!                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
-!                (/dble(SZA(i,j))/), &
-!                (/dble(abs(RAA(i,j)))/), &
-!                (/dble(VZA(i,j))/), &
-!                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, ierr)
-!       end if
+!   Call VlIDORT
+!   ------------
+    if ( FRLAND(i,j) >= 0.99 ) then
+      call DO_LAND()
+    else
+      call DO_OCEAN()
+    end if
 
-!     else if ( ANY(kernel_wt == surf_missing) ) then
-! !     Save code for pixels that were not gap filled
-! !     ---------------------------------------------    
-!       radiance_VL_int(nobs,:) = -500
-!       reflectance_VL_int(nobs,:) = -500
-!       Valbedo = -500
-!       ROT_int = -500
-!       if (.not. scalar) then
-!         Q_int = -500
-!         U_int = -500
-!       end if
-!       ierr = 0
-!     else   
-! !     MODIS BRDF Surface Model
-! !     ------------------------------
-!       if (scalar) then 
-!         if (vlidort) then
-!           ! Call to vlidort scalar code            
-!           call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
-!                   nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
-!                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
-!                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
-!                   dble(Vpe), dble(Vze), dble(Vte), &
-!                   kernel_wt, param, &
-!                   (/dble(SZA(i,j))/), &
-!                   (/dble(abs(RAA(i,j)))/), &
-!                   (/dble(VZA(i,j))/), &
-!                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr )  
-!         else
-!         ! Call to vlidort scalar code            
-!           call LIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
-!                   nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
-!                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
-!                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &                  
-!                   dble(Vpe), dble(Vze), dble(Vte), &
-!                   kernel_wt, param, &
-!                   (/dble(SZA(i,j))/), &
-!                   (/dble(abs(RAA(i,j)))/), &
-!                   (/dble(VZA(i,j))/), &
-!                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr )  
-!         end if
-!       else
-!         ! Call to vlidort vector code
-!         call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nMom, &
-!                 nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-!                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
-!                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
-!                 dble(Vpe), dble(Vze), dble(Vte), &
-!                 kernel_wt, param, &
-!                 (/dble(SZA(i,j))/), &
-!                 (/dble(abs(RAA(i,j)))/), &
-!                 (/dble(VZA(i,j))/), &
-!                 dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, Q_int, U_int, ierr )  
-!       end if      
-!     end if          
     
 !   Check VLIDORT Status, Store Outputs in Shared Arrays
 !   ----------------------------------------------------    
     call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
     radiance_VL(i,j)    = radiance_VL_int(nobs,nch)
     reflectance_VL(i,j) = reflectance_VL_int(nobs,nch)
-    ALBEDO(i,j) = Valbedo(nobs,nch)
-
     ROT(i,j,:) = ROT(:,nobs,nch)
+    ALBEDO(i,j) = Valbedo(nobs,nch)
     
     if (.not. scalar) then
       Q(i,j)      = Q_int(nobs,nch)
       U(i,j)      = U_int(nobs,nch)
+      BR_Q(i,j)   = BR_Q_int(nobs,nch)
+      BR_U(i,j)   = BR_U_int(nobs,nch)
     end if
     
     write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
@@ -683,89 +617,15 @@ Valbedo = 0
 ! ----------------------------------------
   call MAPL_SyncSharedMemory(rc=ierr)
 
+! Write to outfile
+! -----------------
+  call write_outfile()
 
-! ! Write to OUT_file and ATMOS_file
-! ! -----------------------------------------
-!   if (MAPL_am_I_root()) then
-   
-!     allocate (AOD(im,jm))
-
-! !                             Write to main OUT_File
-! !                             ----------------------
-!     call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
-!     do ch = 1, nch
-!       write(msg,'(F10.2)') channels(ch)
-      
-!       call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-!       call check(nf90_put_var(ncid, varid, reflectance_VL, &
-!                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
-
-!       call check(nf90_inq_varid(ncid, 'surf_ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-!       call check(nf90_put_var(ncid, varid, ALBEDO, &
-!                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
-
-!       AOD = 0
-!       do k=1,km 
-!         AOD = AOD + TAU(:,:,k)
-!       end do
-
-!       where(ALBEDO .eq. MISSING)  AOD = MISSING
-      
-
-!       call check(nf90_inq_varid(ncid, 'aod_' // trim(adjustl(msg)), varid), "get aod vaird")
-!       call check(nf90_put_var(ncid, varid, AOD, &
-!                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out aod")
-!     end do
-!     call check( nf90_close(ncid), "close outfile" )
-
-!     if (additional_output) then
-! !                             Write to Additional Outputs File
-! !                             --------------------------------
-!       call check( nf90_open(ATMOS_file, nf90_write, ncid), "opening file " // ATMOS_file )
-!       do ch = 1, nch
-!         write(msg,'(F10.2)') channels(ch)
-!         call check(nf90_inq_varid(ncid, 'rad_' // trim(adjustl(msg)), varid), "get rad vaird")
-!         call check(nf90_put_var(ncid, varid, radiance_VL, &
-!                       start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
-
-!         if (.not. scalar) then
-!           call check(nf90_inq_varid(ncid, 'q_' // trim(adjustl(msg)), varid), "get q vaird")
-!           call check(nf90_put_var(ncid, varid, Q, &
-!                       start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
-
-!           call check(nf90_inq_varid(ncid, 'u_' // trim(adjustl(msg)), varid), "get u vaird")
-!           call check(nf90_put_var(ncid, varid, U, &
-!                       start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
-!         endif        
-
-!         do k=1,km 
-
-!           call check(nf90_inq_varid(ncid, 'aot_' // trim(adjustl(msg)), varid), "get aot vaird")
-!           call check(nf90_put_var(ncid, varid, TAU(:,:,k), &
-!                     start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out tau")
-
-!           call check(nf90_inq_varid(ncid, 'g_' // trim(adjustl(msg)), varid), "get g vaird")
-!           call check(nf90_put_var(ncid, varid, G(:,:,k), &
-!                     start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out g")
-
-!           call check(nf90_inq_varid(ncid, 'ssa_' // trim(adjustl(msg)), varid), "get ssa vaird")
-!           call check(nf90_put_var(ncid, varid, SSA(:,:,k), &
-!                     start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ssa")
-
-!           call check(nf90_inq_varid(ncid, 'rot_' // trim(adjustl(msg)), varid), "get rot vaird")
-!           call check(nf90_put_var(ncid, varid, ROT(:,:,k), &
-!                     start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out rot")
-!         end do
-!       end do
-
-!       call check(nf90_inq_varid(ncid, 'pe', varid), "get pe vaird")
-!       do k=1,km+1
-!         call check(nf90_put_var(ncid, varid, PE(:,:,k), &
-!                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out pe")
-!       end do
-!       call check( nf90_close(ncid), "close atmosfile" )
-!     end if  !additional_output
-!   end if
+! Write additional data
+! ----------------------
+  if (additional_output) then
+    call write_addfile()
+  end if
 
 ! Sync processors before shutting down
 ! ------------------------------------
@@ -788,6 +648,284 @@ Valbedo = 0
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
+!     write_outfile()
+! PURPOSE
+!     writes data to outfile
+! INPUT
+!     None
+! OUTPUT
+!     None
+!  HISTORY
+!     Oct 2018 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+
+  subroutine write_outfile()
+! Write to OUT_file 
+! ------------------
+    if (MAPL_am_I_root()) then
+     
+      allocate (AOD(im,jm))
+
+  !                             Write to main OUT_File
+  !                             ----------------------
+      call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
+      do ch = 1, nch
+        write(msg,'(F10.2)') channels(ch)
+        
+        call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
+        call check(nf90_put_var(ncid, varid, reflectance_VL, &
+                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
+
+        call check(nf90_inq_varid(ncid, 'I_' // trim(adjustl(msg)), varid), "get rad vaird")
+        call check(nf90_put_var(ncid, varid, radiance_VL, &
+                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
+
+        call check(nf90_inq_varid(ncid, 'surf_ref_I_' // trim(adjustl(msg)), varid), "get ref vaird")
+        call check(nf90_put_var(ncid, varid, ALBEDO, &
+                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
+
+        if (.not. scalar) then
+          call check(nf90_inq_varid(ncid, 'Q_' // trim(adjustl(msg)), varid), "get q vaird")
+          call check(nf90_put_var(ncid, varid, Q, &
+                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
+
+          call check(nf90_inq_varid(ncid, 'U_' // trim(adjustl(msg)), varid), "get u vaird")
+          call check(nf90_put_var(ncid, varid, U, &
+                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
+
+          call check(nf90_inq_varid(ncid, 'surf_ref_Q_' // trim(adjustl(msg)), varid), "get ref vaird")
+          call check(nf90_put_var(ncid, varid, BR_Q, &
+                        start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo Q")
+
+          call check(nf90_inq_varid(ncid, 'surf_ref_U_' // trim(adjustl(msg)), varid), "get ref vaird")
+          call check(nf90_put_var(ncid, varid, BR_U, &
+                        start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo U")
+
+        endif        
+
+
+        AOD = 0
+        do k=1,km 
+          AOD = AOD + TAU(:,:,k)
+        end do
+
+        where(ALBEDO .eq. MISSING)  AOD = MISSING
+        
+
+        call check(nf90_inq_varid(ncid, 'aod_' // trim(adjustl(msg)), varid), "get aod vaird")
+        call check(nf90_put_var(ncid, varid, AOD, &
+                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out aod")
+      end do
+      call check( nf90_close(ncid), "close outfile" )
+
+    end if
+
+  end subroutine write_outfile
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     write_addfile()
+! PURPOSE
+!     writes data to addfile
+! INPUT
+!     None
+! OUTPUT
+!     None
+!  HISTORY
+!     Oct 2018 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+
+  subroutine write_addfile
+! Write to ADD_file
+! -------------------
+
+    if (MAPL_am_I_root()) then
+     
+  !                             Write to Additional Outputs File
+  !                             --------------------------------
+      call check( nf90_open(ADD_file, nf90_write, ncid), "opening file " // ADD_file )
+      do ch = 1, nch
+        do k=1,km 
+
+          call check(nf90_inq_varid(ncid, 'aot_' // trim(adjustl(msg)), varid), "get aot vaird")
+          call check(nf90_put_var(ncid, varid, TAU(:,:,k), &
+                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out tau")
+
+          call check(nf90_inq_varid(ncid, 'g_' // trim(adjustl(msg)), varid), "get g vaird")
+          call check(nf90_put_var(ncid, varid, G(:,:,k), &
+                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out g")
+
+          call check(nf90_inq_varid(ncid, 'ssa_' // trim(adjustl(msg)), varid), "get ssa vaird")
+          call check(nf90_put_var(ncid, varid, SSA(:,:,k), &
+                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ssa")
+
+          call check(nf90_inq_varid(ncid, 'rot_' // trim(adjustl(msg)), varid), "get rot vaird")
+          call check(nf90_put_var(ncid, varid, ROT(:,:,k), &
+                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out rot")
+        end do
+      end do
+
+      call check(nf90_inq_varid(ncid, 'pe', varid), "get pe vaird")
+      do k=1,km+1
+        call check(nf90_put_var(ncid, varid, PE(:,:,k), &
+                   start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out pe")
+      end do
+      call check( nf90_close(ncid), "close addfile" )
+      
+    end if
+
+  end subroutine write_addfile
+
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     DO_OCEAN()
+! PURPOSE
+!     call the correct VLIDORT Ocean Subroutine
+! INPUT
+!     None
+! OUTPUT
+!     None
+!  HISTORY
+!     Oct 2018 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+
+  subroutine DO_OCEAN()
+!   WATER PIXELS
+!   ------------
+    if ( (lower_to_upper(surfmodel) .eq. 'CX') ) then
+    ! GISS Cox Munk Model
+    ! -------------------------------
+      if (scalar) then
+        ! Call to vlidort scalar code       
+        call VLIDORT_Scalar_CX_Cloud (km, nch, nobs ,dble(channels), nMom,      &
+                nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
+                dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
+                dble(Vpe), dble(Vze), dble(Vte), &
+                (/dble(U10M(i,j))/), &
+                (/dble(V10M(i,j))/), &
+                dble(mr), &
+                (/dble(SZA(i,j))/), &
+                (/dble(abs(RAA(i,j)))/), &
+                (/dble(VZA(i,j))/), &
+                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr)
+      else
+        ! Call to vlidort vector code
+        call VLIDORT_Vector_CX_Cloud (km, nch, nobs ,dble(channels), nMom,   &
+               nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+               dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
+               dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
+               dble(Vpe), dble(Vze), dble(Vte), &
+               (/dble(U10M(i,j))/), &
+               (/dble(V10M(i,j))/), &
+               dble(mr), &
+               (/dble(SZA(i,j))/), &
+               (/dble(abs(RAA(i,j)))/), &
+               (/dble(VZA(i,j))/), &
+               dble(MISSING),verbose, &
+               radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
+      end if
+
+    end if          
+
+  end subroutine DO_OCEAN
+
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     DO_LAND()
+! PURPOSE
+!     call the correct VLIDORT Land Subroutine
+! INPUT
+!     None
+! OUTPUT
+!     None
+!  HISTORY
+!     Oct 2018 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+
+  subroutine DO_LAND()
+
+  !     LAND PIXELS
+  !     -----------
+
+    if ( (lower_to_upper(surfmodel) .eq. 'LAMBERTIAN') ) then
+    ! Simple lambertian surface model
+    ! -------------------------------
+      if (scalar) then
+          ! Call to vlidort scalar code       
+          call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,      &
+                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
+                  dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
+                  dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
+                  dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
+                  (/dble(SZA(i,j))/), &
+                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(VZA(i,j))/), &
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, ierr)
+      else
+        ! Call to vlidort vector code
+        call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,   &
+               nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+               dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
+               dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
+               dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
+               (/dble(SZA(i,j))/), &
+               (/dble(abs(RAA(i,j)))/), &
+               (/dble(VZA(i,j))/), &
+               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, ierr)
+        BR_Q_int = 0
+        BR_U_int = 0
+      end if
+
+!     else if ( ANY(kernel_wt == surf_missing) ) then
+! !     Save code for pixels that were not gap filled
+! !     ---------------------------------------------    
+!       radiance_VL_int(nobs,:) = -500
+!       reflectance_VL_int(nobs,:) = -500
+!       Valbedo = -500
+!       ROT_int = -500
+!       if (.not. scalar) then
+!         Q_int = -500
+!         U_int = -500
+!       end if
+!       ierr = 0
+!     else   
+! !     MODIS BRDF Surface Model
+! !     ------------------------------
+!       if (scalar) then 
+!           ! Call to vlidort scalar code            
+!           call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
+!                   nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+!                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
+!                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
+!                   dble(Vpe), dble(Vze), dble(Vte), &
+!                   kernel_wt, param, &
+!                   (/dble(SZA(i,j))/), &
+!                   (/dble(abs(RAA(i,j)))/), &
+!                   (/dble(VZA(i,j))/), &
+!                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr )  
+!       else
+!         ! Call to vlidort vector code
+!         call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nMom, &
+!                 nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+!                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
+!                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
+!                 dble(Vpe), dble(Vze), dble(Vte), &
+!                 kernel_wt, param, &
+!                 (/dble(SZA(i,j))/), &
+!                 (/dble(abs(RAA(i,j)))/), &
+!                 (/dble(VZA(i,j))/), &
+!                 dble(MISSING),verbose, &
+!                 radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
+!       end if      
+    end if   
+
+  end subroutine DO_LAND
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
 !     nn_interp
 ! PURPOSE
 !     nearest neighbor interpolation
@@ -801,25 +939,25 @@ Valbedo = 0
 !     10 June 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
 
-function nn_interp(x,y,xint)
-  real,intent(in),dimension(:)    :: x, y
-  real,intent(in)                 :: xint
-  real                            :: nn_interp
-  integer                         :: below, above
-  real                            :: top, bottom
+  function nn_interp(x,y,xint)
+    real,intent(in),dimension(:)    :: x, y
+    real,intent(in)                 :: xint
+    real                            :: nn_interp
+    integer                         :: below, above
+    real                            :: top, bottom
 
-  above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LT. 0)
-  below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GE. 0)
+    above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LT. 0)
+    below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GE. 0)
 
-  if (.not. ANY((/y(above),y(below)/) == surf_missing)) then
-    top = y(above) - y(below)
-    bottom = x(above) - x(below)
-    nn_interp = y(below) + (xint-x(below)) * top / bottom
-  else
-    nn_interp  = surf_missing
-  end if
+    if (.not. ANY((/y(above),y(below)/) == surf_missing)) then
+      top = y(above) - y(below)
+      bottom = x(above) - x(below)
+      nn_interp = y(below) + (xint-x(below)) * top / bottom
+    else
+      nn_interp  = surf_missing
+    end if
 
-end function nn_interp
+  end function nn_interp
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -1326,6 +1464,9 @@ end function nn_interp
     if (.not. scalar) then
       call MAPL_AllocNodeArray(Q,(/im,jm,nch/),rc=ierr)
       call MAPL_AllocNodeArray(U,(/im,jm,nch/),rc=ierr)
+      call MAPL_AllocNodeArray(BR_Q,(/im,jm,nch/),rc=ierr)
+      call MAPL_AllocNodeArray(BR_U,(/im,jm,nch/),rc=ierr)
+
     end if
 
     call MAPL_AllocNodeArray(radiance_VL,(/im,jm,nch/),rc=ierr)
@@ -1396,6 +1537,8 @@ end function nn_interp
     if (.not. scalar) then      
       allocate (Q_int(nobs, nch))
       allocate (U_int(nobs, nch))
+      allocate (BR_Q_int(nobs, nch))
+      allocate (BR_U_int(nobs, nch))
     end if
 
   ! Needed for reading
@@ -1478,7 +1621,7 @@ end function nn_interp
     character(len=*) ,intent(in)       :: date, time
 
     integer,dimension(nch)             :: radVarID, refVarID, aotVarID   
-    integer,dimension(nch)             :: qVarID, uVarID, albVarID      
+    integer,dimension(nch)             :: qVarID, uVarID, albVarID, brUVarID, brQVarID      
     integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID, rotVarID
     integer                            :: peVarID     
     
@@ -1595,11 +1738,15 @@ end function nn_interp
     do ch=1,nch
       write(comment,'(F10.2)') channels(ch)
       call check(nf90_def_var(ncid, 'ref_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),refVarID(ch)),"create reflectance var")
-      call check(nf90_def_var(ncid, 'surf_ref_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),albVarID(ch)),"create albedo var")
+      call check(nf90_def_var(ncid, 'surf_ref_I_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),albVarID(ch)),"create albedo var")
       call check(nf90_def_var(ncid, 'aod_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),aotVarID(ch)),"create aot var")
+      call check(nf90_def_var(ncid, 'I_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),radVarID(ch)),"create radiance var")              
+
       if (.not. scalar) then
-        call check(nf90_def_var(ncid, 'q_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),qVarID(ch)),"create Q var")
-        call check(nf90_def_var(ncid, 'u_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),uVarID(ch)),"create U var")
+        call check(nf90_def_var(ncid, 'Q_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),qVarID(ch)),"create Q var")
+        call check(nf90_def_var(ncid, 'U_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),uVarID(ch)),"create U var")
+        call check(nf90_def_var(ncid, 'surf_ref_Q_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),brQVarID(ch)),"create Q var")
+        call check(nf90_def_var(ncid, 'surf_ref_U_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),brUVarID(ch)),"create U var")
       end if        
 
     end do
@@ -1616,7 +1763,7 @@ end function nn_interp
       call check(nf90_put_att(ncid,refVarID(ch),'units','None'),"units attr")
       call check(nf90_put_att(ncid,refVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
-      write(comment,'(F10.2,A)') channels(ch), ' nm Surface Reflectance'
+      write(comment,'(F10.2,A)') channels(ch), ' nm Surface Reflectance I'
       call check(nf90_put_att(ncid,albVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
       write(comment,'(F10.2,A)') channels(ch), ' nm Bi-Directional Surface Reflectance'
       call check(nf90_put_att(ncid,albVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
@@ -1632,13 +1779,19 @@ end function nn_interp
       call check(nf90_put_att(ncid,aotVarID(ch),'units','None'),"units attr")
       call check(nf90_put_att(ncid,aotVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")    
 
+      write(comment,'(F10.2,A)') channels(ch), ' nm TOA I'
+      call check(nf90_put_att(ncid,radVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+      write(comment,'(F10.2,A)') channels(ch), ' nm TAO I Component of the Stokes Vector'
+      call check(nf90_put_att(ncid,radVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+      call check(nf90_put_att(ncid,radVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,radVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
+      call check(nf90_put_att(ncid,radVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
       if (.not. scalar) then
         write(comment,'(F10.2,A)') channels(ch), ' nm TOA Q'
         call check(nf90_put_att(ncid,qVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
         write(comment,'(F10.2,A)') channels(ch), ' nm TOA Q Component of the Stokes Vector'
         call check(nf90_put_att(ncid,qVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-        write(comment,'(A)') 'only l=1 level contains data'
-        call check(nf90_put_att(ncid,qVarID(ch),'comment',trim(adjustl(comment))),"long_name attr")                
         call check(nf90_put_att(ncid,qVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
         call check(nf90_put_att(ncid,qVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
         call check(nf90_put_att(ncid,qVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
@@ -1647,11 +1800,26 @@ end function nn_interp
         call check(nf90_put_att(ncid,uVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
         write(comment,'(F10.2,A)') channels(ch), ' nm TOA U Component of the Stokes Vector'
         call check(nf90_put_att(ncid,uVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-        write(comment,'(A)') 'only l=1 level contains data'
-        call check(nf90_put_att(ncid,uVarID(ch),'comment',trim(adjustl(comment))),"long_name attr")                          
         call check(nf90_put_att(ncid,uVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
         call check(nf90_put_att(ncid,uVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
         call check(nf90_put_att(ncid,uVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm Surface Reflectance Q'
+        call check(nf90_put_att(ncid,brQVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm Bi-Directional Surface Reflectance'
+        call check(nf90_put_att(ncid,brQVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,brQVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,brQVarID(ch),'units','None'),"units attr")
+        call check(nf90_put_att(ncid,brQVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm Surface Reflectance U'
+        call check(nf90_put_att(ncid,brUVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm Bi-Directional Surface Reflectance'
+        call check(nf90_put_att(ncid,brUVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,brUVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,brUVarID(ch),'units','None'),"units attr")
+        call check(nf90_put_att(ncid,brUVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
       end if
 
     end do
@@ -1727,7 +1895,7 @@ end function nn_interp
 !                           ADDITIONAL OUTPUTS
 !                           ------------------
       ! Open File
-      call check(nf90_create(ATMOS_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // ATMOS_file)
+      call check(nf90_create(ADD_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // ADD_file)
 
       ! Create dimensions
       call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
@@ -2157,7 +2325,7 @@ end function nn_interp
     call ESMF_ConfigGetAttribute(cf, INV_file, label = 'INV_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, SURF_file, label = 'SURF_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, OUT_file, label = 'OUT_file:',__RC__)
-    call ESMF_ConfigGetAttribute(cf, ATMOS_file, label = 'ATMOS_file:',__RC__)
+    call ESMF_ConfigGetAttribute(cf, ADD_file, label = 'ADD_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, CLD_file, label = 'CLD_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, MET_file, label = 'MET_file:',__RC__)
 
@@ -2186,6 +2354,10 @@ end function nn_interp
     nch =  ESMF_ConfigGetLen(cf, label = 'CHANNELS:',__RC__)
     allocate (channels(nch))
     call ESMF_ConfigGetAttribute(cf, channels, label = 'CHANNELS:', default=550.)
+
+    allocate (mr(nch))
+    call ESMF_ConfigGetAttribute(cf, mr, label = 'WATERMR:',__RC__) 
+
 
     ! Get the node number from the rcfile name
     ! ----------------------------------------
