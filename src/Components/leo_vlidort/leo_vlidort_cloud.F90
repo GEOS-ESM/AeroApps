@@ -51,14 +51,11 @@ program leo_vlidort_cloud
   character(len=256)                    :: arg                    ! command line rc file argument
   character(len=256)                    :: nodenumarg             ! command line node number argument
   character(len=8)                      :: date         
-  character(len=7)                      :: surfdate
   character(len=6)                      :: time 
-  character(len=256)                    :: instname, angname, indir, outdir
-  character(len=256)                    :: surfname, surfmodel
-  character(len=256)                    :: surfband               ! flag to use nearest-neighbor interpolation or an exact value given
-  integer                               :: surfbandm              ! number of wavelength bands or channels in surface reflectance data file
-  integer, allocatable                  :: surfband_i(:)          ! surface band indeces that overlap with vlidort channels
-  real, allocatable                     :: surfband_c(:)          ! modis band center wavelength
+  character(len=256)                    :: instname
+  character(len=256)                    :: landname, landmodel, watername, watermodel
+  integer                               :: landbandm              ! number of wavelength bands or channels in surface reflectance data file
+  real, allocatable                     :: landband_c(:)          ! modis band center wavelength
   logical                               :: scalar
   real, allocatable                     :: channels(:)            ! channels to simulate
   real, allocatable                     :: mr(:)                  ! water real refractive index    
@@ -68,7 +65,6 @@ program leo_vlidort_cloud
   integer                               :: nodemax                ! number of nodes requested
   integer                               :: nodenum                ! which node is this?
   character(len=256)                    :: version
-  character(len=256)                    :: surf_version
   character(len=256)                    :: layout 
   character(len=256)                    :: IcldTable, LcldTable
   integer                               :: idxCld
@@ -79,7 +75,7 @@ program leo_vlidort_cloud
 
 ! File names
 ! ----------
-  character(len=256)                    :: AER_file, ANG_file, INV_file, SURF_file, OUT_file, ADD_file, CLD_file, MET_file 
+  character(len=256)                    :: AER_file, ANG_file, INV_file, LAND_file, OUT_file, ADD_file, CLD_file, MET_file 
 
 ! Global, 3D inputs to be allocated using SHMEM
 ! ---------------------------------------------
@@ -101,14 +97,6 @@ program leo_vlidort_cloud
   real, pointer                         :: OCPHOBIC(:,:,:) => null()
   real, pointer                         :: OCPHILIC(:,:,:) => null()
   real, pointer                         :: SO4(:,:,:) => null()  
-  real, pointer                         :: BAND1(:,:,:) => null()
-  real, pointer                         :: BAND2(:,:,:) => null()
-  real, pointer                         :: BAND3(:,:,:) => null()  
-  real, pointer                         :: BAND4(:,:,:) => null()
-  real, pointer                         :: BAND5(:,:,:) => null()
-  real, pointer                         :: BAND6(:,:,:) => null()  
-  real, pointer                         :: BAND7(:,:,:) => null()
-  real, pointer                         :: BAND8(:,:,:) => null()
   real, pointer                         :: KISO(:,:,:) => null()
   real, pointer                         :: KVOL(:,:,:) => null()
   real, pointer                         :: KGEO(:,:,:) => null() 
@@ -192,7 +180,7 @@ program leo_vlidort_cloud
   real*8, allocatable                   :: param(:,:,:)                             ! Li-Sparse parameters 
                                                                                     ! param1 = crown relative height (h/b)
                                                                                     ! param2 = shape parameter (b/r)
-  real                                  :: surf_missing                                                                 
+  real                                  :: land_missing                                                                 
 
 ! Mie Table Stucture
 !---------------------
@@ -272,13 +260,7 @@ program leo_vlidort_cloud
 ! --------------------------
   if (MAPL_am_I_root()) then
     write(*,*) 'Simulating ', lower_to_upper(trim(instname)),' domain on ',date,' ', time, 'Z'
-    write(*,*) 'Input directory: ',trim(indir)
-    write(*,*) 'Output directory: ',trim(outdir)
-    write(*,*) 'Instrument geometry: ',trim(angname)
-    write(*,*) 'BRDF dataset: ',trim(surfname),' ',trim(surfdate)
     write(*,*) 'Channels [nm]: ',channels
-    if (lower_to_upper(surfband) == 'EXACT') write(*,*) 'Using exact surface relflectance parameters on bands : ',surfband_i
-    if (lower_to_upper(surfband) == 'INTERPOLATE') write(*,*) 'Using interpolated surface reflectance parameters' 
     write(*,*) 'SZA < ', szamax
     write(*,*) 'VZA < ', vzamax
     if (scalar) write(*,*) 'Scalar calculations'
@@ -296,13 +278,13 @@ program leo_vlidort_cloud
   call mp_readDim("time", AER_file,tm)
 
   call mp_readVattr("missing_value", AER_FILE, "DELP", g5nr_missing)
-  if (lower_to_upper(surfmodel) == 'RTLS') then
-    call mp_readVattr("missing_value", SURF_file, "Band1", surf_missing) 
-    surf_missing = -99999.0
-  else if (lower_to_upper(surfmodel) == 'Lambertian') then
-    call mp_readVattr("missing_value", SURF_file, "SRFLER354", surf_missing) 
+  if (lower_to_upper(landmodel) == 'RTLS') then
+    call mp_readVattr("missing_value", LAND_file, "Riso470", land_missing) 
+    !surf_missing = -99999.0
+  else if (lower_to_upper(landmodel) == 'Lambertian') then
+    call mp_readVattr("missing_value", LAND_file, "SRFLER354", land_missing) 
   else
-    surf_missing = g5nr_missing
+    land_missing = g5nr_missing
   end if
 
 ! Allocate arrays that will be copied on each processor - unshared
@@ -397,7 +379,7 @@ program leo_vlidort_cloud
 ! ! ------------------------------
   call read_land()
   call read_aer_Nv()
-!  call read_surf()
+  call read_surf_land()
   call read_angles()
   call read_cld_Tau()
   call read_wind()
@@ -477,7 +459,7 @@ program leo_vlidort_cloud
   call MAPL_SyncSharedMemory(rc=ierr)
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
-  do cc = starti, starti+ 10 !endi
+  do cc = starti, endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
 
@@ -496,47 +478,6 @@ program leo_vlidort_cloud
 
     write(msg,'(A,I)') 'calc_qm ', myid
     call write_verbose(msg)  
-
-!   Surface Reflectance Parameters
-!   ----------------------------------
-!     if ( (lower_to_upper(surfmodel) == 'RTLS') ) then
-! !     Get BRDF Kernel Weights
-! !     ----------------------------
-!       do ch = 1, nch
-!         if (lower_to_upper(surfband) == 'EXACT') then
-!           kernel_wt(:,ch,nobs) = (/dble(KISO(i,j,surfband_i(ch))),&
-!                               dble(KGEO(i,j,surfband_i(ch))),&
-!                               dble(KVOL(i,j,surfband_i(ch)))/)
-!         else
-!           ! > 2130 uses highest MODIS wavelength band     
-!           if (channels(ch) >= 2130) then  
-!             iband = minloc(abs(surfband_c - channels(ch)), dim = 1)
-!             kernel_wt(:,ch,nobs) = (/dble(KISO(i,j,iband)),&
-!                               dble(KGEO(i,j,iband)),&
-!                               dble(KVOL(i,j,iband))/)
-!           end if
-          
-!           if (channels(ch) < 2130) then
-!             ! nearest neighbor interpolation of kernel weights to wavelength
-!             ! ******channel has to fall above available range, user is responsible to verify
-!             kernel_wt(1,ch,nobs) = dble(nn_interp(surfband_c,reshape(KISO(i,j,:),(/surfbandm/)),channels(ch)))
-!             kernel_wt(2,ch,nobs) = dble(nn_interp(surfband_c,reshape(KGEO(i,j,:),(/surfbandm/)),channels(ch)))
-!             kernel_wt(3,ch,nobs) = dble(nn_interp(surfband_c,reshape(KVOL(i,j,:),(/surfbandm/)),channels(ch)))          
-!           end if
-!         end if
-!         param(:,ch,nobs)     = (/dble(2),dble(1)/)
-!       end do
-!     else
-!       ! Use a provided albedo file
-!       do ch = 1, nch
-!         if (lower_to_upper(surfband) == 'EXACT') then
-!           Valbedo(nobs,ch) = dble(LER(i,j,surfband_i(ch)))
-Valbedo = 0
-!         else
-!           Valbedo(nobs,ch) = dble(nn_interp(surfband_c,reshape(LER(i,j,:),(/surfbandm/)),channels(ch)))
-!         end if
-!       end do
-!     end if 
 
 !   Aerosol Optical Properties
 !   --------------------------
@@ -576,10 +517,10 @@ Valbedo = 0
     write(msg,*) 'getAOP ', myid
     call write_verbose(msg)
 
-
 !   Call VlIDORT
 !   ------------
     if ( FRLAND(i,j) >= 0.99 ) then
+      call get_surf_params()
       call DO_LAND()
     else
       call DO_OCEAN()
@@ -793,7 +734,7 @@ Valbedo = 0
   subroutine DO_OCEAN()
 !   WATER PIXELS
 !   ------------
-    if ( (lower_to_upper(surfmodel) .eq. 'CX') ) then
+    if ( (lower_to_upper(watermodel) .eq. 'CX') ) then
     ! GISS Cox Munk Model
     ! -------------------------------
       if (scalar) then
@@ -844,13 +785,56 @@ Valbedo = 0
 !  HISTORY
 !     Oct 2018 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+  subroutine get_surf_params()
+  !   Surface Reflectance Parameters
+  !    ----------------------------------
+      if ( (lower_to_upper(landmodel) == 'RTLS') ) then
+      !  Get BRDF Kernel Weights
+      !  ----------------------------
+        do ch = 1, nch
+          if (landbandm == 1) then
+            kernel_wt(:,ch,nobs) = (/dble(KISO(i,j,1)),&
+                                dble(KGEO(i,j,1)),&
+                                dble(KVOL(i,j,1))/)
+          else
+            ! > 2130 uses highest MODIS wavelength band     
+            if (channels(ch) >= maxval(landband_c)) then  
+              iband = minloc(abs(landband_c - channels(ch)), dim = 1)
+              kernel_wt(:,ch,nobs) = (/dble(KISO(i,j,iband)),&
+                                dble(KGEO(i,j,iband)),&
+                                dble(KVOL(i,j,iband))/)
+            end if
+            
+            if (channels(ch) < maxval(landband_c)) then
+              ! nearest neighbor interpolation of kernel weights to wavelength
+              ! ******channel has to fall above available range, user is responsible to verify
+              kernel_wt(1,ch,nobs) = dble(nn_interp(landband_c,reshape(KISO(i,j,:),(/landbandm/)),channels(ch)))
+              kernel_wt(2,ch,nobs) = dble(nn_interp(landband_c,reshape(KGEO(i,j,:),(/landbandm/)),channels(ch)))
+              kernel_wt(3,ch,nobs) = dble(nn_interp(landband_c,reshape(KVOL(i,j,:),(/landbandm/)),channels(ch)))          
+            end if
+          end if
+          param(:,ch,nobs)     = (/dble(2),dble(1)/)
+        end do
+      else if ( (lower_to_upper(landmodel) == 'LAMBERTIAN') ) then
+      !  Get Lambertian Albedo
+      !  ------------------------------
+        do ch = 1, nch
+          if (landbandm == 1) then
+            Valbedo(nobs,ch) = dble(LER(i,j,1))
+          else
+            Valbedo(nobs,ch) = dble(nn_interp(landband_c,reshape(LER(i,j,:),(/landbandm/)),channels(ch)))
+          end if
+        end do
+      end if 
+
+  end subroutine get_surf_params
 
   subroutine DO_LAND()
 
   !     LAND PIXELS
   !     -----------
 
-    if ( (lower_to_upper(surfmodel) .eq. 'LAMBERTIAN') ) then
+    if ( (lower_to_upper(landmodel) .eq. 'LAMBERTIAN') ) then
     ! Simple lambertian surface model
     ! -------------------------------
       if (scalar) then
@@ -879,47 +863,47 @@ Valbedo = 0
         BR_U_int = 0
       end if
 
-!     else if ( ANY(kernel_wt == surf_missing) ) then
-! !     Save code for pixels that were not gap filled
-! !     ---------------------------------------------    
-!       radiance_VL_int(nobs,:) = -500
-!       reflectance_VL_int(nobs,:) = -500
-!       Valbedo = -500
-!       ROT_int = -500
-!       if (.not. scalar) then
-!         Q_int = -500
-!         U_int = -500
-!       end if
-!       ierr = 0
-!     else   
-! !     MODIS BRDF Surface Model
-! !     ------------------------------
-!       if (scalar) then 
-!           ! Call to vlidort scalar code            
-!           call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
-!                   nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
-!                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
-!                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
-!                   dble(Vpe), dble(Vze), dble(Vte), &
-!                   kernel_wt, param, &
-!                   (/dble(SZA(i,j))/), &
-!                   (/dble(abs(RAA(i,j)))/), &
-!                   (/dble(VZA(i,j))/), &
-!                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr )  
-!       else
-!         ! Call to vlidort vector code
-!         call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nMom, &
-!                 nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-!                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
-!                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
-!                 dble(Vpe), dble(Vze), dble(Vte), &
-!                 kernel_wt, param, &
-!                 (/dble(SZA(i,j))/), &
-!                 (/dble(abs(RAA(i,j)))/), &
-!                 (/dble(VZA(i,j))/), &
-!                 dble(MISSING),verbose, &
-!                 radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
-!       end if      
+    else if ( ANY(kernel_wt == land_missing) ) then
+!     Save code for pixels that were not gap filled
+!     ---------------------------------------------    
+      radiance_VL_int(nobs,:) = -500
+      reflectance_VL_int(nobs,:) = -500
+      Valbedo = -500
+      ROT_int = -500
+      if (.not. scalar) then
+        Q_int = -500
+        U_int = -500
+      end if
+      ierr = 0
+    else   
+!     MODIS BRDF Surface Model
+!     ------------------------------
+      if (scalar) then 
+          ! Call to vlidort scalar code            
+          call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
+                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                  dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
+                  dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
+                  dble(Vpe), dble(Vze), dble(Vte), &
+                  kernel_wt, param, &
+                  (/dble(SZA(i,j))/), &
+                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(VZA(i,j))/), &
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr )  
+      else
+        ! Call to vlidort vector code
+        call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nMom, &
+                nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
+                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
+                dble(Vpe), dble(Vze), dble(Vte), &
+                kernel_wt, param, &
+                (/dble(SZA(i,j))/), &
+                (/dble(abs(RAA(i,j)))/), &
+                (/dble(VZA(i,j))/), &
+                dble(MISSING),verbose, &
+                radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
+      end if      
     end if   
 
   end subroutine DO_LAND
@@ -949,12 +933,12 @@ Valbedo = 0
     above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LT. 0)
     below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GE. 0)
 
-    if (.not. ANY((/y(above),y(below)/) == surf_missing)) then
+    if (.not. ANY((/y(above),y(below)/) == land_missing)) then
       top = y(above) - y(below)
       bottom = x(above) - x(below)
       nn_interp = y(below) + (xint-x(below)) * top / bottom
     else
-      nn_interp  = surf_missing
+      nn_interp  = land_missing
     end if
 
   end function nn_interp
@@ -1216,7 +1200,7 @@ Valbedo = 0
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!     read_surf
+!     read_surf_land
 ! PURPOSE
 !     read in all the surface reflectance variables
 ! INPUT
@@ -1227,76 +1211,85 @@ Valbedo = 0
 !     15 May 2015 P. Castellanos
 !     Jul 2015 P. Castellanos - added OMI LER option
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine read_surf()
-    real, dimension(im,jm,surfbandm)   :: temp
+  subroutine read_surf_land()
+
+    if (lower_to_upper(landmodel) == 'RTLS') then
+
+      call read_RTLS()
+      if (MAPL_am_I_root()) then
+        write(*,*) '<> Read BRDF data to shared memory'
+      end if
+      call MAPL_SyncSharedMemory(rc=ierr) 
+    else if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
+
+      if (MAPL_am_I_root()) then
+        call read_LER()        
+        write(*,*) '<> Read LER data to shared memory'
+      end if
+      call MAPL_SyncSharedMemory(rc=ierr) 
+    end if 
+  end subroutine read_surf_land
+
+
+  subroutine read_RTLS()
     integer                            :: Nx, Ny, ntile
     integer                            :: xstart, xend, ystart, yend
     integer                            :: x, y
+    character(len=100)                 :: sds
+    real, dimension(im,jm)             :: temp
 
-    if (lower_to_upper(surfmodel) == 'RTLS') then
       
-      call mp_readvar3Dchunk("Band1", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band1) 
-      call mp_readvar3Dchunk("Band2", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band2) 
-      call mp_readvar3Dchunk("Band3", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band3) 
-      call mp_readvar3Dchunk("Band4", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band4) 
-      call mp_readvar3Dchunk("Band5", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band5) 
-      call mp_readvar3Dchunk("Band6", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band6) 
-      call mp_readvar3Dchunk("Band7", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band7) 
-      if (lower_to_upper(surfname) == 'MAIACRTLS') then
-        call mp_readvar3Dchunk("Band8", SURF_file, (/im,jm,nkernel/), 1, npet, myid, Band8) 
-      end if
+      do ch = 1,landbandm
+        if ( landband_c(ch) < 1000 ) then
+          write(sds,'(A4,I3)') "Riso",int(landband_c(ch))
+        else
+          write(sds,'(A4,I4)') "Riso",int(landband_c(ch))
+        end if
+        call mp_readvar2Dchunk(trim(sds), LAND_file, (/im,jm/), 1, npet, myid, temp) 
+        
+        if (MAPL_am_I_root()) then
+          KISO(:,:,ch) = temp
+        end if
+        call MAPL_SyncSharedMemory(rc=ierr) 
 
-      call MAPL_SyncSharedMemory(rc=ierr)    
+        if ( landband_c(ch) < 1000 ) then
+          write(sds,'(A4,I3)') "Rgeo",int(landband_c(ch))
+        else
+          write(sds,'(A4,I4)') "Rgeo",int(landband_c(ch))
+        end if
 
-      if (MAPL_am_I_root()) then
-        KISO(:,:,1) = Band1(:,:,1)
-        KISO(:,:,2) = Band2(:,:,1)
-        KISO(:,:,3) = Band3(:,:,1)
-        KISO(:,:,4) = Band4(:,:,1)
-        KISO(:,:,5) = Band5(:,:,1)
-        KISO(:,:,6) = Band6(:,:,1)
-        KISO(:,:,7) = Band7(:,:,1)
-        if (lower_to_upper(surfname) == 'MAIACRTLS') KISO(:,:,8) = Band8(:,:,1)
+        call mp_readvar2Dchunk(trim(sds), LAND_file, (/im,jm/), 1, npet, myid, temp) 
+        if (MAPL_am_I_root()) then
+          KGEO(:,:,ch) = temp
+        end if
+        call MAPL_SyncSharedMemory(rc=ierr)         
 
-        KVOL(:,:,1) = Band1(:,:,2)
-        KVOL(:,:,2) = Band2(:,:,2)
-        KVOL(:,:,3) = Band3(:,:,2)
-        KVOL(:,:,4) = Band4(:,:,2)
-        KVOL(:,:,5) = Band5(:,:,2)
-        KVOL(:,:,6) = Band6(:,:,2)
-        KVOL(:,:,7) = Band7(:,:,2)
-        if (lower_to_upper(surfname) == 'MAIACRTLS') KVOL(:,:,8) = Band8(:,:,2)
+        if ( landband_c(ch) < 1000 ) then
+          write(sds,'(A4,I3)') "Rvol",int(landband_c(ch))
+        else
+          write(sds,'(A4,I4)') "Rvol",int(landband_c(ch))
+        end if
 
-        KGEO(:,:,1) = Band1(:,:,3)
-        KGEO(:,:,2) = Band2(:,:,3)
-        KGEO(:,:,3) = Band3(:,:,3)
-        KGEO(:,:,4) = Band4(:,:,3)
-        KGEO(:,:,5) = Band5(:,:,3)
-        KGEO(:,:,6) = Band6(:,:,3)
-        KGEO(:,:,7) = Band7(:,:,3)
-        if (lower_to_upper(surfname) == 'MAIACRTLS') KGEO(:,:,8) = Band8(:,:,3)
+        call mp_readvar2Dchunk(trim(sds), LAND_file, (/im,jm/), 1, npet, myid, temp) 
+        if (MAPL_am_I_root()) then
+          KVOL(:,:,ch) = temp
+        end if
+        call MAPL_SyncSharedMemory(rc=ierr)         
+        
+      end do
 
-        write(*,*) '<> Read BRDF data to shared memory' 
-      end if 
+  end subroutine read_RTLS
 
-    else
-      if (MAPL_am_I_root()) then
-        call read_LER(LER)        
-        write(*,*) '<> Read LER data to shared memory'
-      end if
-    end if
+  subroutine read_LER()
+    real, dimension(im,jm,1,1)         :: temp
+    character(len=100)                 :: sds
 
-  end subroutine read_surf
+    do ch = 1,landbandm
+      write(sds,*) "SRFLER",landband_c(ch)
+      call readvar4d(trim(sds), LAND_file, temp)
+      LER(:,:,ch) = temp(:,:,1,1)
+    end do
 
-  subroutine read_LER(indata)
-    real, intent(inout),dimension(im,jm,surfbandm)         :: indata
-    real, dimension(im,jm,1,1)                             :: temp
-
-    call readvar4d("SRFLER354", SURF_file, temp)
-    indata(:,:,1) = temp(:,:,1,1)
-
-    call readvar4d("SRFLER388", SURF_file, temp)
-    indata(:,:,2) = temp(:,:,1,1)
   end subroutine read_LER
 
 
@@ -1435,12 +1428,12 @@ Valbedo = 0
     call MAPL_AllocNodeArray(OCPHOBIC,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(OCPHILIC,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(SO4,(/im,jm,km/),rc=ierr)
-    if (lower_to_upper(surfmodel) == 'RTLS') then
-      call MAPL_AllocNodeArray(KISO,(/im,jm,surfbandm/),rc=ierr)
-      call MAPL_AllocNodeArray(KVOL,(/im,jm,surfbandm/),rc=ierr)
-      call MAPL_AllocNodeArray(KGEO,(/im,jm,surfbandm/),rc=ierr)
-    else
-      call MAPL_AllocNodeArray(LER,(/im,jm,surfbandm/),rc=ierr)
+    if (lower_to_upper(landmodel) == 'RTLS') then
+      call MAPL_AllocNodeArray(KISO,(/im,jm,landbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(KVOL,(/im,jm,landbandm/),rc=ierr)
+      call MAPL_AllocNodeArray(KGEO,(/im,jm,landbandm/),rc=ierr)
+    else if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
+      call MAPL_AllocNodeArray(LER,(/im,jm,landbandm/),rc=ierr)
     end if 
 
     call MAPL_AllocNodeArray(SZA,(/im,jm/),rc=ierr)
@@ -1471,19 +1464,6 @@ Valbedo = 0
 
     call MAPL_AllocNodeArray(radiance_VL,(/im,jm,nch/),rc=ierr)
     call MAPL_AllocNodeArray(reflectance_VL,(/im,jm,nch/),rc=ierr)
-
-    if (lower_to_upper(surfmodel) == 'RTLS') then
-      call MAPL_AllocNodeArray(BAND1,(/im,jm,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND2,(/im,jm,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND3,(/im,jm,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND4,(/im,jm,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND5,(/im,jm,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND6,(/im,jm,nkernel/),rc=ierr)
-      call MAPL_AllocNodeArray(BAND7,(/im,jm,nkernel/),rc=ierr)
-      if (lower_to_upper(surfname) == 'MAIACRTLS') then
-        call MAPL_AllocNodeArray(BAND8,(/im,jm,nkernel/),rc=ierr)
-      end if
-    end if
 
   end subroutine allocate_shared
 
@@ -1520,7 +1500,7 @@ Valbedo = 0
     allocate (radiance_VL_int(nobs,nch))
     allocate (reflectance_VL_int(nobs, nch))    
 
-    if (lower_to_upper(surfmodel) == 'RTLS') then
+    if (lower_to_upper(landmodel) == 'RTLS') then
       allocate (kernel_wt(nkernel,nch,nobs))
     end if
     allocate (param(nparam,nch,nobs))
@@ -1665,7 +1645,7 @@ Valbedo = 0
     call check(nf90_put_att(ncid,NF90_GLOBAL,'grid_inputs',trim(INV_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'angle_inputs',trim(ANG_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'aerosol_inputs',trim(AER_file)),"input files attr")
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(SURF_file)),"input files attr")
+    call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(LAND_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'cloud_inputs',trim(CLD_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'wind_inputs',trim(MET_file)),"input files attr")
 
@@ -1679,17 +1659,17 @@ Valbedo = 0
                          ' on the '//lower_to_upper(trim(instname))//' swath '
     call check(nf90_put_att(ncid,NF90_GLOBAL,'comment',trim(comment)),"comment attr")   
 
-    if (lower_to_upper(surfmodel) /= 'RTLS') then
-      if (lower_to_upper(surfband) == 'INTERPOLATE') then
+    if (lower_to_upper(landmodel) /= 'RTLS') then
+      if (landbandm == 1) then
         write(comment,'(A)') 'Lambertian surface reflectance interpolated to channel'
       else
         write(comment,'(A)') 'Lambertian surface reflectance without interpolation to channel'
       end if
     else
-      if (lower_to_upper(surfband) == 'INTERPOLATE') then
-        write(comment,'(2A)') lower_to_upper(trim(surfname)),' surface BRDF kernel weights interpolated to channel'
+      if (landbandm > 1 ) then
+        write(comment,'(2A)') lower_to_upper(trim(landname)),' surface BRDF kernel weights interpolated to channel'
       else
-        write(comment,'(2A)') lower_to_upper(trim(surfname)),' surface BRDF kernel weights without inerpolation to channel'
+        write(comment,'(2A)') lower_to_upper(trim(landname)),' surface BRDF kernel weights without inerpolation to channel'
       end if
     end if
 
@@ -2296,58 +2276,44 @@ Valbedo = 0
 
     ! Read in variables
     ! -----------------------
+    ! General
     call ESMF_ConfigGetAttribute(cf, date, label = 'DATE:',__RC__)
     call ESMF_ConfigGetAttribute(cf, time, label = 'TIME:',__RC__)
     call ESMF_ConfigGetAttribute(cf, instname, label = 'INSTNAME:',__RC__)
-    call ESMF_ConfigGetAttribute(cf, angname, label = 'ANGNAME:',default='NONE')
-    call ESMF_ConfigGetAttribute(cf, indir, label = 'INDIR:',__RC__)
-    call ESMF_ConfigGetAttribute(cf, outdir, label = 'OUTDIR:',default=indir)
-    call ESMF_ConfigGetAttribute(cf, surfname, label = 'SURFNAME:',default='MAIACRTLS')
-    call ESMF_ConfigGetAttribute(cf, surfmodel, label = 'SURFMODEL:',default='RTLS')
-    call ESMF_ConfigGetAttribute(cf, surfdate, label = 'SURFDATE:',__RC__)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
-    call ESMF_ConfigGetAttribute(cf, surfband, label = 'SURFBAND:', default='INTERPOLATE')
-!    call ESMF_ConfigGetAttribute(cf, surfbandm, label = 'SURFBANDM:',__RC__)
     call ESMF_ConfigGetAttribute(cf, additional_output, label = 'ADDITIONAL_OUTPUT:',default=.false.)
     call ESMF_ConfigGetAttribute(cf, nodemax, label = 'NODEMAX:',default=1) 
     call ESMF_ConfigGetAttribute(cf, version, label = 'VERSION:',default='1.0') 
-    call ESMF_ConfigGetAttribute(cf, surf_version, label = 'SURF_VERSION:',default='1.0')    
     call ESMF_ConfigGetAttribute(cf, layout, label = 'LAYOUT:',default='111')    
+
+    ! Land Surface
+    call ESMF_ConfigGetAttribute(cf, landname, label = 'LANDNAME:',default='MAIACRTLS')
+    call ESMF_ConfigGetAttribute(cf, landmodel, label = 'LANDMODEL:',default='RTLS')
+    landbandm =  ESMF_ConfigGetLen(cf, label = 'LANDBAND_C:',__RC__)
+    allocate (landband_c(landbandm))    
+    call ESMF_ConfigGetAttribute(cf, landband_c, label = 'LANDBAND_C:', __RC__)
+
+    ! Water Surface
+    call ESMF_ConfigGetAttribute(cf, watername, label = 'WATERNAME:',default='MAIACRTLS')
+    call ESMF_ConfigGetAttribute(cf, watermodel, label = 'WATERMODEL:',default='RTLS')
+
+    ! Clouds
     call ESMF_ConfigGetAttribute(cf, IcldTable, label = 'ICLDTABLE:',__RC__)       
     call ESMF_ConfigGetAttribute(cf, LcldTable, label = 'LCLDTABLE:',__RC__)
     call ESMF_ConfigGetAttribute(cf, idxCld, label = 'IDXCLD:',__RC__)
 
-
+    ! Input Files
     call ESMF_ConfigGetAttribute(cf, AER_file, label = 'AER_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, ANG_file, label = 'ANG_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, INV_file, label = 'INV_file:',__RC__)
-    call ESMF_ConfigGetAttribute(cf, SURF_file, label = 'SURF_file:',__RC__)
+    call ESMF_ConfigGetAttribute(cf, LAND_file, label = 'LAND_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, OUT_file, label = 'OUT_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, ADD_file, label = 'ADD_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, CLD_file, label = 'CLD_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, MET_file, label = 'MET_file:',__RC__)
 
-
-
-  ! angname is instname if not given in the rcfile
-  !------------------------------------------
-    if (trim(lower_to_upper(angname)) == 'NONE') then
-      angname = instname
-    end if
-
-    ! Check that LER configuration is correct
-    !----------------------------------------
-    if (lower_to_upper(surfmodel) /= 'RTLS' ) then
-      if (surfbandm /= 2) then
-        surfbandm = 2
-        if (MAPL_am_I_root()) then
-          write(*,*) 'Wrong number of surface bands.  If not RTLS surface, SURFBANDM must equal 2'
-          write(*,*) 'Forcing surfbandm = 2'          
-        end if
-      end if
-    end if
 
     ! Figure out number of channels and read into vector
     !------------------------------------------------------
@@ -2375,19 +2341,6 @@ Valbedo = 0
       ierr = 2
       return
     end if
-
-
-    ! ! INFILES & OUTFILE set names
-    ! ! -------------------------------
-    ! call filenames()
-
-    ! if (lower_to_upper(surfband) == 'EXACT' ) then
-    !   allocate (surfband_i(nch))
-    !   call ESMF_ConfigGetAttribute(cf, surfband_i, label = 'SURFBAND_I:', __RC__)
-    ! else
-    !   allocate (surfband_c(surfbandm))
-    !   call ESMF_ConfigGetAttribute(cf, surfband_c, label = 'SURFBAND_C:', __RC__)
-    ! end if
 
     call ESMF_ConfigDestroy(cf)
 
@@ -2458,11 +2411,11 @@ Valbedo = 0
     call MAPL_DeallocNodeArray(OCPHOBIC,rc=ierr) 
     call MAPL_DeallocNodeArray(OCPHILIC,rc=ierr) 
     call MAPL_DeallocNodeArray(SO4,rc=ierr) 
-    if (lower_to_upper(surfmodel) == 'RTLS') then
+    if (lower_to_upper(landmodel) == 'RTLS') then
       call MAPL_DeallocNodeArray(KISO,rc=ierr) 
       call MAPL_DeallocNodeArray(KVOL,rc=ierr) 
       call MAPL_DeallocNodeArray(KGEO,rc=ierr) 
-    else
+    else if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
       call MAPL_DeallocNodeArray(LER,rc=ierr) 
     end if
     call MAPL_DeallocNodeArray(SZA,rc=ierr) 
