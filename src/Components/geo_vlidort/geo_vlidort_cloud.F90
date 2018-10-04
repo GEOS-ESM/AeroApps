@@ -157,6 +157,8 @@ program geo_vlidort_cloud
   real*8, allocatable                   :: Q_int(:,:)                                 ! Q Stokes component
   real*8, allocatable                   :: U_int(:,:)                                 ! U Stokes component
   real*8, allocatable                   :: ROT_int(:,:,:)                             ! rayleigh optical thickness
+  real*8, allocatable                   :: BR_Q_int(:,:)                          ! surface albedo Q
+  real*8, allocatable                   :: BR_U_int(:,:)                          ! surface albedo U
 
 !                                  Final Shared Arrays
 !                                  -------------------
@@ -670,7 +672,7 @@ program geo_vlidort_cloud
                 (/dble(SZA(i,j))/), &
                 (/dble(abs(RAA(i,j)))/), &
                 (/dble(VZA(i,j))/), &
-                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, Q_int, U_int, ierr )  
+                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
       end if      
     end if          
     
@@ -1470,6 +1472,8 @@ end subroutine outfile_extname
     if (.not. scalar) then      
       allocate (Q_int(nobs, nch))
       allocate (U_int(nobs, nch))
+      allocate (BR_Q_int(nobs, nch))
+      allocate (BR_U_int(nobs, nch))      
     end if
 
   ! Needed for reading
