@@ -186,7 +186,7 @@ module VLIDORT_BRDF_MODIS
   subroutine VLIDORT_Vector_LandMODIS (km, nch, nobs, channels, nMom,  &
                      nPol,tau, ssa, pmom, pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc, &
+                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, BR_Q, BR_U, rc, &
                      DO_2OS_CORRECTION, DO_BOA)
   !
   ! Place holder.
@@ -238,6 +238,8 @@ module VLIDORT_BRDF_MODIS
 
     real*8,           intent(out)           :: ROT(km,nobs,nch)               ! rayleigh optical thickness
     real*8,           intent(out)           :: BR(nobs,nch)                   ! bidirectional reflectance 
+    real*8,           intent(out)           :: BR_Q(nobs,nch)                   ! bidirectional reflectance 
+    real*8,           intent(out)           :: BR_U(nobs,nch)                   ! bidirectional reflectance 
     real*8,           intent(out)           :: Q(nobs, nch)                   ! Stokes parameter Q
     real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
 
@@ -328,12 +330,17 @@ module VLIDORT_BRDF_MODIS
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
 
-        BR(j,i)    = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
+        BR(j,i)   = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
+        BR_Q(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(2,1,1,1) 
+        BR_U(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(3,1,1,1)     
+
         ! Check to make sure kernel combination is not unphysical
         if (BR(j,i) < 0) then
           radiance_VL_SURF(j,i)    = -500
           reflectance_VL_SURF(j,i) = -500
           BR(j,i)    = -500
+          BR_Q(j,i)  = -500
+          BR_U(j,i)  = -500
           ROT(:,j,i) = -500
           Q(j,i)     = -500
           U(j,i)     = -500
@@ -560,7 +567,7 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
                      nPol,tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                      pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc, &
+                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, BR_Q, BR_U, rc, &
                      DO_2OS_CORRECTION, DO_BOA)
   !
   ! Place holder.
@@ -620,6 +627,8 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
 
     real*8,           intent(out)           :: ROT(km,nobs,nch)               ! rayleigh optical thickness
     real*8,           intent(out)           :: BR(nobs,nch)                   ! bidirectional reflectance 
+    real*8,           intent(out)           :: BR_Q(nobs,nch)                 ! bidirectional reflectance Q 
+    real*8,           intent(out)           :: BR_U(nobs,nch)                 ! bidirectional reflectance U
     real*8,           intent(out)           :: Q(nobs, nch)                   ! Stokes parameter Q
     real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
 
@@ -716,12 +725,17 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
         SCAT%ssaL => ssaL(:,i,j)
         SCAT%pmomL => pmomL(:,i,j,:,:)            
 
-        BR(j,i)    = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
+        BR(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
+        BR_Q(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(2,1,1,1) 
+        BR_U(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(3,1,1,1)     
+
         ! Check to make sure kernel combination is not unphysical
         if (BR(j,i) < 0) then
           radiance_VL_SURF(j,i)    = -500
           reflectance_VL_SURF(j,i) = -500
           BR(j,i)    = -500
+          BR_Q(j,i)    = -500
+          BR_U(j,i)    = -500
           ROT(:,j,i) = -500
           Q(j,i)     = -500
           U(j,i)     = -500
