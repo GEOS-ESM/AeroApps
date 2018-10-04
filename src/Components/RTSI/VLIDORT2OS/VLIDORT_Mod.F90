@@ -4,6 +4,7 @@
       
       USE VLIDORT_IO_DEFS
       USE VBRDF_SUP_MOD
+      USE VSLEAVE_SUP_MOD
       
       implicit NONE
 
@@ -31,6 +32,9 @@
 !!          TYPE(BRDF_Surface_def)             :: VLIDORT_BRDF_inputs
 !!          TYPE(VBRDF_Sup_Inputs)                 :: VBRDF_Sup_In
           TYPE(VBRDF_Sup_Outputs)                :: VBRDF_Sup_Out
+
+          ! SLEAVE output structure
+          TYPE(VSLEAVE_Sup_Outputs)                :: VSLEAVE_Sup_Out                      
 
           !  VLIDORT supplements i/o structure
 

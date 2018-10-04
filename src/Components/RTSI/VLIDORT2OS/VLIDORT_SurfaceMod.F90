@@ -13,6 +13,7 @@ module VLIDORT_SurfaceMod
    PUBLIC  VLIDORT_GissCoxMunk
    PUBLIC  VLIDORT_LANDMODIS
    PUBLIC  VLIDORT_LANDMODIS_BPDF
+   PUBLIC  VLIDORT_OASIM
        
    TYPE VLIDORT_Surface
 
@@ -168,11 +169,11 @@ module VLIDORT_SurfaceMod
       DO_SHADOW_EFFECT = .true.      ! Shadow effect for glitter kernels
 !      DO_DBONLY = .false.        ! only direct bounce BRDF (no Fourier terms calc)
 
-      DO_GLITTER_MSRCORR         = .true.  ! Do multiple reflectance correction for glitter kernels
+      DO_GLITTER_MSRCORR         = .false.  ! Do multiple reflectance correction for glitter kernels
       DO_GLITTER_MSRCORR_DBONLY  = .false. ! Do multiple reflectance correction 
                                                !for only the exact term of glitter kernels
 
-      GLITTER_MSRCORR_ORDER    = 1   !Order of correction for multiple reflectance computations
+      GLITTER_MSRCORR_ORDER    = 0   !Order of correction for multiple reflectance computations
                                     !(0 = no corr), 1,,2,3 ...
       GLITTER_MSRCORR_NMUQUAD  = 40    ! Number of angles used in zenith integration
                                     ! during  multiple corr
@@ -281,6 +282,56 @@ module VLIDORT_SurfaceMod
                              self%Base%VIO%VBRDF_Sup_Out, &  ! Outputs
                            self%Base%VIO%VBRDF_Sup_OutputStatus)          ! Outputs
    end subroutine VLIDORT_GissCoxMunk
+
+!.........................................................................
+   Subroutine VLIDORT_OASIM(self, sleave, solar_zenith, &
+                                  sensor_zenith, relative_azimuth, scalar,rc) 
+ 
+      USE VLIDORT_PARS
+      USE VSLEAVE_SUP_MOD
+
+      implicit NONE
+
+      type(VLIDORT_Surface), intent(inout)   :: self
+      real*8, intent(in)                     :: solar_zenith
+      real*8, intent(in)                     :: sensor_zenith
+      real*8, intent(in)                     :: relative_azimuth 
+      real*8, intent(in)                     :: sleave
+      logical, intent(in)                    :: scalar
+      integer, intent(out)                   :: rc     ! error code
+
+      integer                             ::   NSTOKES
+
+      rc = 0
+
+    
+      ! Save local variables to self
+      self%sfc_type      = 3
+      self%solar_zenith  = solar_zenith
+      self%sensor_zenith = sensor_zenith
+      self%relat_azimuth = relative_azimuth  
+      self%scalar = scalar     
+             
+
+      if ( scalar ) then
+         NSTOKES = 1                 ! Number of Stokes vector components
+      else
+         NSTOKES = 3
+      end if
+
+
+      ! Copy sleave data to VSLEAVE output data structure
+      self%Base%VIO%VSLEAVE_Sup_Out%SL_SLTERM_ISOTROPIC(1,1)     = sleave
+
+      ! Do some checks to make sure parameters are not out of range
+      !------------------------------------------------------------
+      if ( NSTOKES  .GT. MAXSTOKES  )                   rc = 3      
+
+
+   end subroutine VLIDORT_OASIM
+
+
+
 !.................................................................................
 
    Subroutine VLIDORT_LANDMODIS(self, solar_zenith, sensor_zenith, relative_azimuth, &
