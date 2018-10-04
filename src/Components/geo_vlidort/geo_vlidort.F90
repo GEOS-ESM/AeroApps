@@ -161,6 +161,8 @@ program geo_vlidort
   real*8, allocatable                   :: Q(:,:)                                 ! Q Stokes component
   real*8, allocatable                   :: U(:,:)                                 ! U Stokes component
   real*8, allocatable                   :: ROT(:,:,:)                             ! rayleigh optical thickness
+  real*8, allocatable                   :: BR_Q_int(:,:)                          ! surface albedo Q
+  real*8, allocatable                   :: BR_U_int(:,:)                          ! surface albedo U
 
 !                                  Final Shared Arrays
 !                                  -------------------
@@ -644,7 +646,7 @@ program geo_vlidort
                 (/dble(SZA(c))/), &
                 (/dble(abs(RAA(c)))/), &
                 (/dble(VZA(c))/), &
-                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, Q, U, ierr )  
+                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, Q, U, BR_Q_int, BR_U_int, ierr )  
       end if      
     end if          
     
@@ -1535,6 +1537,8 @@ end subroutine outfile_extname
     if (.not. scalar) then      
       allocate (Q(nobs, nch))
       allocate (U(nobs, nch))
+      allocate (BR_Q_int(nobs, nch))
+      allocate (BR_U_int(nobs, nch))      
     end if
 
   ! Needed for reading
