@@ -9,7 +9,7 @@ implicit NONE
 PUBLIC VLIDORT_Scalar_CX
 PUBLIC VLIDORT_Vector_CX
 PUBLIC VLIDORT_Vector_Cx_Cloud
-PUBLIC VLIDORT_Vector_Cx_OASIM_Cloud
+PUBLIC VLIDORT_Vector_Cx_NOBM_Cloud
 contains
 
 
@@ -702,7 +702,7 @@ subroutine VLIDORT_Vector_CX_Cloud (km, nch, nobs,channels, nMom, &
 
 end subroutine VLIDORT_Vector_Cx_Cloud
 
-subroutine VLIDORT_Vector_CX_OASIM_Cloud (km, nch, nobs,channels, nMom, &
+subroutine VLIDORT_Vector_CX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
                    nPol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, sleave, &
@@ -750,7 +750,7 @@ subroutine VLIDORT_Vector_CX_OASIM_Cloud (km, nch, nobs,channels, nMom, &
   real*8, target,   intent(in)  :: U10m(nobs)   ! Wind speed components [m/s]
   real*8, target,   intent(in)  :: V10m(nobs)    
   real*8, target,   intent(in)  :: mr(nch)       ! refractive index
-  real*8, target,   intent(in)  :: sleave(nch,nobs)       ! sun normalized water leaving radiance from OASIM
+  real*8, target,   intent(in)  :: sleave(nch,nobs)       ! sun normalized water leaving radiance from NOBM
                                                           ! described and used in Gregg & Rousseaux 2017 
                        
   real*8, target,   intent(in)  :: solar_zenith(nobs)  
@@ -828,7 +828,7 @@ subroutine VLIDORT_Vector_CX_OASIM_Cloud (km, nch, nobs,channels, nMom, &
           call VLIDORT_GissCoxMunk(SCAT%Surface,U10m(j),V10m(j),mr(i),solar_zenith (j),&
                                     sensor_zenith(j),relat_azymuth(j),scalar,rc)
           ! must be called second
-          call VLIDORT_OASIM(SCAT%Surface,sleave(i,j),solar_zenith(j),&
+          call VLIDORT_NOBM(SCAT%Surface,sleave(i,j),solar_zenith(j),&
                                     sensor_zenith(j),relat_azymuth(j),scalar,rc)
 
           if ( verbose > 0 ) then
@@ -887,6 +887,6 @@ subroutine VLIDORT_Vector_CX_OASIM_Cloud (km, nch, nobs,channels, nMom, &
 
   end do ! Loop over obs
 
-end subroutine VLIDORT_Vector_Cx_OASIM_Cloud
+end subroutine VLIDORT_Vector_Cx_NOBM_Cloud
 
 end module VLIDORT_BRDF_CX
