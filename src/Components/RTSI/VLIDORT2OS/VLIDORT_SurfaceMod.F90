@@ -13,7 +13,7 @@ module VLIDORT_SurfaceMod
    PUBLIC  VLIDORT_GissCoxMunk
    PUBLIC  VLIDORT_LANDMODIS
    PUBLIC  VLIDORT_LANDMODIS_BPDF
-   PUBLIC  VLIDORT_OASIM
+   PUBLIC  VLIDORT_NOBM
        
    TYPE VLIDORT_Surface
 
@@ -284,7 +284,7 @@ module VLIDORT_SurfaceMod
    end subroutine VLIDORT_GissCoxMunk
 
 !.........................................................................
-   Subroutine VLIDORT_OASIM(self, sleave, solar_zenith, &
+   Subroutine VLIDORT_NOBM(self, sleave, solar_zenith, &
                                   sensor_zenith, relative_azimuth, scalar,rc) 
  
       USE VLIDORT_PARS
@@ -328,7 +328,7 @@ module VLIDORT_SurfaceMod
       if ( NSTOKES  .GT. MAXSTOKES  )                   rc = 3      
 
 
-   end subroutine VLIDORT_OASIM
+   end subroutine VLIDORT_NOBM
 
 
 
