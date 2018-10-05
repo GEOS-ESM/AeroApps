@@ -172,9 +172,9 @@ class WORKSPACE(JOBS):
             if args.dryrun:
                 options += ' --dryrun'
             if args.channels is not None:
-                options += ' --channels {}'.format(' '.join(self.channels))
+                options += ' --channels {}'.format(' '.join(args.channels))
             if args.extch is not None:
-                options += ' --extch {}'.format(' '.join(self.extch))
+                options += ' --extch {}'.format(' '.join(args.extch))
             if args.norad:
                 options += ' --norad'
             if args.noext:
