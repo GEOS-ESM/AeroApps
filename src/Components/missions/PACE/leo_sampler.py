@@ -361,7 +361,7 @@ if __name__ == "__main__":
 
     # PACE default
     # -------------------
-    calculon = '/nobackup/3/pcastell/PACE/L1B'
+    calculon = '/nobackup/PACE/L1B'
     nccs = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE'
     if os.path.exists(nccs): 
         L1Root = nccs + '/L1B'
@@ -370,8 +370,6 @@ if __name__ == "__main__":
         L1Root = calculon + '/L1B'
         outdir = calculon + '/LevelB'
 
-
-    dt_minutes = 5 #  5 minutes for now
 
 #   Parse command line options
 #   --------------------------
@@ -403,9 +401,6 @@ if __name__ == "__main__":
               help="Resource file defining parameters to sample (default=%s)"\
                           %rcFile )
 
-    parser.add_option("--dt_minutes", dest="dt_minutes", default=dt_minutes,
-              help="if no iso_t2, time from iso_t1 (default=%d)"\
-                          %dt_minutes )    
 
     parser.add_option("-t", "--title", dest="title", default=title,
               help="Output file title, typically the collection name (default=%s)"\
