@@ -349,7 +349,7 @@ if __name__ == "__main__":
     dt_minutes = 5 #  5 minutes for now
     iso_t1 = '2020-03-24T00:50:00'
     t1     = isoparser(iso_t1)
-    t2     = t1 + timedelta(minutes=options.dt_minutes)
+    t2     = t1 + timedelta(minutes=dt_minutes)
 
 
     # Get Granules to work on
