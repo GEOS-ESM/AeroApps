@@ -75,7 +75,7 @@ class PACE(object):
         # --------------------------------
         nscan,npixel = self.lon[0].shape
         self.tyme = []        
-        if hasattr(self,'midTIme'):
+        if hasattr(self,'midTime'):
             for scanStart,midTime,lon in zip(self.scanStart,self.midTime,self.lon):
                 scanStart  = isoparser(scanStart.strftime('2006-%m-%dT00:00:00'))
                 tyme       = np.array([scanStart + timedelta(seconds=t) for t in midTime])    
