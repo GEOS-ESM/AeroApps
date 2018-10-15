@@ -746,7 +746,7 @@ program leo_vlidort_cloud
 
     if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
       do ch = 1, nch
-        below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .LT. 0)
+        below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .GE. 0)
         Vsleave(ch,nobs) = dble(nn_interp(WATER_CH(below:below+1),reshape(SLEAVE(i,j,ch,:),(/2/)),channels(ch)))
       end do
 
@@ -1293,7 +1293,7 @@ program leo_vlidort_cloud
       write(*,*) 'wavelength', minval(WATER_CH), maxval(WATER_CH)
       do ch = 1, nch
         ! get channel below
-        below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .LT. 0)
+        below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .GE. 0)
         write(*,*) 'below', below,WATER_CH(below)
         call readvar3Dslice('lwn', WAT_file, (/im,jm,2/), 3, below, temp) 
 
