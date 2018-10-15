@@ -26,7 +26,7 @@ endif
 
 THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
-BINS := geo_vlidort.x
+BINS := geo_vlidort.x geo_vlidort_cloud.x
 
 PY_EXTS = GeoAngles_.$(F2PYEXT)
 PY_SCRP = run_geo_vlidort_lc2.py geo_vlidort_lc2.py geo_warp.py \
