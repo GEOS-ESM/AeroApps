@@ -17,14 +17,62 @@ module netcdf_Mod
   public :: readVattrgrp
   public :: readDim
   public :: check
+  public :: readvar3Dslice
 
   interface readvar2Dgrp
        module procedure readvar2DgrpR4
        module procedure readvar2DgrpR8
   end interface
 
+  interface readvar1D
+       module procedure readvar1DR4
+       module procedure readvar1DR8
+  end interface
   
   contains
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    readvar3Dslice
+! PURPOSE
+!     reads a slice of a 3D variable from a netcdf file all at once
+!     can only be called by one processor
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     2018 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine readvar3Dslice(varname, filename, countsize, n, startl, var)
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  filename
+    integer, dimension(:), intent(in)      ::  countsize
+    integer, intent(in)                    ::  n
+    integer, intent(in)                    ::  startl
+    real, dimension(:,:,:), intent(inout)  ::  var
+
+
+    integer                                :: ncid, varid
+
+
+    call check( nf90_open(filename,nf90_nowrite,ncid), "opening file " // filename)
+    call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
+    if (n == 1) then
+      call check( nf90_get_var(ncid, varid,var, start = (/ startl, 1, 1 /), count=countsize), "reading " // varname)
+    else if (n == 2) then
+      call check( nf90_get_var(ncid, varid,var, start = (/ 1, startl, 1 /), count=countsize), "reading " // varname)
+    else 
+      call check( nf90_get_var(ncid, varid,var, start = (/ 1, 1, startl /), count=countsize), "reading " // varname)
+    end if                 
+
+    call check( nf90_get_var(ncid,varid,var), "reading " // varname)
+    call check( nf90_close(ncid), "closing " // filename)
+  end subroutine readvar3Dslice
+
+
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
 !    readDim
@@ -202,7 +250,7 @@ module netcdf_Mod
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!    readvar1D
+!    readvar1DR8
 ! PURPOSE
 !     reads a 1D variable from a netcdf file all at once
 ! INPUT
@@ -214,7 +262,7 @@ module netcdf_Mod
 !  HISTORY
 !     
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine readvar1D(varname, filename, var)
+  subroutine readvar1DR8(varname, filename, var)
     character(len=*), intent(in)           ::  varname
     character(len=*), intent(in)           ::  filename
     real*8, dimension(:), intent(inout)      ::  var
@@ -225,8 +273,34 @@ module netcdf_Mod
     call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
     call check( nf90_get_var(ncid,varid,var), "reading " // varname)
     call check( nf90_close(ncid), "closing " // filename)
-  end subroutine readvar1D
+  end subroutine readvar1DR8
 
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    readvar1DR4
+! PURPOSE
+!     reads a 1D variable from a netcdf file all at once
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine readvar1DR4(varname, filename, var)
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  filename
+    real, dimension(:), intent(inout)      ::  var
+
+    integer                                :: ncid, varid
+
+    call check( nf90_open(filename,nf90_nowrite,ncid), "opening file " // filename)
+    call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
+    call check( nf90_get_var(ncid,varid,var), "reading " // varname)
+    call check( nf90_close(ncid), "closing " // filename)
+  end subroutine readvar1DR4
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
