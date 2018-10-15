@@ -361,7 +361,7 @@ if __name__ == "__main__":
 
     # PACE default
     # -------------------
-    calculon = '/nobackup/PACE/L1B'
+    calculon = '/nobackup/PACE'
     nccs = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE'
     if os.path.exists(nccs): 
         L1Root = nccs + '/L1B'
