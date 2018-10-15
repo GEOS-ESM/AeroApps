@@ -11,6 +11,7 @@ module mp_netcdf_Mod
   public :: mp_readDim
   public :: mp_readvar4D
   public :: mp_readvar3D
+  public :: mp_readvar3Dslice
   public :: mp_readvar2D
   public :: mp_readvar1D
   public :: mp_readGattr
@@ -28,10 +29,19 @@ module mp_netcdf_Mod
   public :: mp_readTilevar3Dchunk
   public :: mp_check
 
+  interface mp_readvar1D
+       module procedure mp_readvar1DR4
+       module procedure mp_readvar1DR8
+  end interface
 
   interface mp_readvar2D
        module procedure mp_readvar2DR4
        module procedure mp_readvar2DR8
+  end interface
+
+  interface mp_readvar1Dchunk
+       module procedure mp_readvar1DchunkR4
+       module procedure mp_readvar1DchunkR8
   end interface
 
   interface mp_readvar2Dchunk
@@ -103,6 +113,46 @@ module mp_netcdf_Mod
     call mp_check( nf90_close(ncid), "closing " // filename)
   end subroutine mp_readvar3D
 
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_readvar3Dslice
+! PURPOSE
+!     reads a slice of a 3D variable from a netcdf file all at once
+!     can only be called by one processor
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     2018 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_readvar3Dslice(varname, filename, countsize, n, startl, var)
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  filename
+    integer, dimension(:), intent(in)      ::  countsize
+    integer, intent(in)                    ::  n
+    integer, intent(in)                    ::  startl
+    real, dimension(:,:,:), intent(inout)  ::  var
+
+
+    integer                                :: ncid, varid
+
+
+    call mp_check( nf90_open(filename,IOR(nf90_nowrite, nf90_mpiio),ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call mp_check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
+    if (n == 1) then
+      call mp_check( nf90_get_var(ncid, varid,var, start = (/ startl, 1, 1 /), count=countsize), "reading " // varname)
+    else if (n == 2) then
+      call mp_check( nf90_get_var(ncid, varid,var, start = (/ 1, startl, 1 /), count=countsize), "reading " // varname)
+    else 
+      call mp_check( nf90_get_var(ncid, varid,var, start = (/ 1, 1, startl /), count=countsize), "reading " // varname)
+    end if                 
+
+    call mp_check( nf90_get_var(ncid,varid,var), "reading " // varname)
+    call mp_check( nf90_close(ncid), "closing " // filename)
+  end subroutine mp_readvar3Dslice
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -197,7 +247,7 @@ module mp_netcdf_Mod
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!    mp_readvar1D
+!    mp_readvar1DR8
 ! PURPOSE
 !     reads a 1D variable from a netcdf file all at once
 !     can only be called by one processor
@@ -210,7 +260,7 @@ module mp_netcdf_Mod
 !  HISTORY
 !     27 April P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine mp_readvar1D(varname, filename, var)
+  subroutine mp_readvar1DR8(varname, filename, var)
     character(len=*), intent(in)           ::  varname
     character(len=*), intent(in)           ::  filename
     real*8, dimension(:), intent(inout)      ::  var
@@ -221,7 +271,35 @@ module mp_netcdf_Mod
     call mp_check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
     call mp_check( nf90_get_var(ncid,varid,var), "reading " // varname)
     call mp_check( nf90_close(ncid), "closing " // filename)
-  end subroutine mp_readvar1D
+  end subroutine mp_readvar1DR8
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_readvar1DR4
+! PURPOSE
+!     reads a 1D variable from a netcdf file all at once
+!     can only be called by one processor
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     27 April P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_readvar1DR4(varname, filename, var)
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  filename
+    real, dimension(:), intent(inout)      ::  var
+
+    integer                                :: ncid, varid
+
+    call mp_check( nf90_open(filename,IOR(nf90_nowrite, nf90_mpiio),ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call mp_check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
+    call mp_check( nf90_get_var(ncid,varid,var), "reading " // varname)
+    call mp_check( nf90_close(ncid), "closing " // filename)
+  end subroutine mp_readvar1DR4
+
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -914,7 +992,7 @@ module mp_netcdf_Mod
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!    mp_readvar1Dchunk
+!    mp_readvar1DchunkR8
 ! PURPOSE
 !     General code to uses npet processors to read a variable from a netcdf file in chunks across dimenion n
 !     is called by multiple processors
@@ -930,7 +1008,7 @@ module mp_netcdf_Mod
 !  HISTORY
 !     11 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine mp_readvar1Dchunk(varname, filename, dim, n, npet, myid, var)
+  subroutine mp_readvar1DchunkR8(varname, filename, dim, n, npet, myid, var)
     character(len=*), intent(in)              ::  varname
     character(len=*), intent(in)              ::  filename
     integer, dimension(:), intent(in)         ::  dim
@@ -982,8 +1060,80 @@ module mp_netcdf_Mod
     end do
     call mp_check( nf90_close(ncid), "closing "// filename)
     !
-  end subroutine mp_readvar1Dchunk    
+  end subroutine mp_readvar1DchunkR8    
 
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_readvar1DchunkR4
+! PURPOSE
+!     General code to uses npet processors to read a variable from a netcdf file in chunks across dimenion n
+!     is called by multiple processors
+!     variable to be read must have 3 dimensions 
+! INPUT
+!     varname         : string of variable name
+!     filename        : file to be read
+!     dim = e.g. [im]  : size of array to be read
+!     n               : dimension to split up
+!     var             : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     11 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_readvar1DchunkR4(varname, filename, dim, n, npet, myid, var)
+    character(len=*), intent(in)              ::  varname
+    character(len=*), intent(in)              ::  filename
+    integer, dimension(:), intent(in)         ::  dim
+    integer, intent(in)                       ::  n  !dimensions to read over in chunks
+    integer, intent(in)                       ::  npet, myid    
+    real, dimension(:), intent(inout)         ::  var
+
+    integer                       :: p, startl, countl, endl
+    integer                       :: ncid, varid
+    integer, dimension(npet)      :: nlayer                ! how many layers each processor reads
+    integer                       :: km
+    integer, allocatable          :: countsize(:)
+
+
+    ! allocate count array
+    !---------------------------------------
+    allocate(countsize(size(dim)))
+
+
+    ! Everyone Figure out how many indeces each PE has to read
+    ! -----------------------------
+    km     = dim(n)
+    nlayer = 0
+    if (npet >= km) then
+      nlayer(1:npet) = 1
+    else if (npet < km) then
+      nlayer(1:npet) = km/npet
+      nlayer(npet)   = nlayer(npet) + mod(km,npet)
+    end if 
+
+    call mp_check( nf90_open(filename, IOR(nf90_nowrite, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call mp_check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
+    do p = 0, npet-1
+      if (myid == p) then
+        if (p == 0) then
+          startl = 1
+        else
+          startl = sum(nlayer(1:p))+1
+        end if
+        countl = nlayer(p+1)
+        endl   = startl + countl - 1
+
+        countsize = dim
+        countsize(n) = countl
+
+        call mp_check( nf90_get_var(ncid, varid,var(startl:endl), start = (/ startl /), count=countsize), "reading " // varname)
+
+      end if
+    end do
+    call mp_check( nf90_close(ncid), "closing "// filename)
+    !
+  end subroutine mp_readvar1DchunkR4   
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
 !    mp_readvarReduced3Dprofile
