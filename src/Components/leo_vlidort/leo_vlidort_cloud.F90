@@ -75,7 +75,7 @@ program leo_vlidort_cloud
 
 ! File names
 ! ----------
-  character(len=256)                    :: AER_file, ANG_file, INV_file, LAND_file, OUT_file, ADD_file, CLD_file, MET_file 
+  character(len=256)                    :: AER_file, ANG_file, INV_file, LAND_file, OUT_file, ADD_file, CLD_file, MET_file, WAT_file 
 
 ! Global, 3D inputs to be allocated using SHMEM
 ! ---------------------------------------------
@@ -112,7 +112,9 @@ program leo_vlidort_cloud
   real, pointer                         :: TAUI(:,:,:) => null()  
   real, pointer                         :: TAUL(:,:,:) => null() 
   real, pointer                         :: V10M(:,:) => null()  
-  real, pointer                         :: U10M(:,:) => null()     
+  real, pointer                         :: U10M(:,:) => null()  
+  real, pointer                         :: SLEAVE(:,:,:,:) => null()
+  real, pointer                         :: WATER_CH(:) => null()
   integer, pointer                      :: indices(:) => null()
 
 
@@ -126,6 +128,7 @@ program leo_vlidort_cloud
   real, allocatable                     :: Vssa(:,:,:)             ! single scattering albedo
   real, allocatable                     :: Vg(:,:,:)               ! asymmetry factor
   real*8, allocatable                   :: Valbedo(:,:)            ! surface albedo
+  real*8, allocatable                   :: Vsleave(:,:)            ! normalized water leaving radiance [Pa]
 
   real, allocatable                     :: VtauLcl(:,:,:)          ! cloud aerosol optical depth
   real, allocatable                     :: VssaIcl(:,:,:)          ! cloud aerosol optical depth
@@ -189,6 +192,7 @@ program leo_vlidort_cloud
 ! Satellite domain variables
 !------------------------------
   integer                               :: im, jm, km, tm                            ! size of satellite domain
+  integer                               :: wnch                                      ! number of wavelength in water leaving file
   integer                               :: i, j, k, n                                ! satellite domain working variable
   integer                               :: starti, counti, endi                      ! array indices and counts for each processor
   integer, allocatable                  :: nclr(:)                                   ! how many clear pixels each processor works on
@@ -287,6 +291,10 @@ program leo_vlidort_cloud
     land_missing = g5nr_missing
   end if
 
+  if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
+    call mp_readDim("wavelength", WAT_file, wnch)
+  end if
+
 ! Allocate arrays that will be copied on each processor - unshared
 ! -----------------------------------------------------------------
   call allocate_unshared()
@@ -380,6 +388,7 @@ program leo_vlidort_cloud
   call read_land()
   call read_aer_Nv()
   call read_surf_land()
+  call read_water()
   call read_angles()
   call read_cld_Tau()
   call read_wind()
@@ -459,7 +468,7 @@ program leo_vlidort_cloud
   call MAPL_SyncSharedMemory(rc=ierr)
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
-  do cc = starti, endi
+  do cc = starti, starti+10 !endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
 
@@ -523,6 +532,7 @@ program leo_vlidort_cloud
       call get_surf_params()
       call DO_LAND()
     else
+      call get_ocean_params()
       call DO_OCEAN()
     end if
 
@@ -730,44 +740,95 @@ program leo_vlidort_cloud
 !  HISTORY
 !     Oct 2018 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+  subroutine get_ocean_params()
+    integer              :: below
+
+
+    if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
+      do ch = 1, nch
+        below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .LT. 0)
+        Vsleave(ch,nobs) = dble(nn_interp(WATER_CH(below:below+1),reshape(SLEAVE(i,j,ch,:),(/2/)),channels(ch)))
+      end do
+
+    end if
+  end subroutine get_ocean_params
+
+
 
   subroutine DO_OCEAN()
 !   WATER PIXELS
 !   ------------
     if ( (lower_to_upper(watermodel) .eq. 'CX') ) then
-    ! GISS Cox Munk Model
-    ! -------------------------------
-      if (scalar) then
-        ! Call to vlidort scalar code       
-        call VLIDORT_Scalar_CX_Cloud (km, nch, nobs ,dble(channels), nMom,      &
-                nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
-                dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
-                dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
-                dble(Vpe), dble(Vze), dble(Vte), &
-                (/dble(U10M(i,j))/), &
-                (/dble(V10M(i,j))/), &
-                dble(mr), &
-                (/dble(SZA(i,j))/), &
-                (/dble(abs(RAA(i,j)))/), &
-                (/dble(VZA(i,j))/), &
-                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr)
-      else
-        ! Call to vlidort vector code
-        call VLIDORT_Vector_CX_Cloud (km, nch, nobs ,dble(channels), nMom,   &
-               nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-               dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
-               dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
-               dble(Vpe), dble(Vze), dble(Vte), &
-               (/dble(U10M(i,j))/), &
-               (/dble(V10M(i,j))/), &
-               dble(mr), &
-               (/dble(SZA(i,j))/), &
-               (/dble(abs(RAA(i,j)))/), &
-               (/dble(VZA(i,j))/), &
-               dble(MISSING),verbose, &
-               radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
-      end if
 
+      if  ( (lower_to_upper(watername) .eq. 'CX') ) then
+      ! GISS Cox Munk Model
+      ! -------------------------------
+        if (scalar) then
+          ! Call to vlidort scalar code       
+          call VLIDORT_Scalar_CX_Cloud (km, nch, nobs ,dble(channels), nMom,      &
+                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                  dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
+                  dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
+                  dble(Vpe), dble(Vze), dble(Vte), &
+                  (/dble(U10M(i,j))/), &
+                  (/dble(V10M(i,j))/), &
+                  dble(mr), &
+                  (/dble(SZA(i,j))/), &
+                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(VZA(i,j))/), &
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr)
+        else
+          ! Call to vlidort vector code
+          call VLIDORT_Vector_CX_Cloud (km, nch, nobs ,dble(channels), nMom,   &
+                 nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
+                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
+                 dble(Vpe), dble(Vze), dble(Vte), &
+                 (/dble(U10M(i,j))/), &
+                 (/dble(V10M(i,j))/), &
+                 dble(mr), &
+                 (/dble(SZA(i,j))/), &
+                 (/dble(abs(RAA(i,j)))/), &
+                 (/dble(VZA(i,j))/), &
+                 dble(MISSING),verbose, &
+                 radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
+        end if
+      else if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
+      ! GISS Cox Munk Model with NOBM Water Leaving Reflectance
+      ! ----------------------------------------------------------
+        if (scalar) then
+          ! Call to vlidort scalar code       
+          call VLIDORT_Scalar_CX_NOBM_Cloud (km, nch, nobs ,dble(channels), nMom,      &
+                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                  dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
+                  dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
+                  dble(Vpe), dble(Vze), dble(Vte), &
+                  (/dble(U10M(i,j))/), &
+                  (/dble(V10M(i,j))/), &
+                  dble(mr), &
+                  Vsleave, &
+                  (/dble(SZA(i,j))/), &
+                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(VZA(i,j))/), &
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr)
+        else
+          ! Call to vlidort vector code
+          call VLIDORT_Vector_CX_NOBM_Cloud (km, nch, nobs ,dble(channels), nMom,   &
+                 nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
+                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
+                 dble(Vpe), dble(Vze), dble(Vte), &
+                 (/dble(U10M(i,j))/), &
+                 (/dble(V10M(i,j))/), &
+                 dble(mr), &
+                 Vsleave, &
+                 (/dble(SZA(i,j))/), &
+                 (/dble(abs(RAA(i,j)))/), &
+                 (/dble(VZA(i,j))/), &
+                 dble(MISSING),verbose, &
+                 radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
+        end if
+      end if
     end if          
 
   end subroutine DO_OCEAN
@@ -1200,6 +1261,52 @@ program leo_vlidort_cloud
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
+!     read_water
+! PURPOSE
+!     read in water leaving reflectance
+! INPUT
+!     none
+! OUTPUT
+!     none
+!  HISTORY
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+  subroutine read_water()
+
+    if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
+
+      call read_SLEAVE()
+      if (MAPL_am_I_root()) then
+        write(*,*) '<> Read SLEAVE data to shared memory'
+      end if
+      call MAPL_SyncSharedMemory(rc=ierr) 
+
+    end if 
+  end subroutine read_water
+
+  subroutine read_SLEAVE()
+    integer                            :: below
+    integer                            :: ncid, varid
+    real, dimension(im,jm,2)           :: temp
+
+    call mp_readvar1Dchunk('wavelength', WAT_file, (/wnch/), 1, npet, myid, WATER_CH)
+    if (MAPL_am_I_root()) then
+      write(*,*) 'wavelength', minval(WATER_CH), maxval(WATER_CH)
+      do ch = 1, nch
+        ! get channel below
+        below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .LT. 0)
+        write(*,*) 'below', below,WATER_CH(below)
+        call readvar3Dslice('lwn', WAT_file, (/im,jm,2/), 3, below, temp) 
+
+        SLEAVE(:,:,ch,:) = temp
+      end do
+    end if
+    call MAPL_SyncSharedMemory(rc=ierr) 
+
+  end subroutine read_SLEAVE
+
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
 !     read_surf_land
 ! PURPOSE
 !     read in all the surface reflectance variables
@@ -1462,6 +1569,11 @@ program leo_vlidort_cloud
 
     end if
 
+    if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
+      call MAPL_AllocNodeArray(SLEAVE,(/im,jm,nch,2/),rc=ierr)
+      call MAPL_AllocNodeArray(WATER_CH,(/wnch/),rc=ierr)
+    end if
+
     call MAPL_AllocNodeArray(radiance_VL,(/im,jm,nch/),rc=ierr)
     call MAPL_AllocNodeArray(reflectance_VL,(/im,jm,nch/),rc=ierr)
 
@@ -1502,8 +1614,12 @@ program leo_vlidort_cloud
 
     if (lower_to_upper(landmodel) == 'RTLS') then
       allocate (kernel_wt(nkernel,nch,nobs))
+      allocate (param(nparam,nch,nobs))
     end if
-    allocate (param(nparam,nch,nobs))
+    
+    if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
+      allocate (Vsleave(nch,nobs))
+    end if
 
     allocate (ROT_int(km,nobs,nch))
     allocate (Vpmom(km,nch,nobs,nMom,nPol))
@@ -2296,8 +2412,8 @@ program leo_vlidort_cloud
     call ESMF_ConfigGetAttribute(cf, landband_c, label = 'LANDBAND_C:', __RC__)
 
     ! Water Surface
-    call ESMF_ConfigGetAttribute(cf, watername, label = 'WATERNAME:',default='MAIACRTLS')
-    call ESMF_ConfigGetAttribute(cf, watermodel, label = 'WATERMODEL:',default='RTLS')
+    call ESMF_ConfigGetAttribute(cf, watername, label = 'WATERNAME:',default='CX')
+    call ESMF_ConfigGetAttribute(cf, watermodel, label = 'WATERMODEL:',default='CX')
 
     ! Clouds
     call ESMF_ConfigGetAttribute(cf, IcldTable, label = 'ICLDTABLE:',__RC__)       
@@ -2313,6 +2429,7 @@ program leo_vlidort_cloud
     call ESMF_ConfigGetAttribute(cf, ADD_file, label = 'ADD_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, CLD_file, label = 'CLD_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, MET_file, label = 'MET_file:',__RC__)
+    call ESMF_ConfigGetAttribute(cf, WAT_file, label = 'WAT_file:',__RC__)
 
 
     ! Figure out number of channels and read into vector
