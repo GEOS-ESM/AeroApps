@@ -230,6 +230,11 @@ class NC4ctl(object):
         lon_min, lon_max = lon.min(), lon.max()
         lat_min, lat_max = lat.min(), lat.max()
 
+        if (lon_min<=Lon.min()) or (lon_max>=Lon.max()):
+            periodic = 1
+        else:
+            periodic = 0
+
         dLon, dLat = Lon[1]-Lon[0], Lat[1]-Lat[0] # assume constant
 
         I = (Lon>=(lon_min-dLon)) & (Lon<=(lon_max+dLon))
@@ -244,7 +249,7 @@ class NC4ctl(object):
             if t>1:
                 raise ValueError, 'InterpXY_LatLon assumes 1 time per file for now'
             Z = V[0:1,J,I] # time here standing in for Z 
-            v = interpxy3d(Z.T,Lon[I],Lat[J],lon,lat)
+            v = interpxy3d(Z.T,X,Y,lon,lat,periodic)
             v = v[0,:]
         elif rank == 4:
             t, z, y, x = V.shape
@@ -258,7 +263,7 @@ class NC4ctl(object):
             if t>1:
                 raise ValueError, 'InterpXY_LatLon assumes 1 time per file for now, ask a guru to generalize me.'
             Z = V[0,k1:k2,J,I] 
-            v = interpxy3d(Z.T,Lon[I],Lat[J],lon,lat) # cache optimized
+            v = interpxy3d(Z.T,X,Y,lon,lat,periodic) # cache optimized
         else:
             raise ValueError, 'invalid rank = %d'%rank
 
@@ -285,16 +290,16 @@ class NC4ctl(object):
         interp() method.
 
         Example:
-	
-	    v = self.interpXY('delp',lon,lat)
+    
+        v = self.interpXY('delp',lon,lat)
 
         By default, when the variable being interpolated is 2-D, the
-	output array will have shape (nobs,); when the variable being
-	interpolated is 3-D, the output array will have shape
-	(km,nobs), where nobs = len(lon), and km is the number of
-	vertical levels being requested. If Transpose=True, the output
-	array is transposed.
-	    
+        output array will have shape (nobs,); when the variable being
+        interpolated is 3-D, the output array will have shape
+        (km,nobs), where nobs = len(lon), and km is the number of
+        vertical levels being requested. If Transpose=True, the output
+        array is transposed.
+        
         """
 
         raise ValueError, "user must supply own interp() method for now."
@@ -314,10 +319,10 @@ class NC4ctl(object):
         time must be in ascending order. Keyword arguments **kwds are
         passed to the interpXY method().
 
-	By default, output arrays have shape (km,nobs), where *km* is the
-	requested number of verical levels. If Transpose=True is specified,
-	then the output arrays will be transposed to (nobs,km).
-	
+        By default, output arrays have shape (km,nobs), where *km* is the
+        requested number of verical levels. If Transpose=True is specified,
+        then the output arrays will be transposed to (nobs,km).
+    
         """
 
         # Inputs must be 1D arrays
@@ -339,9 +344,8 @@ class NC4ctl(object):
             i = (time>=now-dt) & (time<=now+dt)            
             if any(i):
                 v = self.interpXY(vname, lon[i], lat[i],tyme=now,
-				  Transpose=True, # shape will be (nobs,km)
-				  squeeze=False,algorithm=algorithm,**kwopts)
-		shp = list(v.shape)
+                  Transpose=True, # shape will be (nobs,km)
+                  squeeze=False,algorithm=algorithm,**kwopts)                
             else:
                 v = None
             V.append(v)
@@ -377,10 +381,10 @@ class NC4ctl(object):
         else:
             v = V[0]
 
-	if Transpose == False: v = v.T # back to NC4ctl's (km,nobs)
+        if Transpose == False: v = v.T # back to NC4ctl's (km,nobs)
         if squeeze == True:    v = v.squeeze()
 
-	return v
+        return v
 
 #...........................................................................
 
