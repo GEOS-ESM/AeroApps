@@ -66,12 +66,6 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
             tt = array([t]*len(stnLon))
             zz = f.nc4.sample(name,stnLon,stnLat,tt,algorithm=options.algo,
                      Transpose=True,squeeze=True)      
-            if nz>1:
-                z = MAPL_UNDEF * ones((ns,nz))
-                z[I,:] = zz
-            else:
-                z = MAPL_UNDEF * ones(ns)
-                z[I] = zz
 
         if nz>1:
             Z[:,n,:] = z
