@@ -57,29 +57,21 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
         Z = zeros((ns,nt))
     n = 0
     for t in tyme:
-        try:
-            dtF = (f.dt+f.tbeg-f.tbeg).total_seconds()
-            if (dtF == options.dt_secs):
-      
-                z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
-                         Transpose=True,squeeze=squeeze)
-            else:
-                tt = array([t]*len(stnLon))
-                zz = f.nc4.sample(name,stnLon,stnLat,tt,algorithm=options.algo,
-                         Transpose=True,squeeze=True)      
-                if nz>1:
-                    z = MAPL_UNDEF * ones((ns,nz))
-                    z[I,:] = zz
-                else:
-                    z = MAPL_UNDEF * ones(ns)
-                    z[I] = zz
-
-        except:
-            print "    - Interpolation failed for <%s> on %s"%(V.name,str(t))
+        dtF = (f.dt+f.tbeg-f.tbeg).total_seconds()
+        if (dtF == options.dt_secs):
+  
+            z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
+                     Transpose=True,squeeze=squeeze)
+        else:
+            tt = array([t]*len(stnLon))
+            zz = f.nc4.sample(name,stnLon,stnLat,tt,algorithm=options.algo,
+                     Transpose=True,squeeze=True)      
             if nz>1:
                 z = MAPL_UNDEF * ones((ns,nz))
+                z[I,:] = zz
             else:
                 z = MAPL_UNDEF * ones(ns)
+                z[I] = zz
 
         if nz>1:
             Z[:,n,:] = z
