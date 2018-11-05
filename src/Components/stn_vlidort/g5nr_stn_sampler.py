@@ -64,7 +64,7 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
                      Transpose=True,squeeze=squeeze)
         else:
             tt = array([t]*len(stnLon))
-            zz = f.nc4.sample(name,stnLon,stnLat,tt,algorithm=options.algo,
+            z = f.nc4.sample(name,stnLon,stnLat,tt,algorithm=options.algo,
                      Transpose=True,squeeze=True)      
 
         if nz>1:
