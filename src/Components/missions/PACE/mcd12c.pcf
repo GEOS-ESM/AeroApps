@@ -1,0 +1,6 @@
+# LAND COVER SAMPLING
+INSTNAME  = pace
+INDIR     = /nobackup/PACE/LevelB
+OUTDIR    = /nobackup/PACE/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051
+DATADIR   = /nobackup/3/pcastell/MODIS/MCD12C1/
+# LAND COVER SAMPLING
