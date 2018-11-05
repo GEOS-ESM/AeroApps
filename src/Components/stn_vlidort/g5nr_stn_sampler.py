@@ -65,11 +65,7 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
                          Transpose=True,squeeze=squeeze)
             else:
                 tt = array([t]*len(stnLon))
-                # hack for out of bounds
-                lonmin,lonmax = f.lon.min(),f.lon.max()
-                latmin,latmax = f.lat.min(),f.lat.max()
-                I = (stnLon >= lonmin) & (stnLon <= lonmax) & (stnLat >= latmin) & (stnLat <= latmax)
-                zz = f.nc4.sample(name,stnLon[I],stnLat[I],tt[I],algorithm=options.algo,
+                zz = f.nc4.sample(name,stnLon,stnLat,tt,algorithm=options.algo,
                          Transpose=True,squeeze=True)      
                 if nz>1:
                     z = MAPL_UNDEF * ones((ns,nz))
