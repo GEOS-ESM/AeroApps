@@ -2,5 +2,5 @@
 # Resource file for LIDAR sampler
 #
 
-NDVI: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/LevelA/MODIS-NDVI/MYD13C2.006.monthly.ctl
+NDVI: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelA/MODIS-NDVI/MYD13C2.006.monthly.ctl
 
