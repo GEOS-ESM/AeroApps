@@ -6,6 +6,8 @@ Wrapper to do all sampling leo_sampler.py
 import os
 import argparse
 from MAPL            import Config
+from datetime        import datetime, timedelta
+from dateutil.parser import parse         as isoparser
 
 #------------------------------------ M A I N ------------------------------------
 
@@ -26,9 +28,14 @@ if __name__ == "__main__":
     # -------------------
     cf = Config(args.prep_config,delim=' = ')
 
-    iso_t1   = cf('ISO_T1')
-    iso_t2   = cf('ISO_T2')
+    piso_t1   = cf('ISO_T1')
+    piso_t2   = cf('ISO_T2')
 
+    t1 = isoparser(piso_t1)
+    t2 = isoparser(piso_t2)
+
+    giso_t1 = t1.strftime('2006-%m-%dT%H:%M:00')
+    giso_t2 = t2.strftime('2006-%m-%dT%H:%M:00')
 
     # G5NR Sampling
     # -------------------
@@ -60,7 +67,7 @@ if __name__ == "__main__":
 
             command += ' --rcFile {}'.format(rc)
             command += ' --algo {}'.format(a)
-            command += ' {} {}'.format(iso_t1,iso_t2)
+            command += ' {} {}'.format(piso_t1,piso_t2)
 
             print command
             os.system(command)
@@ -80,7 +87,7 @@ if __name__ == "__main__":
         if args.verbose:
             command += ' -v'
 
-        command += ' {} {} {}'.format(iso_t1,iso_t2,mcd12cPCF)
+        command += ' {} {} {}'.format(giso_t1,giso_t2,mcd12cPCF)
 
         print command
         os.system(command)
@@ -100,7 +107,7 @@ if __name__ == "__main__":
         if args.verbose:
             command += ' -v'
 
-        command += ' {} {} {}'.format(iso_t1,iso_t2,mcd43cPCF)
+        command += ' {} {} {}'.format(giso_t1,giso_t2,mcd43cPCF)
 
         print command
         os.system(command)
@@ -120,7 +127,7 @@ if __name__ == "__main__":
         if args.verbose:
             command += ' -v'
 
-        command += ' {} {} {}'.format(iso_t1,iso_t2,nobmPCF)
+        command += ' {} {} {}'.format(giso_t1,giso_t2,nobmPCF)
 
         print command
         os.system(command)
