@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
         command += ' --rcFile {}'.format(myd13c2PCF)
         command += ' --algo nearest'
-        command += ' {} {}'.format(pso_t1,piso_t2)
+        command += ' {} {}'.format(piso_t1,piso_t2)
 
         print command
         os.system(command)
