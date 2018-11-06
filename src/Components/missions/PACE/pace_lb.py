@@ -76,7 +76,7 @@ if __name__ == "__main__":
     if mcd12cPCF is not None:
         bin = "./mcd12c_sampler.py"
 
-        command = ''
+        command = bin + ''
         if args.verbose:
             command += ' -v'
 
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     if mcd43cPCF is not None:
         bin = "./mcd43c_sampler.py"
 
-        command = ''
+        command = bin + ''
         if args.verbose:
             command += ' -v'
 
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     if nobmPCF is not None:
         bin = "./nobm_sampler.py"
 
-        command = ''
+        command = bin + ''
         if args.verbose:
             command += ' -v'
 
