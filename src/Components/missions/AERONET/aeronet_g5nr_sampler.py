@@ -97,8 +97,8 @@ class JOBS(object):
                 stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
 
 
-            print 'Waiting 20 minutes'
-            time.sleep(60*20)
+            #print 'Waiting 20 minutes'
+            time.sleep(60*2)
             
 
         # Exited while loop
@@ -124,7 +124,6 @@ class WORKSPACE(JOBS):
         Date    = isoparser(args.iso_t1)
         enddate = isoparser(args.iso_t2)
         Dt      = timedelta(hours=args.DT_hours)
-        Djobs   = timedelta(hours=args.DT_jobs)
 
         if not os.path.exists(args.tmp):
             os.makedirs(args.tmp)
@@ -135,8 +134,7 @@ class WORKSPACE(JOBS):
 
         self.dirstring = []
         while Date <= enddate:
-            edate = Date + Djobs - Dt
-            if edate > enddate: edate = enddate
+            edate = Date 
 
             # copy template to temp
             outpath = '{}/{}'.format(args.tmp,Date.isoformat())
@@ -159,7 +157,7 @@ class WORKSPACE(JOBS):
             iso1 = Date.isoformat()
             iso2 = edate.isoformat()
 
-            newline = 'python -u $BIN -v --nproc 6 --DT_hours {} {} {} {} >{}'.format(args.DT_hours,iso1,iso2,args.prep_config,outpath) + '/slurm_${SLURM_JOBID}_py.out\n'
+            newline = 'python -u $BIN -v --DT_hours {} {} {} {} >{}'.format(args.DT_hours,iso1,iso2,args.prep_config,outpath) + '/slurm_${SLURM_JOBID}_py.out\n'
             text[-2] = newline
 
             #Write edited text back to file
@@ -168,7 +166,7 @@ class WORKSPACE(JOBS):
                 f.write(l)
             f.close()
 
-            Date += Djobs
+            Date += Dt
 
 
     def destroy_workspace(self,i,jobid):
@@ -194,7 +192,6 @@ if __name__ == '__main__':
     
     #Defaults
     DT_hours = 1
-    DT_jobs  = 1    #hours
     slurm    = 'aeronet_g5nr_sampler.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/workdir'
 
@@ -206,9 +203,6 @@ if __name__ == '__main__':
 
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
-
-    parser.add_argument("--DT_jobs", default=DT_jobs, type=int,
-                        help="Timestep in days for each job (default=%i)"%DT_jobs)    
 
     parser.add_argument('-s',"--slurm",default=slurm,
                         help="slurm script template")           
