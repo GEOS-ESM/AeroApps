@@ -6,13 +6,65 @@
 import os
 from time     import time
 from numpy    import linspace, ones, zeros, any, array, float32, tile
+import numpy as np
 from datetime import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 
 from netCDF4 import Dataset as Dataset_
 
-from binObs_ import interpxy3d
+#from binObs_ import interpxy3d
 from dateutil.relativedelta import relativedelta
+
+
+def interpxy3d(gField,glon,glat,lon,lat,periodic):
+
+
+    nobs       = len(lon)
+    im,jm,km   = gField.shape
+    oField     = np.ones([km,nobs])*-999
+
+    if periodic == 1:
+        m_dlon = float(im) / 360.     # assume global & periodic
+        m_dlat = float(jm-1) / 180.
+    else:
+        m_dlon = float(im-1) / ( glon[im-1] - glon[0] )
+        m_dlat = float(jm-1) / ( glat[jm-1] - glat[0] )
+
+    # Loop over observations
+    # ------------------------------
+    for nob in np.arange(nobs):
+        # Longitude
+        # --------------
+        o_lon = 1. + (lon[nob]-glon[0]) * m_dlon
+        if ( periodic == 1 ):
+            i   = min(im, int( o_lon ))
+            alfa  = o_lon - i
+            if (i == im):
+                i1 = im-1
+                i2 = 0
+            else:
+                i1 = i-1
+                i2 = i
+        else:
+            i   = min(im-1, int( o_lon ))
+            alfa  = o_lon - i
+            i1 = i-1
+            i2 = i
+
+        # Latitude
+        # -------------
+        o_lat = 1. + (lat[nob] - glat[0]) * m_dlat
+        j   = min( jm-1, int( o_lat ) )
+        beta  = o_lat - j
+        a11 = gField[i1,j-1,  :]   #!W-S
+        a21 = gField[i2,j-1,  :]   #!E-S
+        a12 = gField[i1,j,:]       #!W-N
+        a22 = gField[i2,j,:]       #!E-N
+        a00 = a11 + alfa * ( a21 - a11 )
+
+        oField[:,nob] = a00 + beta * ( a12 + alfa * ( a22 - a12 ) - a00)
+
+    return oField
 
 class NC4ctlHandle(object):
     """
