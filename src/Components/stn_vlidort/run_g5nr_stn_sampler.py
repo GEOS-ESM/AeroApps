@@ -24,86 +24,12 @@ else:
     nccat = '/ford1/share/dasilva/bin/ncrcat'
 
 #------------------------------------ M A I N ------------------------------------
-def NCconcatenate(filelist):
-    ncbeg = Dataset(filelist[0],'a')
-
-    # Get var list
-    dims = [u'x',u'y',u'station',u'lev',u'stnLon',u'stnLat',u'stnName']
-    vars = ncbeg.variables.keys()
-    avars = []
-    for v in vars:
-        if v not in dims:
-            avars.append(v)
-
-    data = ncbeg.variables['time'][:]
-    nt = len(data)
-    for f in filelist[1:]:
-        ncnow   = Dataset(f)
-        datanow = ncnow.variables['time'][:]
-        ntnow   = len(datanow)        
-        for v in avars:
-            datanow = ncnow.variables[v][:]
-            if len(datanow.shape) == 1:
-                ncbeg.variables[v][nt:nt+ntnow] = datanow
-            elif len(datanow.shape) == 2:
-                if v == 'isotime':
-                    for t in range(ntnow):
-                        ncbeg.variables[v][nt:nt+ntnow,:] = datanow
-                else:
-                    ncbeg.variables[v][:,nt:nt+ntnow] = datanow
-            elif len(datanow.shape) == 3:
-                ncbeg.variables[v][:,nt:nt+ntnow,:] = datanow 
-
-        ncnow.close()
-        nt   = nt+ntnow
-
-    ncbeg.close()
-
-
-
-
-def fix_time(filelist,tbeg):
-    for filename in filelist:
-        nc = Dataset(filename,'r+')
-        time = nc.variables['time']
-        time.units = 'seconds since %s'%tbeg.isoformat(' ')
-        tyme = nc.variables['isotime'][:]
-        tyme = np.array([isoparser(''.join(t)) for t in tyme])
-        time[:] = np.array([(t-tbeg).total_seconds() for t in tyme])
-
-        nc.close()
-
-def StartNew(processes,cmds,nextdate,lendate):
-   """ Start a new subprocess if there is work to do """
-
-   if nextdate < lendate:
-      proc = subprocess.Popen(cmds[nextdate], shell=True)
-      print cmds[nextdate]
-      nextdate += 1
-      processes.append(proc)
-
-   return processes,nextdate
-
-def CheckRunning(processes,cmds,nextdate,lendate,args):
-   """ Check any running processes and start new ones if there are spare slots."""
-
-   for p in range(len(processes))[::-1]: # Check the processes in reverse order
-      if processes[p].poll() is not None: # If the process hasn't finished will return None
-         del processes[p] # Remove from list - this is why we needed reverse order
-
-   while (len(processes) < args.nproc) and (nextdate < lendate): # More to do and some spare slots
-      processes, nextdate = StartNew(processes,cmds,nextdate,lendate)
-
-   return processes,nextdate
-
-
 
 if __name__ == "__main__":
 
     # Defaults
     DT_hours = 24
     algo     = "linear"
-    nproc    = 8
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",
@@ -125,10 +51,6 @@ if __name__ == "__main__":
 
     parser.add_argument("-r", "--dryrun",action="store_true",
                         help="do a dry run (default=False).")    
-
-    parser.add_argument("-n", "--nproc",default=nproc,type=int,
-                        help="Number of processors (default=%i)."%nproc)   
-
 
     args = parser.parse_args()
 
@@ -153,59 +75,36 @@ if __name__ == "__main__":
     stnFile  = cf('STNFILE')
     dt_secs  = cf('DT_SECS')
 
-    Date = isoparser(args.iso_t1)
+    date = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
 
     pdt   = timedelta(hours=1)
-    while Date <= enddate:
-        outpath = '{}/Y{}/M{}'.format(outdir,Date.year,str(Date.month).zfill(2))
+    while date <= enddate:
+        outpath = '{}/Y{}/M{}'.format(outdir,date.year,str(date.month).zfill(2))
         if not os.path.exists(outpath):
             os.makedirs(outpath)
 
         # run trajectory sampler on model fields
-        # split across multiple processors by date
-        datelist = [Date + p*pdt for p in range(args.DT_hours)]
-        lendate  = len(datelist)        
-
         for rc,colname in zip(rcFiles,colNames):
-            processes = []
-            cmds      = []            
-            filelist  = []
-            for date in datelist:
-                nymd = str(date.date()).replace('-','')
-                hour = str(date.hour).zfill(2)
-                edate = date 
-            
-                outFile = '{}/{}-g5nr.lb2.{}.{}_{}z.nc4'.format(outpath,instname,colname,nymd,hour)
+            nymd = str(date.date()).replace('-','')
+            hour = str(date.hour).zfill(2)
+            edate = date 
+        
+            outFile = '{}/{}-g5nr.lb2.{}.{}_{}z.nc4'.format(outpath,instname,colname,nymd,hour)
 
-                Options =     " --output=" + outFile       + \
-                              " --isoTime"  +\
-                              " --algorithm=" + args.algo  +\
-                              " --dt_secs=" + dt_secs
+            Options =     " --output=" + outFile       + \
+                          " --isoTime"  +\
+                          " --algorithm=" + args.algo  +\
+                          " --dt_secs=" + dt_secs
 
-                if args.verbose:
-                    Options += " --verbose" 
+            if args.verbose:
+                Options += " --verbose" 
 
-                cmd = 'g5nr_stn_sampler.py {} {} {} {} {}'.format(Options,stnFile,rc,date.isoformat(),edate.isoformat())
-                cmds.append(cmd)
-                filelist.append(outFile)
+            cmd = 'python -u /discover/nobackup/pcastell/workspace/GAAS/Linux/bin/g5nr_stn_sampler.py {} {} {} {} {}'.format(Options,stnFile,rc,date.isoformat(),edate.isoformat())
+            print cmd
+            if not args.dryrun:
+                os.system(cmd)
 
-            # Manage processes
-            # This will start the max processes running    
-            processes, nextdate = CheckRunning(processes,cmds,0,lendate,args)
-            while len(processes)>0: # Some things still going on
-                time.sleep(10)      # Wait
-                # add more processes as other ones finish
-                processes, nextdate = CheckRunning(processes,cmds,nextdate,lendate,args)
 
-            if (not args.dryrun) & (args.nproc > 1) & (args.DT_hours > 1):
-                # make time units all the same
-                fix_time(filelist,Date)
-                #Concatenate outfiles into one
-                NCconcatenate(filelist)
-
-                for filename in filelist[1:]:
-                    os.remove(filename)
-
-        Date += timedelta(hours=args.DT_hours)
+        date += timedelta(hours=args.DT_hours)
 
