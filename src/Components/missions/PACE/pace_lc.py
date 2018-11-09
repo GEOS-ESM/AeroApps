@@ -136,7 +136,7 @@ class WORKSPACE(JOBS):
         self.dirstring = []
 
         if args.channels is None:
-            self.get_channels(Date)
+            self.get_channels(self.Date)
         else:
             if type(args.channels) is float:
                 self.channels = [args.channels]
