@@ -194,7 +194,7 @@ class WORKSPACE(JOBS):
 
         # Edit text
         for i,l in enumerate(text):
-            if 'r_channels:' in l[0:10]:
+            if 'r_channels:' in l[0:11]:
                 newline = "r_channels: {}e-6".format(ch*0.001)
                 text[i] = newline
 
