@@ -150,7 +150,7 @@ class WORKSPACE(JOBS):
             outpath = '{}/{}.{}'.format(args.tmp,self.Date.isoformat(),ch)
 
             # Copy over some files to working temp directory
-            self.create_workdir(outpath)
+            self.create_workdir(outpath,ch)
 
             # # Create pcf file
             # self.write_pcf()
@@ -160,7 +160,7 @@ class WORKSPACE(JOBS):
 
 
 
-    def create_workdir(self,outpath):
+    def create_workdir(self,outpath,ch):
         # create directory     
         if os.path.exists(outpath):
             shutil.rmtree(outpath)
@@ -173,12 +173,39 @@ class WORKSPACE(JOBS):
         # Copy over Aod_EOS.rc
         outfile = '{}/{}'.format(outpath,'Aod_EOS.rc')
         shutil.copyfile('Aod_EOS.rc',outfile)
+        self.edit_AODrc(outfile,ch)
 
         # link over some scripts and files
         source = ['leo_vlidort_cloud.x','ExtData','Chem_MieRegistry.rc',
                   'ExtDataCloud']
         for src in source:
             os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(outpath,src))
+
+        
+
+    def edit_AODrc(self,filename):
+        f = open(filename)
+        # read the file first
+        text = []
+        for l in f:
+            text.append(l)
+
+        f.close()
+
+        # Edit text
+        for i,l in enumerate(text):
+            if 'r_channels:' in l[0:10]:
+                newline = "r_channels: {}e-6".format(ch*0.001)
+                text[i] = newline
+
+        # Write edited text back to file
+        f = open(filename,'w')
+        for l in text:
+            f.write(l)
+
+        f.close()
+
+
 
     def write_pcf(self):
         # Change start and enddate
