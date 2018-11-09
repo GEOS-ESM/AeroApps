@@ -183,7 +183,7 @@ class WORKSPACE(JOBS):
 
         
 
-    def edit_AODrc(self,filename):
+    def edit_AODrc(self,filename,ch):
         f = open(filename)
         # read the file first
         text = []
