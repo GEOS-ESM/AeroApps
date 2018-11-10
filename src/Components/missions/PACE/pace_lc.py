@@ -336,31 +336,37 @@ class WORKSPACE(JOBS):
         newline = 'IDXCLD: {}\n'.format(idx)
         text.append(newline)
 
+        text.append('\n')
         # OTHER FILENAMES
         AER_file = '{}/pace-g5nr.lb.aer_Nv.{}_{}.nc4'.format(LbDir,nymd,hms)
         newline = 'AER_file: {}\n'.format(AER_file)
+        text.append(newline)
 
         MET_file = '{}/pace-g5nr.lb.met_Nv.{}_{}.nc4'.format(LbDir,nymd,hms)
         newline = 'MET_file: {}\n'.format(MET_file)
+        text.append(newline)
 
         pDate = isoparser(self.Date.strftime('2020-%m-%dT%H:%M:00'))
         nyj = pDate.strftime('%Y%j')
         ANG_file = '{}/OCI{}{}.L1B_PACE.nc'.format(L1bDir,nyj,hms)
         newline = 'ANG_file: {}\n'.format(ANG_file)
-
+        text.append(newline)
 
         INV_file = '{}/pace-g5nr.lb.asm_Nx.{}_{}.nc4'.format(LbDir,nymd,hms)
         newline = 'AER_file: {}\n'.format(INV_file)
+        text.append(newline)
 
         OUT_file = '{}/pace-g5nr.lc.vlidort.{}_{}.nc4'.format(LcDir,nymd,hms)
         newline = 'OUT_file: {}\n'.format(OUT_file)
+        text.append(newline)
 
         ADD_file = '{}/pace-g5nr.lc.add.{}_{}.nc4'.format(LcDir,nymd,hms)
         newline = 'ADD_file: {}\n'.format(ADD_file)
+        text.append(newline)
 
         CLD_file = '{}/pace-g5nr.lc.TOTWPDF-GCOP-SKEWT.{}_{}.nc4'.format(LcDir,nymd,hms)
         newline = 'CLD_file: {}\n'.format(CLD_file)
-
+        text.append(newline)
 
         # write text to file
         for l in text:
