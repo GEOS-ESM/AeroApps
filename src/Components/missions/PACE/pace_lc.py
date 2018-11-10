@@ -277,7 +277,7 @@ class WORKSPACE(JOBS):
             LER_file = '{}/pace-g5nr.lb.omi_ler-discover.{}_{}.nc4'.format(LbDir,nymd,hms)
             newline = 'LER_file: {}'.format(LER_file)
         # HYBRID
-        else if (ch > 388.) and (ch < 470):
+        elif (ch > 388.) and (ch < 470):
             newline = 'LANDNAME: LER-MCD43C\n'
             text.append(newline)
             newline = 'LANDMODEL: RTLS-HYBRID\n'
