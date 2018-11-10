@@ -332,7 +332,7 @@ class WORKSPACE(JOBS):
         nc = Dataset(cldFile)
         mch = nc.variables['MODIS_wavelength'][:]
         nc.close()
-        idx = 1+ np.argmin(np.abs(mch - ch))
+        idx = 1+ np.argmin(np.abs(1e3*mch - ch))
         newline = 'IDXCLD: {}\n'.format(idx)
         text.append(newline)
 
@@ -356,7 +356,7 @@ class WORKSPACE(JOBS):
         newline = 'AER_file: {}\n'.format(INV_file)
         text.append(newline)
 
-        OUT_file = '{}/pace-g5nr.lc.vlidort.{}_{}.nc4'.format(LcDir,nymd,hms)
+        OUT_file = '{}/pace-g5nr.lc.vlidort.{}_{}.{}.nc4'.format(LcDir,nymd,hms,int(ch))
         newline = 'OUT_file: {}\n'.format(OUT_file)
         text.append(newline)
 
