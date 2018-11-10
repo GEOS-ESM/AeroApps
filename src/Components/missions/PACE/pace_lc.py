@@ -362,11 +362,11 @@ class WORKSPACE(JOBS):
         newline = 'CLD_file: {}\n'.format(CLD_file)
 
 
-       # write text to file
-       for l in text:
-           f.write(l)
+        # write text to file
+        for l in text:
+            f.write(l)
 
-       f.close()
+        f.close()
 
     def get_channels(self,date):
         pdate = isoparser(date.strftime('2020-%m-%dT%H:%M:00'))
