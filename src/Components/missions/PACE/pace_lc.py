@@ -328,7 +328,7 @@ class WORKSPACE(JOBS):
         newline = 'LCLDTABLE:ExtDataCloud/WaterLegendreCoeffs.nc4\n'
         text.append(newline)
 
-        cldFile = Dataset('ExtDataCloud/IceLegendreCoeffs.nc4')
+        cldFile = 'ExtDataCloud/IceLegendreCoeffs.nc4'
         nc = Dataset(cldFile)
         mch = nc.variables['MODIS_wavelength'][:]
         nc.close()
