@@ -15,6 +15,15 @@ import time
 from   pace            import granules
 from   netCDF4         import Dataset
 
+mr =  [1.396,1.362,1.349,1.345,1.339,1.335,1.334,1.333,1.332,1.331,1.329,1.326,
+      1.323,1.318,1.312,1.306,1.292,1.261]
+
+mr_ch = [200,250,300,337,400,488,515,550,633,694,860,1060,1300,1536,1800,2000,2250,2500]
+
+mr = np.array(mr)
+mr_ch = np.array(mr_ch)
+
+
 jobsmax   = 150
 class JOBS(object):
     def handle_jobs(self):
@@ -153,7 +162,7 @@ class WORKSPACE(JOBS):
             self.create_workdir(outpath,ch)
 
             # # Create pcf file
-            # self.write_pcf()
+            self.write_rc(outpath,ch)
 
             self.dirstring.append(outpath)
 
@@ -207,18 +216,157 @@ class WORKSPACE(JOBS):
 
 
 
-    def write_pcf(self):
-        # Change start and enddate
-        iso1 = Date.isoformat()
-        iso2 = edate.isoformat()
+    def write_rc(self,outpath,ch):
+        YMDdir    = self.Date.strftime('Y%Y/M%m/D%d')
+        LbDir     = '{}/LevelB/{}'.format(self.rootdir,YMDdir)
+        LcDir     = '{}/LevelC/{}'.format(self.rootdir,YMDdir)
+        surfDir   = '{}/LevelB/surface'.format(self.rootdir)
 
-        newline  = 'setenv START {}\n'.format(iso1)
-        text[18] = newline
-
-        newline  = 'setenv END  {}\n'.format(iso2)
-        text[19] = newline
+        pYMDdir   = self.Date.strftime('Y2020/M%m/D%d')
+        L1bDir    = '{}/L1B/{}'.format(self.rootdir,pYMDdir)
 
 
+        filename = '{}/leo_vlidort_cloud.rc'.format(outpath)
+        f = open(filename,'w')
+        text = []
+
+        # META STUFF
+        nymd = self.Date.strftime('%Y%m%d')
+        hms  = self.Date.strftime('%H%M00')
+
+        newline  = 'DATE: {}\n'.format(nymd)
+        text.append(newline)
+
+        newline  = 'TIME: {}\n'.format(hms)
+        text.append(newline)
+
+        newline  = 'INSTNAME: pace\n'
+        text.append(newline)
+
+        newline  = 'CHANNELS: {}\n'.format(ch)
+        text.append(newline)
+
+        newline  = 'SCALAR: false\n'
+        text.append(newline)
+
+        if self.nodemax > 1:
+            newline = 'NODEMAX: {}\n'.format(self.nodemax)
+        else:
+            newline = 'NODESMAX: None'
+
+        text.append(newline)
+
+        newline = 'ADDITIONAL_OUTPUT: true\n'
+        text.append(newline)
+        newline = 'VERSION: 1.0\n'
+        text.append(newline)
+        newline = 'LAYOUT: None\n'
+        text.append(newline)
+        text.append('\n')
+
+        # LAND STUFF
+
+        # LER
+        if ch <= 388.0:
+            newline = 'LANDNAME: LER\n'
+            text.append(newline)
+            newline = 'LANDMODEL: LAMBERTIAN\n'
+            text.append(newline)
+            newline = 'LANDBAND_C_LER: 354 388\n'
+            text.append(newline)
+            LER_file = '{}/pace-g5nr.lb.omi_ler-discover.{}_{}.nc4'.format(LbDir,nymd,hms)
+            newline = 'LER_file: {}'.format(LER_file)
+        # HYBRID
+        else if (ch > 388.) and (ch < 470):
+            newline = 'LANDNAME: LER-MCD43C\n'
+            text.append(newline)
+            newline = 'LANDMODEL: RTLS-HYBRID\n'
+            text.append(newline)
+            newline = 'LANDBAND_C_LER: 354 388\n'
+            text.append(newline)
+            LER_file = '{}/pace-g5nr.lb.omi_ler-discover.{}_{}.nc4'.format(LbDir,nymd,hms)
+            newline = 'LER_file: {}\n'.format(LER_file)
+            newline = 'LANDBAND_C_BRDF: 470 550 650 850 1200 1600 2100\n'
+            text.append(newline)
+            BRDF_file = '{}/BRDF/MCD43C1/006/{}/pace-g5nr.lb.brdf.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
+            newline = 'BRDF_file: {}\n'.format(BRDF_file)
+
+        else:
+            newline = 'LANDNAME: MCD43C-BPDF\n'
+            text.append(newline)
+            newline = 'LANDMODEL: RTLS\n'
+            text.append(newline)
+            newline = 'LANDBAND_C_BRDF: 470 550 650 850 1200 1600 2100\n'
+            text.append(newline)
+            BRDF_file = '{}/BRDF/MCD43C1/006/{}/pace-g5nr.lb.brdf.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
+            newline = 'BRDF_file: {}\n'.format(BRDF_file)
+            BPDF_file = '{}/BPDF/LAND_COVER/MCD12C1/051/{}/pace-g5nr.lb.land_cover.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
+            newline = 'BPDF_file: {}\n'.format(BPDF_file)
+            NDVI_file = '{}/{}/pace-g5nr.lb-nearest.myd13c2.{}_{}.nc4'.format(LbDir,YMDdir,nymd,hms)
+            newline = 'NDVI_file: {}\n'.format(NDVI_file)
+
+        text.append('\n')
+        # WATER STUFF
+        newline = 'WATERNAME: NOBM-CX\n'
+        text.append(newline)
+        newline = 'WATERMODEL: CX\n'
+        text.append(newline)
+        WAT_file = '{}/SLEAVE/NOBM/{}/pace-g5nr.lb.sleave.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
+        newline = 'WAT_file: {}\n'.format(WAT_file)
+
+        #refractive index
+        mruse = np.interp(float(ch),mr_ch,mr)
+        newline = 'WATERMR NOBM-CX\n'
+        text.append(newline)
+        newline = 'WATERMR: {}\n'.format(mruse)
+        text.append(newline)
+
+        text.append('\n')
+        # CLOUD STUFF
+        newline = 'ICLDTABLE:ExtDataCloud/IceLegendreCoeffs.nc4\n'
+        text.append(newline)
+        newline = 'LCLDTABLE:ExtDataCloud/WaterLegendreCoeffs.nc4\n'
+        text.append(newline)
+
+        cldFile = Dataset('ICLDTABLE:ExtDataCloud/IceLegendreCoeffs.nc4')
+        nc = Dataset(cldFile)
+        mch = nc.variables['MODIS_wavelength'][:]
+        nc.close()
+        idx = 1+ np.argmin(np.abs(mch - ch))
+        newline = 'IDXCLD: {}\n'.format(idx)
+        text.append(newline)
+
+        # OTHER FILENAMES
+        AER_file = '{}/pace-g5nr.lb.aer_Nv.{}_{}.nc4'.format(LbDir,nymd,hms)
+        newline = 'AER_file: {}\n'.format(AER_file)
+
+        MET_file = '{}/pace-g5nr.lb.met_Nv.{}_{}.nc4'.format(LbDir,nymd,hms)
+        newline = 'MET_file: {}\n'.format(MET_file)
+
+        pDate = isoparser(self.Date.strftime('2020-%m-%dT%H:%M:00'))
+        nyj = pDate.strftime('%Y%j')
+        ANG_file = '{}/OCI{}{}.L1B_PACE.nc'.format(L1bDir,nyj,hms)
+        newline = 'ANG_file: {}\n'.format(ANG_file)
+
+
+        INV_file = '{}/pace-g5nr.lb.asm_Nx.{}_{}.nc4'.format(LbDir,nymd,hms)
+        newline = 'AER_file: {}\n'.format(INV_file)
+
+        OUT_file = '{}/pace-g5nr.lc.vlidort.{}_{}.nc4'.format(LcDir,nymd,hms)
+        newline = 'OUT_file: {}\n'.format(OUT_file)
+
+        ADD_file = '{}/pace-g5nr.lc.add.{}_{}.nc4'.format(LcDir,nymd,hms)
+        newline = 'ADD_file: {}\n'.format(ADD_file)
+
+        CLD_file = '{}/pace-g5nr.lc.TOTWPDF-GCOP-SKEWT.{}_{}.nc4'.format(LcDir,nymd,hms)
+        newline = 'CLD_file: {}\n'.format(CLD_file)
+
+
+       # write text to file
+       for l in text:
+           f.write(l)
+
+       f.close()
 
     def get_channels(self,date):
         pdate = isoparser(date.strftime('2020-%m-%dT%H:%M:00'))
