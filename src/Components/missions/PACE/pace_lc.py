@@ -24,9 +24,10 @@ mr = np.array(mr)
 mr_ch = np.array(mr_ch)
 
 
-jobsmax   = 150
+
 class JOBS(object):
     def handle_jobs(self):
+        jobsmax = 150
         # Figure out how many jobs you need to submit
         runlen  = len(self.dirstring)   
 
@@ -483,10 +484,10 @@ if __name__ == '__main__':
     parser.add_argument("-r", "--dryrun",action="store_true",
                         help="do a dry run (default=False).")   
 
-    parser.add_argument("-c","--channels", default=None,nargs='+',
+    parser.add_argument("-c","--channels", default=None,type=lambda s: map(int, s.split(",")),
                         help="channels to get TOA radiance (default=None - read in from PACE L1B File)")                            
 
-    parser.add_argument("-e","--extch", default=None,nargs='+',
+    parser.add_argument("-e","--extch", default=None,type=lambda s: map(int, s.split(",")),
                         help="channels to run extinction sampler (default=None - read in from PACE L1B File)")  
 
     parser.add_argument("--norad",action="store_true",
