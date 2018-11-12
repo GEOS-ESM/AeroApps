@@ -315,6 +315,7 @@ class WORKSPACE(JOBS):
             text.append(newline)
             LER_file = '{}/pace-g5nr.lb.omi_ler-discover.{}_{}.nc4'.format(LbDir,nymd,hms)
             newline = 'LER_file: {}'.format(LER_file)
+            text.append(newline)
         # HYBRID
         elif (ch > 388.) and (ch < 470):
             newline = 'LANDNAME: LER-MCD43C\n'
@@ -329,7 +330,7 @@ class WORKSPACE(JOBS):
             text.append(newline)
             BRDF_file = '{}/BRDF/MCD43C1/006/{}/pace-g5nr.lb.brdf.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
             newline = 'BRDF_file: {}\n'.format(BRDF_file)
-
+            text.append(newline)
         else:
             newline = 'LANDNAME: MCD43C-BPDF\n'
             text.append(newline)
@@ -343,6 +344,7 @@ class WORKSPACE(JOBS):
             newline = 'BPDF_file: {}\n'.format(BPDF_file)
             NDVI_file = '{}/{}/pace-g5nr.lb-nearest.myd13c2.{}_{}.nc4'.format(LbDir,YMDdir,nymd,hms)
             newline = 'NDVI_file: {}\n'.format(NDVI_file)
+            text.append(newline)
 
         text.append('\n')
         # WATER STUFF
@@ -352,6 +354,7 @@ class WORKSPACE(JOBS):
         text.append(newline)
         WAT_file = '{}/SLEAVE/NOBM/{}/pace-g5nr.lb.sleave.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
         newline = 'WAT_file: {}\n'.format(WAT_file)
+        text.append(newline)
 
         #refractive index
         mruse = np.interp(float(ch),mr_ch,mr)
@@ -392,7 +395,7 @@ class WORKSPACE(JOBS):
         text.append(newline)
 
         INV_file = '{}/pace-g5nr.lb.asm_Nx.{}_{}.nc4'.format(LbDir,nymd,hms)
-        newline = 'AER_file: {}\n'.format(INV_file)
+        newline = 'INV_file: {}\n'.format(INV_file)
         text.append(newline)
 
         OUT_file = '{}/pace-g5nr.lc.vlidort.{}_{}.{}.nc4'.format(LcDir,nymd,hms,int(ch))
