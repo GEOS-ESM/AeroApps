@@ -29,14 +29,22 @@ class JOBS(object):
     def handle_jobs(self):
         # Figure out how many jobs you need to submit
         runlen  = len(self.dirstring)   
+
+        if self.nodemax is not None:
+            runlen = runlen*self.nodemax
         
         devnull = open(os.devnull, 'w')
         if runlen <= jobsmax:   
             countRun     = runlen  
             node_tally   = runlen 
         else:
-            countRun   = jobsmax
-            node_tally = jobsmax
+            if self.nodemax is not None:
+                countRun   = int(jobsmax/self.nodemax)
+                node_tally = self.nodemax*int(jobsmax/self.nodemax)
+                jobsmax    = node_tally
+            else:
+                countRun   = jobsmax
+                node_tally = jobsmax
 
         workingJobs = np.arange(countRun)
 
@@ -62,9 +70,27 @@ class JOBS(object):
                 finished = False
 
                 # Check to see if this job is finished
-                result = subprocess.call(['qstat',s], stdout=devnull)
-                if (result != 0):
-                    finished = True   
+                if self.nodemax is not None:
+                    # Loop through the nodes working on this job
+                    finishedCNT = 0
+                    for a in np.arange(self.nodemax):
+                        a = a + 1
+
+                        try:
+                            result = subprocess.check_output(['squeue','-j',s+'_'+ str(a)],stderr=subprocess.STDOUT)
+                            if (s+'_'+ str(a) not in result):
+                                #print ' Job Not Found! '+s+'_'+ str(a)
+                                finishedCNT = finishedCNT + 1
+                        except subprocess.CalledProcessError as e:
+                            #print ' ERROR Job Not Found! '+s+'_'+ str(a)
+                            finishedCNT = finishedCNT + 1
+
+                    if (finishedCNT == self.nodemax):
+                        finished = True
+                else:
+                    result = subprocess.call(['qstat',s], stdout=devnull)
+                    if (result != 0):
+                        finished = True   
 
                 # if the job is finished clean up the workspace
                 if finished:
@@ -80,7 +106,10 @@ class JOBS(object):
             # Remove finished jobs from the currently working list
             if len(finishedJobs) != 0:
                 print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
-                node_tally  = node_tally - len(finishedJobs)
+                if self.nodexmax is not None:
+                    node_tally = node_tally - self.nodemax*len(finishedJobs)
+                else:                
+                    node_tally  = node_tally - len(finishedJobs)
 
                 workingJobs = np.delete(workingJobs,finishedJobs)
 
@@ -88,12 +117,19 @@ class JOBS(object):
             # reinitialize stat variable
             if (runlen > countRun) and (node_tally < jobsmax):
                 #print 'adding new jobs'
-                newRun     = jobsmax - node_tally
-                node_tally = jobsmax
+                if self.nodemax is not None:
+                    newRun     = (jobsmax - node_tally)/self.nodemax
+                    node_tally = jobsmax
+                else:
+                    newRun     = jobsmax - node_tally
+                    node_tally = jobsmax
 
                 if (newRun + countRun) > runlen:
                     newRun = runlen - countRun
-                    node_tally = node_tally + newRun
+                    if self.nodemax is not None:
+                        node_tally = newRun*self.nodemax
+                    else:               
+                        node_tally = node_tally + newRun
                 
 
                 newjobs  = countRun + np.arange(newRun)
