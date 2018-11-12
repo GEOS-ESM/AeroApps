@@ -318,10 +318,10 @@ class WORKSPACE(JOBS):
         newline  = 'SCALAR: false\n'
         text.append(newline)
 
-        if self.nodemax > 1:
+        if self.nodemax is not None:
             newline = 'NODEMAX: {}\n'.format(self.nodemax)
         else:
-            newline = 'NODESMAX: None'
+            newline = 'NODEMAX: 1'
 
         text.append(newline)
 
@@ -510,14 +510,14 @@ class WORKSPACE(JOBS):
         filelist = []
         for a in np.arange(self.nodemax):
             a = a + 1
-            filelist.append(outfile[:-4] + '_' + str(a) + '.nc4')
+            filelist.append(outfile + '_' + str(a) )
 
         self.do_merge(outfile,filelist)
 
         filelist = []
         for a in np.arange(self.nodemax):
             a = a + 1
-            filelist.append(addfile[:-4] + '_' + str(a) + '.nc4')
+            filelist.append(addfile + '_' + str(a) )
         
         self.do_merge(addfile,filelist)
 
