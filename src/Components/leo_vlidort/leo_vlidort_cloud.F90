@@ -2363,6 +2363,7 @@ program leo_vlidort_cloud
     character(len=*),intent(in)      :: rcfile
     character(len=*),intent(in)      :: nodenumarg
     integer,intent(out)              :: ierr
+    character(len=256)               :: file
 
     cf = ESMF_ConfigCreate()
     call ESMF_ConfigLoadFile(cf, fileName=trim(rcfile), __RC__)
@@ -2452,6 +2453,21 @@ program leo_vlidort_cloud
       ierr = 2
       return
     end if
+
+    ! Change out_file and add_file names if nodemax > 1
+    if (nodemax > 1) then
+      if (nodenum < 10) then
+        write(file,'(A,A,I1)') trim(OUT_file),'_',nodenum
+        OUT_file = file
+        write(file,'(A,A,I1)') trim(ADD_file),'_',nodenum
+        ADD_file = file        
+      else if (nodenum >= 10 .and. nodenum < 100) then
+        write(file,'(A,A,I2)') trim(OUT_file),'_',nodenum
+        OUT_file = file
+        write(file,'(A,A,I2)') trim(ADD_file),'_',nodenum
+        ADD_file = file        
+      end if
+    end if    
 
     call ESMF_ConfigDestroy(cf)
 
