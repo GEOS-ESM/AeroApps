@@ -14,6 +14,7 @@ import numpy           as np
 import time
 from   pace            import granules
 from   netCDF4         import Dataset
+from   glob            import glob
 
 mr =  [1.396,1.362,1.349,1.345,1.339,1.335,1.334,1.333,1.332,1.331,1.329,1.326,
       1.323,1.318,1.312,1.306,1.292,1.261]
@@ -102,6 +103,8 @@ class JOBS(object):
                     errcheck = self.check_for_errors(i,s)               
                     if (errcheck is False):
                         self.destroy_workspace(i,s)
+                        if self.nodemax is not None:
+                            self.combine_files(i)
                     else:
                         print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
 
@@ -182,6 +185,8 @@ class WORKSPACE(JOBS):
         self.rootdir = args.rootdir
 
         self.dirstring = []
+        self.outfilelist = []
+        self.addfilelist = []
 
         if args.channels is None:
             self.get_channels(self.Date)
@@ -191,8 +196,10 @@ class WORKSPACE(JOBS):
             else:
                 self.channels = args.channels
 
-        if args.nodemax is not None: self.nodemax = int(args.nodemax)
-        if args.nodemax is None: self.nodemax = 1
+        if args.nodemax > 1 : 
+            self.nodemax = int(args.nodemax)
+        else:
+            self.nodemax = None
 
         for ch in self.channels:
             outpath = '{}/{}.{}'.format(args.tmp,self.Date.isoformat(),ch)
@@ -218,6 +225,9 @@ class WORKSPACE(JOBS):
         outfile = '{}/{}'.format(outpath,self.runfile)
         shutil.copyfile(self.runfile,outfile)
 
+        if self.nodemax is not None:
+            self.edit_runFile(outfile)
+
         # Copy over Aod_EOS.rc
         outfile = '{}/{}'.format(outpath,'Aod_EOS.rc')
         shutil.copyfile('Aod_EOS.rc',outfile)
@@ -225,11 +235,31 @@ class WORKSPACE(JOBS):
 
         # link over some scripts and files
         source = ['leo_vlidort_cloud.x','ExtData','Chem_MieRegistry.rc',
-                  'ExtDataCloud']
+                  'ExtDataCloud','clean_mem.sh']
         for src in source:
             os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(outpath,src))
 
-        
+    def edit_runFile(self,filename):
+        f = open(filename)
+        # read the file first
+        text = []
+        for l in f:
+            text.append(l)   
+
+        f.close()    
+
+        # Edit text
+        for i,l in enumerate(text):
+            if 'r_channels:' in l[0:11]:
+                newline = "r_channels: {}e-6".format(ch*0.001)
+                text[i] = newline
+
+        # Write edited text back to file
+        f = open(filename,'w')
+        for l in text:
+            f.write(l)
+
+        f.close()
 
     def edit_AODrc(self,filename,ch):
         f = open(filename)
@@ -242,8 +272,8 @@ class WORKSPACE(JOBS):
 
         # Edit text
         for i,l in enumerate(text):
-            if 'r_channels:' in l[0:11]:
-                newline = "r_channels: {}e-6".format(ch*0.001)
+            if (l[0:15] == '#SBATCH --array'):
+                newline = '#SBATCH --array=1-'+str(self.nodemax)+'\n'
                 text[i] = newline
 
         # Write edited text back to file
@@ -313,8 +343,8 @@ class WORKSPACE(JOBS):
             text.append(newline)
             newline = 'LANDBAND_C_LER: 354 388\n'
             text.append(newline)
-            LER_file = '{}/pace-g5nr.lb.omi_ler-discover.{}_{}.nc4'.format(LbDir,nymd,hms)
-            newline = 'LER_file: {}'.format(LER_file)
+            LER_file = '{}/pace-g5nr.lb.omi_ler.{}_{}.nc4'.format(LbDir,nymd,hms)
+            newline = 'LER_file: {}\n'.format(LER_file)
             text.append(newline)
         # HYBRID
         elif (ch > 388.) and (ch < 470):
@@ -401,12 +431,14 @@ class WORKSPACE(JOBS):
         OUT_file = '{}/pace-g5nr.lc.vlidort.{}_{}.{}.nc4'.format(LcDir,nymd,hms,int(ch))
         newline = 'OUT_file: {}\n'.format(OUT_file)
         text.append(newline)
+        self.outfilelist.append(OUT_file)
 
         ADD_file = '{}/pace-g5nr.lc.add.{}_{}.nc4'.format(LcDir,nymd,hms)
         newline = 'ADD_file: {}\n'.format(ADD_file)
         text.append(newline)
+        self.addfilelist.append(ADD_file)
 
-        CLD_file = '{}/pace-g5nr.lc.TOTWPDF-GCOP-SKEWT.{}_{}.nc4'.format(LcDir,nymd,hms)
+        CLD_file = '{}/pace-g5nr.TOTWPDF-GCOP-SKEWT.{}_{}.nc4'.format(LcDir,nymd,hms)
         newline = 'CLD_file: {}\n'.format(CLD_file)
         text.append(newline)
 
@@ -438,19 +470,29 @@ class WORKSPACE(JOBS):
         os.chdir(self.dirstring[i])
 
         if self.profile is False:
-            errfile = 'slurm_' +jobid + '.err'
-            os.remove(errfile)        
-            outfile = 'slurm_' +jobid + '.out'
-            os.remove(outfile)        
-            pyfile = 'slurm_' +jobid + '_py.out'
-            os.remove(pyfile)        
+
+            if self.nodemax is not None:
+                for a in np.arange(self.nodemax):
+                    a = a + 1
+                    errfile = 'slurm_' +jobid + '_' + str(a) + '.err'                    
+                    outfile = 'slurm_' +jobid + '_' + str(a) + '.out'
+                    if self.verbose:
+                        print '++cleaning up errfile', errfile
+                        print '++cleaning up outfile', outfile
+                    os.remove(errfile)
+                    os.remove(outfile)
+                os.remove('slurm_%A_%a.out')                    
+            else:
+                errfile = 'slurm_' +jobid + '.err'
+                os.remove(errfile)        
+                outfile = 'slurm_' +jobid + '.out'
+                os.remove(outfile)        
 
             os.remove(self.runfile)
 
         # remove symlinks
-        source = ['nccs','Aod_EOS.rc','Aod_EOS.440.rc','Aod_EOS.870.rc',
-                  'run_aeronet_vlidort.py','aeronet_vlidort_lc.py','ExtData',
-                  'Chem_MieRegistry.rc']
+        source = ['Aod_EOS.rc','ExtData','ExtDataCloud','leo_vlidort_cloud.rc',
+                  'leo_vlidort_cloud.x','Chem_MieRegistry.rc','clean_mem.sh']
         for src in source:
             os.remove(src)
 
@@ -458,6 +500,47 @@ class WORKSPACE(JOBS):
         if self.profile is False:
             os.rmdir(self.dirstring[i])
 
+    def combine_files(self,i):
+        date_ch = self.dirstring[i].split('/')[-1]
+        date,ch = date_ch.split('.')
+
+        outfile = self.outfilelist[i]
+        addfile = self.addfilelist[i]
+
+        filelist = []
+        for a in np.arange(self.nodemax):
+            a = a + 1
+            filelist.append(outfile[:-4] + '_' + str(a) + '.nc4')
+
+        self.do_merge(outfile,filelist)
+
+        filelist = []
+        for a in np.arange(self.nodemax):
+            a = a + 1
+            filelist.append(addfile[:-4] + '_' + str(a) + '.nc4')
+        
+        self.do_merge(addfile,filelist)
+
+    def do_merge(self,mergedfile,filelist):
+        os.rename(filelist[0],mergedfile)
+        filelist = filelist[1:]
+
+        if type(filelist) is str:
+            filelist = filelist.split()
+
+        ncmergedfile = Dataset(mergedfile, mode='r+')
+        for filename in filelist:
+            ncfile = Dataset(filename)
+            for var in ncmergedfile.variables:
+                vardata = ncfile.variables[var][:]
+                mergedata = ncmergedfile.variables[var][:]
+                if (np.ma.is_masked(vardata)):
+                    mergedata[~vardata.mask] = vardata[~vardata.mask]
+                    ncmergedfile.variables[var][:] = mergedata
+            ncfile.close()
+            os.remove(filename)
+
+        ncmergedfile.close()
 
 
 if __name__ == '__main__':
