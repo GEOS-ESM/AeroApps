@@ -30,8 +30,9 @@ program leo_vlidort_cloud
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
+  use vlidort_brdf_modis_bpdf      ! Module to run VLIDORT with MODIS BRDF+BPDF surface supplement  
   use vlidort_lambert              ! Module to run VLIDORT with lambertian surface  
-  use vlidort_brdf_cx                   ! Module to run VLIDORT with cox munk surface
+  use vlidort_brdf_cx              ! Module to run VLIDORT with cox munk surface
   use Chem_MieMod
   use mp_netcdf_Mod
   use netcdf_Mod
@@ -54,8 +55,8 @@ program leo_vlidort_cloud
   character(len=6)                      :: time 
   character(len=256)                    :: instname
   character(len=256)                    :: landname, landmodel, watername, watermodel
-  integer                               :: landbandm              ! number of wavelength bands or channels in surface reflectance data file
-  real, allocatable                     :: landband_c(:)          ! modis band center wavelength
+  integer                               :: landbandmBRDF, landbandmLER              ! number of wavelength bands or channels in surface reflectance data file
+  real, allocatable                     :: landband_cBRDF(:), landband_cLER(:)      ! modis band center wavelength
   logical                               :: scalar
   real, allocatable                     :: channels(:)            ! channels to simulate
   real, allocatable                     :: mr(:)                  ! water real refractive index    
@@ -75,7 +76,7 @@ program leo_vlidort_cloud
 
 ! File names
 ! ----------
-  character(len=256)                    :: AER_file, ANG_file, INV_file, LAND_file, OUT_file, ADD_file, CLD_file, MET_file, WAT_file 
+  character(len=256)                    :: AER_file, ANG_file, INV_file, BRDF_file, LER_file, OUT_file, ADD_file, CLD_file, MET_file, WAT_file, NDVI_file, BPDF_file 
 
 ! Global, 3D inputs to be allocated using SHMEM
 ! ---------------------------------------------
@@ -115,6 +116,8 @@ program leo_vlidort_cloud
   real, pointer                         :: U10M(:,:) => null()  
   real, pointer                         :: SLEAVE(:,:,:,:) => null()
   real, pointer                         :: WATER_CH(:) => null()
+  real, pointer                         :: NDVI(:,:) => null()  
+  real, pointer                         :: BPDFcoef(:,:) => null()  
   integer, pointer                      :: indices(:) => null()
 
 
@@ -184,6 +187,7 @@ program leo_vlidort_cloud
                                                                                     ! param1 = crown relative height (h/b)
                                                                                     ! param2 = shape parameter (b/r)
   real                                  :: land_missing                                                                 
+  real*8, allocatable                   :: BPDFparam(:,:,:)                         ! BPDF model parameters (/1.5,NDVI,BPDFcoef/)
 
 ! Mie Table Stucture
 !---------------------
@@ -283,10 +287,10 @@ program leo_vlidort_cloud
 
   call mp_readVattr("missing_value", AER_FILE, "DELP", g5nr_missing)
   if (lower_to_upper(landmodel) == 'RTLS') then
-    call mp_readVattr("missing_value", LAND_file, "Riso470", land_missing) 
+    call mp_readVattr("missing_value", BRDF_file, "Riso470", land_missing) 
     !surf_missing = -99999.0
-  else if (lower_to_upper(landmodel) == 'Lambertian') then
-    call mp_readVattr("missing_value", LAND_file, "SRFLER354", land_missing) 
+  else if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
+    call mp_readVattr("missing_value", LER_file, "SRFLER354", land_missing) 
   else
     land_missing = g5nr_missing
   end if
@@ -847,43 +851,76 @@ program leo_vlidort_cloud
 !     Oct 2018 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine get_surf_params()
+  real,dimension(2)    :: temp_iso, temp_geo, temp_vol
+  integer,dimension(1) :: brdf_i, ler_i
+
   !   Surface Reflectance Parameters
   !    ----------------------------------
-      if ( (lower_to_upper(landmodel) == 'RTLS') ) then
+      if ( (index(lower_to_upper(landmodel),'RTLS') > 0) ) then
       !  Get BRDF Kernel Weights
       !  ----------------------------
         do ch = 1, nch
-          if (landbandm == 1) then
+          if (landbandmBRDF == 1) then
             kernel_wt(:,ch,nobs) = (/dble(KISO(i,j,1)),&
                                 dble(KGEO(i,j,1)),&
                                 dble(KVOL(i,j,1))/)
           else
             ! > 2130 uses highest MODIS wavelength band     
-            if (channels(ch) >= maxval(landband_c)) then  
-              iband = minloc(abs(landband_c - channels(ch)), dim = 1)
+            if (channels(ch) >= maxval(landband_cBRDF)) then  
+              iband = minloc(abs(landband_cBRDF - channels(ch)), dim = 1)
               kernel_wt(:,ch,nobs) = (/dble(KISO(i,j,iband)),&
                                 dble(KGEO(i,j,iband)),&
                                 dble(KVOL(i,j,iband))/)
             end if
             
-            if (channels(ch) < maxval(landband_c)) then
+            if (channels(ch) < maxval(landband_cBRDF)) then
               ! nearest neighbor interpolation of kernel weights to wavelength
-              ! ******channel has to fall above available range, user is responsible to verify
-              kernel_wt(1,ch,nobs) = dble(nn_interp(landband_c,reshape(KISO(i,j,:),(/landbandm/)),channels(ch)))
-              kernel_wt(2,ch,nobs) = dble(nn_interp(landband_c,reshape(KGEO(i,j,:),(/landbandm/)),channels(ch)))
-              kernel_wt(3,ch,nobs) = dble(nn_interp(landband_c,reshape(KVOL(i,j,:),(/landbandm/)),channels(ch)))          
+              if ( (lower_to_upper(landmodel) == 'RTLS-HYBRID') .and. (channels(ch) < minval(landband_cBRDF)) ) then
+                !  relax kernel weights below 470 to lamberitan 
+                !  ----------------------------
+                brdf_i = minloc(landband_cBRDF)
+                ler_i  = maxloc(landband_cLER)
+
+                temp_iso(1) = LER(i,j,ler_i(1))
+                temp_iso(2) = KISO(i,j,brdf_i(1))
+
+                temp_geo(1) = 0
+                temp_geo(2) = KGEO(i,j,brdf_i(1))
+
+                temp_vol(1) = 0
+                temp_vol(2) = KVOL(i,j,brdf_i(1))
+
+                kernel_wt(1,ch,nobs) = dble(nn_interp((/landband_cLER(ler_i(1)),landband_cBRDF(brdf_i(1))/),temp_iso,channels(ch)))
+                kernel_wt(2,ch,nobs) = dble(nn_interp((/landband_cLER(ler_i(1)),landband_cBRDF(brdf_i(1))/),temp_geo,channels(ch)))
+                kernel_wt(3,ch,nobs) = dble(nn_interp((/landband_cLER(ler_i(1)),landband_cBRDF(brdf_i(1))/),temp_vol,channels(ch)))
+
+              else
+                ! ******channel has to fall above available range, user is responsible to verify
+                kernel_wt(1,ch,nobs) = dble(nn_interp(landband_cBRDF,reshape(KISO(i,j,:),(/landbandmBRDF/)),channels(ch)))
+                kernel_wt(2,ch,nobs) = dble(nn_interp(landband_cBRDF,reshape(KGEO(i,j,:),(/landbandmBRDF/)),channels(ch)))
+                kernel_wt(3,ch,nobs) = dble(nn_interp(landband_cBRDF,reshape(KVOL(i,j,:),(/landbandmBRDF/)),channels(ch)))    
+              end if      
             end if
           end if
           param(:,ch,nobs)     = (/dble(2),dble(1)/)
         end do
+
+        if ( (index(lower_to_upper(landname),'BPDF') > 0) ) then
+        ! Get BPDF parameters
+        ! ----------------------
+          BPDFparam(1,:,:) = 1.5   ! water refractive index
+          BPDFparam(2,:,:) = dble(NDVI(i,j))
+          BPDFparam(3,:,:) = dble(BPDFcoef(i,j))
+        end if
+
       else if ( (lower_to_upper(landmodel) == 'LAMBERTIAN') ) then
       !  Get Lambertian Albedo
       !  ------------------------------
         do ch = 1, nch
-          if (landbandm == 1) then
+          if (landbandmLER == 1) then
             Valbedo(nobs,ch) = dble(LER(i,j,1))
           else
-            Valbedo(nobs,ch) = dble(nn_interp(landband_c,reshape(LER(i,j,:),(/landbandm/)),channels(ch)))
+            Valbedo(nobs,ch) = dble(nn_interp(landband_cLER,reshape(LER(i,j,:),(/landbandmLER/)),channels(ch)))
           end if
         end do
       end if 
@@ -924,47 +961,84 @@ program leo_vlidort_cloud
         BR_U_int = 0
       end if
 
-    else if ( ANY(kernel_wt == land_missing) ) then
-!     Save code for pixels that were not gap filled
-!     ---------------------------------------------    
-      radiance_VL_int(nobs,:) = -500
-      reflectance_VL_int(nobs,:) = -500
-      Valbedo = -500
-      ROT_int = -500
-      if (.not. scalar) then
-        Q_int = -500
-        U_int = -500
-      end if
-      ierr = 0
-    else   
-!     MODIS BRDF Surface Model
-!     ------------------------------
-      if (scalar) then 
-          ! Call to vlidort scalar code            
-          call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
-                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
-                  dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
-                  dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
+    else if ( (lower_to_upper(landmodel) == 'RTLS') .and. (index(lower_to_upper(landname),'BPDF') .eq. 0) ) then
+      if ( ANY(kernel_wt == land_missing) ) then
+!       Save code for pixels that were not gap filled
+!       ---------------------------------------------    
+        radiance_VL_int(nobs,:) = -500
+        reflectance_VL_int(nobs,:) = -500
+        Valbedo = -500
+        ROT_int = -500
+        if (.not. scalar) then
+          Q_int = -500
+          U_int = -500
+        end if
+        ierr = 0
+
+      else   
+!       MODIS BRDF Surface Model
+!       ------------------------------
+
+        if (scalar) then 
+            ! Call to vlidort scalar code            
+            call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
+                    nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                    dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
+                    dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
+                    dble(Vpe), dble(Vze), dble(Vte), &
+                    kernel_wt, param, &
+                    (/dble(SZA(i,j))/), &
+                    (/dble(abs(RAA(i,j)))/), &
+                    (/dble(VZA(i,j))/), &
+                    dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr )  
+        else
+          ! Call to vlidort vector code
+          call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nMom, &
+                  nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
+                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
                   dble(Vpe), dble(Vze), dble(Vte), &
                   kernel_wt, param, &
                   (/dble(SZA(i,j))/), &
                   (/dble(abs(RAA(i,j)))/), &
                   (/dble(VZA(i,j))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr )  
-      else
+                  dble(MISSING),verbose, &
+                  radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
+        end if    
+      end if
+
+    else if ( (lower_to_upper(landmodel) == 'RTLS') .and. (index(lower_to_upper(landname),'BPDF') > 0) ) then  
+      if ( ANY(kernel_wt == land_missing) .or. ANY(BPDFparam < -900)) then
+!       Save code for pixels that were not gap filled
+!       ---------------------------------------------    
+        radiance_VL_int(nobs,:) = -500
+        reflectance_VL_int(nobs,:) = -500
+        Valbedo = -500
+        ROT_int = -500
+        if (.not. scalar) then
+          Q_int = -500
+          U_int = -500
+        end if
+        ierr = 0
+
+      else   
+!       MODIS BPDF Surface Model
+!       ------------------------------
+
         ! Call to vlidort vector code
-        call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nMom, &
+        call VLIDORT_Vector_LandMODIS_BPDF_cloud (km, nch, nobs, dble(channels), nMom, &
                 nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
                 dble(Vpe), dble(Vze), dble(Vte), &
-                kernel_wt, param, &
+                kernel_wt, param, BPDFparam, &
                 (/dble(SZA(i,j))/), &
                 (/dble(abs(RAA(i,j)))/), &
                 (/dble(VZA(i,j))/), &
                 dble(MISSING),verbose, &
                 radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
-      end if      
+      end if
+
     end if   
 
   end subroutine DO_LAND
@@ -1290,11 +1364,11 @@ program leo_vlidort_cloud
 
     call mp_readvar1Dchunk('wavelength', WAT_file, (/wnch/), 1, npet, myid, WATER_CH)
     if (MAPL_am_I_root()) then
-      write(*,*) 'wavelength', minval(WATER_CH), maxval(WATER_CH)
+      
       do ch = 1, nch
         ! get channel below
         below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .GE. 0)
-        write(*,*) 'below', below,WATER_CH(below)
+        
         call readvar3Dslice('lwn', WAT_file, (/im,jm,2/), 3, below, temp) 
 
         SLEAVE(:,:,ch,:) = temp
@@ -1320,13 +1394,30 @@ program leo_vlidort_cloud
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_surf_land()
 
-    if (lower_to_upper(landmodel) == 'RTLS') then
+    if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
 
       call read_RTLS()
       if (MAPL_am_I_root()) then
         write(*,*) '<> Read BRDF data to shared memory'
       end if
       call MAPL_SyncSharedMemory(rc=ierr) 
+
+      if ( (index(lower_to_upper(landname),'BPDF') > 0) ) then
+        call read_BPDF()
+        if (MAPL_am_I_root()) then
+          write(*,*) '<> Read BPDF data to shared memory'
+        end if
+      call MAPL_SyncSharedMemory(rc=ierr) 
+
+      end if
+
+      if (lower_to_upper(landmodel) == 'RTLS-HYBRID') then
+        if (MAPL_am_I_root()) then
+          call read_LER()        
+          write(*,*) '<> Read LER data to shared memory'
+        end if
+        call MAPL_SyncSharedMemory(rc=ierr) 
+      end if
     else if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
 
       if (MAPL_am_I_root()) then
@@ -1346,38 +1437,38 @@ program leo_vlidort_cloud
     real, dimension(im,jm)             :: temp
 
       
-      do ch = 1,landbandm
-        if ( landband_c(ch) < 1000 ) then
-          write(sds,'(A4,I3)') "Riso",int(landband_c(ch))
+      do ch = 1,landbandmBRDF
+        if ( landband_cBRDF(ch) < 1000 ) then
+          write(sds,'(A4,I3)') "Riso",int(landband_cBRDF(ch))
         else
-          write(sds,'(A4,I4)') "Riso",int(landband_c(ch))
+          write(sds,'(A4,I4)') "Riso",int(landband_cBRDF(ch))
         end if
-        call mp_readvar2Dchunk(trim(sds), LAND_file, (/im,jm/), 1, npet, myid, temp) 
+        call mp_readvar2Dchunk(trim(sds), BRDF_file, (/im,jm/), 1, npet, myid, temp) 
         
         if (MAPL_am_I_root()) then
           KISO(:,:,ch) = temp
         end if
         call MAPL_SyncSharedMemory(rc=ierr) 
 
-        if ( landband_c(ch) < 1000 ) then
-          write(sds,'(A4,I3)') "Rgeo",int(landband_c(ch))
+        if ( landband_cBRDF(ch) < 1000 ) then
+          write(sds,'(A4,I3)') "Rgeo",int(landband_cBRDF(ch))
         else
-          write(sds,'(A4,I4)') "Rgeo",int(landband_c(ch))
+          write(sds,'(A4,I4)') "Rgeo",int(landband_cBRDF(ch))
         end if
 
-        call mp_readvar2Dchunk(trim(sds), LAND_file, (/im,jm/), 1, npet, myid, temp) 
+        call mp_readvar2Dchunk(trim(sds), BRDF_file, (/im,jm/), 1, npet, myid, temp) 
         if (MAPL_am_I_root()) then
           KGEO(:,:,ch) = temp
         end if
         call MAPL_SyncSharedMemory(rc=ierr)         
 
-        if ( landband_c(ch) < 1000 ) then
-          write(sds,'(A4,I3)') "Rvol",int(landband_c(ch))
+        if ( landband_cBRDF(ch) < 1000 ) then
+          write(sds,'(A4,I3)') "Rvol",int(landband_cBRDF(ch))
         else
-          write(sds,'(A4,I4)') "Rvol",int(landband_c(ch))
+          write(sds,'(A4,I4)') "Rvol",int(landband_cBRDF(ch))
         end if
 
-        call mp_readvar2Dchunk(trim(sds), LAND_file, (/im,jm/), 1, npet, myid, temp) 
+        call mp_readvar2Dchunk(trim(sds), BRDF_file, (/im,jm/), 1, npet, myid, temp) 
         if (MAPL_am_I_root()) then
           KVOL(:,:,ch) = temp
         end if
@@ -1387,13 +1478,22 @@ program leo_vlidort_cloud
 
   end subroutine read_RTLS
 
+  subroutine read_BPDF()
+
+    call mp_readvar2Dchunk('NDVI', NDVI_file, (/im,jm/), 1, npet, myid, NDVI) 
+    call mp_readvar2Dchunk('BPDFcoef', BPDF_file, (/im,jm/), 1, npet, myid, BPDFcoef) 
+
+  end subroutine read_BPDF
+
   subroutine read_LER()
     real, dimension(im,jm,1,1)         :: temp
     character(len=100)                 :: sds
 
-    do ch = 1,landbandm
-      write(sds,*) "SRFLER",landband_c(ch)
-      call readvar4d(trim(sds), LAND_file, temp)
+    do ch = 1,landbandmLER
+      if ( landband_cLER(ch) < 1000 ) then
+        write(sds,'(A6,I3)') "SRFLER",int(landband_cLER(ch))
+      end if
+      call readvar4d(trim(sds), LER_file, temp)
       LER(:,:,ch) = temp(:,:,1,1)
     end do
 
@@ -1535,12 +1635,16 @@ program leo_vlidort_cloud
     call MAPL_AllocNodeArray(OCPHOBIC,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(OCPHILIC,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(SO4,(/im,jm,km/),rc=ierr)
-    if (lower_to_upper(landmodel) == 'RTLS') then
-      call MAPL_AllocNodeArray(KISO,(/im,jm,landbandm/),rc=ierr)
-      call MAPL_AllocNodeArray(KVOL,(/im,jm,landbandm/),rc=ierr)
-      call MAPL_AllocNodeArray(KGEO,(/im,jm,landbandm/),rc=ierr)
-    else if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
-      call MAPL_AllocNodeArray(LER,(/im,jm,landbandm/),rc=ierr)
+    if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
+      call MAPL_AllocNodeArray(KISO,(/im,jm,landbandmBRDF/),rc=ierr)
+      call MAPL_AllocNodeArray(KVOL,(/im,jm,landbandmBRDF/),rc=ierr)
+      call MAPL_AllocNodeArray(KGEO,(/im,jm,landbandmBRDF/),rc=ierr)
+      if ( (index(lower_to_upper(landname),'BPDF') > 0) ) then
+        call MAPL_AllocNodeArray(NDVI,(/im,jm/),rc=ierr)
+        call MAPL_AllocNodeArray(BPDFcoef,(/im,jm/),rc=ierr)
+      end if
+    else if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (lower_to_upper(landmodel) == 'RTLS-HYBRID')) then
+      call MAPL_AllocNodeArray(LER,(/im,jm,landbandmLER/),rc=ierr)
     end if 
 
     call MAPL_AllocNodeArray(SZA,(/im,jm/),rc=ierr)
@@ -1615,6 +1719,10 @@ program leo_vlidort_cloud
     if (lower_to_upper(landmodel) == 'RTLS') then
       allocate (kernel_wt(nkernel,nch,nobs))
       allocate (param(nparam,nch,nobs))
+    end if
+
+    if ( (index(lower_to_upper(landname),'BPDF') > 0) ) then   
+      allocate (BPDFparam(3,nch,nobs)) 
     end if
     
     if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
@@ -1761,7 +1869,14 @@ program leo_vlidort_cloud
     call check(nf90_put_att(ncid,NF90_GLOBAL,'grid_inputs',trim(INV_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'angle_inputs',trim(ANG_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'aerosol_inputs',trim(AER_file)),"input files attr")
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(LAND_file)),"input files attr")
+    if (lower_to_upper(landmodel) == 'RTLS') then
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(BRDF_file)),"input files attr")
+    else if (lower_to_upper(landmodel) == 'RTLS-HYBRID') then
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(BRDF_file)),"input files attr")
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(LER_file)),"input files attr")
+    else
+      call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(LER_file)),"input files attr")
+    end if
     call check(nf90_put_att(ncid,NF90_GLOBAL,'cloud_inputs',trim(CLD_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'wind_inputs',trim(MET_file)),"input files attr")
 
@@ -1774,22 +1889,6 @@ program leo_vlidort_cloud
                          'radiance and reflectance from GEOS-5 parameters sampled ' // &
                          ' on the '//lower_to_upper(trim(instname))//' swath '
     call check(nf90_put_att(ncid,NF90_GLOBAL,'comment',trim(comment)),"comment attr")   
-
-    if (lower_to_upper(landmodel) /= 'RTLS') then
-      if (landbandm == 1) then
-        write(comment,'(A)') 'Lambertian surface reflectance interpolated to channel'
-      else
-        write(comment,'(A)') 'Lambertian surface reflectance without interpolation to channel'
-      end if
-    else
-      if (landbandm > 1 ) then
-        write(comment,'(2A)') lower_to_upper(trim(landname)),' surface BRDF kernel weights interpolated to channel'
-      else
-        write(comment,'(2A)') lower_to_upper(trim(landname)),' surface BRDF kernel weights without inerpolation to channel'
-      end if
-    end if
-
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_comment',trim(comment)),"surface_comment")
 
     if ( scalar ) then
       write(comment,'(A)') 'Scalar calculations'
@@ -2249,128 +2348,6 @@ program leo_vlidort_cloud
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!    shmem_test3D
-! PURPOSE
-!     test that shared memory arrays have same values across all processors
-! INPUT
-!     varname: string of variable name
-!     var    : the variable to be checked
-! OUTPUT
-!     Writes to the file shmem_test.txt the min and max value of the variable as 
-!     reported by each processor
-!  HISTORY
-!     27 April P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine do_testing()
-
-    if ( MAPL_am_I_root() ) then
-      open (unit = 2, file="shmem_test.txt")
-      write(2,'(A)') '--- Array Statistics ---'
-    end if
-
-    call shmem_test3D('RH',RH)
-    call shmem_test3D('AIRDENS',AIRDENS)
-    call shmem_test3D('DELP',DELP)
-    call shmem_test3D('DU001',DU001)
-    call shmem_test3D('DU002',DU002)
-    call shmem_test3D('DU003',DU003)
-    call shmem_test3D('DU004',DU004)
-    call shmem_test3D('DU005',DU005)
-    call shmem_test3D('SS001',SS001)
-    call shmem_test3D('SS002',SS002)
-    call shmem_test3D('SS003',SS003)
-    call shmem_test3D('SS004',SS004)
-    call shmem_test3D('SS005',SS005)
-    call shmem_test3D('BCPHOBIC',BCPHOBIC)
-    call shmem_test3D('BCPHILIC',BCPHILIC)
-    call shmem_test3D('OCPHOBIC',OCPHOBIC)
-    call shmem_test3D('OCPHILIC',OCPHILIC)
-    call shmem_test3D('SO4',SO4)
-
-    !   Wait for everyone to finish and print max memory used
-    !   -----------------------------------------------------------  
-    call MAPL_SyncSharedMemory(rc=ierr)
-    if (MAPL_am_I_root()) then  
-      write(*,*) 'Tested shared memory' 
-      call sys_tracker()   
-    end if   
-
-  end subroutine do_testing
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!    shmem_test3D
-! PURPOSE
-!     test that shared memory arrays have same values across all processors
-! INPUT
-!     varname: string of variable name
-!     var    : the variable to be checked
-! OUTPUT
-!     Writes to the file shmem_test.txt the min and max value of the variable as 
-!     reported by each processor
-!  HISTORY
-!     27 April P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  subroutine shmem_test3D(varname,var)
-    character(len=*), intent(in)  :: varname
-    real,dimension(:,:,:)         :: var
-    character(len=61)             :: msg
-
-    if ( MAPL_am_I_root() ) then
-      open (unit = 2, file="shmem_test.txt",position="append")
-      do p = 1,npet-1
-        call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status_mpi, ierr)
-        write(2,*) msg
-      end do
-      write(msg,'(A9,I4,E24.17,E24.17)') varname,myid,maxval(var),minval(var)
-      write(2,*) msg
-      write(2,*) 'These should all have the same min/max values!'
-      close(2)
-    else
-      write(msg,'(A9,I4,E24.17,E24.17)') varname,myid,maxval(var),minval(var)
-      call mpi_send(msg, 61, MPI_CHARACTER, 0, 1, MPI_COMM_WORLD, ierr)
-    end if
-
-  end subroutine shmem_test3D
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!    shmem_test2D
-! PURPOSE
-!     test that shared memory arrays have same values across all processors
-! INPUT
-!     varname: string of variable name
-!     var    : the variable to be checked
-! OUTPUT
-!     Writes to the file shmem_test.txt the min and max value of the variable as 
-!     reported by each processor
-!  HISTORY
-!     27 April P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine shmem_test2D(varname,var)
-    character(len=*), intent(in)  :: varname
-    real,dimension(:,:)      :: var
-
-    if ( MAPL_am_I_root() ) then
-      open (unit = 2, file="shmem_test.txt",position="append")
-      do p = 1,npet-1
-        call mpi_recv(msg, 61, MPI_CHARACTER, p, 1, MPI_COMM_WORLD, status_mpi, ierr)
-        write(2,*) msg
-      end do
-        write(msg,'(A9,I4,E24.17,E24.17)') varname,myid,maxval(var),minval(var)
-        write(2,*) msg
-        write(2,*) 'These should all have the same min/max values!'
-        close(2)
-    else
-        write(msg,'(A9,I4,E24.17,E24.17)') varname,myid,maxval(var),minval(var)
-        call mpi_send(msg, 61, MPI_CHARACTER, 0, 1, MPI_COMM_WORLD, ierr)
-    end if
-
-  end subroutine shmem_test2D
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
 !    get_config()
 ! PURPOSE
 !     Read and parse resource file
@@ -2407,9 +2384,16 @@ program leo_vlidort_cloud
     ! Land Surface
     call ESMF_ConfigGetAttribute(cf, landname, label = 'LANDNAME:',default='MAIACRTLS')
     call ESMF_ConfigGetAttribute(cf, landmodel, label = 'LANDMODEL:',default='RTLS')
-    landbandm =  ESMF_ConfigGetLen(cf, label = 'LANDBAND_C:',__RC__)
-    allocate (landband_c(landbandm))    
-    call ESMF_ConfigGetAttribute(cf, landband_c, label = 'LANDBAND_C:', __RC__)
+    if ( (index(lower_to_upper(landmodel),'RTLS') > 0) ) then
+      landbandmBRDF =  ESMF_ConfigGetLen(cf, label = 'LANDBAND_C_BRDF:',__RC__)
+      allocate (landband_cBRDF(landbandmBRDF))    
+      call ESMF_ConfigGetAttribute(cf, landband_cBRDF, label = 'LANDBAND_C_BRDF:', __RC__)
+    end if
+    if ( (lower_to_upper(landmodel) == 'RTLS-HYBRID') .or. (lower_to_upper(landmodel) == 'LAMBERTIAN') ) then
+      landbandmLER =  ESMF_ConfigGetLen(cf, label = 'LANDBAND_C_LER:',__RC__)
+      allocate (landband_cLER(landbandmLER))    
+      call ESMF_ConfigGetAttribute(cf, landband_cLER, label = 'LANDBAND_C_LER:', __RC__)
+    end if
 
     ! Water Surface
     call ESMF_ConfigGetAttribute(cf, watername, label = 'WATERNAME:',default='CX')
@@ -2424,12 +2408,22 @@ program leo_vlidort_cloud
     call ESMF_ConfigGetAttribute(cf, AER_file, label = 'AER_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, ANG_file, label = 'ANG_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, INV_file, label = 'INV_file:',__RC__)
-    call ESMF_ConfigGetAttribute(cf, LAND_file, label = 'LAND_file:',__RC__)
+    if ( (index(lower_to_upper(landmodel),'RTLS') > 0) ) then
+      call ESMF_ConfigGetAttribute(cf, BRDF_file, label = 'BRDF_file:',__RC__)
+    end if
+    if ( (lower_to_upper(landmodel) == 'RTLS-HYBRID') .or. (lower_to_upper(landmodel) == 'LAMBERTIAN') ) then
+      call ESMF_ConfigGetAttribute(cf, LER_file, label = 'LER_file:',__RC__)
+    end if
+
     call ESMF_ConfigGetAttribute(cf, OUT_file, label = 'OUT_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, ADD_file, label = 'ADD_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, CLD_file, label = 'CLD_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, MET_file, label = 'MET_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, WAT_file, label = 'WAT_file:',__RC__)
+    if ( (index(lower_to_upper(landname),'BPDF') > 0) ) then
+      call ESMF_ConfigGetAttribute(cf, NDVI_file, label = 'NDVI_file:',__RC__)
+      call ESMF_ConfigGetAttribute(cf, BPDF_file, label = 'BPDF_file:',__RC__)    
+    end if
 
 
     ! Figure out number of channels and read into vector
