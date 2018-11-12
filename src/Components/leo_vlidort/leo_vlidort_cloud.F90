@@ -472,7 +472,7 @@ program leo_vlidort_cloud
   call MAPL_SyncSharedMemory(rc=ierr)
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
-  do cc = starti, starti+10 !endi
+  do cc = starti, endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
 
