@@ -512,4 +512,4 @@ if __name__ == '__main__':
     workspace = WORKSPACE(args)
 
     # Submit and monitor jobs
-    # workspace.handle_jobs()
+    workspace.handle_jobs()
