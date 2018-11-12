@@ -10,6 +10,7 @@
 #SBATCH --mail-user=patricia.castellanos@nasa.gov
 #SBATCH --job-name=pace_vlidort
 #SBATCH -A s1412
+#SBATCH --array=1-20
 #SBATCH --output=slurm_%A_%a.out
 #SBATCH --error=slurm_%A_%a.err
 
