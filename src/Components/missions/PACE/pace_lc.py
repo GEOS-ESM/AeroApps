@@ -32,10 +32,12 @@ class JOBS(object):
         runlen  = len(self.dirstring)   
 
         if self.nodemax is not None:
-            runlen = runlen*self.nodemax
+            numjobs = self.nodemax*runlen
+        else:
+            numjobs = runlen
         
         devnull = open(os.devnull, 'w')
-        if runlen <= jobsmax:   
+        if numjobs <= jobsmax:   
             countRun     = runlen  
             node_tally   = runlen 
         else:
