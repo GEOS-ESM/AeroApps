@@ -112,7 +112,7 @@ class JOBS(object):
             # Remove finished jobs from the currently working list
             if len(finishedJobs) != 0:
                 print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
-                if self.nodexmax is not None:
+                if self.nodemax is not None:
                     node_tally = node_tally - self.nodemax*len(finishedJobs)
                 else:                
                     node_tally  = node_tally - len(finishedJobs)
@@ -553,6 +553,46 @@ class WORKSPACE(JOBS):
         ncmergedfile.close()
 
 
+
+def populate_L1B(outfilelist,rootdir,channels,Date):
+        pYMDdir   = Date.strftime('Y2020/M%m/D%d')
+        L1bDir    = '{}/L1B/{}'.format(rootdir,pYMDdir)
+        LcDir     = '{}/LevelC/{}'.format(rootdir,YMDdir)
+
+        pDate = isoparser(Date.strftime('2020-%m-%dT%H:%M:00'))
+        nyj = pDate.strftime('%Y%j')
+        L1B_file = '{}/OCI{}{}.L1B_PACE.nc'.format(L1bDir,nyj,hms)
+
+        outfile = '{}/OCI{}{}.L1B_PACE.nc'.format(LcDir,nyj,hms)
+        shutil.copyfile(L1B_file,outfile)
+
+        ncmerge = Dataset(outfile,mode='r+')
+        SDS = {'blue_wavelength' : 'Lt_blue',
+               'red_wavelength'  : 'Lt_red',
+               'SWIR_wavelength' : 'Lt_SWIR'}
+        for sds in SDS:
+            pchannels = ncmerge.groups['sensor_band_parameters'].variables[sds][:]
+            pvar      = ncmerge.groups['observation_data'].variables[SDS[sds]][:]
+
+            for ch,filename in channels,outfilelist:
+                if float(ch) in pchannels:
+                    nc = Dataset(filename)
+                    fch = "{:.2f}".format(ch)
+                    data = np.squeeze(nc.variables['I_'+fch][:])
+
+                    i = np.argmin(np.abs(float(ch)-pchannels))
+                    pvar[i,:,:] = data
+
+                    nc.close()
+
+        ncmerge.close()
+
+
+
+
+
+
+
 if __name__ == '__main__':
     
     #Defaults
@@ -606,3 +646,6 @@ if __name__ == '__main__':
 
     # Submit and monitor jobs
     workspace.handle_jobs()
+
+    # Take VLIDORT outputs and populate PACE L1b File
+    populate_l1b(self.outfilelist,self.rootdir,self.channels,self.Date)
