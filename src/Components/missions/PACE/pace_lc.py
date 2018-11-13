@@ -161,11 +161,19 @@ class JOBS(object):
     def check_for_errors(self,i,jobid):
         os.chdir(self.dirstring[i])  
 
-        error = False  
-        errfile = 'slurm_' +jobid + '.err'
-        statinfo = os.stat(errfile)
-        if (statinfo.st_size != 0):
-            error = True
+        error = False 
+        if self.nodemax is not None:
+            for a in np.arange(nodemax):
+                a = a + 1
+                errfile = 'slurm_' +jobid + '_' + str(a) + '.err'
+                statinfo = os.stat(errfile)
+                if (statinfo.st_size != 0):
+                    error = True            
+        else: 
+            errfile = 'slurm_' +jobid + '.err'
+            statinfo = os.stat(errfile)
+            if (statinfo.st_size != 0):
+                error = True
 
         os.chdir(self.cwd)
         return error
@@ -202,7 +210,8 @@ class WORKSPACE(JOBS):
             self.nodemax = None
 
         for ch in self.channels:
-            outpath = '{}/{}.{}'.format(args.tmp,self.Date.isoformat(),ch)
+            fch = "{:.2f}".format(ch).replace('.','d')
+            outpath = '{}/{}.{}'.format(args.tmp,self.Date.isoformat(),fch)
 
             # Copy over some files to working temp directory
             self.create_workdir(outpath,ch)
@@ -239,7 +248,7 @@ class WORKSPACE(JOBS):
         for src in source:
             os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(outpath,src))
 
-    def edit_runFile(self,filename):
+    def edit_AODrc(self,filename,ch):
         f = open(filename)
         # read the file first
         text = []
@@ -261,7 +270,7 @@ class WORKSPACE(JOBS):
 
         f.close()
 
-    def edit_AODrc(self,filename,ch):
+    def edit_runFile(self,filename):
         f = open(filename)
         # read the file first
         text = []
@@ -428,12 +437,13 @@ class WORKSPACE(JOBS):
         newline = 'INV_file: {}\n'.format(INV_file)
         text.append(newline)
 
-        OUT_file = '{}/pace-g5nr.lc.vlidort.{}_{}.{}.nc4'.format(LcDir,nymd,hms,int(ch))
+        fch = "{:.2f}".format(ch).replace('.','d')
+        OUT_file = '{}/pace-g5nr.lc.vlidort.{}_{}.{}.nc4'.format(LcDir,nymd,hms,fch)
         newline = 'OUT_file: {}\n'.format(OUT_file)
         text.append(newline)
         self.outfilelist.append(OUT_file)
 
-        ADD_file = '{}/pace-g5nr.lc.add.{}_{}.nc4'.format(LcDir,nymd,hms)
+        ADD_file = '{}/pace-g5nr.lc.add.{}_{}.{}.nc4'.format(LcDir,nymd,hms,fch)
         newline = 'ADD_file: {}\n'.format(ADD_file)
         text.append(newline)
         self.addfilelist.append(ADD_file)
