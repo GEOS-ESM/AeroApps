@@ -365,6 +365,7 @@ class WORKSPACE(JOBS):
             text.append(newline)
             LER_file = '{}/pace-g5nr.lb.omi_ler-discover.{}_{}.nc4'.format(LbDir,nymd,hms)
             newline = 'LER_file: {}\n'.format(LER_file)
+            text.append(newline)
             newline = 'LANDBAND_C_BRDF: 470 550 650 850 1200 1600 2100\n'
             text.append(newline)
             BRDF_file = '{}/BRDF/MCD43C1/006/{}/pace-g5nr.lb.brdf.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
@@ -379,8 +380,10 @@ class WORKSPACE(JOBS):
             text.append(newline)
             BRDF_file = '{}/BRDF/MCD43C1/006/{}/pace-g5nr.lb.brdf.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
             newline = 'BRDF_file: {}\n'.format(BRDF_file)
+            text.append(newline)
             BPDF_file = '{}/BPDF/LAND_COVER/MCD12C1/051/{}/pace-g5nr.lb.land_cover.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
             newline = 'BPDF_file: {}\n'.format(BPDF_file)
+            text.append(newline)
             NDVI_file = '{}/{}/pace-g5nr.lb-nearest.myd13c2.{}_{}.nc4'.format(LbDir,YMDdir,nymd,hms)
             newline = 'NDVI_file: {}\n'.format(NDVI_file)
             text.append(newline)
