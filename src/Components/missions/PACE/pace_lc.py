@@ -651,4 +651,4 @@ if __name__ == '__main__':
     workspace.handle_jobs()
 
     # Take VLIDORT outputs and populate PACE L1b File
-    populate_l1b(self.outfilelist,self.rootdir,self.channels,self.Date)
+    populate_L1B(workspace.outfilelist,workspace.rootdir,workspace.channels,workspace.Date)
