@@ -558,6 +558,7 @@ class WORKSPACE(JOBS):
 
 
 def populate_L1B(outfilelist,rootdir,channels,Date):
+        YMDdir    = Date.strftime('Y%Y/M%m/D%d')
         pYMDdir   = Date.strftime('Y2020/M%m/D%d')
         L1bDir    = '{}/L1B/{}'.format(rootdir,pYMDdir)
         LcDir     = '{}/LevelC/{}'.format(rootdir,YMDdir)
