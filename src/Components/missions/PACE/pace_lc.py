@@ -363,7 +363,7 @@ class WORKSPACE(JOBS):
             text.append(newline)
             newline = 'LANDBAND_C_LER: 354 388\n'
             text.append(newline)
-            LER_file = '{}/pace-g5nr.lb.omi_ler-discover.{}_{}.nc4'.format(LbDir,nymd,hms)
+            LER_file = '{}/pace-g5nr.lb.omi_ler.{}_{}.nc4'.format(LbDir,nymd,hms)
             newline = 'LER_file: {}\n'.format(LER_file)
             text.append(newline)
             newline = 'LANDBAND_C_BRDF: 470 550 650 850 1200 1600 2100\n'
