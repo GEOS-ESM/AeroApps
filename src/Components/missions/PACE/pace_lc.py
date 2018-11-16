@@ -384,7 +384,7 @@ class WORKSPACE(JOBS):
             BPDF_file = '{}/BPDF/LAND_COVER/MCD12C1/051/{}/pace-g5nr.lb.land_cover.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
             newline = 'BPDF_file: {}\n'.format(BPDF_file)
             text.append(newline)
-            NDVI_file = '{}/{}/pace-g5nr.lb-nearest.myd13c2.{}_{}.nc4'.format(LbDir,YMDdir,nymd,hms)
+            NDVI_file = '{}/pace-g5nr.lb-nearest.myd13c2.{}_{}.nc4'.format(LbDir,nymd,hms)
             newline = 'NDVI_file: {}\n'.format(NDVI_file)
             text.append(newline)
 
