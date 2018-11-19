@@ -586,7 +586,7 @@ def populate_L1B(outfilelist,rootdir,channels,Date,force=False):
                'SWIR_wavelength' : 'Lt_SWIR'}
         for sds in SDS:
             pchannels = ncmerge.groups['sensor_band_parameters'].variables[sds][:]
-            pvar      = ncmerge.groups['observation_data'].variables[SDS[sds]][:]
+            pvar      = ncmerge.groups['observation_data'].variables[SDS[sds]]
 
             for ch,filename in zip(channels,outfilelist):
                 if float(ch) in pchannels:
