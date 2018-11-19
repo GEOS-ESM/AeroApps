@@ -114,7 +114,9 @@ def computeMie(Vars, channel, varnames, rcFile, options):
             if (v==0):
                 tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
                 ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-                ext2back = ext/backscat
+                ext2back = np.ones(backscat.shape)*MAPL_UNDEF
+                I = backscat > 0
+                ext2back[I] = ext[I]/backscat[I]
                 MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}
 
                 if options.intensive:
@@ -127,7 +129,9 @@ def computeMie(Vars, channel, varnames, rcFile, options):
             else:
                 tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
                 ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-                ext2back = ext/backscat
+                ext2back = np.ones(backscat.shape)*MAPL_UNDEF
+                I = backscat > 0
+                ext2back[I] = ext[I]/backscat[I]
                 MieVars['ext'].append(ext)
                 MieVars['scatext'].append(sca)
                 MieVars['backscat'].append(backscat)
@@ -151,7 +155,9 @@ def computeMie(Vars, channel, varnames, rcFile, options):
     else:
         tau,ssa,g = getAOPscalar(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
         ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-        ext2back = ext/backscat
+        ext2back = np.ones(backscat.shape)*MAPL_UNDEF
+        I = backscat > 0
+        ext2back[I] = ext[I]/backscat[I]
         MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}       
         if options.intensive:
             vol, area, refr, refi, reff  = getAOPint(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
