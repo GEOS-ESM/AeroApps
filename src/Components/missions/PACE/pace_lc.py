@@ -390,12 +390,17 @@ class WORKSPACE(JOBS):
 
         text.append('\n')
         # WATER STUFF
-        newline = 'WATERNAME: NOBM-CX\n'
-        text.append(newline)
+        if ch <= 775.0:
+            newline = 'WATERNAME: NOBM-CX\n'
+            text.append(newline)
+            WAT_file = '{}/SLEAVE/NOBM/{}/pace-g5nr.lb.sleave.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
+            newline = 'WAT_file: {}\n'.format(WAT_file)
+            text.append(newline)
+        else:
+            newline = 'WATERNAME: CX\n'
+            text.append(newline)
+
         newline = 'WATERMODEL: CX\n'
-        text.append(newline)
-        WAT_file = '{}/SLEAVE/NOBM/{}/pace-g5nr.lb.sleave.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
-        newline = 'WAT_file: {}\n'.format(WAT_file)
         text.append(newline)
 
         #refractive index
