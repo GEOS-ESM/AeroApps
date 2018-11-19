@@ -186,6 +186,8 @@ if __name__ == "__main__":
     modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,aer_x,
                       coll=options.coll,
                       cloud_thresh=0.7,
+                      cloudFree = 0.0,
+                      aodmax = 1.0,
                       verbose=options.verbose)
     if modis.nobs < 1:
         if options.verbose:

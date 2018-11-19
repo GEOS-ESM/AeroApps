@@ -112,6 +112,8 @@ class MxD04_NNR(MxD04_L2):
                  cloud_thresh=0.70,
                  glint_thresh=40.0,
                  scat_thresh=170.0,
+                 cloudFree=None,
+                 aodmax=1.0,
                  coll='006',verbose=0):
         """
         Contructs a MXD04 object from MODIS Aerosol Level 2
@@ -125,6 +127,8 @@ class MxD04_NNR(MxD04_L2):
         syn_time --- synoptic time
 
         cloud_tresh --- cloud fraction treshhold
+        cloudFree   --- cloud fraction threshhold for assuring no cloud contaminations when aod is > aodmax
+                        if None, no cloud free check is made
               
         The following attributes are also defined:
            fractions dust, sea salt, BC+OC, sulfate
@@ -138,6 +142,9 @@ class MxD04_NNR(MxD04_L2):
         """
 
         self.verbose = verbose
+        self.algo    = algo
+        self.cloudFree = cloudFree
+        self.aodmax = aodmax
         
         # Initialize superclass
         # ---------------------
@@ -146,6 +153,7 @@ class MxD04_NNR(MxD04_L2):
             MxD04_L2.__init__(self,Files,algo,syn_time,
                               only_good=True,
                               SDS=SDS,
+                              alias={'Deep_Blue_Cloud_Fraction_Land':'cloud_deep'},
                               Verb=verbose)            
         else:        
             MxD04_L2.__init__(self,Files,algo,syn_time,
@@ -207,6 +215,7 @@ class MxD04_NNR(MxD04_L2):
             self.qa_flag = self.qa_flag[m]
             self.aod     = self.aod[m,:]
             self.time    = self.time[m]
+            self.Time    = self.Time[m]
             self.iGood   = self.iGood[m] 
             self.nobs    = self.Longitude.shape[0]         
 
@@ -218,7 +227,7 @@ class MxD04_NNR(MxD04_L2):
         # ---      
         self.iGood = self.cloud<cloud_thresh  
         if algo == "LAND":
-            self.iGood = self.iGood & (self.Deep_Blue_Cloud_Fraction_Land<cloud_thresh)
+            self.iGood = self.iGood & (self.cloud_deep<cloud_thresh)
         elif algo == "DEEP":
             self.iGood = self.iGood & (self.cloud_lnd<cloud_thresh)
 
@@ -428,6 +437,7 @@ class MxD04_NNR(MxD04_L2):
         # ---------------------
         targets = self.net(self._getInputs())
 
+
         # Targets do not have to be in MODIS retrieval
         # ----------------------------------------------
         for i,targetName in enumerate(self.net.TargetNames):
@@ -460,7 +470,29 @@ class MxD04_NNR(MxD04_L2):
             self.__dict__[name][self.iGood,k] = result
 
 
-        return result
+        # Do extra cloud filtering if required
+        if self.cloudFree is not None:                 
+            if self.algo == "LAND":
+                cloudy = (self.cloud_deep>=self.cloudFree) & (self.cloud>=self.cloudFree)
+            elif self.algo == "DEEP":
+                cloudy = (self.cloud_lnd>=self.cloudFree) & (self.cloud>=self.cloudFree)
+    
+            contaminated = np.zeros(np.sum(self.iGood)).astype(bool)
+            for targetName in self.net.TargetNames:
+                name, ch = TranslateTarget[targetName]
+                k = list(self.channels).index(ch) # index of channel
+                result = self.__dict__[name][self.iGood,k]
+                contaminated = contaminated | ( (result > self.aodmax) & cloudy[self.iGood] )
+                
+            for targetName in self.net.TargetNames:
+                name, ch = TranslateTarget[targetName]
+                k = list(self.channels).index(ch) # index of channel
+                self.__dict__[name][self.iGood,k][contaminated] = MISSING
+
+            self.iGood[contaminated] = False
+
+
+
 
 
 #---
@@ -495,5 +527,5 @@ if __name__ == "__main__":
                   cloud_thresh=0.7,
                   verbose=True)
 
-    laod = m.apply(nn_file)
-    aod = exp(laod) - 0.01
+    m.apply(nn_file)
+    aod = m.aod_
