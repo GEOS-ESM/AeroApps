@@ -751,7 +751,11 @@ program leo_vlidort_cloud
     if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
       do ch = 1, nch
         below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .GE. 0)
-        Vsleave(ch,nobs) = dble(nn_interp(WATER_CH(below:below+1),reshape(SLEAVE(i,j,ch,:),(/2/)),channels(ch)))
+        if (ch .eq. maxval(WATER_CH)) then
+          Vsleave(ch,nobs) = SLEAVE(i,j,ch,1)
+        else
+          Vsleave(ch,nobs) = dble(nn_interp(WATER_CH(below:below+1),reshape(SLEAVE(i,j,ch,:),(/2/)),channels(ch)))
+        end if
       end do
 
     end if
@@ -1361,6 +1365,7 @@ program leo_vlidort_cloud
     integer                            :: below
     integer                            :: ncid, varid
     real, dimension(im,jm,2)           :: temp
+    real, dimension(im,jm,1)           :: tempmax
 
     call mp_readvar1Dchunk('wavelength', WAT_file, (/wnch/), 1, npet, myid, WATER_CH)
     if (MAPL_am_I_root()) then
@@ -1368,10 +1373,15 @@ program leo_vlidort_cloud
       do ch = 1, nch
         ! get channel below
         below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .GE. 0)
-        
-        call readvar3Dslice('lwn', WAT_file, (/im,jm,2/), 3, below, temp) 
-
+        if (ch .eq. maxval(WATER_CH)) then
+          call readvar3Dslice('lwn', WAT_file, (/im,jm,1/), 3, below, tempmax)
+          temp = 0
+          temp(:,:,1) = tempmax(:,:,1)
+        else
+          call readvar3Dslice('lwn', WAT_file, (/im,jm,2/), 3, below, temp)          
+        end if
         SLEAVE(:,:,ch,:) = temp
+        
       end do
     end if
     call MAPL_SyncSharedMemory(rc=ierr) 
