@@ -667,4 +667,6 @@ if __name__ == '__main__':
     # Take VLIDORT outputs and populate PACE L1b File
     I = ~workspace.errTally
     if any(I):
-        populate_L1B(workspace.outfilelist[I],workspace.rootdir,workspace.channels[I],workspace.Date,args.force)
+        outfilelist = np.array(workspace.outfilelist)[I]
+        channels    = np.array(workspace.channels)[I]
+        populate_L1B(outfilelist,workspace.rootdir,channels,workspace.Date,args.force)
