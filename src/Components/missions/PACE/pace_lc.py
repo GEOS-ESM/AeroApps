@@ -51,7 +51,7 @@ class JOBS(object):
                 node_tally = jobsmax
 
         workingJobs = np.arange(countRun)
-
+        
 
         # Submit first JOBSMAX jobs
         jobid = np.empty(0)
@@ -102,6 +102,7 @@ class JOBS(object):
                     finishedJobs = np.append(finishedJobs,ii)
                     errcheck = self.check_for_errors(i,s)               
                     if (errcheck is False):
+                        self.errTally[i] = False
                         self.destroy_workspace(i,s)
                         if self.nodemax is not None:
                             self.combine_files(i)
@@ -222,7 +223,7 @@ class WORKSPACE(JOBS):
             self.dirstring.append(outpath)
 
 
-
+        self.errTally    = np.ones(len(self.dirstring)).astype(bool)
 
     def create_workdir(self,outpath,ch):
         # create directory     
@@ -562,18 +563,22 @@ class WORKSPACE(JOBS):
 
 
 
-def populate_L1B(outfilelist,rootdir,channels,Date):
+def populate_L1B(outfilelist,rootdir,channels,Date,force=False):
         YMDdir    = Date.strftime('Y%Y/M%m/D%d')
         pYMDdir   = Date.strftime('Y2020/M%m/D%d')
         L1bDir    = '{}/L1B/{}'.format(rootdir,pYMDdir)
         LcDir     = '{}/LevelC/{}'.format(rootdir,YMDdir)
+        hms       = Date.strftime('%H%M00')
 
         pDate = isoparser(Date.strftime('2020-%m-%dT%H:%M:00'))
         nyj = pDate.strftime('%Y%j')
         L1B_file = '{}/OCI{}{}.L1B_PACE.nc'.format(L1bDir,nyj,hms)
 
         outfile = '{}/OCI{}{}.L1B_PACE.nc'.format(LcDir,nyj,hms)
-        shutil.copyfile(L1B_file,outfile)
+        exists  = os.path.isfile(outfile)
+        if force or (not exists):
+            shutil.copyfile(L1B_file,outfile)
+
 
         ncmerge = Dataset(outfile,mode='r+')
         SDS = {'blue_wavelength' : 'Lt_blue',
@@ -643,6 +648,9 @@ if __name__ == '__main__':
     parser.add_argument("--noext",action="store_true",
                         help="No extinctions calculations (default=False).")
 
+    parser.add_argument("--force",action="store_true",
+                        help="Overwrite existing L1B file in LevelC directory (default=False).")    
+
     parser.add_argument("-n", "--nodemax", default=nodemax,
                         help="Max number of nodes to use. "\
                       "(default=%s)"\
@@ -657,4 +665,6 @@ if __name__ == '__main__':
     workspace.handle_jobs()
 
     # Take VLIDORT outputs and populate PACE L1b File
-    populate_L1B(workspace.outfilelist,workspace.rootdir,workspace.channels,workspace.Date)
+    I = ~self.errTally
+    if any(I):
+        populate_L1B(workspace.outfilelist[I],workspace.rootdir,workspace.channels[I],workspace.Date,args.force)
