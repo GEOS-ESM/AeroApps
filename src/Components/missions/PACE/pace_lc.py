@@ -588,7 +588,7 @@ def populate_L1B(outfilelist,rootdir,channels,Date,force=False):
             pchannels = ncmerge.groups['sensor_band_parameters'].variables[sds][:]
             pvar      = ncmerge.groups['observation_data'].variables[SDS[sds]][:]
 
-            for ch,filename in channels,outfilelist:
+            for ch,filename in zip(channels,outfilelist):
                 if float(ch) in pchannels:
                     nc = Dataset(filename)
                     fch = "{:.2f}".format(ch)
