@@ -151,8 +151,8 @@ class JOBS(object):
                 stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
 
 
-            print 'Waiting 20 minutes'
-            time.sleep(60*20)
+            print 'Waiting 5 minutes'
+            time.sleep(60*5)
             
 
         # Exited while loop
@@ -665,6 +665,6 @@ if __name__ == '__main__':
     workspace.handle_jobs()
 
     # Take VLIDORT outputs and populate PACE L1b File
-    I = ~self.errTally
+    I = ~workspace.errTally
     if any(I):
         populate_L1B(workspace.outfilelist[I],workspace.rootdir,workspace.channels[I],workspace.Date,args.force)
