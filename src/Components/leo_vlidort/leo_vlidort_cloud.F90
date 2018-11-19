@@ -2409,6 +2409,9 @@ program leo_vlidort_cloud
     ! Water Surface
     call ESMF_ConfigGetAttribute(cf, watername, label = 'WATERNAME:',default='CX')
     call ESMF_ConfigGetAttribute(cf, watermodel, label = 'WATERMODEL:',default='CX')
+    if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
+      call ESMF_ConfigGetAttribute(cf, WAT_file, label = 'WAT_file:',__RC__)
+    end if
 
     ! Clouds
     call ESMF_ConfigGetAttribute(cf, IcldTable, label = 'ICLDTABLE:',__RC__)       
@@ -2430,7 +2433,7 @@ program leo_vlidort_cloud
     call ESMF_ConfigGetAttribute(cf, ADD_file, label = 'ADD_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, CLD_file, label = 'CLD_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, MET_file, label = 'MET_file:',__RC__)
-    call ESMF_ConfigGetAttribute(cf, WAT_file, label = 'WAT_file:',__RC__)
+    
     if ( (index(lower_to_upper(landname),'BPDF') > 0) ) then
       call ESMF_ConfigGetAttribute(cf, NDVI_file, label = 'NDVI_file:',__RC__)
       call ESMF_ConfigGetAttribute(cf, BPDF_file, label = 'BPDF_file:',__RC__)    
