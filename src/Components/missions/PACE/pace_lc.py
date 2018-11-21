@@ -482,7 +482,7 @@ class WORKSPACE(JOBS):
 
 
         self.gchannels = channels
-        self.channels  = list(np.concatenate(channels))
+        self.channels  = list(np.unique(np.concatenate(channels)))
 
 
     def destroy_workspace(self,i,jobid):
