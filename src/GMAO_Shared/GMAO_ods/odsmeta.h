@@ -29,6 +29,8 @@
 !  30May2012  Todling   ATMS/CrIS; distinguish GPS ref/bend; consistent w/ kt_list.rc
 !  24Oct2012  Sienkiewicz  Take out obsolete ssmis references (las,uas,etc)
 !                          add 'seviri', change SSMIS to same idsats as SSMI
+!  09Oct2014  Weir      Begin adding trace gas support
+!  20May2017  Todling   Add exclusion flag X_ADV_LOCAL
 !
 !EOP
 !-------------------------------------------------------------------------
@@ -117,6 +119,9 @@
         integer, parameter :: ktlat  = 92       !   position-type obs: latitude
         integer, parameter :: ktlon  = 93       !   position-type obs: longitude
         integer, parameter :: ktdw   = 94       !   doppler wind lidar
+                                                ! Trace gases
+        integer, parameter  :: ktco   = 127     !   layer co (ppbv)
+        integer, parameter  :: ktxco2 = 126     !   average column co2 (ppmv)
 
         integer, dimension(28), parameter :: ktSurfAll = (/ ktus, ktvs, ktslp,
      &                                                      ktus10, ktTs10, ktTds, ktrhs, ktqs10,
@@ -231,6 +236,7 @@
       integer, parameter :: X_NCEP_PURGE  = 35  ! NCEP SDM purged (non-raob)
       integer, parameter :: X_NCEP_NLNQC  = 36  ! Rejected by GSI non-linear QC 
       integer, parameter :: X_ODSMATCH    = 37  ! ODS-match could not find a match
+      integer, parameter :: X_ADV_LOCAL   = 38   ! obs not contributing to EFSOI due to advection of localization
 
 !     Descriptions of history flags:
 !     -----------------------------
@@ -268,7 +274,7 @@
 !     -------------------------------
 
                                 ! number of exclusion flags in use
-      integer, parameter :: nqcXmax = 37
+      integer, parameter :: nqcXmax = 38
 
       character(len=33), parameter :: qcXnames(nqcXmax)=(/
      1                 'unspecified preprocessing flag  ',
@@ -307,10 +313,11 @@
      4                 'Failed elevation limit check    ',
      5                 'NCEP SDM purged (non-raob)      ',
      6                 'Rejected by GSI non-linear QC   ',
-     7                 'ODSmatch could not find match   '/)
+     7                 'ODSmatch could not find match   ',
+     8                 'no impact due to advected local '/)
 
 
-      integer, parameter :: nsats = 40
+      integer, parameter :: nsats = 43
       character(len=*), parameter :: sats(nsats)=(/
      .                 'hirs2           ', 'hirs3           ', 'hirs4           ',
      .                 'msu             ', 'ssu             ', 'sndr            ',
@@ -324,8 +331,10 @@
      .                 'atms            ', 'cris            ', 'omieff          ',
      .                 'o3lev           ', 'tomseff         ', 'gome            ',
      .                 'mls             ', 'mls20           ', 'mls22           ',
-     .                 'mls30           ', 'mls55           ', 'tmi             ',
-     .                 'gmi             '/)
+     .                 'mls30           ', 'mls55           ', 'ompslp          ',
+     .                 'tmi             ', 'gmi             ', 'acos            ',
+     .                 'mopitt          '  /)
+
 ! note: numbers below were made up for MHS, and SSU
 ! note: CRIS and ATMS numbers assigned at will
 ! note: omieff number assigned as omi
@@ -343,8 +352,9 @@
      .                 900               , 950               , 449               ,
      .                 304               , 440               , 445               ,
      .                 310               , 315               , 320               ,
-     .                 325               , 330               , 705               ,
-     .                 706 /)
+     .                 325               , 330               , 335               ,
+     .                 705               , 706               , 998               ,
+     .                 999 /)
 
       integer, parameter :: npcp = 4
       character(len=*), parameter :: pcpt(npcp)=(/

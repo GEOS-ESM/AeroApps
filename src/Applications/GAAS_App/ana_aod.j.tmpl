@@ -5,17 +5,17 @@
 #PBS -j eo
 #SBATCH --constraint=hasw
 #------------------------------
+setenv FVHOME >>>FVHOME<<<
+
 if ($#argv > 0) then
    setenv aod_parallel_flag $1
    shift
 else
    setenv aod_parallel_flag 0
    setenv PATH $PBS_O_PATH
+   source $FVHOME/run/FVDAS_Run_Config
 endif
 
-#------------------------------
-setenv FVHOME >>>FVHOME<<<
-source $FVHOME/run/FVDAS_Run_Config
 #------------------------------
 # Odd variables that offend MPT-built execs
 unsetenv PMI_RANK
@@ -115,9 +115,10 @@ foreach time_offset ( 000000 030000 )
 
    # run ana_aod.x
    #--------------
+   if (-e ANAAOD_EGRESS) /bin/rm ANAAOD_EGRESS
    set flags = "-a $aod_a -d $aod_d -f $aod_f -k $aod_k"
    ana_aod.x -v -x $EXPID $flags -o $ods_a $aer_f
-   if(! -e ANAAOD_EGRESS) then
+   if (! -e ANAAOD_EGRESS) then
       @ errcnt = $errcnt + 1
    endif
 

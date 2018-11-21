@@ -4,9 +4,10 @@
 
 from types    import ListType
 from datetime import datetime, timedelta
-from numpy    import loadtxt, ones, NaN, concatenate, array
+from numpy    import loadtxt, ones, NaN, concatenate, array, pi, cos, sin, arccos, zeros
 from MAPL     import config
 from glob     import glob
+import gzip
 
 MISSING = -99999.0
 ULOD    = -77777.0 # Upper Limit of Detection (LOD) flag
@@ -83,13 +84,13 @@ class ICARTT(object):
         self.Nav = dict ( Time=self.tyme, Longitude=None, Latitude=None, Altitude=None, Pressure=None )
         for var in self.Vars:
             VAR = var.upper()
-            if VAR in ('LONGITUDE', 'FMS_LON', 'GPS_LON', 'LON'):
+            if VAR in ('LONGITUDE', 'FMS_LON', 'GPS_LON', 'LON', 'GGLON'):
                 self.Nav['Longitude'] = self.__dict__[var]
-            if VAR in ('LATITUDE', 'FMS_LAT', 'GPS_LAT', 'LAT' ):
+            if VAR in ('LATITUDE', 'FMS_LAT', 'GPS_LAT', 'LAT', 'GGLAT' ):
                 self.Nav['Latitude'] = self.__dict__[var]
-            if VAR in ('GPSALT', 'FMS_ALT_PRES', 'GPS_ALT' ):
+            if VAR in ('GPSALT', 'FMS_ALT_PRES', 'GPS_ALT', 'GGALT' ):
                 self.Nav['Altitude'] = self.__dict__[var]
-            if VAR in ('PRESSURE', 'C_STATICPRESSURE'):
+            if VAR in ('PRESSURE', 'C_STATICPRESSURE', 'PSXC'):
                 self.Nav['Pressure'] = self.__dict__[var]
 
 #--
@@ -143,7 +144,10 @@ class ICARTT(object):
 
         # Top header
         # ----------
-        f = open(filename,mode='r')
+        if filename[-3:] == '.gz':
+            f = gzip.open(filename, mode='r')
+        else:
+            f = open(filename,mode='r')
         header = f.readline().replace('\n','').replace('\r','')
         if ',' in header:
             tokens = header.split(',')
@@ -289,11 +293,56 @@ class ICARTT(object):
                     
         self.tyme = self.__dict__[tvar] # just an alias
 
+#--
+    def getSpeed(self, metric=True,skip=60):
+        """
+        Return plane speed in km/h or nm/h depending on metric)
+        """
+        # coarsen trajectory
+        # ------------------
+        lon = self.Nav['Longitude'][::skip]
+        lat = self.Nav['Latitude'][::skip]
+        t = self.tyme[::skip]
+        
+        dst = _getDist(lon,lat) # meters
+        if metric:
+            dst = dst / 1000.               # km
+        else:
+            dst = 0.000539957 * dst # nautical miles
+
+        # Fix units
+        # ---------
+        dt = t[1:]-t[:-1]
+        dt_hour = array([dt_.total_seconds()/3600. for dt_ in dt]) # hours
+        
+        spd = dst / dt_hour
+
+        return spd
+        
+def _gcDist(x1,y1,z1,x2,y2,z2):
+    """
+    Return great circle distance.
+    """
+    a = (6378137.00+6356752.3142)/2. # mean earth radius
+    cosa = x1*x2 + y1*y2 + z1*z2
+    cosa[cosa>1.] = 1.
+    return a * arccos(cosa)
+    
+def _getDist(lon,lat):
+    """
+    Return distance along trajectory.
+    """
+    d2r = pi / 180.
+    rlon, rlat = (d2r * lon, d2r * lat)
+    x, y, z = (cos(rlat)*cos(rlon),cos(rlat)*sin(rlon),sin(rlat))
+    dist = _gcDist(x[:-1],y[:-1],z[:-1],
+                   x[1:], y[1:], z[1:])
+    return dist
+
+        
 #....................................................................
 
 if __name__ == "__main__":
 
-    ic = ICARTT('discoveraq-metchem_GROUND-EDGEWOOD_20110705_RA.ict')
-    
-
+    ic = ICARTT('WECANrf11.ict.gz')
 

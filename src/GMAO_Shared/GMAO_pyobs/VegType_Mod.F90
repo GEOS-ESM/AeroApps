@@ -433,13 +433,13 @@ subroutine vegopenf(iunit, filenm, formt, stat, act, iclob)
 implicit none
 
 integer iunit, iclob
-character*(*) filenm, formt, stat, act
+character(len=*) filenm, formt, stat, act
 logical exans
 integer, external :: lastchar
 
 inquire(FILE=filenm,EXIST=exans)
 if(exans.and.iclob.eq.0.and.  &
-     (act(1:5).eq.'WRITE'.or.act(1:5).eq.'write')) then
+     ((act == 'WRITE') .or. (act == 'write'))) then
    print*,'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
    print*,'!!!   trying to open file name :'
    print*,'!!!       ',filenm
@@ -457,7 +457,7 @@ end subroutine vegopenf
 
 !-------------------------------------------------------------------
 integer function lastchar(str)
-character*(*) str
+character(len=*) str
 integer ln,n
 
 ! returns last non-blank character position from a string

@@ -25,6 +25,7 @@
   integer :: idxTable
   integer :: out_fid
   integer iarg, iargc, argc, lenfile
+  logical :: only_taod
   logical :: doing_tauabs2d
   logical :: doing_totext2d
   logical :: doing_ssa2d
@@ -45,6 +46,7 @@
   iarg = 0
   outfile = 'chem_aod'
   rcfile  = 'Aod_Registry.rc'
+  only_taod=.false.
   doing_tauabs2d = .false.
   doing_totext2d = .false.
   doing_ssa2d = .false.
@@ -66,9 +68,11 @@
      doing_tauabs2d = .true.
     case ("-totext2d")
      doing_totext2d = .true.
-     doing_tauabs2d = .true.
+!_RT doing_tauabs2d = .true.
     case ("-ssa2d")
      doing_ssa2d = .true.
+    case ("-only_taod")
+     only_taod = .true.
     case ("-o")
      if(iarg+1 .gt. argc) call usage()
      iarg = iarg+1
@@ -182,13 +186,19 @@
       do k = 1, w_c%grid%km
       do j = 1, jm
       do i = 1, im
-      call Chem_MieQuery(mie_tables, idxTable, 1.*ik, &
-                         w_c%qa(iq)%data3d(i,j,k)*w_c%delp(i,j,k)/9.81, &
-                         w_c%rh(i,j,k) * scaleRH, tau=tau_, ssa=ssa_)
-      w_tau%qa(iq)%data3d(i,j,ik) = w_tau%qa(iq)%data3d(i,j,ik) + tau_
-      if(doing_ssa2d) w_ssa%qa(iq)%data3d(i,j,ik) = w_ssa%qa(iq)%data3d(i,j,ik) + tau_*ssa_
-      if(doing_tauabs2d) w_tauabs%qa(iq)%data3d(i,j,ik) = &
-                       w_tauabs%qa(iq)%data3d(i,j,ik) + (1.-ssa_)*tau_
+         if ( doing_ssa2d .or. doing_tauabs2d ) then
+            call Chem_MieQuery(mie_tables, idxTable, float(ik), &
+                            w_c%qa(iq)%data3d(i,j,k)*w_c%delp(i,j,k)/9.80616, &
+                            w_c%rh(i,j,k) * scaleRH, tau=tau_, ssa=ssa_)
+         else
+            call Chem_MieQuery(mie_tables, idxTable, float(ik), &
+                            w_c%qa(iq)%data3d(i,j,k)*w_c%delp(i,j,k)/9.80616, &
+                            w_c%rh(i,j,k) * scaleRH, tau=tau_)
+         endif
+         w_tau%qa(iq)%data3d(i,j,ik) = w_tau%qa(iq)%data3d(i,j,ik) + tau_
+         if(doing_ssa2d) w_ssa%qa(iq)%data3d(i,j,ik) = w_ssa%qa(iq)%data3d(i,j,ik) + tau_*ssa_
+         if(doing_tauabs2d) w_tauabs%qa(iq)%data3d(i,j,ik) = &
+                            w_tauabs%qa(iq)%data3d(i,j,ik) + (1.-ssa_)*tau_
       enddo
       enddo
       enddo
@@ -212,19 +222,25 @@
    datestr = yyyymmddstr//'_'//hhnnstr//'z'
 
 
-    if(doing_totext2d) then 
-      filename0 = trim(outfile(1:lenfile)//'.ext_Nc.'//datestr//'.nc4')
-      call cmp_totext(filename0,w_tau,nymd,nhms,0,1,out_fid,freq=freq)
+  if(doing_totext2d) then 
+    if (only_taod) then
+       filename0 = trim(outfile)
+    else
+       filename0 = trim(outfile(1:lenfile)//'.ext_Nc.'//datestr//'.nc4')
     endif
+    call cmp_totext(filename0,w_tau,nymd,nhms,0,1,out_fid,freq=freq)
+  endif
+
+  if(.not.only_taod) then 
 
     filename = trim(outfile(1:lenfile)//'.taod_Nc.'//datestr//'.nc4')
     call Chem_BundleWrite( filename, nymd, nhms, 0, w_tau, rc, &
                           verbose=verbose, new=new, freq=freq)
 
    if(doing_ssa2d) then 
-    filename = trim(outfile(1:lenfile)//'.tssa_Nc.'//datestr//'.nc4')
-    call Chem_BundleWrite( filename, nymd, nhms, 0, w_ssa, rc, &
-                           verbose=verbose, new=new, freq=freq)
+      filename = trim(outfile(1:lenfile)//'.tssa_Nc.'//datestr//'.nc4')
+      call Chem_BundleWrite( filename, nymd, nhms, 0, w_ssa, rc, &
+                             verbose=verbose, new=new, freq=freq)
    endif
 
    if(doing_tauabs2d) then 
@@ -238,6 +254,7 @@
     call Chem_BundleWrite( filename, nymd, nhms, 0, w_tauabs, rc, &
                            verbose=verbose, new=new, freq=freq)
    endif
+  endif ! .not.only_taod
 
 !  ==================================================================================
 
@@ -272,6 +289,7 @@
 !
 ! !USES:
 !
+  use m_chars, only: uppercase
   implicit NONE
 
 !
@@ -316,22 +334,18 @@
 
      total_ext = 0.0
      do iq = 1, w_c%reg%nq
-       if(trim(w_c%reg%vname(iq)) == 'du001' .or. trim(w_c%reg%vname(iq)) == 'DU001' .or. &
-          trim(w_c%reg%vname(iq)) == 'du002' .or. trim(w_c%reg%vname(iq)) == 'DU002' .or. &
-          trim(w_c%reg%vname(iq)) == 'du003' .or. trim(w_c%reg%vname(iq)) == 'DU003' .or. &
-          trim(w_c%reg%vname(iq)) == 'du004' .or. trim(w_c%reg%vname(iq)) == 'DU004' .or. &
-          trim(w_c%reg%vname(iq)) == 'du005' .or. trim(w_c%reg%vname(iq)) == 'DU005' .or. &
-          trim(w_c%reg%vname(iq)) == 'ss001' .or. trim(w_c%reg%vname(iq)) == 'SS001' .or. &
-          trim(w_c%reg%vname(iq)) == 'ss002' .or. trim(w_c%reg%vname(iq)) == 'SS002' .or. &
-          trim(w_c%reg%vname(iq)) == 'ss003' .or. trim(w_c%reg%vname(iq)) == 'SS003' .or. &
-          trim(w_c%reg%vname(iq)) == 'ss004' .or. trim(w_c%reg%vname(iq)) == 'SS004' .or. &
-          trim(w_c%reg%vname(iq)) == 'ss005' .or. trim(w_c%reg%vname(iq)) == 'SS005' .or. &
-          trim(w_c%reg%vname(iq)) == 'SO4' .or. trim(w_c%reg%vname(iq)) == 'SO4' .or.     &
-          trim(w_c%reg%vname(iq)) == 'BCphobic' .or.                                      &
-          trim(w_c%reg%vname(iq)) == 'BCphilic' .or.                                      &
-          trim(w_c%reg%vname(iq)) == 'OCphobic' .or.                                      &
-          trim(w_c%reg%vname(iq)) == 'OCphilic') then
+       if(trim(uppercase(w_c%reg%vname(iq)(1:2))) == 'DU'       .or. &
+          trim(uppercase(w_c%reg%vname(iq)(1:2))) == 'SS'       .or. &
+          trim(uppercase(w_c%reg%vname(iq)))      == 'SO4'      .or. &
+          trim(uppercase(w_c%reg%vname(iq)))      == 'NO3AN1'   .or. &
+          trim(uppercase(w_c%reg%vname(iq)))      == 'NO3AN2'   .or. &
+          trim(uppercase(w_c%reg%vname(iq)))      == 'NO3AN3'   .or. &
+          trim(uppercase(w_c%reg%vname(iq)))      == 'BCPHOBIC' .or. &
+          trim(uppercase(w_c%reg%vname(iq)))      == 'BCPHILIC' .or. &
+          trim(uppercase(w_c%reg%vname(iq)))      == 'OCPHOBIC' .or. &
+          trim(uppercase(w_c%reg%vname(iq)))      == 'OCPHILIC') then
 
+          print *, 'w_c%reg%vname(iq) = ', trim(w_c%reg%vname(iq))
 
           do k = 1,km_e
            do j = 1,jm_e

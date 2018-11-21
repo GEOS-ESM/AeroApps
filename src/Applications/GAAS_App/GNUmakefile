@@ -81,7 +81,7 @@ INC_PSAS = $(ESMAINC)/GMAO_psas
 LIB_PSAS = $(ESMALIB)/libGMAO_psas.a
 
 MOD_DIRS = . $(INC_MPEU) $(INC_ODS) $(INC_PSAS) $(INC_HERMES) \
-             $(INC_CHEM_BASE) $(INC_MAPL_BASE) $(INC_CFIO) $(INC_ESMF)
+             $(INC_CHEM_BASE) $(INC_MAPL_BASE) $(INC_CFIO) $(INC_SDF) $(INC_ESMF)
 
 INC_DIRS = $(MOD_DIRS)
 
@@ -103,29 +103,29 @@ ana_aod.x : $(LIB) ana_aod.o
 	$(FC) $(LDFLAGS) -o $@ ana_aod.o $(LIB) \
               $(LIB_CHEM_BASE) $(LIB_ODS) $(LIB_PSAS) $(LIB_HERMES) \
               $(LIB_GFIO) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
-              $(LIB_EU) $(LIB_SDF) \
-              $(LIB_ESMF) $(LIB_SCI) $(LIB_SYS) $(LIB_MPI)
+              $(LIB_EU) $(LIB_ESMF) \
+              $(LIB_SDF) $(LIB_SCI) $(LIB_SYS) $(LIB_MPI)
 
 mpana_aod.x : $(LIB) mpana_aod.o
 	$(FC) $(LDFLAGS) -o $@ mpana_aod.o $(LIB) \
               $(LIB_CHEM_BASE) $(LIB_ODS) $(LIB_PSAS) $(LIB_HERMES) \
               $(LIB_GFIO) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
-              $(LIB_CFIO) $(LIB_MPEU) $(LIB_SDF) \
-              $(LIB_ESMF) $(LIB_SCI) $(LIB_SYS) $(LIB_MPI)
+              $(LIB_CFIO) $(LIB_MPEU) $(LIB_ESMF) \
+              $(LIB_SDF) $(LIB_SCI) $(LIB_SYS) $(LIB_MPI)
 
 odsqc.x : $(LIB) odsqc.o
 	$(FC) $(LDFLAGS) -o $@ odsqc.o $(LIB) \
               $(LIB_CHEM_BASE) $(LIB_ODS) $(LIB_PSAS) $(LIB_HERMES) \
               $(LIB_GFIO) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
-              $(LIB_EU) $(LIB_SDF) \
-              $(LIB_ESMF) $(LIB_SCI) $(LIB_SYS) $(LIB_MPI)
+              $(LIB_EU) $(LIB_ESMF) \
+              $(LIB_SDF) $(LIB_SCI) $(LIB_SYS) $(LIB_MPI)
 
 %.x : $(LIB) %.o
 	$(FC) $(LDFLAGS) -o $@ $*.o $(LIB) \
               $(LIB_CHEM_BASE) $(LIB_HERMES) \
               $(LIB_GFIO) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
               $(LIB_CFIO) $(LIB_MPEU) \
-              $(LIB_SDF) $(LIB_ESMF) $(LIB_SCI) $(LIB_SYS) $(LIB_MPI)
+              $(LIB_ESMF) $(LIB_SDF) $(LIB_SCI) $(LIB_SYS) $(LIB_MPI)
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------

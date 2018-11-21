@@ -6,6 +6,7 @@
 # !REVISION HISTORY:
 #
 #  23Jun2016  Todling   Created from Joe Stassi original GEOSdas.csm code
+#  13Aug2017  Todling   Merge w/ latest from Joe; but now too much entanglement
 #
 #############################################################################
 
@@ -64,160 +65,109 @@ if ( $#argv < 3 ) then
    echo " \\clearpage "
    exit(0)
 endif
-set bnymd  = $1
-set bnhms  = $2
+
+
+# Functions.csh must be somewhere in your path
+# --------------------------------------------
+  set Functions = ( `which Functions.csh` )
+  if ( $status ) then
+     echo $0": cannot find required Functions.csh"
+     exit 1
+  else
+     source $Functions[1]
+  endif
+
+# When "Verify" is set, non-zero return code from any user defined
+# csh Function causes this script to exit with the same return code; 
+# see Functions.csh
+# -------------------------------------------------------------------
+  set Verify
+  set Trace
+  Echo
+
+# Function definitions
+# --------------------
+  Use GEOSdas
+
+# Input parameters
+# ----------------
+set nymd   = $1
+set nhms   = $2
 set nstep  = $3
+#set expid = $1
+#set nymd = $2
+#set nhms = $3
+#set nstep = $4
+#set workdir  = $5
+#set egressfn = $6
 
-set hh =  `echo $bnhms | cut -c1-2`
-set yyyymmddhh = ${bnymd}${hh}
+set hh =  `echo $nhms | cut -c1-2`
+set yyyymmddhh = ${nymd}${hh}
 
-
+# Required environment variables
+# ------------------------------
 setenv FAILED 0
-
 if ( !($?FVHOME)        ) setenv FAILED 1
 if ( !($?FVROOT)        ) setenv FAILED 1
 if ( !($?FVWORK)        ) setenv FAILED 1
 if ( !($?GID)           ) setenv FAILED 1
-if ( !($?group_list)    ) setenv FAILED 1
-
-if ( -e $FVWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
-   echo "${MYNAME}: Already done."
-   exit(0)
-endif
-
+if ( !($?MPIRUN_AOD)    ) setenv FAILED 1
 if ( $FAILED ) then
   echo " ${MYNAME}: not all required env vars defined"
   exit 1
 endif
 
+# Defaults for other environment variables
+# ----------------------------------------
 if ( !($?AERO_OBSDBRC) )  setenv AERO_OBSDBRC  obsys-gaas.rc
+if ( !($?AODBLOCKJOB)  )  setenv AODBLOCKJOB   1
+if ( !($?CHECK_DMF)    )  setenv CHECK_DMF     1
 if ( !($?DATA_QUEUE)   )  setenv DATA_QUEUE    datamove
 if ( !($?DO_DMGET)     )  setenv DO_DMGET      1
+if ( !($?DO4DVAR)      )  setenv DO4DVAR       0
+if ( !($?GAAS_ANA)     )  setenv GAAS_ANA      1
 if ( !($?IGNORE_0)     )  setenv IGNORE_0      0
 if ( !($?MODIS_L2_HDF) )  setenv MODIS_L2_HDF  0
+if ( !($?NCPUS_AOD)    )  setenv NCPUS_AOD     1
+if ( !($?PBS_BIN)      )  setenv PBS_BIN       "/usr/slurm/bin"
+if ( !($?group_list)   )  setenv group_list    "SBATCH -A $GID"
 
 if ( $?FVSPOOL ) then
-   set spool = "-s $FVSPOOL "
+   set spool = $FVSPOOL
 else
    set diren = `dirname $FVHOME`
-   set spool = "-s $diren/spool "
+   set spool = $diren/spool
 endif
 
-set path = ( . $FVHOME/run $FVROOT/bin $path )
+# Work directory
+# --------------
+if ( -e $FVWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
+   echo "${MYNAME}: Already done."
+   exit(0)
+endif
+cd $FVWORK
 
-  alias fname1 'echo \!* >! $fname'   # write first line of $fname
-  alias fname2 'echo \!* >> $fname'   # append to $fname
+# Aliases needed in GEOSdas.csm
+# -----------------------------
+alias fname1 'echo \!* >! $fname'   # write first line of $fname
+alias fname2 'echo \!* >> $fname'   # append to $fname
 
+# Variables needed in GEOSdas.csm (passed globally)
+# -------------------------------------------------
+@ numhrs = $nstep * 6
+set aod_parallel_flag = 0
+set bnhms = $nhms
+set bnymd = $nymd
+set data_queue = $DATA_QUEUE
+set gaasDateBeg = $nymd
+set gaasTimeBeg = $nhms
+set onhms = 060000 # frequency of observation files (we pack files in 6-hr intervals)
 
-             set fname = "acqaerobs1.pbs"
-             if ( ! -e $fname ) /bin/rm $fname
-             set acqdate = ${bnymd}_`echo $bnhms | cut -c1-2`z
-             set acqlog = $FVHOME/run/acqaerobs1.log.$acqdate.txt
-             touch ${FVWORK}/acquire.FAILED
-             fname1 "#\!/bin/csh -xvf"
-             fname2 "#$group_list"
-             fname2 "#PBS -N acqaerobs1"
-             fname2 "#PBS -o acqaerobs1.log.$acqdate.txt"
-             fname2 "#PBS -l nodes=1:ppn=1"
-             fname2 "#PBS -l walltime=2:00:00"
-             fname2 "#PBS -q $DATA_QUEUE"
-             fname2 "#PBS -S /bin/csh"
-             fname2 "#PBS -j eo"
-             fname2 ""
-             fname2 "setenv IGNORE_0  $IGNORE_0"
-             fname2 "setenv FVWORK $FVWORK"
-             fname2 "setenv DO_DMGET $DO_DMGET"
-             fname2 "set path = ( $path )"
-             fname2 "cd $FVWORK"
-
-                set flag = "-rc $AERO_OBSDBRC"
-                @ numhrs = $nstep * 6
-
-                # check for AVHRR data availability
-                #----------------------------------
-                obsys_check.pl $flag patmosx_asc $bnymd $bnhms $numhrs
-                setenv PATMOSX $status
-
-                # check whether user wants to access NRT MODIS HDF data 
-                #------------------------------------------------------
-                if ($MODIS_L2_HDF) then
-                   setenv MOD04_NNR 0
-                   setenv MYD04_NNR 0
-                else
-
-                   # check for MODIS Terra data availability
-                   #----------------------------------------
-                   obsys_check.pl $flag mod04_land_nnr $bnymd $bnhms $numhrs
-                   setenv MOD04_NNR $status
-
-                   # check for MODIS Aqua data availability
-                   #---------------------------------------
-                   obsys_check.pl $flag myd04_land_nnr $bnymd $bnhms $numhrs
-                   setenv MYD04_NNR $status
-
-                endif
-
-                # check for misr data availability
-                #---------------------------------
-                obsys_check.pl $flag misr_F12_bright $bnymd $bnhms $numhrs
-                setenv MISR_BRIGHT $status
-
-                # check for AERONET data availability
-                #------------------------------------
-                obsys_check.pl $flag aeronet_obs $bnymd $bnhms $numhrs
-                setenv AERONET $status
-
-                # acquire available data
-                #-----------------------
-                if ($PATMOSX) then
-                   @ mstep = $nstep  #$nstep * 2
-                   fname2 "acquire_obsys -v -d $FVWORK $spool -ssh \"
-                   fname2 "      -strict $bnymd $bnhms 030000 $mstep \"
-                   fname2 "      patmosx_asc,patmosx_des -drc obsys-gaas.rc"
-                   fname2 "setup_gaas_obs.pl $FVWORK -v -avhrr"
-                endif
-                if ($MOD04_NNR) then
-                   @ mstep = $nstep #$nstep * 2
-                   fname2 "acquire_obsys -v -d $FVWORK $spool -ssh \"
-                   fname2 "      -strict $bnymd $bnhms 030000 $mstep \"
-                   fname2 "      mod04_land_nnr,mod04_ocean_nnr -drc obsys-gaas.rc"
-                endif
-                if ($MYD04_NNR) then
-                   @ mstep = $nstep #$nstep * 2
-                   fname2 "acquire_obsys -v -d $FVWORK $spool -ssh \"
-                   fname2 "      -strict $bnymd $bnhms 030000 $mstep \"
-                   fname2 "      myd04_land_nnr,myd04_ocean_nnr -drc obsys-gaas.rc"
-                endif
-                #-----------------------------------------------------------
-                # NOTE: ana_aod.j script accesses MODIS L2 HDF data directly
-                #       from intermediate directory (see modis_l2.pcf)
-                #-----------------------------------------------------------
-                if ($MODIS_L2_HDF) then
-                   set bdtgaas = (`tick $bnymd $bnhms -5400`)
-                   @ mstep = $nstep * 72
-                   fname2 "acquire_obsys -v -d $FVWORK $spool -ssh \"
-                   fname2 "      $bdtgaas[1] $bdtgaas[2] 000500 $mstep \"
-                   fname2 "      mod04_051_flk,myd04_051_flk"
-                   fname2 "setup_gaas_obs.pl $FVWORK -v -modis"
-                endif
-                #-----------------------------------------------------------
-                if ($MISR_BRIGHT) then
-                   @ mstep = 1
-                   fname2 "acquire_obsys -v -d $FVWORK $spool -ssh \"
-                   fname2 "      -strict $bnymd $bnhms 240000 $mstep \"
-                   fname2 "      misr_F12_bright -drc obsys-gaas.rc"
-                endif
-                if ($AERONET) then
-                   @ mstep = 1
-                   fname2 "acquire_obsys -v -d $FVWORK $spool -ssh \"
-                   fname2 "      -strict $bnymd $bnhms 240000 $mstep \"
-                   fname2 "      aeronet_obs -drc obsys-gaas.rc"
-                endif
-
-                fname2 ' if ( ! $status ) /bin/rm -f ${FVWORK}/acquire.FAILED'
-                fname2 "exit"
-
-                qsub -W block=true -o $acqlog $fname  # acquire observations; ignore status return
+# Call GEOSdas.csm functions
+# --------------------------
+set look_ahead = 0
+unsetenv obsclass  # do not acquire non-GAAS obs
+Call SubmitAcquireObsJobs_( $look_ahead )
 
 # if made it here, should be ok
 # -----------------------------

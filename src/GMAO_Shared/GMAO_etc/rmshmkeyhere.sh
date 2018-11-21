@@ -7,6 +7,8 @@ if [[ -z $segments ]]
 then
    echo "No shared memory segments to remove."
 else
+   hostname # capture the host name
+   ipcs -m # capture the current ipcs memory segments in use
    echo "Removing segments..."
    for seg in $segments
    do

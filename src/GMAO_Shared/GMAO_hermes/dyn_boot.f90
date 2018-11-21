@@ -25,14 +25,14 @@ lm = idyn%grid%lm + 2
 call dyn_init ( idyn, odyn, ier, copy=.true., vectype=vectype, lm=lm )
      if ( ier/=0 ) then
         print *, trim(myname), ': Error duplicating dyn vector(odyn), ier=', ier
-        stop(998)
+        call exit(998)
      endif
 
 print *, 'writing to: ', ofile
 call dyn_put ( ofile, nymd, nhms, prec, odyn, ier, freq=freq, nstep=nstep, vectype=vectype )
      if ( ier .ne. 0 ) then
         print *, trim(myname), ': cannot write interpolated ETA file'
-        stop(999)
+        call exit(999)
      endif
 
 call dyn_clean ( odyn )

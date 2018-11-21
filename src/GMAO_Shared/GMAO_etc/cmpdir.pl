@@ -13,19 +13,28 @@
 #=======================================================================
 use strict;
 use warnings;
+
+use Cwd ("abs_path");
+use File::Basename qw(basename dirname);
+use File::Copy qw(copy);
+use File::Find qw(find);
+use File::Path qw(mkpath rmtree);
+use Getopt::Long;
+
 use FindBin qw($Bin);
 use lib "$FindBin::Bin";
+use Query qw(query yes);
 
 # global variables
 #-----------------
 my ($bindiff, $bwiFLG, $debug, $diffFLGs);
-my ($dir1, $dir2, $dirA, $dirB, $dirL1, $dirL2, $dmgetcmd);
-my ($ext, $fileID, $first, $list, $listx, $quiet, $recurse);
-my ($subdir, $TMPDIR, $tmpdir1, $tmpdir2, $untarflg, $verbose);
+my ($dir1, $dir2, $dirA, $dirB, $dirL1, $dirL2);
+my ($dmgetcmd, $ext, $first, $list, $listx);
+my ($quiet, $recurse, $sortFLG, $subdir, $verbose);
 my (%different, %diffsBIN, %diffsTXT, %dir_display);
-my (%filesize, %found, %identical);
-my (@exclude, @files, @files1, @files2, @p1, @p2);
-my (@subdirs, @unmatched1, @unmatched2);
+my (%filesize, %found, %identical, %opts, %vopts);
+my (@exclude, @fileIDs, @files, @files1, @files2);
+my (@p1, @p2, @subdirs, @unmatched1, @unmatched2);
 
 # main program
 #-------------
@@ -42,10 +51,8 @@ my (@subdirs, @unmatched1, @unmatched2);
 # purpose  - get input parameters and initialize global variables
 #=======================================================================
 sub init {
-    use File::Basename;
-    use Getopt::Long;
-    my ($bwiFLG, $etcflg, $help, %patterns, $fcstflg, $rsflg, $runflg);
-    my ($cvsX, @excludeList, $line, @names, $name, $subdirname);
+    my ($bwiFLG, $cvsX, $etcflg, $fcstflg, $help, %patterns, $rsflg, $runflg);
+    my ($arrAddr, $subdirname, $val, @values, @vlist);
 
     # get runtime flags
     #------------------
@@ -56,31 +63,47 @@ sub init {
                "etc"      => \$etcflg,
                "fcst"     => \$fcstflg,
                "h|help"   => \$help,
-               "id=s"     => \$fileID,
+               "id=s"     => \@fileIDs,
                "list"     => \$list,
                "listx"    => \$listx,
                "p=s"      => \%patterns,
                "p1=s"     => \@p1,
                "p2=s"     => \@p2,
                "q"        => \$quiet,
-               "rs"       => \$rsflg,
                "r"        => \$recurse,
+               "rs"       => \$rsflg,
                "run"      => \$runflg,
                "subdir=s" => \$subdir,
-               "untar"    => \$untarflg,
                "v"        => \$verbose,
-               "X=s"      => \@excludeList );
+               "X=s"      => \@exclude );
     usage() if $help;
     $list = 1 if $listx;
     $verbose = 1 if $debug;
 
-    # exclude list
-    #-------------
-    foreach $line (@excludeList) {
-        @names = split ',', $line;
-        foreach $name (@names) { push @exclude, $name if $name }
+    # verbose option, only if verbose mode
+    #-------------------------------------
+    if ($verbose) { %opts = ("verbose" => 1) }
+    else          { %opts = () }
+
+    # verbose option, always
+    #-----------------------
+    %vopts = ("verbose" => 1);
+
+    # extract comma-separated option values
+    #--------------------------------------
+    foreach $arrAddr (\@exclude, \@fileIDs, \@p1, \@p2) {
+        @vlist = ();
+        foreach (@$arrAddr) {
+            @values = split ',', $_;
+            foreach $val (@values) { push @vlist, $val if $val }
+        }
+        @$arrAddr = @vlist;
     }
+
+    # exclude CVS directories
+    #------------------------
     if ($cvsX) {
+        push @exclude, "CVS";
         push @exclude, "Entries";
         push @exclude, "Root";
         push @exclude, "Tag";
@@ -129,17 +152,17 @@ sub init {
     # find common subdirectories
     #---------------------------
     foreach (<$dirA/*>) {
-        next unless -d $_;
+        next unless -d abs_path($_);
         $subdirname = basename $_;
-        push @subdirs, $subdirname if -d "$dirB/$subdirname";
+        push @subdirs, $subdirname if -d abs_path("$dirB/$subdirname");
         next;
     }
 
     # check for requested subdirectory
     #---------------------------------
     if ($subdir) {
-        die "not found: $dirA/$subdir\n" unless -d "$dirA/$subdir";
-        die "not found: $dirB/$subdir\n" unless -d "$dirB/$subdir";
+        die "not found: $dirA/$subdir\n" unless -d abs_path("$dirA/$subdir");
+        die "not found: $dirB/$subdir\n" unless -d abs_path("$dirB/$subdir");
     }
 
     # initialize other variables
@@ -172,14 +195,8 @@ sub init {
 #           the other.
 #=======================================================================
 sub cmp_files {
-    use File::Basename qw(basename dirname);
-    use File::Copy qw(copy);
-    use File::Find qw(find);
-    use File::Path qw(mkpath rmtree);
-
     my ($dirID, $arrAddr, $file, $filext, @dmgetArr);
-    my (%opt, $tmpdir, $tmptar);
-    my ($file1, $file2, $base1, $base2, $dirname1, $dirname2, $middir);
+    my ($fID, $file1, $file2, $base1, $base2, $dirname1, $dirname2, $middir);
     my ($align, $maxK, $fmt1, $fmt2);
     my ($status, $indexB, $indexT, %Rfound);
 
@@ -204,18 +221,22 @@ sub cmp_files {
     # get file lists
     #---------------
     if ($ext) {
-        chomp( @files1 = (`find $dir1 -name \\*\.$ext`) );
-        chomp( @files2 = (`find $dir2 -name \\*\.$ext`) );
+        chomp( @files1 = (`find -L $dir1 -name \\*\.$ext`) );
+        chomp( @files2 = (`find -L $dir2 -name \\*\.$ext`) );
     }
-    elsif ($fileID) {
-        $fileID =~ s/\./\\\./;
-        chomp( @files1 = (`find $dir1 -name \\*$fileID\\*`) );
-        chomp( @files2 = (`find $dir2 -name \\*$fileID\\*`) );
+    elsif (@fileIDs) {
+        @files1 = ();
+        @files2 = ();
+        foreach $fID (@fileIDs) {
+            $fID =~ s/\./\\\./;
+            chomp( @files1 = (@files1, `find -L $dir1 -name \\*$fID\\*`) );
+            chomp( @files2 = (@files2, `find -L $dir2 -name \\*$fID\\*`) );
+        }
     }
     else {
         if ($recurse) {
-            chomp( @files1 = (`find $dir1 -name \\*`) );
-            chomp( @files2 = (`find $dir2 -name \\*`) );
+            chomp( @files1 = (`find -L $dir1 -name \\*`) );
+            chomp( @files2 = (`find -L $dir2 -name \\*`) );
         }
         else {
             @files1 = ( <$dir1/*> );
@@ -223,64 +244,14 @@ sub cmp_files {
         }
     }
 
-    # preliminary dmget for tarfiles
-    #-------------------------------
-    $dirID = 0;
+    # remove directories
+    #-------------------
     foreach $arrAddr (\@files1, \@files2) {
-        @dmgetArr = ();
-        foreach $file (@$arrAddr) {
-            $filext = (split /[.]/, $file)[-1];
-            push @dmgetArr, $file if $filext eq "tar";
-        }
-        dmget(++$dirID, @dmgetArr);
-    }
-
-    # extract tarfiles and remove directories
-    #----------------------------------------
-    %opt = ();
-    $opt{"verbose"} = 1;
-
-    $TMPDIR = "$ENV{TMPDIR}";
-    $tmpdir1 = "$TMPDIR/tmp1";
-    $tmpdir2 = "$TMPDIR/tmp2";
-
-    foreach $arrAddr (\@files1, \@files2) {
-        if ($arrAddr == \@files1) { $tmpdir = $tmpdir1 }
-        else                      { $tmpdir = $tmpdir2 }
-        rmtree($tmpdir, %opt) if -d $tmpdir;
 
         foreach (0..$#$arrAddr) {
             $file = shift @$arrAddr;
-            $filext = (split /[.]/, $file)[-1];
-
-            # tar file extension found
-            #-------------------------
-            if ($untarflg and $filext and $filext eq "tar") {
-
-                # copy tarfile to TMPDIR
-                #-----------------------
-                mkpath($tmpdir, %opt) unless -d $tmpdir;
-                $tmptar = "$tmpdir/" . basename($file);
-                copy($file, $tmptar);
-
-                # extract files and then unlink tarfile
-                #--------------------------------------
-                print "\nUntarring in " .'$TMPDIR/' .basename($tmpdir)
-                    .": " .basename($file) ."\n";
-                system_("tar xf $tmptar -C $tmpdir", 1)
-                    && die "Error untarring $tmptar;";
-                unlink($tmptar);
-                next;  # do not add tarfile back to list
-            }
-
-            # add non-directories back to list
-            #---------------------------------
-            push @$arrAddr, $file unless -d $file;
+            push @$arrAddr, $file unless -d abs_path($file);
         }
-
-        # add extracted files to list
-        #----------------------------
-        if (-d $tmpdir) { foreach (<$tmpdir/*>) { push @$arrAddr, $_ } }
     }
     show_file_counts(1);
     find_common_label(\@files1, \@files2);
@@ -308,14 +279,12 @@ sub cmp_files {
         print "(1) checking $file1\n" if $verbose;
 
         if ($middir) { $file2 = namechange("$dir2/$middir/$base1") }
-        else {
-            if ($dirname1 eq $tmpdir1) { $file2 = namechange("$tmpdir2/$base1") }
-            else                       { $file2 = namechange("$dir2/$base1")    }
-        }
+        else         { $file2 = namechange("$dir2/$base1")         }
+
         print "(2) checking $file2\n\n" if $verbose;
 
-        if (-e $file2) { $found{$file1} =  $file2 }
-        else           { push @unmatched1, display($file1,1) }
+        if (-e $file2 or -l $file2) { $found{$file1} = $file2 }
+        else                        { push @unmatched1, display($file1,1) }
     }
 
     # send job to dmget files (just in case)
@@ -344,8 +313,8 @@ sub cmp_files {
 
         # get file sizes
         #---------------
-        $filesize{$file1} = -s $file1;
-        $filesize{$file2} = -s $file2;
+        $filesize{$file1} = -s abs_path($file1);
+        $filesize{$file2} = -s abs_path($file2);
 
         $status = system_("diff $diffFLGs $file1 $file2 >& /dev/null");
         unless ($status) {
@@ -377,14 +346,16 @@ sub cmp_files {
 #=======================================================================
 sub cmp_lists {
     my ($HOME, $list1, $list2);
-    my (@filearr1, @filearr2, $cnt, $name);
+    my (@filearr1, @filearr2, $cnt, $name, %fopts);
     my ($expid1, $expid2);
 
     # make list of files in $dir1
     #----------------------------
     print "\n(1) making list of files in $dir1\n";
     @files = ();
-    find(\&wanted, $dir1);
+
+    %fopts = ( "wanted" => \&wanted, "follow" => 1 );
+    find(\%fopts, $dir1);
     @filearr1 = sort @files;
     $expid1 = getexpid(@filearr1);
 
@@ -392,7 +363,7 @@ sub cmp_lists {
     #----------------------------
     print "(2) making list of files in $dir2\n";
     @files = ();
-    find(\&wanted, $dir2);
+    find(\%fopts, $dir2);
     @filearr2 = sort @files;
     $expid2 = getexpid(@filearr2);
 
@@ -426,10 +397,10 @@ sub cmp_lists {
     $list2 = "$HOME/cmpdir_list2_" .basename($dir2);
 
     listdump(\@filearr1, $list1, dirname($dir1)."/");
-    print "\n(1) list written: $list1\n";
+    print "\n(1) list written: $list1 (" .scalar(@filearr1) ." lines)\n";
 
     listdump(\@filearr2, $list2, dirname($dir2)."/");
-    print "(2) list written: $list2\n\n";
+    print "(2) list written: $list2 (" .scalar(@filearr2) ." lines)\n\n";
         
     # set up global arrays and hashes to show differences in list files
     #------------------------------------------------------------------
@@ -439,7 +410,6 @@ sub cmp_lists {
     $different{$list1} = $list2;
     $diffsTXT{"1"} = $list1;
     $diffFLGs = "-bwi";
-
     return;
 }
 
@@ -510,8 +480,7 @@ sub find_common_label {
 #           between two directories
 #=======================================================================
 sub show_results {
-    use File::Path qw(rmtree);
-    my ($opt, $dflt, $ans);
+    my ($opt, $dflt, $ans, $pid);
 
     $opt  = "";
     $dflt = 1;
@@ -526,13 +495,22 @@ sub show_results {
         chomp($ans = <STDIN>);
         exit unless lc($ans) eq "y";
     }
+
+    # put list diffs display in background by forking
+    #------------------------------------------------
     if ($list) {
-        display_text_diffs(1, %diffsTXT);
-        foreach (keys %different) {
-            unlink $_;
-            unlink $different{$_};
-            print "unlink $_\n";
-            print "unlink $different{$_}\n";
+        defined($pid = fork) or die "Error while forking: $!";
+        unless ($pid) {
+            $diffsTXT{"wait"} = 1;
+            display_text_diffs(1, %diffsTXT);
+            delete $diffsTXT{"wait"};
+
+            foreach (keys %different) {
+                unlink $_;
+                unlink $different{$_};
+                print "\nunlink $_\n";
+                print "unlink $different{$_}\n";
+            }
         }
         exit;
     }
@@ -570,11 +548,6 @@ sub show_results {
         }
         print "\n$opt: Invalid option; Try again.\n\n";
     }
-
-    if ($untarflg) {
-        rmtree($tmpdir1) if -d $tmpdir1;
-        rmtree($tmpdir2) if -d $tmpdir2;
-    }
 }
 
 #=======================================================================
@@ -583,8 +556,6 @@ sub show_results {
 #           to view differences in specific files using xxdiff utility
 #=======================================================================
 sub show_differences {
-    use File::Basename;
-
     unless (%diffsBIN or %diffsTXT) {
         print "\nNo differences found.\n";
         pause();
@@ -602,7 +573,7 @@ sub show_differences {
 sub size_differences {
     my ($fmt, $file1, $file2, $label, $diffcnt);
     $fmt = "%s: %s (%d)\n";
-    foreach $file1 (keys %filesize) {
+    foreach $file1 (sort keys %filesize) {
         next unless $file2 = $found{$file1};
         if ($filesize{$file1} != $filesize{$file2}) {
             print "\n";
@@ -622,9 +593,8 @@ sub size_differences {
 # purpose - 
 #=======================================================================
 sub show_binary_diffs {
-    use File::Basename;
-    my (%diffs, $maxB, $align, $fmt1, $fmtB, $num, $show_menu);
-    my ($file1, $file2, $base1, $base2, $dflt, $sel);
+    my (%diffs, $maxB, $align, $fmt1, $fmtB, $num, $show_menu, $ask);
+    my ($file1, $file2, $base1, $base2, $ext1, $ext2, $dflt, $sel);
 
     if (@_) { %diffs = @_ }
     else    { %diffs = %diffsBIN }
@@ -668,8 +638,11 @@ sub show_binary_diffs {
 
         $show_menu = 0;
         $dflt = ++$num;
+
         while ($dflt) {
             unless ( $diffs{$dflt} ) { $dflt = 0; last }
+            last if $diffs{$dflt} =~ /\.tar$/;
+
             if ($bindiff =~ m/cdo/) {
                 last if $diffs{$dflt} =~ /\.hdf$/
                     or  $diffs{$dflt} =~ /\.nc4$/
@@ -701,7 +674,33 @@ sub show_binary_diffs {
         }
         $file1 = $diffs{$num};
         $file2 = $different{$file1};
-        cmp_binary_files($num, $file1, $file2);
+
+        $ext1 = (split /[.]/, $file1)[-1];
+        $ext2 = (split /[.]/, $file2)[-1];
+
+        # compare tarfile contents
+        #-------------------------
+        if ($ext1 eq "tar" and $ext2 eq "tar") {
+            $ask = query("Compare tarfile contents?", "y");
+            if (yes($ask)) {
+                cmp_tarfiles($file1, $file2);
+
+                $base1 = basename($file1);
+                $base2 = basename($file2);
+
+                print "\n Tarfile comparison complete.";
+                print "\n [$num] $base1";
+                print " <=> $base2" if $base1 ne $base2;
+                print "\n";
+                pause()
+            }
+            $num++;
+            $show_menu = 1;
+        }
+
+        # compare binary files
+        #---------------------
+        else { cmp_binary_files($num, $file1, $file2) }
     }
 }
 
@@ -715,7 +714,6 @@ sub show_binary_diffs {
 # => $file2: 2nd file to compare
 #=======================================================================
 sub cmp_binary_files {
-    use File::Basename ("basename");
     my ($num, $file1, $file2, $base1, $base2, $status);
 
     $num   = shift @_;
@@ -730,6 +728,7 @@ sub cmp_binary_files {
     } else {
         printf "$bindiff (%d) %s <=> %s\n", $num, $base1, $base2;
     }
+
     $status = system_("$bindiff $file1 $file2");
     unless ($bindiff =~ m/cdo/) {
         if ($status ) { print "FILES DIFFER\n" }
@@ -738,11 +737,41 @@ sub cmp_binary_files {
 }
 
 #=======================================================================
+# name - cmp_tarfiles
+# purpose - recursively call cmpdir.pl to compare contents of tarfiles
+#=======================================================================
+sub cmp_tarfiles {
+    my  (@tarfile, @tmpdir);
+
+    $tarfile[1] = shift @_;
+    $tarfile[2] = shift @_;
+
+    # untar into temporary directories
+    #---------------------------------
+    foreach (1..2) {
+        $tmpdir[$_] = "$ENV{TMPDIR}/tmpdir$_.$$";
+        rmtree($tmpdir[$_], \%opts) if -d $tmpdir[$_];
+        mkpath($tmpdir[$_], \%vopts);
+
+        system_("tar xf $tarfile[$_] -C $tmpdir[$_]")
+            && die "Error untarring $tmpdir[$_];";
+    }
+
+    # use cmpdir.pl to compare temporary directories
+    #-----------------------------------------------
+    system("$Bin/cmpdir.pl $tmpdir[1] $tmpdir[2]");
+
+    # remove temporary directories when done
+    #---------------------------------------
+    rmtree($tmpdir[1], \%opts);
+    rmtree($tmpdir[2], \%opts);
+}
+
+#=======================================================================
 # name - show_text_diffs
 # purpose - show text differences
 #=======================================================================
 sub show_text_diffs {
-    use File::Basename;
     my (%diffs, $maxT, $fmt0, $fmt1, $fmtT, $num);
     my ($file1, $base1, $base2, $dflt, $sel);
 
@@ -780,8 +809,11 @@ sub show_text_diffs {
             printf $fmt0, "a", "cycle thru all";
             if ($dflt) { print " (starting from $dflt)\n" } else { print "\n" }
         }
-        if ($diffFLGs) { printf $fmt1, "b", "toggle diff -bwi flag OFF\n" }
-        else           { printf $fmt1, "b", "toggle diff -bwi flag ON\n"  }
+        if ($diffFLGs) { printf $fmt1, "b", "turn OFF -bwi diff flag" }
+        else           { printf $fmt1, "b", "turn ON -bwi diff flag"  }
+
+        if ($sortFLG) { printf $fmt1, "s", "turn OFF sorted diff\n" }
+        else          { printf $fmt1, "s", "turn ON sorted diff\n"  }
 
         print "Make Selection: [$dflt] ";
         chomp( $sel = <STDIN> );
@@ -792,13 +824,18 @@ sub show_text_diffs {
         return if $sel eq "0";
 
         # show differences for all remaining files starting with current index
-        #---------------------------------------------------------------------
-        if ($sel eq "a") {
+        #-----------------------------------------------------------------------
+        # use $diffs{"wait"} to signal not to display all at once if $sel eq "a"
+        # (unadvertised "A" option will display all at once)
+        #-----------------------------------------------------------------------
+        if ($sel eq "a" or $sel eq "A") {
+            $diffs{"wait"} = 1 if $sel eq "a";
             $num = 1 unless $diffs{$num};
             while ($diffs{$num}) {
                 display_text_diffs($num, %diffs);
                 $num++;
             }
+            delete $diffs{"wait"} if $diffs{"wait"};
             $num = -1; next;
         }
 
@@ -809,6 +846,14 @@ sub show_text_diffs {
             if ($diffFLGs) { $diffFLGs = ""     }
             else           { $diffFLGs = "-bwi" }
             $num -= 2; $num = 0 if $num < 0; next;
+        }
+
+        # toggle $sortFLG
+        #----------------
+        if ($sel eq "s") {
+            if ($sortFLG) { $sortFLG = 0 }
+            else          { $sortFLG = 1 }
+            $num -= 1; next;
         }
 
         # show selected difference
@@ -832,9 +877,9 @@ sub show_text_diffs {
 # => $num: index number of difference to display (starting at 1)
 #=======================================================================
 sub display_text_diffs {
-    use File::Basename ("basename");
-    my ($num, %diffs);
+    my ($num, %diffs, $amperflag);
     my ($file1, $file2, $base1, $base2);
+    my ($tmpdir, $srt, $f1, $f2);
 
     $num = shift @_;
     %diffs = @_;
@@ -844,12 +889,35 @@ sub display_text_diffs {
     $base1 = basename $file1;
     $base2 = basename $file2;
 
-    if ($base1 eq $base2) {
-        printf "showing diffs for (%d) %s\n", $num, $base1;
-    } else {
-        printf "showing diffs for (%d) %s <=> %s\n", $num, $base1, $base2;
+    $tmpdir = "$ENV{TMPDIR}/tmpdir.$$";
+    rmtree($tmpdir, \%opts) if -d $tmpdir;
+
+    if ($sortFLG) {
+        $srt = "sorted ";
+        mkpath($tmpdir, \%opts);
+
+        $f1 = "$tmpdir/$base1.sorted.1";
+        $f2 = "$tmpdir/$base2.sorted.2";
+
+        system_("sort $file1 > $f1") && die "Error: sort $file1 > $f1;";
+        system_("sort $file2 > $f2") && die "Error: sort $file2 > $f2;";
     }
-    system_("xxdiff --text $diffFLGs $file1 $file2");
+    else {
+        $srt = "";
+        $f1 = $file1;
+        $f2 = $file2;
+    }
+
+    if ($base1 eq $base2) {
+        printf "showing ${srt}diffs for (%d) %s\n", $num, $base1;
+    } else {
+        printf "showing ${srt}diffs for (%d) %s <=> %s\n", $num, $base1, $base2;
+    }
+    if ($diffs{"wait"} or $sortFLG) { $amperflag = ""  }
+    else                            { $amperflag = "&" }
+
+    system_("xxdiff --text $diffFLGs $f1 $f2 $amperflag");
+    rmtree($tmpdir, \%opts) if -d $tmpdir;
 }
 
 #=======================================================================
@@ -858,7 +926,6 @@ sub display_text_diffs {
 #           directories
 #=======================================================================
 sub show_identical {
-    use File::Basename;
     my ($max, $num, $fmt1, $fmt2);
     my ($file1, $file2, $base1, $base2);
 
@@ -892,7 +959,6 @@ sub show_identical {
 #           but not in the other
 #=======================================================================
 sub show_unmatched {
-    use Query qw(query yes);
     my ($num, $ddir1, $ddir2, $ddirL1, $ddirL2);
     my ($ask, $f1, $f2, $file1, $file2);
     my (%diffsB, %diffsT, $indexB, $indexT);
@@ -991,30 +1057,52 @@ sub show_unmatched {
             print   "  0. Exit menu\n";
 
             if ($f1) {
-                print "\nchoose file from dir1 (1-$cnt1): $dflt1\n";
+                print "\nchoose file from dir1 (1-$cnt1): $f1\n";
             }
             else {
-                $f1 = query("\nchoose file from dir1 (1-$cnt1):", $dflt1++);
-                if ($f1 == -1) { $menu = 1; redo }
+                {
+                    $f1 = query("\nchoose file from dir1 (1-$cnt1):", $dflt1++);
+                    if (($f1 !~ /^-?\d+$/) or ($f1 < -1) or ($f1 > $cnt1)) {
+                        $dflt1--;
+                        redo;
+                    }
+                }
+                if ($f1 == -1) { $menu = 1; $f1 = ""; $dflt1--; redo }
                 if ($f1 ==  0) { last }
             }
-            if ($f1 > $cnt2) { $dflt2 = $cnt2 }
-            else             { $dflt2 = $f1 - $delta }
+            $dflt2 = $f1 - $delta;
+            $dflt2 = $cnt2 if $dflt2 > $cnt2;
 
-            $f2 = query("choose file from dir2 (1-$cnt2):", $dflt2);
-            if ($f2 == -1) { $menu = 1; redo }
+            {
+                $f2 = query("choose file from dir2 (1-$cnt2):", $dflt2);
+                redo if ($f2 !~ /^-?\d+$/) or ($f2 < -1) or ($f2 > $cnt2);
+            }
+            if ($f2 == -1) { $menu = 1; $f1 = ""; $dflt1--; redo }
             if ($f2 ==  0) { last }
             $delta = $f1 - $f2;
 
             $file1 = $unmatched1[$f1-1];
             $file2 = $unmatched2[$f2-1];
-            $different{$file1} = $file2;
 
+            # cannot compare $file1 to more than one $file2;
+            # remove duplicate $file1 entries from %diffs{T,B}
+            #-------------------------------------------------
             %RdiffsT = reverse %diffsT;
+            if ($key = $RdiffsT{$file1}) {
+                delete $diffsT{$key};
+                %diffsT = reindex(\%diffsT);
+                $indexT--;
+            }
             %RdiffsB = reverse %diffsB;
-            delete $diffsT{$key} if $key = $RdiffsT{$file1};
-            delete $diffsB{$key} if $key = $RdiffsB{$file1};
+            if ($key = $RdiffsB{$file1}) {
+                delete $diffsB{$key};
+                %diffsB = reindex(\%diffsB);
+                $indexB--;
+            }
 
+            # add new entries
+            #----------------
+            $different{$file1} = $file2;
             if (text($file1, $file2)) { $diffsT{++$indexT} = $file1 }
             else                      { $diffsB{++$indexB} = $file1 }
 
@@ -1150,7 +1238,6 @@ sub choose_subdir {
 # => $name: pathname of variable
 #=======================================================================
 sub baselen {
-    use File::Basename;
     my $name = shift @_;
     return length(mybase($name, "1"));
 }    
@@ -1165,7 +1252,6 @@ sub baselen {
 # => $flag: return abbreviated name if ==1
 #=======================================================================
 sub cleanDirName {
-    use Cwd ("abs_path");
     my ($dir, $flag, $abspath);
 
     $dir  = shift @_;
@@ -1204,8 +1290,6 @@ sub display {
 # => @arr: array of files to dmget
 #=======================================================================
 sub dmget {
-    use Cwd ("abs_path");
-    use File::Basename;
     my ($flag, @arr, $str, $name, $cnt, $max, $pid, $cmd);
 
     return unless -x $dmgetcmd;
@@ -1250,7 +1334,6 @@ sub dmget {
 # => @arr: list of file names
 #=======================================================================
 sub getexpid {
-    use File::Basename;
     my (@arr, $expid, $max);
     my ($fullname, $name, @dummy, %count);
 
@@ -1381,25 +1464,27 @@ sub mybase {
         $name =~ s/$dir2\///;
         $name =~ s/$ddir\///;
     }
-    $name =~ s/^$TMPDIR\///;
+    $name =~ s/^$ENV{"TMPDIR"}\///;
     return $name;
 }
 
 #=======================================================================
 # name - namechange
-# purpose - substitute patterns into name
+# purpose - substitute patterns into a filename;
+#           return the new filename, if the file exists
 #
 # input parameters
 # => $name: name of file before name change
 #=======================================================================
 sub namechange {
-    use File::Basename;
     my ($name, $namesave, $flag);
     my ($dir, $base);
 
     $name = shift @_;
     $namesave = $name;
 
+    # check each pattern substitution individually
+    #---------------------------------------------
     foreach (0..$#p1) {
         last if -e $name;
         $dir = dirname $namesave;
@@ -1407,6 +1492,20 @@ sub namechange {
         $base =~ s/\b$p1[$_]\b/$p2[$_]/g;
         $name = "$dir/$base";
     }
+
+    # check cumulative pattern substitution
+    #--------------------------------------
+    unless (-e $name) {
+        $name = $namesave;
+        foreach (0..$#p1) {
+            last if -e $name;
+            $dir = dirname $name;
+            $base = basename $name;
+            $base =~ s/\b$p1[$_]\b/$p2[$_]/g;
+            $name = "$dir/$base";
+        }
+    }
+
     return $name;
 }
 
@@ -1427,6 +1526,33 @@ sub pause {
     my $dummy;
     print "\nHit <CR> to continue ... ";
     $dummy = <STDIN>;
+}
+
+#=======================================================================
+# name - reindex
+# purpose - for a hash which uses an index number for the key, renumber
+#           the keys (indices) if one has been removed
+#
+# input parameters
+# => $hashAddr: the address of the hash to reindex
+# => $first: first index of reindexed hash
+#
+# return value
+# => %new: reindexed hash
+#=======================================================================
+sub reindex {
+    my ($hashAddr, %myHash, $first, $next, %new);
+
+    $hashAddr = shift @_;
+    %myHash = %$hashAddr;
+
+    $first = shift @_;
+    $first = 1 unless $first;
+
+    $next = $first;
+    foreach (sort keys %myHash) { $new{$next++} = $myHash{$_}}
+
+    return %new;
 }
 
 #=======================================================================
@@ -1461,8 +1587,8 @@ sub text {
     $file2 = shift @_;
 
     $txtflag = 0;
-    $type1 = `file $file1`;
-    $type2 = `file $file2`;
+    $type1 = `file -L $file1`;
+    $type2 = `file -L $file2`;
 
     $txtflag = 1 if ($type1=~/ASCII/ or $type1=~/text/ or $type1=~/source/)
         and         ($type2=~/ASCII/ or $type2=~/text/ or $type2=~/source/);
@@ -1529,7 +1655,6 @@ sub Xcluded {
 # purpose - print script usage information
 #=======================================================================
 sub usage {    
-    use File::Basename;
     my $script = basename $0;
     print << "EOF";
 Usage: $script dir1 dir2 [options]
@@ -1545,6 +1670,7 @@ options
   -fcst              shortcut for "-subdir fcst -r"
   -h(elp)            print usage information
   -id fileID         compare all files with \"fileID\" as part of its filename
+                     (see Note 1)
   -list              compare list of file names in dir1 and dir2 (rather than
                      comparing the actual files)
   -listx             same as -list, except ignore dir and expid name differences
@@ -1553,16 +1679,21 @@ options
   -rs                shortcut for "-subdir rs -r"
   -run               shortcut for "-subdir run -r"
   -subdir name       start comparison in specified subdirectory
-  -untar             extract files from tar files before comparing
   -v                 verbose mode
-  -X  str1[,str2,..] exclude filenames which include str1; can list multiple
-                     multiple string entries separated by commas (no spaces)
+  -X str             exclude filenames which include str (see Note 1)
+
 pattern options
   -p1 pattern1       ignore these pattern differences in dir1/dir2 filenames
-  -p2 pattern2
-
+  -p2 pattern2       (see Notes 1-3)
 or
   -p pattern1=pattern2
+
+Notes:
+1. Multiple values can be given for fileID (-id), pattern1 (-p1), pattern2 (-p2),
+   and str (-X) by separating values with a comma (no space) or by multiple uses
+   of the option flag.
+2. Multiple pattern1=pattern2 values can be given by multiple uses of the -p flag
+3. There must be a matching pattern2 for each pattern1, and vice versa.
 
 EOF
 exit;

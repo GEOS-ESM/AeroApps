@@ -59,6 +59,19 @@ package WriteLog;
 #  copy_("\n$source", $dest) ...... prints one blank line before message
 #  copy_("\n\n$source", $dest) .... prints two blank lines before message
 #
+# Key global variables
+# --------------------
+# The following global variables are intended to guard against infinite
+# loops where a query gets called in a batch job with the same prompt
+# over and over again without an acceptable response being provided.
+#
+# => %consecutive: hash to keep track of consecutive calls to same prompt
+# => $max_consecutive: max number of consecutive queries to same prompt
+# => $check_consecutive:  if == 1, then check is on
+#                         if == 0, then check is off
+#    A function can be added if needed to give users the power to turn
+#    this variable on or off.
+#
 # !Revision History
 # -----------------
 # 21Feb2013  Stassi    Initial version of package
@@ -89,12 +102,16 @@ our @EXPORT_OK = qw( openLOG
 # global variables
 #-----------------
 my ($LOGFILE, $noprompt, $verbose, %display);
+my (%consecutive, $max_consecutive, $check_consecutive);
 
 # defaults
 #---------
 $LOGFILE = "";
 $noprompt = 0;
 $verbose = 1;
+
+$check_consecutive = 1;
+$max_consecutive = 100;
 
 #=======================================================================
 # name - openLOG
@@ -170,6 +187,18 @@ sub query {
 
     $dflt = "" if blank($dflt);
 
+    # check for consecutive calls to same prompt
+    #-------------------------------------------
+    if ($consecutive{$prompt} and $check_consecutive) {
+        if (++$consecutive{$prompt} > $max_consecutive) {
+            die "Error. Exceeded max # of consecutive calls to prompt <$prompt>;";
+        }
+    }
+    else {
+        %consecutive = ();
+        $consecutive{$prompt} = 1;
+    }
+
     # prepare prompt
     #---------------
     $prompt .= " ";
@@ -178,7 +207,10 @@ sub query {
 
     # get user response
     #------------------
-    if ($noprompt) { $ans = $dflt; print_("$ans\n") }
+    if ($noprompt) {
+        if ($dflt) { $ans = $dflt; print_("$ans\n") }
+        else       { die "Error. No default response provided;" }
+    }
     else           { chomp($ans = <STDIN>); $ans =~ s/^\s*|\s*$//g;
                      printLOG_("$ans\n") }
 

@@ -1,4 +1,4 @@
-! $Id: Chem_MieMod.F90,v 1.51.28.1.2.1 2017/05/17 19:17:34 pcolarco Exp $
+! $Id: Chem_MieMod.F90,v 1.52 2017/09/20 14:03:00 adarmeno Exp $
 
 #include "MAPL_Exceptions.h"
 

@@ -181,7 +181,7 @@ class Writer(object):
 #.................................................................................................
 
 #     ---------
-class txtWriter(Writer):
+class stdoutWriter(Writer):
 #     ---------
     """
     Implements text file writer.
@@ -209,6 +209,39 @@ class txtWriter(Writer):
 
     def close(self):
         pass
+
+#.................................................................................................
+
+#     ---------
+class txtWriter(Writer):
+#     ---------
+    """
+    Implements text file writer.
+    """
+    def __init__(self,filename=None):
+        self.filename = filename # ignore this for now.
+        self.doc = open(filename,'w')
+        self.secn = 0
+    def section(self,collection,description):
+        self.secn += 1
+        self.doc.write("\n")
+        self.doc.write("\n")
+        self.doc.write( "%d) Collection %s: %s\n"%(self.secn,collection,description) )
+        self.doc.write("\n")
+    def property(self,name,value):
+        self.doc.write( "%19s: %s\n"%(name,value) )
+    def table(self,choice='header'):
+        if choice == 'header':
+            self.doc.write("\n")
+            self.doc.write( " -----------|------|------------------------------------------------------------|------------\n" )
+            self.doc.write( "   Name     | Dims |                     Description                            |    Units   \n" )
+        self.doc.write( " -----------|------|------------------------------------------------------------|------------\n" )
+        return
+    def row(self,vname,dim,descr,units):
+        self.doc.write( ' %-10s | %4s | %-58s | %-10s \n'%(vname,dim,descr,units) )
+
+    def close(self):
+        self.doc.close()
 
 #.................................................................................................
 
@@ -394,14 +427,14 @@ if __name__ == "__main__":
 #   Parse command line options
 #   --------------------------
     parser = OptionParser(usage="Usage: %prog [OPTIONS] netcdf_file(s)",
-                          version='1.0.0' )
+                          version='1.1.0' )
 
     parser.add_option("-o", "--output", dest="outFile", default=outFile,
-              help="Output file name for the File Spec (default=%s)"\
+              help="Output file name for the File Spec, ignored for format 'stdout' (default=%s)"\
                           %outFile )
 
     parser.add_option("-f", "--format", dest="format", default=format,
-              help="Output file format: one of 'text', 'rtf' (default=%s)"%format )
+              help="Output file format: one of 'stdout', 'text', 'rtf' (default=%s)"%format )
 
     parser.add_option("-H", "--history", dest="history", default=None,
               help="Optional HISTORY.rc resource file (default=None)")
@@ -453,6 +486,9 @@ if __name__ == "__main__":
     if 'text' in options.format:
         options.outFile = name + '.txt'
         writer = txtWriter(options.outFile)
+    elif 'stdout' in options.format:
+        options.outFile = name + '.txt'
+        writer = stdoutWriter(options.outFile)
     elif 'rtf' in options.format:
         if not HAS_RTF:
             raise ValueError, 'PyRTF is not installed, therefore format RTF is not available'

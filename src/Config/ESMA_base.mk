@@ -37,6 +37,10 @@ ifndef BPREC
   BPREC := 64#  Build with "-r8"
 endif
 
+ifndef FV_PRECISION #  Toggle build precision for FV3. Set to R4 for single precision
+  FV_PRECISION := R4
+endif
+
 #                       ----------------
 #                       Main Directories
 #                       ----------------

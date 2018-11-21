@@ -1452,11 +1452,13 @@ sub beg_item {
       if($dims eq 'GEOS\_DIMSVERTONLY') {print "z \&";}
       if($dims eq 'GEOS\_DIMSTILEONLY') {print "tile \&";}
       if($dims eq 'GEOS\_DIMSTILETILE') {print "TileTile \&";}
+      if($dims eq 'GEOS\_DIMSCATCHONLY') {print "tile \&";}
       if($dims eq 'MAPL\_DIMSHORZONLY') {print "xy \&";}
       if($dims eq 'MAPL\_DIMSHORZVERT') {print "xyz \&";}
       if($dims eq 'MAPL\_DIMSVERTONLY') {print "z \&";}
       if($dims eq 'MAPL\_DIMSTILEONLY') {print "tile \&";}
       if($dims eq 'MAPL\_DIMSTILETILE') {print "TileTile \&";}
+      if($dims eq 'MAPL\_DIMSCATCHONLY') {print "tile \&";}
     }
     else{print "\&";}
 

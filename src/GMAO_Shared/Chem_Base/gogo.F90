@@ -25,6 +25,7 @@ program gocart_restart_editor
     integer, parameter  :: ERROR_DUPLICATED_OPTIONS                = 13
     integer, parameter  :: ERROR_MISSING_OPTION                    = 14
     integer, parameter  :: ERROR_VERTICAL_LEVELS                   = 15
+    integer, parameter  :: ERROR_CONVERSION_TO_REAL                = 16
 
     integer, parameter  :: REQUEST_HELP                            = 100
 
@@ -40,6 +41,9 @@ program gocart_restart_editor
 
     logical  :: dry_run = .false.
 
+    logical  :: correct_co2 = .false.
+    real     :: delta_co2 = 0.0
+
     integer  :: rc = 0  
 
 
@@ -52,6 +56,8 @@ program gocart_restart_editor
                        agcm_jm              = jm,           &
                        agcm_lm              = lm,           &
                        dry_run              = dry_run,      &
+                       correct_co2          = correct_co2,  &
+                       delta_co2            = delta_co2,    &
                        rc                   = rc)
 
     if (rc /= SUCCESS) then
@@ -71,6 +77,8 @@ program gocart_restart_editor
                         agcm_jm              = jm,           &
                         agcm_lm              = lm,           &
                         dry_run              = dry_run,      &
+                        correct_co2          = correct_co2,  &
+                        delta_co2            = delta_co2,    &
                         rc                   = rc)
 
     if (rc /= SUCCESS) then
@@ -81,7 +89,8 @@ contains
 
 subroutine get_arguments(source_restart_file, source_registry_file, &
                          target_registry_file, target_restart_file, &
-                         agcm_im, agcm_jm, agcm_lm, dry_run, rc)
+                         agcm_im, agcm_jm, agcm_lm, dry_run,        &
+                         correct_co2, delta_co2, rc)
 
     implicit none
 
@@ -96,6 +105,9 @@ subroutine get_arguments(source_restart_file, source_registry_file, &
  
     logical,          intent(out) :: dry_run
 
+    logical,          intent(out) :: correct_co2
+    real,             intent(out) :: delta_co2
+
     integer,          intent(out) :: rc
 
     ! local
@@ -104,6 +116,7 @@ subroutine get_arguments(source_restart_file, source_registry_file, &
     character(len=STR_LENGTH)     :: opt
     character(len=MAX_STR_LENGTH) :: arg
     character(len=MAX_STR_LENGTH) :: buffer
+    character(len=MAX_STR_LENGTH) :: delta_co2_
     integer                       :: i
     integer                       :: j
     integer                       :: argc, iargc
@@ -118,6 +131,10 @@ subroutine get_arguments(source_restart_file, source_registry_file, &
     levels               = ''
     
     dry_run              = .false.
+
+    correct_co2          = .false.
+    delta_co2_           = ''
+    delta_co2            = 0.0
 
     argc = iargc()
 
@@ -176,7 +193,16 @@ subroutine get_arguments(source_restart_file, source_registry_file, &
             if (rc /= SUCCESS) then
                 call error_message(rc)
                 return
-            end if    
+            end if
+
+            ! optional
+            call get_arg_('-c', '--correct-co2',     delta_co2_,           rc)
+            if (rc /= SUCCESS) then
+                correct_co2 = .false.
+                delta_co2_  = ''
+            else
+                correct_co2 = .true.
+            end if
 
             ! options
             call get_opt_('-n', '--dry-run',         dry_run,              rc)
@@ -193,16 +219,26 @@ subroutine get_arguments(source_restart_file, source_registry_file, &
     if (rc /= SUCCESS) then
         call error_message(rc)
         return
-    end if 
+    end if
+
+    if (correct_co2) then
+        call parse_real(delta_co2_, delta_co2, rc)
+        if (rc /= SUCCESS) then
+            call error_message(rc)
+            return
+        end if
+    endif
+
 
 #if (DEBUG)
-    print *, 'Dry run         : ', dry_run  
+    print *, 'Dry run         : ', dry_run 
     print *, 'Source Registry : ', trim(source_registry_file)
     print *, 'Target Registry : ', trim(target_registry_file)
     print *, 'Source Restart  : ', trim(source_restart_file)
     print *, 'Target Restart  : ', trim(target_restart_file)
     print *, 'Resolution      : ', trim(resolution), agcm_im, agcm_jm
     print *, 'Levels          : ', trim(levels), agcm_lm
+    print *, 'Correct CO2     : ', trim(delta_co2_), correct_co2, delta_co2
 #endif
 
     rc = 0
@@ -295,7 +331,8 @@ end subroutine get_opt_
 
 subroutine create_restart(source_restart_file, source_registry_file, &
                           dest_registry_file, dest_restart_file,     &
-                          agcm_im, agcm_jm, agcm_lm, dry_run, rc)
+                          agcm_im, agcm_jm, agcm_lm, dry_run,        &
+                          correct_co2, delta_co2, rc)
 
     implicit none
 
@@ -309,6 +346,9 @@ subroutine create_restart(source_restart_file, source_registry_file, &
     integer,          intent(in) :: agcm_lm
 
     logical,          intent(in) :: dry_run
+
+    logical,          intent(in) :: correct_co2
+    real,             intent(in) :: delta_co2
 
     integer,          intent(out) :: rc
 
@@ -381,7 +421,11 @@ subroutine create_restart(source_restart_file, source_registry_file, &
             COPY_TRACER: do l = 1, lm
                     read  (unit=src) q
                     if (.not. dry_run) then
-                        write (unit=dst) q
+                        if (trim(r_src%vname(i_src)) == 'CO2' .and. correct_co2) then
+                            write (unit=dst) (q + delta_co2)
+                        else
+                            write (unit=dst) q
+                        end if   
                     end if    
             end do COPY_TRACER
         else
@@ -419,6 +463,7 @@ subroutine help()
     print *, '              -o TARGET_GOCART_RESTART \'
     print *, '              -r resolution            \'
     print *, '              -l levels                \'
+    print *, '              [-c DELTA_CO2]           \'
     print *, '              [-n]'
     print *, ''
     print *, '       gogo.x -h | --help'
@@ -430,6 +475,7 @@ subroutine help()
     print *, '  -o, --target-restart=GOCART            Target gocart_internal_rst'
     print *, '  -r, --resolution=b|...|c48|...|IM,JM   GEOS-5 nominal resolution or IM,JM'
     print *, '  -l, --levels=LM                        Vertical levels. Typically 72 or 137.'
+    print *, '  -c, --correct-co2=DELTA_CO2            Modify CO2 by adding uniform value of DELTA_CO2 [mol/mol].'
     print *, '  -n, --dry-run                          Trial run that does not write a'
     print *, '                                         restart file'
     print *, '  -h, --help                             Show this screen'
@@ -473,7 +519,7 @@ subroutine parse_resolution(res, im, jm, rc)
 
         case ('C48', 'C90', 'C180', 'C360', 'C500', 'C720', 'C1000', 'C1440', 'C2000', 'C2880', &
               'c48', 'c90', 'c180', 'c360', 'c500', 'c720', 'c1000', 'c1440', 'c2000', 'c2880')
-            read(res(2:), '(i)', iostat=rc) im
+            read(res(2:), '(i4)', iostat=rc) im
             if (rc == 0) then
                 jm = 6*im
             else
@@ -485,13 +531,13 @@ subroutine parse_resolution(res, im, jm, rc)
             i = index(res, delimiter)
 
             if (i > 0) then
-                read(res(1:i) , '(i)', iostat=rc) im
+                read(res(1:i) , '(i4)', iostat=rc) im
                 if (rc /= 0) then
                     rc = ERROR_DIM_SIZES
                     return
                 end if
  
-                read(res(i+1:), '(i)', iostat=rc) jm
+                read(res(i+1:), '(i4)', iostat=rc) jm
                 if (rc /= 0) then
                     rc = ERROR_DIM_SIZES
                     return
@@ -520,7 +566,7 @@ subroutine parse_levels(lev, lm, rc)
     integer,          intent(out) :: lm   ! JM
     integer,          intent(out) :: rc   ! return code
 
-    read(lev, '(i)', iostat=rc) lm
+    read(lev, '(i3)', iostat=rc) lm
 
     if (rc == 0) then
         rc = SUCCESS
@@ -529,6 +575,25 @@ subroutine parse_levels(lev, lm, rc)
     end if
 
 end subroutine parse_levels
+
+
+subroutine parse_real(str, v, rc)
+
+    implicit none
+
+    character(len=*), intent(in)  :: str  ! string
+    real,             intent(out) :: v    ! real
+    integer,          intent(out) :: rc   ! return code
+
+    read(str, *, iostat=rc) v
+
+    if (rc == 0) then
+        rc = SUCCESS
+    else
+        rc = ERROR_CONVERSION_TO_REAL
+    end if
+
+end subroutine parse_real
 
 
 subroutine error_message(rc)

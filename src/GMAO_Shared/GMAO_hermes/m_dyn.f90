@@ -72,6 +72,7 @@
 !  05Mar2009  Todling   Add fraction of land/water/ice
 !  14May2009  Todling   Making hardwired values more explicit
 !  19Jan2010  Todling   Various clean-ups related to dynvectype 4 or 5
+!  20Oct2015  Todling   Update default number of tracers to 6
 !
 !EOP
 !-------------------------------------------------------------------------
@@ -87,7 +88,7 @@
    integer, parameter ::  nfix2d5 = 9              ! phis, hs_stdv, ts, ps, frlands(5)
    integer, parameter ::  nfix2d4 = 5              ! phis, hs_stdv, ts, ps, lwi
    integer, parameter ::  nfix3d  = 4              ! delp, u, v, pt
-   integer, parameter ::  n3dtrc  = 4              ! number of fix tracer: q,o3,qi,ql
+   integer, parameter ::  n3dtrc  = 6              ! number of fix tracer: q,o3,qi,ql,qr,qs
    integer, parameter ::  nfix4   = nfix2d4+nfix3d ! fixed vars (minus q)
    integer, parameter ::  nfix5   = nfix2d5+nfix3d ! fixed vars (minus q)
    integer, save      ::  nfix    = nfix4          ! Default as above: GEOS-4
@@ -1070,7 +1071,7 @@ CONTAINS
 !
   subroutine  dyn_put ( fname, nymd, nhms, prec, w_f, rc, &
                         nstep, verbose, new, freq, epv, plevs, vectype, forceflip,&  ! optional
-                        only_vars                                                 )  ! optional
+                        only_vars, indxlevs                                       )  ! optional
 !
 ! !USES:
 !
@@ -1101,6 +1102,7 @@ CONTAINS
                                                 ! file is assumed to be PRS.
   integer, intent(in), OPTIONAL     :: vectype  ! switch between g4/g5 dyn-vects
   logical, intent(in), OPTIONAL     :: forceflip! allows flip of data%fields only
+  logical, intent(in), OPTIONAL     :: indxlevs ! place lev index instead of pressure levs in file
   character(len=*), intent(in), OPTIONAL :: only_vars(:) ! write out only these fields
 
 !
@@ -1133,6 +1135,7 @@ CONTAINS
 !  05Mar2009 Todling   Add fraction of land/water/ice; lwi no longer written out
 !  16Jan2010 Todling   Add forceflip here as already in the read
 !  23Jun2010 Kokron    Initialize fliplon to .false.
+!  08May2018 Todling   Allow for lev-index to be in file (MAPL only handles indx)
 !
 !EOP
 !-------------------------------------------------------------------------
@@ -1209,6 +1212,15 @@ CONTAINS
    lat = w_f%grid%lat
    lon = w_f%grid%lon
 
+!  Consistency check
+!  -----------------
+   if ( present(plevs) .and. indxlevs ) then
+        print *, 'dyn_put: error, plevs and indxlevs cannot both be specified'
+        call clean_()
+        rc = 901
+        return
+   endif
+
 !  Vertical coordinates: given on input (prs files)
 !  ------------------------------------------------
    if ( present(plevs) ) then
@@ -1229,6 +1241,15 @@ CONTAINS
 
    end if
    levunits = 'hPa'
+
+   if (present(indxlevs) ) then
+      if (indxlevs) then
+         do k=1,km
+            lev(k)=k
+         enddo
+         levunits = 'layer'
+      endif
+   endif 
 
 !  Global metadata
 !  ---------------
@@ -1812,6 +1833,7 @@ CONTAINS
 !  20Feb2014 Todling   ncf knob to allow reading non-compliant (special) file
 !  06Mar2014 Todling   pncf knob to allow reading non-compliant perturbation file created by GSI
 !  16Oct2015 Todling   For too long now MAP-written files have upset m_dyn; patch fix
+!  01Oct2016 M.J. Kim  Add qi,ql,qr,qs to perturbation 
 !
 !EOP
 !-------------------------------------------------------------------------
@@ -1938,7 +1960,7 @@ CONTAINS
    if(vectype_==4) nfix=nfix4
    if(vectype_==5) nfix=nfix5
    if (ncf_ .or. pncf_) then
-      lm = 4                              ! if non-compliant file, force lm to g5 lm 
+      lm = n3dtrc                         ! if non-compliant file, force lm to g5 lm 
    else
       lm =  nvars - nfix                  ! lm now means the trace dimensions
       if (vectype_==5 .and. &
@@ -2175,11 +2197,29 @@ CONTAINS
        if (pncf_) fldname = 'sphu'
           call GFIO_GetVar ( fid, trim(fldname), nymd, nhms, &
                              im, jm, 1, km, w_f%q(:,:,:,1), err )
-       if (pncf_) then ! pert files have ozone
+       if (pncf_) then ! pert fields
           fldname = 'ozone'
           call GFIO_GetVar ( fid, trim(fldname), nymd, nhms, &
                              im, jm, 1, km, w_f%q(:,:,:,2), err )
+          if ( lm > 3 ) then
+             fldname = 'qitot'
+             call GFIO_GetVar ( fid, trim(fldname), nymd, nhms, &
+                                im, jm, 1, km, w_f%q(:,:,:,3), err )
+             fldname = 'qltot'
+             call GFIO_GetVar ( fid, trim(fldname), nymd, nhms, &
+                                im, jm, 1, km, w_f%q(:,:,:,4), err )
+          endif
+          if ( lm > 5 ) then
+             fldname = 'qrtot'
+             call GFIO_GetVar ( fid, trim(fldname), nymd, nhms, &
+                                im, jm, 1, km, w_f%q(:,:,:,5), err )
+             fldname = 'qstot'
+             call GFIO_GetVar ( fid, trim(fldname), nymd, nhms, &
+                                im, jm, 1, km, w_f%q(:,:,:,6), err )
+          endif
        endif
+
+
    else ! .not. ncf/pncf
       do l = lbeg, lm
            call GFIO_GetVar ( fid, w_f%qm(l)%name, nymd, nhms, &

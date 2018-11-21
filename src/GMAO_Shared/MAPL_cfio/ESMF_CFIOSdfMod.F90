@@ -355,7 +355,8 @@
       integer :: fileNameLen
       real*4 :: amiss
       real*4 :: vRange32(2)
-      real*4, pointer :: lon(:), lat(:), lev(:)
+      real*4, pointer :: lon(:), lat(:)
+      real*4, pointer :: lev(:) => null()
       real*8, pointer :: lon_64(:), lat_64(:), lev_64(:)
       integer :: coXType = NF90_FLOAT
       integer :: coYType = NF90_FLOAT
@@ -394,6 +395,7 @@
       integer :: loc1, loc2
       integer :: akid, bkid, ptopid
       integer :: icount
+      integer :: vdir
       real*4, pointer :: ak(:), bk(:)
       real*4 :: ptop
       real*4 :: ptop_array(1)
@@ -443,12 +445,13 @@
 !     get grid information and global meta data
                                                                                           
       call CFIO_DimInquire (cfio%fid, im, jm, km, lm, &
-                            cfio%mVars, ngatts, rtcode)
+                            cfio%mVars, ngatts, vdir=vdir, rc=rtcode)
       if (err("CFIO_DimInquire failed",rtcode,rtcode) .lt. 0) then  
          if ( present(rc) ) rc = rtcode
          return
       end if
       cfio%tSteps = lm
+      cfio%vDir = vdir
 
       rtcode = NF90_INQUIRE (cfio%fid,nDims,allVars,ngatts,recdim)
       if (err("FileOpen: NF90_INQUIRE failed",rtcode,-48) .NE. 0) then  
@@ -681,8 +684,9 @@
               if (rtcode .ne. 0) cfio%varObjs(nVars)%grid%coordinate = "pressure"  
               cfio%varObjs(nVars)%grid%levUnits = trim(dimUnits(iv))
 
-              allocate(cfio%varObjs(nVars)%grid%lev(dimSize(iv)), &
-                       lev(dimSize(iv)))
+              allocate(cfio%varObjs(nVars)%grid%lev(dimSize(iv)))
+              if (.not.associated(lev))  allocate(lev(dimSize(iv)))
+
               if ( coZType .eq. NF90_FLOAT ) then
                  rtcode = NF90_GET_VAR(fid, varId, lev, (/1/), (/dimSize(iv)/)) 
 !print *, "Lev from CFIO SDFFileOpen: ", lev
@@ -695,7 +699,7 @@
               cfio%varObjs(nVars)%grid%lev = 0.0
               cfio%varObjs(nVars)%grid%lev = lev
 !print *, "cfio%varObjs(nVars)%grid%lev from CFIO SDFFileOpen: ", cfio%varObjs(nVars)%grid%lev
-              deallocate(lev)
+              rtcode = NF90_GET_ATT(fid,varId,'units',levunits)
            end if
         end do
         rtcode = NF90_INQ_VARID (cfio%fid, cfio%varObjs(nVars)%vName, varId)
@@ -1064,6 +1068,12 @@
 !     set grids objects in a CFIO object
       allocate( cfio%grids(cfio%mGrids), stat = rtcode)
       cfio%grids(1) = cfio%varObjs(1)%grid
+      if (associated(lev)) then
+         cfio%grids(1)%levunits = levUnits
+         allocate(cfio%grids(1)%lev(size(lev)),stat = rtcode)
+         cfio%grids(1)%lev = lev
+         deallocate(lev)
+      end if
       if ( cfio%mGrids .eq. 1 .and. cfio%varObjs(1)%grid%km .eq. 0) &
          cfio%grids(1)%km = km
       
@@ -2870,16 +2880,17 @@
 ! If Time (tm) has been set in grid, set the file to contiguous
 !
            if( bTimeSet .eqv. .FALSE. ) then
+              if (useFaceDim) then
+                 chunkDim=5
+                 nDefaultChunkSize(2)=jm/nf !!!ALT!!!
+              else
+                 chunkDim=4
+                 nDefaultChunkSize(2)=jm
+              end if
               nDefaultChunkSize(1)=im
-              nDefaultChunkSize(2)=jm/nf !!!ALT!!!
               nDefaultChunkSize(3)=1 !nf
               nDefaultChunkSize(4)=1
               nDefaultChunkSize(5)=1
-              if (useFaceDim) then
-                 chunkDim=5
-              else
-                 chunkDim=4
-              end if
               rc=NF90_DEF_VAR_CHUNKING(fid, vid(i), NF90_CHUNKED,  & 
                    nDefaultChunkSize(1:chunkDim))
            endif

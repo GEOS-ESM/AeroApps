@@ -102,6 +102,10 @@ class OMAERUV_L2(AURA_L2):
             print "[w] Wrote file "+filename
 
 #---
+    def ibits(self, arg, pos, len):
+        return (arg >> pos) & ((1 << len) - 1)
+
+#---
     def writeg(self,syn_time,nsyn=8,filename=None,dir='.',expid='omaeruv',refine=4,res=None,Verb=1):
        """
         Writes gridded OMI measurements to file.
