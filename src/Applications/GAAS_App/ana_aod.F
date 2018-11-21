@@ -112,6 +112,11 @@
       type (Chem_Registry) :: aodReg        ! Registry with single XX tracer
       type (ods_vect)      :: ods, ods_
 
+
+      logical:: test_nan
+      integer k,l
+
+
       call zeit_ci ( 'ana_aod' )
 
 !     Parse command line
@@ -152,6 +157,8 @@
      &       'could not determine dimensions of mixing ratio file' 
      &        //trim(aerfile))
       end if
+
+      print*, 'test IM JM KM', im, jm, km
 
 !     Handle optional superob dimension
 !     ---------------------------------
@@ -321,28 +328,29 @@
                                                                               call zeit_ci ( 'Analyzer' )
       call Analyzer ( ods, nobs_good, im_so, jm_so, dy_a, 
      &                 chAOD, do_avk, y_k, skipPSAS )
-                                                                              call zeit_co ( 'Analyzer' )
 
+      
+      
+                                                                              call zeit_co ( 'Analyzer' )
 !     Stability device:
 !        Check for signs of non-convergence; redo analysis at lower
 !        resolution if this is the case     
 !     -----------------------------------------------------------
-      if ( log_transf ) then
-           AINC_MAX = 4.0
-      else
-           AINC_MAX = 20.
-      end if
-      if ( maxval(abs(dy_a%qa(1)%data3d)) > AINC_MAX ) then
+  
+      if (PSAS_convergence(dy_a) ==.FALSE.) then
+
          print *, "<<WARNING>> PSAS appears to have NOT converged at native resolution, trying superob at lower resolution ..."
-         im_so = im / 2
-         jm_so = (jm-1)/2 + 1
-         call Analyzer ( ods, nobs_good, im_so, jm_so, dy_a, 
-     &                   chAOD, do_avk, y_k, skipPSAS )
-         if ( maxval(abs(dy_a%qa(1)%data3d)) > AINC_MAX ) then
-              call die(myname,'<<ERROR>> no convergence at low resolution as well; stop here.')
-         else
-                 print *, "<<WARNING>> PSAS appears to have converged now; cross your fingers."
-         end if
+               im_so = im / 2
+               jm_so = (jm-1)/2 + 1
+               call Analyzer ( ods, nobs_good, im_so, jm_so, dy_a, 
+     &              chAOD, do_avk, y_k, skipPSAS )
+         
+               if (PSAS_convergence(dy_a) ==.FALSE.) then
+                   print*, "<<WARNING>><<WARNING>> no convergence at low resolution as well; so increments will be all set to zeros"
+                   dy_a%qa(1)%data3d = 0.0 
+               else
+                   print*, "<<WARNING>> PSAS appears to have converged now at lower resolution"
+               end if
       end if
 
 !     Update bias estimate
@@ -468,6 +476,37 @@
       call exit(0)
 
       CONTAINS
+
+
+      logical function PSAS_convergence(dy_a)
+            type(chem_bundle), intent(in) :: dy_a
+            integer i, j, k
+            PSAS_convergence = .TRUE.
+            do k = 1, nch
+               do i = 1, im 
+                  do j = 1, jm
+                     if (ISNAN(dy_a%qa(1)%data3d(i, j, k))) then
+                         PSAS_convergence = .FALSE.
+                     return
+                     endif  
+                  enddo      
+               enddo
+            enddo
+
+            if ( log_transf ) then
+                  AINC_MAX = 4.0
+            else
+                  AINC_MAX = 20.
+            end if
+
+            if ( maxval(abs(dy_a%qa(1)%data3d)) > AINC_MAX )  then
+                    PSAS_convergence = .FALSE.
+                    return
+            endif
+      
+      end function PSAS_convergence
+
+
 
 !-----------------------------------------------------------------------
 !     NASA/GSFC, Global Modeling and Assimilation Office, Code 610.1   !

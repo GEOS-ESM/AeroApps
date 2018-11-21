@@ -1,9 +1,7 @@
 D/NCA////
-/GNUmakefile/1.8.4.1/Tue Nov 20 21:10:41 2018//TGEOSadas-5_21_2_OPS
 /aeronet_all.py/1.1/Tue Nov 20 19:51:54 2018//TGEOSadas-5_21_2_OPS
 /ana.rc/1.6/Tue Nov 20 19:51:54 2018//TGEOSadas-5_21_2_OPS
 /ana.rc.tmpl/1.11/Tue Nov 20 21:10:41 2018//TGEOSadas-5_21_2_OPS
-/ana_aod.F/1.9/Tue Nov 20 19:51:54 2018//TGEOSadas-5_21_2_OPS
 /ana_aod.csh/1.5/Tue Nov 20 19:51:54 2018//TGEOSadas-5_21_2_OPS
 /ana_aod.j.tmpl/1.35/Tue Nov 20 21:10:41 2018//TGEOSadas-5_21_2_OPS
 /aod_util.F90/1.8/Tue Nov 20 19:51:54 2018//TGEOSadas-5_21_2_OPS
@@ -34,3 +32,6 @@ D/NCA////
 /ut_get_aero_obs.j/1.5/Tue Nov 20 21:10:42 2018//TGEOSadas-5_21_2_OPS
 /mxd04_l2a.py/1.15/Tue Nov 20 21:11:08 2018//
 /mxd04_nnr.py/1.10/Tue Nov 20 21:11:08 2018//
+/ana_aod.F/1.12/Wed Nov 21 21:20:33 2018//
+/aod_data.py/1.2/Fri Aug 24 20:38:35 2018//
+/GNUmakefile/1.12/Wed Nov 21 21:43:55 2018//

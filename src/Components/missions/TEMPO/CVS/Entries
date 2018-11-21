@@ -8,7 +8,6 @@
 /tempo_lg2.py/1.1/Thu Jan 22 22:35:04 2015//
 /GNUmakefile/1.7/Tue Feb  2 14:01:54 2016//
 /geo_sampler.py/1.6/Tue Feb  2 14:01:54 2016//
-/Aod_EOS.rc/1.1/Tue Feb  2 14:01:54 2016//
 /Chem_MieRegistry.rc/1.1/Fri Jun  5 13:37:47 2015//
 /geo_angles.rc/1.1/Tue Feb  2 14:01:54 2016//
 /geo_vlidort.rc/1.1/Tue Feb  2 14:01:54 2016//
@@ -23,3 +22,4 @@
 /clean_mem.sh/1.1/Fri Jun  5 13:37:47 2015//
 /geo_angles.F90/1.1/Tue Feb  2 14:01:54 2016//
 D/simulator////
+/Aod_EOS.rc/1.2/Tue Nov 20 19:51:59 2018//

@@ -27,9 +27,9 @@ endif
 THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
 
-BINS   = mpana_aod.x ana_aod.x 
+BINS   = ana_aod.x # mpana_aod.x 
 CSSCRP = get_aero_obs.csh run_gaas_ana.csh
-PYSCRP = modis_l2a.py mxd04_l2a.py avhrr_l2a.py patmosx_l2a.py
+PYSCRP = modis_l2a.py mxd04_l2a.py avhrr_l2a.py patmosx_l2a.py aod_data.py
 PYMODS = mxd04_nnr.py avhrr_nnr.py
 
 esma_install install: $(DEPS) $(LIB) $(BINS) $(PYMODS)
@@ -102,14 +102,14 @@ $(LIB) lib :  $(DEPS) $(OBJS)
 ana_aod.x : $(LIB) ana_aod.o
 	$(FC) $(LDFLAGS) -o $@ ana_aod.o $(LIB) \
               $(LIB_CHEM_BASE) $(LIB_ODS) $(LIB_PSAS) $(LIB_HERMES) \
-              $(LIB_GFIO) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
+              $(LIB_GFIO) $(LIB_MAPL_BASE) $(LIB_GMAO_pFIO) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
               $(LIB_EU) $(LIB_ESMF) \
               $(LIB_SDF) $(LIB_SCI) $(LIB_SYS) $(LIB_MPI)
 
 mpana_aod.x : $(LIB) mpana_aod.o
 	$(FC) $(LDFLAGS) -o $@ mpana_aod.o $(LIB) \
               $(LIB_CHEM_BASE) $(LIB_ODS) $(LIB_PSAS) $(LIB_HERMES) \
-              $(LIB_GFIO) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
+              $(LIB_GFIO) $(LIB_MAPL_BASE) $(LIB_GMAO_pFIO) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
               $(LIB_CFIO) $(LIB_MPEU) $(LIB_ESMF) \
               $(LIB_SDF) $(LIB_SCI) $(LIB_SYS) $(LIB_MPI)
 
