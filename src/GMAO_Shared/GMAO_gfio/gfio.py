@@ -6,6 +6,7 @@
 
 import os
 from numpy    import linspace, ones, zeros, any, array, float32, tile
+import numpy as np
 from datetime import datetime, timedelta
 
 from collections import OrderedDict
@@ -781,7 +782,7 @@ class GFIOctl(object):
           v1, v2 = v.copy(), v.copy() # scratch space
           n = 0
           for now in Times[:-1]:
-              v1[I[n]], v2[I[n+1]] = V[n], V[n+1]
+              v1[I[n]], v2[I[n+1]] = np.squeeze(V[n]), np.squeeze(V[n+1])
               j = (time>=now) & (time<=now+dt)
               dt_secs = ((now+dt)-now).total_seconds()
               if any(j): 
