@@ -8,6 +8,11 @@ import os
 from numpy    import linspace, ones, zeros, any, array, float32, tile
 from datetime import datetime, timedelta
 
+from collections import OrderedDict
+from dateutil.relativedelta import relativedelta
+
+__MAXFILES__ = 512 # max number of files to keep open at once, per instance
+
 from GFIO_ import *
 
 class GFIOHandle(object):
@@ -79,12 +84,36 @@ class GFIO(object):
         self.vtitle = self.vtitle.split(':')[:-1]
         self.vunits = self.vunits.split(':')[:-1]
 
+#       Lats4d files lack proper variable attributes. For reasons not
+#       quite well understood, this causes vunits to come out blank.
+#       This is a quick workaround
+#       -----------------------------------------------------------
+        if len(self.vtitle)==0 or len(self.vunits)==0:
+            self._fixUnits(filename)
+
 #       Hash with number of levels by variable name
 #       -------------------------------------------
         self.kmvar_name = {}
 
         for i in range(len(self.vname)):
             self.kmvar_name[self.vname[i]] = self.kmvar[i]
+#---
+    def _fixUnits(self,filename):
+        """
+        Lats4d workaround.
+        """
+        try:
+            from netCDF4 import Dataset
+            n = Dataset(filename)
+            self.vtitle, self.vunits = ([], [])
+            for v in self.vname:
+                self.vtitle.append(str(n.variables[v].long_name)) 
+                self.vunits.append(str(n.variables[v].units))                
+        except: # in case netCDF4 is not available
+            if len(self.vtitle)==0:
+                self.vtitle = self.vname # vtitle is affected as well
+            if len(self.vunits)==0:
+                self.vunits = len(self.vname) * ['unkown',]
 
 #---
     def read(self,vname,nymd=None,nhms=None,kbeg=None,kount=None,squeeze=True):
@@ -119,7 +148,7 @@ class GFIO(object):
             else:
                 kbeg = 1 # 3D
                 kount = self.km
-    
+                
         var, rc = gfiogetvar(self.fid,vname,nymd,nhms,self.im,self.jm,kbeg,kount)
         if rc:
             raise IOError, "cannot read <"+vname+"> from GFIO file "+self.filename+' at %d %d'%(nymd,nhms)
@@ -515,9 +544,15 @@ class GFIOctl(object):
             secs = int(dt.replace('mn','')) * 60
         elif 'dy' in dt:
             secs = int(dt.replace('dy','')) * 24 * 60 * 60
+        elif 'mo' in dt:
+            mons = int(dt.replace('mo',''))
         else:
             raise ValueError, 'invalid time step <%s>'%dt 
-        dt = timedelta(seconds=secs)
+
+        if 'mo' in dt:
+          dt = relativedelta(months=+mons)
+        else:
+          dt = timedelta(seconds=secs)
 
         # Save this
         # ---------
@@ -526,11 +561,11 @@ class GFIOctl(object):
         self.dt = dt
         self.tbeg = _gat2dt(t0)
         self.tend = self.tbeg + (self.lm-1) * self.dt
-        self.Files = dict()
+        self.Files = OrderedDict()
 
         # Open GFIO file for first time
         # -----------------------------
-        filename = _strTemplate(self.dset,dtime=self.tbeg)
+        filename = _strTemplate(self.dset,tyme=self.tbeg)
         self.Files[filename] = GFIO(filename)
         self.gfio = self.Files[filename]
 
@@ -541,7 +576,24 @@ class GFIOctl(object):
             self.__dict__[att] = self.gfio.__dict__[att]
         
 #---
-    def read(self,vname,nymd=None,nhms=None,dtime=None,**kwds):
+
+    def _fifo(self,filename,gfio):
+        """
+        Save gfio object in container. If the maximum number of files
+        are exceeded, then the first in goes out.
+        """
+
+        # Close 1 file if too many files are open
+        # ---------------------------------------
+        if len(self.Files)  > __MAXFILES__:
+            first = self.Files.keys()[0]
+            self.Files[first].close() # close this file
+            del self.Files[first]     # delete this entry
+            #print '------- deleted %s ----------'%first
+            
+        self.Files[filename] = gfio
+            
+    def read(self,vname,nymd=None,nhms=None,tyme=None,**kwds):
         """
         Reads a variable at a given time/date, or the first time on file if
         nymd/nhms is not specified. By default it returns all vertical
@@ -550,9 +602,9 @@ class GFIOctl(object):
         The keyword arguments **kwds are passed to the GFIO method read().
         """
 
-        if dtime != None:
-            nymd = dtime.year*10000 + dtime.month*100 + dtime.day
-            nhms = dtime.hour*10000 + dtime.minute*100 + int(dtime.second)
+        if tyme != None:
+            nymd = tyme.year*10000 + tyme.month*100 + tyme.day
+            nhms = tyme.hour*10000 + tyme.minute*100 + int(tyme.second)
             
         if None in (nymd,nhms):
             pass # should we raise exception instead?
@@ -561,7 +613,8 @@ class GFIOctl(object):
             filename = _strTemplate(self.dset,nymd=nymd,nhms=nhms)
             if self.Files.has_key(filename) == False:
                 gfio = GFIO(filename)
-                self.Files[filename] = gfio
+                #self.Files[filename] = gfio
+                self._fifo(filename,gfio)
             else:
                 gfio = self.Files[filename]
 
@@ -578,9 +631,16 @@ class GFIOctl(object):
         elif t>self.tend:
             raise ValueError, '%s after %s'%(str(t),str(self.tend))
 
-        dt = t - self.tbeg
-        i = int(dt.total_seconds() / self.dt.total_seconds())
-        t1 = self.tbeg + i * self.dt
+        # dt = t - self.tbeg
+        # i = int(dt.total_seconds() / self.dt.total_seconds())
+        # t1 = self.tbeg + i * self.dt
+        # t2 = t1 + self.dt
+
+        t1 = self.tbeg
+        while t1 <= t:
+          t1 = t1 + self.dt
+
+        t1 = t1 - self.dt
         t2 = t1 + self.dt
         return (t1,t2)
     
@@ -602,7 +662,7 @@ class GFIOctl(object):
         return T
                 
 #---
-    def interpXY(self,vname,lon,lat,nymd=None,nhms=None,dtime=None,
+    def interpXY(self,vname,lon,lat,nymd=None,nhms=None,tyme=None,
 		 Transpose=False, algorithm='linear',**kwds):
         """
         Reads a variable at a given time/date, or the first time on
@@ -627,9 +687,9 @@ class GFIOctl(object):
 	    
         """
 
-        if dtime != None:
-            nymd = dtime.year*10000 + dtime.month*100 + dtime.day
-            nhms = dtime.hour*10000 + dtime.minute*100 + int(dtime.second)
+        if tyme != None:
+            nymd = tyme.year*10000 + tyme.month*100 + tyme.day
+            nhms = tyme.hour*10000 + tyme.minute*100 + int(tyme.second)
             
         if None in (nymd,nhms):
             pass # should we raise exception instead?
@@ -638,7 +698,8 @@ class GFIOctl(object):
             filename = _strTemplate(self.dset,nymd=nymd,nhms=nhms)
             if self.Files.has_key(filename) == False:
                 gfio = GFIO(filename)
-                self.Files[filename] = gfio
+                #self.Files[filename] = gfio
+                self._fifo(filename,gfio)
             else:
                 gfio = self.Files[filename]
 
@@ -683,7 +744,8 @@ class GFIOctl(object):
         # Find times bracketing the input time array
         # ------------------------------------------
         Times = self.trange(time.min(),time.max())
-        dt, dt_secs = (self.dt, self.dt.total_seconds())
+        # dt, dt_secs = (self.dt, self.dt.total_seconds())
+        dt = self.dt
 
         # Loop over time, producing XY interpolation at each time
         # -------------------------------------------------------
@@ -692,7 +754,7 @@ class GFIOctl(object):
             if Verbose: print " [] XY Interpolating <%s> at "%vname,now
             i = (time>=now-dt) & (time<=now+dt)
             if any(i):
-                v = self.interpXY(vname, lon[i], lat[i],dtime=now,
+                v = self.interpXY(vname, lon[i], lat[i],tyme=now,
 				  Transpose=True, # shape will be (nobs,km)
 				  squeeze=False,algorithm=algorithm,**kwopts)
 		shp = list(v.shape)
@@ -704,24 +766,34 @@ class GFIOctl(object):
         # Now perform the time interpolation
         # ----------------------------------
         N = len(lon)
-        km = self.kmvar_name[vname]
-        if km>1:
-            shp = [N,km]
+        kount = self.kmvar_name[vname]
+        if kount>1:
+            try:
+                if kwopts['kount'] is not None:
+                    kount = kwopts['kount']
+            except:
+                pass 
+            shp = [N,kount]
         else:
             shp = [N,]
-        v  = zeros(shp,dtype=float32)
-        v1, v2 = v.copy(), v.copy() # scratch space
-        n = 0
-        for now in Times[:-1]:
-            v1[I[n]], v2[I[n+1]] = V[n], V[n+1]
-            j = (time>=now) & (time<=now+dt)
-            if any(j): 
-                a = array([r.total_seconds()/dt_secs for r in time[j]-now],dtype=float32) 
-                if len(shp)==2: # has vertical levels
-                    a = tile(a,(shp[1],1)).T # replicate array
-                v[j] = (1-a) * v1[j] + a * v2[j]
-            n += 1
-
+        if len(Times) > 1:
+          v  = zeros(shp,dtype=float32)
+          v1, v2 = v.copy(), v.copy() # scratch space
+          n = 0
+          for now in Times[:-1]:
+              v1[I[n]], v2[I[n+1]] = V[n], V[n+1]
+              j = (time>=now) & (time<=now+dt)
+              dt_secs = ((now+dt)-now).total_seconds()
+              if any(j): 
+                  a = array([r.total_seconds()/dt_secs for r in time[j]-now],dtype=float32) 
+                  if len(shp)==2: # has vertical levels
+                      a = tile(a,(shp[1],1)).T # replicate array
+                  v[j] = (1-a) * v1[j] + a * v2[j]
+              n += 1
+        else:
+          v = V[0]
+          v.shape = shp
+          
 	if Transpose == False: v = v.T # back to GFIO's (km,nobs)
         if squeeze == True:    v = v.squeeze()
 
@@ -768,6 +840,45 @@ class GFIOctl(object):
 
         return sample_
     
+#.........................................................................................................
+
+class GFIOurl(GFIOctl):
+    """
+    A class inheriting GFIOctl functionality but initializing from an OPeNDAP URL
+    or even a NetCDF file with multiple time steps.
+    """
+
+    def __init__ (self, url ):
+        """
+        Initialize an aggregated GFIO object from an OPeNDAP URL.
+        Alternatively, a NetCDF file name with multiple time steps
+        can be provided instead of a URL.
+        """
+
+        # Open GFIO file for first time
+        # -----------------------------
+        self.Files = dict()
+        self.Files[url] = GFIO(url)
+        self.gfio = self.Files[url]
+
+        # Expose attributes
+        # -----------------
+        for att in ('title','source','contact','amiss',
+                    'im','jm','km','lm','lon','lat','levs','levunits',
+                    'vname', 'vtitle', 'vunits', 'kmvar', 'kmvar_name',
+                    'valid_range','packing_range',):
+            self.__dict__[att] = self.gfio.__dict__[att]
+
+        if self.lm < 2:
+            raise ValueError, "only one time step on file; use GFIO class instead"
+            
+        # Save this
+        # ---------
+        self.dset = url
+        self.dt = _hms2td(self.gfio.timinc)
+        self.tbeg = _nymd2dt(self.gfio.yyyymmdd[0],self.gfio.hhmmss[0])
+        self.tend = _nymd2dt(self.gfio.yyyymmdd[-1],self.gfio.hhmmss[-1])
+
 #...........................................................................
 
 __Months__ = ['JAN','FEB','MAR','APR','MAY','JUN',
@@ -775,7 +886,7 @@ __Months__ = ['JAN','FEB','MAR','APR','MAY','JUN',
 
 def _strTemplate(templ,expid=None,nymd=None,nhms=None,
                     yy=None,mm=None,dd=None,h=None,m=None,s=None,
-                    dtime=None):
+                    tyme=None):
     """
     Expands GrADS template in string *templ*. On input,
 
@@ -790,7 +901,7 @@ def _strTemplate(templ,expid=None,nymd=None,nhms=None,
        nymd  ---  same as yy*10000 + mm*100 + dd
        nhms  ---  same as h *10000 + h*100  + s
 
-       dtime ---  python datetime
+       tyme ---  python datetime
 
     Unlike GrADS, notice that seconds are expanded using the %S2 token. 
     Input date/time can be either strings or integers.
@@ -813,13 +924,13 @@ def _strTemplate(templ,expid=None,nymd=None,nhms=None,
     
     str_ = templ[:]
 
-    if dtime is not None:
-        yy = dtime.year
-        mm = dtime.month
-        dd = dtime.day
-        h  = dtime.hour
-        m  = dtime.minute
-        s  = dtime.second
+    if tyme is not None:
+        yy = tyme.year
+        mm = tyme.month
+        dd = tyme.day
+        h  = tyme.hour
+        m  = tyme.minute
+        s  = tyme.second
 
     if nymd is not None:
         nymd = int(nymd)
@@ -857,11 +968,41 @@ def _strTemplate(templ,expid=None,nymd=None,nhms=None,
 
 #...........................................................................
 
+def _splitDate(nymd):
+    """
+    Split nymd into year, month, date tuple.
+    """
+    nymd = int(nymd)
+    yy = nymd/10000
+    mm = (nymd - yy*10000)/100
+    dd = nymd - (10000*yy + 100*mm )
+
+    return (yy,mm,dd)
+
+def _nymd2dt(nymd,nhms=0):
+    """
+    Return python time given (nymd,nhms).
+    """
+    yy, mm, dd = _splitDate(nymd)
+    h, m, s = _splitDate(nhms)
+    return datetime(yy,mm,dd,h,m,s)
+    
+def _hms2td(nhms):
+    """
+    Return python time delta given nhms.
+    """
+    h, m, s = _splitDate(nhms)
+    return timedelta(seconds=(h*3600+m*60+s))
+    
 def _gat2dt(gat):
     """
     Convert grads time to datetime.
     """
-    time, date = gat.upper().split('Z')
+    try:
+        time, date = gat.upper().split('Z')
+    except:
+        time = '0'
+        date = gat.upper()
     if time.count(':') > 0:
         h, m = time.split(":")
     else:
