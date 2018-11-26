@@ -144,15 +144,12 @@
       integer type, nvDims, vdims(MAXVDIMS), nvAtts, dimSize
       integer nDims, nvars, ngatts, dimId, IdentifyDim
 
-       integer  julday, j0
-       external julday
-
 !     Time conversion local variables
       real*4    rtime
       real*8    dtime
       integer*2 itime
       integer*4 ltime
-      real*8    t1, t2, ndays, unitDays, xhour, xmin
+      real*8   t1, t2
 
 !     Start by determing the ID of the time coordinate variable
 !     ---------------------------------------------------------
@@ -221,7 +218,7 @@
 !     (RL: 10/2000)
 
       call ParseTimeUnits ( timeUnits, year, month, day, hour, min, sec, rc )
-      begDate = year*10000 + month*100 + day ! see below for adjustment due to first time value
+      begDate = year*10000 + month*100 + day
       begTime = hour*10000 + min*100   + sec
 
 !     Determine time increment.
@@ -266,41 +263,25 @@
      &         1,-44) .NE. 0) return
       endif
 
+
 !     Convert time increment to seconds if necessary
 !     ----------------------------------------------
       incSecsr8 = t2 - t1
       if ( timeUnits(1:6) .eq.  'minute' ) then
-           incSecsr8 = incSecsr8 * 60
-           unitDays = 1. / (24. * 60. ) 
+           incSecsr8 = incSecsr8 * 60 
       else if ( timeUnits(1:4) .eq. 'hour'   ) then
            incSecsr8 = incSecsr8 * 60 * 60 
-           unitDays = 1. / 24. 
       else if ( timeUnits(1:3) .eq.  'day' ) then
            incSecsr8 = incSecsr8 * 60 * 60 * 24
-           unitDays = 1. 
       else
            if (err("GetBegDateTime: invalid time unit name",
      &         1,-44) .NE. 0) return
       endif
 
 !dn      print *,timeUnits,incSecsr8
-      incSecs = max ( 1, nint(incSecsr8) )
+      incSecs = max ( 1, int(incSecsr8) )
 
-      if ( t1 > 0 ) then
-           ndays = t1 * unitDays
-           j0 = julday(month,day,year) + int(ndays)
-           call caldat(j0,month,day,year)
-           !ams print *, 't1, t2, j0, ndays: ', t1, t2, j0, ndays
-           begDate = year*10000+month*100+day
-           xhour = (ndays - int(ndays)) * 24
-           hour = int(hour)
-           xmin = (xhour - hour) * 60.
-           min = int(xmin)
-           sec = int(xmin - min) * 60
-           begTime =  hour * 10000 + min * 100 + sec
-      end if
-
-      !ams print *, 'begdate, begtime, incsecs: ',begdate, begtime, incsecs
+!ams      print *, 'begdate, begtime, incsecs: ',begdate, begtime, incsecs
 
       rc = 0 ! all done
       call ncpopt(__NCVERBOS__)

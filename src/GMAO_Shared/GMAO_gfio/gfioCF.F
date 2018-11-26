@@ -258,6 +258,7 @@
 !  1999.01.04  Lucchesi           Changed variable initialization
 !  1999.03.30  Lucchesi           Added 'positive=down' attribute to lev.
 !  2009.04.28  Lucchesi           Changed lon/lat/lev from float to double.
+!  2018.05.08  Todling            Add attribute coordinate for MAPL compatibility
 !
 !EOP
 !-------------------------------------------------------------------------
@@ -457,6 +458,12 @@ c                           timeUnits: string is built below
      .               'down',rc)
         if (err("Create: error creating lev attribute",rc,-33) .LT. 0)
      .      return
+        if (trim(levunits).eq.'layer') then
+           call ncaptc (fid,levid,'coordinate',NCCHAR,LEN_TRIM('eta'),
+     .                  'eta',rc)
+           if (err("Create: error creating lev attribute",rc,-33) .LT. 0)
+     .         return
+        endif
       endif
 
       call ncaptc (fid, timeid, 'long_name', NCCHAR, LEN_TRIM(timeName),

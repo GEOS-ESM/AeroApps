@@ -92,154 +92,151 @@
 !                                Variable Work Space
 !                              -----------------------
 
-       real, pointer ::  inField(:,:,:)         ! Input variable
-       real, pointer ::  extinction(:,:,:)         ! Input variable
-       real, pointer ::  ssa(:,:,:)         ! Input variable
-       real, pointer ::  write_out(:,:,:)       ! Input variable
-       real, pointer :: outField(:,:,:)         ! Ouput variable
-       real, pointer :: cntField(:,:,:)         ! Ouput variable
+      real, pointer ::  inField(:,:,:)         ! Input variable
+      real, pointer ::  write_out(:,:,:)       ! Input variable
+      real, pointer :: outField(:,:,:)         ! Ouput variable
+      real, pointer :: cntField(:,:,:)         ! Ouput variable
 
-       real, pointer   :: total3d(:,:,:,:)          ! Monthly total for 3d
-       real, pointer   :: total1d(:,:,:)          ! Monthly total for 1d
-       real,pointer :: kount3d(:,:,:,:)        ! Kounter for 3d
-       real,pointer :: kount1d(:,:,:)          ! Kounter for 1d
- 
-!!                                        Local Work Space
-!!                                    -----------------------
- 
-       integer count, iff, it, iv, lm, itest, ii, i, j, k
-       real dx,dx1, dx2,dy, dy1, dy2, field_val,ext_val,ssa_val
-       double precision pi
- 
- 
-!!                                    -----------------------
-!!                                        Output Meta Data
-!!                                    -----------------------
- 
-       character(len=255) :: title              ! meta data title
-       character(len=255) :: source             ! data source
-       character(len=255) :: contact            ! contact org.   
-       character(len=255) :: levunits           ! Vertical levels
-       character(len=25)  :: append             ! im*jm
-       real               :: missing_val
- 
-       integer, pointer :: yyyymmdd(:)          ! Date
-       integer, pointer :: hhmmss(:)            !
-       integer          :: yyyymmdd_new          ! Date
-       integer          :: hhmmss_new            !
-       integer          :: ndate   ! Date
-       integer          :: yyyymmdd1,yyyymmdd2  ! Date
-       integer          :: yyyymmddp,hhmmssp    ! previous Date & time
-       integer          :: ntimep               ! counter for total number of times previously accumulated.
-       integer          :: yyyymmdd3,hhmmss3    ! previous Date & time
-       integer          :: yyyymmddp1           ! previous Date + 1
-       integer          :: hhmmss1              ! Time
-       integer          :: ntime 
-       integer          :: timinc,timinc_new    ! Time increment
-       integer          :: timinc_save          ! Time increment
+      real, pointer   :: total3d(:,:,:,:)          ! Monthly total for 3d
+      real, pointer   :: total1d(:,:,:)          ! Monthly total for 1d
+      real,pointer :: kount3d(:,:,:,:)        ! Kounter for 3d
+      real,pointer :: kount1d(:,:,:)          ! Kounter for 1d
 
-       integer          :: in_fmode = 1         ! non-zero for READ-ONLY
-       integer          :: out_fmode = 0        ! 0 for READ-WRITE 
-       integer          :: fid                  ! input file ID
-       integer          :: out_fid              ! output file ID
-       integer          :: fidt                 ! output running total file ID
-       integer          :: fidc                 ! output running counter file ID
-       integer          :: nkount
-       integer          :: rc, rc1              ! return error code
- 
-       character(len=255) :: vtitle(mVars)      ! output title
-       character(len=255) :: vunits(mVars)      ! output title
-       character(len=257) :: vName(mVars)       ! output variable names (nVars)
-       integer            :: outKm(mVars)       ! number of levels for variables;
-       real              :: valid_range_prs(2, mVars)
-       real              :: packing_range_prs(2, mVars)
- 
- 
-!!                                    -----------------------
-!!                                        eta information 
-!!                                    -----------------------
- 
-       integer           :: im_e                ! input zonal dimension       
-       integer           :: jm_e                ! input meridional dimension       
-       integer           :: km_e                ! input vertical dimension    
-       integer           :: lm_e                ! input time dimension    
-       integer           :: nVars_e             ! input number of variables   
-       integer           :: buf(3)
-       integer           :: iundef0
-       integer           :: iext,issa            
-       real              :: undef               ! Missing value
-       real              :: undef0              ! Missing value
-       real, pointer     :: lon_e(:)            ! longitudes in deg (im)
-       real, pointer     :: lat_e(:)            ! latitudes in deg (jm)
-       real, pointer     :: lev_e(:)            ! levels in hPa (km)
-       integer, pointer  :: kmVar_e(:)          ! Number of vertical levels for variables
- 
-       character(len=255) :: vtitle_in(mVars)   ! output title
-       real              :: valid_range(2, mVars)
-       real              :: packing_range(2, mVars)
-       integer           :: ngatts              ! Number of attributes for GFIO
-       integer           :: imin,jmin,xmin,imax,jmax,xmax
-       logical              initial,file_exist,rms,define
-!!.......................................................................................
- 
- 
-         initial = .true.
-          nkount = 0
- 
-!!        Get user input
-!!  ----  --------------
-          call  Init_ ( mFiles, nFiles, inFiles, outFile,                            &
-                        out_total_file,out_counter_file,iflag,irflag,                &
-                        im, jm, km, nLevs, Levs,                                     &
-                        mVars, nVars, outVars, outPrec, append,inc_hhmmss,           &
-                        alpha, rms, linear_comb, xswap ) 
- 
-!!        Need to check whether this will work if iflag /= 1; for now disable it
-!!        ----------------------------------------------------------------------
-          if ( linear_comb.and. iflag /= 1 ) &
-               call die ( myname, 'for now, linear combination mode only with iflag=1' )
- 
-!!  ----  --------------------------------------------------------------------------------
-!!            Set the totals and the counter initialization flag.
-!!            iflag   0     Starting date of the month, initialize the totals and counters.
-!!                    1     Compute monthly means.
-!!                    2     donot open the monthly mean dataset.
-!!                    3     Compute monthly means using the accumulated totals and counters.
- 
-!!            irflag  0     Continue saving the running totals.
-!!                    1     Accumulate the totals using the previous accumulated totals
-!!                          and compute monthly means.
-!!                    2     Donot accumulate the totals, compute the monthly means using
-!!                          the previously accumulated totals and coutners.
-!!                    3     No more input data to be added.
-!!  ----  --------------------------------------------------------------------------------
- 
-           if(iflag == 3 .and. irflag == 3) then
- 
-!!            -----------------------------------------
-!!             Compute monthly means from the existing
-!!             totals and the counters.
-!!            -----------------------------------------
- 
-              call tot2mean(out_total_file,out_counter_file,outFile,outPrec,mVars)
-              stop
-           endif
- 
-!!  ----  -------------------------
-!!        Loop over input files ...
-!!  ----  -------------------------
-          do iff = 1, nFiles
- 
-!!          Open GFIO file
-!!          --------------
-            call GFIO_Open ( inFiles(iff), in_fmode, fid, rc )
-            if ( rc /= 0 )  call die (myname, 'can not open input files')
- 
-!!          Determine on file
-!!          ------------------
-            call GFIO_DimInquire ( fid, im_e, jm_e, km_e, lm_e, nvars_e, ngatts, rc)
-            if ( rc /= 0 )  call die (myname, 'can not do GFIO_DimInquire')
- 
+!                                  Local Work Space
+!                              -----------------------
+
+      integer count, iff, it, iv, lm, itest, ii, i, j, k
+      real dx,dx1, dx2,dy, dy1, dy2, field_val
+      double precision pi
+
+
+!                              -----------------------
+!                                  Output Meta Data
+!                              -----------------------
+
+      character(len=255) :: title              ! meta data title
+      character(len=255) :: source             ! data source
+      character(len=255) :: contact            ! contact org.   
+      character(len=255) :: levunits           ! Vertical levels
+      character(len=25)  :: append             ! im*jm
+      real               :: missing_val
+
+      integer, pointer :: yyyymmdd(:)          ! Date
+      integer, pointer :: hhmmss(:)            !
+      integer          :: yyyymmdd_new          ! Date
+      integer          :: hhmmss_new            !
+      integer          :: ndate   ! Date
+      integer          :: yyyymmdd1,yyyymmdd2  ! Date
+      integer          :: yyyymmddp,hhmmssp    ! previous Date & time
+      integer          :: ntimep               ! counter for total number of times previously accumulated.
+      integer          :: yyyymmdd3,hhmmss3    ! previous Date & time
+      integer          :: yyyymmddp1           ! previous Date + 1
+      integer          :: hhmmss1              ! Time
+      integer          :: ntime 
+      integer          :: timinc,timinc_new    ! Time increment
+      integer          :: timinc_save          ! Time increment
+
+      integer          :: in_fmode = 1         ! non-zero for READ-ONLY
+      integer          :: out_fmode = 0        ! 0 for READ-WRITE 
+      integer          :: fid                  ! input file ID
+      integer          :: out_fid              ! output file ID
+      integer          :: fidt                 ! output running total file ID
+      integer          :: fidc                 ! output running counter file ID
+      integer          :: nkount
+      integer          :: rc, rc1              ! return error code
+
+      character(len=255) :: vtitle(mVars)      ! output title
+      character(len=255) :: vunits(mVars)      ! output title
+      character(len=257) :: vName(mVars)       ! output variable names (nVars)
+      integer            :: outKm(mVars)       ! number of levels for variables;
+      real              :: valid_range_prs(2, mVars)
+      real              :: packing_range_prs(2, mVars)
+
+
+!                              -----------------------
+!                                  eta information 
+!                              -----------------------
+
+      integer           :: im_e                ! input zonal dimension       
+      integer           :: jm_e                ! input meridional dimension       
+      integer           :: km_e                ! input vertical dimension    
+      integer           :: lm_e                ! input time dimension    
+      integer           :: nVars_e             ! input number of variables   
+      integer           :: buf(3)
+      integer           :: iundef0
+      real              :: undef               ! Missing value
+      real              :: undef0              ! Missing value
+      real, pointer     :: lon_e(:)            ! longitudes in deg (im)
+      real, pointer     :: lat_e(:)            ! latitudes in deg (jm)
+      real, pointer     :: lev_e(:)            ! levels in hPa (km)
+      integer, pointer  :: kmVar_e(:)          ! Number of vertical levels for variables
+
+      character(len=255) :: vtitle_in(mVars)   ! output title
+      real              :: valid_range(2, mVars)
+      real              :: packing_range(2, mVars)
+      integer           :: ngatts              ! Number of attributes for GFIO
+      integer           :: imin,jmin,xmin,imax,jmax,xmax
+      logical              initial,file_exist,rms,define
+!.................................................................................
+
+
+   initial = .true.
+   nkount = 0
+
+!  Get user input
+!  --------------
+   call  Init_ ( mFiles, nFiles, inFiles, outFile,                            &
+                 out_total_file,out_counter_file,iflag,irflag,                &
+                 im, jm, km, nLevs, Levs,                                     &
+                 mVars, nVars, outVars, outPrec, append,inc_hhmmss,           &
+                 alpha, rms, linear_comb, xswap ) 
+
+!  Need to check whether this will work if iflag /= 1; for now disable it
+!  ----------------------------------------------------------------------
+   if ( linear_comb.and. iflag /= 1 ) &
+        call die ( myname, 'for now, linear combination mode only with iflag=1' )
+
+!  --------------------------------------------------------------------------------
+!      Set the totals and the counter initialization flag.
+!      iflag   0     Starting date of the month, initialize the totals and counters.
+!              1     Compute monthly means.
+!              2     donot open the monthly mean dataset.
+!              3     Compute monthly means using the accumulated totals and counters.
+
+!      irflag  0     Continue saving the running totals.
+!              1     Accumulate the totals using the previous accumulated totals
+!                    and compute monthly means.
+!              2     Donot accumulate the totals, compute the monthly means using
+!                    the previously accumulated totals and coutners.
+!              3     No more input data to be added.
+!  --------------------------------------------------------------------------------
+
+    if(iflag == 3 .and. irflag == 3) then
+
+!      -----------------------------------------
+!       Compute monthly means from the existing
+!       totals and the counters.
+!      -----------------------------------------
+
+       call tot2mean(out_total_file,out_counter_file,outFile,outPrec,mVars)
+       stop
+    endif
+
+!  -------------------------
+!  Loop over input files ...
+!  -------------------------
+   do iff = 1, nFiles
+
+!    Open GFIO file
+!    --------------
+     call GFIO_Open ( inFiles(iff), in_fmode, fid, rc )
+     if ( rc /= 0 )  call die (myname, 'can not open input files')
+
+!    Determine on file
+!    ------------------
+     call GFIO_DimInquire ( fid, im_e, jm_e, km_e, lm_e, nvars_e, ngatts, rc)
+     if ( rc /= 0 )  call die (myname, 'can not do GFIO_DimInquire')
+
 !     -------------------------------------------------------------------
 !     Allocate and initialize the 3d total and counters to accumulate the
 !     monthly means.
@@ -249,14 +246,10 @@
       print *,' im_e,jm_e,km_e,nvars_e = ',im_e,jm_e,km_e,nvars_e
       allocate ( total3d(im_e,jm_e,km_e,nvars_e), total1d(im_e,jm_e,nvars_e),stat=rc )
       allocate ( kount3d(im_e,jm_e,km_e,nvars_e), kount1d(im_e,jm_e,nvars_e),stat=rc )
-      allocate ( extinction(im_e,jm_e,km_e),stat=rc )
-      allocate ( ssa(im_e,jm_e,km_e),stat=rc )
       total3d = 0.0
       total1d = 0.0
       kount3d = 0.0
       kount1d = 0.0
-      extinction = 0.0
-      ssa       = 0.0
       initial = .false.
 !
 !    ------------------------------------------------------------
@@ -394,13 +387,6 @@
 !     -----------------------
 
        print *, ' Reading ',trim( inFiles(iff)),' lm_e ',lm_e, ', alpha = ', alpha(iff), linear_comb
-!
-!         Extract extinction and single scattering albedo indexes.
-!
-      do iv = 1, nVars 
-         if ( outVars(iv) == 'extinction') iext = iv
-         if ( outVars(iv) == 'ssa') issa = iv
-      end do
 
       do it = 1, lm_e
 
@@ -419,15 +405,6 @@
                if ( rc /= 0 )  call die (myname, 'can not allocate inField  ')
                call GFIO_GetVar ( fid, outVars(iv), yyyymmdd(it), hhmmss(it), &
                                   im_e, jm_e, 1, km_e, inField, rc )
-                                  
-               if ( outVars(iv) == 'extinction' ) then
-                extinction = inField
-               endif
-
-               if ( outVars(iv) == 'ssa' ) then
-                ssa = inField
-               endif
-
                if ( rc /= 0 )  call die (myname, 'something wrong in GFIO_GetVarT for 3D file')
             else                                       ! 2D file
                allocate ( inField(im_e, jm_e, 1),stat = rc )
@@ -460,36 +437,13 @@
                   do  i = 1,im_e
 !                  if(inField(i,j,k) < 1.e+10) then
 !                  if(inField(i,j,k) < undef0) then
-
-                   if ( outVars(iv) == 'ssa' ) then
-                    if( defined(extinction(i,j,k),undef)) then
-                      ext_val = alpha(iff) * extinction(i,j,k)
-                      if(rms) then
-                        ext_val = ext_val * ext_val
-                      endif
+                   if( defined(inField(i,j,k),undef)) then
+                    field_val = alpha(iff) * inField(i,j,k)
+                    if(rms) then
+                     field_val = field_val * field_val
                     endif
-
-                    if( defined(ssa(i,j,k),undef)) then
-                      ssa_val = alpha(iff) * ssa(i,j,k)
-                      if(rms) then
-                        ssa_val = ssa_val * ssa_val
-                      endif
-                    endif
-
-                    if( defined(ext_val,undef) .and.  defined(ssa_val,undef) ) then
-                     total3d(i,j,k,iv) = total3d(i,j,k,iv) + (ssa_val * ext_val)
-                    endif
-
-                   else
-                     
-                    if( defined(inField(i,j,k),undef)) then
-                     field_val = alpha(iff) * inField(i,j,k)
-                     if(rms) then
-                      field_val = field_val * field_val
-                     endif
-                     total3d(i,j,k,iv) = total3d(i,j,k,iv) + field_val
-                     kount3d(i,j,k,iv) = kount3d(i,j,k,iv) + 1.0
-                    endif
+                    total3d(i,j,k,iv) = total3d(i,j,k,iv) + field_val
+                    kount3d(i,j,k,iv) = kount3d(i,j,k,iv) + 1.0
                    endif
                   end do
                  end do
@@ -622,14 +576,6 @@
          call GFIO_PutIntAtt ( fidc, 'ntimep',  1, buf(3),outPrec, rc )
         endif
 
-!
-!         Extract extinction and single scattering albedo indexes.
-!
-        do iv = 1, nVars 
-           if ( outVars(iv) == 'extinction') iext = iv
-           if ( outVars(iv) == 'ssa') issa = iv
-        end do
-
         do iv = 1, nVars 
          if(ndate /= 999999) yyyymmdd_new = ndate
          if(ntime /= 999999) hhmmss_new = ntime
@@ -639,30 +585,13 @@
               do k = 1, km_e 
                do j = 1,jm_e
                 do i = 1,im_e
-!
-!                Computinit monthly single scattering albedo.
-!
-                 if ( outVars(iv) == 'ssa') then
-                   if ( total3d(i,j,k,issa) > 0.0 .and. total3d(i,j,k,iext) > 0.0 ) then
-                    outField(i,j,k) = total3d(i,j,k,issa)/total3d(i,j,k,iext)
-                    if(rms) then
-                     outField(i,j,k) = sqrt(outField(i,j,k))
-                    endif
-                   else
-                    outField(i,j,k) = undef
-                   endif
-                 else
-!
-!                 Computing monthly non-single scattering albedo.
-!
-                  if(kount3d(i,j,k,iv) > 0) then
-                   outField(i,j,k) = total3d(i,j,k,iv)/kount3d(i,j,k,iv)
-                   if(rms) then
-                    outField(i,j,k) = sqrt(outField(i,j,k))
-                   endif
-                  else
-                   outField(i,j,k) = undef
+                 if(kount3d(i,j,k,iv) > 0) then
+                  outField(i,j,k) = total3d(i,j,k,iv)/kount3d(i,j,k,iv)
+                  if(rms) then
+                   outField(i,j,k) = sqrt(outField(i,j,k))
                   endif
+                 else
+                  outField(i,j,k) = undef
                  endif
                 end do
                end do
@@ -743,7 +672,7 @@
            endif
          end do  ! variables
 
-      deallocate( total3d, total1d,kount3d,kount1d,extinction,ssa)
+      deallocate( total3d, total1d,kount3d,kount1d)
 !     if ( outKm(iv) .gt. 0 ) deallocate( write_out )
 !     deallocate( outField )
 
@@ -831,7 +760,6 @@ CONTAINS
 
       logical,             intent(out) :: rms ! Flag for rms (true compute the rms
                                               ! false compute mean, default)
-
 
       integer, intent(out)          :: outPrec ! Output file precision:
                                                ! 0 = 32 bits,  1 = 6 4bits
