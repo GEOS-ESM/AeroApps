@@ -489,7 +489,7 @@ class MxD04_NNR(MxD04_L2):
                 k = list(self.channels).index(ch) # index of channel
                 self.__dict__[name][self.iGood,k][contaminated] = MISSING
 
-            self.iGood[contaminated] = False
+            self.iGood[self.iGood][contaminated] = False
 
 
 
