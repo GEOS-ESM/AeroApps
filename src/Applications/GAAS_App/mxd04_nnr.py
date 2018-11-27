@@ -476,6 +476,8 @@ class MxD04_NNR(MxD04_L2):
                 cloudy = (self.cloud_deep>=self.cloudFree) & (self.cloud>=self.cloudFree)
             elif self.algo == "DEEP":
                 cloudy = (self.cloud_lnd>=self.cloudFree) & (self.cloud>=self.cloudFree)
+            elif self.algo == "OCEAN":
+                cloudy = (self.cloud>=self.cloudFree)
     
             contaminated = np.zeros(np.sum(self.iGood)).astype(bool)
             for targetName in self.net.TargetNames:
