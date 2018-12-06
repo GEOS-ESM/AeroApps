@@ -11,7 +11,7 @@ import sys
 from types    import *
 from numpy    import zeros, ones, sqrt, std, mean, unique,\
                      concatenate, where, array, linspace,\
-                     shape, arange, interp
+                     shape, arange, interp, count_nonzero
 from datetime import date, datetime, timedelta
 from glob     import glob
 
@@ -121,10 +121,10 @@ ALIAS = dict (  longitude = 'lon',
                 Surface_Reflectance_Land = 'sfc_reflectance',
                 Corrected_Optical_Depth_Land = 'aod',
                 Optical_Depth_Small_Land = 'aod_fine',
-                Cloud_Fraction_Land = 'cloud',
+                Aerosol_Cloud_Fraction_Land = 'cloud',
                 Effective_Optical_Depth_Average_Ocean = 'aod',
                 Optical_Depth_Small_Best_Ocean = 'aod_fine',
-                Cloud_Fraction_Ocean = 'cloud',
+                Aerosol_Cloud_Fraction_Ocean = 'cloud',
                 Mean_Reflectance_Ocean = 'reflectance',
              )
 
@@ -176,7 +176,7 @@ class GEO04_L2(object):
                  0 - really quiet (default)
                  1 - Warns if invalid file is found
                  2 - Prints out non-zero number of aerosols in each file.
-         SDS      --- Variables to be read from MODIS hdf files.  Must 
+         SDS      --- Variables to be read from GEO netcdf files.  Must 
                       be a dictionary with keys 'META' and Algo
          ALIAS    --- dictionary of alises for SDSs
 
@@ -241,9 +241,11 @@ class GEO04_L2(object):
        # Determine index of "good" observations
        # --------------------------------------
        if Algo == 'LAND':
-           self.iGood = self.qa_flag==BEST
+           aod = self.Corrected_Optical_Depth_Land
+           self.iGood = (self.qa_flag==BEST) & (aod[:,1]>-0.01)
        elif Algo == 'OCEAN':
-           self.iGood = self.qa_flag>BAD
+           aod = self.Effective_Optical_Depth_Average_Ocean 
+           self.iGood = (self.qa_flag>BAD) & (aod[:,1]>-0.01)
        else:
            raise ValueError, 'invalid algorithm (very strange)'
 
@@ -259,7 +261,6 @@ class GEO04_L2(object):
                    self.__dict__[sds] = self.__dict__[sds][m,:]
                else:
                    raise IndexError, 'invalid rank=%d'%rank
-           self.qa_flag = self.qa_flag[m]
            self.iGood = self.iGood[m]
 
        # Make aliases for compatibility with older code 
@@ -267,7 +268,7 @@ class GEO04_L2(object):
        for sds in self.SDS:
            if sds in self.ALIAS:
                self.__dict__[self.ALIAS[sds]] = self.__dict__[sds] 
-
+       self.qa_flag = self.Land_Ocean_Quality_Flag # reflresh alias
 
        # ODS friendly attributes
        # -----------------------
@@ -341,17 +342,18 @@ class GEO04_L2(object):
                 elif len(V.shape) == 2:
                     v = V[:,:]
                     v = v.ravel()
-                    n = len(v)
                 else:
                     raise IndexError, "invalid shape for SDS <%s>"%sds
                 if self.verb > 2:
                     print "<> ", sds, v.shape
-                if V.scale !=1. or V.add_offset != 0.:
-                    v = V.scale * v + add_offset
+                ### Data seems to be scaled already!
+                ### if V.scale_factor !=1. or V.add_offset != 0.:
+                ###    v = V.scale_factor * v + V.add_offset
                 self.__dict__[sds].append(v)
 
         # Seeting time for this granule based on file name
         # ------------------------------------------------
+        n = len(self.longitude[-1])
         tyme = _gettyme(filename)
         Time = array([tyme,]*n )
         self.__dict__['Time'].append(Time)
@@ -366,26 +368,77 @@ class GEO04_L2(object):
 
 #---
 
+    def filter(self,cloud_thresh=[0.70,0.70], 
+                    glint_thresh=[40.0,None],
+                    scat_thresh=[170.0,None],
+                    sensor_zenith_thresh=[60.,60.],
+                    aod_thresh=[3.,3.]):
+        """
+        Apply additional quality control filters.
+        First therehold in list is for OCEAN, second for LAND:
+        [OCEAN,LAND]
+        """
+
+        if self.algo =="OCEAN":
+               i = 0
+        elif self.algo =="LAND":
+               i = 1
+        else:
+               raise ValueError, 'Unknown algorithm <%s:'%self.algo 
+
+        if cloud_thresh[i] is not None:
+               self.iGood = (self.iGood & (self.cloud<cloud_thresh[i]))
+               if self.verb>2:
+                  print "-- Applying cloud filter for %s"%self.algo, cloud_thresh[i], count_nonzero(self.iGood)
+
+        if glint_thresh[i] is not None:
+               self.iGood = (self.iGood & (self.GlintAngle>glint_thresh[i])) 
+               if self.verb>2:
+                  print "-- Applying glint filter for %s"%self.algo, glint_thresh[i], count_nonzero(self.iGood) 
+
+        if scat_thresh[i] is not None:
+               self.iGood = (self.iGood & (self.ScatteringAngle<scat_thresh[i]))
+               if self.verb>2:
+                  print "-- Applying scattering filter for %s"%self.algo, scat_thresh[i], count_nonzero(self.iGood) 
+
+        if sensor_zenith_thresh[i] is not None:
+               self.iGood = (self.iGood & (self.SensorZenith<sensor_zenith_thresh[i]))  
+               if self.verb>2:
+                  print "-- Applying sensor zenith filter for %s"%self.algo, sensor_zenith_thresh[i], count_nonzero(self.iGood)
+
+        if aod_thresh[i] is not None:
+               aodBad = ((self.aod[:,1]>aod_thresh[1])&(self.cloud>0.25))
+               self.iGood = self.iGood & (aodBad==False)
+               if self.verb>2:
+                  print "-- Applying AOD-Cloud filter for %s"%self.algo, aod_thresh[i], count_nonzero(self.iGood)
+
+        # Get rid of bad observations
+        # ---------------------------
+        self.reduce(self.iGood)
+
+        if any(self.iGood) == False:
+            print "WARNING: Strange, no good obs left to work with"
+            return
+
     def reduce(self,I):
         """
         Reduce observations according to index I. 
         """
-        Nicknames = self.ALIAS.values()
-        for name in self.__dict__:
-            if name in Nicknames:
-                continue # alias do not get reduced
-            q = self.__dict__[name]
-            if type(q) is type(self.lon):
-                if len(q) == self.nobs:
-                    # print "{} Reducing "+name
-                    self.__dict__[name] = q[I]
 
-        Alias = self.ALIAS.keys()
         for sds in self.SDS:
-            if sds in Alias:
-                self.__dict__[self.ALIAS[sds]] = self.__dict__[sds] # redefine aliases
+            rank = len(self.__dict__[sds].shape)
+            if rank == 1:
+                self.__dict__[sds] = self.__dict__[sds][I]
+            elif rank == 2:
+                self.__dict__[sds] = self.__dict__[sds][I,:]
+            else:
+                raise IndexError, 'invalid rank=%d'%rank
+            if sds in self.ALIAS:
+                self.__dict__[self.ALIAS[sds]] = self.__dict__[sds] 
 
-            self.nobs = len(self.lon)
+        self.qa_flag = self.qa_flag[I]
+        self.iGood = self.iGood[I]
+        self.nobs = len(self.lon)
 
 #---
     def write(self,filename=None,dir='.',expid=None,Verb=1):
@@ -437,7 +490,7 @@ class GEO04_L2(object):
         """
         
         if self.syn_time == None:
-            raise ValuError, "synoptic time missing, cannot write ODS"
+            raise ValueError, "synoptic time missing, cannot write ODS"
             
         # Stop here is no good obs available
         # ----------------------------------
@@ -468,6 +521,7 @@ class GEO04_L2(object):
             ods.ks[I]  = ks
             ods.lat[I] = self.lat[:]
             ods.lon[I] = self.lon[:]
+            ods.xm[I] = self.SensorZenith[:]
             ods.time[I] = self.time[:].astype('int')
             ods.lev[I] = ch
             ods.qch[I] = self.qa_flag[:].astype('int')
@@ -476,6 +530,7 @@ class GEO04_L2(object):
                 ods.xvec[I] = self.aod[:,j].astype('float32')
             else:
                 ods.obs[I] = self.aod[:,j].astype('float32')
+            ods.xm
             i += ns
 
         # Handle corrupted coordinates
@@ -760,6 +815,7 @@ def granules ( path, syn_time, nsyn=8 ):
 
     return Granules
 
+
 #--
 
 def print_stats(name,x=None):
@@ -798,22 +854,44 @@ def _gatime(nymd,nhms):
         t = chms[0:2]+":"+chms[2:4]+"Z"+\
             cymd[6:8]+Months[int(cymd[4:6])-1]+cymd[0:4]
         return t
-    
-#............................................................................
+
+def _writeAllODS():
+    """
+    Write ODS files for a single, hardwired month. For testing.
+    """
+
+    path = '/nobackup/1/GEO/ABI_Testing/Level2'
+    odsdir = '/nobackup/1/GEO/ABI_Testing/ODS/Y2018/M08'
+    for day in range(1,32):
+        for hour in (0,3,6,9,12,15,18,21):
+
+            syn_time = datetime(2018,8,day,hour,0)
+            files = granules ( path, syn_time, nsyn=8 )
+
+            if len(files)==0: continue  # no granules, nothing to do.
+
+            g = GEO04_L2 (files,'OCEAN',syn_time=syn_time,nsyn=8,Verb=3)
+            g.filter()
+            g.writeODS(dir=odsdir,channels=[550,],nsyn=8,Verb=1)
+
+            g = GEO04_L2 (files,'LAND',syn_time=syn_time,nsyn=8,Verb=3)
+            g.filter()
+            g.writeODS(dir=odsdir,channels=[550,],nsyn=8,Verb=1)
 
 if __name__ == "__main__":
 
-#     path = '/nobackup/1/GEO/ABI_Testing/Level2/2018/227'
-#    files = [path+'/ABI_L2_2018227.1945.nc',
-#              path+'/ABI_L2_2018227.2000.nc']
+    _writeAllODS()
 
-    
+def hold():
      path = '/nobackup/1/GEO/ABI_Testing/Level2'
      syn_time = datetime(2018,8,15,18,0)
      files = granules ( path, syn_time, nsyn=8 )
 
-     go = GEO04_L2 (files,'OCEAN',syn_time=None,nsyn=8,Verb=3)
-     gl = GEO04_L2 (files,'LAND',syn_time=None,nsyn=8,Verb=3)
+     go = GEO04_L2 (files,'OCEAN',syn_time=syn_time,nsyn=8,Verb=3)
+     go.filter()
 
+     gl = GEO04_L2 (files,'LAND',syn_time=syn_time,nsyn=8,Verb=3)
+     gl.filter()
 
-
+     gl.writeODS(filename=None,dir='.',expid=None,channels=[550,],
+                revised=False,nsyn=8,Verb=1)
