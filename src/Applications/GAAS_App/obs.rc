@@ -95,8 +95,22 @@ INSIDE    # Exclude data which are inside these boxes
 # AERONET is passive
 #   1      323 323   45  45    -90 +90     -180 +180    0  2100    -180 +180
 
+# GOES-16 ABI OCEAN is passive
+   2      327 327   45  45    -90 +90     -180 +180    0  2100    -180 +180
+# GOES-16 ABI LAND is passive
+   3      328 328   45  45    -90 +90     -180 +180    0  2100    -180 +180
+# GOES-17 ABI OCEAN is passive
+   4      329 329   45  45    -90 +90     -180 +180    0  2100    -180 +180
+# GOES-7 ABI LAND is passive
+   5      330 330   45  45    -90 +90     -180 +180    0  2100    -180 +180
+# Himawari AHI OCEAN is passive
+   6      331 331   45  45    -90 +90     -180 +180    0  2100    -180 +180
+# Himawari AHI LAND is passive
+   7      332 332   45  45    -90 +90     -180 +180    0  2100    -180 +180
+
 # -----   -------  -------  ----------  ----------  ----------- ------------
 # BoxId      kx       kt      lat          lon          lev         time
+
 
 ::
 
