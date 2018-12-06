@@ -624,6 +624,12 @@ subroutine pyods_putAll(filename, ftype, nymd,nhms, nsyn, nobs, &
   ods%meta%kx_names(324) = 'AVHRR PATMOSX Aerosol Retrievals'
   ods%meta%kx_names(325) = 'OMSO2 (OMI Sulfer Dioxide)'
   ods%meta%kx_names(326) = 'GOCI Aerosol Retrievals (Yonsei University)'
+  ods%meta%kx_names(327) = 'GOES-16 Aerosol (Dark Target Ocean Algorithm)'
+  ods%meta%kx_names(328) = 'GOES-16 Aerosol (Dark Target Land Algorithm)' 
+  ods%meta%kx_names(329) = 'GOES-17 Aerosol (Dark Target Ocean Algorithm)' 
+  ods%meta%kx_names(330) = 'GOES-17 Aerosol (Dark Target Land Algorithm)' 
+  ods%meta%kx_names(331) = 'Himawari Aerosol (Dark Target Ocean Algorithm)'
+  ods%meta%kx_names(332) = 'Himawari Aerosol (Dark Target Land Algorithm)'
 
   call ods_put (filename, ftype, nymd, nhms, ods, rc)
   if ( rc .ne. 0 ) return
