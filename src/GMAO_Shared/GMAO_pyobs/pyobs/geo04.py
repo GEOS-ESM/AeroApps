@@ -103,10 +103,19 @@ SDS = dict (
                )
          
 
-CHANNELS = dict (
-                   LAND = ( 470, 550, 660 ),
-                  OCEAN = ( 470, 550, 660, 870, 1200, 1600, 2100 ),
-                   SREF = ( 470, 660, 2100 ),
+rCHANNELS = dict ( # reflectance channels
+                   LAND = ( 470, -510, 640, 860, -1240, 1610, 2110 ),
+                  OCEAN = ( 470, -510, 640, 860, -1240, 1610, 2110 ),
+                )
+
+aCHANNELS = dict ( # AOD channels (same channels for surface reflectance land
+                   LAND = ( 470, 550, 660, 2113 ),
+                  OCEAN = ( 470, 550, 640, 860, -1240, 1610, 2110 ),
+                )
+
+sCHANNELS = dict ( # Surface reflectance
+                   LAND = ( 470, 660, 2100 ),
+                   OCEAN = (),
                 )
 
 ALIAS = dict (  longitude = 'lon',
@@ -275,9 +284,9 @@ class GEO04_L2(object):
        self.nobs = self.longitude.shape[0]
        self.kx = KX[self.sat+'_'+self.algo]
        self.ident = IDENT[self.sat+'_'+self.algo]
-       self.Channels = CHANNELS["OCEAN"]   # all channels
-       self.sChannels = CHANNELS["SREF"]   # LAND surface reflectivity (not the same as algo)
-       self.channels = CHANNELS[self.algo]
+       self.rChannels = rCHANNELS[Algo]   # reflectance channels 
+       self.sChannels = sCHANNELS[Algo]   # surface reflectance
+       self.aChannels = aCHANNELS[Algo]   # AOD channels
        if syn_time == None:
            self.syn_time = None
            self.time = None
@@ -369,10 +378,10 @@ class GEO04_L2(object):
 #---
 
     def filter(self,cloud_thresh=[0.70,0.70], 
-                    glint_thresh=[40.0,None],
+                    glint_thresh=[75.0,None],
                     scat_thresh=[170.0,None],
                     sensor_zenith_thresh=[60.,60.],
-                    aod_thresh=[3.,3.]):
+                    aod_thresh=[2.,2.]):
         """
         Apply additional quality control filters.
         First therehold in list is for OCEAN, second for LAND:
@@ -407,10 +416,23 @@ class GEO04_L2(object):
                   print "-- Applying sensor zenith filter for %s"%self.algo, sensor_zenith_thresh[i], count_nonzero(self.iGood)
 
         if aod_thresh[i] is not None:
-               aodBad = ((self.aod[:,1]>aod_thresh[1])&(self.cloud>0.25))
+               aodBad = ((self.aod[:,1]>aod_thresh[i])&(self.cloud>0.25))
                self.iGood = self.iGood & (aodBad==False)
                if self.verb>2:
                   print "-- Applying AOD-Cloud filter for %s"%self.algo, aod_thresh[i], count_nonzero(self.iGood)
+
+        # Filter out negative reflectances (skip missing channels)
+        # --------------------------------------------------------
+        i = 0
+        for ch in self.rChannels:
+            if ch>=0: # missing channels have negative wavelength
+                self.iGood = self.iGood & (self.reflectance[:,i]>=0)
+            i+=1
+        i = 0
+        for ch in self.sChannels:
+            if ch>=0: # missing channels have negative wavelength
+                self.iGood = self.iGood & (self.sfc_reflectance[:,i]>=0)
+            i+=1
 
         # Get rid of bad observations
         # ---------------------------
@@ -466,7 +488,9 @@ class GEO04_L2(object):
                              lon = self.lon,
                              lat = self.lat,
                               ks = self.ks,
-                        channels = self.channels,
+                        rChannels = self.rChannels,
+                        aChannels = self.aChannels,
+                        sChannels = self.sChannels,
                          qa_flag = self.qa_flag,
                      SolarZenith = self.SolarZenith,
                     SolarAzimuth = self.SolarAzimuth,
@@ -506,7 +530,7 @@ class GEO04_L2(object):
             filename = '%s/%s.obs.%d_%02dz.ods'%(dir,expid,self.nymd,self.nhms/10000)
 
         if channels is None:
-            channels = self.channels
+            channels = self.aChannels
 
         # Create and populated ODS object
         # -------------------------------
@@ -517,7 +541,7 @@ class GEO04_L2(object):
         ks = arange(ns) + 1
         for ch in channels:
             I = range(i,i+ns)
-            j = channels.index(ch)
+            j = list(self.aChannels).index(ch)
             ods.ks[I]  = ks
             ods.lat[I] = self.lat[:]
             ods.lon[I] = self.lon[:]
@@ -618,7 +642,7 @@ class GEO04_L2(object):
        glat = linspace(-90.,90.,jm)
 
        if channels is None:
-           channels = self.channels
+           channels = self.aChannels
  
        levs = array(channels)
 
@@ -654,7 +678,7 @@ class GEO04_L2(object):
        # --------------------------------
        I = []
        for ch in channels:
-           i = list(self.channels).index(ch)
+           i = list(self.aChannels).index(ch)
            I = I + [i,]
        aod = self.aod[:,I]
 
@@ -802,10 +826,10 @@ def granules ( path, syn_time, nsyn=8 ):
             basen = "%s/%s/%s/ABI_L2_%04d%03d.%02d%02d.nc"\
                      %(path,t.year,doy,t.year,doy,t.hour,t.minute)
             try:
-                print basen
+                #print basen
                 filen = glob(basen)[0]
                 Granules += [filen,]
-#               print " [x] Found "+filen
+                #print " [x] Found "+filen
             except:
                 pass
         t += dt
@@ -883,12 +907,13 @@ if __name__ == "__main__":
     _writeAllODS()
 
 def hold():
+
      path = '/nobackup/1/GEO/ABI_Testing/Level2'
      syn_time = datetime(2018,8,15,18,0)
      files = granules ( path, syn_time, nsyn=8 )
 
-     go = GEO04_L2 (files,'OCEAN',syn_time=syn_time,nsyn=8,Verb=3)
-     go.filter()
+#     go = GEO04_L2 (files,'OCEAN',syn_time=syn_time,nsyn=8,Verb=3)
+#     go.filter()
 
      gl = GEO04_L2 (files,'LAND',syn_time=syn_time,nsyn=8,Verb=3)
      gl.filter()
