@@ -91,6 +91,18 @@ LIBS = $(LIB_GEOVLIDORT) $(LIB_VLIDORT2OS) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
        $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
        $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
 
+# f2py cannot handle a -Wl flag used by Open MPI. But that option is not
+# necessary for the code to compile or run. So if it is part of LIB_MPI
+# we just strip it from LIBS
+BADPATTERN := -Wl,--export-dynamic
+LIBS_F2PY1 = $(subst $(BADPATTERN),,$(LIBS))
+BADPATTERN2 := -Wl,-commons,use_dylibs
+LIBS_F2PY2 = $(subst $(BADPATTERN2),,$(LIBS_F2PY1))
+BADPATTERN3 := -pthread
+LIBS_F2PY3 = $(subst $(BADPATTERN3),,$(LIBS_F2PY2))
+BADPATTERN4 := -Wl,-flat_namespace
+LIBS_F2PY = $(subst $(BADPATTERN4),,$(LIBS_F2PY3))       
+
 #                  --------------------
 #                  User Defined Targets
 #                  --------------------
@@ -116,12 +128,12 @@ python: $(PY_EXTS)
 
 VLIDORT_POLAR_.$(F2PYEXT): VLIDORT_POLAR_py.F90 
 	$(F2PY) -c -m VLIDORT_POLAR_ $(M). $(M)$(INC_GEOVLIDORT) \
-                 VLIDORT_POLAR_py.F90 $(LIBS)                  
+                 VLIDORT_POLAR_py.F90 $(LIBS_F2PY)                  
 # 	$(CP) -p VLIDORT_.$(F2PYEXT) $(ESMALIB)/Python 	
 
 READ_NC_.$(F2PYEXT): READ_NC_py.F90 
 	$(F2PY) -c -m READ_NC_ $(M). $(M)$(INC_GEOVLIDORT) \
-                 READ_NC_py.F90 $(LIBS)
+                 READ_NC_py.F90 $(LIBS_F2PY)
 
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 

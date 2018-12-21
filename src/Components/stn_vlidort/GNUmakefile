@@ -66,19 +66,77 @@ esma_help help:
 #                  --------------------
 #                  User Defined Targets
 #                  --------------------
+INC_VLIDORT2OS = $(ESMAINC)/VLIDORT2OS
+LIB_VLIDORT2OS = $(ESMALIB)/libVLIDORT2OS.a
+
+INC_GEOVLIDORT = ../geo_vlidort
+LIB_GEOVLIDORT = ../geo_vlidort/libgeo_vlidort.a
+
+INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT2OS) $(INC_GEOVLIDORT) /usr/include
+USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
+USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
+
+vpath % $(INC_DIRS) 
+
+FREAL = $(FREAL4)
+THIS_CFIO = MAPL_cfio_r4
+THIS_GFIO = GMAO_gfio_r4
+
+LIBS = $(LIB_GEOVLIDORT) $(LIB_VLIDORT2OS) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
+       $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
+       $(LIB_MAPL_BASE_STUBS2) \
+       $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
+       $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
+
+# f2py cannot handle a -Wl flag used by Open MPI. But that option is not
+# necessary for the code to compile or run. So if it is part of LIB_MPI
+# we just strip it from LIBS
+BADPATTERN := -Wl,--export-dynamic
+LIBS_F2PY1 = $(subst $(BADPATTERN),,$(LIBS))
+BADPATTERN2 := -Wl,-commons,use_dylibs
+LIBS_F2PY2 = $(subst $(BADPATTERN2),,$(LIBS_F2PY1))
+BADPATTERN3 := -pthread
+LIBS_F2PY3 = $(subst $(BADPATTERN3),,$(LIBS_F2PY2))
+BADPATTERN4 := -Wl,-flat_namespace
+LIBS_F2PY = $(subst $(BADPATTERN4),,$(LIBS_F2PY3)) 
 
 
 #                  --------------------
 #                  User Defined Targets
 #                  --------------------
 
-SRCS := 
+SRCS =  #
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
 DEPS := $(addsuffix .d, $(basename $(SRCS))) 
  
 $(LIB) lib : $(DEPS) $(OBJS)
 	$(RM) $(LIB)
 	$(AR) $(AR_FLAGS) $(LIB) $(OBJS)
+
+
+# Python extension modules
+# ------------------------
+python: $(PY_EXTS)
+
+VLIDORT_STN_.$(F2PYEXT): VLIDORT_STN_py.F90 
+	$(F2PY) -c -m VLIDORT_STN_ $(M). $(M)$(INC_GEOVLIDORT) \
+                 VLIDORT_STN_py.F90 $(LIBS_F2PY)                  
+# 	$(CP) -p VLIDORT_.$(F2PYEXT) $(ESMALIB)/Python 	
+
+stnAngles_.$(F2PYEXT): stnAngles_py.F90 
+	$(F2PY) -c -m stnAngles_ $(M). \
+                 stnAngles_py.F90 $(LIBS_F2PY)
+
+%.$(F2PYEXT): %py.F90 
+	$(F2PY) -c -m $* $(M). $< 
+
+#python python_install: $(PY_EXTS)
+
+#stnAngles_.$(F2PYEXT): stnAngles_py.F90 
+#	$(F2PY) -c -m stnAngles_  $(M). $(M)$(INC_MAPL_BASE) stnAngles_py.F90 $(LIB) $(LIBS_F2PY)
+
+#VLIDORT_STN_.$(F2PYEXT): VLIDORT_STN_py.F90 
+#	$(F2PY) -c -m VLIDORT_STN_  $(M). $(M)../geo_vlidort $(M)$(INC_MAPL_BASE) VLIDORT_STN_py.F90 $(LIB) $(LIBS_F2PY)
 
 
 # Hack to prevent remaking dep files during cleaning

@@ -86,6 +86,8 @@ FREAL =
 INC_DIRS = . $(INC_MPEU) $(INC_CHEM_BASE) $(INC_MAPL_BASE) $(FPATH)
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
+ 
+LIB_SCI_PY = -L$(MKLPATH) -lmkl_rt
 
 vpath % $(INC_DIRS) 
 
@@ -93,6 +95,18 @@ THIS_GFIO = GMAO_gfio_r4
 
 LIBS = $(LIB_CHEM_BASE) $(LIB_MAPL_BASE) $(LIB_EU) $(LIB_GFIO) \
        $(LIB_ESMF) $(LIB_MPI) $(LIB_SDF) $(LIB_SYS) 
+
+# f2py cannot handle a -Wl flag used by Open MPI. But that option is not
+# necessary for the code to compile or run. So if it is part of LIB_MPI
+# we just strip it from LIBS
+BADPATTERN := -Wl,--export-dynamic
+LIBS_F2PY1 = $(subst $(BADPATTERN),,$(LIBS))
+BADPATTERN2 := -Wl,-commons,use_dylibs
+LIBS_F2PY2 = $(subst $(BADPATTERN2),,$(LIBS_F2PY1))
+BADPATTERN3 := -pthread
+LIBS_F2PY3 = $(subst $(BADPATTERN3),,$(LIBS_F2PY2))
+BADPATTERN4 := -Wl,-flat_namespace
+LIBS_F2PY = $(subst $(BADPATTERN4),,$(LIBS_F2PY3))
 
 $(LIB) lib : $(DEPS) $(OBJS)
 	$(RM) $(LIB)
@@ -107,13 +121,13 @@ $(LIB) lib : $(DEPS) $(OBJS)
 python: $(PY_EXTS)
 
 Aero_.$(F2PYEXT): Aero_py.F90 
-	$(F2PY) -c -m Aero_  $(M). $(M)$(INC_MAPL_BASE) Aero_py.F90 $(LIB) $(LIBS) $(LIB_SCI)
+	$(F2PY) -c -m Aero_  $(M). $(M)$(INC_MAPL_BASE) Aero_py.F90 $(LIB) $(LIBS_F2PY) $(LIB_SCI_PY)
 
 ICA_.$(F2PYEXT): ICA_py.F90 
-	$(F2PY) -c -m ICA_  $(M). $(M)$(INC_MAPL_BASE) ICA_py.F90 $(LIB) $(LIBS) $(LIB_SCI)
+	$(F2PY) -c -m ICA_  $(M). $(M)$(INC_MAPL_BASE) ICA_py.F90 $(LIB) $(LIBS_F2PY) $(LIB_SCI_PY)
 
 mcsRegrid_.$(F2PYEXT): mcsRegrid_py.F90 
-	$(F2PY) -c -m mcsRegrid_  $(M). mcsRegrid_py.F90 $(LIB) $(LIB_SCI)
+	$(F2PY) -c -m mcsRegrid_  $(M). mcsRegrid_py.F90 $(LIB) $(LIB_SCI_PY)
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------
