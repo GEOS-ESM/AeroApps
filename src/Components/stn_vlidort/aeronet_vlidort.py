@@ -1464,7 +1464,7 @@ class AERONET_VLIDORT(object):
                             self.verbose]
 
                     # Call VLIDORT wrapper function
-                    I, reflectance, ROT, surf_reflectance, Q, U, rc = vlidortWrapper(*args)                        
+                    I, reflectance, ROT, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)                        
                     
                 elif self.albedoType == 'MODIS_BRDF_BPDF':
                     # For albedo

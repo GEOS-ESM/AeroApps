@@ -9,7 +9,7 @@
 subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nMom, nPol,nkernel,nparam, &
                      tau, ssa, pmom, pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc)
+                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, BR_Q, BR_U, rc)
 
     use VLIDORT_BRDF_MODIS, only: VLIDORT_Vector_LandMODIS  
     implicit None
@@ -58,6 +58,8 @@ subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nMom, nPol,nkernel,nparam,
     real*8,           intent(out)           :: BR(nobs,nch)                   ! bidirectional reflectance 
     real*8,           intent(out)           :: Q(nobs, nch)                   ! Stokes parameter Q
     real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
+    real*8,           intent(out)           :: BR_Q(nobs, nch)                ! Stokes parameter Q
+    real*8,           intent(out)           :: BR_U(nobs, nch)                ! Stokes parameter U
 
     logical, parameter                      :: DO_2OS_CORRECTION = .false.
     logical, parameter                      :: DO_BOA = .true.
@@ -72,7 +74,7 @@ subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nMom, nPol,nkernel,nparam,
                                    MISSING,verbose, &
                                    radiance_VL_SURF, &
                                    reflectance_VL_SURF, &
-                                   ROT, BR, Q, U, rc, DO_2OS_CORRECTION, DO_BOA)  
+                                   ROT, BR, Q, U, BR_Q, BR_U, rc, DO_2OS_CORRECTION, DO_BOA)  
 
 
 end subroutine VECTOR_BRDF_MODIS
