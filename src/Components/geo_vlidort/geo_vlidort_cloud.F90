@@ -552,8 +552,8 @@ program geo_vlidort_cloud
 
 !   Cloud Optical Properties
 !   ------------------------
-    call getCOPvector(IcldTable, km, nobs, nch, nMom, nPol, idxCld, REI(i,j,:), VssaIcl, VgIcl, VpmomIcl, betaIcl, truncIcl)
-    call getCOPvector(LcldTable, km, nobs, nch, nMom, nPol, idxCld, REL(i,j,:), VssaLcl, VgLcl, VpmomLcl, betaLcl, truncLcl)
+    call getCOPvector_idX(IcldTable, km, nobs, nch, nMom, nPol, idxCld, REI(i,j,:), VssaIcl, VgIcl, VpmomIcl, betaIcl, truncIcl)
+    call getCOPvector_idX(LcldTable, km, nobs, nch, nMom, nPol, idxCld, REL(i,j,:), VssaLcl, VgLcl, VpmomLcl, betaLcl, truncLcl)
 
 !   Scale Cloud Optical Thickness from reference wavelength of 0.65um
 !   ------------------------
@@ -831,8 +831,8 @@ function nn_interp(x,y,xint)
   integer                         :: below, above
   real                            :: top, bottom
 
-  above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LT. 0)
-  below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GE. 0)
+  above = minloc((xint - x), dim = 1, mask = (xint - x) .LT. 0)
+  below = minloc((xint - x), dim = 1, mask = (xint - x) .GE. 0)
 
   if (.not. ANY((/y(above),y(below)/) == surf_missing)) then
     top = y(above) - y(below)
