@@ -1201,6 +1201,8 @@ class POLAR_VLIDORT(object):
         self.U = np.ones([ntime,2*nangles])*MISSING
         self.reflectance = np.ones([ntime,2*nangles])*MISSING
         self.surf_reflectance = np.ones([ntime,2*nangles])*MISSING
+        self.BR_Q = np.ones([ntime,2*nangles])*MISSING
+        self.BR_U = np.ones([ntime,2*nangles])*MISSING
         self.ROT = np.ones([ntime,nlev])*MISSING
 
         #backward directions, forward directions
@@ -1237,7 +1239,7 @@ class POLAR_VLIDORT(object):
                         self.verbose]
 
                 # Call VLIDORT wrapper function
-                I, reflectance, ROT, surf_reflectance, Q, U, rc = vlidortWrapper(*args)                        
+                I, reflectance, ROT, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)                        
                 
             elif self.albedoType == 'MODIS_BRDF_BPDF':
                 # For albedo
@@ -1255,6 +1257,8 @@ class POLAR_VLIDORT(object):
                 U = np.zeros([self.nobs,1])
                 reflectance = np.zeros([self.nobs,1])
                 surf_reflectance = np.zeros([self.nobs,1])
+                BR_Q = np.zeros([self.nobs,1])
+                BR_U = np.zeros([self.nobs,1])
                 ROT = np.zeros([nlev,self.nobs,1])
 
                 for p in range(self.nobs):
@@ -1276,7 +1280,7 @@ class POLAR_VLIDORT(object):
 
                         BRDFvlidortWrapper = WrapperFuncs['MODIS_BRDF']
                         # Call VLIDORT wrapper function
-                        I_, reflectance_, ROT_, surf_reflectance_, Q_, U_, rc = BRDFvlidortWrapper(*args)                         
+                        I_, reflectance_, ROT_, surf_reflectance_, Q_, U_, BR_Q_, BR_U_, rc = BRDFvlidortWrapper(*args)                         
 
                     else:
                         args = [self.channel,
@@ -1296,13 +1300,15 @@ class POLAR_VLIDORT(object):
                                 self.verbose]
 
                         # Call VLIDORT wrapper function
-                        I_, reflectance_, ROT_, surf_reflectance_, Q_, U_, rc = vlidortWrapper(*args)
+                        I_, reflectance_, ROT_, surf_reflectance_, Q_, U_, BR_Q_, BR_U_, rc = vlidortWrapper(*args)
             
                     I[p:p+1,:] = I_
                     Q[p:p+1,:] = Q_
                     U[p:p+1,:] = U_
                     reflectance[p:p+1,:] = reflectance_
                     surf_reflectance[p:p+1,:] = surf_reflectance_
+                    BR_Q[p:p+1,:] = BR_Q_
+                    BR_U[p:p+1,:] = BR_U_
                     ROT[:,p:p+1,:] = ROT_
             
             elif self.albedoType == 'LAMBERTIAN':
@@ -1325,6 +1331,8 @@ class POLAR_VLIDORT(object):
             self.surf_reflectance[self.iGood,i] = np.squeeze(surf_reflectance)
             self.Q[self.iGood,i] = np.squeeze(Q)
             self.U[self.iGood,i] = np.squeeze(U) 
+            self.BR_Q[self.iGood,i] = np.squeeze(BR_Q)
+            self.BR_U[self.iGood,i] = np.squeeze(BR_U) 
 
 
         self.writeNC()
@@ -1452,6 +1460,20 @@ class POLAR_VLIDORT(object):
         sref.units         = "None"
         sref[:]            = self.surf_reflectance
 
+        sref = nc.createVariable('surf_reflectance_Q','f4',('time','view_angles',),zlib=zlib,fill_value=MISSING)
+        sref.standard_name = '%.2f nm Surface Reflectance Q' %self.channel
+        sref.long_name     = '%.2f nm Bi-Directional Surface Reflectance Q' %self.channel
+        sref.missing_value = MISSING
+        sref.units         = "None"
+        sref[:]            = self.BR_Q
+
+        sref = nc.createVariable('surf_reflectance_U','f4',('time','view_angles',),zlib=zlib,fill_value=MISSING)
+        sref.standard_name = '%.2f nm Surface Reflectance U' %self.channel
+        sref.long_name     = '%.2f nm Bi-Directional Surface Reflectance U' %self.channel
+        sref.missing_value = MISSING
+        sref.units         = "None"
+        sref[:]            = self.BR_U
+
         rot = nc.createVariable('ROT','f4',('time','lev',),zlib=zlib,fill_value=MISSING)
         rot.long_name = '%.2f nm Rayleigh Optical Thickness' %self.channel
         rot.missing_value = MISSING
@@ -1549,25 +1571,27 @@ def get_chd(channel):
 #------------------------------------ M A I N ------------------------------------
 
 if __name__ == "__main__":
-    date     = datetime(2006,01,01,00)
+    date     = datetime(2006,8,01,00)
     nymd     = str(date.date()).replace('-','')
     hour     = str(date.hour).zfill(2)
     format   = 'NETCDF4_CLASSIC'
 
-    inDir        = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelB/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    rootDir  = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/CALIPSO/'
+
+    inDir        = '{}/LevelB/Y{}/M{}'.format(rootDir,date.year,str(date.month).zfill(2))
     inFile       = '{}/calipso-g5nr.lb2.%col.{}_{}z.nc4'.format(inDir,nymd,hour)
-    brdfDir      = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BRDF/MCD43C1/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    brdfDir      = '{}/LevelB/surface/BRDF/MCD43C1/006/Y{}/M{}'.format(rootDir,date.year,str(date.month).zfill(2))
     brdfFile     = '{}/calipso-g5nr.lb2.brdf.{}_{}z.nc4'.format(brdfDir,nymd,hour)
-    ndviDir      = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BPDF/NDVI/MYD13C2/006/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    ndviDir      = '{}/LevelB/surface/BPDF/NDVI/MYD13C2/006/Y{}/M{}'.format(rootDir,date.year,str(date.month).zfill(2))
     ndviFile     = '{}/calipso-g5nr.lb2.ndvi.{}_{}z.nc4'.format(ndviDir,nymd,hour)
-    lcDir        = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/BPDF/LAND_COVER/MCD12C1/051/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
+    lcDir        = '{}/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051/Y{}/M{}'.format(rootDir,date.year,str(date.month).zfill(2))
     lcFile       = '{}/calipso-g5nr.lb2.land_cover.{}_{}z.nc4'.format(lcDir,nymd,hour)    
-    albedoType   = 'MODIS_BRDF_BPDF'
+    albedoType   = 'MODIS_BRDF'
 
     channel  = 470
     chd      = get_chd(channel)
-    outDir    = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/LevelC/Y{}/M{}'.format(date.year,str(date.month).zfill(2))
-    outFile   = '{}/calipso-g5nr.vlidort.vector.MCD43C.{}_{}z_{}nm.nc4'.format(outDir,nymd,hour,chd)
+    outDir    = '{}/LevelC/Y{}/M{}'.format(rootDir,date.year,str(date.month).zfill(2))
+    outFile   = '{}/calipso-g5nr.vlidort.vector.MCD43C_noBPDF.{}_{}z_{}nm.nc4'.format(outDir,nymd,hour,chd)
     
     rcFile   = 'Aod_EOS.rc'
     VZAname  = 'POLDER'
@@ -1585,7 +1609,7 @@ if __name__ == "__main__":
                             ndviFile=ndviFile,
                             lcFile=lcFile,
                             verbose=verbose,
-                            distOnly=True)
+                            distOnly=False)
 
    
     # Run ext_sampler
