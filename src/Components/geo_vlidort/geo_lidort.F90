@@ -582,8 +582,8 @@ function nn_interp(x,y,xint)
   integer                         :: below, above
   real                            :: top, bottom
 
-  below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LE. 0)
-  above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GT. 0)
+  below = minloc((xint - x), dim = 1, mask = (xint - x) .LE. 0)
+  above = minloc((xint - x), dim = 1, mask = (xint - x) .GT. 0)
 
   
   if (.not. ANY((/y(above),y(below)/) == surf_missing)) then
