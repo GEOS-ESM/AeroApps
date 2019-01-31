@@ -8,7 +8,7 @@ from   dateutil.parser        import parse as isoparser
 from   dateutil.relativedelta import relativedelta
 import numpy                  as     np
 from   glob                   import glob
-from   scipy.interpolate      import RegularGridInterpolator
+import  mpl_toolkits.basemap
 from   netCDF4                import Dataset
 
 
@@ -181,19 +181,20 @@ class NOBM(object):
                     print 'Working on '+ str(ut.date())
 
                 data = self.lwn[ut,ich,:,:]
+                nlat,nlon = data.shape
+                data1 = data[:,0:nlon*0.5]
+                data2 = data[:,nlon*0.5:]
+                data  = np.hstack((data2, data1))
+                data = np.flipud(data)
 
                 Ityme = dtyme == ut
 
                 lat = trjLat[Ityme]
                 lon = trjLon[Ityme]
-                pts = []
-                for LAT,LON in zip(lat,lon): pts.append([LAT,LON])
 
             
-                interpFunc = RegularGridInterpolator((self.lat, self.lon), data,
-                                method='nearest',bounds_error=False,fill_value=None)
+                temp[Ityme] = mpl_toolkits.basemap.interp(data, self.lon, self.lat,lon,lat,order=0)
 
-                temp[Ityme] = interpFunc(pts) 
             
             self.sleave.lwn[ich,:,:] = temp
 
