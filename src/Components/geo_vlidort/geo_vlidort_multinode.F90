@@ -814,8 +814,8 @@ function nn_interp(x,y,xint)
   integer                         :: below, above
   real                            :: top, bottom
 
-  above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LT. 0)
-  below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GE. 0)
+  above = minloc((xint - x), dim = 1, mask = (xint - x) .LT. 0)
+  below = minloc((xint - x), dim = 1, mask = (xint - x) .GE. 0)
 
   if (.not. (VLIDORT_IS_MISSING(y(above),surf_missing) .or. VLIDORT_IS_MISSING(y(below),surf_missing))) then
     top = y(above) - y(below)
