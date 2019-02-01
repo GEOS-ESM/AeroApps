@@ -178,8 +178,8 @@ program leo_vlidort_cloud
   real,allocatable                      :: Vpmom(:,:,:,:,:)                         ! elements of scattering phase matrix for vector calculations
   real,allocatable                      :: VpmomIcl(:,:,:,:,:)                      ! elements of scattering phase matrix for vector calculations
   real,allocatable                      :: VpmomLcl(:,:,:,:,:)                      ! elements of scattering phase matrix for vector calculations
-  real,allocatable                      :: betaIcl(:,:,:), betaLcl(:,:,:)           ! cloud optical thickness scaling factors 
-  real,allocatable                      :: truncIcl(:,:,:), truncLcl(:,:,:)          ! cloud optical thickness scaling factors
+  ! real,allocatable                      :: betaIcl(:,:,:), betaLcl(:,:,:)           ! cloud optical thickness scaling factors 
+  ! real,allocatable                      :: truncIcl(:,:,:), truncLcl(:,:,:)          ! cloud optical thickness scaling factors
 ! MODIS Kernel variables
 !--------------------------
   real*8, allocatable                   :: kernel_wt(:,:,:)                         ! kernel weights (/fiso,fgeo,fvol/)
@@ -221,7 +221,8 @@ program leo_vlidort_cloud
   integer                               :: p                                           ! i-processor
   character(len=100)                    :: msg                                         ! message to be printed
   real                                  :: progress                                    ! 
-  real                                  :: g5nr_missing                                !
+  real                                  :: g5nr_missing  
+  logical                               :: do_cxonly                              !
 
 ! System tracking variables
 ! -----------------------------
@@ -350,7 +351,7 @@ program leo_vlidort_cloud
 
   if (clrm == 0) then
     if (MAPL_am_I_root()) then
-      write(*,*) 'No good pixels over land, nothing to do'
+      write(*,*) 'No good pixels, nothing to do'
       write(*,*) 'Exiting.....'
     end if
     GOTO 500
@@ -369,7 +370,7 @@ program leo_vlidort_cloud
     end do
   end do
 
-! Land data and unshared angles no longer needed
+! Unshared angles no longer needed
 !---------------------------------------
   deallocate (SOLAR_ZENITH)
   deallocate (SENSOR_ZENITH)
@@ -472,12 +473,16 @@ program leo_vlidort_cloud
   call MAPL_SyncSharedMemory(rc=ierr)
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
-  do cc = starti, endi
+if (MAPL_am_I_root()) then
+  do cc = starti, starti !endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
 
     i  = iIndex(c)
     j  = jIndex(c)
+
+    i = 501
+    j = 31
 
     call getEdgeVars ( km, nobs, reshape(AIRDENS(i,j,:),(/km,nobs/)), &
                        reshape(DELP(i,j,:),(/km,nobs/)), ptop, &
@@ -504,22 +509,28 @@ program leo_vlidort_cloud
 
 !   Cloud Optical Properties
 !   ------------------------
-    call getCOPvector(IcldTable, km, nobs, nch, nMom, nPol, idxCld, REI(i,j,:), VssaIcl, VgIcl, VpmomIcl, betaIcl, truncIcl)
-    call getCOPvector(LcldTable, km, nobs, nch, nMom, nPol, idxCld, REL(i,j,:), VssaLcl, VgLcl, VpmomLcl, betaLcl, truncLcl)
+    call getCOPvector(IcldTable, km, nobs, nch, nMom, nPol, channels, REI(i,j,:), TAUI(i,j,:), VssaIcl, VgIcl, VpmomIcl, VtauIcl)
+    call getCOPvector(LcldTable, km, nobs, nch, nMom, nPol, channels, REL(i,j,:), TAUL(i,j,:), VssaLcl, VgLcl, VpmomLcl, VtauLcl)
 
-!   Scale Cloud Optical Thickness from reference wavelength of 0.65um
-!   ------------------------
-    VtauIcl(:,nch,nobs) = TAUI(i,j,:)
-    VtauIcl             = VtauIcl*betaIcl
-    VtauLcl(:,nch,nobs) = TAUL(i,j,:)
-    VtauLcl             = VtauLcl*betaLcl 
+! !   Scale Cloud Optical Thickness from reference wavelength of 0.65um
+! !   ------------------------
+!     VtauIcl(:,nch,nobs) = TAUI(i,j,:)
+!     VtauIcl             = VtauIcl*betaIcl
+!     VtauLcl(:,nch,nobs) = TAUL(i,j,:)
+!     VtauLcl             = VtauLcl*betaLcl 
 
-!   Scale Cloud optical thickness for phase function truncation            
-!   ------------------------
-    VtauIcl = VtauIcl*(1. - truncIcl*VssaIcl)
-    VtauLcl = VtauLcl*(1. - truncLcl*VssaLcl)
-    VssaIcl = VssaIcl*(1. - truncIcl)/(1. - VssaIcl*truncIcl)
-    VssaLcl = VssaLcl*(1. - truncLcl)/(1. - VssaLcl*truncLcl)    
+! !   Scale Cloud optical thickness for phase function truncation            
+! !   ------------------------
+!     VtauIcl = VtauIcl*(1. - truncIcl*VssaIcl)
+!     VtauLcl = VtauLcl*(1. - truncLcl*VssaLcl)
+!     VssaIcl = VssaIcl*(1. - truncIcl)/(1. - VssaIcl*truncIcl)
+!     VssaLcl = VssaLcl*(1. - truncLcl)/(1. - VssaLcl*truncLcl)    
+
+    if (MAPL_am_I_root()) then
+      write(*,*) 'VtauLcl', VtauLcl 
+      write(*,*) 'VssaLcl', VssaLcl 
+    end if
+
 
 !   Save some variables on the 2D Grid for Writing Later
 !   ------------------------
@@ -555,7 +566,12 @@ program leo_vlidort_cloud
       BR_Q(i,j)   = BR_Q_int(nobs,nch)
       BR_U(i,j)   = BR_U_int(nobs,nch)
     end if
-    
+
+
+    if (MAPL_am_I_root()) then
+      write(*,*) 'radiance', radiance_VL(i,j)
+    end if
+
     write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
     call write_verbose(msg)
 
@@ -567,7 +583,7 @@ program leo_vlidort_cloud
     end if
                 
   end do ! do clear pixels
-
+end if
 ! Wait for everyone to finish calculations
 ! ----------------------------------------
   call MAPL_SyncSharedMemory(rc=ierr)
@@ -751,7 +767,7 @@ program leo_vlidort_cloud
     if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
       do ch = 1, nch
         below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .GE. 0)
-        if (ch .eq. maxval(WATER_CH)) then
+        if (channels(ch) .eq. maxval(WATER_CH)) then
           Vsleave(ch,nobs) = SLEAVE(i,j,ch,1)
         else
           Vsleave(ch,nobs) = dble(nn_interp(WATER_CH(below:below+1),reshape(SLEAVE(i,j,ch,:),(/2/)),channels(ch)))
@@ -769,6 +785,16 @@ program leo_vlidort_cloud
     if ( (lower_to_upper(watermodel) .eq. 'CX') ) then
 
       if  ( (lower_to_upper(watername) .eq. 'CX') ) then
+        do_cxonly = .true.
+      else if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
+        if (ANY(Vsleave > 1E9)) then
+          do_cxonly = .true.
+        else
+          do_cxonly = .false.
+        end if
+      end if
+
+      if  ( do_cxonly ) then
       ! GISS Cox Munk Model
       ! -------------------------------
         if (scalar) then
@@ -801,7 +827,7 @@ program leo_vlidort_cloud
                  dble(MISSING),verbose, &
                  radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
         end if
-      else if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
+      else 
       ! GISS Cox Munk Model with NOBM Water Leaving Reflectance
       ! ----------------------------------------------------------
         if (scalar) then
@@ -1069,8 +1095,8 @@ program leo_vlidort_cloud
     integer                         :: below, above
     real                            :: top, bottom
 
-    above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LT. 0)
-    below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GE. 0)
+    above = minloc((xint - x), dim = 1, mask = (xint - x) .LT. 0)
+    below = minloc((xint - x), dim = 1, mask = (xint - x) .GE. 0)
 
     if (.not. ANY((/y(above),y(below)/) == land_missing)) then
       top = y(above) - y(below)
@@ -1373,7 +1399,7 @@ program leo_vlidort_cloud
       do ch = 1, nch
         ! get channel below
         below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .GE. 0)
-        if (ch .eq. maxval(WATER_CH)) then
+        if (channels(ch) .eq. maxval(WATER_CH)) then
           call readvar3Dslice('lwn', WAT_file, (/im,jm,1/), 3, below, tempmax)
           temp = 0
           temp(:,:,1) = tempmax(:,:,1)
@@ -1743,10 +1769,10 @@ program leo_vlidort_cloud
     allocate (Vpmom(km,nch,nobs,nMom,nPol))
     allocate (VpmomLcl(km,nch,nobs,nMom,nPol))
     allocate (VpmomIcl(km,nch,nobs,nMom,nPol))
-    allocate (betaIcl(km,nch,nobs))
-    allocate (betaLcl(km,nch,nobs))
-    allocate (truncIcl(km,nch,nobs))
-    allocate (truncLcl(km,nch,nobs))
+    ! allocate (betaIcl(km,nch,nobs))
+    ! allocate (betaLcl(km,nch,nobs))
+    ! allocate (truncIcl(km,nch,nobs))
+    ! allocate (truncLcl(km,nch,nobs))
 
     if (.not. scalar) then      
       allocate (Q_int(nobs, nch))
