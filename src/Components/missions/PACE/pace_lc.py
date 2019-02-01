@@ -652,8 +652,9 @@ if __name__ == '__main__':
 
     workspace = WORKSPACE(args)
 
-    # Submit and monitor jobs
-    workspace.handle_jobs()
+    if not args.dryrun:
+        # Submit and monitor jobs
+        workspace.handle_jobs()
 
     # Take VLIDORT outputs and populate PACE L1b File
     I = ~workspace.errTally
