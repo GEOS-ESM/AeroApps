@@ -296,7 +296,7 @@
 
       SUBROUTINE  ASYMTX( AAD, M, IA, IEVEC, &
                             EVECD, EVALD, IER, WKD, &
-                            MESSAGE, BAD_STATUS )
+                            MESSAGE, BAD_STATUS, TOLin )
 
 !    =======  D O U B L E    P R E C I S I O N    V E R S I O N  ======
 
@@ -365,6 +365,8 @@
                AAD(MAXSTRMSTKS,MAXSTRMSTKS), WKD(4*MAXSTRMSTKS), &
                EVALD(MAXSTRMSTKS), EVECD(MAXSTRMSTKS,MAXSTRMSTKS)
 
+      DOUBLE PRECISION, optional :: TOLin
+
 !  local variables (explicit declaration
 
       LOGICAL           NOCONV, NOTLAS
@@ -386,7 +388,11 @@
 
 !---4/18/08. Use 1.0d-12 (1.0d-24 has convergence issues in Rayleigh lay
 !      TOL = 0.0000001
-      TOL = 1.0D-10
+      IF (present(TOLin)) THEN
+        TOL = TOLin
+      ELSE
+        TOL = 1.0D-12
+      ENDIF
 !      TOL = 1.0D-24
 !      TOL = 1.0D-20
 
