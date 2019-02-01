@@ -589,15 +589,16 @@ def populate_L1B(outfilelist,rootdir,channels,Date,force=False):
             pvar      = ncmerge.groups['observation_data'].variables[SDS[sds]]
 
             for ch,filename in zip(channels,outfilelist):
-                if float(ch) in pchannels:
-                    nc = Dataset(filename)
-                    fch = "{:.2f}".format(ch)
-                    data = np.squeeze(nc.variables['I_'+fch][:])
+                for i,pch in enumerate(pchannels):
+                    if float(ch) == pch:
+                        print 'inserting ',filename
+                        nc = Dataset(filename)
+                        fch = "{:.2f}".format(ch)
+                        data = np.squeeze(nc.variables['I_'+fch][:])
 
-                    i = np.argmin(np.abs(float(ch)-pchannels))
-                    pvar[i,:,:] = data
+                        pvar[i,:,:] = data
 
-                    nc.close()
+                        nc.close()
 
         ncmerge.close()
 
