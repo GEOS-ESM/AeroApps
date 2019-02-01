@@ -2442,7 +2442,6 @@ end if
     ! Clouds
     call ESMF_ConfigGetAttribute(cf, IcldTable, label = 'ICLDTABLE:',__RC__)       
     call ESMF_ConfigGetAttribute(cf, LcldTable, label = 'LCLDTABLE:',__RC__)
-    call ESMF_ConfigGetAttribute(cf, idxCld, label = 'IDXCLD:',__RC__)
 
     ! Input Files
     call ESMF_ConfigGetAttribute(cf, AER_file, label = 'AER_file:',__RC__)
