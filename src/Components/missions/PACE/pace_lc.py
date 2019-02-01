@@ -406,8 +406,6 @@ class WORKSPACE(JOBS):
 
         #refractive index
         mruse = np.interp(float(ch),mr_ch,mr)
-        newline = 'WATERMR NOBM-CX\n'
-        text.append(newline)
         newline = 'WATERMR: {}\n'.format(mruse)
         text.append(newline)
 
@@ -417,16 +415,8 @@ class WORKSPACE(JOBS):
         text.append(newline)
         newline = 'LCLDTABLE:ExtDataCloud/WaterLegendreCoeffs.nc4\n'
         text.append(newline)
-
-        cldFile = 'ExtDataCloud/IceLegendreCoeffs.nc4'
-        nc = Dataset(cldFile)
-        mch = nc.variables['MODIS_wavelength'][:]
-        nc.close()
-        idx = 1+ np.argmin(np.abs(1e3*mch - ch))
-        newline = 'IDXCLD: {}\n'.format(idx)
-        text.append(newline)
-
         text.append('\n')
+
         # OTHER FILENAMES
         AER_file = '{}/pace-g5nr.lb.aer_Nv.{}_{}.nc4'.format(LbDir,nymd,hms)
         newline = 'AER_file: {}\n'.format(AER_file)
