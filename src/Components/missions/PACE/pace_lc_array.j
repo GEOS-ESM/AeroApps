@@ -3,13 +3,13 @@
 #######################################################################
 #                     Batch Parameters for Run Job
 #######################################################################
-#SBATCH --time=03:00:00
+#SBATCH --time=01:00:00
 #SBATCH --constraint=hasw
 #SBATCH --ntasks=28 --cpus-per-task=1 --ntasks-per-node=28
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=patricia.castellanos@nasa.gov
 #SBATCH --job-name=pace_vlidort
-#SBATCH -A s1412
+#SBATCH -A g0620
 #SBATCH --array=1-2
 #SBATCH --output=slurm_%A_%a.out
 #SBATCH --error=slurm_%A_%a.err
