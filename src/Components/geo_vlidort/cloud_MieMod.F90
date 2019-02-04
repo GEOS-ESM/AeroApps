@@ -120,14 +120,13 @@ subroutine getCOPvector(filename, km, nobs, nch, nMom, nPol, channels, re, tau_i
                 gCH(idX) = nn_interp(sngl(radius),sngl(gTable(idX,:)),re(k))
                 ssaCH(idX) = nn_interp(sngl(radius),sngl(ssaTable(idX,:)),re(k))
                 betaCH(idX) = nn_interp(sngl(radius),sngl(betaTable(idX,:)),re(k))
-                betaCH(idX) = betaCH(idX)/betaCH(1)
                 tfCH(idX) = nn_interp(sngl(radius),sngl(tfTable(idX,:)),re(k))
                 do s = 1, maxStreams
                     pmomCH(idX,s) = nn_interp(sngl(radius),pmomTable(idX,:,s),re(k))
                 end do
 
                 ! Scale Cloud Optical Thickness from reference wavelength of 0.65um
-                tauCH(idX) = tau_in(k)*betaCH(idX)
+                tauCH(idX) = tau_in(k)*(betaCH(idX)/betaCH(1))
 
                 ! Scale Cloud optical thickness & SSA for phase function truncation    
                 tauCH(idX) = tauCH(idX)*(1. - tfCH(idX)*ssaCH(idX))
