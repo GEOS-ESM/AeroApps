@@ -140,9 +140,9 @@ subroutine getCOPvector(filename, km, nobs, nch, nMom, nPol, channels, re, tau_i
 
                 g(k,c,o) = nn_interp(sngl(chTable),gCH,ch)
                 ssa(k,c,o) = nn_interp(sngl(chTable),ssaCH,ch)
-                tau_scaled(k,c,o) = nn_interp(sngl(chTable),tauCH,ch)
+                tau_scaled(k,c,o) = nn_interp(sngl(chTable),tauCH,ch)                
                 do s = 1, maxStreams
-                    pmom(k,c,o,s,1) = nn_interp(sngl(chTable),pmomCH(:,s),ch)
+                   pmom(k,c,o,s,1) = nn_interp(sngl(chTable),pmomCH(:,s),ch)
                 end do
 
             end do
@@ -244,8 +244,8 @@ function nn_interp(x,y,xint)
     integer                         :: below, above
     real                            :: top, bottom
 
-    above = minloc((xint - x), dim = 1, mask = (xint - x) .LT. 0)
-    below = minloc((xint - x), dim = 1, mask = (xint - x) .GE. 0)
+    above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LT. 0)
+    below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GE. 0)
 
     top = y(above) - y(below)
     bottom = x(above) - x(below)
