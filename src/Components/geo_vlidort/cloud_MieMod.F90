@@ -244,12 +244,20 @@ function nn_interp(x,y,xint)
     integer                         :: below, above
     real                            :: top, bottom
 
-    above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LT. 0)
-    below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GE. 0)
+    if (xint .GE. maxval(x)) then
+        below = maxloc(x, dim = 1)
+        nn_interp = y(below)
+    else if (xint .LT. minval(x)) then
+        above = minloc(x, dim = 1)
+        nn_interp = y(above)
+    else
+        above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LT. 0)
+        below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GE. 0)
 
-    top = y(above) - y(below)
-    bottom = x(above) - x(below)
-    nn_interp = y(below) + (xint-x(below)) * top / bottom
+        top = y(above) - y(below)
+        bottom = x(above) - x(below)
+        nn_interp = y(below) + (xint-x(below)) * top / bottom
+    end if
 
 end function nn_interp   
 
