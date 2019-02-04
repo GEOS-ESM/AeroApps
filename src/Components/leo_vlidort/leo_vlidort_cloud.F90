@@ -931,7 +931,6 @@ end if
                 kernel_wt(3,ch,nobs) = dble(nn_interp((/landband_cLER(ler_i(1)),landband_cBRDF(brdf_i(1))/),temp_vol,channels(ch)))
 
               else
-                ! ******channel has to fall above available range, user is responsible to verify
                 kernel_wt(1,ch,nobs) = dble(nn_interp(landband_cBRDF,reshape(KISO(i,j,:),(/landbandmBRDF/)),channels(ch)))
                 kernel_wt(2,ch,nobs) = dble(nn_interp(landband_cBRDF,reshape(KGEO(i,j,:),(/landbandmBRDF/)),channels(ch)))
                 kernel_wt(3,ch,nobs) = dble(nn_interp(landband_cBRDF,reshape(KVOL(i,j,:),(/landbandmBRDF/)),channels(ch)))    
@@ -1101,17 +1100,24 @@ end if
     integer                         :: below, above
     real                            :: top, bottom
 
-    above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LT. 0)
-    below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GE. 0)
-
-    if (.not. ANY((/y(above),y(below)/) == land_missing)) then
-      top = y(above) - y(below)
-      bottom = x(above) - x(below)
-      nn_interp = y(below) + (xint-x(below)) * top / bottom
+    if (xint .GE. maxval(x)) then
+        below = maxloc(x, dim = 1)
+        nn_interp = y(below)
+    else if (xint .LT. minval(x)) then
+        above = minloc(x, dim = 1)
+        nn_interp = y(above)
     else
-      nn_interp  = land_missing
-    end if
+      above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LT. 0)
+      below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GE. 0)
 
+      if (.not. ANY((/y(above),y(below)/) == land_missing)) then
+        top = y(above) - y(below)
+        bottom = x(above) - x(below)
+        nn_interp = y(below) + (xint-x(below)) * top / bottom
+      else
+        nn_interp  = land_missing
+      end if
+    end if
   end function nn_interp
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
