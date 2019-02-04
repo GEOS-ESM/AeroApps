@@ -526,9 +526,15 @@ if (MAPL_am_I_root()) then
 !     VssaIcl = VssaIcl*(1. - truncIcl)/(1. - VssaIcl*truncIcl)
 !     VssaLcl = VssaLcl*(1. - truncLcl)/(1. - VssaLcl*truncLcl)    
 
+!    Vtau = 0
+!    VtauIcl = 0
+!    VtauLcl = 0
     if (MAPL_am_I_root()) then
       write(*,*) 'VtauLcl', VtauLcl 
       write(*,*) 'VssaLcl', VssaLcl 
+
+      write(*,*) 'VtauIcl', VtauIcl 
+      write(*,*) 'VssaIcl', VssaIcl       
     end if
 
 
@@ -1095,8 +1101,8 @@ end if
     integer                         :: below, above
     real                            :: top, bottom
 
-    above = minloc((xint - x), dim = 1, mask = (xint - x) .LT. 0)
-    below = minloc((xint - x), dim = 1, mask = (xint - x) .GE. 0)
+    above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LT. 0)
+    below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GE. 0)
 
     if (.not. ANY((/y(above),y(below)/) == land_missing)) then
       top = y(above) - y(below)
