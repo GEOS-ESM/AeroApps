@@ -526,16 +526,14 @@ if (MAPL_am_I_root()) then
 !     VssaIcl = VssaIcl*(1. - truncIcl)/(1. - VssaIcl*truncIcl)
 !     VssaLcl = VssaLcl*(1. - truncLcl)/(1. - VssaLcl*truncLcl)    
 
-!    Vtau = 0
-!    VtauIcl = 0
-!    VtauLcl = 0
-    if (MAPL_am_I_root()) then
-      write(*,*) 'VtauLcl', VtauLcl 
-      write(*,*) 'VssaLcl', VssaLcl 
 
-      write(*,*) 'VtauIcl', VtauIcl 
-      write(*,*) 'VssaIcl', VssaIcl       
-    end if
+    ! if (MAPL_am_I_root()) then
+    !   write(*,*) 'VtauLcl', VtauLcl 
+    !   write(*,*) 'VssaLcl', VssaLcl 
+
+    !   write(*,*) 'VtauIcl', VtauIcl 
+    !   write(*,*) 'VssaIcl', VssaIcl       
+    ! end if
 
 
 !   Save some variables on the 2D Grid for Writing Later
@@ -554,6 +552,12 @@ if (MAPL_am_I_root()) then
       call DO_LAND()
     else
       call get_ocean_params()
+      Vsleave = 0
+      Vtau = 0
+      VtauIcl = 0
+      VtauLcl = 0 
+      Vte = 0
+      write(*,*) 'no atmosphere'     
       call DO_OCEAN()
     end if
 
