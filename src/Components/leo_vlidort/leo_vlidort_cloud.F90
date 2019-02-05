@@ -556,7 +556,7 @@ if (MAPL_am_I_root()) then
       Vtau = 0
       VtauIcl = 0
       VtauLcl = 0 
-      Vte = 0
+      Vpe = 0
       write(*,*) 'no atmosphere'     
       call DO_OCEAN()
     end if
@@ -568,6 +568,7 @@ if (MAPL_am_I_root()) then
     radiance_VL(i,j)    = radiance_VL_int(nobs,nch)
     reflectance_VL(i,j) = reflectance_VL_int(nobs,nch)
     ROT(i,j,:) = ROT(:,nobs,nch)
+    write(*,*) 'ROT is ',ROT(i,j,:)
     ALBEDO(i,j) = Valbedo(nobs,nch)
     
     if (.not. scalar) then
