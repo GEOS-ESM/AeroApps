@@ -28,7 +28,7 @@ THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
 BINS := leo_vlidort_cloud.x
 
-PY_EXTS = LidarAngles_.$(F2PYEXT) VLIDORT_POLAR_.$(F2PYEXT) READ_NC_.$(F2PYEXT) leo_vlidort.py
+PY_EXTS = LidarAngles_.$(F2PYEXT) VLIDORT_POLAR_.$(F2PYEXT) READ_NC_.$(F2PYEXT) 
 PY_SCRP = leo_vlidort_lc.py
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
