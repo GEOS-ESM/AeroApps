@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 """
-    Calculates polarized TOA radiance for a multiangle polarimeter on a lidar track.
-    Model fields have already been sampled using trj_sampler
+    Calculates polarized TOA radiance for a leo swath.
+    Geometry has already been simulated.
+    Model fields have already been sampled. 
+    Cloud simulation already created.
 
-    Adapted from ext_sampler.py
-    Patricia Castellanos, May, 2017
+    Adapted from polar_vlidort.py
+    Patricia Castellanos, Sep 2018
 
 """
 
@@ -19,11 +21,10 @@ from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 
 from MAPL.constants import *
-import LidarAngles_    
 import VLIDORT_POLAR_ 
-from copyvar  import _copyVar
 from scipy import interpolate
 from   MAPL  import config
+import multiprocessing
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
@@ -31,47 +32,82 @@ VNAMES_SS = ['SS001','SS002','SS003','SS004','SS005']
 VNAMES_BC = ['BCPHOBIC','BCPHILIC']
 VNAMES_OC = ['OCPHOBIC','OCPHILIC']
 VNAMES_SU = ['SO4']
-MieVarsNames = ['ext','scatext','backscat','aback_sfc','aback_toa','depol','ext2back','tau','ssa','g']
-MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitless','unitless','unitless']
 
-META    = ['DELP','PS','RH','AIRDENS','LONGITUDE','LATITUDE','isotime']
+SDS_META = ['DELP','PS','AIRDENS']
 AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
-SDS_AER = META + AERNAMES
-SDS_MET = []#['CLDTOT']
-SDS_INV = ['FRLAND']
+SDS_AER  = SDS_META + AERNAMES
+SDS_CLD  = ['TAUI','TAUL','REI','REL','RH']
+SDS_INV  = ['FRLAND']
+SDS_WIND = ['U10M','V10M']
+SDS_GEOM = ['sensor_azimuth','sensor_zenith','solar_azimuth','solar_zenith']
 
-ncALIAS = {'LONGITUDE': 'trjLon',
-           'LATITUDE': 'trjLat'}
+
+MIENAMES = ['tau','ssa','g','pmom','refi','refr','vol']
+
+ncALIAS = {'longitude': 'trjLon',
+           'latitude': 'trjLat'}
 
 
 nMom     = 300
 
-VZAdic = {'POLDER': np.array([3.66, 11., 18.33, 25.66, 33, 40.33, 47.66, 55.0])}
-
-HGTdic = {'LEO': 705,
-          'ISS': 400}
-
 
 SurfaceFuncs = {'MODIS_BRDF'     : 'readSampledMODISBRDF',
                 'MODIS_BRDF_BPDF': 'readSampledMODISBRDF',
-                'LAMBERTIAN'     : 'readSampledLER'}
+                'LAMBERTIAN'     : 'readSampledLER',
+                'CX'             : 'read10mWind'}
 
 WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_POLAR_.vector_brdf_modis,
                 'MODIS_BRDF_BPDF': VLIDORT_POLAR_.vector_brdf_modis_bpdf,
-                'LAMBERTIAN'     : VLIDORT_POLAR_.vector_lambert}   
+                'LAMBERTIAN'     : VLIDORT_POLAR_.vector_lambert,
+                'CX'             : VLIDORT_POLAR_.vector_cx}   
 
 LandAlbedos  = 'MODIS_BRDF','MODIS_BRDF_BPDF','LAMBERTIAN'
+WaterAlbedos = 'CX',
 
 
 MISSING = -1.e+20
 
-class POLAR_VLIDORT(object):
+
+def unwrap_doMie(arg, **kwarg):
+    return doMie(*arg, **kwarg)
+
+def doMie(AERDATA,channel,rcFile,nMom,t):
+    NAMES = AERNAMES + ['PS','DELP','RH','AIRDENS']
+    inVars = MieVARS()
+    for i,sds in enumerate(NAMES):
+        var = AERDATA[i]
+        if len(var.shape)==3:
+            inVars.__dict__[sds] = var[:,t,:]
+        elif len(var.shape) ==2:
+            inVars.__dict__[sds] = var[:,t]
+
+    tau,ssa,g,pmom = getAOPvector(inVars,channel,
+                             vnames=AERNAMES,
+                             Verbose=False,
+                             rcfile=rcFile,
+                             nMom=self.nMom)
+
+    vol, area, refr, refi, reff = getAOPint(inVars,channel,
+                             vnames=AERNAMES,
+                             Verbose=False,
+                             rcfile=rcFile)
+
+    return tau,ssa,g,pmom,refr,refi,vol
+
+
+class MieVARS(object):
+    """
+    container for mie vars calculations
+    """
+    pass
+
+class LEO_VLIDORT(object):
     """
     Everything needed for calling VLIDORT
     GEOS-5 has already been sampled on lidar track
     """
-    def __init__(self,inFile,outFile,rcFile,albedoType,
-                channel,VZA,hgtss,
+    def __init__(self,LGinFile,LBinFile,LCinFile,outFile,rcFile,albedoType,
+                channel,
                 brdfFile=None,
                 ndviFile=None,
                 lcFile=None,
@@ -80,44 +116,34 @@ class POLAR_VLIDORT(object):
                 extOnly=False,
                 distOnly=False,
                 outFileDist=None):
-        self.SDS_AER = SDS_AER
-        self.SDS_MET = SDS_MET
-        self.SDS_INV = SDS_INV
-        self.AERNAMES = AERNAMES
-        self.inFile  = inFile
-        self.outFile = outFile
-        self.outFileDist = outFileDist
-        self.albedoType = albedoType
-        self.rcFile  = rcFile
-        self.channel = channel
-        self.verbose = verbose
-        self.nMom    = nMom
-        self.brdfFile = brdfFile
-        self.lcFile = lcFile
-        self.ndviFile = ndviFile
-        self.lerFile  = lerFile
+        self.SDS_AER      = SDS_AER
+        self.SDS_CLD      = SDS_CLD
+        self.SDS_INV      = SDS_INV
+        self.SDS_GEOM     = SDS_GEOM
+        self.AERNAMES     = AERNAMES
+        self.LGinFile     = LGinFile
+        self.LBinFile     = LBinFile
+        self.LCinFile     = LCinFile
+        self.outFile      = outFile
+        self.outFileDist  = outFileDist
+        self.albedoType   = albedoType
+        self.rcFile       = rcFile
+        self.channel      = channel
+        self.verbose      = verbose
+        self.nMom         = nMom
+        self.brdfFile     = brdfFile
+        self.lcFile       = lcFile
+        self.ndviFile     = ndviFile
+        self.lerFile      = lerFile
+        self.extOnly      = extOnly
 
-        if not extOnly:
-            # initialize empty lists
-            for sds in self.SDS_AER+self.SDS_MET+self.SDS_INV:
-                self.__dict__[sds] = []
+        if not self.extOnly:
 
-            # Read in data model data
+            # Read in geometry and model data
+            self.readGeom()
             self.readSampledGEOS()
 
-            # Make lists into arrays
-            for sds in self.SDS_AER+self.SDS_MET:
-                self.__dict__[sds] = np.concatenate(self.__dict__[sds])
-
-            # convert isotime to datetime
-            self.tyme = []
-            for isotime in self.isotime:
-                self.tyme.append(isoparser(''.join(isotime)))
-
-            self.tyme = np.array(self.tyme)
-
             # Start out with all good obs
-            self.nobs  = len(self.tyme)
             self.iGood = np.ones([self.nobs]).astype(bool)
             
             if not distOnly:
@@ -133,21 +159,6 @@ class POLAR_VLIDORT(object):
                 if 'BPDF' in albedoType:
                     self.BPDFinputs()
 
-
-                # Calculate aerosol optical properties
-                self.computeMie()
-
-                # Calculate atmospheric profile properties needed for Rayleigh calc
-                self.computeAtmos()
-
-                # Calculate Scene Geometry
-                self.VZA = VZA
-                self.hgtss = hgtss
-                self.calcAngles()
-
-                if self.nobs > 0:
-                    # Land-Sea Mask
-                    self.LandSeaMask()
 
     # --
     def BPDFinputs(self):
@@ -280,31 +291,59 @@ class POLAR_VLIDORT(object):
     def readSampledGEOS(self):
         """
         Read in model sampled track
+        ***need to implement array flattening
         """
         col = 'aer_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
-        nc       = Dataset(self.inFile.replace('%col',col))
+            print 'opening file',self.LBinFile.replace('%col',col)
+        nc       = Dataset(self.LBinFile.replace('%col',col))
+
+        print 'File opened'
 
         for sds in self.SDS_AER:
             sds_ = sds
             if sds in ncALIAS:
                 sds_ = ncALIAS[sds]
+            if self.verbose: 
+                print 'Reading ',sds_                
             var = nc.variables[sds_][:]
-            self.__dict__[sds].append(var)
+            self.__dict__[sds] = var
+            if self.verbose: 
+                print 'Finished Reading ',sds_
 
-        # col = 'met_Nv'
-        # if self.verbose: 
-        #     print 'opening file',self.inFile.replace('%col',col)        
-        # nc       = Dataset(self.inFile.replace('%col',col))
+        nc.close()
 
-        # for sds in self.SDS_MET:
-        #     sds_ = sds
-        #     if sds in ncALIAS:
-        #         sds_ = ncALIAS[sds]
-        #     var = nc.variables[sds_][:]
-        #     self.__dict__[sds].append(var)
+        if self.verbose: 
+            print 'opening file',self.LCinFile
+        nc       = Dataset(self.LCinFile)
 
+        for sds in self.SDS_CLD:
+            sds_ = sds
+            if sds in ncALIAS:
+                sds_ = ncALIAS[sds]
+            var = nc.variables[sds_][:]
+            self.__dict__[sds] = var
+            if self.verbose: 
+                print 'Finished Reading',sds_
+
+        nc.close()          
+
+    #---
+    def readGeom(self):
+        """
+        Read in precalculated geometry
+        **need to implement array flattening
+        """
+        if self.verbose: 
+            print 'opening file',self.LGinFile
+        nc       = Dataset(self.LGinFile)
+
+        for sds in self.SDS_GEOM:
+            sds_ = sds
+            if sds in ncALIAS:
+                sds_ = ncALIAS[sds]
+            var = nc.variables[sds_][:]
+            self.__dict__[sds] = var
 
 
     def sizeDistribution(self):
@@ -1127,20 +1166,80 @@ class POLAR_VLIDORT(object):
 
         self.albedo = self.__dict__[sds]     
 
+    # #---
+    # def computeMie(self):
+    #     """
+    #     Computes aerosol optical quantities 
+    #     """
+    #     tau,ssa,g,pmom = getAOPvector(self,self.channel,
+    #                              vnames=self.AERNAMES,
+    #                              Verbose=self.verbose,
+    #                              rcfile=self.rcFile,
+    #                              nMom=self.nMom,
+    #                              I = range(10))
+    #     self.tau = tau  #(km,nch,nobs)
+    #     self.ssa = ssa  #(km,nch,nobs)
+    #     self.g   = g    #(km,nch,nobs)
+    #     self.pmom = pmom  #(km,nch,nobs,nMom,nPol)
+
     #---
-    def computeMie(self):
-        """
-        Computes aerosol optical quantities 
-        """
-        tau,ssa,g,pmom = getAOPvector(self,self.channel,
-                                 vnames=self.AERNAMES,
-                                 Verbose=True,
-                                 rcfile=self.rcFile,
-                                 nMom=self.nMom)
-        self.tau = tau  #(km,nch,nobs)
-        self.ssa = ssa  #(km,nch,nobs)
-        self.g   = g    #(km,nch,nobs)
-        self.pmom = pmom  #(km,nch,nobs,nMom,nPol)
+    # def computeMie(self):
+    #     """
+    #     Computes aerosol optical quantities 
+    #     """
+    #     self.tau = []
+    #     self.ssa = []
+    #     self.g   = []
+    #     self.pmom = []
+    #     self.refi = []
+    #     self.refr = []
+    #     self.vol  = []
+
+    #     # start fork here so large data is not copied to children
+    #     nproc = int(multiprocessing.cpu_count()*0.5)    
+    #     pool = multiprocessing.Pool(nproc) 
+
+    #     args = zip([self]*self.nobs,range(self.nobs))
+    #     result = pool.map(unwrap_self_doMie,args)
+        
+    #     for r in result:
+    #         tau, ssa, g, pmom,refi,refr,vol = r
+    #         self.tau.append(tau)  #(km,nch,nobs)
+    #         self.ssa.append(ssa)  #(km,nch,nobs)
+    #         self.g.append(g)    #(km,nch,nobs)
+    #         self.pmom.append(pmom)  #(km,nch,nobs,nMom,nPol)
+    #         self.refi.append(refi) #(km,nch,nobs)
+    #         self.refr.append(refr) #(km,nch,nobs)
+    #         self.vol.append(vol) #(km,nch,nobs)
+
+    #     pool.close()
+    #     pool.join()
+
+
+    # def doMie(self,t):
+    #     NAMES = self.AERNAMES + ['PS','DELP','RH','AIRDENS']
+    #     inVars = MieVARS()
+    #     for sds in NAMES:
+    #         var = self.__dict__[sds]
+    #         if len(var.shape)==3:
+    #             inVars.__dict__[sds] = var[:,t,:]
+    #         elif len(var.shape) ==2:
+    #             inVars.__dict__[sds] = var[:,t]
+
+    #     tau,ssa,g,pmom = getAOPvector(inVars,self.channel,
+    #                              vnames=self.AERNAMES,
+    #                              Verbose=False,
+    #                              rcfile=self.rcFile,
+    #                              nMom=self.nMom)
+
+    #     vol, area, refr, refi, reff = getAOPint(inVars,self.channel,
+    #                              vnames=self.AERNAMES,
+    #                              Verbose=False,
+    #                              rcfile=self.rcFile)
+
+    #     return tau,ssa,g,pmom,refr,refi,vol
+
+
 
     # --
     def runExt(self):
@@ -1545,10 +1644,43 @@ def get_chd(channel):
     chd = chd.replace('.','d')
 
     return chd
+
+
+def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
+    """
+    Create variable *name* in output file and copy its
+    content over,
+    """
+    x = ncIn.variables[name]
+    if verbose:
+        print 'copy variable ',name,x.dimensions
+    y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
+    if hasattr(x,'long_name'): y.long_name = x.long_name
+    if hasattr(x,'units'): y.units = x.units
+    try:
+        y.missing_value = x.missing_value
+    except:
+        pass
+    rank = len(x.shape)
+
+    if rank == 1:
+        y[:] = x[:]
+    elif rank == 2:
+        y[:,:] = x[:,:]
+    elif rank == 3:
+        y[:,:,:] = x[:,:,:]
+    else:
+        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)    
     
 #------------------------------------ M A I N ------------------------------------
 
 if __name__ == "__main__":
+    # # start fork here so large data is not copied to children
+    nproc = int(multiprocessing.cpu_count()*0.5)    
+    pool = multiprocessing.Pool(nproc) 
+
+
+
     date     = datetime(2006,01,01,00)
     nymd     = str(date.date()).replace('-','')
     hour     = str(date.hour).zfill(2)
@@ -1574,6 +1706,8 @@ if __name__ == "__main__":
     orbit    = 'LEO'
     verbose  = True
 
+    extOnly  = False
+
     # Initialize VLIDORT class getting aerosol optical properties
     # -----------------------------------------------------------
     vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,
@@ -1585,7 +1719,38 @@ if __name__ == "__main__":
                             ndviFile=ndviFile,
                             lcFile=lcFile,
                             verbose=verbose,
-                            distOnly=True)
+                            distOnly=True,
+                            pool=pool)
+
+
+    if not v.extOnly:
+        # Calculate aerosol optical properties
+
+        #doMie(AERDATA,channel,rcFile,nMom,t)
+        NAMES = AERNAMES + ['PS','DELP','RH','AIRDENS']
+        argsMETA = [vlidort.nobs*[vlidort.channel],vlidort.nobs*[vlidort.rcFile],vlidort.nobs*[vlidort.nMom],range(vlidort.nobs)]
+        args = []
+        for sds in NAMES:
+            args.append(vlidort.__dict__[sds])
+
+        args = args + argsMETA
+        args = zip(*args)
+        #result = pool.map(unwrap_doMie,args)
+
+
+    #     vlidort.computeMie()
+
+    #     # Calculate atmospheric profile properties needed for Rayleigh calc
+    #     self.computeAtmos()
+
+    #     # Calculate Scene Geometry
+    #     self.VZA = VZA
+    #     self.hgtss = hgtss
+    #     self.calcAngles()
+
+    #     if self.nobs > 0:
+    #         # Land-Sea Mask
+    #         self.LandSeaMask()
 
    
     # Run ext_sampler
@@ -1594,3 +1759,6 @@ if __name__ == "__main__":
     # Run VLIDORT
     # if vlidort.nobs > 0:
     #     vlidort.runVLIDORT()
+
+    pool.close()
+    pool.join()
