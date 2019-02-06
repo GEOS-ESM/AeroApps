@@ -203,6 +203,13 @@ class WORKSPACE(JOBS):
         else:
             if type(args.channels) is float:
                 self.channels = [args.channels]
+            elif ',' in args.channels:
+                makelist=lambda s: map(int, s.split(","))
+                self.channels = makelist(args.channels)
+            elif ':' in args.channels:
+                makelist=lambda s: map(int, s.split(":"))
+                start,stop,delta = makelist(args.channels)
+                self.channels = range(start,stop+delta,delta)
             else:
                 self.channels = args.channels
 
@@ -628,8 +635,8 @@ if __name__ == '__main__':
     parser.add_argument("-r", "--dryrun",action="store_true",
                         help="do a dry run (default=False).")   
 
-    parser.add_argument("-c","--channels", default=None,type=lambda s: map(int, s.split(",")),
-                        help="channels to get TOA radiance (default=None - read in from PACE L1B File)")                            
+    parser.add_argument("-c","--channels", default=None,
+                        help="channels to get TOA radiance. Can be a list (1,2) or a range (1:2:1) (default=None - read in from PACE L1B File)")                            
 
     parser.add_argument("-e","--extch", default=None,type=lambda s: map(int, s.split(",")),
                         help="channels to run extinction sampler (default=None - read in from PACE L1B File)")  
