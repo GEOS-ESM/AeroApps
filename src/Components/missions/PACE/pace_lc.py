@@ -192,6 +192,7 @@ class WORKSPACE(JOBS):
         self.runfile = args.slurm
         self.profile = args.profile
         self.rootdir = args.rootdir
+        self.verbose = args.verbose
 
         self.dirstring = []
         self.outfilelist = []
@@ -205,7 +206,7 @@ class WORKSPACE(JOBS):
             else:
                 self.channels = args.channels
 
-        if args.nodemax > 1 : 
+        if int(args.nodemax) > 1 : 
             self.nodemax = int(args.nodemax)
         else:
             self.nodemax = None
@@ -331,7 +332,7 @@ class WORKSPACE(JOBS):
         if self.nodemax is not None:
             newline = 'NODEMAX: {}\n'.format(self.nodemax)
         else:
-            newline = 'NODEMAX: 1'
+            newline = 'NODEMAX: 1\n'
 
         text.append(newline)
 
@@ -656,9 +657,9 @@ if __name__ == '__main__':
         # Submit and monitor jobs
         workspace.handle_jobs()
 
-    # Take VLIDORT outputs and populate PACE L1b File
-    I = ~workspace.errTally
-    if any(I):
-        outfilelist = np.array(workspace.outfilelist)[I]
-        channels    = np.array(workspace.channels)[I]
-        populate_L1B(outfilelist,workspace.rootdir,channels,workspace.Date,args.force)
+        # Take VLIDORT outputs and populate PACE L1b File
+        I = ~workspace.errTally
+        if any(I):
+            outfilelist = np.array(workspace.outfilelist)[I]
+            channels    = np.array(workspace.channels)[I]
+            populate_L1B(outfilelist,workspace.rootdir,channels,workspace.Date,args.force)
