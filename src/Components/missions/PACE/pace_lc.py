@@ -24,7 +24,17 @@ mr_ch = [200,250,300,337,400,488,515,550,633,694,860,1060,1300,1536,1800,2000,22
 mr = np.array(mr)
 mr_ch = np.array(mr_ch)
 
+nlev = 72
 
+SDS_RT = {'rot_blue': ['rayleigh optical thickness for blue CCD','None',nlev],
+          'rot_red':  ['rayleigh optical thickness for red CCD','None',nlev],
+          'rot_SWIR': ['rayleigh optical thickness for SWIR bands','None',nlev],
+          'surf_ref_blue': ['surface reflectance for blue CCD','None',None],
+          'surf_ref_red':  ['surface reflectance for red CCD','None',None],
+          'surf_ref_SWIR': ['surface reflectance for SWIR bands','None',None],
+          'pe': ['layer edge pressure','Pa',nlev+1],
+          'ze': ['layer edge altitude','m',nlev+1],
+          'te': ['layer edge temperature','K',nlev+1]}
 
 class JOBS(object):
     def handle_jobs(self):
@@ -307,6 +317,7 @@ class WORKSPACE(JOBS):
         YMDdir    = self.Date.strftime('Y%Y/M%m/D%d')
         LbDir     = '{}/LevelB/{}'.format(self.rootdir,YMDdir)
         LcDir     = '{}/LevelC/{}'.format(self.rootdir,YMDdir)
+        LcDirCh   = '{}/LevelC/channel/{}'.format(self.rootdir,YMDdir)
         surfDir   = '{}/LevelB/surface'.format(self.rootdir)
 
         pYMDdir   = self.Date.strftime('Y2020/M%m/D%d')
@@ -445,12 +456,12 @@ class WORKSPACE(JOBS):
         text.append(newline)
 
         fch = "{:.2f}".format(ch).replace('.','d')
-        OUT_file = '{}/pace-g5nr.lc.vlidort.{}_{}.{}.nc4'.format(LcDir,nymd,hms,fch)
+        OUT_file = '{}/pace-g5nr.lc.vlidort.{}_{}.{}.nc4'.format(LcDirCh,nymd,hms,fch)
         newline = 'OUT_file: {}\n'.format(OUT_file)
         text.append(newline)
         self.outfilelist.append(OUT_file)
 
-        ADD_file = '{}/pace-g5nr.lc.add.{}_{}.{}.nc4'.format(LcDir,nymd,hms,fch)
+        ADD_file = '{}/pace-g5nr.lc.add.{}_{}.{}.nc4'.format(LcDirCh,nymd,hms,fch)
         newline = 'ADD_file: {}\n'.format(ADD_file)
         text.append(newline)
         self.addfilelist.append(ADD_file)
@@ -565,14 +576,14 @@ def populate_L1B(outfilelist,rootdir,channels,Date,force=False):
         YMDdir    = Date.strftime('Y%Y/M%m/D%d')
         pYMDdir   = Date.strftime('Y2020/M%m/D%d')
         L1bDir    = '{}/L1B/{}'.format(rootdir,pYMDdir)
-        LcDir     = '{}/LevelC/{}'.format(rootdir,YMDdir)
+        Lc2Dir    = '{}/LevelC2/{}'.format(rootdir,YMDdir)
         hms       = Date.strftime('%H%M00')
 
         pDate = isoparser(Date.strftime('2020-%m-%dT%H:%M:00'))
         nyj = pDate.strftime('%Y%j')
         L1B_file = '{}/OCI{}{}.L1B_PACE.nc'.format(L1bDir,nyj,hms)
 
-        outfile = '{}/OCI{}{}.L1B_PACE.nc'.format(LcDir,nyj,hms)
+        outfile = '{}/OCI{}{}.L1B_PACE.nc'.format(Lc2Dir,nyj,hms)
         exists  = os.path.isfile(outfile)
         if force or (not exists):
             shutil.copyfile(L1B_file,outfile)
@@ -600,10 +611,203 @@ def populate_L1B(outfilelist,rootdir,channels,Date,force=False):
 
         ncmerge.close()
 
+def condense_LC(outfilelist,rootdir,channels,Date,force=False):
+        YMDdir    = Date.strftime('Y%Y/M%m/D%d')
+        pYMDdir   = Date.strftime('Y2020/M%m/D%d')
+        LcDir     = '{}/LevelC/{}'.format(rootdir,YMDdir)
+        L1bDir    = '{}/L1B/{}'.format(rootdir,pYMDdir)
+        hms       = Date.strftime('%H%M00')
+        nymd      = Date.strftime('%Y%m%d')
+
+        pDate = isoparser(Date.strftime('2020-%m-%dT%H:%M:00'))
+        nyj = pDate.strftime('%Y%j')
+        L1B_file = '{}/OCI{}{}.L1B_PACE.nc'.format(L1bDir,nyj,hms)
+
+        # Condense RT stuff
+        SDS = SDS_RT
+        outfile = '{}/pace-g5nr.lc.vlidort.{}_{}.nc4'.format(LcDir,nymd,hms)
+        exists  = os.path.isfile(outfile)
+        if force or (not exists):
+            # create new outfile
+            create_condenseFile(L1B_file,outfile,Date,SDS)
+
+        insert_condenseVar(outfile,SDS,channels,outfilelist))
+
+def insert_condenseVar(outfile,SDS,channels,outfilelist):
+    # insert data into correct place in outfile
+    ncmerge = Dataset(outfile,mode='r+')
+    for sds in SDS:
+        if 'blue' in sds:
+            chname = 'blue_wavelength'
+        elif 'red' in sds:
+            chname = 'red_wavelength'
+        elif 'SWIR' in sds:
+            chname = 'SWIR_wavelength'
+        else:
+            chname = None
+
+        if chname is not None:
+            pchannels = ncmerge.groups.variables[chname][:]
+        else:
+            pchannels = None
+
+        if '_' in sds:
+            oname = '_'.join(sds.split('_')[:-1])
+        else:
+            oname = sds
 
 
+        pvar      = ncmerge.groups.variables[sds]
+
+        if pchannels is not None:
+            for ch,filename in zip(channels,outfilelist):
+                for i,pch in enumerate(pchannels):
+                    if float(ch) == pch:
+                        print 'inserting ',oname, filename
+                        nc = Dataset(filename)
+                        fch = "{:.2f}".format(ch)
+                        data = np.squeeze(nc.variables[oname + '_'+fch][:])
+                        rank = len(data.shape)
+                        if rank == 1:
+                            pvar[i,:] = data
+                        if rank == 2:
+                            pvar[i,:,:] = data
+                        if rank == 3:
+                            pvar[i,:,:,:] = data
+
+                        nc.close()
 
 
+        if pchannels is None:
+            filename = outfilelist[0]:
+            print 'inserting ',oname,filename
+            nc = Dataset(filename)
+            data = np.squeeze(nc.variables[oname][:])
+            pvar[:] = data
+
+            nc.close()
+                        
+
+
+def create_condenseFile(L1B_file,outfile,Date,SDS):
+
+    # Open NC file
+    # ------------
+    nc = Dataset(outfile,'w',format='NETCDF4_CLASSIC')
+    nctrj = Dataset(L1B_file)
+
+    # Get Dimensions
+    # ----------------------
+    npixel = len(nctrj.dimensions['ccd_pixels'])
+    nscan  = len(nctrj.dimensions['number_of_scans'])
+    nblue  = len(nctrj.dimensions['blue_bands'])
+    nred   = len(nctrj.dimensions['red_bands'])
+    nswir  = len(nctrj.dimensions['SWIR_bands'])
+
+
+    # Set global attributes
+    # ---------------------
+    nc.title = "RT inputs for VLIDORT Simulation of GEOS-5 PACE Sampled Data"
+    nc.institution = 'NASA/Goddard Space Flight Center'
+    nc.source = 'Global Model and Assimilation Office'
+    nc.history = 'Condensed outputs from channel files'
+    nc.references = 'n/a'
+    nc.comment = 'n/a'
+    nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
+    nc.Conventions = 'CF'    
+
+    # Create dimensions
+    # -----------------
+    l = nc.createDimension('lev',nlev)
+    le = nc.createDimension('leve',nlev+1)
+    x = nc.createDimension('ccd_pixels',npixel)
+    y = nc.createDimension('number_of_scans',nscan)
+    b = nc.createDimension('blue_bands',nblue)
+    r = nc.createDimension('red_bands',nred)
+    s = nc.createDimension('swir_bands',nswir)
+
+    # Save lon/lat
+    # --------------------------
+    _copyVar(nctrj,nc,u'longitude','geolocation_data',dtype='f4',zlib=True,verbose=verbose)
+    _copyVar(nctrj,nc,u'latitude','geolocation_data',dtype='f4',zlib=True,verbose=verbose)
+    _copyVar(nctrj,nc,u'ev_mid_time','scan_line_attributes', dtype='f4',zlib=True,verbose=verbose)
+    _copyVar(nctrj,nc,u'blue_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=verbose)
+    _copyVar(nctrj,nc,u'red_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=verbose)
+    _copyVar(nctrj,nc,u'SWIR_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=verbose)
+
+
+    # Loop over SDS creating each dataset
+    #---------------------------------------
+    for sds in SDS:
+        lname,unit,levs = SDS[sds]
+        if levs == nlev:
+            if 'red' in sds:
+                dim = ('red_bands','lev','number_of_scans','ccd_pixels')
+            elif 'blue' in sds:
+                dim = ('blue_bands','lev','number_of_scans','ccd_pixels')
+            elif 'SWIR' in sds:
+                dim = ('SWIR_bands','lev','number_of_scans','ccd_pixels')
+            else:
+                dim = ('lev','number_of_scans','ccd_pixels')
+
+        elif levs == nlev+1:
+            if 'red' in sds:
+                dim = ('red_bands','leve','number_of_scans','ccd_pixels')
+            elif 'blue' in sds:
+                dim = ('blue_bands','leve','number_of_scans','ccd_pixels')
+            elif 'SWIR' in sds:
+                dim = ('SWIR_bands','leve','number_of_scans','ccd_pixels')
+            else:
+                dim = ('leve','number_of_scans','ccd_pixels')
+
+        else:
+            if 'red' in sds:
+                dim = ('red_bands','number_of_scans','ccd_pixels')
+            elif 'blue' in sds:
+                dim = ('blue_bands','number_of_scans','ccd_pixels')
+            elif 'SWIR' in sds:
+                dim = ('SWIR_bands','number_of_scans','ccd_pixels')
+            else:
+                dim = ('number_of_scans','ccd_pixels')
+
+
+        this = nc.createVariable(sds,'f4',dim)  
+
+        this.long_name = lname
+        this.missing_value = -999.0
+        this.unit = unit  
+
+
+    nc.close()
+    nctrj.close()          
+
+
+#----
+def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False,verbose=False):
+    """
+    Create variable *name* in output file and copy its
+    content over,
+    """
+    x = ncIn.groups[group].variables[name]
+    if verbose:
+        print 'copy variable ',name,x.dimensions
+    y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
+    if hasattr(x,'long_name'): y.long_name = x.long_name
+    if hasattr(x,'units'): y.units = x.units
+    try:
+        y.missing_value = x.missing_value
+    except:
+        pass
+    rank = len(x.shape)
+
+    if rank == 1:
+        y[:] = x[:]
+    elif rank == 2:
+        y[:,:] = x[:,:]
+    elif rank == 3:
+        y[:,:,:] = x[:,:,:]
+    else:
+        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
 
 
 if __name__ == '__main__':
@@ -669,4 +873,5 @@ if __name__ == '__main__':
         if any(I):
             outfilelist = np.array(workspace.outfilelist)[I]
             channels    = np.array(workspace.channels)[I]
-            populate_L1B(outfilelist,workspace.rootdir,channels,workspace.Date,args.force)
+            populate_L1B(outfilelist,workspace.rootdir,channels,workspace.Date,force=args.force)
+            condense_LC(outfilelist,workspace.rootdir,channels,workspace.Date,force=args.force)
