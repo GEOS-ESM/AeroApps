@@ -473,16 +473,16 @@ program leo_vlidort_cloud
   call MAPL_SyncSharedMemory(rc=ierr)
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
-if (MAPL_am_I_root()) then
-  do cc = starti, starti !endi
+!if (MAPL_am_I_root()) then
+  do cc = starti, endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
 
     i  = iIndex(c)
     j  = jIndex(c)
 
-    i = 501
-    j = 31
+!    i = 501
+!    j = 31
 
     call getEdgeVars ( km, nobs, reshape(AIRDENS(i,j,:),(/km,nobs/)), &
                        reshape(DELP(i,j,:),(/km,nobs/)), ptop, &
@@ -526,14 +526,16 @@ if (MAPL_am_I_root()) then
 !     VssaIcl = VssaIcl*(1. - truncIcl)/(1. - VssaIcl*truncIcl)
 !     VssaLcl = VssaLcl*(1. - truncLcl)/(1. - VssaLcl*truncLcl)    
 
+!    Vtau = 0
+!    VtauIcl = 0
+!    VtauLcl = 0
+    if (MAPL_am_I_root()) then
+      write(*,*) 'VtauLcl', VtauLcl 
+      write(*,*) 'VssaLcl', VssaLcl 
 
-    ! if (MAPL_am_I_root()) then
-    !   write(*,*) 'VtauLcl', VtauLcl 
-    !   write(*,*) 'VssaLcl', VssaLcl 
-
-    !   write(*,*) 'VtauIcl', VtauIcl 
-    !   write(*,*) 'VssaIcl', VssaIcl       
-    ! end if
+      write(*,*) 'VtauIcl', VtauIcl 
+      write(*,*) 'VssaIcl', VssaIcl       
+    end if
 
 
 !   Save some variables on the 2D Grid for Writing Later
@@ -552,12 +554,6 @@ if (MAPL_am_I_root()) then
       call DO_LAND()
     else
       call get_ocean_params()
-      Vsleave = 0
-      Vtau = 0
-      VtauIcl = 0
-      VtauLcl = 0 
-      Vpe = 0
-      write(*,*) 'no atmosphere'     
       call DO_OCEAN()
     end if
 
@@ -567,8 +563,7 @@ if (MAPL_am_I_root()) then
     call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
     radiance_VL(i,j)    = radiance_VL_int(nobs,nch)
     reflectance_VL(i,j) = reflectance_VL_int(nobs,nch)
-    ROT(i,j,:) = ROT(:,nobs,nch)
-    write(*,*) 'ROT is ',ROT(i,j,:)
+    ROT(i,j,:) = ROT_int(:,nobs,nch)
     ALBEDO(i,j) = Valbedo(nobs,nch)
     
     if (.not. scalar) then
@@ -594,7 +589,7 @@ if (MAPL_am_I_root()) then
     end if
                 
   end do ! do clear pixels
-end if
+!end if
 ! Wait for everyone to finish calculations
 ! ----------------------------------------
   call MAPL_SyncSharedMemory(rc=ierr)
