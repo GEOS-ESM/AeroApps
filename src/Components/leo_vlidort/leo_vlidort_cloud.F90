@@ -169,6 +169,8 @@ program leo_vlidort_cloud
   real, pointer                         :: SSA(:,:,:) => null()                  ! single scattering albedo
   real, pointer                         :: G(:,:,:) => null()                    ! asymmetry factor
   real, pointer                         :: PE(:,:,:) => null()
+  real, pointer                         :: ZE(:,:,:) => null()  
+  real, pointer                         :: TE(:,:,:) => null()
 
   real*8,allocatable                    :: AOD(:,:)                                 ! Temporary variable to add up AOD
 ! VLIDORT working variables
@@ -433,6 +435,8 @@ program leo_vlidort_cloud
   ALBEDO        = dble(MISSING)
   ROT           = dble(MISSING)
   PE            = dble(MISSING)
+  ZE            = dble(MISSING)
+  TE            = dble(MISSING)    
   radiance_VL    = dble(MISSING)
   reflectance_VL = dble(MISSING)
   if (.not. scalar) then
@@ -473,7 +477,7 @@ program leo_vlidort_cloud
   call MAPL_SyncSharedMemory(rc=ierr)
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
-!if (MAPL_am_I_root()) then
+if (MAPL_am_I_root()) then
   do cc = starti, endi
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
@@ -481,13 +485,15 @@ program leo_vlidort_cloud
     i  = iIndex(c)
     j  = jIndex(c)
 
-!    i = 501
-!    j = 31
+   i = 501
+   j = 31
 
     call getEdgeVars ( km, nobs, reshape(AIRDENS(i,j,:),(/km,nobs/)), &
                        reshape(DELP(i,j,:),(/km,nobs/)), ptop, &
                        Vpe, Vze, Vte )   
     PE(i,j,:) = Vpe(:,nobs)
+    ZE(i,j,:) = Vze(:,nobs)
+    TE(i,j,:) = Vte(:,nobs)
 
     write(msg,'(A,I)') 'getEdgeVars ', myid
     call write_verbose(msg)
@@ -589,7 +595,7 @@ program leo_vlidort_cloud
     end if
                 
   end do ! do clear pixels
-!end if
+end if
 ! Wait for everyone to finish calculations
 ! ----------------------------------------
   call MAPL_SyncSharedMemory(rc=ierr)
@@ -747,6 +753,17 @@ program leo_vlidort_cloud
         call check(nf90_put_var(ncid, varid, PE(:,:,k), &
                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out pe")
       end do
+      call check(nf90_inq_varid(ncid, 'ze', varid), "get ze vaird")
+      do k=1,km+1
+        call check(nf90_put_var(ncid, varid, ZE(:,:,k), &
+                   start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ze")
+      end do
+      call check(nf90_inq_varid(ncid, 'te', varid), "get te vaird")
+      do k=1,km+1
+        call check(nf90_put_var(ncid, varid, TE(:,:,k), &
+                   start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out te")
+      end do
+
       call check( nf90_close(ncid), "close addfile" )
       
     end if
@@ -1712,6 +1729,8 @@ program leo_vlidort_cloud
     call MAPL_AllocNodeArray(ROT,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(ALBEDO,(/im,jm/),rc=ierr)
     call MAPL_AllocNodeArray(PE,(/im,jm,km+1/),rc=ierr)
+    call MAPL_AllocNodeArray(ZE,(/im,jm,km+1/),rc=ierr)
+    call MAPL_AllocNodeArray(TE,(/im,jm,km+1/),rc=ierr)
     
     if (.not. scalar) then
       call MAPL_AllocNodeArray(Q,(/im,jm,nch/),rc=ierr)
@@ -1875,7 +1894,7 @@ program leo_vlidort_cloud
     integer,dimension(nch)             :: radVarID, refVarID, aotVarID   
     integer,dimension(nch)             :: qVarID, uVarID, albVarID, brUVarID, brQVarID      
     integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID, rotVarID
-    integer                            :: peVarID     
+    integer                            :: peVarID, zeVarID, teVarID     
     
     integer                            :: ncid
     integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID 
@@ -2212,6 +2231,8 @@ program leo_vlidort_cloud
         call check(nf90_def_var(ncid, 'g_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),gVarID(ch)),"create g var")
       end do
       call check(nf90_def_var(ncid,'pe',nf90_float,(/ewDimID,nsDimID,leveDimID,timeDimID/),peVarID),"create pe var")
+      call check(nf90_def_var(ncid,'ze',nf90_float,(/ewDimID,nsDimID,leveDimID,timeDimID/),zeVarID),"create ze var")
+      call check(nf90_def_var(ncid,'te',nf90_float,(/ewDimID,nsDimID,leveDimID,timeDimID/),teVarID),"create te var")
       ! Variable Attributes
   !                                          Additional Data
   !                                          -----------------  
@@ -2253,6 +2274,17 @@ program leo_vlidort_cloud
       call check(nf90_put_att(ncid,peVarID,'missing_value',real(MISSING)),"missing_value attr")
       call check(nf90_put_att(ncid,peVarID,'units','Pa'),"units attr")
       call check(nf90_put_att(ncid,peVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")  
+
+      call check(nf90_put_att(ncid,zeVarID,'standard_name','Edge Altitude Above Surface'),"standard_name attr")
+      call check(nf90_put_att(ncid,zeVarID,'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,zeVarID,'units','m'),"units attr")
+      call check(nf90_put_att(ncid,zeVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")  
+
+      call check(nf90_put_att(ncid,teVarID,'standard_name','Edge Temperature'),"standard_name attr")
+      call check(nf90_put_att(ncid,teVarID,'missing_value',real(MISSING)),"missing_value attr")
+      call check(nf90_put_att(ncid,teVarID,'units','K'),"units attr")
+      call check(nf90_put_att(ncid,teVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")  
+
 
   !                                          scanTime
   !                                          -------  
@@ -2605,6 +2637,8 @@ program leo_vlidort_cloud
     call MAPL_DeallocNodeArray(ROT,rc=ierr)
     call MAPL_DeallocNodeArray(ALBEDO,rc=ierr)
     call MAPL_DeallocNodeArray(PE,rc=ierr)
+    call MAPL_DeallocNodeArray(ZE,rc=ierr)
+    call MAPL_DeallocNodeArray(TE,rc=ierr)
     if (.not. scalar) then
       call MAPL_DeallocNodeArray(Q,rc=ierr)
       call MAPL_DeallocNodeArray(U,rc=ierr)
