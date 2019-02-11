@@ -26,15 +26,35 @@ mr_ch = np.array(mr_ch)
 
 nlev = 72
 
-SDS_RT = {'rot_blue': ['rayleigh optical thickness for blue CCD','None',nlev],
+SDS_RT = {'surf_ref_I_blue': ['surface reflectance for blue CCD','None',None],
+          'surf_ref_I_red':  ['surface reflectance for red CCD','None',None],
+          'surf_ref_I_SWIR': ['surface reflectance for SWIR bands','None',None]}
+
+SDS_ADD = {'rot_blue': ['rayleigh optical thickness for blue CCD','None',nlev],
           'rot_red':  ['rayleigh optical thickness for red CCD','None',nlev],
           'rot_SWIR': ['rayleigh optical thickness for SWIR bands','None',nlev],
-          'surf_ref_blue': ['surface reflectance for blue CCD','None',None],
-          'surf_ref_red':  ['surface reflectance for red CCD','None',None],
-          'surf_ref_SWIR': ['surface reflectance for SWIR bands','None',None],
           'pe': ['layer edge pressure','Pa',nlev+1],
           'ze': ['layer edge altitude','m',nlev+1],
-          'te': ['layer edge temperature','K',nlev+1]}
+          'te': ['layer edge temperature','K',nlev+1]}      
+
+SDS_CLD = {'lcot_blue': ['liquid cloud optical depth for blue CCD','None',nlev],
+          'lc_ssa_blue':  ['liquid cloud single scattering albedo for blue CCD','None',nlev],
+          'lc_g_blue':  ['liquid cloud assymetry parameter for blue CCD','None',nlev],
+          'lcot_red': ['liquid cloud optical depth for red CCD','None',nlev],
+          'lc_ssa_red':  ['liquid cloud single scattering albedo for red CCD','None',nlev],
+          'lc_g_red':  ['liquid cloud assymetry parameter for red CCD','None',nlev],    
+          'lcot_SWIR': ['liquid cloud optical depth for SWIR bands','None',nlev],
+          'lc_ssa_SWIR':  ['liquid cloud single scattering albedo for SWIR bands','None',nlev],
+          'lc_g_SWIR':  ['liquid cloud assymetry parameter for SWIR bands','None',nlev],
+          'icot_blue': ['ice cloud optical depth for blue CCD','None',nlev],
+          'ic_ssa_blue':  ['ice  cloud single scattering albedo for blue CCD','None',nlev],
+          'ic_g_blue':  ['ice  cloud assymetry parameter for blue CCD','None',nlev],
+          'icot_red': ['ice  cloud optical depth for red CCD','None',nlev],
+          'ic_ssa_red':  ['ice  cloud single scattering albedo for red CCD','None',nlev],
+          'ic_g_red':  ['ice  cloud assymetry parameter for red CCD','None',nlev],    
+          'icot_SWIR': ['ice  cloud optical depth for SWIR bands','None',nlev],
+          'ic_ssa_SWIR':  ['ice  cloud single scattering albedo for SWIR bands','None',nlev],
+          'ic_g_SWIR':  ['ice  cloud assymetry parameter for SWIR bands','None',nlev]}              
 
 class JOBS(object):
     def handle_jobs(self):
@@ -211,9 +231,7 @@ class WORKSPACE(JOBS):
         if args.channels is None:
             self.get_channels(self.Date)
         else:
-            if type(args.channels) is float:
-                self.channels = [args.channels]
-            elif ',' in args.channels:
+            if ',' in args.channels:
                 makelist=lambda s: map(int, s.split(","))
                 self.channels = makelist(args.channels)
             elif ':' in args.channels:
@@ -221,7 +239,7 @@ class WORKSPACE(JOBS):
                 start,stop,delta = makelist(args.channels)
                 self.channels = range(start,stop+delta,delta)
             else:
-                self.channels = args.channels
+                self.channels = [int(args.channels)]
 
         if int(args.nodemax) > 1 : 
             self.nodemax = int(args.nodemax)
@@ -317,7 +335,7 @@ class WORKSPACE(JOBS):
         YMDdir    = self.Date.strftime('Y%Y/M%m/D%d')
         LbDir     = '{}/LevelB/{}'.format(self.rootdir,YMDdir)
         LcDir     = '{}/LevelC/{}'.format(self.rootdir,YMDdir)
-        LcDirCh   = '{}/LevelC/channel/{}'.format(self.rootdir,YMDdir)
+        LcDirCh   = '{}/LevelC/{}/channel'.format(self.rootdir,YMDdir)
         surfDir   = '{}/LevelB/surface'.format(self.rootdir)
 
         pYMDdir   = self.Date.strftime('Y2020/M%m/D%d')
@@ -611,7 +629,7 @@ def populate_L1B(outfilelist,rootdir,channels,Date,force=False):
 
         ncmerge.close()
 
-def condense_LC(outfilelist,rootdir,channels,Date,force=False):
+def condense_LC(outfilelist,addfilelist,rootdir,channels,Date,force=False):
         YMDdir    = Date.strftime('Y%Y/M%m/D%d')
         pYMDdir   = Date.strftime('Y2020/M%m/D%d')
         LcDir     = '{}/LevelC/{}'.format(rootdir,YMDdir)
@@ -623,15 +641,35 @@ def condense_LC(outfilelist,rootdir,channels,Date,force=False):
         nyj = pDate.strftime('%Y%j')
         L1B_file = '{}/OCI{}{}.L1B_PACE.nc'.format(L1bDir,nyj,hms)
 
-        # Condense RT stuff
-        SDS = SDS_RT
+        # Create file if you need to
         outfile = '{}/pace-g5nr.lc.vlidort.{}_{}.nc4'.format(LcDir,nymd,hms)
         exists  = os.path.isfile(outfile)
         if force or (not exists):
             # create new outfile
+            SDS = dict(SDS_RT, **SDS_ADD)
             create_condenseFile(L1B_file,outfile,Date,SDS)
 
-        insert_condenseVar(outfile,SDS,channels,outfilelist))
+        # Condense RT stuff
+        SDS = SDS_RT        
+        insert_condenseVar(outfile,SDS,channels,outfilelist)
+
+        # Condense ADD stuff
+        SDS = SDS_ADD
+        insert_condenseVar(outfile,SDS,channels,addfilelist)
+
+        # Create file if you need to
+        outfile = '{}/pace-g5nr.cloud.{}_{}.nc4'.format(LcDir,nymd,hms)
+        exists  = os.path.isfile(outfile)
+        if force or (not exists):
+            # create new outfile
+            SDS = SDS_CLD
+            create_condenseFile(L1B_file,outfile,Date,SDS)
+
+        # Condense Cloud stuff
+        SDS = SDS_CLD        
+        insert_condenseVar(outfile,SDS,channels,addfilelist)
+
+
 
 def insert_condenseVar(outfile,SDS,channels,outfilelist):
     # insert data into correct place in outfile
@@ -647,7 +685,7 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
             chname = None
 
         if chname is not None:
-            pchannels = ncmerge.groups.variables[chname][:]
+            pchannels = ncmerge.variables[chname][:]
         else:
             pchannels = None
 
@@ -657,13 +695,13 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
             oname = sds
 
 
-        pvar      = ncmerge.groups.variables[sds]
+        pvar      = ncmerge.variables[sds]
 
         if pchannels is not None:
             for ch,filename in zip(channels,outfilelist):
                 for i,pch in enumerate(pchannels):
                     if float(ch) == pch:
-                        print 'inserting ',oname, filename
+                        print 'inserting ',oname, filename, ' to ',sds
                         nc = Dataset(filename)
                         fch = "{:.2f}".format(ch)
                         data = np.squeeze(nc.variables[oname + '_'+fch][:])
@@ -679,8 +717,8 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
 
 
         if pchannels is None:
-            filename = outfilelist[0]:
-            print 'inserting ',oname,filename
+            filename = outfilelist[0]
+            print 'inserting ',oname,filename, ' to ',sds
             nc = Dataset(filename)
             data = np.squeeze(nc.variables[oname][:])
             pvar[:] = data
@@ -693,7 +731,9 @@ def create_condenseFile(L1B_file,outfile,Date,SDS):
 
     # Open NC file
     # ------------
+    print 'create outfile',outfile
     nc = Dataset(outfile,'w',format='NETCDF4_CLASSIC')
+    print 'copy from',L1B_file
     nctrj = Dataset(L1B_file)
 
     # Get Dimensions
@@ -721,19 +761,20 @@ def create_condenseFile(L1B_file,outfile,Date,SDS):
     l = nc.createDimension('lev',nlev)
     le = nc.createDimension('leve',nlev+1)
     x = nc.createDimension('ccd_pixels',npixel)
+    xs = nc.createDimension('SWIR_pixels',npixel)
     y = nc.createDimension('number_of_scans',nscan)
     b = nc.createDimension('blue_bands',nblue)
     r = nc.createDimension('red_bands',nred)
-    s = nc.createDimension('swir_bands',nswir)
+    s = nc.createDimension('SWIR_bands',nswir)
 
     # Save lon/lat
     # --------------------------
-    _copyVar(nctrj,nc,u'longitude','geolocation_data',dtype='f4',zlib=True,verbose=verbose)
-    _copyVar(nctrj,nc,u'latitude','geolocation_data',dtype='f4',zlib=True,verbose=verbose)
-    _copyVar(nctrj,nc,u'ev_mid_time','scan_line_attributes', dtype='f4',zlib=True,verbose=verbose)
-    _copyVar(nctrj,nc,u'blue_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=verbose)
-    _copyVar(nctrj,nc,u'red_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=verbose)
-    _copyVar(nctrj,nc,u'SWIR_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=verbose)
+    _copyVar(nctrj,nc,u'longitude','geolocation_data',dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,u'latitude','geolocation_data',dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,u'ev_mid_time','scan_line_attributes', dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,u'blue_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,u'red_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,u'SWIR_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
 
 
     # Loop over SDS creating each dataset
@@ -872,6 +913,7 @@ if __name__ == '__main__':
         I = ~workspace.errTally
         if any(I):
             outfilelist = np.array(workspace.outfilelist)[I]
+            addfilelist = np.array(workspace.addfilelist)[I]
             channels    = np.array(workspace.channels)[I]
             populate_L1B(outfilelist,workspace.rootdir,channels,workspace.Date,force=args.force)
-            condense_LC(outfilelist,workspace.rootdir,channels,workspace.Date,force=args.force)
+            condense_LC(outfilelist,addfilelist,workspace.rootdir,channels,workspace.Date,force=args.force)
