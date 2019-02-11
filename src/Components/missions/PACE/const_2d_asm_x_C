@@ -1,4 +1,4 @@
-dset /nobackup/PACE/LevelA/Y%y4/M%m2/D%d2/c1440_NR.const_2d_asm_Nx.%y4%m2%d2.nc4
+dset /nobackup/PACE/LevelA/G5NR/Y%y4/M%m2/D%d2/c1440_NR.const_2d_asm_Nx.%y4%m2%d2.nc4
 OPTIONS template
 title c1440_NR_const_2d_asm_Nx
 undef 1e+15

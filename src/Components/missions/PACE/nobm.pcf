@@ -2,5 +2,5 @@
 INSTNAME  = pace
 INDIR     = /nobackup/PACE/LevelB
 OUTDIR    = /nobackup/PACE/LevelB/surface/SLEAVE/NOBM/
-DATAFILE  = /nobackup/PACE/LevelA/water_leave/HyperLwn.R2014.nc4
+DATAFILE  = /nobackup/PACE/LevelA/NOBM/v1.0/HyperLwn.R2014.nc4
 # WATER LEAVING RADIANCE SAMPLING
