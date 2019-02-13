@@ -1,0 +1,6 @@
+# LER SAMPLING
+INSTNAME  = pace
+INDIR     = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB
+OUTDIR    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/surface/OMI_LER/
+DATADIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/LevelA/SurfLER/
+# LER SAMPLING

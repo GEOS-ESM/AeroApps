@@ -1,0 +1,6 @@
+# LER SAMPLING
+INSTNAME  = pace
+INDIR     = /nobackup/PACE/LevelB
+OUTDIR    = /nobackup/PACE/LevelB/surface/OMI_LER/
+DATADIR   = /nobackup/TEMPO/SurfLER/
+# LER SAMPLING
