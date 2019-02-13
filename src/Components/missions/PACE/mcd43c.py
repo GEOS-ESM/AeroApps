@@ -10,6 +10,7 @@ from   pyhdf.SD               import SD, HDF4Error
 import numpy                  as     np
 from   glob                   import glob
 from   scipy.interpolate      import RegularGridInterpolator
+import  mpl_toolkits.basemap
 from   netCDF4                import Dataset
 
 
@@ -70,14 +71,10 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
         raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
 
 class BRDF(object):
-    def __init__(self,nscan,npixel,omp=False):
-        if omp:      
-            import pymp      
-            for sds in SDS:
-                self.__dict__[SDS[sds]] = pymp.shared.array((nscan,npixel))                
-        else:
-            for sds in SDS:
-                self.__dict__[SDS[sds]] = np.zeros((nscan,npixel))
+    def __init__(self,nscan,npixel):
+        for sds in SDS:
+            self.__dict__[SDS[sds]]      = np.ma.zeros((nscan,npixel))
+            self.__dict__[SDS[sds]].mask = np.ones((nscan,npixel)).astype(bool)
 
 
 class MCD43C(object):
@@ -109,7 +106,8 @@ class MCD43C(object):
             if a['scale_factor']!=1.0 or a['add_offset']!=0.0:
                 v = v * float(a['scale_factor'])  + float(a['add_offset'])
                 fill_value = float(a['_FillValue'])*float(a['scale_factor'])   + float(a['add_offset'])
-                v[np.abs(v - fill_value)/fill_value < 0.01] = -999.
+                I = np.abs(v - fill_value)/fill_value < 0.01
+                v = np.ma.array(v,mask=I)
                 self.__dict__[SDS[sds]] = np.flipud(v)
 
             
@@ -135,7 +133,7 @@ class MCD43C(object):
         return inFileList[0]
 
     #----
-    def writenc(self,nctrj,outFile,verbose=False):
+    def writenc(self,nctrj,outFile,verbose=False,zlib=True):
         """
         Write a NetCDF file with sampled MCD43C1 kernel weights on lidar trajectory
         """
@@ -174,17 +172,17 @@ class MCD43C(object):
 
         # Save lon/lat
         # --------------------------
-        _copyVar(nctrj,nc,u'ccd_pixels',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'number_of_scans',dtype='f4',zlib=False,verbose=verbose)            
-        _copyVar(nctrj,nc,u'longitude',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'latitude',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'ev_mid_time', dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,u'ccd_pixels',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,u'number_of_scans',dtype='f4',zlib=zlib,verbose=verbose)            
+        _copyVar(nctrj,nc,u'longitude',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,u'latitude',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,u'ev_mid_time', dtype='f4',zlib=zlib,verbose=verbose)
 
         # Loop over Bands writing each dataset
         #---------------------------------------
         dim = ('time','number_of_scans','ccd_pixels')
         for sds in SDS:
-          this = nc.createVariable(SDS[sds],'f4',dim)  
+          this = nc.createVariable(SDS[sds],'f4',dim,zlib=zlib,fill_value=-999.0)  
 
           this.long_name = SDS[sds][4:] + ' BRDF Kernel weight'
           this.missing_value = -999.0
@@ -194,10 +192,7 @@ class MCD43C(object):
 
         nc.close()          
 
-    def sample(self,inFile,outFile,Verbose=False,omp=False):
-        if omp:
-            import pymp
-
+    def sample(self,inFile,outFile,Verbose=False):
         # Open lidar sampled file
         nctrj = Dataset(inFile)
 
@@ -220,7 +215,7 @@ class MCD43C(object):
         dtyme.shape = (nscan,1)
         dtyme       = np.repeat(dtyme,npixel,axis=1)
 
-        self.brdf = BRDF(nscan,npixel,omp=omp)
+        self.brdf = BRDF(nscan,npixel)
         self.tyme = tyme
         self.trjLon = trjLon
         self.trjLat = trjLat
@@ -228,44 +223,56 @@ class MCD43C(object):
         self.npixel = npixel
 
 
-        if omp:
-            # use openmp type parallel processing
-            with pymp.Parallel(10) as p:
-                for ut in p.iterate(utyme):
-                    if Verbose:
-                        print 'Working on '+ str(ut.date())
-                    inFile = self.downloadFile(ut)
-                    self.readFile(inFile)
+        for ut in utyme:
+            if Verbose:
+                print 'Working on '+ str(ut.date())
+            inFile = self.downloadFile(ut)
+            self.readFile(inFile)
 
-                    Ityme = dtyme == ut
+            Ityme = dtyme == ut
 
-                    lat = trjLat[Ityme]
-                    lon = trjLon[Ityme]
-                    pts = []
-                    for LAT,LON in zip(lat,lon): pts.append([LAT,LON])
-
-                    for sds in SDS:
-                        interpFunc = RegularGridInterpolator((self.lat, self.lon), self.__dict__[SDS[sds]],
-                                        method='nearest',bounds_error=False,fill_value=None)
-                        self.brdf.__dict__[SDS[sds]][Ityme] = interpFunc(pts)
-        else:
-            for ut in utyme:
-                if Verbose:
-                    print 'Working on '+ str(ut.date())
-                inFile = self.downloadFile(ut)
-                self.readFile(inFile)
-
-                Ityme = dtyme == ut
-
+            for sds in SDS:
                 lat = trjLat[Ityme]
                 lon = trjLon[Ityme]
-                pts = []
-                for LAT,LON in zip(lat,lon): pts.append([LAT,LON])
 
-                for sds in SDS:
-                    interpFunc = RegularGridInterpolator((self.lat, self.lon), self.__dict__[SDS[sds]],
-                                    method='nearest',bounds_error=False,fill_value=None)
-                    self.brdf.__dict__[SDS[sds]][Ityme] = interpFunc(pts)      
+                data = self.__dict__[SDS[sds]]
+
+                if trjLon[0,0] > trjLon[-1,-1]:
+                    #center at dateline, lon goes from 0 to 360
+                    i = lon < 0
+                    lon[i] = lon[i] + 360.0
+
+                    nlat,nlon = data.shape
+                    lon1 = self.lon[0:nlon*0.5]
+                    lon2 = self.lon[nlon*0.5:]
+                    datalon = np.append(lon2,lon1+360.)
+
+                    data1 = data[:,0:nlon*0.5]
+                    data2 = data[:,nlon*0.5:]
+                    data  = np.ma.hstack((data2, data1))
+                else:
+                    datalon = self.lon
+
+
+                """
+                If datain is a masked array and order=1 (bilinear interpolation) is
+                used, elements of dataout will be masked if any of the four surrounding
+                points in datain are masked.  To avoid this, do the interpolation in two
+                passes, first with order=1 (producing dataout1), then with order=0
+                (producing dataout2).  Then replace all the masked values in dataout1
+                with the corresponding elements in dataout2 (using numpy.where).
+                This effectively uses nearest neighbor interpolation if any of the
+                four surrounding points in datain are masked, and bilinear interpolation
+                otherwise.
+                """                    
+            
+                tempnn  = mpl_toolkits.basemap.interp(data, datalon, self.lat,lon,lat,order=0)
+                templin = mpl_toolkits.basemap.interp(data, datalon, self.lat,lon,lat,order=1)
+
+                if np.sum(templin.mask) > 0:
+                    templin[templin.mask] = tempnn[templin.mask]
+
+                self.brdf.__dict__[SDS[sds]][Ityme] = templin
 
 
         self.writenc(nctrj,outFile,verbose=Verbose) 
