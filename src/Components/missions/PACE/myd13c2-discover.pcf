@@ -1,0 +1,6 @@
+# NDVI SAMPLING
+INSTNAME  = pace
+INDIR     = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB
+OUTDIR    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/surface/BPDF/NDVI/MYD13C2/006
+DATADIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelA/MODIS-NDVI/MYD13C2/006/
+# NDVI SAMPLING
