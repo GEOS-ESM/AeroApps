@@ -9,7 +9,7 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=patricia.castellanos@nasa.gov
 #SBATCH --job-name=pace_vlidort
-#SBATCH -A g0620
+#SBATCH -A s1180
 #SBATCH --array=1-2
 #SBATCH --output=slurm_%A_%a.out
 #SBATCH --error=slurm_%A_%a.err
