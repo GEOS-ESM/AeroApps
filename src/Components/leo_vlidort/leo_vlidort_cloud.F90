@@ -2020,9 +2020,9 @@ end if
     call check(nf90_put_att(ncid,NF90_GLOBAL,'grid_inputs',trim(INV_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'angle_inputs',trim(ANG_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'aerosol_inputs',trim(AER_file)),"input files attr")
-    if (if ( (index(lower_to_upper(landmodel),'RTLS') > 0) ) then   ) then
+    if ( (index(lower_to_upper(landmodel),'RTLS') > 0) ) then
       call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(BRDF_file)),"input files attr")
-    else if (if ( (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0) ) then   ) then
+    else if ( (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0) ) then
       call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(BRDF_file)),"input files attr")
       call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(LER_file)),"input files attr")
     else
