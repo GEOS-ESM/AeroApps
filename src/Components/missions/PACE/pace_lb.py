@@ -141,17 +141,13 @@ if __name__ == "__main__":
         myd13c2PCF = None
 
     if myd13c2PCF is not None:
-        bin = "./leo_sampler.py"
+        bin = "./myd13c2_sampler.py"
 
-        # always write out coordinates
-        command = bin + ' -C'
-
+        command = bin + ''
         if args.verbose:
             command += ' -v'
 
-        command += ' --rcFile {}'.format(myd13c2PCF)
-        command += ' --algo nearest'
-        command += ' {} {}'.format(piso_t1,piso_t2)
+        command += ' {} {} {}'.format(giso_t1,giso_t2,myd13c2PCF)
 
         print command
         os.system(command)
@@ -164,17 +160,13 @@ if __name__ == "__main__":
         lerPCF = None
 
     if myd13c2PCF is not None:
-        bin = "./leo_sampler.py"
+        bin = "./omi_ler_sampler.py"
 
-        # always write out coordinates
-        command = bin + ' -C'
-
+        command = bin + ''
         if args.verbose:
             command += ' -v'
 
-        command += ' --rcFile {}'.format(lerPCF)
-        command += ' --algo linear'
-        command += ' {} {}'.format(piso_t1,piso_t2)
+        command += ' {} {} {}'.format(giso_t1,giso_t2,lerPCF)
 
         print command
         os.system(command)
