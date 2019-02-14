@@ -219,10 +219,12 @@ class WORKSPACE(JOBS):
             os.makedirs(args.tmp)
 
         self.cwd = os.getcwd()
-        self.runfile = args.slurm
-        self.profile = args.profile
-        self.rootdir = args.rootdir
-        self.verbose = args.verbose
+        self.runfile   = args.slurm
+        self.profile   = args.profile
+        self.rootdir   = args.rootdir
+        self.verbose   = args.verbose
+        self.bpdf_name = args.bpdf_name
+        self.rtls_name = args.rtls_name
 
         self.dirstring = []
         self.outfilelist = []
@@ -395,9 +397,16 @@ class WORKSPACE(JOBS):
             text.append(newline)
         # HYBRID
         elif (ch > 388.) and (ch < 470):
-            newline = 'LANDNAME: LER-MCD43C\n'
+            if self.bpdf_name is None:
+                newline = 'LANDNAME: LER-{}\n'.format(self.rtls_name)
+            else:
+                newline = 'LANDNAME: LER-{}-{}\n'.format(self.rtls_name,self.bpdf_name)                
+
             text.append(newline)
-            newline = 'LANDMODEL: RTLS-HYBRID\n'
+            if self.bpdf_name is None:
+                newline = 'LANDMODEL: RTLS-HYBRID\n'
+            else:
+                newline = 'LANDMODEL: RTLS-HYBRID-BPDF\n'
             text.append(newline)
             newline = 'LANDBAND_C_LER: 354 388\n'
             text.append(newline)
@@ -409,22 +418,39 @@ class WORKSPACE(JOBS):
             BRDF_file = '{}/BRDF/MCD43C1/006/{}/pace-g5nr.lb.brdf.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
             newline = 'BRDF_file: {}\n'.format(BRDF_file)
             text.append(newline)
+
+            if self.bpdf_name is not None:
+                BPDF_file = '{}/BPDF/LAND_COVER/MCD12C1/051/{}/pace-g5nr.lb.land_cover.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
+                newline = 'BPDF_file: {}\n'.format(BPDF_file)
+                text.append(newline)
+                NDVI_file = '{}/BPDF/NDVI/MYD13C2/006/pace-g5nr.lb.myd13c2.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
+                newline = 'NDVI_file: {}\n'.format(NDVI_file)
+                text.append(newline)
+
         else:
-            newline = 'LANDNAME: MCD43C-BPDF\n'
+            if self.bpdf_name is None:
+                newline = 'LANDNAME: {}\n'.format(self.rtls_name)
+            else:
+                newline = 'LANDNAME: {}-{}\n'.format(self.rtls_name,self.bpdf_name)                
             text.append(newline)
-            newline = 'LANDMODEL: RTLS\n'
+            if self.bpdf_name is None:
+                newline = 'LANDMODEL: RTLS\n'
+            else:
+                newline = 'LANDMODEL: RTLS-BPDF\n'
             text.append(newline)
             newline = 'LANDBAND_C_BRDF: 470 550 650 850 1200 1600 2100\n'
             text.append(newline)
             BRDF_file = '{}/BRDF/MCD43C1/006/{}/pace-g5nr.lb.brdf.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
             newline = 'BRDF_file: {}\n'.format(BRDF_file)
             text.append(newline)
-            BPDF_file = '{}/BPDF/LAND_COVER/MCD12C1/051/{}/pace-g5nr.lb.land_cover.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
-            newline = 'BPDF_file: {}\n'.format(BPDF_file)
-            text.append(newline)
-            NDVI_file = '{}/BPDF/NDVI/MYD13C2/006/pace-g5nr.lb.myd13c2.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
-            newline = 'NDVI_file: {}\n'.format(NDVI_file)
-            text.append(newline)
+
+            if self.bpdf_name is not None:            
+                BPDF_file = '{}/BPDF/LAND_COVER/MCD12C1/051/{}/pace-g5nr.lb.land_cover.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
+                newline = 'BPDF_file: {}\n'.format(BPDF_file)
+                text.append(newline)
+                NDVI_file = '{}/BPDF/NDVI/MYD13C2/006/pace-g5nr.lb.myd13c2.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
+                newline = 'NDVI_file: {}\n'.format(NDVI_file)
+                text.append(newline)
 
         text.append('\n')
         # WATER STUFF
@@ -623,6 +649,15 @@ def populate_L1B(outfilelist,rootdir,channels,Date,force=False):
                         fch = "{:.2f}".format(ch)
                         data = np.squeeze(nc.variables['I_'+fch][:])
 
+                        ii = data == -500.0
+                        if np.sum(ii) > 0:
+                            if (not hasattr(data,'mask')):
+                                data = np.ma.array(data)
+                                data.mask = ii
+                            elif (type(data.mask) is np.bool_):
+                                data.mask = ii
+                            else:
+                                data.mask[ii] = True
                         pvar[i,:,:] = data
 
                         nc.close()
@@ -812,7 +847,7 @@ def create_condenseFile(L1B_file,outfile,Date,SDS):
                 dim = ('number_of_scans','ccd_pixels')
 
 
-        this = nc.createVariable(sds,'f4',dim)  
+        this = nc.createVariable(sds,'f4',dim,zlib=True,fill_value=-999.0)  
 
         this.long_name = lname
         this.missing_value = -999.0
@@ -854,10 +889,12 @@ def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False,verbose=False):
 if __name__ == '__main__':
     
     #Defaults
-    nodemax  = 20
-    slurm    = 'pace_lc_array.j'
-    rootdir  = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE'
-    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/workdir'
+    nodemax   = 20
+    slurm     = 'pace_lc_array.j'
+    rootdir   = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE'
+    tmp       = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/workdir'
+    rtls_name = 'MCD43C'
+    bpdf_name = None # 'MAIGNAN'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
@@ -885,6 +922,12 @@ if __name__ == '__main__':
 
     parser.add_argument("-e","--extch", default=None,type=lambda s: map(int, s.split(",")),
                         help="channels to run extinction sampler (default=None - read in from PACE L1B File)")  
+
+    parser.add_argument('--bpdf_name',default=bpdf_name,
+                        help="BPDF model name (default=%s)"%bpdf_name)                          
+
+    parser.add_argument('--rtls_name',default=rtls_name,
+                        help="RTLS data name (default=%s)"%rtls_name)                          
 
     parser.add_argument("--norad",action="store_true",
                         help="No radiance calculations (default=False).")
