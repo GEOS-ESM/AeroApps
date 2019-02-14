@@ -196,6 +196,7 @@ program leo_vlidort_cloud
                                                                                     ! param1 = crown relative height (h/b)
                                                                                     ! param2 = shape parameter (b/r)
   real                                  :: land_missing                                                                 
+  real                                  :: sleave_missing                                                                 
   real*8, allocatable                   :: BPDFparam(:,:,:)                         ! BPDF model parameters (/1.5,NDVI,BPDFcoef/)
 
 ! Mie Table Stucture
@@ -231,7 +232,7 @@ program leo_vlidort_cloud
   character(len=100)                    :: msg                                         ! message to be printed
   real                                  :: progress                                    ! 
   real                                  :: g5nr_missing  
-  logical                               :: do_cxonly                              !
+  logical                               :: do_cxonly, do_cx_sleave                              !
 
 ! System tracking variables
 ! -----------------------------
@@ -296,17 +297,18 @@ program leo_vlidort_cloud
   call mp_readDim("time", AER_file,tm)
 
   call mp_readVattr("missing_value", AER_FILE, "DELP", g5nr_missing)
-  if (lower_to_upper(landmodel) == 'RTLS') then
+  if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
     call mp_readVattr("missing_value", BRDF_file, "Riso470", land_missing) 
-    !surf_missing = -99999.0
+    !land_missing = -999.0
   else if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
     call mp_readVattr("missing_value", LER_file, "SRFLER354", land_missing) 
-  else
-    land_missing = g5nr_missing
+  else if ((index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
+    call mp_readVattr("missing_value", BRDF_file, "Riso470", land_missing)
   end if
 
   if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
     call mp_readDim("wavelength", WAT_file, wnch)
+    call mp_readVattr("missing_value", WAT_file, "lwn",sleave_missing)
   end if
 
 ! Allocate arrays that will be copied on each processor - unshared
@@ -840,9 +842,12 @@ end if
       do ch = 1, nch
         below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .GE. 0)
         if (channels(ch) .eq. maxval(WATER_CH)) then
-          Vsleave(ch,nobs) = SLEAVE(i,j,ch,1)
+          Vsleave(ch,nobs) = dble(SLEAVE(i,j,ch,1))
+          if (SLEAVE(i,j,ch,1) .eq. sleave_missing) then
+            Vsleave(ch,nobs) = dble(MISSING)
+          end if
         else
-          Vsleave(ch,nobs) = dble(nn_interp(WATER_CH(below:below+1),reshape(SLEAVE(i,j,ch,:),(/2/)),channels(ch)))
+          Vsleave(ch,nobs) = dble(nn_interp(WATER_CH(below:below+1),reshape(SLEAVE(i,j,ch,:),(/2/)),channels(ch),sleave_missing,MISSING))
         end if
       end do
 
@@ -858,11 +863,12 @@ end if
 
       if  ( (lower_to_upper(watername) .eq. 'CX') ) then
         do_cxonly = .true.
+        do_cx_sleave = .false.
       else if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-        if (ANY(Vsleave > 1E9)) then
-          do_cxonly = .true.
-        else
-          do_cxonly = .false.
+        do_cxonly = .false.
+        do_cx_sleave = .true.
+        if (ANY(Vsleave .eq. dble(MISSING))) then
+          do_cx_sleave = .false.
         end if
       end if
 
@@ -899,7 +905,7 @@ end if
                  dble(MISSING),verbose, &
                  radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
         end if
-      else 
+      else if  ( do_cx_sleave ) then
       ! GISS Cox Munk Model with NOBM Water Leaving Reflectance
       ! ----------------------------------------------------------
         if (scalar) then
@@ -934,6 +940,19 @@ end if
                  dble(MISSING),verbose, &
                  radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
         end if
+      else
+!       Save code for pixels that were not gap filled
+!       ---------------------------------------------    
+        radiance_VL_int(nobs,:) = -500
+        reflectance_VL_int(nobs,:) = -500
+        Valbedo = -500
+        ROT_int = -500
+        if (.not. scalar) then
+          Q_int = -500
+          U_int = -500
+        end if
+        ierr = 0
+
       end if
     end if          
 
@@ -977,7 +996,7 @@ end if
             
             if (channels(ch) < maxval(landband_cBRDF)) then
               ! nearest neighbor interpolation of kernel weights to wavelength
-              if ( (lower_to_upper(landmodel) == 'RTLS-HYBRID') .and. (channels(ch) < minval(landband_cBRDF)) ) then
+              if ( (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)  .and. (channels(ch) < minval(landband_cBRDF)) ) then
                 !  relax kernel weights below 470 to lamberitan 
                 !  ----------------------------
                 brdf_i = minloc(landband_cBRDF)
@@ -992,26 +1011,28 @@ end if
                 temp_vol(1) = 0
                 temp_vol(2) = KVOL(i,j,brdf_i(1))
 
-                kernel_wt(1,ch,nobs) = dble(nn_interp((/landband_cLER(ler_i(1)),landband_cBRDF(brdf_i(1))/),temp_iso,channels(ch)))
-                kernel_wt(2,ch,nobs) = dble(nn_interp((/landband_cLER(ler_i(1)),landband_cBRDF(brdf_i(1))/),temp_geo,channels(ch)))
-                kernel_wt(3,ch,nobs) = dble(nn_interp((/landband_cLER(ler_i(1)),landband_cBRDF(brdf_i(1))/),temp_vol,channels(ch)))
+                kernel_wt(1,ch,nobs) = dble(nn_interp((/landband_cLER(ler_i(1)),landband_cBRDF(brdf_i(1))/),temp_iso,channels(ch),land_missing,MISSING))
+                kernel_wt(2,ch,nobs) = dble(nn_interp((/landband_cLER(ler_i(1)),landband_cBRDF(brdf_i(1))/),temp_geo,channels(ch),land_missing,MISSING))
+                kernel_wt(3,ch,nobs) = dble(nn_interp((/landband_cLER(ler_i(1)),landband_cBRDF(brdf_i(1))/),temp_vol,channels(ch),land_missing,MISSING))
 
               else
-                kernel_wt(1,ch,nobs) = dble(nn_interp(landband_cBRDF,reshape(KISO(i,j,:),(/landbandmBRDF/)),channels(ch)))
-                kernel_wt(2,ch,nobs) = dble(nn_interp(landband_cBRDF,reshape(KGEO(i,j,:),(/landbandmBRDF/)),channels(ch)))
-                kernel_wt(3,ch,nobs) = dble(nn_interp(landband_cBRDF,reshape(KVOL(i,j,:),(/landbandmBRDF/)),channels(ch)))    
+                kernel_wt(1,ch,nobs) = dble(nn_interp(landband_cBRDF,reshape(KISO(i,j,:),(/landbandmBRDF/)),channels(ch),land_missing,MISSING))
+                kernel_wt(2,ch,nobs) = dble(nn_interp(landband_cBRDF,reshape(KGEO(i,j,:),(/landbandmBRDF/)),channels(ch),land_missing,MISSING))
+                kernel_wt(3,ch,nobs) = dble(nn_interp(landband_cBRDF,reshape(KVOL(i,j,:),(/landbandmBRDF/)),channels(ch),land_missing,MISSING))    
               end if      
             end if
           end if
           param(:,ch,nobs)     = (/dble(2),dble(1)/)
         end do
 
-        if ( (index(lower_to_upper(landname),'BPDF') > 0) ) then
+        if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
         ! Get BPDF parameters
         ! ----------------------
-          BPDFparam(1,:,:) = 1.5   ! water refractive index
-          BPDFparam(2,:,:) = dble(NDVI(i,j))
-          BPDFparam(3,:,:) = dble(BPDFcoef(i,j))
+          if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then
+            BPDFparam(1,:,:) = 1.5   ! water refractive index
+            BPDFparam(2,:,:) = dble(NDVI(i,j))
+            BPDFparam(3,:,:) = dble(BPDFcoef(i,j))
+          end if
         end if
 
       else if ( (lower_to_upper(landmodel) == 'LAMBERTIAN') ) then
@@ -1021,7 +1042,7 @@ end if
           if (landbandmLER == 1) then
             Valbedo(nobs,ch) = dble(LER(i,j,1))
           else
-            Valbedo(nobs,ch) = dble(nn_interp(landband_cLER,reshape(LER(i,j,:),(/landbandmLER/)),channels(ch)))
+            Valbedo(nobs,ch) = dble(nn_interp(landband_cLER,reshape(LER(i,j,:),(/landbandmLER/)),channels(ch),land_missing,MISSING))
           end if
         end do
       end if 
@@ -1062,8 +1083,8 @@ end if
         BR_U_int = 0
       end if
 
-    else if ( (lower_to_upper(landmodel) == 'RTLS') .and. (index(lower_to_upper(landname),'BPDF') .eq. 0) ) then
-      if ( ANY(kernel_wt == land_missing) ) then
+    else if ( (index(lower_to_upper(landmodel),'RTLS') > 0) .and. (index(lower_to_upper(landmodel),'BPDF') .eq. 0) ) then
+      if ( ANY(kernel_wt == MISSING) ) then
 !       Save code for pixels that were not gap filled
 !       ---------------------------------------------    
         radiance_VL_int(nobs,:) = -500
@@ -1108,8 +1129,8 @@ end if
         end if    
       end if
 
-    else if ( (lower_to_upper(landmodel) == 'RTLS') .and. (index(lower_to_upper(landname),'BPDF') > 0) ) then  
-      if ( ANY(kernel_wt == land_missing) .or. ANY(BPDFparam < -900)) then
+    else if ( (index(lower_to_upper(landmodel),'RTLS') > 0) .and. (index(lower_to_upper(landmodel),'BPDF') > 0) ) then  
+      if ( ANY(kernel_wt == MISSING) .or. ANY(BPDFparam == land_missing)) then
 !       Save code for pixels that were not gap filled
 !       ---------------------------------------------    
         radiance_VL_int(nobs,:) = -500
@@ -1159,12 +1180,13 @@ end if
 !     10 June 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
 
-  function nn_interp(x,y,xint)
+  function nn_interp(x,y,xint,ymissing,missing)
     real,intent(in),dimension(:)    :: x, y
     real,intent(in)                 :: xint
     real                            :: nn_interp
     integer                         :: below, above
     real                            :: top, bottom
+    real                            :: ymissing,missing
 
     if (xint .GE. maxval(x)) then
         below = maxloc(x, dim = 1)
@@ -1176,12 +1198,12 @@ end if
       above = minloc(abs(xint - x), dim = 1, mask = (xint - x) .LT. 0)
       below = minloc(abs(xint - x), dim = 1, mask = (xint - x) .GE. 0)
 
-      if (.not. ANY((/y(above),y(below)/) == land_missing)) then
+      if (.not. ANY((/y(above),y(below)/) == ymissing)) then
         top = y(above) - y(below)
         bottom = x(above) - x(below)
         nn_interp = y(below) + (xint-x(below)) * top / bottom
       else
-        nn_interp  = land_missing
+        nn_interp  = missing
       end if
     end if
   end function nn_interp
@@ -1516,7 +1538,7 @@ end if
       end if
       call MAPL_SyncSharedMemory(rc=ierr) 
 
-      if ( (index(lower_to_upper(landname),'BPDF') > 0) ) then
+      if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
         call read_BPDF()
         if (MAPL_am_I_root()) then
           write(*,*) '<> Read BPDF data to shared memory'
@@ -1525,7 +1547,7 @@ end if
 
       end if
 
-      if (lower_to_upper(landmodel) == 'RTLS-HYBRID') then
+      if ((index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
         if (MAPL_am_I_root()) then
           call read_LER()        
           write(*,*) '<> Read LER data to shared memory'
@@ -1753,11 +1775,13 @@ end if
       call MAPL_AllocNodeArray(KISO,(/im,jm,landbandmBRDF/),rc=ierr)
       call MAPL_AllocNodeArray(KVOL,(/im,jm,landbandmBRDF/),rc=ierr)
       call MAPL_AllocNodeArray(KGEO,(/im,jm,landbandmBRDF/),rc=ierr)
-      if ( (index(lower_to_upper(landname),'BPDF') > 0) ) then
-        call MAPL_AllocNodeArray(NDVI,(/im,jm/),rc=ierr)
-        call MAPL_AllocNodeArray(BPDFcoef,(/im,jm/),rc=ierr)
+      if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
+        if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then
+          call MAPL_AllocNodeArray(NDVI,(/im,jm/),rc=ierr)
+          call MAPL_AllocNodeArray(BPDFcoef,(/im,jm/),rc=ierr)
+        end if
       end if
-    else if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (lower_to_upper(landmodel) == 'RTLS-HYBRID')) then
+    else if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
       call MAPL_AllocNodeArray(LER,(/im,jm,landbandmLER/),rc=ierr)
     end if 
 
@@ -1839,13 +1863,15 @@ end if
     allocate (radiance_VL_int(nobs,nch))
     allocate (reflectance_VL_int(nobs, nch))    
 
-    if (lower_to_upper(landmodel) == 'RTLS') then
+    if ((index(lower_to_upper(landmodel),'RTLS') > 0) ) then
       allocate (kernel_wt(nkernel,nch,nobs))
       allocate (param(nparam,nch,nobs))
     end if
 
-    if ( (index(lower_to_upper(landname),'BPDF') > 0) ) then   
-      allocate (BPDFparam(3,nch,nobs)) 
+    if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then  
+      if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then    
+        allocate (BPDFparam(3,nch,nobs)) 
+      end if
     end if
     
     if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
@@ -1994,9 +2020,9 @@ end if
     call check(nf90_put_att(ncid,NF90_GLOBAL,'grid_inputs',trim(INV_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'angle_inputs',trim(ANG_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'aerosol_inputs',trim(AER_file)),"input files attr")
-    if (lower_to_upper(landmodel) == 'RTLS') then
+    if (if ( (index(lower_to_upper(landmodel),'RTLS') > 0) ) then   ) then
       call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(BRDF_file)),"input files attr")
-    else if (lower_to_upper(landmodel) == 'RTLS-HYBRID') then
+    else if (if ( (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0) ) then   ) then
       call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(BRDF_file)),"input files attr")
       call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(LER_file)),"input files attr")
     else
@@ -2590,7 +2616,7 @@ end if
       allocate (landband_cBRDF(landbandmBRDF))    
       call ESMF_ConfigGetAttribute(cf, landband_cBRDF, label = 'LANDBAND_C_BRDF:', __RC__)
     end if
-    if ( (lower_to_upper(landmodel) == 'RTLS-HYBRID') .or. (lower_to_upper(landmodel) == 'LAMBERTIAN') ) then
+    if ( (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0) .or. (lower_to_upper(landmodel) == 'LAMBERTIAN') ) then
       landbandmLER =  ESMF_ConfigGetLen(cf, label = 'LANDBAND_C_LER:',__RC__)
       allocate (landband_cLER(landbandmLER))    
       call ESMF_ConfigGetAttribute(cf, landband_cLER, label = 'LANDBAND_C_LER:', __RC__)
@@ -2614,7 +2640,7 @@ end if
     if ( (index(lower_to_upper(landmodel),'RTLS') > 0) ) then
       call ESMF_ConfigGetAttribute(cf, BRDF_file, label = 'BRDF_file:',__RC__)
     end if
-    if ( (lower_to_upper(landmodel) == 'RTLS-HYBRID') .or. (lower_to_upper(landmodel) == 'LAMBERTIAN') ) then
+    if ( (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0) .or. (lower_to_upper(landmodel) == 'LAMBERTIAN') ) then
       call ESMF_ConfigGetAttribute(cf, LER_file, label = 'LER_file:',__RC__)
     end if
 
@@ -2623,9 +2649,11 @@ end if
     call ESMF_ConfigGetAttribute(cf, CLD_file, label = 'CLD_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, MET_file, label = 'MET_file:',__RC__)
     
-    if ( (index(lower_to_upper(landname),'BPDF') > 0) ) then
-      call ESMF_ConfigGetAttribute(cf, NDVI_file, label = 'NDVI_file:',__RC__)
-      call ESMF_ConfigGetAttribute(cf, BPDF_file, label = 'BPDF_file:',__RC__)    
+    if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
+      if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then    
+        call ESMF_ConfigGetAttribute(cf, NDVI_file, label = 'NDVI_file:',__RC__)
+        call ESMF_ConfigGetAttribute(cf, BPDF_file, label = 'BPDF_file:',__RC__)    
+      end if
     end if
 
 
@@ -2740,7 +2768,7 @@ end if
     call MAPL_DeallocNodeArray(OCPHOBIC,rc=ierr) 
     call MAPL_DeallocNodeArray(OCPHILIC,rc=ierr) 
     call MAPL_DeallocNodeArray(SO4,rc=ierr) 
-    if (lower_to_upper(landmodel) == 'RTLS') then
+    if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
       call MAPL_DeallocNodeArray(KISO,rc=ierr) 
       call MAPL_DeallocNodeArray(KVOL,rc=ierr) 
       call MAPL_DeallocNodeArray(KGEO,rc=ierr) 
