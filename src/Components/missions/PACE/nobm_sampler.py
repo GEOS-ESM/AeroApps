@@ -45,7 +45,8 @@ if __name__ == "__main__":
     cf = Config(args.prep_config,delim=' = ')
     outdir    = cf('OUTDIR')
     indir     = cf('INDIR')
-    datafile   = cf('DATAFILE')
+    datadir   = cf('DATADIR')
+    gridfile  = cf('GRIDFILE')
     instname  = cf('INSTNAME')
 
     date = isoparser(args.iso_t1)
@@ -66,7 +67,7 @@ if __name__ == "__main__":
         # Read in trajectory lat/lon
         # Interpolate BRDF 
 
-        sleave = NOBM(datafile)
+        sleave = NOBM(datadir,gridfile)
         sleave.sample(inFile,outFile,Verbose=args.verbose)
 
         date += timedelta(minutes=args.DT_mins)
