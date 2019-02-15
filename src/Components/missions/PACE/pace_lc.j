@@ -46,4 +46,6 @@ cd $AEROBIN
 ######         Perform single iteration of VLIDORT Run
 ######
 ##################################################################
+./clean_mem.sh
 $RUN_CMD ./leo_vlidort_cloud.x leo_vlidort_cloud.rc
+./clean_mem.sh
