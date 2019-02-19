@@ -212,12 +212,12 @@ class MYD13C2(object):
                     lon[i] = lon[i] + 360.0
 
                     nlat,nlon = datach.shape
-                    lon1 = self.lon[0:nlon*0.5]
-                    lon2 = self.lon[nlon*0.5:]
-                    datalon = np.append(lon2,lon1+360.)
+                    lon1 = self.lon[0:int(nlon*0.5)]
+                    lon2 = self.lon[int(nlon*0.5)]
+                    datalon = np.append(lon2,lon1+360)
 
-                    data1  = datach[:,0:nlon*0.5]
-                    data2  = datach[:,nlon*0.5:]
+                    data1  = datach[:,0:int(nlon*0.5)]
+                    data2  = datach[:,int(nlon*0.5):]
                     datach = np.ma.hstack((data2, data1))                    
 
                 else:

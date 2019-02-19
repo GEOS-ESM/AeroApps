@@ -932,8 +932,8 @@ if __name__ == '__main__':
     parser.add_argument("--norad",action="store_true",
                         help="No radiance calculations (default=False).")
 
-    parser.add_argument("--noext",action="store_true",
-                        help="No extinctions calculations (default=False).")
+    parser.add_argument("--doext",action="store_true",
+                        help="Do extinctions calculations (default=False).")
 
     parser.add_argument("--force",action="store_true",
                         help="Overwrite existing L1B file in LevelC directory (default=False).")    
@@ -950,13 +950,19 @@ if __name__ == '__main__':
 
     if not args.dryrun:
         # Submit and monitor jobs
-        workspace.handle_jobs()
+        if not args.norad:
+            workspace.handle_jobs()
 
-        # Take VLIDORT outputs and populate PACE L1b File
-        I = ~workspace.errTally
-        if any(I):
-            outfilelist = np.array(workspace.outfilelist)[I]
-            addfilelist = np.array(workspace.addfilelist)[I]
-            channels    = np.array(workspace.channels)[I]
-            populate_L1B(outfilelist,workspace.rootdir,channels,workspace.Date,force=args.force)
-            condense_LC(outfilelist,addfilelist,workspace.rootdir,channels,workspace.Date,force=args.force)
+            # Take VLIDORT outputs and populate PACE L1b File
+            I = ~workspace.errTally
+            if any(I):
+                outfilelist = np.array(workspace.outfilelist)[I]
+                addfilelist = np.array(workspace.addfilelist)[I]
+                channels    = np.array(workspace.channels)[I]
+                populate_L1B(outfilelist,workspace.rootdir,channels,workspace.Date,force=args.force)
+                condense_LC(outfilelist,addfilelist,workspace.rootdir,channels,workspace.Date,force=args.force)
+
+
+        if args.doext:
+            # calls extinction sampler
+            pass
