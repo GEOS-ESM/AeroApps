@@ -213,7 +213,7 @@ class MYD13C2(object):
 
                     nlat,nlon = datach.shape
                     lon1 = self.lon[0:int(nlon*0.5)]
-                    lon2 = self.lon[int(nlon*0.5)]
+                    lon2 = self.lon[int(nlon*0.5):]
                     datalon = np.append(lon2,lon1+360)
 
                     data1  = datach[:,0:int(nlon*0.5)]
