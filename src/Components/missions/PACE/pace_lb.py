@@ -50,10 +50,10 @@ if __name__ == "__main__":
 
         # Parse prep config
         # -----------------
-        cf = Config(g5nrPCF,delim=' = ')
+        cfg5nr = Config(g5nrPCF,delim=' = ')
 
-        algo     = cf('ALGO')
-        rcFiles  = cf('RCFILES')
+        algo     = cfg5nr('ALGO')
+        rcFiles  = cfg5nr('RCFILES')
 
         algo = algo.split(',')
         rcFiles = rcFiles.split(',')
@@ -78,7 +78,7 @@ if __name__ == "__main__":
         mcd12cPCF = cf('MCD12C')
 
     except:
-        MCD12CPCF = None   
+        mcd12cPCF = None   
 
     if mcd12cPCF is not None:
         bin = "./mcd12c_sampler.py"
