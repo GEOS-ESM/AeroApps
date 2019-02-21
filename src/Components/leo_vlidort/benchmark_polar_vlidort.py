@@ -295,7 +295,7 @@ class POLAR_VLIDORT(object):
     def readSampledLER(self):
 
 
-        self.albedo = np.array([0])  
+        self.albedo = np.array([0.5])  
         self.albedo.shape = (1,1)
 
 
@@ -712,12 +712,12 @@ if __name__ == "__main__":
     format   = 'NETCDF4_CLASSIC'
 
     rootDir  = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/CALIPSO/'
-    albedoType   = 'BRDF_BPDF'
+    albedoType   = 'MODIS_BRDF_BPDF'
 
     channel  = 865
     chd      = get_chd(channel)
-    outDir    = './benchmark_mueller_fix'
-    outFile   = '{}/calipso-g5nr.vlidort.vector.BPDF.{}.nc4'.format(outDir,chd)
+    outDir    = './benchmark_mueller_fix2'
+    outFile   = '{}/calipso-g5nr.vlidort.vector.{}.{}.nc4'.format(outDir,albedoType,chd)
     
     rcFile   = 'Aod_EOS.rc'
     verbose  = True
