@@ -48,7 +48,7 @@ IntVarsUnits = {'area':'m2 m-3',
                 'refr':'unitless',
                 'reff':'m'}
 
-IntVarsLongNames = {'area':'aerosol surface area',
+IntVarsLongNames = {'area':'aerosol cross sectional area',
                     'vol' :'aerosol volume',
                     'refi':'imaginary refractive index',
                     'refr':'real refractive index',
