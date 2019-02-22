@@ -225,10 +225,15 @@ class WORKSPACE(JOBS):
         self.verbose   = args.verbose
         self.bpdf_name = args.bpdf_name
         self.rtls_name = args.rtls_name
+        self.write_add = args.write_add
+        self.write_aer = args.write_aer
+        self.write_cld = args.write_cld
 
         self.dirstring = []
         self.outfilelist = []
         self.addfilelist = []
+        self.aerfilelist = []
+        self.cldfilelist = []
 
         if args.channels is None:
             self.get_channels(self.Date)
@@ -374,7 +379,10 @@ class WORKSPACE(JOBS):
 
         text.append(newline)
 
-        newline = 'ADDITIONAL_OUTPUT: true\n'
+        if self.write_add:
+            newline = 'ADDITIONAL_OUTPUT: true\n'
+        else:
+            newline = 'ADDITIONAL_OUTPUT: false\n'
         text.append(newline)
         newline = 'VERSION: 1.0\n'
         text.append(newline)
@@ -505,10 +513,11 @@ class WORKSPACE(JOBS):
         text.append(newline)
         self.outfilelist.append(OUT_file)
 
-        ADD_file = '{}/pace-g5nr.lc.add.{}_{}.{}.nc4'.format(LcDirCh,nymd,hms,fch)
-        newline = 'ADD_file: {}\n'.format(ADD_file)
-        text.append(newline)
-        self.addfilelist.append(ADD_file)
+        if self.write_add:
+            ADD_file = '{}/pace-g5nr.lc.add.{}_{}.{}.nc4'.format(LcDirCh,nymd,hms,fch)
+            newline = 'ADD_file: {}\n'.format(ADD_file)
+            text.append(newline)
+            self.addfilelist.append(ADD_file)
 
         CLD_file = '{}/pace-g5nr.TOTWPDF-GCOP-SKEWT.{}_{}.nc4'.format(LcDir,nymd,hms)
         newline = 'CLD_file: {}\n'.format(CLD_file)
@@ -577,8 +586,6 @@ class WORKSPACE(JOBS):
         date,ch = date_ch.split('.')
 
         outfile = self.outfilelist[i]
-        addfile = self.addfilelist[i]
-
         filelist = []
         for a in np.arange(self.nodemax):
             a = a + 1
@@ -586,12 +593,14 @@ class WORKSPACE(JOBS):
 
         self.do_merge(outfile,filelist)
 
-        filelist = []
-        for a in np.arange(self.nodemax):
-            a = a + 1
-            filelist.append(addfile + '_' + str(a) )
-        
-        self.do_merge(addfile,filelist)
+        if self.write_add:
+            addfile = self.addfilelist[i]
+            filelist = []
+            for a in np.arange(self.nodemax):
+                a = a + 1
+                filelist.append(addfile + '_' + str(a) )
+            
+            self.do_merge(addfile,filelist)
 
     def do_merge(self,mergedfile,filelist):
         os.rename(filelist[0],mergedfile)
@@ -664,7 +673,7 @@ def populate_L1B(outfilelist,rootdir,channels,Date,force=False):
 
         ncmerge.close()
 
-def condense_LC(outfilelist,addfilelist,rootdir,channels,Date,force=False):
+def condense_LC(outfilelist,addfilelist,cldfilelist,aerfilelist,rootdir,channels,Date,force=False):
         YMDdir    = Date.strftime('Y%Y/M%m/D%d')
         pYMDdir   = Date.strftime('Y2020/M%m/D%d')
         LcDir     = '{}/LevelC/{}'.format(rootdir,YMDdir)
@@ -681,7 +690,10 @@ def condense_LC(outfilelist,addfilelist,rootdir,channels,Date,force=False):
         exists  = os.path.isfile(outfile)
         if force or (not exists):
             # create new outfile
-            SDS = dict(SDS_RT, **SDS_ADD)
+            if self.write_add:
+                SDS = SDS_RT
+            else:
+                SDS = dict(SDS_RT, **SDS_ADD)
             create_condenseFile(L1B_file,outfile,Date,SDS)
 
         # Condense RT stuff
@@ -689,20 +701,22 @@ def condense_LC(outfilelist,addfilelist,rootdir,channels,Date,force=False):
         insert_condenseVar(outfile,SDS,channels,outfilelist)
 
         # Condense ADD stuff
-        SDS = SDS_ADD
-        insert_condenseVar(outfile,SDS,channels,addfilelist)
+        if self.write_add:
+            SDS = SDS_ADD
+            insert_condenseVar(outfile,SDS,channels,addfilelist)
 
-        # Create file if you need to
-        outfile = '{}/pace-g5nr.cloud.{}_{}.nc4'.format(LcDir,nymd,hms)
-        exists  = os.path.isfile(outfile)
-        if force or (not exists):
-            # create new outfile
-            SDS = SDS_CLD
-            create_condenseFile(L1B_file,outfile,Date,SDS)
+        if self.write_cld:
+            # Create file if you need to
+            outfile = '{}/pace-g5nr.cloud.{}_{}.nc4'.format(LcDir,nymd,hms)
+            exists  = os.path.isfile(outfile)
+            if force or (not exists):
+                # create new outfile
+                SDS = SDS_CLD
+                create_condenseFile(L1B_file,outfile,Date,SDS)
 
-        # Condense Cloud stuff
-        SDS = SDS_CLD        
-        insert_condenseVar(outfile,SDS,channels,addfilelist)
+            # Condense Cloud stuff
+            SDS = SDS_CLD        
+            insert_condenseVar(outfile,SDS,channels,cldfilelist)
 
 
 
@@ -932,6 +946,15 @@ if __name__ == '__main__':
     parser.add_argument("--norad",action="store_true",
                         help="No radiance calculations (default=False).")
 
+    parser.add_argument("--no_add",action="store_true",
+                        help="Do NOT write additional output in VLIDORT call (default=False).")  
+
+    parser.add_argument("--write_aer",action="store_true",
+                        help="Do aerosol output in VLIDORT call (default=False).")  
+
+    parser.add_argument("--write_cld",action="store_true",
+                        help="Do cloud output in VLIDORT call (default=False).")                                                    
+
     parser.add_argument("--doext",action="store_true",
                         help="Do extinctions calculations (default=False).")
 
@@ -945,6 +968,11 @@ if __name__ == '__main__':
 
 
     args = parser.parse_args()
+    if args.no_add:
+        args.write_add = False
+    else:
+        args.write_add = True
+
 
     workspace = WORKSPACE(args)
 
@@ -959,8 +987,16 @@ if __name__ == '__main__':
                 outfilelist = np.array(workspace.outfilelist)[I]
                 addfilelist = np.array(workspace.addfilelist)[I]
                 channels    = np.array(workspace.channels)[I]
+                if workspace.write_aer:
+                    aerfilelist = np.array(workspace.aerfilelist)[I]
+                else:
+                    aerfilelist = None
+                if workspace.write_cld:
+                    cldfilelist = np.array(workspace.cldfilelist)[I]
+                else:
+                    cldfilelist = None                    
                 populate_L1B(outfilelist,workspace.rootdir,channels,workspace.Date,force=args.force)
-                condense_LC(outfilelist,addfilelist,workspace.rootdir,channels,workspace.Date,force=args.force)
+                condense_LC(outfilelist,addfilelist,cldfilelist,aerfilelist,workspace.rootdir,channels,workspace.Date,force=args.force)
 
 
         if args.doext:
