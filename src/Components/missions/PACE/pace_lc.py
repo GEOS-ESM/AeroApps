@@ -775,7 +775,7 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
 
             nc.close()
                         
-
+    ncmerge.close()
 
 def create_condenseFile(L1B_file,outfile,Date,SDS):
 
