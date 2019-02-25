@@ -691,7 +691,7 @@ def condense_LC(outfilelist,addfilelist,cldfilelist,aerfilelist,rootdir,channels
         exists  = os.path.isfile(outfile)
         if force or (not exists):
             # create new outfile
-            if addfilelist is not None:
+            if addfilelist is None:
                 SDS = SDS_RT
             else:
                 SDS = dict(SDS_RT, **SDS_ADD)
