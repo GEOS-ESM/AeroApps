@@ -33,9 +33,10 @@ SDS_RT = {'surf_ref_I_blue': ['surface reflectance for blue CCD','None',None],
 SDS_ADD = {'rot_blue': ['rayleigh optical thickness for blue CCD','None',nlev],
           'rot_red':  ['rayleigh optical thickness for red CCD','None',nlev],
           'rot_SWIR': ['rayleigh optical thickness for SWIR bands','None',nlev],
-          'pe': ['layer edge pressure','Pa',nlev+1],
-          'ze': ['layer edge altitude','m',nlev+1],
-          'te': ['layer edge temperature','K',nlev+1]}      
+          }
+          # 'pe': ['layer edge pressure','Pa',nlev+1],
+          # 'ze': ['layer edge altitude','m',nlev+1],
+          # 'te': ['layer edge temperature','K',nlev+1]}      
 
 SDS_CLD = {'lcot_blue': ['liquid cloud optical depth for blue CCD','None',nlev],
           'lc_ssa_blue':  ['liquid cloud single scattering albedo for blue CCD','None',nlev],
