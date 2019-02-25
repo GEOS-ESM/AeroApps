@@ -691,7 +691,7 @@ def condense_LC(outfilelist,addfilelist,cldfilelist,aerfilelist,rootdir,channels
         exists  = os.path.isfile(outfile)
         if force or (not exists):
             # create new outfile
-            if self.write_add:
+            if addfilelist is not None:
                 SDS = SDS_RT
             else:
                 SDS = dict(SDS_RT, **SDS_ADD)
@@ -985,9 +985,14 @@ if __name__ == '__main__':
             # Take VLIDORT outputs and populate PACE L1b File
             I = ~workspace.errTally
             if any(I):
-                outfilelist = np.array(workspace.outfilelist)[I]
-                addfilelist = np.array(workspace.addfilelist)[I]
+                outfilelist = np.array(workspace.outfilelist)[I]                
                 channels    = np.array(workspace.channels)[I]
+                rootdir     = workspace.rootdir
+                Date        = workspace.Date
+                if workspace.write_add:
+                    addfilelist = np.array(workspace.addfilelist)[I]
+                else:
+                    addfilelist = None
                 if workspace.write_aer:
                     aerfilelist = np.array(workspace.aerfilelist)[I]
                 else:
@@ -996,10 +1001,8 @@ if __name__ == '__main__':
                     cldfilelist = np.array(workspace.cldfilelist)[I]
                 else:
                     cldfilelist = None                    
-                populate_L1B(outfilelist,workspace.rootdir,channels,workspace.Date,force=args.force)
-                condense_LC(outfilelist,addfilelist,cldfilelist,aerfilelist,
-                            workspace.rootdir,channels,workspace.Date,
-                            force=args.force)
+                populate_L1B(outfilelist,rootdir,channels,Date,force=args.force)
+                condense_LC(outfilelist,addfilelist,cldfilelist,aerfilelist,rootdir,channels,Date,force=args.force)
 
 
         if args.doext:
