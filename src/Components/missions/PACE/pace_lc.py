@@ -674,7 +674,7 @@ def populate_L1B(outfilelist,rootdir,channels,Date,force=False):
 
         ncmerge.close()
 
-def condense_LC(outfilelist,addfilelist,cldfilelist,aerfilelist,rootdir,channels,Date,write_add=True,write_cld=False,force=False):
+def condense_LC(outfilelist,addfilelist,cldfilelist,aerfilelist,rootdir,channels,Date,force=False):
         YMDdir    = Date.strftime('Y%Y/M%m/D%d')
         pYMDdir   = Date.strftime('Y2020/M%m/D%d')
         LcDir     = '{}/LevelC/{}'.format(rootdir,YMDdir)
@@ -702,11 +702,11 @@ def condense_LC(outfilelist,addfilelist,cldfilelist,aerfilelist,rootdir,channels
         insert_condenseVar(outfile,SDS,channels,outfilelist)
 
         # Condense ADD stuff
-        if write_add:
+        if addfilelist is not None:
             SDS = SDS_ADD
             insert_condenseVar(outfile,SDS,channels,addfilelist)
 
-        if write_cld:
+        if cldfilelist is not None:
             # Create file if you need to
             outfile = '{}/pace-g5nr.cloud.{}_{}.nc4'.format(LcDir,nymd,hms)
             exists  = os.path.isfile(outfile)
@@ -999,7 +999,7 @@ if __name__ == '__main__':
                 populate_L1B(outfilelist,workspace.rootdir,channels,workspace.Date,force=args.force)
                 condense_LC(outfilelist,addfilelist,cldfilelist,aerfilelist,
                             workspace.rootdir,channels,workspace.Date,
-                            write_add=workspace.write_add,write_cloud=workspace.write_cld,force=args.force)
+                            force=args.force)
 
 
         if args.doext:
