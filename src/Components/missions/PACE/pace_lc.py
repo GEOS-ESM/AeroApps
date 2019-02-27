@@ -837,7 +837,7 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
             nc.close()
             ncmerge.close()
                         
-    ncmerge.close()
+    
 
 def create_condenseFile(L1B_file,outfile,Date,SDS):
 
@@ -972,7 +972,7 @@ if __name__ == '__main__':
     nodemax   = 20
     slurm     = 'pace_lc_array.j'
     rootdir   = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE'
-    tmp       = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/workdir/test'
+    tmp       = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/workdir'
     rtls_name = 'MCD43C'
     bpdf_name = None # 'MAIGNAN'
 
