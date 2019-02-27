@@ -29,36 +29,52 @@ mr_ch = np.array(mr_ch)
 
 nlev = 72
 
-SDS_RT = {'surf_ref_I_blue': ['surface reflectance for blue CCD','None',None],
-          'surf_ref_I_red':  ['surface reflectance for red CCD','None',None],
-          'surf_ref_I_SWIR': ['surface reflectance for SWIR bands','None',None]}
+SDS_RT_blue = {'surf_ref_I_blue': ['surface reflectance for blue CCD','None',None]}
+SDS_RT_red  = {'surf_ref_I_red':  ['surface reflectance for red CCD','None',None]}
+SDS_RT_SWIR = {'surf_ref_I_SWIR': ['surface reflectance for SWIR bands','None',None]}
 
-SDS_ADD = {'rot_blue': ['rayleigh optical thickness for blue CCD','None',nlev],
-          'rot_red':  ['rayleigh optical thickness for red CCD','None',nlev],
-          'rot_SWIR': ['rayleigh optical thickness for SWIR bands','None',nlev],
-          }
+SDS_ADD_blue = {'rot_blue': ['rayleigh optical thickness for blue CCD','None',nlev]}
+SDS_ADD_red  = {'rot_red':  ['rayleigh optical thickness for red CCD','None',nlev]}
+SDS_ADD_SWIR = {'rot_SWIR': ['rayleigh optical thickness for SWIR bands','None',nlev]}
+          
           # 'pe': ['layer edge pressure','Pa',nlev+1],
           # 'ze': ['layer edge altitude','m',nlev+1],
-          # 'te': ['layer edge temperature','K',nlev+1]}      
+          # 'te': ['layer edge temperature','K',nlev+1]} 
 
-SDS_CLD = {'lcot_blue': ['liquid cloud optical depth for blue CCD','None',nlev],
-          'lc_ssa_blue':  ['liquid cloud single scattering albedo for blue CCD','None',nlev],
-          # 'lc_g_blue':  ['liquid cloud assymetry parameter for blue CCD','None',nlev],
-          'lcot_red': ['liquid cloud optical depth for red CCD','None',nlev],
-          'lc_ssa_red':  ['liquid cloud single scattering albedo for red CCD','None',nlev],
-          # 'lc_g_red':  ['liquid cloud assymetry parameter for red CCD','None',nlev],    
-          'lcot_SWIR': ['liquid cloud optical depth for SWIR bands','None',nlev],
-          'lc_ssa_SWIR':  ['liquid cloud single scattering albedo for SWIR bands','None',nlev],
-          # 'lc_g_SWIR':  ['liquid cloud assymetry parameter for SWIR bands','None',nlev],
-          'icot_blue': ['ice cloud optical depth for blue CCD','None',nlev],
-          'ic_ssa_blue':  ['ice  cloud single scattering albedo for blue CCD','None',nlev],
-          # 'ic_g_blue':  ['ice  cloud assymetry parameter for blue CCD','None',nlev],
-          'icot_red': ['ice  cloud optical depth for red CCD','None',nlev],
-          'ic_ssa_red':  ['ice  cloud single scattering albedo for red CCD','None',nlev],
-          # 'ic_g_red':  ['ice  cloud assymetry parameter for red CCD','None',nlev],    
-          'icot_SWIR': ['ice  cloud optical depth for SWIR bands','None',nlev],
-          'ic_ssa_SWIR':  ['ice  cloud single scattering albedo for SWIR bands','None',nlev]}
-          # 'ic_g_SWIR':  ['ice  cloud assymetry parameter for SWIR bands','None',nlev]}              
+SDS_CLD_blue = {'lcot_blue': ['liquid cloud optical depth for blue CCD','None',nlev],
+                'lc_ssa_blue':  ['liquid cloud single scattering albedo for blue CCD','None',nlev],
+                # 'lc_g_blue':  ['liquid cloud assymetry parameter for blue CCD','None',nlev],
+                'icot_blue': ['ice cloud optical depth for blue CCD','None',nlev],
+                'ic_ssa_blue':  ['ice  cloud single scattering albedo for blue CCD','None',nlev],
+                # 'ic_g_blue':  ['ice  cloud assymetry parameter for blue CCD','None',nlev],
+                }
+
+SDS_CLD_red  = {'lcot_red': ['liquid cloud optical depth for red CCD','None',nlev],
+                'lc_ssa_red':  ['liquid cloud single scattering albedo for red CCD','None',nlev],
+                # 'lc_g_red':  ['liquid cloud assymetry parameter for red CCD','None',nlev],    
+                'icot_red': ['ice  cloud optical depth for red CCD','None',nlev],
+                'ic_ssa_red':  ['ice  cloud single scattering albedo for red CCD','None',nlev],
+                # 'ic_g_red':  ['ice  cloud assymetry parameter for red CCD','None',nlev],    
+                }
+SDS_CLD_SWIR = {'lcot_SWIR': ['liquid cloud optical depth for SWIR bands','None',nlev],
+                'lc_ssa_SWIR':  ['liquid cloud single scattering albedo for SWIR bands','None',nlev],
+                # 'lc_g_SWIR':  ['liquid cloud assymetry parameter for SWIR bands','None',nlev],
+                'icot_SWIR': ['ice  cloud optical depth for SWIR bands','None',nlev],
+                'ic_ssa_SWIR':  ['ice  cloud single scattering albedo for SWIR bands','None',nlev],
+                # 'ic_g_SWIR':  ['ice  cloud assymetry parameter for SWIR bands','None',nlev],
+                }
+
+SDS_RT = {'red': SDS_RT_red,
+          'blue': SDS_RT_blue,
+          'SWIR': SDS_RT_SWIR}
+
+SDS_ADD = {'red': SDS_ADD_red,
+          'blue': SDS_ADD_blue,
+          'SWIR': SDS_ADD_SWIR}          
+
+SDS_CLD = {'red': SDS_CLD_red,
+          'blue': SDS_CLD_blue,
+          'SWIR': SDS_CLD_SWIR}                
 
 #---
 def shave(q,undef=MAPL_UNDEF,has_undef=1,nbits=12):
@@ -717,37 +733,38 @@ def condense_LC(outfilelist,addfilelist,cldfilelist,aerfilelist,rootdir,channels
         L1B_file = '{}/OCI{}{}.L1B_PACE.nc'.format(L1bDir,nyj,hms)
 
         # Create file if you need to
-        outfile = '{}/pace-g5nr.lc.vlidort.{}_{}.nc4'.format(LcDir,nymd,hms)
-        exists  = os.path.isfile(outfile)
-        if force or (not exists):
-            # create new outfile
-            if addfilelist is None:
-                SDS = SDS_RT
-            else:
-                SDS = dict(SDS_RT, **SDS_ADD)
-            create_condenseFile(L1B_file,outfile,Date,SDS)
-
-        # Condense RT stuff
-        SDS = SDS_RT        
-        insert_condenseVar(outfile,SDS,channels,outfilelist)
-
-        # Condense ADD stuff
-        if addfilelist is not None:
-            SDS = SDS_ADD
-            insert_condenseVar(outfile,SDS,channels,addfilelist)
-
-        if cldfilelist is not None:
-            # Create file if you need to
-            outfile = '{}/pace-g5nr.cloud.{}_{}.nc4'.format(LcDir,nymd,hms)
+        for wav in ['blue','red','SWIR']:
+            outfile = '{}/pace-g5nr.lc.vlidort_{}.{}_{}.nc4'.format(LcDir,wav,nymd,hms)
             exists  = os.path.isfile(outfile)
             if force or (not exists):
                 # create new outfile
-                SDS = SDS_CLD
+                if addfilelist is None:
+                    SDS = SDS_RT[wav[]]
+                else:
+                    SDS = dict(SDS_RT[wav], **SDS_ADD[wav])
                 create_condenseFile(L1B_file,outfile,Date,SDS)
 
-            # Condense Cloud stuff
-            SDS = SDS_CLD        
-            insert_condenseVar(outfile,SDS,channels,cldfilelist)
+            # Condense RT stuff
+            SDS = SDS_RT[wav]        
+            insert_condenseVar(outfile,SDS,channels,outfilelist)
+
+            # Condense ADD stuff
+            if addfilelist is not None:
+                SDS = SDS_ADD[wav]
+                insert_condenseVar(outfile,SDS,channels,addfilelist)
+
+            if cldfilelist is not None:
+                # Create file if you need to
+                outfile = '{}/pace-g5nr.cloud_{wav}.{}_{}.nc4'.format(LcDir,wav,nymd,hms)
+                exists  = os.path.isfile(outfile)
+                if force or (not exists):
+                    # create new outfile
+                    SDS = SDS_CLD[wav]
+                    create_condenseFile(L1B_file,outfile,Date,SDS)
+
+                # Condense Cloud stuff
+                SDS = SDS_CLD[wav]        
+                insert_condenseVar(outfile,SDS,channels,cldfilelist)
 
 
 
