@@ -15,6 +15,9 @@ import time
 from   pace            import granules
 from   netCDF4         import Dataset
 from   glob            import glob
+from   MAPL.ShaveMantissa_ import shave32
+from MAPL.constants import MAPL_UNDEF
+
 
 mr =  [1.396,1.362,1.349,1.345,1.339,1.335,1.334,1.333,1.332,1.331,1.329,1.326,
       1.323,1.318,1.312,1.306,1.292,1.261]
@@ -40,22 +43,49 @@ SDS_ADD = {'rot_blue': ['rayleigh optical thickness for blue CCD','None',nlev],
 
 SDS_CLD = {'lcot_blue': ['liquid cloud optical depth for blue CCD','None',nlev],
           'lc_ssa_blue':  ['liquid cloud single scattering albedo for blue CCD','None',nlev],
-          'lc_g_blue':  ['liquid cloud assymetry parameter for blue CCD','None',nlev],
+          # 'lc_g_blue':  ['liquid cloud assymetry parameter for blue CCD','None',nlev],
           'lcot_red': ['liquid cloud optical depth for red CCD','None',nlev],
           'lc_ssa_red':  ['liquid cloud single scattering albedo for red CCD','None',nlev],
-          'lc_g_red':  ['liquid cloud assymetry parameter for red CCD','None',nlev],    
+          # 'lc_g_red':  ['liquid cloud assymetry parameter for red CCD','None',nlev],    
           'lcot_SWIR': ['liquid cloud optical depth for SWIR bands','None',nlev],
           'lc_ssa_SWIR':  ['liquid cloud single scattering albedo for SWIR bands','None',nlev],
-          'lc_g_SWIR':  ['liquid cloud assymetry parameter for SWIR bands','None',nlev],
+          # 'lc_g_SWIR':  ['liquid cloud assymetry parameter for SWIR bands','None',nlev],
           'icot_blue': ['ice cloud optical depth for blue CCD','None',nlev],
           'ic_ssa_blue':  ['ice  cloud single scattering albedo for blue CCD','None',nlev],
-          'ic_g_blue':  ['ice  cloud assymetry parameter for blue CCD','None',nlev],
+          # 'ic_g_blue':  ['ice  cloud assymetry parameter for blue CCD','None',nlev],
           'icot_red': ['ice  cloud optical depth for red CCD','None',nlev],
           'ic_ssa_red':  ['ice  cloud single scattering albedo for red CCD','None',nlev],
-          'ic_g_red':  ['ice  cloud assymetry parameter for red CCD','None',nlev],    
+          # 'ic_g_red':  ['ice  cloud assymetry parameter for red CCD','None',nlev],    
           'icot_SWIR': ['ice  cloud optical depth for SWIR bands','None',nlev],
-          'ic_ssa_SWIR':  ['ice  cloud single scattering albedo for SWIR bands','None',nlev],
-          'ic_g_SWIR':  ['ice  cloud assymetry parameter for SWIR bands','None',nlev]}              
+          'ic_ssa_SWIR':  ['ice  cloud single scattering albedo for SWIR bands','None',nlev]}
+          # 'ic_g_SWIR':  ['ice  cloud assymetry parameter for SWIR bands','None',nlev]}              
+
+#---
+def shave(q,undef=MAPL_UNDEF,has_undef=1,nbits=12):
+    """
+    Shave variable. On input, nbits is the number of mantissa bits to keep
+    out of maximum of 24.
+    """
+
+    # Determine shaving parameters
+    # ----------------------------
+    xbits = 24 - nbits
+    shp = q.shape
+    rank = len(shp)
+    if rank == 2:  # yx
+        chunksize = shp[0]*shp[1] 
+    elif rank == 3: # zyx
+        chunksize = shp[1]*shp[2]
+    else:
+        raise ValueError, "invalid rank=%d"%rank
+
+    # Shave it
+    # --------
+    qs, rc = shave32(q.ravel(),xbits,has_undef,undef,chunksize)
+    if rc:
+        raise ValueError, "error on return from shave32, rc=%d"%rc
+
+    return qs.reshape(shp)
 
 class JOBS(object):
     def handle_jobs(self):
@@ -754,14 +784,16 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
                         print 'inserting ',oname, filename, ' to ',sds
                         nc = Dataset(filename)
                         fch = "{:.2f}".format(ch)
-                        data = np.squeeze(nc.variables[oname + '_'+fch][:])
+                        ovar = nc.variables[oname + '_'+fch]
+                        missing_value = ovar._FillValue
+                        data = np.squeeze(ovar[:])
                         rank = len(data.shape)
                         if rank == 1:
                             pvar[i,:] = data
                         if rank == 2:
-                            pvar[i,:,:] = data
+                            pvar[i,:,:] = shave(data,undef=missing_value)
                         if rank == 3:
-                            pvar[i,:,:,:] = data
+                            pvar[i,:,:,:] = shave(data,undef=missing_value)
 
                         nc.close()
 
@@ -770,8 +802,14 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
             filename = outfilelist[0]
             print 'inserting ',oname,filename, ' to ',sds
             nc = Dataset(filename)
-            data = np.squeeze(nc.variables[oname][:])
-            pvar[:] = data
+            ovar = nc.variables[oname]
+            data = np.squeeze(ovar[:])
+            missing_value = ovar._FillValue
+            rank = len(data.shape)
+            if rank == 1:
+                pvar[:] = data
+            else:
+                pvar[:] = shave(data,undef=missing_value)
 
             nc.close()
                         
