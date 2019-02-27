@@ -770,7 +770,7 @@ def condense_LC(outfilelist,addfilelist,cldfilelist,aerfilelist,rootdir,channels
 
 def insert_condenseVar(outfile,SDS,channels,outfilelist):
     # insert data into correct place in outfile
-    ncmerge = Dataset(outfile,mode='r+')
+    
     for sds in SDS:
         if 'blue' in sds:
             chname = 'blue_wavelength'
@@ -792,12 +792,12 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
             oname = sds
 
 
-        pvar      = ncmerge.variables[sds]
-
         if pchannels is not None:
             for ch,filename in zip(channels,outfilelist):
                 for i,pch in enumerate(pchannels):
                     if float(ch) == pch:
+                        ncmerge = Dataset(outfile,mode='r+')
+                        pvar      = ncmerge.variables[sds]
                         print 'inserting ',oname, filename, ' to ',sds
                         nc = Dataset(filename)
                         fch = "{:.2f}".format(ch)
@@ -813,6 +813,7 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
                             pvar[i,:,:,:] = shave(data,undef=missing_value)
 
                         nc.close()
+                        ncmerge.close()
 
 
         if pchannels is None:
@@ -940,7 +941,7 @@ def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False,verbose=False):
     y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
     if hasattr(x,'long_name'): y.long_name = x.long_name
     if hasattr(x,'units'): y.units = x.units
-    if hasattr(x.'missing_value'): y.missing_value = x.missing_value
+    if hasattr(x,'missing_value'): y.missing_value = x.missing_value
     rank = len(x.shape)
 
     if rank == 1:
@@ -965,7 +966,7 @@ if __name__ == '__main__':
     nodemax   = 20
     slurm     = 'pace_lc_array.j'
     rootdir   = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE'
-    tmp       = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/workdir'
+    tmp       = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/workdir/test'
     rtls_name = 'MCD43C'
     bpdf_name = None # 'MAIGNAN'
 
