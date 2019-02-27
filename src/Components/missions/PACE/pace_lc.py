@@ -940,22 +940,19 @@ def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False,verbose=False):
     y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
     if hasattr(x,'long_name'): y.long_name = x.long_name
     if hasattr(x,'units'): y.units = x.units
-    try:
-        y.missing_value = x.missing_value
-    except:
-        pass
+    if hasattr(x.'missing_value'): y.missing_value = x.missing_value
     rank = len(x.shape)
 
     if rank == 1:
         y[:] = x[:]
     elif rank == 2:
-        if hasattr(y,'missing_value'):
-            y[:,:] = shave(x[:,:],undef=y.missing_value)
+        if hasattr(x,'missing_value'):
+            y[:,:] = shave(x[:,:],undef=x.missing_value)
         else:
             y[:,:] = shave(x[:,:],has_undef=0)
     elif rank == 3:
-        if hasattr(y,'missing_value'):
-            y[:,:,:] = shave(x[:,:,:],undef=y.missing_value)
+        if hasattr(x,'missing_value'):
+            y[:,:,:] = shave(x[:,:,:],undef=x.missing_value)
         else:
             y[:,:,:] = shave(x[:,:,:],has_undef=0)
     else:
