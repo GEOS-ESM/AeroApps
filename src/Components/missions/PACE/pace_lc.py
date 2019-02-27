@@ -783,7 +783,7 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
             chname = None
 
         if chname is not None:
-            ncmerge = Dataset(outfile,mode='w')
+            ncmerge = Dataset(outfile,mode='r')
             pchannels = ncmerge.variables[chname][:]
             ncmerge.close()
         else:
