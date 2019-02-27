@@ -739,7 +739,7 @@ def condense_LC(outfilelist,addfilelist,cldfilelist,aerfilelist,rootdir,channels
             if force or (not exists):
                 # create new outfile
                 if addfilelist is None:
-                    SDS = SDS_RT[wav[]]
+                    SDS = SDS_RT[wav]
                 else:
                     SDS = dict(SDS_RT[wav], **SDS_ADD[wav])
                 create_condenseFile(L1B_file,outfile,Date,SDS)
@@ -949,12 +949,12 @@ def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False,verbose=False):
     if rank == 1:
         y[:] = x[:]
     elif rank == 2:
-        if hasattr(y.missing_value):
+        if hasattr(y,'missing_value'):
             y[:,:] = shave(x[:,:],undef=y.missing_value)
         else:
             y[:,:] = shave(x[:,:],has_undef=0)
     elif rank == 3:
-        if hasattr(y.missing_value):
+        if hasattr(y,'missing_value'):
             y[:,:,:] = shave(x[:,:,:],undef=y.missing_value)
         else:
             y[:,:,:] = shave(x[:,:,:],has_undef=0)
