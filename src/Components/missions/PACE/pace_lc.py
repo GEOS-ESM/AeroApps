@@ -809,11 +809,11 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
                         data = np.squeeze(ovar[:])
                         rank = len(data.shape)
                         if rank == 1:
-                            pvar[i,:] = data
+                            pvar[:,i] = data
                         if rank == 2:
-                            pvar[i,:,:] = shave(data,undef=missing_value)
+                            pvar[:,:,i] = shave(data,undef=missing_value)
                         if rank == 3:
-                            pvar[i,:,:,:] = shave(data,undef=missing_value)
+                            pvar[:,:,:,i] = shave(data,undef=missing_value)
 
                         nc.close()
                         ncmerge.close()
@@ -895,31 +895,31 @@ def create_condenseFile(L1B_file,outfile,Date,SDS):
         lname,unit,levs = SDS[sds]
         if levs == nlev:
             if 'red' in sds:
-                dim = ('red_bands','lev','number_of_scans','ccd_pixels')
+                dim = ('lev','number_of_scans','ccd_pixels','red_bands',)
             elif 'blue' in sds:
-                dim = ('blue_bands','lev','number_of_scans','ccd_pixels')
+                dim = ('lev','number_of_scans','ccd_pixels','blue_bands',)
             elif 'SWIR' in sds:
-                dim = ('SWIR_bands','lev','number_of_scans','ccd_pixels')
+                dim = ('lev','number_of_scans','ccd_pixels','SWIR_bands',)
             else:
                 dim = ('lev','number_of_scans','ccd_pixels')
 
         elif levs == nlev+1:
             if 'red' in sds:
-                dim = ('red_bands','leve','number_of_scans','ccd_pixels')
+                dim = ('leve','number_of_scans','ccd_pixels','red_bands',)
             elif 'blue' in sds:
-                dim = ('blue_bands','leve','number_of_scans','ccd_pixels')
+                dim = ('leve','number_of_scans','ccd_pixels','blue_bands',)
             elif 'SWIR' in sds:
-                dim = ('SWIR_bands','leve','number_of_scans','ccd_pixels')
+                dim = ('leve','number_of_scans','ccd_pixels','SWIR_bands',)
             else:
                 dim = ('leve','number_of_scans','ccd_pixels')
 
         else:
             if 'red' in sds:
-                dim = ('red_bands','number_of_scans','ccd_pixels')
+                dim = ('number_of_scans','ccd_pixels','red_bands',)
             elif 'blue' in sds:
-                dim = ('blue_bands','number_of_scans','ccd_pixels')
+                dim = ('number_of_scans','ccd_pixels','blue_bands',)
             elif 'SWIR' in sds:
-                dim = ('SWIR_bands','number_of_scans','ccd_pixels')
+                dim = ('number_of_scans','ccd_pixels','SWIR_bands',)
             else:
                 dim = ('number_of_scans','ccd_pixels')
 
