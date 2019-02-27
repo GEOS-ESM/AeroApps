@@ -772,6 +772,7 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
     # insert data into correct place in outfile
     
     for sds in SDS:
+
         if 'blue' in sds:
             chname = 'blue_wavelength'
         elif 'red' in sds:
@@ -782,7 +783,9 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
             chname = None
 
         if chname is not None:
+            ncmerge = Dataset(outfile,mode='w')
             pchannels = ncmerge.variables[chname][:]
+            ncmerge.close()
         else:
             pchannels = None
 
