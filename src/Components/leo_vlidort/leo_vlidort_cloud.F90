@@ -796,21 +796,21 @@ end if
         end do
       end do
 
-      call check(nf90_inq_varid(ncid, 'pe', varid), "get pe vaird")
-      do k=1,km+1
-        call check(nf90_put_var(ncid, varid, PE(:,:,k), &
-                   start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out pe")
-      end do
-      call check(nf90_inq_varid(ncid, 'ze', varid), "get ze vaird")
-      do k=1,km+1
-        call check(nf90_put_var(ncid, varid, ZE(:,:,k), &
-                   start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ze")
-      end do
-      call check(nf90_inq_varid(ncid, 'te', varid), "get te vaird")
-      do k=1,km+1
-        call check(nf90_put_var(ncid, varid, TE(:,:,k), &
-                   start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out te")
-      end do
+      ! call check(nf90_inq_varid(ncid, 'pe', varid), "get pe vaird")
+      ! do k=1,km+1
+      !   call check(nf90_put_var(ncid, varid, PE(:,:,k), &
+      !              start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out pe")
+      ! end do
+      ! call check(nf90_inq_varid(ncid, 'ze', varid), "get ze vaird")
+      ! do k=1,km+1
+      !   call check(nf90_put_var(ncid, varid, ZE(:,:,k), &
+      !              start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ze")
+      ! end do
+      ! call check(nf90_inq_varid(ncid, 'te', varid), "get te vaird")
+      ! do k=1,km+1
+      !   call check(nf90_put_var(ncid, varid, TE(:,:,k), &
+      !              start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out te")
+      ! end do
 
       call check( nf90_close(ncid), "close addfile" )
       
@@ -2861,9 +2861,9 @@ end if
         write(comment,'(F10.2)') channels(ch)
         call check(nf90_def_var(ncid, 'rot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),rotVarID(ch)),"create rot var")
       end do
-      call check(nf90_def_var(ncid,'pe',nf90_float,(/ewDimID,nsDimID,leveDimID,timeDimID/),peVarID),"create pe var")
-      call check(nf90_def_var(ncid,'ze',nf90_float,(/ewDimID,nsDimID,leveDimID,timeDimID/),zeVarID),"create ze var")
-      call check(nf90_def_var(ncid,'te',nf90_float,(/ewDimID,nsDimID,leveDimID,timeDimID/),teVarID),"create te var")
+      ! call check(nf90_def_var(ncid,'pe',nf90_float,(/ewDimID,nsDimID,leveDimID,timeDimID/),peVarID),"create pe var")
+      ! call check(nf90_def_var(ncid,'ze',nf90_float,(/ewDimID,nsDimID,leveDimID,timeDimID/),zeVarID),"create ze var")
+      ! call check(nf90_def_var(ncid,'te',nf90_float,(/ewDimID,nsDimID,leveDimID,timeDimID/),teVarID),"create te var")
       ! Variable Attributes
   !                                          Additional Data
   !                                          -----------------  
@@ -2878,20 +2878,20 @@ end if
 
       end do
 
-      call check(nf90_put_att(ncid,peVarID,'standard_name','Edge Pressure'),"standard_name attr")
-      call check(nf90_put_att(ncid,peVarID,'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,peVarID,'units','Pa'),"units attr")
-      call check(nf90_put_att(ncid,peVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")  
+      ! call check(nf90_put_att(ncid,peVarID,'standard_name','Edge Pressure'),"standard_name attr")
+      ! call check(nf90_put_att(ncid,peVarID,'missing_value',real(MISSING)),"missing_value attr")
+      ! call check(nf90_put_att(ncid,peVarID,'units','Pa'),"units attr")
+      ! call check(nf90_put_att(ncid,peVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")  
 
-      call check(nf90_put_att(ncid,zeVarID,'standard_name','Edge Altitude Above Surface'),"standard_name attr")
-      call check(nf90_put_att(ncid,zeVarID,'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,zeVarID,'units','m'),"units attr")
-      call check(nf90_put_att(ncid,zeVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")  
+      ! call check(nf90_put_att(ncid,zeVarID,'standard_name','Edge Altitude Above Surface'),"standard_name attr")
+      ! call check(nf90_put_att(ncid,zeVarID,'missing_value',real(MISSING)),"missing_value attr")
+      ! call check(nf90_put_att(ncid,zeVarID,'units','m'),"units attr")
+      ! call check(nf90_put_att(ncid,zeVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")  
 
-      call check(nf90_put_att(ncid,teVarID,'standard_name','Edge Temperature'),"standard_name attr")
-      call check(nf90_put_att(ncid,teVarID,'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,teVarID,'units','K'),"units attr")
-      call check(nf90_put_att(ncid,teVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")  
+      ! call check(nf90_put_att(ncid,teVarID,'standard_name','Edge Temperature'),"standard_name attr")
+      ! call check(nf90_put_att(ncid,teVarID,'missing_value',real(MISSING)),"missing_value attr")
+      ! call check(nf90_put_att(ncid,teVarID,'units','K'),"units attr")
+      ! call check(nf90_put_att(ncid,teVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")  
 
 
   !                                          scanTime
