@@ -1,6 +1,6 @@
 #!/bin/bash
 
-segments=$( ipcs -m | grep '^0x' | awk '{print $1}' )
+segments=$( ipcs -m | grep $USER | grep '^0x1b2e' | awk '{print $1}' )
 
 if [[ -z $segments ]]
 then
