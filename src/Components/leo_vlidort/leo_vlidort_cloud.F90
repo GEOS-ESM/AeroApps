@@ -705,64 +705,61 @@ end if
 
   subroutine write_outfile()
 ! Write to OUT_file 
-! ------------------
-    if (MAPL_am_I_root()) then
-     
-      allocate (AOD(im,jm))
+! ------------------     
+    ! allocate (AOD(im,jm))
 
-  !                             Write to main OUT_File
-  !                             ----------------------
-      call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
-      do ch = 1, nch
-        write(msg,'(F10.2)') channels(ch)
-        
-        call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-        call check(nf90_put_var(ncid, varid, reflectance_VL, &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
+!                             Write to main OUT_File
+!                             ----------------------
+    call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
+    do ch = 1, nch
+      write(msg,'(F10.2)') channels(ch)
+      
+      call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
+      call check(nf90_put_var(ncid, varid, reflectance_VL, &
+                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
 
-        call check(nf90_inq_varid(ncid, 'I_' // trim(adjustl(msg)), varid), "get rad vaird")
-        call check(nf90_put_var(ncid, varid, radiance_VL, &
-                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
+      call check(nf90_inq_varid(ncid, 'I_' // trim(adjustl(msg)), varid), "get rad vaird")
+      call check(nf90_put_var(ncid, varid, radiance_VL, &
+                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
 
-        call check(nf90_inq_varid(ncid, 'surf_ref_I_' // trim(adjustl(msg)), varid), "get ref vaird")
-        call check(nf90_put_var(ncid, varid, ALBEDO, &
-                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
+      call check(nf90_inq_varid(ncid, 'surf_ref_I_' // trim(adjustl(msg)), varid), "get ref vaird")
+      call check(nf90_put_var(ncid, varid, ALBEDO, &
+                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
 
-        if (.not. scalar) then
-          call check(nf90_inq_varid(ncid, 'Q_' // trim(adjustl(msg)), varid), "get q vaird")
-          call check(nf90_put_var(ncid, varid, Q, &
-                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
+      if (.not. scalar) then
+        call check(nf90_inq_varid(ncid, 'Q_' // trim(adjustl(msg)), varid), "get q vaird")
+        call check(nf90_put_var(ncid, varid, Q, &
+                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
 
-          call check(nf90_inq_varid(ncid, 'U_' // trim(adjustl(msg)), varid), "get u vaird")
-          call check(nf90_put_var(ncid, varid, U, &
-                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
+        call check(nf90_inq_varid(ncid, 'U_' // trim(adjustl(msg)), varid), "get u vaird")
+        call check(nf90_put_var(ncid, varid, U, &
+                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
 
-          call check(nf90_inq_varid(ncid, 'surf_ref_Q_' // trim(adjustl(msg)), varid), "get ref vaird")
-          call check(nf90_put_var(ncid, varid, BR_Q, &
-                        start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo Q")
+        call check(nf90_inq_varid(ncid, 'surf_ref_Q_' // trim(adjustl(msg)), varid), "get ref vaird")
+        call check(nf90_put_var(ncid, varid, BR_Q, &
+                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo Q")
 
-          call check(nf90_inq_varid(ncid, 'surf_ref_U_' // trim(adjustl(msg)), varid), "get ref vaird")
-          call check(nf90_put_var(ncid, varid, BR_U, &
-                        start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo U")
+        call check(nf90_inq_varid(ncid, 'surf_ref_U_' // trim(adjustl(msg)), varid), "get ref vaird")
+        call check(nf90_put_var(ncid, varid, BR_U, &
+                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo U")
 
-        endif        
+      endif        
 
 
-        AOD = 0
-        do k=1,km 
-          AOD = AOD + TAU(:,:,k)
-        end do
+    !   AOD = 0
+    !   do k=1,km 
+    !     AOD = AOD + TAU(:,:,k)
+    !   end do
 
-        where(ALBEDO .eq. MISSING)  AOD = MISSING
-        
+    !   where(ALBEDO .eq. MISSING)  AOD = MISSING
+      
 
-        call check(nf90_inq_varid(ncid, 'aod_' // trim(adjustl(msg)), varid), "get aod vaird")
-        call check(nf90_put_var(ncid, varid, AOD, &
-                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out aod")
-      end do
-      call check( nf90_close(ncid), "close outfile" )
+    !   call check(nf90_inq_varid(ncid, 'aod_' // trim(adjustl(msg)), varid), "get aod vaird")
+    !   call check(nf90_put_var(ncid, varid, AOD, &
+    !                 start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out aod")
+    ! end do
+    call check( nf90_close(ncid), "close outfile" )
 
-    end if
 
   end subroutine write_outfile
 
@@ -2189,7 +2186,7 @@ end if
       write(comment,'(F10.2)') channels(ch)
       call check(nf90_def_var(ncid, 'ref_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),refVarID(ch)),"create reflectance var")
       call check(nf90_def_var(ncid, 'surf_ref_I_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),albVarID(ch)),"create albedo var")
-      call check(nf90_def_var(ncid, 'aod_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),aotVarID(ch)),"create aot var")
+      ! call check(nf90_def_var(ncid, 'aod_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),aotVarID(ch)),"create aot var")
       call check(nf90_def_var(ncid, 'I_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),radVarID(ch)),"create radiance var")              
 
       if (.not. scalar) then
@@ -2221,13 +2218,13 @@ end if
       call check(nf90_put_att(ncid,albVarID(ch),'units','None'),"units attr")
       call check(nf90_put_att(ncid,albVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
-      write(comment,'(F10.2,A)') channels(ch), ' nm AOD'
-      call check(nf90_put_att(ncid,aotVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-      write(comment,'(F10.2,A)') channels(ch), ' nm Aerosol Optical Depth'
-      call check(nf90_put_att(ncid,aotVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-      call check(nf90_put_att(ncid,aotVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,aotVarID(ch),'units','None'),"units attr")
-      call check(nf90_put_att(ncid,aotVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")    
+      ! write(comment,'(F10.2,A)') channels(ch), ' nm AOD'
+      ! call check(nf90_put_att(ncid,aotVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+      ! write(comment,'(F10.2,A)') channels(ch), ' nm Aerosol Optical Depth'
+      ! call check(nf90_put_att(ncid,aotVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+      ! call check(nf90_put_att(ncid,aotVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+      ! call check(nf90_put_att(ncid,aotVarID(ch),'units','None'),"units attr")
+      ! call check(nf90_put_att(ncid,aotVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")    
 
       write(comment,'(F10.2,A)') channels(ch), ' nm TOA I'
       call check(nf90_put_att(ncid,radVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
