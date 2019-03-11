@@ -322,8 +322,7 @@ do iband = 1, nband
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
 
   subroutine write_cldfile()
-    integer                            :: ncid, varid, found, length 
-    character(len=256)                 :: filename
+    integer                            :: ncid, varid
     integer, dimension(npet)           :: nlayer  ! how many layers each processor writes
     integer                            :: startl,countl,endl
 ! Write to CLDO_file
@@ -345,11 +344,7 @@ do iband = 1, nband
     endl   = startl + countl - 1  
 
 
-    found = index(OUT_file,'_{}')
-    length = len(trim(OUT_file))
-    ! filename = OUT_file(1:found-1)//trim(bandname)//OUT_file(found+2:length)
-    filename = OUT_file(1:found-1)//OUT_file(found+2:length)
-    call check( nf90_open(filename, IOR(nf90_write, nf90_mpiio), ncid,comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename )
+    call check( nf90_open(OUT_file, IOR(nf90_write, nf90_mpiio), ncid,comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // OUT_file )
       
     !                             Write to Cloud Outputs File
     !                             --------------------------------
@@ -625,7 +620,7 @@ do iband = 1, nband
 ! PURPOSE
 !     creates outfile for wiriting to
 ! INPUT
-!     filename
+!     
 ! OUTPUT
 !     none
 !  HISTORY
@@ -647,19 +642,13 @@ do iband = 1, nband
     real*8,allocatable,dimension(:)    :: scantime, ew, ns, tyme, lev
 
     character(len=2000)                :: comment
-    character(len=256)                 :: filename
-    integer                            :: found, length
 
-    found = index(OUT_file,'_{}')
-    length = len(trim(OUT_file))
-    ! filename = OUT_file(1:found-1)//trim(bandname)//OUT_file(found+2:length)
-    filename = OUT_file(1:found-1)//OUT_file(found+2:length)
-    write(*,*) 'Creating file: ',trim(filename)
+    write(*,*) 'Creating file: ',trim(OUT_file)
 
 !                           CLOUD OUTPUTS
 !                           ------------------
       ! Open File
-      call check(nf90_create(filename, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // filename)
+      call check(nf90_create(OUT_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // OUT_file)
 
       ! Create dimensions
       ! call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
