@@ -10,7 +10,8 @@ import numpy                  as     np
 from   glob                   import glob
 import  mpl_toolkits.basemap
 from   netCDF4                import Dataset
-
+from   MAPL.ShaveMantissa_ import shave32
+from MAPL.constants import MAPL_UNDEF
 
 SDS = { 'lwn'                 : ('sun normalized water leaving radiance','mW cm-2 micron-1 sr-1'),
         'cdomnapa'            : ('absorption by colored dissolved organic matter and non algal particles','m-1'),
@@ -21,6 +22,36 @@ SDS = { 'lwn'                 : ('sun normalized water leaving radiance','mW cm-
         'partbb'              : ('paticulate backscattering','m-1'),
         'phytoa'              : ('absorption by phytoplankton','m-1'),
         'rrs'                 : ('remote sensing reflectance','sr-1')}
+
+
+#---
+def shave(q,undef=MAPL_UNDEF,has_undef=1,nbits=12):
+    """
+    Shave variable. On input, nbits is the number of mantissa bits to keep
+    out of maximum of 24.
+    """
+
+    # Determine shaving parameters
+    # ----------------------------
+    xbits = 24 - nbits
+    shp = q.shape
+    rank = len(shp)
+    if rank == 2:  # yx
+        chunksize = shp[0]*shp[1] 
+    elif rank == 3: # zyx
+        chunksize = shp[1]*shp[2]
+    else:
+        raise ValueError, "invalid rank=%d"%rank
+
+    # Shave it
+    # --------
+    qs, rc = shave32(q.ravel(),xbits,has_undef,undef,chunksize)
+    if rc:
+        raise ValueError, "error on return from shave32, rc=%d"%rc
+
+    return qs.reshape(shp)
+
+
 
 #----
 def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
@@ -48,9 +79,15 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
     if rank == 1:
         y[:] = x[:]
     elif rank == 2:
-        y[:,:] = x[:,:]
+        if fill_value is None:
+            y[:,:] = shave(x[:,:],has_undef=0)
+        else:
+            y[:,:] = shave(x[:,:],undef=fill_value)
     elif rank == 3:
-        y[:,:,:] = x[:,:,:]
+        if fill_value is None:
+            y[:,:,:] = shave(x[:,:,:],has_undef=0)
+        else:
+            y[:,:,:] = shave(x[:,:,:],undef=fill_value)
     else:
         raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
 
@@ -175,7 +212,7 @@ class NOBM(object):
             this.long_name = SDS[sds][0]
             this.missing_value = self.fill_value
             this.unit = SDS[sds][1]
-            this[:] = data
+            this[:] = shave(data,undef=self.fill_value)
 
 
         nc.close()          
