@@ -54,12 +54,12 @@ program cloud_calculator
 
 !                                  Final Shared Arrays
 !                                  -------------------
-  real, pointer                         :: LTAU(:,:) => null()                 ! liquid cloud optical depth
-  real, pointer                         :: LSSA(:,:) => null()                 ! liquid cloud single scattering albedo
-  real, pointer                         :: LG(:,:) => null()                   ! liquid cloud asymmetry factor
-  real, pointer                         :: ITAU(:,:) => null()                 ! ice cloud optical depth
-  real, pointer                         :: ISSA(:,:) => null()                 ! ice cloud single scattering albedo
-  real, pointer                         :: IG(:,:) => null()                   ! ice cloud asymmetry factor
+  real, pointer                         :: LTAU(:,:,:) => null()                 ! liquid cloud optical depth
+  real, pointer                         :: LSSA(:,:,:) => null()                 ! liquid cloud single scattering albedo
+  real, pointer                         :: LG(:,:,:) => null()                   ! liquid cloud asymmetry factor
+  real, pointer                         :: ITAU(:,:,:) => null()                 ! ice cloud optical depth
+  real, pointer                         :: ISSA(:,:,:) => null()                 ! ice cloud single scattering albedo
+  real, pointer                         :: IG(:,:,:) => null()                   ! ice cloud asymmetry factor
 
 ! working variables
 !------------------------------
@@ -134,14 +134,16 @@ program cloud_calculator
 ! Allocate arrays that will be shared
 ! -----------------------------------------------------------------
   call allocate_shared()
-
-! Allocate arrays that will be copied on each processor - unshared
-! -----------------------------------------------------------------
-  call allocate_unshared()
+  call MAPL_SyncSharedMemory(rc=ierr)
 
 ! Read in the global arrays
 ! ------------------------------
-!  call read_cld_Tau() 
+  call read_cld_Tau() 
+  call MAPL_SyncSharedMemory(rc=ierr)
+
+! Create out file 
+! ----------------------
+  if ( MAPL_am_I_root() ) call create_cldfile()
   call MAPL_SyncSharedMemory(rc=ierr)
 
 ! Collapse indeces
@@ -204,79 +206,87 @@ do iband = 1, nband
     allocate(channels(nch))
     call readvar1Dgrp(trim(bandname)//"_wavelength", "sensor_band_parameters", ANG_file, channels)
 
-
-  ! Create out file 
-  ! ----------------------
-    if ( MAPL_am_I_root() ) call create_cldfile()
+  ! Allocate arrays that will be shared
+  ! -----------------------------------------------------------------
+    call allocate_shared_band()
     call MAPL_SyncSharedMemory(rc=ierr)
 
-    do ch = 1,nch     
-      ! Initialize outputs to be safe
-      ! -------------------------------
-      LTAU           = g5nr_missing
-      LSSA           = g5nr_missing
-      LG             = g5nr_missing
-      ITAU           = g5nr_missing
-      ISSA           = g5nr_missing
-      IG             = g5nr_missing
-      call MAPL_SyncSharedMemory(rc=ierr)
+  ! Allocate arrays that will be copied on each processor - unshared
+  ! -----------------------------------------------------------------
+    call allocate_unshared()
 
-      ! Main do loop over the part of the shuffled domain assinged to each processor
-      write(*,*)'<> Work on ch ',ch
-      progress = 10
-      do cc = starti, endi  
-        c = indices(cc)
-        i  = iIndex(c)
-        j  = jIndex(c)
 
-    !   Cloud Optical Properties
-    !   ------------------------
-        ! nch = 1
-        call getCOPvector(IcldTable, km, nobs, 1, nMom, nPol, (/channels(ch)/), REI(i,j,:), TAUI(i,j,:), VssaIcl, VgIcl, VpmomIcl, VtauIcl)
-        call getCOPvector(LcldTable, km, nobs, 1, nMom, nPol, (/channels(ch)/), REL(i,j,:), TAUL(i,j,:), VssaLcl, VgLcl, VpmomLcl, VtauLcl)
+  ! Initialize outputs to be safe
+  ! -------------------------------
+    LTAU           = g5nr_missing
+    LSSA           = g5nr_missing
+    LG             = g5nr_missing
+    ITAU           = g5nr_missing
+    ISSA           = g5nr_missing
+    IG             = g5nr_missing
+    call MAPL_SyncSharedMemory(rc=ierr)
+  ! Main do loop over the part of the shuffled domain assinged to each processor
+    write(*,*)'<> Work on all channels ',myid
+    progress = 0
+    do cc = starti, endi  
+      c = indices(cc)
+      i  = iIndex(c)
+      j  = jIndex(c)
 
-    !   Save some variables on the 2D Grid for Writing Later
-    !   ------------------------
-                               !km,nch,nobs
-        LTAU(i,j) = SUM(VtauLcl(:,1,nobs))
-        if (LTAU(i,j) > 0) then
-          LSSA(i,j) = SUM(VssaLcl(:,1,nobs)*VtauLcl(:,1,nobs))/LTAU(i,j)
-          LG(i,j)   = SUM(VgLcl(:,1,nobs)*VtauLcl(:,1,nobs))/LTAU(i,j)   
+  !   Cloud Optical Properties
+  !   ------------------------
+      ! nch = 1
+      call getCOPvector(IcldTable, km, nobs, nch, nMom, nPol, channels, REI(i,j,:), TAUI(i,j,:), VssaIcl, VgIcl, VpmomIcl, VtauIcl)
+      call getCOPvector(LcldTable, km, nobs, nch, nMom, nPol, channels, REL(i,j,:), TAUL(i,j,:), VssaLcl, VgLcl, VpmomLcl, VtauLcl)
+
+  !   Save some variables on the 2D Grid for Writing Later
+  !   ------------------------
+                             !km,nch,nobs
+      LTAU(i,j,:) = SUM(VtauLcl(:,:,nobs),DIM=1)
+      LSSA(i,j,:) = SUM(VssaLcl(:,:,nobs)*VtauLcl(:,:,nobs),DIM=1)
+      LG(i,j,:)   = SUM(VgLcl(:,:,nobs)*VtauLcl(:,:,nobs),DIM=1)      
+
+      ITAU(i,j,:) = SUM(VtauIcl(:,:,nobs),DIM=1)
+      ISSA(i,j,:) = SUM(VssaIcl(:,:,nobs)*VtauIcl(:,:,nobs),DIM=1)
+      IG(i,j,:)   = SUM(VgIcl(:,:,nobs)*VtauIcl(:,:,nobs),DIM=1)    
+      do ch = 1,nch
+        if (LTAU(i,j,ch) > 0) then
+          LSSA(i,j,ch) = LSSA(i,j,ch)/LTAU(i,j,ch)
+          LG(i,j,ch)   = LG(i,j,ch)/LTAU(i,j,ch)
         else
-          LSSA(i,j) = g5nr_missing
-          LG(i,j)   = g5nr_missing
+          LSSA(i,j,ch) = g5nr_missing
+          LG(i,j,ch)   = g5nr_missing
         end if
-
-        ITAU(i,j) = SUM(VtauIcl(:,1,nobs))
-        if (ITAU(i,j) > 0) then        
-          ISSA(i,j) = SUM(VssaIcl(:,1,nobs)*VtauIcl(:,1,nobs))/ITAU(i,j)
-          IG(i,j)   = SUM(VgIcl(:,1,nobs)*VtauIcl(:,1,nobs))/ITAU(i,j)
+        
+        if (ITAU(i,j,ch) > 0) then        
+          ISSA(i,j,ch) = ISSA(i,j,ch)/ITAU(i,j,ch)
+          IG(i,j,ch)   = IG(i,j,ch)/ITAU(i,j,ch)
         else
-          ISSA(i,j) = g5nr_missing
-          IG(i,j)   = g5nr_missing
+          ISSA(i,j,ch) = g5nr_missing
+          IG(i,j,ch)   = g5nr_missing
         end if
-       
-    !   Keep track of progress of each processor
-    !   -----------------------------------------        
-        if (nint(100.*real(cc-starti)/real(counti)) > progress) then
-          progress = progress + 10
-          write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',cc,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
-        end if
-                    
-      end do ! do clear pixels
-      ! Wait for everyone to finish calculations
-      ! ----------------------------------------
-      call MAPL_SyncSharedMemory(rc=ierr)
+      end do
+     
+  !   Keep track of progress of each processor
+  !   -----------------------------------------        
+      if (nint(100.*real(cc-starti)/real(counti)) > progress) then         
+        write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',cc,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'
+        progress = progress + 10       
+      end if
+                  
+    end do ! do clear pixels
+    ! Sync processors before shutting down
+    ! ------------------------------------
+    call MAPL_SyncSharedMemory(rc=ierr)
 
+    !Write cloud data
+    !----------------------
+    call write_cldfile()
 
-      !Write cloud data
-      !----------------------
-      call write_cldfile()
+    ! Sync processors before shutting down
+    ! ------------------------------------
+    call MAPL_SyncSharedMemory(rc=ierr)
 
-      ! Sync processors before shutting down
-      ! ------------------------------------
-      call MAPL_SyncSharedMemory(rc=ierr)
-    end do !nch
     if (MAPL_am_I_root()) then
       write(*,*) '<> Wrote Out File for band ',bandname
       write(*,*) ' '
@@ -285,6 +295,9 @@ do iband = 1, nband
     ! All done band
     ! -----------------
     deallocate(channels)
+    call deallocate_shared_band()
+    call deallocate_unshared()
+
     call MAPL_SyncSharedMemory(rc=ierr)
   end do !nband
 500  call MAPL_SyncSharedMemory(rc=ierr)
@@ -332,32 +345,38 @@ do iband = 1, nband
     endl   = startl + countl - 1  
 
 
-    found = index(OUT_file,'{}')
+    found = index(OUT_file,'_{}')
     length = len(trim(OUT_file))
-    filename = OUT_file(1:found-1)//trim(bandname)//OUT_file(found+2:length)
+    ! filename = OUT_file(1:found-1)//trim(bandname)//OUT_file(found+2:length)
+    filename = OUT_file(1:found-1)//OUT_file(found+2:length)
     call check( nf90_open(filename, IOR(nf90_write, nf90_mpiio), ncid,comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename )
       
     !                             Write to Cloud Outputs File
     !                             --------------------------------
     ! ! Liquid Cloud Stuff
     call check(nf90_inq_varid(ncid, 'lcot_' // trim(bandname), varid), "get lcot vaird")    
-    call check(nf90_put_var(ncid, varid, LTAU(:,startl:endl),start = (/1,startl,ch/), count = (/im,countl,1/)), "writing out ltau")
+    call check(nf90_put_var(ncid, varid, LTAU(:,startl:endl,:),start = (/1,startl,1/), count = (/im,countl,nch/)), "writing out ltau")
 
     ! ! call check(nf90_inq_varid(ncid, 'lc_g_' // trim(bandname), varid), "get lc_g vaird")
     ! call check(nf90_put_var(ncid, varid, LG), "writing out lg")
 
     call check(nf90_inq_varid(ncid, 'lc_ssa_' // trim(bandname), varid), "get lc_ssa vaird")
-    call check(nf90_put_var(ncid, varid, LSSA(:,startl:endl), start = (/1,startl,ch/), count = (/im,countl,1/)), "writing out lssa")
+    call check(nf90_put_var(ncid, varid, LSSA(:,startl:endl,:), start = (/1,startl,1/), count = (/im,countl,nch/)), "writing out lssa")
 
     ! Liquid Cloud Stuff
     call check(nf90_inq_varid(ncid, 'icot_' // trim(bandname), varid), "get icot vaird")
-    call check(nf90_put_var(ncid, varid, ITAU(:,startl:endl), start = (/1,startl,ch/), count = (/im,countl,1/)), "writing out itau")
+    call check(nf90_put_var(ncid, varid, ITAU(:,startl:endl,:), start = (/1,startl,1/), count = (/im,countl,nch/)), "writing out itau")
 
     ! ! call check(nf90_inq_varid(ncid, 'ic_g_' // trim(bandname), varid), "get ic_g vaird")
     ! ! call check(nf90_put_var(ncid, varid, IG), "writing out ig")
 
     call check(nf90_inq_varid(ncid, 'ic_ssa_' // trim(bandname), varid), "get ic_ssa vaird")
-    call check(nf90_put_var(ncid, varid, ISSA(:,startl:endl), start = (/1,startl,ch/), count = (/im,countl,1/)), "writing out issa")
+    call check(nf90_put_var(ncid, varid, ISSA(:,startl:endl,:), start = (/1,startl,1/), count = (/im,countl,nch/)), "writing out issa")
+
+    if (myid == 0) then
+      call check(nf90_inq_varid(ncid, trim(bandname) // '_wavelength', varid), "get wavelength vaird")
+      call check(nf90_put_var(ncid,varid,channels), "writing out channels")  
+    end if
         
     call check( nf90_close(ncid), "close cldofile" )
 
@@ -510,14 +529,20 @@ do iband = 1, nband
     call MAPL_AllocNodeArray(REL,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(TAUI,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(TAUL,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(LTAU,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(LSSA,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(LG,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(ITAU,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(ISSA,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(IG,(/im,jm/),rc=ierr)
-
   end subroutine allocate_shared
+
+  subroutine allocate_shared_band()
+    if (MAPL_am_I_root()) then
+      write(*,*) '<> Allocating shared memory band variables'
+    end if
+    call MAPL_AllocNodeArray(LTAU,(/im,jm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(LSSA,(/im,jm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(LG,(/im,jm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(ITAU,(/im,jm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(ISSA,(/im,jm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(IG,(/im,jm,nch/),rc=ierr)
+
+  end subroutine allocate_shared_band
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -559,14 +584,14 @@ do iband = 1, nband
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine allocate_unshared()
    !nch = 1
-   allocate (VtauIcl(km,1,nobs))
-   allocate (VtauLcl(km,1,nobs))
-   allocate (VssaIcl(km,1,nobs))
-   allocate (VssaLcl(km,1,nobs))    
-   allocate (VgIcl(km,1,nobs))    
-   allocate (VgLcl(km,1,nobs))    
-   allocate (VpmomLcl(km,1,nobs,nMom,nPol))
-   allocate (VpmomIcl(km,1,nobs,nMom,nPol))
+   allocate (VtauIcl(km,nch,nobs))
+   allocate (VtauLcl(km,nch,nobs))
+   allocate (VssaIcl(km,nch,nobs))
+   allocate (VssaLcl(km,nch,nobs))    
+   allocate (VgIcl(km,nch,nobs))    
+   allocate (VgLcl(km,nch,nobs))    
+   allocate (VpmomLcl(km,nch,nobs,nMom,nPol))
+   allocate (VpmomIcl(km,nch,nobs,nMom,nPol))
 
   end subroutine allocate_unshared
 
@@ -625,9 +650,10 @@ do iband = 1, nband
     character(len=256)                 :: filename
     integer                            :: found, length
 
-    found = index(OUT_file,'{}')
+    found = index(OUT_file,'_{}')
     length = len(trim(OUT_file))
-    filename = OUT_file(1:found-1)//trim(bandname)//OUT_file(found+2:length)
+    ! filename = OUT_file(1:found-1)//trim(bandname)//OUT_file(found+2:length)
+    filename = OUT_file(1:found-1)//OUT_file(found+2:length)
     write(*,*) 'Creating file: ',trim(filename)
 
 !                           CLOUD OUTPUTS
@@ -639,7 +665,6 @@ do iband = 1, nband
       ! call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
       call check(nf90_def_dim(ncid, "ccd_pixels", im, ewDimID), "creating ew dimension") !im
       call check(nf90_def_dim(ncid, "number_of_scans", jm, nsDimID), "creating ns dimension") !jm
-      call check(nf90_def_dim(ncid, trim(bandname)//"_wavelength", nch, chDimID), "creating ch dimension") !nch
 
       ! Global Attributes
       write(comment,'(A)') 'Atmospheric inputs for VLIDORT Simulation of GEOS-5 PACE Sampler'
@@ -671,73 +696,90 @@ do iband = 1, nband
       call check(nf90_def_var(ncid,'ev_mid_time',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
       call check(nf90_def_var(ncid,'longitude',nf90_float,(/ewDimID,nsDimID/),clonVarID),"create clon var")
       call check(nf90_def_var(ncid,'latitude',nf90_float,(/ewDimID,nsDimID/),clatVarID),"create clat var")
-      call check(nf90_def_var(ncid,trim(bandname)//"_wavelength",nf90_float,(/chDimID/),chVarID),"create ch var")
 
+    do iband = 1, nband
+
+      ! Read in channels for band
+      ! --------------------------
+        if (iband == 1) then 
+          bandname = 'blue'
+          nch = 60
+        else if (iband == 2) then
+          bandname = 'red'
+          nch = 60
+        else if (iband == 3) then
+          bandname = 'SWIR'
+          nch = 9
+        end if
+
+        
+        call check(nf90_def_dim(ncid, trim(bandname)//"_wavelength", nch, chDimID), "creating ch dimension") !nch
+        call check(nf90_def_var(ncid,trim(bandname)//"_wavelength",nf90_float,(/chDimID/),chVarID),"create ch var")
 
   !                                     Data
   !                                     ----
-      call check(nf90_def_var(ncid, 'lcot_' // trim(bandname) ,nf90_float,(/ewDimID,nsDimID,chDimID/),LtauVarID),"create lcot var")      
-      call check(nf90_def_var(ncid, 'lc_ssa_' // trim(bandname) ,nf90_float,(/ewDimID,nsDimID,chDimID/),LssaVarID),"create lc_ssa var")
-!      call check(nf90_def_var(ncid, 'lc_g_' // trim(bandname),nf90_float,(/ewDimID,nsDimID,levDimID,chDimID/),LgVarID),"create lc_g var")
+        call check(nf90_def_var(ncid, 'lcot_' // trim(bandname) ,nf90_float,(/ewDimID,nsDimID,chDimID/),LtauVarID),"create lcot var")      
+        call check(nf90_def_var(ncid, 'lc_ssa_' // trim(bandname) ,nf90_float,(/ewDimID,nsDimID,chDimID/),LssaVarID),"create lc_ssa var")
+  !      call check(nf90_def_var(ncid, 'lc_g_' // trim(bandname),nf90_float,(/ewDimID,nsDimID,levDimID,chDimID/),LgVarID),"create lc_g var")
 
-      call check(nf90_def_var(ncid, 'icot_' // trim(bandname) ,nf90_float,(/ewDimID,nsDimID,chDimID/),ItauVarID),"create icot var")      
-      call check(nf90_def_var(ncid, 'ic_ssa_' // trim(bandname) ,nf90_float,(/ewDimID,nsDimID,chDimID/),IssaVarID),"create ic_ssa var")
-!      call check(nf90_def_var(ncid, 'ic_g_' // trim(bandname) ,nf90_float,(/ewDimID,nsDimID,levDimID,chDimID/),IgVarID),"create ic_g var")
+        call check(nf90_def_var(ncid, 'icot_' // trim(bandname) ,nf90_float,(/ewDimID,nsDimID,chDimID/),ItauVarID),"create icot var")      
+        call check(nf90_def_var(ncid, 'ic_ssa_' // trim(bandname) ,nf90_float,(/ewDimID,nsDimID,chDimID/),IssaVarID),"create ic_ssa var")
+  !      call check(nf90_def_var(ncid, 'ic_g_' // trim(bandname) ,nf90_float,(/ewDimID,nsDimID,levDimID,chDimID/),IgVarID),"create ic_g var")
 
 
-      ! Variable Attributes
-  !                                          Cloud Data
-  !                                          -----------------  
-      ! Liquid Cloud Stuff
-      write(comment,'(A,A)') bandname, ' wavelengths Liquid COT'
-      call check(nf90_put_att(ncid,LtauVarID,'standard_name',trim(adjustl(comment))),"standard_name attr")
-      write(comment,'(A,A)') bandname, ' wavelengths layer Liquid Cloud Optical Thickness'
-      call check(nf90_put_att(ncid,LtauVarID,'long_name',trim(adjustl(comment))),"long_name attr")
-      call check(nf90_put_att(ncid,LtauVarID,'missing_value',real(g5nr_missing)),"missing_value attr")
-      call check(nf90_put_att(ncid,LtauVarID,'units','none'),"units attr")
-      call check(nf90_put_att(ncid,LtauVarID,"_FillValue",real(g5nr_missing)),"_Fillvalue attr")
+    ! Variable Attributes
+    !                                          Cloud Data
+    !                                          -----------------  
+        ! Liquid Cloud Stuff
+        write(comment,'(A,A)') bandname, ' wavelengths Liquid COT'
+        call check(nf90_put_att(ncid,LtauVarID,'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(A,A)') bandname, ' wavelengths layer Liquid Cloud Optical Thickness'
+        call check(nf90_put_att(ncid,LtauVarID,'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,LtauVarID,'missing_value',real(g5nr_missing)),"missing_value attr")
+        call check(nf90_put_att(ncid,LtauVarID,'units','none'),"units attr")
+        call check(nf90_put_att(ncid,LtauVarID,"_FillValue",real(g5nr_missing)),"_Fillvalue attr")
 
-      write(comment,'(A,A)') bandname, ' wavelengths Liquid Cloud SSA'
-      call check(nf90_put_att(ncid,LssaVarID,'standard_name',trim(adjustl(comment))),"standard_name attr")
-      write(comment,'(A,A)') bandname, ' wavelengths layer Liquid Cloud Single Scattering Albedo'
-      call check(nf90_put_att(ncid,LssaVarID,'long_name',trim(adjustl(comment))),"long_name attr")
-      call check(nf90_put_att(ncid,LssaVarID,'missing_value',real(g5nr_missing)),"missing_value attr")
-      call check(nf90_put_att(ncid,LssaVarID,'units','none'),"units attr")
-      call check(nf90_put_att(ncid,LssaVarID,"_FillValue",real(g5nr_missing)),"_Fillvalue attr")   
+        write(comment,'(A,A)') bandname, ' wavelengths Liquid Cloud SSA'
+        call check(nf90_put_att(ncid,LssaVarID,'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(A,A)') bandname, ' wavelengths layer Liquid Cloud Single Scattering Albedo'
+        call check(nf90_put_att(ncid,LssaVarID,'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,LssaVarID,'missing_value',real(g5nr_missing)),"missing_value attr")
+        call check(nf90_put_att(ncid,LssaVarID,'units','none'),"units attr")
+        call check(nf90_put_att(ncid,LssaVarID,"_FillValue",real(g5nr_missing)),"_Fillvalue attr")   
 
-  !       write(comment,'(A,A)') bandname, ' wavelengths Liquid Cloud g'
-  !       call check(nf90_put_att(ncid,LgVarID,'standard_name',trim(adjustl(comment))),"standard_name attr")
-  !       write(comment,'(A,A)') bandname, ' wavelengths layer Liquid Cloud Asymmetry Parameter'
-  !       call check(nf90_put_att(ncid,LgVarID,'long_name',trim(adjustl(comment))),"long_name attr")
-  !       call check(nf90_put_att(ncid,LgVarID,'missing_value',real(g5nr_missing)),"missing_value attr")
-  !       call check(nf90_put_att(ncid,LgVarID,'units','none'),"units attr")
-  !       call check(nf90_put_att(ncid,LgVarID,"_FillValue",real(g5nr_missing)),"_Fillvalue attr")  
+    !       write(comment,'(A,A)') bandname, ' wavelengths Liquid Cloud g'
+    !       call check(nf90_put_att(ncid,LgVarID,'standard_name',trim(adjustl(comment))),"standard_name attr")
+    !       write(comment,'(A,A)') bandname, ' wavelengths layer Liquid Cloud Asymmetry Parameter'
+    !       call check(nf90_put_att(ncid,LgVarID,'long_name',trim(adjustl(comment))),"long_name attr")
+    !       call check(nf90_put_att(ncid,LgVarID,'missing_value',real(g5nr_missing)),"missing_value attr")
+    !       call check(nf90_put_att(ncid,LgVarID,'units','none'),"units attr")
+    !       call check(nf90_put_att(ncid,LgVarID,"_FillValue",real(g5nr_missing)),"_Fillvalue attr")  
 
-      ! Ice Cloud Stuff
-      write(comment,'(A,A)') bandname, ' wavelengths Ice COT'
-      call check(nf90_put_att(ncid,ItauVarID,'standard_name',trim(adjustl(comment))),"standard_name attr")
-      write(comment,'(A,A)') bandname, ' wavelengths layer Ice Cloud Optical Thickness'
-      call check(nf90_put_att(ncid,ItauVarID,'long_name',trim(adjustl(comment))),"long_name attr")
-      call check(nf90_put_att(ncid,ItauVarID,'missing_value',real(g5nr_missing)),"missing_value attr")
-      call check(nf90_put_att(ncid,ItauVarID,'units','none'),"units attr")
-      call check(nf90_put_att(ncid,ItauVarID,"_FillValue",real(g5nr_missing)),"_Fillvalue attr")
+        ! Ice Cloud Stuff
+        write(comment,'(A,A)') bandname, ' wavelengths Ice COT'
+        call check(nf90_put_att(ncid,ItauVarID,'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(A,A)') bandname, ' wavelengths layer Ice Cloud Optical Thickness'
+        call check(nf90_put_att(ncid,ItauVarID,'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,ItauVarID,'missing_value',real(g5nr_missing)),"missing_value attr")
+        call check(nf90_put_att(ncid,ItauVarID,'units','none'),"units attr")
+        call check(nf90_put_att(ncid,ItauVarID,"_FillValue",real(g5nr_missing)),"_Fillvalue attr")
 
-      write(comment,'(A,A)') bandname, ' wavelengths Ice Cloud SSA'
-      call check(nf90_put_att(ncid,IssaVarID,'standard_name',trim(adjustl(comment))),"standard_name attr")
-      write(comment,'(A,A)') bandname, ' wavelengths layer Ice Cloud Single Scattering Albedo'
-      call check(nf90_put_att(ncid,IssaVarID,'long_name',trim(adjustl(comment))),"long_name attr")
-      call check(nf90_put_att(ncid,IssaVarID,'missing_value',real(g5nr_missing)),"missing_value attr")
-      call check(nf90_put_att(ncid,IssaVarID,'units','none'),"units attr")
-      call check(nf90_put_att(ncid,IssaVarID,"_FillValue",real(g5nr_missing)),"_Fillvalue attr")   
+        write(comment,'(A,A)') bandname, ' wavelengths Ice Cloud SSA'
+        call check(nf90_put_att(ncid,IssaVarID,'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(A,A)') bandname, ' wavelengths layer Ice Cloud Single Scattering Albedo'
+        call check(nf90_put_att(ncid,IssaVarID,'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,IssaVarID,'missing_value',real(g5nr_missing)),"missing_value attr")
+        call check(nf90_put_att(ncid,IssaVarID,'units','none'),"units attr")
+        call check(nf90_put_att(ncid,IssaVarID,"_FillValue",real(g5nr_missing)),"_Fillvalue attr")   
 
-  !       write(comment,'(A,A)') bandname, ' wavelengths Ice Cloud g'
-  !       call check(nf90_put_att(ncid,IgVarID,'standard_name',trim(adjustl(comment))),"standard_name attr")
-  !       write(comment,'(A,A)') bandname, ' wavelengths layer Ice Cloud Asymmetry Parameter'
-  !       call check(nf90_put_att(ncid,IgVarID,'long_name',trim(adjustl(comment))),"long_name attr")
-  !       call check(nf90_put_att(ncid,IgVarID,'missing_value',real(g5nr_missing)),"missing_value attr")
-  !       call check(nf90_put_att(ncid,IgVarID,'units','none'),"units attr")
-  !       call check(nf90_put_att(ncid,IgVarID,"_FillValue",real(g5nr_missing)),"_Fillvalue attr")  
-
+    !       write(comment,'(A,A)') bandname, ' wavelengths Ice Cloud g'
+    !       call check(nf90_put_att(ncid,IgVarID,'standard_name',trim(adjustl(comment))),"standard_name attr")
+    !       write(comment,'(A,A)') bandname, ' wavelengths layer Ice Cloud Asymmetry Parameter'
+    !       call check(nf90_put_att(ncid,IgVarID,'long_name',trim(adjustl(comment))),"long_name attr")
+    !       call check(nf90_put_att(ncid,IgVarID,'missing_value',real(g5nr_missing)),"missing_value attr")
+    !       call check(nf90_put_att(ncid,IgVarID,'units','none'),"units attr")
+    !       call check(nf90_put_att(ncid,IgVarID,"_FillValue",real(g5nr_missing)),"_Fillvalue attr")  
+    end do !bands
 
   !                                          scanTime
   !                                          -------  
@@ -806,7 +848,6 @@ do iband = 1, nband
       deallocate (ew)
       ! deallocate (lev)
 
-      call check(nf90_put_var(ncid,chVarID,channels), "writing out ns")  
       call check( nf90_close(ncid), "close cldofile" )
   end subroutine create_cldfile  
 
