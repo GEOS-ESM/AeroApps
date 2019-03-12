@@ -15,7 +15,6 @@
 program cloud_calculator
 
   use ESMF                         ! ESMF modules
-  use ESMF_CFIOMod, only: ESMF_CFIODownBit
   use MAPL_Mod
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
