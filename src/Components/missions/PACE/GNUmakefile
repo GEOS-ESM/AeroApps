@@ -26,7 +26,7 @@ endif
 
 THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
-BINS := cloud_calculator.x
+BINS := cloud_calculator.x aero_calculator.x 
 
 PY_EXTS = 
 PY_SCRP = 
