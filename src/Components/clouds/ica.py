@@ -53,7 +53,7 @@ def genICA(ncols,DELP,T,QV,QL,QI,CLOUD,PTOP,mode,
     Generate *ncols* independent columns.
     Optionally add spatial coherence (see below).
     
-    QV_, QL_, QI_ = genICA(ncols,DELP,T,QV,QL,QI,CLOUD,PTOP,mode)
+    QV_, QL_, QI_, rc = genICA(ncols,DELP,T,QV,QL,QI,CLOUD,PTOP,mode)
 
     On input,
 
@@ -87,31 +87,40 @@ def genICA(ncols,DELP,T,QV,QL,QI,CLOUD,PTOP,mode,
      QV_, QL_, QI_ --- water vapor and cloud condensate for each subcolum.
                        (ncols, nlayers)
 
+     rc            --- return code, 0 if success
     """
+
+    # default success
+    rc = 0
 
     # ICA generation
     # --------------
     if mode == 'TOTWPDF-GCOP-SKEWT':
       plim_,Lp_ = (100.*plim,100.*Lp) # hPa->Pa
       QV_,QL_,QI_,rc = genica(ncols,PTOP,DELP,T,QV,QL,QI,CLOUD,plim_,Lp_,Ls)
-      if rc: raise ValueError, 'Error on return from genICA, rc %d'%rc
+      if rc: print 'Error on return from genICA, rc %d'%rc
     elif mode == 'HOMOCLD-MAXRAN':
       pref = getPe(len(DELP))
       QV_,QL_,QI_,rc = genica_geos5like(ncols,PTOP,DELP,T,QV,QL,QI,CLOUD,pref)
-      if rc: raise ValueError, 'Error on return from genICA_GEOS5like, rc %d'%rc
+      if rc: print 'Error on return from genICA_GEOS5like, rc %d'%rc
     elif mode == 'HOMOCLD-COSP':
       QV_,QL_,QI_,rc = genica_cosp(ncols,PTOP,DELP,T,QV,QL,QI,CLOUD)
-      if rc: raise ValueError, 'Error on return from genICA_COSP, rc %d'%rc
+      if rc: print 'Error on return from genICA_COSP, rc %d'%rc
     else:
       raise ValueError, 'unknown ICA mode %s'%mode
 
+    # handle errors more gently
+    if rc:
+      print '  ... dropping this generation'
+      return (None, None, None, rc)
+
     # Optional spatial clumping
     # -------------------------
-    if Longitude != None and Latitude != None:
+    if (Longitude is not None) and (Latitude is not None):
       QV_,QL_,QI_ = clumpICA(ncols,QV_,QL_,QI_,Longitude,Latitude,
         np.sum((QL_+QI_)*np.tile(DELP/MAPL_GRAV,(ncols,1)),axis=1)) # CWP
 
-    return (QV_, QL_, QI_)
+    return (QV_, QL_, QI_, rc)
 
 #---
 
@@ -122,7 +131,7 @@ def clumpICA(ncols,QV_,QL_,QI_,
     """
     Generate clumped (spatially coherent) columns from regular ICA columns.
     
-        QV_, QL_, QI_ = genICA(ncols,QV_,QL_,QI_,Longitude,Latitude,svar)
+        QV_, QL_, QI_ = clumpICA(ncols,QV_,QL_,QI_,Longitude,Latitude,svar)
 
     On input,
 
@@ -197,7 +206,7 @@ def getRe(DELP,T,U,QILS,QIAN,PTOP):
     Return Re in meters.
     """
 
-    pref = getPe(DELP.shape[2])
+    pref = getPe(DELP.shape[-1])
 
     REL,REI = simre(PTOP,DELP,T,pref,U,QILS,QIAN)
 
