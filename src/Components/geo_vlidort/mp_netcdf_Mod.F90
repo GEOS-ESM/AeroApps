@@ -28,6 +28,24 @@ module mp_netcdf_Mod
   public :: mp_readvarReduced1D
   public :: mp_readTilevar3Dchunk
   public :: mp_check
+  public :: mp_writevar1Dchunk
+  public :: mp_writevar2Dchunk
+  public :: mp_writevar3Dchunk
+
+  interface mp_writevar1Dchunk
+       module procedure mp_writevar1DchunkR4
+       module procedure mp_writevar1DchunkR8
+  end interface
+
+  interface mp_writevar2Dchunk
+       module procedure mp_writevar2DchunkR4
+       module procedure mp_writevar2DchunkR8
+  end interface  
+
+  interface mp_writevar3Dchunk
+       module procedure mp_writevar3DchunkR4
+       module procedure mp_writevar3DchunkR8
+  end interface    
 
   interface mp_readvar1D
        module procedure mp_readvar1DR4
@@ -1335,6 +1353,467 @@ module mp_netcdf_Mod
     !
   end subroutine mp_readvarReduced1D      
 
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_writevar1DchunkR8
+! PURPOSE
+!     General code to uses npet processors to write a variable from a netcdf file in chunks across dimenion n
+!     is called by multiple processors
+!     variable to be read must have 1 dimensions 
+! INPUT
+!     varname         : string of variable name
+!     filename        : file to be read
+!     im              : size of array to be read
+!     n               : dimension to split up
+!     var             : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     Feb 2019 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_writevar1DchunkR8(varname, filename, n, npet, myid, im, var)
+    character(len=*), intent(in)              ::  varname
+    character(len=*), intent(in)              ::  filename
+    integer, intent(in)                       ::  im
+    integer, intent(in)                       ::  n  !dimensions to read over in chunks
+    integer, intent(in)                       ::  npet, myid    
+    real*8, intent(in)                        ::  var(im)
+
+    integer                       :: p, startl, countl, endl
+    integer                       :: ncid, varid
+    integer, dimension(npet)      :: nlayer                ! how many layers each processor reads
+    integer                       :: km
+    integer, dimension(1)         :: countsize, startsize
+
+
+    ! Everyone Figure out how many indeces each PE has to write
+    ! -----------------------------
+    km = im
+    nlayer = 0
+    if (npet >= km) then
+      nlayer(1:npet) = 1
+    else if (npet < km) then
+      nlayer(1:npet) = km/npet
+      nlayer(npet)   = nlayer(npet) + mod(km,npet)
+    end if 
+
+    call mp_check( nf90_open(filename, IOR(nf90_write, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call mp_check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
+    do p = 0, npet-1
+      if (myid == p) then
+        if (p == 0) then
+          startl = 1
+        else
+          startl = sum(nlayer(1:p))+1
+        end if
+        countl = nlayer(p+1)
+        endl   = startl + countl - 1
+
+        countsize = (/ im /)
+        countsize(n) = countl
+
+        startsize = (/ startl /)
+
+        call mp_check( nf90_put_var(ncid, varid,var(startl:endl), start=startsize, count=countsize), "reading " // varname)
+
+      end if
+    end do
+    call mp_check( nf90_close(ncid), "closing "// filename)
+    !
+  end subroutine mp_writevar1DchunkR8    
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_writevar1DchunkR4
+! PURPOSE
+!     General code to uses npet processors to write a variable from a netcdf file in chunks across dimenion n
+!     is called by multiple processors
+!     variable to be read must have 1 dimensions 
+! INPUT
+!     varname         : string of variable name
+!     filename        : file to be read
+!     im              : size of array to be read
+!     n               : dimension to split up
+!     var             : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     Feb 2019 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_writevar1DchunkR4(varname, filename, n, npet, myid, im, var)
+    character(len=*), intent(in)              ::  varname
+    character(len=*), intent(in)              ::  filename
+    integer, intent(in)                       ::  im
+    integer, intent(in)                       ::  n  !dimensions to read over in chunks
+    integer, intent(in)                       ::  npet, myid    
+    real, intent(in)                          ::  var(im)
+
+    integer                       :: p, startl, countl, endl
+    integer                       :: ncid, varid
+    integer, dimension(npet)      :: nlayer                ! how many layers each processor reads
+    integer                       :: km
+    integer, dimension(1)         :: countsize, startsize
+
+
+    ! Everyone Figure out how many indeces each PE has to write
+    ! -----------------------------
+    km = im
+    nlayer = 0
+    if (npet >= km) then
+      nlayer(1:npet) = 1
+    else if (npet < km) then
+      nlayer(1:npet) = km/npet
+      nlayer(npet)   = nlayer(npet) + mod(km,npet)
+    end if 
+
+    call mp_check( nf90_open(filename, IOR(nf90_write, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call mp_check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
+    do p = 0, npet-1
+      if (myid == p) then
+        if (p == 0) then
+          startl = 1
+        else
+          startl = sum(nlayer(1:p))+1
+        end if
+        countl = nlayer(p+1)
+        endl   = startl + countl - 1
+
+        countsize = (/ im /)
+        countsize(n) = countl
+
+        startsize = (/ startl /)
+
+        call mp_check( nf90_put_var(ncid, varid,var(startl:endl), start=startsize, count=countsize), "reading " // varname)
+
+      end if
+    end do
+    call mp_check( nf90_close(ncid), "closing "// filename)
+    !
+  end subroutine mp_writevar1DchunkR4    
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_writevar2DchunkR8
+! PURPOSE
+!     General code to uses npet processors to write a variable from a netcdf file in chunks across dimenion n
+!     is called by multiple processors
+!     variable to be read must have 1 dimensions 
+! INPUT
+!     varname         : string of variable name
+!     filename        : file to be read
+!     im, jm          : size of array to be read
+!     n               : dimension to split up
+!     var             : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     Feb 2019 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_writevar2DchunkR8(varname, filename, n, npet, myid, im, jm, var)
+    character(len=*), intent(in)              ::  varname
+    character(len=*), intent(in)              ::  filename
+    integer, intent(in)                       ::  im, jm
+    integer, intent(in)                       ::  n  !dimensions to read over in chunks
+    integer, intent(in)                       ::  npet, myid    
+    real*8, intent(in)                        ::  var(im,jm)
+
+    integer                       :: p, startl, countl, endl
+    integer                       :: ncid, varid
+    integer, dimension(npet)      :: nlayer                ! how many layers each processor reads
+    integer                       :: km
+    integer, dimension(2)         :: countsize, startsize
+
+
+    ! Everyone Figure out how many indeces each PE has to write
+    ! -----------------------------
+    if (n == 1) then
+      km = im
+    else if (n == 2) then
+      km = jm
+    end if
+
+    nlayer = 0
+    if (npet >= km) then
+      nlayer(1:npet) = 1
+    else if (npet < km) then
+      nlayer(1:npet) = km/npet
+      nlayer(npet)   = nlayer(npet) + mod(km,npet)
+    end if 
+
+    call mp_check( nf90_open(filename, IOR(nf90_write, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call mp_check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
+    do p = 0, npet-1
+      if (myid == p) then
+        if (p == 0) then
+          startl = 1
+        else
+          startl = sum(nlayer(1:p))+1
+        end if
+        countl = nlayer(p+1)
+        endl   = startl + countl - 1
+
+        countsize = (/ im, jm /)
+        countsize(n) = countl
+
+        if (n == 1) then
+          startsize = (/ startl, 1 /)
+          call mp_check( nf90_put_var(ncid, varid,var(startl:endl,:), start=startsize, count=countsize), "reading " // varname)
+        else if (n == 2) then
+          startsize = (/ 1, startl /)
+          call mp_check( nf90_put_var(ncid, varid,var(:,startl:endl), start=startsize, count=countsize), "reading " // varname)
+        end if
+
+      end if
+    end do
+    call mp_check( nf90_close(ncid), "closing "// filename)
+    !
+  end subroutine mp_writevar2DchunkR8    
+
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_writevar2DchunkR4
+! PURPOSE
+!     General code to uses npet processors to write a variable from a netcdf file in chunks across dimenion n
+!     is called by multiple processors
+!     variable to be read must have 1 dimensions 
+! INPUT
+!     varname         : string of variable name
+!     filename        : file to be read
+!     im, jm          : size of array to be read
+!     n               : dimension to split up
+!     var             : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     Feb 2019 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_writevar2DchunkR4(varname, filename, n, npet, myid, im, jm, var)
+    character(len=*), intent(in)              ::  varname
+    character(len=*), intent(in)              ::  filename
+    integer, intent(in)                       ::  im, jm
+    integer, intent(in)                       ::  n  !dimensions to read over in chunks
+    integer, intent(in)                       ::  npet, myid    
+    real, intent(in)                        ::  var(im,jm)
+
+    integer                       :: p, startl, countl, endl
+    integer                       :: ncid, varid
+    integer, dimension(npet)      :: nlayer                ! how many layers each processor reads
+    integer                       :: km
+    integer, dimension(2)         :: countsize, startsize
+
+
+    ! Everyone Figure out how many indeces each PE has to write
+    ! -----------------------------
+    if (n == 1) then
+      km = im
+    else if (n == 2) then
+      km = jm
+    end if
+
+    nlayer = 0
+    if (npet >= km) then
+      nlayer(1:npet) = 1
+    else if (npet < km) then
+      nlayer(1:npet) = km/npet
+      nlayer(npet)   = nlayer(npet) + mod(km,npet)
+    end if 
+
+    call mp_check( nf90_open(filename, IOR(nf90_write, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call mp_check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
+    do p = 0, npet-1
+      if (myid == p) then
+        if (p == 0) then
+          startl = 1
+        else
+          startl = sum(nlayer(1:p))+1
+        end if
+        countl = nlayer(p+1)
+        endl   = startl + countl - 1
+
+        countsize = (/ im, jm /)
+        countsize(n) = countl
+
+        if (n == 1) then
+          startsize = (/ startl, 1 /)
+          call mp_check( nf90_put_var(ncid, varid,var(startl:endl,:), start=startsize, count=countsize), "reading " // varname)
+        else if (n == 2) then
+          startsize = (/ 1, startl /)
+          call mp_check( nf90_put_var(ncid, varid,var(:,startl:endl), start=startsize, count=countsize), "reading " // varname)
+        end if
+
+      end if
+    end do
+    call mp_check( nf90_close(ncid), "closing "// filename)
+    !
+  end subroutine mp_writevar2DchunkR4
+
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_writevar3DchunkR8
+! PURPOSE
+!     General code to uses npet processors to write a variable from a netcdf file in chunks across dimenion n
+!     is called by multiple processors
+!     variable to be read must have 1 dimensions 
+! INPUT
+!     varname         : string of variable name
+!     filename        : file to be read
+!     im, jm, lm      : size of array to be read
+!     n               : dimension to split up
+!     var             : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     Feb 2019 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_writevar3DchunkR8(varname, filename, n, npet, myid, im, jm, lm, var)
+    character(len=*), intent(in)              ::  varname
+    character(len=*), intent(in)              ::  filename
+    integer, intent(in)                       ::  im, jm, lm
+    integer, intent(in)                       ::  n  !dimensions to read over in chunks
+    integer, intent(in)                       ::  npet, myid    
+    real*8, intent(in)                        ::  var(im,jm,lm)
+
+    integer                       :: p, startl, countl, endl
+    integer                       :: ncid, varid
+    integer, dimension(npet)      :: nlayer                ! how many layers each processor reads
+    integer                       :: km
+    integer, dimension(3)         :: countsize, startsize
+
+
+    ! Everyone Figure out how many indeces each PE has to write
+    ! -----------------------------
+    if (n == 1) then
+      km = im
+    else if (n == 2) then
+      km = jm
+    else if (n == 3) then
+      km = lm      
+    end if
+
+    nlayer = 0
+    if (npet >= km) then
+      nlayer(1:npet) = 1
+    else if (npet < km) then
+      nlayer(1:npet) = km/npet
+      nlayer(npet)   = nlayer(npet) + mod(km,npet)
+    end if 
+
+    call mp_check( nf90_open(filename, IOR(nf90_write, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call mp_check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
+    do p = 0, npet-1
+      if (myid == p) then
+        if (p == 0) then
+          startl = 1
+        else
+          startl = sum(nlayer(1:p))+1
+        end if
+        countl = nlayer(p+1)
+        endl   = startl + countl - 1
+
+        countsize = (/ im, jm, lm /)
+        countsize(n) = countl
+
+        if (n == 1) then
+          startsize = (/ startl, 1, 1 /)
+          call mp_check( nf90_put_var(ncid, varid,var(startl:endl,:,:), start=startsize, count=countsize), "reading " // varname)
+        else if (n == 2) then
+          startsize = (/ 1, startl, 1 /)
+          call mp_check( nf90_put_var(ncid, varid,var(:,startl:endl,:), start=startsize, count=countsize), "reading " // varname)
+        else if (n == 3) then
+          startsize = (/ 1, 1, startl /)
+          call mp_check( nf90_put_var(ncid, varid,var(:,:,startl:endl), start=startsize, count=countsize), "reading " // varname)
+        end if
+
+      end if
+    end do
+    call mp_check( nf90_close(ncid), "closing "// filename)
+    !
+  end subroutine mp_writevar3DchunkR8    
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    mp_writevar3DchunkR4
+! PURPOSE
+!     General code to uses npet processors to write a variable from a netcdf file in chunks across dimenion n
+!     is called by multiple processors
+!     variable to be read must have 1 dimensions 
+! INPUT
+!     varname         : string of variable name
+!     filename        : file to be read
+!     im, jm, lm      : size of array to be read
+!     n               : dimension to split up
+!     var             : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     Feb 2019 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine mp_writevar3DchunkR4(varname, filename, n, npet, myid, im, jm, lm, var)
+    character(len=*), intent(in)              ::  varname
+    character(len=*), intent(in)              ::  filename
+    integer, intent(in)                       ::  im, jm, lm
+    integer, intent(in)                       ::  n  !dimensions to read over in chunks
+    integer, intent(in)                       ::  npet, myid    
+    real, intent(in)                        ::  var(im,jm,lm)
+
+    integer                       :: p, startl, countl, endl
+    integer                       :: ncid, varid
+    integer, dimension(npet)      :: nlayer                ! how many layers each processor reads
+    integer                       :: km
+    integer, dimension(3)         :: countsize, startsize
+
+
+    ! Everyone Figure out how many indeces each PE has to write
+    ! -----------------------------
+    if (n == 1) then
+      km = im
+    else if (n == 2) then
+      km = jm
+    else if (n == 3) then
+      km = lm      
+    end if
+
+    nlayer = 0
+    if (npet >= km) then
+      nlayer(1:npet) = 1
+    else if (npet < km) then
+      nlayer(1:npet) = km/npet
+      nlayer(npet)   = nlayer(npet) + mod(km,npet)
+    end if 
+
+    call mp_check( nf90_open(filename, IOR(nf90_write, nf90_mpiio), ncid, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // filename)
+    call mp_check( nf90_inq_varid(ncid, varname, varid), "getting varid for " // varname)
+    do p = 0, npet-1
+      if (myid == p) then
+        if (p == 0) then
+          startl = 1
+        else
+          startl = sum(nlayer(1:p))+1
+        end if
+        countl = nlayer(p+1)
+        endl   = startl + countl - 1
+
+        countsize = (/ im, jm, lm /)
+        countsize(n) = countl
+
+        if (n == 1) then
+          startsize = (/ startl, 1, 1 /)
+          call mp_check( nf90_put_var(ncid, varid,var(startl:endl,:,:), start=startsize, count=countsize), "reading " // varname)
+        else if (n == 2) then
+          startsize = (/ 1, startl, 1 /)
+          call mp_check( nf90_put_var(ncid, varid,var(:,startl:endl,:), start=startsize, count=countsize), "reading " // varname)
+        else if (n == 3) then
+          startsize = (/ 1, 1, startl /)
+          call mp_check( nf90_put_var(ncid, varid,var(:,:,startl:endl), start=startsize, count=countsize), "reading " // varname)
+        end if
+
+      end if
+    end do
+    call mp_check( nf90_close(ncid), "closing "// filename)
+    !
+  end subroutine mp_writevar3DchunkR4    
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
