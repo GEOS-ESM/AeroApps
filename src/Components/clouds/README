@@ -1,5 +1,12 @@
 Notes:
 
+0. setup
+cd /discover/nobackup/pnorris/GAAS
+setenv ESMADIR `pwd`
+cd src
+source g5_modules
+setenv PYTHONPATH /discover/nobackup/pnorris/GAAS/Linux/lib/Python:$PYTHONPATH
+
 1. Currently mcs_aero.py is very memory intensive.
 It will only run on dali, not discover.
 
