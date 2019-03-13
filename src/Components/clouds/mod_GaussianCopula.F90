@@ -91,7 +91,7 @@ contains
     ! below. Note that for getting a (nsamples,ndim) matrix, 
     !   (LZ)^T = Z^T L^T = "randn"(nsamples,ndim) U.
     rc = vsrnggaussian( &
-      VSL_METHOD_SGAUSSIAN_ICDF, brngStream, &
+      VSL_RNG_METHOD_GAUSSIAN_ICDF, brngStream, &
       size(rank), rank, 0., 1.)
     if (rc /= VSL_STATUS_OK) &
       call myError('using vsrnggaussian')
