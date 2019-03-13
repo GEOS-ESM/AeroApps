@@ -1,5 +1,8 @@
 ! ICA_py.F90
 ! generate ICA subcolumns of a grid column, etc.
+! pre-2016  pmn  original MCS version
+! 020816    pmn  horizontal dims collapsed to 1D in simRe and simTau for SCS
+!                -- now mcs.py will need to ravel horizontal dims explicitly
 
 !...........................................................................
 !BOP
@@ -87,7 +90,9 @@
 
 ! -----
 
+    ! PC - always start with no errors
     rc = 0
+    exception = .false.
 
     ! prepare moisture contents
     ! first convert 'specific' quantities (mass per mass air)
@@ -695,11 +700,11 @@
 !...........................................................................
 !BOP
 
-! !ROUTINE: simRe --- Simulate effective radius on a swath
+! !ROUTINE: simRe --- Simulate effective radius on a set of pixels
 
 ! !INTERFACE:
 
-  subroutine simRe ( ns, nf, km, &
+  subroutine simRe ( np, km, &
                      pTop, delp, T, &
                      pref, u, qils, qian, &
                      rel, rei)
@@ -711,55 +716,52 @@
 
 ! !INPUT PARAMETERS:
 
-    integer, intent(in) :: ns                ! no. scans  in swath
-    integer, intent(in) :: nf                ! no. frames in swath
-    integer, intent(in) :: km                ! no. vertical layers
+    integer, intent(in) :: np             ! no. of pixels
+    integer, intent(in) :: km             ! no. vertical layers
 
     ! subcolumn profiles
-    real*4,  intent(in) :: pTop              ! top pressure [Pa]
-    real*4,  intent(in) :: delp (ns,nf,km)   ! pressure thickness [Pa]
-    real*4,  intent(in) :: T    (ns,nf,km)   ! temperature [K]
-    real*4,  intent(in) :: pref (km+1)       ! *reference* edge press [Pa]
-    real*4,  intent(in) :: u    (ns,nf,km)   ! zonal (east) velocity [m/s]
-    real*4,  intent(in) :: qils (ns,nf,km)   ! largescale ice water [kg/kg]
-    real*4,  intent(in) :: qian (ns,nf,km)   ! anvil      ice water [kg/kg]
+    real*4,  intent(in) :: pTop           ! top pressure [Pa]
+    real*4,  intent(in) :: delp (np,km)   ! pressure thickness [Pa]
+    real*4,  intent(in) :: T    (np,km)   ! temperature [K]
+    real*4,  intent(in) :: pref (km+1)    ! *reference* edge press [Pa]
+    real*4,  intent(in) :: u    (np,km)   ! zonal (east) velocity [m/s]
+    real*4,  intent(in) :: qils (np,km)   ! largescale ice water [kg/kg]
+    real*4,  intent(in) :: qian (np,km)   ! anvil      ice water [kg/kg]
 
 ! !OUTPUT PARAMETERS:
 
-    real*4, intent(out) :: rel  (ns,nf,km)   ! liquid effective radii [m]
-    real*4, intent(out) :: rei  (ns,nf,km)   ! ice    effective radii [m]
+    real*4, intent(out) :: rel  (np,km)   ! liquid effective radii [m]
+    real*4, intent(out) :: rei  (np,km)   ! ice    effective radii [m]
 
 !EOP
 !...........................................................................
 
     ! locals
-    integer :: i, j, k
+    integer :: n, k
     real*4 :: tempor, pBote, pTope
     real*4 :: pMid(km)
 
 ! -----
 
     ! loop over pixels
-    do j = 1, nf
-      do i = 1, ns
+    do n = 1, np
 
-        ! midpoint pressure
-        pTope = pTop
-        do k = 1, km
-          pBote = pTope + delp(i,j,k)
-          pMid(k) = (pBote + pTope) / 2.
-          pTope = pBote
-        end do
-
-        ! effective radii
-        call get_tempor (km, pref, u(i,j,:), tempor)
-        do k = 1, km
-          call reff (T(i,j,k), pMid(k)/100., &
-            qils(i,j,k), qian(i,j,k), tempor, &
-            rel(i,j,k), rei(i,j,k))
-        end do
-
+      ! midpoint pressure
+      pTope = pTop
+      do k = 1, km
+        pBote = pTope + delp(n,k)
+        pMid(k) = (pBote + pTope) / 2.
+        pTope = pBote
       end do
+
+      ! effective radii
+      call get_tempor (km, pref, u(n,:), tempor)
+      do k = 1, km
+        call reff (T(n,k), pMid(k)/100., &
+          qils(n,k), qian(n,k), tempor, &
+          rel(n,k), rei(n,k))
+      end do
+
     end do
 
   end subroutine simRe
@@ -768,11 +770,11 @@
 !...........................................................................
 !BOP
 
-! !ROUTINE: simTau --- Simulate cloud optical depth on a swath
+! !ROUTINE: simTau --- Simulate cloud optical depth on a set of pixels
 
 ! !INTERFACE:
 
-  subroutine simTau ( ns, nf, km, &
+  subroutine simTau ( np, km, &
                       delp, rel, rei, ql, qi, &
                       taul, taui)
 
@@ -783,43 +785,40 @@
 
 ! !INPUT PARAMETERS:
 
-    integer, intent(in) :: ns                ! no. scans  in swath
-    integer, intent(in) :: nf                ! no. frames in swath
-    integer, intent(in) :: km                ! no. vertical layers
+    integer, intent(in) :: np             ! no. of pixels
+    integer, intent(in) :: km             ! no. vertical layers
 
-    real*4,  intent(in) :: delp (ns,nf,km)   ! pressure thickness [Pa]
-    real*4,  intent(in) :: rel  (ns,nf,km)   ! liquid effective radii [m]
-    real*4,  intent(in) :: rei  (ns,nf,km)   ! ice    effective radii [m]
-    real*4,  intent(in) :: ql   (ns,nf,km)   ! spec. liquid water [kg/kg]
-    real*4,  intent(in) :: qi   (ns,nf,km)   ! spec. ice    water [kg/kg]
+    real*4,  intent(in) :: delp (np,km)   ! pressure thickness [Pa]
+    real*4,  intent(in) :: rel  (np,km)   ! liquid effective radii [m]
+    real*4,  intent(in) :: rei  (np,km)   ! ice    effective radii [m]
+    real*4,  intent(in) :: ql   (np,km)   ! spec. liquid water [kg/kg]
+    real*4,  intent(in) :: qi   (np,km)   ! spec. ice    water [kg/kg]
 
 ! !OUTPUT PARAMETERS:
 
-    real*4, intent(out) :: taul (ns,nf,km)   ! liquid opt thicknesses []
-    real*4, intent(out) :: taui (ns,nf,km)   ! ice    opt thicknesses []
+    real*4, intent(out) :: taul (np,km)   ! liquid opt thicknesses []
+    real*4, intent(out) :: taui (np,km)   ! ice    opt thicknesses []
 
 !EOP
 !...........................................................................
 
     ! locals
-    integer :: i, j
+    integer :: n
     real*4 :: delpog(km), ftauLqdVis(km), ftauIceVis(km)
 
 ! -----
 
     ! loop over pixels
-    do j = 1, nf
-      do i = 1, ns
+    do n = 1, np
 
-        ! Visible COT per condensed water path (see mod_simTauRe)
-        call getftauVis (rel(i,j,:), rei(i,j,:), km, ftauLqdVis, ftauIceVis)
+      ! Visible COT per condensed water path (see mod_simTauRe)
+      call getftauVis (rel(n,:), rei(n,:), km, ftauLqdVis, ftauIceVis)
 
-        ! optical depths per layer
-        delpog = delp(i,j,:) / grav
-        taul(i,j,:) = ql(i,j,:) * delpog * ftaulqdVis
-        taui(i,j,:) = qi(i,j,:) * delpog * ftauiceVis
+      ! optical depths per layer
+      delpog = delp(n,:) / grav
+      taul(n,:) = ql(n,:) * delpog * ftaulqdVis
+      taui(n,:) = qi(n,:) * delpog * ftauiceVis
 
-      end do
     end do
 
   end subroutine simTau
