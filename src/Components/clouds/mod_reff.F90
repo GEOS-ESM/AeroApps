@@ -66,7 +66,9 @@ contains
          RAD_RI = MAX_RI*150./PL
       end if
 
-      ! weighted anvil reff
+      ! weighted anvil reff:
+      ! to get no anvil adjustment use either QCiAN=QCiLS=0
+      ! note also that only the RATIO of QCiAN to QCiLS is important below, not absolute values
       RAD_RI_AN = RAD_RI
       if (QCiLS + QCiAN > 0.0) then
          RAD_RI_AN =(QCiLS + QCiAN) / (QCiLS/RAD_RI + QCiAN/RI_ANV)
