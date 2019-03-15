@@ -202,7 +202,7 @@ if __name__ == "__main__":
 
     format = 'NETCDF4_CLASSIC'
     outFile = 'gems.mcd43c1_climatology.nc4'
-    geoFile = 'gems.lg1.invariant.nc4'
+    geoFile = '/nobackup/GEMS/LevelG/invariant/gems.lg1.invariant.nc4'
 
     path    = '/nobackup/3/pcastell/MODIS/MCD43C1/'
     years   = 2006,2007
