@@ -248,6 +248,14 @@ if __name__ == '__main__':
 	pc   = ncOut.createDimension('pix_corner',4)
 	time = ncOut.createDimension('time',1)
 
+	var = elon[-1,:]
+	print 'E-W TOP ',var[var<1e14].min(),var[var<1e14].max()
+	var = elon[0,:]
+	print 'E-W BOTTOM ',var[var<1e14].min(),var[var<1e14].max()
+	var = elat[:,0]
+	print 'N-S LEFT ',var[var<1e14].min(),var[var<1e14].max()	
+	var = elat[:,-1]
+	print 'N-S RIGHT ',var[var<1e14].min(),var[var<1e14].max()		
 
 	# clat
 	varobj = ncOut.createVariable('clat','f4',('ns','ew',))
