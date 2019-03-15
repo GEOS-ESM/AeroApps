@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
 
     command += ' -v -C -r ' + rcFile 
-    command += ' -T' + scanTimeFile
+    command += ' -T ' + scanTimeFile
     command += ' -i GOES-R'
 
 
@@ -76,7 +76,7 @@ if __name__ == "__main__":
         outfile = outTemplate.format(levelBdir,Y,M,D,col,Y+M+D,H)
 
 
-        run_command = command + ' -o' + outfile + ' ' + startdate.isoformat()
+        run_command = command + ' -o ' + outfile + ' ' + startdate.isoformat()
 
         print run_command
         if system(run_command):
