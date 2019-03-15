@@ -67,7 +67,7 @@ def map_(fig,m,data,cmap,minval,maxval,title,norm=None,format=None,elon=None,ela
 		m.drawcountries(color='white')
 		m.drawstates(color='white')
 
-		meridian  = np.arange(75.,150.,5.)
+		meridian  = np.arange(70.,150.,5.)
 		parallels = np.arange(-10.,80.,5.)
 		m.drawparallels(parallels) # draw parallels
 		m.drawmeridians(meridian) # draw meridians    
@@ -127,6 +127,7 @@ if __name__ == '__main__':
 	outfile    = 'gems.lg1.invariant.nc4'
 	projection = 'geos'
 	lon_0      = 128.2
+	lat_0      = 0.0
 	satellite_height = 35785831.0
 	rsphere          = (6378137.00,6356752.3142)
 	centerlon = 114.1  #degrees E
@@ -134,9 +135,9 @@ if __name__ == '__main__':
 	fov       = 70  #degree of view East-West
 	latmax = 45
 	latmin = -5
-	lonmin = 75
-	lonmax = 145
-	nEW   = 900   
+	lonmin = 87
+	lonmax = 139.5
+	nEW   = 700   
 	nNS   = 2000
 	doVincenty = False
 
@@ -149,6 +150,9 @@ if __name__ == '__main__':
 
 	Xmin, Ymin = m(lonmin,latmin)
 	Xmax, Ymin = m(lonmax,latmin)
+	# Xmin, Ymin = m(lonmin,lat_0)
+	# Xmax, Ymin = m(lonmax,lat_0)
+
 	xese = np.linspace(Xmin, Xmax, nEW+1) #edges
 	dx  = xese[1:] - xese[0:-1]
 	xes = xese[0:-1] + 0.5*dx  #centers
@@ -240,6 +244,14 @@ if __name__ == '__main__':
 	pc   = ncOut.createDimension('pix_corner',4)
 	time = ncOut.createDimension('time',1)
 
+	var = elon[-1,:]
+	print 'E-W TOP ',var[var<1e14].min(),var[var<1e14].max()
+	var = elon[0,:]
+	print 'E-W BOTTOM ',var[var<1e14].min(),var[var<1e14].max()
+	var = elat[:,0]
+	print 'N-S LEFT ',var[var<1e14].min(),var[var<1e14].max()	
+	var = elat[:,-1]
+	print 'N-S RIGHT ',var[var<1e14].min(),var[var<1e14].max()		
 
 	# clat
 	varobj = ncOut.createVariable('clat','f4',('ns','ew',))
@@ -314,7 +326,7 @@ if __name__ == '__main__':
 	# EW
 	# --
 	# define the bins and normalize
-	bounds = np.arange(7,10.5,0.5)
+	bounds = np.arange(7,11.5,0.25)
 	norm = colors.BoundaryNorm(bounds, cmap.N)
 	cmap.set_bad(color='w',alpha=0)
 
@@ -334,7 +346,7 @@ if __name__ == '__main__':
 	# NS
 	# --
 	# define the bins and normalize
-	bounds = np.arange(2,7.5,0.5)
+	bounds = np.arange(2,5.5,0.25)
 	norm = colors.BoundaryNorm(bounds, cmap.N)
 	cmap.set_bad(color='w',alpha=0)
 	fig = plt.figure()
