@@ -10,7 +10,7 @@ from grads import gacm
 
 if __name__ == "__main__":
 
-    sdir = '/Users/adasilva/iesa/kaq/sampled/plan'
+    sdir = '/nobackup/3/pcastell/iesa/kaq/sampled/plan'
     meteo =  sdir + '/KORUSAQ-GEOS5-METEO-AIRCRAFT_PLAN_DATE_R0.nc'
     chem  =  sdir + '/KORUSAQ-GEOS5-CHEM-AIRCRAFT_PLAN_DATE_R0.nc'
     ict = '../Plans/fltplan_aircraft_DATE.ict'
@@ -52,11 +52,14 @@ if __name__ == "__main__":
     # Pre-load meteorology
     # --------------------
     f.loadMet()
+    f.T.mask[abs(f.T)>400.] = True # detect undef contaminated interp
     f.contourf(f.T,r'GEOS-5 Temperature [K]',
                cmap=cm.hot,figFile='tmpu'+figTail, N=32, extend='max')
+    f.RH.mask[abs(f.RH)>400.] = True # detect undef contaminated interp
     f.contourf(f.RH,r'GEOS-5 Relative Humidity',
                cmap=cm.RdBu_r,figFile='rh'+figTail, N=32, extend='max', vmin=0,vmax=100)
     try:
+        f.CLOUD.mask[abs(f.CLOUD)>400.] = True # detect undef contaminated interp
         f.contourf(f.CLOUD,r'GEOS-5 Cloud Fraction [%]',
                    cmap=cm.RdBu,figFile='cld'+figTail, N=32, extend='max')
     except:
@@ -67,6 +70,9 @@ if __name__ == "__main__":
     f.load(f.fh_chm,['du','ss','bc','oc','so4','so2','co2','co','conbas','cobbgl','cobbae'],
            factor='airdens')
     f.cobbot = f.cobbgl-f.cobbae
+
+    for spec in ['du','ss','bc','oc','so4','so2','co2','co','conbas','cobbgl','cobbae','cobbot']:
+        f.__dict__[spec].mask[abs(f.__dict__[spec])>1e10] = True    # detect undef contaminated interp
 
     # Plot them
     f.contourf(1e9*f.du,r'GEOS-5 Dust Aerosol Concentration [$\mu$g/m$^3$]    ',
@@ -97,7 +103,11 @@ if __name__ == "__main__":
     # Extinction
     # ----------
     f.load(f.fh_ext,['duext','ssext','bcext','ocext','suext'])
+    for spec in ['duext','ssext','bcext','ocext','suext']:
+        f.__dict__[spec].mask[abs(f.__dict__[spec])>1e10] = True    # detect undef contaminated interp
+
     f.ext  = f.duext+f.ssext+f.bcext+f.ocext+f.suext
+
 
     f.contourf(1000*f.ext,  'GEOS-5 Total Aerosol Extinction [1/km]',
                cmap=gacm.jet_l,figFile='ext'+figTail,N=32, extend='max')
