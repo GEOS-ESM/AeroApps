@@ -524,7 +524,7 @@ if __name__ == "__main__":
 
                     code = code + surface
 
-                    dirlist = make_workspace(startdate,ch,code,outdir,runfile,instname,nodemax=nodemax_,
+                    dirlist = make_workspace(startdate,ch,code,outdir+ch+'/',runfile,instname,nodemax=nodemax_,
                                              addoutdir=addoutdir,layout=laycode,prefix=prefix)
 
                     if (additional_output):
