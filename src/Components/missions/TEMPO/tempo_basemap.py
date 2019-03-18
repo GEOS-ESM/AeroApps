@@ -42,7 +42,7 @@ def getCoords(m,lon,lat,name):
     print 'Recentered Bounding box: ', Bbox 
     print 'Normalized Bounding box: ', bbox 
 
-    return (X,Y,BBOX)
+    return (X,Y,BBOX,Bbox)
 
 #---
 if __name__ == '__main__':
@@ -59,10 +59,10 @@ if __name__ == '__main__':
 
     # Read and Tighten the E-W domain
     # -------------------------------
-    clon = nc.variables[u'clon'][:,124:1374]
-    clat = nc.variables[u'clat'][:,124:1374]
-    elon = nc.variables[u'elon'][:,124:1374]
-    elat = nc.variables[u'elat'][:,124:1374]
+    clon = nc.variables[u'clon'][:]#[:,124:1374]
+    clat = nc.variables[u'clat'][:]#[:,124:1374]
+    elon = nc.variables[u'elon'][:]#[:,124:1374]
+    elat = nc.variables[u'elat'][:]#[:,124:1374]
 
     mx, my = elon.shape
     nx, ny = clon.shape
@@ -74,17 +74,17 @@ if __name__ == '__main__':
                  rsphere=(6378137.00,6356752.3142),
                  satellite_height = 35785831.0)
 
-    cX, cY, cBOX = getCoords(m,clon,clat,'CENTER Coordinates')
-    eX, eY, eBOX = getCoords(m,elon,elat,'EDGE   Coordinates')
+    cX, cY, cBOX, cbox = getCoords(m,clon,clat,'CENTER Coordinates')
+    eX, eY, eBOX, ebox = getCoords(m,elon,elat,'EDGE   Coordinates')
 
 
     # Plot Map
     # --------
     m =  Basemap(projection='geos',lon_0=lon_0,resolution='l',
-                 llcrnrx=eBOX[0],
-                 llcrnry=eBOX[1],
-                 urcrnrx=eBOX[2],
-                 urcrnry=eBOX[3],
+                 llcrnrx=ebox[0],
+                 llcrnry=ebox[1],
+                 urcrnrx=ebox[2],
+                 urcrnry=ebox[3],
                  rsphere=(6378137.00,6356752.3142),
                  satellite_height = 35785831.0)
     
@@ -99,5 +99,5 @@ if __name__ == '__main__':
     m.drawmapboundary(fill_color='aqua')
 
     title('TEMPO Geostationary Sector')
-    savefig('tempo_basemap.png')
-    #show()
+#    savefig('tempo_basemap.png')
+    show()
