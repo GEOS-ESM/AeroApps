@@ -264,7 +264,7 @@
 !                          Lambertian OR BRDF surface
 !                          --------------------------
 
-      if ( self%Surface%sfc_type == 1 ) then               ! Lambertian surface ?
+      if ( self%Surface%sfc_type == LAMBERTIAN ) then               ! Lambertian surface ?
          DO_LAMBERTIAN_SURFACE = .true.        
          LAMBERTIAN_ALBEDO = self%Surface%albedo           ! Lambertian (isotropic) input albedo
       else                                   
@@ -602,7 +602,7 @@
 !                          Lambertian OR BRDF surface
 !                          --------------------------
 
-      if ( self%Surface%sfc_type == 1 ) then               ! Lambertian surface ?
+      if ( self%Surface%sfc_type == LAMBERTIAN ) then               ! Lambertian surface ?
          DO_LAMBERTIAN_SURFACE = .true.        
          LAMBERTIAN_ALBEDO = self%Surface%albedo           ! Lambertian (isotropic) input albedo
       else                                   
@@ -611,7 +611,7 @@
  
       end if
 
-      if ( self%Surface%sfc_type == 3 ) then               ! Surface Leaving from External dataset containing isotropic radiance?
+      if ( self%Surface%sfc_type == NOBM ) then               ! Surface Leaving from External dataset containing isotropic radiance?
          self%Surface%Base%VIO%VLIDORT_Fixin%Bool%TS_DO_SURFACE_LEAVING = .true.
          self%Surface%Base%VIO%VLIDORT_Fixin%Bool%TS_DO_SL_ISOTROPIC    = .true.
          self%Surface%Base%VIO%VLIDORT_Sup%SLEAVE%TS_SLTERM_ISOTROPIC   = self%Surface%Base%VIO%VSLEAVE_Sup_Out%SL_SLTERM_ISOTROPIC
@@ -884,7 +884,7 @@
 !                          Lambertian OR BRDF surface
 !                          --------------------------
 
-      if ( self%Surface%sfc_type == 1 ) then               ! Lambertian surface ?
+      if ( self%Surface%sfc_type == LAMBERTIAN ) then               ! Lambertian surface ?
          DO_LAMBERTIAN_SURFACE = .true.        
          LAMBERTIAN_ALBEDO = self%Surface%albedo           ! Lambertian (isotropic) input albedo
       else                                   
@@ -1465,7 +1465,7 @@
 !                          Lambertian OR BRDF surface
 !                          --------------------------
 
-      if ( self%Surface%sfc_type == 1 ) then               ! Lambertian surface ?
+      if ( self%Surface%sfc_type == LAMBERTIAN ) then               ! Lambertian surface ?
          DO_LAMBERTIAN_SURFACE = .true.        
          LAMBERTIAN_ALBEDO = self%Surface%albedo           ! Lambertian (isotropic) input albedo
       else                                   
@@ -1828,7 +1828,7 @@
 !                          Lambertian OR BRDF surface
 !                          --------------------------
 
-      if ( self%Surface%sfc_type == 1 ) then               ! Lambertian surface ?
+      if ( self%Surface%sfc_type == LAMBERTIAN ) then               ! Lambertian surface ?
          DO_LAMBERTIAN_SURFACE = .true.        
          LAMBERTIAN_ALBEDO = self%Surface%albedo           ! Lambertian (isotropic) input albedo
       else                                   
