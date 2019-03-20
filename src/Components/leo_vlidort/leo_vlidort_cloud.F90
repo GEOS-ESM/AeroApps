@@ -191,8 +191,7 @@ program leo_vlidort_cloud
   real,allocatable                      :: Vpmom(:,:,:,:,:)                         ! elements of scattering phase matrix for vector calculations
   real,allocatable                      :: VpmomIcl(:,:,:,:,:)                      ! elements of scattering phase matrix for vector calculations
   real,allocatable                      :: VpmomLcl(:,:,:,:,:)                      ! elements of scattering phase matrix for vector calculations
-  ! real,allocatable                      :: betaIcl(:,:,:), betaLcl(:,:,:)           ! cloud optical thickness scaling factors 
-  ! real,allocatable                      :: truncIcl(:,:,:), truncLcl(:,:,:)          ! cloud optical thickness scaling factors
+
 ! MODIS Kernel variables
 !--------------------------
   real*8, allocatable                   :: kernel_wt(:,:,:)                         ! kernel weights (/fiso,fgeo,fvol/)
@@ -247,7 +246,7 @@ program leo_vlidort_cloud
 !                               END OF VARIABLE DECLARATIONS
 !----------------------------------------------------------------------------------------------------------
   
-  progress = -1
+  progress = 10
 
 ! Initialize MPI with ESMF
 ! ------------------------
@@ -305,11 +304,8 @@ program leo_vlidort_cloud
   call mp_readVattr("missing_value", AER_FILE, "DELP", g5nr_missing)
   if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
     call mp_readVattr("missing_value", BRDF_file, "Riso470", land_missing) 
-    !land_missing = -999.0
   else if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
     call mp_readVattr("missing_value", LER_file, "SRFLER354", land_missing) 
-  else if ((index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
-    call mp_readVattr("missing_value", BRDF_file, "Riso470", land_missing)
   end if
 
   if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
@@ -413,7 +409,7 @@ program leo_vlidort_cloud
 
   if (MAPL_am_I_root()) then
     write(*,*) '<> Created Mask'
-    write(*,'(A,I3,A)') '       ',nint(100.*clrm/(im*jm)),'% of the domain is sunlit'
+    write(*,'(A,I3,A)') '       ',nint(100.*clrm/(im*jm)),'% of the domain will be simulated'
     write(*,'(A,I,A)')  '       Simulating ',clrm,' pixels'
     write(*,*) ' '
   end if   
@@ -463,20 +459,20 @@ program leo_vlidort_cloud
 
 ! Initialize outputs to be safe
 ! -------------------------------
-  TAU           = dble(MISSING)
-  SSA           = dble(MISSING)
-  G             = dble(MISSING)
+  TAU            = dble(MISSING)
+  SSA            = dble(MISSING)
+  G              = dble(MISSING)
   LTAU           = dble(MISSING)
   LSSA           = dble(MISSING)
   LG             = dble(MISSING)
   ITAU           = dble(MISSING)
   ISSA           = dble(MISSING)
   IG             = dble(MISSING)
-  ALBEDO        = dble(MISSING)
-  ROT           = dble(MISSING)
-  PE            = dble(MISSING)
-  ZE            = dble(MISSING)
-  TE            = dble(MISSING)    
+  ALBEDO         = dble(MISSING)
+  ROT            = dble(MISSING)
+  PE             = dble(MISSING)
+  ZE             = dble(MISSING)
+  TE             = dble(MISSING)    
   radiance_VL    = dble(MISSING)
   reflectance_VL = dble(MISSING)
   if (.not. scalar) then
@@ -526,8 +522,8 @@ if (MAPL_am_I_root()) then
     i  = iIndex(c)
     j  = jIndex(c)
 
-   i = 501
-   j = 31
+    i = 501
+    j = 31
 
     call getEdgeVars ( km, nobs, reshape(AIRDENS(i,j,:),(/km,nobs/)), &
                        reshape(DELP(i,j,:),(/km,nobs/)), ptop, &
@@ -558,32 +554,6 @@ if (MAPL_am_I_root()) then
 !   ------------------------
     call getCOPvector(IcldTable, km, nobs, nch, nMom, nPol, channels, REI(i,j,:), TAUI(i,j,:), VssaIcl, VgIcl, VpmomIcl, VtauIcl)
     call getCOPvector(LcldTable, km, nobs, nch, nMom, nPol, channels, REL(i,j,:), TAUL(i,j,:), VssaLcl, VgLcl, VpmomLcl, VtauLcl)
-
-! !   Scale Cloud Optical Thickness from reference wavelength of 0.65um
-! !   ------------------------
-!     VtauIcl(:,nch,nobs) = TAUI(i,j,:)
-!     VtauIcl             = VtauIcl*betaIcl
-!     VtauLcl(:,nch,nobs) = TAUL(i,j,:)
-!     VtauLcl             = VtauLcl*betaLcl 
-
-! !   Scale Cloud optical thickness for phase function truncation            
-! !   ------------------------
-!     VtauIcl = VtauIcl*(1. - truncIcl*VssaIcl)
-!     VtauLcl = VtauLcl*(1. - truncLcl*VssaLcl)
-!     VssaIcl = VssaIcl*(1. - truncIcl)/(1. - VssaIcl*truncIcl)
-!     VssaLcl = VssaLcl*(1. - truncLcl)/(1. - VssaLcl*truncLcl)    
-
-!    Vtau = 0
-!    VtauIcl = 0
-!    VtauLcl = 0
-    if (MAPL_am_I_root()) then
-      write(*,*) 'VtauLcl', VtauLcl 
-      write(*,*) 'VssaLcl', VssaLcl 
-
-      write(*,*) 'VtauIcl', VtauIcl 
-      write(*,*) 'VssaIcl', VssaIcl       
-    end if
-
 
 !   Save some variables on the 2D Grid for Writing Later
 !   ------------------------
@@ -628,18 +598,13 @@ if (MAPL_am_I_root()) then
       BR_U(i,j)   = BR_U_int(nobs,nch)
     end if
 
-
-    if (MAPL_am_I_root()) then
-      write(*,*) 'radiance', radiance_VL(i,j)
-    end if
-
     write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
     call write_verbose(msg)
 
 !   Keep track of progress of each processor
 !   -----------------------------------------        
     if (nint(100.*real(cc-starti)/real(counti)) > progress) then
-      progress = nint(100.*real(cc-starti)/real(counti))
+      progress = progress + 10
       write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',cc,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
     end if
                 
@@ -681,7 +646,6 @@ end if
 
 ! ! All done
 ! ! --------
-!  call deallocate_shared()
 500  call MAPL_SyncSharedMemory(rc=ierr)
   call MAPL_FinalizeShmem (rc=ierr)
   call ESMF_Finalize(__RC__)
@@ -704,61 +668,66 @@ end if
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
 
   subroutine write_outfile()
+    integer, dimension(npet)           :: nlayer  ! how many layers each processor writes
+    integer                            :: startl,countl,endl  
 ! Write to OUT_file 
 ! ------------------     
-    ! allocate (AOD(im,jm))
+    nlayer = 0
+    if (npet >= jm) then
+      nlayer(1:npet) = 1
+    else if (npet < jm) then
+      nlayer(1:npet) = jm/npet
+      nlayer(npet)   = nlayer(npet) + mod(jm,npet)
+    end if 
+
+    if (myid == 0) then
+      startl = 1
+    else
+      startl = sum(nlayer(1:myid))+1
+    end if
+    countl = nlayer(myid+1)
+    endl   = startl + countl - 1  
 
 !                             Write to main OUT_File
 !                             ----------------------
-    call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
-    do ch = 1, nch
-      write(msg,'(F10.2)') channels(ch)
-      
-      call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, reflectance_VL, &
-                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
+    call check( nf90_open(OUT_file, IOR(nf90_write, nf90_mpiio), ncid,comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // OUT_file )
+    write(msg,'(F10.2)') channels(nch)
+    
+    call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
+    call check(nf90_put_var(ncid, varid, reflectance_VL(:,startl:endl), &
+                start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out reflectance")
 
-      call check(nf90_inq_varid(ncid, 'I_' // trim(adjustl(msg)), varid), "get rad vaird")
-      call check(nf90_put_var(ncid, varid, radiance_VL, &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
+    call check(nf90_inq_varid(ncid, 'I_' // trim(adjustl(msg)), varid), "get rad vaird")
+    call check(nf90_put_var(ncid, varid, radiance_VL(:,startl:endl), &
+                  start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out radiance")
 
-      call check(nf90_inq_varid(ncid, 'surf_ref_I_' // trim(adjustl(msg)), varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, ALBEDO, &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
+    call check(nf90_inq_varid(ncid, 'surf_ref_I_' // trim(adjustl(msg)), varid), "get ref vaird")
+    call check(nf90_put_var(ncid, varid, ALBEDO(:,startl:endl), &
+                  start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out albedo")
 
-      if (.not. scalar) then
-        call check(nf90_inq_varid(ncid, 'Q_' // trim(adjustl(msg)), varid), "get q vaird")
-        call check(nf90_put_var(ncid, varid, Q, &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
+    if (.not. scalar) then
+      call check(nf90_inq_varid(ncid, 'Q_' // trim(adjustl(msg)), varid), "get q vaird")
+      call check(nf90_put_var(ncid, varid, Q(:,startl:endl), &
+                  start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out Q")
 
-        call check(nf90_inq_varid(ncid, 'U_' // trim(adjustl(msg)), varid), "get u vaird")
-        call check(nf90_put_var(ncid, varid, U, &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
+      call check(nf90_inq_varid(ncid, 'U_' // trim(adjustl(msg)), varid), "get u vaird")
+      call check(nf90_put_var(ncid, varid, U(:,startl:endl), &
+                  start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out U")
 
-        call check(nf90_inq_varid(ncid, 'surf_ref_Q_' // trim(adjustl(msg)), varid), "get ref vaird")
-        call check(nf90_put_var(ncid, varid, BR_Q, &
-                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo Q")
+      call check(nf90_inq_varid(ncid, 'surf_ref_Q_' // trim(adjustl(msg)), varid), "get ref vaird")
+      call check(nf90_put_var(ncid, varid, BR_Q(:,startl:endl), &
+                    start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out albedo Q")
 
-        call check(nf90_inq_varid(ncid, 'surf_ref_U_' // trim(adjustl(msg)), varid), "get ref vaird")
-        call check(nf90_put_var(ncid, varid, BR_U, &
-                      start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo U")
+      call check(nf90_inq_varid(ncid, 'surf_ref_U_' // trim(adjustl(msg)), varid), "get ref vaird")
+      call check(nf90_put_var(ncid, varid, BR_U(:,startl:endl), &
+                    start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out albedo U")
 
-      endif        
+    endif        
 
-
-    !   AOD = 0
-    !   do k=1,km 
-    !     AOD = AOD + TAU(:,:,k)
-    !   end do
-
-    !   where(ALBEDO .eq. MISSING)  AOD = MISSING
-      
-
-    !   call check(nf90_inq_varid(ncid, 'aod_' // trim(adjustl(msg)), varid), "get aod vaird")
-    !   call check(nf90_put_var(ncid, varid, AOD, &
-    !                 start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out aod")
-    ! end do
     call check( nf90_close(ncid), "close outfile" )
+    if (MAPL_am_I_root()) then
+      write(*,*) '<> Wrote Outfile '
+    end if
 
 
   end subroutine write_outfile
@@ -777,41 +746,42 @@ end if
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
 
   subroutine write_addfile
+    integer, dimension(npet)           :: nlayer  ! how many layers each processor writes
+    integer                            :: startl,countl,endl    
 ! Write to ADD_file
 ! -------------------
+    nlayer = 0
+    if (npet >= jm) then
+      nlayer(1:npet) = 1
+    else if (npet < jm) then
+      nlayer(1:npet) = jm/npet
+      nlayer(npet)   = nlayer(npet) + mod(jm,npet)
+    end if 
 
-    if (MAPL_am_I_root()) then
+    if (myid == 0) then
+      startl = 1
+    else
+      startl = sum(nlayer(1:myid))+1
+    end if
+    countl = nlayer(myid+1)
+    endl   = startl + countl - 1  
      
   !                             Write to Additional Outputs File
   !                             --------------------------------
-      call check( nf90_open(ADD_file, nf90_write, ncid), "opening file " // ADD_file )
-      do ch = 1, nch
-        do k=1,km 
-          call check(nf90_inq_varid(ncid, 'rot_' // trim(adjustl(msg)), varid), "get rot vaird")
-          call check(nf90_put_var(ncid, varid, ROT(:,:,k), &
-                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out rot")
-        end do
-      end do
 
-      ! call check(nf90_inq_varid(ncid, 'pe', varid), "get pe vaird")
-      ! do k=1,km+1
-      !   call check(nf90_put_var(ncid, varid, PE(:,:,k), &
-      !              start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out pe")
-      ! end do
-      ! call check(nf90_inq_varid(ncid, 'ze', varid), "get ze vaird")
-      ! do k=1,km+1
-      !   call check(nf90_put_var(ncid, varid, ZE(:,:,k), &
-      !              start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ze")
-      ! end do
-      ! call check(nf90_inq_varid(ncid, 'te', varid), "get te vaird")
-      ! do k=1,km+1
-      !   call check(nf90_put_var(ncid, varid, TE(:,:,k), &
-      !              start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out te")
-      ! end do
+    call check( nf90_open(ADD_file, IOR(nf90_write, nf90_mpiio), ncid,comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // ADD_file )
+    write(msg,'(F10.2)') channels(nch)
+    do k=1,km 
+      call check(nf90_inq_varid(ncid, 'rot_' // trim(adjustl(msg)), varid), "get rot vaird")
+      call check(nf90_put_var(ncid, varid, ROT(:,startl:endl,k), &
+                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out rot")
+    end do
 
-      call check( nf90_close(ncid), "close addfile" )
-      
+    call check( nf90_close(ncid), "close addfile" )
+    if (MAPL_am_I_root()) then
+      write(*,*) '<> Wrote Additional Data file '
     end if
+      
 
   end subroutine write_addfile
 
@@ -829,39 +799,52 @@ end if
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
 
   subroutine write_aerfile
+    integer, dimension(npet)           :: nlayer  ! how many layers each processor writes
+    integer                            :: startl,countl,endl     
 ! Write to AERO_file
 ! -------------------
+    nlayer = 0
+    if (npet >= jm) then
+      nlayer(1:npet) = 1
+    else if (npet < jm) then
+      nlayer(1:npet) = jm/npet
+      nlayer(npet)   = nlayer(npet) + mod(jm,npet)
+    end if 
 
-    if (MAPL_am_I_root()) then
+    if (myid == 0) then
+      startl = 1
+    else
+      startl = sum(nlayer(1:myid))+1
+    end if
+    countl = nlayer(myid+1)
+    endl   = startl + countl - 1  
      
   !                             Write to Aerosol Outputs File
   !                             --------------------------------
-      call check( nf90_open(AERO_file, nf90_write, ncid), "opening file " // AERO_file )
-      do ch = 1, nch
-        do k=1,km 
+    call check( nf90_open(AERO_file, IOR(nf90_write, nf90_mpiio), ncid,comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // AERO_file )
+    write(msg,'(F10.2)') channels(nch)
+    do k=1,km 
 
-          ! Aerosol Stuff
-          call check(nf90_inq_varid(ncid, 'aot_' // trim(adjustl(msg)), varid), "get aot vaird")
-          call check(nf90_put_var(ncid, varid, TAU(:,:,k), &
-                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out tau")
+      ! Aerosol Stuff
+      call check(nf90_inq_varid(ncid, 'aot_' // trim(adjustl(msg)), varid), "get aot vaird")
+      call check(nf90_put_var(ncid, varid, TAU(:,startl:endl,k), &
+                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out tau")
 
-          call check(nf90_inq_varid(ncid, 'g_' // trim(adjustl(msg)), varid), "get g vaird")
-          call check(nf90_put_var(ncid, varid, G(:,:,k), &
-                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out g")
+      call check(nf90_inq_varid(ncid, 'g_' // trim(adjustl(msg)), varid), "get g vaird")
+      call check(nf90_put_var(ncid, varid, G(:,startl:endl,k), &
+                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out g")
 
-          call check(nf90_inq_varid(ncid, 'ssa_' // trim(adjustl(msg)), varid), "get ssa vaird")
-          call check(nf90_put_var(ncid, varid, SSA(:,:,k), &
-                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ssa")
+      call check(nf90_inq_varid(ncid, 'ssa_' // trim(adjustl(msg)), varid), "get ssa vaird")
+      call check(nf90_put_var(ncid, varid, SSA(:,startl:endl,k), &
+                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out ssa")
 
+    end do
 
-        end do
-      end do
-
-
-      call check( nf90_close(ncid), "close aerofile" )
-      
+    call check( nf90_close(ncid), "close aerofile" )
+    if (MAPL_am_I_root()) then
+      write(*,*) '<> Wrote Aerosol file '
     end if
-
+      
   end subroutine write_aerfile
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -877,48 +860,65 @@ end if
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
 
   subroutine write_cldfile
+    integer, dimension(npet)           :: nlayer  ! how many layers each processor writes
+    integer                            :: startl,countl,endl     
+
 ! Write to CLDO_file
 ! -------------------
+    nlayer = 0
+    if (npet >= jm) then
+      nlayer(1:npet) = 1
+    else if (npet < jm) then
+      nlayer(1:npet) = jm/npet
+      nlayer(npet)   = nlayer(npet) + mod(jm,npet)
+    end if 
 
-    if (MAPL_am_I_root()) then
+    if (myid == 0) then
+      startl = 1
+    else
+      startl = sum(nlayer(1:myid))+1
+    end if
+    countl = nlayer(myid+1)
+    endl   = startl + countl - 1  
      
   !                             Write to Cloud Outputs File
   !                             --------------------------------
-      call check( nf90_open(CLDO_file, nf90_write, ncid), "opening file " // CLDO_file )
-      do ch = 1, nch
-        do k=1,km 
+    call check( nf90_open(CLDO_file, IOR(nf90_write, nf90_mpiio), ncid,comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // CLDO_file )
+    write(msg,'(F10.2)') channels(nch)
+    do k=1,km 
 
-          ! Liquid Cloud Stuff
-          call check(nf90_inq_varid(ncid, 'lcot_' // trim(adjustl(msg)), varid), "get lcot vaird")
-          call check(nf90_put_var(ncid, varid, LTAU(:,:,k), &
-                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ltau")
+      ! Liquid Cloud Stuff
+      call check(nf90_inq_varid(ncid, 'lcot_' // trim(adjustl(msg)), varid), "get lcot vaird")
+      call check(nf90_put_var(ncid, varid, LTAU(:,startl:endl,k), &
+                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out ltau")
 
-          call check(nf90_inq_varid(ncid, 'lc_g_' // trim(adjustl(msg)), varid), "get lc_g vaird")
-          call check(nf90_put_var(ncid, varid, LG(:,:,k), &
-                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out lg")
+      call check(nf90_inq_varid(ncid, 'lc_g_' // trim(adjustl(msg)), varid), "get lc_g vaird")
+      call check(nf90_put_var(ncid, varid, LG(:,startl:endl,k), &
+                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out lg")
 
-          call check(nf90_inq_varid(ncid, 'lc_ssa_' // trim(adjustl(msg)), varid), "get lc_ssa vaird")
-          call check(nf90_put_var(ncid, varid, LSSA(:,:,k), &
-                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out lssa")
+      call check(nf90_inq_varid(ncid, 'lc_ssa_' // trim(adjustl(msg)), varid), "get lc_ssa vaird")
+      call check(nf90_put_var(ncid, varid, LSSA(:,startl:endl,k), &
+                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out lssa")
 
-          ! Liquid Cloud Stuff
-          call check(nf90_inq_varid(ncid, 'icot_' // trim(adjustl(msg)), varid), "get icot vaird")
-          call check(nf90_put_var(ncid, varid, ITAU(:,:,k), &
-                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out itau")
+      ! Liquid Cloud Stuff
+      call check(nf90_inq_varid(ncid, 'icot_' // trim(adjustl(msg)), varid), "get icot vaird")
+      call check(nf90_put_var(ncid, varid, ITAU(:,startl:endl,k), &
+                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out itau")
 
-          call check(nf90_inq_varid(ncid, 'ic_g_' // trim(adjustl(msg)), varid), "get ic_g vaird")
-          call check(nf90_put_var(ncid, varid, IG(:,:,k), &
-                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out ig")
+      call check(nf90_inq_varid(ncid, 'ic_g_' // trim(adjustl(msg)), varid), "get ic_g vaird")
+      call check(nf90_put_var(ncid, varid, IG(:,startl:endl,k), &
+                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out ig")
 
-          call check(nf90_inq_varid(ncid, 'ic_ssa_' // trim(adjustl(msg)), varid), "get ic_ssa vaird")
-          call check(nf90_put_var(ncid, varid, ISSA(:,:,k), &
-                    start = (/1,1,k,nobs/), count = (/im,jm,1,nobs/)), "writing out issa")
+      call check(nf90_inq_varid(ncid, 'ic_ssa_' // trim(adjustl(msg)), varid), "get ic_ssa vaird")
+      call check(nf90_put_var(ncid, varid, ISSA(:,startl:endl,k), &
+                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out issa")
 
-        end do
-      end do
+    end do
 
-      call check( nf90_close(ncid), "close cldofile" )
-      
+    call check( nf90_close(ncid), "close cldofile" )
+    
+    if (MAPL_am_I_root()) then
+      write(*,*) '<> Wrote Cloud file '
     end if
 
   end subroutine write_cldfile
@@ -1630,35 +1630,37 @@ end if
 !     Jul 2015 P. Castellanos - added OMI LER option
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_surf_land()
-
+    ! RTLS Kernel
     if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
-
       call read_RTLS()
       if (MAPL_am_I_root()) then
         write(*,*) '<> Read BRDF data to shared memory'
       end if
       call MAPL_SyncSharedMemory(rc=ierr) 
 
-      if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
-        call read_BPDF()
-        if (MAPL_am_I_root()) then
-          write(*,*) '<> Read BPDF data to shared memory'
-        end if
-      call MAPL_SyncSharedMemory(rc=ierr) 
-
-      end if
-
       if ((index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
-        if (MAPL_am_I_root()) then
-          call read_LER()        
+        call read_LER()   
+        if (MAPL_am_I_root()) then               
           write(*,*) '<> Read LER data to shared memory'
         end if
         call MAPL_SyncSharedMemory(rc=ierr) 
       end if
-    else if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
+    end if
 
+    ! BPDF
+    if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
+      call read_BPDF()
       if (MAPL_am_I_root()) then
-        call read_LER()        
+        write(*,*) '<> Read BPDF data to shared memory'
+      end if
+    call MAPL_SyncSharedMemory(rc=ierr) 
+
+    end if
+
+    ! Lambertian
+    if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
+      call read_LER()     
+      if (MAPL_am_I_root()) then           
         write(*,*) '<> Read LER data to shared memory'
       end if
       call MAPL_SyncSharedMemory(rc=ierr) 
@@ -1671,48 +1673,52 @@ end if
     integer                            :: xstart, xend, ystart, yend
     integer                            :: x, y
     character(len=100)                 :: sds
-    real, dimension(im,jm)             :: temp
+    real, pointer                      :: temp(:,:)
 
+    call MAPL_AllocNodeArray(temp,(/im,jm/),rc=ierr)
+    call MAPL_SyncSharedMemory(rc=ierr) 
+    do ch = 1,landbandmBRDF
+      if ( landband_cBRDF(ch) < 1000 ) then
+        write(sds,'(A4,I3)') "Riso",int(landband_cBRDF(ch))
+      else
+        write(sds,'(A4,I4)') "Riso",int(landband_cBRDF(ch))
+      end if
+
+      call mp_readvar2Dchunk(trim(sds), BRDF_file, (/im,jm/), 1, npet, myid, temp) 
+      call MAPL_SyncSharedMemory(rc=ierr) 
+      if (MAPL_am_I_root()) then
+        KISO(:,:,ch) = temp
+      end if
+      call MAPL_SyncSharedMemory(rc=ierr) 
+
+      if ( landband_cBRDF(ch) < 1000 ) then
+        write(sds,'(A4,I3)') "Rgeo",int(landband_cBRDF(ch))
+      else
+        write(sds,'(A4,I4)') "Rgeo",int(landband_cBRDF(ch))
+      end if
       
-      do ch = 1,landbandmBRDF
-        if ( landband_cBRDF(ch) < 1000 ) then
-          write(sds,'(A4,I3)') "Riso",int(landband_cBRDF(ch))
-        else
-          write(sds,'(A4,I4)') "Riso",int(landband_cBRDF(ch))
-        end if
-        call mp_readvar2Dchunk(trim(sds), BRDF_file, (/im,jm/), 1, npet, myid, temp) 
-        
-        if (MAPL_am_I_root()) then
-          KISO(:,:,ch) = temp
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr) 
+      call mp_readvar2Dchunk(trim(sds), BRDF_file, (/im,jm/), 1, npet, myid, temp) 
+      call MAPL_SyncSharedMemory(rc=ierr)
+      if (MAPL_am_I_root()) then
+        KGEO(:,:,ch) = temp
+      end if
+      call MAPL_SyncSharedMemory(rc=ierr)         
 
-        if ( landband_cBRDF(ch) < 1000 ) then
-          write(sds,'(A4,I3)') "Rgeo",int(landband_cBRDF(ch))
-        else
-          write(sds,'(A4,I4)') "Rgeo",int(landband_cBRDF(ch))
-        end if
+      if ( landband_cBRDF(ch) < 1000 ) then
+        write(sds,'(A4,I3)') "Rvol",int(landband_cBRDF(ch))
+      else
+        write(sds,'(A4,I4)') "Rvol",int(landband_cBRDF(ch))
+      end if
 
-        call mp_readvar2Dchunk(trim(sds), BRDF_file, (/im,jm/), 1, npet, myid, temp) 
-        if (MAPL_am_I_root()) then
-          KGEO(:,:,ch) = temp
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)         
-
-        if ( landband_cBRDF(ch) < 1000 ) then
-          write(sds,'(A4,I3)') "Rvol",int(landband_cBRDF(ch))
-        else
-          write(sds,'(A4,I4)') "Rvol",int(landband_cBRDF(ch))
-        end if
-
-        call mp_readvar2Dchunk(trim(sds), BRDF_file, (/im,jm/), 1, npet, myid, temp) 
-        if (MAPL_am_I_root()) then
-          KVOL(:,:,ch) = temp
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)         
-        
-      end do
-
+      call mp_readvar2Dchunk(trim(sds), BRDF_file, (/im,jm/), 1, npet, myid, temp) 
+      call MAPL_SyncSharedMemory(rc=ierr)
+      if (MAPL_am_I_root()) then
+        KVOL(:,:,ch) = temp
+      end if
+      call MAPL_SyncSharedMemory(rc=ierr)         
+      
+    end do
+    call MAPL_DeallocNodeArray(temp,rc=ierr)
   end subroutine read_RTLS
 
   subroutine read_BPDF()
@@ -1723,17 +1729,25 @@ end if
   end subroutine read_BPDF
 
   subroutine read_LER()
-    real, dimension(im,jm,1,1)         :: temp
+    !real, dimension(im,jm,1,1)         :: temp
+    real, pointer                      :: temp(:,:,:,:)
     character(len=100)                 :: sds
 
+    call MAPL_AllocNodeArray(temp,(/im,jm,1,1/),rc=ierr)
+    call MAPL_SyncSharedMemory(rc=ierr)   
     do ch = 1,landbandmLER
       if ( landband_cLER(ch) < 1000 ) then
         write(sds,'(A6,I3)') "SRFLER",int(landband_cLER(ch))
       end if
-      call readvar4d(trim(sds), LER_file, temp)
-      LER(:,:,ch) = temp(:,:,1,1)
+      !call readvar4d(trim(sds), LER_file, temp)
+      call mp_readvar4Dchunk(trim(sds), LER_file, (/im,jm,1,1/), 1, npet, myid, temp) 
+      call MAPL_SyncSharedMemory(rc=ierr)  
+      if (MAPL_am_I_root()) then 
+        LER(:,:,ch) = temp(:,:,1,1)
+      end if
+      call MAPL_SyncSharedMemory(rc=ierr)     
     end do
-
+    call MAPL_DeallocNodeArray(temp,rc=ierr)
   end subroutine read_LER
 
 
@@ -1876,15 +1890,16 @@ end if
       call MAPL_AllocNodeArray(KISO,(/im,jm,landbandmBRDF/),rc=ierr)
       call MAPL_AllocNodeArray(KVOL,(/im,jm,landbandmBRDF/),rc=ierr)
       call MAPL_AllocNodeArray(KGEO,(/im,jm,landbandmBRDF/),rc=ierr)
-      if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
-        if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then
-          call MAPL_AllocNodeArray(NDVI,(/im,jm/),rc=ierr)
-          call MAPL_AllocNodeArray(BPDFcoef,(/im,jm/),rc=ierr)
-        end if
-      end if
-    else if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
+    end if
+    if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
       call MAPL_AllocNodeArray(LER,(/im,jm,landbandmLER/),rc=ierr)
     end if 
+    if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
+      if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then
+        call MAPL_AllocNodeArray(NDVI,(/im,jm/),rc=ierr)
+        call MAPL_AllocNodeArray(BPDFcoef,(/im,jm/),rc=ierr)
+      end if
+    end if
 
     call MAPL_AllocNodeArray(SZA,(/im,jm/),rc=ierr)
     call MAPL_AllocNodeArray(VZA,(/im,jm/),rc=ierr)
@@ -1914,10 +1929,10 @@ end if
     call MAPL_AllocNodeArray(TE,(/im,jm,km+1/),rc=ierr)
     
     if (.not. scalar) then
-      call MAPL_AllocNodeArray(Q,(/im,jm,nch/),rc=ierr)
-      call MAPL_AllocNodeArray(U,(/im,jm,nch/),rc=ierr)
-      call MAPL_AllocNodeArray(BR_Q,(/im,jm,nch/),rc=ierr)
-      call MAPL_AllocNodeArray(BR_U,(/im,jm,nch/),rc=ierr)
+      call MAPL_AllocNodeArray(Q,(/im,jm/),rc=ierr)
+      call MAPL_AllocNodeArray(U,(/im,jm/),rc=ierr)
+      call MAPL_AllocNodeArray(BR_Q,(/im,jm/),rc=ierr)
+      call MAPL_AllocNodeArray(BR_U,(/im,jm/),rc=ierr)
 
     end if
 
@@ -1926,8 +1941,8 @@ end if
       call MAPL_AllocNodeArray(WATER_CH,(/wnch/),rc=ierr)
     end if
 
-    call MAPL_AllocNodeArray(radiance_VL,(/im,jm,nch/),rc=ierr)
-    call MAPL_AllocNodeArray(reflectance_VL,(/im,jm,nch/),rc=ierr)
+    call MAPL_AllocNodeArray(radiance_VL,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(reflectance_VL,(/im,jm/),rc=ierr)
 
   end subroutine allocate_shared
 
@@ -1983,10 +1998,6 @@ end if
     allocate (Vpmom(km,nch,nobs,nMom,nPol))
     allocate (VpmomLcl(km,nch,nobs,nMom,nPol))
     allocate (VpmomIcl(km,nch,nobs,nMom,nPol))
-    ! allocate (betaIcl(km,nch,nobs))
-    ! allocate (betaLcl(km,nch,nobs))
-    ! allocate (truncIcl(km,nch,nobs))
-    ! allocate (truncLcl(km,nch,nobs))
 
     if (.not. scalar) then      
       allocate (Q_int(nobs, nch))
@@ -2090,7 +2101,7 @@ end if
     integer                            :: ch
 
     real*8,allocatable,dimension(:,:)  :: clon, clat, sza, vza, raa
-    real*8,allocatable,dimension(:)    :: scantime, ew, ns, tyme, lev
+    real*8,allocatable,dimension(:)    :: scantime, ew, ns, tyme
 
     character(len=2000)                :: comment
 
@@ -2186,7 +2197,6 @@ end if
       write(comment,'(F10.2)') channels(ch)
       call check(nf90_def_var(ncid, 'ref_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),refVarID(ch)),"create reflectance var")
       call check(nf90_def_var(ncid, 'surf_ref_I_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),albVarID(ch)),"create albedo var")
-      ! call check(nf90_def_var(ncid, 'aod_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),aotVarID(ch)),"create aot var")
       call check(nf90_def_var(ncid, 'I_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),radVarID(ch)),"create radiance var")              
 
       if (.not. scalar) then
@@ -2199,8 +2209,8 @@ end if
     end do
 
     ! Variable Attributes
-!                                          Reflectance and AOD
-!                                          ------------------------  
+!                                          Reflectance TOA & Surface
+!                                          -------------------------  
     do ch=1,size(channels)
       write(comment,'(F10.2,A)') channels(ch), ' nm TOA Reflectance'
       call check(nf90_put_att(ncid,refVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
@@ -2217,14 +2227,6 @@ end if
       call check(nf90_put_att(ncid,albVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
       call check(nf90_put_att(ncid,albVarID(ch),'units','None'),"units attr")
       call check(nf90_put_att(ncid,albVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
-
-      ! write(comment,'(F10.2,A)') channels(ch), ' nm AOD'
-      ! call check(nf90_put_att(ncid,aotVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-      ! write(comment,'(F10.2,A)') channels(ch), ' nm Aerosol Optical Depth'
-      ! call check(nf90_put_att(ncid,aotVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-      ! call check(nf90_put_att(ncid,aotVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-      ! call check(nf90_put_att(ncid,aotVarID(ch),'units','None'),"units attr")
-      ! call check(nf90_put_att(ncid,aotVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")    
 
       write(comment,'(F10.2,A)') channels(ch), ' nm TOA I'
       call check(nf90_put_att(ncid,radVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
@@ -2309,7 +2311,6 @@ end if
     allocate (clat(im, jm))
     allocate (ew(im))
     allocate (ns(jm))    
-    allocate (lev(1))
 
     call readvar1D("ev_mid_time", INV_file, scantime)
     call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
@@ -2320,8 +2321,7 @@ end if
     call readvar2D("latitude", INV_file, clat)
     call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
-    call readvar1D("lev", AER_file, lev)
-    call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
+    call check(nf90_put_var(ncid,levVarID,(/1/)), "writing out lev")
 
     call readvar1D("ccd_pixels", INV_file, ew)
     call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
@@ -2334,7 +2334,6 @@ end if
     deallocate (scantime)
     deallocate (ns)
     deallocate (ew)
-    deallocate (lev)
 
     call check( nf90_close(ncid), "close outfile" )
 
@@ -2347,7 +2346,6 @@ end if
     
     integer                            :: ncid
     integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID 
-    integer                            :: leveDimID      
     integer                            :: scantimeVarID, clonVarID, clatVarID
     integer                            :: timeVarID, levVarID, ewVarID, nsVarID
     integer                            :: leveVarID, e
@@ -2366,7 +2364,6 @@ end if
       ! Create dimensions
       call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
       call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
-      call check(nf90_def_dim(ncid, "leve", km+1, leveDimID), "creating edge level dimension") !km+1
       call check(nf90_def_dim(ncid, "ccd_pixels", im, ewDimID), "creating ew dimension") !im
       call check(nf90_def_dim(ncid, "number_of_scans", jm, nsDimID), "creating ns dimension") !jm
 
@@ -2417,7 +2414,6 @@ end if
   !                                     Dimensions
   !                                     ----------    
       call check(nf90_def_var(ncid,'lev',nf90_float,(/levDimID/),levVarID),"create lev var")
-      call check(nf90_def_var(ncid,'leve',nf90_float,(/leveDimID/),leveVarID),"create leve var")
       call check(nf90_def_var(ncid,'ccd_pixels',nf90_float,(/ewDimID/),ewVarID),"create ew var")
       call check(nf90_def_var(ncid,'number_of_scans',nf90_float,(/nsDimID/),nsVarID),"create ns var")
 
@@ -2520,8 +2516,6 @@ end if
       call readvar1D("lev", AER_file, lev)
       call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
 
-      call check(nf90_put_var(ncid,leveVarID,(/(real(e), e = 1, km+1)/)), "writing out leve")      
-
       call readvar1D("ccd_pixels", INV_file, ew)
       call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
 
@@ -2546,7 +2540,6 @@ end if
     
     integer                            :: ncid
     integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID 
-    integer                            :: leveDimID      
     integer                            :: scantimeVarID, clonVarID, clatVarID
     integer                            :: timeVarID, levVarID, ewVarID, nsVarID
     integer                            :: leveVarID, e
@@ -2565,7 +2558,6 @@ end if
       ! Create dimensions
       call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
       call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
-      call check(nf90_def_dim(ncid, "leve", km+1, leveDimID), "creating edge level dimension") !km+1
       call check(nf90_def_dim(ncid, "ccd_pixels", im, ewDimID), "creating ew dimension") !im
       call check(nf90_def_dim(ncid, "number_of_scans", jm, nsDimID), "creating ns dimension") !jm
 
@@ -2616,7 +2608,6 @@ end if
   !                                     Dimensions
   !                                     ----------    
       call check(nf90_def_var(ncid,'lev',nf90_float,(/levDimID/),levVarID),"create lev var")
-      call check(nf90_def_var(ncid,'leve',nf90_float,(/leveDimID/),leveVarID),"create leve var")
       call check(nf90_def_var(ncid,'ccd_pixels',nf90_float,(/ewDimID/),ewVarID),"create ew var")
       call check(nf90_def_var(ncid,'number_of_scans',nf90_float,(/nsDimID/),nsVarID),"create ns var")
 
@@ -2747,8 +2738,6 @@ end if
       call readvar1D("lev", AER_file, lev)
       call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
 
-      call check(nf90_put_var(ncid,leveVarID,(/(real(e), e = 1, km+1)/)), "writing out leve")      
-
       call readvar1D("ccd_pixels", INV_file, ew)
       call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
 
@@ -2774,7 +2763,6 @@ end if
     
     integer                            :: ncid
     integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID 
-    integer                            :: leveDimID      
     integer                            :: scantimeVarID, clonVarID, clatVarID
     integer                            :: timeVarID, levVarID, ewVarID, nsVarID
     integer                            :: leveVarID, e
@@ -2793,7 +2781,6 @@ end if
       ! Create dimensions
       call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
       call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
-      call check(nf90_def_dim(ncid, "leve", km+1, leveDimID), "creating edge level dimension") !km+1
       call check(nf90_def_dim(ncid, "ccd_pixels", im, ewDimID), "creating ew dimension") !im
       call check(nf90_def_dim(ncid, "number_of_scans", jm, nsDimID), "creating ns dimension") !jm
 
@@ -2844,7 +2831,6 @@ end if
   !                                     Dimensions
   !                                     ----------    
       call check(nf90_def_var(ncid,'lev',nf90_float,(/levDimID/),levVarID),"create lev var")
-      call check(nf90_def_var(ncid,'leve',nf90_float,(/leveDimID/),leveVarID),"create leve var")
       call check(nf90_def_var(ncid,'ccd_pixels',nf90_float,(/ewDimID/),ewVarID),"create ew var")
       call check(nf90_def_var(ncid,'number_of_scans',nf90_float,(/nsDimID/),nsVarID),"create ns var")
 
@@ -2858,9 +2844,6 @@ end if
         write(comment,'(F10.2)') channels(ch)
         call check(nf90_def_var(ncid, 'rot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),rotVarID(ch)),"create rot var")
       end do
-      ! call check(nf90_def_var(ncid,'pe',nf90_float,(/ewDimID,nsDimID,leveDimID,timeDimID/),peVarID),"create pe var")
-      ! call check(nf90_def_var(ncid,'ze',nf90_float,(/ewDimID,nsDimID,leveDimID,timeDimID/),zeVarID),"create ze var")
-      ! call check(nf90_def_var(ncid,'te',nf90_float,(/ewDimID,nsDimID,leveDimID,timeDimID/),teVarID),"create te var")
       ! Variable Attributes
   !                                          Additional Data
   !                                          -----------------  
@@ -2874,21 +2857,6 @@ end if
         call check(nf90_put_att(ncid,rotVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
       end do
-
-      ! call check(nf90_put_att(ncid,peVarID,'standard_name','Edge Pressure'),"standard_name attr")
-      ! call check(nf90_put_att(ncid,peVarID,'missing_value',real(MISSING)),"missing_value attr")
-      ! call check(nf90_put_att(ncid,peVarID,'units','Pa'),"units attr")
-      ! call check(nf90_put_att(ncid,peVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")  
-
-      ! call check(nf90_put_att(ncid,zeVarID,'standard_name','Edge Altitude Above Surface'),"standard_name attr")
-      ! call check(nf90_put_att(ncid,zeVarID,'missing_value',real(MISSING)),"missing_value attr")
-      ! call check(nf90_put_att(ncid,zeVarID,'units','m'),"units attr")
-      ! call check(nf90_put_att(ncid,zeVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")  
-
-      ! call check(nf90_put_att(ncid,teVarID,'standard_name','Edge Temperature'),"standard_name attr")
-      ! call check(nf90_put_att(ncid,teVarID,'missing_value',real(MISSING)),"missing_value attr")
-      ! call check(nf90_put_att(ncid,teVarID,'units','K'),"units attr")
-      ! call check(nf90_put_att(ncid,teVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")  
 
 
   !                                          scanTime
@@ -2942,8 +2910,6 @@ end if
 
       call readvar1D("lev", AER_file, lev)
       call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
-
-      call check(nf90_put_var(ncid,leveVarID,(/(real(e), e = 1, km+1)/)), "writing out leve")      
 
       call readvar1D("ccd_pixels", INV_file, ew)
       call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
@@ -3221,77 +3187,5 @@ end if
     end do
 
   end function knuthshuffle
-
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!    deallocate_shared
-! PURPOSE
-!     Clean up allocated arrays 
-! INPUT
-!     None
-! OUTPUT
-!     None
-!  HISTORY
-!     27 April P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  subroutine deallocate_shared()         
-
-    ! shmem must deallocate shared memory arrays
-    call MAPL_DeallocNodeArray(AIRDENS,rc=ierr)
-    call MAPL_DeallocNodeArray(RH,rc=ierr)
-    call MAPL_DeallocNodeArray(DELP,rc=ierr)
-    call MAPL_DeallocNodeArray(DU001,rc=ierr)
-    call MAPL_DeallocNodeArray(DU002,rc=ierr)
-    call MAPL_DeallocNodeArray(DU003,rc=ierr)
-    call MAPL_DeallocNodeArray(DU004,rc=ierr)                           
-    call MAPL_DeallocNodeArray(DU005,rc=ierr)
-    call MAPL_DeallocNodeArray(SS001,rc=ierr) 
-    call MAPL_DeallocNodeArray(SS002,rc=ierr) 
-    call MAPL_DeallocNodeArray(SS003,rc=ierr) 
-    call MAPL_DeallocNodeArray(SS004,rc=ierr) 
-    call MAPL_DeallocNodeArray(SS005,rc=ierr) 
-    call MAPL_DeallocNodeArray(BCPHOBIC,rc=ierr) 
-    call MAPL_DeallocNodeArray(BCPHILIC,rc=ierr) 
-    call MAPL_DeallocNodeArray(OCPHOBIC,rc=ierr) 
-    call MAPL_DeallocNodeArray(OCPHILIC,rc=ierr) 
-    call MAPL_DeallocNodeArray(SO4,rc=ierr) 
-    if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
-      call MAPL_DeallocNodeArray(KISO,rc=ierr) 
-      call MAPL_DeallocNodeArray(KVOL,rc=ierr) 
-      call MAPL_DeallocNodeArray(KGEO,rc=ierr) 
-    else if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
-      call MAPL_DeallocNodeArray(LER,rc=ierr) 
-    end if
-    call MAPL_DeallocNodeArray(SZA,rc=ierr) 
-    call MAPL_DeallocNodeArray(VZA,rc=ierr) 
-    call MAPL_DeallocNodeArray(RAA,rc=ierr) 
-
-    call MAPL_DeallocNodeArray(TAU,rc=ierr)
-    call MAPL_DeallocNodeArray(SSA,rc=ierr)
-    call MAPL_DeallocNodeArray(G,rc=ierr)
-    call MAPL_DeallocNodeArray(LTAU,rc=ierr)
-    call MAPL_DeallocNodeArray(LSSA,rc=ierr)
-    call MAPL_DeallocNodeArray(LG,rc=ierr)
-    call MAPL_DeallocNodeArray(ITAU,rc=ierr)
-    call MAPL_DeallocNodeArray(ISSA,rc=ierr)
-    call MAPL_DeallocNodeArray(IG,rc=ierr)
-
-    call MAPL_DeallocNodeArray(ROT,rc=ierr)
-    call MAPL_DeallocNodeArray(ALBEDO,rc=ierr)
-    call MAPL_DeallocNodeArray(PE,rc=ierr)
-    call MAPL_DeallocNodeArray(ZE,rc=ierr)
-    call MAPL_DeallocNodeArray(TE,rc=ierr)
-    if (.not. scalar) then
-      call MAPL_DeallocNodeArray(Q,rc=ierr)
-      call MAPL_DeallocNodeArray(U,rc=ierr)
-    end if
-
-    call MAPL_DeallocNodeArray(radiance_VL,rc=ierr) 
-    call MAPL_DeallocNodeArray(reflectance_VL,rc=ierr) 
-
-  end subroutine deallocate_shared
-
 
 end program leo_vlidort_cloud
