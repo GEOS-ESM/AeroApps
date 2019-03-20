@@ -32,7 +32,8 @@ module VLIDORT_BRDF_MODIS_BPDF
  
     logical                                 :: scalar
     integer, parameter                      :: nkernel = 3   ! number of kernels
-    integer, parameter                      :: nparam  = 3   ! number of kernel parameters
+    integer, parameter                      :: nparam  = 2   ! number of kernel parameters
+    integer, parameter                      :: nparam_bpdf  = 3   ! number of BPDF kernel parameters
 
   ! !INPUT PARAMETERS:
 
@@ -59,7 +60,7 @@ module VLIDORT_BRDF_MODIS_BPDF
     real*8, target,   intent(in)            :: RTLSparam(nparam,nch,nobs)     ! Li-Sparse parameters 
                                                                               ! param1 = crown relative height (h/b)
                                                                               ! param2 = shape parameter (b/r)
-    real*8, target,   intent(in)            :: BPDFparam(nparam,nch,nobs)     ! BPRDF parameters 
+    real*8, target,   intent(in)            :: BPDFparam(nparam_bpdf,nch,nobs)     ! BPRDF parameters 
                                                                               ! param1 = Refractive index of water (1.5)
                                                                               ! param2 = NDVI , must be <=1 or >=1
                                                                               ! param3 = Scaling factor (C, from Maignan 2009 RSE Table 1)
@@ -143,13 +144,15 @@ module VLIDORT_BRDF_MODIS_BPDF
             reflectance_VL_SURF(j,i) = MISSING
             cycle
           end if
+        end do
+
+        do p = 1, nparam_bpdf
           if (IS_MISSING(BPDFparam(p,i,j),MISSING)) then
             radiance_VL_SURF(j,i) = MISSING
             reflectance_VL_SURF(j,i) = MISSING
             cycle
           end if
-
-        end do
+        end do        
 
         if ( verbose > 0 ) then
           print*, 'DO MODIS BRDF + BPDF'
@@ -159,7 +162,7 @@ module VLIDORT_BRDF_MODIS_BPDF
         call VLIDORT_LANDMODIS_BPDF(SCAT%Surface,solar_zenith(j),&
                                sensor_zenith(j),relat_azymuth(j),&
                                kernel_wt(1,i,j),kernel_wt(2,i,j),kernel_wt(3,i,j),&
-                               reshape(RTLSparam(:,i,j),(/nparam/)),reshape(BPDFparam(:,i,j),(/nparam/)),&
+                               reshape(RTLSparam(:,i,j),(/nparam/)),reshape(BPDFparam(:,i,j),(/nparam_bpdf/)),&
                                scalar,rc)
 
         SCAT%wavelength = channels(i)        
@@ -231,7 +234,8 @@ module VLIDORT_BRDF_MODIS_BPDF
  
     logical                                 :: scalar
     integer, parameter                      :: nkernel = 3   ! number of kernels
-    integer, parameter                      :: nparam  = 3   ! number of kernel parameters
+    integer, parameter                      :: nparam  = 2   ! number of kernel parameters
+    integer, parameter                      :: nparam_bpdf  = 3   ! number of BPDF kernel parameters
 
   ! !INPUT PARAMETERS:
 
@@ -266,7 +270,7 @@ module VLIDORT_BRDF_MODIS_BPDF
     real*8, target,   intent(in)            :: RTLSparam(nparam,nch,nobs)     ! Li-Sparse parameters 
                                                                               ! param1 = crown relative height (h/b)
                                                                               ! param2 = shape parameter (b/r)
-    real*8, target,   intent(in)            :: BPDFparam(nparam,nch,nobs)     ! BPRDF parameters 
+    real*8, target,   intent(in)            :: BPDFparam(nparam_bpdf,nch,nobs)     ! BPRDF parameters 
                                                                               ! param1 = Refractive index of water (1.5)
                                                                               ! param2 = NDVI , must be <=1 or >=1
                                                                               ! param3 = Scaling factor (C, from Maignan 2009 RSE Table 1)
@@ -350,13 +354,15 @@ module VLIDORT_BRDF_MODIS_BPDF
             reflectance_VL_SURF(j,i) = MISSING
             cycle
           end if
+        end do
+
+        do p = 1, nparam_bpdf
           if (IS_MISSING(BPDFparam(p,i,j),MISSING)) then
             radiance_VL_SURF(j,i) = MISSING
             reflectance_VL_SURF(j,i) = MISSING
             cycle
           end if
-
-        end do
+        end do        
 
         if ( verbose > 0 ) then
           print*, 'DO MODIS BRDF + BPDF'
@@ -366,7 +372,7 @@ module VLIDORT_BRDF_MODIS_BPDF
         call VLIDORT_LANDMODIS_BPDF(SCAT%Surface,solar_zenith(j),&
                                sensor_zenith(j),relat_azymuth(j),&
                                kernel_wt(1,i,j),kernel_wt(2,i,j),kernel_wt(3,i,j),&
-                               reshape(RTLSparam(:,i,j),(/nparam/)),reshape(BPDFparam(:,i,j),(/nparam/)),&
+                               reshape(RTLSparam(:,i,j),(/nparam/)),reshape(BPDFparam(:,i,j),(/nparam_bpdf/)),&
                                scalar,rc)
 
         SCAT%wavelength = channels(i)        

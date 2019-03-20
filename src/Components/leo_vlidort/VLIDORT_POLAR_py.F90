@@ -77,7 +77,7 @@ subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nMom, nPol,nkernel,nparam,
 end subroutine VECTOR_BRDF_MODIS
 
 
-subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nMom, nPol,nkernel,nparam, &
+subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nMom, nPol,nkernel,nparam,nparam_bpdf, &
                      tau, ssa, pmom, pe, he, te, kernel_wt, RTLSparam, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, BR_Q, BR_U, rc)
@@ -97,6 +97,7 @@ subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nMom, nPol,nkernel,np
 
     integer,          intent(in)            :: nkernel ! number of kernels
     integer,          intent(in)            :: nparam  ! number of kernel parameters
+    integer,          intent(in)            :: nparam_bpdf  ! number of BPDF kernel parameters
                     
     real*8,           intent(in)            :: channels(nch)    ! wavelengths [nm]
 
@@ -114,7 +115,7 @@ subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nMom, nPol,nkernel,np
     real*8,           intent(in)            :: RTLSparam(nparam,nch,nobs)         ! Li-Sparse parameters 
                                                                               ! param1 = crown relative height (h/b)
                                                                               ! param2 = shape parameter (b/r)
-    real*8,           intent(in)            :: BPDFparam(nparam,nch,nobs)     ! BPRDF parameters 
+    real*8,           intent(in)            :: BPDFparam(nparam_bpdf,nch,nobs)     ! BPRDF parameters 
                                                                               ! param1 = Refractive index of water (1.5)
                                                                               ! param2 = NDVI , must be <=1 or >=1
                                                                               ! param3 = Scaling factor (C, from Maignan 2009 RSE Table 1)                         
