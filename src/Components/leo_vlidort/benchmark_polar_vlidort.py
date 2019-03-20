@@ -39,7 +39,6 @@ WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_POLAR_.vector_brdf_modis,
                 'LAMBERTIAN'     : VLIDORT_POLAR_.vector_lambert,
                 'LAMBERTIAN_BPDF': VLIDORT_POLAR_.vector_lambert_bpdf}   
 
-LandAlbedos  = 'MODIS_BRDF','MODIS_BRDF_BPDF','LAMBERTIAN','BPDF','LAMBERTIAN_BPDF'
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
