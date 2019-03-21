@@ -727,7 +727,7 @@ module VLIDORT_SurfaceMod
       VBRDF%VBRDF_Sup_In%BS_NSTREAMS_BRDF          = NSTREAMS_BRDF
 
 
-      VBRDF%VBRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = .true.   ! only direct bounce BRDF (no Fourier terms calc)
+      VBRDF%VBRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = .false.   ! only direct bounce BRDF (no Fourier terms calc)
 
       ! The following is needed for Cox-munck type only
       ! set to initialization values
@@ -942,7 +942,7 @@ module VLIDORT_SurfaceMod
       VBRDF%VBRDF_Sup_In%BS_NSTREAMS_BRDF          = NSTREAMS_BRDF
 
 
-      VBRDF%VBRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = .true.   ! only direct bounce BRDF (no Fourier terms calc)
+      VBRDF%VBRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = .false.   ! only direct bounce BRDF (no Fourier terms calc)
 
       ! The following is needed for Cox-munck type only
       ! set to initialization values
