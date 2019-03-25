@@ -186,7 +186,8 @@ end subroutine VLIDORT_Scalar_CX
 subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
                    nPol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
-                   MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, ROT, Q, U, BRDF,rc)
+                   MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
+                   ROT, BRDF, Q, U, BRDF_Q, BRDF_U, rc)
 !
 ! Place holder.
 !
@@ -233,7 +234,9 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
   integer,          intent(out) :: rc                          ! return code
   real*8,           intent(out) :: reflectance_VL_SURF(nobs, nch)   ! TOA reflectance from VLIDORT
   real*8,           intent(out) :: ROT(km,nobs,nch)               ! rayleigh optical thickness  
-  real*8,           intent(out) :: BRDF(3,nobs, nch)  
+  real*8,           intent(out) :: BRDF(nobs, nch)
+  real*8,           intent(out) :: BRDF_Q(nobs, nch)
+  real*8,           intent(out) :: BRDF_U(nobs, nch)  
   real*8,           intent(out) :: Q(nobs, nch)   ! Stokes parameter Q
   real*8,           intent(out) :: U(nobs, nch)   ! Stokes parameter U
 !                               ---
@@ -312,9 +315,9 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
             print *,'brdf output3', SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(3,1,1,1) 
           end if
 
-          BRDF(1,j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1) 
-          BRDF(2,j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(2,1,1,1) 
-          BRDF(3,j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(3,1,1,1)     
+          BRDF(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1) 
+          BRDF_Q(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(2,1,1,1) 
+          BRDF_U(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(3,1,1,1)     
 
          
           call VLIDORT_Run_Vector (SCAT, output, ier)
