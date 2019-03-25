@@ -286,7 +286,7 @@ end subroutine VECTOR_LAMBERT
 subroutine VECTOR_LAMBERT_BPDF(km, nch, nobs, channels, nMom, nPol, nparam, &
                      tau, ssa, pmom, pe, he, te, albedo, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, ROT, Q, U, BR_Q, BR_U, rc)
+                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, BR_Q, BR_U, rc)
 
     use VLIDORT_LAMBERT_BPDF, only: VLIDORT_Vector_Lambert_BPDF  
     implicit None
@@ -348,7 +348,7 @@ subroutine VECTOR_LAMBERT_BPDF(km, nch, nobs, channels, nMom, nPol, nparam, &
                                    MISSING,verbose, &
                                    radiance_VL_SURF, &
                                    reflectance_VL_SURF, &
-                                   BR, ROT, Q, U, BR_Q, BR_U, rc )  
+                                   ROT, BR, Q, U, BR_Q, BR_U, rc )  
 
 
 end subroutine VECTOR_LAMBERT_BPDF
@@ -417,7 +417,8 @@ end subroutine SCALAR_LAMBERT
 subroutine VECTOR_CX(km, nch, nobs, channels, nMom,  &
                      nPol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                      mr, solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, rc)
+                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, &
+                     ROT, BR, Q, U, BR_Q, BR_U, rc)
 
     use VLIDORT_BRDF_CX, only: VLIDORT_Vector_CX  
     implicit None
@@ -459,7 +460,9 @@ subroutine VECTOR_CX(km, nch, nobs, channels, nMom,  &
     integer,          intent(out)           :: rc                             ! return code
 
     real*8,           intent(out)           :: ROT(km,nobs,nch)               ! rayleigh optical thickness
-    real*8,           intent(out)           :: BR(3,nobs,nch)                 ! polarized bidirectional reflectance 
+    real*8,           intent(out)           :: BR(nobs,nch)                   ! polarized bidirectional reflectance
+    real*8,           intent(out)           :: BR_Q(nobs,nch)                 ! polarized bidirectional reflectance
+    real*8,           intent(out)           :: BR_U(nobs,nch)                 ! polarized bidirectional reflectance    
     real*8,           intent(out)           :: Q(nobs, nch)                   ! Stokes parameter Q
     real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
 
@@ -473,7 +476,7 @@ subroutine VECTOR_CX(km, nch, nobs, channels, nMom,  &
                                    MISSING,verbose, &
                                    radiance_VL_SURF, &
                                    reflectance_VL_SURF, &
-                                   ROT, Q, U, BR, rc )  
+                                   ROT, BR, Q, U, BR_Q, BR_U, rc )  
 
 
 end subroutine VECTOR_CX
