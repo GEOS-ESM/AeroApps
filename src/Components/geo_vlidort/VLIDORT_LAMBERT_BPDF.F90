@@ -23,7 +23,7 @@ module VLIDORT_LAMBERT_BPDF
   subroutine VLIDORT_Vector_Lambert_BPDF (km, nch, nobs, channels, nMom,  &
                      nPol,tau, ssa, pmom, pe, he, te, albedo, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL, reflectance_VL, BR, ROT, Q ,U, BR_Q,BR_U,rc, &
+                     MISSING,verbose, radiance_VL, reflectance_VL, ROT, BR, Q ,U, BR_Q,BR_U,rc, &
                      DO_2OS_CORRECTION, DO_BOA)
   !
   ! Place holder.
