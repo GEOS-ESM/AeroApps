@@ -183,6 +183,9 @@ class JOBS(object):
                         self.destroy_workspace(i,s)
                         if self.nodemax is not None:
                             self.combine_files(i)
+
+                        # Compress outfiles
+                        self.compress(i)
                     else:
                         print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
 
@@ -628,10 +631,20 @@ class WORKSPACE(JOBS):
         if self.profile is False:
             os.rmdir(self.dirstring[i])
 
-    def combine_files(self,i):
-        date_ch = self.dirstring[i].split('/')[-1]
-        date,ch = date_ch.split('.')
+    def compress(self,i):
+        outfile = self.outfilelist[i]
 
+        cmd = "ncks --hst --no_abc -O -4 -L 2 --cnk_plc=g2d --cnk_dmn ccd_pixels,91 --cnk_dmn number_of_scans,144 --cnk_dmn lev,1 {} {}"
+        newcmd = cmd.format(outfile,outfile)
+
+        stat = subprocess.call(newcmd, shell=True, stdout=devnull)
+
+        if self.write_add:
+            addfile = self.addfilelist[i]
+            newcmd = cmd.format(addfile,addfile)
+            stat = subprocess.call(newcmd, shell=True, stdout=devnull)
+
+    def combine_files(self,i):
         outfile = self.outfilelist[i]
         filelist = []
         for a in np.arange(self.nodemax):
