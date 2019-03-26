@@ -169,15 +169,15 @@ program leo_vlidort_cloud
   real*8, pointer                       :: BR_U(:,:) => null()                   ! bi-directional surface reflectance U
 
 
-  real, pointer                         :: TAU(:,:,:) => null()                  ! aerosol optical depth
-  real, pointer                         :: SSA(:,:,:) => null()                  ! single scattering albedo
-  real, pointer                         :: G(:,:,:) => null()                    ! asymmetry factor
-  real, pointer                         :: LTAU(:,:,:) => null()                 ! liquid cloud optical depth
-  real, pointer                         :: LSSA(:,:,:) => null()                 ! liquid cloud single scattering albedo
-  real, pointer                         :: LG(:,:,:) => null()                   ! liquid cloud asymmetry factor
-  real, pointer                         :: ITAU(:,:,:) => null()                 ! ice cloud optical depth
-  real, pointer                         :: ISSA(:,:,:) => null()                 ! ice cloud single scattering albedo
-  real, pointer                         :: IG(:,:,:) => null()                   ! ice cloud asymmetry factor
+  real, pointer                         :: TAU(:,:) => null()                  ! aerosol optical depth
+  real, pointer                         :: SSA(:,:) => null()                  ! single scattering albedo
+  real, pointer                         :: G(:,:) => null()                    ! asymmetry factor
+  real, pointer                         :: LTAU(:,:) => null()                 ! liquid cloud optical depth
+  real, pointer                         :: LSSA(:,:) => null()                 ! liquid cloud single scattering albedo
+  real, pointer                         :: LG(:,:) => null()                   ! liquid cloud asymmetry factor
+  real, pointer                         :: ITAU(:,:) => null()                 ! ice cloud optical depth
+  real, pointer                         :: ISSA(:,:) => null()                 ! ice cloud single scattering albedo
+  real, pointer                         :: IG(:,:) => null()                   ! ice cloud asymmetry factor
 
   real, pointer                         :: PE(:,:,:) => null()
   real, pointer                         :: ZE(:,:,:) => null()  
@@ -557,17 +557,42 @@ if (MAPL_am_I_root()) then
 
 !   Save some variables on the 2D Grid for Writing Later
 !   ------------------------
-    TAU(i,j,:) = Vtau(:,nch,nobs)
-    SSA(i,j,:) = Vssa(:,nch,nobs)
-    G(i,j,:)   = Vg(:,nch,nobs)
+    TAU(i,j) = SUM(Vtau(:,nch,nobs))
+    SSA(i,j) = SUM(Vssa(:,nch,nobs)*Vtau(:,nch,nobs))
+    G(i,j)   = SUM(Vg(:,nch,nobs)*Vtau(:,nch,nobs))
 
-    LTAU(i,j,:) = VtauLcl(:,nch,nobs)
-    LSSA(i,j,:) = VssaLcl(:,nch,nobs)
-    LG(i,j,:)   = VgLcl(:,nch,nobs)   
+    LTAU(i,j) = SUM(VtauLcl(:,nch,nobs))
+    LSSA(i,j) = SUM(VssaLcl(:,nch,nobs)*VtauLcl(:,nch,nobs))
+    LG(i,j)   = SUM(VgLcl(:,nch,nobs)*VtauLcl(:,nch,nobs))
 
-    ITAU(i,j,:) = VtauIcl(:,nch,nobs)
-    ISSA(i,j,:) = VssaIcl(:,nch,nobs)
-    IG(i,j,:)   = VgIcl(:,nch,nobs)   
+    ITAU(i,j) = SUM(VtauIcl(:,nch,nobs))
+    ISSA(i,j) = SUM(VssaIcl(:,nch,nobs)*VtauIcl(:,nch,nobs))
+    IG(i,j)   = SUM(VgIcl(:,nch,nobs)*VtauIcl(:,nch,nobs))
+
+    if (TAU(i,j) > 0) then
+      SSA(i,j) = SSA(i,j)/TAU(i,j)
+      G(i,j)   = G(i,j)/TAU(i,j)
+    else
+      SSA(i,j) = dble(MISSING)
+      G(i,j)   = dble(MISSING)
+    end if
+
+    if (LTAU(i,j) > 0) then
+      LSSA(i,j) = LSSA(i,j)/LTAU(i,j)
+      LG(i,j)   = LG(i,j)/LTAU(i,j)
+    else
+      LSSA(i,j) = dble(MISSING)
+      LG(i,j)   = dble(MISSING)
+    end if
+
+    if (ITAU(i,j) > 0) then
+      ISSA(i,j) = ISSA(i,j)/ITAU(i,j)
+      IG(i,j)   = IG(i,j)/ITAU(i,j)
+    else
+      ISSA(i,j) = dble(MISSING)
+      IG(i,j)   = dble(MISSING)
+    end if
+
 
     write(msg,*) 'getAOP ', myid
     call write_verbose(msg)
@@ -823,22 +848,20 @@ end if
   !                             --------------------------------
     call check( nf90_open(AERO_file, IOR(nf90_write, nf90_mpiio), ncid,comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // AERO_file )
     write(msg,'(F10.2)') channels(nch)
-    do k=1,km 
 
-      ! Aerosol Stuff
-      call check(nf90_inq_varid(ncid, 'aot_' // trim(adjustl(msg)), varid), "get aot vaird")
-      call check(nf90_put_var(ncid, varid, TAU(:,startl:endl,k), &
-                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out tau")
+    ! Aerosol Stuff
+    call check(nf90_inq_varid(ncid, 'aot_' // trim(adjustl(msg)), varid), "get aot vaird")
+    call check(nf90_put_var(ncid, varid, TAU(:,startl:endl), &
+              start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out tau")
 
-      call check(nf90_inq_varid(ncid, 'g_' // trim(adjustl(msg)), varid), "get g vaird")
-      call check(nf90_put_var(ncid, varid, G(:,startl:endl,k), &
-                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out g")
+    call check(nf90_inq_varid(ncid, 'g_' // trim(adjustl(msg)), varid), "get g vaird")
+    call check(nf90_put_var(ncid, varid, G(:,startl:endl), &
+              start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out g")
 
-      call check(nf90_inq_varid(ncid, 'ssa_' // trim(adjustl(msg)), varid), "get ssa vaird")
-      call check(nf90_put_var(ncid, varid, SSA(:,startl:endl,k), &
-                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out ssa")
+    call check(nf90_inq_varid(ncid, 'ssa_' // trim(adjustl(msg)), varid), "get ssa vaird")
+    call check(nf90_put_var(ncid, varid, SSA(:,startl:endl), &
+              start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out ssa")
 
-    end do
 
     call check( nf90_close(ncid), "close aerofile" )
     if (MAPL_am_I_root()) then
@@ -885,35 +908,33 @@ end if
   !                             --------------------------------
     call check( nf90_open(CLDO_file, IOR(nf90_write, nf90_mpiio), ncid,comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // CLDO_file )
     write(msg,'(F10.2)') channels(nch)
-    do k=1,km 
 
-      ! Liquid Cloud Stuff
-      call check(nf90_inq_varid(ncid, 'lcot_' // trim(adjustl(msg)), varid), "get lcot vaird")
-      call check(nf90_put_var(ncid, varid, LTAU(:,startl:endl,k), &
-                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out ltau")
+    ! Liquid Cloud Stuff
+    call check(nf90_inq_varid(ncid, 'lcot_' // trim(adjustl(msg)), varid), "get lcot vaird")
+    call check(nf90_put_var(ncid, varid, LTAU(:,startl:endl), &
+              start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out ltau")
 
-      call check(nf90_inq_varid(ncid, 'lc_g_' // trim(adjustl(msg)), varid), "get lc_g vaird")
-      call check(nf90_put_var(ncid, varid, LG(:,startl:endl,k), &
-                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out lg")
+    ! call check(nf90_inq_varid(ncid, 'lc_g_' // trim(adjustl(msg)), varid), "get lc_g vaird")
+    ! call check(nf90_put_var(ncid, varid, LG(:,startl:endl,k), &
+    !           start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out lg")
 
-      call check(nf90_inq_varid(ncid, 'lc_ssa_' // trim(adjustl(msg)), varid), "get lc_ssa vaird")
-      call check(nf90_put_var(ncid, varid, LSSA(:,startl:endl,k), &
-                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out lssa")
+    call check(nf90_inq_varid(ncid, 'lc_ssa_' // trim(adjustl(msg)), varid), "get lc_ssa vaird")
+    call check(nf90_put_var(ncid, varid, LSSA(:,startl:endl), &
+              start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out lssa")
 
-      ! Liquid Cloud Stuff
-      call check(nf90_inq_varid(ncid, 'icot_' // trim(adjustl(msg)), varid), "get icot vaird")
-      call check(nf90_put_var(ncid, varid, ITAU(:,startl:endl,k), &
-                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out itau")
+    ! Ice Cloud Stuff
+    call check(nf90_inq_varid(ncid, 'icot_' // trim(adjustl(msg)), varid), "get icot vaird")
+    call check(nf90_put_var(ncid, varid, ITAU(:,startl:endl), &
+              start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out itau")
 
-      call check(nf90_inq_varid(ncid, 'ic_g_' // trim(adjustl(msg)), varid), "get ic_g vaird")
-      call check(nf90_put_var(ncid, varid, IG(:,startl:endl,k), &
-                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out ig")
+    ! call check(nf90_inq_varid(ncid, 'ic_g_' // trim(adjustl(msg)), varid), "get ic_g vaird")
+    ! call check(nf90_put_var(ncid, varid, IG(:,startl:endl,k), &
+    !           start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out ig")
 
-      call check(nf90_inq_varid(ncid, 'ic_ssa_' // trim(adjustl(msg)), varid), "get ic_ssa vaird")
-      call check(nf90_put_var(ncid, varid, ISSA(:,startl:endl,k), &
-                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out issa")
+    call check(nf90_inq_varid(ncid, 'ic_ssa_' // trim(adjustl(msg)), varid), "get ic_ssa vaird")
+    call check(nf90_put_var(ncid, varid, ISSA(:,startl:endl), &
+              start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out issa")
 
-    end do
 
     call check( nf90_close(ncid), "close cldofile" )
     
@@ -1912,15 +1933,15 @@ end if
     call MAPL_AllocNodeArray(U10M,(/im,jm/),rc=ierr) 
     call MAPL_AllocNodeArray(V10M,(/im,jm/),rc=ierr) 
 
-    call MAPL_AllocNodeArray(TAU,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SSA,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(G,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(LTAU,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(LSSA,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(LG,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(ITAU,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(ISSA,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(IG,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(TAU,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(SSA,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(G,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(LTAU,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(LSSA,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(LG,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(ITAU,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(ISSA,(/im,jm/),rc=ierr)
+    call MAPL_AllocNodeArray(IG,(/im,jm/),rc=ierr)
 
     call MAPL_AllocNodeArray(ROT,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(ALBEDO,(/im,jm/),rc=ierr)
@@ -2363,7 +2384,7 @@ end if
 
       ! Create dimensions
       call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
-      call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
+      call check(nf90_def_dim(ncid, "lev", 1, levDimID), "creating ns dimension") !km
       call check(nf90_def_dim(ncid, "ccd_pixels", im, ewDimID), "creating ew dimension") !im
       call check(nf90_def_dim(ncid, "number_of_scans", jm, nsDimID), "creating ns dimension") !jm
 
@@ -2426,7 +2447,7 @@ end if
       do ch=1,nch
         write(comment,'(F10.2)') channels(ch)
 
-        call check(nf90_def_var(ncid, 'aot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),tauVarID(ch)),"create aot var")      
+        call check(nf90_def_var(ncid, 'aod_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),tauVarID(ch)),"create aot var")      
         call check(nf90_def_var(ncid, 'ssa_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),ssaVarID(ch)),"create ssa var")
         call check(nf90_def_var(ncid, 'g_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),gVarID(ch)),"create g var")
 
@@ -2437,9 +2458,9 @@ end if
       do ch=1,size(channels)
 
         ! Aerosol Stuff
-        write(comment,'(F10.2,A)') channels(ch), ' nm AOT'
+        write(comment,'(F10.2,A)') channels(ch), ' nm AOD'
         call check(nf90_put_att(ncid,tauVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm layer Aerosol Optical Thickness'
+        write(comment,'(F10.2,A)') channels(ch), ' nm Aerosol Optical Depth'
         call check(nf90_put_att(ncid,tauVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
         call check(nf90_put_att(ncid,tauVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
         call check(nf90_put_att(ncid,tauVarID(ch),'units','none'),"units attr")
@@ -2447,7 +2468,7 @@ end if
 
         write(comment,'(F10.2,A)') channels(ch), ' nm SSA'
         call check(nf90_put_att(ncid,ssaVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm layer Aerosol Single Scattering Albedo'
+        write(comment,'(F10.2,A)') channels(ch), ' nm Aerosol Single Scattering Albedo'
         call check(nf90_put_att(ncid,ssaVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
         call check(nf90_put_att(ncid,ssaVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
         call check(nf90_put_att(ncid,ssaVarID(ch),'units','none'),"units attr")
@@ -2455,7 +2476,7 @@ end if
 
         write(comment,'(F10.2,A)') channels(ch), ' nm g'
         call check(nf90_put_att(ncid,gVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm layer Aerosol Asymmetry Parameter'
+        write(comment,'(F10.2,A)') channels(ch), ' nm Aerosol Asymmetry Parameter'
         call check(nf90_put_att(ncid,gVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
         call check(nf90_put_att(ncid,gVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
         call check(nf90_put_att(ncid,gVarID(ch),'units','none'),"units attr")
@@ -2557,7 +2578,7 @@ end if
 
       ! Create dimensions
       call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
-      call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating ns dimension") !km
+      call check(nf90_def_dim(ncid, "lev", 1, levDimID), "creating ns dimension") !km
       call check(nf90_def_dim(ncid, "ccd_pixels", im, ewDimID), "creating ew dimension") !im
       call check(nf90_def_dim(ncid, "number_of_scans", jm, nsDimID), "creating ns dimension") !jm
 
@@ -2620,11 +2641,11 @@ end if
       do ch=1,nch
         write(comment,'(F10.2)') channels(ch)
 
-        call check(nf90_def_var(ncid, 'lcot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),LtauVarID(ch)),"create lcot var")      
+        call check(nf90_def_var(ncid, 'lcod_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),LtauVarID(ch)),"create lcot var")      
         call check(nf90_def_var(ncid, 'lc_ssa_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),LssaVarID(ch)),"create lc_ssa var")
         call check(nf90_def_var(ncid, 'lc_g_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),LgVarID(ch)),"create lc_g var")
 
-        call check(nf90_def_var(ncid, 'icot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),ItauVarID(ch)),"create icot var")      
+        call check(nf90_def_var(ncid, 'icod_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),ItauVarID(ch)),"create icot var")      
         call check(nf90_def_var(ncid, 'ic_ssa_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),IssaVarID(ch)),"create ic_ssa var")
         call check(nf90_def_var(ncid, 'ic_g_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),IgVarID(ch)),"create ic_g var")
 
@@ -2634,9 +2655,9 @@ end if
   !                                          -----------------  
       do ch=1,size(channels)
         ! Liquid Cloud Stuff
-        write(comment,'(F10.2,A)') channels(ch), ' nm Liquid COT'
+        write(comment,'(F10.2,A)') channels(ch), ' nm Liquid COD'
         call check(nf90_put_att(ncid,LtauVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm layer Liquid Cloud Optical Thickness'
+        write(comment,'(F10.2,A)') channels(ch), ' nm Liquid Cloud Optical Depth'
         call check(nf90_put_att(ncid,LtauVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
         call check(nf90_put_att(ncid,LtauVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
         call check(nf90_put_att(ncid,LtauVarID(ch),'units','none'),"units attr")
@@ -2644,24 +2665,24 @@ end if
 
         write(comment,'(F10.2,A)') channels(ch), ' nm Liquid Cloud SSA'
         call check(nf90_put_att(ncid,LssaVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm layer Liquid Cloud Single Scattering Albedo'
+        write(comment,'(F10.2,A)') channels(ch), ' nm Liquid Cloud Single Scattering Albedo'
         call check(nf90_put_att(ncid,LssaVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
         call check(nf90_put_att(ncid,LssaVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
         call check(nf90_put_att(ncid,LssaVarID(ch),'units','none'),"units attr")
         call check(nf90_put_att(ncid,LssaVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")   
 
-        write(comment,'(F10.2,A)') channels(ch), ' nm Liquid Cloud g'
-        call check(nf90_put_att(ncid,LgVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm layer Liquid Cloud Asymmetry Parameter'
-        call check(nf90_put_att(ncid,LgVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-        call check(nf90_put_att(ncid,LgVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-        call check(nf90_put_att(ncid,LgVarID(ch),'units','none'),"units attr")
-        call check(nf90_put_att(ncid,LgVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")  
+        ! write(comment,'(F10.2,A)') channels(ch), ' nm Liquid Cloud g'
+        ! call check(nf90_put_att(ncid,LgVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        ! write(comment,'(F10.2,A)') channels(ch), ' nm layer Liquid Cloud Asymmetry Parameter'
+        ! call check(nf90_put_att(ncid,LgVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        ! call check(nf90_put_att(ncid,LgVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        ! call check(nf90_put_att(ncid,LgVarID(ch),'units','none'),"units attr")
+        ! call check(nf90_put_att(ncid,LgVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")  
 
         ! Ice Cloud Stuff
-        write(comment,'(F10.2,A)') channels(ch), ' nm Ice COT'
+        write(comment,'(F10.2,A)') channels(ch), ' nm Ice COD'
         call check(nf90_put_att(ncid,ItauVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm layer Ice Cloud Optical Thickness'
+        write(comment,'(F10.2,A)') channels(ch), ' nm Ice Cloud Optical Depth'
         call check(nf90_put_att(ncid,ItauVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
         call check(nf90_put_att(ncid,ItauVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
         call check(nf90_put_att(ncid,ItauVarID(ch),'units','none'),"units attr")
@@ -2669,19 +2690,19 @@ end if
 
         write(comment,'(F10.2,A)') channels(ch), ' nm Ice Cloud SSA'
         call check(nf90_put_att(ncid,IssaVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm layer Ice Cloud Single Scattering Albedo'
+        write(comment,'(F10.2,A)') channels(ch), ' nm Ice Cloud Single Scattering Albedo'
         call check(nf90_put_att(ncid,IssaVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
         call check(nf90_put_att(ncid,IssaVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
         call check(nf90_put_att(ncid,IssaVarID(ch),'units','none'),"units attr")
         call check(nf90_put_att(ncid,IssaVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")   
 
-        write(comment,'(F10.2,A)') channels(ch), ' nm Ice Cloud g'
-        call check(nf90_put_att(ncid,IgVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm layer Ice Cloud Asymmetry Parameter'
-        call check(nf90_put_att(ncid,IgVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-        call check(nf90_put_att(ncid,IgVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-        call check(nf90_put_att(ncid,IgVarID(ch),'units','none'),"units attr")
-        call check(nf90_put_att(ncid,IgVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")  
+        ! write(comment,'(F10.2,A)') channels(ch), ' nm Ice Cloud g'
+        ! call check(nf90_put_att(ncid,IgVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        ! write(comment,'(F10.2,A)') channels(ch), ' nm layer Ice Cloud Asymmetry Parameter'
+        ! call check(nf90_put_att(ncid,IgVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        ! call check(nf90_put_att(ncid,IgVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        ! call check(nf90_put_att(ncid,IgVarID(ch),'units','none'),"units attr")
+        ! call check(nf90_put_att(ncid,IgVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")  
 
       end do
 
