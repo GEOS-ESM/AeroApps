@@ -497,7 +497,8 @@ class BENCHMARK(POLAR_VLIDORT):
         nvza = len(self.VZA)
         nraa = len(self.VAA)
 
-        raa = np.radians(self.VAA - self.SAA)
+        #raa = np.radians(self.VAA - self.SAA)
+        raa = np.radians(self.RAA)
         razi_pm = np.ones(nraa)
         razi_pm[np.sin(raa) >= 0] = -1.0
         cos_razi = np.cos(raa)
@@ -551,8 +552,8 @@ class BENCHMARK(POLAR_VLIDORT):
                 q_out= q_in*cos2i2 - u_in*sin2i2
                 u_out= q_in*sin2i2 + u_in*cos2i2
 
-                self.Q_out[ivza,iraa] = q_out
-                self.U_out[ivza,iraa] = u_out
+                self.Q_out[ivza,iraa] = -1.*q_out
+                self.U_out[ivza,iraa] = -1.*u_out
 
 
 
@@ -977,8 +978,8 @@ if __name__ == "__main__":
     if not os.path.exists(rootDir):
         rootDir = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/'
     #albedoType   = 'BPDF'
-    #albedoType = 'MODIS_BRDF_BPDF'
-    albedoType = 'LAMBERTIAN'
+    albedoType = 'MODIS_BRDF_BPDF'
+    #albedoType = 'LAMBERTIAN'
     #albedoType = 'CX'
 
     aerosol = False  # true if you want aerosols in simulation
@@ -987,7 +988,7 @@ if __name__ == "__main__":
     channels  = 865,    # 410,440,470,550,670,865,1020,1650,2100  #
     for channel in channels:
         chd      = get_chd(channel)
-        outDir    = './benchmark_rayleigh_nosurface_PP'
+        outDir    = './benchmark_rayleigh_BRDF_BPDF_PP'
         outFile   = '{}/calipso-g5nr.vlidort.vector.{}.{}.nc4'.format(outDir,albedoType,chd)
         
         rcFile   = 'rc/Aod_EOS.{}.rc'.format(channel)
