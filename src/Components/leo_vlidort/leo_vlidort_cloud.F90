@@ -2535,7 +2535,7 @@ end if
       call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
       call readvar1D("lev", AER_file, lev)
-      call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
+      call check(nf90_put_var(ncid,levVarID,(/1/)), "writing out lev")
 
       call readvar1D("ccd_pixels", INV_file, ew)
       call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
@@ -2757,7 +2757,7 @@ end if
       call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
       call readvar1D("lev", AER_file, lev)
-      call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
+      call check(nf90_put_var(ncid,levVarID,(/1/)), "writing out lev")
 
       call readvar1D("ccd_pixels", INV_file, ew)
       call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
