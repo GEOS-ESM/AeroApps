@@ -83,26 +83,27 @@ class POLAR_VLIDORT(object):
                 extOnly=False,
                 distOnly=False,
                 outFileDist=None):
-        self.SDS_AER = SDS_AER
-        self.SDS_MET = SDS_MET
-        self.SDS_INV = SDS_INV
-        self.AERNAMES = AERNAMES
-        self.inFile  = inFile
-        self.outFile = outFile
+        self.SDS_AER     = SDS_AER
+        self.SDS_MET     = SDS_MET
+        self.SDS_INV     = SDS_INV
+        self.SDS_CX      = SDS_CX
+        self.AERNAMES    = AERNAMES
+        self.inFile      = inFile
+        self.outFile     = outFile
         self.outFileDist = outFileDist
-        self.albedoType = albedoType
-        self.rcFile  = rcFile
-        self.channel = channel
-        self.verbose = verbose
-        self.nMom    = nMom
-        self.brdfFile = brdfFile
-        self.lcFile = lcFile
-        self.ndviFile = ndviFile
-        self.lerFile  = lerFile
+        self.albedoType  = albedoType
+        self.rcFile      = rcFile
+        self.channel     = channel
+        self.verbose     = verbose
+        self.nMom        = nMom
+        self.brdfFile    = brdfFile
+        self.lcFile      = lcFile
+        self.ndviFile    = ndviFile
+        self.lerFile     = lerFile
 
         if not extOnly:
             # initialize empty lists
-            for sds in self.SDS_AER+self.SDS_MET+self.SDS_INV:
+            for sds in self.SDS_AER+self.SDS_MET+self.SDS_INV+self.SDS_CX:
                 self.__dict__[sds] = []
 
             # Read in data model data
@@ -1228,21 +1229,22 @@ class POLAR_VLIDORT(object):
         #backward directions, forward directions
         VZA = np.append(self.VZA[::-1],self.VZA)
 
-        raaf.shape = raaf.shape + (1,)
-        raaf = np.repeat(raaf,len(self.VZA),axis=1)
-        
-        raab.shape = raab.shape + (1,)        
-        raab = np.repeat(raab,len(self.VZA),axis=1)
-
-        RAA = np.append(raab,raaf,axis=1)
-        RAA[RAA < 0] = RAA[RAA<0]+360.0
-
         # loop though LAND and SEA
         for surface in surfList:
+
             iGood = self.__dict__['i'+surface]
             sza  = self.SZA[iGood]
             raaf = self.RAAf[iGood]
             raab = self.RAAb[iGood]
+
+            raaf.shape = raaf.shape + (1,)
+            raaf = np.repeat(raaf,len(self.VZA),axis=1)
+            
+            raab.shape = raab.shape + (1,)        
+            raab = np.repeat(raab,len(self.VZA),axis=1)
+
+            RAA = np.append(raab,raaf,axis=1)
+            RAA[RAA < 0] = RAA[RAA<0]+360.0
 
             tau = self.tau[:,:,iGood]
             ssa = self.ssa[:,:,iGood]
@@ -1251,133 +1253,128 @@ class POLAR_VLIDORT(object):
             ze   = self.ze[:,iGood]
             te   = self.te[:,iGood]
 
-            if surface == 'Land'        
-                # Get VLIDORT wrapper name from dictionary
-                vlidortWrapper = WrapperFuncs[self.albedoType]
+            if surface == 'Land':        
+                albedoType = self.albedoType
+
             else:
-                vlidortWrapper = WrapperFuncs['CX']
+                albedoType = 'CX'
+
+            # Get VLIDORT wrapper name from dictionary
+            vlidortWrapper = WrapperFuncs[albedoType]
 
             # loop through viewing angles and run VLIDORT
             for i in range(2*nangles):
                 vza  = np.array([VZA[i]]*self.nobs)
                 raa  = RAA[:,i]
 
-                runFunction = self.__dict__[self.albedoType+'run']
+                runFunction = self.__getattribute__(albedoType+'_run')
                 I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT = runFunction(vlidortWrapper,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood)
-                
-                # get args list for each surface model
-                if self.albedoType == 'MODIS_BRDF':
-                    kernel_wt = self.kernel_wt[:,:,self.iGood]
-                    param     = self.RTLSparam[:,:,self.iGood]                
-                    
-
-                    args = [self.channel,tau, ssa, pmom, 
-                            pe, ze, te, 
-                            kernel_wt, param, 
-                            sza, raa, vza, 
-                            MISSING,
-                            self.verbose]
-
-                    # Call VLIDORT wrapper function
-                    I, reflectance, ROT, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)                        
-                    
-                elif self.albedoType == 'MODIS_BRDF_BPDF':
-                    # For albedo
-                    kernel_wt = self.kernel_wt[:,:,self.iGood]
-                    RTLSparam = self.RTLSparam[:,:,self.iGood] 
-                    RTLSparam = np.append(RTLSparam,np.zeros([1,1,self.nobs]),axis=0) 
-
-                    # For BPDF
-                    BPDFparam = self.BPDFparam[:,:,self.iGood]
-
-                    # Loop through one by one
-                    # Some land covers do not have polarization (i.e. urban)
-                    I = np.zeros([self.nobs,1])
-                    Q = np.zeros([self.nobs,1])
-                    U = np.zeros([self.nobs,1])
-                    reflectance = np.zeros([self.nobs,1])
-                    surf_reflectance = np.zeros([self.nobs,1])
-                    BR_Q = np.zeros([self.nobs,1])
-                    BR_U = np.zeros([self.nobs,1])
-                    ROT = np.zeros([nlev,self.nobs,1])
-
-                    for p in range(self.nobs):
-                        if BPDFparam[2,0,p] == MISSING: 
-                            args = [self.channel,
-                                    tau[:,:,p:p+1], 
-                                    ssa[:,:,p:p+1], 
-                                    pmom[:,:,p:p+1,:,:], 
-                                    pe[:,p:p+1], 
-                                    ze[:,p:p+1], 
-                                    te[:,p:p+1], 
-                                    kernel_wt[:,:,p:p+1], 
-                                    RTLSparam[:,:,p:p+1], 
-                                    sza[p:p+1], 
-                                    raa[p:p+1], 
-                                    vza[p:p+1], 
-                                    MISSING,
-                                    self.verbose]
-
-                            BRDFvlidortWrapper = WrapperFuncs['MODIS_BRDF']
-                            # Call VLIDORT wrapper function
-                            I_, reflectance_, ROT_, surf_reflectance_, Q_, U_, BR_Q_, BR_U_, rc = BRDFvlidortWrapper(*args)                         
-
-                        else:
-                            args = [self.channel,
-                                    tau[:,:,p:p+1], 
-                                    ssa[:,:,p:p+1], 
-                                    pmom[:,:,p:p+1,:,:], 
-                                    pe[:,p:p+1], 
-                                    ze[:,p:p+1], 
-                                    te[:,p:p+1], 
-                                    kernel_wt[:,:,p:p+1], 
-                                    RTLSparam[:,:,p:p+1], 
-                                    BPDFparam[:,:,p:p+1],
-                                    sza[p:p+1], 
-                                    raa[p:p+1], 
-                                    vza[p:p+1], 
-                                    MISSING,
-                                    self.verbose]
-
-                            # Call VLIDORT wrapper function
-                            I_, reflectance_, ROT_, surf_reflectance_, Q_, U_, BR_Q_, BR_U_, rc = vlidortWrapper(*args)
-                
-                        I[p:p+1,:] = I_
-                        Q[p:p+1,:] = Q_
-                        U[p:p+1,:] = U_
-                        reflectance[p:p+1,:] = reflectance_
-                        surf_reflectance[p:p+1,:] = surf_reflectance_
-                        BR_Q[p:p+1,:] = BR_Q_
-                        BR_U[p:p+1,:] = BR_U_
-                        ROT[:,p:p+1,:] = ROT_
-                
-                elif self.albedoType == 'LAMBERTIAN':
-                    albedo = self.albedo[self.iGood,:]
-                    
-                    args = [self.channel,tau, ssa, pmom, 
-                            pe, ze, te, 
-                            albedo, 
-                            sza, raa, vza, 
-                            MISSING,
-                            self.verbose]
-
-                    # Call VLIDORT wrapper function
-                    I, reflectance, ROT, Q, U, rc = vlidortWrapper(*args)  
-                    surf_reflectance = albedo
+                                                    
                 if i == 0:
-                    self.ROT[self.iGood,:] = np.squeeze(ROT).T
-                self.I[self.iGood,i] = np.squeeze(I)
-                self.reflectance[self.iGood,i] = np.squeeze(reflectance)
-                self.surf_reflectance[self.iGood,i] = np.squeeze(surf_reflectance)
-                self.Q[self.iGood,i] = np.squeeze(Q)
-                self.U[self.iGood,i] = np.squeeze(U) 
-                self.BR_Q[self.iGood,i] = np.squeeze(BR_Q)
-                self.BR_U[self.iGood,i] = np.squeeze(BR_U) 
+                    self.ROT[iGood,:] = np.squeeze(ROT).T
+                self.I[iGood,i] = np.squeeze(I)
+                self.reflectance[iGood,i] = np.squeeze(reflectance)
+                self.surf_reflectance[iGood,i] = np.squeeze(surf_reflectance)
+                self.Q[iGood,i] = np.squeeze(Q)
+                self.U[iGood,i] = np.squeeze(U) 
+                self.BR_Q[iGood,i] = np.squeeze(BR_Q)
+                self.BR_U[iGood,i] = np.squeeze(BR_U) 
 
 
         self.writeNC()
+    #---
+    def MODIS_BRDF_run(self,vlidortWrapper,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
+        kernel_wt = self.kernel_wt[:,:,iGood]
+        param     = self.RTLSparam[:,:,iGood]                
+        
+
+        args = [self.channel,tau, ssa, pmom, 
+                pe, ze, te, 
+                kernel_wt, param, 
+                sza, raa, vza, 
+                MISSING,
+                self.verbose]
+
+        # Call VLIDORT wrapper function
+        I, reflectance, ROT, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)                        
+
+        return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT        
+    #---    
+    def MODIS_BRDF_BPDF_run(self,vlidortWrapper,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
+        # For albedo
+        kernel_wt = self.kernel_wt[:,:,iGood]
+        RTLSparam = self.RTLSparam[:,:,iGood] 
+        RTLSparam = np.append(RTLSparam,np.zeros([1,1,self.nobsLand]),axis=0) 
+
+        # For BPDF
+        BPDFparam = self.BPDFparam[:,:,iGood]
+
+        # Loop through one by one
+        # Some land covers do not have polarization (i.e. urban)
+        I                = np.zeros([self.nobsLand,1])
+        Q                = np.zeros([self.nobsLand,1])
+        U                = np.zeros([self.nobsLand,1])
+        reflectance      = np.zeros([self.nobsLand,1])
+        surf_reflectance = np.zeros([self.nobsLand,1])
+        BR_Q             = np.zeros([self.nobsLand,1])
+        BR_U             = np.zeros([self.nobsLand,1])
+        nlev             = tau.shape[0]
+        ROT              = np.zeros([nlev,self.nobsLand,1])
+
+        for p in range(self.nobsLand):
+            if BPDFparam[2,0,p] == MISSING: 
+                args = [self.channel,
+                        tau[:,:,p:p+1], 
+                        ssa[:,:,p:p+1], 
+                        pmom[:,:,p:p+1,:,:], 
+                        pe[:,p:p+1], 
+                        ze[:,p:p+1], 
+                        te[:,p:p+1], 
+                        kernel_wt[:,:,p:p+1], 
+                        RTLSparam[:,:,p:p+1], 
+                        sza[p:p+1], 
+                        raa[p:p+1], 
+                        vza[p:p+1], 
+                        MISSING,
+                        self.verbose]
+
+                BRDFvlidortWrapper = WrapperFuncs['MODIS_BRDF']
+                # Call VLIDORT wrapper function
+                I_, reflectance_, ROT_, surf_reflectance_, Q_, U_, BR_Q_, BR_U_, rc = BRDFvlidortWrapper(*args)                         
+
+            else:
+                args = [self.channel,
+                        tau[:,:,p:p+1], 
+                        ssa[:,:,p:p+1], 
+                        pmom[:,:,p:p+1,:,:], 
+                        pe[:,p:p+1], 
+                        ze[:,p:p+1], 
+                        te[:,p:p+1], 
+                        kernel_wt[:,:,p:p+1], 
+                        RTLSparam[:,:,p:p+1], 
+                        BPDFparam[:,:,p:p+1],
+                        sza[p:p+1], 
+                        raa[p:p+1], 
+                        vza[p:p+1], 
+                        MISSING,
+                        self.verbose]
+
+                # Call VLIDORT wrapper function
+                I_, reflectance_, ROT_, surf_reflectance_, Q_, U_, BR_Q_, BR_U_, rc = vlidortWrapper(*args)
+    
+            I[p:p+1,:] = I_
+            Q[p:p+1,:] = Q_
+            U[p:p+1,:] = U_
+            reflectance[p:p+1,:] = reflectance_
+            surf_reflectance[p:p+1,:] = surf_reflectance_
+            BR_Q[p:p+1,:] = BR_Q_
+            BR_U[p:p+1,:] = BR_U_
+            ROT[:,p:p+1,:] = ROT_
+
+        return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT
+    #---
     def LAMBERTIAN_run(self,vlidortWrapper,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
-        albedo = self.albedo[self.iGood,:]
+        albedo = self.albedo[iGood,:]
         
         args = [self.channel,tau, ssa, pmom, 
                 pe, ze, te, 
@@ -1632,7 +1629,8 @@ if __name__ == "__main__":
     hour     = str(date.hour).zfill(2)
     format   = 'NETCDF4_CLASSIC'
 
-    rootDir  = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/CALIPSO/'
+    #rootDir  = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/CALIPSO/'
+    rootDir  = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/'
 
     inDir        = '{}/LevelB/Y{}/M{}'.format(rootDir,date.year,str(date.month).zfill(2))
     inFile       = '{}/calipso-g5nr.lb2.%col.{}_{}z.nc4'.format(inDir,nymd,hour)
@@ -1642,15 +1640,15 @@ if __name__ == "__main__":
     ndviFile     = '{}/calipso-g5nr.lb2.ndvi.{}_{}z.nc4'.format(ndviDir,nymd,hour)
     lcDir        = '{}/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051/Y{}/M{}'.format(rootDir,date.year,str(date.month).zfill(2))
     lcFile       = '{}/calipso-g5nr.lb2.land_cover.{}_{}z.nc4'.format(lcDir,nymd,hour)    
-    albedoType   = 'MODIS_BRDF'
+    albedoType   = 'MODIS_BRDF_BPDF'
+    VZAname      = 'POLDER'
 
-    channel  = 470
-    chd      = get_chd(channel)
+    channel   = 470
+    chd       = get_chd(channel)
     outDir    = '{}/LevelC/Y{}/M{}'.format(rootDir,date.year,str(date.month).zfill(2))
-    outFile   = '{}/calipso-g5nr.vlidort.vector.MCD43C_noBPDF.{}_{}z_{}nm.nc4'.format(outDir,nymd,hour,chd)
+    outFile   = '{}/calipso-g5nr.vlidort.vector.{}.{}.{}_{}z_{}nm.nc4'.format(outDir,albedoType,VZAname,nymd,hour,chd)
     
     rcFile   = 'Aod_EOS.rc'
-    VZAname  = 'POLDER'
     orbit    = 'LEO'
     verbose  = True
 
