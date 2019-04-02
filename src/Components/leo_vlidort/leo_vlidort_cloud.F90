@@ -850,7 +850,7 @@ end if
     write(msg,'(F10.2)') channels(nch)
 
     ! Aerosol Stuff
-    call check(nf90_inq_varid(ncid, 'aot_' // trim(adjustl(msg)), varid), "get aot vaird")
+    call check(nf90_inq_varid(ncid, 'aod_' // trim(adjustl(msg)), varid), "get aot vaird")
     call check(nf90_put_var(ncid, varid, TAU(:,startl:endl), &
               start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out tau")
 
@@ -910,7 +910,7 @@ end if
     write(msg,'(F10.2)') channels(nch)
 
     ! Liquid Cloud Stuff
-    call check(nf90_inq_varid(ncid, 'lcot_' // trim(adjustl(msg)), varid), "get lcot vaird")
+    call check(nf90_inq_varid(ncid, 'lcod_' // trim(adjustl(msg)), varid), "get lcot vaird")
     call check(nf90_put_var(ncid, varid, LTAU(:,startl:endl), &
               start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out ltau")
 
@@ -923,7 +923,7 @@ end if
               start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out lssa")
 
     ! Ice Cloud Stuff
-    call check(nf90_inq_varid(ncid, 'icot_' // trim(adjustl(msg)), varid), "get icot vaird")
+    call check(nf90_inq_varid(ncid, 'icod_' // trim(adjustl(msg)), varid), "get icot vaird")
     call check(nf90_put_var(ncid, varid, ITAU(:,startl:endl), &
               start = (/1,startl,1,nobs/), count = (/im,countl,1,nobs/)), "writing out itau")
 
