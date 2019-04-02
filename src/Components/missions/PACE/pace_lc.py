@@ -41,7 +41,7 @@ SDS_ADD = {'rot_blue': ['rayleigh optical thickness for blue CCD','None',nlev],
           # 'ze': ['layer edge altitude','m',nlev+1],
           # 'te': ['layer edge temperature','K',nlev+1]} 
 
-SDS_CLD = {'lcod_blue': ['liquid cloud optical depth for blue CCD','None'None],
+SDS_CLD = {'lcod_blue': ['liquid cloud optical depth for blue CCD','None',None],
             'lc_ssa_blue':  ['liquid cloud single scattering albedo for blue CCD','None',None],
             # 'lc_g_blue':  ['liquid cloud assymetry parameter for blue CCD','None',nlev],
             'icod_blue': ['ice cloud optical depth for blue CCD','None',None],
@@ -60,7 +60,7 @@ SDS_CLD = {'lcod_blue': ['liquid cloud optical depth for blue CCD','None'None],
             'ic_ssa_SWIR':  ['ice  cloud single scattering albedo for SWIR bands','None',None],
             # 'ic_g_SWIR':  ['ice  cloud assymetry parameter for SWIR bands','None',nlev],
             }
-SDS_AER = {'aod_blue': ['aerosol optical depth for blue CCD','None'None],
+SDS_AER = {'aod_blue': ['aerosol optical depth for blue CCD','None',None],
             'ssa_blue':  ['aerosol single scattering albedo for blue CCD','None',None],
             'g_blue':  ['aerosol assymetry parameter for blue CCD','None',None],
             'aod_red': ['aerosol optical depth for red CCD','None',None],
