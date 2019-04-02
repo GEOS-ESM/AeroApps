@@ -181,7 +181,7 @@ class JOBS(object):
                             self.combine_files(i)
 
                         # Compress outfiles
-                        self.compress(i)
+                        self.compress(i,devnull)
                     else:
                         print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
 
@@ -233,7 +233,7 @@ class JOBS(object):
 
         # Exited while loop
         print 'All jobs done'
-
+        devnull.close()
 
     def check_for_errors(self,i,jobid):
         os.chdir(self.dirstring[i])  
@@ -641,19 +641,19 @@ class WORKSPACE(JOBS):
         if self.profile is False:
             os.rmdir(self.dirstring[i])
 
-    def compress(self,i):
+    def compress(self,i,devnull):
         outfile = self.outfilelist[i]
 
         cmd = "ncks --hst --no_abc -O -4 -L 2 --cnk_plc=g2d --cnk_dmn ccd_pixels,91 --cnk_dmn number_of_scans,144 --cnk_dmn lev,1 {} {}"
         newcmd = cmd.format(outfile,outfile)
-
+        
         stat = subprocess.call(newcmd, shell=True, stdout=devnull)
 
         if self.write_add:
             addfile = self.addfilelist[i]
             newcmd = cmd.format(addfile,addfile)
             stat = subprocess.call(newcmd, shell=True, stdout=devnull)
-
+        
     def combine_files(self,i):
         outfile = self.outfilelist[i]
         filelist = []
@@ -777,7 +777,9 @@ def condense_LC(outfilelist,rootdir,channels,Date,addfilelist=None,force=False):
         cmd = "ncks --hst --no_abc -O -4 -L 2 --cnk_plc=g2d --cnk_dmn ccd_pixels,91 --cnk_dmn number_of_scans,144 --cnk_dmn lev,1 {} {}"
         newcmd = cmd.format(outfile,outfile)
 
+        devnull = open(os.devnull, 'w')
         stat = subprocess.call(newcmd, shell=True, stdout=devnull)
+        devnull.close()
 
 def condense_OTHER(outfilelist,name,SDS,rootdir,channels,Date,force=False):
         YMDdir    = Date.strftime('Y%Y/M%m/D%d')
@@ -804,8 +806,9 @@ def condense_OTHER(outfilelist,name,SDS,rootdir,channels,Date,force=False):
         cmd = "ncks --hst --no_abc -O -4 -L 2 --cnk_plc=g2d --cnk_dmn ccd_pixels,91 --cnk_dmn number_of_scans,144 --cnk_dmn lev,1 {} {}"
         newcmd = cmd.format(outfile,outfile)
 
+        devnull = open(os.devnull, 'w')
         stat = subprocess.call(newcmd, shell=True, stdout=devnull)
-
+        devnull.close()
 
 
 
