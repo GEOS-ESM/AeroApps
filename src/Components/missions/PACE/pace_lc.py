@@ -793,7 +793,7 @@ def condense_OTHER(outfilelist,name,SDS,rootdir,channels,Date,force=False):
         nyj = pDate.strftime('%Y%j')
         L1B_file = '{}/OCI{}{}.L1B_PACE.nc'.format(L1bDir,nyj,hms)
         # Create file if you need to
-        outfile = '{}/pace-g5nr.{}_{}.{}_{}.nc4'.format(LcDir,name,wav,nymd,hms)
+        outfile = '{}/pace-g5nr.{}.{}_{}.nc4'.format(LcDir,name,nymd,hms)
         exists  = os.path.isfile(outfile)
         if force or (not exists):
             # create new outfile            
