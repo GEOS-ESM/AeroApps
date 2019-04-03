@@ -176,12 +176,12 @@ class JOBS(object):
                     errcheck = self.check_for_errors(i,s)               
                     if (errcheck is False):
                         self.errTally[i] = False
-                        self.destroy_workspace(i,s)
-                        if self.nodemax is not None:
-                            self.combine_files(i)
+                        # self.destroy_workspace(i,s)
+                        # if self.nodemax is not None:
+                        #     self.combine_files(i)
 
-                        # Compress outfiles
-                        self.compress(i,devnull)
+                        # # Compress outfiles
+                        # self.compress(i,devnull)
                     else:
                         print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
 
@@ -233,7 +233,22 @@ class JOBS(object):
 
         # Exited while loop
         print 'All jobs done'
+
+        # Clean up workspaces for completed jobs
+        for i,s in enumerate(jobid):
+            s = s.strip('\n')
+            if not self.errTally[i]:
+                self.destroy_workspace(i,s)
+                if self.nodemax is not None:
+                    self.combine_files(i)
+
+                    # Compress outfiles
+                    self.compress(i,devnull)
+
+        # Postprocessing done
+        print 'Cleaned Up Worksapces'
         devnull.close()
+
 
     def check_for_errors(self,i,jobid):
         os.chdir(self.dirstring[i])  
@@ -569,7 +584,7 @@ class WORKSPACE(JOBS):
         text.append(newline)
 
         if self.write_cld:
-            newline = 'CLOUD_OUTPUT: true'
+            newline = 'CLOUD_OUTPUT: true\n'
             text.append(newline)
             CLDO_file = '{}/pace-g5nr.lc.cloud.{}_{}.{}.nc4'.format(LcDirCh,nymd,hms,fch)
             newline = 'CLDO_file: {}\n'.format(CLDO_file)
@@ -577,7 +592,7 @@ class WORKSPACE(JOBS):
             self.cldfilelist.append(CLDO_file)   
 
         if self.write_aer:
-            newline = 'AEROSOL_OUTPUT: true'
+            newline = 'AEROSOL_OUTPUT: true\n'
             text.append(newline)
             AERO_file = '{}/pace-g5nr.lc.aerosol.{}_{}.{}.nc4'.format(LcDirCh,nymd,hms,fch)
             newline = 'AERO_file: {}\n'.format(AERO_file)
