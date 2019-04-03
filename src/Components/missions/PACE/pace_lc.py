@@ -644,7 +644,7 @@ class WORKSPACE(JOBS):
     def compress(self,i,devnull):
         outfile = self.outfilelist[i]
 
-        cmd = "$BASEDIR/Linux/bin/ncks --hst --no_abc -O -4 -L 2 --cnk_plc=g2d --cnk_dmn ccd_pixels,91 --cnk_dmn number_of_scans,144 --cnk_dmn lev,1 {} {}"
+        cmd = "$BASEDIR/Linux/bin/ncks --hst --abc -O -4 -L 2 --cnk_plc=g2d --cnk_dmn ccd_pixels,91 --cnk_dmn number_of_scans,144 --cnk_dmn lev,1 {} {}"
         newcmd = cmd.format(outfile,outfile)
         
         stat = subprocess.call(newcmd, shell=True, stdout=devnull)
@@ -774,7 +774,7 @@ def condense_LC(outfilelist,rootdir,channels,Date,addfilelist=None,force=False):
             insert_condenseVar(outfile,SDS_ADD,channels,addfilelist)
 
         #Compress
-        cmd = "$BASEDIR/Linux/bin/ncks --hst --no_abc -O -4 -L 2 --cnk_plc=g2d --cnk_dmn ccd_pixels,91 --cnk_dmn number_of_scans,144 --cnk_dmn lev,1 {} {}"
+        cmd = "$BASEDIR/Linux/bin/ncks --hst --abc -O -4 -L 2 --cnk_plc=g2d --cnk_dmn ccd_pixels,91 --cnk_dmn number_of_scans,144 --cnk_dmn lev,1 {} {}"
         newcmd = cmd.format(outfile,outfile)
 
         devnull = open(os.devnull, 'w')
@@ -803,7 +803,7 @@ def condense_OTHER(outfilelist,name,SDS,rootdir,channels,Date,force=False):
         insert_condenseVar(outfile,SDS,channels,outfilelist)
 
         #Compress
-        cmd = "$BASEDIR/Linux/bin/ncks --hst --no_abc -O -4 -L 2 --cnk_plc=g2d --cnk_dmn ccd_pixels,91 --cnk_dmn number_of_scans,144 --cnk_dmn lev,1 {} {}"
+        cmd = "$BASEDIR/Linux/bin/ncks --hst --abc -O -4 -L 2 --cnk_plc=g2d --cnk_dmn ccd_pixels,91 --cnk_dmn number_of_scans,144 --cnk_dmn lev,1 {} {}"
         newcmd = cmd.format(outfile,outfile)
 
         devnull = open(os.devnull, 'w')
