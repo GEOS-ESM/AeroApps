@@ -853,12 +853,11 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
         else:
             oname = sds
 
-
+        ncmerge = Dataset(outfile,mode='r+')
         if pchannels is not None:
             for ch,filename in zip(channels,outfilelist):
                 for i,pch in enumerate(pchannels):
                     if float(ch) == pch:
-                        ncmerge = Dataset(outfile,mode='r+')
                         pvar      = ncmerge.variables[sds]
                         print 'inserting ',oname, filename, ' to ',sds
                         nc = Dataset(filename)
@@ -875,11 +874,9 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
                             pvar[:,:,:,i] = shave(data,undef=missing_value)
 
                         nc.close()
-                        ncmerge.close()
 
 
         if pchannels is None:
-            ncmerge = Dataset(outfile,mode='r+')
             pvar      = ncmerge.variables[sds]
             filename = outfilelist[0]
             print 'inserting ',oname,filename, ' to ',sds
@@ -894,7 +891,7 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
                 pvar[:] = shave(data,undef=missing_value)
 
             nc.close()
-            ncmerge.close()
+        ncmerge.close()
                         
     
 
