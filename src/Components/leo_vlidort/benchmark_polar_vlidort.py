@@ -917,6 +917,25 @@ class BENCHMARK(POLAR_VLIDORT):
             rvol.units         = "None"
             rvol[:]            = self.__dict__['Rvol'+chs]
 
+        if 'CX' in self.albedoType:
+            mr = nc.createVariable('mr','f4',('nobs',),zlib=zlib,fill_value=MISSING)
+            mr.long_name = 'refractive index of water' 
+            mr.missing_value = MISSING
+            mr.units         = "None"
+            mr[:]            = self.__dict__['mr']  
+
+            u10m = nc.createVariable('U10m','f4',('nobs',),zlib=zlib,fill_value=MISSING)
+            u10m.long_name = '10-meter wind speed U component' 
+            u10m.missing_value = MISSING
+            u10m.units         = "None"
+            u10m[:]            = self.__dict__['U10m']   
+
+            v10m = nc.createVariable('V10m','f4',('nobs',),zlib=zlib,fill_value=MISSING)
+            v10m.long_name = '10-meter wind speed V component' 
+            v10m.missing_value = MISSING
+            v10m.units         = "None"
+            v10m[:]            = self.__dict__['V10m']   
+
         if self.aerosol:
             tau = nc.createVariable('TAU','f4',('lev',),zlib=zlib,fill_value=MISSING)
             tau.long_name = 'layer aerosol extinction optical depth' 
@@ -1003,8 +1022,8 @@ if __name__ == "__main__":
         rootDir = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/'
     #albedoType   = 'BPDF'
     #albedoType = 'MODIS_BRDF_BPDF'
-    albedoType = 'LAMBERTIAN_BPDF'
-    #albedoType = 'CX'
+    #albedoType = 'LAMBERTIAN_BPDF'
+    albedoType = 'CX'
 
     aerosol = False  # true if you want aerosols in simulation
     dark    = True  #use if you want lambertian surface with albedo = 0
@@ -1012,7 +1031,7 @@ if __name__ == "__main__":
     channels  = 865,    # 410,440,470,550,670,865,1020,1650,2100  #
     for channel in channels:
         chd      = get_chd(channel)
-        outDir    = './benchmark_rayleigh_nosurface_BPDF_DBonly'
+        outDir    = './benchmark_rayleigh_CX_PP'
         outFile   = '{}/calipso-g5nr.vlidort.vector.{}.{}.nc4'.format(outDir,albedoType,chd)
         
         rcFile   = 'rc/Aod_EOS.{}.rc'.format(channel)
