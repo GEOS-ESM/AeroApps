@@ -513,17 +513,12 @@ program leo_vlidort_cloud
   call MAPL_SyncSharedMemory(rc=ierr)
 
 ! Main do loop over the part of the shuffled domain assinged to each processor
-if (MAPL_am_I_root()) then
-  do cc = starti, starti
-!  do cc = starti, endi  
+  do cc = starti, endi  
     c = indices(cc)
     c = c + (clrm_total/nodemax)*(nodenum-1)
 
     i  = iIndex(c)
     j  = jIndex(c)
-
-    i = 501
-    j = 31
 
     call getEdgeVars ( km, nobs, reshape(AIRDENS(i,j,:),(/km,nobs/)), &
                        reshape(DELP(i,j,:),(/km,nobs/)), ptop, &
@@ -634,7 +629,7 @@ if (MAPL_am_I_root()) then
     end if
                 
   end do ! do clear pixels
-end if
+
 ! Wait for everyone to finish calculations
 ! ----------------------------------------
   call MAPL_SyncSharedMemory(rc=ierr)
