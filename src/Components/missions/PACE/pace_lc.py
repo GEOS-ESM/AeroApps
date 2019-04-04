@@ -31,7 +31,19 @@ nlev = 72
 
 SDS_RT = {'surf_ref_I_blue': ['surface reflectance for blue CCD','None',None],
          'surf_ref_I_red':  ['surface reflectance for red CCD','None',None],
-         'surf_ref_I_SWIR': ['surface reflectance for SWIR bands','None',None]}
+         'surf_ref_I_SWIR': ['surface reflectance for SWIR bands','None',None],
+         'surf_ref_Q_blue': ['surface polarized reflectance Q for blue CCD','None',None],
+         'surf_ref_Q_red':  ['surface polarized reflectance Q for red CCD','None',None],
+         'surf_ref_Q_SWIR': ['surface polarized reflectance Q for SWIR bands','None',None],
+         'surf_ref_U_blue': ['surface polarized reflectance U for blue CCD','None',None],
+         'surf_ref_U_red':  ['surface polarized reflectance U for red CCD','None',None],
+         'surf_ref_U_SWIR': ['surface polarized reflectance U for SWIR bands','None',None],
+         'Q_blue': ['TOA polarized radiance Q for blue CCD','None',None],
+         'Q_red':  ['TOA polarized radiance Q for red CCD','None',None],
+         'Q_SWIR': ['TOA polarized radiance Q for SWIR bands','None',None],
+         'U_blue': ['TOA polarized radiance U for blue CCD','None',None],
+         'U_red':  ['TOA polarized radiance U for red CCD','None',None],
+         'U_SWIR': ['TOA polarized radiance U for SWIR bands','None',None]         }
 
 SDS_ADD = {'rot_blue': ['rayleigh optical thickness for blue CCD','None',nlev],
           'rot_red':  ['rayleigh optical thickness for red CCD','None',nlev],
@@ -808,7 +820,7 @@ def condense_OTHER(outfilelist,name,SDS,rootdir,channels,Date,force=False):
         nyj = pDate.strftime('%Y%j')
         L1B_file = '{}/OCI{}{}.L1B_PACE.nc'.format(L1bDir,nyj,hms)
         # Create file if you need to
-        outfile = '{}/pace-g5nr.{}.{}_{}.nc4'.format(LcDir,name,nymd,hms)
+        outfile = '{}/pace-g5nr.lc.{}.{}_{}.nc4'.format(LcDir,name,nymd,hms)
         exists  = os.path.isfile(outfile)
         if force or (not exists):
             # create new outfile            
