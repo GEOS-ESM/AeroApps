@@ -770,7 +770,7 @@ def populate_L1B(outfilelist,rootdir,channels,Date,force=False):
 
         ncmerge.close()
 
-def condense_LC(outfilelist,rootdir,channels,Date,addfilelist=None,force=False):
+def condense_LC(outfilelist,rootdir,channels,Date,addfilelist=None,force=False,rm_ch=False):
         YMDdir    = Date.strftime('Y%Y/M%m/D%d')
         pYMDdir   = Date.strftime('Y2020/M%m/D%d')
         LcDir     = '{}/LevelC/{}'.format(rootdir,YMDdir)
@@ -808,7 +808,16 @@ def condense_LC(outfilelist,rootdir,channels,Date,addfilelist=None,force=False):
         stat = subprocess.call(newcmd, shell=True, stdout=devnull)
         devnull.close()
 
-def condense_OTHER(outfilelist,name,SDS,rootdir,channels,Date,force=False):
+        # Remove channel files if desired and compression was successful
+        if rm_ch and (stat ==0):
+            for ofile in outfilelist:
+                os.remove(ofile)
+
+            if addfilelist is not None:
+                for ofile in addfilelist:
+                    os.remove(ofile)
+
+def condense_OTHER(outfilelist,name,SDS,rootdir,channels,Date,force=False,rm_ch=False):
         YMDdir    = Date.strftime('Y%Y/M%m/D%d')
         pYMDdir   = Date.strftime('Y2020/M%m/D%d')
         LcDir     = '{}/LevelC/{}'.format(rootdir,YMDdir)
@@ -837,7 +846,10 @@ def condense_OTHER(outfilelist,name,SDS,rootdir,channels,Date,force=False):
         stat = subprocess.call(newcmd, shell=True, stdout=devnull)
         devnull.close()
 
-
+        # Remove channel files if desired and compression was successful
+        if rm_ch and (stat == 0):
+            for ofile in outfilelist:
+                os.remove(ofile)
 
 def insert_condenseVar(outfile,SDS,channels,outfilelist):
     # insert data into correct place in outfile
@@ -1072,10 +1084,10 @@ if __name__ == '__main__':
                         help="channels to run extinction sampler (default=None - read in from PACE L1B File)")  
 
     parser.add_argument('--bpdf_name',default=bpdf_name,
-                        help="BPDF model name (default=%s)"%bpdf_name)                          
+                        help="BPDF model name (e.g. MAIGNAN) (default=%s)"%bpdf_name)                          
 
     parser.add_argument('--rtls_name',default=rtls_name,
-                        help="RTLS data name (default=%s)"%rtls_name)                          
+                        help="RTLS data name (e.g. MCD43C) (default=%s)"%rtls_name)                          
 
     parser.add_argument("--norad",action="store_true",
                         help="No radiance calculations (default=False).")
@@ -1094,6 +1106,9 @@ if __name__ == '__main__':
 
     parser.add_argument("--force",action="store_true",
                         help="Overwrite existing L1B file in LevelC directory (default=False).")    
+
+    parser.add_argument("--rm_ch",action="store_true",
+                        help="Remove channel specific files after condensing to one file (default=False).")    
 
     parser.add_argument("-n", "--nodemax", default=nodemax,
                         help="Max number of nodes to use. "\
@@ -1135,17 +1150,17 @@ if __name__ == '__main__':
                 addfilelist = None
                 if workspace.write_add:
                     addfilelist = np.array(workspace.addfilelist)[I]                    
-                condense_LC(outfilelist,rootdir,channels,Date,force=args.force,addfilelist=addfilelist)
+                condense_LC(outfilelist,rootdir,channels,Date,force=args.force,addfilelist=addfilelist,rm_ch=args.rm_ch)
 
 
                 if workspace.write_aer:
                     aerfilelist = np.array(workspace.aerfilelist)[I]
-                    condense_OTHER(aerfilelist,'aerosol',SDS_AER,rootdir,channels,Date,force=args.force)
+                    condense_OTHER(aerfilelist,'aerosol',SDS_AER,rootdir,channels,Date,force=args.force,rm_ch=args.rm_ch)
 
                     
                 if workspace.write_cld:
                     cldfilelist = np.array(workspace.cldfilelist)[I]
-                    condense_OTHER(cldfilelist,'cloud',SDS_CLD,rootdir,channels,Date,force=args.force)
+                    condense_OTHER(cldfilelist,'cloud',SDS_CLD,rootdir,channels,Date,force=args.force,rm_ch=args.rm_ch)
 
 
         if args.doext:
