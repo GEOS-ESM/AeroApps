@@ -698,7 +698,7 @@ class WORKSPACE(JOBS):
             filelist = []
             for a in np.arange(self.nodemax):
                 a = a + 1
-                filelist.append(addfile + '_' + str(a) )
+                filelist.append(aerfile + '_' + str(a) )
             
             self.do_merge(aerfile,filelist)
 
@@ -707,7 +707,7 @@ class WORKSPACE(JOBS):
             filelist = []
             for a in np.arange(self.nodemax):
                 a = a + 1
-                filelist.append(addfile + '_' + str(a) )
+                filelist.append(cldfile + '_' + str(a) )
             
             self.do_merge(cldfile,filelist)            
 
