@@ -188,12 +188,6 @@ class JOBS(object):
                     errcheck = self.check_for_errors(i,s)               
                     if (errcheck is False):
                         self.errTally[i] = False
-                        # self.destroy_workspace(i,s)
-                        # if self.nodemax is not None:
-                        #     self.combine_files(i)
-
-                        # # Compress outfiles
-                        # self.compress(i,devnull)
                     else:
                         print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
 
@@ -698,6 +692,25 @@ class WORKSPACE(JOBS):
                 filelist.append(addfile + '_' + str(a) )
             
             self.do_merge(addfile,filelist)
+
+        if self.write_aer:
+            aerfile = self.aerfilelist[i]
+            filelist = []
+            for a in np.arange(self.nodemax):
+                a = a + 1
+                filelist.append(addfile + '_' + str(a) )
+            
+            self.do_merge(aerfile,filelist)
+
+        if self.write_cld:
+            cldfile = self.cldfilelist[i]
+            filelist = []
+            for a in np.arange(self.nodemax):
+                a = a + 1
+                filelist.append(addfile + '_' + str(a) )
+            
+            self.do_merge(cldfile,filelist)            
+
 
     def do_merge(self,mergedfile,filelist):
         os.rename(filelist[0],mergedfile)
