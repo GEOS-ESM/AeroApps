@@ -674,6 +674,16 @@ class WORKSPACE(JOBS):
             addfile = self.addfilelist[i]
             newcmd = cmd.format(addfile,addfile)
             stat = subprocess.call(newcmd, shell=True, stdout=devnull)
+
+        if self.write_aer:
+            aerfile = self.aerfilelist[i]
+            newcmd = cmd.format(aerfile,aerfile)
+            stat = subprocess.call(newcmd, shell=True, stdout=devnull)
+
+        if self.write_cld:
+            cldfile = self.cldfilelist[i]
+            newcmd = cmd.format(cldfile,cldfile)
+            stat = subprocess.call(newcmd, shell=True, stdout=devnull)
         
     def combine_files(self,i):
         outfile = self.outfilelist[i]
