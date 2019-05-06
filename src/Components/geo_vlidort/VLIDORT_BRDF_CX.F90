@@ -6,12 +6,15 @@ module VLIDORT_BRDF_CX
 
 implicit NONE
 
+PUBLIC VLIDORT_Scalar_GissCX
+PUBLIC VLIDORT_Vector_GissCX
+PUBLIC VLIDORT_Scalar_GissCx_Cloud
+PUBLIC VLIDORT_Vector_GissCx_Cloud
+PUBLIC VLIDORT_Scalar_GissCx_NOBM_Cloud
+PUBLIC VLIDORT_Vector_GissCx_NOBM_Cloud
+
 PUBLIC VLIDORT_Scalar_CX
 PUBLIC VLIDORT_Vector_CX
-PUBLIC VLIDORT_Scalar_Cx_Cloud
-PUBLIC VLIDORT_Vector_Cx_Cloud
-PUBLIC VLIDORT_Scalar_Cx_NOBM_Cloud
-PUBLIC VLIDORT_Vector_Cx_NOBM_Cloud
 contains
 
 
@@ -26,7 +29,7 @@ end function IS_MISSING
 
 
 
-subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
+subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nMom, &
                    nPol, tau, ssa, g, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_Vl_SURF, ROT, BRDF,rc)
@@ -179,11 +182,11 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
 
   end do ! Loop over obs
 
-end subroutine VLIDORT_Scalar_CX
+end subroutine VLIDORT_Scalar_GissCX
 
 !..........................................................................
 
-subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
+subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nMom, &
                    nPol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
@@ -346,11 +349,11 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
 
   end do ! Loop over obs
 
-end subroutine VLIDORT_Vector_Cx
+end subroutine VLIDORT_Vector_GissCx
 
 !..........................................................................
 
-subroutine VLIDORT_Scalar_CX_Cloud (km, nch, nobs,channels, nMom, &
+subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nMom, &
                    nPol, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
@@ -522,11 +525,11 @@ subroutine VLIDORT_Scalar_CX_Cloud (km, nch, nobs,channels, nMom, &
 
   end do ! Loop over obs
 
-end subroutine VLIDORT_Scalar_CX_Cloud
+end subroutine VLIDORT_Scalar_GissCX_Cloud
 
 
 
-subroutine VLIDORT_Vector_CX_Cloud (km, nch, nobs,channels, nMom, &
+subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nMom, &
                    nPol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
@@ -705,11 +708,11 @@ subroutine VLIDORT_Vector_CX_Cloud (km, nch, nobs,channels, nMom, &
 
   end do ! Loop over obs
 
-end subroutine VLIDORT_Vector_Cx_Cloud
+end subroutine VLIDORT_Vector_GissCx_Cloud
 
 !..........................................................................
 
-subroutine VLIDORT_Scalar_CX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
+subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
                    nPol, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, sleave, &
@@ -889,11 +892,11 @@ subroutine VLIDORT_Scalar_CX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
 
   end do ! Loop over obs
 
-end subroutine VLIDORT_Scalar_CX_NOBM_Cloud
+end subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud
 
 
 
-subroutine VLIDORT_Vector_CX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
+subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
                    nPol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, sleave, &
@@ -1080,6 +1083,6 @@ subroutine VLIDORT_Vector_CX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
 
   end do ! Loop over obs
 
-end subroutine VLIDORT_Vector_Cx_NOBM_Cloud
+end subroutine VLIDORT_Vector_GissCx_NOBM_Cloud
 
 end module VLIDORT_BRDF_CX
