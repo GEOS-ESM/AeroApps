@@ -35,14 +35,16 @@ SurfaceFuncs = {'MODIS_BRDF'     : 'readSampledMODISBRDF',
                 'MODIS_BRDF_BPDF': 'readSampledMODISBRDF',
                 'LAMBERTIAN'     : 'readSampledLER',
                 'LAMBERTIAN_BPDF': 'readSampledLER',
-                'GissCX'         : 'readSampledWindCX'}
+                'GissCX'         : 'readSampledWindCX',
+                'CX'             : 'readSampledWindCX'}
 
 WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_POLAR_.vector_brdf_modis,
                 'MODIS_BRDF_BPDF': VLIDORT_POLAR_.vector_brdf_modis_bpdf,
                 'BPDF'           : VLIDORT_POLAR_.vector_bpdf,
                 'LAMBERTIAN'     : VLIDORT_POLAR_.vector_lambert,
                 'LAMBERTIAN_BPDF': VLIDORT_POLAR_.vector_lambert_bpdf,
-                'GissCX'             : VLIDORT_POLAR_.vector_gisscx}   
+                'GissCX'         : VLIDORT_POLAR_.vector_gisscx,
+                'CX'             : VLIDORT_POLAR_.vector_cx}   
 
 
 # Generic Lists of Varnames and Units
@@ -691,7 +693,7 @@ class BENCHMARK(POLAR_VLIDORT):
                     # Call VLIDORT wrapper function
                     I, reflectance, ROT, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)                    
                 
-                elif self.albedoType == 'GissCX':
+                elif 'CX' in self.albedoType:
                     args = [self.channel,tau, ssa, pmom,
                             pe, ze, te,
                             self.U10m, self.V10m, self.mr,
@@ -1030,7 +1032,7 @@ if __name__ == "__main__":
     aerosol = False  # true if you want aerosols in simulation
     dark    = True  #use if you want lambertian surface with albedo = 0
 
-    channels  = 470,    # 410,440,470,550,670,865,1020,1650,2100  #
+    channels  = 865,    # 410,440,470,550,670,865,1020,1650,2100  #
     for channel in channels:
         chd      = get_chd(channel)
         outDir    = './benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING_25'
