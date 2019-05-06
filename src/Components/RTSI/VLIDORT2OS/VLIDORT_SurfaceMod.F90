@@ -397,7 +397,7 @@ module VLIDORT_SurfaceMod
       BRDF_FACTORS(1)      =  1.   
       N_BRDF_PARAMETERS(1) = 3
       BRDF_PARAMETERS(1,1) = sigma2
-      BRDF_PARAMETERS(1,2) = m
+      BRDF_PARAMETERS(1,2) = m*m
       BRDF_PARAMETERS(1,3) = 0
 
       ! Only for Cox-Munk type kernels
