@@ -583,7 +583,7 @@ program geo_vlidort_vnncLUTo
               ! -------------------------------
               if (scalar) then
                 ! Call to vlidort scalar code       
-                call VLIDORT_Scalar_CX (km, nch, nobs ,dble(channels), nMom,      &
+                call VLIDORT_Scalar_GissCX (km, nch, nobs ,dble(channels), nMom,      &
                         nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
                         reshape((/U10M(uwind)/),(/nobs/),pad=(/U10M(uwind)/)),&
                         reshape((/V10M(vwind)/),(/nobs/),pad=(/V10M(vwind)/)),&
@@ -594,7 +594,7 @@ program geo_vlidort_vnncLUTo
                         dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, brdf_cx_int, ierr)
               else              
                 ! Call to vlidort vector code
-                call VLIDORT_Vector_CX (km, nch, nobs ,dble(channels), nMom,   &
+                call VLIDORT_Vector_GissCX (km, nch, nobs ,dble(channels), nMom,   &
                           nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), &
                           reshape((/U10M(uwind)/),(/nobs/),pad=(/U10M(uwind)/)),&
                           reshape((/V10M(vwind)/),(/nobs/),pad=(/V10M(vwind)/)),&

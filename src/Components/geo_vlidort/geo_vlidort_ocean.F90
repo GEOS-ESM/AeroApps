@@ -518,7 +518,7 @@ program geo_vlidort
       if (scalar) then
         if (vlidort) then
           ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_CX (km, nch, nobs ,dble(channels), nMom,      &
+          call VLIDORT_Scalar_GissCX (km, nch, nobs ,dble(channels), nMom,      &
                   nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
                   (/dble(U10M(c))/), &
                   (/dble(V10M(c))/), &
@@ -530,7 +530,7 @@ program geo_vlidort
         end if
       else
         ! Call to vlidort vector code
-        call VLIDORT_Vector_CX (km, nch, nobs ,dble(channels), nMom,   &
+        call VLIDORT_Vector_GissCX (km, nch, nobs ,dble(channels), nMom,   &
                nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), &
                (/dble(U10M(c))/), &
                (/dble(V10M(c))/), &
