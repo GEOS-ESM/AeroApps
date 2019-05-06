@@ -414,13 +414,13 @@ subroutine SCALAR_LAMBERT(km, nch, nobs, channels, nMom, nPol, &
 
 end subroutine SCALAR_LAMBERT
 
-subroutine VECTOR_CX(km, nch, nobs, channels, nMom,  &
+subroutine VECTOR_GissCX(km, nch, nobs, channels, nMom,  &
                      nPol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                      mr, solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, &
                      ROT, BR, Q, U, BR_Q, BR_U, rc)
 
-    use VLIDORT_BRDF_CX, only: VLIDORT_Vector_CX  
+    use VLIDORT_BRDF_CX, only: VLIDORT_Vector_GissCX  
     implicit None
 
   ! !INPUT PARAMETERS:
@@ -467,7 +467,7 @@ subroutine VECTOR_CX(km, nch, nobs, channels, nMom,  &
     real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_CX (km, nch, nobs, channels, nMom, &
+    call VLIDORT_Vector_GissCX (km, nch, nobs, channels, nMom, &
                                    nPol, tau, ssa, pmom, pe, he, te, &
                                    U10m, V10m, mr, &
                                    solar_zenith, &
@@ -479,4 +479,4 @@ subroutine VECTOR_CX(km, nch, nobs, channels, nMom,  &
                                    ROT, BR, Q, U, BR_Q, BR_U, rc )  
 
 
-end subroutine VECTOR_CX
+end subroutine VECTOR_GissCX

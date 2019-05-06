@@ -35,14 +35,14 @@ SurfaceFuncs = {'MODIS_BRDF'     : 'readSampledMODISBRDF',
                 'MODIS_BRDF_BPDF': 'readSampledMODISBRDF',
                 'LAMBERTIAN'     : 'readSampledLER',
                 'LAMBERTIAN_BPDF': 'readSampledLER',
-                'CX'             : 'readSampledWindCX'}
+                'GissCX'         : 'readSampledWindCX'}
 
 WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_POLAR_.vector_brdf_modis,
                 'MODIS_BRDF_BPDF': VLIDORT_POLAR_.vector_brdf_modis_bpdf,
                 'BPDF'           : VLIDORT_POLAR_.vector_bpdf,
                 'LAMBERTIAN'     : VLIDORT_POLAR_.vector_lambert,
                 'LAMBERTIAN_BPDF': VLIDORT_POLAR_.vector_lambert_bpdf,
-                'CX'             : VLIDORT_POLAR_.vector_cx}   
+                'GissCX'             : VLIDORT_POLAR_.vector_gisscx}   
 
 
 # Generic Lists of Varnames and Units
@@ -691,7 +691,7 @@ class BENCHMARK(POLAR_VLIDORT):
                     # Call VLIDORT wrapper function
                     I, reflectance, ROT, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)                    
                 
-                elif self.albedoType == 'CX':
+                elif self.albedoType == 'GissCX':
                     args = [self.channel,tau, ssa, pmom,
                             pe, ze, te,
                             self.U10m, self.V10m, self.mr,
@@ -1023,15 +1023,17 @@ if __name__ == "__main__":
     #albedoType   = 'BPDF'
     #albedoType = 'MODIS_BRDF_BPDF'
     #albedoType = 'LAMBERTIAN_BPDF'
-    albedoType = 'CX'
+    #albedoType = 'CX'
+    albedoType = 'LAMBERTIAN'
+    #albedoType = 'MODIS_BRDF'
 
     aerosol = False  # true if you want aerosols in simulation
     dark    = True  #use if you want lambertian surface with albedo = 0
 
-    channels  = 865,    # 410,440,470,550,670,865,1020,1650,2100  #
+    channels  = 470,    # 410,440,470,550,670,865,1020,1650,2100  #
     for channel in channels:
         chd      = get_chd(channel)
-        outDir    = './benchmark_rayleigh_CX_PP'
+        outDir    = './benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING_25'
         outFile   = '{}/calipso-g5nr.vlidort.vector.{}.{}.nc4'.format(outDir,albedoType,chd)
         
         rcFile   = 'rc/Aod_EOS.{}.rc'.format(channel)

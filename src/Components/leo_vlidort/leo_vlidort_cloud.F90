@@ -994,7 +994,7 @@ program leo_vlidort_cloud
       ! -------------------------------
         if (scalar) then
           ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_CX_Cloud (km, nch, nobs ,dble(channels), nMom,      &
+          call VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs ,dble(channels), nMom,      &
                   nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
@@ -1008,7 +1008,7 @@ program leo_vlidort_cloud
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr)
         else
           ! Call to vlidort vector code
-          call VLIDORT_Vector_CX_Cloud (km, nch, nobs ,dble(channels), nMom,   &
+          call VLIDORT_Vector_GissCX_Cloud (km, nch, nobs ,dble(channels), nMom,   &
                  nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
@@ -1027,7 +1027,7 @@ program leo_vlidort_cloud
       ! ----------------------------------------------------------
         if (scalar) then
           ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_CX_NOBM_Cloud (km, nch, nobs ,dble(channels), nMom,      &
+          call VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nMom,      &
                   nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
@@ -1042,7 +1042,7 @@ program leo_vlidort_cloud
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr)
         else
           ! Call to vlidort vector code
-          call VLIDORT_Vector_CX_NOBM_Cloud (km, nch, nobs ,dble(channels), nMom,   &
+          call VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nMom,   &
                  nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
