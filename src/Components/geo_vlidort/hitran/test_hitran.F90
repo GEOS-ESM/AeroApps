@@ -24,10 +24,11 @@ program test_hitran
   hitran_path  = './'
   the_molecule = 'NO2'
   fwhm         = 0.6 ! nm
-  nlambda      = 1
+  nlambda      = 2
   allocate( lambda(nlambda) )
   allocate( cross_section(nlambda))
-  lambda(1)    = 400 ! nm
+  lambda(1)    = 200 ! nm
+  lambda(2)    = 405 ! nm
   is_wavenum   = .FALSE.
   nz           = 1
   allocate( ps(nz) )
