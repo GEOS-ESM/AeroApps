@@ -209,7 +209,7 @@ module HITRAN
 
   ! Get HITRAN line parameters file name
   WRITE(molc, '(I2.2)') molnum
-  hitran_filename = adjustl(trim(HITRAN_path)) // molc // '_hit12.par'
+  hitran_filename = adjustl(trim(HITRAN_path)) // molc // '_hit16.par'
 
   IF (write_diagnostics) WRITE(*, *) TRIM(ADJUSTL(hitran_filename))
   OPEN(unit = 22, file = TRIM(ADJUSTL(hitran_filename)), err = 455, status = 'old')
@@ -231,7 +231,7 @@ module HITRAN
   ! read lines (15 cm^-1 extra on both sides)
   i = 1
   DO 
-     READ (22, '(i2, i1, f12.6, 2e10.3, 2f5.4, f10.4, f4.2, f8.6)', IOSTAT = MEND) mol_temp, &
+     READ (22, '(i2, i1, f12.6, 2e10.3, f5.4, f5.3, f10.4, f4.2, f8.6)', IOSTAT = MEND) mol_temp, &
           iso_temp, sigma0_temp, strnth_temp, einstein_temp, alpha_temp, selfbrdn_temp, &
           elow_temp, coeff_temp, pshift_temp
      IF (MEND < 0 .OR. sigma0_temp > wend + 15.0) EXIT
@@ -240,6 +240,8 @@ module HITRAN
           .OR. (mol_temp .EQ. 40) ) CYCLE
 
      ! only count lines for the specified molecule
+     write(*,*),'+++',mol_temp,molnum
+     write(*,*),'===',sigma0_temp,wstart-15
      IF (mol_temp == molnum .AND. sigma0_temp > wstart - 15.0 ) THEN
         if_q(mol_temp, iso_temp) = .TRUE.
         mol(i) = mol_temp
