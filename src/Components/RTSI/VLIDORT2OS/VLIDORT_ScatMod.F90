@@ -223,7 +223,7 @@
          F_air= (78.084*depol1 + 20.946*depol2 + 0.934*depol3 +  C*100.0*depol4) / (78.084 + 20.946 + 0.934 + C*100.0)
 
       end function F_air       
-      
+
 !.............................................................................
       subroutine VLIDORT_Run_Vector (self, output, rc)
 !
@@ -866,7 +866,6 @@
       real*8                                             :: aerswt 
       real*8                                             :: rayswt
       real*8                                             :: factor      
-      real*8                                             :: COEF_DEPOL
       real*8                                             :: wmicron
       real*8                                             :: AOT         ! Aerosol Optical Thickness
 
