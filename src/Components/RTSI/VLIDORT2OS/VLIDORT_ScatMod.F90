@@ -386,16 +386,8 @@
             aervmoms(l,i,11) = self%pmom(i,l+1,3) ! P33 
             aervmoms(l,i,12) = self%pmom(i,l+1,4) ! P34            
             aervmoms(l,i,15) = -self%pmom(i,l+1,4) ! - P34
-        
-            if (self%nPol == 4) then
-               aervmoms(l,i,6)  = self%pmom(i,l+1,1) ! P22 = P11 for spherical               
-               aervmoms(l,i,16) = self%pmom(i,l+1,3) ! P44 = P33         
-            else  if (self%nPol == 6) then   
-               aervmoms(l,i,6)  = self%pmom(i,l+1,5) ! P22  for non spherical               
-               aervmoms(l,i,16) = self%pmom(i,l+1,6) ! P44  
-            else
-               rc = 1
-            end if
+            aervmoms(l,i,6)  = self%pmom(i,l+1,5) ! P22
+            aervmoms(l,i,16) = self%pmom(i,l+1,6) ! P44  
          end do
          
 !        Add together Aerosol and Rayleigh Parts weighting by scattering optical depth
@@ -1120,17 +1112,9 @@
                   aervmoms(l,i,5)  = self%pmom(i,l+1,2) ! P12 = P21                            
                   aervmoms(l,i,11) = self%pmom(i,l+1,3) ! P33 
                   aervmoms(l,i,12) = self%pmom(i,l+1,4) ! P34            
-                  aervmoms(l,i,15) = -self%pmom(i,l+1,4) ! - P34
-              
-                  if (self%nPol == 4) then
-                     aervmoms(l,i,6)  = self%pmom(i,l+1,1) ! P22 = P11 for spherical               
-                     aervmoms(l,i,16) = self%pmom(i,l+1,3) ! P44 = P33         
-                  else  if (self%nPol == 6) then   
-                     aervmoms(l,i,6)  = self%pmom(i,l+1,5) ! P22  for non spherical               
-                     aervmoms(l,i,16) = self%pmom(i,l+1,6) ! P44  
-                  else
-                     rc = 1
-                  end if
+                  aervmoms(l,i,15) = -self%pmom(i,l+1,4) ! - P34          
+                  aervmoms(l,i,6)  = self%pmom(i,l+1,5) ! P22        
+                  aervmoms(l,i,16) = self%pmom(i,l+1,6) ! P44  
                end do
             
 
@@ -1593,16 +1577,8 @@
             aervmoms(l,i,11) = self%pmom(i,l+1,3) ! P33 
             aervmoms(l,i,12) = self%pmom(i,l+1,4) ! P34            
             aervmoms(l,i,15) = -self%pmom(i,l+1,4) ! - P34
-        
-            if (self%nPol == 4) then
-               aervmoms(l,i,6)  = self%pmom(i,l+1,1) ! P22 = P11 for spherical               
-               aervmoms(l,i,16) = self%pmom(i,l+1,3) ! P44 = P33         
-            else  if (self%nPol == 6) then   
-               aervmoms(l,i,6)  = self%pmom(i,l+1,5) ! P22  for non spherical               
-               aervmoms(l,i,16) = self%pmom(i,l+1,6) ! P44  
-            else
-               rc = 1
-            end if
+            aervmoms(l,i,6)  = self%pmom(i,l+1,5) ! P22     
+            aervmoms(l,i,16) = self%pmom(i,l+1,6) ! P44  
          end do
 
 !        Phase function moments - Cloud Part
