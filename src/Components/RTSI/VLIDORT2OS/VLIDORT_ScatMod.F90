@@ -93,22 +93,30 @@
       real*8, dimension(0:MAXLAYERS)                     :: height_grid                     
       real*8, dimension(0:MAXLAYERS)                     :: pressure_grid 
       real*8, dimension(0:MAXLAYERS)                     :: temperature_grid   
-      real*8                                             :: wmicron   
+      real*8                                             :: wmicron  
+      real*8                                             :: Ns
+      real*8                                             :: ROD 
+      real*8                                             :: ma, C, P_surface
       real*8                                             :: difz
       integer                                            :: NLAYERS
       integer                                            :: j
-
+      real*8, parameter :: Av  = 6.0221367e23    !Avogadros number molecules/mol
+      real*8, parameter :: Ts = 288.15  !K, standard temperature
+      real*8, parameter :: Ps = 1013.25 !hPa, standard pressture
+      real*8, parameter :: g = 980.665  ! gravity in cm/s^2
 
       NLAYERS                     = self%Surface%Base%VIO%VLIDORT_FixIn%Cont%TS_NLAYERS
       height_grid(0:NLAYERS)      = self%ze * 1.E-3  ! en km
       pressure_grid(0:NLAYERS)    = self%pe * 1.E-2 ! en hPa
-      temperature_grid(0:NLAYERS) = self%te   
+      temperature_grid(0:NLAYERS) = self%te         ! K
 
 
       wmicron = self%wavelength * 1.E-3  ! micrometer
+   ! molecular density for standard pressure and temperature in molecules/cm^3
+      Ns = (Av/22.4141)*(273.15/Ts)*(1.0/1000)
       
       do j = 0, NLAYERS 
-         Vol(j) = 3.69296E-18 * A(wmicron) * pressure_grid(j) / temperature_grid(j)
+         Vol(j) = A(wmicron) * Ns * (pressure_grid(j)/Ps) * (Ts/temperature_grid(j))
          Vol(j) = Vol(j) * 1.E5 ! en km-1
       end do
        
@@ -119,6 +127,18 @@
          ray(j+1) = difz * (Vol(j) + Vol(j+1))/2.
       end do
 
+!     Scale to Bodhaine's ROD calculation based on surface pressure (eq. 25)
+      
+      ! molecular weight of dry air (g/mol) at CO2 concentration C in parts per volume
+      ! CO2 = 360 ppm
+      C = 360.0*1e-6 ! parts per volume
+      ma = 15.0556*C + 28.9595
+
+      ! pressure in g/cm/s^2
+      P_surface = pressure_grid(NLAYERS)*1000
+      ROD = A(wmicron)*Av*P_surface/(ma*g)
+      ray = ray*(ROD/sum(ray))
+
 
       self%rot => Ray
 
@@ -127,45 +147,80 @@
       Contains
 
 !.................................................................................
-! determination of the function A(wmicron)
+! Rayleigh scattering cross section A(wmicron) (cm^2/molecule)
 !-----------------------------------      
     
       function A(X)
-!  pour le Rayleigh, X = lambda en micron
+!  for Rayleigh, X = lambda in micron
           implicit none
           real*8 :: A
           real*8, intent(in) :: X
-          real*8 :: depol_ratio
+          real*8 :: Ns, pi3
           real*8 :: XX, XX2, C
-          real*8 :: depol1, depol2, depol3, depol4
-          real*8 :: coef_depol
-          real*8 :: RI
+          real*8 :: CM
+          real*8 :: RI, RI2
+          real*8, parameter :: pi = (4.*atan(1.0))
+          real*8, parameter :: Av  = 6.0221367e23    !Avogadros number
+          real*8, parameter :: Ts = 288.15  !K, standard temperature
+         XX=1./X
+
+         XX2=XX*XX
+
+         CM = X/10000.0  ! lambda in cm
+
+         pi3 = pi*pi*pi
+        
+   !  (ns-1)*1e8  - refractive index of dry air at standard pressure and temperature for CO2 = 300 ppmv
+         RI = 8060.51 + 2480990.0/(132.274-XX2) + 17455.7/(39.32957-XX2)
+         RI = RI*1e-8 + 1.0
+
+   ! adjust for CO2 = 360 ppm
+         C = 360.0*1e-6 ! parts per volume
+         RI = (RI-1)*(1.0 + 0.54*(C - 0.0003)) + 1
+         RI2 = RI*RI
+
+   ! molecular density for standard pressure and temperature in molecules/cm^3
+         Ns = (Av/22.4141)*(273.15/Ts)*(1.0/1000)
+            
+         A = 24.0*pi3*F_air(XX2,C)* ((RI2-1)*(RI2-1))/(Ns*Ns*CM*CM*CM*CM*(RI2+2)*(RI2+2))
+         
+         return
+
+      end function A  
+
+      function F_air(XX2,C)  
+! King factor - depolarization
+         implicit None
+         real*8 :: F_air
+         real*8, intent(in) :: XX2  ! 1/lambda^2 in micron
+         real*8, intent(in) :: C    ! CO2 in parts per volume
+         real*8 :: depol1, depol2, depol3, depol4
+
+         depol1 = 1.034 + 3.17E-4 * XX2  ! N2
+         depol2 = 1.096 + 1.385E-3 * XX2 + 1.448E-4 * XX2 * XX2  ! O2
+         depol3 = 1.  !Ar
+         depol4 = 1.15  !CO2
+
+         ! C*100  conc in percent parts per volume
+         F_air= (78.084*depol1 + 20.946*depol2 + 0.934*depol3 +  C*100.0*depol4) / (78.084 + 20.946 + 0.934 + C*100.0)
+
+      end function F_air       
+
+      function coef_depol(X)
+         implicit None
+         real*8 :: coef_depol
+         real*8, intent(in) :: X !lambda in micron
+         real*8 :: XX, XX2, C
 
          XX=1./X
 
          XX2=XX*XX
-        
-   !  ns-1  sans approximation
-         RI=8060.77+2481070/(132.274-XX2)+17456.3/(39.32957-XX2)
+   ! CO2 = 360 ppm
+         C = 360.0*1e-6 ! parts per volume
 
+         coef_depol = 6.0*(F_air(XX2,C)-1.0)/(7.0*F_air(XX2,C)+3.0)
 
-   ! autre maniere de determiner coef_depol
-           depol1 = 1.034 + 3.17E-4 * XX2
-           depol2 = 1.096 + 1.385E-3 * XX2 + 1.448E-4 * XX2 * XX2
-           depol3 = 1.
-           depol4 = 1.15
-   !depol5 = 1.001 if we 
-           C = 0.030 ! for standard air , concentration of CO2 = 300 ppmv
-
-           coef_depol= (78.084 * depol1 + 20.946 * depol2 + 0.934 * depol3 +  C * depol4) / (78.084 + 20.946 + 0.934 + C)
-
-            
-         A=coef_depol * XX2 * XX2 * RI * RI
-         
-         return
-
-      end function A            
-
+      end function coef_depol
       end subroutine VLIDORT_Rayleigh
 
 !.............................................................................
