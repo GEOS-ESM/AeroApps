@@ -6,6 +6,41 @@
 !  May 2017
 !.............................................................................
 
+subroutine ROT_CALC(km, nch, nobs, channels, pe, he, te, &
+                     MISSING,verbose, ROT, rc)
+
+    use VLIDORT_ROT, only: VLIDORT_ROT_CALC
+    implicit None
+
+  ! !INPUT PARAMETERS:
+
+    integer,          intent(in)            :: km    ! number of vertical levels 
+    integer,          intent(in)            :: nch   ! number of channels
+    integer,          intent(in)            :: nobs  ! number of observations
+                    
+    real*8,           intent(in)            :: channels(nch)    ! wavelengths [nm]
+
+    real*8,           intent(in)            :: MISSING          ! MISSING VALUE
+    real*8,           intent(in)            :: pe(km+1,nobs)    ! pressure at layer edges [Pa]
+    real*8,           intent(in)            :: he(km+1,nobs)    ! height above sea-level  [m]
+    real*8,           intent(in)            :: te(km+1,nobs)    ! temperature at layer edges [K]
+
+    integer,          intent(in)            :: verbose
+
+  ! !OUTPUT PARAMETERS:
+    integer,          intent(out)           :: rc                             ! return code
+
+    real*8,           intent(out)           :: ROT(km,nobs,nch)               ! rayleigh optical thickness
+
+    call VLIDORT_ROT_CALC (km, nch, nobs, channels, pe, he, te, &
+                                   MISSING,verbose, &
+                                   ROT, rc )  
+
+
+end subroutine ROT_CALC
+
+
+
 subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nMom, nPol,nkernel,nparam, &
                      tau, ssa, pmom, pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
