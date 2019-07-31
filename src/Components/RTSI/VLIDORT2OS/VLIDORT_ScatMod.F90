@@ -127,7 +127,7 @@
          ray(j+1) = difz * (Vol(j) + Vol(j+1))/2.
       end do
 
-!     Scale to Bodhaine's ROD calculation based on surface pressure (eq. 25)
+!     Scale to Bodhaine ROD calculation based on surface pressure (eq. 25)
       
       ! molecular weight of dry air (g/mol) at CO2 concentration C in parts per volume
       ! CO2 = 360 ppm
@@ -188,6 +188,24 @@
 
       end function A  
 
+      end subroutine VLIDORT_Rayleigh
+
+      function coef_depol(X)
+         implicit None
+         real*8 :: coef_depol
+         real*8, intent(in) :: X !lambda in micron
+         real*8 :: XX, XX2, C
+
+         XX=1./X
+
+         XX2=XX*XX
+   ! CO2 = 360 ppm
+         C = 360.0*1e-6 ! parts per volume
+
+         coef_depol = 6.0*(F_air(XX2,C)-1.0)/(7.0*F_air(XX2,C)+3.0)
+
+      end function coef_depol
+
       function F_air(XX2,C)  
 ! King factor - depolarization
          implicit None
@@ -205,24 +223,7 @@
          F_air= (78.084*depol1 + 20.946*depol2 + 0.934*depol3 +  C*100.0*depol4) / (78.084 + 20.946 + 0.934 + C*100.0)
 
       end function F_air       
-
-      function coef_depol(X)
-         implicit None
-         real*8 :: coef_depol
-         real*8, intent(in) :: X !lambda in micron
-         real*8 :: XX, XX2, C
-
-         XX=1./X
-
-         XX2=XX*XX
-   ! CO2 = 360 ppm
-         C = 360.0*1e-6 ! parts per volume
-
-         coef_depol = 6.0*(F_air(XX2,C)-1.0)/(7.0*F_air(XX2,C)+3.0)
-
-      end function coef_depol
-      end subroutine VLIDORT_Rayleigh
-
+      
 !.............................................................................
       subroutine VLIDORT_Run_Vector (self, output, rc)
 !
@@ -284,7 +285,7 @@
       real*8                                             :: FLUX_FACTOR
 
       real*8, parameter                                  :: pi = 4.*atan(1.0)
-      real*8, parameter                                  :: DEPOL_RATIO = 0.030
+      real*8                                             :: DEPOL_RATIO 
        
       
       rc = 0
@@ -368,6 +369,10 @@
 
 !                Populate Scattering Phase Matrix
 !                ---------------------------------
+
+! DEPOL_RATIO is a function of wavelength in microns
+      DEPOL_RATIO = coef_depol(self%wavelength * 1.E-3)
+
 ! First initialize to zero to be safe
       rayvmoms = 0.0
       aervmoms = 0.0      
@@ -612,7 +617,7 @@
 !     product of the molecular number density of air by the total ray 
 !     scattering cross section).
       real*8, parameter                                  :: pi = 4.*atan(1.0)
-      real*8, parameter                                  :: DEPOL_RATIO = 0.030
+      real*8                                             :: DEPOL_RATIO 
        
       
        rc = 0
@@ -698,6 +703,8 @@
 !               ----------------------------------------------------               
       call VLIDORT_Rayleigh (self, rc)
 
+! DEPOL_RATIO is a function of wavelength in microns
+      DEPOL_RATIO = coef_depol(self%wavelength * 1.E-3)
 !                Populate Scattering Phase Matrix
 !                ---------------------------------
 ! First initialize to zero to be safe
@@ -894,7 +901,7 @@
       real*8, dimension(0:MAXLAYERS+1)                   :: Vol 
       real*8, dimension(0:MAXLAYERS+1)                   :: sect 
       real*8, parameter                                  :: pi = 4.*atan(1.0)
-      real*8, parameter                                  :: DEPOL_RATIO = 0.030
+      real*8                                             :: DEPOL_RATIO 
        
       
        rc = 0
@@ -1011,6 +1018,8 @@
 
 !     greek moments for Rayleigh only( only if vector )
 !     ----------------------------- 
+! DEPOL_RATIO is a function of wavelength in microns
+      DEPOL_RATIO = coef_depol(self%wavelength * 1.E-3)
       if ( vector ) then
 
          gammamom2 = -SQRT(6.) * (1 - DEPOL_RATIO) / (2 + DEPOL_RATIO)
@@ -1469,7 +1478,7 @@
       real*8                                             :: FLUX_FACTOR
 
       real*8, parameter                                  :: pi = 4.*atan(1.0)
-      real*8, parameter                                  :: DEPOL_RATIO = 0.030
+      real*8                                             :: DEPOL_RATIO
        
       
       rc = 0
@@ -1551,6 +1560,8 @@
 !               ----------------------------------------------------               
       call VLIDORT_Rayleigh (self, rc)
 
+! DEPOL_RATIO is a function of wavelength in microns
+      DEPOL_RATIO = coef_depol(self%wavelength * 1.E-3)
 !                Populate Scattering Phase Matrix
 !                ---------------------------------
 ! First initialize to zero to be safe
@@ -1822,7 +1833,7 @@
 !     product of the molecular number density of air by the total ray 
 !     scattering cross section).
       real*8, parameter                                  :: pi = 4.*atan(1.0)
-      real*8, parameter                                  :: DEPOL_RATIO = 0.030
+      real*8                                             :: DEPOL_RATIO
        
       
        rc = 0
@@ -1909,6 +1920,8 @@
       clLsmom = 0.0
       clIsmom = 0.0     
 
+! DEPOL_RATIO is a function of wavelength in microns
+      DEPOL_RATIO = coef_depol(self%wavelength * 1.E-3)
 !                Greek moment for Rayleigh Scattering 
 !                The same for all layers because DEPOL_RATIO is
 !                taken as constant right now. 
