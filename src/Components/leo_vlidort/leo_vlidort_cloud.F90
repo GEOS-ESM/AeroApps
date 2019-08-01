@@ -536,6 +536,12 @@ program leo_vlidort_cloud
     write(msg,'(A,I)') 'calc_qm ', myid
     call write_verbose(msg)  
 
+!   Rayleigh Optical Thickness
+!   --------------------------
+    call VLIDORT_ROT_CALC (km, nch, nobs, channels, Vpe, Vhe, Vte, &
+                                   MISSING,verbose, &
+                                   ROT, ierr )  
+
 !   Aerosol Optical Properties
 !   --------------------------
     call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
