@@ -26,6 +26,7 @@ program geo_vlidort
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   use vlidort_lambert              ! Module to run VLIDORT with lambertian surface  
+  use vlidort_rot                  ! Module to calculate Rayleigh  
   use Chem_MieMod
 !  use netcdf_helper                ! Module with netcdf routines
   use mp_netcdf_Mod
@@ -461,6 +462,13 @@ program geo_vlidort
 !   ----------------------------------
     albedo = 0
 
+!   Rayleigh Optical Thickness
+!   --------------------------
+    call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(pe), dble(ze), dble(te), &
+                                   dble(MISSING),verbose, &
+                                   ROT, ierr )  
+
+
 !   Aerosol Optical Properties
 !   --------------------------
     call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
@@ -475,6 +483,9 @@ program geo_vlidort
     TAU_(c,:,:) = tau(:,:,nobs)
     SSA_(c,:,:) = ssa(:,:,nobs)
     G_(c,:,:)   = g(:,:,nobs)
+    do ch=1,nch      
+        ROT_(c,:,ch) = ROT(:,nobs,ch)
+    end do
 
     write(msg,*) 'getAOP ', myid
     call write_verbose(msg)
@@ -486,11 +497,11 @@ program geo_vlidort
 !   -------------------------------
     ! Call to vlidort vector code
     call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
-               nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+               nPol, ROT, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                (/dble(SZA(c))/), &
                (/dble(abs(RAA(c)))/), &
                (/dble(VZA(c))/), &
-               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, Q, U, ierr)
+               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q, U, ierr)
    
 
 !   Check VLIDORT Status, Store Outputs in Shared Arrays
@@ -498,11 +509,6 @@ program geo_vlidort
     call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
     radiance_VL(c,:)    = radiance_VL_int(nobs,:)
     reflectance_VL(c,:) = reflectance_VL_int(nobs,:)
-
-
-    do ch=1,nch      
-        ROT_(c,:,ch) = ROT(:,nobs,ch)
-    end do
 
     if (.not. scalar) then
       Q_(c,:)      = Q(nobs,:)

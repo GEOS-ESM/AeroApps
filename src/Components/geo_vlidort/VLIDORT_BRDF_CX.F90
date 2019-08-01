@@ -29,9 +29,9 @@ logical function IS_MISSING(x,MISSING)
 end function IS_MISSING
 
 subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
-                   nPol, tau, ssa, g, pmom, pe, he, te, U10m, V10m, &
+                   nPol, ROT, tau, ssa, g, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
-                   MISSING,verbose,radiance_VL_SURF,reflectance_Vl_SURF, ROT, BRDF,rc)
+                   MISSING,verbose,radiance_VL_SURF,reflectance_Vl_SURF, BRDF,rc)
 !
 ! Uses VLIDORT in scalar mode to compute OMI aerosol TOA radiances.
 !
@@ -52,6 +52,9 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
                                       
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                   ! --- Rayleigh Parameters ---
+  real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -80,7 +83,6 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
   real*8,           intent(out) :: radiance_VL_SURF(nobs,nch)       ! TOA normalized radiance from VLIDORT
   integer,          intent(out) :: rc                          ! return code
   real*8,           intent(out) :: reflectance_VL_SURF(nobs, nch)   ! TOA reflectance from VLIDORT
-  real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness  
   real*8,           intent(out) :: BRDF(1,nobs, nch)  
 !                         ---  
   integer             :: i,j,n,p,ier
@@ -142,6 +144,7 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
           if ( rc /= 0 ) return
 
           SCAT%wavelength = channels(i)
+          SCAT%rot => ROT(:,j,i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%g => g(:,i,j)
@@ -162,7 +165,6 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
 
           radiance_VL_SURF(j,i)    = output%radiance
           reflectance_VL_SURF(j,i) = output%reflectance
-          ROT(:,j,i) = SCAT%rot      
 
            if ( ier /= 0 ) then
               radiance_VL_SURF(j,i) = MISSING
@@ -185,10 +187,10 @@ end subroutine VLIDORT_Scalar_CX
 !..........................................................................
 
 subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
-                   nPol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
+                   nPol, ROT, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
-                   ROT, BRDF, Q, U, BRDF_Q, BRDF_U, rc)
+                   BRDF, Q, U, BRDF_Q, BRDF_U, rc)
 !
 ! Place holder.
 !
@@ -208,6 +210,9 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
   integer, target,  intent(in)  :: nPol  ! number of components                               
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                   ! --- Rayleigh Parameters ---
+  real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -234,7 +239,6 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
   real*8,           intent(out) :: radiance_VL_SURF(nobs,nch)       ! TOA normalized radiance from VLIDORT
   integer,          intent(out) :: rc                          ! return code
   real*8,           intent(out) :: reflectance_VL_SURF(nobs, nch)   ! TOA reflectance from VLIDORT
-  real*8,           intent(out) :: ROT(km,nobs,nch)               ! rayleigh optical thickness  
   real*8,           intent(out) :: BRDF(nobs, nch)
   real*8,           intent(out) :: BRDF_Q(nobs, nch)
   real*8,           intent(out) :: BRDF_U(nobs, nch)  
@@ -306,6 +310,7 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
           if ( rc /= 0 ) return
 
           SCAT%wavelength = channels(i)
+          SCAT%rot => ROT(:,j,i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)
@@ -324,7 +329,6 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
           call VLIDORT_Run_Vector (SCAT, output, ier)
 
 
-          ROT(:,j,i) = SCAT%rot
           radiance_VL_SURF(j,i)    = output%radiance
           reflectance_VL_SURF(j,i) = output%reflectance
           Q(j,i)                   = output%Q
@@ -350,10 +354,10 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
 end subroutine VLIDORT_Vector_Cx
 
 subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nMom, &
-                   nPol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
+                   nPol, ROT, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, sleave, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
-                   ROT, BRDF, Q, U, BRDF_Q, BRDF_U, rc)
+                   BRDF, Q, U, BRDF_Q, BRDF_U, rc)
 !
 ! Place holder.
 !
@@ -373,6 +377,9 @@ subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nMom, &
   integer, target,  intent(in)  :: nPol  ! number of components                               
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                   ! --- Rayleigh Parameters ---
+  real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -401,7 +408,6 @@ subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nMom, &
   real*8,           intent(out) :: radiance_VL_SURF(nobs,nch)       ! TOA normalized radiance from VLIDORT
   integer,          intent(out) :: rc                          ! return code
   real*8,           intent(out) :: reflectance_VL_SURF(nobs, nch)   ! TOA reflectance from VLIDORT
-  real*8,           intent(out) :: ROT(km,nobs,nch)               ! rayleigh optical thickness  
   real*8,           intent(out) :: BRDF(nobs, nch)
   real*8,           intent(out) :: BRDF_Q(nobs, nch)
   real*8,           intent(out) :: BRDF_U(nobs, nch)  
@@ -478,6 +484,7 @@ subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nMom, &
           if ( rc /= 0 ) return
 
           SCAT%wavelength = channels(i)
+          SCAT%rot => ROT(:,j,i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)
@@ -496,7 +503,6 @@ subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nMom, &
           call VLIDORT_Run_Vector (SCAT, output, ier)
 
 
-          ROT(:,j,i) = SCAT%rot
           radiance_VL_SURF(j,i)    = output%radiance
           reflectance_VL_SURF(j,i) = output%reflectance
           Q(j,i)                   = output%Q
@@ -523,9 +529,9 @@ end subroutine VLIDORT_Vector_Cx_NOBM
 
 
 subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nMom, &
-                   nPol, tau, ssa, g, pmom, pe, he, te, U10m, V10m, &
+                   nPol, ROT, tau, ssa, g, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
-                   MISSING,verbose,radiance_VL_SURF,reflectance_Vl_SURF, ROT, BRDF,rc)
+                   MISSING,verbose,radiance_VL_SURF,reflectance_Vl_SURF, BRDF,rc)
 !
 ! Uses VLIDORT in scalar mode to compute OMI aerosol TOA radiances.
 !
@@ -546,6 +552,9 @@ subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nMom, &
                                       
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                   ! --- Rayleigh Parameters ---
+  real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -574,7 +583,6 @@ subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nMom, &
   real*8,           intent(out) :: radiance_VL_SURF(nobs,nch)       ! TOA normalized radiance from VLIDORT
   integer,          intent(out) :: rc                          ! return code
   real*8,           intent(out) :: reflectance_VL_SURF(nobs, nch)   ! TOA reflectance from VLIDORT
-  real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness  
   real*8,           intent(out) :: BRDF(1,nobs, nch)  
 !                         ---  
   integer             :: i,j,n,p,ier
@@ -636,6 +644,7 @@ subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nMom, &
           if ( rc /= 0 ) return
 
           SCAT%wavelength = channels(i)
+          SCAT%rot => ROT(:,j,i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%g => g(:,i,j)
@@ -656,7 +665,6 @@ subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nMom, &
 
           radiance_VL_SURF(j,i)    = output%radiance
           reflectance_VL_SURF(j,i) = output%reflectance
-          ROT(:,j,i) = SCAT%rot      
 
            if ( ier /= 0 ) then
               radiance_VL_SURF(j,i) = MISSING
@@ -680,10 +688,10 @@ end subroutine VLIDORT_Scalar_GissCX
 !..........................................................................
 
 subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nMom, &
-                   nPol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
+                   nPol, ROT, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
-                   ROT, BRDF, Q, U, BRDF_Q, BRDF_U, rc)
+                   BRDF, Q, U, BRDF_Q, BRDF_U, rc)
 !
 ! Place holder.
 !
@@ -703,6 +711,9 @@ subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nMom, &
   integer, target,  intent(in)  :: nPol  ! number of components                               
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                   ! --- Rayleigh Parameters ---
+  real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -729,7 +740,6 @@ subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nMom, &
   real*8,           intent(out) :: radiance_VL_SURF(nobs,nch)       ! TOA normalized radiance from VLIDORT
   integer,          intent(out) :: rc                          ! return code
   real*8,           intent(out) :: reflectance_VL_SURF(nobs, nch)   ! TOA reflectance from VLIDORT
-  real*8,           intent(out) :: ROT(km,nobs,nch)               ! rayleigh optical thickness  
   real*8,           intent(out) :: BRDF(nobs, nch)
   real*8,           intent(out) :: BRDF_Q(nobs, nch)
   real*8,           intent(out) :: BRDF_U(nobs, nch)  
@@ -801,6 +811,7 @@ subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nMom, &
           if ( rc /= 0 ) return
 
           SCAT%wavelength = channels(i)
+          SCAT%rot => ROT(:,j,i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)
@@ -819,7 +830,6 @@ subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nMom, &
           call VLIDORT_Run_Vector (SCAT, output, ier)
 
 
-          ROT(:,j,i) = SCAT%rot
           radiance_VL_SURF(j,i)    = output%radiance
           reflectance_VL_SURF(j,i) = output%reflectance
           Q(j,i)                   = output%Q
@@ -847,10 +857,10 @@ end subroutine VLIDORT_Vector_GissCx
 !..........................................................................
 
 subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nMom, &
-                   nPol, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
+                   nPol, ROT, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
-                   MISSING,verbose,radiance_VL_SURF,reflectance_Vl_SURF, ROT, BRDF,rc)
+                   MISSING,verbose,radiance_VL_SURF,reflectance_Vl_SURF, BRDF,rc)
 !
 ! Uses VLIDORT in scalar mode to compute OMI aerosol TOA radiances.
 !
@@ -871,6 +881,9 @@ subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nMom, &
                                       
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                   ! --- Rayleigh Parameters ---
+  real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -909,7 +922,6 @@ subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nMom, &
   real*8,           intent(out) :: radiance_VL_SURF(nobs,nch)       ! TOA normalized radiance from VLIDORT
   integer,          intent(out) :: rc                          ! return code
   real*8,           intent(out) :: reflectance_VL_SURF(nobs, nch)   ! TOA reflectance from VLIDORT
-  real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness  
   real*8,           intent(out) :: BRDF(nobs, nch)  
 !                         ---  
   integer             :: i,j,n,p,ier
@@ -971,6 +983,7 @@ subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nMom, &
           if ( rc /= 0 ) return
 
           SCAT%wavelength = channels(i)
+          SCAT%rot => ROT(:,j,i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%g => g(:,i,j)
@@ -999,7 +1012,6 @@ subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nMom, &
 
           radiance_VL_SURF(j,i)    = output%radiance
           reflectance_VL_SURF(j,i) = output%reflectance
-          ROT(:,j,i) = SCAT%rot      
 
            if ( ier /= 0 ) then
               radiance_VL_SURF(j,i) = MISSING
@@ -1023,10 +1035,10 @@ end subroutine VLIDORT_Scalar_GissCX_Cloud
 
 
 subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nMom, &
-                   nPol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+                   nPol, ROT, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
-                   MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, ROT, Q, U, BRDF, BRDF_Q, BRDF_U,rc)
+                   MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, Q, U, BRDF, BRDF_Q, BRDF_U,rc)
 !
 ! Place holder.
 !
@@ -1046,6 +1058,9 @@ subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nMom, &
   integer, target,  intent(in)  :: nPol  ! number of components                               
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                   ! --- Rayleigh Parameters ---
+  real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -1081,7 +1096,6 @@ subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nMom, &
   real*8,           intent(out) :: radiance_VL_SURF(nobs,nch)       ! TOA normalized radiance from VLIDORT
   integer,          intent(out) :: rc                          ! return code
   real*8,           intent(out) :: reflectance_VL_SURF(nobs, nch)   ! TOA reflectance from VLIDORT
-  real*8,           intent(out) :: ROT(km,nobs,nch)               ! rayleigh optical thickness  
   real*8,           intent(out) :: BRDF(nobs, nch)  
   real*8,           intent(out) :: BRDF_Q(nobs, nch)  
   real*8,           intent(out) :: BRDF_U(nobs, nch)      
@@ -1153,6 +1167,7 @@ subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nMom, &
           if ( rc /= 0 ) return
 
           SCAT%wavelength = channels(i)
+          SCAT%rot => ROT(:,j,i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)
@@ -1178,7 +1193,6 @@ subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nMom, &
           call VLIDORT_Run_Vector_Cloud (SCAT, output, ier)
 
 
-          ROT(:,j,i) = SCAT%rot
           radiance_VL_SURF(j,i)    = output%radiance
           reflectance_VL_SURF(j,i) = output%reflectance
           Q(j,i)                   = output%Q
@@ -1206,11 +1220,11 @@ end subroutine VLIDORT_Vector_GissCx_Cloud
 !..........................................................................
 
 subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
-                   nPol, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
+                   nPol, ROT, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, sleave, &
                    solar_zenith, relat_azymuth, sensor_zenith, &
-                   MISSING,verbose,radiance_VL_SURF,reflectance_Vl_SURF, ROT, BRDF,rc)
+                   MISSING,verbose,radiance_VL_SURF,reflectance_Vl_SURF, BRDF,rc)
 !
 ! Uses VLIDORT in scalar mode to compute OMI aerosol TOA radiances.
 !
@@ -1231,6 +1245,9 @@ subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
                                       
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                   ! --- Rayleigh Parameters ---
+  real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -1271,7 +1288,6 @@ subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
   real*8,           intent(out) :: radiance_VL_SURF(nobs,nch)       ! TOA normalized radiance from VLIDORT
   integer,          intent(out) :: rc                          ! return code
   real*8,           intent(out) :: reflectance_VL_SURF(nobs, nch)   ! TOA reflectance from VLIDORT
-  real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness  
   real*8,           intent(out) :: BRDF(nobs, nch)  
 !                         ---  
   integer             :: i,j,n,p,ier
@@ -1338,6 +1354,7 @@ subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
           if ( rc /= 0 ) return
 
           SCAT%wavelength = channels(i)
+          SCAT%rot => ROT(:,j,i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%g => g(:,i,j)
@@ -1366,7 +1383,6 @@ subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
 
           radiance_VL_SURF(j,i)    = output%radiance
           reflectance_VL_SURF(j,i) = output%reflectance
-          ROT(:,j,i) = SCAT%rot      
 
            if ( ier /= 0 ) then
               radiance_VL_SURF(j,i) = MISSING
@@ -1390,11 +1406,11 @@ end subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud
 
 
 subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
-                   nPol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+                   nPol, ROT, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, sleave, &
                    solar_zenith, relat_azymuth, sensor_zenith, &
-                   MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, ROT, Q, U, BRDF, BRDF_Q, BRDF_U,rc)
+                   MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, Q, U, BRDF, BRDF_Q, BRDF_U,rc)
 !
 ! Place holder.
 !
@@ -1414,6 +1430,9 @@ subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
   integer, target,  intent(in)  :: nPol  ! number of components                               
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                   ! --- Rayleigh Parameters ---
+  real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -1451,7 +1470,6 @@ subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
   real*8,           intent(out) :: radiance_VL_SURF(nobs,nch)       ! TOA normalized radiance from VLIDORT
   integer,          intent(out) :: rc                          ! return code
   real*8,           intent(out) :: reflectance_VL_SURF(nobs, nch)   ! TOA reflectance from VLIDORT
-  real*8,           intent(out) :: ROT(km,nobs,nch)               ! rayleigh optical thickness  
   real*8,           intent(out) :: BRDF(nobs, nch)  
   real*8,           intent(out) :: BRDF_Q(nobs, nch)  
   real*8,           intent(out) :: BRDF_U(nobs, nch)      
@@ -1528,6 +1546,7 @@ subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
           if ( rc /= 0 ) return
 
           SCAT%wavelength = channels(i)
+          SCAT%rot => ROT(:,j,i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)
@@ -1553,7 +1572,6 @@ subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
           call VLIDORT_Run_Vector_Cloud (SCAT, output, ier)
 
 
-          ROT(:,j,i) = SCAT%rot
           radiance_VL_SURF(j,i)    = output%radiance
           reflectance_VL_SURF(j,i) = output%reflectance
           Q(j,i)                   = output%Q

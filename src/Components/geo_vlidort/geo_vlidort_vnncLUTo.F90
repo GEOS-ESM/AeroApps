@@ -26,6 +26,7 @@ program geo_vlidort_vnncLUTo
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_cx              ! Module to run VLIDORT with Giss Cox-Munk ocean BRDF surface supplement
+  use vlidort_rot                  ! Module to calculate Rayleigh
   use Chem_MieMod
   use mp_netcdf_Mod                ! Modules with netcdf routines
   use netcdf_Mod
@@ -523,6 +524,12 @@ program geo_vlidort_vnncLUTo
     write(msg,'(A,I)') 'calc_qm ', myid
     call write_verbose(msg)  
 
+!   Rayleigh Optical Thickness
+!   --------------------------
+    call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(pe), dble(ze), dble(te), &
+                                   dble(MISSING),verbose, &
+                                   ROT, ierr )  
+
 !   Aerosol Optical Properties
 !   --------------------------
 !   Speciate
@@ -563,6 +570,9 @@ program geo_vlidort_vnncLUTo
     SSA_(c,:,:) = ssa(:,:,nobs)
     G_(c,:,:)   = g(:,:,nobs)
 
+    do ch=1,nch     
+      ROT_(c,:,ch) = ROT(:,nobs,ch)      
+    end do   
 
 
     write(msg,*) 'getAOP ', myid
@@ -584,25 +594,25 @@ program geo_vlidort_vnncLUTo
               if (scalar) then
                 ! Call to vlidort scalar code       
                 call VLIDORT_Scalar_GissCX (km, nch, nobs ,dble(channels), nMom,      &
-                        nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+                        nPol, ROT, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
                         reshape((/U10M(uwind)/),(/nobs/),pad=(/U10M(uwind)/)),&
                         reshape((/V10M(vwind)/),(/nobs/),pad=(/V10M(vwind)/)),&
                         reshape((/mr/),(/nch/),pad=(/mr/)),&
                         (/dble(SOLAR_ZENITH(sza))/), &
                         (/dble(RELATIVE_AZIMUTH(raa))/), &
                         (/dble(SENSOR_ZENITH(vza))/), &               
-                        dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, brdf_cx_int, ierr)
+                        dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, brdf_cx_int, ierr)
               else              
                 ! Call to vlidort vector code
                 call VLIDORT_Vector_GissCX (km, nch, nobs ,dble(channels), nMom,   &
-                          nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), &
+                          nPol, ROT, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), &
                           reshape((/U10M(uwind)/),(/nobs/),pad=(/U10M(uwind)/)),&
                           reshape((/V10M(vwind)/),(/nobs/),pad=(/V10M(vwind)/)),&
                           reshape((/mr/),(/nch/),pad=(/mr/)),&
                           (/dble(SOLAR_ZENITH(sza))/), &
                           (/dble(RELATIVE_AZIMUTH(raa))/), &
                           (/dble(SENSOR_ZENITH(vza))/), &  
-                          dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, Q, U, brdf_cx_int, ierr)
+                          dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q, U, brdf_cx_int, ierr)
               end if
              
           !   Check VLIDORT Status, Store Outputs in Shared Arrays
@@ -613,10 +623,6 @@ program geo_vlidort_vnncLUTo
               if (MAPL_am_I_root()) then
                 brdf_cx(:,sza,vza,raa,uwind,vwind) = brdf_cx_int(:,nobs,nch)
               end if
-
-              do ch=1,nch     
-                ROT_(c,:,ch) = ROT(:,nobs,ch)      
-              end do   
 
               PE_(c,:) = dble(pe(:,nobs))
 

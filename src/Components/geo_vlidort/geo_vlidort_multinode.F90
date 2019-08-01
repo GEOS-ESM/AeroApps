@@ -26,6 +26,7 @@ program geo_vlidort_multinode
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
+  use vlidort_rot                  ! Module to calculate Rayleigh  
   use Chem_MieMod
   use netcdf_helper                ! Module with netcdf routines
   use GeoAngles                    ! Module with geostationary satellite algorithms for scene geometry
@@ -562,6 +563,13 @@ program geo_vlidort_multinode
         end do
       end if 
 
+!   Rayleigh Optical Thickness
+!   --------------------------
+    call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(pe), dble(ze), dble(te), &
+                                   dble(MISSING),verbose, &
+                                   ROT, ierr )  
+
+
   !   Aerosol Optical Properties
   !   --------------------------
       if (scalar) then
@@ -577,6 +585,9 @@ program geo_vlidort_multinode
       TAU_(c,:,:) = tau(:,:,nobs)
       SSA_(c,:,:) = ssa(:,:,nobs)
       G_(c,:,:)   = g(:,:,nobs)
+      do ch=1,nch      
+          ROT_(c,:,ch) = ROT(:,nobs,ch)
+      end do
 
       write(msg,*) 'getAOP ', myid
       call write_verbose(msg)
@@ -589,19 +600,19 @@ program geo_vlidort_multinode
         if (scalar) then
           ! Call to vlidort scalar code       
           call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels),        &
-                  dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), albedo,&
+                  ROT, dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), albedo,&
                   (/dble(SZA(c))/), &
                   (/dble(abs(RAA(c)))/), &
                   (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
         else
           ! Call to vlidort vector code
           call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
-                 nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+                 nPol, ROT, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                  (/dble(SZA(c))/), &
                  (/dble(abs(RAA(c)))/), &
                  (/dble(VZA(c))/), &
-                 dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, Q, U, ierr)
+                 dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q, U, ierr)
         end if
       else if (KERNEL_IS_MISSING(kernel_wt,dble(surf_missing))) then
   !     Save code for pixels that were not gap filled
@@ -609,7 +620,6 @@ program geo_vlidort_multinode
         radiance_VL_int(nobs,:) = -500
         reflectance_VL_int(nobs,:) = -500
         albedo = -500
-        ROT = -500
         if (.not. scalar) then
           Q = -500
           U = -500
@@ -621,21 +631,21 @@ program geo_vlidort_multinode
         if (scalar) then 
           ! Call to vlidort scalar code            
           call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
-                  dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
+                  ROT, ble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
                   kernel_wt, param, &
                   (/dble(SZA(c))/), &
                   (/dble(abs(RAA(c)))/), &
                   (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, albedo, ierr )  
         else
           ! Call to vlidort vector code
           call VLIDORT_Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+                  nPol, ROT, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
                   kernel_wt, param, &
                   (/dble(SZA(c))/), &
                   (/dble(abs(RAA(c)))/), &
                   (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, Q, U, ierr )  
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, albedo, Q, U, ierr )  
         end if      
       end if          
       
@@ -645,9 +655,6 @@ program geo_vlidort_multinode
       radiance_VL(c,:)    = radiance_VL_int(nobs,:)
       reflectance_VL(c,:) = reflectance_VL_int(nobs,:)
       ALBEDO_(c,:) = albedo(nobs,:)
-      do ch=1,nch      
-          ROT_(c,:,ch) = ROT(:,nobs,ch)
-      end do
 
       if (.not. scalar) then
         Q_(c,:)      = Q(nobs,:)

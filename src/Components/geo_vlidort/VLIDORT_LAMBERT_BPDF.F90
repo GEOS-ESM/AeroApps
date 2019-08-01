@@ -21,9 +21,9 @@ module VLIDORT_LAMBERT_BPDF
 
 
   subroutine VLIDORT_Vector_Lambert_BPDF (km, nch, nobs, channels, nMom,  &
-                     nPol,tau, ssa, pmom, pe, he, te, albedo, BPDFparam, &
+                     nPol, ROT, tau, ssa, pmom, pe, he, te, albedo, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL, reflectance_VL, ROT, BR, Q ,U, BR_Q,BR_U,rc, &
+                     MISSING,verbose, radiance_VL, reflectance_VL, BR, Q ,U, BR_Q,BR_U,rc, &
                      DO_2OS_CORRECTION, DO_BOA)
   !
   ! Place holder.
@@ -45,6 +45,9 @@ module VLIDORT_LAMBERT_BPDF
     integer, target,  intent(in)  :: nPol  ! number of components                               
                     
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
   !                                                   ! --- Mie Parameters ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -75,7 +78,6 @@ module VLIDORT_LAMBERT_BPDF
     real*8,           intent(out) :: radiance_VL(nobs,nch)       ! TOA radiance from VLIDORT
     integer,          intent(out) :: rc                          ! return code
     real*8,           intent(out) :: reflectance_VL(nobs, nch)   ! TOA reflectance from VLIDORT
-    real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness  
     real*8,           intent(out) :: Q(nobs, nch)   ! Q Stokes component
     real*8,           intent(out) :: U(nobs, nch)   ! U Stokes component
     real*8,           intent(out) :: BR(nobs,nch)                   ! bidirectional reflectance 
@@ -155,7 +157,8 @@ module VLIDORT_LAMBERT_BPDF
                                      albedo(j,i),reshape(BPDFparam(:,i,j),(/nparam/)),scalar,rc)
 
 
-        SCAT%wavelength = channels(i)        
+        SCAT%wavelength = channels(i)
+        SCAT%rot => ROT(:,j,i)        
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
@@ -171,7 +174,6 @@ module VLIDORT_LAMBERT_BPDF
           BR(j,i)    = -500
           BR_Q(j,i)    = -500
           BR_U(j,i)    = -500
-          ROT(:,j,i) = -500
           Q(j,i)     = -500
           U(j,i)     = -500
           cycle
@@ -179,7 +181,6 @@ module VLIDORT_LAMBERT_BPDF
 
         call VLIDORT_Run_Vector (SCAT, output, ier)
 
-        ROT(:,j,i) = SCAT%rot
         if (SCAT%DO_BOA) then
           radiance_VL(j,i)         = output%BOA_radiance
           reflectance_VL(j,i)      = output%BOA_reflectance
@@ -216,10 +217,10 @@ module VLIDORT_LAMBERT_BPDF
   !..........................................................................
 
   subroutine VLIDORT_Vector_Lambert_BPDF_Cloud (km, nch, nobs, channels, nMom,  &
-                     nPol,tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+                     nPol, ROT, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                      pe, he, te, albedo, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL, reflectance_VL, BR, ROT, Q ,U, BR_Q, BR_U, rc, &
+                     MISSING,verbose, radiance_VL, reflectance_VL, BR, Q ,U, BR_Q, BR_U, rc, &
                      DO_2OS_CORRECTION, DO_BOA)
   !
   ! Place holder.
@@ -241,6 +242,9 @@ module VLIDORT_LAMBERT_BPDF
     integer, target,  intent(in)  :: nPol  ! number of components                               
                     
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
   !                                                   ! --- Mie Parameters ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -278,7 +282,6 @@ module VLIDORT_LAMBERT_BPDF
     real*8,           intent(out) :: radiance_VL(nobs,nch)       ! TOA radiance from VLIDORT
     integer,          intent(out) :: rc                          ! return code
     real*8,           intent(out) :: reflectance_VL(nobs, nch)   ! TOA reflectance from VLIDORT
-    real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness  
     real*8,           intent(out) :: Q(nobs, nch)   ! Q Stokes component
     real*8,           intent(out) :: U(nobs, nch)   ! U Stokes component
     real*8,           intent(out) :: BR(nobs,nch)                   ! bidirectional reflectance
@@ -356,7 +359,8 @@ module VLIDORT_LAMBERT_BPDF
         call VLIDORT_LAMBERTIAN_BPDF(SCAT%Surface,solar_zenith (j),sensor_zenith(j),relat_azymuth(j),&
                                      albedo(j,i),reshape(BPDFparam(:,i,j),(/nparam/)),scalar,rc)
 
-        SCAT%wavelength = channels(i)        
+        SCAT%wavelength = channels(i)    
+        SCAT%rot => ROT(:,j,i)    
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
@@ -378,7 +382,6 @@ module VLIDORT_LAMBERT_BPDF
           BR(j,i)    = -500
           BR_Q(j,i)    = -500
           BR_U(j,i)    = -500
-          ROT(:,j,i) = -500
           Q(j,i)     = -500
           U(j,i)     = -500
           cycle
@@ -387,7 +390,6 @@ module VLIDORT_LAMBERT_BPDF
 
         call VLIDORT_Run_Vector (SCAT, output, ier)
 
-        ROT(:,j,i) = SCAT%rot
         if (SCAT%DO_BOA) then
           radiance_VL(j,i)         = output%BOA_radiance
           reflectance_VL(j,i)      = output%BOA_reflectance

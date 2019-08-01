@@ -34,6 +34,7 @@ program geo_vlidort_cloud
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
   use vlidort_lambert              ! Module to run VLIDORT with lambertian surface  
+  use vlidort_rot                  ! Module to calculate Rayleigh  
   use lidort_brdf_modis
   use Chem_MieMod
 !  use netcdf_helper                ! Module with netcdf routines
@@ -540,6 +541,12 @@ program geo_vlidort_cloud
       end do
     end if 
 
+!   Rayleigh Optical Thickness
+!   --------------------------
+    call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(Vpe), dble(Vze), dble(Vte), &
+                                   dble(MISSING),verbose, &
+                                   ROT_int, ierr ) 
+
 !   Aerosol Optical Properties
 !   --------------------------
     call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
@@ -571,6 +578,7 @@ program geo_vlidort_cloud
 
 !   Save some variables on the 2D Grid for Writing Later
 !   ------------------------
+    ROT(i,j,:) = ROT_int(:,nobs,nch)
     TAU(i,j,:) = Vtau(:,nch,nobs)
     SSA(i,j,:) = Vssa(:,nch,nobs)
     G(i,j,:)   = Vg(:,nch,nobs)
@@ -588,14 +596,14 @@ program geo_vlidort_cloud
         if (vlidort) then
           ! Call to vlidort scalar code       
           call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
+                  nPol, ROT_int, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
                   dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                   (/dble(SZA(i,j))/), &
                   (/dble(abs(RAA(i,j)))/), &
                   (/dble(VZA(i,j))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, ierr)
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
         else 
           call LIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,      &
                   nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
@@ -610,14 +618,14 @@ program geo_vlidort_cloud
       else
         ! Call to vlidort vector code
         call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,   &
-               nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+               nPol, ROT_int, dble(Vtau), dble(Vssa), dble(Vpmom), &
                dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                (/dble(SZA(i,j))/), &
                (/dble(abs(RAA(i,j)))/), &
                (/dble(VZA(i,j))/), &
-               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, ierr)
+               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q_int, U_int, ierr)
       end if
 
     else if ( ANY(kernel_wt == surf_missing) ) then
@@ -626,7 +634,6 @@ program geo_vlidort_cloud
       radiance_VL_int(nobs,:) = -500
       reflectance_VL_int(nobs,:) = -500
       Valbedo = -500
-      ROT_int = -500
       if (.not. scalar) then
         Q_int = -500
         U_int = -500
@@ -639,7 +646,7 @@ program geo_vlidort_cloud
         if (vlidort) then
           ! Call to vlidort scalar code            
           call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
-                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                  nPol, ROT_int, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
                   dble(Vpe), dble(Vze), dble(Vte), &
@@ -647,7 +654,7 @@ program geo_vlidort_cloud
                   (/dble(SZA(i,j))/), &
                   (/dble(abs(RAA(i,j)))/), &
                   (/dble(VZA(i,j))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr )  
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
         else
         ! Call to vlidort scalar code            
           call LIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
@@ -664,7 +671,7 @@ program geo_vlidort_cloud
       else
         ! Call to vlidort vector code
         call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nMom, &
-                nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                nPol, ROT_int, dble(Vtau), dble(Vssa), dble(Vpmom), &
                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
                 dble(Vpe), dble(Vze), dble(Vte), &
@@ -672,7 +679,7 @@ program geo_vlidort_cloud
                 (/dble(SZA(i,j))/), &
                 (/dble(abs(RAA(i,j)))/), &
                 (/dble(VZA(i,j))/), &
-                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
+                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
       end if      
     end if          
     
@@ -682,8 +689,6 @@ program geo_vlidort_cloud
     radiance_VL(i,j)    = radiance_VL_int(nobs,nch)
     reflectance_VL(i,j) = reflectance_VL_int(nobs,nch)
     ALBEDO(i,j) = Valbedo(nobs,nch)
-
-    ROT(i,j,:) = ROT(:,nobs,nch)
     
     if (.not. scalar) then
       Q(i,j)      = Q_int(nobs,nch)

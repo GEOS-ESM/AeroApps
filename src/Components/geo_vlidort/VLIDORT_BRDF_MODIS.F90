@@ -21,9 +21,9 @@ module VLIDORT_BRDF_MODIS
   end function IS_MISSING
 
   subroutine VLIDORT_Scalar_LandMODIS (km, nch, nobs,channels, nMom, &
-                     nPol, tau, ssa, g, pmom, pe, he, te, kernel_wt, param, &
+                     nPol, ROT, tau, ssa, g, pmom, pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, rc )
+                     MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, BR, rc )
   !
   ! Uses VLIDORT in scalar mode to compute OMI aerosol TOA radiances.
   !
@@ -43,6 +43,9 @@ module VLIDORT_BRDF_MODIS
     integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
 
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -71,7 +74,6 @@ module VLIDORT_BRDF_MODIS
     real*8,           intent(out) :: radiance_VL_SURF(nobs,nch)       ! TOA normalized radiance from VLIDORT using surface module
     real*8,           intent(out) :: reflectance_VL_SURF(nobs, nch)   ! TOA reflectance from VLIDORT using surface module
     integer,          intent(out) :: rc                               ! return code
-    real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness  
     real*8,           intent(out) :: BR(nobs,nch)                     ! bi-directional reflectance 
 
   !                         ---  
@@ -138,6 +140,7 @@ module VLIDORT_BRDF_MODIS
         if ( rc /= 0 ) return
 
         SCAT%wavelength = channels(i)
+        SCAT%rot => ROT(:,j,i)
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%g => g(:,i,j)
@@ -149,7 +152,6 @@ module VLIDORT_BRDF_MODIS
           radiance_VL_SURF(j,i)    = -500
           reflectance_VL_SURF(j,i) = -500
           BR(j,i)    = -500
-          ROT(:,j,i) = -500
           cycle
         end if
          
@@ -157,7 +159,6 @@ module VLIDORT_BRDF_MODIS
 
         radiance_VL_SURF(j,i)    = output%radiance
         reflectance_VL_SURF(j,i) = output%reflectance
-        ROT(:,j,i) = SCAT%rot      
 
         if ( verbose > 0 ) then
           print *, 'My radiance land modis',radiance_VL_SURF(j,i), reflectance_VL_SURF(j,i) 
@@ -184,9 +185,9 @@ module VLIDORT_BRDF_MODIS
   !..........................................................................
 
   subroutine VLIDORT_Vector_LandMODIS (km, nch, nobs, channels, nMom,  &
-                     nPol,tau, ssa, pmom, pe, he, te, kernel_wt, param, &
+                     nPol, ROT, tau, ssa, pmom, pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, BR_Q, BR_U, rc, &
+                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc, &
                      DO_2OS_CORRECTION, DO_BOA)
   !
   ! Place holder.
@@ -209,6 +210,9 @@ module VLIDORT_BRDF_MODIS
     integer, target,  intent(in)            :: nPol  ! number of scattering matrix components                               
                     
     real*8, target,   intent(in)            :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -236,7 +240,6 @@ module VLIDORT_BRDF_MODIS
     real*8,           intent(out)           :: reflectance_VL_SURF(nobs, nch) ! TOA reflectance from VLIDORT using surface module
     integer,          intent(out)           :: rc                             ! return code
 
-    real*8,           intent(out)           :: ROT(km,nobs,nch)               ! rayleigh optical thickness
     real*8,           intent(out)           :: BR(nobs,nch)                   ! bidirectional reflectance 
     real*8,           intent(out)           :: BR_Q(nobs,nch)                   ! bidirectional reflectance 
     real*8,           intent(out)           :: BR_U(nobs,nch)                   ! bidirectional reflectance 
@@ -325,7 +328,8 @@ module VLIDORT_BRDF_MODIS
                                reshape(param(:,i,j),(/nparam/)),&
                                scalar,rc)
 
-        SCAT%wavelength = channels(i)        
+        SCAT%wavelength = channels(i) 
+        SCAT%rot => ROT(:,j,i)       
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
@@ -341,7 +345,6 @@ module VLIDORT_BRDF_MODIS
           BR(j,i)    = -500
           BR_Q(j,i)  = -500
           BR_U(j,i)  = -500
-          ROT(:,j,i) = -500
           Q(j,i)     = -500
           U(j,i)     = -500
           cycle
@@ -349,7 +352,6 @@ module VLIDORT_BRDF_MODIS
 
         call VLIDORT_Run_Vector (SCAT, output, ier)
 
-        ROT(:,j,i) = SCAT%rot
         if (SCAT%DO_BOA) then
           radiance_VL_SURF(j,i)    = output%BOA_radiance
           reflectance_VL_SURF(j,i) = output%BOA_reflectance
@@ -381,10 +383,10 @@ module VLIDORT_BRDF_MODIS
   end subroutine VLIDORT_Vector_LandMODIS
 
 subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
-                     nPol, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
+                     nPol, ROT, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
                      pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, rc )
+                     MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, BR, rc )
   !
   ! Uses VLIDORT in scalar mode to compute OMI aerosol TOA radiances.
   !
@@ -404,6 +406,9 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
     integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
 
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -444,7 +449,6 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
     real*8,           intent(out) :: radiance_VL_SURF(nobs,nch)       ! TOA normalized radiance from VLIDORT using surface module
     real*8,           intent(out) :: reflectance_VL_SURF(nobs, nch)   ! TOA reflectance from VLIDORT using surface module
     integer,          intent(out) :: rc                               ! return code
-    real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness  
     real*8,           intent(out) :: BR(nobs,nch)                     ! bi-directional reflectance 
 
   !                         ---  
@@ -511,6 +515,7 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
         if ( rc /= 0 ) return
 
         SCAT%wavelength = channels(i)
+        SCAT%rot => ROT(:,j,i)
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%g => g(:,i,j)
@@ -530,7 +535,6 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
           radiance_VL_SURF(j,i)    = -500
           reflectance_VL_SURF(j,i) = -500
           BR(j,i)    = -500
-          ROT(:,j,i) = -500
           cycle
         end if
          
@@ -538,7 +542,6 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
 
         radiance_VL_SURF(j,i)    = output%radiance
         reflectance_VL_SURF(j,i) = output%reflectance
-        ROT(:,j,i) = SCAT%rot      
 
         if ( verbose > 0 ) then
           print *, 'My radiance land modis',radiance_VL_SURF(j,i), reflectance_VL_SURF(j,i) 
@@ -564,10 +567,10 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
 
   !..........................................................................
   subroutine VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, channels, nMom,  &
-                     nPol,tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+                     nPol, ROT, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                      pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, BR_Q, BR_U, rc, &
+                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc, &
                      DO_2OS_CORRECTION, DO_BOA)
   !
   ! Place holder.
@@ -590,6 +593,9 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
     integer, target,  intent(in)            :: nPol  ! number of scattering matrix components                               
                     
     real*8, target,   intent(in)            :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -625,7 +631,6 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
     real*8,           intent(out)           :: reflectance_VL_SURF(nobs, nch) ! TOA reflectance from VLIDORT using surface module
     integer,          intent(out)           :: rc                             ! return code
 
-    real*8,           intent(out)           :: ROT(km,nobs,nch)               ! rayleigh optical thickness
     real*8,           intent(out)           :: BR(nobs,nch)                   ! bidirectional reflectance 
     real*8,           intent(out)           :: BR_Q(nobs,nch)                 ! bidirectional reflectance Q 
     real*8,           intent(out)           :: BR_U(nobs,nch)                 ! bidirectional reflectance U
@@ -714,7 +719,8 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
                                reshape(param(:,i,j),(/nparam/)),&
                                scalar,rc)
 
-        SCAT%wavelength = channels(i)        
+        SCAT%wavelength = channels(i) 
+        SCAT%rot => rot(:,j,i)       
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
@@ -736,7 +742,6 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
           BR(j,i)    = -500
           BR_Q(j,i)    = -500
           BR_U(j,i)    = -500
-          ROT(:,j,i) = -500
           Q(j,i)     = -500
           U(j,i)     = -500
           cycle
@@ -744,7 +749,6 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nMom, &
 
         call VLIDORT_Run_Vector_Cloud (SCAT, output, ier)
 
-        ROT(:,j,i) = SCAT%rot
         if (SCAT%DO_BOA) then
           radiance_VL_SURF(j,i)    = output%BOA_radiance
           reflectance_VL_SURF(j,i) = output%BOA_reflectance

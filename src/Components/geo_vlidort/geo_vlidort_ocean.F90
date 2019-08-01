@@ -26,6 +26,7 @@ program geo_vlidort
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_cx              ! Module to run VLIDORT with MODIS BRDF surface supplement
+  use vlidort_rot                  ! Module to calculate Rayleigh  
   use Chem_MieMod
   use mp_netcdf_Mod
   use netcdf_Mod
@@ -490,6 +491,12 @@ program geo_vlidort
     write(msg,'(A,I)') 'calc_qm ', myid
     call write_verbose(msg)  
 
+!   Rayleigh Optical Thickness
+!   --------------------------
+    call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(pe), dble(ze), dble(te), &
+                                   dble(MISSING),verbose, &
+                                   ROT, ierr )  
+
 
 !   Aerosol Optical Properties
 !   --------------------------
@@ -505,6 +512,9 @@ program geo_vlidort
     TAU_(c,:,:) = tau(:,:,nobs)
     SSA_(c,:,:) = ssa(:,:,nobs)
     G_(c,:,:)   = g(:,:,nobs)
+    do ch=1,nch      
+        ROT_(c,:,ch) = ROT(:,nobs,ch)        
+    end do
 
     write(msg,*) 'getAOP ', myid
     call write_verbose(msg)
@@ -519,14 +529,14 @@ program geo_vlidort
         if (vlidort) then
           ! Call to vlidort scalar code       
           call VLIDORT_Scalar_GissCX (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+                  nPol, ROT, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
                   (/dble(U10M(c))/), &
                   (/dble(V10M(c))/), &
                   dble(mr), &
                   (/dble(SZA(c))/), &
                   (/dble(abs(RAA(c)))/), &
                   (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr)
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, albedo, ierr)
         end if
       else
         ! Call to vlidort vector code
@@ -538,7 +548,7 @@ program geo_vlidort
                (/dble(SZA(c))/), &
                (/dble(abs(RAA(c)))/), &
                (/dble(VZA(c))/), &
-               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, Q, U, albedo, ierr)
+               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q, U, albedo, ierr)
       end if
 
     end if          
@@ -554,10 +564,6 @@ program geo_vlidort
       ALBEDO_U(c,:)      = albedo(3,nobs,:)
     end if
     WIND_SPEED(c)      = SQRT(dble(U10M(c)*U10M(c)) + dble(V10M(c)*V10M(c)))
-
-    do ch=1,nch      
-        ROT_(c,:,ch) = ROT(:,nobs,ch)        
-    end do
 
     if (.not. scalar) then
       Q_(c,:)      = Q(nobs,:)

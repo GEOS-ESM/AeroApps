@@ -21,9 +21,9 @@ module VLIDORT_BRDF_MODIS_BPDF
   end function IS_MISSING
 
   subroutine VLIDORT_Vector_LandMODIS_BPDF (km, nch, nobs, channels, nMom,  &
-                     nPol,tau, ssa, pmom, pe, he, te, kernel_wt, RTLSparam, BPDFparam, &
+                     nPol, ROT, tau, ssa, pmom, pe, he, te, kernel_wt, RTLSparam, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, BR_Q, BR_U, rc, DO_BOA)
+                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc, DO_BOA)
   !
   ! Place holder.
   !
@@ -46,6 +46,9 @@ module VLIDORT_BRDF_MODIS_BPDF
     integer, target,  intent(in)            :: nPol  ! number of scattering matrix components                               
                     
     real*8, target,   intent(in)            :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -77,7 +80,6 @@ module VLIDORT_BRDF_MODIS_BPDF
     real*8,           intent(out)           :: reflectance_VL_SURF(nobs, nch) ! TOA reflectance from VLIDORT using surface module
     integer,          intent(out)           :: rc                             ! return code
 
-    real*8,           intent(out)           :: ROT(km,nobs,nch)               ! rayleigh optical thickness
     real*8,           intent(out)           :: BR(nobs,nch)                   ! bidirectional reflectance 
     real*8,           intent(out)           :: BR_Q(nobs,nch)                   ! bidirectional reflectance 
     real*8,           intent(out)           :: BR_U(nobs,nch)                   ! bidirectional reflectance 
@@ -166,7 +168,8 @@ module VLIDORT_BRDF_MODIS_BPDF
                                reshape(RTLSparam(:,i,j),(/nparam/)),reshape(BPDFparam(:,i,j),(/nparam_bpdf/)),&
                                scalar,rc)
 
-        SCAT%wavelength = channels(i)        
+        SCAT%wavelength = channels(i)
+        SCAT%rot => ROT(:,j,i)        
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
@@ -182,7 +185,6 @@ module VLIDORT_BRDF_MODIS_BPDF
           BR(j,i)    = -500
           BR_Q(j,i)  = -500
           BR_U(j,i)  = -500
-          ROT(:,j,i) = -500
           Q(j,i)     = -500
           U(j,i)     = -500
           cycle
@@ -190,7 +192,6 @@ module VLIDORT_BRDF_MODIS_BPDF
 
         call VLIDORT_Run_Vector (SCAT, output, ier)
 
-        ROT(:,j,i) = SCAT%rot
         if (SCAT%DO_BOA) then
           radiance_VL_SURF(j,i)    = output%BOA_radiance
           reflectance_VL_SURF(j,i) = output%BOA_reflectance
@@ -222,10 +223,10 @@ module VLIDORT_BRDF_MODIS_BPDF
   end subroutine VLIDORT_Vector_LandMODIS_BPDF
 
   subroutine VLIDORT_Vector_LandMODIS_BPDF_Cloud (km, nch, nobs, channels, nMom,  &
-                     nPol,tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+                     nPol, ROT, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                      pe, he, te, kernel_wt, RTLSparam, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, BR_Q, BR_U, rc, DO_BOA)
+                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc, DO_BOA)
   !
   ! Place holder.
   !
@@ -248,6 +249,9 @@ module VLIDORT_BRDF_MODIS_BPDF
     integer, target,  intent(in)            :: nPol  ! number of scattering matrix components                               
                     
     real*8, target,   intent(in)            :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -287,7 +291,6 @@ module VLIDORT_BRDF_MODIS_BPDF
     real*8,           intent(out)           :: reflectance_VL_SURF(nobs, nch) ! TOA reflectance from VLIDORT using surface module
     integer,          intent(out)           :: rc                             ! return code
 
-    real*8,           intent(out)           :: ROT(km,nobs,nch)               ! rayleigh optical thickness
     real*8,           intent(out)           :: BR(nobs,nch)                   ! bidirectional reflectance
     real*8,           intent(out)           :: BR_Q(nobs,nch)                 ! bidirectional reflectance Q 
     real*8,           intent(out)           :: BR_U(nobs,nch)                 ! bidirectional reflectance U     
@@ -376,7 +379,8 @@ module VLIDORT_BRDF_MODIS_BPDF
                                reshape(RTLSparam(:,i,j),(/nparam/)),reshape(BPDFparam(:,i,j),(/nparam_bpdf/)),&
                                scalar,rc)
 
-        SCAT%wavelength = channels(i)        
+        SCAT%wavelength = channels(i) 
+        SCAT%rot => ROT(:,j,i)       
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
@@ -392,7 +396,6 @@ module VLIDORT_BRDF_MODIS_BPDF
           BR(j,i)    = -500
           BR_Q(j,i)    = -500
           BR_U(j,i)    = -500
-          ROT(:,j,i) = -500
           Q(j,i)     = -500
           U(j,i)     = -500
           cycle
@@ -400,7 +403,6 @@ module VLIDORT_BRDF_MODIS_BPDF
 
         call VLIDORT_Run_Vector (SCAT, output, ier)
 
-        ROT(:,j,i) = SCAT%rot
         if (SCAT%DO_BOA) then
           radiance_VL_SURF(j,i)    = output%BOA_radiance
           reflectance_VL_SURF(j,i) = output%BOA_reflectance
@@ -432,9 +434,9 @@ module VLIDORT_BRDF_MODIS_BPDF
   end subroutine VLIDORT_Vector_LandMODIS_BPDF_cloud
 
   subroutine VLIDORT_Vector_BPDF (km, nch, nobs, channels, nMom,  &
-                     nPol,tau, ssa, pmom, pe, he, te, BPDFparam, &
+                     nPol, ROT, tau, ssa, pmom, pe, he, te, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, ROT, BR, Q, U, BR_Q, BR_U, rc, DO_BOA)
+                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc, DO_BOA)
   !
   ! Place holder.
   !
@@ -455,6 +457,9 @@ module VLIDORT_BRDF_MODIS_BPDF
     integer, target,  intent(in)            :: nPol  ! number of scattering matrix components                               
                     
     real*8, target,   intent(in)            :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -482,7 +487,6 @@ module VLIDORT_BRDF_MODIS_BPDF
     real*8,           intent(out)           :: reflectance_VL_SURF(nobs, nch) ! TOA reflectance from VLIDORT using surface module
     integer,          intent(out)           :: rc                             ! return code
 
-    real*8,           intent(out)           :: ROT(km,nobs,nch)               ! rayleigh optical thickness
     real*8,           intent(out)           :: BR(nobs,nch)                   ! bidirectional reflectance 
     real*8,           intent(out)           :: BR_Q(nobs,nch)                   ! bidirectional reflectance 
     real*8,           intent(out)           :: BR_U(nobs,nch)                   ! bidirectional reflectance 
@@ -554,7 +558,8 @@ module VLIDORT_BRDF_MODIS_BPDF
                                reshape(BPDFparam(:,i,j),(/nparam/)),&
                                scalar,rc)
 
-        SCAT%wavelength = channels(i)        
+        SCAT%wavelength = channels(i)   
+        SCAT%rot => ROT(:,j,i)     
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
@@ -570,7 +575,6 @@ module VLIDORT_BRDF_MODIS_BPDF
           BR(j,i)    = -500
           BR_Q(j,i)  = -500
           BR_U(j,i)  = -500
-          ROT(:,j,i) = -500
           Q(j,i)     = -500
           U(j,i)     = -500
           cycle
@@ -578,7 +582,6 @@ module VLIDORT_BRDF_MODIS_BPDF
 
         call VLIDORT_Run_Vector (SCAT, output, ier)
 
-        ROT(:,j,i) = SCAT%rot
         if (SCAT%DO_BOA) then
           radiance_VL_SURF(j,i)    = output%BOA_radiance
           reflectance_VL_SURF(j,i) = output%BOA_reflectance

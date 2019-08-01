@@ -153,7 +153,7 @@ program leo_vlidort_cloud
   real*8, allocatable                   :: reflectance_VL_int(:,:)                ! TOA reflectance from VLIDORT  
   real*8, allocatable                   :: Q_int(:,:)                             ! Q Stokes component
   real*8, allocatable                   :: U_int(:,:)                             ! U Stokes component
-  real*8, allocatable                   :: ROT_int(:,:,:)                         ! rayleigh optical thickness
+  real*8, allocatable                   :: ROT(:,:,:)                             ! rayleigh optical thickness
   real*8, allocatable                   :: BR_Q_int(:,:)                          ! surface albedo Q
   real*8, allocatable                   :: BR_U_int(:,:)                          ! surface albedo U
 
@@ -164,7 +164,7 @@ program leo_vlidort_cloud
   real*8, pointer                       :: reflectance_VL(:,:) => null()          ! TOA reflectance from VLIDORT
   real*8, pointer                       :: Q(:,:) => null()                      ! Q Stokes component
   real*8, pointer                       :: U(:,:) => null()                      ! U Stokes component
-  real*8, pointer                       :: ROT(:,:,:) => null()                  ! rayleigh optical thickness
+  real*8, pointer                       :: ROD(:,:) => null()                    ! rayleigh optical depth
   real*8, pointer                       :: ALBEDO(:,:) => null()                 ! bi-directional surface reflectance
   real*8, pointer                       :: BR_Q(:,:) => null()                   ! bi-directional surface reflectance Q
   real*8, pointer                       :: BR_U(:,:) => null()                   ! bi-directional surface reflectance U
@@ -538,9 +538,10 @@ program leo_vlidort_cloud
 
 !   Rayleigh Optical Thickness
 !   --------------------------
-    call VLIDORT_ROT_CALC (km, nch, nobs, channels, Vpe, Vhe, Vte, &
-                                   MISSING,verbose, &
+    call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(Vpe), dble(Vze), dble(Vte), &
+                                   dble(MISSING),verbose, &
                                    ROT, ierr )  
+
 
 !   Aerosol Optical Properties
 !   --------------------------
@@ -559,10 +560,15 @@ program leo_vlidort_cloud
 
 !   Save some variables on the 2D Grid for Writing Later
 !   ------------------------
+    ! Rayleigh
+    ROD(i,j) = SUM(ROT(:,nobs,nch))
+
+    ! Aerosols
     TAU(i,j) = SUM(Vtau(:,nch,nobs))
     SSA(i,j) = SUM(Vssa(:,nch,nobs)*Vtau(:,nch,nobs))
     G(i,j)   = SUM(Vg(:,nch,nobs)*Vtau(:,nch,nobs))
 
+    ! Clouds
     LTAU(i,j) = SUM(VtauLcl(:,nch,nobs))
     LSSA(i,j) = SUM(VssaLcl(:,nch,nobs)*VtauLcl(:,nch,nobs))
     LG(i,j)   = SUM(VgLcl(:,nch,nobs)*VtauLcl(:,nch,nobs))
@@ -615,7 +621,6 @@ program leo_vlidort_cloud
     call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
     radiance_VL(i,j)    = radiance_VL_int(nobs,nch)
     reflectance_VL(i,j) = reflectance_VL_int(nobs,nch)
-    ROT(i,j,:) = ROT_int(:,nobs,nch)
     ALBEDO(i,j) = Valbedo(nobs,nch)
     
     if (.not. scalar) then
@@ -798,11 +803,9 @@ program leo_vlidort_cloud
 
     call check( nf90_open(ADD_file, IOR(nf90_write, nf90_mpiio), ncid,comm = MPI_COMM_WORLD, info = MPI_INFO_NULL), "opening file " // ADD_file )
     write(msg,'(F10.2)') channels(nch)
-    do k=1,km 
-      call check(nf90_inq_varid(ncid, 'rot_' // trim(adjustl(msg)), varid), "get rot vaird")
-      call check(nf90_put_var(ncid, varid, ROT(:,startl:endl,k), &
-                start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out rot")
-    end do
+    call check(nf90_inq_varid(ncid, 'rod_' // trim(adjustl(msg)), varid), "get rod vaird")
+    call check(nf90_put_var(ncid, varid, ROD(:,startl:endl), &
+              start = (/1,startl,nobs/), count = (/im,countl,nobs/)), "writing out rod")
 
     call check( nf90_close(ncid), "close addfile" )
     if (MAPL_am_I_root()) then
@@ -1002,7 +1005,7 @@ program leo_vlidort_cloud
         if (scalar) then
           ! Call to vlidort scalar code       
           call VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                  nPol, ROT, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
                   dble(Vpe), dble(Vze), dble(Vte), &
@@ -1012,11 +1015,11 @@ program leo_vlidort_cloud
                   (/dble(SZA(i,j))/), &
                   (/dble(abs(RAA(i,j)))/), &
                   (/dble(VZA(i,j))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr)
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
         else
           ! Call to vlidort vector code
           call VLIDORT_Vector_GissCX_Cloud (km, nch, nobs ,dble(channels), nMom,   &
-                 nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                 nPol, ROT, dble(Vtau), dble(Vssa), dble(Vpmom), &
                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
                  dble(Vpe), dble(Vze), dble(Vte), &
@@ -1027,7 +1030,7 @@ program leo_vlidort_cloud
                  (/dble(abs(RAA(i,j)))/), &
                  (/dble(VZA(i,j))/), &
                  dble(MISSING),verbose, &
-                 radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
+                 radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
         end if
       else if  ( do_cx_sleave ) then
       ! GISS Cox Munk Model with NOBM Water Leaving Reflectance
@@ -1035,7 +1038,7 @@ program leo_vlidort_cloud
         if (scalar) then
           ! Call to vlidort scalar code       
           call VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                  nPol, ROT, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
                   dble(Vpe), dble(Vze), dble(Vte), &
@@ -1046,11 +1049,11 @@ program leo_vlidort_cloud
                   (/dble(SZA(i,j))/), &
                   (/dble(abs(RAA(i,j)))/), &
                   (/dble(VZA(i,j))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr)
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
         else
           ! Call to vlidort vector code
           call VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nMom,   &
-                 nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                 nPol, ROT, dble(Vtau), dble(Vssa), dble(Vpmom), &
                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
                  dble(Vpe), dble(Vze), dble(Vte), &
@@ -1062,7 +1065,7 @@ program leo_vlidort_cloud
                  (/dble(abs(RAA(i,j)))/), &
                  (/dble(VZA(i,j))/), &
                  dble(MISSING),verbose, &
-                 radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
+                 radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
         end if
       else
 !       Save code for pixels that were not gap filled
@@ -1070,7 +1073,6 @@ program leo_vlidort_cloud
         radiance_VL_int(nobs,:) = -500
         reflectance_VL_int(nobs,:) = -500
         Valbedo = -500
-        ROT_int = -500
         if (.not. scalar) then
           Q_int = -500
           U_int = -500
@@ -1184,25 +1186,25 @@ program leo_vlidort_cloud
       if (scalar) then
           ! Call to vlidort scalar code       
           call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
+                  nPol, ROT, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
                   dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                   (/dble(SZA(i,j))/), &
                   (/dble(abs(RAA(i,j)))/), &
                   (/dble(VZA(i,j))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, ierr)
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
       else
         ! Call to vlidort vector code
         call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,   &
-               nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+               nPol, ROT, dble(Vtau), dble(Vssa), dble(Vpmom), &
                dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                (/dble(SZA(i,j))/), &
                (/dble(abs(RAA(i,j)))/), &
                (/dble(VZA(i,j))/), &
-               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, ierr)
+               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q_int, U_int, ierr)
         BR_Q_int = 0
         BR_U_int = 0
       end if
@@ -1214,7 +1216,6 @@ program leo_vlidort_cloud
         radiance_VL_int(nobs,:) = -500
         reflectance_VL_int(nobs,:) = -500
         Valbedo = -500
-        ROT_int = -500
         if (.not. scalar) then
           Q_int = -500
           U_int = -500
@@ -1228,7 +1229,7 @@ program leo_vlidort_cloud
         if (scalar) then 
             ! Call to vlidort scalar code            
             call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
-                    nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                    nPol, ROT, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                     dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
                     dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
                     dble(Vpe), dble(Vze), dble(Vte), &
@@ -1236,11 +1237,11 @@ program leo_vlidort_cloud
                     (/dble(SZA(i,j))/), &
                     (/dble(abs(RAA(i,j)))/), &
                     (/dble(VZA(i,j))/), &
-                    dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr )  
+                    dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
         else
           ! Call to vlidort vector code
           call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nMom, &
-                  nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                  nPol, ROT, dble(Vtau), dble(Vssa), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                   dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
                   dble(Vpe), dble(Vze), dble(Vte), &
@@ -1249,7 +1250,7 @@ program leo_vlidort_cloud
                   (/dble(abs(RAA(i,j)))/), &
                   (/dble(VZA(i,j))/), &
                   dble(MISSING),verbose, &
-                  radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
+                  radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
         end if    
       end if
 
@@ -1260,7 +1261,6 @@ program leo_vlidort_cloud
         radiance_VL_int(nobs,:) = -500
         reflectance_VL_int(nobs,:) = -500
         Valbedo = -500
-        ROT_int = -500
         if (.not. scalar) then
           Q_int = -500
           U_int = -500
@@ -1273,7 +1273,7 @@ program leo_vlidort_cloud
 
         ! Call to vlidort vector code
         call VLIDORT_Vector_LandMODIS_BPDF_cloud (km, nch, nobs, dble(channels), nMom, &
-                nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                nPol, ROT, dble(Vtau), dble(Vssa), dble(Vpmom), &
                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
                 dble(Vpe), dble(Vze), dble(Vte), &
@@ -1282,7 +1282,7 @@ program leo_vlidort_cloud
                 (/dble(abs(RAA(i,j)))/), &
                 (/dble(VZA(i,j))/), &
                 dble(MISSING),verbose, &
-                radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
+                radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
       end if
 
     end if   
@@ -1945,7 +1945,7 @@ program leo_vlidort_cloud
     call MAPL_AllocNodeArray(ISSA,(/im,jm/),rc=ierr)
     call MAPL_AllocNodeArray(IG,(/im,jm/),rc=ierr)
 
-    call MAPL_AllocNodeArray(ROT,(/im,jm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(ROD,(/im,jm/),rc=ierr)
     call MAPL_AllocNodeArray(ALBEDO,(/im,jm/),rc=ierr)
     call MAPL_AllocNodeArray(PE,(/im,jm,km+1/),rc=ierr)
     call MAPL_AllocNodeArray(ZE,(/im,jm,km+1/),rc=ierr)
@@ -2017,7 +2017,7 @@ program leo_vlidort_cloud
       allocate (Vsleave(nch,nobs))
     end if
 
-    allocate (ROT_int(km,nobs,nch))
+    allocate (ROT(km,nobs,nch))
     allocate (Vpmom(km,nch,nobs,nMom,nPol))
     allocate (VpmomLcl(km,nch,nobs,nMom,nPol))
     allocate (VpmomIcl(km,nch,nobs,nMom,nPol))
@@ -2110,7 +2110,7 @@ program leo_vlidort_cloud
 
     integer,dimension(nch)             :: radVarID, refVarID, aotVarID   
     integer,dimension(nch)             :: qVarID, uVarID, albVarID, brUVarID, brQVarID      
-    integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID, rotVarID
+    integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID
     integer,dimension(nch)             :: LssaVarID, LtauVarID, LgVarID
     integer,dimension(nch)             :: IssaVarID, ItauVarID, IgVarID
     integer                            :: peVarID, zeVarID, teVarID     
@@ -2781,7 +2781,7 @@ program leo_vlidort_cloud
   subroutine create_addfile(date, time)
     character(len=*) ,intent(in)       :: date, time
 
-    integer,dimension(nch)             :: rotVarID
+    integer,dimension(nch)             :: rodVarID
     integer                            :: peVarID, zeVarID, teVarID     
     
     integer                            :: ncid
@@ -2865,19 +2865,19 @@ program leo_vlidort_cloud
   !                                     ----
       do ch=1,nch
         write(comment,'(F10.2)') channels(ch)
-        call check(nf90_def_var(ncid, 'rot_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),rotVarID(ch)),"create rot var")
+        call check(nf90_def_var(ncid, 'rod_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),rodVarID(ch)),"create rod var")
       end do
       ! Variable Attributes
   !                                          Additional Data
   !                                          -----------------  
       do ch=1,size(channels)
-        write(comment,'(F10.2,A)') channels(ch), ' nm ROT'
-        call check(nf90_put_att(ncid,rotVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm layer Rayliegh Optical Thickness'
-        call check(nf90_put_att(ncid,rotVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-        call check(nf90_put_att(ncid,rotVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-        call check(nf90_put_att(ncid,rotVarID(ch),'units','none'),"units attr")
-        call check(nf90_put_att(ncid,rotVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm ROD'
+        call check(nf90_put_att(ncid,rodVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm column Rayliegh Optical Depth'
+        call check(nf90_put_att(ncid,rodVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,rodVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,rodVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,rodVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
       end do
 
