@@ -33,6 +33,7 @@ program leo_vlidort_cloud
   use vlidort_brdf_modis_bpdf      ! Module to run VLIDORT with MODIS BRDF+BPDF surface supplement  
   use vlidort_lambert              ! Module to run VLIDORT with lambertian surface  
   use vlidort_brdf_cx              ! Module to run VLIDORT with cox munk surface
+  use vlidort_rot                  ! Module to calculate Rayleigh
   use Chem_MieMod
   use mp_netcdf_Mod
   use netcdf_Mod
