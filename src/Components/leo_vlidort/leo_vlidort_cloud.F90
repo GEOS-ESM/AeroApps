@@ -59,6 +59,7 @@ program leo_vlidort_cloud
   integer                               :: landbandmBRDF, landbandmLER              ! number of wavelength bands or channels in surface reflectance data file
   real, allocatable                     :: landband_cBRDF(:), landband_cLER(:)      ! modis band center wavelength
   logical                               :: scalar
+  integer                               :: nstreams               ! number of half space streams, default = 6
   real, allocatable                     :: channels(:)            ! channels to simulate
   real, allocatable                     :: mr(:)                  ! water real refractive index    
   integer                               :: nch                    ! number of channels  
@@ -154,6 +155,7 @@ program leo_vlidort_cloud
   real*8, allocatable                   :: Q_int(:,:)                             ! Q Stokes component
   real*8, allocatable                   :: U_int(:,:)                             ! U Stokes component
   real*8, allocatable                   :: ROT(:,:,:)                             ! rayleigh optical thickness
+  real*8, allocatable                   :: depol(:)                               ! rayleigh depolarization ratio
   real*8, allocatable                   :: BR_Q_int(:,:)                          ! surface albedo Q
   real*8, allocatable                   :: BR_U_int(:,:)                          ! surface albedo U
 
@@ -540,7 +542,7 @@ program leo_vlidort_cloud
 !   --------------------------
     call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(Vpe), dble(Vze), dble(Vte), &
                                    dble(MISSING),verbose, &
-                                   ROT, ierr )  
+                                   ROT, depol, ierr )  
 
 
 !   Aerosol Optical Properties
@@ -1004,8 +1006,8 @@ program leo_vlidort_cloud
       ! -------------------------------
         if (scalar) then
           ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, ROT, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+          call VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, nMom,      &
+                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
                   dble(Vpe), dble(Vze), dble(Vte), &
@@ -1018,8 +1020,8 @@ program leo_vlidort_cloud
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
         else
           ! Call to vlidort vector code
-          call VLIDORT_Vector_GissCX_Cloud (km, nch, nobs ,dble(channels), nMom,   &
-                 nPol, ROT, dble(Vtau), dble(Vssa), dble(Vpmom), &
+          call VLIDORT_Vector_GissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, nMom,   &
+                 nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
                  dble(Vpe), dble(Vze), dble(Vte), &
@@ -1037,8 +1039,8 @@ program leo_vlidort_cloud
       ! ----------------------------------------------------------
         if (scalar) then
           ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, ROT, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+          call VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, nMom,      &
+                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
                   dble(Vpe), dble(Vze), dble(Vte), &
@@ -1052,8 +1054,8 @@ program leo_vlidort_cloud
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
         else
           ! Call to vlidort vector code
-          call VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nMom,   &
-                 nPol, ROT, dble(Vtau), dble(Vssa), dble(Vpmom), &
+          call VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, nMom,   &
+                 nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
                  dble(Vpe), dble(Vze), dble(Vte), &
@@ -1185,8 +1187,8 @@ program leo_vlidort_cloud
     ! -------------------------------
       if (scalar) then
           ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, ROT, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
+          call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, nMom,      &
+                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
                   dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
@@ -1196,8 +1198,8 @@ program leo_vlidort_cloud
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
       else
         ! Call to vlidort vector code
-        call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,   &
-               nPol, ROT, dble(Vtau), dble(Vssa), dble(Vpmom), &
+        call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, nMom,   &
+               nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
@@ -1228,8 +1230,8 @@ program leo_vlidort_cloud
 
         if (scalar) then 
             ! Call to vlidort scalar code            
-            call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
-                    nPol, ROT, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+            call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nstreams, nMom,  &
+                    nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                     dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
                     dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
                     dble(Vpe), dble(Vze), dble(Vte), &
@@ -1240,8 +1242,8 @@ program leo_vlidort_cloud
                     dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
         else
           ! Call to vlidort vector code
-          call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nMom, &
-                  nPol, ROT, dble(Vtau), dble(Vssa), dble(Vpmom), &
+          call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nstreams, nMom, &
+                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                   dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
                   dble(Vpe), dble(Vze), dble(Vte), &
@@ -1272,8 +1274,8 @@ program leo_vlidort_cloud
 !       ------------------------------
 
         ! Call to vlidort vector code
-        call VLIDORT_Vector_LandMODIS_BPDF_cloud (km, nch, nobs, dble(channels), nMom, &
-                nPol, ROT, dble(Vtau), dble(Vssa), dble(Vpmom), &
+        call VLIDORT_Vector_LandMODIS_BPDF_cloud (km, nch, nobs, dble(channels), nstreams, nMom, &
+                nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
                 dble(Vpe), dble(Vze), dble(Vte), &
@@ -2018,6 +2020,7 @@ program leo_vlidort_cloud
     end if
 
     allocate (ROT(km,nobs,nch))
+    allocate (depol(nch))
     allocate (Vpmom(km,nch,nobs,nMom,nPol))
     allocate (VpmomLcl(km,nch,nobs,nMom,nPol))
     allocate (VpmomIcl(km,nch,nobs,nMom,nPol))
@@ -3047,6 +3050,7 @@ program leo_vlidort_cloud
     call ESMF_ConfigGetAttribute(cf, time, label = 'TIME:',__RC__)
     call ESMF_ConfigGetAttribute(cf, instname, label = 'INSTNAME:',__RC__)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
+    call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=6)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, additional_output, label = 'ADDITIONAL_OUTPUT:',default=.false.)

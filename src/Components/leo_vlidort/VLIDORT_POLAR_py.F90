@@ -7,7 +7,7 @@
 !.............................................................................
 
 subroutine ROT_CALC(km, nch, nobs, channels, pe, he, te, &
-                     MISSING,verbose, ROT, rc)
+                     MISSING,verbose, ROT, depol, rc)
 
     use VLIDORT_ROT, only: VLIDORT_ROT_CALC
     implicit None
@@ -31,18 +31,19 @@ subroutine ROT_CALC(km, nch, nobs, channels, pe, he, te, &
     integer,          intent(out)           :: rc                             ! return code
 
     real*8,           intent(out)           :: ROT(km,nobs,nch)               ! rayleigh optical thickness
+    real*8,           intent(out)           :: depol(nch)                     ! rayleigh depolarization ratio
 
     call VLIDORT_ROT_CALC (km, nch, nobs, channels, pe, he, te, &
                                    MISSING,verbose, &
-                                   ROT, rc )  
+                                   ROT, depol, rc )  
 
 
 end subroutine ROT_CALC
 
 
 
-subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nMom, nPol,nkernel,nparam, &
-                     ROT, tau, ssa, pmom, pe, he, te, kernel_wt, param, &
+subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nstreams, nMom, nPol,nkernel,nparam, &
+                     ROT, depol, tau, ssa, pmom, pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc)
 
@@ -57,6 +58,7 @@ subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nMom, nPol,nkernel,nparam,
 
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)            :: nstreams  ! number of half space streams
 
     integer,          intent(in)            :: nkernel ! number of kernels
     integer,          intent(in)            :: nparam  ! number of kernel parameters
@@ -64,7 +66,8 @@ subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nMom, nPol,nkernel,nparam,
     real*8,           intent(in)            :: channels(nch)    ! wavelengths [nm]
 
   !                                                   ! --- Rayleigh Parameters ---
-    real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: depol(nch)       ! rayleigh depolarization ratio
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8,           intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -99,8 +102,8 @@ subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nMom, nPol,nkernel,nparam,
     real*8,           intent(out)           :: BR_U(nobs, nch)                ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_LandMODIS (km, nch, nobs, channels, nMom, &
-                                   nPol, ROT, tau, ssa, pmom, pe, he, te, &
+    call VLIDORT_Vector_LandMODIS (km, nch, nobs, channels, nstreams, nMom, &
+                                   nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
                                    kernel_wt, param, &
                                    solar_zenith, &
                                    relat_azymuth, &
@@ -114,8 +117,8 @@ subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nMom, nPol,nkernel,nparam,
 end subroutine VECTOR_BRDF_MODIS
 
 
-subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nMom, nPol,nkernel,nparam,nparam_bpdf, &
-                     ROT, tau, ssa, pmom, pe, he, te, kernel_wt, RTLSparam, BPDFparam, &
+subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol,nkernel,nparam,nparam_bpdf, &
+                     ROT, depol, tau, ssa, pmom, pe, he, te, kernel_wt, RTLSparam, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc)
 
@@ -131,6 +134,7 @@ subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nMom, nPol,nkernel,np
 
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)            :: nstreams  ! number of half space streams
 
     integer,          intent(in)            :: nkernel ! number of kernels
     integer,          intent(in)            :: nparam  ! number of kernel parameters
@@ -139,7 +143,8 @@ subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nMom, nPol,nkernel,np
     real*8,           intent(in)            :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
-    real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: depol(nch)       ! rayleigh depolarization ratio
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8,           intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -177,8 +182,8 @@ subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nMom, nPol,nkernel,np
     real*8,           intent(out)           :: BR_U(nobs, nch)                ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_LandMODIS_BPDF (km, nch, nobs, channels, nMom, &
-                                   nPol, ROT, tau, ssa, pmom, pe, he, te, &
+    call VLIDORT_Vector_LandMODIS_BPDF (km, nch, nobs, channels, nstreams, nMom, &
+                                   nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
                                    kernel_wt, RTLSparam, BPDFparam, &
                                    solar_zenith, &
                                    relat_azymuth, &
@@ -191,8 +196,8 @@ subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nMom, nPol,nkernel,np
 
 end subroutine VECTOR_BRDF_MODIS_BPDF
 
-subroutine VECTOR_BPDF(km, nch, nobs, channels, nMom, nPol,nparam, &
-                     ROT, tau, ssa, pmom, pe, he, te, BPDFparam, &
+subroutine VECTOR_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol,nparam, &
+                     ROT, depol, tau, ssa, pmom, pe, he, te, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc)
 
@@ -208,13 +213,15 @@ subroutine VECTOR_BPDF(km, nch, nobs, channels, nMom, nPol,nparam, &
 
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)            :: nstreams  ! number of half space streams
 
     integer,          intent(in)            :: nparam  ! number of kernel parameters
                     
     real*8,           intent(in)            :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
-    real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: depol(nch)       ! rayleigh depolarization ratio
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8,           intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -248,8 +255,8 @@ subroutine VECTOR_BPDF(km, nch, nobs, channels, nMom, nPol,nparam, &
     real*8,           intent(out)           :: BR_U(nobs, nch)                ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_BPDF (km, nch, nobs, channels, nMom, &
-                                   nPol, ROT, tau, ssa, pmom, pe, he, te, &
+    call VLIDORT_Vector_BPDF (km, nch, nobs, channels, nstreams, nMom, &
+                                   nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
                                    BPDFparam, &
                                    solar_zenith, &
                                    relat_azymuth, &
@@ -263,8 +270,8 @@ subroutine VECTOR_BPDF(km, nch, nobs, channels, nMom, nPol,nparam, &
 end subroutine VECTOR_BPDF
 
 
-subroutine VECTOR_LAMBERT(km, nch, nobs, channels, nMom, nPol, &
-                     ROT, tau, ssa, pmom, pe, he, te, albedo, &
+subroutine VECTOR_LAMBERT(km, nch, nobs, channels, nstreams, nMom, nPol, &
+                     ROT, depol, tau, ssa, pmom, pe, he, te, albedo, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, Q, U, rc)
 
@@ -279,11 +286,14 @@ subroutine VECTOR_LAMBERT(km, nch, nobs, channels, nMom, nPol, &
 
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)            :: nstreams  ! number of half space streams
                     
     real*8,           intent(in)            :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
-    real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: depol(nch)       ! rayleigh depolarization ratio
+
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8,           intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -312,8 +322,8 @@ subroutine VECTOR_LAMBERT(km, nch, nobs, channels, nMom, nPol, &
     real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_Lambert (km, nch, nobs, channels, nMom, &
-                                   nPol, ROT, tau, ssa, pmom, pe, he, te, &
+    call VLIDORT_Vector_Lambert (km, nch, nobs, channels, nstreams, nMom, &
+                                   nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
                                    albedo, &
                                    solar_zenith, &
                                    relat_azymuth, &
@@ -326,8 +336,8 @@ subroutine VECTOR_LAMBERT(km, nch, nobs, channels, nMom, nPol, &
 
 end subroutine VECTOR_LAMBERT
 
-subroutine VECTOR_LAMBERT_BPDF(km, nch, nobs, channels, nMom, nPol, nparam, &
-                     ROT, tau, ssa, pmom, pe, he, te, albedo, BPDFparam, &
+subroutine VECTOR_LAMBERT_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol, nparam, &
+                     ROT, depol, tau, ssa, pmom, pe, he, te, albedo, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc)
 
@@ -342,13 +352,16 @@ subroutine VECTOR_LAMBERT_BPDF(km, nch, nobs, channels, nMom, nPol, nparam, &
 
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)            :: nstreams  ! number of half space streams
 
     integer,          intent(in)            :: nparam  ! number of kernel parameters
                      
     real*8,           intent(in)            :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
-    real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: depol(nch)       ! rayleigh depolarization ratio
+
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8,           intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -384,8 +397,8 @@ subroutine VECTOR_LAMBERT_BPDF(km, nch, nobs, channels, nMom, nPol, nparam, &
     real*8,           intent(out)           :: BR_U(nobs, nch)                ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_Lambert_BPDF (km, nch, nobs, channels, nMom, &
-                                   nPol, ROT, tau, ssa, pmom, pe, he, te, &
+    call VLIDORT_Vector_Lambert_BPDF (km, nch, nobs, channels, nstreams, nMom, &
+                                   nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
                                    albedo, BPDFparam, &
                                    solar_zenith, &
                                    relat_azymuth, &
@@ -399,8 +412,8 @@ subroutine VECTOR_LAMBERT_BPDF(km, nch, nobs, channels, nMom, nPol, nparam, &
 end subroutine VECTOR_LAMBERT_BPDF
 
 
-subroutine SCALAR_LAMBERT(km, nch, nobs, channels, nMom, nPol, &
-                     ROT, tau, ssa, g, pmom, pe, he, te, albedo, &
+subroutine SCALAR_LAMBERT(km, nch, nobs, channels, nstreams, nMom, nPol, &
+                     ROT, depol, tau, ssa, g, pmom, pe, he, te, albedo, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, rc)
 
@@ -415,11 +428,14 @@ subroutine SCALAR_LAMBERT(km, nch, nobs, channels, nMom, nPol, &
 
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)            :: nstreams  ! number of half space streams
                     
     real*8,           intent(in)            :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
-    real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: depol(nch)       ! rayleigh depolarization ratio
+
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8,           intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -447,8 +463,8 @@ subroutine SCALAR_LAMBERT(km, nch, nobs, channels, nMom, nPol, &
 
 
 
-    call VLIDORT_Scalar_Lambert (km, nch, nobs, channels, nMom, &
-                                   nPol, ROT, tau, ssa, g, pmom, pe, he, te, &
+    call VLIDORT_Scalar_Lambert (km, nch, nobs, channels, nstreams, nMom, &
+                                   nPol, ROT, depol, tau, ssa, g, pmom, pe, he, te, &
                                    albedo, &
                                    solar_zenith, &
                                    relat_azymuth, &
@@ -461,8 +477,8 @@ subroutine SCALAR_LAMBERT(km, nch, nobs, channels, nMom, nPol, &
 
 end subroutine SCALAR_LAMBERT
 
-subroutine VECTOR_GissCX(km, nch, nobs, channels, nMom,  &
-                     nPol, ROT, tau, ssa, pmom, pe, he, te, U10m, V10m, &
+subroutine VECTOR_GissCX(km, nch, nobs, channels, nstreams, nMom,  &
+                     nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                      mr, solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, &
                      BR, Q, U, BR_Q, BR_U, rc)
@@ -478,11 +494,13 @@ subroutine VECTOR_GissCX(km, nch, nobs, channels, nMom,  &
 
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)            :: nstreams  ! number of half space streams
                     
     real*8,           intent(in)            :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
-    real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: depol(nch)       ! rayleigh depolarization ratio
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8,           intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -516,8 +534,8 @@ subroutine VECTOR_GissCX(km, nch, nobs, channels, nMom,  &
     real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_GissCX (km, nch, nobs, channels, nMom, &
-                                   nPol, ROT, tau, ssa, pmom, pe, he, te, &
+    call VLIDORT_Vector_GissCX (km, nch, nobs, channels, nstreams, nMom, &
+                                   nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
                                    U10m, V10m, mr, &
                                    solar_zenith, &
                                    relat_azymuth, &
@@ -530,8 +548,8 @@ subroutine VECTOR_GissCX(km, nch, nobs, channels, nMom,  &
 
 end subroutine VECTOR_GissCX
 
-subroutine VECTOR_CX(km, nch, nobs, channels, nMom,  &
-                     nPol, ROT, tau, ssa, pmom, pe, he, te, U10m, V10m, &
+subroutine VECTOR_CX(km, nch, nobs, channels, nstreams, nMom,  &
+                     nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                      mr, solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, &
                      BR, Q, U, BR_Q, BR_U, rc)
@@ -547,11 +565,13 @@ subroutine VECTOR_CX(km, nch, nobs, channels, nMom,  &
 
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)            :: nstreams  ! number of half space streams
                     
     real*8,           intent(in)            :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
-    real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8,           intent(in)            :: depol(nch)       ! rayleigh depolarization ratio
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8,           intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -585,8 +605,8 @@ subroutine VECTOR_CX(km, nch, nobs, channels, nMom,  &
     real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_CX (km, nch, nobs, channels, nMom, &
-                                   nPol, ROT, tau, ssa, pmom, pe, he, te, &
+    call VLIDORT_Vector_CX (km, nch, nobs, channels, nstreams, nMom, &
+                                   nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
                                    U10m, V10m, mr, &
                                    solar_zenith, &
                                    relat_azymuth, &
