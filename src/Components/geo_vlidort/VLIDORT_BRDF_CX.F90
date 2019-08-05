@@ -49,7 +49,7 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nstreams, nMom, &
 
   integer, target,  intent(in)  :: nMom             ! number of phase function moments    
   integer, target,  intent(in)  :: nPol  ! number of scattering matrix components   
-  integer           intent(in)  :: nstreams  ! number of half space streams                                
+  integer,          intent(in)  :: nstreams  ! number of half space streams                                
                                       
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
@@ -364,7 +364,7 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nstreams, nMom, &
 
 end subroutine VLIDORT_Vector_Cx
 
-subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nstreams, Mom, &
+subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nstreams, nMom, &
                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, sleave, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
