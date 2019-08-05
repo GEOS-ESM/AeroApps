@@ -20,7 +20,7 @@ module VLIDORT_BRDF_MODIS_BPDF
     return
   end function IS_MISSING
 
-  subroutine VLIDORT_Vector_LandMODIS_BPDF (km, nch, nobs, channels, nstreams, nMom,  &
+  subroutine VLIDORT_Vector_LandMODIS_BPDF (km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
                      nPol, ROT, depol, tau, ssa, pmom, pe, he, te, kernel_wt, RTLSparam, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc, DO_BOA)
@@ -41,6 +41,8 @@ module VLIDORT_BRDF_MODIS_BPDF
     integer,          intent(in)            :: km    ! number of vertical levels 
     integer,          intent(in)            :: nch   ! number of channels
     integer,          intent(in)            :: nobs  ! number of observations
+
+    logical,          intent(in)            :: plane_parallel ! do plane parallel flag
 
     integer, target,  intent(in)            :: nMom  ! number of phase function moments 
     integer, target,  intent(in)            :: nPol  ! number of scattering matrix components                               
@@ -102,6 +104,7 @@ module VLIDORT_BRDF_MODIS_BPDF
     ier = 0
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
     SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -225,7 +228,7 @@ module VLIDORT_BRDF_MODIS_BPDF
 
   end subroutine VLIDORT_Vector_LandMODIS_BPDF
 
-  subroutine VLIDORT_Vector_LandMODIS_BPDF_Cloud (km, nch, nobs, channels, nstreams, nMom,  &
+  subroutine VLIDORT_Vector_LandMODIS_BPDF_Cloud (km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
                      nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                      pe, he, te, kernel_wt, RTLSparam, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
@@ -247,6 +250,8 @@ module VLIDORT_BRDF_MODIS_BPDF
     integer,          intent(in)            :: km    ! number of vertical levels 
     integer,          intent(in)            :: nch   ! number of channels
     integer,          intent(in)            :: nobs  ! number of observations
+
+    logical,          intent(in)            :: plane_parallel ! do plane parallel flag
 
     integer, target,  intent(in)            :: nMom  ! number of phase function moments 
     integer, target,  intent(in)            :: nPol  ! number of scattering matrix components                               
@@ -316,6 +321,7 @@ module VLIDORT_BRDF_MODIS_BPDF
     ier = 0
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
     SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -439,7 +445,7 @@ module VLIDORT_BRDF_MODIS_BPDF
 
   end subroutine VLIDORT_Vector_LandMODIS_BPDF_cloud
 
-  subroutine VLIDORT_Vector_BPDF (km, nch, nobs, channels, nstreams, nMom,  &
+  subroutine VLIDORT_Vector_BPDF (km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
                      nPol, ROT, depol, tau, ssa, pmom, pe, he, te, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc, DO_BOA)
@@ -458,6 +464,8 @@ module VLIDORT_BRDF_MODIS_BPDF
     integer,          intent(in)            :: km    ! number of vertical levels 
     integer,          intent(in)            :: nch   ! number of channels
     integer,          intent(in)            :: nobs  ! number of observations
+
+    logical,          intent(in)            :: plane_parallel ! do plane parallel flag
 
     integer, target,  intent(in)            :: nMom  ! number of phase function moments 
     integer, target,  intent(in)            :: nPol  ! number of scattering matrix components                               
@@ -515,6 +523,7 @@ module VLIDORT_BRDF_MODIS_BPDF
     ier = 0
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
     SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 

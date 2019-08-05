@@ -49,6 +49,7 @@ program geo_vlidort_vnncLUTo
   character(len=256)                    :: instname, indir, outdir
   logical                               :: scalar
   integer                               :: nstreams               ! number of half space streams, default = 6  
+  logical                               :: plane_parallel  
   real, allocatable                     :: channels(:)            ! channels to simulate
   integer                               :: nch                    ! number of channels  
   real*8                                :: mr                     ! water real refractive index  
@@ -595,7 +596,7 @@ program geo_vlidort_vnncLUTo
               ! -------------------------------
               if (scalar) then
                 ! Call to vlidort scalar code       
-                call VLIDORT_Scalar_GissCX (km, nch, nobs ,dble(channels), nstreams, nMom,      &
+                call VLIDORT_Scalar_GissCX (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
                         nPol, ROT, depol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
                         reshape((/U10M(uwind)/),(/nobs/),pad=(/U10M(uwind)/)),&
                         reshape((/V10M(vwind)/),(/nobs/),pad=(/V10M(vwind)/)),&
@@ -606,7 +607,7 @@ program geo_vlidort_vnncLUTo
                         dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, brdf_cx_int, ierr)
               else              
                 ! Call to vlidort vector code
-                call VLIDORT_Vector_GissCX (km, nch, nobs ,dble(channels), nstreams, Mom,   &
+                call VLIDORT_Vector_GissCX (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
                           nPol, ROT, depol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), &
                           reshape((/U10M(uwind)/),(/nobs/),pad=(/U10M(uwind)/)),&
                           reshape((/V10M(vwind)/),(/nobs/),pad=(/V10M(vwind)/)),&
@@ -1898,6 +1899,7 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, indir, label = 'INDIR:',__RC__)
     call ESMF_ConfigGetAttribute(cf, outdir, label = 'OUTDIR:',default=indir)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
+    call ESMF_ConfigGetAttribute(cf, plane_parallel, label = 'PLANE_PARALLEL:',default=.FALSE.)
     call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=6)
     call ESMF_ConfigGetAttribute(cf, additional_output, label = 'ADDITIONAL_OUTPUT:',default=.false.)
     call ESMF_ConfigGetAttribute(cf, nodemax, label = 'NODEMAX:',default=1) 

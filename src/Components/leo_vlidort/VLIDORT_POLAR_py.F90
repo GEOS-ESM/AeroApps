@@ -42,7 +42,7 @@ end subroutine ROT_CALC
 
 
 
-subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nstreams, nMom, nPol,nkernel,nparam, &
+subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nstreams, plane_parallel, nMom, nPol,nkernel,nparam, &
                      ROT, depol, tau, ssa, pmom, pe, he, te, kernel_wt, param, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc)
@@ -55,6 +55,8 @@ subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nstreams, nMom, nPol,nkern
     integer,          intent(in)            :: km    ! number of vertical levels 
     integer,          intent(in)            :: nch   ! number of channels
     integer,          intent(in)            :: nobs  ! number of observations
+
+    logical,          intent(in)            :: plane_parallel ! do plane parallel flag
 
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
@@ -102,7 +104,7 @@ subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nstreams, nMom, nPol,nkern
     real*8,           intent(out)           :: BR_U(nobs, nch)                ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_LandMODIS (km, nch, nobs, channels, nstreams, nMom, &
+    call VLIDORT_Vector_LandMODIS (km, nch, nobs, channels, nstreams, plane_parallel, nMom, &
                                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
                                    kernel_wt, param, &
                                    solar_zenith, &
@@ -117,7 +119,7 @@ subroutine VECTOR_BRDF_MODIS(km, nch, nobs, channels, nstreams, nMom, nPol,nkern
 end subroutine VECTOR_BRDF_MODIS
 
 
-subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol,nkernel,nparam,nparam_bpdf, &
+subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nstreams, plane_parallel, nMom, nPol,nkernel,nparam,nparam_bpdf, &
                      ROT, depol, tau, ssa, pmom, pe, he, te, kernel_wt, RTLSparam, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc)
@@ -131,6 +133,8 @@ subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol,
     integer,          intent(in)            :: km    ! number of vertical levels 
     integer,          intent(in)            :: nch   ! number of channels
     integer,          intent(in)            :: nobs  ! number of observations
+
+    logical,          intent(in)            :: plane_parallel ! do plane parallel flag
 
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
@@ -182,7 +186,7 @@ subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol,
     real*8,           intent(out)           :: BR_U(nobs, nch)                ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_LandMODIS_BPDF (km, nch, nobs, channels, nstreams, nMom, &
+    call VLIDORT_Vector_LandMODIS_BPDF (km, nch, nobs, channels, nstreams, plane_parallel, nMom, &
                                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
                                    kernel_wt, RTLSparam, BPDFparam, &
                                    solar_zenith, &
@@ -196,7 +200,7 @@ subroutine VECTOR_BRDF_MODIS_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol,
 
 end subroutine VECTOR_BRDF_MODIS_BPDF
 
-subroutine VECTOR_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol,nparam, &
+subroutine VECTOR_BPDF(km, nch, nobs, channels, nstreams, plane_parallel, nMom, nPol,nparam, &
                      ROT, depol, tau, ssa, pmom, pe, he, te, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc)
@@ -210,6 +214,8 @@ subroutine VECTOR_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol,nparam, &
     integer,          intent(in)            :: km    ! number of vertical levels 
     integer,          intent(in)            :: nch   ! number of channels
     integer,          intent(in)            :: nobs  ! number of observations
+
+    logical,          intent(in)            :: plane_parallel ! do plane parallel flag
 
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
@@ -255,7 +261,7 @@ subroutine VECTOR_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol,nparam, &
     real*8,           intent(out)           :: BR_U(nobs, nch)                ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_BPDF (km, nch, nobs, channels, nstreams, nMom, &
+    call VLIDORT_Vector_BPDF (km, nch, nobs, channels, nstreams, plane_parallel, nMom, &
                                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
                                    BPDFparam, &
                                    solar_zenith, &
@@ -270,7 +276,7 @@ subroutine VECTOR_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol,nparam, &
 end subroutine VECTOR_BPDF
 
 
-subroutine VECTOR_LAMBERT(km, nch, nobs, channels, nstreams, nMom, nPol, &
+subroutine VECTOR_LAMBERT(km, nch, nobs, channels, nstreams, plane_parallel, nMom, nPol, &
                      ROT, depol, tau, ssa, pmom, pe, he, te, albedo, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, Q, U, rc)
@@ -283,6 +289,8 @@ subroutine VECTOR_LAMBERT(km, nch, nobs, channels, nstreams, nMom, nPol, &
     integer,          intent(in)            :: km    ! number of vertical levels 
     integer,          intent(in)            :: nch   ! number of channels
     integer,          intent(in)            :: nobs  ! number of observations
+
+    logical,          intent(in)            :: plane_parallel ! do plane parallel flag
 
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
@@ -322,7 +330,7 @@ subroutine VECTOR_LAMBERT(km, nch, nobs, channels, nstreams, nMom, nPol, &
     real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_Lambert (km, nch, nobs, channels, nstreams, nMom, &
+    call VLIDORT_Vector_Lambert (km, nch, nobs, channels, nstreams, plane_parallel, nMom, &
                                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
                                    albedo, &
                                    solar_zenith, &
@@ -336,7 +344,7 @@ subroutine VECTOR_LAMBERT(km, nch, nobs, channels, nstreams, nMom, nPol, &
 
 end subroutine VECTOR_LAMBERT
 
-subroutine VECTOR_LAMBERT_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol, nparam, &
+subroutine VECTOR_LAMBERT_BPDF(km, nch, nobs, channels, nstreams, plane_parallel, nMom, nPol, nparam, &
                      ROT, depol, tau, ssa, pmom, pe, he, te, albedo, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc)
@@ -349,6 +357,8 @@ subroutine VECTOR_LAMBERT_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol, np
     integer,          intent(in)            :: km    ! number of vertical levels 
     integer,          intent(in)            :: nch   ! number of channels
     integer,          intent(in)            :: nobs  ! number of observations
+
+    logical,          intent(in)            :: plane_parallel ! do plane parallel flag
 
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
@@ -397,7 +407,7 @@ subroutine VECTOR_LAMBERT_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol, np
     real*8,           intent(out)           :: BR_U(nobs, nch)                ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_Lambert_BPDF (km, nch, nobs, channels, nstreams, nMom, &
+    call VLIDORT_Vector_Lambert_BPDF (km, nch, nobs, channels, nstreams, plane_parallel, nMom, &
                                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
                                    albedo, BPDFparam, &
                                    solar_zenith, &
@@ -412,7 +422,7 @@ subroutine VECTOR_LAMBERT_BPDF(km, nch, nobs, channels, nstreams, nMom, nPol, np
 end subroutine VECTOR_LAMBERT_BPDF
 
 
-subroutine SCALAR_LAMBERT(km, nch, nobs, channels, nstreams, nMom, nPol, &
+subroutine SCALAR_LAMBERT(km, nch, nobs, channels, nstreams, plane_parallel, nMom, nPol, &
                      ROT, depol, tau, ssa, g, pmom, pe, he, te, albedo, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, rc)
@@ -425,6 +435,8 @@ subroutine SCALAR_LAMBERT(km, nch, nobs, channels, nstreams, nMom, nPol, &
     integer,          intent(in)            :: km    ! number of vertical levels 
     integer,          intent(in)            :: nch   ! number of channels
     integer,          intent(in)            :: nobs  ! number of observations
+
+    logical,          intent(in)            :: plane_parallel ! do plane parallel flag
 
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
@@ -463,7 +475,7 @@ subroutine SCALAR_LAMBERT(km, nch, nobs, channels, nstreams, nMom, nPol, &
 
 
 
-    call VLIDORT_Scalar_Lambert (km, nch, nobs, channels, nstreams, nMom, &
+    call VLIDORT_Scalar_Lambert (km, nch, nobs, channels, nstreams, plane_parallel, nMom, &
                                    nPol, ROT, depol, tau, ssa, g, pmom, pe, he, te, &
                                    albedo, &
                                    solar_zenith, &
@@ -477,7 +489,7 @@ subroutine SCALAR_LAMBERT(km, nch, nobs, channels, nstreams, nMom, nPol, &
 
 end subroutine SCALAR_LAMBERT
 
-subroutine VECTOR_GissCX(km, nch, nobs, channels, nstreams, nMom,  &
+subroutine VECTOR_GissCX(km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
                      nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                      mr, solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, &
@@ -492,6 +504,8 @@ subroutine VECTOR_GissCX(km, nch, nobs, channels, nstreams, nMom,  &
     integer,          intent(in)            :: nch   ! number of channels
     integer,          intent(in)            :: nobs  ! number of observations
 
+    logical,          intent(in)            :: plane_parallel ! do plane parallel flag
+
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
     integer,          intent(in)            :: nstreams  ! number of half space streams
@@ -534,7 +548,7 @@ subroutine VECTOR_GissCX(km, nch, nobs, channels, nstreams, nMom,  &
     real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_GissCX (km, nch, nobs, channels, nstreams, nMom, &
+    call VLIDORT_Vector_GissCX (km, nch, nobs, channels, nstreams, plane_parallel, nMom, &
                                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
                                    U10m, V10m, mr, &
                                    solar_zenith, &
@@ -548,7 +562,7 @@ subroutine VECTOR_GissCX(km, nch, nobs, channels, nstreams, nMom,  &
 
 end subroutine VECTOR_GissCX
 
-subroutine VECTOR_CX(km, nch, nobs, channels, nstreams, nMom,  &
+subroutine VECTOR_CX(km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
                      nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                      mr, solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, &
@@ -563,6 +577,8 @@ subroutine VECTOR_CX(km, nch, nobs, channels, nstreams, nMom,  &
     integer,          intent(in)            :: nch   ! number of channels
     integer,          intent(in)            :: nobs  ! number of observations
 
+    logical,          intent(in)            :: plane_parallel ! do plane parallel flag
+
     integer,          intent(in)            :: nMom  ! number of phase function moments 
     integer,          intent(in)            :: nPol  ! number of scattering matrix components                               
     integer,          intent(in)            :: nstreams  ! number of half space streams
@@ -605,7 +621,7 @@ subroutine VECTOR_CX(km, nch, nobs, channels, nstreams, nMom,  &
     real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
 
 
-    call VLIDORT_Vector_CX (km, nch, nobs, channels, nstreams, nMom, &
+    call VLIDORT_Vector_CX (km, nch, nobs, channels, nstreams, plane_parallel, nMom, &
                                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
                                    U10m, V10m, mr, &
                                    solar_zenith, &

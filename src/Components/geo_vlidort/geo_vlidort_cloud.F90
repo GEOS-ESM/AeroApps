@@ -67,6 +67,7 @@ program geo_vlidort_cloud
   real, allocatable                     :: surfband_c(:)          ! modis band center wavelength
   logical                               :: scalar
   integer                               :: nstreams               ! number of half space streams, default = 6  
+  logical                               :: plane_parallel  
   real, allocatable                     :: channels(:)            ! channels to simulate
   integer                               :: nch                    ! number of channels  
   real                                  :: szamax, vzamax         ! Geomtry filtering
@@ -597,7 +598,7 @@ program geo_vlidort_cloud
       if (scalar) then
         if (vlidort) then
           ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, nMom,      &
+          call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
                   nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
@@ -619,7 +620,7 @@ program geo_vlidort_cloud
         end if 
       else
         ! Call to vlidort vector code
-        call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, nMom,   &
+        call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
                nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
@@ -647,7 +648,7 @@ program geo_vlidort_cloud
       if (scalar) then 
         if (vlidort) then
           ! Call to vlidort scalar code            
-          call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nstreams, nMom,  &
+          call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom,  &
                   nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
@@ -672,7 +673,7 @@ program geo_vlidort_cloud
         end if
       else
         ! Call to vlidort vector code
-        call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nstreams, nMom, &
+        call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
                 nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
@@ -2247,6 +2248,7 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, surfmodel, label = 'SURFMODEL:',default='RTLS')
     call ESMF_ConfigGetAttribute(cf, surfdate, label = 'SURFDATE:',__RC__)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
+    call ESMF_ConfigGetAttribute(cf, plane_parallel, label = 'PLANE_PARALLEL:',default=.FALSE.)
     call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=6)    
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)

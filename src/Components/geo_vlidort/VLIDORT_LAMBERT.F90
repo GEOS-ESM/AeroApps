@@ -21,7 +21,7 @@ module VLIDORT_LAMBERT
     return
   end function IS_MISSING
 
-  subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels, nstreams, nMom, &
+  subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels, nstreams, plane_parallel, nMom, &
                      nPol, ROT, depol, tau, ssa, g, pmom, pe, he, te, albedo,             &
                      solar_zenith, relat_azymuth, sensor_zenith,  &
                      MISSING,verbose,radiance_VL,reflectance_VL, rc)
@@ -38,6 +38,8 @@ module VLIDORT_LAMBERT
     integer,          intent(in)  :: km    ! number of levels on file
     integer,          intent(in)  :: nch   ! number of channels
     integer,          intent(in)  :: nobs  ! number of observations
+
+    logical,          intent(in)  :: plane_parallel ! do plane parallel flag
                                         
     integer, target,  intent(in)  :: nMom             ! number of phase function moments     
     integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
@@ -84,6 +86,7 @@ module VLIDORT_LAMBERT
     ier = 0
 
     SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
     call VLIDORT_Init( SCAT%Surface%Base, km, rc)
     if ( rc /= 0 ) return
 
@@ -156,7 +159,7 @@ module VLIDORT_LAMBERT
 
   !..........................................................................
 
-  subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nstreams, nMom,  &
+  subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
                      nPol, ROT, depol, tau, ssa, pmom, pe, he, te, albedo, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL, reflectance_VL, Q ,U, rc, &
@@ -174,6 +177,8 @@ module VLIDORT_LAMBERT
     integer,          intent(in)  :: km    ! number of levels on file
     integer,          intent(in)  :: nch   ! number of channels
     integer,          intent(in)  :: nobs  ! number of observations
+
+    logical,          intent(in)  :: plane_parallel ! do plane parallel flag
 
     integer, target,  intent(in)  :: nMom  ! number of moments 
     integer, target,  intent(in)  :: nPol  ! number of components                               
@@ -229,6 +234,7 @@ module VLIDORT_LAMBERT
     ier = 0
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
     SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -319,7 +325,7 @@ module VLIDORT_LAMBERT
   end subroutine VLIDORT_Vector_Lambert
   !.............................................................................
 
-  subroutine VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs,channels, nstreams, nMom, &
+  subroutine VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs,channels, nstreams, plane_parallel, nMom, &
                      nPol, ROT, depol, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
                      pe, he, te, albedo,             &
                      solar_zenith, relat_azymuth, sensor_zenith,  &
@@ -337,6 +343,8 @@ module VLIDORT_LAMBERT
     integer,          intent(in)  :: km    ! number of levels on file
     integer,          intent(in)  :: nch   ! number of channels
     integer,          intent(in)  :: nobs  ! number of observations
+
+    logical,          intent(in)  :: plane_parallel ! do plane parallel flag
                                         
     integer, target,  intent(in)  :: nMom             ! number of phase function moments     
     integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
@@ -392,6 +400,7 @@ module VLIDORT_LAMBERT
     rc = 0
     ier = 0
     SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
     call VLIDORT_Init( SCAT%Surface%Base, km, rc)
     if ( rc /= 0 ) return
 
@@ -472,7 +481,7 @@ module VLIDORT_LAMBERT
 
   !..........................................................................
 
-  subroutine VLIDORT_Vector_Lambert_Cloud (km, nch, nobs, channels, nstreams, nMom,  &
+  subroutine VLIDORT_Vector_Lambert_Cloud (km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
                      nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                      pe, he, te, albedo, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
@@ -491,6 +500,8 @@ module VLIDORT_LAMBERT
     integer,          intent(in)  :: km    ! number of levels on file
     integer,          intent(in)  :: nch   ! number of channels
     integer,          intent(in)  :: nobs  ! number of observations
+
+    logical,          intent(in)  :: plane_parallel ! do plane parallel flag
 
     integer, target,  intent(in)  :: nMom  ! number of moments 
     integer, target,  intent(in)  :: nPol  ! number of components                               
@@ -553,6 +564,7 @@ module VLIDORT_LAMBERT
     ier = 0
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
     SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 

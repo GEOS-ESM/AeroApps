@@ -28,7 +28,7 @@ logical function IS_MISSING(x,MISSING)
   return
 end function IS_MISSING
 
-subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nstreams, nMom, &
+subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nstreams, plane_parallel, nMom, &
                    nPol, ROT, depol, tau, ssa, g, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_Vl_SURF, BRDF,rc)
@@ -46,6 +46,8 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nstreams, nMom, &
   integer,          intent(in)  :: km    ! number of levels on file
   integer,          intent(in)  :: nch   ! number of channels
   integer,          intent(in)  :: nobs  ! number of observations
+
+  logical,          intent(in)  :: plane_parallel ! do plane parallel flag
 
   integer, target,  intent(in)  :: nMom             ! number of phase function moments    
   integer, target,  intent(in)  :: nPol  ! number of scattering matrix components   
@@ -97,6 +99,7 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nstreams, nMom, &
 
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
+  SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -191,7 +194,7 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nstreams, nMom, &
 end subroutine VLIDORT_Scalar_CX
 !..........................................................................
 
-subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nstreams, nMom, &
+subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nstreams, plane_parallel, nMom, &
                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
@@ -210,6 +213,8 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nstreams, nMom, &
   integer,          intent(in)  :: km    ! number of levels on file
   integer,          intent(in)  :: nch   ! number of channels
   integer,          intent(in)  :: nobs  ! number of observations
+
+  logical,          intent(in)  :: plane_parallel ! do plane parallel flag
 
   integer, target,  intent(in)  :: nMom  ! number of moments 
   integer, target,  intent(in)  :: nPol  ! number of components    
@@ -264,6 +269,7 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nstreams, nMom, &
 
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams 
+  SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -364,7 +370,7 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nstreams, nMom, &
 
 end subroutine VLIDORT_Vector_Cx
 
-subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nstreams, nMom, &
+subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nstreams, plane_parallel, nMom, &
                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, sleave, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
@@ -383,6 +389,8 @@ subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nstreams, nMom, &
   integer,          intent(in)  :: km    ! number of levels on file
   integer,          intent(in)  :: nch   ! number of channels
   integer,          intent(in)  :: nobs  ! number of observations
+
+  logical,          intent(in)  :: plane_parallel ! do plane parallel flag
 
   integer, target,  intent(in)  :: nMom  ! number of moments 
   integer, target,  intent(in)  :: nPol  ! number of components                               
@@ -438,6 +446,7 @@ subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nstreams, nMom, &
  
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
+  SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -544,7 +553,7 @@ subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nstreams, nMom, &
 end subroutine VLIDORT_Vector_Cx_NOBM
 
 
-subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nstreams, nMom, &
+subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nstreams, plane_parallel, nMom, &
                    nPol, ROT, depol, tau, ssa, g, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_Vl_SURF, BRDF,rc)
@@ -562,6 +571,8 @@ subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nstreams, nMom, &
   integer,          intent(in)  :: km    ! number of levels on file
   integer,          intent(in)  :: nch   ! number of channels
   integer,          intent(in)  :: nobs  ! number of observations
+
+  logical,          intent(in)  :: plane_parallel ! do plane parallel flag
 
   integer, target,  intent(in)  :: nMom             ! number of phase function moments    
   integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
@@ -612,6 +623,7 @@ subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nstreams, nMom, &
 
   ! Set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
+  SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -707,7 +719,7 @@ end subroutine VLIDORT_Scalar_GissCX
 
 !..........................................................................
 
-subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nstreams, nMom, &
+subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nstreams, plane_parallel, nMom, &
                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
@@ -726,6 +738,8 @@ subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nstreams, nMom, &
   integer,          intent(in)  :: km    ! number of levels on file
   integer,          intent(in)  :: nch   ! number of channels
   integer,          intent(in)  :: nobs  ! number of observations
+
+  logical,          intent(in)  :: plane_parallel
 
   integer, target,  intent(in)  :: nMom  ! number of moments 
   integer, target,  intent(in)  :: nPol  ! number of components                               
@@ -779,6 +793,7 @@ subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nstreams, nMom, &
  
   ! set streams here
   SCAT%Surface%BASE%NSTREAMS = nstreams
+  SCAT%Surface%BASE%DO_PLANE_PARALLEL = plane_parallel
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -881,7 +896,7 @@ end subroutine VLIDORT_Vector_GissCx
 
 !..........................................................................
 
-subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nstreams, nMom, &
+subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nstreams, plane_parallel, nMom, &
                    nPol, ROT, depol, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
@@ -900,6 +915,8 @@ subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nstreams, nMom, 
   integer,          intent(in)  :: km    ! number of levels on file
   integer,          intent(in)  :: nch   ! number of channels
   integer,          intent(in)  :: nobs  ! number of observations
+
+  logical,          intent(in)  :: plane_parallel ! do plane parallel flag
 
   integer, target,  intent(in)  :: nMom             ! number of phase function moments    
   integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
@@ -960,6 +977,7 @@ subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nstreams, nMom, 
 
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
+  SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -1063,7 +1081,7 @@ end subroutine VLIDORT_Scalar_GissCX_Cloud
 
 
 
-subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nstreams, nMom, &
+subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nstreams, plane_parallel, nMom, &
                    nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
@@ -1082,6 +1100,8 @@ subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nstreams, nMom, 
   integer,          intent(in)  :: km    ! number of levels on file
   integer,          intent(in)  :: nch   ! number of channels
   integer,          intent(in)  :: nobs  ! number of observations
+
+  logical,          intent(in)  :: plane_parallel ! do plane parallel flag
 
   integer, target,  intent(in)  :: nMom  ! number of moments 
   integer, target,  intent(in)  :: nPol  ! number of components                               
@@ -1144,6 +1164,7 @@ subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nstreams, nMom, 
  
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
+  SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -1253,7 +1274,7 @@ end subroutine VLIDORT_Vector_GissCx_Cloud
 
 !..........................................................................
 
-subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nstreams, nMom, &
+subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nstreams, plane_parallel, nMom, &
                    nPol, ROT, depol, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, sleave, &
@@ -1273,6 +1294,8 @@ subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nstreams, n
   integer,          intent(in)  :: km    ! number of levels on file
   integer,          intent(in)  :: nch   ! number of channels
   integer,          intent(in)  :: nobs  ! number of observations
+
+  logical,          intent(in)  :: plane_parallel ! do plane parallel flag
 
   integer, target,  intent(in)  :: nMom             ! number of phase function moments    
   integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
@@ -1336,6 +1359,7 @@ subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nstreams, n
 
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
+  SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -1444,7 +1468,7 @@ end subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud
 
 
 
-subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nstreams, nMom, &
+subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nstreams, plane_parallel, nMom, &
                    nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, sleave, &
@@ -1464,6 +1488,8 @@ subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nstreams, n
   integer,          intent(in)  :: km    ! number of levels on file
   integer,          intent(in)  :: nch   ! number of channels
   integer,          intent(in)  :: nobs  ! number of observations
+
+  logical,          intent(in)  :: plane_parallel ! do plane parallel flag
 
   integer, target,  intent(in)  :: nMom  ! number of moments 
   integer, target,  intent(in)  :: nPol  ! number of components                               
@@ -1528,6 +1554,7 @@ subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nstreams, n
  
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
+  SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 

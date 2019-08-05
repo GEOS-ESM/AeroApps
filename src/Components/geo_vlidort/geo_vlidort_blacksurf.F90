@@ -49,6 +49,7 @@ program geo_vlidort
   character(len=2)                      :: time 
   character(len=256)                    :: instname, indir, outdir
   logical                               :: scalar
+  logical                               :: plane_parallel
   integer                               :: nstreams               ! number of half space streams, default = 6
   real, allocatable                     :: channels(:)            ! channels to simulate
   integer                               :: nch                    ! number of channels  
@@ -497,7 +498,7 @@ program geo_vlidort
 !   Simple lambertian surface model
 !   -------------------------------
     ! Call to vlidort vector code
-    call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nstreams, nMom,   &
+    call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
                nPol, ROT, depol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                (/dble(SZA(c))/), &
                (/dble(abs(RAA(c)))/), &
@@ -1621,9 +1622,10 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, indir, label = 'INDIR:',__RC__)
     call ESMF_ConfigGetAttribute(cf, outdir, label = 'OUTDIR:',default=indir)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
+    call ESMF_ConfigGetAttribute(cf, plane_parallel, label = 'PLANE_PARALLEL:',default=.FALSE.)
     call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=6)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
-    call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
+    call ESMF_ConfigGetAttribute(cf, vzamax, lacall ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)bel = 'VZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, cldmax, label = 'CLDMAX:',default=0.01)
     call ESMF_ConfigGetAttribute(cf, nodemax, label = 'NODEMAX:',default=1) 
     call ESMF_ConfigGetAttribute(cf, version, label = 'VERSION:',default='1.0') 

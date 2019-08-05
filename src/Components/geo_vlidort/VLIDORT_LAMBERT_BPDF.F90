@@ -20,7 +20,7 @@ module VLIDORT_LAMBERT_BPDF
   end function IS_MISSING
 
 
-  subroutine VLIDORT_Vector_Lambert_BPDF (km, nch, nobs, channels, nstreams, nMom,  &
+  subroutine VLIDORT_Vector_Lambert_BPDF (km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
                      nPol, ROT, depol, tau, ssa, pmom, pe, he, te, albedo, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL, reflectance_VL, BR, Q ,U, BR_Q,BR_U,rc, &
@@ -40,6 +40,8 @@ module VLIDORT_LAMBERT_BPDF
     integer,          intent(in)  :: km    ! number of levels on file
     integer,          intent(in)  :: nch   ! number of channels
     integer,          intent(in)  :: nobs  ! number of observations
+
+    logical,          intent(in)  :: plane_parallel ! do plane parallel flag
 
     integer, target,  intent(in)  :: nMom  ! number of moments 
     integer, target,  intent(in)  :: nPol  ! number of components                               
@@ -103,6 +105,7 @@ module VLIDORT_LAMBERT_BPDF
 
     ! set streams here
     SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -221,7 +224,7 @@ module VLIDORT_LAMBERT_BPDF
 
   !..........................................................................
 
-  subroutine VLIDORT_Vector_Lambert_BPDF_Cloud (km, nch, nobs, channels, nstreams, nMom,  &
+  subroutine VLIDORT_Vector_Lambert_BPDF_Cloud (km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
                      nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                      pe, he, te, albedo, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
@@ -242,6 +245,8 @@ module VLIDORT_LAMBERT_BPDF
     integer,          intent(in)  :: km    ! number of levels on file
     integer,          intent(in)  :: nch   ! number of channels
     integer,          intent(in)  :: nobs  ! number of observations
+
+    logical,          intent(in)  :: plane_parallel ! do plane parallel flag
 
     integer, target,  intent(in)  :: nMom  ! number of moments 
     integer, target,  intent(in)  :: nPol  ! number of components                               
@@ -313,6 +318,7 @@ module VLIDORT_LAMBERT_BPDF
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
     ! Set streams here
     SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
