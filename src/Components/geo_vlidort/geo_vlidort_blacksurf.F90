@@ -49,6 +49,7 @@ program geo_vlidort
   character(len=2)                      :: time 
   character(len=256)                    :: instname, indir, outdir
   logical                               :: scalar
+  integer                               :: nstreams               ! number of half space streams, default = 6
   real, allocatable                     :: channels(:)            ! channels to simulate
   integer                               :: nch                    ! number of channels  
   real                                  :: cldmax                 ! Cloud Filtering  
@@ -136,7 +137,7 @@ program geo_vlidort
   real*8, allocatable                   :: Q(:,:)                                 ! Q Stokes component
   real*8, allocatable                   :: U(:,:)                                 ! U Stokes component
   real*8, allocatable                   :: ROT(:,:,:)                             ! rayleigh optical thickness
-
+  real*8, allocatable                   :: depol(:)                               ! rayleigh depolarization ratio
 !                                  Final Shared Arrays
 !                                  -------------------
   real*8, pointer                       :: radiance_VL(:,:) => null()             ! TOA normalized radiance from VLIDORT
@@ -466,7 +467,7 @@ program geo_vlidort
 !   --------------------------
     call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(pe), dble(ze), dble(te), &
                                    dble(MISSING),verbose, &
-                                   ROT, ierr )  
+                                   ROT, depol, ierr )  
 
 
 !   Aerosol Optical Properties
@@ -496,8 +497,8 @@ program geo_vlidort
 !   Simple lambertian surface model
 !   -------------------------------
     ! Call to vlidort vector code
-    call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
-               nPol, ROT, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+    call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nstreams, nMom,   &
+               nPol, ROT, depol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                (/dble(SZA(c))/), &
                (/dble(abs(RAA(c)))/), &
                (/dble(VZA(c))/), &
@@ -1110,6 +1111,7 @@ end subroutine outfile_extname
     allocate (reflectance_VL_int(nobs, nch))    
 
     allocate (ROT(km,nobs,nch))
+    allocate (depol(nch))
     allocate (pmom(km,nch,nobs,nMom,nPol))
 
     if (.not. scalar) then      
@@ -1619,6 +1621,7 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, indir, label = 'INDIR:',__RC__)
     call ESMF_ConfigGetAttribute(cf, outdir, label = 'OUTDIR:',default=indir)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
+    call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=6)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, cldmax, label = 'CLDMAX:',default=0.01)

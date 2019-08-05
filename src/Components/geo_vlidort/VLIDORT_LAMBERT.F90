@@ -21,8 +21,8 @@ module VLIDORT_LAMBERT
     return
   end function IS_MISSING
 
-  subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels, nMom, &
-                     nPol, ROT, tau, ssa, g, pmom, pe, he, te, albedo,             &
+  subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels, nstreams, nMom, &
+                     nPol, ROT, depol, tau, ssa, g, pmom, pe, he, te, albedo,             &
                      solar_zenith, relat_azymuth, sensor_zenith,  &
                      MISSING,verbose,radiance_VL,reflectance_VL, rc)
   !
@@ -41,11 +41,13 @@ module VLIDORT_LAMBERT
                                         
     integer, target,  intent(in)  :: nMom             ! number of phase function moments     
     integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)  :: nstreams  ! number of half space streams
 
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                     ! --- Rayleigh Parameters ---
     real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
   !                                                   ! --- Mie Parameters ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -81,6 +83,7 @@ module VLIDORT_LAMBERT
     rc = 0
     ier = 0
 
+    SCAT%Surface%Base%NSTREAMS = nstreams
     call VLIDORT_Init( SCAT%Surface%Base, km, rc)
     if ( rc /= 0 ) return
 
@@ -122,6 +125,7 @@ module VLIDORT_LAMBERT
 
           SCAT%wavelength = channels(i)
           SCAT%rot => ROT(:,j,i)
+          SCAT%depol_ratio => depol(i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%g => g(:,i,j)
@@ -152,8 +156,8 @@ module VLIDORT_LAMBERT
 
   !..........................................................................
 
-  subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nMom,  &
-                     nPol, ROT, tau, ssa, pmom, pe, he, te, albedo, &
+  subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nstreams, nMom,  &
+                     nPol, ROT, depol, tau, ssa, pmom, pe, he, te, albedo, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL, reflectance_VL, Q ,U, rc, &
                      DO_2OS_CORRECTION, DO_BOA)
@@ -173,11 +177,13 @@ module VLIDORT_LAMBERT
 
     integer, target,  intent(in)  :: nMom  ! number of moments 
     integer, target,  intent(in)  :: nPol  ! number of components                               
+    integer,          intent(in)  :: nstreams  ! number of half space streams
                     
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                     ! --- Rayleigh Parameters ---
     real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
   !                                                   ! --- Mie Parameters ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -222,7 +228,7 @@ module VLIDORT_LAMBERT
     rc = 0
     ier = 0
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
-
+    SCAT%Surface%Base%NSTREAMS = nstreams
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -272,7 +278,8 @@ module VLIDORT_LAMBERT
                                  relat_azymuth(j),scalar)
 
           SCAT%wavelength = channels(i)  
-          SCAT%rot => ROT(:,j,i)      
+          SCAT%rot => ROT(:,j,i)    
+          SCAT%depol_ratio => depol(i)  
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)
@@ -312,8 +319,8 @@ module VLIDORT_LAMBERT
   end subroutine VLIDORT_Vector_Lambert
   !.............................................................................
 
-  subroutine VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs,channels, nMom, &
-                     nPol, ROT, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
+  subroutine VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs,channels, nstreams, nMom, &
+                     nPol, ROT, depol, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
                      pe, he, te, albedo,             &
                      solar_zenith, relat_azymuth, sensor_zenith,  &
                      MISSING,verbose,radiance_VL,reflectance_VL, rc)
@@ -333,11 +340,13 @@ module VLIDORT_LAMBERT
                                         
     integer, target,  intent(in)  :: nMom             ! number of phase function moments     
     integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)  :: nstreams  ! number of half space streams
 
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                     ! --- Rayleigh Parameters ---
     real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
   !                                                   ! --- Mie Parameters ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -382,7 +391,7 @@ module VLIDORT_LAMBERT
 
     rc = 0
     ier = 0
-
+    SCAT%Surface%Base%NSTREAMS = nstreams
     call VLIDORT_Init( SCAT%Surface%Base, km, rc)
     if ( rc /= 0 ) return
 
@@ -424,6 +433,7 @@ module VLIDORT_LAMBERT
 
           SCAT%wavelength = channels(i)
           SCAT%rot => ROT(:,j,i)
+          SCAT%depol_ratio => depol(i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%g => g(:,i,j)
@@ -462,8 +472,8 @@ module VLIDORT_LAMBERT
 
   !..........................................................................
 
-  subroutine VLIDORT_Vector_Lambert_Cloud (km, nch, nobs, channels, nMom,  &
-                     nPol, ROT, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+  subroutine VLIDORT_Vector_Lambert_Cloud (km, nch, nobs, channels, nstreams, nMom,  &
+                     nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                      pe, he, te, albedo, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL, reflectance_VL, Q ,U, rc, &
@@ -484,11 +494,13 @@ module VLIDORT_LAMBERT
 
     integer, target,  intent(in)  :: nMom  ! number of moments 
     integer, target,  intent(in)  :: nPol  ! number of components                               
+    integer,          intent(in)  :: nstreams  ! number of half space streams
                     
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                     ! --- Rayleigh Parameters ---
     real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
   !                                                   ! --- Mie Parameters ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -540,7 +552,7 @@ module VLIDORT_LAMBERT
     rc = 0
     ier = 0
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
-
+    SCAT%Surface%Base%NSTREAMS = nstreams
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -590,7 +602,8 @@ module VLIDORT_LAMBERT
                                  relat_azymuth(j),scalar)
 
           SCAT%wavelength = channels(i) 
-          SCAT%rot => ROT(:,j,i)       
+          SCAT%rot => ROT(:,j,i) 
+          SCAT%depol_ratio => depol(i)      
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)

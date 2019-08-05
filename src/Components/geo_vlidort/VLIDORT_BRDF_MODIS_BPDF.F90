@@ -20,8 +20,8 @@ module VLIDORT_BRDF_MODIS_BPDF
     return
   end function IS_MISSING
 
-  subroutine VLIDORT_Vector_LandMODIS_BPDF (km, nch, nobs, channels, nMom,  &
-                     nPol, ROT, tau, ssa, pmom, pe, he, te, kernel_wt, RTLSparam, BPDFparam, &
+  subroutine VLIDORT_Vector_LandMODIS_BPDF (km, nch, nobs, channels, nstreams, nMom,  &
+                     nPol, ROT, depol, tau, ssa, pmom, pe, he, te, kernel_wt, RTLSparam, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc, DO_BOA)
   !
@@ -44,11 +44,13 @@ module VLIDORT_BRDF_MODIS_BPDF
 
     integer, target,  intent(in)            :: nMom  ! number of phase function moments 
     integer, target,  intent(in)            :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)            :: nstreams  ! number of half space streams
                     
     real*8, target,   intent(in)            :: channels(nch)    ! wavelengths [nm]
 
 !                                                     ! --- Rayleigh Parameters ---
     real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)            :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -99,7 +101,7 @@ module VLIDORT_BRDF_MODIS_BPDF
     rc = 0
     ier = 0
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
-   
+    SCAT%Surface%Base%NSTREAMS = nstreams
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -169,7 +171,8 @@ module VLIDORT_BRDF_MODIS_BPDF
                                scalar,rc)
 
         SCAT%wavelength = channels(i)
-        SCAT%rot => ROT(:,j,i)        
+        SCAT%rot => ROT(:,j,i)  
+        SCAT%depol_ratio => depol(i)      
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
@@ -222,8 +225,8 @@ module VLIDORT_BRDF_MODIS_BPDF
 
   end subroutine VLIDORT_Vector_LandMODIS_BPDF
 
-  subroutine VLIDORT_Vector_LandMODIS_BPDF_Cloud (km, nch, nobs, channels, nMom,  &
-                     nPol, ROT, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+  subroutine VLIDORT_Vector_LandMODIS_BPDF_Cloud (km, nch, nobs, channels, nstreams, nMom,  &
+                     nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                      pe, he, te, kernel_wt, RTLSparam, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc, DO_BOA)
@@ -247,11 +250,13 @@ module VLIDORT_BRDF_MODIS_BPDF
 
     integer, target,  intent(in)            :: nMom  ! number of phase function moments 
     integer, target,  intent(in)            :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)            :: nstreams  ! number of half space streams
                     
     real*8, target,   intent(in)            :: channels(nch)    ! wavelengths [nm]
 
 !                                                     ! --- Rayleigh Parameters ---
     real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)            :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -310,7 +315,7 @@ module VLIDORT_BRDF_MODIS_BPDF
     rc = 0
     ier = 0
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
-   
+    SCAT%Surface%Base%NSTREAMS = nstreams
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -380,7 +385,8 @@ module VLIDORT_BRDF_MODIS_BPDF
                                scalar,rc)
 
         SCAT%wavelength = channels(i) 
-        SCAT%rot => ROT(:,j,i)       
+        SCAT%rot => ROT(:,j,i)
+        SCAT%depol_ratio => depol(i)       
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
@@ -433,8 +439,8 @@ module VLIDORT_BRDF_MODIS_BPDF
 
   end subroutine VLIDORT_Vector_LandMODIS_BPDF_cloud
 
-  subroutine VLIDORT_Vector_BPDF (km, nch, nobs, channels, nMom,  &
-                     nPol, ROT, tau, ssa, pmom, pe, he, te, BPDFparam, &
+  subroutine VLIDORT_Vector_BPDF (km, nch, nobs, channels, nstreams, nMom,  &
+                     nPol, ROT, depol, tau, ssa, pmom, pe, he, te, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc, DO_BOA)
   !
@@ -455,11 +461,13 @@ module VLIDORT_BRDF_MODIS_BPDF
 
     integer, target,  intent(in)            :: nMom  ! number of phase function moments 
     integer, target,  intent(in)            :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)            :: nstreams  ! number of half space streams
                     
     real*8, target,   intent(in)            :: channels(nch)    ! wavelengths [nm]
 
 !                                                     ! --- Rayleigh Parameters ---
     real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)            :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -506,7 +514,7 @@ module VLIDORT_BRDF_MODIS_BPDF
     rc = 0
     ier = 0
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
-   
+    SCAT%Surface%Base%NSTREAMS = nstreams
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -559,7 +567,8 @@ module VLIDORT_BRDF_MODIS_BPDF
                                scalar,rc)
 
         SCAT%wavelength = channels(i)   
-        SCAT%rot => ROT(:,j,i)     
+        SCAT%rot => ROT(:,j,i)  
+        SCAT%depol_ratio => depol(i)   
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)

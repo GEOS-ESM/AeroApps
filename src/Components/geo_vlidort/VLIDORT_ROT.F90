@@ -16,7 +16,7 @@ module VLIDORT_ROT
     return
   end function IS_MISSING
 
-  subroutine VLIDORT_ROT_CALC(km,nch,nobs,channels,pe,he,te,MISSING,verbose,ROT,rc)  
+  subroutine VLIDORT_ROT_CALC(km,nch,nobs,channels,pe,he,te,MISSING,verbose,ROT,depol, rc)  
   !
   ! Uses VLIDORT_Rayleigh subroutine to calc ROT
   !
@@ -42,6 +42,8 @@ module VLIDORT_ROT
     !OUTPUT PARAMETERS
     integer,          intent(out) :: rc                          ! return code
     real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness 
+    real*8,           intent(out) :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
+
 
     !
 
@@ -66,6 +68,7 @@ module VLIDORT_ROT
           SCAT%wavelength = channels(i)
           call VLIDORT_Rayleigh(SCAT,ier)
           ROT(:,j,i) = SCAT%rot 
+          depol(i) = SCAT%depol_ratio
 
           if ( ier /= 0 ) then
             ROT(:,j,i) = MISSING

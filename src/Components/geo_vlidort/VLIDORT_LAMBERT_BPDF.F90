@@ -20,8 +20,8 @@ module VLIDORT_LAMBERT_BPDF
   end function IS_MISSING
 
 
-  subroutine VLIDORT_Vector_Lambert_BPDF (km, nch, nobs, channels, nMom,  &
-                     nPol, ROT, tau, ssa, pmom, pe, he, te, albedo, BPDFparam, &
+  subroutine VLIDORT_Vector_Lambert_BPDF (km, nch, nobs, channels, nstreams, nMom,  &
+                     nPol, ROT, depol, tau, ssa, pmom, pe, he, te, albedo, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL, reflectance_VL, BR, Q ,U, BR_Q,BR_U,rc, &
                      DO_2OS_CORRECTION, DO_BOA)
@@ -43,11 +43,13 @@ module VLIDORT_LAMBERT_BPDF
 
     integer, target,  intent(in)  :: nMom  ! number of moments 
     integer, target,  intent(in)  :: nPol  ! number of components                               
+    integer,          intent(in)  :: nstreams  ! number of half space streams
                     
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                     ! --- Rayleigh Parameters ---
     real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
   !                                                   ! --- Mie Parameters ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -99,6 +101,8 @@ module VLIDORT_LAMBERT_BPDF
     ier = 0
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
 
+    ! set streams here
+    SCAT%Surface%Base%NSTREAMS = nstreams
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -158,7 +162,8 @@ module VLIDORT_LAMBERT_BPDF
 
 
         SCAT%wavelength = channels(i)
-        SCAT%rot => ROT(:,j,i)        
+        SCAT%rot => ROT(:,j,i) 
+        SCAT%depol_ratio => depol(i)       
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
@@ -216,8 +221,8 @@ module VLIDORT_LAMBERT_BPDF
 
   !..........................................................................
 
-  subroutine VLIDORT_Vector_Lambert_BPDF_Cloud (km, nch, nobs, channels, nMom,  &
-                     nPol, ROT, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+  subroutine VLIDORT_Vector_Lambert_BPDF_Cloud (km, nch, nobs, channels, nstreams, nMom,  &
+                     nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                      pe, he, te, albedo, BPDFparam, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
                      MISSING,verbose, radiance_VL, reflectance_VL, BR, Q ,U, BR_Q, BR_U, rc, &
@@ -240,11 +245,14 @@ module VLIDORT_LAMBERT_BPDF
 
     integer, target,  intent(in)  :: nMom  ! number of moments 
     integer, target,  intent(in)  :: nPol  ! number of components                               
+    integer,          intent(in)  :: nstreams  ! number of half space streams
                     
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                     ! --- Rayleigh Parameters ---
     real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
+
 
   !                                                   ! --- Mie Parameters ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -303,7 +311,8 @@ module VLIDORT_LAMBERT_BPDF
     rc = 0
     ier = 0
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
-
+    ! Set streams here
+    SCAT%Surface%Base%NSTREAMS = nstreams
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -360,7 +369,8 @@ module VLIDORT_LAMBERT_BPDF
                                      albedo(j,i),reshape(BPDFparam(:,i,j),(/nparam/)),scalar,rc)
 
         SCAT%wavelength = channels(i)    
-        SCAT%rot => ROT(:,j,i)    
+        SCAT%rot => ROT(:,j,i) 
+        SCAT%depol_ratio => depol(i)   
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)

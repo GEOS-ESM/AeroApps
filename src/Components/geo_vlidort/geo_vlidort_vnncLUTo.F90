@@ -48,6 +48,7 @@ program geo_vlidort_vnncLUTo
   character(len=2)                      :: time 
   character(len=256)                    :: instname, indir, outdir
   logical                               :: scalar
+  integer                               :: nstreams               ! number of half space streams, default = 6  
   real, allocatable                     :: channels(:)            ! channels to simulate
   integer                               :: nch                    ! number of channels  
   real*8                                :: mr                     ! water real refractive index  
@@ -141,6 +142,7 @@ program geo_vlidort_vnncLUTo
   real*8, allocatable                   :: Q(:,:)                                 ! Q Stokes component
   real*8, allocatable                   :: U(:,:)                                 ! U Stokes component
   real*8, allocatable                   :: ROT(:,:,:)                             ! rayleigh optical thickness
+  real*8, allocatable                   :: depol(:)                               ! rayleigh depolarization ratio
 
 !                                  Final Shared Arrays
 !                                  -------------------
@@ -528,7 +530,7 @@ program geo_vlidort_vnncLUTo
 !   --------------------------
     call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(pe), dble(ze), dble(te), &
                                    dble(MISSING),verbose, &
-                                   ROT, ierr )  
+                                   ROT, depol, ierr )  
 
 !   Aerosol Optical Properties
 !   --------------------------
@@ -593,8 +595,8 @@ program geo_vlidort_vnncLUTo
               ! -------------------------------
               if (scalar) then
                 ! Call to vlidort scalar code       
-                call VLIDORT_Scalar_GissCX (km, nch, nobs ,dble(channels), nMom,      &
-                        nPol, ROT, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+                call VLIDORT_Scalar_GissCX (km, nch, nobs ,dble(channels), nstreams, nMom,      &
+                        nPol, ROT, depol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
                         reshape((/U10M(uwind)/),(/nobs/),pad=(/U10M(uwind)/)),&
                         reshape((/V10M(vwind)/),(/nobs/),pad=(/V10M(vwind)/)),&
                         reshape((/mr/),(/nch/),pad=(/mr/)),&
@@ -604,8 +606,8 @@ program geo_vlidort_vnncLUTo
                         dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, brdf_cx_int, ierr)
               else              
                 ! Call to vlidort vector code
-                call VLIDORT_Vector_GissCX (km, nch, nobs ,dble(channels), nMom,   &
-                          nPol, ROT, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), &
+                call VLIDORT_Vector_GissCX (km, nch, nobs ,dble(channels), nstreams, Mom,   &
+                          nPol, ROT, depol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), &
                           reshape((/U10M(uwind)/),(/nobs/),pad=(/U10M(uwind)/)),&
                           reshape((/V10M(vwind)/),(/nobs/),pad=(/V10M(vwind)/)),&
                           reshape((/mr/),(/nch/),pad=(/mr/)),&
@@ -1195,6 +1197,7 @@ end subroutine outfile_extname
     allocate (brdf_cx_int(nstokes,nobs,nch))   
 
     allocate (ROT(km,nobs,nch))
+    allocate (depol(nch))
     allocate (pmom(km,nch,nobs,nMom,nPol))
 
     if (.not. scalar) then      
@@ -1895,6 +1898,7 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, indir, label = 'INDIR:',__RC__)
     call ESMF_ConfigGetAttribute(cf, outdir, label = 'OUTDIR:',default=indir)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
+    call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=6)
     call ESMF_ConfigGetAttribute(cf, additional_output, label = 'ADDITIONAL_OUTPUT:',default=.false.)
     call ESMF_ConfigGetAttribute(cf, nodemax, label = 'NODEMAX:',default=1) 
     call ESMF_ConfigGetAttribute(cf, mr, label = 'SURFMR:',__RC__) 

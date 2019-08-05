@@ -28,8 +28,8 @@ logical function IS_MISSING(x,MISSING)
   return
 end function IS_MISSING
 
-subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
-                   nPol, ROT, tau, ssa, g, pmom, pe, he, te, U10m, V10m, &
+subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nstreams, nMom, &
+                   nPol, ROT, depol, tau, ssa, g, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_Vl_SURF, BRDF,rc)
 !
@@ -48,13 +48,15 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
   integer,          intent(in)  :: nobs  ! number of observations
 
   integer, target,  intent(in)  :: nMom             ! number of phase function moments    
-  integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
+  integer, target,  intent(in)  :: nPol  ! number of scattering matrix components   
+  integer           intent(in)  :: nstreams  ! number of half space streams                                
                                       
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
   real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+  real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -93,6 +95,8 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
   rc = 0
   ier = 0
 
+  ! set streams here
+  SCAT%Surface%Base%NSTREAMS = nstreams
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -145,6 +149,7 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
 
           SCAT%wavelength = channels(i)
           SCAT%rot => ROT(:,j,i)
+          SCAT%depol_ratio => depol(i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%g => g(:,i,j)
@@ -186,8 +191,8 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nMom, &
 end subroutine VLIDORT_Scalar_CX
 !..........................................................................
 
-subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
-                   nPol, ROT, tau, ssa, pmom, pe, he, te, U10m, V10m, &
+subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nstreams, nMom, &
+                   nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
                    BRDF, Q, U, BRDF_Q, BRDF_U, rc)
@@ -207,12 +212,15 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
   integer,          intent(in)  :: nobs  ! number of observations
 
   integer, target,  intent(in)  :: nMom  ! number of moments 
-  integer, target,  intent(in)  :: nPol  ! number of components                               
+  integer, target,  intent(in)  :: nPol  ! number of components    
+  integer,          intent(in)  :: nstreams  ! number of half space streams
+
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
   real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+  real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -253,7 +261,9 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
 
   rc = 0
   ier = 0
- 
+
+  ! set streams here
+  SCAT%Surface%Base%NSTREAMS = nstreams 
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -311,6 +321,7 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
 
           SCAT%wavelength = channels(i)
           SCAT%rot => ROT(:,j,i)
+          SCAT%depol_ratio => depol(i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)
@@ -353,8 +364,8 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nMom, &
 
 end subroutine VLIDORT_Vector_Cx
 
-subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nMom, &
-                   nPol, ROT, tau, ssa, pmom, pe, he, te, U10m, V10m, &
+subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nstreams, Mom, &
+                   nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, sleave, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
                    BRDF, Q, U, BRDF_Q, BRDF_U, rc)
@@ -375,11 +386,13 @@ subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nMom, &
 
   integer, target,  intent(in)  :: nMom  ! number of moments 
   integer, target,  intent(in)  :: nPol  ! number of components                               
-                  
+  integer,          intent(in)  :: nstreams  ! number of half space streams
+                 
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
   real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+  real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -423,6 +436,8 @@ subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nMom, &
   rc = 0
   ier = 0
  
+  ! set streams here
+  SCAT%Surface%Base%NSTREAMS = nstreams
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -485,6 +500,7 @@ subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nMom, &
 
           SCAT%wavelength = channels(i)
           SCAT%rot => ROT(:,j,i)
+          SCAT%depol_ratio => depol(i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)
@@ -528,8 +544,8 @@ subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nMom, &
 end subroutine VLIDORT_Vector_Cx_NOBM
 
 
-subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nMom, &
-                   nPol, ROT, tau, ssa, g, pmom, pe, he, te, U10m, V10m, &
+subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nstreams, nMom, &
+                   nPol, ROT, depol, tau, ssa, g, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_Vl_SURF, BRDF,rc)
 !
@@ -549,12 +565,13 @@ subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nMom, &
 
   integer, target,  intent(in)  :: nMom             ! number of phase function moments    
   integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
-                                      
+  integer,          intent(in)  :: nstreams  ! number of half space streams                                      
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
   real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+  real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -593,6 +610,8 @@ subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nMom, &
   rc = 0
   ier = 0
 
+  ! Set streams here
+  SCAT%Surface%Base%NSTREAMS = nstreams
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -645,6 +664,7 @@ subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nMom, &
 
           SCAT%wavelength = channels(i)
           SCAT%rot => ROT(:,j,i)
+          SCAT%depol_ratio => depol(i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%g => g(:,i,j)
@@ -687,8 +707,8 @@ end subroutine VLIDORT_Scalar_GissCX
 
 !..........................................................................
 
-subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nMom, &
-                   nPol, ROT, tau, ssa, pmom, pe, he, te, U10m, V10m, &
+subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nstreams, nMom, &
+                   nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
                    BRDF, Q, U, BRDF_Q, BRDF_U, rc)
@@ -709,11 +729,13 @@ subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nMom, &
 
   integer, target,  intent(in)  :: nMom  ! number of moments 
   integer, target,  intent(in)  :: nPol  ! number of components                               
+  integer,          intent(in)  :: nstreams  ! number of half space streams
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
   real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+  real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -755,6 +777,8 @@ subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nMom, &
   rc = 0
   ier = 0
  
+  ! set streams here
+  SCAT%Surface%BASE%NSTREAMS = nstreams
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -812,6 +836,7 @@ subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nMom, &
 
           SCAT%wavelength = channels(i)
           SCAT%rot => ROT(:,j,i)
+          SCAT%depol_ratio => depol(i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)
@@ -856,8 +881,8 @@ end subroutine VLIDORT_Vector_GissCx
 
 !..........................................................................
 
-subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nMom, &
-                   nPol, ROT, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
+subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nstreams, nMom, &
+                   nPol, ROT, depol, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_Vl_SURF, BRDF,rc)
@@ -878,12 +903,13 @@ subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nMom, &
 
   integer, target,  intent(in)  :: nMom             ! number of phase function moments    
   integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
-                                      
+  integer,          intent(in)  :: nstreams  ! number of half space streams                                      
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
   real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+  real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -932,6 +958,8 @@ subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nMom, &
   rc = 0
   ier = 0
 
+  ! set streams here
+  SCAT%Surface%Base%NSTREAMS = nstreams
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -984,6 +1012,7 @@ subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nMom, &
 
           SCAT%wavelength = channels(i)
           SCAT%rot => ROT(:,j,i)
+          SCAT%depol_ratio => depol(i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%g => g(:,i,j)
@@ -1034,8 +1063,8 @@ end subroutine VLIDORT_Scalar_GissCX_Cloud
 
 
 
-subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nMom, &
-                   nPol, ROT, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nstreams, nMom, &
+                   nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, Q, U, BRDF, BRDF_Q, BRDF_U,rc)
@@ -1056,11 +1085,13 @@ subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nMom, &
 
   integer, target,  intent(in)  :: nMom  ! number of moments 
   integer, target,  intent(in)  :: nPol  ! number of components                               
+  integer,          intent(in)  :: nstreams  ! number of half space streams
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
   real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+  real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -1111,6 +1142,8 @@ subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nMom, &
   rc = 0
   ier = 0
  
+  ! set streams here
+  SCAT%Surface%Base%NSTREAMS = nstreams
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -1168,6 +1201,7 @@ subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nMom, &
 
           SCAT%wavelength = channels(i)
           SCAT%rot => ROT(:,j,i)
+          SCAT%depol_ratio => depol(i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)
@@ -1219,8 +1253,8 @@ end subroutine VLIDORT_Vector_GissCx_Cloud
 
 !..........................................................................
 
-subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
-                   nPol, ROT, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
+subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nstreams, nMom, &
+                   nPol, ROT, depol, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, sleave, &
                    solar_zenith, relat_azymuth, sensor_zenith, &
@@ -1242,12 +1276,14 @@ subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
 
   integer, target,  intent(in)  :: nMom             ! number of phase function moments    
   integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
-                                      
-                  
+  integer,          intent(in)  :: nstreams  ! number of half space streams
+                                                        
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
   real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+  real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
+
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -1298,6 +1334,8 @@ subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
   rc = 0
   ier = 0
 
+  ! set streams here
+  SCAT%Surface%Base%NSTREAMS = nstreams
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -1355,6 +1393,7 @@ subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
 
           SCAT%wavelength = channels(i)
           SCAT%rot => ROT(:,j,i)
+          SCAT%depol_ratio => depol(i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%g => g(:,i,j)
@@ -1405,8 +1444,8 @@ end subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud
 
 
 
-subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
-                   nPol, ROT, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nstreams, nMom, &
+                   nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                    pe, he, te, U10m, V10m, &
                    mr, sleave, &
                    solar_zenith, relat_azymuth, sensor_zenith, &
@@ -1428,11 +1467,13 @@ subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
 
   integer, target,  intent(in)  :: nMom  ! number of moments 
   integer, target,  intent(in)  :: nPol  ! number of components                               
+  integer,          intent(in)  :: nstreams  ! number of half space streams
                   
   real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
 
 !                                                   ! --- Rayleigh Parameters ---
   real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+  real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
 !                                                   ! --- Mie Parameters ---
   real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -1485,6 +1526,8 @@ subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
   rc = 0
   ier = 0
  
+  ! set streams here
+  SCAT%Surface%Base%NSTREAMS = nstreams
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -1547,6 +1590,7 @@ subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nMom, &
 
           SCAT%wavelength = channels(i)
           SCAT%rot => ROT(:,j,i)
+          SCAT%depol_ratio => depol(i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)
