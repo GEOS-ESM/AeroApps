@@ -51,7 +51,7 @@
         integer     :: N_USER_RELAZMS = 1  ! Number of relative azimuth angles
         integer     :: N_USER_LEVELS  = 1  ! Number of user-defined vertical output levels
         integer     :: N_USER_OBSGEOMS = 1 ! Number of azimuth angles calculated by surface supplement
-
+        logical     :: DO_PLANE_PARALLEL = .false.
         type(VLIDORT_IO) :: VIO
 
       END TYPE VLIDORT
@@ -212,7 +212,7 @@
 !                            -------------
 
       DO_SOLAR_SOURCES    = .true.     ! Include solar sources?
-      DO_PLANE_PARALLEL   = .false.    ! Plane-parallel treatment of direct beam?
+      DO_PLANE_PARALLEL   = self%DO_PLANE_PARALLEL    ! Plane-parallel treatment of direct beam?
       DO_CHAPMAN_FUNCTION = .true.     ! Perform internal Chapman function calculation?
       DO_REFRACTIVE_GEOMETRY = .false. ! Beam path with refractive atmosphere?
      
