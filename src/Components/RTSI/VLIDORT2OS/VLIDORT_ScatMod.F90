@@ -32,7 +32,8 @@
          integer         :: nMom                ! number of momemts read (phase function) 
          integer         :: nPol                ! number of components of the scattering matrix
          real*8          :: MISSING             ! MISSING VALUE
-         real*8, pointer :: rot(:)              ! rayleigh optical thickness         
+         real*8, pointer :: rot(:)              ! rayleigh optical thickness     
+         real*8, pointer :: depol_ratio    
          real*8, pointer :: tau(:)              ! aerosol tau
          real*8, pointer :: ssa(:)              ! aerosol ssa
          real*8, pointer ::   g(:)              ! aerosol asymmetry factor
@@ -89,6 +90,7 @@
 
       real*8, dimension(0:MAXLAYERS)                     :: Vol    ! Volume coefficient for molecular scattering
       real*8, target, dimension(MAXLAYERS)               :: Ray    ! Layer Rayleigh optical thickness
+      real*8, target                                     :: depol
 
       real*8, dimension(0:MAXLAYERS)                     :: height_grid                     
       real*8, dimension(0:MAXLAYERS)                     :: pressure_grid 
@@ -141,6 +143,8 @@
 
 
       self%rot => Ray
+      depol = coef_depol(wmicron)
+      self%depol_ratio => depol
 
       rc = 0
 
@@ -370,8 +374,8 @@
 !                Populate Scattering Phase Matrix
 !                ---------------------------------
 
-! DEPOL_RATIO is a function of wavelength in microns
-      DEPOL_RATIO = coef_depol(self%wavelength * 1.E-3)
+! DEPOL_RATIO is a function of wavelength 
+      DEPOL_RATIO = self%depol_ratio
 
 ! First initialize to zero to be safe
       rayvmoms = 0.0
@@ -704,7 +708,7 @@
       call VLIDORT_Rayleigh (self, rc)
 
 ! DEPOL_RATIO is a function of wavelength in microns
-      DEPOL_RATIO = coef_depol(self%wavelength * 1.E-3)
+      DEPOL_RATIO = self%depol_ratio
 !                Populate Scattering Phase Matrix
 !                ---------------------------------
 ! First initialize to zero to be safe
