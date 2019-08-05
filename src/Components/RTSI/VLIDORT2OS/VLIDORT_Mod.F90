@@ -221,7 +221,7 @@
 
       DO_RAYLEIGH_ONLY     = .false. ! Rayleigh atmosphere only?
       DO_DELTAM_SCALING    = .true.  ! Include Delta-M scaling?
-      DO_SSCORR_TRUNCATION = .true. ! Additional Delta-M scaling for SS correction?
+      DO_SSCORR_TRUNCATION = .false. ! Additional Delta-M scaling for SS correction? SHOULD ALWAYS BE FALSE
       DO_SOLUTION_SAVING   = .false. ! Solution saving mode?
       DO_BVP_TELESCOPING   = .false. ! Boundary value problem telescoping mode?
       
