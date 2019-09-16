@@ -10,7 +10,7 @@
 # Make sure ESMADIR is defined
 # ----------------------------
 ifndef ESMADIR
-       ESMADIR := $(PWD)/../../..
+       ESMADIR := $(PWD)/../../../..
 endif
 
 # Compilation rules, flags, etc
@@ -26,7 +26,9 @@ endif
 
 THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
-BINS := cloud_calculator.x aero_calculator.x 
+BINS := pace_vlidort.x
+# aero_calculator.x
+# cloud_calculator.x 
 
 PY_EXTS = 
 PY_SCRP = 
@@ -61,11 +63,18 @@ esma_help help:
 #                  --------------------
 #                  User Defined Targets
 #                  --------------------
+INC_VLIDORT2OS = $(ESMAINC)/VLIDORT2OS
+LIB_VLIDORT2OS = $(ESMALIB)/libVLIDORT2OS.a
+
 INC_GEOVLIDORT = ../../geo_vlidort
 LIB_GEOVLIDORT = ../../geo_vlidort/libgeo_vlidort.a
 
-INC_DIRS = .  $(INC_SDF) $(INC_MAPL_BASE) $(INC_CFIO) $(INC_GFIO) $(INC_MPEU) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) \
-              $(INC_CHEM_BASE) $(INC_GEOS_SHARED)  $(INC_GEOVLIDORT) /usr/include
+INC_LIDORT3p7  = $(ESMAINC)/LIDORT3p7
+LIB_LIDORT3p7  = $(ESMALIB)/libLIDORT3p7.a
+
+INC_DIRS = .  $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) \
+              $(INC_CHEM_BASE) $(INC_VLIDORT2OS) $(INC_GEOVLIDORT) /usr/include
+#$(INC_SDF) $(INC_CFIO) $(INC_GFIO) $(INC_MPEU) $(INC_GEOS_SHARED)             
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
@@ -75,10 +84,10 @@ FREAL = $(FREAL4)
 THIS_CFIO = MAPL_cfio_r4
 THIS_GFIO = GMAO_gfio_r4
 
-LIBS = $(LIB_GEOVLIDORT) $(LIB_CHEM_BASE) \
+LIBS = $(LIB_GEOVLIDORT) $(LIB_VLIDORT2OS) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
        $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
        $(LIB_MAPL_BASE_STUBS2) \
-       $(LIB_CFIO) $(LIB_GFIO) $(LIB_MPEU)  $(LIB_NETCDF) \
+       $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
        $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
 
 # f2py cannot handle a -Wl flag used by Open MPI. But that option is not
@@ -109,7 +118,7 @@ $(LIB) lib : $(DEPS) $(OBJS)
 #%.x : $(LIB) %.F90
 #	$(FC) $(LDFLAGS) -o $@ $(D)TEST $*.F90 $(LIBS)	
 
-%.x: ../geo_vlidort/cloud_MieMod.o %.o
+%.x: ../../geo_vlidort/cloud_MieMod.o %.o
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIBS)	
 
 
