@@ -3064,7 +3064,7 @@ program pace_vlidort
     call ESMF_ConfigGetAttribute(cf, instname, label = 'INSTNAME:',__RC__)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, plane_parallel, label = 'PLANE_PARALLEL:',default=.FALSE.)
-    call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=6)
+    call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=12)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, additional_output, label = 'ADDITIONAL_OUTPUT:',default=.false.)
