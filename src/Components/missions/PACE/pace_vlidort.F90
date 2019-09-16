@@ -59,8 +59,9 @@ program pace_vlidort
   integer                               :: landbandmBRDF, landbandmLER              ! number of wavelength bands or channels in surface reflectance data file
   real, allocatable                     :: landband_cBRDF(:), landband_cLER(:)      ! modis band center wavelength
   logical                               :: scalar
-  integer                               :: nstreams               ! number of half space streams, default = 6
+  integer                               :: nstreams               ! number of half space streams, default = 12
   logical                               :: plane_parallel    
+  logical                               :: cloud_free
   real, allocatable                     :: channels(:)            ! channels to simulate
   real, allocatable                     :: mr(:)                  ! water real refractive index    
   integer                               :: nch                    ! number of channels  
@@ -3063,7 +3064,8 @@ program pace_vlidort
     call ESMF_ConfigGetAttribute(cf, time, label = 'TIME:',__RC__)
     call ESMF_ConfigGetAttribute(cf, instname, label = 'INSTNAME:',__RC__)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
-    call ESMF_ConfigGetAttribute(cf, plane_parallel, label = 'PLANE_PARALLEL:',default=.FALSE.)
+    call ESMF_ConfigGetAttribute(cf, plane_parallel, label = 'PLANE_PARALLEL:',default=.TRUE.)
+    call ESMF_ConfigGetAttribute(cf, cloud_free, label = 'CLOUD_FREE:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=12)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
