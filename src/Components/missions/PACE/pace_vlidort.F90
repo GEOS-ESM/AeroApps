@@ -559,9 +559,20 @@ program pace_vlidort
 
 !   Cloud Optical Properties
 !   ------------------------
-    call getCOPvector(IcldTable, km, nobs, nch, nMom, nPol, channels, REI(i,j,:), TAUI(i,j,:), VssaIcl, VgIcl, VpmomIcl, VtauIcl)
-    call getCOPvector(LcldTable, km, nobs, nch, nMom, nPol, channels, REL(i,j,:), TAUL(i,j,:), VssaLcl, VgLcl, VpmomLcl, VtauLcl)
+    if (cloud_free) then
+      VssaIcl  = 0
+      VgIcl    = 0
+      VpmomIcl = 0
+      VtauIcl  = 0
 
+      Vssalcl  = 0
+      VgLcl    = 0
+      VpmomLcl = 0
+      VtauLcl  = 0
+    else
+      call getCOPvector(IcldTable, km, nobs, nch, nMom, nPol, channels, REI(i,j,:), TAUI(i,j,:), VssaIcl, VgIcl, VpmomIcl, VtauIcl)
+      call getCOPvector(LcldTable, km, nobs, nch, nMom, nPol, channels, REL(i,j,:), TAUL(i,j,:), VssaLcl, VgLcl, VpmomLcl, VtauLcl)
+    end if
 !   Save some variables on the 2D Grid for Writing Later
 !   ------------------------
     ! Rayleigh
@@ -1548,10 +1559,17 @@ program pace_vlidort
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_cld_Tau()
 
-    call mp_readvar3Dchunk("REI"    , CLD_file, (/im,jm,km/), 1, npet, myid, REI) 
-    call mp_readvar3Dchunk("REL"    , CLD_file, (/im,jm,km/), 1, npet, myid, REL) 
-    call mp_readvar3Dchunk("TAUI"   , CLD_file, (/im,jm,km/), 1, npet, myid, TAUI) 
-    call mp_readvar3Dchunk("TAUL"   , CLD_file, (/im,jm,km/), 1, npet, myid, TAUL) 
+    if (cloud_free) then
+      REI = 0
+      REL = 0
+      TAUI = 0
+      TAUL = 0
+    else
+      call mp_readvar3Dchunk("REI"    , CLD_file, (/im,jm,km/), 1, npet, myid, REI) 
+      call mp_readvar3Dchunk("REL"    , CLD_file, (/im,jm,km/), 1, npet, myid, REL) 
+      call mp_readvar3Dchunk("TAUI"   , CLD_file, (/im,jm,km/), 1, npet, myid, TAUI) 
+      call mp_readvar3Dchunk("TAUL"   , CLD_file, (/im,jm,km/), 1, npet, myid, TAUL) 
+    end if
 
     call MAPL_SyncSharedMemory(rc=ierr)    
     if (MAPL_am_I_root()) then
