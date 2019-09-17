@@ -1027,7 +1027,7 @@ program pace_vlidort
       ! -------------------------------
         if (scalar) then
           ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
+          call VLIDORT_Scalar_OCIGissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
                   nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
@@ -1041,7 +1041,7 @@ program pace_vlidort
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
         else
           ! Call to vlidort vector code
-          call VLIDORT_Vector_GissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
+          call VLIDORT_Vector_OCIGissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
@@ -1060,7 +1060,7 @@ program pace_vlidort
       ! ----------------------------------------------------------
         if (scalar) then
           ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
+          call VLIDORT_Scalar_OCIGissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
                   nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
@@ -1075,7 +1075,7 @@ program pace_vlidort
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
         else
           ! Call to vlidort vector code
-          call VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
+          call VLIDORT_Vector_OCIGissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
