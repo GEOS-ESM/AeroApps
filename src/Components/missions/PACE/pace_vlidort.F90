@@ -63,6 +63,7 @@ program pace_vlidort
   logical                               :: plane_parallel    
   logical                               :: cloud_free
   logical                               :: aerosol_free
+  logical                               :: standard_atm
   real, allocatable                     :: channels(:)            ! channels to simulate
   real, allocatable                     :: mr(:)                  ! water real refractive index    
   integer                               :: nch                    ! number of channels  
@@ -85,7 +86,7 @@ program pace_vlidort
 ! ----------
   character(len=256)                    :: AER_file, ANG_file, INV_file, BRDF_file, LER_file, OUT_file
   character(len=256)                    :: ADD_file, CLD_file, MET_file, WAT_file, NDVI_file, BPDF_file 
-  character(len=256)                    :: AERO_file, CLDO_file
+  character(len=256)                    :: AERO_file, CLDO_file, STDATM_file
 
 ! Global, 3D inputs to be allocated using SHMEM
 ! ---------------------------------------------
@@ -239,6 +240,7 @@ program pace_vlidort
   integer                               :: myid, npet, CoresPerNode                    ! MPI dimensions and processor id
   integer                               :: p                                           ! i-processor
   character(len=100)                    :: msg                                         ! message to be printed
+  character(len=256)                    :: line                                        ! dummy variables to read line of file 
   real                                  :: progress                                    ! 
   real                                  :: g5nr_missing  
   logical                               :: do_cxonly, do_cx_sleave                              !
@@ -304,8 +306,30 @@ program pace_vlidort
 !----------------------------------------------
   call mp_readDim("ccd_pixels", CLD_file, im)
   call mp_readDim("number_of_scans", CLD_file, jm)
-  call mp_readDim("lev", CLD_file, km)
+  
   call mp_readDim("time", AER_file,tm)
+
+  if (standard_atm) then
+    do p=1,npet
+      if (myid .eq. p) then
+        km = 0
+        open(unit=15,file=STDATM_file, status='old', access='sequential', &
+              form='formatted', action='read')
+
+        do
+          read(15,*,end=10) line
+          km = km + 1
+        enddo
+
+10      close(15)
+        km = km -1
+      end if  
+      call MAPL_SyncSharedMemory(rc=ierr)    
+    end do    
+  else
+    call mp_readDim("lev", CLD_file, km)
+  end if
+
 
   call mp_readVattr("missing_value", AER_FILE, "DELP", g5nr_missing)
   if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
@@ -430,6 +454,7 @@ program pace_vlidort
 ! ! ------------------------------
   call read_land()
   call read_aer_Nv()
+  call read_PT()
   call read_surf_land()
   call read_water()
   call read_angles()
@@ -526,9 +551,11 @@ program pace_vlidort
     i  = iIndex(c)
     j  = jIndex(c)
 
-    call getEdgeVars ( km, nobs, reshape(AIRDENS(i,j,:),(/km,nobs/)), &
+    if (.not. standard_atm) then
+      call getEdgeVars ( km, nobs, reshape(AIRDENS(i,j,:),(/km,nobs/)), &
                        reshape(DELP(i,j,:),(/km,nobs/)), ptop, &
                        Vpe, Vze, Vte )   
+    end if
     PE(i,j,:) = Vpe(:,nobs)
     ZE(i,j,:) = Vze(:,nobs)
     TE(i,j,:) = Vte(:,nobs)
@@ -1543,6 +1570,7 @@ program pace_vlidort
         OCPHOBIC = 0
         OCPHILIC = 0
         SO4 = 0
+        RH  = 0
       end if
       call MAPL_SyncSharedMemory(rc=ierr)   
     else
@@ -1561,11 +1589,8 @@ program pace_vlidort
       call mp_readvar3Dchunk("OCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, OCPHOBIC) 
       call mp_readvar3Dchunk("OCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, OCPHILIC) 
       call mp_readvar3Dchunk("SO4", AER_file, (/im,jm,km/), 1, npet, myid, SO4) 
+      call mp_readvar3Dchunk("RH"     , AER_file, (/im,jm,km/), 1, npet, myid, RH) 
     end if
-
-    call mp_readvar3Dchunk("AIRDENS", AER_file, (/im,jm,km/), 1, npet, myid, AIRDENS)  
-    call mp_readvar3Dchunk("RH"     , AER_file, (/im,jm,km/), 1, npet, myid, RH) 
-    call mp_readvar3Dchunk("DELP"   , AER_file, (/im,jm,km/), 1, npet, myid, DELP) 
 
     call MAPL_SyncSharedMemory(rc=ierr)    
     if (MAPL_am_I_root()) then
@@ -1573,6 +1598,49 @@ program pace_vlidort
     end if      
 
   end subroutine read_aer_Nv
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     read_PT
+! PURPOSE
+!     read in pressure, temperature profile.  either get P,T from text file,
+!     or AIRDENS and DELP, which will later convert to P,T
+! INPUT
+!     none
+! OUTPUT
+!     none
+!  HISTORY
+!     15 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+  subroutine read_PT()
+
+
+    if (standard_atm) then
+      ! read edge vars to each processor
+      do p=1,npet
+        if (myid .eq. p) then
+          open(unit=15,file=STDATM_file, status='old', access='sequential', &
+                form='formatted', action='read')
+
+          do k=1,km+1
+            read(15,*) Vpe(k,nobs),Vte(k,nobs),Vze(k,nobs)
+          end do
+
+          close(15)
+        end if
+        call MAPL_SyncSharedMemory(rc=ierr)  
+      end do
+    else
+      call mp_readvar3Dchunk("AIRDENS", AER_file, (/im,jm,km/), 1, npet, myid, AIRDENS)  
+      call mp_readvar3Dchunk("DELP"   , AER_file, (/im,jm,km/), 1, npet, myid, DELP) 
+    end if
+
+
+    call MAPL_SyncSharedMemory(rc=ierr)    
+    if (MAPL_am_I_root()) then
+      write(*,*) '<> Read pressutre,temperature data to shared memory'
+    end if      
+
+  end subroutine read_PT
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -3116,6 +3184,7 @@ program pace_vlidort
     call ESMF_ConfigGetAttribute(cf, plane_parallel, label = 'PLANE_PARALLEL:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, cloud_free, label = 'CLOUD_FREE:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, aerosol_free, label = 'AEROSOL_FREE:',default=.TRUE.)
+    call ESMF_ConfigGetAttribute(cf, standard_atm, label = 'STANDARD_ATM:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=12)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
@@ -3140,6 +3209,10 @@ program pace_vlidort
       call ESMF_ConfigGetAttribute(cf, landband_cLER, label = 'LANDBAND_C_LER:', __RC__)
     end if
 
+    ! standard atmosphere profile
+    if (standard_atm) then
+      call ESMF_ConfigGetAttribute(cf, STDATM_file, label = 'STDATM_file:',__RC__)
+    end if
     ! Water Surface
     call ESMF_ConfigGetAttribute(cf, watername, label = 'WATERNAME:',default='CX')
     call ESMF_ConfigGetAttribute(cf, watermodel, label = 'WATERMODEL:',default='CX')
