@@ -62,6 +62,7 @@ program pace_vlidort
   integer                               :: nstreams               ! number of half space streams, default = 12
   logical                               :: plane_parallel    
   logical                               :: cloud_free
+  logical                               :: aerosol_free
   real, allocatable                     :: channels(:)            ! channels to simulate
   real, allocatable                     :: mr(:)                  ! water real refractive index    
   integer                               :: nch                    ! number of channels  
@@ -549,12 +550,19 @@ program pace_vlidort
 
 !   Aerosol Optical Properties
 !   --------------------------
-    call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
+    if (aerosol_free) then
+      Vtau = 0
+      Vssa = 0
+      Vg   = 0
+      Vpmom = 0
+    else
+      call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
                         Vqm, reshape(RH(i,j,:),(/km,nobs/)),&
                         nMom,nPol, Vtau, Vssa, Vg, Vpmom, ierr )
-    if ( ierr /= 0 ) then
-      print *, 'cannot get aerosol optical properties'
-      call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)      
+      if ( ierr /= 0 ) then
+        print *, 'cannot get aerosol optical properties'
+        call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)      
+      end if
     end if
 
 !   Cloud Optical Properties
@@ -1518,22 +1526,43 @@ program pace_vlidort
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_aer_Nv()
+    if (aerosol_free) then
+      if (MAPL_am_I_root()) then
+        DU001 = 0
+        DU002 = 0
+        DU003 = 0
+        DU004 = 0
+        DU005 = 0
+        SS001 = 0
+        SS002 = 0
+        SS003 = 0
+        SS004 = 0
+        SS005 = 0
+        BCPHOBIC = 0
+        BCPHILIC = 0
+        OCPHOBIC = 0
+        OCPHILIC = 0
+        SO4 = 0
+      end if
+      call MAPL_SyncSharedMemory(rc=ierr)   
+    else
+      call mp_readvar3Dchunk("DU001", AER_file, (/im,jm,km/), 1, npet, myid, DU001) 
+      call mp_readvar3Dchunk("DU002", AER_file, (/im,jm,km/), 1, npet, myid, DU002) 
+      call mp_readvar3Dchunk("DU003", AER_file, (/im,jm,km/), 1, npet, myid, DU003) 
+      call mp_readvar3Dchunk("DU004", AER_file, (/im,jm,km/), 1, npet, myid, DU004) 
+      call mp_readvar3Dchunk("DU005", AER_file, (/im,jm,km/), 1, npet, myid, DU005) 
+      call mp_readvar3Dchunk("SS001", AER_file, (/im,jm,km/), 1, npet, myid, SS001) 
+      call mp_readvar3Dchunk("SS002", AER_file, (/im,jm,km/), 1, npet, myid, SS002) 
+      call mp_readvar3Dchunk("SS003", AER_file, (/im,jm,km/), 1, npet, myid, SS003) 
+      call mp_readvar3Dchunk("SS004", AER_file, (/im,jm,km/), 1, npet, myid, SS004) 
+      call mp_readvar3Dchunk("SS005", AER_file, (/im,jm,km/), 1, npet, myid, SS005) 
+      call mp_readvar3Dchunk("BCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, BCPHOBIC) 
+      call mp_readvar3Dchunk("BCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, BCPHILIC) 
+      call mp_readvar3Dchunk("OCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, OCPHOBIC) 
+      call mp_readvar3Dchunk("OCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, OCPHILIC) 
+      call mp_readvar3Dchunk("SO4", AER_file, (/im,jm,km/), 1, npet, myid, SO4) 
+    end if
 
-    call mp_readvar3Dchunk("DU001", AER_file, (/im,jm,km/), 1, npet, myid, DU001) 
-    call mp_readvar3Dchunk("DU002", AER_file, (/im,jm,km/), 1, npet, myid, DU002) 
-    call mp_readvar3Dchunk("DU003", AER_file, (/im,jm,km/), 1, npet, myid, DU003) 
-    call mp_readvar3Dchunk("DU004", AER_file, (/im,jm,km/), 1, npet, myid, DU004) 
-    call mp_readvar3Dchunk("DU005", AER_file, (/im,jm,km/), 1, npet, myid, DU005) 
-    call mp_readvar3Dchunk("SS001", AER_file, (/im,jm,km/), 1, npet, myid, SS001) 
-    call mp_readvar3Dchunk("SS002", AER_file, (/im,jm,km/), 1, npet, myid, SS002) 
-    call mp_readvar3Dchunk("SS003", AER_file, (/im,jm,km/), 1, npet, myid, SS003) 
-    call mp_readvar3Dchunk("SS004", AER_file, (/im,jm,km/), 1, npet, myid, SS004) 
-    call mp_readvar3Dchunk("SS005", AER_file, (/im,jm,km/), 1, npet, myid, SS005) 
-    call mp_readvar3Dchunk("BCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, BCPHOBIC) 
-    call mp_readvar3Dchunk("BCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, BCPHILIC) 
-    call mp_readvar3Dchunk("OCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, OCPHOBIC) 
-    call mp_readvar3Dchunk("OCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, OCPHILIC) 
-    call mp_readvar3Dchunk("SO4", AER_file, (/im,jm,km/), 1, npet, myid, SO4) 
     call mp_readvar3Dchunk("AIRDENS", AER_file, (/im,jm,km/), 1, npet, myid, AIRDENS)  
     call mp_readvar3Dchunk("RH"     , AER_file, (/im,jm,km/), 1, npet, myid, RH) 
     call mp_readvar3Dchunk("DELP"   , AER_file, (/im,jm,km/), 1, npet, myid, DELP) 
@@ -1560,10 +1589,12 @@ program pace_vlidort
   subroutine read_cld_Tau()
 
     if (cloud_free) then
-      REI = 0
-      REL = 0
-      TAUI = 0
-      TAUL = 0
+      if (MAPL_am_I_root()) then
+        REI = 0
+        REL = 0
+        TAUI = 0
+        TAUL = 0
+      end if
     else
       call mp_readvar3Dchunk("REI"    , CLD_file, (/im,jm,km/), 1, npet, myid, REI) 
       call mp_readvar3Dchunk("REL"    , CLD_file, (/im,jm,km/), 1, npet, myid, REL) 
@@ -3084,6 +3115,7 @@ program pace_vlidort
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, plane_parallel, label = 'PLANE_PARALLEL:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, cloud_free, label = 'CLOUD_FREE:',default=.TRUE.)
+    call ESMF_ConfigGetAttribute(cf, aerosol_free, label = 'AEROSOL_FREE:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=12)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
