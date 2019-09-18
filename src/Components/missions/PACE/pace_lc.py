@@ -19,6 +19,9 @@ from   MAPL.ShaveMantissa_ import shave32
 from MAPL.constants import MAPL_UNDEF
 
 
+OCItable_file = './oci_tables/OCI_ROD_Table_adjusted_rotate.txt'
+STDATM_file   = './oci_tables/pressure_temp_profile.txt'
+
 mr =  [1.396,1.362,1.349,1.345,1.339,1.335,1.334,1.333,1.332,1.331,1.329,1.326,
       1.323,1.318,1.312,1.306,1.292,1.261]
 
@@ -26,6 +29,8 @@ mr_ch = [200,250,300,337,400,488,515,550,633,694,860,1060,1300,1536,1800,2000,22
 
 mr = np.array(mr)
 mr_ch = np.array(mr_ch)
+
+mr_OCI = 1.334
 
 nlev = 72
 
@@ -146,6 +151,8 @@ class JOBS(object):
             jobid = np.append(jobid,subprocess.check_output(['qsub',self.runfile]))
         os.chdir(self.cwd)
 
+        # launch subprocess that will monitor queue and do file merging
+
         # Monitor jobs 1-by-1 
         # Add a new job when one finishes 
         # Until they are all done
@@ -181,7 +188,7 @@ class JOBS(object):
                     if (result != 0):
                         finished = True   
 
-                # if the job is finished clean up the workspace
+                # if the job is finished add to finished jobs list
                 if finished:
                     #print 'Job finished, cleaning up', s, i 
                     finishedJobs = np.append(finishedJobs,ii)
@@ -285,16 +292,23 @@ class WORKSPACE(JOBS):
         if not os.path.exists(args.tmp):
             os.makedirs(args.tmp)
 
-        self.cwd = os.getcwd()
-        self.runfile   = args.slurm
-        self.profile   = args.profile
-        self.rootdir   = args.rootdir
-        self.verbose   = args.verbose
-        self.bpdf_name = args.bpdf_name
-        self.rtls_name = args.rtls_name
-        self.write_add = args.write_add
-        self.write_aer = args.write_aer
-        self.write_cld = args.write_cld
+        self.cwd          = os.getcwd()
+        self.runfile      = args.slurm
+        self.profile      = args.profile
+        self.rootdir      = args.rootdir
+        self.verbose      = args.verbose
+        self.bpdf_name    = args.bpdf_name
+        self.rtls_name    = args.rtls_name
+        self.write_add    = args.write_add
+        self.write_aer    = args.write_aer
+        self.write_cld    = args.write_cld
+        self.standard_atm = args.standard_atm
+        self.cloudfree    = args.cloudfree
+        self.aerosolfree  = args.aerosolfree
+        self.mr_spectral  = args.mr_spectral
+
+        self.OCItable_file = args.OCItable_file
+        self.STDATM_file   = args.STDATM_file
 
         self.dirstring = []
         self.outfilelist = []
@@ -355,7 +369,7 @@ class WORKSPACE(JOBS):
 
         # link over some scripts and files
         source = ['leo_vlidort_cloud.x','ExtData','Chem_MieRegistry.rc',
-                  'ExtDataCloud','clean_mem.sh']
+                  'ExtDataCloud','clean_mem.sh',self.OCItable_file,self.STDATM_file]
         for src in source:
             os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(outpath,src))
 
@@ -438,6 +452,15 @@ class WORKSPACE(JOBS):
         newline  = 'SCALAR: false\n'
         text.append(newline)
 
+        newline = 'PLANE_PARALLEL: {}\n'.format(self.planeparallel)
+        text.append(newline)
+
+        newline = 'CLOUD_FREE: {}\n'.format(self.cloudfree)
+        text.append(newline)
+
+        newline = 'AEROSOL_FREE: {}\n'.format(self.aerosolfree)
+        text.append(newline)
+
         if self.nodemax is not None:
             newline = 'NODEMAX: {}\n'.format(self.nodemax)
         else:
@@ -453,6 +476,13 @@ class WORKSPACE(JOBS):
         newline = 'VERSION: 1.0\n'
         text.append(newline)
         newline = 'LAYOUT: None\n'
+        text.append(newline)
+        text.append('\n')
+
+        # OCI SPECIFIC STUFF
+        newline = 'OCItable_file: {}\n'.format(self.OCItable_file)
+        text.append(newline)
+        newline = 'STDATM_file: {}\n'.format(self.STDATM_file)
         text.append(newline)
         text.append('\n')
 
@@ -542,11 +572,14 @@ class WORKSPACE(JOBS):
         text.append(newline)
 
         #refractive index
-        mruse = np.interp(float(ch),mr_ch,mr)
+        if self.mr_spectral:
+            mruse = np.interp(float(ch),mr_ch,mr)
+        else:
+            mruse = mr_OCI
         newline = 'WATERMR: {}\n'.format(mruse)
         text.append(newline)
-
         text.append('\n')
+
         # CLOUD STUFF
         newline = 'ICLDTABLE:ExtDataCloud/IceLegendreCoeffs.nc4\n'
         text.append(newline)
@@ -1110,10 +1143,31 @@ if __name__ == '__main__':
                         help="BPDF model name (e.g. MAIGNAN) (default=%s)"%bpdf_name)                          
 
     parser.add_argument('--rtls_name',default=rtls_name,
-                        help="RTLS data name (e.g. MCD43C) (default=%s)"%rtls_name)                          
+                        help="RTLS data name (e.g. MCD43C) (default=%s)"%rtls_name)     
+
+    parser.add_argument('--STDATM_file',default=STDATM_file,
+                        help="standard atmosphere profile (default=%s)"%STDATM_file)      
+
+    parser.add_argument('--OCItable_file',default=OCItable_file,
+                        help="OCI tables of bandpass spectral ROD and depol ratio (default=%s)"%OCIable_file)                                                                           
 
     parser.add_argument("--norad",action="store_true",
                         help="No radiance calculations (default=False).")
+
+    parser.add_argument("--withcloud",action="store_true",
+                        help="Include cloud effects (default=False).")    
+
+    parser.add_argument("--withaerosol",action="store_true",
+                        help="Include aerosol effects (default=False).")   
+
+    parser.add_argument("--mr_spectral",action="store_true",
+                        help="Use spectral refractive index for water (default=False).")       
+
+    parser.add_argument("--geosprofile",action="store_true",
+                        help="Use GEOS atmospheric profile, instead of standard atm (default=False).")                                
+
+    parser.add_argument("--pseudospherical",action="store_true",
+                        help="Use pseudospherical approximation, instead of plane parallel (default=False).")                                
 
     parser.add_argument("--no_add",action="store_true",
                         help="Do NOT write additional output in VLIDORT call (default=False).")  
@@ -1150,8 +1204,23 @@ if __name__ == '__main__':
 
     args.write_aer = True
     if args.no_write_aer:
-        args.write_aer = False        
+        args.write_aer = False     
 
+    args.standard_atm = True
+    if args.geosprofile:
+        args.standard_atm = False
+
+    args.cloudfree = True
+    if args.withcloud:
+        args.cloudfree = False
+
+    args.aerosolfree = True
+    if args.withaerosol:
+        args.aerosolfree = False
+
+    args.planeparallel = True
+    if args.pseudospherical:
+        args.planeparallel = False
 
     workspace = WORKSPACE(args)
 
