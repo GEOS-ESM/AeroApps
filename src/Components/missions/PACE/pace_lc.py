@@ -19,8 +19,8 @@ from   MAPL.ShaveMantissa_ import shave32
 from MAPL.constants import MAPL_UNDEF
 
 
-OCItable_file = './oci_tables/OCI_ROD_Table_adjusted_rotate.txt'
-STDATM_file   = './oci_tables/pressure_temp_profile.txt'
+OCItable_file = 'oci_tables/OCI_ROD_Table_adjusted_rotate.txt'
+STDATM_file   = 'oci_tables/pressure_temp_profile.txt'
 
 mr =  [1.396,1.362,1.349,1.345,1.339,1.335,1.334,1.333,1.332,1.331,1.329,1.326,
       1.323,1.318,1.312,1.306,1.292,1.261]
@@ -292,21 +292,22 @@ class WORKSPACE(JOBS):
         if not os.path.exists(args.tmp):
             os.makedirs(args.tmp)
 
-        self.cwd          = os.getcwd()
-        self.runfile      = args.slurm
-        self.profile      = args.profile
-        self.rootdir      = args.rootdir
-        self.verbose      = args.verbose
-        self.run_name     = args.run_name
-        self.bpdf_name    = args.bpdf_name
-        self.rtls_name    = args.rtls_name
-        self.write_add    = args.write_add
-        self.write_aer    = args.write_aer
-        self.write_cld    = args.write_cld
-        self.standard_atm = args.standard_atm
-        self.cloudfree    = args.cloudfree
-        self.aerosolfree  = args.aerosolfree
-        self.mr_spectral  = args.mr_spectral
+        self.cwd           = os.getcwd()
+        self.runfile       = args.slurm
+        self.profile       = args.profile
+        self.rootdir       = args.rootdir
+        self.verbose       = args.verbose
+        self.run_name      = args.run_name
+        self.bpdf_name     = args.bpdf_name
+        self.rtls_name     = args.rtls_name
+        self.write_add     = args.write_add
+        self.write_aer     = args.write_aer
+        self.write_cld     = args.write_cld
+        self.standard_atm  = args.standard_atm
+        self.planeparallel = args.planeparallel
+        self.cloudfree     = args.cloudfree
+        self.aerosolfree   = args.aerosolfree
+        self.mr_spectral   = args.mr_spectral
 
         self.OCItable_file = args.OCItable_file
         self.STDATM_file   = args.STDATM_file
@@ -355,6 +356,7 @@ class WORKSPACE(JOBS):
         if os.path.exists(outpath):
             shutil.rmtree(outpath)
         os.makedirs(outpath)
+        os.makedirs(outpath+'/oci_tables')
 
         # Copy over slurm script    
         outfile = '{}/{}'.format(outpath,self.runfile)
