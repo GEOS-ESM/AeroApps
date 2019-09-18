@@ -1153,7 +1153,7 @@ if __name__ == '__main__':
                         help="channels to run extinction sampler (default=None - read in from PACE L1B File)")  
 
     parser.add_argument('--run_name',default=None,
-                        help="Optional version naming for outfiles (default=%s)"%run_name)    
+                        help="Optional version naming for outfiles (default=None)")    
 
     parser.add_argument('--bpdf_name',default=bpdf_name,
                         help="BPDF model name (e.g. MAIGNAN) (default=%s)"%bpdf_name)                          
