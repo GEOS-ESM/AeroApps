@@ -432,7 +432,7 @@ class WORKSPACE(JOBS):
         L1bDir    = '{}/L1B/{}'.format(self.rootdir,pYMDdir)
 
 
-        filename = '{}/leo_vlidort_cloud.rc'.format(outpath)
+        filename = '{}/pace_vlidort.rc'.format(outpath)
         f = open(filename,'w')
         text = []
 

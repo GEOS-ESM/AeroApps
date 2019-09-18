@@ -3,13 +3,15 @@
 #######################################################################
 #                     Batch Parameters for Run Job
 #######################################################################
-#SBATCH --time=01:00:00
+#SBATCH --time=03:00:00
 #SBATCH --constraint=hasw
 #SBATCH --ntasks=28 --cpus-per-task=1 --ntasks-per-node=28
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=patricia.castellanos@nasa.gov
 #SBATCH --job-name=pace_vlidort
-#SBATCH -A s1180
+#SBATCH --qos=pace
+#SBATCH --partition=preops
+#SBATCH --account=s1180
 #SBATCH --array=1-2
 #SBATCH --output=slurm_%A_%a.out
 #SBATCH --error=slurm_%A_%a.err
@@ -48,6 +50,6 @@ cd $AEROBIN
 ######
 ##################################################################
 ./clean_mem.sh
-$RUN_CMD ./leo_vlidort_cloud.x leo_vlidort_cloud.rc ${SLURM_ARRAY_TASK_ID}
+$RUN_CMD ./pace_vlidort.x pace_vlidort.rc ${SLURM_ARRAY_TASK_ID}
 ./clean_mem.sh
 
