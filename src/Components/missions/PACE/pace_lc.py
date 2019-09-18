@@ -371,7 +371,7 @@ class WORKSPACE(JOBS):
         self.edit_AODrc(outfile,ch)
 
         # link over some scripts and files
-        source = ['leo_vlidort_cloud.x','ExtData','Chem_MieRegistry.rc',
+        source = ['pace_vlidort.x','ExtData','Chem_MieRegistry.rc',
                   'ExtDataCloud','clean_mem.sh',self.OCItable_file,self.STDATM_file]
         for src in source:
             os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(outpath,src))
