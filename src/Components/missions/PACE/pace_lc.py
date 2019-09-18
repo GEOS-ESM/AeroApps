@@ -268,7 +268,7 @@ class JOBS(object):
 
         error = False 
         if self.nodemax is not None:
-            for a in np.arange(nodemax):
+            for a in np.arange(self.nodemax):
                 a = a + 1
                 errfile = 'slurm_' +jobid + '_' + str(a) + '.err'
                 statinfo = os.stat(errfile)
