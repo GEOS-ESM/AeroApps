@@ -86,7 +86,7 @@ program pace_vlidort
 ! ----------
   character(len=256)                    :: AER_file, ANG_file, INV_file, BRDF_file, LER_file, OUT_file
   character(len=256)                    :: ADD_file, CLD_file, MET_file, WAT_file, NDVI_file, BPDF_file 
-  character(len=256)                    :: AERO_file, CLDO_file, STDATM_file
+  character(len=256)                    :: AERO_file, CLDO_file, STDATM_file, OCItable_file
 
 ! Global, 3D inputs to be allocated using SHMEM
 ! ---------------------------------------------
@@ -212,6 +212,12 @@ program pace_vlidort
 ! Mie Table Stucture
 !---------------------
   type(Chem_Mie)                        :: mieTables
+
+! OCI ROD Table
+!--------------------
+  integer, parameter                    :: nchOCI = 123
+  real                                  :: depolOCI(nchOCI), rodOCI(nchOCI), wavOCI(nchOCI)
+  real, allocatable                     :: ROD_stdatm(:), DEPOL_stdatm(:)
 
 ! Satellite domain variables
 !------------------------------
@@ -513,6 +519,16 @@ program pace_vlidort
     BR_U = dble(MISSING)    
   end if
   call MAPL_SyncSharedMemory(rc=ierr)
+
+! Read OCI standard ROD and depol ratio Table
+! --------------------------------------------
+  call read_OCI_stdatm()
+  do k=1,nchOCI
+    ROD_stdatm(k)   = nn_interp(wavOCI,rodOCI,channels(k),MISSING,MISSING)
+    DEPOL_stdatm(k) = nn_interp(wavOCI,depolOCI,channels(k),MISSING,MISSING)
+  end do
+
+
 ! Prepare inputs and run VLIDORT
 ! -----------------------------------
   call strarr_2_chararr(vnames_string,nq,16,vnames)
@@ -573,7 +589,20 @@ program pace_vlidort
     call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(Vpe), dble(Vze), dble(Vte), &
                                    dble(MISSING),verbose, &
                                    ROT, depol, ierr )  
+    ! rescale to ROD_stdatm
+    do k=1,nch
+      ROT(:,nobs,k) = ROT(:,nobs,k)*ROD_stdatm(k)/sum(ROT(:,nobs,k))
+    end do
 
+    if (.not. standard_atm) then   
+    ! use standard PS = 101300.00 Pa for scaling
+      do k=1,nch
+        ROT(:,nobs,k) = ROT(:,nobs,k)*Vpe(km+1,nobs)/1013000.0
+      end do
+    end if
+
+    ! set to OCI table values
+    depol = DEPOL_stdatm
 
 !   Aerosol Optical Properties
 !   --------------------------
@@ -1338,6 +1367,33 @@ program pace_vlidort
     end if   
 
   end subroutine DO_LAND
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     read_OCI_stdatm
+! PURPOSE
+!     read in OCI spectral ROD and depol ratio values for standard atmosphere
+! INPUT
+! OUTPUT
+!  HISTORY
+!     Sep 2018 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+  subroutine read_OCI_stdatm()
+    do p=1,npet
+      if (myid .eq. p) then
+        open(unit=15,file=OCItable_file, status='old', access='sequential', &
+              form='formatted', action='read')
+        ! read header
+        read(15,*) line 
+        do k=1,nchOCI
+          read(15,*) wavOCI(k), rodOCI(k), depolOCI(k)
+        end do
+
+        close(15)
+      end if
+      call MAPL_SyncSharedMemory(rc=ierr)      
+    end do
+  end subroutine read_OCI_stdatm
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -2152,6 +2208,8 @@ program pace_vlidort
 
     allocate (ROT(km,nobs,nch))
     allocate (depol(nch))
+    allocate (ROD_stdatm(nch))
+    allocate (DEPOL_stdatm(nch))
     allocate (Vpmom(km,nch,nobs,nMom,nPol))
     allocate (VpmomLcl(km,nch,nobs,nMom,nPol))
     allocate (VpmomIcl(km,nch,nobs,nMom,nPol))
@@ -3208,6 +3266,9 @@ program pace_vlidort
       allocate (landband_cLER(landbandmLER))    
       call ESMF_ConfigGetAttribute(cf, landband_cLER, label = 'LANDBAND_C_LER:', __RC__)
     end if
+
+    ! OCI Bandpass specific RODs
+    call ESMF_ConfigGetAttribute(cf, OCItable_file, label = 'OCItable_file:',__RC__)
 
     ! standard atmosphere profile
     if (standard_atm) then
