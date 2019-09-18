@@ -1165,7 +1165,7 @@ if __name__ == '__main__':
                         help="standard atmosphere profile (default=%s)"%STDATM_file)      
 
     parser.add_argument('--OCItable_file',default=OCItable_file,
-                        help="OCI tables of bandpass spectral ROD and depol ratio (default=%s)"%OCIable_file)                                                                           
+                        help="OCI tables of bandpass spectral ROD and depol ratio (default=%s)"%OCItable_file)                                                                           
 
     parser.add_argument("--norad",action="store_true",
                         help="No radiance calculations (default=False).")
