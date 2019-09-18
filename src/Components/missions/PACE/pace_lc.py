@@ -297,6 +297,7 @@ class WORKSPACE(JOBS):
         self.profile      = args.profile
         self.rootdir      = args.rootdir
         self.verbose      = args.verbose
+        self.run_name     = args.run_name
         self.bpdf_name    = args.bpdf_name
         self.rtls_name    = args.rtls_name
         self.write_add    = args.write_add
@@ -607,13 +608,19 @@ class WORKSPACE(JOBS):
         text.append(newline)
 
         fch = "{:.2f}".format(ch).replace('.','d')
-        OUT_file = '{}/pace-g5nr.lc.vlidort.{}_{}.{}.nc4'.format(LcDirCh,nymd,hms,fch)
+        if self.run_name is None:
+            OUT_file = '{}/pace-g5nr.lc.vlidort.{}_{}.{}.nc4'.format(LcDirCh,nymd,hms,fch)
+        else:
+            OUT_file = '{}/pace-g5nr.lc.vlidort.{}.{}_{}.{}.nc4'.format(LcDirCh,self.run_name,nymd,hms,fch)
         newline = 'OUT_file: {}\n'.format(OUT_file)
         text.append(newline)
         self.outfilelist.append(OUT_file)
 
         if self.write_add:
-            ADD_file = '{}/pace-g5nr.lc.add.{}_{}.{}.nc4'.format(LcDirCh,nymd,hms,fch)
+            if self.run_name is None:
+                ADD_file = '{}/pace-g5nr.lc.add.{}_{}.{}.nc4'.format(LcDirCh,nymd,hms,fch)
+            else:
+                ADD_file = '{}/pace-g5nr.lc.add.{}.{}_{}.{}.nc4'.format(LcDirCh,self.run_name,nymd,hms,fch)
             newline = 'ADD_file: {}\n'.format(ADD_file)
             text.append(newline)
             self.addfilelist.append(ADD_file)
@@ -625,7 +632,10 @@ class WORKSPACE(JOBS):
         if self.write_cld:
             newline = 'CLOUD_OUTPUT: true\n'
             text.append(newline)
-            CLDO_file = '{}/pace-g5nr.lc.cloud.{}_{}.{}.nc4'.format(LcDirCh,nymd,hms,fch)
+            if self.run_name is None:
+                CLDO_file = '{}/pace-g5nr.lc.cloud.{}_{}.{}.nc4'.format(LcDirCh,nymd,hms,fch)
+            else:
+                CLDO_file = '{}/pace-g5nr.lc.cloud.{}.{}_{}.{}.nc4'.format(LcDirCh,self.run_name,nymd,hms,fch)
             newline = 'CLDO_file: {}\n'.format(CLDO_file)
             text.append(newline)
             self.cldfilelist.append(CLDO_file)   
@@ -633,7 +643,10 @@ class WORKSPACE(JOBS):
         if self.write_aer:
             newline = 'AEROSOL_OUTPUT: true\n'
             text.append(newline)
-            AERO_file = '{}/pace-g5nr.lc.aerosol.{}_{}.{}.nc4'.format(LcDirCh,nymd,hms,fch)
+            if self.run_name is None:
+                AERO_file = '{}/pace-g5nr.lc.aerosol.{}_{}.{}.nc4'.format(LcDirCh,nymd,hms,fch)
+            else:
+                AERO_file = '{}/pace-g5nr.lc.aerosol.{}.{}_{}.{}.nc4'.format(LcDirCh,self.run_name,nymd,hms,fch)
             newline = 'AERO_file: {}\n'.format(AERO_file)
             text.append(newline)
             self.aerfilelist.append(AERO_file)                        
@@ -1138,6 +1151,9 @@ if __name__ == '__main__':
 
     parser.add_argument("-e","--extch", default=None,type=lambda s: map(int, s.split(",")),
                         help="channels to run extinction sampler (default=None - read in from PACE L1B File)")  
+
+    parser.add_argument('--run_name',default=None,
+                        help="Optional version naming for outfiles (default=%s)"%run_name)    
 
     parser.add_argument('--bpdf_name',default=bpdf_name,
                         help="BPDF model name (e.g. MAIGNAN) (default=%s)"%bpdf_name)                          
