@@ -316,14 +316,15 @@ program pace_vlidort
   call mp_readDim("time", AER_file,tm)
 
   if (standard_atm) then
-    do p=1,npet
+    call MAPL_SyncSharedMemory(rc=ierr)  
+    do p=0,npet-1
       if (myid .eq. p) then
         km = 0
         open(unit=15,file=STDATM_file, status='old', access='sequential', &
               form='formatted', action='read')
-
+        read(15,'(A)') line ! header
         do
-          read(15,*,end=10) line
+          read(15,'(A)',end=10) line
           km = km + 1
         enddo
 
@@ -523,11 +524,10 @@ program pace_vlidort
 ! Read OCI standard ROD and depol ratio Table
 ! --------------------------------------------
   call read_OCI_stdatm()
-  do k=1,nchOCI
+  do k=1,nch
     ROD_stdatm(k)   = nn_interp(wavOCI,rodOCI,channels(k),MISSING,MISSING)
     DEPOL_stdatm(k) = nn_interp(wavOCI,depolOCI,channels(k),MISSING,MISSING)
   end do
-
 
 ! Prepare inputs and run VLIDORT
 ! -----------------------------------
@@ -535,15 +535,18 @@ program pace_vlidort
 
 ! Create the Mie Tables
 ! ---------------------
-  mieTables = Chem_MieCreate(rcfile,rc)
-  if ( rc /= 0 ) then
-    print *, 'Cannot create Mie tables from '//trim(rcfile)
-    call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
-  end if
+  if (.not. standard_atm) then
+    mieTables = Chem_MieCreate(rcfile,rc)
+    if ( rc /= 0 ) then
+      print *, 'Cannot create Mie tables from '//trim(rcfile)
+      call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
+    end if
 
-  if ( nMom > mieTables%nMom ) then ! mieTables%nMom is writen in Aod_EOS.rc file
-    print *, 'mieTables do not have enough moments', nMom, mieTables%nMom
-    call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
+    if ( nMom > mieTables%nMom ) then ! mieTables%nMom is writen in Aod_EOS.rc file
+      print *, 'mieTables do not have enough moments', nMom, mieTables%nMom
+      call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
+    end if
+
   end if
 
   if (myid == 0) then
@@ -1379,12 +1382,12 @@ program pace_vlidort
 !     Sep 2018 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_OCI_stdatm()
-    do p=1,npet
+    do p=0,npet-1
       if (myid .eq. p) then
         open(unit=15,file=OCItable_file, status='old', access='sequential', &
               form='formatted', action='read')
         ! read header
-        read(15,*) line 
+        read(15,'(A)') line 
         do k=1,nchOCI
           read(15,*) wavOCI(k), rodOCI(k), depolOCI(k)
         end do
@@ -1393,6 +1396,9 @@ program pace_vlidort
       end if
       call MAPL_SyncSharedMemory(rc=ierr)      
     end do
+    if (MAPL_am_I_root()) then
+      write(*,*) '<> Read OCI Standard Atmosphere Table'
+    end if
   end subroutine read_OCI_stdatm
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1672,11 +1678,11 @@ program pace_vlidort
 
     if (standard_atm) then
       ! read edge vars to each processor
-      do p=1,npet
+      do p=0,npet-1
         if (myid .eq. p) then
           open(unit=15,file=STDATM_file, status='old', access='sequential', &
                 form='formatted', action='read')
-
+          read(15,'(A)') line
           do k=1,km+1
             read(15,*) Vpe(k,nobs),Vte(k,nobs),Vze(k,nobs)
           end do
@@ -2074,7 +2080,7 @@ program pace_vlidort
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine allocate_shared()
     if (MAPL_am_I_root()) then
-      write(*,*) '<> Allocating shared memory variables'
+      write(*,*) '<> Allocating shared memory variables',im,jm,km
     end if
     call MAPL_AllocNodeArray(AIRDENS,(/im,jm,km/),rc=ierr)
     call MAPL_AllocNodeArray(RH,(/im,jm,km/),rc=ierr)
@@ -3123,8 +3129,7 @@ program pace_vlidort
       call readvar2D("latitude", INV_file, clat)
       call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
-      call readvar1D("lev", AER_file, lev)
-      call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
+      call check(nf90_put_var(ncid,levVarID,(/(i, i=1,km, 1)/)), "writing out lev")
 
       call readvar1D("ccd_pixels", INV_file, ew)
       call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
