@@ -1,0 +1,6 @@
+#
+# Resource file for geo sampler: met_Nv files for TEMPO
+#
+
+U10M,V10M: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_2d_met1_Nx
+
