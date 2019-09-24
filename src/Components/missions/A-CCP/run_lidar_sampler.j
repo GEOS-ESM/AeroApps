@@ -7,6 +7,8 @@
 #SBATCH --ntasks=12 --cpus-per-task=1 --ntasks-per-node=12
 #SBATCH --job-name=lidar_sampler
 #SBATCH -A s1180
+#SBATCH --qos=pace
+#SBATCH --partition=preops
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=patricia.castellanos@nasa.gov
 #SBATCH --output=slurm_%j.out
@@ -23,7 +25,7 @@ limit stacksize unlimited
 #           Architecture Specific Environment Variables
 #######################################################################
 setenv G5DIR /discover/nobackup/pcastell/workspace/GAAS/src
-setenv BIN /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP 
+setenv BIN $PWD 
 
 source $HOME/.cshrc
 cd $G5DIR
