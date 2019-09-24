@@ -28,10 +28,10 @@ if __name__ == '__main__':
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
 
     parser.add_argument('-s',"--slurm",default=slurm,
-                        help="slurm script template")           
+                        help="slurm script template (default=%s)"%slurm)           
 
     parser.add_argument('-t','--tmp',default=tmp,
-                        help="temp directory")
+                        help="temp directory (default=%s)"%tmp)
 
     args = parser.parse_args()
 
