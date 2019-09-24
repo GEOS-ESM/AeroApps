@@ -50,9 +50,9 @@ SDS_RT = {'surf_ref_I_blue': ['surface reflectance for blue CCD','None',None],
          'U_red':  ['TOA polarized radiance U for red CCD','None',None],
          'U_SWIR': ['TOA polarized radiance U for SWIR bands','None',None]         }
 
-SDS_ADD = {'rot_blue': ['rayleigh optical thickness for blue CCD','None',nlev],
-          'rot_red':  ['rayleigh optical thickness for red CCD','None',nlev],
-          'rot_SWIR': ['rayleigh optical thickness for SWIR bands','None',nlev]}
+SDS_ADD = {'rod_blue': ['rayleigh optical depth for blue CCD','None',None],
+          'rod_red':  ['rayleigh optical depth for red CCD','None',None],
+          'rod_SWIR': ['rayleigh optical depth for SWIR bands','None',None]}
           
           # 'pe': ['layer edge pressure','Pa',nlev+1],
           # 'ze': ['layer edge altitude','m',nlev+1],
@@ -299,6 +299,7 @@ class WORKSPACE(JOBS):
         self.verbose       = args.verbose
         self.run_name      = args.run_name
         self.bpdf_name     = args.bpdf_name
+        self.water_name    = args.water_name
         self.rtls_name     = args.rtls_name
         self.write_add     = args.write_add
         self.write_aer     = args.write_aer
@@ -561,15 +562,23 @@ class WORKSPACE(JOBS):
 
         text.append('\n')
         # WATER STUFF
-        if ch <= 775.0:
-            newline = 'WATERNAME: NOBM-CX\n'
+        if self.water_name is not None:
+            newline = 'WATERNAME: {}\n'.format(self.water_name)
             text.append(newline)
-            WAT_file = '{}/SLEAVE/NOBM/{}/pace-g5nr.lb.sleave.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
-            newline = 'WAT_file: {}\n'.format(WAT_file)
-            text.append(newline)
+            if self.water_name == 'NOBM-CX':
+                WAT_file = '{}/SLEAVE/NOBM/{}/pace-g5nr.lb.sleave.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
+                newline = 'WAT_file: {}\n'.format(WAT_file)
+                text.append(newline)                
         else:
-            newline = 'WATERNAME: CX\n'
-            text.append(newline)
+            if ch <= 775.0:
+                newline = 'WATERNAME: NOBM-CX\n'
+                text.append(newline)
+                WAT_file = '{}/SLEAVE/NOBM/{}/pace-g5nr.lb.sleave.{}_{}.nc4'.format(surfDir,YMDdir,nymd,hms)
+                newline = 'WAT_file: {}\n'.format(WAT_file)
+                text.append(newline)
+            else:
+                newline = 'WATERNAME: CX\n'
+                text.append(newline)
 
         newline = 'WATERMODEL: CX\n'
         text.append(newline)
@@ -701,10 +710,12 @@ class WORKSPACE(JOBS):
             os.remove(self.runfile)
 
         # remove symlinks
-        source = ['Aod_EOS.rc','ExtData','ExtDataCloud','leo_vlidort_cloud.rc',
-                  'leo_vlidort_cloud.x','Chem_MieRegistry.rc','clean_mem.sh']
+        source = ['Aod_EOS.rc','ExtData','ExtDataCloud','pace_vlidort.rc',
+                  'pace_vlidort.x','Chem_MieRegistry.rc','clean_mem.sh']
         for src in source:
             os.remove(src)
+
+        shutil.rmtree('oci_tables')
 
         os.chdir(self.cwd)
         if self.profile is False:
@@ -793,7 +804,7 @@ class WORKSPACE(JOBS):
 
 
 
-def populate_L1B(outfilelist,rootdir,channels,Date,force=False):
+def populate_L1B(outfilelist,rootdir,channels,Date,force=False,run_name=None):
         YMDdir    = Date.strftime('Y%Y/M%m/D%d')
         pYMDdir   = Date.strftime('Y2020/M%m/D%d')
         L1bDir    = '{}/L1B/{}'.format(rootdir,pYMDdir)
@@ -804,7 +815,10 @@ def populate_L1B(outfilelist,rootdir,channels,Date,force=False):
         nyj = pDate.strftime('%Y%j')
         L1B_file = '{}/OCI{}{}.L1B_PACE.nc'.format(L1bDir,nyj,hms)
 
-        outfile = '{}/OCI{}{}.L1B_PACE.nc'.format(Lc2Dir,nyj,hms)
+        if run_name is None:
+            outfile = '{}/OCI{}{}.L1B_PACE.nc'.format(Lc2Dir,nyj,hms)
+        else:
+            outfile = '{}/OCI{}{}.L1B_PACE.{}.nc'.format(Lc2Dir,nyj,hms,run_name)
         exists  = os.path.isfile(outfile)
         if force or (not exists):
             shutil.copyfile(L1B_file,outfile)
@@ -841,7 +855,8 @@ def populate_L1B(outfilelist,rootdir,channels,Date,force=False):
 
         ncmerge.close()
 
-def condense_LC(outfilelist,rootdir,channels,Date,addfilelist=None,force=False,rm_ch=False):
+def condense_LC(outfilelist,rootdir,channels,Date,addfilelist=None,force=False,rm_ch=False,
+                run_name=None):
         YMDdir    = Date.strftime('Y%Y/M%m/D%d')
         pYMDdir   = Date.strftime('Y2020/M%m/D%d')
         LcDir     = '{}/LevelC/{}'.format(rootdir,YMDdir)
@@ -854,7 +869,10 @@ def condense_LC(outfilelist,rootdir,channels,Date,addfilelist=None,force=False,r
         L1B_file = '{}/OCI{}{}.L1B_PACE.nc'.format(L1bDir,nyj,hms)
 
         # Create file if you need to
-        outfile = '{}/pace-g5nr.lc.vlidort.{}_{}.nc4'.format(LcDir,nymd,hms)
+        if run_name is None:
+            outfile = '{}/pace-g5nr.lc.vlidort.{}_{}.nc4'.format(LcDir,nymd,hms)
+        else:
+            outfile = '{}/pace-g5nr.lc.vlidort.{}.{}_{}.nc4'.format(LcDir,run_name,nymd,hms)
         exists  = os.path.isfile(outfile)
         if force or (not exists):
             # create new outfile
@@ -888,7 +906,7 @@ def condense_LC(outfilelist,rootdir,channels,Date,addfilelist=None,force=False,r
                 for ofile in addfilelist:
                     os.remove(ofile)
 
-def condense_OTHER(outfilelist,name,SDS,rootdir,channels,Date,force=False,rm_ch=False):
+def condense_OTHER(outfilelist,name,SDS,rootdir,channels,Date,force=False,rm_ch=False,run_name=None):
         YMDdir    = Date.strftime('Y%Y/M%m/D%d')
         pYMDdir   = Date.strftime('Y2020/M%m/D%d')
         LcDir     = '{}/LevelC/{}'.format(rootdir,YMDdir)
@@ -900,7 +918,10 @@ def condense_OTHER(outfilelist,name,SDS,rootdir,channels,Date,force=False,rm_ch=
         nyj = pDate.strftime('%Y%j')
         L1B_file = '{}/OCI{}{}.L1B_PACE.nc'.format(L1bDir,nyj,hms)
         # Create file if you need to
-        outfile = '{}/pace-g5nr.lc.{}.{}_{}.nc4'.format(LcDir,name,nymd,hms)
+        if run_name is None:
+            outfile = '{}/pace-g5nr.lc.{}.{}_{}.nc4'.format(LcDir,name,nymd,hms)
+        else:
+            outfile = '{}/pace-g5nr.lc.{}.{}.{}_{}.nc4'.format(LcDir,name,run_name,nymd,hms)
         exists  = os.path.isfile(outfile)
         if force or (not exists):
             # create new outfile            
@@ -1126,6 +1147,7 @@ if __name__ == '__main__':
     tmp       = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/workdir'
     rtls_name = 'MCD43C'
     bpdf_name = None # 'MAIGNAN'
+    water_name = None
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
@@ -1158,7 +1180,10 @@ if __name__ == '__main__':
                         help="Optional version naming for outfiles (default=None)")    
 
     parser.add_argument('--bpdf_name',default=bpdf_name,
-                        help="BPDF model name (e.g. MAIGNAN) (default=%s)"%bpdf_name)                          
+                        help="BPDF model name (e.g. MAIGNAN) (default=%s)"%bpdf_name)   
+
+    parser.add_argument('--water_name',default=water_name,
+                        help="Ocean reflectance model name (e.g. CX-NOBM) (default=%s, set by wavelength)"%water_name)                                                  
 
     parser.add_argument('--rtls_name',default=rtls_name,
                         help="RTLS data name (e.g. MCD43C) (default=%s)"%rtls_name)     
@@ -1255,22 +1280,25 @@ if __name__ == '__main__':
                 rootdir     = workspace.rootdir
                 Date        = workspace.Date
 
-                populate_L1B(outfilelist,rootdir,channels,Date,force=args.force)
+                populate_L1B(outfilelist,rootdir,channels,Date,force=args.force,run_name=workspace.run_name)
                 
                 addfilelist = None
                 if workspace.write_add:
                     addfilelist = np.array(workspace.addfilelist)[I]                    
-                condense_LC(outfilelist,rootdir,channels,Date,force=args.force,addfilelist=addfilelist,rm_ch=args.rm_ch)
+                condense_LC(outfilelist,rootdir,channels,Date,force=args.force,addfilelist=addfilelist,
+                            rm_ch=args.rm_ch,run_name=workspace.run_name)
 
 
                 if workspace.write_aer:
                     aerfilelist = np.array(workspace.aerfilelist)[I]
-                    condense_OTHER(aerfilelist,'aerosol',SDS_AER,rootdir,channels,Date,force=args.force,rm_ch=args.rm_ch)
+                    condense_OTHER(aerfilelist,'aerosol',SDS_AER,rootdir,channels,Date,force=args.force,
+                            rm_ch=args.rm_ch,run_name=workspace.run_name)
 
                     
                 if workspace.write_cld:
                     cldfilelist = np.array(workspace.cldfilelist)[I]
-                    condense_OTHER(cldfilelist,'cloud',SDS_CLD,rootdir,channels,Date,force=args.force,rm_ch=args.rm_ch)
+                    condense_OTHER(cldfilelist,'cloud',SDS_CLD,rootdir,channels,Date,force=args.force,
+                            rm_ch=args.rm_ch,run_name=workspace.run_name)
 
 
         if args.doext:
