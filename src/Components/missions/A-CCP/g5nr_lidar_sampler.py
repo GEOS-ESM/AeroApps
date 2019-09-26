@@ -10,30 +10,22 @@ import shutil
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
 import argparse
+import numpy as np
+import time
 
 class JOBS(object):
     def handle_jobs(self):
         jobsmax = 150
         # Figure out how many jobs you need to submit
-        runlen  = len(self.dirstring)   
-
-        if self.nodemax is not None:
-            numjobs = self.nodemax*runlen
-        else:
-            numjobs = runlen
+        numjobs  = len(self.dirstring)   
         
         devnull = open(os.devnull, 'w')
         if numjobs <= jobsmax:   
-            countRun     = runlen  
-            node_tally   = runlen 
+            countRun     = numjobs 
+            node_tally   = numjobs
         else:
-            if self.nodemax is not None:
-                countRun   = int(jobsmax/self.nodemax)
-                node_tally = self.nodemax*int(jobsmax/self.nodemax)
-                jobsmax    = node_tally
-            else:
-                countRun   = jobsmax
-                node_tally = jobsmax
+            countRun   = jobsmax
+            node_tally = jobsmax
 
         workingJobs = np.arange(countRun)
         
@@ -43,10 +35,10 @@ class JOBS(object):
         for i in workingJobs:
             s = self.dirstring[i]
             os.chdir(s)
-            jobid = np.append(jobid,subprocess.check_output(['qsub',self.runfile]))
+            jobid = np.append(jobid,subprocess.check_output(['qsub',self.slurm]))
         os.chdir(self.cwd)
 
-        # launch subprocess that will monitor queue and do file merging
+        # launch subprocess that will monitor queue
 
         # Monitor jobs 1-by-1 
         # Add a new job when one finishes 
@@ -61,27 +53,9 @@ class JOBS(object):
                 finished = False
 
                 # Check to see if this job is finished
-                if self.nodemax is not None:
-                    # Loop through the nodes working on this job
-                    finishedCNT = 0
-                    for a in np.arange(self.nodemax):
-                        a = a + 1
-
-                        try:
-                            result = subprocess.check_output(['squeue','-j',s+'_'+ str(a)],stderr=subprocess.STDOUT)
-                            if (s+'_'+ str(a) not in result):
-                                #print ' Job Not Found! '+s+'_'+ str(a)
-                                finishedCNT = finishedCNT + 1
-                        except subprocess.CalledProcessError as e:
-                            #print ' ERROR Job Not Found! '+s+'_'+ str(a)
-                            finishedCNT = finishedCNT + 1
-
-                    if (finishedCNT == self.nodemax):
-                        finished = True
-                else:
-                    result = subprocess.call(['qstat',s], stdout=devnull)
-                    if (result != 0):
-                        finished = True   
+                result = subprocess.call(['qstat',s], stdout=devnull)
+                if (result != 0):
+                    finished = True   
 
                 # if the job is finished add to finished jobs list
                 if finished:
@@ -97,30 +71,20 @@ class JOBS(object):
             # Remove finished jobs from the currently working list
             if len(finishedJobs) != 0:
                 print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
-                if self.nodemax is not None:
-                    node_tally = node_tally - self.nodemax*len(finishedJobs)
-                else:                
-                    node_tally  = node_tally - len(finishedJobs)
+                node_tally  = node_tally - len(finishedJobs)
 
                 workingJobs = np.delete(workingJobs,finishedJobs)
 
             # Add more jobs if needed
             # reinitialize stat variable
-            if (runlen > countRun) and (node_tally < jobsmax):
+            if (numjobs > countRun) and (node_tally < jobsmax):
                 #print 'adding new jobs'
-                if self.nodemax is not None:
-                    newRun     = (jobsmax - node_tally)/self.nodemax
-                    node_tally = jobsmax
-                else:
-                    newRun     = jobsmax - node_tally
-                    node_tally = jobsmax
+                newRun     = jobsmax - node_tally
+                node_tally = jobsmax
 
-                if (newRun + countRun) > runlen:
-                    newRun = runlen - countRun
-                    if self.nodemax is not None:
-                        node_tally = newRun*self.nodemax
-                    else:               
-                        node_tally = node_tally + newRun
+                if (newRun + countRun) > numjobs:
+                    newRun = numjobs - countRun
+                    node_tally = node_tally + newRun
                 
 
                 newjobs  = countRun + np.arange(newRun)
@@ -147,11 +111,6 @@ class JOBS(object):
             s = s.strip('\n')
             if not self.errTally[i]:
                 self.destroy_workspace(i,s)
-                if self.nodemax is not None:
-                    self.combine_files(i)
-
-                    # Compress outfiles
-                    self.compress(i,devnull)
 
         # Postprocessing done
         print 'Cleaned Up Worksapces'
@@ -162,18 +121,10 @@ class JOBS(object):
         os.chdir(self.dirstring[i])  
 
         error = False 
-        if self.nodemax is not None:
-            for a in np.arange(self.nodemax):
-                a = a + 1
-                errfile = 'slurm_' +jobid + '_' + str(a) + '.err'
-                statinfo = os.stat(errfile)
-                if (statinfo.st_size != 0):
-                    error = True            
-        else: 
-            errfile = 'slurm_' +jobid + '.err'
-            statinfo = os.stat(errfile)
-            if (statinfo.st_size != 0):
-                error = True
+        errfile = 'slurm_' +jobid + '.err'
+        statinfo = os.stat(errfile)
+        if (statinfo.st_size != 0):
+            error = True
 
         os.chdir(self.cwd)
         return error
@@ -183,20 +134,28 @@ class WORKSPACE(JOBS):
     def __init__(self,args):
 
         self.Date      = isoparser(args.iso_t1)
-        self.eddate    = isoparser(args.iso_t2)
+        self.enddate    = isoparser(args.iso_t2)
         self.Dt        = timedelta(hours=args.DT_hours)
 
         if not os.path.exists(args.tmp):
             os.makedirs(args.tmp)
 
         self.cwd         = os.getcwd()
-        self.slurm       = arg.slurm
+        self.slurm       = args.slurm
         self.prep_config = args.prep_config
         self.tmp         = args.tmp
+        self.profile     = args.profile
+
+        # create working directories
+        self.create_workdir()
+
+        # modify slurm scripts
+        self.edit_slurm()
 
 
     def create_workdir(self):
         sdate = self.Date
+        self.dirstring = []
         while sdate < self.enddate:
             # create directory
 
@@ -215,20 +174,75 @@ class WORKSPACE(JOBS):
             shutil.copyfile(self.prep_config,outfile)
 
             #link over needed python scripts
-            source = ['lidar_sampler.py','run_lidar_sampler.py','sampling']
+            source = ['lidar_sampler.py','run_lidar_sampler.py','sampling','tle']
             for src in source:
-                
+                os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
-
-
+            self.dirstring.append(workpath)
             sdate += self.Dt
+
+    def edit_slurm(self):
+        sdate = self.Date
+        for workpath in self.dirstring:
+            edate = sdate + self.Dt
+            outpath = '{}/{}'.format(workpath,self.slurm)
+
+            # read file first
+            f = open(outpath)
+
+            text = []
+            for l in f:
+                text.append(l)
+
+            # replace one line
+            iso1 = sdate.isoformat()
+            iso2 = edate.isoformat()
+            newline = 'python -u run_lidar_sampler.py -v --nproc 6 --DT_hours {} {} {} {} >'.format(self.Dt.seconds/3600,iso1,iso2,self.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
+            text[-2] = newline
+            f.close()
+
+            #  write out
+            f = open(outpath,'w')
+            for l in text:
+                f.write(l)
+            f.close()     
+
+            sdate += self.Dt   
+
+    def destroy_workspace(self,i,jobid):
+        os.chdir(self.dirstring[i])
+
+        if self.profile is False:
+
+            errfile = 'slurm_' +jobid + '.err'
+            os.remove(errfile)        
+            outfile = 'slurm_' +jobid + '.out'
+            os.remove(outfile)        
+
+            outfile = 'slurm_' +jobid + '_py.out'
+            os.remove(outfile)     
+
+            os.remove(self.slurm)
+
+        # remove symlinks
+        source = ['lidar_sampler.py','run_lidar_sampler.py']
+        for src in source:
+            os.remove(src)
+
+        shutil.rmtree('sampling')
+        shutil.rmtree('tle')
+
+        os.chdir(self.cwd)
+        if self.profile is False:
+            os.rmdir(self.dirstring[i])
+
 
 if __name__ == '__main__':
     
     #Defaults
     DT_hours = 24
     slurm    = 'run_lidar_sampler.j'
-    tmp      = './tmp'
+    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
@@ -245,45 +259,17 @@ if __name__ == '__main__':
     parser.add_argument('-t','--tmp',default=tmp,
                         help="temp directory (default=%s)"%tmp)
 
+    parser.add_argument("-r", "--dryrun",action="store_true",
+                        help="do a dry run (default=False).") 
+
+    parser.add_argument("-p", "--profile",action="store_true",
+                        help="Don't cleanup slurm files (default=False).")    
+
+
     args = parser.parse_args()
 
-    Date    = isoparser(args.iso_t1)
-    enddate = isoparser(args.iso_t2)
-    Dt      = timedelta(hours=args.DT_hours)
+    workspace = WORKSPACE(args)
 
-    if not os.path.exists(args.tmp):
-        os.makedirs(args.tmp)
-
-    cwd = os.getcwd()
-    while Date < enddate:
-        edate = Date + Dt
-
-        # copy template to temp
-        outfile = '{}_{}.j'.format(args.slurm[:-2],Date.date())
-        outpath = '{}/{}'.format(args.tmp,outfile)
-
-        shutil.copyfile(args.slurm,outpath)
-
-        f = open(outpath)
-        text = []
-        for l in f:
-            text.append(l)
-
-        iso1 = Date.isoformat()
-        iso2 = edate.isoformat()
-        newline = 'python -u run_lidar_sampler.py -v --nproc 6 --DT_hours {} {} {} {} >'.format(args.DT_hours,iso1,iso2,args.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
-        text[-2] = newline
-        f.close()
-
-        f = open(outpath,'w')
-        for l in text:
-            f.write(l)
-        f.close()
-
-
-        os.chdir(args.tmp)
-        subprocess.call('sbatch {}'.format(outfile),shell=True)
-        os.chdir(cwd)
-
-        Date += Dt
+    if not args.dryrun:
+        workspace.handle_jobs()
 
