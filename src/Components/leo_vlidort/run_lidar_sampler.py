@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
     # Defaults
     DT_hours = 24
-    dt_secs = "60"
+    dt_secs = "1"
     algo    = "linear"
     nproc    = 8
 
@@ -129,14 +129,26 @@ if __name__ == "__main__":
     Date = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
 
-    pdt   = timedelta(hours=1)
+    if args.DT_hours == 1:
+        #pdt   = timedelta(minutes=int(60/args.nproc))
+        pdt   = timedelta(minutes=5)
+    else:
+        #pdt   = timedelta(hours=int(args.DT_hours/args.nproc))
+        pdt   = timedelta(hours=1)
+
     while Date < enddate:
-        outpath = '{}/Y{}/M{}'.format(outdir,Date.year,str(Date.month).zfill(2))
+        if args.DT_hours < 24:
+            outpath = '{}/Y{}/M{}/D{}'.format(outdir,Date.year,str(Date.month).zfill(2),str(Date.day).zfill(2))
+        else:
+            outpath = '{}/Y{}/M{}'.format(outdir,Date.year,str(Date.month).zfill(2))
         mkdir_p(outpath)
 
         # run trajectory sampler on model fields
         # split across multiple processors by date
-        datelist = [Date + p*pdt for p in range(args.DT_hours)]
+        if args.DT_hours == 1:
+                datelist = [Date + p*pdt for p in range(60/5)]
+        else:        
+        	datelist = [Date + p*pdt for p in range(args.DT_hours)]
         lendate  = len(datelist)
 
         for rc,colname in zip(rcFiles,colNames):
@@ -144,12 +156,13 @@ if __name__ == "__main__":
             cmds      = []
             filelist  = []
             for date in datelist:
-                nymd = str(date.date()).replace('-','')
-                hour = str(date.hour).zfill(2)
+                nymd   = str(date.date()).replace('-','')
+                hour   = str(date.hour).zfill(2)
+                minute = str(date.minute).zfill(2)
 
                 edate = date + pdt - timedelta(seconds=int(args.dt_secs))
 
-                outFile = '{}/{}-g5nr.lb2.{}.{}_{}z.nc4'.format(outpath,instname,colname,nymd,hour)
+                outFile = '{}/{}-g5nr.lb2.{}.{}_{}{}z.nc4'.format(outpath,instname,colname,nymd,hour,minute)
 
                 Options =     " --rcFile=" + rc      + \
                               " --output=" + outFile       + \
