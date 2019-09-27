@@ -239,6 +239,7 @@
          
       USE VLIDORT_IO_DEFS
       USE VBRDF_SUP_MOD
+      USE VSLEAVE_SUP_MOD
       
       USE VLIDORT_AUX
       USE VLIDORT_INPUTS
@@ -332,6 +333,12 @@
          LAMBERTIAN_ALBEDO = 0.0                           ! Use BRDF -> albedo set to 0
  
       end if
+
+      if ( self%Surface%sfc_type == NOBM ) then               ! Surface Leaving from External dataset containing isotropic radiance?
+         self%Surface%Base%VIO%VLIDORT_Fixin%Bool%TS_DO_SURFACE_LEAVING = .true.
+         self%Surface%Base%VIO%VLIDORT_Fixin%Bool%TS_DO_SL_ISOTROPIC    = .true.
+         self%Surface%Base%VIO%VLIDORT_Sup%SLEAVE%TS_SLTERM_ISOTROPIC   = self%Surface%Base%VIO%VSLEAVE_Sup_Out%SL_SLTERM_ISOTROPIC
+      end if      
 
       self%Surface%Base%VIO%VLIDORT_Fixin%Bool%TS_DO_LAMBERTIAN_SURFACE = DO_LAMBERTIAN_SURFACE
       self%Surface%Base%VIO%VLIDORT_FixIn%Optical%TS_LAMBERTIAN_ALBEDO = LAMBERTIAN_ALBEDO
@@ -1423,6 +1430,7 @@
          
       USE VLIDORT_IO_DEFS
       USE VBRDF_SUP_MOD
+      USE VSLEAVE_SUP_MOD
       
       USE VLIDORT_AUX
       USE VLIDORT_INPUTS
@@ -1524,6 +1532,12 @@
          LAMBERTIAN_ALBEDO = 0.0                           ! Use BRDF -> albedo set to 0
  
       end if
+
+      if ( self%Surface%sfc_type == NOBM ) then               ! Surface Leaving from External dataset containing isotropic radiance?
+         self%Surface%Base%VIO%VLIDORT_Fixin%Bool%TS_DO_SURFACE_LEAVING = .true.
+         self%Surface%Base%VIO%VLIDORT_Fixin%Bool%TS_DO_SL_ISOTROPIC    = .true.
+         self%Surface%Base%VIO%VLIDORT_Sup%SLEAVE%TS_SLTERM_ISOTROPIC   = self%Surface%Base%VIO%VSLEAVE_Sup_Out%SL_SLTERM_ISOTROPIC
+      end if      
 
       self%Surface%Base%VIO%VLIDORT_Fixin%Bool%TS_DO_LAMBERTIAN_SURFACE = DO_LAMBERTIAN_SURFACE
       self%Surface%Base%VIO%VLIDORT_FixIn%Optical%TS_LAMBERTIAN_ALBEDO = LAMBERTIAN_ALBEDO
@@ -1776,6 +1790,7 @@
          
       USE VLIDORT_IO_DEFS
       USE VBRDF_SUP_MOD
+      USE VSLEAVE_SUP_MOD
       
       USE VLIDORT_AUX
       USE VLIDORT_INPUTS
@@ -1880,6 +1895,12 @@
          DO_LAMBERTIAN_SURFACE = .false. 
          LAMBERTIAN_ALBEDO = 0.0                           ! Use BRDF -> albedo set to 0
  
+      end if
+
+      if ( self%Surface%sfc_type == NOBM ) then               ! Surface Leaving from External dataset containing isotropic radiance?
+         self%Surface%Base%VIO%VLIDORT_Fixin%Bool%TS_DO_SURFACE_LEAVING = .true.
+         self%Surface%Base%VIO%VLIDORT_Fixin%Bool%TS_DO_SL_ISOTROPIC    = .true.
+         self%Surface%Base%VIO%VLIDORT_Sup%SLEAVE%TS_SLTERM_ISOTROPIC   = self%Surface%Base%VIO%VSLEAVE_Sup_Out%SL_SLTERM_ISOTROPIC
       end if
 
       self%Surface%Base%VIO%VLIDORT_Fixin%Bool%TS_DO_LAMBERTIAN_SURFACE = DO_LAMBERTIAN_SURFACE
