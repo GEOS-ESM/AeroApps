@@ -92,7 +92,7 @@ class JOBS(object):
                 for i in newjobs:
                     s = self.dirstring[i]
                     os.chdir(s)
-                    jobid = np.append(jobid,subprocess.check_output(['qsub',self.runfile]))
+                    jobid = np.append(jobid,subprocess.check_output(['qsub',self.slurm]))
 
                 os.chdir(self.cwd)
                 countRun = countRun + newRun
@@ -148,6 +148,7 @@ class WORKSPACE(JOBS):
 
         # create working directories
         self.create_workdir()
+        self.errTally    = np.ones(len(self.dirstring)).astype(bool)
 
         # modify slurm scripts
         self.edit_slurm()
@@ -197,7 +198,7 @@ class WORKSPACE(JOBS):
             # replace one line
             iso1 = sdate.isoformat()
             iso2 = edate.isoformat()
-            newline = 'python -u run_lidar_sampler.py -v --nproc 6 --DT_hours {} {} {} {} >'.format(self.Dt.seconds/3600,iso1,iso2,self.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
+            newline = 'python -u run_lidar_sampler.py -v --nproc 12 --DT_hours {} {} {} {} >'.format(self.Dt.seconds/3600,iso1,iso2,self.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
             text[-2] = newline
             f.close()
 
@@ -223,14 +224,12 @@ class WORKSPACE(JOBS):
             os.remove(outfile)     
 
             os.remove(self.slurm)
+            os.remove('lidar_sampler.pcf')
 
         # remove symlinks
-        source = ['lidar_sampler.py','run_lidar_sampler.py']
+        source = ['lidar_sampler.py','run_lidar_sampler.py','sampling','tle']
         for src in source:
             os.remove(src)
-
-        shutil.rmtree('sampling')
-        shutil.rmtree('tle')
 
         os.chdir(self.cwd)
         if self.profile is False:
