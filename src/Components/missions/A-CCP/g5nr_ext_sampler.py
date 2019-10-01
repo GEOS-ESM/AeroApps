@@ -235,6 +235,9 @@ class WORKSPACE(JOBS):
                 # get outFile
                 outFile = '{}/Y{}/M{}/D{}/{}-g5nr.lc.aer_Nv.{}.nc4'.format(self.outDir,YY,MM,DD,self.instname,strdate)
 
+                if not os.path.exists(os.path.basename(outFile)):
+                    os.makedirs(os.path.basename)
+
                 # replace one line
                 command = 'python -u ${G5BIN}/ext_sampler.py '
                 newline = command + '--input={} --output={} --channel={} --rc={}'.format(inFile,outFile,ch,self.rcFile)
