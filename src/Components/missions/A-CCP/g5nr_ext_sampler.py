@@ -180,7 +180,7 @@ class WORKSPACE(JOBS):
 
                 # Copy over Aod_EOS.rc
                 os.makedirs(workpath+'/rc')
-                outfile = '{}/rc/{}'.format(workpath,self.rcFile)
+                outfile = '{}/{}'.format(workpath,self.rcFile)
                 shutil.copyfile(self.rcFile,outfile)
                 self.edit_AODrc(outfile,ch)            
 
