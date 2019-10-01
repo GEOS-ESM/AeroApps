@@ -237,7 +237,7 @@ class WORKSPACE(JOBS):
                 outFile = '{}/Y{}/M{}/D{}/{}-g5nr.lc.aer_Nv.{}.nc4'.format(self.outDir,YY,MM,DD,self.instname,strdate)
 
                 if not os.path.exists(os.path.basename(outFile)):
-                    os.makedirs(os.path.basename)
+                    os.makedirs(os.path.basename(outFile))
 
                 # replace one line
                 command = 'python -u ${G5BIN}/ext_sampler.py '
