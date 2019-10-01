@@ -1,0 +1,8 @@
+# LIDAR SAMPLING
+INSTNAME  = gpm
+CHANNELS  = 355, 532, 550, 1064
+RCFILE    = rc/Aod_EOS.Osku.rc
+EXTDATA   = ExtDataOsku       
+INDIR     = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB
+OUTDIR    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelC
+# LIDAR SAMPLING
