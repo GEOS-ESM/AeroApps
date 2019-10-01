@@ -179,7 +179,8 @@ class WORKSPACE(JOBS):
                 shutil.copyfile(self.slurm,outfile)
 
                 # Copy over Aod_EOS.rc
-                outfile = '{}/{}'.format(workpath,self.rcFile)
+                os.makedirs(workpath+'/rc')
+                outfile = '{}/rc/{}'.format(workpath,self.rcFile)
                 shutil.copyfile(self.rcFile,outfile)
                 self.edit_AODrc(outfile,ch)            
 
