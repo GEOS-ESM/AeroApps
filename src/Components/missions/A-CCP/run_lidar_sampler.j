@@ -3,7 +3,7 @@
 #######################################################################
 #                     Batch Parameters for Run Job
 #######################################################################
-#SBATCH --time=04:00:00
+#SBATCH --time=01:00:00
 #SBATCH --ntasks=12 --cpus-per-task=1 --ntasks-per-node=12
 #SBATCH --job-name=lidar_sampler
 #SBATCH -A s1180
