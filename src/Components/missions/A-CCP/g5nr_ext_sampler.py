@@ -215,45 +215,50 @@ class WORKSPACE(JOBS):
         f.close()
 
     def edit_slurm(self):
-        sdate = self.Date
+
         for workpath in self.dirstring:
+            isodate, ch = os.path.basename(workpath).split('.')
+            sdate = isoparser(isodate)
             YY = sdate.year
             MM = sdate.month
             DD = sdate.day
             strdate = sdate.strftime('%Y%m%d_%H%Mz')
-            for ch in self.channels:
-                outpath = '{}/{}'.format(workpath,self.slurm)
 
-                # read file first
-                f = open(outpath)
+            # get inFile
+            inFile = '{}/Y{}/M{}/D{}/{}-g5nr.lb2.aer_Nv.{}.nc4'.format(self.inDir,YY,MM,DD,self.instname,strdate)
+            # get outDir
+            outDir = '{}/Y{}/M{}/D{}/'.format(self.outDir,YY,MM,DD)
 
-                text = []
-                for l in f:
-                    text.append(l)
+            if not os.path.exists(os.path.basename(outFile)):
+                os.makedirs(os.path.basename(outFile))
 
-                # get inFile
-                inFile = '{}/Y{}/M{}/D{}/{}-g5nr.lb2.aer_Nv.{}.nc4'.format(self.inDir,YY,MM,DD,self.instname,strdate)
-                # get outFile
-                outFile = '{}/Y{}/M{}/D{}/{}-g5nr.lc.aer_Nv.{}.nc4'.format(self.outDir,YY,MM,DD,self.instname,strdate)
+            outpath = '{}/{}'.format(workpath,self.slurm)
 
-                if not os.path.exists(os.path.basename(outFile)):
-                    os.makedirs(os.path.basename(outFile))
+            # outFile
+            outFile = '{}/{}-g5nr.lc.ext.{}.{}.nc4'.format(outDir,self.instname,strdate,ch)
 
-                # replace one line
-                command = 'python -u ${G5BIN}/ext_sampler.py '
-                newline = command + '--input={} --output={} --channel={} --rc={}'.format(inFile,outFile,ch,self.rcFile)
-                endcommand = ' --format=NETCDF4_CLASSIC --intensive > slurm_${SLURM_JOBID}_py.out'
-                newline = newline + endcommand
-                text[-2] = newline
-                f.close()
+            # read file first
+            f = open(outpath)
 
-                #  write out
-                f = open(outpath,'w')
-                for l in text:
-                    f.write(l)
-                f.close()     
+            text = []
+            for l in f:
+                text.append(l)
 
-            sdate += self.Dt   
+
+            # replace one line
+            command = 'python -u ${G5BIN}/ext_sampler.py '
+            newline = command + '--input={} --output={} --channel={} --rc={}'.format(inFile,outFile,ch,self.rcFile)
+            endcommand = ' --format=NETCDF4_CLASSIC --intensive > slurm_${SLURM_JOBID}_py.out'
+            newline = newline + endcommand
+            text[-2] = newline
+            f.close()
+
+            #  write out
+            f = open(outpath,'w')
+            for l in text:
+                f.write(l)
+            f.close()     
+
 
     def destroy_workspace(self,i,jobid):
         os.chdir(self.dirstring[i])
