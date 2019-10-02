@@ -229,15 +229,14 @@ class WORKSPACE(JOBS):
             # get outDir
             outDir = '{}/Y{}/M{}/D{}/'.format(self.outDir,YY,MM,DD)
 
-            if not os.path.exists(os.path.basename(outFile)):
-                os.makedirs(os.path.basename(outFile))
-
-            outpath = '{}/{}'.format(workpath,self.slurm)
+            if not os.path.exists(outDir):
+                os.makedirs(outDir)
 
             # outFile
             outFile = '{}/{}-g5nr.lc.ext.{}.{}.nc4'.format(outDir,self.instname,strdate,ch)
-
+            
             # read file first
+            outpath = '{}/{}'.format(workpath,self.slurm)
             f = open(outpath)
 
             text = []
