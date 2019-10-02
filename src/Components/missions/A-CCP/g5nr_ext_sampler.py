@@ -245,7 +245,7 @@ class WORKSPACE(JOBS):
 
 
             # replace one line
-            command = 'python -u ${G5BIN}/ext_sampler.py '
+            command = 'python -u ${G5BIN}/ext_sampler.py --vnames=SS001,SS002,SS003,SS004,SS005,BCPHOBIC,BCPHILIC,OCPHOBIC,OCPHILIC,SO4 '
             newline = command + '--input={} --output={} --channel={} --rc={}'.format(inFile,outFile,ch,self.rcFile)
             endcommand = ' --format=NETCDF4_CLASSIC --intensive > slurm_${SLURM_JOBID}_py.out'
             newline = newline + endcommand
