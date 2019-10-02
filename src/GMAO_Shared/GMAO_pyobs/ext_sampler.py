@@ -419,6 +419,10 @@ if __name__ == "__main__":
     # --------------------------
     Vars = getVars(options.inFile)
 
+    # Varibles to be included in calculation
+    if type(options.VNAMES) is not list:
+        options.VNAMES = options.VNAMES.split(',')
+
     # Run Mie Calculator and Write Output Files
     # --------------------------
     if options.station:
