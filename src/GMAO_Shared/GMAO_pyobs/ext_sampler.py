@@ -363,6 +363,9 @@ if __name__ == "__main__":
     parser.add_option("-c", "--channel", dest="channel", default=channel,
               help="Channel for Mie calculation")
 
+    parser.add_option("--vnames", dest="VNAMES", default=VNAMES,
+              help="Species to include in calculation (default=%s)"%VNAMES)    
+
     parser.add_option("-I", "--intensive",default=intensive,
                       action="store_true", dest="intensive",
                       help="return intensive variables")
@@ -424,7 +427,7 @@ if __name__ == "__main__":
         StnNames = ''
 
     channelIn = float(options.channel)
-    MieVars = computeMie(Vars,channelIn,VNAMES,options.rcFile,options)
+    MieVars = computeMie(Vars,channelIn,options.VNAMES,options.rcFile,options)
     writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
             MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,options.outFile,options)
 
