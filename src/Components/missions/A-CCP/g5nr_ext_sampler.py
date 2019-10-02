@@ -185,7 +185,7 @@ class WORKSPACE(JOBS):
                 self.edit_AODrc(outfile,ch)            
 
                 #link over needed extdata
-                source = [self.extData]
+                source = [self.extData,'ExtData','Chem_MieRegistry.rc']
                 for src in source:
                     os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
