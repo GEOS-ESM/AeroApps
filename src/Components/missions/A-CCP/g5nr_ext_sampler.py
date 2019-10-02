@@ -219,9 +219,9 @@ class WORKSPACE(JOBS):
         for workpath in self.dirstring:
             isodate, ch = os.path.basename(workpath).split('.')
             sdate = isoparser(isodate)
-            YY = sdate.year
-            MM = sdate.month
-            DD = sdate.day
+            YY = sdate.strftime('%Y')
+            MM = sdate.strftime('%m')
+            DD = sdate.strftime('%d')
             strdate = sdate.strftime('%Y%m%d_%H%Mz')
 
             # get inFile
@@ -233,7 +233,7 @@ class WORKSPACE(JOBS):
                 os.makedirs(outDir)
 
             # outFile
-            outFile = '{}/{}-g5nr.lc.ext.{}.{}.nc4'.format(outDir,self.instname,strdate,ch)
+            outFile = '{}/{}-g5nr.lc.ext.{}.{}nm.nc4'.format(outDir,self.instname,strdate,ch)
             
             # read file first
             outpath = '{}/{}'.format(workpath,self.slurm)
