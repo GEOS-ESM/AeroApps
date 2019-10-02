@@ -135,8 +135,9 @@ class WORKSPACE(JOBS):
     def __init__(self,args):
 
         self.Date      = isoparser(args.iso_t1)
-        self.enddate    = isoparser(args.iso_t2)
-        self.Dt        = timedelta(hours=args.DT_hours)
+        self.enddate   = isoparser(args.iso_t2)
+        self.Dt_hours  = args.DT_hours
+        self.dt        = timedelta(hours=args.dt_hours)
 
         if not os.path.exists(args.tmp):
             os.makedirs(args.tmp)
@@ -167,7 +168,6 @@ class WORKSPACE(JOBS):
         while sdate < self.enddate:
             for ch in self.channels:
                 # create directory
-
                 workpath = '{}/{}.{}'.format(self.tmp,sdate.isoformat(),ch)
                 if os.path.exists(workpath):
                     shutil.rmtree(workpath)
@@ -185,12 +185,12 @@ class WORKSPACE(JOBS):
                 self.edit_AODrc(outfile,ch)            
 
                 #link over needed extdata
-                source = [self.extData,'ExtData','Chem_MieRegistry.rc']
+                source = [self.extData,'ExtData','Chem_MieRegistry.rc','run_ext_sampler.py']
                 for src in source:
                     os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
                 self.dirstring.append(workpath)
-            sdate += self.Dt
+                sdate += self.dt
 
     def edit_AODrc(self,filename,ch):
         f = open(filename)
@@ -219,21 +219,14 @@ class WORKSPACE(JOBS):
         for workpath in self.dirstring:
             isodate, ch = os.path.basename(workpath).split('.')
             sdate = isoparser(isodate)
-            YY = sdate.strftime('%Y')
-            MM = sdate.strftime('%m')
-            DD = sdate.strftime('%d')
-            strdate = sdate.strftime('%Y%m%d_%H%Mz')
+            edate = date + self.dt
+            isoedate = edate.isoformat()
 
             # get inFile
-            inFile = '{}/Y{}/M{}/D{}/{}-g5nr.lb2.aer_Nv.{}.nc4'.format(self.inDir,YY,MM,DD,self.instname,strdate)
-            # get outDir
-            outDir = '{}/Y{}/M{}/D{}/'.format(self.outDir,YY,MM,DD)
-
-            if not os.path.exists(outDir):
-                os.makedirs(outDir)
+            inFile = self.inDir + '/Y{}/M{}/D{}/' + self.instname + '-g5nr.lb2.aer_Nv.{}.nc4'
 
             # outFile
-            outFile = '{}/{}-g5nr.lc.ext.{}.{}nm.nc4'.format(outDir,self.instname,strdate,ch)
+            outFile = self.outDir + '/Y{}/M{}/D{}/'+ self.instname +'-g5nr.lc.ext.{}.{}nm.nc4'
             
             # read file first
             outpath = '{}/{}'.format(workpath,self.slurm)
@@ -245,10 +238,9 @@ class WORKSPACE(JOBS):
 
 
             # replace one line
-            command = 'python -u ${G5BIN}/ext_sampler.py --vnames=SS001,SS002,SS003,SS004,SS005,BCPHOBIC,BCPHILIC,OCPHOBIC,OCPHILIC,SO4 '
-            newline = command + '--input={} --output={} --channel={} --rc={}'.format(inFile,outFile,ch,self.rcFile)
-            endcommand = ' --format=NETCDF4_CLASSIC --intensive > slurm_${SLURM_JOBID}_py.out'
-            newline = newline + endcommand
+            command = 'python -u run_ext_sampler.py --DT_hours {} --rc {} {} {} {} {} {}'.format(self.DT_hours,self.rcFile,inFile,outFile,ch)
+            endcommand = ' > slurm_${SLURM_JOBID}_py.out'
+            newline = command  + endcommand
             text[-2] = newline
             f.close()
 
@@ -289,6 +281,7 @@ if __name__ == '__main__':
     
     #Defaults
     DT_hours = 1
+    dt_hours = 24
     slurm    = 'run_ext_sampler.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir'
 
@@ -300,6 +293,9 @@ if __name__ == '__main__':
 
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
+
+    parser.add_argument('-d',"--dt_hours", default=DT_hours, type=int,
+                        help="Timestep in hours for job (default=%i)"%dt_hours)    
 
     parser.add_argument('-s',"--slurm",default=slurm,
                         help="slurm script template (default=%s)"%slurm)           
