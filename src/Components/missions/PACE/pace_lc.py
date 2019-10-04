@@ -489,6 +489,9 @@ class WORKSPACE(JOBS):
         newline = 'STDATM_file: {}\n'.format(self.STDATM_file)
         text.append(newline)
         text.append('\n')
+        if self.standard_atm is False:
+            newline  = 'STANDARD_ATM: false\n'
+
 
         # LAND STUFF
 
