@@ -1133,7 +1133,7 @@ program pace_vlidort
                   (/dble(VZA(i,j))/), &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
         else
-          ! Call to vlidort vector code
+          ! Call to vlidort vector code          
           call VLIDORT_Vector_OCIGissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
@@ -1784,9 +1784,9 @@ program pace_vlidort
   subroutine read_water()
 
     if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-
-      call read_SLEAVE()
+      call mp_readvar1Dchunk('wavelength', WAT_file, (/wnch/), 1, npet, myid, WATER_CH)
       if (MAPL_am_I_root()) then
+        call read_SLEAVE()            
         write(*,*) '<> Read SLEAVE data to shared memory'
       end if
       call MAPL_SyncSharedMemory(rc=ierr) 
@@ -1798,29 +1798,24 @@ program pace_vlidort
     integer                            :: below
     integer                            :: ncid, varid
     real, dimension(im,jm,2)           :: temp
-    real, dimension(im,jm,1)           :: tempmax
+    real, dimension(im,jm,wnch)        :: temp3d 
+    
+    call readvar3D('rrs',WAT_file,temp3d)
 
-    call mp_readvar1Dchunk('wavelength', WAT_file, (/wnch/), 1, npet, myid, WATER_CH)
-    if (MAPL_am_I_root()) then
+    do ch = 1, nch
+      ! get channel below
+      below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .GE. 0)
+      if (channels(ch) .eq. maxval(WATER_CH)) then
+        temp = 0
+        temp(:,:,1) = temp3d(:,:,below)
+      else
+        temp = temp3d(:,:,below:below+1)          
+      end if
+      SLEAVE(:,:,ch,:) = temp
       
-      do ch = 1, nch
-        ! get channel below
-        below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .GE. 0)
-        if (channels(ch) .eq. maxval(WATER_CH)) then
-          call readvar3Dslice('lwn', WAT_file, (/im,jm,1/), 3, below, tempmax)
-          temp = 0
-          temp(:,:,1) = tempmax(:,:,1)
-        else
-          call readvar3Dslice('lwn', WAT_file, (/im,jm,2/), 3, below, temp)          
-        end if
-        SLEAVE(:,:,ch,:) = temp
-        
-      end do
-    end if
-    call MAPL_SyncSharedMemory(rc=ierr) 
+    end do
 
   end subroutine read_SLEAVE
-
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -2054,13 +2049,10 @@ program pace_vlidort
 
     call mp_readvar2Dchunk("U10M",   MET_file, (/im,jm/), 1, npet, myid, U10M) 
     call mp_readvar2Dchunk("V10M",  MET_file, (/im,jm/), 1, npet, myid, V10M) 
-    call MAPL_SyncSharedMemory(rc=ierr)    
 
     call MAPL_SyncSharedMemory(rc=ierr)    
     if (MAPL_am_I_root()) then
-        
       write(*,*) '<> Read wind data to shared memory' 
-
     end if
     
   end subroutine read_wind
