@@ -507,7 +507,7 @@ program pace_vlidort
   ISSA           = dble(MISSING)
   IG             = dble(MISSING)
   ALBEDO         = dble(MISSING)
-  ROT            = dble(MISSING)
+  ROD            = dble(MISSING)
   PE             = dble(MISSING)
   ZE             = dble(MISSING)
   TE             = dble(MISSING)    
@@ -600,7 +600,7 @@ program pace_vlidort
     if (.not. standard_atm) then   
     ! use standard PS = 101300.00 Pa for scaling
       do k=1,nch
-        ROT(:,nobs,k) = ROT(:,nobs,k)*Vpe(km+1,nobs)/1013000.0
+        ROT(:,nobs,k) = ROT(:,nobs,k)*Vpe(km+1,nobs)/101300.0
       end do
     end if
 
