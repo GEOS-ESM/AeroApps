@@ -136,7 +136,7 @@ class WORKSPACE(JOBS):
 
         self.Date      = isoparser(args.iso_t1)
         self.enddate   = isoparser(args.iso_t2)
-        self.Dt_hours  = args.DT_hours
+        self.DT_hours  = args.DT_hours
         self.dt        = timedelta(hours=args.dt_hours)
 
         if not os.path.exists(args.tmp):
@@ -190,7 +190,7 @@ class WORKSPACE(JOBS):
                     os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
                 self.dirstring.append(workpath)
-                sdate += self.dt
+            sdate += self.dt
 
     def edit_AODrc(self,filename,ch):
         f = open(filename)
@@ -219,7 +219,7 @@ class WORKSPACE(JOBS):
         for workpath in self.dirstring:
             isodate, ch = os.path.basename(workpath).split('.')
             sdate = isoparser(isodate)
-            edate = date + self.dt
+            edate = sdate + self.dt
             isoedate = edate.isoformat()
 
             # get inFile
@@ -238,7 +238,10 @@ class WORKSPACE(JOBS):
 
 
             # replace one line
-            command = 'python -u run_ext_sampler.py --DT_hours {} --rc {} {} {} {} {} {}'.format(self.DT_hours,self.rcFile,inFile,outFile,ch)
+            command = 'python -u ./run_ext_sampler.py --DT_hours {} --rc {} {} {} '.format(self.DT_hours,self.rcFile,isodate,isoedate)
+            command = command + " '" + inFile + "' "
+            command = command + " '" + outFile + "' "
+            command = command + ch
             endcommand = ' > slurm_${SLURM_JOBID}_py.out'
             newline = command  + endcommand
             text[-2] = newline
@@ -265,12 +268,13 @@ class WORKSPACE(JOBS):
             os.remove(outfile)     
 
             os.remove(self.slurm)
-            os.remove('lidar_sampler.pcf')
 
         # remove symlinks
-        source = ['lidar_sampler.py','run_lidar_sampler.py','sampling','tle']
+        source = [self.extData,'ExtData','Chem_MieRegistry.rc','run_ext_sampler.py']
         for src in source:
             os.remove(src)
+	# remove rc directory
+	shutil.rmtree('rc')
 
         os.chdir(self.cwd)
         if self.profile is False:
@@ -294,7 +298,7 @@ if __name__ == '__main__':
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
 
-    parser.add_argument('-d',"--dt_hours", default=DT_hours, type=int,
+    parser.add_argument('-d',"--dt_hours", default=dt_hours, type=int,
                         help="Timestep in hours for job (default=%i)"%dt_hours)    
 
     parser.add_argument('-s',"--slurm",default=slurm,
@@ -316,7 +320,10 @@ if __name__ == '__main__':
     # -----------------
     cf = Config(args.prep_config,delim=' = ')
     args.instname = cf('INSTNAME')
-    args.channels = np.array(cf('CHANNELS').split(',')).astype(int)
+    if ',' in cf('CHANNELS'):
+    	args.channels = np.array(cf('CHANNELS').split(',')).astype(int)
+    else:
+	args.channels = np.array([int(cf('CHANNELS'))])
     args.rcFile   = cf('RCFILE')
     args.extData  = cf('EXTDATA')
     args.inDir    = cf('INDIR')
