@@ -89,6 +89,12 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--dryrun",action="store_true",
                         help="do a dry run (default=False).")    
 
+    parser.add_argument("--coarse",action="store_true",
+                        help="do coarse mode only (default=False).")
+
+    parser.add_argument("--fine",action="store_true",
+                        help="do fine mode only (default=False).")
+
     parser.add_argument("-n", "--nproc",default=nproc,type=int,
                         help="Number of processors (default=%i)."%nproc)    
 
@@ -118,16 +124,13 @@ if __name__ == "__main__":
 
     # run extinction sampler on model fields
     # split across multiple processors by date
-    lendate  = len(inFilelist)
-
     processes = []
     cmds      = []
-    filelist  = []
     for inFile,outFile in zip(inFilelist,outFilelist):
-
+	# all species
         Options =     " --vnames=SS001,SS002,SS003,SS004,SS005,BCPHOBIC,BCPHILIC,OCPHOBIC,OCPHILIC,SO4"     + \
                       " --input=" + inFile       + \
-                      " --output=" + outFile       + \
+                      " --output=" + outFile      + \
                       " --channel=" + ch      + \
                       " --rc=" + args.rc      + \
                       " --format=NETCDF4_CLASSIC"      + \
@@ -138,8 +141,40 @@ if __name__ == "__main__":
 
         cmd = 'ext_sampler.py {} '.format(Options)
         cmds.append(cmd)
-        filelist.append(outFile)
 
+	# coarse mode only
+        if args.coarse:
+        	Options =     " --vnames=SS001,SS002,SS003,SS004,SS005"     + \
+                      	      " --input=" + inFile       + \
+                              " --output=" + outFile[:-4] + ".coarse.nc4"      + \
+                              " --channel=" + ch      + \
+                              " --rc=" + args.rc      + \
+                              " --format=NETCDF4_CLASSIC"      + \
+                              " --intensive"
+
+        	if args.verbose:
+            		Options += " --verbose"
+
+        	cmd = 'ext_sampler.py {} '.format(Options)
+        	cmds.append(cmd)
+
+	# fine mode only
+	if args.fine:
+        	Options =     " --vnames=BCPHOBIC,BCPHILIC,OCPHOBIC,OCPHILIC,SO4"     + \
+                              " --input=" + inFile       + \
+                              " --output=" + outFile[:-4] + ".fine.nc4"      + \
+                              " --channel=" + ch      + \
+                              " --rc=" + args.rc      + \
+                              " --format=NETCDF4_CLASSIC"      + \
+                              " --intensive"
+
+        	if args.verbose:
+            		Options += " --verbose"
+
+        	cmd = 'ext_sampler.py {} '.format(Options)
+        	cmds.append(cmd)
+
+    lendate  = len(cmds)
     # Manage processes
     # This will start the max processes running    
     if not args.dryrun:
