@@ -373,7 +373,7 @@ class WORKSPACE(JOBS):
 
         # link over some scripts and files
         source = ['pace_vlidort.x','ExtData','Chem_MieRegistry.rc',
-                  'ExtDataCloud','clean_mem.sh',self.OCItable_file,self.STDATM_file]
+                  'ExtDataCloud','ExtDataOsku','clean_mem.sh',self.OCItable_file,self.STDATM_file]
         for src in source:
             os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(outpath,src))
 
@@ -714,7 +714,7 @@ class WORKSPACE(JOBS):
             os.remove(self.runfile)
 
         # remove symlinks
-        source = ['Aod_EOS.rc','ExtData','ExtDataCloud','pace_vlidort.rc',
+        source = ['Aod_EOS.rc','ExtData','ExtDataCloud','ExtDataOsku','pace_vlidort.rc',
                   'pace_vlidort.x','Chem_MieRegistry.rc','clean_mem.sh']
         for src in source:
             os.remove(src)
