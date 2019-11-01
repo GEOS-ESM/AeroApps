@@ -374,9 +374,6 @@
       self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_pressure_grid(0:NLAYERS)    = self%pe * 1.E-2  ! en hPa
       self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_temperature_grid(0:NLAYERS) = self%te
 
-!               Calculation of the Rayleigh-Scattering Optical Depth
-!               ----------------------------------------------------               
-      call VLIDORT_Rayleigh (self, rc)
 
 !                Populate Scattering Phase Matrix
 !                ---------------------------------
@@ -710,9 +707,6 @@
       self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_pressure_grid(0:NLAYERS)    = self%pe * 1.E-2  ! en hPa
       self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_temperature_grid(0:NLAYERS) = self%te
 
-!               Calculation of the Rayleigh-Scattering Optical Depth
-!               ----------------------------------------------------               
-      call VLIDORT_Rayleigh (self, rc)
 
 ! DEPOL_RATIO is a function of wavelength in microns
       DEPOL_RATIO = self%depol_ratio
@@ -1573,9 +1567,6 @@
       self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_pressure_grid(0:NLAYERS)    = self%pe * 1.E-2  ! en hPa
       self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_temperature_grid(0:NLAYERS) = self%te
 
-!               Calculation of the Rayleigh-Scattering Optical Depth
-!               ----------------------------------------------------               
-      call VLIDORT_Rayleigh (self, rc)
 
 ! DEPOL_RATIO is a function of wavelength in microns
       DEPOL_RATIO = coef_depol(self%wavelength * 1.E-3)
@@ -1933,9 +1924,6 @@
       self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_pressure_grid(0:NLAYERS)    = self%pe * 1.E-2  ! en hPa
       self%Surface%Base%VIO%VLIDORT_FixIn%Chapman%TS_temperature_grid(0:NLAYERS) = self%te
 
-!               Calculation of the Rayleigh-Scattering Optical Depth
-!               ----------------------------------------------------               
-      call VLIDORT_Rayleigh (self, rc)
 
 !                Populate Scattering Phase Matrix
 !                ---------------------------------
