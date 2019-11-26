@@ -26,7 +26,7 @@ endif
 
 THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
-BINS := pace_vlidort.x
+BINS := pace_vlidort.x pace_vlidort_multinode.x
 # aero_calculator.x
 # cloud_calculator.x 
 
