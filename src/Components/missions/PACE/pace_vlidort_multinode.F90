@@ -454,8 +454,10 @@ program pace_vlidort
 ! Allocate the Global arrays using SHMEM
 ! It will be available on all processors
 ! ---------------------------------------------------------
- call allocate_shared(clrm)
- call MAPL_SyncSharedMemory(rc=ierr)
+  if (amOnFirstNode) then
+    call allocate_shared(clrm)
+  end if
+  call MAPL_SyncSharedMemory(rc=ierr)
   
 ! ! Read in the global arrays
 ! ! ------------------------------
