@@ -25,6 +25,11 @@ module netcdf_Mod
        module procedure readvar2DgrpR8
   end interface
 
+  interface readvar2D
+       module procedure readvar2DR4
+       module procedure readvar2DR8
+  end interface  
+
   interface readvar1Dgrp
        module procedure readvar1DgrpR4
        module procedure readvar1DgrpR8
@@ -165,10 +170,9 @@ module netcdf_Mod
     call check( nf90_close(ncid), "closing " // filename)
   end subroutine readvar4D
 
-
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!    readvar2D
+!    readvar2DR4
 ! PURPOSE
 !     reads a 2D variable from a netcdf file all at once
 ! INPUT
@@ -179,7 +183,35 @@ module netcdf_Mod
 !     None
 !  HISTORY
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine readvar2D(varname, filename, var)
+  subroutine readvar2DR4(varname, filename, var)
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  filename
+    real, dimension(:,:), intent(inout)    ::  var
+
+    integer                                :: ncid, varid
+
+
+    call check( nf90_open(filename,nf90_nowrite,ncid), "opening file " // filename)
+    call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
+    call check( nf90_get_var(ncid,varid,var), "reading " // varname)
+    call check( nf90_close(ncid), "closing " // filename)
+
+  end subroutine readvar2DR4
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    readvar2DR8
+! PURPOSE
+!     reads a 2D variable from a netcdf file all at once
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine readvar2DR8(varname, filename, var)
     character(len=*), intent(in)           ::  varname
     character(len=*), intent(in)           ::  filename
     real*8, dimension(:,:), intent(inout)    ::  var
@@ -192,7 +224,7 @@ module netcdf_Mod
     call check( nf90_get_var(ncid,varid,var), "reading " // varname)
     call check( nf90_close(ncid), "closing " // filename)
 
-  end subroutine readvar2D
+  end subroutine readvar2DR8
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
