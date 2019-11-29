@@ -622,6 +622,9 @@ program pace_vlidort
         print *, 'cannot get aerosol optical properties'
         call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)      
       end if
+      ! Multiply by -1 to go from Mischenko convention to VLIDORT
+      Vpmom(:,:,:,:,2) = -1.*Vpmom(:,:,:,:,2)
+      Vpmom(:,:,:,:,4) = -1.*Vpmom(:,:,:,:,4)
     end if
 
 !   Cloud Optical Properties
