@@ -505,7 +505,6 @@ program pace_vlidort
     call allocate_multinode(nclr(myid))
   end if
 
-
 ! Initialize outputs to be safe
 ! -------------------------------
   TAU            = dble(MISSING)
@@ -751,6 +750,9 @@ program pace_vlidort
           print *, 'cannot get aerosol optical properties'
           call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)      
         end if
+        ! Multiply by -1 to go from Mischenko convention to VLIDORT
+        Vpmom(:,:,:,:,2) = -1.*Vpmom(:,:,:,:,2)
+        Vpmom(:,:,:,:,4) = -1.*Vpmom(:,:,:,:,4)
       end if
 
   !   Cloud Optical Properties
@@ -773,7 +775,7 @@ program pace_vlidort
   !   ------------------------
       ! Rayleigh
       ROD(c) = SUM(ROT(:,nobs,nch))
-
+      
       ! Aerosols
       TAU(c) = SUM(Vtau(:,nch,nobs))
       SSA(c) = SUM(Vssa(:,nch,nobs)*Vtau(:,nch,nobs))
@@ -840,7 +842,6 @@ program pace_vlidort
         BR_Q(c)   = BR_Q_int(nobs,nch)
         BR_U(c)   = BR_U_int(nobs,nch)
       end if
-
       write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
       call write_verbose(msg)
 
@@ -848,12 +849,11 @@ program pace_vlidort
   !   -----------------------------------------        
       if (nint(100.*real(cc-starti)/real(counti)) > progress) then
         progress = progress + 10
-        write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',cc,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
+        write(*,'(A,I,A,I,A,I4,A,I3,A)') 'Pixel: ',cc,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
       end if
                   
     end do ! do clear pixels
   end if ! not Root processor
-
 ! Wait for everyone to finish calculations
 ! ----------------------------------------
   call MAPL_SyncSharedMemory(rc=ierr)
@@ -865,8 +865,8 @@ program pace_vlidort
       call mpi_send(PE, counti*km+1, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
       call mpi_send(ZE, counti*km+1, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
       call mpi_send(TE, counti*km+1, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-
-      call mpi_send(ROD, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      
+      call mpi_send(ROD, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
       call mpi_send(TAU, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
       call mpi_send(SSA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
       call mpi_send(G, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
@@ -877,16 +877,16 @@ program pace_vlidort
       call mpi_send(ISSA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
       call mpi_send(IG, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
 
-      call mpi_send(ALBEDO, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(ALBEDO, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
       if (.not. scalar) then
-        call mpi_send(Q, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-        call mpi_send(U, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-        call mpi_send(BR_Q, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-        call mpi_send(BR_U, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+        call mpi_send(Q, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+        call mpi_send(U, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+        call mpi_send(BR_Q, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+        call mpi_send(BR_U, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
       end if
 
-      call mpi_send(radiance_VL, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-      call mpi_send(reflectance_VL, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(radiance_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(reflectance_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
     end if
   end if
 
@@ -902,7 +902,7 @@ program pace_vlidort
           call mpi_recv(ZE(starti:endi,:), counti*km+1, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
           call mpi_recv(TE(starti:endi,:), counti*km+1, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
 
-          call mpi_recv(ROD(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(ROD(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
           call mpi_recv(TAU(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
           call mpi_recv(SSA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
           call mpi_recv(G(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
@@ -913,16 +913,16 @@ program pace_vlidort
           call mpi_recv(ISSA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
           call mpi_recv(IG(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
 
-          call mpi_recv(ALBEDO(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+          call mpi_recv(ALBEDO(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
           if (.not. scalar) then
-            call mpi_recv(Q(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-            call mpi_recv(U(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-            call mpi_recv(BR_Q(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-            call mpi_recv(BR_U(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+            call mpi_recv(Q(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+            call mpi_recv(U(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+            call mpi_recv(BR_Q(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+            call mpi_recv(BR_U(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
           end if
 
-          call mpi_recv(radiance_VL(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-          call mpi_recv(reflectance_VL(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(radiance_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(reflectance_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
         end if
       end if
     end do
@@ -1631,21 +1631,12 @@ program pace_vlidort
 !     28 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_land()
-    if (amOnFirstNode) then
-      call mp_readvar2Dchunk("FRLAND", INV_file, (/im,jm/), 1, npet, myid, READER2D)
-      
-      call MAPL_SyncSharedMemory(rc=ierr)    
-      if (MAPL_am_I_root()) then
-        FRLAND = pack(READER2D,clmask)
-      end if      
-      call MAPL_SyncSharedMemory(rc=ierr) 
-    end if
-
-    call MAPL_SyncSharedMemory(rc=ierr)   
     if (MAPL_am_I_root()) then
+      call readvar2D("FRLAND", INV_file, READER2D)
+      FRLAND = pack(READER2D,clmask)
       write(*,*) '<> Read fraction land data to shared memory'
     end if       
-
+    call MAPL_SyncSharedMemory(rc=ierr)
   end subroutine read_land
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1767,8 +1758,8 @@ program pace_vlidort
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_aer_Nv()
-    if (aerosol_free) then
-      if (MAPL_am_I_root()) then
+    if (MAPL_am_I_root()) then
+      if (aerosol_free) then
         DU001 = 0
         DU002 = 0
         DU003 = 0
@@ -1784,129 +1775,60 @@ program pace_vlidort
         OCPHOBIC = 0
         OCPHILIC = 0
         SO4 = 0
-        RH  = 0
+        RH  = 0      
+      else
+        call readvar3D("DU001", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,DU001)
+
+        call readvar3D("DU002", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,DU002)
+
+        call readvar3D("DU003", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,DU003)
+
+        call readvar3D("DU004", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,DU004)
+
+        call readvar3D("DU005", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,DU005)
+
+        call readvar3D("SS001", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,SS001)
+
+        call readvar3D("SS002", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,SS002)
+
+        call readvar3D("SS003", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,SS003)
+
+        call readvar3D("SS004", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,SS004)
+
+        call readvar3D("SS005", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,SS005)
+
+        call readvar3D("BCPHOBIC", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,BCPHOBIC)
+
+        call readvar3D("BCPHILIC", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,BCPHILIC)
+
+        call readvar3D("OCPHOBIC", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,OCPHOBIC)
+
+        call readvar3D("OCPHILIC", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,OCPHILIC)
+
+        call readvar3D("SO4", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,SO4)
+
+        call readvar3D("RH", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,RH)
       end if
-      call MAPL_SyncSharedMemory(rc=ierr)   
-    else
-      if (amOnFirstNode) then
-        call mp_readvar3Dchunk("DU001", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,DU001)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("DU002", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,DU002)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("DU003", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,DU003)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("DU004", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,DU004)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("DU005", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,DU005)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("SS001", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,SS001)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("SS002", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,SS002)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("SS003", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,SS003)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("SS004", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,SS004)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("SS005", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,SS005)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("BCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,BCPHOBIC)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("BCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,BCPHILIC)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("OCPHOBIC", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,OCPHOBIC)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("OCPHILIC", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,OCPHILIC)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("SO4", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,SO4)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("RH"     , AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,RH)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)        
-      end if
+      write(*,*) '<> Read aeorosl data to shared memory'
     end if
 
     call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root()) then
-      write(*,*) '<> Read aeorosl data to shared memory'
-    end if      
 
   end subroutine read_aer_Nv
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1941,20 +1863,12 @@ program pace_vlidort
         call MAPL_SyncSharedMemory(rc=ierr)  
       end do
     else
-      if (amOnFirstNode) then
-        call mp_readvar3Dchunk("AIRDENS", AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr) 
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,AIRDENS)
-        end if 
-        call MAPL_SyncSharedMemory(rc=ierr) 
+      if (MAPL_am_I_root()) then
+        call readvar3D("AIRDENS", AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,AIRDENS)
 
-        call mp_readvar3Dchunk("DELP"   , AER_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr) 
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,DELP)
-        end if 
-        call MAPL_SyncSharedMemory(rc=ierr)  
+        call readvar3D("DELP"   , AER_file, READER3D) 
+        call reduceProfile(READER3D,clmask,DELP)
       end if     
     end if
 
@@ -1962,7 +1876,8 @@ program pace_vlidort
     call MAPL_SyncSharedMemory(rc=ierr)    
     if (MAPL_am_I_root()) then
       write(*,*) '<> Read pressutre,temperature data to shared memory'
-    end if      
+    end if     
+    call MAPL_SyncSharedMemory(rc=ierr)   
 
   end subroutine read_PT
 
@@ -1980,50 +1895,29 @@ program pace_vlidort
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_cld_Tau()
 
-    if (cloud_free) then
-      if (MAPL_am_I_root()) then
+    if (MAPL_am_I_root()) then
+      if (cloud_free) then
         REI = 0
         REL = 0
         TAUI = 0
         TAUL = 0
+      else
+        call readvar3D("REI"    , CLD_file, READER3D) 
+        call reduceProfile(READER3D,clmask,REI)
+
+        call readvar3D("REL"    , CLD_file, READER3D) 
+        call reduceProfile(READER3D,clmask,REL)
+
+        call readvar3D("TAUI"   , CLD_file, READER3D) 
+        call reduceProfile(READER3D,clmask,TAUI)
+
+        call readvar3D("TAUL"   , CLD_file, READER3D) 
+        call reduceProfile(READER3D,clmask,TAUL)
       end if
-    else
-      if (amOnFirstNode) then
-        call mp_readvar3Dchunk("REI"    , CLD_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,REI)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("REL"    , CLD_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,REL)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("TAUI"   , CLD_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,TAUI)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-        call mp_readvar3Dchunk("TAUL"   , CLD_file, (/im,jm,km/), 1, npet, myid, READER3D) 
-        call MAPL_SyncSharedMemory(rc=ierr)  
-        if (MAPL_am_I_root()) then
-          call reduceProfile(READER3D,clmask,TAUL)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-
-      end if
+      write(*,*) '<> Read cloud data to shared memory'
     end if
 
     call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root()) then
-      write(*,*) '<> Read cloud data to shared memory'
-    end if      
 
   end subroutine read_cld_Tau
 
@@ -2071,16 +1965,15 @@ program pace_vlidort
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_water()
 
-    if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-      call mp_readvar1Dchunk('wavelength', WAT_file, (/wnch/), 1, npet, myid, WATER_CH)
-      call MAPL_SyncSharedMemory(rc=ierr) 
-      if (MAPL_am_I_root()) then
+    if (MAPL_am_I_root()) then
+      if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
+        call readvar1D('wavelength', WAT_file, WATER_CH)
         call read_SLEAVE()            
         write(*,*) '<> Read SLEAVE data to shared memory'
       end if
-      call MAPL_SyncSharedMemory(rc=ierr) 
-
     end if 
+
+    call MAPL_SyncSharedMemory(rc=ierr) 
 
   end subroutine read_water
 
@@ -2123,41 +2016,28 @@ program pace_vlidort
 !     Jul 2015 P. Castellanos - added OMI LER option
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_surf_land()
-    if (amOnFirstNode) then
+    if (MAPL_am_I_root()) then
       ! RTLS Kernel
       if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
         call read_RTLS()
-        if (MAPL_am_I_root()) then
-          write(*,*) '<> Read BRDF data to shared memory'
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr) 
+        write(*,*) '<> Read BRDF data to shared memory'
 
         if ((index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
           call read_LER()   
-          if (MAPL_am_I_root()) then               
-            write(*,*) '<> Read LER data to shared memory'
-          end if
-          call MAPL_SyncSharedMemory(rc=ierr) 
+          write(*,*) '<> Read LER data to shared memory'
         end if
       end if
 
       ! BPDF
       if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
         call read_BPDF()
-        if (MAPL_am_I_root()) then
-          write(*,*) '<> Read BPDF data to shared memory'
-        end if
-      call MAPL_SyncSharedMemory(rc=ierr) 
-
+        write(*,*) '<> Read BPDF data to shared memory'
       end if
 
       ! Lambertian
       if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
         call read_LER()     
-        if (MAPL_am_I_root()) then           
-          write(*,*) '<> Read LER data to shared memory'
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr) 
+        write(*,*) '<> Read LER data to shared memory'
       end if 
     end if
     call MAPL_SyncSharedMemory(rc=ierr) 
@@ -2170,7 +2050,6 @@ program pace_vlidort
     integer                            :: x, y
     character(len=100)                 :: sds
 
-    call MAPL_SyncSharedMemory(rc=ierr) 
     do ch = 1,landbandmBRDF
       if ( landband_cBRDF(ch) < 1000 ) then
         write(sds,'(A4,I3)') "Riso",int(landband_cBRDF(ch))
@@ -2178,12 +2057,8 @@ program pace_vlidort
         write(sds,'(A4,I4)') "Riso",int(landband_cBRDF(ch))
       end if
 
-      call mp_readvar2Dchunk(trim(sds), BRDF_file, (/im,jm/), 1, npet, myid, READER2D) 
-      call MAPL_SyncSharedMemory(rc=ierr) 
-      if (MAPL_am_I_root()) then
-        KISO(:,ch) = pack(READER2D,clmask)
-      end if
-      call MAPL_SyncSharedMemory(rc=ierr) 
+      call readvar2D(trim(sds), BRDF_file, READER2D) 
+      KISO(:,ch) = pack(READER2D,clmask)
 
       if ( landband_cBRDF(ch) < 1000 ) then
         write(sds,'(A4,I3)') "Rgeo",int(landband_cBRDF(ch))
@@ -2191,12 +2066,8 @@ program pace_vlidort
         write(sds,'(A4,I4)') "Rgeo",int(landband_cBRDF(ch))
       end if
       
-      call mp_readvar2Dchunk(trim(sds), BRDF_file, (/im,jm/), 1, npet, myid, READER2D) 
-      call MAPL_SyncSharedMemory(rc=ierr)
-      if (MAPL_am_I_root()) then
-        KGEO(:,ch) = pack(READER2D,clmask)
-      end if
-      call MAPL_SyncSharedMemory(rc=ierr)         
+      call readvar2D(trim(sds), BRDF_file, READER2D) 
+      KGEO(:,ch) = pack(READER2D,clmask)
 
       if ( landband_cBRDF(ch) < 1000 ) then
         write(sds,'(A4,I3)') "Rvol",int(landband_cBRDF(ch))
@@ -2204,52 +2075,34 @@ program pace_vlidort
         write(sds,'(A4,I4)') "Rvol",int(landband_cBRDF(ch))
       end if
 
-      call mp_readvar2Dchunk(trim(sds), BRDF_file, (/im,jm/), 1, npet, myid, READER2D) 
-      call MAPL_SyncSharedMemory(rc=ierr)
-      if (MAPL_am_I_root()) then
-        KVOL(:,ch) = pack(READER2D,clmask)
-      end if
-      call MAPL_SyncSharedMemory(rc=ierr)         
-      
+      call readvar2D(trim(sds), BRDF_file, READER2D) 
+      KVOL(:,ch) = pack(READER2D,clmask)      
     end do
     
   end subroutine read_RTLS
 
   subroutine read_BPDF()
 
-    call mp_readvar2Dchunk('NDVI', NDVI_file, (/im,jm/), 1, npet, myid, READER2D) 
-    call MAPL_SyncSharedMemory(rc=ierr)
-    if (MAPL_am_I_root()) then
-      NDVI = pack(READER2D,clmask)
-    end if
-    call MAPL_SyncSharedMemory(rc=ierr)             
-    call mp_readvar2Dchunk('BPDFcoef', BPDF_file, (/im,jm/), 1, npet, myid, READER2D) 
-    call MAPL_SyncSharedMemory(rc=ierr)
-    if (MAPL_am_I_root()) then
-      BPDFcoef= pack(READER2D,clmask)
-    end if
-    call MAPL_SyncSharedMemory(rc=ierr)  
+    call readvar2D('NDVI', NDVI_file, READER2D) 
+    NDVI = pack(READER2D,clmask)
+    call readvar2D('BPDFcoef', BPDF_file, READER2D) 
+    BPDFcoef= pack(READER2D,clmask)
   end subroutine read_BPDF
 
   subroutine read_LER()
     real, pointer                      :: temp(:,:,:,:)
     character(len=100)                 :: sds
 
-    call MAPL_AllocNodeArray(temp,(/im,jm,1,1/),rc=ierr)
-    call MAPL_SyncSharedMemory(rc=ierr)   
+    allocate(temp(im,jm,1,1))
     do ch = 1,landbandmLER
       if ( landband_cLER(ch) < 1000 ) then
         write(sds,'(A6,I3)') "SRFLER",int(landband_cLER(ch))
       end if
       
-      call mp_readvar4Dchunk(trim(sds), LER_file, (/im,jm,1,1/), 1, npet, myid, temp) 
-      call MAPL_SyncSharedMemory(rc=ierr)  
-      if (MAPL_am_I_root()) then 
-        LER(:,ch) = pack(reshape(temp(:,:,1,1),(/im,jm/)),clmask)
-      end if
-      call MAPL_SyncSharedMemory(rc=ierr)     
+      call readvar4D(trim(sds), LER_file, temp) 
+      LER(:,ch) = pack(reshape(temp(:,:,1,1),(/im,jm/)),clmask)
     end do
-    call MAPL_DeallocNodeArray(temp,rc=ierr)
+    deallocate(temp)
   end subroutine read_LER
 
 
@@ -2347,26 +2200,16 @@ program pace_vlidort
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_wind()
 
-    if (amOnFirstNode) then
-      call mp_readvar2Dchunk("U10M",   MET_file, (/im,jm/), 1, npet, myid, READER2D) 
-      call MAPL_SyncSharedMemory(rc=ierr)  
-      if (MAPL_am_I_root()) then
-        U10M = pack(READER2D,clmask)
-      end if
-      call MAPL_SyncSharedMemory(rc=ierr)  
+    if (MAPL_am_I_root()) then
+      call readvar2D("U10M",   MET_file, READER2D) 
+      U10M = pack(READER2D,clmask)
 
-      call mp_readvar2Dchunk("V10M",  MET_file, (/im,jm/), 1, npet, myid, READER2D) 
-      call MAPL_SyncSharedMemory(rc=ierr)  
-      if (MAPL_am_I_root()) then
-        V10M = pack(READER2D,clmask)
-      end if
-      call MAPL_SyncSharedMemory(rc=ierr)        
+      call readvar2D("V10M",  MET_file, READER2D) 
+      V10M = pack(READER2D,clmask)
+      write(*,*) '<> Read wind data to shared memory' 
     end if
 
     call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root()) then
-      write(*,*) '<> Read wind data to shared memory' 
-    end if
     
   end subroutine read_wind
 
