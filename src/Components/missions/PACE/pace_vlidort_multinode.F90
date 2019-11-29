@@ -622,7 +622,7 @@ program pace_vlidort
           call mpi_send(V10M(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
 
           if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-            call mpi_send(SLEAVE(starti:endi,nch,2), counti*nch*2, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)     
+            call mpi_send(SLEAVE(starti:endi,nch,:), counti*nch*2, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)     
             call mpi_send(WATER_CH, wnch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)    
           end if
         end if
