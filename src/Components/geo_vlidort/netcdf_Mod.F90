@@ -30,6 +30,17 @@ module netcdf_Mod
        module procedure readvar2DR8
   end interface  
 
+  interface readvar3D
+       module procedure readvar3DR4
+       module procedure readvar3DR8
+  end interface  
+
+  interface readvar4D
+       module procedure readvar4DR4
+       module procedure readvar4DR8
+  end interface  
+
+
   interface readvar1Dgrp
        module procedure readvar1DgrpR4
        module procedure readvar1DgrpR8
@@ -115,7 +126,7 @@ module netcdf_Mod
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!    readvar3D
+!    readvar3DR4
 ! PURPOSE
 !     reads a 3D variable from a netcdf file all at once
 ! INPUT
@@ -127,7 +138,7 @@ module netcdf_Mod
 !  HISTORY
 !     
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine readvar3D(varname, filename, var)
+  subroutine readvar3DR4(varname, filename, var)
     character(len=*), intent(in)           ::  varname
     character(len=*), intent(in)           ::  filename
     real, dimension(:,:,:), intent(inout)  ::  var
@@ -139,12 +150,39 @@ module netcdf_Mod
     call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
     call check( nf90_get_var(ncid,varid,var), "reading " // varname)
     call check( nf90_close(ncid), "closing " // filename)
-  end subroutine readvar3D
-
+  end subroutine readvar3DR4
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!    readvar4D
+!    readvar3DR8
+! PURPOSE
+!     reads a 3D variable from a netcdf file all at once
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine readvar3DR8(varname, filename, var)
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  filename
+    real*8, dimension(:,:,:), intent(inout)  ::  var
+
+    integer                                :: ncid, varid
+
+
+    call check( nf90_open(filename,NF90_NOWRITE,ncid), "opening file " // filename)
+    call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
+    call check( nf90_get_var(ncid,varid,var), "reading " // varname)
+    call check( nf90_close(ncid), "closing " // filename)
+  end subroutine readvar3DR8
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    readvar4DR4
 ! PURPOSE
 !     reads a 4D variable from a netcdf file all at once
 ! INPUT
@@ -156,7 +194,7 @@ module netcdf_Mod
 !  HISTORY
 !     
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine readvar4D(varname, filename, var)
+  subroutine readvar4DR4(varname, filename, var)
     character(len=*), intent(in)           ::  varname
     character(len=*), intent(in)           ::  filename
     real, dimension(:,:,:,:), intent(inout)  ::  var
@@ -168,7 +206,35 @@ module netcdf_Mod
     call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
     call check( nf90_get_var(ncid,varid,var), "reading " // varname)
     call check( nf90_close(ncid), "closing " // filename)
-  end subroutine readvar4D
+  end subroutine readvar4DR4
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    readvar4DR8
+! PURPOSE
+!     reads a 4D variable from a netcdf file all at once
+! INPUT
+!     varname  : string of variable name
+!     filename : file to be read
+!     var      : the variable to be read to
+! OUTPUT
+!     None
+!  HISTORY
+!     
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine readvar4DR8(varname, filename, var)
+    character(len=*), intent(in)           ::  varname
+    character(len=*), intent(in)           ::  filename
+    real*8, dimension(:,:,:,:), intent(inout)  ::  var
+
+    integer                                :: ncid, varid
+
+
+    call check( nf90_open(filename,NF90_NOWRITE,ncid), "opening file " // filename)
+    call check( nf90_inq_varid(ncid,varname,varid), "getting varid for " // varname)
+    call check( nf90_get_var(ncid,varid,var), "reading " // varname)
+    call check( nf90_close(ncid), "closing " // filename)
+  end subroutine readvar4DR8  
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
