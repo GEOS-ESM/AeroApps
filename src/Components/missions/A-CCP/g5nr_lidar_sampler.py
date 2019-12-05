@@ -15,7 +15,7 @@ import time
 
 class JOBS(object):
     def handle_jobs(self):
-        jobsmax = 150
+        jobsmax = 25
         # Figure out how many jobs you need to submit
         numjobs  = len(self.dirstring)   
         
