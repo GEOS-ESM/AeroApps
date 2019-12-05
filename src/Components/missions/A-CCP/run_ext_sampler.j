@@ -3,7 +3,7 @@
 #######################################################################
 #                     Batch Parameters for Run Job
 #######################################################################
-#SBATCH --time=01:00:00
+#SBATCH --time=00:15:00
 #SBATCH --ntasks=12 --cpus-per-task=1 --ntasks-per-node=12
 #SBATCH --job-name=lidar_sampler
 #SBATCH -A s1180
@@ -26,7 +26,12 @@ limit stacksize unlimited
 #######################################################################
 setenv G5DIR /discover/nobackup/pcastell/workspace/GAAS/src
 setenv G5BIN /discover/nobackup/pcastell/workspace/GAAS/Linux/bin
-setenv BIN $PWD 
+setenv BIN $PWD
+setenv TMPDIR $LOCAL_TMPDIR 
+
+cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/ExtDataOsku $LOCAL_TMPDIR
+ln -s $LOCAL_TMPDIR/ ./ExtDataOsku
+
 
 source $HOME/.cshrc
 cd $G5DIR
@@ -43,4 +48,4 @@ cd $BIN
 ######
 ##################################################################
 python -u ${G5BIN}/ext_sampler.py --input=INFILE --output=OUTFILE --format=NETCDF4_CLASSIC --channel=CHANNEL --rc=Aod_EOS.rc --intensive > slurm_${SLURM_JOBID}_py.out
-
+rm ExtDataOsku
