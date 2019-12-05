@@ -16,7 +16,7 @@ from MAPL     import Config
 
 class JOBS(object):
     def handle_jobs(self):
-        jobsmax = 150
+        jobsmax = 25
         # Figure out how many jobs you need to submit
         numjobs  = len(self.dirstring)   
         
@@ -101,7 +101,7 @@ class JOBS(object):
 
 
             print 'Waiting 5 minutes'
-            time.sleep(60*5)
+            time.sleep(60*1)
             
 
         # Exited while loop
@@ -153,6 +153,7 @@ class WORKSPACE(JOBS):
         self.extData     = args.extData
         self.inDir       = args.inDir
         self.outDir      = args.outDir
+        self.case        = args.case
 
         # create working directories
         self.create_workdir()
@@ -184,10 +185,14 @@ class WORKSPACE(JOBS):
                 shutil.copyfile(self.rcFile,outfile)
                 self.edit_AODrc(outfile,ch)            
 
-                #link over needed extdata
-                source = [self.extData,'ExtData','Chem_MieRegistry.rc','run_ext_sampler.py']
+                #cp over needed extdata
+                source = ['Chem_MieRegistry.rc','run_ext_sampler.py']
                 for src in source:
-                    os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
+                    shutil.copyfile('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
+               
+                source = ['ExtData'] #,self.extData]
+                for src in source:
+                    os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))                                        
 
                 self.dirstring.append(workpath)
             sdate += self.dt
@@ -238,11 +243,18 @@ class WORKSPACE(JOBS):
 
 
             # replace one line
-            command = 'python -u ./run_ext_sampler.py --DT_hours {} --rc {} {} {} '.format(self.DT_hours,self.rcFile,isodate,isoedate)
+            if len(self.case) == 0:
+                command = 'python -u ./run_ext_sampler.py --DT_hours {} --rc {} {} {} '.format(self.DT_hours,self.rcFile,isodate,isoedate)
+            else:
+                options = ''
+                for case in self.case:
+                    options = options + ' --' + case
+                command = 'python -u ./run_ext_sampler.py {} --DT_hours {} --rc {} {} {} '.format(options,self.DT_hours,self.rcFile,isodate,isoedate)
+
             command = command + " '" + inFile + "' "
             command = command + " '" + outFile + "' "
             command = command + ch
-            endcommand = ' > slurm_${SLURM_JOBID}_py.out'
+            endcommand = ' > slurm_${SLURM_JOBID}_py.out\n'
             newline = command  + endcommand
             text[-2] = newline
             f.close()
@@ -270,15 +282,17 @@ class WORKSPACE(JOBS):
             os.remove(self.slurm)
 
         # remove symlinks
-        source = [self.extData,'ExtData','Chem_MieRegistry.rc','run_ext_sampler.py']
+        source = ['ExtData','Chem_MieRegistry.rc','run_ext_sampler.py']
         for src in source:
             os.remove(src)
-	# remove rc directory
-	shutil.rmtree('rc')
+	    # remove rc directory
+	    #shutil.rmtree('rc')
+        #shutil.rmtree(self.extData)
 
         os.chdir(self.cwd)
         if self.profile is False:
-            os.rmdir(self.dirstring[i])
+            #os.rmdir(self.dirstring[i])
+            shutil.rmtree(self.dirstring[i])
 
 
 if __name__ == '__main__':
@@ -321,13 +335,22 @@ if __name__ == '__main__':
     cf = Config(args.prep_config,delim=' = ')
     args.instname = cf('INSTNAME')
     if ',' in cf('CHANNELS'):
-    	args.channels = np.array(cf('CHANNELS').split(',')).astype(int)
+        args.channels = np.array(cf('CHANNELS').split(',')).astype(int)
     else:
-	args.channels = np.array([int(cf('CHANNELS'))])
+        args.channels = np.array([int(cf('CHANNELS'))])
     args.rcFile   = cf('RCFILE')
     args.extData  = cf('EXTDATA')
     args.inDir    = cf('INDIR')
     args.outDir   = cf('OUTDIR')
+
+    if ',' in cf('CASE'):
+        args.case     = cf('CASE').split(',')
+    else:
+        args.case     = list(cf('CASE'))
+
+    if 'all' in args.case:
+        args.case.remove('all')
+
 
     workspace = WORKSPACE(args)
 
