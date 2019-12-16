@@ -94,6 +94,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--fine",action="store_true",
                         help="do fine mode only (default=False).")
+    parser.add_argument("--spc",action="store_true",
+                        help="do indivudual species (default=False).")
 
     parser.add_argument("-n", "--nproc",default=nproc,type=int,
                         help="Number of processors (default=%i)."%nproc)    
@@ -127,8 +129,8 @@ if __name__ == "__main__":
     processes = []
     cmds      = []
     for inFile,outFile in zip(inFilelist,outFilelist):
-	# all species
-        Options =     " --vnames=SS001,SS002,SS003,SS004,SS005,BCPHOBIC,BCPHILIC,OCPHOBIC,OCPHILIC,SO4"     + \
+        # all species
+        Options =     " --vnames=SS001,SS002,SS003,SS004,SS005,BCPHOBIC,BCPHILIC,OCPHOBIC,OCPHILIC,SO4,DU001,DU002,DU003,DU004,DU005"     + \
                       " --input=" + inFile       + \
                       " --output=" + outFile      + \
                       " --channel=" + ch      + \
@@ -142,25 +144,50 @@ if __name__ == "__main__":
         cmd = 'ext_sampler.py {} '.format(Options)
         cmds.append(cmd)
 
-	# coarse mode only
-        if args.coarse:
-        	Options =     " --vnames=SS001,SS002,SS003,SS004,SS005"     + \
-                      	      " --input=" + inFile       + \
+    if args.spc:
+        SPC = {'SU':'SO4',
+               'OC':'OCPHILIC,OCPHOBIC',
+               'BC':'BCPHILIC,BCPHOBIC',
+               'SS':'SS001,SS002,SS003,SS004,SS005',
+               'DU':'DU001,DU002,DU003,DU004,DU005'}
+        for spc in SPC:
+            for inFile,outFile in zip(inFilelist,outFilelist):
+            # all species indivudually    
+                Options = " --vnames=" + SPC[spc] + \
+                              " --input=" + inFile       + \
+                              " --output=" + outFile[:-4] + "."+spc+".nc4"      + \
+                              " --channel=" + ch      + \
+                              " --rc=" + args.rc      + \
+                              " --format=NETCDF4_CLASSIC"      
+                              #" --intensive"
+
+                if args.verbose:
+                    Options += " --verbose"
+
+                cmd = 'ext_sampler.py {} '.format(Options)
+                cmds.append(cmd)
+
+    # coarse mode only
+    if args.coarse:
+        for inFile,outFile in zip(inFilelist,outFilelist):
+            Options =     " --vnames=SS001,SS002,SS003,SS004,SS005,DU001,DU002,DU003,DU004,DU005"     + \
+                              " --input=" + inFile       + \
                               " --output=" + outFile[:-4] + ".coarse.nc4"      + \
                               " --channel=" + ch      + \
                               " --rc=" + args.rc      + \
                               " --format=NETCDF4_CLASSIC"      + \
                               " --intensive"
 
-        	if args.verbose:
-            		Options += " --verbose"
+            if args.verbose:
+                Options += " --verbose"
 
-        	cmd = 'ext_sampler.py {} '.format(Options)
-        	cmds.append(cmd)
+            cmd = 'ext_sampler.py {} '.format(Options)
+            cmds.append(cmd)
 
-	# fine mode only
-	if args.fine:
-        	Options =     " --vnames=BCPHOBIC,BCPHILIC,OCPHOBIC,OCPHILIC,SO4"     + \
+    # fine mode only
+    if args.fine:
+        for inFile,outFile in zip(inFilelist,outFilelist):
+            Options =     " --vnames=BCPHOBIC,BCPHILIC,OCPHOBIC,OCPHILIC,SO4"     + \
                               " --input=" + inFile       + \
                               " --output=" + outFile[:-4] + ".fine.nc4"      + \
                               " --channel=" + ch      + \
@@ -168,11 +195,11 @@ if __name__ == "__main__":
                               " --format=NETCDF4_CLASSIC"      + \
                               " --intensive"
 
-        	if args.verbose:
-            		Options += " --verbose"
+            if args.verbose:
+                Options += " --verbose"
 
-        	cmd = 'ext_sampler.py {} '.format(Options)
-        	cmds.append(cmd)
+            cmd = 'ext_sampler.py {} '.format(Options)
+            cmds.append(cmd)
 
     lendate  = len(cmds)
     # Manage processes
