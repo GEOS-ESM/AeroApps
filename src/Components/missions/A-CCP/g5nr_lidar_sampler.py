@@ -145,6 +145,7 @@ class WORKSPACE(JOBS):
         self.prep_config = args.prep_config
         self.tmp         = args.tmp
         self.profile     = args.profile
+        self.nproc       = args.nproc
 
         # create working directories
         self.create_workdir()
@@ -175,7 +176,7 @@ class WORKSPACE(JOBS):
             shutil.copyfile(self.prep_config,outfile)
 
             #link over needed python scripts
-            source = ['lidar_sampler.py','run_lidar_sampler.py','sampling','tle']
+            source = ['lidar_sampler.py','run_lidar_sampler.py'] #,'sampling','tle']
             for src in source:
                 os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
@@ -198,8 +199,8 @@ class WORKSPACE(JOBS):
             # replace one line
             iso1 = sdate.isoformat()
             iso2 = edate.isoformat()
-            newline = 'python -u run_lidar_sampler.py -v --nproc 12 --DT_hours {} {} {} {} >'.format(self.Dt.seconds/3600,iso1,iso2,self.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
-            text[-2] = newline
+            newline = 'python -u run_lidar_sampler.py -v --nproc {} --DT_hours {} {} {} {} >'.format(self.nproc,self.Dt.seconds/3600,iso1,iso2,self.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
+            text[-3] = newline
             f.close()
 
             #  write out
@@ -227,7 +228,7 @@ class WORKSPACE(JOBS):
             os.remove('lidar_sampler.pcf')
 
         # remove symlinks
-        source = ['lidar_sampler.py','run_lidar_sampler.py','sampling','tle']
+        source = ['lidar_sampler.py','run_lidar_sampler.py'] #'sampling','tle']
         for src in source:
             os.remove(src)
 
@@ -240,6 +241,7 @@ if __name__ == '__main__':
     
     #Defaults
     DT_hours = 24
+    nproc    = 8
     slurm    = 'run_lidar_sampler.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir'
 
@@ -262,7 +264,10 @@ if __name__ == '__main__':
                         help="do a dry run (default=False).") 
 
     parser.add_argument("-p", "--profile",action="store_true",
-                        help="Don't cleanup slurm files (default=False).")    
+                        help="Don't cleanup slurm files (default=False).")   
+
+    parser.add_argument("-n", "--nproc",default=nproc,
+                        help="Number of processors (default=%i)"%nproc)                            
 
 
     args = parser.parse_args()
