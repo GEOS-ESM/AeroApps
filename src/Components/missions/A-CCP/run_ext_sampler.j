@@ -29,8 +29,9 @@ setenv G5BIN /discover/nobackup/pcastell/workspace/GAAS/Linux/bin
 setenv BIN $PWD
 setenv TMPDIR $LOCAL_TMPDIR 
 
-cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/ExtDataOsku $LOCAL_TMPDIR
-ln -s $LOCAL_TMPDIR/ ./ExtDataOsku
+mkdir -p $LOCAL_TMPDIR/ExtDataOsku
+cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/ExtDataOsku/* $LOCAL_TMPDIR/ExtDataOsku
+ln -s $LOCAL_TMPDIR/ExtDataOsku ./ExtDataOsku
 
 
 source $HOME/.cshrc
