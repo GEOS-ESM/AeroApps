@@ -26,6 +26,14 @@ limit stacksize unlimited
 #######################################################################
 setenv G5DIR /discover/nobackup/pcastell/workspace/GAAS/src
 setenv BIN $PWD 
+setenv TMPDIR $LOCAL_TMPDIR 
+
+mkdir -p $LOCAL_TMPDIR/sampling
+cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/sampling/* $LOCAL_TMPDIR/sampling
+ln -s $LOCAL_TMPDIR/sampling ./sampling
+
+cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/tle/ $LOCAL_TMPDIR
+ln -s $LOCAL_TMPDIR/tle ./tle
 
 source $HOME/.cshrc
 cd $G5DIR
@@ -42,4 +50,5 @@ cd $BIN
 ######
 ##################################################################
 python -u run_lidar_sampler.py -v --nproc 12 --DT_hours 24 2006-01-01T00 2006-01-02T00 lidar.pcf > slurm_${SLURM_JOBID}_py.out
-
+rm sampling
+rm tle
