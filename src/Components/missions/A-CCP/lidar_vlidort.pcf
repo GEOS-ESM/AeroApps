@@ -19,7 +19,7 @@
     outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%INSTNAME/LevelC/Y%year/M%month/D%day
     outFile      = %instname-g5nr.lc.vlidort.%nymd_%hour00z_%chdnm.nc4
 
-    channel      = 550    
+    channel      = 532    
     rcFile       = Aod_EOS.rc
 
     instname     = gpm    
