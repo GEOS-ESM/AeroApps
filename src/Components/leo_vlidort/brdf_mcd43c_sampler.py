@@ -55,14 +55,21 @@ if __name__ == "__main__":
     while date < enddate:
         nymd = str(date.date()).replace('-','')
         hour = str(date.hour).zfill(2)
-        outpath = '{}/Y{}/M{}'.format(outdir,date.year,str(date.month).zfill(2))
-        inpath  = '{}/Y{}/M{}'.format(indir,date.year,str(date.month).zfill(2))
+        if args.DT_hours < 24:
+            outpath = '{}/Y{}/M{}/D{}'.format(outdir,date.year,str(date.month).zfill(2),str(date.day).zfill(2))
+            inpath  = '{}/Y{}/M{}/D{}'.format(indir,date.year,str(date.month).zfill(2),str(date.day).zfill(2))
+        else:
+            outpath = '{}/Y{}/M{}'.format(outdir,date.year,str(date.month).zfill(2))
+            inpath  = '{}/Y{}/M{}'.format(indir,date.year,str(date.month).zfill(2))
         if not os.path.exists(outpath):
             os.makedirs(outpath)
 
-
-        outFile = '{}/{}-g5nr.lb2.brdf.{}_{}z.nc4'.format(outpath,instname,nymd,hour)
-        inFile  = '{}/{}-g5nr.lb2.aer_Nv.{}_{}z.nc4'.format(inpath,instname,nymd,hour)
+        if args.DT_hours < 24:
+            outFile = '{}/{}-g5nr.lb2.brdf.{}_{}00z.nc4'.format(outpath,instname,nymd,hour)
+            inFile  = '{}/{}-g5nr.lb2.aer_Nv.{}_{}00z.nc4'.format(inpath,instname,nymd,hour)
+        else:
+            outFile = '{}/{}-g5nr.lb2.brdf.{}_{}z.nc4'.format(outpath,instname,nymd,hour)
+            inFile  = '{}/{}-g5nr.lb2.aer_Nv.{}_{}z.nc4'.format(inpath,instname,nymd,hour)
 
         # Read in trajectory lat/lon
         # Interpolate BRDF 
