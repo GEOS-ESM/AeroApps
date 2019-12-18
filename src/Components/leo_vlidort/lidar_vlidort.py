@@ -61,7 +61,7 @@ LandAlbedos  = 'MODIS_BRDF','MODIS_BRDF_BPDF','LAMBERTIAN','CX'
 
 MISSING = -1.e+20
 
-class POLAR_VLIDORT(object):
+class LIDAR_VLIDORT(object):
     """
     Everything needed for calling VLIDORT
     GEOS-5 has already been sampled on lidar track
@@ -1622,7 +1622,7 @@ if __name__ == "__main__":
 
     # Initialize VLIDORT class getting aerosol optical properties
     # -----------------------------------------------------------
-    vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,
+    vlidort = LIDAR_VLIDORT(inFile,outFile,rcFile,
                             albedoType,
                             channel,                            
                             hgtss,
