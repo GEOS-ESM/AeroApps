@@ -13,7 +13,7 @@ import argparse
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
 from   MAPL            import Config
-from   polar_vlidort   import POLAR_VLIDORT, get_chd
+from   lidar_vlidort   import LIDAR_VLIDORT, get_chd
 import numpy  as np
 
 #------------------------------------ M A I N ------------------------------------
@@ -96,30 +96,31 @@ if __name__ == "__main__":
     Dt        = timedelta(hours=args.DT_hours)
 
     while date < enddate:
-        nymd = str(date.date()).replace('-','')
-        year = str(date.year)
+        nymd  = str(date.date()).replace('-','')
+        year  = str(date.year)
         month = str(date.month).zfill(2)
-        hour = str(date.hour).zfill(2)    
+        day   = str(date.day).zfill(2)
+        hour  = str(date.hour).zfill(2)    
 
-        inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
-        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel)).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
+        inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
+        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel)).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
 
         if brdfTemplate is None:
             brdfFile = None
         else:
-            brdfFile = brdfTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
+            brdfFile = brdfTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
         
         if ndviTemplate is None:
             ndviFile = None
             lcFile   = None
         else:
-            ndviFile   = ndviTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
-            lcFile     = lcTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
+            ndviFile   = ndviTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
+            lcFile     = lcTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
 
         if lerTemplate is None:
             lerFile = None
         else:
-            lerFile   = lerTemplate.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
+            lerFile   = lerTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
 
         # Initialize VLIDORT class getting aerosol optical properties
         # -----------------------------------------------------------
@@ -137,7 +138,7 @@ if __name__ == "__main__":
         print '>>>verbose:   ',args.verbose
         print '++++End of arguments+++'
         if not args.dryrun:
-            vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,
+            vlidort = LIDAR_VLIDORT(inFile,outFile,rcFile,
                                     cf('albedoType'),
                                     channel,
                                     HGT,
@@ -147,9 +148,9 @@ if __name__ == "__main__":
                                     lerFile=lerFile,
                                     verbose=args.verbose)
 
-            # Run VLIDORT
-            if vlidort.nobs > 0:
-                vlidort.runVLIDORT()
+            # # Run VLIDORT
+            # if vlidort.nobs > 0:
+            #     vlidort.runVLIDORT()
 
         date += Dt
 
