@@ -953,10 +953,10 @@ class POLAR_VLIDORT(object):
             SDS = 'Riso'+chs,'Rgeo'+chs,'Rvol'+chs
         else:
             dch = self.channel - np.array(MODIS_channels).astype('int')
-            chmin = np.argmax(dch[dch<0])
-            chmin = MODIS_channels[dch<0][chmin]
-            chmax = np.argmin(dch[dch>0])
-            chmax = MODIS_channels[dch>0][chmax]
+            chmin = np.argmin(dch[dch>0])
+            chmin = MODIS_channels[dch>0][chmin]
+            chmax = np.argmax(dch[dch<0])
+            chmax = MODIS_channels[dch<0][chmax]
 
             SDS = 'Riso'+chmin,'Rgeo'+chmin,'Rvol'+chmin,'Riso'+chmax,'Rgeo'+chmax,'Rvol'+chmax
 
