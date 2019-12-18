@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
 """
-    Calculates polarized TOA radiance for a multiangle polarimeter on a lidar track.
+    Calculates polarized TOA radiance for a lidar track.
     Model fields have already been sampled using trj_sampler
 
     Adapted from ext_sampler.py
-    Patricia Castellanos, May, 2017
+    Adapted from polar_vlidort.py
+    Patricia Castellanos, Dec, 2019
 
 """
 
@@ -31,8 +32,6 @@ VNAMES_SS = ['SS001','SS002','SS003','SS004','SS005']
 VNAMES_BC = ['BCPHOBIC','BCPHILIC']
 VNAMES_OC = ['OCPHOBIC','OCPHILIC']
 VNAMES_SU = ['SO4']
-MieVarsNames = ['ext','scatext','backscat','aback_sfc','aback_toa','depol','ext2back','tau','ssa','g']
-MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitless','unitless','unitless']
 
 META    = ['DELP','PS','RH','AIRDENS','LONGITUDE','LATITUDE','isotime']
 AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
@@ -44,14 +43,7 @@ SDS_CX = ['U10M','V10M']
 ncALIAS = {'LONGITUDE': 'trjLon',
            'LATITUDE': 'trjLat'}
 
-
 nMom     = 300
-
-VZAdic = {'POLDER': np.array([3.66, 11., 18.33, 25.66, 33, 40.33, 47.66, 55.0])}
-
-HGTdic = {'LEO': 705,
-          'ISS': 400}
-
 
 SurfaceFuncs = {'MODIS_BRDF'     : 'readSampledMODISBRDF',
                 'MODIS_BRDF_BPDF': 'readSampledMODISBRDF',
@@ -61,7 +53,8 @@ SurfaceFuncs = {'MODIS_BRDF'     : 'readSampledMODISBRDF',
 WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_POLAR_.vector_brdf_modis,
                 'MODIS_BRDF_BPDF': VLIDORT_POLAR_.vector_brdf_modis_bpdf,
                 'LAMBERTIAN'     : VLIDORT_POLAR_.vector_lambert,
-                'CX'             : VLIDORT_POLAR_.vector_gisscx}   
+                'GissCX'         : VLIDORT_POLAR_.vector_gisscx,
+                'CX'             : VLIDORT_POLAR_.vector_cx}   
 
 LandAlbedos  = 'MODIS_BRDF','MODIS_BRDF_BPDF','LAMBERTIAN','CX'
 
@@ -74,15 +67,12 @@ class POLAR_VLIDORT(object):
     GEOS-5 has already been sampled on lidar track
     """
     def __init__(self,inFile,outFile,rcFile,albedoType,
-                channel,VZA,hgtss,
+                channel,hgtss,
                 brdfFile=None,
                 ndviFile=None,
                 lcFile=None,
                 lerFile=None,
-                verbose=False,
-                extOnly=False,
-                distOnly=False,
-                outFileDist=None):
+                verbose=False):
         self.SDS_AER     = SDS_AER
         self.SDS_MET     = SDS_MET
         self.SDS_INV     = SDS_INV
@@ -90,7 +80,6 @@ class POLAR_VLIDORT(object):
         self.AERNAMES    = AERNAMES
         self.inFile      = inFile
         self.outFile     = outFile
-        self.outFileDist = outFileDist
         self.albedoType  = albedoType
         self.rcFile      = rcFile
         self.channel     = channel
@@ -101,60 +90,59 @@ class POLAR_VLIDORT(object):
         self.ndviFile    = ndviFile
         self.lerFile     = lerFile
 
-        if not extOnly:
-            # initialize empty lists
-            for sds in self.SDS_AER+self.SDS_MET+self.SDS_INV+self.SDS_CX:
-                self.__dict__[sds] = []
+        # initialize empty lists
+        for sds in self.SDS_AER+self.SDS_MET+self.SDS_INV+self.SDS_CX:
+            self.__dict__[sds] = []
 
-            # Read in data model data
-            self.readSampledGEOS()
+        # Read in model data
+        self.readSampledGEOS()
 
-            # Make lists into arrays
-            for sds in self.SDS_AER+self.SDS_MET:
-                self.__dict__[sds] = np.concatenate(self.__dict__[sds])
+        # Make lists into arrays
+        for sds in self.SDS_AER+self.SDS_MET:
+            self.__dict__[sds] = np.concatenate(self.__dict__[sds])
 
-            # convert isotime to datetime
-            self.tyme = []
-            for isotime in self.isotime:
-                self.tyme.append(isoparser(''.join(isotime)))
+        # convert isotime to datetime
+        self.tyme = []
+        for isotime in self.isotime:
+            self.tyme.append(isoparser(''.join(isotime)))
 
-            self.tyme = np.array(self.tyme)
+        self.tyme = np.array(self.tyme)
 
-            # Start out with all good obs
-            self.nobs  = len(self.tyme)
-            self.iGood = np.ones([self.nobs]).astype(bool)
-            
-            if not distOnly:
-                # Read in surface data
-                # Intensity
-                if (self.channel < 470) & ("MODIS_BRDF" in albedoType):
-                    albedoReader = getattr(self,'readHybridMODISBRDF')
-                else:
-                    albedoReader = getattr(self,SurfaceFuncs[albedoType])
-                albedoReader()
+        # Start out with all good obs
+        self.nobs  = len(self.tyme)
+        self.iGood = np.ones([self.nobs]).astype(bool)
+        
+        # Read in surface data
+        # Intensity
+        if (self.channel < 470) & ("MODIS_BRDF" in albedoType):
+            albedoReader = getattr(self,'readHybridMODISBRDF')
+        else:
+            albedoReader = getattr(self,SurfaceFuncs[albedoType])
+        albedoReader()
 
-                # Polarization
-                if 'BPDF' in albedoType:
-                    self.BPDFinputs()
+        # Polarization
+        if 'BPDF' in albedoType:
+            self.BPDFinputs()
 
-                # Ocean
-                albedoReader = getattr(self,SurfaceFuncs['CX'])
-                albedoReader()
+        # Ocean
+        albedoReader = getattr(self,SurfaceFuncs['CX'])
+        albedoReader()
 
-                # Calculate aerosol optical properties
-                self.computeMie()
+        # Calculate aerosol optical properties
+        self.computeMie()
 
-                # Calculate atmospheric profile properties needed for Rayleigh calc
-                self.computeAtmos()
+        # Calculate atmospheric profile properties needed for Rayleigh calc
+        self.computeAtmos()
 
-                # Calculate Scene Geometry
-                self.VZA = VZA
-                self.hgtss = hgtss
-                self.calcAngles()
+        # Calculate Scene Geometry
+        # limit iGood to sza < 80
+        self.VZA = [0.]
+        self.hgtss = hgtss
+        self.calcAngles()
 
-                if self.nobs > 0:
-                    # Land-Sea Mask
-                    self.LandSeaMask()
+        if self.nobs > 0:
+            # Land-Sea Mask
+            self.LandSeaMask()
 
     # --
     def BPDFinputs(self):
@@ -228,15 +216,10 @@ class POLAR_VLIDORT(object):
     def calcAngles(self):
         SZA   = []
         SAA   = []
-        VAAf  = []
-        VAAb  = []
+        VAA   = []
         for i,tyme in enumerate(self.tyme):
-            if i == len(self.tyme)-1:
-                CLAT = self.LATITUDE[i-1]
-                CLON = self.LONGITUDE[i-1]
-            else:
-                CLAT = self.LATITUDE[i+1]
-                CLON = self.LONGITUDE[i+1]
+            CLAT = self.LATITUDE[i]
+            CLON = self.LONGITUDE[i]
             
             SLAT = self.LATITUDE[i]
             SLON = self.LONGITUDE[i]
@@ -247,36 +230,22 @@ class POLAR_VLIDORT(object):
                                                 0.0,
                                                 self.hgtss)
 
+            VAA.append(sat_angles[0][0])
             SZA.append(sat_angles[3][0])
             SAA.append(sat_angles[2][0])
 
-            if i == len(self.tyme)-1:
-                VAAb.append(sat_angles[0][0])
-                vaaf = sat_angles[0][0] - 180.0
-                if vaaf < 0:
-                    vaaf = vaaf + 360.
-                VAAf.append(vaaf)
-
-            else:
-                VAAf.append(sat_angles[0][0])
-                vaab = sat_angles[0][0]+180
-                if vaab > 360.:
-                    vaab = vaab - 360.
-                VAAb.append(vaab)
 
 
         self.SZA = np.array(SZA)
         self.SAA = np.array(SAA)
-        self.VAAf = np.array(VAAf)
-        self.VAAb = np.array(VAAb)
+        self.VAA = np.array(VAA)
 
         # define RAA according to photon travel direction
         saa = self.SAA + 180.0
         I = saa >= 360.
         saa[I] = saa[I] - 360.
 
-        self.RAAb = self.VAAb - saa
-        self.RAAf = self.VAAf - saa
+        self.RAA = self.VAA - saa
 
         # Limit SZAs
         self.iGood = self.iGood & (self.SZA < 80)
