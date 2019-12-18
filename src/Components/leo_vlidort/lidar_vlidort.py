@@ -1593,13 +1593,12 @@ def get_chd(channel):
 #------------------------------------ M A I N ------------------------------------
 
 if __name__ == "__main__":
-    date     = datetime(2006,8,01,00)
+    date     = datetime(2006,01,01,00)
     nymd     = str(date.date()).replace('-','')
     hour     = str(date.hour).zfill(2)
     format   = 'NETCDF4_CLASSIC'
 
-    #rootDir  = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/CALIPSO/'
-    rootDir  = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/'
+    rootDir  = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/CALIPSO/'
 
     inDir        = '{}/LevelB/Y{}/M{}'.format(rootDir,date.year,str(date.month).zfill(2))
     inFile       = '{}/calipso-g5nr.lb2.%col.{}_{}z.nc4'.format(inDir,nymd,hour)
@@ -1612,27 +1611,26 @@ if __name__ == "__main__":
     albedoType   = 'MODIS_BRDF_BPDF'
     VZAname      = 'POLDER'
 
-    channel   = 470
+    channel   = 532
     chd       = get_chd(channel)
     outDir    = '{}/LevelC/Y{}/M{}'.format(rootDir,date.year,str(date.month).zfill(2))
     outFile   = '{}/calipso-g5nr.vlidort.vector.{}.{}.{}_{}z_{}nm.nc4'.format(outDir,albedoType,VZAname,nymd,hour,chd)
     
     rcFile   = 'Aod_EOS.rc'
     orbit    = 'LEO'
+    hgtss    = 705
     verbose  = True
 
     # Initialize VLIDORT class getting aerosol optical properties
     # -----------------------------------------------------------
     vlidort = POLAR_VLIDORT(inFile,outFile,rcFile,
                             albedoType,
-                            channel,
-                            VZAdic[VZAname],
-                            HGTdic[orbit],
+                            channel,                            
+                            hgtss,
                             brdfFile=brdfFile,
                             ndviFile=ndviFile,
                             lcFile=lcFile,
-                            verbose=verbose,
-                            distOnly=False)
+                            verbose=verbose)
 
    
     # Run ext_sampler
