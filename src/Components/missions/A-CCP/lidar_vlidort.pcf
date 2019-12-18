@@ -1,0 +1,27 @@
+# LIDAR SIMULATION
+    inDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%INSTNAME/LevelB/Y%year/M%month/D%day
+    inFile       = %instname-g5nr.lb2.%col.%nymd_%hour00z.nc4
+
+    brdfDir    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%INSTNAME/LevelB/surface/BRDF/MCD43C1/006/Y%year/M%month/D%day
+    brdfFile     = %instname-g5nr.lb2.brdf.%nymd_%hour00z.nc4
+
+    ndviDir      = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%INSTNAME/LevelB/surface/BPDF/NDVI/MYD13C2/006/Y%year/M%month/D%day
+    ndviFile     = %instname-g5nr.lb2.ndvi.%nymd_%hour00z.nc4
+
+    lcDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%INSTNAME/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051/Y%year/M%month/D%day
+    lcFile       = %instname-g5nr.lb2.land_cover.%nymd_%hour00z.nc4    
+
+    lerDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%INSTNAME/LevelB/surface/LER/OMI/Y%year/M%month/D%day   
+    lerFile      = %instname-g5nr.lb2.ler.%nymd_%hour00.nc4
+
+    albedoType   = MODIS_BRDF
+
+    outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%INSTNAME/LevelC/Y%year/M%month/D%day
+    outFile      = %instname-g5nr.lc.vlidort.%nymd_%hour00z_%chdnm.nc4
+
+    channel      = 550    
+    rcFile       = Aod_EOS.rc
+
+    instname     = gpm    
+    HGT          = 407
+# LIDAR SIMULATION
