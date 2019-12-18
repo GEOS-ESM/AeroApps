@@ -136,7 +136,8 @@ class POLAR_VLIDORT(object):
 
         # Calculate Scene Geometry
         # limit iGood to sza < 80
-        self.VZA = [0.]
+        self.VZA = 0.0
+        self.VAA = 0.0
         self.hgtss = hgtss
         self.calcAngles()
 
@@ -216,7 +217,7 @@ class POLAR_VLIDORT(object):
     def calcAngles(self):
         SZA   = []
         SAA   = []
-        VAA   = []
+
         for i,tyme in enumerate(self.tyme):
             CLAT = self.LATITUDE[i]
             CLON = self.LONGITUDE[i]
@@ -230,7 +231,6 @@ class POLAR_VLIDORT(object):
                                                 0.0,
                                                 self.hgtss)
 
-            VAA.append(sat_angles[0][0])
             SZA.append(sat_angles[3][0])
             SAA.append(sat_angles[2][0])
 
@@ -238,7 +238,6 @@ class POLAR_VLIDORT(object):
 
         self.SZA = np.array(SZA)
         self.SAA = np.array(SAA)
-        self.VAA = np.array(VAA)
 
         # define RAA according to photon travel direction
         saa = self.SAA + 180.0
