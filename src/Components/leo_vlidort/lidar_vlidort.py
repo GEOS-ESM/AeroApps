@@ -69,6 +69,8 @@ class LIDAR_VLIDORT(object):
     """
     def __init__(self,inFile,outFile,rcFile,albedoType,
                 channel,hgtss,
+                nstreams=12,
+                plane_parallel=True,
                 brdfFile=None,
                 ndviFile=None,
                 lcFile=None,
@@ -90,6 +92,8 @@ class LIDAR_VLIDORT(object):
         self.lcFile      = lcFile
         self.ndviFile    = ndviFile
         self.lerFile     = lerFile
+        self.nstreams    = nstreams
+        self.plane_parallel = plane_parallel
 
         # initialize empty lists
         for sds in self.SDS_AER+self.SDS_MET+self.SDS_INV+self.SDS_CX:
@@ -1183,7 +1187,6 @@ class LIDAR_VLIDORT(object):
         self.iGood = np.arange(len(self.iGood))[self.iGood]
 
         # Initiate output arrays
-        nangles = 1
         ntime   = len(self.tyme)
         nlev    = self.tau.shape[0]
         self.I = np.ones([ntime])*MISSING
@@ -1198,8 +1201,12 @@ class LIDAR_VLIDORT(object):
         # Calculate ROT
         args = [self.channel, self.pe, self.ze, self.te, MISSING, self.verbose]
         vlidortWrapper = WrapperFuncs['ROT_CALC']
-        ROT, depol_ratio, rc = vlidortWrapper(*args)         
+        ROT, depol_ratio, rc = vlidortWrapper(*args)  
+        #nlev,ntime,nch
+        self.ROT = np.squeeze(ROT).T 
+        self.depol_ratio = depol_ratio   
 
+        vza = self.VZA
         # loop though LAND and SEA
         for surface in surfList:
 
@@ -1213,12 +1220,7 @@ class LIDAR_VLIDORT(object):
             pe   = self.pe[:,iGood]
             ze   = self.ze[:,iGood]
             te   = self.te[:,iGood]
-
-            # Calculate ROT
-            args = [self.channel, pe, ze, te, MISSING, self.verbose]
-            vlidortWrapper = WrapperFuncs['ROT_CALC']
-            ROT, depol_ratio, rc = vlidortWrapper(*args) 
-            depol_ratio = np.array([0.03])            
+            rot  = ROT[:,iGood,:]
 
             if surface == 'Land':        
                 albedoType = self.albedoType
@@ -1230,12 +1232,9 @@ class LIDAR_VLIDORT(object):
             vlidortWrapper = WrapperFuncs[albedoType]
 
             # run VLIDORT
-
             runFunction = self.__getattribute__(albedoType+'_run')
-            I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT = runFunction(vlidortWrapper,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood)
+            I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT = runFunction(vlidortWrapper,rot,depol_ratio,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood)
                                                 
-            if i == 0:
-                self.ROT[iGood,:] = np.squeeze(ROT).T
             self.I[iGood] = np.squeeze(I)
             self.reflectance[iGood] = np.squeeze(reflectance)
             self.surf_reflectance[iGood] = np.squeeze(surf_reflectance)
@@ -1245,14 +1244,14 @@ class LIDAR_VLIDORT(object):
             self.BR_U[iGood] = np.squeeze(BR_U) 
 
 
-        self.writeNC()
+        #self.writeNC()
     #---
-    def MODIS_BRDF_run(self,vlidortWrapper,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
+    def MODIS_BRDF_run(self,vlidortWrapper,ROT,depol_ratio,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
         kernel_wt = self.kernel_wt[:,:,iGood]
         param     = self.RTLSparam[:,:,iGood]                
         
 
-        args = [self.channel,tau, ssa, pmom, 
+        args = [self.channel, self.nstreams, self.plane_parallel, ROT, depol_ratio, tau, ssa, pmom, 
                 pe, ze, te, 
                 kernel_wt, param, 
                 sza, raa, vza, 
@@ -1260,11 +1259,11 @@ class LIDAR_VLIDORT(object):
                 self.verbose]
 
         # Call VLIDORT wrapper function
-        I, reflectance, ROT, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)                        
+        I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)                        
 
-        return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT        
+        return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U       
     #---    
-    def MODIS_BRDF_BPDF_run(self,vlidortWrapper,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
+    def MODIS_BRDF_BPDF_run(self,vlidortWrapper,ROT,depol_ratio,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
         # For albedo
         kernel_wt = self.kernel_wt[:,:,iGood]
         RTLSparam = self.RTLSparam[:,:,iGood] 
@@ -1283,11 +1282,14 @@ class LIDAR_VLIDORT(object):
         BR_Q             = np.zeros([self.nobsLand,1])
         BR_U             = np.zeros([self.nobsLand,1])
         nlev             = tau.shape[0]
-        ROT              = np.zeros([nlev,self.nobsLand,1])
 
         for p in range(self.nobsLand):
             if BPDFparam[2,0,p] == MISSING: 
                 args = [self.channel,
+                        self.nstreams,
+                        self.plane_parallel,
+                        ROT[:,p:p+1,:],
+                        depol_ratio,
                         tau[:,:,p:p+1], 
                         ssa[:,:,p:p+1], 
                         pmom[:,:,p:p+1,:,:], 
@@ -1298,16 +1300,20 @@ class LIDAR_VLIDORT(object):
                         RTLSparam[:,:,p:p+1], 
                         sza[p:p+1], 
                         raa[p:p+1], 
-                        vza[p:p+1], 
+                        vza, 
                         MISSING,
                         self.verbose]
 
                 BRDFvlidortWrapper = WrapperFuncs['MODIS_BRDF']
                 # Call VLIDORT wrapper function
-                I_, reflectance_, ROT_, surf_reflectance_, Q_, U_, BR_Q_, BR_U_, rc = BRDFvlidortWrapper(*args)                         
+                I_, reflectance_, surf_reflectance_, Q_, U_, BR_Q_, BR_U_, rc = BRDFvlidortWrapper(*args)                         
 
             else:
                 args = [self.channel,
+                        self.nstreams,
+                        self.plane_parallel,
+                        ROT[:,p:p+1,:],
+                        depol_ratio,
                         tau[:,:,p:p+1], 
                         ssa[:,:,p:p+1], 
                         pmom[:,:,p:p+1,:,:], 
@@ -1319,12 +1325,12 @@ class LIDAR_VLIDORT(object):
                         BPDFparam[:,:,p:p+1],
                         sza[p:p+1], 
                         raa[p:p+1], 
-                        vza[p:p+1], 
+                        vza, 
                         MISSING,
                         self.verbose]
 
                 # Call VLIDORT wrapper function
-                I_, reflectance_, ROT_, surf_reflectance_, Q_, U_, BR_Q_, BR_U_, rc = vlidortWrapper(*args)
+                I_, reflectance_, surf_reflectance_, Q_, U_, BR_Q_, BR_U_, rc = vlidortWrapper(*args)
     
             I[p:p+1,:] = I_
             Q[p:p+1,:] = Q_
@@ -1333,14 +1339,13 @@ class LIDAR_VLIDORT(object):
             surf_reflectance[p:p+1,:] = surf_reflectance_
             BR_Q[p:p+1,:] = BR_Q_
             BR_U[p:p+1,:] = BR_U_
-            ROT[:,p:p+1,:] = ROT_
 
-        return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT
+        return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U
     #---
-    def LAMBERTIAN_run(self,vlidortWrapper,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
+    def LAMBERTIAN_run(self,vlidortWrapper,ROT,depol_ratio,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
         albedo = self.albedo[iGood,:]
         
-        args = [self.channel,tau, ssa, pmom, 
+        args = [self.channel,self.nstreams,self.plane_parallel,ROT,depol_ratio,tau, ssa, pmom, 
                 pe, ze, te, 
                 albedo, 
                 sza, raa, vza, 
@@ -1348,12 +1353,12 @@ class LIDAR_VLIDORT(object):
                 self.verbose]
 
         # Call VLIDORT wrapper function
-        I, reflectance, ROT, Q, U, rc = vlidortWrapper(*args)  
+        I, reflectance, Q, U, rc = vlidortWrapper(*args)  
         surf_reflectance = albedo            
 
         BR_Q = None
         BR_U = None
-        return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT
+        return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U
     #---
     def writeNC (self,zlib=True):
         """
