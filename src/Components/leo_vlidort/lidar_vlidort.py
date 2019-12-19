@@ -54,7 +54,8 @@ WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_POLAR_.vector_brdf_modis,
                 'MODIS_BRDF_BPDF': VLIDORT_POLAR_.vector_brdf_modis_bpdf,
                 'LAMBERTIAN'     : VLIDORT_POLAR_.vector_lambert,
                 'GissCX'         : VLIDORT_POLAR_.vector_gisscx,
-                'CX'             : VLIDORT_POLAR_.vector_cx}   
+                'CX'             : VLIDORT_POLAR_.vector_cx,
+                'ROT_CALC'       : VLIDORT_POLAR_.rot_calc}   
 
 LandAlbedos  = 'MODIS_BRDF','MODIS_BRDF_BPDF','LAMBERTIAN','CX'
 
@@ -244,7 +245,9 @@ class LIDAR_VLIDORT(object):
         I = saa >= 360.
         saa[I] = saa[I] - 360.
 
-        self.RAA = self.VAA - saa
+        RAA = self.VAA - saa
+        RAA[RAA < 0] = RAA[RAA<0]+360.0
+        self.RAA = RAA
 
         # Limit SZAs
         self.iGood = self.iGood & (self.SZA < 80)
@@ -1170,8 +1173,6 @@ class LIDAR_VLIDORT(object):
         """
 
         # Only do good obs
-        # self.iGood = np.arange(len(self.iGood))[self.iGood][0:1]
-        # self.nobs  = 1
         surfList = []
         if self.nobsLand > 0:
             self.iLand = np.arange(len(self.iGood))[self.iGood & self.iLand]
@@ -1182,37 +1183,29 @@ class LIDAR_VLIDORT(object):
         self.iGood = np.arange(len(self.iGood))[self.iGood]
 
         # Initiate output arrays
-        nangles = len(self.VZA)
+        nangles = 1
         ntime   = len(self.tyme)
         nlev    = self.tau.shape[0]
-        self.I = np.ones([ntime,2*nangles])*MISSING
-        self.Q = np.ones([ntime,2*nangles])*MISSING
-        self.U = np.ones([ntime,2*nangles])*MISSING
-        self.reflectance = np.ones([ntime,2*nangles])*MISSING
-        self.surf_reflectance = np.ones([ntime,2*nangles])*MISSING
-        self.BR_Q = np.ones([ntime,2*nangles])*MISSING
-        self.BR_U = np.ones([ntime,2*nangles])*MISSING
+        self.I = np.ones([ntime])*MISSING
+        self.Q = np.ones([ntime])*MISSING
+        self.U = np.ones([ntime])*MISSING
+        self.reflectance = np.ones([ntime])*MISSING
+        self.surf_reflectance = np.ones([ntime])*MISSING
+        self.BR_Q = np.ones([ntime])*MISSING
+        self.BR_U = np.ones([ntime])*MISSING
         self.ROT = np.ones([ntime,nlev])*MISSING
 
-        #backward directions, forward directions
-        VZA = np.append(self.VZA[::-1],self.VZA)
+        # Calculate ROT
+        args = [self.channel, self.pe, self.ze, self.te, MISSING, self.verbose]
+        vlidortWrapper = WrapperFuncs['ROT_CALC']
+        ROT, depol_ratio, rc = vlidortWrapper(*args)         
 
         # loop though LAND and SEA
         for surface in surfList:
 
             iGood = self.__dict__['i'+surface]
             sza  = self.SZA[iGood]
-            raaf = self.RAAf[iGood]
-            raab = self.RAAb[iGood]
-
-            raaf.shape = raaf.shape + (1,)
-            raaf = np.repeat(raaf,len(self.VZA),axis=1)
-            
-            raab.shape = raab.shape + (1,)        
-            raab = np.repeat(raab,len(self.VZA),axis=1)
-
-            RAA = np.append(raab,raaf,axis=1)
-            RAA[RAA < 0] = RAA[RAA<0]+360.0
+            raa  = self.RAA[iGood]            
 
             tau = self.tau[:,:,iGood]
             ssa = self.ssa[:,:,iGood]
@@ -1220,6 +1213,12 @@ class LIDAR_VLIDORT(object):
             pe   = self.pe[:,iGood]
             ze   = self.ze[:,iGood]
             te   = self.te[:,iGood]
+
+            # Calculate ROT
+            args = [self.channel, pe, ze, te, MISSING, self.verbose]
+            vlidortWrapper = WrapperFuncs['ROT_CALC']
+            ROT, depol_ratio, rc = vlidortWrapper(*args) 
+            depol_ratio = np.array([0.03])            
 
             if surface == 'Land':        
                 albedoType = self.albedoType
@@ -1230,23 +1229,20 @@ class LIDAR_VLIDORT(object):
             # Get VLIDORT wrapper name from dictionary
             vlidortWrapper = WrapperFuncs[albedoType]
 
-            # loop through viewing angles and run VLIDORT
-            for i in range(2*nangles):
-                vza  = np.array([VZA[i]]*self.nobs)
-                raa  = RAA[:,i]
+            # run VLIDORT
 
-                runFunction = self.__getattribute__(albedoType+'_run')
-                I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT = runFunction(vlidortWrapper,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood)
-                                                    
-                if i == 0:
-                    self.ROT[iGood,:] = np.squeeze(ROT).T
-                self.I[iGood,i] = np.squeeze(I)
-                self.reflectance[iGood,i] = np.squeeze(reflectance)
-                self.surf_reflectance[iGood,i] = np.squeeze(surf_reflectance)
-                self.Q[iGood,i] = np.squeeze(Q)
-                self.U[iGood,i] = np.squeeze(U) 
-                self.BR_Q[iGood,i] = np.squeeze(BR_Q)
-                self.BR_U[iGood,i] = np.squeeze(BR_U) 
+            runFunction = self.__getattribute__(albedoType+'_run')
+            I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT = runFunction(vlidortWrapper,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood)
+                                                
+            if i == 0:
+                self.ROT[iGood,:] = np.squeeze(ROT).T
+            self.I[iGood] = np.squeeze(I)
+            self.reflectance[iGood] = np.squeeze(reflectance)
+            self.surf_reflectance[iGood] = np.squeeze(surf_reflectance)
+            self.Q[iGood] = np.squeeze(Q)
+            self.U[iGood] = np.squeeze(U) 
+            self.BR_Q[iGood] = np.squeeze(BR_Q)
+            self.BR_U[iGood] = np.squeeze(BR_U) 
 
 
         self.writeNC()
@@ -1632,9 +1628,6 @@ if __name__ == "__main__":
                             verbose=verbose)
 
    
-    # Run ext_sampler
-    # vlidort.runExt()
-
     # Run VLIDORT
     # if vlidort.nobs > 0:
     #     vlidort.runVLIDORT()
