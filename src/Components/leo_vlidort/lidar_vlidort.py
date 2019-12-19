@@ -303,7 +303,7 @@ class LIDAR_VLIDORT(object):
         for sds in self.SDS_CX:
             self.__dict__[sds] = np.concatenate(self.__dict__[sds])
 
- 
+        self.mr = np.array([1.333])
 
     def sizeDistribution(self):
         """ 
@@ -1249,6 +1249,22 @@ class LIDAR_VLIDORT(object):
 
 
         #self.writeNC()
+    #---
+    def CX_run(self,vlidortWrapper,ROT,depol_ratio,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
+        u10m = self.U10M[iGood]
+        v10m = self.V10M[iGood]
+
+        args = [self.channel, self.nstreams, self.plane_parallel, ROT, depol_ratio, tau, ssa, pmom, 
+                pe, ze, te, 
+                u10m, v10m, self.mr, 
+                sza, raa, vza, 
+                MISSING,
+                self.verbose]
+
+        # Call VLIDORT wrapper function
+        I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)                        
+
+        return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U
     #---
     def MODIS_BRDF_run(self,vlidortWrapper,ROT,depol_ratio,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
         kernel_wt = self.kernel_wt[:,:,iGood]
