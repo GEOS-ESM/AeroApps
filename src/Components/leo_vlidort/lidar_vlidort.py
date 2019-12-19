@@ -1237,7 +1237,7 @@ class LIDAR_VLIDORT(object):
 
             # run VLIDORT
             runFunction = self.__getattribute__(albedoType+'_run')
-            I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT = runFunction(vlidortWrapper,rot,depol_ratio,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood)
+            I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U = runFunction(vlidortWrapper,rot,depol_ratio,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood)
                                                 
             self.I[iGood] = np.squeeze(I)
             self.reflectance[iGood] = np.squeeze(reflectance)
