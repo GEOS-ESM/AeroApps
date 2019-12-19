@@ -116,6 +116,8 @@ class LIDAR_VLIDORT(object):
         # Start out with all good obs
         self.nobs  = len(self.tyme)
         self.iGood = np.ones([self.nobs]).astype(bool)
+        self.nobsLand  = len(self.tyme)
+        self.iGoodLand = np.ones([self.nobs]).astype(bool)
         
         # Read in surface data
         # Intensity
@@ -202,7 +204,7 @@ class LIDAR_VLIDORT(object):
         for sds in self.SDS_INV:
             self.__dict__[sds] = np.concatenate(self.__dict__[sds])            
 
-        self.iLand = self.FRLAND >= 0.99
+        self.iLand = (self.FRLAND >= 0.99) & self.iGoodLand
         self.iSea  = self.FRLAND < 0.99
 
         # self.iGood = self.iGood & iGood
@@ -357,8 +359,8 @@ class LIDAR_VLIDORT(object):
         Rgeo = self.__dict__['Rgeo'+chs]
         Rvol = self.__dict__['Rvol'+chs]
         iGood = (Riso != missing_value) & (Rgeo != missing_value) & (Rvol != missing_value)
-        self.iGood = self.iGood & iGood
-        self.nobs = np.sum(self.iGood)
+        self.iGoodLand = self.iGoodLand & iGood
+        self.nobsLand = np.sum(self.iGoodLand)
 
         for sds in SDS:
             self.__dict__[sds].shape = (1,1,nobs)
@@ -442,8 +444,8 @@ class LIDAR_VLIDORT(object):
         Rgeo = self.__dict__['Rgeo'+chs]
         Rvol = self.__dict__['Rvol'+chs]
         iGood = (Riso != missing_value) & (Rgeo != missing_value) & (Rvol != missing_value)
-        self.iGood = self.iGood & iGood
-        self.nobs = np.sum(self.iGood)
+        self.iGoodLand = self.iGoodLand & iGood
+        self.nobsLand = np.sum(self.iGoodLand)
 
         for sds in SDS:
             self.__dict__[sds].shape = (1,1,nobs)
@@ -506,8 +508,8 @@ class LIDAR_VLIDORT(object):
 
         # Check for missing values
         iGood = (self.__dict__[sds] != missing_value) 
-        self.iGood = self.iGood & iGood
-        self.nobs = np.sum(self.iGood)
+        self.iGoodLand= self.iGoodLand & iGood
+        self.nobsLand = np.sum(self.iGoodLand)
 
         # (nobs,nch)
         self.__dict__[sds].shape = (nobs,1) 
