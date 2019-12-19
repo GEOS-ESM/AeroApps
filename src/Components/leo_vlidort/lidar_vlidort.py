@@ -1206,13 +1206,17 @@ class LIDAR_VLIDORT(object):
         self.ROT = np.squeeze(ROT).T 
         self.depol_ratio = depol_ratio   
 
-        vza = self.VZA
+        
         # loop though LAND and SEA
         for surface in surfList:
 
             iGood = self.__dict__['i'+surface]
             sza  = self.SZA[iGood]
-            raa  = self.RAA[iGood]            
+            raa  = self.RAA[iGood] 
+            if surface == 'Land':
+                vza = np.zeros(self.nobsLand)
+            else:
+                vza = np.zeros(self.nobsSea)
 
             tau = self.tau[:,:,iGood]
             ssa = self.ssa[:,:,iGood]
@@ -1300,7 +1304,7 @@ class LIDAR_VLIDORT(object):
                         RTLSparam[:,:,p:p+1], 
                         sza[p:p+1], 
                         raa[p:p+1], 
-                        vza, 
+                        vza[p:p+1], 
                         MISSING,
                         self.verbose]
 
@@ -1325,7 +1329,7 @@ class LIDAR_VLIDORT(object):
                         BPDFparam[:,:,p:p+1],
                         sza[p:p+1], 
                         raa[p:p+1], 
-                        vza, 
+                        vza[p:p+1], 
                         MISSING,
                         self.verbose]
 
