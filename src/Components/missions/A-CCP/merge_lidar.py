@@ -208,9 +208,9 @@ if __name__ == "__main__":
         outFile     = outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%ch',str(channel)).replace('%instname',instname).replace('%INSTNAME',INSTNAME).replace('LevelC','LevelC2')
 
 
-        # Initialize VLIDORT class getting aerosol optical properties
+        # Initialize MERGE class and write new outfile
         # -----------------------------------------------------------
-        print '++++Running VLIDORT with the following arguments+++'
+        print '++++Merging with the following arguments+++'
         print '>>>extFile:    ',extFile
         print '>>>vlidortFile:   ',vlidortFile
         print '>>>asmFile:    ',asmFile
