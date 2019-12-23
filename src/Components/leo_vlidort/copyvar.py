@@ -11,7 +11,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False,rename=None):
         outname = name
     else:
         outname = rename
-    y = ncOut.createVariable(rename,dtype,x.dimensions,zlib=zlib)
+    y = ncOut.createVariable(outname,dtype,x.dimensions,zlib=zlib)
     if hasattr(x,'long_name'): y.long_name = x.long_name
     if hasattr(x,'units'): y.units = x.units 
     try:
