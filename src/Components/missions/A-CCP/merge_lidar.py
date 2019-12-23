@@ -14,6 +14,7 @@ from   dateutil.parser import parse         as isoparser
 from   MAPL            import Config
 from   lidar_vlidort   import get_chd
 import numpy  as np
+from   netCDF4 import Dataset
 
 
 META = ['longitude','latitude','isotime']
@@ -208,9 +209,6 @@ if __name__ == "__main__":
         print '++++End of arguments+++'
         if not args.dryrun:
             merge = MERGE(vlidortFile,extFile,aerFile,metFile,asmFile,chmFile,outFile)
-
-            # # Run VLIDORT
-            # if vlidort.nobs > 0:
-            #     vlidort.runVLIDORT()
+            merge.writenc()
 
         date += Dt
