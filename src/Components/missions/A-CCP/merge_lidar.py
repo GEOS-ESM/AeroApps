@@ -184,7 +184,7 @@ if __name__ == "__main__":
     instname       = cf('instname')
     INSTNAME       = instname.upper()
 
-    # Loop through dates, running VLIDORT
+    # Loop through dates, merging datafile
     # ------------------------------------
     date      = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
