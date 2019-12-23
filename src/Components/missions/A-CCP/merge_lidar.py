@@ -72,7 +72,7 @@ class MERGE(object):
         nc.metFile = self.metFile
         nc.asmFile = self.asmFile
         nc.chmFile = self.chmFile
-        nc.vlidort = VLIDORT
+        nc.vlidort = str(VLIDORT)
         nc.ext = str(EXT)
         nc.asm = str(ASM)
         nc.met = str(MET)
