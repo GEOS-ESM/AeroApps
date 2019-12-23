@@ -20,12 +20,13 @@ from   copyvar  import _copyVar
 
 META = ['longitude','latitude','isotime']
 ASM  = ['PHIS']
-MET  = ['T','P','PBLH']
+MET  = ['T','PBLH']
 AER  = ['AIRDENS','RH','PS','DELP']
 EXT  = ['ext','backscat'] 
 VLIDORT = ['surf_reflectance','I','ROT','rayleigh_depol_ratio','solar_zenith']
 CHM  = ['O3']
 
+AERNAMES = ['OC','SS','SU','BC','DU']
 #------------------------------------ M A I N ------------------------------------
 
 class MERGE(object):
@@ -72,11 +73,11 @@ class MERGE(object):
         nc.asmFile = self.asmFile
         nc.chmFile = self.chmFile
         nc.vlidort = VLIDORT
-        nc.ext = EXT
-        nc.asm = ASM
-        nc.met = MET
-        nc.aer = AER
-        nc.chm = CHM
+        nc.ext = str(EXT)
+        nc.asm = str(ASM)
+        nc.met = str(MET)
+        nc.aer = str(AER)
+        nc.chm = str(CHM)
         nc.comment = 'VLIDORT TOA reflectance simulations limited to SZA < 80'        
      
 
@@ -106,6 +107,16 @@ class MERGE(object):
             _copyVar(nctrj,nc,var,dtype='f4',zlib=False,verbose=self.verbose)
 
         nctrj.close()
+
+        # Speciated
+        for spc in AERNAMES:
+            spcFile = self.extFile[:-3]
+            spcFile = spcFile + spc + '.nc4'
+
+            nctrj = Dataset(spcFile)
+            for var in EXT:
+                _copyVar(nctrj,nc,var,dtype='f4',zlib=False,verbose=self.verbose,rename=var+'_'+spc)
+
         # ASM
         nctrj = Dataset(self.asmFile)
         for var in ASM:
