@@ -1,5 +1,5 @@
 #----
-def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
+def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False,rename=None):
     """
     Create variable *name* in output file and copy its
     content over,
@@ -7,7 +7,11 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
     x = ncIn.variables[name]
     if verbose:
         print 'copy variable ',name,x.dimensions
-    y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
+    if rename is None:
+        outname = name
+    else:
+        outname = rename
+    y = ncOut.createVariable(rename,dtype,x.dimensions,zlib=zlib)
     if hasattr(x,'long_name'): y.long_name = x.long_name
     if hasattr(x,'units'): y.units = x.units 
     try:
