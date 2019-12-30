@@ -453,7 +453,7 @@ end FUNCTION solar_angles
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!    view_angles
+!    view_angles_from_target
 !
 ! PURPOSE
 !    Calculate viewing angles of satellite at a given target location P, 
@@ -491,7 +491,7 @@ end FUNCTION solar_angles
 !    translated into Fortran90 24 Feb 2012 by Vijay Natraj
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    
 
-FUNCTION view_angles(latp, lonp, latss, lonss, h)
+FUNCTION view_angles_from_target(latp, lonp, latss, lonss, h)
 
 implicit none
 
@@ -505,7 +505,7 @@ real(kind=8),    intent(in)  :: h
 
 !  Outputs
    
-real(kind=8)                 :: view_angles(2)
+real(kind=8)                 :: view_angles_from_target(2)
 
 !  Local variables
 
@@ -565,9 +565,9 @@ ceps = sin(eta)/srho
 eps = acos(ceps)
 
 r2d = 180.d0/acos(-1.d0)
-view_angles(1) = r2d*phiv
-if (lonp-lonss .GT. 0.d0) view_angles(1) = 360.d0 - view_angles(1)
-view_angles(2) = r2d*eps
+view_angles_from_target(1) = r2d*phiv
+if (lonp-lonss .GT. 0.d0) view_angles_from_target(1) = 360.d0 - view_angles_from_target(1)
+view_angles_from_target(2) = r2d*eps
 
 ! Check for spacecraft below horizon at target
 
@@ -577,18 +577,155 @@ if (lambda .GT. lambda0) then
    write(0,*) 'WARNING: SPACECRAFT BELOW HORIZON AT TARGET'
    write(0,*) 'Lambda  (Central Angle between Target and SSP) = ', lambda
    write(0,*) 'Lambda0 (Central Angle Visible to Spacecraft)  = ', lambda0
-   view_angles(2) = -view_angles(2)
+   view_angles_from_target(2) = -view_angles_from_target(2)
 endif
 
 return
-end function view_angles
+end function view_angles_from_target
+
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    view_angles
+!
+! PURPOSE
+!    Calculate viewing angles of satellite at a given target location P, 
+!    subsatellite point SSP, and satellite altitude h.
+!
+! INPUT
+!    latp  = latitude of target in degrees (-90 to 90)
+!    lonp  = longitude of target in degrees (-180 to 180)
+!    latss = latitude of subsatellite point in degrees (-90 to 90)
+!    lonss = longitude of subsatellite point in degrees (-180 to 180)
+!    h     = altitude above Earth in km
+!
+! OUTPUT
+!    view_angles is returned array of length 2.
+!    view_angles(1) is Satellite Azimuth Angle in Degrees, 0-360, clockwise from North at Target.
+!    view_angles(2) is Satellite Azimuth Angle in Degrees, 0-90, measured at satellite between
+!    satellite and target (Angle ETA in Reference).
+!    Example in Reference: Given LATP,LONP = 22, -200; LATSSP,LONSSP = 10, -185; h=1000 km;
+!    view_angles = [48.3, 56.8] 
+!    
+! REFERENCE
+!    Space Mission Analysis and Design, 
+!        by James R. Wertz, Wiley J. Larson. 
+!        Chapter 5, Space Mission Geometry, pp 112-114. 
+!
+! HISTORY
+!    written 1 April 2010 by Joyce Wolf for Annemarie Eldering and Susan Kulawik (JPL)
+!    updated 30 April 2010 to add warning if target is outside 
+!    region visible to spacecraft (spacecraft is below horizon at target).
+!    translated into Fortran90 24 Feb 2012 by Vijay Natraj
+!    adapted for view from spacecraft by P. Castellanos Dec 2019
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    
+
+FUNCTION view_angles_from_space(latp, lonp, latss, lonss, h)
+
+implicit none
+
+!  Inputs
+
+real(kind=8),    intent(in)  :: latp
+real(kind=8),    intent(in)  :: lonp
+real(kind=8),    intent(in)  :: latss
+real(kind=8),    intent(in)  :: lonss
+real(kind=8),    intent(in)  :: h
+
+!  Outputs
+   
+real(kind=8)                 :: view_angles_from_space(2)
+
+!  Local variables
+
+real(kind=8)                 :: d2r, re, srho
+real(kind=8)                 :: deltaL, cdeltaL, clatss, slatss, clatp, slatp
+real(kind=8)                 :: clambda, slambda, cphiv, phiv
+real(kind=8)                 :: taneta, eta, ceps, eps, r2d
+real(kind=8)                 :: lambda, lambda0
+
+d2r = acos(-1.d0)/180.d0
+
+! Earth radius in km
+
+re = 6378.d0
+
+! sin(angular radius of Earth at height h)
+
+srho = re/(re+h)
+
+deltaL = abs(lonss-lonp)
+cdeltaL = cos(d2r*deltaL)
+clatss = cos(d2r*latss)
+slatss = sin(d2r*latss)
+clatp = cos(d2r*latp)
+slatp = sin(d2r*latp)
+
+! Find lambda, central angle of great circle arc connecting P and SSP.
+! use Law of Cosines for spherical triangle with vertices P, SSP, and North Pole.
+! sides are central angles (great circle arcs) 90-LatP, 90-LatSS, and Lambda.
+! Law of Cosines: cos(c) = cos(a) cos(b) +sin(a) sin(b) cos(C),
+! where a, b, c are the sides and C is the corner angle opposite side c.
+
+! cos(lambda)
+
+clambda = slatss*slatp + clatss*clatp*cdeltaL
+
+! sin(lambda) 
+
+slambda = sin(acos(clambda))
+
+! cos phiv (Phi_V is azimuth of satellite measured from North at target P).
+! Use Law of Cosines on Spherical Triangle formed by P, North Pole, SSP.
+
+cphiv = (slatp - clambda*slatss) / (slambda*clatss)
+
+if (cphiv .GT. 1.d0) cphiv = 1.d0
+if (cphiv .LT. -1.d0) cphiv = -1.d0
+phiv = acos(cphiv)
+
+! tan eta
+
+taneta = srho*slambda / (1.d0-srho*clambda)
+eta = atan(taneta)
+
+! cos epsilon
+
+ceps = sin(eta)/srho
+eps = acos(ceps)
+
+r2d = 180.d0/acos(-1.d0)
+
+! azimuth angle
+view_angles_from_space(1) = r2d*phiv
+! if target is west of satellite, phiv should be negative
+! subtract from 360 to get azimuth angles in 0-360
+if (lonp-lonss .LT. 0.d0) view_angles_from_space(1) = 360.d0 - view_angles_from_space(1)
+
+! zenith angle
+view_angles_from_space(2) = r2d*eta
+
+! Check for spacecraft below horizon at target
+
+lambda = r2d*acos(clambda)
+lambda0 = r2d*acos(srho)
+if (lambda .GT. lambda0) then
+   write(0,*) 'WARNING: SPACECRAFT BELOW HORIZON AT TARGET'
+   write(0,*) 'Lambda  (Central Angle between Target and SSP) = ', lambda
+   write(0,*) 'Lambda0 (Central Angle Visible to Spacecraft)  = ', lambda0
+   view_angles_from_space(2) = -view_angles_from_space(2)
+endif
+
+return
+end function view_angles_from_space
+
+
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
 !    satellite_angles
 !
 ! PURPOSE
-!    For geostationary satellite GEOCAPE, at a given target location,
+!    For a satellite, at a given target location,
 !    calculate spacecraft Azimuth Viewing Angle VAA
 !    and spacecraft Zenith Viewing Angle VZA;
 !    also given UTC time calculate
@@ -613,12 +750,13 @@ end function view_angles
 !
 ! REQUIRED
 !   solar_angles.f90
-!   view_angles.f90
+!   view_angles_from_space.f90
 !   julday.f90
 !
 ! HISTORY
 !   written 29 April 2010 by Joyce Wolf for Annmarie Eldering & S. Kulawik
 !   translated into Fortran90 24 Feb 2012 by Vijay Natraj
+!   fixed code to give angles from space not target Dec 2019 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 FUNCTION satellite_angles(yr,mo,day,hr,min,sec,tz,latp,lonp,latss,lonss,hgtss)
@@ -654,9 +792,9 @@ real(kind=8) :: satellite_angles(4)
 real(kind=8)                :: vangles(2), phiv, thetav
 real(kind=8)                :: azel(2), saa, sza
 
-vangles = view_angles(latp,lonp,latss,lonss,hgtss)
+vangles = view_angles_from_space(latp,lonp,latss,lonss,hgtss)
 phiv    = vangles(1)
-thetav  = 90.d0 - vangles(2)
+thetav  = vangles(2)
 
 azel = solar_angles(yr,mo,day,hr,min,sec,tz,latp,lonp)
 saa = azel(1)
