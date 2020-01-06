@@ -143,7 +143,12 @@ class MERGE(object):
         for var in CHM:
             _copyVar(nctrj,nc,var,dtype='f4',zlib=False,verbose=self.verbose)
 
-        nctrj.close()        
+        nctrj.close() 
+
+        #VLIDORT
+        nctrj = Dataset(self.vlidortFile)
+        for var in VLIDORT:
+            _copyVar(nctrj,nc,var,dtype='f4',zlib=False,verbose=self.verbose)       
 
 if __name__ == "__main__":
 
