@@ -61,7 +61,9 @@ SurfaceFuncs = {'MODIS_BRDF'     : 'readSampledMODISBRDF',
 WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_POLAR_.vector_brdf_modis,
                 'MODIS_BRDF_BPDF': VLIDORT_POLAR_.vector_brdf_modis_bpdf,
                 'LAMBERTIAN'     : VLIDORT_POLAR_.vector_lambert,
-                'CX'             : VLIDORT_POLAR_.vector_gisscx}   
+                'GissCX'         : VLIDORT_POLAR_.vector_gisscx,
+                'CX'             : VLIDORT_POLAR_.vector_cx,
+                'ROT_CALC'       : VLIDORT_POLAR_.rot_calc}                      
 
 LandAlbedos  = 'MODIS_BRDF','MODIS_BRDF_BPDF','LAMBERTIAN','CX'
 
