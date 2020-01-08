@@ -488,10 +488,10 @@ class LIDAR_VLIDORT(object):
         # interpolate if needed
         if chs not in LER_channels:
             dch   = self.channel - np.array(LER_channels).astype('int')
-            chmin = np.argmax(dch[dch<0])
-            chmin = LER_channels[dch<0][chmin]
-            chmax = np.argmin(dch[dch>0])
-            chmax = LER_channels[dch>0][chmax]            
+            chmin = np.argmin(dch[dch>0])
+            chmin = LER_channels[dch>0][chmin]
+            chmax = np.argmax(dch[dch<0])
+            chmax = LER_channels[dch<0][chmax]            
             X = np.array([chmin,chmax]).astype('int')
 
             self.__dict__[sds] = np.empty([nobs])
