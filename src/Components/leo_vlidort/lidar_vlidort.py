@@ -11,7 +11,6 @@
 """
 
 import os
-import MieObs_
 from   netCDF4 import Dataset
 from   mieobs  import  getAOPvector, getEdgeVars
 import numpy   as np
