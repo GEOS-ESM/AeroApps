@@ -20,9 +20,9 @@ from   copyvar  import _copyVar
 
 META = ['longitude','latitude','isotime']
 ASM  = ['PHIS']
-MET  = ['T','PBLH']
+MET  = ['T','PBLH','QV']
 AER  = ['AIRDENS','RH','PS','DELP']
-EXT  = ['ext','backscat'] 
+EXT  = ['ext','backscat','depol'] 
 VLIDORT = ['surf_reflectance','I','ROT','rayleigh_depol_ratio','solar_zenith']
 CHM  = ['O3']
 
