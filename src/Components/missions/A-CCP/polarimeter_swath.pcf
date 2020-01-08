@@ -5,4 +5,7 @@
     instname     = gpm    
     HGT          = 407
     polarimeter_name = polar07
+    cross_track_km  = 550
+    cross_track_dkm = 0.5
+    along_track_deg = -57:57:10
 # LIDAR SIMULATION
