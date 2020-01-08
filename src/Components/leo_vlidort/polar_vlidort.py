@@ -21,7 +21,7 @@ from dateutil.parser import parse         as isoparser
 from MAPL.constants import *
 import LidarAngles_    
 import VLIDORT_POLAR_ 
-from vlidort import VLIDORT
+from vlidort import VLIDORT, WrapperFuncs, get_chd
 from copyvar  import _copyVar
 from scipy import interpolate
 from   MAPL  import config
@@ -58,14 +58,6 @@ SurfaceFuncs = {'MODIS_BRDF'     : 'readSampledMODISBRDF',
                 'MODIS_BRDF_BPDF': 'readSampledMODISBRDF',
                 'LAMBERTIAN'     : 'readSampledLER',
                 'CX'             : 'readSampledWindCX'}
-
-WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_POLAR_.vector_brdf_modis,
-                'MODIS_BRDF_BPDF': VLIDORT_POLAR_.vector_brdf_modis_bpdf,
-                'LAMBERTIAN'     : VLIDORT_POLAR_.vector_lambert,
-                'GissCX'         : VLIDORT_POLAR_.vector_gisscx,
-                'CX'             : VLIDORT_POLAR_.vector_cx,
-                'ROT_CALC'       : VLIDORT_POLAR_.rot_calc}                      
-
 
 MISSING = -1.e+20
 
@@ -894,6 +886,14 @@ class POLAR_VLIDORT(VLIDORT):
         #backward directions, forward directions
         VZA = np.append(self.VZA[::-1],self.VZA)
 
+        # Calculate ROT
+        args = [self.channel, self.pe, self.ze, self.te, MISSING, self.verbose]
+        vlidortWrapper = WrapperFuncs['ROT_CALC']
+        ROT, depol_ratio, rc = vlidortWrapper(*args)  
+        #nlev,ntime,nch
+        self.ROT = np.squeeze(ROT).T 
+        self.depol_ratio = depol_ratio          
+
         # loop though LAND and SEA
         for surface in surfList:
 
@@ -1279,12 +1279,6 @@ class POLAR_VLIDORT(VLIDORT):
         if self.verbose:
             print " <> wrote %s"%(self.outFileDist)
     
-
-def get_chd(channel):
-    chd = '%.2f'%channel
-    chd = chd.replace('.','d')
-
-    return chd
     
 #------------------------------------ M A I N ------------------------------------
 
