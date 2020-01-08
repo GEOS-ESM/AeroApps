@@ -68,6 +68,8 @@ class POLAR_VLIDORT(VLIDORT):
     """
     def __init__(self,inFile,outFile,rcFile,albedoType,
                 channel,VZA,hgtss,
+                nstreams=12,
+                plane_parallel=True,                
                 brdfFile=None,
                 ndviFile=None,
                 lcFile=None,
@@ -93,6 +95,8 @@ class POLAR_VLIDORT(VLIDORT):
         self.lcFile      = lcFile
         self.ndviFile    = ndviFile
         self.lerFile     = lerFile
+        self.nstreams    = nstreams
+        self.plane_parallel = plane_parallel
 
         if not extOnly:
             # initialize empty lists
@@ -917,6 +921,7 @@ class POLAR_VLIDORT(VLIDORT):
             pe   = self.pe[:,iGood]
             ze   = self.ze[:,iGood]
             te   = self.te[:,iGood]
+            rot  = ROT[:,iGood,:]
 
             if surface == 'Land':        
                 albedoType = self.albedoType
@@ -933,10 +938,8 @@ class POLAR_VLIDORT(VLIDORT):
                 raa  = RAA[:,i]
 
                 runFunction = self.__getattribute__(albedoType+'_run')
-                I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT = runFunction(vlidortWrapper,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood)
+                I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U = runFunction(vlidortWrapper,rot,depol_ratio,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood)
                                                     
-                if i == 0:
-                    self.ROT[iGood,:] = np.squeeze(ROT).T
                 self.I[iGood,i] = np.squeeze(I)
                 self.reflectance[iGood,i] = np.squeeze(reflectance)
                 self.surf_reflectance[iGood,i] = np.squeeze(surf_reflectance)
@@ -947,114 +950,7 @@ class POLAR_VLIDORT(VLIDORT):
 
 
         self.writeNC()
-    #---
-    def MODIS_BRDF_run(self,vlidortWrapper,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
-        kernel_wt = self.kernel_wt[:,:,iGood]
-        param     = self.RTLSparam[:,:,iGood]                
-        
 
-        args = [self.channel,tau, ssa, pmom, 
-                pe, ze, te, 
-                kernel_wt, param, 
-                sza, raa, vza, 
-                MISSING,
-                self.verbose]
-
-        # Call VLIDORT wrapper function
-        I, reflectance, ROT, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)                        
-
-        return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT        
-    #---    
-    def MODIS_BRDF_BPDF_run(self,vlidortWrapper,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
-        # For albedo
-        kernel_wt = self.kernel_wt[:,:,iGood]
-        RTLSparam = self.RTLSparam[:,:,iGood] 
-        RTLSparam = np.append(RTLSparam,np.zeros([1,1,self.nobsLand]),axis=0) 
-
-        # For BPDF
-        BPDFparam = self.BPDFparam[:,:,iGood]
-
-        # Loop through one by one
-        # Some land covers do not have polarization (i.e. urban)
-        I                = np.zeros([self.nobsLand,1])
-        Q                = np.zeros([self.nobsLand,1])
-        U                = np.zeros([self.nobsLand,1])
-        reflectance      = np.zeros([self.nobsLand,1])
-        surf_reflectance = np.zeros([self.nobsLand,1])
-        BR_Q             = np.zeros([self.nobsLand,1])
-        BR_U             = np.zeros([self.nobsLand,1])
-        nlev             = tau.shape[0]
-        ROT              = np.zeros([nlev,self.nobsLand,1])
-
-        for p in range(self.nobsLand):
-            if BPDFparam[2,0,p] == MISSING: 
-                args = [self.channel,
-                        tau[:,:,p:p+1], 
-                        ssa[:,:,p:p+1], 
-                        pmom[:,:,p:p+1,:,:], 
-                        pe[:,p:p+1], 
-                        ze[:,p:p+1], 
-                        te[:,p:p+1], 
-                        kernel_wt[:,:,p:p+1], 
-                        RTLSparam[:,:,p:p+1], 
-                        sza[p:p+1], 
-                        raa[p:p+1], 
-                        vza[p:p+1], 
-                        MISSING,
-                        self.verbose]
-
-                BRDFvlidortWrapper = WrapperFuncs['MODIS_BRDF']
-                # Call VLIDORT wrapper function
-                I_, reflectance_, ROT_, surf_reflectance_, Q_, U_, BR_Q_, BR_U_, rc = BRDFvlidortWrapper(*args)                         
-
-            else:
-                args = [self.channel,
-                        tau[:,:,p:p+1], 
-                        ssa[:,:,p:p+1], 
-                        pmom[:,:,p:p+1,:,:], 
-                        pe[:,p:p+1], 
-                        ze[:,p:p+1], 
-                        te[:,p:p+1], 
-                        kernel_wt[:,:,p:p+1], 
-                        RTLSparam[:,:,p:p+1], 
-                        BPDFparam[:,:,p:p+1],
-                        sza[p:p+1], 
-                        raa[p:p+1], 
-                        vza[p:p+1], 
-                        MISSING,
-                        self.verbose]
-
-                # Call VLIDORT wrapper function
-                I_, reflectance_, ROT_, surf_reflectance_, Q_, U_, BR_Q_, BR_U_, rc = vlidortWrapper(*args)
-    
-            I[p:p+1,:] = I_
-            Q[p:p+1,:] = Q_
-            U[p:p+1,:] = U_
-            reflectance[p:p+1,:] = reflectance_
-            surf_reflectance[p:p+1,:] = surf_reflectance_
-            BR_Q[p:p+1,:] = BR_Q_
-            BR_U[p:p+1,:] = BR_U_
-            ROT[:,p:p+1,:] = ROT_
-
-        return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT
-    #---
-    def LAMBERTIAN_run(self,vlidortWrapper,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
-        albedo = self.albedo[iGood,:]
-        
-        args = [self.channel,tau, ssa, pmom, 
-                pe, ze, te, 
-                albedo, 
-                sza, raa, vza, 
-                MISSING,
-                self.verbose]
-
-        # Call VLIDORT wrapper function
-        I, reflectance, ROT, Q, U, rc = vlidortWrapper(*args)  
-        surf_reflectance = albedo            
-
-        BR_Q = None
-        BR_U = None
-        return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U,ROT
     #---
     def writeNC (self,zlib=True):
         """
