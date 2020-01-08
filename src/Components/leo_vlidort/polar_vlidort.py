@@ -124,6 +124,8 @@ class POLAR_VLIDORT(VLIDORT):
             # Start out with all good obs
             self.nobs  = len(self.tyme)
             self.iGood = np.ones([self.nobs]).astype(bool)
+            self.nobsLand  = len(self.tyme)
+            self.iGoodLand = np.ones([self.nobs]).astype(bool)            
             
             if not distOnly:
                 # Read in surface data
@@ -156,74 +158,6 @@ class POLAR_VLIDORT(VLIDORT):
                 if self.nobs > 0:
                     # Land-Sea Mask
                     self.LandSeaMask()
-
-    # --
-    def BPDFinputs(self):
-        """
-        Read in NDVI and Landuse Coefficient- should have been sampled already
-        """
-        if self.verbose:
-            print 'opening file',self.ndviFile
-
-        nc = Dataset(self.ndviFile)
-        NDVI = nc.variables['NDVI'][:]
-        I = NDVI < -900
-        NDVI[I] = MISSING
-        nc.close()
-
-        if self.verbose:
-            print 'opening file',self.lcFile
-        nc = Dataset(self.lcFile)
-        BPDFcoef = nc.variables['BPDFcoef'][:]
-        I = BPDFcoef < -900
-        BPDFcoef[I] = MISSING
-        nc.close()
-
-        self.iGood = self.iGood & (NDVI != MISSING)
-        self.nobs  = np.sum(self.iGood)
-
-        #BPDFparam(nparam,nch,nobs)
-        self.BPDFparam = np.zeros([3,1,len(self.tyme)])
-        self.BPDFparam[0,0,:] = 1.5
-        self.BPDFparam[1,0,:] = NDVI
-        self.BPDFparam[2,0,:] = BPDFcoef        
-
-    # ---
-    def LandSeaMask(self):
-        """
-        Read in invariant dataset
-        """
-        col = 'asm_Nx'
-        if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
-        nc       = Dataset(self.inFile.replace('%col',col))
-
-        for sds in self.SDS_INV:
-            sds_ = sds
-            if sds in ncALIAS:
-                sds_ = ncALIAS[sds]
-            var = nc.variables[sds_][:]
-            self.__dict__[sds].append(var)   
-
-        # Make lists into arrays
-        for sds in self.SDS_INV:
-            self.__dict__[sds] = np.concatenate(self.__dict__[sds])            
-
-        self.iLand = self.FRLAND >= 0.99
-        self.iSea  = self.FRLAND < 0.99
-
-        # self.iGood = self.iGood & iGood
-        self.nobsLand  = np.sum(self.iGood & self.iLand)
-        self.nobsSea   = np.sum(self.iGood & self.iSea)
-
-    # --
-    def computeAtmos(self):
-
-        pe, ze, te = getEdgeVars(self)
-
-        self.pe = pe # (km,nobs)
-        self.ze = ze 
-        self.te = te
 
     # --
     def calcAngles(self):
@@ -894,74 +828,7 @@ class POLAR_VLIDORT(VLIDORT):
         
         return r, dr, rlow, rup
 
-    def readSampledLER(self):
-        """
-        Read in sampler LER files.
-        Fill albedo attribute
-        """
-        LER_channels   = np.array(['354','388'])   
-        chs = str(int(self.channel))
 
-        SDS = []
-        for lchs in LER_channels:
-            SDS.append('SRFLER'+lchs)
-
-        if self.verbose:
-            print 'opening LER albedo file ',self.lerFile
-        nc = Dataset(self.lerFile)
-
-        for sds in SDS:
-            self.__dict__[sds] = np.squeeze(nc.variables[sds][:])
-
-        missing_value = nc.variables[sds].missing_value
-        nobs = len(self.__dict__[sds])
-        nc.close()
-
-        sds = 'SRFLER'+chs
-        # interpolate if needed
-        if chs not in LER_channels:
-            dch   = self.channel - np.array(LER_channels).astype('int')
-            chmin = np.argmin(dch[dch>0])
-            chmin = LER_channels[dch>0][chmin]
-            chmax = np.argmax(dch[dch<0])
-            chmax = LER_channels[dch<0][chmax]            
-            X = np.array([chmin,chmax]).astype('int')
-
-            self.__dict__[sds] = np.empty([nobs])
-            for i in range(nobs):
-                Y = np.array([self.__dict__['SRFLER'+chmin][i],self.__dict__['SRFLER'+chmax][i]])
-                if missing_value in Y:
-                    self.__dict__[sds][i] = missing_value
-                else:
-                    f = interpolate.interp1d(X, Y)
-                    self.__dict__[sds][i] = f([int(chs)]) 
-
-
-        # Check for missing values
-        iGood = (self.__dict__[sds] != missing_value) 
-        self.iGood = self.iGood & iGood
-        self.nobs = np.sum(self.iGood)
-
-        # (nobs,nch)
-        self.__dict__[sds].shape = (nobs,1) 
-
-
-        self.albedo = self.__dict__[sds]     
-
-    #---
-    def computeMie(self):
-        """
-        Computes aerosol optical quantities 
-        """
-        tau,ssa,g,pmom = getAOPvector(self,self.channel,
-                                 vnames=self.AERNAMES,
-                                 Verbose=True,
-                                 rcfile=self.rcFile,
-                                 nMom=self.nMom)
-        self.tau = tau  #(km,nch,nobs)
-        self.ssa = ssa  #(km,nch,nobs)
-        self.g   = g    #(km,nch,nobs)
-        self.pmom = pmom  #(km,nch,nobs,nMom,nPol)
 
     # --
     def runExt(self):
