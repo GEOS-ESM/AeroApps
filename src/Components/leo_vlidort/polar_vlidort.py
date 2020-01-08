@@ -65,8 +65,6 @@ WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_POLAR_.vector_brdf_modis,
                 'CX'             : VLIDORT_POLAR_.vector_cx,
                 'ROT_CALC'       : VLIDORT_POLAR_.rot_calc}                      
 
-LandAlbedos  = 'MODIS_BRDF','MODIS_BRDF_BPDF','LAMBERTIAN','CX'
-
 
 MISSING = -1.e+20
 
