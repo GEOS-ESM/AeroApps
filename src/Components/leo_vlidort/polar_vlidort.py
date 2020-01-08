@@ -21,6 +21,7 @@ from dateutil.parser import parse         as isoparser
 from MAPL.constants import *
 import LidarAngles_    
 import VLIDORT_POLAR_ 
+from vlidort import VLIDORT
 from copyvar  import _copyVar
 from scipy import interpolate
 from   MAPL  import config
@@ -68,7 +69,7 @@ WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_POLAR_.vector_brdf_modis,
 
 MISSING = -1.e+20
 
-class POLAR_VLIDORT(object):
+class POLAR_VLIDORT(VLIDORT):
     """
     Everything needed for calling VLIDORT
     GEOS-5 has already been sampled on lidar track
@@ -282,53 +283,6 @@ class POLAR_VLIDORT(object):
         self.iGood = self.iGood & (self.SZA < 80)
         self.nobs = np.sum(self.iGood)     
 
-    #---
-    def readSampledGEOS(self):
-        """
-        Read in model sampled track
-        """
-        col = 'aer_Nv'
-        if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
-        nc       = Dataset(self.inFile.replace('%col',col))
-
-        for sds in self.SDS_AER:
-            sds_ = sds
-            if sds in ncALIAS:
-                sds_ = ncALIAS[sds]
-            var = nc.variables[sds_][:]
-            self.__dict__[sds].append(var)
-
-        if len(self.SDS_MET) > 0:
-            col = 'met_Nv'
-            if self.verbose: 
-                print 'opening file',self.inFile.replace('%col',col)        
-            nc       = Dataset(self.inFile.replace('%col',col))
-
-            for sds in self.SDS_MET:
-                sds_ = sds
-                if sds in ncALIAS:
-                    sds_ = ncALIAS[sds]
-                var = nc.variables[sds_][:]
-                self.__dict__[sds].append(var)
-
-    def readSampledWindCX(self):
-        col = 'met_Nv'
-        if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)        
-        nc       = Dataset(self.inFile.replace('%col',col))
-
-        for sds in self.SDS_CX:
-            sds_ = sds
-            if sds in ncALIAS:
-                sds_ = ncALIAS[sds]
-            var = nc.variables[sds_][:]
-            self.__dict__[sds].append(var)
-
-        for sds in self.SDS_CX:
-            self.__dict__[sds] = np.concatenate(self.__dict__[sds])
-
- 
 
     def sizeDistribution(self):
         """ 
@@ -940,162 +894,6 @@ class POLAR_VLIDORT(object):
         
         return r, dr, rlow, rup
 
-
-    # --- 
-    def readSampledMODISBRDF(self):
-        """
-        Read in MODIS BRDF kernel weights
-        that have already been sampled on lidar track
-        """
-        MODIS_channels = np.array(['470','550','650','850','1200','1600','2100'])
-        chs = str(int(self.channel))
-        if chs in MODIS_channels:
-            SDS = 'Riso'+chs,'Rgeo'+chs,'Rvol'+chs
-        else:
-            dch = self.channel - np.array(MODIS_channels).astype('int')
-            chmin = np.argmin(dch[dch>0])
-            chmin = MODIS_channels[dch>0][chmin]
-            chmax = np.argmax(dch[dch<0])
-            chmax = MODIS_channels[dch<0][chmax]
-
-            SDS = 'Riso'+chmin,'Rgeo'+chmin,'Rvol'+chmin,'Riso'+chmax,'Rgeo'+chmax,'Rvol'+chmax
-
-        if self.verbose:
-            print 'opening BRDF file ',self.brdfFile
-        nc = Dataset(self.brdfFile)
-
-        for sds in SDS:
-            self.__dict__[sds] = np.array(nc.variables[sds][:])
-
-        missing_value = nc.variables[sds].missing_value
-        nc.close()
-
-        nobs = len(self.__dict__[sds])
-        # Interpolate if necessary
-        if chs not in MODIS_channels:
-            X = np.array([chmin,chmax]).astype('int')
-            for R in ['Riso','Rgeo','Rvol']:
-                sds = R + chs
-                self.__dict__[sds] = np.empty([nobs])
-                for i in range(nobs):
-                    Y = np.array([self.__dict__[R+chmin][i],self.__dict__[R+chmax][i]])
-                    if missing_value in Y:
-                        self.__dict__[sds][i] = missing_value
-                    else:
-                        f = interpolate.interp1d(X, Y)
-                        self.__dict__[sds][i] = f([int(chs)])
-
-            SDS = 'Riso'+chs,'Rgeo'+chs,'Rvol'+chs
-        
-        # Check for missing kernel weights
-        Riso = self.__dict__['Riso'+chs]
-        Rgeo = self.__dict__['Rgeo'+chs]
-        Rvol = self.__dict__['Rvol'+chs]
-        iGood = (Riso != missing_value) & (Rgeo != missing_value) & (Rvol != missing_value)
-        self.iGood = self.iGood & iGood
-        self.nobs = np.sum(self.iGood)
-
-        for sds in SDS:
-            self.__dict__[sds].shape = (1,1,nobs)
-
-        # [nkernel,nch,nobs]
-        self.kernel_wt = np.append(self.__dict__['Riso'+chs],self.__dict__['Rgeo'+chs],axis=0)
-        self.kernel_wt = np.append(self.kernel_wt,self.__dict__['Rvol'+chs],axis=0)
-
-        param1 = np.array([2]*nobs)
-        param2 = np.array([1]*nobs)
-
-        param1.shape = (1,1,nobs)
-        param2.shape = (1,1,nobs)
-
-        # [nparam,nch,nobs]
-        self.RTLSparam = np.append(param1,param2,axis=0)
-
-    # --- 
-    def readHybridMODISBRDF(self):
-        """
-        Read in MODIS BRDF kernel weights
-        that have already been sampled on lidar track
-        for wavelngths between 388 and 470
-        """
-        MODIS_channels = np.array(['470','550','650','850','1200','1600','2100'])
-        LER_channels   = np.array(['354','388'])
-        MODISchs = '470' 
-        mSDS = 'Riso'+MODISchs,'Rgeo'+MODISchs,'Rvol'+MODISchs
-        LERchs = '388'
-        lSDS = 'SRFLER' + LERchs
-        chs = str(int(self.channel))
-
-        if self.verbose:
-            print 'opening BRDF abledo file ',self.brdfFile
-        nc = Dataset(self.brdfFile)
-
-        for sds in mSDS:
-            self.__dict__[sds] = nc.variables[sds][:]
-
-        missing_value = nc.variables[sds].missing_value
-        nc.close()
-
-        if self.verbose:
-            print 'opening LER albedo file ',self.lerFile
-        nc = Dataset(self.lerFile)
-
-        self.__dict__[lSDS] = nc.variables[lSDS][:]
-        nc.close()
-
-        nobs = len(self.__dict__[sds])
-        # Interpolate 
-        X = np.array([388,470])
-        #Riso
-        sds = 'Riso' + chs
-        R   = 'Riso' + MODISchs
-        self.__dict__[sds] = np.empty([nobs])
-        for i in range(nobs):
-            Y = np.array([self.__dict__[lSDS][i],self.__dict__[R][i]])
-            if missing_value in Y:
-                self.__dict__[sds][i] = missing_value
-            else:
-                f = interpolate.interp1d(X, Y)
-                self.__dict__[sds][i] = f([int(chs)])
-
-        #Rgeo and Rvol
-        for R in 'Rgeo','Rvol':
-            sds = R + chs
-            self.__dict__[sds] = np.empty([nobs])
-            for i in range(nobs):
-                Y = np.array([0.0,self.__dict__[R+MODISchs][i]])
-                if missing_value in Y:
-                    self.__dict__[sds][i] = missing_value
-                else:
-                    f = interpolate.interp1d(X, Y)
-                    self.__dict__[sds][i] = f([int(chs)])
-
-        SDS = 'Riso'+chs,'Rgeo'+chs,'Rvol'+chs
-        
-        # Check for missing kernel weights
-        Riso = self.__dict__['Riso'+chs]
-        Rgeo = self.__dict__['Rgeo'+chs]
-        Rvol = self.__dict__['Rvol'+chs]
-        iGood = (Riso != missing_value) & (Rgeo != missing_value) & (Rvol != missing_value)
-        self.iGood = self.iGood & iGood
-        self.nobs = np.sum(self.iGood)
-
-        for sds in SDS:
-            self.__dict__[sds].shape = (1,1,nobs)
-
-        # [nkernel,nch,nobs]
-        self.kernel_wt = np.append(self.__dict__['Riso'+chs],self.__dict__['Rgeo'+chs],axis=0)
-        self.kernel_wt = np.append(self.kernel_wt,self.__dict__['Rvol'+chs],axis=0)
-
-        param1 = np.array([2]*nobs)
-        param2 = np.array([1]*nobs)
-
-        param1.shape = (1,1,nobs)
-        param2.shape = (1,1,nobs)
-
-        # [nparam,nch,nobs]
-        self.RTLSparam = np.append(param1,param2,axis=0)
-
     def readSampledLER(self):
         """
         Read in sampler LER files.
@@ -1123,10 +921,10 @@ class POLAR_VLIDORT(object):
         # interpolate if needed
         if chs not in LER_channels:
             dch   = self.channel - np.array(LER_channels).astype('int')
-            chmin = np.argmax(dch[dch<0])
-            chmin = LER_channels[dch<0][chmin]
-            chmax = np.argmin(dch[dch>0])
-            chmax = LER_channels[dch>0][chmax]            
+            chmin = np.argmin(dch[dch>0])
+            chmin = LER_channels[dch>0][chmin]
+            chmax = np.argmax(dch[dch<0])
+            chmax = LER_channels[dch<0][chmax]            
             X = np.array([chmin,chmax]).astype('int')
 
             self.__dict__[sds] = np.empty([nobs])
