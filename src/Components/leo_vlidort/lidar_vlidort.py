@@ -172,8 +172,8 @@ class LIDAR_VLIDORT(object):
         BPDFcoef[I] = MISSING
         nc.close()
 
-        self.iGood = self.iGood & (NDVI != MISSING)
-        self.nobs  = np.sum(self.iGood)
+        self.iGoodLand = self.iGoodLand & (NDVI != MISSING)
+        self.nobsLand  = np.sum(self.iGoodLand)
 
         #BPDFparam(nparam,nch,nobs)
         self.BPDFparam = np.zeros([3,1,len(self.tyme)])
