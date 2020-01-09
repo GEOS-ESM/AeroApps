@@ -29,12 +29,14 @@ LIB   = lib$(THIS).a
 BINS := leo_vlidort_cloud.x
 
 PY_EXTS = LidarAngles_.$(F2PYEXT) VLIDORT_POLAR_.$(F2PYEXT) READ_NC_.$(F2PYEXT) 
-PY_SCRP = leo_vlidort_lc.py
+PY_SCRP = leo_vlidort_lc.py 
+PY_LIBS = vlidort.py 
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
                  $(ESMAINC)/$(THIS) $(ESMABIN)
 	$(CP) -pr $(PY_EXTS)               $(ESMALIB)/Python 
+	$(CP) -pr $(PY_LIBS)               $(ESMALIB)/Python
 	$(CP) -p  $(BINS) $(PY_SCRP)       $(ESMABIN)
 
 esma_clean clean:
