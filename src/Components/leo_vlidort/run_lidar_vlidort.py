@@ -148,9 +148,9 @@ if __name__ == "__main__":
                                     lerFile=lerFile,
                                     verbose=args.verbose)
 
-            # Run VLIDORT
-            if vlidort.nobs > 0:
-                vlidort.runVLIDORT()
+            # # Run VLIDORT
+            # if vlidort.nobs > 0:
+            #     vlidort.runVLIDORT()
 
         date += Dt
 
