@@ -35,7 +35,7 @@ PY_LIBS = py_$(THIS)
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
                  $(ESMAINC)/$(THIS) $(ESMABIN)
-	$(CP) -pr $(PY_EXTS)               $(ESMALIB)/Python 
+	$(CP) -pr $(PY_EXTS)               $(ESMALIB)/Python/py_$(THIS) 
 	$(CP) -pr $(PY_LIBS)               $(ESMALIB)/Python
 	$(CP) -p  $(BINS) $(PY_SCRP)       $(ESMABIN)
 
