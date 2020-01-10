@@ -145,7 +145,6 @@ if __name__ == "__main__":
         print '>>>rcFile:    ',rcFile
         print '>>>albedoType:',albedoType
         print '>>>channel:   ',channel
-        print '>>>HGT:       ',HGT
         print '>>>brdfFile:  ',brdfFile
         print '>>>ndviFile:  ',ndviFile
         print '>>>lcFile:    ',lcFile
