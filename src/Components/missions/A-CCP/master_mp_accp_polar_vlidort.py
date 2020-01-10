@@ -295,7 +295,9 @@ if __name__ == '__main__':
     nproc    = 8
     slurm    = 'run_accp_polar_vlidort.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir'
-
+    rcFile   = 'Aod_EOS.rc'
+    albedoType = None
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
     parser.add_argument("iso_t2",help='ending iso time')
