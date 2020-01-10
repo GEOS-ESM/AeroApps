@@ -14,7 +14,7 @@ from   dateutil.parser import parse         as isoparser
 from   MAPL            import Config
 import numpy  as np
 from netCDF4 import Dataset
-import LidarAngles_   
+from  py_leo_vlidort import LidarAngles_ 
 from mpl_toolkits.basemap import Basemap
 from   py_leo_vlidort.copyvar  import _copyVar
 
