@@ -13,7 +13,7 @@ import argparse
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
 from   MAPL            import Config
-from   lidar_vlidort   import LIDAR_VLIDORT, get_chd
+from   py_leo_vlidort.lidar_vlidort   import LIDAR_VLIDORT, get_chd
 import numpy  as np
 
 #------------------------------------ M A I N ------------------------------------
