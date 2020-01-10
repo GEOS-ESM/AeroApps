@@ -21,7 +21,10 @@ import numpy  as np
 if __name__ == "__main__":
 
     # Defaults
-    DT_hours = 1
+    DT_hours   = 1
+    instname   = 'lidar'
+    rcFile     = 'Aod_EOS.rc'
+    albedoType = None
 
 #   Parse command line options
 #   --------------------------
@@ -32,8 +35,22 @@ if __name__ == "__main__":
     parser.add_argument("iso_t2",
                         help="ending iso time")
 
-    parser.add_argument("prep_config",
-                        help="prep config filename")
+    parser.add_argument("track_pcf",
+                        help="prep config file with track input file names")
+
+    parser.add_argument("orbit_pcf",
+                        help="prep config file with orbit variables")
+
+    parser.add_argument("channel", type=int,
+                        help="channel in nm")
+
+    parser.add_argument("-a","--albedotype", default=albedoType,
+                        help="albedo type keyword. default is to figure out according to channel")
+
+    parser.add_argument("-I","--instname", default=instname,
+                        help="Instrument name (default=%s)"%instname)
+    parser.add_argument("--rcfile",default=rcFile,
+                        help="rcFile (default=%s)"%rcFile)
 
     parser.add_argument("-D","--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
@@ -45,18 +62,29 @@ if __name__ == "__main__":
                         help="do a dry run (default=False).")    
 
     args = parser.parse_args()
+    channel        = args.channel
+    rcFile         = args.rcfile
+    instname       = args.instname
+    albedoType     = args.albedotype
+
+    # figure out albedoType keyword
+    if albedoType is None:
+        if channel <= 388:
+            albedoType = 'LAMBERTIAN'
+        else:
+            albedoType = 'MODIS_BRDF'
 
     # Parse prep config
     # -----------------
-    cf             = Config(args.prep_config,delim=' = ')
-    inTemplate     = cf('inDir')     + '/' + cf('inFile')         
-    outTemplate    = cf('outDir')    + '/' + cf('outFile')
-    channel        = int(cf('channel'))
-    rcFile         = cf('rcFile')
-    instname       = cf('instname')
-    INSTNAME       = instname.upper()
+    cf             = Config(args.orbit_pcf,delim=' = ')
+    orbitname      = cf('orbitname')
+    ORBITNAME      = orbitname.upper()
     HGT            = float(cf('HGT'))
 
+    cf             = Config(args.track_pcf,delim=' = ')
+    inTemplate     = cf('inDir')     + '/' + cf('inFile')         
+    outTemplate    = cf('outDir')    + '/' + cf('outFile')
+    
     try:
         brdfTemplate = cf('brdfDir') + '/' + cf('brdfFile') 
     except:
@@ -78,7 +106,7 @@ if __name__ == "__main__":
     # Change wavelength number in Aod_EOS.rc
     # ---------------------------------------
     source = open(rcFile,'r')
-    destination = open(rcFile+'.'+cf('channel')+'.tmp','w')
+    destination = open(rcFile+'.'+str(channel)+'.tmp','w')
     a = float(channel)*1e-3
     for line in source:
         if (line[0:11] == 'r_channels:'):
@@ -87,7 +115,7 @@ if __name__ == "__main__":
             destination.write(line) 
     source.close()
     destination.close()
-    rcFile = rcFile+'.'+cf('channel')+'.tmp'
+    rcFile = rcFile+'.'+str(channel)+'.tmp'
 
     # Loop through dates, running VLIDORT
     # ------------------------------------
@@ -102,25 +130,25 @@ if __name__ == "__main__":
         day   = str(date.day).zfill(2)
         hour  = str(date.hour).zfill(2)    
 
-        inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
-        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel)).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
+        inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel)).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME).replace('%instname',instname)
 
         if brdfTemplate is None:
             brdfFile = None
         else:
-            brdfFile = brdfTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
+            brdfFile = brdfTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
         
         if ndviTemplate is None:
             ndviFile = None
             lcFile   = None
         else:
-            ndviFile   = ndviTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
-            lcFile     = lcTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
+            ndviFile   = ndviTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+            lcFile     = lcTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
         if lerTemplate is None:
             lerFile = None
         else:
-            lerFile   = lerTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
+            lerFile   = lerTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
         # Initialize VLIDORT class getting aerosol optical properties
         # -----------------------------------------------------------
@@ -128,7 +156,7 @@ if __name__ == "__main__":
         print '>>>inFile:    ',inFile
         print '>>>outFile:   ',outFile
         print '>>>rcFile:    ',rcFile
-        print '>>>albedoType:',cf('albedoType')
+        print '>>>albedoType:',albedoType
         print '>>>channel:   ',channel
         print '>>>HGT:       ',HGT
         print '>>>brdfFile:  ',brdfFile
@@ -139,7 +167,7 @@ if __name__ == "__main__":
         print '++++End of arguments+++'
         if not args.dryrun:
             vlidort = LIDAR_VLIDORT(inFile,outFile,rcFile,
-                                    cf('albedoType'),
+                                    albedoType,
                                     channel,
                                     HGT,
                                     brdfFile=brdfFile,
