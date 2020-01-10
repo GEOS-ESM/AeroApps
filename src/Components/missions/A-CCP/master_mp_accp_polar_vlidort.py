@@ -272,10 +272,13 @@ class WORKSPACE(JOBS):
             os.remove(outfile)     
 
             os.remove(self.slurm)
-            os.remove(self.prep_config)
+            os.remove(self.track_pcf)
+            os.remove(self.orbit_pcf)
+            os.remove(self.inst_pcf)
+            os.remove(self.rcFile)
 
         # remove symlinks
-        source = ['lidar_sampler.py','run_lidar_sampler.py'] #'sampling','tle']
+        source = ['mp_run_accp_polar_vlidort.py','run_accp_polar_vlidort.py'] 
         for src in source:
             os.remove(src)
 
