@@ -21,7 +21,7 @@ from dateutil.parser import parse         as isoparser
 from MAPL.constants import *
 import LidarAngles_    
 import VLIDORT_POLAR_ 
-from vlidort import VLIDORT, WrapperFuncs, get_chd
+from py_leo_vlidort.vlidort import VLIDORT, WrapperFuncs, get_chd
 from copyvar  import _copyVar
 from scipy import interpolate
 from   MAPL  import config
