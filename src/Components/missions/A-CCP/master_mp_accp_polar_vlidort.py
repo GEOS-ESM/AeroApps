@@ -136,7 +136,7 @@ class WORKSPACE(JOBS):
 
         self.Date      = isoparser(args.iso_t1)
         self.enddate   = isoparser(args.iso_t2)
-        self.Dt        = timedelta(hours=args.dt_hours)
+        self.Dt        = timedelta(hours=args.pDT_hours)
 
         
         self.track_pcf   = args.track_pcf
@@ -290,19 +290,35 @@ class WORKSPACE(JOBS):
 if __name__ == '__main__':
     
     #Defaults
-    DT_hours = 24
+    DT_hours = 1
+    pDT_hours = 1
     nproc    = 8
-    slurm    = 'run_lidar_sampler.j'
+    slurm    = 'run_accp_polar_vlidort.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
     parser.add_argument("iso_t2",help='ending iso time')
-    parser.add_argument("prep_config",
-                        help="prep config filename")
+    parser.add_argument("track_pcf",
+                        help="prep config file with orbit variables")
+
+    parser.add_argument("orbit_pcf",
+                        help="prep config file with orbit variables")
+
+    parser.add_argument("inst_pcf",
+                        help="prep config file with instrument variables")
 
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
+
+    parser.add_argument("-a","--albedotype", default=albedoType,
+                        help="albedo type keyword. default is to figure out according to channel")
+
+    parser.add_argument("--rcfile",default=rcFile,
+                        help="rcFile (default=%s)"%rcFile)    
+
+    parser.add_argument("--pDT_hours", default=pDT_hours, type=int,
+                        help="Timestep in hours for each processing chunk (default=%i)"%pDT_hours)
 
     parser.add_argument('-s',"--slurm",default=slurm,
                         help="slurm script template (default=%s)"%slurm)           
