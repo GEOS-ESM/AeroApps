@@ -864,3 +864,51 @@ real(kind=8), intent(out) :: solar_zenith(n)
   end do
 
 end subroutine satAngles
+
+subroutine solarAngles(n,yr,mo,day,hr,min,sec,latp,lonp,tz, &
+                     solar_azimuth, solar_zenith )
+
+use LidarAngles
+
+implicit none
+
+!  Inputs
+
+integer(kind=4), intent(in) :: n        ! number of points
+integer(kind=4), intent(in) :: yr(n)    ! UTC year
+integer(kind=4), intent(in) :: mo(n)    ! UTC month
+integer(kind=4), intent(in) :: day(n)   ! UTC day
+integer(kind=4), intent(in) :: hr(n)    ! UTC hour
+integer(kind=4), intent(in) :: min(n)   ! UTC min
+real(kind=8),    intent(in) :: sec(n)   ! UTC second
+real(kind=8),    intent(in) :: lonp(n)  ! longitude of target in degrees (-180 to 180)
+real(kind=8),    intent(in) :: latp(n)  ! latitude of target in degrees (-90 to 90)
+real(kind=8),    intent(in) :: tz       ! local time zone (0.d0 = UTC, -8.d0 = PST)
+
+
+
+!  Outputs
+
+real(kind=8), intent(out) :: solar_azimuth(n)
+real(kind=8), intent(out) :: solar_zenith(n)
+
+!                ---
+
+  integer(kind=4) :: i
+
+  real(kind=8) :: azel(2), sza, saa
+
+  do i = 1, n
+
+     azel = solar_angles(yr(i),mo(i),day(i),hr(i),min(i),sec(i),tz,latp(i),lonp(i))
+     saa = azel(1)
+     sza = 90.d0 - azel(2)
+
+
+     solar_azimuth(i) = saa
+     solar_zenith(i)  = sza
+
+  end do
+
+end subroutine solarAngles
+
