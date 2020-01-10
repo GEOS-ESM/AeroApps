@@ -1,11 +1,6 @@
-# POLARIMETER SIMULATION
-    inDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%INSTNAME/LevelB/Y%year/M%month/D%day
-    inFile       = %instname-g5nr.lb2.%col.%nymd_%hour00z.nc4
-
-    instname     = gpm    
-    HGT          = 407
-    polarimeter_name = polar07
+# POLARIMETER 
+    instname        = polar07    
     cross_track_km  = 550
     cross_track_dkm = 0.5
     along_track_deg = -57:57:10
-# LIDAR SIMULATION
+# POLARIMETER
