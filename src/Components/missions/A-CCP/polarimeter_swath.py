@@ -620,8 +620,14 @@ if __name__ == "__main__":
     parser.add_argument("iso_t2",
                         help="ending iso time")
 
-    parser.add_argument("prep_config",
-                        help="prep config filename")
+    parser.add_argument("track_pcf",
+                        help="prep config file with track input file names")
+
+    parser.add_argument("orbit_pcf",
+                        help="prep config file with orbit variables")
+
+    parser.add_argument("inst_pcf",
+                        help="prep config file with instrument variables")
 
     parser.add_argument("-D","--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
@@ -636,12 +642,16 @@ if __name__ == "__main__":
 
     # Parse prep config
     # -----------------
-    cf             = Config(args.prep_config,delim=' = ')
+    cf             = Config(args.track_pcf,delim=' = ')
     inTemplate     = cf('inDir')     + '/' + cf('inFile')         
-    instname       = cf('instname')
-    INSTNAME       = instname.upper()
+
+    cf             = Config(args.orbit_pcf,delim=' = ')
+    orbitname      = cf('orbitname')
+    ORBITNAME      = orbitname.upper()
     HGT            = float(cf('HGT'))
-    polarimeter_name = cf('polarimeter_name')
+
+    cf             = Config(args.inst_pcf,delim=' = ')
+    instname       = cf('instname')
 
     try:
         cross_track_km = float(cf('cross_track_km'))
@@ -669,8 +679,8 @@ if __name__ == "__main__":
         day   = str(date.day).zfill(2)
         hour  = str(date.hour).zfill(2)    
 
-        inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
-        outFile    = inTemplate.replace('%col',polarimeter_name).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
+        inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+        outFile    = inTemplate.replace('%col',instname).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
         datem1 = date - Dt
         if datem1 < datetime(2006,01,01,00):
@@ -681,7 +691,7 @@ if __name__ == "__main__":
             month = str(datem1.month).zfill(2)
             day   = str(datem1.day).zfill(2)
             hour  = str(datem1.hour).zfill(2)    
-            inFilem1   = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
+            inFilem1   = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
         datep1 = date + Dt
         if datep1 >= datetime(2007,01,01,00):
@@ -692,7 +702,7 @@ if __name__ == "__main__":
             month = str(datep1.month).zfill(2)
             day   = str(datep1.day).zfill(2)
             hour  = str(datep1.hour).zfill(2)    
-            inFilep1   = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
+            inFilep1   = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
 
         # Initialize SWATH class and create outfile
