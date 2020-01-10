@@ -171,9 +171,6 @@ class WORKSPACE(JOBS):
         self.create_workdir()
         self.errTally    = np.ones(len(self.dirstring)).astype(bool)
 
-        # modify slurm scripts
-        self.edit_slurm()
-
 
     def create_workdir(self):
         sdate = self.Date
@@ -297,7 +294,7 @@ if __name__ == '__main__':
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir'
     rcFile   = 'Aod_EOS.rc'
     albedoType = None
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
     parser.add_argument("iso_t2",help='ending iso time')
