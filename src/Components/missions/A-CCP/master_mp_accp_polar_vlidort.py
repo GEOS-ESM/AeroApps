@@ -12,6 +12,7 @@ from   dateutil.parser import parse         as isoparser
 import argparse
 import numpy as np
 import time
+from   MAPL            import Config
 
 class JOBS(object):
     def handle_jobs(self):
@@ -130,23 +131,42 @@ class JOBS(object):
         return error
 
 class WORKSPACE(JOBS):
-    """ Create slurm scripts for running run_lidar_sampler.py """
+    """ Create slurm scripts for running mp_accp_polar_vlidort.py """
     def __init__(self,args):
 
         self.Date      = isoparser(args.iso_t1)
-        self.enddate    = isoparser(args.iso_t2)
-        self.Dt        = timedelta(hours=args.DT_hours)
+        self.enddate   = isoparser(args.iso_t2)
+        self.Dt        = timedelta(hours=args.dt_hours)
+
+        
+        self.track_pcf   = args.track_pcf
+        self.orbit_pcf   = args.orbit_pcf
+        self.inst_pcf    = args.inst_pcf
+        self.DT_hours    = args.DT_hours
+        self.albedoType  = args.albedotype
+        self.rcFile      = args.rcfile
+        self.dryrun      = args.dryrun
+        self.nproc       = args.nproc
+
+        self.slurm       = args.slurm
+        self.tmp         = args.tmp
+        self.profile     = args.profile
 
         if not os.path.exists(args.tmp):
             os.makedirs(args.tmp)
 
         self.cwd         = os.getcwd()
-        self.slurm       = args.slurm
-        self.prep_config = args.prep_config
-        self.tmp         = args.tmp
-        self.profile     = args.profile
-        self.nproc       = args.nproc
 
+        # figure out channels from instfile
+        cf = Config(args.inst_pcf,delim=' = ')
+        channels = cf('channels')
+        if ',' in channels:
+            channels = channels.split(',')    
+        else:
+            channels = [channels]    
+        self.channels = np.array(channels).astype(int)
+        self.nch = len(channels)
+        
         # create working directories
         self.create_workdir()
         self.errTally    = np.ones(len(self.dirstring)).astype(bool)
@@ -159,57 +179,87 @@ class WORKSPACE(JOBS):
         sdate = self.Date
         self.dirstring = []
         while sdate < self.enddate:
-            # create directory
+            for ch in self.channels:
+                # create directory
 
-            workpath = '{}/{}'.format(self.tmp,sdate.isoformat())
-            if os.path.exists(workpath):
-                shutil.rmtree(workpath)
+                workpath = '{}/{}.{}'.format(self.tmp,sdate.isoformat(),ch)
+                if os.path.exists(workpath):
+                    shutil.rmtree(workpath)
 
-            os.makedirs(workpath)
+                os.makedirs(workpath)
 
-            # copy over slurm scipt
-            outfile = '{}/{}'.format(workpath,self.slurm)
-            shutil.copyfile(self.slurm,outfile)
+                # copy over slurm scipt
+                outfile = '{}/{}'.format(workpath,self.slurm)
+                shutil.copyfile(self.slurm,outfile)
 
-            # copy over pcf file
-            outfile = '{}/{}'.format(workpath,self.prep_config)
-            shutil.copyfile(self.prep_config,outfile)
+                # copy over pcf files                
+                outfile = '{}/{}'.format(workpath,self.track_pcf)
+                shutil.copyfile(self.track_pcf,outfile)
 
-            #link over needed python scripts
-            source = ['lidar_sampler.py','run_lidar_sampler.py'] #,'sampling','tle']
-            for src in source:
-                os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
+                outfile = '{}/{}'.format(workpath,self.orbit_pcf)
+                shutil.copyfile(self.orbit_pcf,outfile)
 
-            self.dirstring.append(workpath)
+                outfile = '{}/{}'.format(workpath,self.inst_pcf)
+                shutil.copyfile(self.inst_pcf,outfile)
+
+                #link over needed python scripts
+                source = ['mp_run_accp_polar_vlidort.py','run_accp_polar_vlidort.py'] 
+                for src in source:
+                    os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
+
+                # Copy over rc and edit
+                outfile = '{}/{}'.format(workpath,self.rcFile)                
+
+                source = open(self.rcFile,'r')
+                destination = open(outfile,'w')
+                a = float(ch)*1e-3
+                for line in source:
+                    if (line[0:11] == 'r_channels:'):
+                        destination.write('r_channels: '+'{:0.3f}e-6'.format(a)+'\n')
+                    else:
+                        destination.write(line)
+                source.close()
+                destination.close()
+
+                # edit slurm
+                self.edit_slurm(sdate,workpath,ch)
+
+                self.dirstring.append(workpath)
             sdate += self.Dt
 
-    def edit_slurm(self):
-        sdate = self.Date
-        for workpath in self.dirstring:
-            edate = sdate + self.Dt
-            outpath = '{}/{}'.format(workpath,self.slurm)
+    def edit_slurm(self,sdate,workpath,channel):
+        edate = sdate + self.Dt
+        outpath = '{}/{}'.format(workpath,self.slurm)
 
-            # read file first
-            f = open(outpath)
+        # read file first
+        f = open(outpath)
 
-            text = []
-            for l in f:
-                text.append(l)
+        text = []
+        for l in f:
+            text.append(l)
 
-            # replace one line
-            iso1 = sdate.isoformat()
-            iso2 = edate.isoformat()
-            newline = 'python -u run_lidar_sampler.py -v --nproc {} --DT_hours {} {} {} {} >'.format(self.nproc,self.Dt.seconds/3600,iso1,iso2,self.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
-            text[-3] = newline
-            f.close()
+        # replace one line
+        iso1 = sdate.isoformat()
+        iso2 = edate.isoformat()
+        Options = ' -v' +\
+                  ' --nproc {}'.format(self.nproc) +\
+                  ' --DT_hours {}'.format(self.DT_hours) +\
+                  ' --rcfile {}'.format(self.rcFile) 
 
-            #  write out
-            f = open(outpath,'w')
-            for l in text:
-                f.write(l)
-            f.close()     
+        if self.albedoType is not None:
+            Options += ' --albedotype {}'.format(self.albedoType)
+        if self.dryrun:
+            Options += ' -r'
 
-            sdate += self.Dt   
+        newline = 'python -u mp_run_accp_polar_vlidort.py {} {} {} {} {} {} {} >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf,channel) + ' slurm_${SLURM_JOBID}_py.out\n'
+        text[-5] = newline
+        f.close()
+
+        #  write out
+        f = open(outpath,'w')
+        for l in text:
+            f.write(l)
+        f.close()             
 
     def destroy_workspace(self,i,jobid):
         os.chdir(self.dirstring[i])
