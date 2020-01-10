@@ -13,7 +13,7 @@ import argparse
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
 from   MAPL            import Config
-from   py_leo_vlidort.lidar_vlidort   import LIDAR_VLIDORT, get_chd
+from   accp_polar_vlidort   import ACCP_POLAR_VLIDORT, get_chd
 import numpy  as np
 
 #------------------------------------ M A I N ------------------------------------
@@ -22,7 +22,6 @@ if __name__ == "__main__":
 
     # Defaults
     DT_hours   = 1
-    instname   = 'lidar'
     rcFile     = 'Aod_EOS.rc'
     albedoType = None
 
@@ -40,6 +39,9 @@ if __name__ == "__main__":
 
     parser.add_argument("orbit_pcf",
                         help="prep config file with orbit variables")
+    
+    parser.add_argument("inst_pcf",
+                        help="prep config file with instrument variables")
 
     parser.add_argument("channel", type=int,
                         help="channel in nm")
@@ -47,8 +49,6 @@ if __name__ == "__main__":
     parser.add_argument("-a","--albedotype", default=albedoType,
                         help="albedo type keyword. default is to figure out according to channel")
 
-    parser.add_argument("-I","--instname", default=instname,
-                        help="Instrument name (default=%s)"%instname)
     parser.add_argument("--rcfile",default=rcFile,
                         help="rcFile (default=%s)"%rcFile)
 
@@ -64,7 +64,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     channel        = args.channel
     rcFile         = args.rcfile
-    instname       = args.instname
     albedoType     = args.albedotype
 
     # figure out albedoType keyword
@@ -76,10 +75,12 @@ if __name__ == "__main__":
 
     # Parse prep config
     # -----------------
+    cf             = Config(args.inst_pcf,delim=' = ')
+    instname       = cf('instname')
+
     cf             = Config(args.orbit_pcf,delim=' = ')
     orbitname      = cf('orbitname')
     ORBITNAME      = orbitname.upper()
-    HGT            = float(cf('HGT'))
 
     cf             = Config(args.track_pcf,delim=' = ')
     inTemplate     = cf('inDir')     + '/' + cf('inFile')         
@@ -102,20 +103,6 @@ if __name__ == "__main__":
     except:
         lerTemplate    = None
 
-
-    # Change wavelength number in Aod_EOS.rc
-    # ---------------------------------------
-    source = open(rcFile,'r')
-    destination = open(rcFile+'.'+str(channel)+'.tmp','w')
-    a = float(channel)*1e-3
-    for line in source:
-        if (line[0:11] == 'r_channels:'):
-            destination.write('r_channels: '+'{:0.3f}e-6'.format(a)+'\n')
-        else:
-            destination.write(line) 
-    source.close()
-    destination.close()
-    rcFile = rcFile+'.'+str(channel)+'.tmp'
 
     # Loop through dates, running VLIDORT
     # ------------------------------------
@@ -166,10 +153,10 @@ if __name__ == "__main__":
         print '>>>verbose:   ',args.verbose
         print '++++End of arguments+++'
         if not args.dryrun:
-            vlidort = LIDAR_VLIDORT(inFile,outFile,rcFile,
+            vlidort = ACCP_POLAR_VLIDORT(inFile,outFile,rcFile,
                                     albedoType,
                                     channel,
-                                    HGT,
+                                    instname,
                                     brdfFile=brdfFile,
                                     ndviFile=ndviFile,
                                     lcFile=lcFile,
@@ -183,5 +170,3 @@ if __name__ == "__main__":
         date += Dt
 
 
-    # clean up rcFile
-    os.remove(rcFile)
