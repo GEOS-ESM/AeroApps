@@ -695,7 +695,7 @@ if __name__ == "__main__":
             inFilep1   = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
 
 
-        # Initialize MERGE class and write new outfile
+        # Initialize SWATH class and create outfile
         # -----------------------------------------------------------
         print '++++Getting polarimeter swath with the following arguments+++'
         print '>>>inFile:    ',inFile
