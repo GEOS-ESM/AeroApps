@@ -94,6 +94,11 @@ class SWATH(object):
 
         # Calculate Calculate Full Pixel Locations and view angles
         self.granulePixels()
+        self.granuleSolarAngles()
+        istart = self.Istyme 
+        iend   = self.Istyme + self.ntyme
+        self.scatAngle_granule = self.getScatAngle(self.sza_granule,self.saa_granule,self.vza_granule[istart:iend,:,:],self.vaa_granule[istart:iend,:,:])
+
 
         # figure out when satellite pixels overlap with each satellite sub-point
         self.subpointView()
@@ -176,7 +181,7 @@ class SWATH(object):
         this.long_name = 'VAA when polarimeter views satellite subpoint'
         this.units = 'degrees, clockwise from north 0-360'
 
-        this = nc.createVariable('scatAngle','f4',dim)
+        this = nc.createVariable('scatAngle_ss','f4',dim)
         this[:] = self.scatAngle
         this.long_name = 'scattering angle when polarimeter view satellite subpoint'
         this.units = 'degrees, 0 = forward scattering'
@@ -205,18 +210,36 @@ class SWATH(object):
         this.long_name = 'view azimuth angle'
         this.units = 'degrees, clockwise from north 0-360'
 
+        this = nc.createVariable('sza','f4',dim)
+        this[:] = self.sza_granule
+        this.long_name = 'solar zenith angle'
+        this.units = 'degrees'
+
+        this = nc.createVariable('saa','f4',dim)
+        this[:] = self.saa_granule
+        this.long_name = 'solar azimuth angle'
+        this.units = 'degrees, clockwise from north 0-360'
+
+        this = nc.createVariable('scatAngle','f4',dim)
+        this[:] = self.scatAngle_granule
+        this.long_name = 'scattering angle'
+        this.units = 'degrees, 0 = forward scattering'        
+
         nc.close()
 
 
 
-    def getScatAngle(self,sza,saa,vza,vaa):
+    def getScatAngle(self,sza,SAA,vza,VAA):
         """
         The angle between the sun, the pixel and sensor.  A value of
         180.0 would imply pure backscatter.  A value of zero would
         imply pure forward scatter (not seen in satellite remote sensing).
         Values less than 90 imply forward scattering.
         Range is 0 to 180.0 
-       """       
+        """       
+        # do this so you don't change original values
+        saa = SAA.copy()
+        vaa = VAA.copy()
         if np.any(vaa > 180):
             I = vaa > 180
             vaa[I] = vaa[I] - 360.0
@@ -265,14 +288,14 @@ class SWATH(object):
                 vaa[ityme,ialong] = self.vaa_granule[:,ialong,:][self.Itymeview[ityme,ialong],self.Icrossview[ityme,ialong]]
                 time[ityme,ialong] = dtyme[ityme].total_seconds()
 
-        scatAngle = self.getScatAngle(sza,saa,vza,vaa)
-
         self.sza = np.ma.array(sza)
         self.saa = np.ma.array(saa)
         self.vza = np.ma.array(vza)
         self.vaa = np.ma.array(vaa)
-        self.scatAngle = np.ma.array(scatAngle)
         self.time = np.ma.array(time)
+
+        scatAngle = self.getScatAngle(sza,saa,vza,vaa)
+        self.scatAngle = np.ma.array(scatAngle)
         
         mask = np.zeros(self.sza.shape).astype(bool)
         if self.inFilem1 is None:
@@ -292,15 +315,14 @@ class SWATH(object):
         # get index of closest lon and lat to lon0, lat0
 
         # use haversine formula for distance
-        dphi = np.radians(lat - lat0)
-        dlam = np.radians(lon - lon0) 
-        phi0 = np.radians(lat0)
-        phi  = np.radians(lat)
+        phi0, phi, lam0, lam = map(np.radians,[lat0,lat,lon0,lon])
+        dphi = phi - phi0
+        dlam = lam - lam0
 
-        a = np.sin(dphi*0.5)*np.sin(dphi*0.5) + np.cos(phi0)*np.cos(phi)*np.sin(dlam*0.5)*np.sin(dlam*0.5)
+        a = np.sin(dphi*0.5)**2 + np.cos(phi0)*np.cos(phi)*np.sin(dlam*0.5)**2
         if np.any(a > 1.0):
             a[a> 1.0] = 1.0
-        c = 2.0*np.arctan2(np.sqrt(a),np.sqrt(1-a))
+        c = 2.0*np.arcsin(np.sqrt(a))
         distance = self.Re*c
 
         imin = np.argmin(distance)
@@ -315,18 +337,24 @@ class SWATH(object):
         self.Itymeview    = np.zeros([self.ntyme,self.nalong]).astype(int)
         self.Icrossview    = np.zeros([self.ntyme,self.nalong]).astype(int)
         for ityme in range(self.ntyme):
+            # print 'ityme',ityme,self.ntyme
             lon = self.LONGITUDE[ityme+self.Istyme]
             lat = self.LATITUDE[ityme+self.Istyme]
+            # pick a window to search around to speed things up
+            styme = np.max([ityme+self.Istyme-200,0])
+            etyme = np.min([ityme+self.Istyme+200,self.ntymeTotal])
             for ialong in range(self.nalong):
-                imin = self.min_distance(lon,lat,self.lon_granule[:,ialong,:],self.lat_granule[:,ialong,:])
+                imin = self.min_distance(lon,lat,self.lon_granule[styme:etyme,ialong,:],self.lat_granule[styme:etyme,ialong,:])
 
                 itymemin, icrossmin = np.unravel_index(imin,(self.ntymeTotal,self.ncross))
+                itymemin = itymemin + styme
+
 
                 self.Itymeview[ityme,ialong] = itymemin
                 self.Icrossview[ityme,ialong] = icrossmin
     # --
     def pixel_loc(self,lon0,lat0,vza,vaa):
-        # givent satellite sub-poin and viewing direction, get pixel lat/lon
+        # givent satellite sub-point and viewing direction, get pixel lat/lon
         lon0, lat0 = np.radians(lon0),np.radians(lat0)
         slat0 = np.sin(lat0)
         clat0 = np.cos(lat0)
@@ -433,6 +461,32 @@ class SWATH(object):
 
                 self.lon_granule[:,ialong,icross] = lon
                 self.lat_granule[:,ialong,icross] = lat
+
+    # --
+    def granuleSolarAngles(self):
+        """
+        use fortran code to get solar angles for granule
+        """
+        istart = self.Istyme 
+        iend   = self.Istyme + self.ntyme
+
+        self.sza_granule = np.zeros([self.ntyme,self.nalong,self.ncross])
+        self.saa_granule = np.zeros([self.ntyme,self.nalong,self.ncross])
+
+        for i,tyme in enumerate(self.tyme[istart:iend]):
+            ityme = i + istart
+            for ialong in range(self.nalong):
+                for icross in range(self.ncross):
+                    CLAT = self.lat_granule[ityme,ialong,icross]
+                    CLON = self.lon_granule[ityme,ialong,icross]
+            
+                    solar_angles = LidarAngles_.solarangles(tyme.year,tyme.month,tyme.day,
+                                                tyme.hour,tyme.minute,tyme.second,
+                                                CLAT,CLON,
+                                                0.0)
+
+                    self.sza_granule[i,ialong,icross] = solar_angles[1][0]
+                    self.saa_granule[i,ialong,icross] = solar_angles[0][0]
 
 
     # --
