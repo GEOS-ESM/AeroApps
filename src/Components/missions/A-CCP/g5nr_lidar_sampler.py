@@ -225,7 +225,7 @@ class WORKSPACE(JOBS):
             os.remove(outfile)     
 
             os.remove(self.slurm)
-            os.remove('lidar_sampler.pcf')
+            os.remove(self.prep_config)
 
         # remove symlinks
         source = ['lidar_sampler.py','run_lidar_sampler.py'] #'sampling','tle']
