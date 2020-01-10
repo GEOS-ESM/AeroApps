@@ -17,8 +17,8 @@ from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 
 from MAPL.constants import *
-from vlidort import VLIDORT, get_chd, WrapperFuncs
-from copyvar  import _copyVar
+from py_leo_vlidort.vlidort import VLIDORT, get_chd, WrapperFuncs
+from py_leo_vlidort.copyvar  import _copyVar
 from   MAPL  import config
 
 # Generic Lists of Varnames and Units

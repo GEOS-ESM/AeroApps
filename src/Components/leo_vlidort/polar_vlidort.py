@@ -22,7 +22,7 @@ from MAPL.constants import *
 import LidarAngles_    
 import VLIDORT_POLAR_ 
 from py_leo_vlidort.vlidort import VLIDORT, WrapperFuncs, get_chd
-from copyvar  import _copyVar
+from py_leo_vlidort.copyvar  import _copyVar
 from scipy import interpolate
 from   MAPL  import config
 

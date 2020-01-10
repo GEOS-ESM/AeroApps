@@ -16,7 +16,7 @@ import numpy  as np
 from netCDF4 import Dataset
 import LidarAngles_   
 from mpl_toolkits.basemap import Basemap
-from   copyvar  import _copyVar
+from   py_leo_vlidort.copyvar  import _copyVar
 
 # Generic Lists of Varnames and Units
 SDS_AER    = ['LONGITUDE','LATITUDE','isotime']

@@ -15,7 +15,7 @@ from   MAPL            import Config
 from   lidar_vlidort   import get_chd
 import numpy  as np
 from   netCDF4 import Dataset
-from   copyvar  import _copyVar
+from   py_leo_vlidort.copyvar  import _copyVar
 
 
 META = ['longitude','latitude','isotime']
