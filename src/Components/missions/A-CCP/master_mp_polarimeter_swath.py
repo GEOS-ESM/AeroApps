@@ -218,7 +218,7 @@ class WORKSPACE(JOBS):
         if self.dryrun:
             Options += ' -r'
 
-        newline = 'python -u mp_polarimeter_swath.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
+        newline = 'python -u ./mp_polarimeter_swath.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
         text[-1] = newline
         f.close()
 
@@ -263,7 +263,7 @@ if __name__ == '__main__':
     pDT_hours = 1
     nproc    = 12
     slurm    = 'mp_polarimeter_swath.j'
-    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdiri/swath'
+    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir/swath'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
