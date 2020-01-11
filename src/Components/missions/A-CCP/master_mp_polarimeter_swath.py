@@ -186,7 +186,7 @@ class WORKSPACE(JOBS):
             shutil.copyfile(self.inst_pcf,outfile)
 
             #link over needed python scripts
-            source = ['polarimeter_swath.py'] 
+            source = ['polarimeter_swath.py','mp_polarimeter_swath.py'] 
             for src in source:
                 os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
@@ -218,7 +218,7 @@ class WORKSPACE(JOBS):
         if self.dryrun:
             Options += ' -r'
 
-        newline = 'python -u run_polarimeter_swath.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
+        newline = 'python -u mp_polarimeter_swath.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
         text[-1] = newline
         f.close()
 
@@ -247,7 +247,7 @@ class WORKSPACE(JOBS):
             os.remove(self.inst_pcf)
 
         # remove symlinks
-        source = ['run_polarimeter_swath.py'] 
+        source = ['mp_polarimeter_swath.py','polarimeter_swath.py'] 
         for src in source:
             os.remove(src)
 
@@ -262,7 +262,7 @@ if __name__ == '__main__':
     DT_hours = 1
     pDT_hours = 1
     nproc    = 12
-    slurm    = 'run_polarimeter_swath.j'
+    slurm    = 'mp_polarimeter_swath.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdiri/swath'
 
     parser = argparse.ArgumentParser()

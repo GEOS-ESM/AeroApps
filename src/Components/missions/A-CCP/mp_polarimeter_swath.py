@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-    Wrapper for accp_polar_vlidort.py
+    Wrapper for polarimeter_swath.py
     Uses subprocess to run more than one instance
 
     Patricia Castellanos, Jan 2020
@@ -15,8 +15,6 @@ import argparse
 import time
 from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
-from MAPL            import Config
-from netCDF4         import Dataset
 import numpy         as np
 
 #------------------------------------ M A I N ------------------------------------
@@ -57,8 +55,6 @@ if __name__ == "__main__":
     # Defaults
     DT_hours = 1
     nproc    = 8
-    rcFile   = 'Aod_EOS.rc'
-    albedoType = None
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",
@@ -74,15 +70,6 @@ if __name__ == "__main__":
 
     parser.add_argument("inst_pcf",
                         help="prep config file with instrument variables")
-
-    parser.add_argument("channel", type=int,
-                        help="channel in nm")
-
-    parser.add_argument("-a","--albedotype", default=albedoType,
-                        help="albedo type keyword. default is to figure out according to channel")
-
-    parser.add_argument("--rcfile",default=rcFile,
-                        help="rcFile (default=%s)"%rcFile)
 
     parser.add_argument("-D","--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
@@ -100,10 +87,6 @@ if __name__ == "__main__":
     track_pcf      = args.track_pcf
     orbit_pcf      = args.orbit_pcf
     inst_pcf       = args.inst_pcf
-    channel        = args.channel
-    rcFile         = args.rcfile
-    albedoType     = args.albedotype
-
 
     Date = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
@@ -112,7 +95,7 @@ if __name__ == "__main__":
     DT    = int(DT.total_seconds()/(60*60))
     datelist = [Date + p*pdt for p in range(DT)]
 
-    # run vlidort 
+    # run swath calculator 
     # split across multiple processors by date
     lendate  = len(datelist)
 
@@ -121,8 +104,7 @@ if __name__ == "__main__":
     for date in datelist:
         edate = date + pdt 
 
-        Options =     " --rcfile=" + rcFile      + \
-                      " --DT_hours=" + str(args.DT_hours)
+        Options =     " --DT_hours=" + str(args.DT_hours)
 
         if args.verbose:
             Options += " --verbose" 
@@ -130,14 +112,11 @@ if __name__ == "__main__":
         if args.dryrun:
             Options += " --dryrun"
 
-        if albedoType is not None:
-            Options += " --albedotype=" + albedoType
-
-        cmd = './run_accp_polar_vlidort.py {} {} {} {} {} {} {}'.format(Options,date.isoformat(),edate.isoformat(),track_pcf,orbit_pcf,inst_pcf,channel)
+        cmd = './polarimter_swath.py {} {} {} {} {} {} '.format(Options,date.isoformat(),edate.isoformat(),track_pcf,orbit_pcf,inst_pcf)
         cmds.append(cmd)
 
     # Manage processes
-    # This will start the max processes running    
+    # This will start the max processes running   
     processes, nextdate = CheckRunning(processes,cmds,0,lendate,args)
     while len(processes)>0: # Some things still going on
         time.sleep(10)      # Wait
