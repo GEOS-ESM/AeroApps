@@ -44,4 +44,3 @@ cd $BIN
 ######
 ##################################################################
 python -u run_accp_polarimeter_swath.py -v --DT_hours 1 2006-01-01T00:00 2006-01-02T00:00 lidar_files.pcf gpm.pcf polar07.pcf  > slurm_${SLURM_JOBID}_py.out &
-

@@ -142,8 +142,6 @@ class WORKSPACE(JOBS):
         self.orbit_pcf   = args.orbit_pcf
         self.inst_pcf    = args.inst_pcf
         self.DT_hours    = args.DT_hours
-        self.albedoType  = args.albedotype
-        self.rcFile      = args.rcfile
         self.dryrun      = args.dryrun
         self.nproc       = args.nproc
 
@@ -156,16 +154,6 @@ class WORKSPACE(JOBS):
 
         self.cwd         = os.getcwd()
 
-        # figure out channels from instfile
-        cf = Config(args.inst_pcf,delim=' = ')
-        channels = cf('channels')
-        if ',' in channels:
-            channels = channels.split(',')    
-        else:
-            channels = [channels]    
-        self.channels = np.array(channels).astype(int)
-        self.nch = len(channels)
-        
         # create working directories
         self.create_workdir()
         self.errTally    = np.ones(len(self.dirstring)).astype(bool)
@@ -175,55 +163,41 @@ class WORKSPACE(JOBS):
         sdate = self.Date
         self.dirstring = []
         while sdate < self.enddate:
-            for ch in self.channels:
-                # create directory
+            # create directory
 
-                workpath = '{}/{}.{}'.format(self.tmp,sdate.isoformat(),ch)
-                if os.path.exists(workpath):
-                    shutil.rmtree(workpath)
+            workpath = '{}/{}'.format(self.tmp,sdate.isoformat())
+            if os.path.exists(workpath):
+                shutil.rmtree(workpath)
 
-                os.makedirs(workpath)
+            os.makedirs(workpath)
 
-                # copy over slurm scipt
-                outfile = '{}/{}'.format(workpath,self.slurm)
-                shutil.copyfile(self.slurm,outfile)
+            # copy over slurm scipt
+            outfile = '{}/{}'.format(workpath,self.slurm)
+            shutil.copyfile(self.slurm,outfile)
 
-                # copy over pcf files                
-                outfile = '{}/{}'.format(workpath,self.track_pcf)
-                shutil.copyfile(self.track_pcf,outfile)
+            # copy over pcf files                
+            outfile = '{}/{}'.format(workpath,self.track_pcf)
+            shutil.copyfile(self.track_pcf,outfile)
 
-                outfile = '{}/{}'.format(workpath,self.orbit_pcf)
-                shutil.copyfile(self.orbit_pcf,outfile)
+            outfile = '{}/{}'.format(workpath,self.orbit_pcf)
+            shutil.copyfile(self.orbit_pcf,outfile)
 
-                outfile = '{}/{}'.format(workpath,self.inst_pcf)
-                shutil.copyfile(self.inst_pcf,outfile)
+            outfile = '{}/{}'.format(workpath,self.inst_pcf)
+            shutil.copyfile(self.inst_pcf,outfile)
 
-                #link over needed python scripts
-                source = ['mp_run_accp_polar_vlidort.py','run_accp_polar_vlidort.py'] 
-                for src in source:
-                    os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
+            #link over needed python scripts
+            source = ['polarimeter_swath.py'] 
+            for src in source:
+                os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
-                # Copy over rc and edit
-                outfile = '{}/{}'.format(workpath,self.rcFile)                
+            # edit slurm
+            self.edit_slurm(sdate,workpath)
 
-                source = open(self.rcFile,'r')
-                destination = open(outfile,'w')
-                a = float(ch)*1e-3
-                for line in source:
-                    if (line[0:11] == 'r_channels:'):
-                        destination.write('r_channels: '+'{:0.3f}e-6'.format(a)+'\n')
-                    else:
-                        destination.write(line)
-                source.close()
-                destination.close()
-
-                # edit slurm
-                self.edit_slurm(sdate,workpath,ch)
-
-                self.dirstring.append(workpath)
+            self.dirstring.append(workpath)
+            
             sdate += self.Dt
 
-    def edit_slurm(self,sdate,workpath,channel):
+    def edit_slurm(self,sdate,workpath):
         edate = sdate + self.Dt
         outpath = '{}/{}'.format(workpath,self.slurm)
 
@@ -239,16 +213,13 @@ class WORKSPACE(JOBS):
         iso2 = edate.isoformat()
         Options = ' -v' +\
                   ' --nproc {}'.format(self.nproc) +\
-                  ' --DT_hours {}'.format(self.DT_hours) +\
-                  ' --rcfile {}'.format(self.rcFile) 
+                  ' --DT_hours {}'.format(self.DT_hours) 
 
-        if self.albedoType is not None:
-            Options += ' --albedotype {}'.format(self.albedoType)
         if self.dryrun:
             Options += ' -r'
 
-        newline = 'python -u mp_run_accp_polar_vlidort.py {} {} {} {} {} {} {} >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf,channel) + ' slurm_${SLURM_JOBID}_py.out\n'
-        text[-5] = newline
+        newline = 'python -u run_polarimeter_swath.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
+        text[-1] = newline
         f.close()
 
         #  write out
@@ -271,10 +242,12 @@ class WORKSPACE(JOBS):
             os.remove(outfile)     
 
             os.remove(self.slurm)
-            os.remove(self.prep_config)
+            os.remove(self.track_pcf)
+            os.remove(self.orbit_pcf)
+            os.remove(self.inst_pcf)
 
         # remove symlinks
-        source = ['lidar_sampler.py','run_lidar_sampler.py'] #'sampling','tle']
+        source = ['run_polarimeter_swath.py'] 
         for src in source:
             os.remove(src)
 
@@ -288,11 +261,9 @@ if __name__ == '__main__':
     #Defaults
     DT_hours = 1
     pDT_hours = 1
-    nproc    = 8
-    slurm    = 'run_accp_polar_vlidort.j'
-    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir'
-    rcFile   = 'Aod_EOS.rc'
-    albedoType = None
+    nproc    = 12
+    slurm    = 'run_polarimeter_swath.j'
+    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdiri/swath'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
@@ -308,12 +279,6 @@ if __name__ == '__main__':
 
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
-
-    parser.add_argument("-a","--albedotype", default=albedoType,
-                        help="albedo type keyword. default is to figure out according to channel")
-
-    parser.add_argument("--rcfile",default=rcFile,
-                        help="rcFile (default=%s)"%rcFile)    
 
     parser.add_argument("--pDT_hours", default=pDT_hours, type=int,
                         help="Timestep in hours for each processing chunk (default=%i)"%pDT_hours)
