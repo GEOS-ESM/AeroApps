@@ -112,7 +112,7 @@ if __name__ == "__main__":
         if args.dryrun:
             Options += " --dryrun"
 
-        cmd = './polarimter_swath.py {} {} {} {} {} {} '.format(Options,date.isoformat(),edate.isoformat(),track_pcf,orbit_pcf,inst_pcf)
+        cmd = './polarimeter_swath.py {} {} {} {} {} {} '.format(Options,date.isoformat(),edate.isoformat(),track_pcf,orbit_pcf,inst_pcf)
         cmds.append(cmd)
 
     # Manage processes
