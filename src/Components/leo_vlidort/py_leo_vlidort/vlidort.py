@@ -511,8 +511,8 @@ class VLIDORT(object):
         I, reflectance, Q, U, rc = vlidortWrapper(*args)  
         surf_reflectance = albedo            
 
-        BR_Q = None
-        BR_U = None
+        BR_Q = 0.
+        BR_U = 0.
         return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U
     #---
     def CX_run(self,vlidortWrapper,ROT,depol_ratio,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood):
