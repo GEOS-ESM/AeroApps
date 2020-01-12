@@ -254,7 +254,8 @@ class VLIDORT(object):
         nc = Dataset(self.brdfFile)
 
         for sds in mSDS:
-            self.__dict__[sds] = nc.variables[sds][:]
+            # cast from masked array
+            self.__dict__[sds] = np.array(nc.variables[sds][:])
 
         missing_value = nc.variables[sds].missing_value
         nc.close()
