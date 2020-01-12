@@ -303,12 +303,12 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
                         BR_Q.append(BR_Q_r)
                         BR_U.append(BR_U_r)
                     surf_reflectance = albedo
+                    BR_Q = np.ones(nobs)*MISSING
+                    BR_U = np.ones(nobs)*MISSING
                     I = np.concatenate(I)
                     Q = np.concatenate(Q)
                     U = np.concatenate(U)
                     reflectance = np.concatenate(reflectance)
-                    BR_Q = np.concatenate(BR_Q)
-                    BR_U = np.concatentate(BR_U)
                 elif albedoType == 'CX':
                     args = [(self.channel, self.nstreams, self.plane_parallel, ROT[:,i:i+1,:], depol_ratio,
                             tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
