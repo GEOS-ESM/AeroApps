@@ -300,11 +300,9 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
                         Q.append(Q_r)
                         U.append(U_r)
                         reflectance.append(reflectance_r)
-                        BR_Q.append(BR_Q_r)
-                        BR_U.append(BR_U_r)
                     surf_reflectance = albedo
-                    BR_Q = np.ones(nobs)*MISSING
-                    BR_U = np.ones(nobs)*MISSING
+                    BR_Q = np.zeros(nobs)
+                    BR_U = np.zeros(nobs)
                     I = np.concatenate(I)
                     Q = np.concatenate(Q)
                     U = np.concatenate(U)
