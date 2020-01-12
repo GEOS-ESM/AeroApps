@@ -3,8 +3,8 @@
 #######################################################################
 #                     Batch Parameters for Run Job
 #######################################################################
-#SBATCH --time=01:00:00
-#SBATCH --ntasks=8 --cpus-per-task=1 --ntasks-per-node=8
+#SBATCH --time=02:00:00
+#SBATCH --ntasks=28 --cpus-per-task=1 --ntasks-per-node=28
 #SBATCH --job-name=accp_vlidort
 #SBATCH -A s1180
 #SBATCH --qos=pace
@@ -53,7 +53,7 @@ cd $BIN
 ######         Do Sampling
 ######
 ##################################################################
-python -u mp_run_accp_polar_vlidort.py -v --DT_hours 1 2006-01-01T00:00 2006-01-02T00:00 lidar_files.pcf gpm.pcf polar07.pcf 550 > slurm_${SLURM_JOBID}_py.out &
+python -u ./run_accp_polar_vlidort.py -v --DT_hours 1 2006-01-01T00:00 2006-01-02T00:00 lidar_files.pcf gpm.pcf polar07.pcf 550 > slurm_${SLURM_JOBID}_py.out &
 
 rm ExtData
 rm ExtDataOsku
