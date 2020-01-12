@@ -17,9 +17,10 @@ from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 
 from MAPL.constants import *
-from py_leo_vlidort.vlidort import VLIDORT, get_chd, WrapperFuncs
+from py_leo_vlidort.vlidort import VLIDORT, get_chd, WrapperFuncs, CX_run, LAMBERTIAN_run, MODIS_BRDF_run
 from py_leo_vlidort.copyvar  import _copyVar
 from   MAPL  import config
+from multiprocessing import Pool
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
@@ -214,10 +215,12 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         self.ROT = np.squeeze(ROT).T 
         self.depol_ratio = depol_ratio          
 
+        p = Pool(27)
         # loop though LAND and SEA
         for surface in surfList:
 
             iGood = self.__dict__['i'+surface]
+            nobs = len(iGood)
             tau = self.tau[:,:,iGood]
             ssa = self.ssa[:,:,iGood]
             pmom = self.pmom[:,:,iGood,:,:]
@@ -232,18 +235,105 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
             else:
                 albedoType = 'CX'
 
-            # Get VLIDORT wrapper name from dictionary
-            vlidortWrapper = WrapperFuncs[albedoType]
+            # Get surface data
+            if albedoType == 'MODIS_BRDF':
+                param     = self.RTLSparam[:,:,iGood]
+                kernel_wt = self.kernel_wt[:,:,iGood]
+            elif albedoType == 'LAMBERTIAN':
+                albedo = self.albedo[iGood,:]
+            elif albedoType == 'CX':
+                u10m = self.U10M[iGood]
+                v10m = self.V10M[iGood]
 
             # loop through view angles
             for ivza in range(nangles):
+                print 'ivza ',ivza, ' of ',nangles
                 vza = self.VZA[iGood,ivza]
                 sza = self.SZA[iGood,ivza]
                 raa = self.RAA[iGood,ivza]
+                
+                I = []
+                Q = []
+                U = []
+                reflectance = []
+                surf_reflectance = []
+                BR_Q = []
+                BR_U = []
+                if albedoType == 'MODIS_BRDF':
+                    args = [(self.channel, self.nstreams, self.plane_parallel, ROT[:,i:i+1,:], depol_ratio, 
+                            tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
+                            pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
+                            kernel_wt[:,:,i:i+1], param[:,:,i:i+1],
+                            sza[i:i+1], raa[i:i+1], vza[i:i+1],
+                            MISSING,
+                            self.verbose) for i in range(nobs)]
+                    result = p.map(MODIS_BRDF_run,args)
+                    for r in result:
+                        I_r,Q_r,U_r,reflectance_r,surf_reflectance_r,BR_Q_r,BR_U_r = r
+                        I.append(I_r)
+                        Q.append(Q_r)
+                        U.append(U_r)
+                        reflectance.append(reflectance_r)
+                        surf_reflectance.append(surf_reflectance_r)
+                        BR_Q.append(BR_Q_r)
+                        BR_U.append(BR_U_r)
+                    I = np.concatenate(I)
+                    Q = np.concatenate(Q)
+                    U = np.concatenate(U)
+                    reflectance = np.concatenate(reflectance)
+                    surf_reflectance = np.concatenate(surf_reflectance)
+                    BR_Q = np.concatenate(BR_Q)
+                    BR_U = np.concatenate(BR_U)
+                elif albedoType == 'LAMBERTIAN':
+                    args = [(self.channel, self.nstreams, self.plane_parallel, ROT[:,i:i+1,:], depol_ratio,
+                            tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
+                            pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
+                            albedo[i:i+1,:],
+                            sza[i:i+1], raa[i:i+1], vza[i:i+1],
+                            MISSING,
+                            self.verbose) for i in range(nobs)] 
+                    result = p.map(LAMBERTIAN_run,args)
+                    for r in result:
+                        I_r,Q_r,U_r,reflectance_r,surf_reflectance_r,BR_Q_r,BR_U_r = r
+                        I.append(I_r)
+                        Q.append(Q_r)
+                        U.append(U_r)
+                        reflectance.append(reflectance_r)
+                        BR_Q.append(BR_Q_r)
+                        BR_U.append(BR_U_r)
+                    surf_reflectance = albedo
+                    I = np.concatenate(I)
+                    Q = np.concatenate(Q)
+                    U = np.concatenate(U)
+                    reflectance = np.concatenate(reflectance)
+                    BR_Q = np.concatenate(BR_Q)
+                    BR_U = np.concatentate(BR_U)
+                elif albedoType == 'CX':
+                    args = [(self.channel, self.nstreams, self.plane_parallel, ROT[:,i:i+1,:], depol_ratio,
+                            tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
+                            pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
+                            u10m[i:i+1], v10m[i:i+1], self.mr,
+                            sza[i:i+1], raa[i:i+1], vza[i:i+1],
+                            MISSING,
+                            self.verbose) for i in range(nobs)]
+                    result = p.map(CX_run,args)
+                    for r in result:
+                        I_r,Q_r,U_r,reflectance_r,surf_reflectance_r,BR_Q_r,BR_U_r = r
+                        I.append(I_r)
+                        Q.append(Q_r)
+                        U.append(U_r)
+                        reflectance.append(reflectance_r)
+                        surf_reflectance.append(surf_reflectance_r)
+                        BR_Q.append(BR_Q_r)
+                        BR_U.append(BR_U_r)
+                    I = np.concatenate(I)
+                    Q = np.concatenate(Q)
+                    U = np.concatenate(U)
+                    reflectance = np.concatenate(reflectance)
+                    surf_reflectance = np.concatenate(surf_reflectance)
+                    BR_Q = np.concatenate(BR_Q)
+                    BR_U = np.concatenate(BR_U)
 
-                runFunction = self.__getattribute__(albedoType+'_run')
-                I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U = runFunction(vlidortWrapper,rot,depol_ratio,tau,ssa,pmom,pe,ze,te,sza,raa,vza,iGood)
-                                                    
                 self.I[iGood,ivza] = np.squeeze(I)
                 self.reflectance[iGood,ivza] = np.squeeze(reflectance)
                 self.surf_reflectance[iGood,ivza] = np.squeeze(surf_reflectance)
