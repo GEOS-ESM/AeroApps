@@ -26,6 +26,32 @@ WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_POLAR_.vector_brdf_modis,
                 'CX'             : VLIDORT_POLAR_.vector_cx,
                 'ROT_CALC'       : VLIDORT_POLAR_.rot_calc}              
 
+#---
+def CX_run(args):
+       
+    # Call VLIDORT wrapper function
+    I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = VLIDORT_POLAR_.vector_cx(*args)
+
+    return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U
+
+#---
+def LAMBERTIAN_run(args):
+
+    # Call VLIDORT wrapper function
+    I, reflectance, Q, U, rc = VLIDORT_POLAR_.vector_lambert(*args)
+
+    surf_reflectance = None
+    BR_Q = None
+    BR_U = None
+    return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U
+#---
+def MODIS_BRDF_run(args):
+
+    # Call VLIDORT wrapper function
+    I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = VLIDORT_POLAR_.vector_brdf_modis(*args)
+
+    return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U
+
 class VLIDORT(object):
     """ 
     Utilities for setting up input data 
