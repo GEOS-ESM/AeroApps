@@ -10,11 +10,12 @@
 
 """
 import os
+import argparse
+from   datetime        import datetime, timedelta
+from   dateutil.parser import parse         as isoparser
+from   MAPL            import Config
 from   netCDF4 import Dataset
 import numpy   as np
-
-from datetime        import datetime, timedelta
-from dateutil.parser import parse         as isoparser
 
 from MAPL.constants import *
 from py_leo_vlidort.vlidort import VLIDORT, get_chd, WrapperFuncs, CX_run, LAMBERTIAN_run, MODIS_BRDF_run
@@ -218,7 +219,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         p = Pool(27)
         # loop though LAND and SEA
         for surface in surfList:
-
+            print 'Working on ',surface
             iGood = self.__dict__['i'+surface]
             nobs = len(iGood)
             tau = self.tau[:,:,iGood]
@@ -487,44 +488,153 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
 #------------------------------------ M A I N ------------------------------------
 
 if __name__ == "__main__":
-    date     = datetime(2006,01,01,01)
-    nymd     = str(date.date()).replace('-','')
-    hour     = str(date.hour).zfill(2)
-    format   = 'NETCDF4_CLASSIC'
 
-    rootDir  = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/'
+    # Defaults
+    DT_hours   = 1
+    rcFile     = 'Aod_EOS.rc'
+    albedoType = None
 
-    inDir        = '{}/LevelB/Y{}/M{}/D{}'.format(rootDir,date.year,str(date.month).zfill(2),str(date.day).zfill(2))
-    inFile       = '{}/gpm-g5nr.lb2.%col.{}_{}00z.nc4'.format(inDir,nymd,hour)
-    brdfDir      = '{}/LevelB/surface/BRDF/MCD43C1/006/Y{}/M{}/D{}'.format(rootDir,date.year,str(date.month).zfill(2),str(date.day).zfill(2))
-    brdfFile     = '{}/gpm-g5nr.lb2.brdf.{}_{}00z.nc4'.format(brdfDir,nymd,hour)
-    ndviDir      = '{}/LevelB/surface/BPDF/NDVI/MYD13C2/006/Y{}/M{}'.format(rootDir,date.year,str(date.month).zfill(2))
-    ndviFile     = '{}/calipso-g5nr.lb2.ndvi.{}_{}z.nc4'.format(ndviDir,nymd,hour)
-    lcDir        = '{}/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051/Y{}/M{}'.format(rootDir,date.year,str(date.month).zfill(2))
-    lcFile       = '{}/calipso-g5nr.lb2.land_cover.{}_{}z.nc4'.format(lcDir,nymd,hour)    
-    albedoType   = 'MODIS_BRDF'
-    polarname    = 'polar07'
+#   Parse command line options
+#   --------------------------
 
-    channel   = 550
-    chd       = get_chd(channel)
-    outDir    = '{}/LevelC/Y{}/M{}/D{}'.format(rootDir,date.year,str(date.month).zfill(2),str(date.day).zfill(2))
-    outFile   = '{}/gpm-{}-g5nr.lc.vlidort.{}_{}00z_{}nm.nc4'.format(outDir,polarname,nymd,hour,chd)
-    
-    rcFile   = 'Aod_EOS.rc'
-    verbose  = True
+    parser = argparse.ArgumentParser()
+    parser.add_argument("iso_t1",
+                        help="starting iso time")
+    parser.add_argument("iso_t2",
+                        help="ending iso time")
 
-    # Initialize VLIDORT class getting aerosol optical properties
-    # -----------------------------------------------------------
-    vlidort = ACCP_POLAR_VLIDORT(inFile,outFile,rcFile,
+    parser.add_argument("track_pcf",
+                        help="prep config file with track input file names")
+
+    parser.add_argument("orbit_pcf",
+                        help="prep config file with orbit variables")
+
+    parser.add_argument("inst_pcf",
+                        help="prep config file with instrument variables")
+
+    parser.add_argument("channel", type=int,
+                        help="channel in nm")
+
+    parser.add_argument("-a","--albedotype", default=albedoType,
+                        help="albedo type keyword. default is to figure out according to channel")
+
+    parser.add_argument("--rcfile",default=rcFile,
+                        help="rcFile (default=%s)"%rcFile)
+
+    parser.add_argument("-D","--DT_hours", default=DT_hours, type=int,
+                        help="Timestep in hours for each file (default=%i)"%DT_hours)
+
+
+    parser.add_argument("-v", "--verbose",action="store_true",
+                        help="Verbose mode (default=False).")
+
+    parser.add_argument("-r", "--dryrun",action="store_true",
+                        help="do a dry run (default=False).")
+
+    args = parser.parse_args()
+    channel        = args.channel
+    rcFile         = args.rcfile
+    albedoType     = args.albedotype
+
+    # figure out albedoType keyword
+    if albedoType is None:
+        if channel <= 388:
+            albedoType = 'LAMBERTIAN'
+        else:
+            albedoType = 'MODIS_BRDF'
+
+    # Parse prep config
+    # -----------------
+    cf             = Config(args.inst_pcf,delim=' = ')
+    instname       = cf('instname')
+
+    cf             = Config(args.orbit_pcf,delim=' = ')
+    orbitname      = cf('orbitname')
+    ORBITNAME      = orbitname.upper()
+
+    cf             = Config(args.track_pcf,delim=' = ')
+    inTemplate     = cf('inDir')     + '/' + cf('inFile')
+    outTemplate    = cf('outDir')    + '/' + cf('outFile')
+
+    try:
+        brdfTemplate = cf('brdfDir') + '/' + cf('brdfFile')
+    except:
+        brdfTemplate = None
+
+    try:
+        ndviTemplate   = cf('ndviDir')   + '/' + cf('ndviFile')
+        lcTemplate     = cf('lcDir')     + '/' + cf('lcFile')
+    except:
+        ndviTemplate = None
+        lcTemplate   = None
+
+    try:
+        lerTemplate    = cf('lerDir')    + '/' + cf('lerFile')
+    except:
+        lerTemplate    = None
+
+    # Loop through dates, running VLIDORT
+    # ------------------------------------
+    date      = isoparser(args.iso_t1)
+    enddate   = isoparser(args.iso_t2)
+    Dt        = timedelta(hours=args.DT_hours)
+
+    while date < enddate:
+        nymd  = str(date.date()).replace('-','')
+        year  = str(date.year)
+        month = str(date.month).zfill(2)
+        day   = str(date.day).zfill(2)
+        hour  = str(date.hour).zfill(2)
+
+        inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel)).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME).replace('%instname',instname)
+
+        if brdfTemplate is None:
+            brdfFile = None
+        else:
+            brdfFile = brdfTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+
+        if ndviTemplate is None:
+            ndviFile = None
+            lcFile   = None
+        else:
+            ndviFile   = ndviTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+            lcFile     = lcTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+
+        if lerTemplate is None:
+            lerFile = None
+        else:
+            lerFile   = lerTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+
+
+        # Initialize VLIDORT class getting aerosol optical properties
+        # -----------------------------------------------------------
+        print '++++Running VLIDORT with the following arguments+++'
+        print '>>>inFile:    ',inFile
+        print '>>>outFile:   ',outFile
+        print '>>>rcFile:    ',rcFile
+        print '>>>albedoType:',albedoType
+        print '>>>channel:   ',channel
+        print '>>>brdfFile:  ',brdfFile
+        print '>>>ndviFile:  ',ndviFile
+        print '>>>lcFile:    ',lcFile
+        print '>>>lerFile    ',lerFile
+        print '>>>verbose:   ',args.verbose
+        print '++++End of arguments+++'
+        if not args.dryrun:
+            vlidort = ACCP_POLAR_VLIDORT(inFile,outFile,rcFile,
                             albedoType,
                             channel,                            
-                            polarname,
+                            instname,
                             brdfFile=brdfFile,
                             ndviFile=ndviFile,
                             lcFile=lcFile,
-                            verbose=verbose)
+                            lerFile=lerFile,
+                            verbose=args.verbose)
 
    
-    # Run VLIDORT
-    if vlidort.nobs > 0:
-        vlidort.runVLIDORT()
+            # Run VLIDORT
+            if vlidort.nobs > 0:
+                vlidort.runVLIDORT()
+
+        date += Dt
