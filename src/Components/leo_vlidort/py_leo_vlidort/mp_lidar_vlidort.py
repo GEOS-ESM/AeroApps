@@ -22,7 +22,7 @@ from dateutil.parser import parse         as isoparser
 from MAPL.constants import *
 from py_leo_vlidort import LidarAngles_    
  
-#from copyvar  import _copyVar
+from copyvar  import _copyVar
 from scipy import interpolate
 from   MAPL  import Config
 from multiprocessing import Pool
@@ -123,8 +123,8 @@ class LIDAR_VLIDORT(VLIDORT):
             self.BPDFinputs()
 
         # Ocean
-        #albedoReader = getattr(self,SurfaceFuncs['CX'])
-        #albedoReader()
+        albedoReader = getattr(self,SurfaceFuncs['CX'])
+        albedoReader()
 
         # Calculate aerosol optical properties
         self.computeMie()
@@ -264,7 +264,7 @@ class LIDAR_VLIDORT(VLIDORT):
 
             # run VLIDORT
             if albedoType == 'MODIS_BRDF':
-                args = [(self.channel, self.nstreams, self.plane_parallel, ROT[:,i:i+1,:], depol_ratio,
+                args = [(self.channel, self.nstreams, self.plane_parallel, rot[:,i:i+1,:], depol_ratio,
                         tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
                         pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
                         kernel_wt[:,:,i:i+1], param[:,:,i:i+1],
@@ -289,7 +289,7 @@ class LIDAR_VLIDORT(VLIDORT):
                 BR_Q = np.concatenate(BR_Q)
                 BR_U = np.concatenate(BR_U)
             elif albedoType == 'LAMBERTIAN':
-                args = [(self.channel, self.nstreams, self.plane_parallel, ROT[:,i:i+1,:], depol_ratio,
+                args = [(self.channel, self.nstreams, self.plane_parallel, rot[:,i:i+1,:], depol_ratio,
                         tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
                         pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
                         albedo[i:i+1,:],
@@ -312,7 +312,7 @@ class LIDAR_VLIDORT(VLIDORT):
                 reflectance = np.concatenate(reflectance)
 
             elif albedoType == 'CX':
-                args = [(self.channel, self.nstreams, self.plane_parallel, ROT[:,i:i+1,:], depol_ratio,
+                args = [(self.channel, self.nstreams, self.plane_parallel, rot[:,i:i+1,:], depol_ratio,
                         tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
                         pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
                         u10m[i:i+1], v10m[i:i+1], self.mr,
