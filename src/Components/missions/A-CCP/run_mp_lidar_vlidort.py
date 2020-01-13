@@ -268,7 +268,6 @@ class WORKSPACE(JOBS):
             os.remove(self.slurm)
             os.remove(self.track_pcf)
             os.remove(self.orbit_pcf)
-            os.remove(self.inst_pcf)
             os.remove(self.rcFile)
 
         # remove symlinks
