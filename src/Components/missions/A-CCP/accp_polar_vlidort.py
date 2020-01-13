@@ -261,7 +261,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
                 BR_Q = []
                 BR_U = []
                 if albedoType == 'MODIS_BRDF':
-                    args = [(self.channel, self.nstreams, self.plane_parallel, ROT[:,i:i+1,:], depol_ratio, 
+                    args = [(self.channel, self.nstreams, self.plane_parallel, rot[:,i:i+1,:], depol_ratio, 
                             tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
                             pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
                             kernel_wt[:,:,i:i+1], param[:,:,i:i+1],
@@ -286,7 +286,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
                     BR_Q = np.concatenate(BR_Q)
                     BR_U = np.concatenate(BR_U)
                 elif albedoType == 'LAMBERTIAN':
-                    args = [(self.channel, self.nstreams, self.plane_parallel, ROT[:,i:i+1,:], depol_ratio,
+                    args = [(self.channel, self.nstreams, self.plane_parallel, rot[:,i:i+1,:], depol_ratio,
                             tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
                             pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
                             albedo[i:i+1,:],
@@ -308,7 +308,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
                     U = np.concatenate(U)
                     reflectance = np.concatenate(reflectance)
                 elif albedoType == 'CX':
-                    args = [(self.channel, self.nstreams, self.plane_parallel, ROT[:,i:i+1,:], depol_ratio,
+                    args = [(self.channel, self.nstreams, self.plane_parallel, rot[:,i:i+1,:], depol_ratio,
                             tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
                             pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
                             u10m[i:i+1], v10m[i:i+1], self.mr,
