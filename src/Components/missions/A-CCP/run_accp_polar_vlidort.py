@@ -131,12 +131,12 @@ class JOBS(object):
         return error
 
 class WORKSPACE(JOBS):
-    """ Create slurm scripts for running mp_accp_polar_vlidort.py """
+    """ Create slurm scripts for running accp_polar_vlidort.py """
     def __init__(self,args):
 
         self.Date      = isoparser(args.iso_t1)
         self.enddate   = isoparser(args.iso_t2)
-        self.Dt        = timedelta(hours=args.pDT_hours)
+        self.Dt        = timedelta(hours=args.DT_hours)
 
         
         self.track_pcf   = args.track_pcf
@@ -146,7 +146,7 @@ class WORKSPACE(JOBS):
         self.albedoType  = args.albedotype
         self.rcFile      = args.rcfile
         self.dryrun      = args.dryrun
-        self.nproc       = args.nproc
+        self.verbose     = args.verbose
 
         self.slurm       = args.slurm
         self.tmp         = args.tmp
@@ -200,7 +200,7 @@ class WORKSPACE(JOBS):
                 shutil.copyfile(self.inst_pcf,outfile)
 
                 #link over needed python scripts
-                source = ['mp_run_accp_polar_vlidort.py','run_accp_polar_vlidort.py'] 
+                source = ['accp_polar_vlidort.py'] 
                 for src in source:
                     os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
@@ -238,17 +238,16 @@ class WORKSPACE(JOBS):
         # replace one line
         iso1 = sdate.isoformat()
         iso2 = edate.isoformat()
-        Options = ' -v' +\
-                  ' --nproc {}'.format(self.nproc) +\
-                  ' --DT_hours {}'.format(self.DT_hours) +\
+        Options = ' --DT_hours {}'.format(self.DT_hours) +\
                   ' --rcfile {}'.format(self.rcFile) 
 
         if self.albedoType is not None:
             Options += ' --albedotype {}'.format(self.albedoType)
         if self.dryrun:
             Options += ' -r'
-
-        newline = 'python -u mp_run_accp_polar_vlidort.py {} {} {} {} {} {} {} >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf,channel) + ' slurm_${SLURM_JOBID}_py.out\n'
+        if self.verbose:
+            Options +=  ' -v' 
+        newline = 'python -u ./accp_polar_vlidort.py {} {} {} {} {} {} {} >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf,channel) + ' slurm_${SLURM_JOBID}_py.out\n'
         text[-5] = newline
         f.close()
 
@@ -278,7 +277,7 @@ class WORKSPACE(JOBS):
             os.remove(self.rcFile)
 
         # remove symlinks
-        source = ['mp_run_accp_polar_vlidort.py','run_accp_polar_vlidort.py'] 
+        source = ['accp_polar_vlidort.py'] 
         for src in source:
             os.remove(src)
 
@@ -291,8 +290,6 @@ if __name__ == '__main__':
     
     #Defaults
     DT_hours = 1
-    pDT_hours = 1
-    nproc    = 8
     slurm    = 'run_accp_polar_vlidort.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir'
     rcFile   = 'Aod_EOS.rc'
@@ -319,9 +316,6 @@ if __name__ == '__main__':
     parser.add_argument("--rcfile",default=rcFile,
                         help="rcFile (default=%s)"%rcFile)    
 
-    parser.add_argument("--pDT_hours", default=pDT_hours, type=int,
-                        help="Timestep in hours for each processing chunk (default=%i)"%pDT_hours)
-
     parser.add_argument('-s',"--slurm",default=slurm,
                         help="slurm script template (default=%s)"%slurm)           
 
@@ -334,9 +328,8 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--profile",action="store_true",
                         help="Don't cleanup slurm files (default=False).")   
 
-    parser.add_argument("-n", "--nproc",default=nproc,
-                        help="Number of processors (default=%i)"%nproc)                            
-
+    parser.add_argument("-v", "--verbose",action="store_true",
+                        help="Verbose mode (default=False).")
 
     args = parser.parse_args()
 
