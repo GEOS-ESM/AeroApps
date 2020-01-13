@@ -141,7 +141,6 @@ class WORKSPACE(JOBS):
         
         self.track_pcf   = args.track_pcf
         self.orbit_pcf   = args.orbit_pcf
-        self.inst_pcf    = args.inst_pcf
         self.DT_hours    = args.DT_hours
         self.albedoType  = args.albedotype
         self.rcFile      = args.rcfile
@@ -157,9 +156,8 @@ class WORKSPACE(JOBS):
 
         self.cwd         = os.getcwd()
 
-        # figure out channels from instfile
-        cf = Config(args.inst_pcf,delim=' = ')
-        channels = cf('channels')
+        # figure out channels from inputs
+        channels = args.channels
         if ',' in channels:
             channels = channels.split(',')    
         else:
@@ -196,11 +194,8 @@ class WORKSPACE(JOBS):
                 outfile = '{}/{}'.format(workpath,self.orbit_pcf)
                 shutil.copyfile(self.orbit_pcf,outfile)
 
-                outfile = '{}/{}'.format(workpath,self.inst_pcf)
-                shutil.copyfile(self.inst_pcf,outfile)
-
                 #link over needed python scripts
-                source = ['accp_polar_vlidort.py'] 
+                source = ['mp_lidar_vlidort.py'] 
                 for src in source:
                     os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
@@ -247,7 +242,7 @@ class WORKSPACE(JOBS):
             Options += ' -r'
         if self.verbose:
             Options +=  ' -v' 
-        newline = 'python -u ./accp_polar_vlidort.py {} {} {} {} {} {} {} >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf,channel) + ' slurm_${SLURM_JOBID}_py.out\n'
+        newline = 'python -u ./mp_lidar_vlidort.py  {} {} {} {} {} {} >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,channel) + ' slurm_${SLURM_JOBID}_py.out\n'
         text[-5] = newline
         f.close()
 
@@ -277,7 +272,7 @@ class WORKSPACE(JOBS):
             os.remove(self.rcFile)
 
         # remove symlinks
-        source = ['accp_polar_vlidort.py'] 
+        source = ['mp_lidar_vlidort.py'] 
         for src in source:
             os.remove(src)
 
@@ -294,6 +289,7 @@ if __name__ == '__main__':
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir'
     rcFile   = 'Aod_EOS.rc'
     albedoType = None
+    channels = '532,1064'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
@@ -304,8 +300,8 @@ if __name__ == '__main__':
     parser.add_argument("orbit_pcf",
                         help="prep config file with orbit variables")
 
-    parser.add_argument("inst_pcf",
-                        help="prep config file with instrument variables")
+    parser.add_argument("-c","--channels", default=channels,
+                        help="list of channels. (default=%s)"%channels)
 
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
