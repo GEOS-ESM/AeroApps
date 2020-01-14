@@ -17,6 +17,7 @@ from netCDF4 import Dataset
 from  py_leo_vlidort import LidarAngles_ 
 from mpl_toolkits.basemap import Basemap
 from   py_leo_vlidort.copyvar  import _copyVar
+from multiprocessing import Pool
 
 # Generic Lists of Varnames and Units
 SDS_AER    = ['LONGITUDE','LATITUDE','isotime']
@@ -28,6 +29,68 @@ ncALIAS = {'LONGITUDE': 'trjLon',
 #radius of the earth km
 Re = 6378.0
 hgtssRef = 500.
+
+
+# --
+def distance(lon0,lat0,lon,lat,Re):
+    # get index of closest lon and lat to lon0, lat0
+
+    # use haversine formula for distance
+    phi0, phi, lam0, lam = map(np.radians,[lat0,lat,lon0,lon])
+    dphi = phi - phi0
+    dlam = lam - lam0
+
+    a = np.sin(dphi*0.5)**2 + np.cos(phi0)*np.cos(phi)*np.sin(dlam*0.5)**2
+    if np.any(a > 1.0):
+        a[a> 1.0] = 1.0
+    c = 2.0*np.arcsin(np.sqrt(a))
+    d = Re*c
+
+    return d
+
+def get_imin(args):
+    lon,lat,lon_granule,lat_granule,Re,Istyme = args
+    #lon, lat have dims ntyme
+    # lon_granule have dims ntymetotal, ncross 
+    ntyme = len(lon)
+    ntymeTotal, ncross = lon_granule.shape
+
+    IMIN = np.zeros([ntyme,2]).astype(int)
+    for ityme in range(ntyme):
+        lon0 = lon[ityme]
+        lat0 = lat[ityme]
+        # pick a window to search around to speed things up
+        styme = np.max([ityme+Istyme-200,0])
+        etyme = np.min([ityme+Istyme+200,ntymeTotal])
+        
+        d = distance(lon0,lat0,lon_granule[styme:etyme,:],lat_granule[styme:etyme,:],Re)
+        imin = np.argmin(d)
+
+        itymemin, icrossmin = np.unravel_index(imin,d.shape)
+        itymemin = itymemin + styme
+
+        IMIN[ityme,0] = itymemin
+        IMIN[ityme,1] = icrossmin
+
+    return IMIN
+
+def SolarAngles(args):
+    Tyme,lat_granule,lon_granule = args
+    ntyme,ncross = lon_granule.shape
+    angles = np.zeros([ntyme,ncross,2])
+    
+    for ityme,tyme in enumerate(Tyme):
+        for icross in range(ncross):
+            CLAT = lat_granule[ityme,icross]
+            CLON = lon_granule[ityme,icross]
+
+            solar_angles = LidarAngles_.solarangles(tyme.year,tyme.month,tyme.day,
+                                                tyme.hour,tyme.minute,tyme.second,
+                                                CLAT,CLON,
+                                                0.0)
+            angles[ityme,icross,0] = solar_angles[1][0]  #sza
+            angles[ityme,icross,1] = solar_angles[0][0]  #saa
+    return angles
 
 class SWATH(object):
     """
@@ -336,22 +399,17 @@ class SWATH(object):
         # with each along track viewing angle
         self.Itymeview    = np.zeros([self.ntyme,self.nalong]).astype(int)
         self.Icrossview    = np.zeros([self.ntyme,self.nalong]).astype(int)
-        for ityme in range(self.ntyme):
-            # print 'ityme',ityme,self.ntyme
-            lon = self.LONGITUDE[ityme+self.Istyme]
-            lat = self.LATITUDE[ityme+self.Istyme]
-            # pick a window to search around to speed things up
-            styme = np.max([ityme+self.Istyme-200,0])
-            etyme = np.min([ityme+self.Istyme+200,self.ntymeTotal])
-            for ialong in range(self.nalong):
-                imin = self.min_distance(lon,lat,self.lon_granule[styme:etyme,ialong,:],self.lat_granule[styme:etyme,ialong,:])
-
-                itymemin, icrossmin = np.unravel_index(imin,(self.ntymeTotal,self.ncross))
-                itymemin = itymemin + styme
-
-
-                self.Itymeview[ityme,ialong] = itymemin
-                self.Icrossview[ityme,ialong] = icrossmin
+        p = Pool(self.nalong)
+        
+        lon = self.LONGITUDE[self.Istyme:self.Istyme+self.ntyme]
+        lat = self.LATITUDE[self.Istyme:self.Istyme+self.ntyme]
+        args = [(lon,lat,self.lon_granule[:,ialong,:],self.lat_granule[:,ialong,:],self.Re,self.Istyme) for ialong in range(self.nalong)]
+        result = p.map(get_imin,args)
+        for ialong,r in enumerate(result):
+            self.Itymeview[:,ialong] = r[:,0]
+            self.Icrossview[:,ialong] = r[:,1]
+        
+        p.close()
     # --
     def pixel_loc(self,lon0,lat0,vza,vaa):
         # givent satellite sub-point and viewing direction, get pixel lat/lon
@@ -473,21 +531,13 @@ class SWATH(object):
         self.sza_granule = np.zeros([self.ntyme,self.nalong,self.ncross])
         self.saa_granule = np.zeros([self.ntyme,self.nalong,self.ncross])
 
-        for i,tyme in enumerate(self.tyme[istart:iend]):
-            ityme = i + istart
-            for ialong in range(self.nalong):
-                for icross in range(self.ncross):
-                    CLAT = self.lat_granule[ityme,ialong,icross]
-                    CLON = self.lon_granule[ityme,ialong,icross]
-            
-                    solar_angles = LidarAngles_.solarangles(tyme.year,tyme.month,tyme.day,
-                                                tyme.hour,tyme.minute,tyme.second,
-                                                CLAT,CLON,
-                                                0.0)
-
-                    self.sza_granule[i,ialong,icross] = solar_angles[1][0]
-                    self.saa_granule[i,ialong,icross] = solar_angles[0][0]
-
+        p = Pool(self.nalong)
+        args = [(self.tyme[istart:iend],self.lat_granule[istart:iend,ialong,:],self.lon_granule[istart:iend,ialong,:]) for ialong in range(self.nalong)]
+        result = p.map(SolarAngles,args)
+        for ialong,r in enumerate(result):
+            self.sza_granule[:,ialong,:] = r[:,:,0]
+            self.saa_granule[:,ialong,:] = r[:,:,1]
+        p.close()
 
     # --
     def get_vza_cross(self):
