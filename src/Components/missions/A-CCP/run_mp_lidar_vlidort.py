@@ -59,12 +59,17 @@ class JOBS(object):
                     finished = True   
 
                 # if the job is finished add to finished jobs list
+                # and clean up workspace
                 if finished:
                     #print 'Job finished, cleaning up', s, i 
                     finishedJobs = np.append(finishedJobs,ii)
                     errcheck = self.check_for_errors(i,s)               
                     if (errcheck is False):
                         self.errTally[i] = False
+
+                        # Clean up workspaces
+                        self.destroy_workspace(i,s)
+
                     else:
                         print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
 
@@ -101,20 +106,12 @@ class JOBS(object):
 
 
             print 'Waiting 5 minutes'
-            time.sleep(60*2)
+            time.sleep(60*1)
             
 
         # Exited while loop
         print 'All jobs done'
 
-        # Clean up workspaces for completed jobs
-        for i,s in enumerate(jobid):
-            s = s.strip('\n')
-            if not self.errTally[i]:
-                self.destroy_workspace(i,s)
-
-        # Postprocessing done
-        print 'Cleaned Up Worksapces'
         devnull.close()
 
 
