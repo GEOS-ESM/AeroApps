@@ -58,12 +58,17 @@ class JOBS(object):
                     finished = True   
 
                 # if the job is finished add to finished jobs list
+                # and clean up workspace
                 if finished:
                     #print 'Job finished, cleaning up', s, i 
                     finishedJobs = np.append(finishedJobs,ii)
                     errcheck = self.check_for_errors(i,s)               
                     if (errcheck is False):
                         self.errTally[i] = False
+
+                        #clean up workspaces
+                        self.destroy_workspace(i,s)
+
                     else:
                         print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
 
@@ -106,14 +111,6 @@ class JOBS(object):
         # Exited while loop
         print 'All jobs done'
 
-        # Clean up workspaces for completed jobs
-        for i,s in enumerate(jobid):
-            s = s.strip('\n')
-            if not self.errTally[i]:
-                self.destroy_workspace(i,s)
-
-        # Postprocessing done
-        print 'Cleaned Up Worksapces'
         devnull.close()
 
 
@@ -135,7 +132,7 @@ class WORKSPACE(JOBS):
 
         self.Date      = isoparser(args.iso_t1)
         self.enddate   = isoparser(args.iso_t2)
-        self.Dt        = timedelta(hours=args.pDT_hours)
+        self.Dt        = timedelta(hours=args.DT_hours)
 
         
         self.track_pcf   = args.track_pcf
@@ -143,7 +140,6 @@ class WORKSPACE(JOBS):
         self.inst_pcf    = args.inst_pcf
         self.DT_hours    = args.DT_hours
         self.dryrun      = args.dryrun
-        self.nproc       = args.nproc
 
         self.slurm       = args.slurm
         self.tmp         = args.tmp
@@ -186,7 +182,7 @@ class WORKSPACE(JOBS):
             shutil.copyfile(self.inst_pcf,outfile)
 
             #link over needed python scripts
-            source = ['polarimeter_swath.py','mp_polarimeter_swath.py'] 
+            source = ['polarimeter_swath.py'] 
             for src in source:
                 os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
@@ -212,13 +208,12 @@ class WORKSPACE(JOBS):
         iso1 = sdate.isoformat()
         iso2 = edate.isoformat()
         Options = ' -v' +\
-                  ' --nproc {}'.format(self.nproc) +\
                   ' --DT_hours {}'.format(self.DT_hours) 
 
         if self.dryrun:
             Options += ' -r'
 
-        newline = 'python -u ./mp_polarimeter_swath.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
+        newline = 'python -u ./polarimeter_swath.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
         text[-1] = newline
         f.close()
 
@@ -247,7 +242,7 @@ class WORKSPACE(JOBS):
             os.remove(self.inst_pcf)
 
         # remove symlinks
-        source = ['mp_polarimeter_swath.py','polarimeter_swath.py'] 
+        source = ['polarimeter_swath.py'] 
         for src in source:
             os.remove(src)
 
@@ -260,9 +255,7 @@ if __name__ == '__main__':
     
     #Defaults
     DT_hours = 1
-    pDT_hours = 1
-    nproc    = 12
-    slurm    = 'mp_polarimeter_swath.j'
+    slurm    = 'run_polarimeter_swath.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir/swath'
 
     parser = argparse.ArgumentParser()
@@ -280,9 +273,6 @@ if __name__ == '__main__':
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
 
-    parser.add_argument("--pDT_hours", default=pDT_hours, type=int,
-                        help="Timestep in hours for each processing chunk (default=%i)"%pDT_hours)
-
     parser.add_argument('-s',"--slurm",default=slurm,
                         help="slurm script template (default=%s)"%slurm)           
 
@@ -294,9 +284,6 @@ if __name__ == '__main__':
 
     parser.add_argument("-p", "--profile",action="store_true",
                         help="Don't cleanup slurm files (default=False).")   
-
-    parser.add_argument("-n", "--nproc",default=nproc,
-                        help="Number of processors (default=%i)"%nproc)                            
 
 
     args = parser.parse_args()
