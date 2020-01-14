@@ -54,7 +54,7 @@ cd $BIN
 ######
 ##################################################################
 python -u ./accp_polar_vlidort.py -v --DT_hours 1 2006-01-01T00:00 2006-01-02T00:00 lidar_files.pcf gpm.pcf polar07.pcf 550 > slurm_${SLURM_JOBID}_py.out &
-
+rm -rf $LOCAL_TMPDIR/*
 rm ExtData
 rm ExtDataOsku
 rm Chem_MieRegistry.rc
