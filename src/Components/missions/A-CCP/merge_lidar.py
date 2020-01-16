@@ -12,7 +12,7 @@ import argparse
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
 from   MAPL            import Config
-from   lidar_vlidort   import get_chd
+from   py_leo_vlidort.lidar_vlidort   import get_chd
 import numpy  as np
 from   netCDF4 import Dataset
 from   py_leo_vlidort.copyvar  import _copyVar
@@ -154,6 +154,8 @@ if __name__ == "__main__":
 
     # Defaults
     DT_hours = 1
+    channels = '532,1064'
+    instname   = 'lidar'
 
 #   Parse command line options
 #   --------------------------
@@ -164,11 +166,20 @@ if __name__ == "__main__":
     parser.add_argument("iso_t2",
                         help="ending iso time")
 
-    parser.add_argument("prep_config",
-                        help="prep config filename")
+    parser.add_argument("track_pcf",
+                        help="prep config file with with track input file names")
+
+    parser.add_argument("orbit_pcf",
+                        help="prep config file with orbit variables")
 
     parser.add_argument("-D","--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
+
+    parser.add_argument("-c","--channels", default=channels,
+                        help="list of channels. (default=%s)"%channels)
+
+    parser.add_argument("-I","--instname", default=instname,
+                        help="Instrument name (default=%s)"%instname)
 
     parser.add_argument("-v", "--verbose",action="store_true",
                         help="Verbose mode (default=False).")
@@ -177,17 +188,26 @@ if __name__ == "__main__":
                         help="do a dry run (default=False).")    
 
     args = parser.parse_args()
+    channels        = args.channels
+    if ',' in channels:
+        channels = channels.split(',')
+    else:
+        channels = [channels]
+    channels = np.array(channels).astype(int)
+    instname = args.instname
+
 
     # Parse prep config
     # -----------------
-    cf             = Config(args.prep_config,delim=' = ')
+    cf             = Config(args.track_pcf,delim=' = ')
     inTemplate     = cf('inDir')     + '/' + cf('inFile')         
     vlidortTemplate    = cf('outDir')    + '/' + cf('outFile')
-    extTemplate    = cf('outDir')    + '/' + '%instname-g5nr.lc.ext.%nymd_%hour00z.%chnm.nc4'
-    outTemplate    = cf('outDir')    + '/' + '%instname-g5nr.lc2.%nymd_%hour00z.%chnm.nc4'
-    channel        = int(cf('channel'))
-    instname       = cf('instname')
-    INSTNAME       = instname.upper()
+    extTemplate    = cf('outDir')    + '/' + '%orbitname-g5nr.lc.ext.%nymd_%hour00z.%chnm.nc4'
+    outTemplate    = cf('outDir')    + '/' + '%orbitname-%instname-g5nr.lc2.%nymd_%hour00z.%chnm.nc4'
+
+    cf             = Config(args.orbit_pcf,delim=' = ')
+    orbitname       = cf('orbitname')
+    ORBITNAME       = orbitname.upper()
 
     # Loop through dates, merging datafile
     # ------------------------------------
@@ -202,30 +222,31 @@ if __name__ == "__main__":
         day   = str(date.day).zfill(2)
         hour  = str(date.hour).zfill(2)    
 
-        inFile      = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
-        vlidortFile = vlidortTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel)).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
-        extFile     = extTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%ch',str(channel)).replace('%instname',instname).replace('%INSTNAME',INSTNAME)
+        inFile      = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
         asmFile     = inFile.replace('%col','asm_Nx')
         metFile     = inFile.replace('%col','met_Nv')
         aerFile     = inFile.replace('%col','aer_Nv')
         chmFile     = inFile.replace('%col','chm_Nv')
+        for channel in channels:
+            vlidortFile = vlidortTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel)).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME).replace('%instname',instname)
+            extFile     = extTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%ch',str(channel)).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
-        outFile     = outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%ch',str(channel)).replace('%instname',instname).replace('%INSTNAME',INSTNAME).replace('LevelC','LevelC2')
+            outFile     = outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%ch',str(channel)).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME).replace('%instname',instname).replace('LevelC','LevelC2')
 
 
-        # Initialize MERGE class and write new outfile
-        # -----------------------------------------------------------
-        print '++++Merging with the following arguments+++'
-        print '>>>extFile:    ',extFile
-        print '>>>vlidortFile:   ',vlidortFile
-        print '>>>asmFile:    ',asmFile
-        print '>>>metFile:  ',metFile
-        print '>>>naerile:  ',aerFile
-        print '>>>chmFile:    ',chmFile
-        print '>>>outFile:    ',outFile
-        print '++++End of arguments+++'
-        if not args.dryrun:
-            merge = MERGE(vlidortFile,extFile,aerFile,metFile,asmFile,chmFile,outFile)
-            merge.writenc()
+            # Initialize MERGE class and write new outfile
+            # -----------------------------------------------------------
+            print '++++Merging with the following arguments+++'
+            print '>>>extFile:    ',extFile
+            print '>>>vlidortFile:   ',vlidortFile
+            print '>>>asmFile:    ',asmFile
+            print '>>>metFile:  ',metFile
+            print '>>>naerile:  ',aerFile
+            print '>>>chmFile:    ',chmFile
+            print '>>>outFile:    ',outFile
+            print '++++End of arguments+++'
+            if not args.dryrun:
+                merge = MERGE(vlidortFile,extFile,aerFile,metFile,asmFile,chmFile,outFile)
+                merge.writenc()
 
         date += Dt
