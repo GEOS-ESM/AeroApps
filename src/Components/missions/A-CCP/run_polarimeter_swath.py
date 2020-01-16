@@ -105,7 +105,7 @@ class JOBS(object):
 
 
             print 'Waiting 5 minutes'
-            time.sleep(60*2)
+            time.sleep(60*1)
             
 
         # Exited while loop
@@ -262,7 +262,7 @@ if __name__ == '__main__':
     parser.add_argument("iso_t1",help='starting iso time')
     parser.add_argument("iso_t2",help='ending iso time')
     parser.add_argument("track_pcf",
-                        help="prep config file with orbit variables")
+                        help="prep config file with track input file names")
 
     parser.add_argument("orbit_pcf",
                         help="prep config file with orbit variables")
