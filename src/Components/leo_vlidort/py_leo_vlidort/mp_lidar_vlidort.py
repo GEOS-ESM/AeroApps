@@ -139,9 +139,8 @@ class LIDAR_VLIDORT(VLIDORT):
         self.hgtss = hgtss
         self.calcAngles()
 
-        if self.nobs > 0:
-            # Land-Sea Mask
-            self.LandSeaMask()
+        # Land-Sea Mask
+        self.LandSeaMask()
 
     # --
     def calcAngles(self):
@@ -656,7 +655,6 @@ if __name__ == "__main__":
                                     verbose=args.verbose)
 
             # Run VLIDORT
-            if vlidort.nobs > 0:
-                vlidort.runVLIDORT()
+            vlidort.runVLIDORT()
 
         date += Dt
