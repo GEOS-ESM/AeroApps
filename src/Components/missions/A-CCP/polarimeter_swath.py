@@ -495,7 +495,7 @@ class SWATH(object):
                     vaa = self.VAA + 180.0           
                     if any(vaa > 360.0):
                         I = vaa > 360.0
-                        vaa[I] = 360.0 - vaa[I]
+                        vaa[I] = vaa[I] - 360.0 
                     if cross_deg >= 0:
                         vaa = vaa - az
                     else:
@@ -503,7 +503,7 @@ class SWATH(object):
 
                 if any(vaa > 360.0):
                     I = vaa > 360.0
-                    vaa[I] = 360.0 - vaa[I]
+                    vaa[I] = vaa[I] - 360.0 
                 if any(vaa < 0):
                     I = vaa < 0
                     vaa[I] = 360.0 + vaa[I]
