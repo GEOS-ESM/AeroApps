@@ -288,7 +288,7 @@ if __name__ == '__main__':
     #Defaults
     DT_hours = 1
     slurm    = 'run_accp_polar_vlidort.j'
-    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir'
+    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir/vlidort'
     rcFile   = 'Aod_EOS.rc'
     albedoType = None
 
