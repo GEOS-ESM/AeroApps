@@ -65,6 +65,9 @@ class JOBS(object):
                     errcheck = self.check_for_errors(i,s)               
                     if (errcheck is False):
                         self.errTally[i] = False
+
+                        # Clean up workspaces
+                        self.destroy_workspace(i,s)        
                     else:
                         print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
 
@@ -106,12 +109,6 @@ class JOBS(object):
 
         # Exited while loop
         print 'All jobs done'
-
-        # Clean up workspaces for completed jobs
-        for i,s in enumerate(jobid):
-            s = s.strip('\n')
-            if not self.errTally[i]:
-                self.destroy_workspace(i,s)
 
         # Postprocessing done
         print 'Cleaned Up Worksapces'
