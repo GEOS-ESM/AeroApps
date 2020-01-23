@@ -20,7 +20,6 @@ import numpy   as np
 from MAPL.constants import *
 from py_leo_vlidort.vlidort import VLIDORT, get_chd, WrapperFuncs, CX_run, LAMBERTIAN_run, MODIS_BRDF_run
 from py_leo_vlidort.copyvar  import _copyVar
-from   MAPL  import config
 from multiprocessing import Pool
 
 # Generic Lists of Varnames and Units
