@@ -37,10 +37,9 @@ program pace_vlidort
   use Chem_MieMod
   use mp_netcdf_Mod
   use netcdf_Mod
-  use cloud_MieMod
 
   implicit none
-  include "pace_vlidort_pars.F90"
+  include "accp_polar_vlidort_pars.F90"
   include "mpif.h"
 
 ! ESMF Objects
@@ -61,22 +60,16 @@ program pace_vlidort
   logical                               :: scalar
   integer                               :: nstreams               ! number of half space streams, default = 12
   logical                               :: plane_parallel    
-  logical                               :: cloud_free
   logical                               :: aerosol_free
-  logical                               :: standard_atm
   real, allocatable                     :: channels(:)            ! channels to simulate
   real, allocatable                     :: mr(:)                  ! water real refractive index    
   integer                               :: nch                    ! number of channels  
   real                                  :: szamax, vzamax         ! Geomtry filtering
   logical                               :: additional_output      ! does user want additional output
   logical                               :: aerosol_output         ! does user want aerosol output  
-  logical                               :: cloud_output           ! does user want cloud output
   integer                               :: nodemax                ! number of nodes requested
   integer                               :: nodenum                ! which node is this?
   character(len=256)                    :: version
-  character(len=256)                    :: layout 
-  character(len=256)                    :: IcldTable, LcldTable
-  integer                               :: idxCld
 
 ! Test flag
 ! -----------
@@ -85,8 +78,7 @@ program pace_vlidort
 ! File names
 ! ----------
   character(len=256)                    :: AER_file, ANG_file, INV_file, BRDF_file, LER_file, OUT_file
-  character(len=256)                    :: ADD_file, CLD_file, MET_file, WAT_file, NDVI_file, BPDF_file 
-  character(len=256)                    :: AERO_file, CLDO_file, STDATM_file, OCItable_file
+  character(len=256)                    :: MET_file, NDVI_file, BPDF_file 
 
 ! Global, 3D inputs to be allocated using SHMEM
 ! ---------------------------------------------
@@ -118,14 +110,8 @@ program pace_vlidort
   real, pointer                         :: SAA(:) => null()
   real, pointer                         :: VAA(:) => null()
   real, pointer                         :: RAA(:) => null()
-  real, pointer                         :: REI(:,:) => null()  
-  real, pointer                         :: REL(:,:) => null()  
-  real, pointer                         :: TAUI(:,:) => null()  
-  real, pointer                         :: TAUL(:,:) => null() 
   real, pointer                         :: V10M(:) => null()  
   real, pointer                         :: U10M(:) => null()  
-  real, pointer                         :: SLEAVE(:,:,:) => null()
-  real, pointer                         :: WATER_CH(:) => null()
   real, pointer                         :: NDVI(:) => null()  
   real, pointer                         :: BPDFcoef(:) => null()  
   integer, pointer                      :: indices(:) => null()
@@ -143,14 +129,6 @@ program pace_vlidort
   real, allocatable                     :: Vssa(:,:,:)             ! single scattering albedo
   real, allocatable                     :: Vg(:,:,:)               ! asymmetry factor
   real*8, allocatable                   :: Valbedo(:,:)            ! surface albedo
-  real*8, allocatable                   :: Vsleave(:,:)            ! normalized water leaving radiance [Pa]
-
-  real, allocatable                     :: VtauLcl(:,:,:)          ! cloud aerosol optical depth
-  real, allocatable                     :: VssaIcl(:,:,:)          ! cloud aerosol optical depth
-  real, allocatable                     :: VssaLcl(:,:,:)          ! cloud single scattering albedo
-  real, allocatable                     :: VtauIcl(:,:,:)          ! cloud single scattering albedo
-  real, allocatable                     :: VgLcl(:,:,:)            ! cloud asymmetry factor  
-  real, allocatable                     :: VgIcl(:,:,:)            ! cloud asymmetry factor    
 
 ! VLIDORT output arrays
 !-------------------------------
@@ -197,8 +175,6 @@ program pace_vlidort
   integer                               :: ch                                       ! i-channel  
   integer                               :: iband                                    ! i-surfaceband
   real,allocatable                      :: Vpmom(:,:,:,:,:)                         ! elements of scattering phase matrix for vector calculations
-  real,allocatable                      :: VpmomIcl(:,:,:,:,:)                      ! elements of scattering phase matrix for vector calculations
-  real,allocatable                      :: VpmomLcl(:,:,:,:,:)                      ! elements of scattering phase matrix for vector calculations
 
 ! MODIS Kernel variables
 !--------------------------
@@ -207,23 +183,15 @@ program pace_vlidort
                                                                                     ! param1 = crown relative height (h/b)
                                                                                     ! param2 = shape parameter (b/r)
   real                                  :: land_missing                                                                 
-  real                                  :: sleave_missing                                                                 
   real*8, allocatable                   :: BPDFparam(:,:,:)                         ! BPDF model parameters (/1.5,NDVI,BPDFcoef/)
 
 ! Mie Table Stucture
 !---------------------
   type(Chem_Mie)                        :: mieTables
 
-! OCI ROD Table
-!--------------------
-  integer, parameter                    :: nchOCI = 123
-  real                                  :: depolOCI(nchOCI), rodOCI(nchOCI), wavOCI(nchOCI)
-  real, allocatable                     :: ROD_stdatm(:), DEPOL_stdatm(:)
-
 ! Satellite domain variables
 !------------------------------
   integer                               :: im, jm, km, tm                            ! size of satellite domain
-  integer                               :: wnch                                      ! number of wavelength in water leaving file
   integer                               :: i, j, k, n                                ! satellite domain working variable
   integer                               :: starti, counti, endi                      ! array indices and counts for each processor
   integer, allocatable                  :: nclr(:)                                   ! how many clear pixels each processor works on
@@ -251,13 +219,13 @@ program pace_vlidort
   character(len=256)                    :: line                                        ! dummy variables to read line of file 
   real                                  :: progress                                    ! 
   real                                  :: g5nr_missing  
-  logical                               :: do_cxonly, do_cx_sleave                              !
+  logical                               :: do_cxonly                         !
 
 ! System tracking variables
 ! -----------------------------
   integer*8                             :: t1, t2, clock_max
   real*8                                :: clock_rate
-  character(len=*), parameter           :: Iam = 'pace_vlidort'
+  character(len=*), parameter           :: Iam = 'accp_vlidort'
 
 !                               END OF VARIABLE DECLARATIONS
 !----------------------------------------------------------------------------------------------------------
