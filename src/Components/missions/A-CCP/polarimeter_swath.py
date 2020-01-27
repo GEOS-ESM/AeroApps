@@ -160,7 +160,7 @@ class SWATH(object):
         self.granuleSolarAngles()
         istart = self.Istyme 
         iend   = self.Istyme + self.ntyme
-        self.scatAngle_granule = self.getScatAngle(self.sza_granule,self.saa_granule,self.vza_granule[istart:iend,:,:],self.vaa_granule[istart:iend,:,:])
+        self.scatAngle_granule = self.getScatAngle(self.sza_granule[istart:iend,:,:],self.saa_granule[istart:iend,:,:],self.vza_granule[istart:iend,:,:],self.vaa_granule[istart:iend,:,:])
 
 
         # figure out when satellite pixels overlap with each satellite sub-point
@@ -274,12 +274,12 @@ class SWATH(object):
         this.units = 'degrees, clockwise from north 0-360'
 
         this = nc.createVariable('sza','f4',dim,zlib=True)
-        this[:] = self.sza_granule
+        this[:] = self.sza_granule[istart:iend,:,:]
         this.long_name = 'solar zenith angle'
         this.units = 'degrees'
 
         this = nc.createVariable('saa','f4',dim,zlib=True)
-        this[:] = self.saa_granule
+        this[:] = self.saa_granule[istart:iend,:,:]
         this.long_name = 'solar azimuth angle'
         this.units = 'degrees, clockwise from north 0-360'
 
@@ -343,10 +343,10 @@ class SWATH(object):
         time = np.zeros([self.ntyme,self.nalong]).astype(int)
 
         for ialong in range(self.nalong):
-            sza[:,ialong] = self.SZA[self.Itymeview[:,ialong]]
-            saa[:,ialong] = self.SAA[self.Itymeview[:,ialong]]
             dtyme = self.tyme[self.Itymeview[:,ialong]] - self.starttyme
             for ityme in range(self.ntyme):
+                sza[ityme,ialong] = self.sza_granule[:,ialong,:][self.Itymeview[ityme,ialong],self.Icrossview[ityme,ialong]]
+                saa[ityme,ialong] = self.saa_granule[:,ialong,:][self.Itymeview[ityme,ialong],self.Icrossview[ityme,ialong]]
                 vza[ityme,ialong] = self.vza_granule[:,ialong,:][self.Itymeview[ityme,ialong],self.Icrossview[ityme,ialong]]
                 vaa[ityme,ialong] = self.vaa_granule[:,ialong,:][self.Itymeview[ityme,ialong],self.Icrossview[ityme,ialong]]
                 time[ityme,ialong] = dtyme[ityme].total_seconds()
@@ -525,14 +525,11 @@ class SWATH(object):
         """
         use fortran code to get solar angles for granule
         """
-        istart = self.Istyme 
-        iend   = self.Istyme + self.ntyme
-
-        self.sza_granule = np.zeros([self.ntyme,self.nalong,self.ncross])
-        self.saa_granule = np.zeros([self.ntyme,self.nalong,self.ncross])
+        self.sza_granule = np.zeros([self.ntymeTotal,self.nalong,self.ncross])
+        self.saa_granule = np.zeros([self.ntymeTotal,self.nalong,self.ncross])
 
         p = Pool(self.nalong)
-        args = [(self.tyme[istart:iend],self.lat_granule[istart:iend,ialong,:],self.lon_granule[istart:iend,ialong,:]) for ialong in range(self.nalong)]
+        args = [(self.tyme,self.lat_granule[:,ialong,:],self.lon_granule[:,ialong,:]) for ialong in range(self.nalong)]
         result = p.map(SolarAngles,args)
         for ialong,r in enumerate(result):
             self.sza_granule[:,ialong,:] = r[:,:,0]
