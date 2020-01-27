@@ -386,7 +386,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'lev', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'lev', dtype='f4',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
         _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)   
