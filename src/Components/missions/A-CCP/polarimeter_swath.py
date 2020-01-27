@@ -219,32 +219,32 @@ class SWATH(object):
         # Create Variables
         # ------------------
         dim = ('time','nalong',)
-        this = nc.createVariable('time_ss','i4',dim)
+        this = nc.createVariable('time_ss','i4',dim,zlib=True)
         this[:] = self.time
         this.long_name = 'time when polarimeter views satellite subpoint'
         this.units = 'seconds since ' + self.starttyme.isoformat()
 
-        this = nc.createVariable('sza_ss','f4',dim)
+        this = nc.createVariable('sza_ss','f4',dim,zlib=True)
         this[:] = self.sza
         this.long_name = 'SZA when polarimeter views satellite subpoint'
         this.units = 'degrees, >90 is below horizon'
 
-        this = nc.createVariable('saa_ss','f4',dim)
+        this = nc.createVariable('saa_ss','f4',dim,zlib=True)
         this[:] = self.saa
         this.long_name = 'SAA when polarimeter views satellite subpoint'
         this.units = 'degrees, clockwise from north 0-360'
 
-        this = nc.createVariable('vza_ss','f4',dim)
+        this = nc.createVariable('vza_ss','f4',dim,zlib=True)
         this[:] = self.vza
         this.long_name = 'VZA when polarimeter views satellite subpoint'
         this.units = 'degrees'
 
-        this = nc.createVariable('vaa_ss','f4',dim)
+        this = nc.createVariable('vaa_ss','f4',dim,zlib=True)
         this[:] = self.vaa
         this.long_name = 'VAA when polarimeter views satellite subpoint'
         this.units = 'degrees, clockwise from north 0-360'
 
-        this = nc.createVariable('scatAngle_ss','f4',dim)
+        this = nc.createVariable('scatAngle_ss','f4',dim,zlib=True)
         this[:] = self.scatAngle
         this.long_name = 'scattering angle when polarimeter view satellite subpoint'
         this.units = 'degrees, 0 = forward scattering'
@@ -253,37 +253,37 @@ class SWATH(object):
         istart = self.Istyme 
         iend   = self.Istyme + self.ntyme
 
-        this = nc.createVariable('longitude','f4',dim)
+        this = nc.createVariable('longitude','f4',dim,zlib=True)
         this[:] = self.lon_granule[istart:iend,:,:]
         this.long_name = 'longitude of granule pixel centers'
         this.units  = 'degrees_east'
 
-        this = nc.createVariable('latitude','f4',dim)
+        this = nc.createVariable('latitude','f4',dim,zlib=True)
         this[:] = self.lat_granule[istart:iend,:,:]
         this.long_name = 'latitude of granule pixel centers'
         this.units = 'degrees_north'
 
-        this = nc.createVariable('vza','f4',dim)
+        this = nc.createVariable('vza','f4',dim,zlib=True)
         this[:] = self.vza_granule[istart:iend,:,:]
         this.long_name = 'view zenith angle'
         this.units = 'degrees'
 
-        this = nc.createVariable('vaa','f4',dim)
+        this = nc.createVariable('vaa','f4',dim,zlib=True)
         this[:] = self.vaa_granule[istart:iend,:,:]
         this.long_name = 'view azimuth angle'
         this.units = 'degrees, clockwise from north 0-360'
 
-        this = nc.createVariable('sza','f4',dim)
+        this = nc.createVariable('sza','f4',dim,zlib=True)
         this[:] = self.sza_granule
         this.long_name = 'solar zenith angle'
         this.units = 'degrees'
 
-        this = nc.createVariable('saa','f4',dim)
+        this = nc.createVariable('saa','f4',dim,zlib=True)
         this[:] = self.saa_granule
         this.long_name = 'solar azimuth angle'
         this.units = 'degrees, clockwise from north 0-360'
 
-        this = nc.createVariable('scatAngle','f4',dim)
+        this = nc.createVariable('scatAngle','f4',dim,zlib=True)
         this[:] = self.scatAngle_granule
         this.long_name = 'scattering angle'
         this.units = 'degrees, 0 = forward scattering'        
