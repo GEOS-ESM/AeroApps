@@ -17,4 +17,4 @@ AER_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/Leve
 MET_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB/Y2006/M01/D01/gpm-g5nr.lb2.met_Nv.20060101_0100z.nc4
 ANG_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB/Y2006/M01/D01/gpm-g5nr.lb2.polar07.20060101_0100z.nc4
 INV_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB/Y2006/M01/D01/gpm-g5nr.lb2.asm_Nx.20060101_0100z.nc4
-OUT_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelC/Y2006/M01/D01/gpm-polar07-g5nr.lc.vlidort.20060101_0100z_940d00nm.nc4
+OUT_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelC/Y2006/M01/D01/gpm-polar07-g5nr.lc.vlidort.20060101_0100z_550d00nm.nc4
