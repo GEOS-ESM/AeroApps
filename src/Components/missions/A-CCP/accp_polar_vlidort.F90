@@ -186,7 +186,7 @@ program pace_vlidort
 
 ! Satellite domain variables
 !------------------------------
-  integer                               :: vm, km, tm                                ! size of satellite domain
+  integer                               :: nalong, km, tm                                ! size of satellite domain
   integer                               :: i, j, k, n                                ! satellite domain working variable
   integer                               :: starti, counti, endi                      ! array indices and counts for each processor
   integer, allocatable                  :: nclr(:)                                   ! how many clear pixels each processor works on
@@ -195,7 +195,7 @@ program pace_vlidort
   integer                               :: c, cc                                     ! clear pixel working variable
   real, allocatable                     :: SOLAR_ZENITH(:,:)                         ! solar zenith angles used for data filtering
   real,allocatable                      :: SENSOR_ZENITH(:,:)                        ! SENSOR zenith angles used for data filtering  
-  logical, allocatable                  :: clmask(:,:)                               ! cloud-land mask
+  logical, allocatable                  :: clmask(:)                               ! cloud-land mask
 
 ! netcdf variables
 !----------------------  
@@ -269,7 +269,7 @@ program pace_vlidort
 !----------------------------------------------  
   call mp_readDim("time", AER_file,tm)
   call mp_readDim("lev", AER_file, km)
-  call mp_readDim("nalong", ANG_file, vm)
+  call mp_readDim("nalong", ANG_file, nalong)
 
 
   call mp_readVattr("missing_value", AER_FILE, "DELP", g5nr_missing)
@@ -883,327 +883,167 @@ program pace_vlidort
 !     Oct 2018 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
 
-  subroutine write_outfile()
-    real*8, dimension(im,jm)            :: field  
+!   subroutine write_outfile()
+!     real*8, dimension(nalong,tm)            :: field  
 
-    field = dble(MISSING)
-!                             Write to main OUT_File
-!                             ----------------------
-    call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
-    write(msg,'(F10.2)') channels(nch)
+!     field = dble(MISSING)
+! !                             Write to main OUT_File
+! !                             ----------------------
+!     call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
+!     write(msg,'(F10.2)') channels(nch)
     
-    call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-    call check(nf90_put_var(ncid, varid, unpack(reflectance_VL,clmask,field), &
-                start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
+!     call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
+!     call check(nf90_put_var(ncid, varid, unpack(reflectance_VL,clmask,field), &
+!                 start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
 
-    call check(nf90_inq_varid(ncid, 'I_' // trim(adjustl(msg)), varid), "get rad vaird")
-    call check(nf90_put_var(ncid, varid, unpack(radiance_VL,clmask,field), &
-                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
+!     call check(nf90_inq_varid(ncid, 'I_' // trim(adjustl(msg)), varid), "get rad vaird")
+!     call check(nf90_put_var(ncid, varid, unpack(radiance_VL,clmask,field), &
+!                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
 
-    call check(nf90_inq_varid(ncid, 'surf_ref_I_' // trim(adjustl(msg)), varid), "get ref vaird")
-    call check(nf90_put_var(ncid, varid, unpack(ALBEDO,clmask,field), &
-                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
+!     call check(nf90_inq_varid(ncid, 'surf_ref_I_' // trim(adjustl(msg)), varid), "get ref vaird")
+!     call check(nf90_put_var(ncid, varid, unpack(ALBEDO,clmask,field), &
+!                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
 
-    if (.not. scalar) then
-      call check(nf90_inq_varid(ncid, 'Q_' // trim(adjustl(msg)), varid), "get q vaird")
-      call check(nf90_put_var(ncid, varid, unpack(Q,clmask,field), &
-                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
+!     if (.not. scalar) then
+!       call check(nf90_inq_varid(ncid, 'Q_' // trim(adjustl(msg)), varid), "get q vaird")
+!       call check(nf90_put_var(ncid, varid, unpack(Q,clmask,field), &
+!                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
 
-      call check(nf90_inq_varid(ncid, 'U_' // trim(adjustl(msg)), varid), "get u vaird")
-      call check(nf90_put_var(ncid, varid, unpack(U,clmask,field), &
-                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
+!       call check(nf90_inq_varid(ncid, 'U_' // trim(adjustl(msg)), varid), "get u vaird")
+!       call check(nf90_put_var(ncid, varid, unpack(U,clmask,field), &
+!                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
 
-      call check(nf90_inq_varid(ncid, 'surf_ref_Q_' // trim(adjustl(msg)), varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, unpack(BR_Q,clmask,field), &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo Q")
+!       call check(nf90_inq_varid(ncid, 'surf_ref_Q_' // trim(adjustl(msg)), varid), "get ref vaird")
+!       call check(nf90_put_var(ncid, varid, unpack(BR_Q,clmask,field), &
+!                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo Q")
 
-      call check(nf90_inq_varid(ncid, 'surf_ref_U_' // trim(adjustl(msg)), varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, unpack(BR_U,clmask,field), &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo U")
+!       call check(nf90_inq_varid(ncid, 'surf_ref_U_' // trim(adjustl(msg)), varid), "get ref vaird")
+!       call check(nf90_put_var(ncid, varid, unpack(BR_U,clmask,field), &
+!                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo U")
 
-    endif        
+!     endif        
 
-    call check( nf90_close(ncid), "close outfile" )
-    if (MAPL_am_I_root()) then
-      write(*,*) '<> Wrote Outfile '
-    end if
-
-
-  end subroutine write_outfile
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     write_addfile()
-! PURPOSE
-!     writes data to addfile
-! INPUT
-!     None
-! OUTPUT
-!     None
-!  HISTORY
-!     Oct 2018 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-
-  subroutine write_addfile
-    real*8, dimension(im,jm)           :: field  
-
-    field = dble(MISSING)
-     
-  !                             Write to Additional Outputs File
-  !                             --------------------------------
-
-    call check( nf90_open(ADD_file, nf90_write, ncid), "opening file " // ADD_file )
-    write(msg,'(F10.2)') channels(nch)
-    call check(nf90_inq_varid(ncid, 'rod_' // trim(adjustl(msg)), varid), "get rod vaird")
-    call check(nf90_put_var(ncid, varid, unpack(ROD,clmask,field), &
-              start = (/1,1,nobs/), count = (/im,jm,nobs/)), "writing out rod")
-
-    call check( nf90_close(ncid), "close addfile" )
-    if (MAPL_am_I_root()) then
-      write(*,*) '<> Wrote Additional Data file '
-    end if
-      
-
-  end subroutine write_addfile
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     write_aerfile()
-! PURPOSE
-!     writes data to aer outfile
-! INPUT
-!     None
-! OUTPUT
-!     None
-!  HISTORY
-!     Oct 2018 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-
-  subroutine write_aerfile
-    real*8, dimension(im,jm)           :: field  
-
-    field = dble(MISSING)
-
-     
-  !                             Write to Aerosol Outputs File
-  !                             --------------------------------
-    call check( nf90_open(AERO_file, nf90_write, ncid), "opening file " // AERO_file )
-    write(msg,'(F10.2)') channels(nch)
-
-    ! Aerosol Stuff
-    call check(nf90_inq_varid(ncid, 'aod_' // trim(adjustl(msg)), varid), "get aot vaird")
-    call check(nf90_put_var(ncid, varid, unpack(TAU,clmask,field), &
-              start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out tau")
-
-    call check(nf90_inq_varid(ncid, 'g_' // trim(adjustl(msg)), varid), "get g vaird")
-    call check(nf90_put_var(ncid, varid, unpack(G,clmask,field), &
-              start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out g")
-
-    call check(nf90_inq_varid(ncid, 'ssa_' // trim(adjustl(msg)), varid), "get ssa vaird")
-    call check(nf90_put_var(ncid, varid, unpack(SSA,clmask,field), &
-              start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out ssa")
+!     call check( nf90_close(ncid), "close outfile" )
+!     if (MAPL_am_I_root()) then
+!       write(*,*) '<> Wrote Outfile '
+!     end if
 
 
-    call check( nf90_close(ncid), "close aerofile" )
-    if (MAPL_am_I_root()) then
-      write(*,*) '<> Wrote Aerosol file '
-    end if
-      
-  end subroutine write_aerfile
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     write_cldfile()
-! PURPOSE
-!     writes data to cld output file
-! INPUT
-!     None
-! OUTPUT
-!     None
-!  HISTORY
-!     Oct 2018 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-
-  subroutine write_cldfile
-    real*8, dimension(im,jm)           :: field  
-
-    field = dble(MISSING)
-
-     
-  !                             Write to Cloud Outputs File
-  !                             --------------------------------
-    call check( nf90_open(CLDO_file, nf90_write, ncid), "opening file " // CLDO_file )
-    write(msg,'(F10.2)') channels(nch)
-
-    ! Liquid Cloud Stuff
-    call check(nf90_inq_varid(ncid, 'lcod_' // trim(adjustl(msg)), varid), "get lcot vaird")
-    call check(nf90_put_var(ncid, varid, unpack(LTAU,clmask,field), &
-              start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out ltau")
-
-    ! call check(nf90_inq_varid(ncid, 'lc_g_' // trim(adjustl(msg)), varid), "get lc_g vaird")
-    ! call check(nf90_put_var(ncid, varid, LG(:,startl:endl,k), &
-    !           start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out lg")
-
-    call check(nf90_inq_varid(ncid, 'lc_ssa_' // trim(adjustl(msg)), varid), "get lc_ssa vaird")
-    call check(nf90_put_var(ncid, varid, unpack(LSSA,clmask,field), &
-              start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out lssa")
-
-    ! Ice Cloud Stuff
-    call check(nf90_inq_varid(ncid, 'icod_' // trim(adjustl(msg)), varid), "get icot vaird")
-    call check(nf90_put_var(ncid, varid, unpack(ITAU,clmask,field), &
-              start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out itau")
-
-    ! call check(nf90_inq_varid(ncid, 'ic_g_' // trim(adjustl(msg)), varid), "get ic_g vaird")
-    ! call check(nf90_put_var(ncid, varid, IG(:,startl:endl,k), &
-    !           start = (/1,startl,k,nobs/), count = (/im,countl,1,nobs/)), "writing out ig")
-
-    call check(nf90_inq_varid(ncid, 'ic_ssa_' // trim(adjustl(msg)), varid), "get ic_ssa vaird")
-    call check(nf90_put_var(ncid, varid, unpack(ISSA,clmask,field), &
-              start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out issa")
+!   end subroutine write_outfile
 
 
-    call check( nf90_close(ncid), "close cldofile" )
-    
-    if (MAPL_am_I_root()) then
-      write(*,*) '<> Wrote Cloud file '
-    end if
+! !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! ! NAME
+! !     DO_OCEAN()
+! ! PURPOSE
+! !     call the correct VLIDORT Ocean Subroutine
+! ! INPUT
+! !     None
+! ! OUTPUT
+! !     None
+! !  HISTORY
+! !     Oct 2018 P. Castellanos
+! !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+!   subroutine DO_OCEAN()
+! !   WATER PIXELS
+! !   ------------
+!     if ( (lower_to_upper(watermodel) .eq. 'CX') ) then
 
-  end subroutine write_cldfile
+!       if  ( (lower_to_upper(watername) .eq. 'CX') ) then
+!         do_cxonly = .true.
+!         do_cx_sleave = .false.
+!       else if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
+!         do_cxonly = .false.
+!         do_cx_sleave = .true.
+!         if (ANY(Vsleave .eq. dble(MISSING))) then
+!           do_cx_sleave = .false.
+!         end if
+!       end if
 
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     DO_OCEAN()
-! PURPOSE
-!     call the correct VLIDORT Ocean Subroutine
-! INPUT
-!     None
-! OUTPUT
-!     None
-!  HISTORY
-!     Oct 2018 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine get_ocean_params()
-    integer              :: below
+!       if  ( do_cxonly ) then
+!       ! GISS Cox Munk Model
+!       ! -------------------------------
+!         if (scalar) then
+!           ! Call to vlidort scalar code       
+!           call VLIDORT_Scalar_OCIGissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
+!                   nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+!                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
+!                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
+!                   dble(Vpe), dble(Vze), dble(Vte), &
+!                   (/dble(U10M(c))/), &
+!                   (/dble(V10M(c))/), &
+!                   dble(mr), &
+!                   (/dble(SZA(c))/), &
+!                   (/dble(abs(RAA(c)))/), &
+!                   (/dble(VZA(c))/), &
+!                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
+!         else
+!           ! Call to vlidort vector code
+!           call VLIDORT_Vector_OCIGissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
+!                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+!                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
+!                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
+!                  dble(Vpe), dble(Vze), dble(Vte), &
+!                  (/dble(U10M(c))/), &
+!                  (/dble(V10M(c))/), &
+!                  dble(mr), &
+!                  (/dble(SZA(c))/), &
+!                  (/dble(abs(RAA(c)))/), &
+!                  (/dble(VZA(c))/), &
+!                  dble(MISSING),verbose, &
+!                  radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
+!         end if
+!       else if  ( do_cx_sleave ) then
+!       ! GISS Cox Munk Model with NOBM Water Leaving Reflectance
+!       ! ----------------------------------------------------------
+!         if (scalar) then
+!           ! Call to vlidort scalar code       
+!           call VLIDORT_Scalar_OCIGissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
+!                   nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+!                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
+!                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
+!                   dble(Vpe), dble(Vze), dble(Vte), &
+!                   (/dble(U10M(c))/), &
+!                   (/dble(V10M(c))/), &
+!                   dble(mr), &
+!                   Vsleave, &
+!                   (/dble(SZA(c))/), &
+!                   (/dble(abs(RAA(c)))/), &
+!                   (/dble(VZA(c))/), &
+!                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
+!         else
+!           ! Call to vlidort vector code          
+!           call VLIDORT_Vector_OCIGissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
+!                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+!                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
+!                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
+!                  dble(Vpe), dble(Vze), dble(Vte), &
+!                  (/dble(U10M(c))/), &
+!                  (/dble(V10M(c))/), &
+!                  dble(mr), &
+!                  Vsleave, &
+!                  (/dble(SZA(c))/), &
+!                  (/dble(abs(RAA(c)))/), &
+!                  (/dble(VZA(c))/), &
+!                  dble(MISSING),verbose, &
+!                  radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
+!         end if
+!       else
+! !       Save code for pixels that were not gap filled
+! !       ---------------------------------------------    
+!         radiance_VL_int(nobs,:) = -500
+!         reflectance_VL_int(nobs,:) = -500
+!         Valbedo = -500
+!         if (.not. scalar) then
+!           Q_int = -500
+!           U_int = -500
+!         end if
+!         ierr = 0
 
+!       end if
+!     end if          
 
-    if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-      do ch = 1, nch
-        below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .GE. 0)
-        if (channels(ch) .eq. maxval(WATER_CH)) then
-          Vsleave(ch,nobs) = dble(SLEAVE(c,ch,1))
-          if (SLEAVE(c,ch,1) .eq. sleave_missing) then
-            Vsleave(ch,nobs) = dble(MISSING)
-          end if
-        else
-          Vsleave(ch,nobs) = dble(nn_interp(WATER_CH(below:below+1),reshape(SLEAVE(c,ch,:),(/2/)),channels(ch),sleave_missing,MISSING))
-        end if
-        Vsleave(ch,nobs) = cos(dble(pi*SZA(c)/180.))*Vsleave(ch,nobs)
-      end do
-
-    end if
-  end subroutine get_ocean_params
-
-
-
-  subroutine DO_OCEAN()
-!   WATER PIXELS
-!   ------------
-    if ( (lower_to_upper(watermodel) .eq. 'CX') ) then
-
-      if  ( (lower_to_upper(watername) .eq. 'CX') ) then
-        do_cxonly = .true.
-        do_cx_sleave = .false.
-      else if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-        do_cxonly = .false.
-        do_cx_sleave = .true.
-        if (ANY(Vsleave .eq. dble(MISSING))) then
-          do_cx_sleave = .false.
-        end if
-      end if
-
-      if  ( do_cxonly ) then
-      ! GISS Cox Munk Model
-      ! -------------------------------
-        if (scalar) then
-          ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_OCIGissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
-                  dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
-                  dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
-                  dble(Vpe), dble(Vze), dble(Vte), &
-                  (/dble(U10M(c))/), &
-                  (/dble(V10M(c))/), &
-                  dble(mr), &
-                  (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
-                  (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
-        else
-          ! Call to vlidort vector code
-          call VLIDORT_Vector_OCIGissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-                 nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
-                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
-                 dble(Vpe), dble(Vze), dble(Vte), &
-                 (/dble(U10M(c))/), &
-                 (/dble(V10M(c))/), &
-                 dble(mr), &
-                 (/dble(SZA(c))/), &
-                 (/dble(abs(RAA(c)))/), &
-                 (/dble(VZA(c))/), &
-                 dble(MISSING),verbose, &
-                 radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
-        end if
-      else if  ( do_cx_sleave ) then
-      ! GISS Cox Munk Model with NOBM Water Leaving Reflectance
-      ! ----------------------------------------------------------
-        if (scalar) then
-          ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_OCIGissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
-                  dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
-                  dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
-                  dble(Vpe), dble(Vze), dble(Vte), &
-                  (/dble(U10M(c))/), &
-                  (/dble(V10M(c))/), &
-                  dble(mr), &
-                  Vsleave, &
-                  (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
-                  (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
-        else
-          ! Call to vlidort vector code          
-          call VLIDORT_Vector_OCIGissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-                 nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
-                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
-                 dble(Vpe), dble(Vze), dble(Vte), &
-                 (/dble(U10M(c))/), &
-                 (/dble(V10M(c))/), &
-                 dble(mr), &
-                 Vsleave, &
-                 (/dble(SZA(c))/), &
-                 (/dble(abs(RAA(c)))/), &
-                 (/dble(VZA(c))/), &
-                 dble(MISSING),verbose, &
-                 radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
-        end if
-      else
-!       Save code for pixels that were not gap filled
-!       ---------------------------------------------    
-        radiance_VL_int(nobs,:) = -500
-        reflectance_VL_int(nobs,:) = -500
-        Valbedo = -500
-        if (.not. scalar) then
-          Q_int = -500
-          U_int = -500
-        end if
-        ierr = 0
-
-      end if
-    end if          
-
-  end subroutine DO_OCEAN
+!   end subroutine DO_OCEAN
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1296,149 +1136,120 @@ program pace_vlidort
 
   end subroutine get_surf_params
 
-  subroutine DO_LAND()
+!   subroutine DO_LAND()
 
-  !     LAND PIXELS
-  !     -----------
+!   !     LAND PIXELS
+!   !     -----------
 
-    if ( (lower_to_upper(landmodel) .eq. 'LAMBERTIAN') ) then
-    ! Simple lambertian surface model
-    ! -------------------------------
-      if (scalar) then
-          ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
-                  dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
-                  dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
-                  dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
-                  (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
-                  (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
-      else
-        ! Call to vlidort vector code
-        call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-               nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-               dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
-               dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
-               dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
-               (/dble(SZA(c))/), &
-               (/dble(abs(RAA(c)))/), &
-               (/dble(VZA(c))/), &
-               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q_int, U_int, ierr)
-        BR_Q_int = 0
-        BR_U_int = 0
-      end if
+!     if ( (lower_to_upper(landmodel) .eq. 'LAMBERTIAN') ) then
+!     ! Simple lambertian surface model
+!     ! -------------------------------
+!       if (scalar) then
+!           ! Call to vlidort scalar code       
+!           call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
+!                   nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
+!                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
+!                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
+!                   dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
+!                   (/dble(SZA(c))/), &
+!                   (/dble(abs(RAA(c)))/), &
+!                   (/dble(VZA(c))/), &
+!                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
+!       else
+!         ! Call to vlidort vector code
+!         call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
+!                nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+!                dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
+!                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
+!                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
+!                (/dble(SZA(c))/), &
+!                (/dble(abs(RAA(c)))/), &
+!                (/dble(VZA(c))/), &
+!                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q_int, U_int, ierr)
+!         BR_Q_int = 0
+!         BR_U_int = 0
+!       end if
 
-    else if ( (index(lower_to_upper(landmodel),'RTLS') > 0) .and. (index(lower_to_upper(landmodel),'BPDF') .eq. 0) ) then
-      if ( ANY(kernel_wt == MISSING) ) then
-!       Save code for pixels that were not gap filled
-!       ---------------------------------------------    
-        radiance_VL_int(nobs,:) = -500
-        reflectance_VL_int(nobs,:) = -500
-        Valbedo = -500
-        if (.not. scalar) then
-          Q_int = -500
-          U_int = -500
-        end if
-        ierr = 0
+!     else if ( (index(lower_to_upper(landmodel),'RTLS') > 0) .and. (index(lower_to_upper(landmodel),'BPDF') .eq. 0) ) then
+!       if ( ANY(kernel_wt == MISSING) ) then
+! !       Save code for pixels that were not gap filled
+! !       ---------------------------------------------    
+!         radiance_VL_int(nobs,:) = -500
+!         reflectance_VL_int(nobs,:) = -500
+!         Valbedo = -500
+!         if (.not. scalar) then
+!           Q_int = -500
+!           U_int = -500
+!         end if
+!         ierr = 0
 
-      else   
-!       MODIS BRDF Surface Model
-!       ------------------------------
+!       else   
+! !       MODIS BRDF Surface Model
+! !       ------------------------------
 
-        if (scalar) then 
-            ! Call to vlidort scalar code            
-            call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom,  &
-                    nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
-                    dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
-                    dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
-                    dble(Vpe), dble(Vze), dble(Vte), &
-                    kernel_wt, param, &
-                    (/dble(SZA(c))/), &
-                    (/dble(abs(RAA(c)))/), &
-                    (/dble(VZA(c))/), &
-                    dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
-        else
-          ! Call to vlidort vector code
-          call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
-                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
-                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
-                  dble(Vpe), dble(Vze), dble(Vte), &
-                  kernel_wt, param, &
-                  (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
-                  (/dble(VZA(c))/), &
-                  dble(MISSING),verbose, &
-                  radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
-        end if    
-      end if
+!         if (scalar) then 
+!             ! Call to vlidort scalar code            
+!             call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom,  &
+!                     nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+!                     dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
+!                     dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
+!                     dble(Vpe), dble(Vze), dble(Vte), &
+!                     kernel_wt, param, &
+!                     (/dble(SZA(c))/), &
+!                     (/dble(abs(RAA(c)))/), &
+!                     (/dble(VZA(c))/), &
+!                     dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
+!         else
+!           ! Call to vlidort vector code
+!           call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
+!                   nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+!                   dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
+!                   dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
+!                   dble(Vpe), dble(Vze), dble(Vte), &
+!                   kernel_wt, param, &
+!                   (/dble(SZA(c))/), &
+!                   (/dble(abs(RAA(c)))/), &
+!                   (/dble(VZA(c))/), &
+!                   dble(MISSING),verbose, &
+!                   radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
+!         end if    
+!       end if
 
-    else if ( (index(lower_to_upper(landmodel),'RTLS') > 0) .and. (index(lower_to_upper(landmodel),'BPDF') > 0) ) then  
-      if ( ANY(kernel_wt == MISSING) .or. ANY(BPDFparam == land_missing)) then
-!       Save code for pixels that were not gap filled
-!       ---------------------------------------------    
-        radiance_VL_int(nobs,:) = -500
-        reflectance_VL_int(nobs,:) = -500
-        Valbedo = -500
-        if (.not. scalar) then
-          Q_int = -500
-          U_int = -500
-        end if
-        ierr = 0
+!     else if ( (index(lower_to_upper(landmodel),'RTLS') > 0) .and. (index(lower_to_upper(landmodel),'BPDF') > 0) ) then  
+!       if ( ANY(kernel_wt == MISSING) .or. ANY(BPDFparam == land_missing)) then
+! !       Save code for pixels that were not gap filled
+! !       ---------------------------------------------    
+!         radiance_VL_int(nobs,:) = -500
+!         reflectance_VL_int(nobs,:) = -500
+!         Valbedo = -500
+!         if (.not. scalar) then
+!           Q_int = -500
+!           U_int = -500
+!         end if
+!         ierr = 0
 
-      else   
-!       MODIS BPDF Surface Model
-!       ------------------------------
+!       else   
+! !       MODIS BPDF Surface Model
+! !       ------------------------------
 
-        ! Call to vlidort vector code
-        call VLIDORT_Vector_LandMODIS_BPDF_cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
-                nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-                dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
-                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
-                dble(Vpe), dble(Vze), dble(Vte), &
-                kernel_wt, param, BPDFparam, &
-                (/dble(SZA(c))/), &
-                (/dble(abs(RAA(c)))/), &
-                (/dble(VZA(c))/), &
-                dble(MISSING),verbose, &
-                radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
-      end if
+!         ! Call to vlidort vector code
+!         call VLIDORT_Vector_LandMODIS_BPDF_cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
+!                 nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+!                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
+!                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
+!                 dble(Vpe), dble(Vze), dble(Vte), &
+!                 kernel_wt, param, BPDFparam, &
+!                 (/dble(SZA(c))/), &
+!                 (/dble(abs(RAA(c)))/), &
+!                 (/dble(VZA(c))/), &
+!                 dble(MISSING),verbose, &
+!                 radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
+!       end if
 
-    end if   
+!     end if   
 
-  end subroutine DO_LAND
+!   end subroutine DO_LAND
 
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     read_OCI_stdatm
-! PURPOSE
-!     read in OCI spectral ROD and depol ratio values for standard atmosphere
-! INPUT
-! OUTPUT
-!  HISTORY
-!     Sep 2018 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine read_OCI_stdatm()
-    do pp=0,npet-1
-      if (myid .eq. pp) then
-        open(unit=15,file=OCItable_file, status='old', access='sequential', &
-              form='formatted', action='read')
-        ! read header
-        read(15,'(A)') line 
-        do k=1,nchOCI
-          read(15,*) wavOCI(k), rodOCI(k), depolOCI(k)
-        end do
-
-        close(15)
-      end if
-      call MAPL_SyncSharedMemory(rc=ierr)      
-    end do
-    if (MAPL_am_I_root()) then
-      write(*,*) '<> Read OCI Standard Atmosphere Table'
-    end if
-  end subroutine read_OCI_stdatm
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -1523,14 +1334,14 @@ program pace_vlidort
 !  HISTORY
 !     28 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine read_land()
-    if (MAPL_am_I_root()) then
-      call readvar2D("FRLAND", INV_file, READER2D)
-      FRLAND = pack(READER2D,clmask)
-      write(*,*) '<> Read fraction land data to shared memory'
-    end if       
-    call MAPL_SyncSharedMemory(rc=ierr)
-  end subroutine read_land
+  ! subroutine read_land()
+  !   if (MAPL_am_I_root()) then
+  !     call readvar2D("FRLAND", INV_file, READER2D)
+  !     FRLAND = pack(READER2D,clmask)
+  !     write(*,*) '<> Read fraction land data to shared memory'
+  !   end if       
+  !   call MAPL_SyncSharedMemory(rc=ierr)
+  ! end subroutine read_land
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -1546,7 +1357,7 @@ program pace_vlidort
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_sza()
 
-    allocate (SOLAR_ZENITH(vm,tm))
+    allocate (SOLAR_ZENITH(nalong,tm))
 
     call readvar2D("sza_ss", ANG_file, SOLAR_ZENITH)
 
@@ -1632,169 +1443,80 @@ program pace_vlidort
 !  HISTORY
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine read_aer_Nv()
-    if (MAPL_am_I_root()) then
-      if (aerosol_free) then
-        DU001 = 0
-        DU002 = 0
-        DU003 = 0
-        DU004 = 0
-        DU005 = 0
-        SS001 = 0
-        SS002 = 0
-        SS003 = 0
-        SS004 = 0
-        SS005 = 0
-        BCPHOBIC = 0
-        BCPHILIC = 0
-        OCPHOBIC = 0
-        OCPHILIC = 0
-        SO4 = 0
-        RH  = 0      
-      else
-        call readvar3D("DU001", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,DU001)
+  ! subroutine read_aer_Nv()
+  !   if (MAPL_am_I_root()) then
+  !     if (aerosol_free) then
+  !       DU001 = 0
+  !       DU002 = 0
+  !       DU003 = 0
+  !       DU004 = 0
+  !       DU005 = 0
+  !       SS001 = 0
+  !       SS002 = 0
+  !       SS003 = 0
+  !       SS004 = 0
+  !       SS005 = 0
+  !       BCPHOBIC = 0
+  !       BCPHILIC = 0
+  !       OCPHOBIC = 0
+  !       OCPHILIC = 0
+  !       SO4 = 0
+  !       RH  = 0      
+  !     else
+  !       call readvar3D("DU001", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,DU001)
 
-        call readvar3D("DU002", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,DU002)
+  !       call readvar3D("DU002", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,DU002)
 
-        call readvar3D("DU003", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,DU003)
+  !       call readvar3D("DU003", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,DU003)
 
-        call readvar3D("DU004", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,DU004)
+  !       call readvar3D("DU004", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,DU004)
 
-        call readvar3D("DU005", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,DU005)
+  !       call readvar3D("DU005", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,DU005)
 
-        call readvar3D("SS001", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,SS001)
+  !       call readvar3D("SS001", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,SS001)
 
-        call readvar3D("SS002", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,SS002)
+  !       call readvar3D("SS002", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,SS002)
 
-        call readvar3D("SS003", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,SS003)
+  !       call readvar3D("SS003", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,SS003)
 
-        call readvar3D("SS004", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,SS004)
+  !       call readvar3D("SS004", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,SS004)
 
-        call readvar3D("SS005", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,SS005)
+  !       call readvar3D("SS005", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,SS005)
 
-        call readvar3D("BCPHOBIC", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,BCPHOBIC)
+  !       call readvar3D("BCPHOBIC", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,BCPHOBIC)
 
-        call readvar3D("BCPHILIC", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,BCPHILIC)
+  !       call readvar3D("BCPHILIC", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,BCPHILIC)
 
-        call readvar3D("OCPHOBIC", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,OCPHOBIC)
+  !       call readvar3D("OCPHOBIC", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,OCPHOBIC)
 
-        call readvar3D("OCPHILIC", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,OCPHILIC)
+  !       call readvar3D("OCPHILIC", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,OCPHILIC)
 
-        call readvar3D("SO4", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,SO4)
+  !       call readvar3D("SO4", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,SO4)
 
-        call readvar3D("RH", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,RH)
-      end if
-      write(*,*) '<> Read aeorosl data to shared memory'
-    end if
+  !       call readvar3D("RH", AER_file, READER3D) 
+  !       call reduceProfile(READER3D,clmask,RH)
+  !     end if
+  !     write(*,*) '<> Read aeorosl data to shared memory'
+  !   end if
 
-    call MAPL_SyncSharedMemory(rc=ierr)    
+  !   call MAPL_SyncSharedMemory(rc=ierr)    
 
-  end subroutine read_aer_Nv
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     read_PT
-! PURPOSE
-!     read in pressure, temperature profile.  either get P,T from text file,
-!     or AIRDENS and DELP, which will later convert to P,T
-! INPUT
-!     none
-! OUTPUT
-!     none
-!  HISTORY
-!     15 May 2015 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine read_PT()
-
-
-    if (standard_atm) then
-      ! read edge vars to each processor
-      do pp=0,npet-1
-        if (myid .eq. pp) then
-          open(unit=15,file=STDATM_file, status='old', access='sequential', &
-                form='formatted', action='read')
-          read(15,'(A)') line
-          do k=1,km+1
-            read(15,*) Vpe(k,nobs),Vte(k,nobs),Vze(k,nobs)
-          end do
-
-          close(15)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-      end do
-    else
-      if (MAPL_am_I_root()) then
-        call readvar3D("AIRDENS", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,AIRDENS)
-
-        call readvar3D("DELP"   , AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,DELP)
-      end if     
-    end if
-
-
-    call MAPL_SyncSharedMemory(rc=ierr)    
-    if (MAPL_am_I_root()) then
-      write(*,*) '<> Read pressutre,temperature data to shared memory'
-    end if     
-    call MAPL_SyncSharedMemory(rc=ierr)   
-
-  end subroutine read_PT
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     read_cld_Tau
-! PURPOSE
-!     read in cloud optical depth
-! INPUT
-!     none
-! OUTPUT
-!     none
-!  HISTORY
-!     August 2017 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine read_cld_Tau()
-
-    if (MAPL_am_I_root()) then
-      if (cloud_free) then
-        REI = 0
-        REL = 0
-        TAUI = 0
-        TAUL = 0
-      else
-        call readvar3D("REI"    , CLD_file, READER3D) 
-        call reduceProfile(READER3D,clmask,REI)
-
-        call readvar3D("REL"    , CLD_file, READER3D) 
-        call reduceProfile(READER3D,clmask,REL)
-
-        call readvar3D("TAUI"   , CLD_file, READER3D) 
-        call reduceProfile(READER3D,clmask,TAUI)
-
-        call readvar3D("TAUL"   , CLD_file, READER3D) 
-        call reduceProfile(READER3D,clmask,TAUL)
-      end if
-      write(*,*) '<> Read cloud data to shared memory'
-    end if
-
-    call MAPL_SyncSharedMemory(rc=ierr)    
-
-  end subroutine read_cld_Tau
+  ! end subroutine read_aer_Nv
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1827,55 +1549,6 @@ program pace_vlidort
 
   end subroutine reduceProfile
 
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     read_water
-! PURPOSE
-!     read in water leaving reflectance
-! INPUT
-!     none
-! OUTPUT
-!     none
-!  HISTORY
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine read_water()
-
-    if (MAPL_am_I_root()) then
-      if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-        call readvar1D('wavelength', WAT_file, WATER_CH)
-        call read_SLEAVE()            
-        write(*,*) '<> Read SLEAVE data to shared memory'
-      end if
-    end if 
-
-    call MAPL_SyncSharedMemory(rc=ierr) 
-
-  end subroutine read_water
-
-  subroutine read_SLEAVE()
-    integer                            :: below
-    integer                            :: ncid, varid
-    real, dimension(im,jm,2)           :: temp
-    real, dimension(clrm,2)            :: tempReduce
-    real, dimension(im,jm,wnch)        :: temp3d 
-    
-    call readvar3D('rrs',WAT_file,temp3d)
-
-    do ch = 1, nch
-      ! get channel below
-      below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .GE. 0)
-      if (channels(ch) .eq. maxval(WATER_CH)) then
-        temp = 0
-        temp(:,:,1) = temp3d(:,:,below)
-      else
-        temp = temp3d(:,:,below:below+1)          
-      end if
-      call reduceProfile(temp,clmask,tempReduce)
-      SLEAVE(:,ch,:) = tempReduce
-      
-    end do
-
-  end subroutine read_SLEAVE
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -1890,95 +1563,95 @@ program pace_vlidort
 !     15 May 2015 P. Castellanos
 !     Jul 2015 P. Castellanos - added OMI LER option
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine read_surf_land()
-    if (MAPL_am_I_root()) then
-      ! RTLS Kernel
-      if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
-        call read_RTLS()
-        write(*,*) '<> Read BRDF data to shared memory'
+  ! subroutine read_surf_land()
+  !   if (MAPL_am_I_root()) then
+  !     ! RTLS Kernel
+  !     if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
+  !       call read_RTLS()
+  !       write(*,*) '<> Read BRDF data to shared memory'
 
-        if ((index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
-          call read_LER()   
-          write(*,*) '<> Read LER data to shared memory'
-        end if
-      end if
+  !       if ((index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
+  !         call read_LER()   
+  !         write(*,*) '<> Read LER data to shared memory'
+  !       end if
+  !     end if
 
-      ! BPDF
-      if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
-        call read_BPDF()
-        write(*,*) '<> Read BPDF data to shared memory'
-      end if
+  !     ! BPDF
+  !     if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
+  !       call read_BPDF()
+  !       write(*,*) '<> Read BPDF data to shared memory'
+  !     end if
 
-      ! Lambertian
-      if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
-        call read_LER()     
-        write(*,*) '<> Read LER data to shared memory'
-      end if 
-    end if
-    call MAPL_SyncSharedMemory(rc=ierr) 
-  end subroutine read_surf_land
+  !     ! Lambertian
+  !     if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
+  !       call read_LER()     
+  !       write(*,*) '<> Read LER data to shared memory'
+  !     end if 
+  !   end if
+  !   call MAPL_SyncSharedMemory(rc=ierr) 
+  ! end subroutine read_surf_land
 
 
-  subroutine read_RTLS()
-    integer                            :: Nx, Ny, ntile
-    integer                            :: xstart, xend, ystart, yend
-    integer                            :: x, y
-    character(len=100)                 :: sds
+  ! subroutine read_RTLS()
+  !   integer                            :: Nx, Ny, ntile
+  !   integer                            :: xstart, xend, ystart, yend
+  !   integer                            :: x, y
+  !   character(len=100)                 :: sds
 
-    do ch = 1,landbandmBRDF
-      if ( landband_cBRDF(ch) < 1000 ) then
-        write(sds,'(A4,I3)') "Riso",int(landband_cBRDF(ch))
-      else
-        write(sds,'(A4,I4)') "Riso",int(landband_cBRDF(ch))
-      end if
+  !   do ch = 1,landbandmBRDF
+  !     if ( landband_cBRDF(ch) < 1000 ) then
+  !       write(sds,'(A4,I3)') "Riso",int(landband_cBRDF(ch))
+  !     else
+  !       write(sds,'(A4,I4)') "Riso",int(landband_cBRDF(ch))
+  !     end if
 
-      call readvar2D(trim(sds), BRDF_file, READER2D) 
-      KISO(:,ch) = pack(READER2D,clmask)
+  !     call readvar2D(trim(sds), BRDF_file, READER2D) 
+  !     KISO(:,ch) = pack(READER2D,clmask)
 
-      if ( landband_cBRDF(ch) < 1000 ) then
-        write(sds,'(A4,I3)') "Rgeo",int(landband_cBRDF(ch))
-      else
-        write(sds,'(A4,I4)') "Rgeo",int(landband_cBRDF(ch))
-      end if
+  !     if ( landband_cBRDF(ch) < 1000 ) then
+  !       write(sds,'(A4,I3)') "Rgeo",int(landband_cBRDF(ch))
+  !     else
+  !       write(sds,'(A4,I4)') "Rgeo",int(landband_cBRDF(ch))
+  !     end if
       
-      call readvar2D(trim(sds), BRDF_file, READER2D) 
-      KGEO(:,ch) = pack(READER2D,clmask)
+  !     call readvar2D(trim(sds), BRDF_file, READER2D) 
+  !     KGEO(:,ch) = pack(READER2D,clmask)
 
-      if ( landband_cBRDF(ch) < 1000 ) then
-        write(sds,'(A4,I3)') "Rvol",int(landband_cBRDF(ch))
-      else
-        write(sds,'(A4,I4)') "Rvol",int(landband_cBRDF(ch))
-      end if
+  !     if ( landband_cBRDF(ch) < 1000 ) then
+  !       write(sds,'(A4,I3)') "Rvol",int(landband_cBRDF(ch))
+  !     else
+  !       write(sds,'(A4,I4)') "Rvol",int(landband_cBRDF(ch))
+  !     end if
 
-      call readvar2D(trim(sds), BRDF_file, READER2D) 
-      KVOL(:,ch) = pack(READER2D,clmask)      
-    end do
+  !     call readvar2D(trim(sds), BRDF_file, READER2D) 
+  !     KVOL(:,ch) = pack(READER2D,clmask)      
+  !   end do
     
-  end subroutine read_RTLS
+  ! end subroutine read_RTLS
 
-  subroutine read_BPDF()
+  ! subroutine read_BPDF()
 
-    call readvar2D('NDVI', NDVI_file, READER2D) 
-    NDVI = pack(READER2D,clmask)
-    call readvar2D('BPDFcoef', BPDF_file, READER2D) 
-    BPDFcoef= pack(READER2D,clmask)
-  end subroutine read_BPDF
+  !   call readvar2D('NDVI', NDVI_file, READER2D) 
+  !   NDVI = pack(READER2D,clmask)
+  !   call readvar2D('BPDFcoef', BPDF_file, READER2D) 
+  !   BPDFcoef= pack(READER2D,clmask)
+  ! end subroutine read_BPDF
 
-  subroutine read_LER()
-    real, pointer                      :: temp(:,:,:,:)
-    character(len=100)                 :: sds
+  ! subroutine read_LER()
+  !   real, pointer                      :: temp(:,:,:,:)
+  !   character(len=100)                 :: sds
 
-    allocate(temp(im,jm,1,1))
-    do ch = 1,landbandmLER
-      if ( landband_cLER(ch) < 1000 ) then
-        write(sds,'(A6,I3)') "SRFLER",int(landband_cLER(ch))
-      end if
+  !   allocate(temp(im,jm,1,1))
+  !   do ch = 1,landbandmLER
+  !     if ( landband_cLER(ch) < 1000 ) then
+  !       write(sds,'(A6,I3)') "SRFLER",int(landband_cLER(ch))
+  !     end if
       
-      call readvar4D(trim(sds), LER_file, temp) 
-      LER(:,ch) = pack(reshape(temp(:,:,1,1),(/im,jm/)),clmask)
-    end do
-    deallocate(temp)
-  end subroutine read_LER
+  !     call readvar4D(trim(sds), LER_file, temp) 
+  !     LER(:,ch) = pack(reshape(temp(:,:,1,1),(/im,jm/)),clmask)
+  !   end do
+  !   deallocate(temp)
+  ! end subroutine read_LER
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1993,73 +1666,73 @@ program pace_vlidort
 !  HISTORY
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine read_angles()
-    real, dimension(im,jm)     :: temp
-    real, allocatable          :: saa_(:),angle(:,:)
-    integer                    :: i,j
-    real                       :: add_offset, scale_factor
+  ! subroutine read_angles()
+  !   real, dimension(im,jm)     :: temp
+  !   real, allocatable          :: saa_(:),angle(:,:)
+  !   integer                    :: i,j
+  !   real                       :: add_offset, scale_factor
 
-    if (MAPL_am_I_root()) then  
-      allocate (saa_(clrm))
-      allocate (angle(im,jm))
+  !   if (MAPL_am_I_root()) then  
+  !     allocate (saa_(clrm))
+  !     allocate (angle(im,jm))
 
-      call readvar2Dgrp("solar_zenith", "geolocation_data", ANG_file, angle)
-      call readVattrgrp("add_offset", "geolocation_data", ANG_file, "solar_zenith", add_offset)
-      call readVattrgrp("scale_factor", "geolocation_data", ANG_file, "solar_zenith", scale_factor)
+  !     call readvar2Dgrp("solar_zenith", "geolocation_data", ANG_file, angle)
+  !     call readVattrgrp("add_offset", "geolocation_data", ANG_file, "solar_zenith", add_offset)
+  !     call readVattrgrp("scale_factor", "geolocation_data", ANG_file, "solar_zenith", scale_factor)
 
-      angle = angle*dble(scale_factor) + dble(add_offset)
-      SZA = pack(angle,clmask)
+  !     angle = angle*dble(scale_factor) + dble(add_offset)
+  !     SZA = pack(angle,clmask)
 
 
-      call readvar2Dgrp("sensor_zenith", "geolocation_data", ANG_file, angle)
-      call readVattrgrp("add_offset", "geolocation_data", ANG_file, "sensor_zenith", add_offset)
-      call readVattrgrp("scale_factor", "geolocation_data", ANG_file, "sensor_zenith", scale_factor)
+  !     call readvar2Dgrp("sensor_zenith", "geolocation_data", ANG_file, angle)
+  !     call readVattrgrp("add_offset", "geolocation_data", ANG_file, "sensor_zenith", add_offset)
+  !     call readVattrgrp("scale_factor", "geolocation_data", ANG_file, "sensor_zenith", scale_factor)
 
-      angle = angle*dble(scale_factor) + dble(add_offset)
-      VZA = pack(angle,clmask)
+  !     angle = angle*dble(scale_factor) + dble(add_offset)
+  !     VZA = pack(angle,clmask)
 
-      call readvar2Dgrp("solar_azimuth", "geolocation_data", ANG_file, angle)
-      call readVattrgrp("add_offset", "geolocation_data", ANG_file, "solar_azimuth", add_offset)
-      call readVattrgrp("scale_factor", "geolocation_data", ANG_file, "solar_azimuth", scale_factor)
+  !     call readvar2Dgrp("solar_azimuth", "geolocation_data", ANG_file, angle)
+  !     call readVattrgrp("add_offset", "geolocation_data", ANG_file, "solar_azimuth", add_offset)
+  !     call readVattrgrp("scale_factor", "geolocation_data", ANG_file, "solar_azimuth", scale_factor)
 
-      angle = angle*dble(scale_factor) + dble(add_offset)
-      SAA = pack(angle,clmask)
+  !     angle = angle*dble(scale_factor) + dble(add_offset)
+  !     SAA = pack(angle,clmask)
 
-      call readvar2Dgrp("sensor_azimuth", "geolocation_data", ANG_file, angle)
-      call readVattrgrp("add_offset", "geolocation_data", ANG_file, "sensor_azimuth", add_offset)
-      call readVattrgrp("scale_factor", "geolocation_data", ANG_file, "sensor_azimuth", scale_factor)
+  !     call readvar2Dgrp("sensor_azimuth", "geolocation_data", ANG_file, angle)
+  !     call readVattrgrp("add_offset", "geolocation_data", ANG_file, "sensor_azimuth", add_offset)
+  !     call readVattrgrp("scale_factor", "geolocation_data", ANG_file, "sensor_azimuth", scale_factor)
 
-      angle = angle*dble(scale_factor) + dble(add_offset)
-      VAA = pack(angle,clmask)
+  !     angle = angle*dble(scale_factor) + dble(add_offset)
+  !     VAA = pack(angle,clmask)
 
-      ! make azimiuths clockwise from north
-      do i = 1, clrm
-        if (SAA(i) < 0) then
-          SAA(i) = 360.0 + SAA(i)
-        end if
-        if (VAA(i) < 0) then
-          VAA(i) = 360.0 + VAA(i)
-        end if
-      end do
+  !     ! make azimiuths clockwise from north
+  !     do i = 1, clrm
+  !       if (SAA(i) < 0) then
+  !         SAA(i) = 360.0 + SAA(i)
+  !       end if
+  !       if (VAA(i) < 0) then
+  !         VAA(i) = 360.0 + VAA(i)
+  !       end if
+  !     end do
      
-      ! define according to photon travel direction
-      saa_ = SAA + 180.0
-      do i = 1, clrm
-        if (saa_(i) >= 360.0) then
-          saa_(i) = saa_(i) - 360.0
-        end if
-      end do
+  !     ! define according to photon travel direction
+  !     saa_ = SAA + 180.0
+  !     do i = 1, clrm
+  !       if (saa_(i) >= 360.0) then
+  !         saa_(i) = saa_(i) - 360.0
+  !       end if
+  !     end do
 
-      RAA = VAA - saa_
+  !     RAA = VAA - saa_
 
-      deallocate (saa_)
-      write(*,*) '<> Read angle data to shared memory' 
+  !     deallocate (saa_)
+  !     write(*,*) '<> Read angle data to shared memory' 
 
-    end if
-    call MAPL_SyncSharedMemory(rc=ierr)    
+  !   end if
+  !   call MAPL_SyncSharedMemory(rc=ierr)    
 
 
-  end subroutine read_angles  
+  ! end subroutine read_angles  
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -2073,20 +1746,20 @@ program pace_vlidort
 !  HISTORY
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine read_wind()
+  ! subroutine read_wind()
 
-    if (MAPL_am_I_root()) then
-      call readvar2D("U10M",   MET_file, READER2D) 
-      U10M = pack(READER2D,clmask)
+  !   if (MAPL_am_I_root()) then
+  !     call readvar2D("U10M",   MET_file, READER2D) 
+  !     U10M = pack(READER2D,clmask)
 
-      call readvar2D("V10M",  MET_file, READER2D) 
-      V10M = pack(READER2D,clmask)
-      write(*,*) '<> Read wind data to shared memory' 
-    end if
+  !     call readvar2D("V10M",  MET_file, READER2D) 
+  !     V10M = pack(READER2D,clmask)
+  !     write(*,*) '<> Read wind data to shared memory' 
+  !   end if
 
-    call MAPL_SyncSharedMemory(rc=ierr)    
+  !   call MAPL_SyncSharedMemory(rc=ierr)    
     
-  end subroutine read_wind
+  ! end subroutine read_wind
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2101,192 +1774,192 @@ program pace_vlidort
 !  HISTORY
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine allocate_shared(clrm)
-    integer, intent(in)      :: clrm
+!   subroutine allocate_shared(clrm)
+!     integer, intent(in)      :: clrm
 
-    if (MAPL_am_I_root()) then
-      write(*,*) '<> Allocating shared memory variables',im,jm,km, clrm
-    end if
-    call MAPL_AllocNodeArray(READER3D,(/im,jm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(READER2D,(/im,jm/),rc=ierr)
-    call MAPL_AllocNodeArray(AIRDENS,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(RH,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DELP,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(REI,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(REL,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(TAUI,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(TAUL,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU001,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU002,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU003,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU004,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(DU005,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS001,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS002,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS003,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS004,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SS005,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(BCPHOBIC,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(BCPHILIC,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(OCPHOBIC,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(OCPHILIC,(/clrm,km/),rc=ierr)
-    call MAPL_AllocNodeArray(SO4,(/clrm,km/),rc=ierr)
-    if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
-      call MAPL_AllocNodeArray(KISO,(/clrm,landbandmBRDF/),rc=ierr)
-      call MAPL_AllocNodeArray(KVOL,(/clrm,landbandmBRDF/),rc=ierr)
-      call MAPL_AllocNodeArray(KGEO,(/clrm,landbandmBRDF/),rc=ierr)
-    end if
-    if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
-      call MAPL_AllocNodeArray(LER,(/clrm,landbandmLER/),rc=ierr)
-    end if 
-    if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
-      if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then
-        call MAPL_AllocNodeArray(NDVI,(/clrm/),rc=ierr)
-        call MAPL_AllocNodeArray(BPDFcoef,(/clrm/),rc=ierr)
-      end if
-    end if
+!     if (MAPL_am_I_root()) then
+!       write(*,*) '<> Allocating shared memory variables',im,jm,km, clrm
+!     end if
+!     call MAPL_AllocNodeArray(READER3D,(/im,jm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(READER2D,(/im,jm/),rc=ierr)
+!     call MAPL_AllocNodeArray(AIRDENS,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(RH,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(DELP,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(REI,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(REL,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(TAUI,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(TAUL,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(DU001,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(DU002,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(DU003,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(DU004,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(DU005,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(SS001,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(SS002,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(SS003,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(SS004,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(SS005,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(BCPHOBIC,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(BCPHILIC,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(OCPHOBIC,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(OCPHILIC,(/clrm,km/),rc=ierr)
+!     call MAPL_AllocNodeArray(SO4,(/clrm,km/),rc=ierr)
+!     if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
+!       call MAPL_AllocNodeArray(KISO,(/clrm,landbandmBRDF/),rc=ierr)
+!       call MAPL_AllocNodeArray(KVOL,(/clrm,landbandmBRDF/),rc=ierr)
+!       call MAPL_AllocNodeArray(KGEO,(/clrm,landbandmBRDF/),rc=ierr)
+!     end if
+!     if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
+!       call MAPL_AllocNodeArray(LER,(/clrm,landbandmLER/),rc=ierr)
+!     end if 
+!     if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
+!       if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then
+!         call MAPL_AllocNodeArray(NDVI,(/clrm/),rc=ierr)
+!         call MAPL_AllocNodeArray(BPDFcoef,(/clrm/),rc=ierr)
+!       end if
+!     end if
 
-    call MAPL_AllocNodeArray(SZA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(VZA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(SAA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(VAA,(/clrm/),rc=ierr) 
+!     call MAPL_AllocNodeArray(SZA,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(VZA,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(SAA,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(VAA,(/clrm/),rc=ierr) 
 
-    call MAPL_AllocNodeArray(FRLAND,(/clrm/),rc=ierr) 
+!     call MAPL_AllocNodeArray(FRLAND,(/clrm/),rc=ierr) 
 
-    call MAPL_AllocNodeArray(U10M,(/clrm/),rc=ierr) 
-    call MAPL_AllocNodeArray(V10M,(/clrm/),rc=ierr) 
+!     call MAPL_AllocNodeArray(U10M,(/clrm/),rc=ierr) 
+!     call MAPL_AllocNodeArray(V10M,(/clrm/),rc=ierr) 
 
-    call MAPL_AllocNodeArray(TAU,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(SSA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(G,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(LTAU,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(LSSA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(LG,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(ITAU,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(ISSA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(IG,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(TAU,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(SSA,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(G,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(LTAU,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(LSSA,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(LG,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(ITAU,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(ISSA,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(IG,(/clrm/),rc=ierr)
 
-    call MAPL_AllocNodeArray(ROD,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(ALBEDO,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(PE,(/clrm,km+1/),rc=ierr)
-    call MAPL_AllocNodeArray(ZE,(/clrm,km+1/),rc=ierr)
-    call MAPL_AllocNodeArray(TE,(/clrm,km+1/),rc=ierr)
+!     call MAPL_AllocNodeArray(ROD,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(ALBEDO,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(PE,(/clrm,km+1/),rc=ierr)
+!     call MAPL_AllocNodeArray(ZE,(/clrm,km+1/),rc=ierr)
+!     call MAPL_AllocNodeArray(TE,(/clrm,km+1/),rc=ierr)
     
-    if (.not. scalar) then
-      call MAPL_AllocNodeArray(Q,(/clrm/),rc=ierr)
-      call MAPL_AllocNodeArray(U,(/clrm/),rc=ierr)
-      call MAPL_AllocNodeArray(BR_Q,(/clrm/),rc=ierr)
-      call MAPL_AllocNodeArray(BR_U,(/clrm/),rc=ierr)
+!     if (.not. scalar) then
+!       call MAPL_AllocNodeArray(Q,(/clrm/),rc=ierr)
+!       call MAPL_AllocNodeArray(U,(/clrm/),rc=ierr)
+!       call MAPL_AllocNodeArray(BR_Q,(/clrm/),rc=ierr)
+!       call MAPL_AllocNodeArray(BR_U,(/clrm/),rc=ierr)
 
-    end if
+!     end if
 
-    if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-      call MAPL_AllocNodeArray(SLEAVE,(/clrm,nch,2/),rc=ierr)
-      call MAPL_AllocNodeArray(WATER_CH,(/wnch/),rc=ierr)
-    end if
+!     if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
+!       call MAPL_AllocNodeArray(SLEAVE,(/clrm,nch,2/),rc=ierr)
+!       call MAPL_AllocNodeArray(WATER_CH,(/wnch/),rc=ierr)
+!     end if
 
-    call MAPL_AllocNodeArray(radiance_VL,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(reflectance_VL,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(radiance_VL,(/clrm/),rc=ierr)
+!     call MAPL_AllocNodeArray(reflectance_VL,(/clrm/),rc=ierr)
 
-  end subroutine allocate_shared
+!   end subroutine allocate_shared
 
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     allocate_multinode
-! PURPOSE
-!     allocates all the unshared arrays that I need on the nodes that are not root
-! INPUT
-!     clrm   :: number of pixels this processor needs to work on
-! OUTPUT
-!     none
-!  HISTORY
-!     
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine allocate_multinode(clrm)
-    integer, intent(in)    :: clrm
+! !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! ! NAME
+! !     allocate_multinode
+! ! PURPOSE
+! !     allocates all the unshared arrays that I need on the nodes that are not root
+! ! INPUT
+! !     clrm   :: number of pixels this processor needs to work on
+! ! OUTPUT
+! !     none
+! !  HISTORY
+! !     
+! !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+!   subroutine allocate_multinode(clrm)
+!     integer, intent(in)    :: clrm
 
-    if (clrm > 0) then
-      allocate (AIRDENS(clrm,km))
-      allocate (RH(clrm,km))
-      allocate (DELP(clrm,km))
-      allocate (REI(clrm,km))
-      allocate (REL(clrm,km))
-      allocate (TAUI(clrm,km))
-      allocate (TAUL(clrm,km))      
-      allocate (DU001(clrm,km))
-      allocate (DU002(clrm,km))
-      allocate (DU003(clrm,km))
-      allocate (DU004(clrm,km))
-      allocate (DU005(clrm,km))
-      allocate (SS001(clrm,km))
-      allocate (SS002(clrm,km))
-      allocate (SS003(clrm,km))
-      allocate (SS004(clrm,km))
-      allocate (SS005(clrm,km))
-      allocate (BCPHOBIC(clrm,km))
-      allocate (BCPHILIC(clrm,km))
-      allocate (OCPHOBIC(clrm,km))
-      allocate (OCPHILIC(clrm,km))
-      allocate (SO4(clrm,km))
-      if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
-        allocate (KISO(clrm,landbandmBRDF))
-        allocate (KVOL(clrm,landbandmBRDF))
-        allocate (KGEO(clrm,landbandmBRDF))
-      end if
-      if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
-        allocate (LER(clrm,landbandmLER))
-      end if 
-      if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
-        if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then  
-          allocate (NDVI(clrm))    
-          allocate (BPDFcoef(clrm))
-        end if
-      end if
+!     if (clrm > 0) then
+!       allocate (AIRDENS(clrm,km))
+!       allocate (RH(clrm,km))
+!       allocate (DELP(clrm,km))
+!       allocate (REI(clrm,km))
+!       allocate (REL(clrm,km))
+!       allocate (TAUI(clrm,km))
+!       allocate (TAUL(clrm,km))      
+!       allocate (DU001(clrm,km))
+!       allocate (DU002(clrm,km))
+!       allocate (DU003(clrm,km))
+!       allocate (DU004(clrm,km))
+!       allocate (DU005(clrm,km))
+!       allocate (SS001(clrm,km))
+!       allocate (SS002(clrm,km))
+!       allocate (SS003(clrm,km))
+!       allocate (SS004(clrm,km))
+!       allocate (SS005(clrm,km))
+!       allocate (BCPHOBIC(clrm,km))
+!       allocate (BCPHILIC(clrm,km))
+!       allocate (OCPHOBIC(clrm,km))
+!       allocate (OCPHILIC(clrm,km))
+!       allocate (SO4(clrm,km))
+!       if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
+!         allocate (KISO(clrm,landbandmBRDF))
+!         allocate (KVOL(clrm,landbandmBRDF))
+!         allocate (KGEO(clrm,landbandmBRDF))
+!       end if
+!       if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
+!         allocate (LER(clrm,landbandmLER))
+!       end if 
+!       if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
+!         if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then  
+!           allocate (NDVI(clrm))    
+!           allocate (BPDFcoef(clrm))
+!         end if
+!       end if
 
-      allocate (SZA(clrm))
-      allocate (VZA(clrm))
-      allocate (RAA(clrm))
-      allocate (SAA(clrm))
-      allocate (VAA(clrm))
+!       allocate (SZA(clrm))
+!       allocate (VZA(clrm))
+!       allocate (RAA(clrm))
+!       allocate (SAA(clrm))
+!       allocate (VAA(clrm))
 
-      allocate (FRLAND(clrm))
+!       allocate (FRLAND(clrm))
 
-      allocate (U10M(clrm))
-      allocate (V10M(clrm))
+!       allocate (U10M(clrm))
+!       allocate (V10M(clrm))
 
-      allocate (TAU(clrm))
-      allocate (SSA(clrm))
-      allocate (G(clrm))
-      allocate (LTAU(clrm))
-      allocate (LSSA(clrm))
-      allocate (LG(clrm))
-      allocate (ITAU(clrm))
-      allocate (ISSA(clrm))
-      allocate (IG(clrm))
+!       allocate (TAU(clrm))
+!       allocate (SSA(clrm))
+!       allocate (G(clrm))
+!       allocate (LTAU(clrm))
+!       allocate (LSSA(clrm))
+!       allocate (LG(clrm))
+!       allocate (ITAU(clrm))
+!       allocate (ISSA(clrm))
+!       allocate (IG(clrm))
 
-      allocate (ROD(clrm))
-      allocate (ALBEDO(clrm))
-      allocate (PE(clrm,km+1))
-      allocate (ZE(clrm,km+1))
-      allocate (TE(clrm,km+1))
+!       allocate (ROD(clrm))
+!       allocate (ALBEDO(clrm))
+!       allocate (PE(clrm,km+1))
+!       allocate (ZE(clrm,km+1))
+!       allocate (TE(clrm,km+1))
       
-      if (.not. scalar) then
-        allocate (Q(clrm))
-        allocate (U(clrm))
-        allocate (BR_Q(clrm))
-        allocate (BR_U(clrm))
-      end if
+!       if (.not. scalar) then
+!         allocate (Q(clrm))
+!         allocate (U(clrm))
+!         allocate (BR_Q(clrm))
+!         allocate (BR_U(clrm))
+!       end if
 
-      if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-        allocate (SLEAVE(clrm,nch,2))
-        allocate (WATER_CH(wnch))
-      end if
+!       if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
+!         allocate (SLEAVE(clrm,nch,2))
+!         allocate (WATER_CH(wnch))
+!       end if
 
-      allocate (radiance_VL(clrm))
-      allocate (reflectance_VL(clrm))
-    end if
-  end subroutine allocate_multinode
+!       allocate (radiance_VL(clrm))
+!       allocate (reflectance_VL(clrm))
+!     end if
+!   end subroutine allocate_multinode
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2330,8 +2003,6 @@ program pace_vlidort
 
     allocate (ROT(km,nobs,nch))
     allocate (depol(nch))
-    allocate (ROD_stdatm(nch))
-    allocate (DEPOL_stdatm(nch))
     allocate (Vpmom(km,nch,nobs,nMom,nPol))
 
     if (.not. scalar) then      
@@ -2429,10 +2100,11 @@ program pace_vlidort
     integer                            :: isotimeVarID, lonVarID, latVarID
     integer                            :: timeVarID, levVarID, xVarID, yVarID
     integer                            :: vzaVarID, vaaVarID, szaVarID, saaVarID
+    integer                            :: rotVarID, depolVarID, oriVarID
     integer                            :: ch
 
     real*8,allocatable,dimension(:)    :: lon, lat, sza, vza, raa
-    real*8,allocatable,dimension(:)    :: time, x, y
+    real*8,allocatable,dimension(:)    :: scantime, x, y, lev
     character(len=1),allocatable,dimension(:,:) :: isotime
 
     character(len=2000)                :: comment
@@ -2444,8 +2116,8 @@ program pace_vlidort
 
     ! Create dimensions
     call check(nf90_def_dim(ncid, "ls", 19, lsDimID), "creating ls dimension") 
-    call check(nf90_def_dim(ncid, "channel", 1, chimID), "creating channel dimension") 
-    call check(nf90_def_dim(ncid, "view_angles", nvza, nvzaDimID), "creating view_angles dimension") 
+    call check(nf90_def_dim(ncid, "channel", 1, chDimID), "creating channel dimension") 
+    call check(nf90_def_dim(ncid, "view_angles", nalong, nvzaDimID), "creating view_angles dimension") 
     call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
     call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating lev dimension") !km
     call check(nf90_def_dim(ncid, "x", 1, xDimID), "creating x dimension") 
@@ -2648,7 +2320,7 @@ program pace_vlidort
     call check(nf90_enddef(ncid),"leaving define mode")
 
     ! write out ew, ns, lev, time, clon, clat, & scantime
-    allocate (time(tm))
+    allocate (scantime(tm))
     allocate (isotime(19,tm))
     allocate (lon(tm))
     allocate (lat(tm))
@@ -2657,8 +2329,8 @@ program pace_vlidort
     allocate (lev(km))
 
 
-    call readvar1D("time", INV_file, time)
-    call check(nf90_put_var(ncid,timeVarID,time), "writing out time")
+    call readvar1D("time", INV_file, scantime)
+    call check(nf90_put_var(ncid,timeVarID,scantime), "writing out time")
 
     call readvar2D("isotime", INV_file, isotime)
     call check(nf90_put_var(ncid,isotimeVarID,isotime), "writing out isotime")
@@ -2667,7 +2339,7 @@ program pace_vlidort
     call check(nf90_put_var(ncid,lonVarID,lon), "writing out lon")
 
     call readvar1D("trjLat", INV_file, lat)
-    call check(nf90_put_var(ncid,latVarID,clat), "writing out lat")
+    call check(nf90_put_var(ncid,latVarID,lat), "writing out lat")
 
     call readvar1D("lev", AER_file, lev)
     call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
@@ -2676,7 +2348,7 @@ program pace_vlidort
     call check(nf90_put_var(ncid,xVarID,x), "writing out x")
 
     call readvar1D("y", INV_file, y)
-    call check(nf90_put_var(ncid,nsVarID,y), "writing out y")   
+    call check(nf90_put_var(ncid,yVarID,y), "writing out y")   
 
     call check( nf90_close(ncid), "close outfile" )
 
@@ -2783,7 +2455,6 @@ program pace_vlidort
     call ESMF_ConfigGetAttribute(cf, aerosol_free, label = 'AEROSOL_FREE:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=12)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
-    call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
 
     ! Land Surface
     call ESMF_ConfigGetAttribute(cf, landname, label = 'LANDNAME:',default='MAIACRTLS')
