@@ -2175,7 +2175,7 @@ program pace_vlidort
     call check(nf90_def_var(ncid, 'surface_reflectance',nf90_float,(/nvzaDimID,timeDimID/),albVarID),"create albedo var")
     if (.not. scalar) then
       call check(nf90_def_var(ncid, 'surface_reflectance_Q',nf90_float,(/nvzaDimID,timeDimID/),brQVarID),"create Q var")
-      call check(nf90_def_var(ncid, 'surface_reflectance_Q',nf90_float,(/nvzaDimID,timeDimID/),brUVarID),"create U var")
+      call check(nf90_def_var(ncid, 'surface_reflectance_U',nf90_float,(/nvzaDimID,timeDimID/),brUVarID),"create U var")
     end if        
 
     call check(nf90_def_var(ncid,'ROT',nf90_float,(/levDimID,timeDimID/),rotVarID),"create rot var")
