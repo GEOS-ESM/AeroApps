@@ -1360,7 +1360,7 @@ program pace_vlidort
     allocate (SOLAR_ZENITH(nalong,tm))
 
     call readvar2D("sza_ss", ANG_file, SOLAR_ZENITH)
-
+ 
   end subroutine read_sza
 
 
@@ -2252,7 +2252,6 @@ program pace_vlidort
     write(comment,*) 'seconds since ',date(1:4),'-',date(5:6),'-',date(7:8),' ',time(1:2),':',time(3:4),':',time(5:6)
     call check(nf90_put_att(ncid,timeVarID,'units',trim(adjustl(comment))),"units attr")
 
-    call check(nf90_put_att(ncid,isotimeVarID,'long_name','Time (ISO Format)'),"long_name attr")
 
 
 !                                          EW, NS, LEV, TIME
