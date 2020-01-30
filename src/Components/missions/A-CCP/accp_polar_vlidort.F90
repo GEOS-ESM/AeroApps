@@ -1320,14 +1320,15 @@ program pace_vlidort
 !  HISTORY
 !     28 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  ! subroutine read_land()
-  !   if (MAPL_am_I_root()) then
-  !     call readvar2D("FRLAND", INV_file, READER2D)
-  !     FRLAND = pack(READER2D,clmask)
-  !     write(*,*) '<> Read fraction land data to shared memory'
-  !   end if       
-  !   call MAPL_SyncSharedMemory(rc=ierr)
-  ! end subroutine read_land
+  subroutine read_land()
+    if (MAPL_am_I_root()) then
+      call readvar1D("FRLAND", INV_file, READER1D)
+      FRLAND = pack(READER1D,clmask)
+      write(*,*) '<> Read fraction land data to shared memory'
+    end if       
+    
+    call MAPL_SyncSharedMemory(rc=ierr)
+  end subroutine read_land
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
