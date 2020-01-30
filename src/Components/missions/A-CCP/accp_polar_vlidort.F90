@@ -80,6 +80,7 @@ program pace_vlidort
   real, pointer                         :: AIRDENS(:,:) => null()
   real, pointer                         :: RH(:,:) => null()
   real, pointer                         :: DELP(:,:) => null()
+  real, pointer                         :: PS(:) => null()  
   real, pointer                         :: DU001(:,:) => null()
   real, pointer                         :: DU002(:,:) => null()
   real, pointer                         :: DU003(:,:) => null()
@@ -347,9 +348,8 @@ program pace_vlidort
 ! Read in the global arrays
 ! ------------------------------
   call read_land()
-!   call read_aer_Nv()
-!   call read_PT()
-!   call read_surf_land()
+  call read_aer_Nv()
+  call read_surf_land()
 !   call read_water()
 !   call read_angles()
 !   call read_cld_Tau()
@@ -1326,7 +1326,7 @@ program pace_vlidort
       FRLAND = pack(READER1D,clmask)
       write(*,*) '<> Read fraction land data to shared memory'
     end if       
-    
+
     call MAPL_SyncSharedMemory(rc=ierr)
   end subroutine read_land
 
@@ -1430,80 +1430,71 @@ program pace_vlidort
 !  HISTORY
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  ! subroutine read_aer_Nv()
-  !   if (MAPL_am_I_root()) then
-  !     if (aerosol_free) then
-  !       DU001 = 0
-  !       DU002 = 0
-  !       DU003 = 0
-  !       DU004 = 0
-  !       DU005 = 0
-  !       SS001 = 0
-  !       SS002 = 0
-  !       SS003 = 0
-  !       SS004 = 0
-  !       SS005 = 0
-  !       BCPHOBIC = 0
-  !       BCPHILIC = 0
-  !       OCPHOBIC = 0
-  !       OCPHILIC = 0
-  !       SO4 = 0
-  !       RH  = 0      
-  !     else
-  !       call readvar3D("DU001", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,DU001)
+  subroutine read_aer_Nv()
+    if (MAPL_am_I_root()) then
+      call readvar2D("DU001", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,DU001)
 
-  !       call readvar3D("DU002", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,DU002)
+      call readvar2D("DU002", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,DU002)
 
-  !       call readvar3D("DU003", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,DU003)
+      call readvar2D("DU003", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,DU003)
 
-  !       call readvar3D("DU004", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,DU004)
+      call readvar2D("DU004", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,DU004)
 
-  !       call readvar3D("DU005", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,DU005)
+      call readvar2D("DU005", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,DU005)
 
-  !       call readvar3D("SS001", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,SS001)
+      call readvar2D("SS001", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,SS001)
 
-  !       call readvar3D("SS002", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,SS002)
+      call readvar2D("SS002", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,SS002)
 
-  !       call readvar3D("SS003", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,SS003)
+      call readvar2D("SS003", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,SS003)
 
-  !       call readvar3D("SS004", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,SS004)
+      call readvar2D("SS004", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,SS004)
 
-  !       call readvar3D("SS005", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,SS005)
+      call readvar2D("SS005", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,SS005)
 
-  !       call readvar3D("BCPHOBIC", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,BCPHOBIC)
+      call readvar2D("BCPHOBIC", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,BCPHOBIC)
 
-  !       call readvar3D("BCPHILIC", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,BCPHILIC)
+      call readvar2D("BCPHILIC", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,BCPHILIC)
 
-  !       call readvar3D("OCPHOBIC", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,OCPHOBIC)
+      call readvar2D("OCPHOBIC", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,OCPHOBIC)
 
-  !       call readvar3D("OCPHILIC", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,OCPHILIC)
+      call readvar2D("OCPHILIC", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,OCPHILIC)
 
-  !       call readvar3D("SO4", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,SO4)
+      call readvar2D("SO4", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,SO4)
 
-  !       call readvar3D("RH", AER_file, READER3D) 
-  !       call reduceProfile(READER3D,clmask,RH)
-  !     end if
-  !     write(*,*) '<> Read aeorosl data to shared memory'
-  !   end if
+      call readvar2D("RH", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,RH)
 
-  !   call MAPL_SyncSharedMemory(rc=ierr)    
+      call readvar2D("DELP", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,DELP)
 
-  ! end subroutine read_aer_Nv
+      call readvar2D("AIRDENS", AER_file, READER2D) 
+      call reduceProfile(READER2D,clmask,AIRDENS)
+
+      call readvar1D("PS", AER_file, READER1D) 
+      PS = pack(READER1D,clmask)
+
+      write(*,*) '<> Read aeorosl data to shared memory'
+    end if
+
+    call MAPL_SyncSharedMemory(rc=ierr)    
+
+  end subroutine read_aer_Nv
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1520,18 +1511,17 @@ program pace_vlidort
 !     29 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine reduceProfile(var,mask,reducedProfile)
-    real,intent(in),dimension(:,:,:)               :: var
-    logical,intent(in),dimension(:,:)              :: mask
-    real,intent(inout),dimension(:,:)              :: reducedProfile
+    real,intent(in),dimension(:,:)               :: var
+    logical,intent(in),dimension(:)              :: mask
+    real,intent(inout),dimension(:,:)            :: reducedProfile
 
-    integer                                        :: im, jm, km, k
+    integer                                        :: tm, km, k
 
-    im = size(var,1)
-    jm = size(var,2)
-    km = size(var,3)
+    km = size(var,1)
+    tm = size(var,2)
 
     do k = 1, km
-      reducedProfile(:,k) = pack(reshape(var(:,:,k),(/im,jm/)),mask)
+      reducedProfile(:,k) = pack(reshape(var(k,:),(/tm/)),mask)
     end do
 
   end subroutine reduceProfile
@@ -1550,95 +1540,92 @@ program pace_vlidort
 !     15 May 2015 P. Castellanos
 !     Jul 2015 P. Castellanos - added OMI LER option
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  ! subroutine read_surf_land()
-  !   if (MAPL_am_I_root()) then
-  !     ! RTLS Kernel
-  !     if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
-  !       call read_RTLS()
-  !       write(*,*) '<> Read BRDF data to shared memory'
+  subroutine read_surf_land()
+    if (MAPL_am_I_root()) then
+      ! RTLS Kernel
+      if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
+        call read_RTLS()
+        write(*,*) '<> Read BRDF data to shared memory'
 
-  !       if ((index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
-  !         call read_LER()   
-  !         write(*,*) '<> Read LER data to shared memory'
-  !       end if
-  !     end if
+        if ((index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
+          call read_LER()   
+          write(*,*) '<> Read LER data to shared memory'
+        end if
+      end if
 
-  !     ! BPDF
-  !     if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
-  !       call read_BPDF()
-  !       write(*,*) '<> Read BPDF data to shared memory'
-  !     end if
+      ! BPDF
+      if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
+        call read_BPDF()
+        write(*,*) '<> Read BPDF data to shared memory'
+      end if
 
-  !     ! Lambertian
-  !     if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
-  !       call read_LER()     
-  !       write(*,*) '<> Read LER data to shared memory'
-  !     end if 
-  !   end if
-  !   call MAPL_SyncSharedMemory(rc=ierr) 
-  ! end subroutine read_surf_land
+      ! Lambertian
+      if (lower_to_upper(landmodel) == 'LAMBERTIAN') then
+        call read_LER()     
+        write(*,*) '<> Read LER data to shared memory'
+      end if 
+    end if
+    call MAPL_SyncSharedMemory(rc=ierr) 
+  end subroutine read_surf_land
 
 
-  ! subroutine read_RTLS()
-  !   integer                            :: Nx, Ny, ntile
-  !   integer                            :: xstart, xend, ystart, yend
-  !   integer                            :: x, y
-  !   character(len=100)                 :: sds
+  subroutine read_RTLS()
+    character(len=100)                 :: sds
 
-  !   do ch = 1,landbandmBRDF
-  !     if ( landband_cBRDF(ch) < 1000 ) then
-  !       write(sds,'(A4,I3)') "Riso",int(landband_cBRDF(ch))
-  !     else
-  !       write(sds,'(A4,I4)') "Riso",int(landband_cBRDF(ch))
-  !     end if
+    do ch = 1,landbandmBRDF
+      if ( landband_cBRDF(ch) < 1000 ) then
+        write(sds,'(A4,I3)') "Riso",int(landband_cBRDF(ch))
+      else
+        write(sds,'(A4,I4)') "Riso",int(landband_cBRDF(ch))
+      end if
 
-  !     call readvar2D(trim(sds), BRDF_file, READER2D) 
-  !     KISO(:,ch) = pack(READER2D,clmask)
+      call readvar1D(trim(sds), BRDF_file, READER1D) 
+      KISO(:,ch) = pack(READER1D,clmask)
 
-  !     if ( landband_cBRDF(ch) < 1000 ) then
-  !       write(sds,'(A4,I3)') "Rgeo",int(landband_cBRDF(ch))
-  !     else
-  !       write(sds,'(A4,I4)') "Rgeo",int(landband_cBRDF(ch))
-  !     end if
+      if ( landband_cBRDF(ch) < 1000 ) then
+        write(sds,'(A4,I3)') "Rgeo",int(landband_cBRDF(ch))
+      else
+        write(sds,'(A4,I4)') "Rgeo",int(landband_cBRDF(ch))
+      end if
       
-  !     call readvar2D(trim(sds), BRDF_file, READER2D) 
-  !     KGEO(:,ch) = pack(READER2D,clmask)
+      call readvar1D(trim(sds), BRDF_file, READER1D) 
+      KGEO(:,ch) = pack(READER1D,clmask)
 
-  !     if ( landband_cBRDF(ch) < 1000 ) then
-  !       write(sds,'(A4,I3)') "Rvol",int(landband_cBRDF(ch))
-  !     else
-  !       write(sds,'(A4,I4)') "Rvol",int(landband_cBRDF(ch))
-  !     end if
+      if ( landband_cBRDF(ch) < 1000 ) then
+        write(sds,'(A4,I3)') "Rvol",int(landband_cBRDF(ch))
+      else
+        write(sds,'(A4,I4)') "Rvol",int(landband_cBRDF(ch))
+      end if
 
-  !     call readvar2D(trim(sds), BRDF_file, READER2D) 
-  !     KVOL(:,ch) = pack(READER2D,clmask)      
-  !   end do
+      call readvar1D(trim(sds), BRDF_file, READER1D) 
+      KVOL(:,ch) = pack(READER1D,clmask)      
+    end do
     
-  ! end subroutine read_RTLS
+  end subroutine read_RTLS
 
-  ! subroutine read_BPDF()
+  subroutine read_BPDF()
 
-  !   call readvar2D('NDVI', NDVI_file, READER2D) 
-  !   NDVI = pack(READER2D,clmask)
-  !   call readvar2D('BPDFcoef', BPDF_file, READER2D) 
-  !   BPDFcoef= pack(READER2D,clmask)
-  ! end subroutine read_BPDF
+    call readvar1D('NDVI', NDVI_file, READER1D) 
+    NDVI = pack(READER1D,clmask)
+    call readvar1D('BPDFcoef', BPDF_file, READER1D) 
+    BPDFcoef= pack(READER1D,clmask)
+  end subroutine read_BPDF
 
-  ! subroutine read_LER()
-  !   real, pointer                      :: temp(:,:,:,:)
-  !   character(len=100)                 :: sds
+  subroutine read_LER()
+    real, pointer                      :: temp(:,:)
+    character(len=100)                 :: sds
 
-  !   allocate(temp(im,jm,1,1))
-  !   do ch = 1,landbandmLER
-  !     if ( landband_cLER(ch) < 1000 ) then
-  !       write(sds,'(A6,I3)') "SRFLER",int(landband_cLER(ch))
-  !     end if
+    allocate(temp(1,tm))
+    do ch = 1,landbandmLER
+      if ( landband_cLER(ch) < 1000 ) then
+        write(sds,'(A6,I3)') "SRFLER",int(landband_cLER(ch))
+      end if
       
-  !     call readvar4D(trim(sds), LER_file, temp) 
-  !     LER(:,ch) = pack(reshape(temp(:,:,1,1),(/im,jm/)),clmask)
-  !   end do
-  !   deallocate(temp)
-  ! end subroutine read_LER
+      call readvar2D(trim(sds), LER_file, temp) 
+      LER(:,ch) = pack(reshape(temp(1,:),(/tm/)),clmask)
+    end do
+    deallocate(temp)
+  end subroutine read_LER
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1772,6 +1759,7 @@ program pace_vlidort
     call MAPL_AllocNodeArray(AIRDENS,(/clrm,km/),rc=ierr)
     call MAPL_AllocNodeArray(RH,(/clrm,km/),rc=ierr)
     call MAPL_AllocNodeArray(DELP,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(PS,(/clrm/),rc=ierr)
     call MAPL_AllocNodeArray(DU001,(/clrm,km/),rc=ierr)
     call MAPL_AllocNodeArray(DU002,(/clrm,km/),rc=ierr)
     call MAPL_AllocNodeArray(DU003,(/clrm,km/),rc=ierr)

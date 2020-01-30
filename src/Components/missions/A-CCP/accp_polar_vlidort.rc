@@ -6,10 +6,12 @@ SCALAR: false
 PLANE_PARALLEL: True
 
 LANDNAME: MCD43C
-LANDMODEL: RTLS
+LANDMODEL: RTLS-HYBRID
 LANDBAND_C_BRDF: 470 550 650 850 1200 1600 2100
 BRDF_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB/surface/BRDF/MCD43C1/006/Y2006/M01/D01/gpm-g5nr.lb2.brdf.20060101_0100z.nc4
-
+LANDBAND_C_LER: 354 388
+LER_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB/surface/LER/OMI/Y2006/M01/D01/gpm-g5nr.lb2.ler.20060101_0100z.nc4
+ 
 WATERMODEL: CX
 WATERMR: 1.334
 
