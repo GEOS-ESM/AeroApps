@@ -111,7 +111,7 @@ program pace_vlidort
   real, pointer                         :: BPDFcoef(:) => null()  
   integer, pointer                      :: indices(:) => null()
   real, pointer                         :: READER2D(:,:) => null()
-  real, pointer                         :: READER3D(:,:,:) => null()
+  real, pointer                         :: READER1D(:) => null()
 
 
 ! VLIDORT input arrays
@@ -325,29 +325,28 @@ program pace_vlidort
   end if
 
 
-! ! Unshared angles no longer needed
-! !---------------------------------------
-!   deallocate (SOLAR_ZENITH)
-!   deallocate (SENSOR_ZENITH)
+! Unshared angles no longer needed
+!---------------------------------------
+  deallocate (SOLAR_ZENITH)
 
-!   if (MAPL_am_I_root()) then
-!     write(*,*) '<> Created Mask'
-!     write(*,'(A,I3,A)') '       ',nint(100.*clrm/(im*jm)),'% of the domain will be simulated'
-!     write(*,'(A,I,A)')  '       Simulating ',clrm,' pixels'
-!     write(*,*) ' '
-!   end if   
+  if (MAPL_am_I_root()) then
+    write(*,*) '<> Created Mask'
+    write(*,'(A,I3,A)') '       ',nint(100.*clrm/(tm)),'% of the domain will be simulated'
+    write(*,'(A,I,A)')  '       Simulating ',clrm,' pixels'
+    write(*,*) ' '
+  end if   
 
-! ! Allocate the Global arrays using SHMEM
-! ! It will be available on all processors
-! ! ---------------------------------------------------------
-!   if (amOnFirstNode) then
-!     call allocate_shared(clrm)
-!   end if
-!   call MAPL_SyncSharedMemory(rc=ierr)
+! Allocate the Global arrays using SHMEM
+! It will be available on all processors
+! ---------------------------------------------------------
+  if (amOnFirstNode) then
+    call allocate_shared(clrm)
+  end if
+  call MAPL_SyncSharedMemory(rc=ierr)
   
-! ! ! Read in the global arrays
-! ! ! ------------------------------
-!   call read_land()
+! Read in the global arrays
+! ------------------------------
+  call read_land()
 !   call read_aer_Nv()
 !   call read_PT()
 !   call read_surf_land()
@@ -1761,95 +1760,80 @@ program pace_vlidort
 !  HISTORY
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-!   subroutine allocate_shared(clrm)
-!     integer, intent(in)      :: clrm
+  subroutine allocate_shared(clrm)
+    integer, intent(in)      :: clrm
 
-!     if (MAPL_am_I_root()) then
-!       write(*,*) '<> Allocating shared memory variables',im,jm,km, clrm
-!     end if
-!     call MAPL_AllocNodeArray(READER3D,(/im,jm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(READER2D,(/im,jm/),rc=ierr)
-!     call MAPL_AllocNodeArray(AIRDENS,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(RH,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(DELP,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(REI,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(REL,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(TAUI,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(TAUL,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(DU001,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(DU002,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(DU003,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(DU004,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(DU005,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(SS001,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(SS002,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(SS003,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(SS004,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(SS005,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(BCPHOBIC,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(BCPHILIC,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(OCPHOBIC,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(OCPHILIC,(/clrm,km/),rc=ierr)
-!     call MAPL_AllocNodeArray(SO4,(/clrm,km/),rc=ierr)
-!     if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
-!       call MAPL_AllocNodeArray(KISO,(/clrm,landbandmBRDF/),rc=ierr)
-!       call MAPL_AllocNodeArray(KVOL,(/clrm,landbandmBRDF/),rc=ierr)
-!       call MAPL_AllocNodeArray(KGEO,(/clrm,landbandmBRDF/),rc=ierr)
-!     end if
-!     if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
-!       call MAPL_AllocNodeArray(LER,(/clrm,landbandmLER/),rc=ierr)
-!     end if 
-!     if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
-!       if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then
-!         call MAPL_AllocNodeArray(NDVI,(/clrm/),rc=ierr)
-!         call MAPL_AllocNodeArray(BPDFcoef,(/clrm/),rc=ierr)
-!       end if
-!     end if
+    if (MAPL_am_I_root()) then
+      write(*,*) '<> Allocating shared memory variables',tm,km, clrm
+    end if
+    call MAPL_AllocNodeArray(READER2D,(/km,tm/),rc=ierr)
+    call MAPL_AllocNodeArray(READER1D,(/tm/),rc=ierr)
+    call MAPL_AllocNodeArray(AIRDENS,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(RH,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DELP,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU001,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU002,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU003,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU004,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(DU005,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS001,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS002,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS003,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS004,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SS005,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(BCPHOBIC,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(BCPHILIC,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(OCPHOBIC,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(OCPHILIC,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(SO4,(/clrm,km/),rc=ierr)
+    if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
+      call MAPL_AllocNodeArray(KISO,(/clrm,landbandmBRDF/),rc=ierr)
+      call MAPL_AllocNodeArray(KVOL,(/clrm,landbandmBRDF/),rc=ierr)
+      call MAPL_AllocNodeArray(KGEO,(/clrm,landbandmBRDF/),rc=ierr)
+    end if
+    if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
+      call MAPL_AllocNodeArray(LER,(/clrm,landbandmLER/),rc=ierr)
+    end if 
+    if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
+      if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then
+        call MAPL_AllocNodeArray(NDVI,(/clrm/),rc=ierr)
+        call MAPL_AllocNodeArray(BPDFcoef,(/clrm/),rc=ierr)
+      end if
+    end if
 
-!     call MAPL_AllocNodeArray(SZA,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(VZA,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(SAA,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(VAA,(/clrm/),rc=ierr) 
+    call MAPL_AllocNodeArray(SZA,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(VZA,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(SAA,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(VAA,(/clrm/),rc=ierr) 
 
-!     call MAPL_AllocNodeArray(FRLAND,(/clrm/),rc=ierr) 
+    call MAPL_AllocNodeArray(FRLAND,(/clrm/),rc=ierr) 
 
-!     call MAPL_AllocNodeArray(U10M,(/clrm/),rc=ierr) 
-!     call MAPL_AllocNodeArray(V10M,(/clrm/),rc=ierr) 
+    call MAPL_AllocNodeArray(U10M,(/clrm/),rc=ierr) 
+    call MAPL_AllocNodeArray(V10M,(/clrm/),rc=ierr) 
 
-!     call MAPL_AllocNodeArray(TAU,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(SSA,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(G,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(LTAU,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(LSSA,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(LG,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(ITAU,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(ISSA,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(IG,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(TAU,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(SSA,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(G,(/clrm/),rc=ierr)
 
-!     call MAPL_AllocNodeArray(ROD,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(ALBEDO,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(PE,(/clrm,km+1/),rc=ierr)
-!     call MAPL_AllocNodeArray(ZE,(/clrm,km+1/),rc=ierr)
-!     call MAPL_AllocNodeArray(TE,(/clrm,km+1/),rc=ierr)
+    call MAPL_AllocNodeArray(ROD,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(ALBEDO,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(PE,(/clrm,km+1/),rc=ierr)
+    call MAPL_AllocNodeArray(ZE,(/clrm,km+1/),rc=ierr)
+    call MAPL_AllocNodeArray(TE,(/clrm,km+1/),rc=ierr)
     
-!     if (.not. scalar) then
-!       call MAPL_AllocNodeArray(Q,(/clrm/),rc=ierr)
-!       call MAPL_AllocNodeArray(U,(/clrm/),rc=ierr)
-!       call MAPL_AllocNodeArray(BR_Q,(/clrm/),rc=ierr)
-!       call MAPL_AllocNodeArray(BR_U,(/clrm/),rc=ierr)
+    if (.not. scalar) then
+      call MAPL_AllocNodeArray(Q,(/clrm/),rc=ierr)
+      call MAPL_AllocNodeArray(U,(/clrm/),rc=ierr)
+      call MAPL_AllocNodeArray(BR_Q,(/clrm/),rc=ierr)
+      call MAPL_AllocNodeArray(BR_U,(/clrm/),rc=ierr)
 
-!     end if
+    end if
 
-!     if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-!       call MAPL_AllocNodeArray(SLEAVE,(/clrm,nch,2/),rc=ierr)
-!       call MAPL_AllocNodeArray(WATER_CH,(/wnch/),rc=ierr)
-!     end if
+    call MAPL_AllocNodeArray(radiance_VL,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(reflectance_VL,(/clrm/),rc=ierr)
 
-!     call MAPL_AllocNodeArray(radiance_VL,(/clrm/),rc=ierr)
-!     call MAPL_AllocNodeArray(reflectance_VL,(/clrm/),rc=ierr)
-
-!   end subroutine allocate_shared
+  end subroutine allocate_shared
 
 ! !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! ! NAME
