@@ -195,7 +195,7 @@ program pace_vlidort
   integer                               :: c, cc                                     ! clear pixel working variable
   real, allocatable                     :: SOLAR_ZENITH(:,:)                         ! solar zenith angles used for data filtering
   real,allocatable                      :: SENSOR_ZENITH(:,:)                        ! SENSOR zenith angles used for data filtering  
-  logical, allocatable                  :: clmask(:)                               ! cloud-land mask
+  logical, allocatable                  :: clmask(:)                                 ! cloud-land mask
 
 ! netcdf variables
 !----------------------  
@@ -294,48 +294,35 @@ program pace_vlidort
 ! -------------------------------------
   call read_sza()
 
-! ! Create mask
-! ! ------------------------
-!   ! first check that you can do anything!!!!!  
-!   if (.not. ANY(SOLAR_ZENITH < szamax)) then   
-!     if (MAPL_am_I_root()) then
-!       write(*,*) 'The sun has set, nothing to do'
-!       write(*,*) 'Exiting.....'
-!     end if
-!     GOTO 500
-!   end if
+! Create mask
+! ------------------------
+  ! first check that you can do anything!!!!!  
+  if (.not. ANY(SOLAR_ZENITH < szamax)) then   
+    if (MAPL_am_I_root()) then
+      write(*,*) 'The sun has set, nothing to do'
+      write(*,*) 'Exiting.....'
+    end if
+    GOTO 500
+  end if
 
-!   if (.not. ANY(SENSOR_ZENITH < vzamax)) then   
-!     if (MAPL_am_I_root()) then
-!       write(*,*) 'View angle too slant, nothing to do'
-!       write(*,*) 'Exiting.....'
-!     end if
-!     GOTO 500
-!   end if  
+! Figure out how many indices to work on
+!------------------------------------------
+  clrm = 0
+  clmask = .False.
+  do i=1,tm
+    if (ALL(SOLAR_ZENITH(:,i) < szamax)) then
+      clrm = clrm + 1
+      clmask(i) = .True.
+    end if
+  end do
 
-
-! ! Figure out how many indices to work on
-! !------------------------------------------
-!   clrm = 0
-!   clmask = .False.
-!   do i=1,im
-!     do j=1,jm
-!       if (SOLAR_ZENITH(i,j) < szamax) then
-!         if (SENSOR_ZENITH(i,j) < vzamax) then
-!           clrm = clrm + 1
-!           clmask(i,j) = .True.
-!         end if
-!       end if
-!     end do
-!   end do
-
-!   if (clrm == 0) then
-!     if (MAPL_am_I_root()) then
-!       write(*,*) 'No good pixels, nothing to do'
-!       write(*,*) 'Exiting.....'
-!     end if
-!     GOTO 500
-!   end if
+  if (clrm == 0) then
+    if (MAPL_am_I_root()) then
+      write(*,*) 'No good pixels, nothing to do'
+      write(*,*) 'Exiting.....'
+    end if
+    GOTO 500
+  end if
 
 
 ! ! Unshared angles no longer needed
