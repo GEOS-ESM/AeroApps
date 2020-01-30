@@ -1,0 +1,20 @@
+DATE: 20060101
+TIME: 010000
+INSTNAME: gpm-polar07
+CHANNELS: 550
+SCALAR: false
+PLANE_PARALLEL: True
+
+LANDNAME: MCD43C
+LANDMODEL: RTLS
+LANDBAND_C_BRDF: 470 550 650 850 1200 1600 2100
+BRDF_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB/surface/BRDF/MCD43C1/006/Y2006/M01/D01/gpm-g5nr.lb2.brdf.20060101_0100z.nc4
+
+WATERMODEL: CX
+WATERMR: 1.334
+
+AER_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB/Y2006/M01/D01/gpm-g5nr.lb2.aer_Nv.20060101_0100z.nc4
+MET_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB/Y2006/M01/D01/gpm-g5nr.lb2.met_Nv.20060101_0100z.nc4
+ANG_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB/Y2006/M01/D01/gpm-g5nr.lb2.polar07.20060101_0100z.nc4
+INV_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB/Y2006/M01/D01/gpm-g5nr.lb2.asm_Nx.20060101_0100z.nc4
+OUT_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelC/Y2006/M01/D01/gpm-polar07-g5nr.lc.vlidort.20060101_0100z_940d00nm.nc4
