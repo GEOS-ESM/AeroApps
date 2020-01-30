@@ -2150,7 +2150,7 @@ program pace_vlidort
 !                                     ----------    
     call check(nf90_def_var(ncid,'trjLon',nf90_float,(/timeDimID/),lonVarID),"create lon var")
     call check(nf90_def_var(ncid,'trjLat',nf90_float,(/timeDimID/),latVarID),"create lat var")
-    call check(nf90_def_var(ncid,'time',nf90_float,(/timeDimID/),timeVarID),"create time var")
+    call check(nf90_def_var(ncid,'time',nf90_int,(/timeDimID/),timeVarID),"create time var")
     call check(nf90_def_var(ncid,'lev',nf90_float,(/levDimID/),levVarID),"create lev var")
     call check(nf90_def_var(ncid,'isotime',nf90_char,(/lsDimID,timeDimID/),isotimeVarID),"create isotime var")
     call check(nf90_def_var(ncid,'x',nf90_float,(/xDimID/),xVarID),"create x var")
@@ -2330,7 +2330,7 @@ program pace_vlidort
 
 
     call readvar1D("time", INV_file, scantime)
-    call check(nf90_put_var(ncid,timeVarID,scantime), "writing out time")
+    call check(nf90_put_var(ncid,timeVarID,int(scantime)), "writing out time")
 
     call readvar2D("isotime", INV_file, isotime)
     call check(nf90_put_var(ncid,isotimeVarID,isotime), "writing out isotime")
