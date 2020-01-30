@@ -2097,7 +2097,7 @@ program pace_vlidort
     integer                            :: ncid
     integer                            :: timeDimID, xDimID, yDimID, levDimID, lsDimID 
     integer                            :: nvzaDimID, chDimID     
-    integer                            :: isotimeVarID, lonVarID, latVarID
+    integer                            :: lonVarID, latVarID
     integer                            :: timeVarID, levVarID, xVarID, yVarID
     integer                            :: vzaVarID, vaaVarID, szaVarID, saaVarID
     integer                            :: rotVarID, depolVarID, oriVarID
@@ -2105,7 +2105,6 @@ program pace_vlidort
 
     real*8,allocatable,dimension(:)    :: lon, lat, sza, vza, raa
     real*8,allocatable,dimension(:)    :: scantime, x, y, lev
-    character(len=1),allocatable,dimension(:,:) :: isotime
 
     character(len=2000)                :: comment
 
@@ -2115,7 +2114,6 @@ program pace_vlidort
     call check(nf90_create(OUT_file, IOR(nf90_netcdf4, nf90_clobber), ncid), "creating file " // OUT_file)
 
     ! Create dimensions
-    call check(nf90_def_dim(ncid, "ls", 19, lsDimID), "creating ls dimension") 
     call check(nf90_def_dim(ncid, "channel", 1, chDimID), "creating channel dimension") 
     call check(nf90_def_dim(ncid, "view_angles", nalong, nvzaDimID), "creating view_angles dimension") 
     call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
@@ -2152,7 +2150,6 @@ program pace_vlidort
     call check(nf90_def_var(ncid,'trjLat',nf90_float,(/timeDimID/),latVarID),"create lat var")
     call check(nf90_def_var(ncid,'time',nf90_int,(/timeDimID/),timeVarID),"create time var")
     call check(nf90_def_var(ncid,'lev',nf90_float,(/levDimID/),levVarID),"create lev var")
-    call check(nf90_def_var(ncid,'isotime',nf90_char,(/lsDimID,timeDimID/),isotimeVarID),"create isotime var")
     call check(nf90_def_var(ncid,'x',nf90_float,(/xDimID/),xVarID),"create x var")
     call check(nf90_def_var(ncid,'y',nf90_float,(/yDimID/),yVarID),"create y var")
 
@@ -2321,7 +2318,6 @@ program pace_vlidort
 
     ! write out ew, ns, lev, time, clon, clat, & scantime
     allocate (scantime(tm))
-    allocate (isotime(19,tm))
     allocate (lon(tm))
     allocate (lat(tm))
     allocate (x(1))
@@ -2331,9 +2327,6 @@ program pace_vlidort
 
     call readvar1D("time", INV_file, scantime)
     call check(nf90_put_var(ncid,timeVarID,int(scantime)), "writing out time")
-
-    call readvar2D("isotime", INV_file, isotime)
-    call check(nf90_put_var(ncid,isotimeVarID,isotime), "writing out isotime")
 
     call readvar1D("trjLon", INV_file, lon)
     call check(nf90_put_var(ncid,lonVarID,lon), "writing out lon")
