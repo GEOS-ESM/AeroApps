@@ -101,11 +101,11 @@ program pace_vlidort
   real, pointer                         :: KGEO(:,:) => null() 
   real, pointer                         :: LER(:,:) => null()   
   real, pointer                         :: FRLAND(:) => null()
-  real, pointer                         :: SZA(:) => null()
-  real, pointer                         :: VZA(:) => null()
-  real, pointer                         :: SAA(:) => null()
-  real, pointer                         :: VAA(:) => null()
-  real, pointer                         :: RAA(:) => null()
+  real, pointer                         :: SZA(:,:) => null()
+  real, pointer                         :: VZA(:,:) => null()
+  real, pointer                         :: SAA(:,:) => null()
+  real, pointer                         :: VAA(:,:) => null()
+  real, pointer                         :: RAA(:,:) => null()
   real, pointer                         :: V10M(:) => null()  
   real, pointer                         :: U10M(:) => null()  
   real, pointer                         :: NDVI(:) => null()  
@@ -134,7 +134,7 @@ program pace_vlidort
   real*8, allocatable                   :: reflectance_VL_int(:,:)                ! TOA reflectance from VLIDORT  
   real*8, allocatable                   :: Q_int(:,:)                             ! Q Stokes component
   real*8, allocatable                   :: U_int(:,:)                             ! U Stokes component
-  real*8, allocatable                   :: ROT(:,:,:)                             ! rayleigh optical thickness
+  real*8, allocatable                   :: ROT_int(:,:,:)                         ! rayleigh optical thickness
   real*8, allocatable                   :: depol(:)                               ! rayleigh depolarization ratio
   real*8, allocatable                   :: BR_Q_int(:,:)                          ! surface albedo Q
   real*8, allocatable                   :: BR_U_int(:,:)                          ! surface albedo U
@@ -142,25 +142,19 @@ program pace_vlidort
 
 !                                  Final Shared Arrays
 !                                  -------------------
-  real*8, pointer                       :: radiance_VL(:) => null()             ! TOA normalized radiance from VLIDORT
-  real*8, pointer                       :: reflectance_VL(:) => null()          ! TOA reflectance from VLIDORT
-  real*8, pointer                       :: Q(:) => null()                      ! Q Stokes component
-  real*8, pointer                       :: U(:) => null()                      ! U Stokes component
-  real*8, pointer                       :: ROD(:) => null()                    ! rayleigh optical depth
-  real*8, pointer                       :: ALBEDO(:) => null()                 ! bi-directional surface reflectance
-  real*8, pointer                       :: BR_Q(:) => null()                   ! bi-directional surface reflectance Q
-  real*8, pointer                       :: BR_U(:) => null()                   ! bi-directional surface reflectance U
+  real*8, pointer                       :: radiance_VL(:,:) => null()             ! TOA normalized radiance from VLIDORT
+  real*8, pointer                       :: reflectance_VL(:,:) => null()          ! TOA reflectance from VLIDORT
+  real*8, pointer                       :: Q(:,:) => null()                      ! Q Stokes component
+  real*8, pointer                       :: U(:,:) => null()                      ! U Stokes component
+  real*8, pointer                       :: ROT(:,:) => null()                  ! rayleigh optical depth
+  real*8, pointer                       :: ALBEDO(:,:) => null()                 ! bi-directional surface reflectance
+  real*8, pointer                       :: BR_Q(:,:) => null()                   ! bi-directional surface reflectance Q
+  real*8, pointer                       :: BR_U(:,:) => null()                   ! bi-directional surface reflectance U
 
 
   real, pointer                         :: TAU(:) => null()                  ! aerosol optical depth
   real, pointer                         :: SSA(:) => null()                  ! single scattering albedo
   real, pointer                         :: G(:) => null()                    ! asymmetry factor
-  real, pointer                         :: LTAU(:) => null()                 ! liquid cloud optical depth
-  real, pointer                         :: LSSA(:) => null()                 ! liquid cloud single scattering albedo
-  real, pointer                         :: LG(:) => null()                   ! liquid cloud asymmetry factor
-  real, pointer                         :: ITAU(:) => null()                 ! ice cloud optical depth
-  real, pointer                         :: ISSA(:) => null()                 ! ice cloud single scattering albedo
-  real, pointer                         :: IG(:) => null()                   ! ice cloud asymmetry factor
 
   real, pointer                         :: PE(:,:) => null()
   real, pointer                         :: ZE(:,:) => null()  
@@ -195,7 +189,6 @@ program pace_vlidort
   integer                               :: clrm_total                                ! number of clear pixels 
   integer                               :: c, cc                                     ! clear pixel working variable
   real, allocatable                     :: SOLAR_ZENITH(:,:)                         ! solar zenith angles used for data filtering
-  real,allocatable                      :: SENSOR_ZENITH(:,:)                        ! SENSOR zenith angles used for data filtering  
   logical, allocatable                  :: clmask(:)                                 ! cloud-land mask
 
 ! netcdf variables
@@ -253,7 +246,7 @@ program pace_vlidort
 ! Parse Resource file provided at command line for input info 
 ! -----------------------------------------------------------
   call getarg(1, arg)
-  call get_config(arg, ierr)
+  call get_config(arg)
 
 ! Write out settings to use
 ! --------------------------
@@ -350,64 +343,55 @@ program pace_vlidort
   call read_land()
   call read_aer_Nv()
   call read_surf_land()
-!   call read_water()
-!   call read_angles()
-!   call read_cld_Tau()
-!   call read_wind()
+  call read_angles()
+  call read_wind()
 
-! ! Wait for everyone to finish reading 
-! ! ------------------------------------------------------------------  
-!   call MAPL_SyncSharedMemory(rc=ierr)
+! Wait for everyone to finish reading 
+! ------------------------------------------------------------------  
+  call MAPL_SyncSharedMemory(rc=ierr)
    
 
-! ! Split up filtered domain among parallel job nodes
-! ! User must verify that there are not more nodes than pixels!
-! !--------------------------------------
-!   clrm_total = clrm
+! Split up filtered domain among parallel job nodes
+!--------------------------------------
+  clrm_total = clrm
 
-! ! Split up filtered domain among processors
-! ! Root processor does not work. Reserved for message passing.
-! ! Split up among npet-1 processors
-! !----------------------------------------------
-!   nclr = 0
-!   if (npet-1 >= clrm) then
-!     nclr(1:clrm) = 1
-!   else if (npet-1 < clrm) then
-!     nclr(1:npet-1) = clrm/(npet-1)
-!     nclr(npet-1)   = nclr(npet-1) + mod(clrm,npet-1)
-!   end if 
+! Split up filtered domain among processors
+! Root processor does not work. Reserved for message passing.
+! Split up among npet-1 processors
+!----------------------------------------------
+  nclr = 0
+  if (npet-1 >= clrm) then
+    nclr(1:clrm) = 1
+  else if (npet-1 < clrm) then
+    nclr(1:npet-1) = clrm/(npet-1)
+    nclr(npet-1)   = nclr(npet-1) + mod(clrm,npet-1)
+  end if 
 
-! ! Create unshared arrays on other nodes
-! ! --------------------------------------
-!   if (.not. amOnFirstNode) then
-!     call allocate_multinode(nclr(myid))
-!   end if
+! Create unshared arrays on other nodes
+! --------------------------------------
+  if (.not. amOnFirstNode) then
+    call allocate_multinode(nclr(myid))
+  end if
 
-! ! Initialize outputs to be safe
-! ! -------------------------------
-!   TAU            = dble(MISSING)
-!   SSA            = dble(MISSING)
-!   G              = dble(MISSING)
-!   LTAU           = dble(MISSING)
-!   LSSA           = dble(MISSING)
-!   LG             = dble(MISSING)
-!   ITAU           = dble(MISSING)
-!   ISSA           = dble(MISSING)
-!   IG             = dble(MISSING)
-!   ALBEDO         = dble(MISSING)
-!   ROD            = dble(MISSING)
-!   PE             = dble(MISSING)
-!   ZE             = dble(MISSING)
-!   TE             = dble(MISSING)    
-!   radiance_VL    = dble(MISSING)
-!   reflectance_VL = dble(MISSING)
-!   if (.not. scalar) then
-!     Q = dble(MISSING)
-!     U = dble(MISSING)
-!     BR_Q = dble(MISSING)
-!     BR_U = dble(MISSING)    
-!   end if
-!   call MAPL_SyncSharedMemory(rc=ierr)
+! Initialize outputs to be safe
+! -------------------------------
+  TAU            = dble(MISSING)
+  SSA            = dble(MISSING)
+  G              = dble(MISSING)  
+  ROT            = dble(MISSING)
+  PE             = dble(MISSING)
+  ZE             = dble(MISSING)
+  TE             = dble(MISSING) 
+  ALBEDO         = dble(MISSING)   
+  radiance_VL    = dble(MISSING)
+  reflectance_VL = dble(MISSING)
+  if (.not. scalar) then
+    Q = dble(MISSING)
+    U = dble(MISSING)
+    BR_Q = dble(MISSING)
+    BR_U = dble(MISSING)    
+  end if
+  call MAPL_SyncSharedMemory(rc=ierr)
 
 ! ! Read OCI standard ROD and depol ratio Table
 ! ! --------------------------------------------
@@ -1640,73 +1624,47 @@ program pace_vlidort
 !  HISTORY
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  ! subroutine read_angles()
-  !   real, dimension(im,jm)     :: temp
-  !   real, allocatable          :: saa_(:),angle(:,:)
-  !   integer                    :: i,j
-  !   real                       :: add_offset, scale_factor
+  subroutine read_angles()
+    real, allocatable          :: saa_(:,:),angle(:,:)
+    integer                    :: i,n
 
-  !   if (MAPL_am_I_root()) then  
-  !     allocate (saa_(clrm))
-  !     allocate (angle(im,jm))
+    if (MAPL_am_I_root()) then  
+      allocate (saa_(clrm,nalong))
+      allocate (angle(nalong,tm))
 
-  !     call readvar2Dgrp("solar_zenith", "geolocation_data", ANG_file, angle)
-  !     call readVattrgrp("add_offset", "geolocation_data", ANG_file, "solar_zenith", add_offset)
-  !     call readVattrgrp("scale_factor", "geolocation_data", ANG_file, "solar_zenith", scale_factor)
+      call readvar2D("sza_ss", ANG_file, angle)
+      call reduceProfile(angle,clmask,SZA)
 
-  !     angle = angle*dble(scale_factor) + dble(add_offset)
-  !     SZA = pack(angle,clmask)
+      call readvar2D("vza_ss", ANG_file, angle)
+      call reduceProfile(angle,clmask,VZA)
 
+      call readvar2D("saa_ss", ANG_file, angle)
+      call reduceProfile(angle,clmask,SAA)
 
-  !     call readvar2Dgrp("sensor_zenith", "geolocation_data", ANG_file, angle)
-  !     call readVattrgrp("add_offset", "geolocation_data", ANG_file, "sensor_zenith", add_offset)
-  !     call readVattrgrp("scale_factor", "geolocation_data", ANG_file, "sensor_zenith", scale_factor)
+      call readvar2D("vaa_ss", ANG_file, angle)
+      call reduceProfile(angle,clmask,VAA)
 
-  !     angle = angle*dble(scale_factor) + dble(add_offset)
-  !     VZA = pack(angle,clmask)
-
-  !     call readvar2Dgrp("solar_azimuth", "geolocation_data", ANG_file, angle)
-  !     call readVattrgrp("add_offset", "geolocation_data", ANG_file, "solar_azimuth", add_offset)
-  !     call readVattrgrp("scale_factor", "geolocation_data", ANG_file, "solar_azimuth", scale_factor)
-
-  !     angle = angle*dble(scale_factor) + dble(add_offset)
-  !     SAA = pack(angle,clmask)
-
-  !     call readvar2Dgrp("sensor_azimuth", "geolocation_data", ANG_file, angle)
-  !     call readVattrgrp("add_offset", "geolocation_data", ANG_file, "sensor_azimuth", add_offset)
-  !     call readVattrgrp("scale_factor", "geolocation_data", ANG_file, "sensor_azimuth", scale_factor)
-
-  !     angle = angle*dble(scale_factor) + dble(add_offset)
-  !     VAA = pack(angle,clmask)
-
-  !     ! make azimiuths clockwise from north
-  !     do i = 1, clrm
-  !       if (SAA(i) < 0) then
-  !         SAA(i) = 360.0 + SAA(i)
-  !       end if
-  !       if (VAA(i) < 0) then
-  !         VAA(i) = 360.0 + VAA(i)
-  !       end if
-  !     end do
      
-  !     ! define according to photon travel direction
-  !     saa_ = SAA + 180.0
-  !     do i = 1, clrm
-  !       if (saa_(i) >= 360.0) then
-  !         saa_(i) = saa_(i) - 360.0
-  !       end if
-  !     end do
+      ! define according to photon travel direction
+      saa_ = SAA + 180.0
+      do i = 1, clrm
+        do n = 1,nalong
+          if (saa_(i,n) >= 360.0) then
+            saa_(i,n) = saa_(i,n) - 360.0
+          end if
+        end do
+      end do
 
-  !     RAA = VAA - saa_
+      RAA = VAA - saa_
 
-  !     deallocate (saa_)
-  !     write(*,*) '<> Read angle data to shared memory' 
+      deallocate (saa_)
+      write(*,*) '<> Read angle data to shared memory' 
 
-  !   end if
-  !   call MAPL_SyncSharedMemory(rc=ierr)    
+    end if
+    call MAPL_SyncSharedMemory(rc=ierr)    
 
 
-  ! end subroutine read_angles  
+  end subroutine read_angles  
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -1720,20 +1678,20 @@ program pace_vlidort
 !  HISTORY
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  ! subroutine read_wind()
+  subroutine read_wind()
 
-  !   if (MAPL_am_I_root()) then
-  !     call readvar2D("U10M",   MET_file, READER2D) 
-  !     U10M = pack(READER2D,clmask)
+    if (MAPL_am_I_root()) then
+      call readvar1D("U10M",   MET_file, READER1D) 
+      U10M = pack(READER1D,clmask)
 
-  !     call readvar2D("V10M",  MET_file, READER2D) 
-  !     V10M = pack(READER2D,clmask)
-  !     write(*,*) '<> Read wind data to shared memory' 
-  !   end if
+      call readvar1D("V10M",  MET_file, READER1D) 
+      V10M = pack(READER1D,clmask)
+      write(*,*) '<> Read wind data to shared memory' 
+    end if
 
-  !   call MAPL_SyncSharedMemory(rc=ierr)    
+    call MAPL_SyncSharedMemory(rc=ierr)    
     
-  ! end subroutine read_wind
+  end subroutine read_wind
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1790,11 +1748,11 @@ program pace_vlidort
       end if
     end if
 
-    call MAPL_AllocNodeArray(SZA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(VZA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(RAA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(SAA,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(VAA,(/clrm/),rc=ierr) 
+    call MAPL_AllocNodeArray(SZA,(/clrm,nalong/),rc=ierr)
+    call MAPL_AllocNodeArray(VZA,(/clrm,nalong/),rc=ierr)
+    call MAPL_AllocNodeArray(RAA,(/clrm,nalong/),rc=ierr)
+    call MAPL_AllocNodeArray(SAA,(/clrm,nalong/),rc=ierr)
+    call MAPL_AllocNodeArray(VAA,(/clrm,nalong/),rc=ierr) 
 
     call MAPL_AllocNodeArray(FRLAND,(/clrm/),rc=ierr) 
 
@@ -1805,121 +1763,107 @@ program pace_vlidort
     call MAPL_AllocNodeArray(SSA,(/clrm/),rc=ierr)
     call MAPL_AllocNodeArray(G,(/clrm/),rc=ierr)
 
-    call MAPL_AllocNodeArray(ROD,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(ALBEDO,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(ROT,(/clrm,km/),rc=ierr)
     call MAPL_AllocNodeArray(PE,(/clrm,km+1/),rc=ierr)
     call MAPL_AllocNodeArray(ZE,(/clrm,km+1/),rc=ierr)
     call MAPL_AllocNodeArray(TE,(/clrm,km+1/),rc=ierr)
     
     if (.not. scalar) then
-      call MAPL_AllocNodeArray(Q,(/clrm/),rc=ierr)
-      call MAPL_AllocNodeArray(U,(/clrm/),rc=ierr)
-      call MAPL_AllocNodeArray(BR_Q,(/clrm/),rc=ierr)
-      call MAPL_AllocNodeArray(BR_U,(/clrm/),rc=ierr)
+      call MAPL_AllocNodeArray(Q,(/clrm,nalong/),rc=ierr)
+      call MAPL_AllocNodeArray(U,(/clrm,nalong/),rc=ierr)
+      call MAPL_AllocNodeArray(BR_Q,(/clrm,nalong/),rc=ierr)
+      call MAPL_AllocNodeArray(BR_U,(/clrm,nalong/),rc=ierr)
 
     end if
 
-    call MAPL_AllocNodeArray(radiance_VL,(/clrm/),rc=ierr)
-    call MAPL_AllocNodeArray(reflectance_VL,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(ALBEDO,(/clrm,nalong/),rc=ierr)
+    call MAPL_AllocNodeArray(radiance_VL,(/clrm,nalong/),rc=ierr)
+    call MAPL_AllocNodeArray(reflectance_VL,(/clrm,nalong/),rc=ierr)
 
   end subroutine allocate_shared
 
-! !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! ! NAME
-! !     allocate_multinode
-! ! PURPOSE
-! !     allocates all the unshared arrays that I need on the nodes that are not root
-! ! INPUT
-! !     clrm   :: number of pixels this processor needs to work on
-! ! OUTPUT
-! !     none
-! !  HISTORY
-! !     
-! !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-!   subroutine allocate_multinode(clrm)
-!     integer, intent(in)    :: clrm
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     allocate_multinode
+! PURPOSE
+!     allocates all the unshared arrays that I need on the nodes that are not root
+! INPUT
+!     clrm   :: number of pixels this processor needs to work on
+! OUTPUT
+!     none
+!  HISTORY
+!     
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+  subroutine allocate_multinode(clrm)
+    integer, intent(in)    :: clrm
 
-!     if (clrm > 0) then
-!       allocate (AIRDENS(clrm,km))
-!       allocate (RH(clrm,km))
-!       allocate (DELP(clrm,km))
-!       allocate (REI(clrm,km))
-!       allocate (REL(clrm,km))
-!       allocate (TAUI(clrm,km))
-!       allocate (TAUL(clrm,km))      
-!       allocate (DU001(clrm,km))
-!       allocate (DU002(clrm,km))
-!       allocate (DU003(clrm,km))
-!       allocate (DU004(clrm,km))
-!       allocate (DU005(clrm,km))
-!       allocate (SS001(clrm,km))
-!       allocate (SS002(clrm,km))
-!       allocate (SS003(clrm,km))
-!       allocate (SS004(clrm,km))
-!       allocate (SS005(clrm,km))
-!       allocate (BCPHOBIC(clrm,km))
-!       allocate (BCPHILIC(clrm,km))
-!       allocate (OCPHOBIC(clrm,km))
-!       allocate (OCPHILIC(clrm,km))
-!       allocate (SO4(clrm,km))
-!       if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
-!         allocate (KISO(clrm,landbandmBRDF))
-!         allocate (KVOL(clrm,landbandmBRDF))
-!         allocate (KGEO(clrm,landbandmBRDF))
-!       end if
-!       if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
-!         allocate (LER(clrm,landbandmLER))
-!       end if 
-!       if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
-!         if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then  
-!           allocate (NDVI(clrm))    
-!           allocate (BPDFcoef(clrm))
-!         end if
-!       end if
+    if (clrm > 0) then
+      allocate (AIRDENS(clrm,km))
+      allocate (RH(clrm,km))
+      allocate (DELP(clrm,km))
+      allocate (PS(clrm))
+      allocate (DU001(clrm,km))
+      allocate (DU002(clrm,km))
+      allocate (DU003(clrm,km))
+      allocate (DU004(clrm,km))
+      allocate (DU005(clrm,km))
+      allocate (SS001(clrm,km))
+      allocate (SS002(clrm,km))
+      allocate (SS003(clrm,km))
+      allocate (SS004(clrm,km))
+      allocate (SS005(clrm,km))
+      allocate (BCPHOBIC(clrm,km))
+      allocate (BCPHILIC(clrm,km))
+      allocate (OCPHOBIC(clrm,km))
+      allocate (OCPHILIC(clrm,km))
+      allocate (SO4(clrm,km))
+      if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
+        allocate (KISO(clrm,landbandmBRDF))
+        allocate (KVOL(clrm,landbandmBRDF))
+        allocate (KGEO(clrm,landbandmBRDF))
+      end if
+      if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
+        allocate (LER(clrm,landbandmLER))
+      end if 
+      if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
+        if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then  
+          allocate (NDVI(clrm))    
+          allocate (BPDFcoef(clrm))
+        end if
+      end if
 
-!       allocate (SZA(clrm))
-!       allocate (VZA(clrm))
-!       allocate (RAA(clrm))
-!       allocate (SAA(clrm))
-!       allocate (VAA(clrm))
+      allocate (SZA(clrm,nalong))
+      allocate (VZA(clrm,nalong))
+      allocate (RAA(clrm,nalong))
+      allocate (SAA(clrm,nalong))
+      allocate (VAA(clrm,nalong))
 
-!       allocate (FRLAND(clrm))
+      allocate (FRLAND(clrm))
 
-!       allocate (U10M(clrm))
-!       allocate (V10M(clrm))
+      allocate (U10M(clrm))
+      allocate (V10M(clrm))
 
-!       allocate (TAU(clrm))
-!       allocate (SSA(clrm))
-!       allocate (G(clrm))
-!       allocate (LTAU(clrm))
-!       allocate (LSSA(clrm))
-!       allocate (LG(clrm))
-!       allocate (ITAU(clrm))
-!       allocate (ISSA(clrm))
-!       allocate (IG(clrm))
+      allocate (TAU(clrm))
+      allocate (SSA(clrm))
+      allocate (G(clrm))
 
-!       allocate (ROD(clrm))
-!       allocate (ALBEDO(clrm))
-!       allocate (PE(clrm,km+1))
-!       allocate (ZE(clrm,km+1))
-!       allocate (TE(clrm,km+1))
+      allocate (ROT(clrm,km))      
+      allocate (PE(clrm,km+1))
+      allocate (ZE(clrm,km+1))
+      allocate (TE(clrm,km+1))
       
-!       if (.not. scalar) then
-!         allocate (Q(clrm))
-!         allocate (U(clrm))
-!         allocate (BR_Q(clrm))
-!         allocate (BR_U(clrm))
-!       end if
+      if (.not. scalar) then
+        allocate (Q(clrm,nalong))
+        allocate (U(clrm,nalong))
+        allocate (BR_Q(clrm,nalong))
+        allocate (BR_U(clrm,nalong))
+      end if
 
-!       if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-!         allocate (SLEAVE(clrm,nch,2))
-!         allocate (WATER_CH(wnch))
-!       end if
-
-!       allocate (radiance_VL(clrm))
-!       allocate (reflectance_VL(clrm))
-!     end if
-!   end subroutine allocate_multinode
+      allocate (ALBEDO(clrm,nalong))
+      allocate (radiance_VL(clrm,nalong))
+      allocate (reflectance_VL(clrm,nalong))
+    end if
+  end subroutine allocate_multinode
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1961,7 +1905,7 @@ program pace_vlidort
     end if
     
 
-    allocate (ROT(km,nobs,nch))
+    allocate (ROT_int(km,nobs,nch))
     allocate (depol(nch))
     allocate (Vpmom(km,nch,nobs,nMom,nPol))
 
@@ -2388,9 +2332,8 @@ program pace_vlidort
 !  HISTORY
 !     29 May P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  subroutine get_config(rcfile, ierr)
+  subroutine get_config(rcfile)
     character(len=*),intent(in)      :: rcfile
-    integer,intent(out)              :: ierr
     character(len=256)               :: file
 
     cf = ESMF_ConfigCreate()
