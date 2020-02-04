@@ -181,8 +181,8 @@ program pace_vlidort
 
 ! Satellite domain variables
 !------------------------------
-  integer                               :: nalong, km, tm                                ! size of satellite domain
-  integer                               :: i, j, k, n                                ! satellite domain working variable
+  integer                               :: nalong, km, tm                            ! size of satellite domain
+  integer                               :: i, j, k, n, ialong                        ! satellite domain working variable
   integer                               :: starti, counti, endi                      ! array indices and counts for each processor
   integer, allocatable                  :: nclr(:)                                   ! how many clear pixels each processor works on
   integer                               :: clrm                                      ! number of clear pixels for this part of decomposed domain
@@ -208,7 +208,6 @@ program pace_vlidort
   character(len=256)                    :: line                                        ! dummy variables to read line of file 
   real                                  :: progress                                    ! 
   real                                  :: g5nr_missing  
-  logical                               :: do_cxonly                         !
 
 ! System tracking variables
 ! -----------------------------
@@ -393,332 +392,249 @@ program pace_vlidort
   end if
   call MAPL_SyncSharedMemory(rc=ierr)
 
-! ! Read OCI standard ROD and depol ratio Table
-! ! --------------------------------------------
-!   call read_OCI_stdatm()
-!   do k=1,nch
-!     ROD_stdatm(k)   = nn_interp(wavOCI,rodOCI,channels(k),MISSING,MISSING)
-!     DEPOL_stdatm(k) = nn_interp(wavOCI,depolOCI,channels(k),MISSING,MISSING)
-!   end do
+! Prepare inputs and run VLIDORT
+! -----------------------------------
+  call strarr_2_chararr(vnames_string,nq,16,vnames)
 
-! ! Prepare inputs and run VLIDORT
-! ! -----------------------------------
-!   call strarr_2_chararr(vnames_string,nq,16,vnames)
+! Create the Mie Tables
+! ---------------------
+  mieTables = Chem_MieCreate(rcfile,rc)
+  if ( rc /= 0 ) then
+    print *, 'Cannot create Mie tables from '//trim(rcfile)
+    call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
+  end if
 
-! ! Create the Mie Tables
-! ! ---------------------
-!   if (.not. standard_atm) then
-!     mieTables = Chem_MieCreate(rcfile,rc)
-!     if ( rc /= 0 ) then
-!       print *, 'Cannot create Mie tables from '//trim(rcfile)
-!       call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
-!     end if
+  if ( nMom > mieTables%nMom ) then ! mieTables%nMom is writen in Aod_EOS.rc file
+    print *, 'mieTables do not have enough moments', nMom, mieTables%nMom
+    call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
+  end if
 
-!     if ( nMom > mieTables%nMom ) then ! mieTables%nMom is writen in Aod_EOS.rc file
-!       print *, 'mieTables do not have enough moments', nMom, mieTables%nMom
-!       call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
-!     end if
+! Get start and end index for each processor
+! start from process 1 as root (0) does not work
+! -------------------------------------------
+  if (myid == 1) then
+    starti  = 1
+  else
+    starti = sum(nclr(1:myid-1)) + 1
+  end if    
+  counti = nclr(myid)
+  endi   = starti + counti - 1 
 
-!   end if
+! Processors not on the root node need to ask for data
+! -----------------------------------------------------
+  if (MAPL_am_I_root()) then
+    do pp = 1,npet-1
+      if (.not. FirstNode(pp)) then
+        starti = sum(nclr(1:pp-1))+1
+        counti = nclr(pp)
+        endi   = starti + counti - 1  
+        if (counti > 0) then
+          call mpi_send(AIRDENS(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(RH(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(DELP(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(DU001(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(DU002(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(DU003(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(DU004(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(DU005(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(SS001(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(SS002(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(SS003(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(SS004(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(SS005(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)    
+          call mpi_send(BCPHOBIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
+          call mpi_send(BCPHILIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
+          call mpi_send(OCPHOBIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
+          call mpi_send(OCPHILIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(SO4(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)   
+          if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
+            call mpi_send(KISO(starti:endi,:), counti*landbandmBRDF, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
+            call mpi_send(KVOL(starti:endi,:), counti*landbandmBRDF, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
+            call mpi_send(KGEO(starti:endi,:), counti*landbandmBRDF, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
+          end if
+          if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
+            call mpi_send(LER(starti:endi,:), counti*landbandmLER, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)   
+          end if
+          if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
+            if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then
+              call mpi_send(NDVI(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
+              call mpi_send(BPDFcoef(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
+            end if
+          end if 
+          call mpi_send(SZA(starti:endi,:), counti*nalong, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
+          call mpi_send(VZA(starti:endi,:), counti*nalong, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
+          call mpi_send(RAA(starti:endi,:), counti*nalong, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
 
-!   if (myid == 1) then
-!     starti  = 1
-!   else
-!     starti = sum(nclr(1:myid-1)) + 1
-!   end if    
-!   counti = nclr(myid)
-!   endi   = starti + counti - 1 
+          call mpi_send(FRLAND(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)    
+          call mpi_send(U10M(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)   
+          call mpi_send(V10M(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
 
-! ! Processors not on the root node need to ask for data
-! ! -----------------------------------------------------
-!   if (MAPL_am_I_root()) then
-!     do pp = 1,npet-1
-!       if (.not. FirstNode(pp)) then
-!         starti = sum(nclr(1:pp-1))+1
-!         starti = starti + (clrm_total/nodemax)*(nodenum-1)
-!         counti = nclr(pp)
-!         endi   = starti + counti - 1  
-!         if (counti > 0) then
-!           call mpi_send(AIRDENS(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(RH(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(DELP(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(REI(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(REL(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(TAUI(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(TAUL(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(DU001(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(DU002(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(DU003(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(DU004(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(DU005(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(SS001(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(SS002(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(SS003(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(SS004(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(SS005(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)    
-!           call mpi_send(BCPHOBIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
-!           call mpi_send(BCPHILIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
-!           call mpi_send(OCPHOBIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
-!           call mpi_send(OCPHILIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-!           call mpi_send(SO4(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)   
-!           if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
-!             call mpi_send(KISO(starti:endi,:), counti*landbandmBRDF, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
-!             call mpi_send(KVOL(starti:endi,:), counti*landbandmBRDF, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
-!             call mpi_send(KGEO(starti:endi,:), counti*landbandmBRDF, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
-!           end if
-!           if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
-!             call mpi_send(LER(starti:endi,:), counti*landbandmLER, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)   
-!           end if
-!           if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
-!             if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then
-!               call mpi_send(NDVI(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
-!               call mpi_send(BPDFcoef(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
-!             end if
-!           end if 
-!           call mpi_send(SZA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
-!           call mpi_send(VZA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
-!           call mpi_send(RAA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
+        end if
+      end if 
+    end do
+  end if 
 
-!           call mpi_send(FRLAND(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)    
-!           call mpi_send(U10M(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)   
-!           call mpi_send(V10M(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
+  if (.not. amOnFirstNode) then
+    if (counti > 0) then
+      call mpi_recv(AIRDENS, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(RH, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(DELP, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(DU001, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(DU002, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(DU003, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(DU004, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(DU005, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(SS001, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(SS002, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(SS003, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(SS004, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(SS005, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)    
+      call mpi_recv(BCPHOBIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+      call mpi_recv(BCPHILIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)  
+      call mpi_recv(OCPHOBIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+      call mpi_recv(OCPHILIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+      call mpi_recv(SO4, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)      
+      if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
+        call mpi_recv(KISO, counti*landbandmBRDF, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)  
+        call mpi_recv(KVOL, counti*landbandmBRDF, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+        call mpi_recv(KGEO, counti*landbandmBRDF, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+      end if
+      if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
+        call mpi_recv(LER, counti*landbandmLER, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+      end if
+      if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
+        if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then
+          call mpi_recv(NDVI, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+          call mpi_recv(BPDFcoef, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+        end if
+      end if
 
-!           if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-!             call mpi_send(SLEAVE(starti:endi,nch,:), counti*nch*2, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)     
-!             call mpi_send(WATER_CH, wnch, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)    
-!           end if
-!         end if
-!       end if 
-!     end do
-!   end if 
+      call mpi_recv(SZA, counti*nalong, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)   
+      call mpi_recv(VZA, counti*nalong, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)   
+      call mpi_recv(RAA, counti*nalong, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)      
 
-!   if (.not. amOnFirstNode) then
-!     if (counti > 0) then
-!       call mpi_recv(AIRDENS, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(RH, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(DELP, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(REI, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(REL, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(TAUI, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(TAUL, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(DU001, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(DU002, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(DU003, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(DU004, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(DU005, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(SS001, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(SS002, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(SS003, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(SS004, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!       call mpi_recv(SS005, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)    
-!       call mpi_recv(BCPHOBIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-!       call mpi_recv(BCPHILIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)  
-!       call mpi_recv(OCPHOBIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-!       call mpi_recv(OCPHILIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-!       call mpi_recv(SO4, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)      
-!       if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
-!         call mpi_recv(KISO, counti*landbandmBRDF, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)  
-!         call mpi_recv(KVOL, counti*landbandmBRDF, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!         call mpi_recv(KGEO, counti*landbandmBRDF, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-!       end if
-!       if ((lower_to_upper(landmodel) == 'LAMBERTIAN') .or. (index(lower_to_upper(landmodel),'RTLS-HYBRID') > 0)) then
-!         call mpi_recv(LER, counti*landbandmLER, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-!       end if
-!       if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
-!         if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then
-!           call mpi_recv(NDVI, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-!           call mpi_recv(BPDFcoef, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-!         end if
-!       end if
+      call mpi_recv(FRLAND, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)    
+      call mpi_recv(U10M, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)   
+      call mpi_recv(V10M, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)   
 
-!       call mpi_recv(SZA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)   
-!       call mpi_recv(VZA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)   
-!       call mpi_recv(RAA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)      
-
-!       call mpi_recv(FRLAND, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)    
-!       call mpi_recv(U10M, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)   
-!       call mpi_recv(V10M, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)   
-
-!       if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-!         call mpi_recv(SLEAVE, counti*nch*2, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)   
-!         call mpi_recv(WATER_CH, wnch, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)   
-!       end if
-!     end if
-!   end if  
+    end if
+  end if  
 
 
-! ! Main do loop over the part of the domain assinged to each processor
-!   if ((.not. MAPL_am_I_root()) .and. (counti > 0)) then
-!     if (.not. amOnFirstNode) then
-!       starti = 1
-!       endi = counti
-!     end if
-!     do cc = starti, endi  
-!       if (amOnFirstNode) then
-!         c = cc + (clrm_total/nodemax)*(nodenum-1)
-!       else
-!         c = cc
-!       end if
+! Main do loop over the part of the domain assinged to each processor
+  if ((.not. MAPL_am_I_root()) .and. (counti > 0)) then
+    if (.not. amOnFirstNode) then
+      starti = 1
+      endi = counti
+    end if
+    do c = starti, endi  
 
-!       if (.not. standard_atm) then
-!         call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
-!                          reshape(DELP(c,:),(/km,nobs/)), ptop, &
-!                          Vpe, Vze, Vte )   
-!       end if
-!       PE(c,:) = Vpe(:,nobs)
-!       ZE(c,:) = Vze(:,nobs)
-!       TE(c,:) = Vte(:,nobs)
+      call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
+                       reshape(DELP(c,:),(/km,nobs/)), ptop, &
+                       Vpe, Vze, Vte )   
 
-!       write(msg,'(A,I)') 'getEdgeVars ', myid
-!       call write_verbose(msg)
+      PE(c,:) = Vpe(:,nobs)
+      ZE(c,:) = Vze(:,nobs)
+      TE(c,:) = Vte(:,nobs)
+
+      write(msg,'(A,I)') 'getEdgeVars ', myid
+      call write_verbose(msg)
       
-!       call calc_qm()
+      call calc_qm()
 
-!       write(msg,'(A,I)') 'calc_qm ', myid
-!       call write_verbose(msg)  
+      write(msg,'(A,I)') 'calc_qm ', myid
+      call write_verbose(msg)  
 
-!   !   Rayleigh Optical Thickness
-!   !   --------------------------
-!       call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(Vpe), dble(Vze), dble(Vte), &
-!                                      dble(MISSING),verbose, &
-!                                      ROT, depol, ierr )  
-!       ! rescale to ROD_stdatm
-!       do k=1,nch
-!         ROT(:,nobs,k) = ROT(:,nobs,k)*ROD_stdatm(k)/sum(ROT(:,nobs,k))
-!       end do
+  !   Rayleigh Optical Thickness
+  !   --------------------------
+      call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(Vpe), dble(Vze), dble(Vte), &
+                                     dble(MISSING),verbose, &
+                                     ROT_int, depol, ierr ) 
 
-!       if (.not. standard_atm) then   
-!       ! use standard PS = 101300.00 Pa for scaling
-!         do k=1,nch
-!           ROT(:,nobs,k) = ROT(:,nobs,k)*Vpe(km+1,nobs)/101300.0
-!         end do
-!       end if
 
-!       ! set to OCI table values
-!       depol = DEPOL_stdatm
+  !   Aerosol Optical Properties
+  !   --------------------------
+      call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
+                        Vqm, reshape(RH(c,:),(/km,nobs/)),&
+                        nMom,nPol, Vtau, Vssa, Vg, Vpmom, ierr )
+      if ( ierr /= 0 ) then
+        print *, 'cannot get aerosol optical properties'
+        call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)      
+      end if
+      ! Multiply by -1 to go from Mischenko convention to VLIDORT
+      Vpmom(:,:,:,:,2) = -1.*Vpmom(:,:,:,:,2)
+      Vpmom(:,:,:,:,4) = -1.*Vpmom(:,:,:,:,4)
 
-!   !   Aerosol Optical Properties
-!   !   --------------------------
-!       if (aerosol_free) then
-!         Vtau = 0
-!         Vssa = 0
-!         Vg   = 0
-!         Vpmom = 0
-!       else
-!         call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
-!                           Vqm, reshape(RH(c,:),(/km,nobs/)),&
-!                           nMom,nPol, Vtau, Vssa, Vg, Vpmom, ierr )
-!         if ( ierr /= 0 ) then
-!           print *, 'cannot get aerosol optical properties'
-!           call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)      
-!         end if
-!         ! Multiply by -1 to go from Mischenko convention to VLIDORT
-!         Vpmom(:,:,:,:,2) = -1.*Vpmom(:,:,:,:,2)
-!         Vpmom(:,:,:,:,4) = -1.*Vpmom(:,:,:,:,4)
-!       end if
-
-!   !   Cloud Optical Properties
-!   !   ------------------------
-!       if (cloud_free) then
-!         VssaIcl  = 0
-!         VgIcl    = 0
-!         VpmomIcl = 0
-!         VtauIcl  = 0
-
-!         Vssalcl  = 0
-!         VgLcl    = 0
-!         VpmomLcl = 0
-!         VtauLcl  = 0
-!       else
-!         call getCOPvector(IcldTable, km, nobs, nch, nMom, nPol, channels, REI(c,:), TAUI(c,:), VssaIcl, VgIcl, VpmomIcl, VtauIcl)
-!         call getCOPvector(LcldTable, km, nobs, nch, nMom, nPol, channels, REL(c,:), TAUL(c,:), VssaLcl, VgLcl, VpmomLcl, VtauLcl)
-!       end if
-!   !   Save some variables on the 2D Grid for Writing Later
-!   !   ------------------------
-!       ! Rayleigh
-!       ROD(c) = SUM(ROT(:,nobs,nch))
+  !   Save some variables for Writing Later
+  !   ----------------------------------------
+      ! Rayleigh
+      ROT(c,:) = ROT_int(:,nobs,nch)                                      
       
-!       ! Aerosols
-!       TAU(c) = SUM(Vtau(:,nch,nobs))
-!       SSA(c) = SUM(Vssa(:,nch,nobs)*Vtau(:,nch,nobs))
-!       G(c)   = SUM(Vg(:,nch,nobs)*Vtau(:,nch,nobs))
+      ! Aerosols
+      TAU(c) = SUM(Vtau(:,nch,nobs))
+      SSA(c) = SUM(Vssa(:,nch,nobs)*Vtau(:,nch,nobs))
+      G(c)   = SUM(Vg(:,nch,nobs)*Vtau(:,nch,nobs))
 
-!       ! Clouds
-!       LTAU(c) = SUM(VtauLcl(:,nch,nobs))
-!       LSSA(c) = SUM(VssaLcl(:,nch,nobs)*VtauLcl(:,nch,nobs))
-!       LG(c)   = SUM(VgLcl(:,nch,nobs)*VtauLcl(:,nch,nobs))
+      if (TAU(c) > 0) then
+        SSA(c) = SSA(c)/TAU(c)
+        G(c)   = G(c)/TAU(c)
+      else
+        SSA(c) = dble(MISSING)
+        G(c)   = dble(MISSING)
+      end if
 
-!       ITAU(c) = SUM(VtauIcl(:,nch,nobs))
-!       ISSA(c) = SUM(VssaIcl(:,nch,nobs)*VtauIcl(:,nch,nobs))
-!       IG(c)   = SUM(VgIcl(:,nch,nobs)*VtauIcl(:,nch,nobs))
-
-!       if (TAU(c) > 0) then
-!         SSA(c) = SSA(c)/TAU(c)
-!         G(c)   = G(c)/TAU(c)
-!       else
-!         SSA(c) = dble(MISSING)
-!         G(c)   = dble(MISSING)
-!       end if
-
-!       if (LTAU(c) > 0) then
-!         LSSA(c) = LSSA(c)/LTAU(c)
-!         LG(c)   = LG(c)/LTAU(c)
-!       else
-!         LSSA(c) = dble(MISSING)
-!         LG(c)   = dble(MISSING)
-!       end if
-
-!       if (ITAU(c) > 0) then
-!         ISSA(c) = ISSA(c)/ITAU(c)
-!         IG(c)   = IG(c)/ITAU(c)
-!       else
-!         ISSA(c) = dble(MISSING)
-!         IG(c)   = dble(MISSING)
-!       end if
+      write(msg,*) 'getAOP ', myid
+      call write_verbose(msg)
 
 
-!       write(msg,*) 'getAOP ', myid
-!       call write_verbose(msg)
+  !   Surface Parameters
+  !   -------------------
+      if ( FRLAND(c) >= 0.99 ) then
+        call get_surf_params()
+      end if
 
-!   !   Call VlIDORT
-!   !   ------------
-!       if ( FRLAND(c) >= 0.99 ) then
-!         call get_surf_params()
-!         call DO_LAND()
-!       else
-!         call get_ocean_params()
-!         call DO_OCEAN()
-!       end if
+  !   Call VlIDORT
+  !   ------------
+      ! loop through view zenith angles
+      do ialong=1,nalong
+        if ( FRLAND(c) >= 0.99 ) then
+          call DO_LAND()
+        else
+          call DO_OCEAN()
+        end if
 
       
-!   !   Check VLIDORT Status, Store Outputs in Shared Arrays
-!   !   ----------------------------------------------------    
-!       call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
-!       radiance_VL(c)    = radiance_VL_int(nobs,nch)
-!       reflectance_VL(c) = reflectance_VL_int(nobs,nch)
-!       ALBEDO(c) = Valbedo(nobs,nch)
-      
-!       if (.not. scalar) then
-!         Q(c)      = Q_int(nobs,nch)
-!         U(c)      = U_int(nobs,nch)
-!         BR_Q(c)   = BR_Q_int(nobs,nch)
-!         BR_U(c)   = BR_U_int(nobs,nch)
-!       end if
-!       write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
-!       call write_verbose(msg)
+    !   Check VLIDORT Status, Store Outputs in Shared Arrays
+    !   ----------------------------------------------------    
+        call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
+        radiance_VL(c,ialong)    = radiance_VL_int(nobs,nch)
+        reflectance_VL(c,ialong) = reflectance_VL_int(nobs,nch)
+        ALBEDO(c,ialong) = Valbedo(nobs,nch)
+        
+        if (.not. scalar) then
+          Q(c,ialong)      = Q_int(nobs,nch)
+          U(c,ialong)      = U_int(nobs,nch)
+          BR_Q(c,ialong)   = BR_Q_int(nobs,nch)
+          BR_U(c,ialong)   = BR_U_int(nobs,nch)
+        end if
 
-!   !   Keep track of progress of each processor
-!   !   -----------------------------------------        
-!       if (nint(100.*real(cc-starti)/real(counti)) > progress) then
-!         progress = progress + 10
-!         write(*,'(A,I,A,I,A,I4,A,I3,A)') 'Pixel: ',cc,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
-!       end if
+        write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
+        call write_verbose(msg)
+
+      end do ! ialong
+
+  !   Keep track of progress of each processor
+  !   -----------------------------------------        
+      if (nint(100.*real(c-starti)/real(counti)) > progress) then
+        progress = progress + 10
+        write(*,'(A,I,A,I,A,I4,A,I3,A)') 'Pixel: ',c,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
+      end if
                   
-!     end do ! do clear pixels
-!   end if ! not Root processor
-! ! Wait for everyone to finish calculations
-! ! ----------------------------------------
-!   call MAPL_SyncSharedMemory(rc=ierr)
+    end do ! do clear pixels
+  end if ! not Root processor
+! Wait for everyone to finish calculations
+! ----------------------------------------
+  call MAPL_SyncSharedMemory(rc=ierr)
 
 ! ! Processors not on root node need to send data back to be put into shared memory
 ! ! ----------------------------------------
@@ -902,125 +818,73 @@ program pace_vlidort
 !   end subroutine write_outfile
 
 
-! !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! ! NAME
-! !     DO_OCEAN()
-! ! PURPOSE
-! !     call the correct VLIDORT Ocean Subroutine
-! ! INPUT
-! !     None
-! ! OUTPUT
-! !     None
-! !  HISTORY
-! !     Oct 2018 P. Castellanos
-! !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-!   subroutine DO_OCEAN()
-! !   WATER PIXELS
-! !   ------------
-!     if ( (lower_to_upper(watermodel) .eq. 'CX') ) then
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     DO_OCEAN()
+! PURPOSE
+!     call the correct VLIDORT Ocean Subroutine
+! INPUT
+!     None
+! OUTPUT
+!     None
+!  HISTORY
+!     Oct 2018 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+  subroutine DO_OCEAN()
+!   WATER PIXELS
+!   ------------
+    if ( (lower_to_upper(watermodel) .eq. 'CX') ) then
 
-!       if  ( (lower_to_upper(watername) .eq. 'CX') ) then
-!         do_cxonly = .true.
-!         do_cx_sleave = .false.
-!       else if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-!         do_cxonly = .false.
-!         do_cx_sleave = .true.
-!         if (ANY(Vsleave .eq. dble(MISSING))) then
-!           do_cx_sleave = .false.
-!         end if
-!       end if
+    ! Cox Munk Model
+    ! -------------------------------
+      if (scalar) then
+        ! Call to vlidort scalar code       
+        call VLIDORT_Scalar_CX (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
+                nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                dble(Vpe), dble(Vze), dble(Vte), &
+                (/dble(U10M(c))/), &
+                (/dble(V10M(c))/), &
+                dble(mr), &
+                (/dble(SZA(c,ialong))/), &
+                (/dble(abs(RAA(c,ialong)))/), &
+                (/dble(VZA(c,ialong))/), &
+                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
+      else
+        ! Call to vlidort vector code
+        call VLIDORT_Vector_CX (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
+               nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+               dble(Vpe), dble(Vze), dble(Vte), &
+               (/dble(U10M(c))/), &
+               (/dble(V10M(c))/), &
+               dble(mr), &
+               (/dble(SZA(c,ialong))/), &
+               (/dble(abs(RAA(c,ialong)))/), &
+               (/dble(VZA(c,ialong))/), &
+               dble(MISSING),verbose, &
+               radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
+      end if
+    else
+!       Save code for pixels that were not gap filled
+!       ---------------------------------------------    
+      radiance_VL_int(nobs,:) = MISSING
+      reflectance_VL_int(nobs,:) = MISSING
+      Valbedo = MISSING
+      if (.not. scalar) then
+        Q_int = MISSING
+        U_int = MISSING
+      end if
+      ierr = 0
 
-!       if  ( do_cxonly ) then
-!       ! GISS Cox Munk Model
-!       ! -------------------------------
-!         if (scalar) then
-!           ! Call to vlidort scalar code       
-!           call VLIDORT_Scalar_OCIGissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-!                   nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
-!                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
-!                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
-!                   dble(Vpe), dble(Vze), dble(Vte), &
-!                   (/dble(U10M(c))/), &
-!                   (/dble(V10M(c))/), &
-!                   dble(mr), &
-!                   (/dble(SZA(c))/), &
-!                   (/dble(abs(RAA(c)))/), &
-!                   (/dble(VZA(c))/), &
-!                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
-!         else
-!           ! Call to vlidort vector code
-!           call VLIDORT_Vector_OCIGissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-!                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-!                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
-!                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
-!                  dble(Vpe), dble(Vze), dble(Vte), &
-!                  (/dble(U10M(c))/), &
-!                  (/dble(V10M(c))/), &
-!                  dble(mr), &
-!                  (/dble(SZA(c))/), &
-!                  (/dble(abs(RAA(c)))/), &
-!                  (/dble(VZA(c))/), &
-!                  dble(MISSING),verbose, &
-!                  radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
-!         end if
-!       else if  ( do_cx_sleave ) then
-!       ! GISS Cox Munk Model with NOBM Water Leaving Reflectance
-!       ! ----------------------------------------------------------
-!         if (scalar) then
-!           ! Call to vlidort scalar code       
-!           call VLIDORT_Scalar_OCIGissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-!                   nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
-!                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
-!                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
-!                   dble(Vpe), dble(Vze), dble(Vte), &
-!                   (/dble(U10M(c))/), &
-!                   (/dble(V10M(c))/), &
-!                   dble(mr), &
-!                   Vsleave, &
-!                   (/dble(SZA(c))/), &
-!                   (/dble(abs(RAA(c)))/), &
-!                   (/dble(VZA(c))/), &
-!                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
-!         else
-!           ! Call to vlidort vector code          
-!           call VLIDORT_Vector_OCIGissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-!                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-!                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
-!                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
-!                  dble(Vpe), dble(Vze), dble(Vte), &
-!                  (/dble(U10M(c))/), &
-!                  (/dble(V10M(c))/), &
-!                  dble(mr), &
-!                  Vsleave, &
-!                  (/dble(SZA(c))/), &
-!                  (/dble(abs(RAA(c)))/), &
-!                  (/dble(VZA(c))/), &
-!                  dble(MISSING),verbose, &
-!                  radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
-!         end if
-!       else
-! !       Save code for pixels that were not gap filled
-! !       ---------------------------------------------    
-!         radiance_VL_int(nobs,:) = -500
-!         reflectance_VL_int(nobs,:) = -500
-!         Valbedo = -500
-!         if (.not. scalar) then
-!           Q_int = -500
-!           U_int = -500
-!         end if
-!         ierr = 0
+    end if
 
-!       end if
-!     end if          
-
-!   end subroutine DO_OCEAN
+  end subroutine DO_OCEAN
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
-!     DO_LAND()
+!     get_surf_params()
 ! PURPOSE
-!     call the correct VLIDORT Land Subroutine
+!     get surface parameters
 ! INPUT
 !     None
 ! OUTPUT
@@ -1106,119 +970,122 @@ program pace_vlidort
 
   end subroutine get_surf_params
 
-!   subroutine DO_LAND()
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     DO_LAND()
+! PURPOSE
+!     call the correct VLIDORT Land Subroutine
+! INPUT
+!     None
+! OUTPUT
+!     None
+!  HISTORY
+!     Oct 2018 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
 
-!   !     LAND PIXELS
-!   !     -----------
+  subroutine DO_LAND()
 
-!     if ( (lower_to_upper(landmodel) .eq. 'LAMBERTIAN') ) then
-!     ! Simple lambertian surface model
-!     ! -------------------------------
-!       if (scalar) then
-!           ! Call to vlidort scalar code       
-!           call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-!                   nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
-!                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
-!                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
-!                   dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
-!                   (/dble(SZA(c))/), &
-!                   (/dble(abs(RAA(c)))/), &
-!                   (/dble(VZA(c))/), &
-!                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
-!       else
-!         ! Call to vlidort vector code
-!         call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-!                nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-!                dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
-!                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
-!                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
-!                (/dble(SZA(c))/), &
-!                (/dble(abs(RAA(c)))/), &
-!                (/dble(VZA(c))/), &
-!                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q_int, U_int, ierr)
-!         BR_Q_int = 0
-!         BR_U_int = 0
-!       end if
+  !     LAND PIXELS
+  !     -----------
 
-!     else if ( (index(lower_to_upper(landmodel),'RTLS') > 0) .and. (index(lower_to_upper(landmodel),'BPDF') .eq. 0) ) then
-!       if ( ANY(kernel_wt == MISSING) ) then
-! !       Save code for pixels that were not gap filled
-! !       ---------------------------------------------    
-!         radiance_VL_int(nobs,:) = -500
-!         reflectance_VL_int(nobs,:) = -500
-!         Valbedo = -500
-!         if (.not. scalar) then
-!           Q_int = -500
-!           U_int = -500
-!         end if
-!         ierr = 0
+    if ( (lower_to_upper(landmodel) .eq. 'LAMBERTIAN') ) then
+    ! Simple lambertian surface model
+    ! -------------------------------
+      if (scalar) then
+          ! Call to vlidort scalar code       
+          call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
+                  nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
+                  dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
+                  (/dble(SZA(c,ialong))/), &
+                  (/dble(abs(RAA(c,ialong)))/), &
+                  (/dble(VZA(c,ialong))/), &
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
+      else
+        ! Call to vlidort vector code
+        call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
+               nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+               dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
+               (/dble(SZA(c,ialong))/), &
+               (/dble(abs(RAA(c,ialong)))/), &
+               (/dble(VZA(c,ialong))/), &
+               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q_int, U_int, ierr)
+        BR_Q_int = 0
+        BR_U_int = 0
+      end if
 
-!       else   
-! !       MODIS BRDF Surface Model
-! !       ------------------------------
+    else if ( (index(lower_to_upper(landmodel),'RTLS') > 0) .and. (index(lower_to_upper(landmodel),'BPDF') .eq. 0) ) then
+      if ( ANY(kernel_wt == MISSING) ) then
+!       Save code for pixels that were not gap filled
+!       ---------------------------------------------    
+        radiance_VL_int(nobs,:) = MISSING
+        reflectance_VL_int(nobs,:) = MISSING
+        Valbedo = MISSING
+        if (.not. scalar) then
+          Q_int = MISSING
+          U_int = MISSING
+        end if
+        ierr = 0
 
-!         if (scalar) then 
-!             ! Call to vlidort scalar code            
-!             call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom,  &
-!                     nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
-!                     dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
-!                     dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
-!                     dble(Vpe), dble(Vze), dble(Vte), &
-!                     kernel_wt, param, &
-!                     (/dble(SZA(c))/), &
-!                     (/dble(abs(RAA(c)))/), &
-!                     (/dble(VZA(c))/), &
-!                     dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
-!         else
-!           ! Call to vlidort vector code
-!           call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
-!                   nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-!                   dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
-!                   dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
-!                   dble(Vpe), dble(Vze), dble(Vte), &
-!                   kernel_wt, param, &
-!                   (/dble(SZA(c))/), &
-!                   (/dble(abs(RAA(c)))/), &
-!                   (/dble(VZA(c))/), &
-!                   dble(MISSING),verbose, &
-!                   radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
-!         end if    
-!       end if
+      else   
+!       MODIS BRDF Surface Model
+!       ------------------------------
 
-!     else if ( (index(lower_to_upper(landmodel),'RTLS') > 0) .and. (index(lower_to_upper(landmodel),'BPDF') > 0) ) then  
-!       if ( ANY(kernel_wt == MISSING) .or. ANY(BPDFparam == land_missing)) then
-! !       Save code for pixels that were not gap filled
-! !       ---------------------------------------------    
-!         radiance_VL_int(nobs,:) = -500
-!         reflectance_VL_int(nobs,:) = -500
-!         Valbedo = -500
-!         if (.not. scalar) then
-!           Q_int = -500
-!           U_int = -500
-!         end if
-!         ierr = 0
+        if (scalar) then 
+            ! Call to vlidort scalar code            
+            call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom,  &
+                    nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                    dble(Vpe), dble(Vze), dble(Vte), &
+                    kernel_wt, param, &
+                    (/dble(SZA(c,ialong))/), &
+                    (/dble(abs(RAA(c,ialong)))/), &
+                    (/dble(VZA(c,ialong))/), &
+                    dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
+        else
+          ! Call to vlidort vector code
+          call VLIDORT_Vector_LandMODIS (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
+                  nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                  dble(Vpe), dble(Vze), dble(Vte), &
+                  kernel_wt, param, &
+                  (/dble(SZA(c,ialong))/), &
+                  (/dble(abs(RAA(c,ialong)))/), &
+                  (/dble(VZA(c,ialong))/), &
+                  dble(MISSING),verbose, &
+                  radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
+        end if    
+      end if
 
-!       else   
-! !       MODIS BPDF Surface Model
-! !       ------------------------------
+    else if ( (index(lower_to_upper(landmodel),'RTLS') > 0) .and. (index(lower_to_upper(landmodel),'BPDF') > 0) ) then  
+      if ( ANY(kernel_wt == MISSING) .or. ANY(BPDFparam == land_missing)) then
+!       Save code for pixels that were not gap filled
+!       ---------------------------------------------    
+        radiance_VL_int(nobs,:) = -500
+        reflectance_VL_int(nobs,:) = -500
+        Valbedo = -500
+        if (.not. scalar) then
+          Q_int = -500
+          U_int = -500
+        end if
+        ierr = 0
 
-!         ! Call to vlidort vector code
-!         call VLIDORT_Vector_LandMODIS_BPDF_cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
-!                 nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-!                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
-!                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
-!                 dble(Vpe), dble(Vze), dble(Vte), &
-!                 kernel_wt, param, BPDFparam, &
-!                 (/dble(SZA(c))/), &
-!                 (/dble(abs(RAA(c)))/), &
-!                 (/dble(VZA(c))/), &
-!                 dble(MISSING),verbose, &
-!                 radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
-!       end if
+      else   
+!       MODIS BPDF Surface Model
+!       ------------------------------
 
-!     end if   
+        ! Call to vlidort vector code
+        call VLIDORT_Vector_LandMODIS_BPDF (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
+                nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                dble(Vpe), dble(Vze), dble(Vte), &
+                kernel_wt, param, BPDFparam, &
+                (/dble(SZA(c,ialong))/), &
+                (/dble(abs(RAA(c,ialong)))/), &
+                (/dble(VZA(c,ialong))/), &
+                dble(MISSING),verbose, &
+                radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
+      end if
 
-!   end subroutine DO_LAND
+    end if   
+
+  end subroutine DO_LAND
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
