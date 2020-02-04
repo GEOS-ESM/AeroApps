@@ -604,9 +604,8 @@ program pace_vlidort
         end if
 
       
-    !   Check VLIDORT Status, Store Outputs in Shared Arrays
+    !   Store Outputs in Shared Arrays
     !   ----------------------------------------------------    
-        call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
         radiance_VL(c,ialong)    = radiance_VL_int(nobs,nch)
         reflectance_VL(c,ialong) = reflectance_VL_int(nobs,nch)
         ALBEDO(c,ialong) = Valbedo(nobs,nch)
@@ -863,6 +862,10 @@ program pace_vlidort
                dble(MISSING),verbose, &
                radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
       end if
+      !   Check VLIDORT Status
+      !   ----------------------------------------------------    
+      call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
+
     else
 !       Save code for pixels that were not gap filled
 !       ---------------------------------------------    
@@ -992,14 +995,14 @@ program pace_vlidort
     ! Simple lambertian surface model
     ! -------------------------------
       if (scalar) then
-          ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-                  nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
-                  dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
-                  (/dble(SZA(c,ialong))/), &
-                  (/dble(abs(RAA(c,ialong)))/), &
-                  (/dble(VZA(c,ialong))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
+        ! Call to vlidort scalar code       
+        call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
+                nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
+                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
+                (/dble(SZA(c,ialong))/), &
+                (/dble(abs(RAA(c,ialong)))/), &
+                (/dble(VZA(c,ialong))/), &
+                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
       else
         ! Call to vlidort vector code
         call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
@@ -1012,6 +1015,9 @@ program pace_vlidort
         BR_Q_int = 0
         BR_U_int = 0
       end if
+      !   Check VLIDORT Status
+      !   ----------------------------------------------------    
+      call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
 
     else if ( (index(lower_to_upper(landmodel),'RTLS') > 0) .and. (index(lower_to_upper(landmodel),'BPDF') .eq. 0) ) then
       if ( ANY(kernel_wt == MISSING) ) then
@@ -1031,15 +1037,15 @@ program pace_vlidort
 !       ------------------------------
 
         if (scalar) then 
-            ! Call to vlidort scalar code            
-            call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom,  &
-                    nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
-                    dble(Vpe), dble(Vze), dble(Vte), &
-                    kernel_wt, param, &
-                    (/dble(SZA(c,ialong))/), &
-                    (/dble(abs(RAA(c,ialong)))/), &
-                    (/dble(VZA(c,ialong))/), &
-                    dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
+          ! Call to vlidort scalar code            
+          call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom,  &
+                  nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                  dble(Vpe), dble(Vze), dble(Vte), &
+                  kernel_wt, param, &
+                  (/dble(SZA(c,ialong))/), &
+                  (/dble(abs(RAA(c,ialong)))/), &
+                  (/dble(VZA(c,ialong))/), &
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
         else
           ! Call to vlidort vector code
           call VLIDORT_Vector_LandMODIS (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
@@ -1051,19 +1057,23 @@ program pace_vlidort
                   (/dble(VZA(c,ialong))/), &
                   dble(MISSING),verbose, &
                   radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
-        end if    
+        end if 
+    !   Check VLIDORT Status
+    !   ----------------------------------------------------    
+        call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
+
       end if
 
     else if ( (index(lower_to_upper(landmodel),'RTLS') > 0) .and. (index(lower_to_upper(landmodel),'BPDF') > 0) ) then  
       if ( ANY(kernel_wt == MISSING) .or. ANY(BPDFparam == land_missing)) then
 !       Save code for pixels that were not gap filled
 !       ---------------------------------------------    
-        radiance_VL_int(nobs,:) = -500
-        reflectance_VL_int(nobs,:) = -500
-        Valbedo = -500
+        radiance_VL_int(nobs,:) = MISSING
+        reflectance_VL_int(nobs,:) = MISSING
+        Valbedo = MISSING
         if (.not. scalar) then
-          Q_int = -500
-          U_int = -500
+          Q_int = MISSING
+          U_int = MISSING
         end if
         ierr = 0
 
@@ -1081,6 +1091,11 @@ program pace_vlidort
                 (/dble(VZA(c,ialong))/), &
                 dble(MISSING),verbose, &
                 radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
+        
+    !   Check VLIDORT Status
+    !   ----------------------------------------------------    
+        call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
+
       end if
 
     end if   
