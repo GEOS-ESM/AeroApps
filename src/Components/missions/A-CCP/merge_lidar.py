@@ -94,17 +94,17 @@ class MERGE(object):
         y  = nc.createDimension('y',1)
         ch  = nc.createDimension('channel',1)
 
-        _copyVar(nctrj,nc,u'longitude',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'latitude',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'lev', dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)   
+        _copyVar(nctrj,nc,u'longitude',dtype='f4',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'latitude',dtype='f4',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'lev', dtype='S1',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=zlib,verbose=self.verbose)   
 
         # Ext variables
         for var in EXT:
-            _copyVar(nctrj,nc,var,dtype='f4',zlib=False,verbose=self.verbose)
+            _copyVar(nctrj,nc,var,dtype='f4',zlib=zlib,verbose=self.verbose)
 
         nctrj.close()
 
@@ -115,40 +115,40 @@ class MERGE(object):
 
             nctrj = Dataset(spcFile)
             for var in EXT:
-                _copyVar(nctrj,nc,var,dtype='f4',zlib=False,verbose=self.verbose,rename=var+'_'+spc)
+                _copyVar(nctrj,nc,var,dtype='f4',zlib=zlib,verbose=self.verbose,rename=var+'_'+spc)
 
         # ASM
         nctrj = Dataset(self.asmFile)
         for var in ASM:
-            _copyVar(nctrj,nc,var,dtype='f4',zlib=False,verbose=self.verbose)
+            _copyVar(nctrj,nc,var,dtype='f4',zlib=zlib,verbose=self.verbose)
 
         nctrj.close()
 
         #MET
         nctrj = Dataset(self.metFile)
         for var in MET:
-            _copyVar(nctrj,nc,var,dtype='f4',zlib=False,verbose=self.verbose)
+            _copyVar(nctrj,nc,var,dtype='f4',zlib=zlib,verbose=self.verbose)
 
         nctrj.close()
 
         #AER
         nctrj = Dataset(self.aerFile)
         for var in AER:
-            _copyVar(nctrj,nc,var,dtype='f4',zlib=False,verbose=self.verbose)
+            _copyVar(nctrj,nc,var,dtype='f4',zlib=zlib,verbose=self.verbose)
 
         nctrj.close()
 
         #CHM
         nctrj = Dataset(self.chmFile)
         for var in CHM:
-            _copyVar(nctrj,nc,var,dtype='f4',zlib=False,verbose=self.verbose)
+            _copyVar(nctrj,nc,var,dtype='f4',zlib=zlib,verbose=self.verbose)
 
         nctrj.close() 
 
         #VLIDORT
         nctrj = Dataset(self.vlidortFile)
         for var in VLIDORT:
-            _copyVar(nctrj,nc,var,dtype='f4',zlib=False,verbose=self.verbose)       
+            _copyVar(nctrj,nc,var,dtype='f4',zlib=zlib,verbose=self.verbose)       
 
 if __name__ == "__main__":
 
