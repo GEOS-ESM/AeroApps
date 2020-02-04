@@ -635,118 +635,81 @@ program pace_vlidort
 ! ----------------------------------------
   call MAPL_SyncSharedMemory(rc=ierr)
 
-! ! Processors not on root node need to send data back to be put into shared memory
-! ! ----------------------------------------
-!   if (.not. amOnFirstNode) then
-!     if (counti > 0) then
-!       call mpi_send(PE, counti*km+1, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-!       call mpi_send(ZE, counti*km+1, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-!       call mpi_send(TE, counti*km+1, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+! Processors not on root node need to send data back to be put into shared memory
+! ----------------------------------------
+  if (.not. amOnFirstNode) then
+    if (counti > 0) then
+      call mpi_send(PE, counti*km+1, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(ZE, counti*km+1, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(TE, counti*km+1, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
       
-!       call mpi_send(ROD, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
-!       call mpi_send(TAU, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-!       call mpi_send(SSA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-!       call mpi_send(G, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-!       call mpi_send(LTAU, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-!       call mpi_send(LSSA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-!       call mpi_send(LG, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-!       call mpi_send(ITAU, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-!       call mpi_send(ISSA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-!       call mpi_send(IG, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(ROT, counti*km, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(TAU, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(SSA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(G, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
 
-!       call mpi_send(ALBEDO, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
-!       if (.not. scalar) then
-!         call mpi_send(Q, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
-!         call mpi_send(U, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
-!         call mpi_send(BR_Q, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
-!         call mpi_send(BR_U, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
-!       end if
+      call mpi_send(ALBEDO, counti*nalong, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      if (.not. scalar) then
+        call mpi_send(Q, counti*nalong, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+        call mpi_send(U, counti*nalong, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+        call mpi_send(BR_Q, counti*nalong, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+        call mpi_send(BR_U, counti*nalong, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      end if
 
-!       call mpi_send(radiance_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
-!       call mpi_send(reflectance_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
-!     end if
-!   end if
+      call mpi_send(radiance_VL, counti*nalong, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(reflectance_VL, counti*nalong, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+    end if
+  end if
 
-!   if (MAPL_am_I_root()) then
-!     do pp = 1,npet-1
-!       if (.not. FirstNode(pp)) then
-!         starti = sum(nclr(1:pp-1))+1
-!         starti = starti + (clrm_total/nodemax)*(nodenum-1)
-!         counti = nclr(pp)
-!         endi   = starti + counti - 1  
-!         if (counti > 0) then
-!           call mpi_recv(PE(starti:endi,:), counti*km+1, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!           call mpi_recv(ZE(starti:endi,:), counti*km+1, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!           call mpi_recv(TE(starti:endi,:), counti*km+1, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+  if (MAPL_am_I_root()) then
+    do pp = 1,npet-1
+      if (.not. FirstNode(pp)) then
+        starti = sum(nclr(1:pp-1))+1
+        counti = nclr(pp)
+        endi   = starti + counti - 1  
+        if (counti > 0) then
+          call mpi_recv(PE(starti:endi,:), counti*km+1, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(ZE(starti:endi,:), counti*km+1, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(TE(starti:endi,:), counti*km+1, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
 
-!           call mpi_recv(ROD(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!           call mpi_recv(TAU(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!           call mpi_recv(SSA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!           call mpi_recv(G(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!           call mpi_recv(LTAU(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!           call mpi_recv(LSSA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!           call mpi_recv(LG(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!           call mpi_recv(ITAU(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!           call mpi_recv(ISSA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!           call mpi_recv(IG(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(ROT(starti:endi,:), counti*km, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(TAU(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(SSA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(G(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
 
-!           call mpi_recv(ALBEDO(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-!           if (.not. scalar) then
-!             call mpi_recv(Q(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!             call mpi_recv(U(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-!             call mpi_recv(BR_Q(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!             call mpi_recv(BR_U(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-!           end if
+          call mpi_recv(ALBEDO(starti:endi,:), counti*nalong, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+          if (.not. scalar) then
+            call mpi_recv(Q(starti:endi,:), counti*nalong, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+            call mpi_recv(U(starti:endi,:), counti*nalong, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+            call mpi_recv(BR_Q(starti:endi,:), counti*nalong, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+            call mpi_recv(BR_U(starti:endi,:), counti*nalong, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+          end if
 
-!           call mpi_recv(radiance_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!           call mpi_recv(reflectance_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-!         end if
-!       end if
-!     end do
-!   end if
+          call mpi_recv(radiance_VL(starti:endi,:), counti*nalong, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(reflectance_VL(starti:endi,:), counti*nalong, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+        end if
+      end if
+    end do
+  end if
 
-! ! Write to outfile
-! ! Expand radiance to im x jm using mask
-! ! Write output to correct position in file 
-! ! -----------------
-!   if (MAPL_am_I_root()) then
-!     call write_outfile()
-!   end if
+! Write to outfile
+! Expand radiance to im x jm using mask
+! Write output to correct position in file 
+! -----------------
+  if (MAPL_am_I_root()) then
+    call write_outfile()
+  end if
 
-! ! Write additional data
-! ! ----------------------
-!   if (additional_output) then
-!     if (MAPL_am_I_root()) then
-!       call write_addfile()
-!     end if
-!   end if
+! Sync processors before shutting down
+! ------------------------------------
+  call MAPL_SyncSharedMemory(rc=ierr)
+  if (MAPL_am_I_root()) then
+    write(*,*) '<> Finished VLIDORT Simulation of '//trim(lower_to_upper(instname))//' domain'
+    write(*,*) ' '
+  end if
 
-! ! Write aerosol data
-! ! ----------------------
-!   if (aerosol_output) then
-!     if (MAPL_am_I_root()) then
-!       call write_aerfile()
-!     end if
-!   end if
-
-! ! Write cloud data
-! ! ----------------------
-!   if (cloud_output) then
-!     if (MAPL_am_I_root()) then
-!       call write_cldfile()
-!     end if
-!   end if
-
-! ! Sync processors before shutting down
-! ! ------------------------------------
-!   call MAPL_SyncSharedMemory(rc=ierr)
-!   if (MAPL_am_I_root()) then
-!     write(*,*) '<> Finished VLIDORT Simulation of '//trim(lower_to_upper(instname))//' domain'
-!     write(*,*) ' '
-!   end if
-
-! ! All done
-! ! --------
+! All done
+! --------
 500  call MAPL_SyncSharedMemory(rc=ierr)
   call MAPL_FinalizeShmem (rc=ierr)
   call ESMF_Finalize(__RC__)
@@ -768,53 +731,55 @@ program pace_vlidort
 !     Oct 2018 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
 
-!   subroutine write_outfile()
-!     real*8, dimension(nalong,tm)            :: field  
+  subroutine write_outfile()
+    real*8, dimension(tm)            :: field  
 
-!     field = dble(MISSING)
-! !                             Write to main OUT_File
-! !                             ----------------------
-!     call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
-!     write(msg,'(F10.2)') channels(nch)
+    field = dble(MISSING)
+!                             Write to main OUT_File
+!                             ----------------------
+    call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
+    write(msg,'(F10.2)') channels(nch)
     
-!     call check(nf90_inq_varid(ncid, 'ref_' // trim(adjustl(msg)), varid), "get ref vaird")
-!     call check(nf90_put_var(ncid, varid, unpack(reflectance_VL,clmask,field), &
-!                 start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out reflectance")
+    call check(nf90_inq_varid(ncid, 'toa_reflectance', varid), "get ref vaird")
+    do ialong=1,nalong
+      call check(nf90_put_var(ncid, varid, unpack(reshape(reflectance_VL(:,ialong),(/tm/)),clmask,field), &
+                  start = (/ialong,1/), count = (/1,tm/)), "writing out reflectance")
 
-!     call check(nf90_inq_varid(ncid, 'I_' // trim(adjustl(msg)), varid), "get rad vaird")
-!     call check(nf90_put_var(ncid, varid, unpack(radiance_VL,clmask,field), &
-!                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out radiance")
+      call check(nf90_inq_varid(ncid, 'I' , varid), "get rad vaird")
+      call check(nf90_put_var(ncid, varid, unpack(reshape(radiance_VL(:,ialong),(/tm/)),clmask,field), &
+                    start = (/ialong,1/), count = (/1,tm/)), "writing out radiance")
 
-!     call check(nf90_inq_varid(ncid, 'surf_ref_I_' // trim(adjustl(msg)), varid), "get ref vaird")
-!     call check(nf90_put_var(ncid, varid, unpack(ALBEDO,clmask,field), &
-!                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
+      call check(nf90_inq_varid(ncid, 'surface_reflectance', varid), "get ref vaird")
+      call check(nf90_put_var(ncid, varid, unpack(reshape(ALBEDO(:,ialong),(/tm/)),clmask,field), &
+                    start = (/ialong,1/), count = (/1,tm/)), "writing out albedo")
 
-!     if (.not. scalar) then
-!       call check(nf90_inq_varid(ncid, 'Q_' // trim(adjustl(msg)), varid), "get q vaird")
-!       call check(nf90_put_var(ncid, varid, unpack(Q,clmask,field), &
-!                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
+      if (.not. scalar) then
+        call check(nf90_inq_varid(ncid, 'Q', varid), "get q vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(Q(:,ialong),(/tm/)),clmask,field), &
+                    start = (/ialong,1/), count = (/1,tm/)), "writing out Q")
 
-!       call check(nf90_inq_varid(ncid, 'U_' // trim(adjustl(msg)), varid), "get u vaird")
-!       call check(nf90_put_var(ncid, varid, unpack(U,clmask,field), &
-!                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
+        call check(nf90_inq_varid(ncid, 'U', varid), "get u vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(U(:,ialong),(/tm/)),clmask,field), &
+                    start = (/ialong,1/), count = (/1,tm/)), "writing out U")
 
-!       call check(nf90_inq_varid(ncid, 'surf_ref_Q_' // trim(adjustl(msg)), varid), "get ref vaird")
-!       call check(nf90_put_var(ncid, varid, unpack(BR_Q,clmask,field), &
-!                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo Q")
+        call check(nf90_inq_varid(ncid, 'surface_reflectance_Q', varid), "get ref vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(BR_Q(:,ialong),(/tm/)),clmask,field), &
+                      start = (/ialong,1/), count = (/1,tm/)), "writing out albedo Q")
 
-!       call check(nf90_inq_varid(ncid, 'surf_ref_U_' // trim(adjustl(msg)), varid), "get ref vaird")
-!       call check(nf90_put_var(ncid, varid, unpack(BR_U,clmask,field), &
-!                     start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo U")
+        call check(nf90_inq_varid(ncid, 'surface_reflectance_U', varid), "get ref vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(BR_U(:,ialong),(/tm/)),clmask,field), &
+                      start = (/ialong,1/), count = (/1,tm/)), "writing out albedo U")
 
-!     endif        
+      endif        
+    end do
 
-!     call check( nf90_close(ncid), "close outfile" )
-!     if (MAPL_am_I_root()) then
-!       write(*,*) '<> Wrote Outfile '
-!     end if
+    call check( nf90_close(ncid), "close outfile" )
+    if (MAPL_am_I_root()) then
+      write(*,*) '<> Wrote Outfile '
+    end if
 
 
-!   end subroutine write_outfile
+  end subroutine write_outfile
 
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1091,7 +1056,7 @@ program pace_vlidort
                 (/dble(VZA(c,ialong))/), &
                 dble(MISSING),verbose, &
                 radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
-        
+
     !   Check VLIDORT Status
     !   ----------------------------------------------------    
         call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
