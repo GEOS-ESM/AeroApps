@@ -18,13 +18,5 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False,rename=None):
         y.missing_value = x.missing_value
     except:
         pass
-    rank = len(x.shape)
-
-    if rank == 1:
-        y[:] = x[:]
-    elif rank == 2:
-        y[:,:] = x[:,:]
-    elif rank == 3:
-        y[:,:,:] = x[:,:,:]
-    else:
-        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
+    data = x[:]
+    y[:] = data
