@@ -150,6 +150,9 @@ class MERGE(object):
         for var in VLIDORT:
             _copyVar(nctrj,nc,var,dtype='f4',zlib=zlib,verbose=self.verbose)       
 
+        nctrj.close()
+
+        nc.close()
 if __name__ == "__main__":
 
     # Defaults
