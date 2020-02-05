@@ -3,12 +3,12 @@
 #######################################################################
 #                     Batch Parameters for Run Job
 #######################################################################
-#SBATCH --time=01:30:00
+#SBATCH --time=00:30:00
 #SBATCH --constraint=hasw
-#SBATCH --ntasks=840 --cpus-per-task=1 --ntasks-per-node=28
+#SBATCH --ntasks=84 --cpus-per-task=1 --ntasks-per-node=28
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=patricia.castellanos@nasa.gov
-#SBATCH --job-name=pace_vlidort
+#SBATCH --job-name=accp_vlidort
 #SBATCH --qos=pace
 #SBATCH --partition=preops
 #SBATCH --account=s1180
@@ -32,7 +32,18 @@ limit stacksize unlimited
 #           Architecture Specific Environment Variables
 #######################################################################
 setenv G5DIR /discover/nobackup/pcastell/workspace/GAAS/src
-setenv RUN_CMD  "mpirun -np 840"
+setenv RUN_CMD  "mpirun -np 84"
+
+mkdir -p $LOCAL_TMPDIR/ExtData
+cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/ExtData/ $LOCAL_TMPDIR
+ln -s $LOCAL_TMPDIR/ExtData ./ExtData
+
+cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/ExtDataOsku/ $LOCAL_TMPDIR
+ln -s $LOCAL_TMPDIR/ExtDataOsku ./ExtDataOsku
+
+cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/Chem_MieRegistry.rc $LOCAL_TMPDIR
+ln -s $LOCAL_TMPDIR/Chem_MieRegistry.rc ./Chem_MieRegistry.rc
+
 
 source $HOME/.cshrc
 cd $G5DIR
@@ -49,5 +60,9 @@ cd $AEROBIN
 ######
 ##################################################################
 ./clean_mem.sh
-$RUN_CMD ./pace_vlidort_multinode.x pace_vlidort.rc
+$RUN_CMD ./accp_polar_vlidort.x accp_polar_vlidort.rc
 ./clean_mem.sh
+rm -rf $LOCAL_TMPDIR/*
+rm ExtData
+rm ExtDataOsku
+rm Chem_MieRegistry.rc
