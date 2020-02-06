@@ -8,7 +8,6 @@ implicit NONE
 
 PUBLIC VLIDORT_Scalar_GissCX
 PUBLIC VLIDORT_Vector_GissCX
-PUBLIC VLIDORT_Scalar_GissCx_Cloud
 PUBLIC VLIDORT_Vector_GissCx_Cloud
 PUBLIC VLIDORT_Scalar_GissCx_NOBM_Cloud
 PUBLIC VLIDORT_Vector_GissCx_NOBM_Cloud
