@@ -116,6 +116,7 @@ class MERGE(object):
             nctrj = Dataset(spcFile)
             for var in EXT:
                 _copyVar(nctrj,nc,var,dtype='f4',zlib=zlib,verbose=self.verbose,rename=var+'_'+spc)
+            nctrj.close()
 
         # ASM
         nctrj = Dataset(self.asmFile)
