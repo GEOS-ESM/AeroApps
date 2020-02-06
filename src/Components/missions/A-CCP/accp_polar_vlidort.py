@@ -618,8 +618,8 @@ if __name__ == "__main__":
         print '>>>lerFile    ',lerFile
         print '>>>verbose:   ',args.verbose
         print '++++End of arguments+++'
-        if not args.dryrun:
-            vlidort = ACCP_POLAR_VLIDORT(inFile,outFile,rcFile,
+        
+        vlidort = ACCP_POLAR_VLIDORT(inFile,outFile,rcFile,
                             albedoType,
                             channel,                            
                             instname,
@@ -629,7 +629,7 @@ if __name__ == "__main__":
                             lerFile=lerFile,
                             verbose=args.verbose)
 
-   
+        if not args.dryrun: 
             # Run VLIDORT
             if vlidort.nobs > 0:
                 vlidort.runVLIDORT()
