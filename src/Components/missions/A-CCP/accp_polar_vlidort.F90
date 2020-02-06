@@ -740,8 +740,13 @@ program pace_vlidort
     call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
     write(msg,'(F10.2)') channels(nch)
     
-    call check(nf90_inq_varid(ncid, 'toa_reflectance', varid), "get ref vaird")
+    call check(nf90_inq_varid(ncid, 'ROT', varid), "get ref vaird")
+    do k=1,km
+      call check(nf90_put_var(ncid, varid, unpack(reshape(ROT(:,k),(/tm/)),clmask,field), &
+                  start = (/k,1/), count = (/1,tm/)), "writing out ROT")
+    enddo
     do ialong=1,nalong
+      call check(nf90_inq_varid(ncid, 'toa_reflectance', varid), "get ref vaird")
       call check(nf90_put_var(ncid, varid, unpack(reshape(reflectance_VL(:,ialong),(/tm/)),clmask,field), &
                   start = (/ialong,1/), count = (/1,tm/)), "writing out reflectance")
 
@@ -749,7 +754,7 @@ program pace_vlidort
       call check(nf90_put_var(ncid, varid, unpack(reshape(radiance_VL(:,ialong),(/tm/)),clmask,field), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out radiance")
 
-      call check(nf90_inq_varid(ncid, 'surface_reflectance', varid), "get ref vaird")
+      call check(nf90_inq_varid(ncid, 'surf_reflectance', varid), "get ref vaird")
       call check(nf90_put_var(ncid, varid, unpack(reshape(ALBEDO(:,ialong),(/tm/)),clmask,field), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out albedo")
 
@@ -762,11 +767,11 @@ program pace_vlidort
         call check(nf90_put_var(ncid, varid, unpack(reshape(U(:,ialong),(/tm/)),clmask,field), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out U")
 
-        call check(nf90_inq_varid(ncid, 'surface_reflectance_Q', varid), "get ref vaird")
+        call check(nf90_inq_varid(ncid, 'surf_reflectance_Q', varid), "get ref vaird")
         call check(nf90_put_var(ncid, varid, unpack(reshape(BR_Q(:,ialong),(/tm/)),clmask,field), &
                       start = (/ialong,1/), count = (/1,tm/)), "writing out albedo Q")
 
-        call check(nf90_inq_varid(ncid, 'surface_reflectance_U', varid), "get ref vaird")
+        call check(nf90_inq_varid(ncid, 'surf_reflectance_U', varid), "get ref vaird")
         call check(nf90_put_var(ncid, varid, unpack(reshape(BR_U(:,ialong),(/tm/)),clmask,field), &
                       start = (/ialong,1/), count = (/1,tm/)), "writing out albedo U")
 
@@ -1920,10 +1925,10 @@ program pace_vlidort
       call check(nf90_def_var(ncid, 'U',nf90_float,(/nvzaDimID,timeDimID/),uVarID),"create U var")
     end if        
 
-    call check(nf90_def_var(ncid, 'surface_reflectance',nf90_float,(/nvzaDimID,timeDimID/),albVarID),"create albedo var")
+    call check(nf90_def_var(ncid, 'surf_reflectance',nf90_float,(/nvzaDimID,timeDimID/),albVarID),"create albedo var")
     if (.not. scalar) then
-      call check(nf90_def_var(ncid, 'surface_reflectance_Q',nf90_float,(/nvzaDimID,timeDimID/),brQVarID),"create Q var")
-      call check(nf90_def_var(ncid, 'surface_reflectance_U',nf90_float,(/nvzaDimID,timeDimID/),brUVarID),"create U var")
+      call check(nf90_def_var(ncid, 'surf_reflectance_Q',nf90_float,(/nvzaDimID,timeDimID/),brQVarID),"create Q var")
+      call check(nf90_def_var(ncid, 'surf_reflectance_U',nf90_float,(/nvzaDimID,timeDimID/),brUVarID),"create U var")
     end if        
 
     call check(nf90_def_var(ncid,'ROT',nf90_float,(/levDimID,timeDimID/),rotVarID),"create rot var")
