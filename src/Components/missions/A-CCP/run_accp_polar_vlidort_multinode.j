@@ -34,15 +34,11 @@ limit stacksize unlimited
 setenv G5DIR /discover/nobackup/pcastell/workspace/GAAS/src
 setenv RUN_CMD  "mpirun -np 84"
 
-mkdir -p $LOCAL_TMPDIR/ExtData
-cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/ExtData/ $LOCAL_TMPDIR
-ln -s $LOCAL_TMPDIR/ExtData ./ExtData
+cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/ExtData/ .
 
-cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/ExtDataOsku/ $LOCAL_TMPDIR
-ln -s $LOCAL_TMPDIR/ExtDataOsku ./ExtDataOsku
+cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/ExtDataOsku/ .
 
-cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/Chem_MieRegistry.rc $LOCAL_TMPDIR
-ln -s $LOCAL_TMPDIR/Chem_MieRegistry.rc ./Chem_MieRegistry.rc
+cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/Chem_MieRegistry.rc .
 
 
 source $HOME/.cshrc
@@ -62,7 +58,6 @@ cd $AEROBIN
 ./clean_mem.sh
 $RUN_CMD ./accp_polar_vlidort.x accp_polar_vlidort.rc
 ./clean_mem.sh
-rm -rf $LOCAL_TMPDIR/*
-rm ExtData
-rm ExtDataOsku
+rm -rf ExtData
+rm -rf ExtDataOsku
 rm Chem_MieRegistry.rc
