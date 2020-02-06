@@ -41,7 +41,7 @@ subroutine VLIDORT_Vector_OCIGissCX (km, nch, nobs,channels, nstreams, plane_par
                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
-                   BRDF, Q, U, BRDF_Q, BRDF_U, rc)
+                   Q, U, BRDF, BRDF_Q, BRDF_U, rc)
 !
 ! Place holder.
 !
@@ -219,7 +219,7 @@ subroutine VLIDORT_Vector_OCICX (km, nch, nobs,channels, nstreams, plane_paralle
                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
-                   BRDF, Q, U, BRDF_Q, BRDF_U, rc)
+                   Q, U, BRDF, BRDF_Q, BRDF_U, rc)
 !
 ! Place holder.
 !
@@ -563,7 +563,7 @@ subroutine VLIDORT_Vector_CX (km, nch, nobs,channels, nstreams, plane_parallel, 
                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
-                   BRDF, Q, U, BRDF_Q, BRDF_U, rc)
+                   Q, U, BRDF, BRDF_Q, BRDF_U, rc)
 !
 ! Place holder.
 !
@@ -739,7 +739,7 @@ subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nstreams, plane_paral
                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, sleave, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
-                   BRDF, Q, U, BRDF_Q, BRDF_U, rc)
+                   Q, U, BRDF, BRDF_Q, BRDF_U, rc)
 !
 ! Place holder.
 !
@@ -1088,7 +1088,7 @@ subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nstreams, plane_parall
                    nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
                    mr, solar_zenith, relat_azymuth, sensor_zenith, &
                    MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, &
-                   BRDF, Q, U, BRDF_Q, BRDF_U, rc)
+                   Q, U, BRDF, BRDF_Q, BRDF_U, rc)
 !
 ! Place holder.
 !

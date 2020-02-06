@@ -557,7 +557,7 @@ subroutine VECTOR_GissCX(km, nch, nobs, channels, nstreams, plane_parallel, nMom
                                    MISSING,verbose, &
                                    radiance_VL_SURF, &
                                    reflectance_VL_SURF, &
-                                   BR, Q, U, BR_Q, BR_U, rc )  
+                                   Q, U, BR, BR_Q, BR_U, rc )  
 
 
 end subroutine VECTOR_GissCX
@@ -630,7 +630,7 @@ subroutine VECTOR_CX(km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
                                    MISSING,verbose, &
                                    radiance_VL_SURF, &
                                    reflectance_VL_SURF, &
-                                   BR, Q, U, BR_Q, BR_U, rc )  
+                                   Q, U, BR, BR_Q, BR_U, rc )  
 
 
 end subroutine VECTOR_CX
@@ -703,7 +703,7 @@ subroutine VECTOR_OCICX(km, nch, nobs, channels, nstreams, plane_parallel, nMom,
                                    MISSING,verbose, &
                                    radiance_VL_SURF, &
                                    reflectance_VL_SURF, &
-                                   BR, Q, U, BR_Q, BR_U, rc )  
+                                   Q, U, BR, BR_Q, BR_U, rc )  
 
 
 end subroutine VECTOR_OCICX
@@ -776,7 +776,7 @@ subroutine VECTOR_OCIGissCX(km, nch, nobs, channels, nstreams, plane_parallel, n
                                    MISSING,verbose, &
                                    radiance_VL_SURF, &
                                    reflectance_VL_SURF, &
-                                   BR, Q, U, BR_Q, BR_U, rc )  
+                                   Q, U, BR, BR_Q, BR_U, rc )  
 
 
 end subroutine VECTOR_OCIGissCX
