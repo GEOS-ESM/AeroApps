@@ -30,25 +30,15 @@ class JOBS(object):
     def handle_jobs(self):
         jobsmax = 25
         # Figure out how many jobs you need to submit
-        runlen  = len(self.dirstring)   
+        numjobs  = len(self.dirstring)   
 
-        if self.nodemax is not None:
-            numjobs = self.nodemax*runlen
-        else:
-            numjobs = runlen
-        
         devnull = open(os.devnull, 'w')
         if numjobs <= jobsmax:   
-            countRun     = runlen  
-            node_tally   = runlen 
+            countRun     = numjobs  
+            node_tally   = numjobs
         else:
-            if self.nodemax is not None:
-                countRun   = int(jobsmax/self.nodemax)
-                node_tally = self.nodemax*int(jobsmax/self.nodemax)
-                jobsmax    = node_tally
-            else:
-                countRun   = jobsmax
-                node_tally = jobsmax
+            countRun   = jobsmax
+            node_tally = jobsmax
 
         workingJobs = np.arange(countRun)
         
@@ -58,7 +48,7 @@ class JOBS(object):
         for i in workingJobs:
             s = self.dirstring[i]
             os.chdir(s)
-            jobid = np.append(jobid,subprocess.check_output(['qsub',self.runfile]))
+            jobid = np.append(jobid,subprocess.check_output(['qsub',self.slurm]))
         os.chdir(self.cwd)
 
         # launch subprocess that will monitor queue 
@@ -104,13 +94,13 @@ class JOBS(object):
 
             # Add more jobs if needed
             # reinitialize stat variable
-            if (runlen > countRun) and (node_tally < jobsmax):
+            if (numjobs > countRun) and (node_tally < jobsmax):
                 #print 'adding new jobs'
                 newRun     = jobsmax - node_tally
                 node_tally = jobsmax
 
-                if (newRun + countRun) > runlen:
-                    newRun = runlen - countRun
+                if (newRun + countRun) > numjobs:
+                    newRun = numjobs - countRun
                     node_tally = node_tally + newRun
                 
 
@@ -119,7 +109,7 @@ class JOBS(object):
                 for i in newjobs:
                     s = self.dirstring[i]
                     os.chdir(s)
-                    jobid = np.append(jobid,subprocess.check_output(['qsub',self.runfile]))
+                    jobid = np.append(jobid,subprocess.check_output(['qsub',self.slurm]))
 
                 os.chdir(self.cwd)
                 countRun = countRun + newRun
@@ -149,18 +139,10 @@ class JOBS(object):
         os.chdir(self.dirstring[i])  
 
         error = False 
-        if self.nodemax is not None:
-            for a in np.arange(self.nodemax):
-                a = a + 1
-                errfile = 'slurm_' +jobid + '_' + str(a) + '.err'
-                statinfo = os.stat(errfile)
-                if (statinfo.st_size != 0):
-                    error = True            
-        else: 
-            errfile = 'slurm_' +jobid + '.err'
-            statinfo = os.stat(errfile)
-            if (statinfo.st_size != 0):
-                error = True
+        errfile = 'slurm_' +jobid + '.err'
+        statinfo = os.stat(errfile)
+        if (statinfo.st_size != 0):
+            error = True
 
         os.chdir(self.cwd)
         return error
