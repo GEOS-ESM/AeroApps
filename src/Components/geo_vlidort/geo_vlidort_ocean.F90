@@ -160,7 +160,9 @@ program geo_vlidort
   real*8, allocatable                   :: U(:,:)                                 ! U Stokes component
   real*8, allocatable                   :: ROT(:,:,:)                             ! rayleigh optical thickness
   real*8, allocatable                   :: depol(:)                               ! rayleigh depolarization ratio
-  real*8, allocatable                   :: albedo(:,:,:)                          ! bi-directional surface reflectance
+  real*8, allocatable                   :: albedo(:,:)                          ! bi-directional surface reflectance
+  real*8, allocatable                   :: BR_Q(:,:)                          ! bi-directional surface reflectance
+  real*8, allocatable                   :: BR_U(:,:)                          ! bi-directional surface reflectance
 
 !                                  Final Shared Arrays
 !                                  -------------------
@@ -537,7 +539,7 @@ program geo_vlidort
                   (/dble(V10M(c))/), &
                   dble(mr), &
                   (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
+                  (/dble(RAA(c))/), &
                   (/dble(VZA(c))/), &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, albedo, ierr)
         end if
@@ -549,9 +551,9 @@ program geo_vlidort
                (/dble(V10M(c))/), &
                dble(mr), &
                (/dble(SZA(c))/), &
-               (/dble(abs(RAA(c)))/), &
+               (/dble(RAA(c))/), &
                (/dble(VZA(c))/), &
-               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q, U, albedo, ierr)
+               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q, U, albedo, BR_Q, BR_U, ierr)
       end if
 
     end if          
@@ -561,10 +563,10 @@ program geo_vlidort
     call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
     radiance_VL(c,:)    = radiance_VL_int(nobs,:)
     reflectance_VL(c,:) = reflectance_VL_int(nobs,:)
-    ALBEDO_I(c,:)      = albedo(1,nobs,:)
+    ALBEDO_I(c,:)      = albedo(nobs,:)
     if (.not. scalar) then
-      ALBEDO_Q(c,:)      = albedo(2,nobs,:)
-      ALBEDO_U(c,:)      = albedo(3,nobs,:)
+      ALBEDO_Q(c,:)      = BR_Q(nobs,:)
+      ALBEDO_U(c,:)      = BR_U(nobs,:)
     end if
     WIND_SPEED(c)      = SQRT(dble(U10M(c)*U10M(c)) + dble(V10M(c)*V10M(c)))
 
@@ -1123,7 +1125,11 @@ end subroutine outfile_extname
       vaa = pack(VAA_,clmask)
 
       RAA = vaa - saa
-
+      do i = 1, clrm
+        if (RAA(i) < 0) then
+          RAA(i) = RAA(i) + 360.0
+        end if
+      end do
       deallocate (saa)
       deallocate (vaa)
       write(*,*) '<> Read angle data to shared memory' 
@@ -1294,13 +1300,13 @@ end subroutine outfile_extname
     if (.not. scalar) then      
       allocate (Q(nobs, nch))
       allocate (U(nobs, nch))
+      allocate (BR_Q(nobs, nch))
+      allocate (BR_U(nobs, nch))
     end if
 
-    if (scalar) then
-      allocate(albedo(1,nobs,nch))
-    else
-      allocate(albedo(3,nobs,nch))
-    end if
+    allocate(albedo(nobs,nch))
+
+    
 
   ! Needed for reading
   ! ----------------------

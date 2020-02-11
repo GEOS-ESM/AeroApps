@@ -382,7 +382,7 @@ class VLIDORT(object):
         """
         tau,ssa,g,pmom = getAOPvector(self,self.channel,
                                  vnames=self.AERNAMES,
-                                 Verbose=True,
+                                 Verbose=self.verbose,
                                  rcfile=self.rcFile,
                                  nMom=self.nMom)
         self.tau = tau  #(km,nch,nobs)

@@ -501,7 +501,7 @@ program geo_vlidort
     call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
                nPol, ROT, depol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                (/dble(SZA(c))/), &
-               (/dble(abs(RAA(c)))/), &
+               (/dble(RAA(c))/), &
                (/dble(VZA(c))/), &
                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q, U, ierr)
    
@@ -993,7 +993,11 @@ end subroutine outfile_extname
       vaa = pack(VAA_,clmask)
 
       RAA = vaa - saa
-
+      do i = 1, clrm
+        if (RAA(i) < 0) then
+          RAA(i) = RAA(i) + 360.0
+        end if
+      end do
       deallocate (saa)
       deallocate (vaa)
       write(*,*) '<> Read angle data to shared memory' 
@@ -1625,7 +1629,7 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, plane_parallel, label = 'PLANE_PARALLEL:',default=.FALSE.)
     call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=6)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
-    call ESMF_ConfigGetAttribute(cf, vzamax, lacall ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)bel = 'VZAMAX:',default=80.0)
+    call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, cldmax, label = 'CLDMAX:',default=0.01)
     call ESMF_ConfigGetAttribute(cf, nodemax, label = 'NODEMAX:',default=1) 
     call ESMF_ConfigGetAttribute(cf, version, label = 'VERSION:',default='1.0') 

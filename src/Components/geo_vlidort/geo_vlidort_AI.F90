@@ -27,6 +27,7 @@ program geo_vlidort
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
   use vlidort_lambert              ! Module to run VLIDORT with lambertian surface  
+  use vlidort_rot                  ! Module to calculate Rayleigh
   use lidort_brdf_modis
   use Chem_MieMod
 !  use netcdf_helper                ! Module with netcdf routines
@@ -94,6 +95,8 @@ program geo_vlidort
   real, allocatable                     :: ssa(:,:,:)             ! single scattering albedo
   real, allocatable                     :: g(:,:,:)               ! asymmetry factor
   real*8, allocatable                   :: albedo(:,:)            ! surface albedo
+  integer, parameter                    :: nstreams = 12
+  logical, parameter                    :: plane_parallel = .True.
 
 ! VLIDORT output arrays
 !-------------------------------
@@ -104,6 +107,7 @@ program geo_vlidort
   real*8, allocatable                   :: Q(:,:)                                 ! Q Stokes component
   real*8, allocatable                   :: U(:,:)                                 ! U Stokes component
   real*8, allocatable                   :: ROT(:,:,:)                             ! rayleigh optical thickness
+  real*8, allocatable                   :: depol(:)                               ! rayleigh depolarization ratio
 
 !                                  Final Shared Arrays
 !                                  -------------------
@@ -415,25 +419,30 @@ program geo_vlidort
 
 !   Call VlIDORT
 !   ------------
-  
+
+!   Rayleigh Optical Thickness
+!   --------------------------
+    call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(pe), dble(ze), dble(te), &
+                                   dble(MISSING),verbose, &
+                                   ROT, depol, ierr ) 
 !     Simple lambertian surface model
 !     -------------------------------
     if (scalar) then
         ! Call to vlidort scalar code       
-        call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
-                nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+        call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
+                nPol, ROT, depol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                 (/dble(SZA(c))/), &
-                (/dble(abs(RAA(c)))/), &
+                (/dble(RAA(c))/), &
                 (/dble(VZA(c))/), &
-                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
+                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
     else 
         ! Call to vlidort vector code
-        call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
-             nPol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+        call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
+             nPol, ROT, depol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
              (/dble(SZA(c))/), &
-             (/dble(abs(RAA(c)))/), &
+             (/dble(RAA(c))/), &
              (/dble(VZA(c))/), &
-             dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, Q, U, ierr)
+             dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q, U, ierr)
     end if  
     
 !   Check VLIDORT Status, Store Outputs in Shared Arrays
@@ -855,6 +864,11 @@ end subroutine outfile_extname
       vaa = pack(VAA_,clmask)
 
       RAA = vaa - saa
+      do i = 1, clrm
+        if (RAA(i) < 0) then
+          RAA(i) = RAA(i) + 360.0
+        end if
+      end do
 
       deallocate (saa)
       deallocate (vaa)
@@ -937,6 +951,7 @@ end subroutine outfile_extname
     allocate (reflectance_VL_int(nobs, nch))    
 
     allocate (ROT(km,nobs,nch))
+    allocate (depol(nch))
     allocate (pmom(km,nch,nobs,nMom,nPol))
 
     if (.not. scalar) then      

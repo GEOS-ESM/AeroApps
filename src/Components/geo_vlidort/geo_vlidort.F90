@@ -596,14 +596,14 @@ program geo_vlidort
           call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
                   nPol, ROT, depol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                   (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
+                  (/dble(RAA(c))/), &
                   (/dble(VZA(c))/), &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
         else 
           call LIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nMom,      &
                   nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                   (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
+                  (/dble(RAA(c))/), &
                   (/dble(VZA(c))/), &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
         end if 
@@ -612,7 +612,7 @@ program geo_vlidort
         call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
                nPol, ROT, depol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                (/dble(SZA(c))/), &
-               (/dble(abs(RAA(c)))/), &
+               (/dble(RAA(c))/), &
                (/dble(VZA(c))/), &
                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q, U, ierr)
       end if
@@ -638,7 +638,7 @@ program geo_vlidort
                   nPol, ROT, depol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
                   kernel_wt, param, &
                   (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
+                  (/dble(RAA(c))/), &
                   (/dble(VZA(c))/), &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, albedo, ierr )  
         else
@@ -647,7 +647,7 @@ program geo_vlidort
                   nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
                   kernel_wt, param, &
                   (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
+                  (/dble(RAA(c))/), &
                   (/dble(VZA(c))/), &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
         end if
@@ -657,7 +657,7 @@ program geo_vlidort
                 nPol, ROT, depol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), &
                 kernel_wt, param, &
                 (/dble(SZA(c))/), &
-                (/dble(abs(RAA(c)))/), &
+                (/dble(RAA(c))/), &
                 (/dble(VZA(c))/), &
                 dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, albedo, Q, U, BR_Q_int, BR_U_int, ierr )  
       end if      
@@ -1394,7 +1394,11 @@ end subroutine outfile_extname
       vaa = pack(VAA_,clmask)
 
       RAA = vaa - saa
-
+      do i = 1, clrm
+        if (RAA(i) < 0) then
+          RAA(i) = RAA(i) + 360.0
+        end if
+      end do
       deallocate (saa)
       deallocate (vaa)
       write(*,*) '<> Read angle data to shared memory' 

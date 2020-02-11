@@ -132,7 +132,7 @@ geo_lidort.x: netcdf_helper.o geo_lidort.o
                                  $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)     
 
 geo_vlidort_multinode.x: netcdf_helper.o geo_vlidort_multinode.o 
-	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_CHEM_BASE) \
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT2OS) $(LIB_CHEM_BASE) \
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
