@@ -1016,7 +1016,7 @@ program leo_vlidort_cloud
                   (/dble(V10M(i,j))/), &
                   dble(mr), &
                   (/dble(SZA(i,j))/), &
-                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
         else
@@ -1030,7 +1030,7 @@ program leo_vlidort_cloud
                  (/dble(V10M(i,j))/), &
                  dble(mr), &
                  (/dble(SZA(i,j))/), &
-                 (/dble(abs(RAA(i,j)))/), &
+                 (/dble(RAA(i,j))/), &
                  (/dble(VZA(i,j))/), &
                  dble(MISSING),verbose, &
                  radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
@@ -1050,7 +1050,7 @@ program leo_vlidort_cloud
                   dble(mr), &
                   Vsleave, &
                   (/dble(SZA(i,j))/), &
-                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
         else
@@ -1065,7 +1065,7 @@ program leo_vlidort_cloud
                  dble(mr), &
                  Vsleave, &
                  (/dble(SZA(i,j))/), &
-                 (/dble(abs(RAA(i,j)))/), &
+                 (/dble(RAA(i,j))/), &
                  (/dble(VZA(i,j))/), &
                  dble(MISSING),verbose, &
                  radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
@@ -1194,7 +1194,7 @@ program leo_vlidort_cloud
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
                   dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                   (/dble(SZA(i,j))/), &
-                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
       else
@@ -1205,7 +1205,7 @@ program leo_vlidort_cloud
                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                (/dble(SZA(i,j))/), &
-               (/dble(abs(RAA(i,j)))/), &
+               (/dble(RAA(i,j))/), &
                (/dble(VZA(i,j))/), &
                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q_int, U_int, ierr)
         BR_Q_int = 0
@@ -1238,7 +1238,7 @@ program leo_vlidort_cloud
                     dble(Vpe), dble(Vze), dble(Vte), &
                     kernel_wt, param, &
                     (/dble(SZA(i,j))/), &
-                    (/dble(abs(RAA(i,j)))/), &
+                    (/dble(RAA(i,j))/), &
                     (/dble(VZA(i,j))/), &
                     dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
         else
@@ -1250,7 +1250,7 @@ program leo_vlidort_cloud
                   dble(Vpe), dble(Vze), dble(Vte), &
                   kernel_wt, param, &
                   (/dble(SZA(i,j))/), &
-                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
                   dble(MISSING),verbose, &
                   radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
@@ -1282,7 +1282,7 @@ program leo_vlidort_cloud
                 dble(Vpe), dble(Vze), dble(Vte), &
                 kernel_wt, param, BPDFparam, &
                 (/dble(SZA(i,j))/), &
-                (/dble(abs(RAA(i,j)))/), &
+                (/dble(RAA(i,j))/), &
                 (/dble(VZA(i,j))/), &
                 dble(MISSING),verbose, &
                 radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
@@ -1835,7 +1835,13 @@ program leo_vlidort_cloud
       end do
 
       RAA = VAA - saa_
-
+      do i = 1, im
+        do j = 1, jm
+          if (RAA(i,j) < 0) then
+            RAA(i,j) = RAA(i,j) + 360.0
+          end if
+        end do
+      end do
       deallocate (saa_)
       write(*,*) '<> Read angle data to shared memory' 
 
