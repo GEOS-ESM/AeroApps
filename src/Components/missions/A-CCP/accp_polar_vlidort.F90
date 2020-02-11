@@ -62,7 +62,7 @@ program pace_vlidort
   logical                               :: plane_parallel    
   logical                               :: aerosol_free
   real, allocatable                     :: channels(:)            ! channels to simulate
-  real, allocatable                     :: mr(:)                  ! water real refractive index    
+  real*8, allocatable                   :: mr(:)                  ! water real refractive index    
   integer                               :: nch                    ! number of channels  
   real                                  :: szamax                 ! Geomtry filtering
 
@@ -609,7 +609,7 @@ program pace_vlidort
         radiance_VL(c,ialong)    = radiance_VL_int(nobs,nch)
         reflectance_VL(c,ialong) = reflectance_VL_int(nobs,nch)
         ALBEDO(c,ialong) = Valbedo(nobs,nch)
-        
+
         if (.not. scalar) then
           Q(c,ialong)      = Q_int(nobs,nch)
           U(c,ialong)      = U_int(nobs,nch)
@@ -813,9 +813,9 @@ program pace_vlidort
                 dble(Vpe), dble(Vze), dble(Vte), &
                 (/dble(U10M(c))/), &
                 (/dble(V10M(c))/), &
-                dble(mr), &
+                mr, &
                 (/dble(SZA(c,ialong))/), &
-                (/dble(abs(RAA(c,ialong)))/), &
+                (/dble(RAA(c,ialong))/), &
                 (/dble(VZA(c,ialong))/), &
                 dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
       else
@@ -825,9 +825,9 @@ program pace_vlidort
                dble(Vpe), dble(Vze), dble(Vte), &
                (/dble(U10M(c))/), &
                (/dble(V10M(c))/), &
-               dble(mr), &
+               mr, &
                (/dble(SZA(c,ialong))/), &
-               (/dble(abs(RAA(c,ialong)))/), &
+               (/dble(RAA(c,ialong))/), &
                (/dble(VZA(c,ialong))/), &
                dble(MISSING),verbose, &
                radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
@@ -970,7 +970,7 @@ program pace_vlidort
                 nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
                 dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                 (/dble(SZA(c,ialong))/), &
-                (/dble(abs(RAA(c,ialong)))/), &
+                (/dble(RAA(c,ialong))/), &
                 (/dble(VZA(c,ialong))/), &
                 dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
       else
@@ -979,7 +979,7 @@ program pace_vlidort
                nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                (/dble(SZA(c,ialong))/), &
-               (/dble(abs(RAA(c,ialong)))/), &
+               (/dble(RAA(c,ialong))/), &
                (/dble(VZA(c,ialong))/), &
                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q_int, U_int, ierr)
         BR_Q_int = 0
@@ -1013,7 +1013,7 @@ program pace_vlidort
                   dble(Vpe), dble(Vze), dble(Vte), &
                   kernel_wt, param, &
                   (/dble(SZA(c,ialong))/), &
-                  (/dble(abs(RAA(c,ialong)))/), &
+                  (/dble(RAA(c,ialong))/), &
                   (/dble(VZA(c,ialong))/), &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
         else
@@ -1023,7 +1023,7 @@ program pace_vlidort
                   dble(Vpe), dble(Vze), dble(Vte), &
                   kernel_wt, param, &
                   (/dble(SZA(c,ialong))/), &
-                  (/dble(abs(RAA(c,ialong)))/), &
+                  (/dble(RAA(c,ialong))/), &
                   (/dble(VZA(c,ialong))/), &
                   dble(MISSING),verbose, &
                   radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
@@ -1057,7 +1057,7 @@ program pace_vlidort
                 dble(Vpe), dble(Vze), dble(Vte), &
                 kernel_wt, param, BPDFparam, &
                 (/dble(SZA(c,ialong))/), &
-                (/dble(abs(RAA(c,ialong)))/), &
+                (/dble(RAA(c,ialong))/), &
                 (/dble(VZA(c,ialong))/), &
                 dble(MISSING),verbose, &
                 radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
@@ -1508,7 +1508,13 @@ program pace_vlidort
       end do
 
       RAA = VAA - saa_
-
+      do i = 1, clrm
+        do n = 1,nalong
+          if (RAA(i,n) < 0) then
+            RAA(i,n) = RAA(i,n) + 360.0
+          end if
+        end do
+      end do
       deallocate (saa_)
       write(*,*) '<> Read angle data to shared memory' 
 
