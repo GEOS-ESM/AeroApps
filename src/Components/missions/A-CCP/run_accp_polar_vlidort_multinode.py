@@ -195,7 +195,7 @@ class WORKSPACE(JOBS):
         # filename templates
         cf             = Config(args.track_pcf,delim=' = ')
         self.inTemplate     = cf('inDir')     + '/' + cf('inFile')
-        self.outTemplate    = cf('outDir')    + '/test/' + cf('outFile')
+        self.outTemplate    = cf('outDir')    + cf('outFile')
 
         try:
             brdfTemplate = cf('brdfDir') + '/' + cf('brdfFile')
