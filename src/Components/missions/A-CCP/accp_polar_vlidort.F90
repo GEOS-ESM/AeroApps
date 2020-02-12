@@ -696,7 +696,7 @@ program pace_vlidort
 ! Expand radiance to im x jm using mask
 ! Write output to correct position in file 
 ! -----------------
-  if (MAPL_am_I_root()) then
+  if (myid .eq. 1) then
     call write_outfile()
   end if
 
@@ -771,12 +771,31 @@ program pace_vlidort
         call check(nf90_put_var(ncid, varid, unpack(reshape(BR_Q(:,ialong),(/tm/)),clmask,field), &
                       start = (/ialong,1/), count = (/1,tm/)), "writing out albedo Q")
 
-        call check(nf90_inq_varid(ncid, 'surf_reflectance_U', varid), "get ref vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(BR_U(:,ialong),(/tm/)),clmask,field), &
-                      start = (/ialong,1/), count = (/1,tm/)), "writing out albedo U")
+        call check(nf90_inq_varid(ncid, 'solar_zenith', varid), "get sza vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(SZA(:,ialong),(/tm/)),clmask,field), &
+                      start = (/ialong,1/), count = (/1,tm/)), "writing out sza")
+
+        call check(nf90_inq_varid(ncid, 'sensor_zenith', varid), "get vza vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(VZA(:,ialong),(/tm/)),clmask,field), &
+                      start = (/ialong,1/), count = (/1,tm/)), "writing out vza")
+
+        call check(nf90_inq_varid(ncid, 'solar_azimuth', varid), "get saa vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(SAA(:,ialong),(/tm/)),clmask,field), &
+                      start = (/ialong,1/), count = (/1,tm/)), "writing out saa")
+
+        call check(nf90_inq_varid(ncid, 'sensor_azimuth', varid), "get vaa vaird")
+        call check(nf90_put_var(ncid, varid, unpack(reshape(VAA(:,ialong),(/tm/)),clmask,field), &
+                      start = (/ialong,1/), count = (/1,tm/)), "writing out vaa")
+
 
       endif        
     end do
+    call check(nf90_inq_varid(ncid, 'rayleigh_depol_ratio', varid), "get depol vaird")
+    call check(nf90_put_var(ncid, varid, depol), "writing out depol")
+
+    call check(nf90_inq_varid(ncid, 'ocean_refractive_index', varid), "get ori vaird")
+    call check(nf90_put_var(ncid, varid, real(mr)), "writing out ori")
+
 
     call check( nf90_close(ncid), "close outfile" )
     if (MAPL_am_I_root()) then
@@ -2257,7 +2276,7 @@ program pace_vlidort
 
     allocate (mr(nch))
     call ESMF_ConfigGetAttribute(cf, mr, label = 'WATERMR:',__RC__) 
-
+    
     call ESMF_ConfigDestroy(cf)
 
   end subroutine get_config
