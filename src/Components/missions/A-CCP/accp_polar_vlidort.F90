@@ -186,7 +186,6 @@ program pace_vlidort
   integer                               :: starti, counti, endi                      ! array indices and counts for each processor
   integer, allocatable                  :: nclr(:)                                   ! how many clear pixels each processor works on
   integer                               :: clrm                                      ! number of clear pixels for this part of decomposed domain
-  integer                               :: clrm_total                                ! number of clear pixels 
   integer                               :: c, cc                                     ! clear pixel working variable
   real, allocatable                     :: SOLAR_ZENITH(:,:)                         ! solar zenith angles used for data filtering
   logical, allocatable                  :: clmask(:)                                 ! cloud-land mask
@@ -350,10 +349,6 @@ program pace_vlidort
   call MAPL_SyncSharedMemory(rc=ierr)
    
 
-! Split up filtered domain among parallel job nodes
-!--------------------------------------
-  clrm_total = clrm
-
 ! Split up filtered domain among processors
 ! Root processor does not work. Reserved for message passing.
 ! Split up among npet-1 processors
@@ -363,7 +358,9 @@ program pace_vlidort
     nclr(1:clrm) = 1
   else if (npet-1 < clrm) then
     nclr(1:npet-1) = clrm/(npet-1)
-    nclr(npet-1)   = nclr(npet-1) + mod(clrm,npet-1)
+    do i=1,mod(clrm,npet-1)
+      nclr(i)   = nclr(i) + 1
+    end do
   end if 
 
 ! Create unshared arrays on other nodes
@@ -419,6 +416,7 @@ program pace_vlidort
   end if    
   counti = nclr(myid)
   endi   = starti + counti - 1 
+
 
 ! Processors not on the root node need to ask for data
 ! -----------------------------------------------------
@@ -691,7 +689,7 @@ program pace_vlidort
       end if
     end do
   end if
-
+  call MAPL_SyncSharedMemory(rc=ierr)
 ! Write to outfile
 ! Expand radiance to im x jm using mask
 ! Write output to correct position in file 
@@ -732,9 +730,11 @@ program pace_vlidort
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
 
   subroutine write_outfile()
-    real*8, dimension(tm)            :: field  
+    real*8, dimension(tm)            :: field 
+    real, dimension(tm)              :: field4   
 
     field = dble(MISSING)
+    field4 = MISSING
 !                             Write to main OUT_File
 !                             ----------------------
     call check( nf90_open(OUT_file, nf90_write, ncid), "opening file " // OUT_file )
@@ -770,31 +770,31 @@ program pace_vlidort
         call check(nf90_inq_varid(ncid, 'surf_reflectance_Q', varid), "get ref vaird")
         call check(nf90_put_var(ncid, varid, unpack(reshape(BR_Q(:,ialong),(/tm/)),clmask,field), &
                       start = (/ialong,1/), count = (/1,tm/)), "writing out albedo Q")
-
-        call check(nf90_inq_varid(ncid, 'solar_zenith', varid), "get sza vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(SZA(:,ialong),(/tm/)),clmask,field), &
-                      start = (/ialong,1/), count = (/1,tm/)), "writing out sza")
-
-        call check(nf90_inq_varid(ncid, 'sensor_zenith', varid), "get vza vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(VZA(:,ialong),(/tm/)),clmask,field), &
-                      start = (/ialong,1/), count = (/1,tm/)), "writing out vza")
-
-        call check(nf90_inq_varid(ncid, 'solar_azimuth', varid), "get saa vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(SAA(:,ialong),(/tm/)),clmask,field), &
-                      start = (/ialong,1/), count = (/1,tm/)), "writing out saa")
-
-        call check(nf90_inq_varid(ncid, 'sensor_azimuth', varid), "get vaa vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(VAA(:,ialong),(/tm/)),clmask,field), &
-                      start = (/ialong,1/), count = (/1,tm/)), "writing out vaa")
-
-
       endif        
+
+      call check(nf90_inq_varid(ncid, 'solar_zenith', varid), "get sza vaird")
+      call check(nf90_put_var(ncid, varid, unpack(reshape(SZA(:,ialong),(/tm/)),clmask,field4), &
+                    start = (/ialong,1/), count = (/1,tm/)), "writing out sza")
+
+      call check(nf90_inq_varid(ncid, 'sensor_zenith', varid), "get vza vaird")
+      call check(nf90_put_var(ncid, varid, unpack(reshape(VZA(:,ialong),(/tm/)),clmask,field4), &
+                    start = (/ialong,1/), count = (/1,tm/)), "writing out vza")
+
+      call check(nf90_inq_varid(ncid, 'solar_azimuth', varid), "get saa vaird")
+      call check(nf90_put_var(ncid, varid, unpack(reshape(SAA(:,ialong),(/tm/)),clmask,field4), &
+                    start = (/ialong,1/), count = (/1,tm/)), "writing out saa")
+
+      call check(nf90_inq_varid(ncid, 'sensor_azimuth', varid), "get vaa vaird")
+      call check(nf90_put_var(ncid, varid, unpack(reshape(VAA(:,ialong),(/tm/)),clmask,field4), &
+                    start = (/ialong,1/), count = (/1,tm/)), "writing out vaa")
+
+
     end do
     call check(nf90_inq_varid(ncid, 'rayleigh_depol_ratio', varid), "get depol vaird")
     call check(nf90_put_var(ncid, varid, depol), "writing out depol")
 
     call check(nf90_inq_varid(ncid, 'ocean_refractive_index', varid), "get ori vaird")
-    call check(nf90_put_var(ncid, varid, real(mr)), "writing out ori")
+    call check(nf90_put_var(ncid, varid, mr), "writing out ori")
 
 
     call check( nf90_close(ncid), "close outfile" )
@@ -1795,7 +1795,7 @@ program pace_vlidort
 
   ! Needed for reading
   ! ----------------------
-    allocate (nclr(npet)) 
+    allocate (nclr(npet-1)) 
     nclr = 0
 
     allocate(clmask(tm))
