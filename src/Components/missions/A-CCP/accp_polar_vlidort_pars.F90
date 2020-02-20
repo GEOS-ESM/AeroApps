@@ -25,7 +25,6 @@
   real, parameter                       :: MISSING = 1e15
 
   ! RC file
-  character(len=*), parameter           :: rcfile            = 'Aod_EOS.rc'  ! resource file
   character(len=16), parameter          :: vnames_string(nq) = (/'du001', 'du002', 'du003', 'du004', 'du005', &
                                                              'ss001', 'ss002', 'ss003', 'ss004', 'ss005', &
                                                              'BCphobic', 'BCphilic',                      &
