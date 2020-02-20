@@ -195,7 +195,7 @@ class WORKSPACE(JOBS):
         # filename templates
         cf             = Config(args.track_pcf,delim=' = ')
         self.inTemplate     = cf('inDir')     + '/' + cf('inFile')
-        self.outTemplate    = cf('outDir')    + cf('outFile')
+        self.outTemplate    = cf('outDir')    + '/' + cf('outFile')
 
         try:
             brdfTemplate = cf('brdfDir') + '/' + cf('brdfFile')
@@ -353,8 +353,8 @@ class WORKSPACE(JOBS):
         text = []
 
         # META STUFF
-        nymd = self.Date.strftime('%Y%m%d')
-        hms  = self.Date.strftime('%H%M00')
+        nymd = date.strftime('%Y%m%d')
+        hms  = date.strftime('%H%M00')
 
         newline  = 'DATE: {}\n'.format(nymd)
         text.append(newline)
