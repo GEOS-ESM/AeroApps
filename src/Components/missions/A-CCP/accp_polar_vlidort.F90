@@ -2186,8 +2186,8 @@ program pace_vlidort
     call ESMF_ConfigGetAttribute(cf, aerosol_free, label = 'AEROSOL_FREE:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=12)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
-    call ESMF_ConfigGetAttribute(cf, rcfile, label = 'RCFILE',default='Aod_EOS.rc')
-
+    call ESMF_ConfigGetAttribute(cf, rcfile, label = 'RCFILE:',default='Aod_EOS.rc')
+    
     ! Land Surface
     call ESMF_ConfigGetAttribute(cf, landname, label = 'LANDNAME:',default='MAIACRTLS')
     call ESMF_ConfigGetAttribute(cf, landmodel, label = 'LANDMODEL:',default='RTLS')
