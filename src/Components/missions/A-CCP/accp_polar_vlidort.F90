@@ -728,7 +728,7 @@ program pace_vlidort
 
   subroutine write_outfile()
     real*8, dimension(tm)            :: field 
-    real, dimension(tm)              :: field4   
+    real, dimension(tm)              :: field4  
 
     field = dble(MISSING)
     field4 = MISSING
@@ -739,59 +739,64 @@ program pace_vlidort
     
     call check(nf90_inq_varid(ncid, 'ROT', varid), "get ref vaird")
     do k=1,km
-      call check(nf90_put_var(ncid, varid, unpack(reshape(ROT(:,k),(/tm/)),clmask,field), &
+      call check(nf90_put_var(ncid, varid, real(unpack(reshape(ROT(:,k),(/clrm/)),clmask,field)), &
                   start = (/k,1/), count = (/1,tm/)), "writing out ROT")
     enddo
     do ialong=1,nalong
       call check(nf90_inq_varid(ncid, 'toa_reflectance', varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(reflectance_VL(:,ialong),(/tm/)),clmask,field), &
+      call check(nf90_put_var(ncid, varid, real(unpack(reshape(reflectance_VL(:,ialong),(/clrm/)),clmask,field)), &
                   start = (/ialong,1/), count = (/1,tm/)), "writing out reflectance")
 
       call check(nf90_inq_varid(ncid, 'I' , varid), "get rad vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(radiance_VL(:,ialong),(/tm/)),clmask,field), &
+      call check(nf90_put_var(ncid, varid, real(unpack(reshape(radiance_VL(:,ialong),(/clrm/)),clmask,field)), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out radiance")
 
       call check(nf90_inq_varid(ncid, 'surf_reflectance', varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(ALBEDO(:,ialong),(/tm/)),clmask,field), &
+      call check(nf90_put_var(ncid, varid, real(unpack(reshape(ALBEDO(:,ialong),(/clrm/)),clmask,field)), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out albedo")
 
       if (.not. scalar) then
         call check(nf90_inq_varid(ncid, 'Q', varid), "get q vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(Q(:,ialong),(/tm/)),clmask,field), &
+        call check(nf90_put_var(ncid, varid, real(unpack(reshape(Q(:,ialong),(/clrm/)),clmask,field)), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out Q")
 
         call check(nf90_inq_varid(ncid, 'U', varid), "get u vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(U(:,ialong),(/tm/)),clmask,field), &
+        call check(nf90_put_var(ncid, varid, real(unpack(reshape(BR_U(:,ialong),(/clrm/)),clmask,field)), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out U")
 
         call check(nf90_inq_varid(ncid, 'surf_reflectance_Q', varid), "get ref vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(BR_Q(:,ialong),(/tm/)),clmask,field), &
+        call check(nf90_put_var(ncid, varid, real(unpack(reshape(BR_Q(:,ialong),(/clrm/)),clmask,field)), &
                       start = (/ialong,1/), count = (/1,tm/)), "writing out albedo Q")
+
+        call check(nf90_inq_varid(ncid, 'surf_reflectance_U', varid), "get ref vaird")
+        call check(nf90_put_var(ncid, varid, real(unpack(reshape(U(:,ialong),(/clrm/)),clmask,field)), &
+                      start = (/ialong,1/), count = (/1,tm/)), "writing out albedo Q")
+
       endif        
 
       call check(nf90_inq_varid(ncid, 'solar_zenith', varid), "get sza vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(SZA(:,ialong),(/tm/)),clmask,field4), &
+      call check(nf90_put_var(ncid, varid, unpack(reshape(SZA(:,ialong),(/clrm/)),clmask,field4), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out sza")
 
       call check(nf90_inq_varid(ncid, 'sensor_zenith', varid), "get vza vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(VZA(:,ialong),(/tm/)),clmask,field4), &
+      call check(nf90_put_var(ncid, varid, unpack(reshape(VZA(:,ialong),(/clrm/)),clmask,field4), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out vza")
 
       call check(nf90_inq_varid(ncid, 'solar_azimuth', varid), "get saa vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(SAA(:,ialong),(/tm/)),clmask,field4), &
+      call check(nf90_put_var(ncid, varid, unpack(reshape(SAA(:,ialong),(/clrm/)),clmask,field4), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out saa")
 
       call check(nf90_inq_varid(ncid, 'sensor_azimuth', varid), "get vaa vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(VAA(:,ialong),(/tm/)),clmask,field4), &
+      call check(nf90_put_var(ncid, varid, unpack(reshape(VAA(:,ialong),(/clrm/)),clmask,field4), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out vaa")
 
 
     end do
     call check(nf90_inq_varid(ncid, 'rayleigh_depol_ratio', varid), "get depol vaird")
-    call check(nf90_put_var(ncid, varid, depol), "writing out depol")
+    call check(nf90_put_var(ncid, varid, real(depol)), "writing out depol")
 
     call check(nf90_inq_varid(ncid, 'ocean_refractive_index', varid), "get ori vaird")
-    call check(nf90_put_var(ncid, varid, mr), "writing out ori")
+    call check(nf90_put_var(ncid, varid, real(mr)), "writing out ori")
 
 
     call check( nf90_close(ncid), "close outfile" )
