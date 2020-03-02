@@ -79,8 +79,8 @@ class ICARTT(object):
                     self.__dict__[var] = self.__dict__[var]/1.8 + 255.372
 
         # Standardize Navigation information
-        # Supported Aircrafts: UMd, P3, UC12
-        # ----------------------------------
+        # Supported Aircrafts: UMd, P3, UC12, NCAR C130
+        # ---------------------------------------------
         self.Nav = dict ( Time=self.tyme, Longitude=None, Latitude=None, Altitude=None, Pressure=None )
         for var in self.Vars:
             VAR = var.upper()
@@ -93,6 +93,10 @@ class ICARTT(object):
             if VAR in ('PRESSURE', 'C_STATICPRESSURE', 'PSXC'):
                 self.Nav['Pressure'] = self.__dict__[var]
 
+        # Navigation shorthands
+        # ---------------------
+        self._shorthands()
+                
 #--
     def _readManyFiles (self,Filenames,Alias=None):
         """
@@ -267,15 +271,27 @@ class ICARTT(object):
             v[bad] = NaN              # use NaN for bad data
             self.__dict__[self.Vars[i]] = v
 
+        # For some merged files there is no mid time, so create one
+        # ---------------------------------------------------------
+        if (self.Vars[0].upper()=='TIME_START') and (self.Vars[1].upper()=='TIME_STOP'):
+            self.Time_Mid = (self.__dict__[self.Vars[0]]+self.__dict__[self.Vars[1]])/2.
+            self.Vars = self.Vars + ['Time_Mid',]
+
         # Find time variables
         # -------------------
         Tvar = []
         for var in self.Vars:
-            if var.upper().count('UTC_')>0 or \
-               var.upper().count('_UTC')>0 or \
-               var.upper() == 'GPS_TIME'   or \
+            if var.upper().count('UTC_')>0   or \
+               var.upper().count('_UTC')>0   or \
+               var.upper() == 'GPS_TIME'     or \
+               var.upper() == 'TIME_START'   or \
+               var.upper() == 'TIME_STOP'    or \
+               var.upper() == 'TIME_MID'     or \
                var.upper() == 'UTC':
-                Tvar += [var,]
+               Tvar += [var,]
+
+        if len(Tvar)==0:
+            Tvar = [self.Vars[0],]   # safe guard
 
         # Express time variables in python native format
         # ----------------------------------------------
@@ -283,16 +299,71 @@ class ICARTT(object):
         for tvar in Tvar:
             self.__dict__[tvar] = array([ T0+timedelta(seconds=t) for t in self.__dict__[tvar] ])
 
+            
         # Find representative time variable
         # ---------------------------------
         tvar = self.Vars[0]
-        for tvar_ in ( 'MID_UTC', 'UTC_MID' ):
+        for tvar_ in ( 'MID_UTC', 'UTC_MID', 'TIME_MID'):
             for var in self.Vars:
                 if var.upper() == tvar_: # case insensitive
                     tvar = var
                     
         self.tyme = self.__dict__[tvar] # just an alias
 
+#--
+    def _shorthands(self):
+        """
+        Add navigation short hands: lon, lat, etc.
+        """
+        self.lon = self.Nav['Longitude']
+        self.lat = self.Nav['Latitude']
+        self.prs = self.Nav['Pressure']
+        self.alt = self.Nav['Altitude']
+
+        #--
+    def fixNav(self, nav):
+        """
+        Given a possibly longer ICARTT object *nav* with (Longitude,Latitude,Altitude)
+        properly defined, complete the navigation of this object. This function is needed
+        because some instrument teams do not include geo-location on their ICARTT files.
+        """
+
+        n_this = len(self.tyme)
+        n_nav = len(nav.tyme)
+
+        # Consistency tests
+        # -----------------
+        if n_this > n_nav:
+            raise ValueError, 'Navigation object is not long enough.'
+        if self.tyme[0] < nav.tyme[0]:
+            raise ValueError, 'Navigation object start after this object'
+        if self.tyme[-1] > nav.tyme[-1]:
+            raise ValueError, 'Navigation object end before this object'
+        
+        # Compute proper time offsets
+        # ---------------------------
+        i_off = int((self.tyme[0]-nav.tyme[0]).total_seconds())
+        j_off = int((nav.tyme[-1]-self.tyme[-1]).total_seconds())
+
+        # More consistency tests
+        # ----------------------
+        if self.tyme[0] != nav.tyme[i_off]:
+            raise ValueError, 'inconsistent start times'
+        if self.tyme[-1] != nav.tyme[n_nav-j_off-1]:
+            raise ValueError, 'inconsistent end times'
+        if (n_nav-j_off-i_off) != n_this:
+            raise ValueError, 'inconsistent sizes'
+        
+        # Complete navigation of this object where needed
+        # -----------------------------------------------
+        for coord in ( 'Longitude', 'Latitude', 'Altitude', 'Pressure' ):
+            if self.Nav[coord] is None:
+                self.Nav[coord] = nav.Nav[coord][i_off:n_nav-j_off]
+
+        # Navigation shorthands
+        # ---------------------
+        self._shorthands()
+        
 #--
     def getSpeed(self, metric=True,skip=60):
         """
@@ -344,5 +415,5 @@ def _getDist(lon,lat):
 
 if __name__ == "__main__":
 
-    ic = ICARTT('WECANrf11.ict.gz')
+    x = ICARTT('camp2ex-mrg60-p3b_merge_20190904_RB.ict')
 
