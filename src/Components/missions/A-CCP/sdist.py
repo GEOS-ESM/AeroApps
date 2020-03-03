@@ -324,7 +324,7 @@ class SDIST(object):
         cf = config.Config(self.rcFile)
         optable = cf('filename_optical_properties_DU')
 
-        # Read in growth factors and rh tables
+        # Open Table
         nc = Dataset(optable)
 
         # lognormal volume median radius in microns
