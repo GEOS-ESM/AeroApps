@@ -87,6 +87,22 @@ class SDIST(object):
 
 #        self.__dict__[spc] = temp
 
+
+        # effective radius for total only
+        self.TOTreff = np.zeros([nobs,nlev])
+        self.colTOTreff = np.zeros([nobs])
+        R = self.R
+        DR = self.DR
+        R3 = R**3
+        R2 = R**2
+        for t in range(nobs):
+            dndr = self.colTOTdist[t,:]/R3
+            self.colTOTreff[t] = np.sum(R3*dndr*DR)/np.sum(R2*dndr*DR)
+            for k in range(nlev):
+                dndr = self.TOTdist[t,k,:]/R3
+                self.TOTreff[t,k] = np.sum(R3*dndr*DR)/np.sum(R2*dndr*DR)
+
+
     def logNormalDistribution(self,spc):
         # master bins
         R    = self.R
@@ -597,6 +613,19 @@ class SDIST(object):
             this.long_name = spc + 'column size distribution (dV/dr)'
             this.units = 'm^3/m'
             this[:] = self.__dict__[spcdist]
+
+
+        dim = ('time','lev',)
+        this = nc.createVariable('reff_profile','f4',dim,zlib=True)
+        this.long_name = 'profile effective radius'
+        this.units = 'm'
+        this[:] = self.TOTreff
+
+        dim = ('time',)
+        this = nc.createVariable('reff_column','f4',dim,zlib=True)
+        this.long_name = 'column effective radius'
+        this.units = 'm'
+        this[:] = self.colTOTreff
 
         nc.close()
 
