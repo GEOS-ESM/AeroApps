@@ -59,10 +59,10 @@ BINS =  ana5sfc.x diag2dyn.x drs2dyn.x dyn2drs.x dyn2dyn.x dyn_boot.x \
 	fvsubset.x getgfiodim.x ibc_upd.x maph.x maph_pert.x mapz.x \
 	recalcsfc.x reset_time.x rs52dyn.x gcmbkg2ana.x dyndot.x \
         dyn_pert_remap.x dyn_recenter.x dyn_rankhist.x dyn2real_eta.x \
-        dyn_ncf2dyn.x dyn_iupd.x $(BINS_MAPL)
+        dyn_ncf2dyn.x dyn_iupd.x dyn_cov.x dyn_efsens.x eta_echo.x dyn_inflate.x $(BINS_MAPL)
 
 UT = ut_ana2dyn.x ut_fread.x ut_insitu.x ut_lp.x ut_ocean.x ut_sst.x \
-	blendq.x geos2fv.x rout2prs.x 
+	blendq.x geos2fv.x rout2prs.x ut_dyn_ipert.x 
 
 MOD_DIRS = . $(INC_MPEU) $(INC_GFIO) $(INC_CFIO) $(INC_SDF) \
              $(INC_MAPL_BASE) $(INC_GEOS_SHARED)
@@ -105,9 +105,10 @@ THIS = $(shell basename `pwd`)
 LIB  = lib$(THIS).a
 
 SRCS = m_ana2dyn.F m_const.f90 m_dyn.f90 m_dyn2dyn.f90 m_dynp.F90 \
-	m_insitu.F m_interp.F90 m_lp.F m_maph.F90 m_maph_pert.F90 m_mapz.F \
+	m_insitu.F m_interp.F90 m_lp.F m_maph.F90 m_maph_pert.F90 m_mapz.F m_mapz_pert.F90 \
 	m_qsat.F m_remap.f90 m_set_eta.F90 m_vdc2vdc.F90 progsig.f90 m_topo_remap.F90 \
-	m_interpack.F m_interpack_ad.F m_ec_set_eta.F90 m_ecdyn.f90 dyn_pert_remap.F90
+	m_interpack.F m_interpack_ad.F m_ec_set_eta.F90 m_ecdyn.f90 dyn_pert_remap.F90 \
+        m_tick.f90 m_dyn_util.F90 m_spline.f90
 
 ########################################################################
 

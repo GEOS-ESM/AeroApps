@@ -225,7 +225,7 @@ DESCRIPTION
      dtmin  Time increment in minutes
      idx    Index used for renaming
 
-    Optinal Arguents:
+    Optional Arguments:
 
     -h             help (echoes this usage)   
     -debug         does not copy/move file, simply echoes what it would be done

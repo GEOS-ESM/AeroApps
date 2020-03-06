@@ -17,6 +17,12 @@
 !  HISTORY
 !     27 April 2015 P. Castellanos adapted from A. da Silva shmem_reader.F90
 !     Aug 2017 P. Castellanos add clouds
+! NOTE
+!     VLIDORT should be configured to run with the same number of streams found 
+!     in the ice cloud optical properties file.  This is because a truncation
+!     factor is used to scale ice optical thickness.  This truncation factor corrects
+!     for the loss of the forward peak in the ice cloud scatterimg matrix introduced by
+!     using a finite number of streams.
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #  include "MAPL_Generic.h"
 #  include "MAPL_ErrLogMain.h"
@@ -28,6 +34,7 @@ program geo_vlidort_cloud
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
   use vlidort_lambert              ! Module to run VLIDORT with lambertian surface  
+  use vlidort_rot                  ! Module to calculate Rayleigh  
   use lidort_brdf_modis
   use Chem_MieMod
 !  use netcdf_helper                ! Module with netcdf routines
@@ -59,6 +66,8 @@ program geo_vlidort_cloud
   integer, allocatable                  :: surfband_i(:)          ! surface band indeces that overlap with vlidort channels
   real, allocatable                     :: surfband_c(:)          ! modis band center wavelength
   logical                               :: scalar
+  integer                               :: nstreams               ! number of half space streams, default = 6  
+  logical                               :: plane_parallel  
   real, allocatable                     :: channels(:)            ! channels to simulate
   integer                               :: nch                    ! number of channels  
   real                                  :: szamax, vzamax         ! Geomtry filtering
@@ -78,7 +87,7 @@ program geo_vlidort_cloud
 
 ! File names
 ! ----------
-  character(len=256)                    :: MET_file, AER_file, ANG_file, INV_file, SURF_file, OUT_file, ATMOS_file, CLD_file 
+  character(len=256)                    :: AER_file, ANG_file, INV_file, SURF_file, OUT_file, ATMOS_file, CLD_file 
 
 ! Global, 3D inputs to be allocated using SHMEM
 ! ---------------------------------------------
@@ -151,6 +160,9 @@ program geo_vlidort_cloud
   real*8, allocatable                   :: Q_int(:,:)                                 ! Q Stokes component
   real*8, allocatable                   :: U_int(:,:)                                 ! U Stokes component
   real*8, allocatable                   :: ROT_int(:,:,:)                             ! rayleigh optical thickness
+  real*8, allocatable                   :: depol(:)                               ! rayleigh depolarization ratio
+  real*8, allocatable                   :: BR_Q_int(:,:)                          ! surface albedo Q
+  real*8, allocatable                   :: BR_U_int(:,:)                          ! surface albedo U
 
 !                                  Final Shared Arrays
 !                                  -------------------
@@ -174,7 +186,8 @@ program geo_vlidort_cloud
   real,allocatable                      :: Vpmom(:,:,:,:,:)                         ! elements of scattering phase matrix for vector calculations
   real,allocatable                      :: VpmomIcl(:,:,:,:,:)                      ! elements of scattering phase matrix for vector calculations
   real,allocatable                      :: VpmomLcl(:,:,:,:,:)                      ! elements of scattering phase matrix for vector calculations
-
+  real,allocatable                      :: betaIcl(:,:,:), betaLcl(:,:,:)           ! cloud optical thickness scaling factors 
+  real,allocatable                      :: truncIcl(:,:,:), truncLcl(:,:,:)          ! cloud optical thickness scaling factors
 ! MODIS Kernel variables
 !--------------------------
   real*8, allocatable                   :: kernel_wt(:,:,:)                         ! kernel weights (/fiso,fgeo,fvol/)
@@ -197,7 +210,7 @@ program geo_vlidort_cloud
   integer, allocatable                  :: nclr(:)                                   ! how many clear pixels each processor works on
   integer                               :: clrm                                      ! number of clear pixels for this part of decomposed domain
   integer                               :: clrm_total                                ! number of clear pixels 
-  integer                               :: c, cc                                 ! clear pixel working variable
+  integer                               :: c, cc                                     ! clear pixel working variable
   real*8, allocatable                   :: CLDTOT(:,:)                               ! GEOS-5 cloud fraction
   real*8, allocatable                   :: FRLAND(:,:)                               ! GEOS-5 land fraction
   real*8, allocatable                   :: SOLAR_ZENITH(:,:)                         ! solar zenith angles used for data filtering
@@ -296,7 +309,7 @@ program geo_vlidort_cloud
   else
     call mp_readVattr("missing_value", SURF_file, "SRFLER354", surf_missing) 
   end if
-  call mp_readVattr("missing_value", MET_FILE, "CLDTOT", g5nr_missing)
+  call mp_readVattr("missing_value", AER_FILE, "DELP", g5nr_missing)
 
 ! Allocate arrays that will be copied on each processor - unshared
 ! -----------------------------------------------------------------
@@ -531,17 +544,44 @@ program geo_vlidort_cloud
       end do
     end if 
 
+!   Rayleigh Optical Thickness
+!   --------------------------
+    call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(Vpe), dble(Vze), dble(Vte), &
+                                   dble(MISSING),verbose, &
+                                   ROT_int, depol, ierr ) 
+
 !   Aerosol Optical Properties
 !   --------------------------
     call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
                         Vqm, reshape(RH(i,j,:),(/km,nobs/)),&
                         nMom,nPol, Vtau, Vssa, Vg, Vpmom, ierr )
+    if ( ierr /= 0 ) then
+      print *, 'cannot get aerosol optical properties'
+      call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)      
+    end if
 
 !   Cloud Optical Properties
 !   ------------------------
-    call getCOPvector(IcldTable, km, nobs, nch, nMom, nPol, idxCld, REI(i,j,:), VssaIcl, VgIcl, VpmomIcl)
-    call getCOPvector(LcldTable, km, nobs, nch, nMom, nPol, idxCld, REL(i,j,:), VssaLcl, VgLcl, VpmomLcl)
+    call getCOPvector_idX(IcldTable, km, nobs, nch, nMom, nPol, idxCld, REI(i,j,:), VssaIcl, VgIcl, VpmomIcl, betaIcl, truncIcl)
+    call getCOPvector_idX(LcldTable, km, nobs, nch, nMom, nPol, idxCld, REL(i,j,:), VssaLcl, VgLcl, VpmomLcl, betaLcl, truncLcl)
 
+!   Scale Cloud Optical Thickness from reference wavelength of 0.65um
+!   ------------------------
+    VtauIcl(:,nch,nobs) = TAUI(i,j,:)
+    VtauIcl             = VtauIcl*betaIcl
+    VtauLcl(:,nch,nobs) = TAUL(i,j,:)
+    VtauLcl             = VtauLcl*betaLcl 
+
+!   Scale Cloud optical thickness for phase function truncation            
+!   ------------------------
+    VtauIcl = VtauIcl*(1. - truncIcl*VssaIcl)
+    VtauLcl = VtauLcl*(1. - truncLcl*VssaLcl)
+    VssaIcl = VssaIcl*(1. - truncIcl)/(1. - VssaIcl*truncIcl)
+    VssaLcl = VssaLcl*(1. - truncLcl)/(1. - VssaLcl*truncLcl)    
+
+!   Save some variables on the 2D Grid for Writing Later
+!   ------------------------
+    ROT(i,j,:) = ROT_int(:,nobs,nch)
     TAU(i,j,:) = Vtau(:,nch,nobs)
     SSA(i,j,:) = Vssa(:,nch,nobs)
     G(i,j,:)   = Vg(:,nch,nobs)
@@ -558,15 +598,15 @@ program geo_vlidort_cloud
       if (scalar) then
         if (vlidort) then
           ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,      &
-                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
+          call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
+                  nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
                   dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                   (/dble(SZA(i,j))/), &
-                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, ierr)
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
         else 
           call LIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,      &
                   nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
@@ -574,21 +614,21 @@ program geo_vlidort_cloud
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
                   dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                   (/dble(SZA(i,j))/), &
-                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, ierr)
         end if 
       else
         ! Call to vlidort vector code
-        call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nMom,   &
-               nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+        call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
+               nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                (/dble(SZA(i,j))/), &
-               (/dble(abs(RAA(i,j)))/), &
+               (/dble(RAA(i,j))/), &
                (/dble(VZA(i,j))/), &
-               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Q_int, U_int, ierr)
+               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q_int, U_int, ierr)
       end if
 
     else if ( ANY(kernel_wt == surf_missing) ) then
@@ -597,7 +637,6 @@ program geo_vlidort_cloud
       radiance_VL_int(nobs,:) = -500
       reflectance_VL_int(nobs,:) = -500
       Valbedo = -500
-      ROT_int = -500
       if (.not. scalar) then
         Q_int = -500
         U_int = -500
@@ -609,16 +648,16 @@ program geo_vlidort_cloud
       if (scalar) then 
         if (vlidort) then
           ! Call to vlidort scalar code            
-          call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
-                  nPol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+          call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom,  &
+                  nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
                   dble(Vpe), dble(Vze), dble(Vte), &
                   kernel_wt, param, &
                   (/dble(SZA(i,j))/), &
-                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr )  
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
         else
         ! Call to vlidort scalar code            
           call LIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nMom,  &
@@ -628,22 +667,22 @@ program geo_vlidort_cloud
                   dble(Vpe), dble(Vze), dble(Vte), &
                   kernel_wt, param, &
                   (/dble(SZA(i,j))/), &
-                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, ierr )  
         end if
       else
         ! Call to vlidort vector code
-        call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nMom, &
-                nPol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+        call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
+                nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
                 dble(Vpe), dble(Vze), dble(Vte), &
                 kernel_wt, param, &
                 (/dble(SZA(i,j))/), &
-                (/dble(abs(RAA(i,j)))/), &
+                (/dble(RAA(i,j))/), &
                 (/dble(VZA(i,j))/), &
-                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT_int, Valbedo, Q_int, U_int, ierr )  
+                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
       end if      
     end if          
     
@@ -653,8 +692,6 @@ program geo_vlidort_cloud
     radiance_VL(i,j)    = radiance_VL_int(nobs,nch)
     reflectance_VL(i,j) = reflectance_VL_int(nobs,nch)
     ALBEDO(i,j) = Valbedo(nobs,nch)
-
-    ROT(i,j,:) = ROT(:,nobs,nch)
     
     if (.not. scalar) then
       Q(i,j)      = Q_int(nobs,nch)
@@ -668,7 +705,7 @@ program geo_vlidort_cloud
 !   -----------------------------------------        
     if (nint(100.*real(cc-starti)/real(counti)) > progress) then
       progress = nint(100.*real(cc-starti)/real(counti))
-      write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',c,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
+      write(*,'(A,I,A,I,A,I2,A,I3,A)') 'Pixel: ',cc,'  End Pixel: ',endi,'  ID:',myid,'  Progress:', nint(progress),'%'           
     end if
                 
   end do ! do clear pixels
@@ -907,8 +944,6 @@ end subroutine read_vza
 subroutine filenames()
   
   ! INFILES
-  write(MET_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
-                          trim(instname),'-g5nr.lb2.met_Nv.',date,'_',time,'z.nc4'
   write(AER_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
                           trim(instname),'-g5nr.lb2.aer_Nv.',date,'_',time,'z.nc4'
 
@@ -916,12 +951,12 @@ subroutine filenames()
     write(CLD_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
                             trim(instname),'-g5nr-icacl-TOTWPDF-GCOP-SKEWT.',date,'_',time,'z.nc4'                                     
     write(ANG_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
-                          trim(angname),'.cloud.lb2.angles.',date,'_',time,'z.nc4'
+                          trim(angname),'.lb2.angles.',date,'_',time,'z.nc4'
   else
     write(CLD_file,'(16A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
                             trim(instname),'-g5nr-icacl-TOTWPDF-GCOP-SKEWT.',date,'_',time,'z.',trim(layout),'.nc4'  
     write(ANG_file,'(16A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/', &
-                          trim(angname),'.cloud.lb2.angles.',date,'_',time,'z.',trim(layout),'.nc4'                              
+                          trim(angname),'.lb2.angles.',date,'_',time,'z.',trim(layout),'.nc4'                              
   end if  
 
   if ( lower_to_upper(surfmodel) == 'RTLS' ) then
@@ -934,9 +969,9 @@ subroutine filenames()
     write(SURF_file,'(6A)') trim(indir),'/SurfLER/',trim(instname),'-omi.SurfLER.',date(5:6),'.nc4'
   end if
   if (trim(layout) == '111') then
-    write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.cld.invariant.nc4'
+    write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.nc4'
   else
-    write(INV_file,'(6A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.cld.invariant.',trim(layout),'.nc4'
+    write(INV_file,'(6A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.',trim(layout),'.nc4'
   end if
 
 ! OUTFILES
@@ -1300,6 +1335,13 @@ end subroutine outfile_extname
       end do
 
       RAA = VAA - saa_
+      do i = 1, im
+        do j = 1, jm
+          if (RAA(i,j) < 0) then
+            RAA(i,j) = RAA(i,j) + 360.0
+          end if
+        end do
+      end do
 
       deallocate (saa_)
       write(*,*) '<> Read angle data to shared memory' 
@@ -1434,13 +1476,20 @@ end subroutine outfile_extname
     allocate (param(nparam,nch,nobs))
 
     allocate (ROT_int(km,nobs,nch))
+    allocate (depol(nch))
     allocate (Vpmom(km,nch,nobs,nMom,nPol))
     allocate (VpmomLcl(km,nch,nobs,nMom,nPol))
     allocate (VpmomIcl(km,nch,nobs,nMom,nPol))
+    allocate (betaIcl(km,nch,nobs))
+    allocate (betaLcl(km,nch,nobs))
+    allocate (truncIcl(km,nch,nobs))
+    allocate (truncLcl(km,nch,nobs))
 
     if (.not. scalar) then      
       allocate (Q_int(nobs, nch))
       allocate (U_int(nobs, nch))
+      allocate (BR_Q_int(nobs, nch))
+      allocate (BR_U_int(nobs, nch))      
     end if
 
   ! Needed for reading
@@ -1566,7 +1615,6 @@ end subroutine outfile_extname
 
     call check(nf90_put_att(ncid,NF90_GLOBAL,'grid_inputs',trim(INV_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'angle_inputs',trim(ANG_file)),"input files attr")
-    call check(nf90_put_att(ncid,NF90_GLOBAL,'met_inputs',trim(MET_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'aerosol_inputs',trim(AER_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'surface_inputs',trim(SURF_file)),"input files attr")
     call check(nf90_put_att(ncid,NF90_GLOBAL,'cloud_inputs',trim(CLD_file)),"input files attr")
@@ -1725,10 +1773,10 @@ end subroutine outfile_extname
     call readvar2D("clat", INV_file, clat)
     call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
-    call readvar1D("time", MET_file, tyme)
+    call readvar1D("time", AER_file, tyme)
     call check(nf90_put_var(ncid,timeVarID,tyme), "writing out time")
 
-    call readvar1D("lev", MET_file, lev)
+    call readvar1D("lev", AER_file, lev)
     call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
 
     call readvar1D("ew", INV_file, ew)
@@ -1957,10 +2005,10 @@ end subroutine outfile_extname
       call readvar2D("clat", INV_file, clat)
       call check(nf90_put_var(ncid,clatVarID,clat), "writing out clat")
 
-      call readvar1D("time", MET_file, tyme)
+      call readvar1D("time", AER_file, tyme)
       call check(nf90_put_var(ncid,timeVarID,tyme), "writing out time")
 
-      call readvar1D("lev", MET_file, lev)
+      call readvar1D("lev", AER_file, lev)
       call check(nf90_put_var(ncid,levVarID,lev), "writing out lev")
 
       call check(nf90_put_var(ncid,leveVarID,(/(real(e), e = 1, km+1)/)), "writing out leve")      
@@ -2207,6 +2255,8 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, surfmodel, label = 'SURFMODEL:',default='RTLS')
     call ESMF_ConfigGetAttribute(cf, surfdate, label = 'SURFDATE:',__RC__)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
+    call ESMF_ConfigGetAttribute(cf, plane_parallel, label = 'PLANE_PARALLEL:',default=.FALSE.)
+    call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=6)    
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, surfband, label = 'SURFBAND:', default='INTERPOLATE')

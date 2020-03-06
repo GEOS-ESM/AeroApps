@@ -1,0 +1,8 @@
+ISO_T1  = 2020-03-24T00:50:00
+ISO_T2  = 2020-03-24T00:50:00
+G5NR    = g5nr.pcf
+MCD12C  = mcd12c-discover.pcf
+MCD43C  = mcd43c-discover.pcf
+NOBM    = nobm-discover.pcf
+MYD13C2 = myd13c2-discover.pcf
+LER     = omi_ler-discover.pcf

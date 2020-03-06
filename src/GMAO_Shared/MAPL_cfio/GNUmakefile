@@ -72,10 +72,10 @@ local_esma_install local_install: $(LIB) python-install
 	@echo No local install in here
 
 local_esma_clean local_clean:
-	-$(RM) *~ *.[aox] *.[Mm][Oo][Dd]
+	-$(RM) *~ *.[aox] *.[Mm][Oo][Dd] *.so
 
 esma_distclean distclean:
-	-$(RM) -r *~ *.[aoxd] *.[Mm][Oo][Dd] $(SUBDIRS)
+	-$(RM) -r *~ *.[aoxd] *.[Mm][Oo][Dd] *.so $(SUBDIRS)
 
 local_esma_doc local_doc:
 	@echo no documentation here

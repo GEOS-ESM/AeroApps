@@ -1,7 +1,0 @@
-# STN SAMPLING
-INSTNAME = aeronet
-STNFILE  = aeronet_master_locations.txt
-RCFILES  = omi_ler.rc
-COLNAMES = omi_ler
-OUTDIR   = /nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelB/surface/SurfLER
-# STN SAMPLING

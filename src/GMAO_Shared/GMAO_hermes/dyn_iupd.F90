@@ -27,8 +27,7 @@ type(dyn_vect) :: xi
 type(dyn_vect) :: yi
 type(dyn_vect) :: zi
 logical, parameter :: pncf=.true.
-!character(len=*), parameter :: ovars(9)=(/'    u','    v',' delp','   tv','   ps','   ts','ozone','qitot','qltot'/) 
-character(len=*), parameter :: ovars(7)=(/'    u','    v',' delp','   tv','   ps','   ts', ' sphu'/)
+character(len=*), parameter :: ovars(11)=(/'    u','    v',' delp','   tv','   ps','   ts', ' sphu','qitot','qltot','qrtot','qstot'/)
 
 argc = iargc()
 if ( argc < 2 ) then

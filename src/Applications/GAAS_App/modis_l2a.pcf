@@ -10,7 +10,7 @@ MODIS_L2A_EXPID           =  ${EXPID}
 MODIS_L2A_IDENTS          = mydl,mydo,mydd,modl,modo,modd
 MODIS_L2A_COLLECTION      = 006,006,006,006,006,006
 
-MODIS_L2A_L2_DIR          = /discover/nobackup/dao_ops/intermediate/flk/modis
+MODIS_L2A_L2_DIR          = ${FVWORK}
 MODIS_L2A_OUT_DIR         = ${FVWORK}
 
 MODIS_L2A_OVERWRITE       = YES

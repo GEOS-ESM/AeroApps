@@ -1,0 +1,26 @@
+# AERONET SIMULATION
+    inDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelB/Y%year/M%month
+    inFile       = aeronet-g5nr.lb2.%col.%nymd_%hourz.nc4
+
+    invDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelB/invariant
+    invFile      = aeronet-g5nr.lb2.%col.nc4
+
+    brdfDir      = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelB/surface/BRDF/MCD43C1/006/Y%year/M%month
+    brdfFile     = aeronet-g5nr.lb2.brdf.%nymd_%hourz.nc4
+
+    ndviDir      = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelB/surface/BPDF/NDVI/MYD13C2/006/Y%year/M%month
+    ndviFile     = aeronet-g5nr.lb2.ndvi.%nymd_%hourz.nc4
+
+    lcDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051/Y%year/M%month
+    lcFile       = aeronet-g5nr.lb2.land_cover.%nymd_%hourz.nc4    
+
+    albedoType   = MODIS_BRDF_BPDF
+
+    outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelC/Y%year/M%month
+    outFile      = aeronet-g5nr.lc2.vlidort.vector.%nymd_%hourz_%chdnm.nc4
+
+    channel      = 1020   
+    rcFile       = Aod_EOS.rc
+    DO_VLIDORT   = YES
+    DO_EXT       = NO
+# AERONET SIMULATION

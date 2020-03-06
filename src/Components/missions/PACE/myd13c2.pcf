@@ -1,0 +1,6 @@
+# NDVI SAMPLING
+INSTNAME  = pace
+INDIR     = /nobackup/PACE/LevelB
+OUTDIR    = /nobackup/PACE/LevelB/surface/BPDF/NDVI/MYD13C2/006
+DATADIR   = /nobackup/3/pcastell/MODIS-NDVI/MYD13C2/006/
+# NDVI SAMPLING

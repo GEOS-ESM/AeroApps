@@ -1,0 +1,11 @@
+#
+# Resource file for GEO sampler
+#
+
+AREA:  /discover/nobackup/rgovinda/TEMPO/const_2d_area_asm_Nx
+FRLAKE: /discover/nobackup/rgovinda/TEMPO/const_2d_frlake_asm_Nx
+FRLAND: /discover/nobackup/rgovinda/TEMPO/const_2d_frland_asm_Nx
+FRLANDICE: /discover/nobackup/rgovinda/TEMPO/const_2d_frlandice_asm_Nx
+FROCEAN: /discover/nobackup/rgovinda/TEMPO/const_2d_frocean_asm_Nx
+PHIS:  /discover/nobackup/rgovinda/TEMPO/const_2d_phis_asm_Nx
+SGH:  /discover/nobackup/rgovinda/TEMPO/const_2d_sgh_asm_Nx

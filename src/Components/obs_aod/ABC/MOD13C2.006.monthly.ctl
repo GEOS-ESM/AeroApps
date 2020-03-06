@@ -1,4 +1,4 @@
-DSET /nobackup/3/pcastell/MODIS-NDVI/MOD13C2/Y%y4/M%m2/MOD13C2.006.%y4%m2.nc
+DSET /nobackup/3/pcastell/MODIS-NDVI/MOD13C2/Y%y4/M%m2/MOD13C2.006.%y4%m2.nc4
 title MOD13C2 - MODIS NDVI
 dtype netcdf
 options template

@@ -39,7 +39,7 @@ VARS = ( 'AERONET_Site',
          'AOT_412', 
          'AOT_380', 
          'AOT_340',
-         'Precipitable_Water',
+         'Water',
          'Solar_Zenith_Angle',
          )
 
@@ -123,6 +123,35 @@ class AERONET_L2(object):
         aot_550 = _updAOT(aot_550,self.AOT_551) # close enough
 
         self.AOT_550 = aot_550[:] # update undefs with interpolated values
+
+        # Interpolate AOT to 670 nm if needed
+        # -----------------------------------
+        aot_670 = MISSING * ones(len(self.lon))
+
+        aot_670a = aodInterpAngs(670.,self.AOT_667,self.AOT_675,667.,675.)
+        
+        aot_670 = _updAOT(aot_670,aot_670a)
+
+        aot_670 = _updAOT(aot_670,self.AOT_667) # close enough
+        aot_670 = _updAOT(aot_670,self.AOT_675) # close enough
+
+        self.AOT_670 = aot_670[:] # update undefs with interpolated values        
+
+        # Interpolate AOT to 470 nm if needed
+        # -----------------------------------
+        aot_470 = MISSING * ones(len(self.lon))
+
+        aot_470a = aodInterpAngs(470.,self.AOT_443,self.AOT_490,443.,490.)
+        aot_470b = aodInterpAngs(470.,self.AOT_440,self.AOT_490,440.,490.)
+        aot_470c = aodInterpAngs(470.,self.AOT_443,self.AOT_500,443.,500.)
+        aot_470d = aodInterpAngs(470.,self.AOT_440,self.AOT_500,440.,500.)
+        
+        aot_470 = _updAOT(aot_470,aot_470d)
+        aot_470 = _updAOT(aot_470,aot_470c)
+        aot_470 = _updAOT(aot_470,aot_470b)
+        aot_470 = _updAOT(aot_470,aot_470a)
+
+        self.AOT_470 = aot_470[:] # update undefs with interpolated values        
         
         # Create timedate
         # ---------------
@@ -181,7 +210,7 @@ class AERONET_L2(object):
                     for c in columns:                    
                         self.columns += [c.replace('%','').replace('-','_').replace(' ','')\
                                           .replace('AOD','AOT').replace('nm','')\
-                                          .replace('Site_','')\
+                                          .replace('_Name','').replace('Precipitable_','')\
                                           .split('(')[0],]
                     break
                 i += 1

@@ -1,0 +1,7 @@
+# WATER LEAVING RADIANCE SAMPLING
+INSTNAME  = pace
+INDIR     = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB
+OUTDIR    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/surface/SLEAVE/NOBM/
+DATADIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelA/NOBM/v2.0/
+GRIDFILE  = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelA/NOBM/v1.0/HyperLwn.R2014.nc4
+# WATER LEAVING RADIANCE SAMPLING

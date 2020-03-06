@@ -1,0 +1,7 @@
+# LIDAR SAMPLING
+INSTNAME = gpm
+TLEFILE  = tle/gpm.nodrag.tle
+RCFILES  = sampling/ndvi_myd13c2.rc
+COLNAMES = ndvi
+OUTDIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB/surface/NDVI/MYD13C2/006
+# LIDAR SAMPLING

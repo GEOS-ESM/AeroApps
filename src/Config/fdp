@@ -28,6 +28,7 @@
 #........................................................................
 use strict;
 use warnings;
+use Data::Dumper;
 
 # global variables
 #-----------------
@@ -44,6 +45,7 @@ my (@stdfinc);
 {
     init();
     read_input();
+    #--print Dumper(\%deps);
     write_output();
 }
 
@@ -157,20 +159,20 @@ sub read_input {
             $name =~ s/\'//g;
             $name =~ s/<//g;
             $name =~ s/>//g;
-            #--print $name;
+            #--print "pound include: $name\n";
             addkey(\%deps, $name);
 
         } elsif (/^[Ii][Nn][Cc][Ll][Uu][Dd][Ee]\s/ and $name) {
             $name =~ s/\"//g;
             $name =~ s/\'//g;
-            #--print $name;
+            #--print "plain include: $name\n";
             addkey(\%deps, $name);
 
         } elsif (/^[Uu][Ss][Ee]\s/ and $name) {
             $name =~ s/;//g;
             $name =~ s/,.*//gi;
             $name = fix_mod("$name");
-            #--print $name;
+            #--print "use: $name\n";
             addkey(\%deps, $name);
 
         } elsif (/^[Mm][Oo][Dd][Uu][Ll][Ee]\s/ and $name) {
@@ -240,6 +242,7 @@ sub write_output {
                                      or  smart_match($dep, \@stdfinc)       # Is the dep a standard Fortran library?
                                      or  $dep =~ /^sys\//       # Is the dep in the sys/ folder?
                                      or  $dep =~ /^omp_lib/     # Is the dep omp_lib?
+                                     or  $dep =~ /^mpi\.mod/    # Is the dep mpi.mod?
                                      or  $dep =~ /^mpif.*h$/ ); # Is the dep an included mpif-/_ file?
     }
     print OUTFL "\n";
@@ -250,7 +253,7 @@ sub write_output {
 sub smart_match {
     my ($dep, $array) = @_;
     foreach (@{$array}){
-        return 1 if($dep =~ $_);
+        return 1 if($dep eq $_);
     }
     return 0;
 }

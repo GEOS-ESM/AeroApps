@@ -3,7 +3,7 @@
 #
 #
 
-OBS*Operations: sum
+OBS*Operations: sum numneg numneu
 #OBS*Variable: xvecxomf
 
 OBS*Class*Kts:: 

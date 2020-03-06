@@ -1,0 +1,5 @@
+ICLDTABLE:ExtDataCloud/IceLegendreCoeffs.nc4
+LCLDTABLE:ExtDataCloud/WaterLegendreCoeffs.nc4
+CLD_file:  /nobackup/PACE/LevelC/Y2006/M03/D24/pace-g5nr.TOTWPDF-GCOP-SKEWT.20060324_005000.nc4
+OUT_file: /nobackup/PACE/LevelC/Y2006/M03/D24/pace-g5nr.cloud.20060324_005000.nc4
+ANG_file:  /nobackup/PACE/L1B/Y2020/M03/D24/OCI2020084005000.L1B_PACE.nc

@@ -364,7 +364,7 @@ program geo_vlidort_surface
       ! call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels),        &
       !         dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), albedo,&
       !         (/dble(SZA(c))/), &
-      !         (/dble(abs(RAA(c)))/), &
+      !         (/dble(RAA(c))/), &
       !         (/dble(VZA(c))/), &
       !         dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
       write(*,*) 'other surfaces not implemented yet'
@@ -381,7 +381,7 @@ program geo_vlidort_surface
       call VLIDORT_SURFACE_LandMODIS (km, nch, nobs, dble(channels),        &
               kernel_wt, param, &
               (/dble(SZA(c))/), &
-              (/dble(abs(RAA(c)))/), &
+              (/dble(RAA(c))/), &
               (/dble(VZA(c))/), &
               dble(MISSING),verbose, albedo, wsa, bsa, ierr )  
     end if          
@@ -781,6 +781,8 @@ end subroutine outfile_extname
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine read_angles()
     real, dimension(im,jm)     :: temp
+    real, allocatable          :: SAA(:), VAA(:)
+    integer                    :: clrm
 
     if (myid == 0) then
       call readvar2D("solar_zenith", ANG_file, temp)
@@ -789,8 +791,27 @@ end subroutine outfile_extname
       call readvar2D("sensor_zenith", ANG_file, temp)
       VZA = pack(temp,clmask)
 
-      call readvar2D("relat_azimuth", ANG_file, temp)
-      RAA = pack(temp,clmask)
+      call readvar2D("solar_azimuth", ANG_file, temp)
+      SAA = pack(temp,clmask)
+
+      call readvar2D("sensor_azimuth", ANG_file, temp)
+      VAA = pack(temp,clmask)
+
+      ! define according to photon travel direction
+      SAA = SAA + 180.0
+      do i = 1, clrm
+        if (SAA(i) >= 360.0) then
+            SAA(i) = SAA(i) - 360.0
+        end if
+      end do
+
+      RAA = VAA - SAA
+      do i = 1, clrm
+        if (RAA(i) < 0) then
+          RAA(i) = RAA(i) + 360.0
+        end if
+      end do
+
       write(*,*) '<> Read angle data to shared memory' 
     end if
 

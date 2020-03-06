@@ -1,0 +1,47 @@
+#
+# AOD Registry Resource File
+#
+
+# First block specifies number and channels to compute AOD over
+# and the input filenames to use. 
+# ------------------------------------------------------------
+
+# OMI SO2: 305, 310, 324, 380, 440, 500
+# OMI Aerosol: 354 388 [~380] 471 [~470] 
+# MODIS: .47e-6 .55e-6 .659e-6 .865e-6 1.24e-6 1.64e-6 2.13e-6
+# MISR: 468 [~470] 558 [~550] 672 [~670] 867 [~865]
+# PARASOL: 670 [~670]  865 
+
+n_channels: 1
+n_moments: 300
+#r_channels: .355e-6 .532e-6 1.064e-6
+r_channels: 0.440e-6   
+
+# --------------------------------------------------------------
+#
+# Mie Tables:
+# ----------
+#  DU.v5   - Ellipsoid database, Levoni refractive indices
+#  SS.v3_2 - OPAC, cap at 95%
+#  OC.v1_2 - OPAC, Chin et al. 2002
+#  BC.v1_2 - OPAC, Chin et al. 2002
+#  SU.v3_2 - OPAC refractive index, Tang et al. growth curve, 
+#            Chin et al. 2002 particle size properties, 
+#            second bin for volcanic aerosols following V. Aquila
+#
+# --------------------------------------------------------------
+#filename_optical_properties_DU: ExtData/g5chem/x.OLD/optics_DU.v1_pmom.nc
+#filename_optical_properties_DU: ExtData/g5chem/x/optics_DU.v5.nc
+filename_optical_properties_DU: ExtData/optics_DU.v15_5.nc
+filename_optical_properties_SS: ExtData/optics_SS.v3_5.nc
+filename_optical_properties_BC: ExtData/optics_BC.v1_5.nc
+filename_optical_properties_OC: ExtData/optics_OC.v1_5.nc
+filename_optical_properties_SU: ExtData/optics_SU.v1_5.nc
+filename_optical_properties_NI:  ExtData/optics_NI.v2_5.nc
+filename_optical_properties_BRC: ExtData/optics_BRC.v1_5.nc
+
+#filename_optical_properties_DU: ExtData/g5chem/x.OLD/optics_DU.v4.nc
+#filename_optical_properties_SS: ExtData/g5chem/x.OLD/optics_SS.v3.nc
+#filename_optical_properties_OC: ExtData/g5chem/x.OLD/optics_OC.nc
+#filename_optical_properties_BC: ExtData/g5chem/x.OLD/optics_BC.nc
+#filename_optical_properties_SU: ExtData/g5chem/x.OLD/optics_SU.v3.nc

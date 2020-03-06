@@ -219,7 +219,7 @@ def getAOPext(aer,channels,I=None,vnames=VNAMES,vtypes=None,Verbose=False,rcfile
         
         qc = ones((km,nq,nobs),dtype=float32)
         qm = ones((km,nq,nobs),dtype=float32)
-        rh = aer.RH[I]
+        rh = aer.RH[:,I]
 #        rh = zeros((km,nobs))
         for n, v in zip(range(nq),vnames):
             V = v.upper()
@@ -286,7 +286,7 @@ def getAOPint(aer,channels,I=None,vnames=VNAMES,vtypes=None,Verbose=False,rcfile
         
         qc = ones((km,nq,nobs),dtype=float32)
         qm = ones((km,nq,nobs),dtype=float32)
-        rh = aer.RH[I]
+        rh = aer.RH[:,I]
 #        rh = zeros((km,nobs))
         for n, v in zip(range(nq),vnames):
             V = v.upper()

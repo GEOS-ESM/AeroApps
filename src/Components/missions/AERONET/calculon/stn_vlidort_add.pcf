@@ -1,0 +1,12 @@
+# AERONET SIMULATION
+    inDir        = /nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelB/Y%year/M%month
+    inFile       = aeronet-g5nr.lb2.%col.%nymd_%hourz.nc4
+
+    outDir       = /nobackup/3/pcastell/STN_VLIDORT/AERONET/LevelC/Y%year/M%month
+    outFile      = aeronet-g5nr.lc2.add.%nymd_%hourz.nc4
+
+    channel      = 1020   
+    rcFile       = Aod_EOS.rc
+    DO_VLIDORT   = NO
+    DO_EXT       = NO
+# AERONET SIMULATION

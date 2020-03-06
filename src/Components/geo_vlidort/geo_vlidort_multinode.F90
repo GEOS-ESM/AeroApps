@@ -26,6 +26,8 @@ program geo_vlidort_multinode
   use MAPL_ShmemMod                ! The SHMEM infrastructure
   use netcdf                       ! for reading the NR files
   use vlidort_brdf_modis           ! Module to run VLIDORT with MODIS BRDF surface supplement
+  use vlidort_lambert
+  use vlidort_rot                  ! Module to calculate Rayleigh  
   use Chem_MieMod
   use netcdf_helper                ! Module with netcdf routines
   use GeoAngles                    ! Module with geostationary satellite algorithms for scene geometry
@@ -51,6 +53,8 @@ program geo_vlidort_multinode
   integer, allocatable                  :: surfband_i(:)          ! surface band indeces that overlap with vlidort channels
   real, allocatable                     :: surfband_c(:)          ! modis band center wavelength
   logical                               :: scalar
+  integer                               :: nstreams               ! number of half space streams, default = 6  
+  logical                               :: plane_parallel  
   real, allocatable                     :: channels(:)            ! channels to simulate
   integer                               :: nch                    ! number of channels  
   real                                  :: cldmax                 ! Cloud Filtering  
@@ -102,7 +106,8 @@ program geo_vlidort_multinode
   real, allocatable                     :: ssa(:,:,:)             ! single scattering albedo
   real, allocatable                     :: g(:,:,:)               ! asymmetry factor
   real*8, allocatable                   :: albedo(:,:)            ! surface albedo
-
+  real*8, allocatable                   :: BR_Q(:,:)              ! surface albedo
+  real*8, allocatable                   :: BR_U(:,:)              ! surface albedo
 ! VLIDORT output arrays
 !-------------------------------
 !                                  Intermediate Unshared Arrays
@@ -112,7 +117,7 @@ program geo_vlidort_multinode
   real*8, allocatable                   :: Q(:,:)                                 ! Q Stokes component
   real*8, allocatable                   :: U(:,:)                                 ! U Stokes component
   real*8, allocatable                   :: ROT(:,:,:)                             ! rayleigh optical thickness
-
+  real*8, allocatable                   :: depol(:)                               ! rayleigh depolarization ratio
 !                                  Final Shared Arrays
 !                                  -------------------
   real*8, pointer                       :: radiance_VL(:,:) => null()             ! TOA normalized radiance from VLIDORT
@@ -562,21 +567,31 @@ program geo_vlidort_multinode
         end do
       end if 
 
+!   Rayleigh Optical Thickness
+!   --------------------------
+    call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(pe), dble(ze), dble(te), &
+                                   dble(MISSING),verbose, &
+                                   ROT, depol, ierr )  
+
+
   !   Aerosol Optical Properties
   !   --------------------------
-      if (scalar) then
-        call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
-                            qm, reshape(RH(c,:),(/km,nobs/)), &
-                            tau, ssa, g, ierr )
-      else
+!      if (scalar) then
+!        call VLIDORT_getAOPscalar ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
+!                            qm, reshape(RH(c,:),(/km,nobs/)), &
+!                            tau, ssa, g, ierr )
+!      else
         call VLIDORT_getAOPvector ( mieTables, km, nobs, nch, nq, channels, vnames, verbose, &
                             qm, reshape(RH(c,:),(/km,nobs/)),&
                             nMom,nPol, tau, ssa, g, pmom, ierr )
-      end if
+!      end if
 
       TAU_(c,:,:) = tau(:,:,nobs)
       SSA_(c,:,:) = ssa(:,:,nobs)
       G_(c,:,:)   = g(:,:,nobs)
+      do ch=1,nch      
+          ROT_(c,:,ch) = ROT(:,nobs,ch)
+      end do
 
       write(msg,*) 'getAOP ', myid
       call write_verbose(msg)
@@ -588,20 +603,20 @@ program geo_vlidort_multinode
   !     -------------------------------
         if (scalar) then
           ! Call to vlidort scalar code       
-          call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels),        &
-                  dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), albedo,&
+          call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
+                  nPol, ROT, depol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                   (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
+                  (/dble(RAA(c))/), &
                   (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, ierr)
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
         else
           ! Call to vlidort vector code
-          call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nMom,   &
-                 nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+          call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
+                 nPol, ROT, depol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                  (/dble(SZA(c))/), &
-                 (/dble(abs(RAA(c)))/), &
+                 (/dble(RAA(c))/), &
                  (/dble(VZA(c))/), &
-                 dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, Q, U, ierr)
+                 dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q, U, ierr)
         end if
       else if (KERNEL_IS_MISSING(kernel_wt,dble(surf_missing))) then
   !     Save code for pixels that were not gap filled
@@ -609,7 +624,6 @@ program geo_vlidort_multinode
         radiance_VL_int(nobs,:) = -500
         reflectance_VL_int(nobs,:) = -500
         albedo = -500
-        ROT = -500
         if (.not. scalar) then
           Q = -500
           U = -500
@@ -620,22 +634,22 @@ program geo_vlidort_multinode
   !     ------------------------------
         if (scalar) then 
           ! Call to vlidort scalar code            
-          call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels),        &
-                  dble(tau), dble(ssa), dble(g), dble(pe), dble(ze), dble(te), &
+          call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom,   &
+                  nPol, ROT, depol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
                   kernel_wt, param, &
                   (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
+                  (/dble(RAA(c))/), &
                   (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, ierr )  
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, albedo, ierr )  
         else
           ! Call to vlidort vector code
-          call VLIDORT_Vector_LandMODIS (km, nch, nobs, dble(channels), nMom, &
-                  nPol, dble(tau), dble(ssa), dble(g), dble(pmom), dble(pe), dble(ze), dble(te), &
+          call VLIDORT_Vector_LandMODIS (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
+                  nPol, ROT, depol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), &
                   kernel_wt, param, &
                   (/dble(SZA(c))/), &
-                  (/dble(abs(RAA(c)))/), &
+                  (/dble(RAA(c))/), &
                   (/dble(VZA(c))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ROT, albedo, Q, U, ierr )  
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, albedo, Q, U, BR_Q, BR_U, ierr )  
         end if      
       end if          
       
@@ -645,9 +659,6 @@ program geo_vlidort_multinode
       radiance_VL(c,:)    = radiance_VL_int(nobs,:)
       reflectance_VL(c,:) = reflectance_VL_int(nobs,:)
       ALBEDO_(c,:) = albedo(nobs,:)
-      do ch=1,nch      
-          ROT_(c,:,ch) = ROT(:,nobs,ch)
-      end do
 
       if (.not. scalar) then
         Q_(c,:)      = Q(nobs,:)
@@ -1222,7 +1233,7 @@ end subroutine outfile_extname
       saa = saa + 180.0
       do i = 1, clrm
         if (saa(i) >= 360.0) then
-          saa(i) = 360.0 - saa(i)
+          saa(i) = saa(i) - 360.0 
         end if
       end do
 
@@ -1230,7 +1241,11 @@ end subroutine outfile_extname
       vaa = pack(temp,clmask)
 
       RAA = vaa - saa
-
+      do i = 1, clrm
+        if (RAA(i) < 0) then
+          RAA(i) = RAA(i) + 360.0
+        end if
+      end do
       deallocate (saa)
       deallocate (vaa)
       write(*,*) '<> Read angle data to shared memory' 
@@ -1383,6 +1398,8 @@ end subroutine outfile_extname
     allocate (ssa(km,nch,nobs))
     allocate (g(km,nch,nobs))
     allocate (albedo(nobs,nch))
+    allocate (BR_Q(nobs,nch))
+    allocate (BR_U(nobs,nch))
 
     allocate (radiance_VL_int(nobs,nch))
     allocate (reflectance_VL_int(nobs, nch))    
@@ -1393,6 +1410,7 @@ end subroutine outfile_extname
     allocate (param(nparam,nch,nobs))
 
     allocate (ROT(km,nobs,nch))
+    allocate (depol(nch))
 
     if (.not. scalar) then
       allocate (pmom(km,nch,nobs,nMom,nPol))
@@ -2137,6 +2155,8 @@ end subroutine outfile_extname
     call ESMF_ConfigGetAttribute(cf, surfname, label = 'SURFNAME:',default='MAIACRTLS')
     call ESMF_ConfigGetAttribute(cf, surfdate, label = 'SURFDATE:',__RC__)
     call ESMF_ConfigGetAttribute(cf, scalar, label = 'SCALAR:',default=.TRUE.)
+    call ESMF_ConfigGetAttribute(cf, plane_parallel, label = 'PLANE_PARALLEL:',default=.FALSE.)
+    call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=6)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, cldmax, label = 'CLDMAX:',default=0.01)

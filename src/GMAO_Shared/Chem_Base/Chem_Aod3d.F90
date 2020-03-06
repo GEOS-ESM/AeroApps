@@ -31,7 +31,7 @@
   type(Chem_Bundle)   :: w_taubc     ! output black carbon tau chemistry bundle
   type(Chem_Bundle)   :: w_taucc     ! output total carbon tau chemistry bundle
   type(Chem_Bundle)   :: w_tausu     ! output sulfate tau chemistry bundle
-  integer :: i, j, k, im, jm, km, idx, n
+  integer :: i, j, k, im, jm, km, idx, n, ndx
   integer :: i1, i2, ig, j1, j2, jg, ik, iq, iz, kk
   integer :: nymd, nhms, timidx, freq, rc, ier, fid
   integer :: idxTable
@@ -42,8 +42,10 @@
   logical :: new
   logical :: found_airdensfile, found_hghtefile
   real    :: channel, tau_, ssa_, bbck_, bext_, taulev, gasym_, scaleRH, maxRH, &
-             qMass, p11_, p22_
-  integer :: itau, iext, issa, immr, ibbck, iabck0, iabck1, ietob, igasym, idepol
+             qMass, p11_, p22_, vol_, area_, refr_, refi_
+  integer :: itau, iext, issa, immr, ibbck, &
+             iabck0, iabck1, ietob, igasym, idepol, &
+             ivol, iarea, ireff, irefr, irefi
   integer, parameter :: READ_ONLY = 1
   real, pointer :: delz(:,:,:), t(:,:,:), q(:,:,:), hghte(:,:,:)
   real, pointer :: airdens(:,:,:) => null()
@@ -156,6 +158,11 @@
   iabck1 = -1
   igasym = -1
   idepol = -1
+  ivol   = -1
+  iarea  = -1
+  ireff  = -1
+  irefr  = -1
+  irefi  = -1
   do iq = 1, regOut%nq
    if(trim(regOut%vname(iq)) .eq. 'tau')        itau   = iq
    if(trim(regOut%vname(iq)) .eq. 'extinction') iext   = iq
@@ -169,6 +176,12 @@
    if(trim(regOut%vname(iq)) .eq. 'backscat')   ibbck  = iq
    if(trim(regOut%vname(iq)) .eq. 'gasym')      igasym = iq
    if(trim(regOut%vname(iq)) .eq. 'depol')      idepol = iq
+   if(trim(regOut%vname(iq)) .eq. 'depol')      idepol = iq
+   if(trim(regOut%vname(iq)) .eq. 'volume')     ivol   = iq
+   if(trim(regOut%vname(iq)) .eq. 'area')       iarea  = iq
+   if(trim(regOut%vname(iq)) .eq. 'reff')       ireff  = iq
+   if(trim(regOut%vname(iq)) .eq. 'refreal')    irefr  = iq
+   if(trim(regOut%vname(iq)) .eq. 'refimag')    irefi  = iq
   enddo
 
 ! At this point should do some checking that certain fields are
@@ -180,12 +193,15 @@
   if((iabck0 .gt. 0 .or. iabck1 .gt. 0) .and. &
      (itau .lt. 0 .or.ibbck .lt. 0) )                      ier = 5
   if(idepol .gt. 0 .and. (itau .lt. 0 .or. issa .lt. 0))   ier = 6
+  if(ireff .gt. 0 .and. (ivol .lt. 0 .or. iarea .lt. 0))   ier = 7
+  if(irefr .gt. 0 .and. ivol .lt. 0)                       ier = 8
+  if(irefi .gt. 0 .and. ivol .lt. 0)                       ier = 8
 
   if(ier /= 0) then
      print *,'----------------------------------------------------'
      print *,'ier = ', ier
-     print *,'issa, itau, igasym, ibbck, ietob, iabck0, iabck1, idepol = ', &
-            issa, itau, igasym, ibbck, ietob, iabck0, iabck1, idepol
+     print *,'issa, itau, igasym, ibbck, ietob, iabck0, iabck1, idepol, ireff, irefr, irefi = ', &
+            issa, itau, igasym, ibbck, ietob, iabck0, iabck1, idepol, ireff, irefr, irefi
      call die(myname,'inconsistency in output registry')
   end if
 
@@ -200,14 +216,13 @@
 ! ------------------------------------------------------------------
   mie_tables = Chem_MieCreate(rcfile,ier)
 
-! This part needs some work: in GEOS-4 the chemistry bundle input 
-! files generally had 4 times per file, and in GEOS-5 they generally
-! have 1 time per file.  The loop over IDX below is the number of
-! times on the file.  In the future this should come from the
-! chemistry bundle and not have to be hardwired.
+! Call subroutine to check the number of times and frequency on
+! input file; output will have same information
 ! ------------------------------------------------------------------
+  call check_infile  ! returns ndx and freq
+
   new = .true.
-  do idx = 1, 1
+  do idx = 1, ndx
 
 !  Read the input chemistry bundle from the infile
 !  -------------------------------------------------
@@ -372,7 +387,9 @@
       call Chem_MieQuery(mie_tables, idxTable, 1.*ik, &
                          qMass, &
                          w_c%rh(i,j,k) * scaleRH, tau=tau_, ssa=ssa_, &
-                         bbck=bbck_, bext=bext_, gasym=gasym_, p11=p11_, p22=p22_)
+                         bbck=bbck_, bext=bext_, gasym=gasym_, &
+                         p11=p11_, p22=p22_, vol=vol_, area=area_, &
+                         refr=refr_, refi=refi_)
 
 !     Fill in the total values
 !     Note the weighting of the ssa, backscatter, and e_to_b ratio
@@ -447,48 +464,48 @@
     filename = trim(outfile(1:lenfile)//trim(chstr))
     w_tau%rh = w_c%rh
     call Chem_BundleWrite( filename, nymd, nhms, 0, w_tau, rc, &
-                           verbose=.true., new=new)
+                           verbose=.true., new=new, freq=freq)
     if(doing_dust) then 
      filename = trim(outfile(1:lenfile)//trim(chstr)//'.dust')
      w_taudu%rh = w_c%rh
      call Chem_BundleWrite( filename, nymd, nhms, 0, w_taudu, rc, &
-                            verbose=.true., new=new)
+                            verbose=.true., new=new, freq=freq)
     endif
     if(doing_ss) then 
      filename = trim(outfile(1:lenfile)//trim(chstr)//'.ss')
      w_tauss%rh = w_c%rh
      call Chem_BundleWrite( filename, nymd, nhms, 0, w_tauss, rc, &
-                            verbose=.true., new=new)
+                            verbose=.true., new=new, freq=freq)
     endif
     if(doing_su) then 
      filename = trim(outfile(1:lenfile)//trim(chstr)//'.su')
      w_tausu%rh = w_c%rh
      call Chem_BundleWrite( filename, nymd, nhms, 0, w_tausu, rc, &
-                            verbose=.true., new=new)
+                            verbose=.true., new=new, freq=freq)
     endif
     if(doing_oc) then 
      filename = trim(outfile(1:lenfile)//trim(chstr)//'.oc')
      w_tauoc%rh = w_c%rh
      call Chem_BundleWrite( filename, nymd, nhms, 0, w_tauoc, rc, &
-                            verbose=.true., new=new)
+                            verbose=.true., new=new, freq=freq)
     endif
     if(doing_bc) then 
      filename = trim(outfile(1:lenfile)//trim(chstr)//'.bc')
      w_taubc%rh = w_c%rh
      call Chem_BundleWrite( filename, nymd, nhms, 0, w_taubc, rc, &
-                            verbose=.true., new=new)
+                            verbose=.true., new=new, freq=freq)
     endif
     if(doing_cc) then 
      filename = trim(outfile(1:lenfile)//trim(chstr)//'.cc')
      w_taucc%rh = w_c%rh
      call Chem_BundleWrite( filename, nymd, nhms, 0, w_taucc, rc, &
-                            verbose=.true., new=new)
+                            verbose=.true., new=new, freq=freq)
     endif
     if(doing_anthro) then 
      filename = trim(outfile(1:lenfile)//trim(chstr)//'.anthro')
      w_tauant%rh = w_c%rh
      call Chem_BundleWrite( filename, nymd, nhms, 0, w_tauant, rc, &
-                            verbose=.true., new=new)
+                            verbose=.true., new=new, freq=freq)
     endif
 
 
@@ -513,7 +530,7 @@
 !  ==================================================================================
 
    call Chem_BundleDestroy(w_c,rc)
-
+   new = .false.
   enddo   ! idx (time increment in input file)
 
 ! Destroy Mie tables
@@ -594,6 +611,22 @@
         this%rh(i,j,k) = this%rh(i,j,k) + (p11_+p22_)*ssa_*tau_
       endif
 
+      if(ivol .gt. 0) then
+        this%qa(ivol)%data3d(i,j,k) = this%qa(ivol)%data3d(i,j,k) + vol_*qMass/delz(i,j,k)
+      endif
+
+      if(iarea .gt. 0) then
+        this%qa(iarea)%data3d(i,j,k) = this%qa(iarea)%data3d(i,j,k) + area_*qMass/delz(i,j,k)
+      endif
+
+      if(irefr .gt. 0) then
+        this%qa(irefr)%data3d(i,j,k) = this%qa(irefr)%data3d(i,j,k) + refr_*vol_*qMass/delz(i,j,k)
+      endif
+
+      if(irefi .gt. 0) then
+        this%qa(irefi)%data3d(i,j,k) = this%qa(irefi)%data3d(i,j,k) + refi_*vol_*qMass/delz(i,j,k)
+      endif
+
   end subroutine fill
 
 
@@ -622,6 +655,19 @@
          if(idepol .gt. 0) this%qa(idepol)%data3d(i,j,k) = this%qa(idepol)%data3d(i,j,k)/max(this%rh(i,j,k),tiny(this%rh))
          if(idepol .gt. 0) this%qa(idepol)%data3d(i,j,k) = max(     this%qa(idepol)%data3d(i,j,k), &
                                                            tiny(this%qa(idepol)%data3d(i,j,k)))
+         if(ivol .gt. 0) this%qa(ivol)%data3d(i,j,k) = max(     this%qa(ivol)%data3d(i,j,k), &
+                                                           tiny(this%qa(ivol)%data3d(i,j,k)))
+         if(iarea .gt. 0) this%qa(iarea)%data3d(i,j,k) = max(     this%qa(iarea)%data3d(i,j,k), &
+                                                           tiny(this%qa(iarea)%data3d(i,j,k)))
+         if(ireff .gt. 0) this%qa(ireff)%data3d(i,j,k) = 3./4.*this%qa(ivol)%data3d(i,j,k)/this%qa(iarea)%data3d(i,j,k)
+         if(ireff .gt. 0) this%qa(ireff)%data3d(i,j,k) = max(     this%qa(ireff)%data3d(i,j,k), &
+                                                           tiny(this%qa(ireff)%data3d(i,j,k)))
+         if(irefr .gt. 0) this%qa(irefr)%data3d(i,j,k) = this%qa(irefr)%data3d(i,j,k)/this%qa(ivol)%data3d(i,j,k)
+         if(irefr .gt. 0) this%qa(irefr)%data3d(i,j,k) = max(     this%qa(irefr)%data3d(i,j,k), &
+                                                           tiny(this%qa(irefr)%data3d(i,j,k)))
+         if(irefi .gt. 0) this%qa(irefi)%data3d(i,j,k) = this%qa(irefi)%data3d(i,j,k)/this%qa(ivol)%data3d(i,j,k)
+         if(irefi .gt. 0) this%qa(irefi)%data3d(i,j,k) = max(     this%qa(irefi)%data3d(i,j,k), &
+                                                           tiny(this%qa(irefi)%data3d(i,j,k)))
         enddo
        enddo
       enddo
@@ -689,5 +735,28 @@
 
   end subroutine delz_
 
+
+  subroutine check_infile
+   ! This will die non-gracefully if any problems reading file
+   integer fid, err, hour, min, timInc
+   integer l_im, l_jm, l_km, l_lm, l_nvars, l_ngatts, incsecs, yyyymmdd_beg, hhmmss_beg
+   integer, parameter :: READ_ONLY = 1
+
+   !  Open the file
+   !  -------------
+   call GFIO_Open ( infile, READ_ONLY, fid, err )
+   call GFIO_DimInquire ( fid, l_im, l_jm, l_km, l_lm, l_nvars, l_ngatts, err)
+   call GetBegDateTime ( fid, yyyymmdd_beg, hhmmss_beg, incSecs, err )
+   timInc = 000100   ! default: 1 minute
+   if ( l_lm .ge. 1 ) then   !ams: changed lm.gt.1 to lm.ge.1
+           hour = incSecs/3600
+           if (hour == 0) hour=1
+           min = mod(incSecs,3600*hour)/60
+           timInc = incSecs/3600*10000 + mod(incSecs,3600)/60*100 + mod(incSecs,60)
+   end if
+   call GFIO_close ( fid, err )
+   ndx = l_lm
+   freq = timInc
+  end subroutine check_infile
 
 end

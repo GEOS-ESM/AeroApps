@@ -107,8 +107,8 @@ if __name__ == "__main__":
                cmap=gacm.jet_l,figFile='conbgl'+figTail, N=32, extend='max')
     f.contourf(1e9*f.cobbgl,r'GEOS-5 CO Biomass Burning Concentration [$\mu$g/m$^3$]',
                cmap=gacm.jet_l,figFile='cobbgl'+figTail, N=32, extend='max')
-    f.contourf(1e9*f.cobbaf,r'GEOS-5 CO African BB Concentration [$\mu$g/m$^3$]',
-               cmap=gacm.jet_l,figFile='cobbaf'+figTail, N=32, extend='max')
+    f.contourf(1e9*f.cobbaf,r'GEOS-5 CO North American BB Concentration [$\mu$g/m$^3$]',
+               cmap=gacm.jet_l,figFile='cobbna'+figTail, N=32, extend='max')
 
     # Extinction
     # ----------

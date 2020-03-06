@@ -1,0 +1,8 @@
+# STN SAMPLING
+INSTNAME = aeronet
+STNFILE  = aeronet_locations_v3.txt
+RCFILES  = aer_Nv.rc, chm_Nv.rc, met_Nv.rc
+COLNAMES = aer_Nv, chm_Nv, met_Nv
+OUTDIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelB
+DT_SECS  = 3600
+# STN SAMPLING

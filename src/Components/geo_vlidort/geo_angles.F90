@@ -40,12 +40,12 @@ program geo_angles
   character(len=256)                    :: arg
   character(len=8)                      :: date 
   character(len=2)                      :: time 
-  character(len=256)                    :: instname, indir, outdir
+  character(len=256)                    :: instname, indir, outdir, layout
 
 
 ! File names
 ! ----------
-  character(len=256)                    :: MET_file, INV_file, OUT_file 
+  character(len=256)                    :: INV_file, OUT_file 
 
 ! Global, 3D arrays to be allocated using SHMEM
 ! ---------------------------------------------
@@ -122,6 +122,7 @@ program geo_angles
   call ESMF_ConfigGetAttribute(cf, instname, label = 'INSTNAME:',__RC__)
   call ESMF_ConfigGetAttribute(cf, indir, label = 'INDIR:',__RC__)
   call ESMF_ConfigGetAttribute(cf, outdir, label = 'OUTDIR:',default=indir)
+  call ESMF_ConfigGetAttribute(cf, layout, label = 'LAYOUT:',default='111') 
 
 ! Write out settings to use
 ! -------------------------------
@@ -129,6 +130,7 @@ program geo_angles
     write(*,*) 'Processing ', lower_to_upper(trim(instname)),' domain on ',date,' ', time, 'Z'
     write(*,*) 'Input directory: ',trim(indir)
     write(*,*) 'Output directory: ',trim(outdir)
+    write(*,*) 'Layout:',trim(layout)
     write(*,*) ' '
   end if 
 
@@ -138,8 +140,8 @@ program geo_angles
 
 ! Query for domain dimensions, satellite constants, and missing value
 !--------------------------------------------------------------
-  call mp_readDim("ew", MET_file, im)
-  call mp_readDim("ns", MET_file, jm)
+  call mp_readDim("ew", INV_file, im)
+  call mp_readDim("ns", INV_file, jm)
   call mp_readGattr("sat_lat", INV_FILE, sat_lat)
   call mp_readGattr("sat_lon", INV_FILE, sat_lon)
   call mp_readGattr("sat_alt", INV_FILE, sat_alt)
@@ -156,7 +158,7 @@ program geo_angles
 
 ! Read in position data to shared memeory
 ! --------------------------------------------
-  call mp_readvar1Dchunk('scanTime', MET_file, (/im/), 1, npet, myid, SCANTIME)
+  call mp_readvar1Dchunk('scanTime', INV_file, (/im/), 1, npet, myid, SCANTIME)
   call mp_readvar2Dchunk('clon', INV_file, (/im, jm/), 1, npet, myid, CLON)
   call mp_readvar2Dchunk('clat', INV_file, (/im, jm/), 1, npet, myid, CLAT)
 
@@ -276,11 +278,18 @@ end subroutine get_geometry
 subroutine filenames()
 
   ! INFILES
-  write(MET_file,'(14A)') trim(indir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'-g5nr.lb2.met_Nv.',date,'_',time,'z.nc4'
-  write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.nc4'
+    if (trim(layout) == '111') then
+      write(INV_file,'(4A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.nc4'
+    else
+      write(INV_file,'(6A)')  trim(indir),'/LevelG/invariant/',trim(instname),'.lg1.invariant.',trim(layout),'.nc4' 
+    end if
 
 ! OUTFILES
-  write(OUT_file,'(14A)') trim(outdir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'.lb2.angles.',date,'_',time,'z.nc4'
+  if (trim(layout) == '111') then
+    write(OUT_file,'(14A)') trim(outdir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'.lb2.angles.',date,'_',time,'z.nc4'
+  else
+    write(OUT_file,'(16A)') trim(outdir),'/LevelB/Y',date(1:4),'/M',date(5:6),'/D',date(7:8),'/',trim(instname),'.lb2.angles.',date,'_',time,'z.',trim(layout),'.nc4'
+  end if
 end subroutine filenames
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -436,13 +445,13 @@ end subroutine filenames
     allocate (ew(im))
     allocate (ns(jm))
 
-    call readvar1D("scanTime", MET_file, scantime)
+    call readvar1D("scanTime", INV_file, scantime)
     call check(nf90_put_var(ncid,timeVarID,scantime), "writing out scantime")
 
-    call readvar1D("ew", MET_file, ew)
+    call readvar1D("ew", INV_file, ew)
     call check(nf90_put_var(ncid,ewVarID,ew), "writing out ew")
 
-    call readvar1D("ns", MET_file, ns)
+    call readvar1D("ns", INV_file, ns)
     call check(nf90_put_var(ncid,nsVarID,ns), "writing out ns")    
 
     call readvar2D("clon", INV_file, clon)

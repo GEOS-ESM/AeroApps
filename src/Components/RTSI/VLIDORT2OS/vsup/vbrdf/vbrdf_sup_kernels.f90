@@ -939,6 +939,9 @@
       RL = ( Z2 - H2 ) / ( Z2 + H2 )
       XMP = HALF * ( RP*RP + RL*RL )
 
+      COXMUNK_VKERNEL(1) = XMP
+
+      IF ( PARS(1) .GT. ZERO ) THEN
 !  Coxmunk Function
 
       A = TWO * Z2
@@ -951,7 +954,7 @@
         PROB = DEXP ( - ARGUMENT )
         FAC1 = PROB / PARS(1)
         FAC2 = QUARTER / XI / ( B ** FOUR )
-        COXMUNK_VKERNEL(1) = XMP * FAC1 * FAC2 / XJ
+        COXMUNK_VKERNEL(1) = COXMUNK_VKERNEL(1) * FAC1 * FAC2 / XJ
       ENDIF
 
 !  No Shadow code if not flagged
@@ -982,6 +985,7 @@
 
       COXMUNK_VKERNEL(1) = COXMUNK_VKERNEL(1) * SHADOW
 
+      ENDIF
 !  Finish
 
       RETURN
@@ -1178,6 +1182,8 @@
 
       DCOEFF = DCOEFF_0 * FACT1 * FACT1 * DEX
 
+      IF (SIGMA2 .EQ. ZERO) DCOEFF = 1.0
+
       AF  = HALF * DCOEFF
       AF11 = DABS(CF11)
       AF12 = DABS(CF12)
@@ -1294,6 +1300,7 @@
 
       SHADOW = ONE/(ONE+SHADOWI+SHADOWR)
 
+      IF (SIGMA2 .EQ. ZERO) SHADOW = 1.0
       DO I = 1, 10
        IM = KERNELMASK(I)
        GISSCOXMUNK_VKERNEL(IM) = GISSCOXMUNK_VKERNEL(IM) * SHADOW
@@ -2735,7 +2742,107 @@
 
 !
 
-      SUBROUTINE BPDFNDVI_VFUNCTION  &
+SUBROUTINE BPDFNDVI_VFUNCTION  &
+        ( MAXPARS, NPARS, PARS, NSSQ, XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI, BPDFNDVI_VKERNEL )
+
+!  Quick alternative to the NDVI official BPDF in VLIDORT
+!    - Programmed by R. Spurr, 6/27/19. Uses Fresnel results directly. I/O the same
+!    - Reflectance matrix has no U/V components. Only (1,1), (1,2), (2,1) and (2,2) entries are needed.
+
+!  module, dimensions and numbers
+
+      USE VLIDORT_pars, only : ZERO, ONE, MINUS_ONE, HALF, DEG_TO_RAD
+
+      implicit none
+
+!  Subroutine arguments
+
+      INTEGER         , intent(in)     :: MAXPARS, NPARS, NSSQ
+      DOUBLE PRECISION, intent(in)     :: PARS ( MAXPARS )
+      DOUBLE PRECISION, intent(inout)  :: XI, SXI, XJ, SXJ, PHI, CPHI, SKPHI
+      DOUBLE PRECISION, intent(out)    :: BPDFNDVI_VKERNEL(16)
+
+!  local variables.
+
+      DOUBLE PRECISION :: HFUNCTION, NDVI, DEXPNDVI, C
+      DOUBLE PRECISION :: ATTEN, FP0, Z, Z2, Z1, CN1, CN2, sgamma, cgamma
+      DOUBLE PRECISION :: CAL, SAL, CAT, SAT, RP, RS, XMISTOKES, XMQSTOKES, AT, AL
+
+!  F-.M. Breon BPDF NDVI model (2009).
+!    This is the Vector model with polarization
+
+!  Initialize
+
+      BPDFNDVI_VKERNEL = ZERO
+
+!  PARS(1) = refractive index of water (real)
+
+      CN1 = ONE
+      CN2 = PARS(1)
+
+!  Check for limiting cases
+
+      IF(DABS(XI-1D0).LT.1d-9) XI = 0.999999999999d0
+      IF(DABS(XJ-1D0).LT.1d-9) XJ = 0.999999999999d0
+
+!   Angle at the surface that generates specular reflection
+
+      Z = XI * XJ - SXI * SXJ * CPHI
+      IF ( Z .GT. ONE) Z = ONE
+      Z1 = ACOS(Z)
+      Z2 = COS(Z1*HALF)
+
+!  Exponential of the NDVI. (PARS(2) = NDVI)
+!     Out of range values default to zero
+
+      NDVI = PARS(2)
+      IF ( NDVI .GT. ONE .or. NDVI .lt. MINUS_ONE ) THEN
+        NDVI = ZERO
+      ENDIF
+      DEXPNDVI = EXP ( - NDVI )
+      Fp0 = 0.25d0 * DEXPNDVI / ( xi + xj )
+
+! attenuation factor
+
+      cgamma = Z2
+      sgamma = dsqrt ( one - cgamma * cgamma )
+      atten  = dexp ( - sgamma / cgamma )
+
+!  PARS(3) = Scaling Factor
+
+      C = PARS(3) 
+
+!  Final H-function
+
+      HFUNCTION = C * Fp0 * atten
+
+!  Use Fresnel Equations
+
+      CAL = cgamma        ; SAL = sgamma            ; AL = ACOS(CAL)
+      SAT = SAL / PARS(1) ; CAT = SQRT(ONE-SAT*SAT) ; AT = ACOS(CAT)
+      RS = ( CN1 * CAL - CN2 * CAT) / (CN1 * CAL + CN2 * CAT)
+      RP = ( CN2 * CAL - CN1 * CAT) / (CN2 * CAL + CN1 * CAT)
+      XMISTOKES = HALF * ( RS*RS + RP*RP )
+      XMQSTOKES = HALF * ( RS*RS - RP*RP )
+
+!  IQ Only. Only require entries 1, 2, 5, 6. Use symmetry
+!      BPDF = BPDFNDVI_VKERNEL(5), agrees with Full result using Kernel with phi = 180.0d0
+
+      BPDFNDVI_VKERNEL(1) = XMISTOKES * HFUNCTION
+      if ( NSSQ .gt. 1 ) then
+         BPDFNDVI_VKERNEL(5) = - XMQSTOKES * HFUNCTION
+         BPDFNDVI_VKERNEL(2) = BPDFNDVI_VKERNEL(5)
+         BPDFNDVI_VKERNEL(6) = BPDFNDVI_VKERNEL(1)
+      endif
+
+!  Finish
+
+      RETURN
+      END SUBROUTINE BPDFNDVI_VFUNCTION
+
+!
+
+      SUBROUTINE BPDFNDVI_VFUNCTION_FULLFRESNEL  &
         ( MAXPARS, NPARS, PARS, NSSQ, XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI, BPDFNDVI_VKERNEL )
 
 !  module, dimensions and numbers
@@ -2898,7 +3005,7 @@
 !  Finish
 
       RETURN
-      END SUBROUTINE BPDFNDVI_VFUNCTION
+      END SUBROUTINE BPDFNDVI_VFUNCTION_FULLFRESNEL
 
 !
 

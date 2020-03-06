@@ -335,6 +335,12 @@ kx_list::
   324 AVHRR PATMOSX Aerosol Retrievals
   325 OMSO2 (OMI SULFER DIOXIDE)
   326 GOCI Aerosol Retrievals (Yonsei University)
+  327 GOES-16 Aerosol (Dark Target Ocean Algorithm)
+  328 GOES-16 Aerosol (Dark Target Land Algorithm)
+  329 GOES-17 Aerosol (Dark Target Ocean Algorithm)
+  330 GOES-17 Aerosol (Dark Target Land Algorithm)
+  331 Himawari Aerosol (Dark Target Ocean Algorithm)
+  332 Himawari Aerosol (Dark Target Land Algorithm)
 ::
 
 # Notes:

@@ -26,10 +26,14 @@ endif
 
 THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
-BINS := geo_vlidort.x
+BINS := geo_vlidort.x geo_vlidort_cloud.x
 
 PY_EXTS = GeoAngles_.$(F2PYEXT)
-PY_SCRP = run_geo_vlidort_lc2.py geo_vlidort_lc2.py geo_warp.py run_geo_vlidort_cloud_lc2.py geo_vlidort_cloud_lc2.py
+PY_SCRP = run_geo_vlidort_lc2.py geo_vlidort_lc2.py geo_warp.py \
+          run_geo_vlidort_cloud_lc2.py geo_vlidort_cloud_lc2.py \
+          run_geo_vlidort_ocean_lc2.py geo_vlidort_ocean_lc2.py \
+          run_geo_vlidort_AI_lc2.py geo_vlidort_AI_lc2.py \
+          geo_vlidort_blksurf_lc2.py run_geo_vlidort_blksurf_lc2.py
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
@@ -89,6 +93,7 @@ THIS_GFIO = GMAO_gfio_r4
 
 SRCS := sys_tracker.c GeoAngles_py.F90 VLIDORT_LAMBERT.F90 VLIDORT_BRDF_MODIS.F90 VLIDORT_BRDF_MODIS_BPDF.F90 \
 			  LIDORT_LAMBERT.F90 LIDORT_BRDF_MODIS.F90 VLIDORT_SURFACE.F90 SURFACE.F90 VLIDORT_MieMod.F90 \
+			  VLIDORT_BRDF_CX.F90 VLIDORT_LAMBERT_BPDF.F90 VLIDORT_ROT.F90 \
 			  mp_netcdf_Mod.F90 netcdf_Mod.F90
 #			  netcdf_helper.F90
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
@@ -127,7 +132,7 @@ geo_lidort.x: netcdf_helper.o geo_lidort.o
                                  $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)     
 
 geo_vlidort_multinode.x: netcdf_helper.o geo_vlidort_multinode.o 
-	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT90) $(LIB_CHEM_BASE) \
+	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_VLIDORT2OS) $(LIB_CHEM_BASE) \
                                  $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                                  $(LIB_MAPL_BASE_STUBS2) \
                                  $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
@@ -157,10 +162,6 @@ geo_surface.x: netcdf_helper.o geo_surface.o
 geo_angles.x: geo_angles.o
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
                             $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)
-
-geo_angles_cloud.x: geo_angles_cloud.o
-	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIB_NETCDF) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) \
-                            $(LIB_MAPL_BASE_STUBS2) $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)                                                                                                                               
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------

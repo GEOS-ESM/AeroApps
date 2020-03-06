@@ -150,7 +150,7 @@ if __name__ == "__main__":
 #   Form output gridded file name
 #   -----------------------------
     out_tmpl = options.out_dir+'/'+options.out_tmpl
-    out_tmpl = out_tmpl.replace('%coll',coll).replace('%prod',prod).replace('%algo',algo).replace('%lev','3').replace('%ext','nc4')
+    out_tmpl = out_tmpl.replace('%coll',options.coll).replace('%prod',prod).replace('%algo',algo).replace('%lev','3').replace('%ext','nc4')
     out_file = strTemplate(out_tmpl,expid=options.expid,nymd=nymd,nhms=nhms)
     name, ext = os.path.splitext(out_file)
     if os.path.exists(out_file) and (options.force is not True):
@@ -162,7 +162,7 @@ if __name__ == "__main__":
 #   Form ODS file name
 #   ------------------
     ods_tmpl = options.out_dir+'/'+options.out_tmpl
-    ods_tmpl = ods_tmpl.replace('%coll',coll).replace('%prod',prod).replace('%algo',algo).replace('%lev','2').replace('%ext','ods')
+    ods_tmpl = ods_tmpl.replace('%coll',options.coll).replace('%prod',prod).replace('%algo',algo).replace('%lev','2').replace('%ext','ods')
     ods_file = strTemplate(ods_tmpl,expid=options.expid,nymd=nymd,nhms=nhms)
     if os.path.exists(ods_file) and (options.force is not True):
         print "mxd04_l2a: Output ODS file <%s> exists --- cannot proceed."%ods_file
@@ -186,6 +186,8 @@ if __name__ == "__main__":
     modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,aer_x,
                       coll=options.coll,
                       cloud_thresh=0.7,
+                      cloudFree = 0.0,
+                      aodmax = 1.0,
                       verbose=options.verbose)
     if modis.nobs < 1:
         if options.verbose:
@@ -215,6 +217,9 @@ if __name__ == "__main__":
 #   -------------------------------------------------
     makethis_dir(out_file)
     if modis.nobs>0:
+      if str.isdigit(options.res):
+        modis.writeg(filename=out_file,refine=int(options.res),channels=modis.channels_)
+      else:
         modis.writeg(filename=out_file,res=options.res,channels=modis.channels_)
 
 #   Write ungridded data

@@ -1,0 +1,13 @@
+#
+# Define individual supplement paths
+#
+
+BRDF_PATH   = $(SUP_PATH)/brdf
+#SLEAVE_PATH = $(SUP_PATH)/sleave
+
+#
+# Include individual supplement makefiles
+#
+
+include $(BRDF_PATH)/makefile.brdf
+#include $(SLEAVE_PATH)/makefile.sleave

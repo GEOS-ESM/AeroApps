@@ -1,7 +1,0 @@
-# STN SAMPLING
-INSTNAME = aeronet
-STNFILE  = aeronet_master_locations.txt
-RCFILES  = asm_Nx.rc
-COLNAMES = asm_Nx
-OUTDIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AERONET/LevelB/invariant
-# STN SAMPLING

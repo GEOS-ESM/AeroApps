@@ -49,19 +49,25 @@ LIB  = lib$(THIS).a
             Chem_MieTableMod.F90 Chem_MieMod.F90 Chem_AodMod.F90 \
             Chem_SimpleBundleMod.F90 MieObs_py.F90
      LIBS = $(LIB) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
-            $(LIB_EU) $(LIB_CFIO) $(LIB_GFIO) \
-            $(LIB_MPEU) $(LIB_MFHDF3) $(LIB_SDF) \
-            $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)
+            $(LIB_CFIO) $(LIB_GFIO) \
+            $(LIB_EU) $(LIB_MFHDF3) $(LIB_ESMF) \
+            $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
      MPLIBS = $(LIB) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
-            $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) \
-            $(LIB_MPEU) $(LIB_MFHDF3) $(LIB_SDF) \
-            $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)
+            $(LIB_CFIO) $(LIB_GFIO) \
+            $(LIB_MPEU) $(LIB_MFHDF3) $(LIB_ESMF) \
+            $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
 
      # f2py cannot handle a -Wl flag used by Open MPI. But that option is not
      # necessary for the code to compile or run. So if it is part of LIB_MPI
      # we just strip it from LIBS
      BADPATTERN := -Wl,--export-dynamic
-     LIBS_F2PY = $(subst $(BADPATTERN),,$(LIBS))
+     LIBS_F2PY1 = $(subst $(BADPATTERN),,$(LIBS))
+     BADPATTERN2 := -Wl,-commons,use_dylibs
+     LIBS_F2PY2 = $(subst $(BADPATTERN2),,$(LIBS_F2PY1))
+     BADPATTERN3 := -pthread
+     LIBS_F2PY3 = $(subst $(BADPATTERN3),,$(LIBS_F2PY2))
+     BADPATTERN4 := -Wl,-flat_namespace
+     LIBS_F2PY = $(subst $(BADPATTERN4),,$(LIBS_F2PY3))
   endif
 
 ifeq ( $(wildcard $(INC_MAPL_BASE)), $(null) ) 
@@ -74,17 +80,21 @@ endif
 RCDIR = .
 
 esma_install install: $(LIB) $(BINS) $(PY_EXTS)
-	$(MKDIR) $(ESMALIB) $(ESMAETC) $(ESMAETC)/CMIP $(ESMAETC)/MERRA2 $(ESMAETC)/NR $(ESMAETC)/PIESA $(ESMAINC)/$(THIS) $(ESMABIN)
-	$(CP) -p *.a                    $(ESMALIB)
-	$(CP) -p        *.rc            $(ESMAETC)
-	$(CP) -p   CMIP/*.rc            $(ESMAETC)/CMIP
-	$(CP) -p MERRA2/*.rc            $(ESMAETC)/MERRA2
-	$(CP) -p     NR/*.rc            $(ESMAETC)/NR
-	$(CP) -p  PIESA/*.rc            $(ESMAETC)/PIESA
-	$(CP) -p *.mod                  $(ESMAINC)/$(THIS)
-	$(CP) -p $(BINS) $(SCRP)        $(ESMABIN)
-	$(CP) -p $(PY_SCRP)             $(ESMABIN)
-	$(CP) -p $(PY_MODS) $(PY_EXTS)  $(ESMALIB)/Python
+	$(MKDIR) $(ESMALIB) $(ESMAETC) $(ESMAETC)/CMIP $(ESMAETC)/MERRA2 $(ESMAETC)/MERRA2-DD $(ESMAETC)/NR $(ESMAETC)/PIESA \
+                 $(ESMAETC)/CCMI_REF-C1 $(ESMAETC)/CCMI_REF-C2 $(ESMAINC)/$(THIS) $(ESMABIN)
+	$(CP) -p  *.a                    $(ESMALIB)
+	$(CP) -p  *.rc                   $(ESMAETC)
+	$(CP) -p  CMIP/*.rc              $(ESMAETC)/CMIP
+	$(CP) -p  MERRA2/*.rc            $(ESMAETC)/MERRA2
+	$(CP) -p  MERRA2-DD/*.rc         $(ESMAETC)/MERRA2-DD
+	$(CP) -p  NR/*.rc                $(ESMAETC)/NR
+	$(CP) -p  PIESA/*.rc             $(ESMAETC)/PIESA
+	$(CP) -p  CCMI_REF-C1/*.rc       $(ESMAETC)/CCMI_REF-C1
+	$(CP) -p  CCMI_REF-C2/*.rc       $(ESMAETC)/CCMI_REF-C2
+	$(CP) -p  *.mod                  $(ESMAINC)/$(THIS)
+	$(CP) -p  $(BINS) $(SCRP)        $(ESMABIN)
+	$(CP) -p  $(PY_SCRP)             $(ESMABIN)
+	$(CP) -p  $(PY_MODS) $(PY_EXTS)  $(ESMALIB)/Python
 
 esma_clean clean:
 	$(RM) *~ *.[aox] *.[Mm][Oo][Dd] *.xx *.so
@@ -131,17 +141,30 @@ else
 	FREAL = $(FREAL4)
 endif
 
-MOD_DIRS += . $(INC_ESMF) $(INC_MAPL_BASE) $(INC_MPEU) $(INC_MFHDF3) 
+MOD_DIRS += . $(INC_ESMF) $(INC_MAPL_BASE) $(INC_MPEU) $(INC_MFHDF3)
 
 USER_FFLAGS = $(BIG_ENDIAN) $(DGEOS5)
 USER_FMODS  = $(foreach dir,$(MOD_DIRS),$(M)$(dir)) 
 USER_FINCS  = $(foreach dir,$(MOD_DIRS),$(I)$(dir)) 
+
+# GPU_TARGET interferes with f2py. Turn it off
+%_.$(F2PYEXT): GPU_TARGET := 
+
+
+# Intel 15 on Mac cannot handle the USER_FINCS as GMAO_mpeu
+# carries an assert.H which seems to interfere with f2py
+ifeq ($(ESMA_FC), pgfortran)
+   PY_FINCS = $(USER_FINCS)
+else
+   PY_FINCS = 
+endif
 
 vpath % $(MOD_DIRS)
 
 $(LIB) lib : $(DEPS) $(OBJS)
 	$(RM) $(LIB)
 	$(AR) $(AR_FLAGS) $(LIB) $(OBJS)
+	$(RANLIB) $(RANLIB_FLAGS) $(LIB)
 
 # Generic single PE apps
 # ----------------------
@@ -156,7 +179,7 @@ $(LIB) lib : $(DEPS) $(OBJS)
 # Python extensions
 # -----------------
 %_.$(F2PYEXT): %_py.F90 $(LIB)
-	$(F2PY) -c -m $*_ $(M). $(USER_FINCS) $< $(LIBS_F2PY)
+	$(F2PY) -c -m $*_ $(M). $(PY_FINCS) $< $(LIBS_F2PY)
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------

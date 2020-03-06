@@ -46,7 +46,7 @@
       integer, parameter :: NFILES_MAX = 1488! Max number of input files
 
       integer, parameter ::  NOMAX = 5       ! max no. of operations
-      integer, parameter ::  NCMAX = 800     ! max no. of classes
+      integer, parameter ::  NCMAX = 999     ! max no. of classes
       integer, parameter ::  NTMAX = 12*31*4 ! 4 syn times a day, for a year (roughly)
       integer, parameter ::  LVMAX = 800     ! Max number of levels/channels
 
@@ -69,6 +69,7 @@
       real, pointer      :: ptr(:,:)              ! number of obs giving positive attribute
       real, target       :: obssum(ncmax,ntmax)   ! sum per class and syn hour
       real, target       :: negsum(ncmax,ntmax)   ! number of obs for which attr are negative
+      real, target       :: neusum(ncmax,ntmax)   ! number of obs for which attr are neutral
       real, target       :: obsgms(ncmax,ntmax)   ! global mean square of obs for each attr
       integer            :: obsnum(ncmax,ntmax)   ! number of obs per class and syn hour
       integer            :: nymda(ntmax)          ! all dates
@@ -80,6 +81,7 @@
       real               :: accum_obsgms(ncmax)   ! accumulated global mean square of obs per class
       integer            :: accum_obsnum(ncmax)   ! accumulated impact per class
       integer            :: accum_obsneg(ncmax)   ! accumulated number of obs with neg attribute
+      integer            :: accum_obsneu(ncmax)   ! accumulated number of obs with neutral attribute
  
       character*255 infile (NFILES_MAX) ! input filenames
       character*255 fileout, outfile, outodsfn   ! output filename
@@ -123,8 +125,10 @@
       accum_obssum = 0.0
       accum_obsgms = 0.0
       accum_obsneg = 0
+      accum_obsneu = 0
       obssum = 0.0
       negsum = 0.0
+      neusum = 0.0
       obsgms = 0.0
       nymdb = -1
       nhmsb = -1
@@ -233,6 +237,7 @@
              do nop = 1, nops
                 if(opers(nop)=='sum')    call sumattr ( verb, odss, nsel, obvar, obssum(nc,nt) )
                 if(opers(nop)=='numneg') call negattr ( verb, odss, nsel, obvar, negsum(nc,nt) )
+                if(opers(nop)=='numneu') call neuattr ( verb, odss, nsel, obvar, neusum(nc,nt) )
                 if(opers(nop)=='stdev')  then
                    call gmsattr ( verb, odss, nsel, obvar, obsgms(nc,nt) )
                    lstdv = .true.
@@ -245,6 +250,7 @@
              accum_obssum(nc) = accum_obssum(nc) + obssum(nc,nt)
              accum_obsgms(nc) = accum_obsgms(nc) + obsgms(nc,nt)
              accum_obsneg(nc) = accum_obsneg(nc) + negsum(nc,nt)
+             accum_obsneu(nc) = accum_obsneu(nc) + neusum(nc,nt)
 
 !            When debugging, write out select ODS entries
 !            ---------------------------------------------
@@ -295,7 +301,7 @@
 !     ------------------------------
       fileout = trim(outfile) // '_' // 'all.txt'
       call Write_AccumStats ( fileout, accum_obssum, accum_obsgms, accum_obsnum, accum_obsneg, 
-     .                        oclass, ncfound, ncmax, nymdb, nhmsb, lstdv, verb, ierr ) 
+     .                        accum_obsneu, oclass, ncfound, ncmax, nymdb, nhmsb, lstdv, verb, ierr ) 
 
 
       CONTAINS
@@ -650,6 +656,18 @@
             sum=sum+ods%data%xvec(i)
          enddo
       endif
+      if ( trim(attr) == 'imp0hr' ) then ! calculate 0hr impact as Jo(a)-Jo(b)
+         do i=1,nobs
+            sum=sum+((ods%data%oma(i))**2  -
+     .               (ods%data%omf(i))**2) /(ods%data%xvec(i))**2 ! calculate impact
+         enddo
+      endif
+      if ( trim(attr) == 'imp0hrxm' ) then ! calculate 0hr impact as Jo(a)-Jo(b) (for when sigo stored in xm)
+         do i=1,nobs
+            sum=sum+((ods%data%oma(i))**2  -
+     .               (ods%data%omf(i))**2) /(ods%data%xm(i))**2 ! calculate impact
+         enddo
+      endif
       if ( trim(attr) == 'imp_from_sens' .or.
      .     trim(attr) == 'xvecxomf'    ) then  ! this handles the case when xvec holds sensitivities
                                                ! rather than impacts themselves
@@ -678,6 +696,26 @@
             sum=sum+ods%data%xm(i)*ods%data%xm(i)
          enddo
       endif
+      if ( trim(attr) == 'omf2byxvec2' ) then  ! Jo(b) when sigO in xvec slot
+         do i=1,nobs
+            sum=sum+ods%data%omf(i)*ods%data%omf(i)/(ods%data%xvec(i)*ods%data%xvec(i))
+         enddo
+      endif
+      if ( trim(attr) == 'oma2byxvec2' ) then  ! Jo(a) when sigO in xvec slot
+         do i=1,nobs
+            sum=sum+ods%data%oma(i)*ods%data%oma(i)/(ods%data%xvec(i)*ods%data%xvec(i))
+         enddo
+      endif
+      if ( trim(attr) == 'omf2byxm2' ) then    ! Jo(b) when sigO in xm slot
+         do i=1,nobs
+            sum=sum+ods%data%omf(i)*ods%data%omf(i)/(ods%data%xm(i)*ods%data%xm(i))
+         enddo
+      endif
+      if ( trim(attr) == 'oma2byxm2' ) then    ! Jo(a) when sigO in xm slot
+         do i=1,nobs
+            sum=sum+ods%data%oma(i)*ods%data%oma(i)/(ods%data%xm(i)*ods%data%xm(i))
+         enddo
+      endif
 
       if ( verb ) then
           print *, 'Obs impact(sum):      ', sum
@@ -695,18 +733,36 @@
       real,    intent(inout) ::  sum
       logical, intent(in) :: verb
       integer  i
+      real     imp
+      real,parameter:: eps=0.0
 
       sum = 0.0
       if (nobs==0) return ! nothing to do
       if ( trim(attr) == 'xvec' ) then
          do i=1,nobs
-            if(ods%data%xvec(i)<0.0) sum=sum+1.0
+            if(ods%data%xvec(i)<eps) sum=sum+1.0
+         enddo
+      endif
+      if ( trim(attr) == 'imp0hr' ) then
+         do i=1,nobs
+            imp = (ods%data%oma(i))**2 -
+     .            (ods%data%omf(i))**2
+            imp = imp/ods%data%xvec(i)*2
+            if(imp<eps) sum=sum+1.0
+         enddo
+      endif
+      if ( trim(attr) == 'imp0hrxm' ) then
+         do i=1,nobs
+            imp = (ods%data%oma(i))**2 -
+     .            (ods%data%omf(i))**2
+            imp = imp/ods%data%xm(i)*2
+            if(imp<eps) sum=sum+1.0
          enddo
       endif
       if ( trim(attr) == 'imp_from_sens' .or.
      .     trim(attr) == 'xvecxomf'    ) then  ! this handles the case when xvec holds sensitivities
          do i=1,nobs
-            if(ods%data%xvec(i)*ods%data%omf(i)<0.0) sum=sum+1.0
+            if(ods%data%xvec(i)*ods%data%omf(i)<eps) sum=sum+1.0
          enddo
       endif
       if ( verb ) then
@@ -715,6 +771,54 @@
       endif
 
       end subroutine negattr
+
+      subroutine neuattr ( verb, ods, nobs, attr, sum )
+      use m_ods
+      implicit none
+      type(ods_vect) ods
+      integer, intent(in) :: nobs
+      character(len=*), intent(in) :: attr 
+      real,    intent(inout) ::  sum
+      logical, intent(in) :: verb
+      integer  i
+      real     imp
+      real,parameter:: eps=1.0e-10
+
+      sum = 0.0
+      if (nobs==0) return ! nothing to do
+      if ( trim(attr) == 'xvec' ) then
+         do i=1,nobs
+            if(abs(ods%data%xvec(i))<eps) sum=sum+1.0
+         enddo
+      endif
+      if ( trim(attr) == 'imp0hr' ) then
+         do i=1,nobs
+            imp = (ods%data%oma(i))**2 -
+     .            (ods%data%omf(i))**2
+            imp = imp/ods%data%xvec(i)*2
+            if(abs(imp)<eps) sum=sum+1.0
+         enddo
+      endif
+      if ( trim(attr) == 'imp0hrxm' ) then
+         do i=1,nobs
+            imp = (ods%data%oma(i))**2 -
+     .            (ods%data%omf(i))**2
+            imp = imp/ods%data%xm(i)*2
+            if(abs(imp)<eps) sum=sum+1.0
+         enddo
+      endif
+      if ( trim(attr) == 'imp_from_sens' .or.
+     .     trim(attr) == 'xvecxomf'    ) then  ! this handles the case when xvec holds sensitivities
+         do i=1,nobs
+            if(abs(ods%data%xvec(i)*ods%data%omf(i))<eps) sum=sum+1.0
+         enddo
+      endif
+      if ( verb ) then
+          print *, '    Number of obs with positive impact:  ',  sum
+          print *, 'Percentage of obs with positive impact:  ', (sum/nobs)*100.
+      endif
+
+      end subroutine neuattr
 
       subroutine gmsattr ( verb, ods, nobs, attr, rsum )
       use m_ods
@@ -966,7 +1070,7 @@
 
       end subroutine Write_gsiRfactor
 
-      subroutine Write_AccumStats ( fname, obssum, obsgms, obsnum, obsneg, oclass, ncfound, ncmax, nymd, nhms, lstdev, 
+      subroutine Write_AccumStats ( fname, obssum, obsgms, obsnum, obsneg, obsneu, oclass, ncfound, ncmax, nymd, nhms, lstdev, 
      .                              verb, stat )
       use m_ioutil, only : luavail
       implicit none
@@ -977,6 +1081,7 @@
       real,    intent(in)          :: obsgms(ncmax)
       integer, intent(in)          :: obsnum(ncmax)
       integer, intent(in)          :: obsneg(ncmax)
+      integer, intent(in)          :: obsneu(ncmax)
       integer, intent(in)          :: nymd, nhms
       logical, intent(in)          :: lstdev
       logical, intent(in)          :: verb
@@ -1017,11 +1122,11 @@
          enddo
       else
          do ll=1,nu
-            write(lu(ll),'(44x,3a)') '#obs ', ' sum_impact ', '     numneg '
+            write(lu(ll),'(44x,4a)') '#obs ', ' sum_impact ', '     numneg ', '     numneu '
             do i = 1, ncfound  ! loop ob classes
                                ! intentionally truncate oclass to 20 chars
-               write(lu(ll),'(i8.8,1x,i6.6,1x,a20,1x,i11,1x,1p,e11.4,1x,i11)') 
-     .               nymd, nhms, oclass(i), obsnum(i), obssum(i), obsneg(i)
+               write(lu(ll),'(i8.8,1x,i6.6,1x,a20,1x,i11,1x,1p,e11.4,1x,i11,1x,i11)') 
+     .               nymd, nhms, oclass(i), obsnum(i), obssum(i), obsneg(i), obsneu(i)
          enddo
       enddo
       endif

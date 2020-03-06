@@ -11,6 +11,11 @@ module VLIDORT_LAMBERT
   PUBLIC VLIDORT_Scalar_Lambert_Cloud
   PUBLIC VLIDORT_Vector_Lambert_Cloud  
 
+  interface VLIDORT_Vector_Lambert
+      module procedure VLIDORT_Vector_Lambert_SingleGeom
+      module procedure VLIDORT_Vector_Lambert_MultiGeom
+  end interface
+
   contains
 
   logical function IS_MISSING(x,MISSING)
@@ -21,10 +26,10 @@ module VLIDORT_LAMBERT
     return
   end function IS_MISSING
 
-  subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels, nMom, &
-                     nPol, tau, ssa, g, pmom, pe, he, te, albedo,             &
+  subroutine VLIDORT_Scalar_Lambert (km, nch, nobs,channels, nstreams, plane_parallel, nMom, &
+                     nPol, ROT, depol, tau, ssa, g, pmom, pe, he, te, albedo,             &
                      solar_zenith, relat_azymuth, sensor_zenith,  &
-                     MISSING,verbose,radiance_VL,reflectance_VL, ROT, rc)
+                     MISSING,verbose,radiance_VL,reflectance_VL, rc)
   !
   ! Uses VLIDORT in scalar mode to compute OMI aerosol TOA radiances.
   !
@@ -38,11 +43,18 @@ module VLIDORT_LAMBERT
     integer,          intent(in)  :: km    ! number of levels on file
     integer,          intent(in)  :: nch   ! number of channels
     integer,          intent(in)  :: nobs  ! number of observations
+
+    logical,          intent(in)  :: plane_parallel ! do plane parallel flag
                                         
     integer, target,  intent(in)  :: nMom             ! number of phase function moments     
     integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)  :: nstreams  ! number of half space streams
 
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
   !                                                   ! --- Mie Parameters ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -68,7 +80,6 @@ module VLIDORT_LAMBERT
     real*8,           intent(out) :: radiance_VL(nobs,nch)       ! TOA normalized radiance from VLIDORT
     integer,          intent(out) :: rc                          ! return code
     real*8,           intent(out) :: reflectance_VL(nobs, nch)   ! TOA reflectance from VLIDORT
-    real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness 
 
   !                               ---  
     integer                       :: i,j, ier
@@ -79,6 +90,8 @@ module VLIDORT_LAMBERT
     rc = 0
     ier = 0
 
+    SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
     call VLIDORT_Init( SCAT%Surface%Base, km, rc)
     if ( rc /= 0 ) return
 
@@ -119,6 +132,8 @@ module VLIDORT_LAMBERT
                              relat_azymuth(j),scalar)
 
           SCAT%wavelength = channels(i)
+          SCAT%rot => ROT(:,j,i)
+          SCAT%depol_ratio => depol(i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%g => g(:,i,j)
@@ -128,7 +143,6 @@ module VLIDORT_LAMBERT
 
           radiance_VL(j,i)    = output%radiance
           reflectance_VL(j,i) = output%reflectance
-          ROT(:,j,i) = SCAT%rot              
 
           if ( ier /= 0 ) then
             radiance_VL(j,i) = MISSING
@@ -150,10 +164,10 @@ module VLIDORT_LAMBERT
 
   !..........................................................................
 
-  subroutine VLIDORT_Vector_Lambert (km, nch, nobs, channels, nMom,  &
-                     nPol,tau, ssa, pmom, pe, he, te, albedo, &
+  subroutine VLIDORT_Vector_Lambert_SingleGeom (km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
+                     nPol, ROT, depol, tau, ssa, pmom, pe, he, te, albedo, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL, reflectance_VL, ROT, Q ,U, rc, &
+                     MISSING,verbose, radiance_VL, reflectance_VL, Q ,U, rc, &
                      DO_2OS_CORRECTION, DO_BOA)
   !
   ! Place holder.
@@ -169,10 +183,17 @@ module VLIDORT_LAMBERT
     integer,          intent(in)  :: nch   ! number of channels
     integer,          intent(in)  :: nobs  ! number of observations
 
+    logical,          intent(in)  :: plane_parallel ! do plane parallel flag
+
     integer, target,  intent(in)  :: nMom  ! number of moments 
     integer, target,  intent(in)  :: nPol  ! number of components                               
+    integer,          intent(in)  :: nstreams  ! number of half space streams
                     
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
   !                                                   ! --- Mie Parameters ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -199,7 +220,6 @@ module VLIDORT_LAMBERT
     real*8,           intent(out) :: radiance_VL(nobs,nch)       ! TOA radiance from VLIDORT
     integer,          intent(out) :: rc                          ! return code
     real*8,           intent(out) :: reflectance_VL(nobs, nch)   ! TOA reflectance from VLIDORT
-    real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness  
     real*8,           intent(out) :: Q(nobs, nch)   ! Q Stokes component
     real*8,           intent(out) :: U(nobs, nch)   ! U Stokes component
 
@@ -218,7 +238,8 @@ module VLIDORT_LAMBERT
     rc = 0
     ier = 0
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
-
+    SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -267,14 +288,15 @@ module VLIDORT_LAMBERT
          call VLIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i),solar_zenith (j),sensor_zenith(j),&
                                  relat_azymuth(j),scalar)
 
-          SCAT%wavelength = channels(i)        
+          SCAT%wavelength = channels(i)  
+          SCAT%rot => ROT(:,j,i)    
+          SCAT%depol_ratio => depol(i)  
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)
 
           call VLIDORT_Run_Vector (SCAT, output, ier)
 
-          ROT(:,j,i) = SCAT%rot
           if (SCAT%DO_BOA) then
             radiance_VL(j,i)         = output%BOA_radiance
             reflectance_VL(j,i)      = output%BOA_reflectance
@@ -305,14 +327,187 @@ module VLIDORT_LAMBERT
 
     end do ! Loop over obs
 
-  end subroutine VLIDORT_Vector_Lambert
+  end subroutine VLIDORT_Vector_Lambert_SingleGeom
+
+  !..........................................................................
+
+  subroutine VLIDORT_Vector_Lambert_MultiGeom (km, nch, nobs, ngeom, channels, nstreams, plane_parallel, nMom,  &
+                     nPol, ROT, depol, tau, ssa, pmom, pe, he, te, albedo, &
+                     solar_zenith, relat_azymuth, sensor_zenith, &
+                     MISSING,verbose, radiance_VL, reflectance_VL, Q ,U, rc, &
+                     DO_2OS_CORRECTION, DO_BOA)
+  !
+  ! Place holder.
+  !
+     use VLIDORT_ScatMod
+   
+     implicit NONE
+
+    logical, parameter            :: scalar = .false.
+  ! !INPUT PARAMETERS:
+
+    integer,          intent(in)  :: km    ! number of levels on file
+    integer,          intent(in)  :: nch   ! number of channels
+    integer,          intent(in)  :: nobs  ! number of observations
+    integer,          intent(in)  :: ngeom  ! number of geometries
+
+    logical,          intent(in)  :: plane_parallel ! do plane parallel flag
+
+    integer, target,  intent(in)  :: nMom  ! number of moments 
+    integer, target,  intent(in)  :: nPol  ! number of components                               
+    integer,          intent(in)  :: nstreams  ! number of half space streams
+                    
+    real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
+
+  !                                                   ! --- Mie Parameters ---
+    real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
+    real*8, target,   intent(in)  :: ssa(km,nch,nobs) ! single scattering albedo
+    
+    real*8, target,   intent(in)  :: pmom(km,nch,nobs,nMom,nPol) !components of the scat phase matrix
+
+    real*8, target,   intent(in)  :: MISSING          ! MISSING VALUE
+    real*8, target,   intent(in)  :: pe(km+1,nobs)    ! pressure at layer edges [Pa]
+    real*8, target,   intent(in)  :: he(km+1,nobs)    ! height above sea-level  [m]
+    real*8, target,   intent(in)  :: te(km+1,nobs)    ! temperature at layer edges [K]
+
+                         
+    real*8, target,   intent(in)  :: solar_zenith(nobs,ngeom)  
+    real*8, target,   intent(in)  :: relat_azymuth(nobs,ngeom) 
+    real*8, target,   intent(in)  :: sensor_zenith(nobs,ngeom) 
+
+    real*8, target,   intent(in)  :: albedo(nobs,nch,ngeom)       ! surface albedo
+
+    integer,          intent(in)  :: verbose
+
+  ! !OUTPUT PARAMETERS:
+
+    real*8,           intent(out) :: radiance_VL(nobs,nch,ngeom)       ! TOA radiance from VLIDORT
+    integer,          intent(out) :: rc                          ! return code
+    real*8,           intent(out) :: reflectance_VL(nobs, nch, ngeom)   ! TOA reflectance from VLIDORT
+    real*8,           intent(out) :: Q(nobs, nch, ngeom)   ! Q Stokes component
+    real*8,           intent(out) :: U(nobs, nch, ngeom)   ! U Stokes component
+
+  ! !OPTIONAL PARAMETERS
+    logical, optional, intent(in) :: DO_2OS_CORRECTION 
+    logical, optional, intent(in) :: DO_BOA
+    
+  !                               ---
+    
+    integer             :: i,j, ier 
+    
+    type(VLIDORT_scat_multigeom) :: SCAT
+    type(VLIDORT_output_vector_multigeom)  :: output  
+
+  
+    rc = 0
+    ier = 0
+    if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
+    SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+    SCAT%Surface%Base%N_USER_OBSGEOMS   = ngeom
+    SCAT%Surface%Base%NBEAMS            = ngeom
+    SCAT%Surface%Base%N_USER_STREAMS   = ngeom
+    SCAT%Surface%Base%N_USER_RELAZMS    = ngeom
+    call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
+    if ( rc /= 0 ) return
+
+    SCAT%nMom = nMom
+    SCAT%nPol = nPol
+    if (present(DO_2OS_CORRECTION)) then
+      SCAT%DO_2OS_CORRECTION = DO_2OS_CORRECTION
+      if (DO_2OS_CORRECTION) then
+        SCAT%NSTOKES = 1
+      else
+        SCAT%NSTOKES = 3
+      end if
+    else   
+      SCAT%NSTOKES = 3  
+    end if
+
+    do j = 1, nobs
+       
+       ! Make sure albedo and angles are available
+       ! -----------------------------------------
+       if ( IS_MISSING(solar_zenith(j,1),MISSING)  .OR. & 
+            IS_MISSING(sensor_zenith(j,1),MISSING) .OR. &
+            IS_MISSING(relat_azymuth(j,1),MISSING)  )  then
+
+          radiance_VL(j,:,:) = MISSING
+          reflectance_VL(j,:,:) = MISSING
+          Q(j,:,:) = MISSING
+          U(j,:,:) = MISSING
+          cycle
+
+        end if
+       
+       SCAT%pe => pe(:,j)
+       SCAT%ze => he(:,j)
+       SCAT%te => te(:,j) 
+
+       do i = 1, nch
+         if ( IS_MISSING(albedo(j,i,1),MISSING) ) then
+                radiance_VL(j,i,:) = MISSING
+                reflectance_VL(j,i,:) = MISSING
+                Q(j,i,:) = MISSING
+                U(j,i,:) = MISSING
+                cycle
+         end if
+
+         call VLIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i,:),solar_zenith (j,:),sensor_zenith(j,:),&
+                                 relat_azymuth(j,:),scalar)
+
+          SCAT%wavelength = channels(i)  
+          SCAT%rot => ROT(:,j,i)    
+          SCAT%depol_ratio => depol(i)  
+          SCAT%tau => tau(:,i,j)
+          SCAT%ssa => ssa(:,i,j)
+          SCAT%pmom => pmom(:,i,j,:,:)
+
+          call VLIDORT_Run_Vector (SCAT, output, ier)
+
+          if (SCAT%DO_BOA) then
+            radiance_VL(j,i,:)         = output%BOA_radiance
+            reflectance_VL(j,i,:)      = output%BOA_reflectance
+            Q(j,i,:)                   = output%BOA_Q
+            U(j,i,:)                   = output%BOA_U                          
+          else
+            radiance_VL(j,i,:)         = output%radiance
+            reflectance_VL(j,i,:)      = output%reflectance
+            Q(j,i,:)                   = output%Q
+            U(j,i,:)                   = output%U                
+          end if
+
+          if ( ier /= 0 ) then
+            radiance_VL(j,i,:) = MISSING
+            reflectance_VL(j,i,:) = MISSING
+            Q(j,i,:) = MISSING
+            U(j,i,:) = MISSING
+            cycle
+          end if
+
+          end do ! end loop over channels
+       
+          if ( verbose > 0 ) then
+             if ( mod(j-1,1000) == 0 ) then
+                print *, '<> VLIDORT Vector: ', nint(j*100./nobs), '%'
+             end if
+          end if
+
+    end do ! Loop over obs
+
+  end subroutine VLIDORT_Vector_Lambert_MultiGeom
+
   !.............................................................................
 
-  subroutine VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs,channels, nMom, &
-                     nPol, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
+  subroutine VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs,channels, nstreams, plane_parallel, nMom, &
+                     nPol, ROT, depol, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
                      pe, he, te, albedo,             &
                      solar_zenith, relat_azymuth, sensor_zenith,  &
-                     MISSING,verbose,radiance_VL,reflectance_VL, ROT, rc)
+                     MISSING,verbose,radiance_VL,reflectance_VL, rc)
   !
   ! Uses VLIDORT in scalar mode to compute OMI aerosol TOA radiances.
   !
@@ -326,11 +521,18 @@ module VLIDORT_LAMBERT
     integer,          intent(in)  :: km    ! number of levels on file
     integer,          intent(in)  :: nch   ! number of channels
     integer,          intent(in)  :: nobs  ! number of observations
+
+    logical,          intent(in)  :: plane_parallel ! do plane parallel flag
                                         
     integer, target,  intent(in)  :: nMom             ! number of phase function moments     
     integer, target,  intent(in)  :: nPol  ! number of scattering matrix components                               
+    integer,          intent(in)  :: nstreams  ! number of half space streams
 
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
   !                                                   ! --- Mie Parameters ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -366,7 +568,6 @@ module VLIDORT_LAMBERT
     real*8,           intent(out) :: radiance_VL(nobs,nch)       ! TOA normalized radiance from VLIDORT
     integer,          intent(out) :: rc                          ! return code
     real*8,           intent(out) :: reflectance_VL(nobs, nch)   ! TOA reflectance from VLIDORT
-    real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness 
 
   !                               ---  
     integer                       :: i,j, ier
@@ -376,7 +577,8 @@ module VLIDORT_LAMBERT
 
     rc = 0
     ier = 0
-
+    SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
     call VLIDORT_Init( SCAT%Surface%Base, km, rc)
     if ( rc /= 0 ) return
 
@@ -417,6 +619,8 @@ module VLIDORT_LAMBERT
                              relat_azymuth(j),scalar)
 
           SCAT%wavelength = channels(i)
+          SCAT%rot => ROT(:,j,i)
+          SCAT%depol_ratio => depol(i)
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%g => g(:,i,j)
@@ -434,7 +638,6 @@ module VLIDORT_LAMBERT
 
           radiance_VL(j,i)    = output%radiance
           reflectance_VL(j,i) = output%reflectance
-          ROT(:,j,i) = SCAT%rot              
 
           if ( ier /= 0 ) then
             radiance_VL(j,i) = MISSING
@@ -456,11 +659,11 @@ module VLIDORT_LAMBERT
 
   !..........................................................................
 
-  subroutine VLIDORT_Vector_Lambert_Cloud (km, nch, nobs, channels, nMom,  &
-                     nPol,tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+  subroutine VLIDORT_Vector_Lambert_Cloud (km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
+                     nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                      pe, he, te, albedo, &
                      solar_zenith, relat_azymuth, sensor_zenith, &
-                     MISSING,verbose, radiance_VL, reflectance_VL, ROT, Q ,U, rc, &
+                     MISSING,verbose, radiance_VL, reflectance_VL, Q ,U, rc, &
                      DO_2OS_CORRECTION, DO_BOA)
   !
   ! Place holder.
@@ -476,10 +679,17 @@ module VLIDORT_LAMBERT
     integer,          intent(in)  :: nch   ! number of channels
     integer,          intent(in)  :: nobs  ! number of observations
 
+    logical,          intent(in)  :: plane_parallel ! do plane parallel flag
+
     integer, target,  intent(in)  :: nMom  ! number of moments 
     integer, target,  intent(in)  :: nPol  ! number of components                               
+    integer,          intent(in)  :: nstreams  ! number of half space streams
                     
     real*8, target,   intent(in)  :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
   !                                                   ! --- Mie Parameters ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -513,7 +723,6 @@ module VLIDORT_LAMBERT
     real*8,           intent(out) :: radiance_VL(nobs,nch)       ! TOA radiance from VLIDORT
     integer,          intent(out) :: rc                          ! return code
     real*8,           intent(out) :: reflectance_VL(nobs, nch)   ! TOA reflectance from VLIDORT
-    real*8,           intent(out) :: ROT(km,nobs,nch)                 ! rayleigh optical thickness  
     real*8,           intent(out) :: Q(nobs, nch)   ! Q Stokes component
     real*8,           intent(out) :: U(nobs, nch)   ! U Stokes component
 
@@ -532,7 +741,8 @@ module VLIDORT_LAMBERT
     rc = 0
     ier = 0
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
-
+    SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -581,7 +791,9 @@ module VLIDORT_LAMBERT
          call VLIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i),solar_zenith (j),sensor_zenith(j),&
                                  relat_azymuth(j),scalar)
 
-          SCAT%wavelength = channels(i)        
+          SCAT%wavelength = channels(i) 
+          SCAT%rot => ROT(:,j,i) 
+          SCAT%depol_ratio => depol(i)      
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%pmom => pmom(:,i,j,:,:)
@@ -594,7 +806,6 @@ module VLIDORT_LAMBERT
 
           call VLIDORT_Run_Vector (SCAT, output, ier)
 
-          ROT(:,j,i) = SCAT%rot
           if (SCAT%DO_BOA) then
             radiance_VL(j,i)         = output%BOA_radiance
             reflectance_VL(j,i)      = output%BOA_reflectance

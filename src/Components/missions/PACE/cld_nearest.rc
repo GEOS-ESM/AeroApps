@@ -1,0 +1,12 @@
+#
+# Resource file for geo sampler: met_Nv files for TEMPO
+#
+
+
+CLOUD: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_CLOUD_Nv
+T:     /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_T_Nv
+QV:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_QV_Nv
+QI:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_QI_Nv
+QL:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_QL_Nv
+DELP: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_DELP_Nv
+FRLAND: /home/pcastell/NatureRun/data/GCS/opendap/native/const_2d_asm_x

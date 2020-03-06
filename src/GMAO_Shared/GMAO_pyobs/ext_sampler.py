@@ -48,7 +48,7 @@ IntVarsUnits = {'area':'m2 m-3',
                 'refr':'unitless',
                 'reff':'m'}
 
-IntVarsLongNames = {'area':'aerosol surface area',
+IntVarsLongNames = {'area':'aerosol cross sectional area',
                     'vol' :'aerosol volume',
                     'refi':'imaginary refractive index',
                     'refr':'real refractive index',
@@ -114,7 +114,9 @@ def computeMie(Vars, channel, varnames, rcFile, options):
             if (v==0):
                 tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
                 ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-                ext2back = ext/backscat
+                ext2back = ones(backscat.shape)*MAPL_UNDEF
+                I = backscat > 0
+                ext2back[I] = ext[I]/backscat[I]
                 MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}
 
                 if options.intensive:
@@ -127,7 +129,9 @@ def computeMie(Vars, channel, varnames, rcFile, options):
             else:
                 tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
                 ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-                ext2back = ext/backscat
+                ext2back = ones(backscat.shape)*MAPL_UNDEF
+                I = backscat > 0
+                ext2back[I] = ext[I]/backscat[I]
                 MieVars['ext'].append(ext)
                 MieVars['scatext'].append(sca)
                 MieVars['backscat'].append(backscat)
@@ -151,7 +155,9 @@ def computeMie(Vars, channel, varnames, rcFile, options):
     else:
         tau,ssa,g = getAOPscalar(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
         ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-        ext2back = ext/backscat
+        ext2back = ones(backscat.shape)*MAPL_UNDEF
+        I = backscat > 0
+        ext2back[I] = ext[I]/backscat[I]
         MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}       
         if options.intensive:
             vol, area, refr, refi, reff  = getAOPint(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
@@ -357,6 +363,9 @@ if __name__ == "__main__":
     parser.add_option("-c", "--channel", dest="channel", default=channel,
               help="Channel for Mie calculation")
 
+    parser.add_option("--vnames", dest="VNAMES", default=VNAMES,
+              help="Species to include in calculation (default=%s)"%VNAMES)    
+
     parser.add_option("-I", "--intensive",default=intensive,
                       action="store_true", dest="intensive",
                       help="return intensive variables")
@@ -410,6 +419,10 @@ if __name__ == "__main__":
     # --------------------------
     Vars = getVars(options.inFile)
 
+    # Varibles to be included in calculation
+    if type(options.VNAMES) is not list:
+        options.VNAMES = options.VNAMES.split(',')
+
     # Run Mie Calculator and Write Output Files
     # --------------------------
     if options.station:
@@ -418,37 +431,37 @@ if __name__ == "__main__":
         StnNames = ''
 
     channelIn = float(options.channel)
-    MieVars = computeMie(Vars,channelIn,VNAMES,options.rcFile,options)
+    MieVars = computeMie(Vars,channelIn,options.VNAMES,options.rcFile,options)
     writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
             MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,options.outFile,options)
 
     if options.dust:
         outFile = options.outFile+'.dust'
-        MieVars = computeMie(Vars,channelIn,VNAMES_DU,options.rcFile)
+        MieVars = computeMie(Vars,channelIn,VNAMES_DU,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.seasalt:
         outFile = options.outFile+'.ss'
-        MieVars = computeMie(Vars,channelIn,VNAMES_SS,options.rcFile)
+        MieVars = computeMie(Vars,channelIn,VNAMES_SS,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.sulfate:
         outFile = options.outFile+'.su'
-        MieVars = computeMie(Vars,channelIn,VNAMES_SU,options.rcFile)
+        MieVars = computeMie(Vars,channelIn,VNAMES_SU,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.bcarbon:
         outFile = options.outFile+'.bc'
-        MieVars = computeMie(Vars,channelIn,VNAMES_BC,options.rcFile)
+        MieVars = computeMie(Vars,channelIn,VNAMES_BC,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.ocarbon:
         outFile = options.outFile+'.oc'
-        MieVars = computeMie(Vars,channelIn,VNAMES_OC,options.rcFile)
+        MieVars = computeMie(Vars,channelIn,VNAMES_OC,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
    

@@ -26,16 +26,19 @@ endif
 
 THIS := $(shell basename `pwd`)
 LIB   = lib$(THIS).a
-
+BINS := 
 
 PY_EXTS = stnAngles_.$(F2PYEXT) VLIDORT_STN_.$(F2PYEXT)
-PY_SCRP =  
+PY_SCRP = g5nr_stn_sampler.py mcd12c_stn_sampler.py mcd43c_stn_sampler.py run_g5nr_stn_sampler_invariant.py \
+			run_g5nr_stn_sampler.py ext_stn_vlidort_sampler.py
+PY_LIBS = directsun_vlidort.py aeronet_vlidort.py stn_vlidort_aux.py pystn
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
 	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
                  $(ESMAINC)/$(THIS) $(ESMABIN)
-	$(CP) -pr $(PY_EXTS)               $(ESMALIB)/Python 
-#	$(CP) -p  $(BINS) $(PY_SCRP)       $(ESMABIN)
+	$(CP) -pr $(PY_EXTS)            $(ESMALIB)/Python                 
+	$(CP) -pr $(PY_LIBS)            $(ESMALIB)/Python
+	$(CP) -p  $(BINS) $(PY_SCRP)    $(ESMABIN)
 
 esma_clean clean:
 	$(RM) -rf *~ *.[aox] *.[Mm][Oo][Dd] *.pyc *.$(F2PYEXT) 
@@ -63,19 +66,13 @@ esma_help help:
 #                  --------------------
 #                  User Defined Targets
 #                  --------------------
-INC_VLIDORT90  = $(ESMAINC)/VLIDORT90
-LIB_VLIDORT90  = $(ESMALIB)/libVLIDORT90.a
-
 INC_VLIDORT2OS = $(ESMAINC)/VLIDORT2OS
 LIB_VLIDORT2OS = $(ESMALIB)/libVLIDORT2OS.a
-
-INC_LIDORT3p7  = $(ESMAINC)/LIDORT3p7
-LIB_LIDORT3p7  = $(ESMALIB)/libLIDORT3p7.a
 
 INC_GEOVLIDORT = ../geo_vlidort
 LIB_GEOVLIDORT = ../geo_vlidort/libgeo_vlidort.a
 
-INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT2OS) $(INC_LIDORT3p7) $(INC_GEOVLIDORT)) /usr/include
+INC_DIRS = . $(INC_MAPL_BASE) $(INC_ESMF) $(INC_MPI) $(INC_NETCDF) $(INC_CHEM_BASE) $(INC_VLIDORT2OS) $(INC_GEOVLIDORT) /usr/include
 USER_FMODS = $(foreach dir,$(INC_DIRS),$(M)$(dir)) 
 USER_FINCS = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
 
@@ -91,6 +88,19 @@ LIBS = $(LIB_GEOVLIDORT) $(LIB_VLIDORT2OS) $(LIB_LIDORT3p7) $(LIB_CHEM_BASE) \
        $(LIB_MPEU) $(LIB_CFIO) $(LIB_GFIO) $(LIB_NETCDF) \
        $(LIB_ESMF) $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
 
+# f2py cannot handle a -Wl flag used by Open MPI. But that option is not
+# necessary for the code to compile or run. So if it is part of LIB_MPI
+# we just strip it from LIBS
+BADPATTERN := -Wl,--export-dynamic
+LIBS_F2PY1 = $(subst $(BADPATTERN),,$(LIBS))
+BADPATTERN2 := -Wl,-commons,use_dylibs
+LIBS_F2PY2 = $(subst $(BADPATTERN2),,$(LIBS_F2PY1))
+BADPATTERN3 := -pthread
+LIBS_F2PY3 = $(subst $(BADPATTERN3),,$(LIBS_F2PY2))
+BADPATTERN4 := -Wl,-flat_namespace
+LIBS_F2PY = $(subst $(BADPATTERN4),,$(LIBS_F2PY3)) 
+
+
 #                  --------------------
 #                  User Defined Targets
 #                  --------------------
@@ -103,9 +113,6 @@ $(LIB) lib : $(DEPS) $(OBJS)
 	$(RM) $(LIB)
 	$(AR) $(AR_FLAGS) $(LIB) $(OBJS)
 
-%.x : $(LIB) %.F90
-	$(FC) $(LDFLAGS) -o $@ $(D)TEST $*.F90 $(LIBS)	
-
 
 # Python extension modules
 # ------------------------
@@ -113,11 +120,23 @@ python: $(PY_EXTS)
 
 VLIDORT_STN_.$(F2PYEXT): VLIDORT_STN_py.F90 
 	$(F2PY) -c -m VLIDORT_STN_ $(M). $(M)$(INC_GEOVLIDORT) \
-                 VLIDORT_STN_py.F90 $(LIBS)                  
+                 VLIDORT_STN_py.F90 $(LIBS_F2PY)                  
 # 	$(CP) -p VLIDORT_.$(F2PYEXT) $(ESMALIB)/Python 	
+
+stnAngles_.$(F2PYEXT): stnAngles_py.F90 
+	$(F2PY) -c -m stnAngles_ $(M). \
+                 stnAngles_py.F90 $(LIBS_F2PY)
 
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
+
+#python python_install: $(PY_EXTS)
+
+#stnAngles_.$(F2PYEXT): stnAngles_py.F90 
+#	$(F2PY) -c -m stnAngles_  $(M). $(M)$(INC_MAPL_BASE) stnAngles_py.F90 $(LIB) $(LIBS_F2PY)
+
+#VLIDORT_STN_.$(F2PYEXT): VLIDORT_STN_py.F90 
+#	$(F2PY) -c -m VLIDORT_STN_  $(M). $(M)../geo_vlidort $(M)$(INC_MAPL_BASE) VLIDORT_STN_py.F90 $(LIB) $(LIBS_F2PY)
 
 
 # Hack to prevent remaking dep files during cleaning

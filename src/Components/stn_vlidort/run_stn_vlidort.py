@@ -13,7 +13,7 @@ import argparse
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
 from   MAPL            import Config
-from   stn_vlidort     import STN_VLIDORT, get_chd
+from   directsun_vlidort     import STN_VLIDORT, get_chd
 import numpy  as np
 
 #------------------------------------ M A I N ------------------------------------
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     if (cf('DO_VLIDORT').upper() == 'NO') & (cf('DO_EXT').upper() == 'YES'):
         extOnly = True
 
-    while date < enddate:
+    while date <= enddate:
         nymd = str(date.date()).replace('-','')
         year = str(date.year)
         month = str(date.month).zfill(2)

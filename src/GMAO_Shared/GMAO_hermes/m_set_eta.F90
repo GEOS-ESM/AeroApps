@@ -17,6 +17,7 @@
 !   31Jul2009  Ravi      Updated NCEP 64 Layer ak and bk (source Dr.da silva Arlindo)
 !   20Oct2009  Todling   Multiplied NCEP 64 ak levels by 10 (should be in Pa)
 !   07Jul2012  Todling   Create a 72-level set from NCEP's 64-level set
+!   04Apr2018  Todling   Overload for r4/r8 support
 !
 #ifdef HERMES
 
@@ -24,6 +25,7 @@
 
       PRIVATE
       PUBLIC set_eta
+      PUBLIC get_ref_plevs
       PUBLIC set_sigma
       PUBLIC unset_sigma
       PUBLIC set_ncep72
@@ -32,15 +34,25 @@
       logical :: SIGMA_LEVS  = .false.   ! controls whether levs are sigma or eta
       logical :: NCEP72_4GMAO= .false.   ! controls whether levs are 72, but largely as NCEP's 64
       
+      interface set_eta
+         module procedure set_eta_r8_    ! double precision (original) version
+         module procedure set_eta_r4_    ! single precision support
+      end interface
+      interface get_ref_plevs
+         module procedure get_ref_plevs_r8_   ! double precision (original) version
+         module procedure get_ref_plevs_r4_   ! single precision support
+      end interface
 CONTAINS
 
-      subroutine set_eta (km, ks, ptop, pint, ak, bk)
+      subroutine set_eta_r8_ (km, ks, ptop, pint, ak, bk)
       use m_realkinds, only : r8 => kind_r8  ! from mpeu
+      use m_realkinds, only : r4 => kind_r4  ! from mpeu
 
 #else
 
-      subroutine set_eta(km, ks, ptop, pint, ak, bk)
+      subroutine set_eta_r8_(km, ks, ptop, pint, ak, bk)
       use shr_kind_mod, only : r8 => shr_kind_r8 ! from gvgcm
+      use shr_kind_mod, only : r4 => shr_kind_r4 ! from gvgcm
 
 #endif
 
@@ -61,6 +73,7 @@ CONTAINS
       real(r8) a30(31),b30(31)              ! CCM4
 
 ! NASA only
+      real(r8) a01(2),b01(2)                ! to allow single-level utils to rely on sim code
       real(r8) a30m(31),b30m(31)            ! smoothed CCM4 30-L
       real(r8) a32(33),b32(33)
       real(r8) a44(45),b44(45)
@@ -535,6 +548,10 @@ CONTAINS
 
 #endif
 
+! Fake single-level for util codes - mimic lowest lev of 72 GMAO case
+      data a01 /  4.8048257,       0.0000000 /
+      data b01 /  0.98495195,      1.0000000 /
+
 !  ECMWF Nature
 !
       data a91/    0.000000000000,    2.000040054321,      3.980832099915,     7.387186050415, &
@@ -799,6 +816,14 @@ CONTAINS
 
       select case (km)
 
+! Fake single-level for util codes
+        case (1)
+          ks = 1
+          do k=1,km+1
+            ak(k) = a01(k)
+            bk(k) = b01(k)
+          enddo
+
 ! *** Original CCM3 18-Level setup ***
         case (18)
           ks = 4
@@ -929,7 +954,35 @@ CONTAINS
           pint = ak(ks+1) 
 
       return
-    end subroutine set_eta
+    end subroutine set_eta_r8_
+
+    subroutine set_eta_r4_ (km, ks, ptop, pint, ak, bk)
+
+#ifdef HERMES
+      use m_realkinds, only : r8 => kind_r8  ! from mpeu
+      use m_realkinds, only : r4 => kind_r4  ! from mpeu
+#else
+      subroutine set_eta_r8_(km, ks, ptop, pint, ak, bk)
+      use shr_kind_mod, only : r8 => shr_kind_r8 ! from gvgcm
+      use shr_kind_mod, only : r4 => shr_kind_r4 ! from gvgcm
+#endif
+      implicit none
+      integer ks, k, km
+      real(r4) ak(km+1),bk(km+1)
+      real(r4) ptop                      ! model top (Pa)
+      real(r4) pint                      ! transition to p (Pa)
+      real(r8),allocatable,dimension(:) :: r8_ak, r8_bk
+      real(r8) r8_ptop
+      real(r8) r8_pint
+      allocate(r8_ak(km+1),r8_bk(km+1))
+      call set_eta_r8_ (km, ks, r8_ptop, r8_pint, r8_ak, r8_bk)
+      ptop = r8_ptop
+      pint = r8_pint
+      ak   = r8_ak
+      bk   = r8_bk
+      deallocate(r8_ak,r8_bk)
+      
+    end subroutine set_eta_r4_
 
     subroutine set_sigma ()
     implicit none
@@ -950,6 +1003,66 @@ CONTAINS
        NCEP72_4GMAO = .false.
        print*, 'Unsetting eta 72-levels with NCEP-64-like characteristics'
     end subroutine unset_ncep72
+
+    subroutine get_ref_plevs_r4_ ( ak, bk, ptop, plev, p0 )
+    implicit none
+    real(4), intent(in) :: ak(:), bk(:)
+    real(4), intent(in) :: ptop
+    real(4), intent(inout) :: plev(:)
+    real(4), intent(in), optional :: p0
+
+    integer k,nlev
+    real(4) p0_
+
+    p0_=98400.
+    if(present(p0)) then
+      p0_=p0
+    endif
+
+    nlev = size(plev)
+    plev(1) = ptop + 0.5 * dpref_(1,p0_)
+    do k = 2, nlev
+       plev(k) = plev(k-1) + 0.5 * ( dpref_(k-1,p0_) + dpref_(k,p0_) )
+    enddo
+    plev(1:nlev) = plev(1:nlev) / 100.
+
+      contains
+      real(4) function dpref_ (k,pbot)
+      integer k
+      real(4) pbot
+      dpref_   = ( ak(k+1) - ak(k) ) + &
+                 ( bk(k+1) - bk(k) ) * pbot
+      end function dpref_
+    end subroutine get_ref_plevs_r4_
+
+    subroutine get_ref_plevs_r8_ ( ak, bk, ptop, plev, p0 )
+    implicit none
+    real(8), intent(in) :: ak(:), bk(:)
+    real(8), intent(in) :: ptop
+    real(8), intent(inout) :: plev(:)
+    real(8), intent(in), optional :: p0
+
+    integer k,nlev
+    real(8) p0_
+    p0_=98400.d0
+    if(present(p0)) then
+      p0_=p0
+    endif
+    nlev = size(plev)
+    plev(1) = ptop + 0.5 * dpref_(1,p0_)
+    do k = 2, nlev
+       plev(k) = plev(k-1) + 0.5 * ( dpref_(k-1,p0_) + dpref_(k,p0_) )
+    enddo
+    plev(1:nlev) = plev(1:nlev) / 100.
+
+      contains
+      real(8) function dpref_ (k,pbot)
+      integer k
+      real(8) pbot
+      dpref_   = ( ak(k+1) - ak(k) ) + &
+                 ( bk(k+1) - bk(k) ) * pbot
+      end function dpref_
+    end subroutine get_ref_plevs_r8_
 
 #ifdef HERMES
   end module m_set_eta

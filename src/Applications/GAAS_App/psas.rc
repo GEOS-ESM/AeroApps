@@ -21,6 +21,7 @@
 #
 # !REVISION HISTORY:
 #
+# 2018-12-06  da Silva  Initial GEO AOD errors.
 # 2014-11-20  da Silva  Revised conjugate gradient parameters to improve convergence;
 #                       also turned on verbose at Level 5.
 # Dark Ages   da Silva  QQ L changed to 140 km, based on preliminary ML estimates for LAOD.
@@ -129,7 +130,13 @@ DataSourceTable::
   320  MYDD        -100  MODIS/AQUA-Land (Deep Blue)
   323  ANET        -100  AERONET
   324  AVHRR       -100  AVHRR NNR Retrievals
-
+  326  GOCI        -100  GOCI Aerosol Retrievals
+  327  G16O        -100  GOES-16 Aerosol DT Ocean
+  328  G16L        -100  GOES-16 Aerosol DT Lan
+  329  G17O        -100  GOES-17 Aerosol DT Ocean
+  330  G17L        -100  GOES-17 Aerosol DT Land
+  331  AHIO        -100  Himawari Aerosol DT Ocean
+  332  AHIL        -100  Himawari Aerosol DT Land
 ::      # End of DataSourceTable
 
 
@@ -161,7 +168,27 @@ ObsErr*MODO::   # kx = 301
   q_UprAir.u  0.19   0.19   0.18   0.18 
 ::
 
+ObsErr*G16O::   # kx = 327
+  q_UprAir.u  0.19   0.19   0.18   0.18 
+::
+ObsErr*G17O::   # kx = 329
+  q_UprAir.u  0.19   0.19   0.18   0.18 
+::
+ObsErr*AHIO::   # kx = 331
+  q_UprAir.u  0.19   0.19   0.18   0.18 
+::
+
 ObsErr*MODL::   # kx = 302 --- For now, same as MODO
+  q_UprAir.u  0.19   0.19   0.18   0.18 
+::
+
+ObsErr*G16L::   # kx = 328
+  q_UprAir.u  0.19   0.19   0.18   0.18 
+::
+ObsErr*G17L::   # kx = 330
+  q_UprAir.u  0.19   0.19   0.18   0.18 
+::
+ObsErr*AHIL::   # kx = 332
   q_UprAir.u  0.19   0.19   0.18   0.18 
 ::
 

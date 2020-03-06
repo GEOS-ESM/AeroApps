@@ -143,7 +143,7 @@ def destroy_workspace(jobid,dirname,outdir,addoutdir=None,nodemax=None,profile=F
     os.remove('clean_mem.sh')
     os.remove('ExtData')
     os.remove('geo_vlidort.rc')
-    os.remove('geo_vlidort_run_array.j')
+    os.remove('geo_vlidort_lc2.j')
     os.remove('LUT_angles_albedo.nc4')
 
     if profile is False:
@@ -426,7 +426,7 @@ if __name__ == "__main__":
     surf_version      = '1.0'
     layout            = None
 
-    runfile           = 'geo_vlidort_run_array.j'
+    runfile           = 'geo_vlidort_lc2.j'
     nccs              = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/'+ \
                          instname.upper() + '/DATA/'
 
@@ -524,7 +524,7 @@ if __name__ == "__main__":
 
                     code = code + surface
 
-                    dirlist = make_workspace(startdate,ch,code,outdir,runfile,instname,nodemax=nodemax_,
+                    dirlist = make_workspace(startdate,ch,code,outdir+ch+'/',runfile,instname,nodemax=nodemax_,
                                              addoutdir=addoutdir,layout=laycode,prefix=prefix)
 
                     if (additional_output):

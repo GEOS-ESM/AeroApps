@@ -1649,9 +1649,10 @@
         ELSE IF ( M .EQ. 0 ) THEN
           DO IB = 1, NBEAMS
             DO I = 1, NSTREAMS
-              DO Q = 1, NSTOKESSQ
-                LOCAL_BRDF_F_0(Q,I,IB) = ONE
-              ENDDO
+              Q = 1 ; LOCAL_BRDF_F_0(Q,I,IB) = ONE
+!              DO Q = 1, NSTOKESSQ
+!                LOCAL_BRDF_F_0(Q,I,IB) = ONE
+!              ENDDO
             ENDDO
           ENDDO
         ENDIF
@@ -1680,9 +1681,10 @@
       ELSE IF ( M .EQ. 0 ) THEN
         DO I = 1, NSTREAMS
           DO J = 1, NSTREAMS
-            DO Q = 1, NSTOKESSQ
-              LOCAL_BRDF_F(Q,I,J) = ONE
-            ENDDO
+            Q = 1 ; LOCAL_BRDF_F(Q,I,J) = ONE
+!            DO Q = 1, NSTOKESSQ
+!              LOCAL_BRDF_F(Q,I,J) = ONE
+!            ENDDO
           ENDDO
         ENDDO
       ENDIF
@@ -1732,9 +1734,10 @@
               ENDDO
             ELSE IF ( M .EQ. 0 ) THEN
               DO IB = 1, NBEAMS
-                DO Q = 1, NSTOKESSQ
-                  LOCAL_USER_BRDF_F_0(Q,LUM,IB) = ONE
-                ENDDO
+                Q = 1 ; LOCAL_USER_BRDF_F_0(Q,LUM,IB) = ONE
+!                DO Q = 1, NSTOKESSQ
+!                  LOCAL_USER_BRDF_F_0(Q,LUM,IB) = ONE
+!                ENDDO
               ENDDO
             ENDIF
           ELSE
@@ -1759,9 +1762,10 @@
             ELSE IF ( M .EQ. 0 ) THEN
               DO IB = 1, NBEAMS
                 DO UI = 1, N_USER_STREAMS
-                  DO Q = 1, NSTOKESSQ
-                    LOCAL_USER_BRDF_F_0(Q,UI,IB) = ONE
-                  ENDDO
+                  Q = 1 ; LOCAL_USER_BRDF_F_0(Q,UI,IB) = ONE
+!                  DO Q = 1, NSTOKESSQ
+!                    LOCAL_USER_BRDF_F_0(Q,UI,IB) = ONE
+!                  ENDDO
                 ENDDO
               ENDDO
             ENDIF
@@ -1791,9 +1795,10 @@
         ELSE IF ( M .EQ. 0 ) THEN
           DO UI = 1, N_USER_STREAMS
             DO J = 1, NSTREAMS
-              DO Q = 1, NSTOKESSQ
-                LOCAL_USER_BRDF_F(Q,UI,J) = ONE
-              ENDDO
+              Q = 1 ; LOCAL_USER_BRDF_F(Q,UI,J) = ONE
+!              DO Q = 1, NSTOKESSQ
+!                LOCAL_USER_BRDF_F(Q,UI,J) = ONE
+!              ENDDO
             ENDDO
           ENDDO
         ENDIF

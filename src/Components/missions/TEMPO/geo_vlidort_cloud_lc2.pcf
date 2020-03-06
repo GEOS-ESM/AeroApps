@@ -2,22 +2,22 @@
 
 LC2_INSTNAME = tempo
 LC2_ANGNAME  = tempo
-LC2_VERSION  = 1.0
 LC2_CHANNELS = 388
 LC2_RUNMODE  = vector
+
+# used for file naming
+LC2_VERSION  = 1.0
 
 ## Cloud optics
 LC2_ICLDTABLE  = ExtDataCloud/IceLegendreCoeffs.nc4
 LC2_LCLDTABLE  = ExtDataCloud/WaterLegendreCoeffs.nc4
-LC2_IDXCLD     = 8
 
 ## Surface info
-# lambertian or MAIACRTLS
+# lambertian or MCD43D or MCD43C
 LC2_SURFACE  = lambertian
 # exact or interpolate
-LC2_INTERP   = exact
-# if exact, then band number
-LC2_I_BAND   = 2
+LC2_SURF_INTERP   = exact
+# only used when LC2_SURFACE is MCD43x
 LC2_SURF_VERSION = 1.0
 
 ## Array mode info
@@ -32,7 +32,13 @@ LC2_DIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS
 LC2_EXECFILE   = /discover/nobackup/pcastell/workspace/GAAS/src/Components/geo_vlidort/geo_vlidort_cloud.x
 LC2_RUNFILE = geo_vlidort_cloud_lc2.j
 
+## Don't delete slurm log files after run is complete 
 LC2_PROFILE = No
+## Run in Verbose Mode
 LC2_VERBOSE = Yes
+## Write additional output file
 LC2_ADDOUTPUT = No
-LC2_KEEP      = Yes
+## keep LevelB Files on Local Disk 
+LC2_KEEP_LB    = Yes
+## Copy LB Files over to archive after run is complete
+LC2_ARCHIVE_LB  = Yes

@@ -26,7 +26,7 @@ from   geo_vlidort_lc2   import JOBS, WORKSPACE
 
 jobsmax   = 150
 dt = timedelta(hours=1)
-archive = '/archive/u/rgovinda/osse2/c1440_NR/OBS'
+archive = '/archive/u/rgovinda/osse2/'
 
 
 class CLD_WORKSPACE(WORKSPACE):
@@ -42,7 +42,6 @@ class CLD_WORKSPACE(WORKSPACE):
 
         if self.nodemax is not None: self.nodemax = int(self.nodemax)
         self.nccs    = self.nccs + '/' + self.instname.upper() + '/CLD_DATA/' 
-        self.archive    = self.archive + '/' + self.instname.upper() + '/CLD_DATA/' 
         self.prefix  = self.nccs + 'workdir/'
 
         self.indir   = self.nccs 
@@ -65,8 +64,8 @@ class CLD_WORKSPACE(WORKSPACE):
             else:
                 self.channels = self.channels.split()
 
-        if type(self.i_band) is str:
-            self.i_band = self.i_band.split()
+        if type(self.c_band) is str:
+            self.c_band.replace(',',' ')
 
         # Runmode code
         self.code = self.runmode + '.'
@@ -121,11 +120,6 @@ class CLD_WORKSPACE(WORKSPACE):
                         nodemax = None
 
                     for i, ch in enumerate(self.channels):
-                        if self.interp == 'exact':
-                            i_band = self.i_band[i]
-                        else:
-                            i_band = None
-
                         # Create working directories for intermediate outputs
                         # create output directories
                         # save directory names
@@ -145,13 +139,13 @@ class CLD_WORKSPACE(WORKSPACE):
 
                         # Create rcfiles - different for different surface types
                         if (self.surface.upper() == 'MAIACRTLS'):
-                            self.make_maiac_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
+                            self.make_maiac_rcfile(workdir,startdate,ch,nodemax=nodemax,
                                                    layout=laycode)
                         elif ('MCD43' in self.surface.upper()):
-                            self.make_mcd43_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
+                            self.make_mcd43_rcfile(workdir,startdate,ch,nodemax=nodemax,
                                                    layout=laycode)                            
                         else:
-                            self.make_ler_rcfile(workdir,startdate,ch,nodemax=nodemax,i_band=i_band,
+                            self.make_ler_rcfile(workdir,startdate,ch,nodemax=nodemax,
                                                  layout=laycode)
 
 
@@ -166,57 +160,177 @@ class CLD_WORKSPACE(WORKSPACE):
         hour  = str(date.hour).zfill(2)
 
         if layout is None:
-            geom  = g5dir + '/' + self.instname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
+            geom  = g5dir + '/' + self.angname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
             land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.nc4' 
+            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'
         else:
-            geom  = g5dir + '/' + self.instname.lower() + '.cloud.lb2.angles.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
-            land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.' + layout +'.nc4' 
+            geom  = g5dir + '/' + self.angname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
+            land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.' + layout +'.nc4'
+            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'
+ 
 
         if self.verbose:
             print '++Opening geometry file ',geom
             print '++Opening land file', land
 
         if not os.path.exists(geom):
-            self.get_from_archive(geom,date)
+            self.get_from_archive(geom)
         ncGeom = Dataset(geom)
         SZA    = np.squeeze(ncGeom.variables[u'solar_zenith'][:])
         VZA    = np.squeeze(ncGeom.variables[u'sensor_zenith'][:])
         ncGeom.close()
 
         if not os.path.exists(land):
-            self.get_from_archive(land,date)        
+            self.get_from_archive(land)        
         ncLand = Dataset(land)
         FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
         ncLand.close()
 
-        def clean_up(self,met,geom,land,date):
-            self.put_in_archive(geom,date)
-            self.put_in_archive(land,date)
-
 
         f   = VZA < 80
         if np.sum(f) == 0:
-            #clean_up(self,met,geom,land,date)
             return 0
 
         SZA    = SZA[f]
         FRLAND = FRLAND[f]
         f      = SZA < 80
         if np.sum(f) == 0:
-            #clean_up(self,met,geom,land,date)
             return 0
 
         FRLAND = FRLAND[f]
         f      = FRLAND >= 0.99
         if np.sum(f) == 0:
-            #clean_up(self,met,geom,land,date)
             return 0
 
         return np.sum(f)
 
 
-    def make_maiac_rcfile(self,dirname,date,ch,nodemax=None,i_band=None,layout=None):
+    def final_cleanup(self):
+        # put LevelB aer files in archive or remove
+        # --------------------
+        # Loop over dates
+        date = self.startdate
+        while (date <= self.enddate):
+            g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
+            nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
+            hour  = str(date.hour).zfill(2)
+
+            aer   = g5dir + '/' + self.instname.lower() + '-g5nr.lb2.aer_Nv.' + nymd + '_' + hour + 'z.nc4'
+
+            if self.archive_lb:
+                self.put_in_archive(aer)
+                
+            if not self.keep_lb:
+                os.remove(aer)
+
+            if self.layout is not None:
+                # loop through tiles
+                for tile in np.arange(self.ntiles):
+                    laycode = self.layout + str(tile)
+                    geom  = g5dir + '/' + self.angname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.' + laycode +'.nc4'
+                    land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.' + laycode +'.nc4'
+                    if self.archive_lb:
+                        self.put_in_archive(geom)
+                        self.put_in_archive(land)
+                        
+                    if not self.keep_lb:
+                        os.remove(geom)
+                        os.remove(land)
+            else:
+                geom  = g5dir + '/' + self.angname.lower() + '.lb2.angles.' + nymd + '_' + hour + 'z.nc4'
+                land  = g5dir + '/' + self.instname.lower() + '-g5nr-icacl-TOTWPDF-GCOP-SKEWT.' + nymd + '_' + hour + 'z.nc4' 
+
+                if self.archive_lb:
+                    self.put_in_archive(geom)
+                    self.put_in_archive(land)
+                    
+                if not self.keep_lb:
+                    os.remove(geom)
+                    os.remove(land)
+
+            date += dt
+
+
+
+
+    def destroy_workspace(self,i,jobid):
+        os.chdir(self.dirstring[i])
+
+        os.remove('Aod_EOS.rc')
+        os.remove('Chem_MieRegistry.rc')
+        os.remove(os.path.basename(self.execFile))
+        os.remove('clean_mem.sh')
+        os.remove('ExtData')
+        os.remove('ExtDataCloud')
+        os.remove('geo_vlidort.rc')
+        os.remove(self.runfile)
+
+        if self.nodemax is None:
+            nodemax = None
+        else:
+            nodemax = self.nodemax_list[i]
+
+        if self.additional_output:
+            addoutdir = self.addoutdirstring[i]
+        else:
+            addoutdir = None
+
+        outdir = self.outdirstring[i]
+
+        if self.profile is False:
+            if nodemax is not None and nodemax > 1:
+                for a in np.arange(nodemax):
+                    a = a + 1
+                    errfile = 'slurm_' +jobid + '_' + str(a) + '.err'                    
+                    outfile = 'slurm_' +jobid + '_' + str(a) + '.out'
+                    if self.verbose:
+                        print '++cleaning up errfile', errfile
+                        print '++cleaning up outfile', outfile
+                    os.remove(errfile)
+                    os.remove(outfile)
+                os.remove('slurm_%A_%a.out')
+
+            else:
+                errfile = 'slurm_' +jobid + '.err'
+                os.remove(errfile)        
+                outfile = 'slurm_' +jobid + '.out'
+                os.remove(outfile)        
+
+        def move_file(filelist,dest):
+            for movefile in filelist:
+                if os.path.exists(dest+'/'+movefile):
+                    os.remove(dest+'/'+movefile)
+                shutil.move(movefile,dest)
+
+        #runscript to combine files
+        if nodemax is not None and nodemax > 1:
+            outfilelist = glob.glob('*.lc2.*.nc4')
+            self.combine_files(outfilelist)
+            outfilelist = glob.glob('*.lc2.*.nc4')
+            move_file(outfilelist,outdir)
+        else:
+            outfilelist = glob.glob('*.lc2.*.nc4')
+            move_file(outfilelist,outdir)
+
+
+        if (addoutdir is not None):
+            if nodemax is not None and nodemax > 1:
+                outfilelist = glob.glob('*.add.*.nc4')
+                self.combine_files(outfilelist)
+                outfilelist = glob.glob('*.add.*.nc4')
+                move_file(outfilelist,addoutdir)
+            else:
+                outfilelist = glob.glob('*.add.*.nc4')
+                move_file(outfilelist,addoutdir)
+
+        os.chdir(self.cwd)
+        if self.profile is False:
+            os.rmdir(self.dirstring[i])
+
+
+    def make_maiac_rcfile(self,dirname,date,ch,nodemax=None,layout=None):
         os.chdir(dirname)
+        fch = float(ch)
 
         rcfile = open('geo_vlidort.rc','w')
         rcfile.write('INDIR: '+self.indir+'\n')
@@ -228,6 +342,7 @@ class CLD_WORKSPACE(WORKSPACE):
         rcfile.write('SURFNAME: MAIACRTLS\n')
         rcfile.write('SURFMODEL: RTLS\n')
 
+        # Set Surface Configuration
         #figure out correct MODIS doy
         if (str(startdate.date()) == '2005-12-31'):
             rcfile.write('SURFDATE: 2006008\n')
@@ -248,14 +363,24 @@ class CLD_WORKSPACE(WORKSPACE):
             else:
                 rcfile.write('SURFDATE: '+str(date.year)+str(DOY).zfill(3)+'\n')
 
+        if self.c_band is None:
+            self.c_band = "645 858 469 555 1240 1640 2130 412"
+
+        rcfile.write('SURFBANDM: '+ str(len(self.c_band.split(' '))) + '\n')
 
         rcfile.write('SURFBAND: ' + self.interp +'\n')
         if (self.interp.upper() == 'INTERPOLATE'):
-            rcfile.write('SURFBAND_C: 645 858 469 555 1240 1640 2130 412\n')
+            rcfile.write('SURFBAND_C: ' + self.c_band + '\n')
         else:
-            rcfile.write('SURFBAND_I: '+ i_band + '\n')
-
-        rcfile.write('SURFBANDM: 8 \n')
+            #figure out index
+            c_band = np.array(self.c_band.split(' ')).astype('float')
+            if fch >= c_band.max():
+                i_band = np.argmax(c_band) + 1
+            elif fch <= c_band.min():
+                i_band = np.argmin(c_band) + 1
+            else:
+                i_band = np.argmin(np.abs((fch-c_band) )) + 1
+            rcfile.write('SURFBAND_I: '+ str(i_band)  + '\n')
 
         if (self.code == 'scalar'):
             rcfile.write('SCALAR: true\n')
@@ -281,17 +406,27 @@ class CLD_WORKSPACE(WORKSPACE):
         if layout is not None:
             rcfile.write('LAYOUT: '+layout+'\n')
 
+        # Set up cloud configuration
         rcfile.write('ICLDTABLE:'+self.icldtable+'\n') 
         rcfile.write('LCLDTABLE:'+self.lcldtable+'\n') 
-        rcfile.write('IDXCLD:'+self.idxcld+'\n')   
+        cld_band = np.array(self.cld_band.split(',')).astype('float')
+        if fch >= cld_band.max():
+            idxcld = np.argmax(cld_band) + 1
+        elif fch <= cld_band.min():
+            idxcld = np.argmin(cld_band) + 1
+        else:
+            idxcld = np.argmin(np.abs((fch-cld_band) )) + 1
+
+        rcfile.write('IDXCLD:'+ str(idxcld) +'\n')   
             
         rcfile.close()
 
         os.chdir(self.cwd)
 
 
-    def make_ler_rcfile(self,dirname,date,ch,nodemax=None,i_band=None,layout=None):
+    def make_ler_rcfile(self,dirname,date,ch,nodemax=None,layout=None):
         os.chdir(dirname)
+        fch = float(ch)
 
         rcfile = open('geo_vlidort.rc','w')
         rcfile.write('INDIR: ' + self.indir + '\n')
@@ -303,15 +438,27 @@ class CLD_WORKSPACE(WORKSPACE):
         rcfile.write('SURFNAME: LER\n')
         rcfile.write('SURFMODEL: LER\n')
 
+        # Set Surface Configuration
         rcfile.write('SURFDATE: ' + str(date.month).zfill(2) +'\n')
+
+        if self.c_band is None:
+            self.c_band = "354 388"
+
+        rcfile.write('SURFBANDM: '+ str(len(self.c_band.split(' '))) + '\n')
 
         rcfile.write('SURFBAND: ' + self.interp + '\n')
         if (self.interp.upper() == 'INTERPOLATE'):
-            rcfile.write('SURFBAND_C: 354 388\n')
+            rcfile.write('SURFBAND_C: ' + self.c_band + '\n')
         else:
-            rcfile.write('SURFBAND_I: ' + i_band + '\n')
-
-        rcfile.write('SURFBANDM: 2 \n')
+            #figure out index
+            c_band = np.array(self.c_band.split(' ')).astype('float')
+            if fch >= c_band.max():
+                i_band = np.argmax(c_band) + 1
+            elif fch <= c_band.min():
+                i_band = np.argmin(c_band) + 1
+            else:
+                i_band = np.argmin(np.abs((fch-c_band) )) + 1
+            rcfile.write('SURFBAND_I: '+ str(i_band) + '\n')
 
         if (self.code == 'scalar'):
             rcfile.write('SCALAR: true\n')
@@ -339,15 +486,23 @@ class CLD_WORKSPACE(WORKSPACE):
 
         rcfile.write('ICLDTABLE:'+self.icldtable+'\n') 
         rcfile.write('LCLDTABLE:'+self.lcldtable+'\n') 
-        rcfile.write('IDXCLD:'+self.idxcld+'\n')               
+        cld_band = np.array(self.cld_band.split(',')).astype('float')
+        if fch >= cld_band.max():
+            idxcld = np.argmax(cld_band) + 1
+        elif fch <= cld_band.min():
+            idxcld = np.argmin(cld_band) + 1
+        else:
+            idxcld = np.argmin(np.abs((fch-cld_band) )) + 1
 
+        rcfile.write('IDXCLD:'+ str(idxcld) +'\n')   
         rcfile.close()
 
         os.chdir(self.cwd)    
 
 
-    def make_mcd43_rcfile(self,dirname,date,ch,nodemax=None,i_band=None,layout=None):
+    def make_mcd43_rcfile(self,dirname,date,ch,nodemax=None,layout=None):
         os.chdir(dirname)
+        fch = float(ch)
 
         rcfile = open('geo_vlidort.rc','w')
         rcfile.write('INDIR: '+self.indir+'\n')
@@ -359,16 +514,28 @@ class CLD_WORKSPACE(WORKSPACE):
         rcfile.write('SURFNAME: '+self.surface+'\n')
         rcfile.write('SURFMODEL: RTLS\n')
 
+        # Set Surface Configuration
         doy = date.toordinal() - datetime(date.year-1,12,31).toordinal()
         rcfile.write('SURFDATE: '+str(date.year)+str(doy).zfill(3)+'\n')
 
+        if self.c_band is None:
+            self.c_band = "645 858 469 555 1240 1640 2130"
+
+        rcfile.write('SURFBANDM: '+ str(len(self.c_band.split(' '))) + '\n')
+
         rcfile.write('SURFBAND: ' + self.interp +'\n')
         if (self.interp.upper() == 'INTERPOLATE'):
-            rcfile.write('SURFBAND_C: 645 858 469 555 1240 1640 2130\n')
+            rcfile.write('SURFBAND_C: ' + self.c_band + '\n')
         else:
-            rcfile.write('SURFBAND_I: '+ i_band + '\n')
-
-        rcfile.write('SURFBANDM: 7 \n')
+            #figure out index
+            c_band = np.array(self.c_band.split(' ')).astype('float')
+            if fch >= c_band.max():
+                i_band = np.argmax(c_band) + 1
+            elif fch <= c_band.min():
+                i_band = np.argmin(c_band) + 1
+            else:
+                i_band = np.argmin(np.abs((fch-c_band) )) + 1
+            rcfile.write('SURFBAND_I: '+ str(i_band) + '\n')
 
         if (self.code == 'scalar'):
             rcfile.write('SCALAR: true\n')
@@ -396,8 +563,15 @@ class CLD_WORKSPACE(WORKSPACE):
 
         rcfile.write('ICLDTABLE:'+self.icldtable+'\n') 
         rcfile.write('LCLDTABLE:'+self.lcldtable+'\n') 
-        rcfile.write('IDXCLD:'+self.idxcld+'\n')        
-            
+        cld_band = np.array(self.cld_band.split(',')).astype('float')
+        if fch >= cld_band.max():
+            idxcld = np.argmax(cld_band) + 1
+        elif fch <= cld_band.min():
+            idxcld = np.argmin(cld_band) + 1
+        else:
+            idxcld = np.argmin(np.abs((fch-cld_band) )) + 1
+
+        rcfile.write('IDXCLD:'+ str(idxcld) +'\n')               
         rcfile.close()
 
         os.chdir(self.cwd)
@@ -415,7 +589,6 @@ if __name__ == "__main__":
     channels          = '388'
     surface           = 'lambertian' #'lambertian' or 'MAIACRTLS'
     interp            = 'exact'  #'interpolate' or 'exact'
-    i_band            = '2'    
     
     nodemax           = 10
     surf_version      = '1.0'
@@ -429,12 +602,17 @@ if __name__ == "__main__":
     
     icldtable         = 'ExtDataCloud/IceLegendreCoeffs.nc4'
     lcldtable         = 'ExtDataCloud/WaterLegendreCoeffs.nc4'
-    idxcld            = 8
+    cld_band          = '650, 860, 470, 550, 1240, 1630, 2130, ' + \
+                        '410, 440, 910, 936, 940, 3700, 3900, ' + \
+                        '380, 6200, 7300, 8500, 11000, 12000, ' + \
+                        '13200, 13400, 13800, 14200'
+    cld_band          = cld_band.replace(' ','')
     #Flags
     # verbose           = False
     # additional_output = False
     # profile           = False
-    # keep              = False
+    # keep_lb           = False
+    # archive_lb        = False
 
     # Parse command line options
     # ------------------------------
@@ -465,9 +643,9 @@ if __name__ == "__main__":
                       help="Liquid cloud optics table (default=%s)"\
                       %lcldtable ) 
 
-    parser.add_option("--idxcld", dest="idxcld", default=idxcld,
-                      help="Band in optics table(default=%s)"\
-                      %idxcld )                                                 
+    parser.add_option("--cld_band", dest="cld_band", default=cld_band,
+                      help="Bands in cloud optics table(default=%s)"\
+                      %cld_band )                                                 
 
     parser.add_option("-s", "--surface", dest="surface", default=surface,
                       help="Surface Reflectance Dataset.  Choose from 'lambertian' or 'MAIACRTLS' or 'MCD43X' "\
@@ -482,8 +660,8 @@ if __name__ == "__main__":
                       "(default=%s)"\
                       %interp )      
 
-    parser.add_option("-b", "--i_band", dest="i_band", default=i_band,
-                      help="Surface reflectance band index. Required if interp=='exact'" )  
+    parser.add_option("-b", "--c_band", dest="c_band",
+                      help="Surface reflectance bands." )  
 
     parser.add_option("-a", "--additional",
                       action="store_true", dest="additional_output",default=False,
@@ -493,10 +671,13 @@ if __name__ == "__main__":
                       dest="verbose", default=False,
                       help="Verbose (default=False)" )    
 
-    parser.add_option("-k", "--keep",action="store_true",
-                      dest="keep", default=False,
-                      help="keep LevelB files - do not archive (default=False)" )    
+    parser.add_option("--keep_lb",action="store_true",
+                      dest="keep_lb", default=False,
+                      help="keep LevelB files - do not remove after geo_vlidort is finished (default=False)" )    
 
+    parser.add_option("--archive_lb",action="store_true",
+                      dest="archive_lb", default=False,
+                      help="archive LevelB files - copy to archive dir after geo_vlidort is finished (default=False)" )    
 
     parser.add_option("-n", "--nodemax", dest="nodemax", default=nodemax,
                       help="Max number of nodes to use. "\
@@ -561,6 +742,7 @@ if __name__ == "__main__":
     # -----------------------------
     if (workspace.dirstring) > 0:
         workspace.handle_jobs()
+        workspace.final_cleanup()
     else:
         print 'No model hours to run'
 

@@ -121,7 +121,7 @@ class GCS03(object):
         # Instiate grads and open file
         # ----------------------------
         f = GFIOctl(inFile)
-        if self.ica == None:
+        if self.ica is None:
             self.ica = GCS03Handle(inFile)
 
         # Handle grid indices for ICA algorithms

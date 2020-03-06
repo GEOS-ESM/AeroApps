@@ -4,55 +4,59 @@
       
       USE VLIDORT_IO_DEFS
       USE VBRDF_SUP_MOD
+      USE VSLEAVE_SUP_MOD
       
       implicit NONE
 
-      PUBLIC  VLIDORT_Init ! Initialize once for all pixels
-      PUBLIC  VLIDORT_Fin  ! Finalize once
-       
-      !  VLIDORT input/output structures
+	      PUBLIC  VLIDORT_Init ! Initialize once for all pixels
+	      PUBLIC  VLIDORT_Fin  ! Finalize once
+	       
+	      !  VLIDORT input/output structures
 
-      TYPE VLIDORT_IO
-          !  VLIDORT input structures
-          TYPE(VLIDORT_Fixed_Inputs)             :: VLIDORT_FixIn
-          TYPE(VLIDORT_Modified_Inputs)          :: VLIDORT_ModIn
-
-
-
-          !  VLIDORT output structures
-!!          TYPE(Outputs_Main_def)             :: VLIDORT_Outputs
-          TYPE(VLIDORT_Outputs)                  :: VLIDORT_Out
-
-!!          TYPE(Exception_Handling_def)       :: VLIDORT_Status
-          TYPE(VBRDF_Output_Exception_Handling)   :: VBRDF_Sup_OutputStatus
+	      TYPE VLIDORT_IO
+		  !  VLIDORT input structures
+		  TYPE(VLIDORT_Fixed_Inputs)             :: VLIDORT_FixIn
+		  TYPE(VLIDORT_Modified_Inputs)          :: VLIDORT_ModIn
 
 
-          !  BRDF input and output structure
-!!          TYPE(BRDF_Surface_def)             :: VLIDORT_BRDF_inputs
-!!          TYPE(VBRDF_Sup_Inputs)                 :: VBRDF_Sup_In
-          TYPE(VBRDF_Sup_Outputs)                :: VBRDF_Sup_Out
 
-          !  VLIDORT supplements i/o structure
+		  !  VLIDORT output structures
+	!!          TYPE(Outputs_Main_def)             :: VLIDORT_Outputs
+		  TYPE(VLIDORT_Outputs)                  :: VLIDORT_Out
 
-          TYPE(VLIDORT_Sup_InOut)                :: VLIDORT_Sup
+	!!          TYPE(Exception_Handling_def)       :: VLIDORT_Status
+		  TYPE(VBRDF_Output_Exception_Handling)   :: VBRDF_Sup_OutputStatus
 
-      END TYPE VLIDORT_IO
-      
 
-      TYPE VLIDORT
-        logical     :: initialized = .false.  
-        integer     :: NSTREAMS = 6        ! Number of half-space streams
-        integer     :: NBEAMS = 1          ! Number of solar zenith angles
-        integer     :: N_USER_STREAMS = 1  ! Number of Viewing zenith angles
-        integer     :: N_USER_RELAZMS = 1  ! Number of relative azimuth angles
-        integer     :: N_USER_LEVELS  = 1  ! Number of user-defined vertical output levels
-        integer     :: N_USER_OBSGEOMS = 1 ! Number of azimuth angles calculated by surface supplement
+		  !  BRDF input and output structure
+	!!          TYPE(BRDF_Surface_def)             :: VLIDORT_BRDF_inputs
+	!!          TYPE(VBRDF_Sup_Inputs)                 :: VBRDF_Sup_In
+		  TYPE(VBRDF_Sup_Outputs)                :: VBRDF_Sup_Out
 
-        type(VLIDORT_IO) :: VIO
+		  ! SLEAVE output structure
+		  TYPE(VSLEAVE_Sup_Outputs)                :: VSLEAVE_Sup_Out                      
 
-      END TYPE VLIDORT
+		  !  VLIDORT supplements i/o structure
 
-      contains
+		  TYPE(VLIDORT_Sup_InOut)                :: VLIDORT_Sup
+
+	      END TYPE VLIDORT_IO
+	      
+
+	      TYPE VLIDORT
+		logical     :: initialized = .false.  
+		integer     :: NSTREAMS = 6        ! Number of half-space streams
+		integer     :: NBEAMS = 1          ! Number of solar zenith angles
+		integer     :: N_USER_STREAMS = 1  ! Number of Viewing zenith angles
+		integer     :: N_USER_RELAZMS = 1  ! Number of relative azimuth angles
+		integer     :: N_USER_LEVELS  = 1  ! Number of user-defined vertical output levels
+		integer     :: N_USER_OBSGEOMS = 1 ! Number of azimuth angles calculated by surface supplement
+		logical     :: DO_PLANE_PARALLEL = .false.
+		type(VLIDORT_IO) :: VIO
+
+	      END TYPE VLIDORT
+
+	      contains
 
 !.............................................................................
 
@@ -208,7 +212,7 @@
 !                            -------------
 
       DO_SOLAR_SOURCES    = .true.     ! Include solar sources?
-      DO_PLANE_PARALLEL   = .false.    ! Plane-parallel treatment of direct beam?
+      DO_PLANE_PARALLEL   = self%DO_PLANE_PARALLEL    ! Plane-parallel treatment of direct beam?
       DO_CHAPMAN_FUNCTION = .true.     ! Perform internal Chapman function calculation?
       DO_REFRACTIVE_GEOMETRY = .false. ! Beam path with refractive atmosphere?
      
@@ -217,7 +221,7 @@
 
       DO_RAYLEIGH_ONLY     = .false. ! Rayleigh atmosphere only?
       DO_DELTAM_SCALING    = .true.  ! Include Delta-M scaling?
-      DO_SSCORR_TRUNCATION = .true. ! Additional Delta-M scaling for SS correction?
+      DO_SSCORR_TRUNCATION = .false. ! Additional Delta-M scaling for SS correction? SHOULD ALWAYS BE FALSE
       DO_SOLUTION_SAVING   = .false. ! Solution saving mode?
       DO_BVP_TELESCOPING   = .false. ! Boundary value problem telescoping mode?
       
@@ -272,8 +276,7 @@
       NFINELAYERS = 3                 ! Number of fine layers (outgoing sphericity correction)
       NGREEK_MOMENTS_INPUT = 300     ! Number of scattering matrix expansion coefficients
       TAYLOR_ORDER = 3                ! Number of small-number terms in Taylor series expansions
-      N_USER_OBSGEOMS = 1             ! Number of observation Geometry inputs
-      
+      N_USER_OBSGEOMS = self%N_USER_OBSGEOMS             ! Number of observation Geometry inputs 
 
 !                            accuracy input
 !                            --------------

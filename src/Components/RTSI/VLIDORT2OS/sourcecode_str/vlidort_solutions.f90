@@ -488,12 +488,37 @@
 !  Exception handling 2
 
        IF ( IER.GT.0 ) THEN
-         WRITE(CI,'(I3)')IER
-         WRITE(CN,'(I3)')N
-         MESSAGE = 'eigenvalue '//CI//' has not converged'
-         TRACE   = 'ASYMTX error in VLIDORT_QHOM_SOLUTION, Layer ='//CN
-         STATUS  = VLIDORT_SERIOUS
-         RETURN
+         ! First Try a lower TOL = 1.0D-10 before failing
+         DO J = 1, NSTKS_NSTRMS
+           DO I = 1, NSTKS_NSTRMS
+             EIGENMAT(I,J) = EIGENMAT_SAVE(I,J,N)
+           ENDDO
+         ENDDO         
+         CALL  ASYMTX &
+              ( EIGENMAT, NSTKS_NSTRMS, MAXSTRMSTKS, MAXSTRMSTKS, &
+                RITE_EVEC, REAL_KSQ, IER, WK, &
+                MESSAGE, ASYMTX_FAILURE,1.0D-10)
+         IF ( IER.GT.0 ) THEN
+           ! Now try TOL = 1.0D-8 before failing
+            DO J = 1, NSTKS_NSTRMS
+              DO I = 1, NSTKS_NSTRMS
+                EIGENMAT(I,J) = EIGENMAT_SAVE(I,J,N)
+              ENDDO
+            ENDDO           
+            CALL  ASYMTX &
+                 ( EIGENMAT, NSTKS_NSTRMS, MAXSTRMSTKS, MAXSTRMSTKS, &
+                   RITE_EVEC, REAL_KSQ, IER, WK, &
+                   MESSAGE, ASYMTX_FAILURE,1.0D-8)
+            IF ( IER.GT.0 ) THEN
+               ! OK Fail
+               WRITE(CI,'(I3)')IER
+               WRITE(CN,'(I3)')N
+               MESSAGE = 'eigenvalue '//CI//' has not converged'
+               TRACE   = 'ASYMTX error in VLIDORT_QHOM_SOLUTION, Layer ='//CN
+               STATUS  = VLIDORT_SERIOUS
+               RETURN
+            ENDIF
+         ENDIF
        ENDIF
 
 !  renormalize - this is vital for ASMTX output

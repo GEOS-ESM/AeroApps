@@ -1,0 +1,18 @@
+#
+# Resource file for geo_vlidort
+#
+
+INDIR:   /nobackup/TEMPO
+OUTDIR:  ./outputs
+DATE: 20051231
+TIME: 17
+INSTNAME: tempo
+SURFNAME: GISS_CoxMunk
+SURFMODEL: CX
+SCALAR: true
+CHANNELS: 550
+SURFMR: 1.33
+CLDMAX: 0.01
+ADDITIONAL_OUTPUT: true
+VLIDORT: true
+

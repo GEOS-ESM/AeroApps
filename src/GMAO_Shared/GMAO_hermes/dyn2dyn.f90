@@ -85,6 +85,7 @@
       integer vectype
       logical verbose, pick, dophys, oldana, force, fakedate, dgrid, ncep72
       logical ncf,pncf
+      logical indxlevs
  
 
 !                                 *******
@@ -96,7 +97,7 @@
                                 prec, in, jn, kn, pick, nymd, nhms, myfreq,  &
                                 fakedate, nymdf, nhmsf, &
                                 dophys, expid, RCfile, verbose, oldana, force, &
-                                vectype, dgrid, ncep72, ncf, pncf )
+                                vectype, dgrid, ncep72, ncf, pncf, indxlevs )
 
 
 !  Loop over input eta files
@@ -159,7 +160,7 @@
          if ( trim(RCfile)=='NONE' ) then
 
               call dyn2dyn_do ( w_e,  &
-                                in, jn, kn, verbose, ier, &
+                                in, jn, kn, indxlevs, verbose, ier, &
                                 dynfile=dynfile, lwifile=lwifile, &
                                 nymd=nymd, nhms=nhms, prec=prec, freq=freq, nstep=nstep,   &
                                 dophys=dophys, force=force, dgrid=dgrid, vectype=vectype )
@@ -173,7 +174,7 @@
                                  nymd=nymd, nhms=nhms, stat=ier )
                   if (ier/=0) call die(myname,'cannot determine file via template')
 
-              call dyn2dyn_do ( dynfile, w_e, nymd, nhms, freq, nstep, ier, &
+              call dyn2dyn_do ( dynfile, w_e, nymd, nhms, freq, nstep, indxlevs, ier, &
                                 dophys=dophys, expid=expid, RCfile=RCfile, force=force, &
                                 dgrid=dgrid, vectype=vectype )
          endif
@@ -208,7 +209,7 @@ CONTAINS
                          prec, in, jn, kn, pick, nymd, nhms, myfreq, &
                          fakedate, nymdf, nhmsf,                     &
                          dophys, expid, RCfile, verbose, oldana, force, &
-                         vectype, dgrid, ncep72, ncf, pncf )
+                         vectype, dgrid, ncep72, ncf, pncf, indxlevs )
 
       implicit NONE
 
@@ -240,6 +241,7 @@ CONTAINS
       logical,       intent(out) :: ncep72  ! Set NCEP-like-levels, but 72 of them
       logical,       intent(out) :: ncf     ! non-complaint dyn-file knob
       logical,       intent(out) :: pncf    ! non-complaint dyn-perturbation file knob
+      logical,       intent(out) :: indxlevs! index levels (in place of pressure levs)
       
 !
 ! !REVISION HISTORY:
@@ -251,6 +253,7 @@ CONTAINS
 !       21Apr2009  Todling            Updated default hor/ver resolutions of GEOS-5
 !       20Feb2014  Todling            Knob for non-complaint file
 !       27Jan2015  Todling            Add 137-level option
+!       02May2018  Todling            Add 132 to list of supported levels
 !
 !EOP
 !BOC
@@ -274,7 +277,7 @@ CONTAINS
       integer, dimension(6), parameter :: IMSN = (/ 192, 376, 512, 768, 1152, 2304 /)
       integer, dimension(6), parameter :: JMSN = (/  96, 192, 258, 386,  578, 1154 /)
 
-      integer, dimension(7), parameter :: KMS  = (/ 18,  32,  55,  64,   72,   91, 137 /)
+      integer, dimension(8), parameter :: KMS  = (/ 18,  32,  55,  64,   72,   91, 132, 137 /)
 
 !     Defaults
 !     --------
@@ -304,6 +307,7 @@ CONTAINS
       ncep72  = .false.    ! default: use usual GMAO-72 level
       ncf     = .false.    ! default: handle usual dyn-complaint file
       pncf    = .false.    ! default: handle usual dyn-complaint file
+      indxlevs= .false.    ! default: put pressure levels in lev attribute
 
 !     Parse command line
 !     ------------------
@@ -424,6 +428,8 @@ CONTAINS
                iarg = iarg + 1
                call GetArg ( iarg, argv )
                read(argv,*) myfreq
+           case ('-indxlevs')
+               indxlevs = .true.
            case ('-g5')
                vectype = 5
                dgrid   = .false.
@@ -462,7 +468,7 @@ CONTAINS
          print *
          print *, 'Invalid resolution options, aborting ...'
          print *
-         stop(999)
+         stop 999 
       endif
       if ( setres ) then
            if ( geos4res ) then

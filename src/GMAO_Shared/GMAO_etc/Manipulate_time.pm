@@ -870,6 +870,11 @@ sub get_hours{
         if ( "$syntime" eq "all" ) { @hlist = ( "00$mm","06$mm","12$mm","18$mm" ) }
         else                       { @hlist = ( "$syntime$mm" ) }
     }
+    elsif ( $type eq "bkg03"){
+        if ( "$hm" eq "m" ){ $mm = "00";}
+        if ( "$syntime" eq "all" ) { @hlist = ( "03$mm","09$mm","15$mm","21$mm" ) }
+        else                       { @hlist = ( "$syntime$mm" ) }
+    }
     elsif ($type eq "inst2d") {
         if ( "$hm" eq "m" ){ $mm = "00" }
         if ( $finalize ) { @hlist = ( "21"."$mm") }

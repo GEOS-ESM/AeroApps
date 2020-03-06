@@ -173,9 +173,10 @@ class MxD04_L2(object):
 
        # Add/Substitute some aliases if given
        # ------------------------------------
+       self.ALIAS = ALIAS.copy()
        if alias is not None:
-           for a in alias: ALIAS[a] = alias[a]  
-       self.ALIAS = ALIAS
+           for a in alias: self.ALIAS[a] = alias[a]  
+       
 
        # Create empty lists for SDS to be read from file
        # -----------------------------------------------
@@ -242,10 +243,10 @@ class MxD04_L2(object):
 
        # Make aliases for compatibility with older code 
        # ----------------------------------------------
-       Alias = ALIAS.keys()
+       Alias = self.ALIAS.keys()
        for sds in self.SDS:
            if sds in Alias:
-               self.__dict__[ALIAS[sds]] = self.__dict__[sds] 
+               self.__dict__[self.ALIAS[sds]] = self.__dict__[sds] 
 
        # Create corresponding python time
        # --------------------------------
@@ -369,7 +370,7 @@ class MxD04_L2(object):
         """
         Reduce observations according to index I. 
         """
-        Nicknames = ALIAS.values()
+        Nicknames = self.ALIAS.values()
         for name in self.__dict__:
             if name in Nicknames:
                 continue # alias do not get reduced
@@ -379,10 +380,10 @@ class MxD04_L2(object):
                     # print "{} Reducing "+name
                     self.__dict__[name] = q[I]
 
-        Alias = ALIAS.keys()
+        Alias = self.ALIAS.keys()
         for sds in self.SDS:
             if sds in Alias:
-                self.__dict__[ALIAS[sds]] = self.__dict__[sds] # redefine aliases
+                self.__dict__[self.ALIAS[sds]] = self.__dict__[sds] # redefine aliases
 
             self.nobs = len(self.lon)
 

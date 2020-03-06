@@ -1,0 +1,8 @@
+# AEROSOL SIZE DISTRIBUTION CALCULATION
+    inDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/CALIPSO/LevelB/Y%year/M%month
+    inFile       = calipso-g5nr.lb2.%col.%nymd_%hourz.nc4
+
+    outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/POLAR_LIDAR/CALIPSO/LevelC/dist/Y%year/M%month
+    outFile      = calipso-g5nr.dist.%nymd_%hourz.nc4
+
+# AEROSOL SIZE DISTRIBUTION CALCULATION

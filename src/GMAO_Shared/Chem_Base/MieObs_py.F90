@@ -78,13 +78,13 @@ end subroutine getMieDims
                               ! dry adiabatic
         te(km+1,n) = tm(km) * (pe(km+1,n)/pm(km))**kappa
 
-     end do
+  end do
 
 end subroutine getEdgeVars
 
 !...................................................................................
 
- subroutine getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vname, verbose, &
+subroutine getAOPscalar ( km, nobs, nch, nq, rcfile, channels, vname, verbose, &
                            qm, rh, &
                            tau, ssa, g, rc )
 
@@ -130,37 +130,37 @@ end subroutine getEdgeVars
 ! Deal with f2py strange handling of strings
 ! ------------------------------------------
   do iq = 1, nq
-     do n = 1, 16
-        vname_(iq)(n:n) = vname(iq,n)
-     end do
+    do n = 1, 16
+      vname_(iq)(n:n) = vname(iq,n)
+    end do
   end do
 
 ! Create the Mie Tables
 ! ---------------------
   mieTables = Chem_MieCreate(rcfile,rc)
   if ( rc /= 0 ) then
-     print *, 'Cannot create Mie tables from '//trim(rcfile)
-     return
+    print *, 'Cannot create Mie tables from '//trim(rcfile)
+    return
   end if
 
 ! Determine channel indices
 ! -------------------------
   do n = 1, nch
-     idxChannel(n) = -1 ! this is really the channel index
-     do m = 1, mieTables%nch
-        if ( abs(channels(n) - (1.e9)*mieTables%channels(m)) < 1. ) then
-           idxChannel(n) = m
-           exit
-         end if
-      end do
-   end do
-   if ( any(idxChannel<0) ) then
+    idxChannel(n) = -1 ! this is really the channel index
+    do m = 1, mieTables%nch
+      if ( abs(channels(n) - (1.e9)*mieTables%channels(m)) < 1. ) then
+        idxChannel(n) = m
+        exit
+      end if
+    end do
+  end do
+  if ( any(idxChannel<0) ) then
         print *, 'Mie resource files does not set the required channel'
         print *, 'Channels requested:  ', channels
         print *, 'Channels on RC file: ', 1.e+9 * mieTables%channels
         rc = 99
         return
-   end if
+  end if
 
 ! Initialize output arrays to zero
 ! --------------------------------
@@ -201,17 +201,17 @@ end subroutine getEdgeVars
 
 !  Normalize ssa and g
 !  -------------------
-   where (     tau > 0.0 ) ssa = ssa / tau
-   where ( ssa*tau > 0.0 )   g =  g / ( ssa * tau ) 
+  where (     tau > 0.0 ) ssa = ssa / tau
+  where ( ssa*tau > 0.0 )   g =  g / ( ssa * tau ) 
 
-   call Chem_MieDestroy(mieTables, rc)
-   if ( rc /= 0 ) then
-     print *, 'Cannot destroy MieTables'
-     return
+  call Chem_MieDestroy(mieTables, rc)
+  if ( rc /= 0 ) then
+    print *, 'Cannot destroy MieTables'
+    return
   end if
 
 
-   end subroutine getAOPscalar
+end subroutine getAOPscalar
 
 !...................................................................................
 
@@ -457,7 +457,7 @@ end subroutine getEdgeVars
 
 !...................................................................................
 
-  subroutine getExt ( km, nobs, nch, nq, rcfile, channels, vname, verbose, &
+subroutine getExt ( km, nobs, nch, nq, rcfile, channels, vname, verbose, &
                       qc,qm, rh, ext, sca, bsc, absc_SFC, absc_TOA, depol, rc )
 
 ! Returns aerosol extinction profile.
@@ -509,37 +509,37 @@ end subroutine getEdgeVars
 ! Deal with f2py strange handling of strings
 ! ------------------------------------------
   do iq = 1, nq
-     do n = 1, 16
+    do n = 1, 16
         vname_(iq)(n:n) = vname(iq,n)
-     end do
+    end do
   end do
 
 ! Create the Mie Tables
 ! ---------------------
   mieTables = Chem_MieCreate(rcfile,rc)
   if ( rc /= 0 ) then
-     print *, 'Cannot create Mie tables from ' // trim(rcfile)
-     return
+    print *, 'Cannot create Mie tables from ' // trim(rcfile)
+    return
   end if
 
 ! Determine channel indices
 ! -------------------------
   do n = 1, nch
-     idxChannel(n) = -1 ! this is really the channel index
-     do m = 1, mieTables%nch
-        if ( abs(channels(n) - (1.e9)*mieTables%channels(m)) < 1. ) then
+    idxChannel(n) = -1 ! this is really the channel index
+    do m = 1, mieTables%nch
+      if ( abs(channels(n) - (1.e9)*mieTables%channels(m)) < 1. ) then
            idxChannel(n) = m
            exit
-         end if
-      end do
-   end do
-   if ( any(idxChannel<0) ) then
+      end if
+    end do
+  end do
+  if ( any(idxChannel<0) ) then
         print *, 'Mie resource files does not set the required channel'
         print *, 'Channels requested:  ', channels
         print *, 'Channels on RC file: ', 1.e+9 * mieTables%channels
         rc = 99
         return
-   end if
+  end if
 
 ! Initialize output arrays to zero
 ! --------------------------------
@@ -555,21 +555,21 @@ end subroutine getEdgeVars
 ! Loop over aerosol species
 ! -------------------------
   do iq = 1,nq
-     idxTable = Chem_MieQueryIdx(mieTables,vname_(iq),rc)
-     if(idxTable == -1) cycle
-     if ( rc/=0 ) then
+    idxTable = Chem_MieQueryIdx(mieTables,vname_(iq),rc)
+    if(idxTable == -1) cycle
+    if ( rc/=0 ) then
         print *, 'cannot get Mie index for '//vname_(iq)
         return
-     end if
+    end if
 
-     if (verbose==1) &
-          print *, '[+] Adding '//trim(vname_(iq))//' contribution'
+    if (verbose==1) &
+      print *, '[+] Adding '//trim(vname_(iq))//' contribution'
 
 !    Loop over nobs, km, nch
 !    --------------------------
-     do i = 1, nobs
-        do n = 1, nch
-           do k =1, km
+    do i = 1, nobs
+      do n = 1, nch
+        do k =1, km
         
             call Chem_MieQuery(mieTables, idxTable, idxChannel(n), &
                                qc(k,iq,i), rh(k,i), tau=ext_,&
@@ -586,9 +586,9 @@ end subroutine getEdgeVars
                                depol(k,n,i)  = depol(k,n,i)  + (p11_-p22_)*ssa_*tau_
                                depol_(k,n,i) = depol_(k,n,i) + (p11_+p22_)*ssa_*tau_
 
-            end do  ! end nch
-         end do ! end km
-      end do  ! end nobs
+        end do  ! end km
+      end do ! end nch
+    end do  ! end nobs
   end do ! end tracers
 
   ! Depolarization ratio
@@ -605,41 +605,41 @@ end subroutine getEdgeVars
 
 !  Attenuated backscatter from space 
  
-    absc_TOA(1,:,:) = bsc(1,:,:)*exp(-tau(1,:,:))
-    do n = 1, nch
-       do k = 2, km        
-         do i = 1, nobs
-           taulev = 0.
-           do l = 1, k-1
-              taulev = taulev + tau(l,n,i)
-           enddo
-           taulev = taulev + 0.5 *tau(k,n,i)
-           absc_TOA(k,n,i) = bsc(k,n,i)*exp(-2.*taulev)
+  absc_TOA(1,:,:) = bsc(1,:,:)*exp(-tau(1,:,:))
+  do n = 1, nch
+    do k = 2, km        
+      do i = 1, nobs
+        taulev = 0.
+        do l = 1, k-1
+          taulev = taulev + tau(l,n,i)
         enddo
+        taulev = taulev + 0.5 *tau(k,n,i)
+        absc_TOA(k,n,i) = bsc(k,n,i)*exp(-2.*taulev)
       enddo
     enddo
+  enddo
 
 !  Attenuated backscatter from surface 
    
-    absc_SFC(km,:,:)= bsc(km,:,:)*exp(-tau(km,:,:))
-    do n = 1, nch
-       do k = km -1, 1, -1        
-         do i = 1, nobs
-           taulev = 0.
-           do l = km, k+1, -1
-              taulev = taulev + tau(l,n,i)
-           enddo
+  absc_SFC(km,:,:)= bsc(km,:,:)*exp(-tau(km,:,:))
+  do n = 1, nch
+    do k = km -1, 1, -1        
+      do i = 1, nobs
+        taulev = 0.
+        do l = km, k+1, -1
+          taulev = taulev + tau(l,n,i)
+        enddo
         taulev = taulev + 0.5 * tau(k,n,i)
         absc_SFC(k,n,i) = bsc(k,n,i)*exp(-2.*taulev)
-        enddo
       enddo
     enddo
+  enddo
  
 end subroutine getExt
 
 !...................................................................................
 
-  subroutine getInt ( km, nobs, nch, nq, rcfile, channels, vname, verbose, &
+subroutine getInt ( km, nobs, nch, nq, rcfile, channels, vname, verbose, &
                       qc,qm, rh, vol, area, refr, refi, reff, rc )
 
 ! Returns aerosol extinction profile.
@@ -686,37 +686,37 @@ end subroutine getExt
 ! Deal with f2py strange handling of strings
 ! ------------------------------------------
   do iq = 1, nq
-     do n = 1, 16
-        vname_(iq)(n:n) = vname(iq,n)
-     end do
+    do n = 1, 16
+      vname_(iq)(n:n) = vname(iq,n)
+    end do
   end do
 
 ! Create the Mie Tables
 ! ---------------------
   mieTables = Chem_MieCreate(rcfile,rc)
   if ( rc /= 0 ) then
-     print *, 'Cannot create Mie tables from ' // trim(rcfile)
-     return
+    print *, 'Cannot create Mie tables from ' // trim(rcfile)
+    return
   end if
 
 ! Determine channel indices
 ! -------------------------
   do n = 1, nch
-     idxChannel(n) = -1 ! this is really the channel index
-     do m = 1, mieTables%nch
-        if ( abs(channels(n) - (1.e9)*mieTables%channels(m)) < 1. ) then
-           idxChannel(n) = m
-           exit
-         end if
-      end do
-   end do
-   if ( any(idxChannel<0) ) then
+    idxChannel(n) = -1 ! this is really the channel index
+    do m = 1, mieTables%nch
+      if ( abs(channels(n) - (1.e9)*mieTables%channels(m)) < 1. ) then
+        idxChannel(n) = m
+        exit
+      end if
+    end do
+  end do
+  if ( any(idxChannel<0) ) then
         print *, 'Mie resource files does not set the required channel'
         print *, 'Channels requested:  ', channels
         print *, 'Channels on RC file: ', 1.e+9 * mieTables%channels
         rc = 99
         return
-   end if
+  end if
 
 ! Initialize output arrays to zero
 ! --------------------------------
@@ -729,21 +729,21 @@ end subroutine getExt
 ! Loop over aerosol species
 ! -------------------------
   do iq = 1,nq
-     idxTable = Chem_MieQueryIdx(mieTables,vname_(iq),rc)
-     if(idxTable == -1) cycle
-     if ( rc/=0 ) then
-        print *, 'cannot get Mie index for '//vname_(iq)
-        return
-     end if
+    idxTable = Chem_MieQueryIdx(mieTables,vname_(iq),rc)
+    if(idxTable == -1) cycle
+    if ( rc/=0 ) then
+      print *, 'cannot get Mie index for '//vname_(iq)
+      return
+    end if
 
-     if (verbose==1) &
+    if (verbose==1) &
           print *, '[+] Adding '//trim(vname_(iq))//' contribution'
 
 !    Loop over nobs, km, nch
 !    --------------------------
-     do i = 1, nobs
-        do n = 1, nch
-            do k =1, km
+    do i = 1, nobs
+      do n = 1, nch
+        do k =1, km
 
               call Chem_MieQuery(mieTables, idxTable, idxChannel(n), &  
                                  qm(k,iq,i), rh(k,i), area=area_, vol=vol_, &
@@ -753,9 +753,9 @@ end subroutine getExt
               refr(k,n,i) = refr(k,n,i) + refr_*vol_*qc(k,iq,i)
               refi(k,n,i) = refi(k,n,i) + refi_*vol_*qc(k,iq,i)  
 
-            end do  ! end nch
-        end do ! end km
-     end do  ! end nobs
+        end do  ! end km
+      end do ! end nch
+    end do  ! end nobs
   end do ! end tracers
 
   ! Calculate effective radius from volume and area

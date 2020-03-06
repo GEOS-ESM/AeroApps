@@ -41,11 +41,9 @@ if __name__ == "__main__":
                         " --channels=" + cf('LC2_CHANNELS')     + \
                         " --icldtable="+ cf('LC2_ICLDTABLE')    + \
                         " --lcldtable="+ cf('LC2_LCLDTABLE')    + \
-                        " --idxcld="   + cf('LC2_IDXCLD')       + \
                          " --surface=" + cf('LC2_SURFACE')      + \
                      " --surfversion=" + cf('LC2_SURF_VERSION') + \
-                          " --interp=" + cf('LC2_INTERP')       + \
-                          " --i_band=" + cf('LC2_I_BAND')       + \
+                          " --interp=" + cf('LC2_SURF_INTERP')  + \
                          " --nodemax=" + cf('LC2_NODEMAX')      + \
                           " --layout=" + cf('LC2_LAYOUT')       + \
                              " --dir=" + cf('LC2_DIR')          + \
@@ -53,11 +51,22 @@ if __name__ == "__main__":
                          " --runfile=" + cf('LC2_RUNFILE')      + \
                           " --execfile=" + cf('LC2_EXECFILE') 
 
+    # Optional
+    try:
+        Options += " --c_band=" + cf('LC2_SURF_C_BAND')                      
+    except:
+        pass
+
+    try:
+        Options += " --cld_band=" + cf('LC2_CLD_C_BAND')                      
+    except:
+        pass        
 
     if cf('LC2_PROFILE').upper()   == 'YES': Options += " --profile"
     if cf('LC2_VERBOSE').upper()   == 'YES': Options += " --verbose"
     if cf('LC2_ADDOUTPUT').upper() == 'YES': Options += " --additional"
-    if cf('LC2_KEEP').upper()      == 'YES': Options += " --keep"
+    if cf('LC2_KEEP_LB').upper()     == 'YES': Options += " --keep_lb"
+    if cf('LC2_ARCHIVE_LB').upper()  == 'YES': Options += " --archive_lb"
 
 
     # Generate LC2 products

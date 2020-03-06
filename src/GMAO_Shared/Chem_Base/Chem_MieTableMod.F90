@@ -421,7 +421,7 @@ end subroutine Chem_MieTableDestroy
         rc = nf_get_var_double(ncid,ivarid,pback_table)
         VERIFY_(rc)
       endif
- 
+
       if ( nmom_ > 0 ) then
          rc = nf_inq_varid(ncid,'pmom',ivarid)
          VERIFY_(rc)
@@ -457,7 +457,7 @@ end subroutine Chem_MieTableDestroy
         rc = nf_get_var_double(ncid,ivarid,rhod_table)
         do i = 1, nrh_table
           rhod_table(i,:) = rhod_table(1,:)
-        enddo        
+        enddo
         VERIFY_(rc)
       endif
 
@@ -480,14 +480,13 @@ end subroutine Chem_MieTableDestroy
         refi_table = abs(refi_table)
       endif
 
-!     Wet particle radius [m3 kg-1] (wet particle volume/dry particle mass)
+!     Wet particle volume [m3 kg-1]
 !     Ratio of wet to dry volume is gf^3, hence the following
       vol_table = gf_table**3 / rhod_table
 
 !     Wet particle cross sectional area [m2 kg-1]
 !     Assume area is volume divided by (4./3.*reff)
       area_table = vol_table / (4./3.*reff_table)
-
 
 !     Close the table file
 !     -------------------------------------
@@ -570,7 +569,7 @@ end subroutine Chem_MieTableDestroy
          call polint(channels_table,refr_table(:,i,j),nch_table, &
                      this%lambda(n),this%refr(i,n,j),yerr)
          call polint(channels_table,refi_table(:,i,j),nch_table, &
-                     this%lambda(n),this%refi(i,n,j),yerr)         
+                     this%lambda(n),this%refi(i,n,j),yerr)
          do ipol = 1, this%nPol
                   call polint(channels_table,pback_table(:,i,j,ipol),nch_table, &
                        this%lambda(n),this%pback(i,n,j,ipol),yerr)
@@ -661,7 +660,7 @@ end subroutine Chem_MieTableDestroy
       deallocate (refr_table, stat = rc )
       VERIFY_(rc)
       deallocate (refi_table, stat = rc )
-      VERIFY_(rc)      
+      VERIFY_(rc)
 
 return
 

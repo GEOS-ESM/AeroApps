@@ -33,7 +33,7 @@ class NC4ctl_(NC4ctl):
 def getTyme(Dt,t1,t2):
     t = t1
     tyme = [t,]
-    while t < t2-Dt:
+    while t < t2:
         t += Dt
         tyme += [t,]
     tyme = array(tyme)
@@ -57,33 +57,15 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
         Z = zeros((ns,nt))
     n = 0
     for t in tyme:
-        try:
-            dtF = (f.dt+f.tbeg-f.tbeg).total_seconds()
-            if (dtF == options.dt_secs):
-      
-                z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
-                         Transpose=True,squeeze=squeeze)
-            else:
-                tt = array([t]*len(stnLon))
-                # hack for out of bounds
-                lonmin,lonmax = f.lon.min(),f.lon.max()
-                latmin,latmax = f.lat.min(),f.lat.max()
-                I = (stnLon >= lonmin) & (stnLon <= lonmax) & (stnLat >= latmin) & (stnLat <= latmax)
-                zz = f.nc4.sample(name,stnLon[I],stnLat[I],tt[I],algorithm=options.algo,
-                         Transpose=True,squeeze=True)      
-                if nz>1:
-                    z = MAPL_UNDEF * ones((ns,nz))
-                    z[I,:] = zz
-                else:
-                    z = MAPL_UNDEF * ones(ns)
-                    z[I] = zz
-
-        except:
-            print "    - Interpolation failed for <%s> on %s"%(V.name,str(t))
-            if nz>1:
-                z = MAPL_UNDEF * ones((ns,nz))
-            else:
-                z = MAPL_UNDEF * ones(ns)
+        dtF = (f.dt+f.tbeg-f.tbeg).total_seconds()
+        if (dtF == options.dt_secs):
+  
+            z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
+                     Transpose=True,squeeze=squeeze)
+        else:
+            tt = array([t]*len(stnLon))
+            z = f.nc4.sample(name,stnLon,stnLat,tt,algorithm=options.algo,
+                     Transpose=True,squeeze=True)      
 
         if nz>1:
             Z[:,n,:] = z
@@ -237,7 +219,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
 
 if __name__ == "__main__":
     
-    format = 'NETCDF3_CLASSIC'
+    format = 'NETCDF4'
     outFile = 'stn_sampler.nc'
     algo = 'linear'
     dt_secs = 60*30  #30 minutes
@@ -258,9 +240,6 @@ if __name__ == "__main__":
     parser.add_option("-V", "--vars", dest="Vars", default=None,
               help="Variables to sample (default=All)")
     
-    parser.add_option("-f", "--format", dest="format", default=format,
-              help="Output file format: one of NETCDF4, NETCDF4_CLASSIC, NETCDF3_CLASSIC, NETCDF3_64BIT (default=%s)"%format )
-
     parser.add_option("-d", "--dt_secs", dest="dt_secs", default=dt_secs,
               type='int',
               help="Timesetp in seconds for sampling (default=%s)"%dt_secs )    
@@ -293,17 +272,9 @@ if __name__ == "__main__":
 
     # Create consistent file name extension
     # -------------------------------------
+    options.format = format
     name, ext = os.path.splitext(options.outFile)
-    if ext.upper() == '.XLS':
-        options.format = 'EXCEL'
-    if 'NETCDF4' in options.format:
-        options.outFile = name + '.nc4'
-    elif 'NETCDF3' in options.format:
-        options.outFile = name + '.nc'
-    elif 'EXCEL' in options.format:
-        options.outFile = name + '.xls'
-    else:
-        raise ValueError, 'invalid extension <%s>'%ext
+    options.outFile = name + '.nc4'
             
     # Station Locations
     # -----------------
