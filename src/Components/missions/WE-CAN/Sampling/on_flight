@@ -1,0 +1,70 @@
+#!/bin/csh -f
+#
+# Given an ICT with a flight path, sample GEOS-products of interest.
+#
+# PC: modified to work for ACEPOL
+
+set rc = ../RC
+set sampler = $ESMADIR/`uname`/bin/trj_sampler.py
+set esampler = $ESMADIR/`uname`/bin/ext_sampler.py
+set dest = $HOME/iesa/aerosol/data/WE-CAN/sampled
+set nav = $HOME/iesa/aerosol/data/WE-CAN/nav
+
+if ( $#argv < 1 ) then
+   echo "  usage: $0 [-r REV] navigation_filename [force]"
+   echo "example: $0 [-r REV] WECAN-NAV_C130_20180808_R0.ict.gz [force]"
+   exit 1
+endif
+    
+if ( "$1" == "-r" ) then
+     set rev = $2
+     shift
+     shift
+else
+     set rev = R0
+endif
+
+if ( $#argv > 1) then
+    set force = 1
+    set ICT = $1
+else
+    set force = 0
+    set ICT = ( $argv )
+endif
+
+foreach ict ( $ICT ) 
+  foreach prod ( CHEM METEO )
+
+    set basen = `basename $ict`
+    set basen = `echo $basen:r:r | sed -e s/NAV/GEOS-${prod}/g -e s/R0/$rev/g`
+    set nc = $dest/$basen.nc
+
+    if ( $force == 1) then 
+	    $sampler -t ict -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $nav/$ict
+    else
+	    if ( -e $nc ) then
+	      echo "<> Skipping $nc, already there there"
+	    else
+	      $sampler -t ict -f NETCDF3_CLASSIC  -I -v -r $rc/trj.assim.$prod.rc -o $nc $nav/$ict
+	    endif
+    endif
+
+    if ( $prod == "CHEM" ) then
+
+      set inFile = $nc
+      set enc = `echo $inFile | sed -e 's/CHEM/EXT355/'`
+
+      if ( $force == 1) then
+	      $esampler -c 355 -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_355nm.rc -o $enc
+      else
+	      if ( -e $enc ) then
+	        echo "<> Skipping $nc, already there there"
+	      else
+	        $esampler -c 355 -f NETCDF3_CLASSIC -i $inFile -v -r $rc/Aod3d_355nm.rc -o $enc 
+      	endif
+      endif
+
+   endif
+ end
+end
+
