@@ -797,10 +797,10 @@ azel = solar_angles(yr,mo,day,hr,min,sec,tz,latp,lonp)
 saa = azel(1)
 sza = 90.d0 - azel(2)
 
-satellite_angles(1) = phiv
-satellite_angles(2) = thetav
-satellite_angles(3) = saa
-satellite_angles(4) = sza
+satellite_angles_from_space(1) = phiv
+satellite_angles_from_space(2) = thetav
+satellite_angles_from_space(3) = saa
+satellite_angles_from_space(4) = sza
 
 return
 end function satellite_angles_from_space
