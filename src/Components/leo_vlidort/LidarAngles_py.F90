@@ -600,11 +600,9 @@ end function view_angles_from_target
 !
 ! OUTPUT
 !    view_angles is returned array of length 2.
-!    view_angles(1) is Satellite Azimuth Angle in Degrees, 0-360, clockwise from North at Target.
-!    view_angles(2) is Satellite Azimuth Angle in Degrees, 0-90, measured at satellite between
+!    view_angles(1) is Satellite Azimuth Angle in Degrees, 0-360, clockwise from North at satellite subpoint
+!    view_angles(2) is Satellite View Angle in Degrees, 0-90, measured at satellite between
 !    satellite and target (Angle ETA in Reference).
-!    Example in Reference: Given LATP,LONP = 22, -200; LATSSP,LONSSP = 10, -185; h=1000 km;
-!    view_angles = [48.3, 56.8] 
 !    
 ! REFERENCE
 !    Space Mission Analysis and Design, 
@@ -674,7 +672,7 @@ clambda = slatss*slatp + clatss*clatp*cdeltaL
 
 slambda = sin(acos(clambda))
 
-! cos phiv (Phi_V is azimuth of satellite measured from North at target P).
+! cos phiv (Phi_V is azimuth of satellite measured from North at SSP).
 ! Use Law of Cosines on Spherical Triangle formed by P, North Pole, SSP.
 
 cphiv = (slatp - clambda*slatss) / (slambda*clatss)
@@ -689,7 +687,7 @@ taneta = srho*slambda / (1.d0-srho*clambda)
 eta = atan(taneta)
 
 ! cos epsilon
-
+! not used here
 ceps = sin(eta)/srho
 eps = acos(ceps)
 
@@ -697,7 +695,7 @@ r2d = 180.d0/acos(-1.d0)
 
 ! azimuth angle
 view_angles_from_space(1) = r2d*phiv
-! if target is west of satellite, phiv should be negative
+! if target is west of satellite, phiv should be 180-360
 ! subtract from 360 to get azimuth angles in 0-360
 if (lonp-lonss .LT. 0.d0) view_angles_from_space(1) = 360.d0 - view_angles_from_space(1)
 
@@ -744,7 +742,7 @@ end function view_angles_from_space
 ! OUTPUTS
 !   satellite_angles    = returned array of length 4
 !   satellite_angles(1) = Spacecraft Viewing Azimuth Angle in deg (0-360)
-!   satellite_angles(2) = Spacecraft Viewing Zenith Angle in deg (0-90)
+!   satellite_angles(2) = Spacecraft Viewing Angle in deg (0-90)
 !   satellite_angles(3) = Solar Azimuth Angle in degrees (0-360)
 !   satellite_angles(4) = Solar Zenith Angles in degrees (0-180, >90 is below horizon)
 !
@@ -756,10 +754,10 @@ end function view_angles_from_space
 ! HISTORY
 !   written 29 April 2010 by Joyce Wolf for Annmarie Eldering & S. Kulawik
 !   translated into Fortran90 24 Feb 2012 by Vijay Natraj
-!   fixed code to give angles from space not target Dec 2019 P. Castellanos
+!   changed code to give angles from space not target Dec 2019 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-FUNCTION satellite_angles(yr,mo,day,hr,min,sec,tz,latp,lonp,latss,lonss,hgtss)
+FUNCTION satellite_angles_from_space(yr,mo,day,hr,min,sec,tz,latp,lonp,latss,lonss,hgtss)
 
 implicit none
 
@@ -780,7 +778,7 @@ real(kind=8),    intent(in) :: hgtss ! altitude of satellite in km
 
 !  Outputs
 
-real(kind=8) :: satellite_angles(4)
+real(kind=8) :: satellite_angles_from_space(4)
                              ! 1: Spacecraft Viewing Azimuth Angle in deg (0-360)
                              ! 2: Spacecraft Viewing Zenith Angle in deg (0-90)
                              ! 3: Solar Azimuth Angle in degrees (0-360)
@@ -806,7 +804,7 @@ satellite_angles(3) = saa
 satellite_angles(4) = sza
 
 return
-end function satellite_angles
+end function satellite_angles_from_space
 
 end Module LidarAngles
 
