@@ -7,6 +7,7 @@ from netCDF4 import Dataset
 import numpy as np
 from   MAPL  import config
 from scipy import interpolate
+from   py_leo_vlidort.copyvar  import _copyVar
 
 class SDIST(object):
     #---
@@ -60,11 +61,8 @@ class SDIST(object):
         # Mixture Distribution
         # -------------
         #self.TOTdist = self.BCPHILICdist + self.BCPHOBICdist + self.OCPHILICdist + self.OCPHOBICdist + self.SUdist + self.DUdist + self.SSdist
-        for spc in self.AERNAMES:
-            if spc == 'SO4':
-                spcdist = 'SUdist'
-            else:
-                spcdist = spc+'dist'     
+        for spc in self.AERdistNAMES:
+            spcdist = spc+'dist'     
             
             if hasattr(self,'TOTdist'):
                 self.TOTdist += self.__dict__[spcdist]
@@ -73,19 +71,37 @@ class SDIST(object):
 
         # Column size distribution
         nobs,nlev,nR = self.TOTdist.shape
-        self.colTOTdist = np.zeros([nobs,nR])
-        for t in range(nobs):
-            dz = self.ze[:-1,t] - self.ze[1:,t]
-            for r in range(nR):
-                self.colTOTdist[t,r] = np.sum(self.TOTdist[t,:,r]*dz)
+        for spc in self.AERdistNAMES+['TOT']:
+            spcdist = spc + 'dist'
+            self.__dict__['col'+spcdist] = np.zeros([nobs,nR])
+            for t in range(nobs):
+                dz = self.ze[:-1,t] - self.ze[1:,t]
+                for r in range(nR):
+                    self.__dict__['col'+spcdist][t,r] = np.sum(self.__dict__[spcdist][t,:,r]*dz)
 
-        # convert to dV/dlnR [microns^3/microns^2] 
-        spc = 'colTOTdist'
-        temp = np.zeros(self.__dict__[spc].shape)  
-        for t in range(nobs):
-            temp[t,:] = self.__dict__[spc][t,:]*self.R*1e6
+#        # convert to dV/dlnR [microns^3/microns^2] 
+#        spc = 'colTOTdist'
+#        temp = np.zeros(self.__dict__[spc].shape)  
+#        for t in range(nobs):
+#            temp[t,:] = self.__dict__[spc][t,:]*self.R*1e6
 
-        self.__dict__[spc] = temp
+#        self.__dict__[spc] = temp
+
+
+        # effective radius for total only
+        self.TOTreff = np.zeros([nobs,nlev])
+        self.colTOTreff = np.zeros([nobs])
+        R = self.R
+        DR = self.DR
+        R3 = R**3
+        R2 = R**2
+        for t in range(nobs):
+            dndr = self.colTOTdist[t,:]/R3
+            self.colTOTreff[t] = np.sum(R3*dndr*DR)/np.sum(R2*dndr*DR)
+            for k in range(nlev):
+                dndr = self.TOTdist[t,k,:]/R3
+                self.TOTreff[t,k] = np.sum(R3*dndr*DR)/np.sum(R2*dndr*DR)
+
 
     def logNormalDistribution(self,spc):
         # master bins
@@ -161,12 +177,32 @@ class SDIST(object):
                 C      = np.sqrt(2.*np.pi)
                 dndr = (1./(R*lsigma*C))*np.exp(-(np.log(R/rNum)**2.)/(2.*lsigma**2.)) 
 
-                # Truncate distribution according to rmin and rmax
-                ii = RUP < rmin[k]
+                # Truncate distribution according to rlow and rup
+                ii = RUP <= rmin[k]
                 dndr[ii] = 0
 
-                ii = RLOW > rmax[k]
+                ii = RLOW >= rmax[k]
                 dndr[ii] = 0
+
+                # deal with lowest bin
+                # number concentration is scaled to the
+                # fraction of the bin that is covered by
+                # the aerosol distribution
+                if any(RLOW < rmin[k]):
+                    bini = np.arange(len(R))
+                    i = bini[RLOW < rmin[k]][-1]
+                    drtilda = RUP[i] - rmin[k]
+                    dndr[i] = dndr[i]*drtilda/DR[i]
+
+                #deal with the highest bin
+                # number concentration is scaled to the
+                # fraction of the bin that is covered by
+                # the aerosol distribution
+                if any(RLOW < rmax[k]):
+                    bini = np.arange(len(R))
+                    i = bini[RLOW < rmax[k]][-1]
+                    drtilda = rmax[k] - RLOW[i]
+                    dndr[i] = dndr[i]*drtilda/DR[i]
 
                 # Now get the volume distribution
                 # dvdr
@@ -286,11 +322,31 @@ class SDIST(object):
                     dndr = dndr80 * r80Rat
 
                     # Truncate distribution according to rlow and rup
-                    ii = RUP < rMinUse
+                    ii = RUP <= rMinUse
                     dndr[ii] = 0
 
-                    ii = RLOW > rMaxUse
+                    ii = RLOW >= rMaxUse
                     dndr[ii] = 0
+
+                    # deal with lowest bin
+                    # number concentration is scaled to the
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution
+                    if any(RLOW < rMinUse):
+                        bini = np.arange(len(R))
+                        i = bini[RLOW < rMinUse][-1]
+                        drtilda = RUP[i] - rMinUse
+                        dndr[i] = dndr[i]*drtilda/DR[i]
+
+                    #deal with the highest bin
+                    # number concentration is scaled to the
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution
+                    if any(RLOW < rMaxUse):
+                        bini = np.arange(len(R))
+                        i = bini[RLOW < rMaxUse][-1]
+                        drtilda = rMaxUse - RLOW[i]
+                        dndr[i] = dndr[i]*drtilda/DR[i]
 
                     # Now get the volume distribution
                     # dvdr
@@ -324,7 +380,7 @@ class SDIST(object):
         cf = config.Config(self.rcFile)
         optable = cf('filename_optical_properties_DU')
 
-        # Read in growth factors and rh tables
+        # Open Table
         nc = Dataset(optable)
 
         # lognormal volume median radius in microns
@@ -387,11 +443,31 @@ class SDIST(object):
                     dvdr = (1./(R*sigmaUse*C))*np.exp(-((np.log(R)-rvUse)**2.)/(2.*sigmaUse**2.)) 
 
                     # Truncate distribution according to rmin and rmax
-                    ii = RUP < rmin
+                    ii = RUP <= rmin
                     dvdr[ii] = 0
 
-                    ii = RLOW > rmax
+                    ii = RLOW >= rmax
                     dvdr[ii] = 0
+
+                    # deal with lowest bin
+                    # number concentration is scaled to the
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution
+                    if any(RLOW < rmin):
+                        bini = np.arange(len(R))
+                        i = bini[RLOW < rmin][-1]
+                        drtilda = RUP[i] - rmin
+                        dvdr[i] = dvdr[i]*drtilda/DR[i]
+
+                    #deal with the highest bin
+                    # number concentration is scaled to the
+                    # fraction of the bin that is covered by
+                    # the aerosol distribution
+                    if any(RLOW < rmax):
+                        bini = np.arange(len(R))
+                        i = bini[RLOW < rmax][-1]
+                        drtilda = rmax - RLOW[i]
+                        dvdr[i] = dvdr[i]*drtilda/DR[i]
 
                     # Get aerosol DRY! volume concentration
                     mr = DU[t,k,iBin]
@@ -454,4 +530,102 @@ class SDIST(object):
         if rmax > RMAX: RMAX = rmax
 
         return RMAX
-	
+
+    def writenc(self):
+        """
+        write a netcdf File of size distributions
+        """
+        if not os.path.exists(os.path.dirname(self.outFile)):
+            os.makedirs(os.path.dirname(self.outFile))
+
+        # Open NC file
+        # ------------
+        nc = Dataset(self.outFile,'w')	
+
+        # Set global attributes
+        # ---------------------
+        nc.title = 'GEOS Size Distribution'
+        nc.institution = 'NASA/Goddard Space Flight Center'
+        nc.source = 'Global Model and Assimilation Office'
+        nc.history = ''
+        nc.references = 'n/a'
+        nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
+        nc.Conventions = 'CF'
+
+
+        # Open extFile for reading
+        nctrj = Dataset(self.inFile.replace('%col','aer_Nv'))
+
+        # Create dimensions
+        # -----------------
+        ntime,nlev = self.AIRDENS.shape
+        nt = nc.createDimension('time',ntime)
+        ls = nc.createDimension('ls',19)
+        x  = nc.createDimension('x',1)
+        y  = nc.createDimension('y',1)
+        r  = nc.createDimension('r',len(self.R))
+        l  = nc.createDimension('lev',nlev)
+
+        _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)
+
+        nctrj.close()
+
+        # Create Variables
+        # ------------------
+        dim = ('r',)
+        this = nc.createVariable('radius','f4',dim,zlib=True)
+        this.units = 'm'
+        this[:] = self.R
+
+        this = nc.createVariable('dradius','f4',dim,zlib=True)
+        this.long_name = 'radius bin width'
+        this.units = 'm'
+        this[:] = self.DR
+
+        this = nc.createVariable('rlow','f4',dim,zlib=True)
+        this.long_name = 'radius bin lower edge'
+        this.units = 'm'
+        this[:] = self.RLOW
+
+        this = nc.createVariable('rup','f4',dim,zlib=True)
+        this.long_name = 'radius bin upper edge'
+        this.units = 'm'
+        this[:] = self.RUP
+
+        dim = ('time','lev','r',)
+        for spc in self.AERdistNAMES+['TOT']:
+            spcdist = spc+'dist'
+            print spcdist
+            this = nc.createVariable(spcdist,'f4',dim,zlib=True)
+            this.long_name = spc + ' size distribution (dV/dr)'
+            this.units = 'm^3/m'
+            this[:] = self.__dict__[spcdist]
+
+        dim = ('time','r',)
+        for spc in self.AERdistNAMES+['TOT']:
+            spcdist = 'col'+spc+'dist'
+            this = nc.createVariable(spcdist,'f4',dim,zlib=True)
+            this.long_name = spc + 'column size distribution (dV/dr)'
+            this.units = 'm^3/m'
+            this[:] = self.__dict__[spcdist]
+
+
+        dim = ('time','lev',)
+        this = nc.createVariable('reff_profile','f4',dim,zlib=True)
+        this.long_name = 'profile effective radius'
+        this.units = 'm'
+        this[:] = self.TOTreff
+
+        dim = ('time',)
+        this = nc.createVariable('reff_column','f4',dim,zlib=True)
+        this.long_name = 'column effective radius'
+        this.units = 'm'
+        this[:] = self.colTOTreff
+
+        nc.close()
+

@@ -11,7 +11,7 @@ from   dateutil.parser import parse         as isoparser
 from   MAPL            import Config
 from   netCDF4 import Dataset
 import numpy   as np
-
+from   mieobs  import getEdgeVars
 from MAPL.constants import *
 from sdist import SDIST
 
@@ -24,6 +24,7 @@ VNAMES_SU = ['SO4']
 
 META    = ['DELP','PS','RH','AIRDENS','LONGITUDE','LATITUDE','isotime']
 AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
+AERdistNAMES = ['DU','SS','OCPHILIC','OCPHOBIC','BCPHILIC','BCPHOBIC','SU']
 SDS_AER = META + AERNAMES
 
 ncALIAS = {'LONGITUDE': 'trjLon',
@@ -38,8 +39,10 @@ class ACCP_SDIST(SDIST):
     def __init__(self,inFile,outFile,rcFile,verbose=False):
         self.SDS_AER = SDS_AER
         self.AERNAMES = AERNAMES
+        self.AERdistNAMES = AERdistNAMES
         self.inFile   = inFile
         self.outFile  = outFile
+        self.rcFile   = rcFile
         self.verbose  = verbose
 
         # initialize empty lists
@@ -53,6 +56,14 @@ class ACCP_SDIST(SDIST):
         for sds in self.SDS_AER:
             self.__dict__[sds] = np.concatenate(self.__dict__[sds])
 
+        # Get ze variable
+        pe, ze, te = getEdgeVars(self)
+
+        self.pe = pe # (km,nobs)
+        self.ze = ze
+        self.te = te
+
+
         # convert isotime to datetime
         self.tyme = []
         for isotime in self.isotime:
@@ -63,8 +74,9 @@ class ACCP_SDIST(SDIST):
 
         # calculate column size distribution
         self.sizeDistribution()
-
-
+ 
+        # write outfile
+        self.writenc()
     #---
     def readSampledGEOS(self):
         """
@@ -121,9 +133,6 @@ if __name__ == "__main__":
 
     # Parse prep config
     # -----------------
-    cf             = Config(args.inst_pcf,delim=' = ')
-    instname       = cf('instname')
-
     cf             = Config(args.orbit_pcf,delim=' = ')
     orbitname      = cf('orbitname')
     ORBITNAME      = orbitname.upper()
@@ -132,8 +141,8 @@ if __name__ == "__main__":
     inTemplate     = cf('inDir')     + '/' + cf('inFile')
     outTemplate    = inTemplate
 
-    # Loop through dates, running VLIDORT
-    # ------------------------------------
+    # Loop through dates, calculating size distribution
+    # -------------------------------------------------
     date      = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
     Dt        = timedelta(hours=args.DT_hours)

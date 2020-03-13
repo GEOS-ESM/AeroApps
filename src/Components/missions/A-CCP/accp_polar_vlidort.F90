@@ -742,6 +742,14 @@ program pace_vlidort
       call check(nf90_put_var(ncid, varid, real(unpack(reshape(ROT(:,k),(/clrm/)),clmask,field)), &
                   start = (/k,1/), count = (/1,tm/)), "writing out ROT")
     enddo
+
+    call check(nf90_inq_varid(ncid, 'ZE', varid), "get ref vaird")
+    do k=1,km+1
+      call check(nf90_put_var(ncid, varid, real(unpack(reshape(ZE(:,k),(/clrm/)),clmask,field)), &
+                  start = (/k,1/), count = (/1,tm/)), "writing out ZE")
+    enddo
+
+
     do ialong=1,nalong
       call check(nf90_inq_varid(ncid, 'toa_reflectance', varid), "get ref vaird")
       call check(nf90_put_var(ncid, varid, real(unpack(reshape(reflectance_VL(:,ialong),(/clrm/)),clmask,field)), &
@@ -761,7 +769,7 @@ program pace_vlidort
                     start = (/ialong,1/), count = (/1,tm/)), "writing out Q")
 
         call check(nf90_inq_varid(ncid, 'U', varid), "get u vaird")
-        call check(nf90_put_var(ncid, varid, real(unpack(reshape(BR_U(:,ialong),(/clrm/)),clmask,field)), &
+        call check(nf90_put_var(ncid, varid, real(unpack(reshape(U(:,ialong),(/clrm/)),clmask,field)), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out U")
 
         call check(nf90_inq_varid(ncid, 'surf_reflectance_Q', varid), "get ref vaird")
@@ -769,7 +777,7 @@ program pace_vlidort
                       start = (/ialong,1/), count = (/1,tm/)), "writing out albedo Q")
 
         call check(nf90_inq_varid(ncid, 'surf_reflectance_U', varid), "get ref vaird")
-        call check(nf90_put_var(ncid, varid, real(unpack(reshape(U(:,ialong),(/clrm/)),clmask,field)), &
+        call check(nf90_put_var(ncid, varid, real(unpack(reshape(BR_U(:,ialong),(/clrm/)),clmask,field)), &
                       start = (/ialong,1/), count = (/1,tm/)), "writing out albedo Q")
 
       endif        
@@ -852,6 +860,8 @@ program pace_vlidort
       if (.not. scalar) then
         Q_int = MISSING
         U_int = MISSING
+        BR_Q_int = MISSING
+        BR_U_int = MISSING
       end if
       ierr = 0
 
@@ -995,6 +1005,8 @@ program pace_vlidort
         if (.not. scalar) then
           Q_int = MISSING
           U_int = MISSING
+          BR_Q_int = MISSING
+          BR_U_int = MISSING
         end if
         ierr = 0
 
@@ -1840,12 +1852,12 @@ program pace_vlidort
     integer                            :: qVarID, uVarID, albVarID, brUVarID, brQVarID      
     
     integer                            :: ncid
-    integer                            :: timeDimID, xDimID, yDimID, levDimID, lsDimID 
+    integer                            :: timeDimID, xDimID, yDimID, levDimID, lsDimID, leveDimID 
     integer                            :: nvzaDimID, chDimID     
     integer                            :: lonVarID, latVarID
     integer                            :: timeVarID, levVarID, xVarID, yVarID
     integer                            :: vzaVarID, vaaVarID, szaVarID, saaVarID
-    integer                            :: rotVarID, depolVarID, oriVarID
+    integer                            :: rotVarID, depolVarID, oriVarID, zeVarID
     integer                            :: ch
 
     real*8,allocatable,dimension(:)    :: lon, lat, sza, vza, raa
@@ -1863,6 +1875,7 @@ program pace_vlidort
     call check(nf90_def_dim(ncid, "view_angles", nalong, nvzaDimID), "creating view_angles dimension") 
     call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
     call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating lev dimension") !km
+    call check(nf90_def_dim(ncid, "leve", km+1, leveDimID), "creating leve dimension") !km+1
     call check(nf90_def_dim(ncid, "x", 1, xDimID), "creating x dimension") 
     call check(nf90_def_dim(ncid, "y", 1, yDimID), "creating y dimension") 
 
@@ -1924,6 +1937,7 @@ program pace_vlidort
     call check(nf90_def_var(ncid,'rayleigh_depol_ratio',nf90_float,(/chDimID/),depolVarID),"create depol var")
     call check(nf90_def_var(ncid,'ocean_refractive_index',nf90_float,(/chDimID/),oriVarID),"create ori var")
 
+    call check(nf90_def_var(ncid,'ZE',nf90_float,(/leveDimID,timeDimID/),zeVarID),"create ze var")
 
     ! Variable Attributes
 !                                          Reflectance TOA & Surface
@@ -2056,6 +2070,16 @@ program pace_vlidort
     call check(nf90_put_att(ncid,oriVarID,'missing_value',real(MISSING)),"missing_value attr")
     call check(nf90_put_att(ncid,oriVarID,'units','None'),"units attr")
     call check(nf90_put_att(ncid,oriVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+!                                          ZE
+!                                          -------
+    write(comment,'(A)') 'Layer Edge Altitude Above Surface'
+    call check(nf90_put_att(ncid,zeVarID,'long_name',trim(adjustl(comment))),"standard_name attr")
+    call check(nf90_put_att(ncid,zeVarID,'missing_value',real(MISSING)),"missing_value attr")
+    call check(nf90_put_att(ncid,zeVarID,'units','m'),"units attr")
+    call check(nf90_put_att(ncid,zeVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+
 
     !Leave define mode
     call check(nf90_enddef(ncid),"leaving define mode")
