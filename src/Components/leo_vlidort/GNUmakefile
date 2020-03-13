@@ -33,7 +33,7 @@ PY_SCRP = leo_vlidort_lc.py
 PY_LIBS = py_$(THIS)
 
 esma_install install python_install: $(DEPS) $(LIB) $(BINS) $(PY_EXTS) 
-	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMAETC) \
+	$(MKDIR) $(ESMALIB) $(ESMALIB)/Python $(ESMALIB)/Python/py_$(THIS) $(ESMAETC) \
                  $(ESMAINC)/$(THIS) $(ESMABIN)
 	$(CP) -pr $(PY_EXTS)               $(ESMALIB)/Python/py_$(THIS) 
 	$(CP) -pr $(PY_LIBS)               $(ESMALIB)/Python
