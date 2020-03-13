@@ -15,6 +15,7 @@ import time
 from   netCDF4         import Dataset
 from   MAPL            import Config
 from py_leo_vlidort.vlidort import get_chd
+from glob import glob
 
 mr =  [1.396,1.362,1.349,1.345,1.339,1.335,1.334,1.333,1.332,1.331,1.329,1.326,
       1.323,1.318,1.312,1.306,1.292,1.261]
@@ -28,7 +29,7 @@ mr_ACCP = 1.333
 
 class JOBS(object):
     def handle_jobs(self):
-        jobsmax = 25
+        jobsmax = 15
         # Figure out how many jobs you need to submit
         numjobs  = len(self.dirstring)   
 
@@ -56,9 +57,9 @@ class JOBS(object):
         # Monitor jobs 1-by-1 
         # Add a new job when one finishes 
         # Until they are all done
-        stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
+        stat = subprocess.call(['qstat -u {}'.format(self.user)], shell=True, stdout=devnull)
         while (stat == 0):
-            stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
+            stat = subprocess.call(['qstat -u {}'.format(self.user)], shell=True, stdout=devnull)
             finishedJobs = np.empty(0,dtype='int')
             for ii,i in enumerate(workingJobs):
                 s = jobid[i]
@@ -113,7 +114,7 @@ class JOBS(object):
 
                 os.chdir(self.cwd)
                 countRun = countRun + newRun
-                stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
+                stat = subprocess.call(['qstat -u {}'.format(self.user)], shell=True, stdout=devnull)
 
 
             print 'Waiting 30 minutes'
@@ -173,6 +174,7 @@ class WORKSPACE(JOBS):
         self.tmp         = args.tmp
         self.profile     = args.profile
         self.planeparallel = args.planeparallel
+        self.user        = args.user
 
         # Parse prep config files
         # --------------------------
@@ -467,8 +469,12 @@ class WORKSPACE(JOBS):
             os.remove(outfile)        
 
             os.remove(self.slurm)
-            os.remove(self.rcFile)
-            os.remove('accp_polar_vlidort.rc')
+            filelist = glob('Aod_EOS.*.rc')
+            for filename in filelist:
+                os.remove(filename)
+            filelist = glob('accp_polar_vlidort*.rc')
+            for filename in filelist:
+                os.remove(filename)
 
         # remove symlinks
         source = ['accp_polar_vlidort.x','clean_mem.sh']
@@ -500,7 +506,8 @@ if __name__ == '__main__':
     slurm     = 'run_accp_polar_vlidort_singlenode.j'
     tmp       = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir/vlidort'
     rcFile   = 'Aod_EOS.rc'
-    albedoType = 'BRDF'    
+    albedoType = 'BRDF'
+    user       = 'pcastell'    
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
@@ -542,6 +549,8 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbose",action="store_true",
                         help="Verbose mode (default=False).")
 
+    parser.add_argument('-u',"--user",default=user,
+                        help="username (default=%s)"%user)
 
     args = parser.parse_args()
     args.planeparallel = True
