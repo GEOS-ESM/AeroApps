@@ -298,7 +298,7 @@ class SWATH(object):
 
 
 
-    def getScatAngle(self,sza,SAA,vza,VAA):
+    def getScatAngle(self,sza,saa,vza,vaa):
         """
         The angle between the sun, the pixel and sensor.  A value of
         180.0 would imply pure backscatter.  A value of zero would
@@ -306,36 +306,24 @@ class SWATH(object):
         Values less than 90 imply forward scattering.
         Range is 0 to 180.0 
         """       
-        # do this so you don't change original values
-        saa = SAA.copy()
-        vaa = VAA.copy()
-        if np.any(vaa > 180):
-            I = vaa > 180
-            vaa[I] = vaa[I] - 360.0
-        if np.any(saa > 180):
-            I = saa > 180
-            saa[I] = saa[I] - 360.0
-
-        raa = np.abs(saa-vaa)
-        if np.any(raa > 180.0):
-            I = raa > 180.0
-            raa[I] = 360.0 - raa[I]
-        raa = 180.0 - raa
+    
+        raa = np.abs(vaa - saa)
+        I = raa > 180
+        raa[I] = 360.0 - raa[I]
 
         szar = np.radians(sza)
         vzar = np.radians(vza)
         raar = np.radians(raa)
-        scattering_angle = -1.0*np.cos(szar)*np.cos(vzar) - np.sin(szar)*np.sin(vzar)*np.cos(raar)
-        if np.any(scattering_angle) > 1.0:
-            I = scattering_angle > 1.0
-            scattering_angle[I] = 1.0
+        coscattering_angle = np.cos(szar)*np.cos(vzar) + np.sin(szar)*np.sin(vzar)*np.cos(raar)
+        if np.any(coscattering_angle) > 1.0:
+            I = coscattering_angle > 1.0
+            coscattering_angle[I] = 1.0
 
-        if np.any(scattering_angle) < -1.0:
-            I = scattering_angle < -1.0
-            scattering_angle[I] = -1.0
+        if np.any(coscattering_angle) < -1.0:
+            I = coscattering_angle < -1.0
+            coscattering_angle[I] = -1.0
 
-        scattering_angle = np.arccos(scattering_angle)
-        scattering_angle = np.degrees(scattering_angle)
+        scattering_angle = 180. - np.degrees(np.arccos(coscattering_angle))
 
         return scattering_angle
 
