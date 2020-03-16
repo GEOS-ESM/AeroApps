@@ -113,14 +113,15 @@ class SWATH(object):
         self.hgtssRef = hgtssRef
 
         # Parse along_track_deg variable
+        # vna == view nadir angle.  view angle between satellite subpoint and target at the satellite 
         if ',' in along_track_deg:
             # list
-            self.vza_along = np.array(along_track_deg.split(',')).astype(float)
-            self.nalong    = len(self.vza_along)
+            self.vna_along = np.array(along_track_deg.split(',')).astype(float)
+            self.nalong    = len(self.vna_along)
         elif ':' in along_track_deg:
-            vzamin,vzamax,nalong = np.array(along_track_deg.split(':')).astype(float)
+            vnamin,vnamax,nalong = np.array(along_track_deg.split(':')).astype(float)
 
-            self.vza_along = np.linspace(vzamin,vzamax,nalong)
+            self.vna_along = np.linspace(vnamin,vnamax,nalong)
             self.nalong    = int(nalong)
 
         # initialize empty lists
@@ -128,6 +129,7 @@ class SWATH(object):
             self.__dict__[sds] = []
 
         # Read in model data
+        # only reading satellite sub-point location and time of observation
         self.readSampledGEOS()
         self.ntyme = len(self.LONGITUDE[0])
         if self.inFilem1 is None:
@@ -147,17 +149,21 @@ class SWATH(object):
         self.tyme = np.array(self.tyme)
         self.ntymeTotal = len(self.tyme)
 
-        # Calculate Nadir Scene Geometry
+        # Get Satellite Heading
         self.hgtss = hgtss
         self.nadirAngles()
 
         # Get cross track swath deg full angle
         if self.cross_track_km is not None:
-            self.get_vza_cross()
+            self.get_vna_cross()
 
-        # Calculate Calculate Full Pixel Locations and view angles
+        # Calculate Full Pixel Locations and view angles
         self.granulePixels()
+
+        # Calculate Full Pixel solar angles
         self.granuleSolarAngles()
+
+        # Calculate scattering angle
         istart = self.Istyme 
         iend   = self.Istyme + self.ntyme
         self.scatAngle_granule = self.getScatAngle(self.sza_granule[istart:iend,:,:],self.saa_granule[istart:iend,:,:],self.vza_granule[istart:iend,:,:],self.vaa_granule[istart:iend,:,:])
@@ -443,21 +449,29 @@ class SWATH(object):
 
     # --
     def granulePixels(self):
-        # Calculate full Granule Pixel Locations and View Angles
+        """
+        Calculate full Granule Pixel Locations and Angles
+        """
+
         self.lon_granule = np.zeros([self.ntymeTotal,self.nalong,self.ncross])
         self.lat_granule = np.zeros([self.ntymeTotal,self.nalong,self.ncross])
         self.vza_granule = np.zeros([self.ntymeTotal,self.nalong,self.ncross])
         self.vaa_granule = np.zeros([self.ntymeTotal,self.nalong,self.ncross])
 
+        vna_granule = np.zeros([self.ntymeTotal,self.nalong,self.ncross])
+        # azimuth of satellite measured from North at SSP
+        az_granule  = np.zeros([self.ntymeTotal,self.nalong,self.ncross])
+
+
         srho = self.Re/(self.Re+self.hgtss)
-        for ialong,along_deg in enumerate(self.vza_along):
+        for ialong,along_deg in enumerate(self.vna_along):
             eta_along = np.radians(abs(along_deg))
             seta_along = np.sin(eta_along)
             cepsilon_along   = seta_along/srho
             epsilon_along    = np.arccos(cepsilon_along)
             #subtended angle in along track direction
             lambr_along = np.pi*0.5 - eta_along - epsilon_along
-            for icross,cross_deg in enumerate(self.vza_cross):
+            for icross,cross_deg in enumerate(self.vna_cross):
                 eta_cross = np.radians(abs(cross_deg))
                 seta_cross = np.sin(eta_cross)
                 cepsilon_cross = seta_cross/srho
@@ -471,12 +485,18 @@ class SWATH(object):
                 lambr_view = np.arccos(clambr_view)
                 slambr_view = np.sin(lambr_view)
 
-                # view zenith angle
-                teta = srho*slambr_view/(1-srho*clambr_view)
-                eta  = np.arctan(teta)
-                self.vza_granule[:,ialong,icross] = np.degrees(eta)
+                # view nadir angle
+                teta_view = srho*slambr_view/(1-srho*clambr_view)
+                eta_view  = np.arctan(teta_view)
+                vna_granule[:,ialong,icross] = np.degrees(eta_view)
 
-                # get view azimuth angle using spherical law of cosines
+                #view zenith angle
+                seta_view = np.sin(eta_view)
+                cepsilon_view = seta_view/srho
+                epsilon_view = np.arccos(cepsilon_view)
+                self.vza_granule[:,ialong,icross] = 90. - np.degrees(epsilon_view)
+
+                # get azimuth angle using spherical law of cosines
                 clambr_cross = np.cos(lambr_cross)
                 clambr_along = np.cos(lambr_along)
                 slambr_along = np.sin(lambr_along)
@@ -485,40 +505,57 @@ class SWATH(object):
                 az   = np.degrees(azr)
                 if along_deg >= 0:
                     # looking forwards
-                    vaa = self.VAA
+                    aa = self.HEAD
                     if cross_deg >= 0:
-                        vaa = vaa + az
+                        aa = aa + az
                     else:
-                        vaa = vaa - az                        
+                        aa = aa - az                        
                 else:
                     # looking backwards
-                    vaa = self.VAA + 180.0           
-                    if any(vaa > 360.0):
-                        I = vaa > 360.0
-                        vaa[I] = vaa[I] - 360.0 
+                    aa = self.HEAD + 180.0           
+                    if any(aa > 360.0):
+                        I = aa > 360.0
+                        aa[I] = aa[I] - 360.0 
                     if cross_deg >= 0:
-                        vaa = vaa - az
+                        aa = aa - az
                     else:
-                        vaa = vaa + az
+                        aa = aa + az
+                # make sure between 0-360
+                if any(aa > 360.0):
+                    I = aa > 360.0
+                    aa[I] = aa[I] - 360.0 
+                if any(aa < 0):
+                    I = aa < 0
+                    aa[I] = 360.0 + aa[I]
 
-                if any(vaa > 360.0):
-                    I = vaa > 360.0
-                    vaa[I] = vaa[I] - 360.0 
-                if any(vaa < 0):
-                    I = vaa < 0
-                    vaa[I] = 360.0 + vaa[I]
+                az_granule[:,ialong,icross] = aa
 
-                self.vaa_granule[:,ialong,icross] = vaa
-
-                # given vza and vaa, get lat/lon of pixel
+                # given vna and az, get lat/lon of pixel
                 lon0 = self.LONGITUDE
                 lat0 = self.LATITUDE
-                vza = self.vza_granule[:,ialong,icross]
-                vaa = self.vaa_granule[:,ialong,icross]
-                lon,lat = self.pixel_loc(lon0,lat0,vza,vaa)
+                vna  = vna_granule[:,ialong,icross]
+                az   = az_granule[:,ialong,icross]
+                lon,lat = self.pixel_loc(lon0,lat0,vna,az)
 
                 self.lon_granule[:,ialong,icross] = lon
                 self.lat_granule[:,ialong,icross] = lat
+
+
+                # get azimuth of satellite measure from North at target
+                # use law of cosines on spherical triangle formed by target, north pole and satellite subpoint
+                # target
+                latr = np.radians(lat)
+                clatp = np.cos(latr)
+                slatp = np.sin(latr)
+
+                # satellite subpoint
+                latr = np.radians(lat0)
+                slatss = np.sin(latr)
+
+                cvaar = (slatss - slatp*clambr_view)/(clatp*slambr_view)
+                vaar = np.arccos(cvaar)
+                self.vaa_granule[:,ialong,icross] = np.degrees(vaar)
+
 
     # --
     def granuleSolarAngles(self):
@@ -537,11 +574,12 @@ class SWATH(object):
         p.close()
 
     # --
-    def get_vza_cross(self):
-        """ get approximate cross track swath full angle using 
-            spherical earth approximation
+    def get_vna_cross(self):
+        """ 
+        get approximate cross track swath view angle using 
+        spherical earth approximation
 
-            Note: use reference satellite altitude for calculations
+        Note: use reference satellite altitude for calculations
         """
 
         # get cross track swath full angle
@@ -572,9 +610,13 @@ class SWATH(object):
         deta   = self.cross_track_deg/(ncross-1)
 
         self.ncross = ncross
-        self.vza_cross = -1.*self.cross_track_deg*0.5 + np.arange(ncross)*deta
+        self.vna_cross = -1.*self.cross_track_deg*0.5 + np.arange(ncross)*deta
     # --
     def nadirAngles(self):
+        """
+        Get the satellite heading (viewing azimuth angle at satellite subpoint)
+        and the solar angles for the satellite subpoint
+        """
         SZA   = []
         SAA   = []
         VAA   = []
@@ -601,7 +643,7 @@ class SWATH(object):
             else:
                 CLAT = self.LATITUDE[i+1]
                 CLON = self.LONGITUDE[i+1]
-            sat_angles = LidarAngles_.satangles(tyme.year,tyme.month,tyme.day,
+            sat_angles = LidarAngles_.satangles_fromspace(tyme.year,tyme.month,tyme.day,
                                                 tyme.hour,tyme.minute,tyme.second,
                                                 CLAT,CLON,
                                                 SLAT,SLON,
@@ -621,7 +663,7 @@ class SWATH(object):
 
         self.SZA = np.array(SZA)
         self.SAA = np.array(SAA)
-        self.VAA = np.array(VAA)  
+        self.HEAD = np.array(VAA)  
 
     #---
     def readSampledGEOS(self):
