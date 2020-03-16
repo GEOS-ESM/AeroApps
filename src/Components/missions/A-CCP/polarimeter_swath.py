@@ -603,27 +603,13 @@ class SWATH(object):
     def nadirAngles(self):
         """
         Get the satellite heading (viewing azimuth angle at satellite subpoint)
-        and the solar angles for the satellite subpoint
         """
-        SZA   = []
-        SAA   = []
         VAA   = []
         
         for i,tyme in enumerate(self.tyme):
-            CLAT = self.LATITUDE[i]
-            CLON = self.LONGITUDE[i]
-            
             SLAT = self.LATITUDE[i]
             SLON = self.LONGITUDE[i]
-            sat_angles = LidarAngles_.satangles(tyme.year,tyme.month,tyme.day,
-                                                tyme.hour,tyme.minute,tyme.second,
-                                                CLAT,CLON,
-                                                SLAT,SLON,
-                                                0.0,
-                                                self.hgtss)
-            SZA.append(sat_angles[3][0])
-            SAA.append(sat_angles[2][0])
-
+        
             # get local azimuth angle for direction satellite is moving in
             if i == self.ntymeTotal-1:
                 CLAT = self.LATITUDE[i-1]
@@ -649,8 +635,6 @@ class SWATH(object):
                 VAA.append(sat_angles[0][0])
 
 
-        self.SZA = np.array(SZA)
-        self.SAA = np.array(SAA)
         self.HEAD = np.array(VAA)  
 
     #---
