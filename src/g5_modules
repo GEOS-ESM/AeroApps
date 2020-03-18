@@ -43,6 +43,7 @@
 #  22Apr2010  Kokron   Updated for Fortuna-2.1 on pleiades
 #  21Jul2011  Kokron   Overlay older MKL module as on discover to gain reproducible results from dgeev in GSI 
 #  24Aug2012  Stassi   Added sh option to write bash source-able file
+#  03Nov2016  Thompson Remove JIBB
 ########################################################################
 
 # NOTE: Spell out scriptname--DO NOT SET EQUAL TO $0!
@@ -72,10 +73,6 @@ if (($node =~ discover*) || ($node =~ borg*)  || \
     ($node =~ dali*)     || ($node =~ warp*)) then
 
    set site = "NCCS"
-
-else if ( ($node =~ jibb*) || ($node =~ jcc01*) ) then
-
-   set site = "JIBB"
 
 else if (($node =~ pfe*)  || ($node =~ p4fe*) || \
          ($node =~ r[0-9]*i[0-9]*n[0-9]*)     || \
@@ -125,64 +122,75 @@ set modinit = DUMMY
 set loadmodules = 0
 set usemodules = 0
 
-#=================#
-#  NCCS and JIBB  #
-#=================#
-if ( $site == NCCS || $site == JIBB ) then
+#========#
+#  NCCS  #
+#========#
+if ( $site == NCCS ) then
 
-   set mod1 = comp/intel-15.0.2.164
+# Are we on SLES12..
+if ( -e /etc/os-release) then
 
-   # For MVAPICH2 
-   #set basedir = /discover/swdev/mathomp4/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/ifort_15.0.2.164-mvapich2_2.1
-   #set mod2 = other/mpi/mvapich2-2.1/intel-15.0.2.164
+   set mod1 = GEOSenv
 
-   # For IMPI 5.0 (recommended)
-   if ( $site == NCCS ) then
-      set basedir = /discover/nobackup/projects/gmao/share/gmao_ops/Baselibs/v4.0.6_build1/x86_64-unknown-linux-gnu/ifort_15.0.2.164-intelmpi_5.0.3.048
-   else
-      set basedir = /jibb/nobackup/gmaosi/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/ifort_15.0.2.164-intelmpi_5.0.3.048
-   endif 
-   set mod2 = mpi/impi-5.0.3.048
+   set mod2 = comp/gcc/6.5.0
+   set mod3 = comp/intel/18.0.5.274
 
-   # For MPT
-   #set basedir = /discover/nobackup/projects/gmao/share/gmao_ops/Baselibs/v4.0.6_build1/x86_64-unknown-linux-gnu/ifort_15.0.2.164-mpt_2.11
-   #set mod2 = mpi/sgi-mpt-2.11
+   set basedir = /discover/swdev/mathomp4/Baselibs/ESMA-Baselibs-4.0.11-SLES12/x86_64-unknown-linux-gnu/ifort_18.0.5.274-intelmpi_19.1.0.166
+   set mod4 = mpi/impi/19.1.0.166
 
-   set mod3 = lib/mkl-15.0.2.164
-   set mod4 = other/comp/gcc-4.6.3-sp1
-   set mod5 = other/SIVO-PyD/spd_1.20.0_gcc-4.6.3-sp1_mkl-15.0.0.090
-   set mod6 = other/git-2.3.1
+   set mod5 = python/GEOSpyD/Ana2019.10_py2.7
 
-   set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 $mod6)
+   set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 )
    set modinit = /usr/share/modules/init/csh
    set loadmodules = 0
-   set usemodules = 0
+   set usemodules = 1
+
+# or not
+else
+
+   set mod1 = GEOSenv
+
+   set mod2 = other/comp/gcc-6.3
+   set mod3 = comp/intel-18.0.5.274
+
+   set basedir = /discover/swdev/mathomp4/Baselibs/ESMA-Baselibs-4.0.11/x86_64-unknown-linux-gnu/ifort_18.0.5.274-intelmpi_18.0.5.274
+   set mod4 = mpi/impi-18.0.5.274
+
+   set mod5 = other/python/GEOSpyD/Ana2019.10_py2.7
+
+   set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 )
+   set modinit = /usr/share/modules/init/csh
+   set loadmodules = 0
+   set usemodules = 1
+
+endif
 
 #=======#
 #  NAS  #
 #=======#
 else if ( $site == NAS ) then
 
-   set basedir = /nobackup/gmao_SIteam/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/ifort_2015.0.090-mpt_2.12r16
-   set mod1 = comp-intel/2015.0.090
-   set mod2 = mpi-sgi/mpt
-   set mod3 = python/2.7.9
-   set mod4 = imagemagick/6.4.0-3
+   set basedir = /nobackup/gmao_SIteam/Baselibs/ESMA-Baselibs-4.0.11/x86_64-unknown-linux-gnu/ifort_2018.1.163-mpt_2.17r4-gcc_6.3.0
+   set mod1 = comp-gcc/6.3.0
+   set mod2 = 2018.1.163.modulefile
+   set mod3 = mpi-hpe/mpt.2.17r13
+   set mod4 = math-mkl/2018.1.163
+   set mod5 = python/2.7.12
 
-   set mods = ( $mod1 $mod2 $mod3 $mod4 )
+   set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 )
    set modinit = /usr/share/modules/init/tcsh
    set loadmodules = 0
-   set usemodules = 0
+   set usemodules = 1
 
 #=========#
 #  JANUS  #
 #=========#
 else if ( $site == GMAO.janus ) then
-   set basedir=/ford1/share/gmao_SIteam/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/pgfortran_15.7-openmpi_1.8.7
-   set mod1 = comp/pgi/15.7.0
-   set mod2 = mpi/openmpi/1.8.7/pgi-15.7.0
-   set mod3 = other/python/canopy
-   set mod4 = lib/mkl/15.0.2.164
+   set basedir=/ford1/share/gmao_SIteam/Baselibs/GMAO-Baselibs-4_0_8/x86_64-unknown-linux-gnu/pgfortran_17.5-openmpi_2.1.1
+   set mod1 = comp/pgi/17.5
+   set mod2 = mpi/openmpi/2.1.1/pgi-17.5
+   set mod3 = lib/mkl/17.0.4.196
+   set mod4 = other/python/canopy
 
    setenv GPU_CC_REV cc20
 
@@ -226,13 +234,16 @@ else if ( $site == GMAO.niteroi ) then
 #=================#
 else if ( $site == GMAO.desktop ) then
 
-   set basedir=/ford1/share/gmao_SIteam/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/ifort_15.0.2.164-openmpi_1.8.7-static
-   set mod1 = comp/intel/15.0.2.164
-   set mod2 = mpi/openmpi/1.8.7/intel-15.0.2.164-static
-   set mod3 = other/python/canopy
-   set mod4 = lib/mkl/15.0.2.164
+   set mod1 = GEOSenv
 
-   set mods = ( $mod1 $mod2 $mod3 $mod4 )
+   set basedir=/ford1/share/gmao_SIteam/Baselibs/ESMA-Baselibs-4.0.11/x86_64-unknown-linux-gnu/ifort_18.0.5.274-openmpi_4.0.0-gcc_6.3.0
+   set mod2 = comp/gcc/6.3.0
+   set mod3 = comp/intel/18.0.5.274
+   set mod4 = mpi/openmpi/4.0.0/intel-18.0.5.274_gcc-6.3.0
+   set mod5 = lib/mkl/18.0.5.274
+   set mod6 = other/python/GEOSpyD/Ana2019.10_py2.7
+
+   set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 $mod6 )
    set modinit = /usr/share/Modules/init/tcsh
    set loadmodules = 0
    set usemodules = 1
@@ -350,9 +361,18 @@ if (-e $modinit) then
    if ($loadmodules) module load modules
 
    if ($usemodules) then
+      if ($site == NCCS) then
+         if ( -e /etc/os-release ) then
+            module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES12
+         else
+            module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES11
+         endif
+      endif
+
       if ($site == NAS) then
          module use -a /u/scicon/tools/modulefiles
          module use -a /nobackup/gmao_SIteam/modulefiles
+         module use -a /nasa/intel/Compiler/2018.1.163
       endif
 
       if ($site =~ "GMAO.*" ) then

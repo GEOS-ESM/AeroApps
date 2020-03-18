@@ -159,6 +159,11 @@ else
    PY_FINCS = 
 endif
 
+XLIBS =
+ifeq ($(wildcard /etc/os-release/.*),)
+   XLIBS = -L/usr/lib64 -lssl -lcrypto
+endif
+
 vpath % $(MOD_DIRS)
 
 $(LIB) lib : $(DEPS) $(OBJS)
@@ -179,7 +184,7 @@ $(LIB) lib : $(DEPS) $(OBJS)
 # Python extensions
 # -----------------
 %_.$(F2PYEXT): %_py.F90 $(LIB)
-	$(F2PY) -c -m $*_ $(M). $(PY_FINCS) $< $(LIBS_F2PY)
+	$(F2PY) -c -m $*_ $(M). $(PY_FINCS) $< $(LIBS_F2PY) $(XLIBS)
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------

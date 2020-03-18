@@ -197,8 +197,13 @@ pyods/odsmeta.py : odsmeta.h
         grep -v idsats \
         > pyods/odsmeta.py
 
+XLIBS =
+ifeq ($(wildcard /etc/os-release/.*),)
+   XLIBS = -L/usr/lib64 -lssl -lcrypto
+endif
+
 pyods/pyods_.$(F2PYEXT): pyods_.F90 $(LIB) 
-	$(F2PY) -c -m pyods_ $(M). pyods_.F90 $(LIB) $(LIB_MPEU) $(LIB_SDF) $(LIB_SYS)
+	$(F2PY) -c -m pyods_ $(M). pyods_.F90 $(LIB) $(LIB_MPEU) $(LIB_SDF) $(LIB_SYS) $(XLIBS)
 	mv pyods_.$(F2PYEXT) pyods
 
 python_clean:

@@ -90,6 +90,10 @@ $(LIB) lib : $(DEPS) $(OBJS)
 	$(RM) $(LIB)
 	$(AR) $(AR_FLAGS) $(LIB) $(OBJS)
 
+XLIBS =
+ifeq ($(wildcard /etc/os-release/.*),)
+   XLIBS = -L/usr/lib64 -lssl -lcrypto
+endif
 
 %.x : $(LIB) %.F90
 	$(FC) $(LDFLAGS) -o $@ $(D)TEST $*.F90 $(LIBS)
@@ -103,7 +107,7 @@ python: $(PY_EXTS)
 
 AOP_.$(F2PYEXT): AOP_py.F90 
 	$(F2PY) -c -m AOP_ $(M). $(M)$(INC_CHEM_BASE) \
-                 AOP_py.F90 $(LIBS) 
+                 AOP_py.F90 $(LIBS) $(XLIBS)
 
 %_.$(F2PYEXT): %_py.F90
 	$(F2PY) -c -m $*_ $(M). $<

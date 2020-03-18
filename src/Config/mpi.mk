@@ -7,8 +7,8 @@
   ifdef I_MPI_ROOT
       FC := mpiifort
       INC_MPI := $(I_MPI_ROOT)/include64
-      LIB_MPI := -L$(I_MPI_ROOT)/lib64 -lmpifort -lmpi -lmpigi # Intel MPI
-      LIB_MPI_OMP := -L$(I_MPI_ROOT)/lib64 -lmpifort -lmpi_mt -lmpigi # Intel MPI
+      LIB_MPI := -L$(I_MPI_ROOT)/lib64 -lmpifort -lmpi # Intel MPI
+      LIB_MPI_OMP := -L$(I_MPI_ROOT)/lib64 -lmpifort -lmpi # Intel MPI
   else
   ifdef OPENMPI
       FC := mpifort

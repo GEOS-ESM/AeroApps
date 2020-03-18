@@ -131,7 +131,7 @@ sub init {
                 "stdint.h",      "stdio.h",    "stdlib.h",
                 "stdnoreturn.h", "string.h",   "tgmath.h",
                 "threads.h",     "time.h",     "uchar.h", 
-                "wchar.h",       "wctype.h");
+                "wchar.h",       "wctype.h",   "mpi.h");
 }
 
 #=======================================================================
@@ -243,7 +243,8 @@ sub write_output {
                                      or  $dep =~ /^sys\//       # Is the dep in the sys/ folder?
                                      or  $dep =~ /^omp_lib/     # Is the dep omp_lib?
                                      or  $dep =~ /^mpi\.mod/    # Is the dep mpi.mod?
-                                     or  $dep =~ /^mpif.*h$/ ); # Is the dep an included mpif-/_ file?
+                                     or  $dep =~ /^mpif.*h$/    # Is the dep an included mpif-/_ file?
+                                     or  $dep =~ /^mkl.*(mod|f90)/ ); # Is the dep an included mkl file
     }
     print OUTFL "\n";
     close OUTFL;

@@ -112,6 +112,10 @@ $(LIB) lib : $(DEPS) $(OBJS)
 	$(RM) $(LIB)
 	$(AR) $(AR_FLAGS) $(LIB) $(OBJS)
 
+XLIBS =
+ifeq ($(wildcard /etc/os-release/.*),)
+   XLIBS = -L/usr/lib64 -lssl -lcrypto
+endif
 
 %.x : $(LIB) %.F90
 	$(FC) $(LDFLAGS) -o $@ $(D)TEST $*.F90 $(LIBS)
@@ -121,10 +125,10 @@ $(LIB) lib : $(DEPS) $(OBJS)
 python: $(PY_EXTS)
 
 Aero_.$(F2PYEXT): Aero_py.F90 
-	$(F2PY) -c -m Aero_  $(M). $(M)$(INC_MAPL_BASE) Aero_py.F90 $(LIB) $(LIBS_F2PY) $(LIB_SCI_PY)
+	$(F2PY) -c -m Aero_  $(M). $(M)$(INC_MAPL_BASE) Aero_py.F90 $(LIB) $(LIBS_F2PY) $(XLIBS) $(LIB_SCI_PY)
 
 ICA_.$(F2PYEXT): ICA_py.F90 
-	$(F2PY) -c -m ICA_  $(M). $(M)$(INC_MAPL_BASE) ICA_py.F90 $(LIB) $(LIBS_F2PY) $(LIB_SCI_PY)
+	$(F2PY) -c -m ICA_  $(M). $(M)$(INC_MAPL_BASE) ICA_py.F90 $(LIB) $(LIBS_F2PY) $(XLIBS) $(LIB_SCI_PY)
 
 mcsRegrid_.$(F2PYEXT): mcsRegrid_py.F90 
 	$(F2PY) -c -m mcsRegrid_  $(M). mcsRegrid_py.F90 $(LIB) $(LIB_SCI_PY)

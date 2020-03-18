@@ -100,6 +100,10 @@ $(LIB) lib : $(DEPS) $(OBJS)
 	$(RM) $(LIB)
 	$(AR) $(AR_FLAGS) $(LIB) $(OBJS)
 
+XLIBS =
+ifeq ($(wildcard /etc/os-release/.*),)
+   XLIBS = -L/usr/lib64 -lssl -lcrypto
+endif
 
 %.x : $(LIB) %.F90
 	$(FC) $(LDFLAGS) -o $@ $(D)TEST $*.F90 $(LIBS)
@@ -115,7 +119,7 @@ python: $(PY_EXTS)
 VLIDORT_BRDF_.$(F2PYEXT): VLIDORT_BRDF_py.F90 
 	$(F2PY) -c -m VLIDORT_BRDF_ $(M). $(M)$(INC_CHEM_BASE) \
 	         $(I)$(INC_VLIDORT90) \
-                VLIDORT_BRDF_py.F90 $(LIB_VLIDORT90) $(LIBS) 
+                VLIDORT_BRDF_py.F90 $(LIB_VLIDORT90) $(LIBS) $(XLIBS)
 
 
 %_.$(F2PYEXT): %_py.F90

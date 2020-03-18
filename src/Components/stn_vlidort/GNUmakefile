@@ -113,6 +113,10 @@ $(LIB) lib : $(DEPS) $(OBJS)
 	$(RM) $(LIB)
 	$(AR) $(AR_FLAGS) $(LIB) $(OBJS)
 
+XLIBS =
+ifeq ($(wildcard /etc/os-release/.*),)
+   XLIBS = -L/usr/lib64 -lssl -lcrypto
+endif
 
 # Python extension modules
 # ------------------------
@@ -120,12 +124,12 @@ python: $(PY_EXTS)
 
 VLIDORT_STN_.$(F2PYEXT): VLIDORT_STN_py.F90 
 	$(F2PY) -c -m VLIDORT_STN_ $(M). $(M)$(INC_GEOVLIDORT) \
-                 VLIDORT_STN_py.F90 $(LIBS_F2PY)                  
+                 VLIDORT_STN_py.F90 $(LIBS_F2PY) $(XLIBS)
 # 	$(CP) -p VLIDORT_.$(F2PYEXT) $(ESMALIB)/Python 	
 
 stnAngles_.$(F2PYEXT): stnAngles_py.F90 
 	$(F2PY) -c -m stnAngles_ $(M). \
-                 stnAngles_py.F90 $(LIBS_F2PY)
+                 stnAngles_py.F90 $(LIBS_F2PY) $(XLIBS)
 
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
@@ -133,10 +137,10 @@ stnAngles_.$(F2PYEXT): stnAngles_py.F90
 #python python_install: $(PY_EXTS)
 
 #stnAngles_.$(F2PYEXT): stnAngles_py.F90 
-#	$(F2PY) -c -m stnAngles_  $(M). $(M)$(INC_MAPL_BASE) stnAngles_py.F90 $(LIB) $(LIBS_F2PY)
+#	$(F2PY) -c -m stnAngles_  $(M). $(M)$(INC_MAPL_BASE) stnAngles_py.F90 $(LIB) $(LIBS_F2PY) $(XLIBS)
 
 #VLIDORT_STN_.$(F2PYEXT): VLIDORT_STN_py.F90 
-#	$(F2PY) -c -m VLIDORT_STN_  $(M). $(M)../geo_vlidort $(M)$(INC_MAPL_BASE) VLIDORT_STN_py.F90 $(LIB) $(LIBS_F2PY)
+#	$(F2PY) -c -m VLIDORT_STN_  $(M). $(M)../geo_vlidort $(M)$(INC_MAPL_BASE) VLIDORT_STN_py.F90 $(LIB) $(LIBS_F2PY) $(XLIBS)
 
 
 # Hack to prevent remaking dep files during cleaning

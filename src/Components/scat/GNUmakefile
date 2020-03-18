@@ -102,6 +102,10 @@ $(LIB) lib : $(DEPS) $(OBJS)
 	$(RM) $(LIB)
 	$(AR) $(AR_FLAGS) $(LIB) $(OBJS)
 
+XLIBS =
+ifeq ($(wildcard /etc/os-release/.*),)
+   XLIBS = -L/usr/lib64 -lssl -lcrypto
+endif
 
 %.x : $(LIB) %.F90
 	$(FC) $(LDFLAGS) -o $@ $(D)TEST $*.F90 $(LIBS)
@@ -116,40 +120,40 @@ python: $(PY_EXTS)
 
 Mie_.$(F2PYEXT): Mie_py.F90 
 	$(F2PY) -c -m Mie_ $(M). $(M)$(INC_CHEM_BASE) \
-                 Mie_py.F90 $(LIBS) \
+                 Mie_py.F90 $(LIBS) $(XLIBS) \
                  only: getdims getmiedims getmiegridded getaerobs\
                  getmieobs getmieobs2 scalar vector gettopobs :
 
 MieObs_.$(F2PYEXT): MieObs_py.F90 
 	$(F2PY) -c -m MieObs_ $(M). $(M)$(INC_CHEM_BASE) \
-                 MieObs_py.F90 $(LIBS) 
+                 MieObs_py.F90 $(LIBS) $(XLIBS) 
 
 OMI_.$(F2PYEXT): OMI_py.F90 
 	$(F2PY) -c -m OMI_ $(M). $(M)$(INC_CHEM_BASE) \
 	         $(I)$(INC_VLIDORT) \
-                 OMI_py.F90 $(LIB_VLIDORT) $(LIBS) \
+                 OMI_py.F90 $(LIB_VLIDORT) $(LIBS) $(XLIBS) \
                  only: scalar vector :
 
 VLIDORT_BRDF_.$(F2PYEXT): VLIDORT_BRDF_py.F90 
 	$(F2PY) -c -m VLIDORT_BRDF_ $(M). $(M)$(INC_CHEM_BASE) \
 	         $(I)$(INC_VLIDORT90) \
-                VLIDORT_BRDF_py.F90 $(LIB_VLIDORT90) $(LIBS) \
+                VLIDORT_BRDF_py.F90 $(LIB_VLIDORT90) $(LIBS) $(XLIBS) \
                 only: scalar vector :
 
 VLIDORT_OMI_.$(F2PYEXT): VLIDORT_OMI_py.F90 
 	$(F2PY) -c -m VLIDORT_OMI_ $(M). $(M)$(INC_CHEM_BASE) \
 	         $(I)$(INC_VLIDORT90) \
-                 VLIDORT_OMI_py.F90 $(LIB_VLIDORT90) $(LIBS) \
+                 VLIDORT_OMI_py.F90 $(LIB_VLIDORT90) $(LIBS) $(XLIBS)
 
 VLIDORT_cloud_.$(F2PYEXT): VLIDORT_cloud_py.F90 
 	$(F2PY) -c -m VLIDORT_cloud_ $(M). $(M)$(INC_CHEM_BASE) \
 	         $(I)$(INC_VLIDORT90) \
-                 VLIDORT_cloud_py.F90 $(LIB_VLIDORT90) $(LIBS) \
+                 VLIDORT_cloud_py.F90 $(LIB_VLIDORT90) $(LIBS) $(XLIBS)
 
 
 qsat_.$(F2PYEXT): qsat_py.F90 
 	$(F2PY) -c -m qsat_ $(M). $(M)$(INC_MAPL_BASE) \
-                 qsat_py.F90 $(LIBS) \
+                 qsat_py.F90 $(LIBS) $(XLIBS)
 
 binObs_.$(F2PYEXT): binObs_py.F
 	$(F2PY) -c -m binObs_ $(M). \

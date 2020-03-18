@@ -65,6 +65,11 @@ $(TARGETS):
 	  done
 	$(MAKE) local_$@
 
+XLIBS =
+ifeq ($(wildcard /etc/os-release/.*),)
+   XLIBS = -L/usr/lib64 -lssl -lcrypto
+endif
+
 local_esma_install local_install: $(LIB) python_install
 	@echo No local install in here
 
@@ -109,7 +114,7 @@ python: $(PY_EXTS)
 
 GFIO_.$(F2PYEXT): GFIO_py.F90 r4_install
 	$(F2PY) -c -m GFIO_ $(M). $(M)$(INC_SDF) \
-                 GFIO_py.F90 r4/libGMAO_gfio_r4.a $(LIB_SDF) $(LIB_SYS) \
+                 GFIO_py.F90 r4/libGMAO_gfio_r4.a $(LIB_SDF) $(LIB_SYS) $(XLIBS)\
                  only: gfioopen gfiocreate gfiodiminquire gfioinquire\
                        gfiogetvar gfiogetvart gfioputvar gfiogetbegdatetime\
                        gfiointerpxy gfiointerpnn gfiocoordnn gfioclose :

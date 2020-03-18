@@ -123,6 +123,10 @@ $(LIB) lib : $(DEPS) $(OBJS)
 %.x:  ../geo_vlidort/cloud_MieMod.o %.o
 	$(FC) $(FOPTS) $^ -o $@  $(LIB) $(LIBS)	
 
+XLIBS =
+ifeq ($(wildcard /etc/os-release/.*),)
+   XLIBS = -L/usr/lib64 -lssl -lcrypto
+endif
 
 # Python extension modules
 # ------------------------
@@ -130,12 +134,12 @@ python: $(PY_EXTS)
 
 VLIDORT_POLAR_.$(F2PYEXT): VLIDORT_POLAR_py.F90 
 	$(F2PY) -c -m VLIDORT_POLAR_ $(M). $(M)$(INC_GEOVLIDORT) \
-                 VLIDORT_POLAR_py.F90 $(LIBS_F2PY)                  
+                 VLIDORT_POLAR_py.F90 $(LIBS_F2PY) $(XLIBS)
 # 	$(CP) -p VLIDORT_.$(F2PYEXT) $(ESMALIB)/Python 	
 
 READ_NC_.$(F2PYEXT): READ_NC_py.F90 
 	$(F2PY) -c -m READ_NC_ $(M). $(M)$(INC_GEOVLIDORT) \
-                 READ_NC_py.F90 $(LIBS_F2PY)
+                 READ_NC_py.F90 $(LIBS_F2PY) $(XLIBS)
 
 %.$(F2PYEXT): %py.F90 
 	$(F2PY) -c -m $* $(M). $< 
