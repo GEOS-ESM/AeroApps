@@ -133,7 +133,7 @@ class WORKSPACE(JOBS):
         self.Date      = isoparser(args.iso_t1)
         self.enddate   = isoparser(args.iso_t2)
         self.Dt        = timedelta(hours=args.DT_hours)
-
+        self.dt        = timedelta(days=args.dt_days)
         
         self.track_pcf   = args.track_pcf
         self.orbit_pcf   = args.orbit_pcf
@@ -191,10 +191,12 @@ class WORKSPACE(JOBS):
 
             self.dirstring.append(workpath)
             
-            sdate += self.Dt
+            sdate += self.dt
 
     def edit_slurm(self,sdate,workpath):
-        edate = sdate + self.Dt
+        edate = sdate + self.dt
+        if edate > self.enddate:
+            edate = self.enddate
         outpath = '{}/{}'.format(workpath,self.slurm)
 
         # read file first
@@ -255,6 +257,7 @@ if __name__ == '__main__':
     
     #Defaults
     DT_hours = 1
+    dt_days  = 5
     slurm    = 'run_polarimeter_swath.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir/swath'
 
@@ -269,6 +272,9 @@ if __name__ == '__main__':
 
     parser.add_argument("inst_pcf",
                         help="prep config file with instrument variables")
+
+    parser.add_argument('-d',"--dt_days", default=dt_days, type=int,
+                        help="Timestep in hours for each run (default=%i)"%dt_days)
 
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
