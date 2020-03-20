@@ -3,12 +3,10 @@
 #######################################################################
 #                     Batch Parameters for Run Job
 #######################################################################
-#SBATCH --time=01:00:00
+#SBATCH --time=12:00:00
 #SBATCH --ntasks=8 --cpus-per-task=1 --ntasks-per-node=8
 #SBATCH --job-name=swath
-#SBATCH -A s1180
-#SBATCH --qos=pace
-#SBATCH --partition=preops
+#SBATCH -A s2190
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=patricia.castellanos@nasa.gov
 #SBATCH --output=slurm_%j.out

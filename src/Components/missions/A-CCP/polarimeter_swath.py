@@ -541,6 +541,12 @@ class SWATH(object):
                 slatss = np.sin(latr)
 
                 cvaar = (slatss - slatp*clambr_view)/(clatp*slambr_view)
+                if any(cvaar > 1):
+                    I = cvaar > 1
+                    cvaar[I] = 1.0
+                if any(cvaar < -1):
+                    I = cvaar < -1
+                    cvaar[I] = -1.0
                 vaar = np.arccos(cvaar)
                 self.vaa_granule[:,ialong,icross] = np.degrees(vaar)
 
@@ -775,7 +781,7 @@ if __name__ == "__main__":
         print '>>>verbose:   ',args.verbose
         print '++++End of arguments+++'
         if not args.dryrun:
-            swath = SWATH(date,inFilem1,inFile,inFilep1,outFile,HGT,along_track_deg,
+            SWATH(date,inFilem1,inFile,inFilep1,outFile,HGT,along_track_deg,
                           cross_track_km=cross_track_km,
                           cross_track_dkm=cross_track_dkm)
 
