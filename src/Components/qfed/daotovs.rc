@@ -1,0 +1,446 @@
+#
+# This portion of the DATOVS resource file is specific of fvDAS without
+# Serial Analysis Updates (SAU)
+#
+# FVDAS
+# =====
+do_co: yes
+stddev_fact_t: 0.5  
+stddev_fact_q: 0.5  
+fg_time_inc: 360
+#  0.70, 0.70, 0.70, 0.70,  0.70, 0.70, 0.70, 0.70, 0.70, 0.70, &
+#       0.70, 0.70, 0.60, 0.55, 0.50, 0.45, 0.32, 0.20
+#fcfile: %s.gg2fv.eta.%y4%m2%d2_%h2z.hdf
+#fcfile: %s.ana.eta.%y4%m2%d2.hdf
+#bkgfile: %s.ana.tovs_%sat.%y4%m2%d2.oms
+#fcfile: /g2/joiner/airs/%s.bkg.eta.%y4%m2%d2.hdf
+fcfile: /g2/joiner/airs/ncep/bkg/%y4%m2/gg2fv.eta.%y4%m2%d2_%h2z.hdf
+#bkgfile: /g2/joiner/airs/%s.bkg.tovs_%sat.%y4%m2%d2.oms
+#bkgfile: /g2/joiner/airs/paper/%s.bkg.tovs_%sat.%y4%m2%d2.oms
+ bkgfile: /g2/joiner/airs/co/bkg/l1c9/%s.bkg.tovs_%sat.%y4%m2%d2.oms
+ anafile: %s.bkg.tovs_%sat.%y4%m2%d2.oms
+#anafile: /g2/joiner/airs/%s.bkg.tovs_%sat.%y4%m2%d2.oms
+tunefile: /g2/joiner/airs/co/tuning/%s.tuning.tovs_%sat.%y4%m2%d2.oms
+tunefile_rc: /g2/joiner/airs/co/%s.tuning.tovs_%sat.oms
+omffile: %s.omf.tovs_%sat.%y4%m2%d2_%h2z.oms
+#omffile_1: /g2/joiner/airs/ncep/warmest_fov/%s.omf.tovs_%sat.%y4%m2%d2.oms
+omffile_1: %s.omf.tovs_%sat.%y4%m2%d2_%h2z.oms
+#l2file: /nobackup2/joiner/airs/co/good/%s.level2.tovs_%sat.%y4%m2%d2_%h2z.oms.1
+#l2file_1: /nobackup2/joiner/airs/co/good/%s.level2.tovs_%sat.%y4%m2%d2_%h2z.oms.1
+l2file: /nobackup2/joiner/airs/co/%s.level2_co.tovs_%sat.%y4%m2%d2_%h2z.oms
+l2file_1: /nobackup2/joiner/airs/co/%s.level2.tovs_%sat.%y4%m2%d2.oms
+odsfile: %s.daotovs.obs.%y4%m2%d2.ods
+#o3file: /g2/joiner/airs/a001.Ox.a.%y4%m2%d2z00.%y4%m2%d2z18
+o3file: /input/dao_ops/ozone003/ozone/Y%y4/M%m2/a003.Ox.a.%y4%m2%d2z00.%y4%m2%d2z18
+#o3cldfile:  /g2/joiner/airs/paper/%s.bkg_o3cld.tovs_%sat.%y4%m2%d2.oms
+#o3cldfile:  /g2/joiner/airs/%s.bkg_o3cld.tovs_%sat.%y4%m2%d2.oms
+#o3cldfile:  /g2/joiner/airs/ozone/assimfg/%s.bkg_o3cld.tovs_%sat.%y4%m2%d2.oms
+#o3cldfile:  /g2/joiner/airs/co/bkg/l1c9/%s.bkg_o3cld.tovs_%sat.%y4%m2%d2.oms
+o3cldfile:  /nobackup2/joiner/airs/ncep/bkg/%s.bkg_o3cld.tovs_%sat.%y4%m2%d2.oms
+
+#colfile: %s.cqc.obs.%y4%m2%d2.bfr 
+colfile: %s.sonde_hirs.tovs_%sat.%y4%m2%d2.oms
+
+#auxilliary data directory
+aux_data_dir: /home/joiner/DAOTOVS/src/aux_data/
+#aux_data_dir: /u/joiner/DAOTOVS/src/aux_data/
+#aux_data_dir: /share/fvpsas/data/iret/
+#
+# DAOTOVS base resource file (same for GEOS and fvDAS)
+#
+# DAOTOVS.header.rsrc
+#-----------------------------------------------------------------------
+#///////////////////////////////////////////////////////////////////////
+#-----------------------------------------------------------------------
+#
+#-----------------------------------------------------------------------------
+###  NOAA Satellite Information:
+# tn = TIROS N Launch 10/13/78 - 06/30/80  [2:30pm]  Inst: HIRS, MSU, SSU
+# na = NOAA  6 Launch 06/27/79 - 03/31/87  [7:30am]  Inst: HIRS, MSU, SSU
+A
+# nc = NOAA  7 Launch 06/23/81 - 06/17/86  [2:30pm]  Inst: HIRS, MSU, SSU
+# ne = NOAA  8 Launch 03/25/83 - 12/29/85  [7:30am]  Inst: HIRS, MSU, SSU
+# nf = NOAA  9 Launch 12/00/84 - 11/07/88  [2:20pm]  Inst: HIRS, MSU, SSU
+# ng = NOAA 10 Launch 11/17/86 - 09/16/91  [7:30am]  Inst: HIRS, MSU
+# nh = NOAA 11 Launch 09/24/88 - 00/00/00  [1:40pm]  Inst: HIRS, MSU, SSU
+# nd = NOAA 12 Launch 05/14/91 - 07/14/97  [7:30am]  Inst: HIRS, MSU
+# nj = NOAA 14 Launch 12/30/94 - 00/00/00  [1:30pm]  Inst: HIRS, MSU, SSU
+# nk = NOAA 15 Launch 05/13/98 - 00/00/00  [7:30am]  Inst: HIRS, AMSUA AMSUB
+# !History:
+#
+# 21Feb00 Joiner  - Created this file.
+# 25Jun01 Frank  - Adding OMF to NH, adding nl to preprocess section.
+#
+#///////////////////////////////////////////////////////////////////////
+#-----------------------------------------------------------------------
+
+#Filename conventions
+#====================
+
+#for off-line (GEOS-DAS)
+#=======================
+#fcfile: %s.pre-anal.prs.t%y4%m2%d2
+
+#for all
+#=======
+#l1cfile: l1b_hybrd/%inst.%sat.hdf.t%y4%m2%d2
+#l1cfile: /g2/joiner/airs/l1b_hybrd/%inst.%sat.hdf.t%y4%m2%d2
+ l1cfile: /g2/joiner/airs/l1c9_343/%inst.%sat.hdf.t%y4%m2%d2
+#l1cfile: /input/dfrank/AIRS/aqua_l1c_re/%inst.%sat.hdf.t%y4%m2%d2
+# sonde file name has been moved to daotovs_fv.rc and daotovs_geos.rc
+
+#eventually might use these instead
+#===================================
+#l1cfile: %inst.tovs_%sat.%y4%m2.oms
+#colfile: rawsnd.tovs_%sat.%y4%m2.oms
+
+#simul: yes
+omf: no # default no
+write_obs: no  # default no
+avg_obs: yes # default yes
+#avg_obs: no # default yes
+write_obscc: no # default no
+omf_cldy: no # default no
+#omf_cldy: no
+nkeep_eig: 40
+nstd_check: 1.75 #2.0
+#nstd_check: 3.0
+interp_layer_mean: yes
+use_land_em: yes
+mwemis_ret: no
+use_mit_ps: yes
+#use_sarta: no
+#use_new_h2o: no
+cloud_clear: yes
+#cloud_clear: no
+#enable_sarta: no
+enable_sarta: yes
+airs_sarta_chan_file: airs_chan_343.txt
+
+#For l1bproc
+#===========
+
+numsats: 14
+
+#sat  code  sat number
+satnumbers::
+tn 1  1 'tiros-n tn 10/13/78 launch, 1500/0300 orbit, r&d prototype, replace itos satellites (noaa 1-5), 01/20/80 on board computer failure'  
+na 2  6 'noaa-6  na 06/27/79 launch, 1930/0730 orbit, 06/20/83 sounding product terminated'
+nb 0  0 'noaa-?  nb 05/29/80 failed to achieve orbit'
+nc 4  7 'noaa-7  nc 06/23/81 launch, 1430/0230 orbit, 08/19/81 replace na, 09/01/83 ssu 2 turned off, 02/02/85 hirs dead' 
+nd 5  12 'noaa-12  nd 05/91 launch into 1930/0730 orbit, 07/14/97 HIRS went bad, 08/15/97 HIRS failed'
+ne 6  8 'noaa-8  ne 03/28/83 launch, 1930/0730 orbit, 1st advanced tiros-n, 06/20/83 operational, replaced na, 12/07/83 ssu 3 turned off, 10/31/85 turned off'
+nf 7  9 'noaa-9  nf 12/12/84 launch, 1420/0220 orbit, 02/05/85 become operational, 03/??/87 msu channel 2 went dead, 11/07/88 last day of data'
+ng 8  10 'noaa-10 ng 09/17/86 launch, without ssu, 1930/0730 orbit'
+nh 1  11 'noaa-11 nh 09/24/88 launch, 1340/0140 orbit, hirs2 channels 10 & 17 were changed, 02/26/99 MSU failed, 04/14/00 HIRS failed'
+ni 5  13 'noaa-13 ni 08/93 launch, 09/93 dead'
+nj 3  14 'noaa-14 nj 12/94 launch, 1340/0140 orbit'
+nk 15 15 'noaa-15 nk 05/98 launch 1920/0730 orbit, 07/01 first good day of AMSUA data'
+nl 16 16 'noaa-16 nl 09/21/00 launch 1400/0200 orbit, first good day of AMSUA data'
+aq 0 100 'eos-pm aqua aq launch in pm orbit, first good day of data'
+:: # End of satnumbers
+
+#sat  frequencies
+#note : this table does not need to be updated, the information now contained in l1b files
+hirs_frequencies::
+ tn
+                 668.70   679.05   689.70   703.80   716.70  
+                 731.85   749.50   900.00  1030.00  1225.00  
+                1365.00  1488.00  2192.50  2211.65  2237.35  
+                2271.20  2308.85  2512.00  2660.00 14500.0 
+  na
+                 667.95   679.34   689.99   704.63   717.75  
+                 732.30   749.16   899.94  1027.55  1222.98  
+                1368.50  1481.08  2190.48  2210.91  2238.62  
+                2269.65  2360.94  2515.28  2649.97 14500.0 
+  nb
+                 667.95   679.34   689.99   704.63   717.75  
+                 732.30   749.16   899.94  1027.55  1222.98  
+                1368.50  1481.08  2190.48  2210.91  2238.62  
+                2269.65  2360.94  2515.28  2649.97 14500.0 
+  nc
+                 668.70   681.00   692.00   705.00   718.00  
+                 734.00   753.00   904.00  1028.00  1229.00  
+                1360.00  1483.00  2181.00  2211.00  2241.00  
+                2260.00  2360.00  2515.00  2660.00 14500.0 
+  nd
+                 667.58   680.18   690.01   704.22   716.32  
+                 732.81   751.92   900.45  1026.66  1223.44  
+                1368.68  1478.59  2190.37  2210.51  2236.62  
+                2267.62  2361.64  2514.68  2653.48 14453.14
+ ne
+                 667.41   679.45   690.90   702.97   717.56
+                 732.97   747.90   901.08  1027.11  1224.05
+                1366.17  1486.92  2189.28  2211.71  2238.06
+                2271.43  2357.11  2515.53  2661.85 14355.00
+  nf 
+                 667.67   679.84   691.46   703.37   717.16
+                 732.64   749.40   898.53  1031.61  1224.74
+                1365.12  1483.24  2189.97  2209.18  2243.14
+                2276.46  2359.05  2518.14  2667.80 14549.27
+  ng
+                 667.70   680.23   691.15   704.33   716.30
+                 733.13   750.72   899.50  1029.01  1224.07
+                1363.32  1489.42  2191.38  2208.74  2237.49
+                2269.09  2360.00  2514.58  2665.38 14453.14
+  nh
+                 668.99   678.89   689.70   703.25   716.83
+                 732.11   749.48   900.51  1031.19   795.69
+                1361.10  1479.86  2189.94  2209.66  2239.26
+                2267.80  2416.32  2511.83  2664.07 14453.14
+  ni
+                 668.99   678.89   689.70   703.25   716.83
+                 732.11   749.48   900.51  1031.19   795.69
+                1361.10  1479.86  2189.94  2209.66  2239.26
+                2267.80  2416.32  2511.83  2664.07 14453.14
+  nj 
+                 668.90   679.36   689.63   703.56   714.50
+                 732.28   749.64   898.67  1028.31   796.04
+                1360.95  1481.00  2191.32  2207.36  2236.39
+                2268.12  2420.24  2512.21  2647.91 14453.14 
+  nk
+                 669.08   678.80   690.45   703.14   715.92
+                 731.71   747.66   897.37  1032.11   801.12
+                1362.43  1529.83  2188.20  2209.90  2235.26
+                2241.96  2418.99  2518.76  2657.26 14453.14
+  nl
+                 669.63   679.62   691.34   701.21   715.97
+                 731.48   748.81   894.57  1031.61   803.03
+                1362.17  1524.87  2184.24  2205.76  2234.22
+                2243.77  2415.06  2515.56  2663.39 14453.14
+:: # End hirs_frequencies
+
+#For level 2 processing
+#=======================
+ntimes_sat: 18 
+satproc::
+
+#begin date  end date  numsats sats
+19780101   19790701    1 tn
+19790702   19800601    2 tn na
+19800602   19810601    1 na
+19810602   19830301    2 na nc
+19830302   19850101    3 na nc ne
+19850102   19860601    3 na nc nf
+19860602   19861101    2 na nf
+19861102   19870301    3 na nf ng
+19870302   19880901    2 nf ng
+19880902   19881101    3 nf nh ng
+19881102   19910501    2 nh ng
+19910502   19910901    3 nh ng nd
+19910902   19950101    2 nh nd
+19950102   19970801    3 nh nj nd
+19970802   19980701    2 nh nj
+19980702   19990225    3 nh nj nk
+19990226   20001231    2 nj nk
+#20010101   21000101    1 nl
+20010101   21000101    1 aq
+#20010101   21000101    3 nj nk nl
+:: # end satproc
+
+#These are the instruments to be used by tuning and level 2
+sat_inst::
+tn 3 hirs msu ssu 
+na 3 hirs msu ssu
+nb 3 hirs msu ssu
+nc 3 hirs msu ssu
+nd 2 hirs msu ssu
+ne 3 hirs msu ssu
+nf 3 hirs msu ssu
+ng 2 hirs msu ssu
+nh 3 hirs msu ssu
+ni 3 hirs msu ssu
+nj 3 hirs msu ssu
+nk 2 hirs amsua amsub
+nl 3 hirs amsua amsub
+aq 1 airs amsua hsb
+:: # end sat_inst
+
+#For preproc
+#==============
+
+#For tuning
+#==============
+ntune_chan: 15
+tune_chans::
+
+#sat begdate enddate numchans chans
+#===================================
+tn 19780101 21000101 20  2 3 4 5 6 7 8 10 11 12 13 14 15 18 19 21 22 23 24
+na 19780101 21000101 20  1 2 3 4 5 6 7 8 10 11 12 13 14 15 18 19 21 22 23 24     
+nb 19780101 21000101 20  1 2 3 4 5 6 7 8 10 11 12 13 14 15 18 19 21 22 23 24    
+nc 19780101 21000101 20  1 2 3 4 5 6 7 8 10 11 12 13 14 15 18 19 21 22 23 24   
+nd 19780101 21000101 20  1 2 3 4 5 6 7 8 10 11 12 13 14 15 18 19 21 22 23 24  
+ne 19780101 21000101 20  1 2 3 4 5 6 7 8 10 11 12 13 14 15 18 19 21 22 23 24 
+nf 19780101 19870301 20  1 2 3 4 5 6 7 8 10 11 12 13 14 15 18 19 21 22 23 24
+nf 19870302 21000101 19  1 2 3 4 5 6 7 8 10 11 12 13 14 15 18 19 21    23 24
+ng 19780101 21000101 20  1 2 3 4 5 6 7 8 10 11 12 13 14 15 18 19 21 22 23 24 
+nh 19780101 21000101 19  2 3 4 5 6 7 8 10 11 12 13 14 15 18 19 21 22 23 24
+ni 19780101 21000101 20  1 2 3 4 5 6 7 8 10 11 12 13 14 15 18 19 21 22 23 24
+nj 19780101 21000101 20  1 2 3 4 5 6 7 8 10 11 12 13 14 15 18 19 21 22 23 24
+nk 19780101 21000101 26  1 2 3 4 5 6 7 8 10 11 12 13 14 15 18 19 33 34 35 36 37 38 39 40 41 42
+nl 19780101 21000101 26  1 2 3 4 5 6 7 8 10 11 12 13 14 15 18 19 33 34 35 36 37 38 39 40 41 42
+aq 19780101 21000101 1 33:44 10001:10281 
+#aq 19780101 21000101 33:42 10001:10032 10038:10231 10242:10281 
+#aq 19780101 21000101 4  33:42 10063:10130  10154:10225 10240:10281
+
+:: # end tune_chans
+
+nchan_tune_coeff: 12
+chan_tune_coeff:: 
+10001:10074 1 1 0 0 0 1
+10075:10084 1 1 1 0 0 1
+10085:10111 1 1 0 0 0 1
+10112:10116 1 1 0 1 0 1
+10117:10130 1 0 0 1 0 0
+10131:10133 1 1 0 1 0 1
+10134:10152 1 1 0 1 0 1
+10153:10158 1 1 0 1 0 1
+10159:10161 1 0 0 1 0 0
+10162:10170 1 1 0 1 0 1
+10171:10214 1 1 0 0 0 1
+10215:10261 1 1 0 1 0 1 
+10262:10281 1 1 0 1 0 1
+::
+
+#nchan_tune_coeff: 1
+#chan_tune_coeff::
+#10001:10281 1 1 0 0 0 1
+#::
+
+#increment
+#===================
+#max_lat_l2: -60
+#min_lon_l2: -122
+
+#CO Alaska fires
+#===============
+#min_lat_l2: 30
+#max_lat_l2: 90
+#min_lon_l2: -180
+#max_lon_l2: -30
+
+#clear night
+#===========
+#min_index_l2:1
+#max_index_l2:5000
+#min_index_l2:10182
+#max_index_l2:10230
+#min_index_l2:9569
+#max_index_l2:9571
+
+#airs_noise_factor: 4.0
+#For level2
+# Note: must list HIRS/AIRS first!
+=================================
+add_noise: yes
+add_error: yes
+#add_cloud: no
+write_l2: yes
+do_fast: yes
+#stddev_thresh: 10.0
+stddev_thresh: 2.0
+ch_10_8: 5.0
+#mean_thresh: 0.4
+#mean_thresh: 0.5
+#thresh_tau_min:0.05
+#thresh_tau_max:0.5
+tau_cld_thresh:0.04
+nlev2_chan: 18
+lev2_chans::
+#sat begdate enddate numchans chans
+#===================================
+tn 19780101 21000101 24  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 25 26 27
+na 19780101 21000101 24  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 25 26 27   
+nb 19780101 21000101 21  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24    
+nc 19780101 21000101 24  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 25 26 27   
+nd 19780101 21000101 21  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24  
+ne 19780101 21000101 24  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24  25 26 27
+nf 19780101 19870301 24  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 25 26 27
+nf 19870302 21000101 23  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21    23 24 25 26 27
+ng 19780101 21000101 21  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 
+nh 19780101 19950101 23  2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 25 26 27
+nh 19950102 21000101 20  2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 # turn off SSU
+ni 19780101 21000101 21  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24
+nj 19780101 19980703 24  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 25 26 27
+nj 19980703 21000101 21  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 # turn off SSU
+nk 19780101 20001029 29  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 33 34 35 36 37 38 39 40 41 42 43 44
+nk 20001030 21000101 28  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 33 34 35 36 37 38 39 40 41 42 43 
+nl 19780101 21000101 29  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 33 34 35 36 37 38 39 40 41 42 43 44 
+#aq 19780101 26000101 18 10002:10006 10008:10010 10012:10031 10034:10041 10043:10044 10051:10090 10092 10094 10104:10110 10116:10125 10131:10153 10163:10184 10192:10204 10206:10213 10215:10218 10220:10225 10248:10256 33:44
+#aq 19780101 26000101 4 10001:10216 10219:10223 10225:10229 33:44
+#aq 19780101 26000101 4 10001:10216 10219:10223 10225:10229 33:44
+#aq 19780101 26000101 3 10001:10216 10219:10223 10225:10229 # 33:44
+#aq 19780101 26000101 5 10001:10155 10215:10216 10219:10223 10225:10229 33:44
+#aq 19780101 26000101 4 10001:10155 10215:10216 10219:10223 10225:10229 # 33:44
+#aq 19780101 26000101 4 10001:10126 10215:10216 10219:10223 10225:10229 # 33:44
+ aq 19780101 26000101 1 10236:10240
+#aq 19780101 26000101 10 10001:10166 10175 10179 10181 10183 10236 10240:10242 10244:10247 10249:10258 33:44
+#aq 19780101 26000101 5 10001:10126 10215:10216 10219:10223 10225:10229 33:44
+#note - like shorter wavelength o3
+#aq 19780101 21000101 6  10002:10006 10008:10010 10012:10028 10125 10264 10279:10281 
+#aq 19780101 21000101 17 10002:10006 10008:10010 10012:10031 10034:10041 10043:10044 10051:10090 10092 10094 10104:10110 10116:10125 10152:10155 10163:10184 10192:10204 10206:10207 10209:10213 10222:10231 10264 10279 #10147:10155 33:44
+#aq 19780101 21000101 16 10002:10006 10008:10010 10012:10031 10034:10041 10043:10044 10051:10090 10092 10094 10104:10110 10116:10125 10163:10184 10192:10204 10206:10207 10209:10213 10222:10231 10264 10279 #10147:10155 33:44
+#aq 20000101 21000101 6   10001:10032 10119 10125 10264 10279 33:44
+#aq 20000101 21000101 1   10001:10032 10038:10111 10114:10214 10264 10279 33:44
+#aq 20000101 21000101 2   10001:10281 33:44 # for simulations
+#aq 20000101 21000101 1   10001:10281 # for simulations
+:: # end lev2_chans
+
+npassive_chan: 16
+passive_chans::
+#sat begdate enddate numchans chans
+#===================================
+tn 19780101 21000101 24 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 25 26 27
+na 19780101 21000101 24 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 25 26 27   
+nb 19780101 21000101 21 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24    
+nc 19780101 21000101 22 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 25 26 27   
+nd 19780101 21000101 21 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24  
+ne 19780101 21000101 24 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24  25 26 27
+nf 19780101 19870301 24 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 25 26 27
+nf 19870302 21000101 23 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21    23 24 25 26 27
+ng 19780101 21000101 21 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 
+nh 19780101 19950101 24 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 25 26 27
+nh 19950102 21000101 21 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24
+ni 19780101 21000101 21 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24
+nj 19780101 21000101 24 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 21 22 23 24 25 26 27
+nk 19780101 20001029 29 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 33 34 35 36 37 38 39 40 41 42 43 44
+nk 20001030 21000101 28 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 33 34 35 36 37 38 39 40 41 42 43 
+nl 19780101 21000101 29 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 33 34 35 36 37 38 39 40 41 42 43 44
+#aq 19780101 26000101 1 10001:10281 
+#aq 19780101 26000101 0
+#aq 19780101 26000101 1 10236:10240
+aq 19780101 26000101 0 
+#aq 19780101 26000101 10002:10006 10008:10010 10012:10031 10034:10041 10043:10044 10051:10090 10092 10094 10104:10110 10116:10125 10145 10163:10184 10192:10204 10206:10213 10215:10218 10220:10225 10248:10256 10264 10279:10281 33:44
+#aq 19780101 21000101 9 10034:10041 10090:10104 10125 10142:10155 10177 10199 10213:10242 10279 33:44
+::
+# don't use AIRS 10112
+
+#For postproc
+#==============
+#note: put satellites in order of priority
+
+postsats::
+
+#begin date  end date  numsats sats  am_pm
+#note 0 = am, 1=pm, 2=use amsu kx's
+19780101   19790701    1 tn 1
+19790702   19800601    2 tn na 1 0
+19800602   19810601    1 na 0
+19810602   19830301    2 na nc 0 1
+19830302   19850101    3 na nc ne 0 1 0
+19850102   19860601    3 nf na nc 1 0 1
+19860602   19861101    2 nf na 1 0
+19861102   19870301    3 nf na ng 1 0 0 
+19870302   19880901    2 nf ng 1 0
+19880902   19881101    3 nh nf ng 1 0 0 # choose nf over ng because ssu?
+19881102   19910501    2 nh ng 1 0
+19910502   19910901    3 nh ng nd 1 0 0
+19910902   19950101    2 nh nd 1 0
+19950102   19970714    3 nj nh nd 1 0 0 # choose nh over nd because of ssu?
+19970715   19980630    2 nj nh 1 0 # nh drifts into morning?
+19980701   19990225    3 nk nj nh 0 1 1 # call nh PM
+19990226   20010301    2 nk nj 0 1
+20010302   21000101    3 nl nk nj 1 0 1
+
+:: # end postsats

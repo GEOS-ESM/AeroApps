@@ -1,0 +1,110 @@
+QFED ChangeLog
+
+2018-01-12  <anton.s.darmenov@nasa.gov>, Tag qfed-2_5_r2
+	* Merged Ben's edits for cubed sphere output. There are 
+	  no algorithm changes. Support for writing files on 
+	  cubed sphere grid necessitated updating GMAO_Shared 
+	  to more a recent version.
+
+2016-11-15  <anton.s.darmenov@nasa.gov>, Tag qfed-2_5_r1
+	* Updates to accommodate the changes in MODIS Collection 6 
+	  active fire data product. Use the algorithm QA mask to
+	  find cloudy pixels over water and lump them with the non-fire
+	  water pixels, in this way cloudy pixels are treated as
+	  potential fire pixels only over land and coastal areas. 
+	  Emissions from offshore flaring are not considered 
+	  and flares inland/coasts are not treated explicitly.
+
+2015-04-06  <anton.s.darmenov@nasa.gov>, Tag qfed-2_4_r8
+	* No biomass burning emissions from locations categorized
+	  in IGBP as water and snow/ice.
+
+2014-12-10  <arlindo.dasilva@nasa.gov>, Tag qfed-2_4_b7
+	* Updated Plume Rise code with VMD calculation.
+	* Updated minx.py to handle MINX v3.x files.
+	* Update g5_modules, GMAO_Shared/Config to a more recent tag.
+	
+2013-08-01  <anton.s.darmenov@nasa.gov>, Tag qfed-2_4_r6_p1
+	* This is QFED v2.4-r6-p1 stable release. Patch for binning
+	  FRP on 3600x1800 grid.
+
+2012-11-01  <arlindo.dasilva>, Tag qfed-2_4_b3
+	* Refactoring; some stuff moved to GMAO_Shared/GMAO_pyobs
+
+2012-10-26  <anton.s.darmenov@nasa.gov>, Tag qfed-2_4_r1
+	* This is QFED v2.4-r1 stable release. Same as qfed-2_4_b1_m1.
+
+2012-10-26  <anton.s.darmenov@nasa.gov>, Tag qfed-2_4_b1_m1
+	* Updated g5_modules, GNUmakefile, Config and GMAO_Shared to
+	  GEOSadas-5_7_2_p5_m1
+	  
+2012-10-22  <anton.s.darmenov@nasa.gov>, Tag qfed-2_4_b1
+	* Updated the sequential algorithm to use emissions from 
+	  the previous day. Emission calculation method defaults to 
+	      'sequential'      - sequential algorithm with background 
+	                          (first guess) value estimated from previous 
+	                          day emissions
+	* Updated g5_modules, GNUmakefile, Config and GMAO_Shared to 
+	  Ganymed-1_0_UNSTABLE
+
+
+2012-10-19  <anton.s.darmenov@nasa.gov>, Tag qfed-2_3_r1
+	* Updated pixel area algorithm following the latest 
+	  MODIS Fire product documentation.
+	* Fixed a bug in the Level3a I/O. Level3a product generation 
+	  is sped up by a factor of two.
+	* Fixed illusive segmentation faults that were traced back to 
+	  invalid gelocation data passed to bionObs(). Pixels with 
+	  invalid geolocation data are now being discarded.
+	* Added options to compute emissions under different treatments of
+	  cloud area. Supported methods include: 
+	      'nofires'         - no fires from areas obscured by clouds
+	      'similarity'      - observed and non observed land areas have 
+	                          same FRP density
+	      'sequential-zero' - simplified implementation of a sequential 
+	                          algorithm with background (first guess) value
+	                          equal to zero (no fires)
+	* Implemented capping of the FRP magnitude. The new quality control 
+	  procedure estimates the daily mean AOD and scales down the FRP if 
+	  the estimated AOD exceeds a predetermined value.
+	* Added support for computing emissions of ammonia, NOx, 
+	  methyl ethyl ketone, propene, ethane, propane, C4-C5 alkanes, 
+	  acetaldehyde, formaldehyde, acetone, methane.
+	* Added support for generating Level3a and Level3b products at 
+	  f-resolution (1/8 degree)
+
+
+2011-10-06 <anton.s.darmenov@nasa.gov>, Tag qfed-2_2_r1_p1
+	* Fixed a crash when using IGBP directory path longer than
+	  80 characters
+	* Increased the length of the IGBP directory path to 512
+	  characters
+	* Updated the g5_modules - Baselibs/v3.2.0_buildSLES11 and
+	  SIVO-PyD/spd_1.1.2
+
+
+2011-05-31 <anton.s.darmenov@nasa.gov>, Tag qfed-2_2_r1
+	* This is QFED v2.2 stable release.
+	* The internal version number used in the title file attribute
+	  now clearly identifies the product/level version rather than 
+	  the QFED release.
+
+
+2011-05-31 <anton.s.darmenov@nasa.gov>, Tag qfed-2_2_b1
+	* This is QFED v2.2 beta release
+	* Include the tag name in the title file attribute of the 
+	  FRP and emissions files.
+	* Compared with the previous stable release QFED v2.1 
+	  (tag: qfed-2_1_r1), OC,BC,SO2,PM emissions are scaled up 
+	  by biome dependent factors of 2.5 for tropical forest, 
+	  4.5 for extra-tropical forest, and 1.8 for savanna and 
+	  grassland, whereas CO and CO2 emissions remain the same.
+	* Include g5_modules to standardize the build environment.
+
+
+2011-05-20 <anton.s.darmenov@nasa.gov>, Tag qfed-2_1_r1
+	* Drop the old naming convention for tag names. From now on 
+	  the name of the tag should reflect the QFED version. Pushed 
+	  QFED-v2.1 tag (qfed-2_1_r1) which is the same as the 
+	  'qfed-1_0_r5' tag.
+

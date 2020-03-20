@@ -1,0 +1,58 @@
+#!/bin/csh -f
+#
+# Given an FPL with a flight path, sample GEOS-products of interest.
+#
+
+set rc = ../RC
+set sampler = $ESMADIR/`uname`/bin/trj_sampler.py
+set esampler = $ESMADIR/`uname`/bin/ext_sampler.py
+
+set dest = $HOME/iesa/aerosol/data/WE-CAN/sampled
+set nav = $HOME/iesa/aerosol/data/WE-CAN/Nav
+
+
+if ( $#argv < 1 ) then
+   echo "usage:    $0 [-r REV] we-can.plan.2018-08-23.npz  [fcst_DTG]"
+   echo "          where REV is the revision; default is R0"  
+   exit 1
+else 
+
+if ( "$1" == "-r" ) then
+     set rev = $2
+     shift
+     shift
+else
+     set rev = R0
+endif
+
+if ( $#argv == 2 ) then
+    set fpl  = $nav/$1
+    set DTG  = $2
+    foreach prod ( CHEM METEO )
+        cp $rc/trj.fcast2.$prod.rc  /tmp/trj.fcast.$prod.$$.rc
+	repl DTG $DTG /tmp/trj.fcast.$prod.$$.rc
+    end
+else
+    set fpl = $nav/$1
+    foreach prod ( CHEM METEO )
+       cp $rc/trj.fcast.$prod.rc  /tmp/trj.fcast.$prod.$$.rc
+    end
+endif
+
+endif
+
+
+        
+foreach prod ( CHEM METEO )  
+
+   set basen = `basename $fpl`
+   set date = `echo $basen:r:r | awk -F_ '{print $3}'`
+   set nc = $dest/WECAN_PLAN_${date}_$rev.nc
+
+   $sampler -f NETCDF3_CLASSIC  -I -v \
+             -r /tmp/trj.fcast.$prod.$$.rc -o $nc $fpl
+
+    rm -rf /tmp/trj.fcast.$prod.$$.rc*
+             
+end
+
