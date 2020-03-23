@@ -1,78 +1,9 @@
-# Compiled source #
-###################
-*.com
-*.class
-*.dll
-*.exe
-*.o
-*.so
-*.mod
-*.MOD
-*.d
-*.x
-*.xx
-*.a
-*___.F90
-*___.f90
-*.pyc
-
-# Temp files by editors, etc
-############################
 *~
-\#*
-.\#*
-
- 
-# Packages #
-############
-# it's better to unpack these files and commit the raw source
-# git has its own built in compression methods
-*.7z
-*.dmg
-*.gz
-*.iso
-*.jar
-*.rar
-*.tar
-*.zip
-*.npz
-*.png
-*.mp4
-*.nc4
-*.nc
-*.hdf
-*.h5
- 
-# Logs and databases #
-######################
-*.log
-*.sql
-*.sqlite
- 
-# OS generated files #
-######################
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-.fuse_hidden*
-
-# Assorted GEOS-binaries
-########################
-odslist
-odsmatch
-odsselect
-odsshuffle
-odsstats
-odsmeta.py
-rst_date
-argopt
-
-# Temp build dirs
-#################
-r4
-r8
-DEE
+/@cmake/
+/@modules/
+/@env/
+/BUILD/
+/build*/
+/install*/
+/.mepo/
+parallel_build.o*
