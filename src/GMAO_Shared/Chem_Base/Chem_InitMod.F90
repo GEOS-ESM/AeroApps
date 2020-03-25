@@ -101,7 +101,7 @@ CONTAINS
 
    type(Chem_Init) :: this
    character(len=255) :: rcfilen = 'Chem_Init.rc'
-   integer :: nq, ios, ier
+   integer :: ier
 
    rc = 0
                 

@@ -63,7 +63,7 @@ PROGRAM rst_hdf_bin
   REAL, allocatable :: g4(:,:,:)
   real*4, allocatable :: g5(:,:)
 
-  INTEGER :: argc,i,iarg,iargc,ic,ier,k
+  INTEGER :: argc,iargc,ier,k
   INTEGER :: n,nhms,nq,nymd
   INTEGER, PARAMETER :: lu=12
   REAL :: gmin

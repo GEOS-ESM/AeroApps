@@ -1,7 +1,7 @@
 *~
-/@cmake/
-/@modules/
-/@env/
+/cmake/
+/modules/
+/env/
 /BUILD/
 /build*/
 /install*/

@@ -39,14 +39,13 @@
 
 !     Local variables
 !     ---------------
-      integer :: im, jm, km, nch
-      integer :: rc, i
-      integer :: nymd=0, nhms=0, nymd_b, nhms_b
+      integer :: rc
+      integer :: nymd=0, nhms=0
       integer :: yy, mm, dd, h, m, s
 
       logical :: verbose = .TRUE.
 
-      character(len=ESMF_MAXSTR) :: expid, fname, aer_registry, ext_registry
+      character(len=ESMF_MAXSTR) :: aer_registry, ext_registry
 
 !     Control variables and obervations
 !     ---------------------------------

@@ -165,6 +165,9 @@
      real, pointer    :: sigma(:)   ! (nq), particle lognormal width
      real, pointer    :: fNum(:)    ! (nq), ratio of particle number to mass
 
+     real, pointer    :: Hcts(:,:)   ! (4,nq), four Henrys Law Cts
+
+
   end type Chem_Registry
 
 CONTAINS
@@ -285,7 +288,7 @@ CONTAINS
    allocate ( this%vname(nq), this%vtitle(nq), this%vunits(nq), &
               this%fscav(nq), this%rhop(nq), this%molwght(nq), &
               this%rlow(nq), this%rup(nq), this%rmed(nq), &
-              this%sigma(nq), this%fNum(nq), stat=ios )
+              this%sigma(nq), this%fNum(nq), this%Hcts(4,nq), stat=ios )
    if ( ios /= 0 ) then
         rc = 2
         return 
@@ -299,6 +302,7 @@ CONTAINS
    this%rmed     = -1. ! default
    this%sigma    = -1. ! default
    this%fNum     = -1. ! default
+   this%Hcts(:,:) = -1  ! default
 
 !  Fill in CF metadata
 !  -------------------
@@ -607,7 +611,8 @@ RealNames: IF( ier .EQ. 0 ) THEN
    this%doing_TR = .false.    ! passive tracers
    deallocate ( this%vname, this%vtitle, this%vunits, this%fscav, &
                 this%rhop, this%molwght, this%rlow, this%rup, this%rmed, &
-                this%sigma, this%fNum, stat=ios )
+                this%sigma, this%fNum, this%Hcts, stat=ios )
+
    if ( ios /= 0 ) then
         rc = 1
         return 

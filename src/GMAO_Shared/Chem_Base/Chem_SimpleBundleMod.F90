@@ -9,8 +9,7 @@
 module Chem_SimpleBundleMod
 
    use ESMF
-   use MAPL_Mod
-   use MAPL_SimpleBundleMod ! Base class
+   use MAPL
    use Chem_RegistryMod
    use m_StrTemplate
 
@@ -109,7 +108,7 @@ CONTAINS
     character(len=*), optional,  intent(IN)    :: only_vars 
     integer, OPTIONAL,          intent(out)    :: rc
 !                                ---
-    character(len=256)         :: filename, template, expid
+    character(len=256)         :: filename, template, expid, fname
     type(ESMF_Time)            :: Time_
     integer                    :: nymd, nhms, yy, mm, dd, h, m, s, fid, incSecs
 
@@ -117,9 +116,10 @@ CONTAINS
 
     call ESMF_ConfigGetAttribute(CF, expid, Label='EXPID:', Default='unknown',__RC__ )
     call ESMF_ConfigGetAttribute(CF, filename, Label=trim(rc_name)//':',  __RC__ )
+    fname = trim(rc_name)
 
     if ( present(Time) ) then
-       self = MAPL_SimpleBundleRead (filename, Grid, Time, verbose, &
+       self = MAPL_SimpleBundleRead (filename, fname, Grid, Time, verbose, &
                                      ONLY_VARS=only_vars, expid=expid, __RC__ )
     else
        call GFIO_Open ( filename, READ_ONLY, fid, rc )
@@ -131,7 +131,7 @@ CONTAINS
        yy = nymd/10000; mm = (nymd-yy*10000) / 100; dd = nymd - (10000*yy + mm*100)
        h  = nhms/10000;  m = (nhms- h*10000) / 100;  s = nhms - (10000*h  +  m*100)
        call ESMF_TimeSet(Time_, yy=yy, mm=mm, dd=dd,  h=h,  m=m, s=s)
-       self = MAPL_SimpleBundleRead (filename, Grid, Time_, verbose, &
+       self = MAPL_SimpleBundleRead (filename, fname, Grid, Time_, verbose, &
               ONLY_VARS=only_vars, expid=expid, __RC__ )
     end if
 
@@ -150,8 +150,7 @@ CONTAINS
     logical, OPTIONAL,          intent(in)     :: verbose
     integer, OPTIONAL,          intent(out)    :: rc
 !                                ---
-    character(len=256) :: template, filename
-    integer i
+    character(len=256) :: filename
 
     __Iam__ ('Chem_SimpleBundleWrite')
 

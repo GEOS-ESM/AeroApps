@@ -1,4 +1,4 @@
-! $Id: Chem_MieMod.F90,v 1.52 2017/09/20 14:03:00 adarmeno Exp $
+! $Id$
 
 #include "MAPL_Exceptions.h"
 
@@ -25,7 +25,7 @@
 
 #if defined(GEOS5)
    use ESMF
-   use MAPL_Mod
+   use MAPL
 #endif
 
    implicit none
@@ -462,7 +462,6 @@ contains
                      bext(:,:,:), bsca(:,:,:), reff(:,:), gf(:,:), &
                      rhop(:,:), rhod(:)
    character(len=255) :: reg_filename, name
-   logical :: fexists
 
                       __Iam__('Chem_MieCreateFromCF')
 
@@ -837,7 +836,7 @@ end subroutine Chem_MieDestroy
 !EOP
 !-------------------------------------------------------------------------
 
-      integer                      :: ICHANNEL, TYPE, iq
+      integer                      :: ICHANNEL, TYPE
       integer                      :: irh, irhp1, isnap
       real                         :: rhUse, arh
       real                         :: bextIn, bscaIn, bbckIn, gasymIn, p11In, p22In, &
@@ -979,7 +978,7 @@ end subroutine Chem_MieDestroy
 
 !-------------------------------------------------------------------------
 
-      integer                      :: ICHANNEL, TYPE, i
+      integer                      :: ICHANNEL, i
       integer                      :: irh, irhp1, isnap
       real                         :: arh
       type(Chem_MieTable), pointer :: TABLE
@@ -1086,12 +1085,12 @@ end subroutine Chem_MieDestroy
 
 !-------------------------------------------------------------------------
 
-      integer                      :: ICHANNEL, i, j, k, STATUS
+      integer                      :: ICHANNEL, i, k, STATUS
       integer                      :: irh, irhp1, isnap
       real                         :: arh
       type(Chem_MieTable), pointer :: TABLE
-      integer                      :: II, JJ, KK
-      real                         :: bextIn, bscaIn, bbckIn, gasymIn
+      integer                      :: II, KK
+      real                         :: bextIn, bscaIn, gasymIn
 
       real, allocatable            :: bext_band(:)
       real, allocatable            :: bsca_band(:)
@@ -1186,7 +1185,7 @@ end subroutine Chem_MieDestroy
       real                         :: arh
       type(Chem_MieTable), pointer :: TABLE
       integer                      :: II, JJ, KK
-      real                         :: bextIn, bscaIn, bbckIn, gasymIn
+      real                         :: bextIn, bscaIn, gasymIn
 
       real, allocatable            :: bext_band(:)
       real, allocatable            :: bsca_band(:)

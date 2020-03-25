@@ -43,19 +43,15 @@
 
 !     Local variables
 !     ---------------
-      integer :: im, jm, km, nch
-      integer :: rc, nobs, nobs_good, nODS, i
+      integer :: rc
       integer :: nymd=0, nhms=0
       integer :: yy, mm, dd, h, m, s
 
       logical :: verbose = .TRUE.
 
-      character(len=ESMF_MAXSTR) :: expid, fname
-
 !     Control variables and obervations
 !     ---------------------------------
       type (MAPL_SimpleBundle)   :: q_f          ! Gridded concentration background 
-      type (MAPL_SimpleBundle)   :: q_a          ! Gridded concentration analysis
 
       type (Chem_Mie)      :: Mie                ! Mie Tables, etc
       type (Chem_Registry) :: aerReg             ! Registry with many species
@@ -69,9 +65,6 @@
 
       integer :: Nx, Ny         ! Layout
       integer :: IM_World, JM_World, LM_WORLD ! Global Grid dimensions
-      integer :: CM_World       ! Number of channels
-
-      integer :: root, comm
 
       call Main()
 

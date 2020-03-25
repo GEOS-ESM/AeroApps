@@ -1,3 +1,4 @@
+#include "unused_dummy.H"
 !-------------------------------------------------------------------------
 !      NASA/GSFC, Global Modeling & Assimilation Office, Code 900.3      !
 !-------------------------------------------------------------------------
@@ -15,7 +16,7 @@
       Use Chem_RegistryMod
       Use Chem_ArrayMod
       Use m_chars, only: uppercase
-      Use MAPL_Mod, only: MAPL_UNDEF
+      Use MAPL, only: MAPL_UNDEF
 
       Implicit NONE
 
@@ -602,10 +603,9 @@
    real(8),allocatable :: lon8(:),lat8(:),lev8(:)
    real(8),allocatable :: valid_range8(:,:), packing_range8(:,:)
    real(8),allocatable,dimension(:,:,:)::rank3
-
-   integer :: i1, i2, j1, j2, im, jm, km, lm, nq, nvars
-   real    :: p, ptop, pint
-   integer :: i, j, k, l, timeinc
+   integer :: i1, i2, j1, j2, im, jm, km, nq, nvars
+   real    :: p, ptop
+   integer :: i, j, k, timeinc
    integer :: fid, err
    integer :: gfio_prec_
 
@@ -986,10 +986,10 @@
    real,    allocatable :: valid_range(:,:), packing_range(:,:)
    integer, allocatable :: kmvar(:), yyyymmdd(:), hhmmss(:), ivar(:)
 
-   integer :: im, jm, km, lm, nvars, nq
+   integer :: im, jm, km, lm, nvars
    integer :: i1, i2, ig, j1, j2, jg
    integer :: l, timinc, i, j, n
-   real    :: amiss, ptop, buf(1), buf8(1)
+   real    :: amiss, buf(1), buf8(1)
 
    integer, parameter :: READ_ONLY = 1
    integer :: gfio_prec_
@@ -1377,6 +1377,7 @@
 !EOP
 !-------------------------------------------------------------------------
 
+   _UNUSED_DUMMY(w_c)
    rc = 0
 
    return

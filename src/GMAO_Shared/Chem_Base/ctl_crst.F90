@@ -61,7 +61,7 @@
 
 !       Parses CLI
 
-          integer iarg, iargc, argc
+          integer iargc, argc
           character(len=512) :: res
           
           argc = iargc()

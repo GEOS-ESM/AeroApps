@@ -32,8 +32,8 @@
   type(Chem_Bundle)   :: w_taucc     ! output total carbon tau chemistry bundle
   type(Chem_Bundle)   :: w_tausu     ! output sulfate tau chemistry bundle
   integer :: i, j, k, im, jm, km, idx, n, ndx
-  integer :: i1, i2, ig, j1, j2, jg, ik, iq, iz, kk
-  integer :: nymd, nhms, timidx, freq, rc, ier, fid
+  integer :: i1, i2, ig, j1, j2, jg, ik, iq, kk
+  integer :: nymd, nhms, freq, rc, ier, fid
   integer :: idxTable
   integer :: iarg, iargc, argc, lenfile
   logical :: doing_dust, doing_anthro, doing_ss, doing_oc, doing_bc, doing_su, doing_cc
@@ -574,7 +574,7 @@
 
   subroutine create_species_bundle(this)
   type(Chem_Bundle) :: this
-  integer i
+
   call Chem_BundleCreate(regOut, &
                          i1, i2, ig, im, &
                          j1, j2, jg, jm, km, &

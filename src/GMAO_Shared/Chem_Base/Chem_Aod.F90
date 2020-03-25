@@ -18,10 +18,9 @@
   type(Chem_Bundle)   :: w_tau    ! tau chemistry bundle
   type(Chem_Bundle)   :: w_tauabs ! tau absorption chemistry bundle
   type(Chem_Bundle)   :: w_ssa    ! ssa chemistry bundle
-  real, pointer       :: tau(:,:,:), ssa(:,:,:)
   integer :: i, j, k, im, jm, km, idx
-  integer :: i1, i2, ig, j1, j2, jg, ik, iq, iz
-  integer :: nymd, nhms, timidx, freq, rc, ier
+  integer :: i1, i2, ig, j1, j2, jg, ik, iq
+  integer :: nymd, nhms, freq, rc, ier
   integer :: idxTable
   integer :: out_fid
   integer iarg, iargc, argc, lenfile
@@ -33,7 +32,6 @@
   logical :: doing_dry   ! if true, calculate like rh = 0%
   logical :: new, verbose
   real :: channel, tau_, ssa_, scalerh, maxRH
-  real, pointer :: rh(:,:,:)
   character(len=255) :: infile, outfile, filename, rcfile, argv
   character(len=255) :: filename0
   character(len=14)  :: datestr

@@ -16,7 +16,7 @@
 ! !USES:
 
    use ESMF
-   use MAPL_Mod
+   use MAPL
    use m_die, only: die, warn
 
    implicit none
@@ -129,7 +129,7 @@ CONTAINS
 
    type(Chem_MieTable) :: this
 
-                           __Iam__("Chem_MieTableCreate")
+!                           _Iam_("Chem_MieTableCreate")
 
    rc = 0
 
@@ -179,8 +179,7 @@ CONTAINS
 !
 !EOP
 !-------------------------------------------------------------------------
-   integer ios
-                           __Iam__("Chem_MieTableDestroy")
+                           _Iam_("Chem_MieTableDestroy")
 
    rc = 0
 
@@ -261,7 +260,7 @@ end subroutine Chem_MieTableDestroy
 
       character(len=*), parameter :: myname = 'Chem_MieTableRead'
 
-      integer :: ncid, idimid, ivarid, ios, n, i, j, ip1
+      integer :: ncid, idimid, ivarid, n, i, j, ip1
       integer :: nch_table, nrh_table, nbin_table, nmom_table, nPol_table
 !     Tables are hard-wired as single precision
       real*8, pointer :: channels_table(:), rh_table(:), reff_table(:,:), &
@@ -275,7 +274,7 @@ end subroutine Chem_MieTableDestroy
       real :: yerr
       integer :: nmom_, imom, ipol
 
-                           __Iam__("Chem_MieTableRead")
+                           _Iam_("Chem_MieTableRead")
 
       rc = 0
 
@@ -296,6 +295,9 @@ end subroutine Chem_MieTableDestroy
 !     Open the table and get the dimensions
 !     -------------------------------------
       rc = nf_open(this%mietablename, NF_NOWRITE, ncid)
+      IF ( rc /= ESMF_SUCCESS ) THEN
+        print *, 'nf_open '//this%mietablename//'  RETURN CODE=', rc
+      END IF
       VERIFY_(rc)
 
 !     RH
@@ -753,9 +755,9 @@ END SUBROUTINE Chem_MieTableRead
 
       character(len=*), parameter :: myname = 'Chem_MieTableRead'
 
-      integer :: ncid, idimid, ivarid
+      integer :: ncid, idimid
 
-                           __Iam__("Chem_MieTableGetDims")
+                           _Iam_("Chem_MieTableGetDims")
 
       rc = 0
 

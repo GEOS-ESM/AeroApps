@@ -113,7 +113,6 @@ subroutine get_arguments(source_restart_file, source_registry_file, &
     ! local
     character(len=STR_LENGTH)     :: resolution
     character(len=STR_LENGTH)     :: levels
-    character(len=STR_LENGTH)     :: opt
     character(len=MAX_STR_LENGTH) :: arg
     character(len=MAX_STR_LENGTH) :: buffer
     character(len=MAX_STR_LENGTH) :: delta_co2_

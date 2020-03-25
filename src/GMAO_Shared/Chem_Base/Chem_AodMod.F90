@@ -17,8 +17,7 @@
 
 
    use ESMF
-   use MAPL_Mod
-   use MAPL_SimpleBundleMod
+   use MAPL
 
    use Chem_MieTableMod
    use Chem_MieMod
@@ -114,7 +113,14 @@ CONTAINS
   do iq = 1, x%n3d
 
      idxTable = Chem_MieQueryIdx(Mie,x%r3(iq)%name,rc)
-     if(idxTable == -1) cycle
+
+     if (idxTable == -1) then
+         if (verbose_) &
+          print *, '[-] Skipping '//trim(x%r3(iq)%name)//' contribution'
+
+         cycle
+     end if
+
      if ( rc/=0 ) then
         __raise__(MAPL_RC_ERROR,"cannot get Mie index for "//trim(x%r3(iq)%name))
      end if
@@ -175,7 +181,7 @@ CONTAINS
 !EOP
 !-----------------------------------------------------------------------------
 
-  integer iq, idxTable, im, jm, km, iRH, i, j, k, n
+  integer iq, idxTable, im, jm, km, iRH, i, j, k
   real(ESMF_KIND_R4) :: rEff, delm, rh
   logical :: verbose_
 
@@ -268,11 +274,11 @@ CONTAINS
 !EOP
 !-----------------------------------------------------------------------------
 
-  integer iq, im, jm, km, i, j, k, n, idxTable
+  integer iq, im, jm, km, i, j, k, idxTable
   real(ESMF_KIND_R4) :: delm
   logical :: verbose_
 
-              __Iam__("Chem_ConcCalculator")
+              _Iam_("Chem_ConcCalculator")
 
   if ( present(verbose) ) then
      verbose_ = verbose .and. MAPL_AM_I_ROOT()

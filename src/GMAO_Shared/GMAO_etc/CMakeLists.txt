@@ -88,7 +88,6 @@ set(otherbin
    pyrob
    RmShmKeys_sshmpi.csh
    rmshmkeyhere.sh
-   protex
    )
 
 install (
