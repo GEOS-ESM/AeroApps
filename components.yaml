@@ -16,7 +16,7 @@ ecbuild:
   tag: geos/v1.0.0
 
 MAPL:
-  local: ./src/GMAO_Shared/MAPL
+  local: ./src/Shared/GMAO_Shared/MAPL
   remote: ../MAPL.git
   tag: v2.0.2
   develop: develop
