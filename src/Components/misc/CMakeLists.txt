@@ -1,0 +1,7 @@
+add_subdirectory (dee)
+add_subdirectory (gritas)
+add_subdirectory (kawasaki)
+add_subdirectory (lagranto)
+add_subdirectory (obs_aod)
+add_subdirectory (orbits)
+add_subdirectory (scat)

@@ -1,18 +1,15 @@
 esma_check_if_debug()
 
-esma_add_subdirectories(
-  GMAO_mpeu
-  GMAO_etc
-  GEOS_Shared
-  GMAO_hermes
-  GEOS_Util 
-  GMAO_ods
-  GMAO_psas
-  GMAO_pyobs
-  Chem_Base
-  GMAO_pilgrim
-  MAPL
+set (subdirectories   
+  GMAO_mpeu    GMAO_etc   GEOS_Shared
+  GMAO_hermes  GEOS_Util  GMAO_ods
+  GMAO_psas    GMAO_pyobs Chem_Base
+  GMAO_pilgrim MAPL
   )
+foreach (subdir ${subdirectories})
+  esma_add_subdirectory (${subdir})
+endforeach()
+    
 
 # Special case - GMAO_gfio is built twice with two different precisions.
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/GMAO_gfio)
