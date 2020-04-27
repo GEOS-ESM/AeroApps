@@ -5,5 +5,10 @@
 
 esma_add_subdirectories (rtms/RTSI rtms/crtm rtms/sixsv misc/gritas)
 
+# Partial debugging of below:
+#add_subdirectory (misc/scat)
+
+
+
 
 
