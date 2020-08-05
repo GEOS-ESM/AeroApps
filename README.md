@@ -45,7 +45,6 @@ git clone git@github.com:GEOS-ESM/AeroApps.git
 #### Use mepo to checkout the model
 ```
 cd AeroApps
-git checkout feature/use_cmake
 mepo clone
 ```
 
