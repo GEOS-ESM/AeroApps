@@ -33,7 +33,7 @@ Now load the `GEOSenv` module:
 ```
 module load GEOSenv
 ```
-which obtains the latest `git`, `CMake`, and `manage_externals` modules.
+which obtains the latest `git`, `CMake`, etc. modules needed to build.
 
 #### Obtain the Model
 
