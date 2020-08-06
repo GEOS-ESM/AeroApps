@@ -38,7 +38,7 @@ which obtains the latest `git`, `CMake`, etc. modules needed to build.
 #### Obtain the Model
 
 ```
-git clone git@github.com:GEOS-ESM/AeroApps.git
+git clone -b feature/use_cmake git@github.com:GEOS-ESM/AeroApps.git
 ```
 
 ---
