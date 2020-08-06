@@ -2,7 +2,7 @@ esma_set_this ()
 
 foreach (base Mie_ MieObs_)
 
-  add_f2py_module (${base}
+  esma_add_f2py_module (${base}
     SOURCES ${base}py.F90
     DESTINATION lib/Python/${this}
     LIBRARIES Chem_Base
@@ -12,7 +12,7 @@ foreach (base Mie_ MieObs_)
 
 endforeach()
 
-add_f2py_module (OMI_
+esma_add_f2py_module (OMI_
   SOURCES OMI_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES Chem_Base VLIDORT
@@ -21,38 +21,38 @@ add_f2py_module (OMI_
   )
 add_dependencies(OMI_ VLIDORT)
 
-#add_f2py_module (VLIDORT2_BRDF_
+#esma_add_f2py_module (VLIDORT2_BRDF_
 #  SOURCES VLIDORT_BRDF_py.F90
 #  DESTINATION lib/Python/${this}
 #  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
 #  )
 
-#add_f2py_module (VLIDORT_OMI_
+#esma_add_f2py_module (VLIDORT_OMI_
 #  SOURCES VLIDORT_OMI_py.F90
 #  DESTINATION lib/Python/${this}
 #  LIBRARIES VLIDORT90
 #  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib
 #  ${include_${this}}  ${esma_include}/VLIDORT90)
 
-#add_f2py_module (VLIDORT_cloud_
+#esma_add_f2py_module (VLIDORT_cloud_
 #  SOURCES VLIDORT_cloud_py.F90
 #  DESTINATION lib/Python/${this}
 #  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
 #  )
 
-add_f2py_module (qsat_
+esma_add_f2py_module (qsat_
   SOURCES qsat_py.F90
   DESTINATION lib/Python/${this}
   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
   )
 
-add_f2py_module (binObs_
+esma_add_f2py_module (binObs_
   SOURCES binObs_py.F
   DESTINATION lib/Python/${this}
   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
   )
 
-add_f2py_module (test_mieobs
+esma_add_f2py_module (test_mieobs
   SOURCES test_miobs.F90
   DESTINATION lib/Python/${this}
   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}

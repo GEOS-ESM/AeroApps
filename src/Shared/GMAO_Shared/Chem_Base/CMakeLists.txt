@@ -20,7 +20,7 @@ ecbuild_add_executable(TARGET gogo.x SOURCES gogo.F90 LIBS ${this})
 # This MiObs_py.F90  is nearly identical to the one in ./src/Componenst/misc/scat.
 #include (UseF2Py)
 #include_directories (${esma_include}/${this})
-#add_f2py_module(MieObs_ SOURCES MieObs_py.F90 
+#esma_add_f2py_module(MieObs_ SOURCES MieObs_py.F90 
 #   DESTINATION lib/Python
 #   LIBRARIES Chem_Base MAPL GMAO_mpeu ${NETCDF_LIBRARIES} ${ESMF_LIBRARY}
 #   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${BASEDIR}/lib ${include_${this}} ${INC_NETCDF}

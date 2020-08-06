@@ -91,7 +91,7 @@ install (
    )
 
 include(UseF2Py)
-add_f2py_module(pyods_
+esma_add_f2py_module(pyods_
    SOURCES pyods_.F90
    LIBRARIES GMAO_ods GMAO_mpeu ${NETCDF_LIBRARIES}
    INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${BASEDIR}/lib ${include_${this}} ${INC_NETCDF}

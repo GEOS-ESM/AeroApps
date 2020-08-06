@@ -14,14 +14,14 @@ include(UseF2Py)
 
 # Duplicate target in ~/Components/misc/scat
 
-#add_f2py_module(binObs_
+#esma_add_f2py_module(binObs_
 #   SOURCES binObs_py.F
 #   DESTINATION lib/Python/pyobs
 #   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
 #   )
 #add_dependencies(binObs_ ${this})
 
-add_f2py_module(IGBP_
+esma_add_f2py_module(IGBP_
    SOURCES IGBP_py.F90
    DESTINATION lib/Python/pyobs
    ONLY getsimpleveg getdetailedveg

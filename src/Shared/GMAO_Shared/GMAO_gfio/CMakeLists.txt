@@ -50,11 +50,11 @@ include_directories (${include_${this}})
 include_directories (${INC_NETCDF})
 include (UseF2Py)
 
-#add_f2py_module(GFIO_ GFIO_py.F90
+#esma_add_f2py_module(GFIO_ GFIO_py.F90
 #	DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 if (precision STREQUAL "r4")
-  add_f2py_module(GFIO_ SOURCES GFIO_py.F90
+  esma_add_f2py_module(GFIO_ SOURCES GFIO_py.F90
     DESTINATION lib/Python
     ONLY gfioopen gfiocreate gfiodiminquire gfioinquire
     gfiogetvar gfiogetvart gfioputvar gfiogetbegdatetime
