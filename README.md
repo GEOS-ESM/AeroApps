@@ -53,11 +53,11 @@ mepo clone
 ##### Load Compiler, MPI Stack, and Baselibs
 On tcsh:
 ```
-source @env/g5_modules
+source env@/g5_modules
 ```
 or on bash:
 ```
-source @env/g5_modules.sh
+source env@/g5_modules.sh
 ```
 
 ##### Create Build Directory
