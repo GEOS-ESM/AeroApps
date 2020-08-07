@@ -3,8 +3,8 @@ cmake_policy (SET CMP0053 NEW)
 cmake_policy (SET CMP0054 NEW)
 
 project (
-  GEOSgcm
-  VERSION 10.3
+  AeroApps
+  VERSION 1.0
   LANGUAGES Fortran CXX C)  # Note - CXX is required for ESMF
 
 if ("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
