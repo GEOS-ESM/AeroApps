@@ -1,9 +1,12 @@
 *~
-/@cmake/
-/@modules/
-/@env/
+/cmake/
+/modules/
+/env/
 /BUILD/
 /build*/
 /install*/
 /.mepo/
 parallel_build.o*
+/src/Shared/GMAO_Shared/MAPL@/
+/cmake@/
+/env@/
