@@ -59,6 +59,7 @@
 ! #                                                             #
 ! #     brdf_gauleg:               Numerical Recipes, 1992      #
 ! #     derfc_e:                   V. Natraj, 2005              #
+! #     GETQUAD2                   M. Christi, 2017             #
 ! #     VBRDF_Fresnel_Complex      R. Spurr, 2014 (Version 2.7) #
 ! #     BRDF_QUADRATURE_Gaussian   R. Spurr, 2004               #
 ! #     BRDF_QUADRATURE_Trapezoid  R. Spurr, 2004 (not used)    #
@@ -67,7 +68,7 @@
 
       MODULE vbrdf_sup_aux_m
 
-      USE VLIDORT_PARS, only : zero, one, two, half, pie
+      USE VLIDORT_PARS, only : zero, one, two, half, pie, FPK, QUARTER
  
 !  Everything public here
 
@@ -75,6 +76,93 @@
 
       CONTAINS
 
+!
+
+      SUBROUTINE GETQUAD2(A,B,N,ROOTS,WGTS)
+
+!  Computes N roots and weights for Gauss-Legendre quadrature on the interval (a,b)
+
+      IMPLICIT NONE
+
+!  Limits of interval
+
+      REAL(FPK), INTENT(IN)  :: A, B
+
+!  Dimension
+
+      INTEGER, INTENT(IN) :: N
+
+!  Quadrature roots and weights
+
+      REAL(FPK), INTENT(OUT) :: ROOTS(N), WGTS(N)
+
+!  Local variables
+
+      INTEGER   :: I, M, N2, NM1
+      REAL(FPK) :: IR, MR, NR
+      REAL(FPK) :: MIDPT, SFAC
+      REAL(FPK) :: DLP_DX, LP, LPM1, LPM2, X, XOLD, XX
+
+!  Threshold for Newton's Method
+
+      REAL(FPK), PARAMETER :: QEPS = 1.0D-13
+
+!  Since roots are symmetric about zero on the interval (-1,1), split the interval
+!  in half and only work on the lower half of the interval (-1,0).
+
+      N2 = INT((N + 1)/2)
+      NR = REAL(N,FPK)
+
+!  Define the shift [midpoint of (a,b)] and scale factor to later move roots from
+!  the interval (-1,1) to the interval (a,b)
+
+      MIDPT = HALF*(B + A)
+      SFAC  = HALF*(B - A)
+
+      DO M = 1, N2
+
+!  Find current root of the related Nth order Legendre Polynomial on (-1,0) by Newton's
+!  Method using two Legendre Polynomial recurrence relations (e.g. see Abramowitz &
+!  Stegan (1972))
+
+         !Define starting point [ after Tricomi (1950) ]
+         MR = REAL(M,FPK)
+         XX = PIE*(MR - QUARTER)/(NR + HALF)
+         X  = (ONE - (NR - ONE)/(8.0_FPK*NR**3) &
+             - ONE/(384.0_FPK*NR**4)*(39.0_FPK - 28.0_FPK/SIN(XX)**2))*COS(XX)
+
+         !Use Newton's Method
+         DO
+            LPM1 = ZERO ; LP = ONE
+            DO I = 1, N
+               IR = REAL(I,FPK) ; LPM2 = LPM1 ; LPM1 = LP
+               LP = ((TWO*IR - ONE)*X*LPM1 - (IR - ONE)*LPM2)/IR
+            ENDDO
+            DLP_DX = NR*(X*LP - LPM1)/(X**2 - ONE)
+            XOLD = X ; X = XOLD - LP/DLP_DX
+            IF (ABS(X-XOLD) <= QEPS) EXIT
+         ENDDO
+
+!  Shift and scale the current root (and its symmetric counterpart) from the interval (-1,1)
+!  to the interval (a,b).  Define their related weights (e.g. see Abramowitz & Stegan (1972)).
+!  Note:
+!  If (1) N is even or (2) N is odd and M /= N2, then ROOTS(M) and ROOTS(NM1) are unique.
+!  If N is odd and M = N2, then M = NM1 and ROOTS(M) = ROOTS(NM1) are one and the same root.
+
+         !On interval lower half: (a,midpt)
+         ROOTS(M)   = MIDPT - SFAC*X
+         WGTS(M)    = (TWO*SFAC)/((ONE - X**2)*DLP_DX**2)
+
+         !On interval upper half: (midpt,b)
+         NM1 = N - M + 1
+         ROOTS(NM1) = MIDPT + SFAC*X
+         WGTS (NM1) = WGTS(M)
+
+      ENDDO
+
+      END SUBROUTINE GETQUAD2
+
+!          
 
       SUBROUTINE BRDF_GAULEG(X1,X2,X,W,N)
 
@@ -248,7 +336,7 @@ end subroutine VBRDF_Fresnel_Complex
 
 !  Save these quantities for efficient coding
 
-      CALL BRDF_GAULEG ( ZERO, ONE, X_BRDF, A_BRDF, NBRDF_HALF )
+      CALL GETQUAD2 ( ZERO, ONE, NBRDF_HALF, X_BRDF, A_BRDF )
       DO I = 1, NBRDF_HALF
         I1 = I + NBRDF_HALF
         X_BRDF(I1) = - X_BRDF(I)

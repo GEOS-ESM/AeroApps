@@ -153,6 +153,10 @@ MODULE vbrdf_LinSup_masters_m
 
 !@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+!  Patch Overhaul for Version 2.7. RobFix 11/8/19
+!    - Fourier routine has one less argument
+!    - Introduce reflectivity Mask for proper identification of Matrix elements
+
       USE VLIDORT_PARS
       USE VBRDF_FINDPAR_M
 
@@ -817,11 +821,11 @@ MODULE vbrdf_LinSup_masters_m
               READ (FILUNIT,*,ERR=998) N_BRDF_KERNELS
         CALL FINDPAR_ERROR ( ERROR, PAR_STR, STATUS, NM, MESSAGES, ACTIONS )
 
-!  Check Dimension
+!  Check Dimension. Rob Fix 3/17/15, No longer 3
 
         IF ( N_BRDF_KERNELS .GT. MAX_BRDF_KERNELS ) THEN
           NM = NM + 1
-          MESSAGES(NM) = 'Number of BRDF Kernels > maximum dimension (=3)'
+          MESSAGES(NM) = 'Number of BRDF Kernels > maximum dimension'
           ACTIONS(NM)  = 'Re-set input value or increase MAX_BRDF_KERNELS dimension'
           STATUS = VLIDORT_SERIOUS
           NMESSAGES = NM
@@ -1577,6 +1581,10 @@ MODULE vbrdf_LinSup_masters_m
 
 !@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+!  Patch Overhaul for Version 2.7. RobFix 11/8/19
+!    - Fourier routine has one less argument
+!    - Introduce reflectivity Mask for proper identification of Matrix elements
+
       USE VLIDORT_PARS
 
       USE vbrdf_sup_inputs_def
@@ -1585,7 +1593,7 @@ MODULE vbrdf_LinSup_masters_m
       USE vbrdf_sup_outputs_def
       USE vbrdf_linsup_outputs_def
 
-      USE vbrdf_sup_aux_m, only : BRDF_GAULEG,              &
+      USE vbrdf_sup_aux_m, only : GETQUAD2,              &
                                   BRDF_QUADRATURE_Gaussian, &
                                   BRDF_QUADRATURE_Trapezoid
 
@@ -2032,9 +2040,9 @@ MODULE vbrdf_LinSup_masters_m
 
       LOGICAL :: DO_CHECK_ALBEDO
 
-!  help
+!  help. [RobFix 11/8/19, QMask introduced]
 
-      INTEGER          :: WOFFSET ( MAX_BRDF_KERNELS)
+      INTEGER          :: WOFFSET ( MAX_BRDF_KERNELS), QMask(16)
       INTEGER          :: K, B, I, I1, J, IB, UI, UM, IA, M, O1, Q, P, W, WBSA
       INTEGER          :: BRDF_NPARS, NMOMENTS, NSTOKESSQ, N_phiquad_HALF
       DOUBLE PRECISION :: PARS ( MAX_BRDF_PARAMETERS )
@@ -2194,7 +2202,7 @@ MODULE vbrdf_LinSup_masters_m
 !  Set up Quadrature streams for output
 !    QUAD_STRMWTS dropped for Version 2.7 (now redefined for local WSA/BSA scaling)
 
-      CALL BRDF_GAULEG ( 0.0d0, 1.0d0, QUAD_STREAMS, QUAD_WEIGHTS, NSTREAMS )
+      CALL GETQUAD2 ( 0.0d0, 1.0d0, NSTREAMS, QUAD_STREAMS, QUAD_WEIGHTS )
       DO I = 1, NSTREAMS
         QUAD_SINES(I) = DSQRT(1.0d0-QUAD_STREAMS(I)*QUAD_STREAMS(I))
       enddo
@@ -2203,7 +2211,7 @@ MODULE vbrdf_LinSup_masters_m
 
       IF ( DO_LOCAL_WSA .or. DO_LOCAL_BSA ) THEN
          SCALING_NSTREAMS = MAXSTREAMS_SCALING
-         CALL BRDF_GAULEG ( 0.0d0, 1.0d0, SCALING_QUAD_STREAMS, SCALING_QUAD_WEIGHTS, SCALING_NSTREAMS )
+         CALL GETQUAD2 ( 0.0d0, 1.0d0, SCALING_NSTREAMS, SCALING_QUAD_STREAMS, SCALING_QUAD_WEIGHTS )
          DO I = 1, SCALING_NSTREAMS
             SCALING_QUAD_SINES(I)   = SQRT(1.0d0-SCALING_QUAD_STREAMS(I)*SCALING_QUAD_STREAMS(I))
             SCALING_QUAD_STRMWTS(I) = SCALING_QUAD_STREAMS(I) * SCALING_QUAD_WEIGHTS(I)
@@ -2336,7 +2344,7 @@ MODULE vbrdf_LinSup_masters_m
 !  Air to water, Polar quadrature
 
       if ( DO_MSRCORR  ) THEN
-         CALL brdf_gauleg ( ZERO, ONE, X_muquad, W_muquad, n_muquad )
+         CALL GETQUAD2 ( ZERO, ONE, n_muquad, X_muquad, W_muquad )
          DO I = 1, N_MUQUAD
             XM = X_MUQUAD(I)
             SX_MUQUAD(I) = DSQRT(ONE-XM*XM)
@@ -2348,7 +2356,7 @@ MODULE vbrdf_LinSup_masters_m
 
       if ( DO_MSRCORR  ) THEN
          N_phiquad_HALF = N_PHIQUAD / 2
-         CALL brdf_gauleg ( ZERO, ONE, X_PHIQUAD, W_PHIQUAD, N_PHIQUAD_HALF )
+         CALL GETQUAD2 ( ZERO, ONE, N_PHIQUAD_HALF, X_PHIQUAD, W_PHIQUAD )
          DO I = 1, N_PHIQUAD_HALF
            I1 = I + N_PHIQUAD_HALF
            X_PHIQUAD(I1) = - X_PHIQUAD(I)
@@ -2361,6 +2369,23 @@ MODULE vbrdf_LinSup_masters_m
 
 !  Initialise ALL outputs
 !  ----------------------
+
+!  Reflectivity Mask. Introduced, 11/8/19.
+
+      QMask = 0
+      IF ( nstokes.eq.1 ) then
+         QMask(1) = 1
+      ELSE IF ( nstokes.eq.2 ) then
+         QMask(1) = 1 ; QMask(2) = 2 ; QMask(3) = 5 ; QMask(4) = 6
+      ELSE IF ( nstokes.eq.3 ) then
+         QMask(1) = 1 ; QMask(2) = 2  ; QMask(3) = 3
+         QMask(4) = 5 ; QMask(5) = 6  ; QMask(6) = 7
+         QMask(7) = 9 ; QMask(8) = 10 ; QMask(9) = 11
+      ELSE IF ( nstokes.eq.4 ) then
+         do o1 = 1, 16
+            QMask(o1) = o1
+         enddo
+      ENDIF
 
 !  Zero Direct-Bounce BRDF
 
@@ -2982,6 +3007,9 @@ MODULE vbrdf_LinSup_masters_m
 !  Compute Direct Bounce BRDF
 !  ==========================
 
+!  RobFix 11/8/19. Use masking
+!         DO Q = 1, NSTOKESSQ ; O1 = QMASK(Q) instead of DO O1 = 1, NSTOKESSQ
+
 !  factor
 
         FF = BRDF_FACTORS(K)
@@ -2989,7 +3017,7 @@ MODULE vbrdf_LinSup_masters_m
 !   !@@ Observational Geometry, Optionalities 12/31/12
 
         IF ( DO_USER_OBSGEOMS ) THEN 
-          DO O1 = 1, NSTOKESSQ
+          DO Q = 1, NSTOKESSQ ; O1 = QMASK(Q)
             DO IB = 1, NBEAMS
               VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(O1,LUM,LUA,IB) = &
                 VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(O1,LUM,LUA,IB) &
@@ -2997,7 +3025,7 @@ MODULE vbrdf_LinSup_masters_m
             ENDDO
           ENDDO
         ELSE
-          DO O1 = 1, NSTOKESSQ
+          DO Q = 1, NSTOKESSQ ; O1 = QMASK(Q)
             DO IA = 1, N_USER_RELAZMS
               DO IB = 1, NBEAMS
                 DO UM = 1, N_USER_STREAMS
@@ -3020,14 +3048,14 @@ MODULE vbrdf_LinSup_masters_m
         IF ( DO_KERNEL_FACTOR_WFS(K) ) THEN
           W = W + 1
           IF ( DO_USER_OBSGEOMS ) THEN
-            DO O1 = 1, NSTOKESSQ
+            DO Q = 1, NSTOKESSQ ; O1 = QMASK(Q)
               DO IB = 1, NBEAMS
                 VBRDF_LinSup_Out%BS_LS_DBOUNCE_BRDFUNC(W,O1,LUM,LUA,IB) = &
                   DBKERNEL_BRDFUNC(O1,LUM,LUA,IB)
               ENDDO
             ENDDO
           ELSE
-            DO O1 = 1, NSTOKESSQ
+            DO Q = 1, NSTOKESSQ ; O1 = QMASK(Q)
               DO IA = 1, N_USER_RELAZMS
                 DO IB = 1, NBEAMS
                   DO UM = 1, N_USER_STREAMS
@@ -3046,14 +3074,14 @@ MODULE vbrdf_LinSup_masters_m
          IF ( DERIVS(P) ) THEN
             W = W + 1
             IF ( DO_USER_OBSGEOMS ) THEN
-              DO O1 = 1, NSTOKESSQ
+              DO Q = 1, NSTOKESSQ ; O1 = QMASK(Q)
                 DO IB = 1, NBEAMS
                   VBRDF_LinSup_Out%BS_LS_DBOUNCE_BRDFUNC(W,O1,LUM,LUA,IB) = &
                     FF * D_DBKERNEL_BRDFUNC(P,O1,LUM,LUA,IB)
                 ENDDO
               ENDDO
             ELSE
-              DO O1 = 1, NSTOKESSQ
+              DO Q = 1, NSTOKESSQ ; O1 = QMASK(Q)
                 DO IA = 1, N_USER_RELAZMS
                   DO IB = 1, NBEAMS
                     DO UM = 1, N_USER_STREAMS
@@ -3219,36 +3247,32 @@ MODULE vbrdf_LinSup_masters_m
             ENDDO
           ENDIF
 
-!  Call
+!  Call to Fourier routine
+!     !@@ Rob Fix, 11/1/19. Bug: Cossin_Mask wrongly used, code replaced. Thanks to X.Xu (UMBC)
+!     !@@ Rob Fix, 11/1/19. Remove NSTOKESSQ argument, Cleaner presentation.
 
           CALL VBRDF_FOURIER &
-             ( DO_SOLAR_SOURCES, DO_USER_OBSGEOMS, &
-               DO_USER_STREAMS, DO_SURFACE_EMISSION, &
-               LAMBERTIAN_KERNEL_FLAG(K), M, NSTOKES, NSTOKESSQ, NBEAMS, &
-               NSTREAMS, N_USER_STREAMS, NSTREAMS_BRDF, NBRDF_HALF, &
-               DELFAC, BRDF_FACTORS(K), BRDF_COSAZMFAC, BRDF_SINAZMFAC, &
-               A_BRDF, BAX_BRDF, BRDFUNC, USER_BRDFUNC, BRDFUNC_0, &
-               USER_BRDFUNC_0, EBRDFUNC, USER_EBRDFUNC, &
-               LOCAL_BRDF_F, LOCAL_BRDF_F_0, LOCAL_USER_BRDF_F, &
-               LOCAL_USER_BRDF_F_0, LOCAL_EMISSIVITY, &
-               LOCAL_USER_EMISSIVITY )
+            ( DO_SOLAR_SOURCES, DO_USER_OBSGEOMS, DO_USER_STREAMS,                       & ! Flags
+              DO_SURFACE_EMISSION, LAMBERTIAN_KERNEL_FLAG(K),                            & ! Flags
+              M, NSTOKES, NBEAMS, NSTREAMS, N_USER_STREAMS, NSTREAMS_BRDF, NBRDF_HALF,   & ! Numbers
+              DELFAC, BRDF_FACTORS(K), BRDF_COSAZMFAC, BRDF_SINAZMFAC, A_BRDF, BAX_BRDF, & ! Surface/Azimuth factors
+              BRDFUNC, USER_BRDFUNC, BRDFUNC_0, USER_BRDFUNC_0, EBRDFUNC, USER_EBRDFUNC, & ! Input BRDF Matrices
+              LOCAL_BRDF_F, LOCAL_BRDF_F_0, LOCAL_USER_BRDF_F, LOCAL_USER_BRDF_F_0,      & ! Output Fourier components
+              LOCAL_EMISSIVITY, LOCAL_USER_EMISSIVITY )                                    ! Output emissivities
 
-!  Linear call
+!  Call to Linear Fourier routine
+!     !@@ Rob Fix, 11/1/19. Bug: Cossin_Mask wrongly used, code replaced. Thanks to X.Xu (UMBC)
+!     !@@ Rob Fix, 11/1/19. Remove NSTOKESSQ argument, Cleaner presentation.
 
           IF ( BRDF_NPARS .GT. 0 ) THEN
             CALL VBRDF_LIN_FOURIER &
-               ( DO_SOLAR_SOURCES, DO_USER_OBSGEOMS, &
-                 DO_USER_STREAMS, DO_SURFACE_EMISSION, &
-                 LAMBERTIAN_KERNEL_FLAG(K), M, NSTOKES, NSTOKESSQ, &
-                 NBEAMS, NSTREAMS, N_USER_STREAMS, NSTREAMS_BRDF, &
-                 NBRDF_HALF, BRDF_NPARS, DERIVS, DELFAC, &
-                 BRDF_FACTORS(K), BRDF_COSAZMFAC, BRDF_SINAZMFAC, &
-                 A_BRDF, BAX_BRDF, D_BRDFUNC, D_USER_BRDFUNC, &
-                 D_BRDFUNC_0, D_USER_BRDFUNC_0, &
-                 D_EBRDFUNC, D_USER_EBRDFUNC, &
-                 D_LOCAL_BRDF_F, D_LOCAL_BRDF_F_0, &
-                 D_LOCAL_USER_BRDF_F, D_LOCAL_USER_BRDF_F_0, &
-                 D_LOCAL_EMISSIVITY,  D_LOCAL_USER_EMISSIVITY )
+             ( DO_SOLAR_SOURCES, DO_USER_OBSGEOMS, DO_USER_STREAMS,                                   & ! Flags
+               DO_SURFACE_EMISSION, LAMBERTIAN_KERNEL_FLAG(K),                                        & ! Flags
+               M, NSTOKES, NBEAMS, NSTREAMS, N_USER_STREAMS, NSTREAMS_BRDF, NBRDF_HALF, BRDF_NPARS,   & ! Numbers
+               DERIVS, DELFAC, BRDF_FACTORS(K), BRDF_COSAZMFAC, BRDF_SINAZMFAC, A_BRDF, BAX_BRDF,     & ! Surface/Azimuth factors
+               D_BRDFUNC, D_USER_BRDFUNC, D_BRDFUNC_0, D_USER_BRDFUNC_0, D_EBRDFUNC, D_USER_EBRDFUNC, & ! Input BRDF Matrices
+               D_LOCAL_BRDF_F, D_LOCAL_BRDF_F_0, D_LOCAL_USER_BRDF_F, D_LOCAL_USER_BRDF_F_0,          & ! Output Fouriers
+               D_LOCAL_EMISSIVITY,  D_LOCAL_USER_EMISSIVITY )                                           ! Output emissivities
           ENDIF
 
 !  Start Fourier addition
@@ -3257,6 +3281,9 @@ MODULE vbrdf_LinSup_masters_m
 
 !  Kernel combinations (for quadrature reflectance)
 !  ------------------------------------------------
+
+!  Rob Fix 11/8/19. Introduce masking
+!     That is, replace DO Q = 1, NSTOKESSQ with DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
 
 !  factor
 
@@ -3267,12 +3294,11 @@ MODULE vbrdf_LinSup_masters_m
 
 !  ... Basic
 
-            DO Q = 1, NSTOKESSQ
+            DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
               DO I = 1, NSTREAMS
                 DO J = 1, NSTREAMS
                   VBRDF_Sup_Out%BS_BRDF_F(M,Q,I,J) = &
-                    VBRDF_Sup_Out%BS_BRDF_F(M,Q,I,J) &
-                    + FF*LOCAL_BRDF_F(Q,I,J)
+                    VBRDF_Sup_Out%BS_BRDF_F(M,Q,I,J) + FF*LOCAL_BRDF_F(Q,I,J)
                 ENDDO
               ENDDO
             ENDDO
@@ -3282,11 +3308,10 @@ MODULE vbrdf_LinSup_masters_m
             W  = WOFFSET(K)
             IF ( DO_KERNEL_FACTOR_WFS(K) ) THEN
               W = W + 1
-              DO Q = 1, NSTOKESSQ
+              DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
                 DO I = 1, NSTREAMS
                   DO J = 1, NSTREAMS
-                    VBRDF_LinSup_Out%BS_LS_BRDF_F(W,M,Q,I,J) = &
-                                     LOCAL_BRDF_F(Q,I,J)
+                    VBRDF_LinSup_Out%BS_LS_BRDF_F(W,M,Q,I,J) = LOCAL_BRDF_F(Q,I,J)
                   ENDDO
                 ENDDO
               ENDDO
@@ -3297,11 +3322,10 @@ MODULE vbrdf_LinSup_masters_m
             DO P = 1, BRDF_NPARS
               IF ( DERIVS(P) ) THEN
                 W = W + 1
-                DO Q = 1, NSTOKESSQ
+                DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
                   DO I = 1, NSTREAMS
                     DO J = 1, NSTREAMS
-                      VBRDF_LinSup_Out%BS_LS_BRDF_F(W,M,Q,I,J) = &
-                                  FF*D_LOCAL_BRDF_F(P,Q,I,J)
+                      VBRDF_LinSup_Out%BS_LS_BRDF_F(W,M,Q,I,J) = FF*D_LOCAL_BRDF_F(P,Q,I,J)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3315,12 +3339,11 @@ MODULE vbrdf_LinSup_masters_m
 
 !  ... Basic
 
-              DO Q = 1, NSTOKESSQ
+              DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
                 DO I = 1, NSTREAMS
                   DO IB = 1, NBEAMS
                     VBRDF_Sup_Out%BS_BRDF_F_0(M,Q,I,IB) = &
-                      VBRDF_Sup_Out%BS_BRDF_F_0(M,Q,I,IB) &
-                      + FF*LOCAL_BRDF_F_0(Q,I,IB)
+                      VBRDF_Sup_Out%BS_BRDF_F_0(M,Q,I,IB) + FF*LOCAL_BRDF_F_0(Q,I,IB)
                   ENDDO
                 ENDDO
               ENDDO
@@ -3330,11 +3353,10 @@ MODULE vbrdf_LinSup_masters_m
               W  = WOFFSET(K)
               IF ( DO_KERNEL_FACTOR_WFS(K) ) THEN
                 W = W + 1
-                DO Q = 1, NSTOKESSQ
+                DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
                   DO I = 1, NSTREAMS
                     DO IB = 1, NBEAMS
-                      VBRDF_LinSup_Out%BS_LS_BRDF_F_0(W,M,Q,I,IB) = &
-                                       LOCAL_BRDF_F_0(Q,I,IB)
+                      VBRDF_LinSup_Out%BS_LS_BRDF_F_0(W,M,Q,I,IB) = LOCAL_BRDF_F_0(Q,I,IB)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3345,11 +3367,10 @@ MODULE vbrdf_LinSup_masters_m
               DO P = 1, BRDF_NPARS
                 IF ( DERIVS(P) ) THEN
                   W = W + 1
-                  DO Q = 1, NSTOKESSQ
+                  DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
                     DO I = 1, NSTREAMS
                       DO IB = 1, NBEAMS
-                        VBRDF_LinSup_Out%BS_LS_BRDF_F_0(W,M,Q,I,IB) = &
-                                    FF*D_LOCAL_BRDF_F_0(P,Q,I,IB)
+                        VBRDF_LinSup_Out%BS_LS_BRDF_F_0(W,M,Q,I,IB) = FF*D_LOCAL_BRDF_F_0(P,Q,I,IB)
                       ENDDO
                     ENDDO
                   ENDDO
@@ -3370,12 +3391,11 @@ MODULE vbrdf_LinSup_masters_m
 
 !  ... Basic
 
-              DO Q = 1, NSTOKESSQ
+              DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
                 DO UM = 1, N_USER_STREAMS
                   DO J = 1, NSTREAMS
                     VBRDF_Sup_Out%BS_USER_BRDF_F(M,Q,UM,J) = &
-                      VBRDF_Sup_Out%BS_USER_BRDF_F(M,Q,UM,J) &
-                      + FF*LOCAL_USER_BRDF_F(Q,UM,J)
+                      VBRDF_Sup_Out%BS_USER_BRDF_F(M,Q,UM,J) + FF*LOCAL_USER_BRDF_F(Q,UM,J)
                   ENDDO
                 ENDDO
               ENDDO
@@ -3385,11 +3405,10 @@ MODULE vbrdf_LinSup_masters_m
               W  = WOFFSET(K)
               IF ( DO_KERNEL_FACTOR_WFS(K) ) THEN
                 W = W + 1
-                DO Q = 1, NSTOKESSQ
+                DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
                   DO UM = 1, N_USER_STREAMS
                     DO J = 1, NSTREAMS
-                      VBRDF_LinSup_Out%BS_LS_USER_BRDF_F(W,M,Q,UM,J) = &
-                                       LOCAL_USER_BRDF_F(Q,UM,J)
+                      VBRDF_LinSup_Out%BS_LS_USER_BRDF_F(W,M,Q,UM,J) = LOCAL_USER_BRDF_F(Q,UM,J)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3400,11 +3419,10 @@ MODULE vbrdf_LinSup_masters_m
               DO P = 1, BRDF_NPARS
                 IF ( DERIVS(P) ) THEN
                   W = W + 1
-                  DO Q = 1, NSTOKESSQ
+                  DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
                     DO UM = 1, N_USER_STREAMS
                       DO J = 1, NSTREAMS
-                        VBRDF_LinSup_Out%BS_LS_USER_BRDF_F(W,M,Q,UM,J) = &
-                            FF*D_LOCAL_USER_BRDF_F(P,Q,UM,J)
+                        VBRDF_LinSup_Out%BS_LS_USER_BRDF_F(W,M,Q,UM,J) = FF*D_LOCAL_USER_BRDF_F(P,Q,UM,J)
                       ENDDO
                     ENDDO
                   ENDDO
@@ -3425,20 +3443,18 @@ MODULE vbrdf_LinSup_masters_m
 !  ... Basic
 
               IF ( DO_USER_OBSGEOMS ) THEN
-                DO Q = 1, NSTOKESSQ
+                DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
                   DO IB = 1, NBEAMS
                     VBRDF_Sup_Out%BS_USER_BRDF_F_0(M,Q,LUM,IB) = &
-                      VBRDF_Sup_Out%BS_USER_BRDF_F_0(M,Q,LUM,IB) &
-                      + FF*LOCAL_USER_BRDF_F_0(Q,LUM,IB)
+                      VBRDF_Sup_Out%BS_USER_BRDF_F_0(M,Q,LUM,IB) + FF*LOCAL_USER_BRDF_F_0(Q,LUM,IB)
                   ENDDO
                 ENDDO
               ELSE
-                DO Q = 1, NSTOKESSQ
+                DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
                   DO UM = 1, N_USER_STREAMS
                     DO IB = 1, NBEAMS
                       VBRDF_Sup_Out%BS_USER_BRDF_F_0(M,Q,UM,IB) = &
-                        VBRDF_Sup_Out%BS_USER_BRDF_F_0(M,Q,UM,IB) &
-                        + FF*LOCAL_USER_BRDF_F_0(Q,UM,IB)
+                        VBRDF_Sup_Out%BS_USER_BRDF_F_0(M,Q,UM,IB) + FF*LOCAL_USER_BRDF_F_0(Q,UM,IB)
                     ENDDO
                   ENDDO
                 ENDDO
@@ -3450,18 +3466,16 @@ MODULE vbrdf_LinSup_masters_m
               IF ( DO_KERNEL_FACTOR_WFS(K) ) THEN
                 W = W + 1
                 IF ( DO_USER_OBSGEOMS ) THEN
-                  DO Q = 1, NSTOKESSQ
+                  DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
                     DO IB = 1, NBEAMS
-                      VBRDF_LinSup_Out%BS_LS_USER_BRDF_F_0(W,M,Q,LUM,IB) = &
-                        LOCAL_USER_BRDF_F_0(Q,LUM,IB)
+                      VBRDF_LinSup_Out%BS_LS_USER_BRDF_F_0(W,M,Q,LUM,IB) = LOCAL_USER_BRDF_F_0(Q,LUM,IB)
                     ENDDO
                   ENDDO
                 ELSE
-                  DO Q = 1, NSTOKESSQ
+                  DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
                     DO UM = 1, N_USER_STREAMS
                       DO IB = 1, NBEAMS
-                        VBRDF_LinSup_Out%BS_LS_USER_BRDF_F_0(W,M,Q,UM,IB) = &
-                          LOCAL_USER_BRDF_F_0(Q,UM,IB)
+                        VBRDF_LinSup_Out%BS_LS_USER_BRDF_F_0(W,M,Q,UM,IB) = LOCAL_USER_BRDF_F_0(Q,UM,IB)
                       ENDDO
                     ENDDO
                   ENDDO
@@ -3474,18 +3488,16 @@ MODULE vbrdf_LinSup_masters_m
                 IF ( DERIVS(P) ) THEN
                   W = W + 1
                   IF ( DO_USER_OBSGEOMS ) THEN
-                    DO Q = 1, NSTOKESSQ
+                    DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
                       DO IB = 1, NBEAMS
-                        VBRDF_LinSup_Out%BS_LS_USER_BRDF_F_0(W,M,Q,LUM,IB) = &
-                            FF*D_LOCAL_USER_BRDF_F_0(P,Q,LUM,IB)
+                        VBRDF_LinSup_Out%BS_LS_USER_BRDF_F_0(W,M,Q,LUM,IB) = FF*D_LOCAL_USER_BRDF_F_0(P,Q,LUM,IB)
                       ENDDO
                     ENDDO
                   ELSE
-                    DO Q = 1, NSTOKESSQ
+                    DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
                       DO UM = 1, N_USER_STREAMS
                         DO IB = 1, NBEAMS
-                          VBRDF_LinSup_Out%BS_LS_USER_BRDF_F_0(W,M,Q,UM,IB) = &
-                              FF*D_LOCAL_USER_BRDF_F_0(P,Q,UM,IB)
+                          VBRDF_LinSup_Out%BS_LS_USER_BRDF_F_0(W,M,Q,UM,IB) = FF*D_LOCAL_USER_BRDF_F_0(P,Q,UM,IB)
                         ENDDO
                       ENDDO
                     ENDDO
@@ -3613,7 +3625,10 @@ MODULE vbrdf_LinSup_masters_m
 !  BRDF Scaling : Start loop over matrix entries
 !  ---------------------------------------------
 
-         DO Q = 1, NSTOKESSQ
+!  RobFix. 11/8/19. Introduce masking
+!     That is, replace DO Q = 1, NSTOKESSQ with DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
+
+         DO O1 = 1, NSTOKESSQ ; Q = QMASK(O1)
 
 !  Scaling the Exact Direct Beam BRDF and its derivatives
 !  ------------------------------------------------------
@@ -3772,7 +3787,7 @@ MODULE vbrdf_LinSup_masters_m
 
 6779        continue
 
-!  End reflectance Matrix Loop
+!  End reflectance Matrix Loop, with Mask added (11/8/19, RobFix)
 
          ENDDO
 

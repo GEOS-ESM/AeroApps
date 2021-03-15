@@ -65,6 +65,16 @@
 ! #                                                             #
 ! ###############################################################
 
+!  Patch Overhaul. 08 November 2019
+!  ================================
+
+!  In the Fourier routines--->
+
+!     !@@ Rob Fix, 3/20/19. Bug: Lambertian case wrongly used NSTOKESSQ instead of 1
+!     !@@ Rob Fix, 11/1/19. Bug: Cossin_Mask wrongly used, code replaced. Thanks to X.Xu (UMBC)
+!     !@@ Rob Fix, 11/1/19. Recoded the BRDF emissivity case
+!     !@@ Rob Fix, 11/1/19. Used the Dot-Product command throughout. NSTOKESSQ Dropped.
+
       MODULE vbrdf_sup_routines_m
 
       PRIVATE
@@ -96,7 +106,7 @@
       USE VLIDORT_PARS,        only : MAXBEAMS, MAX_USER_RELAZMS, MAX_USER_STREAMS, &
                                       MAXSTOKES_SQ, MAXSTREAMS, MAXSTREAMS_SCALING, & 
                                       MAX_BRDF_PARAMETERS, MAXSTREAMS_BRDF, MAXSTHALF_BRDF, &
-                                      max_msrs_muquad, max_msrs_phiquad
+                                      max_msrs_muquad, max_msrs_phiquad, ZERO
 
       IMPLICIT NONE
 
@@ -262,7 +272,9 @@
 
 !    !@@ Observational Geometry choice 12/31/12
 !    !@@ Rob Fix 9/25/14. Always calculated for Solar Sources
+!mick fix 9/19/2017 - initialize DBKERNEL_BRDFUNC
 
+      DBKERNEL_BRDFUNC = ZERO
       IF ( DO_SOLAR_SOURCES ) THEN
         IF ( DO_USER_OBSGEOMS ) THEN
           DO IB = 1, NBEAMS
@@ -586,7 +598,7 @@
       USE VLIDORT_PARS,        only : MAXBEAMS, MAX_USER_RELAZMS, MAX_USER_STREAMS, &
                                       MAXSTOKES_SQ, MAXSTREAMS, MAXSTREAMS_SCALING, & 
                                       MAX_BRDF_PARAMETERS, MAXSTREAMS_BRDF, MAXSTHALF_BRDF, &
-                                      max_msrs_muquad, max_msrs_phiquad
+                                      max_msrs_muquad, max_msrs_phiquad, ZERO
 
       USE vbrdf_sup_kernels_m, only : GCMCRI_VFUNCTION_MSR, GCMCRI_VFUNCTION
 
@@ -755,7 +767,9 @@
 !  -------------------------
 
 !  9/27/14, remove DO_EXACT flag
+!mick fix 9/19/2017 - initialize DBKERNEL_BRDFUNC
 
+      DBKERNEL_BRDFUNC = ZERO
       IF ( DO_SOLAR_SOURCES ) THEN
         IF ( .NOT. DO_USER_OBSGEOMS ) THEN
           IF ( DO_MSRCORR .or. DO_MSRCORR_DBONLY ) THEN
@@ -1243,6 +1257,9 @@
 !  Direct Bounce calculation
 !  -------------------------
 
+!mick fix 9/19/2017 - initialize DBKERNEL_BRDFUNC
+
+      DBKERNEL_BRDFUNC = ZERO
       IF ( .NOT. DO_USER_OBSGEOMS ) THEN
          DO K = 1, N_USER_RELAZMS
             DO IB = 1, NBEAMS
@@ -1398,6 +1415,9 @@
               A_BRDF, SCALING_BRDFUNC, SCALING_BRDFUNC_0,  &
               SCALING_BRDF_F, SCALING_BRDF_F_0 )
 
+!  Version 2p7. Patch Overhaul. Code is more compact.
+!     !@@ Rob Fix, 11/1/19. Used the Dot-Product command throughout.
+
 !  include file of dimensions and numbers
 
       USE VLIDORT_PARS
@@ -1405,11 +1425,6 @@
       IMPLICIT NONE
 
 !  Prepares Fourier component of the bidirectional reflectance functions
-
-!  Observational Geometry Inputs. Marked with !@@
-!     Installed 31 december 2012.
-!     Observation-Geometry input control.         (DO_USER_OBSGEOMS)
-!     Added solar_sources flag for better control (DO_SOLAR_SOURCES)
 
 !  Input arguments
 !  ===============
@@ -1446,8 +1461,8 @@
 !  local variables
 !  ===============
 
-      INTEGER ::          I, J, K
-      DOUBLE PRECISION :: SUM
+      INTEGER ::          I, J
+      DOUBLE PRECISION :: HELP
 
 !  Zeroing
 
@@ -1462,11 +1477,8 @@
       IF ( DO_LOCAL_BSA ) THEN
          IF ( .NOT. LAMBERTIAN_FLAG ) THEN
             DO I = 1, SCALING_NSTREAMS
-               SUM = ZERO
-               DO K = 1, NSTREAMS_BRDF
-                  SUM  = SUM + SCALING_BRDFUNC_0(I,K)*A_BRDF(K)
-               ENDDO
-               SCALING_BRDF_F_0(I) = SUM * HALF
+               HELP = DOT_PRODUCT(SCALING_BRDFUNC_0(I,1:NSTREAMS_BRDF),A_BRDF(1:NSTREAMS_BRDF))
+               SCALING_BRDF_F_0(I) = HELP * HALF
             ENDDO
          ELSE
             SCALING_BRDF_F_0 = ONE
@@ -1479,11 +1491,8 @@
          IF ( .NOT. LAMBERTIAN_FLAG ) THEN
             DO I = 1, SCALING_NSTREAMS
                DO J = 1, SCALING_NSTREAMS
-                  SUM = ZERO
-                  DO K = 1, NSTREAMS_BRDF
-                     SUM  = SUM + SCALING_BRDFUNC(I,J,K)*A_BRDF(K)
-                  ENDDO
-                  SCALING_BRDF_F(I,J) = SUM * HALF
+                  HELP = DOT_PRODUCT(SCALING_BRDFUNC(I,J,1:NSTREAMS_BRDF),A_BRDF(1:NSTREAMS_BRDF))
+                  SCALING_BRDF_F(I,J) = HELP * HALF
                ENDDO
             ENDDO
          ELSE 
@@ -1499,20 +1508,22 @@
 !  
 
       SUBROUTINE VBRDF_FOURIER &
-         ( DO_SOLAR_SOURCES, DO_USER_OBSGEOMS, &
-           DO_USER_STREAMS, DO_SURFACE_EMISSION, &
-           LAMBERTIAN_FLAG, M, NSTOKES, NSTOKESSQ, &
-           NBEAMS, NSTREAMS, N_USER_STREAMS, NSTREAMS_BRDF, NBRDF_HALF, &
-           DELFAC, FACTOR, BRDF_COSAZMFAC, BRDF_SINAZMFAC, &
-           A_BRDF, BAX_BRDF, BRDFUNC, USER_BRDFUNC, BRDFUNC_0, &
-           USER_BRDFUNC_0, EBRDFUNC, USER_EBRDFUNC, &
-           LOCAL_BRDF_F, LOCAL_BRDF_F_0, LOCAL_USER_BRDF_F, &
-           LOCAL_USER_BRDF_F_0, LOCAL_EMISSIVITY, &
-           LOCAL_USER_EMISSIVITY )
+         ( DO_SOLAR_SOURCES, DO_USER_OBSGEOMS, DO_USER_STREAMS, DO_SURFEMISS, LAMBERTIAN_FLAG,   & ! Control flags
+           M, NSTOKES, NBEAMS, NSTREAMS, N_USER_STREAMS, NSTREAMS_BRDF, NBRDF_HALF,              & ! Numbers
+           DELFAC, FACTOR, BRDF_COSAZMFAC, BRDF_SINAZMFAC, A_BRDF, BAX_BRDF,                     & ! Surface/Azimuth factors
+           BRDFUNC, USER_BRDFUNC, BRDFUNC_0, USER_BRDFUNC_0, EBRDFUNC, USER_EBRDFUNC,            & ! Input BRDF matrices
+           L_BRDF_F, L_BRDF_F_0, L_USER_BRDF_F, L_USER_BRDF_F_0, L_EMISSIVITY, L_USER_EMISSIVITY ) ! Output Fourier Components
+
+!  Version 2p7. Patch Overhaul. Code is more compact.
+!     !@@ Rob Fix, 3/20/19. Bug: Lambertian case wrongly used NSTOKESSQ instead of 1
+!     !@@ Rob Fix, 11/1/19. Bug: Cossin_Mask wrongly used, code replaced. Thanks to X.Xu (UMBC)
+!     !@@ Rob Fix, 11/1/19. Recoded the BRDF emissivity case
+!     !@@ Rob Fix, 11/1/19. Used the Dot-Product command throughout. NSTOKESSQ Dropped.
 
 !  include file of dimensions and numbers
 
-      USE VLIDORT_PARS
+      USE VLIDORT_PARS, Only : MAXSTOKES_SQ, MAX_USER_STREAMS, MAXSTREAMS, MAXBEAMS, &
+                               MAXSTOKES, MAXSTREAMS_BRDF, MAXSTHALF_BRDF, ZERO, HALF, ONE
 
       IMPLICIT NONE
 
@@ -1526,23 +1537,19 @@
 !  Input arguments
 !  ===============
 
+!  Control flags
 !   !@@ Solar sources + Observational Geometry flag !@@
 
       LOGICAL ::          DO_SOLAR_SOURCES
       LOGICAL ::          DO_USER_OBSGEOMS
-
-!  Control
-
       LOGICAL ::          LAMBERTIAN_FLAG
       LOGICAL ::          DO_USER_STREAMS
-      LOGICAL ::          DO_SURFACE_EMISSION
+      LOGICAL ::          DO_SURFEMISS
 
 !  Local numbers
 
-      INTEGER ::          M, NSTOKES, NSTOKESSQ
-      INTEGER ::          NSTREAMS
-      INTEGER ::          NBEAMS
-      INTEGER ::          N_USER_STREAMS
+      INTEGER ::          M, NSTOKES, NSTREAMS
+      INTEGER ::          NBEAMS, N_USER_STREAMS
       INTEGER ::          NSTREAMS_BRDF, NBRDF_HALF
 
 !  Surface factors
@@ -1558,135 +1565,127 @@
 
 !  at quadrature (discrete ordinate) angles
 
-      DOUBLE PRECISION :: BRDFUNC &
-          ( MAXSTOKES_SQ, MAXSTREAMS, MAXSTREAMS, MAXSTREAMS_BRDF )
-      DOUBLE PRECISION :: BRDFUNC_0 &
-          ( MAXSTOKES_SQ, MAXSTREAMS, MAXBEAMS, MAXSTREAMS_BRDF )
+      DOUBLE PRECISION :: BRDFUNC   ( MAXSTOKES_SQ, MAXSTREAMS, MAXSTREAMS, MAXSTREAMS_BRDF )
+      DOUBLE PRECISION :: BRDFUNC_0 ( MAXSTOKES_SQ, MAXSTREAMS, MAXBEAMS,   MAXSTREAMS_BRDF )
 
 !  at user-defined stream directions
 
-      DOUBLE PRECISION :: USER_BRDFUNC &
-          ( MAXSTOKES_SQ, MAX_USER_STREAMS, MAXSTREAMS, MAXSTREAMS_BRDF )
-      DOUBLE PRECISION :: USER_BRDFUNC_0 &
-          ( MAXSTOKES_SQ, MAX_USER_STREAMS, MAXBEAMS, MAXSTREAMS_BRDF )
+      DOUBLE PRECISION :: USER_BRDFUNC   ( MAXSTOKES_SQ, MAX_USER_STREAMS, MAXSTREAMS, MAXSTREAMS_BRDF )
+      DOUBLE PRECISION :: USER_BRDFUNC_0 ( MAXSTOKES_SQ, MAX_USER_STREAMS, MAXBEAMS,   MAXSTREAMS_BRDF )
 
 !  Values for Emissivity
 
-      DOUBLE PRECISION :: EBRDFUNC &
-          ( MAXSTOKES_SQ, MAXSTREAMS, MAXSTHALF_BRDF, MAXSTREAMS_BRDF)
-      DOUBLE PRECISION :: USER_EBRDFUNC &
-          ( MAXSTOKES_SQ, MAX_USER_STREAMS, MAXSTHALF_BRDF, MAXSTREAMS_BRDF)
+      DOUBLE PRECISION :: EBRDFUNC      ( MAXSTOKES_SQ, MAXSTREAMS,       MAXSTHALF_BRDF, MAXSTREAMS_BRDF)
+      DOUBLE PRECISION :: USER_EBRDFUNC ( MAXSTOKES_SQ, MAX_USER_STREAMS, MAXSTHALF_BRDF, MAXSTREAMS_BRDF)
 
 !  Output: Local kernel Fourier components
 !  =======================================
 
 !  at quadrature (discrete ordinate) angles
 
-      DOUBLE PRECISION :: LOCAL_BRDF_F &
-          ( MAXSTOKES_SQ, MAXSTREAMS, MAXSTREAMS )
-      DOUBLE PRECISION :: LOCAL_BRDF_F_0 &
-          ( MAXSTOKES_SQ, MAXSTREAMS, MAXBEAMS   )
+      DOUBLE PRECISION :: L_BRDF_F   ( MAXSTOKES_SQ, MAXSTREAMS, MAXSTREAMS )
+      DOUBLE PRECISION :: L_BRDF_F_0 ( MAXSTOKES_SQ, MAXSTREAMS, MAXBEAMS   )
 
 !  at user-defined stream directions
 
-      DOUBLE PRECISION :: LOCAL_USER_BRDF_F &
-          ( MAXSTOKES_SQ, MAX_USER_STREAMS, MAXSTREAMS )
-      DOUBLE PRECISION :: LOCAL_USER_BRDF_F_0 &
-          ( MAXSTOKES_SQ, MAX_USER_STREAMS, MAXBEAMS   )
+      DOUBLE PRECISION :: L_USER_BRDF_F   ( MAXSTOKES_SQ, MAX_USER_STREAMS, MAXSTREAMS )
+      DOUBLE PRECISION :: L_USER_BRDF_F_0 ( MAXSTOKES_SQ, MAX_USER_STREAMS, MAXBEAMS   )
 
 !  emissivities
 
-      DOUBLE PRECISION :: LOCAL_EMISSIVITY ( MAXSTOKES, MAXSTREAMS )
-      DOUBLE PRECISION :: LOCAL_USER_EMISSIVITY ( MAXSTOKES, MAX_USER_STREAMS )
+      DOUBLE PRECISION :: L_EMISSIVITY      ( MAXSTOKES, MAXSTREAMS )
+      DOUBLE PRECISION :: L_USER_EMISSIVITY ( MAXSTOKES, MAX_USER_STREAMS )
 
 !  local variables
 !  ===============
 
-      INTEGER ::          I, UI, J, K, KPHI, IB, Q, O1, O2
-      DOUBLE PRECISION :: SUM, REFL, HELP, EMISS(16)
+!  11/1/19. Some new local variables
+
+      INTEGER ::          I, UI, J, KPHI, IB, Q, O1, O2, OM, OOFF(4), NK, NK2
+      DOUBLE PRECISION :: REFL, HELP, EMISS(4) ! EMISS(16)
       INTEGER ::          COSSIN_MASK(16)
 
-      INTEGER, PARAMETER :: LUM = 1        !@@
-
+      INTEGER, PARAMETER :: LUM = 1 
       COSSIN_MASK = (/ 1,1,2,0,1,1,2,0,2,2,1,0,0,0,0,1 /)
 
 !  surface factor
 
       HELP = HALF * DELFAC
 
+!  11/1/19. Proxies and offset. New Code.
+
+      NK = NSTREAMS_BRDF ; NK2 = NBRDF_HALF
+      OOFF(1) = 0 ; OOFF(2) = 4 ; OOFF(3) = 8 ; OOFF(4) = 12
+
 !  Zeroing
 
-      LOCAL_BRDF_F        = ZERO
-      LOCAL_BRDF_F_0      = ZERO
-      LOCAL_USER_BRDF_F   = ZERO
-      LOCAL_USER_BRDF_F_0 = ZERO
+      L_BRDF_F        = ZERO
+      L_BRDF_F_0      = ZERO
+      L_USER_BRDF_F   = ZERO
+      L_USER_BRDF_F_0 = ZERO
 
 !  Quadrature outgoing directions
 !  ------------------------------
 
 !  Incident Solar beam (direct beam reflections)
 !    !@@ Solar Optionality, added 12/31/12
+!     !@@ Rob Fix, 3/20/19. Bug: Lambertian case wrongly used NSTOKESSQ instead of 1
+!     !@@ Rob Fix, 11/1/19. Bug: Cossin_Mask wrongly used, code replaced. Thanks to X.Xu (UMBC)
 
       IF ( DO_SOLAR_SOURCES ) THEN
         IF ( .NOT. LAMBERTIAN_FLAG ) THEN
           DO IB = 1, NBEAMS
             DO I = 1, NSTREAMS
-              DO Q = 1, NSTOKESSQ
-                SUM = ZERO
-                IF ( COSSIN_MASK(Q) .EQ. 1 ) THEN
-                  DO K = 1, NSTREAMS_BRDF
-                    SUM  = SUM + BRDFUNC_0(Q,I,IB,K)*BRDF_COSAZMFAC(K)
-                  ENDDO
-                ELSE IF ( COSSIN_MASK(Q) .EQ. 2 ) THEN
-                  DO K = 1, NSTREAMS_BRDF
-                    SUM  = SUM + BRDFUNC_0(Q,I,IB,K)*BRDF_SINAZMFAC(K)
-                  ENDDO
-                ENDIF
-                LOCAL_BRDF_F_0(Q,I,IB) = SUM * HELP
+!  Start Replacement code --------------------------------
+              DO O1 = 1, NSTOKES
+                DO O2 = 1, NSTOKES
+                  OM = OOFF(O1) + O2
+                  IF ( COSSIN_MASK(OM) .EQ. 1 ) THEN
+                    L_BRDF_F_0(OM,I,IB) = HELP * DOT_PRODUCT(BRDFUNC_0(OM,I,IB,1:NK),BRDF_COSAZMFAC(1:NK))
+                  ELSE IF ( COSSIN_MASK(OM) .EQ. 2 ) THEN
+                    L_BRDF_F_0(OM,I,IB) = HELP * DOT_PRODUCT(BRDFUNC_0(OM,I,IB,1:NK),BRDF_SINAZMFAC(1:NK))
+                  ENDIF
+                ENDDO
               ENDDO
+!  End Replacement code ---------------------------------
             ENDDO
           ENDDO
         ELSE IF ( M .EQ. 0 ) THEN
           DO IB = 1, NBEAMS
             DO I = 1, NSTREAMS
-              Q = 1 ; LOCAL_BRDF_F_0(Q,I,IB) = ONE
-!              DO Q = 1, NSTOKESSQ
-!                LOCAL_BRDF_F_0(Q,I,IB) = ONE
-!              ENDDO
+              Q = 1 ; L_BRDF_F_0(Q,I,IB) = ONE ! 3/20/19 --> L_BRDF_F_0(1:NSTOKESSQ,I,IB) = ONE
             ENDDO
           ENDDO
         ENDIF
       ENDIF
 
 !  incident quadrature directions (surface multiple reflections)
+!     !@@ Rob Fix, 3/20/19. Bug: Lambertian case wrongly used NSTOKESSQ instead of 1
+!     !@@ Rob Fix, 11/1/19. Bug: Cossin_Mask wrongly used, code replaced. Thanks to X.Xu (UMBC)
 
       IF ( .NOT. LAMBERTIAN_FLAG ) THEN
-        DO I = 1, NSTREAMS
-          DO J = 1, NSTREAMS
-            DO Q = 1, NSTOKESSQ
-              SUM = ZERO
-              IF ( COSSIN_MASK(Q) .EQ. 1 ) THEN
-                DO K = 1, NSTREAMS_BRDF
-                  SUM  = SUM + BRDFUNC(Q,I,J,K)*BRDF_COSAZMFAC(K)
-                ENDDO
-              ELSE IF ( COSSIN_MASK(Q) .EQ. 2 ) THEN
-                DO K = 1, NSTREAMS_BRDF
-                  SUM  = SUM + BRDFUNC(Q,I,J,K)*BRDF_SINAZMFAC(K)
-                ENDDO
-              ENDIF
-              LOCAL_BRDF_F(Q,I,J) = SUM * HELP
+         DO I = 1, NSTREAMS
+            DO J = 1, NSTREAMS
+!  Start Replacement code --------------------------------
+               DO O1 = 1, NSTOKES
+                  DO O2 = 1, NSTOKES
+                     OM = OOFF(O1) + O2
+                     IF ( COSSIN_MASK(OM) .EQ. 1 ) THEN
+                        L_BRDF_F(OM,I,J) = HELP * DOT_PRODUCT(BRDFUNC(OM,I,J,1:NK),BRDF_COSAZMFAC(1:NK))
+                     ELSE IF ( COSSIN_MASK(OM) .EQ. 2 ) THEN
+                        L_BRDF_F(OM,I,J) = HELP * DOT_PRODUCT(BRDFUNC(OM,I,J,1:NK),BRDF_SINAZMFAC(1:NK))
+                     ENDIF
+                  ENDDO
+               ENDDO
+!  End Replacement code ---------------------------------
             ENDDO
-          ENDDO
-        ENDDO
+         ENDDO
       ELSE IF ( M .EQ. 0 ) THEN
-        DO I = 1, NSTREAMS
-          DO J = 1, NSTREAMS
-            Q = 1 ; LOCAL_BRDF_F(Q,I,J) = ONE
-!            DO Q = 1, NSTOKESSQ
-!              LOCAL_BRDF_F(Q,I,J) = ONE
-!            ENDDO
-          ENDDO
-        ENDDO
+         DO I = 1, NSTREAMS
+            DO J = 1, NSTREAMS
+               Q = 1 ; L_BRDF_F(Q,I,J) = ONE ! 3/20/19 --> L_BRDF_F(1:NSTOKESSQ,I,J) = ONE
+            ENDDO
+         ENDDO
       ENDIF
 
 !  debug information
@@ -1695,8 +1694,7 @@
 !        WRITE(555,'(A)')'BRDF_1 Fourier 0 quad values'
 !        IF ( FOURIER .EQ. 0 ) THEN
 !          DO I = 1, NSTREAMS
-!          WRITE(555,'(1PE12.5,3x,1P10E12.5)')
-!     & BIREFLEC_0(1,I,1),(BIREFLEC(1,I,J),J=1,NSTREAMS)
+!          WRITE(555,'(1PE12.5,3x,1P10E12.5)') BIREFLEC_0(1,I,1),(BIREFLEC(1,I,J),J=1,NSTREAMS)
 !         ENDDO
 !        ENDIF
 !      ENDIF
@@ -1704,68 +1702,56 @@
 !  albedo check, always calculate the spherical albedo.
 !   (Plane albedo calculations are commented out)
 
-
 !  User-streams outgoing directions
 !  --------------------------------
 
       IF ( DO_USER_STREAMS ) THEN
 
 !  Incident Solar beam (direct beam reflections)
-!     !@@ Observational Geometry option. Installed 12/31/12
-!     !@@ Solar Optionality, added 12/31/12
+!     !@@ Observational Geometry option and Solar Optionality, Installed 12/31/12
+!     !@@ Rob Fix, 3/20/19. Bug: Lambertian case wrongly used NSTOKESSQ instead of 1
+!     !@@ Rob Fix, 11/1/19. Bug: Cossin_Mask wrongly used, code replaced. Thanks to X.Xu (UMBC)
 
         IF ( DO_SOLAR_SOURCES ) THEN
           IF ( DO_USER_OBSGEOMS ) THEN
             IF ( .NOT. LAMBERTIAN_FLAG ) THEN
               DO IB = 1, NBEAMS
-                DO Q = 1, NSTOKESSQ
-                  SUM = ZERO
-                  IF ( COSSIN_MASK(Q) .EQ. 1 ) THEN
-                    DO K = 1, NSTREAMS_BRDF
-                      SUM=SUM+USER_BRDFUNC_0(Q,LUM,IB,K)*BRDF_COSAZMFAC(K)
-                    ENDDO
-                  ELSE IF ( COSSIN_MASK(Q) .EQ. 2 ) THEN
-                    DO K = 1, NSTREAMS_BRDF
-                      SUM=SUM+USER_BRDFUNC_0(Q,LUM,IB,K)*BRDF_SINAZMFAC(K)
-                    ENDDO
+!  Start Replacement code --------------------------------
+                DO O1 = 1, NSTOKES ; DO O2 = 1, NSTOKES
+                  OM = OOFF(O1) + O2
+                  IF ( COSSIN_MASK(OM) .EQ. 1 ) THEN
+                    L_USER_BRDF_F_0(OM,LUM,IB) = HELP * DOT_PRODUCT(USER_BRDFUNC_0(OM,LUM,IB,1:NK),BRDF_COSAZMFAC(1:NK))
+                  ELSE IF ( COSSIN_MASK(OM) .EQ. 2 ) THEN
+                    L_USER_BRDF_F_0(OM,LUM,IB) = HELP * DOT_PRODUCT(USER_BRDFUNC_0(OM,LUM,IB,1:NK),BRDF_SINAZMFAC(1:NK))
                   ENDIF
-                  LOCAL_USER_BRDF_F_0(Q,LUM,IB) = SUM * HELP
-                ENDDO
+                  ENDDO ; ENDDO
+!  End Replacement code ---------------------------------
               ENDDO
             ELSE IF ( M .EQ. 0 ) THEN
               DO IB = 1, NBEAMS
-                Q = 1 ; LOCAL_USER_BRDF_F_0(Q,LUM,IB) = ONE
-!                DO Q = 1, NSTOKESSQ
-!                  LOCAL_USER_BRDF_F_0(Q,LUM,IB) = ONE
-!                ENDDO
+                Q = 1 ; L_USER_BRDF_F_0(Q,LUM,IB) = ONE ! 3/20/19 --> L_USER_BRDF_F_0(1:NSTOKESSQ,LUM,IB) = ONE 
               ENDDO
             ENDIF
           ELSE
             IF ( .NOT. LAMBERTIAN_FLAG ) THEN
               DO IB = 1, NBEAMS
                 DO UI = 1, N_USER_STREAMS
-                  DO Q = 1, NSTOKESSQ
-                    SUM = ZERO
-                    IF ( COSSIN_MASK(Q) .EQ. 1 ) THEN
-                      DO K = 1, NSTREAMS_BRDF
-                        SUM=SUM+USER_BRDFUNC_0(Q,UI,IB,K)*BRDF_COSAZMFAC(K)
-                      ENDDO
-                    ELSE IF ( COSSIN_MASK(Q) .EQ. 2 ) THEN
-                      DO K = 1, NSTREAMS_BRDF
-                        SUM=SUM+USER_BRDFUNC_0(Q,UI,IB,K)*BRDF_SINAZMFAC(K)
-                      ENDDO
+!  Start Replacement code --------------------------------
+                  DO O1 = 1, NSTOKES ; DO O2 = 1, NSTOKES
+                    OM = OOFF(O1) + O2
+                    IF ( COSSIN_MASK(OM) .EQ. 1 ) THEN
+                      L_USER_BRDF_F_0(OM,UI,IB) = HELP * DOT_PRODUCT(USER_BRDFUNC_0(OM,UI,IB,1:NK),BRDF_COSAZMFAC(1:NK))
+                    ELSE IF ( COSSIN_MASK(OM) .EQ. 2 ) THEN
+                      L_USER_BRDF_F_0(OM,UI,IB) = HELP * DOT_PRODUCT(USER_BRDFUNC_0(OM,UI,IB,1:NK),BRDF_SINAZMFAC(1:NK))
                     ENDIF
-                    LOCAL_USER_BRDF_F_0(Q,UI,IB) = SUM * HELP
-                  ENDDO
+                  ENDDO ; ENDDO
+!  End Replacement code ---------------------------------
                 ENDDO
               ENDDO
             ELSE IF ( M .EQ. 0 ) THEN
               DO IB = 1, NBEAMS
                 DO UI = 1, N_USER_STREAMS
-                  Q = 1 ; LOCAL_USER_BRDF_F_0(Q,UI,IB) = ONE
-!                  DO Q = 1, NSTOKESSQ
-!                    LOCAL_USER_BRDF_F_0(Q,UI,IB) = ONE
-!                  ENDDO
+                  Q = 1 ; L_USER_BRDF_F_0(Q,UI,IB) = ONE !  3/20/19 --> L_USER_BRDF_F_0(1:NSTOKESSQ,UI,IB) = ONE
                 ENDDO
               ENDDO
             ENDIF
@@ -1773,35 +1759,33 @@
         ENDIF
 
 !  incident quadrature directions (surface multiple reflections)
+!     !@@ Rob Fix, 3/20/19. Bug: Lambertian case wrongly used NSTOKESSQ instead of 1
+!     !@@ Rob Fix, 11/1/19. Bug: Cossin_Mask wrongly used, code replaced. Thanks to X.Xu (UMBC)
 
         IF ( .NOT. LAMBERTIAN_FLAG ) THEN
           DO UI = 1, N_USER_STREAMS
             DO J = 1, NSTREAMS
-              DO Q = 1, NSTOKESSQ
-                SUM = ZERO
-                IF ( COSSIN_MASK(Q) .EQ. 1 ) THEN
-                  DO K = 1, NSTREAMS_BRDF
-                    SUM = SUM+USER_BRDFUNC(Q,UI,J,K)*BRDF_COSAZMFAC(K)
-                  ENDDO
-                ELSE IF ( COSSIN_MASK(Q) .EQ. 2 ) THEN
-                  DO K = 1, NSTREAMS_BRDF
-                    SUM = SUM+USER_BRDFUNC(Q,UI,J,K)*BRDF_SINAZMFAC(K)
-                  ENDDO
+!  Start Replacement code --------------------------------
+              DO O1 = 1, NSTOKES ; DO O2 = 1, NSTOKES
+                OM = OOFF(O1) + O2
+                IF ( COSSIN_MASK(OM) .EQ. 1 ) THEN
+                  L_USER_BRDF_F(OM,UI,J) = HELP * DOT_PRODUCT(USER_BRDFUNC(OM,UI,J,1:NK),BRDF_COSAZMFAC(1:NK))
+                ELSE IF ( COSSIN_MASK(OM) .EQ. 2 ) THEN
+                  L_USER_BRDF_F(OM,UI,J) = HELP * DOT_PRODUCT(USER_BRDFUNC(OM,UI,J,1:NK),BRDF_SINAZMFAC(1:NK))
                 ENDIF
-                LOCAL_USER_BRDF_F(Q,UI,J) = SUM * HELP
-              ENDDO
+              ENDDO ; ENDDO
+!  End Replacement code ---------------------------------
             ENDDO
           ENDDO
         ELSE IF ( M .EQ. 0 ) THEN
           DO UI = 1, N_USER_STREAMS
             DO J = 1, NSTREAMS
-              Q = 1 ; LOCAL_USER_BRDF_F(Q,UI,J) = ONE
-!              DO Q = 1, NSTOKESSQ
-!                LOCAL_USER_BRDF_F(Q,UI,J) = ONE
-!              ENDDO
+              Q = 1 ; L_USER_BRDF_F(Q,UI,J) = ONE ! 3/20/19 --> L_USER_BRDF_F(1:NSTOKESSQ,UI,J) = ONE
             ENDDO
           ENDDO
         ENDIF
+
+!  End user-stream clause
 
       ENDIF
 
@@ -1810,17 +1794,17 @@
 
 !  Azimuth independent contribution, from Kirchhoff's law
 
-      IF ( DO_SURFACE_EMISSION .AND. M .EQ. 0 ) THEN
+      IF ( DO_SURFEMISS .AND. M .EQ. 0 ) THEN
 
 !  Lambertian case
 
         IF ( LAMBERTIAN_FLAG ) THEN
           DO I = 1, NSTREAMS
-            LOCAL_EMISSIVITY(1,I) = FACTOR
+            L_EMISSIVITY(1,I) = FACTOR
           ENDDO
           IF ( DO_USER_STREAMS ) THEN
             DO UI = 1, N_USER_STREAMS
-              LOCAL_USER_EMISSIVITY(1,UI) = FACTOR
+              L_USER_EMISSIVITY(1,UI) = FACTOR
             ENDDO
           ENDIF
         ENDIF
@@ -1830,6 +1814,7 @@
         IF ( .NOT. LAMBERTIAN_FLAG ) THEN
 
 !  Inserted Polarization sum here.   Still to be checked.....!!!!!!!
+!     !@@ Rob Fix, 11/1/19. Recoded the BRDF emissivity case
 
 !  Quadrature polar directions
 
@@ -1837,50 +1822,40 @@
           EMISS = ZERO
 
           DO I = 1, NSTREAMS
-            DO Q = 1, NSTOKESSQ
-              REFL = ZERO
-              DO KPHI= 1, NSTREAMS_BRDF
-                SUM = ZERO
-                DO K = 1, NBRDF_HALF
-                  SUM = SUM + EBRDFUNC(Q,I,K,KPHI) * BAX_BRDF(K)
-                ENDDO
-                REFL = REFL + A_BRDF(KPHI) * SUM
-              ENDDO
-              EMISS(Q) = REFL
-            ENDDO
+!  Start Replacement code --------------------------------
             DO O1 = 1, NSTOKES
-              REFL = ZERO
               DO O2 = 1, NSTOKES
-                Q = 4 * ( O1 - 1 ) + O2
-                REFL = REFL + EMISS(Q)
+                OM = OOFF(O1) + O2
+                REFL = ZERO
+                DO KPHI = 1, NSTREAMS_BRDF
+                  HELP = DOT_PRODUCT(EBRDFUNC(OM,I,1:NK2,KPHI),BAX_BRDF(1:NK2))
+                  REFL = REFL + A_BRDF(KPHI) * HELP
+                ENDDO
+                EMISS(O2) = REFL
               ENDDO
-              LOCAL_EMISSIVITY(O1,I) = REFL * FACTOR
+              L_EMISSIVITY(O1,I) = FACTOR * SUM(EMISS(1:NSTOKES))
             ENDDO
+!  End Replacement code ---------------------------------
           ENDDO
 
 !   user-defined polar directions
 
           IF ( DO_USER_STREAMS ) THEN
             DO UI = 1, N_USER_STREAMS
-              DO Q = 1, NSTOKESSQ
-                REFL = ZERO
-                DO KPHI= 1, NSTREAMS_BRDF
-                  SUM = ZERO
-                  DO K = 1, NBRDF_HALF
-                    SUM = SUM + USER_EBRDFUNC(Q,UI,K,KPHI)*BAX_BRDF(K)
-                  ENDDO
-                  REFL = REFL + A_BRDF(KPHI) * SUM
-                ENDDO
-                EMISS(Q) = REFL
-              ENDDO
+!  Start Replacement code --------------------------------
               DO O1 = 1, NSTOKES
-                REFL = ZERO
                 DO O2 = 1, NSTOKES
-                  Q = 4 * ( O1 - 1 ) + O2
-                  REFL = REFL + EMISS(Q)
+                  OM = OOFF(O1) + O2
+                  REFL = ZERO
+                  DO KPHI = 1, NSTREAMS_BRDF
+                    HELP = DOT_PRODUCT(USER_EBRDFUNC(OM,UI,1:NK2,KPHI),BAX_BRDF(1:NK2))
+                    REFL = REFL + A_BRDF(KPHI) * HELP
+                  ENDDO
+                  EMISS(O2) = REFL
                 ENDDO
-                LOCAL_USER_EMISSIVITY(O1,UI) = REFL * FACTOR
+                L_USER_EMISSIVITY(O1,UI) = FACTOR * SUM(EMISS(1:NSTOKES))
               ENDDO
+!  End Replacement code ---------------------------------
             ENDDO
           ENDIF
 
