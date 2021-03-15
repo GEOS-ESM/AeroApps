@@ -2610,7 +2610,7 @@
 !      ENDIF
 !  New code --------
       IF ( DO_RAYLEIGH_ONLY .AND. .NOT. DO_LAMBERTIAN_SURFACE ) THEN
-        IF ( .not.DO_SSCORR_OUTGOING .or..not. DO_SSCORR_NADIR ) THEN
+        IF ( .not.DO_SSCORR_OUTGOING .AND..not. DO_SSCORR_NADIR ) THEN
           IF ( .not.DO_SS_EXTERNAL ) THEN
             NM = NM + 1
             MESSAGES(NM) = 'Bad input: Rayleigh-only+BRDF: set an SSCORR flag!'
