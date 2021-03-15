@@ -77,11 +77,19 @@
 ! #                                                             #
 ! ###############################################################
 
+!  Linearized Kernel routines.
+!    11/1/19. Version 2.7. Patch Overhaul
+!             revisions to do with sine-term signs and matrix transpositions
+!             Revisions implemented by R. Spurr, Verified by X. Xu (UMBC)
+
       MODULE vbrdf_LinSup_kernels_m
 
 !  Rob Extension 12/2/14. BPDF Kernels (replaces BPDF2009_VFUNCTION)
 
       use VLIDORT_PARS
+
+!  Auxiliary
+
       use vbrdf_sup_aux_m, only : derfc_e, VBRDF_Fresnel_Complex
 
       PRIVATE
@@ -90,12 +98,12 @@
                 HAPKE_VFUNCTION_PLUS,          &
                 RAHMAN_VFUNCTION_PLUS,         &
                 COXMUNK_VFUNCTION_PLUS,        &
-                GISSCOXMUNK_VFUNCTION_PLUS,    &
+                GISSCOXMUNK_VFUNCTION_PLUS,    &    ! Revised for Version 2.7 patch
                 COXMUNK_VFUNCTION_MSR_PLUS,    &
                 GISSCOXMUNK_VFUNCTION_MSR_PLUS,&
-                BPDFVEGN_VFUNCTION_PLUS,       &
-                BPDFSOIL_VFUNCTION_PLUS,       &
-                BPDFNDVI_VFUNCTION_PLUS,       &
+                BPDFVEGN_VFUNCTION_PLUS,       &    ! Revised for Version 2.7 patch
+                BPDFSOIL_VFUNCTION_PLUS,       &    ! Revised for Version 2.7 patch
+                BPDFNDVI_VFUNCTION_PLUS,       &    ! Revised for Version 2.7 patch
                 VBRDF_Generalized_Glint_plus,  &
                 VBRDF_WhiteCap_Reflectance_plus
 
@@ -103,8 +111,12 @@
 
       SUBROUTINE LIDENSE_VFUNCTION_PLUS &
          ( MAXPARS, NPARS, PARS, DO_DERIV_PARS, N_BRDF_STOKESSQ, &
-           XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI, &
+           XI, SXI, XJ, SXJ, PHI, CPHI, SKPHI, &
            LIDENSE_VKERNEL, LIDENSE_VDERIVATIVES )
+
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Formerly, we had...    ( XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,  
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
 !  include file of constants
 
@@ -147,7 +159,7 @@
 
 !  .. incidence
 
-      TX       = SXJ / XJ
+      TX       = SXI / XI
       T_INC    = PARS(2) * TX
       T_INC_SQ = T_INC * T_INC
       ANG_P    = DATAN ( T_INC )
@@ -156,7 +168,7 @@
 
 !  .. reflection
 
-      TX       = SXI / XI
+      TX       = SXJ / XJ
       T_REF    = PARS(2) * TX
       T_REF_SQ = T_REF * T_REF
       ANG_P    = DATAN ( T_REF )
@@ -251,8 +263,12 @@
 
       SUBROUTINE LISPARSE_VFUNCTION_PLUS &
          ( MAXPARS, NPARS, PARS, DO_DERIV_PARS, N_BRDF_STOKESSQ, &
-           XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI, &
+           XI, SXI, XJ, SXJ, PHI, CPHI, SKPHI, &
            LISPARSE_VKERNEL, LISPARSE_VDERIVATIVES )
+
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Formerly, we had...    ( XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,  
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
 !  include file of constants
 
@@ -295,7 +311,7 @@
 
 !  .. incidence
 
-      TX       = SXJ / XJ
+      TX       = SXI / XI
       T_INC    = PARS(2) * TX
       T_INC_SQ = T_INC * T_INC
       ANG_P    = DATAN ( T_INC )
@@ -304,7 +320,7 @@
 
 !  .. reflection
 
-      TX       = SXI / XI
+      TX       = SXJ / XJ
       T_REF    = PARS(2) * TX
       T_REF_SQ = T_REF * T_REF
       ANG_P    = DATAN ( T_REF )
@@ -399,8 +415,12 @@
 
       SUBROUTINE HAPKE_VFUNCTION_PLUS &
          ( MAXPARS, NPARS, PARS, DO_DERIV_PARS, N_BRDF_STOKESSQ, &
-           XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI, &
+           XI, SXI, XJ, SXJ, PHI, CPHI, SKPHI, &
            HAPKE_VKERNEL, HAPKE_VDERIVATIVES )
+
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Formerly, we had...    ( XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,   &
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
 !  include file of constants
 
@@ -537,8 +557,12 @@
 
       SUBROUTINE RAHMAN_VFUNCTION_PLUS &
          ( MAXPARS, NPARS, PARS, DO_DERIV_PARS, N_BRDF_STOKESSQ, &
-           XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI, &
+           XI, SXI, XJ, SXJ, PHI, CPHI, SKPHI, &
            RAHMAN_VKERNEL, RAHMAN_VDERIVATIVES )
+
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Formerly, we had...    ( XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,   &
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
 !  include file of constants
 
@@ -646,8 +670,12 @@
 
       SUBROUTINE COXMUNK_VFUNCTION_PLUS &
          ( MAXPARS, NPARS, PARS, DO_DERIV_PARS, N_BRDF_STOKESSQ, &
-           XJ, SXJ, XI, SXI, PHI, CKPHI, SKPHI, &
+           XI, SXI, XJ, SXJ, PHI, CKPHI, SKPHI, &
            COXMUNK_VKERNEL, COXMUNK_VDERIVATIVES )
+
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Formerly, we had...    ( XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,   &
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
 !  include file of constants
 
@@ -829,8 +857,12 @@
 
       SUBROUTINE GISSCOXMUNK_VFUNCTION_PLUS &
          ( MAXPARS, NPARS, PARS, DO_DERIV_PARS, N_BRDF_STOKESSQ, &
-           XJ, SXJ, XI, SXI, XPHI_REF, CKPHI_REF, SKPHI_REF, &
+           XI, SXI, XJ, SXJ, XPHI_REF, CKPHI_REF, SKPHI_REF, &
            GISSCOXMUNK_VKERNEL, GISSCOXMUNK_VDERIVATIVES )
+
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Formerly, we had...    XJ, SXJ, XI, SXI, XPHI_REF, CKPHI_REF, SKPHI_REF,   &
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
 !  include file of constants
 
@@ -928,6 +960,7 @@
       VI1 = SXI * CKPHI_INC
       VI2 = SXI * SKPHI_INC
       VI3 = -XI
+
       VR1 = SXJ * CKPHI_REF
       VR2 = SXJ * SKPHI_REF
       VR3 = XJ
@@ -1052,6 +1085,8 @@
 !      R(2,2)=(AF11-AF12-AF21+AF22)*AF
 
 !  Transcribed code
+!  11/1/19. No transpose necessary, as incident/reflected already switched.
+
       GISSCOXMUNK_VKERNEL(1) = (AF11+AF12+AF21+AF22)*AF
       GISSCOXMUNK_VKERNEL(2) = (AF11-AF12+AF21-AF22)*AF
       GISSCOXMUNK_VKERNEL(5) = (AF11-AF22+AF12-AF21)*AF
@@ -1096,14 +1131,23 @@
 !    We think that sine-terms need to be reversed! Entries 3, 7, 9, 10
 !    Real Refractive index --> Entries 4, 8, 12, 13, 14, 15 are zero.
 
-!  New code (Version 2.7, pending verification)
+!    Rob Fix 11/1/19. No transpose necessary, as XI/SXI and XJ/SXJ switched
+!    Rob Fix 11/1/19. Sine terms now reversed with MINUS sign
+!     ---Thanks to X. Xu (UMBC) for verification
 
-      GISSCOXMUNK_VKERNEL(3)  =    (CTTTP+CPTPP)*DCOEFF   ! Sine
-      GISSCOXMUNK_VKERNEL(7)  =    (CTTTP-CPTPP)*DCOEFF   ! Sine
-      GISSCOXMUNK_VKERNEL(9)  =    (CTTPT+CTPPP)*DCOEFF   ! Sine
-      GISSCOXMUNK_VKERNEL(10) =    (CTTPT-CTPPP)*DCOEFF   ! Sine
-      GISSCOXMUNK_VKERNEL(11) =    (CTTPP+CTPPT)*DCOEFF   ! Cos
-      GISSCOXMUNK_VKERNEL(16) =    (CTTPP-CTPPT)*DCOEFF   ! Cos
+!      GISSCOXMUNK_VKERNEL(3)  =    ( CTTTP+CPTPP ) * DCOEFF   ! Sine
+!      GISSCOXMUNK_VKERNEL(7)  =    ( CTTTP-CPTPP ) * DCOEFF   ! Sine
+!      GISSCOXMUNK_VKERNEL(9)  =    ( CTTPT+CTPPP ) * DCOEFF   ! Sine
+!      GISSCOXMUNK_VKERNEL(10) =    ( CTTPT-CTPPP ) * DCOEFF   ! Sine
+
+      GISSCOXMUNK_VKERNEL(3)  =  - ( CTTTP+CPTPP ) * DCOEFF   ! Sine
+      GISSCOXMUNK_VKERNEL(7)  =  - ( CTTTP-CPTPP ) * DCOEFF   ! Sine
+      GISSCOXMUNK_VKERNEL(9)  =  - ( CTTPT+CTPPP ) * DCOEFF   ! Sine
+      GISSCOXMUNK_VKERNEL(10) =  - ( CTTPT-CTPPP ) * DCOEFF   ! Sine
+
+      GISSCOXMUNK_VKERNEL(11) =    ( CTTPP+CTPPT ) * DCOEFF   ! Cos
+      GISSCOXMUNK_VKERNEL(16) =    ( CTTPP-CTPPT ) * DCOEFF   ! Cos
+
 
 !  Original VLIDORT code (Version 2.6)
 
@@ -1194,9 +1238,13 @@
 
       SUBROUTINE COXMUNK_VFUNCTION_MSR_PLUS &
      ( MAXPARS, NPARS, PARS, DERIVS, ORDER, NSSQ,                        &
-       n_muquad, n_phiquad, XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,          & 
+       n_muquad, n_phiquad, XI, SXI, XJ, SXJ, PHI, CPHI, SKPHI,          & 
        X_MUQUAD, W_MUQUAD, SX_MUQUAD, WXX_MUQUAD, X_PHIQUAD, W_PHIQUAD,  &
        COXMUNK_VKERNEL, COXMUNK_VDERIVATIVES )
+
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Formerly, we had...  n_muquad, n_phiquad, DO_SHADOW, XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
 !  include file of constants
 
@@ -1257,9 +1305,12 @@
 !  Only want the first element (this is a scalar routine)
 
 !  Single scattering (zero order), Phi is in degrees here!
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Formerly, we had...  MAXPARS, NPARS, PARS, DERIVS, NSSQ, XJ, SXJ, XI, SXI,
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)'
 
       CALL COXMUNK_VFUNCTION_PLUS &
-         ( MAXPARS, NPARS, PARS, DERIVS, NSSQ, XJ, SXJ, XI, SXI, &
+         ( MAXPARS, NPARS, PARS, DERIVS, NSSQ, XI, SXI, XJ, SXJ, &
            PHI, CPHI, SKPHI, REFLEC_0, D_REFLEC_0 )
 
 !  Higher orders scattering
@@ -1273,6 +1324,7 @@
 
 !  Quadrature output for first order R/T calculations
 !        This will be overwritten as the orders increase
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
 
       IF ( ORDER.GE.1 ) THEN
          DO K = 1, n_muquad
@@ -1287,10 +1339,10 @@
                SPHI_SUB2 = DSIN(PHI_SUB2)
                CALL COXMUNK_VFUNCTION_PLUS &
                 ( MAXPARS, NPARS, PARS, DERIVS, NSSQ, XI, SXI, XM, SXM, PHI_SUB2, &
-                  CPHI_SUB2, SPHI_SUB2, R0_OUT_QUAD(:,K,N), D_R0_OUT_QUAD(:,:,K,N) )
+                  CPHI_SUB2, SPHI_SUB2, R0_QUAD_IN(:,K,N), D_R0_QUAD_IN(:,:,K,N) )
                CALL COXMUNK_VFUNCTION_PLUS &
                 ( MAXPARS, NPARS, PARS, DERIVS, NSSQ, XM, SXM, XJ, SXJ, PHI_SUB1, &
-                  CPHI_SUB1, SPHI_SUB1, R0_QUAD_IN(:,K,N), D_R0_QUAD_IN(:,:,K,N) )
+                  CPHI_SUB1, SPHI_SUB1, R0_OUT_QUAD(:,K,N), D_R0_OUT_QUAD(:,:,K,N) )
             ENDDO
          ENDDO
       ENDIF
@@ -1456,9 +1508,13 @@
 
       SUBROUTINE GISSCOXMUNK_VFUNCTION_MSR_PLUS &
      ( MAXPARS, NPARS, PARS, DERIVS, ORDER, NSSQ,                        &
-       n_muquad, n_phiquad, XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,          & 
+       n_muquad, n_phiquad, XI, SXI, XJ, SXJ, PHI, CPHI, SKPHI,          & 
        X_MUQUAD, W_MUQUAD, SX_MUQUAD, WXX_MUQUAD, X_PHIQUAD, W_PHIQUAD,  &
        GISSCOXMUNK_VKERNEL, GISSCOXMUNK_VDERIVATIVES )
+
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Formerly, we had...    ( n_muquad, n_phiquad, XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
 !  include file of constants
 
@@ -1544,9 +1600,12 @@
       MASKIT(3,3) = 11
 
 !  Single scattering (zero order), Phi is in degrees here!
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Formerly, we had...  MAXPARS, NPARS, PARS, DERIVS, NSSQ, XJ, SXJ, XI, SXI,
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)'
 
       CALL GISSCOXMUNK_VFUNCTION_PLUS &
-         ( MAXPARS, NPARS, PARS, DERIVS, NSSQ, XJ, SXJ, XI, SXI, &
+         ( MAXPARS, NPARS, PARS, DERIVS, NSSQ, XI, SXI, XJ, SXJ, &
            PHI, CPHI, SKPHI, REFLEC_0, D_REFLEC_0 )
 
 !  Higher orders scattering
@@ -1560,6 +1619,7 @@
 
 !  Quadrature output for first order R/T calculations
 !        This will be overwritten as the orders increase
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
 
       IF ( ORDER.GE.1 ) THEN
          DO K = 1, n_muquad
@@ -1574,10 +1634,10 @@
                SPHI_SUB2 = DSIN(PHI_SUB2)
                CALL GISSCOXMUNK_VFUNCTION_PLUS &
                 ( MAXPARS, NPARS, PARS, DERIVS, NSSQ, XI, SXI, XM, SXM, PHI_SUB2, &
-                  CPHI_SUB2, SPHI_SUB2, R0_OUT_QUAD(:,K,N), D_R0_OUT_QUAD(:,:,K,N) )
+                  CPHI_SUB2, SPHI_SUB2, R0_QUAD_IN(:,K,N), D_R0_QUAD_IN(:,:,K,N) )
                CALL GISSCOXMUNK_VFUNCTION_PLUS &
                 ( MAXPARS, NPARS, PARS, DERIVS, NSSQ, XM, SXM, XJ, SXJ, PHI_SUB1, &
-                  CPHI_SUB1, SPHI_SUB1, R0_QUAD_IN(:,K,N), D_R0_QUAD_IN(:,:,K,N) )
+                  CPHI_SUB1, SPHI_SUB1, R0_OUT_QUAD(:,K,N), D_R0_OUT_QUAD(:,:,K,N) )
             ENDDO
          ENDDO
       ENDIF
@@ -1810,8 +1870,12 @@
 
       SUBROUTINE BPDFSOIL_VFUNCTION_PLUS &
         ( MAXPARS, NPARS, PARS, DO_DERIV_PARS, NSSQ, &
-          XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,        &
+          XI, SXI, XJ, SXJ, PHI, CPHI, SKPHI,        &
           BPDFSOIL_VKERNEL, BPDFSOIL_VDERIVATIVES )
+
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Formerly, we had........XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
 !  module, dimensions and numbers
 
@@ -1865,6 +1929,8 @@
 !   SXI and SXJ are the respective SINES (input)
 !   XPHI_REF = REFLECTION AZIMUTH ANGLE
 
+!  PARS(1) = refractive index of water (real)
+
       CN1 = ONE
       CN2 = PARS(1)
 
@@ -1901,6 +1967,8 @@
       HFUNCTION = 0.25d0 * atten / xi / xj
 
 !  Call to the vector Fresnel routine
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
       CALL FRESNEL_VECTOR_PLUS &
       ( CN1, CN2, XI, SXI, XJ, SXJ, CPHI, SKPHI,                        & ! Input
@@ -1929,6 +1997,8 @@
       ENDIF
 
       FACTOR = HALF * HFUNCTION
+
+!  11/1/19. No Transpose necessary, as incident/reflected switched already.
 
       BPDFSOIL_VKERNEL(1) = (AF11+AF12+AF21+AF22) * FACTOR
       BPDFSOIL_VKERNEL(2) = (AF11-AF12+AF21-AF22) * FACTOR
@@ -1974,14 +2044,25 @@
 !  New code (Version 2.7, pending verification)
 !    We think that sine-terms need to be reversed! Entries 3, 7, 9, 10.
 
-      BPDFSOIL_VKERNEL(3)  =    ( CTTTP+CPTPP) * FACTOR   ! Sine
-      BPDFSOIL_VKERNEL(7)  =    ( CTTTP-CPTPP) * FACTOR   ! Sine
-      BPDFSOIL_VKERNEL(9)  =    ( CTTPT+CTPPP) * FACTOR   ! Sine
-      BPDFSOIL_VKERNEL(10) =    ( CTTPT-CTPPP) * FACTOR   ! Sine
-      BPDFSOIL_VKERNEL(11) =    ( CTTPP+CTPPT) * FACTOR   ! Cos
+!    Rob Fix 11/1/19. No transpose necessary, as XI/SXI and XJ/SXJ switched
+!    Rob Fix 11/1/19. Sine terms now reversed with MINUS sign
+!     ---Thanks to X. Xu (UMBC) for verification
+
+!      BPDFSOIL_VKERNEL(3)  =    ( CTTTP+CPTPP ) * FACTOR   ! Sine
+!      BPDFSOIL_VKERNEL(7)  =    ( CTTTP-CPTPP ) * FACTOR   ! Sine
+!      BPDFSOIL_VKERNEL(9)  =    ( CTTPT+CTPPP ) * FACTOR   ! Sine
+!      BPDFSOIL_VKERNEL(10) =    ( CTTPT-CTPPP ) * FACTOR   ! Sine
+
+      BPDFSOIL_VKERNEL(3)  =  - ( CTTTP+CPTPP ) * FACTOR   ! Sine
+      BPDFSOIL_VKERNEL(7)  =  - ( CTTTP-CPTPP ) * FACTOR   ! Sine
+      BPDFSOIL_VKERNEL(9)  =  - ( CTTPT+CTPPP ) * FACTOR   ! Sine
+      BPDFSOIL_VKERNEL(10) =  - ( CTTPT-CTPPP ) * FACTOR   ! Sine
+
+      BPDFSOIL_VKERNEL(11) =    ( CTTPP+CTPPT ) * FACTOR   ! Cos
       IF ( NSSQ.eq.16 ) then
-         BPDFSOIL_VKERNEL(16) =    ( CTTPP-CTPPT) * FACTOR   ! Cos
+         BPDFSOIL_VKERNEL(16) =    ( CTTPP-CTPPT ) * FACTOR   ! Cos
       endif
+
 
 !  Original VLIDORT code (Version 2.6)
 
@@ -1992,15 +2073,27 @@
 !      BPDF2009_VKERNEL(11) =    (-CTTPP-CTPPT) * FACTOR   !  Wrongly coded, these are Cosine terms
 !      BPDF2009_VKERNEL(16) =    (-CTTPP+CTPPT) * FACTOR   !  Wrongly coded, these are Cosine terms
 
+!    Rob Fix 11/1/19. Sine terms now reversed with MINUS sign
+!     ---Thanks to X. Xu (UMBC) for verification
+
       if ( DO_DERIV_PARS(1) ) THEN
-         BPDFSOIL_VDERIVATIVES(1,3)  =    ( D_CTTTP+D_CPTPP) * FACTOR   ! Sine
-         BPDFSOIL_VDERIVATIVES(1,7)  =    ( D_CTTTP-D_CPTPP) * FACTOR   ! Sine
-         BPDFSOIL_VDERIVATIVES(1,9)  =    ( D_CTTPT+D_CTPPP) * FACTOR   ! Sine
-         BPDFSOIL_VDERIVATIVES(1,10) =    ( D_CTTPT-D_CTPPP) * FACTOR   ! Sine
-         BPDFSOIL_VDERIVATIVES(1,11) =    ( D_CTTPP+D_CTPPT) * FACTOR   ! Cos
+
+!         BPDFSOIL_VDERIVATIVES(1,3)  =    ( D_CTTTP+D_CPTPP ) * FACTOR   ! Sine
+!         BPDFSOIL_VDERIVATIVES(1,7)  =    ( D_CTTTP-D_CPTPP ) * FACTOR   ! Sine
+!         BPDFSOIL_VDERIVATIVES(1,9)  =    ( D_CTTPT+D_CTPPP ) * FACTOR   ! Sine
+!         BPDFSOIL_VDERIVATIVES(1,10) =    ( D_CTTPT-D_CTPPP ) * FACTOR   ! Sine
+
+         BPDFSOIL_VDERIVATIVES(1,3)  =  -  ( D_CTTTP+D_CPTPP ) * FACTOR   ! Sine
+         BPDFSOIL_VDERIVATIVES(1,7)  =  -  ( D_CTTTP-D_CPTPP ) * FACTOR   ! Sine
+         BPDFSOIL_VDERIVATIVES(1,9)  =  -  ( D_CTTPT+D_CTPPP ) * FACTOR   ! Sine
+         BPDFSOIL_VDERIVATIVES(1,10) =  -  ( D_CTTPT-D_CTPPP ) * FACTOR   ! Sine
+
+         BPDFSOIL_VDERIVATIVES(1,11) =     ( D_CTTPP+D_CTPPT ) * FACTOR   ! Cos
+
       ENDIF
+
       IF ( NSSQ.eq.16 .and. DO_DERIV_PARS(1) ) then
-         BPDFSOIL_VDERIVATIVES(1,16) =    ( D_CTTPP-D_CTPPT) * FACTOR   ! Cos
+         BPDFSOIL_VDERIVATIVES(1,16) =     ( D_CTTPP-D_CTPPT ) * FACTOR   ! Cos
       endif
 
 !  Finish
@@ -2012,8 +2105,12 @@
 
       SUBROUTINE BPDFVEGN_VFUNCTION_PLUS &
         ( MAXPARS, NPARS, PARS, DO_DERIV_PARS, NSSQ, &
-          XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,        &
+          XI, SXI, XJ, SXJ, PHI, CPHI, SKPHI,        &
           BPDFVEGN_VKERNEL, BPDFVEGN_VDERIVATIVES )
+
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Formerly, we had........XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
 !  module, dimensions and numbers
 
@@ -2074,6 +2171,8 @@
 !   SXI and SXJ are the respective SINES (input)
 !   XPHI_REF = REFLECTION AZIMUTH ANGLE
 
+!  PARS(1) = refractive index of water (real)
+
       CN1 = ONE
       CN2 = PARS(1)
 
@@ -2131,6 +2230,8 @@
       HFUNCTION = Fp0 * atten
 
 !  Call to the vector Fresnel routine
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
       CALL FRESNEL_VECTOR_PLUS &
       ( CN1, CN2, XI, SXI, XJ, SXJ, CPHI, SKPHI,                        & ! Input
@@ -2159,6 +2260,8 @@
       ENDIF
 
       FACTOR = HALF * HFUNCTION
+
+!  11/1/19. No Transpose necessary, as incident/reflected switched already.
 
       BPDFVEGN_VKERNEL(1) = (AF11+AF12+AF21+AF22) * FACTOR
       BPDFVEGN_VKERNEL(2) = (AF11-AF12+AF21-AF22) * FACTOR
@@ -2204,13 +2307,23 @@
 !  New code (Version 2.7, pending verification)
 !    We think that sine-terms need to be reversed! Entries 3, 7, 9, 10.
 
-      BPDFVEGN_VKERNEL(3)  =    ( CTTTP+CPTPP) * FACTOR   ! Sine
-      BPDFVEGN_VKERNEL(7)  =    ( CTTTP-CPTPP) * FACTOR   ! Sine
-      BPDFVEGN_VKERNEL(9)  =    ( CTTPT+CTPPP) * FACTOR   ! Sine
-      BPDFVEGN_VKERNEL(10) =    ( CTTPT-CTPPP) * FACTOR   ! Sine
-      BPDFVEGN_VKERNEL(11) =    ( CTTPP+CTPPT) * FACTOR   ! Cos
+!    Rob Fix 11/1/19. No transpose necessary, as XI/SXI and XJ/SXJ switched
+!    Rob Fix 11/1/19. Sine terms now reversed with MINUS sign
+!     ---Thanks to X. Xu (UMBC) for verification
+
+!      BPDFVEGN_VKERNEL(3)  =    ( CTTTP+CPTPP ) * FACTOR   ! Sine
+!      BPDFVEGN_VKERNEL(7)  =    ( CTTTP-CPTPP ) * FACTOR   ! Sine
+!      BPDFVEGN_VKERNEL(9)  =    ( CTTPT+CTPPP ) * FACTOR   ! Sine
+!      BPDFVEGN_VKERNEL(10) =    ( CTTPT-CTPPP ) * FACTOR   ! Sine
+
+      BPDFVEGN_VKERNEL(3)  =  - ( CTTTP+CPTPP ) * FACTOR   ! Sine
+      BPDFVEGN_VKERNEL(7)  =  - ( CTTTP-CPTPP ) * FACTOR   ! Sine
+      BPDFVEGN_VKERNEL(9)  =  - ( CTTPT+CTPPP ) * FACTOR   ! Sine
+      BPDFVEGN_VKERNEL(10) =  - ( CTTPT-CTPPP ) * FACTOR   ! Sine
+
+      BPDFVEGN_VKERNEL(11) =    ( CTTPP+CTPPT ) * FACTOR   ! Cos
       IF ( NSSQ.eq.16 ) then
-         BPDFVEGN_VKERNEL(16) =    ( CTTPP-CTPPT) * FACTOR   ! Cos
+         BPDFVEGN_VKERNEL(16) =    ( CTTPP-CTPPT ) * FACTOR   ! Cos
       endif
 
 !  Original VLIDORT code (Version 2.6)
@@ -2222,15 +2335,27 @@
 !      BPDF2009_VKERNEL(11) =    (-CTTPP-CTPPT) * FACTOR   !  Wrongly coded, these are Cosine terms
 !      BPDF2009_VKERNEL(16) =    (-CTTPP+CTPPT) * FACTOR   !  Wrongly coded, these are Cosine terms
 
+!    Rob Fix 11/1/19. Sine terms now reversed with MINUS sign
+!     ---Thanks to X. Xu (UMBC) for verification
+
       if ( DO_DERIV_PARS(1) ) THEN
-         BPDFVEGN_VDERIVATIVES(1,3)  =    ( D_CTTTP+D_CPTPP) * FACTOR   ! Sine
-         BPDFVEGN_VDERIVATIVES(1,7)  =    ( D_CTTTP-D_CPTPP) * FACTOR   ! Sine
-         BPDFVEGN_VDERIVATIVES(1,9)  =    ( D_CTTPT+D_CTPPP) * FACTOR   ! Sine
-         BPDFVEGN_VDERIVATIVES(1,10) =    ( D_CTTPT-D_CTPPP) * FACTOR   ! Sine
-         BPDFVEGN_VDERIVATIVES(1,11) =    ( D_CTTPP+D_CTPPT) * FACTOR   ! Cos
+
+!         BPDFVEGN_VDERIVATIVES(1,3)  =    ( D_CTTTP+D_CPTPP ) * FACTOR   ! Sine
+!         BPDFVEGN_VDERIVATIVES(1,7)  =    ( D_CTTTP-D_CPTPP ) * FACTOR   ! Sine
+!         BPDFVEGN_VDERIVATIVES(1,9)  =    ( D_CTTPT+D_CTPPP ) * FACTOR   ! Sine
+!         BPDFVEGN_VDERIVATIVES(1,10) =    ( D_CTTPT-D_CTPPP ) * FACTOR   ! Sine
+
+         BPDFVEGN_VDERIVATIVES(1,3)  =  -  ( D_CTTTP+D_CPTPP ) * FACTOR   ! Sine
+         BPDFVEGN_VDERIVATIVES(1,7)  =  -  ( D_CTTTP-D_CPTPP ) * FACTOR   ! Sine
+         BPDFVEGN_VDERIVATIVES(1,9)  =  -  ( D_CTTPT+D_CTPPP ) * FACTOR   ! Sine
+         BPDFVEGN_VDERIVATIVES(1,10) =  -  ( D_CTTPT-D_CTPPP ) * FACTOR   ! Sine
+
+         BPDFVEGN_VDERIVATIVES(1,11) =     ( D_CTTPP+D_CTPPT ) * FACTOR   ! Cos
+
       ENDIF
+
       IF ( NSSQ.eq.16 .and. DO_DERIV_PARS(1) ) then
-         BPDFVEGN_VDERIVATIVES(1,16) =    ( D_CTTPP-D_CTPPT) * FACTOR   ! Cos
+         BPDFVEGN_VDERIVATIVES(1,16) =    ( D_CTTPP-D_CTPPT ) * FACTOR   ! Cos
       endif
 
 !  Finish
@@ -2242,8 +2367,12 @@
 
       SUBROUTINE BPDFNDVI_VFUNCTION_PLUS &
         ( MAXPARS, NPARS, PARS, DO_DERIV_PARS, NSSQ, &
-          XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,        &
+          XI, SXI, XJ, SXJ, PHI, CPHI, SKPHI,        &
           BPDFNDVI_VKERNEL, BPDFNDVI_VDERIVATIVES )
+
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Formerly, we had........XJ, SXJ, XI, SXI, PHI, CPHI, SKPHI,
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
 !  module, dimensions and numbers
 
@@ -2297,6 +2426,8 @@
 !   SXI and SXJ are the respective SINES (input)
 !   XPHI_REF = REFLECTION AZIMUTH ANGLE
 
+!  PARS(1) = refractive index of water (real)
+
       CN1 = ONE
       CN2 = PARS(1)
 
@@ -2314,6 +2445,7 @@
       Z1 = DACOS(Z)
       Z2 = DCOS(Z1*HALF)
 
+!  PARS(2) = NDVI
 !  Exponential of the NDVI
 !    Out of range values default to zero
 
@@ -2340,6 +2472,8 @@
       HFUNCTION = Fp0
 
 !  Call to the vector Fresnel routine
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
       CALL FRESNEL_VECTOR_PLUS &
       ( CN1, CN2, XI, SXI, XJ, SXJ, CPHI, SKPHI,                        & ! Input
@@ -2368,6 +2502,8 @@
       ENDIF
 
       FACTOR = HALF * HFUNCTION * C * DEXPNDVI
+
+!  11/1/19. No Transpose necessary, as incident/reflected switched already.
 
       BPDFNDVI_VKERNEL(1) = (AF11+AF12+AF21+AF22) * FACTOR
       BPDFNDVI_VKERNEL(2) = (AF11-AF12+AF21-AF22) * FACTOR
@@ -2425,11 +2561,21 @@
 !  New code (Version 2.7, pending verification)
 !    We think that sine-terms need to be reversed! Entries 3, 7, 9, 10.
 
-      BPDFNDVI_VKERNEL(3)  =    ( CTTTP+CPTPP) * FACTOR   ! Sine
-      BPDFNDVI_VKERNEL(7)  =    ( CTTTP-CPTPP) * FACTOR   ! Sine
-      BPDFNDVI_VKERNEL(9)  =    ( CTTPT+CTPPP) * FACTOR   ! Sine
-      BPDFNDVI_VKERNEL(10) =    ( CTTPT-CTPPP) * FACTOR   ! Sine
-      BPDFNDVI_VKERNEL(11) =    ( CTTPP+CTPPT) * FACTOR   ! Cos
+!    Rob Fix 11/1/19. No transpose necessary, as XI/SXI and XJ/SXJ switched
+!    Rob Fix 11/1/19. Sine terms now reversed with MINUS sign
+!     ---Thanks to X. Xu (UMBC) for verification
+
+!      BPDFNDVI_VKERNEL(3)  =    ( CTTTP+CPTPP ) * FACTOR   ! Sine
+!      BPDFNDVI_VKERNEL(7)  =    ( CTTTP-CPTPP ) * FACTOR   ! Sine
+!      BPDFNDVI_VKERNEL(9)  =    ( CTTPT+CTPPP ) * FACTOR   ! Sine
+!      BPDFNDVI_VKERNEL(10) =    ( CTTPT-CTPPP ) * FACTOR   ! Sine
+
+      BPDFNDVI_VKERNEL(3)  =  - ( CTTTP+CPTPP ) * FACTOR   ! Sine
+      BPDFNDVI_VKERNEL(7)  =  - ( CTTTP-CPTPP ) * FACTOR   ! Sine
+      BPDFNDVI_VKERNEL(9)  =  - ( CTTPT+CTPPP ) * FACTOR   ! Sine
+      BPDFNDVI_VKERNEL(10) =  - ( CTTPT-CTPPP ) * FACTOR   ! Sine
+
+      BPDFNDVI_VKERNEL(11) =     ( CTTPP+CTPPT) * FACTOR   ! Cos
       IF ( NSSQ.eq.16 ) then
          BPDFNDVI_VKERNEL(16) =    ( CTTPP-CTPPT) * FACTOR   ! Cos
       endif
@@ -2443,13 +2589,21 @@
 !      BPDF2009_VKERNEL(11) =    (-CTTPP-CTPPT) * FACTOR   !  Wrongly coded, these are Cosine terms
 !      BPDF2009_VKERNEL(16) =    (-CTTPP+CTPPT) * FACTOR   !  Wrongly coded, these are Cosine terms
 
+!    Rob Fix 11/1/19. Sine terms now reversed with MINUS sign
+!     ---Thanks to X. Xu (UMBC) for verification
+
       if ( DO_DERIV_PARS(1) ) THEN
-         BPDFNDVI_VDERIVATIVES(1,3)  =    ( D_CTTTP+D_CPTPP) * FACTOR   ! Sine
-         BPDFNDVI_VDERIVATIVES(1,7)  =    ( D_CTTTP-D_CPTPP) * FACTOR   ! Sine
-         BPDFNDVI_VDERIVATIVES(1,9)  =    ( D_CTTPT+D_CTPPP) * FACTOR   ! Sine
-         BPDFNDVI_VDERIVATIVES(1,10) =    ( D_CTTPT-D_CTPPP) * FACTOR   ! Sine
-         BPDFNDVI_VDERIVATIVES(1,11) =    ( D_CTTPP+D_CTPPT) * FACTOR   ! Cos
+!         BPDFNDVI_VDERIVATIVES(1,3)  =    ( D_CTTTP+D_CPTPP ) * FACTOR   ! Sine
+!         BPDFNDVI_VDERIVATIVES(1,7)  =    ( D_CTTTP-D_CPTPP ) * FACTOR   ! Sine
+!         BPDFNDVI_VDERIVATIVES(1,9)  =    ( D_CTTPT+D_CTPPP ) * FACTOR   ! Sine
+!         BPDFNDVI_VDERIVATIVES(1,10) =    ( D_CTTPT-D_CTPPP ) * FACTOR   ! Sine
+         BPDFNDVI_VDERIVATIVES(1,3)  =  -  ( D_CTTTP+D_CPTPP ) * FACTOR   ! Sine
+         BPDFNDVI_VDERIVATIVES(1,7)  =  -  ( D_CTTTP-D_CPTPP ) * FACTOR   ! Sine
+         BPDFNDVI_VDERIVATIVES(1,9)  =  -  ( D_CTTPT+D_CTPPP ) * FACTOR   ! Sine
+         BPDFNDVI_VDERIVATIVES(1,10) =  -  ( D_CTTPT-D_CTPPP ) * FACTOR   ! Sine
+         BPDFNDVI_VDERIVATIVES(1,11) =     ( D_CTTPP+D_CTPPT ) * FACTOR   ! Cos
       ENDIF
+
       if ( DO_DERIV_PARS(2) ) THEN
          BPDFNDVI_VDERIVATIVES(2,3)  = BPDFNDVI_VKERNEL(3)  * D_DEXPNDVI
          BPDFNDVI_VDERIVATIVES(2,7)  = BPDFNDVI_VKERNEL(7)  * D_DEXPNDVI
@@ -2632,9 +2786,13 @@ SUBROUTINE VBRDF_Generalized_Glint_plus &
          ( DO_ISOTROPIC, DO_SHADOW, DO_COEFFS,    &
            REFRAC_R, REFRAC_I, WINDSPEED,         &
            PHI_W, CPHI_W, SPHI_W,                 &
-           XJ, SXJ, XI, SXI, PHI, CPHI, SPHI,     &
+           XI, SXI, XJ, SXJ, PHI, CPHI, SPHI,     &
            SUNGLINT_COEFFS, DSUNGLINT_COEFFS,     &
            SUNGLINT_REFLEC, DSUNGLINT_REFLEC )
+
+!    Rob Fix, 11/1/19. incident and reflected zenith angles swapped
+!       ==> Formerly, we had...    ( XJ, SXJ, XI, SXI, PHI, CPHI, SPHI,  
+!       ==> Equivalent to formal transpose. Verification thanks to X. Xu (UMBC)
 
       implicit none
 
@@ -2745,6 +2903,7 @@ SUBROUTINE VBRDF_Generalized_Glint_plus &
       SKPHI_W = SPHI_W
 
 !  Tilt angle
+!   11/1/19. Incident/reflection swapped, makes no difference here.
 
       B  = ONE / ( XI + XJ )
       ZX = - SXI * SKPHI * B
@@ -2765,7 +2924,7 @@ SUBROUTINE VBRDF_Generalized_Glint_plus &
 !  -------
 
        CALL VBRDF_Fresnel_Complex ( REFRAC_R, REFRAC_I, Z2, XMP )
-
+!      CALL VBRDF_Fresnel_Complex ( 1.334d0, 0.0d0, Z2, XMP )  !   Force Old Cox-Munk
 !  Anisotropic
 !  -----------
 
