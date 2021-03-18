@@ -10,9 +10,9 @@ module VLIDORT_SurfaceMod
    integer, parameter :: MODIS_ROSSTHICK_LISPARSE_BPDF = 4
    integer, parameter :: LAMBERTIAN_BPDF = 5
    integer, parameter :: BPDF = 6
-   integer, parameter :: NOBM = 7
+   integer, parameter :: NOBM_ISO = 7
    integer, parameter :: COXMNK = 8
-
+   integer, parameter :: NOBM = 9
 
    PUBLIC  VLIDORT_SurfaceLamb
    PUBLIC  VLIDORT_GissCoxMunk
@@ -22,6 +22,7 @@ module VLIDORT_SurfaceMod
    PUBLIC  VLIDORT_LANDMODIS
    PUBLIC  VLIDORT_LANDMODIS_BPDF
    PUBLIC  VLIDORT_LAMBERTIAN_BPDF
+   PUBLIC  VLIDORT_NOBM_ISO
    PUBLIC  VLIDORT_NOBM
 
    interface VLIDORT_SurfaceLamb
@@ -43,6 +44,7 @@ module VLIDORT_SurfaceMod
 
       type(VLIDORT)                 :: Base 
       integer                       :: sfc_type = -1
+      logical                       :: sleave_adjust = .false.
       real*8                        :: albedo 
 !     real*8,pointer,dimension(16)  :: B => NULL()  ! NSTOKES(4) * NSTOKES for GissCoxMunk
 
@@ -59,6 +61,7 @@ module VLIDORT_SurfaceMod
 
       type(VLIDORT)                 :: Base
       integer                       :: sfc_type = -1
+      logical                       :: sleave_adjust = .false.
       real*8,pointer                :: albedo
 !     real*8,pointer,dimension(16)  :: B => NULL()  ! NSTOKES(4) * NSTOKES for GissCoxMunk
 
@@ -867,6 +870,7 @@ module VLIDORT_SurfaceMod
       integer, dimension(MAX_BRDF_KERNELS)            ::   N_BRDF_PARAMETERS
       double precision, dimension(MAX_BRDF_KERNELS, MAX_BRDF_PARAMETERS)    ::   BRDF_PARAMETERS
       logical                                         ::   DO_DEBUG_RESTORATION
+      logical                                         ::   DO_DBONLY
       integer                                         ::   N_MOMENTS_INPUT
 
       double precision                                ::  sigma2
@@ -921,7 +925,7 @@ module VLIDORT_SurfaceMod
 
       ! Only for Cox-Munk type kernels
       DO_SHADOW_EFFECT = .true.      ! Shadow effect for glitter kernels
-!      DO_DBONLY = .false.        ! only direct bounce BRDF (no Fourier terms calc)
+      DO_DBONLY        = .false.     ! only direct bounce BRDF (no Fourier terms calc)
 
       DO_GLITTER_MSRCORR         = .false.  ! Do multiple reflectance correction for glitter kernels
       DO_GLITTER_MSRCORR_DBONLY  = .false. ! Do multiple reflectance correction 
@@ -969,15 +973,14 @@ module VLIDORT_SurfaceMod
       VBRDF%VBRDF_Sup_In%BS_LAMBERTIAN_KERNEL_FLAG = LAMBERTIAN_KERNEL_FLAG
       VBRDF%VBRDF_Sup_In%BS_BRDF_FACTORS           = BRDF_FACTORS
       VBRDF%VBRDF_Sup_In%BS_NSTREAMS_BRDF          = NSTREAMS_BRDF
+      VBRDF%VBRDF_Sup_In%BS_DO_SHADOW_EFFECT       = DO_SHADOW_EFFECT
+      VBRDF%VBRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = DO_DBONLY
 
-      VBRDF%VBRDF_Sup_In%BS_DO_SHADOW_EFFECT             = DO_SHADOW_EFFECT
       VBRDF%VBRDF_Sup_In%BS_DO_GLITTER_MSRCORR           = DO_GLITTER_MSRCORR
       VBRDF%VBRDF_Sup_In%BS_DO_GLITTER_MSRCORR_DBONLY    = DO_GLITTER_MSRCORR_DBONLY
       VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_ORDER        = GLITTER_MSRCORR_ORDER
       VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_NMUQUAD      = GLITTER_MSRCORR_NMUQUAD
       VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_NPHIQUAD     = GLITTER_MSRCORR_NPHIQUAD
-
-      VBRDF%VBRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = .false.   ! only direct bounce BRDF (no Fourier terms calc)
 
       ! The following is needed for New Cox-munck type only
       ! set to initialization values
@@ -1096,6 +1099,7 @@ module VLIDORT_SurfaceMod
       integer, dimension(MAX_BRDF_KERNELS)            ::   N_BRDF_PARAMETERS
       double precision, dimension(MAX_BRDF_KERNELS, MAX_BRDF_PARAMETERS)    ::   BRDF_PARAMETERS
       logical                                         ::   DO_DEBUG_RESTORATION
+      logical                                         ::   DO_DBONLY
       integer                                         ::   N_MOMENTS_INPUT
 
       double precision                                ::  sigma2
@@ -1150,7 +1154,7 @@ module VLIDORT_SurfaceMod
 
       ! Only for Cox-Munk type kernels
       DO_SHADOW_EFFECT = .true.      ! Shadow effect for glitter kernels
-!      DO_DBONLY = .false.        ! only direct bounce BRDF (no Fourier terms calc)
+      DO_DBONLY = .false.        ! only direct bounce BRDF (no Fourier terms calc)
 
       DO_GLITTER_MSRCORR         = .false.  ! Do multiple reflectance correction for glitter kernels
       DO_GLITTER_MSRCORR_DBONLY  = .false. ! Do multiple reflectance correction 
@@ -1200,13 +1204,13 @@ module VLIDORT_SurfaceMod
       VBRDF%VBRDF_Sup_In%BS_NSTREAMS_BRDF          = NSTREAMS_BRDF
 
       VBRDF%VBRDF_Sup_In%BS_DO_SHADOW_EFFECT             = DO_SHADOW_EFFECT
+      VBRDF%VBRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY         = DO_DBONLY
+
       VBRDF%VBRDF_Sup_In%BS_DO_GLITTER_MSRCORR           = DO_GLITTER_MSRCORR
       VBRDF%VBRDF_Sup_In%BS_DO_GLITTER_MSRCORR_DBONLY    = DO_GLITTER_MSRCORR_DBONLY
       VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_ORDER        = GLITTER_MSRCORR_ORDER
       VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_NMUQUAD      = GLITTER_MSRCORR_NMUQUAD
       VBRDF%VBRDF_Sup_In%BS_GLITTER_MSRCORR_NPHIQUAD     = GLITTER_MSRCORR_NPHIQUAD
-
-      VBRDF%VBRDF_Sup_In%BS_DO_DIRECTBOUNCE_ONLY   = .false.   ! only direct bounce BRDF (no Fourier terms calc)
 
       ! The following is needed for New Cox-munck type only
       ! set to initialization values
@@ -1267,8 +1271,9 @@ module VLIDORT_SurfaceMod
    end subroutine VLIDORT_CoxMunk_MultiGeom
 
 !.........................................................................
-   Subroutine VLIDORT_NOBM(self, sleave, solar_zenith, &
-                                  sensor_zenith, relative_azimuth, scalar,rc) 
+   Subroutine VLIDORT_NOBM_ISO(self, sleave, solar_zenith, &
+                                  sensor_zenith, relative_azimuth, &
+                                  scalar,rc,sleave_adjust) 
  
       USE VLIDORT_PARS
       USE VSLEAVE_SUP_MOD
@@ -1282,6 +1287,7 @@ module VLIDORT_SurfaceMod
       real*8, intent(in)                     :: sleave
       logical, intent(in)                    :: scalar
       integer, intent(out)                   :: rc     ! error code
+      logical, optional, intent(in)          :: sleave_adjust
 
       integer                             ::   NSTOKES
 
@@ -1289,7 +1295,7 @@ module VLIDORT_SurfaceMod
 
     
       ! Save local variables to self
-      self%sfc_type      = NOBM
+      self%sfc_type      = NOBM_ISO
       self%solar_zenith  = solar_zenith
       self%sensor_zenith = sensor_zenith
       self%relat_azimuth = relative_azimuth  
@@ -1311,8 +1317,55 @@ module VLIDORT_SurfaceMod
       if ( NSTOKES  .GT. MAXSTOKES  )                   rc = 3      
 
 
-   end subroutine VLIDORT_NOBM
+   end subroutine VLIDORT_NOBM_ISO
 
+!.........................................................................
+   Subroutine VLIDORT_NOBM(self, sleave, solar_zenith, &
+                                  sensor_zenith, relative_azimuth, &
+                                  scalar,rc,sleave_adjust)
+
+      USE VLIDORT_PARS
+      USE VSLEAVE_SUP_MOD
+
+      implicit NONE
+
+      type(VLIDORT_Surface), intent(inout)   :: self
+      real*8, intent(in)                     :: solar_zenith
+      real*8, intent(in)                     :: sensor_zenith
+      real*8, intent(in)                     :: relative_azimuth
+      real*8, intent(in)                     :: sleave
+      logical, intent(in)                    :: scalar
+      integer, intent(out)                   :: rc     ! error code
+      logical, optional, intent(in)          :: sleave_adjust
+
+      integer                             ::   NSTOKES
+
+      rc = 0
+
+
+      ! Save local variables to self
+      self%sfc_type      = NOBM
+      self%solar_zenith  = solar_zenith
+      self%sensor_zenith = sensor_zenith
+      self%relat_azimuth = relative_azimuth
+      self%scalar = scalar
+
+      if ( scalar ) then
+         NSTOKES = 1                 ! Number of Stokes vector components
+      else
+         NSTOKES = 3
+      end if
+
+
+      ! Copy sleave data to VSLEAVE output data structure
+      self%Base%VIO%VSLEAVE_Sup_Out%SL_SLTERM_USERANGLES(1,1,1,1) = sleave
+
+      ! Do some checks to make sure parameters are not out of range
+      !------------------------------------------------------------
+      if ( NSTOKES  .GT. MAXSTOKES  )                   rc = 3
+
+
+   end subroutine VLIDORT_NOBM
 !.................................................................................
 
    Subroutine VLIDORT_LANDMODIS_SingleGeom(self, solar_zenith, sensor_zenith, relative_azimuth, &
