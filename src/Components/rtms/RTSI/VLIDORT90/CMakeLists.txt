@@ -35,7 +35,17 @@ list (APPEND srcs
    ${VBRDF_PATH}/vbrdf_sup_masters.f90
    ${VBRDF_PATH}/vbrdf_sup_mod.f90
 )
-  
+
+set(VSLEAVE_PATH vsup/vsleave)
+list (APPEND srcs
+   ${VSLEAVE_PATH}/vsleave_findpar.f90
+   ${VSLEAVE_PATH}/vsleave_sup_inputs_def.f90
+   ${VSLEAVE_PATH}/vsleave_sup_outputs_def.f90
+   ${VSLEAVE_PATH}/vsleave_sup_aux.f90
+   ${VSLEAVE_PATH}/vsleave_sup_routines.f90
+   ${VSLEAVE_PATH}/vsleave_sup_masters.f90
+   ${VSLEAVE_PATH}/vsleave_sup_mod.f90
+)
 
 esma_add_library (${this}
   SRCS ${srcs}
