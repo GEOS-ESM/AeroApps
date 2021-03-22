@@ -1,0 +1,19 @@
+#
+# Define individual supplement paths
+#
+
+#  VFZMAT added for Version 2.8, 9/19/16
+
+VBRDF_PATH   = $(VSUP_PATH)/vbrdf
+VSLEAVE_PATH = $(VSUP_PATH)/vsleave
+VFZMAT_PATH  = $(VSUP_PATH)/vfzmat
+VACCESS_PATH = $(VSUP_PATH)/vaccessories
+
+#
+# Include individual supplement makefiles
+#
+
+include $(VBRDF_PATH)/makefile.vbrdf
+include $(VSLEAVE_PATH)/makefile.vsleave
+include $(VFZMAT_PATH)/makefile.vfzmat
+include $(VACCESS_PATH)/makefile.vaccess

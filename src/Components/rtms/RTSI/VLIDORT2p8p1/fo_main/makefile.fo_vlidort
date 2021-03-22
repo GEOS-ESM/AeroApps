@@ -1,0 +1,54 @@
+#
+# Define list of source files
+# (Note: ordering is important because of dependencies)
+#
+
+#  Update to Version 1.5, done 9/17/16. Only need changes to FO_SOURCES.
+#   This code just for Vector applications, 3/9/17
+
+# Basic independent code sets
+
+FO_SOURCES =
+FO_SOURCES += \
+   $(FO_MAIN_PATH)/FO_geometry_Generic.f90    \
+   $(FO_MAIN_PATH)/FO_WPgeometry_Routines.f90 \
+   $(FO_MAIN_PATH)/FO_DTWPgeometry_master.f90 \
+   $(FO_MAIN_PATH)/FO_SSWPgeometry_master.f90 \
+   $(FO_MAIN_PATH)/FO_Planckfunc.f90          \
+   $(FO_MAIN_PATH)/FO_Taylor.f90
+
+FO_SOURCES_Thermal =
+FO_SOURCES_Thermal += \
+   $(FO_MAIN_PATH)/FO_Thermal_RTCalcs_I.f90
+
+FO_SOURCES_L_Thermal =
+FO_SOURCES_L_Thermal += \
+   $(FO_MAIN_PATH)/FO_Thermal_RTCalcs_ILCS.f90 \
+   $(FO_MAIN_PATH)/FO_Thermal_RTCalcs_ILPS.f90
+
+#  Vector dependent code sets
+
+FO_SOURCES_Vector =
+FO_SOURCES_Vector += \
+   $(FO_SOURCES) \
+   $(FO_SOURCES_Thermal) \
+   $(FO_MAIN_PATH)/FO_VectorSS_Spherfuncs.f90 \
+   $(FO_MAIN_PATH)/FO_VectorSS_RTCalcs_I.f90  \
+   $(FO_MAIN_PATH)/VFO_Master.f90
+#   $(FO_MAIN_PATH)/FO_Vector_Master.f90
+
+FO_SOURCES_L_Vector =
+FO_SOURCES_L_Vector += \
+   $(FO_SOURCES_Vector) \
+   $(FO_SOURCES_L_Thermal) \
+   $(FO_MAIN_PATH)/FO_VectorSS_RTCalcs_ILCS.f90 \
+   $(FO_MAIN_PATH)/FO_VectorSS_RTCalcs_ILPS.f90 \
+   $(FO_MAIN_PATH)/VFO_LinMasters.f90
+#   $(FO_MAIN_PATH)/FO_Vector_LinMasters.f90
+
+#
+# Define pattern rule for creating object files
+#
+
+$(OBJ_PATH)/%.o : $(FO_MAIN_PATH)/%.f90
+	$(FC) $(FFLAGS) $< -o $@
