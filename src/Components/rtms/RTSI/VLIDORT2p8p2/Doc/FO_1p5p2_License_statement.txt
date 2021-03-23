@@ -1,0 +1,30 @@
+
+! ##################################################################
+! #                                                                #
+! # This is Version 1.5.2 of the FO_1p5 software library. This     #
+! # library comes with the Standard GNU General Public License,    #
+! # Version 3.0, 29 June 2007. Please read this license carefully. #
+! #                                                                #
+! #      FO CODE Copyright (c) 2010-2020.                          #
+! #          Robert Spurr, RT Solutions Inc.                       #
+! #          9 Channing Street, Cambridge, MA 02138, USA.          #
+! #                                                                #
+! # This file is part of FO_1p5 Version 1.5.2.                     #
+! #                                                                #
+! # FO_1p5 is free software: you can redistribute it               #
+! # and/or modify it under the terms of the GNU GPL (Standard)     #
+! # General Public License) as published by the Free Software      #
+! # Foundation, either version 3.0 of this License, or any         #
+! # later version.                                                 #
+! #                                                                #
+! # FO_1p5 is distributed in the hope that it will be              #
+! # useful, but WITHOUT ANY WARRANTY; without even the implied     #
+! # warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR        #
+! # PURPOSE. See the GNU Standard General Public License (GPL)     #
+! # for more details.                                              #
+! #                                                                #
+! # You should have received a copy of the GNU Standard General    #
+! # Public License (GPL) Version 3.0, along with FO_1p5_           #
+! # Version 1.5.2. If not, see <http://www.gnu.org/licenses/>.     #
+! #                                                                #
+! ##################################################################

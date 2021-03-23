@@ -1,0 +1,11 @@
+#
+# Define individual supplement paths
+#
+
+VACCESS_PATH = $(SUP_PATH)/vaccessories
+
+#
+# Include individual supplement makefiles
+#
+
+include $(VACCESS_PATH)/makefile.vaccess

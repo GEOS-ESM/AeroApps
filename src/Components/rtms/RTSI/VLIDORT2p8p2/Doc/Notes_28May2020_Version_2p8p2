@@ -1,0 +1,110 @@
+Changes to VLIDORT 2.8.2, 26 May 2020
+=====================================
+
+Debugging and Feedback have led to Several changes.
+
+All Changes marked "5/5/20.  Version 2.8.2 Upgrades" or 
+                   "5/22/20. Version 2.8.2 Upgrade"
+		   
+1. In subdirectory vlidort_def:
+
+      All vlidort_pars.f90 modules (6 of them)
+
+   ==> The MAXSTREAMS_BRDF parameter must be set to an even number (100)
+
+2. In subdirectory vlidort_def:
+
+      vlidort_outputs_def.f90
+      vlidort_lin_outputs_def.f90
+
+   ==> Some specialist output was added (but it remains commented out) for
+       generation of Fourier components in a zero-albedo Rayleigh scenario
+       goes with 3(c).
+
+3. In subdirectory vlidort_main_FO_1p5/regular_modules
+
+      vlidort_rtcalc_master.f90:
+      vlidort_setups_master.f90:
+
+(a)  ==> Check on planetary problem conditions has been relaxed, formerly 
+         Rayleigh only, now allowed for aerosols and FOCORR_NADIR. Now 2
+         Error messages in the exception handling. [Setups_master]
+
+(b)   ==> Planetary problem output was revised to use only the first index of the 
+          TRANSBEAM arrays, this makes the Q-problem valid (polarized output)
+
+(c)   ==> Some specialist output was added (but it remains commented out) for
+          generation of Fourier components in a zero-albedo Rayleigh scenario.
+
+4. In subdirectory vlidort_main_FO_1p5/linearized_modules
+
+      vlidort_rtcalc_lpsmaster.f90
+      vlidort_rtcalc_lcsmaster.f90
+
+   The above three items in #3 have also been applied in the linearized masters
+   with additional code to handle linearizations.
+
+5. In subdirectory fo_main_1p5_NEW
+
+     FO_VectorSSRT.f90.f90
+     FO_VectorSSRT_ILPS.f90
+     FO_VectorSSRT_ILCS.f90
+
+   The Output CUMTRANS array for the water-leaving situation was not
+   properly initialized - coming out with wrong values in all 3 of these
+   modules (Upwelling only). LC_CUMTRANS was also not properly initialized
+   but LP_CUMTRANS was OK. Now consistent.
+
+   The test-driver results (LWCoupling) were in fact correct from the previous
+   version, but this was accidental(!), due to the fact that the output is
+   at 2 levels ToaUp and BoaUp, with the latter option providing the correct
+   bookkeeping number NSTART just by virtue of it being NLAYERS !!!!
+
+6. In subdirectory fo_main_1p5_NEW
+
+      FO_DTWPgeometry_master.f90
+      FO_Thermal_DTRT.f90
+      FO_Thermal_DTRT_ILPS.f90
+      FO_Thermal_DTRT_ILCS.f90
+      VFO_RTCalc_Master.f90
+      VFO_RTCalc_LinMasters.f90
+
+   The direct thermal whole- and partial-layer calculations were incorrect
+   with the FOCORR_OUTGOING option, because the thermal emission
+   parameterizations were based on the SLANT optical depths rather than the
+   vertical optical depths. Necessary to output the vertical height drops
+   from the geometry routine, and use them to get the thermal emission
+   solutions in terms of vertical optical depths.
+
+7. A bug was found in the Vsup/vfzmat module vfzmat_Rayleigh.f90.
+   Basically the Rayleigh phase function was being calculated with
+   a reduced second coefficient. Once corrected,  two implementations
+   in the FO code (direct use of F-matrices versus use of expansion coeffs)
+   give the same answers (to 7 SF) in the FOCODE SSCORR calculation of
+   intensities. The test driver for the vfzmat option was changed slightly
+   so that the "direct use of F-matrices" option is in force. A new set of
+   test output was generated/
+   
+8. The modules 
+
+      vlidort_vfo_lcs_interface.f90
+      vlidort_vfo_lps_interface.f90
+
+   These were moved from the former location (regular_modules) to the new
+   location (linearized_modules), where they really belong. The makefiles
+   in the test directories were modified accordingly.
+
+9. There was a copying error in the thermal driver in vlidort_v_test/
+   The greekmat coefficients were set up for polarized RT for Task #1,
+   but the full set of polarized coefficients was not copied for tasks
+   2-6. Only the (1,1) element was copied ==> this resulted in a
+   correct validation for NSTOKES = 1, but incorrect for NSTOKES = 3
+   Now remedied.
+
+
+10. In vlidort_inputs.f90, CHECK_INPUT subroutine. Look for 6/17/20.
+
+   The check on FOCORR_OUTGOING and FOCORR_NADIR, has been relaxed to allow
+   the FO_CORR calculation to be performed for Plane-parallel input. Forermly
+   this was not allowed, and was returning a serious error.
+

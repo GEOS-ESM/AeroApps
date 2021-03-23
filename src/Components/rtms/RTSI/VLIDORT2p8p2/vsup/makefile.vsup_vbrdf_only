@@ -1,0 +1,11 @@
+#
+# Define individual supplement paths
+#
+
+VBRDF_PATH   = $(VSUP_PATH)/vbrdf
+
+#
+# Include individual supplement makefiles
+#
+
+include $(VBRDF_PATH)/makefile.vbrdf
