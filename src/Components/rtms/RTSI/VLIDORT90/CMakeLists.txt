@@ -1,7 +1,7 @@
 esma_set_this ()
 
 set (src_dirs DEF_directory sourcecode_str LAPACK_directory)
-set (srcs VLIDORT_Mod.F90 VLIDORT_SurfaceMod.F90 VLIDORT_ScatMod.F90)
+set (srcs VLIDORT_Mod.F90 VLIDORT_SurfaceMod.F90 VLIDORT_ScatMod.F90 VLIDORT_ScatMod_cd.F90)
 foreach (dir ${src_dirs})
   file (GLOB srcs_ ${dir}/*.[Ffc] ${dir}/*.[fF]90)
   list (APPEND srcs ${srcs_})
