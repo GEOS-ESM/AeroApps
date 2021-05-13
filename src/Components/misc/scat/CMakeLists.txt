@@ -43,7 +43,7 @@ add_dependencies(OMI_ VLIDORT)
 esma_add_f2py_module (qsat_
   SOURCES qsat_py.F90
   DESTINATION lib/Python/${this}
-  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
+  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${CMAKE_BINARY_DIR}/include/MAPL.base ${include_${this}}
   )
 
 esma_add_f2py_module (binObs_
@@ -52,9 +52,9 @@ esma_add_f2py_module (binObs_
   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
   )
 
-esma_add_f2py_module (test_mieobs
-  SOURCES test_miobs.F90
-  DESTINATION lib/Python/${this}
-  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
-  )
+#esma_add_f2py_module (test_mieobs
+#  SOURCES test_miobs.F90
+#  DESTINATION lib/Python/${this}
+#  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
+#  )
 
