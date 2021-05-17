@@ -457,6 +457,436 @@ end subroutine getEdgeVars
 
 !...................................................................................
 
+ subroutine getO3tauOMI ( km, nobs, nch, channels, verbose, o3, t, delp, &
+                          tau, rc )
+
+! Return the extinction profile due to gaseous ozone absorption, based on the 
+! OMI channels and the extinction cross sections provided by Can Li convolved
+! with OMI slit function
+
+  implicit NONE
+
+  integer,          intent(in)  :: km               ! number vertical layers
+  integer,          intent(in)  :: nobs             ! number of profiles
+  integer,          intent(in)  :: nch              ! number of channels
+  real,             intent(in)  :: channels(nch)
+
+  integer,          intent(in)  :: verbose
+
+  real,             intent(in)  :: o3(km,nobs)     ! ozone volume mixing ratio
+  real,             intent(in)  :: t(km,nobs)      ! temperature [K]
+  real,             intent(in)  :: delp(km,nobs)   ! pressure thickness of level [Pa]
+
+  real,             intent(out) :: tau(km,nch,nobs) ! aerosol optical depth
+ 
+  integer,          intent(out) :: rc
+
+! -------------------------------------------------------------------------------------
+! Cross section notes
+!
+! Can Li provides O3 cross section coefficients at OMI wavelengths convolved with
+! OMI slit function.  Given ozone (converted to # cm-2 in vertical level) calculate
+! the absorbtion cross section (cm2) derived from the data coefficients:
+!  xsec = 1.e-20 * a0 * (1. + a1*T + a2*T*T)
+! where T is the temperature [deg C] and xsec is [cm2]
+
+  real, parameter :: omichan(16) = &
+          (/   308.700, 312.340, 312.610, 317.350, 317.620, &
+               322.420, 325.000, 331.060, 331.340, 339.660, &
+               354.000, 359.880, 360.150, 379.950, 388.000, 471.000 /)
+  real, parameter :: a0(16) = &
+          (/   11.9240, 6.97293, 6.63798, 3.66506, 3.72993, &
+               2.08910, 1.56904, 0.689132, 0.692929, 0.121311, &
+               0.00884554, 0.00656508, 0.00628016, 0.000462138, 0.000513032, 0. /)
+  real, parameter :: a1(16) = &
+          (/   0.00264655, 0.00329817, 0.00343651, 0.00371339, 0.00330990, &
+               0.00344314, 0.00283151, 0.00402877, 0.00385602, 0.0127579, &
+               0.0197702,  0.00803209, 0.0104759,  0.0186137,  0.00696032, 0. /)
+  real, parameter :: a2(16) = &
+          (/   2.11937e-05, 2.01685e-05, 2.10381e-05, 2.74817e-05, 2.66713e-05, &
+               2.58214e-05, 2.34310e-05, 3.11755e-05, 2.57440e-05, 7.52920e-05, &
+               0.000136205, 6.48508e-05, 6.97569e-05, 8.70968e-05, -3.86025e-06, 0. /)
+
+  integer, parameter  :: nch_omi = 16
+
+  real, parameter     :: grav = 9.80616   ! acceleration of gravity [m s-2]
+  real, parameter     :: Na   = 6.022e23  ! Avogadro's numbers
+  real, parameter     :: mair = 0.02897   ! air mole weight [kg mole-1]
+
+
+  integer             :: idxChannel(nch)
+  integer             :: iq, n, m, i, k
+  real                :: xsec, t_, fac
+
+  rc = 0
+  
+! Determine channel indices
+! -------------------------
+  do n = 1, nch
+     idxChannel(n) = -1 ! this is really the channel index
+     do m = 1, nch_omi
+        if ( abs(channels(n) - omichan(m)) < 1. ) then
+           idxChannel(n) = m
+           exit
+         end if
+      end do
+   end do
+   if ( any(idxChannel<0) ) then
+        print *, 'Requested channel not available'
+        print *, 'Channels requested:  ', channels
+        print *, 'Channels on RC file: ', omichan
+        rc = 99
+        return
+   end if
+
+
+! Initialize output arrays to zero
+! --------------------------------
+  tau = 0.0
+
+! Loop over nobs, km, nch
+! --------------------------
+  fac = 1.e-4 * na/mair/grav
+  do i = 1, nobs
+     do n = 1, nch
+        m = idxchannel(n)
+        do k =1, km
+            t_ = t(k,i)-273.15  ! degrees C
+            xsec = 1.e-20 * a0(m) * (1. + a1(m)*t_ + a2(m)*t_**2)
+            if(xsec < 1.e-30) xsec = 1.e-30
+            tau(k,n,i) = xsec*o3(k,i)*delp(k,i)*fac
+        end do  ! end nch
+     end do ! end km
+  end do  ! end nobs
+
+  end subroutine getO3tauOMI
+
+!...................................................................................
+
+ subroutine getO3tauOMPS ( km, nobs, nch, channels, verbose, o3, t, delp, &
+                           tau, rc )
+
+! Return the extinction profile due to gaseous ozone absorption, based on the 
+! OMPS channels and the extinction cross sections provided by Can Li convolved
+! with OMPS slit function
+
+  implicit NONE
+
+  integer,          intent(in)  :: km               ! number vertical layers
+  integer,          intent(in)  :: nobs             ! number of profiles
+  integer,          intent(in)  :: nch              ! number of channels
+  real,             intent(in)  :: channels(nch)
+
+  integer,          intent(in)  :: verbose
+
+  real,             intent(in)  :: o3(km,nobs)     ! ozone volume mixing ratio
+  real,             intent(in)  :: t(km,nobs)      ! temperature [K]
+  real,             intent(in)  :: delp(km,nobs)   ! pressure thickness of level [Pa]
+
+  real,             intent(out) :: tau(km,nch,nobs) ! aerosol optical depth
+ 
+  integer,          intent(out) :: rc
+
+! -------------------------------------------------------------------------------------
+! Cross section notes
+!
+! Can Li provides O3 cross section coefficients at OMPS wavelengths convolved with
+! OMPS slit function.  Given ozone (converted to # cm-2 in vertical level) calculate
+! the absorbtion cross section (cm2) derived from the data coefficients:
+!  xsec = 1.e-20 * a0 * (1. + a1*T + a2*T*T)
+! where T is the temperature [deg C] and xsec is [cm2]
+
+  real, parameter :: omichan(16) = &
+          (/   308.700, 312.340, 312.610, 317.350, 317.620, &
+               322.420, 325.000, 331.060, 331.340, 339.660, &
+               354.000, 359.880, 360.150, 379.950, 388.000, 471.000 /)
+  real, parameter :: a0(16) = &
+          (/   11.9184, 7.02340, 6.70705, 3.66829, 3.62842, &
+               2.04284, 1.39918, 0.645718,0.617893,0.126645, &
+               0.00935895, 0.00644011,  0.00620974, 0.000450954, 0.000516689, 0./)
+  real, parameter :: a1(16) = &
+          (/      0.00260584, 0.00327230, 0.00336150, 0.00373411, &
+                  0.00357413, 0.00355121, 0.00377594, 0.00440684, &
+                  0.00481047, 0.0115148,  0.0193700,  0.00988421, &
+                  0.0108591,  0.0185442,  0.00692930, 0./)
+  real, parameter :: a2(16) = &
+          (/     2.04564e-05, 2.02593e-05, 2.09936e-05, 2.72707e-05, &
+                 2.65668e-05, 2.62994e-05, 2.47051e-05, 3.04936e-05, &
+                 2.96094e-05, 7.17826e-05, 0.000135241, 7.71440e-05, &
+                 7.59650e-05, 8.85767e-05, -5.70736e-06, 0./)
+
+  integer, parameter  :: nch_omi = 16
+
+  real, parameter     :: grav = 9.80616   ! acceleration of gravity [m s-2]
+  real, parameter     :: Na   = 6.022e23  ! Avogadro's numbers
+  real, parameter     :: mair = 0.02897   ! air mole weight [kg mole-1]
+
+
+  integer             :: idxChannel(nch)
+  integer             :: iq, n, m, i, k
+  real                :: xsec, t_, fac
+
+  rc = 0
+  
+! Determine channel indices
+! -------------------------
+  do n = 1, nch
+     idxChannel(n) = -1 ! this is really the channel index
+     do m = 1, nch_omi
+        if ( abs(channels(n) - omichan(m)) < 1. ) then
+           idxChannel(n) = m
+           exit
+         end if
+      end do
+   end do
+   if ( any(idxChannel<0) ) then
+        print *, 'Requested channel not available'
+        print *, 'Channels requested:  ', channels
+        print *, 'Channels on RC file: ', omichan
+        rc = 99
+        return
+   end if
+
+
+! Initialize output arrays to zero
+! --------------------------------
+  tau = 0.0
+
+! Loop over nobs, km, nch
+! --------------------------
+  fac = 1.e-4 * na/mair/grav
+  do i = 1, nobs
+     do n = 1, nch
+        m = idxchannel(n)
+        do k =1, km
+            t_ = t(k,i)-273.15  ! degrees C
+            xsec = 1.e-20 * a0(m) * (1. + a1(m)*t_ + a2(m)*t_**2)
+            if(xsec < 1.e-30) xsec = 1.e-30
+            tau(k,n,i) = xsec*o3(k,i)*delp(k,i)*fac
+        end do  ! end nch
+     end do ! end km
+  end do  ! end nobs
+
+  end subroutine getO3tauOMPS
+
+!...................................................................................
+
+ subroutine getSO2tauOMI ( km, nobs, nch, channels, verbose, so2, t, delp, &
+                           tau, rc )
+
+! Return the extinction profile due to gaseous ozone absorption, based on the 
+! OMI channels and the extinction cross sections provided by Can Li convolved
+! with OMI slit function
+
+  implicit NONE
+
+  integer,          intent(in)  :: km               ! number vertical layers
+  integer,          intent(in)  :: nobs             ! number of profiles
+  integer,          intent(in)  :: nch              ! number of channels
+  real,             intent(in)  :: channels(nch)
+
+  integer,          intent(in)  :: verbose
+
+  real,             intent(in)  :: so2(km,nobs)    ! SO2 mass mixing ratio
+  real,             intent(in)  :: t(km,nobs)      ! temperature [K]
+  real,             intent(in)  :: delp(km,nobs)   ! pressure thickness of level [Pa]
+
+  real,             intent(out) :: tau(km,nch,nobs) ! aerosol optical depth
+ 
+  integer,          intent(out) :: rc
+
+! -------------------------------------------------------------------------------------
+! Cross section notes
+!
+! Can Li provides SO2 cross section coefficients at OMI wavelengths convolved with
+! OMI slit function.  Given SO2 (converted to # cm-2 in vertical level) calculate
+! the absorbtion cross section (cm2) derived from the data coefficients:
+!  xsec = 1.e-20 * a0 * (1. + a1*T + a2*T*T)
+! where T is the temperature [deg C] and xsec is [cm2]
+
+  real, parameter :: omichan(16) = &
+          (/   308.700, 312.340, 312.610, 317.350, 317.620, &
+               322.420, 325.000, 331.060, 331.340, 339.660, &
+               354.000, 359.880, 360.150, 379.950, 388.000, 471.000 /)
+  real, parameter :: a0(16) = &
+          (/   45.7172, 13.1613, 14.4654, 8.44695, 7.53393, &
+               2.41046, 0.939168, 0.140702, 0.111248, 0.0117402, &
+               0.00909536, 0.0143170, 0.00701996, 0.0144760, 0.0314615, 0. /)
+  real, parameter :: a1(16) = &
+          (/    -0.000903696, 0.000393644, 0.000263059, 0.000331801, 0.00117448, &
+                 0.00199029,  0.00521772,  0.0106194,   0.0141481,   0.0347246, &
+                 -0.0183250, -0.00523190, -0.00890666, -0.00396620, -0.00130793, 0. /)
+  real, parameter :: a2(16) = &
+          (/     3.92349e-07, -8.07379e-07, -3.42160e-06, 1.25723e-06, 4.57435e-06, &
+                 1.94237e-05,  4.83911e-05,  0.000152681, 0.000205431, 0.00111805, &
+                 0.000480777,  0.000464484,  0.00118211,  2.23354e-05, 3.31965e-05, 0. /)
+
+  integer, parameter  :: nch_omi = 16
+
+  real, parameter     :: grav = 9.80616   ! acceleration of gravity [m s-2]
+  real, parameter     :: Na   = 6.022e23  ! Avogadro's numbers
+  real, parameter     :: mair = 0.02897   ! air mole weight [kg mole-1]
+  real, parameter     :: mso2 = 0.064     ! SO2 mole weight [kg mole-1]
+
+
+  integer             :: idxChannel(nch)
+  integer             :: iq, n, m, i, k
+  real                :: xsec, t_, fac
+
+  rc = 0
+  
+! Determine channel indices
+! -------------------------
+  do n = 1, nch
+     idxChannel(n) = -1 ! this is really the channel index
+     do m = 1, nch_omi
+        if ( abs(channels(n) - omichan(m)) < 1. ) then
+           idxChannel(n) = m
+           exit
+         end if
+      end do
+   end do
+   if ( any(idxChannel<0) ) then
+        print *, 'Requested channel not available'
+        print *, 'Channels requested:  ', channels
+        print *, 'Channels on RC file: ', omichan
+        rc = 99
+        return
+   end if
+
+
+! Initialize output arrays to zero
+! --------------------------------
+  tau = 0.0
+
+! Loop over nobs, km, nch
+! --------------------------
+  fac = 1.e-4 * na/mair/grav*(mair/mso2)
+  do i = 1, nobs
+     do n = 1, nch
+        m = idxchannel(n)
+        do k =1, km
+            t_ = t(k,i)-273.15  ! degrees C
+            xsec = 1.e-20 * a0(m) * (1. + a1(m)*t_ + a2(m)*t_**2)
+            if(xsec < 1.e-30) xsec = 1.e-30
+            tau(k,n,i) = xsec*so2(k,i)*delp(k,i)*fac
+        end do  ! end nch
+     end do ! end km
+  end do  ! end nobs
+
+  end subroutine getSO2tauOMI
+
+!...................................................................................
+
+ subroutine getSO2tauOMPS ( km, nobs, nch, channels, verbose, so2, t, delp, &
+                            tau, rc )
+
+! Return the extinction profile due to gaseous ozone absorption, based on the 
+! OMPS channels and the extinction cross sections provided by Can Li convolved
+! with OMPS slit function
+
+  implicit NONE
+
+  integer,          intent(in)  :: km               ! number vertical layers
+  integer,          intent(in)  :: nobs             ! number of profiles
+  integer,          intent(in)  :: nch              ! number of channels
+  real,             intent(in)  :: channels(nch)
+
+  integer,          intent(in)  :: verbose
+
+  real,             intent(in)  :: so2(km,nobs)    ! SO2 mass mixing ratio
+  real,             intent(in)  :: t(km,nobs)      ! temperature [K]
+  real,             intent(in)  :: delp(km,nobs)   ! pressure thickness of level [Pa]
+
+  real,             intent(out) :: tau(km,nch,nobs) ! aerosol optical depth
+ 
+  integer,          intent(out) :: rc
+
+! -------------------------------------------------------------------------------------
+! Cross section notes
+!
+! Can Li provides SO2 cross section coefficients at OMPS wavelengths convolved with
+! OMPS slit function.  Given SO2 (converted to # cm-2 in vertical level) calculate
+! the absorbtion cross section (cm2) derived from the data coefficients:
+!  xsec = 1.e-20 * a0 * (1. + a1*T + a2*T*T)
+! where T is the temperature [deg C] and xsec is [cm2]
+
+  real, parameter :: omichan(16) = &
+          (/   308.700, 312.340, 312.610, 317.350, 317.620, &
+               322.420, 325.000, 331.060, 331.340, 339.660, &
+               354.000, 359.880, 360.150, 379.950, 388.000, 471.000 /)
+  real, parameter :: a0(16) = &
+          (/   35.7355, 13.9534, 15.6521, 8.15167, 7.99223, &
+               2.26554, 0.961155, 0.142323, 0.117623, 0.00994909, &
+               0.0110929, 0.0144042, 0.00926030, 0.0132294, 0.0303940, 0. /)
+  real, parameter :: a1(16) = &
+          (/    -3.17972e-05, 0.000628254, 0.000250902, 0.000519986, &
+                 0.000608687, 0.00247980,  0.00455231,  0.0119573, &
+                 0.0147213,   0.0444674,  -0.0214338,  -0.00672439, &
+                -0.00672764, -0.000797140,-0.000876723, 0. /)
+  real, parameter :: a2(16) = &
+          (/      3.07185e-06, 1.51349e-06,-1.04839e-06, 2.35145e-06, &
+                  2.87820e-06, 2.12412e-05, 4.32081e-05, 0.000174339, &
+                  0.000212400, 0.00124433,  0.000577062, 0.000705503, &
+                  0.00123442,  0.000126878, 4.59309e-05, 0. /)
+
+  integer, parameter  :: nch_omi = 16
+
+  real, parameter     :: grav = 9.80616   ! acceleration of gravity [m s-2]
+  real, parameter     :: Na   = 6.022e23  ! Avogadro's numbers
+  real, parameter     :: mair = 0.02897   ! air mole weight [kg mole-1]
+  real, parameter     :: mso2 = 0.064     ! SO2 mole weight [kg mole-1]
+
+
+  integer             :: idxChannel(nch)
+  integer             :: iq, n, m, i, k
+  real                :: xsec, t_, fac
+
+  rc = 0
+  
+! Determine channel indices
+! -------------------------
+  do n = 1, nch
+     idxChannel(n) = -1 ! this is really the channel index
+     do m = 1, nch_omi
+        if ( abs(channels(n) - omichan(m)) < 1. ) then
+           idxChannel(n) = m
+           exit
+         end if
+      end do
+   end do
+   if ( any(idxChannel<0) ) then
+        print *, 'Requested channel not available'
+        print *, 'Channels requested:  ', channels
+        print *, 'Channels on RC file: ', omichan
+        rc = 99
+        return
+   end if
+
+
+! Initialize output arrays to zero
+! --------------------------------
+  tau = 0.0
+
+! Loop over nobs, km, nch
+! --------------------------
+  fac = 1.e-4 * na/mair/grav*(mair/mso2)
+  do i = 1, nobs
+     do n = 1, nch
+        m = idxchannel(n)
+        do k =1, km
+            t_ = t(k,i)-273.15  ! degrees C
+            xsec = 1.e-20 * a0(m) * (1. + a1(m)*t_ + a2(m)*t_**2)
+            if(xsec < 1.e-30) xsec = 1.e-30
+            tau(k,n,i) = xsec*so2(k,i)*delp(k,i)*fac
+        end do  ! end nch
+     end do ! end km
+  end do  ! end nobs
+
+  end subroutine getSO2tauOMPS
+
+!...................................................................................
+
   subroutine getExt ( km, nobs, nch, nq, channels, vname, verbose, &
                      qc,qm, rh, ext, sca, bsc, absc_SFC,absc_TOA, rc )
 
@@ -621,4 +1051,32 @@ end subroutine getEdgeVars
  
 end subroutine getExt
 
+
+!..............................................................
+
+! Read the OMI research retrieval required Fresnel Ocean Reflectivity LUT
+! Function of wavelength (340, 380 nm) and nodes of SZA, VZA, VAA
+  subroutine readFresnel (filename, ocean_ler)
+  
+  character(len=*), intent(in)             :: filename  ! LUT filename
+  real, intent(out), dimension(2,16,16,16) :: ocean_ler ! LUT values
+
+  integer                                  :: ix, iy, iz, iw
+  real*4                                   :: datai
+
+  
+  open(unit=11,file=filename, form='unformatted')
+  do iw = 1, 16
+  do iz = 1, 16
+  do iy = 1, 16
+  do ix = 1, 2
+   read(11) datai
+   ocean_ler(ix,iy,iz,iw) = datai
+  enddo
+  enddo
+  enddo
+  enddo
+  close(unit=11)
+
+end subroutine readFresnel
 

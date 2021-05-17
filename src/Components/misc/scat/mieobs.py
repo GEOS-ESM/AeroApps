@@ -9,6 +9,20 @@ from MAPL  import config
 
 import MieObs_ 
 
+#...........................................................................
+
+def getFresnelLUT(filename):
+    """
+    Given a filename, return the ocean Fresnel reflectance LUT
+    """
+#   Call Fortran for the actual read
+#   ---------------------------------------
+    oceanler = MieObs_.readfresnel(filename)
+
+    return(oceanler)
+
+#...........................................................................
+
 def getMieDims(rcfile='Aod_EOS.rc'):
     """
         Return dimensions of Mie-table like nPol and nMom.
@@ -168,6 +182,100 @@ def getAOPvector(aer,channels,I=None,Verbose=False,rcfile='Aod_EOS.rc',nMom=301)
         raise ValueError, 'cannot get Aerosol Optical Properties (vector version)'
 
     return (tau,ssa,g,pmom)
+#---
+def getO3tau(aer,channels,Verbose=False,I=None,OMPS=False,):
+    """
+    Compute (tau) due to ozone absorption given aer object including temperature.
+
+    Input arrays can be (nobs,km) or (km,nobs).
+    It always returns arrays that are (km,nobs).
+    
+    J --- index of subset of observations to process
+    """
+
+    # Can Li provides O3 cross section coefficients at OMI wavelengths convolved with
+    # OMI slit function.  Given ozone in VMR and the pressure thickness of each layer
+    # we need to calculate the # of molecules cm-2 and multiply by the cross section
+    # derived from the following coefficients as:
+    #  xsec = 1.e-20 * a0 * (1. + a1*T + a2*T*T)
+    # where T is the temperature [deg C] and xsec is [cm2]
+
+    # Make sure channels is a numpy array
+    # -------------------------------------
+    channels = _toArray(channels)
+
+
+    nch = len(channels) 
+    if I is None:
+        nobs = size(aer.PS)
+        I = range(0,nobs)
+    else :
+        nobs = len(I)
+    
+    if needs_transpose(aer): # aer is (nobs,km)
+        km    = aer.DELP.shape[1]
+        delp  = aer.DELP[I].T
+        o3    = aer.O3[I].T    #O3 is vmr [mol mol-1]
+        t     = aer.T[I].T     # [K]
+    else:                    # aer is (km,nobs)
+        km    = aer.DELP.shape[0]
+        delp  = aer.DELP[:,I]
+        o3    = aer.O3[:,I]
+        t     = aer.T[:,I]
+
+    if OMPS:
+        tau,rc = MieObs_.geto3tauomps(channels,Verbose,o3,t,delp)
+    else:
+        tau,rc = MieObs_.geto3tauomi(channels,Verbose,o3,t,delp)
+
+    return (tau)
+#---
+def getSO2tau(aer,channels,Verbose=False,I=None,OMPS=False,):
+    """
+    Compute (tau) due to SO2 absorption given aer object including temperature.
+
+    Input arrays can be (nobs,km) or (km,nobs).
+    It always returns arrays that are (km,nobs).
+    
+    J --- index of subset of observations to process
+    """
+
+    # Can Li provides SO2 cross section coefficients at OMI wavelengths convolved with
+    # OMI slit function.  Given SO2 in MMR and the pressure thickness of each layer
+    # we need to calculate the # of molecules cm-2 and multiply by the cross section
+    # derived from the following coefficients as:
+    #  xsec = 1.e-20 * a0 * (1. + a1*T + a2*T*T)
+    # where T is the temperature [deg C] and xsec is [cm2]
+
+    # Make sure channels is a numpy array
+    # -------------------------------------
+    channels = _toArray(channels)
+
+
+    nch = len(channels) 
+    if I is None:
+        nobs = size(aer.PS)
+        I = range(0,nobs)
+    else :
+        nobs = len(I)
+    
+    if needs_transpose(aer): # aer is (nobs,km)
+        km    = aer.DELP.shape[1]
+        delp  = aer.DELP[I].T
+        so2   = aer.SO2S[I].T + aer.SO2V[I].T   #O3 is vmr [mol mol-1]
+        t     = aer.T[I].T     # [K]
+    else:                    # aer is (km,nobs)
+        km    = aer.DELP.shape[0]
+        delp  = aer.DELP[:,I]
+        so2   = aer.SO2S[:,I] + aer.SO2V[:,I]
+        t     = aer.T[:,I]
+
+    if OMPS:
+        tau,rc = MieObs_.getso2tauomps(channels,Verbose,so2,t,delp)
+    else:
+        tau,rc = MieObs_.getso2tauomi(channels,Verbose,so2,t,delp)
+
+    return (tau)
 #---
 def getAOPext(aer,channels,I=None,vnames=None,Verbose=False):
     """
