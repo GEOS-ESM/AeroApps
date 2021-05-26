@@ -380,7 +380,7 @@ class GIANT(object):
     """
     Calls VLIDORT wrapper to calculate CoxMunk Bidirectional Surface Reflectance.
     """
-    import VLIDORT_BRDF_
+    import VLIDORT_BRDF_ABC_
 
     channeli = [470. ,550. ,660. ,870. ,1200.,1600.,2100.]
     mr       = [1.336,1.333,1.331,1.328,1.324,1.317,1.306]  # refractive index
@@ -410,7 +410,7 @@ class GIANT(object):
     strch = [str(int(ch)) for ch in channels]
     m  = interp(channels,channeli,mr)
     
-    albedos, rc = VLIDORT_BRDF_.coxmunk(1,channels,u10m,v10m,m,sza,raa,vza,-999,1)
+    albedos, rc = VLIDORT_BRDF_ABC_.coxmunk(1,channels,u10m,v10m,m,sza,raa,vza,-999,1)
 
     self.sample = CX_ALBEDO(strch)
     for i,ch in enumerate(strch):
