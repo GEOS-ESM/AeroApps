@@ -30,3 +30,66 @@ ecbuild_add_executable (
   LIBS ${this}
   )
 
+# these are executable scripts
+set (PYSCRIPTS
+    aeronet_all.py
+    aod_data.py
+    avhrr_all.py
+    avhrr_l2a.py
+    misr_land.py
+    modis_l2a.py
+    mxd04_l2a.py
+    patmosx_l2a.py
+    )
+
+set (SCRIPTS
+    ana_aod.csh
+    get_aero_obs.csh
+    l2a_all.csh
+    run_all.csh
+    run_gaas_ana.csh
+    ut_get_aero_obs.j
+    )
+
+install (
+    PROGRAMS  ${PYSCRIPTS} ${SCRIPTS}
+    DESTINATION bin/${this}
+    )
+
+# these are non-executaables
+set (PYFILES
+    avhrr_nnr.py
+    geo04_nnr.py
+    mxd04_nnr.py
+    )
+
+set (RCFILES
+    ana_aodens.rc
+    ana.rc
+    mpana.rc
+    obs.rc
+    psas.rc
+    sqc.rc
+    )
+
+set (PCFFILES
+    avhrr_l2a.pcf
+    modis_l2a.pcf
+    )
+
+install (
+    FILES ${PYFILES} ${RCFILES} ${PCFFILES}
+    DESTINATION bin/${this}
+    )
+
+
+set (FILEDIRS
+    NCA
+    )
+
+install (
+    DIRECTORY ${FILEDIRS}
+    DESTINATION bin/${this}
+    USE_SOURCE_PERMISSIONS
+    MESSAGE_NEVER
+    )

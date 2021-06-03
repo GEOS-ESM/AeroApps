@@ -68,9 +68,11 @@ subroutine CoxMunk (km, nch, nobs,channels, U10m,V10m, &
       ! ------------------
       do i = 1, nch 
 
-           call VLIDORT_CoxMunk(SCAT%Surface,U10m(j),V10m(j),mr(i),solar_zenith (j),&
-                                    sensor_zenith(j),relat_azymuth(j),.true.,BRDF(j,i),rc)
 
+           call VLIDORT_CoxMunk(SCAT%Surface,U10m(j),V10m(j),mr(i),solar_zenith (j),&
+                                    sensor_zenith(j),relat_azymuth(j),.true.,rc)
+
+           BRDF(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)                                
            if ( rc /= 0 ) then
              BRDF(j,i) = MISSING
              return

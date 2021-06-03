@@ -57,7 +57,8 @@ subroutine Scalar (km, nch, nobs,channels,        &
 !                         ---  
   integer             :: i,j, ier
 
-  real*8              :: AOT(nobs,nch)            ! total aerosol optical thickness 
+  real*8              :: AOT(nobs,nch)            ! total aerosol optical thickness
+  real*8              :: SSA_col(nobs,nch)        ! total single scattering albedo 
   real*8              :: Q(nobs, nch)   ! Stokes parameter Q
   real*8              :: U(nobs, nch)   ! Stokes parameter U     
   type(VLIDORT_scat) :: SCAT
@@ -108,7 +109,7 @@ subroutine Scalar (km, nch, nobs,channels,        &
            SCAT%g => g(:,i,j)
          
            call VLIDORT_Run (SCAT, radiance_VL(j,i), reflectance_VL(j,i), &
-                                 AOT(j,i),ier,Q(j,i),U(j,i), .true., .true.)
+                                 AOT(j,i),SSA_col(j,i),ier,Q(j,i),U(j,i), .true., .true.)
 !           print *, 'radiance albedo',albedo(j,i),radiance_VL(j,i), reflectance_VL(j,i) 
            if ( ier /= 0 ) then
               radiance_VL(j,i) = MISSING
@@ -117,7 +118,8 @@ subroutine Scalar (km, nch, nobs,channels,        &
            end if
            print*, 'DO COX MUNK'
            call VLIDORT_GissCoxMunk(SCAT%Surface,U10m(j),V10m(j),mr(i),solar_zenith (j),&
-                                    sensor_zenith(j),relat_azymuth(j),.true.,BRDF(j,i),rc)
+                                    sensor_zenith(j),relat_azymuth(j),.true.,rc)
+           BRDF(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
            if ( rc /= 0 ) return
 
            SCAT%wavelength = channels(i)
@@ -126,7 +128,7 @@ subroutine Scalar (km, nch, nobs,channels,        &
            SCAT%g => g(:,i,j)
          
            call VLIDORT_Run (SCAT, radiance_VL(j,i), reflectance_cx(j,i), &
-                                 AOT(j,i), ier,Q(j,i),U(j,i), .true., .true.)
+                                 AOT(j,i),SSA_col(j,i),ier,Q(j,i),U(j,i), .true., .true.)
 
 !           print *, 'radinace cox munk',radiance_VL(j,i), reflectance_cx(j,i) 
            if ( ier /= 0 ) then
@@ -210,7 +212,7 @@ subroutine Vector (km, nch, nobs, channels, nMom,  &
   
   integer             :: i,j, ier
   real*8              :: AOT(nobs,nch)            ! total aerosol optical thickness 
-
+  real*8              :: SSA_col(nobs,nch)        ! total aerosol single scattering albedo
   
   type(VLIDORT_scat) :: SCAT
 
@@ -260,7 +262,7 @@ subroutine Vector (km, nch, nobs, channels, nMom,  &
         SCAT%pmom => pmom(:,:,:,i,j)
 
         call VLIDORT_Run (SCAT, radiance_VL(j,i),reflectance_VL(j,i),&
-                          AOT(j,i), ier, Q(j,i),U(j,i),.false., .true.)
+                          AOT(j,i),SSA_col(j,i),ier, Q(j,i),U(j,i),.false., .true.)
         if ( ier /= 0 ) then
               radiance_VL(j,i) = MISSING
               reflectance_VL(j,i) = MISSING
@@ -269,7 +271,9 @@ subroutine Vector (km, nch, nobs, channels, nMom,  &
            end if
 !        print*, 'DO COX MUNK'
            call VLIDORT_GissCoxMunk(SCAT%Surface,U10m(j),V10m(j),mr(i),solar_zenith (j),&
-                                    sensor_zenith(j),relat_azymuth(j),.false.,BRDF(j,i),rc)
+                                    sensor_zenith(j),relat_azymuth(j),.false.,rc)
+
+           BRDF(j,i) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,1)
            if ( rc /= 0 ) return
 
            SCAT%wavelength = channels(i)
@@ -278,7 +282,7 @@ subroutine Vector (km, nch, nobs, channels, nMom,  &
            SCAT%g => g(:,i,j)
          
            call VLIDORT_Run (SCAT, radiance_VL(j,i), reflectance_cx(j,i), &
-                                 AOT(j,i), ier,Q(j,i),U(j,i), .false., .true.)
+                                 AOT(j,i),SSA_col(j,i), ier,Q(j,i),U(j,i), .false., .true.)
 
 !           print *, 'radinace cox munk',radiance_VL(j,i), reflectance_cx(j,i) 
            if ( ier /= 0 ) then
