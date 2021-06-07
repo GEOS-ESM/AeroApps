@@ -1,60 +1,5 @@
-      subroutine screenObs2D(obs,sObs,im,jm,missing)
-      implicit NONE
-      integer, intent(in)  :: im, jm
-      real, intent(in)     :: obs(im,jm)
-      real, intent(in)     :: missing
-      real, intent(out)    :: sObs(im,jm)
-!
-! Screen obs. Assigns missing  values to pixel if nearby obs is MISSING.
-!
-!
-      integer              :: i, j, ii, jj
-      integer              :: iis, iie
-      integer              :: jjs, jje
-
-      sObs = obs
-
-      do i = 1, im
-         do j = 1, jm
-            if ( abs(obs(i,j)-missing) .gt. 0.01*abs(missing) ) then
-               ! Look at all the pixels around it
-               if ( i .eq. 1 ) then
-                  iis = i
-               else
-                  iis = i - 1
-               end if
-               if ( i .eq. im ) then
-                  iie = im
-               else
-                  iie = i + 1
-               end if 
-               if ( j .eq. 1 ) then
-                  jjs = j
-               else
-                  jjs = j - 1
-               end if
-               if ( j .eq. jm ) then
-                  jje = j
-               else
-                  jje = j + 1
-               end if
-
-               do ii = iis, iie
-                  do jj = jjs, jje
-                     if ( abs(obs(ii,jj)-missing) .le. 
-     &                    0.01*abs(missing) ) then
-                       sObs(i,j) = missing             
-                    end if 
-                  end do
-               end do
-            end if
-         end do
-      end do
-
-      end 
-
-!-----------
       subroutine binObs2D(lon,lat,obs,nobs,gObs,im,jm,missing)
+      use MAPL_BinningMod, only: MAPL_GetHorzijIndex
       implicit NONE
       integer, intent(in) :: im, jm, nobs
       real, intent(in)  :: lon(nobs)
@@ -73,31 +18,49 @@
       integer :: i, j, n
       real :: dLon, dLat, xLon
       real :: nsample(im,jm)
-
-      dLon = 360. / im
-      dLat = 180. / ( jm - 1.)
+      integer :: ics(nobs),jcs(nobs)
+      real, parameter :: radToDeg = 57.2957795
 
       gObs = 0.0
       nSample = 0.0
-      do n = 1, nobs
+      if (jm == 6*im) then
 
-         if ( (abs(lon(n))>180.) .OR. (abs(lat(n))>90.) ) cycle
+         call MAPL_GetHorzIJIndex(im,jm,nobs,ics,jcs,lon=lon
+     &   /radToDeg,lat=lat/radToDeg)
 
-         xLon = lon(n)
-         if ( xLon >= 180. ) xLon = xLon - 360.
- 
-         i = 1 + nint((xlon + 180.  ) / dLon)
-         j = 1 + nint((lat(n) + 90. ) / dLat)
+         do n= 1,nobs
+            if (abs(obs(n)-missing) > 0.01*abs(missing)) then
+            gObs(ics(n),jcs(n)) = gObs(ics(n),jcs(n)) + obs(n)
+            nSample(ics(n),jcs(n)) = nSample(ics(n),jcs(n)) + 1.0
+            end if
+         enddo
 
-         if ( i>im ) i = i - im
-         if ( i<1  ) i = i + im
-         
-!        if (abs(obs(n)-missing) > 0.1) then
-         if (abs(obs(n)-missing) > 0.01*abs(missing)) then
-         gObs(i,j) = gObs(i,j) + obs(n)
-         nSample(i,j) = nSample(i,j) + 1.0
-         end if
-      end do
+      else
+
+         dLon = 360. / im
+         dLat = 180. / ( jm - 1.)
+
+         do n = 1, nobs
+
+            if ( (abs(lon(n))>180.) .OR. (abs(lat(n))>90.) ) cycle
+
+            xLon = lon(n)
+            if ( xLon >= 180. ) xLon = xLon - 360.
+    
+            i = 1 + nint((xlon + 180.  ) / dLon)
+            j = 1 + nint((lat(n) + 90. ) / dLat)
+
+            if ( i>im ) i = i - im
+            if ( i<1  ) i = i + im
+            
+   !  e MAPL_BinningMod, only: MAPL_GetHorzijIndex     if (abs(obs(n)-missing) > 0.1) then
+            if (abs(obs(n)-missing) > 0.01*abs(missing)) then
+            gObs(i,j) = gObs(i,j) + obs(n)
+            nSample(i,j) = nSample(i,j) + 1.0
+            end if
+         end do
+
+      end if
 
       where ( nsample > 0 ) 
               gObs = gObs / nSample
@@ -110,6 +73,7 @@
 !-----------
 
       subroutine binObs3D(lon,lat,obs,nobs,gObs,im,jm,km,missing)
+      use MAPL_BinningMod, only: MAPL_GetHorzijIndex
       implicit NONE
       integer, intent(in) :: im, jm, km,nobs
       real, intent(in)  :: lon(nobs)
@@ -128,6 +92,8 @@
       integer :: i, j, k, n
       real :: dLon, dLat, xLon
       real :: nSample(im,jm)
+      integer :: ics(nobs),jcs(nobs)
+      real, parameter :: radToDeg = 57.2957795
 
       dLon = 360. / im
       dLat = 180. / ( jm - 1.)
@@ -136,27 +102,41 @@
 
       do k = 1, km
          nSample = 0.0
+
+         if (jm == 6*im)then
+
+               call MAPL_GetHorzijIndex(im,jm,nobs,ics,jcs,
+     &         lon=lon/radToDeg,lat=lat/radToDeg)
+
+               if (abs(obs(n,k)-missing) > 0.01*abs(missing)) then
+               gObs(ics(n),jcs(n),k) = gObs(ics(n),jcs(n),k) + obs(n,k)
+               nSample(ics(n),jcs(n)) = nSample(ics(n),jcs(n)) + 1.0
+               end if
+
+         else
          
-         do n = 1,nobs
-                 
-            if ( (abs(lon(n))>180.) .OR. (abs(lat(n))>90.) ) cycle
+            do n = 1,nobs
+                    
+               if ( (abs(lon(n))>180.) .OR. (abs(lat(n))>90.) ) cycle
 
-            xLon = lon(n)
-            if ( xLon >= 180. ) xLon = xLon - 360.
-            
-            i = 1 + nint((xlon + 180.  ) / dLon)
-            j = 1 + nint((lat(n) + 90. ) / dLat)
+               xLon = lon(n)
+               if ( xLon >= 180. ) xLon = xLon - 360.
+               
+               i = 1 + nint((xlon + 180.  ) / dLon)
+               j = 1 + nint((lat(n) + 90. ) / dLat)
 
-            if ( i>im ) i = i - im
-            if ( i<1  ) i = i + im
-       
-!           if (abs(obs(n,k)-missing) > 0.1) then
-            if (abs(obs(n,k)-missing) > 0.01*abs(missing)) then
-               gObs(i,j,k) = gObs(i,j,k) + obs(n,k)
-               nSample(i,j) = nSample(i,j) + 1.0
-            end if
+               if ( i>im ) i = i - im
+               if ( i<1  ) i = i + im
+          
+   !           if (abs(obs(n,k)-missing) > 0.1) then
+               if (abs(obs(n,k)-missing) > 0.01*abs(missing)) then
+                  gObs(i,j,k) = gObs(i,j,k) + obs(n,k)
+                  nSample(i,j) = nSample(i,j) + 1.0
+               end if
 
-         end do
+            end do
+
+         end if
 
          where ( nsample > 0 ) 
             gObs(:,:,k) = gObs(:,:,k) / nSample
@@ -169,6 +149,7 @@
       end
 !-------------
       subroutine binRms2D(lon,lat,obs,nobs,gObs,im,jm,missing)
+      use MAPL_BinningMod, only: MAPL_GetHorzijIndex
       implicit NONE
       integer, intent(in) :: im, jm, nobs
       real, intent(in)  :: lon(nobs)
@@ -187,31 +168,49 @@
       integer :: i, j, n
       real :: dLon, dLat, xLon
       real :: nsample(im,jm)
+      integer :: ics(nobs),jcs(nobs)
+      real, parameter :: radToDeg = 57.2957795
 
       dLon = 360. / im
       dLat = 180. / ( jm - 1.)
 
       gObs = 0.0
       nSample = 0.0
-      do n = 1, nobs
+      if (jm == 6*im) then
 
-         if ( (abs(lon(n))>180.) .OR. (abs(lat(n))>90.) ) cycle
+         call MAPL_GetHorzIJIndex(im,jm,nobs,ics,jcs,
+     &   lon=lon/radToDeg,lat=lat/radToDeg)
 
-         xLon = lon(n)
-         if ( xLon >= 180. ) xLon = xLon - 360.
- 
-         i = 1 + nint((xlon + 180.  ) / dLon)
-         j = 1 + nint((lat(n) + 90. ) / dLat)
+         do n= 1,nobs
+            if (abs(obs(n)-missing) > 0.01*abs(missing)) then
+            gObs(ics(n),jcs(n)) = gObs(ics(n),jcs(n)) + obs(n)
+            nSample(ics(n),jcs(n)) = nSample(ics(n),jcs(n)) + 1.0
+            end if
+         enddo
 
-         if ( i>im ) i = i - im
-         if ( i<1  ) i = i + im
-         
-!        if (abs(obs(n)-missing) > 0.1) then
-         if (abs(obs(n)-missing) > 0.01*abs(missing)) then
-         gObs(i,j) = gObs(i,j) + obs(n)*obs(n)
-         nSample(i,j) = nSample(i,j) + 1.0
-         end if
-      end do
+      else
+
+         do n = 1, nobs
+
+            if ( (abs(lon(n))>180.) .OR. (abs(lat(n))>90.) ) cycle
+
+            xLon = lon(n)
+            if ( xLon >= 180. ) xLon = xLon - 360.
+    
+            i = 1 + nint((xlon + 180.  ) / dLon)
+            j = 1 + nint((lat(n) + 90. ) / dLat)
+
+            if ( i>im ) i = i - im
+            if ( i<1  ) i = i + im
+            
+   !        if (abs(obs(n)-missing) > 0.1) then
+            if (abs(obs(n)-missing) > 0.01*abs(missing)) then
+            gObs(i,j) = gObs(i,j) + obs(n)*obs(n)
+            nSample(i,j) = nSample(i,j) + 1.0
+            end if
+         end do
+
+      end if
 
       where ( nsample > 0 ) 
               gObs = sqrt(abs(gObs / nSample))
@@ -224,6 +223,7 @@
 !-----------
 
       subroutine binRms3D(lon,lat,obs,nobs,gObs,im,jm,km,missing)
+      use MAPL_BinningMod, only: MAPL_GetHorzijIndex
       implicit NONE
       integer, intent(in) :: im, jm, km,nobs
       real, intent(in)  :: lon(nobs)
@@ -242,6 +242,8 @@
       integer :: i, j, k, n
       real :: dLon, dLat, xLon
       real :: nSample(im,jm)
+      integer :: ics(nobs),jcs(nobs)
+      real, parameter :: radToDeg = 57.2957795
 
       dLon = 360. / im
       dLat = 180. / ( jm - 1.)
@@ -250,27 +252,38 @@
 
       do k = 1, km
          nSample = 0.0
-         
-         do n = 1,nobs
-                 
-            if ( (abs(lon(n))>180.) .OR. (abs(lat(n))>90.) ) cycle
+         if (jm == 6*im)then
 
-            xLon = lon(n)
-            if ( xLon >= 180. ) xLon = xLon - 360.
-            
-            i = 1 + nint((xlon + 180.  ) / dLon)
-            j = 1 + nint((lat(n) + 90. ) / dLat)
+               call MAPL_GetHorzijIndex(im,jm,nobs,ics,jcs,
+     &         lon=lon/radToDeg,lat=lat/radToDeg)
 
-            if ( i>im ) i = i - im
-            if ( i<1  ) i = i + im
-       
-!           if (abs(obs(n,k)-missing) > 0.1) then
-            if (abs(obs(n,k)-missing) > 0.01*abs(missing)) then
-               gObs(i,j,k) = gObs(i,j,k) + obs(n,k)*obs(n,k)
-               nSample(i,j) = nSample(i,j) + 1.0
-            end if
+               if (abs(obs(n,k)-missing) > 0.01*abs(missing)) then
+               gObs(ics(n),jcs(n),k) = gObs(ics(n),jcs(n),k) + obs(n,k)
+               nSample(ics(n),jcs(n)) = nSample(ics(n),jcs(n)) + 1.0
+               end if
+         else 
+            do n = 1,nobs
+                    
+               if ( (abs(lon(n))>180.) .OR. (abs(lat(n))>90.) ) cycle
 
-         end do
+               xLon = lon(n)
+               if ( xLon >= 180. ) xLon = xLon - 360.
+               
+               i = 1 + nint((xlon + 180.  ) / dLon)
+               j = 1 + nint((lat(n) + 90. ) / dLat)
+
+               if ( i>im ) i = i - im
+               if ( i<1  ) i = i + im
+          
+   !           if (abs(obs(n,k)-missing) > 0.1) then
+               if (abs(obs(n,k)-missing) > 0.01*abs(missing)) then
+                  gObs(i,j,k) = gObs(i,j,k) + obs(n,k)*obs(n,k)
+                  nSample(i,j) = nSample(i,j) + 1.0
+               end if
+
+            end do
+
+         end if
 
          where ( nsample > 0 ) 
             gObs(:,:,k) = sqrt(abs(gObs(:,:,k) / nSample))
@@ -284,6 +297,7 @@
 !--------------
       subroutine binObs3DP(lon,lat,obs,pobs,pe,nobs,nlev,
      & gObs,im,jm,km,missing)
+      use MAPL_BinningMod, only: MAPL_GetHorzijIndex
       implicit NONE
       integer, intent(in) :: im, jm, km,nobs
       real, intent(in)  :: lon(nobs)
@@ -449,6 +463,7 @@
 !--------------
 
       subroutine binAreas(lon,lat,area,nobs,gArea,im,jm)
+      use MAPL_BinningMod, only: MAPL_GetHorzijIndex
       implicit NONE
       integer, intent(in) :: im, jm, nobs
       real, intent(in)  :: lon(nobs)
@@ -464,25 +479,40 @@
 !
       integer :: i, j, n
       real :: dLon, dLat, xLon
-
-      dLon = 360. / im
-      dLat = 180. / ( jm - 1.)
+      integer ics(nobs),jcs(nobs)
+      real, parameter :: radToDeg = 57.2957795
 
       gArea = 0.0
-      do n = 1, nobs
 
-         xLon = lon(n)
-         if ( xLon >= 180. ) xLon = xLon - 360.
- 
-         i = 1 + nint((xlon + 180.  ) / dLon)
-         j = 1 + nint((lat(n) + 90. ) / dLat)
+      if (jm == 6*im) then
 
-         if ( i>im ) i = i - im
-         if ( i<1  ) i = i + im
+         call MAPL_GetHorzIJIndex(im,jm,nobs,ics,jcs,
+     &   lon=lon/radToDeg,lat=lat/radToDeg)
 
-         gArea(i,j) = gArea(i,j) + area(n)
+         do n= 1,nobs
+            gArea(ics(n),jcs(n)) = gArea(ics(n),jcs(n)) + area(n)
+         enddo
 
-      end do
+      else
+
+         dLon = 360. / im
+         dLat = 180. / ( jm - 1.)
+
+         do n = 1, nobs
+
+            xLon = lon(n)
+            if ( xLon >= 180. ) xLon = xLon - 360.
+    
+            i = 1 + nint((xlon + 180.  ) / dLon)
+            j = 1 + nint((lat(n) + 90. ) / dLat)
+
+            if ( i>im ) i = i - im
+            if ( i<1  ) i = i + im
+
+            gArea(i,j) = gArea(i,j) + area(n)
+
+         end do
+      end if
 
       end
 
@@ -582,7 +612,7 @@
       integer :: idel_, jdel_, i, j, i_, j_, i1, i2, j1, j2, n
       real*8  :: accum
 
-#define VALID(x) (abs(x-missing) > 0.01*abs(missing))
+#define VALID(x) (abs(x-missing) > 0.01*missing)
 
       rc = 0
 
