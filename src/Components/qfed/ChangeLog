@@ -1,5 +1,11 @@
 QFED ChangeLog
 
+2021-02-11  <anton.s.darmenov@nasa.gov>, Tag qfed-2_5_r1-sles12
+	* Updates to run QFED on Discover SLES12
+	* L3a/b filenames now use the collection string from the 
+	  MxD14 files rather than the one from the MxD03 files
+	* Updated contact and source metadata
+
 2018-01-12  <anton.s.darmenov@nasa.gov>, Tag qfed-2_5_r2
 	* Merged Ben's edits for cubed sphere output. There are 
 	  no algorithm changes. Support for writing files on 
