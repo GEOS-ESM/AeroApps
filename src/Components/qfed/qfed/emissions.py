@@ -368,8 +368,8 @@ class Emissions(object):
        """
        
        title = 'QFED Level3b v%3.1f (%s) Gridded Emission Estimates' % (__VERSION__, _getTagName(tag))
-       source = 'NASA/GSFC/GMAO GEOS-5 Aerosol Group'
-       contact = 'arlindo.dasilva@nasa.gov'
+       source = 'NASA/GSFC/GMAO GEOS Aerosol Group'
+       contact = ('%s; %s') % ('arlindo.dasilva@nasa.gov', 'anton.darmenov@nasa.gov')
 
 
 #      Create directory for output file
@@ -461,8 +461,8 @@ class Emissions(object):
        vunits  = ('km2', 'km2', 'km2', 'MW', 'MW', 'MW', 'MW', 
                   'MW km-2', 'MW km-2', 'MW km-2', 'MW km-2')
        title   = 'QFED Level3a v%3.1f (%s) Gridded FRP Estimates'%(L3A_VERSION, _getTagName(L3A_CVSTAG))
-       source  = 'NASA/GSFC/GMAO GEOS-5 Aerosol Group'
-       contact = 'arlindo.dasilva@nasa.gov'
+       source  = 'NASA/GSFC/GMAO GEOS Aerosol Group'
+       contact = ('%s; %s') % ('arlindo.dasilva@nasa.gov', 'anton.darmenov@nasa.gov')
 
        d = self.date + timedelta(days=1)
        nymd = 10000*d.year + 100*d.month + d.day

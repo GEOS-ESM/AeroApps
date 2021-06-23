@@ -105,7 +105,7 @@ if __name__ == "__main__":
     v_units = ['', ]
 
     title = 'QFED v%3.1f Vegetation Map' % QFED_VERSION
-    source = 'NASA/GSFC/GMAO GEOS-5 Aerosol Group'
+    source = 'NASA/GSFC/GMAO GEOS Aerosol Group'
     contact = ('%s; %s') % ('arlindo.dasilva@nasa.gov', 'anton.darmenov@nasa.gov')
 
     # create the output file

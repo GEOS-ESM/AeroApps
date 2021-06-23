@@ -192,10 +192,10 @@ class MxD14_L3(object):
                              'Background FRP Density (Savanna)',
                              'Background FRP Density (Grasslands)'),
                   vunits  = ('km2', 'km2', 'km2', 'MW', 'MW', 'MW', 'MW', 
-                            'MW km-2', 'MW km-2', 'MW km-2', 'MW km-2'),
+                             'MW km-2', 'MW km-2', 'MW km-2', 'MW km-2'),
                   title   = 'QFED Level3a v%3.1f (%s) Gridded FRP Estimates'%(__VERSION__, _getTagName(tag)),
-                  source  = 'NASA/GSFC/GMAO GEOS-5 Aerosol Group',
-                  contact = 'arlindo.dasilva@nasa.gov')
+                  source  = 'NASA/GSFC/GMAO GEOS Aerosol Group',
+                  contact = ('%s; %s') % ('arlindo.dasilva@nasa.gov', 'anton.darmenov@nasa.gov')
 
 
        if self.date is None:
@@ -367,7 +367,9 @@ class MxD14_L3(object):
             self.date = date(int(year),1,1) + timedelta(days=self.doy - 1)
 
         if self.col is None:
-            self.col = base.split(".")[3]
+            # adopt the collection version of the MxD14 files 
+            str = os.path.basename(filename)
+            self.col = str.split('.')[3]
             
 #       Read FRP retrieval and bin it
 #       -----------------------------
