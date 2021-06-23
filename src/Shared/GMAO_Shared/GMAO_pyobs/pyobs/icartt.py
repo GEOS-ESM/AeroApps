@@ -8,6 +8,7 @@ from numpy    import loadtxt, ones, NaN, concatenate, array, pi, cos, sin, arcco
 from MAPL     import config
 from glob     import glob
 import gzip
+import collections
 
 MISSING = -99999.0
 ULOD    = -77777.0 # Upper Limit of Detection (LOD) flag
@@ -84,13 +85,13 @@ class ICARTT(object):
         self.Nav = dict ( Time=self.tyme, Longitude=None, Latitude=None, Altitude=None, Pressure=None )
         for var in self.Vars:
             VAR = var.upper()
-            if VAR in ('LONGITUDE', 'FMS_LON', 'GPS_LON', 'LON', 'GGLON'):
+            if VAR in ('LONGITUDE', 'LONGITUDE_YANG', 'LONGITUDE_DEG','FMS_LON', 'GPS_LON', 'LON', 'GGLON'):
                 self.Nav['Longitude'] = self.__dict__[var]
-            if VAR in ('LATITUDE', 'FMS_LAT', 'GPS_LAT', 'LAT', 'GGLAT' ):
+            if VAR in ('LATITUDE', 'LATITUDE_YANG', 'LATITUDE_DEG','FMS_LAT', 'GPS_LAT', 'LAT', 'GGLAT' ):
                 self.Nav['Latitude'] = self.__dict__[var]
-            if VAR in ('GPSALT', 'FMS_ALT_PRES', 'GPS_ALT', 'GGALT' ):
+            if VAR in ('GPSALT', 'MSL_GPS_ALTITUDE_YANG', 'GPSALT_M', 'FMS_ALT_PRES', 'GPS_ALT', 'GGALT' ):
                 self.Nav['Altitude'] = self.__dict__[var]
-            if VAR in ('PRESSURE', 'C_STATICPRESSURE', 'PSXC'):
+            if VAR in ('PRESSURE', 'PRESSURE_YANG', 'C_STATICPRESSURE', 'PSXC'):
                 self.Nav['Pressure'] = self.__dict__[var]
 
         # Navigation shorthands
@@ -222,6 +223,11 @@ class ICARTT(object):
         else:
             self.Vars = f.readline().replace('\n','').replace('\r','').replace('.','').split(delim)
         f.close()
+
+        # Remove duplicates
+        # -----------------
+        for dup in [item for item, count in collections.Counter(self.Vars).items() if count > 1]:
+            self.Vars.remove(dup)
         
 #       Use Config to load other attributes
 #       -----------------------------------
@@ -238,7 +244,7 @@ class ICARTT(object):
             converters[i] = lambda s: float(s or MISSING)
             formats += ('f4',)
             i += 1
-                
+
         # Read the data
         # -------------
         data = loadtxt(filename, delimiter=delim,
@@ -415,5 +421,5 @@ def _getDist(lon,lat):
 
 if __name__ == "__main__":
 
-    x = ICARTT('camp2ex-mrg60-p3b_merge_20190904_RB.ict')
+    x = ICARTT('SEAC4RS-mrg60-dc8_merge_20130923_R7.ict')
 
