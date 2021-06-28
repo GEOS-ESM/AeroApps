@@ -53,8 +53,8 @@ esma_add_f2py_module (qsat_
   )
 add_dependencies(qsat_ MAPL.base)
 
-esma_add_f2py_module (binObs_
-  SOURCES binObs_py.F
+esma_add_f2py_module (scat_binObs_
+  SOURCES scat_binObs_py.F
   DESTINATION lib/Python/${this}
   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
   )

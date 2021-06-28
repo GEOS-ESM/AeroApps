@@ -10,7 +10,7 @@ from pyods import ODS
 from numpy import save, zeros, ones, linspace, any, arange, savez, load
 #from pylab import *
 
-from binObs_    import binobs2d, binobs3d
+from scat.scat_binObs_    import binobs2d, binobs3d
 from gfio       import GFIO
 
 ktPS = 33
