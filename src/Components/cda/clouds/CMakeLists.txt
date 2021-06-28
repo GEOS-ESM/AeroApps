@@ -26,14 +26,18 @@ esma_add_library (${this}
 esma_add_f2py_module (Aero_
   SOURCES Aero_py.F90
   DESTINATION lib/Python/${this}
-  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
+  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib 
+  ${include_${this}} ${esma_include}/MAPL.shared ${esma_include}/MAPL.base
   )
+add_dependencies(Aero_ MAPL.shared MAPL.base)
 
 esma_add_f2py_module (ICA_
   SOURCES ICA_py.F90
   DESTINATION lib/Python/${this}
-  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
+  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib 
+  ${include_${this}} ${esma_include}/MAPL.base
   )
+add_dependencies(ICA_ MAPL.base)
 
 esma_add_f2py_module (mcsRegrid_
   SOURCES mcsRegrid_py.F90
