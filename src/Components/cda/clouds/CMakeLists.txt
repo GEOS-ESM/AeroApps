@@ -44,3 +44,38 @@ esma_add_f2py_module (mcsRegrid_
   DESTINATION lib/Python/${this}
   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
   )
+
+# these are executable scripts
+set (PYSCRIPTS
+    mcs_aero.py
+    mcs.py
+    renn.py
+    )
+
+install (
+    PROGRAMS  ${PYSCRIPTS}
+    DESTINATION bin/${this}
+    )
+
+# these are non-executaables
+set (PYFILES
+    eta.py
+    ica.py
+    )
+
+set (RCFILE
+    Aod_MODIS_Clouds.rc
+    variables.rc
+    )
+
+set (OTHERFILES    
+    edge-ica.ddf
+    edge-noica.ddf
+    README
+    Re-Exploratory.ipynb
+    )
+
+install (
+    FILES ${PYFILES} ${RCFILES} ${OTHERFILES}
+    DESTINATION bin/${this}
+    )
