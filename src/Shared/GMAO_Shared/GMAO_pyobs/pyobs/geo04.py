@@ -4,6 +4,7 @@ and returns a single object with the relevant data.
 
 This software is hereby placed in the public domain.
 Arlindo.daSilva@nasa.gov
+VB: updated Apr 2021
 """
 
 import os
@@ -104,12 +105,12 @@ SDS = dict (
          
 
 rCHANNELS = dict ( # reflectance channels
-                   LAND = ( 470, -510, 640, 860, -1240, 1610, 2110 ),
+                   LAND = ( 470,  660, 2110 ),
                   OCEAN = ( 470, -510, 640, 860, -1240, 1610, 2110 ),
                 )
 
 aCHANNELS = dict ( # AOD channels (same channels for surface reflectance land
-                   LAND = ( 470, 550, 660, 2113 ),
+                   LAND = ( 470, 550, 660, 2110 ),
                   OCEAN = ( 470, 550, 640, 860, -1240, 1610, 2110 ),
                 )
 
@@ -143,6 +144,8 @@ KX = dict ( G16_OCEAN = 327,
             G16_LAND  = 328,
             G17_OCEAN = 329,
             G17_LAND  = 330,
+            HIM_OCEAN = 331,
+            HIM_LAND  = 332,
           )
 
 KT = dict ( AOD = 45, )
@@ -151,22 +154,28 @@ IDENT = dict ( G16_OCEAN = 'g16o',
                G16_LAND  = 'g16l',
                G17_OCEAN = 'g17o',
                G17_LAND  = 'g17l',
+               HIM_OCEAN = 'himo',
+               HIM_LAND  = 'himl',
           )
 
 MISSING = 999.999
+
+TEMPLATE = dict ( G16 = 'GOES/16/L2/$year/$doy/ABI_L2_E_$year$doy.$hh$mm.nc',
+                  G17 = 'GOES/17/L2/$year/$doy/ABI_L2_W_$year$doy.$hh$mm.nc',
+                  HIM = 'Himawari/L2/$year/$doy/AERDT_L2_AHI_H08.A$year$doy.$hh$mm.001.nc'
+            )
 
 #...........................................................................
 
 class GEO04_L2(object):
     """
-    This class implements the MODIS Level 2 AEROSOL products, usually
-    referred to as MOD04 (TERRA satellite) and MYD04 (AQUA satellite).
+    This class implements the ABI/AHI Level 2 AEROSOL products
     """
 
-    def __init__ (self,Path,Algo,syn_time=None,nsyn=8,Verb=0,
+    def __init__ (self,Path,Sat,Algo,syn_time=None,nsyn=8,Verb=0,
                   only_good=True,SDS=SDS,GROUPS=GROUPS,alias=None):
        """
-       Reads individual granules or a full day of Level 2 MOD04/MYD04 files
+       Reads individual granules or a full day of Level 2 ABI/AHI files
        present on a given *Path* and returns a single object with
        all data concatenated for a given algorithm. On input, 
 
@@ -175,6 +184,7 @@ class GEO04_L2(object):
                  of files and directories.  Directories are
                  transversed recursively. If a non GEO Level 2
                  file is encountered, it is simply ignored.
+         Sat  -- Satellite name: G16, G17 or HIM
          Algo -- Algorithm: LAND or OCEAN
 
        Optional parameters:
@@ -194,10 +204,13 @@ class GEO04_L2(object):
        if Algo not in ('LAND', 'OCEAN'):
            raise ValueError, "invalid algorithm "+Algo+" --- must be LAND or OCEAN"
 
+       if Sat not in ('G16', 'G17', 'HIM'):
+           raise ValueError, "invalid satellite "+Sat+" --- must be G16 or G17 or HIM"
+
 #      Initially are lists of numpy arrays for each granule
 #      ------------------------------------------------
        self.verb = Verb
-       self.sat  = None # Satellite name
+       self.sat  = Sat # Satellite name
        self.col  = None # collection, e.g., 005
        self.algo = Algo
        self.SDS  = SDS['META'] + SDS[Algo] + ('Time',)
@@ -226,6 +239,7 @@ class GEO04_L2(object):
                return
        else:
            Path = [Path, ]
+       
        self._readList(Path)
 
        # Protect against empty GEO04 files
@@ -277,11 +291,12 @@ class GEO04_L2(object):
        for sds in self.SDS:
            if sds in self.ALIAS:
                self.__dict__[self.ALIAS[sds]] = self.__dict__[sds] 
-       self.qa_flag = self.Land_Ocean_Quality_Flag # reflresh alias
+       self.qa_flag = self.Land_Ocean_Quality_Flag # refresh alias
 
        # ODS friendly attributes
        # -----------------------
        self.nobs = self.longitude.shape[0]
+       print('[] nobs before filter', self.nobs)
        self.kx = KX[self.sat+'_'+self.algo]
        self.ident = IDENT[self.sat+'_'+self.algo]
        self.rChannels = rCHANNELS[Algo]   # reflectance channels 
@@ -324,8 +339,7 @@ class GEO04_L2(object):
 
 #---
     def _readGranule(self,filename):
-        """Reads one MOD04/MYD04 granule with Level 2 aerosol data."""
-
+        """Reads one ABI/ AHI  granule with Level 2 aerosol data."""
         # Don't fuss if the file cannot be opened
         # ---------------------------------------
         try:
@@ -363,14 +377,10 @@ class GEO04_L2(object):
         # Seeting time for this granule based on file name
         # ------------------------------------------------
         n = len(self.longitude[-1])
-        tyme = _gettyme(filename)
+        tyme = _gettyme(filename, self.sat)
         Time = array([tyme,]*n )
         self.__dict__['Time'].append(Time)
 
-#       Satellite name
-#       --------------
-        self.sat = 'G16' # hardwire this for now
-            
 #       Collection
 #       ----------
         self.col = 0
@@ -426,7 +436,7 @@ class GEO04_L2(object):
         i = 0
         for ch in self.rChannels:
             if ch>=0: # missing channels have negative wavelength
-                self.iGood = self.iGood & (self.reflectance[:,i]>=0)
+               self.iGood = self.iGood & (self.reflectance[:,i]>=0)
             i+=1
         i = 0
         for ch in self.sChannels:
@@ -461,7 +471,8 @@ class GEO04_L2(object):
         self.qa_flag = self.qa_flag[I]
         self.iGood = self.iGood[I]
         self.nobs = len(self.lon)
-
+        self.time =self.time[I]
+        print('[]nobs after filter', self.nobs)
 #---
     def write(self,filename=None,dir='.',expid=None,Verb=1):
         """
@@ -477,7 +488,6 @@ class GEO04_L2(object):
 
         if expid == None:
             expid = self.ident
-
         if filename is None:
             filename = '%s/%s.omi.%d_%02dz.npz'%(dir,expid,self.nymd,self.nhms/10000)
 
@@ -554,7 +564,7 @@ class GEO04_L2(object):
                 ods.xvec[I] = self.aod[:,j].astype('float32')
             else:
                 ods.obs[I] = self.aod[:,j].astype('float32')
-            ods.xm
+            ods.xm[I] = self.cloud[:]   # saving the cloud fraction
             i += ns
 
         # Handle corrupted coordinates
@@ -583,7 +593,7 @@ class GEO04_L2(object):
     def writeg(self,filename=None,dir='.',expid=None,refine=8,res=None,
                channels=None,Verb=1):
        """
-        Writes gridded MODIS measurements to file.
+        Writes gridded GEO  measurements to file.
 
          refine  -- refinement level for a base 4x5 GEOS-5 grid
                        refine=1  produces a   4  x  5    grid
@@ -787,10 +797,14 @@ class GEO04_L2(object):
 
 #............................................................................
 
-def _gettyme(pathname):
+def _gettyme(pathname, sat):
     filename = os.path.basename(pathname)
-    yyyyjjj = filename.split('_')[2].split('.')[0]
-    hhmm = filename.split('.')[1]
+    if sat=='G16' or sat=='G17': 
+        yyyyjjj = filename.split('_')[3].split('.')[0]
+        hhmm = filename.split('.')[1]
+    elif sat =='HIM':
+        yyyyjjj = filename.split('.')[1][1:8]
+        hhmm = filename.split('.')[2]
     year = int(yyyyjjj[0:4])
     jjj = int(yyyyjjj[4:7])
     hour = int(hhmm[0:2])
@@ -798,12 +812,13 @@ def _gettyme(pathname):
     dt = timedelta(seconds=(jjj-1)*24*60*60)  
     return datetime(year,1,1,hour,minute)+dt
 
-def granules ( path, syn_time, nsyn=8 ):
+def granules ( path, sat, syn_time, nsyn=8 ):
     """
     Returns a list of GEO04 granules for a given product at given synoptic time.
     On input,
 
     path      ---  mounting point for the GEO04 Level 2 files
+    sat       ---  satellite name: G16, G17, HIM
     syn_time  ---  synoptic time (timedate format)
 
     nsyn      ---  number of synoptic times per day (optional)
@@ -814,22 +829,23 @@ def granules ( path, syn_time, nsyn=8 ):
     # -----------------------------
     dt = timedelta(seconds = 12. * 60. * 60. / nsyn)
     t1, t2 = (syn_time-dt,syn_time+dt)
-
+    
     # Find MODIS granules in synoptic time range
     # ------------------------------------------
-    dt = timedelta(minutes=15)
+    dt = timedelta(minutes=10)
     t = datetime(t1.year,t1.month,t1.day,t1.hour,0,0)
     Granules = []
     while t < t2:
         if t >= t1:
             doy = t.timetuple()[7]
-            basen = "%s/%s/%s/ABI_L2_%04d%03d.%02d%02d.nc"\
-                     %(path,t.year,doy,t.year,doy,t.hour,t.minute)
+            basen = path+'/'+TEMPLATE[sat].replace('$year',"%04d"%t.year)\
+                                          .replace('$doy', "%03d"%doy)\
+                                          .replace('$hh',"%02d"%t.hour)\
+                                          .replace('$mm', "%02d"%t.minute)
             try:
-                #print basen
                 filen = glob(basen)[0]
-                Granules += [filen,]
-                #print " [x] Found "+filen
+                Granules += [(filen),]
+                print " [x] Found "+filen
             except:
                 pass
         t += dt
@@ -888,9 +904,9 @@ def _writeAllODS():
     odsdir = '/nobackup/1/GEO/ABI_Testing/ODS/Y2018/M08'
     for day in range(1,32):
         for hour in (0,3,6,9,12,15,18,21):
-
+            sat = 'G16'
             syn_time = datetime(2018,8,day,hour,0)
-            files = granules ( path, syn_time, nsyn=8 )
+            files = granules ( path, sat, syn_time, nsyn=8 )
 
             if len(files)==0: continue  # no granules, nothing to do.
 
@@ -910,6 +926,7 @@ def hold():
 
      path = '/nobackup/1/GEO/ABI_Testing/Level2'
      syn_time = datetime(2018,8,15,18,0)
+     sat = 'G16'
      files = granules ( path, syn_time, nsyn=8 )
 
 #     go = GEO04_L2 (files,'OCEAN',syn_time=syn_time,nsyn=8,Verb=3)
@@ -919,4 +936,4 @@ def hold():
      gl.filter()
 
      gl.writeODS(filename=None,dir='.',expid=None,channels=[550,],
-                revised=False,nsyn=8,Verb=1)
+                revised=False,nsyn=8, Verb=1)
