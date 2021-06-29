@@ -7,7 +7,7 @@ from numpy import array, isfortran, ones, float32, size, zeros
 from pylab import plot, axis, title
 from MAPL  import config
 
-import MieObs_ 
+import scat_MieObs_ 
 
 #...........................................................................
 
@@ -17,7 +17,7 @@ def getFresnelLUT(filename):
     """
 #   Call Fortran for the actual read
 #   ---------------------------------------
-    oceanler = MieObs_.readfresnel(filename)
+    oceanler = scat_MieObs_.readfresnel(filename)
 
     return(oceanler)
 
@@ -29,7 +29,7 @@ def getMieDims(rcfile='Aod_EOS.rc'):
     """
     cf = config.Config(rcfile)
     dutable = cf('filename_optical_properties_DU')
-    nCh, nRh, nBin, nMom, nPol, rc = MieObs_.getmiedims(dutable) 
+    nCh, nRh, nBin, nMom, nPol, rc = scat_MieObs_.getmiedims(dutable) 
     if rc != 0:
        raise ValueError, "on return from getMieDims, rc = %d"%rc
 
@@ -69,9 +69,9 @@ def getEdgeVars(aer,ptop=1.):
     It always returns arrays that are (km,nobs).
     """
     if needs_transpose(aer):
-        pe, ze, te = MieObs_.getedgevars(aer.AIRDENS.T,aer.DELP.T,ptop)
+        pe, ze, te = scat_MieObs_.getedgevars(aer.AIRDENS.T,aer.DELP.T,ptop)
     else: 
-        pe, ze, te = MieObs_.getedgevars(aer.AIRDENS,aer.DELP,ptop)
+        pe, ze, te = scat_MieObs_.getedgevars(aer.AIRDENS,aer.DELP,ptop)
 
     return (pe,ze,te)
 
@@ -117,10 +117,10 @@ def getAOPscalar(aer,channels,Verbose=False,rcfile='Aod_EOS.rc'):
 
     # Do the Mie calculation
     # ----------------------
-    tau,ssa,g,rc = MieObs_.getaopscalar(rcfile,channels,pad(vnames),Verbose,qm,rh)
+    tau,ssa,g,rc = scat_MieObs_.getaopscalar(rcfile,channels,pad(vnames),Verbose,qm,rh)
 
     if rc!=0:
-        print "<<<ERROR>>> on return from MieObs_.getaopscalar, rc = ", rc
+        print "<<<ERROR>>> on return from scat_MieObs_.getaopscalar, rc = ", rc
         raise ValueError, 'cannot get Aerosol Optical Properties (scalar version)'
 
     return (tau,ssa,g)
@@ -175,10 +175,10 @@ def getAOPvector(aer,channels,I=None,Verbose=False,rcfile='Aod_EOS.rc',nMom=301)
     # ----------------------
     nMom_mieTable,nPol_mieTable = getMieDims(rcfile=rcfile)  # return nMom & nPol of the Mie tables
     nPol = 6                                                 # for dust non spherical
-    tau,ssa,g,pmom,rc = MieObs_.getaopvector(rcfile,channels,pad(vnames),Verbose,qm,rh,nMom,nPol)
+    tau,ssa,g,pmom,rc = scat_MieObs_.getaopvector(rcfile,channels,pad(vnames),Verbose,qm,rh,nMom,nPol)
 
     if rc!=0:
-        print "<<<ERROR>>> on return from MieObs_.getaopvector, rc = ", rc
+        print "<<<ERROR>>> on return from scat_MieObs_.getaopvector, rc = ", rc
         raise ValueError, 'cannot get Aerosol Optical Properties (vector version)'
 
     return (tau,ssa,g,pmom)
@@ -224,9 +224,9 @@ def getO3tau(aer,channels,Verbose=False,I=None,OMPS=False,):
         t     = aer.T[:,I]
 
     if OMPS:
-        tau,rc = MieObs_.geto3tauomps(channels,Verbose,o3,t,delp)
+        tau,rc = scat_MieObs_.geto3tauomps(channels,Verbose,o3,t,delp)
     else:
-        tau,rc = MieObs_.geto3tauomi(channels,Verbose,o3,t,delp)
+        tau,rc = scat_MieObs_.geto3tauomi(channels,Verbose,o3,t,delp)
 
     return (tau)
 #---
@@ -271,9 +271,9 @@ def getSO2tau(aer,channels,Verbose=False,I=None,OMPS=False,):
         t     = aer.T[:,I]
 
     if OMPS:
-        tau,rc = MieObs_.getso2tauomps(channels,Verbose,so2,t,delp)
+        tau,rc = scat_MieObs_.getso2tauomps(channels,Verbose,so2,t,delp)
     else:
-        tau,rc = MieObs_.getso2tauomi(channels,Verbose,so2,t,delp)
+        tau,rc = scat_MieObs_.getso2tauomi(channels,Verbose,so2,t,delp)
 
     return (tau)
 #---
@@ -334,10 +334,10 @@ def getAOPext(aer,channels,I=None,vnames=None,Verbose=False):
     # Do the Mie calculation
     # ----------------------
     
-    ext,sca,backscat,aback_sfc,aback_toa,rc = MieObs_.getext(channels,pad(vnames),Verbose,qc,qm,rh)
+    ext,sca,backscat,aback_sfc,aback_toa,rc = scat_MieObs_.getext(channels,pad(vnames),Verbose,qc,qm,rh)
 
     if rc!=0:
-        print "<<<ERROR>>> on return from MieObs_.getaopvector, rc = ", rc
+        print "<<<ERROR>>> on return from scat_MieObs_.getaopvector, rc = ", rc
         raise ValueError, 'cannot get Aerosol Optical Properties (vector version)'
 
     return (ext,sca,backscat,aback_sfc,aback_toa)

@@ -1,6 +1,6 @@
 esma_set_this ()
 
-foreach (base Mie_ MieObs_)
+foreach (base Mie_ scat_MieObs_)
 
   esma_add_f2py_module (${base}
     SOURCES ${base}py.F90
