@@ -1,0 +1,24 @@
+# GEO_L2A  processing
+#
+#..................................................................................
+
+GEO_L2A_VERBOSE         = YES
+GEO_L2A_UNCOMPRESSED    = NO
+
+GEO_L2A_EXPID           =  ${EXPID}
+GEO_L2A_SAT             = G16, G17, HIM
+GEO_L2A_IDENTS          = g16o,g16l,g17o,g17l,himo,himl
+
+GEO_L2A_L2_DIR          = /css/geostationary/
+GEO_L2A_OUT_DIR         = ./Results/obs/Level%lev/%sat/Y%y4/M%m2
+
+GEO_L2A_OVERWRITE       = YES
+GEO_L2A_OUT_TEMPLATE    = '%s.%sat_L%leva.%algo.%y4%m2%d2_%h2%n2z.%ext'
+GEO_L2A_RESOLUTION      = e
+
+#GEO_L2A_AER_X           = %s.gaas_bkg.sfc.%y4%m2%d2_%h2z.nc4
+
+#GEO_L2A_NN_FILE         = ExtData/g5chem/x/NN/nnr_003.%ident_Tau.net
+GEO_L2A_BLANK_ODS       = ExtData/g5chem/x/blank_syn8.ods
+
+#END GEO_L2A  processing
