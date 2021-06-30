@@ -19,6 +19,7 @@ esma_add_f2py_module (sgp4_
     INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib
     ${include_${this}}
     )
+add_dependencies(sgp4_ ${this})
 
 # these are executable scripts
 set (PYSCRIPTS
