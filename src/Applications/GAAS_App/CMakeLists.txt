@@ -9,7 +9,7 @@ esma_add_library(${this}
   Chem_Base MAPL
   INCLUDES ${INC_ESMF} ${INC_NETCDF}
   )
-
+target_link_libraries(${this} PRIVATE OpenMP::OpenMP_Fortran)
 
 set_property(SOURCE ana_aod.F PROPERTY COMPILE_FLAGS ${EXTENDED_SOURCE})
 ecbuild_add_executable (
