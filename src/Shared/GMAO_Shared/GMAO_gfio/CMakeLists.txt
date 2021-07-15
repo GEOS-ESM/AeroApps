@@ -52,7 +52,8 @@ include_directories (${INC_NETCDF})
 if (precision STREQUAL "r4")
   find_package(F2PY2)
   if (F2PY2_FOUND)
-    esma_add_f2py2_module(GFIO_ SOURCES GFIO_py.F90
+    # Using add_ here as the import test threw an SSL error on GMAO desktop
+    add_f2py2_module(GFIO_ SOURCES GFIO_py.F90
       DESTINATION lib/Python
       ONLY gfioopen gfiocreate gfiodiminquire gfioinquire
       gfiogetvar gfiogetvart gfioputvar gfiogetbegdatetime
