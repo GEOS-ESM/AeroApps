@@ -131,4 +131,11 @@ set (srcs
   CRTM_NLTECorrection.f90 NLTE_Parameters.f90 NLTE_Predictor_Define.f90 NLTE_Predictor_IO.f90
   )
 
-esma_add_library(${this}   SRCS ${srcs})
+if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+  if (CMAKE_BUILD_TYPE MATCHES Debug)
+    message(WARNING "Intel Compiler and our debugging flags have issues with ADA_Module.f90. So for now we turn off checking compiling ADA_Module.f90")
+    set_source_files_properties(ADA_Module.f90 PROPERTIES COMPILE_OPTIONS -nocheck)
+  endif ()
+endif ()
+
+esma_add_library(${this} SRCS ${srcs})
