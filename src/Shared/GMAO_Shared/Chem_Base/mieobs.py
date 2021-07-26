@@ -11,7 +11,9 @@ VNAMES = [ 'DU001', 'DU002', 'DU003', 'DU004', 'DU005',
            'SS001', 'SS002', 'SS003', 'SS004', 'SS005',
            'BCPHOBIC', 'BCPHILIC',
            'OCPHOBIC', 'OCPHILIC',
-           'SO4' ]
+           'SO4',
+           'NH3', 'NH4a', 'NO3an1', 'NO3an2', 'NO3an3',
+           'BRCphobic', 'BRCphilic']
 
 import MieObs_ 
 

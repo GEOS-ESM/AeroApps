@@ -90,15 +90,18 @@ install (
    DESTINATION lib/Python/pyods
    )
 
-include(UseF2Py)
-esma_add_f2py_module(pyods_
-   SOURCES pyods_.F90
-   LIBRARIES GMAO_ods GMAO_mpeu ${NETCDF_LIBRARIES}
-   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${BASEDIR}/lib ${include_${this}} ${INC_NETCDF}
-   DESTINATION lib/Python/pyods
-   USE_MPI
-   )
-add_dependencies(pyods_ ${this})
+find_package(F2PY2)
+if (F2PY2_FOUND)
+  # Using add_ here as the import test threw an SSL error on GMAO desktop
+  add_f2py2_module(pyods_
+    SOURCES pyods_.F90
+    LIBRARIES GMAO_ods GMAO_mpeu ${NETCDF_LIBRARIES}
+    INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${BASEDIR}/lib ${include_${this}} ${INC_NETCDF}
+    DESTINATION lib/Python/pyods
+    USE_MPI
+    )
+  add_dependencies(pyods_ ${this})
+endif ()
 
 separate_arguments(ODSMETA_ARGS NATIVE_COMMAND "sed -e 's/integer, parameter//g' -e 's/:://g' -e 's/\!/   #/g' -e 's/^[ ]*//g'")
 add_custom_command (

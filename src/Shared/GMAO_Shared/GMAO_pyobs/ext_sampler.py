@@ -11,11 +11,13 @@
 """
 
 import os
+import sys
 import MieObs_
 from types import *
 from netCDF4 import Dataset
-from mieobs import VNAMES, getAOPext, getAOPscalar, getAOPint
+from mieobs import VNAMES, getAOPext, getAOPint, getAOPscalar, getEdgeVars
 from numpy import zeros, arange, array, ones, zeros, interp, isnan, ma, NaN, squeeze, transpose, shape, asarray
+import numpy as np
 from math import pi, sin, cos, asin, acos
 
 from types           import *
@@ -35,6 +37,9 @@ VNAMES_SS = ['SS001','SS002','SS003','SS004','SS005']
 VNAMES_BC = ['BCPHOBIC','BCPHILIC']
 VNAMES_OC = ['OCPHOBIC','OCPHILIC']
 VNAMES_SU = ['SO4']
+VNAMES_NI = ['NO3AN1','NO3AN2','NO3AN3']
+VNAMES_BRC = ['BRCPHOBIC','BRCPHILIC']
+
 MieVarsNames = ['ext','scatext','backscat','aback_sfc','aback_toa','depol','ext2back','tau','ssa','g']
 MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitless','unitless','unitless']
 MieVarsLongNames = ['total aerosol extinction','scattering extinction','total aerosol backscatter',
@@ -112,6 +117,7 @@ def computeMie(Vars, channel, varnames, rcFile, options):
 
   
             if (v==0):
+                pe, ze, te = getEdgeVars(VarsIn)
                 tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
                 ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
                 ext2back = ones(backscat.shape)*MAPL_UNDEF
@@ -126,7 +132,14 @@ def computeMie(Vars, channel, varnames, rcFile, options):
                     MieVars['refr'] = [refr]
                     MieVars['refi'] = [refi]
                     MieVars['reff'] = [reff]
+                
+                MieVars['pe'] = [pe]
+                MieVars['ze'] = [ze]
+                MieVars['rh'] = [VarsIn.RH]         
+
+
             else:
+                pe, ze, te = getEdgeVars(VarsIn)
                 tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
                 ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
                 ext2back = ones(backscat.shape)*MAPL_UNDEF
@@ -142,6 +155,10 @@ def computeMie(Vars, channel, varnames, rcFile, options):
                 MieVars['tau'].append(tau)
                 MieVars['ssa'].append(ssa)
                 MieVars['g'].append(g)
+
+                MieVars['pe'] = [pe]
+                MieVars['ze'] = [ze]
+                MieVars['rh'] = [VarsIn.RH]
 
                 if options.intensive:
                     vol, area, refr, refi, reff = getAOPint(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
@@ -190,6 +207,9 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
     nc.history = 'Created from sampled GEOS-5 collections'
     nc.references = 'n/a'
     nc.comment = 'This file contains sampled GEOS-5 aerosol optical properties.'
+    fixrh = float(options.fixrh)
+    if(fixrh >= 0.):
+       nc.comment = nc.comment+' Calculations carried out at fixed RH = '+str(fixrh)
     nc.contact = 'Ed Nowottnick <edward.p.nowottnick@nasa.gov>'
     nc.Conventions = 'CF'
     nc.inFile = inFile
@@ -202,6 +222,7 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
     ls = nc.createDimension('ls',19)
     if km>0:
         nz = nc.createDimension('lev',km)
+        nze = nc.createDimension('leve',km+1)
     x = nc.createDimension('x',1)
     y = nc.createDimension('y',1)
 
@@ -226,10 +247,17 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
     if km > 0: # pressure level not supported yet
         lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
         lev.long_name = 'Vertical Level'
-        lev.units = 'km'
+        lev.units = 'none'
         lev.positive = 'down'
         lev.axis = 'z'
         lev[:] = range(1,km+1)
+
+        lev = nc.createVariable('leve','f4',('leve',),zlib=zlib)
+        lev.long_name = 'Vertical Level Edge'
+        lev.units = 'none'
+        lev.positive = 'down'
+        lev.axis = 'z'
+        lev[:] = range(1,km+2)
 
     # Add fake dimensions for GrADS compatibility
     # -------------------------------------------
@@ -295,12 +323,24 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
         this.standard_name = name
         this.long_name = MieVarsLongNames[n]
         this.units = MieVarsUnits[n]
-        this.missing_value = MAPL_UNDEF
+        this.missing_value = np.float32(MAPL_UNDEF)
         if options.station:
             this[:] = transpose(var,(0,2,1))
         else:
             this[:] = transpose(var)
 
+    #for name in ['pe','ze','rh']:
+    #    var = squeeze(MieVars[name])
+    #    var = asarray([var])
+    #    if name == 'rh':
+    #        dim = ('station','time','lev')
+    #    else:
+    #        dim = ('station','time','leve')
+
+    #    this = nc.createVariable(name,'f4',dim,zlib=zlib)
+    #    this.standard_name = name
+    #    this.missing_value = MAPL_UNDEF
+    #    this[:] = transpose(var,(0,2,1))
     if options.intensive:
         for name in IntVarsUnits:
             var = squeeze(MieVars[name])
@@ -319,7 +359,7 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
             this.standard_name = name
             this.long_name     = IntVarsLongNames[name]
             this.units = IntVarsUnits[name]
-            this.missing_value = MAPL_UNDEF
+            this.missing_value = np.float32(MAPL_UNDEF)
             if options.station:
                 this[:] = transpose(var,(0,2,1))
             else:
@@ -342,29 +382,37 @@ if __name__ == "__main__":
     outFile = 'ext_sampler.nc'
     channel = (532)
     rcFile = 'Aod3d_532nm.rc'
+    chmFile = 'Chem_MieRegistry.rc'
     intensive = False
+    fixrh   = (-1.)
 
 #   Parse command line options
 #   --------------------------
     parser = OptionParser()
 
     parser.add_option("-i", "--input", dest="inFile", default=inFile,
-              help="Sampled input file")
+              help="Sampled input file (default=%s)"%inFile)
 
     parser.add_option("-o", "--output", dest="outFile", default=outFile,
-              help="Output file containing optical properties")
+              help="Output file containing optical properties (default=%s)"%outFile)
 
     parser.add_option("-r", "--rc", dest="rcFile", default=rcFile,
-              help="Resource file pointing to optical tables")
+              help="Resource file pointing to optical tables (default=%s)"%rcFile)
+
+    parser.add_option("-C", "--chm", dest="chmFile", default=chmFile,
+              help="Chem Registry Resource file (default=%s)"%chmFile)
 
     parser.add_option("-f", "--format", dest="format", default=format,
               help="Output file format: one of NETCDF4, NETCDF4_CLASSIC, NETCDF3_CLASSIC, NETCDF3_64BIT or EXCEL (default=%s)"%format )
 
     parser.add_option("-c", "--channel", dest="channel", default=channel,
-              help="Channel for Mie calculation")
+              help="Channel for Mie calculation (default={})".format(channel))
 
-    parser.add_option("--vnames", dest="VNAMES", default=VNAMES,
-              help="Species to include in calculation (default=%s)"%VNAMES)    
+    parser.add_option("--rh", dest="fixrh", default=fixrh,
+              help="If specified use provided RH (0-1) in calculations")
+
+    parser.add_option("--vnames", dest="VNAMES", default=None,
+              help="Comma sepearted list of species to include in calculation (default=read from chem registry file)")    
 
     parser.add_option("-I", "--intensive",default=intensive,
                       action="store_true", dest="intensive",
@@ -376,23 +424,31 @@ if __name__ == "__main__":
 
     parser.add_option("--du",
                       action="store_true", dest="dust",
-                      help="Dust Only")
+                      help="Output separate file with DUST only properties")
 
     parser.add_option("--ss",
                       action="store_true", dest="seasalt",
-                      help="Seasalt Only")
+                      help="Output separate file with SEASALT only properties")
 
     parser.add_option("--su",
                       action="store_true", dest="sulfate",
-                      help="Sulfate Only")
+                      help="Output separate file with SULFATE only properties")
 
     parser.add_option("--bc",
                       action="store_true", dest="bcarbon",
-                      help="Black Carbon Only")
+                      help="Output separate file with BLACK CARBON only properties")
 
     parser.add_option("--oc",
                       action="store_true", dest="ocarbon",
-                      help="Organic Carbon Only")
+                      help="Output separate file with ORGANIC CARBON only properties")
+
+    parser.add_option("--ni",
+                      action="store_true", dest="nitrate",
+                      help="Output separate file with NITRATE only properties")
+
+    parser.add_option("--brc",
+                      action="store_true", dest="brcarbon",
+                      help="Output separate file with BROWN CARBON only properties")
 
     parser.add_option("--stn",
                       action="store_true", dest="station",
@@ -419,9 +475,64 @@ if __name__ == "__main__":
     # --------------------------
     Vars = getVars(options.inFile)
 
-    # Varibles to be included in calculation
-    if type(options.VNAMES) is not list:
-        options.VNAMES = options.VNAMES.split(',')
+    # Check FIXRH option
+    # --------------------------
+    fixrh = float(options.fixrh)
+    if(fixrh >= 0.):
+        if(fixrh > 1.):
+           print "Your --RH > 1, must be between 0 - 1; exit and fix"
+           sys.exit()
+        Vars.RH = Vars.RH*0.0+fixrh
+
+    # Variables to be included in calculation
+    if options.VNAMES is None:
+        VNAMES = []
+        cf = Config(options.chmFile)
+        try:
+            du = cf('doing_DU')
+            if du.upper() == 'YES':
+                VNAMES += VNAMES_DU
+        except:
+            pass
+        try:
+            ss = cf('doing_SS')
+            if ss.upper() == 'YES':
+                VNAMES += VNAMES_SS
+        except:
+            pass
+        try: 
+            su = cf('doing_SU')
+            if su.upper() == 'YES':
+                VNAMES += VNAMES_SU
+        except:
+            pass
+        try:
+            oc = cf('doing_OC')
+            if oc.upper() == 'YES':
+                VNAMES += VNAMES_OC
+        except:
+            pass
+        try:
+            bc = cf('doing_BC')
+            if bc.upper() == 'YES':
+                VNAMES += VNAMES_BC
+        except:
+            pass
+        try:
+            brc = cf('doing_BRC')
+            if brc.upper() == 'YES':
+                VNAMES += VNAMES_BRC
+        except:
+            pass
+        try:
+            ni = cf('doing_NI')
+            if ni.upper() == 'YES':
+                VNAMES += VNAMES_NI
+        except:
+            pass
+
+    if type(options.VNAMES) is str:
+        VNAMES = options.VNAMES.split(',')
 
     # Run Mie Calculator and Write Output Files
     # --------------------------
@@ -431,37 +542,49 @@ if __name__ == "__main__":
         StnNames = ''
 
     channelIn = float(options.channel)
-    MieVars = computeMie(Vars,channelIn,options.VNAMES,options.rcFile,options)
+    MieVars = computeMie(Vars,channelIn,VNAMES,options.rcFile,options)
     writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
             MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,options.outFile,options)
 
+    name, ext = os.path.splitext(options.outFile)
     if options.dust:
-        outFile = options.outFile+'.dust'
+        outFile = name+'.du'+ext
         MieVars = computeMie(Vars,channelIn,VNAMES_DU,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.seasalt:
-        outFile = options.outFile+'.ss'
+        outFile = name+'.ss'+ext
         MieVars = computeMie(Vars,channelIn,VNAMES_SS,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.sulfate:
-        outFile = options.outFile+'.su'
+        outFile = name+'.su'+ext
         MieVars = computeMie(Vars,channelIn,VNAMES_SU,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.bcarbon:
-        outFile = options.outFile+'.bc'
+        outFile = name+'.bc'+ext
         MieVars = computeMie(Vars,channelIn,VNAMES_BC,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
 
     if options.ocarbon:
-        outFile = options.outFile+'.oc'
+        outFile = name+'.oc'+ext
         MieVars = computeMie(Vars,channelIn,VNAMES_OC,options.rcFile,options)
         writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
                 MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
    
+    if options.nitrate:
+        outFile = name+'.ni'+ext
+        MieVars = computeMie(Vars,channelIn,VNAMES_NI,options.rcFile,options)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
+                MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
+
+    if options.brcarbon:
+        outFile = name+'.brc'+ext
+        MieVars = computeMie(Vars,channelIn,VNAMES_BRC,options.rcFile,options)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
+                MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)

@@ -1,43 +1,48 @@
 esma_set_this ()
 
-foreach (base Mie_ MieObs_)
+find_package(F2PY2 REQUIRED)
 
-  esma_add_f2py_module (${base}
-    SOURCES ${base}py.F90
-    DESTINATION lib/Python/${this}
-    LIBRARIES Chem_Base
-    INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib
-    ${include_${this}} ${esma_include}/Chem_Base
-    )
-  add_dependencies(${base} Chem_Base)
-endforeach()
+# MAT: Note uses add_f2py2 because I can't figure out the import test for netCDF f2py code
+add_f2py2_module (Mie_
+  SOURCES Mie_py.F90
+  DESTINATION lib/Python/${this}
+  LIBRARIES Chem_Base GMAO_gfio_r4 ${NETCDF_LIBRARIES}
+  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/Chem_Base ${BASEDIR}/lib ${INC_NETCDF}
+  )
+add_dependencies(Mie_ Chem_Base GMAO_gfio_r4)
 
-esma_add_f2py_module (OMI_
+# MAT: Note uses add_f2py2 because I can't figure out the import test for netCDF f2py code
+add_f2py2_module (scat_MieObs_
+  SOURCES scat_MieObs_py.F90
+  DESTINATION lib/Python/${this}
+  LIBRARIES Chem_Base GMAO_mpeu ${NETCDF_LIBRARIES}
+  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/Chem_Base ${BASEDIR}/lib ${INC_NETCDF}
+  )
+add_dependencies(scat_MieObs_ Chem_Base GMAO_mpeu)
+
+esma_add_f2py2_module (OMI_
   SOURCES OMI_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES Chem_Base VLIDORT
-  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib
-  ${include_${this}} ${esma_include}/Chem_Base ${esma_include}/VLIDORT
+  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/Chem_Base ${esma_include}/VLIDORT
   )
 add_dependencies(OMI_ Chem_Base VLIDORT)
 
-esma_add_f2py_module (VLIDORT_BRDF_
+esma_add_f2py2_module (VLIDORT_BRDF_
   SOURCES VLIDORT_BRDF_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES VLIDORT90
-  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib 
-  ${include_${this}} ${esma_include}/VLIDORT90)
+  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/VLIDORT90)
 add_dependencies(VLIDORT_BRDF_ VLIDORT90)
 
-esma_add_f2py_module (VLIDORT_OMI_
+esma_add_f2py2_module (VLIDORT_OMI_
   SOURCES VLIDORT_OMI_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES VLIDORT90
-  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib
-  ${include_${this}}  ${esma_include}/VLIDORT90)
+  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}  ${esma_include}/VLIDORT90)
 add_dependencies(VLIDORT_OMI_ VLIDORT90)
 
-esma_add_f2py_module (VLIDORT_cloud_
+esma_add_f2py2_module (VLIDORT_cloud_
   SOURCES VLIDORT_cloud_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES Chem_Base VLIDORT90
@@ -45,7 +50,8 @@ esma_add_f2py_module (VLIDORT_cloud_
   )
 add_dependencies(VLIDORT_cloud_ Chem_Base VLIDORT90)
 
-esma_add_f2py_module (qsat_
+# Using add_f2py2_module here as I can't get the built-in import test to work
+esma_add_f2py2_module (qsat_
   SOURCES qsat_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES MAPL.base
@@ -53,8 +59,8 @@ esma_add_f2py_module (qsat_
   )
 add_dependencies(qsat_ MAPL.base)
 
-esma_add_f2py_module (binObs_
-  SOURCES binObs_py.F
+esma_add_f2py2_module (scat_binObs_
+  SOURCES scat_binObs_py.F
   DESTINATION lib/Python/${this}
   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
   )

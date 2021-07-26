@@ -1,3 +1,59 @@
+      subroutine screenObs2D(obs,sObs,im,jm,missing)
+      implicit NONE
+      integer, intent(in)  :: im, jm
+      real, intent(in)     :: obs(im,jm)
+      real, intent(in)     :: missing
+      real, intent(out)    :: sObs(im,jm)
+!
+! Screen obs. Assigns missing  values to pixel if nearby obs is MISSING.
+!
+!
+      integer              :: i, j, ii, jj
+      integer              :: iis, iie
+      integer              :: jjs, jje
+
+      sObs = obs
+
+      do i = 1, im
+         do j = 1, jm
+            if ( abs(obs(i,j)-missing) .gt. 0.01*abs(missing) ) then
+               ! Look at all the pixels around it
+               if ( i .eq. 1 ) then
+                  iis = i
+               else
+                  iis = i - 1
+               end if
+               if ( i .eq. im ) then
+                  iie = im
+               else
+                  iie = i + 1
+               end if
+               if ( j .eq. 1 ) then
+                  jjs = j
+               else
+                  jjs = j - 1
+               end if
+               if ( j .eq. jm ) then
+                  jje = j
+               else
+                  jje = j + 1
+               end if
+
+               do ii = iis, iie
+                  do jj = jjs, jje
+                     if ( abs(obs(ii,jj)-missing) .le.
+     &                    0.01*abs(missing) ) then
+                       sObs(i,j) = missing
+                    end if
+                  end do
+               end do
+            end if
+         end do
+      end do
+
+      end
+
+!-----------
       subroutine binObs2D(lon,lat,obs,nobs,gObs,im,jm,missing)
       use MAPL_BinningMod, only: MAPL_GetHorzijIndex
       implicit NONE
@@ -612,7 +668,7 @@
       integer :: idel_, jdel_, i, j, i_, j_, i1, i2, j1, j2, n
       real*8  :: accum
 
-#define VALID(x) (abs(x-missing) > 0.01*missing)
+#define VALID(x) (abs(x-missing) > 0.01*abs(missing))
 
       rc = 0
 

@@ -1,11 +1,11 @@
 esma_set_this ()
 
-
-esma_add_f2py_module (VLIDORT_BRDF_ABC_
+find_package(F2PY2 REQUIRED)
+esma_add_f2py2_module (VLIDORT_BRDF_ABC_
   SOURCES VLIDORT_BRDF_ABC_py.F90
   DESTINATION lib/Python/${this}
-  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib 
-  ${include_${this}} ${esma_include}/VLIDORT90)
+  LIBRARIES VLIDORT90
+  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/VLIDORT90)
 add_dependencies(VLIDORT_BRDF_ABC_ VLIDORT90)
 
 # these are non-executaables
