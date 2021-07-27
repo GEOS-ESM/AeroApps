@@ -32,10 +32,12 @@ ecbuild_add_executable (
 
 # these are executable scripts
 set (PYSCRIPTS
+    aerdt_l2a.py
     aeronet_all.py
     aod_data.py
     avhrr_all.py
     avhrr_l2a.py
+    geo04_l2a.py
     misr_land.py
     modis_l2a.py
     mxd04_l2a.py
@@ -73,6 +75,7 @@ set (RCFILES
     )
 
 set (PCFFILES
+    aerdt_l2a.pcf
     avhrr_l2a.pcf
     modis_l2a.pcf
     )

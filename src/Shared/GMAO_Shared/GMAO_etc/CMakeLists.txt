@@ -69,6 +69,7 @@ set(perlscripts
    lsfpL
    mkdir_remote
    n4zip
+   n4zip_ods
    now
    num_days_in_month
    pasta
