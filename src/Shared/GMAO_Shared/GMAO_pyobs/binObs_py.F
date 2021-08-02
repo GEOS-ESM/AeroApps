@@ -55,7 +55,7 @@
 
 !-----------
       subroutine binObs2D(lon,lat,obs,nobs,gObs,im,jm,missing)
-      use MAPL_BinningMod, only: MAPL_GetHorzijIndex
+!vb      use MAPL_BaseMod, only: MAPL_GetHorzijIndex
       implicit NONE
       integer, intent(in) :: im, jm, nobs
       real, intent(in)  :: lon(nobs)
@@ -80,16 +80,16 @@
       gObs = 0.0
       nSample = 0.0
       if (jm == 6*im) then
+         print*, "warning, function under dev"
+!vb         call MAPL_GetHorzIJIndex(im,jm,nobs,ics,jcs,lon=lon
+!vb     &   /radToDeg,lat=lat/radToDeg)
 
-         call MAPL_GetHorzIJIndex(im,jm,nobs,ics,jcs,lon=lon
-     &   /radToDeg,lat=lat/radToDeg)
-
-         do n= 1,nobs
-            if (abs(obs(n)-missing) > 0.01*abs(missing)) then
-            gObs(ics(n),jcs(n)) = gObs(ics(n),jcs(n)) + obs(n)
-            nSample(ics(n),jcs(n)) = nSample(ics(n),jcs(n)) + 1.0
-            end if
-         enddo
+!vb         do n= 1,nobs
+!vb            if (abs(obs(n)-missing) > 0.01*abs(missing)) then
+!vb            gObs(ics(n),jcs(n)) = gObs(ics(n),jcs(n)) + obs(n)
+!vb            nSample(ics(n),jcs(n)) = nSample(ics(n),jcs(n)) + 1.0
+!vb            end if
+!vb         enddo
 
       else
 
@@ -109,7 +109,6 @@
             if ( i>im ) i = i - im
             if ( i<1  ) i = i + im
             
-   !  e MAPL_BinningMod, only: MAPL_GetHorzijIndex     if (abs(obs(n)-missing) > 0.1) then
             if (abs(obs(n)-missing) > 0.01*abs(missing)) then
             gObs(i,j) = gObs(i,j) + obs(n)
             nSample(i,j) = nSample(i,j) + 1.0
@@ -129,7 +128,7 @@
 !-----------
 
       subroutine binObs3D(lon,lat,obs,nobs,gObs,im,jm,km,missing)
-      use MAPL_BinningMod, only: MAPL_GetHorzijIndex
+!vb      use MAPL_BaseMod, only: MAPL_GetHorzijIndex
       implicit NONE
       integer, intent(in) :: im, jm, km,nobs
       real, intent(in)  :: lon(nobs)
@@ -160,14 +159,14 @@
          nSample = 0.0
 
          if (jm == 6*im)then
+               print*, "warning, function under dev"
+!vb               call MAPL_GetHorzijIndex(im,jm,nobs,ics,jcs,
+!vb     &         lon=lon/radToDeg,lat=lat/radToDeg)
 
-               call MAPL_GetHorzijIndex(im,jm,nobs,ics,jcs,
-     &         lon=lon/radToDeg,lat=lat/radToDeg)
-
-               if (abs(obs(n,k)-missing) > 0.01*abs(missing)) then
-               gObs(ics(n),jcs(n),k) = gObs(ics(n),jcs(n),k) + obs(n,k)
-               nSample(ics(n),jcs(n)) = nSample(ics(n),jcs(n)) + 1.0
-               end if
+!vb               if (abs(obs(n,k)-missing) > 0.01*abs(missing)) then
+!vb               gObs(ics(n),jcs(n),k) = gObs(ics(n),jcs(n),k) + obs(n,k)
+!vb               nSample(ics(n),jcs(n)) = nSample(ics(n),jcs(n)) + 1.0
+!vb               end if
 
          else
          
@@ -205,7 +204,7 @@
       end
 !-------------
       subroutine binRms2D(lon,lat,obs,nobs,gObs,im,jm,missing)
-      use MAPL_BinningMod, only: MAPL_GetHorzijIndex
+!vb      use MAPL_BaseMod, only: MAPL_GetHorzijIndex
       implicit NONE
       integer, intent(in) :: im, jm, nobs
       real, intent(in)  :: lon(nobs)
@@ -233,16 +232,16 @@
       gObs = 0.0
       nSample = 0.0
       if (jm == 6*im) then
+         print*, "warning, function under dev"
+!vb         call MAPL_GetHorzIJIndex(im,jm,nobs,ics,jcs,
+!vb     &   lon=lon/radToDeg,lat=lat/radToDeg)
 
-         call MAPL_GetHorzIJIndex(im,jm,nobs,ics,jcs,
-     &   lon=lon/radToDeg,lat=lat/radToDeg)
-
-         do n= 1,nobs
-            if (abs(obs(n)-missing) > 0.01*abs(missing)) then
-            gObs(ics(n),jcs(n)) = gObs(ics(n),jcs(n)) + obs(n)
-            nSample(ics(n),jcs(n)) = nSample(ics(n),jcs(n)) + 1.0
-            end if
-         enddo
+!vb         do n= 1,nobs
+!vb            if (abs(obs(n)-missing) > 0.01*abs(missing)) then
+!vb            gObs(ics(n),jcs(n)) = gObs(ics(n),jcs(n)) + obs(n)
+!vb            nSample(ics(n),jcs(n)) = nSample(ics(n),jcs(n)) + 1.0
+!vb            end if
+!vb         enddo
 
       else
 
@@ -279,7 +278,7 @@
 !-----------
 
       subroutine binRms3D(lon,lat,obs,nobs,gObs,im,jm,km,missing)
-      use MAPL_BinningMod, only: MAPL_GetHorzijIndex
+!vb      use MAPL_BaseMod, only: MAPL_GetHorzijIndex
       implicit NONE
       integer, intent(in) :: im, jm, km,nobs
       real, intent(in)  :: lon(nobs)
@@ -309,14 +308,14 @@
       do k = 1, km
          nSample = 0.0
          if (jm == 6*im)then
+               print*, "warning, function under dev"
+!vb               call MAPL_GetHorzijIndex(im,jm,nobs,ics,jcs,
+!vb     &         lon=lon/radToDeg,lat=lat/radToDeg)
 
-               call MAPL_GetHorzijIndex(im,jm,nobs,ics,jcs,
-     &         lon=lon/radToDeg,lat=lat/radToDeg)
-
-               if (abs(obs(n,k)-missing) > 0.01*abs(missing)) then
-               gObs(ics(n),jcs(n),k) = gObs(ics(n),jcs(n),k) + obs(n,k)
-               nSample(ics(n),jcs(n)) = nSample(ics(n),jcs(n)) + 1.0
-               end if
+!vb               if (abs(obs(n,k)-missing) > 0.01*abs(missing)) then
+!vb               gObs(ics(n),jcs(n),k) = gObs(ics(n),jcs(n),k) + obs(n,k)
+!vb               nSample(ics(n),jcs(n)) = nSample(ics(n),jcs(n)) + 1.0
+!vb               end if
          else 
             do n = 1,nobs
                     
@@ -353,7 +352,7 @@
 !--------------
       subroutine binObs3DP(lon,lat,obs,pobs,pe,nobs,nlev,
      & gObs,im,jm,km,missing)
-      use MAPL_BinningMod, only: MAPL_GetHorzijIndex
+!vb      use MAPL_BaseMod, only: MAPL_GetHorzijIndex
       implicit NONE
       integer, intent(in) :: im, jm, km,nobs
       real, intent(in)  :: lon(nobs)
@@ -519,7 +518,7 @@
 !--------------
 
       subroutine binAreas(lon,lat,area,nobs,gArea,im,jm)
-      use MAPL_BinningMod, only: MAPL_GetHorzijIndex
+!vb      use MAPL_BaseMod, only: MAPL_GetHorzijIndex
       implicit NONE
       integer, intent(in) :: im, jm, nobs
       real, intent(in)  :: lon(nobs)
@@ -541,13 +540,13 @@
       gArea = 0.0
 
       if (jm == 6*im) then
+         print*, "warning, function under dev"
+!vb         call MAPL_GetHorzIJIndex(im,jm,nobs,ics,jcs,
+!vb     &   lon=lon/radToDeg,lat=lat/radToDeg)
 
-         call MAPL_GetHorzIJIndex(im,jm,nobs,ics,jcs,
-     &   lon=lon/radToDeg,lat=lat/radToDeg)
-
-         do n= 1,nobs
-            gArea(ics(n),jcs(n)) = gArea(ics(n),jcs(n)) + area(n)
-         enddo
+!vb         do n= 1,nobs
+!vb            gArea(ics(n),jcs(n)) = gArea(ics(n),jcs(n)) + area(n)
+!vb         enddo
 
       else
 
