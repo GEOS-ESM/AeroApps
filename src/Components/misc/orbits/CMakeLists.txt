@@ -14,13 +14,13 @@ ecbuild_add_executable(
     )
 
 find_package(F2PY2 REQUIRED)
-esma_add_f2py2_module (sgp4_
-    SOURCES sgp4_py.F90
+esma_add_f2py2_module (sgp4_orbits_
+    SOURCES sgp4_orbits_py.F90
     DESTINATION lib/Python/${this}
     LIBRARIES ${this}
     INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
     )
-add_dependencies(sgp4_ ${this})
+add_dependencies(sgp4_orbits_ ${this})
 
 # these are executable scripts
 set (PYSCRIPTS
