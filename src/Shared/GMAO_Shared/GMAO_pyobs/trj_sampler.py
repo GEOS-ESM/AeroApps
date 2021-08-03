@@ -10,7 +10,7 @@
 
 import os
 
-from numpy import zeros, arange, array
+from numpy import zeros, arange, array, float32
 
 from optparse        import OptionParser
 from datetime        import datetime, timedelta
@@ -20,7 +20,7 @@ from csv             import DictReader
 from MAPL           import Config, eta
 from MAPL.constants import *
 from pyobs.sgp4     import getTrack as getTrackTLE
-from pyobs          import ICARTT, NPZ, HSRL
+from pyobs          import ICARTT, NPZ, HSRL, ORACLES
 
 class TleVar(object):
     """                                                                                  
@@ -84,8 +84,8 @@ def getTrackICT(ictFile,dt_secs):
     """
     m = ICARTT(ictFile)
     lon, lat, tyme = m.Nav['Longitude'], m.Nav['Latitude'], m.Nav['Time']
-    dt = tyme[1] - tyme[0] # in seconds
-    idt = int(dt_secs/dt.total_seconds()+0.5)
+    mdt = (tyme[-1] - tyme[0]).total_seconds()/float(len(tyme)-1) # in seconds
+    idt = int(dt_secs/mdt+0.5)
     return (lon[::idt], lat[::idt], tyme[::idt])
 
 def getTrackHSRL(hsrlFile,dt_secs=60):
@@ -101,11 +101,21 @@ def getTrackHSRL(hsrlFile,dt_secs=60):
     else:
         idt = 1
     return (lon[::idt], lat[::idt], tyme[::idt])
-    
+
+def getTrackORACLES(mergeFile,dt_secs=60):
+    """
+    Get trajectory from ORACLES merge file (netCDF).
+    """
+    m = ORACLES(mergeFile)
+    lon, lat, tyme = m.lon, m.lat, m.tyme
+    mdt = (tyme[-1] - tyme[0]).total_seconds()/float(len(tyme)-1) # in seconds
+    idt = int(dt_secs/mdt+0.5)
+    return (lon[::idt], lat[::idt], tyme[::idt])
+
 def getTrackCSV(csvFile):
     """
     Get trajectory from a CSV with (lon,lat,time) coordinates.
-    Notice that *time* must be specified in ISO format, e.g.,
+
 
                   2014-02-05T12:30:45
     """
@@ -219,7 +229,7 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
     time.long_name = 'Time'
     t0 = tyme[0]
     time.units = 'seconds since %s'%t0.isoformat(' ')
-    time[:] = array([(t-t0).total_seconds() for t in tyme])
+    time[:] = array([int((t-t0).total_seconds()+0.5) for t in tyme])
     if km > 0: # pressure level not supported yet
         lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
         lev.long_name = 'Vertical Level'
@@ -285,7 +295,7 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
             this = nc.createVariable(var.name,'f4',dim,zlib=zlib)
             this.standard_name = var.title
             this.long_name = var.title.replace('_',' ')
-            this.missing_value = MAPL_UNDEF
+            this.missing_value = float32(MAPL_UNDEF)
             this.units = var.units
             if g.lower:
                 name = var.name.lower() # GDS always uses lower case
@@ -447,7 +457,7 @@ if __name__ == "__main__":
               help="Output file format: one of NETCDF4, NETCDF4_CLASSIC, NETCDF3_CLASSIC, NETCDF3_64BIT or EXCEL (default=%s)"%format )
 
     parser.add_option("-t", "--trajectory", dest="traj", default=None,
-              help="Trajectory file format: one of tle, ict, csv, npz, hsrl (default=trjFile extension)" )
+                      help="Trajectory file format: one of tle, ict, csv, npz, hsrl, oracles (default=trjFile extension)" )
 
     parser.add_option("-d", "--dt_secs", dest="dt_secs", default=dt_secs,
               type='int',
@@ -508,7 +518,9 @@ if __name__ == "__main__":
     elif options.traj == 'NPZ':
         lon, lat, tyme = getTrackNPZ(trjFile)
     elif options.traj == 'HSRL' or options.traj == 'H5':
-        lon, lat, tyme = getTrackHSRL(trjFile)
+        lon, lat, tyme = getTrackHSRL(trjFile,options.dt_secs)
+    elif options.traj == 'ORACLES':
+        lon, lat, tyme = getTrackORACLES(trjFile,options.dt_secs)
     else:
         raise ValueError, 'cannot handle trajectory file format <%s>'%options.traj
 

@@ -3,16 +3,23 @@
 """
 
 MISSING = -999.
-
+from datetime import datetime
 from numpy import loadtxt, ones, savez, pi, log
 
 Months = ('jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec')
 
 def date2nymd(s):
-    S = s.split('/')
-    yy = 2000+int(S[2]) 
-    mm = int(S[0])
-    dd = int(S[1])
+    if ('/' in s):
+        S = s.split('/')
+        yy = 2000+int(S[2])
+        mm = int(S[0])
+        dd = int(S[1])
+    elif (':' in s):
+        S = s.split(':')
+        yy = int(S[2])
+        mm = int(S[1])
+        dd = int(S[0])
+
     return (yy,mm,dd)
 
 def time2nhms(s):
@@ -26,11 +33,14 @@ def gatime(date,time):
     h, m = time2nhms(time)
     return "%d:%dZ%d%s%d"%(h,m,dd,Months[mm-1],yy)
 
-def _getCols():
+def _getCols(fname):
     """
     From CSV Spreadsheet.
     """
-    cols = 'Date,Time,Air Mass,Latitude,Longitude,tau_340,tau_380,tau_440,tau_500,tau_675,tau_870,tau_1020,tau_1640,Water Vapor(cm),440-870_Angstrom_Exponent,STD_Latitude,STD_Longitude,STD_340,STD_380,STD_440,STD_500,STD_675,STD_870,STD_1020,STD_1640,STD_Water_Vapor(cm),STD_440-870_Angstrom_Exponent,Number_of_Observations,Last_Processing_Date'
+    f = open(fname,'r')
+    cols = f.readline()
+    f.close()
+    #cols = 'Date,Time,Air Mass,Latitude,Longitude,tau_340,tau_380,tau_440,tau_500,tau_675,tau_870,tau_1020,tau_1640,Water Vapor(cm),440-870_Angstrom_Exponent,STD_Latitude,STD_Longitude,STD_340,STD_380,STD_440,STD_500,STD_675,STD_870,STD_1020,STD_1640,STD_Water_Vapor(cm),STD_440-870_Angstrom_Exponent,Number_of_Observations,Last_Processing_Date'
     return cols
 
 def _getNames(cols):
@@ -43,30 +53,35 @@ def _getNames(cols):
     NewName['Longitude'] = 'lon'
     NewName['Latitude'] = 'lat'
 
-    NewName['tau_340'] = 'aTau340'
-    NewName['tau_380'] = 'aTau380'
-    NewName['tau_440'] = 'aTau440'
-    NewName['tau_500'] = 'aTau500'
-    NewName['tau_675'] = 'aTau675'
-    NewName['tau_870'] = 'aTau870'
-    NewName['tau_1020'] = 'aTau1020'
-    NewName['tau_1640'] = 'aTau1640'
+    NewName['AOD_340nm'] = 'aTau340'
+    NewName['AOD_380nm'] = 'aTau380'
+    NewName['AOD_440nm'] = 'aTau440'
+    NewName['AOD_500nm'] = 'aTau500'
+    NewName['AOD_675nm'] = 'aTau675'
+    NewName['AOD_870nm'] = 'aTau870'
+    NewName['AOD_1020nm'] = 'aTau1020'
+    NewName['AOD_1640nm'] = 'aTau1640'
+
+    NewName['Date(dd:mm:yyyy)'] = 'Date'
+    NewName['Time(hh:mm:ss)']   = 'Time'
 
     return (Names, NewName)
 
 #----
+Vars = ( 'Longitude', 'Latitude', 'Date', 'Time',
+         'AOD_340nm', 'AOD_380nm', 'AOD_440nm', 'AOD_500nm',
+         'AOD_675nm', 'AOD_870nm', 'AOD_1020nm', 'AOD_1640nm' )
+
 class MAN(object):
     """Base class for Martime Aerosol Network (MAN)."""
 
-    def __init__ (self,fname='All_MAN_series_Level2_June21_2010.csv'):
+    def __init__ (self,
+                  fname='All_MAN_series_Level2_June21_2010.csv',
+                  Vars=Vars):
 
-        cols = _getCols()
+        cols = _getCols(fname)
         Names, NewName = _getNames(cols)
 
-        Vars = ( 'Longitude', 'Latitude', 'Date', 'Time',
-                 'tau_340', 'tau_380', 'tau_440', 'tau_500', 
-                 'tau_675', 'tau_870', 'tau_1020', 'tau_1640' )
-        
         self.filename = fname
             
         iVars = ()
@@ -77,10 +92,13 @@ class MAN(object):
                 i = Names.index(name)
             except:
                 raise ValueError, "cannot find <%s> in file"%name
+
             iVars = iVars + (i,)
             if name=='Date':
                 formats = formats + ('S8',)
-            elif name=='Time':
+            elif name=='Date(dd:mm:yyyy)':
+                formats = formats + ('S10',)
+            elif 'Time' in name:
                 formats = formats + ('S8',)
             else:
                 converters[i] = lambda s: float(s or MISSING)
@@ -125,7 +143,14 @@ class MAN(object):
         self.time = []
         for i in range(N):
                self.time.append(gatime(self.Date[i],self.Time[i]))
-   
+
+#       Create python datetime
+#       ----------------------
+        self.tyme = []
+        for i in range(N):
+            yy,mm,dd = date2nymd(self.Date[i])
+            h, m = time2nhms(self.Time[i])
+            self.tyme.append(datetime(yy,mm,dd,h,m))
 #---
     def addVar(self,ga,outfile=None,expr='tau',vname=None, clmYear=None):
         """
