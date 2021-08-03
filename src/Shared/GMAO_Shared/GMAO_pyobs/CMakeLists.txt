@@ -6,6 +6,7 @@ set (SRCS
   glint_mod.F90  
   sgp4_mod.F90  
   TLE_mod.F90
+  cubed_sphere_utilities.F90
   )
 
 esma_add_library (${this}
