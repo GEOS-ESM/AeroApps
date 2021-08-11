@@ -10,6 +10,7 @@ set (srcs
   Chem_MieMod.F90
   Chem_AodMod.F90
   Chem_SimpleBundleMod.F90
+  MieObs_py.F90
   )
 esma_add_library(${this} SRCS ${srcs} DEPENDENCIES GMAO_mpeu MAPL GMAO_gfio_r4)
 target_include_directories (${this} PUBLIC ${INC_ESMF} ${INC_NETCDF})
