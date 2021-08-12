@@ -1,3 +1,4 @@
+esma_add_subdirectories (solar_reference)
 esma_set_this ()
 
 set (srcs 
