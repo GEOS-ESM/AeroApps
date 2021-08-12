@@ -36,7 +36,8 @@ class JOBS(object):
         for i in workingJobs:
             s = self.dirstring[i]
             os.chdir(s)
-            jobid = np.append(jobid,subprocess.check_output(['qsub',self.slurm]))
+            result = subprocess.check_output(['sbatch',self.slurm])
+            jobid = np.append(jobid,result.split()[-1])
         os.chdir(self.cwd)
 
         # launch subprocess that will monitor queue
@@ -44,9 +45,9 @@ class JOBS(object):
         # Monitor jobs 1-by-1 
         # Add a new job when one finishes 
         # Until they are all done
-        stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
+        stat = 0
+        countDone = 0
         while (stat == 0):
-            stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
             finishedJobs = np.empty(0,dtype='int')
             for ii,i in enumerate(workingJobs):
                 s = jobid[i]
@@ -63,6 +64,7 @@ class JOBS(object):
                 if finished:
                     #print 'Job finished, cleaning up', s, i 
                     finishedJobs = np.append(finishedJobs,ii)
+                    countDone += 1
                     errcheck = self.check_for_errors(i,s)               
                     if (errcheck is False):
                         self.errTally[i] = False
@@ -98,15 +100,18 @@ class JOBS(object):
                 for i in newjobs:
                     s = self.dirstring[i]
                     os.chdir(s)
-                    jobid = np.append(jobid,subprocess.check_output(['qsub',self.slurm]))
+                    result = subprocess.check_output(['sbatch',self.slurm])
+                    jobid = np.append(jobid,result.split()[-1])
 
                 os.chdir(self.cwd)
                 countRun = countRun + newRun
-                stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
 
-
-            print 'Waiting 5 minutes'
-            time.sleep(60*1)
+            # check if all the jobs are finished
+            if countDone == numjobs:
+                stat = 1
+            else:
+                print 'Waiting 30 minutes'
+                time.sleep(60*30)
             
 
         # Exited while loop
@@ -134,6 +139,7 @@ class WORKSPACE(JOBS):
         self.Date      = isoparser(args.iso_t1)
         self.enddate   = isoparser(args.iso_t2)
         self.Dt        = timedelta(hours=args.DT_hours)
+        self.dt        = timedelta(days=args.dt_days)
 
         
         self.track_pcf   = args.track_pcf
@@ -171,6 +177,9 @@ class WORKSPACE(JOBS):
         sdate = self.Date
         self.dirstring = []
         while sdate < self.enddate:
+            edate = sdate + self.dt
+            if edate > self.enddate:
+                edate = self.enddate
             for ch in self.channels:
                 # create directory
 
@@ -211,13 +220,13 @@ class WORKSPACE(JOBS):
                 destination.close()
 
                 # edit slurm
-                self.edit_slurm(sdate,workpath,ch)
+                self.edit_slurm(sdate,edate,workpath,ch)
 
                 self.dirstring.append(workpath)
-            sdate += self.Dt
+            sdate += self.dt
 
-    def edit_slurm(self,sdate,workpath,channel):
-        edate = sdate + self.Dt
+    def edit_slurm(self,sdate,edate,workpath,channel):
+        
         outpath = '{}/{}'.format(workpath,self.slurm)
 
         # read file first
@@ -239,7 +248,7 @@ class WORKSPACE(JOBS):
             Options += ' -r'
         if self.verbose:
             Options +=  ' -v' 
-        newline = 'python -u ./mp_lidar_vlidort.py  {} {} {} {} {} {} >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,channel) + ' slurm_${SLURM_JOBID}_py.out\n'
+        newline = 'nohup python -u ./mp_lidar_vlidort.py  {} {} {} {} {} {} >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,channel) + ' slurm_${SLURM_JOBID}_py.out\n'
         text[-5] = newline
         f.close()
 
@@ -281,8 +290,9 @@ if __name__ == '__main__':
     
     #Defaults
     DT_hours = 1
+    dt_days  = 100
     slurm    = 'run_accp_polar_vlidort.j'
-    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir'
+    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir/lidar_vlidort'
     rcFile   = 'Aod_EOS.rc'
     albedoType = None
     channels = '532,1064'
@@ -301,6 +311,9 @@ if __name__ == '__main__':
 
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
+
+    parser.add_argument('-d',"--dt_days", default=dt_days, type=int,
+                        help="Timestep in days for each job (default=%i)"%dt_days)
 
     parser.add_argument("-a","--albedotype", default=albedoType,
                         help="albedo type keyword. default is to figure out according to channel")

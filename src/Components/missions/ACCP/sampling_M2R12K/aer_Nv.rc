@@ -1,0 +1,5 @@
+#
+# Resource file for GEO sampler
+#
+
+PS,AIRDENS,DELP,RH,DU001,DU002,DU003,DU004,DU005,SS001,SS002,SS003,SS004,SS005,SO2,SO4,BCPHOBIC,BCPHILIC,OCPHOBIC,OCPHILIC: /discover/nobackup/projects/gmao/iesa/aerosol/data/M2R12K/data/opendap/0.1250_deg/M2R12K_may2005/inst/inst3_3d_aer_Nv 

@@ -26,6 +26,9 @@ setenv G5DIR /discover/nobackup/pcastell/workspace/GAAS/src
 setenv BIN $PWD 
 setenv TMPDIR $LOCAL_TMPDIR 
 
+mkdir -p $LOCAL_TMPDIR/tle
+cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/tle/ $LOCAL_TMPDIR
+ln -s $LOCAL_TMPDIR/tle ./tle
 
 source $HOME/.cshrc
 cd $G5DIR
@@ -42,3 +45,5 @@ cd $BIN
 ######
 ##################################################################
 python -u run_accp_polarimeter_swath.py -v --DT_hours 1 2006-01-01T00:00 2006-01-02T00:00 lidar_files.pcf gpm.pcf polar07.pcf  > slurm_${SLURM_JOBID}_py.out &
+rm -rf $LOCAL_TMPDIR/*
+rm tle

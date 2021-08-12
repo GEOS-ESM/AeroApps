@@ -60,19 +60,8 @@ cd $AEROBIN
 ######
 ##################################################################
 ./accp_sdist.py 2006-02-01T00 2006-02-01T04 lidar_files.pcf gpm.pcf &
-./accp_sdist.py 2006-02-01T04 2006-02-01T08 lidar_files.pcf gpm.pcf &
-./accp_sdist.py 2006-02-01T08 2006-02-01T12 lidar_files.pcf gpm.pcf &
-./accp_sdist.py 2006-02-01T12 2006-02-01T16 lidar_files.pcf gpm.pcf &
-./accp_sdist.py 2006-02-01T16 2006-02-01T20 lidar_files.pcf gpm.pcf &
-./accp_sdist.py 2006-02-01T20 2006-02-02T00 lidar_files.pcf gpm.pcf &
-./accp_sdist.py 2006-02-02T00 2006-02-02T04 lidar_files.pcf gpm.pcf &
-./accp_sdist.py 2006-02-02T04 2006-02-02T08 lidar_files.pcf gpm.pcf &
-./accp_sdist.py 2006-02-02T08 2006-02-02T12 lidar_files.pcf gpm.pcf &
-./accp_sdist.py 2006-02-02T12 2006-02-02T16 lidar_files.pcf gpm.pcf &
-./accp_sdist.py 2006-02-02T16 2006-02-02T20 lidar_files.pcf gpm.pcf &
-./accp_sdist.py 2006-02-02T20 2006-02-03T00 lidar_files.pcf gpm.pcf 
 
-
+wait
 rm -rf $LOCAL_TMPDIR/*
 rm ExtData
 rm ExtDataOsku

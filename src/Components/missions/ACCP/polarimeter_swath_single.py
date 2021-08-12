@@ -19,11 +19,9 @@ from  py_leo_vlidort import LidarAngles_
 from mpl_toolkits.basemap import Basemap
 from   py_leo_vlidort.copyvar  import _copyVar
 from multiprocessing import Pool
+from scipy import signal
 
 # Generic Lists of Varnames and Units
-SDS_AER    = ['LONGITUDE','LATITUDE','isotime']
-
-
 ncALIAS = {'LONGITUDE': 'trjLon',
            'LATITUDE': 'trjLat'}
 
@@ -233,7 +231,8 @@ class SWATH(object):
     def __init__(self,starttyme,endtyme,dt_secs,trjFile,outFile,hgtss,along_track_deg,
                  verbose=True,
                  cross_track_km=None,cross_track_dkm=None,
-                 no_ss=False):
+                 no_ss=False,
+                 single=False):
         self.starttyme = starttyme
         self.endtyme   = endtyme
         self.dt_secs   = dt_secs
@@ -241,13 +240,13 @@ class SWATH(object):
         self.trjFile   = trjFile
         self.outFile  = outFile
         self.hgtss    = hgtss
-        self.SDS_AER  = SDS_AER
         self.verbose  = verbose
         self.cross_track_km = cross_track_km
         self.cross_track_dkm = cross_track_dkm
         self.Re       = Re
         self.hgtssRef = hgtssRef
         self.no_ss    = no_ss
+        self.single   = single
 
         # Parse along_track_deg variable
         # vna == view nadir angle.  view angle between satellite subpoint and target at the satellite 
@@ -264,6 +263,10 @@ class SWATH(object):
         # calculate trajectory from TLE file
         t1 = starttyme
         t2 = endtyme
+        if self.single:
+            t1,t2 = self.get_single_orbit(trjFile,t1,t2,dt_secs)
+            print 'new t1,t2',t1,t2
+
         LONGITUDE, LATITUDE, tyme = getTrackTLE(trjFile, t1, t2, dt_secs)
         self.ntyme = len(LONGITUDE)
 
@@ -471,8 +474,71 @@ class SWATH(object):
 
         nc.close()
 
+# ---
+    def get_single_orbit(self,trjFile,t1,t2,dt_secs):
+        """
+        pick out one orbit closest to prime meridion
+        """
+        # calculate orbit for full day
+        CLON, CLAT, tyme = getTrackTLE(trjFile, t1, t2, dt_secs)
+        year = []
+        month = []
+        day = []
+        hour = []
+        minute = []
+        second = []
+        for t in tyme:
+            year.append(t.year)
+            month.append(t.month)
+            day.append(t.day)
+            hour.append(t.hour)
+            minute.append(t.minute)
+            second.append(t.second)
 
 
+        # calculate sza time series
+        saa,sza = LidarAngles_.solarangles(year,month,day,
+                                                hour,minute,second,
+                                                CLAT,CLON,
+                                                0.0)
+
+        # get all the peaks in the time series of sza
+        # these are the orbit start indeces
+        a = signal.find_peaks(sza,width=10)
+        a = a[0]
+
+        # find the orbit that is close to prime meridion
+        peak = None
+        for i in range(len(a)-1):
+            istart = a[i]
+            iend   = a[i+1]
+            llon = CLON[istart:iend]
+            llat = CLAT[istart:iend]
+            ssza = sza[istart:iend]
+            if any((llon<10) & (llon>-10) & (llat<10) & (llat>-10)& (ssza<90)):
+                peak = i
+
+        if peak is None:
+            # try again
+            for i in range(len(a)-1):
+                istart = a[i]
+                iend   = a[i+1]
+                llon = lon[istart:iend]
+                llat = lat[istart:iend]
+                ssza = sza[istart:iend]
+                if any((llon<17) & (llon>-17) & (llat<10) & (llat>-10)& (ssza<90)):
+                    peak = i
+
+        if peak is None:
+            print "coulnd't find peak! Exiting"
+            print date.isoformat()
+            sys.exit()
+
+        t1_single = tyme[a[peak]]
+        t2_single = tyme[a[peak+1]]
+
+        return t1_single,t2_single
+# ---
     def getScatAngle(self,sza,saa,vza,vaa):
         """
         The angle between the sun, the pixel and sensor.  A value of
@@ -796,6 +862,9 @@ if __name__ == "__main__":
     parser.add_argument("--no_ss",action="store_true",
                         help="don't do satellite subpoint aggregation (default=False).")
 
+    parser.add_argument("--single",action="store_true",
+                        help="only calculate 1 orbit per day (default=False).")
+
     args = parser.parse_args()
 
     # Parse prep config
@@ -830,7 +899,10 @@ if __name__ == "__main__":
     date      = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
     dt        = timedelta(seconds=args.dt_secs)
-    Dt        = timedelta(hours=args.DT_hours)
+    if args.single:
+        Dt        = timedelta(hours=24)
+    else:
+        Dt        = timedelta(hours=args.DT_hours)
 
     while date < enddate:
         edate = date + Dt - dt
@@ -857,6 +929,7 @@ if __name__ == "__main__":
             swath = SWATH(date,edate,args.dt_secs,trjFile,outFile,HGT,along_track_deg,
                           cross_track_km=cross_track_km,
                           cross_track_dkm=cross_track_dkm,
-                          no_ss=args.no_ss)
+                          no_ss=args.no_ss,
+                          single=args.single)
             swath = None
         date += Dt

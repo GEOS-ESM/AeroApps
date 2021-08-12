@@ -91,7 +91,9 @@ class ACCP_SDIST(SDIST):
             sds_ = sds
             if sds in ncALIAS:
                 sds_ = ncALIAS[sds]
-            var = nc.variables[sds_][:]
+            # make this explicitly array because 
+            # in sdist.py interpolate doesn't handle masked arrays
+            var = np.array(nc.variables[sds_][:])
             self.__dict__[sds].append(var)
 
 
@@ -166,7 +168,8 @@ if __name__ == "__main__":
         print '>>>verbose:   ',args.verbose
         print '++++End of arguments+++'
         if not args.dryrun:
-            coldist = ACCP_SDIST(inFile,outFile,rcFile,verbose=args.verbose)
+            sdist = ACCP_SDIST(inFile,outFile,rcFile,verbose=args.verbose)
+            sdist = None
 
 
         date += Dt

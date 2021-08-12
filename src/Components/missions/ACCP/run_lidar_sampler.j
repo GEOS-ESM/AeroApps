@@ -3,12 +3,10 @@
 #######################################################################
 #                     Batch Parameters for Run Job
 #######################################################################
-#SBATCH --time=01:00:00
+#SBATCH --time=12:00:00
 #SBATCH --ntasks=12 --cpus-per-task=1 --ntasks-per-node=12
 #SBATCH --job-name=lidar_sampler
-#SBATCH -A s1180
-#SBATCH --qos=pace
-#SBATCH --partition=preops
+#SBATCH -A s2190
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=patricia.castellanos@nasa.gov
 #SBATCH --output=slurm_%j.out
@@ -50,5 +48,6 @@ cd $BIN
 ######
 ##################################################################
 python -u run_lidar_sampler.py -v --nproc 12 --DT_hours 24 2006-01-01T00 2006-01-02T00 lidar.pcf > slurm_${SLURM_JOBID}_py.out
+rm -rf $LOCAL_TMPDIR/*
 rm sampling
 rm tle

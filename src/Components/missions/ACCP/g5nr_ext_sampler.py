@@ -16,7 +16,7 @@ from MAPL     import Config
 
 class JOBS(object):
     def handle_jobs(self):
-        jobsmax = 25
+        jobsmax = 10
         # Figure out how many jobs you need to submit
         numjobs  = len(self.dirstring)   
         
@@ -36,7 +36,9 @@ class JOBS(object):
         for i in workingJobs:
             s = self.dirstring[i]
             os.chdir(s)
-            jobid = np.append(jobid,subprocess.check_output(['qsub',self.slurm]))
+            result = subprocess.check_output(['sbatch',self.slurm])
+            jobid = np.append(jobid,result.split()[-1])
+            
         os.chdir(self.cwd)
 
         # launch subprocess that will monitor queue
@@ -44,9 +46,9 @@ class JOBS(object):
         # Monitor jobs 1-by-1 
         # Add a new job when one finishes 
         # Until they are all done
-        stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
+        stat = 0
+        countDone = 0
         while (stat == 0):
-            stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
             finishedJobs = np.empty(0,dtype='int')
             for ii,i in enumerate(workingJobs):
                 s = jobid[i]
@@ -62,9 +64,13 @@ class JOBS(object):
                 if finished:
                     #print 'Job finished, cleaning up', s, i 
                     finishedJobs = np.append(finishedJobs,ii)
+                    countDone += 1
                     errcheck = self.check_for_errors(i,s)               
                     if (errcheck is False):
                         self.errTally[i] = False
+
+                        #clean up workspaces
+                        self.destroy_workspace(i,s)
                     else:
                         print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
 
@@ -93,28 +99,24 @@ class JOBS(object):
                 for i in newjobs:
                     s = self.dirstring[i]
                     os.chdir(s)
-                    jobid = np.append(jobid,subprocess.check_output(['qsub',self.slurm]))
+                    result = subprocess.check_output(['sbatch',self.slurm])
+                    jobid = np.append(jobid,result.split()[-1])
+
 
                 os.chdir(self.cwd)
                 countRun = countRun + newRun
-                stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
-
-
-            print 'Waiting 5 minutes'
-            time.sleep(60*1)
+            
+            # check if all the jobs are finished
+            if countDone == numjobs:
+                stat = 1
+            else:
+                print 'Waiting 30 minutes'
+                time.sleep(60*30)
             
 
         # Exited while loop
         print 'All jobs done'
 
-        # Clean up workspaces for completed jobs
-        for i,s in enumerate(jobid):
-            s = s.strip('\n')
-            if not self.errTally[i]:
-                self.destroy_workspace(i,s)
-
-        # Postprocessing done
-        print 'Cleaned Up Worksapces'
         devnull.close()
 
 
@@ -137,7 +139,7 @@ class WORKSPACE(JOBS):
         self.Date      = isoparser(args.iso_t1)
         self.enddate   = isoparser(args.iso_t2)
         self.DT_hours  = args.DT_hours
-        self.dt        = timedelta(hours=args.dt_hours)
+        self.dt        = timedelta(days=args.dt_days)
 
         if not os.path.exists(args.tmp):
             os.makedirs(args.tmp)
@@ -150,7 +152,7 @@ class WORKSPACE(JOBS):
         self.instname    = args.instname
         self.channels    = args.channels
         self.rcFile      = args.rcFile
-        self.extData     = args.extData
+        self.name        = args.name
         self.inDir       = args.inDir
         self.outDir      = args.outDir
         self.case        = args.case
@@ -180,19 +182,17 @@ class WORKSPACE(JOBS):
                 shutil.copyfile(self.slurm,outfile)
 
                 # Copy over Aod_EOS.rc
-                os.makedirs(workpath+'/rc')
                 outfile = '{}/{}'.format(workpath,self.rcFile)
+                outpath = os.path.dirname(outfile)
+                if not os.path.exists(outpath):
+                    os.makedirs(outpath)
                 shutil.copyfile(self.rcFile,outfile)
                 self.edit_AODrc(outfile,ch)            
 
-                #cp over needed extdata
-                source = ['Chem_MieRegistry.rc','run_ext_sampler.py']
+                #cp over run script
+                source = ['run_ext_sampler.py']
                 for src in source:
-                    shutil.copyfile('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
-               
-                source = ['ExtData'] #,self.extData]
-                for src in source:
-                    os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))                                        
+                    shutil.copyfile('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))                                       
 
                 self.dirstring.append(workpath)
             sdate += self.dt
@@ -225,14 +225,19 @@ class WORKSPACE(JOBS):
             isodate, ch = os.path.basename(workpath).split('.')
             sdate = isoparser(isodate)
             edate = sdate + self.dt
+            if edate > self.enddate:
+                edate = self.enddate
             isoedate = edate.isoformat()
 
             # get inFile
             inFile = self.inDir + '/Y{}/M{}/D{}/' + self.instname + '-g5nr.lb2.aer_Nv.{}.nc4'
-
-            # outFile
-            outFile = self.outDir + '/Y{}/M{}/D{}/'+ self.instname +'-g5nr.lc.ext.{}.{}nm.nc4'
             
+            # outfile
+            if self.name == 'None':
+                outFile = self.outDir + '/Y{}/M{}/D{}/'+ self.instname +'-g5nr.lc.ext.{}.{}nm.nc4'
+            else:
+                outFile = self.outDir + '/Y{}/M{}/D{}/'+ self.instname +'-g5nr.lc.ext.'+ self.name +'.{}.{}nm.nc4'
+
             # read file first
             outpath = '{}/{}'.format(workpath,self.slurm)
             f = open(outpath)
@@ -241,22 +246,25 @@ class WORKSPACE(JOBS):
             for l in f:
                 text.append(l)
 
+            # replace Aod_EOS line
+            command = 'cp -r {} $LOCAL_TMPDIR/Aod_EOS.rc\n'.format(self.rcFile)
+            text[40] = command
 
             # replace one line
             if len(self.case) == 0:
-                command = 'python -u ./run_ext_sampler.py --DT_hours {} --rc {} {} {} '.format(self.DT_hours,self.rcFile,isodate,isoedate)
+                command = 'python -u ./run_ext_sampler.py --DT_hours {} --rc Aod_EOS.rc {} {} '.format(self.DT_hours,isodate,isoedate)
             else:
                 options = ''
                 for case in self.case:
                     options = options + ' --' + case
-                command = 'python -u ./run_ext_sampler.py {} --DT_hours {} --rc {} {} {} '.format(options,self.DT_hours,self.rcFile,isodate,isoedate)
+                command = 'python -u ./run_ext_sampler.py {} --DT_hours {} --rc Aod_EOS.rc {} {} '.format(options,self.DT_hours,isodate,isoedate)
 
             command = command + " '" + inFile + "' "
             command = command + " '" + outFile + "' "
             command = command + ch
             endcommand = ' > slurm_${SLURM_JOBID}_py.out\n'
             newline = command  + endcommand
-            text[-2] = newline
+            text[-7] = newline
             f.close()
 
             #  write out
@@ -281,17 +289,13 @@ class WORKSPACE(JOBS):
 
             os.remove(self.slurm)
 
-        # remove symlinks
-        source = ['ExtData','Chem_MieRegistry.rc','run_ext_sampler.py']
+        # remove runscript
+        source = ['run_ext_sampler.py',self.rcFile]
         for src in source:
             os.remove(src)
-	    # remove rc directory
-	    #shutil.rmtree('rc')
-        #shutil.rmtree(self.extData)
 
         os.chdir(self.cwd)
         if self.profile is False:
-            #os.rmdir(self.dirstring[i])
             shutil.rmtree(self.dirstring[i])
 
 
@@ -299,7 +303,7 @@ if __name__ == '__main__':
     
     #Defaults
     DT_hours = 1
-    dt_hours = 24
+    dt_days  = 24
     slurm    = 'run_ext_sampler.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir'
 
@@ -312,8 +316,8 @@ if __name__ == '__main__':
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
 
-    parser.add_argument('-d',"--dt_hours", default=dt_hours, type=int,
-                        help="Timestep in hours for job (default=%i)"%dt_hours)    
+    parser.add_argument('-d',"--dt_days", default=dt_days, type=int,
+                        help="Timestep in days for job (default=%i)"%dt_days)    
 
     parser.add_argument('-s',"--slurm",default=slurm,
                         help="slurm script template (default=%s)"%slurm)           
@@ -339,7 +343,7 @@ if __name__ == '__main__':
     else:
         args.channels = np.array([int(cf('CHANNELS'))])
     args.rcFile   = cf('RCFILE')
-    args.extData  = cf('EXTDATA')
+    args.name     = cf('NAME')
     args.inDir    = cf('INDIR')
     args.outDir   = cf('OUTDIR')
 
