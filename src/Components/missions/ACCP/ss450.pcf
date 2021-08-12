@@ -1,4 +1,5 @@
 # ORBIT
+    TLEFILE  = tle/Sun_Synch_1330cross_Ascending_Generated_TLE.tle
     orbitname     = ss450   
     HGT          = 450
 # ORBIT

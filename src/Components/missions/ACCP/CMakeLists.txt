@@ -23,10 +23,13 @@ install (
 set (PYSCRIPTS
     accp_polar_vlidort.py
     accp_sdist.py
+    fillvalue_fix.py
+    fillvalue_fix_surface.py
     g5nr_ext_sampler.py
     g5nr_lidar_sampler.py
     merge_lidar.py
     polarimeter_swath.py
+    polarimeter_swath_single.py
     run_accp_polar_vlidort_multinode.py
     run_accp_polar_vlidort.py
     run_accp_polar_vlidort_singlenode.py
@@ -59,7 +62,12 @@ set (RCFILES
     accp_polar_vlidort.rc
     Chem_MieRegistry.rc
     brdf_mcd43c.pcf
+    gpm045.pcf
+    gpm050.pcf
+    gpm055.pcf
+    gpm060.pcf
     gpm.pcf
+    landcover_mcd12c.pcf
     lidar_ext.pcf
     lidar_files.pcf
     lidar_sampler_ler.pcf
@@ -90,6 +98,13 @@ install (
 
 install (
    DIRECTORY sampling
+   DESTINATION bin/missions/${this}
+   USE_SOURCE_PERMISSIONS
+   MESSAGE_NEVER
+   )
+
+install (
+   DIRECTORY sampling_M2R12K
    DESTINATION bin/missions/${this}
    USE_SOURCE_PERMISSIONS
    MESSAGE_NEVER

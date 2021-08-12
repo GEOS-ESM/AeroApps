@@ -15,7 +15,7 @@
 n_channels: 1
 n_moments: 300
 #r_channels: .355e-6 .532e-6 1.064e-6
-r_channels: 1.064e-6   
+r_channels: 1.380e-6   
 
 # --------------------------------------------------------------
 #
@@ -30,7 +30,7 @@ r_channels: 1.064e-6
 #            second bin for volcanic aerosols following V. Aquila
 #
 # --------------------------------------------------------------
-filename_optical_properties_DU: ExtDataOsku/GRASP_LUT-DUST_V4.GSFun-300_fix.nc
+filename_optical_properties_DU: ExtDataOsku/GRASP_LUT-DUST_V5_80nmTO20000nm.GSFun-300_fix.nc
 filename_optical_properties_SS: ExtDataOsku/optics_SS.v3_7.GSFun-300.nc
 filename_optical_properties_BC: ExtDataOsku/optics_BC.v5_7.GSFun.nc
 filename_optical_properties_OC: ExtDataOsku/optics_OC.v12_7.GSFun.nc

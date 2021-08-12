@@ -1,7 +1,7 @@
 # LIDAR SAMPLING
-INSTNAME = gpm
-TLEFILE  = tle/gpm.nodrag.tle
-RCFILES  = ler_omi.rc
+INSTNAME = ss450
+TLEFILE  = tle/Sun_Synch_1330cross_Ascending_Generated_TLE.tle
+RCFILES  = sampling/ler_omi.rc
 COLNAMES = ler
-OUTDIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB/surface/LER/OMI
+OUTDIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/SS450/LevelB/surface/LER/OMI
 # LIDAR SAMPLING

@@ -1,0 +1,5 @@
+# ORBIT
+    TLEFILE       = tle/gpm045.nodrag.tle
+    orbitname     = gpm045    
+    HGT          = 407
+# ORBIT

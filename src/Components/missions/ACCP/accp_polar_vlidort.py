@@ -208,7 +208,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         self.ROT = np.ones([ntime,nlev])*MISSING
 
         # Calculate ROT
-        args = [self.channel, self.pe, self.ze, self.te, MISSING, self.verbose]
+        args = [self.channel, self.pe.astype('float64'), self.ze.astype('float64'), self.te.astype('float64'), MISSING, self.verbose]
         vlidortWrapper = WrapperFuncs['ROT_CALC']
         ROT, depol_ratio, rc = vlidortWrapper(*args)  
         #nlev,ntime,nch
@@ -221,12 +221,12 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
             print 'Working on ',surface
             iGood = self.__dict__['i'+surface]
             nobs = len(iGood)
-            tau = self.tau[:,:,iGood]
-            ssa = self.ssa[:,:,iGood]
-            pmom = self.pmom[:,:,iGood,:,:]
-            pe   = self.pe[:,iGood]
-            ze   = self.ze[:,iGood]
-            te   = self.te[:,iGood]
+            tau = self.tau[:,:,iGood].astype('float64')
+            ssa = self.ssa[:,:,iGood].astype('float64')
+            pmom = self.pmom[:,:,iGood,:,:].astype('float64')
+            pe   = self.pe[:,iGood].astype('float64')
+            ze   = self.ze[:,iGood].astype('float64')
+            te   = self.te[:,iGood].astype('float64')
             rot  = ROT[:,iGood,:]
 
             if surface == 'Land':        
@@ -237,20 +237,20 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
 
             # Get surface data
             if albedoType == 'MODIS_BRDF':
-                param     = self.RTLSparam[:,:,iGood]
-                kernel_wt = self.kernel_wt[:,:,iGood]
+                param     = self.RTLSparam[:,:,iGood].astype('float64')
+                kernel_wt = self.kernel_wt[:,:,iGood].astype('float64')
             elif albedoType == 'LAMBERTIAN':
-                albedo = self.albedo[iGood,:]
+                albedo = self.albedo[iGood,:].astype('float64')
             elif albedoType == 'CX':
-                u10m = self.U10M[iGood]
-                v10m = self.V10M[iGood]
+                u10m = self.U10M[iGood].astype('float64')
+                v10m = self.V10M[iGood].astype('float64')
 
             # loop through view angles
             for ivza in range(nangles):
                 print 'ivza ',ivza, ' of ',nangles
-                vza = self.VZA[iGood,ivza]
-                sza = self.SZA[iGood,ivza]
-                raa = self.RAA[iGood,ivza]
+                vza = self.VZA[iGood,ivza].astype('float64')
+                sza = self.SZA[iGood,ivza].astype('float64')
+                raa = self.RAA[iGood,ivza].astype('float64')
                 
                 I = []
                 Q = []

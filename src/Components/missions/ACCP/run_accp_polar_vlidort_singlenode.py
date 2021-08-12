@@ -9,6 +9,7 @@ import subprocess
 import shutil
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
+from   dateutil.relativedelta import relativedelta
 import argparse
 import numpy           as np
 import time
@@ -49,7 +50,9 @@ class JOBS(object):
         for i in workingJobs:
             s = self.dirstring[i]
             os.chdir(s)
-            jobid = np.append(jobid,subprocess.check_output(['qsub',self.slurm]))
+            result = subprocess.check_output(['sbatch',self.slurm])
+            jobid = np.append(jobid,result.split()[-1])
+
         os.chdir(self.cwd)
 
         # launch subprocess that will monitor queue 
@@ -57,9 +60,9 @@ class JOBS(object):
         # Monitor jobs 1-by-1 
         # Add a new job when one finishes 
         # Until they are all done
-        stat = subprocess.call(['qstat -u {}'.format(self.user)], shell=True, stdout=devnull)
+        stat = 0
+        countDone = 0
         while (stat == 0):
-            stat = subprocess.call(['qstat -u {}'.format(self.user)], shell=True, stdout=devnull)
             finishedJobs = np.empty(0,dtype='int')
             for ii,i in enumerate(workingJobs):
                 s = jobid[i]
@@ -75,6 +78,7 @@ class JOBS(object):
                 if finished:
                     #print 'Job finished, cleaning up', s, i 
                     finishedJobs = np.append(finishedJobs,ii)
+                    countDone += 1
                     errcheck = self.check_for_errors(i,s)               
                     if (errcheck is False):
                         self.errTally[i] = False
@@ -110,15 +114,18 @@ class JOBS(object):
                 for i in newjobs:
                     s = self.dirstring[i]
                     os.chdir(s)
-                    jobid = np.append(jobid,subprocess.check_output(['qsub',self.slurm]))
+                    result = subprocess.check_output(['sbatch',self.slurm])
+                    jobid = np.append(jobid,result.split()[-1])
 
                 os.chdir(self.cwd)
                 countRun = countRun + newRun
-                stat = subprocess.call(['qstat -u {}'.format(self.user)], shell=True, stdout=devnull)
 
-
-            print 'Waiting 30 minutes'
-            time.sleep(60*30)
+            # check if all the jobs are finished
+            if countDone == numjobs:
+                stat = 1
+            else:
+                print 'Waiting 30 minutes'
+                time.sleep(60*30)
             
 
         # Exited while loop
@@ -154,8 +161,12 @@ class WORKSPACE(JOBS):
     def __init__(self,args):
         self.Date    = isoparser(args.iso_t1)
         self.enddate   = isoparser(args.iso_t2)
-        self.Dt        = timedelta(hours=args.DT_hours)        
-        self.dt        = timedelta(hours=args.dt_hours)
+        if args.dt_units == 'hours':
+            self.Dt        = timedelta(hours=args.DT)        
+            self.dt        = timedelta(hours=args.dt)
+        elif args.dt_units == 'months':
+            self.Dt        = relativedelta(months=args.DT)
+            self.dt        = relativedelta(months=args.dt)
 
         if not os.path.exists(args.tmp):
             os.makedirs(args.tmp)
@@ -164,17 +175,15 @@ class WORKSPACE(JOBS):
         self.track_pcf   = args.track_pcf
         self.orbit_pcf   = args.orbit_pcf
         self.inst_pcf    = args.inst_pcf
-        self.DT_hours    = args.DT_hours
         self.albedoType  = args.albedoType
         self.rcFile      = args.rcfile
         self.dryrun      = args.dryrun
         self.verbose     = args.verbose
-
+        self.random      = args.random
         self.slurm       = args.slurm
         self.tmp         = args.tmp
         self.profile     = args.profile
         self.planeparallel = args.planeparallel
-        self.user        = args.user
 
         # Parse prep config files
         # --------------------------
@@ -221,6 +230,15 @@ class WORKSPACE(JOBS):
         self.ndviTemplate = ndviTemplate
         self.lcTemplate = lcTemplate
         self.lerTemplate = lerTemplate
+
+        # remove days field if monthly
+        if args.dt_units == 'months':
+            self.inTemplate = self.inTemplate.replace('D%day/','')
+            self.outTemplate = self.outTemplate.replace('D%day/','')
+            self.brdfTemplate = self.brdfTemplate.replace('D%day/','')
+            self.ndviTemplate = self.ndviTemplate.replace('D%day/','')
+            self.lcTemplate = self.lcTemplate.replace('D%day/','')
+            self.lerTemplate = self.lerTemplate.replace('D%day/','')
 
         # create working directories
         self.create_workdir()
@@ -314,6 +332,8 @@ class WORKSPACE(JOBS):
             brdfFile = None
         else:
             brdfFile = self.brdfTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+            if self.random:
+                brdfFile = brdfFile.replace('.brdf.','.brdf.random.')
 
         if self.ndviTemplate is None:
             ndviFile = None
@@ -321,11 +341,16 @@ class WORKSPACE(JOBS):
         else:
             ndviFile   = self.ndviTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
             lcFile     = self.lcTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+            if self.random:
+                ndviFile = ndviFile.replace('.ndvi.','.ndvi.random.')
+                lcFile   = lcFile.replace('.land_cover.','.land_cover.random.')
 
         if self.lerTemplate is None:
             lerFile = None
         else:
             lerFile   = self.lerTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+            if self.random:
+                lerFile = lerFile.replace('.ler.','.ler.random.')
 
         # figure out albedoType keyword
         if self.albedoType is 'BRDF':
@@ -432,23 +457,37 @@ class WORKSPACE(JOBS):
 
 
         # INPUT FILENAMES
-        AER_file = inFile.replace('%col','aer_Nv')
+        if self.random:
+            AER_file = inFile.replace('%col','aer_Nv.random')
+        else:
+            AER_file = inFile.replace('%col','aer_Nv')
         newline = 'AER_file: {}\n'.format(AER_file)
         text.append(newline)
 
-        MET_file = inFile.replace('%col','met_Nv')
+        if self.random:
+            MET_file = inFile.replace('%col','met_Nv.random')
+        else:
+            MET_file = inFile.replace('%col','met_Nv')
         newline = 'MET_file: {}\n'.format(MET_file)
         text.append(newline)
 
-        ANG_file = inFile.replace('%col',self.instname)
+        if self.random:
+            ANG_file = inFile.replace('%col',self.instname+'.random')
+        else:
+            ANG_file = inFile.replace('%col',self.instname)
         newline = 'ANG_file: {}\n'.format(ANG_file)
         text.append(newline)
 
-        INV_file = inFile.replace('%col','asm_Nx')
+        if self.random:
+            INV_file = inFile.replace('%col','asm_Nx.random')
+        else:
+            INV_file = inFile.replace('%col','asm_Nx')
         newline = 'INV_file: {}\n'.format(INV_file)
         text.append(newline)
 
-        newline = 'OUT_file: {}\n'.format(outFile)
+        if self.random:
+            outFile = outFile.replace('vlidort','vlidort.random')
+        newline = 'OUT_file: {}\n'.format(outFile)  
         text.append(newline)
         self.outfilelist.append(outFile)
 
@@ -501,13 +540,14 @@ class WORKSPACE(JOBS):
 if __name__ == '__main__':
     
     #Defaults
-    DT_hours  = 1
-    dt_hours  = 48
+    DT  = 1
+    dt  = 12
+    dt_units = 'hours'
+    
     slurm     = 'run_accp_polar_vlidort_singlenode.j'
     tmp       = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir/vlidort'
     rcFile   = 'Aod_EOS.rc'
     albedoType = 'BRDF'
-    user       = 'pcastell'    
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
@@ -522,11 +562,17 @@ if __name__ == '__main__':
     parser.add_argument("inst_pcf",
                         help="prep config file with instrument variables")
 
-    parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
-                        help="Timestep in hours for each file (default=%i)"%DT_hours)
+    parser.add_argument('-D',"--DT", default=DT, type=int,
+                        help="Timestep for each file (default=%i)"%DT)
 
-    parser.add_argument('-d',"--dt_hours", default=dt_hours, type=int,
-                        help="Timestep in hours for each job (default=%i)"%dt_hours)
+    parser.add_argument('-d',"--dt", default=dt, type=int,
+                        help="Timestep for each job (default=%i)"%dt)
+
+    parser.add_argument("--dt_units", default=dt_units,
+                        help="Timestep units (default=%s)"%dt_units)
+
+    parser.add_argument("--random", action="store_true",
+                        help="Are these random samples (default=False)")
 
     parser.add_argument("-a","--albedoType", default=albedoType,
                         help="albedo type keyword. either BRDF of BPDF (default=%s)"%albedoType)
@@ -549,8 +595,6 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbose",action="store_true",
                         help="Verbose mode (default=False).")
 
-    parser.add_argument('-u',"--user",default=user,
-                        help="username (default=%s)"%user)
 
     args = parser.parse_args()
     args.planeparallel = True

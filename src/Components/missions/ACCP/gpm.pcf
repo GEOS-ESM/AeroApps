@@ -1,4 +1,5 @@
 # ORBIT
+    TLEFILE       = tle/GPM-CORE_39574_Generated_TLE.tle
     orbitname     = gpm    
     HGT          = 407
 # ORBIT

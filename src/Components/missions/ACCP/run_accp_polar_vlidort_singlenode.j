@@ -63,9 +63,10 @@ set filelist=`ls accp_polar_vlidort*.rc`
 foreach f ($filelist)
   ./clean_mem.sh
   echo $f
-  $RUN_CMD ./accp_polar_vlidort.x $f  &
-  wait
+  $RUN_CMD ./accp_polar_vlidort.x $f  
+  sleep 5
   ./clean_mem.sh
+  sleep 5
 end
 rm -rf $LOCAL_TMPDIR/*
 rm ExtData

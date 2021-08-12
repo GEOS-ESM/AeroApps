@@ -1,0 +1,5 @@
+#
+# Resource file for GEO sampler
+#
+
+AREA,FRLAKE,FRLAND,FRLANDICE,FROCEAN,PHIS,SGH:  /discover/nobackup/projects/gmao/iesa/aerosol/data/M2R12K/data/opendap/0.1250_deg/M2R12K_may2005/const.ctl
