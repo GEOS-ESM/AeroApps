@@ -15,7 +15,8 @@ set (srcs
     VLIDORT_LAMBERT_BPDF.F90 
     VLIDORT_ROT.F90
     mp_netcdf_Mod.F90 
-    netcdf_Mod.F90)
+    netcdf_Mod.F90
+    cloud_MieMod.F90)
 
 
 esma_add_library (${this}
