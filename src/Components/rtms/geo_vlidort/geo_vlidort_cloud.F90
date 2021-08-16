@@ -24,6 +24,7 @@
 !     for the loss of the forward peak in the ice cloud scatterimg matrix introduced by
 !     using a finite number of streams.
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#  define I_AM_MAIN
 #  include "MAPL_Generic.h"
 #  include "MAPL_ErrLogMain.h"
 program geo_vlidort_cloud
