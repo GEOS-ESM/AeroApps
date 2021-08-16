@@ -28,7 +28,7 @@ from MAPL.ShaveMantissa_ import shave32
 
 from pace                import PACE, granules
 
-
+MAPL_UNDEF = np.float32(MAPL_UNDEF)
 
 class SampleVar(object):
     """                                                                                  

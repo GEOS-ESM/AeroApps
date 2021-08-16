@@ -45,6 +45,6 @@
 
   ! Physical constants
   real, parameter                       :: grav = 9.81               ! gravity
-
+  real, parameter                       :: pi = 4.0*atan(1.0)
 
 

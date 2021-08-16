@@ -78,6 +78,8 @@ program pace_vlidort
   character(len=256)                    :: layout 
   character(len=256)                    :: IcldTable, LcldTable
   integer                               :: idxCld
+  logical                               :: do_sleave_iso
+  logical                               :: do_sleave_adjust
 
 ! Test flag
 ! -----------
@@ -150,6 +152,9 @@ program pace_vlidort
   real, allocatable                     :: VtauIcl(:,:,:)          ! cloud single scattering albedo
   real, allocatable                     :: VgLcl(:,:,:)            ! cloud asymmetry factor  
   real, allocatable                     :: VgIcl(:,:,:)            ! cloud asymmetry factor    
+
+  real*8, allocatable                   :: Valpha(:,:,:)           ! trace gas absorption
+  real*8, allocatable                   :: Vflux_factor(:,:)       ! solar irradiance
 
 ! VLIDORT output arrays
 !-------------------------------
@@ -1091,7 +1096,7 @@ program pace_vlidort
         if (scalar) then
           ! Call to vlidort scalar code       
           call VLIDORT_Scalar_OCIGissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                  nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
                   dble(Vpe), dble(Vze), dble(Vte), &
@@ -1099,13 +1104,14 @@ program pace_vlidort
                   (/dble(V10M(i,j))/), &
                   dble(mr), &
                   (/dble(SZA(i,j))/), &
-                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
+                  Vflux_factor, &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
         else
           ! Call to vlidort vector code
           call VLIDORT_Vector_OCIGissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-                 nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                 nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
                  dble(Vpe), dble(Vze), dble(Vte), &
@@ -1113,8 +1119,9 @@ program pace_vlidort
                  (/dble(V10M(i,j))/), &
                  dble(mr), &
                  (/dble(SZA(i,j))/), &
-                 (/dble(abs(RAA(i,j)))/), &
+                 (/dble(RAA(i,j))/), &
                  (/dble(VZA(i,j))/), &
+                 Vflux_factor, &
                  dble(MISSING),verbose, &
                  radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
         end if
@@ -1124,7 +1131,7 @@ program pace_vlidort
         if (scalar) then
           ! Call to vlidort scalar code       
           call VLIDORT_Scalar_OCIGissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                  nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
                   dble(Vpe), dble(Vze), dble(Vte), &
@@ -1132,14 +1139,17 @@ program pace_vlidort
                   (/dble(V10M(i,j))/), &
                   dble(mr), &
                   Vsleave, &
+                  do_sleave_iso, &
+                  do_sleave_adjust, &
                   (/dble(SZA(i,j))/), &
-                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
+                  Vflux_factor, &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
         else
           ! Call to vlidort vector code          
           call VLIDORT_Vector_OCIGissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-                 nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                 nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
                  dble(Vpe), dble(Vze), dble(Vte), &
@@ -1147,9 +1157,12 @@ program pace_vlidort
                  (/dble(V10M(i,j))/), &
                  dble(mr), &
                  Vsleave, &
+                 do_sleave_iso, &
+                 do_sleave_adjust, &
                  (/dble(SZA(i,j))/), &
-                 (/dble(abs(RAA(i,j)))/), &
+                 (/dble(RAA(i,j))/), &
                  (/dble(VZA(i,j))/), &
+                 Vflux_factor, &
                  dble(MISSING),verbose, &
                  radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
         end if
@@ -1272,24 +1285,26 @@ program pace_vlidort
       if (scalar) then
           ! Call to vlidort scalar code       
           call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
+                  nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
                   dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                   (/dble(SZA(i,j))/), &
-                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
+                  Vflux_factor, &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
       else
         ! Call to vlidort vector code
         call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-               nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+               nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
                dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                (/dble(SZA(i,j))/), &
-               (/dble(abs(RAA(i,j)))/), &
+               (/dble(RAA(i,j))/), &
                (/dble(VZA(i,j))/), &
+               Vflux_factor, &
                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q_int, U_int, ierr)
         BR_Q_int = 0
         BR_U_int = 0
@@ -1315,26 +1330,28 @@ program pace_vlidort
         if (scalar) then 
             ! Call to vlidort scalar code            
             call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom,  &
-                    nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                    nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                     dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
                     dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
                     dble(Vpe), dble(Vze), dble(Vte), &
                     kernel_wt, param, &
                     (/dble(SZA(i,j))/), &
-                    (/dble(abs(RAA(i,j)))/), &
+                    (/dble(RAA(i,j))/), &
                     (/dble(VZA(i,j))/), &
+                    Vflux_factor, &
                     dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
         else
           ! Call to vlidort vector code
           call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
-                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                  nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                   dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
                   dble(Vpe), dble(Vze), dble(Vte), &
                   kernel_wt, param, &
                   (/dble(SZA(i,j))/), &
-                  (/dble(abs(RAA(i,j)))/), &
+                  (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
+                  Vflux_factor, &
                   dble(MISSING),verbose, &
                   radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
         end if    
@@ -1359,14 +1376,15 @@ program pace_vlidort
 
         ! Call to vlidort vector code
         call VLIDORT_Vector_LandMODIS_BPDF_cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
-                nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
                 dble(Vpe), dble(Vze), dble(Vte), &
                 kernel_wt, param, BPDFparam, &
                 (/dble(SZA(i,j))/), &
-                (/dble(abs(RAA(i,j)))/), &
+                (/dble(RAA(i,j))/), &
                 (/dble(VZA(i,j))/), &
+                Vflux_factor, &
                 dble(MISSING),verbose, &
                 radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
       end if
@@ -2026,6 +2044,13 @@ program pace_vlidort
       end do
 
       RAA = VAA - saa_
+      do i = 1, im
+        do j = 1, jm
+          if (RAA(i,j) < 0) then
+            RAA(i,j) = RAA(i,j) + 360.0
+          end if
+        end do
+      end do
 
       deallocate (saa_)
       write(*,*) '<> Read angle data to shared memory' 
@@ -2189,6 +2214,11 @@ program pace_vlidort
     allocate (VgIcl(km,nch,nobs))    
     allocate (VgLcl(km,nch,nobs))    
     allocate (Valbedo(nobs,nch))
+
+    allocate (Valpha(km,nobs,nch))
+    Valpha = 0.0
+    allocate (Vflux_factor(nch,nobs))
+    Vflux_factor = 1.0
 
     allocate (radiance_VL_int(nobs,nch))
     allocate (reflectance_VL_int(nobs, nch))    
@@ -3250,6 +3280,8 @@ program pace_vlidort
     call ESMF_ConfigGetAttribute(cf, additional_output, label = 'ADDITIONAL_OUTPUT:',default=.false.)
     call ESMF_ConfigGetAttribute(cf, aerosol_output, label = 'AEROSOL_OUTPUT:',default=.false.)
     call ESMF_ConfigGetAttribute(cf, cloud_output, label = 'CLOUD_OUTPUT:',default=.false.)
+    call ESMF_ConfigGetAttribute(cf, do_sleave_adjust, label = 'DO_SLEAVE_ADJUST:',default=.false.)
+    call ESMF_ConfigGetAttribute(cf, do_sleave_iso, label = 'DO_SLEAVE_ISO:',default=.false.)
     call ESMF_ConfigGetAttribute(cf, nodemax, label = 'NODEMAX:',default=1) 
     call ESMF_ConfigGetAttribute(cf, version, label = 'VERSION:',default='1.0') 
     call ESMF_ConfigGetAttribute(cf, layout, label = 'LAYOUT:',default='111')    
