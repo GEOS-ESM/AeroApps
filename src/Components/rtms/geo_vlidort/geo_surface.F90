@@ -15,6 +15,7 @@
 !     27 April 2015 P. Castellanos adapted from A. da Silva shmem_reader.F90
 !     July 2015 P. Castellanos adapted rrom geo_vlidort.F90
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#  define  I_AM_MAIN
 #  include "MAPL_Generic.h"
 #  include "MAPL_ErrLogMain.h"
 program geo_vlidort_surface

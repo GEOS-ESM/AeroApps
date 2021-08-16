@@ -16,6 +16,12 @@ module VLIDORT_BRDF_MODIS
     module procedure VLIDORT_Vector_LandMODIS_MultiGeom
   end interface VLIDORT_Vector_LandMODIS
 
+  interface VLIDORT_Vector_LandMODIS_Cloud
+    module procedure VLIDORT_Vector_LandMODIS_Cloud_SingleGeom
+    module procedure VLIDORT_Vector_LandMODIS_Cloud_MultiGeom
+  end interface VLIDORT_Vector_LandMODIS_Cloud
+
+
   contains
 
   logical function IS_MISSING(x,MISSING)
@@ -614,9 +620,9 @@ module VLIDORT_BRDF_MODIS
   end subroutine VLIDORT_Vector_LandMODIS_MultiGeom
 
 subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nstreams, plane_parallel, nMom, &
-                     nPol, ROT, depol, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
+                     nPol, ROT, depol, alpha, tau, ssa, g, pmom, tauI, ssaI, gI, pmomI, tauL, ssaL, gL, pmomL, &
                      pe, he, te, kernel_wt, param, &
-                     solar_zenith, relat_azymuth, sensor_zenith, &
+                     solar_zenith, relat_azymuth, sensor_zenith, flux_factor, &
                      MISSING,verbose,radiance_VL_SURF,reflectance_VL_SURF, BR, rc )
   !
   ! Uses VLIDORT in scalar mode to compute OMI aerosol TOA radiances.
@@ -644,6 +650,10 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nstreams, pla
 !                                                     ! --- Rayleigh Parameters ---
     real*8, target,   intent(in)  :: ROT(km,nobs,nch) ! rayleigh optical thickness
     real*8, target,   intent(in)  :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
+
+!                                                   ! --- Trace Gas Absorption ---
+    real*8, target,   intent(in)  :: alpha(km,nobs,nch) ! trace gas absoprtion optical thickness
+
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)  :: tau(km,nch,nobs) ! aerosol optical depth
@@ -676,7 +686,8 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nstreams, pla
     real*8, target,   intent(in)  :: solar_zenith(nobs)  
     real*8, target,   intent(in)  :: relat_azymuth(nobs) 
     real*8, target,   intent(in)  :: sensor_zenith(nobs) 
-    
+
+    real*8,           intent(in)  :: flux_factor(nch,nobs) ! solar flux (F0)    
     integer,          intent(in)            :: verbose
 
   ! !OUTPUT PARAMETERS:
@@ -722,7 +733,10 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nstreams, pla
    
       ! Loop over channels
       ! ------------------
-      do i = 1, nch 
+      do i = 1, nch
+        ! set solar flux
+        SCAT%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR = flux_factor(i,j)
+ 
         ! Make sure kernel weights and parameters are defined
         do n = 1, nkernel
           if (IS_MISSING(kernel_wt(n,i,j),MISSING)) then
@@ -753,6 +767,7 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nstreams, pla
         SCAT%wavelength = channels(i)
         SCAT%rot => ROT(:,j,i)
         SCAT%depol_ratio => depol(i)
+        SCAT%alpha => alpha(:,j,i)
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%g => g(:,i,j)
@@ -803,10 +818,10 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nstreams, pla
   end subroutine VLIDORT_Scalar_LandMODIS_Cloud
 
   !..........................................................................
-  subroutine VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
-                     nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+  subroutine VLIDORT_Vector_LandMODIS_Cloud_SingleGeom (km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
+                     nPol, ROT, depol, alpha, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                      pe, he, te, kernel_wt, param, &
-                     solar_zenith, relat_azymuth, sensor_zenith, &
+                     solar_zenith, relat_azymuth, sensor_zenith, flux_factor, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc, &
                      DO_2OS_CORRECTION, DO_BOA)
   !
@@ -839,6 +854,9 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nstreams, pla
     real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
     real*8, target,   intent(in)            :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
 
+!                                                   ! --- Trace Gas Absorption ---
+    real*8, target,   intent(in)  :: alpha(km,nobs,nch) ! trace gas absoprtion optical thickness
+
   !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
     real*8, target,   intent(in)            :: ssa(km,nch,nobs) ! single scattering albedo    
@@ -866,6 +884,7 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nstreams, pla
     real*8, target,   intent(in)            :: relat_azymuth(nobs) 
     real*8, target,   intent(in)            :: sensor_zenith(nobs) 
 
+    real*8,           intent(in)  :: flux_factor(nch,nobs) ! solar flux (F0)
     integer,          intent(in)            :: verbose
 
   ! !OUTPUT PARAMETERS:
@@ -935,6 +954,9 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nstreams, pla
       SCAT%te => te(:,j) 
 
       do i = 1, nch
+        ! set solar flux
+        SCAT%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR = flux_factor(i,j)
+
         ! Make sure kernel weights and parameters are defined
         do n = 1, nkernel
           if (IS_MISSING(kernel_wt(n,i,j),MISSING)) then
@@ -964,7 +986,8 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nstreams, pla
 
         SCAT%wavelength = channels(i) 
         SCAT%rot => rot(:,j,i)  
-        SCAT%depol_ratio => depol(i)     
+        SCAT%depol_ratio => depol(i)    
+        SCAT%alpha => alpha(:,j,i) 
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)
@@ -1021,7 +1044,241 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nstreams, pla
 
     end do ! Loop over obs
 
-  end subroutine VLIDORT_Vector_LandMODIS_cloud
+  end subroutine VLIDORT_Vector_LandMODIS_Cloud_SingleGeom
 
+  !..........................................................................
+  subroutine VLIDORT_Vector_LandMODIS_Cloud_MultiGeom (km, nch, nobs, ngeom, channels, nstreams, plane_parallel, nMom,  &
+                     nPol, ROT, depol, alpha, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+                     pe, he, te, kernel_wt, param, &
+                     solar_zenith, relat_azymuth, sensor_zenith, flux_factor, &
+                     MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc, &
+                     DO_2OS_CORRECTION, DO_BOA)
+  !
+  ! Place holder.
+  !
+     use VLIDORT_ScatMod
+   
+     implicit NONE
+ 
+    logical                                 :: scalar
+    integer, parameter                      :: nkernel = 3   ! number of kernels
+    integer, parameter                      :: nparam  = 2   ! number of kernel parameters
+
+  ! !INPUT PARAMETERS:
+
+    integer,          intent(in)            :: km    ! number of vertical levels 
+    integer,          intent(in)            :: nch   ! number of channels
+    integer,          intent(in)            :: nobs  ! number of observations
+    integer,          intent(in)            :: ngeom  ! number of geometries
+
+    logical,          intent(in)            :: plane_parallel ! do plane parallel flag
+
+    integer, target,  intent(in)            :: nMom  ! number of phase function moments 
+    integer, target,  intent(in)            :: nPol  ! number of scattering matrix components    
+    integer,          intent(in)            :: nstreams  ! number of half space streams
+
+                    
+    real*8, target,   intent(in)            :: channels(nch)    ! wavelengths [nm]
+
+!                                                     ! --- Rayleigh Parameters ---
+    real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
+    real*8, target,   intent(in)            :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
+
+!                                                   ! --- Trace Gas Absorption ---
+    real*8, target,   intent(in)  :: alpha(km,nobs,nch) ! trace gas absoprtion optical thickness
+
+  !                                                   ! --- Aerosol Optical Properties ---
+    real*8, target,   intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
+    real*8, target,   intent(in)            :: ssa(km,nch,nobs) ! single scattering albedo    
+    real*8, target,   intent(in)            :: pmom(km,nch,nobs,nMom,nPol) !components of the scat phase matrix
+
+    real*8, target,   intent(in)            :: tauI(km,nch,nobs) ! ice cloud optical depth
+    real*8, target,   intent(in)            :: ssaI(km,nch,nobs) ! ice cloud single scattering albedo   
+    real*8, target,   intent(in)            :: pmomI(km,nch,nobs,nMom,nPol) !ice cloud components of the scat phase matrix
+
+    real*8, target,   intent(in)            :: tauL(km,nch,nobs) ! liquid cloud optical depth
+    real*8, target,   intent(in)            :: ssaL(km,nch,nobs) ! liquid cloud single scattering albedo   
+    real*8, target,   intent(in)            :: pmomL(km,nch,nobs,nMom,nPol) !liquid cloud components of the scat phase matrix
+
+    real*8, target,   intent(in)            :: MISSING          ! MISSING VALUE
+    real*8, target,   intent(in)            :: pe(km+1,nobs)    ! pressure at layer edges [Pa]
+    real*8, target,   intent(in)            :: he(km+1,nobs)    ! height above sea-level  [m]
+    real*8, target,   intent(in)            :: te(km+1,nobs)    ! temperature at layer edges [K]
+
+    real*8, target,   intent(in)            :: kernel_wt(nkernel,nch,nobs)    ! kernel weights (/fiso,fgeo,fvol/)
+    real*8, target,   intent(in)            :: param(nparam,nch,nobs)         ! Li-Sparse parameters 
+                                                                              ! param1 = crown relative height (h/b)
+                                                                              ! param2 = shape parameter (b/r)
+                         
+    real*8, target,   intent(in)            :: solar_zenith(nobs,ngeom)  
+    real*8, target,   intent(in)            :: relat_azymuth(nobs,ngeom) 
+    real*8, target,   intent(in)            :: sensor_zenith(nobs,ngeom) 
+
+    real*8,           intent(in)  :: flux_factor(nch,nobs) ! solar flux (F0)
+    integer,          intent(in)            :: verbose
+
+  ! !OUTPUT PARAMETERS:
+    real*8,           intent(out)           :: radiance_VL_SURF(nobs,nch,ngeom)     ! TOA normalized radiance from VLIDORT using surface module
+    real*8,           intent(out)           :: reflectance_VL_SURF(nobs, nch, ngeom) ! TOA reflectance from VLIDORT using surface module
+    integer,          intent(out)           :: rc                             ! return code
+
+    real*8,           intent(out)           :: BR(nobs,nch,ngeom)                   ! bidirectional reflectance 
+    real*8,           intent(out)           :: BR_Q(nobs,nch,ngeom)                 ! bidirectional reflectance Q 
+    real*8,           intent(out)           :: BR_U(nobs,nch,ngeom)                 ! bidirectional reflectance U
+    real*8,           intent(out)           :: Q(nobs, nch, ngeom)                   ! Stokes parameter Q
+    real*8,           intent(out)           :: U(nobs, nch, ngeom)                   ! Stokes parameter U   
+
+  ! !OPTIONAL PARAMETERS
+    logical, optional, intent(in) :: DO_2OS_CORRECTION
+    logical, optional, intent(in) :: DO_BOA
+
+  !                               ---
+    
+    integer             :: i,j,n,p,ier,g
+
+    
+    type(VLIDORT_scat_multigeom) :: SCAT
+    type(VLIDORT_output_vector_multigeom)  :: output
+
+    rc = 0
+    ier = 0
+   
+    if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
+    SCAT%Surface%Base%NSTREAMS = nstreams
+    SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+    SCAT%Surface%Base%N_USER_OBSGEOMS   = ngeom
+    SCAT%Surface%Base%NBEAMS            = ngeom
+    SCAT%Surface%Base%N_USER_STREAMS    = ngeom
+    SCAT%Surface%Base%N_USER_RELAZMS    = ngeom
+    call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
+    if ( rc /= 0 ) return
+
+    SCAT%nMom    = nMom
+    SCAT%nPol    = nPol
+    if (present(DO_2OS_CORRECTION)) then
+      SCAT%DO_2OS_CORRECTION = DO_2OS_CORRECTION
+      if (DO_2OS_CORRECTION) then
+        SCAT%NSTOKES = 1
+      else
+        SCAT%NSTOKES = 3
+      end if
+    else    
+      SCAT%NSTOKES = 3
+    end if
+
+    if ( SCAT%NSTOKES  .GT. MAXSTOKES  )   return
+
+    do j = 1, nobs
+       
+      ! Make sure angles are available
+      ! -----------------------------------------
+      if ( IS_MISSING(solar_zenith(j,1),MISSING)  .OR. & 
+           IS_MISSING(sensor_zenith(j,1),MISSING) .OR. &
+           IS_MISSING(relat_azymuth(j,1),MISSING)  )  then
+
+        radiance_VL_SURF(j,:,:) = MISSING
+        reflectance_VL_SURF(j,:,:) = MISSING
+        
+        cycle
+
+      end if
+
+      SCAT%pe => pe(:,j)
+      SCAT%ze => he(:,j)
+      SCAT%te => te(:,j) 
+
+      do i = 1, nch
+        ! set solar flux
+        SCAT%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR = flux_factor(i,j)
+      
+        ! Make sure kernel weights and parameters are defined
+        do n = 1, nkernel
+          if (IS_MISSING(kernel_wt(n,i,j),MISSING)) then
+            radiance_VL_SURF(j,i,:) = MISSING
+            reflectance_VL_SURF(j,i,:) = MISSING
+            cycle
+          end if
+        end do
+        do p = 1, nparam
+          if (IS_MISSING(param(p,i,j),MISSING)) then
+            radiance_VL_SURF(j,i,:) = MISSING
+            reflectance_VL_SURF(j,i,:) = MISSING
+            cycle
+          end if
+        end do
+
+        if ( verbose > 0 ) then
+          print*, 'DO MODIS BRDF'
+        end if
+
+        scalar = .true.
+        call VLIDORT_LANDMODIS(SCAT%Surface,solar_zenith(j,:),&
+                               sensor_zenith(j,:),relat_azymuth(j,:),&
+                               kernel_wt(1,i,j),kernel_wt(2,i,j),kernel_wt(3,i,j),&
+                               reshape(param(:,i,j),(/nparam/)),&
+                               scalar,rc)
+
+        SCAT%wavelength = channels(i) 
+        SCAT%rot => rot(:,j,i)  
+        SCAT%depol_ratio => depol(i)    
+        SCAT%alpha => alpha(:,j,i) 
+        SCAT%tau => tau(:,i,j)
+        SCAT%ssa => ssa(:,i,j)
+        SCAT%pmom => pmom(:,i,j,:,:)
+        SCAT%tauI => tauI(:,i,j)
+        SCAT%ssaI => ssaI(:,i,j)
+        SCAT%pmomI => pmomI(:,i,j,:,:)    
+        SCAT%tauL => tauL(:,i,j)
+        SCAT%ssaL => ssaL(:,i,j)
+        SCAT%pmomL => pmomL(:,i,j,:,:)            
+
+        do g = 1,ngeom
+          BR(j,i,g) = SCAT%Surface%Base%VIO%VBRDF_Sup_Out%BS_DBOUNCE_BRDFUNC(1,1,1,g)
+          BR_Q(j,i,g) = 0
+          BR_U(j,i,g) = 0     
+
+          ! Check to make sure kernel combination is not unphysical
+          if (BR(j,i,g) < 0) then
+            radiance_VL_SURF(j,i,g)    = -500
+            reflectance_VL_SURF(j,i,g) = -500
+            BR(j,i,g)    = -500
+            BR_Q(j,i,g)    = -500
+            BR_U(j,i,g)    = -500
+            Q(j,i,g)     = -500
+            U(j,i,g)     = -500
+            cycle
+          end if
+        end do
+        call VLIDORT_Run_Vector_Cloud (SCAT, output, ier)
+
+        if (SCAT%DO_BOA) then
+          radiance_VL_SURF(j,i,:)    = output%BOA_radiance
+          reflectance_VL_SURF(j,i,:) = output%BOA_reflectance
+          Q(j,i,:)                   = output%BOA_Q
+          U(j,i,:)                   = output%BOA_U                          
+        else
+          radiance_VL_SURF(j,i,:)    = output%radiance
+          reflectance_VL_SURF(j,i,:) = output%reflectance
+          Q(j,i,:)                   = output%Q
+          U(j,i,:)                   = output%U                
+        end if
+
+        if ( ier /= 0 ) then
+          radiance_VL_SURF(j,i,:) = MISSING
+          reflectance_VL_SURF(j,i,:) = MISSING               
+          cycle
+        end if
+
+      end do ! end loop over channels
+       
+      if ( verbose > 0 ) then
+        if ( mod(j-1,1000) == 0 ) then
+          print *, '<> VLIDORT Vector: ', nint(j*100./nobs), '%'
+        end if
+      end if
+
+    end do ! Loop over obs
+
+  end subroutine VLIDORT_Vector_LandMODIS_Cloud_MultiGeom
 
 end module VLIDORT_BRDF_MODIS
