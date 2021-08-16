@@ -1,0 +1,41 @@
+DATE: 20060324
+TIME: 005000
+INSTNAME: pace
+CHANNELS: 470
+SCALAR: false
+PLANE_PARALLEL: True
+CLOUD_FREE: True
+AEROSOL_FREE: True
+ADDITIONAL_OUTPUT: true
+VERSION: 1.0
+LAYOUT: None
+
+OCItable_file: oci_tables/OCI_ROD_Table_adjusted_rotate.txt
+STDATM_file: oci_tables/pressure_temp_profile.txt
+STANDARD_ATM: false
+
+LANDNAME: MCD43C
+LANDMODEL: RTLS
+LANDBAND_C_BRDF: 470 550 650 850 1200 1600 2100
+BRDF_file: /nobackup/PACE/LevelB/surface/BRDF/MCD43C1/006/Y2006/M03/D24/pace-g5nr.lb.brdf.20060324_005000.nc4
+
+WATERNAME: NOBM-CX
+WAT_file: /nobackup/PACE/LevelB/surface/SLEAVE/NOBM/Y2006/M03/D24/pace-g5nr.lb.sleave.20060324_005000.nc4
+WATERMODEL: CX
+WATERMR: 1.334
+
+ICLDTABLE:ExtDataCloud/IceLegendreCoeffs.nc4
+LCLDTABLE:ExtDataCloud/WaterLegendreCoeffs.nc4
+
+AER_file: /nobackup/PACE/LevelB/Y2006/M03/D24/pace-g5nr.lb.aer_Nv.20060324_005000.nc4
+MET_file: /nobackup/PACE/LevelB/Y2006/M03/D24/pace-g5nr.lb.met_Nv.20060324_005000.nc4
+ANG_file: /nobackup/PACE/L1B/Y2020/M03/D24/OCI2020084005000.L1B_PACE.nc
+INV_file: /nobackup/PACE/LevelB/Y2006/M03/D24/pace-g5nr.lb.asm_Nx.20060324_005000.nc4
+OUT_file: /nobackup/PACE/LevelC/Y2006/M03/D24/pace-g5nr.vlidort.20060324_005000_470d00nm.nc4
+ADD_file: /nobackup/PACE/LevelC/Y2006/M03/D24/pace-g5nr.vlidort.add.20060324_005000_470d00nm.nc4
+CLD_file: /nobackup/PACE/LevelC/Y2006/M03/D24/pace-g5nr.TOTWPDF-GCOP-SKEWT.20060324_005000.nc4
+
+
+
+
+

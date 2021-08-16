@@ -131,6 +131,8 @@ class PACE(object):
             if not hasattr(v,'mask'):
                 v = np.ma.array(v)
                 v.mask = np.zeros(v.shape).astype('bool')
+            elif type(v.mask) is np.bool_:
+                v.mask = np.zeros(v.shape).astype('bool')
             self.__dict__[sds].append(v) 
 
 
