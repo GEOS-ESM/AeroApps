@@ -18,6 +18,7 @@
 !     27 April 2015 P. Castellanos adapted from A. da Silva shmem_reader.F90
 !     9 July 2015   P. Castellanos adapted from geo_vlidort.F90 to now work with LIDORT
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#  define I_AM_MAIN
 #  include "MAPL_Generic.h"
 #  include "MAPL_ErrLogMain.h"
 program geo_lidort

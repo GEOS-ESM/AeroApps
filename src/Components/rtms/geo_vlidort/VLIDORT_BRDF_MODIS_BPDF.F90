@@ -229,9 +229,9 @@ module VLIDORT_BRDF_MODIS_BPDF
   end subroutine VLIDORT_Vector_LandMODIS_BPDF
 
   subroutine VLIDORT_Vector_LandMODIS_BPDF_Cloud (km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
-                     nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+                     nPol, ROT, depol, alpha, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                      pe, he, te, kernel_wt, RTLSparam, BPDFparam, &
-                     solar_zenith, relat_azymuth, sensor_zenith, &
+                     solar_zenith, relat_azymuth, sensor_zenith, flux_factor, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, BR, Q, U, BR_Q, BR_U, rc, DO_BOA)
   !
   ! Place holder.
@@ -262,6 +262,9 @@ module VLIDORT_BRDF_MODIS_BPDF
 !                                                     ! --- Rayleigh Parameters ---
     real*8, target,   intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
     real*8, target,   intent(in)            :: depol(nch)       ! rayleigh depolarization ratio used in phase matrix
+
+!                                                   ! --- Trace Gas Absorption ---
+  real*8, target,   intent(in)  :: alpha(km,nobs,nch) ! trace gas absoprtion optical thickness
 
   !                                                   ! --- Aerosol Optical Properties ---
     real*8, target,   intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
@@ -294,6 +297,8 @@ module VLIDORT_BRDF_MODIS_BPDF
     real*8, target,   intent(in)            :: relat_azymuth(nobs) 
     real*8, target,   intent(in)            :: sensor_zenith(nobs) 
 
+    real*8,           intent(in)  :: flux_factor(nch,nobs) ! solar flux (F0)
+    
     integer,          intent(in)            :: verbose
 
   ! !OUTPUT PARAMETERS:
@@ -352,6 +357,9 @@ module VLIDORT_BRDF_MODIS_BPDF
       SCAT%te => te(:,j) 
 
       do i = 1, nch
+         ! set solar flux
+          SCAT%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR = flux_factor(i,j)
+
         ! Make sure kernel weights and parameters are defined
         
         do n = 1, nkernel
@@ -392,7 +400,8 @@ module VLIDORT_BRDF_MODIS_BPDF
 
         SCAT%wavelength = channels(i) 
         SCAT%rot => ROT(:,j,i)
-        SCAT%depol_ratio => depol(i)       
+        SCAT%depol_ratio => depol(i)      
+        SCAT%alpha => alpha(:,j,i) 
         SCAT%tau => tau(:,i,j)
         SCAT%ssa => ssa(:,i,j)
         SCAT%pmom => pmom(:,i,j,:,:)

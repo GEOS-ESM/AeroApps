@@ -14,6 +14,7 @@
 !  HISTORY
 !     29 May 2015 P. Castellanos 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#  define  I_AM_MAIN
 #  include "MAPL_Generic.h"
 #  include "MAPL_ErrLogMain.h"
 program geo_angles
