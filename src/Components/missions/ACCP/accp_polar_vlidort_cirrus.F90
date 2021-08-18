@@ -21,7 +21,7 @@
 !     for the loss of the forward peak in the ice cloud scatterimg matrix introduced by
 !     using a finite number of streams.
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-#  define I_AM_MAIN
+#  define  I_AM_MAIN
 #  include "MAPL_Generic.h"
 #  include "MAPL_ErrLogMain.h"
 program pace_vlidort
@@ -36,6 +36,7 @@ program pace_vlidort
   use vlidort_brdf_cx              ! Module to run VLIDORT with cox munk surface
   use vlidort_rot                  ! Module to calculate Rayleigh
   use Chem_MieMod
+  use Cirrus_MieMod
   use mp_netcdf_Mod
   use netcdf_Mod
 
@@ -67,6 +68,10 @@ program pace_vlidort
   integer                               :: nch                    ! number of channels  
   real                                  :: szamax                 ! Geomtry filtering
   character(len=256)                    :: rcfile                 ! resource file
+  real                                  :: cirrusALT              ! cirrul layer altitude km
+  real                                  :: cirrusOD532(nobs)      ! cirrus optical depth @ 532 nm
+  real                                  :: cirrusREFF(nobs)       ! cirrus effective raidum micron
+  character(len=256)                    :: cirrusTable            ! cirrus optical property table
 
 ! Test flag
 ! -----------
@@ -126,23 +131,39 @@ program pace_vlidort
   real, allocatable                     :: Vtau(:,:,:)             ! aerosol optical depth
   real, allocatable                     :: Vssa(:,:,:)             ! single scattering albedo
   real, allocatable                     :: Vg(:,:,:)               ! asymmetry factor
-  real*8, allocatable                   :: Valbedo(:,:)            ! surface albedo
+  real*8, allocatable                   :: Valbedo(:,:,:)            ! surface albedo
+
+  real, allocatable                     :: VtauLcl(:,:,:)          ! cloud aerosol optical depth
+  real*8, allocatable                   :: VssaIcl(:,:,:)          ! cloud aerosol optical depth
+  real, allocatable                     :: VssaLcl(:,:,:)          ! cloud single scattering albedo
+  real*8, allocatable                   :: VtauIcl(:,:,:)          ! cloud single scattering albedo
+  real, allocatable                     :: VgLcl(:,:,:)            ! cloud asymmetry factor
+  real, allocatable                     :: VgIcl(:,:,:)            ! cloud asymmetry factor
+  real,allocatable                      :: Vpmom(:,:,:,:,:)                         ! elements of scattering phase matrix for vector calculations
+  real*8,allocatable                    :: VpmomIcl(:,:,:,:,:)                      ! elements of scattering phase matrix for vector calculations
+  real,allocatable                      :: VpmomLcl(:,:,:,:,:)                      ! elements of scattering phase matrix for vector calculations
 
 ! VLIDORT output arrays
 !-------------------------------
 !                                  Intermediate Unshared Arrays
 !                                  -----------------------------
-  real*8, allocatable                   :: radiance_VL_int(:,:)                   ! TOA normalized radiance from VLIDORT
-  real*8, allocatable                   :: reflectance_VL_int(:,:)                ! TOA reflectance from VLIDORT  
-  real*8, allocatable                   :: Q_int(:,:)                             ! Q Stokes component
-  real*8, allocatable                   :: U_int(:,:)                             ! U Stokes component
+  real*8, allocatable                   :: radiance_VL_int(:,:,:)                   ! TOA normalized radiance from VLIDORT
+  real*8, allocatable                   :: reflectance_VL_int(:,:,:)                ! TOA reflectance from VLIDORT  
+  real*8, allocatable                   :: Q_int(:,:,:)                             ! Q Stokes component
+  real*8, allocatable                   :: U_int(:,:,:)                             ! U Stokes component
   real*8, allocatable                   :: ROT_int(:,:,:)                         ! rayleigh optical thickness
   real*8, allocatable                   :: depol(:)                               ! rayleigh depolarization ratio
   real*8, allocatable                   :: alpha(:,:,:)                           ! trace gas absorption
-  real*8, allocatable                   :: flux_factor(:,:)                       ! solar irradiance (F0)
-  real*8, allocatable                   :: BR_Q_int(:,:)                          ! surface albedo Q
-  real*8, allocatable                   :: BR_U_int(:,:)                          ! surface albedo U
-
+  real*8, allocatable                   :: BR_Q_int(:,:,:)                          ! surface albedo Q
+  real*8, allocatable                   :: BR_U_int(:,:,:)                          ! surface albedo U
+  real*8, allocatable                   :: flux_factor(:,:)                        ! solar flux (F0)
+! Cirrus derived inputs
+! ------------------------
+  integer                               :: k_cirrus               ! index for cirrus layer
+  real*8, pointer                       :: cirrusEXT(:,:)           ! extinction in cirrus layer
+  real*8, allocatable                   :: cirrusOD(:,:)          ! cirrus optical depth at wavelength and effective raidus
+  real*8, allocatable                   :: cirrusSSA(:,:)         ! cirrus SSA at wavelength and effective radius
+  real*8, allocatable                   :: cirrusPMOM(:,:,:,:)    ! cirrus scattering matrix at wavelength and effective radius
 
 !                                  Final Shared Arrays
 !                                  -------------------
@@ -168,7 +189,6 @@ program pace_vlidort
 !------------------------------
   integer                               :: ch                                       ! i-channel  
   integer                               :: iband                                    ! i-surfaceband
-  real,allocatable                      :: Vpmom(:,:,:,:,:)                         ! elements of scattering phase matrix for vector calculations
 
 ! MODIS Kernel variables
 !--------------------------
@@ -410,6 +430,13 @@ program pace_vlidort
     call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
   end if
 
+! Cirrus Optical Properties
+! -------------------------
+  ! read cirrus table
+  ! scale optical depth to wavelength
+  ! and interpolate pmom and ssa
+  call get_cirrusOP(trim(cirrusTable),nobs,nch,nMom,nPol,dble(channels),dble(cirrusOD532),dble(cirrusREFF),cirrusOD,cirrusSSA,cirrusPMOM)
+
 ! Get start and end index for each processor
 ! start from process 1 as root (0) does not work
 ! -------------------------------------------
@@ -567,8 +594,36 @@ program pace_vlidort
       Vpmom(:,:,:,:,2) = -1.*Vpmom(:,:,:,:,2)
       Vpmom(:,:,:,:,4) = -1.*Vpmom(:,:,:,:,4)
 
+  !   Cirrus 
+  !   --------
+      ! Cirrus Only
+      VtauLcl = 0.0
+      VssaLcl = 0.0
+      VpmomLcl = 0.0
+      VgLcl    = 0.0
+
+      ! figure out layer to put cirrus in
+      do k = 1,km
+        if ((Vze(k,nobs) >= cirrusAlt) .and. (Vze(k+1,nobs) < cirrusALT)) then
+            k_cirrus = k
+        end if
+      end do
+
+      ! initialize
+      VtauIcl = 0.0
+      VssaIcl = 0.0
+      VpmomIcl = 0.0
+      VgIcl    = 0.0
+
+      VtauIcl(k_cirrus,:,:) = cirrusOD
+      VssaIcl(k_cirrus,:,:) = cirrusSSA
+      VpmomIcl(k_cirrus,:,:,:,:) = cirrusPMOM      
+
   !   Save some variables for Writing Later
   !   ----------------------------------------
+      ! Cirrus Extinction
+      cirrusEXT = cirrusOD/(1d-3*(Vze(k,nobs)-Vze(k+1,nobs)))  !km-1
+
       ! Rayleigh
       ROT(c,:) = ROT_int(:,nobs,nch)                                      
       
@@ -597,32 +652,28 @@ program pace_vlidort
 
   !   Call VlIDORT
   !   ------------
-      ! loop through view zenith angles
-      do ialong=1,nalong
-        if ( FRLAND(c) >= 0.99 ) then
-          call DO_LAND()
-        else
-          call DO_OCEAN()
-        end if
+      if ( FRLAND(c) >= 0.99 ) then
+        call DO_LAND()
+      else
+        call DO_OCEAN()
+      end if
 
       
-    !   Store Outputs in Shared Arrays
-    !   ----------------------------------------------------    
-        radiance_VL(c,ialong)    = radiance_VL_int(nobs,nch)
-        reflectance_VL(c,ialong) = reflectance_VL_int(nobs,nch)
-        ALBEDO(c,ialong) = Valbedo(nobs,nch)
+    ! Store Outputs in Shared Arrays
+    ! ----------------------------------------------------    
+      radiance_VL(c,:)    = radiance_VL_int(nobs,nch,:)
+      reflectance_VL(c,:) = reflectance_VL_int(nobs,nch,:)
+      ALBEDO(c,:) = Valbedo(nobs,nch,:)
 
-        if (.not. scalar) then
-          Q(c,ialong)      = Q_int(nobs,nch)
-          U(c,ialong)      = U_int(nobs,nch)
-          BR_Q(c,ialong)   = BR_Q_int(nobs,nch)
-          BR_U(c,ialong)   = BR_U_int(nobs,nch)
-        end if
+      if (.not. scalar) then
+        Q(c,:)      = Q_int(nobs,nch,:)
+        U(c,:)      = U_int(nobs,nch,:)
+        BR_Q(c,:)   = BR_Q_int(nobs,nch,:)
+        BR_U(c,:)   = BR_U_int(nobs,nch,:)
+      end if
 
-        write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
-        call write_verbose(msg)
-
-      end do ! ialong
+      write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
+      call write_verbose(msg)
 
   !   Keep track of progress of each processor
   !   -----------------------------------------        
@@ -735,7 +786,7 @@ program pace_vlidort
 
   subroutine write_outfile()
     real*8, dimension(tm)            :: field 
-    real, dimension(tm)              :: field4   
+    real, dimension(tm)              :: field4  
 
     field = dble(MISSING)
     field4 = MISSING
@@ -746,59 +797,72 @@ program pace_vlidort
     
     call check(nf90_inq_varid(ncid, 'ROT', varid), "get ref vaird")
     do k=1,km
-      call check(nf90_put_var(ncid, varid, unpack(reshape(ROT(:,k),(/tm/)),clmask,field), &
+      call check(nf90_put_var(ncid, varid, real(unpack(reshape(ROT(:,k),(/clrm/)),clmask,field)), &
                   start = (/k,1/), count = (/1,tm/)), "writing out ROT")
     enddo
+
+    call check(nf90_inq_varid(ncid, 'ZE', varid), "get ref vaird")
+    do k=1,km+1
+      call check(nf90_put_var(ncid, varid, real(unpack(reshape(ZE(:,k),(/clrm/)),clmask,field)), &
+                  start = (/k,1/), count = (/1,tm/)), "writing out ZE")
+    enddo
+
+
     do ialong=1,nalong
       call check(nf90_inq_varid(ncid, 'toa_reflectance', varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(reflectance_VL(:,ialong),(/tm/)),clmask,field), &
+      call check(nf90_put_var(ncid, varid, real(unpack(reshape(reflectance_VL(:,ialong),(/clrm/)),clmask,field)), &
                   start = (/ialong,1/), count = (/1,tm/)), "writing out reflectance")
 
       call check(nf90_inq_varid(ncid, 'I' , varid), "get rad vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(radiance_VL(:,ialong),(/tm/)),clmask,field), &
+      call check(nf90_put_var(ncid, varid, real(unpack(reshape(radiance_VL(:,ialong),(/clrm/)),clmask,field)), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out radiance")
 
       call check(nf90_inq_varid(ncid, 'surf_reflectance', varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(ALBEDO(:,ialong),(/tm/)),clmask,field), &
+      call check(nf90_put_var(ncid, varid, real(unpack(reshape(ALBEDO(:,ialong),(/clrm/)),clmask,field)), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out albedo")
 
       if (.not. scalar) then
         call check(nf90_inq_varid(ncid, 'Q', varid), "get q vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(Q(:,ialong),(/tm/)),clmask,field), &
+        call check(nf90_put_var(ncid, varid, real(unpack(reshape(Q(:,ialong),(/clrm/)),clmask,field)), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out Q")
 
         call check(nf90_inq_varid(ncid, 'U', varid), "get u vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(U(:,ialong),(/tm/)),clmask,field), &
+        call check(nf90_put_var(ncid, varid, real(unpack(reshape(U(:,ialong),(/clrm/)),clmask,field)), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out U")
 
         call check(nf90_inq_varid(ncid, 'surf_reflectance_Q', varid), "get ref vaird")
-        call check(nf90_put_var(ncid, varid, unpack(reshape(BR_Q(:,ialong),(/tm/)),clmask,field), &
+        call check(nf90_put_var(ncid, varid, real(unpack(reshape(BR_Q(:,ialong),(/clrm/)),clmask,field)), &
                       start = (/ialong,1/), count = (/1,tm/)), "writing out albedo Q")
+
+        call check(nf90_inq_varid(ncid, 'surf_reflectance_U', varid), "get ref vaird")
+        call check(nf90_put_var(ncid, varid, real(unpack(reshape(BR_U(:,ialong),(/clrm/)),clmask,field)), &
+                      start = (/ialong,1/), count = (/1,tm/)), "writing out albedo Q")
+
       endif        
 
       call check(nf90_inq_varid(ncid, 'solar_zenith', varid), "get sza vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(SZA(:,ialong),(/tm/)),clmask,field4), &
+      call check(nf90_put_var(ncid, varid, unpack(reshape(SZA(:,ialong),(/clrm/)),clmask,field4), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out sza")
 
       call check(nf90_inq_varid(ncid, 'sensor_zenith', varid), "get vza vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(VZA(:,ialong),(/tm/)),clmask,field4), &
+      call check(nf90_put_var(ncid, varid, unpack(reshape(VZA(:,ialong),(/clrm/)),clmask,field4), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out vza")
 
       call check(nf90_inq_varid(ncid, 'solar_azimuth', varid), "get saa vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(SAA(:,ialong),(/tm/)),clmask,field4), &
+      call check(nf90_put_var(ncid, varid, unpack(reshape(SAA(:,ialong),(/clrm/)),clmask,field4), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out saa")
 
       call check(nf90_inq_varid(ncid, 'sensor_azimuth', varid), "get vaa vaird")
-      call check(nf90_put_var(ncid, varid, unpack(reshape(VAA(:,ialong),(/tm/)),clmask,field4), &
+      call check(nf90_put_var(ncid, varid, unpack(reshape(VAA(:,ialong),(/clrm/)),clmask,field4), &
                     start = (/ialong,1/), count = (/1,tm/)), "writing out vaa")
 
 
     end do
     call check(nf90_inq_varid(ncid, 'rayleigh_depol_ratio', varid), "get depol vaird")
-    call check(nf90_put_var(ncid, varid, depol), "writing out depol")
+    call check(nf90_put_var(ncid, varid, real(depol)), "writing out depol")
 
     call check(nf90_inq_varid(ncid, 'ocean_refractive_index', varid), "get ori vaird")
-    call check(nf90_put_var(ncid, varid, mr), "writing out ori")
+    call check(nf90_put_var(ncid, varid, real(mr)), "writing out ori")
 
 
     call check( nf90_close(ncid), "close outfile" )
@@ -829,32 +893,20 @@ program pace_vlidort
 
     ! Cox Munk Model
     ! -------------------------------
-      if (scalar) then
-        ! Call to vlidort scalar code       
-        call VLIDORT_Scalar_CX (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-                nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
-                dble(Vpe), dble(Vze), dble(Vte), &
-                (/dble(U10M(c))/), &
-                (/dble(V10M(c))/), &
-                mr, &
-                (/dble(SZA(c,ialong))/), &
-                (/dble(RAA(c,ialong))/), &
-                (/dble(VZA(c,ialong))/), &
-                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
-      else
-        ! Call to vlidort vector code
-        call VLIDORT_Vector_CX (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-               nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-               dble(Vpe), dble(Vze), dble(Vte), &
-               (/dble(U10M(c))/), &
-               (/dble(V10M(c))/), &
-               mr, &
-               (/dble(SZA(c,ialong))/), &
-               (/dble(RAA(c,ialong))/), &
-               (/dble(VZA(c,ialong))/), &
-               dble(MISSING),verbose, &
-               radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
-      end if
+      ! Call to vlidort vector code
+      call VLIDORT_Vector_CX_cloud (km, nch, nobs ,nalong, dble(channels), nstreams, plane_parallel, nMom,   &
+             nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+             VtauIcl, VssaIcl, VpmomIcl, &
+             dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
+             dble(Vpe), dble(Vze), dble(Vte), &
+             (/dble(U10M(c))/), &
+             (/dble(V10M(c))/), &
+             mr, &
+             reshape(dble(SZA(c,:)),(/nobs,nalong/)), &
+             reshape(dble(RAA(c,:)),(/nobs,nalong/)), &
+             reshape(dble(VZA(c,:)),(/nobs,nalong/)), &
+             dble(MISSING),verbose, &
+             radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
       !   Check VLIDORT Status
       !   ----------------------------------------------------    
       call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
@@ -862,12 +914,14 @@ program pace_vlidort
     else
 !       Save code for pixels that were not gap filled
 !       ---------------------------------------------    
-      radiance_VL_int(nobs,:) = MISSING
-      reflectance_VL_int(nobs,:) = MISSING
+      radiance_VL_int = MISSING
+      reflectance_VL_int = MISSING
       Valbedo = MISSING
       if (.not. scalar) then
         Q_int = MISSING
         U_int = MISSING
+        BR_Q_int = MISSING
+        BR_U_int = MISSING
       end if
       ierr = 0
 
@@ -957,9 +1011,9 @@ program pace_vlidort
       !  ------------------------------
         do ch = 1, nch
           if (landbandmLER == 1) then
-            Valbedo(nobs,ch) = dble(LER(c,1))
+            Valbedo(nobs,ch,:) = dble(LER(c,1))
           else
-            Valbedo(nobs,ch) = dble(nn_interp(landband_cLER,reshape(LER(c,:),(/landbandmLER/)),channels(ch),land_missing,MISSING))
+            Valbedo(nobs,ch,:) = dble(nn_interp(landband_cLER,reshape(LER(c,:),(/landbandmLER/)),channels(ch),land_missing,MISSING))
           end if
         end do
       end if 
@@ -987,28 +1041,18 @@ program pace_vlidort
     if ( (lower_to_upper(landmodel) .eq. 'LAMBERTIAN') ) then
     ! Simple lambertian surface model
     ! -------------------------------
-      if (scalar) then
-        ! Call to vlidort scalar code       
-        call VLIDORT_Scalar_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-                nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
-                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
-                (/dble(SZA(c,ialong))/), &
-                (/dble(RAA(c,ialong))/), &
-                (/dble(VZA(c,ialong))/), &
-                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
-      else
-        ! Call to vlidort vector code
-        call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-               nPol, ROT_int, depol, alpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
-               dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
-               (/dble(SZA(c,ialong))/), &
-               (/dble(RAA(c,ialong))/), &
-               (/dble(VZA(c,ialong))/), &
-               flux_factor, &
-               dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q_int, U_int, ierr)
-        BR_Q_int = 0
-        BR_U_int = 0
-      end if
+      ! Call to vlidort vector code
+      call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs , nalong, dble(channels), nstreams, plane_parallel, nMom,   &
+             nPol, ROT_int, depol, dble(alpha), dble(Vtau), dble(Vssa), dble(Vpmom), &
+             VtauIcl, VssaIcl, VpmomIcl, &
+             dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
+             dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
+             reshape(dble(SZA(c,:)),(/nobs,nalong/)), &
+             reshape(dble(RAA(c,:)),(/nobs,nalong/)), &
+             reshape(dble(VZA(c,:)),(/nobs,nalong/)), &
+             dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q_int, U_int, ierr)
+      BR_Q_int = 0
+      BR_U_int = 0
       !   Check VLIDORT Status
       !   ----------------------------------------------------    
       call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
@@ -1017,41 +1061,33 @@ program pace_vlidort
       if ( ANY(kernel_wt == MISSING) ) then
 !       Save code for pixels that were not gap filled
 !       ---------------------------------------------    
-        radiance_VL_int(nobs,:) = MISSING
-        reflectance_VL_int(nobs,:) = MISSING
+        radiance_VL_int = MISSING
+        reflectance_VL_int = MISSING
         Valbedo = MISSING
         if (.not. scalar) then
           Q_int = MISSING
           U_int = MISSING
+          BR_Q_int = MISSING
+          BR_U_int = MISSING
         end if
         ierr = 0
 
       else   
 !       MODIS BRDF Surface Model
 !       ------------------------------
-
-        if (scalar) then 
-          ! Call to vlidort scalar code            
-          call VLIDORT_Scalar_LandMODIS (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom,  &
-                  nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
-                  dble(Vpe), dble(Vze), dble(Vte), &
-                  kernel_wt, param, &
-                  (/dble(SZA(c,ialong))/), &
-                  (/dble(RAA(c,ialong))/), &
-                  (/dble(VZA(c,ialong))/), &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
-        else
-          ! Call to vlidort vector code
-          call VLIDORT_Vector_LandMODIS (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
-                  nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-                  dble(Vpe), dble(Vze), dble(Vte), &
-                  kernel_wt, param, &
-                  (/dble(SZA(c,ialong))/), &
-                  (/dble(RAA(c,ialong))/), &
-                  (/dble(VZA(c,ialong))/), &
-                  dble(MISSING),verbose, &
-                  radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
-        end if 
+        ! Call to vlidort vector code
+        call VLIDORT_Vector_LandMODIS_Cloud (km, nch, nobs, nalong, dble(channels), nstreams, plane_parallel, nMom, &
+                nPol, ROT_int, depol, dble(alpha), dble(Vtau), dble(Vssa), dble(Vpmom), &
+                VtauIcl, VssaIcl, VpmomIcl, &
+                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
+                dble(Vpe), dble(Vze), dble(Vte), &
+                kernel_wt, param, &
+                reshape(dble(SZA(c,:)),(/nobs,nalong/)), &
+                reshape(dble(RAA(c,:)),(/nobs,nalong/)), &
+                reshape(dble(VZA(c,:)),(/nobs,nalong/)), &
+                dble(flux_factor), &
+                dble(MISSING),verbose, &
+                radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
     !   Check VLIDORT Status
     !   ----------------------------------------------------    
         call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
@@ -1062,8 +1098,8 @@ program pace_vlidort
       if ( ANY(kernel_wt == MISSING) .or. ANY(BPDFparam == land_missing)) then
 !       Save code for pixels that were not gap filled
 !       ---------------------------------------------    
-        radiance_VL_int(nobs,:) = MISSING
-        reflectance_VL_int(nobs,:) = MISSING
+        radiance_VL_int = MISSING
+        reflectance_VL_int = MISSING
         Valbedo = MISSING
         if (.not. scalar) then
           Q_int = MISSING
@@ -1071,31 +1107,30 @@ program pace_vlidort
         end if
         ierr = 0
 
-      else   
-!       MODIS BPDF Surface Model
-!       ------------------------------
+!      else   
+!!       MODIS BPDF Surface Model
+!!       ------------------------------
 
-        ! Call to vlidort vector code
-        call VLIDORT_Vector_LandMODIS_BPDF (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
-                nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
-                dble(Vpe), dble(Vze), dble(Vte), &
-                kernel_wt, param, BPDFparam, &
-                (/dble(SZA(c,ialong))/), &
-                (/dble(RAA(c,ialong))/), &
-                (/dble(VZA(c,ialong))/), &
-                dble(MISSING),verbose, &
-                radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
+!        ! Call to vlidort vector code
+!        call VLIDORT_Vector_LandMODIS_BPDF (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
+!                nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+!                dble(Vpe), dble(Vze), dble(Vte), &
+!                kernel_wt, param, BPDFparam, &
+!                (/dble(SZA(c,:))/), &
+!                (/dble(RAA(c,:))/), &
+!                (/dble(VZA(c,:))/), &
+!                dble(MISSING),verbose, &
+!                radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
 
-    !   Check VLIDORT Status
-    !   ----------------------------------------------------    
-        call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
+!    !   Check VLIDORT Status
+!    !   ----------------------------------------------------    
+!        call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
 
       end if
 
     end if   
 
   end subroutine DO_LAND
-
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -1261,7 +1296,7 @@ program pace_vlidort
 !     15 May 2015 P. Castellanos
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
   subroutine mp_check_vlidort(radiance,reflectance)
-    real*8, dimension(:,:)    :: radiance, reflectance
+    real*8, dimension(:,:,:)    :: radiance, reflectance
 
 
     if (ANY(radiance == MISSING) .or. ANY(reflectance == MISSING)) then
@@ -1770,10 +1805,16 @@ program pace_vlidort
     allocate (Vtau(km,nch,nobs))
     allocate (Vssa(km,nch,nobs))
     allocate (Vg(km,nch,nobs))
-    allocate (Valbedo(nobs,nch))
+    allocate (VtauIcl(km,nch,nobs))
+    allocate (VssaIcl(km,nch,nobs))
+    allocate (VgIcl(km,nch,nobs))
+    allocate (VtauLcl(km,nch,nobs))
+    allocate (VssaLcl(km,nch,nobs))
+    allocate (VgLcl(km,nch,nobs))
+    allocate (Valbedo(nobs,nch,nalong))
 
-    allocate (radiance_VL_int(nobs,nch))
-    allocate (reflectance_VL_int(nobs, nch))    
+    allocate (radiance_VL_int(nobs,nch,nalong))
+    allocate (reflectance_VL_int(nobs, nch,nalong))    
 
     if ((index(lower_to_upper(landmodel),'RTLS') > 0) ) then
       allocate (kernel_wt(nkernel,nch,nobs))
@@ -1791,15 +1832,23 @@ program pace_vlidort
     allocate (depol(nch))
     allocate (alpha(km,nobs,nch))
     alpha = 0.0
+    allocate (Vpmom(km,nch,nobs,nMom,nPol))
+    allocate (VpmomIcl(km,nch,nobs,nMom,nPol))
+    allocate (VpmomLcl(km,nch,nobs,nMom,nPol))
+    VpmomLcl = 0.0
+
     allocate (flux_factor(nch,nobs))
     flux_factor = 1.0
-    allocate (Vpmom(km,nch,nobs,nMom,nPol))
+
+    allocate (cirrusOD(nch,nobs))
+    allocate (cirrusSSA(nch,nobs))
+    allocate (cirrusPMOM(nch,nobs,nMom,nPol))
 
     if (.not. scalar) then      
-      allocate (Q_int(nobs, nch))
-      allocate (U_int(nobs, nch))
-      allocate (BR_Q_int(nobs, nch))
-      allocate (BR_U_int(nobs, nch))
+      allocate (Q_int(nobs, nch, nalong))
+      allocate (U_int(nobs, nch, nalong))
+      allocate (BR_Q_int(nobs, nch, nalong))
+      allocate (BR_U_int(nobs, nch, nalong))
     end if
 
   ! Needed for reading
@@ -1885,12 +1934,12 @@ program pace_vlidort
     integer                            :: qVarID, uVarID, albVarID, brUVarID, brQVarID      
     
     integer                            :: ncid
-    integer                            :: timeDimID, xDimID, yDimID, levDimID, lsDimID 
+    integer                            :: timeDimID, xDimID, yDimID, levDimID, lsDimID, leveDimID 
     integer                            :: nvzaDimID, chDimID     
     integer                            :: lonVarID, latVarID
     integer                            :: timeVarID, levVarID, xVarID, yVarID
     integer                            :: vzaVarID, vaaVarID, szaVarID, saaVarID
-    integer                            :: rotVarID, depolVarID, oriVarID
+    integer                            :: rotVarID, depolVarID, oriVarID, zeVarID
     integer                            :: ch
 
     real*8,allocatable,dimension(:)    :: lon, lat, sza, vza, raa
@@ -1908,6 +1957,7 @@ program pace_vlidort
     call check(nf90_def_dim(ncid, "view_angles", nalong, nvzaDimID), "creating view_angles dimension") 
     call check(nf90_def_dim(ncid, "time", tm, timeDimID), "creating time dimension")
     call check(nf90_def_dim(ncid, "lev", km, levDimID), "creating lev dimension") !km
+    call check(nf90_def_dim(ncid, "leve", km+1, leveDimID), "creating leve dimension") !km+1
     call check(nf90_def_dim(ncid, "x", 1, xDimID), "creating x dimension") 
     call check(nf90_def_dim(ncid, "y", 1, yDimID), "creating y dimension") 
 
@@ -1969,6 +2019,7 @@ program pace_vlidort
     call check(nf90_def_var(ncid,'rayleigh_depol_ratio',nf90_float,(/chDimID/),depolVarID),"create depol var")
     call check(nf90_def_var(ncid,'ocean_refractive_index',nf90_float,(/chDimID/),oriVarID),"create ori var")
 
+    call check(nf90_def_var(ncid,'ZE',nf90_float,(/leveDimID,timeDimID/),zeVarID),"create ze var")
 
     ! Variable Attributes
 !                                          Reflectance TOA & Surface
@@ -2102,6 +2153,16 @@ program pace_vlidort
     call check(nf90_put_att(ncid,oriVarID,'units','None'),"units attr")
     call check(nf90_put_att(ncid,oriVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")
 
+!                                          ZE
+!                                          -------
+    write(comment,'(A)') 'Layer Edge Altitude Above Surface'
+    call check(nf90_put_att(ncid,zeVarID,'long_name',trim(adjustl(comment))),"standard_name attr")
+    call check(nf90_put_att(ncid,zeVarID,'missing_value',real(MISSING)),"missing_value attr")
+    call check(nf90_put_att(ncid,zeVarID,'units','m'),"units attr")
+    call check(nf90_put_att(ncid,zeVarID,"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+
+
     !Leave define mode
     call check(nf90_enddef(ncid),"leaving define mode")
 
@@ -2221,6 +2282,7 @@ program pace_vlidort
   subroutine get_config(configfile)
     character(len=*),intent(in)      :: configfile
     character(len=256)               :: file
+    real                             :: temp
 
     cf = ESMF_ConfigCreate()
     call ESMF_ConfigLoadFile(cf, fileName=trim(configfile), __RC__)
@@ -2236,7 +2298,15 @@ program pace_vlidort
     call ESMF_ConfigGetAttribute(cf, aerosol_free, label = 'AEROSOL_FREE:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=12)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
-    call ESMF_ConfigGetAttribute(cf, rcfile, label = 'RCFILE',default='Aod_EOS.rc')
+    call ESMF_ConfigGetAttribute(cf, rcfile, label = 'RCFILE:',default='Aod_EOS.rc')
+   
+    ! cirrus test cases parameters
+    call ESMF_ConfigGetAttribute(cf, cirrusALT, label = 'CIRRUSALT:',__RC__) 
+    call ESMF_ConfigGetAttribute(cf, temp, label = 'CIRRUSOD532:',__RC__)
+    cirrusOD532(:) = temp
+    call ESMF_ConfigGetAttribute(cf, temp, label = 'CIRRUSREFF:',__RC__)
+    cirrusREFF(:) = temp
+    call ESMF_ConfigGetAttribute(cf, cirrusTable, label = 'CIRRUSTABLE:',__RC__)
 
     ! Land Surface
     call ESMF_ConfigGetAttribute(cf, landname, label = 'LANDNAME:',default='MAIACRTLS')

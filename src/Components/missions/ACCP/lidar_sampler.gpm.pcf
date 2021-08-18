@@ -1,0 +1,7 @@
+# LIDAR SAMPLING
+INSTNAME = gpm
+TLEFILE  = tle/GPM-CORE_39574_Generated_TLE.tle
+RCFILES  = sampling/aer_Nv.rc, sampling/asm_Nx.rc, sampling/chm_Nv.rc, sampling/met_Nv.rc
+COLNAMES = aer_Nv, asm_Nx, chm_Nv, met_Nv
+OUTDIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB
+# LIDAR SAMPLING

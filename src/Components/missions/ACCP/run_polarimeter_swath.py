@@ -150,6 +150,7 @@ class WORKSPACE(JOBS):
         self.slurm       = args.slurm
         self.tmp         = args.tmp
         self.profile     = args.profile
+        self.single      = args.single
 
         if not os.path.exists(args.tmp):
             os.makedirs(args.tmp)
@@ -221,7 +222,10 @@ class WORKSPACE(JOBS):
         if self.dryrun:
             Options += ' -r'
 
-        newline = 'python -u ./polarimeter_swath.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
+        if self.single:
+            Options += ' --single'
+
+        newline = 'python -u ./polarimeter_swath_single.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
         text[-3] = newline
         f.close()
 
@@ -297,8 +301,12 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--profile",action="store_true",
                         help="Don't cleanup slurm files (default=False).")   
 
+    parser.add_argument("--single",action="store_true",
+                        help="Only do 1 orbit per day (default=False).")
 
     args = parser.parse_args()
+    if args.single:
+        args.DT_hours = 24
 
     workspace = WORKSPACE(args)
 

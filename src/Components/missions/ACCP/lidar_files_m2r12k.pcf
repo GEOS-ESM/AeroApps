@@ -1,0 +1,20 @@
+# FILENAMES
+    inDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%ORBITNAME-M2R12K/LevelB/Y%year/M%month/D%day
+    inFile       = %orbitname-m2r12k.lb2.%col.%nymd_%hour00z.nc4
+
+    brdfDir    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%ORBITNAME-M2R12K/LevelB/surface/BRDF/MCD43C1/006/Y%year/M%month/D%day
+    brdfFile     = %orbitname-g5nr.lb2.brdf.%nymd_%hour00z.nc4
+
+    ndviDir      = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%ORBITNAME-M2R12K/LevelB/surface/BPDF/NDVI/MYD13C2/006/Y%year/M%month/D%day
+    ndviFile     = %orbitname-g5nr.lb2.ndvi.%nymd_%hour00z.nc4
+
+    lcDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%ORBITNAME-M2R12K/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051/Y%year/M%month/D%day
+    lcFile       = %orbitname-g5nr.lb2.land_cover.%nymd_%hour00z.nc4    
+
+    lerDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%ORBITNAME-M2R12K/LevelB/surface/LER/OMI/Y%year/M%month/D%day   
+    lerFile      = %orbitname-g5nr.lb2.ler.%nymd_%hour00z.nc4
+
+    outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%ORBITNAME-M2R12K/LevelC/Y%year/M%month/D%day
+    outFile      = %orbitname-%instname-m2r12k.lc.vlidort.%nymd_%hour00z_%chdnm.nc4
+
+# FILENAMES

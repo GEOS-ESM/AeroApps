@@ -19,6 +19,8 @@ aer_Nv = ['PS','DELP','RH',
           'BCPHOBIC','BCPHILIC',
           'OCPHOBIC','OCPHILIC']
 
+aer_Nv = ['AIRDENS']
+
 met_Nv = ['TROPPB','TROPT','TROPQ','IWP','LWP',
           'U10M','V10M','PS','TS','PBLH',
           'CLDLOW','CLDMID','CLDHGH','CLDTOT',
@@ -30,10 +32,10 @@ asm_Nx = ['AREA','FRLAKE','FRLAND','FRLANDICE',
 
 chm_Nv = ['CO','CO2','O3','SO2']
 
-COLS = {'aer_Nv': aer_Nv, 
-        'met_Nv': met_Nv, 
-        'asm_Nx': asm_Nx, 
-        'chm_Nv': chm_Nv}
+COLS = {'aer_Nv': aer_Nv}
+#        'met_Nv': met_Nv, 
+#        'asm_Nx': asm_Nx, 
+#        'chm_Nv': chm_Nv}
 
 
 if __name__ == '__main__':
@@ -41,7 +43,7 @@ if __name__ == '__main__':
     #Defaults
     DT_hours = 1
     rootDir     = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/'
-    rootDir     = '/nobackup/3/pcastell/A-CCP'
+#    rootDir     = '/nobackup/3/pcastell/A-CCP'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')

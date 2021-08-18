@@ -101,7 +101,10 @@ class SDIST(object):
             self.colTOTreff[t] = (3./4)*np.sum(R3*dndr*DR)/np.sum(R2*dndr*DR)
             for k in range(nlev):
                 dndr = self.TOTdist[t,k,:]/R3
-                self.TOTreff[t,k] = (3./4.)*np.sum(R3*dndr*DR)/np.sum(R2*dndr*DR)
+                if np.sum(R2*dndr*DR) == 0.0:
+                    self.TOTreff[t,k] = np.nan
+                else:
+                    self.TOTreff[t,k] = (3./4.)*np.sum(R3*dndr*DR)/np.sum(R2*dndr*DR)
 
 
     def logNormalDistribution(self,spc):
@@ -307,8 +310,12 @@ class SDIST(object):
 
                     #adjust bin edges for humidified particles
                     rhUse = rh[t,k]
-                    rMinUse = (c1*rMinCM**c2 /(c3*rMinCM**c4 - np.log10(rhUse))+rMinCM**3.)**(1./3.)/100.                                      
-                    rMaxUse = (c1*rMaxCM**c2 /(c3*rMaxCM**c4 - np.log10(rhUse))+rMaxCM**3.)**(1./3.)/100.  
+                    if rhUse >= 1e-100:
+                        rMinUse = rMinCM/100.
+                        rMaxUse = rMaxCM/100.
+                    else:
+                        rMinUse = (c1*rMinCM**c2 /(c3*rMinCM**c4 - np.log10(rhUse))+rMinCM**3.)**(1./3.)/100.                                      
+                        rMaxUse = (c1*rMaxCM**c2 /(c3*rMaxCM**c4 - np.log10(rhUse))+rMaxCM**3.)**(1./3.)/100.  
 
                     # Determine the dNdr of the particle size distribution using the
                     # Gong 2003 particle sub-bin distribution

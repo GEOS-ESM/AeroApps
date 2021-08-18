@@ -156,6 +156,7 @@ class WORKSPACE(JOBS):
         self.inDir       = args.inDir
         self.outDir      = args.outDir
         self.case        = args.case
+        self.exp         = args.exp
 
         # create working directories
         self.create_workdir()
@@ -230,13 +231,13 @@ class WORKSPACE(JOBS):
             isoedate = edate.isoformat()
 
             # get inFile
-            inFile = self.inDir + '/Y{}/M{}/D{}/' + self.instname + '-g5nr.lb2.aer_Nv.{}.nc4'
+            inFile = self.inDir + '/Y{}/M{}/D{}/' + self.instname + '-' + self.exp + '.lb2.aer_Nv.{}.nc4'
             
             # outfile
             if self.name == 'None':
-                outFile = self.outDir + '/Y{}/M{}/D{}/'+ self.instname +'-g5nr.lc.ext.{}.{}nm.nc4'
+                outFile = self.outDir + '/Y{}/M{}/D{}/'+ self.instname +'-' + self.exp + '.lc.ext.{}.{}nm.nc4'
             else:
-                outFile = self.outDir + '/Y{}/M{}/D{}/'+ self.instname +'-g5nr.lc.ext.'+ self.name +'.{}.{}nm.nc4'
+                outFile = self.outDir + '/Y{}/M{}/D{}/'+ self.instname +'-' + self.exp + '.lc.ext.'+ self.name +'.{}.{}nm.nc4'
 
             # read file first
             outpath = '{}/{}'.format(workpath,self.slurm)
@@ -306,12 +307,16 @@ if __name__ == '__main__':
     dt_days  = 24
     slurm    = 'run_ext_sampler.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir'
+    exp      = 'g5nr'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
     parser.add_argument("iso_t2",help='ending iso time')
     parser.add_argument("prep_config",
                         help="prep config filename")
+
+    parser.add_argument('-e',"--exp", default=exp,
+                        help="GEOS experiment name for outfile (default=%s)"%exp)
 
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)

@@ -1,0 +1,9 @@
+# LIDAR SAMPLING
+INSTNAME  = ss450
+CHANNELS  = 355, 360, 380, 410, 440, 532, 550, 670, 870, 1064, 1550, 1650 
+CASE      = all,spc
+RCFILE    = rc/Aod_EOS.Osku.fine.rc
+NAME      = finemode
+INDIR     = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/SS450/LevelB
+OUTDIR    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/SS450/LevelC
+# LIDAR SAMPLING

@@ -150,6 +150,8 @@ class WORKSPACE(JOBS):
         self.tmp         = args.tmp
         self.profile     = args.profile
         self.nproc       = args.nproc
+        self.exp         = args.exp
+        self.tle_year    = args.tle_year
 
         # create working directories
         self.create_workdir()
@@ -209,7 +211,10 @@ class WORKSPACE(JOBS):
             # replace one line
             iso1 = sdate.isoformat()
             iso2 = edate.isoformat()
-            newline = 'nohup python -u run_lidar_sampler.py -v --nproc {} --DT_hours {} {} {} {} >'.format(self.nproc,self.Dt,iso1,iso2,self.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
+            if self.tle_year is not None:
+                newline = 'nohup python -u run_lidar_sampler.py -v --exp {} --tle_year {} --nproc {} --DT_hours {} {} {} {} >'.format(self.exp,self.tle_year,self.nproc,self.Dt,iso1,iso2,self.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
+            else:
+                newline = 'nohup python -u run_lidar_sampler.py -v --exp {} --nproc {} --DT_hours {} {} {} {} >'.format(self.exp,self.nproc,self.Dt,iso1,iso2,self.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
             text[-4] = newline
             f.close()
 
@@ -254,12 +259,20 @@ if __name__ == '__main__':
     nproc    = 8
     slurm    = 'run_lidar_sampler.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir/lidar_sampler'
+    exp      = 'g5nr'
+    tle_year = None
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
     parser.add_argument("iso_t2",help='ending iso time')
     parser.add_argument("prep_config",
                         help="prep config filename")
+
+    parser.add_argument('-e',"--exp", default=exp,
+                        help="GEOS experiment name for outfiles (default=%s)"%exp)
+
+    parser.add_argument("--tle_year", default=tle_year,
+                        help="Year for TLE calc (default=None)")
 
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)

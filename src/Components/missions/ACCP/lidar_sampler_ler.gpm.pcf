@@ -1,0 +1,7 @@
+# LIDAR SAMPLING
+INSTNAME = gpm
+TLEFILE  = tle/GPM-CORE_39574_Generated_TLE.tle
+RCFILES  = sampling/ler_omi.rc
+COLNAMES = ler
+OUTDIR   = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/GPM/LevelB/surface/LER/OMI
+# LIDAR SAMPLING

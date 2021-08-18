@@ -9,6 +9,7 @@ import subprocess
 import shutil
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
+from   dateutil.relativedelta import relativedelta
 import argparse
 import numpy as np
 import time
@@ -70,8 +71,7 @@ class JOBS(object):
                         self.errTally[i] = False
 
                         # Clean up workspaces
-                        self.destroy_workspace(i,s)
-
+                        self.destroy_workspace(i,s)        
                     else:
                         print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
 
@@ -112,11 +112,13 @@ class JOBS(object):
             else:
                 print 'Waiting 30 minutes'
                 time.sleep(60*30)
-            
+
 
         # Exited while loop
         print 'All jobs done'
 
+        # Postprocessing done
+        print 'Cleaned Up Worksapces'
         devnull.close()
 
 
@@ -138,13 +140,14 @@ class WORKSPACE(JOBS):
 
         self.Date      = isoparser(args.iso_t1)
         self.enddate   = isoparser(args.iso_t2)
-        self.Dt        = timedelta(hours=args.DT_hours)
-        self.dt        = timedelta(days=args.dt_days)
+        self.Dt        = relativedelta(months=args.DT_months)
 
         
         self.track_pcf   = args.track_pcf
         self.orbit_pcf   = args.orbit_pcf
-        self.DT_hours    = args.DT_hours
+        self.inst_pcf    = args.inst_pcf
+        self.cirrus_model = args.cirrus_model
+        self.DT_months    = args.DT_months
         self.albedoType  = args.albedotype
         self.rcFile      = args.rcfile
         self.dryrun      = args.dryrun
@@ -159,8 +162,9 @@ class WORKSPACE(JOBS):
 
         self.cwd         = os.getcwd()
 
-        # figure out channels from inputs
-        channels = args.channels
+        # figure out channels from instfile
+        cf = Config(args.inst_pcf,delim=' = ')
+        channels = cf('channels')
         if ',' in channels:
             channels = channels.split(',')    
         else:
@@ -177,9 +181,6 @@ class WORKSPACE(JOBS):
         sdate = self.Date
         self.dirstring = []
         while sdate < self.enddate:
-            edate = sdate + self.dt
-            if edate > self.enddate:
-                edate = self.enddate
             for ch in self.channels:
                 # create directory
 
@@ -200,8 +201,11 @@ class WORKSPACE(JOBS):
                 outfile = '{}/{}'.format(workpath,self.orbit_pcf)
                 shutil.copyfile(self.orbit_pcf,outfile)
 
+                outfile = '{}/{}'.format(workpath,self.inst_pcf)
+                shutil.copyfile(self.inst_pcf,outfile)
+
                 #link over needed python scripts
-                source = ['mp_lidar_vlidort.py'] 
+                source = ['accp_polar_vlidort_cirrus.py'] 
                 for src in source:
                     os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
@@ -220,13 +224,13 @@ class WORKSPACE(JOBS):
                 destination.close()
 
                 # edit slurm
-                self.edit_slurm(sdate,edate,workpath,ch)
+                self.edit_slurm(sdate,workpath,ch)
 
                 self.dirstring.append(workpath)
-            sdate += self.dt
+            sdate += self.Dt
 
-    def edit_slurm(self,sdate,edate,workpath,channel):
-        
+    def edit_slurm(self,sdate,workpath,channel):
+        edate = sdate + self.Dt
         outpath = '{}/{}'.format(workpath,self.slurm)
 
         # read file first
@@ -239,7 +243,7 @@ class WORKSPACE(JOBS):
         # replace one line
         iso1 = sdate.isoformat()
         iso2 = edate.isoformat()
-        Options = ' --DT_hours {}'.format(self.DT_hours) +\
+        Options = ' --DT_months {}'.format(self.DT_months) +\
                   ' --rcfile {}'.format(self.rcFile) 
 
         if self.albedoType is not None:
@@ -248,7 +252,7 @@ class WORKSPACE(JOBS):
             Options += ' -r'
         if self.verbose:
             Options +=  ' -v' 
-        newline = 'nohup python -u ./mp_lidar_vlidort.py  {} {} {} {} {} {} >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,channel) + ' slurm_${SLURM_JOBID}_py.out\n'
+        newline = 'python -u ./accp_polar_vlidort_cirrus.py {} {} {} {} {} {} {} {} >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf,channel,self.cirrus_model) + ' slurm_${SLURM_JOBID}_py.out\n'
         text[-5] = newline
         f.close()
 
@@ -274,10 +278,11 @@ class WORKSPACE(JOBS):
             os.remove(self.slurm)
             os.remove(self.track_pcf)
             os.remove(self.orbit_pcf)
+            os.remove(self.inst_pcf)
             os.remove(self.rcFile)
 
         # remove symlinks
-        source = ['mp_lidar_vlidort.py'] 
+        source = ['accp_polar_vlidort_cirrus.py'] 
         for src in source:
             os.remove(src)
 
@@ -289,31 +294,29 @@ class WORKSPACE(JOBS):
 if __name__ == '__main__':
     
     #Defaults
-    DT_hours = 1
-    dt_days  = 20
-    slurm    = 'run_accp_polar_vlidort.j'
-    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir/lidar_vlidort'
+    DT_months = 1
+    slurm    = 'run_accp_polar_vlidort_cirrus.j'
+    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir/vlidort'
     rcFile   = 'Aod_EOS.rc'
     albedoType = None
-    channels = '532,1064'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
     parser.add_argument("iso_t2",help='ending iso time')
     parser.add_argument("track_pcf",
-                        help="prep config file with with track input file names")
+                        help="prep config file with orbit variables")
 
     parser.add_argument("orbit_pcf",
                         help="prep config file with orbit variables")
 
-    parser.add_argument("-c","--channels", default=channels,
-                        help="list of channels. (default=%s)"%channels)
+    parser.add_argument("inst_pcf",
+                        help="prep config file with instrument variables")
 
-    parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
-                        help="Timestep in hours for each file (default=%i)"%DT_hours)
+    parser.add_argument("cirrus_model",
+                        help="aggregates, rosette0, rosette3, rosette50")
 
-    parser.add_argument('-d',"--dt_days", default=dt_days, type=int,
-                        help="Timestep in days for each job (default=%i)"%dt_days)
+    parser.add_argument('-D',"--DT_months", default=DT_months, type=int,
+                        help="Timestep in months for each file (default=%i)"%DT_months)
 
     parser.add_argument("-a","--albedotype", default=albedoType,
                         help="albedo type keyword. default is to figure out according to channel")
