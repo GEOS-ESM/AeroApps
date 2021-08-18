@@ -1,0 +1,229 @@
+#BASEDIR = /discover/nobackup/projects/gmao/share/gmao_ops/Baselibs/v3.2.0_buildSLES11SP1/x86_64-unknown-linux-gnu/ifort/
+BASEDIR = /discover/nobackup/projects/gmao/share/gmao_ops/Baselibs/v4.0.6_build1/x86_64-unknown-linux-gnu/ifort_13.1.2.183-mvapich2_2.1a/
+#ESMADIR = /home/adasilva/workspace/GAAS
+ESMADIR = /discover/nobackup/gwind/GAAS
+
+# Compilation rules, flags, etc                                                                                                                                                                                     
+# -----------------------------                                                                                                                                                                                     
+  include $(ESMADIR)/Config/ESMA_base.mk  # Generic stuff
+  include $(ESMADIR)/Config/ESMA_arch.mk  # System dependencies                                       
+  include $(ESMADIR)/Config/GMAO_base.mk  # System dependencies      
+
+
+HDFINC = $(BASEDIR)/Linux/include/hdf/
+HDFLIB = $(BASEDIR)/Linux/lib/
+
+HDF5INC = $(BASEDIR)/Linux/include/hdf5/
+HDF5LIB = $(BASEDIR)/Linux/lib/
+
+
+HDF_INC = -I$(HDFINC) 
+HDF_LIB = -L$(HDFLIB) -lmfhdf -ldf -ljpeg -lz -lm -L/usr/local/other/szip/2.1/noShared_intel-12.0.1.107/lib/ -lsz
+HDF5_INC = -I$(HDF5INC)
+HDF5_LIB = -L$(HDF5LIB) -lhdf5 -lhdf5_fortran -lhdf5
+
+LIBS = $(LIB_CHEM_BASE) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_MAPL_BASE_STUBS2) \
+            $(LIB_EU) $(LIB_CFIO) $(LIB_GFIO) \
+            $(LIB_MPEU) $(LIB_MFHDF3) $(LIB_SDF) \
+            $(LIB_ESMF) $(LIB_MPI) $(LIB_SYS)
+
+
+FREAL =
+
+INCS = -I$(BASEDIR)/$(ARCH)/include/netcdf -I$(ESMADIR)/$(ARCH)/include/GMAO_mpeu \
+       -I$(ESMADIR)/$(ARCH)/include/MAPL_Base -I$(ESMADIR)/$(ARCH)/include/Chem_Base
+
+
+
+MYINC = $(HDF_INC)
+
+PATH_OD_SHARED = 
+PATH_CT_SHARED = 
+
+CC = gcc 
+CFLAGS = -O3 -funsigned-char -DMACINTOSH -DUSE_GDAS -c  
+
+
+F77 = ifort
+F77FLAGS = -O3  -c  
+F90 = ifort 
+F90FLAGS = -O3  
+ADD_F90FLAGS = -c
+
+OBJECT_LIST_AOD =  ErrorHandleMod.o AOP_Mod.o 
+
+
+OBJECT_LIST_DISORT = dis_global_pars.o dis_rayleigh.o  \
+	RDI1MACHmodule.o RDI1MACH.o  \
+	LINPAK.o  DISORT_solver.o 	
+
+
+OBJECT_LIST_CORRK = CKD_common.o  modis1.o modis2.o modis3.o modis4.o modis5a.o modis5b.o modis6.o \
+	modis7.o modis8.o modis9.o modis17.o modis18.o modis19.o modis20.o modis22.o modis26.o \
+	modis27.o modis28.o modis29.o \
+	modis31.o modis32.o modis33.o modis34.o modis35.o modis36.o 
+
+OBJECT_LIST = modis_numerical_module.o \
+			global_model_grids.o \
+			  general_array_io.o \
+			  geos5_io_module.o \
+			  disort_ancillary.o \
+			  corrK_profile.o \
+			  modis_simulator.o \
+			  DISORT_setup.o
+
+
+all : DISORT_setup.exe
+
+DISORT_setup.exe : $(OBJECT_LIST_AOD) $(OBJECT_LIST_CORRK) $(OBJECT_LIST_DISORT) $(OBJECT_LIST) 
+	$(F90) -O3 -o DISORT_setup.exe $(OBJECT_LIST_AOD) $(OBJECT_LIST_CORRK) $(OBJECT_LIST_DISORT) $(OBJECT_LIST) $(HDF_LIB) $(HDF5_LIB) $(LIBS)
+	cp DISORT_setup.exe ../MPI/DISORT_setup.exe
+
+
+global_model_grids.o: $(PATH_OD_SHARED)global_model_grids.f90
+	$(F90) $(F90FLAGS) $(ADD_F90FLAGS)  $(PATH_OD_SHARED)global_model_grids.f90
+
+
+geos5_io_module.o : geos5_io_module.f90
+	$(F90)  $(F90FLAGS)  $(HDF5_INC) geos5_io_module.f90 -c
+	
+general_array_io.o : general_array_io.f90
+	$(F90)  $(F90FLAGS)  $(HDF_INC) general_array_io.f90 -c
+
+
+disort_ancillary.o: $(PATH_OD_SHARED)disort_ancillary.F90
+	$(F90) $(F90FLAGS) $(ADD_F90FLAGS) $(INCS) $(MYINC) $(HDF5_INC) $(PATH_OD_SHARED)disort_ancillary.F90
+
+
+modis_numerical_module.o : modis_numerical_module.f90
+	$(F90) $(F90FLAGS) modis_numerical_module.f90 -c 
+
+DISORT_setup.o : DISORT_setup.f90
+	$(F90)  $(F90FLAGS)  $(HDF_INC) $(HDF5_INC) DISORT_setup.f90 -c
+	
+# these are the GMAO AOD modules
+
+ErrorHandleMod.o : ErrorHandleMod.F90
+	$(FC) $(FFLAGS) $(INCS) -c ErrorHandleMod.F90
+
+AOP_Mod.o : AOP_Mod.F90 ErrorHandleMod.o
+	$(FC) $(FFLAGS) $(INCS) -c AOP_Mod.F90
+
+	
+# these are the Correlated-K modules
+
+
+CKD_common.o : CKD_common.f90
+	$(F90) $(F90FLAGS) CKD_common.f90 -c 
+
+modis1.o : modis1.f90
+	$(F90) $(F90FLAGS) modis1.f90 -c 
+	
+modis2.o : modis2.f90
+	$(F90) $(F90FLAGS) modis2.f90 -c 
+	
+modis3.o : modis3.f90
+	$(F90) $(F90FLAGS) modis3.f90 -c 
+
+modis4.o : modis4.f90
+	$(F90) $(F90FLAGS) modis4.f90 -c 
+
+modis5a.o : modis5a.f90
+	$(F90) $(F90FLAGS) modis5a.f90 -c 
+
+modis5b.o : modis5b.f90
+	$(F90) $(F90FLAGS) modis5b.f90 -c 
+
+modis6.o : modis6.f90
+	$(F90) $(F90FLAGS) modis6.f90 -c 
+
+modis7.o : modis7.f90
+	$(F90) $(F90FLAGS) modis7.f90 -c 
+
+modis8.o : modis8.f90
+	$(F90) $(F90FLAGS) modis8.f90 -c 
+
+modis9.o : modis9.f90
+	$(F90) $(F90FLAGS) modis9.f90 -c 
+
+modis17.o : modis17.f90
+	$(F90) $(F90FLAGS) modis17.f90 -c 
+
+modis18.o : modis18.f90
+	$(F90) $(F90FLAGS) modis18.f90 -c 
+
+modis19.o : modis19.f90
+	$(F90) $(F90FLAGS) modis19.f90 -c 
+
+modis20.o : modis20.f90
+	$(F90) $(F90FLAGS) modis20.f90 -c 
+
+modis22.o : modis22.f90
+	$(F90) $(F90FLAGS) modis22.f90 -c 
+
+modis26.o : modis26.f90
+	$(F90) $(F90FLAGS) modis26.f90 -c 
+
+modis27.o : modis27.f90
+	$(F90) $(F90FLAGS) modis27.f90 -c 
+
+modis28.o : modis28.f90
+	$(F90) $(F90FLAGS) modis28.f90 -c 
+
+modis29.o : modis29.f90
+	$(F90) $(F90FLAGS) modis29.f90 -c 
+
+modis31.o : modis31.f90
+	$(F90) $(F90FLAGS) modis31.f90 -c 
+
+modis32.o : modis32.f90
+	$(F90) $(F90FLAGS) modis32.f90 -c 
+
+modis33.o : modis33.f90
+	$(F90) $(F90FLAGS) modis33.f90 -c 
+
+modis34.o : modis34.f90
+	$(F90) $(F90FLAGS) modis34.f90 -c 
+
+modis35.o : modis35.f90
+	$(F90) $(F90FLAGS) modis35.f90 -c 
+
+modis36.o : modis36.f90
+	$(F90) $(F90FLAGS) modis36.f90 -c 
+
+corrK_profile.o : corrK_profile.f90
+	$(F90) $(F90FLAGS) $(HDF5_INC) $(HDF_INC) corrK_profile.f90 -c 	
+	
+	
+# this is the DISORT stuff. We have to be super-careful on how the 
+# outer wrapper interacts with the actual DISORT because of the auto-double thing 
+# that has to be used with DISORT. If you don't have the auto-double then DISORT
+# goes bananas. 
+
+DIS_F77 = ifort -O3 -autodouble -f77rtl 
+DIS_F90 = ifort -O3 -autodouble 
+
+
+dis_rayleigh.o : dis_rayleigh.f90
+	$(DIS_F90) dis_rayleigh.f90 -c
+
+dis_global_pars.o : dis_global_pars.f90
+	$(DIS_F90) dis_global_pars.f90 -c
+	
+RDI1MACH.o : RDI1MACH.f
+	$(DIS_F77) RDI1MACH.f -c
+
+LINPAK.o : LINPAK.f
+	$(DIS_F77) LINPAK.f -c
+
+RDI1MACHmodule.o : RDI1MACHmodule.f90
+	$(DIS_F90) RDI1MACHmodule.f90 -c
+
+DISORT_solver.o : DISORT_solver.f90
+	$(DIS_F90) DISORT_solver.f90 -c 
+
+
+modis_simulator.o : modis_simulator.F90 
+	$(DIS_F90) $(INCS) $(HDF_INC) $(HDF5_INC) modis_simulator.F90 -c
+	
+	
