@@ -1,26 +1,33 @@
 #!/usr/bin/env python
 
 """
-    Utility to compute optical properties for a PACE granule
+    Utility to compute optical properties along a sampled file.
 
-    Adapted from ext_sampler
-    P. Castellanos April 2019
+    Ed Nowottnick, January, 2015.
+
+    Modified to return lidar intensive properties
+    P. Castellanos June 2017
 
 """
 
 import os
 import MieObs_
-from netCDF4           import Dataset
-from mieobs            import getAOPext, getAOPscalar, getAOPint, getAOPvector
+from types import *
+from netCDF4 import Dataset
+from mieobs import VNAMES, getAOPext, getAOPscalar, getAOPint
+from numpy import zeros, arange, array, ones, zeros, interp, isnan, ma, NaN, squeeze, transpose, shape, asarray
+from math import pi, sin, cos, asin, acos
 
-from datetime          import datetime, timedelta
-from dateutil.parser   import parse         as isoparser
+from types           import *
+from optparse        import OptionParser
+from datetime        import datetime, timedelta
+from dateutil.parser import parse         as isoparser
+from csv             import DictReader
 
-from MAPL              import Config, eta
-from MAPL.constants    import *
-import argparse
-from   pace            import granules
-import numpy           as np
+from MAPL           import Config, eta
+from MAPL.constants import *
+from pyobs          import ICARTT
+from pyobs.sgp4     import getTrack 
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
@@ -28,284 +35,426 @@ VNAMES_SS = ['SS001','SS002','SS003','SS004','SS005']
 VNAMES_BC = ['BCPHOBIC','BCPHILIC']
 VNAMES_OC = ['OCPHOBIC','OCPHILIC']
 VNAMES_SU = ['SO4']
+MieVarsNames = ['ext','scatext','backscat','aback_sfc','aback_toa','depol','ext2back','tau','ssa','g']
+MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitless','unitless','unitless']
+MieVarsLongNames = ['total aerosol extinction','scattering extinction','total aerosol backscatter',
+                    'attenuated aerosol backscatter at the surface','attenuated aerosol backscatter at TOA',
+                    'depolarization ratio','extinction to backscatter ratio','aerosol optical depth',
+                    'single scattering albedo','assymetry parameter']
 
-META    = ['DELP','PS','RH','AIRDENS']
-AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
+IntVarsUnits = {'area':'m2 m-3', 
+                'vol': 'm3 m-3',
+                'refi':'unitless',
+                'refr':'unitless',
+                'reff':'m'}
 
-MieVars = {'ext'    : ['total aerosol extinction','km-1'],
-           'scatext': ['scattering extinction','km-1'],
-           'depol'  : ['depolarization ratio','unitless']}
+IntVarsLongNames = {'area':'aerosol cross sectional area',
+                    'vol' :'aerosol volume',
+                    'refi':'imaginary refractive index',
+                    'refr':'real refractive index',
+                    'reff':'aerosol effective raidus'}                
 
-IntVars = {'refi' : ['imaginary refractive index','unitless'],
-           'refr' : ['real refractive index','unitless'],
-           'reff' : ['aerosol effective raidus','m']}
-
-
-class EXTCALC(object):
+class MieCalc(object):
+    pass
+    """                                                                                  
+    Generic container for Variables
     """
-    Deals with everything to do with aerosol extinction and intensive variables sampling
+
+#---
+def getVars(inFile):
     """
-    def __init__(self,args,AERNAMES=AERNAMES,MieVars=MieVars,IntVars=IntVars):
-        self.AERNAMES  = AERNAMES
-        self.MieVars   = MieVars
-        self.IntVars   = IntVars
-        self.SDS       = AERNAMES + META
+#    Parse input file, create variable dictionary
+#    """
 
-        self.rootdir = args.rootdir
-        self.Date    = isoparser(args.iso_t1)
-        self.rcDir   = args.rcDir
-        self.verbose = args.verbose
-        self.iscan   = int(args.iscan)
-        self.iccd    = int(args.iccd)
+    Vars       = MieCalc()
+    file       = Dataset(inFile)
+    names      = file.variables.keys()
+    MIENAMES   = names
+    for n, name in enumerate(MIENAMES):
+        var = file.variables[name]
+        if (name == 'trjLon') or (name == 'stnLon'):
+            name = 'LONGITUDE'
+        if (name == 'trjLat') or (name == 'stnLat'):
+            name = 'LATITUDE'
+        name = name.upper()
+        size = len(var.shape)
+        if size == 3:
+            setattr(Vars,name,var[:,:,:])
+        if size == 2:
+            setattr(Vars,name,var[:,:])
+        if size == 1:
+            setattr(Vars,name,var[:])
+    return Vars        
 
-        # get PACE channels
-        self.get_channels()        
+#---
+def computeMie(Vars, channel, varnames, rcFile, options):
+    """
+#    Computes optical quantities and combines into a dictionary
+#   """
 
-        # Read in what you need from aerFile
-        self.getVars()
+    #STN Sampled?
+    if options.station:
+        NAMES = VNAMES + ['PS','DELP','RH','AIRDENS']
+        nstn = len(Vars.STATION)
+        nobs = len(Vars.TIME)
 
-        # Call Mie Calculator
-        self.computeMie()
-    #---
-    def get_channels(self):
-        pdate = isoparser(self.Date.strftime('2020-%m-%dT%H:%M:00'))
-        inFile = granules(self.rootdir+'/L1B',pdate,pdate)
-        if len(inFile) == 0:
-            raise Exception('No PACE Infiles found, nothing to do, exiting.')
-        
-        nc = Dataset(inFile[0])
-        group = 'sensor_band_parameters'
-        SDS = ['blue_wavelength','red_wavelength','SWIR_wavelength']
-        for sds in SDS:
-            self.__dict__[sds] = np.array(nc.groups[group].variables[sds][:])
+        for v in range(nstn):
+            VarsIn = MieCalc()
+            for n, name in enumerate(NAMES):
+                Var = getattr(Vars,name)
+                size = len(Var.shape)
+                if (size == 2):
+                    #1D Variables, ex. PS
+                    setattr(VarsIn,name,Var[v,:])
+                if size == 3:
+                    #2D Variables, ex. DU001
+                    setattr(VarsIn,name,Var[v,:,:])
 
-    #---
-    def getVars(self):
-        """
-        Parse input file, create variable dictionary
-        """
-        YMDdir    = self.Date.strftime('Y%Y/M%m/D%d')
-        nymd = self.Date.strftime('%Y%m%d')
-        hms  = self.Date.strftime('%H%M00')
+  
+            if (v==0):
+                tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                ext2back = ones(backscat.shape)*MAPL_UNDEF
+                I = backscat > 0
+                ext2back[I] = ext[I]/backscat[I]
+                MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}
 
-        LbDir     = '{}/LevelB/{}'.format(self.rootdir,YMDdir)
-        AER_file  = '{}/pace-g5nr.lb.aer_Nv.{}_{}.nc4'.format(LbDir,nymd,hms)
-
-        nc    = Dataset(AER_file)
-        nccd  = len(nc.dimensions['ccd_pixels'])
-        nscan = len(nc.dimensions['number_of_scans'])
-        nlev  = len(nc.dimensions['lev'])
-
-        for sds in self.SDS:
-            var = np.squeeze(nc.variables[sds][:])
-            rank = len(var.shape)
-            if rank == 2:
-                # [nscan,nccd]
-                #var = var.reshape(nscan*nccd)
-                var = var[self.iscan:self.iscan+1,self.iccd]
+                if options.intensive:
+                    vol, area, refr, refi, reff = getAOPint(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                    MieVars['vol']  = [vol]
+                    MieVars['area'] = [area]
+                    MieVars['refr'] = [refr]
+                    MieVars['refi'] = [refi]
+                    MieVars['reff'] = [reff]
             else:
-                # [nlev,nscan,nccd]
-                #var = var.reshape([nlev,nscan*nccd])
-                var = var[:,self.iscan:self.iscan+1,self.iccd]
+                tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                ext2back = ones(backscat.shape)*MAPL_UNDEF
+                I = backscat > 0
+                ext2back[I] = ext[I]/backscat[I]
+                MieVars['ext'].append(ext)
+                MieVars['scatext'].append(sca)
+                MieVars['backscat'].append(backscat)
+                MieVars['aback_sfc'].append(aback_sfc)
+                MieVars['aback_toa'].append(aback_toa)
+                MieVars['depol'].append(depol) 
+                MieVars['ext2back'].append(ext2back)
+                MieVars['tau'].append(tau)
+                MieVars['ssa'].append(ssa)
+                MieVars['g'].append(g)
 
-            self.__dict__[sds] = var
-        
-        nc.close()
-        self.nccd  = nccd
-        self.nscan = nscan
-        self.nlev  = nlev
-        self.nobs  = nccd*nscan
+                if options.intensive:
+                    vol, area, refr, refi, reff = getAOPint(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                    MieVars['vol'].append(vol)
+                    MieVars['area'].append(area)
+                    MieVars['refr'].append(refr)
+                    MieVars['refi'].append(refi)
+                    MieVars['reff'].append(reff)                    
 
-    #---
-    def computeMie(self):
-        """
-        Computes optical quantities 
-        """
+    #TRJ Sampled?
+    else:
+        tau,ssa,g = getAOPscalar(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+        ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+        ext2back = ones(backscat.shape)*MAPL_UNDEF
+        I = backscat > 0
+        ext2back[I] = ext[I]/backscat[I]
+        MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}       
+        if options.intensive:
+            vol, area, refr, refi, reff  = getAOPint(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+            MieVars['vol']  = [vol]
+            MieVars['area'] = [area]
+            MieVars['refr'] = [refr]
+            MieVars['refi'] = [refi]
+            MieVars['reff'] = [reff]
 
-        for band in ['blue','red','SWIR']:
-            channel = self.__dict__[band + '_wavelength']
-            tau_ = []
-            ssa_ = []
-            pmom_ = []
+    return MieVars
 
-            for ch in channel:
-                rcFile = self.rcDir + '/Aod_EOS_{}.rc'.format(int(ch))
-                tau,ssa,g,pmom = getAOPvector(self,[ch],vnames=self.AERNAMES,Verbose=self.verbose,rcfile=rcFile,nMom=300)
-                tau_.append(tau)
-                ssa_.append(ssa)
-                pmom_.append(pmom)
+#---
+def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieVarsLongNames,
+              MieVarsUnits, inFile, outFile, options, zlib=False):
+    """
+    Write a NetCDF file with sampled GEOS-5 variables along the satellite track
+    described by (lon,lat,tyme).
+    """
+    km = 72
 
-            self.__dict__['tau_'+band] = np.concatenate(tau_,axis=1)
-            self.__dict__['ssa_'+band] = np.concatenate(ssa_,axis=1)
-            self.__dict__['pmom_'+band] = np.concatenate(pmom_,axis=1)
+    # Open NC file
+    # ------------
+    nc = Dataset(outFile,'w',format=options.format)
 
-#     ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-        #     ext2back = ones(backscat.shape)*MAPL_UNDEF
-        #     I = backscat > 0
-        #     ext2back[I] = ext[I]/backscat[I]
-        #     MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}
-
-        #     if options.intensive:
-        #         vol, area, refr, refi, reff = getAOPint(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-        #         MieVars['vol']  = [vol]
-        #         MieVars['area'] = [area]
-        #         MieVars['refr'] = [refr]
-        #         MieVars['refi'] = [refi]
-        #         MieVars['reff'] = [reff]
-        #         else:
-        #             tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-        #             ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-        #             ext2back = ones(backscat.shape)*MAPL_UNDEF
-        #             I = backscat > 0
-        #             ext2back[I] = ext[I]/backscat[I]
-        #             MieVars['ext'].append(ext)
-        #             MieVars['scatext'].append(sca)
-        #             MieVars['backscat'].append(backscat)
-        #             MieVars['aback_sfc'].append(aback_sfc)
-        #             MieVars['aback_toa'].append(aback_toa)
-        #             MieVars['depol'].append(depol) 
-        #             MieVars['ext2back'].append(ext2back)
-        #             MieVars['tau'].append(tau)
-        #             MieVars['ssa'].append(ssa)
-        #             MieVars['g'].append(g)
-
-        #             if options.intensive:
-        #                 vol, area, refr, refi, reff = getAOPint(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-        #                 MieVars['vol'].append(vol)
-        #                 MieVars['area'].append(area)
-        #                 MieVars['refr'].append(refr)
-        #                 MieVars['refi'].append(refi)
-        #                 MieVars['reff'].append(reff)                    
-
-
-    #---
-    def writeNC ( self, outFile, zlib=False):
-        """
-        Write a NetCDF file with sampled GEOS-5 variables along the satellite track
-        described by (lon,lat,tyme).
-        """
-        km = 72
-
-        # Open NC file
-        # ------------
-        nc = Dataset(outFile,'w')
-
-        # Set global attributes
-        # ---------------------
-        nc.title = 'GEOS-5 Sampled Aerosol Optical Properties File'
-        nc.institution = 'NASA/Goddard Space Flight Center'
-        nc.source = 'Global Model and Assimilation Office'
-        nc.history = 'Created from sampled GEOS-5 collections'
-        nc.references = 'n/a'
-        nc.comment = 'This file contains sampled GEOS-5 aerosol optical properties.'
-        nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
-        nc.Conventions = 'CF'
-     
-        # Create dimensions
-        # -----------------
-        nt = nc.createDimension('time',1)
+    # Set global attributes
+    # ---------------------
+    nc.title = 'GEOS-5 Sampled Aerosol Optical Properties File'
+    nc.institution = 'NASA/Goddard Space Flight Center'
+    nc.source = 'Global Model and Assimilation Office'
+    nc.history = 'Created from sampled GEOS-5 collections'
+    nc.references = 'n/a'
+    nc.comment = 'This file contains sampled GEOS-5 aerosol optical properties.'
+    nc.contact = 'Ed Nowottnick <edward.p.nowottnick@nasa.gov>'
+    nc.Conventions = 'CF'
+    nc.inFile = inFile
+ 
+    # Create dimensions
+    # -----------------
+    nt = nc.createDimension('time',len(tyme))
+    if options.station:
+        ns = nc.createDimension('station',len(stations))
+    ls = nc.createDimension('ls',19)
+    if km>0:
         nz = nc.createDimension('lev',km)
-        nb = nc.createDimension('blue_wavelength',len(self.blue_wavelength))
-        nr = nc.createDimension('red_wavelength',len(self.red_wavelength))
-        ns = nc.createDimension('SWIR_wavelength',len(self.SWIR_wavelength))
-        nm = nc.createDimension('nMoments',300)
-        nP = nc.createDimension('nPol',6)
-        # Coordinate variables
-        # --------------------
-        if km > 0: # pressure level not supported yet
-            lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
-            lev.long_name = 'Vertical Level'
-            lev.units = 'km'
-            lev.positive = 'down'
-            lev.axis = 'z'
-            lev[:] = range(1,km+1)
+    x = nc.createDimension('x',1)
+    y = nc.createDimension('y',1)
 
-        
-        # Write each variable
-        # --------------------------------------------------
-        for band in ['blue','red','SWIR']:
-            for n, name in enumerate(['tau','ssa','pmom']):
-                print name
-                var = self.__dict__[name + '_' + band]
-                if name == 'pmom':
-                    dim = ('lev',band+'_wavelength','time','nMoments','nPol')
-                else:
-                    dim = ('lev',band+'_wavelength','time') 
+    if options.station:
+        # Station names
+        # -------------
+        stnName_ = nc.createVariable('stnName','S1',('station','ls'),zlib=zlib)
+        stnName_.long_name = 'Station Names'
+        stnName_.axis = 'e'
+        stnName_[:] = stations[:]   
 
-                this = nc.createVariable(name+'_'+band,'f4',dim,zlib=zlib)
-                this.standard_name = name
-                this.units = 'None'
-                this.missing_value = np.float32(MAPL_UNDEF)
-                this[:] = var
+    # Coordinate variables
+    # --------------------
+    time = nc.createVariable('time','i4',('time',),zlib=zlib)
+    time.long_name = 'Time'
+    t0 = tyme[0]
+    isot0 = isotimeIn[0]
+    date0 = ''.join(isot0[:10])
+    time0 = ''.join(isot0[-8:])
+    time.units = 'seconds since '+date0+' '+time0
+    time[:] = tyme
+    if km > 0: # pressure level not supported yet
+        lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
+        lev.long_name = 'Vertical Level'
+        lev.units = 'km'
+        lev.positive = 'down'
+        lev.axis = 'z'
+        lev[:] = range(1,km+1)
 
-        # Close the file
-        # --------------
-        nc.close()
+    # Add fake dimensions for GrADS compatibility
+    # -------------------------------------------
+    x = nc.createVariable('x','f4',('x',),zlib=zlib)
+    x.long_name = 'Fake Longitude for GrADS Compatibility'
+    x.units = 'degrees_east'
+    x[:] = zeros(1)
+    y = nc.createVariable('y','f4',('y',),zlib=zlib)
+    y.long_name = 'Fake Latitude for GrADS Compatibility'
+    y.units = 'degrees_north'
+    y[:] = zeros(1)
+    if options.station:
+        e = nc.createVariable('station','i4',('station',),zlib=zlib)
+        e.long_name = 'Station Ensemble Dimension'
+        e.axis = 'e'
+        e.grads_dim = 'e'
+        e[:] = range(len(stations))
+    
+    # Lat/Lon Coordinates
+    # ----------------------
+    if options.station:
+        lon = nc.createVariable('longitude','f4',('station',),zlib=zlib)
+        lon.long_name = 'Longitude'
+        lon.units = 'degrees_east'
+        lon[:] = lons[:]
+        lat = nc.createVariable('latitude','f4',('station',),zlib=zlib)
+        lat.long_name = 'Latitude'
+        lat.units = 'degrees_north'
+        lat[:] = lats[:]
+    else:
+        lon = nc.createVariable('longitude','f4',('time',),zlib=zlib)
+        lon.long_name = 'Longitude'
+        lon.units = 'degrees_east'
+        lon[:] = lons[:]
+        lat = nc.createVariable('latitude','f4',('time',),zlib=zlib)
+        lat.long_name = 'Latitude'
+        lat.units = 'degrees_north'
+        lat[:] = lats[:]        
+    
+    # Time in ISO format if so desired
+    # ---------------------------------
+    isotime = nc.createVariable('isotime','S1',('time','ls'),zlib=zlib)
+    isotime.long_name = 'Time (ISO Format)'
+    isotime[:] = isotimeIn[:]
 
-        print " <> wrote file %s"%(outFile)
+    # Write each variable
+    # --------------------------------------------------
+    for n, name in enumerate(MieVarsNames):
+
+        var = squeeze(MieVars[name])
+        size = len(var.shape)
+        if options.station:
+            if size == 2:
+                var = asarray([var])
+                size = len(var.shape)
+        if size == 3:
+            dim = ('station','time','lev')
+        if size == 2:
+            dim = ('time','lev')
+        if size == 1:
+            dim = ('time')
+        this = nc.createVariable(name,'f4',dim,zlib=zlib)
+        this.standard_name = name
+        this.long_name = MieVarsLongNames[n]
+        this.units = MieVarsUnits[n]
+        this.missing_value = MAPL_UNDEF
+        if options.station:
+            this[:] = transpose(var,(0,2,1))
+        else:
+            this[:] = transpose(var)
+
+    if options.intensive:
+        for name in IntVarsUnits:
+            var = squeeze(MieVars[name])
+            size = len(var.shape)
+            if options.station:
+                if size == 2:
+                    var = asarray([var])
+                    size = len(var.shape)
+            if size == 3:
+                dim = ('station','time','lev')
+            if size == 2:
+                dim = ('time','lev')
+            if size == 1:
+                dim = ('time')
+            this = nc.createVariable(name,'f4',dim,zlib=zlib)
+            this.standard_name = name
+            this.long_name     = IntVarsLongNames[name]
+            this.units = IntVarsUnits[name]
+            this.missing_value = MAPL_UNDEF
+            if options.station:
+                this[:] = transpose(var,(0,2,1))
+            else:
+                this[:] = transpose(var)            
+
+    # Close the file
+    # --------------
+    nc.close()
+
+    if options.verbose:
+        print " <> wrote %s file %s"%(options.format,options.outFile)
     
     
 #------------------------------------ M A I N ------------------------------------
 
 if __name__ == "__main__":
     
-    format   = 'NETCDF4_CLASSIC'
-    rootdir  = '/nobackup/PACE/'
-    outFile  = 'pace_ext.nc4'
-    rcDir    = './rc/'
-    iscan    = "600"
-    iccd     = "900"
+    format = 'NETCDF3_CLASSIC'
+    inFile  = 'trj_sampler.nc'
+    outFile = 'ext_sampler.nc'
+    channel = (532)
+    rcFile = 'Aod3d_532nm.rc'
+    intensive = False
 
 #   Parse command line options
 #   --------------------------
-    parser = argparse.ArgumentParser()
-    parser.add_argument("iso_t1",help='starting iso time')
+    parser = OptionParser()
 
-    parser.add_argument("--outFile",default=outFile,
-                           help="out file name (default=%s)."%outFile)
+    parser.add_option("-i", "--input", dest="inFile", default=inFile,
+              help="Sampled input file")
 
-    parser.add_argument("--iscan",default=iscan,
-                           help="scan index (default=%s)."%iscan)
+    parser.add_option("-o", "--output", dest="outFile", default=outFile,
+              help="Output file containing optical properties")
 
-    parser.add_argument("--iccd",default=iccd,
-                                       help="ccd index (default=%s)."%iccd)
+    parser.add_option("-r", "--rc", dest="rcFile", default=rcFile,
+              help="Resource file pointing to optical tables")
 
-    parser.add_argument("--rootdir",default=rootdir,
-               help="root directory for PACE data (default=%s)."%rootdir)      
+    parser.add_option("-f", "--format", dest="format", default=format,
+              help="Output file format: one of NETCDF4, NETCDF4_CLASSIC, NETCDF3_CLASSIC, NETCDF3_64BIT or EXCEL (default=%s)"%format )
 
-    parser.add_argument("-r", "--rcDir", default=rcDir,
-              help="Directory for Resource files pointing to optical tables")
+    parser.add_option("-c", "--channel", dest="channel", default=channel,
+              help="Channel for Mie calculation")
 
-    parser.add_argument("--no_intensive",action="store_true",
-                      help="do not return intensive variables")
+    parser.add_option("-I", "--intensive",default=intensive,
+                      action="store_true", dest="intensive",
+                      help="return intensive variables")
 
-    parser.add_argument("-v", "--verbose",
-                      action="store_true", 
+    parser.add_option("-v", "--verbose",
+                      action="store_true", dest="verbose",
                       help="Verbose mode")
 
-    parser.add_argument("--du",
-                      action="store_true", 
+    parser.add_option("--du",
+                      action="store_true", dest="dust",
                       help="Dust Only")
 
-    parser.add_argument("--ss",
-                      action="store_true",
+    parser.add_option("--ss",
+                      action="store_true", dest="seasalt",
                       help="Seasalt Only")
 
-    parser.add_argument("--su",
-                      action="store_true",
+    parser.add_option("--su",
+                      action="store_true", dest="sulfate",
                       help="Sulfate Only")
 
-    parser.add_argument("--bc",
-                      action="store_true",
+    parser.add_option("--bc",
+                      action="store_true", dest="bcarbon",
                       help="Black Carbon Only")
 
-    parser.add_argument("--oc",
-                      action="store_true",
+    parser.add_option("--oc",
+                      action="store_true", dest="ocarbon",
                       help="Organic Carbon Only")
 
-    args = parser.parse_args()
-        
+    parser.add_option("--stn",
+                      action="store_true", dest="station",
+                      help="Input File is from stn_sampler.py")
+
+    (options, args) = parser.parse_args()
+
+         
+    # Create consistent file name extension
+    # -------------------------------------
+    name, ext = os.path.splitext(options.outFile)
+    if ext.upper() == '.XLS':
+        options.format = 'EXCEL'
+    if 'NETCDF4' in options.format:
+        options.outFile = name + '.nc4'
+    elif 'NETCDF3' in options.format:
+        options.outFile = name + '.nc'
+    elif 'EXCEL' in options.format:
+        options.outFile = name + '.xls'
+    else:
+        raise ValueError, 'invalid extension <%s>'%ext
+    
     # Get Variables
     # --------------------------
-    ext = EXTCALC(args)
-    ext.writeNC(args.outFile)
+    Vars = getVars(options.inFile)
+
+    # Run Mie Calculator and Write Output Files
+    # --------------------------
+    if options.station:
+        StnNames = Vars.STNNAME
+    else:
+        StnNames = ''
+
+    channelIn = float(options.channel)
+    MieVars = computeMie(Vars,channelIn,VNAMES,options.rcFile,options)
+    writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
+            MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,options.outFile,options)
+
+    if options.dust:
+        outFile = options.outFile+'.dust'
+        MieVars = computeMie(Vars,channelIn,VNAMES_DU,options.rcFile,options)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
+                MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
+
+    if options.seasalt:
+        outFile = options.outFile+'.ss'
+        MieVars = computeMie(Vars,channelIn,VNAMES_SS,options.rcFile,options)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
+                MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
+
+    if options.sulfate:
+        outFile = options.outFile+'.su'
+        MieVars = computeMie(Vars,channelIn,VNAMES_SU,options.rcFile,options)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
+                MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
+
+    if options.bcarbon:
+        outFile = options.outFile+'.bc'
+        MieVars = computeMie(Vars,channelIn,VNAMES_BC,options.rcFile,options)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
+                MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
+
+    if options.ocarbon:
+        outFile = options.outFile+'.oc'
+        MieVars = computeMie(Vars,channelIn,VNAMES_OC,options.rcFile,options)
+        writeNC(StnNames,Vars.LONGITUDE,Vars.LATITUDE,Vars.TIME,Vars.ISOTIME,
+                MieVars,MieVarsNames,MieVarsLongNames,MieVarsUnits,options.inFile,outFile,options)
+   

@@ -21,7 +21,6 @@
 !     for the loss of the forward peak in the ice cloud scatterimg matrix introduced by
 !     using a finite number of streams.
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-#  define I_AM_MAIN
 #  include "MAPL_Generic.h"
 #  include "MAPL_ErrLogMain.h"
 program pace_vlidort
@@ -64,7 +63,7 @@ program pace_vlidort
   logical                               :: plane_parallel    
   logical                               :: cloud_free
   logical                               :: aerosol_free
-  logical                               :: standard_atm
+  logical                               :: gas_free
   real, allocatable                     :: channels(:)            ! channels to simulate
   real, allocatable                     :: mr(:)                  ! water real refractive index    
   integer                               :: nch                    ! number of channels  
@@ -72,6 +71,7 @@ program pace_vlidort
   logical                               :: additional_output      ! does user want additional output
   logical                               :: aerosol_output         ! does user want aerosol output  
   logical                               :: cloud_output           ! does user want cloud output
+  logical                               :: do_single_xtrack       ! for testing - mask all but one xtrack
   integer                               :: nodemax                ! number of nodes requested
   integer                               :: nodenum                ! which node is this?
   character(len=256)                    :: version
@@ -80,6 +80,7 @@ program pace_vlidort
   integer                               :: idxCld
   logical                               :: do_sleave_iso
   logical                               :: do_sleave_adjust
+  logical                               :: do_diagnostic_only
 
 ! Test flag
 ! -----------
@@ -88,8 +89,8 @@ program pace_vlidort
 ! File names
 ! ----------
   character(len=256)                    :: AER_file, ANG_file, INV_file, BRDF_file, LER_file, OUT_file
-  character(len=256)                    :: ADD_file, CLD_file, MET_file, WAT_file, NDVI_file, BPDF_file 
-  character(len=256)                    :: AERO_file, CLDO_file, STDATM_file, OCItable_file
+  character(len=256)                    :: ADD_file, CLD_file, MET_file, WAT_file, FQ_file, NDVI_file, BPDF_file 
+  character(len=256)                    :: AERO_file, CLDO_file, ALPHA_file, CHM_file
 
 ! Global, 3D inputs to be allocated using SHMEM
 ! ---------------------------------------------
@@ -110,7 +111,12 @@ program pace_vlidort
   real, pointer                         :: BCPHILIC(:,:) => null()
   real, pointer                         :: OCPHOBIC(:,:) => null()
   real, pointer                         :: OCPHILIC(:,:) => null()
-  real, pointer                         :: SO4(:,:) => null()  
+  real, pointer                         :: SO4(:,:) => null() 
+  real, pointer                         :: CO(:,:) => null()  
+  real, pointer                         :: CO2(:,:) => null()  
+  real, pointer                         :: O3(:,:) => null()  
+  real, pointer                         :: H2O(:,:) => null()
+  real, pointer                         :: ALPHA(:,:,:) => null()
   real, pointer                         :: KISO(:,:) => null()
   real, pointer                         :: KVOL(:,:) => null()
   real, pointer                         :: KGEO(:,:) => null() 
@@ -135,6 +141,30 @@ program pace_vlidort
   real, pointer                         :: READER2D(:,:) => null()
   real, pointer                         :: READER3D(:,:,:) => null()
 
+! Absorption cross section arrays
+! ------------------------------
+  real, allocatable                     :: alpha_ch4(:,:,:)
+  real, allocatable                     :: alpha_n2o(:,:,:)
+  real, allocatable                     :: alpha_o2(:,:,:)
+
+  real, allocatable                     :: trans_ch4_bins(:)
+  real, allocatable                     :: trans_n2o_bins(:)
+  real, allocatable                     :: trans_o2_bins(:)
+  real, allocatable                     :: trans_o3_bins(:)
+  real, allocatable                     :: trans_co_bins(:)
+  real, allocatable                     :: trans_co2_bins(:)
+  real, allocatable                     :: trans_h2o_bins(:)
+  real, allocatable                     :: trans_total_bins(:)
+
+  real, allocatable                     :: xsec_o3(:,:)
+  real, allocatable                     :: xsec_h2o(:,:,:)
+  real, allocatable                     :: xsec_co(:,:,:)
+  real, allocatable                     :: xsec_co2(:,:,:) 
+  real, allocatable                     :: nbins(:)
+  real, allocatable                     :: g_bins(:)
+  integer, allocatable                  :: ioci(:)
+  real, allocatable                     :: IRR(:)                     ! solar irradiance
+  real, allocatable                     :: ROD_stdatm(:), DEPOL_stdatm(:)
 
 ! VLIDORT input arrays
 ! ---------------------------
@@ -155,7 +185,7 @@ program pace_vlidort
   real, allocatable                     :: VgLcl(:,:,:)            ! cloud asymmetry factor  
   real, allocatable                     :: VgIcl(:,:,:)            ! cloud asymmetry factor    
 
-  real*8, allocatable                   :: Valpha(:,:,:)           ! trace gas optical depth
+  real, allocatable                     :: Valpha(:,:,:)           ! trace gas absorption
   real*8, allocatable                   :: Vflux_factor(:,:)       ! solar irradiance
 
 ! VLIDORT output arrays
@@ -163,26 +193,40 @@ program pace_vlidort
 !                                  Intermediate Unshared Arrays
 !                                  -----------------------------
   real*8, allocatable                   :: radiance_VL_int(:,:)                   ! TOA normalized radiance from VLIDORT
+  real*8, allocatable                   :: radiance_VL_bins(:)                    ! TOA normalized radiance from VLIDORT
   real*8, allocatable                   :: reflectance_VL_int(:,:)                ! TOA reflectance from VLIDORT  
+  real*8, allocatable                   :: reflectance_VL_bins(:)                ! TOA reflectance from VLIDORT
   real*8, allocatable                   :: Q_int(:,:)                             ! Q Stokes component
   real*8, allocatable                   :: U_int(:,:)                             ! U Stokes component
   real*8, allocatable                   :: ROT(:,:,:)                             ! rayleigh optical thickness
   real*8, allocatable                   :: depol(:)                               ! rayleigh depolarization ratio
   real*8, allocatable                   :: BR_Q_int(:,:)                          ! surface albedo Q
   real*8, allocatable                   :: BR_U_int(:,:)                          ! surface albedo U
-
+  real*8, allocatable                   :: ADJUSTED_SLEAVE_int(:,:)   ! transmittance adjusted water leaving radiance
+  
 
 !                                  Final Shared Arrays
 !                                  -------------------
   real*8, pointer                       :: radiance_VL(:) => null()             ! TOA normalized radiance from VLIDORT
   real*8, pointer                       :: reflectance_VL(:) => null()          ! TOA reflectance from VLIDORT
-  real*8, pointer                       :: Q(:) => null()                      ! Q Stokes component
-  real*8, pointer                       :: U(:) => null()                      ! U Stokes component
+!  real*8, pointer                       :: Q(:) => null()                      ! Q Stokes component
+!  real*8, pointer                       :: U(:) => null()                      ! U Stokes component
+  real*8, pointer                       :: TRANS_RAY(:) => null()                    ! rayleigh transmittance
   real*8, pointer                       :: ROD(:) => null()                    ! rayleigh optical depth
   real*8, pointer                       :: ALBEDO(:) => null()                 ! bi-directional surface reflectance
-  real*8, pointer                       :: BR_Q(:) => null()                   ! bi-directional surface reflectance Q
-  real*8, pointer                       :: BR_U(:) => null()                   ! bi-directional surface reflectance U
-
+!  real*8, pointer                       :: BR_Q(:) => null()                   ! bi-directional surface reflectance Q
+!  real*8, pointer                       :: BR_U(:) => null()                   ! bi-directional surface reflectance U
+  real*8, pointer                       :: TRANS_O2_VL(:) => null()
+  real*8, pointer                       :: TRANS_N2O_VL(:) => null()
+  real*8, pointer                       :: TRANS_CH4_VL(:) => null()
+  real*8, pointer                       :: TRANS_O3_VL(:) => null()
+  real*8, pointer                       :: TRANS_H2O_VL(:) => null()
+  real*8, pointer                       :: TRANS_CO_VL(:) => null()
+  real*8, pointer                       :: TRANS_CO2_VL(:) => null()
+  real*8, pointer                       :: TRANS_TOTAL_VL(:) => null()
+  real*8, pointer                       :: SLEAVE_VL(:) => null()               ! water leaving radiance
+  real*8, pointer                       :: ADJUSTED_SLEAVE(:) => null()         ! adjusted water leaving radiance
+  real*8, pointer                       :: IRR_VL(:) => null()                  ! solar irradiance
 
   real, pointer                         :: TAU(:) => null()                  ! aerosol optical depth
   real, pointer                         :: SSA(:) => null()                  ! single scattering albedo
@@ -220,11 +264,6 @@ program pace_vlidort
 !---------------------
   type(Chem_Mie)                        :: mieTables
 
-! OCI ROD Table
-!--------------------
-  integer, parameter                    :: nchOCI = 123
-  real                                  :: depolOCI(nchOCI), rodOCI(nchOCI), wavOCI(nchOCI)
-  real, allocatable                     :: ROD_stdatm(:), DEPOL_stdatm(:)
 
 ! Satellite domain variables
 !------------------------------
@@ -239,6 +278,8 @@ program pace_vlidort
   real, allocatable                     :: SOLAR_ZENITH(:,:)                         ! solar zenith angles used for data filtering
   real,allocatable                      :: SENSOR_ZENITH(:,:)                        ! SENSOR zenith angles used for data filtering  
   logical, allocatable                  :: clmask(:,:)                               ! cloud-land mask
+  integer                               :: bm, b                                     ! number of c-k bins
+  integer                               :: noci                                      ! number of OCI channels
 
 ! netcdf variables
 !----------------------  
@@ -257,7 +298,7 @@ program pace_vlidort
   character(len=256)                    :: line                                        ! dummy variables to read line of file 
   real                                  :: progress                                    ! 
   real                                  :: g5nr_missing  
-  logical                               :: do_cxonly, do_cx_sleave                              !
+  logical                               :: do_cxonly, do_cx_sleave                     !
 
 ! System tracking variables
 ! -----------------------------
@@ -328,33 +369,12 @@ program pace_vlidort
 
 ! Query for domain dimensions and missing value
 !----------------------------------------------
-  call mp_readDim("ccd_pixels", CLD_file, im)
-  call mp_readDim("number_of_scans", CLD_file, jm)
-  
+  call mp_readDim("ccd_pixels", AER_file, im)
+  call mp_readDim("number_of_scans", AER_file, jm)
   call mp_readDim("time", AER_file,tm)
-
-  if (standard_atm) then
-    call MAPL_SyncSharedMemory(rc=ierr)  
-    do pp=0,npet-1
-      if (myid .eq. pp) then
-        km = 0
-        open(unit=15,file=STDATM_file, status='old', access='sequential', &
-              form='formatted', action='read')
-        read(15,'(A)') line ! header
-        do
-          read(15,'(A)',end=10) line
-          km = km + 1
-        enddo
-
-10      close(15)
-        km = km -1
-      end if  
-      call MAPL_SyncSharedMemory(rc=ierr)    
-    end do    
-  else
-    call mp_readDim("lev", CLD_file, km)
-  end if
-
+  call mp_readDim("lev", AER_file, km)
+  call mp_readDim("ckbin", ALPHA_file, bm)
+  call mp_readDim("channels", ALPHA_file, noci)
 
   call mp_readVattr("missing_value", AER_FILE, "DELP", g5nr_missing)
   if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
@@ -374,7 +394,9 @@ program pace_vlidort
 
 ! Create OUTFILE
 ! --------------
-  if ( MAPL_am_I_root() )  call create_outfile(date, time)
+  if (.not. do_diagnostic_only) then
+    if ( MAPL_am_I_root() )  call create_outfile(date, time)
+  end if
 
 ! Create additional data
 ! ----------------------
@@ -435,6 +457,20 @@ program pace_vlidort
       end if
     end do
   end do
+  
+  ! for testing - do 1 cross track
+  if (do_single_xtrack) then
+    clrm = 0
+    do i=1,im
+      do j=1,jm
+        if (j .ne. 601) then
+          clmask(i,j) = .False.
+        else if ((j .eq. 601) .and. (clmask(i,j))) then
+          clrm = clrm + 1
+        end if
+      end do
+    end do
+  end if
 
   if (clrm == 0) then
     if (MAPL_am_I_root()) then
@@ -469,6 +505,7 @@ program pace_vlidort
 ! ! ------------------------------
   call read_land()
   call read_aer_Nv()
+  call read_chm_Nv()
   call read_PT()
   call read_surf_land()
   call read_water()
@@ -524,26 +561,31 @@ program pace_vlidort
   IG             = dble(MISSING)
   ALBEDO         = dble(MISSING)
   ROD            = dble(MISSING)
+  TRANS_RAY      = dble(MISSING)
   PE             = dble(MISSING)
   ZE             = dble(MISSING)
   TE             = dble(MISSING)    
   radiance_VL    = dble(MISSING)
   reflectance_VL = dble(MISSING)
-  if (.not. scalar) then
-    Q = dble(MISSING)
-    U = dble(MISSING)
-    BR_Q = dble(MISSING)
-    BR_U = dble(MISSING)    
+  SLEAVE_VL      = dble(MISSING)
+  IRR_VL         = dble(MISSING)
+  TRANS_O2_VL    = dble(MISSING)
+  TRANS_N2O_VL   = dble(MISSING)
+  TRANS_CH4_VL   = dble(MISSING)
+  TRANS_O3_VL    = dble(MISSING)
+  TRANS_H2O_VL   = dble(MISSING)
+  TRANS_CO_VL    = dble(MISSING)
+  TRANS_CO2_VL   = dble(MISSING)
+  TRANS_TOTAL_VL = dble(MISSING)
+  if (do_sleave_adjust) then
+    ADJUSTED_SLEAVE = dble(MISSING)
   end if
   call MAPL_SyncSharedMemory(rc=ierr)
 
-! Read OCI standard ROD and depol ratio Table
+! Read absorption cross sections
+! figure out index of channels
 ! --------------------------------------------
-  call read_OCI_stdatm()
-  do k=1,nch
-    ROD_stdatm(k)   = nn_interp(wavOCI,rodOCI,channels(k),MISSING,MISSING)
-    DEPOL_stdatm(k) = nn_interp(wavOCI,depolOCI,channels(k),MISSING,MISSING)
-  end do
+  call read_alpha()
 
 ! Prepare inputs and run VLIDORT
 ! -----------------------------------
@@ -551,18 +593,15 @@ program pace_vlidort
 
 ! Create the Mie Tables
 ! ---------------------
-  if (.not. standard_atm) then
-    mieTables = Chem_MieCreate(rcfile,rc)
-    if ( rc /= 0 ) then
-      print *, 'Cannot create Mie tables from '//trim(rcfile)
-      call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
-    end if
+  mieTables = Chem_MieCreate(rcfile,rc)
+  if ( rc /= 0 ) then
+    print *, 'Cannot create Mie tables from '//trim(rcfile)
+    call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
+  end if
 
-    if ( nMom > mieTables%nMom ) then ! mieTables%nMom is writen in Aod_EOS.rc file
-      print *, 'mieTables do not have enough moments', nMom, mieTables%nMom
-      call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
-    end if
-
+  if ( nMom > mieTables%nMom ) then ! mieTables%nMom is writen in Aod_EOS.rc file
+    print *, 'mieTables do not have enough moments', nMom, mieTables%nMom
+    call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
   end if
 
   if (myid == 1) then
@@ -604,7 +643,11 @@ program pace_vlidort
           call mpi_send(BCPHILIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
           call mpi_send(OCPHOBIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
           call mpi_send(OCPHILIC(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
-          call mpi_send(SO4(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)   
+          call mpi_send(SO4(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)  
+          call mpi_send(H2O(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
+          call mpi_send(O3(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(CO(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
+          call mpi_send(CO2(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
           if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
             call mpi_send(KISO(starti:endi,:), counti*landbandmBRDF, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
             call mpi_send(KVOL(starti:endi,:), counti*landbandmBRDF, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr) 
@@ -659,7 +702,11 @@ program pace_vlidort
       call mpi_recv(BCPHILIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)  
       call mpi_recv(OCPHOBIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
       call mpi_recv(OCPHILIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-      call mpi_recv(SO4, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)      
+      call mpi_recv(SO4, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)     
+      call mpi_recv(H2O, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+      call mpi_recv(CO, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(CO2, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(O3, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
       if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
         call mpi_recv(KISO, counti*landbandmBRDF, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)  
         call mpi_recv(KVOL, counti*landbandmBRDF, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
@@ -704,11 +751,7 @@ program pace_vlidort
         c = cc
       end if
 
-      if (.not. standard_atm) then
-        call getEdgeVars ( km, nobs, reshape(AIRDENS(c,:),(/km,nobs/)), &
-                         reshape(DELP(c,:),(/km,nobs/)), ptop, &
-                         Vpe, Vze, Vte )   
-      end if
+
       PE(c,:) = Vpe(:,nobs)
       ZE(c,:) = Vze(:,nobs)
       TE(c,:) = Vte(:,nobs)
@@ -725,21 +768,12 @@ program pace_vlidort
   !   --------------------------
       call VLIDORT_ROT_CALC (km, nch, nobs, dble(channels), dble(Vpe), dble(Vze), dble(Vte), &
                                      dble(MISSING),verbose, &
-                                     ROT, depol, ierr )  
-      ! rescale to ROD_stdatm
+                                     ROT, depol, ierr )                                         
       do k=1,nch
-        ROT(:,nobs,k) = ROT(:,nobs,k)*ROD_stdatm(k)/sum(ROT(:,nobs,k))
+        ! set to OCI table value
+        ROT(:,nobs,k) = ROT(:,nobs,k)*dble(ROD_stdatm(ioci(k)))/sum(ROT(:,nobs,k))
+        depol(k)      = dble(DEPOL_stdatm(ioci(k)))
       end do
-
-      if (.not. standard_atm) then   
-      ! use standard PS = 101300.00 Pa for scaling
-        do k=1,nch
-          ROT(:,nobs,k) = ROT(:,nobs,k)*Vpe(km+1,nobs)/101300.0
-        end do
-      end if
-
-      ! set to OCI table values
-      depol = DEPOL_stdatm
 
   !   Aerosol Optical Properties
   !   --------------------------
@@ -781,6 +815,7 @@ program pace_vlidort
   !   ------------------------
       ! Rayleigh
       ROD(c) = SUM(ROT(:,nobs,nch))
+      TRANS_RAY(c) = exp(-1.D0*SUM(ROT(:,nobs,nch))/cos(dble(pi*SZA(c)/180.)))
       
       ! Aerosols
       TAU(c) = SUM(Vtau(:,nch,nobs))
@@ -824,32 +859,79 @@ program pace_vlidort
       write(msg,*) 'getAOP ', myid
       call write_verbose(msg)
 
-  !   Call VlIDORT
-  !   ------------
-      if ( FRLAND(c) >= 0.99 ) then
-        call get_surf_params()
-        call DO_LAND()
-      else
-        call get_ocean_params()
-        call DO_OCEAN()
-      end if
+  !   Alpha loop
+  !   -----------
+      Vflux_factor = IRR(ioci(nch))
+      do b=1, nbins(ioci(nch))
+          call calc_alpha(b,ioci(nch))
+
+          !   Call VlIDORT
+          !   ------------
+          if ( FRLAND(c) >= 0.99 ) then
+            call get_surf_params()
+            if (.not. do_diagnostic_only) then
+              call DO_LAND()
+            end if
+          else
+            call get_ocean_params()
+            if (.not. do_diagnostic_only) then
+              call DO_OCEAN()
+            end if
+          end if
 
       
   !   Check VLIDORT Status, Store Outputs in Shared Arrays
-  !   ----------------------------------------------------    
-      call mp_check_vlidort(radiance_VL_int,reflectance_VL_int)  
-      radiance_VL(c)    = radiance_VL_int(nobs,nch)
-      reflectance_VL(c) = reflectance_VL_int(nobs,nch)
-      ALBEDO(c) = Valbedo(nobs,nch)
-      
-      if (.not. scalar) then
-        Q(c)      = Q_int(nobs,nch)
-        U(c)      = U_int(nobs,nch)
-        BR_Q(c)   = BR_Q_int(nobs,nch)
-        BR_U(c)   = BR_U_int(nobs,nch)
+  !   ----------------------------------------------------   
+          if (.not. do_diagnostic_only) then 
+            call mp_check_vlidort(radiance_VL_int,reflectance_VL_int) 
+     
+            radiance_VL_bins(b) = radiance_VL_int(nobs,nch) 
+            reflectance_VL_bins(b) = reflectance_VL_int(nobs,nch)
+          end if
+          ALBEDO(c) = Valbedo(nobs,nch)
+          IRR_VL(c) = Vflux_factor(nch,nobs)
+          if ( FRLAND(c) < 0.99 ) then
+            SLEAVE_VL(c) = Vsleave(nch,nobs)*Vflux_factor(nch,nobs)
+            if (do_sleave_adjust) then
+              ADJUSTED_SLEAVE(c) = ADJUSTED_SLEAVE_int(nobs,nch)*Vflux_factor(nch,nobs)
+            end if
+          end if 
+          write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
+          call write_verbose(msg)
+      end do
+
+  !   Integrate c-k bins with g weights to get 
+  !   effective reflectance at wavelength
+      if (nbins(ioci(nch)) .gt. 1) then
+        TRANS_O2_VL(c) = trap08(dble(g_bins),dble(trans_o2_bins))
+        TRANS_N2O_VL(c) = trap08(dble(g_bins),dble(trans_n2o_bins))
+        TRANS_CH4_VL(c) = trap08(dble(g_bins),dble(trans_ch4_bins))
+        ! ozone is constant
+        TRANS_O3_VL(c) = dble(trans_o3_bins(1))
+        TRANS_H2O_VL(c) = trap08(dble(g_bins),dble(trans_h2o_bins))
+        TRANS_CO_VL(c) = trap08(dble(g_bins),dble(trans_co_bins))
+        TRANS_CO2_VL(c) = trap08(dble(g_bins),dble(trans_co2_bins))
+        TRANS_TOTAL_VL(c) = trap08(dble(g_bins),dble(trans_total_bins))
+
+        if (.not. do_diagnostic_only) then
+          radiance_VL(c) = trap08(dble(g_bins),radiance_VL_bins) 
+          reflectance_VL(c) = trap08(dble(g_bins),reflectance_VL_bins)
+        end if
+      else
+        TRANS_O2_VL(c) = dble(trans_o2_bins(1))
+        TRANS_N2O_VL(c) = dble(trans_n2o_bins(1))
+        TRANS_CH4_VL(c) = dble(trans_ch4_bins(1))
+        TRANS_O3_VL(c) = dble(trans_o3_bins(1))
+        TRANS_H2O_VL(c) = dble(trans_h2o_bins(1))
+        TRANS_CO_VL(c) = dble(trans_co_bins(1))
+        TRANS_CO2_VL(c) = dble(trans_co2_bins(1))
+        TRANS_TOTAL_VL(c) = dble(trans_total_bins(1))
+
+        if (.not. do_diagnostic_only) then
+          radiance_VL(c) = radiance_VL_bins(1)     
+          reflectance_VL(c) = reflectance_VL_bins(1)
+        end if
       end if
-      write(msg,*) 'VLIDORT Calculations DONE', myid, ierr
-      call write_verbose(msg)
 
   !   Keep track of progress of each processor
   !   -----------------------------------------        
@@ -871,8 +953,9 @@ program pace_vlidort
       call mpi_send(PE, counti*km+1, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
       call mpi_send(ZE, counti*km+1, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
       call mpi_send(TE, counti*km+1, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
-      
-      call mpi_send(ROD, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+     
+      call mpi_send(ROD, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr) 
+      call mpi_send(TRANS_RAY, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
       call mpi_send(TAU, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
       call mpi_send(SSA, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
       call mpi_send(G, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
@@ -884,15 +967,23 @@ program pace_vlidort
       call mpi_send(IG, counti, MPI_REAL, 0, 2001, MPI_COMM_WORLD, ierr)
 
       call mpi_send(ALBEDO, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
-      if (.not. scalar) then
-        call mpi_send(Q, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
-        call mpi_send(U, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
-        call mpi_send(BR_Q, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
-        call mpi_send(BR_U, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
-      end if
 
       call mpi_send(radiance_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
       call mpi_send(reflectance_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(SLEAVE_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(IRR_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(TRANS_O2_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(TRANS_N2O_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(TRANS_CH4_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(TRANS_O3_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(TRANS_H2O_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(TRANS_CO_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(TRANS_CO2_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      call mpi_send(TRANS_TOTAL_VL, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+
+      if (do_sleave_adjust) then
+        call mpi_send(ADJUSTED_SLEAVE, counti, MPI_REAL8, 0, 2001, MPI_COMM_WORLD, ierr)
+      end if
     end if
   end if
 
@@ -909,6 +1000,7 @@ program pace_vlidort
           call mpi_recv(TE(starti:endi,:), counti*km+1, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
 
           call mpi_recv(ROD(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(TRANS_RAY(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
           call mpi_recv(TAU(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
           call mpi_recv(SSA(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
           call mpi_recv(G(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
@@ -920,15 +1012,24 @@ program pace_vlidort
           call mpi_recv(IG(starti:endi), counti, MPI_REAL, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
 
           call mpi_recv(ALBEDO(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-          if (.not. scalar) then
-            call mpi_recv(Q(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-            call mpi_recv(U(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-            call mpi_recv(BR_Q(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-            call mpi_recv(BR_U(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
-          end if
 
           call mpi_recv(radiance_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
           call mpi_recv(reflectance_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(SLEAVE_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(IRR_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+
+          call mpi_recv(TRANS_O2_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(TRANS_N2O_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(TRANS_CH4_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(TRANS_O3_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(TRANS_H2O_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(TRANS_CO_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(TRANS_CO2_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          call mpi_recv(TRANS_TOTAL_VL(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+
+          if (do_sleave_adjust) then
+            call mpi_recv(ADJUSTED_SLEAVE(starti:endi), counti, MPI_REAL8, pp, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+          end if
         end if
       end if
     end do
@@ -939,7 +1040,9 @@ program pace_vlidort
 ! Write output to correct position in file 
 ! -----------------
   if (MAPL_am_I_root()) then
-    call write_outfile()
+    if (.not. do_diagnostic_only) then
+      call write_outfile()
+    end if
   end if
 
 ! Write additional data
@@ -1018,24 +1121,12 @@ program pace_vlidort
     call check(nf90_put_var(ncid, varid, unpack(ALBEDO,clmask,field), &
                   start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo")
 
-    if (.not. scalar) then
-      call check(nf90_inq_varid(ncid, 'Q_' // trim(adjustl(msg)), varid), "get q vaird")
-      call check(nf90_put_var(ncid, varid, unpack(Q,clmask,field), &
-                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out Q")
+    if (do_sleave_adjust) then
+      call check(nf90_inq_varid(ncid, 'ADJUSTED_SLEAVE_' // trim(adjustl(msg)), varid), "get adjusted sleave varid")
+      call check(nf90_put_var(ncid, varid, unpack(ADJUSTED_SLEAVE,clmask,field), &
+                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out adjusted sleave")
+    end if
 
-      call check(nf90_inq_varid(ncid, 'U_' // trim(adjustl(msg)), varid), "get u vaird")
-      call check(nf90_put_var(ncid, varid, unpack(U,clmask,field), &
-                  start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out U")
-
-      call check(nf90_inq_varid(ncid, 'surf_ref_Q_' // trim(adjustl(msg)), varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, unpack(BR_Q,clmask,field), &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo Q")
-
-      call check(nf90_inq_varid(ncid, 'surf_ref_U_' // trim(adjustl(msg)), varid), "get ref vaird")
-      call check(nf90_put_var(ncid, varid, unpack(BR_U,clmask,field), &
-                    start = (/1,1,1,nobs/), count = (/im,jm,1,nobs/)), "writing out albedo U")
-
-    endif        
 
     call check( nf90_close(ncid), "close outfile" )
     if (MAPL_am_I_root()) then
@@ -1068,9 +1159,55 @@ program pace_vlidort
 
     call check( nf90_open(ADD_file, nf90_write, ncid), "opening file " // ADD_file )
     write(msg,'(F10.2)') channels(nch)
-    call check(nf90_inq_varid(ncid, 'rod_' // trim(adjustl(msg)), varid), "get rod vaird")
+
+    call check(nf90_inq_varid(ncid, 'ROD_' // trim(adjustl(msg)), varid), "get rod vaird")
     call check(nf90_put_var(ncid, varid, unpack(ROD,clmask,field), &
               start = (/1,1,nobs/), count = (/im,jm,nobs/)), "writing out rod")
+
+    call check(nf90_inq_varid(ncid, 'TRANS_RAY_' // trim(adjustl(msg)), varid), "get rod vaird")
+    call check(nf90_put_var(ncid, varid, unpack(TRANS_RAY,clmask,field), &
+              start = (/1,1,nobs/), count = (/im,jm,nobs/)), "writing out rod")
+
+
+    call check(nf90_inq_varid(ncid, 'SLEAVE_' // trim(adjustl(msg)), varid), "get sleave varid")
+    call check(nf90_put_var(ncid, varid, unpack(SLEAVE_VL,clmask,field), &
+                    start = (/1,1,nobs/), count = (/im,jm,nobs/)), "writing out sleave")
+
+    call check(nf90_inq_varid(ncid, 'TRANS_O2_' // trim(adjustl(msg)), varid), "get alpha varid")
+    call check(nf90_put_var(ncid, varid, unpack(TRANS_O2_VL,clmask,field), &
+                    start = (/1,1,nobs/), count = (/im,jm,nobs/)), "writing out alpha")
+
+    call check(nf90_inq_varid(ncid, 'TRANS_N2O_' // trim(adjustl(msg)), varid), "get alpha varid")
+    call check(nf90_put_var(ncid, varid, unpack(TRANS_N2O_VL,clmask,field), &
+                    start = (/1,1,nobs/), count = (/im,jm,nobs/)), "writing out alpha")
+
+    call check(nf90_inq_varid(ncid, 'TRANS_CH4_' // trim(adjustl(msg)), varid), "get alpha varid")
+    call check(nf90_put_var(ncid, varid, unpack(TRANS_CH4_VL,clmask,field), &
+                    start = (/1,1,nobs/), count = (/im,jm,nobs/)), "writing out alpha")
+
+    call check(nf90_inq_varid(ncid, 'TRANS_O3_' // trim(adjustl(msg)), varid), "get alpha varid")
+    call check(nf90_put_var(ncid, varid, unpack(TRANS_O3_VL,clmask,field), &
+                    start = (/1,1,nobs/), count = (/im,jm,nobs/)), "writing out alpha")
+
+    call check(nf90_inq_varid(ncid, 'TRANS_H2O_' // trim(adjustl(msg)), varid), "get alpha varid")
+    call check(nf90_put_var(ncid, varid, unpack(TRANS_H2O_VL,clmask,field), &
+                    start = (/1,1,nobs/), count = (/im,jm,nobs/)), "writing out alpha")
+
+    call check(nf90_inq_varid(ncid, 'TRANS_CO_' // trim(adjustl(msg)), varid), "get alpha varid")
+    call check(nf90_put_var(ncid, varid, unpack(TRANS_CO_VL,clmask,field), &
+                    start = (/1,1,nobs/), count = (/im,jm,nobs/)), "writing out alpha")
+
+    call check(nf90_inq_varid(ncid, 'TRANS_CO2_' // trim(adjustl(msg)), varid), "get alpha varid")
+    call check(nf90_put_var(ncid, varid, unpack(TRANS_CO2_VL,clmask,field), &
+                    start = (/1,1,nobs/), count = (/im,jm,nobs/)), "writing out alpha")
+
+    call check(nf90_inq_varid(ncid, 'TRANS_TOTAL_' // trim(adjustl(msg)), varid), "get alpha varid")
+    call check(nf90_put_var(ncid, varid, unpack(TRANS_TOTAL_VL,clmask,field), &
+                    start = (/1,1,nobs/), count = (/im,jm,nobs/)), "writing out alpha")
+
+    call check(nf90_inq_varid(ncid, 'IRR_' // trim(adjustl(msg)), varid), "get irr varid")
+    call check(nf90_put_var(ncid, varid, unpack(IRR_VL,clmask,field), &
+                    start = (/1,1,nobs/), count = (/im,jm,nobs/)), "writing out irr")
 
     call check( nf90_close(ncid), "close addfile" )
     if (MAPL_am_I_root()) then
@@ -1210,10 +1347,15 @@ program pace_vlidort
         else
           Vsleave(ch,nobs) = dble(nn_interp(WATER_CH(below:below+1),reshape(SLEAVE(c,ch,:),(/2/)),channels(ch),sleave_missing,MISSING))
         end if
-        Vsleave(ch,nobs) = cos(dble(pi*SZA(c)/180.))*Vsleave(ch,nobs)
+        if (do_sleave_iso) then
+           Vsleave(ch,nobs) = cos(dble(pi*SZA(c)/180.))*Vsleave(ch,nobs)
+        end if
       end do
 
+    else
+      Vsleave = 0.0
     end if
+    
   end subroutine get_ocean_params
 
 
@@ -1240,7 +1382,7 @@ program pace_vlidort
         if (scalar) then
           ! Call to vlidort scalar code       
           call VLIDORT_Scalar_OCIGissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-                  nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                  nPol, ROT, depol, dble(Valpha), dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
                   dble(Vpe), dble(Vze), dble(Vte), &
@@ -1255,7 +1397,7 @@ program pace_vlidort
         else
           ! Call to vlidort vector code
           call VLIDORT_Vector_OCIGissCX_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-                 nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                 nPol, ROT, depol, dble(Valpha), dble(Vtau), dble(Vssa), dble(Vpmom), &
                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
                  dble(Vpe), dble(Vze), dble(Vte), &
@@ -1275,7 +1417,7 @@ program pace_vlidort
         if (scalar) then
           ! Call to vlidort scalar code       
           call VLIDORT_Scalar_OCIGissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-                  nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                  nPol, ROT, depol, dble(Valpha), dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&                
                   dble(Vpe), dble(Vze), dble(Vte), &
@@ -1289,11 +1431,14 @@ program pace_vlidort
                   (/dble(RAA(c))/), &
                   (/dble(VZA(c))/), &
                   Vflux_factor, &
-                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr)
+                  dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, &
+                  Valbedo, &
+                  ierr, &
+                  ADJUSTED_SLEAVE_int)
         else
-          ! Call to vlidort vector code          
+          ! Call to vlidort vector code
           call VLIDORT_Vector_OCIGissCX_NOBM_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-                 nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                 nPol, ROT, depol, dble(Valpha), dble(Vtau), dble(Vssa), dble(Vpmom), &
                  dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl),&
                  dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl),&               
                  dble(Vpe), dble(Vze), dble(Vte), &
@@ -1308,7 +1453,10 @@ program pace_vlidort
                  (/dble(VZA(c))/), &
                  Vflux_factor, &
                  dble(MISSING),verbose, &
-                 radiance_VL_int,reflectance_VL_int, Q_int, U_int, Valbedo, BR_Q_int, BR_U_int, ierr)
+                 radiance_VL_int,reflectance_VL_int, Q_int, U_int, &
+                 Valbedo, BR_Q_int, BR_U_int, &
+                 ierr, &
+                 ADJUSTED_SLEAVE_int)
         end if
       else
 !       Save code for pixels that were not gap filled
@@ -1319,6 +1467,9 @@ program pace_vlidort
         if (.not. scalar) then
           Q_int = -500
           U_int = -500
+        end if
+        if (do_sleave_adjust) then
+          ADJUSTED_SLEAVE_int = -500
         end if
         ierr = 0
 
@@ -1429,7 +1580,7 @@ program pace_vlidort
       if (scalar) then
           ! Call to vlidort scalar code       
           call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-                  nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
+                  nPol, ROT, depol, dble(Valpha), dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
                   dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
@@ -1441,7 +1592,7 @@ program pace_vlidort
       else
         ! Call to vlidort vector code
         call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-               nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
+               nPol, ROT, depol, dble(Valpha), dble(Vtau), dble(Vssa), dble(Vpmom), &
                dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
@@ -1466,7 +1617,7 @@ program pace_vlidort
           U_int = -500
         end if
         ierr = 0
-
+        
       else   
 !       MODIS BRDF Surface Model
 !       ------------------------------
@@ -1474,7 +1625,7 @@ program pace_vlidort
         if (scalar) then 
             ! Call to vlidort scalar code            
             call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom,  &
-                    nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                    nPol, ROT, depol, dble(Valpha), dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                     dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
                     dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
                     dble(Vpe), dble(Vze), dble(Vte), &
@@ -1487,7 +1638,7 @@ program pace_vlidort
         else
           ! Call to vlidort vector code
           call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
-                  nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                  nPol, ROT, depol, dble(Valpha), dble(Vtau), dble(Vssa), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                   dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
                   dble(Vpe), dble(Vze), dble(Vte), &
@@ -1520,7 +1671,7 @@ program pace_vlidort
 
         ! Call to vlidort vector code
         call VLIDORT_Vector_LandMODIS_BPDF_cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
-                nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                nPol, ROT, depol, dble(Valpha), dble(Vtau), dble(Vssa), dble(Vpmom), &
                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
                 dble(Vpe), dble(Vze), dble(Vte), &
@@ -1536,36 +1687,6 @@ program pace_vlidort
     end if   
 
   end subroutine DO_LAND
-
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-! NAME
-!     read_OCI_stdatm
-! PURPOSE
-!     read in OCI spectral ROD and depol ratio values for standard atmosphere
-! INPUT
-! OUTPUT
-!  HISTORY
-!     Sep 2018 P. Castellanos
-!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-  subroutine read_OCI_stdatm()
-    do pp=0,npet-1
-      if (myid .eq. pp) then
-        open(unit=15,file=OCItable_file, status='old', access='sequential', &
-              form='formatted', action='read')
-        ! read header
-        read(15,'(A)') line 
-        do k=1,nchOCI
-          read(15,*) wavOCI(k), rodOCI(k), depolOCI(k)
-        end do
-
-        close(15)
-      end if
-      call MAPL_SyncSharedMemory(rc=ierr)      
-    end do
-    if (MAPL_am_I_root()) then
-      write(*,*) '<> Read OCI Standard Atmosphere Table'
-    end if
-  end subroutine read_OCI_stdatm
 
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
@@ -1845,12 +1966,201 @@ program pace_vlidort
         call readvar3D("RH", AER_file, READER3D) 
         call reduceProfile(READER3D,clmask,RH)
       end if
+        call readvar3D("WV_VMR", AER_file, READER3D)
+        call reduceProfile(READER3D,clmask,H2O)
       write(*,*) '<> Read aeorosl data to shared memory'
     end if
 
     call MAPL_SyncSharedMemory(rc=ierr)    
 
   end subroutine read_aer_Nv
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     read_chm_Nv
+! PURPOSE
+!     read in all the chemistry variables
+! INPUT
+!     none
+! OUTPUT
+!     none
+!  HISTORY
+!     15 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine read_chm_Nv()
+    if (MAPL_am_I_root()) then
+        call readvar3D("O3", CHM_file, READER3D)
+        call reduceProfile(READER3D,clmask,O3)
+
+        call readvar3D("CO", CHM_file, READER3D)
+        call reduceProfile(READER3D,clmask,CO)
+
+        call readvar3D("CO2", CHM_file, READER3D)
+        call reduceProfile(READER3D,clmask,CO2)
+
+        write(*,*) '<> Read chemistry data to shared memory'
+    end if
+  end subroutine read_chm_Nv
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     read_alpha
+! PURPOSE
+!     read in absorption cross section
+! INPUT
+!     none
+! OUTPUT
+!     none
+!  HISTORY
+!     15 May 2015 P. Castellanos
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  subroutine read_alpha()
+      real                         :: tt(km+1)     
+      ! read in data
+      call mp_readvar1D("g_bins", ALPHA_file, g_bins)
+      call mp_readvar1D("nbins", ALPHA_file, nbins)
+      call mp_readvar2D("xsec_o3", ALPHA_file, xsec_o3)
+      call mp_readvar3D("xsec_h2o", ALPHA_file, xsec_h2o)
+      call mp_readvar3D("xsec_co", ALPHA_file, xsec_co)
+      call mp_readvar3D("xsec_co2", ALPHA_file, xsec_co2)
+      call mp_readvar3D("alpha_n2o", ALPHA_file, alpha_n2o)
+      call mp_readvar3D("alpha_ch4", ALPHA_file, alpha_ch4)
+      call mp_readvar3D("alpha_o2", ALPHA_file, alpha_o2)
+      call mp_readvar1D("solar_irradiance", ALPHA_file, IRR)      
+      call mp_readvar1D("ROD", ALPHA_file, ROD_stdatm)
+      call mp_readvar1D("depol_ratio", ALPHA_file, DEPOL_stdatm)
+      call mp_readvar1D("PE", ALPHA_file, tt)
+      Vpe(:,nobs) = tt
+      call mp_readvar1D("TE", ALPHA_file, tt)
+      Vte(:,nobs) = tt
+      call mp_readvar1D("ZE", ALPHA_file, tt)
+      Vze(:,nobs) = tt
+
+
+    if (MAPL_am_I_root()) then
+      write(*,*) '<> Read Alpha Table'
+    end if
+    call MAPL_SyncSharedMemory(rc=ierr)
+  end subroutine read_alpha
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!    calc_alpha
+! PURPOSE
+!     calculates alpha needed by VLIDORT
+! INPUT
+! OUTPUT
+!     None
+!  HISTORY
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  subroutine calc_alpha(b,ch)
+    integer, intent(in)                    :: b   ! bin number
+    integer, intent(in)                    :: ch  ! oci channel index
+    integer                                :: k
+    real                                   :: rho(km)  ! air number density [molecules/m3]
+    real                                   :: alpha_o3(km)
+    real                                   :: alpha_co(km)
+    real                                   :: alpha_co2(km)
+    real                                   :: alpha_h2o(km)
+    real                                   :: cvza
+    real                                   :: o3_conc(km)  ! ozone number density
+    real                                   :: dz(km)       ! layer thickness
+    real, parameter                        :: R = 8.3145  ! gas constant [J mol-1 K-1]
+    real, parameter                        :: Na = 6.022e23 ! avogadro's number
+    real, parameter                        :: AIR_MW = 28.964*1e-3 ! kg/mole
+    real, parameter                        :: O3_MW  = 48.0*1e-3     ! kg/mole 
+    
+    if (gas_free) then
+      Valpha     = 0.0
+      alpha_o2   = 0.0
+      alpha_n2o  = 0.0
+      alpha_ch4  = 0.0
+      alpha_o3   = 0.0
+      alpha_h2o  = 0.0
+      alpha_co   = 0.0
+      alpha_co2  = 0.0
+    else
+      Valpha(:,nch,nobs) = alpha_o2(ch,b,:) + alpha_n2o(ch,b,:) + alpha_ch4(ch,b,:)
+
+      do k=1,km
+        dz(k) = Vze(k,nobs) - Vze(k+1,nobs)
+      end do
+
+      ! O3
+      ! convert mass mixing ratio to molecules/m3
+      ! AIRDENS is in kg/m3
+      o3_conc = O3(c,:)*AIRDENS(c,:)  ! kg/m3
+      o3_conc = o3_conc*Na/O3_MW      ! molecules/m3
+
+      ! xsecs are in m2/molecule
+      alpha_o3  = o3_conc*dz*xsec_o3(ch,:) 
+
+      ! Water vapor is in ppm
+      rho = AIRDENS(c,:)*Na/AIR_MW    ! air density molecules/m3
+      alpha_h2o = 1e-6*H2O(c,:)*rho*dz*xsec_h2o(ch,b,:)
+
+      ! CO is in volume mixing ratio
+      alpha_co  = CO(c,:)*rho*dz*xsec_co(ch,b,:)
+
+      ! CO2 is in volume mixing ratio
+      alpha_co2 = CO2(c,:)*rho*dz*xsec_co2(ch,b,:)
+
+      Valpha(:,nch,nobs) = Valpha(:,nch,nobs) + alpha_o3 + alpha_h2o + alpha_co + alpha_co2
+    end if
+
+    cvza = cos(pi*VZA(c)/180.)
+    trans_o2_bins(b)  = exp(-1.*sum(alpha_o2(ch,b,:))/cvza)
+    trans_n2o_bins(b) = exp(-1.*sum(alpha_n2o(ch,b,:))/cvza)
+    trans_ch4_bins(b) = exp(-1.*sum(alpha_ch4(ch,b,:))/cvza)
+    trans_o3_bins(b)  = exp(-1.*sum(alpha_o3)/cvza)
+    trans_h2o_bins(b) = exp(-1.*sum(alpha_h2o)/cvza)
+    trans_co_bins(b)  = exp(-1.*sum(alpha_co)/cvza)
+    trans_co2_bins(b) = exp(-1.*sum(alpha_co2)/cvza)
+    trans_total_bins(b) = exp(-1.*sum(Valpha(:,nch,nobs))/cvza)
+
+   end subroutine calc_alpha
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     trap0
+! PURPOSE
+!     trapezoidal integration
+! INPUT
+!     none
+! OUTPUT
+!     none
+!  HISTORY
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  function trap0(x,y)
+    real, intent(in)                    :: x(:)   !! variable x
+    real, intent(in)                    :: y(:)   !! variable y
+    integer                             :: n
+    real                                :: trap0
+    
+
+    ! integrate using the trapezoidal rule
+    n = size(x)
+    trap0 = sum((y(1+1:n-0) + y(1+0:n-1))*(x(1+1:n-0) - x(1+0:n-1)))/2
+  end function trap0
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+! NAME
+!     trap0
+! PURPOSE
+!     trapezoidal integration
+! INPUT
+!     none
+! OUTPUT
+!     none
+!  HISTORY
+!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  function trap08(x,y)
+    real*8, intent(in)                    :: x(:)   !! variable x
+    real*8, intent(in)                    :: y(:)   !! variable y
+    integer                               :: n
+    real*8                                :: trap08
+
+
+    ! integrate using the trapezoidal rule
+    n = size(x)
+    trap08 = sum((y(1+1:n-0) + y(1+0:n-1))*(x(1+1:n-0) - x(1+0:n-1)))/2
+  end function trap08
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
 !     read_PT
@@ -1867,30 +2177,13 @@ program pace_vlidort
   subroutine read_PT()
 
 
-    if (standard_atm) then
-      ! read edge vars to each processor
-      do pp=0,npet-1
-        if (myid .eq. pp) then
-          open(unit=15,file=STDATM_file, status='old', access='sequential', &
-                form='formatted', action='read')
-          read(15,'(A)') line
-          do k=1,km+1
-            read(15,*) Vpe(k,nobs),Vte(k,nobs),Vze(k,nobs)
-          end do
+    if (MAPL_am_I_root()) then
+      call readvar3D("AIRDENS", AER_file, READER3D) 
+      call reduceProfile(READER3D,clmask,AIRDENS)
 
-          close(15)
-        end if
-        call MAPL_SyncSharedMemory(rc=ierr)  
-      end do
-    else
-      if (MAPL_am_I_root()) then
-        call readvar3D("AIRDENS", AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,AIRDENS)
-
-        call readvar3D("DELP"   , AER_file, READER3D) 
-        call reduceProfile(READER3D,clmask,DELP)
-      end if     
-    end if
+      call readvar3D("DELP"   , AER_file, READER3D) 
+      call reduceProfile(READER3D,clmask,DELP)
+    end if     
 
 
     call MAPL_SyncSharedMemory(rc=ierr)    
@@ -1900,7 +2193,6 @@ program pace_vlidort
     call MAPL_SyncSharedMemory(rc=ierr)   
 
   end subroutine read_PT
-
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ! NAME
 !     read_cld_Tau
@@ -2003,9 +2295,14 @@ program pace_vlidort
     real, dimension(im,jm,2)           :: temp
     real, dimension(clrm,2)            :: tempReduce
     real, dimension(im,jm,wnch)        :: temp3d 
+    real, dimension(im,jm,wnch)        :: fq
     
     call readvar3D('rrs',WAT_file,temp3d)
-
+    if (.not. do_sleave_iso) then
+       call readvar3D('fq',FQ_file,fq)
+       temp3d = temp3d*fq
+    end if
+        
     do ch = 1, nch
       ! get channel below
       below = minloc(abs(channels(ch) - WATER_CH), dim = 1, mask = (channels(ch) - WATER_CH) .GE. 0)
@@ -2280,6 +2577,12 @@ program pace_vlidort
     call MAPL_AllocNodeArray(OCPHOBIC,(/clrm,km/),rc=ierr)
     call MAPL_AllocNodeArray(OCPHILIC,(/clrm,km/),rc=ierr)
     call MAPL_AllocNodeArray(SO4,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(O3,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(CO,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(CO2,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(H2O,(/clrm,km/),rc=ierr)
+    call MAPL_AllocNodeArray(ALPHA,(/clrm,bm,km/),rc=ierr)
+
     if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
       call MAPL_AllocNodeArray(KISO,(/clrm,landbandmBRDF/),rc=ierr)
       call MAPL_AllocNodeArray(KVOL,(/clrm,landbandmBRDF/),rc=ierr)
@@ -2316,20 +2619,13 @@ program pace_vlidort
     call MAPL_AllocNodeArray(ISSA,(/clrm/),rc=ierr)
     call MAPL_AllocNodeArray(IG,(/clrm/),rc=ierr)
 
+    call MAPL_AllocNodeArray(TRANS_RAY,(/clrm/),rc=ierr)
     call MAPL_AllocNodeArray(ROD,(/clrm/),rc=ierr)
     call MAPL_AllocNodeArray(ALBEDO,(/clrm/),rc=ierr)
     call MAPL_AllocNodeArray(PE,(/clrm,km+1/),rc=ierr)
     call MAPL_AllocNodeArray(ZE,(/clrm,km+1/),rc=ierr)
     call MAPL_AllocNodeArray(TE,(/clrm,km+1/),rc=ierr)
     
-    if (.not. scalar) then
-      call MAPL_AllocNodeArray(Q,(/clrm/),rc=ierr)
-      call MAPL_AllocNodeArray(U,(/clrm/),rc=ierr)
-      call MAPL_AllocNodeArray(BR_Q,(/clrm/),rc=ierr)
-      call MAPL_AllocNodeArray(BR_U,(/clrm/),rc=ierr)
-
-    end if
-
     if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
       call MAPL_AllocNodeArray(SLEAVE,(/clrm,nch,2/),rc=ierr)
       call MAPL_AllocNodeArray(WATER_CH,(/wnch/),rc=ierr)
@@ -2337,6 +2633,21 @@ program pace_vlidort
 
     call MAPL_AllocNodeArray(radiance_VL,(/clrm/),rc=ierr)
     call MAPL_AllocNodeArray(reflectance_VL,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(SLEAVE_VL,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(IRR_VL,(/clrm/),rc=ierr)
+
+    call MAPL_AllocNodeArray(TRANS_O2_VL,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(TRANS_N2O_VL,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(TRANS_CH4_VL,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(TRANS_O3_VL,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(TRANS_H2O_VL,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(TRANS_CO_VL,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(TRANS_CO2_VL,(/clrm/),rc=ierr)
+    call MAPL_AllocNodeArray(TRANS_TOTAL_VL,(/clrm/),rc=ierr)
+
+    if (do_sleave_adjust) then
+      call MAPL_AllocNodeArray(ADJUSTED_SLEAVE,(/clrm/),rc=ierr)
+    end if
 
   end subroutine allocate_shared
 
@@ -2378,6 +2689,11 @@ program pace_vlidort
       allocate (OCPHOBIC(clrm,km))
       allocate (OCPHILIC(clrm,km))
       allocate (SO4(clrm,km))
+      allocate (O3(clrm,km))
+      allocate (CO(clrm,km))
+      allocate (CO2(clrm,km))
+      allocate (H2O(clrm,km))
+      allocate (ALPHA(clrm,bm,km))
       if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
         allocate (KISO(clrm,landbandmBRDF))
         allocate (KVOL(clrm,landbandmBRDF))
@@ -2414,19 +2730,13 @@ program pace_vlidort
       allocate (ISSA(clrm))
       allocate (IG(clrm))
 
+      allocate (TRANS_RAY(clrm))
       allocate (ROD(clrm))
       allocate (ALBEDO(clrm))
       allocate (PE(clrm,km+1))
       allocate (ZE(clrm,km+1))
       allocate (TE(clrm,km+1))
       
-      if (.not. scalar) then
-        allocate (Q(clrm))
-        allocate (U(clrm))
-        allocate (BR_Q(clrm))
-        allocate (BR_U(clrm))
-      end if
-
       if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
         allocate (SLEAVE(clrm,nch,2))
         allocate (WATER_CH(wnch))
@@ -2434,6 +2744,21 @@ program pace_vlidort
 
       allocate (radiance_VL(clrm))
       allocate (reflectance_VL(clrm))
+      allocate (SLEAVE_VL(clrm))
+      allocate (IRR_VL(clrm))
+
+      allocate (TRANS_O2_VL(clrm))
+      allocate (TRANS_N2O_VL(clrm))
+      allocate (TRANS_CH4_VL(clrm))
+      allocate (TRANS_O3_VL(clrm))
+      allocate (TRANS_H2O_VL(clrm))
+      allocate (TRANS_CO_VL(clrm))
+      allocate (TRANS_CO2_VL(clrm))
+      allocate (TRANS_TOTAL_VL(clrm))
+
+      if (do_sleave_adjust) then
+        allocate (ADJUSTED_SLEAVE(clrm))
+      end if
     end if
   end subroutine allocate_multinode
 
@@ -2467,9 +2792,13 @@ program pace_vlidort
     allocate (VgIcl(km,nch,nobs))    
     allocate (VgLcl(km,nch,nobs))    
     allocate (Valbedo(nobs,nch))
+    allocate (Valpha(km,nch,nobs))
+    allocate (Vflux_factor(nch,nobs))
 
     allocate (radiance_VL_int(nobs,nch))
+    allocate (radiance_VL_bins(bm))
     allocate (reflectance_VL_int(nobs, nch))    
+    allocate (reflectance_VL_bins(bm))
 
     if ((index(lower_to_upper(landmodel),'RTLS') > 0) ) then
       allocate (kernel_wt(nkernel,nch,nobs))
@@ -2482,18 +2811,10 @@ program pace_vlidort
       end if
     end if
     
-    if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
-      allocate (Vsleave(nch,nobs))
-    end if
+    allocate (Vsleave(nch,nobs))
 
     allocate (ROT(km,nobs,nch))
     allocate (depol(nch))
-    allocate (Valpha(km,nobs,nch))
-    Valpha = 0.0
-    allocate (Vflux_factor(nch,nobs))
-    Vflux_factor = 1.0
-    allocate (ROD_stdatm(nch))
-    allocate (DEPOL_stdatm(nch))
     allocate (Vpmom(km,nch,nobs,nMom,nPol))
     allocate (VpmomLcl(km,nch,nobs,nMom,nPol))
     allocate (VpmomIcl(km,nch,nobs,nMom,nPol))
@@ -2505,6 +2826,8 @@ program pace_vlidort
       allocate (BR_U_int(nobs, nch))
     end if
 
+    allocate (ADJUSTED_SLEAVE_int(nobs,nch))
+
   ! Needed for reading
   ! ----------------------
     allocate (nclr(npet)) 
@@ -2512,6 +2835,30 @@ program pace_vlidort
 
     allocate(clmask(im,jm))
     clmask = .False.
+
+  ! trace gas stuff
+  ! ---------------------
+  allocate (alpha_n2o(noci,bm,km))
+  allocate (alpha_o2(noci,bm,km))
+  allocate (alpha_ch4(noci,bm,km))
+  allocate (nbins(noci))
+  allocate (g_bins(bm))
+  allocate (IRR(noci))
+  allocate (ROD_stdatm(noci))
+  allocate (DEPOL_stdatm(noci))
+  allocate (xsec_o3(noci,km))
+  allocate (xsec_h2o(noci,bm,km))
+  allocate (xsec_co(noci,bm,km))
+  allocate (xsec_co2(noci,bm,km))
+
+  allocate (trans_n2o_bins(bm))
+  allocate (trans_o2_bins(bm))
+  allocate (trans_ch4_bins(bm))
+  allocate (trans_o3_bins(bm))
+  allocate (trans_h2o_bins(bm))
+  allocate (trans_co_bins(bm))
+  allocate (trans_co2_bins(bm))
+  allocate (trans_total_bins(bm))
 
   end subroutine allocate_unshared
 
@@ -2584,12 +2931,9 @@ program pace_vlidort
   subroutine create_outfile(date, time)
     character(len=*) ,intent(in)       :: date, time
 
-    integer,dimension(nch)             :: radVarID, refVarID, aotVarID   
-    integer,dimension(nch)             :: qVarID, uVarID, albVarID, brUVarID, brQVarID      
-    integer,dimension(nch)             :: ssaVarID, tauVarID, gVarID
-    integer,dimension(nch)             :: LssaVarID, LtauVarID, LgVarID
-    integer,dimension(nch)             :: IssaVarID, ItauVarID, IgVarID
-    integer                            :: peVarID, zeVarID, teVarID     
+    integer,dimension(nch)             :: radVarID, refVarID   
+    integer,dimension(nch)             :: albVarID
+    integer,dimension(nch)             :: sleaveVarID
     
     integer                            :: ncid
     integer                            :: timeDimID, ewDimID, nsDimID, levDimID, chaDimID 
@@ -2696,15 +3040,10 @@ program pace_vlidort
       write(comment,'(F10.2)') channels(ch)
       call check(nf90_def_var(ncid, 'ref_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),refVarID(ch)),"create reflectance var")
       call check(nf90_def_var(ncid, 'surf_ref_I_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),albVarID(ch)),"create albedo var")
-      call check(nf90_def_var(ncid, 'I_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),radVarID(ch)),"create radiance var")              
-
-      if (.not. scalar) then
-        call check(nf90_def_var(ncid, 'Q_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),qVarID(ch)),"create Q var")
-        call check(nf90_def_var(ncid, 'U_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),uVarID(ch)),"create U var")
-        call check(nf90_def_var(ncid, 'surf_ref_Q_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),brQVarID(ch)),"create Q var")
-        call check(nf90_def_var(ncid, 'surf_ref_U_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),brUVarID(ch)),"create U var")
-      end if        
-
+      call check(nf90_def_var(ncid, 'I_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),radVarID(ch)),"create radiance var")             
+      if (do_sleave_adjust) then
+          call check(nf90_def_var(ncid, 'ADJUSTED_SLEAVE_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,levDimID,timeDimID/),sleaveVarID(ch)),"create adjusted sleave var")
+      end if
     end do
 
     ! Variable Attributes
@@ -2732,44 +3071,18 @@ program pace_vlidort
       write(comment,'(F10.2,A)') channels(ch), ' nm TAO I Component of the Stokes Vector'
       call check(nf90_put_att(ncid,radVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
       call check(nf90_put_att(ncid,radVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-      call check(nf90_put_att(ncid,radVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
+      call check(nf90_put_att(ncid,radVarID(ch),'units','uW cm-2 sr-1 nm-1'),"units attr")
       call check(nf90_put_att(ncid,radVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
-      if (.not. scalar) then
-        write(comment,'(F10.2,A)') channels(ch), ' nm TOA Q'
-        call check(nf90_put_att(ncid,qVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm TOA Q Component of the Stokes Vector'
-        call check(nf90_put_att(ncid,qVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-        call check(nf90_put_att(ncid,qVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-        call check(nf90_put_att(ncid,qVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
-        call check(nf90_put_att(ncid,qVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
-
-        write(comment,'(F10.2,A)') channels(ch), ' nm TOA U'
-        call check(nf90_put_att(ncid,uVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm TOA U Component of the Stokes Vector'
-        call check(nf90_put_att(ncid,uVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-        call check(nf90_put_att(ncid,uVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-        call check(nf90_put_att(ncid,uVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
-        call check(nf90_put_att(ncid,uVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
-
-        write(comment,'(F10.2,A)') channels(ch), ' nm Surface Reflectance Q'
-        call check(nf90_put_att(ncid,brQVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm Bi-Directional Surface Reflectance'
-        call check(nf90_put_att(ncid,brQVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-        call check(nf90_put_att(ncid,brQVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-        call check(nf90_put_att(ncid,brQVarID(ch),'units','None'),"units attr")
-        call check(nf90_put_att(ncid,brQVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
-
-        write(comment,'(F10.2,A)') channels(ch), ' nm Surface Reflectance U'
-        call check(nf90_put_att(ncid,brUVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm Bi-Directional Surface Reflectance'
-        call check(nf90_put_att(ncid,brUVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
-        call check(nf90_put_att(ncid,brUVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
-        call check(nf90_put_att(ncid,brUVarID(ch),'units','None'),"units attr")
-        call check(nf90_put_att(ncid,brUVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
-
+      if (do_sleave_adjust) then
+        write(comment,'(F10.2,A)') channels(ch), ' nm adjusted SLEAVE'
+        call check(nf90_put_att(ncid,sleaveVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm transmittance adjusted sun normalized water leaving radiance'
+        call check(nf90_put_att(ncid,sleaveVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,sleaveVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,sleaveVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
+        call check(nf90_put_att(ncid,sleaveVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
       end if
-
     end do
 
 !                                          scanTime
@@ -3257,7 +3570,9 @@ program pace_vlidort
   subroutine create_addfile(date, time)
     character(len=*) ,intent(in)       :: date, time
 
-    integer,dimension(nch)             :: rodVarID
+    integer,dimension(nch)             :: rodVarID, sleaveVarID, irrVarID, rayVarID
+    integer,dimension(nch)             :: o2VarID, n2oVarID, ch4VarID, transVarID
+    integer,dimension(nch)             :: o3VarID, h2oVarID, coVarID, co2VarID
     integer                            :: peVarID, zeVarID, teVarID     
     
     integer                            :: ncid
@@ -3341,20 +3656,129 @@ program pace_vlidort
   !                                     ----
       do ch=1,nch
         write(comment,'(F10.2)') channels(ch)
-        call check(nf90_def_var(ncid, 'rod_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),rodVarID(ch)),"create rod var")
+        call check(nf90_def_var(ncid, 'ROD_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),rodVarID(ch)),"create rod var")
+
+        call check(nf90_def_var(ncid, 'TRANS_RAY_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),rayVarID(ch)),"create rod var")
+
+        call check(nf90_def_var(ncid, 'SLEAVE_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),sleaveVarID(ch)),"create sleave var")
+
+        call check(nf90_def_var(ncid, 'TRANS_O2_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),o2VarID(ch)),"create o2 var")
+
+        call check(nf90_def_var(ncid, 'TRANS_N2O_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),n2oVarID(ch)),"create o2 var")
+
+        call check(nf90_def_var(ncid, 'TRANS_CH4_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),ch4VarID(ch)),"create o2 var")
+
+        call check(nf90_def_var(ncid, 'TRANS_O3_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),o3VarID(ch)),"create o2 var")
+
+        call check(nf90_def_var(ncid, 'TRANS_H2O_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),h2oVarID(ch)),"create o2 var")
+
+        call check(nf90_def_var(ncid, 'TRANS_CO_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),coVarID(ch)),"create o2 var")
+
+        call check(nf90_def_var(ncid, 'TRANS_CO2_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),co2VarID(ch)),"create o2 var")
+
+        call check(nf90_def_var(ncid, 'TRANS_TOTAL_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),transVarID(ch)),"create total var")
+
+        call check(nf90_def_var(ncid, 'IRR_' // trim(adjustl(comment)) ,nf90_float,(/ewDimID,nsDimID,timeDimID/),irrVarID(ch)),"create irr var")
       end do
       ! Variable Attributes
   !                                          Additional Data
   !                                          -----------------  
       do ch=1,size(channels)
-        write(comment,'(F10.2,A)') channels(ch), ' nm ROD'
+        write(comment,'(F10.2,A)') channels(ch), ' nm Rayleigh optical depth'
         call check(nf90_put_att(ncid,rodVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
-        write(comment,'(F10.2,A)') channels(ch), ' nm column Rayliegh Optical Depth'
+        write(comment,'(F10.2,A)') channels(ch), ' nm Rayliegh optical depth'
         call check(nf90_put_att(ncid,rodVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
         call check(nf90_put_att(ncid,rodVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
         call check(nf90_put_att(ncid,rodVarID(ch),'units','none'),"units attr")
         call check(nf90_put_att(ncid,rodVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
 
+        write(comment,'(F10.2,A)') channels(ch), ' nm Rayleigh transmittance'
+        call check(nf90_put_att(ncid,rayVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm Rayliegh transmittance'
+        call check(nf90_put_att(ncid,rayVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,rayVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,rayVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,rayVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm adjusted SLEAVE'
+        call check(nf90_put_att(ncid,sleaveVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm water leaving radiance'
+        call check(nf90_put_att(ncid,sleaveVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,sleaveVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,sleaveVarID(ch),'units','W m-2 sr-1 nm-1'),"units attr")
+        call check(nf90_put_att(ncid,sleaveVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm O2 transmittance'
+        call check(nf90_put_att(ncid,o2VarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm O2 transmittance'
+        call check(nf90_put_att(ncid,o2VarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,o2VarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,o2VarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,o2VarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm N2O transmittance'
+        call check(nf90_put_att(ncid,n2oVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm N2O transmittance'
+        call check(nf90_put_att(ncid,n2oVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,n2oVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,n2oVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,n2oVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm CH4 transmittance'
+        call check(nf90_put_att(ncid,ch4VarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm CH4 transmittance'
+        call check(nf90_put_att(ncid,ch4VarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,ch4VarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,ch4VarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,ch4VarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm O3 transmittance'
+        call check(nf90_put_att(ncid,o3VarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm O3 transmittance'
+        call check(nf90_put_att(ncid,o3VarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,o3VarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,o3VarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,o3VarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm H2O transmittance'
+        call check(nf90_put_att(ncid,h2oVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm H2O transmittance'
+        call check(nf90_put_att(ncid,h2oVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,h2oVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,h2oVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,h2oVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm CO transmittance'
+        call check(nf90_put_att(ncid,coVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm CO transmittance'
+        call check(nf90_put_att(ncid,coVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,coVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,coVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,coVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm CO2 transmittance'
+        call check(nf90_put_att(ncid,co2VarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm CO2 transmittance'
+        call check(nf90_put_att(ncid,co2VarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,co2VarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,co2VarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,co2VarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm total gas transmittance'
+        call check(nf90_put_att(ncid,transVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm total gas transmittance'
+        call check(nf90_put_att(ncid,transVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,transVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,transVarID(ch),'units','none'),"units attr")
+        call check(nf90_put_att(ncid,transVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
+
+        write(comment,'(F10.2,A)') channels(ch), ' nm irradiance'
+        call check(nf90_put_att(ncid,irrVarID(ch),'standard_name',trim(adjustl(comment))),"standard_name attr")
+        write(comment,'(F10.2,A)') channels(ch), ' nm solar irradiance'
+        call check(nf90_put_att(ncid,irrVarID(ch),'long_name',trim(adjustl(comment))),"long_name attr")
+        call check(nf90_put_att(ncid,irrVarID(ch),'missing_value',real(MISSING)),"missing_value attr")
+        call check(nf90_put_att(ncid,irrVarID(ch),'units','W/m^2/nm'),"units attr")
+        call check(nf90_put_att(ncid,irrVarID(ch),"_FillValue",real(MISSING)),"_Fillvalue attr")
       end do
 
 
@@ -3525,18 +3949,20 @@ program pace_vlidort
     call ESMF_ConfigGetAttribute(cf, plane_parallel, label = 'PLANE_PARALLEL:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, cloud_free, label = 'CLOUD_FREE:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, aerosol_free, label = 'AEROSOL_FREE:',default=.TRUE.)
-    call ESMF_ConfigGetAttribute(cf, standard_atm, label = 'STANDARD_ATM:',default=.TRUE.)
+    call ESMF_ConfigGetAttribute(cf, gas_free, label = 'GAS_FREE:',default=.TRUE.)
     call ESMF_ConfigGetAttribute(cf, nstreams, label = 'NSTREAMS:',default=12)
     call ESMF_ConfigGetAttribute(cf, szamax, label = 'SZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, vzamax, label = 'VZAMAX:',default=80.0)
     call ESMF_ConfigGetAttribute(cf, additional_output, label = 'ADDITIONAL_OUTPUT:',default=.false.)
     call ESMF_ConfigGetAttribute(cf, aerosol_output, label = 'AEROSOL_OUTPUT:',default=.false.)
     call ESMF_ConfigGetAttribute(cf, cloud_output, label = 'CLOUD_OUTPUT:',default=.false.)
-    call ESMF_ConfigGetAttribute(cf, do_sleave_iso, label = 'DO_SLEAVE_ISO:',default=.false.)
     call ESMF_ConfigGetAttribute(cf, do_sleave_adjust, label = 'DO_SLEAVE_ADJUST:',default=.false.)
+    call ESMF_ConfigGetAttribute(cf, do_sleave_iso, label = 'DO_SLEAVE_ISO:',default=.false.)
+    call ESMF_ConfigGetAttribute(cf, do_diagnostic_only, label = 'DO_DIAGNOSTIC_ONLY:',default=.false.)
     call ESMF_ConfigGetAttribute(cf, nodemax, label = 'NODEMAX:',default=1) 
     call ESMF_ConfigGetAttribute(cf, version, label = 'VERSION:',default='1.0') 
     call ESMF_ConfigGetAttribute(cf, layout, label = 'LAYOUT:',default='111')    
+    call ESMF_ConfigGetAttribute(cf, do_single_xtrack, label = 'DO_SINGLE_XTRACK:',default=.false.) 
 
     ! Land Surface
     call ESMF_ConfigGetAttribute(cf, landname, label = 'LANDNAME:',default='MAIACRTLS')
@@ -3552,18 +3978,14 @@ program pace_vlidort
       call ESMF_ConfigGetAttribute(cf, landband_cLER, label = 'LANDBAND_C_LER:', __RC__)
     end if
 
-    ! OCI Bandpass specific RODs
-    call ESMF_ConfigGetAttribute(cf, OCItable_file, label = 'OCItable_file:',__RC__)
-
-    ! standard atmosphere profile
-    if (standard_atm) then
-      call ESMF_ConfigGetAttribute(cf, STDATM_file, label = 'STDATM_file:',__RC__)
-    end if
     ! Water Surface
     call ESMF_ConfigGetAttribute(cf, watername, label = 'WATERNAME:',default='CX')
     call ESMF_ConfigGetAttribute(cf, watermodel, label = 'WATERMODEL:',default='CX')
     if ( (index(lower_to_upper(watername),'NOBM') > 0) ) then
       call ESMF_ConfigGetAttribute(cf, WAT_file, label = 'WAT_file:',__RC__)
+      if (.not. do_sleave_iso) then
+        call ESMF_ConfigGetAttribute(cf, FQ_file, label = 'FQ_file:',__RC__)
+      end if
     end if
 
     ! Clouds
@@ -3572,6 +3994,7 @@ program pace_vlidort
 
     ! Input Files
     call ESMF_ConfigGetAttribute(cf, AER_file, label = 'AER_file:',__RC__)
+    call ESMF_ConfigGetAttribute(cf, CHM_file, label = 'CHM_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, ANG_file, label = 'ANG_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, INV_file, label = 'INV_file:',__RC__)
     if ( (index(lower_to_upper(landmodel),'RTLS') > 0) ) then
@@ -3594,6 +4017,7 @@ program pace_vlidort
 
     call ESMF_ConfigGetAttribute(cf, CLD_file, label = 'CLD_file:',__RC__)
     call ESMF_ConfigGetAttribute(cf, MET_file, label = 'MET_file:',__RC__)
+    call ESMF_ConfigGetAttribute(cf, ALPHA_file, label = 'ALPHA_file:',__RC__)
     
     if ( (index(lower_to_upper(landmodel),'BPDF') > 0) ) then
       if ( (index(lower_to_upper(landname),'MAIGNAN') > 0) ) then    
@@ -3607,7 +4031,9 @@ program pace_vlidort
     !------------------------------------------------------
     nch =  ESMF_ConfigGetLen(cf, label = 'CHANNELS:',__RC__)
     allocate (channels(nch))
+    allocate (ioci(nch))
     call ESMF_ConfigGetAttribute(cf, channels, label = 'CHANNELS:', default=550.)
+    call ESMF_ConfigGetAttribute(cf, ioci, label = 'IOCI:',__RC__)
 
     allocate (mr(nch))
     call ESMF_ConfigGetAttribute(cf, mr, label = 'WATERMR:',__RC__) 

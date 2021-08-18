@@ -5,10 +5,10 @@
 #######################################################################
 #SBATCH --time=12:00:00
 #SBATCH --constraint=sky
-#SBATCH --ntasks=200 --cpus-per-task=1 --ntasks-per-node=40
+#SBATCH --ntasks=40 --cpus-per-task=1 --ntasks-per-node=40
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=patricia.castellanos@nasa.gov
-#SBATCH --job-name=pace
+#SBATCH --job-name=sample
 #SBATCH --account=s2190
 #SBATCH --output=slurm_%j.out
 #SBATCH --error=slurm_%j.err
@@ -30,7 +30,6 @@ limit stacksize unlimited
 #           Architecture Specific Environment Variables
 #######################################################################
 setenv G5DIR /discover/nobackup/pcastell/workspace/GAAS/src
-setenv RUN_CMD  "mpirun -np 200"
 
 source $HOME/.cshrc
 cd $G5DIR
@@ -43,9 +42,18 @@ cd $AEROBIN
 
 ##################################################################
 ######
-######         Perform single iteration of VLIDORT Run
+######         Run python code
 ######
 ##################################################################
-./clean_mem.sh
-$RUN_CMD ./pace_vlidort_gasabs_multinode.x pace_vlidort.rc
-./clean_mem.sh
+
+./pace_lb.py pace_lb.20.pcf &
+./pace_lb.py pace_lb.25.pcf &
+./pace_lb.py pace_lb.30.pcf &
+./pace_lb.py pace_lb.35.pcf &
+./pace_lb.py pace_lb.40.pcf &
+./pace_lb.py pace_lb.45.pcf &
+./pace_lb.py pace_lb.50.pcf &
+./pace_lb.py pace_lb.55.pcf &
+
+wait
+

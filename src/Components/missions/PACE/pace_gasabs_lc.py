@@ -244,9 +244,9 @@ class WORKSPACE(JOBS):
         self.aerfilelist = []
         self.cldfilelist = []
 
-        if args.channels is None:
+        if (args.channels is None) and (args.ichannels is None):
             self.get_channels()
-        else:
+        elif args.channels is not None:
             if ',' in args.channels:
                 makelist=lambda s: map(int, s.split(","))
                 self.channels = makelist(args.channels)
@@ -258,18 +258,30 @@ class WORKSPACE(JOBS):
                 self.channels = [float(args.channels)]
 
             self.get_ichannels()
+        elif args.ichannels is not None:
+            if ',' in args.ichannels:
+                makelist=lambda s: map(int, s.split(","))
+                self.ichannels = makelist(args.ichannels)
+            elif ':' in args.ichannels:
+                makelist=lambda s: map(int, s.split(":"))
+                start,stop,delta = makelist(args.ichannels)
+                self.ichannels = range(start,stop+delta,delta)
+            else:
+                self.ichannels = [int(args.ichannels)]
+
+            self.get_channels(ichannels=self.ichannels)
 
         if int(args.nodemax) > 1 : 
             self.nodemax = int(args.nodemax)
         else:
             self.nodemax = None
 
-        for ich,nbin,ch in zip(self.ichannels,self.channels,self.nbins):
+        for ich,ch,nbin in zip(self.ichannels,self.channels,self.nbins):
             fch = "{:.2f}".format(ch).replace('.','d')
             outpath = '{}/{}-{}.{}'.format(args.tmp,str(ich).zfill(4),self.Date.isoformat(),fch)
 
             # Copy over some files to working temp directory
-            self.create_workdir(outpath,ch)
+            self.create_workdir(outpath,ch,nbin)
 
             # # Create pcf file
             self.write_rc(outpath,ich,ch)
@@ -363,7 +375,7 @@ class WORKSPACE(JOBS):
         LcDirCh   = '{}/LevelC/{}/v{}/channel'.format(self.rootdir,YMDdir,self.version)
         surfDir   = '{}/LevelB/surface'.format(self.rootdir)
 
-        pYMDdir   = self.Date.strftime('Y2020/M%m/D%d')
+        pYMDdir   = self.Date.strftime('Y2019/M%m/D%d')
         L1bDir    = '{}/L1B/{}'.format(self.rootdir,pYMDdir)
 
 
@@ -567,7 +579,7 @@ class WORKSPACE(JOBS):
         newline = 'CHM_file: {}\n'.format(CHM_file)
         text.append(newline)
 
-        pDate = isoparser(self.Date.strftime('2020-%m-%dT%H:%M:00'))
+        pDate = isoparser(self.Date.strftime('2019-%m-%dT%H:%M:00'))
         nyj = pDate.strftime('%Y%j')
         ANG_file = '{}/OCI{}{}.L1B_PACE.nc'.format(L1bDir,nyj,hms)
         newline = 'ANG_file: {}\n'.format(ANG_file)
@@ -626,11 +638,16 @@ class WORKSPACE(JOBS):
 
         f.close()
 # ---
-    def get_channels(self):
+    def get_channels(self,ichannels=None):
         nc = Dataset(self.ALPHA_file)
         self.channels  = nc.variables['channels'][:]
+        self.nbins     = nc.variables['nbins'][:]
         nc.close()
-        self.ichannels = np.arange(len(self.channels))
+        if ichannels is None:
+            self.ichannels = np.arange(len(self.channels))
+        else:
+            self.channels = self.channels[ichannels]
+            self.nbins    = self.nbins[ichannels]
 # ---
     def get_ichannels(self):
         nc = Dataset(self.ALPHA_file)
@@ -694,7 +711,7 @@ class WORKSPACE(JOBS):
 
     def compress(self,i,devnull):
 
-        cmd = "$BASEDIR/Linux/bin/ncks --hst --no_abc -O -4 -L 2 --cnk_plc=g2d --cnk_dmn ccd_pixels,91 --cnk_dmn number_of_scans,144 --cnk_dmn lev,1 {} {}"
+        cmd = "$BASEDIR/Linux/bin/ncks --hst -O -4 -L 2 --cnk_plc=g2d --cnk_dmn ccd_pixels,91 --cnk_dmn number_of_scans,144 --cnk_dmn lev,1 {} {}"
 
         if not self.do_diagnostic_only:
             outfile = self.outfilelist[i]
@@ -787,7 +804,7 @@ if __name__ == '__main__':
     rtls_name  = 'MCD43C'
     bpdf_name  = None # 'MAIGNAN'
     water_name = None
-    ALPHA_file = 'alphaTable_v0/alpha_CK_Thuillier_o3.nc4'
+    ALPHA_file = 'alphaTable_v7/alpha_CK_Thuillier_o3.nc4'
     version    = 2.0
 
     parser = argparse.ArgumentParser()
@@ -816,6 +833,9 @@ if __name__ == '__main__':
 
     parser.add_argument("-c","--channels", default=None,
                         help="channels to get TOA radiance. Can be a list (1,2) or a range (1:2:1) (default=None - read in from PACE L1B File)")                            
+
+    parser.add_argument("--ichannels", default=None,
+                        help="index of channels to get TOA radiance. Can be a list (1,2) or a range (1:2:1) (default=None - read in from PACE L1B File)")
 
     parser.add_argument("-e","--extch", default=None,type=lambda s: map(int, s.split(",")),
                         help="channels to run extinction sampler (default=None - read in from PACE L1B File)")  

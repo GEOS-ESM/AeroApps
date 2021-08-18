@@ -50,6 +50,7 @@ set (PYSCRIPTS
     pace_gasabs_lc.py
     pace_lb.py
     pace_lc.py
+    pace_lc_to_l1b_mp.py
     pace_lc_to_l1b.py
     pace.py
     sleave_brdf.py
@@ -57,10 +58,15 @@ set (PYSCRIPTS
 
 set (SCRIPTS
     clean_mem.sh
+    leo_vlidort_lc.j
+    pace_lb.j
     pace_lc_array.j
     pace_lc_gas.j
     pace_lc_gas_multinode.j
     pace_lc.j
+    pace_lc_multinode.j
+    pace_lc_to_l1b.j
+    pace_lc_to_l1b_mp.j
     )
 
 install (
@@ -86,7 +92,9 @@ set (RCFILES
     cld_nearest.rc
     cloud_calc.rc
     leo_sampler.rc
+    leo_vlidort_cloud.rc
     met_Nv.rc
+    met_Nv_uv.rc
     pace_vlidort_gas_470-nccs.rc
     pace_vlidort.rc
     variablesGCS.rc
@@ -94,6 +102,7 @@ set (RCFILES
 
 set (OTHERFILES
     g5nr.pcf
+    g5nr_uv.pcf
     mcd12c.pcf
     mcd43c.pcf
     myd13c2.pcf

@@ -29,8 +29,8 @@ class SLEAVE_BRDF(object):
 
             self.outFile = options.lbRoot + '/surface/SLEAVE/NOBM' + dirname + 'pace-g5nr.lb.fq.' + fname
 
-            dirname = t1.strftime('/Y2019/M%m/D%d/')
-            tj    = isoparser(t1.strftime('2019-%m-%dT%H:%M'))
+            dirname = t1.strftime('/Y2020/M%m/D%d/')
+            tj    = isoparser(t1.strftime('2020-%m-%dT%H:%M'))
             jdate = tj.strftime('%Y%j%H%M00') 
             self.l1bFile = options.l1bRoot + dirname + 'OCI' + jdate + '.L1B_PACE.nc'
 

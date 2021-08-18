@@ -20,6 +20,7 @@ from   MAPL.constants import MAPL_UNDEF
 from   pyhdf.SD import SD, SDC
 from   scipy.interpolate import interp1d
 from collections import OrderedDict
+from multiprocessing import Pool
 
 MISSING = np.float32(1e20)
 
@@ -118,6 +119,43 @@ SDS_AER['aod_SWIR'] = ['aerosol optical depth for SWIR bands','None',None]
 SDS_AER['ssa_SWIR'] = ['aerosol single scattering albedo for SWIR bands','None',None]
 SDS_AER['g_SWIR']   = ['aerosol assymetry parameter for SWIR bands','None',None]
          
+#---
+
+def rsr_smoother(args):
+
+    wav_ck,varck,wav_ck_grid,rsr_int,norms,istart,noci,MISSING,F0_int = args
+
+    nck,nscan,nccd = varck.shape
+    ck_smooth = np.ones([noci-istart,nscan,nccd])*MISSING
+    ngrid = len(wav_ck_grid)
+    if F0_int is None:
+        F0_int = 1.0
+
+    ck_f = interp1d(wav_ck,varck,axis=0,kind='linear')
+    varck_grid = ck_f(wav_ck_grid)
+    for ich in range(istart,noci):
+        norm = norms[ich]
+        C    = rsr_int[ich,:]*F0_int
+        C.shape = (ngrid,1,1)
+        ck_smooth[ich-istart,:,:] = np.trapz(varck_grid*C,wav_ck_grid,axis=0)/norm
+
+    return ck_smooth
+#---
+
+def center_interpolator(args):
+
+    wav_ck,varck,wav_cen,istart,noci,MISSING = args
+
+    # interpolate to OCI center wavelengths
+    # but only for OCI channels covered by CK bins
+    nck,nscan,nccd = varck.shape
+    ich = range(istart,noci)
+    ck_center = np.ones([noci-istart,nscan,nccd])*MISSING
+    ck_f = interp1d(wav_ck,varck,axis=0,kind='linear')
+    ck_center = ck_f(wav_cen[ich])
+
+    return ck_center
+
 
 #---
 def shave(q,undef=MAPL_UNDEF,has_undef=1,nbits=12):
@@ -157,6 +195,7 @@ class LEVELC(object):
 
         self.cwd           = os.getcwd()
         self.rootdir       = args.rootdir
+        self.istart        = args.istart
         self.run_name      = args.run_name
         self.write_add     = args.write_add
         self.write_aer     = args.write_aer
@@ -175,14 +214,14 @@ class LEVELC(object):
         self.cldfilelist = None
 
         YMDdir    = self.Date.strftime('Y%Y/M%m/D%d')
-        pYMDdir   = self.Date.strftime('Y2020/M%m/D%d')
+        pYMDdir   = self.Date.strftime('Y2019/M%m/D%d')
         self.LcDir     = '{}/LevelC/{}/v{}'.format(self.rootdir,YMDdir,self.version)
         self.L1bDir    = '{}/L1B/{}'.format(self.rootdir,pYMDdir)
         self.Lc2Dir    = '{}/LevelC2/{}/v{}'.format(rootdir,YMDdir,self.version)
         self.hms       = self.Date.strftime('%H%M00')
         self.nymd      = self.Date.strftime('%Y%m%d')
 
-        pDate = isoparser(self.Date.strftime('2020-%m-%dT%H:%M:00'))
+        pDate = isoparser(self.Date.strftime('2019-%m-%dT%H:%M:00'))
         self.nyj = pDate.strftime('%Y%j')
         self.L1B_file = '{}/OCI{}{}.L1B_PACE.nc'.format(self.L1bDir,self.nyj,self.hms)
 
@@ -210,71 +249,6 @@ class LEVELC(object):
         if self.write_cld:
             self.cldfilelist = self.get_outfilelist('cloud')
             self.condense_AER_CLD('cloud',self.cldfilelist,SDS_CLD)
-# ---
-    def rod_rsr_weighted(self,filelist,varname):
-        """
-        weight rod by RSR
-        this is only for ck wavs
-        """
-
-        # get granule dimensions
-        nc = Dataset(filelist[0])
-        nccd = len(nc.dimensions['ccd_pixels'])
-        nscan = len(nc.dimensions['number_of_scans'])
-        nc.close()
-
-        # read in data
-        var = []
-        for filename in filelist:
-            nc = Dataset(filename)
-            chname = self.get_chname(filename)
-            pvar = nc.variables[varname+'_'+chname]
-            rank = len(pvar.shape)
-            if rank == 4:
-                var.append(pvar[0,0:1,:,:])
-            else:
-                var.append(pvar[0:1,:,:])
-
-            nc.close()
-
-        # split into UV and CK wavelengths
-        var = np.concatenate(var,axis=0)
-        varck = var[self.ick,:,:]
-        self.varuv = var[self.iuv,:,:]
-        var = None
-
-        # regrid CK so it's a consistent resolution
-        # integrate over RSR
-        # but only for OCI channels covered by CK bins
-        wav_ck_grid = np.arange(self.wav_ck.min(),self.wav_ck.max()+0.5,0.5)
-        istart = 53
-        ck_smooth = np.ones([self.noci-istart,nscan,nccd])*MISSING
-
-        rsr_f = interp1d(self.wav_rsr,self.rsr,kind='linear',fill_value=0.0,bounds_error=False)
-        rsr_int = rsr_f(wav_ck_grid)
-        norms = np.zeros(self.noci)
-        for ich in range(self.noci):
-            norms[ich] = np.trapz(rsr_int[ich,:],wav_ck_grid)
-
-        if self.do_single_xtrack:
-            iscan = 600
-            for iccd in range(nccd):
-                ck_f = interp1d(self.wav_ck,varck[:,iscan,iccd],kind='linear')
-                varck_grid = ck_f(wav_ck_grid)
-                for ich in range(istart,self.noci):
-                    norm = norms[ich]
-                    ck_smooth[ich-istart,iscan,iccd] = np.trapz(varck_grid*rsr_int[ich,:],wav_ck_grid)/norm
-        else:
-            for iscan in range(nscan):
-                for iccd in range(nccd):
-                    ck_f = interp1d(self.wav_ck,varck[:,iscan,iccd],kind='linear')
-                    varck_grid = ck_f(wav_ck_grid)
-                    for ich in range(istart,self.noci):
-                        norm = norms[ich]
-                        ck_smooth[ich-istart,iscan,iccd] = np.trapz(varck_grid*rsr_int[ich,:],wav_ck_grid)/norm
-
-
-        self.varck = ck_smooth
 
 # ---
     def trans_rsr_weighted(self,filelist,varname):
@@ -319,8 +293,7 @@ class LEVELC(object):
         # integrate over RSR
         # but only for OCI channels covered by CK bins
         wav_ck_grid = np.arange(self.wav_ck.min(),self.wav_ck.max()+0.5,0.5)
-        istart = 53
-        ck_smooth = np.ones([self.noci-istart,nscan,nccd])*MISSING
+        istart = self.istart
 
         F0_f = interp1d(self.wav_ck,F0ck,kind='linear')
         F0_int = F0_f(wav_ck_grid)
@@ -331,25 +304,36 @@ class LEVELC(object):
         for ich in range(self.noci):
             norms[ich] = np.trapz(rsr_int[ich,:]*F0_int,wav_ck_grid)
 
+
         if self.do_single_xtrack:
             iscan = 600
-            for iccd in range(nccd):
-                ck_f = interp1d(self.wav_ck,varck[:,iscan,iccd],kind='linear')
-                varck_grid = ck_f(wav_ck_grid)
-                for ich in range(istart,self.noci):
-                    norm = norms[ich]
-                    ck_smooth[ich-istart,iscan,iccd] = np.trapz(varck_grid*rsr_int[ich,:]*F0_int,wav_ck_grid)/norm
+            args = [self.wav_ck,varck[:,iscan:iscan+1,:],wav_ck_grid,rsr_int,norms,istart,self.noci,MISSING,F0_int]
+            varout = rsr_smoother(args)
+            self.varck = np.ones([noci-istart,nscan,nccd])*MISSING
+            self.varck[:,iscan,:] = varout
         else:
-            for iscan in range(nscan):
-                for iccd in range(nccd):
-                    ck_f = interp1d(self.wav_ck,varck[:,iscan,iccd],kind='linear')
-                    varck_grid = ck_f(wav_ck_grid)
-                    for ich in range(istart,self.noci):
-                        norm = norms[ich]
-                        ck_smooth[ich-istart,iscan,iccd] = np.trapz(varck_grid*rsr_int[ich,:]*F0_int,wav_ck_grid)/norm
+            p = Pool(30)
+            varout = None
+            for i in np.arange(0,nscan,30):
+                si = i
+                ei = i + 30
+                if ei > nscan:
+                    ei = nscan            
+                args = []
+                for i in range(si,ei):
+                    aa = [self.wav_ck,varck[:,i:i+1,:],wav_ck_grid,rsr_int,norms,istart,self.noci,MISSING,F0_int]
+                    args.append(aa)
 
+                result = p.map(rsr_smoother,args)
+                if varout is None:
+                    varout = np.concatenate(result,axis=1)
+                else:
+                    varout = np.append(varout,np.concatenate(result,axis=1),axis=1)
+               
+            p.close()
+            p.join()
+            self.varck = varout
 
-        self.varck = ck_smooth
 # ---
     def rsr_weighted_radiance(self,filelist):
         """
@@ -401,33 +385,44 @@ class LEVELC(object):
         # integrate over RSR
         # but only for OCI channels covered by CK bins
         wav_ck_grid = np.arange(self.wav_ck.min(),self.wav_ck.max()+0.5,0.5)
-        istart = 53
-        ck_smooth = np.ones([self.noci-istart,nscan,nccd])*MISSING
+        istart = self.istart
+
         rsr_f = interp1d(self.wav_rsr,self.rsr,kind='linear',fill_value=0.0,bounds_error=False)
         rsr_int = rsr_f(wav_ck_grid)
         norms = np.zeros(self.noci)
         for ich in range(self.noci):
             norms[ich] = np.trapz(rsr_int[ich,:],wav_ck_grid)
 
+        F0_int=None
         if self.do_single_xtrack:
             iscan = 600
-            for iccd in range(nccd):
-                ck_f = interp1d(self.wav_ck,varck[:,iscan,iccd],kind='linear')
-                varck_grid = ck_f(wav_ck_grid)
-                for ich in range(istart,self.noci):
-                    norm = norms[ich]
-                    ck_smooth[ich-istart,iscan,iccd] = np.trapz(varck_grid*rsr_int[ich,:],wav_ck_grid)/norm
+            args = [self.wav_ck,varck[:,iscan:iscan+1,:],wav_ck_grid,rsr_int,norms,istart,self.noci,MISSING,F0_int]
+            varout = rsr_smoother(args)
+            self.varck = np.ones([noci-istart,nscan,nccd])*MISSING
+            self.varck[:,iscan,:] = varout
         else:
-            for iscan in range(nscan):
-                for iccd in range(nccd):
-                    ck_f = interp1d(self.wav_ck,varck[:,iscan,iccd],kind='linear')
-                    varck_grid = ck_f(wav_ck_grid)
-                    for ich in range(istart,self.noci):
-                        norm = norms[ich]
-                        ck_smooth[ich-istart,iscan,iccd] = np.trapz(varck_grid*rsr_int[ich,:],wav_ck_grid)/norm
+            p = Pool(30)
+            varout = None
+            for i in np.arange(0,nscan,30):
+                si = i
+                ei = i + 30
+                if ei > nscan:
+                    ei = nscan
+                args = []
+                for i in range(si,ei):
+                    aa = [self.wav_ck,varck[:,i:i+1,:],wav_ck_grid,rsr_int,norms,istart,self.noci,MISSING,F0_int]
+                    args.append(aa)
 
-        self.varck = ck_smooth
+                result = p.map(rsr_smoother,args)
 
+                if varout is None:
+                    varout = np.concatenate(result,axis=1)
+                else:
+                    varout = np.append(varout,np.concatenate(result,axis=1),axis=1)
+
+            p.close()
+            p.join()
+            self.varck = varout
 
         # go from reflectance to radiance
         self.varuv = self.varuv*irr[:istart,:,:]*csza/np.pi        
@@ -469,33 +464,44 @@ class LEVELC(object):
         # integrate over RSR
         # but only for OCI channels covered by CK bins
         wav_ck_grid = np.arange(self.wav_ck.min(),self.wav_ck.max()+0.5,0.5)
-        istart = 53
-        ck_smooth = np.ones([self.noci-istart,nscan,nccd])*MISSING
+        istart = self.istart
+
         rsr_f = interp1d(self.wav_rsr,self.rsr,kind='linear',fill_value=0.0,bounds_error=False)
         rsr_int = rsr_f(wav_ck_grid)        
         norms = np.zeros(self.noci)
         for ich in range(self.noci):
             norms[ich] = np.trapz(rsr_int[ich,:],wav_ck_grid)
 
+        F0_int = None
         if self.do_single_xtrack:
             iscan = 600
-            for iccd in range(nccd):
-                ck_f = interp1d(self.wav_ck,varck[:,iscan,iccd],kind='linear')
-                varck_grid = ck_f(wav_ck_grid)
-                for ich in range(istart,self.noci):
-                    norm = norms[ich]
-                    ck_smooth[ich-istart,iscan,iccd] = np.trapz(varck_grid*rsr_int[ich,:],wav_ck_grid)/norm
+            args = [self.wav_ck,varck[:,iscan:iscan+1,:],wav_ck_grid,rsr_int,norms,istart,self.noci,MISSING,F0_int]
+            varout = rsr_smoother(args)
+            self.varck = np.ones([noci-istart,nscan,nccd])*MISSING
+            self.varck[:,iscan,:] = varout
         else:
-            for iscan in range(nscan):
-                for iccd in range(nccd):
-                    ck_f = interp1d(self.wav_ck,varck[:,iscan,iccd],kind='linear')
-                    varck_grid = ck_f(wav_ck_grid)
-                    for ich in range(istart,self.noci):
-                        norm = norms[ich]
-                        ck_smooth[ich-istart,iscan,iccd] = np.trapz(varck_grid*rsr_int[ich,:],wav_ck_grid)/norm
-            
-            
-        self.varck = ck_smooth
+            p = Pool(30)
+            varout = None
+            for i in np.arange(0,nscan,30):
+                si = i
+                ei = i + 30
+                if ei > nscan: 
+                    ei = nscan
+                args = []
+                for i in range(si,ei):
+                    aa = [self.wav_ck,varck[:,i:i+1,:],wav_ck_grid,rsr_int,norms,istart,self.noci,MISSING,F0_int]
+                    args.append(aa)
+
+                result = p.map(rsr_smoother,args)
+                if varout is None:
+                    varout = np.concatenate(result,axis=1)
+                else:
+                    varout = np.append(varout,np.concatenate(result,axis=1),axis=1)
+
+            p.close()
+            p.join()
+            self.varck = varout
+
 # ---
     def center_interpolated(self,filelist,varname):
         """
@@ -530,24 +536,37 @@ class LEVELC(object):
 
         # interpolate to OCI center wavelengths
         # but only for OCI channels covered by CK bins
-        istart = 53
-        ich = range(istart,self.noci)
-        ck_center = np.ones([self.noci-istart,nscan,nccd])*MISSING
+        istart = self.istart
+
         if self.do_single_xtrack:
             iscan = 600
-            for iccd in range(nccd):
-                ck_f = interp1d(self.wav_ck,varck[:,iscan,iccd],kind='linear')
-                ck_center[:,iscan,iccd] = ck_f(self.wav_cen[ich])
+            args = [self.wav_ck,varck[:,iscan:iscan+1,:],self.wav_cen,istart,self.noci,MISSING]
+            varout = center_interpolator(args)
+            self.varck = np.ones([noci-istart,nscan,nccd])*MISSING
+            self.varck[:,iscan,:] = varout
         else:
-            for iscan in range(nscan):
-                for iccd in range(nccd):
-                        ck_f = interp1d(self.wav_ck,varck[:,iscan,iccd],kind='linear')
-                        ck_center[:,iscan,iccd] = ck_f(self.wav_cen[ich])
+            p = Pool(30)
+            varout = None
+            for i in np.arange(0,nscan,30):
+                si = i
+                ei = i + 30
+                if ei > nscan:
+                    ei = nscan
+                args = []
+                for i in range(si,ei):
+                    aa = [self.wav_ck,varck[:,i:i+1,:],self.wav_cen,istart,self.noci,MISSING]
+                    args.append(aa)
 
+                result = p.map(center_interpolator,args)
+                if varout is None:
+                    varout = np.concatenate(result,axis=1)
+                else:
+                    varout = np.append(varout,np.concatenate(result,axis=1),axis=1)
 
-        self.varck = ck_center
+            p.close()
+            p.join()
+            self.varck = varout
 
-        
 # ---
     def get_chname(self,filename):
         fname = os.path.basename(filename)
@@ -623,6 +642,10 @@ class LEVELC(object):
             pchannels = np.array(ncmerge.groups['sensor_band_parameters'].variables[sds][:])
             pvar      = ncmerge.groups['observation_data'].variables[SDS[sds]]
 
+            if sds == 'SWIR_wavelength':
+                for i,ch in enumerate(pchannels):
+                    pchannels[i] = round(ch,3)
+
             # first do UV channels
             for ich,ch in enumerate(self.wav_uv):
                 for i,pch in enumerate(pchannels):
@@ -641,7 +664,7 @@ class LEVELC(object):
                         pvar[i,:,:] = data
 
             # now do other channels
-            istart = 53
+            istart = self.istart
             for ich, ch in enumerate(self.wav_oci[istart:]):
                 for i,pch in enumerate(pchannels):
                     if float(ch) == pch:
@@ -752,7 +775,7 @@ class LEVELC(object):
                         pvar[:,:,i] = data
 
             # now do other channels
-            istart = 53
+            istart = self.istart
             for ich, ch in enumerate(self.wav_oci[istart:]):
                 for i,pch in enumerate(pchannels):
                     if float(ch) == pch:
@@ -781,7 +804,7 @@ class LEVELC(object):
         SDS_ = np.unique(np.array(SDS_))
         for sds in SDS_:
             if 'ROD' in sds:
-                self.rod_rsr_weighted(filelist,sds)
+                self.rsr_weighted(filelist,sds)
                 self.insert_condenseVar(outfile,sds)
             else:
                 self.trans_rsr_weighted(filelist,sds)
@@ -883,6 +906,7 @@ def create_condenseFile(L1B_file,outfile,Date,SDS):
         _copyVar(nctrj,nc,u'ev_mid_time','scan_line_attributes', dtype='f4',zlib=True,verbose=True)
     else:
         _copyVar(nctrj,nc,u'time','scan_line_attributes', dtype='f4',zlib=True,verbose=True)
+
     _copyVar(nctrj,nc,u'blue_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
     _copyVar(nctrj,nc,u'red_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
     _copyVar(nctrj,nc,u'SWIR_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
@@ -969,17 +993,20 @@ if __name__ == '__main__':
     
     #Defaults
     rootdir    = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE'
-    ALPHA_file = 'alphaTable_v0/alpha_CK_Thuillier_o3.nc4'
-    RSR_file   = 'rsrFile/OCI_RSR_v0.hdf'
-    IRR_file   = 'irrTable_v0/F0_rsr_weighted_V0.nc'
+    ALPHA_file = 'alphaTable_v7/alpha_CK_Thuillier_o3.nc4'
+    RSR_file   = 'rsrFile/OCI_RSR_2.5nm_v7_amended.hdf'
+    IRR_file   = 'irrTable_v7/F0_rsr_weighted_V7.nc'
     version    = 2.0
-
+    istart     = 103
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
 
     parser.add_argument("--rootdir",default=rootdir,
                         help="root directory for PACE data (default=%s)."%rootdir)       
+    parser.add_argument("--istart",default=istart,
+                        help="ck istart, choose 53 for 5 nm and 103 for 2.5 nm steps (default=%s)."%istart)
+
 
     parser.add_argument("-v", "--verbose",action="store_true",
                         help="Verbose mode (default=False).")

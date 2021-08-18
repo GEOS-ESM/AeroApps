@@ -1,0 +1,2 @@
+RCFILES = met_Nv_uv.rc
+ALGO    = linear

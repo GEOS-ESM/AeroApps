@@ -3,6 +3,7 @@ TIME: 005000
 INSTNAME: pace
 
 SCALAR: false
+NSTREAMS: 10
 PLANE_PARALLEL: True
 DO_SLEAVE_ADJUST: false
 
@@ -22,9 +23,9 @@ STANDARD_ATM: false
 LANDNAME: MCD43C 
 LANDMODEL: RTLS
 LANDBAND_C_BRDF: 470 550 650 850 1200 1600 2100
-BRDF_file: /nobackup/PACE/LevelB/surface/BRDF/MCD43C1/006/Y2006/M03/D24/pace-g5nr.lb.brdf.20060324_005000.nc4
-NDVI_file: /nobackup/PACE/LevelB/Y2006/M03/D24/pace-g5nr.lb-nearest.myd13c2.20060324_005000.nc4
-BPDF_file: /nobackup/PACE/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051/Y2006/M03/D24/pace-g5nr.lb.land_cover.20060324_005000.nc4
+BRDF_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/surface/BRDF/MCD43C1/006/Y2006/M03/D24/pace-g5nr.lb.brdf.20060324_005000.nc4
+NDVI_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/Y2006/M03/D24/pace-g5nr.lb-nearest.myd13c2.20060324_005000.nc4
+BPDF_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051/Y2006/M03/D24/pace-g5nr.lb.land_cover.20060324_005000.nc4
 
 
 WATERNAME: NOBM-CX

@@ -176,7 +176,7 @@ class MCD43C(object):
         _copyVar(nctrj,nc,u'number_of_scans',dtype='f4',zlib=zlib,verbose=verbose)            
         _copyVar(nctrj,nc,u'longitude',dtype='f4',zlib=zlib,verbose=verbose)
         _copyVar(nctrj,nc,u'latitude',dtype='f4',zlib=zlib,verbose=verbose)
-        _copyVar(nctrj,nc,u'ev_mid_time', dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,u'time', dtype='f4',zlib=zlib,verbose=verbose)
 
         # Loop over Bands writing each dataset
         #---------------------------------------
@@ -204,7 +204,7 @@ class MCD43C(object):
 
         # Read in tymes
         scanStart = isoparser(nctrj.time_coverage_start)
-        midTime   = nctrj.variables['ev_mid_time'][:]
+        midTime   = nctrj.variables['time'][:]
         tyme       = np.array([scanStart + timedelta(seconds=int(t)) for t in midTime])   
         # Round dates to day
         dtyme = np.array([isoparser(str(d.date())) for d in tyme])

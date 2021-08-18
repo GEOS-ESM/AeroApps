@@ -621,7 +621,7 @@ program pace_vlidort
         starti = sum(nclr(1:pp-1))+1
         starti = starti + (clrm_total/nodemax)*(nodenum-1)
         counti = nclr(pp)
-        endi   = starti + counti - 1  
+        endi   = starti + counti - 1 
         if (counti > 0) then
           call mpi_send(AIRDENS(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
           call mpi_send(RH(starti:endi,:), counti*km, MPI_REAL, pp, 2001, MPI_COMM_WORLD, ierr)
@@ -704,10 +704,10 @@ program pace_vlidort
       call mpi_recv(OCPHOBIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
       call mpi_recv(OCPHILIC, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
       call mpi_recv(SO4, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)     
-      call mpi_recv(H2O, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
+      call mpi_recv(H2O, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
+      call mpi_recv(O3, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr) 
       call mpi_recv(CO, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
       call mpi_recv(CO2, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
-      call mpi_recv(O3, counti*km, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
       if ((index(lower_to_upper(landmodel),'RTLS') > 0)) then
         call mpi_recv(KISO, counti*landbandmBRDF, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)  
         call mpi_recv(KVOL, counti*landbandmBRDF, MPI_REAL, 0, 2001, MPI_COMM_WORLD, status_mpi, ierr)
@@ -3031,7 +3031,7 @@ program pace_vlidort
     call check(nf90_def_var(ncid,'ccd_pixels',nf90_float,(/ewDimID/),ewVarID),"create ew var")
     call check(nf90_def_var(ncid,'number_of_scans',nf90_float,(/nsDimID/),nsVarID),"create ns var")
 
-    call check(nf90_def_var(ncid,'ev_mid_time',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
+    call check(nf90_def_var(ncid,'time',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
     call check(nf90_def_var(ncid,'longitude',nf90_float,(/ewDimID,nsDimID/),clonVarID),"create clon var")
     call check(nf90_def_var(ncid,'latitude',nf90_float,(/ewDimID,nsDimID/),clatVarID),"create clat var")
 
@@ -3125,7 +3125,7 @@ program pace_vlidort
     allocate (ew(im))
     allocate (ns(jm))    
 
-    call readvar1D("ev_mid_time", INV_file, scantime)
+    call readvar1D("time", INV_file, scantime)
     call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
 
     call readvar2D("longitude", INV_file, clon)
@@ -3230,7 +3230,7 @@ program pace_vlidort
       call check(nf90_def_var(ncid,'ccd_pixels',nf90_float,(/ewDimID/),ewVarID),"create ew var")
       call check(nf90_def_var(ncid,'number_of_scans',nf90_float,(/nsDimID/),nsVarID),"create ns var")
 
-      call check(nf90_def_var(ncid,'ev_mid_time',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
+      call check(nf90_def_var(ncid,'time',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
       call check(nf90_def_var(ncid,'longitude',nf90_float,(/ewDimID,nsDimID/),clonVarID),"create clon var")
       call check(nf90_def_var(ncid,'latitude',nf90_float,(/ewDimID,nsDimID/),clatVarID),"create clat var")
 
@@ -3317,7 +3317,7 @@ program pace_vlidort
       allocate (ns(jm))    
       allocate (lev(km))
 
-      call readvar1D("ev_mid_time", INV_file, scantime)
+      call readvar1D("time", INV_file, scantime)
       call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
 
       call readvar2D("longitude", INV_file, clon)
@@ -3424,7 +3424,7 @@ program pace_vlidort
       call check(nf90_def_var(ncid,'ccd_pixels',nf90_float,(/ewDimID/),ewVarID),"create ew var")
       call check(nf90_def_var(ncid,'number_of_scans',nf90_float,(/nsDimID/),nsVarID),"create ns var")
 
-      call check(nf90_def_var(ncid,'ev_mid_time',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
+      call check(nf90_def_var(ncid,'time',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
       call check(nf90_def_var(ncid,'longitude',nf90_float,(/ewDimID,nsDimID/),clonVarID),"create clon var")
       call check(nf90_def_var(ncid,'latitude',nf90_float,(/ewDimID,nsDimID/),clatVarID),"create clat var")
 
@@ -3539,7 +3539,7 @@ program pace_vlidort
       allocate (ns(jm))    
       allocate (lev(km))
 
-      call readvar1D("ev_mid_time", INV_file, scantime)
+      call readvar1D("time", INV_file, scantime)
       call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
 
       call readvar2D("longitude", INV_file, clon)
@@ -3649,7 +3649,7 @@ program pace_vlidort
       call check(nf90_def_var(ncid,'ccd_pixels',nf90_float,(/ewDimID/),ewVarID),"create ew var")
       call check(nf90_def_var(ncid,'number_of_scans',nf90_float,(/nsDimID/),nsVarID),"create ns var")
 
-      call check(nf90_def_var(ncid,'ev_mid_time',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
+      call check(nf90_def_var(ncid,'time',nf90_float,(/ewDimID/),scantimeVarID),"create scanTime var")
       call check(nf90_def_var(ncid,'longitude',nf90_float,(/ewDimID,nsDimID/),clonVarID),"create clon var")
       call check(nf90_def_var(ncid,'latitude',nf90_float,(/ewDimID,nsDimID/),clatVarID),"create clat var")
 
@@ -3823,7 +3823,7 @@ program pace_vlidort
       allocate (ns(jm))    
       allocate (lev(km))
 
-      call readvar1D("ev_mid_time", INV_file, scantime)
+      call readvar1D("time", INV_file, scantime)
       call check(nf90_put_var(ncid,scantimeVarID,scantime), "writing out scantime")
 
       call readvar2D("longitude", INV_file, clon)
