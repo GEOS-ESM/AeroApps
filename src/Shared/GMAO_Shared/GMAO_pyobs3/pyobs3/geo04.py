@@ -1,6 +1,6 @@
 """
-Reads Level 2 MOD04/MYD04 granules for a single day and returns a
-single object with the relevant data.
+Reads Level 2 Aerosol ABI/AHI granules produced by the MODIS Aerosol Group (Rob Levy) 
+and returns a single object with the relevant data.
 
 This software is hereby placed in the public domain.
 Arlindo.daSilva@nasa.gov
@@ -11,18 +11,18 @@ import sys
 from types    import *
 from numpy    import zeros, ones, sqrt, std, mean, unique,\
                      concatenate, where, array, linspace,\
-                     shape, arange, interp
+                     shape, arange, interp, count_nonzero
 from datetime import date, datetime, timedelta
 from glob     import glob
 
 from .npz import NPZ
 
+from netCDF4 import Dataset
+
 try:
     from pyods import ODS # must be inported before pyhdf
 except:
     pass
-
-from pyhdf.SD import SD, HDF4Error
 
 from .bits import BITS
 
@@ -30,109 +30,140 @@ from .bits import BITS
 
 DATE_START = datetime(1993,1,1,0,0,0)
 
+GROUPS = dict ( META = 'geolocation_data',
+                LAND = 'geophysical_data',
+               OCEAN = 'geophysical_data')
+
 SDS = dict (
-      META = ('Longitude', 'Latitude', 'Scan_Start_Time',
-              'Sensor_Zenith', 'Sensor_Azimuth',
-              'Solar_Zenith',  'Solar_Azimuth',
-              'Scattering_Angle' ),
-      LAND = ( 'Mean_Reflectance_Land',
-               'Corrected_Optical_Depth_Land',
-#               'Optical_Depth_Small_Land',
-#               'Critical_Reflectance_Land',
-               'Surface_Reflectance_Land',
-               'Cloud_Fraction_Land',
-               'Quality_Assurance_Land'),
-     OCEAN = ( 'Effective_Optical_Depth_Best_Ocean',
-               'Optical_Depth_Small_Best_Ocean',
-               'Effective_Radius_Ocean',
-               'Asymmetry_Factor_Best_Ocean',
-               'Angstrom_Exponent_1_Ocean',
-               'Angstrom_Exponent_2_Ocean',
-               'Cloud_Fraction_Ocean',
-               'Mean_Reflectance_Ocean',
-               'Quality_Assurance_Ocean' ),
-      DEEP = ( 'Deep_Blue_Spectral_Aerosol_Optical_Depth_Land',
-               'Deep_Blue_Spectral_Single_Scattering_Albedo_Land',
-               'Deep_Blue_Spectral_Surface_Reflectance_Land',
-               'Deep_Blue_Spectral_TOA_Reflectance_Land',
-               'Deep_Blue_Angstrom_Exponent_Land',
-               'Deep_Blue_Aerosol_Optical_Depth_550_Land_Best_Estimate',
-               'Deep_Blue_Aerosol_Optical_Depth_550_Land_QA_Flag',
-               'Deep_Blue_Algorithm_Flag_Land',
-               'Cloud_Fraction_Land',)
-        )
+                     META = ('longitude',
+                             'latitude',
+                             'solar_zenith_angle',
+                             'solar_azimuth_angle',
+                             'sensor_zenith_angle',
+                             'sensor_azimuth_angle',
+                             'Scattering_Angle',
+                             'Glint_Angle',
+                             ),
+                    LAND = ( 'Land_Ocean_Quality_Flag',
+                           #  u'Cloud_Pixel_Distance_Land_Ocean',
+                             'Surface_Reflectance_Land',
+                             'Corrected_Optical_Depth_Land',
+                             'Mean_Reflectance_Land',
+                             'Aerosol_Cloud_Fraction_Land',
+                             ),
+                    OCEAN = ('Land_Ocean_Quality_Flag',
+                           #  u'Cloud_Pixel_Distance_Land_Ocean',
+                             'Effective_Optical_Depth_Average_Ocean',
+                             'Optical_Depth_Small_Average_Ocean',
+                             'Aerosol_Cloud_Fraction_Ocean',
+                             'Effective_Radius_Ocean',
+                             'Asymmetry_Factor_Average_Ocean',
+                             'Angstrom_Exponent_1_Ocean',
+                             'Angstrom_Exponent_2_Ocean',
+                             'Mean_Reflectance_Ocean',
+                             ),
+                     ALL  = ('Land_Sea_Flag',
+                             'Aerosol_Cldmask_Land_Ocean',
+                             'Cloud_Pixel_Distance_Land_Ocean',
+                             'Land_Ocean_Quality_Flag',
+                             'Optical_Depth_Land_And_Ocean',
+                             'Image_Optical_Depth_Land_And_Ocean',
+                             'Aerosol_Type_Land',
+                             'Fitting_Error_Land',
+                             'Surface_Reflectance_Land',
+                             'Corrected_Optical_Depth_Land',
+                             'Optical_Depth_Ratio_Small_Land',
+                             'Number_Pixels_Used_Land',
+                             'Mean_Reflectance_Land',
+                             'STD_Reflectance_Land',
+                             'Mass_Concentration_Land',
+                             'Aerosol_Cloud_Fraction_Land',
+                             'Effective_Optical_Depth_Average_Ocean',
+                             'Optical_Depth_Small_Average_Ocean',
+                             'Optical_Depth_Large_Average_Ocean',
+                             'Mass_Concentration_Ocean',
+                             'Aerosol_Cloud_Fraction_Ocean',
+                             'Effective_Radius_Ocean',
+                             'PSML003_Ocean',
+                             'Asymmetry_Factor_Average_Ocean',
+                             'Backscattering_Ratio_Average_Ocean',
+                             'Angstrom_Exponent_1_Ocean',
+                             'Angstrom_Exponent_2_Ocean',
+                             'Least_Squares_Error_Ocean',
+                             'Optical_Depth_Ratio_Small_Ocean_0p55micron',
+                             'Optical_Depth_By_Models_Ocean',
+                             'Number_Pixels_Used_Ocean',
+                             'Mean_Reflectance_Ocean',
+                             'STD_Reflectance_Ocean',
+                             'Wind_Speed_Ncep_Ocean',
+                             'Topographic_Altitude_Land',
+                             'Error_Flag_Land_And_Ocean',
+                             ),
+               )
+         
 
-NEW_SDS = dict ( # New in Collection 6
-          Cloud_Fraction_Land = 'Aerosol_Cloud_Fraction_Land',
-          Cloud_Fraction_Ocean = 'Aerosol_Cloud_Fraction_Ocean',
-          )
-
-CHANNELS = dict (
-                   LAND = ( 470, 550, 660 ),
-                  OCEAN = ( 470, 550, 660, 870, 1200, 1600, 2100 ),
-                   DEEP = ( 412, 470, 550, 660 ), # file has 550 separate
-                   SREF = ( 470, 660, 2100 ),
+rCHANNELS = dict ( # reflectance channels
+                   LAND = ( 470, -510, 640, 860, -1240, 1610, 2110 ),
+                  OCEAN = ( 470, -510, 640, 860, -1240, 1610, 2110 ),
                 )
 
-ALIAS = dict (  Longitude = 'lon',
-                Latitude = 'lat',
-                Sensor_Zenith = 'SensorZenith',
-                Sensor_Azimuth = 'SensorAzimuth',
-                Solar_Zenith = 'SolarZenith',
-                Solar_Azimuth = 'SolarAzimuth',
+aCHANNELS = dict ( # AOD channels (same channels for surface reflectance land
+                   LAND = ( 470, 550, 660, 2113 ),
+                  OCEAN = ( 470, 550, 640, 860, -1240, 1610, 2110 ),
+                )
+
+sCHANNELS = dict ( # Surface reflectance
+                   LAND = ( 470, 660, 2100 ),
+                   OCEAN = (),
+                )
+
+ALIAS = dict (  longitude = 'lon',
+                latitude = 'lat',
+                sensor_zenith_angle = 'SensorZenith',
+                sensor_azimuth_angle = 'SensorAzimuth',
+                solar_zenith_angle = 'SolarZenith',
+                solar_azimuth_angle = 'SolarAzimuth',
                 Scattering_Angle = 'ScatteringAngle',
                 Glint_Angle = 'GlintAngle',
                 Mean_Reflectance_Land = 'reflectance',
                 Surface_Reflectance_Land = 'sfc_reflectance',
                 Corrected_Optical_Depth_Land = 'aod',
                 Optical_Depth_Small_Land = 'aod_fine',
-                Cloud_Fraction_Land = 'cloud',
-                Effective_Optical_Depth_Best_Ocean = 'aod',
+                Aerosol_Cloud_Fraction_Land = 'cloud',
+                Effective_Optical_Depth_Average_Ocean = 'aod',
                 Optical_Depth_Small_Best_Ocean = 'aod_fine',
-                Cloud_Fraction_Ocean = 'cloud',
+                Aerosol_Cloud_Fraction_Ocean = 'cloud',
                 Mean_Reflectance_Ocean = 'reflectance',
-                Deep_Blue_Spectral_Aerosol_Optical_Depth_Land = 'aod3ch',
-                Deep_Blue_Aerosol_Optical_Depth_550_Land_Best_Estimate = 'aod550',
-                Deep_Blue_Spectral_Surface_Reflectance_Land = 'sfc_reflectance',
-                Deep_Blue_Spectral_TOA_Reflectance_Land = 'reflectance',
-                Deep_Blue_Spectral_Single_Scattering_Albedo_Land = 'ssa',
-                Deep_Blue_Algorithm_Flag_Land = 'atype',
-                Deep_Blue_Angstrom_Exponent_Land = 'angstrom',
-                Deep_Blue_Cloud_Fraction_Land = 'cloud'
              )
 
 BAD, MARGINAL, GOOD, BEST = ( 0, 1, 2, 3 ) # QA marks
 
-KX = dict ( TerraOCEAN = 301,
-            TerraLAND  = 302,
-            TerraDEEP  = 310,
-            AquaOCEAN  = 311, 
-            AquaLAND   = 312,
-            AquaDEEP   = 320,
+KX = dict ( G16_OCEAN = 327,
+            G16_LAND  = 328,
+            G17_OCEAN = 329,
+            G17_LAND  = 330,
           )
 
 KT = dict ( AOD = 45, )
 
-IDENT = dict ( TerraOCEAN = 'modo',
-               TerraLAND  = 'modl',
-               TerraDEEP  = 'modd',
-               AquaOCEAN  = 'mydo',
-               AquaLAND   = 'mydl',
-               AquaDEEP   = 'mydd'
+IDENT = dict ( G16_OCEAN = 'g16o',
+               G16_LAND  = 'g16l',
+               G17_OCEAN = 'g17o',
+               G17_LAND  = 'g17l',
           )
 
 MISSING = 999.999
 
 #...........................................................................
 
-class MxD04_L2(object):
+class GEO04_L2(object):
     """
     This class implements the MODIS Level 2 AEROSOL products, usually
     referred to as MOD04 (TERRA satellite) and MYD04 (AQUA satellite).
     """
 
     def __init__ (self,Path,Algo,syn_time=None,nsyn=8,Verb=0,
-                  only_good=True,SDS=SDS,alias=None):
+                  only_good=True,SDS=SDS,GROUPS=GROUPS,alias=None):
        """
        Reads individual granules or a full day of Level 2 MOD04/MYD04 files
        present on a given *Path* and returns a single object with
@@ -141,9 +172,9 @@ class MxD04_L2(object):
        Required parameters:
          Path -- can be a single file, a single directory, of a list
                  of files and directories.  Directories are
-                 transversed recursively. If a non MOD04/MYD04 Level 2
+                 transversed recursively. If a non GEO Level 2
                  file is encountered, it is simply ignored.
-         Algo -- Algorithm: LAND, OCEAN or DEEP (for Deep Blue)
+         Algo -- Algorithm: LAND or OCEAN
 
        Optional parameters:
          syn_type  --- synoptic time
@@ -153,14 +184,14 @@ class MxD04_L2(object):
                  0 - really quiet (default)
                  1 - Warns if invalid file is found
                  2 - Prints out non-zero number of aerosols in each file.
-         SDS      --- Variables to be read from MODIS hdf files.  Must 
+         SDS      --- Variables to be read from GEO netcdf files.  Must 
                       be a dictionary with keys 'META' and Algo
          ALIAS    --- dictionary of alises for SDSs
 
        """
 
-       if Algo not in ('LAND', 'OCEAN', 'DEEP'):
-           raise ValueError("invalid algorithm "+Algo+" --- must be LAND, OCEAN or DEEP")
+       if Algo not in ('LAND', 'OCEAN'):
+           raise ValueError("invalid algorithm "+Algo+" --- must be LAND or OCEAN")
 
 #      Initially are lists of numpy arrays for each granule
 #      ------------------------------------------------
@@ -168,7 +199,9 @@ class MxD04_L2(object):
        self.sat  = None # Satellite name
        self.col  = None # collection, e.g., 005
        self.algo = Algo
-       self.SDS = SDS['META'] + SDS[Algo]
+       self.SDS  = SDS['META'] + SDS[Algo] + ('Time',)
+       self.META = SDS['META']
+       self.VARS = SDS[Algo]
 
        # Add/Substitute some aliases if given
        # ------------------------------------
@@ -179,25 +212,26 @@ class MxD04_L2(object):
 
        # Create empty lists for SDS to be read from file
        # -----------------------------------------------
-       for name in self.SDS:
+       for name in self.META+self.VARS:
            self.__dict__[name] = []
+       self.__dict__['Time'] = []
 
        # Read each granule, appending them to the list
        # ---------------------------------------------
        if type(Path) is ListType:
            if len(Path) == 0:
                self.nobs = 0
-               print("WARNING: Empty MxD04_L2 object created")
+               print("WARNING: Empty GEO04_L2 object created (1)")
                return
        else:
            Path = [Path, ]
        self._readList(Path)
 
-       #Protect against empty MXD04 files
+       # Protect against empty GEO04 files
        # --------------------------------
-       if len(self.Longitude) == 0:
+       if len(self.longitude) == 0:
            self.nobs = 0
-           print("WARNING: Empty MxD04_L2 object created")
+           print("WARNING: Empty GEO04_L2 object created (2)")
            return           
 
        # Make each attribute a single numpy array
@@ -207,21 +241,19 @@ class MxD04_L2(object):
                self.__dict__[sds] = concatenate(self.__dict__[sds])
            except:
                print("Failed concatenating "+sds)
-           if "Quality_Assurance" in sds:
-               if Algo == 'DEEP':
-                     pass
-               else:
-                     self.__dict__['qa_flag'] = BITS(self.__dict__[sds][:,0])[1:4] # QA Flag
+
+       # QA flag is now readily available
+       # --------------------------------
+       self.qa_flag = self.Land_Ocean_Quality_Flag
 
        # Determine index of "good" observations
        # --------------------------------------
        if Algo == 'LAND':
-           self.iGood = self.qa_flag==BEST
+           aod = self.Corrected_Optical_Depth_Land
+           self.iGood = (self.qa_flag==BEST) & (aod[:,1]>-0.01)
        elif Algo == 'OCEAN':
-           self.iGood = self.qa_flag>BAD
-       elif Algo == 'DEEP':
-           self.qa_flag = self.Deep_Blue_Aerosol_Optical_Depth_550_Land_QA_Flag
-           self.iGood = self.qa_flag>BAD # for now
+           aod = self.Effective_Optical_Depth_Average_Ocean 
+           self.iGood = (self.qa_flag>BAD) & (aod[:,1]>-0.01)
        else:
            raise ValueError('invalid algorithm (very strange)')
 
@@ -237,29 +269,23 @@ class MxD04_L2(object):
                    self.__dict__[sds] = self.__dict__[sds][m,:]
                else:
                    raise IndexError('invalid rank=%d'%rank)
-           self.qa_flag = self.qa_flag[m]
            self.iGood = self.iGood[m]
 
        # Make aliases for compatibility with older code 
        # ----------------------------------------------
-       Alias = list(self.ALIAS.keys())
        for sds in self.SDS:
-           if sds in Alias:
+           if sds in self.ALIAS:
                self.__dict__[self.ALIAS[sds]] = self.__dict__[sds] 
-
-       # Create corresponding python time
-       # --------------------------------
-       self.Time = array([DATE_START+timedelta(seconds=s) for s in self.Scan_Start_Time])
+       self.qa_flag = self.Land_Ocean_Quality_Flag # reflresh alias
 
        # ODS friendly attributes
        # -----------------------
-       self.nobs = self.Longitude.shape[0]
-       self.kx = KX[self.sat+self.algo]
-       self.ident = IDENT[self.sat+self.algo]
-       self.Channels = CHANNELS["OCEAN"]   # all channels
-       self.sChannels = CHANNELS["SREF"]   # LAND surface reflectivity (not the same as algo)
-       self.dChannels = CHANNELS["DEEP"]   # LAND surface reflectivity (not the same as algo)
-       self.channels = CHANNELS[self.algo]
+       self.nobs = self.longitude.shape[0]
+       self.kx = KX[self.sat+'_'+self.algo]
+       self.ident = IDENT[self.sat+'_'+self.algo]
+       self.rChannels = rCHANNELS[Algo]   # reflectance channels 
+       self.sChannels = sCHANNELS[Algo]   # surface reflectance
+       self.aChannels = aCHANNELS[Algo]   # AOD channels
        if syn_time == None:
            self.syn_time = None
            self.time = None
@@ -273,18 +299,6 @@ class MxD04_L2(object):
            self.nymd = 10000 * syn_time.year + 100*syn_time.month  + syn_time.day
            self.nhms = 10000 * syn_time.hour + 100*syn_time.minute + syn_time.second
            self.nsyn = nsyn # number of synoptic times per day
-
-       # Concatenate AOD channels for Deep Blue
-       # --------------------------------------
-       if Algo == 'DEEP':
-           try: 
-               self.aod = ones((self.nobs,4))
-               self.aod[:,0] = self.aod3ch[:,0]
-               self.aod[:,1] = self.aod3ch[:,1]
-               self.aod[:,2] = self.aod550[:]
-               self.aod[:,3] = self.aod3ch[:,2]
-           except:
-               pass # don't fuss, aod3ch may not have been read
 
 #---
     def _readList(self,List):
@@ -316,75 +330,136 @@ class MxD04_L2(object):
         try:
             if self.verb:
                 print("[] Working on "+filename)
-            hfile = SD(filename)
-        except HDF4Error:
+            nc = Dataset(filename)
+        except:
+
             if self.verb > 2:
-                print("- %s: not recognized as an HDF file"%filename)
+                print("- %s: cannot open"%filename)
             return 
 
-        # Read select variables (reshape to allow concatenation later)
-        # ------------------------------------------------------------
-        for sds_ in self.SDS:
-            sds = sds_
-            try:
-                v = hfile.select(sds).get()
-            except:
-                if sds in NEW_SDS: # cope with new names in Coll. 6
-                    sds = NEW_SDS[sds_]
-                    v = hfile.select(sds).get()
-            a = hfile.select(sds).attributes()
-            if a['scale_factor']!=1.0 or a['add_offset']!=0.0:
-                v = a['scale_factor'] * v + a['add_offset']
-            if len(v.shape) == 3:
-                i, j, k = v.shape
-                if "Quality_Assurance" in sds:
+        # Read GEO location and geophysical variables
+        # -------------------------------------------
+        for (g, VARS) in ( (nc.groups['geolocation_data'], self.META),
+                           (nc.groups['geophysical_data'], self.VARS), ):
+            for sds in VARS:
+                V = g.variables[sds]
+                if len(V.shape) == 3:
+                    v = V[:,:,:].data
+                    i, j, k = v.shape
                     v = v.reshape((i*j,k))
+                elif len(V.shape) == 2:
+                    v = V[:,:]
+                    v = v.ravel()
                 else:
-                    v = v.reshape((i,j*k)).T
-            elif len(v.shape) == 2:
-                v = v.ravel()
-            else:
-                raise IndexError("invalid shape for SDS <%s>"%sds)
-            self.__dict__[sds_].append(v) # Keep Collection 5 names!
+                    raise IndexError("invalid shape for SDS <%s>"%sds)
+                if self.verb > 2:
+                    print("<> ", sds, v.shape)
+                ### Data seems to be scaled already!
+                ### if V.scale_factor !=1. or V.add_offset != 0.:
+                ###    v = V.scale_factor * v + V.add_offset
+                self.__dict__[sds].append(v)
 
-        # Core Metadata
-        # -------------
-        cm = hfile.attributes()['CoreMetadata.0']
+        # Seeting time for this granule based on file name
+        # ------------------------------------------------
+        n = len(self.longitude[-1])
+        tyme = _gettyme(filename)
+        Time = array([tyme,]*n )
+        self.__dict__['Time'].append(Time)
 
 #       Satellite name
 #       --------------
-        if self.sat is None:
-            sat = cm.split('ASSOCIATEDPLATFORMSHORTNAME')[1].split('\n')[3].split('=')[1]
-            self.sat = sat.lstrip().replace('"','')
+        self.sat = 'G16' # hardwire this for now
             
 #       Collection
 #       ----------
-        if self.col is None:
-            col = int(cm.split('COLLECTION')[1].split('VERSIONID')[1].split('\n')[2].split('=')[1])
-            self.col = "%03d"%col
+        self.col = 0
 
 #---
+
+    def filter(self,cloud_thresh=[0.70,0.70], 
+                    glint_thresh=[75.0,None],
+                    scat_thresh=[170.0,None],
+                    sensor_zenith_thresh=[60.,60.],
+                    aod_thresh=[2.,2.]):
+        """
+        Apply additional quality control filters.
+        First therehold in list is for OCEAN, second for LAND:
+        [OCEAN,LAND]
+        """
+
+        if self.algo =="OCEAN":
+               i = 0
+        elif self.algo =="LAND":
+               i = 1
+        else:
+               raise ValueError('Unknown algorithm <%s:'%self.algo) 
+
+        if cloud_thresh[i] is not None:
+               self.iGood = (self.iGood & (self.cloud<cloud_thresh[i]))
+               if self.verb>2:
+                  print("-- Applying cloud filter for %s"%self.algo, cloud_thresh[i], count_nonzero(self.iGood))
+
+        if glint_thresh[i] is not None:
+               self.iGood = (self.iGood & (self.GlintAngle>glint_thresh[i])) 
+               if self.verb>2:
+                  print("-- Applying glint filter for %s"%self.algo, glint_thresh[i], count_nonzero(self.iGood)) 
+
+        if scat_thresh[i] is not None:
+               self.iGood = (self.iGood & (self.ScatteringAngle<scat_thresh[i]))
+               if self.verb>2:
+                  print("-- Applying scattering filter for %s"%self.algo, scat_thresh[i], count_nonzero(self.iGood)) 
+
+        if sensor_zenith_thresh[i] is not None:
+               self.iGood = (self.iGood & (self.SensorZenith<sensor_zenith_thresh[i]))  
+               if self.verb>2:
+                  print("-- Applying sensor zenith filter for %s"%self.algo, sensor_zenith_thresh[i], count_nonzero(self.iGood))
+
+        if aod_thresh[i] is not None:
+               aodBad = ((self.aod[:,1]>aod_thresh[i])&(self.cloud>0.25))
+               self.iGood = self.iGood & (aodBad==False)
+               if self.verb>2:
+                  print("-- Applying AOD-Cloud filter for %s"%self.algo, aod_thresh[i], count_nonzero(self.iGood))
+
+        # Filter out negative reflectances (skip missing channels)
+        # --------------------------------------------------------
+        i = 0
+        for ch in self.rChannels:
+            if ch>=0: # missing channels have negative wavelength
+                self.iGood = self.iGood & (self.reflectance[:,i]>=0)
+            i+=1
+        i = 0
+        for ch in self.sChannels:
+            if ch>=0: # missing channels have negative wavelength
+                self.iGood = self.iGood & (self.sfc_reflectance[:,i]>=0)
+            i+=1
+
+        # Get rid of bad observations
+        # ---------------------------
+        self.reduce(self.iGood)
+
+        if any(self.iGood) == False:
+            print("WARNING: Strange, no good obs left to work with")
+            return
 
     def reduce(self,I):
         """
         Reduce observations according to index I. 
         """
-        Nicknames = list(self.ALIAS.values())
-        for name in self.__dict__:
-            if name in Nicknames:
-                continue # alias do not get reduced
-            q = self.__dict__[name]
-            if type(q) is type(self.lon):
-                if len(q) == self.nobs:
-                    # print "{} Reducing "+name
-                    self.__dict__[name] = q[I]
 
-        Alias = list(self.ALIAS.keys())
         for sds in self.SDS:
-            if sds in Alias:
-                self.__dict__[self.ALIAS[sds]] = self.__dict__[sds] # redefine aliases
+            rank = len(self.__dict__[sds].shape)
+            if rank == 1:
+                self.__dict__[sds] = self.__dict__[sds][I]
+            elif rank == 2:
+                self.__dict__[sds] = self.__dict__[sds][I,:]
+            else:
+                raise IndexError('invalid rank=%d'%rank)
+            if sds in self.ALIAS:
+                self.__dict__[self.ALIAS[sds]] = self.__dict__[sds] 
 
-            self.nobs = len(self.lon)
+        self.qa_flag = self.qa_flag[I]
+        self.iGood = self.iGood[I]
+        self.nobs = len(self.lon)
 
 #---
     def write(self,filename=None,dir='.',expid=None,Verb=1):
@@ -412,7 +487,9 @@ class MxD04_L2(object):
                              lon = self.lon,
                              lat = self.lat,
                               ks = self.ks,
-                        channels = self.channels,
+                        rChannels = self.rChannels,
+                        aChannels = self.aChannels,
+                        sChannels = self.sChannels,
                          qa_flag = self.qa_flag,
                      SolarZenith = self.SolarZenith,
                     SolarAzimuth = self.SolarAzimuth,
@@ -436,7 +513,7 @@ class MxD04_L2(object):
         """
         
         if self.syn_time == None:
-            raise ValuError("synoptic time missing, cannot write ODS")
+            raise ValueError("synoptic time missing, cannot write ODS")
             
         # Stop here is no good obs available
         # ----------------------------------
@@ -452,7 +529,7 @@ class MxD04_L2(object):
             filename = '%s/%s.obs.%d_%02dz.ods'%(dir,expid,self.nymd,self.nhms/10000)
 
         if channels is None:
-            channels = self.channels
+            channels = self.aChannels
 
         # Create and populated ODS object
         # -------------------------------
@@ -463,10 +540,11 @@ class MxD04_L2(object):
         ks = arange(ns) + 1
         for ch in channels:
             I = list(range(i,i+ns))
-            j = channels.index(ch)
+            j = list(self.aChannels).index(ch)
             ods.ks[I]  = ks
             ods.lat[I] = self.lat[:]
             ods.lon[I] = self.lon[:]
+            ods.xm[I] = self.SensorZenith[:]
             ods.time[I] = self.time[:].astype('int')
             ods.lev[I] = ch
             ods.qch[I] = self.qa_flag[:].astype('int')
@@ -475,6 +553,7 @@ class MxD04_L2(object):
                 ods.xvec[I] = self.aod[:,j].astype('float32')
             else:
                 ods.obs[I] = self.aod[:,j].astype('float32')
+            ods.xm
             i += ns
 
         # Handle corrupted coordinates
@@ -563,7 +642,7 @@ class MxD04_L2(object):
        glat = linspace(-90.,90.,jm)
 
        if channels is None:
-           channels = self.channels
+           channels = self.aChannels
  
        levs = array(channels)
 
@@ -599,7 +678,7 @@ class MxD04_L2(object):
        # --------------------------------
        I = []
        for ch in channels:
-           i = list(self.channels).index(ch)
+           i = list(self.aChannels).index(ch)
            I = I + [i,]
        aod = self.aod[:,I]
 
@@ -708,16 +787,25 @@ class MxD04_L2(object):
 
 #............................................................................
 
-def granules ( path, prod, syn_time, coll='051', nsyn=8 ):
+def _gettyme(pathname):
+    filename = os.path.basename(pathname)
+    yyyyjjj = filename.split('_')[2].split('.')[0]
+    hhmm = filename.split('.')[1]
+    year = int(yyyyjjj[0:4])
+    jjj = int(yyyyjjj[4:7])
+    hour = int(hhmm[0:2])
+    minute = int(hhmm[2:4])
+    dt = timedelta(seconds=(jjj-1)*24*60*60)  
+    return datetime(year,1,1,hour,minute)+dt
+
+def granules ( path, syn_time, nsyn=8 ):
     """
-    Returns a list of MxD04 granules for a given product at given synoptic time.
+    Returns a list of GEO04 granules for a given product at given synoptic time.
     On input,
 
-    path      ---  mounting point for the MxD04 Level 2 files
-    prod      ---  either MOD04 or MYD04
+    path      ---  mounting point for the GEO04 Level 2 files
     syn_time  ---  synoptic time (timedate format)
 
-    coll      ---  collection: 005, 051 (optional)
     nsyn      ---  number of synoptic times per day (optional)
 
     """
@@ -729,26 +817,28 @@ def granules ( path, prod, syn_time, coll='051', nsyn=8 ):
 
     # Find MODIS granules in synoptic time range
     # ------------------------------------------
-    dt = timedelta(minutes=5)
+    dt = timedelta(minutes=15)
     t = datetime(t1.year,t1.month,t1.day,t1.hour,0,0)
     Granules = []
     while t < t2:
         if t >= t1:
             doy = t.timetuple()[7]
-            basen = "%s/%s/%s/%04d/%03d/%s_L2.A%04d%03d.%02d%02d.%s.*.hdf"\
-                     %(path,coll,prod,t.year,doy,prod,t.year,doy,t.hour,t.minute,coll)
+            basen = "%s/%s/%s/ABI_L2_%04d%03d.%02d%02d.nc"\
+                     %(path,t.year,doy,t.year,doy,t.hour,t.minute)
             try:
+                #print basen
                 filen = glob(basen)[0]
                 Granules += [filen,]
-#               print " [x] Found "+filen
+                #print " [x] Found "+filen
             except:
                 pass
         t += dt
 
     if len(Granules) == 0:
-        print("WARNING: no %s collection %s granules found for"%(prod,coll), syn_time)
+        print("WARNING: no granules found for", syn_time)
 
     return Granules
+
 
 #--
 
@@ -788,17 +878,45 @@ def _gatime(nymd,nhms):
         t = chms[0:2]+":"+chms[2:4]+"Z"+\
             cymd[6:8]+Months[int(cymd[4:6])-1]+cymd[0:4]
         return t
-    
-#............................................................................
+
+def _writeAllODS():
+    """
+    Write ODS files for a single, hardwired month. For testing.
+    """
+
+    path = '/nobackup/1/GEO/ABI_Testing/Level2'
+    odsdir = '/nobackup/1/GEO/ABI_Testing/ODS/Y2018/M08'
+    for day in range(1,32):
+        for hour in (0,3,6,9,12,15,18,21):
+
+            syn_time = datetime(2018,8,day,hour,0)
+            files = granules ( path, syn_time, nsyn=8 )
+
+            if len(files)==0: continue  # no granules, nothing to do.
+
+            g = GEO04_L2 (files,'OCEAN',syn_time=syn_time,nsyn=8,Verb=3)
+            g.filter()
+            g.writeODS(dir=odsdir,channels=[550,],nsyn=8,Verb=1)
+
+            g = GEO04_L2 (files,'LAND',syn_time=syn_time,nsyn=8,Verb=3)
+            g.filter()
+            g.writeODS(dir=odsdir,channels=[550,],nsyn=8,Verb=1)
 
 if __name__ == "__main__":
 
-#    syn_time = datetime(2008,6,30,0,0,0)
-    syn_time = datetime(2016,10,26,10,0,0)
-#    Files = granules('/nobackup/MODIS/Level2/','MYD04',syn_time,coll='006')
-    Files = granules('/discover/nobackup/dao_ops/intermediate/flk/modis','MOD04',syn_time,coll='006')
+    _writeAllODS()
 
-    ocean = MxD04_L2(Files,'OCEAN',syn_time,Verb=1,only_good=True)
-#    land  = MxD04_L2(Files,'LAND',syn_time,Verb=1)
-#    deep  = MxD04_L2(Files,'DEEP',syn_time,Verb=1)
-    
+def hold():
+
+     path = '/nobackup/1/GEO/ABI_Testing/Level2'
+     syn_time = datetime(2018,8,15,18,0)
+     files = granules ( path, syn_time, nsyn=8 )
+
+#     go = GEO04_L2 (files,'OCEAN',syn_time=syn_time,nsyn=8,Verb=3)
+#     go.filter()
+
+     gl = GEO04_L2 (files,'LAND',syn_time=syn_time,nsyn=8,Verb=3)
+     gl.filter()
+
+     gl.writeODS(filename=None,dir='.',expid=None,channels=[550,],
+                revised=False,nsyn=8,Verb=1)

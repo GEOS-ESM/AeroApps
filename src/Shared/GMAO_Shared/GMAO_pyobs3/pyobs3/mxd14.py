@@ -9,16 +9,11 @@ Arlindo.daSilva@nasa.gov
 import os
 from types import *
 
-from numpy import zeros, ones, sqrt, std, mean, unique, concatenate, where, linspace
+import numpy as np
 
-from matplotlib.mlab   import prctile
-from matplotlib.pyplot import plot, xlabel, ylabel, title
-
-from pyhdf.SD           import *
-
+from pyhdf.SD    import *
 from scipy.stats import kde
-
-from datetime  import date, timedelta
+from datetime    import date, timedelta
 
 DAY = timedelta(seconds=60*60*24)
 
@@ -83,12 +78,12 @@ class MxD14_L2(object):
 
 #      Make each attribute a single numpy array, screening for qc=0
 #      ------------------------------------------------------------
-       self.qc   = concatenate(self.qc)
-       self.T21 = concatenate(self.T21)
-       self.T31 = concatenate(self.T31)
-       self.DT = concatenate(self.DT)
-       self.Tb21 = concatenate(self.Tb21)
-       self.Tb31 = concatenate(self.Tb31)
+       self.qc   = np.concatenate(self.qc)
+       self.T21 = np.concatenate(self.T21)
+       self.T31 = np.concatenate(self.T31)
+       self.DT = np.concatenate(self.DT)
+       self.Tb21 = np.concatenate(self.Tb21)
+       self.Tb31 = np.concatenate(self.Tb31)
        m = (self.qc > qc_thresh) & (self.Tb21 > 0.0) & (self.Tb31 > 0.0) & \
            ((self.T31-self.Tb31) > dt_thresh)
        nraw = self.qc.size
@@ -99,18 +94,18 @@ class MxD14_L2(object):
        self.T21 = self.T21[m]
        self.T31 = self.T31[m]
        self.DT = self.DT[m]
-       self.lon = concatenate(self.lon)[m]
-       self.lat = concatenate(self.lat)[m]
-       self.pixar = concatenate(self.pixar)[m] # in km2
-       self.pow = concatenate(self.pow)[m]
-       self.R2  = concatenate(self.R2)[m]
-       self.yyyy = concatenate(self.yyyy)[m]
-       self.jjj  = concatenate(self.jjj)[m]
-       self.hh   = concatenate(self.hh)[m]
-       self.nn   = concatenate(self.nn)[m]
-       self.tgmt = concatenate(self.tgmt)[m]
-       self.tloc = concatenate(self.tloc)[m]
-       self.tga = concatenate(self.tga)[m]
+       self.lon = np.concatenate(self.lon)[m]
+       self.lat = np.concatenate(self.lat)[m]
+       self.pixar = np.concatenate(self.pixar)[m] # in km2
+       self.pow = np.concatenate(self.pow)[m]
+       self.R2  = np.concatenate(self.R2)[m]
+       self.yyyy = np.concatenate(self.yyyy)[m]
+       self.jjj  = np.concatenate(self.jjj)[m]
+       self.hh   = np.concatenate(self.hh)[m]
+       self.nn   = np.concatenate(self.nn)[m]
+       self.tgmt = np.concatenate(self.tgmt)[m]
+       self.tloc = np.concatenate(self.tloc)[m]
+       self.tga = np.concatenate(self.tga)[m]
 
 #      Ensure type of some attributes
 #      ------------------------------
@@ -149,7 +144,7 @@ class MxD14_L2(object):
             if os.path.isdir(item):      self._readDir(item,RoundHour)
             elif os.path.isfile(item):   self._readGranule(item,RoundHour)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print("%s is not a valid file or directory, ignoring it"%item)
 #---
     def _readDir(self,dir,RoundHour=False):
         """Recursively, look for files in directory."""
@@ -158,7 +153,7 @@ class MxD14_L2(object):
             if os.path.isdir(path):      self._readDir(path,RoundHour)
             elif os.path.isfile(path):   self._readGranule(path,RoundHour)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print("%s is not a valid file or directory, ignoring it"%item)
 
 #---
     def _readGranule(self,filename,RoundHour=False):
@@ -170,14 +165,14 @@ class MxD14_L2(object):
             hfile = SD(filename)
         except HDF4Error:
             if self.verb > 2:
-                print "- %s: not recognized as an HDF file"%filename
+                print("- %s: not recognized as an HDF file"%filename)
             return 
 
 #       No fires, nothing to do
 #       ----------------------
         if hfile.select('FP_longitude').checkempty():
             if self.verb > 2:
-                print "- %s:  no  fires"%filename
+                print("- %s:  no  fires"%filename)
             return
 
 #       Read select variables
@@ -204,7 +199,7 @@ class MxD14_L2(object):
             elif sat == "MOD":
                 sat = 'Terra'
             else:
-                raise ValueError, 'Unknown MOD03 file type: '+sat
+                raise ValueError('Unknown MOD03 file type: '+sat)
 
             self.sat = sat
 
@@ -226,23 +221,23 @@ class MxD14_L2(object):
         hh = int(timestamp[7:9])
         nn = int(timestamp[9:11])
 
-        tgmt = _local_time(hh,nn,zeros(1),RoundHour) # Local time
+        tgmt = _local_time(hh,nn,np.zeros(1),RoundHour) # Local time
         tga = [_gatime(yyyy,jjj,hh,nn),] # GrADS time string
         tloc = _local_time(hh,nn,self.lon[-1],RoundHour) # Local time
 
         n = self.lon[-1].size
 
-        self.yyyy.append(yyyy * ones(n))
-        self.jjj.append(jjj * ones(n))
-        self.hh.append(hh * ones(n))
-        self.nn.append(nn * ones(n))
+        self.yyyy.append(yyyy * np.ones(n))
+        self.jjj.append(jjj * np.ones(n))
+        self.hh.append(hh * np.ones(n))
+        self.nn.append(nn * np.ones(n))
 
-        self.tgmt.append(tgmt * ones(n))
+        self.tgmt.append(tgmt * np.ones(n))
         self.tga.append(n*tga)
         self.tloc.append(tloc)
     
         if self.verb > 1:
-            print "- %s: %4d fires"%(filename,n)
+            print("- %s: %4d fires"%(filename,n))
 
 #---
 
@@ -281,13 +276,13 @@ class MxD14_L2(object):
                 if v in Vars:
                     vinfo.append((v,k,l))
             if len(vinfo)==0:
-                print "IndexError: requested variables - ", Vars
-                raise IndexError, "cannot find any matchig variable in file %f"\
-                    %filename
+                print("IndexError: requested variables - ", Vars)
+                raise IndexError("cannot find any matchig variable in file %f"\
+                    %filename)
 
 #       For each observation, find the correspondng time on file
 #       --------------------------------------------------------
-        utimes = unique(self.tga)   # unique obs times in grads format
+        utimes = np.unique(self.tga)   # unique obs times in grads format
         self.tgaf = self.tga.copy() # will hold times on file for each ob
         for tga in utimes:
             ga('set time %s'%tga,Quiet=True)
@@ -299,19 +294,19 @@ class MxD14_L2(object):
 #       -----------------------------------------------------
         self.met = {}
         n = self.lon.size
-        levs = 1000. * zeros(fh.nz)
+        levs = 1000. * np.zeros(fh.nz)
         for v,nlevs,l in vinfo:
             if nlevs==0: 
                 nlevs=1
-                y_f = zeros(n)
+                y_f = np.zeros(n)
             else:
-                y_f = zeros((n,nlevs))
-            for tgaf in unique(self.tgaf): 
+                y_f = np.zeros((n,nlevs))
+            for tgaf in np.unique(self.tgaf): 
                 ga('set time %s'%tgaf,Quiet=True)
                 ga('set z %d %d'%(1,nlevs),Quiet=True)
                 m = (self.tgaf == tgaf) # gather obs for this time
                 lon_, lat_ = (self.lon[m], self.lat[m])
-                print "- Interpolating %5d %s obs at %s"%(lon_.size,v,tgaf)
+                print("- Interpolating %5d %s obs at %s"%(lon_.size,v,tgaf))
                 y_f[m], levs = ga.interp(v,lon_,lat_) # interp & scatter
             self.met[v] = y_f
         self.met['levs'] = levs # record vertical levels
@@ -322,8 +317,8 @@ def _local_time(hh,nn,lon,RoundHour=False):
     tlocal =  float(hh) + (float(nn)/60.) + (12./180.) * lon
     if RoundHour:
         tlocal = floor(tlocal+0.5) # round up to nearest hour
-    tlocal = where(tlocal<  0, tlocal+24, tlocal)
-    tlocal = where(tlocal>=24, tlocal-24, tlocal)
+    tlocal = np.where(tlocal<  0, tlocal+24, tlocal)
+    tlocal = np.where(tlocal>=24, tlocal-24, tlocal)
     return tlocal
 
 def _gatime(yyyy,jjj,hh=None,nn=None):
@@ -353,7 +348,7 @@ def _pixar(x):
 
 #   Horner's rule
 #   -------------
-    area = c[8] * ones(x.size)
+    area = c[8] * np.ones(x.size)
     for i in (7,6,5,4,3,2,1,0):
         area = area * x + c[i]
 
@@ -361,23 +356,26 @@ def _pixar(x):
 
 def do_kde(X,range=None,N=256):
     if range is None:
-        prc = prctile(X.ravel())
+        q = (0.0, 25.0, 50.0, 75.0, 100.0)
+        prc = np.percentile(X.ravel(),q)
         a = prc[0]
         b = prc[4]
     else:
         a, b = range
-    bins = linspace(a,b,N)
+    bins = np.linspace(a,b,N)
     kernel = kde.gaussian_kde(X.ravel())
     return bins, kernel(bins)
 
 def plot_kde(X,a=None,b=None,N=256,Title=None,Label=None):
+    from matplotlib.pyplot import plot, xlabel, ylabel, title
     if a==None:
-        prc = prctile(X.ravel())
+        q = (0.0, 25.0, 50.0, 75.0, 100.0)
+        prc = np.percentile(X.ravel(),q)
         a = prc[0]
         b = prc[4]
     if Title is None: 
         Title = 'Kernel Density Function'
-    bins = linspace(a,b,N)
+    bins = np.linspace(a,b,N)
     kernel = kde.gaussian_kde(X.ravel())
     plot(bins,kernel(bins))
     ylabel('PDF')
@@ -389,25 +387,26 @@ def print_stats(name,x=None):
         x = name
         name = 'mean,stdv,rms,min,25%,median,75%,max: '
     if name == '__header__':
-        print ''
+        print('')
         n = (80 - len(x))/2
-        print n * ' ' + x
-        print n * ' ' + len(x) * '-'
-        print ''
-        print '   Name       mean      stdv      rms      min     25%    median     75%      max'
-        print ' ---------  -------  -------  -------  -------  -------  -------  -------  -------'
+        print(n * ' ' + x)
+        print(n * ' ' + len(x) * '-')
+        print('')
+        print('   Name       mean      stdv      rms      min     25%    median     75%      max')
+        print(' ---------  -------  -------  -------  -------  -------  -------  -------  -------')
     elif name == '__sep__':
-        print ' ---------  -------  -------  -------  -------  -------  -------  -------  -------'
+        print(' ---------  -------  -------  -------  -------  -------  -------  -------  -------')
     elif name == '__footer__':
-        print ' ---------  -------  -------  -------  -------  -------  -------  -------  -------'
-        print ''
+        print(' ---------  -------  -------  -------  -------  -------  -------  -------  -------')
+        print('')
     else:
         ave = x.mean()
         std = x.std()
-        rms = sqrt(ave*ave+std*std)
-        prc = prctile(x)
-        print '%10s  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  '%\
-            (name,ave,std,rms,prc[0],prc[1],prc[2],prc[3],prc[4])
+        rms = np.sqrt(ave*ave+std*std)
+        q = (0.0, 25.0, 50.0, 75.0, 100.0)
+        prc = np.percentile(x,q)
+        print('%10s  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  '%\
+            (name,ave,std,rms,prc[0],prc[1],prc[2],prc[3],prc[4]))
 
 
 #............................................................................

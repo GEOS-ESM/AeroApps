@@ -147,7 +147,7 @@ class MxD06_L2(object):
        # ---------------------------------------------
        if type(Path) is ListType:
            if len(Path) == 0:
-               print "WARNING: Empty MxD06_L2 object created"
+               print("WARNING: Empty MxD06_L2 object created")
                return
        else:
            Path = [Path, ]
@@ -162,9 +162,9 @@ class MxD06_L2(object):
            try:
                self._catName(sds)
                if self.verb>1:
-                   print "() Concatenated <%s>"%sds
+                   print("() Concatenated <%s>"%sds)
            except:
-               print "WARNING: Failed concatenating "+sds
+               print("WARNING: Failed concatenating "+sds)
 
        # If decimating to 5km, provide access in 5km section
        # ---------------------------------------------------
@@ -172,15 +172,15 @@ class MxD06_L2(object):
              for name in SDS['COP']:
                    self.__dict__[name] = self.COP.__dict__[name] 
                    if self.verb>1:
-                        print "/\ Moved <%s> up"%name
+                        print("/\ Moved <%s> up"%name)
        
        # Make aliases for compatibility with older code 
        # ----------------------------------------------
-       Alias = ALIAS.keys()
+       Alias = list(ALIAS.keys())
        for sds in self.SDS:
            if sds in Alias:
                if self.verb>1:
-                        print ">< Aliasing %s --> %s"%(sds,ALIAS[sds])
+                        print(">< Aliasing %s --> %s"%(sds,ALIAS[sds]))
                self._aliasName(sds)
 
        # Create corresponding python time
@@ -232,7 +232,7 @@ class MxD06_L2(object):
               # ("channel",along,across)
               along = 1
         else:
-              raise MxD06Error, 'Invalid SDS rank=%d for <%s> '%(rank,name)
+              raise MxD06Error('Invalid SDS rank=%d for <%s> '%(rank,name))
 
         # concatenate along swath to a single numpy.ma array
         b.__dict__[name] = ma.concatenate(V,axis=along)
@@ -254,7 +254,7 @@ class MxD06_L2(object):
             if   os.path.isdir(item):    self._readDir(item)
             elif os.path.isfile(item):   self._readGranule(item)
             else:
-                print "%s is not a valid file or directory, ignoring it" % item
+                print("%s is not a valid file or directory, ignoring it" % item)
 
 #---
     def _readDir(self,dir):
@@ -264,7 +264,7 @@ class MxD06_L2(object):
             if   os.path.isdir(path):    self._readDir(path)
             elif os.path.isfile(path):   self._readGranule(path)
             else:
-                print "%s is not a valid file or directory, ignoring it" % item
+                print("%s is not a valid file or directory, ignoring it" % item)
 
 #---
     def _readGranule(self,filename):
@@ -274,11 +274,11 @@ class MxD06_L2(object):
         # ---------------------------------------
         try:
             if self.verb > 0:
-                print " [] Working on " + filename
+                print(" [] Working on " + filename)
             hfile = SD(filename)
         except HDF4Error:
             if self.verb > 0:
-                print "- %s: not recognized as an HDF file" % filename
+                print("- %s: not recognized as an HDF file" % filename)
             return 
 
         # default 5km sampling if require decimation
@@ -291,7 +291,7 @@ class MxD06_L2(object):
         # Read selected variables
         # -----------------------
         for sds in self.SDS:
-            if self.verb > 1: print ' <> Doing %s' % sds
+            if self.verb > 1: print(' <> Doing %s' % sds)
 
             # read and scale the current SDS
             # (uses masked array as best way to preserve data type)
@@ -299,7 +299,7 @@ class MxD06_L2(object):
             a = hfile.select(sds).attributes()
             v = ma.masked_equal(v,a['_FillValue'])
             if a['scale_factor'] != 1 or a['add_offset'] != 0:
-                if self.verb > 1: print ' <> Scaling %s' % sds
+                if self.verb > 1: print(' <> Scaling %s' % sds)
                 v = a['scale_factor'] * (v - a['add_offset'])
                 # PS: I know that looks strange.
                 #   The add_offset is what was used to get the HDF stored values within range.
@@ -325,18 +325,18 @@ class MxD06_L2(object):
                     sampFound = True
                   else:
                     if lSamp_ != lSamp or xSamp_ != xSamp:
-                      print '  WARNING: mixed 5-km Sampling found'
-                      print '     along:', lSamp, lSamp_
-                      print '    across:', xSamp, xSamp_
-                      print '    Will use first'
+                      print('  WARNING: mixed 5-km Sampling found')
+                      print('     along:', lSamp, lSamp_)
+                      print('    across:', xSamp, xSamp_)
+                      print('    Will use first')
 
               # also verify that COP 1-km sampling starts from 1
               #   otherwise it will mess up decimation assumptions
               if sds in SDS['COP']:
                 if lSamp_[0] != 1 or lSamp_[2] != 1:
-                  raise MxD06Error, 'Bad 1-km  along sampling for ' + sds + lSamp_
+                  raise MxD06Error('Bad 1-km  along sampling for ' + sds + lSamp_)
                 if xSamp_[0] != 1 or xSamp_[2] != 1:
-                  raise MxD06Error, 'Bad 1-km across sampling for ' + sds + xSamp_
+                  raise MxD06Error('Bad 1-km across sampling for ' + sds + xSamp_)
 
         # Decimate 1km data to lower 5km resolution (Needs better Q/C)
         # ------------------------------------------------------------
@@ -348,15 +348,15 @@ class MxD06_L2(object):
 
           # report 5km sampling
           if self.verb > 1:
-            print ' 5km sampling:',
-            if sampFound: print 'detected:',
-            else:         print 'default:',
-            print 'along', lSamp, 'across', xSamp
+            print(' 5km sampling:', end=' ')
+            if sampFound: print('detected:', end=' ')
+            else:         print('default:', end=' ')
+            print('along', lSamp, 'across', xSamp)
 
           # verify assumed 5-km sampling, since binning
           #   currently hardwired for -2:+2 for simplicity
           if lSamp[2] != 5 or xSamp[2] != 5:
-            raise MxD06Error, 'Not 5-km sampling as assumed!'
+            raise MxD06Error('Not 5-km sampling as assumed!')
 
           # adjust to python zero-based indexing
           lSamp[0] -= 1; lSamp[1] -= 1
@@ -367,7 +367,7 @@ class MxD06_L2(object):
             for name in SDS['COP']:
               v = self.COP.__dict__[name][-1]
               if v.ndim != 2:
-                raise MxD06Error, 'Only 2D SDSs implemented for decimation'
+                raise MxD06Error('Only 2D SDSs implemented for decimation')
               self.COP.__dict__[name][-1] = v[lSamp[0]:lSamp[1]+1:5,
                                               xSamp[0]:xSamp[1]+1:5]
 
@@ -376,7 +376,7 @@ class MxD06_L2(object):
             for name in SDS['COP']:
               v = self.COP.__dict__[name][-1]
               if v.ndim != 2:
-                raise MxD06Error, 'Only 2D SDSs implemented for decimation'
+                raise MxD06Error('Only 2D SDSs implemented for decimation')
               # calculate number of 5x5 boxes
               nl = (lSamp[1]-lSamp[0])//5+1
               nx = (xSamp[1]-xSamp[0])//5+1
@@ -398,7 +398,7 @@ class MxD06_L2(object):
           self.sat = sat
         else:
           if sat != self.sat:
-            raise MxD06Error, 'Mixed satellites encountered'
+            raise MxD06Error('Mixed satellites encountered')
  
         # Collection
         # ----------
@@ -408,7 +408,7 @@ class MxD06_L2(object):
           self.coll = coll
         else:
           if coll != self.coll:
-            raise MxD06Error, 'Mixed collections encountered'
+            raise MxD06Error('Mixed collections encountered')
         
 #---
     def write(self, filename, syn_time, dt=timedelta(hours=6),
@@ -497,7 +497,7 @@ class MxD06_L2(object):
 
          # both im and jm must be explicitly provided
          if im is None or jm is None:
-           raise MxD06Error, 'Must provide both im and jm is either is provided!'
+           raise MxD06Error('Must provide both im and jm is either is provided!')
 
        # Lat lon grid
        # ------------
@@ -539,9 +539,9 @@ class MxD06_L2(object):
        elif self.sat.lower() == 'aqua':
          prod = 'MYD06'
        else:
-         raise MxD06Error, 'Unknown satellite <%s>' % self.sat
+         raise MxD06Error('Unknown satellite <%s>' % self.sat)
 
-       if self.coll is None: raise MxD06Error, 'Missing collection'
+       if self.coll is None: raise MxD06Error('Missing collection')
 
        title = 'Gridded MODIS Cloud Retrievals'
        source = '%s_L2 collection %s gridded at NASA/GSFC/GMAO' % (prod, self.coll)
@@ -554,7 +554,7 @@ class MxD06_L2(object):
              '%s_c%s.cld_Nx.%08d_%04dz.nc4' % (prod,self.coll,nymd,nhms/100)))
 
        if Verb > 0:
-           print "[w] Writing", filename
+           print("[w] Writing", filename)
 
        # Create the file
        # ---------------
@@ -567,7 +567,7 @@ class MxD06_L2(object):
        # Grid variables and write to file
        # -------------------------------
        for oVar in ('CTP','CTT',): #'BT','F','RE','TAU','CWP'):
-         if Verb > 1: print ' [] writing variable', oVar
+         if Verb > 1: print(' [] writing variable', oVar)
          f.write (oVar, nymd, nhms, self._binObs(self.__dict__[oVar],im,jm))
 
        f.close()
@@ -701,7 +701,7 @@ def granules ( path, prod, syn_time, coll='006', nsyn=8 ):
         t += dtGranule
 
     if len(Granules) == 0:
-        print "WARNING: no %s collection %s granules found for time" % (prod, coll), syn_time
+        print("WARNING: no %s collection %s granules found for time" % (prod, coll), syn_time)
 
     return Granules
 

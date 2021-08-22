@@ -80,7 +80,7 @@ class MxD03(object):
        if type(Path) is ListType:
            if len(Path) == 0:
                self.nobs = 0
-               print "WARNING: Empty Mxd03 object created"
+               print("WARNING: Empty Mxd03 object created")
                return
        else:
            Path = [Path, ]
@@ -93,11 +93,11 @@ class MxD03(object):
            try:
                self.__dict__[sds_] = concatenate(self.__dict__[sds_])
            except:
-               print "Failed concatenating "+sds
+               print("Failed concatenating "+sds)
 
        # Make aliases for convenience
        # ----------------------------
-       Alias = ALIAS.keys()
+       Alias = list(ALIAS.keys())
        for sds in self.SDS:
            sds_ = sds.replace(' ','_')
            if sds_ in Alias:
@@ -142,7 +142,7 @@ class MxD03(object):
         # ---------------------------
         for v in onlyVars:
             if self.verb:
-                print " <> Linear sampling ", v
+                print(" <> Linear sampling ", v)
             var = f.sample(v,lons,lats,tymes,Verbose=self.verb)
             if len(var.shape) == 1:
                 self.sample.__dict__[v] = var.reshape((nt,nr))
@@ -150,7 +150,7 @@ class MxD03(object):
                 var = var.T # shape should be (nobs,nz)
                 self.sample.__dict__[v] = var.reshape((nt,nr,-1))
             else:
-                raise IndexError, 'variable <%s> has rannk = %d'%len(var.shape)
+                raise IndexError('variable <%s> has rannk = %d'%len(var.shape))
 
 #---
     def nearestSampleFile(self, inFile, onlyVars=None):
@@ -181,7 +181,7 @@ class MxD03(object):
         # ---------------------------
         for v in onlyVars:
             if self.verb:
-                print " <> Nearest sampling ", v
+                print(" <> Nearest sampling ", v)
             var = f.sample(v,lons,lats,tymes,
                            algorithm='nearest',Verbose=self.verb)
             self.var = var
@@ -191,7 +191,7 @@ class MxD03(object):
                 var = var.T # shape should be (nobs,nz)
                 self.sample.__dict__[v] = var.reshape((nt,nr,-1))
             else:
-                raise IndexError, 'variable <%s> has rannk = %d'%len(var.shape)
+                raise IndexError('variable <%s> has rannk = %d'%len(var.shape))
 
 #---
     def getICAindx(self,inFile):
@@ -212,7 +212,7 @@ class MxD03(object):
         # --------------------------------------
         nt, nr = self.lon.shape
         if self.verb:
-            print " <> Performing ICA index generation"
+            print(" <> Performing ICA index generation")
         iCoord, jCoord = f.coordNN(self.lon.ravel(),self.lat.ravel())
         iS, jS = iCoord.astype('S5'), jCoord.astype('S5'), 
         keys = [ ii+','+jj for ii,jj in zip(iS,jS) ]
@@ -236,7 +236,7 @@ class MxD03(object):
             if os.path.isdir(item):      self._readDir(item)
             elif os.path.isfile(item):   self._readGranule(item)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print("%s is not a valid file or directory, ignoring it"%item)
 #---
     def _readDir(self,dir):
         """Recursively, look for files in directory."""
@@ -245,7 +245,7 @@ class MxD03(object):
             if os.path.isdir(path):      self._readDir(path)
             elif os.path.isfile(path):   self._readGranule(path)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print("%s is not a valid file or directory, ignoring it"%item)
 
 #---
     def _readGranule(self,filename):
@@ -255,11 +255,11 @@ class MxD03(object):
         # ---------------------------------------
         try:
             if self.verb:
-                print "[] Working on "+filename
+                print("[] Working on "+filename)
             hfile = SD(filename)
         except HDF4Error:
             if self.verb > 2:
-                print "- %s: not recognized as an HDF file"%filename
+                print("- %s: not recognized as an HDF file"%filename)
             return 
 
         # Read select variables (reshape to allow concatenation later)
