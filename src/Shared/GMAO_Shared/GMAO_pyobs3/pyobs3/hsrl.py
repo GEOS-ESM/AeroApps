@@ -7,6 +7,8 @@ import h5py
 from   numpy    import ones, zeros, interp, NaN, isnan, array
 from   datetime import datetime, timedelta
 
+from .config import strTemplate
+
 SDS_DIAL = {'Nav_Data':
                   ('gps_alt','gps_date','gps_lat','gps_lon','gps_time'),
             'Data_Products':
@@ -399,7 +401,6 @@ class HSRL(object):
          and time interpolation.
          """
          from gfio import GFIO
-         from MAPL import strTemplate
  
          # Compute index and open file for each syn time
          # ---------------------------------------------
