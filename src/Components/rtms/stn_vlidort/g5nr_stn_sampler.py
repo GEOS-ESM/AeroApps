@@ -26,6 +26,7 @@ from MAPL           import Config
 from MAPL.constants import *
 from   pyobs.nc4ctl    import NC4ctl
 
+MAPL_UNDEF = np.float32(MAPL_UNDEF)
 
 class NC4ctl_(NC4ctl):
     interpXY = NC4ctl.interpXY_LatLon # select this as the default XY interpolation
