@@ -129,6 +129,12 @@ class LIDAR_VLIDORT(VLIDORT):
         # Calculate aerosol optical properties
         self.computeMie()
 
+        # Calculate trace gas absorption
+        self.computeAlpha()
+
+        # Read in Solar Irradiance
+        self.readIRR()
+
         # Calculate atmospheric profile properties needed for Rayleigh calc
         self.computeAtmos()
 
@@ -236,6 +242,8 @@ class LIDAR_VLIDORT(VLIDORT):
             ze   = self.ze[:,iGood]
             te   = self.te[:,iGood]
             rot  = ROT[:,iGood,:]
+            alpha = self.alpha[:,iGood,:]
+            flux_factor = self.flux_factor[:,self.iGood]
 
             if surface == 'Land':        
                 albedoType = self.albedoType
@@ -288,11 +296,14 @@ class LIDAR_VLIDORT(VLIDORT):
                 BR_Q = np.concatenate(BR_Q)
                 BR_U = np.concatenate(BR_U)
             elif albedoType == 'LAMBERTIAN':
-                args = [(self.channel, self.nstreams, self.plane_parallel, rot[:,i:i+1,:], depol_ratio,
+                args = [(self.channel, self.nstreams, self.plane_parallel, 
+                        rot[:,i:i+1,:], depol_ratio,
+                        alpha[:,i:i+1,:],
                         tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
                         pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
                         albedo[i:i+1,:],
                         sza[i:i+1], raa[i:i+1], vza[i:i+1],
+                        flux_factor[:,i:i+1],
                         MISSING,
                         self.verbose) for i in range(nobs)]
                 result = p.map(LAMBERTIAN_run,args)
