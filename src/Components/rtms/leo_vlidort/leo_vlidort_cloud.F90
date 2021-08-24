@@ -21,6 +21,7 @@
 !     for the loss of the forward peak in the ice cloud scatterimg matrix introduced by
 !     using a finite number of streams.
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#  define  I_AM_MAIN
 #  include "MAPL_Generic.h"
 #  include "MAPL_ErrLogMain.h"
 program leo_vlidort_cloud
@@ -146,6 +147,9 @@ program leo_vlidort_cloud
   real, allocatable                     :: VtauIcl(:,:,:)          ! cloud single scattering albedo
   real, allocatable                     :: VgLcl(:,:,:)            ! cloud asymmetry factor  
   real, allocatable                     :: VgIcl(:,:,:)            ! cloud asymmetry factor    
+
+  real*8, allocatable                   :: Valpha(:,:,:)            ! trace gas absorption
+  real*8, allocatable                   :: Vflux_factor(:,:)        ! solar irradiance
 
 ! VLIDORT output arrays
 !-------------------------------
@@ -1048,7 +1052,7 @@ program leo_vlidort_cloud
                   (/dble(U10M(i,j))/), &
                   (/dble(V10M(i,j))/), &
                   dble(mr), &
-                  Vsleave, &
+                  Vsleave, .False., .False., &
                   (/dble(SZA(i,j))/), &
                   (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
@@ -1063,7 +1067,7 @@ program leo_vlidort_cloud
                  (/dble(U10M(i,j))/), &
                  (/dble(V10M(i,j))/), &
                  dble(mr), &
-                 Vsleave, &
+                 Vsleave, .False., .False., &
                  (/dble(SZA(i,j))/), &
                  (/dble(RAA(i,j))/), &
                  (/dble(VZA(i,j))/), &
@@ -1189,24 +1193,26 @@ program leo_vlidort_cloud
       if (scalar) then
           ! Call to vlidort scalar code       
           call VLIDORT_Scalar_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,      &
-                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
+                  nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom),&
                   dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl),&
                   dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl),&
                   dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                   (/dble(SZA(i,j))/), &
                   (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
+                  Vflux_factor, &
                   dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, ierr)
       else
         ! Call to vlidort vector code
         call VLIDORT_Vector_Lambert_Cloud (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-               nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+               nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
                dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &
                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                (/dble(SZA(i,j))/), &
                (/dble(RAA(i,j))/), &
                (/dble(VZA(i,j))/), &
+               Vflux_factor, &
                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q_int, U_int, ierr)
         BR_Q_int = 0
         BR_U_int = 0
@@ -1232,7 +1238,7 @@ program leo_vlidort_cloud
         if (scalar) then 
             ! Call to vlidort scalar code            
             call VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom,  &
-                    nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
+                    nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vg), dble(Vpmom), &
                     dble(VtauIcl), dble(VssaIcl), dble(VgIcl), dble(VpmomIcl), &
                     dble(VtauLcl), dble(VssaLcl), dble(VgLcl), dble(VpmomLcl), &
                     dble(Vpe), dble(Vze), dble(Vte), &
@@ -1240,11 +1246,12 @@ program leo_vlidort_cloud
                     (/dble(SZA(i,j))/), &
                     (/dble(RAA(i,j))/), &
                     (/dble(VZA(i,j))/), &
+                    Vflux_factor, &
                     dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Valbedo, ierr )  
         else
           ! Call to vlidort vector code
           call VLIDORT_Vector_LandMODIS_cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
-                  nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                  nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
                   dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                   dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
                   dble(Vpe), dble(Vze), dble(Vte), &
@@ -1252,6 +1259,7 @@ program leo_vlidort_cloud
                   (/dble(SZA(i,j))/), &
                   (/dble(RAA(i,j))/), &
                   (/dble(VZA(i,j))/), &
+                  Vflux_factor, &
                   dble(MISSING),verbose, &
                   radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
         end if    
@@ -1276,7 +1284,7 @@ program leo_vlidort_cloud
 
         ! Call to vlidort vector code
         call VLIDORT_Vector_LandMODIS_BPDF_cloud (km, nch, nobs, dble(channels), nstreams, plane_parallel, nMom, &
-                nPol, ROT, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+                nPol, ROT, depol, Valpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
                 dble(VtauIcl), dble(VssaIcl), dble(VpmomIcl), &
                 dble(VtauLcl), dble(VssaLcl), dble(VpmomLcl), &                
                 dble(Vpe), dble(Vze), dble(Vte), &
@@ -1284,6 +1292,7 @@ program leo_vlidort_cloud
                 (/dble(SZA(i,j))/), &
                 (/dble(RAA(i,j))/), &
                 (/dble(VZA(i,j))/), &
+                Vflux_factor, &
                 dble(MISSING),verbose, &
                 radiance_VL_int,reflectance_VL_int, Valbedo, Q_int, U_int, BR_Q_int, BR_U_int, ierr )  
       end if
@@ -2007,6 +2016,11 @@ program leo_vlidort_cloud
     allocate (VgIcl(km,nch,nobs))    
     allocate (VgLcl(km,nch,nobs))    
     allocate (Valbedo(nobs,nch))
+
+    allocate (Valpha(km,nobs,nch))
+    Valpha = 0.0
+    allocate (Vflux_factor(nch,nobs))
+    Vflux_factor = 1.0
 
     allocate (radiance_VL_int(nobs,nch))
     allocate (reflectance_VL_int(nobs, nch))    

@@ -18,10 +18,8 @@ import VLIDORT_POLAR_
 from polar_vlidort import POLAR_VLIDORT
 from scipy.special.orthogonal import legendre
 
-GRASP_phase = 'Expansion_Coefs/GRASPe438668_correctNorm_simpleAerosol_PMonly.txt'
 
 nMom     = 300
-#nMom     = 30 # GRASP Phase function
 nPol     = 6
 km       = 72
 
@@ -34,7 +32,8 @@ SAA = [0.0]
 pixel = 1171
 
 NDVI = 0.11846055
-BPDFcoef = 5.99  
+BPDFcoef = 5.99
+
 
 SurfaceFuncs = {'MODIS_BRDF'     : 'readSampledMODISBRDF',
                 'MODIS_BRDF_BPDF': 'readSampledMODISBRDF',
@@ -65,8 +64,6 @@ VNAMES_SS = ['SS001','SS002','SS003','SS004','SS005']
 VNAMES_BC = ['BCPHOBIC','BCPHILIC']
 VNAMES_OC = ['OCPHOBIC','OCPHILIC']
 VNAMES_SU = ['SO4']
-MieVarsNames = ['ext','scatext','backscat','aback_sfc','aback_toa','depol','ext2back','tau','ssa','g']
-MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitless','unitless','unitless']
 
 META    = ['DELP','PS','RH','AIRDENS','trjLon','trjLat','isotime']
 AERNAMES = VNAMES_SU #+ VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
@@ -78,18 +75,20 @@ class BENCHMARK(POLAR_VLIDORT):
     """
     Everything needed for calling VLIDORT
     """
-    def __init__(self,albedoType,channel,outFile,rootDir,rcFile,
+    def __init__(self,albedoType,channels,outFile,rootDir,rcFile,
                 verbose=False,aerosol=True,dark=False,simple_aerosol=False,
                 emde=False,grasp=False,grasp_higher=False,rayleigh=False,
-                nstreams=12,plane_parallel=True):
+                nstreams=12,plane_parallel=True,
+                sleave_adjust=False):
+
         self.outFile = outFile
         self.albedoType = albedoType
-        self.channel = channel
+        self.channels = channels
         self.verbose = verbose
         self.nMom    = nMom
         self.nPol    = nPol
         self.nobs    = 1
-        self.nch     = 1
+        self.nch     = len(channels)
         self.km      = km
         self.SDS_AER = SDS_AER
         self.SDS_META= META
@@ -105,24 +104,21 @@ class BENCHMARK(POLAR_VLIDORT):
         self.rayleigh = rayleigh
         self.nstreams = nstreams
         self.plane_parallel = plane_parallel
+        self.sleave_adjust = sleave_adjust
 
         # get filesnames
         self.getFilenames()
             
         # Read in surface data
-        if (self.channel < 470) & ("MODIS_BRDF" in albedoType):
-            albedoReader = getattr(self,'readHybridMODISBRDF')
-        elif albedoType == 'BPDF':
-            albedoReader = None
-        else:
-            albedoReader = getattr(self,SurfaceFuncs[albedoType])
-
-        if albedoReader is not None:
-            albedoReader()
+        self.getSurface()
 
         # Polarization
         if 'BPDF' in albedoType:
             self.BPDFinputs()
+
+        # Water leaving radiance
+        if 'NOBM' in albedoType:
+            self.readRRS()
 
         # Read Model Data
         self.readSampledGEOS()
@@ -131,9 +127,6 @@ class BENCHMARK(POLAR_VLIDORT):
         # Calculate aerosol optical properties
         # set to zero if aerosol is false
         self.computeMie()          
-        # if self.aerosol:
-        #     # calculate size distribution
-        #     self.sizeDistribution()
 
         # Calculate Scene Geometry
         self.VZA = VZA
@@ -142,6 +135,22 @@ class BENCHMARK(POLAR_VLIDORT):
         self.SAA = np.array(SAA)
         self.calcAngles()
 
+    #---
+    def getSurface(self):
+        if 'CX' in self.albedoType:
+            albedoReader = getattr(self,SurfaceFuncs[albedoType])
+            albedoReader()
+        elif albedoType == 'BPDF':
+            pass
+        else: 
+            for ch in self.channels:
+                if (ch < 470) & ("MODIS_BRDF" in self.albedoType):
+                    albedoReader = getattr(self,'readHybridMODISBRDF')
+                else:
+                    albedoReader = getattr(self,SurfaceFuncs[albedoType])
+                albedoReader()
+
+    #---
     def getFilenames(self):
         inDir           = '{}/LevelB/Y2006/M08/'.format(self.rootDir)
         self.inFile     = '{}/calipso-g5nr.lb2.aer_Nv.20060801_00z.nc4'.format(inDir)
@@ -149,62 +158,90 @@ class BENCHMARK(POLAR_VLIDORT):
         self.brdfFile   = '{}/calipso-g5nr.lb2.brdf.20060801_00z.nc4'.format(inDir)
         inDir           = '{}/LevelB/surface/SurfLER/Y2006/M08'.format(self.rootDir)
         self.lerFile    = '{}/calipso-g5nr.lb2.omi_ler.20060801_00z.nc4'.format(inDir)
+        self.rrsFile    = '/nobackup/PACE/LevelB/surface/SLEAVE/NOBM/Y2006/M03/D24/pace-g5nr.lb.sleave.20060324_005000.nc4'
 
     #---
     def computeMie(self):
         """
         Computes aerosol optical quantities 
         """
-        if self.simple_aerosol and self.aerosol:
-            self.RH[:] = 0.00
+        self.tau = []
+        self.ssa = []
+        self.g   = []
+        self.pmom = []
+        for ch in self.channels:
+            rcFile = self.rcFile.format(ch)
+            if self.simple_aerosol and self.aerosol:
+                self.RH[:] = 0.00
 
-            tauO,ssa,g,pmom = getAOPvector(self,self.channel,
+                tauO,ssa,g,pmom = getAOPvector(self,[ch],
                                  vnames=self.AERNAMES,
                                  Verbose=True,
-                                 rcfile=self.rcFile,
+                                 rcfile=rcFile,
                                  nMom=self.nMom)
 
-            dz = self.ze[:-1,0] - self.ze[1:,0]  
-            z  = self.ze[:-1,0] - 0.5*dz
-            H  = 1000 # m
-            ext = np.exp(-z/H)
-            # scale so integral equals AOD
-            total = np.sum(ext*dz)
-            ext   = ext*tauO.sum()/total
-            tau   = ext*dz  
-            tau.shape = tau.shape + (1,1)
-            tau       = tau
+                dz = self.ze[:-1,0] - self.ze[1:,0]  
+                z  = self.ze[:-1,0] - 0.5*dz
+                H  = 1000 # m
+                ext = np.exp(-z/H)
+                # scale so integral equals AOD
+                total = np.sum(ext*dz)
+                ext   = ext*tauO.sum()/total
+                tau   = ext*dz  
+                tau.shape = tau.shape + (1,1)
+                tau       = tau
 
-            # i think this sign needs to be changed
-            pmom[:,:,:,:,1] = -1.*pmom[:,:,:,:,1]
-            pmom[:,:,:,:,3] = -1.*pmom[:,:,:,:,3]
+                # i think this sign needs to be changed
+                pmom[:,:,:,:,1] = -1.*pmom[:,:,:,:,1]
+                pmom[:,:,:,:,3] = -1.*pmom[:,:,:,:,3]
 
-        elif self.aerosol:
-            tau,ssa,g,pmom = getAOPvector(self,self.channel,
+            elif self.aerosol:
+                tau,ssa,g,pmom = getAOPvector(self,[ch],
                                  vnames=self.AERNAMES,
                                  Verbose=True,
-                                 rcfile=self.rcFile,
+                                 rcfile=rcFile,
                                  nMom=self.nMom)
-        else:
-            tau = np.zeros([self.km,self.nch,self.nobs])
-            ssa = np.zeros([self.km,self.nch,self.nobs])
-            g   = np.zeros([self.km,self.nch,self.nobs])
-            pmom = np.zeros([self.km,self.nch,self.nobs,self.nMom,self.nPol])
+            else:
+                tau = np.zeros([self.km,self.nch,self.nobs])
+                ssa = np.zeros([self.km,self.nch,self.nobs])
+                g   = np.zeros([self.km,self.nch,self.nobs])
+                pmom = np.zeros([self.km,self.nch,self.nobs,self.nMom,self.nPol])
 
-        self.tau = tau  #(km,nch,nobs)
-        self.ssa = ssa  #(km,nch,nobs)
-        self.g   = g    #(km,nch,nobs)
-        self.pmom = pmom  #(km,nch,nobs,nMom,nPol)
+            self.tau.append(tau)  #(km,nch,nobs)
+            self.ssa.append(ssa)  #(km,nch,nobs)
+            self.g.append(g)    #(km,nch,nobs)
+            self.pmom.append(pmom)  #(km,nch,nobs,nMom,nPol)
+        
+        self.tau  = np.concatenate(self.tau,axis=1)
+        self.ssa  = np.concatenate(self.ssa,axis=1)
+        self.g    = np.concatenate(self.g,axis=1)
+        self.pmom = np.concatenate(self.pmom,axis=1)
 
     # --
     def readSampledWindCX(self):
         """
         Cox-munk inputs
         """
-        self.mr = np.array([1.333])
+        self.mr = np.repeat([1.333],self.nch)
         self.U10m = np.array([3.0])
         self.V10m = np.array([4.0])
 
+    def readRRS(self):
+        """
+        sun normalized water leaving radiance
+        divided by extraterrestrial solar irradiance
+        this has to be multiplied by cos(SZA) to get
+        the VLIDORT SL_ISOTROPIC value
+        valid for 400-450 nm
+        """
+
+        nc = Dataset(self.rrsFile)
+        rrs = nc.variables['rrs'][0,:,900,600]
+        wav = nc.variables['wavelength'][:]
+        f = interpolate.interp1d(wav,rrs)
+        self.RRS = f(self.channels)
+        i = self.RRS<0
+        self.RRS[i] = 0.0
 
     # --
     def BPDFinputs(self):
@@ -408,6 +445,7 @@ class BENCHMARK(POLAR_VLIDORT):
         # [nparam,nch,nobs]
         self.RTLSparam = np.append(param1,param2,axis=0)
 
+    #---
     def readSampledLER(self):
 
         if self.dark:
@@ -417,145 +455,14 @@ class BENCHMARK(POLAR_VLIDORT):
 
         self.albedo.shape = (1,1)
 
-
-    def sizeDistribution(self):
-        """ 
-        Get size aerosol size distribution from 
-        GEOS-5 aerosol mixing ratios
-
-        Based on P. Colarco's optics table calculations.
-        Note: hard coded for these versions of the optics tables.
-        May not work for other versions.
-
-        filename_optical_properties_DU: ExtData/optics_DU.v15_5.nc
-        filename_optical_properties_SS: ExtData/optics_SS.v3_5.nc
-        filename_optical_properties_BC: ExtData/optics_BC.v1_5.nc
-        filename_optical_properties_OC: ExtData/optics_OC.v1_5.nc
-        filename_optical_properties_SU: ExtData/optics_SU.v1_5.nc
-        """
-
-        # Create master bins for all levels
-        # ---------------------------------
-        rmin      = 0.001e-6   #meters 
-        rmax      = self.getRMAX()
-        R, DR, RLOW, RUP = self.logBins(0.5*rmin,1.1*rmax)
-        self.R = R
-        self.DR = DR
-        self.RLOW = RLOW
-        self.RUP  = RUP
-
-
-        # Lognormal Species: BC, OC, and SU
-        # ---------------------------------
-        
-        # BC
-        r0        = 0.0118e-6  #meters
-        rmin      = 0.001e-6   #meters 
-        rmax0     = 5.0e-6     #meters
-        sigma     = 2.00
-        rhop0     = 1000       # Density of dry particles [kg m-3]
-
-        spc = 'BCPHOBIC'
-        if spc in self.AERNAMES:
-            self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
-        spc = 'BCPHILIC'
-        if spc in self.AERNAMES:
-            self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
-
-        # OC
-        r0        = 0.0212e-6  #meters
-        rmin      = 0.005e-6   #meters 
-        rmax0     = 5.0e-6     #meters
-        sigma     = 2.12
-        rhop0     = 1800       #[kg m-3]
-
-        spc = 'OCPHOBIC'
-        if spc in self.AERNAMES:
-            self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
-        spc = 'OCPHILIC'
-        if spc in self.AERNAMES:
-            self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
-
-        # SU
-        r0        = 0.0695e-6  #meters
-        rmin      = 0.005e-6   #meters 
-        rmax0     = 5.0e-6     #meters
-        sigma     = 1.77
-        rhop0     = 1700       #[kg m-3]
-
-        spc = 'SU'
-        if 'SO4' in self.AERNAMES:
-            self.logNormalDistribution(spc,r0,rmin,rmax0,sigma,rhop0)
-
-        # Dust
-        # ----------
-        if 'DU001' in self.AERNAMES:
-            self.dustDistribution()
-
-        # Sea Salt
-        # ------------
-        if 'SS001' in self.AERNAMES:
-            self.seasaltDistribution()
-
-        # Mixture Distribution
-        # -------------
-        #self.TOTdist = self.BCPHILICdist + self.BCPHOBICdist + self.OCPHILICdist + self.OCPHOBICdist + self.SUdist + self.DUdist + self.SSdist
-        #self.BCdist  = self.BCPHILICdist + self.BCPHOBICdist
-        #self.OCdist  = self.OCPHILICdist + self.OCPHOBICdist
-        distnames = ['BCPHILICdist','BCPHOBICdist','OCPHILICdist','OCPHOBICdist','SUdist','DUdist','SSdist']
-        for spc in distnames:
-            if hasattr(self,spc):
-                if hasattr(self,'TOTdist'):
-                    self.TOTdist += self.__dict__[spc]
-                else:
-                    self.TOTdist = self.__dict__[spc]
-
-                if spc in ('BCPHILICdist','BCPHOBICdist'):
-                    if hasattr(self,'BCdist'):
-                        self.BCdist += self.__dict__[spc]
-                    else:
-                        self.BCdist = self.__dict__[spc]
-
-                if spc in ('OCPHILICdist','OCPHOBICdist'):
-                    if hasattr(self,'BCdist'):
-                        self.OCdist += self.__dict__[spc]
-                    else:
-                        self.OCdist = self.__dict__[spc]        
-
-        # Column size distribution
-        self.colTOTdist = np.zeros([self.nobs,len(self.R)])
-        dz = self.ze[:-1,0] - self.ze[1:,0]  
-        for t in range(self.nobs):
-            for r in range(len(self.R)):
-                self.colTOTdist[t,r] = np.sum(self.TOTdist[t,:,r]*dz)
-        
-
-
-        # convert to dV/dlnR [microns^3/microns^2] 
-        distnames = ['BCdist','OCdist','SUdist','DUdist','SSdist','TOTdist']
-        nlev      = 72
-        for spc in distnames:
-            if hasattr(self,spc):  
-                temp = np.zeros(self.__dict__[spc].shape)  
-                for t in range(self.nobs):
-                    for k in range(nlev):
-                        temp[t,k,:] = self.__dict__[spc][t,k,:]*self.R*1e6
-
-                self.__dict__[spc] = temp
-
-        spc = 'colTOTdist'
-        temp = np.zeros(self.__dict__[spc].shape)  
-        for t in range(self.nobs):
-            temp[t,:] = self.__dict__[spc][t,:]*self.R*1e6
-
-        self.__dict__[spc] = temp
-
+    #---
     def rot2scatplane(self):
         """
         Rotate meridonal plane (VLIDORT) outputs to scattering plane (GRASP)
         adapted from Kirk's code rot2scatplane.pro
         """
-        
+       
+        nch  = self.nch
         nvza = len(self.VZA)
         nraa = len(self.VAA)
 
@@ -569,10 +476,10 @@ class BENCHMARK(POLAR_VLIDORT):
         u_v = np.cos(np.radians(self.VZA))
 
         root_s = np.sqrt(1.0-u_s**2)
-        self.Q_out = np.zeros([nvza,nraa])
-        self.U_out = np.zeros([nvza,nraa])
-        self.Qsurf_out = np.zeros([nvza,nraa])
-        self.Usurf_out = np.zeros([nvza,nraa])        
+        self.Q_out = np.zeros([nch,nvza,nraa])
+        self.U_out = np.zeros([nch,nvza,nraa])
+        self.Qsurf_out = np.zeros([nch,nvza,nraa])
+        self.Usurf_out = np.zeros([nch,nvza,nraa])        
         for ivza in range(nvza):
             for iraa in range(nraa):
                 #print 'ivza,iraa',ivza,iraa
@@ -611,21 +518,61 @@ class BENCHMARK(POLAR_VLIDORT):
                     cos2i2= 2.0*(cosi2**2.0)-1.0
 
                 # rotate into scattering plane as shown in (2) of Hovenier 
-                q_in = self.Q[ivza,iraa]
-                u_in = self.U[ivza,iraa]
+                q_in = self.Q[:,ivza,iraa]
+                u_in = self.U[:,ivza,iraa]
                 q_out= q_in*cos2i2 - u_in*sin2i2
                 u_out= q_in*sin2i2 + u_in*cos2i2
 
-                self.Q_out[ivza,iraa] = -1.*q_out
-                self.U_out[ivza,iraa] = -1.*u_out
+                self.Q_out[:,ivza,iraa] = -1.*q_out
+                self.U_out[:,ivza,iraa] = -1.*u_out
 
-                q_in = self.BR_Q[ivza,iraa]
-                u_in = self.BR_U[ivza,iraa]
+                q_in = self.BR_Q[:,ivza,iraa]
+                u_in = self.BR_U[:,ivza,iraa]
                 q_out= q_in*cos2i2 - u_in*sin2i2
                 u_out= q_in*sin2i2 + u_in*cos2i2                
-                self.Qsurf_out[ivza,iraa] = -1.*q_out
-                self.Usurf_out[ivza,iraa] = -1.*u_out
+                self.Qsurf_out[:,ivza,iraa] = -1.*q_out
+                self.Usurf_out[:,ivza,iraa] = -1.*u_out
 
+    def A(self,X):
+        """
+        Rayleigh scattering cross section (cm2/molecule)
+        """
+        pi = np.pi
+        Av  = 6.0221367e23    #Avogadros number
+        Ts = 288.15           #K, standard temperature
+
+        XX=1./X
+        XX2=XX*XX
+        CM = X/10000.0  # lambda in cm
+        pi3 = pi*pi*pi
+
+        #  (ns-1)*1e8  - refractive index of dry air at standard pressure and temperature for CO2 = 300 ppmv
+        RI = 8060.51 + 2480990.0/(132.274-XX2) + 17455.7/(39.32957-XX2)
+        RI = RI*1e-8 + 1.0
+
+        C = 360.0*1e-6 # parts per volume
+        RI = (RI-1)*(1.0 + 0.54*(C - 0.0003)) + 1
+        RI2 = RI*RI
+
+        # adjust for CO2 = 360 ppm
+        Ns = (Av/22.4141)*(273.15/Ts)*(1.0/1000)
+        A = 24.0*pi3*self.F_air(XX2,C)* ((RI2-1)*(RI2-1))/(Ns*Ns*CM*CM*CM*CM*(RI2+2)*(RI2+2))
+
+        return A
+
+    def F_air(self,XX2,C):
+        """
+        King factor - depolarization
+        """
+        depol1 = 1.034 + 3.17E-4 * XX2  # N2
+        depol2 = 1.096 + 1.385E-3 * XX2 + 1.448E-4 * XX2 * XX2  # O2
+        depol3 = 1.  # Ar
+        depol4 = 1.15  # CO2
+
+        # C*100  conc in percent parts per volume
+        F_air= (78.084*depol1 + 20.946*depol2 + 0.934*depol3 +  C*100.0*depol4) / (78.084 + 20.946 + 0.934 + C*100.0)
+
+        return F_air
 
 
     def runVLIDORT(self):
@@ -641,30 +588,34 @@ class BENCHMARK(POLAR_VLIDORT):
         ssa  = self.ssa   
         pmom = self.pmom  
         
+        tauC = self.tau*0.0
+        ssaC = self.ssa*0.0
+        pmomC = self.pmom*0.0
+
+        nch = self.nch
 
         nvza = len(self.VZA)
         nraa = len(self.RAA)
         sza  = self.SZA[0]
 
-        self.I = np.ones([nvza,nraa])*MISSING
-        self.Q = np.ones([nvza,nraa])*MISSING
-        self.U = np.ones([nvza,nraa])*MISSING
-        self.reflectance = np.ones([nvza,nraa])*MISSING
-        self.surf_reflectance = np.ones([nvza,nraa])*MISSING
-        self.BR_Q = np.ones([nvza,nraa])*MISSING
-        self.BR_U = np.ones([nvza,nraa])*MISSING
+        sleave = self.RRS*np.cos(np.radians(sza))
+
+        self.I = np.ones([nch,nvza,nraa])*MISSING
+        self.Q = np.ones([nch,nvza,nraa])*MISSING
+        self.U = np.ones([nch,nvza,nraa])*MISSING
+        self.reflectance = np.ones([nch,nvza,nraa])*MISSING
+        self.surf_reflectance = np.ones([nch,nvza,nraa])*MISSING
+        self.BR_Q = np.ones([nch,nvza,nraa])*MISSING
+        self.BR_U = np.ones([nch,nvza,nraa])*MISSING
+        self.adjusted_sleave = np.ones([nch,nvza,nraa])*MISSING
 
         # Calculate ROT
-        args = [self.channel, pe, ze, te, MISSING, self.verbose]
+        args = [self.channels, pe, ze, te, MISSING, self.verbose]
         vlidortWrapper = WrapperFuncs['ROT_CALC']
         ROT, depol_ratio, rc = vlidortWrapper(*args) 
-        depol_ratio = np.array([0.03])
         
-
-        # hack to scale to GRASP
-        rod = 1.72484312e-02        
-        ROT = ROT*rod/np.sum(ROT)
         self.ROT = np.squeeze(ROT).T
+        alpha = ROT*0.0
 
         # Get VLIDORT wrapper name from dictionary
         vlidortWrapper = WrapperFuncs[self.albedoType]
@@ -681,7 +632,7 @@ class BENCHMARK(POLAR_VLIDORT):
                     param     = self.RTLSparam[:,:,0]                
                     
 
-                    args = [self.channel, self.nstreams, self.plane_parallel, ROT, depol_ratio, tau, ssa, pmom, 
+                    args = [self.channels, self.nstreams, self.plane_parallel, ROT, depol_ratio, tau, ssa, pmom, 
                             pe, ze, te, 
                             kernel_wt, param, 
                             sza, raa, vza, 
@@ -700,7 +651,7 @@ class BENCHMARK(POLAR_VLIDORT):
                     # For BPDF
                     BPDFparam = self.BPDFparam[:,:,0]
 
-                    args = [self.channel,
+                    args = [self.channels,
                             self.nstreams,
                             self.plane_parallel, 
                             ROT,
@@ -728,7 +679,7 @@ class BENCHMARK(POLAR_VLIDORT):
                     # For BPDF
                     BPDFparam = self.BPDFparam[:,:,0]
 
-                    args = [self.channel,
+                    args = [self.channels,
                             self.nstreams,
                             self.plane_parallel, 
                             ROT,
@@ -754,7 +705,7 @@ class BENCHMARK(POLAR_VLIDORT):
                     # For BPDF
                     BPDFparam = self.BPDFparam[:,:,0]
 
-                    args = [self.channel,
+                    args = [self.channels,
                             self.nstreams,
                             self.plane_parallel, 
                             ROT,
@@ -776,8 +727,8 @@ class BENCHMARK(POLAR_VLIDORT):
                     # Call VLIDORT wrapper function
                     I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)                    
                 
-                elif 'CX' in self.albedoType:
-                    args = [self.channel, self.nstreams, self.plane_parallel, ROT, depol_ratio, tau, ssa, pmom,
+                elif ('CX' in self.albedoType) and (self.albedoType != 'OCIGissCX_NOBM_CLOUD'):
+                    args = [self.channels, self.nstreams, self.plane_parallel, ROT, depol_ratio, tau, ssa, pmom,
                             pe, ze, te,
                             self.U10m, self.V10m, self.mr,
                             sza, raa, vza,
@@ -785,10 +736,24 @@ class BENCHMARK(POLAR_VLIDORT):
                             self.verbose]
 
                     I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)
+                elif self.albedoType == 'OCIGissCX_NOBM_CLOUD':
+                    args = [self.channels, self.nstreams, 
+                            self.plane_parallel, ROT, depol_ratio, alpha,
+                            tau, ssa, pmom,
+                            tauC, ssaC, pmomC,
+                            tauC, ssaC, pmomC,
+                            pe, ze, te,
+                            self.U10m, self.V10m, self.mr,
+                            sleave, self.sleave_adjust,
+                            sza, raa, vza,
+                            MISSING,
+                            self.verbose]
+                    
+                    I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc, adjusted_sleave = vlidortWrapper(*args)                    
                 elif self.albedoType == 'LAMBERTIAN':
                     albedo = self.albedo
                     
-                    args = [self.channel, self.nstreams, self.plane_parallel, ROT, depol_ratio, tau, ssa, pmom, 
+                    args = [self.channel, self.nstreams, self.plane_parallel, ROT, depol_ratio, alpha, tau, ssa, pmom, 
                             pe, ze, te, 
                             albedo, 
                             sza, raa, vza, 
@@ -799,14 +764,17 @@ class BENCHMARK(POLAR_VLIDORT):
                     I, reflectance, Q, U, rc = vlidortWrapper(*args)  
                     surf_reflectance = albedo
 
-                self.I[ivza,iraa] = np.squeeze(I)
-                self.reflectance[ivza,iraa] = np.squeeze(reflectance)
-                self.surf_reflectance[ivza,iraa] = np.squeeze(surf_reflectance)
-                self.Q[ivza,iraa] = np.squeeze(Q)
-                self.U[ivza,iraa] = np.squeeze(U) 
+                self.I[:,ivza,iraa] = np.squeeze(I)
+                self.reflectance[:,ivza,iraa] = np.squeeze(reflectance)
+                self.surf_reflectance[:,ivza,iraa] = np.squeeze(surf_reflectance)
+                self.Q[:,ivza,iraa] = np.squeeze(Q)
+                self.U[:,ivza,iraa] = np.squeeze(U) 
                 if self.albedoType != 'LAMBERTIAN':
-                    self.BR_Q[ivza,iraa] = np.squeeze(BR_Q)
-                    self.BR_U[ivza,iraa] = np.squeeze(BR_U) 
+                    self.BR_Q[:,ivza,iraa] = np.squeeze(BR_Q)
+                    self.BR_U[:,ivza,iraa] = np.squeeze(BR_U)
+                if ('NOBM' in self.albedoType) and (self.sleave_adjust is True):
+                    self.adjusted_sleave[:,ivza,iraa] = np.squeeze(adjusted_sleave)
+
 
         self.rot2scatplane()
         self.writeNC()
@@ -849,6 +817,7 @@ class BENCHMARK(POLAR_VLIDORT):
      
         # Create dimensions
         # -----------------
+        ch = nc.createDimension('nch',self.nch)
         nt = nc.createDimension('vza',len(self.VZA))
         ls = nc.createDimension('vaa',len(self.VAA))
         nz = nc.createDimension('lev',km)
@@ -857,17 +826,20 @@ class BENCHMARK(POLAR_VLIDORT):
         # if self.aerosol:
         #     nr = nc.createDimension('radius',len(self.R))  
         #     na = nc.createDimension('angle',len(self.angle))    
-
+        ch = nc.createVariable('channels','f4',('nch',),zlib=zlib)
+        ch.long_name = "wavelength"
+        ch.units     = "nm"
+        ch[:]        = self.channels
 
         vza = nc.createVariable('sensor_zenith','f4',('vza',),zlib=zlib)
         vza.long_name     = "sensor viewing zenith angle (VZA)"
-        vza.missing_value = MISSING
+        vza.missing_value = np.float32(MISSING)
         vza.units         = "degrees (positive forward view)"
         vza[:]            = self.VZA
 
         vaa = nc.createVariable('sensor_azimuth','f4',('vaa',),zlib=zlib)
         vaa.long_name     = "sensor viewing azimuth angle (VAA)"
-        vaa.missing_value = MISSING
+        vaa.missing_value = np.float32(MISSING)
         vaa.units         = "degrees clockwise from North"
         
         vaa[:]            = self.VAA
@@ -875,110 +847,110 @@ class BENCHMARK(POLAR_VLIDORT):
 
         # Write VLIDORT Outputs
         # ---------------------
-        ref = nc.createVariable('toa_reflectance','f4',('vza','vaa',),zlib=zlib,fill_value=MISSING)
-        ref.standard_name = '%.2f nm TOA Reflectance' %self.channel
-        ref.long_name     = '%.2f nm reflectance at the top of the atmosphere' %self.channel
-        ref.missing_value = MISSING
+        ref = nc.createVariable('toa_reflectance','f4',('nch','vza','vaa',),zlib=zlib,fill_value=MISSING)
+        ref.standard_name = 'spectral TOA Reflectance'
+        ref.long_name     = 'spectral reflectance at the top of the atmosphere'
+        ref.missing_value = np.float32(MISSING)
         ref.units         = "None"
         ref[:]            = self.reflectance
 
-        i = nc.createVariable('I','f4',('vza','vaa',),zlib=zlib,fill_value=MISSING)
-        i.standard_name = '%.2f nm TOA I' %self.channel
-        i.long_name     = '%.2f nm intensity at the top of the atmosphere' %self.channel
-        i.missing_value = MISSING
+        i = nc.createVariable('I','f4',('nch','vza','vaa',),zlib=zlib,fill_value=MISSING)
+        i.standard_name = 'spectral TOA I'
+        i.long_name     = 'spectral intensity at the top of the atmosphere'
+        i.missing_value = np.float32(MISSING)
         i.units         = "W m-2 sr-1 nm-1"
         i[:]            = self.I
 
-        q = nc.createVariable('Q','f4',('vza','vaa',),zlib=zlib,fill_value=MISSING)
-        q.standard_name = '%.2f nm TOA Q' %self.channel
-        q.long_name     = '%.2f nm Q-component of the stokes vector at the top of the atmopshere' %self.channel
-        q.missing_value = MISSING
+        q = nc.createVariable('Q','f4',('nch','vza','vaa',),zlib=zlib,fill_value=MISSING)
+        q.standard_name = 'spectral TOA Q'
+        q.long_name     = 'spectral Q-component of the stokes vector at the top of the atmopshere' 
+        q.missing_value = np.float32(MISSING)
         q.units         = "W m-2 sr-1 nm-1"
         q[:]            = self.Q    
 
-        u = nc.createVariable('U','f4',('vza','vaa',),zlib=zlib,fill_value=MISSING)
-        u.standard_name = '%.2f nm TOA U' %self.channel
-        u.long_name     = '%.2f nm U-component of the stokes vector at the top of the atmopshere' %self.channel
-        u.missing_value = MISSING
+        u = nc.createVariable('U','f4',('nch','vza','vaa',),zlib=zlib,fill_value=MISSING)
+        u.standard_name = 'spectral TOA U'
+        u.long_name     = 'spectral U-component of the stokes vector at the top of the atmopshere' 
+        u.missing_value = np.float32(MISSING)
         u.units         = "W m-2 sr-1 nm-1"
         u[:]            = self.U
 
-        q = nc.createVariable('Q_scatplane','f4',('vza','vaa',),zlib=zlib,fill_value=MISSING)
-        q.standard_name = '%.2f nm TOA Q rotated to scattering plane' %self.channel
-        q.long_name     = '%.2f nm Q-component of the stokes vector at the top of the atmopshere' %self.channel
-        q.missing_value = MISSING
+        q = nc.createVariable('Q_scatplane','f4',('nch','vza','vaa',),zlib=zlib,fill_value=MISSING)
+        q.standard_name = 'spectral TOA Q rotated to scattering plane'
+        q.long_name     = 'spectral Q-component of the stokes vector at the top of the atmopshere'
+        q.missing_value = np.float32(MISSING)
         q.units         = "W m-2 sr-1 nm-1"
         q[:]            = self.Q_out
 
-        u = nc.createVariable('U_scatplane','f4',('vza','vaa',),zlib=zlib,fill_value=MISSING)
-        u.standard_name = '%.2f nm TOA U rotated to scattering plane' %self.channel
-        u.long_name     = '%.2f nm U-component of the stokes vector at the top of the atmopshere' %self.channel
-        u.missing_value = MISSING
+        u = nc.createVariable('U_scatplane','f4',('nch','vza','vaa',),zlib=zlib,fill_value=MISSING)
+        u.standard_name = 'spectral TOA U rotated to scattering plane'
+        u.long_name     = 'spectral U-component of the stokes vector at the top of the atmopshere' 
+        u.missing_value = np.float32(MISSING)
         u.units         = "W m-2 sr-1 nm-1"
         u[:]            = self.U_out
-        sref = nc.createVariable('surf_reflectance','f4',('vza','vaa',),zlib=zlib,fill_value=MISSING)
-        sref.standard_name = '%.2f nm Surface Reflectance' %self.channel
-        sref.long_name     = '%.2f nm Bi-Directional Surface Reflectance' %self.channel
-        sref.missing_value = MISSING
+        sref = nc.createVariable('surf_reflectance','f4',('nch','vza','vaa',),zlib=zlib,fill_value=MISSING)
+        sref.standard_name = 'spectral Surface Reflectance' 
+        sref.long_name     = 'spectral Bi-Directional Surface Reflectance'
+        sref.missing_value = np.float32(MISSING)
         sref.units         = "None"
         sref[:]            = self.surf_reflectance
 
-        sref = nc.createVariable('surf_reflectance_Q','f4',('vza','vaa',),zlib=zlib,fill_value=MISSING)
-        sref.standard_name = '%.2f nm Surface Reflectance Q' %self.channel
-        sref.long_name     = '%.2f nm Bi-Directional Surface Reflectance Q' %self.channel
-        sref.missing_value = MISSING
+        sref = nc.createVariable('surf_reflectance_Q','f4',('nch','vza','vaa',),zlib=zlib,fill_value=MISSING)
+        sref.standard_name = 'spectral Surface Reflectance Q'
+        sref.long_name     = 'spectral Bi-Directional Surface Reflectance Q'
+        sref.missing_value = np.float32(MISSING)
         sref.units         = "None"
         sref[:]            = self.BR_Q
 
-        sref = nc.createVariable('surf_reflectance_U','f4',('vza','vaa',),zlib=zlib,fill_value=MISSING)
-        sref.standard_name = '%.2f nm Surface Reflectance U' %self.channel
-        sref.long_name     = '%.2f nm Bi-Directional Surface Reflectance U' %self.channel
-        sref.missing_value = MISSING
+        sref = nc.createVariable('surf_reflectance_U','f4',('nch','vza','vaa',),zlib=zlib,fill_value=MISSING)
+        sref.standard_name = 'spectral Surface Reflectance U'
+        sref.long_name     = 'spectral Bi-Directional Surface Reflectance U'
+        sref.missing_value = np.float32(MISSING)
         sref.units         = "None"
         sref[:]            = self.BR_U
 
-        sref = nc.createVariable('surf_reflectance_Q_scatplane','f4',('vza','vaa',),zlib=zlib,fill_value=MISSING)
-        sref.standard_name = '%.2f nm Surface Reflectance Q' %self.channel
-        sref.long_name     = '%.2f nm Bi-Directional Surface Reflectance Q' %self.channel
-        sref.missing_value = MISSING
+        sref = nc.createVariable('surf_reflectance_Q_scatplane','f4',('nch','vza','vaa',),zlib=zlib,fill_value=MISSING)
+        sref.standard_name = 'spectral Surface Reflectance Q'
+        sref.long_name     = 'spectral Bi-Directional Surface Reflectance Q'
+        sref.missing_value = np.float32(MISSING)
         sref.units         = "None"
         sref[:]            = self.Qsurf_out
 
-        sref = nc.createVariable('surf_reflectance_U_scatplane','f4',('vza','vaa',),zlib=zlib,fill_value=MISSING)
-        sref.standard_name = '%.2f nm Surface Reflectance U' %self.channel
-        sref.long_name     = '%.2f nm Bi-Directional Surface Reflectance U' %self.channel
-        sref.missing_value = MISSING
+        sref = nc.createVariable('surf_reflectance_U_scatplane','f4',('nch','vza','vaa',),zlib=zlib,fill_value=MISSING)
+        sref.standard_name = 'spectral Surface Reflectance U'
+        sref.long_name     = 'spectral Bi-Directional Surface Reflectance U'
+        sref.missing_value = np.float32(MISSING)
         sref.units         = "None"
         sref[:]            = self.Usurf_out
 
 
-        rot = nc.createVariable('ROT','f4',('lev',),zlib=zlib,fill_value=MISSING)
-        rot.long_name = '%.2f nm Rayleigh Optical Thickness' %self.channel
-        rot.missing_value = MISSING
+        rot = nc.createVariable('ROT','f4',('lev','nch',),zlib=zlib,fill_value=MISSING)
+        rot.long_name = 'spectral Rayleigh Optical Thickness'
+        rot.missing_value = np.float32(MISSING)
         rot.units         = "None"
         rot[:]            = self.ROT
 
         pe = nc.createVariable('PE','f4',('leve',),zlib=zlib,fill_value=MISSING)
         pe.long_name = 'layer edge pressure' 
-        pe.missing_value = MISSING
+        pe.missing_value = np.float32(MISSING)
         pe.units         = "Pa"
         pe[:]            = self.pe
 
         ze = nc.createVariable('ZE','f4',('leve',),zlib=zlib,fill_value=MISSING)
         ze.long_name = 'layer edge height' 
-        ze.missing_value = MISSING
+        ze.missing_value = np.float32(MISSING)
         ze.units         = "m"
         ze[:]            = self.ze
 
         te = nc.createVariable('TE','f4',('leve',),zlib=zlib,fill_value=MISSING)
         te.long_name = 'layer edge temperature' 
-        te.missing_value = MISSING
+        te.missing_value = np.float32(MISSING)
         te.units         = "K"
         te[:]            = self.te
 
         dens = nc.createVariable('AIRDENS','f4',('lev',),zlib=zlib,fill_value=MISSING)
         dens.long_name = 'layer air density' 
-        dens.missing_value = MISSING
+        dens.missing_value = np.float32(MISSING)
         dens.units         = "kg m-3"
         dens[:]            = self.AIRDENS[0,:]      
 
@@ -986,51 +958,58 @@ class BENCHMARK(POLAR_VLIDORT):
             chs = str(int(self.channel))
             riso = nc.createVariable('RISO','f4',('nobs',),zlib=zlib,fill_value=MISSING)
             riso.long_name = 'RTLS isotropic kernel weight' 
-            riso.missing_value = MISSING
+            riso.missing_value = np.float32(MISSING)
             riso.units         = "None"
             riso[:]            = self.__dict__['Riso'+chs]
 
             rgeo = nc.createVariable('RGEO','f4',('nobs',),zlib=zlib,fill_value=MISSING)
             rgeo.long_name = 'RTLS geometric kernel weight' 
-            rgeo.missing_value = MISSING
+            rgeo.missing_value = np.float32(MISSING)
             rgeo.units         = "None"
             rgeo[:]            = self.__dict__['Rgeo'+chs]
 
             rvol = nc.createVariable('RVOL','f4',('nobs',),zlib=zlib,fill_value=MISSING)
             rvol.long_name = 'RTLS volumetric kernel weight' 
-            rvol.missing_value = MISSING
+            rvol.missing_value = np.float32(MISSING)
             rvol.units         = "None"
             rvol[:]            = self.__dict__['Rvol'+chs]
 
         if 'CX' in self.albedoType:
-            mr = nc.createVariable('mr','f4',('nobs',),zlib=zlib,fill_value=MISSING)
+            mr = nc.createVariable('mr','f4',('nch',),zlib=zlib,fill_value=MISSING)
             mr.long_name = 'refractive index of water' 
-            mr.missing_value = MISSING
+            mr.missing_value = np.float32(MISSING)
             mr.units         = "None"
             mr[:]            = self.__dict__['mr']  
 
             u10m = nc.createVariable('U10m','f4',('nobs',),zlib=zlib,fill_value=MISSING)
             u10m.long_name = '10-meter wind speed U component' 
-            u10m.missing_value = MISSING
+            u10m.missing_value = np.float32(MISSING)
             u10m.units         = "None"
             u10m[:]            = self.__dict__['U10m']   
 
             v10m = nc.createVariable('V10m','f4',('nobs',),zlib=zlib,fill_value=MISSING)
             v10m.long_name = '10-meter wind speed V component' 
-            v10m.missing_value = MISSING
+            v10m.missing_value = np.float32(MISSING)
             v10m.units         = "None"
-            v10m[:]            = self.__dict__['V10m']   
+            v10m[:]            = self.__dict__['V10m']  
+
+        if ('NOBM' in self.albedoType) and (self.sleave_adjust is True):
+            sl = nc.createVariable('adjusted_sleave','f4',('nch','vza','vaa',),zlib=zlib,fill_value=MISSING)
+            sl.long_name = 'transmittance adjusted sleave'
+            sl.missing_value = np.float32(MISSING)
+            sl.units         = 'None'
+            sl[:]            = self.adjusted_sleave
 
         if self.aerosol:
-            tau = nc.createVariable('TAU','f4',('lev',),zlib=zlib,fill_value=MISSING)
+            tau = nc.createVariable('TAU','f4',('lev','nch',),zlib=zlib,fill_value=MISSING)
             tau.long_name = 'layer aerosol extinction optical depth' 
-            tau.missing_value = MISSING
+            tau.missing_value = np.float32(MISSING)
             tau.units         = "None"
             tau[:]            = np.squeeze(self.tau)
 
-            ssa = nc.createVariable('SSA','f4',('lev',),zlib=zlib,fill_value=MISSING)
+            ssa = nc.createVariable('SSA','f4',('lev','nch',),zlib=zlib,fill_value=MISSING)
             ssa.long_name = 'layer aerosol single scattering albedo' 
-            ssa.missing_value = MISSING
+            ssa.missing_value = np.float32(MISSING)
             ssa.units         = "None"
             ssa[:]            = np.squeeze(self.ssa)
 
@@ -1058,56 +1037,63 @@ if __name__ == "__main__":
     if not os.path.exists(rootDir):
         rootDir = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/'
 
-    outRoot = './self_benchmark/2p7_graspConfig_12_Osku_DrySU_V1/'
+    outRoot = './self_benchmark_2p8p2/graspConfig_12_Osku_DrySU_V1_hyperspectral/'
 
 
     #albedoType   = 'BPDF'
     #albedoType = 'MODIS_BRDF_BPDF'
     #albedoType = 'LAMBERTIAN_BPDF'
     #albedoType = 'GissCX'
-    albedoType = 'CX'
+    #albedoType = 'CX'
     #albedoType = 'LAMBERTIAN'
     #albedoType = 'MODIS_BRDF'
-
+    albedoType  = 'OCIGissCX_NOBM_CLOUD'
+    
     aerosol        = True # true if you want aerosols in simulation
     simple_aerosol = True # true if exponential aerosol with constnat optical properties
     dark           = True  #use if you want lambertian surface with albedo = 0
-    nstreams       = 12
+    nstreams       = 20
     plane_parallel = True
+    sleave_adjust  = True  # if surface leaving surface, do you want to adjust for the transmittance
 
+    step = 10
+    channels  = np.arange(350,710,step)  
+    chdmin    = get_chd(channels.min())
+    chdmax    = get_chd(channels.max())
+    
 
-    channels  = 400, #865, #470,    # 410,440,470,550,670,865,1020,1650,2100  #
-    for channel in channels:
-        chd      = get_chd(channel)
+    if (albedoType == 'LAMBERTIAN') and (dark is True):
+        sfcname = 'nosurface'
+    elif albedoType == 'MODIS_BRDF':
+        sfcname = 'BRDF'
+    elif ('NOBM' in albedoType) and (sleave_adjust is True):
+        sfcname = albedoType + '_sleave_adjust'
+    else:
+        sfcname = albedoType
 
-        if (albedoType == 'LAMBERTIAN') and (dark is True):
-            sfcname = 'nosurface'
-        elif albedoType == 'MODIS_BRDF':
-            sfcname = 'BRDF'
+    if aerosol is False:
+        aname = 'rayleigh'
+    else:
+        if simple_aerosol:
+            #aname = 'rayleigh+simple_aerosol'
+            aname = 'rayleigh+simple_aerosol'
         else:
-            sfcname = albedoType
+            aname = 'rayleigh+aerosol'
 
-        if aerosol is False:
-            aname = 'rayleigh'
-        else:
-            if simple_aerosol:
-                #aname = 'rayleigh+simple_aerosol'
-                aname = 'rayleigh+simple_aerosol'
-            else:
-                aname = 'rayleigh+aerosol'
-
-        outDir    = '{}/benchmark_{}_{}'.format(outRoot,aname,sfcname)
-        outFile   = '{}/calipso-g5nr.vlidort.vector.{}.{}.nc4'.format(outDir,albedoType,chd)
+    outDir    = '{}/benchmark_{}_{}'.format(outRoot,aname,sfcname)
+    outFile   = '{}/calipso-g5nr.vlidort.vector.{}.{}_{}_{}.nc4'.format(outDir,albedoType,chdmin,chdmax,step)
         
-        rcFile   = 'rc/Aod_EOS.{}.rc'.format(channel)
-        verbose  = True
+    rcFile   = 'rc/Aod_EOS.{}.rc'
+    verbose  = True
 
-        # Initialize VLIDORT class getting aerosol optical properties
-        # -----------------------------------------------------------
-        vlidort = BENCHMARK(albedoType,channel,outFile,rootDir,rcFile,
-                                verbose=verbose,aerosol=aerosol,dark=dark,
-                                simple_aerosol=simple_aerosol,
-                                nstreams=nstreams,plane_parallel=plane_parallel)
+    # Initialize VLIDORT class getting aerosol optical properties
+    # -----------------------------------------------------------
+    vlidort = BENCHMARK(albedoType,channels,outFile,rootDir,rcFile,
+                             verbose=verbose,aerosol=aerosol,dark=dark,
+                             simple_aerosol=simple_aerosol,
+                             nstreams=nstreams,
+                             plane_parallel=plane_parallel,
+                             sleave_adjust=sleave_adjust)
 
        
-        vlidort.runVLIDORT()
+    vlidort.runVLIDORT()
