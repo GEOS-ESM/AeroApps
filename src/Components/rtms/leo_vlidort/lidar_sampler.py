@@ -23,6 +23,7 @@ from   optparse        import OptionParser
 from   dateutil.parser import parse         as isoparser
 from   pyobs.sgp4      import getTrack as getTrackTLE
 from   numpy           import zeros, arange, array
+import numpy           as np
 from   MAPL            import eta
 from   MAPL.constants  import *
 from   pyobs.nc4ctl    import NC4ctl  
@@ -141,7 +142,7 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
             this = nc.createVariable(var.name,'f4',dim,zlib=zlib)
             this.standard_name = var.title
             this.long_name = var.title.replace('_',' ')
-            this.missing_value = MAPL_UNDEF
+            this.missing_value = np.float32(MAPL_UNDEF)
             this.units = var.units
             if g.lower:
                 name = var.name.lower() # GDS always uses lower case
@@ -179,6 +180,7 @@ if __name__ == "__main__":
     outFile = 'trj_sampler.nc'
     dt_secs = 60
     algo = 'linear'
+    
 
 #   Parse command line options
 #   --------------------------
@@ -214,6 +216,10 @@ if __name__ == "__main__":
     parser.add_option("-v", "--verbose",
                       action="store_true", dest="verbose",
                       help="Verbose mode.")
+
+    parser.add_option("-z", "--no_zlib",
+                      action="store_false", dest="zlib", default=True,
+                      help="no zlib compression for netcdf files")
 
     (options, args) = parser.parse_args()
     
@@ -275,5 +281,5 @@ if __name__ == "__main__":
     if options.format == 'EXCEL':
         writeXLS(lon,lat,tyme,Vars,trjFile,options)
     else:
-        writeNC(lon,lat,tyme,Vars,levs,levUnits,trjFile,options)
+        writeNC(lon,lat,tyme,Vars,levs,levUnits,trjFile,options,zlib=options.zlib)
     

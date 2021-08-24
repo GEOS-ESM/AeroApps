@@ -345,7 +345,8 @@ class LIDAR_VLIDORT(VLIDORT):
             self.BR_Q[iGood] = np.squeeze(BR_Q)
             self.BR_U[iGood] = np.squeeze(BR_U) 
 
-
+        p.close()
+        p.join()
         self.writeNC()
     #---
     def writeNC (self,zlib=True):
@@ -401,26 +402,26 @@ class LIDAR_VLIDORT(VLIDORT):
 
         vza = nc.createVariable('sensor_zenith','f4',('time',),zlib=zlib)
         vza.long_name     = "sensor viewing zenith angle (VZA)"
-        vza.missing_value = MISSING
+        vza.missing_value = np.float32(MISSING)
         vza.units         = "degrees (positive forward view)"
         vza[:]            = self.VZA
 
         vaa = nc.createVariable('sensor_azimuth','f4',('time',),zlib=zlib)
         vaa.long_name     = "sensor viewing azimuth angle (VAA)"
-        vaa.missing_value = MISSING
+        vaa.missing_value = np.float32(MISSING)
         vaa.units         = "degrees clockwise from North"
         
         vaa[:]            = self.VAA
 
         sza = nc.createVariable('solar_zenith','f4',('time',),zlib=zlib)
         sza.long_name     = "solar zenith angle (SZA)"
-        sza.missing_value = MISSING
+        sza.missing_value = np.float32(MISSING)
         sza.units         = "degrees"
         sza[:]            = self.SZA  
 
         saa = nc.createVariable('solar_azimuth','f4',('time',),zlib=zlib)
         saa.long_name     = "solar azimuth angle (SAA)"
-        saa.missing_value = MISSING
+        saa.missing_value = np.float32(MISSING)
         saa.units         = "degrees clockwise from North"
         saa[:]            = self.SAA
 
@@ -430,67 +431,67 @@ class LIDAR_VLIDORT(VLIDORT):
         ref = nc.createVariable('toa_reflectance','f4',('time',),zlib=zlib,fill_value=MISSING)
         ref.standard_name = '%.2f nm TOA Reflectance' %self.channel
         ref.long_name     = '%.2f nm reflectance at the top of the atmosphere' %self.channel
-        ref.missing_value = MISSING
+        ref.missing_value = np.float32(MISSING)
         ref.units         = "None"
         ref[:]            = self.reflectance
 
         i = nc.createVariable('I','f4',('time',),zlib=zlib,fill_value=MISSING)
         i.standard_name = '%.2f nm TOA I' %self.channel
         i.long_name     = '%.2f nm sun normalized intensity at the top of the atmosphere' %self.channel
-        i.missing_value = MISSING
+        i.missing_value = np.float32(MISSING)
         i.units         = "W m-2 sr-1 nm-1"
         i[:]            = self.I
 
         q = nc.createVariable('Q','f4',('time',),zlib=zlib,fill_value=MISSING)
         q.standard_name = '%.2f nm TOA Q' %self.channel
         q.long_name     = '%.2f nm Q-component of the stokes vector at the top of the atmopshere' %self.channel
-        q.missing_value = MISSING
+        q.missing_value = np.float32(MISSING)
         q.units         = "W m-2 sr-1 nm-1"
         q[:]            = self.Q    
 
         u = nc.createVariable('U','f4',('time',),zlib=zlib,fill_value=MISSING)
         u.standard_name = '%.2f nm TOA U' %self.channel
         u.long_name     = '%.2f nm U-component of the stokes vector at the top of the atmopshere' %self.channel
-        u.missing_value = MISSING
+        u.missing_value = np.float32(MISSING)
         u.units         = "W m-2 sr-1 nm-1"
         u[:]            = self.U
 
         sref = nc.createVariable('surf_reflectance','f4',('time',),zlib=zlib,fill_value=MISSING)
         sref.standard_name = '%.2f nm Surface Reflectance' %self.channel
         sref.long_name     = '%.2f nm Bi-Directional Surface Reflectance' %self.channel
-        sref.missing_value = MISSING
+        sref.missing_value = np.float32(MISSING)
         sref.units         = "None"
         sref[:]            = self.surf_reflectance
 
         sref = nc.createVariable('surf_reflectance_Q','f4',('time',),zlib=zlib,fill_value=MISSING)
         sref.standard_name = '%.2f nm Surface Reflectance Q' %self.channel
         sref.long_name     = '%.2f nm Bi-Directional Surface Reflectance Q' %self.channel
-        sref.missing_value = MISSING
+        sref.missing_value = np.float32(MISSING)
         sref.units         = "None"
         sref[:]            = self.BR_Q
 
         sref = nc.createVariable('surf_reflectance_U','f4',('time',),zlib=zlib,fill_value=MISSING)
         sref.standard_name = '%.2f nm Surface Reflectance U' %self.channel
         sref.long_name     = '%.2f nm Bi-Directional Surface Reflectance U' %self.channel
-        sref.missing_value = MISSING
+        sref.missing_value = np.float32(MISSING)
         sref.units         = "None"
         sref[:]            = self.BR_U
 
         rot = nc.createVariable('ROT','f4',('time','lev',),zlib=zlib,fill_value=MISSING)
         rot.long_name = '%.2f nm Rayleigh Optical Thickness' %self.channel
-        rot.missing_value = MISSING
+        rot.missing_value = np.float32(MISSING)
         rot.units         = "None"
         rot[:]            = self.ROT
 
         depol = nc.createVariable('rayleigh_depol_ratio','f4',('channel',),zlib=zlib,fill_value=MISSING)
         depol.long_name = '%.2f nm Rayleigh Depolrization Ratio' %self.channel
-        depol.missing_value = MISSING
+        depol.missing_value = np.float32(MISSING)
         depol.units         = "None"
         depol[:]            = self.depol_ratio
 
         mr = nc.createVariable('ocean_refractive_index','f4',('channel',),zlib=zlib,fill_value=MISSING)
         mr.long_name = '%.2f nm ocean refreactive index' %self.channel
-        mr.missing_value = MISSING
+        mr.missing_value = np.float32(MISSING)
         mr.units         = "None"
         mr[:]            = self.mr
 
@@ -656,5 +657,6 @@ if __name__ == "__main__":
 
             # Run VLIDORT
             vlidort.runVLIDORT()
+            vlidort = None
 
         date += Dt

@@ -20,7 +20,7 @@ from netCDF4         import Dataset
 import numpy         as np
 
 if os.path.exists('/discover/nobackup'):
-    nccat = '/usr/local/other/SLES11.1/nco/4.4.4/intel-12.1.0.233/bin/ncrcat'
+    nccat = '/usr/local/other/nco/4.8.1/bin/ncrcat'
 else:
     nccat = '/ford1/share/dasilva/bin/ncrcat'
 
@@ -76,6 +76,7 @@ if __name__ == "__main__":
     dt_secs = "1"
     algo    = "linear"
     nproc    = 8
+    exp     = 'g5nr'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",
@@ -85,6 +86,10 @@ if __name__ == "__main__":
 
     parser.add_argument("prep_config",
                         help="prep config filename")
+
+    parser.add_argument("-e", "--exp", default=exp,
+              help="GEOS experiment name (default=%s)"\
+                          %exp)
 
     parser.add_argument("-a", "--algo", default=algo,
               help="Interpolation algorithm, one of linear, nearest (default=%s)"\
@@ -162,7 +167,7 @@ if __name__ == "__main__":
 
                 edate = date + pdt - timedelta(seconds=int(args.dt_secs))
 
-                outFile = '{}/{}-g5nr.lb2.{}.{}_{}{}z.nc4'.format(outpath,instname,colname,nymd,hour,minute)
+                outFile = '{}/{}-{}.lb2.{}.{}_{}{}z.nc4'.format(outpath,instname,args.exp,colname,nymd,hour,minute)
 
                 Options =     " --rcFile=" + rc      + \
                               " --output=" + outFile       + \

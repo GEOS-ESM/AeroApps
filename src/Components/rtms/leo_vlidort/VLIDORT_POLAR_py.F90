@@ -277,8 +277,8 @@ end subroutine VECTOR_BPDF
 
 
 subroutine VECTOR_LAMBERT(km, nch, nobs, channels, nstreams, plane_parallel, nMom, nPol, &
-                     ROT, depol, tau, ssa, pmom, pe, he, te, albedo, &
-                     solar_zenith, relat_azymuth, sensor_zenith, &
+                     ROT, depol, alpha, tau, ssa, pmom, pe, he, te, albedo, &
+                     solar_zenith, relat_azymuth, sensor_zenith, flux_factor, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, Q, U, rc)
 
     use VLIDORT_LAMBERT, only: VLIDORT_Vector_Lambert  
@@ -302,7 +302,7 @@ subroutine VECTOR_LAMBERT(km, nch, nobs, channels, nstreams, plane_parallel, nMo
     real*8,           intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
     real*8,           intent(in)            :: depol(nch)       ! rayleigh depolarization ratio
 
-
+    real*8,           intent(in)            :: alpha(km,nobs,nch)       ! trace gas absorption
   !                                                   ! --- Aerosol Optical Properties ---
     real*8,           intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
     real*8,           intent(in)            :: ssa(km,nch,nobs) ! single scattering albedo    
@@ -319,6 +319,8 @@ subroutine VECTOR_LAMBERT(km, nch, nobs, channels, nstreams, plane_parallel, nMo
     real*8,           intent(in)            :: relat_azymuth(nobs) 
     real*8,           intent(in)            :: sensor_zenith(nobs) 
 
+    real*8,           intent(in)  :: flux_factor(nch,nobs) ! solar flux (F0)
+
     integer,          intent(in)            :: verbose
 
   ! !OUTPUT PARAMETERS:
@@ -331,11 +333,12 @@ subroutine VECTOR_LAMBERT(km, nch, nobs, channels, nstreams, plane_parallel, nMo
 
 
     call VLIDORT_Vector_Lambert (km, nch, nobs, channels, nstreams, plane_parallel, nMom, &
-                                   nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
+                                   nPol, ROT, depol, alpha, tau, ssa, pmom, pe, he, te, &
                                    albedo, &
                                    solar_zenith, &
                                    relat_azymuth, &
                                    sensor_zenith, &
+                                   flux_factor, &
                                    MISSING,verbose, &
                                    radiance_VL_SURF, &
                                    reflectance_VL_SURF, &
@@ -709,8 +712,8 @@ subroutine VECTOR_OCICX(km, nch, nobs, channels, nstreams, plane_parallel, nMom,
 end subroutine VECTOR_OCICX
 
 subroutine VECTOR_OCIGissCX(km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
-                     nPol, ROT, depol, tau, ssa, pmom, pe, he, te, U10m, V10m, &
-                     mr, solar_zenith, relat_azymuth, sensor_zenith, &
+                     nPol, ROT, depol, alpha, tau, ssa, pmom, pe, he, te, U10m, V10m, &
+                     mr, solar_zenith, relat_azymuth, sensor_zenith, flux_factor, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, &
                      BR, Q, U, BR_Q, BR_U, rc)
 
@@ -735,7 +738,10 @@ subroutine VECTOR_OCIGissCX(km, nch, nobs, channels, nstreams, plane_parallel, n
     real*8,           intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
     real*8,           intent(in)            :: depol(nch)       ! rayleigh depolarization ratio
 
-  !                                                   ! --- Aerosol Optical Properties ---
+!                                                   ! --- Trace Gas Absorption---
+  real*8, target,   intent(in)              :: alpha(km,nobs,nch) ! trace gas absoprtion optical thickness
+
+!                                                   ! --- Aerosol Optical Properties ---
     real*8,           intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
     real*8,           intent(in)            :: ssa(km,nch,nobs) ! single scattering albedo    
     real*8,           intent(in)            :: pmom(km,nch,nobs,nMom,nPol) !components of the scat phase matrix
@@ -753,6 +759,8 @@ subroutine VECTOR_OCIGissCX(km, nch, nobs, channels, nstreams, plane_parallel, n
     real*8,           intent(in)            :: relat_azymuth(nobs) 
     real*8,           intent(in)            :: sensor_zenith(nobs) 
 
+    real*8,           intent(in)            :: flux_factor(nch,nobs) ! solar flux (F0)
+
     integer,          intent(in)            :: verbose
 
   ! !OUTPUT PARAMETERS:
@@ -768,11 +776,12 @@ subroutine VECTOR_OCIGissCX(km, nch, nobs, channels, nstreams, plane_parallel, n
 
 
     call VLIDORT_Vector_OCIGissCX (km, nch, nobs, channels, nstreams, plane_parallel, nMom, &
-                                   nPol, ROT, depol, tau, ssa, pmom, pe, he, te, &
+                                   nPol, ROT, depol, alpha, tau, ssa, pmom, pe, he, te, &
                                    U10m, V10m, mr, &
                                    solar_zenith, &
                                    relat_azymuth, &
                                    sensor_zenith, &
+                                   flux_factor, &
                                    MISSING,verbose, &
                                    radiance_VL_SURF, &
                                    reflectance_VL_SURF, &
@@ -782,12 +791,12 @@ subroutine VECTOR_OCIGissCX(km, nch, nobs, channels, nstreams, plane_parallel, n
 end subroutine VECTOR_OCIGissCX
 
 subroutine VECTOR_OCIGissCX_NOBM_Cloud(km, nch, nobs, channels, nstreams, plane_parallel, nMom,  &
-                     nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+                     nPol, ROT, depol, alpha, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                      pe, he, te, U10m, V10m, &
-                     mr, sleave, &
-                     solar_zenith, relat_azymuth, sensor_zenith, &
+                     mr, sleave, sleave_iso, sleave_adjust, &
+                     solar_zenith, relat_azymuth, sensor_zenith, flux_factor, &
                      MISSING,verbose, radiance_VL_SURF,reflectance_VL_SURF, &
-                     BR, Q, U, BR_Q, BR_U, rc)
+                     BR, Q, U, BR_Q, BR_U, rc, ADJUSTED_SLEAVE)
 
     use VLIDORT_BRDF_CX, only: VLIDORT_Vector_OCIGissCX_NOBM_CLOUD  
     implicit None
@@ -809,7 +818,8 @@ subroutine VECTOR_OCIGissCX_NOBM_Cloud(km, nch, nobs, channels, nstreams, plane_
 !                                                   ! --- Rayleigh Parameters ---
     real*8,           intent(in)            :: ROT(km,nobs,nch) ! rayleigh optical thickness
     real*8,           intent(in)            :: depol(nch)       ! rayleigh depolarization ratio
-
+!                                                   ! Trace Gas Properties ---
+    real*8,           intent(in)            :: alpha(km,nobs,nch) ! trace gas absorption optical thickenss
   !                                                   ! --- Aerosol Optical Properties ---
     real*8,           intent(in)            :: tau(km,nch,nobs) ! aerosol optical depth
     real*8,           intent(in)            :: ssa(km,nch,nobs) ! single scattering albedo    
@@ -833,10 +843,14 @@ subroutine VECTOR_OCIGissCX_NOBM_Cloud(km, nch, nobs, channels, nstreams, plane_
     real*8,           intent(in)            :: V10m(nobs)    
     real*8,           intent(in)            :: mr(nch)       ! refractive index
     real*8,           intent(in)            :: sleave(nch,nobs)       ! sun normalized water leaving radiance from NOBM
-                                                          ! described and used in Gregg & Rousseaux 2017                          
+                                                          ! described and used in Gregg & Rousseaux 2017
+    logical,          intent(in)            :: sleave_iso
+    logical,          intent(in)            :: sleave_adjust 
     real*8,           intent(in)            :: solar_zenith(nobs)  
     real*8,           intent(in)            :: relat_azymuth(nobs) 
     real*8,           intent(in)            :: sensor_zenith(nobs) 
+
+    real*8,           intent(in)            :: flux_factor(nch,nobs) ! solar flux (F0)
 
     integer,          intent(in)            :: verbose
 
@@ -850,19 +864,20 @@ subroutine VECTOR_OCIGissCX_NOBM_Cloud(km, nch, nobs, channels, nstreams, plane_
     real*8,           intent(out)           :: BR_U(nobs,nch)                 ! polarized bidirectional reflectance    
     real*8,           intent(out)           :: Q(nobs, nch)                   ! Stokes parameter Q
     real*8,           intent(out)           :: U(nobs, nch)                   ! Stokes parameter U   
-
+    real*8,           intent(out)           :: ADJUSTED_SLEAVE(nobs,nch)
 
     call VLIDORT_Vector_OCIGissCX_NOBM_CLOUD (km, nch, nobs, channels, nstreams, plane_parallel, nMom, &
-                                   nPol, ROT, depol, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
+                                   nPol, ROT, depol, alpha, tau, ssa, pmom, tauI, ssaI, pmomI, tauL, ssaL, pmomL, &
                                    pe, he, te, U10m, V10m, &
-                                   mr, sleave, &
+                                   mr, sleave, sleave_iso, sleave_adjust, &
                                    solar_zenith, &
                                    relat_azymuth, &
                                    sensor_zenith, &
+                                   flux_factor, &
                                    MISSING,verbose, &
                                    radiance_VL_SURF, &
                                    reflectance_VL_SURF, &
-                                   Q, U, BR, BR_Q, BR_U, rc )  
+                                   Q, U, BR, BR_Q, BR_U, rc, ADJUSTED_SLEAVE )  
 
 
 end subroutine VECTOR_OCIGissCX_NOBM_Cloud
