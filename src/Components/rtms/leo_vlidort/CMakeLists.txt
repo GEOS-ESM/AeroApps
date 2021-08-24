@@ -34,25 +34,73 @@ esma_add_f2py2_module (LidarAngles_
   )
 
 
+file (GLOB python_files py_leo_vldort/*.py)
+install (FILES ${python_files} DESTINATION lib/Python/py_leo_vlidort)
+
+
 # these are executable scripts
-#set (PYSCRIPTS
-#    geo_vlidort_AI_lc2.py
-#    geo_vlidort_blksurf_lc2.py
-#    geo_vlidort_cloud_lc2.py
-#    geo_vlidort_lc2.py
-#    geo_vlidort_ocean_lc2.py
-#    geo_warp.py
-#    run_geo_vlidort_AI_lc2.py
-#    run_geo_vlidort_blksurf_lc2.py
-#    run_geo_vlidort_cloud_lc2.py
-#    run_geo_vlidort_lc2.py
-#    run_geo_vlidort_ocean_lc2.py
-#    utAngles.py
-#    )
+set (PYSCRIPTS
+    batch_lidar_sampler.py
+    benchmark_polar_vlidort_grasp.py
+    benchmark_polar_vlidort_hyperspectral.py
+    benchmark_polar_vlidort_iprt.py
+    benchmark_polar_vlidort.py
+    brdf_mcd43c_sampler.py
+    landcover_mcd12c_sampler.py
+    leo_vlidort_lc.py
+    lidar_sampler.py
+    pace_test.py
+    plot_diff_iprt.py
+    plot_diff.py
+    plot_sleave.py
+    polar_aero_dist.py
+    polar_vlidort.py
+    run_ext_sampler.py
+    run_lidar_sampler.py
+    run_lidar_vlidort.py
+    run_polar_vlidort.py
+    trace_gas_test.py
+    )
 
-#install (
-#    PROGRAMS  ${PYSCRIPTS}
-#    DESTINATION bin/${this}
-#    )
+set (SCRIPTS
+    run_lidar_sampler.j
+    )
 
+install (
+    PROGRAMS  ${PYSCRIPTS} ${SCRIPTS}
+    DESTINATION bin/${this}
+    )
 
+# these are non-executaables
+set (PYFILES
+    mcd12c.py
+    )
+
+set (RCFILES
+    aer_Nv_opendap.rc
+    aer_Nv.rc
+    Aod_EOS.rc
+    asm_Nx.rc
+    Chem_MieRegistry.rc
+    chm_Nv_opendap.rc
+    chm_Nv.rc
+    met_Nv_opendap.rc
+    met_Nv.rc
+    myd13c2.rc
+    omi_ler.rc
+    )
+
+set (OTHERFILES
+    polar_vlidort.pcf
+    )
+install (
+    FILES ${PYFILES} ${RCFILES} ${OTHERFILES}
+    DESTINATION bin/${this}
+    )
+
+install (
+   DIRECTORY calipso
+   DESTINATION bin/${this}
+   USE_SOURCE_PERMISSIONS
+   MESSAGE_NEVER
+   )
