@@ -49,6 +49,7 @@ set (PYSCRIPTS
     landcover_mcd12c_sampler.py
     leo_vlidort_lc.py
     lidar_sampler.py
+    mp_lidar_vlidort.py
     pace_test.py
     plot_diff_iprt.py
     plot_diff.py

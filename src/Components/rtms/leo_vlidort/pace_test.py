@@ -32,7 +32,7 @@ MieVarsNames = ['ext','scatext','backscat','aback_sfc','aback_toa','depol','ext2
 MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitless','unitless','unitless']
 
 META    = ['DELP','PS','RH','AIRDENS']
-AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
+AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC# + VNAMES_DU
 SDS_AER = META + AERNAMES
 MISSING = -1.e+20
 
@@ -121,7 +121,7 @@ def get_channels():
     return blue,red,swir
 
 def get_geom(i,j):
-    inFile = '/nobackup/PACE/L1B/Y2020/M03/D24/OCI2020084005000.L1B_PACE.nc'
+    inFile = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/L1B/Y2020/M03/D24/OCI2020084005000.L1B_PACE.nc'
     nc = Dataset(inFile)
     grp = nc.groups['geolocation_data']
     sza = grp.variables['solar_zenith'][:]
@@ -166,7 +166,8 @@ def level_1(geos,SZA,VZA,RAA,channel,rcFile):
                          Verbose=True,
                          rcfile=rcFile,
                          nMom=300)
-
+    pmom[:,:,:,:,1] = -1.*pmom[:,:,:,:,1]
+    pmom[:,:,:,:,3] = -1.*pmom[:,:,:,:,3]
     tauI = np.zeros(tau.shape)
     ssaI = np.zeros(ssa.shape)
     pmomI = np.zeros(pmom.shape)
@@ -233,8 +234,8 @@ def level_1(geos,SZA,VZA,RAA,channel,rcFile):
 
 if __name__ == "__main__":
 
-    aerFile   = '/nobackup/PACE/LevelB/Y2006/M03/D24/pace-g5nr.lb.aer_Nv.20060324_005000.nc4'
-    metFile   = '/nobackup/PACE/LevelB/Y2006/M03/D24/pace-g5nr.lb.met_Nv.20060324_005000.nc4'
+    aerFile   = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/Y2006/M03/D24/pace-g5nr.lb.aer_Nv.20060324_005000.nc4'
+    metFile   = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/Y2006/M03/D24/pace-g5nr.lb.met_Nv.20060324_005000.nc4'
     channel   = 445
     geos = GEOS(aerFile,metFile)
     # read in granule geometry

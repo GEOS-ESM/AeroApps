@@ -209,6 +209,9 @@ if __name__ == "__main__":
               type='int',
               help="Timesetp in seconds for TLE sampling (default=%s)"%dt_secs )
 
+    parser.add_option("--tle_year", dest="tle_year", 
+              help="Year for TLE calculations (default=None)")
+
     parser.add_option("-I", "--isoTime",
                       action="store_true", dest="isoTime",
                       help="Include ISO format time in output file.")
@@ -260,7 +263,13 @@ if __name__ == "__main__":
     if options.traj == 'TLE':
         if t1 is None:
             raise ValueError, 'time range (t1,t2) must be specified when doing TLE sampling.'
-        lon, lat, tyme = getTrackTLE(trjFile, t1, t2, options.dt_secs)
+        if options.tle_year is not None:
+            t1_ = isoparser(options.tle_year + iso_t1[4:])
+            t2_ = isoparser(options.tle_year + iso_t2[4:])
+            lon, lat, tyme_ = getTrackTLE(trjFile, t1_, t2_, options.dt_secs)
+            lon_, lat_, tyme = getTrackTLE(trjFile, t1, t2, options.dt_secs)
+        else:
+            lon, lat, tyme = getTrackTLE(trjFile, t1, t2, options.dt_secs)
     elif options.traj == 'ICT':
         lon, lat, tyme = getTrackICT(trjFile,options.dt_secs)
     elif options.traj == 'CSV':

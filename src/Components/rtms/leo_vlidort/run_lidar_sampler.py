@@ -91,6 +91,9 @@ if __name__ == "__main__":
               help="GEOS experiment name (default=%s)"\
                           %exp)
 
+    parser.add_argument("--tle_year", default=None,
+              help="Year for TLE calculations (default=None)")
+
     parser.add_argument("-a", "--algo", default=algo,
               help="Interpolation algorithm, one of linear, nearest (default=%s)"\
                           %algo)
@@ -134,9 +137,11 @@ if __name__ == "__main__":
     Date = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
 
-    if args.DT_hours == 1:
+    if (args.DT_hours == 1) and (args.nproc > 1):
         #pdt   = timedelta(minutes=int(60/args.nproc))
         pdt   = timedelta(minutes=5)
+    elif args.nproc == 1:
+        pdt = timedelta(hours=args.DT_hours)
     else:
         #pdt   = timedelta(hours=int(args.DT_hours/args.nproc))
         pdt   = timedelta(hours=1)
@@ -178,7 +183,10 @@ if __name__ == "__main__":
                               " --algorithm=" + args.algo
 
                 if args.verbose:
-                    Options += " --verbose" 
+                    Options += " --verbose"
+
+                if args.tle_year is not None:
+                    Options += " --tle_year=" + args.tle_year 
 
                 cmd = './lidar_sampler.py {} {} {} {}'.format(Options,tleFile,date.isoformat(),edate.isoformat())
                 cmds.append(cmd)
