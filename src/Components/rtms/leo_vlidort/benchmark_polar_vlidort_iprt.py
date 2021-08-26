@@ -180,6 +180,7 @@ class BENCHMARK(POLAR_VLIDORT):
         """
         Calls VLIDORT 
         """
+        flux_factor = np.ones([1,1]) #solar flux F0 (nch,nobs)
         pe   = self.ze*0.0
         ze   = self.ze*1e3
         te   = self.ze*0.0
@@ -235,7 +236,8 @@ class BENCHMARK(POLAR_VLIDORT):
                     args = [self.channel, self.nstreams, self.plane_parallel, ROT, depol_ratio, alpha, tau, ssa, pmom, 
                             pe, ze, te, 
                             albedo, 
-                            sza, raa, vza, 
+                            sza, raa, vza,
+                            flux_factor,
                             MISSING,
                             self.verbose]
 
