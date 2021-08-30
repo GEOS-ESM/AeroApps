@@ -430,7 +430,7 @@
       if ( N_THERMAL_COEFFS .GT. MAX_THERMAL_COEFFS )   rc =  10
      
       
-!      print*, 'test...', NSTREAMS, MAXSTREAMS, rc
+      print*, 'test...', NSTREAMS, MAXSTREAMS, rc
 
 !     All done
 !     --------

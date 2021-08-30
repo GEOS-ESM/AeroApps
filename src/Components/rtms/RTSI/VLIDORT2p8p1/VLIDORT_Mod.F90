@@ -150,7 +150,7 @@
 !     initialize variables to false or zero
 !     -------------------------------------    
 
-      call VLIDORT_INIT_INPUTS(self%VIO%VLIDORT_FixIn,self%VIO%VLIDORT_ModIn)
+!      call VLIDORT_INIT_INPUTS(self%VIO%VLIDORT_FixIn,self%VIO%VLIDORT_ModIn)
 
       !    Customize those parameters that do not vary from pixel to pixel
 !     ---------------------------------------------------------------
@@ -258,116 +258,116 @@
 
 !  Fixed Boolean inputs
 
-      self%VIO%VLIDORT_FixIn%Bool%TS_DO_FULLRAD_MODE        = DO_FULLRAD_MODE
-      self%VIO%VLIDORT_FixIn%Bool%TS_DO_THERMAL_EMISSION    = DO_THERMAL_EMISSION
-      self%VIO%VLIDORT_FixIn%Bool%TS_DO_SURFACE_EMISSION    = DO_SURFACE_EMISSION
-      self%VIO%VLIDORT_FixIn%Bool%TS_DO_PLANE_PARALLEL      = DO_PLANE_PARALLEL
-      !self%VIO%VLIDORT_FixIn%Bool%TS_DO_BRDF_SURFACE       = DO_BRDF_SURFACE
-      self%VIO%VLIDORT_FixIn%Bool%TS_DO_UPWELLING           = DO_UPWELLING
-      self%VIO%VLIDORT_FixIn%Bool%TS_DO_DNWELLING           = DO_DNWELLING
-      !self%VIO%VLIDORT_FixIn%Bool%TS_DO_LAMBERTIAN_SURFACE = DO_LAMBERTIAN_SURFACE
+!      self%VIO%VLIDORT_FixIn%Bool%TS_DO_FULLRAD_MODE        = DO_FULLRAD_MODE
+!      self%VIO%VLIDORT_FixIn%Bool%TS_DO_THERMAL_EMISSION    = DO_THERMAL_EMISSION
+!      self%VIO%VLIDORT_FixIn%Bool%TS_DO_SURFACE_EMISSION    = DO_SURFACE_EMISSION
+!      self%VIO%VLIDORT_FixIn%Bool%TS_DO_PLANE_PARALLEL      = DO_PLANE_PARALLEL
+!      !self%VIO%VLIDORT_FixIn%Bool%TS_DO_BRDF_SURFACE       = DO_BRDF_SURFACE
+!      self%VIO%VLIDORT_FixIn%Bool%TS_DO_UPWELLING           = DO_UPWELLING
+!      self%VIO%VLIDORT_FixIn%Bool%TS_DO_DNWELLING           = DO_DNWELLING
+!      !self%VIO%VLIDORT_FixIn%Bool%TS_DO_LAMBERTIAN_SURFACE = DO_LAMBERTIAN_SURFACE
 
 
 !  Modified Boolean inputs
 
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_FOCORR_NADIR        = DO_FOCORR_NADIR
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_FOCORR_OUTGOING     = DO_FOCORR_OUTGOING
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_FOCORR              = DO_FOCORR
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_FOCORR_EXTERNAL     = DO_FOCORR_EXTERNAL
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_SSCORR_TRUNCATION   = DO_SSCORR_TRUNCATION
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_SSCORR_USEFMAT      = DO_SSCORR_USEFMAT
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_DOUBLE_CONVTEST     = DO_DOUBLE_CONVTEST
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_SOLAR_SOURCES       = DO_SOLAR_SOURCES
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_REFRACTIVE_GEOMETRY = DO_REFRACTIVE_GEOMETRY
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_CHAPMAN_FUNCTION    = DO_CHAPMAN_FUNCTION
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_RAYLEIGH_ONLY       = DO_RAYLEIGH_ONLY
-      !VLIDORT_ModIn%MBool%TS_DO_ISOTROPIC_ONLY              = DO_ISOTROPIC_ONLY
-      !VLIDORT_ModIn%MBool%TS_DO_NO_AZIMUTH                  = DO_NO_AZIMUTH
-      !VLIDORT_ModIn%MBool%TS_DO_ALL_FOURIER                 = DO_ALL_FOURIER
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_DELTAM_SCALING      = DO_DELTAM_SCALING
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_SOLUTION_SAVING     = DO_SOLUTION_SAVING
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_BVP_TELESCOPING     = DO_BVP_TELESCOPING
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_OBSERVATION_GEOMETRY= DO_OBSERVATION_GEOMETRY
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_USER_VZANGLES       = DO_USER_VZANGLES
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_ADDITIONAL_MVOUT    = DO_ADDITIONAL_MVOUT
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_MVOUT_ONLY          = DO_MVOUT_ONLY
-      self%VIO%VLIDORT_ModIn%MBool%TS_DO_THERMAL_TRANSONLY   = DO_THERMAL_TRANSONLY
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_FOCORR_NADIR        = DO_FOCORR_NADIR
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_FOCORR_OUTGOING     = DO_FOCORR_OUTGOING
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_FOCORR              = DO_FOCORR
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_FOCORR_EXTERNAL     = DO_FOCORR_EXTERNAL
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_SSCORR_TRUNCATION   = DO_SSCORR_TRUNCATION
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_SSCORR_USEFMAT      = DO_SSCORR_USEFMAT
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_DOUBLE_CONVTEST     = DO_DOUBLE_CONVTEST
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_SOLAR_SOURCES       = DO_SOLAR_SOURCES
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_REFRACTIVE_GEOMETRY = DO_REFRACTIVE_GEOMETRY
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_CHAPMAN_FUNCTION    = DO_CHAPMAN_FUNCTION
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_RAYLEIGH_ONLY       = DO_RAYLEIGH_ONLY
+!      !VLIDORT_ModIn%MBool%TS_DO_ISOTROPIC_ONLY              = DO_ISOTROPIC_ONLY
+!      !VLIDORT_ModIn%MBool%TS_DO_NO_AZIMUTH                  = DO_NO_AZIMUTH
+!      !VLIDORT_ModIn%MBool%TS_DO_ALL_FOURIER                 = DO_ALL_FOURIER
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_DELTAM_SCALING      = DO_DELTAM_SCALING
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_SOLUTION_SAVING     = DO_SOLUTION_SAVING
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_BVP_TELESCOPING     = DO_BVP_TELESCOPING
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_OBSERVATION_GEOMETRY= DO_OBSERVATION_GEOMETRY
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_USER_VZANGLES       = DO_USER_VZANGLES
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_ADDITIONAL_MVOUT    = DO_ADDITIONAL_MVOUT
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_MVOUT_ONLY          = DO_MVOUT_ONLY
+!      self%VIO%VLIDORT_ModIn%MBool%TS_DO_THERMAL_TRANSONLY   = DO_THERMAL_TRANSONLY
 
 !  Fixed control inputs
-!      self%VIO%VLIDORT_FixIn%Cont%TS_NSTOKES               = NSTOKES
-      self%VIO%VLIDORT_FixIn%Cont%TS_TAYLOR_ORDER           = TAYLOR_ORDER
-      self%VIO%VLIDORT_FixIn%Cont%TS_NSTREAMS               = self%NSTREAMS
-      self%VIO%VLIDORT_FixIn%Cont%TS_NLAYERS                = NLAYERS
-      self%VIO%VLIDORT_FixIn%Cont%TS_NFINELAYERS            = NFINELAYERS
-      self%VIO%VLIDORT_FixIn%Cont%TS_N_THERMAL_COEFFS       = N_THERMAL_COEFFS
-      self%VIO%VLIDORT_FixIn%Cont%TS_VLIDORT_ACCURACY       = VLIDORT_ACCURACY
-      self%VIO%VLIDORT_FixIn%Cont%TS_TF_MAXITER             = TF_MAXITER
-      self%VIO%VLIDORT_FixIn%Cont%TS_TF_CRITERION           = TF_CRITERION
+!!      self%VIO%VLIDORT_FixIn%Cont%TS_NSTOKES               = NSTOKES
+!      self%VIO%VLIDORT_FixIn%Cont%TS_TAYLOR_ORDER           = TAYLOR_ORDER
+!      self%VIO%VLIDORT_FixIn%Cont%TS_NSTREAMS               = self%NSTREAMS
+!      self%VIO%VLIDORT_FixIn%Cont%TS_NLAYERS                = NLAYERS
+!      self%VIO%VLIDORT_FixIn%Cont%TS_NFINELAYERS            = NFINELAYERS
+!      self%VIO%VLIDORT_FixIn%Cont%TS_N_THERMAL_COEFFS       = N_THERMAL_COEFFS
+!      self%VIO%VLIDORT_FixIn%Cont%TS_VLIDORT_ACCURACY       = VLIDORT_ACCURACY
+!      self%VIO%VLIDORT_FixIn%Cont%TS_TF_MAXITER             = TF_MAXITER
+!      self%VIO%VLIDORT_FixIn%Cont%TS_TF_CRITERION           = TF_CRITERION
 !  Modified control inputs
 
-      self%VIO%VLIDORT_ModIn%Mcont%TS_NGREEK_MOMENTS_INPUT   = NGREEK_MOMENTS_INPUT
+!      self%VIO%VLIDORT_ModIn%Mcont%TS_NGREEK_MOMENTS_INPUT   = NGREEK_MOMENTS_INPUT
 
 !  Beam inputs
 
-      self%VIO%VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR               = FLUX_FACTOR      
-      self%VIO%VLIDORT_ModIn%MSunRays%TS_N_SZANGLES               = self%NBEAMS
-      self%VIO%VLIDORT_ModIn%MUserVal%TS_N_USER_RELAZMS           = self%N_USER_RELAZMS     
-      self%VIO%VLIDORT_ModIn%MUserVal%TS_N_USER_VZANGLES          = self%N_USER_STREAMS
-      self%VIO%VLIDORT_FixIn%UserVal%TS_N_USER_LEVELS             = self%N_USER_LEVELS
+!      self%VIO%VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR               = FLUX_FACTOR      
+!      self%VIO%VLIDORT_ModIn%MSunRays%TS_N_SZANGLES               = self%NBEAMS
+!      self%VIO%VLIDORT_ModIn%MUserVal%TS_N_USER_RELAZMS           = self%N_USER_RELAZMS     
+!      self%VIO%VLIDORT_ModIn%MUserVal%TS_N_USER_VZANGLES          = self%N_USER_STREAMS
+!      self%VIO%VLIDORT_FixIn%UserVal%TS_N_USER_LEVELS             = self%N_USER_LEVELS
       
-      self%VIO%VLIDORT_ModIn%MUserVal%TS_GEOMETRY_SPECHEIGHT      = GEOMETRY_SPECHEIGHT
+!      self%VIO%VLIDORT_ModIn%MUserVal%TS_GEOMETRY_SPECHEIGHT      = GEOMETRY_SPECHEIGHT
 
-      self%VIO%VLIDORT_ModIn%MUserVal%TS_N_USER_OBSGEOMS          = N_USER_OBSGEOMS     
-      self%VIO%VLIDORT_ModIn%MUserVal%TS_USER_OBSGEOMS_INPUT      = USER_OBSGEOMS
+!      self%VIO%VLIDORT_ModIn%MUserVal%TS_N_USER_OBSGEOMS          = N_USER_OBSGEOMS     
+!      self%VIO%VLIDORT_ModIn%MUserVal%TS_USER_OBSGEOMS_INPUT      = USER_OBSGEOMS
       
 
 !  Fixed Chapman function inputs
 
-      !VLIDORT_Chapman_inputs%TS_HEIGHT_GRID                     = HEIGHT_GRID
-      !VLIDORT_Chapman_inputs%TS_PRESSURE_GRID                   = PRESSURE_GRID
-      !VLIDORT_Chapman_inputs%TS_TEMPERATURE_GRID                = TEMPERATURE_GRID
-      !VLIDORT_Chapman_inputs%TS_FINEGRID                        = FINEGRID
-      self%VIO%VLIDORT_ModIn%MChapman%TS_EARTH_RADIUS            = EARTH_RADIUS
-      self%VIO%VLIDORT_FixIn%Chapman%TS_RFINDEX_PARAMETER       = RFINDEX_PARAMETER
+!      !VLIDORT_Chapman_inputs%TS_HEIGHT_GRID                     = HEIGHT_GRID
+!      !VLIDORT_Chapman_inputs%TS_PRESSURE_GRID                   = PRESSURE_GRID
+!      !VLIDORT_Chapman_inputs%TS_TEMPERATURE_GRID                = TEMPERATURE_GRID
+!      !VLIDORT_Chapman_inputs%TS_FINEGRID                        = FINEGRID
+!      self%VIO%VLIDORT_ModIn%MChapman%TS_EARTH_RADIUS            = EARTH_RADIUS
+!      self%VIO%VLIDORT_FixIn%Chapman%TS_RFINDEX_PARAMETER       = RFINDEX_PARAMETER
 
 !  Fixed optical inputs
 
-      !VLIDORT_Optical_inputs%TS_DELTAU_VERT_INPUT               = DELTAU_VERT_INPUT
-      !VLIDORT_Optical_inputs%TS_OMEGA_TOTAL_INPUT               = OMEGA_TOTAL_INPUT
-      !VLIDORT_Optical_inputs%TS_GREEKMAT_TOTAL_INPUT            = GREEKMAT_TOTAL_INPUT
-      self%VIO%VLIDORT_FixIn%Optical%TS_THERMAL_BB_INPUT        = THERMAL_BB_INPUT
-      self%VIO%VLIDORT_FixIn%Optical%TS_LAMBERTIAN_ALBEDO       = LAMBERTIAN_ALBEDO
-      self%VIO%VLIDORT_FixIn%Optical%TS_SURFACE_BB_INPUT        = SURFBB
+!      !VLIDORT_Optical_inputs%TS_DELTAU_VERT_INPUT               = DELTAU_VERT_INPUT
+!      !VLIDORT_Optical_inputs%TS_OMEGA_TOTAL_INPUT               = OMEGA_TOTAL_INPUT
+!      !VLIDORT_Optical_inputs%TS_GREEKMAT_TOTAL_INPUT            = GREEKMAT_TOTAL_INPUT
+!      self%VIO%VLIDORT_FixIn%Optical%TS_THERMAL_BB_INPUT        = THERMAL_BB_INPUT
+!      self%VIO%VLIDORT_FixIn%Optical%TS_LAMBERTIAN_ALBEDO       = LAMBERTIAN_ALBEDO
+!      self%VIO%VLIDORT_FixIn%Optical%TS_SURFACE_BB_INPUT        = SURFBB
 
 !  Fixed write inputs
 
-      self%VIO%VLIDORT_FixIn%Write%TS_DO_DEBUG_WRITE            = DO_DEBUG_WRITE
+!      self%VIO%VLIDORT_FixIn%Write%TS_DO_DEBUG_WRITE            = DO_DEBUG_WRITE
   
-      self%VIO%VLIDORT_FixIn%Write%TS_DO_WRITE_INPUT            = DO_WRITE_INPUT
-      self%VIO%VLIDORT_FixIn%Write%TS_INPUT_WRITE_FILENAME      = INPUT_WRITE_FILENAME
+!      self%VIO%VLIDORT_FixIn%Write%TS_DO_WRITE_INPUT            = DO_WRITE_INPUT
+!      self%VIO%VLIDORT_FixIn%Write%TS_INPUT_WRITE_FILENAME      = INPUT_WRITE_FILENAME
 
-      self%VIO%VLIDORT_FixIn%Write%TS_DO_WRITE_SCENARIO         = DO_WRITE_SCENARIO
-      self%VIO%VLIDORT_FixIn%Write%TS_SCENARIO_WRITE_FILENAME   = SCENARIO_WRITE_FILENAME
+!      self%VIO%VLIDORT_FixIn%Write%TS_DO_WRITE_SCENARIO         = DO_WRITE_SCENARIO
+!      self%VIO%VLIDORT_FixIn%Write%TS_SCENARIO_WRITE_FILENAME   = SCENARIO_WRITE_FILENAME
 
-      self%VIO%VLIDORT_FixIn%Write%TS_DO_WRITE_FOURIER          = DO_WRITE_FOURIER
-      self%VIO%VLIDORT_FixIn%Write%TS_FOURIER_WRITE_FILENAME    = FOURIER_WRITE_FILENAME
+!      self%VIO%VLIDORT_FixIn%Write%TS_DO_WRITE_FOURIER          = DO_WRITE_FOURIER
+!      self%VIO%VLIDORT_FixIn%Write%TS_FOURIER_WRITE_FILENAME    = FOURIER_WRITE_FILENAME
 
-      self%VIO%VLIDORT_FixIn%Write%TS_DO_WRITE_RESULTS          = DO_WRITE_RESULTS
-      self%VIO%VLIDORT_FixIn%Write%TS_RESULTS_WRITE_FILENAME    = RESULTS_WRITE_FILENAME
+!      self%VIO%VLIDORT_FixIn%Write%TS_DO_WRITE_RESULTS          = DO_WRITE_RESULTS
+!      self%VIO%VLIDORT_FixIn%Write%TS_RESULTS_WRITE_FILENAME    = RESULTS_WRITE_FILENAME
 
 !                            Error Checking
 !                            --------------
 
 !      if ( NSTOKES  .GT. MAXSTOKES  )                   rc = 1
-      if ( NSTREAMS .GT. MAXSTREAMS )                   rc = 2
-      if ( NLAYERS  .GT. MAXLAYERS  )                   rc = 3
-      if ( NFINELAYERS .GT. MAXFINELAYERS )             rc = 4
-      if ( NGREEK_MOMENTS_INPUT .GT. MAXMOMENTS_INPUT)  rc = 5
-      if ( N_SZANGLES .GT. MAX_SZANGLES )               rc = 6
-      if ( N_USER_RELAZMS .GT. MAX_USER_RELAZMS )       rc = 7
-      if ( N_USER_VZANGLES .GT. MAX_USER_VZANGLES )     rc = 8
-      if ( N_USER_LEVELS .GT. MAX_USER_LEVELS )         rc = 9 
-      if ( N_THERMAL_COEFFS .GT. MAX_THERMAL_COEFFS )   rc =  10
+!      if ( NSTREAMS .GT. MAXSTREAMS )                   rc = 2
+!      if ( NLAYERS  .GT. MAXLAYERS  )                   rc = 3
+!      if ( NFINELAYERS .GT. MAXFINELAYERS )             rc = 4
+!      if ( NGREEK_MOMENTS_INPUT .GT. MAXMOMENTS_INPUT)  rc = 5
+!      if ( N_SZANGLES .GT. MAX_SZANGLES )               rc = 6
+!      if ( N_USER_RELAZMS .GT. MAX_USER_RELAZMS )       rc = 7
+!      if ( N_USER_VZANGLES .GT. MAX_USER_VZANGLES )     rc = 8
+!      if ( N_USER_LEVELS .GT. MAX_USER_LEVELS )         rc = 9 
+!      if ( N_THERMAL_COEFFS .GT. MAX_THERMAL_COEFFS )   rc =  10
      
       
 !      print*, 'test...', NSTREAMS, MAXSTREAMS, rc
