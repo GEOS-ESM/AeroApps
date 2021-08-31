@@ -5,17 +5,17 @@ find_package(F2PY2 REQUIRED)
 ecbuild_add_executable (
   TARGET leo_vlidort_cloud.x
   SOURCES leo_vlidort_cloud.F90 
-  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL VLIDORT2p8p1 geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
+  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL VLIDORT2OS geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
   )
 
 # MAT: Note uses add_f2py2 because I can't figure out the import test for netCDF f2py code
 add_f2py2_module (VLIDORT_POLAR_
   SOURCES VLIDORT_POLAR_py.F90
   DESTINATION lib/Python/${this}
-  LIBRARIES geo_vlidort VLIDORT2p8p1
-  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/geo_vlidort ${esma_include}/VLIDORT2p8p1
+  LIBRARIES geo_vlidort VLIDORT2OS
+  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/geo_vlidort ${esma_include}/VLIDORT2OS
   )
-add_dependencies(VLIDORT_POLAR_ geo_vlidort VLIDORT2p8p1)
+add_dependencies(VLIDORT_POLAR_ geo_vlidort VLIDORT2OS)
 
 # MAT: Note uses add_f2py2 because I can't figure out the import test for netCDF f2py code
 add_f2py2_module (READ_NC_
