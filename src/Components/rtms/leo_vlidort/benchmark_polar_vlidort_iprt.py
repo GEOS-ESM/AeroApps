@@ -244,8 +244,7 @@ class BENCHMARK(POLAR_VLIDORT):
                     # Call VLIDORT wrapper function
                     I, reflectance, Q, U, rc = vlidortWrapper(*args)  
                     surf_reflectance = albedo
-                    print 'rc',rc
-                    print 'I',I
+
                 self.I[ivza,iraa] = np.squeeze(I)
                 self.reflectance[ivza,iraa] = np.squeeze(reflectance)
                 self.surf_reflectance[ivza,iraa] = np.squeeze(surf_reflectance)
