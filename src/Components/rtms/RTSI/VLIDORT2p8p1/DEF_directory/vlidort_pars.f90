@@ -121,7 +121,7 @@
 
 !  Maximum number of computational layers
 
-      INTEGER, PARAMETER :: MAXLAYERS = 26 !49
+      INTEGER, PARAMETER :: MAXLAYERS = 72
 
 !  Maximum number of fine layers used in single scattering corrections
 
