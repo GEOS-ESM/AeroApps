@@ -130,6 +130,7 @@ subroutine VLIDORT_Vector_OCIGissCX (km, nch, nobs,channels, nstreams, plane_par
   ! set streams here
   SCAT%Surface%BASE%NSTREAMS = nstreams
   SCAT%Surface%BASE%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -313,6 +314,7 @@ subroutine VLIDORT_Vector_OCICX (km, nch, nobs,channels, nstreams, plane_paralle
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams 
   SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -487,6 +489,7 @@ subroutine VLIDORT_Scalar_CX (km, nch, nobs,channels, nstreams, plane_parallel, 
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
   SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -657,6 +660,7 @@ subroutine VLIDORT_Vector_CX_SingleGeom (km, nch, nobs,channels, nstreams, plane
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams 
   SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -839,6 +843,7 @@ subroutine VLIDORT_Vector_CX_MultiGeom (km, nch, nobs, ngeom, channels, nstreams
   SCAT%Surface%Base%NBEAMS            = ngeom
   SCAT%Surface%Base%N_USER_STREAMS    = ngeom
   SCAT%Surface%Base%N_USER_RELAZMS    = ngeom  
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -1029,6 +1034,7 @@ subroutine VLIDORT_Vector_CX_Cloud_SingleGeom (km, nch, nobs,channels, nstreams,
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams 
   SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -1229,6 +1235,7 @@ subroutine VLIDORT_Vector_CX_Cloud_MultiGeom (km, nch, nobs, ngeom, channels, ns
   SCAT%Surface%Base%NBEAMS            = ngeom
   SCAT%Surface%Base%N_USER_STREAMS    = ngeom
   SCAT%Surface%Base%N_USER_RELAZMS    = ngeom
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -1422,6 +1429,7 @@ subroutine VLIDORT_Vector_CX_NOBM (km, nch, nobs,channels, nstreams, plane_paral
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
   SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -1613,6 +1621,7 @@ subroutine VLIDORT_Scalar_GissCX (km, nch, nobs,channels, nstreams, plane_parall
   ! Set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
   SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -1783,6 +1792,7 @@ subroutine VLIDORT_Vector_GissCX (km, nch, nobs,channels, nstreams, plane_parall
   ! set streams here
   SCAT%Surface%BASE%NSTREAMS = nstreams
   SCAT%Surface%BASE%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -1967,6 +1977,7 @@ subroutine VLIDORT_Scalar_GissCX_Cloud (km, nch, nobs,channels, nstreams, plane_
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
   SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -2156,6 +2167,7 @@ subroutine VLIDORT_Scalar_OCIGissCX_Cloud (km, nch, nobs,channels, nstreams, pla
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
   SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -2345,6 +2357,7 @@ subroutine VLIDORT_Vector_GissCX_Cloud (km, nch, nobs,channels, nstreams, plane_
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
   SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -2541,6 +2554,7 @@ subroutine VLIDORT_Vector_OCIGissCX_Cloud (km, nch, nobs,channels, nstreams, pla
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
   SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -2744,6 +2758,7 @@ subroutine VLIDORT_Scalar_GissCX_NOBM_Cloud (km, nch, nobs,channels, nstreams, p
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
   SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -2959,6 +2974,7 @@ subroutine VLIDORT_Scalar_OCIGissCX_NOBM_Cloud (km, nch, nobs,channels, nstreams
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
   SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -3174,6 +3190,7 @@ subroutine VLIDORT_Vector_GissCX_NOBM_Cloud (km, nch, nobs,channels, nstreams, p
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
   SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 
@@ -3395,6 +3412,7 @@ subroutine VLIDORT_Vector_OCIGissCx_NOBM_Cloud (km, nch, nobs,channels, nstreams
   ! set streams here
   SCAT%Surface%Base%NSTREAMS = nstreams
   SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+  SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
   call VLIDORT_Init( SCAT%Surface%Base, km, rc)
   if ( rc /= 0 ) return
 

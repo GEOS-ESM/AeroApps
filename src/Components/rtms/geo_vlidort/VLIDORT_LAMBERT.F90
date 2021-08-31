@@ -247,97 +247,97 @@ module VLIDORT_LAMBERT
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
     SCAT%Surface%Base%NSTREAMS = nstreams
     SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+    SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
-!    if ( rc /= 0 ) return
+    if ( rc /= 0 ) return
 
-!    SCAT%nMom = nMom
-!    SCAT%nPol = nPol
-!    if (present(DO_2OS_CORRECTION)) then
-!      SCAT%DO_2OS_CORRECTION = DO_2OS_CORRECTION
-!      if (DO_2OS_CORRECTION) then
-!        SCAT%NSTOKES = 1
-!      else
-!        SCAT%NSTOKES = 3
-!      end if
-!    else   
-!      SCAT%NSTOKES = 3 
-!    end if
+    SCAT%nMom = nMom
+    SCAT%nPol = nPol
+    if (present(DO_2OS_CORRECTION)) then
+      SCAT%DO_2OS_CORRECTION = DO_2OS_CORRECTION
+      if (DO_2OS_CORRECTION) then
+        SCAT%NSTOKES = 1
+      else
+        SCAT%NSTOKES = 3
+      end if
+    else   
+      SCAT%NSTOKES = 3 
+    end if
 
-!    do j = 1, nobs
+    do j = 1, nobs
        
-!       ! Make sure albedo and angles are available
-!       ! -----------------------------------------
-!       if ( IS_MISSING(solar_zenith(j),MISSING)  .OR. & 
-!            IS_MISSING(sensor_zenith(j),MISSING) .OR. &
-!            IS_MISSING(relat_azymuth(j),MISSING)  )  then
+       ! Make sure albedo and angles are available
+       ! -----------------------------------------
+       if ( IS_MISSING(solar_zenith(j),MISSING)  .OR. & 
+            IS_MISSING(sensor_zenith(j),MISSING) .OR. &
+            IS_MISSING(relat_azymuth(j),MISSING)  )  then
 
-!          radiance_VL(j,:) = MISSING
-!          reflectance_VL(j,:) = MISSING
-!          Q(j,i) = MISSING
-!          U(j,i) = MISSING
-!          cycle
+          radiance_VL(j,:) = MISSING
+          reflectance_VL(j,:) = MISSING
+          Q(j,i) = MISSING
+          U(j,i) = MISSING
+          cycle
 
-!        end if
+        end if
        
-!       SCAT%pe => pe(:,j)
-!       SCAT%ze => he(:,j)
-!       SCAT%te => te(:,j) 
+       SCAT%pe => pe(:,j)
+       SCAT%ze => he(:,j)
+       SCAT%te => te(:,j) 
 
-!       do i = 1, nch
-!         ! set solar flux
-!         SCAT%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR = flux_factor(i,j)
+       do i = 1, nch
+         ! set solar flux
+         SCAT%Surface%Base%VIO%VLIDORT_FixIn%SunRays%TS_FLUX_FACTOR = flux_factor(i,j)
 
-!         if ( IS_MISSING(albedo(j,i),MISSING) ) then
-!                radiance_VL(j,i) = MISSING
-!                reflectance_VL(j,i) = MISSING
-!                Q(j,i) = MISSING
-!                U(j,i) = MISSING
-!                cycle
-!         end if
+         if ( IS_MISSING(albedo(j,i),MISSING) ) then
+                radiance_VL(j,i) = MISSING
+                reflectance_VL(j,i) = MISSING
+                Q(j,i) = MISSING
+                U(j,i) = MISSING
+                cycle
+         end if
 
-!         call VLIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i),solar_zenith (j),sensor_zenith(j),&
-!                                 relat_azymuth(j),scalar)
+         call VLIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i),solar_zenith (j),sensor_zenith(j),&
+                                 relat_azymuth(j),scalar)
 
-!          SCAT%wavelength = channels(i)  
-!          SCAT%rot => ROT(:,j,i)    
-!          SCAT%depol_ratio => depol(i) 
-!          SCAT%alpha => alpha(:,j,i) 
-!          SCAT%tau => tau(:,i,j)
-!          SCAT%ssa => ssa(:,i,j)
-!          SCAT%pmom => pmom(:,i,j,:,:)
+          SCAT%wavelength = channels(i)  
+          SCAT%rot => ROT(:,j,i)    
+          SCAT%depol_ratio => depol(i) 
+          SCAT%alpha => alpha(:,j,i) 
+          SCAT%tau => tau(:,i,j)
+          SCAT%ssa => ssa(:,i,j)
+          SCAT%pmom => pmom(:,i,j,:,:)
 
-!          call VLIDORT_Run_Vector (SCAT, output, ier)
+          call VLIDORT_Run_Vector (SCAT, output, ier)
 
-!          if (SCAT%DO_BOA) then
-!            radiance_VL(j,i)         = output%BOA_radiance
-!            reflectance_VL(j,i)      = output%BOA_reflectance
-!            Q(j,i)                   = output%BOA_Q
-!            U(j,i)                   = output%BOA_U                          
-!          else
-!            radiance_VL(j,i)         = output%radiance
-!            reflectance_VL(j,i)      = output%reflectance
-!            Q(j,i)                   = output%Q
-!            U(j,i)                   = output%U                
-!          end if
-!          write(*,*) 'ier',ier
-!          write(*,*) 'radiance',output%radiance
-!          if ( ier /= 0 ) then
-!            radiance_VL(j,i) = MISSING
-!            reflectance_VL(j,i) = MISSING
-!            Q(j,i) = MISSING
-!            U(j,i) = MISSING
-!            cycle
-!          end if
+          if (SCAT%DO_BOA) then
+            radiance_VL(j,i)         = output%BOA_radiance
+            reflectance_VL(j,i)      = output%BOA_reflectance
+            Q(j,i)                   = output%BOA_Q
+            U(j,i)                   = output%BOA_U                          
+          else
+            radiance_VL(j,i)         = output%radiance
+            reflectance_VL(j,i)      = output%reflectance
+            Q(j,i)                   = output%Q
+            U(j,i)                   = output%U                
+          end if
 
-!          end do ! end loop over channels
+          if ( ier /= 0 ) then
+            radiance_VL(j,i) = MISSING
+            reflectance_VL(j,i) = MISSING
+            Q(j,i) = MISSING
+            U(j,i) = MISSING
+            cycle
+          end if
+
+          end do ! end loop over channels
        
-!          if ( verbose > 0 ) then
-!             if ( mod(j-1,1000) == 0 ) then
-!                print *, '<> VLIDORT Vector: ', nint(j*100./nobs), '%'
-!             end if
-!          end if
+          if ( verbose > 0 ) then
+             if ( mod(j-1,1000) == 0 ) then
+                print *, '<> VLIDORT Vector: ', nint(j*100./nobs), '%'
+             end if
+          end if
 
-!    end do ! Loop over obs
+    end do ! Loop over obs
 
   end subroutine VLIDORT_Vector_Lambert_SingleGeom
 

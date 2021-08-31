@@ -103,6 +103,7 @@ module VLIDORT_BRDF_MODIS
     ier = 0
     SCAT%Surface%Base%NSTREAMS = nstreams
     SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+    SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
     call VLIDORT_Init( SCAT%Surface%Base, km, rc)
     if ( rc /= 0 ) return
 
@@ -287,6 +288,7 @@ module VLIDORT_BRDF_MODIS
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
     SCAT%Surface%Base%NSTREAMS = nstreams
     SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+    SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -498,6 +500,7 @@ module VLIDORT_BRDF_MODIS
     SCAT%Surface%Base%NBEAMS            = ngeom
     SCAT%Surface%Base%N_USER_STREAMS    = ngeom
     SCAT%Surface%Base%N_USER_RELAZMS    = ngeom    
+    SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -708,6 +711,7 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nstreams, pla
     ier = 0
     SCAT%Surface%Base%NSTREAMS = nstreams
     SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+    SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
     call VLIDORT_Init( SCAT%Surface%Base, km, rc)
     if ( rc /= 0 ) return
 
@@ -916,6 +920,7 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nstreams, pla
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
     SCAT%Surface%Base%NSTREAMS = nstreams
     SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+    SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -1150,6 +1155,7 @@ subroutine VLIDORT_Scalar_LandMODIS_Cloud (km, nch, nobs,channels, nstreams, pla
     SCAT%Surface%Base%NBEAMS            = ngeom
     SCAT%Surface%Base%N_USER_STREAMS    = ngeom
     SCAT%Surface%Base%N_USER_RELAZMS    = ngeom
+    SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 

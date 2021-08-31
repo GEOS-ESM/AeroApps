@@ -44,7 +44,8 @@
 	      
 
 	      TYPE VLIDORT
-		logical     :: initialized = .false.  
+		logical     :: initialized = .false. 
+        integer     :: NGREEK_MOMENTS_INPUT = 300    ! Number of scattering matrix expansion coefficients 
 		integer     :: NSTREAMS = 6        ! Number of half-space streams
 		integer     :: NBEAMS = 1          ! Number of solar zenith angles
 		integer     :: N_USER_STREAMS = 1  ! Number of Viewing zenith angles
@@ -274,7 +275,7 @@
       NSTREAMS = self%NSTREAMS         ! Number of half-space streams
       NLAYERS = km                    ! Number of atmospheric layers
       NFINELAYERS = 3                 ! Number of fine layers (outgoing sphericity correction)
-      NGREEK_MOMENTS_INPUT = 300     ! Number of scattering matrix expansion coefficients
+      NGREEK_MOMENTS_INPUT = self%NGREEK_MOMENTS_INPUT     ! Number of scattering matrix expansion coefficients
       TAYLOR_ORDER = 3                ! Number of small-number terms in Taylor series expansions
       N_USER_OBSGEOMS = self%N_USER_OBSGEOMS             ! Number of observation Geometry inputs 
 
@@ -365,7 +366,7 @@
 
 !  Modified control inputs
 
-      self%VIO%VLIDORT_ModIn%Mcont%TS_NGREEK_MOMENTS_INPUT   = NGREEK_MOMENTS_INPUT
+      self%VIO%VLIDORT_ModIn%Mcont%TS_NGREEK_MOMENTS_INPUT   = self%NGREEK_MOMENTS_INPUT
 
 !  Beam inputs
 
@@ -422,15 +423,15 @@
       if ( NSTREAMS .GT. MAXSTREAMS )                   rc = 2
       if ( NLAYERS  .GT. MAXLAYERS  )                   rc = 3
       if ( NFINELAYERS .GT. MAXFINELAYERS )             rc = 4
-      if ( NGREEK_MOMENTS_INPUT .GT. MAXMOMENTS_INPUT)  rc = 5
-      if ( N_SZANGLES .GT. MAX_SZANGLES )               rc = 6
-      if ( N_USER_RELAZMS .GT. MAX_USER_RELAZMS )       rc = 7
-      if ( N_USER_VZANGLES .GT. MAX_USER_VZANGLES )     rc = 8
-      if ( N_USER_LEVELS .GT. MAX_USER_LEVELS )         rc = 9 
+      if ( self%NGREEK_MOMENTS_INPUT .GT. MAXMOMENTS_INPUT)  rc = 5
+      if ( self%NBEAMS .GT. MAX_SZANGLES )               rc = 6
+      if ( self%N_USER_RELAZMS .GT. MAX_USER_RELAZMS )       rc = 7
+      if ( self%N_USER_STREAMS .GT. MAX_USER_VZANGLES )     rc = 8
+      if ( self%N_USER_LEVELS .GT. MAX_USER_LEVELS )         rc = 9 
       if ( N_THERMAL_COEFFS .GT. MAX_THERMAL_COEFFS )   rc =  10
      
       
-      print*, 'test...', NSTREAMS, MAXSTREAMS, rc
+!      print*, 'test...', NSTREAMS, MAXSTREAMS, rc
 
 !     All done
 !     --------
