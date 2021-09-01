@@ -1,0 +1,73 @@
+
+****************************************
+        Water surface-leaving
+****************************************
+
+         For Stokes: 1
+
+         STANDARD QUANTITIES
+
+Isotropic SLEAVE, all geometries
+
+              sza     Iso SLEAVE value
+
+Iso            1        1.263612E-03
+
+Exact SLEAVE, all geometries
+
+              sza vza azm    Exact SLEAVE value
+
+Exact          1   1   1      1.203291E-03
+
+Fourier Components:
+
+              Fourier component #  0
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1    1.068458E-03
+Solars-Stream  1   2    1.101427E-03
+Solars-Stream  1   3    1.134708E-03
+Solars-Stream  1   4    1.118221E-03
+Solars-Stream  1   5    1.180205E-03
+Solars-Stream  1   6    1.214142E-03
+Solars-Stream  1   7    1.209784E-03
+Solars-Stream  1   8    1.204457E-03
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1    1.203291E-03
+
+
+         WEIGHTING FUNCTIONS (ANALYTIC + FINITE_DIFFERENCE)
+
+Isotropic SLEAVE, all geometries
+
+              sza       Analytic    Finite-diff       Analytic    Finite-diff
+
+Iso            1      2.484637E-03  2.484061E-03   -1.828750E-07 -1.828727E-07
+
+Exact SLEAVE, all geometries
+
+              sza vza azm       Analytic    Finite-diff       Analytic    Finite-diff
+
+Exact          1   1   1      2.111143E-03  2.109797E-03   -2.141348E-07 -2.141510E-07
+
+Fourier Components:
+
+              Fourier component #  0
+
+              sza str       Analytic    Finite-diff       Analytic    Finite-diff
+
+Solars-Stream  1   1      2.518387E-03  2.516830E-03    2.099882E-05  2.098535E-05
+Solars-Stream  1   2      2.586502E-03  2.586307E-03    1.579892E-05  1.578914E-05
+Solars-Stream  1   3      2.619246E-03  2.618386E-03    7.838281E-06  7.833701E-06
+Solars-Stream  1   4      2.481507E-03  2.480584E-03    4.672892E-06  4.673274E-06
+Solars-Stream  1   5      2.465301E-03  2.465286E-03   -5.168593E-06 -5.165629E-06
+Solars-Stream  1   6      2.369461E-03  2.368189E-03   -2.023959E-06 -2.024117E-06
+Solars-Stream  1   7      2.225160E-03  2.224713E-03   -5.097405E-07 -5.098509E-07
+Solars-Stream  1   8      2.128856E-03  2.128060E-03   -2.405965E-07 -2.406171E-07
+
+              sza vza       Analytic    Finite-diff       Analytic    Finite-diff
+
+Solars-Users   1   1      2.111143E-03  2.109797E-03   -2.141348E-07 -2.141510E-07

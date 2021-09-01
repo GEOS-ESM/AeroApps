@@ -1,0 +1,34 @@
+#
+# Define list of source files
+# (Note: ordering is important because of dependencies)
+#
+
+VBRDF_SUP_ACCESS_SOURCES =
+VSLEAVE_SUP_ACCESS_SOURCES =
+VJOINT_SUP_ACCESS_SOURCES =
+
+VBRDF_SUP_ACCESS_SOURCES += \
+   $(VACCESS_PATH)/vlidort_vbrdf_sup_accessories.f90
+VSLEAVE_SUP_ACCESS_SOURCES += \
+   $(VACCESS_PATH)/vlidort_vsleave_sup_accessories.f90
+VJOINT_SUP_ACCESS_SOURCES += \
+   $(VACCESS_PATH)/vlidort_joint_sup_accessories.f90
+
+
+VBRDF_LINSUP_ACCESS_SOURCES =
+VSLEAVE_LINSUP_ACCESS_SOURCES =
+
+VBRDF_LINSUP_ACCESS_SOURCES += \
+   $(VBRDF_SUP_ACCESS_SOURCES) \
+   $(VACCESS_PATH)/vlidort_vbrdf_lin_sup_accessories.f90
+VSLEAVE_LINSUP_ACCESS_SOURCES += \
+   $(VSLEAVE_SUP_ACCESS_SOURCES) \
+   $(VACCESS_PATH)/vlidort_vsleave_lin_sup_accessories.f90
+
+
+#
+# Define supplement pattern rule for creating object files
+#
+
+$(OBJ_PATH)/%.o : $(VACCESS_PATH)/%.f90
+	$(FC) $(FFLAGS) $< -o $@

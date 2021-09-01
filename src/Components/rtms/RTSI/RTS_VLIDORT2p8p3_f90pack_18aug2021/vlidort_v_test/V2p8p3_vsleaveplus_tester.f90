@@ -1,0 +1,1719 @@
+
+! ###############################################################
+! #                                                             #
+! #                       VLIDORT_2p8p3                         #
+! #                                                             #
+! #  Vectorized LInearized Discrete Ordinate Radiative Transfer #
+! #  -          --         -        -        -         -        #
+! #                                                             #
+! ###############################################################
+
+! ###############################################################
+! #                                                             #
+! #  Authors :     Robert. J. D. Spurr (1)                      #
+! #                Matt Christi                                 #
+! #                                                             #
+! #  Address (1) : RT Solutions, inc.                           #
+! #                9 Channing Street                            #
+! #                Cambridge, MA 02138, USA                     #
+! #                                                             #
+! #  Tel:          (617) 492 1183                               #
+! #  Email :       rtsolutions@verizon.net                      #
+! #                                                             #
+! #  This Version :   VLIDORT_2p8p3                             #
+! #  Release Date :   31 March 2021                             #
+! #                                                             #
+! #  Previous VLIDORT Versions under Standard GPL 3.0:          #
+! #  ------------------------------------------------           #
+! #                                                             #
+! #      2.7   F90, released        August 2014                 #
+! #      2.8   F90, released        May    2017                 #
+! #      2.8.1 F90, released        August 2019                 # 
+! #      2.8.2 F90, limited release May    2020                 # 
+! #                                                             #
+! #  Features Summary of Recent VLIDORT Versions:               #
+! #  -------------------------------------------                #
+! #                                                             #
+! #      NEW: TOTAL COLUMN JACOBIANS         (2.4)              #
+! #      NEW: BPDF Land-surface KERNELS      (2.4R)             #
+! #      NEW: Thermal Emission Treatment     (2.4RT)            #
+! #      Consolidated BRDF treatment         (2.4RTC)           #
+! #      f77/f90 Release                     (2.5)              #
+! #      External SS / New I/O Structures    (2.6)              #
+! #                                                             #
+! #      SURFACE-LEAVING / BRDF-SCALING      (2.7)              #
+! #      TAYLOR Series / OMP THREADSAFE      (2.7)              #
+! #      New Water-Leaving Treatment         (2.8)              #
+! #      LBBF & BRDF-Telescoping, enabled    (2.8)              #
+! #      Several Performance Enhancements    (2.8)              #
+! #      Water-leaving coupled code          (2.8.1)            #
+! #      Planetary problem, media properties (2.8.1)            #
+! #      Doublet geometry post-processing    (2.8.2)            #
+! #      Reduction zeroing, dynamic memory   (2.8.2)            #
+! #                                                             #
+! #  Features Summary of This VLIDORT Version                   #
+! #  ----------------------------------------                   #
+! #                                                             #
+! #   2.8.3, released 31 March 2021.                            #
+! #     ==> Green's function RT solutions (Nstokes = 1 or 3)    #
+! #     ==> Sphericity Corrections using MS source terms        #
+! #     ==> BRDF upgrades, including new snow reflectance       #
+! #     ==> SLEAVE Upgrades, extended water-leaving treatment   #
+! #                                                             #
+! ###############################################################
+
+! ###################################################################
+! #                                                                 #
+! # This is Version 2.8.3 of the VLIDORT_2p8 software library.      #
+! # This library comes with the Standard GNU General Public License,#
+! # Version 3.0, 29 June 2007. Please read this license carefully.  #
+! #                                                                 #
+! #      VLIDORT Copyright (c) 2003-2021.                           #
+! #          Robert Spurr, RT Solutions, Inc.                       #
+! #          9 Channing Street, Cambridge, MA 02138, USA.           #
+! #                                                                 #
+! # This file is part of VLIDORT_2p8p3 ( Version 2.8.3 )            #
+! #                                                                 #
+! # VLIDORT_2p8p3 is free software: you can redistribute it         #
+! # and/or modify it under the terms of the Standard GNU GPL        #
+! # (General Public License) as published by the Free Software      #
+! # Foundation, either version 3.0 of the License, or any           #
+! # later version.                                                  #
+! #                                                                 #
+! # VLIDORT_2p8p3 is distributed in the hope that it will be        #
+! # useful, but WITHOUT ANY WARRANTY; without even the implied      #
+! # warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR         #
+! # PURPOSE. See the Standard GNU General Public License (GPL)      #
+! # for more details.                                               #
+! #                                                                 #
+! # You should have received a copy of the Standard GNU General     #
+! # Public License (GPL) Version 3.0, along with the VLIDORT_2p8p3  #
+! # code package. If not, see <http://www.gnu.org/licenses/>.       #
+! #                                                                 #
+! ###################################################################
+
+program VSLEAVEplus_Tester
+
+!  This is the Version 2.8 driver. Created 9/18/16 from 2.7 Driver
+!     R. Spurr. RT Solutions Inc.
+
+!  Upgrade for Version 2.8.1, August 2019
+!  ---------------------------------------
+
+!  Upgrade for Version 2.8.3, March 2021
+!  -------------------------------------
+
+!  Module files for VSLEAVE and VLIDORT. Strict usage, Version 2.8 upwards
+
+   USE VSLEAVE_SUP_AUX_m, Only : VSLEAVE_READ_ERROR
+   USE VSLEAVE_SUP_MOD_m
+   USE VSLEAVE_LINSUP_MOD_m
+
+   USE VLIDORT_PARS_m
+   USE VLIDORT_IO_DEFS_m
+   USE VLIDORT_LIN_IO_DEFS_m
+
+   USE VLIDORT_VSLEAVE_SUP_ACCESSORIES_m
+   USE VLIDORT_VSLEAVE_LINSUP_ACCESSORIES_m
+
+   USE VLIDORT_AUX_m,    Only : VLIDORT_READ_ERROR, VLIDORT_WRITE_STATUS
+   USE VLIDORT_INPUTS_m, Only : VLIDORT_INPUT_MASTER, VLIDORT_BRDF_Sup_Init, VLIDORT_SS_Sup_Init
+   USE VLIDORT_MASTERS_m
+
+   USE VLIDORT_L_INPUTS_m, Only : VLIDORT_L_INPUT_MASTER, VLIDORT_BRDF_LinSup_Init, VLIDORT_SS_LinSup_Init
+   USE VLIDORT_LCS_MASTERS_m
+
+   IMPLICIT NONE
+
+!  VLIDORT file inputs status structure
+
+   TYPE(VLIDORT_Input_Exception_Handling) :: VLIDORT_InputStatus
+
+!  VLIDORT input structures
+
+   TYPE(VLIDORT_Fixed_Inputs)             :: VLIDORT_FixIn
+   TYPE(VLIDORT_Modified_Inputs)          :: VLIDORT_ModIn
+
+!  VLIDORT supplements i/o structure
+
+   TYPE(VLIDORT_Sup_InOut)                :: VLIDORT_Sup
+
+!  VLIDORT output structure
+
+   TYPE(VLIDORT_Outputs)                  :: VLIDORT_Out
+
+!  VLIDORT linearized input structures
+
+   TYPE(VLIDORT_Fixed_LinInputs)          :: VLIDORT_LinFixIn
+   TYPE(VLIDORT_Modified_LinInputs)       :: VLIDORT_LinModIn
+
+!  VLIDORT linearized supplements i/o structure
+
+   TYPE(VLIDORT_LinSup_InOut)             :: VLIDORT_LinSup
+
+!  VLIDORT linearized output structure
+
+   TYPE(VLIDORT_LinOutputs)               :: VLIDORT_LinOut
+
+!  VSLEAVE supplement file inputs status structure
+
+   TYPE(VSLEAVE_Input_Exception_Handling) :: VSLEAVE_Sup_InputStatus
+
+!  VSLEAVE supplement input structures
+
+   TYPE(VSLEAVE_Sup_Inputs)               :: VSLEAVE_Sup_In
+
+!  VSLEAVE supplement linearized input structure
+
+   TYPE(VSLEAVE_LinSup_Inputs)            :: VSLEAVE_LinSup_In
+
+!  VSLEAVE supplement output structure
+
+   TYPE(VSLEAVE_Sup_Outputs)              :: VSLEAVE_Sup_Out
+   TYPE(VSLEAVE_Output_Exception_Handling):: VSLEAVE_Sup_OutputStatus
+
+!  VSLEAVE supplement linearized output structure
+
+   TYPE(VSLEAVE_LinSup_Outputs)           :: VSLEAVE_LinSup_Out
+
+!  VSLEAVE supplement / VLIDORT VSLEAVE-related inputs consistency check status
+
+   TYPE(VLIDORT_Exception_Handling)       :: VLIDORT_VSLEAVECheck_Status
+
+!  Local Variables
+!  ===============
+
+   integer, parameter :: maxlambdas = 900
+   integer, parameter :: maxlevels  = maxlayers + 1
+
+   integer :: nlambdas, data_nheights, nlayers, ngreek_moments_input, ngeometries
+   integer :: i, l, n, na, nf, v, w
+
+   logical :: openfileflag
+   logical :: do_fluorescence, do_waterleaving
+   logical :: do_observation_geometry, do_doublet_geometry
+
+   double precision :: aerwt, raywt, raysca, aersca, aertau, tottau, totsca
+   double precision :: q24, g24, qgr, ggr, ang, aerang, aerssa, aerasy
+   double precision :: cumaer1, cumaer2, aerprv1, aerprv2, aers_550, aert_550
+   double precision :: rho_1, rho_2, rho_a, diff, temp, psurf, ray2
+   double precision :: aerphas(maxmoments_input),aer550(maxlayers)
+
+   double precision :: lambdas(maxlambdas), lambda_start
+   double precision :: rayleigh_xsec(maxlambdas),rayleigh_depol(maxlambdas)
+
+   double precision :: height(maxlevels),tempr(maxlevels)
+   double precision :: data_pressures(maxlevels),data_heights(maxlevels)
+   double precision :: data_temperatures(maxlevels), earth_radius
+
+   double precision :: height_grid(0:maxlayers),layer_temperatures(maxlayers)
+   double precision :: layer_aircolumns(maxlayers)
+
+   double precision :: deltau_vert_input(maxlayers)
+   double precision :: omega_total_input(maxlayers)
+   double precision :: greekmat_total_input(0:maxmoments_input,maxlayers,16)
+
+   !double precision :: fmatrix_up ( maxlayers, max_geometries, 6 ) 
+   !double precision :: fmatrix_dn ( maxlayers, max_geometries, 6 ) 
+
+   double precision :: lambertian_albedo
+
+   character(len=7) :: c1
+   character(len=5) :: c2
+
+!  Saved results
+
+   double precision :: I_base(maxlambdas,max_geometries),&
+                       I_pert(max_surfacewfs+max_sleavewfs,maxlambdas,max_geometries),&
+                       Jac   (max_surfacewfs+max_sleavewfs,maxlambdas,max_geometries)
+
+!  Loschmidt's number (particles/cm3).
+
+   double precision, parameter :: RHO_STANDARD = 2.68675D+19
+
+!  STP values.
+
+   double precision, parameter :: PZERO  = 1013.25D0, TZERO  = 273.15D0, PTZERO = PZERO / TZERO
+   double precision, parameter :: RHO_ZERO = RHO_STANDARD * TZERO / PZERO, CONSTANT = 1.0D+05 * RHO_ZERO
+
+!  CO2 PPMV mixing ratio (for the Rayleigh stuff)
+
+   double precision, parameter :: CO2_PPMV_MIXRATIO = 390.0d0
+
+!  Help variables
+
+   integer :: g, j1, j2, jw, k, m, nsl, o1, uta, q, nmi, n_totalsurface_wfs
+   double precision :: eps, epsfac, epsfac1, epsfac2
+   double precision :: par(2)
+
+   character(len=120) :: trace
+   character(len=200) :: Vsleave_DataPath
+
+!  1/31/21. Version 2.8.3, introduce do_debug_input control
+
+   LOGICAL :: do_debug_input
+
+!  Two TESTS, one for Land (SIF) and the other for water (Water-leaving)
+
+   LOGICAL          :: DO_TEST1 = .true.
+   LOGICAL          :: DO_TEST2 = .true.
+
+!  TEST 1 - Full Calculcation for FLUORESCENCE
+!  ===========================================
+
+!  Avoid if not flagged - go to 87
+
+   if ( .not. DO_TEST1 ) go to 87
+
+!  Initialize by-hand input flag
+!  1/31/21. Version 2.8.3. Local flag for debug input 
+
+   do_debug_input = .false.
+ 
+!  Progress
+
+   write(*,'(1x,a/)')' DOING TEST 1 - Full Calculcation for FLUORESCENCE'
+
+!  Problem setup for TEST 1
+!  ------------------------
+
+!  Set VSLEAVE data path
+
+   Vsleave_DataPath = 'vlidort_v_test/data'
+
+!  Wavelengths
+
+   lambda_start = 640.0d0
+   nlambdas = 181
+   do w = 1, nlambdas
+      lambdas(w) = lambda_start + 1.0d0*dble(w-1)
+   enddo
+
+!  Get the pressures, temperatures and heights from FILE.
+
+   OPEN(1,FILE=Trim(Vsleave_DataPath)//'/temp_psurf.prf_35',STATUS='OLD')
+   READ(1,*)DATA_NHEIGHTS,psurf
+   DO I = 1, DATA_NHEIGHTS
+      READ(1,*)HEIGHT(I), TEMPR(I)
+   ENDDO
+   CLOSE(1)
+
+!  Set the pressures
+
+   DATA_PRESSURES(DATA_NHEIGHTS)=psurf
+   DO I = DATA_NHEIGHTS-1, 1 ,-1
+      DATA_PRESSURES(I) = DATA_PRESSURES(&
+       I+1)*exp(-9.81*28.9/8314.0*(height(DATA_NHEIGHTS-I+1)-&
+       height(DATA_NHEIGHTS-I))*1.0E3/2.0*(1.0/tempr(DATA_NHEIGHTS-I+1)&
+       +1.0/tempr(DATA_NHEIGHTS-I)))
+   ENDDO
+
+!  Set the data heights
+
+   DO I = 1, DATA_NHEIGHTS
+      DATA_HEIGHTS(I)=HEIGHT(DATA_NHEIGHTS-I+1)
+      DATA_TEMPERATURES(I)=TEMPR(DATA_NHEIGHTS-I+1)
+   ENDDO
+
+!  Set the height grid, number of layers, Layer temperatures and Aircolumns
+
+   HEIGHT_GRID = 0.0d0
+   NLAYERS = DATA_NHEIGHTS - 1
+   HEIGHT_GRID(0) = DATA_HEIGHTS(1)
+   DO I = 1, NLAYERS
+      RHO_1 = DATA_PRESSURES(I) / DATA_TEMPERATURES(I)
+      RHO_2 = DATA_PRESSURES(I+1) / DATA_TEMPERATURES(I+1)
+      TEMP  = 0.5D0*(DATA_TEMPERATURES(I)+DATA_TEMPERATURES(I+1))
+      RHO_A = 0.5D0 * CONSTANT * ( RHO_1 + RHO_2 )
+      DIFF  = DATA_HEIGHTS(I) - DATA_HEIGHTS(I+1)
+      HEIGHT_GRID(I) = DATA_HEIGHTS(I+1)
+      LAYER_TEMPERATURES(I) = TEMP
+      LAYER_AIRCOLUMNS(I)   = DIFF * RHO_A
+   ENDDO
+
+!  Rayleigh function
+
+   call Rayleigh_function &
+    ( MAXLAMBDAS, CO2_PPMV_MIXRATIO, &
+      NLAMBDAS,   LAMBDAS, &
+      RAYLEIGH_XSEC, RAYLEIGH_DEPOL )
+
+!  Loading areas
+
+   aers_550 = 0.01d0
+   q24 = 2.0d0 * aers_550 / (height_grid(0)-height_grid(24))
+   g24 = q24 /  (height_grid(0)-height_grid(24))
+
+   aert_550 = 0.15d0
+   qgr = 2.0d0 * aert_550 / (height_grid(24)-height_grid(nlayers))
+   ggr = qgr / (height_grid(24)-height_grid(nlayers))
+
+!  Basic layering for aerosol
+
+   aerprv1 = 0.0d0
+   aerprv2 = 0.0d0
+   do n = 1, nlayers
+      if ( n.le.24 ) then
+         cumaer1 = g24 * (height_grid(0)-height_grid(n))
+         aer550(n) = 0.5*(cumaer1+aerprv1)*(height_grid(n-1)-height_grid(n))
+         aerprv1 = cumaer1
+      else
+         cumaer2 = ggr * (height_grid(24)-height_grid(n))
+         aer550(n) = 0.5*(cumaer2+aerprv2)*(height_grid(n-1)-height_grid(n))
+         aerprv2 = cumaer2
+      endif
+   enddo
+
+!  Other aerosol inputs
+
+   aerAng = 1.01d0
+   aerssa = 0.99d0
+   aerasy = 0.75d0
+   ngreek_moments_input = 50
+   do l = 1, ngreek_moments_input
+      aerphas(L) = dble(2*L+1) * aerasy ** dble(l)
+   enddo
+
+!  Define a proxy
+
+   nmi = ngreek_moments_input
+
+!  Initialize Test 1
+!  -----------------
+
+!  Initialize error file
+
+   OPENFILEFLAG = .false.
+
+!  Initialize perturbation variables
+
+   eps = 1.0d-04
+   epsfac = 1.0d0 + eps
+   epsfac1 = 1.0001d0
+   epsfac2 = 1.001d0
+
+!  Initialize output
+
+   I_base = 0.0d0
+   I_pert = 0.0d0
+   Jac    = 0.0d0
+
+!  Start wavelength loop
+!  ---------------------
+
+   !do w = 1, nlambdas
+   do w = 1, nlambdas, 10
+   !do w = 1,1
+
+      !write(*,*)
+      !write(*,*) '******************************************************'
+      write(*,*) 'w = ',w
+      !write(*,*) 'lambdas(w) = ',lambdas(w)
+
+      !write(*,*)
+      !write(*,*) 'Doing Baseline Calc'
+      !write(*,*) '-------------------'
+
+!  @@@@@@@@@@@@@@@@@@@@@@@@@@@
+!  BASELINE / ANALYTIC SECTION
+!  @@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+!  Read VSLEAVE inputs
+!  -------------------
+
+      CALL VSLEAVE_LIN_INPUTMASTER ( &
+        'vlidort_v_test/V2p8p3_VSLEAVE_ReadInput_fluor.cfg', & ! Input
+         VSLEAVE_Sup_In,         & ! Outputs
+         VSLEAVE_LinSup_In,      & ! Outputs
+         VSLEAVE_Sup_InputStatus ) ! Outputs
+
+      IF ( VSLEAVE_Sup_InputStatus%SL_STATUS_INPUTREAD .ne. VLIDORT_SUCCESS ) &
+        CALL VSLEAVE_READ_ERROR ( 'V2p8p3_VSLEAVE_ReadInput_lin_call_Test1.log', VSLEAVE_Sup_InputStatus )
+
+!  Define some inputs not handled by VSLEAVE_LIN_INPUTMASTER
+
+      VSLEAVE_Sup_In%SL_VSLEAVE_DATAPATH = Trim(Vsleave_DataPath)
+
+!  mick fix 4/1/2015 - moved setting of VSLEAVE wavelength from below
+
+      VSLEAVE_Sup_In%SL_FL_WAVELENGTH = lambdas(w) !must be in [nm]
+
+!  Define local variables
+
+      DO_FLUORESCENCE         = VSLEAVE_Sup_In%SL_DO_FLUORESCENCE
+      DO_WATERLEAVING         = .not. VSLEAVE_Sup_In%SL_DO_FLUORESCENCE
+      DO_OBSERVATION_GEOMETRY = VSLEAVE_Sup_In%SL_DO_USER_OBSGEOMS
+      DO_DOUBLET_GEOMETRY     = VSLEAVE_Sup_In%SL_DO_DOUBLET_GEOMETRY
+      nsl                     = VSLEAVE_LinSup_In%SL_N_SLEAVE_WFS
+
+!  Define VSLEAVE outputs
+!  ----------------------
+
+!  Linearized VSLEAVE call - the output will be used for the
+!                            linearized VLIDORT calculation
+
+      CALL VSLEAVE_LIN_MAINMASTER ( &
+        VSLEAVE_Sup_In,         & ! Inputs
+        VSLEAVE_LinSup_In,      & ! Inputs
+        VSLEAVE_Sup_Out,        & ! Outputs
+        VSLEAVE_LinSup_Out,     & ! Outputs
+        VSLEAVE_Sup_OutputStatus) ! Outputs
+
+      if ( VSLEAVE_Sup_OutputStatus%SL_STATUS_OUTPUT .ne. vlidort_success ) THEN
+         TRACE = 'VSLEAVE_LIN_MAINMASTER failed' ; go to 678
+      endif
+
+!  Read VLIDORT Main inputs
+!  ------------------------
+
+!  VLIDORT linearized control read input, abort if failed
+
+      CALL VLIDORT_L_INPUT_MASTER ( &
+        'vlidort_v_test/V2p8p3_vsleaveplus_tester_fluor.cfg', & ! Input
+        VLIDORT_FixIn,      & ! Outputs
+        VLIDORT_ModIn,      & ! Outputs
+        VLIDORT_LinFixIn,   & ! Outputs
+        VLIDORT_LinModIn,   & ! Outputs
+        VLIDORT_InputStatus ) ! Outputs
+
+      IF ( VLIDORT_InputStatus%TS_STATUS_INPUTREAD .ne. VLIDORT_SUCCESS ) &
+        CALL VLIDORT_READ_ERROR ( 'V2p8p3_VLIDORT_ReadInput_lin_call_Test1.log', VLIDORT_InputStatus )
+
+!  1/31/21. Version 2.8.3, New variables must be set by hand
+
+      VLIDORT_FixIn%Cont%TS_ASYMTX_TOLERANCE = 1.0d-20
+
+!  1/31/21. Version 2.8.3, Set the DO_MSSTS flag to generate output for the MS sphericity corrections
+
+      VLIDORT_FixIn%Bool%TS_DO_MSSTS = .false.
+
+!  There are very strict conditions for this specialist option, as follows :==>
+!     1. Either DO_UPWELLING or DO_DNWELLING must be set, Not Both !!!!
+!     2. DO_FULLRAD_MODE must be set
+!     3. DO_OBSERVATION_GEOMETRY must be set, with N_USER_OBSGEOMS = 3
+!     4. DO_FOCORR and DO_FOCORR_OUTGOING must both be set
+!     5a. Upwelling  : N_USER_LEVELS = 1, and USER_LEVELS(1) = 0.0            [ TOA output only ]
+!     5b. Downwelling: N_USER_LEVELS = 1, and USER_LEVELS(1) = Real(nlayers)  [ BOA output only ]
+!  These checks have been implemented inside VLIDORT.
+
+!  1/31/21. Version 2.8.3, Set the NSTOKES2 FOURIER0 flag by hand
+
+      VLIDORT_FixIn%Bool%TS_DO_FOURIER0_NSTOKES2 = .true.
+
+!  Redefine some VLIDORT input variables (override VLIDORT config file)
+!  mick fix 4/1/2015 - added this wavelength diagnostic (just a dummy here)
+
+      VLIDORT_FixIn%Optical%TS_ATMOS_WAVELENGTH = lambdas(w)/1.0D3 !must be in [um]
+
+!  Define some input variables
+
+      VLIDORT_LinFixIn%Cont%TS_N_SURFACE_WFS = 1
+      VLIDORT_LinFixIn%Cont%TS_N_SLEAVE_WFS  = VSLEAVE_LinSup_In%SL_N_SLEAVE_WFS
+
+!  Initialize some input variables not handled by VLIDORT_L_INPUT_MASTER
+
+      !CALL VLIDORT_BRDF_Sup_Init ( VLIDORT_Sup )
+      !CALL VLIDORT_SS_Sup_Init ( VLIDORT_Sup )
+      !CALL VLIDORT_BRDF_LinSup_Init ( VLIDORT_LinSup )
+      !CALL VLIDORT_SS_LinSup_Init ( VLIDORT_LinSup )
+
+!  IMPORTANT - Check compatibility of VSLEAVE and VLIDORT Main inputs
+!  ------------------------------------------------------------------
+
+      CALL VLIDORT_VSLEAVE_INPUT_CHECK ( &
+        VSLEAVE_Sup_In,             & ! Inputs
+        VLIDORT_FixIn,              & ! Inputs
+        VLIDORT_ModIn,              & ! Inputs
+        VLIDORT_VSLEAVECheck_Status ) ! Outputs
+
+!  Exception handling
+
+      IF ( VLIDORT_VSLEAVECheck_Status%TS_STATUS_INPUTCHECK .ne. VLIDORT_SUCCESS ) &
+        CALL VLIDORT_VSLEAVE_INPUT_CHECK_ERROR ( &
+           'V2p8p3_VLIDORT_VSLEAVEcheck_lin_call_Test1.log', VLIDORT_VSLEAVECheck_Status )
+
+!  Copy VSLEAVE Sup outputs to VLIDORT's VSLEAVE Sup inputs (std & lin)
+
+      VLIDORT_LinModIn%MCont%TS_DO_SLEAVE_WFS = .TRUE.
+      CALL SET_VLIDORT_L_VSLEAVE_INPUTS ( &
+        VSLEAVE_Sup_Out,  VSLEAVE_LinSup_Out, & !Inputs
+        VLIDORT_FixIn,    VLIDORT_ModIn,      & !Inputs
+        VLIDORT_LinFixIn, VLIDORT_LinModIn,   & !Inputs
+        VLIDORT_Sup, VLIDORT_LinSup )           !Outputs
+
+      N_TOTALSURFACE_WFS = VLIDORT_LinFixIn%Cont%TS_N_SURFACE_WFS + &
+                           VLIDORT_LinFixIn%Cont%TS_N_SLEAVE_WFS
+
+!  Optical properties
+!  ------------------
+
+!  Angstrom and ray2mom
+
+      ray2 = ( 1.0d0 - rayleigh_depol(w) ) / ( 2.0d0 + rayleigh_depol(w) )
+      ang  = ( lambdas(w) / 550.0d0 ) ** (-aerAng)
+
+!      write(*,*)w,lambdas(w),ang,rayleigh_depol(w)
+
+!  Make VLIDORT optical properties
+
+      do n = 1, nlayers
+         aertau = aer550(n) * ang
+         aersca = aertau * aerssa
+         raysca = LAYER_AIRCOLUMNS(n) * rayleigh_xsec(w)
+         tottau = raysca + aertau
+         totsca = raysca + aersca
+         deltau_vert_input(n) = tottau
+         omega_total_input(n) = totsca / tottau
+         raywt = raysca / totsca ; aerwt = 1.0d0 - raywt
+         greekmat_total_input(0,n,1) = 1.0d0
+         greekmat_total_input(1,n,1) = aerwt * aerphas(1)
+         greekmat_total_input(2,n,1) = aerwt * aerphas(2) + raywt * ray2
+         do L = 3, ngreek_moments_input
+            greekmat_total_input(L,n,1) = aerwt * aerphas(L)
+         enddo
+      enddo
+
+      lambertian_albedo = 0.02d0
+
+!  Save baseline parameters
+
+      par(1) = lambertian_albedo
+      par(2) = VSLEAVE_Sup_In%SL_FL_Amplitude755
+
+!  Set VLIDORT Type structures
+
+      VLIDORT_FixIn%Cont%TS_nlayers                   = nlayers
+      VLIDORT_ModIn%MCont%TS_ngreek_moments_input     = ngreek_moments_input
+      VLIDORT_FixIn%Chapman%TS_height_grid(0:nlayers) = height_grid(0:nlayers)
+
+      VLIDORT_FixIn%Optical%TS_deltau_vert_input(1:nlayers)             = deltau_vert_input(1:nlayers)
+      VLIDORT_ModIn%MOptical%TS_omega_total_input(1:nlayers)            = omega_total_input(1:nlayers)
+      VLIDORT_FixIn%Optical%TS_greekmat_total_input(0:nmi,1:nlayers,1)  = greekmat_total_input(0:nmi,1:nlayers,1)
+      VLIDORT_FixIn%Optical%TS_lambertian_albedo    = lambertian_albedo 
+
+!  Linearized VLIDORT call
+!  ----------------------
+!  1/31/21. Version 2.8.3. Need to set the debug_input flag
+
+      do_debug_input = .false.
+      CALL VLIDORT_LCS_MASTER ( do_debug_input, &
+        VLIDORT_FixIn, &
+        VLIDORT_ModIn, &
+        VLIDORT_Sup,   &
+        VLIDORT_Out,   &
+        VLIDORT_LinFixIn, &
+        VLIDORT_LinModIn, &
+        VLIDORT_LinSup,   &
+        VLIDORT_LinOut )
+
+!  Exception handling, write-up (optional)
+
+      CALL VLIDORT_WRITE_STATUS ( &
+        'V2p8p3_VLIDORT_Execution.log', VLIDORT_ERRUNIT, OPENFILEFLAG, VLIDORT_Out%Status )
+
+!  Save baseline results
+!  ---------------------
+
+      uta = 1; o1 = 1
+      do v = 1, VSLEAVE_Sup_In%SL_NBEAMS
+        I_base(w,v) = VLIDORT_Out%Main%TS_stokes(uta,v,o1,upidx)
+        do q = 1,n_totalsurface_wfs
+          Jac(q,w,v) = VLIDORT_LinOut%Surf%TS_surfacewf(q,uta,v,o1,upidx)
+        enddo
+      enddo
+
+!  @@@@@@@@@@@@@@@@@@@@@@@@@
+!  FINITE DIFFERENCE SECTION
+!  @@@@@@@@@@@@@@@@@@@@@@@@@
+
+      !write(*,*)
+      !write(*,*) 'Doing FD Calc'
+      !write(*,*) '-------------'
+
+!  Read the Vsleave and VLIDORT configuration files (again)
+!  --------------------------------------------------------
+
+!  Get the VSLEAVE inputs
+
+      CALL VSLEAVE_INPUTMASTER ( &
+        'vlidort_v_test/V2p8p3_VSLEAVE_ReadInput_fluor.cfg', & ! Input
+        VSLEAVE_Sup_In,                         & ! Outputs
+        VSLEAVE_Sup_InputStatus )                 ! Outputs
+
+      IF ( VSLEAVE_Sup_InputStatus%SL_STATUS_INPUTREAD .ne. VLIDORT_SUCCESS ) &
+        CALL VSLEAVE_READ_ERROR ( 'V2p8p3_VSLEAVE_ReadInput_fd_call_Test1.log', VSLEAVE_Sup_InputStatus )
+
+!  Define some inputs not handled by VSLEAVE_INPUTMASTER
+
+      VSLEAVE_Sup_In%SL_VSLEAVE_DATAPATH = Trim(Vsleave_DataPath)
+
+!  mick fix 4/1/2015 - set VSLEAVE wavelength here
+
+      VSLEAVE_Sup_In%SL_FL_WAVELENGTH = lambdas(w) !must be in [nm]
+
+!  VLIDORT control Read input, abort if failed
+
+      CALL VLIDORT_INPUT_MASTER ( &
+        'vlidort_v_test/V2p8p3_vsleaveplus_tester_fluor.cfg', & ! Input
+        VLIDORT_FixIn,      & ! Outputs
+        VLIDORT_ModIn,      & ! Outputs
+        VLIDORT_InputStatus ) ! Outputs
+
+      IF ( VLIDORT_InputStatus%TS_STATUS_INPUTREAD .ne. VLIDORT_SUCCESS ) &
+        CALL VLIDORT_READ_ERROR ( 'V2p8p3_VLIDORT_ReadInput_fd_call_Test1.log', VLIDORT_InputStatus )
+
+!  1/31/21. Version 2.8.3, New variables must be set by hand
+
+      VLIDORT_FixIn%Cont%TS_ASYMTX_TOLERANCE = 1.0d-20
+
+!  1/31/21. Version 2.8.3, Set the DO_MSSTS flag to generate output for the MS sphericity corrections
+
+      VLIDORT_FixIn%Bool%TS_DO_MSSTS = .false.
+
+!  There are very strict conditions for this specialist option, as follows :==>
+!     1. Either DO_UPWELLING or DO_DNWELLING must be set, Not Both !!!!
+!     2. DO_FULLRAD_MODE must be set
+!     3. DO_OBSERVATION_GEOMETRY must be set, with N_USER_OBSGEOMS = 3
+!     4. DO_FOCORR and DO_FOCORR_OUTGOING must both be set
+!     5a. Upwelling  : N_USER_LEVELS = 1, and USER_LEVELS(1) = 0.0            [ TOA output only ]
+!     5b. Downwelling: N_USER_LEVELS = 1, and USER_LEVELS(1) = Real(nlayers)  [ BOA output only ]
+!  These checks have been implemented inside VLIDORT.
+
+!  1/31/21. Version 2.8.3, Set the NSTOKES2 FOURIER0 flag by hand
+
+      VLIDORT_FixIn%Bool%TS_DO_FOURIER0_NSTOKES2 = .true.
+
+!  mick fix 4/1/2015 - added wavelength diagnostic (just a dummy here)
+!  Redefine some VLIDORT input variables (override VLIDORT config file)
+
+      VLIDORT_FixIn%Optical%TS_ATMOS_WAVELENGTH = lambdas(w)/1.0D3 !must be in [um]
+
+!  Initialize some input variables not handled by VLIDORT_INPUT_MASTER
+
+      !CALL VLIDORT_BRDF_Sup_Init ( VLIDORT_Sup )
+      !CALL VLIDORT_SS_Sup_Init ( VLIDORT_Sup )
+
+!   IMPORTANT - Check compatibility of VSLEAVE and Main VLIDORT inputs
+!   ------------------------------------------------------------------
+
+      CALL VLIDORT_VSLEAVE_INPUT_CHECK ( &
+        VSLEAVE_Sup_In,             & ! Inputs
+        VLIDORT_FixIn,              & ! Inputs
+        VLIDORT_ModIn,              & ! Inputs
+        VLIDORT_VSLEAVECheck_Status ) ! Outputs
+
+      IF ( VLIDORT_VSLEAVECheck_Status%TS_STATUS_INPUTCHECK .ne. VLIDORT_SUCCESS ) &
+        CALL VLIDORT_VSLEAVE_INPUT_CHECK_ERROR ( &
+           'V2p8p3_VLIDORT_VSLEAVEcheck_fd_call_Test1.log', VLIDORT_VSLEAVECheck_Status )
+
+!  Finite diff jacobian #1: wrt FL_Amplitude755
+!  --------------------------------------------
+
+!  Perturb FL_Amplitude755
+
+      VSLEAVE_Sup_In%SL_FL_Amplitude755 = par(2)*epsfac
+
+!  VSLEAVE call - the output will be used for the VLIDORT calculation
+
+      CALL VSLEAVE_MAINMASTER ( &
+        VSLEAVE_Sup_In,         & ! Inputs
+        VSLEAVE_Sup_Out,        & ! Outputs
+        VSLEAVE_Sup_OutputStatus) ! Outputs
+
+      if ( VSLEAVE_Sup_OutputStatus%SL_STATUS_OUTPUT .ne. vlidort_success ) THEN
+         TRACE = 'VSLEAVE_MAINMASTER failed, perturbation # 1' ; go to 678
+      endif
+
+!  Copy VSLEAVE Sup outputs to VLIDORT's VSLEAVE Sup inputs (std only)
+
+      CALL SET_VLIDORT_VSLEAVE_INPUTS ( &
+        VSLEAVE_Sup_Out, VLIDORT_FixIn, VLIDORT_ModIn, & !Inputs
+        VLIDORT_Sup )                                    !Outputs
+
+!  Set VLIDORT Type structures
+
+      VLIDORT_FixIn%Cont%TS_nlayers                   = nlayers
+      VLIDORT_ModIn%MCont%TS_ngreek_moments_input     = ngreek_moments_input
+      VLIDORT_FixIn%Chapman%TS_height_grid(0:nlayers) = height_grid(0:nlayers)
+
+      VLIDORT_FixIn%Optical%TS_deltau_vert_input(1:nlayers)             = deltau_vert_input(1:nlayers)
+      VLIDORT_ModIn%MOptical%TS_omega_total_input(1:nlayers)            = omega_total_input(1:nlayers)
+      VLIDORT_FixIn%Optical%TS_greekmat_total_input(0:nmi,1:nlayers,1)  = greekmat_total_input(0:nmi,1:nlayers,1)
+      VLIDORT_FixIn%Optical%TS_lambertian_albedo                        = lambertian_albedo
+
+!  VLIDORT call
+!  1/31/21. Version 2.8.3. Need to set the debug_input flag
+
+      do_debug_input = .false.
+      CALL VLIDORT_MASTER ( do_debug_input, &
+        VLIDORT_FixIn, &
+        VLIDORT_ModIn, &
+        VLIDORT_Sup, &
+        VLIDORT_Out )
+
+!  Exception handling, write-up (optional)
+
+      CALL VLIDORT_WRITE_STATUS ( &
+        'V2p8p3_VLIDORT_Execution.log', VLIDORT_ERRUNIT, OPENFILEFLAG, VLIDORT_Out%Status )
+
+!  Save perturbed results
+
+      q = 2 !for FL_Amplitude755 (follows Lambertian albedo jacobian in array)
+      do v = 1, VSLEAVE_Sup_In%SL_NBEAMS
+        I_pert(q,w,v) = VLIDORT_Out%Main%TS_stokes(uta,v,o1,upidx)
+      enddo
+
+!      write(*,*)
+!      write(*,*) 'q = ',q
+!      write(*,51)w,lambdas(w),' I_pert(q,w,v)                   = ',&
+!                 (I_pert(q,w,v) ,v=1,VSLEAVE_Sup_In%SL_NBEAMS)
+!      write(*,51)w,lambdas(w),' Jac(q,w,v)                      = ',&
+!                 (Jac(q,w,v)    ,v=1,VSLEAVE_Sup_In%SL_NBEAMS)
+!      write(*,51)w,lambdas(w),' par(q)*Jac(q,w,v)               = ',&
+!                 (par(q)*Jac(q,w,v),v=1,VSLEAVE_Sup_In%SL_NBEAMS)
+!      write(*,51)w,lambdas(w),' (I_pert(q,w,v)-I_base(w,v))/eps = ',&
+!                 ((I_pert(q,w,v)-I_base(w,v))/eps,v=1,VSLEAVE_Sup_In%SL_NBEAMS)
+
+!  Reset FL_Amplitude755
+
+      VSLEAVE_Sup_In%SL_FL_Amplitude755 = par(2)
+
+!  Finite diff jacobian #2: wrt Lambertian albedo
+!  ----------------------------------------------
+
+!  VSLEAVE call - the output will be used for the VLIDORT calculation
+
+      CALL VSLEAVE_MAINMASTER ( &
+        VSLEAVE_Sup_In,         & ! Inputs
+        VSLEAVE_Sup_Out,        & ! Outputs
+        VSLEAVE_Sup_OutputStatus) ! Outputs
+
+      if ( VSLEAVE_Sup_OutputStatus%SL_STATUS_OUTPUT .ne. vlidort_success ) THEN
+         TRACE = 'VSLEAVE_MAINMASTER failed, perturbation # 2' ; go to 678
+      endif
+
+!  Copy VSLEAVE Sup outputs to VLIDORT's VSLEAVE Sup inputs (std only)
+
+      CALL SET_VLIDORT_VSLEAVE_INPUTS ( &
+        VSLEAVE_Sup_Out, VLIDORT_FixIn, VLIDORT_ModIn, & !Inputs
+        VLIDORT_Sup )                                    !Outputs
+
+!  Set VLIDORT Type structures
+
+      VLIDORT_FixIn%Cont%TS_nlayers                   = nlayers
+      VLIDORT_ModIn%MCont%TS_ngreek_moments_input     = ngreek_moments_input
+      VLIDORT_FixIn%Chapman%TS_height_grid(0:nlayers) = height_grid(0:nlayers)
+
+      VLIDORT_FixIn%Optical%TS_deltau_vert_input(1:nlayers)             = deltau_vert_input(1:nlayers)
+      VLIDORT_ModIn%MOptical%TS_omega_total_input(1:nlayers)            = omega_total_input(1:nlayers)
+      VLIDORT_FixIn%Optical%TS_greekmat_total_input(0:nmi,1:nlayers,1)  = greekmat_total_input(0:nmi,1:nlayers,1)
+      VLIDORT_FixIn%Optical%TS_lambertian_albedo    = lambertian_albedo
+
+!  Perturb Lambertian albedo
+
+      VLIDORT_FixIn%Optical%TS_LAMBERTIAN_ALBEDO  = par(1)*epsfac
+
+!  VLIDORT call
+!  1/31/21. Version 2.8.3. Need to set the debug_input flag
+
+      do_debug_input = .false.
+      CALL VLIDORT_MASTER ( do_debug_input, &
+        VLIDORT_FixIn, &
+        VLIDORT_ModIn, &
+        VLIDORT_Sup, &
+        VLIDORT_Out )
+
+!  Exception handling, write-up (optional)
+
+      CALL VLIDORT_WRITE_STATUS ( &
+        'V2p8p3_VLIDORT_Execution.log', VLIDORT_ERRUNIT, OPENFILEFLAG, VLIDORT_Out%Status )
+
+!  Save perturbed results
+
+      q = 1 !for lambertian albedo jacobian (first in array)
+      do v = 1, VSLEAVE_Sup_In%SL_NBEAMS
+        I_pert(q,w,v) = VLIDORT_Out%Main%TS_stokes(uta,v,o1,upidx)
+      enddo
+
+!      write(*,*)
+!      write(*,*) 'q = ',q
+!      write(*,51)w,lambdas(w),' I_pert(q,w,v)                   = ',&
+!                 (I_pert(q,w,v) ,v=1,VSLEAVE_Sup_In%SL_NBEAMS)
+!      write(*,51)w,lambdas(w),' Jac(q,w,v)                      = ',&
+!                 (Jac(q,w,v)    ,v=1,VSLEAVE_Sup_In%SL_NBEAMS)
+!      write(*,51)w,lambdas(w),' par(q)*Jac(q,w,v)               = ',&
+!                 (par(q)*Jac(q,w,v),v=1,VSLEAVE_Sup_In%SL_NBEAMS)
+!      write(*,51)w,lambdas(w),' (I_pert(q,w,v)-I_base(w,v))/eps = ',&
+!                 ((I_pert(q,w,v)-I_base(w,v))/eps,v=1,VSLEAVE_Sup_In%SL_NBEAMS)
+
+51 format(i4,f10.4,a,70e17.10)
+
+!  End wavelength loop
+
+   enddo
+
+!  Write results, Test 1
+!  ---------------------
+
+!  Headers
+
+   if (do_observation_geometry) then
+     c1 = 'obsgeo'
+   else if (do_doublet_geometry) then
+     c1 = 'doublet'
+   else
+     c1 = 'lattice'
+   endif
+
+   if (do_fluorescence) then
+     c2 = 'fluor'
+   else
+     c2 = 'clean'
+   end if
+
+!  Open file, write results
+
+   open(unit=777,file='vlidort_v_test/results_vsleaveplus_tester_' &
+        // trim(c1) // '_' // c2 // '.all',status='replace',action='write')
+
+   !do w = 1, nlambdas
+   do w = 1, nlambdas, 10
+   !do w = 1,1
+      write(777,52) w,lambdas(w),&
+        ( I_base(w,v),( par(q)*Jac(q,w,v),(I_pert(q,w,v)-I_base(w,v))/eps,&
+          q=1,n_totalsurface_wfs ),v=1,VSLEAVE_Sup_In%SL_NBEAMS )
+   enddo
+52 format(i4,f10.4,70e12.4)
+
+   close(777)
+
+!  Finish Test 1
+
+   write(*,*)
+   write(*,*) ' TEST 1 finished successfully'
+
+! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+!  continuation point for Test 2
+
+87 continue
+
+!  Avoid if not flagged - go to 89
+
+   if ( .not. DO_TEST2 ) then
+     go to 89
+   else
+     write(*,*)
+   endif
+
+!  TEST 2 - Full Calculcation for WATER-LEAVING
+!  ============================================
+
+!  Initialize by-hand input flag
+!  1/31/21. Version 2.8.3. Local flag for debug input 
+
+   do_debug_input = .false.
+ 
+!  5/24/21. Select geometry
+
+   do_doublet_geometry     = .false.
+   do_observation_geometry = .false.
+
+!  Headers
+
+   if ( do_observation_geometry ) then
+     c1 = 'obsgeom'
+   else if ( do_doublet_geometry ) then
+     c1 = 'doublet'
+   else
+     c1 = 'lattice'
+   endif
+
+!  Progress
+
+   write(*,'(1x,a/)')' DOING TEST 2 - Full Calculcation for WATER-LEAVING'
+
+!  Problem setup for TEST 2
+!  ------------------------
+
+!  Set VSLEAVE data path
+
+   Vsleave_DataPath = 'vlidort_v_test/data'
+
+!  Wavelengths
+
+   lambda_start = 400.0d0
+   nlambdas     = 21
+   do w = 1, nlambdas
+      lambdas(w) = lambda_start + 1.0d0*dble(w-1)
+   enddo
+
+!  Get the pressures, temperatures and heights from FILE.
+
+   OPEN(1,FILE=Trim(Vsleave_DataPath)//'/temp_psurf.prf_35',STATUS='OLD')
+   READ(1,*)DATA_NHEIGHTS,psurf
+   DO I = 1, DATA_NHEIGHTS
+       READ(1,*)HEIGHT(I), TEMPR(I)
+   ENDDO
+   CLOSE(1)
+
+!  Set the pressures
+
+   DATA_PRESSURES(DATA_NHEIGHTS)=psurf
+   DO I = DATA_NHEIGHTS-1, 1 ,-1
+      DATA_PRESSURES(I) = DATA_PRESSURES(&
+       I+1)*exp(-9.81*28.9/8314.0*(height(DATA_NHEIGHTS-I+1)-&
+       height(DATA_NHEIGHTS-I))*1.0E3/2.0*(1.0/tempr(DATA_NHEIGHTS-I+1)&
+       +1.0/tempr(DATA_NHEIGHTS-I)))
+   ENDDO
+
+!  Set the data heights
+
+   DO I = 1, DATA_NHEIGHTS
+      DATA_HEIGHTS(I)=HEIGHT(DATA_NHEIGHTS-I+1)
+      DATA_TEMPERATURES(I)=TEMPR(DATA_NHEIGHTS-I+1)
+   ENDDO
+
+!  Set the height grid, number of layers, Layer temperatures and Aircolumns
+
+   HEIGHT_GRID = 0.0d0
+   NLAYERS = DATA_NHEIGHTS - 1
+   HEIGHT_GRID(0) = DATA_HEIGHTS(1)
+   DO I = 1, NLAYERS
+      RHO_1 = DATA_PRESSURES(I) / DATA_TEMPERATURES(I)
+      RHO_2 = DATA_PRESSURES(I+1) / DATA_TEMPERATURES(I+1)
+      TEMP  = 0.5D0*(DATA_TEMPERATURES(I)+DATA_TEMPERATURES(I+1))
+      RHO_A = 0.5D0 * CONSTANT * ( RHO_1 + RHO_2 )
+      DIFF  = DATA_HEIGHTS(I) - DATA_HEIGHTS(I+1)
+      HEIGHT_GRID(I) = DATA_HEIGHTS(I+1)
+      LAYER_TEMPERATURES(I) = TEMP
+      LAYER_AIRCOLUMNS(I)   = DIFF * RHO_A
+   ENDDO
+
+!  Rayleigh function
+
+   call Rayleigh_function &
+    ( MAXLAMBDAS, CO2_PPMV_MIXRATIO, &
+      NLAMBDAS,   LAMBDAS, &
+      RAYLEIGH_XSEC, RAYLEIGH_DEPOL )
+
+!  Loading areas
+
+   aers_550 = 0.01d0
+   q24 = 2.0d0 * aers_550 / (height_grid(0)-height_grid(24))
+   g24 = q24 /  (height_grid(0)-height_grid(24))
+
+   aert_550 = 0.15d0
+   qgr = 2.0d0 * aert_550 / (height_grid(24)-height_grid(nlayers))
+   ggr = qgr / (height_grid(24)-height_grid(nlayers))
+
+!  Basic layering for aerosol
+
+   aerprv1 = 0.0d0
+   aerprv2 = 0.0d0
+   do n = 1, nlayers
+      if ( n.le.24 ) then
+         cumaer1 = g24 * (height_grid(0)-height_grid(n))
+         aer550(n) = 0.5*(cumaer1+aerprv1)*(height_grid(n-1)-height_grid(n))
+         aerprv1 = cumaer1
+      else
+         cumaer2 = ggr * (height_grid(24)-height_grid(n))
+         aer550(n) = 0.5*(cumaer2+aerprv2)*(height_grid(n-1)-height_grid(n))
+         aerprv2 = cumaer2
+      endif
+   enddo
+
+!  Other aerosol inputs
+
+   aerAng = 1.01d0
+   aerssa = 0.99d0
+   aerasy = 0.75d0
+   ngreek_moments_input = 50
+   do l = 1, ngreek_moments_input
+      aerphas(L) = dble(2*L+1) * aerasy ** dble(l)
+   enddo
+
+!  Define a proxy
+
+   nmi = ngreek_moments_input
+
+!  Initialize Test 2
+!  -----------------
+
+!  Initialize error file
+
+   OPENFILEFLAG = .false.
+
+!  Initialize perturbation variables
+
+   eps = 1.0d-03
+   epsfac = 1.0d0 + eps
+   epsfac1 = epsfac
+   epsfac2 = epsfac
+
+!  Initialize output
+
+   I_base = 0.0d0
+   I_pert = 0.0d0
+   Jac    = 0.0d0
+
+!  Start wavelength loop
+!  ---------------------
+
+   do w = 1, nlambdas
+   !do w = 1, 1
+
+!  Progress
+
+      write(*,*) 'w = ',w
+      !write(*,*) 'lambdas(w) = ',lambdas(w)
+      !write(*,'(A,I5)') '  Test 2: Doing wavelength # w = ',w
+
+!  @@@@@@@@@@@@@@@@@@@@@@@@@@@
+!  BASELINE / ANALYTIC SECTION
+!  @@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+!  Read VSLEAVE inputs
+!  -------------------
+
+      CALL VSLEAVE_LIN_INPUTMASTER ( &
+        'vlidort_v_test/V2p8p3_VSLEAVE_ReadInput_water.cfg', & ! Input
+         VSLEAVE_Sup_In,         & ! Outputs
+         VSLEAVE_LinSup_In,      & ! Outputs
+         VSLEAVE_Sup_InputStatus ) ! Outputs
+
+      IF ( VSLEAVE_Sup_InputStatus%SL_STATUS_INPUTREAD .ne. VLIDORT_SUCCESS ) &
+        CALL VSLEAVE_READ_ERROR ( 'V2p8p3_VSLEAVE_ReadInput_lin_call_Test2.log', VSLEAVE_Sup_InputStatus )
+
+!  Define some inputs not handled by VSLEAVE_LIN_INPUTMASTER
+
+      VSLEAVE_Sup_In%SL_VSLEAVE_DATAPATH = Trim(Vsleave_DataPath)
+
+!  Redefine VSLEAVE input wavelength (override VSLEAVE config file)
+
+      VSLEAVE_Sup_In%SL_WAVELENGTH = lambdas(w)/1.0D3 !in Microns
+
+!  Define local variables
+
+      DO_FLUORESCENCE         = VSLEAVE_Sup_In%SL_DO_FLUORESCENCE
+      DO_WATERLEAVING         = .not. VSLEAVE_Sup_In%SL_DO_FLUORESCENCE
+      DO_OBSERVATION_GEOMETRY = VSLEAVE_Sup_In%SL_DO_USER_OBSGEOMS
+      DO_DOUBLET_GEOMETRY     = VSLEAVE_Sup_In%SL_DO_DOUBLET_GEOMETRY
+      nsl                     = VSLEAVE_LinSup_In%SL_N_SLEAVE_WFS
+
+      if ( do_doublet_geometry ) then
+         ngeometries = VSLEAVE_Sup_In%SL_NBEAMS * VSLEAVE_Sup_In%SL_N_USER_STREAMS
+      else if ( do_observation_geometry ) then
+         ngeometries = VSLEAVE_Sup_In%SL_NBEAMS
+      else
+         ngeometries = VSLEAVE_Sup_In%SL_NBEAMS * VSLEAVE_Sup_In%SL_N_USER_RELAZMS * VSLEAVE_Sup_In%SL_N_USER_STREAMS
+      endif
+
+!  Calculate VSLEAVE outputs
+!  -------------------------
+
+!  Linearized VSLEAVE call - the output will be used for the
+!                            linearized VLIDORT calculation
+
+      CALL VSLEAVE_LIN_MAINMASTER ( &
+        VSLEAVE_Sup_In,         & ! Inputs
+        VSLEAVE_LinSup_In,      & ! Inputs
+        VSLEAVE_Sup_Out,        & ! Outputs
+        VSLEAVE_LinSup_Out,     & ! Outputs
+        VSLEAVE_Sup_OutputStatus) ! Outputs
+
+      if ( VSLEAVE_Sup_OutputStatus%SL_STATUS_OUTPUT .ne. vlidort_success ) THEN
+         TRACE = 'VSLEAVE_LIN_MAINMASTER failed' ; go to 678
+      endif
+
+!  Read VLIDORT Main inputs
+!  ------------------------
+
+!  VLIDORT linearized control read input, abort if failed
+
+      CALL VLIDORT_L_INPUT_MASTER ( &
+        'vlidort_v_test/V2p8p3_vsleaveplus_tester_water.cfg', & ! Input
+        VLIDORT_FixIn,      & ! Outputs
+        VLIDORT_ModIn,      & ! Outputs
+        VLIDORT_LinFixIn,   & ! Outputs
+        VLIDORT_LinModIn,   & ! Outputs
+        VLIDORT_InputStatus ) ! Outputs
+
+      IF ( VLIDORT_InputStatus%TS_STATUS_INPUTREAD .ne. VLIDORT_SUCCESS ) &
+        CALL VLIDORT_READ_ERROR ( 'V2p8p3_VLIDORT_ReadInput_lin_call_Test2.log', VLIDORT_InputStatus )
+
+!  1/31/21. Version 2.8.3, New variables must be set by hand
+
+      VLIDORT_FixIn%Cont%TS_ASYMTX_TOLERANCE = 1.0d-20
+
+!  1/31/21. Version 2.8.3, Set the DO_MSSTS flag to generate output for the MS sphericity corrections
+
+      VLIDORT_FixIn%Bool%TS_DO_MSSTS = .false.
+
+!  There are very strict conditions for this specialist option, as follows :==>
+!     1. Either DO_UPWELLING or DO_DNWELLING must be set, Not Both !!!!
+!     2. DO_FULLRAD_MODE must be set
+!     3. DO_OBSERVATION_GEOMETRY must be set, with N_USER_OBSGEOMS = 3
+!     4. DO_FOCORR and DO_FOCORR_OUTGOING must both be set
+!     5a. Upwelling  : N_USER_LEVELS = 1, and USER_LEVELS(1) = 0.0            [ TOA output only ]
+!     5b. Downwelling: N_USER_LEVELS = 1, and USER_LEVELS(1) = Real(nlayers)  [ BOA output only ]
+!  These checks have been implemented inside VLIDORT.
+
+!  1/31/21. Version 2.8.3, Set the NSTOKES2 FOURIER0 flag by hand
+
+      VLIDORT_FixIn%Bool%TS_DO_FOURIER0_NSTOKES2 = .true.
+
+!  Redefine some VLIDORT input variables (override VLIDORT config file)
+
+      VLIDORT_FixIn%Optical%TS_ATMOS_WAVELENGTH = lambdas(w)/1.0D3 !must be in [um]
+
+!  Define some inputs not handled by LIDORT_L_INPUT_MASTER
+
+      VLIDORT_LinFixIn%Cont%TS_N_SURFACE_WFS = 0
+      VLIDORT_LinFixIn%Cont%TS_N_SLEAVE_WFS  = VSLEAVE_LinSup_In%SL_N_SLEAVE_WFS
+
+!  IMPORTANT - Check compatibility of VSLEAVE and VLIDORT Main inputs
+!  ------------------------------------------------------------------
+
+      CALL VLIDORT_VSLEAVE_INPUT_CHECK ( &
+        VSLEAVE_Sup_In,             & ! Inputs
+        VLIDORT_FixIn,              & ! Inputs
+        VLIDORT_ModIn,              & ! Inputs
+        VLIDORT_VSLEAVECheck_Status ) ! Outputs
+
+!  Exception handling
+
+      IF ( VLIDORT_VSLEAVECheck_Status%TS_STATUS_INPUTCHECK .ne. VLIDORT_SUCCESS ) &
+        CALL VLIDORT_VSLEAVE_INPUT_CHECK_ERROR ( &
+           'V2p8p3_VLIDORT_VSLEAVEcheck_lin_call_Test2.log', VLIDORT_VSLEAVECheck_Status )
+
+!  Copy VSLEAVE Sup outputs to VLIDORT's VSLEAVE Sup inputs (std & lin)
+
+      VLIDORT_LinModIn%MCont%TS_DO_SLEAVE_WFS = .TRUE.
+      CALL SET_VLIDORT_L_VSLEAVE_INPUTS ( &
+        VSLEAVE_Sup_Out,  VSLEAVE_LinSup_Out, & !Inputs
+        VLIDORT_FixIn,    VLIDORT_ModIn,      & !Inputs
+        VLIDORT_LinFixIn, VLIDORT_LinModIn,   & !Inputs
+        VLIDORT_Sup, VLIDORT_LinSup )           !Outputs
+
+      N_TOTALSURFACE_WFS = VLIDORT_LinFixIn%Cont%TS_N_SURFACE_WFS + &
+                           VLIDORT_LinFixIn%Cont%TS_N_SLEAVE_WFS
+
+!  Optical properties
+!  ------------------
+
+!  Angstrom and ray2mom
+
+      ray2 = ( 1.0d0 - rayleigh_depol(w) ) / ( 2.0d0 + rayleigh_depol(w) )
+      ang  = ( lambdas(w) / 550.0d0 ) ** (-aerAng)
+
+      !write(*,*)w,lambdas(w),ang,rayleigh_depol(w)
+
+!  Make VLIDORT optical properties
+
+      do n = 1, nlayers
+         aertau = aer550(n) * ang
+         aersca = aertau * aerssa
+         raysca = LAYER_AIRCOLUMNS(n) * rayleigh_xsec(w)
+         tottau = raysca + aertau
+         totsca = raysca + aersca
+         deltau_vert_input(n) = tottau
+         omega_total_input(n) = totsca / tottau
+         raywt = raysca / totsca ; aerwt = 1.0d0 - raywt
+         greekmat_total_input(0,n,1) = 1.0d0
+         greekmat_total_input(1,n,1) = aerwt * aerphas(1)
+         greekmat_total_input(2,n,1) = aerwt * aerphas(2) + raywt * ray2
+         do L = 3, ngreek_moments_input
+            greekmat_total_input(L,n,1) = aerwt * aerphas(L)
+         enddo
+      enddo
+
+!stop 'oprop stop'
+
+!  No albedo here
+
+      lambertian_albedo = 0.0d0
+
+!  Save baseline parameters
+
+      par(1) = VSLEAVE_Sup_In%SL_CHLORCONC
+      par(2) = VSLEAVE_Sup_In%SL_WINDSPEED
+
+!  Set VLIDORT Type structures
+
+      VLIDORT_FixIn%Cont%TS_nlayers                   = nlayers
+      VLIDORT_ModIn%MCont%TS_ngreek_moments_input     = ngreek_moments_input
+      VLIDORT_FixIn%Chapman%TS_height_grid(0:nlayers) = height_grid(0:nlayers)
+
+      VLIDORT_FixIn%Optical%TS_deltau_vert_input(1:nlayers)             = deltau_vert_input(1:nlayers)
+      VLIDORT_ModIn%MOptical%TS_omega_total_input(1:nlayers)            = omega_total_input(1:nlayers)
+      VLIDORT_FixIn%Optical%TS_greekmat_total_input(0:nmi,1:nlayers,1)  = greekmat_total_input(0:nmi,1:nlayers,1)
+      VLIDORT_FixIn%Optical%TS_lambertian_albedo                        = lambertian_albedo 
+
+!  Linearized VLIDORT call
+!  ----------------------
+!  1/31/21. Version 2.8.3. Need to set the debug_input flag
+!  1/31/21. Version 2.8.3. LCS here, works equally with LPS
+
+      do_debug_input = .false.
+      CALL VLIDORT_LCS_MASTER ( do_debug_input, &
+        VLIDORT_FixIn, &
+        VLIDORT_ModIn, &
+        VLIDORT_Sup,   &
+        VLIDORT_Out,   &
+        VLIDORT_LinFixIn, &
+        VLIDORT_LinModIn, &
+        VLIDORT_LinSup,   &
+        VLIDORT_LinOut )
+
+!  Exception handling, write-up (optional)
+
+      CALL VLIDORT_WRITE_STATUS ( &
+        'V2p8p3_VLIDORT_Execution.log', VLIDORT_ERRUNIT, OPENFILEFLAG, VLIDORT_Out%Status )
+
+!  Save baseline results
+!  ---------------------
+
+      uta = 1; o1 = 1
+      do v = 1, ngeometries
+        I_base(w,v) = VLIDORT_Out%Main%TS_stokes(uta,v,o1,upidx)
+        do q = 1,n_totalsurface_wfs
+          Jac(q,w,v) = VLIDORT_LinOut%Surf%TS_surfacewf(q,uta,v,o1,upidx)
+        enddo
+      enddo
+
+!  @@@@@@@@@@@@@@@@@@@@@@@@@
+!  FINITE DIFFERENCE SECTION
+!  @@@@@@@@@@@@@@@@@@@@@@@@@
+
+      !write(*,*)
+      !write(*,*) 'Doing FD Calc'
+      !write(*,*) '-------------'
+
+!  Read the Vsleave and VLIDORT configuration files (again)
+!  --------------------------------------------------------
+
+!  Get the VSLEAVE inputs
+
+      CALL VSLEAVE_INPUTMASTER ( &
+        'vlidort_v_test/V2p8p3_VSLEAVE_ReadInput_water.cfg', & ! Input
+        VSLEAVE_Sup_In,                         & ! Outputs
+        VSLEAVE_Sup_InputStatus )                 ! Outputs
+
+      IF ( VSLEAVE_Sup_InputStatus%SL_STATUS_INPUTREAD .ne. VLIDORT_SUCCESS ) &
+        CALL VSLEAVE_READ_ERROR ( 'V2p8p3_VSLEAVE_ReadInput_fd_call_Test2.log', VSLEAVE_Sup_InputStatus )
+
+!  Define some inputs not handled by VSLEAVE_INPUTMASTER
+
+      VSLEAVE_Sup_In%SL_VSLEAVE_DATAPATH = Trim(Vsleave_DataPath)
+
+!  Redefine VSLEAVE input wavelength (override VSLEAVE config file)
+
+      VSLEAVE_Sup_In%SL_WAVELENGTH = lambdas(w)/1.0D3 !in Microns
+
+!  VLIDORT control Read input, abort if failed
+
+      CALL VLIDORT_INPUT_MASTER ( &
+        'vlidort_v_test/V2p8p3_vsleaveplus_tester_water.cfg', & ! Input
+        VLIDORT_FixIn,      & ! Outputs
+        VLIDORT_ModIn,      & ! Outputs
+        VLIDORT_InputStatus ) ! Outputs
+
+      IF ( VLIDORT_InputStatus%TS_STATUS_INPUTREAD .ne. VLIDORT_SUCCESS ) &
+        CALL VLIDORT_READ_ERROR ( 'V2p8p3_VLIDORT_ReadInput_fd_call_Test2.log', VLIDORT_InputStatus )
+
+!  1/31/21. Version 2.8.3, New variables must be set by hand
+
+      VLIDORT_FixIn%Cont%TS_ASYMTX_TOLERANCE = 1.0d-20
+
+!  1/31/21. Version 2.8.3, Set the DO_MSSTS flag to generate output for the MS sphericity corrections
+
+      VLIDORT_FixIn%Bool%TS_DO_MSSTS = .false.
+
+!  There are very strict conditions for this specialist option, as follows :==>
+!     1. Either DO_UPWELLING or DO_DNWELLING must be set, Not Both !!!!
+!     2. DO_FULLRAD_MODE must be set
+!     3. DO_OBSERVATION_GEOMETRY must be set, with N_USER_OBSGEOMS = 3
+!     4. DO_FOCORR and DO_FOCORR_OUTGOING must both be set
+!     5a. Upwelling  : N_USER_LEVELS = 1, and USER_LEVELS(1) = 0.0            [ TOA output only ]
+!     5b. Downwelling: N_USER_LEVELS = 1, and USER_LEVELS(1) = Real(nlayers)  [ BOA output only ]
+!  These checks have been implemented inside VLIDORT.
+
+!  1/31/21. Version 2.8.3, Set the NSTOKES2 FOURIER0 flag by hand
+
+      VLIDORT_FixIn%Bool%TS_DO_FOURIER0_NSTOKES2 = .true.
+
+!  Redefine some VLIDORT input variables (override VLIDORT config file)
+
+      VLIDORT_FixIn%Optical%TS_ATMOS_WAVELENGTH = lambdas(w)/1.0D3 !must be in [um]
+
+!  Initialize some input variables not handled by VLIDORT_INPUT_MASTER
+
+      !CALL VLIDORT_BRDF_Sup_Init ( VLIDORT_Sup )
+      !CALL VLIDORT_SS_Sup_Init ( VLIDORT_Sup )
+
+!   IMPORTANT - Check compatibility of VSLEAVE and Main VLIDORT inputs
+!   ------------------------------------------------------------------
+
+      CALL VLIDORT_VSLEAVE_INPUT_CHECK ( &
+        VSLEAVE_Sup_In,             & ! Inputs
+        VLIDORT_FixIn,              & ! Inputs
+        VLIDORT_ModIn,              & ! Inputs
+        VLIDORT_VSLEAVECheck_Status ) ! Outputs
+
+      IF ( VLIDORT_VSLEAVECheck_Status%TS_STATUS_INPUTCHECK .ne. VLIDORT_SUCCESS ) &
+        CALL VLIDORT_VSLEAVE_INPUT_CHECK_ERROR ( &
+           'V2p8p3_VLIDORT_VSLEAVEcheck_fd_call_Test2.log', VLIDORT_VSLEAVECheck_Status )
+
+!  Finite diff jacobian #1: wrt Pigment Concentration
+!  --------------------------------------------------
+
+!  Perturb Pigment Concentration, leave windspeed
+
+      VSLEAVE_Sup_In%SL_CHLORCONC = par(1)*epsfac1
+      VSLEAVE_Sup_In%SL_WINDSPEED = par(2)
+
+!  VSLEAVE call - the output will be used for the VLIDORT calculation
+
+      CALL VSLEAVE_MAINMASTER ( &
+        VSLEAVE_Sup_In,         & ! Inputs
+        VSLEAVE_Sup_Out,        & ! Outputs
+        VSLEAVE_Sup_OutputStatus) ! Outputs
+
+      if ( VSLEAVE_Sup_OutputStatus%SL_STATUS_OUTPUT .ne. vlidort_success ) THEN
+         TRACE = 'VSLEAVE_MAINMASTER failed, perturbation # 1' ; go to 678
+      endif
+
+!  Copy VSLEAVE Sup outputs to VLIDORT's VSLEAVE Sup inputs (std only)
+
+      CALL SET_VLIDORT_VSLEAVE_INPUTS ( &
+        VSLEAVE_Sup_Out, VLIDORT_FixIn, VLIDORT_ModIn, & !Inputs
+        VLIDORT_Sup )                                    !Outputs
+
+!  Set VLIDORT Type structures
+
+      VLIDORT_FixIn%Cont%TS_nlayers                   = nlayers
+      VLIDORT_ModIn%MCont%TS_ngreek_moments_input     = ngreek_moments_input
+      VLIDORT_FixIn%Chapman%TS_height_grid(0:nlayers) = height_grid(0:nlayers)
+
+      VLIDORT_FixIn%Optical%TS_deltau_vert_input(1:nlayers)             = deltau_vert_input(1:nlayers)
+      VLIDORT_ModIn%MOptical%TS_omega_total_input(1:nlayers)            = omega_total_input(1:nlayers)
+      VLIDORT_FixIn%Optical%TS_greekmat_total_input(0:nmi,1:nlayers,1)  = greekmat_total_input(0:nmi,1:nlayers,1)
+      VLIDORT_FixIn%Optical%TS_lambertian_albedo                        = lambertian_albedo
+
+!  VLIDORT call
+!  1/31/21. Version 2.8.3. Need to set the debug_input flag
+
+      do_debug_input = .false.
+      CALL VLIDORT_MASTER ( do_debug_input, &
+        VLIDORT_FixIn, &
+        VLIDORT_ModIn, &
+        VLIDORT_Sup, &
+        VLIDORT_Out )
+
+!  Exception handling, write-up (optional)
+
+      CALL VLIDORT_WRITE_STATUS ( &
+        'V2p8p3_VLIDORT_Execution.log', VLIDORT_ERRUNIT, OPENFILEFLAG, VLIDORT_Out%Status )
+
+!  Save perturbed results
+
+      q = 1
+      do v = 1, ngeometries
+        I_pert(q,w,v) = VLIDORT_Out%Main%TS_stokes(uta,v,o1,upidx)
+      enddo
+
+!  Finite diff jacobian #2: wrt Windspeed
+!  ----------------------------------------
+
+!  Perturb Windspeed, save Pigment Concentration
+
+      VSLEAVE_Sup_In%SL_CHLORCONC = par(1)
+      VSLEAVE_Sup_In%SL_WINDSPEED = par(2)*epsfac2
+
+!  VSLEAVE call - the output will be used for the VLIDORT calculation
+
+      CALL VSLEAVE_MAINMASTER ( &
+        VSLEAVE_Sup_In,         & ! Inputs
+        VSLEAVE_Sup_Out,        & ! Outputs
+        VSLEAVE_Sup_OutputStatus) ! Outputs
+
+      if ( VSLEAVE_Sup_OutputStatus%SL_STATUS_OUTPUT .ne. vlidort_success ) THEN
+         TRACE = 'VSLEAVE_MAINMASTER failed, perturbation # 2' ; go to 678
+      endif
+
+!  Copy VSLEAVE Sup outputs to VLIDORT's VSLEAVE Sup inputs (std only)
+
+      CALL SET_VLIDORT_VSLEAVE_INPUTS ( &
+        VSLEAVE_Sup_Out, VLIDORT_FixIn, VLIDORT_ModIn, & !Inputs
+        VLIDORT_Sup )                                    !Outputs
+
+!  Set VLIDORT Type structures
+
+      VLIDORT_FixIn%Cont%TS_nlayers                   = nlayers
+      VLIDORT_ModIn%MCont%TS_ngreek_moments_input     = ngreek_moments_input
+      VLIDORT_FixIn%Chapman%TS_height_grid(0:nlayers) = height_grid(0:nlayers)
+
+      VLIDORT_FixIn%Optical%TS_deltau_vert_input(1:nlayers)             = deltau_vert_input(1:nlayers)
+      VLIDORT_ModIn%MOptical%TS_omega_total_input(1:nlayers)            = omega_total_input(1:nlayers)
+      VLIDORT_FixIn%Optical%TS_greekmat_total_input(0:nmi,1:nlayers,1)  = greekmat_total_input(0:nmi,1:nlayers,1)
+      VLIDORT_FixIn%Optical%TS_lambertian_albedo                        = lambertian_albedo
+
+!  VLIDORT call
+!  1/31/21. Version 2.8.3. Need to set the debug_input flag
+
+      do_debug_input = .false.
+      CALL VLIDORT_MASTER ( do_debug_input, &
+        VLIDORT_FixIn, &
+        VLIDORT_ModIn, &
+        VLIDORT_Sup, &
+        VLIDORT_Out )
+
+!  Exception handling, write-up (optional)
+
+      CALL VLIDORT_WRITE_STATUS ( &
+        'V2p8p3_VLIDORT_Execution.log', VLIDORT_ERRUNIT, OPENFILEFLAG, VLIDORT_Out%Status )
+
+!  Save perturbed results
+
+      q = 2
+      do v = 1, ngeometries
+        I_pert(q,w,v) = VLIDORT_Out%Main%TS_stokes(uta,v,o1,upidx)
+      enddo
+
+!  End wavelength loop
+
+   enddo
+
+!  Write results, Test 2
+!  ---------------------
+
+   if (do_waterleaving) then
+     c2 = 'water'
+   else
+     c2 = 'clean'
+   end if
+
+!  write results to screen
+!  -- 5/24/21. revised output.
+
+!   write(*,'(/A/)')'  SCREEN OUTPUT '
+!   do w = 1, nlambdas
+!      do v = 1, ngeometries
+!      write(*,54) lambdas(w),v,&
+!         I_base(w,v), ( I_pert(q,w,v), par(q), Jac(q,w,v), par(q)*Jac(q,w,v), &
+!                        (I_pert(q,w,v)-I_base(w,v))/eps, q=1,n_totalsurface_wfs )
+!     enddo
+!   enddo
+!54 format(f10.4,i4, es16.8,5es16.8,/,30x,5es16.8)
+
+!  Write Results to file
+
+   open(unit=777,file='vlidort_v_test/results_vsleaveplus_tester_' &
+        // trim(c1) // '_' // c2 // '.all',status='replace',action='write')
+   write(777,'(/A/A/)')' Wavelength Geom#     Radiance                 Jacobian 1                          Jacobian 2',&
+                       '                      Baseline            Analytic  Finite-Diff               Analytic  Finite-Diff'
+   do w = 1, nlambdas
+      do v = 1, ngeometries
+      write(777,55) lambdas(w),v,&
+         I_base(w,v), Jac(1,w,v), (I_pert(1,w,v)-I_base(w,v))/eps/par(1), &
+                      Jac(2,w,v), (I_pert(2,w,v)-I_base(w,v))/eps/par(2) 
+     enddo
+   enddo
+55 format(f10.4,3x,i2,2x,es16.8,2(3x,2es16.8))
+   close(777)
+
+!  Finish Test 2
+
+   write(*,*)
+   write(*,*) ' TEST 2 finished successfully'
+
+!  continuation point for End of program
+
+89 continue
+
+!  Finish Main
+
+   write(*,*)
+   write(*,*) 'Main program finished successfully'
+   stop
+
+!mick fix 9/19/2017 - added error finish section
+!  Error finish
+
+678   continue
+
+   write(*,*)
+   write(*,'(1x,a)') trim(TRACE)
+   write(*,*)'Number of error messages from VSLEAVE calculation = ',VSLEAVE_Sup_OutputStatus%SL_NOUTPUTMESSAGES
+   do i = 1, VSLEAVE_Sup_OutputStatus%SL_NOUTPUTMESSAGES
+      write(*,'(a,i2,a,a)')' Message # ', i, ': ',adjustl(trim(VSLEAVE_Sup_OutputStatus%SL_OUTPUTMESSAGES(i)))
+   enddo
+
+   stop
+end program VSLEAVEplus_Tester
+
+!
+
+SUBROUTINE RAYLEIGH_FUNCTION &
+          ( FORWARD_MAXLAMBDAS, CO2_PPMV_MIXRATIO, FORWARD_NLAMBDAS, FORWARD_LAMBDAS, &
+            RAYLEIGH_XSEC, RAYLEIGH_DEPOL )
+
+!  D. Haffner (SSAI) and V. Garcia (DLR). Independently spotted slight bug in coding.
+!    -- variable MCO2 is defined in parts per volume (e.g. 0.00036 for 360 ppm). 
+!    -- OK for Eq.(19) in Bodhaine, but for Eq.(23) the CO2 is in ppv by percent (0.036 for 360 ppm). 
+!    -- Multiply MCO2 by a factor of 100 in Eq.(23) corrects the error
+
+!  Stand-alone utility routine.
+!    -- Rayleigh function (cross-sections and depolarization ratios)
+!    -- Bodhaine et. al. (1999) formulae
+!    -- CO2 Mixing ratio in PPMV ( e.g. 400). 
+!    -- Wavelengths in nm (formerly Angstroms)
+
+      IMPLICIT NONE
+
+!  Input arguments
+!  ---------------
+
+!  wavelength
+
+      INTEGER          FORWARD_MAXLAMBDAS, FORWARD_NLAMBDAS
+      DOUBLE PRECISION FORWARD_LAMBDAS ( FORWARD_MAXLAMBDAS )
+
+!  CO2 mixing ratio
+
+      DOUBLE PRECISION CO2_PPMV_MIXRATIO
+
+!  Output arguments
+!  ----------------
+
+!  cross-sections and depolarization output
+
+      DOUBLE PRECISION RAYLEIGH_XSEC  ( FORWARD_MAXLAMBDAS )
+      DOUBLE PRECISION RAYLEIGH_DEPOL ( FORWARD_MAXLAMBDAS )
+
+!  Local variables
+!  ---------------
+
+      INTEGER          W
+      DOUBLE PRECISION MASS_DRYAIR
+      DOUBLE PRECISION NMOL, PI, CONS
+      DOUBLE PRECISION MO2,MN2,MARG,MCO2,MAIR
+      DOUBLE PRECISION FO2,FN2,FARG,FCO2,FAIR
+      DOUBLE PRECISION LAMBDA_C,LAMBDA_M,LPM2,LP2
+      DOUBLE PRECISION N300M1,NCO2M1,NCO2,XCO2
+      DOUBLE PRECISION NCO2SQ, NSQM1,NSQP2,TERM
+
+!  data statements and parameters
+!  ------------------------------
+
+      DATA MO2  / 20.946D0 /
+      DATA MN2  / 78.084D0 /
+      DATA MARG / 0.934D0 /
+
+      DOUBLE PRECISION, PARAMETER :: S0_A = 15.0556D0
+      DOUBLE PRECISION, PARAMETER :: S0_B = 28.9595D0
+
+      DOUBLE PRECISION, PARAMETER :: S1_A = 8060.51D0
+      DOUBLE PRECISION, PARAMETER :: S1_B = 2.48099D+06
+      DOUBLE PRECISION, PARAMETER :: S1_C = 132.274D0
+      DOUBLE PRECISION, PARAMETER :: S1_D = 1.74557D+04
+      DOUBLE PRECISION, PARAMETER :: S1_E = 39.32957D0
+
+      DOUBLE PRECISION, PARAMETER :: S2_A = 0.54D0
+
+      DOUBLE PRECISION, PARAMETER :: S3_A = 1.034D0
+      DOUBLE PRECISION, PARAMETER :: S3_B = 3.17D-04
+      DOUBLE PRECISION, PARAMETER :: S3_C = 1.096D0
+      DOUBLE PRECISION, PARAMETER :: S3_D = 1.385D-03
+      DOUBLE PRECISION, PARAMETER :: S3_E = 1.448D-04
+
+!  Start of code
+!  -------------
+
+!  constants
+
+      NMOL = 2.546899D19
+      PI   = DATAN(1.0D0)*4.0D0
+      CONS = 24.0D0 * PI * PI * PI
+
+!  convert co2. MCO2 is in Parts per Volume
+
+      MCO2 = 1.0D-06 * CO2_PPMV_MIXRATIO
+
+!  mass of dry air: Eq.(17) of BWDS
+
+      MASS_DRYAIR = S0_A * MCO2 + S0_B
+
+!  start loop
+
+      DO W = 1, FORWARD_NLAMBDAS
+
+!  wavelength in micrometers
+
+      LAMBDA_M = 1.0D-03 * FORWARD_LAMBDAS(W)
+      LAMBDA_C = 1.0D-07 * FORWARD_LAMBDAS(W)
+      LPM2     = 1.0D0 / LAMBDA_M / LAMBDA_M
+
+!  step 1: Eq.(18) of BWDS
+
+      N300M1 = S1_A + ( S1_B / ( S1_C - LPM2 ) ) + &
+                      ( S1_D / ( S1_E - LPM2 ) )
+      N300M1 = N300M1 * 1.0D-08
+
+!  step 2: Eq.(19) of BWDS. Uses MCO2, Parts per Volume.
+
+      NCO2M1 = N300M1 * ( 1.0D0 + S2_A * ( MCO2  - 0.0003D0 ) )
+      NCO2   = NCO2M1 + 1
+      NCO2SQ = NCO2 * NCO2
+
+!  step 3: Eqs. (5&6) of BWDS (Bates' results)
+
+      FN2  = S3_A + S3_B * LPM2
+      FO2  = S3_C + S3_D * LPM2 + S3_E * LPM2 * LPM2
+
+!  step 4: Eq.(23) of BWDS. Uses Parts per Volume in percent, i.e. XCO2 = 100 * MCO2
+!     ---> King factor and depolarization ratio
+
+      FARG = 1.0D0
+      FCO2 = 1.15D0
+
+!mick note 4/20/2021 - old lines turned back on to compare with VLIDORT
+
+!  Old lines
+      MAIR = MN2 + MO2 + MARG + MCO2
+      FAIR = MN2*FN2 + MO2*FO2 + MARG*FARG + MCO2*FCO2
+
+!  New lines. Use XCO2 instead of MCO2
+!      XCO2 = 100.0_fpk * MCO2
+!      MAIR = MN2 + MO2 + MARG + XCO2
+!      FAIR = MN2*FN2 + MO2*FO2 + MARG*FARG + XCO2 *FCO2
+
+      FAIR = FAIR / MAIR
+      RAYLEIGH_DEPOL(W) = 6.0D0*(FAIR-1.0D0)/(3.0D0+7.0D0*FAIR)
+
+!  step 5: Eq.(22) of BWDS
+!     ---> Cross section
+
+      LP2  = LAMBDA_C * LAMBDA_C
+      NSQM1 = NCO2SQ - 1.0D0
+      NSQP2 = NCO2SQ + 2.0D0
+      TERM = NSQM1 / LP2 / NMOL / NSQP2
+      RAYLEIGH_XSEC(W) =  CONS * TERM * TERM * FAIR
+
+!  end loop
+
+      ENDDO
+
+!  finish
+!  ------
+
+      RETURN
+END SUBROUTINE RAYLEIGH_FUNCTION
