@@ -106,6 +106,7 @@ module VLIDORT_LAMBERT_BPDF
     ! set streams here
     SCAT%Surface%Base%NSTREAMS = nstreams
     SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+    SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
@@ -319,6 +320,7 @@ module VLIDORT_LAMBERT_BPDF
     ! Set streams here
     SCAT%Surface%Base%NSTREAMS = nstreams
     SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+    SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 

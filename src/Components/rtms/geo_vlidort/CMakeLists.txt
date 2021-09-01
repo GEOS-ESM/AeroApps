@@ -22,7 +22,7 @@ set (srcs
 
 esma_add_library (${this}
   SRCS ${srcs}
-  DEPENDENCIES MAPL.shared MAPL.base VLIDORT2OS LIDORT3p7 Chem_Base   DEPENDENCIES MAPL.shared MAPL.base VLIDORT2OS LIDORT3p7 Chem_Base ${NETCDF_LIBRARIES} MPI::MPI_Fortran
+  DEPENDENCIES MAPL.shared MAPL.base VLIDORT2OS LIDORT3p7 Chem_Base ${NETCDF_LIBRARIES} MPI::MPI_Fortran
 
   )
 

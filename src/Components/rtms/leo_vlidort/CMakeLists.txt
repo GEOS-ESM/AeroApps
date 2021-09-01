@@ -12,10 +12,10 @@ ecbuild_add_executable (
 add_f2py2_module (VLIDORT_POLAR_
   SOURCES VLIDORT_POLAR_py.F90
   DESTINATION lib/Python/${this}
-  LIBRARIES geo_vlidort
-  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/geo_vlidort
+  LIBRARIES geo_vlidort VLIDORT2OS
+  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/geo_vlidort ${esma_include}/VLIDORT2OS
   )
-add_dependencies(VLIDORT_POLAR_ geo_vlidort)
+add_dependencies(VLIDORT_POLAR_ geo_vlidort VLIDORT2OS)
 
 # MAT: Note uses add_f2py2 because I can't figure out the import test for netCDF f2py code
 add_f2py2_module (READ_NC_
@@ -34,7 +34,7 @@ esma_add_f2py2_module (LidarAngles_
   )
 
 
-file (GLOB python_files py_leo_vldort/*.py)
+file (GLOB python_files CONFIGURE_DEPENDS py_leo_vlidort/*.py)
 install (FILES ${python_files} DESTINATION lib/Python/py_leo_vlidort)
 
 

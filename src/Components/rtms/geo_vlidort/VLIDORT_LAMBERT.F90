@@ -247,6 +247,7 @@ module VLIDORT_LAMBERT
     if (present(DO_BOA)) SCAT%DO_BOA = DO_BOA
     SCAT%Surface%Base%NSTREAMS = nstreams
     SCAT%Surface%Base%DO_PLANE_PARALLEL = plane_parallel
+    SCAT%Surface%Base%NGREEK_MOMENTS_INPUT = nMom
     call VLIDORT_Init( SCAT%Surface%Base, km, rc, SCAT%DO_BOA)
     if ( rc /= 0 ) return
 
