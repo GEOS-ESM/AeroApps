@@ -556,7 +556,8 @@
        
 !     Call the MASTER driver for doing the actual calculation
 !     -----------------------------------------------------------
-      call VLIDORT_MASTER (self%Surface%Base%VIO%VLIDORT_FixIn, &
+     call VLIDORT_MASTER (self%Surface%Base%DO_DEBUG_INPUT, &
+           self%Surface%Base%VIO%VLIDORT_FixIn, &
            self%Surface%Base%VIO%VLIDORT_ModIn, &
            self%Surface%Base%VIO%VLIDORT_Sup, &
            self%Surface%Base%VIO%VLIDORT_Out)
@@ -892,7 +893,8 @@
        
 !     Call the MASTER driver for doing the actual calculation
 !     -----------------------------------------------------------
-      call VLIDORT_MASTER (self%Surface%Base%VIO%VLIDORT_FixIn, &
+     call VLIDORT_MASTER (self%Surface%Base%DO_DEBUG_INPUT, &
+           self%Surface%Base%VIO%VLIDORT_FixIn, &
            self%Surface%Base%VIO%VLIDORT_ModIn, &
            self%Surface%Base%VIO%VLIDORT_Sup, &
            self%Surface%Base%VIO%VLIDORT_Out)
@@ -1205,7 +1207,8 @@
        
 !     Call the MASTER driver for doing the actual calculation
 !     -----------------------------------------------------------
-      call VLIDORT_MASTER (self%Surface%Base%VIO%VLIDORT_FixIn, &
+     call VLIDORT_MASTER ( self%Surface%Base%DO_DEBUG_INPUT, &
+           self%Surface%Base%VIO%VLIDORT_FixIn, &
            self%Surface%Base%VIO%VLIDORT_ModIn, &
            self%Surface%Base%VIO%VLIDORT_Sup, &
            self%Surface%Base%VIO%VLIDORT_Out)
@@ -1658,7 +1661,8 @@
  
 !     Call the MASTER driver for doing the actual calculation
 !     -----------------------------------------------------------
-      call VLIDORT_MASTER (self%Surface%Base%VIO%VLIDORT_FixIn, &
+      call VLIDORT_MASTER (self%Surface%Base%DO_DEBUG_INPUT, &
+           self%Surface%Base%VIO%VLIDORT_FixIn, &
            self%Surface%Base%VIO%VLIDORT_ModIn, &
            self%Surface%Base%VIO%VLIDORT_Sup, &
            self%Surface%Base%VIO%VLIDORT_Out)
@@ -2155,7 +2159,8 @@
        
 !     Call the MASTER driver for doing the actual calculation
 !     -----------------------------------------------------------
-      call VLIDORT_MASTER (self%Surface%Base%VIO%VLIDORT_FixIn, &
+     call VLIDORT_MASTER (self%Surface%Base%DO_DEBUG_INPUT, &
+           self%Surface%Base%VIO%VLIDORT_FixIn, &
            self%Surface%Base%VIO%VLIDORT_ModIn, &
            self%Surface%Base%VIO%VLIDORT_Sup, &
            self%Surface%Base%VIO%VLIDORT_Out)
@@ -2513,7 +2518,8 @@
        
 !     Call the MASTER driver for doing the actual calculation
 !     -----------------------------------------------------------
-      call VLIDORT_MASTER (self%Surface%Base%VIO%VLIDORT_FixIn, &
+     call VLIDORT_MASTER (self%Surface%Base%DO_DEBUG_INPUT, &
+           self%Surface%Base%VIO%VLIDORT_FixIn, &
            self%Surface%Base%VIO%VLIDORT_ModIn, &
            self%Surface%Base%VIO%VLIDORT_Sup, &
            self%Surface%Base%VIO%VLIDORT_Out)
@@ -2845,7 +2851,8 @@
        
 !     Call the MASTER driver for doing the actual calculation
 !     -----------------------------------------------------------
-      call VLIDORT_MASTER (self%Surface%Base%VIO%VLIDORT_FixIn, &
+      call VLIDORT_MASTER (self%Surface%Base%DO_DEBUG_INPUT, &
+           self%Surface%Base%VIO%VLIDORT_FixIn, &
            self%Surface%Base%VIO%VLIDORT_ModIn, &
            self%Surface%Base%VIO%VLIDORT_Sup, &
            self%Surface%Base%VIO%VLIDORT_Out)

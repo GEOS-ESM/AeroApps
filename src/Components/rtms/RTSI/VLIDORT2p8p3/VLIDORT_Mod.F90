@@ -53,6 +53,7 @@
 		integer     :: N_USER_LEVELS  = 1  ! Number of user-defined vertical output levels
 		integer     :: N_USER_OBSGEOMS = 1 ! Number of azimuth angles calculated by surface supplement
 		logical     :: DO_PLANE_PARALLEL = .false.
+        logical     :: DO_DEBUG_INPUT = .false. ! flag to write out debug files containing all VLIDORT inputs
 		type(VLIDORT_IO) :: VIO
 
 	      END TYPE VLIDORT
