@@ -305,6 +305,8 @@
       self%VIO%VLIDORT_FixIn%Cont%TS_VLIDORT_ACCURACY       = VLIDORT_ACCURACY
       self%VIO%VLIDORT_FixIn%Cont%TS_TF_MAXITER             = TF_MAXITER
       self%VIO%VLIDORT_FixIn%Cont%TS_TF_CRITERION           = TF_CRITERION
+      ! this has to be initialized here
+      self%VIO%VLIDORT_FixIn%Cont%TS_ASYMTX_TOLERANCE       = 1.0d-12
 !  Modified control inputs
 
       self%VIO%VLIDORT_ModIn%Mcont%TS_NGREEK_MOMENTS_INPUT   = NGREEK_MOMENTS_INPUT
