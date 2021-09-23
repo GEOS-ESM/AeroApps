@@ -1384,7 +1384,7 @@ program pace_vlidort
       call readvar1D("PS", AER_file, READER1D) 
       PS = pack(READER1D,clmask)
 
-      write(*,*) '<> Read aeorosl data to shared memory'
+      write(*,*) '<> Read aerosol data to shared memory'
     end if
 
     call MAPL_SyncSharedMemory(rc=ierr)    
