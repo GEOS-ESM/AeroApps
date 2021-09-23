@@ -854,7 +854,7 @@ class LEO_VLIDORT(object):
                 # Get the bins
                 # r, dr, rlow, rup = self.logBins(rmin,rmax[k])
 
-                # Now get the aeorosl number distribution
+                # Now get the aerosol number distribution
                 # dndr
                 rNum = rmode[k]
                 lsigma = np.log(sigma)

@@ -872,7 +872,7 @@ end subroutine outfile_extname
       call reduceProfile(temp,clmask,SO4)    
   
 
-      write(*,*) '<> Read aeorosl data to shared memory'  
+      write(*,*) '<> Read aerosol data to shared memory'  
     end if
   end subroutine read_aer_Nv
 
