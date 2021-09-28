@@ -35,7 +35,8 @@ class JOBS(object):
         for i in workingJobs:
             s = self.dirstring[i]
             os.chdir(s)
-            jobid = np.append(jobid,subprocess.check_output(['qsub',self.slurm]))
+            result = subprocess.check_output(['sbatch',self.slurm])
+            jobid = np.append(jobid,result.split()[-1])
         os.chdir(self.cwd)
 
         # launch subprocess that will monitor queue
@@ -43,9 +44,9 @@ class JOBS(object):
         # Monitor jobs 1-by-1 
         # Add a new job when one finishes 
         # Until they are all done
-        stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
+        stat = 0
+        countDone = 0
         while (stat == 0):
-            stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
             finishedJobs = np.empty(0,dtype='int')
             for ii,i in enumerate(workingJobs):
                 s = jobid[i]
@@ -62,6 +63,7 @@ class JOBS(object):
                 if finished:
                     #print 'Job finished, cleaning up', s, i 
                     finishedJobs = np.append(finishedJobs,ii)
+                    countDone += 1
                     errcheck = self.check_for_errors(i,s)               
                     if (errcheck is False):
                         self.errTally[i] = False
@@ -97,15 +99,19 @@ class JOBS(object):
                 for i in newjobs:
                     s = self.dirstring[i]
                     os.chdir(s)
-                    jobid = np.append(jobid,subprocess.check_output(['qsub',self.slurm]))
+                    result = subprocess.check_output(['sbatch',self.slurm])
+                    jobid = np.append(jobid,result.split()[-1])
 
                 os.chdir(self.cwd)
                 countRun = countRun + newRun
-                stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
 
 
-            print 'Waiting 5 minutes'
-            time.sleep(60*1)
+            # check if all the jobs are finished
+            if countDone == numjobs:
+                stat = 1
+            else:
+                print 'Waiting 30 minutes'
+                time.sleep(60*30)
             
 
         # Exited while loop
@@ -144,6 +150,7 @@ class WORKSPACE(JOBS):
         self.slurm       = args.slurm
         self.tmp         = args.tmp
         self.profile     = args.profile
+        self.single      = args.single
 
         if not os.path.exists(args.tmp):
             os.makedirs(args.tmp)
@@ -215,8 +222,11 @@ class WORKSPACE(JOBS):
         if self.dryrun:
             Options += ' -r'
 
-        newline = 'python -u ./polarimeter_swath.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
-        text[-1] = newline
+        if self.single:
+            Options += ' --single'
+
+        newline = 'python -u ./polarimeter_swath_single.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
+        text[-3] = newline
         f.close()
 
         #  write out
@@ -229,10 +239,10 @@ class WORKSPACE(JOBS):
         os.chdir(self.dirstring[i])
 
         if self.profile is False:
-
+            
             errfile = 'slurm_' +jobid + '.err'
-            os.remove(errfile)        
-            outfile = 'slurm_' +jobid + '.out'
+            os.remove(errfile)       
+            outfile = 'slurm_' +jobid + '.out' 
             os.remove(outfile)        
 
             outfile = 'slurm_' +jobid + '_py.out'
@@ -257,7 +267,7 @@ if __name__ == '__main__':
     
     #Defaults
     DT_hours = 1
-    dt_days  = 5
+    dt_days  = 10
     slurm    = 'run_polarimeter_swath.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir/swath'
 
@@ -274,7 +284,7 @@ if __name__ == '__main__':
                         help="prep config file with instrument variables")
 
     parser.add_argument('-d',"--dt_days", default=dt_days, type=int,
-                        help="Timestep in hours for each run (default=%i)"%dt_days)
+                        help="Timestep in days for each job (default=%i)"%dt_days)
 
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
@@ -291,8 +301,12 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--profile",action="store_true",
                         help="Don't cleanup slurm files (default=False).")   
 
+    parser.add_argument("--single",action="store_true",
+                        help="Only do 1 orbit per day (default=False).")
 
     args = parser.parse_args()
+    if args.single:
+        args.DT_hours = 24
 
     workspace = WORKSPACE(args)
 

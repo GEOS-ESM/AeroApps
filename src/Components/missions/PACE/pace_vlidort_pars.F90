@@ -6,7 +6,7 @@
 
   ! VLIDORT array sizes
   integer, parameter                    :: nobs = 1               ! number of profiles VLIDORT will work on
-  real, parameter                       :: ptop = 1.0             ! top (edge) pressure [Pa]
+  real, parameter                       :: ptop = 0.032           ! top (edge) pressure [Pa]
   integer, parameter                    :: nq   = 15                ! number of tracers
 
   ! Vector calculation constants
@@ -15,7 +15,7 @@
 
   ! Verbose
   integer, parameter                    :: verbose    = 0
-  integer, parameter                    :: verbose_mp = 0
+  integer, parameter                    :: verbose_mp = 0 
 
   ! MODIS kernel stuff
   integer, parameter                    :: nkernel = 3
@@ -45,6 +45,6 @@
 
   ! Physical constants
   real, parameter                       :: grav = 9.81               ! gravity
-
+  real, parameter                       :: pi = 4.0*atan(1.0)
 
 

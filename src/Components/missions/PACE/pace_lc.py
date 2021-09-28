@@ -118,7 +118,7 @@ def shave(q,undef=MAPL_UNDEF,has_undef=1,nbits=12):
 
 class JOBS(object):
     def handle_jobs(self):
-        jobsmax = 150
+        jobsmax = 25
         # Figure out how many jobs you need to submit
         runlen  = len(self.dirstring)   
 
@@ -241,7 +241,7 @@ class JOBS(object):
 
 
             print 'Waiting 5 minutes'
-            time.sleep(60*5)
+            time.sleep(60*2)
             
 
         # Exited while loop
@@ -372,7 +372,7 @@ class WORKSPACE(JOBS):
         self.edit_AODrc(outfile,ch)
 
         # link over some scripts and files
-        source = ['pace_vlidort.x','ExtData','Chem_MieRegistry.rc',
+        source = ['pace_vlidort.x','pace_vlidort_multinode.x','ExtData','Chem_MieRegistry.rc',
                   'ExtDataCloud','ExtDataOsku','clean_mem.sh',self.OCItable_file,self.STDATM_file]
         for src in source:
             os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(outpath,src))
@@ -715,7 +715,7 @@ class WORKSPACE(JOBS):
 
         # remove symlinks
         source = ['Aod_EOS.rc','ExtData','ExtDataCloud','ExtDataOsku','pace_vlidort.rc',
-                  'pace_vlidort.x','Chem_MieRegistry.rc','clean_mem.sh']
+                  'pace_vlidort.x','pace_vlidort_multinode.x','Chem_MieRegistry.rc','clean_mem.sh']
         for src in source:
             os.remove(src)
 
@@ -1059,7 +1059,7 @@ def create_condenseFile(L1B_file,outfile,Date,SDS):
     # --------------------------
     _copyVar(nctrj,nc,u'longitude','geolocation_data',dtype='f4',zlib=True,verbose=True)
     _copyVar(nctrj,nc,u'latitude','geolocation_data',dtype='f4',zlib=True,verbose=True)
-    _copyVar(nctrj,nc,u'ev_mid_time','scan_line_attributes', dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,u'time','scan_line_attributes', dtype='f4',zlib=True,verbose=True)
     _copyVar(nctrj,nc,u'blue_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
     _copyVar(nctrj,nc,u'red_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
     _copyVar(nctrj,nc,u'SWIR_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)

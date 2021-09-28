@@ -1,0 +1,34 @@
+DATE: 20060324
+TIME: 005000
+INSTNAME: pace
+CHANNELS: 645
+SCALAR: false
+NODEMAX: 1
+ADDITIONAL_OUTPUT: true
+VERSION: 1.0
+LAYOUT: None
+
+LANDNAME: MCD43C-BPDF
+LANDMODEL: RTLS
+LANDBAND_C_BRDF: 470 550 650 850 1200 1600 2100
+BRDF_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/surface/BRDF/MCD43C1/006/Y2006/M03/D24/pace-g5nr.lb.brdf.20060324_005000.nc4
+BPDF_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051/Y2006/M03/D24/pace-g5nr.lb.land_cover.20060324_005000.nc4
+NDVI_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/Y2006/M03/D24/pace-g5nr.lb-nearest.myd13c2.20060324_005000.nc4
+
+WATERNAME: NOBM-CX
+WAT_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/surface/SLEAVE/NOBM/Y2006/M03/D24/pace-g5nr.lb.sleave.20060324_005000.nc4
+WATERMODEL: CX
+WATERMR NOBM-CX
+WATERMR: 1.33239759036
+
+ICLDTABLE:ExtDataCloud/IceLegendreCoeffs.nc4
+LCLDTABLE:ExtDataCloud/WaterLegendreCoeffs.nc4
+IDXCLD: 1
+
+AER_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/Y2006/M03/D24/pace-g5nr.lb.aer_Nv.20060324_005000.nc4
+MET_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/Y2006/M03/D24/pace-g5nr.lb.met_Nv.20060324_005000.nc4
+ANG_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/L1B/Y2020/M03/D24/OCI2020084005000.L1B_PACE.nc
+INV_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelB/Y2006/M03/D24/pace-g5nr.lb.asm_Nx.20060324_005000.nc4
+OUT_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelC/Y2006/M03/D24/pace-g5nr.lc.vlidort.20060324_005000.600d00.nc4
+ADD_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelC/Y2006/M03/D24/pace-g5nr.lc.add.20060324_005000.600d00.nc4
+CLD_file: /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/PACE/LevelC/Y2006/M03/D24/pace-g5nr.TOTWPDF-GCOP-SKEWT.20060324_005000.nc4

@@ -22,12 +22,12 @@ from   glob            import glob
 
 SDS = {'longitude'  : 'geolocation_data',
        'latitude'   : 'geolocation_data',
-       'ev_mid_time': 'scan_line_attributes' }
+       'time': 'scan_line_attributes' }
 
 
 ALIAS = {'longitude': 'lon',
          'latitude' : 'lat',
-         'ev_mid_time': 'midTime'}
+         'time': 'midTime'}
 
 
 class PACE(object):
@@ -130,6 +130,8 @@ class PACE(object):
             v = nc.groups[group].variables[sds][:]
             if not hasattr(v,'mask'):
                 v = np.ma.array(v)
+                v.mask = np.zeros(v.shape).astype('bool')
+            elif type(v.mask) is np.bool_:
                 v.mask = np.zeros(v.shape).astype('bool')
             self.__dict__[sds].append(v) 
 

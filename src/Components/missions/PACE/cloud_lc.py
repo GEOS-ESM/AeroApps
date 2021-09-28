@@ -39,7 +39,7 @@ MODES = \
 #lSDS = ['PHIS','PS','TS','U10M','V10M','DELP','AIRDENS','O3','T','U']
 lSDS = ['DELP','T','U']
 nSDS = ['DELP','T','QV','QL','QI','CLOUD']
-mSDS = ['longitude', 'latitude', 'ev_mid_time']
+mSDS = ['longitude', 'latitude', 'time']
 
 km = 72
 
@@ -407,7 +407,7 @@ class PCS(LEVELBCS,GCS03):
 
 
         # actual time in seconds past hour
-        time = hf.createVariable('ev_mid_time','f4',('number_of_scans','ccd_pixels'),fill_value=MAPL_UNDEF)
+        time = hf.createVariable('time','f4',('number_of_scans','ccd_pixels'),fill_value=MAPL_UNDEF)
         time.long_name = "Earth view mid time (seconds of day)"
         time.units = 'seconds'
         time.missing_value = MAPL_UNDEF

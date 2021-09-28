@@ -10,6 +10,7 @@ set (srcs
   Chem_MieMod.F90
   Chem_AodMod.F90
   Chem_SimpleBundleMod.F90
+  MieObs_py.F90
   )
 esma_add_library(${this} SRCS ${srcs} DEPENDENCIES GMAO_mpeu MAPL GMAO_gfio_r4)
 target_include_directories (${this} PUBLIC ${INC_ESMF} ${INC_NETCDF})
@@ -17,16 +18,16 @@ target_compile_definitions (${this} PRIVATE GEOS5)
 
 ecbuild_add_executable(TARGET gogo.x SOURCES gogo.F90 LIBS ${this})
 
-# This MieObs_py.F90  is nearly identical to the one in ./src/Componenst/misc/scat.
-#include (UseF2Py)
-#include_directories (${esma_include}/${this})
-#esma_add_f2py_module(MieObs_ SOURCES MieObs_py.F90 
-#   DESTINATION lib/Python
-#   LIBRARIES Chem_Base MAPL GMAO_mpeu ${NETCDF_LIBRARIES} ${ESMF_LIBRARY}
-#   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${BASEDIR}/lib ${include_${this}} ${INC_NETCDF}
-#   USE_MPI
-#   )
-#add_dependencies(MieObs_ ${this})
+find_package(F2PY2 REQUIRED)
+# MAT: Note uses add_f2py2 because I can't figure out the import test for netCDF f2py code
+add_f2py2_module(MieObs_ 
+   SOURCES MieObs_py.F90 
+   DESTINATION lib/Python
+   LIBRARIES Chem_Base MAPL GMAO_mpeu ${NETCDF_LIBRARIES} ${ESMF_LIBRARY}
+   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${esma_include}/Chem_Base ${BASEDIR}/lib ${include_${this}} ${INC_NETCDF}
+   USE_MPI
+   )
+add_dependencies(MieObs_ Chem_Base GMAO_mpeu ${this})
 
 
 foreach (exe Chem_Aod.x Chem_Aod3d.x ctl_crst.x Chem_BundleToG5rs.x reff_calculator.xx ext_calculator.xx)

@@ -4,8 +4,8 @@
 #                     Batch Parameters for Run Job
 #######################################################################
 #SBATCH --time=12:00:00
-#SBATCH --constraint=hasw
-#SBATCH --ntasks=28 --cpus-per-task=1 --ntasks-per-node=28
+#SBATCH --constraint=sky
+#SBATCH --ntasks=40 --cpus-per-task=1 --ntasks-per-node=40
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=patricia.castellanos@nasa.gov
 #SBATCH --job-name=accp_vlidort
@@ -30,7 +30,7 @@ limit stacksize unlimited
 #           Architecture Specific Environment Variables
 #######################################################################
 setenv G5DIR /discover/nobackup/pcastell/workspace/GAAS/src
-setenv RUN_CMD  "mpirun -np 28"
+setenv RUN_CMD  "mpirun -np 40"
 
 mkdir -p $LOCAL_TMPDIR/ExtData
 cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/ExtData/ $LOCAL_TMPDIR
@@ -63,9 +63,10 @@ set filelist=`ls accp_polar_vlidort*.rc`
 foreach f ($filelist)
   ./clean_mem.sh
   echo $f
-  $RUN_CMD ./accp_polar_vlidort.x $f  &
-  wait
+  $RUN_CMD ./accp_polar_vlidort.x $f  
+  sleep 5
   ./clean_mem.sh
+  sleep 5
 end
 rm -rf $LOCAL_TMPDIR/*
 rm ExtData

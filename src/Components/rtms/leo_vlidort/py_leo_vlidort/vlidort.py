@@ -20,10 +20,13 @@ ncALIAS = {'LONGITUDE': 'trjLon',
            'LATITUDE': 'trjLat'}
 
 WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_POLAR_.vector_brdf_modis,
+                'MODIS_BRDF_CLOUD'     : VLIDORT_POLAR_.vector_brdf_modis_cloud,
                 'MODIS_BRDF_BPDF': VLIDORT_POLAR_.vector_brdf_modis_bpdf,
                 'LAMBERTIAN'     : VLIDORT_POLAR_.vector_lambert,
+                'LAMBERTIAN_CLOUD'     : VLIDORT_POLAR_.vector_lambert_cloud,
                 'GissCX'         : VLIDORT_POLAR_.vector_gisscx,
                 'CX'             : VLIDORT_POLAR_.vector_cx,
+                'CX_CLOUD'             : VLIDORT_POLAR_.vector_cx_cloud,
                 'ROT_CALC'       : VLIDORT_POLAR_.rot_calc}              
 
 #---
@@ -31,6 +34,13 @@ def CX_run(args):
        
     # Call VLIDORT wrapper function
     I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = VLIDORT_POLAR_.vector_cx(*args)
+
+    return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U
+#---
+def CX_CLOUD_run(args):
+
+    # Call VLIDORT wrapper function
+    I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = VLIDORT_POLAR_.vector_cx_cloud(*args)
 
     return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U
 
@@ -45,10 +55,28 @@ def LAMBERTIAN_run(args):
     BR_U = None
     return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U
 #---
+def LAMBERTIAN_CLOUD_run(args):
+
+    # Call VLIDORT wrapper function
+    I, reflectance, Q, U, rc = VLIDORT_POLAR_.vector_lambert_cloud(*args)
+
+    surf_reflectance = None
+    BR_Q = None
+    BR_U = None
+    return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U
+
+#---
 def MODIS_BRDF_run(args):
 
     # Call VLIDORT wrapper function
     I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = VLIDORT_POLAR_.vector_brdf_modis(*args)
+
+    return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U
+#---
+def MODIS_BRDF_CLOUD_run(args):
+
+    # Call VLIDORT wrapper function
+    I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = VLIDORT_POLAR_.vector_brdf_modis_cloud(*args)
 
     return I,Q,U,reflectance,surf_reflectance,BR_Q,BR_U
 
@@ -374,6 +402,23 @@ class VLIDORT(object):
 
 
         self.albedo = self.__dict__[sds]     
+
+    #---
+    def readIRR(self):
+        """ 
+        Read in solar irradiance
+        """
+        nch = 1
+        self.flux_factor = np.ones([nch,self.nobs])
+     
+    #---
+    def computeAlpha(self):
+        """
+        Computes trace gas absorption optical depth
+        """
+        km = 72
+        nch = 1
+        self.alpha = np.zeros([km,self.nobs,nch])
 
     #---
     def computeMie(self):

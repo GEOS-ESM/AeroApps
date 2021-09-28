@@ -13,14 +13,11 @@
 import os
 import sys
 import MieObs_
-from types import *
 from netCDF4 import Dataset
 from mieobs import VNAMES, getAOPext, getAOPint, getAOPscalar, getEdgeVars
-from numpy import zeros, arange, array, ones, zeros, interp, isnan, ma, NaN, squeeze, transpose, shape, asarray
 import numpy as np
 from math import pi, sin, cos, asin, acos
 
-from types           import *
 from optparse        import OptionParser
 from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
@@ -120,7 +117,7 @@ def computeMie(Vars, channel, varnames, rcFile, options):
                 pe, ze, te = getEdgeVars(VarsIn)
                 tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
                 ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-                ext2back = ones(backscat.shape)*MAPL_UNDEF
+                ext2back = np.ones(backscat.shape)*MAPL_UNDEF
                 I = backscat > 0
                 ext2back[I] = ext[I]/backscat[I]
                 MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}
@@ -142,7 +139,7 @@ def computeMie(Vars, channel, varnames, rcFile, options):
                 pe, ze, te = getEdgeVars(VarsIn)
                 tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
                 ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-                ext2back = ones(backscat.shape)*MAPL_UNDEF
+                ext2back = np.ones(backscat.shape)*MAPL_UNDEF
                 I = backscat > 0
                 ext2back[I] = ext[I]/backscat[I]
                 MieVars['ext'].append(ext)
@@ -172,7 +169,7 @@ def computeMie(Vars, channel, varnames, rcFile, options):
     else:
         tau,ssa,g = getAOPscalar(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
         ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-        ext2back = ones(backscat.shape)*MAPL_UNDEF
+        ext2back = np.ones(backscat.shape)*MAPL_UNDEF
         I = backscat > 0
         ext2back[I] = ext[I]/backscat[I]
         MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}       
@@ -264,11 +261,11 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
     x = nc.createVariable('x','f4',('x',),zlib=zlib)
     x.long_name = 'Fake Longitude for GrADS Compatibility'
     x.units = 'degrees_east'
-    x[:] = zeros(1)
+    x[:] = np.zeros(1)
     y = nc.createVariable('y','f4',('y',),zlib=zlib)
     y.long_name = 'Fake Latitude for GrADS Compatibility'
     y.units = 'degrees_north'
-    y[:] = zeros(1)
+    y[:] = np.zeros(1)
     if options.station:
         e = nc.createVariable('station','i4',('station',),zlib=zlib)
         e.long_name = 'Station Ensemble Dimension'
@@ -307,11 +304,11 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
     # --------------------------------------------------
     for n, name in enumerate(MieVarsNames):
 
-        var = squeeze(MieVars[name])
+        var = np.squeeze(MieVars[name])
         size = len(var.shape)
         if options.station:
             if size == 2:
-                var = asarray([var])
+                var = np.asarray([var])
                 size = len(var.shape)
         if size == 3:
             dim = ('station','time','lev')
@@ -325,13 +322,13 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
         this.units = MieVarsUnits[n]
         this.missing_value = np.float32(MAPL_UNDEF)
         if options.station:
-            this[:] = transpose(var,(0,2,1))
+            this[:] = np.transpose(var,(0,2,1))
         else:
-            this[:] = transpose(var)
+            this[:] = np.transpose(var)
 
     #for name in ['pe','ze','rh']:
-    #    var = squeeze(MieVars[name])
-    #    var = asarray([var])
+    #    var = np.squeeze(MieVars[name])
+    #    var = np.asarray([var])
     #    if name == 'rh':
     #        dim = ('station','time','lev')
     #    else:
@@ -340,14 +337,14 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
     #    this = nc.createVariable(name,'f4',dim,zlib=zlib)
     #    this.standard_name = name
     #    this.missing_value = MAPL_UNDEF
-    #    this[:] = transpose(var,(0,2,1))
+    #    this[:] = np.transpose(var,(0,2,1))
     if options.intensive:
         for name in IntVarsUnits:
-            var = squeeze(MieVars[name])
+            var = np.squeeze(MieVars[name])
             size = len(var.shape)
             if options.station:
                 if size == 2:
-                    var = asarray([var])
+                    var = np.asarray([var])
                     size = len(var.shape)
             if size == 3:
                 dim = ('station','time','lev')
@@ -361,9 +358,9 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
             this.units = IntVarsUnits[name]
             this.missing_value = np.float32(MAPL_UNDEF)
             if options.station:
-                this[:] = transpose(var,(0,2,1))
+                this[:] = np.transpose(var,(0,2,1))
             else:
-                this[:] = transpose(var)            
+                this[:] = np.transpose(var)            
 
     # Close the file
     # --------------

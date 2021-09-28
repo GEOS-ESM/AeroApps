@@ -3,12 +3,10 @@
 #######################################################################
 #                     Batch Parameters for Run Job
 #######################################################################
-#SBATCH --time=00:30:00
+#SBATCH --time=12:00:00
 #SBATCH --ntasks=28 --cpus-per-task=1 --ntasks-per-node=28
 #SBATCH --job-name=accp_vlidort
-#SBATCH -A s1180
-#SBATCH --qos=pace
-#SBATCH --partition=preops
+#SBATCH -A s2190
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=patricia.castellanos@nasa.gov
 #SBATCH --output=slurm_%j.out

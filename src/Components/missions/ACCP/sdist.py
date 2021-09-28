@@ -23,7 +23,7 @@ class SDIST(object):
         rmin      = 0.001e-6   #meters 
         rmax      = self.getRMAX()
         nbins     = 100
-        RE        = np.linspace(rmin,1.1*rmax,101)
+        RE        = np.geomspace(rmin,1.1*rmax,101)
         DR        = RE[1:] - RE[0:-1]
         R         = RE[0:-1] + 0.5*DR
         RLOW      = RE[0:-1]
@@ -67,7 +67,7 @@ class SDIST(object):
             if hasattr(self,'TOTdist'):
                 self.TOTdist += self.__dict__[spcdist]
             else:
-                self.TOTdist = self.__dict__[spcdist]
+                self.TOTdist = self.__dict__[spcdist].copy()
 
         # Column size distribution
         nobs,nlev,nR = self.TOTdist.shape
@@ -89,6 +89,7 @@ class SDIST(object):
 
 
         # effective radius for total only
+        # reff = 3./4.*vol/area
         self.TOTreff = np.zeros([nobs,nlev])
         self.colTOTreff = np.zeros([nobs])
         R = self.R
@@ -97,10 +98,13 @@ class SDIST(object):
         R2 = R**2
         for t in range(nobs):
             dndr = self.colTOTdist[t,:]/R3
-            self.colTOTreff[t] = np.sum(R3*dndr*DR)/np.sum(R2*dndr*DR)
+            self.colTOTreff[t] = (3./4)*np.sum(R3*dndr*DR)/np.sum(R2*dndr*DR)
             for k in range(nlev):
                 dndr = self.TOTdist[t,k,:]/R3
-                self.TOTreff[t,k] = np.sum(R3*dndr*DR)/np.sum(R2*dndr*DR)
+                if np.sum(R2*dndr*DR) == 0.0:
+                    self.TOTreff[t,k] = np.nan
+                else:
+                    self.TOTreff[t,k] = (3./4.)*np.sum(R3*dndr*DR)/np.sum(R2*dndr*DR)
 
 
     def logNormalDistribution(self,spc):
@@ -306,8 +310,12 @@ class SDIST(object):
 
                     #adjust bin edges for humidified particles
                     rhUse = rh[t,k]
-                    rMinUse = (c1*rMinCM**c2 /(c3*rMinCM**c4 - np.log10(rhUse))+rMinCM**3.)**(1./3.)/100.                                      
-                    rMaxUse = (c1*rMaxCM**c2 /(c3*rMaxCM**c4 - np.log10(rhUse))+rMaxCM**3.)**(1./3.)/100.  
+                    if rhUse >= 1e-100:
+                        rMinUse = rMinCM/100.
+                        rMaxUse = rMaxCM/100.
+                    else:
+                        rMinUse = (c1*rMinCM**c2 /(c3*rMinCM**c4 - np.log10(rhUse))+rMinCM**3.)**(1./3.)/100.                                      
+                        rMaxUse = (c1*rMaxCM**c2 /(c3*rMaxCM**c4 - np.log10(rhUse))+rMaxCM**3.)**(1./3.)/100.  
 
                     # Determine the dNdr of the particle size distribution using the
                     # Gong 2003 particle sub-bin distribution

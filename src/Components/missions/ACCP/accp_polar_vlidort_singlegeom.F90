@@ -21,6 +21,7 @@
 !     for the loss of the forward peak in the ice cloud scatterimg matrix introduced by
 !     using a finite number of streams.
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#  define I_AM_MAIN
 #  include "MAPL_Generic.h"
 #  include "MAPL_ErrLogMain.h"
 program pace_vlidort
@@ -137,6 +138,8 @@ program pace_vlidort
   real*8, allocatable                   :: U_int(:,:)                             ! U Stokes component
   real*8, allocatable                   :: ROT_int(:,:,:)                         ! rayleigh optical thickness
   real*8, allocatable                   :: depol(:)                               ! rayleigh depolarization ratio
+  real*8, allocatable                   :: alpha(:,:,:)                           ! trace gas absorption
+  real*8, allocatable                   :: flux_factor(:,:)                       ! solar irradiance (F0)
   real*8, allocatable                   :: BR_Q_int(:,:)                          ! surface albedo Q
   real*8, allocatable                   :: BR_U_int(:,:)                          ! surface albedo U
 
@@ -996,11 +999,12 @@ program pace_vlidort
       else
         ! Call to vlidort vector code
         call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-               nPol, ROT_int, depol, dble(Vtau), dble(Vssa), dble(Vpmom), &
+               nPol, ROT_int, depol, alpha, dble(Vtau), dble(Vssa), dble(Vpmom), &
                dble(Vpe), dble(Vze), dble(Vte), Valbedo,&
                (/dble(SZA(c,ialong))/), &
                (/dble(RAA(c,ialong))/), &
                (/dble(VZA(c,ialong))/), &
+               flux_factor, &
                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q_int, U_int, ierr)
         BR_Q_int = 0
         BR_U_int = 0
@@ -1785,6 +1789,10 @@ program pace_vlidort
 
     allocate (ROT_int(km,nobs,nch))
     allocate (depol(nch))
+    allocate (alpha(km,nobs,nch))
+    alpha = 0.0
+    allocate (flux_factor(nch,nobs))
+    flux_factor = 1.0
     allocate (Vpmom(km,nch,nobs,nMom,nPol))
 
     if (.not. scalar) then      

@@ -12,6 +12,7 @@ from omso2     import OMSO2_L2
 from lidar_l2  import LIDAR_L2
 from npz       import NPZ
 from hsrl      import HSRL
+from oracles   import ORACLES
 from hsrl_pbl  import HSRL_PBL
 from kde       import *
 from igbp      import *

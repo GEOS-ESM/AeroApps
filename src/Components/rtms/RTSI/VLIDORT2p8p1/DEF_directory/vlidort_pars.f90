@@ -117,11 +117,11 @@
 
 !  Number of computational streams in the half-space
 
-      INTEGER, PARAMETER :: MAXSTREAMS = 10
+      INTEGER, PARAMETER :: MAXSTREAMS = 25
 
 !  Maximum number of computational layers
 
-      INTEGER, PARAMETER :: MAXLAYERS = 26 !49
+      INTEGER, PARAMETER :: MAXLAYERS = 72
 
 !  Maximum number of fine layers used in single scattering corrections
 
@@ -130,7 +130,7 @@
 !  Maximum number of input moments.
 !    (Use full range for exact single scatter calculations)
 
-      INTEGER, PARAMETER :: MAXMOMENTS_INPUT = 200
+      INTEGER, PARAMETER :: MAXMOMENTS_INPUT = 1000
 
 !  Max number of thermal coefficients
 !   --------- New for Version 2.4RT -----------------

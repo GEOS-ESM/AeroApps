@@ -23,6 +23,7 @@ from   optparse        import OptionParser
 from   dateutil.parser import parse         as isoparser
 from   pyobs.sgp4      import getTrack as getTrackTLE
 from   numpy           import zeros, arange, array
+import numpy           as np
 from   MAPL            import eta
 from   MAPL.constants  import *
 from   pyobs.nc4ctl    import NC4ctl  
@@ -141,7 +142,7 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
             this = nc.createVariable(var.name,'f4',dim,zlib=zlib)
             this.standard_name = var.title
             this.long_name = var.title.replace('_',' ')
-            this.missing_value = MAPL_UNDEF
+            this.missing_value = np.float32(MAPL_UNDEF)
             this.units = var.units
             if g.lower:
                 name = var.name.lower() # GDS always uses lower case
@@ -179,6 +180,7 @@ if __name__ == "__main__":
     outFile = 'trj_sampler.nc'
     dt_secs = 60
     algo = 'linear'
+    
 
 #   Parse command line options
 #   --------------------------
@@ -207,6 +209,9 @@ if __name__ == "__main__":
               type='int',
               help="Timesetp in seconds for TLE sampling (default=%s)"%dt_secs )
 
+    parser.add_option("--tle_year", dest="tle_year", 
+              help="Year for TLE calculations (default=None)")
+
     parser.add_option("-I", "--isoTime",
                       action="store_true", dest="isoTime",
                       help="Include ISO format time in output file.")
@@ -214,6 +219,10 @@ if __name__ == "__main__":
     parser.add_option("-v", "--verbose",
                       action="store_true", dest="verbose",
                       help="Verbose mode.")
+
+    parser.add_option("-z", "--no_zlib",
+                      action="store_false", dest="zlib", default=True,
+                      help="no zlib compression for netcdf files")
 
     (options, args) = parser.parse_args()
     
@@ -254,7 +263,13 @@ if __name__ == "__main__":
     if options.traj == 'TLE':
         if t1 is None:
             raise ValueError, 'time range (t1,t2) must be specified when doing TLE sampling.'
-        lon, lat, tyme = getTrackTLE(trjFile, t1, t2, options.dt_secs)
+        if options.tle_year is not None:
+            t1_ = isoparser(options.tle_year + iso_t1[4:])
+            t2_ = isoparser(options.tle_year + iso_t2[4:])
+            lon, lat, tyme_ = getTrackTLE(trjFile, t1_, t2_, options.dt_secs)
+            lon_, lat_, tyme = getTrackTLE(trjFile, t1, t2, options.dt_secs)
+        else:
+            lon, lat, tyme = getTrackTLE(trjFile, t1, t2, options.dt_secs)
     elif options.traj == 'ICT':
         lon, lat, tyme = getTrackICT(trjFile,options.dt_secs)
     elif options.traj == 'CSV':
@@ -275,5 +290,5 @@ if __name__ == "__main__":
     if options.format == 'EXCEL':
         writeXLS(lon,lat,tyme,Vars,trjFile,options)
     else:
-        writeNC(lon,lat,tyme,Vars,levs,levUnits,trjFile,options)
+        writeNC(lon,lat,tyme,Vars,levs,levUnits,trjFile,options,zlib=options.zlib)
     

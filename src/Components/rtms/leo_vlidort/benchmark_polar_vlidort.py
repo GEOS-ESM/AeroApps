@@ -21,7 +21,7 @@ from scipy.special.orthogonal import legendre
 GRASP_phase = 'Expansion_Coefs/GRASPe438668_correctNorm_simpleAerosol_PMonly.txt'
 
 nMom     = 300
-nMom     = 30 # GRASP Phase function
+#nMom     = 30 # GRASP Phase function
 nPol     = 6
 km       = 72
 
@@ -42,19 +42,21 @@ SurfaceFuncs = {'MODIS_BRDF'     : 'readSampledMODISBRDF',
                 'LAMBERTIAN_BPDF': 'readSampledLER',
                 'GissCX'         : 'readSampledWindCX',
                 'OCIGissCX'      : 'readSampledWindCX',
+                'OCIGissCX_NOBM_CLOUD'      : 'readSampledWindCX',
                 'CX'             : 'readSampledWindCX',
                 'OCICX'          : 'readSampledWindCX'}
 
-WrapperFuncs = {'MODIS_BRDF'     : VLIDORT_POLAR_.vector_brdf_modis,
-                'MODIS_BRDF_BPDF': VLIDORT_POLAR_.vector_brdf_modis_bpdf,
-                'BPDF'           : VLIDORT_POLAR_.vector_bpdf,
-                'LAMBERTIAN'     : VLIDORT_POLAR_.vector_lambert,
-                'LAMBERTIAN_BPDF': VLIDORT_POLAR_.vector_lambert_bpdf,
-                'GissCX'         : VLIDORT_POLAR_.vector_gisscx,
-                'CX'             : VLIDORT_POLAR_.vector_cx,
-                'OCICX'          : VLIDORT_POLAR_.vector_ocicx,
-                'OCIGissCX'      : VLIDORT_POLAR_.vector_ocigisscx,
-                'ROT_CALC'       : VLIDORT_POLAR_.rot_calc}   
+WrapperFuncs = {'MODIS_BRDF'                : VLIDORT_POLAR_.vector_brdf_modis,
+                'MODIS_BRDF_BPDF'           : VLIDORT_POLAR_.vector_brdf_modis_bpdf,
+                'BPDF'                      : VLIDORT_POLAR_.vector_bpdf,
+                'LAMBERTIAN'                : VLIDORT_POLAR_.vector_lambert,
+                'LAMBERTIAN_BPDF'           : VLIDORT_POLAR_.vector_lambert_bpdf,
+                'GissCX'                    : VLIDORT_POLAR_.vector_gisscx,
+                'CX'                        : VLIDORT_POLAR_.vector_cx,
+                'OCICX'                     : VLIDORT_POLAR_.vector_ocicx,
+                'OCIGissCX'                 : VLIDORT_POLAR_.vector_ocigisscx,
+                'OCIGissCX_NOBM_CLOUD'      : VLIDORT_POLAR_.vector_ocigisscx_nobm_cloud,
+                'ROT_CALC'                  : VLIDORT_POLAR_.rot_calc}   
 
 
 # Generic Lists of Varnames and Units
@@ -68,6 +70,7 @@ MieVarsUnits = ['km-1','km-1','km-1 sr-1','sr-1','sr-1','unitless','sr','unitles
 
 META    = ['DELP','PS','RH','AIRDENS','trjLon','trjLat','isotime']
 AERNAMES = VNAMES_SU #+ VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
+#AERNAMES = ['DU001']
 SDS_AER = META + AERNAMES
 MISSING = -1.e+20
 
@@ -77,7 +80,8 @@ class BENCHMARK(POLAR_VLIDORT):
     """
     def __init__(self,albedoType,channel,outFile,rootDir,rcFile,
                 verbose=False,aerosol=True,dark=False,simple_aerosol=False,
-                emde=False,grasp=False,grasp_higher=False,rayleigh=False):
+                emde=False,grasp=False,grasp_higher=False,rayleigh=False,
+                nstreams=12,plane_parallel=True):
         self.outFile = outFile
         self.albedoType = albedoType
         self.channel = channel
@@ -99,6 +103,8 @@ class BENCHMARK(POLAR_VLIDORT):
         self.grasp   = grasp
         self.grasp_higher = grasp_higher
         self.rayleigh = rayleigh
+        self.nstreams = nstreams
+        self.plane_parallel = plane_parallel
 
         # get filesnames
         self.getFilenames()
@@ -125,9 +131,9 @@ class BENCHMARK(POLAR_VLIDORT):
         # Calculate aerosol optical properties
         # set to zero if aerosol is false
         self.computeMie()          
-        if self.aerosol:
-            # calculate size distribution
-            self.sizeDistribution()
+        # if self.aerosol:
+        #     # calculate size distribution
+        #     self.sizeDistribution()
 
         # Calculate Scene Geometry
         self.VZA = VZA
@@ -150,7 +156,7 @@ class BENCHMARK(POLAR_VLIDORT):
         Computes aerosol optical quantities 
         """
         if self.simple_aerosol and self.aerosol:
-            self.RH[:] = 0.70
+            self.RH[:] = 0.00
 
             tauO,ssa,g,pmom = getAOPvector(self,self.channel,
                                  vnames=self.AERNAMES,
@@ -169,164 +175,9 @@ class BENCHMARK(POLAR_VLIDORT):
             tau.shape = tau.shape + (1,1)
             tau       = tau
 
-            if self.emde:
-                # read in Emde et al. legendre coefficients
-                f = open('/home/pcastell/workspace/vlidort_benchmark/a3_dat/xk_a3.txt','r')
-                f.readline() #header
-                f.readline() #header
-
-                pmom[:] = 0.0
-                ich = 0
-                iob = 0
-                n = 0
-                for l in f:
-                    k,a1k,a2k,a3k,a4k,b1k,b2k = l.split()                    
-                    pmom[:,ich,iob,n,0] = float(a1k)
-                    pmom[:,ich,iob,n,1] = -1.0*float(b1k)
-                    pmom[:,ich,iob,n,2] = float(a3k)
-                    pmom[:,ich,iob,n,3] = -1.0*float(b2k)
-                    pmom[:,ich,iob,n,4] = float(a2k)
-                    pmom[:,ich,iob,n,5] = float(a4k)
-                    n = n + 1
-            elif self.grasp:
-                # Read in phase function generated by GRASP
-                # fit legendre coefficients
-                f = open('PM_GRASP_simple_aerosol.txt','r')
-                # headers
-                f.readline()
-                f.readline()
-                f.readline()
-                f.readline()
-                f.readline()
-                
-                pmom[:] = 0.0
-                ich = 0
-                iob = 0
-                n = 0       
-                P11, P12, P33, P34, ANG = np.zeros(181), np.zeros(181),np.zeros(181),np.zeros(181),np.zeros(181)   
-                for l in f:
-                    k,ang,p11,p12,p22,p33,p34,p44 = l.split()
-                    P11[n] = float(p11)
-                    P12[n] = float(p12)
-                    P33[n] = float(p33)
-                    P34[n] = float(p34)
-                    ANG[n] = float(ang)
-
-                    n = n+ 1
-
-                mu    = np.cos(np.radians(ANG))
-                deg   = 20
-                coef11  = np.polynomial.legendre.legfit(mu,P11,deg)
-                coef12  = np.polynomial.legendre.legfit(mu,P12,deg)
-                coef33  = np.polynomial.legendre.legfit(mu,P33,deg)
-                coef34  = np.polynomial.legendre.legfit(mu,P34,deg)
-                coef11[0] = 1.0
-
-                for n in range(deg+1):
-                    pmom[:,ich,iob,n,0] = coef11[n]
-
-                    pmom[:,ich,iob,n,2] = coef33[n]
-                    pmom[:,ich,iob,n,3] = coef34[n]
-                    pmom[:,ich,iob,n,4] = coef11[n]
-                    pmom[:,ich,iob,n,5] = coef33[n]
-
-                for n in range(deg+1):                    
-                    pmom[:,ich,iob,n,1] = coef12[n]
-
-                self.coef11 = coef11
-                self.coef12 = coef12
-                self.coef33 = coef33
-                self.coef34 = coef34
-
-            elif self.grasp_higher:
-                # Read in coefficients calculated with Mischenko's code
-                f = open('{}.expan_coeff'.format(GRASP_phase),'r')
-                f.readline() #header
-                pmom[:] = 0
-                ich = 0
-                iob = 0
-                for l in f:
-                    n, P11, P22, P33, P44, P12, P34 = l.split()
-                    n = int(n)
-                    pmom[:,ich,iob,n,0] = float(P11)
-                    pmom[:,ich,iob,n,1] = -1.*float(P12)
-                    pmom[:,ich,iob,n,2] = float(P33)
-                    pmom[:,ich,iob,n,3] = float(P34)
-                    pmom[:,ich,iob,n,4] = float(P22)
-                    pmom[:,ich,iob,n,5] = float(P44)
-
-                f.close()
-
-
-                # Read in reconstructed function calculated with Mischenko's code
-                f = open('{}.expan_matr'.format(GRASP_phase),'r')
-                p11 = []
-                p22 = []
-                p33 = []
-                p44 = []
-                p12 = []
-                p34 = []
-                angle = []
-                for l in f:
-                    n, P11, P22, P33, P44, P12, P34 = l.split()
-                    angle.append(float(n))
-                    p11.append(float(P11))
-                    p22.append(float(P22))
-                    p33.append(float(P33))
-                    p44.append(float(P44))
-                    p12.append(float(P12))
-                    p34.append(float(P34))
-
-                self.angle = np.array(angle)
-                self.p11 = np.array(p11)
-                self.p22 = np.array(p22)
-                self.p33 = np.array(p33)
-                self.p44 = np.array(p44)
-                self.p12 = np.array(p12)
-                self.p34 = np.array(p34)
-
-                # Read in phase function generated by GRASP
-                f = open(GRASP_phase,'r')
-                
-                n = 0       
-                P11, P12, P22, P33, P34, P44, ANG = np.zeros(181), np.zeros(181),np.zeros(181),np.zeros(181),np.zeros(181),np.zeros(181),np.zeros(181)     
-                for l in f:
-                    ang,p11,p12,p22,p33,p34,p44 = l.split()
-                    P11[n] = float(p11)
-                    P22[n] = float(p22)
-                    P33[n] = float(p33)                    
-                    P44[n] = float(p44)
-                    P12[n] = float(p12)
-                    P34[n] = float(p34)
-                    ANG[n] = float(ang)
-
-                    n = n+ 1
-
-                self.P11 = P11
-                self.P22 = P22
-                self.P33 = P33
-                self.P44 = P44
-                self.P12 = P12
-                self.P34 = P34
-
-            elif self.rayleigh:
-                pmom[:] = 0
-                ich = 0
-                iob = 0
-                coef11 = [1.0, 0.0, 0.4778325]
-                coef12 = [0.0, 0.0, -1.170446]
-                coef22 = [0.0, 0.0, 2.866995]
-                coef33 = [0.0, 0.0, 0.0]
-                coef34 = [0.0, 0.0, 0.0]
-                coef44 = [0.0, 1.38916256, 0.0]
-                for n in range(3):
-                    pmom[:,ich,iob,n,0] = coef11[n]
-                    pmom[:,ich,iob,n,1] = coef12[n]
-                    pmom[:,ich,iob,n,2] = coef33[n]
-                    pmom[:,ich,iob,n,3] = coef34[n]
-                    pmom[:,ich,iob,n,4] = coef22[n]
-                    pmom[:,ich,iob,n,5] = coef44[n]
-
+            # i think this sign needs to be changed
+            pmom[:,:,:,:,1] = -1.*pmom[:,:,:,:,1]
+            pmom[:,:,:,:,3] = -1.*pmom[:,:,:,:,3]
 
         elif self.aerosol:
             tau,ssa,g,pmom = getAOPvector(self,self.channel,
@@ -345,42 +196,6 @@ class BENCHMARK(POLAR_VLIDORT):
         self.g   = g    #(km,nch,nobs)
         self.pmom = pmom  #(km,nch,nobs,nMom,nPol)
 
-        if self.aerosol:
-            vol, area, refr, refi, reff = getAOPint(self,self.channel,
-                                                    vnames=self.AERNAMES,
-                                                    Verbose=True,
-                                                    rcfile=self.rcFile)
-            self.vol  = vol
-            self.area = area
-            self.refr = refr
-            self.refi = refi
-            self.reff = reff
-
-            if not self.grasp_higher:
-                # calculate phase function from legendre coefficients
-                angle = np.arange(181)
-                mu    = np.cos(np.radians(angle))
-                m = mu.shape
-
-                p11, p12, p33, p34 = (np.zeros(m),np.zeros(m),np.zeros(m),np.zeros(m))
-                k = 0
-                ich = 0
-                iob = 0
-                for n in range(self.nMom):
-                    print "Adding moment ", n
-                    P = legendre(n)
-                        
-                    p11 += pmom[k,ich,iob,n,0]* P(mu)
-                    p12 += pmom[k,ich,iob,n,1] * P(mu)
-                    p33 += pmom[k,ich,iob,n,2] * P(mu)
-                    p34 += pmom[k,ich,iob,n,3] * P(mu)
-
-                self.angle = angle
-                self.p11 = p11
-                self.p12 = p12
-                self.p33 = p33
-                self.p34 = p34
-                  
     # --
     def readSampledWindCX(self):
         """
@@ -456,10 +271,10 @@ class BENCHMARK(POLAR_VLIDORT):
             SDS = 'Riso'+chs,'Rgeo'+chs,'Rvol'+chs
         else:
             dch = self.channel - np.array(MODIS_channels).astype('int')
-            chmin = np.argmax(dch[dch<0])
-            chmin = MODIS_channels[dch<0][chmin]
-            chmax = np.argmin(dch[dch>0])
-            chmax = MODIS_channels[dch>0][chmax]
+            chmin = np.argmin(dch[dch>0])
+            chmin = MODIS_channels[dch>0][chmin]
+            chmax = np.argmax(dch[dch<0])
+            chmax = MODIS_channels[dch<0][chmax]
 
             SDS = 'Riso'+chmin,'Rgeo'+chmin,'Rvol'+chmin,'Riso'+chmax,'Rgeo'+chmax,'Rvol'+chmax
 
@@ -621,7 +436,7 @@ class BENCHMARK(POLAR_VLIDORT):
 
         # Create master bins for all levels
         # ---------------------------------
-        rmin      = 0.005e-6   #meters 
+        rmin      = 0.001e-6   #meters 
         rmax      = self.getRMAX()
         R, DR, RLOW, RUP = self.logBins(0.5*rmin,1.1*rmax)
         self.R = R
@@ -635,7 +450,8 @@ class BENCHMARK(POLAR_VLIDORT):
         
         # BC
         r0        = 0.0118e-6  #meters
-        rmax0     = 0.3e-6     #meters
+        rmin      = 0.001e-6   #meters 
+        rmax0     = 5.0e-6     #meters
         sigma     = 2.00
         rhop0     = 1000       # Density of dry particles [kg m-3]
 
@@ -648,8 +464,9 @@ class BENCHMARK(POLAR_VLIDORT):
 
         # OC
         r0        = 0.0212e-6  #meters
-        rmax0     = 0.3e-6     #meters
-        sigma     = 2.20
+        rmin      = 0.005e-6   #meters 
+        rmax0     = 5.0e-6     #meters
+        sigma     = 2.12
         rhop0     = 1800       #[kg m-3]
 
         spc = 'OCPHOBIC'
@@ -661,8 +478,9 @@ class BENCHMARK(POLAR_VLIDORT):
 
         # SU
         r0        = 0.0695e-6  #meters
-        rmax0     = 0.3e-6     #meters
-        sigma     = 2.03
+        rmin      = 0.005e-6   #meters 
+        rmax0     = 5.0e-6     #meters
+        sigma     = 1.77
         rhop0     = 1700       #[kg m-3]
 
         spc = 'SU'
@@ -839,7 +657,13 @@ class BENCHMARK(POLAR_VLIDORT):
         # Calculate ROT
         args = [self.channel, pe, ze, te, MISSING, self.verbose]
         vlidortWrapper = WrapperFuncs['ROT_CALC']
-        ROT, rc = vlidortWrapper(*args) 
+        ROT, depol_ratio, rc = vlidortWrapper(*args) 
+        depol_ratio = np.array([0.03])
+        
+
+        # hack to scale to GRASP
+        rod = 1.72484312e-02        
+        ROT = ROT*rod/np.sum(ROT)
         self.ROT = np.squeeze(ROT).T
 
         # Get VLIDORT wrapper name from dictionary
@@ -857,7 +681,7 @@ class BENCHMARK(POLAR_VLIDORT):
                     param     = self.RTLSparam[:,:,0]                
                     
 
-                    args = [self.channel, ROT, tau, ssa, pmom, 
+                    args = [self.channel, self.nstreams, self.plane_parallel, ROT, depol_ratio, tau, ssa, pmom, 
                             pe, ze, te, 
                             kernel_wt, param, 
                             sza, raa, vza, 
@@ -877,7 +701,10 @@ class BENCHMARK(POLAR_VLIDORT):
                     BPDFparam = self.BPDFparam[:,:,0]
 
                     args = [self.channel,
+                            self.nstreams,
+                            self.plane_parallel, 
                             ROT,
+                            depol_ratio, 
                             tau, 
                             ssa, 
                             pmom, 
@@ -902,7 +729,10 @@ class BENCHMARK(POLAR_VLIDORT):
                     BPDFparam = self.BPDFparam[:,:,0]
 
                     args = [self.channel,
+                            self.nstreams,
+                            self.plane_parallel, 
                             ROT,
+                            depol_ratio, 
                             tau, 
                             ssa, 
                             pmom, 
@@ -925,7 +755,10 @@ class BENCHMARK(POLAR_VLIDORT):
                     BPDFparam = self.BPDFparam[:,:,0]
 
                     args = [self.channel,
+                            self.nstreams,
+                            self.plane_parallel, 
                             ROT,
+                            depol_ratio, 
                             tau, 
                             ssa, 
                             pmom, 
@@ -944,7 +777,7 @@ class BENCHMARK(POLAR_VLIDORT):
                     I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)                    
                 
                 elif 'CX' in self.albedoType:
-                    args = [self.channel, ROT, tau, ssa, pmom,
+                    args = [self.channel, self.nstreams, self.plane_parallel, ROT, depol_ratio, tau, ssa, pmom,
                             pe, ze, te,
                             self.U10m, self.V10m, self.mr,
                             sza, raa, vza,
@@ -955,7 +788,7 @@ class BENCHMARK(POLAR_VLIDORT):
                 elif self.albedoType == 'LAMBERTIAN':
                     albedo = self.albedo
                     
-                    args = [self.channel, ROT, tau, ssa, pmom, 
+                    args = [self.channel, self.nstreams, self.plane_parallel, ROT, depol_ratio, tau, ssa, pmom, 
                             pe, ze, te, 
                             albedo, 
                             sza, raa, vza, 
@@ -1021,9 +854,9 @@ class BENCHMARK(POLAR_VLIDORT):
         nz = nc.createDimension('lev',km)
         nze = nc.createDimension('leve',km+1)
         no = nc.createDimension('nobs',1)   
-        if self.aerosol:
-            nr = nc.createDimension('radius',len(self.R))  
-            na = nc.createDimension('angle',len(self.angle))    
+        # if self.aerosol:
+        #     nr = nc.createDimension('radius',len(self.R))  
+        #     na = nc.createDimension('angle',len(self.angle))    
 
 
         vza = nc.createVariable('sensor_zenith','f4',('vza',),zlib=zlib)
@@ -1201,86 +1034,6 @@ class BENCHMARK(POLAR_VLIDORT):
             ssa.units         = "None"
             ssa[:]            = np.squeeze(self.ssa)
 
-            refi = nc.createVariable('REFI','f4',('lev',),zlib=zlib,fill_value=MISSING)
-            refi.long_name = 'layer aerosol imaginary refractive index' 
-            refi.missing_value = MISSING
-            refi.units         = "None"
-            refi[:]            = np.squeeze(self.refi)
-
-            refr = nc.createVariable('REFR','f4',('lev',),zlib=zlib,fill_value=MISSING)
-            refr.long_name = 'layer aerosol real refractive index' 
-            refr.missing_value = MISSING
-            refr.units         = "None"
-            refr[:]            = np.squeeze(self.refr)
-
-            reff = nc.createVariable('REFF','f4',('lev',),zlib=False)
-            reff.long_name   = 'aerosol effective radius'
-            reff.units       = 'microns'
-            reff[:]          = np.squeeze(self.reff*1e6)
-
-            area = nc.createVariable('AREA','f4',('lev',),zlib=False)
-            area.long_name   = 'aerosol cross sectional area'
-            area.units       = 'm2 m-3'
-            area[:]          = np.squeeze(self.area)
-
-            vol = nc.createVariable('VOL','f4',('lev',),zlib=False)
-            vol.long_name   = 'aerosol volume'
-            vol.units       = 'm3 m-3'
-            vol[:]          = np.squeeze(self.vol)
-
-            rad = nc.createVariable('radius','f4',('radius',),zlib=False)
-            rad.short_name        = 'R'
-            rad.long_name   = 'aerosol size distribution radius'
-            rad.units       = 'microns'
-            rad[:]          = self.R*1e6
-
-            drad = nc.createVariable('dradius','f4',('radius',),zlib=False)
-            drad.short_name        = 'DR'
-            drad.long_name   = 'aerosol size distribution bin sizes'
-            drad.units       = 'microns'
-            drad[:]          = self.DR*1e6
-
-            # Aerosol size distribution
-            for spc in ['TOT','BC','OC','DU','SS','SU']:
-                varname = spc + 'dist'
-                if spc == 'TOT':
-                    longname = 'total'
-                else:
-                    longname = spc
-
-                if hasattr(self,varname):
-                    dist = nc.createVariable(varname,'f4',('lev','radius',),zlib=zlib,fill_value=MISSING)
-                    dist.long_name     = '{} aerosol size distribution (dV/dlnr)'.format(longname)
-                    dist.missing_value = MISSING
-                    dist.units         = "microns^3/microns^2"
-                    dist[:]            = np.squeeze(self.__dict__[varname])
-
-            spc = 'colTOT'
-            varname = spc + 'dist'
-            dist = nc.createVariable(varname,'f4',('radius',),zlib=zlib,fill_value=MISSING)
-            dist.long_name     = 'column total aerosol size distribution (dV/dlnr)'
-            dist.missing_value = MISSING
-            dist.units         = "microns^3/microns^2"
-            dist[:]            = np.squeeze(self.__dict__[varname])
-
-
-            ang = nc.createVariable('angle','f4',('angle',),zlib=False)
-            ang.long_name      = 'scattering angle'
-            ang.units          = 'degrees'
-            ang[:]             = self.angle
-
-            p11 = nc.createVariable('P11','f4',('angle',))
-            p11[:] = self.p11
-
-            p12 = nc.createVariable('P12','f4',('angle',))
-            p12[:] = self.p12
-
-            p33 = nc.createVariable('P33','f4',('angle',))
-            p33[:] = self.p33   
-
-            p34 = nc.createVariable('P34','f4',('angle',))
-            p34[:] = self.p34                        
-
         # Close the file
         # --------------
         nc.close()
@@ -1305,27 +1058,25 @@ if __name__ == "__main__":
     if not os.path.exists(rootDir):
         rootDir = '/nobackup/3/pcastell/POLAR_LIDAR/CALIPSO/'
 
-    outRoot = './graspConfig_12_P11_P12_P22_only/'
+    outRoot = './self_benchmark/2p7_graspConfig_12_Osku_DrySU_V1/'
 
 
     #albedoType   = 'BPDF'
     #albedoType = 'MODIS_BRDF_BPDF'
     #albedoType = 'LAMBERTIAN_BPDF'
     #albedoType = 'GissCX'
-    #albedoType = 'CX'
-    albedoType = 'LAMBERTIAN'
+    albedoType = 'CX'
+    #albedoType = 'LAMBERTIAN'
     #albedoType = 'MODIS_BRDF'
 
     aerosol        = True # true if you want aerosols in simulation
     simple_aerosol = True # true if exponential aerosol with constnat optical properties
-    emde           = False # use pmom from Emde et al paper
-    grasp          = False # fit legendre coefficient to GRASP phase function
-    grasp_higher   = True # fit higher order spherical functions to GRASP phase function
-    rayleigh       = False  # use rayleigh phase function
     dark           = True  #use if you want lambertian surface with albedo = 0
+    nstreams       = 12
+    plane_parallel = True
 
 
-    channels  = 865, #470,    # 410,440,470,550,670,865,1020,1650,2100  #
+    channels  = 400, #865, #470,    # 410,440,470,550,670,865,1020,1650,2100  #
     for channel in channels:
         chd      = get_chd(channel)
 
@@ -1342,12 +1093,6 @@ if __name__ == "__main__":
             if simple_aerosol:
                 #aname = 'rayleigh+simple_aerosol'
                 aname = 'rayleigh+simple_aerosol'
-                if emde:
-                    aname = 'rayleigh+simple_aerosol+emde'
-                elif grasp:
-                    aname = 'rayleigh+simple_aerosol+grasp'
-                elif grasp_higher:
-                    aname = 'simple_aerosol+grasp_higher'
             else:
                 aname = 'rayleigh+aerosol'
 
@@ -1361,8 +1106,8 @@ if __name__ == "__main__":
         # -----------------------------------------------------------
         vlidort = BENCHMARK(albedoType,channel,outFile,rootDir,rcFile,
                                 verbose=verbose,aerosol=aerosol,dark=dark,
-                                simple_aerosol=simple_aerosol,emde=emde,
-                                grasp=grasp,grasp_higher=grasp_higher,rayleigh=rayleigh)
+                                simple_aerosol=simple_aerosol,
+                                nstreams=nstreams,plane_parallel=plane_parallel)
 
        
         vlidort.runVLIDORT()

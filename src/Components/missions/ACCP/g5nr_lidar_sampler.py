@@ -35,7 +35,9 @@ class JOBS(object):
         for i in workingJobs:
             s = self.dirstring[i]
             os.chdir(s)
-            jobid = np.append(jobid,subprocess.check_output(['qsub',self.slurm]))
+            result = subprocess.check_output(['sbatch',self.slurm])
+            jobid = np.append(jobid,result.split()[-1])
+
         os.chdir(self.cwd)
 
         # launch subprocess that will monitor queue
@@ -43,9 +45,9 @@ class JOBS(object):
         # Monitor jobs 1-by-1 
         # Add a new job when one finishes 
         # Until they are all done
-        stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
+        stat = 0
+        countDone = 0
         while (stat == 0):
-            stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
             finishedJobs = np.empty(0,dtype='int')
             for ii,i in enumerate(workingJobs):
                 s = jobid[i]
@@ -61,9 +63,13 @@ class JOBS(object):
                 if finished:
                     #print 'Job finished, cleaning up', s, i 
                     finishedJobs = np.append(finishedJobs,ii)
+                    countDone += 1
                     errcheck = self.check_for_errors(i,s)               
                     if (errcheck is False):
                         self.errTally[i] = False
+
+                        # Clean up workspaces
+                        self.destroy_workspace(i,s)
                     else:
                         print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
 
@@ -92,25 +98,22 @@ class JOBS(object):
                 for i in newjobs:
                     s = self.dirstring[i]
                     os.chdir(s)
-                    jobid = np.append(jobid,subprocess.check_output(['qsub',self.slurm]))
+                    result = subprocess.check_output(['sbatch',self.slurm])
+                    jobid = np.append(jobid,result.split()[-1])
+                    
 
                 os.chdir(self.cwd)
                 countRun = countRun + newRun
-                stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
-
-
-            print 'Waiting 5 minutes'
-            time.sleep(60*5)
+            # check if all the jobs are finished
+            if countDone == numjobs:
+                stat = 1
+            else:
+                print 'Waiting 30 minutes'
+                time.sleep(60*30)
             
 
         # Exited while loop
         print 'All jobs done'
-
-        # Clean up workspaces for completed jobs
-        for i,s in enumerate(jobid):
-            s = s.strip('\n')
-            if not self.errTally[i]:
-                self.destroy_workspace(i,s)
 
         # Postprocessing done
         print 'Cleaned Up Worksapces'
@@ -134,8 +137,9 @@ class WORKSPACE(JOBS):
     def __init__(self,args):
 
         self.Date      = isoparser(args.iso_t1)
-        self.enddate    = isoparser(args.iso_t2)
-        self.Dt        = timedelta(hours=args.DT_hours)
+        self.enddate   = isoparser(args.iso_t2)
+        self.Dt        = args.DT_hours
+        self.dt        = timedelta(days=args.dt_days)
 
         if not os.path.exists(args.tmp):
             os.makedirs(args.tmp)
@@ -146,6 +150,8 @@ class WORKSPACE(JOBS):
         self.tmp         = args.tmp
         self.profile     = args.profile
         self.nproc       = args.nproc
+        self.exp         = args.exp
+        self.tle_year    = args.tle_year
 
         # create working directories
         self.create_workdir()
@@ -158,8 +164,8 @@ class WORKSPACE(JOBS):
     def create_workdir(self):
         sdate = self.Date
         self.dirstring = []
+        # create directory
         while sdate < self.enddate:
-            # create directory
 
             workpath = '{}/{}'.format(self.tmp,sdate.isoformat())
             if os.path.exists(workpath):
@@ -181,12 +187,18 @@ class WORKSPACE(JOBS):
                 os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
             self.dirstring.append(workpath)
-            sdate += self.Dt
+
+            sdate += self.dt
 
     def edit_slurm(self):
-        sdate = self.Date
         for workpath in self.dirstring:
-            edate = sdate + self.Dt
+            isodate = os.path.basename(workpath)
+            sdate = isoparser(isodate)
+            edate = sdate + self.dt
+            if edate > self.enddate:
+                edate = self.enddate
+        
+
             outpath = '{}/{}'.format(workpath,self.slurm)
 
             # read file first
@@ -199,8 +211,11 @@ class WORKSPACE(JOBS):
             # replace one line
             iso1 = sdate.isoformat()
             iso2 = edate.isoformat()
-            newline = 'python -u run_lidar_sampler.py -v --nproc {} --DT_hours {} {} {} {} >'.format(self.nproc,self.Dt.seconds/3600,iso1,iso2,self.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
-            text[-3] = newline
+            if self.tle_year is not None:
+                newline = 'nohup python -u run_lidar_sampler.py -v --exp {} --tle_year {} --nproc {} --DT_hours {} {} {} {} >'.format(self.exp,self.tle_year,self.nproc,self.Dt,iso1,iso2,self.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
+            else:
+                newline = 'nohup python -u run_lidar_sampler.py -v --exp {} --nproc {} --DT_hours {} {} {} {} >'.format(self.exp,self.nproc,self.Dt,iso1,iso2,self.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
+            text[-4] = newline
             f.close()
 
             #  write out
@@ -209,8 +224,7 @@ class WORKSPACE(JOBS):
                 f.write(l)
             f.close()     
 
-            sdate += self.Dt   
-
+   
     def destroy_workspace(self,i,jobid):
         os.chdir(self.dirstring[i])
 
@@ -240,10 +254,13 @@ class WORKSPACE(JOBS):
 if __name__ == '__main__':
     
     #Defaults
-    DT_hours = 24
+    DT_hours = 1
+    dt_days  = 75
     nproc    = 8
     slurm    = 'run_lidar_sampler.j'
-    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir'
+    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir/lidar_sampler'
+    exp      = 'g5nr'
+    tle_year = None
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
@@ -251,8 +268,17 @@ if __name__ == '__main__':
     parser.add_argument("prep_config",
                         help="prep config filename")
 
+    parser.add_argument('-e',"--exp", default=exp,
+                        help="GEOS experiment name for outfiles (default=%s)"%exp)
+
+    parser.add_argument("--tle_year", default=tle_year,
+                        help="Year for TLE calc (default=None)")
+
     parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
+
+    parser.add_argument('-d',"--dt_days", default=dt_days, type=int,
+                        help="Timestep in days for each job (default=%i)"%dt_days)
 
     parser.add_argument('-s',"--slurm",default=slurm,
                         help="slurm script template (default=%s)"%slurm)           

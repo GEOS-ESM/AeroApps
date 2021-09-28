@@ -11,7 +11,7 @@ env:
 cmake:
   local: ./cmake@
   remote: ../ESMA_cmake.git
-  tag: v3.4.4
+  tag: v3.4.5
   develop: develop
 
 ecbuild:
@@ -22,6 +22,6 @@ ecbuild:
 MAPL:
   local: ./src/Shared/GMAO_Shared/MAPL@
   remote: ../MAPL.git
-  tag: v2.6.7
+  tag: v2.6.9
   develop: develop
 

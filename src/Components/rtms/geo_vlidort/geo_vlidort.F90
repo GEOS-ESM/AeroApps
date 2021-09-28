@@ -17,6 +17,7 @@
 !  HISTORY
 !     27 April 2015 P. Castellanos adapted from A. da Silva shmem_reader.F90
 !;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#  define I_AM_MAIN
 #  include "MAPL_Generic.h"
 #  include "MAPL_ErrLogMain.h"
 program geo_vlidort
@@ -165,9 +166,10 @@ program geo_vlidort
   real*8, allocatable                   :: U(:,:)                                 ! U Stokes component
   real*8, allocatable                   :: ROT(:,:,:)                             ! rayleigh optical thickness
   real*8, allocatable                   :: depol(:)                               ! rayleigh depolarization ratio
+  real*8, allocatable                   :: alpha(:,:,:)                             ! absorption optical thickness
   real*8, allocatable                   :: BR_Q_int(:,:)                          ! surface albedo Q
   real*8, allocatable                   :: BR_U_int(:,:)                          ! surface albedo U
-
+  real*8, allocatable                   :: Vflux_factor(:,:)                      ! solar irradiance
 !                                  Final Shared Arrays
 !                                  -------------------
   real*8, pointer                       :: radiance_VL(:,:) => null()             ! TOA normalized radiance from VLIDORT
@@ -610,10 +612,11 @@ program geo_vlidort
       else
         ! Call to vlidort vector code
         call VLIDORT_Vector_Lambert (km, nch, nobs ,dble(channels), nstreams, plane_parallel, nMom,   &
-               nPol, ROT, depol, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
+               nPol, ROT, depol, alpha, dble(tau), dble(ssa), dble(pmom), dble(pe), dble(ze), dble(te), albedo,&
                (/dble(SZA(c))/), &
                (/dble(RAA(c))/), &
                (/dble(VZA(c))/), &
+               Vflux_factor, &
                dble(MISSING),verbose,radiance_VL_int,reflectance_VL_int, Q, U, ierr)
       end if
 
@@ -1546,6 +1549,10 @@ end subroutine outfile_extname
 
     allocate (ROT(km,nobs,nch))
     allocate (depol(nch))
+    allocate (alpha(km,nobs,nch))
+    alpha = 0.0
+    allocate (Vflux_factor(nch,nobs))
+    Vflux_factor = 1.0
     allocate (pmom(km,nch,nobs,nMom,nPol))
 
     if (.not. scalar) then      

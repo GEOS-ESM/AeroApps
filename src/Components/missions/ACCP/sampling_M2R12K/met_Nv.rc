@@ -1,0 +1,7 @@
+#
+# Resource file for geo sampler: met_Nv files for TEMPO
+#
+
+U10M,V10M,PS,TS,CLDLOW,CLDMID,CLDHGH,CLDTOT,TAULOW,TAUMID,TAUHGH,TAUTOT: /discover/nobackup/projects/gmao/iesa/aerosol/data/M2R12K/data/opendap/0.1250_deg/M2R12K_may2005/inst/inst1_2d_asm_Nx
+PBLH: /discover/nobackup/projects/gmao/iesa/aerosol/data/M2R12K/data/opendap/0.1250_deg/M2R12K_may2005/tavg/tavg1_2d_flx_Nx
+T,U,V,QV: /discover/nobackup/projects/gmao/iesa/aerosol/data/M2R12K/data/opendap/0.1250_deg/M2R12K_may2005/inst/inst3_3d_asm_Nv

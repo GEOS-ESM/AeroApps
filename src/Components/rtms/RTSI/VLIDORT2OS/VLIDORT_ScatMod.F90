@@ -347,7 +347,7 @@
        
       
       rc = 0
- 
+      write(*,*) 'SCATMOD',rc 
       if ( .not. self%Surface%Base%initialized ) then
         rc = 1
         return
@@ -555,7 +555,10 @@
            self%Surface%Base%VIO%VLIDORT_ModIn, &
            self%Surface%Base%VIO%VLIDORT_Sup, &
            self%Surface%Base%VIO%VLIDORT_Out)
-  
+
+      write(*,*) 'more testing...' 
+      write(*,*) 'Testing....'
+      write(*,*) 'status',self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_INPUTCHECK 
       if ( self%Surface%Base%VIO%VLIDORT_Out%Status%TS_STATUS_INPUTCHECK /= 0 ) then
          rc = 3
          write(*,*) 'VLIDORT_MASTER STATUS_INPUTCHECK RETURNED ERROR'
