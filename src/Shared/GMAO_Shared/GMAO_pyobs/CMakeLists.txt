@@ -17,7 +17,7 @@ esma_add_library (${this}
 find_package(F2PY2 REQUIRED)
 esma_add_f2py2_module(binObs_
    SOURCES binObs_py.F
-   DESTINATION lib/Python/${this}
+   DESTINATION lib/Python
    INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
    )
 add_dependencies(binObs_ ${this})
