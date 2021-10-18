@@ -315,6 +315,7 @@ program pace_vlidort
 ! Initialize MPI with ESMF
 ! ------------------------
   call ESMF_Initialize (logkindflag=ESMF_LOGKIND_NONE, vm=vm, __RC__)
+  call MAPL_Initialize(__RC__)
 
   call ESMF_VMGet(vm, localPET=myid, PETcount=npet) 
   if ( MAPL_am_I_root() ) write(*,'(A,I4,A)')'Starting MPI on ',npet, ' processors'
@@ -605,14 +606,15 @@ program pace_vlidort
     call MPI_ABORT(MPI_COMM_WORLD,myid,ierr)
   end if
 
-  if (myid == 1) then
-    starti  = 1
-  else
-    starti = sum(nclr(1:myid-1)) + 1
-  end if    
-  counti = nclr(myid)
-  endi   = starti + counti - 1 
-
+  if (.not. MAPL_am_I_root()) then 
+    if (myid == 1) then
+      starti  = 1
+    else
+      starti = sum(nclr(1:myid-1)) + 1
+    end if    
+    counti = nclr(myid)
+    endi   = starti + counti - 1 
+  end if
 ! Processors not on the root node need to ask for data
 ! -----------------------------------------------------
   if (MAPL_am_I_root()) then
@@ -759,7 +761,7 @@ program pace_vlidort
 
       write(msg,'(A,I)') 'getEdgeVars ', myid
       call write_verbose(msg)
-      
+
       call calc_qm()
 
       write(msg,'(A,I)') 'calc_qm ', myid
@@ -1082,6 +1084,7 @@ program pace_vlidort
 ! ! --------
 500  call MAPL_SyncSharedMemory(rc=ierr)
   call MAPL_FinalizeShmem (rc=ierr)
+  call MAPL_Finalize(__RC__)
   call ESMF_Finalize(__RC__)
 
 ! -----------------------------------------------------------------------------------
@@ -1969,7 +1972,7 @@ program pace_vlidort
       end if
         call readvar3D("WV_VMR", AER_file, READER3D)
         call reduceProfile(READER3D,clmask,H2O)
-      write(*,*) '<> Read aeorosl data to shared memory'
+      write(*,*) '<> Read aerosol data to shared memory'
     end if
 
     call MAPL_SyncSharedMemory(rc=ierr)    
@@ -2189,7 +2192,7 @@ program pace_vlidort
 
     call MAPL_SyncSharedMemory(rc=ierr)    
     if (MAPL_am_I_root()) then
-      write(*,*) '<> Read pressutre,temperature data to shared memory'
+      write(*,*) '<> Read pressure,temperature data to shared memory'
     end if     
     call MAPL_SyncSharedMemory(rc=ierr)   
 

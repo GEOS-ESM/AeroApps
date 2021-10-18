@@ -785,7 +785,7 @@ end subroutine outfile_extname
     if (MAPL_am_I_root()) then
       call reduceProfile(AIRDENS_,clmask,AIRDENS) 
       call reduceProfile(DELP_,clmask,DELP)   
-      write(*,*) '<> Read aeorosl data to shared memory'
+      write(*,*) '<> Read aerosol data to shared memory'
     end if      
 
   end subroutine read_aer_Nv

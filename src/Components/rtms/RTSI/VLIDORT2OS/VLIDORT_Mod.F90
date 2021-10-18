@@ -204,7 +204,7 @@
       DO_FULLRAD_MODE    = .true.  ! Do full Stokes vector calculation?
       DO_SSCORR_NADIR    = .false. ! Do nadir single scatter correction?
       DO_SSCORR_OUTGOING = .true.  ! Do outgoing single scatter correction?
-      DO_FO_CALC         = .false. ! Do outgoung single Nakajima scatter correction?
+      DO_FO_CALC         = .true. ! Do outgoung single Nakajima scatter correction?
       DO_SSFULL          = .false. ! Do Full-up single scatter calculation?
 !      DO_DBCORRECTION    = .true.  ! Do direct beam correction?
       DO_DOUBLE_CONVTEST = .true.  ! Perform double convergence test?

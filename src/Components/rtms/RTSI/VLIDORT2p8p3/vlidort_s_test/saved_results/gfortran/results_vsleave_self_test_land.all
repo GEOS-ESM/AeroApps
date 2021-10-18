@@ -1,0 +1,23 @@
+
+****************************************
+   Land surface-leaving (Fluorescence)
+****************************************
+
+         For Stokes: 1
+
+         STANDARD QUANTITIES
+
+Isotropic SLEAVE, all geometries
+
+              sza     Iso SLEAVE value
+
+Iso            1        1.513515E-04
+
+
+         WEIGHTING FUNCTIONS (ANALYTIC + FINITE_DIFFERENCE)
+
+Isotropic SLEAVE, all geometries
+
+              sza       Analytic    Finite-diff       Analytic    Finite-diff       Analytic    Finite-diff       Analytic    Finite-diff       Analytic    Finite-diff       Analytic    Finite-diff       Analytic    Finite-diff
+
+Iso            1      1.513515E-04  1.513515E-04    1.047404E-04  1.047404E-04   -2.289915E-06 -2.291028E-06    7.345011E-07  7.344904E-07    1.835790E-09  1.835790E-09    7.827338E-10  7.839924E-10    3.671882E-09  3.672231E-09

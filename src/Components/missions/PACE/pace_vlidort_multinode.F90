@@ -1845,7 +1845,7 @@ program pace_vlidort
         call readvar3D("RH", AER_file, READER3D) 
         call reduceProfile(READER3D,clmask,RH)
       end if
-      write(*,*) '<> Read aeorosl data to shared memory'
+      write(*,*) '<> Read aerosol data to shared memory'
     end if
 
     call MAPL_SyncSharedMemory(rc=ierr)    
@@ -1895,7 +1895,7 @@ program pace_vlidort
 
     call MAPL_SyncSharedMemory(rc=ierr)    
     if (MAPL_am_I_root()) then
-      write(*,*) '<> Read pressutre,temperature data to shared memory'
+      write(*,*) '<> Read pressure,temperature data to shared memory'
     end if     
     call MAPL_SyncSharedMemory(rc=ierr)   
 

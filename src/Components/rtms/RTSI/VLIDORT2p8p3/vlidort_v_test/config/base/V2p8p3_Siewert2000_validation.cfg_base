@@ -1,0 +1,397 @@
+
+
+
+C  Table J1: Inputs for VLIDORT Type Structure "VLIDORT_Fixed_Boolean"
+C  ===================================================================
+
+VLIDORT - Do full Stokes vector calculation?
+t
+
+VLIDORT - Do thermal emission?
+f
+
+VLIDORT - Do surface emission?
+f
+
+VLIDORT - Do plane-parallel treatment of direct beam?
+t
+
+VLIDORT - Do upwelling output?
+t
+
+VLIDORT - Do downwelling output?
+t
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@ FOLLOWING FLAGS REMOVED for VERSION 2.8
+#VLIDORT - Do quadrature output?
+#f
+#VLIDORT - Do top of the atmosphere contributions?
+#f
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@ END FLAGS REMOVED for VERSION 2.8
+
+VLIDORT - Do Lambertian surface?
+t
+
+VLIDORT - Do surface-leaving term?
+f
+
+VLIDORT - Do isotropic surface-leaving term?
+f
+
+------------- Additional surface leaving control variables, Version 2.8
+
+VLIDORT - Do Water-leaving option?
+f
+
+VLIDORT - Do Fluorescence option?
+f
+
+VLIDORT - Do iterative calculation of Water-leaving transmittance?
+f
+
+VLIDORT - Do external water-leaving production?
+f 
+
+VLIDORT - Flag for output of transmittance-adjusted water-leaving radiances
+f
+
+C  Table J2: Inputs for VLIDORT Type Structure "VLIDORT_Fixed_Control"
+C  ===================================================================
+
+VLIDORT - Number of small-number terms in Taylor series expansions
+3
+
+VLIDORT - Number of Stokes vector components
+4
+
+VLIDORT - Number of half-space streams
+30
+
+VLIDORT - Number of atmospheric layers
+1
+
+VLIDORT - Number of fine layers (outgoing sphericity option only)
+2
+
+VLIDORT - Number of thermal coefficients
+2
+
+VLIDORT - Fourier series convergence
+0.00001
+
+#VLIDORT - Zenith tolerance level
+#0.00001
+
+---------- Additional Control for Water-leaving, Version 2.8
+
+VLIDORT - Maximum number of iterations in calculation of Water-leaving transmittance
+10
+
+VLIDORT - Convergence criterion for iterative calculation of Water-leaving transmittance
+0.000001
+
+
+
+C  Table J3: Inputs for VLIDORT Type Structure "VLIDORT_Fixed_Sunrays"
+C  ===================================================================
+
+VLIDORT - Solar flux constant
+1.0
+
+
+
+C  Table J4: Inputs for VLIDORT Type Structure "VLIDORT_Fixed_UserValues"
+C  ======================================================================
+
+VLIDORT - Number of user-defined output levels
+7
+
+
+
+C  Table J5: Inputs for VLIDORT Type Structure "VLIDORT_Fixed_Chapman"
+C  ===================================================================
+
+VLIDORT - Refractive index parameter
+0.000288
+
+VLIDORT - Atmospheric Wavelength [Microns]
+0.333
+
+
+
+C  Table J6: Inputs for VLIDORT Type Structure "VLIDORT_Fixed_Optical"
+C  ===================================================================
+
+VLIDORT - Lambertian albedo
+0.0
+
+
+
+C  Table J7: Inputs for VLIDORT Type Structure "VLIDORT_Fixed_Write"
+C  =================================================================
+
+output flags
+------------
+
+VLIDORT - Do debug write?
+f
+
+VLIDORT - Do input control write?
+f
+
+VLIDORT - Do input scenario write?
+f
+
+VLIDORT - Do Fourier component output write?
+f
+
+VLIDORT - Do results write?
+f
+
+output filenames
+----------------
+
+VLIDORT - filename for input write
+Siewert2K_input.res
+
+VLIDORT - filename for scenario write
+Siewert2K_scenario.res
+
+VLIDORT - filename for Fourier output write
+Siewert2K_fourier.res
+
+VLIDORT - filename for main output
+Siewert2K_results.res
+
+
+
+C  Table K1: Inputs for VLIDORT Type Structure "VLIDORT_Modified_Boolean"
+C  ======================================================================
+
+       **** FO and SS flags completely revised for Version 2.8
+
+VLIDORT - Do First-Order (FO) correction?
+f
+
+VLIDORT - Do external First-Order correction?
+f
+
+#VLIDORT - Do First-Order correction alone?
+#f
+
+VLIDORT - Do nadir First-Order correction?
+f
+
+VLIDORT - Do outgoing First-Order correction?
+f
+
+VLIDORT - Do delta-M scaling on single scatter corrections?
+f
+
+VLIDORT - Do Fmatrix usage in single scatter correction?
+f
+
+   ********* New options for Version 2.8.1 (ALBTRN_MEDIA, PLANETARY PROBLEM)
+   ********* New options for Version 2.8.1 (TOA/BOA Illumination). NOT ENABLED 5/10/19
+
+VLIDORT - Do TOA Illumination for Airglow?
+f
+
+VLIDORT - TOA Illumination Flux (sun-normalized)
+0.0
+
+VLIDORT - Do BOA Illumination for nighttime?
+f
+
+VLIDORT - BOA Illumination Flux (sun-normalized)
+0.0
+
+VLIDORT - Do Media properties calculation with TOA illumination?
+f
+
+VLIDORT - Do Media properties calculation with BOA illumination?
+f
+
+VLIDORT - Do planetary problem calculation?
+f
+
+      **** Resume
+
+VLIDORT - Do double convergence test?
+t
+
+VLIDORT - Use solar sources?
+t
+
+VLIDORT - Do internal Chapman function calculation?
+t
+
+VLIDORT - Do refractive geometry?
+f
+
+VLIDORT - Do classical particular-integral solar-beam solution?
+t
+
+VLIDORT - Do Rayleigh atmosphere only?
+f
+
+VLIDORT - Do delta-M scaling?
+f
+
+VLIDORT - Do solution saving?
+f
+
+VLIDORT - Do boundary-value telescoping?
+f
+
+VLIDORT - Use user-defined viewing zenith angles?
+t
+
+VLIDORT - Do mean-value output additionally?
+f
+
+VLIDORT - Do only mean-value output?
+f
+
+VLIDORT - Do thermal emission, transmittance only?
+f
+
+VLIDORT - Do Observation Geometry?
+f
+
+VLIDORT - Do Doublet Geometry?
+f
+
+
+
+C  Table K2: Inputs for VLIDORT Type Structure "VLIDORT_Modified_Control"
+C  ======================================================================
+
+VLIDORT - Number of scattering matrix expansion coefficients
+11
+
+
+
+C  Table K3: Inputs for VLIDORT Type Structure "VLIDORT_Modified_Sunrays"
+C  ======================================================================
+
+VLIDORT - Number of solar zenith angles
+1
+
+VLIDORT - Solar zenith angles (degrees)
+78.463040967
+
+
+
+C  Table K4: Inputs for VLIDORT Type Structure "VLIDORT_Modified_UserValues"
+C  =========================================================================
+
+VLIDORT - Number of user-defined relative azimuth angles
+3
+
+VLIDORT - User-defined relative azimuth angles (degrees)
+0.0
+90.0
+180.0
+
+VLIDORT - Number of user-defined viewing zenith angles
+11
+
+VLIDORT - User-defined viewing zenith angles (degrees)
+0.0001
+25.841932763
+36.869897646
+45.572995999
+53.130102354
+60.0
+66.421821522
+72.542396876
+78.463040967
+84.260829523
+89.9999
+
+VLIDORT - User-defined output levels
+0.0
+0.125
+0.25
+0.5
+0.75
+0.875
+1.0
+
+VLIDORT - Input geometry specification height (km)
+0.0
+
+VLIDORT - Number of Observation Geometry inputs
+1
+
+VLIDORT - Observation Geometry inputs
+78.463040967, 0.0001, 0.0
+
+VLIDORT - Number of Doublet Geometry inputs
+1
+
+VLIDORT - Doublet Geometry inputs
+0.0001, 0.0
+
+
+
+C  Table K5: Inputs for VLIDORT Type Structure "VLIDORT_Modified_Chapman"
+C  ======================================================================
+
+VLIDORT - Earth radius (km)
+6371.0
+
+
+
+C  Table L1: Inputs for VLIDORT Type Structure "VLIDORT_Fixed_LinControl"
+C  ======================================================================
+
+#VLIDORT - Do LTE temperature weighting functions?
+#f
+
+#VLIDORT - Do surface blackbody weighting functions?
+#f
+
+VLIDORT - Number of atmospheric column weighting functions (total)
+5
+
+VLIDORT - Number of atmospheric profile weighting functions (total)
+5
+
+#VLIDORT - Number of surface property weighting functions (total)
+#1
+
+VLIDORT - Atmospheric column Jacobian names (character*31)
+Total_absorption_column--------
+
+VLIDORT - Atmospheric profile Jacobian names (character*31)
+Total_absorption_column--------
+
+#VLIDORT - Surface Jacobian names (character*22)
+#Kernel Amplitude------
+
+
+
+C  Table M1: Inputs for VLIDORT Type Structure "VLIDORT_Modified_LinControl"
+C  =========================================================================
+
+VLIDORT - Do simulation only?
+f
+
+VLIDORT - Do atmospheric column weighting functions?
+f
+
+VLIDORT - Do atmospheric profile weighting functions?
+f
+
+VLIDORT - Do surface property weighting functions?
+f
+
+VLIDORT - Atmospheric BB emission weighting functions?
+f
+
+VLIDORT - Surface BB emission weighting functions?
+f
+
+

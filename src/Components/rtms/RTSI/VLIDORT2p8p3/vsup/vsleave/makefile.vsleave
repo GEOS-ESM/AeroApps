@@ -1,0 +1,32 @@
+#
+# Define list of source files
+# (Note: ordering is important because of dependencies)
+#
+
+VSLEAVE_SUP_SOURCES =
+VSLEAVE_LINSUP_SOURCES =
+
+VSLEAVE_SUP_SOURCES +=   \
+   $(BASE_SOURCES) \
+   $(VSLEAVE_PATH)/vsleave_findpar.f90		\
+   $(VSLEAVE_PATH)/vsleave_sup_inputs_def.f90	\
+   $(VSLEAVE_PATH)/vsleave_sup_outputs_def.f90	\
+   $(VSLEAVE_PATH)/vsleave_sup_aux.f90       	\
+   $(VSLEAVE_PATH)/vsleave_sup_routines.f90	\
+   $(VSLEAVE_PATH)/vsleave_sup_masters.f90   	\
+   $(VSLEAVE_PATH)/vsleave_sup_mod.f90
+
+VSLEAVE_LINSUP_SOURCES += \
+   $(VSLEAVE_SUP_SOURCES) \
+   $(VSLEAVE_PATH)/vsleave_lin_sup_inputs_def.f90	\
+   $(VSLEAVE_PATH)/vsleave_lin_sup_outputs_def.f90	\
+   $(VSLEAVE_PATH)/vsleave_lin_sup_routines.f90		\
+   $(VSLEAVE_PATH)/vsleave_lin_sup_masters.f90		\
+   $(VSLEAVE_PATH)/vsleave_lin_sup_mod.f90
+
+#
+# Define supplement pattern rule for creating object files
+#
+
+$(OBJ_PATH)/%.o : $(VSLEAVE_PATH)/%.f90
+	$(FC) $(FFLAGS) $< -o $@

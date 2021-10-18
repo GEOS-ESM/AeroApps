@@ -1,0 +1,2164 @@
+
+ Number of SurfaceWFs/Beams/Quad-streams/User-streams/User-relazms/nstokessq/GCM flag
+
+    1    1    1    1    3    1   F
+
+ ****************************************
+ VBRDF Name: Lambertian   VBRDF Index:  1
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   1.0000000E+00     1.0000000E+00
+   1   1   2   1.0000000E+00     1.0000000E+00
+   1   1   3   1.0000000E+00     1.0000000E+00
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   1.0000000E+00     1.0000000E+00
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   1.0000000E+00     1.0000000E+00
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   1.0000000E+00     1.0000000E+00
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.0000000E+00     1.0000000E+00
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   0.0000000E+00     0.0000000E+00
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   0.0000000E+00     0.0000000E+00
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   0.0000000E+00     0.0000000E+00
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   0.0000000E+00     0.0000000E+00
+
+
+ ****************************************
+ VBRDF Name: Ross-thin   VBRDF Index:  2
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -5.8332066E-03    -5.8332066E-03
+   1   1   2   7.8572400E-02     7.8572400E-02
+   1   1   3   2.2761539E-01     2.2761539E-01
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   3.1724948E+00     3.1724948E+00
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   1.2496939E+00     1.2496939E+00
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   7.2488197E-01     7.2488197E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.0557739E-01     1.0557739E-01
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -8.4303565E-01    -8.4303565E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -5.3608720E-01    -5.3608720E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -1.5789498E-01    -1.5789498E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.1650687E-01    -1.1650687E-01
+
+
+ ****************************************
+ VBRDF Name: Ross-thick   VBRDF Index:  3
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -8.5567075E-02    -8.5567075E-02
+   1   1   2  -4.7821989E-02    -4.7821989E-02
+   1   1   3   1.8828091E-02     1.8828091E-02
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   4.0042463E-01     4.0042463E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   9.0319807E-02     9.0319807E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -2.4086882E-02    -2.4086882E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -3.5745712E-02    -3.5745712E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -2.1075891E-01    -2.1075891E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -1.6644667E-01    -1.6644667E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -5.2362401E-02    -5.2362401E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -5.2100352E-02    -5.2100352E-02
+
+
+ ****************************************
+ VBRDF Name: Li-sparse   VBRDF Index:  4
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -1.2621230E+00    -1.2621230E+00
+   1   1   2  -9.7622320E-01    -9.7622320E-01
+   1   1   3  -3.8220779E-01    -3.8220779E-01
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   7.7582160E-02     7.7582160E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -1.4861598E+00    -1.4861598E+00
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -1.9451200E+00    -1.9451200E+00
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -8.6148329E-01    -8.6148329E-01
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -6.5593948E+00    -6.5593948E+00
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -2.8360958E+00    -2.8360958E+00
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -7.5515465E-01    -7.5515465E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -4.3429044E-01    -4.3429044E-01
+
+
+ For surface Jacobian # 2
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -8.5774111E-01    -8.5771283E-01
+   1   1   2  -8.2057646E-01    -8.2055676E-01
+   1   1   3  -6.1170098E-01    -6.1169592E-01
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -3.4117572E-01    -3.4111327E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -6.5270716E-01    -6.5258434E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -1.4244843E+00    -1.4243754E+00
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -7.7059481E-01    -7.7057782E-01
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   4.3630879E-01     4.3637165E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   4.8233502E-01     4.8241693E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   5.0448534E-02     5.0491379E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.1604437E-01    -1.1603251E-01
+
+
+ For surface Jacobian # 3
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -6.7353582E-01    -6.7354001E-01
+   1   1   2  -4.8470858E-01    -4.8470844E-01
+   1   1   3  -3.0824930E-02    -3.0807565E-02
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   2.6300828E+00     2.6303626E+00
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   1.5568186E-01     1.5578835E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -8.4131393E-01    -8.4130211E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -3.9280711E-01    -3.9280317E-01
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -5.9316486E+00    -5.9319355E+00
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -2.3761603E+00    -2.3762767E+00
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -6.4594880E-01    -6.4597703E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -3.1452853E-01    -3.1453869E-01
+
+
+ ****************************************
+ VBRDF Name: Li-dense   VBRDF Index:  5
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -1.1619300E+00    -1.1619300E+00
+   1   1   2  -1.0182388E+00    -1.0182388E+00
+   1   1   3  -7.9674057E-01    -7.9674057E-01
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   2.7012865E-02     2.7012865E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -6.4725827E-01    -6.4725827E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -9.6629321E-01    -9.6629321E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -9.8353776E-01    -9.8353776E-01
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -1.8347332E+00    -1.8347332E+00
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -9.1106528E-01    -9.1106528E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -2.6182002E-01    -2.6182002E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.7918454E-01    -1.7918454E-01
+
+
+ For surface Jacobian # 2
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -0.0000000E+00     0.0000000E+00
+   1   1   2  -0.0000000E+00     0.0000000E+00
+   1   1   3  -9.6823241E-02    -9.6783241E-02
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -3.4524411E-02    -3.4519539E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -3.2437642E-03    -3.2055570E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   0.0000000E+00     0.0000000E+00
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.0752127E-02    -1.0744277E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   6.8421206E-02     6.8411658E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   6.4807892E-03     6.4047279E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   0.0000000E+00     0.0000000E+00
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   2.0980119E-02     2.0965059E-02
+
+
+ For surface Jacobian # 3
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -1.1228101E-01    -1.1228077E-01
+   1   1   2  -2.1731036E-03    -2.1713483E-03
+   1   1   3   9.4878294E-02     9.4899587E-02
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   7.5631113E-01     7.5632216E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   3.5186138E-01     3.5187519E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   4.1411612E-02     4.1414154E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.6399559E-02     1.6405035E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -8.7954350E-01    -8.7954539E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -5.2221535E-01    -5.2222109E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -1.6349959E-01    -1.6349997E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.2165785E-01    -1.2166617E-01
+
+
+ ****************************************
+ VBRDF Name: Hapke   VBRDF Index:  6
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   1.8610989E-01     1.8610989E-01
+   1   1   2   1.9240737E-01     1.9240737E-01
+   1   1   3   2.0588793E-01     2.0588793E-01
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   2.7040778E-01     2.7040778E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   2.1901203E-01     2.1901203E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   2.0054547E-01     2.0054547E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.9500462E-01     1.9500462E-01
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -9.1878946E-02    -9.1878946E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -4.0815808E-02    -4.0815808E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -1.0506319E-02    -1.0506319E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -9.6824274E-03    -9.6824274E-03
+
+
+ For surface Jacobian # 2
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   4.9459981E-01     4.9463683E-01
+   1   1   2   5.0499066E-01     5.0502767E-01
+   1   1   3   5.2723358E-01     5.2727059E-01
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   6.6206276E-01     6.6210185E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   5.6158627E-01     5.6162396E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   5.2171611E-01     5.2175257E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   5.0927612E-01     5.0931313E-01
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -1.5160026E-01    -1.5160026E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -6.7346083E-02    -6.7346083E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -1.7335426E-02    -1.7335426E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.5976005E-02    -1.5976005E-02
+
+
+ For surface Jacobian # 3
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   2.0523497E-01     2.0523237E-01
+   1   1   2   2.4153103E-01     2.4152745E-01
+   1   1   3   3.3420213E-01     3.3419501E-01
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   2.8860248E-01     2.8859567E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   2.1692328E-01     2.1692041E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   1.7890523E-01     1.7890350E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   2.6065699E-01     2.6065264E-01
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -3.1505842E-01    -3.1504693E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -1.6325729E-01    -1.6325372E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -3.9950208E-02    -3.9949512E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -6.2891956E-02    -6.2889810E-02
+
+
+ For surface Jacobian # 4
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   1.4097830E-02     1.4097830E-02
+   1   1   2   1.7015057E-02     1.7015057E-02
+   1   1   3   2.5479086E-02     2.5479086E-02
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   2.6244457E-02     2.6244457E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   1.5064410E-02     1.5064410E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   1.1886997E-02     1.1886997E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.8804111E-02     1.8804111E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -3.5272657E-02    -3.5272657E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -1.2448527E-02    -1.2448527E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -2.8810952E-03    -2.8810952E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -5.4861009E-03    -5.4861009E-03
+
+
+ ****************************************
+ VBRDF Name: Roujean   VBRDF Index:  7
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -5.5801921E-01    -5.5801921E-01
+   1   1   2  -5.0489218E-01    -5.0489218E-01
+   1   1   3  -3.8403322E-01    -3.8403322E-01
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -1.1967044E+00    -1.1967044E+00
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -1.1025432E+00    -1.1025432E+00
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -1.0983253E+00    -1.0983253E+00
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -4.8042095E-01    -4.8042095E-01
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -1.2179825E+00    -1.2179825E+00
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -5.2143037E-01    -5.2143037E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -1.3240564E-01    -1.3240564E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -8.6544492E-02    -8.6544492E-02
+
+
+ ****************************************
+ VBRDF Name: Rahman   VBRDF Index:  8
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   2.2996659E-01     2.2996659E-01
+   1   1   2   2.9928158E-01     2.9928158E-01
+   1   1   3   4.9078988E-01     4.9078988E-01
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   4.9235556E-01     4.9235556E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   2.7326833E-01     2.7326833E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   1.8409576E-01     1.8409576E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   3.4013670E-01     3.4013670E-01
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -6.7017305E-01    -6.7017305E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -2.7172082E-01    -2.7172082E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -5.8042972E-02    -5.8042972E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.2744372E-01    -1.2744372E-01
+
+
+ For surface Jacobian # 2
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   2.1946724E+00     2.1946642E+00
+   1   1   2   2.8512486E+00     2.8512375E+00
+   1   1   3   4.6583635E+00     4.6583435E+00
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   4.6942183E+00     4.6942003E+00
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   2.6232871E+00     2.6232789E+00
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   1.7719852E+00     1.7719802E+00
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   3.2364539E+00     3.2364408E+00
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -6.3508546E+00    -6.3508262E+00
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -2.5971589E+00    -2.5971496E+00
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -5.5630204E-01    -5.5630020E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.2041457E+00    -1.2041399E+00
+
+
+ For surface Jacobian # 3
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   4.2999887E-02     4.3051465E-02
+   1   1   2  -1.5811855E-01    -1.5805688E-01
+   1   1   3  -1.0753646E+00    -1.0753659E+00
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -9.4335950E-01    -9.4346382E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -6.3716097E-02    -6.3686966E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   2.1981416E-01     2.1984532E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -3.7094367E-01    -3.7089873E-01
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   2.3485385E+00     2.3487530E+00
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   5.6599721E-01     5.6596127E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   3.9905155E-02     3.9885187E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   5.3014553E-01     5.3016565E-01
+
+
+ For surface Jacobian # 4
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   8.5418293E-02     8.5419094E-02
+   1   1   2   1.1116451E-01     1.1116555E-01
+   1   1   3   1.8229793E-01     1.8229964E-01
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -6.7572424E-01    -6.7570083E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -1.6655354E-01    -1.6655098E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -5.7076867E-02    -5.7076420E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.2633964E-01     1.2634082E-01
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   9.1976655E-01     9.1973467E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   1.6561036E-01     1.6560781E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   1.7995585E-02     1.7995444E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -4.7337420E-02    -4.7337864E-02
+
+
+ ****************************************
+ VBRDF Name: Cox-Munk   VBRDF Index:  9
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   4.9703953E-02     4.9703953E-02
+   1   1   2   2.9087331E-02     2.9087331E-02
+   1   1   3   1.3190549E-02     1.3190549E-02
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   7.3446159E-02     7.3446159E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   2.2685046E-02     2.2685046E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   5.2284712E-03     5.2284712E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   2.8513115E-02     2.8513115E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   1.4266962E-01     1.4266962E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   4.1776149E-02     4.1776149E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   6.3485767E-03     6.3485767E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.7939052E-02     1.7939052E-02
+
+
+ For surface Jacobian # 2
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -2.3924152E-01    -2.3924414E-01
+   1   1   2   8.6242232E-02     8.6216405E-02
+   1   1   3   1.9009532E-01     1.9007898E-01
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -4.2499551E-01    -4.2496304E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   5.1609212E-02     5.1599424E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   1.5694931E-01     1.5695140E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   5.0617860E-02     5.0599777E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -8.8243861E-01    -8.8237332E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   4.3586075E-02     4.3566313E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   1.3715816E-01     1.3714961E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -2.0196650E-01    -2.0196194E-01
+
+
+ For surface Jacobian # 3
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   9.2368082E-02     9.2370786E-02
+   1   1   2   5.4204210E-02     5.4205826E-02
+   1   1   3   2.4632934E-02     2.4633679E-02
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   8.5732237E-02     8.5728157E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   3.6307824E-02     3.6307923E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   9.4600901E-03     9.4603190E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   5.3097071E-02     5.3098647E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   1.6631138E-01     1.6630343E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   6.6684807E-02     6.6684956E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   1.1408107E-02     1.1408368E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   3.3290026E-02     3.3290991E-02
+
+
+ ****************************************
+ VBRDF Name: GissCoxMnk   VBRDF Index: 10
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   4.9703953E-02     4.9703953E-02
+   1   1   2   2.9087331E-02     2.9087331E-02
+   1   1   3   1.3190549E-02     1.3190549E-02
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   7.3446159E-02     7.3446159E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   2.2685046E-02     2.2685046E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   5.2284712E-03     5.2284712E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   2.8513115E-02     2.8513115E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   1.4266962E-01     1.4266962E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   4.1776149E-02     4.1776149E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   6.3485767E-03     6.3485767E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.7939052E-02     1.7939052E-02
+
+
+ For surface Jacobian # 2
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -4.7848304E-01    -4.7848828E-01
+   1   1   2   1.7248446E-01     1.7243281E-01
+   1   1   3   3.8019064E-01     3.8015795E-01
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -8.4999101E-01    -8.4992608E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   1.0321842E-01     1.0319885E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   3.1389862E-01     3.1390280E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.0123572E-01     1.0119955E-01
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -1.7648772E+00    -1.7647466E+00
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   8.7172151E-02     8.7132626E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   2.7431631E-01     2.7429922E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -4.0393300E-01    -4.0392388E-01
+
+
+ ****************************************
+ VBRDF Name: GCMcomplex   VBRDF Index: 11
+
+ (No Surface Jacobians for this BRDF kernel)
+
+
+ ****************************************
+ VBRDF Name: BPDF-Soil   VBRDF Index: 12
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   4.1182069E-03     4.1182069E-03
+   1   1   2   4.4647684E-03     4.4647684E-03
+   1   1   3   5.1587965E-03     5.1587965E-03
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   1.1483267E-02     1.1483267E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   6.9508165E-03     6.9508165E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   5.6742377E-03     5.6742377E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   4.5971872E-03     4.5971872E-03
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -5.1431889E-03    -5.1431889E-03
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -2.4338026E-03    -2.4338026E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -6.4210761E-04    -6.4210761E-04
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -5.1497773E-04    -5.1497773E-04
+
+
+ For surface Jacobian # 2
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   2.0525699E-02     2.0527927E-02
+   1   1   2   2.2314486E-02     2.2316932E-02
+   1   1   3   2.5838094E-02     2.5840949E-02
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   5.2283458E-02     5.2287716E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   3.3361555E-02     3.3364741E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   2.7834364E-02     2.7837216E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   2.2981340E-02     2.2983862E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -3.3305614E-02    -3.3311365E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -1.4119359E-02    -1.4121563E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -3.5790689E-03    -3.5795971E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -2.6294762E-03    -2.6297869E-03
+
+
+ ****************************************
+ VBRDF Name: BPDF-Vegn   VBRDF Index: 13
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   3.1303758E-03     3.1303758E-03
+   1   1   2   4.4874188E-03     4.4874188E-03
+   1   1   3   6.2087945E-03     6.2087945E-03
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   8.1665969E-03     8.1665969E-03
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   7.3488827E-03     7.3488827E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   6.6367997E-03     6.6367997E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   4.7205472E-03     4.7205472E-03
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -2.4818433E-03    -2.4818433E-03
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -3.0978411E-03    -3.0978411E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -1.0657585E-03    -1.0657585E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.5156403E-03    -1.5156403E-03
+
+
+ For surface Jacobian # 2
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   1.5446193E-02     1.5447870E-02
+   1   1   2   2.2203414E-02     2.2205848E-02
+   1   1   3   3.0786091E-02     3.0789493E-02
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   3.6614097E-02     3.6616986E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   3.5077848E-02     3.5081250E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   3.2242851E-02     3.2246159E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   2.3368047E-02     2.3370614E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -1.7449584E-02    -1.7452964E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -1.7003166E-02    -1.7005595E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -5.6666770E-03    -5.6674424E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -7.5547454E-03    -7.5555961E-03
+
+
+ ****************************************
+ VBRDF Name: BPDF-NDVI   VBRDF Index: 14
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   1.6141348E-03     1.6141348E-03
+   1   1   2   1.7178384E-03     1.7178384E-03
+   1   1   3   1.9311917E-03     1.9311917E-03
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   2.6794026E-03     2.6794026E-03
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   1.9899652E-03     1.9899652E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   1.7299199E-03     1.7299199E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.7589758E-03     1.7589758E-03
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -7.8702525E-04    -7.8702525E-04
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -4.7404827E-04    -4.7404827E-04
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -1.3599013E-04    -1.3599013E-04
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.5668243E-04    -1.5668243E-04
+
+
+ For surface Jacobian # 2
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   7.9646149E-03     7.9654794E-03
+   1   1   2   8.4997363E-03     8.5006682E-03
+   1   1   3   9.5757467E-03     9.5768049E-03
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   1.1906084E-02     1.1907001E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   9.4160744E-03     9.4169596E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   8.3988306E-03     8.3996904E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   8.7049494E-03     8.7059045E-03
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -5.9239213E-03    -5.9251309E-03
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -2.9644241E-03    -2.9649565E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -7.9040952E-04    -7.9053940E-04
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -7.9634933E-04    -7.9644515E-04
+
+
+ For surface Jacobian # 3
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -1.5979934E-03    -1.5979775E-03
+   1   1   2  -1.7006600E-03    -1.7006430E-03
+   1   1   3  -1.9118798E-03    -1.9118607E-03
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -2.6526085E-03    -2.6525820E-03
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -1.9700655E-03    -1.9700458E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -1.7126207E-03    -1.7126036E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.7413861E-03    -1.7413687E-03
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   7.7915499E-04     7.7914720E-04
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   4.6930778E-04     4.6930309E-04
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   1.3463023E-04     1.3462889E-04
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.5511560E-04     1.5511405E-04
+
+
+ For surface Jacobian # 4
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   1.5979934E-03     1.5979934E-03
+   1   1   2   1.7006600E-03     1.7006600E-03
+   1   1   3   1.9118798E-03     1.9118798E-03
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   2.6526085E-03     2.6526085E-03
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   1.9700655E-03     1.9700655E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   1.7126207E-03     1.7126207E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.7413861E-03     1.7413861E-03
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -7.7915499E-04    -7.7915499E-04
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -4.6930778E-04    -4.6930778E-04
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -1.3463023E-04    -1.3463023E-04
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.5511560E-04    -1.5511560E-04
+
+
+ ****************************************
+ VBRDF Name: NewCMGlint   VBRDF Index: 15
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -1.2249166E-03    -1.2249295E-03
+   1   1   2   4.4156023E-04     4.4143297E-04
+   1   1   3   9.7328804E-04     9.7320750E-04
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -2.1668408E-03    -2.1758170E-03
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   2.6583148E-04     2.6419094E-04
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   8.0409133E-04     8.0359076E-04
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   2.5916344E-04     2.5907434E-04
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -4.5004514E-03    -4.5177639E-03
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   2.2604203E-04     2.2306333E-04
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   7.0281710E-04     7.0220765E-04
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.0340685E-03    -1.0340460E-03
+
+
+ ****************************************
+ VBRDF Name: NewGCMGlit   VBRDF Index: 16
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -1.2249166E-03    -1.2249295E-03
+   1   1   2   4.4156023E-04     4.4143297E-04
+   1   1   3   9.7328804E-04     9.7320750E-04
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   3.0294013E-02    -2.1758170E-03
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   5.2796538E-03     2.6419094E-04
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   1.9595380E-03     8.0359076E-04
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   2.5916345E-04     2.5907434E-04
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   5.8555072E-02    -4.5177639E-03
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   9.4594087E-03     2.2306333E-04
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   2.1058504E-03     7.0220765E-04
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.0340685E-03    -1.0340460E-03
+
+
+ ****************************************
+ VBRDF Name: RtkHotSpot   VBRDF Index: 17
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -2.6734584E-02    -2.6734584E-02
+   1   1   2  -8.4174208E-03    -8.4174208E-03
+   1   1   3   2.7311129E-02     2.7311129E-02
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   1.9707848E-01     1.9707848E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   4.9290979E-02     4.9290979E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -2.2240965E-03    -2.2240965E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -1.6878413E-03    -1.6878413E-03
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -1.2790764E-01    -1.2790764E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -7.9255734E-02    -7.9255734E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -2.4077515E-02    -2.4077515E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -2.6767264E-02    -2.6767264E-02
+
+
+ ****************************************
+ VBRDF Name: ModFresnel   VBRDF Index: 18
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   1.3459653E-02     1.3459653E-02
+   1   1   2   1.1108345E-02     1.1108345E-02
+   1   1   3   8.3380094E-03     8.3380094E-03
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   5.9670247E-03     5.9670247E-03
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   4.5627474E-03     4.5627474E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   4.1772820E-03     4.1772820E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.0755790E-02     1.0755790E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   1.1132028E-02     1.1132028E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   7.2096961E-03     7.2096961E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   2.4734935E-03     2.4734935E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   2.5558609E-03     2.5558609E-03
+
+
+ For surface Jacobian # 2
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   6.6413881E-02     6.6421090E-02
+   1   1   2   5.4963264E-02     5.4969290E-02
+   1   1   3   4.1343729E-02     4.1348298E-02
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   1.9034064E-02     1.9033382E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   1.9806180E-02     1.9807428E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   2.0173282E-02     2.0175307E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   5.3207903E-02     5.3213733E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   3.5273406E-02     3.5272063E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   3.0817823E-02     3.0819591E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   1.1659725E-02     1.1660788E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.2514851E-02     1.2516170E-02
+
+
+ For surface Jacobian # 3
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -1.1555928E-01    -1.1555207E-01
+   1   1   2  -5.2602031E-02    -5.2602657E-02
+   1   1   3   7.7599738E-03     7.7540556E-03
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -2.7270009E-02    -2.7267596E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   3.3351103E-03     3.3351331E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   4.9964919E-02     4.9960562E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -4.7247987E-02    -4.7248617E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -6.3151216E-02    -6.3146534E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -3.0253214E-02    -3.0254667E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -8.9104785E-03    -8.9136342E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -6.1300043E-02    -6.1293583E-02
+
+
+ For surface Jacobian # 4
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   1.3325057E-02     1.3325057E-02
+   1   1   2   1.0997262E-02     1.0997262E-02
+   1   1   3   8.2546293E-03     8.2546293E-03
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   5.9073545E-03     5.9073545E-03
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   4.5171199E-03     4.5171199E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   4.1355091E-03     4.1355091E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   1.0648232E-02     1.0648232E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   1.1020708E-02     1.1020708E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   7.1375992E-03     7.1375992E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   2.4487585E-03     2.4487585E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   2.5303023E-03     2.5303023E-03
+
+
+ For surface Jacobian # 5
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -6.2451373E-03    -6.2453846E-03
+   1   1   2  -3.6671986E-03    -3.6673548E-03
+   1   1   3  -1.1833711E-03    -1.1834265E-03
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -2.0229002E-02    -2.0228472E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -8.6981690E-03    -8.6982211E-03
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -3.9183577E-03    -3.9184679E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -3.4447076E-03    -3.4448520E-03
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -3.8029655E-02    -3.8028641E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -1.4652300E-02    -1.4652366E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -3.3599265E-03    -3.3600028E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -2.5152005E-03    -2.5152963E-03
+
+
+ ****************************************
+ VBRDF Name: SnowModel   VBRDF Index: 19
+
+ For surface Jacobian # 1
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1   6.8976798E-01     6.8976798E-01
+   1   1   2   6.9203056E-01     6.9203056E-01
+   1   1   3   6.9500665E-01     6.9500665E-01
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   7.9206219E-01     7.9206219E-01
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   7.1089026E-01     7.1089026E-01
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   6.7597475E-01     6.7597475E-01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   6.9245837E-01     6.9245837E-01
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -4.8948682E-02    -4.8948682E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -1.9123842E-02    -1.9123842E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -4.6428775E-03    -4.6428775E-03
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -2.6047533E-03    -2.6047533E-03
+
+
+ For surface Jacobian # 2
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -4.1456732E-02    -4.1455247E-02
+   1   1   2  -4.1497725E-02    -4.1496240E-02
+   1   1   3  -4.1551404E-02    -4.1549918E-02
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -2.5797435E-02    -2.5796639E-02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -3.1333205E-02    -3.1332173E-02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -3.3797986E-02    -3.3796837E-02
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -4.1505405E-02    -4.1503920E-02
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   3.0131800E-04     3.0131624E-04
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   2.0293624E-04     2.0293463E-04
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   6.1445618E-05     6.1445065E-05
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   4.7069452E-05     4.7068944E-05
+
+
+ For surface Jacobian # 3
+ ------------------------
+
+           Exact BRDF, all geometries
+
+  sza vza azm  Exact BRDF values
+
+   1   1   1  -6.4748041E+04    -6.4747986E+04
+   1   1   2  -6.4812065E+04    -6.4812009E+04
+   1   1   3  -6.4895902E+04    -6.4895846E+04
+
+
+           Fourier component #   0
+
+               str str  BRDF values
+
+ Stream-Stream   1   1  -4.0291005E+04    -4.0290975E+04
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1  -4.8936892E+04    -4.8936854E+04
+
+               str vza  BRDF values
+
+ Stream-Users    1   1  -5.2786442E+04    -5.2786399E+04
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1  -6.4824060E+04    -6.4824005E+04
+
+
+           Fourier component #   1
+
+               str str  BRDF values
+
+ Stream-Stream   1   1   4.7060513E+02     4.7060502E+02
+
+               sza str  BRDF values
+
+ Solars-Stream   1   1   3.1695031E+02     3.1695025E+02
+
+               str vza  BRDF values
+
+ Stream-Users    1   1   9.5967126E+01     9.5967121E+01
+
+               sza vza  BRDF values
+
+ Solars-Users    1   1   7.3514111E+01     7.3514102E+01
+

@@ -1,0 +1,11 @@
+#
+# Define individual supplement paths
+#
+
+VSLEAVE_PATH = $(VSUP_PATH)/vsleave
+
+#
+# Include individual supplement makefiles
+#
+
+include $(VSLEAVE_PATH)/makefile.vsleave
