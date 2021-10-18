@@ -57,6 +57,8 @@ class BENCHMARK(POLAR_VLIDORT):
             self.setupBRDF_BPDF1()
         if case == 'gisscx':
             self.setupGISSCX()
+        if case == 'gisscx_sleave':
+            self.setupGISSCX_SLEAVE()
 
         # calc angles
         self.calcAngles()
@@ -298,6 +300,55 @@ class BENCHMARK(POLAR_VLIDORT):
         self.nstreams = 16
         self.plane_parallel = True
         self.albedoType = 'OCIGissCX'
+        # [nkernel,nch,nobs]
+        self.kernel_wt = np.zeros([3,1,1])
+        self.kernel_wt[0,:,:]= 0.17424166  #fiso
+        self.kernel_wt[1,:,:]= 0.044916667 #fgeo
+        self.kernel_wt[2,:,:]= 0.041216664 # fvol
+
+        self.mr = np.array([1.333])
+        self.U10m = np.array([3.0])
+        self.V10m = np.array([4.0])
+
+        self.channel = 350.0
+
+        self.ROT.shape = (self.km,1,1) #(km,nobs,nch)
+        self.ze.shape = (self.km+1,1)
+
+        # molecular absorption
+        self.alpha = np.zeros([1])
+        self.alpha.shape = (self.km,1,1) #(km,nobs,nch)
+
+        # aerosol optical depth
+        self.tau = np.zeros([1])
+        self.tau.shape = (self.km,1,1) #(km,nch,nobs)
+
+        # aerosol SSA
+        self.ssa = np.zeros([1])
+        self.ssa.shape = (self.km,1,1) #(km,nch,nobs)
+
+        # aerosol expansion coefficients
+        #(km,nch,nobs,nMom,nPol)
+        self.pmom = np.zeros([self.km,1,1,self.nMom,self.nPol])
+
+    # ---
+    def setupGISSCX_SLEAVE(self):
+        self.SZA = 45.0
+        self.SAA = 0.0
+        nvza = 17
+        nvaa = 73
+        self.VZA = np.arange(nvza)*5
+        self.VAA = np.arange(nvaa)*5
+
+        self.depol_ratio = np.array([0.03])
+        self.ROT = np.array([0.1])
+        self.ze  = np.array([1,0])
+        self.nMom = 32
+        self.nPol = 6
+        self.km = 1
+        self.nstreams = 16
+        self.plane_parallel = True
+        self.albedoType = 'OCIGissCX_NOBM_CLOUD'
         # [nkernel,nch,nobs]
         self.kernel_wt = np.zeros([3,1,1])
         self.kernel_wt[0,:,:]= 0.17424166  #fiso
