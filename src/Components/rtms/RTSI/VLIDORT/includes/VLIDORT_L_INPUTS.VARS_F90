@@ -1,0 +1,185 @@
+! ===============================================================
+! =                                                             =
+! =                    THE VECTOR LIDORT MODEL                  =
+! =                                                             =
+! =  (Vector LInearized Discrete Ordinate Radiative Transfer)   =
+! =   -      --         -        -        -         -           =
+! =                                                             =
+! ===============================================================
+
+! ===============================================================
+! =                                                             =
+! =  Author :      Robert. J. D. Spurr                          =
+! =                                                             =
+! =  Address :      RT Solutions, inc.                          =
+! =                 9 Channing Street                           =
+! =                 Cambridge, MA 02138, USA                    =
+! =                 Tel: (617) 492 1183                         =
+! =                                                             =
+! =  Email :      rtsolutions@verizon.net                       =
+! =                                                             =
+! =  Versions     :   2.0, 2.2, 2.3, 2.4, 2.4R, 2.4RT           =
+! =  Release Date :   December 2005  (2.0)                      =
+! =  Release Date :   March 2007     (2.2)                      =
+! =  Release Date :   October 2007   (2.3)                      =
+! =  Release Date :   December 2008  (2.4)                      =
+! =  Release Date :   April/May 2009 (2.4R)                     =
+! =  Release Date :   July 2009      (2.4RT)                    !
+! =                                                             =
+! =       NEW: TOTAL COLUMN JACOBIANS         (2.4)             =
+! =       NEW: BPDF Land-surface KERNELS      (2.4R)            =
+! =       NEW: Thermal Emission Treatment     (2.4RT)           =
+! =                                                             =
+! ===============================================================
+
+!    =====================================================
+!    =                                                   =
+!    =   This Version of VLIDORT comes with a GNU-style  =
+!    =   license. Please read the license carefully.     =
+!    =                                                   =
+!    =====================================================
+
+!  include file of Inputs for linearization control and optical properties
+
+!  Extension to Version 2.4.
+!  ------------------------
+
+!  RT Solutions Inc. RJD Spurr.  07 December 2008. 
+!   Introduction of Bulk-property linearization.
+!    Based on LIDORT Version 3.3 code.
+
+!  RT Solutions Inc. RJD Spurr.  11 September 2009. 
+!    LTE linearization: Introduction of T-Jacobians for BB functions
+!   Only works with pure thermal emission (no scattering)
+!  Introduced for the GEOCAPE study
+
+!  overall linearization control
+!  -----------------------------
+
+      LOGICAL             DO_SIMULATION_ONLY
+      LOGICAL             DO_LINEARIZATION
+
+!  Atmospheric linearization
+!  -------------------------
+
+!  control
+
+      LOGICAL             DO_PROFILE_LINEARIZATION
+      LOGICAL             DO_COLUMN_LINEARIZATION
+      LOGICAL             DO_ATMOS_LINEARIZATION
+
+!  New flag for LTE linearization     ------------------ NEW 9/11/09
+
+      LOGICAL             DO_LTE_LINEARIZATION
+
+!  Total number of atmospheric weighting functions
+
+      INTEGER             N_TOTALPROFILE_WFS
+      INTEGER             N_TOTALCOLUMN_WFS
+      INTEGER             N_TOTALATMOS_WFS
+
+!  Control for atmospheric linearizations, layer by layer
+
+      LOGICAL             LAYER_VARY_FLAG  (MAXLAYERS)
+      INTEGER             LAYER_VARY_NUMBER(MAXLAYERS)
+
+!  Optical property linearizations
+!  -------------------------------
+
+!  Layer linearization (bulk property variation) input
+
+      DOUBLE PRECISION                                    &
+             L_OMEGA_TOTAL_INPUT(MAX_ATMOSWFS,MAXLAYERS), &
+             L_DELTAU_VERT_INPUT(MAX_ATMOSWFS,MAXLAYERS)
+
+!  Layer linearization (Greek matrix coefficient variation) input
+
+      DOUBLE PRECISION                                              &
+             L_GREEKMAT_TOTAL_INPUT                                 &
+           (MAX_ATMOSWFS,0:MAXMOMENTS_INPUT,MAXLAYERS,MAXSTOKES_SQ)
+
+!  LTE linearization for BB & total optical depths    ----- NEW 9/11/09
+
+      DOUBLE PRECISION LTE_DELTAU_VERT_INPUT(2,MAXLAYERS)
+      DOUBLE PRECISION LTE_THERMAL_BB_INPUT (0:MAXLAYERS)
+
+!  Surface Linearization
+!  ---------------------
+
+!  Control
+
+      LOGICAL             DO_SURFACE_LINEARIZATION
+      LOGICAL             DO_SURFBB_LINEARIZATION
+
+!   Flags for WF of bidirectional function parameters and factors
+
+      LOGICAL             DO_KERNEL_FACTOR_WFS  ( MAX_BRDF_KERNELS )
+      LOGICAL             DO_KERNEL_PARAMS_WFS  ( MAX_BRDF_KERNELS, MAX_BRDF_PARAMETERS )
+
+!  derived quantity (tells you when to do BRDF derivatives
+
+      LOGICAL             DO_KPARAMS_DERIVS  ( MAX_BRDF_KERNELS )
+
+!  number of albedo weighting functions
+
+      INTEGER             N_TOTALBRDF_WFS
+      INTEGER             N_KERNEL_FACTOR_WFS
+      INTEGER             N_KERNEL_PARAMS_WFS
+
+!  weighting function names
+!  ------------------------
+
+      CHARACTER*31       PROFILEWF_NAMES(MAX_ATMOSWFS)
+      CHARACTER*31       COLUMNWF_NAMES (MAX_ATMOSWFS)
+      CHARACTER*22       SURFACEWF_NAMES(MAX_SURFACEWFS)
+
+!  commons
+!  -------
+
+      COMMON / L_VLIDORT_OVERALL_INPUTS /  &
+             DO_SIMULATION_ONLY,           &  ! L
+             DO_LINEARIZATION                 ! L
+ 
+      COMMON / L_VLIDORT_OPBASIC_INPUTS /  &
+             L_OMEGA_TOTAL_INPUT,          &  ! L
+             L_DELTAU_VERT_INPUT,          &  ! L
+             L_GREEKMAT_TOTAL_INPUT           ! L
+
+      COMMON / L_VLIDORT_ATMOS_INPUTS /    &
+             LAYER_VARY_NUMBER,            &  ! I
+             N_TOTALPROFILE_WFS,           &  ! I
+             N_TOTALCOLUMN_WFS,            &  ! I
+             N_TOTALATMOS_WFS,             &  ! I
+             LAYER_VARY_FLAG,              &  ! L
+             DO_ATMOS_LINEARIZATION,       &  ! L
+             DO_PROFILE_LINEARIZATION,     &  ! L
+             DO_COLUMN_LINEARIZATION          ! L
+
+      COMMON / L_VLIDORT_SURFACE_INPUTS /  &
+          N_KERNEL_FACTOR_WFS,             &  ! I
+          N_KERNEL_PARAMS_WFS,             &  ! I
+          N_TOTALBRDF_WFS,                 &  ! I
+          DO_KERNEL_PARAMS_WFS,            &  ! L
+          DO_KERNEL_FACTOR_WFS,            &  ! L
+          DO_KPARAMS_DERIVS,               &  ! L 
+          DO_SURFACE_LINEARIZATION,        &  ! L
+          DO_SURFBB_LINEARIZATION             ! L
+
+      COMMON / L_VLIDORT_WFNAMES /         &   
+           SURFACEWF_NAMES, PROFILEWF_NAMES, COLUMNWF_NAMES
+
+      SAVE   / L_VLIDORT_OVERALL_INPUTS /
+      SAVE   / L_VLIDORT_OPBASIC_INPUTS /
+      SAVE   / L_VLIDORT_ATMOS_INPUTS   /
+      SAVE   / L_VLIDORT_SURFACE_INPUTS /
+      SAVE   / L_VLIDORT_WFNAMES        /
+
+!  The following is new 9/11/09 for LTE linearization variables
+
+      COMMON / LTE_VLIDORT_INPUTS /                    &
+          LTE_DELTAU_VERT_INPUT, LTE_THERMAL_BB_INPUT, &   ! D
+          DO_LTE_LINEARIZATION                             ! L
+
+      SAVE   / LTE_VLIDORT_INPUTS       /
+
+!  End of file.
