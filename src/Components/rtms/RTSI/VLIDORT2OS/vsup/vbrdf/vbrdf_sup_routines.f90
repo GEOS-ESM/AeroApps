@@ -1602,15 +1602,24 @@
 !  11/1/19. Some new local variables
 
       INTEGER ::          I, UI, J, KPHI, IB, Q, O1, O2, OM, OOFF(4), NK, NK2
-      DOUBLE PRECISION :: REFL, HELP, EMISS(4) ! EMISS(16)
+      DOUBLE PRECISION :: REFL, HELP, HELPC, HELPS, EMISS(4) ! EMISS(16)
       INTEGER ::          COSSIN_MASK(16)
 
       INTEGER, PARAMETER :: LUM = 1 
-      COSSIN_MASK = (/ 1,1,2,0,1,1,2,0,2,2,1,0,0,0,0,1 /)
+!  define cos/sin mask
+!   -- 7/28/21. IMPORTANT. Define mask with 3 entries now.
+
+  !    COSSIN_MASK = (/ 1,1,2,0,1,1,2,0,2,2,1,0,0,0,0,1 /)
+      COSSIN_MASK = (/ 1,1,2,0,1,1,2,0,3,3,1,0,0,0,0,1 /)      
 
 !  surface factor
 
       HELP = HALF * DELFAC
+
+!   -- 7/28/21. Introduce +/- signs for cosine/sine
+
+      HELPC = + HELP
+      HELPS = - HELP
 
 !  11/1/19. Proxies and offset. New Code.
 
@@ -1632,6 +1641,8 @@
 !     !@@ Rob Fix, 3/20/19. Bug: Lambertian case wrongly used NSTOKESSQ instead of 1
 !     !@@ Rob Fix, 11/1/19. Bug: Cossin_Mask wrongly used, code replaced. Thanks to X.Xu (UMBC)
 
+!   --7/28/21. IMPORTANT. Cosine Mask now has 3 possibilities.
+
       IF ( DO_SOLAR_SOURCES ) THEN
         IF ( .NOT. LAMBERTIAN_FLAG ) THEN
           DO IB = 1, NBEAMS
@@ -1641,9 +1652,11 @@
                 DO O2 = 1, NSTOKES
                   OM = OOFF(O1) + O2
                   IF ( COSSIN_MASK(OM) .EQ. 1 ) THEN
-                    L_BRDF_F_0(OM,I,IB) = HELP * DOT_PRODUCT(BRDFUNC_0(OM,I,IB,1:NK),BRDF_COSAZMFAC(1:NK))
+                    L_BRDF_F_0(OM,I,IB) = HELPC * DOT_PRODUCT(BRDFUNC_0(OM,I,IB,1:NK),BRDF_COSAZMFAC(1:NK))
                   ELSE IF ( COSSIN_MASK(OM) .EQ. 2 ) THEN
-                    L_BRDF_F_0(OM,I,IB) = HELP * DOT_PRODUCT(BRDFUNC_0(OM,I,IB,1:NK),BRDF_SINAZMFAC(1:NK))
+                    L_BRDF_F_0(OM,I,IB) = HELPS * DOT_PRODUCT(BRDFUNC_0(OM,I,IB,1:NK),BRDF_SINAZMFAC(1:NK))
+                  ELSE IF ( COSSIN_MASK(OM) .EQ. 3 ) THEN
+                    L_BRDF_F_0(OM,I,IB) = - HELPS * DOT_PRODUCT(BRDFUNC_0(OM,I,IB,1:NK),BRDF_SINAZMFAC(1:NK))                    
                   ENDIF
                 ENDDO
               ENDDO
@@ -1663,6 +1676,8 @@
 !     !@@ Rob Fix, 3/20/19. Bug: Lambertian case wrongly used NSTOKESSQ instead of 1
 !     !@@ Rob Fix, 11/1/19. Bug: Cossin_Mask wrongly used, code replaced. Thanks to X.Xu (UMBC)
 
+!   --7/28/21. IMPORTANT. Cosine Mask now has 3 possibilities.
+
       IF ( .NOT. LAMBERTIAN_FLAG ) THEN
          DO I = 1, NSTREAMS
             DO J = 1, NSTREAMS
@@ -1671,10 +1686,12 @@
                   DO O2 = 1, NSTOKES
                      OM = OOFF(O1) + O2
                      IF ( COSSIN_MASK(OM) .EQ. 1 ) THEN
-                        L_BRDF_F(OM,I,J) = HELP * DOT_PRODUCT(BRDFUNC(OM,I,J,1:NK),BRDF_COSAZMFAC(1:NK))
+                        L_BRDF_F(OM,I,J) = HELPC * DOT_PRODUCT(BRDFUNC(OM,I,J,1:NK),BRDF_COSAZMFAC(1:NK))
                      ELSE IF ( COSSIN_MASK(OM) .EQ. 2 ) THEN
-                        L_BRDF_F(OM,I,J) = HELP * DOT_PRODUCT(BRDFUNC(OM,I,J,1:NK),BRDF_SINAZMFAC(1:NK))
-                     ENDIF
+                        L_BRDF_F(OM,I,J) = HELPS * DOT_PRODUCT(BRDFUNC(OM,I,J,1:NK),BRDF_SINAZMFAC(1:NK))
+                     ELSE IF ( COSSIN_MASK(OM) .EQ. 3 ) THEN
+                        L_BRDF_F(OM,I,J) = - HELPS * DOT_PRODUCT(BRDFUNC(OM,I,J,1:NK),BRDF_SINAZMFAC(1:NK))
+                     ENDIF                     
                   ENDDO
                ENDDO
 !  End Replacement code ---------------------------------
@@ -1712,6 +1729,8 @@
 !     !@@ Rob Fix, 3/20/19. Bug: Lambertian case wrongly used NSTOKESSQ instead of 1
 !     !@@ Rob Fix, 11/1/19. Bug: Cossin_Mask wrongly used, code replaced. Thanks to X.Xu (UMBC)
 
+!   --7/28/21. IMPORTANT. Cosine Mask now has 3 possibilities.
+
         IF ( DO_SOLAR_SOURCES ) THEN
           IF ( DO_USER_OBSGEOMS ) THEN
             IF ( .NOT. LAMBERTIAN_FLAG ) THEN
@@ -1720,9 +1739,11 @@
                 DO O1 = 1, NSTOKES ; DO O2 = 1, NSTOKES
                   OM = OOFF(O1) + O2
                   IF ( COSSIN_MASK(OM) .EQ. 1 ) THEN
-                    L_USER_BRDF_F_0(OM,LUM,IB) = HELP * DOT_PRODUCT(USER_BRDFUNC_0(OM,LUM,IB,1:NK),BRDF_COSAZMFAC(1:NK))
+                    L_USER_BRDF_F_0(OM,LUM,IB) = HELPC * DOT_PRODUCT(USER_BRDFUNC_0(OM,LUM,IB,1:NK),BRDF_COSAZMFAC(1:NK))
                   ELSE IF ( COSSIN_MASK(OM) .EQ. 2 ) THEN
-                    L_USER_BRDF_F_0(OM,LUM,IB) = HELP * DOT_PRODUCT(USER_BRDFUNC_0(OM,LUM,IB,1:NK),BRDF_SINAZMFAC(1:NK))
+                    L_USER_BRDF_F_0(OM,LUM,IB) = HELPS * DOT_PRODUCT(USER_BRDFUNC_0(OM,LUM,IB,1:NK),BRDF_SINAZMFAC(1:NK))
+                  ELSE IF ( COSSIN_MASK(OM) .EQ. 3 ) THEN
+                    L_USER_BRDF_F_0(OM,LUM,IB) = - HELPS * DOT_PRODUCT(USER_BRDFUNC_0(OM,LUM,IB,1:NK),BRDF_SINAZMFAC(1:NK))
                   ENDIF
                   ENDDO ; ENDDO
 !  End Replacement code ---------------------------------
@@ -1740,10 +1761,12 @@
                   DO O1 = 1, NSTOKES ; DO O2 = 1, NSTOKES
                     OM = OOFF(O1) + O2
                     IF ( COSSIN_MASK(OM) .EQ. 1 ) THEN
-                      L_USER_BRDF_F_0(OM,UI,IB) = HELP * DOT_PRODUCT(USER_BRDFUNC_0(OM,UI,IB,1:NK),BRDF_COSAZMFAC(1:NK))
+                      L_USER_BRDF_F_0(OM,UI,IB) = HELPC * DOT_PRODUCT(USER_BRDFUNC_0(OM,UI,IB,1:NK),BRDF_COSAZMFAC(1:NK))
                     ELSE IF ( COSSIN_MASK(OM) .EQ. 2 ) THEN
-                      L_USER_BRDF_F_0(OM,UI,IB) = HELP * DOT_PRODUCT(USER_BRDFUNC_0(OM,UI,IB,1:NK),BRDF_SINAZMFAC(1:NK))
-                    ENDIF
+                      L_USER_BRDF_F_0(OM,UI,IB) = HELPS * DOT_PRODUCT(USER_BRDFUNC_0(OM,UI,IB,1:NK),BRDF_SINAZMFAC(1:NK))
+                    ELSE IF ( COSSIN_MASK(OM) .EQ. 3 ) THEN
+                      L_USER_BRDF_F_0(OM,UI,IB) = - HELPS * DOT_PRODUCT(USER_BRDFUNC_0(OM,UI,IB,1:NK),BRDF_SINAZMFAC(1:NK))
+                    ENDIF                    
                   ENDDO ; ENDDO
 !  End Replacement code ---------------------------------
                 ENDDO
@@ -1769,10 +1792,12 @@
               DO O1 = 1, NSTOKES ; DO O2 = 1, NSTOKES
                 OM = OOFF(O1) + O2
                 IF ( COSSIN_MASK(OM) .EQ. 1 ) THEN
-                  L_USER_BRDF_F(OM,UI,J) = HELP * DOT_PRODUCT(USER_BRDFUNC(OM,UI,J,1:NK),BRDF_COSAZMFAC(1:NK))
+                  L_USER_BRDF_F(OM,UI,J) = HELPC * DOT_PRODUCT(USER_BRDFUNC(OM,UI,J,1:NK),BRDF_COSAZMFAC(1:NK))
                 ELSE IF ( COSSIN_MASK(OM) .EQ. 2 ) THEN
-                  L_USER_BRDF_F(OM,UI,J) = HELP * DOT_PRODUCT(USER_BRDFUNC(OM,UI,J,1:NK),BRDF_SINAZMFAC(1:NK))
-                ENDIF
+                  L_USER_BRDF_F(OM,UI,J) = HELPS * DOT_PRODUCT(USER_BRDFUNC(OM,UI,J,1:NK),BRDF_SINAZMFAC(1:NK))
+                ELSE IF ( COSSIN_MASK(OM) .EQ. 3 ) THEN
+                  L_USER_BRDF_F(OM,UI,J) = - HELPS * DOT_PRODUCT(USER_BRDFUNC(OM,UI,J,1:NK),BRDF_SINAZMFAC(1:NK))
+                ENDIF                
               ENDDO ; ENDDO
 !  End Replacement code ---------------------------------
             ENDDO
