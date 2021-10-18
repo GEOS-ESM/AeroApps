@@ -1028,7 +1028,7 @@ end subroutine outfile_extname
       call reduceProfile(OCPHOBIC_,clmask,OCPHOBIC) 
       call reduceProfile(OCPHILIC_,clmask,OCPHILIC)  
       call reduceProfile(SO4_,clmask,SO4)  
-      write(*,*) '<> Read aeorosl data to shared memory'
+      write(*,*) '<> Read aerosol data to shared memory'
     end if      
 
     ! call MAPL_DeallocNodeArray(AIRDENS_,rc=ierr)

@@ -67,7 +67,7 @@ module VLIDORT_ROT
         do i = 1, nch 
           SCAT%wavelength = channels(i)
           call VLIDORT_Rayleigh(SCAT,ier)
-          ROT(:,j,i) = SCAT%rot 
+          ROT(:,j,i) = SCAT%rot(1:km) 
           depol(i) = SCAT%depol_ratio
 
           if ( ier /= 0 ) then
