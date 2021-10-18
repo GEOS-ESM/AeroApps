@@ -51,6 +51,12 @@ class BENCHMARK(POLAR_VLIDORT):
         # set up cases
         if case == 'b3':
             self.setupB3()
+        if case == 'brdf1':
+            self.setupBRDF1()
+        if case == 'brdf_bpdf1':
+            self.setupBRDF_BPDF1()
+        if case == 'gisscx':
+            self.setupGISSCX()
 
         # calc angles
         self.calcAngles()
@@ -157,9 +163,174 @@ class BENCHMARK(POLAR_VLIDORT):
 
         self.pmom = pmom  #(km,nch,nobs,nMom,nPol)
 
+    # ---
+    def setupBRDF1(self):
+        self.SZA = 45.0
+        self.SAA = 0.0
+        nvza = 17
+        nvaa = 73
+        self.VZA = np.arange(nvza)*5
+        self.VAA = np.arange(nvaa)*5
+
+        self.depol_ratio = np.array([0.03])
+        self.ROT = np.array([0.1])
+        self.ze  = np.array([1,0])
+        self.nMom = 32
+        self.nPol = 6
+        self.km = 1
+        self.nstreams = 16
+        self.plane_parallel = True
+        self.albedoType = 'MODIS_BRDF'
+        # [nkernel,nch,nobs]
+        self.kernel_wt = np.zeros([3,1,1])
+        self.kernel_wt[0,:,:]= 0.17424166  #fiso
+        self.kernel_wt[1,:,:]= 0.044916667 #fgeo
+        self.kernel_wt[2,:,:]= 0.041216664 # fvol
+
+        # [nparam, nch, nobs]
+        self.RTLSparam = np.zeros([2,1,1])
+        self.RTLSparam[0,:,:]    = 2
+        self.RTLSparam[1,:,:]    = 1        
+        self.channel = 350.0
+
+        chs = str(int(self.channel))
+        self.__dict__['Riso'+chs] = self.kernel_wt[0,0,0]
+        self.__dict__['Rgeo'+chs] = self.kernel_wt[1,0,0]
+        self.__dict__['Rvol'+chs] = self.kernel_wt[2,0,0]
 
 
-    # --
+        self.ROT.shape = (self.km,1,1) #(km,nobs,nch)
+        self.ze.shape = (self.km+1,1)
+
+        # molecular absorption
+        self.alpha = np.zeros([1])
+        self.alpha.shape = (self.km,1,1) #(km,nobs,nch)
+
+        # aerosol optical depth
+        self.tau = np.zeros([1])
+        self.tau.shape = (self.km,1,1) #(km,nch,nobs)
+
+        # aerosol SSA
+        self.ssa = np.zeros([1])
+        self.ssa.shape = (self.km,1,1) #(km,nch,nobs)
+
+        # aerosol expansion coefficients
+        #(km,nch,nobs,nMom,nPol)
+        self.pmom = np.zeros([self.km,1,1,self.nMom,self.nPol])
+
+    # ---
+    def setupBRDF_BPDF1(self):
+        self.SZA = 45.0
+        self.SAA = 0.0
+        nvza = 17
+        nvaa = 73
+        self.VZA = np.arange(nvza)*5
+        self.VAA = np.arange(nvaa)*5
+
+        self.depol_ratio = np.array([0.03])
+        self.ROT = np.array([0.1])
+        self.ze  = np.array([1,0])
+        self.nMom = 32
+        self.nPol = 6
+        self.km = 1
+        self.nstreams = 16
+        self.plane_parallel = True
+        self.albedoType = 'MODIS_BRDF_BPDF'
+        # [nkernel,nch,nobs]
+        self.kernel_wt = np.zeros([3,1,1])
+        self.kernel_wt[0,:,:]= 0.17424166  #fiso
+        self.kernel_wt[1,:,:]= 0.044916667 #fgeo
+        self.kernel_wt[2,:,:]= 0.041216664 # fvol
+
+        # [nparam, nch, nobs]
+        self.RTLSparam = np.zeros([2,1,1])
+        self.RTLSparam[0,:,:]    = 2
+        self.RTLSparam[1,:,:]    = 1
+
+        #BPDFparam(nparam,nch,nobs)
+        self.BPDFparam = np.zeros([3,1,1])
+        self.BPDFparam[0,0,:] = 1.5
+        self.BPDFparam[1,0,:] = 0.78 #NDVI
+        self.BPDFparam[2,0,:] = 6.86 #BPDFcoef
+
+        self.channel = 350.0
+
+        chs = str(int(self.channel))
+        self.__dict__['Riso'+chs] = self.kernel_wt[0,0,0]
+        self.__dict__['Rgeo'+chs] = self.kernel_wt[1,0,0]
+        self.__dict__['Rvol'+chs] = self.kernel_wt[2,0,0]
+
+
+        self.ROT.shape = (self.km,1,1) #(km,nobs,nch)
+        self.ze.shape = (self.km+1,1)
+
+        # molecular absorption
+        self.alpha = np.zeros([1])
+        self.alpha.shape = (self.km,1,1) #(km,nobs,nch)
+
+        # aerosol optical depth
+        self.tau = np.zeros([1])
+        self.tau.shape = (self.km,1,1) #(km,nch,nobs)
+
+        # aerosol SSA
+        self.ssa = np.zeros([1])
+        self.ssa.shape = (self.km,1,1) #(km,nch,nobs)
+
+        # aerosol expansion coefficients
+        #(km,nch,nobs,nMom,nPol)
+        self.pmom = np.zeros([self.km,1,1,self.nMom,self.nPol])
+
+    # ---
+    def setupGISSCX(self):
+        self.SZA = 45.0
+        self.SAA = 0.0
+        nvza = 17
+        nvaa = 73
+        self.VZA = np.arange(nvza)*5
+        self.VAA = np.arange(nvaa)*5
+
+        self.depol_ratio = np.array([0.03])
+        self.ROT = np.array([0.1])
+        self.ze  = np.array([1,0])
+        self.nMom = 32
+        self.nPol = 6
+        self.km = 1
+        self.nstreams = 16
+        self.plane_parallel = True
+        self.albedoType = 'OCIGissCX'
+        # [nkernel,nch,nobs]
+        self.kernel_wt = np.zeros([3,1,1])
+        self.kernel_wt[0,:,:]= 0.17424166  #fiso
+        self.kernel_wt[1,:,:]= 0.044916667 #fgeo
+        self.kernel_wt[2,:,:]= 0.041216664 # fvol
+
+        self.mr = np.array([1.333])
+        self.U10m = np.array([3.0])
+        self.V10m = np.array([4.0])
+
+        self.channel = 350.0
+
+        self.ROT.shape = (self.km,1,1) #(km,nobs,nch)
+        self.ze.shape = (self.km+1,1)
+
+        # molecular absorption
+        self.alpha = np.zeros([1])
+        self.alpha.shape = (self.km,1,1) #(km,nobs,nch)
+
+        # aerosol optical depth
+        self.tau = np.zeros([1])
+        self.tau.shape = (self.km,1,1) #(km,nch,nobs)
+
+        # aerosol SSA
+        self.ssa = np.zeros([1])
+        self.ssa.shape = (self.km,1,1) #(km,nch,nobs)
+
+        # aerosol expansion coefficients
+        #(km,nch,nobs,nMom,nPol)
+        self.pmom = np.zeros([self.km,1,1,self.nMom,self.nPol])
+
+
+    # ---
     def computeAtmos(self):
 
         pe, ze, te = getEdgeVars(self)
@@ -228,8 +399,40 @@ class BENCHMARK(POLAR_VLIDORT):
                             self.verbose]
 
                     # Call VLIDORT wrapper function
-                    I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)                        
-                    
+                    I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)      
+                    print 'I',I
+                    print 'rc',rc                    
+
+                elif self.albedoType == 'MODIS_BRDF_BPDF':
+                    kernel_wt = self.kernel_wt[:,:,0]
+                    param     = self.RTLSparam[:,:,0]
+                    bpdf      = self.BPDFparam[:,:,0]
+
+                    args = [self.channel, self.nstreams, self.plane_parallel, ROT, depol_ratio, tau, ssa, pmom,
+                            pe, ze, te,
+                            kernel_wt, param, bpdf,
+                            sza, raa, vza,
+                            MISSING,
+                            self.verbose]
+
+                    # Call VLIDORT wrapper function
+                    I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)
+                    print 'I',I
+                    print 'rc',rc
+
+                elif ('CX' in self.albedoType) and (self.albedoType != 'OCIGissCX_NOBM_CLOUD'):
+                    args = [self.channel, self.nstreams, self.plane_parallel, ROT, depol_ratio, alpha, tau, ssa, pmom,
+                            pe, ze, te,
+                            self.U10m, self.V10m, self.mr,
+                            sza, raa, vza,
+                            flux_factor,
+                            MISSING,
+                            self.verbose]                    
+
+                    # Call VLIDORT wrapper function
+                    I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)
+                    print 'I',I
+                    print 'rc',rc                    
                 elif self.albedoType == 'LAMBERTIAN':
                     albedo = self.albedo
                     
@@ -244,6 +447,8 @@ class BENCHMARK(POLAR_VLIDORT):
                     # Call VLIDORT wrapper function
                     I, reflectance, Q, U, rc = vlidortWrapper(*args)  
                     surf_reflectance = albedo
+                    print 'I',I
+                    print 'rc',rc
 
                 self.I[ivza,iraa] = np.squeeze(I)
                 self.reflectance[ivza,iraa] = np.squeeze(reflectance)
