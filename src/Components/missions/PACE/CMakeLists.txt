@@ -3,21 +3,21 @@ esma_set_this()
 ecbuild_add_executable (
     TARGET pace_vlidort.x
     SOURCES pace_vlidort.F90
-  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL VLIDORT2OS geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
+  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL ${VLIDORT_LIBRARY} geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
   NOINSTALL
   )
 
 ecbuild_add_executable (
   TARGET pace_vlidort_multinode.x
   SOURCES pace_vlidort_multinode.F90
-  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL VLIDORT2OS geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
+  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL ${VLIDORT_LIBRARY} geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
   NOINSTALL
   )
 
 ecbuild_add_executable (
   TARGET pace_vlidort_gasabs_multinode.x
   SOURCES pace_vlidort_gasabs_multinode.F90
-  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL VLIDORT2OS geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
+  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL ${VLIDORT_LIBRARY} geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
   NOINSTALL
   )
 

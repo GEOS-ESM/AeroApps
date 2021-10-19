@@ -22,27 +22,27 @@ set (srcs
 
 esma_add_library (${this}
   SRCS ${srcs}
-  DEPENDENCIES MAPL.shared MAPL.base VLIDORT2p8p3 LIDORT3p7 Chem_Base ${NETCDF_LIBRARIES} MPI::MPI_Fortran
+  DEPENDENCIES MAPL.shared MAPL.base ${VLIDORT_LIBRARY} LIDORT3p7 Chem_Base ${NETCDF_LIBRARIES} MPI::MPI_Fortran
 
   )
 
 ecbuild_add_executable (
   TARGET geo_vlidort.x
   SOURCES geo_vlidort.F90
-  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL VLIDORT2p8p3 geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
+  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL ${VLIDORT_LIBRARY} geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
   )
 
 ecbuild_add_executable (
   TARGET geo_vlidort_cloud.x
   SOURCES geo_vlidort_cloud.F90
-  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL VLIDORT2p8p3 geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
+  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL ${VLIDORT_LIBRARY} geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
   )
 
 # this needs de-bugging/updates to new driver interfaces
 #ecbuild_add_executable (
 #  TARGET geo_vlidort_vnncLUT.x
 #  SOURCES geo_vlidort_vnncLUT.F90
-#  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL VLIDORT2OS geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
+#  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL ${VLIDORT_LIBRARY} geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
 #  )
 
 ecbuild_add_executable (
@@ -55,13 +55,13 @@ ecbuild_add_executable (
 #ecbuild_add_executable (
 #  TARGET geo_vlidort_multinode.x
 #  SOURCES geo_vlidort_multinode.F90 netcdf_helper.F90
-#  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL VLIDORT2OS geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
+#  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL ${VLIDORT_LIBRARY} geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
 #  )
 
 ecbuild_add_executable (
   TARGET geo_vlidort_surface.x
   SOURCES geo_vlidort_surface.F90 netcdf_helper.F90
-  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL VLIDORT2p8p3 geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
+  LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL ${VLIDORT_LIBRARY} geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
   )
 
 ecbuild_add_executable (

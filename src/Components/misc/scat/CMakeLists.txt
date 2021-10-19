@@ -31,16 +31,16 @@ add_dependencies(OMI_ Chem_Base VLIDORT)
 esma_add_f2py2_module (VLIDORT_BRDF_
   SOURCES VLIDORT_BRDF_py.F90
   DESTINATION lib/Python/${this}
-  LIBRARIES VLIDORT90
-  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/VLIDORT90)
-add_dependencies(VLIDORT_BRDF_ VLIDORT90)
+  LIBRARIES ${VLIDORT_LIBRARY}
+  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/${VLIDORT_LIBRARY})
+add_dependencies(VLIDORT_BRDF_ ${VLIDORT_LIBRARY})
 
 esma_add_f2py2_module (VLIDORT_OMI_
   SOURCES VLIDORT_OMI_py.F90
   DESTINATION lib/Python/${this}
-  LIBRARIES VLIDORT90
-  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}  ${esma_include}/VLIDORT90)
-add_dependencies(VLIDORT_OMI_ VLIDORT90)
+  LIBRARIES ${VLIDORT_LIBRARY}
+  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}  ${esma_include}/${VLIDORT_LIBRARY})
+add_dependencies(VLIDORT_OMI_ ${VLIDORT_LIBRARY})
 
 esma_add_f2py2_module (VLIDORT_cloud_
   SOURCES VLIDORT_cloud_py.F90
