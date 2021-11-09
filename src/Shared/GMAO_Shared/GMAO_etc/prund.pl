@@ -179,11 +179,11 @@ OPTIONS
 
 EXAMPLES
 
-     % prund.pl -H $HOSTNAME -d a b c d e f g h i j k l &
-     % prund.pl -H $HOSTNAME echo Got %s as the file name
+     % prund.pl -H `hostname` -d a b c d e f g h i j k l &
+     % prund.pl -H `hostname` echo Got %s as the file name
 
-     % prund.pl -H $HOSTNAME -d a b c d e f g h i j k l &
-     % mpirun -np 8 prund.pl -H $HOSTNAME /bin/ls
+     % prund.pl -H `hostname` -d a b c d e f g h i j k l &
+     % mpirun -np 8 prund.pl -H `hostname` /bin/ls
 
      Note: "/bin/ls" is equivalent to "/bin/ls %s"
 

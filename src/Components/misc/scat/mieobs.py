@@ -92,6 +92,7 @@ def getAOPscalar(aer,channels,Verbose=False,rcfile='Aod_EOS.rc'):
     # -----------
     vnames = [ 'du001', 'du002', 'du003', 'du004', 'du005',
                'ss001', 'ss002', 'ss003', 'ss004', 'ss005',
+               'BRCphobic', 'BRCphilic',
                'BCphobic', 'BCphilic',
                'OCphobic', 'OCphilic',
                'SO4' ]
@@ -143,6 +144,7 @@ def getAOPvector(aer,channels,I=None,Verbose=False,rcfile='Aod_EOS.rc',nMom=301)
     # -----------
     vnames = [ 'du001', 'du002', 'du003', 'du004', 'du005',
                'ss001', 'ss002', 'ss003', 'ss004', 'ss005',
+               'BRCphobic', 'BRCphilic',
                'BCphobic', 'BCphilic',
                'OCphobic', 'OCphilic',
                'SO4' ]
@@ -296,6 +298,7 @@ def getAOPext(aer,channels,I=None,vnames=None,Verbose=False):
     if vnames is None:
        vnames = [ 'du001', 'du002', 'du003', 'du004', 'du005',
                'ss001', 'ss002', 'ss003', 'ss004', 'ss005',
+               'BRCphobic', 'BRCphilic',
                'BCphobic', 'BCphilic',
                'OCphobic', 'OCphilic',
                'SO4' ]

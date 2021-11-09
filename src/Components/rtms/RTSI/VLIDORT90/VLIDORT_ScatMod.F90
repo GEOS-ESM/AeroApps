@@ -1371,7 +1371,7 @@
          ray(j+1) = difz * (Vol(j) + Vol(j+1))/2.
          somray = somray + ray(j+1) ! Total Tau Ray
       end do
-      ROT = ray
+      if(present(ROT)) ROT = ray
 
 !     greek moments for Rayleigh only( only if vector )
 !     ----------------------------- 

@@ -524,6 +524,7 @@ subroutine AI_Vector (km, nch, nobs,  channels, nMom,  &
   
   rc = 0
   ier = 0
+
   call VLIDORT_Init(  SCAT%Surface%Base, km, rc)
 
   if ( rc /= 0 ) return
@@ -581,15 +582,16 @@ subroutine AI_Vector (km, nch, nobs,  channels, nMom,  &
             call VLIDORT_SurfaceLamb(SCAT%Surface,albedo(j,i),solar_zenith (j),sensor_zenith(j),&
                                      relat_azymuth(j),.false.)
           endif
-          
+
           SCAT%wavelength = channels(i)          
           SCAT%tau => tau(:,i,j)
           SCAT%ssa => ssa(:,i,j)
           SCAT%g => g(:,i,j)
           SCAT%pmom => pmom(:,:,:,i,j)
-          
+
           call VLIDORT_Run (SCAT, radiance_VL(j,i),reflectance_VL(j,i), AOT(j,i),SSA_VL(j,i),&
                             ier,Q(j,i),U(j,i), .false., .true.)
+
           if ( ier /= 0 ) then
              radiance_VL(j,i) = MISSING
              cycle
@@ -605,7 +607,7 @@ subroutine AI_Vector (km, nch, nobs,  channels, nMom,  &
                                 sphericalalbedo = spher354(j))
 !write(*,'(1x,i3,4x,3(2x,f8.5))') 354, icalc354(j), trans354(j), spher354(j)
           endif
-             
+
 ! Calculations for 388 nm
           if (abs(SCAT%wavelength - 388.00) < 0.01)  then  
                  
@@ -636,9 +638,9 @@ subroutine AI_Vector (km, nch, nobs,  channels, nMom,  &
                   reflectivity_388nm_adj = refl(j)-(  (sfc_albedo_388nm+oceanlerout(2)) &
                                                      -(sfc_albedo_354nm+oceanlerout(1))   )*cf
                   call AI_Local(radiance_VL(j,1), icalc354(j), reflectivity_388nm_adj, trans354(j), spher354(j), AI_VL(j))
-                  write(*,'(1x,i3,4x,5(2x,f8.5))') qa, refl(j), sfc_albedo_388nm-sfc_albedo_354nm, &
-                                                                       oceanlerout(2)-oceanlerout(1), &
-                                                   reflectivity_388nm_adj, AI_VL(j)
+!                  write(*,'(1x,i3,4x,5(2x,f8.5))') qa, refl(j), sfc_albedo_388nm-sfc_albedo_354nm, &
+!                                                                       oceanlerout(2)-oceanlerout(1), &
+!                                                   reflectivity_388nm_adj, AI_VL(j)
                 else
                  reflectivity_388nm_adj = refl(j)-(sfc_albedo_388nm -sfc_albedo_354nm)*cf
                 endif
@@ -674,6 +676,8 @@ subroutine AI_Vector (km, nch, nobs,  channels, nMom,  &
              call AI_Local(radiance_VL(j,1), icalc354(j), refl(j), trans354(j), spher354(j), residue(j))
 !   print *, 'pete1', j, refl(j), reflectivity_388nm_adj
         end if     
+
+!        write(*,'(1x,i6,4x,5(2x,f8.5))') j, radiance_VL(j,1), reflectance_VL(j,1),  AOT(j,1),SSA_VL(j,1), AI_VL(j)
 
   end do ! end loop over nobs
   

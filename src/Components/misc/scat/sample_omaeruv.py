@@ -19,9 +19,8 @@ def makethis_dir(filename):
 
 if __name__ == "__main__":
 
-    expid   = 'ops'
-    out_dir = '/discover/nobackup/vbuchard/VLIDORT/ENSEMBLE_exp/sample_dR_MERRA-AA-r2_ens10deg/%y4/%m2/%d2'
-    file_dx_dy = 'delta_xy_list_10deg.dat'
+    expid   = 'EXPID'
+    out_dir = 'OUTPATH'
 
     # Parse command line options
     # --------------------------
@@ -62,14 +61,12 @@ if __name__ == "__main__":
     # --------------
     omi = OMAERUV_L2(omi_fn)
 
-    onlyVars = ['ps', 'delp', 'LWI', 'AIRDENS', 'RH',
-                'du001', 'du002', 'du003', 'du004', 'du005',
-                'ss001', 'ss002', 'ss003', 'ss004', 'ss005',
-                'BCphobic', 'BCphilic', 'OCphobic', 'OCphilic', 'SO4']
-#    onlyVars = ['PS', 'DELP', 'LWI', 'AIRDENS', 'RH',
-#                'DU001', 'DU002', 'DU003', 'DU004', 'DU005',
-#                'SS001', 'SS002', 'SS003', 'SS004', 'SS005',
-#                'BCPHOBIC', 'BCPHILIC', 'OCPHOBIC', 'OCPHILIC', 'SO4']
+    onlyVars = ['PS', 'delp', 'LWI', 'AIRDENS', 'RH',
+                'DU001', 'DU002', 'DU003', 'DU004', 'DU005',
+                'SS001', 'SS002', 'SS003', 'SS004', 'SS005',
+                'BRCPHOBIC','BRCPHILIC', 'NO3an1', 'NO3an2', 'NO3an3',
+                'BCPHOBIC', 'BCPHILIC', 'OCPHOBIC', 'OCPHILIC', 'SO4']
+
     # Sample g5 collection at OMI orbit
     # ---------------------------------
     if options.npz_fn is None:
@@ -79,6 +76,8 @@ if __name__ == "__main__":
        options.npz_fn = options.out_dir+'/'+options.expid+'_aer_'+lev+ '-'+\
                prod + '_' + vtime +'Full'+'.npz'
        omi.sampleFile(g5_fn, onlyVars=onlyVars, npzFile=options.npz_fn, Verbose=options.verbose)
+       Igood = omi.qa_flag <10         # OMI doc : FinalAlgorithmFlags - 0 - Most reliable( AAOD, SSA, AOD)
+       omi.sampleReduce(I=Igood,npzFile=options.npz_fn)
     else:
        if options.ensemble:   
            options.npz_fn = options.out_dir+'/'+options.expid+'_aer_'+lev+ '-'+\
