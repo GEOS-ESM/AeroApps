@@ -126,7 +126,13 @@ class AERONET_L2(object):
         Alias = ALIAS.keys()
         for var in self.Vars:
             if var in Alias:
-                self.__dict__[ALIAS[var]] = self.__dict__[var] 
+                self.__dict__[ALIAS[var]] = self.__dict__[var]
+        if 'Site_Longitude' in self.Vars:
+            self.Longitude = self.Site_Longitude
+        if 'Site_Latitude' in self.Vars:
+            self.Latitude = self.Site_Latitude
+        if 'Site_Elevation' in self.Vars:
+            self.Elevation = self.Site_Elevation
 
         # Interpolate AOT to 550 nm if needed
         # -----------------------------------
