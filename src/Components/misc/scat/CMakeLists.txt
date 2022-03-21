@@ -6,19 +6,20 @@ find_package(F2PY2 REQUIRED)
 add_f2py2_module (Mie_
   SOURCES Mie_py.F90
   DESTINATION lib/Python/${this}
-  LIBRARIES Chem_Base GMAO_gfio_r4 ${NETCDF_LIBRARIES}
+  LIBRARIES Chem_Base GMAO_mpeu MAPL GMAO_gfio_r4 ${NETCDF_LIBRARIES}
   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/Chem_Base ${BASEDIR}/lib ${INC_NETCDF}
+  USE_MPI
   )
-add_dependencies(Mie_ Chem_Base GMAO_gfio_r4)
+add_dependencies(Mie_ Chem_Base GMAO_mpeu MAPL GMAO_gfio_r4)
 
 # MAT: Note uses add_f2py2 because I can't figure out the import test for netCDF f2py code
 add_f2py2_module (scat_MieObs_
   SOURCES scat_MieObs_py.F90
   DESTINATION lib/Python/${this}
-  LIBRARIES Chem_Base GMAO_mpeu ${NETCDF_LIBRARIES}
+  LIBRARIES Chem_Base GMAO_mpeu MAPL ${NETCDF_LIBRARIES}
   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/Chem_Base ${BASEDIR}/lib ${INC_NETCDF}
   )
-add_dependencies(scat_MieObs_ Chem_Base GMAO_mpeu)
+add_dependencies(scat_MieObs_ Chem_Base GMAO_mpeu MAPL)
 
 esma_add_f2py2_module (OMI_
   SOURCES OMI_py.F90
