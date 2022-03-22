@@ -14,7 +14,7 @@ import os
 import sys
 import MieObs_
 from netCDF4 import Dataset
-from mieobs import VNAMES, getAOPext, getAOPint, getAOPscalar, getEdgeVars
+from mieobs import getAOPext, getAOPint, getAOPscalar, getEdgeVars
 import numpy as np
 from math import pi, sin, cos, asin, acos
 
@@ -96,7 +96,7 @@ def computeMie(Vars, channel, varnames, rcFile, options):
 
     #STN Sampled?
     if options.station:
-        NAMES = VNAMES + ['PS','DELP','RH','AIRDENS']
+        NAMES = varnames + ['PS','DELP','RH','AIRDENS']
         nstn = len(Vars.STATION)
         nobs = len(Vars.TIME)
 
@@ -115,15 +115,15 @@ def computeMie(Vars, channel, varnames, rcFile, options):
   
             if (v==0):
                 pe, ze, te = getEdgeVars(VarsIn)
-                tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-                ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=options.verbose,rcfile=rcFile)
+                ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=options.verbose,rcfile=rcFile)
                 ext2back = np.ones(backscat.shape)*MAPL_UNDEF
                 I = backscat > 0
                 ext2back[I] = ext[I]/backscat[I]
                 MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}
 
                 if options.intensive:
-                    vol, area, refr, refi, reff = getAOPint(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                    vol, area, refr, refi, reff = getAOPint(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=options.verbose,rcfile=rcFile)
                     MieVars['vol']  = [vol]
                     MieVars['area'] = [area]
                     MieVars['refr'] = [refr]
@@ -132,13 +132,13 @@ def computeMie(Vars, channel, varnames, rcFile, options):
                 
                 MieVars['pe'] = [pe]
                 MieVars['ze'] = [ze]
-                MieVars['rh'] = [VarsIn.RH]         
+                MieVars['rh'] = [np.transpose(VarsIn.RH)]         
 
 
             else:
                 pe, ze, te = getEdgeVars(VarsIn)
-                tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-                ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                tau,ssa,g = getAOPscalar(VarsIn,channel,vnames=varnames,vtypes=varnames,Verbose=options.verbose,rcfile=rcFile)
+                ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=options.verbose,rcfile=rcFile)
                 ext2back = np.ones(backscat.shape)*MAPL_UNDEF
                 I = backscat > 0
                 ext2back[I] = ext[I]/backscat[I]
@@ -153,12 +153,12 @@ def computeMie(Vars, channel, varnames, rcFile, options):
                 MieVars['ssa'].append(ssa)
                 MieVars['g'].append(g)
 
-                MieVars['pe'] = [pe]
-                MieVars['ze'] = [ze]
-                MieVars['rh'] = [VarsIn.RH]
+                MieVars['pe'].append(pe)
+                MieVars['ze'].append(ze)
+                MieVars['rh'].append(np.transpose(VarsIn.RH))
 
                 if options.intensive:
-                    vol, area, refr, refi, reff = getAOPint(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+                    vol, area, refr, refi, reff = getAOPint(VarsIn,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=options.verbose,rcfile=rcFile)
                     MieVars['vol'].append(vol)
                     MieVars['area'].append(area)
                     MieVars['refr'].append(refr)
@@ -167,14 +167,19 @@ def computeMie(Vars, channel, varnames, rcFile, options):
 
     #TRJ Sampled?
     else:
-        tau,ssa,g = getAOPscalar(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
-        ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+        pe, ze, te = getEdgeVars(Vars)
+        tau,ssa,g = getAOPscalar(Vars,channel,vnames=varnames,vtypes=varnames,Verbose=options.verbose,rcfile=rcFile)
+        ext,sca,backscat,aback_sfc,aback_toa,depol = getAOPext(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=options.verbose,rcfile=rcFile)
         ext2back = np.ones(backscat.shape)*MAPL_UNDEF
         I = backscat > 0
         ext2back[I] = ext[I]/backscat[I]
         MieVars = {"ext":[ext],"scatext":[sca],"backscat":[backscat],"aback_sfc":[aback_sfc],"aback_toa":[aback_toa],"depol":[depol],"ext2back":[ext2back],"tau":[tau],"ssa":[ssa],"g":[g]}       
+
+        MieVars['pe'] = [pe]
+        MieVars['ze'] = [ze]
+        MieVars['rh'] = [np.transpose(Vars.RH)]
         if options.intensive:
-            vol, area, refr, refi, reff  = getAOPint(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=True,rcfile=rcFile)
+            vol, area, refr, refi, reff  = getAOPint(Vars,channel,I=None,vnames=varnames,vtypes=varnames,Verbose=options.verbose,rcfile=rcFile)
             MieVars['vol']  = [vol]
             MieVars['area'] = [area]
             MieVars['refr'] = [refr]
@@ -303,13 +308,18 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
     # Write each variable
     # --------------------------------------------------
     for n, name in enumerate(MieVarsNames):
-
+        
         var = np.squeeze(MieVars[name])
         size = len(var.shape)
         if options.station:
+            # make sure profiles are always 3 dimensions
+            # even if only 1 station or time interval
+            if size == 1:
+                var.shape = (len(stations),km,len(tyme))
             if size == 2:
-                var = np.asarray([var])
-                size = len(var.shape)
+                if len(tyme) == 1:
+                    var.shape = (len(stations),km,len(tyme))
+            size = len(var.shape)
         if size == 3:
             dim = ('station','time','lev')
         if size == 2:
@@ -326,25 +336,48 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
         else:
             this[:] = np.transpose(var)
 
-    #for name in ['pe','ze','rh']:
-    #    var = np.squeeze(MieVars[name])
-    #    var = np.asarray([var])
-    #    if name == 'rh':
-    #        dim = ('station','time','lev')
-    #    else:
-    #        dim = ('station','time','leve')
+    uu = ['Pa','m','none']
+    long_name = ['Pressure','Altitude','Relative humidity']
+    for n,name in enumerate(['pe','ze','rh']):
+        var = np.squeeze(MieVars[name])
+        if options.station:
+            # make sure profiles are always 3 dimensions
+            # even if only 1 station or time interval
+            if name == 'rh':
+                var.shape = (len(stations),km,len(tyme))
+            else:
+                var.shape = (len(stations),km+1,len(tyme))
 
-    #    this = nc.createVariable(name,'f4',dim,zlib=zlib)
-    #    this.standard_name = name
-    #    this.missing_value = MAPL_UNDEF
-    #    this[:] = np.transpose(var,(0,2,1))
+            if name == 'rh':
+                dim = ('station','time','lev')
+            else:
+                dim = ('station','time','leve')
+        else:
+            if name == 'rh':
+                dim = ('time','lev')
+            else:
+                dim = ('time','leve')       
+
+        this = nc.createVariable(name,'f4',dim,zlib=zlib)
+        this.standard_name = name
+        this.long_name = long_name[n]
+        this.units = uu[n]
+        this.missing_value = np.float32(MAPL_UNDEF)
+        if options.station:
+            this[:] = np.transpose(var,(0,2,1))
+        else:
+            this[:] = np.transpose(var)
+
     if options.intensive:
         for name in IntVarsUnits:
             var = np.squeeze(MieVars[name])
             size = len(var.shape)
             if options.station:
                 if size == 2:
-                    var = np.asarray([var])
+                    if len(tyme) == 1:
+                        var.shape = (len(stations),1,km)
+                    else:
+                        var.shape = (1,len(tyme),km)
                     size = len(var.shape)
             if size == 3:
                 dim = ('station','time','lev')
@@ -415,7 +448,7 @@ if __name__ == "__main__":
                       action="store_true", dest="intensive",
                       help="return intensive variables")
 
-    parser.add_option("-v", "--verbose",
+    parser.add_option("-v", "--verbose",default=False,
                       action="store_true", dest="verbose",
                       help="Verbose mode")
 
