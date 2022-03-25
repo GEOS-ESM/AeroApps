@@ -8,6 +8,16 @@ esma_add_f2py2_module (VLIDORT_BRDF_ABC_
   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/VLIDORT90)
 add_dependencies(VLIDORT_BRDF_ABC_ VLIDORT90)
 
+# these are executable scripts
+set (PYSCRIPTS
+    mcd43c_download.py
+    )
+
+install (
+    PROGRAMS  ${PYSCRIPTS}
+    DESTINATION bin/${this}
+    )
+
 # these are non-executaables
 set (PYFILES
     abc_avhrr.py
