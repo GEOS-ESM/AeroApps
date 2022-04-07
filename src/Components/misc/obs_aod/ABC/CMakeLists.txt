@@ -39,7 +39,6 @@ set (PYFILES
     mcd43c.py
     nn.py
     reduce_avhrr.py
-    sknet.py
     synoptic_avhrr.py
     )
 
