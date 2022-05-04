@@ -17,7 +17,7 @@ from   numpy             import  meshgrid, concatenate
 import numpy             as      np
 from   matplotlib        import  ticker
 from   scipy             import  stats, mgrid
-from   sklearn.cross_validation import KFold
+from   sklearn.model_selection import KFold
 #..............................................................
 class aodFormat(ticker.Formatter):
     def __call__(self,x,pos=None):
@@ -225,14 +225,14 @@ class NN(object):
         if figfile != None:
             savefig(figfile)
             
-    def plotScat(self,bins=None,I=None,figfile=None):
+    def plotScat(self,iTarget=0,bins=None,I=None,figfile=None):
         """
-        Plot Target vs Model using a 2D Kernel Density Estime.
+        Plot Target vs Model as a scatter plot
         """
         if I is None: I = self.iTest # Testing data by default
         results = self.eval(I)
-        targets = self.getTargets(I)
-        original = log(self.__dict__['m'+self.Target[0][1:]][I] + 0.01)
+        targets = self.getTargets(I)[:,iTarget]
+        original = log(self.__dict__['m'+self.Target[iTarget][1:]][I] + 0.01)
         if bins == None:
             bins = arange(-5., 1., 0.1 )
 
@@ -244,7 +244,7 @@ class NN(object):
         grid()
         xlabel('AERONET')
         ylabel('MODIS')
-        title("Log("+self.Target[0][1:]+"+0.01) - "+self.ident)
+        title("Log("+self.Target[iTarget][1:]+"+0.01) - "+self.ident)
         if figfile != None:
             savefig(figfile)
 #---------------------------------------------------------------------------------
