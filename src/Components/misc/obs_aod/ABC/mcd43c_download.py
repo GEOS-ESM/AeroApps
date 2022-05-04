@@ -45,7 +45,6 @@ if __name__ == '__main__':
     #   --------------------------
     rootDir = '/nobackup/3/pcastell/MODIS/MCD43C1/061'
     coll   = '061'
-    parser = argparse.ArgumentParser()
 
     parser = argparse.ArgumentParser()
     parser.add_argument("startDate",help="Start date of download")
