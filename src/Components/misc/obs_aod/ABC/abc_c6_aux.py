@@ -366,7 +366,7 @@ def make_plots(mxd,expid,ident,I=None):
 
           # Scatter diagram for testing
           # ---------------------------
-          mxd.plotScat(iTarget=t,I=I,figfile=outdir+"/"+expid+"."+ident+"_scat-"+mxd.Target[0][1:]+'.png')
+          mxd.plotScat(iTarget=t,I=I,figfile=outdir+"/"+expid+"."+ident+"_scat-"+mxd.Target[t][1:]+'.png')
 
 
 #---------------------------------------------------------------------

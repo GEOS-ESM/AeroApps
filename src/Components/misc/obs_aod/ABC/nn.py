@@ -230,7 +230,7 @@ class NN(object):
         Plot Target vs Model as a scatter plot
         """
         if I is None: I = self.iTest # Testing data by default
-        results = self.eval(I)
+        results = self.eval(I)[:,iTarget]
         targets = self.getTargets(I)[:,iTarget]
         original = log(self.__dict__['m'+self.Target[iTarget][1:]][I] + 0.01)
         if bins == None:
