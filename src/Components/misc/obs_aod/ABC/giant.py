@@ -272,19 +272,32 @@ class GIANT(object):
       if name in Alias:
           name = self.ALIAS[name]
 
-      self.__dict__[name] = data
+      # old files use -9999.0 for fill value
+      # new files use masked arrays
+      # convert everythong to regular array filling with -9999.0
+      # make sure _fill_value is -9999.0
+      self.__dict__[name] = np.array(data)
       self.giantList.append(name)
     nc.close()
 
     # Form python tyme
     # ----------------
-    D = self.Date[:,0:10]
-    T = self.Time[:,0:10]
-    # Bug in dataset, first field is blank
-    D[0] = D[1]
-    T[0] = T[1]
-    self.aTau550[0] = -9999.0
-    self.tyme = array([ isoparse(''.join(D[i])+'T'+''.join(t)) for i, t in enumerate(T) ])
+    # new files have an ISO_DateTime variable
+    nc = Dataset(filename)
+    if 'ISO_DateTime' in nc.variables.keys():
+        nc = Dataset(filename)
+        iso = nc.variables['ISO_DateTime'][:]
+        self.tyme = array([isoparse(''.join(array(t))) for t in iso])
+        nc.close()
+    else:
+    # old file only have Date and Time variables
+        D = self.Date[:,0:10]
+        T = self.Time[:,0:5] # they didn't save the seconds
+        # Bug in dataset, first field is blank
+        D[0] = D[1]
+        T[0] = T[1]
+        self.aTau550[0] = -9999.0
+        self.tyme = array([ isoparse(''.join(D[i])+'T'+''.join(t)) for i, t in enumerate(T) ])    
 
     # Limit to the MERRA-2 time series
     #---------------------------------
