@@ -66,7 +66,7 @@ xLAND = ("mean_AOD0470corr-l",
         "mean_acfrac-l",   
         "mode_QA-l", 
         "cval_cldpixdistavg",
-        "nval_npu0550-l",
+#        "nval_npu0550-l",
         "nval_AOD0550corr-l" 
         )
 
