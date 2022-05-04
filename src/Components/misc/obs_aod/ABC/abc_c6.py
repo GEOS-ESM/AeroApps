@@ -6,7 +6,6 @@
 """
 
 import os, sys
-sys.path.insert(0,'/home/pcastell/Enthought/Canopy_64bit/System/lib/python2.7/site-packages')
 from   matplotlib.pyplot    import  cm, imshow, plot, figure
 from   matplotlib.pyplot    import  xlabel, ylabel, title, grid, savefig, legend
 import matplotlib.pyplot    as      plt
@@ -92,7 +91,7 @@ class SETUP(object):
     # No aerosol type should make up more that 35% 
     # of the total number of obs
     # --------------------------------------
-    self.iValid = self.balance(self.nobs*0.35)
+    self.iValid = self.balance(int(self.nobs*0.35))
 
     # Flatten Input_nnr into one list
     # -------------------------------
@@ -147,14 +146,15 @@ class ABC(object):
     Common Subroutines to all the ABC Classes
     """
 
-    def __init__(self,fname,Albedo,coxmunk_lut=None):
+    def __init__(self,fname,Albedo,coxmunk_lut=None,NDVI=False):
 
         # Get Auxiliary Data
         self.setfnameRoot(fname)
         self.setWind()
         self.setAlbedo(Albedo,coxmunk_lut=coxmunk_lut)
         self.setSpec()
-        self.setNDVI()
+        if NDVI:
+            self.setNDVI()
 
     def setfnameRoot(self,fname):
         if self.sat == 'Aqua':
@@ -370,7 +370,8 @@ class ABC_Land (LAND,NN,SETUP,ABC):
                   laod=True,
                   verbose=0,
                   cloud_thresh=0.70,
-                  aFilter=None):
+                  aFilter=None,
+                  NDVI=False):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
 
@@ -391,7 +392,7 @@ class ABC_Land (LAND,NN,SETUP,ABC):
         LAND.__init__(self,fname)  # initialize superclass
 
         # Get Auxiliary Data
-        ABC.__init__(self,fname,Albedo)
+        ABC.__init__(self,fname,Albedo,NDVI=NDVI)
 
         # Q/C: enforce QA=3 and albedo in (0,0.25), scattering angle<170
         # --------------------------------------------------------------
@@ -447,7 +448,8 @@ class ABC_Deep (DEEP,NN,SETUP,ABC):
                   laod=True,
                   verbose=0,
                   cloud_thresh=0.70,
-                  aFilter=None):
+                  aFilter=None,
+                  NDVI=False):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
 
@@ -468,7 +470,7 @@ class ABC_Deep (DEEP,NN,SETUP,ABC):
         DEEP.__init__(self,fname)  # initialize superclass
 
         # Get Auxiliary Data
-        ABC.__init__(self,fname,Albedo)
+        ABC.__init__(self,fname,Albedo,NDVI=NDVI)
 
         # Q/C: enforce QA=3 and albedo in (0,0.25), scattering angle<170
         # --------------------------------------------------------------
@@ -529,7 +531,8 @@ class ABC_DBDT (LAND,NN,SETUP,ABC):
                   laod=True,
                   verbose=0,
                   cloud_thresh=0.70,
-                  aFilter=None):
+                  aFilter=None,
+                  NDVI=False):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
 
@@ -551,7 +554,7 @@ class ABC_DBDT (LAND,NN,SETUP,ABC):
         dbl = DEEP(fname)
 
         # Get Auxiliary Data
-        ABC.__init__(self,fname,Albedo)
+        ABC.__init__(self,fname,Albedo,NDVI=NDVI)
 
         # Q/C: enforce QA=3 and scattering angle<170
         # Combines deep blue and dark target
@@ -659,7 +662,8 @@ class ABC_DBDT_INT (LAND,NN,SETUP,ABC):
                   laod=True,
                   verbose=0,
                   cloud_thresh=0.70,
-                  aFilter=None):
+                  aFilter=None,
+                  NDVI=False):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
 
@@ -681,7 +685,7 @@ class ABC_DBDT_INT (LAND,NN,SETUP,ABC):
         dbl = DEEP(fname)
 
         # Get Auxiliary Data
-        ABC.__init__(self,fname,Albedo)        
+        ABC.__init__(self,fname,Albedo,NDVI=NDVI)        
 
         # Q/C: enforce QA=3 and scattering angle<170
         # Combines deep blue and dark target
@@ -778,7 +782,8 @@ class ABC_LAND_COMP (LAND,NN,SETUP,ABC):
                   laod=True,
                   verbose=0,
                   cloud_thresh=0.70,
-                  aFilter=None):
+                  aFilter=None,
+                  NDVI=False):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
 
@@ -800,7 +805,7 @@ class ABC_LAND_COMP (LAND,NN,SETUP,ABC):
         dbl = DEEP(fname)
 
         # Get Auxiliary Data
-        ABC.__init__(self,fname,Albedo)                
+        ABC.__init__(self,fname,Albedo,NDVI=NDVI)                
 
         # Q/C: enforce QA=3 and scattering angle<170
         # Combines deep blue and dark target
@@ -901,7 +906,8 @@ class ABC_DEEP_COMP (DEEP,NN,SETUP,ABC):
                   laod=True,
                   verbose=0,
                   cloud_thresh=0.70,
-                  aFilter=None):
+                  aFilter=None,
+                  NDVI=False):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
 
@@ -923,7 +929,7 @@ class ABC_DEEP_COMP (DEEP,NN,SETUP,ABC):
         lnd = LAND(fname)
 
         # Get Auxiliary Data
-        ABC.__init__(self,fname,Albedo)           
+        ABC.__init__(self,fname,Albedo,NDVI=NDVI)           
 
 
         # Q/C: enforce QA=3 and scattering angle<170
@@ -1252,4 +1258,4 @@ if __name__ == "__main__":
 
     if combinations:
       SummarizeCombinations(ocean,InputMaster,yrange=None,sortname='slope')
-      SummaryPDFs(ocean,varnames=['mRef870','mRef660'])  
+      SummaryPDFs(ocean,varnames=['mRef870','mRef660'])
