@@ -7,7 +7,7 @@
 
 from ffnet                    import *
 from sklearn.base             import BaseEstimator
-from sklearn.cross_validation import cross_val_score
+from sklearn.model_selection import cross_val_score
 
 class SKNET(ffnet,BaseEstimator):
 
