@@ -52,7 +52,7 @@ class BRDF(object):
 
 
 class MCD43C(object):
-    def __init__(self):
+    def __init__(self,inDir=None,coll='061'):
         self.dlon = 0.05
         self.dlat = 0.05
 
@@ -61,10 +61,12 @@ class MCD43C(object):
 
         self.lon = np.linspace(-180 + 0.5*self.dlon,180 - 0.5*self.dlon,self.nEW)
         self.lat = np.linspace(-90 + 0.5*self.dlat,90 - 0.5*self.dlat,self.nNS)
+        
+        if inDir is None:
+            self.inDir  = '/nobackup/3/pcastell/MODIS/MCD43C1/061'
+        else:
+            self.inDir = inDir
 
-        self.inDir  = '/nobackup/3/pcastell/MODIS/MCD43C1/'
-        self.HTTP = 'http://e4ftl01.cr.usgs.gov//MODV6_Cmp_C/MOTA/MCD43C1.006/'
-        self.command = 'wget --user patticastellanos --password Hernan11617! -r -nH -nd -np -R "index.html*" -R "*.xml" -P '
         self.SDS     = SDS
 
     def readFile(self,inFile):
@@ -84,7 +86,7 @@ class MCD43C(object):
 
             
 
-    def downloadFile(self,tyme):
+    def getFileName(self,tyme):
         MM = str(tyme.month).zfill(2)
         DD = str(tyme.day).zfill(2)
         doy  = tyme - datetime(tyme.year,1,1) + timedelta(days=1)
@@ -93,14 +95,8 @@ class MCD43C(object):
         inFileList = glob("{}/Y{}/M{}/*A{}{}*.hdf".format(self.inDir,tyme.year,MM,tyme.year,doy))
 
         if len(inFileList) != 1:
-            Outdir = "{}/Y{}/M{}/".format(self.inDir,tyme.year,MM)
-            dd = '{}.{}.{}'.format(tyme.year,str(tyme.month).zfill(2),str(tyme.day).zfill(2))
-            print 'Downloading '+dd
-            subprocess.call(self.command+Outdir+' '+self.HTTP+dd+'/',shell=True)        
-            inFileList = glob("{}/Y{}/M{}/*A{}{}*.hdf".format(self.inDir,tyme.year,MM,tyme.year,doy))
-            if len(inFileList) != 1:
-                raise Exception('problem downloading '+ dd)
-            
+            print 'Missing Files on {}'.format(tyme.strftime('%Y-%m-%d'))
+            inFileList = [None] 
         
         return inFileList[0]
 
@@ -120,7 +116,7 @@ class MCD43C(object):
                 for ut in p.iterate(utyme):
                     if Verbose:
                         print 'Working on '+ str(ut.date())
-                    inFile = self.downloadFile(ut)
+                    inFile = self.getFileName(ut)
                     self.readFile(inFile)
 
                     Ityme = tyme == ut
@@ -137,7 +133,7 @@ class MCD43C(object):
             for ut in utyme:
                 if Verbose:
                     print 'Working on '+ str(ut.date())
-                inFile = self.downloadFile(ut)
+                inFile = self.getFileName(ut)
                 self.readFile(inFile)
 
                 Ityme = tyme == ut
