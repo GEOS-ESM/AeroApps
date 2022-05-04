@@ -268,14 +268,7 @@ class GIANT(object):
     Alias = self.ALIAS.keys()
     self.giantList =[]
     for name in Names:
-      v = nc.variables[name]
-      rank = len(v.shape)
-      if rank == 1:
-          data = v[:]
-      elif rank==2:
-          data = v[:,:]
-      else:
-          raise ValueError, 'variable %s has invalid rank %d'%(name,rank)
+      data = nc.variables[name][:]
       if name in Alias:
           name = self.ALIAS[name]
 
