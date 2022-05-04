@@ -344,22 +344,29 @@ def make_plots(mxd,expid,ident,I=None):
   # Plot KDE of corrected AOD
   # -------------------------
   # mxd.plotKDE(I=I,figfile=expid+"."+ident+"_kde-"+mxd.Target[0][1:]+"-corrected.png")
-  targets  = mxd.getTargets(I).squeeze()
-  results = mxd.eval(I).squeeze()
-  _plotKDE(targets,results,y_label='NNR')
-  title("Log("+mxd.Target[0][1:]+"+0.01)- "+ident)
-  savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[0][1:]+'-corrected.png')
+  targets  = mxd.getTargets(I)
+  results = mxd.eval(I)
+  # loop through targets
+  for t in range(len(mxd.Target)):
+      _plotKDE(targets[:,t],results[:,t],y_label='NNR')
+      title("Log("+mxd.Target[t][1:]+"+0.01)- "+ident)
+      savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[t][1:]+'-corrected.png')
 
   # Plot KDE of uncorrected AOD
-  # ---------------------------   
-  original = log(mxd.mTau550[I]+0.01)
-  _plotKDE(targets,original,y_label='Original MODIS')
-  title("Log("+mxd.Target[0][1:]+"+0.01)- "+ident)
-  savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[0][1:]+'.png')
+  # ---------------------------  
+  # loop through targets
+  # plot if there's a corresponding MODIS retrieval
+  for t in range(len(mxd.Target)):
+      name = 'm'+mxd.Target[t][1:]
+      if name in mxd.__dict__:
+          original = log(mxd.__dict__[name][I]+0.01)
+          _plotKDE(targets[:,t],original,y_label='Original MODIS')
+          title("Log("+mxd.Target[t][1:]+"+0.01)- "+ident)
+          savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[t][1:]+'.png')
 
-  # Scatter diagram for testing
-  # ---------------------------
-  mxd.plotScat(I=I,figfile=outdir+"/"+expid+"."+ident+"_scat-"+mxd.Target[0][1:]+'.png')
+          # Scatter diagram for testing
+          # ---------------------------
+          mxd.plotScat(iTarget=t,I=I,figfile=outdir+"/"+expid+"."+ident+"_scat-"+mxd.Target[0][1:]+'.png')
 
 
 #---------------------------------------------------------------------
