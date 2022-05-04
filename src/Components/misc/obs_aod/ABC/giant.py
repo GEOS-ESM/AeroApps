@@ -22,8 +22,7 @@ META =  ( "Date",
           "SensorZenith",
           "SensorAzimuth",
           "ScatteringAngle",
-          "GlintAngle",
-          "ndat")
+          "GlintAngle")
 
 ANET = ( # "mean_AOD0340",
 #         "mean_AOD0380",
