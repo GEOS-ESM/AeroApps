@@ -330,7 +330,7 @@ class ABC_Ocean (OCEAN,NN,SETUP,ABC):
                       (self.mRef1600 > 0.0)  &\
                       (self.mRef2100 > 0.0)  &\
                       (self.cloud <cloud_thresh) &\
-                      (self.cloud > 0)           &\
+                      (self.cloud >= 0)          &\
                       (self.GlintAngle != MISSING ) &\
                       (self.GlintAngle > glint_thresh) 
 
@@ -405,7 +405,7 @@ class ABC_Land (LAND,NN,SETUP,ABC):
                       (self.mTau660 > -0.01)      & \
                       (self.mTau2100> -0.01)      & \
                       (self.cloud<cloud_thresh)   & \
-                      (self.cloud > 0)            &\
+                      (self.cloud >= 0)           & \
                       (self.ScatteringAngle<170.) & \
                       (self.mRef412 > 0)          & \
                       (self.mRef440 > 0)          & \
@@ -483,7 +483,7 @@ class ABC_Deep (DEEP,NN,SETUP,ABC):
                       (self.mTau550 > -0.01)      & \
                       (self.mTau660 > -0.01)      & \
                       (self.cloud<cloud_thresh)   & \
-                      (self.cloud > 0)            &\
+                      (self.cloud >= 0)           & \
                       (self.ScatteringAngle<170.) & \
                       (self.mRef412 > 0)          & \
                       (self.mRef470 > 0)          & \
@@ -567,7 +567,7 @@ class ABC_DBDT (LAND,NN,SETUP,ABC):
                       (self.mTau550 > -0.01)      & \
                       (self.mTau660 > -0.01)      & \
                       (self.cloud<cloud_thresh)   & \
-                      (self.cloud > 0)            & \
+                      (self.cloud >= 0)           & \
                       (self.ScatteringAngle<170.) & \
                       (self.mRef412 > 0)          & \
                       (self.mRef440 > 0)          & \
@@ -698,7 +698,7 @@ class ABC_DBDT_INT (LAND,NN,SETUP,ABC):
                       (self.mTau550 > -0.01)      & \
                       (self.mTau660 > -0.01)      & \
                       (self.cloud<cloud_thresh)   & \
-                      (self.cloud > 0)            & \
+                      (self.cloud >= 0)           & \
                       (self.ScatteringAngle<170.) & \
                       (self.mRef412 > 0)          & \
                       (self.mRef440 > 0)          & \
@@ -818,7 +818,7 @@ class ABC_LAND_COMP (LAND,NN,SETUP,ABC):
                       (self.mTau550 > -0.01)      & \
                       (self.mTau660 > -0.01)      & \
                       (self.cloud<cloud_thresh)   & \
-                      (self.cloud > 0)            & \
+                      (self.cloud >= 0)           & \
                       (self.ScatteringAngle<170.) & \
                       (self.mRef412 > 0)          & \
                       (self.mRef440 > 0)          & \
@@ -967,7 +967,7 @@ class ABC_DEEP_COMP (DEEP,NN,SETUP,ABC):
                       (self.mTau550 > -0.01)      & \
                       (self.mTau660 > -0.01)      & \
                       (self.cloud<cloud_thresh)   & \
-                      (self.cloud > 0)           & \
+                      (self.cloud >= 0)           & \
                       (self.ScatteringAngle<170.) & \
                       (self.mRef412 > 0)          & \
                       (self.mRef470 > 0)          & \
