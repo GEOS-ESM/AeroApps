@@ -371,7 +371,8 @@ class ABC_Land (LAND,NN,SETUP,ABC):
                   verbose=0,
                   cloud_thresh=0.70,
                   aFilter=None,
-                  NDVI=False):
+                  NDVI=False,
+                  tymemax='20160701'):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
 
@@ -384,12 +385,15 @@ class ABC_Land (LAND,NN,SETUP,ABC):
                      from this identifier (See below).
         outliers --  number of standard deviations for outlinear removal.
         laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
+        tymemax ---  truncate the data record in the giant file at tymemax. 
+                     set to  None to read entire data record.
+                     20160701 is the default that was used for NNR v003
         """
 
         self.verbose = verbose
         self.laod = laod
 
-        LAND.__init__(self,fname)  # initialize superclass
+        LAND.__init__(self,fname,tymemax=tymemax)  # initialize superclass
 
         # Get Auxiliary Data
         ABC.__init__(self,fname,Albedo,NDVI=NDVI)
@@ -449,7 +453,8 @@ class ABC_Deep (DEEP,NN,SETUP,ABC):
                   verbose=0,
                   cloud_thresh=0.70,
                   aFilter=None,
-                  NDVI=False):
+                  NDVI=False,
+                  tymemax='20160701'):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
 
@@ -462,12 +467,15 @@ class ABC_Deep (DEEP,NN,SETUP,ABC):
                      from this identifier (See below).
         outliers --  number of standard deviations for outlinear removal.
         laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
+        tymemax ---  truncate the data record in the giant file at tymemax.
+                     set to  None to read entire data record.
+                     20160701 is the default that was used for NNR v003        
         """
 
         self.verbose = verbose
         self.laod = laod
 
-        DEEP.__init__(self,fname)  # initialize superclass
+        DEEP.__init__(self,fname,tymemax=tymemax)  # initialize superclass
 
         # Get Auxiliary Data
         ABC.__init__(self,fname,Albedo,NDVI=NDVI)
@@ -532,7 +540,8 @@ class ABC_DBDT (LAND,NN,SETUP,ABC):
                   verbose=0,
                   cloud_thresh=0.70,
                   aFilter=None,
-                  NDVI=False):
+                  NDVI=False,
+                  tymemax='20160701'):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
 
@@ -545,13 +554,16 @@ class ABC_DBDT (LAND,NN,SETUP,ABC):
                      from this identifier (See below).
         outliers --  number of standard deviations for outlinear removal.
         laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
+        tymemax ---  truncate the data record in the giant file at tymemax.
+                     set to  None to read entire data record.
+                     20160701 is the default that was used for NNR v003        
         """
 
         self.verbose = verbose
         self.laod = laod
 
-        LAND.__init__(self,fname)  # initialize superclass
-        dbl = DEEP(fname)
+        LAND.__init__(self,fname,tymemax=tymemax)  # initialize superclass
+        dbl = DEEP(fname,tymemax=tymemax)
 
         # Get Auxiliary Data
         ABC.__init__(self,fname,Albedo,NDVI=NDVI)
@@ -663,7 +675,8 @@ class ABC_DBDT_INT (LAND,NN,SETUP,ABC):
                   verbose=0,
                   cloud_thresh=0.70,
                   aFilter=None,
-                  NDVI=False):
+                  NDVI=False,
+                  tymemax='20160701'):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
 
@@ -676,13 +689,16 @@ class ABC_DBDT_INT (LAND,NN,SETUP,ABC):
                      from this identifier (See below).
         outliers --  number of standard deviations for outlinear removal.
         laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
+        tymemax ---  truncate the data record in the giant file at tymemax.
+                     set to  None to read entire data record.
+                     20160701 is the default that was used for NNR v003
         """
 
         self.verbose = verbose
         self.laod = laod
 
-        LAND.__init__(self,fname)  # initialize superclass
-        dbl = DEEP(fname)
+        LAND.__init__(self,fname,tymemax=tymemax)  # initialize superclass
+        dbl = DEEP(fname,tymemax=tymemax)
 
         # Get Auxiliary Data
         ABC.__init__(self,fname,Albedo,NDVI=NDVI)        
@@ -783,7 +799,8 @@ class ABC_LAND_COMP (LAND,NN,SETUP,ABC):
                   verbose=0,
                   cloud_thresh=0.70,
                   aFilter=None,
-                  NDVI=False):
+                  NDVI=False,
+                  tymemax='20160701'):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
 
@@ -796,13 +813,16 @@ class ABC_LAND_COMP (LAND,NN,SETUP,ABC):
                      from this identifier (See below).
         outliers --  number of standard deviations for outlinear removal.
         laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
+        tymemax ---  truncate the data record in the giant file at tymemax.
+                     set to  None to read entire data record.
+                     20160701 is the default that was used for NNR v003        
         """
 
         self.verbose = verbose
         self.laod = laod
 
-        LAND.__init__(self,fname)  # initialize superclass
-        dbl = DEEP(fname)
+        LAND.__init__(self,fname,tymemax=tymemax)  # initialize superclass
+        dbl = DEEP(fname,tymemax=tymemax)
 
         # Get Auxiliary Data
         ABC.__init__(self,fname,Albedo,NDVI=NDVI)                
@@ -907,7 +927,8 @@ class ABC_DEEP_COMP (DEEP,NN,SETUP,ABC):
                   verbose=0,
                   cloud_thresh=0.70,
                   aFilter=None,
-                  NDVI=False):
+                  NDVI=False,
+                  tymemax='20160701'):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
 
@@ -920,13 +941,16 @@ class ABC_DEEP_COMP (DEEP,NN,SETUP,ABC):
                      from this identifier (See below).
         outliers --  number of standard deviations for outlinear removal.
         laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
+        tymemax ---  truncate the data record in the giant file at tymemax.
+                     set to  None to read entire data record.
+                     20160701 is the default that was used for NNR v003        
         """
 
         self.verbose = verbose
         self.laod = laod
 
-        DEEP.__init__(self,fname)  # initialize superclass
-        lnd = LAND(fname)
+        DEEP.__init__(self,fname,tymemax=tymemax)  # initialize superclass
+        lnd = LAND(fname,tymemax=tymemax)
 
         # Get Auxiliary Data
         ABC.__init__(self,fname,Albedo,NDVI=NDVI)           
