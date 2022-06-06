@@ -285,19 +285,19 @@ class GIANT(object):
     # new files have an ISO_DateTime variable
     nc = Dataset(filename)
     if 'ISO_DateTime' in nc.variables.keys():
-        nc = Dataset(filename)
-        iso = nc.variables['ISO_DateTime'][:]
-        self.tyme = array([isoparse(''.join(array(t))) for t in iso])
-        nc.close()
-    else:
-    # old file only have Date and Time variables
-        D = self.Date[:,0:10]
-        T = self.Time[:,0:5] # they didn't save the seconds
-        # Bug in dataset, first field is blank
-        D[0] = D[1]
-        T[0] = T[1]
-        self.aTau550[0] = -9999.0
-        self.tyme = array([ isoparse(''.join(D[i])+'T'+''.join(t)) for i, t in enumerate(T) ])    
+        try:
+            iso = nc.variables['ISO_DateTime'][:]
+            self.tyme = array([isoparse(''.join(array(t))) for t in iso])
+        except:
+        # old file only have Date and Time variables
+            D = self.Date[:,0:10]
+            T = self.Time[:,0:5] # they didn't save the seconds
+            # Bug in dataset, first field is blank
+            D[0] = D[1]
+            T[0] = T[1]
+            self.aTau550[0] = -9999.0
+            self.tyme = array([ isoparse(''.join(D[i])+'T'+''.join(t)) for i, t in enumerate(T) ])    
+    nc.close()
 
     # Limit to the MERRA-2 time series
     #---------------------------------
@@ -350,7 +350,7 @@ class GIANT(object):
     """
     for name in self.giantList:
       q = self.__dict__[name]
-      #print "{} Reducing "+name,q.shape
+      print "{} Reducing "+name,q.shape
       self.__dict__[name] = q[I]
 
     self.nobs = len(self.lon)
