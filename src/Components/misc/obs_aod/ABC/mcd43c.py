@@ -117,6 +117,25 @@ class MCD43C(object):
                     if Verbose:
                         print 'Working on '+ str(ut.date())
                     inFile = self.getFileName(ut)
+                    if inFile is not None:
+                        self.readFile(inFile)
+
+                        Ityme = tyme == ut
+
+                        lat = giant.lat[Ityme]
+                        lon = giant.lon[Ityme]
+                        pts = []
+                        for LAT,LON in zip(lat,lon): pts.append([LAT,LON])
+
+                        for sds in SDS:
+                            interpFunc = RegularGridInterpolator((self.lat, self.lon), self.__dict__[SDS[sds]],method='nearest')
+                            giant.brdf.__dict__[SDS[sds]][Ityme] = interpFunc(pts)
+        else:
+            for ut in utyme:
+                if Verbose:
+                    print 'Working on '+ str(ut.date())
+                inFile = self.getFileName(ut)
+                if inFile is not None:
                     self.readFile(inFile)
 
                     Ityme = tyme == ut
@@ -128,22 +147,5 @@ class MCD43C(object):
 
                     for sds in SDS:
                         interpFunc = RegularGridInterpolator((self.lat, self.lon), self.__dict__[SDS[sds]],method='nearest')
-                        giant.brdf.__dict__[SDS[sds]][Ityme] = interpFunc(pts)
-        else:
-            for ut in utyme:
-                if Verbose:
-                    print 'Working on '+ str(ut.date())
-                inFile = self.getFileName(ut)
-                self.readFile(inFile)
-
-                Ityme = tyme == ut
-
-                lat = giant.lat[Ityme]
-                lon = giant.lon[Ityme]
-                pts = []
-                for LAT,LON in zip(lat,lon): pts.append([LAT,LON])
-
-                for sds in SDS:
-                    interpFunc = RegularGridInterpolator((self.lat, self.lon), self.__dict__[SDS[sds]],method='nearest')
-                    giant.brdf.__dict__[SDS[sds]][Ityme] = interpFunc(pts)            
+                        giant.brdf.__dict__[SDS[sds]][Ityme] = interpFunc(pts)            
 
