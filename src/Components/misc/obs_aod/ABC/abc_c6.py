@@ -1133,7 +1133,7 @@ def _test(mxd,expid,c,plotting=True):
       netFile = outdir+"/"+expid+'_Tau.net'
 
     mxd.net = mxd.loadnet(netFile)
-    mxd.Input = mxd.comblist[0]
+    mxd.Input = mxd.comblist[c]
     TestStats(mxd,mxd.K,c)
     if plotting: make_plots(mxd,expid,ident,I=mxd.iTest)
   else:
