@@ -283,7 +283,8 @@ class ABC_Ocean (OCEAN,NN,SETUP,ABC):
                   cloud_thresh=0.70,
                   glint_thresh=40.0,
                   Albedo=None,
-                  aFilter=None):
+                  aFilter=None,
+                  tymemax='20160701'):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Ocean algorithm.
 
@@ -293,6 +294,10 @@ class ABC_Ocean (OCEAN,NN,SETUP,ABC):
                      data (see class OCEAN)
         outliers --  number of standard deviations for outlinear removal.
         laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
+        tymemax ---  truncate the data record in the giant file at tymemax.
+                     set to  None to read entire data record.
+                     20160701 is the default that was used for NNR v003
+
 
         Reads in two Albedo variables
               albedo - cox munk lut that parameterizes albedo with wind speed
@@ -306,7 +311,7 @@ class ABC_Ocean (OCEAN,NN,SETUP,ABC):
         self.verbose = verbose
         self.laod    = laod
 
-        OCEAN.__init__(self,fname) # initialize superclass
+        OCEAN.__init__(self,fname,tymemax=tymemax) # initialize superclass
 
         # Get Auxiliary Data
         ABC.__init__(self,fname,Albedo,coxmunk_lut=coxmunk_lut)
