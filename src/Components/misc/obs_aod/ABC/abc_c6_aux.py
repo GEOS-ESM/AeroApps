@@ -388,7 +388,7 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
 
     # results  = [mxd.eval(I)[:,0]]
     inputs = mxd.getInputs(I[0],Input=Input)
-    knet = mxd.loadnet(netfileRoot)
+    knet = mxd.loadnet(netfileRoot+'_Tau.net')
     out = knet(inputs)[:,0]
     results = [out]
 
