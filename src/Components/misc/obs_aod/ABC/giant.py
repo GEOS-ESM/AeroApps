@@ -381,17 +381,17 @@ class GIANT(object):
     self.CoxMunkLUT = albedo
 
 
-  def calcCoxMunk(self,channels=[470. ,550. ,660. ,870. ,1200.,1600.,2100.],windFile=None,npzFile=None):
+  def calcCoxMunk(self,windFile,channels=[470. ,550. ,660. ,870. ,1200.,1600.,2100.],npzFile=None):
     """
     Calls VLIDORT wrapper to calculate CoxMunk Bidirectional Surface Reflectance.
     """
     import VLIDORT_BRDF_ABC_
 
-    channeli = [470. ,550. ,660. ,870. ,1200.,1600.,2100.]
-    mr       = [1.336,1.333,1.331,1.328,1.324,1.317,1.306]  # refractive index
+    channeli = [200,250,300,337,400,488,515,550,633,694,860,1060,1300,1536,1800,2000,2250,2500]
+    # refractive index
+    mr       = [1.396,1.362,1.349,1.345,1.339,1.335,1.334,1.333,1.332,1.331,1.329,1.326,
+               1.323,1.318,1.312,1.306,1.292,1.261]
 
-    if windFile is None:
-      windFile = self.ident + '_MERRA2.npz'
     wind = np.load(windFile)
     u10m = wind['u10m'].astype('float64')
     v10m = wind['v10m'].astype('float64')
