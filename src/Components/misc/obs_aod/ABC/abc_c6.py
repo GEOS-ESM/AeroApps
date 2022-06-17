@@ -84,6 +84,7 @@ class SETUP(object):
     # -----------------
     self.expid   = expid
     self.Target  = Target
+    self.nTarget = len(Target)
     self.K       = K
     self.nHidden = nHidden
       
@@ -106,8 +107,8 @@ class SETUP(object):
           
     # Initialize arrays to hold stats
     # ------------------------------
-    self.nnr  = STATS(K,self.comblist)
-    self.orig = STATS(K,self.comblist)
+    self.nnr  = STATS(K,self.comblist,self.nTarget)
+    self.orig = STATS(K,self.comblist,self.nTarget)
 
     # Initialize K-folding
     # --------------------
@@ -197,8 +198,11 @@ class ABC(object):
     def setCoxMunkBRF(self,albedo):
         # Read in Cox Munk Bidirectional surface reflectance
         # --------------------------------------------------
-        self.__dict__[albedo] = squeeze(load(self.fnameRoot+'_CoxMunkBRF.npz')[albedo])
-        self.giantList.append(albedo)
+        names = ['470','550','660','870','1200','1600','2100']
+        for ch in names:
+            name = 'CxAlbedo' + ch
+            self.__dict__[name] = squeeze(load(self.fnameRoot+'_CxAlbedo.npz')[name])
+            self.giantList.append(name)
 
     def setBRDF(self):
         # Read in MCD43C1 BRDF
@@ -1061,19 +1065,19 @@ class ABC_DEEP_COMP (DEEP,NN,SETUP,ABC):
 
 class STATS(object):
 
-  def __init__ (self,K,comblist):
+  def __init__ (self,K,comblist,nTarget):
     c = max([len(comblist),1])
     if K is None:
       k = 1
     else:
       k = K
 
-    self.slope     = np.ones([k,c])*-999.
-    self.intercept = np.ones([k,c])*-999.
-    self.R         = np.ones([k,c])*-999.
-    self.rmse      = np.ones([k,c])*-999.
-    self.mae       = np.ones([k,c])*-999.
-    self.me        = np.ones([k,c])*-999.
+    self.slope     = np.ones([k,c,nTarget])*np.nan
+    self.intercept = np.ones([k,c,nTarget])*np.nan
+    self.R         = np.ones([k,c,nTarget])*np.nan
+    self.rmse      = np.ones([k,c,nTarget])*np.nan
+    self.mae       = np.ones([k,c,nTarget])*np.nan
+    self.me        = np.ones([k,c,nTarget])*np.nan
 
 #---------------------------------------------------------------------
 def _train(mxd,expid,c):

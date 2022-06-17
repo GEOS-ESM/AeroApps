@@ -13,7 +13,7 @@ from   matplotlib.ticker    import  MultipleLocator
 import matplotlib.patches   as      mpatches
 from   numpy                import  c_ as cat
 from   numpy                import  random, sort, pi, load, cos, log, std, exp
-from   numpy                import  reshape, arange, ones, zeros, interp, sqrt
+from   numpy                import  reshape, arange, ones, zeros, interp
 from   numpy                import  meshgrid, concatenate, squeeze
 import numpy                as      np
 import itertools
@@ -176,10 +176,10 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='rmse'):
     print "MASTERLIST", masterlist
 
     #--------------
-    # Default sort by mean RMSE
+    # Default sort by mean RMSE of first target
     #------------------
-    sortvalue = mxd.nnr.__dict__[sortname]
-    sortvalue  = np.insert(sortvalue,0,np.array(mxd.orig.__dict__[sortname][:,0]),axis=1)
+    sortvalue = mxd.nnr.__dict__[sortname][:,:,0]
+    sortvalue  = np.insert(sortvalue,0,np.array(mxd.orig.__dict__[sortname][:,0,0]),axis=1)
     sortmetric = np.median(sortvalue, axis=0)
     isort = np.empty(0,dtype='int')
     vseps = np.empty(0,dtype='int')
@@ -196,9 +196,9 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='rmse'):
     blocks.mask = [blocks == 0]
 
 
-    def getplotdata(mxd,varname):
-      vardata = mxd.nnr.__dict__[varname]
-      vardata = np.insert(vardata,0,np.array(mxd.orig.__dict__[varname][:,0]),axis=1)
+    def getplotdata(mxd,varname,iTarget):
+      vardata = mxd.nnr.__dict__[varname][:,:,iTarget]
+      vardata = np.insert(vardata,0,np.array(mxd.orig.__dict__[varname][:,0,iTarget]),axis=1)
       vardata = vardata[:,isort]
       
       if vardata.shape[0] == 1:
@@ -213,46 +213,47 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='rmse'):
     else:
       plottype = 'errorbar'
 
-
-    boxplot_imshow(getplotdata(mxd,'slope'),plottype,
+    for t in range(mxd.nTarget):
+      name = mxd.Target[t][1:]
+      boxplot_imshow(getplotdata(mxd,'slope',t),plottype,
                    blocks,masterlist,
                    'Slope',
-                   '{}/Slope.{}.{}.png'.format(outdir,retrieval,ident),
+                   '{}/Slope.{}.{}.{}.png'.format(outdir,retrieval,ident,name),
                    vseps = vseps,
                    yrange=[0,1])
 
-    boxplot_imshow(getplotdata(mxd,'R'),plottype,
+      boxplot_imshow(getplotdata(mxd,'R',t),plottype,
                    blocks,masterlist,
                    'R',
-                   '{}/R.{}.{}.png'.format(outdir,retrieval,ident),
+                   '{}/R.{}.{}.{}.png'.format(outdir,retrieval,ident,name),
                    vseps = vseps,
                    yrange=[0,1])
 
-    boxplot_imshow(getplotdata(mxd,'intercept'),plottype,
+      boxplot_imshow(getplotdata(mxd,'intercept',t),plottype,
                    blocks,masterlist,
                    'Intercept',
-                   '{}/Intercept.{}.{}.png'.format(outdir,retrieval,ident),
+                   '{}/Intercept.{}.{}.{}.png'.format(outdir,retrieval,ident,name),
                    vseps = vseps,
                    yrange=yrange)
 
-    boxplot_imshow(getplotdata(mxd,'rmse'),plottype,
+      boxplot_imshow(getplotdata(mxd,'rmse',t),plottype,
                    blocks,masterlist,
                    'RMSE',
-                   '{}/RMSE.{}.{}.png'.format(outdir,retrieval,ident),
+                   '{}/RMSE.{}.{}.{}.png'.format(outdir,retrieval,ident,name),
                    vseps = vseps,
                    yrange=yrange)
 
-    boxplot_imshow(getplotdata(mxd,'me'),plottype,
+      boxplot_imshow(getplotdata(mxd,'me',t),plottype,
                    blocks,masterlist,
                    'Mean Bias',
-                   '{}/ME.{}.{}.png'.format(outdir,retrieval,ident),
+                   '{}/ME.{}.{}.{}.png'.format(outdir,retrieval,ident,name),
                    vseps = vseps,
                    yrange=yrange)
 
-    boxplot_imshow(getplotdata(mxd,'mae'),plottype,
+      boxplot_imshow(getplotdata(mxd,'mae',t),plottype,
                    blocks,masterlist,
                    'Mean Absolute Error',
-                   '{}/MAE.{}.{}.png'.format(outdir,retrieval,ident),
+                   '{}/MAE.{}.{}.{}.png'.format(outdir,retrieval,ident,name),
                    vseps = vseps,
                    yrange=yrange)    
 
@@ -347,7 +348,7 @@ def make_plots(mxd,expid,ident,I=None):
   targets  = mxd.getTargets(I)
   results = mxd.eval(I)
   # loop through targets
-  for t in range(len(mxd.Target)):
+  for t in range(mxd.nTarget):
       _plotKDE(targets[:,t],results[:,t],y_label='NNR')
       title("Log("+mxd.Target[t][1:]+"+0.01)- "+ident)
       savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[t][1:]+'-corrected.png')
@@ -356,7 +357,7 @@ def make_plots(mxd,expid,ident,I=None):
   # ---------------------------  
   # loop through targets
   # plot if there's a corresponding MODIS retrieval
-  for t in range(len(mxd.Target)):
+  for t in range(mxd.nTarget):
       name = 'm'+mxd.Target[t][1:]
       if name in mxd.__dict__:
           original = log(mxd.__dict__[name][I]+0.01)
@@ -874,48 +875,55 @@ def TestStats(mxd,K,C):
     else:
       c = C
 
-    # regression[0,2] = slope, intercept, r-value
+    # len(regression) = nTarget
+    # regression[*][0:2] = slope, intercept, r-value
+    # out.shape = [ntestobs,nTarget]
     out, reg = mxd.test(iprint=False)
-    out = out[:,0]
 
-    mxd.nnr.slope[k,c]     = reg[0][0]
-    mxd.nnr.intercept[k,c] = reg[0][1]
-    mxd.nnr.R[k,c]         = reg[0][2]
+    mxd.nnr.slope[k,c,:]     = reg[:][0]
+    mxd.nnr.intercept[k,c,:] = reg[:][1]
+    mxd.nnr.R[k,c,:]         = reg[:][2]
 
     targets  = mxd.getTargets(mxd.iTest)
-    if len(targets.shape) > 1:
-      targets = targets[:,0]
-    original = mxd.mTau550[mxd.iTest]
 
-    if mxd.laod:
-      original = log(original + 0.01)
+    # get other NNR STATS
+    mxd.nnr.rmse[k,c,:] = rmse(out,targets)
+    mxd.nnr.mae[k,c,:]  = mae(out,targets)
+    mxd.nnr.me[k,c,:]   = me(out,targets)
 
-    mxd.nnr.rmse[k,c] = rmse(out,targets)
-    mxd.nnr.mae[k,c]  = mae(out,targets)
-    mxd.nnr.me[k,c]   = me(out,targets)
- 
-    lm = LinearRegression()
-    targets.shape = targets.shape + (1,)
-    lm.fit(targets,original)
-    mxd.orig.slope[k,c]     = lm.coef_[0]
-    mxd.orig.intercept[k,c] = lm.intercept_
-    mxd.orig.R[k,c]         = sqrt(lm.score(targets,original))
+    # loop through targets
+    # get corresponding original MODIS retrieval
+    for t in range(mxd.nTarget):
+        name = 'm'+mxd.Target[t][1:]
+        if name in mxd.__dict__:
+            original = mxd.__dict__[name][mxd.iTest]
+            if mxd.laod:
+                original = log(original + 0.01)
 
-    targets  = targets.squeeze()
-    mxd.orig.rmse[k,c] = rmse(original,targets)
-    mxd.orig.mae[k,c]  = mae(original,targets)
-    mxd.orig.me[k,c]   = me(original,targets)
+            # get original MODIS stats 
+            lm = LinearRegression()
+            tt = targets[:,t]
+            tt.shape = tt.shape + (1,)
+            lm.fit(tt,original)
+            mxd.orig.slope[k,c,t]     = lm.coef_[0]
+            mxd.orig.intercept[k,c,t] = lm.intercept_
+            mxd.orig.R[k,c,t]         = np.sqrt(lm.score(tt,original))
+
+            tt  = tt.squeeze()
+            mxd.orig.rmse[k,c,t] = rmse(original,tt)
+            mxd.orig.mae[k,c,t]  = mae(original,tt)
+            mxd.orig.me[k,c,t]   = me(original,tt)
 
     
 # ---
 def rmse(predictions, targets):
-    return sqrt((np.square(predictions - targets)).mean())
+    return np.sqrt((np.square(predictions - targets)).mean(axis=0))
 # ---
 def mae(predictions, targets):
-    return np.abs(predictions-targets).mean()
+    return np.abs(predictions-targets).mean(axis=0)
 # ---
 def me(predictions, targets):
-    return (predictions-targets).mean()    
+    return (predictions-targets).mean(axis=0)    
 
 # ----
 def MAKE_ERROR_PDFS(mxdx,Input,expid,ident,K=None,I=None,Title=None,
