@@ -286,3 +286,5 @@ def _plotKDE(x_values,y_values,x_bins=None,y_bins=None,
         xlabel(x_label)
         ylabel(y_label)
         grid()
+
+        return fig

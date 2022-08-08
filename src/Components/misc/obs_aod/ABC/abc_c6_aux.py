@@ -349,9 +349,10 @@ def make_plots(mxd,expid,ident,I=None):
   results = mxd.eval(I)
   # loop through targets
   for t in range(mxd.nTarget):
-      _plotKDE(targets[:,t],results[:,t],y_label='NNR')
+      fig = _plotKDE(targets[:,t],results[:,t],y_label='NNR')
       title("Log("+mxd.Target[t][1:]+"+0.01)- "+ident)
       savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[t][1:]+'-corrected.png')
+      plt.close(fig)
 
   # Plot KDE of uncorrected AOD
   # ---------------------------  
@@ -361,9 +362,10 @@ def make_plots(mxd,expid,ident,I=None):
       name = 'm'+mxd.Target[t][1:]
       if name in mxd.__dict__:
           original = log(mxd.__dict__[name][I]+0.01)
-          _plotKDE(targets[:,t],original,y_label='Original MODIS')
+          fig = _plotKDE(targets[:,t],original,y_label='Original MODIS')
           title("Log("+mxd.Target[t][1:]+"+0.01)- "+ident)
           savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[t][1:]+'.png')
+          plt.close(fig)
 
           # Scatter diagram for testing
           # ---------------------------
@@ -382,130 +384,129 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
 
   # Plot PDF of Error
   # -------------------------
-  if K is None:
-    targets  = [mxd.getTargets(I[0])]
-    if len(targets[0].shape) > 1:
-      targets[0] = targets[0][:,0]
+  # loop through targets
+  # plot if there's a corresponding MODIS retrieval 
+  for t in range(mxd.nTarget):
+    name = 'm'+mxd.Target[t][1:]
+    if name in mxd.__dict__:
+      if K is None:
+        targets  = mxd.getTargets(I[0])[:,t]
 
-    # results  = [mxd.eval(I)[:,0]]
-    inputs = mxd.getInputs(I[0],Input=Input)
-    knet = mxd.loadnet(netfileRoot+'_Tau.net')
-    out = knet(inputs)[:,0]
-    results = [out]
+        inputs = mxd.getInputs(I[0],Input=Input)
+        knet = mxd.loadnet(netfileRoot+'_Tau.net')
+        results = knet(inputs)[:,t]
+
+        original = mxd.__dict__[name][I[0]]
+
+        if mxd.laod:
+          original = log(original + 0.01)
+
+        mod04RMSE = rmse(original,targets)
+        nnrRMSE   = rmse(results,targets)
+
+        targets = [targets]
+        results = [results]
+        original = [original]
+      else:
+        targets   = []
+        original  = []
+        results   = []
+        mod04RMSE = []
+        nnrRMSE   = []
+        for k,iTest in enumerate(I):
+          mxd.iTest    = iTest
+
+          targets.append(mxd.getTargets(mxd.iTest)[:,t])
+
+          inputs = mxd.getInputs(mxd.iTest,Input=Input)
+
+          knet = mxd.loadnet(netfileRoot+'.k={}_Tau.net'.format(str(k+1)))
+          out = knet(inputs)[:,t]
+          results.append(out)
+
+          original.append(mxd.__dict__[name][mxd.iTest])
+
+          if mxd.laod:
+            original[k] = log(original[k] + 0.01)
+
+          mod04RMSE.append(rmse(original[k],targets[k]))
+          nnrRMSE.append(rmse(results[k],targets[k]))
+
+        print 'mod04RMSE',mod04RMSE
+        print 'nnrRMSE',nnrRMSE
+        mod04RMSE = np.mean(mod04RMSE)
+        nnrRMSE   = np.mean(nnrRMSE)
+
+      eorig = []
+      ecorr = []
+      for o,tar,r in zip(original,targets,results):
+        eorig.append(o - tar)
+        ecorr.append(r - tar)
+
+      if emax is None:
+        emax  = np.array([[e.max() for e in eorig],[e.max() for e in ecorr]]).max()
+      if emin is None:
+        emin  = np.array([[e.min() for e in eorig],[e.min() for e in ecorr]]).min()
+
+      nbins        = 100
+      corrected = []
+      orig      = []
+      x = np.linspace(emin,emax,nbins+1)
+      xcen = x[:-1] + 0.5*(x[1:] - x[:-1])
+      if K is None:
+        # cc, x = np.histogram(ecorr[0],bins=np.linspace(emin,emax,nbins+1),density=True)
+        # oo, x = np.histogram(eorig[0],bins=np.linspace(emin,emax,nbins+1),denstiry=True)
+
+        kernel = stats.gaussian_kde(ecorr[0])
+        cc     = kernel(xcen)
+
+        kernel = stats.gaussian_kde(eorig[0])
+        oo     = kernel(xcen)    
+
+        corrected.append(cc)
+        orig.append(oo)
+      else:
+        for k,iTest in enumerate(I):
+          # cc, x = np.histogram(ecorr[k],bins=np.linspace(emin,emax,nbins+1),density=True)
+          # oo, x = np.histogram(eorig[k],bins=np.linspace(emin,emax,nbins+1),density=True)
+
+          kernel = stats.gaussian_kde(ecorr[k])
+          cc     = kernel(xcen)
+
+          kernel = stats.gaussian_kde(eorig[k])
+          oo     = kernel(xcen)          
+
+          corrected.append(cc)
+          orig.append(oo)
+
+      corrected = np.array(corrected).T
+      orig      = np.array(orig).T
 
 
-    original = [mxd.mTau550[I[0]]]
+      if K is not None:
+         xcen = np.tile(xcen,(K,1)).T
 
-    if mxd.laod:
-      original[0] = log(original[0] + 0.01)
+      fig = plt.figure()
+      ax  = plt.subplot(111)  
+      ax.plot(xcen,orig,color='k')
+      ax.plot(xcen,corrected,color='r')
+      ax.set_xlim(emin,emax)
 
-    mod04RMSE = rmse(original[0],targets[0])
-    nnrRMSE   = rmse(results[0],targets[0])
-  else:
-    targets   = []
-    original  = []
-    results   = []
-    mod04RMSE = []
-    nnrRMSE   = []
-    for k,iTest in enumerate(I):
-      # Irange     = arange(mxd.nobs)
-      # iValid     = Irange[mxd.iValid]
-      # mxd.iTest  = iValid[iTest]
-      mxd.iTest    = iTest
+      if mxd.surface == 'ocean':
+        ax.set_ylim(0,3.5)
+      else:
+        ax.set_ylim(0,2.0)
+      orig_patch      = mpatches.Patch(color='k', label='MOD04 RMSE={:1.2F}'.format(mod04RMSE))
+      corrected_patch = mpatches.Patch(color='r', label='NNR RMSE={:1.2F}'.format(nnrRMSE) )
+      ax.legend(handles=[orig_patch,corrected_patch])
+      plt.grid(True, which='major',axis='both',color='0.50',linestyle='-')
 
-      targets.append(mxd.getTargets(mxd.iTest))
-      if len(targets[k].shape) > 1:
-            targets[k] = targets[k][:,0]
-
-      original.append(mxd.mTau550[mxd.iTest])
-
-      inputs = mxd.getInputs(mxd.iTest,Input=Input)
-
-      knet = mxd.loadnet(netfileRoot+'.k={}_Tau.net'.format(str(k+1)))
-      out = knet(inputs)[:,0]
-      results.append(out)
-
-      if mxd.laod:
-        original[k] = log(original[k] + 0.01)
-
-      mod04RMSE.append(rmse(original[k],targets[k]))
-      nnrRMSE.append(rmse(results[k],targets[k]))
-
-    print 'mod04RMSE',mod04RMSE
-    print 'nnrRMSE',nnrRMSE
-    mod04RMSE = np.mean(mod04RMSE)
-    nnrRMSE   = np.mean(nnrRMSE)
-
-  eorig = []
-  ecorr = []
-  for o,t,r in zip(original,targets,results):
-    eorig.append(o - t)
-    ecorr.append(r - t)
-
-  if emax is None:
-    emax  = np.array([[e.max() for e in eorig],[e.max() for e in ecorr]]).max()
-  if emin is None:
-    emin  = np.array([[e.min() for e in eorig],[e.min() for e in ecorr]]).min()
-
-  nbins        = 100
-  corrected = []
-  orig      = []
-  x = np.linspace(emin,emax,nbins+1)
-  xcen = x[:-1] + 0.5*(x[1:] - x[:-1])
-  if K is None:
-    # cc, x = np.histogram(ecorr[0],bins=np.linspace(emin,emax,nbins+1),density=True)
-    # oo, x = np.histogram(eorig[0],bins=np.linspace(emin,emax,nbins+1),denstiry=True)
-
-    kernel = stats.gaussian_kde(ecorr[0])
-    cc     = kernel(xcen)
-
-    kernel = stats.gaussian_kde(eorig[0])
-    oo     = kernel(xcen)    
-
-    corrected.append(cc)
-    orig.append(oo)
-  else:
-    for k,iTest in enumerate(I):
-      # cc, x = np.histogram(ecorr[k],bins=np.linspace(emin,emax,nbins+1),density=True)
-      # oo, x = np.histogram(eorig[k],bins=np.linspace(emin,emax,nbins+1),density=True)
-
-      kernel = stats.gaussian_kde(ecorr[k])
-      cc     = kernel(xcen)
-
-      kernel = stats.gaussian_kde(eorig[k])
-      oo     = kernel(xcen)          
-
-      corrected.append(cc)
-      orig.append(oo)
-
-  corrected = np.array(corrected).T
-  orig      = np.array(orig).T
-
-
-  if K is not None:
-    xcen = np.tile(xcen,(K,1)).T
-
-  fig = plt.figure()
-  ax  = plt.subplot(111)  
-  ax.plot(xcen,orig,color='k')
-  ax.plot(xcen,corrected,color='r')
-  ax.set_xlim(emin,emax)
-
-  if mxd.surface == 'ocean':
-    ax.set_ylim(0,3.5)
-  else:
-    ax.set_ylim(0,2.0)
-  orig_patch      = mpatches.Patch(color='k', label='MOD04 RMSE={:1.2F}'.format(mod04RMSE))
-  corrected_patch = mpatches.Patch(color='r', label='NNR RMSE={:1.2F}'.format(nnrRMSE) )
-  ax.legend(handles=[orig_patch,corrected_patch])
-  plt.grid(True, which='major',axis='both',color='0.50',linestyle='-')
-
-  if Title is None:
-    title("Error Log("+mxd.Target[0][1:]+"+0.01)")
-  else:
-    title(Title)
-  savefig(outdir+"/error_pdf-"+expid+"."+ident+"-"+mxd.Target[0][1:]+'.png')  
-  plt.close(fig)
+      if Title is None:
+        title("Error Log("+mxd.Target[t][1:]+"+0.01)")
+      else:
+        title(Title)
+      savefig(outdir+"/error_pdf-"+expid+"."+ident+"-"+mxd.Target[t][1:]+'.png')  
+      plt.close(fig)
 #---------------------------------------------------------------------  
 #---------------------------------------------------------------------
 def make_error_pdfs_int(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=None,
