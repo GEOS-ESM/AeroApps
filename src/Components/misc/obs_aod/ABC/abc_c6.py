@@ -150,19 +150,12 @@ class ABC(object):
     def __init__(self,fname,Albedo,coxmunk_lut=None,NDVI=False):
 
         # Get Auxiliary Data
-        self.setfnameRoot(fname)
+        self.fnameRoot = fname[:-3]
         self.setWind()
         self.setAlbedo(Albedo,coxmunk_lut=coxmunk_lut)
         self.setSpec()
         if NDVI:
             self.setNDVI()
-
-    def setfnameRoot(self,fname):
-        if self.sat == 'Aqua':
-            self.fnameRoot = 'myd_' + fname.split('/')[-1].split('.')[0]
-        elif self.sat == 'Terra':
-            self.fnameRoot = 'mod_' + fname.split('/')[-1].split('.')[0]
-        
 
     def setWind(self):
         # Read in wind
