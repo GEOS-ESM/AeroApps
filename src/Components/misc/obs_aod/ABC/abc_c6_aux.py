@@ -83,7 +83,7 @@ def boxplot_imshow(data,plottype,blocks,masterlist,title,filename,
         axis='y',          # changes apply to the y-axis
         which='major',     # major ticks are affected
         direction='out',
-        right='off') 
+        right=False) 
 
 
     axblocks = plt.subplot(212)
@@ -101,11 +101,11 @@ def boxplot_imshow(data,plottype,blocks,masterlist,title,filename,
     plt.tick_params(
         axis='both',          # changes apply to both
         which='major',     # major ticks are affected
-        bottom='off',      # ticks along the bottom edge are off
-        top='off',         # ticks along the top edge are off
-        left='off',
-        right='off',
-        labelbottom='off') # labels along the bottom edge are off 
+        bottom=False,      # ticks along the bottom edge are off
+        top=False,         # ticks along the top edge are off
+        left=False,
+        right=False,
+        labelbottom=False) # labels along the bottom edge are off 
     plt.grid(True,which='minor',color='0.5',linestyle='-')
     axblocks.set_axisbelow(True)  #Grid lines go to the back.
     xlim = axblocks.get_xlim()
@@ -117,7 +117,7 @@ def boxplot_imshow(data,plottype,blocks,masterlist,title,filename,
     plt.tight_layout()
     plt.subplots_adjust(right=0.99,hspace=0.001)
     fig.set_size_inches(10.5, 5.5)   
-    plt.savefig(filename, transparent='true',dpi=300)
+    plt.savefig(filename, transparent=True,dpi=300)
     #plt.show()
     plt.close(fig)
 
