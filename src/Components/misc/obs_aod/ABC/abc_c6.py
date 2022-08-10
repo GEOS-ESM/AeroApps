@@ -1127,7 +1127,8 @@ def _test(mxd,expid,c,plotting=True):
         print '{} not found.  Need to train this combinatin of inputs'.format(netFile)
         raise
     else:
-      netFile = outdir+"/"+expid+'_Tau.net'
+      invars = mxd.comblist[0]
+      netFile = outdir+"/"+".".join(invars)+'_Tau.net'
 
     mxd.net = mxd.loadnet(netFile)
     mxd.Input = mxd.comblist[c]
@@ -1158,7 +1159,8 @@ def _test(mxd,expid,c,plotting=True):
           print '{} not found.  Need to train this combinatin of inputs'.format(netFile)
           raise
       else:
-        netFile = outdir+"/"+expid+'.k={}_Tau.net'.format(str(k))
+        invars = mxd.comblist[0]
+        netFile = outdir+"/"+".".join(invars)+'.k={}_Tau.net'.format(str(k))
 
 
       mxd.net = mxd.loadnet(netFile)
@@ -1171,7 +1173,8 @@ def _test(mxd,expid,c,plotting=True):
 def _trainMODIS(mxdx):
 
   if not mxdx.combinations:
-    _train(mxdx,mxdx.expid,0)
+    Input = mxdx.comblist[0]
+    _train(mxdx,'.'.join(Input),0)
   else:
     for c,Input in enumerate(mxdx.comblist):
       _train(mxdx,'.'.join(Input),c)

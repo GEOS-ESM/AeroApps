@@ -970,7 +970,8 @@ def SummaryPDFs(mxdx,mxdx2=None,varnames=['mRef870','mSre470'],doInt=False):
 
     for c,Input in enumerate(mxdx.comblist):
       if len(mxdx.comblist) == 1:
-        netfileRoot = mxdx.outdir+"/"+mxdx.expid+'_Tau.net'
+        invars = mxdx.comblist[0]
+        netfileRoot = mxdx.outdir+"/"+'.'.join(invars)
       else:
         for invars in itertools.permutations(Input):
           netfileRoot = mxdx.outdir+"/"+'.'.join(invars)
@@ -987,7 +988,8 @@ def SummaryPDFs(mxdx,mxdx2=None,varnames=['mRef870','mSre470'],doInt=False):
       netfileRoot2 = None
       if mxdx2 is not None:
         if len(mxdx.comblist) == 1:
-          netfileRoot2 = mxdx2.outdir+"/"+mxdx2.expid+'_Tau.net'
+          invars = mxdx2.comblist[0]
+          netfileRoot2 = mxdx2.outdir+"/"+'.'.join(invars)
           Input2 = mxdx2.comblist[0]
         else:        
           Input2 = mxdx2.comblist[c]
