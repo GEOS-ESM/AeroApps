@@ -371,7 +371,62 @@ def make_plots(mxd,expid,ident,I=None):
           # ---------------------------
           mxd.plotScat(iTarget=t,I=I,figfile=outdir+"/"+expid+"."+ident+"_scat-"+mxd.Target[t][1:]+'.png')
 
+  # If more than one target
+  # Plot KDE of Angstrom Exponent
+  # Implicitly requires AOD 550
+  # -------------------------------
+  if mxd.nTarget > 1:
+      bins = np.arange(0., 3., 0.05 )
+      # AE from Corrected AOD
+      # ----------------------
+      refname = 'Tau550'
+      refwav  = 550.
+      # find index of reference
+      for t in range(mxd.nTarget):
+          name = mxd.Target[t][1:]
+          if name == refname:
+              reft = np.exp(targets[:,t]) # keep the + 0.01 to handle negatives in MODIS data
+              refr = np.exp(results[:,t]) # keep the + 0.01 to handle negatives in MODIS data
+      # calculate AE with respect to 550
+      for t in range(mxd.nTarget):
+          name = mxd.Target[t][1:]
+          if name != refname:
+              print 't,wav',t,name[3:]
+              wav = float(name[3:])
+              tt = np.exp(targets[:,t]) # keep the + 0.01 to handle negatives in MODIS data
+              rr = np.exp(results[:,t]) # keep the + 0.01 to handle negatives in MODIS data
+              AEt = -1.*np.log(reft/tt)/np.log(refwav/wav)
+              AEr = -1.*np.log(refr/rr)/np.log(refwav/wav)
 
+              fig = _plotKDE(AEt,AEr,y_label='NNR',x_bins=bins,y_bins=bins)
+              title("AE 550/"+name[4:])
+              savefig(outdir+"/"+expid+"."+ident+"_kde-AE"+name[3:]+'-corrected.png')
+              plt.close(fig)
+      
+      # AE from uncorrected AOD
+      # ------------------------
+      # find index of reference
+      refname = 'm' + refname
+      for t in range(mxd.nTarget):
+          name = 'm'+mxd.Target[t][1:]
+          if name in mxd.__dict__:
+              if name == refname:
+                  refo = mxd.__dict__[name][I] + 0.01 # add 0.01 to handle negatives
+      # calculate AE with respect to 550
+      for t in range(mxd.nTarget):
+          name = 'm'+mxd.Target[t][1:]
+          if name in mxd.__dict__:
+              if name != refname:
+                  print 'orig t,wav',t,name[4:]
+                  wav = float(name[4:])
+                  oo = mxd.__dict__[name][I] + 0.01 # add 0.01 to handle negatives
+                  tt = np.exp(targets[:,t]) # keep + 0.01 to handle negatives
+                  AEo = -1.*np.log(refo/oo)/np.log(refwav/wav)
+                  AEt = -1.*np.log(reft/tt)/np.log(refwav/wav)
+                  fig = _plotKDE(AEt,AEo,y_label='Original MODIS',x_bins=bins,y_bins=bins)
+                  title("AE 550/"+name[3:])
+                  savefig(outdir+"/"+expid+"."+ident+"_kde-AE"+name[4:]+'.png')
+                  plt.close(fig)
 #---------------------------------------------------------------------
 def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=None,
                     emin=-1.5,emax=2.5):  
