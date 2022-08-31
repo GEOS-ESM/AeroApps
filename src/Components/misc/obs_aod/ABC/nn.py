@@ -187,11 +187,18 @@ class NN(object):
         targets for a neural net evaluation:
         Returns: tagets
         """
-        targets = self.__dict__[self.Target[0]][I]
+        var = self.Target[0]
+        if self.laod and ('Tau' in var):
+            targets = log(self.__dict__[var][I] + 0.01)
+        else:
+            targets = self.__dict__[var][I]
+
         for var in self.Target[1:]:
-            targets = cat[targets,self.__dict__[var][I]]
-        if self.laod:
-            targets = log(targets + 0.01)
+            if self.laod and ('Tau' in var):
+                targets = cat[targets,log(self.__dict__[var][I] + 0.01)]
+            else:
+                targets = cat[targets,self.__dict__[var][I]]
+
         return targets
  
     def plotKDE(self,bins=None,I=None,figfile=None,
