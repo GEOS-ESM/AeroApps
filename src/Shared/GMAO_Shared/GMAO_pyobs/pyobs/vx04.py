@@ -16,7 +16,7 @@ from datetime import date, datetime, timedelta
 from glob     import glob
 from dateutil.parser import isoparse
 from pyobs.npz import NPZ
-from binObs_   import binobs2d, binobs3d
+from binObs_   import binobs2d, binobs3d, binobscnt3d
 
 try:
     from pyods import ODS # must be inported before pyhdf
@@ -90,7 +90,8 @@ CHANNELS = dict (
                    DT_OCEAN = ( 480., 550., 670., 860., 1240., 1600., 2250. ),
                    DB_LAND = ( 412, 488, 550, 670 ), # file has 550 separate
                    DB_OCEAN = (488.,  550.,  670.,  865., 1240., 1640., 2250.),
-                   SREF = ( 480., 670., 2250. )
+                   DT_SREF = ( 480., 670., 2250. ),
+                   DB_SREF = (412., 488., 670. ),
                 )
 
 
@@ -170,7 +171,7 @@ class Vx04_L2(object):
     Therefore, we will refer to these products at VSNPP04 and VN2004, respectively
     """
 
-    def __init__ (self,Path,Algo,Surface,syn_time=None,nsyn=8,Verb=0,
+    def __init__ (self,Path,algo,syn_time=None,nsyn=8,Verb=0,
                   only_good=True,SDS=SDS,alias=None):
        """
        Reads individual granules or a full day of Level 2 Vx04 files
@@ -182,8 +183,7 @@ class Vx04_L2(object):
                  of files and directories.  Directories are
                  transversed recursively. If a non Vx04 Level 2
                  file is encountered, it is simply ignored.
-         Algo -- Algorithm: DT or DB
-         Surface -- OCEAN or LAND
+         algo -- Algorithm: DT_LAND, DT_OCEAN, DB_LAND or DB_OCEAN
 
        Optional parameters:
          syn_type  --- synoptic time
@@ -199,7 +199,6 @@ class Vx04_L2(object):
 
        """
 
-       algo = '{}_{}'.format(Algo,Surface)
        if algo not in ('DT_LAND', 'DT_OCEAN', 'DB_LAND', 'DB_OCEAN'):
            raise ValueError, "invalid algorithm "+algo+" --- must be DT_LAND, DT_OCEAN, DB_LAND, DB_OCEAN"
 
@@ -209,6 +208,7 @@ class Vx04_L2(object):
        self.sat  = None # Satellite name
        self.col  = None # collection, e.g., 011
        self.algo = algo
+       Algo, Surface = algo.split('_')
        self.SDS = SDS['{}_META'.format(Algo)] + SDS[algo]
        self.SDS_META = SDS['{}_META'.format(Algo)]
 
@@ -295,14 +295,16 @@ class Vx04_L2(object):
            sza = np.radians(self.SolarZenith)
            vza = np.radians(self.SensorZenith)
            raa = np.radians(self.RelativeAzimuth)
-           cglint = np.cos(sza)*np.cos(vza) + np.sin(sza)*np.sin(vza)*np.cos(np.pi-raa)
-           self.GlintAngle = np.arccos(cglint)
+           cglint = np.cos(sza)*np.cos(vza) + np.sin(sza)*np.sin(vza)*np.cos(raa)
+           self.GlintAngle = np.degrees(np.arccos(cglint))
 
 
        # Create corresponding python time
        # --------------------------------
        if 'DB' in self.algo:
            self.Time = np.array([DATE_START+timedelta(seconds=s) for s in self.Scan_Start_Time])
+       else:
+           self.Time = np.array(self.Time)   # masked datetime arrays aren't friendly
 
        # ODS friendly attributes
        # -----------------------
@@ -310,10 +312,8 @@ class Vx04_L2(object):
        self.kx = KX[self.sat+'_'+self.algo]
        self.ident = IDENT[self.sat+'_'+self.algo]
        self.channels = CHANNELS[self.algo]
-       if Algo == 'DT':
-           self.sChannels = CHANNELS["SREF"]   # LAND surface reflectivity (not the same as algo)           
-       else:
-           self.sChannels = CHANNELS[self.algo] # deep blue surface bands are the same as algorithm
+       if Surface == 'LAND':
+           self.sChannels = CHANNELS["{}_SREF".format(Algo)]   # LAND surface reflectivity (not the same as algo)           
 
        if 'DB' in self.algo:
            self.rChannels = self.Reflectance_Bands
@@ -706,11 +706,13 @@ class Vx04_L2(object):
        vtitle = [ 'Aerosol Optical Depth',
                   'Aerosol Optical Depth (Revised)',
                   'Aerosol Optical Depth (Fine Mode)',
+                  'Aerosol Optical Depth Obs Count',
+                  'Aerosol Optical Depth (Revised) Obs Count',
                   'Cloud Fraction' ]
 
-       vname  = ['tau', 'tau_', 'tau_fine', 'cloud' ]
-       vunits = [ '1',    '1',     '1',       '1',  ]
-       kmvar  = [ nch,    nch,     nch,        0    ]
+       vname  = ['tau', 'tau_', 'tau_fine', 'count_tau', 'count_tau_', 'cloud' ]
+       vunits = [ '1',    '1',     '1',       '1',            '1',       '1',  ]
+       kmvar  = [ nch,    nch,     nch,       nch,            nch,        0    ]
 
        title = 'Gridded MODIS Aerosol Retrievals'
        source = 'NASA/GSFC/GMAO GEOS-5 Aerosol Group'
@@ -757,6 +759,10 @@ class Vx04_L2(object):
                binobs3d(self.lon,self.lat,aod_,im,jm,MISSING) )
        f.write('tau_fine', nymd, nhms, 
                binobs3d(self.lon,self.lat,aod_fine,im,jm,MISSING) )
+       f.write('count_tau', nymd, nhms,
+               binobscnt3d(self.lon,self.lat,aod,im,jm,MISSING) )
+       f.write('count_tau_', nymd, nhms,
+               binsobscnt3d(self.lon,self.lat,aod_,im,jm,MISSING) )
        f.write('cloud', nymd, nhms, 
                binobs2d(self.lon,self.lat,self.cloud,im,jm,MISSING) )
            
@@ -840,14 +846,14 @@ class Vx04_L2(object):
 
 #............................................................................
 
-def granules ( path, algo, inst, syn_time, coll='011', nsyn=8, verbose=False ):
+def granules ( path, algo, sat, syn_time, coll='011', nsyn=8, verbose=False ):
     """
     Returns a list of Vx04 granules for a given algorithm at given synoptic time.
     On input,
 
     path      ---  mounting point for the MxD04 Level 2 files
-    algo      ---  either DT or DB
-    inst      ---  SNPP
+    algo      ---  either DT_LAND, DT_OCEAN, DB_LAND or DB_OCEAN
+    sat       ---  SNPP
     syn_time  ---  synoptic time (timedate format)
 
     coll      ---  collection: 011 (optional)
@@ -857,7 +863,8 @@ def granules ( path, algo, inst, syn_time, coll='011', nsyn=8, verbose=False ):
 
     # Get product name
     # -----------------
-    prod = 'AER{}_{}'.format(algo,inst)
+    Algo = algo.split('_')[0]
+    prod = 'AER{}_{}'.format(Algo,sat)
 
     # Determine synoptic time range
     # -----------------------------
@@ -873,7 +880,7 @@ def granules ( path, algo, inst, syn_time, coll='011', nsyn=8, verbose=False ):
         if t >= t1:
             doy = t.timetuple()[7]
             basen = "%s/%s/Level2/%s/%04d/%03d/AER%s_L2_VIIRS_%s.A%04d%03d.%02d%02d.%s.*.nc"\
-                     %(path,coll,prod,t.year,doy,algo,inst,t.year,doy,t.hour,t.minute,coll)
+                     %(path,coll,prod,t.year,doy,Algo,sat,t.year,doy,t.hour,t.minute,coll)
             try:
                 filen = glob(basen)[0]
                 Granules += [filen,]
@@ -884,7 +891,7 @@ def granules ( path, algo, inst, syn_time, coll='011', nsyn=8, verbose=False ):
         t += dt
 
     if len(Granules) == 0:
-        print "WARNING: no %s collection %s granules found for"%(prod,coll), syn_time
+        print "WARNING: no %s collection %s granules found for"%(algo,coll), syn_time
 
     return Granules
 
