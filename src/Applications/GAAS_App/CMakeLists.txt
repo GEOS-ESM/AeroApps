@@ -61,6 +61,7 @@ set (PYFILES
     avhrr_nnr.py
     geo04_nnr.py
     mxd04_nnr.py
+    vx04_nnr.py
     )
 
 set (RCFILES
