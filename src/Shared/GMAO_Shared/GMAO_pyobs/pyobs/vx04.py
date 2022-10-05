@@ -297,7 +297,16 @@ class Vx04_L2(object):
            raa = np.radians(self.RelativeAzimuth)
            cglint = np.cos(sza)*np.cos(vza) + np.sin(sza)*np.sin(vza)*np.cos(raa)
            self.GlintAngle = np.degrees(np.arccos(cglint))
-
+       elif 'DT' in self.algo:
+           # this kind of seems to match the DB RAA
+           # the DT sensor and solar azimuth angles seem off
+           # I can't find a DB definition for RAA so this is close enough
+           raa = self.SolarZenith - self.SensoZenith
+           ii = raa <0
+           raa[ii] = raa[ii] + 180.
+           ii = raa < 0
+           raa[ii] = raa[ii]*-1.
+           self.RelativeAzimuth = raa
 
        # Create corresponding python time
        # --------------------------------
