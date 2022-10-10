@@ -297,16 +297,18 @@ class Vx04_L2(object):
            raa = np.radians(self.RelativeAzimuth)
            cglint = np.cos(sza)*np.cos(vza) + np.sin(sza)*np.sin(vza)*np.cos(raa)
            self.GlintAngle = np.degrees(np.arccos(cglint))
+           self.SDS += ('GlintAngle',)
        elif 'DT' in self.algo:
            # this kind of seems to match the DB RAA
            # the DT sensor and solar azimuth angles seem off
            # I can't find a DB definition for RAA so this is close enough
-           raa = self.SolarZenith - self.SensoZenith
+           raa = self.SolarZenith - self.SensorZenith
            ii = raa <0
            raa[ii] = raa[ii] + 180.
            ii = raa < 0
            raa[ii] = raa[ii]*-1.
            self.RelativeAzimuth = raa
+           self.SDS += ('RelativeAzimuth',)
 
        # Create corresponding python time
        # --------------------------------
@@ -325,7 +327,7 @@ class Vx04_L2(object):
            self.sChannels = CHANNELS["{}_SREF".format(Algo)]   # LAND surface reflectivity (not the same as algo)           
 
        if 'DB' in self.algo:
-           self.rChannels = self.Reflectance_Bands
+           self.rChannels = self.Reflectance_Bands  # [ 412.,  488.,  550.,  670.,  865., 1240., 1640., 2250.]
        elif self.algo == 'DT_LAND':
            self.rChannels = np.array([480.,670.,2250.])
        elif self.algo == 'DT_OCEAN':
@@ -528,7 +530,13 @@ class Vx04_L2(object):
             if sds in Alias:
                 self.__dict__[self.ALIAS[sds]] = self.__dict__[sds] # redefine aliases
 
-            self.nobs = len(self.lon)
+        self.nobs = len(self.lon)
+        # Create corresponding python time
+        # --------------------------------
+        if 'DB' in self.algo:
+            self.Time = np.array([DATE_START+timedelta(seconds=s) for s in self.Scan_Start_Time])
+        else:
+            self.Time = np.array(self.Time)   # masked datetime arrays aren't friendly        
 
 #---
     def write(self,filename=None,dir='.',expid=None,Verb=1):
