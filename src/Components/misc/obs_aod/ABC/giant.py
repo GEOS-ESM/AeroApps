@@ -15,6 +15,7 @@ from pyobs.npz       import NPZ
 
 META =  ( "Date",
           "Time",
+          "Location",
           "Latitude",
           "Longitude",
           "SolarZenith",
