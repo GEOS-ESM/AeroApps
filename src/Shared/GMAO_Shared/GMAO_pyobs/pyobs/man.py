@@ -138,6 +138,30 @@ class MAN(object):
         self.aTau550 =  MISSING * ones(N)
         self.aTau550[i] =  (1.-alpha) * self.aTau500[i] + alpha * self.aTau675[i]
 
+
+#       Interpolate AOD to 660
+#       ----------------------
+        alpha = (log(660.) - log(500.) ) / ( log(675.) - log(500.) )
+        i = (self.aTau500>0) & (self.aTau675>0)
+        self.aTau660intrp =  MISSING * ones(N)
+        self.aTau660intrp[i] =  (1.-alpha) * self.aTau500[i] + alpha * self.aTau675[i]
+
+#       Interpolate AOD to 470
+#       ----------------------
+        alpha = (log(470.) - log(500.) ) / ( log(440.) - log(500.) )
+        i = (self.aTau500>0) & (self.aTau440>0)
+        self.aTau470intrp =  MISSING * ones(N)
+        self.aTau470intrp[i] =  (1.-alpha) * self.aTau500[i] + alpha * self.aTau440[i]
+
+#       Interpolate AOD to 412
+#       ----------------------
+        alpha = (log(412.) - log(380.) ) / ( log(440.) - log(380.) )
+        i = (self.aTau380>0) & (self.aTau440>0)
+        self.aTau412intrp =  MISSING * ones(N)
+        self.aTau412intrp[i] =  (1.-alpha) * self.aTau380[i] + alpha * self.aTau440[i]
+
+
+
 #       Create grads time
 #       -----------------
         self.time = []
