@@ -340,7 +340,7 @@ class ABC_DT_Ocean (DT_OCEAN,NN,SETUP,ABC):
                       (self.mTau480 > -0.01) &\
                       (self.mTau550 > -0.01) &\
                       (self.mTau670 > -0.01) &\
-                      (self.mTau870 > -0.01) &\
+                      (self.mTau860 > -0.01) &\
                       (self.mRef480 > 0.0)   &\
                       (self.mRef550 > 0.0)   &\
                       (self.mRef670 > 0.0)   &\
@@ -428,7 +428,7 @@ class ABC_DB_Ocean (DB_OCEAN,NN,SETUP,ABC):
                       (self.aTau550 > -0.01) &\
                       (self.aTau660 > -0.01) &\
                       (self.aTau870 > -0.01) &\
-                      (self.mTau480 > -0.01) &\
+                      (self.mTau488 > -0.01) &\
                       (self.mTau550 > -0.01) &\
                       (self.mTau670 > -0.01) &\
                       (self.mTau865 > -0.01) &\
@@ -598,15 +598,15 @@ class ABC_DB_Land (DB_LAND,NN,SETUP,ABC):
                       (self.aTau550 > -0.01)      & \
                       (self.aTau660 > -0.01)      & \
                       (self.mTau412 > -0.01)      & \
-                      (self.mTau480 > -0.01)      & \
+                      (self.mTau488 > -0.01)      & \
                       (self.mTau550 > -0.01)      & \
                       (self.mTau670 > -0.01)      & \
-                      (self.mTau2250 > -0.01)     & \
                       (self.cloud<cloud_thresh)   & \
                       (self.cloud >= 0)           & \
                       (self.ScatteringAngle<170.) & \
                       (self.mRef412 > 0)          & \
                       (self.mRef488 > 0)          & \
+                      (self.mRef550 > 0)          & \
                       (self.mRef670 > 0)          & \
                       (self.mRef865 > 0)          & \
                       (self.mRef1240 > 0)         & \
