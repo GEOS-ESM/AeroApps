@@ -129,75 +129,94 @@ xDB_OCEAN = ("mean_AOD0488dpbl-o",
 ALIAS = {
                 "Latitude"              : 'lat',
                 "Longitude"             : 'lon',
+                "mean_AOD0340"          : 'aTau340',
+                "mean_AOD0380"          : 'aTau380',
+                "mean_AOD0410"          : 'aTau412',
                 "mean_AOD0440"          : 'aTau440',
                 "mean_AOD0470intrp"     : 'aTau470',
                 "mean_AOD0500"          : 'aTau500',
                 "mean_AOD0550intrp"     : 'aTau550',
                 "mean_AOD0660intrp"     : 'aTau660',
+                "mean_AOD0670"          : 'aTau670',
                 "mean_AOD0870"          : 'aTau870',
-                "mean_AOD2100intrp"     : 'aTau2100',
+                "mean_AOD1020"          : 'aTau1020',
+                "mean_AOD1640"          : 'aTau1640',
+#                "mean_AOD2100intrp"     : 'aTau2100',
                 "mean_WaterVapor"       : 'aWaterVapor',
-                "nval_AOD0550intrp"     : 'aNcollo',
 
-                "mean_AOD0470corr-l"    : 'mTau470',
+                "mean_AOD0480corr-l"    : 'mTau480',
                 "mean_AOD0550corr-l"    : 'mTau550',
-                "mean_AOD0660corr-l"    : 'mTau660',
-                "mean_AOD2100corr-l"    : 'mTau2100',
-                "mean_mref0412-l"       : 'mRef412',
-                "mean_mref0443-l"       : 'mRef440',
-                "mean_mref0470-l"       : 'mRef470',
-                "mean_mref0550-l"       : 'mRef550',
-                "mean_mref0660-l"       : 'mRef660',
-                "mean_mref0745-l"       : 'mRef745',
-                "mean_mref0870-l"       : 'mRef870',
-                "mean_mref1200-l"       : 'mRef1200',
-                "mean_mref1600-l"       : 'mRef1600',
-                "mean_mref2100-l"       : 'mRef2100',
-                "mean_surfre0470-l"     : 'mSre470',
-                "mean_surfre0660-l"     : 'mSre660',
-                "mean_surfre2100-l"     : 'mSre2100',
+                "mean_AOD0670corr-l"    : 'mTau670',
+                "mean_AOD2250corr-l"    : 'mTau2250',
+#                "mean_mref0412-l"       : 'mRef412',
+#                "mean_mref0443-l"       : 'mRef440',
+                "mean_mref0480-l"       : 'mRef480',
+#                "mean_mref0550-l"       : 'mRef550',
+                "mean_mref0670-l"       : 'mRef670',
+#                "mean_mref0745-l"       : 'mRef745',
+#                "mean_mref0870-l"       : 'mRef870',
+#                "mean_mref1200-l"       : 'mRef1200',
+#                "mean_mref1600-l"       : 'mRef1600',
+                "mean_mref2250-l"       : 'mRef2250',
+                "mean_surfre0480-l"     : 'mSre480',
+                "mean_surfre0670-l"     : 'mSre670',
+                "mean_surfre2250-l"     : 'mSre2250',
                 "mean_acfrac-l"         : 'cloud',    
                 "mode_QA-l"             : 'qa',                
-                "nval_AOD0550corr-l"    : 'mNcollo',
 
-                "mean_AOD0470ea-o"      : 'mTau470',
+                "mean_AOD0480ea-o"      : 'mTau480',
                 "mean_AOD0550ea-o"      : 'mTau550',
-                "mean_AOD0660ea-o"      : 'mTau660',
-                "mean_AOD0870ea-o"      : 'mTau870',
-                "mean_AOD1200ea-o"      : 'mTau1200',
+                "mean_AOD0670ea-o"      : 'mTau670',
+                "mean_AOD0860ea-o"      : 'mTau860',
+                "mean_AOD1240ea-o"      : 'mTau1240',
                 "mean_AOD1600ea-o"      : 'mTau1600',
-                "mean_AOD2100ea-o"      : 'mTau2100',
-                "mean_mref0470-o"       : 'mRef470',
+                "mean_AOD2250ea-o"      : 'mTau2250',
+                "mean_mref0480-o"       : 'mRef470',
                 "mean_mref0550-o"       : 'mRef550',
-                "mean_mref0660-o"       : 'mRef660',
-                "mean_mref0870-o"       : 'mRef870',
-                "mean_mref1200-o"       : 'mRef1200',
+                "mean_mref0670-o"       : 'mRef670',
+                "mean_mref0860-o"       : 'mRef860',
+                "mean_mref1240-o"       : 'mRef1240',
                 "mean_mref1600-o"       : 'mRef1600',
-                "mean_mref2100-o"       : 'mRef2100',
-                "mean_wspeed-o"         : 'speed',
+                "mean_mref2250-o"       : 'mRef2250',
                 "mean_acfrac-o"         : 'cloud',
                 "mode_QAavg-o"          : 'qa',
-                "nval_AOD0550ea-o"      : 'mNcollo',
 
                 "mean_AOD0412dpbl-l"    : 'mTau412',
-                "mean_AOD0470dpbl-l"    : 'mTau470',
+                "mean_AOD0488dpbl-l"    : 'mTau488',
                 "mean_AOD0550dpbl-l"    : 'mTau550',
-                "mean_AOD0660dpbl-l"    : 'mTau660',
+                "mean_AOD0670dpbl-l"    : 'mTau670',
+                "mean_AOD2250dpbl-l"    : 'mTau2250',
                 "mean_cfracdpbl-l"      : 'cloud',    
                 "mean_mref0412dpbl-l"   : 'mRef412',
-                "mean_mref0470dpbl-l"   : 'mRef470',
-                "mean_mref0660dpbl-l"   : 'mRef660',
+                "mean_mref0488dpbl-l"   : 'mRef488',
+                "mean_mref0550dpbl-l"   : 'mRef550',
+                "mean_mref0670dpbl-l"   : 'mRef670',
+                "mean_mref0865dpbl-l"   : 'mRef865',
+                "mean_mref1240dpbl-l"   : 'mRef1240',
+                "mean_mref1640dpbl-l"   : 'mRef1640',
+                "mean_mref2250dpbl-l"   : 'mRef2250',
                 "mean_surfre0412dpbl-l" : 'mSre412',
-                "mean_surfre0470dpbl-l" : 'mSre470',
-                "mean_surfre0660dpbl-l" : 'mSre660',
+                "mean_surfre0488dpbl-l" : 'mSre488',
+                "mean_surfre0670dpbl-l" : 'mSre670',
                 "mode_QAdpbl-l"         : 'qa',
-                "nval_AOD0550dpbl-l"    : 'mNcollo',
 
-                "mean_dtdbAOD0550"      : 'mTau550comb',
-                "cval_cldpixdistavg"    : 'clDist'
-
-
-
+                "mean_AOD0488dpbl-o"    : 'mTau488',
+                "mean_AOD0550dpbl-o"    : 'mTau550',
+                "mean_AOD0670dpbl-o"    : 'mTau670',
+                "mean_AOD0865dpbl-o"    : 'mTau865',
+                "mean_AOD1240dpbl-o"    : 'mTau1240',
+                "mean_AOD1640dpbl-o"    : 'mTau1640',
+                "mean_AOD2250dpbl-o"    : 'mTau2250',
+                "mean_cfracdpbl-o"      : 'cloud',
+                "mean_mref0412dpbl-o"   : 'mRef412',
+                "mean_mref0488dpbl-o"   : 'mRef488',
+                "mean_mref0550dpbl-o"   : 'mRef550',
+                "mean_mref0670dpbl-o"   : 'mRef670',
+                "mean_mref865dpbl-o"    : 'mRef865',
+                "mean_mref1240dpbl-o"   : 'mRef1240',
+                "mean_mref1640dpbl-o"   : 'mRef1640',
+                "mean_mref2250dpbl-o"   : 'mRef2250',
+                "mode_QAdpbl-o"         : 'qa',
              }
 
 MISSING = 1.E20
@@ -294,7 +313,7 @@ class GIANT(object):
 
     # Record number of observations
     # -----------------------------
-    self.nobs = len(self.lon) 
+    self.nobs = len(self.lon)
 
 #--
   def balance(self,N):
@@ -573,6 +592,14 @@ class DT_LAND(GIANT):
         self.ident = self.ident + '_'+ filename.split('/')[-1].split('.')[0]
         self.surface = 'land'
 
+        # Angstrom interpolate retrieved AOD to
+        # nominal MODIS wavelengths (470, 550, 660)
+        # for ease of comparison
+        # VIIRS channels = 480., 550., 670., 2250.
+        # ------------------------------------------------        
+        self.mTau470 = aodInterpAngs(470.,self.mTau480,self.mTau550,480.,550.)
+        self.mTau660 = aodInterpAngs(660.,self.mTau550,self.mTau670,550.,670.)
+
 class DT_OCEAN(GIANT):
     def __init__(self,filename,tymemax=None): 
         GIANT.__init__(self,filename,xVars=xDT_OCEAN,tymemax=tymemax)
@@ -580,6 +607,16 @@ class DT_OCEAN(GIANT):
             self.ident = 'vsdto'
         self.ident = self.ident + '_' + filename.split('/')[-1].split('.')[0]
         self.surface = 'ocean'
+
+        # Angstrom interpolate retrieved AOD to
+        # nominal MODIS wavelengths (470, 550, 660, 870, 1200, 1600, 2100)
+        # for ease of comparison
+        # VIIRS channels = 480., 550., 670., 860., 1240., 1600., 2250.
+        # ------------------------------------------------
+        self.mTau470  = aodInterpAngs(470.,self.mTau480,self.mTau550,480.,550.)
+        self.mTau660  = aodInterpAngs(660.,self.mTau550,self.mTau670,550.,670.)        
+        self.mTau870  = aodInterpAngs(870.,self.mTau670,self.mTau860,670.,860.)
+        self.mTau2100 = aodInterpAngs(2100.,self.mTau1600,self.mTau2250,1600.,2250.) 
 
 class DB_OCEAN(GIANT):
     def __init__(self,filename,tymemax=None):
@@ -589,6 +626,16 @@ class DB_OCEAN(GIANT):
         self.ident = self.ident + '_' + filename.split('/')[-1].split('.')[0]
         self.surface = 'ocean'
 
+        # Angstrom interpolate retrieved AOD to
+        # nominal MODIS wavelengths (470, 550, 660, 870, 1200, 1600, 2100)
+        # for ease of comparison
+        # VIIRS channels = 488.,  550.,  670.,  865., 1240., 1640., 2250.
+        # ------------------------------------------------        
+        self.mTau470  = aodInterpAngs(470.,self.mTau488,self.mTau550,488.,550.)
+        self.mTau660  = aodInterpAngs(660.,self.mTau550,self.mTau670,550.,670.)
+        self.mTau870  = aodInterpAngs(870.,self.mTau670,self.mTau865,670.,865.)
+        self.mTau2100 = aodInterpAngs(2100.,self.mTau1640,self.mTau2250,1640.,2250.)
+
 class DB_LAND(GIANT):
     def __init__(self,filename,tymemax=None): 
         GIANT.__init__(self,filename,xVars=xDB_LAND,tymemax=tymemax)
@@ -597,7 +644,25 @@ class DB_LAND(GIANT):
         self.ident = self.ident + '_' + filename.split('/')[-1].split('.')[0]
         self.surface = 'land'
 
+        # Angstrom interpolate retrieved AOD to 
+        # nominal MODIS wavelengths (412, 470, 550, 660)
+        # for ease of comparison
+        # VIIRS channels = 412, 488, 550, 670
+        # ------------------------------------------------
+        self.mTau470 = aodInterpAngs(470.,self.mTau412,self.mTau488,412.,488.)
+        self.mTau660 = aodInterpAngs(660.,self.mTau550,self.mTau670,550.,670.)
 
+#---
+def aodInterpAngs(lambda_,tau1,tau2,lambda1,lambda2):
+    """
+       Angstrom-interpolated AOD.
+    """
+    I = (tau1 > 0.0) & (tau2 > 0.0)
+
+    angstrom = -np.log(tau1[I]/tau2[I])/np.log(lambda1/lambda2)
+    tau = -9999. * np.ones(len(tau1))
+    tau[I] = tau2[I] * (lambda2/lambda_)**angstrom
+    return tau
 # .......................................................................................................
 
 if __name__ == "__main__":
