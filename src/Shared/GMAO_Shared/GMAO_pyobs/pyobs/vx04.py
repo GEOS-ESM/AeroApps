@@ -779,7 +779,7 @@ class Vx04_L2(object):
        f.write('count_tau', nymd, nhms,
                binobscnt3d(self.lon,self.lat,aod,im,jm,MISSING) )
        f.write('count_tau_', nymd, nhms,
-               binsobscnt3d(self.lon,self.lat,aod_,im,jm,MISSING) )
+               binobscnt3d(self.lon,self.lat,aod_,im,jm,MISSING) )
        f.write('cloud', nymd, nhms, 
                binobs2d(self.lon,self.lat,self.cloud,im,jm,MISSING) )
            
