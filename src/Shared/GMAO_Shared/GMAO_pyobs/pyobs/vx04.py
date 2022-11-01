@@ -256,9 +256,9 @@ class Vx04_L2(object):
        # Determine index of "good" observations
        # --------------------------------------
        if self.algo == 'DT_LAND':
-           self.iGood = self.Land_Ocean_Quality_Flag == BEST
+           self.iGood = (self.Land_Ocean_Quality_Flag == BEST) & (~self.Corrected_Optical_Depth_Land.mask[:,1])
        elif self.algo == 'DT_OCEAN':
-           self.iGood = self.Land_Ocean_Quality_Flag > BAD
+           self.iGood = (self.Land_Ocean_Quality_Flag > BAD) & (~self.Effective_Optical_Depth_Average_Ocean.mask[:,1])
        elif self.algo == 'DB_LAND':
            self.iGood = self.Aerosol_Optical_Thickness_QA_Flag_Land > BAD # for now
        elif self.algo == 'DB_OCEAN':
