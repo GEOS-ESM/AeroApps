@@ -602,6 +602,8 @@ class DT_LAND(GIANT):
         self.mTau470 = aodInterpAngs(470.,self.mTau480,self.mTau550,480.,550.)
         self.mTau660 = aodInterpAngs(660.,self.mTau550,self.mTau670,550.,670.)
 
+        self.giantList += ['mTau470','mTau660']
+
 class DT_OCEAN(GIANT):
     def __init__(self,filename,tymemax=None): 
         GIANT.__init__(self,filename,xVars=xDT_OCEAN,tymemax=tymemax)
@@ -618,7 +620,9 @@ class DT_OCEAN(GIANT):
         self.mTau470  = aodInterpAngs(470.,self.mTau480,self.mTau550,480.,550.)
         self.mTau660  = aodInterpAngs(660.,self.mTau550,self.mTau670,550.,670.)        
         self.mTau870  = aodInterpAngs(870.,self.mTau670,self.mTau860,670.,860.)
-        self.mTau2100 = aodInterpAngs(2100.,self.mTau1600,self.mTau2250,1600.,2250.) 
+        self.mTau2100 = aodInterpAngs(2100.,self.mTau1600,self.mTau2250,1600.,2250.)
+
+        self.giantList +=['mTau470','mTau660','mTau870','mTau2100']
 
 class DB_OCEAN(GIANT):
     def __init__(self,filename,tymemax=None):
@@ -638,6 +642,8 @@ class DB_OCEAN(GIANT):
         self.mTau870  = aodInterpAngs(870.,self.mTau670,self.mTau865,670.,865.)
         self.mTau2100 = aodInterpAngs(2100.,self.mTau1640,self.mTau2250,1640.,2250.)
 
+        self.giantList += ['mTau470','mTau660','mTau870','mTau2100']
+
 class DB_LAND(GIANT):
     def __init__(self,filename,tymemax=None): 
         GIANT.__init__(self,filename,xVars=xDB_LAND,tymemax=tymemax)
@@ -653,6 +659,8 @@ class DB_LAND(GIANT):
         # ------------------------------------------------
         self.mTau470 = aodInterpAngs(470.,self.mTau412,self.mTau488,412.,488.)
         self.mTau660 = aodInterpAngs(660.,self.mTau550,self.mTau670,550.,670.)
+
+        self.giantList += ['mTau470','mTau660']
 
 #---
 def aodInterpAngs(lambda_,tau1,tau2,lambda1,lambda2):
