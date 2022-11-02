@@ -262,7 +262,7 @@ class Vx04_L2(object):
        elif self.algo == 'DB_LAND':
            self.iGood = self.Aerosol_Optical_Thickness_QA_Flag_Land > BAD # for now
        elif self.algo == 'DB_OCEAN':
-           self.iGood = self.Aerosol_Optical_Thickness_QA_Flag_Ocean > BAD
+           self.iGood = self.Aerosol_Optical_Thickness_QA_Flag_Ocean == BEST
        else:
            raise ValueError, 'invalid algorithm (very strange)'
 
