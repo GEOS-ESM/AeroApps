@@ -672,6 +672,9 @@ def aodInterpAngs(lambda_,tau1,tau2,lambda1,lambda2):
     angstrom = -np.log(tau1[I]/tau2[I])/np.log(lambda1/lambda2)
     tau = -9999. * np.ones(len(tau1))
     tau[I] = tau2[I] * (lambda2/lambda_)**angstrom
+
+    I = (tau1 == 0.0) & (tau2 == 0.0)
+    tau[I] = 0.0
     return tau
 # .......................................................................................................
 
