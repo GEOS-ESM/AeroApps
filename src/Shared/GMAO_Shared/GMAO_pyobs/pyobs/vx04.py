@@ -894,7 +894,7 @@ def granules ( path, algo, sat, syn_time, coll='011', nsyn=8, verbose=False ):
     # Get product name
     # -----------------
     Algo = algo.split('_')[0]
-    prod = 'AER{}_{}'.format(Algo,sat)
+    prod = 'AER{}'.format(Algo)
 
     # Determine synoptic time range
     # -----------------------------
@@ -909,8 +909,8 @@ def granules ( path, algo, sat, syn_time, coll='011', nsyn=8, verbose=False ):
     while t < t2:
         if t >= t1:
             doy = t.timetuple()[7]
-            basen = "%s/%s/Level2/%s/%04d/%03d/AER%s_L2_VIIRS_%s.A%04d%03d.%02d%02d.%s.*.nc"\
-                     %(path,coll,prod,t.year,doy,Algo,sat,t.year,doy,t.hour,t.minute,coll)
+            basen = "%s/%s/%s/%s/Level2/%04d/%03d/AER%s_L2_VIIRS_%s.A%04d%03d.%02d%02d.%s.*.nc"\
+                     %(path,prod,sat,coll,t.year,doy,Algo,sat,t.year,doy,t.hour,t.minute,coll)
             try:
                 filen = glob(basen)[0]
                 Granules += [filen,]
