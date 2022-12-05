@@ -302,11 +302,16 @@ class Vx04_L2(object):
            # this kind of seems to match the DB RAA
            # the DT sensor and solar azimuth angles seem off
            # I can't find a DB definition for RAA so this is close enough
-           raa = self.SolarZenith - self.SensorZenith
-           ii = raa <0
-           raa[ii] = raa[ii] + 180.
-           ii = raa < 0
-           raa[ii] = raa[ii]*-1.
+           saa = self.SolarAzimuth
+           vaa = self.SensorAzimuth
+           i = saa < 0
+           saa[i] = 360. + saa[i]
+           i = vaa < 0
+           vaa[i] = 360. + vaa[i]
+           raa = saa - vaa + 180.
+           i = raa > 180.
+           raa[i] = 360. - raa[i]
+
            self.RelativeAzimuth = raa
            self.SDS += ('RelativeAzimuth',)
 
