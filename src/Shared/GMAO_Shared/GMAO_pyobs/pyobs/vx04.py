@@ -69,7 +69,8 @@ SDS = dict (
                'Number_Valid_Pixels',
                'TOA_NDVI',
                'Total_Column_Ozone',
-               'Cell_Average_Elevation_Land'),
+               'Cell_Average_Elevation_Land',
+               'Precipitable_Water'),
      DB_OCEAN = ('Aerosol_Optical_Thickness_550_Ocean', 
                'Spectral_Aerosol_Optical_Thickness_Ocean',
                'Spectral_TOA_Reflectance_Ocean',
@@ -83,7 +84,8 @@ SDS = dict (
                'Wind_Speed',
                'Wind_Direction',
                'Cell_Average_Elevation_Ocean',
-               'Total_Column_Ozone')
+               'Total_Column_Ozone',
+               'Precipitable_Water')
         )
 # NOTE: DEEP BLUE does not have cloud information in their files.
 
@@ -143,6 +145,7 @@ ALIAS = dict (  Longitude = 'lon',
                 Aerosol_Optical_Thickness_QA_Flag_Ocean = 'qa_flag',
                 Land_Ocean_Quality_Flag = 'qa_flag',
                 Scan_Start_Time = 'Time',
+                Cell_Average_Elevation_Land = 'pixel_elevation',
              )
 
 BAD, MARGINAL, GOOD, BEST = ( 0, 1, 2, 3 ) # DT QA marks
