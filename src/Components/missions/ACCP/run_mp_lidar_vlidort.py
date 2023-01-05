@@ -189,6 +189,9 @@ class WORKSPACE(JOBS):
 
                 os.makedirs(workpath)
 
+                # link over setup_env script
+                os.symlink('setup_env','{}/setup_env'.format(workpath))
+
                 # copy over slurm scipt
                 outfile = '{}/{}'.format(workpath,self.slurm)
                 shutil.copyfile(self.slurm,outfile)
