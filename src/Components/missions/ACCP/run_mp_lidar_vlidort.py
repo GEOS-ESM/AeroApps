@@ -201,9 +201,9 @@ class WORKSPACE(JOBS):
                 shutil.copyfile(self.orbit_pcf,outfile)
 
                 #link over needed python scripts
-                source = ['mp_lidar_vlidort.py'] 
+                source = [os.getenv('AERODIR')+'/install/lib/Python/py_leo_vlidort/mp_lidar_vlidort.py'] 
                 for src in source:
-                    os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
+                    os.symlink('{}'.format(src),'{}/{}'.format(workpath,os.path.basename(src)))
 
                 # Copy over rc and edit
                 outfile = '{}/{}'.format(workpath,self.rcFile)                
