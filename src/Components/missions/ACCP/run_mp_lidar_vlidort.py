@@ -280,7 +280,7 @@ class WORKSPACE(JOBS):
             os.remove(self.rcFile)
 
         # remove symlinks
-        source = ['mp_lidar_vlidort.py'] 
+        source = ['mp_lidar_vlidort.py','setup_env'] 
         for src in source:
             os.remove(src)
 
