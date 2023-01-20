@@ -19,6 +19,7 @@ META =  ( "Date",
           "Longitude",
           "SolarZenith",
           "SensorZenith",
+          "RelativeAzimuth",
           "ScatteringAngle",
           "GlintAngle")
 
@@ -103,8 +104,14 @@ xDB_LAND = ( "mean_AOD0412dpbl-l",
           "mean_surfre0488dpbl-l",
           "mean_surfre0670dpbl-l",
           "mode_QAdpbl-l",
+          "mode_algflgdpbl-l",
 #          "cval_cldpixdistavg",
           "nval_AOD0550dpbl-l",
+          "mean_NDVIdpbl-l",
+          "mean_Total_Column_Ozonedpbl-l",
+          "mode_atypedpbl-l",
+          "mean_PrecipitableWaterdpbl-l",
+          "mean_Elevationdpbl-l",
         )
 
 xDB_OCEAN = ("mean_AOD0488dpbl-o",
@@ -125,7 +132,11 @@ xDB_OCEAN = ("mean_AOD0488dpbl-o",
           "mean_mref1640dpbl-o",
           "mean_mref2250dpbl-o",
           "mode_QAdpbl-o",
+          "mode_algflgdpbl-o",
 #          "cval_cldpixdistavg",
+          "mean_Total_Column_Ozonedpbl-o",
+          "mode_atypedpbl-o",
+          "mean_PrecipitableWaterdpbl-o",
         )
 
 ALIAS = {
@@ -201,6 +212,12 @@ ALIAS = {
                 "mean_surfre0488dpbl-l" : 'mSre488',
                 "mean_surfre0670dpbl-l" : 'mSre670',
                 "mode_QAdpbl-l"         : 'qa',
+                "mode_algflgdpbl-l"     : 'algflag',
+                "mode_atypedpbl-l"      : 'atype',
+                "mean_Total_Column_Ozonedpbl-l" : 'colO3',
+                "mean_NDVIdpbl-l"       : 'ndvi',
+                "mean_PrecipitableWaterdpbl-l" : "water",
+                "mean_Elevationdpbl-l"  : "pixel_elevation",
 
                 "mean_AOD0488dpbl-o"    : 'mTau488',
                 "mean_AOD0550dpbl-o"    : 'mTau550',
@@ -219,6 +236,10 @@ ALIAS = {
                 "mean_mref1640dpbl-o"   : 'mRef1640',
                 "mean_mref2250dpbl-o"   : 'mRef2250',
                 "mode_QAdpbl-o"         : 'qa',
+                "mode_algflgdpbl-o"     : 'algflag',
+                "mode_atypedpbl-o"      : 'atype',
+                "mean_Total_Column_Ozonedpbl-o" : 'colO3',
+                "mean_PrecipitableWaterdpbl-o"  : 'water',                
              }
 
 MISSING = 1.E20
