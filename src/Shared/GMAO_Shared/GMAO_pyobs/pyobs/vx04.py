@@ -67,6 +67,7 @@ SDS = dict (
                'Aerosol_Type_Land',
                'Number_Of_Pixels_Used_Land',
                'Number_Valid_Pixels',
+               'Unsuitable_Pixel_Fraction_Land_Ocean',
                'TOA_NDVI',
                'Total_Column_Ozone',
                'Cell_Average_Elevation_Land',
@@ -81,6 +82,7 @@ SDS = dict (
                'Aerosol_Type_Ocean',
                'Number_Of_Pixels_Used_Ocean',
                'Number_Valid_Pixels',
+               'Unsuitable_Pixel_Fraction_Land_Ocean',
                'Wind_Speed',
                'Wind_Direction',
                'Cell_Average_Elevation_Ocean',
@@ -139,8 +141,9 @@ ALIAS = dict (  Longitude = 'lon',
                 Algorithm_Flag_Ocean = 'aflag',
                 Aerosol_Type_Ocean = 'atype',
                 Angstrom_Exponent_Ocean = 'angstrom',                
-                Number_Of_Pixels_Used_Ocean = 'Number_Of_Pixels_Used',
-                Number_Of_Pixels_Used_Land = 'Number_Of_Pixels_Used',
+                Number_Of_Pixels_Used_Ocean = 'npixels_used',
+                Number_Of_Pixels_Used_Land = 'npixels_used',
+                Number_Valid_Pixels = 'npixels_valid',
                 Aerosol_Optical_Thickness_QA_Flag_Land = 'qa_flag',
                 Aerosol_Optical_Thickness_QA_Flag_Ocean = 'qa_flag',
                 Land_Ocean_Quality_Flag = 'qa_flag',
@@ -311,8 +314,9 @@ class Vx04_L2(object):
            self.SDS += ('GlintAngle',)
        elif 'DT' in self.algo:
            # this kind of seems to match the DB RAA
-           # the DT sensor and solar azimuth angles seem off
-           # I can't find a DB definition for RAA so this is close enough
+           # the DT sensor and solar azimuth angles have a bug
+           # this needs to be rechecked with updated version of DT dataset
+           # DB definition for RAA is 'Gordon Convention', RAA=0 is back scattering
            saa = self.SolarAzimuth
            vaa = self.SensorAzimuth
            i = saa < 0
@@ -378,7 +382,7 @@ class Vx04_L2(object):
 
        # Create a pseudo cloud fraction for Deep Blue
        if Algo == 'DB':
-           self.cloud = self.Number_Of_Pixels_Used.astype(float)/self.Number_Valid_Pixels.astype(float)
+           self.cloud = 1. - self.npixels_used.astype(float)/self.npixels_valid.astype(float)
 
 #---
     def _readList(self,List):
