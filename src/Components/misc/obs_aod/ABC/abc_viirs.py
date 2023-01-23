@@ -570,7 +570,8 @@ class ABC_DB_Land (DB_LAND,NN,SETUP,ABC):
                   cloud_thresh=0.70,
                   aFilter=None,
                   NDVI=False,
-                  tymemax=None):
+                  tymemax=None,
+                  algflag=None):
         """
         Initializes the AOD Bias Correction (ABC) for the MODIS Land algorithm.
 
@@ -585,10 +586,17 @@ class ABC_DB_Land (DB_LAND,NN,SETUP,ABC):
         laod    ---  if True, targets are log-transformed AOD, log(Tau+0.01)
         tymemax ---  truncate the data record in the giant file at tymemax.
                      set to  None to read entire data record.
+        algflag ---  DB Land algorithm flag number - this should be a list. Allows for selecting multiple algorithms.
+                     None - don't filter, use all pixels
+                     0 - hybrid (heterogenous surface)
+                     1 - vegetated surface
+                     2 - bright surface
+                     3 - mixed
         """
 
         self.verbose = verbose
         self.laod = laod
+        self.algflag = algflag
 
         DB_LAND.__init__(self,fname,tymemax=tymemax)  # initialize superclass
 
@@ -619,6 +627,11 @@ class ABC_DB_Land (DB_LAND,NN,SETUP,ABC):
                       (self.mSre412 >  0.0)       & \
                       (self.mSre488 >  0.0)       & \
                       (self.mSre670 >  0.0)
+        if algflag is not None:
+            fValid = np.zeros(self.iValid.shape).astype(bool)
+            for aflag in algflag:
+                fValid = fValid | (self.algflag == aflag)
+            self.iValid = self.iValid & fValid
 
 
         # Filter by additional variables
