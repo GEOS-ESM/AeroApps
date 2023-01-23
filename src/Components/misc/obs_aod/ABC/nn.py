@@ -150,7 +150,7 @@ class NN(object):
         Only data with an iValid Q/C flag is considered.
         """
         n = self.lon.size
-        self.kf = KFold(np.sum(self.iValid), n_folds=K, shuffle=True, random_state=n)
+        self.kf = KFold(n_splits=K, shuffle=True, random_state=n)
 
 
     def getInputs(self,I,Input=None):

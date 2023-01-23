@@ -614,7 +614,7 @@ class ABC_DB_Land (DB_LAND,NN,SETUP,ABC):
                       (self.mRef2250 > 0)         & \
                       (self.mSre412 >  0.0)       & \
                       (self.mSre488 >  0.0)       & \
-                      (self.mSre670 >  0.0)      
+                      (self.mSre670 >  0.0)
 
 
         # Filter by additional variables
@@ -675,7 +675,7 @@ def _train(mxd,expid,c):
     mxd.savenet(outdir+"/"+expid+'_Tau.net')    
   else:
     k = 1
-    for iTrain, iTest in mxd.kf:
+    for iTrain, iTest in mxd.kf.split(arange(np.sum(mxd.iValid))):
       I = arange(mxd.nobs)
       iValid = I[mxd.iValid]
       mxd.iTrain = iValid[iTrain]
@@ -720,7 +720,7 @@ def _test(mxd,expid,c,plotting=True):
             make_plots(mxd,expid,ident,I=mxd.iTest)
   else:
     k = 1
-    for iTrain, iTest in mxd.kf:
+    for iTrain, iTest in mxd.kf.split(arange(np.sum(mxd.iValid))):
       I = arange(mxd.nobs)
       iValid = I[mxd.iValid]
       mxd.iTrain = iValid[iTrain]

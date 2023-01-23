@@ -639,7 +639,10 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
         for k,iTest in enumerate(I):
           mxd.iTest    = iTest
 
-          targets.append(mxd.getTargets(mxd.iTest)[:,t])
+          targets_ = mxd.getTargets(mxd.iTest)
+          if mxd.nTarget > 1:
+              targets_ = targets_[:,t]
+          targets.append(targets_)
 
           inputs = mxd.getInputs(mxd.iTest,Input=Input)
 
@@ -652,7 +655,7 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
               tau = base_tau_t*np.exp(-1.*np.log(wav/mxd.AE_base_wav)*targets[k])
               targets[k] = np.log(tau + 0.01)
 
-              base_tau_r = np.exp(knet(inputs)[:,mxd.base_wav_i]) - 0.01
+              base_tau_r = np.exp(knet(inputs)[:,mxd.AE_base_wav_i]) - 0.01
               tau = base_tau_r*np.exp(-1.*np.log(wav/mxd.AE_base_wav)*results[k])
               results[k] = np.log(tau + 0.01)
 
@@ -1186,7 +1189,7 @@ def SummaryPDFs(mxdx,mxdx2=None,varnames=['mRef870','mSre470'],doInt=False):
       I = [Irange]
     else:
       I = []
-      for iTrain, iTest in mxdx.kf:          
+      for iTrain, iTest in mxdx.kf.split(arange(np.sum(mxdx.iValid))):
         I.append(iValid[iTest])
 
     I1, I2, I3, I4 = get_Iquartiles(mxdx,I=I)
