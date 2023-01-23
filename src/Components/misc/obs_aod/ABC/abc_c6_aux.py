@@ -346,6 +346,8 @@ def make_plots(mxd,expid,ident,I=None):
   # -------------------------
   # mxd.plotKDE(I=I,figfile=expid+"."+ident+"_kde-"+mxd.Target[0][1:]+"-corrected.png")
   targets  = mxd.getTargets(I)
+  if mxd.nTarget == 1:
+      targets.shape = targets.shape + (1,)
   results = mxd.eval(I)
   # loop through targets
   for t in range(mxd.nTarget):
@@ -595,7 +597,9 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
         name = tname
     if name in mxd.__dict__:
       if K is None:
-        targets  = mxd.getTargets(I[0])[:,t]
+        targets  = mxd.getTargets(I[0])
+        if mxd.nTarget > 1: 
+            targets = targets[:,t]
 
         inputs = mxd.getInputs(I[0],Input=Input)
         knet = mxd.loadnet(netfileRoot+'_Tau.net')
@@ -1108,12 +1112,14 @@ def TestStats(mxd,K,C):
     # regression[*][0:2] = slope, intercept, r-value
     # out.shape = [ntestobs,nTarget]
     out, reg = mxd.test(iprint=False)
-
-    mxd.nnr.slope[k,c,:]     = reg[:][0]
-    mxd.nnr.intercept[k,c,:] = reg[:][1]
-    mxd.nnr.R[k,c,:]         = reg[:][2]
+    reg = np.array(reg)
+    mxd.nnr.slope[k,c,:]     = reg[:,0]
+    mxd.nnr.intercept[k,c,:] = reg[:,1]
+    mxd.nnr.R[k,c,:]         = reg[:,2]
 
     targets  = mxd.getTargets(mxd.iTest)
+    if mxd.nTarget == 1:
+        targets.shape = targets.shape + (1,)
 
     # get other NNR STATS
     mxd.nnr.rmse[k,c,:] = rmse(out,targets)
