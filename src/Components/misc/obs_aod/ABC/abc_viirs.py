@@ -53,7 +53,8 @@ class SETUP(object):
                                 'cloud', 'albedo','fdu','fcc','fsu' ],
                  Input_const = None,
                  Target = ['aTau550',],
-                 K=None):
+                 K=None,
+                 f_balance=0.50):
        
     
     self.retrieval = retrieval
@@ -111,8 +112,10 @@ class SETUP(object):
     # Balance the dataset before splitting
     # No aerosol type should make up more that 35% 
     # of the total number of obs
+    # f_balance is the fraction that defines whether it's 'dominated'
     # --------------------------------------
-    self.iValid = self.balance(int(self.nobs*0.35))
+    self.f_balance = f_balance
+    self.iValid = self.balance(int(self.nobs*0.35),f_balance=f_balance)
 
     # Flatten Input_nnr into one list
     # -------------------------------

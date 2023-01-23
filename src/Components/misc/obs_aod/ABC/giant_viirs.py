@@ -339,7 +339,7 @@ class GIANT(object):
     self.nobs = len(self.lon)
 
 #--
-  def balance(self,N):
+  def balance(self,N,frac=0.50):
     """
     Return indices of observations so that each species does not have more than
     N observations. This is meant to be performed with a reduced dataset.
@@ -349,7 +349,8 @@ class GIANT(object):
 
     for f in (self.fdu,self.fss,self.fcc,self.fsu):
 
-      J = f>0.5                      # all obs for which species dominate
+      J = f>frac                      # all obs for which species dominate
+      J = J & ~I                      # only obs that haven't already been selected
       n = len(self.lon[J])              # no. obs for this species
       P = random.permutation(n)      # randomize obs for this species
       m = min(n,N)                   # keep this many
