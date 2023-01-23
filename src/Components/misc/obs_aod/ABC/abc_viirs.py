@@ -115,7 +115,7 @@ class SETUP(object):
     # f_balance is the fraction that defines whether it's 'dominated'
     # --------------------------------------
     self.f_balance = f_balance
-    self.iValid = self.balance(int(self.nobs*0.35),f_balance=f_balance)
+    self.iValid = self.balance(int(self.nobs*0.35),frac=f_balance)
 
     # Flatten Input_nnr into one list
     # -------------------------------
