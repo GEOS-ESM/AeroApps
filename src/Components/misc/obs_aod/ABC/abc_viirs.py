@@ -769,9 +769,9 @@ def _test(mxd,expid,c,plotting=True):
       TestStats(mxd,k-1,c)
       if plotting: 
           if mxd.angstrom:
-              make_plots_angstrom(mxd,expid,'.k={}'.format(str(k)),I=mxd.iTest)
+              make_plots_angstrom(mxd,expid,ident+'.k={}'.format(str(k)),I=mxd.iTest)
           else:
-              make_plots(mxd,expid,'.k={}'.format(str(k)),I=mxd.iTest)
+              make_plots(mxd,expid,ident+'.k={}'.format(str(k)),I=mxd.iTest)
       k = k + 1    
 
 #---------------------------------------------------------------------
