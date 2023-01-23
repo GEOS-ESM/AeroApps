@@ -235,7 +235,8 @@ class ABC(object):
             Kgeo = brdf.__dict__['Rgeo'+ch]
             self.__dict__[name] = rtlsReflectance(Kiso,Kgeo,Kvol,
                                                   self.SolarZenith,self.SensorZenith,
-                                                  self.SolarAzimuth,self.SensorAzimuth)
+                                                  None,None,
+                                                  raa=self.RelativeAzimuth)
             self.giantList.append(name)    
 
 
