@@ -670,7 +670,7 @@ class DB_LAND(GIANT):
     def __init__(self,filename,tymemax=None): 
         GIANT.__init__(self,filename,xVars=xDB_LAND,tymemax=tymemax)
         if self.sat == 'SNPP':
-            self.ident = 'vsdto'
+            self.ident = 'vsdbl'
         self.ident = self.ident + '_' + filename.split('/')[-1].split('.')[0]
         self.surface = 'land'
 
