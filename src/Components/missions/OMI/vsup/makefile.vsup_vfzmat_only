@@ -1,0 +1,14 @@
+#
+# Define individual supplement paths
+#
+
+#  Created for Version 2.8, 9/19/16
+
+VFZMAT_PATH   = $(VSUP_PATH)/vfzmat
+
+#
+# Include individual supplement makefiles
+#
+
+include $(VFZMAT_PATH)/makefile.vfzmat
+

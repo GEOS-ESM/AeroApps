@@ -1,0 +1,10 @@
+#
+# Resource file for Trajectory Sampler. Aerosol 3D only parameters.
+#
+
+AIRDENS,BCPHILIC,BCPHOBIC,DELP,DU001,DU002,DU003,DU004,DU005,OCPHILIC,OCPHOBIC,PS,RH,SO2,SO4,SS001,SS002,SS003,SS004,SS005 : opendap/merra2_300_inst3_3d_aer_Nv
+TOTEXTTAU, TOTSCATAU  : opendap/merra2_300_tavg1_2d_aer_Nx
+O3, H , T, PHIS : opendap/merra2_300_inst3_3d_asm_Nv
+
+
+

@@ -1,0 +1,34 @@
+#
+# Define list of source files
+# (Note: ordering is important because of dependencies)
+#
+
+VBRDF_SUP_SOURCES =
+VBRDF_LINSUP_SOURCES =
+
+VBRDF_SUP_SOURCES +=   \
+   $(BASE_SOURCES) \
+   $(VBRDF_PATH)/vbrdf_findpar.f90	  \
+   $(VBRDF_PATH)/vbrdf_sup_inputs_def.f90 \
+   $(VBRDF_PATH)/vbrdf_sup_outputs_def.f90\
+   $(VBRDF_PATH)/vbrdf_sup_aux.f90	  \
+   $(VBRDF_PATH)/vbrdf_sup_kernels.f90	  \
+   $(VBRDF_PATH)/vbrdf_sup_routines.f90	  \
+   $(VBRDF_PATH)/vbrdf_sup_masters.f90    \
+   $(VBRDF_PATH)/vbrdf_sup_mod.f90
+
+VBRDF_LINSUP_SOURCES += \
+   $(VBRDF_SUP_SOURCES) \
+   $(VBRDF_PATH)/vbrdf_lin_sup_inputs_def.f90	\
+   $(VBRDF_PATH)/vbrdf_lin_sup_outputs_def.f90	\
+   $(VBRDF_PATH)/vbrdf_lin_sup_kernels.f90	\
+   $(VBRDF_PATH)/vbrdf_lin_sup_routines.f90	\
+   $(VBRDF_PATH)/vbrdf_lin_sup_masters.f90	\
+   $(VBRDF_PATH)/vbrdf_lin_sup_mod.f90
+
+#
+# Define supplement pattern rule for creating object files
+#
+
+$(OBJ_PATH)/%.o : $(VBRDF_PATH)/%.f90
+	$(FC) $(FFLAGS) $< -o $@

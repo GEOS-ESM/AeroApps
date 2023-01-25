@@ -1,0 +1,302 @@
+
+****************************************
+        Water surface-leaving
+****************************************
+
+         For Stokes: 1
+
+         LW_BASIC =    1.482156E-03
+
+         STANDARD QUANTITIES
+
+Isotropic SLEAVE, all geometries
+
+              sza     Iso SLEAVE value
+
+               1        1.263545E-03
+
+Exact SLEAVE, Direct Line-of-sight
+
+              sza vza azm    Exact SLEAVE value
+
+               1   1   1      1.189157E-03
+
+Exact SLEAVE, Solar-Vertical 
+
+              sza    Exact SLEAVE value
+
+               1      1.230366E-03
+
+Fourier Components:
+
+              Fourier component #  0
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1    1.084778E-03
+Solars-Stream  1   2    1.114509E-03
+Solars-Stream  1   3    1.144066E-03
+Solars-Stream  1   4    1.122063E-03
+Solars-Stream  1   5    1.172707E-03
+Solars-Stream  1   6    1.212559E-03
+Solars-Stream  1   7    1.209346E-03
+Solars-Stream  1   8    1.204325E-03
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1    1.203206E-03
+
+              Fourier component #  1
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1   -7.370192E-05
+Solars-Stream  1   2   -7.667256E-05
+Solars-Stream  1   3   -8.318814E-05
+Solars-Stream  1   4   -8.888607E-05
+Solars-Stream  1   5   -9.773013E-05
+Solars-Stream  1   6   -9.371916E-05
+Solars-Stream  1   7   -7.059225E-05
+Solars-Stream  1   8   -3.292654E-05
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1   -1.447475E-05
+
+              Fourier component #  2
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1    2.773363E-05
+Solars-Stream  1   2    2.805861E-05
+Solars-Stream  1   3    2.675111E-05
+Solars-Stream  1   4    2.187729E-05
+Solars-Stream  1   5    1.649341E-05
+Solars-Stream  1   6    1.019038E-05
+Solars-Stream  1   7    4.148848E-06
+Solars-Stream  1   8    9.882115E-07
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1    1.776759E-07
+
+              Fourier component #  3
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1    1.791151E-06
+Solars-Stream  1   2    1.774729E-06
+Solars-Stream  1   3    1.512767E-06
+Solars-Stream  1   4    1.029306E-06
+Solars-Stream  1   5    5.423385E-07
+Solars-Stream  1   6    9.910345E-08
+Solars-Stream  1   7   -3.299798E-07
+Solars-Stream  1   8    8.920247E-08
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1    5.085304E-08
+
+              Fourier component #  4
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1    2.461259E-07
+Solars-Stream  1   2    2.528774E-07
+Solars-Stream  1   3    2.596486E-07
+Solars-Stream  1   4    1.736149E-07
+Solars-Stream  1   5    9.450473E-08
+Solars-Stream  1   6   -1.504198E-07
+Solars-Stream  1   7   -1.115155E-07
+Solars-Stream  1   8   -1.410119E-08
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1   -1.574736E-08
+
+              Fourier component #  5
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1    1.023025E-08
+Solars-Stream  1   2    6.252871E-09
+Solars-Stream  1   3   -1.362812E-08
+Solars-Stream  1   4    5.330161E-09
+Solars-Stream  1   5    6.279610E-08
+Solars-Stream  1   6   -2.226630E-08
+Solars-Stream  1   7   -6.633500E-08
+Solars-Stream  1   8   -1.826099E-08
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1   -3.061922E-08
+
+              Fourier component #  6
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1    1.797564E-08
+Solars-Stream  1   2    3.508771E-08
+Solars-Stream  1   3    1.144736E-07
+Solars-Stream  1   4    8.932268E-08
+Solars-Stream  1   5   -3.545669E-08
+Solars-Stream  1   6    7.724845E-08
+Solars-Stream  1   7   -5.878354E-08
+Solars-Stream  1   8   -2.639577E-08
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1    7.313739E-08
+
+              Fourier component #  7
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1   -4.319046E-08
+Solars-Stream  1   2   -4.328267E-08
+Solars-Stream  1   3   -3.933827E-08
+Solars-Stream  1   4    1.869149E-09
+Solars-Stream  1   5    2.957204E-08
+Solars-Stream  1   6   -8.733914E-08
+Solars-Stream  1   7   -7.178519E-08
+Solars-Stream  1   8    1.127292E-08
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1   -2.698898E-08
+
+              Fourier component #  8
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1    5.513125E-08
+Solars-Stream  1   2    4.094125E-08
+Solars-Stream  1   3   -3.188437E-08
+Solars-Stream  1   4   -1.315843E-08
+Solars-Stream  1   5    2.886019E-08
+Solars-Stream  1   6   -3.691190E-08
+Solars-Stream  1   7   -4.238659E-08
+Solars-Stream  1   8   -7.776225E-08
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1    1.716637E-08
+
+              Fourier component #  9
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1    6.837499E-08
+Solars-Stream  1   2    6.332990E-08
+Solars-Stream  1   3    3.233422E-08
+Solars-Stream  1   4   -6.363209E-08
+Solars-Stream  1   5    4.972436E-08
+Solars-Stream  1   6    1.537471E-08
+Solars-Stream  1   7    6.236523E-08
+Solars-Stream  1   8    1.173692E-08
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1    1.814160E-08
+
+              Fourier component # 10
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1    1.805585E-08
+Solars-Stream  1   2    2.280004E-08
+Solars-Stream  1   3    4.334850E-08
+Solars-Stream  1   4    7.236528E-08
+Solars-Stream  1   5   -4.925622E-08
+Solars-Stream  1   6   -2.771977E-08
+Solars-Stream  1   7    2.653989E-08
+Solars-Stream  1   8   -1.732662E-08
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1    2.758201E-08
+
+              Fourier component # 11
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1   -7.087729E-08
+Solars-Stream  1   2   -6.934869E-08
+Solars-Stream  1   3   -5.491141E-08
+Solars-Stream  1   4    4.044584E-09
+Solars-Stream  1   5   -2.575950E-08
+Solars-Stream  1   6    2.378598E-08
+Solars-Stream  1   7    7.772273E-08
+Solars-Stream  1   8   -9.048255E-09
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1   -4.433153E-09
+
+              Fourier component # 12
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1    3.210880E-08
+Solars-Stream  1   2    3.255577E-08
+Solars-Stream  1   3    3.152538E-08
+Solars-Stream  1   4    3.360764E-08
+Solars-Stream  1   5    5.378463E-08
+Solars-Stream  1   6   -3.321063E-09
+Solars-Stream  1   7    7.068068E-08
+Solars-Stream  1   8    4.196675E-08
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1    2.540835E-08
+
+              Fourier component # 13
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1   -5.243494E-08
+Solars-Stream  1   2   -5.136005E-08
+Solars-Stream  1   3   -4.085493E-08
+Solars-Stream  1   4    1.985400E-09
+Solars-Stream  1   5   -1.928429E-08
+Solars-Stream  1   6    1.682765E-08
+Solars-Stream  1   7    5.551721E-08
+Solars-Stream  1   8   -6.897783E-09
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1   -3.371943E-09
+
+              Fourier component # 14
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1    2.253443E-10
+Solars-Stream  1   2    2.528815E-09
+Solars-Stream  1   3    1.343981E-08
+Solars-Stream  1   4    2.965988E-08
+Solars-Stream  1   5   -3.063928E-08
+Solars-Stream  1   6   -1.799814E-08
+Solars-Stream  1   7    1.164319E-08
+Solars-Stream  1   8   -9.280696E-09
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1    1.375680E-08
+
+              Fourier component # 15
+
+              sza str    SLEAVE value
+
+Solars-Stream  1   1    3.466916E-08
+Solars-Stream  1   2    3.299260E-08
+Solars-Stream  1   3    2.153690E-08
+Solars-Stream  1   4   -1.495913E-08
+Solars-Stream  1   5    2.706734E-08
+Solars-Stream  1   6    1.266781E-08
+Solars-Stream  1   7    2.684015E-08
+Solars-Stream  1   8    7.245259E-09
+
+               sza vza    SLEAVE value
+
+Solars-Users   1   1    7.988690E-09

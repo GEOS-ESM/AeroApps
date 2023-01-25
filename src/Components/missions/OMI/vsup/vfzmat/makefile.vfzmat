@@ -1,0 +1,31 @@
+#
+# Define list of source files
+# (Note: ordering is important because of dependencies)
+#
+
+#  Created for VLIDORT Version 2.8, 9/19/16.
+#  mick mod 3/2/2020 - modified to include some linearized sources
+
+VFZMAT_SUP_SOURCES =
+VFZMAT_LINSUP_SOURCES =
+
+VFZMAT_SUP_SOURCES +=   \
+   $(VFZMAT_PATH)/vfzmat_Numerical.f90      \
+   $(VFZMAT_PATH)/vfzmat_DevelopCoeffs.f90  \
+   $(VFZMAT_PATH)/vfzmat_ExpandCoeffs.f90   \
+   $(VFZMAT_PATH)/vfzmat_Rotation.f90       \
+   $(VFZMAT_PATH)/vfzmat_PhasMat.f90        \
+   $(VFZMAT_PATH)/vfzmat_Rayleigh.f90       \
+   $(VFZMAT_PATH)/vfzmat_Master.f90
+
+VFZMAT_LINSUP_SOURCES +=   \
+   $(VFZMAT_SUP_SOURCES) \
+   $(VFZMAT_PATH)/vfzmat_Lin_ExpandCoeffs.f90
+
+#
+# Define supplement pattern rule for creating object files
+#
+
+$(OBJ_PATH)/%.o : $(VFZMAT_PATH)/%.f90
+	$(FC) $(FFLAGS) $< -o $@
+

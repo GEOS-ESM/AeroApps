@@ -1,0 +1,74 @@
+set multiplot
+
+unset label 1; unset xlabel ; unset ylabel
+#
+#  first plot
+
+x1 = 350.0 ; x2 = 750.0 ; x3 = 50.0
+y1 = 0.0 ; y2 = 0.06 ; y3 = abs(y2-y1)/6.0
+set xrange[x1:x2] ; set xtics x3
+set yrange[y1:y2] ; set ytics y3
+set ylabel 'Lw reflectances'
+set label 1 'Flat surface' at 500, 0.03
+set label 2 'Comparison of Exact Normalized water-leaving reflectances with unnormalized reflectances' at 400,0.066
+#set xlabel 'Wavelength [nm]'
+set size 0.62,0.47 ;set origin 0.0,0.49
+plot 'EXACTNORM_WLREF.out_Flat' using 2:3  t 'RhowEx C=0.05 mg/m3' w l lt 1 lw 2,\
+     'EXACTNORM_WLREF.out_Flat' using 2:4  t 'RhowEx C=0.5  mg/m3' w l lt 4 lw 2,\
+     'EXACTNORM_WLREF.out_Flat' using 2:5  t 'RhowEx C=5.0  mg/m3' w l lt 7 lw 2,\
+     'EXACTNORM_WLREF.out_Flat' using 2:6  t 'Rhow (50/30/90) values ' w l lt 0 lw 2,\
+     'EXACTNORM_WLREF.out_Flat' using 2:7  notitle w l lt 0 lw 2,\
+     'EXACTNORM_WLREF.out_Flat' using 2:8  notitle w l lt 0 lw 2
+
+#  first plot
+
+x1 = 350.0 ; x2 = 750.0 ; x3 = 50.0
+y1 = 0.0 ; y2 = 0.06 ; y3 = abs(y2-y1)/6.0
+set xrange[x1:x2] ; set xtics x3
+set yrange[y1:y2] ; set ytics y3
+set ylabel 'Lw reflectances'
+set xlabel 'Wavelength [nm]'
+unset label 2
+set label 1 'Rough surface Wind 5 m/s' at 500, 0.03
+set size 0.62,0.51 ;set origin 0.0,0.0
+plot 'EXACTNORM_WLREF.out_Rough_WS5' using 2:3  notitle w l lt 1 lw 2,\
+     'EXACTNORM_WLREF.out_Rough_WS5' using 2:4  notitle w l lt 4 lw 2,\
+     'EXACTNORM_WLREF.out_Rough_WS5' using 2:5  notitle w l lt 7 lw 2,\
+     'EXACTNORM_WLREF.out_Rough_WS5' using 2:6  notitle w l lt 0 lw 2,\
+     'EXACTNORM_WLREF.out_Rough_WS5' using 2:7  notitle w l lt 0 lw 2,\
+     'EXACTNORM_WLREF.out_Rough_WS5' using 2:8  notitle w l lt 0 lw 2
+
+#  Expanded views)
+
+x1 = 420.0 ; x2 = 600.0 ; x3 = 60.0
+y1 = 0.0 ; y2 = 0.025 ; y3 = abs(y2-y1)/5.0
+set xrange[x1:x2] ; set xtics x3
+set yrange[y1:y2] ; set ytics y3
+unset ylabel
+set label 1 '(Expanded view)' at 500, 0.022
+unset xlabel 
+set size 0.4,0.47 ;set origin 0.6,0.49
+plot 'EXACTNORM_WLREF.out_Flat' using 2:3  notitle w l lt 1 lw 2,\
+     'EXACTNORM_WLREF.out_Flat' using 2:4  notitle w l lt 4 lw 2,\
+     'EXACTNORM_WLREF.out_Flat' using 2:5  notitle w l lt 7 lw 2,\
+     'EXACTNORM_WLREF.out_Flat' using 2:6  notitle w l lt 0 lw 2,\
+     'EXACTNORM_WLREF.out_Flat' using 2:7  notitle w l lt 0 lw 2,\
+     'EXACTNORM_WLREF.out_Flat' using 2:8  notitle w l lt 0 lw 2
+
+
+x1 = 420.0 ; x2 = 600.0 ; x3 = 60.0
+y1 = 0.0 ; y2 = 0.025 ; y3 = abs(y2-y1)/5.0
+set xrange[x1:x2] ; set xtics x3
+set yrange[y1:y2] ; set ytics y3
+set xlabel 'Wavelength [nm]'
+set size 0.4,0.51 ;set origin 0.6,0.0
+plot 'EXACTNORM_WLREF.out_Rough_WS5' using 2:3  notitle w l lt 1 lw 2,\
+     'EXACTNORM_WLREF.out_Rough_WS5' using 2:4  notitle w l lt 4 lw 2,\
+     'EXACTNORM_WLREF.out_Rough_WS5' using 2:5  notitle w l lt 7 lw 2,\
+     'EXACTNORM_WLREF.out_Rough_WS5' using 2:6  notitle w l lt 0 lw 2,\
+     'EXACTNORM_WLREF.out_Rough_WS5' using 2:7  notitle w l lt 0 lw 2,\
+     'EXACTNORM_WLREF.out_Rough_WS5' using 2:8  notitle w l lt 0 lw 2
+
+
+
+unset multiplot
