@@ -69,6 +69,12 @@ list (APPEND srcs
    ${VSLEAVE_PATH}/vsleave_sup_mod.f90
 )  
 
+set(VACCESS_PATH vsup/vaccessories)
+list (APPEND srcs
+   ${VACCESS_PATH}/vlidort_vbrdf_sup_accessories.f90
+   ${VACCESS_PATH}/vlidort_vsleave_sup_accessories.f90
+)
+
 list (APPEND srcs vlidort_test_gas_aerosol_retrieval_single.f90)
 
 ecbuild_add_executable (
