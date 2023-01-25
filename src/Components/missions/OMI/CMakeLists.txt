@@ -1,6 +1,6 @@
 esma_set_this ()
 
-set (src_dirs vlidort_main/regular vlidort_main/linearized vlidort_test)
+set (src_dirs vlidort_main/regular vlidort_test)
 foreach (dir ${src_dirs})
     file (GLOB srcs_ CONFIGURE_DEPENDS ${dir}/*.[Ffc] ${dir}/*.[fF]90)
   list (APPEND srcs ${srcs_})
