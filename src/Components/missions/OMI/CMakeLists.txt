@@ -75,6 +75,7 @@ ecbuild_add_executable (
   TARGET vlidort_test_gas_aerosol_retrieval_single.x
   SOURCES ${srcs}
   LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL hdf5hl_fortran hdf5_fortran ${NETCDF_LIBRARIES} MPI::MPI_Fortran
+  INCLUDES ${INC_HDF5}
   NOINSTALL
   )
 
