@@ -90,3 +90,22 @@ install (
     DESTINATION bin/missions/${this}
     )
 
+# these are executable scripts
+set (PYSCRIPTS
+    run_vlidort_orbital.py
+    )
+
+install (
+    PROGRAMS ${PYSCRIPTS}
+    DESTINATION	 bin/missions/${this}
+    )
+
+# these are non-executables
+set (RCFILES
+    pace_sampler.rc
+    )
+
+install (
+    FILES ${RCFILES}
+    DESTINATION bin/missions/${this}
+    )
