@@ -90,6 +90,3 @@ install (
     DESTINATION bin/missions/${this}
     )
 
-#esma_add_library (${this}
-#  SRCS ${srcs}
-#  )
