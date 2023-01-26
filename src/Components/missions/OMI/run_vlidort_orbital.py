@@ -1,4 +1,3 @@
-from MAPL.ShaveMantissa_ import shave32
 from   mieobs  import  getAOPvector, getEdgeVars
 import sys 
 import numpy as np
