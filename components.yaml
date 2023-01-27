@@ -22,6 +22,6 @@ ecbuild:
 MAPL:
   local: ./src/Shared/GMAO_Shared/MAPL@
   remote: ../MAPL.git
-  tag: v2.6.9
+  branch: feature/pcastell/#39/shavemantissa-missing
   develop: develop
 
