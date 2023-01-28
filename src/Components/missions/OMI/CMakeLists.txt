@@ -44,7 +44,7 @@ list (APPEND srcs
   ${FO_PATH}/FO_VectorSS_RTCalcs_ILPS.f90
   ${FO_PATH}/VFO_LinMasters.f90
   )
-
+set(VACCESS_PATH vsup/vaccessories)
 set(VBRDF_PATH vsup/vbrdf)
 list (APPEND srcs
    vlidort_def/vlidort_pars.f90
@@ -56,6 +56,7 @@ list (APPEND srcs
    ${VBRDF_PATH}/vbrdf_sup_routines.f90
    ${VBRDF_PATH}/vbrdf_sup_masters.f90
    ${VBRDF_PATH}/vbrdf_sup_mod.f90
+   ${VACCESS_PATH}/vlidort_vbrdf_sup_accessories.f90
 )
 
 set(VSLEAVE_PATH vsup/vsleave)
@@ -67,13 +68,8 @@ list (APPEND srcs
    ${VSLEAVE_PATH}/vsleave_sup_routines.f90
    ${VSLEAVE_PATH}/vsleave_sup_masters.f90
    ${VSLEAVE_PATH}/vsleave_sup_mod.f90
-)  
-
-set(VACCESS_PATH vsup/vaccessories)
-list (APPEND srcs
-   ${VACCESS_PATH}/vlidort_vbrdf_sup_accessories.f90
    ${VACCESS_PATH}/vlidort_vsleave_sup_accessories.f90
-)
+)  
 
 list (APPEND srcs vlidort_test_gas_aerosol_retrieval_single.f90)
 
