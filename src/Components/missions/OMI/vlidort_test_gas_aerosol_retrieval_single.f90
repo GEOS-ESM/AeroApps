@@ -1,5 +1,13 @@
+#  define I_AM_MAIN
+#  include "MAPL_Generic.h"
+#  include "MAPL_ErrLogMain.h"
+
       program vlidort_test_gas_retrieval
 
+  use ESMF                         ! ESMF modules
+  use MAPL_Mod
+  use MAPL_ShmemMod                ! The SHMEM infrastructure
+  use Chem_MieMod
 !  Module files for Rayleigh+aerosol ops related
       USE create_atm_prfl_single
 !  Module file for pre-processed data readin
@@ -33,7 +41,12 @@
      !     USE VLIDORT_SUP_ACCESSORIES
 
       IMPLICIT NONE
-      
+     include "mpif.h"
+
+! ESMF Objects
+!----------------
+  type(ESMF_Config)       :: cf
+  type(ESMF_VM)           :: vm 
 
 
 !  VLIDORT file inputs status structure
@@ -261,6 +274,23 @@
     NAMELIST /VLIDORT/ VLIDORT_FixIn, VLIDORT_ModIn
     !NAMELIST /MERRA2/ aer_data_rec
 
+! Miscellaneous
+! -------------
+  integer                               :: ierr, rc, status                            ! MPI error message
+  integer                               :: status_mpi(MPI_STATUS_SIZE)                 ! MPI status
+  integer                               :: myid, npet, CoresPerNode                    ! MPI dimensions and processor id
+  logical                               :: amOnFirstNode
+
+! System tracking variables
+! -----------------------------
+  character(len=*), parameter           :: Iam = 'omi_vlidort'
+
+! Initialize MPI with ESMF
+! ------------------------
+  call ESMF_Initialize (logkindflag=ESMF_LOGKIND_NONE, vm=vm, __RC__)
+
+  call ESMF_VMGet(vm, localPET=myid, PETcount=npet)
+  if ( MAPL_am_I_root() ) write(*,'(A,I4,A)')'Starting MPI on ',npet, ' processors'
 
 
     call GET_COMMAND_ARGUMENT(1,fp_filename)
@@ -951,4 +981,5 @@
   
      close(14)
      stop 'VLIDORT run was successful'
+  call ESMF_Finalize(__RC__)
 end program vlidort_test_gas_retrieval
