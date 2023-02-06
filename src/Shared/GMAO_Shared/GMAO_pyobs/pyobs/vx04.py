@@ -93,7 +93,7 @@ SDS = dict (
 
 
 
-# AOD Shannels
+# AOD Channels
 CHANNELS = dict (
                    DT_LAND = ( 480., 550., 670., 2250.),
                    DT_OCEAN = ( 480., 550., 670., 860., 1240., 1600., 2250. ),
@@ -102,8 +102,6 @@ CHANNELS = dict (
                    DT_SREF = ( 480., 670., 2250. ),
                    DB_SREF = (412., 488., 670. ),
                 )
-
-
 
 ALIAS = dict (  Longitude = 'lon',
                 Latitude = 'lat',
@@ -186,7 +184,7 @@ class Vx04_L2(object):
     """
 
     def __init__ (self,Path,algo,syn_time=None,nsyn=8,Verb=0,
-                  only_good=True,SDS=SDS,alias=None):
+                  only_good=True,SDS=SDS,alias=None,anet_wav=False):
        """
        Reads individual granules or a full day of Level 2 Vx04 files
        present on a given *Path* and returns a single object with
@@ -210,6 +208,9 @@ class Vx04_L2(object):
          SDS      --- Variables to be read from L2 Aerosol files.  Must 
                       be a dictionary with keys '{Algo}_META' and '{Algo}_{Surface}'
          ALIAS    --- dictionary of alises for SDSs
+         anet_wav --- angstrom interpolate retrieved AOD to common AERONET wavelengths
+                      e.g. 480 --> 490, 1600 --> 1640, 860 --> 870
+
 
        """
 
@@ -249,7 +250,7 @@ class Vx04_L2(object):
            Path = [Path, ]
        self._readList(Path)
 
-       #Protect against empty MXD04 files
+       #Protect against empty VX04 files
        # --------------------------------
        if len(self.Scattering_Angle) == 0:
            self.nobs = 0
@@ -342,7 +343,7 @@ class Vx04_L2(object):
        self.nobs = self.Scattering_Angle.shape[0]
        self.kx = KX[self.sat+'_'+self.algo]
        self.ident = IDENT[self.sat+'_'+self.algo]
-       self.channels = CHANNELS[self.algo]
+       self.channels = np.array(CHANNELS[self.algo])
        if Surface == 'LAND':
            self.sChannels = CHANNELS["{}_SREF".format(Algo)]   # LAND surface reflectivity (not the same as algo)           
 
@@ -353,7 +354,90 @@ class Vx04_L2(object):
        elif self.algo == 'DT_OCEAN':
            self.rChannels = np.array([480.,550.,670.,860.,1240.,1600.,2250.])
 
-       
+       # Angstrom interpolate to AERONET wavelengths for ease of comparison
+       # and to faciliate NNR ODS files
+       # DT: 480 --> 490, 860 --> 870, 1600 --> 1640
+       # DB: 488 --> 490, 865 --> 870
+       # ------------------------------------------------------------------
+       self.anet_wav = anet_wav
+       if anet_wav:
+           if 'DT' in self.algo:
+               tch = 490
+
+               ch = 550
+               ich = np.argmin(np.abs(self.channels - ch))
+               aod550 = self.aod[:,ich]
+               ch = 480
+               ich = np.argmin(np.abs(self.channels - ch))
+               aod480 = self.aod[:,ich]
+
+               aod_ = self.aodInterpAngs(tch,aod480,aod550,480,550)
+               self.channels[ich] = tch
+               self.aod[:.ich] = aod_
+
+           elif self.algo == 'DT_OCEAN':
+               tch = 870
+
+               ch = 670
+               ich = np.argmin(np.abs(self.channels - ch))
+               aod670 = self.aod[:,ich]
+               ch = 860
+               ich = np.argmin(np.abs(self.channels - ch))
+               aod860 = self.aod[:,ich]               
+
+               aod_ = self.aodInterpAngs(tch,aod670,aod860,670,860)
+               self.channels[ich] = tch
+               self.aod[:.ich] = aod_
+
+               tch = 1640
+
+               ch = 2250
+               ich = np.argmin(np.abs(self.channels - ch))
+               aod2250 = self.aod[:,ich]
+               ch = 1600
+               ich = np.argmin(np.abs(self.channels - ch))
+               aod1600 = self.aod[:,ich]               
+
+               aod_ = self.aodInterpAngs(tch,aod1600,aod2250,1600,2250)
+               self.channels[ich] = tch
+               self.aod[:.ich] = aod_               
+
+
+DB_LAND = ( 412, 488, 550, 670 ), # file has 550 separate
+DB_OCEAN = (488.,  550.,  670.,  865., 1240., 1640., 2250.),
+
+           elif 'DB' in self.algo:
+               tch = 490
+               
+               ch = 550
+               ich = np.argmin(np.abs(self.channels - ch))
+               aod550 = self.aod[:,ich]
+               ch = 488
+               ich = np.argmin(np.abs(self.channels - ch))
+               aod488 = self.aod[:,ich]               
+
+               aod_ = self.aodInterpAngs(tch,aod488,aod550,488,550)
+               self.channels[ich] = tch
+               self.aod[:.ich] = aod_               
+
+           elif self.algo == 'DB_OCEAN':
+               tch = 870
+
+               ch = 670
+               ich = np.argmin(np.abs(self.channels - ch))
+               aod670 = self.aod[:,ich]
+               ch = 865
+               ich = np.argmin(np.abs(self.channels - ch))
+               aod865 = self.aod[:,ich]
+
+               aod_ = self.aodInterpAngs(tch,aod670,aod865,670,865)
+               self.channels[ich] = tch
+               self.aod[:.ich] = aod_
+               
+
+
+       # ODS time variables
+       # -------------------
        if syn_time == None:
            self.syn_time = None
            self.time = None
@@ -383,6 +467,19 @@ class Vx04_L2(object):
        # Create a pseudo cloud fraction for Deep Blue
        if Algo == 'DB':
            self.cloud = 1. - self.npixels_used.astype(float)/self.npixels_valid.astype(float)
+
+
+#---
+    def aodInterpAngs(lambda_,tau1,tau2,lambda1,lambda2):
+        """
+           Angstrom-interpolated AOD.
+           lambda_ = target wavelength for AOD output
+        """
+        I = (tau1>0) & (tau2>0)
+        angstrom = -np.log(tau1[I]/tau2[I])/np.log(lambda1/lambda2)
+        tau = MISSING * np.ones(len(tau1))
+        tau[I] = tau2[I] * (lambda2/lambda_)**angstrom
+        return tau
 
 #---
     def _readList(self,List):
