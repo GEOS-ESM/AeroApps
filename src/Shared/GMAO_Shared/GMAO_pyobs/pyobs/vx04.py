@@ -402,10 +402,6 @@ class Vx04_L2(object):
                self.channels[ich] = tch
                self.aod[:.ich] = aod_               
 
-
-DB_LAND = ( 412, 488, 550, 670 ), # file has 550 separate
-DB_OCEAN = (488.,  550.,  670.,  865., 1240., 1640., 2250.),
-
            elif 'DB' in self.algo:
                tch = 490
                
