@@ -119,7 +119,9 @@ class MxD04_NNR(MxD04_L2):
                  scat_thresh=170.0,
                  cloudFree=None,
                  aodmax=1.0,
-                 coll='006',verbose=0):
+                 coll='006',
+                 nsyn=8,
+                 verbose=0):
         """
         Contructs a MXD04 object from MODIS Aerosol Level 2
         granules. On input,
@@ -134,7 +136,9 @@ class MxD04_NNR(MxD04_L2):
         cloud_tresh --- cloud fraction treshhold
         cloudFree   --- cloud fraction threshhold for assuring no cloud contaminations when aod is > aodmax
                         if None, no cloud free check is made
-              
+        coll         --- MODIS data collection
+        nsyn         --- number of synoptic times              
+
         The following attributes are also defined:
            fractions dust, sea salt, BC+OC, sulfate
            aod_coarse
@@ -153,15 +157,15 @@ class MxD04_NNR(MxD04_L2):
         
         # Initialize superclass
         # ---------------------
-        Files = granules(l2_path,prod,syn_time,coll=coll)
+        Files = granules(l2_path,prod,syn_time,coll=coll,nsyn=nsyn)
         if algo != "DEEP":
-            MxD04_L2.__init__(self,Files,algo,syn_time,
+            MxD04_L2.__init__(self,Files,algo,syn_time=syn_time,nsyn=nsyn,
                               only_good=True,
                               SDS=SDS,
                               alias={'Deep_Blue_Cloud_Fraction_Land':'cloud_deep'},
                               Verb=verbose)            
         else:        
-            MxD04_L2.__init__(self,Files,algo,syn_time,
+            MxD04_L2.__init__(self,Files,algo,syn_time=syn_time,nsyn=nsyn,
                               only_good=False,
                               SDS=SDS,                            
                               alias=ALIAS,
