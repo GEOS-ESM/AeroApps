@@ -1,108 +1,55 @@
 """
-This module implements the VIIRS NNR AOD retrievals.
+This module implements the MODIS NNR AOD retrievals.
 
-This version works from VIIRS DT & DT Level 2 files.
+This version works from MODIS MOD04/MYD04 Level 2 files.
+
+Modified to work for VIIRS.  Feb 2023 P. Castellanos
 
 """
 import os, sys
-import warnings
-from   pyobs.vx04  import Vx04_L2, MISSING, granules, BEST 
+from   pyobs.vx04 import Vx04_L2, MISSING, granules, SDS 
 from   ffnet       import loadnet
-from   numpy       import c_ as cat
-from   numpy       import copy, ones, sin, cos, exp, arccos, pi, any, log
 import numpy       as     np
-from   pyobs.bits  import BITS
-
-# SDS to be read in
-# ------------
-SDS = dict (
-     DT_META = ('longitude', 'latitude',
-              'sensor_zenith_angle', 'sensor_azimuth_angle',
-              'solar_zenith_angle', 'solar_azimuth_angle',
-              'Scattering_Angle', 'Glint_Angle'),
-     DT_LAND = ( 'Mean_Reflectance_Land',
-               'Corrected_Optical_Depth_Land',
-               'Surface_Reflectance_Land',
-               'Aerosol_Cloud_Fraction_Land',
-               'Land_Ocean_Quality_Flag'),
-     DT_OCEAN = ( 'Effective_Optical_Depth_Average_Ocean',
-               'Aerosol_Cloud_Fraction_Ocean',
-               'Mean_Reflectance_Ocean',
-               'Land_Ocean_Quality_Flag' ),
-     DB_META = ('Longitude', 'Latitude', 'Scan_Start_Time',
-              'Viewing_Zenith_Angle', 'Relative_Azimuth_Angle',
-              'Solar_Zenith_Angle',
-              'Scattering_Angle' ),
-     DB_LAND = ('Aerosol_Optical_Thickness_550_Land',
-               'Spectral_Aerosol_Optical_Thickness_Land',
-               'Spectral_Surface_Reflectance',
-               'Spectral_TOA_Reflectance_Land',
-               'Aerosol_Optical_Thickness_QA_Flag_Land',
-               'Algorithm_Flag_Land',
-               'Number_Of_Pixels_Used_Land',
-               'Number_Valid_Pixels'),
-     DB_OCEAN = ('Aerosol_Optical_Thickness_550_Ocean',
-               'Spectral_Aerosol_Optical_Thickness_Ocean',
-               'Spectral_TOA_Reflectance_Ocean',
-               'Aerosol_Optical_Thickness_QA_Flag_Ocean',
-               'Algorithm_Flag_Ocean',
-               'Number_Of_Pixels_Used_Ocean',
-               'Number_Valid_Pixels')
-        )
-
-
-# Channels for TOA reflectance 
-# -----------------------------
-CHANNELS  = dict (
-                   DT_LAND  = ( 480, 670, 2250),
-                   DT_OCEAN = ( 480, 550, 670, 860, 1240, 1600, 2250 ),
-                   DB_LAND  = ( 412, 488, 550, 670, 865, 1240, 1640, 2250 ),
-                   DB_OCEAN = ( 412, 488, 550, 670, 865, 1240, 1640, 2250 ),
-                 )
-
-SCHANNELS = dict (
-                   DT_LAND = ( 480, 670, 2250 ),
-                   DB_LAND = ( 412, 488, 670 ),
-                )
 
 
 # Translate Inputs between NNR and MODIS classes
 # -----------------------------------------------
-TranslateInput = dict ( mRef412  = ('reflectance',412),
-                        mRef480  = ('reflectance',480),
-                        mRef550  = ('reflectance',550),
-                        mRef670  = ('reflectance',670),
-                        mRef860  = ('reflectance',860),
-                        mRef1240 = ('reflectance',1240),
-                        mRef1600 = ('reflectance',1600),
-                        mRef2250 = ('reflectance',2250),
-                        mSre412  = ('sfc_reflectance',412),
-                        mSre480  = ('sfc_reflectance',480),
-                        mSre670  = ('sfc_reflectance',670),
-                        mSre2250 = ('sfc_reflectance',2250),       
-                      )
+def TranslateInput(key):
+    if 'mRef' in key:
+        prefix = 'reflectance'
+        channel = int(key[4:])
+        output = (prefix,channel)
+    elif 'mSre' in key:
+        prefix = 'sfc_reflectance'
+        channel = int(key[4:])
+        output = (prefix,channel)
+    else:
+        output = (key,)
 
-for var in ( 'ScatteringAngle','GlintAngle',
-             'SolarAzimuth', 'SolarZenith',
-             'SensorAzimuth','SensorZenith',
-             'cloud','qa_flag'  ):
-    TranslateInput[var] = (var,)
+
+    return output
+
 
 # Translate Targets between ANET and MODIS classes
 # ------------------------------------------------
-TranslateTarget = dict ( aTau440 = ( 'aod_', 440 ),
-                         aTau470 = ( 'aod_', 470 ),
-                         aTau500 = ( 'aod_', 500 ),
-                         aTau550 = ( 'aod_', 550 ),
-                         aTau660 = ( 'aod_', 660 ),
-                         aTau870 = ( 'aod_', 870 ),
-                         )
+def TranslateTarget(key):
+    if 'aTau' in key:
+        prefix = 'aod_'
+        channel = int(key[4:])
+        output = (prefix, channel)
+    elif 'aAE' in key:
+        prefix = 'aod_'
+        channel = int(key[3:])
+        output = (prefix,channel)
+
+    return output
+
 
 class Vx04_NNR(Vx04_L2):
     """
     This class extends VIIRS by adding methods for producing
     NNR AOD retrievals based on the Neural Net model developed
-    with class *abc_c6*.
+    with class *abc_viirs*.
     """
 
     def __init__(self,l2_path,sat,algo,syn_time,aer_x,
@@ -111,30 +58,36 @@ class Vx04_NNR(Vx04_L2):
                  scat_thresh=170.0,
                  cloudFree=None,
                  aodmax=1.0,
-                 coll='011',verbose=0):
+                 coll='002',
+                 nsyn=8,
+                 verbose=0):
         """
         Contructs a VX04 object from VIIRS Aerosol Level 2
         granules. On input,
 
-         l2_path --- top directory for the VIIRS Level 2 files;
-                      it must have subdirectories AERDB_inst and AERDT_inst.
-            sat  --- either *SNPP* (Suomi-NPP) or *NOAA20* (NOAA-20)
-            algo --- aerosol algorithm: DT_LAND, DT_OCEAN, DB_LAND, or DB_OCEAN
+        l2_path  --- top directory for the VIIRS Level 2 files;
+                      it must have subdirectories AERDB and/or AERDT.
+        sat      --- satellite, either SNPP or NOAAXX (e.g. NOAA20)
+        algo     --- Algorithm: DT_LAND, DT_OCEAN, DB_LAND or DB_OCEAN
         syn_time --- synoptic time
+        aer_x    --- GEOS control file of aerosol collection
 
-        cloud_tresh --- cloud fraction treshhold
-        cloudFree   --- cloud fraction threshhold for assuring no cloud contaminations when aod is > aodmax
+        Optional parameters:
+        glint_thresh --- glint angle threshhold
+        scat_thresh  --- scattering angle thresshold
+        cloud_tresh  --- cloud fraction threshhold
+        cloudFree    --- cloud fraction threshhold for assuring no cloud contaminations when aod is > aodmax
                         if None, no cloud free check is made
+        coll         --- VIIRS data collection
+        nsyn         --- number of synoptic times
               
         The following attributes are also defined:
            fractions dust, sea salt, BC+OC, sulfate
+           aod_coarse
+           wind
            
         It also performs Q/C, setting attribute iGood. On,
         input, *cloud_thresh* is the cloud fraction limit.
-
-        (For right now this is not implemented)
-        When DEEP BLUE algorithm is requested, filters for 
-        retrievals where DARK TARGET obs are unavailable. 
         """
 
         self.verbose = verbose
@@ -143,99 +96,42 @@ class Vx04_NNR(Vx04_L2):
         self.aodmax = aodmax
         
         # Initialize superclass
-        # ---------------------
-        Files = granules(l2_path,algo,sat,syn_time,coll=coll)
-        Vx04_L2.__init__(self,Files,algo,syn_time,
+        # set anet_wav to True so MODIS wavelengths align with AERONET
+        # Needed for ODS files
+        # -------------------------------------------------------------
+        Files = granules(l2_path,algo,sat,syn_time,coll=coll,nsyn=nsyn)
+        Vx04_L2.__init__(self,Files,algo,syn_time=syn_time,nsyn=nsyn,
                               only_good=True,
-                              SDS=SDS,                            
-                              Verb=verbose)
+                              SDS=SDS,
+                              alias=None,
+                              Verb=verbose,
+                              anet_wav=True)            
 
         if self.nobs < 1:
             return # no obs, nothing to do
 
-        # Channels
-        # -----------------------------
-        self.rChannels = CHANNELS[algo]
-        if algo in SCHANNELS:
-            self.sChannels = SCHANNELS[algo]
-
-
-        # DB Algorithm only used when Dark Target data is unavailable
-        # (Not currently implemented)
-        # --------------------------------------------------------------
-
-#        if algo == "DEEP":
-#            # Get DARK TARGET qa_flag
-#            self.qa_flag_lnd = BITS(self.Quality_Assurance_Land[:,0])[1:4]            
-#            lndGood = self.qa_flag_lnd == BEST
-#            lndGood = lndGood & (self.cloud_lnd < cloud_thresh)
-#            rChannels = CHANNELS["LAND"]
-#            sChannels = SCHANNELS["LAND"]
-#            for i,c in enumerate(rChannels):
-#                lndGood = lndGood & (self.reflectance_lnd[:,i]>0)
-
-#            for i,c in enumerate(sChannels):
-#                lndGood = lndGood & (self.sfc_reflectance_lnd[:,i]>0)
-
-#            self.iGood = (self.qa_flag == BEST) & ~lndGood
-
-#            # Keep only "good" observations
-#            # -----------------------------
-#            m = self.iGood
-#            for sds in self.SDS:
-#                rank = len(self.__dict__[sds].shape)
-#                if rank == 1:
-#                    self.__dict__[sds] = self.__dict__[sds][m]
-#                elif rank == 2:
-#                    self.__dict__[sds] = self.__dict__[sds][m,:]
-#                else:
-#                    raise IndexError, 'invalid rank=%d'%rank
-
-#            # Reset aliases
-#            for sds in self.SDS:
-#                if sds in self.ALIAS:
-#                    self.__dict__[self.ALIAS[sds]] = self.__dict__[sds] 
-
-
-#            self.qa_flag = self.qa_flag[m]
-#            self.aod     = self.aod[m,:]
-#            self.time    = self.time[m]
-#            self.Time    = self.Time[m]
-#            self.iGood   = self.iGood[m] 
-#            self.nobs    = self.Longitude.shape[0]         
-
-#            if self.nobs < 1:
-#                return # no obs, nothing to do             
-
-
         # Q/C
         # ---      
         self.iGood = self.cloud<cloud_thresh  
-#        if algo == "LAND":
-#            self.iGood = self.iGood & (self.cloud_deep<cloud_thresh)
-#        elif algo == "DEEP":
-#            self.iGood = self.iGood & (self.cloud_lnd<cloud_thresh)
 
         for i,c in enumerate(self.rChannels):
             self.iGood = self.iGood & (self.reflectance[:,i]>0)
 
-        if algo in SCHANNELS:
+        if "LAND" in algo:
+            self.iGood = self.iGood & (self.ScatteringAngle < scat_thresh)
             for i,c in enumerate(self.sChannels):
                 self.iGood = self.iGood & (self.sfc_reflectance[:,i]>0)
 
         if "OCEAN" in algo:
             self.iGood = self.iGood & (self.GlintAngle > glint_thresh)
 
-        if "LAND" in algo:
-            self.iGood = self.iGood & (self.ScatteringAngle < scat_thresh)
-
-        if any(self.iGood) == False:
+        if np.any(self.iGood) == False:
             print "WARNING: Strange, no good obs left to work with"
             return
 
         # Create attribute for holding NNR predicted AOD
         # ----------------------------------------------
-        self.aod_ = MISSING * ones((self.nobs,len(self.channels)))
+        self.aod_ =  MISSING * ones((self.nobs,len(self.channels)))
 
         # Make sure same good AOD is kept for gridding
         # --------------------------------------------
@@ -246,12 +142,12 @@ class Vx04_NNR(Vx04_L2):
 
         # Angle transforms: for NN calculations we work with cosine of angles
         # -------------------------------------------------------------------
-        self.ScatteringAngle = cos(self.ScatteringAngle*pi/180.0) 
-        self.SensorAzimuth   = cos(self.SensorAzimuth*pi/180.0)   
-        self.SensorZenith    = cos(self.SensorZenith*pi/180.0)    
-        self.SolarAzimuth    = cos(self.SolarAzimuth*pi/180.0)    
-        self.SolarZenith     = cos(self.SolarZenith*pi/180.0)     
-        self.GlintAngle      = cos(self.GlintAngle*pi/180.0)
+        self.ScatteringAngle = np.cos(self.ScatteringAngle*np.pi/180.0) 
+        self.SensorAzimuth   = np.cos(self.SensorAzimuth*np.pi/180.0)   
+        self.SensorZenith    = np.cos(self.SensorZenith*np.pi/180.0)    
+        self.SolarAzimuth    = np.cos(self.SolarAzimuth*np.pi/180.0)    
+        self.SolarZenith     = np.cos(self.SolarZenith*np.pi/180.0)     
+        self.GlintAngle      = np.cos(self.GlintAngle*np.pi/180.0)
 
         # Get fractional composition
         # ------------------------------
@@ -288,6 +184,14 @@ class Vx04_NNR(Vx04_L2):
             self.fsu += self.sample.NIEXTTAU / s.TOTEXTTAU
         except:
             pass   # ignore it for systems without nitrates
+
+        # Handle brown carbon 
+        # --------------------
+        try:
+            self.sampleFile(aer_x,onlyVars=('BRCEXTTAU',),Verbose=Verbose)
+            self.fcc += self.sample.BRCEXTTAU / s.TOTEXTTAU
+        except:
+            pass   # ignore it for systems without brown carbon
 
         del self.sample
 
@@ -360,22 +264,16 @@ class Vx04_NNR(Vx04_L2):
         # ----------------
         first = True
         for inputName in self.net.InputNames:
-            try:
-                iName = TranslateInput[inputName]
-            except:
-                iName = inputName
+            iName = TranslateInput(inputName)
 
             if self.verbose>0:
                 print 'Getting NN input ',iName
 
             # Retrieve input
             # --------------
-            if type(iName) is str:
-                input = self.__dict__[iName][:]
-
-            elif len(iName) == 2:
+            if len(iName) == 2:
                 name, ch = iName
-                if 'mSre' in inputName: # LAND, surface reflectivity
+                if 'mSre' in inputName: # LAND surface reflectivity
                     k = list(self.sChannels).index(ch) # index of channel 
                 elif 'mRef' in inputName: # TOA reflectances
                     k = list(self.rChannels).index(ch) # index of channel 
@@ -395,7 +293,7 @@ class Vx04_NNR(Vx04_L2):
                 inputs = input
                 first = False
             else:
-                inputs = cat[inputs,input]
+                inputs = np.c_[inputs,input]
 
         # Keep only good observations
         # ---------------------------
@@ -407,11 +305,11 @@ class Vx04_NNR(Vx04_L2):
         Apply bias correction to AOD.
         """
 
-        # Stop here is no good obs available
+        # Stop here if no good obs available
         # ----------------------------------
         if self.nobs == 0:
             return # no data to work with
-        if any(self.iGood) == False:
+        if np.any(self.iGood) == False:
             return # no good data to work with
 
         # Load the Neural Net
@@ -422,24 +320,50 @@ class Vx04_NNR(Vx04_L2):
         # ---------------------
         targets = self.net(self._getInputs())
 
+        # If target is angstrom exponent
+        # calculate AOD
+        # ------------------------------
+        doAE = False
+        for targetName in self.net.TargetNames:
+            if 'AE' in targetName:
+                doAE = True
 
-        # Targets do not have to be in standard retrieval
+        if doAE:
+            for i,targetName in enumerate(self.net.TargetNames):
+                if 'Tau' in targetName:
+                    name, base_wav = TranslateTarget[targetName]
+                    base_wav = np.float(base_wav)
+                    base_tau = targets[:,i]
+                    if self.net.laod:
+                        base_tau = exp(base_tau) - 0.01 # inverse
+            for i,targetName in enumerate(self.net.TargetNames):
+                if 'AE' in targetName:
+                    AE = targets[:,i]
+                    name, wav = TranslateTarget[targetName]
+                    wav = np.float(wav)
+                    data = base_tau*np.exp(-1.*AE*np.log(wav/base_wav))
+                    if self.net.laod:
+                        targets[:,i] = np.log(data + 0.01)
+                    else:
+                        targets[:,i] = data
+
+        # Targets do not have to be in VIIRS retrieval
         # ----------------------------------------------
         for i,targetName in enumerate(self.net.TargetNames):
-            name, ch = TranslateTarget[targetName]
+            name, ch = TranslateTarget(targetName)
             try:
                 k = list(self.channels).index(ch) # index of channel            
             except:
                 # add new target channel to end
                 self.channels += (ch,)
-                self.aod  = np.append(self.aod,MISSING*ones((self.nobs,1)),axis=1)
-                self.aod_ = np.append(self.aod_,MISSING*ones((self.nobs,1)),axis=1)
+                self.aod  = np.append(self.aod,MISSING*np.ones((self.nobs,1)),axis=1)
+                self.aod_ = np.append(self.aod_,MISSING*np.ones((self.nobs,1)),axis=1)
 
         # Replace targets with unbiased values
         # ------------------------------------
         self.channels_ = [] # channels being revised
         for i,targetName in enumerate(self.net.TargetNames):
-            name, ch = TranslateTarget[targetName]
+            name, ch = TranslateTarget(targetName)
             if self.verbose>0:
                 if self.net.laod:
                     print "NN Retrieving log(AOD+0.01) at %dnm "%ch
@@ -448,7 +372,7 @@ class Vx04_NNR(Vx04_L2):
             k = list(self.channels).index(ch) # index of channel            
             self.channels_ = self.channels_ + [ch,]
             if self.net.laod:
-                result = exp(targets[:,i]) - 0.01 # inverse
+                result = np.exp(targets[:,i]) - 0.01 # inverse
             else:
                 result = targets[:,i]
 
@@ -458,22 +382,16 @@ class Vx04_NNR(Vx04_L2):
         # Do extra cloud filtering if required
         if self.cloudFree is not None:                 
             cloudy = (self.cloud>=self.cloudFree)
-#            if self.algo == "LAND":
-#                cloudy = (self.cloud_deep>=self.cloudFree) & (self.cloud>=self.cloudFree)
-#            elif self.algo == "DEEP":
-#                cloudy = (self.cloud_lnd>=self.cloudFree) & (self.cloud>=self.cloudFree)
-#            elif self.algo == "OCEAN":
-#                cloudy = (self.cloud>=self.cloudFree)
     
             contaminated = np.zeros(np.sum(self.iGood)).astype(bool)
             for targetName in self.net.TargetNames:
-                name, ch = TranslateTarget[targetName]
+                name, ch = TranslateTarget(targetName)
                 k = list(self.channels).index(ch) # index of channel
                 result = self.__dict__[name][self.iGood,k]
                 contaminated = contaminated | ( (result > self.aodmax) & cloudy[self.iGood] )
                 
             for targetName in self.net.TargetNames:
-                name, ch = TranslateTarget[targetName]
+                name, ch = TranslateTarget(targetName)
                 k = list(self.channels).index(ch) # index of channel
                 self.__dict__[name][self.iGood,k][contaminated] = MISSING
 
@@ -494,25 +412,23 @@ if __name__ == "__main__":
 
     from datetime import datetime
 
-    l2_path = '/nobackup/VIIRS/'
-    algo    = 'DB_LAND'
+    l2_path = '/nobackup/VIIRS/AERDB/SNPP'
     sat     = 'SNPP'
-    coll    = '011'
+    algo    = 'DB_LAND'
+    coll    = '002'
     aer_x   = '/nobackup/NNR/Misc/tavg1_2d_aer_Nx'
 
-    syn_time = datetime(2016,12,19,15,0,0)
+    syn_time = datetime(2012,03,01,00,0,0)
 
-    if algo == 'OCEAN':
-        nn_file = '/nobackup/NNR/Net/nnr_003.mydo_Tau.net'
-    elif algo == 'LAND':
-        nn_file = '/nobackup/NNR/Net/nnr_003.mydl_Tau.net'
-    elif algo == 'DEEP':
-        nn_file = '/nobackup/NNR/Net/nnr_003.mydd_Tau.net'
+    if algo == 'DB_LAND':
+        nn_file = '/nobackup/NNR/Net/VIIRS/nnr_001.vsnppdbl_Tau.net'
 
-    m = Vx04_NNR(l2_path,algo.upper(),sat,syn_time,aer_x,
+    m = Vx04_NNR(l2_path,sat,algo,syn_time,aer_x,
                   coll=coll,
                   cloud_thresh=0.7,
                   verbose=True)
 
     m.apply(nn_file)
     aod = m.aod_
+
+
