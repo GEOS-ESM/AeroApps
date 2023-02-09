@@ -11,6 +11,10 @@ from   pyobs.vx04 import Vx04_L2, MISSING, granules, SDS
 from   ffnet       import loadnet
 import numpy       as     np
 
+ALIAS = dict( TOA_NDVI = 'ndvi',
+              Total_Column_Ozone = 'colO3',
+              Precipitable_Water = 'water',
+              )
 
 # Translate Inputs between NNR and MODIS classes
 # -----------------------------------------------
@@ -103,7 +107,7 @@ class Vx04_NNR(Vx04_L2):
         Vx04_L2.__init__(self,Files,algo,syn_time=syn_time,nsyn=nsyn,
                               only_good=True,
                               SDS=SDS,
-                              alias=None,
+                              alias=ALIAS,
                               Verb=verbose,
                               anet_wav=True)            
 
@@ -131,7 +135,7 @@ class Vx04_NNR(Vx04_L2):
 
         # Create attribute for holding NNR predicted AOD
         # ----------------------------------------------
-        self.aod_ =  MISSING * ones((self.nobs,len(self.channels)))
+        self.aod_ =  MISSING * np.ones((self.nobs,len(self.channels)))
 
         # Make sure same good AOD is kept for gridding
         # --------------------------------------------
@@ -143,9 +147,8 @@ class Vx04_NNR(Vx04_L2):
         # Angle transforms: for NN calculations we work with cosine of angles
         # -------------------------------------------------------------------
         self.ScatteringAngle = np.cos(self.ScatteringAngle*np.pi/180.0) 
-        self.SensorAzimuth   = np.cos(self.SensorAzimuth*np.pi/180.0)   
+        self.RelativeAzimuth   = np.cos(self.RelativeAzimuth*np.pi/180.0)   
         self.SensorZenith    = np.cos(self.SensorZenith*np.pi/180.0)    
-        self.SolarAzimuth    = np.cos(self.SolarAzimuth*np.pi/180.0)    
         self.SolarZenith     = np.cos(self.SolarZenith*np.pi/180.0)     
         self.GlintAngle      = np.cos(self.GlintAngle*np.pi/180.0)
 
@@ -331,15 +334,15 @@ class Vx04_NNR(Vx04_L2):
         if doAE:
             for i,targetName in enumerate(self.net.TargetNames):
                 if 'Tau' in targetName:
-                    name, base_wav = TranslateTarget[targetName]
+                    name, base_wav = TranslateTarget(targetName)
                     base_wav = np.float(base_wav)
                     base_tau = targets[:,i]
                     if self.net.laod:
-                        base_tau = exp(base_tau) - 0.01 # inverse
+                        base_tau = np.exp(base_tau) - 0.01 # inverse
             for i,targetName in enumerate(self.net.TargetNames):
                 if 'AE' in targetName:
                     AE = targets[:,i]
-                    name, wav = TranslateTarget[targetName]
+                    name, wav = TranslateTarget(targetName)
                     wav = np.float(wav)
                     data = base_tau*np.exp(-1.*AE*np.log(wav/base_wav))
                     if self.net.laod:
@@ -355,7 +358,7 @@ class Vx04_NNR(Vx04_L2):
                 k = list(self.channels).index(ch) # index of channel            
             except:
                 # add new target channel to end
-                self.channels += (ch,)
+                self.channels = np.append(self.channels,ch)
                 self.aod  = np.append(self.aod,MISSING*np.ones((self.nobs,1)),axis=1)
                 self.aod_ = np.append(self.aod_,MISSING*np.ones((self.nobs,1)),axis=1)
 
