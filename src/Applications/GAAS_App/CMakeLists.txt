@@ -40,6 +40,8 @@ set (PYSCRIPTS
     modis_l2a.py
     mxd04_l2a.py
     patmosx_l2a.py
+    viirs_l2a.py
+    vx04_l2a.py
     )
 
 set (SCRIPTS
@@ -76,6 +78,7 @@ set (RCFILES
 set (PCFFILES
     avhrr_l2a.pcf
     modis_l2a.pcf
+    viirs_l2a.pcf
     )
 
 install (
