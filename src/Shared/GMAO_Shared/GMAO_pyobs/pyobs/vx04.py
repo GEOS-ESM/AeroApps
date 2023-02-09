@@ -130,13 +130,13 @@ ALIAS = dict (  Longitude = 'lon',
                 Spectral_TOA_Reflectance_Land = 'reflectance',
                 TOA_NDVI = 'NDVI',
                 Spectral_Single_Scattering_Albedo_Land = 'ssa',
-                Algorithm_Flag_Land = 'aflag',
+                Algorithm_Flag_Land = 'algflag',
                 Aerosol_Type_Land = 'atype',
                 Angstrom_Exponent_Land = 'angstrom',
                 Spectral_Aerosol_Optical_Thickness_Ocean = 'aod',
                 Aerosol_Optical_Thickness_550_Ocean = 'aod550',
                 Spectral_TOA_Reflectance_Ocean = 'reflectance',
-                Algorithm_Flag_Ocean = 'aflag',
+                Algorithm_Flag_Ocean = 'algflag',
                 Aerosol_Type_Ocean = 'atype',
                 Angstrom_Exponent_Ocean = 'angstrom',                
                 Number_Of_Pixels_Used_Ocean = 'npixels_used',
@@ -155,10 +155,10 @@ BAD, MARGINAL, GOOD, BEST = ( 0, 1, 2, 3 ) # DT QA marks
 translate_sat = {'Suomi-NPP': 'SNPP'}
 
 
-KX = dict ( SNPP_DT_OCEAN = 301,
-            SNPP_DT_LAND  = 302,
-            SNPP_DB_OCEAN  = 310,
-            SNPP_DB_LAND  = 311, 
+KX = dict ( SNPP_DT_OCEAN = 401,
+            SNPP_DT_LAND  = 402,
+            SNPP_DB_OCEAN  = 403,
+            SNPP_DB_LAND  = 404, 
           )
 
 KT = dict ( AOD = 45, )
@@ -354,15 +354,28 @@ class Vx04_L2(object):
        elif self.algo == 'DT_OCEAN':
            self.rChannels = np.array([480.,550.,670.,860.,1240.,1600.,2250.])
 
+       # Concatenate AOD channels for Deep Blue
+       # --------------------------------------
+       if self.algo == 'DB_LAND':
+           try:
+               self.aod = np.ones((self.nobs,4))
+               self.aod[:,0] = self.aod3ch[:,0]
+               self.aod[:,1] = self.aod3ch[:,1]
+               self.aod[:,2] = self.aod550[:]
+               self.aod[:,3] = self.aod3ch[:,2]
+           except:
+               pass # don't fuss, aod3ch may not have been read
+
+
        # Angstrom interpolate to AERONET wavelengths for ease of comparison
        # and to faciliate NNR ODS files
-       # DT: 480 --> 490, 860 --> 870, 1600 --> 1640
-       # DB: 488 --> 490, 865 --> 870
+       # DT: 480 --> 470, 860 --> 870, 1600 --> 1640
+       # DB: 488 --> 470, 865 --> 870
        # ------------------------------------------------------------------
        self.anet_wav = anet_wav
        if anet_wav:
            if 'DT' in self.algo:
-               tch = 490
+               tch = 470
 
                ch = 550
                ich = np.argmin(np.abs(self.channels - ch))
@@ -373,7 +386,7 @@ class Vx04_L2(object):
 
                aod_ = self.aodInterpAngs(tch,aod480,aod550,480,550)
                self.channels[ich] = tch
-               self.aod[:.ich] = aod_
+               self.aod[:,ich] = aod_
 
            elif self.algo == 'DT_OCEAN':
                tch = 870
@@ -387,7 +400,7 @@ class Vx04_L2(object):
 
                aod_ = self.aodInterpAngs(tch,aod670,aod860,670,860)
                self.channels[ich] = tch
-               self.aod[:.ich] = aod_
+               self.aod[:,ich] = aod_
 
                tch = 1640
 
@@ -400,10 +413,10 @@ class Vx04_L2(object):
 
                aod_ = self.aodInterpAngs(tch,aod1600,aod2250,1600,2250)
                self.channels[ich] = tch
-               self.aod[:.ich] = aod_               
+               self.aod[:,ich] = aod_               
 
            elif 'DB' in self.algo:
-               tch = 490
+               tch = 470
                
                ch = 550
                ich = np.argmin(np.abs(self.channels - ch))
@@ -414,7 +427,7 @@ class Vx04_L2(object):
 
                aod_ = self.aodInterpAngs(tch,aod488,aod550,488,550)
                self.channels[ich] = tch
-               self.aod[:.ich] = aod_               
+               self.aod[:,ich] = aod_               
 
            elif self.algo == 'DB_OCEAN':
                tch = 870
@@ -428,7 +441,7 @@ class Vx04_L2(object):
 
                aod_ = self.aodInterpAngs(tch,aod670,aod865,670,865)
                self.channels[ich] = tch
-               self.aod[:.ich] = aod_
+               self.aod[:,ich] = aod_
                
 
 
@@ -448,17 +461,6 @@ class Vx04_L2(object):
            self.nhms = 10000 * syn_time.hour + 100*syn_time.minute + syn_time.second
            self.nsyn = nsyn # number of synoptic times per day
 
-       # Concatenate AOD channels for Deep Blue
-       # --------------------------------------
-       if self.algo == 'DB_LAND':
-           try: 
-               self.aod = np.ones((self.nobs,4))
-               self.aod[:,0] = self.aod3ch[:,0]
-               self.aod[:,1] = self.aod3ch[:,1]
-               self.aod[:,2] = self.aod550[:]
-               self.aod[:,3] = self.aod3ch[:,2]
-           except:
-               pass # don't fuss, aod3ch may not have been read
 
        # Create a pseudo cloud fraction for Deep Blue
        if Algo == 'DB':
@@ -466,7 +468,7 @@ class Vx04_L2(object):
 
 
 #---
-    def aodInterpAngs(lambda_,tau1,tau2,lambda1,lambda2):
+    def aodInterpAngs(self,lambda_,tau1,tau2,lambda1,lambda2):
         """
            Angstrom-interpolated AOD.
            lambda_ = target wavelength for AOD output
@@ -726,7 +728,7 @@ class Vx04_L2(object):
         ks = np.arange(ns) + 1
         for ch in channels:
             I = range(i,i+ns)
-            j = channels.index(ch)
+            j = list(channels).index(ch) # index of channel
             ods.ks[I]  = ks
             ods.lat[I] = self.lat[:]
             ods.lon[I] = self.lon[:]
