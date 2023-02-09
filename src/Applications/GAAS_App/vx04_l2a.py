@@ -27,10 +27,10 @@ from dateutil.parser import parse as isoparse
 from vx04_nnr       import Vx04_NNR
 from MAPL            import strTemplate
 
-Ident = dict( vsnppdto = ('SNPP04','dt_ocean'),
-              vsnppdtl = ('SNPP04','dt_land'),
-              vsnppdbo = ('SNPP04','db_ocean'),
-              vsnppdbl = ('SNPP04','db_land')
+Ident = dict( vsnppdto = ('SNPP','dt_ocean'),
+              vsnppdtl = ('SNPP','dt_land'),
+              vsnppdbo = ('SNPP','db_ocean'),
+              vsnppdbl = ('SNPP','db_land')
             )
 
 #---------------------------------------------------------------------
@@ -129,7 +129,8 @@ if __name__ == "__main__":
     
     if len(args) == 2:
         ident, isotime = args
-        prod, algo = Ident[ident]
+        sat, algo = Ident[ident]
+        prod = sat + '04'
     else:
         parser.error("must have 3 arguments: ident, date and time")
 
@@ -182,9 +183,9 @@ if __name__ == "__main__":
 #   VIIRS Level 2 NNR Aerosol Retrievals
 #   ------------------------------------
     if options.verbose:
-        print "NNR Retrieving %s %s on "%(prod,algo.upper()),syn_time
+        print "NNR Retrieving %s %s on "%(sat,algo.upper()),syn_time
 
-    viirs = Vx04_NNR(options.l2_path,prod,algo.upper(),syn_time,aer_x,
+    viirs = Vx04_NNR(options.l2_path,sat,algo.upper(),syn_time,aer_x,
                       coll=options.coll,
                       cloud_thresh=0.7,
                       cloudFree = 0.0,
