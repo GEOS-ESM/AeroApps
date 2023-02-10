@@ -473,10 +473,11 @@ class Vx04_L2(object):
            Angstrom-interpolated AOD.
            lambda_ = target wavelength for AOD output
         """
-        I = (tau1>0) & (tau2>0)
-        angstrom = -np.log(tau1[I]/tau2[I])/np.log(lambda1/lambda2)
         tau = MISSING * np.ones(len(tau1))
-        tau[I] = tau2[I] * (lambda2/lambda_)**angstrom
+        I = (tau1>0) & (tau2>0)
+        if any(I):
+            angstrom = -np.log(tau1[I]/tau2[I])/np.log(float(lambda1)/float(lambda2))
+            tau[I] = tau2[I] * (lambda2/lambda_)**angstrom
         return tau
 
 #---
