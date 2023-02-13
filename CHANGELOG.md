@@ -4,18 +4,32 @@
 
 ### Added
 
+### Fixed
+
+### Changed
+
+- Updated to use latest components (matching GEOSgcm v10.25.0)
+
+## [v1.0.0] - 2022-06-17
+
+### Changed
+
+- Converted to mepo, cmake, and v3 giant files
+
+### Added
+
 - initial support for mepo
 - initial treatment for cmake
 - legacy MAPL_Base/Python/MAPL into latest MAPL on develop branch
 
 ### Fixed
-- Moved src/GMAO_Shared to src/Shared/GMAO_Shared
 
-### Changed
+- Moved src/GMAO_Shared to src/Shared/GMAO_Shared
+- obs_aod codes now work with v3 giant files
 
 ## [0.99.0] - 2020-03-23
 
-Intial GitHub release.
+Initial GitHub release.
 
 ### Added
   - Open source license
