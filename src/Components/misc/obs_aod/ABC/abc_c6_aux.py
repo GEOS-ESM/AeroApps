@@ -1097,9 +1097,10 @@ def TestStats(mxd,K,C):
     # out.shape = [ntestobs,nTarget]
     out, reg = mxd.test(iprint=False)
 
-    mxd.nnr.slope[k,c,:]     = reg[:][0]
-    mxd.nnr.intercept[k,c,:] = reg[:][1]
-    mxd.nnr.R[k,c,:]         = reg[:][2]
+    reg = np.array(reg)
+    mxd.nnr.slope[k,c,:]     = reg[:,0]
+    mxd.nnr.intercept[k,c,:] = reg[:,1]
+    mxd.nnr.R[k,c,:]         = reg[:,2]
 
     targets  = mxd.getTargets(mxd.iTest)
 
