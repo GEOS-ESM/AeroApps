@@ -25,3 +25,8 @@ MAPL:
   branch: feature/mathomp4/add-shavemantissa-python
   develop: develop
 
+GMAOpyobs:
+  local: ./src/Shared/GMAO_Shared/GMAO_pyobs@
+  remote: ../GMAOpyobs.git
+  branch: develop
+  develop: develop
