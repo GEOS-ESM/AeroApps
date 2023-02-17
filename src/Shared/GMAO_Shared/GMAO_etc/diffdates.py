@@ -10,4 +10,4 @@ yyyy,mm,dd,hh = splitdate(verifdate)
 verifdate = datetime.datetime(yyyy,mm,dd,hh)
 diff = verifdate - analdate
 hours = diff.seconds/3600
-print '%s' % diff.days, '%s' % hours
+print('%s' % diff.days, '%s' % hours)
