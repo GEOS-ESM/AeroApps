@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to generate GEOS-5 file spec information, a.k.a.
@@ -71,7 +71,7 @@ class Writer(object):
             a, b, c, d = dims
             dim = get1d(a) + get1d(b) + get1d(c) + get1d(d)
         else:
-            raise ValueError, 'invalid dimensions: %s for <%s>'%(str(dims),vname)
+            raise ValueError('invalid dimensions: %s for <%s>'%(str(dims),vname))
         descr = var.long_name.replace('__ENSEMBLE__','').replace('_',' ')
         self.row(vname,dim,descr,var.units)
     
@@ -191,21 +191,21 @@ class stdoutWriter(Writer):
         self.secn = 0
     def section(self,collection,description):
         self.secn += 1
-        print
-        print
-        print "%d) Collection %s: %s"%(self.secn,collection,description)
-        print
+        print()
+        print()
+        print("%d) Collection %s: %s"%(self.secn,collection,description))
+        print()
     def property(self,name,value):
-        print "%19s: %s"%(name,value)
+        print("%19s: %s"%(name,value))
     def table(self,choice='header'):
         if choice == 'header':
-            print
-            print " -----------|------|------------------------------------------------------------|------------"
-            print "   Name     | Dims |                     Description                            |    Units   "
-        print " -----------|------|------------------------------------------------------------|------------"
+            print()
+            print(" -----------|------|------------------------------------------------------------|------------")
+            print("   Name     | Dims |                     Description                            |    Units   ")
+        print(" -----------|------|------------------------------------------------------------|------------")
         return
     def row(self,vname,dim,descr,units):
-        print ' %-10s | %4s | %-58s | %-10s '%(vname,dim,descr,units)
+        print(' %-10s | %4s | %-58s | %-10s '%(vname,dim,descr,units))
 
     def close(self):
         pass
@@ -465,7 +465,7 @@ if __name__ == "__main__":
     if options.history is not None:
         cf = Config(options.history)
         Descr = dict()
-        for v in cf.keys():
+        for v in list(cf.keys()):
             v_ = v.replace('-.descr','.descr')
             Descr[v_] = cf(v)
     else:
@@ -478,7 +478,7 @@ if __name__ == "__main__":
     if options.nature: n+=1
     if options.fp:     n+=1
     if n>1:
-       raise 'ValueError', 'only one of -N, -M, -F can be specified'
+       raise ValueError('only one of -N, -M, -F can be specified')
 
     # Instantiate writer
     # ------------------
@@ -491,11 +491,11 @@ if __name__ == "__main__":
         writer = stdoutWriter(options.outFile)
     elif 'rtf' in options.format:
         if not HAS_RTF:
-            raise ValueError, 'PyRTF is not installed, therefore format RTF is not available'
+            raise ValueError('PyRTF is not installed, therefore format RTF is not available')
         options.outFile = name + '.doc'
         writer = rtfWriter(options.outFile)
     else:
-        raise ValueError, "unsupported format <%s>"%options.format
+        raise ValueError("unsupported format <%s>"%options.format)
 
     # Unique name of collections
     # --------------------------
@@ -528,7 +528,7 @@ if __name__ == "__main__":
     for name in sorted(CollNames):
         collname = CollNames[name]
         if options.verbose:
-            print "[] Working on collection <%s>"%collname
+            print("[] Working on collection <%s>"%collname)
         fname = Files[collname]
         Collection = getCollection(fname,collname)
         if cf is not None:
