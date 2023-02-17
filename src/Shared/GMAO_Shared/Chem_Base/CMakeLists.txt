@@ -18,9 +18,9 @@ target_compile_definitions (${this} PRIVATE GEOS5)
 
 ecbuild_add_executable(TARGET gogo.x SOURCES gogo.F90 LIBS ${this})
 
-find_package(F2PY2 REQUIRED)
-# MAT: Note uses add_f2py2 because I can't figure out the import test for netCDF f2py code
-add_f2py2_module(MieObs_ 
+find_package(F2PY3 REQUIRED)
+# MAT: Note uses add_f2py3 because I can't figure out the import test for netCDF f2py code
+add_f2py3_module(MieObs_ 
    SOURCES MieObs_py.F90 
    DESTINATION lib/Python
    LIBRARIES Chem_Base MAPL GMAO_mpeu ${NETCDF_LIBRARIES} ${ESMF_LIBRARY}
