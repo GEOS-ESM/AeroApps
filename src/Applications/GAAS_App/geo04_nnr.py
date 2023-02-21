@@ -16,32 +16,32 @@ from   pyobs.bits  import BITS
 # SDS to be read in (usually less than in geo04)
 # ----------------------------------------------
 SDS = dict (
-                     META = (u'longitude',
-                             u'latitude',
-                             u'solar_zenith_angle',
-                             u'solar_azimuth_angle',
-                             u'sensor_zenith_angle',
-                             u'sensor_azimuth_angle',
-                             u'Scattering_Angle',
-                             u'Glint_Angle',
+                     META = ('longitude',
+                             'latitude',
+                             'solar_zenith_angle',
+                             'solar_azimuth_angle',
+                             'sensor_zenith_angle',
+                             'sensor_azimuth_angle',
+                             'Scattering_Angle',
+                             'Glint_Angle',
                              ),
-                    LAND = ( u'Land_Ocean_Quality_Flag',
+                    LAND = ( 'Land_Ocean_Quality_Flag',
                              # u'Cloud_Pixel_Distance_Land_Ocean',
-                             u'Surface_Reflectance_Land',
-                             u'Corrected_Optical_Depth_Land',
-                             u'Mean_Reflectance_Land',
-                             u'Aerosol_Cloud_Fraction_Land',
+                             'Surface_Reflectance_Land',
+                             'Corrected_Optical_Depth_Land',
+                             'Mean_Reflectance_Land',
+                             'Aerosol_Cloud_Fraction_Land',
                              ),
-                    OCEAN = (u'Land_Ocean_Quality_Flag',
+                    OCEAN = ('Land_Ocean_Quality_Flag',
                             #  u'Cloud_Pixel_Distance_Land_Ocean',
-                             u'Effective_Optical_Depth_Average_Ocean',
+                             'Effective_Optical_Depth_Average_Ocean',
                             # u'Optical_Depth_Small_Average_Ocean',
-                             u'Aerosol_Cloud_Fraction_Ocean',
+                             'Aerosol_Cloud_Fraction_Ocean',
                             # u'Effective_Radius_Ocean',
                             # u'Asymmetry_Factor_Average_Ocean',
                             # u'Angstrom_Exponent_1_Ocean',
                             # u'Angstrom_Exponent_2_Ocean',
-                             u'Mean_Reflectance_Ocean',
+                             'Mean_Reflectance_Ocean',
                              ),
 )
 
@@ -190,7 +190,7 @@ class GEO04_NNR(GEO04_L2):
           if fh.lm == 1:
             timeInterp = False    # no time interpolation in this case
           else:
-            raise ValueError, "cannot handle files with more tha 1 time, use ctl instead"
+            raise ValueError("cannot handle files with more tha 1 time, use ctl instead")
         else:
           fh = GFIOctl(inFile)  # open timeseries
           timeInterp = True     # perform time interpolation
@@ -208,7 +208,7 @@ class GEO04_NNR(GEO04_L2):
         # ---------------------------
         for v in onlyVars:
             if Verbose:
-                print "<> Sampling ", v
+                print("<> Sampling ", v)
             if timeInterp:
               var = fh.sample(v,lons,lats,tymes,Verbose=Verbose)
             else:
@@ -221,7 +221,7 @@ class GEO04_NNR(GEO04_L2):
                 var = var.T # shape should be (nobs,nz)
                 self.sample.__dict__[v] = var
             else:
-                raise IndexError, 'variable <%s> has rank = %d'%(v,len(var.shape))
+                raise IndexError('variable <%s> has rank = %d'%(v,len(var.shape)))
 
         if npzFile is not None:
             savez(npzFile,**self.sample.__dict__)            
@@ -248,7 +248,7 @@ class GEO04_NNR(GEO04_L2):
                 iName = inputName
 
             if self.verbose>0:
-                print 'Getting NN input ',iName
+                print('Getting NN input ',iName)
 
             # Retrieve input
             # --------------
@@ -269,7 +269,7 @@ class GEO04_NNR(GEO04_L2):
                 input = self.__dict__[name][:]
                 
             else:
-                raise ValueError, "strange, len(iName)=%d"%len(iName)
+                raise ValueError("strange, len(iName)=%d"%len(iName))
 
             # Concatenate Inputs
             # ------------------
@@ -311,9 +311,9 @@ class GEO04_NNR(GEO04_L2):
             name, ch = TranslateTarget[targetName]
             if self.verbose>0:
                 if self.net.laod:
-                    print "NN Retrieving log(AOD+0.01) at %dnm "%ch
+                    print("NN Retrieving log(AOD+0.01) at %dnm "%ch)
                 else:
-                    print "NN Retrieving AOD at %dnm "%ch
+                    print("NN Retrieving AOD at %dnm "%ch)
             k = list(self.aChannels).index(ch) # index of channel            
             self.channels_ += [ch,]
             if self.net.laod:
@@ -330,12 +330,12 @@ class GEO04_NNR(GEO04_L2):
         elif self.algo =="LAND":
                i = 1
         else:
-               raise ValueError, 'Unknown algorithm <%s:'%self.algo 
+               raise ValueError('Unknown algorithm <%s:'%self.algo) 
         if aod_thresh[i] is not None:
                aodBad = ((self.aod_[:,k]>aod_thresh[i])&(self.cloud>0.25))
                self.iGood = self.iGood & (aodBad==False)
                if self.verb>2:
-                  print "-- Applying AOD-Cloud filter for NNR %s"%self.algo, aod_thresh[i], count_nonzero(self.iGood)
+                  print("-- Applying AOD-Cloud filter for NNR %s"%self.algo, aod_thresh[i], count_nonzero(self.iGood))
               
 
 #---
@@ -363,16 +363,16 @@ def _writeAll():
 
             aer_x = '/nobackup/fp/das/Y2018/M08/f521_fp.inst1_2d_hwl_Nx.201808%02d_%02d00z.nc4'%(syn_time.day,syn_time.hour)
 
-            print '-'*20
-            print 'OCEAN', syn_time
+            print('-'*20)
+            print('OCEAN', syn_time)
             nn_file = '/nobackup/NNR/Net/nnr_001.g16o_Tau.net'
             g = GEO04_NNR (l2_path,'OCEAN',syn_time,aer_x,verbose=True)
             g.apply(nn_file)
             g.writeODS(dir=odsdir,revised=True,channels=[550,],nsyn=8,Verb=1)
             g.writeg(dir=nc4dir,refine=16,channels=[550,],Verb=1)
 
-            print '-'*20
-            print 'LAND', syn_time
+            print('-'*20)
+            print('LAND', syn_time)
             nn_file = '/nobackup/NNR/Net/nnr_001.g16l_Tau.net'
             g = GEO04_NNR (l2_path,'LAND',syn_time,aer_x,verbose=True)
             g.apply(nn_file)
