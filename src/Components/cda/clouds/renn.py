@@ -106,7 +106,7 @@ class RENN(MxD06_L2):
 
         for var in Vars:
            if self.verb:
-               print " <> Getting aerosol features for <%s> "%var
+               print(" <> Getting aerosol features for <%s> "%var)
 
            Q = f.sample(var,lon,lat,time,kbeg=self.kbeg,kount=self.kount,
                         Verbose=self.verb)
@@ -149,20 +149,20 @@ class RENN(MxD06_L2):
         Returns: inputs
         """
         if self.verb:
-            print " "
-            print "       Feature          Min      Max"
-            print "  ------------------  -------  -------"
+            print(" ")
+            print("       Feature          Min      Max")
+            print("  ------------------  -------  -------")
         inputs = self.__dict__[Input[0]][I]
         if self.verb:
-            print "%20s %8.4f %8.4f"%(Input[0],inputs.min(),inputs.max())
+            print("%20s %8.4f %8.4f"%(Input[0],inputs.min(),inputs.max()))
         for var in Input[1:]:
             q = self.__dict__[var][I]
             inputs = cat[inputs,q]
             if self.verb:
-                print "%20s %8.4f %8.4f"%(var,q.min(),q.max())
+                print("%20s %8.4f %8.4f"%(var,q.min(),q.max()))
         if self.verb:
-            print "  ------------------  -------  -------"
-            print ""
+            print("  ------------------  -------  -------")
+            print("")
         return inputs
     
     def getTargets(self,I,Target=('RE',)):
@@ -173,14 +173,14 @@ class RENN(MxD06_L2):
         """
         targets = self.__dict__[Target[0]][I]
         if self.verb:
-            print " "
-            print "       Target           Min      Max"
-            print "  ------------------  -------  -------"
-            print "%20s %8.4f %8.4f"%(Target[0],targets.min(),targets.max())
+            print(" ")
+            print("       Target           Min      Max")
+            print("  ------------------  -------  -------")
+            print("%20s %8.4f %8.4f"%(Target[0],targets.min(),targets.max()))
         for var in Target[1:]:
             targets = cat[targets,self.__dict__[var][I]]
             if self.verb:
-                print "%20s %8.4f %8.4f"%(var,targets.min(),targets.max())
+                print("%20s %8.4f %8.4f"%(var,targets.min(),targets.max()))
         return targets
 
 #---
@@ -303,7 +303,7 @@ class RENN(MxD06_L2):
        self.iFilter = None
 
        if Verb >=1:
-           print "[w] Wrote file "+filename
+           print("[w] Wrote file "+filename)
 
 #...............................................................................
 
@@ -344,8 +344,8 @@ def _doNN(m):
         #net = nn.SKNET(topology)
         net = nn.ffnet(topology)
 
-        print " <> Starting training with %s inputs and %s targets"\
-                  %(str(X.shape),str(y.shape))
+        print(" <> Starting training with %s inputs and %s targets"\
+                  %(str(X.shape),str(y.shape)))
 
         net.train_tnc(X,y,maxfun=2500)
 
