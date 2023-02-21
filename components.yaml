@@ -22,7 +22,7 @@ ecbuild:
 MAPL:
   local: ./src/Shared/GMAO_Shared/MAPL@
   remote: ../MAPL.git
-  branch: feature/mathomp4/add-shavemantissa-python
+  branch: feature/mathomp4/update-pyrob-to-python3
   develop: develop
 
 GMAOpyobs:
