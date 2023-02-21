@@ -1,5 +1,5 @@
 
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
   Implements direct emission estimates based on MODIS Deep Blue C6
   retrievals.
@@ -28,7 +28,7 @@ def monthly_means(path,coll,outFile,year,month):
 
     if not Force:
         if os.path.exists(outFile):
-            print '<> File exists, skipping <%s>'%filename
+            print('<> File exists, skipping <%s>'%filename)
             return
 
     if year<2010:
@@ -42,15 +42,15 @@ def monthly_means(path,coll,outFile,year,month):
     patt = '*.%s.*.nc4'%coll
     inFiles = sorted(glob(patt))
     if len(inFiles)<1:
-        raise ValueError, 'no files for %d-%02d'%(year,month)
+        raise ValueError('no files for %d-%02d'%(year,month))
 
     cmd = 'GFIO_mean_r8.x -o '+outFile+' '+' '.join(inFiles)
 
-    print 30*'-'
-    print cmd
-    print 30*'-'
+    print(30*'-')
+    print(cmd)
+    print(30*'-')
     if os.system(cmd):
-        raise RuntimeError, 'error on return from %s'%cmd
+        raise RuntimeError('error on return from %s'%cmd)
 
     os.chdir(here)
 
@@ -69,10 +69,10 @@ if __name__ == "__main__":
         year1 = sys.argv[1]
         year2 = year1
     else:
-        print "   Usage:   %s  year1 [year2]"%sys.argv[0]
-        print "Examples:   %s   2003  2005"%sys.argv[0]
-        print "            %s   2003"%sys.argv[0]
-        raise RuntimeError, 'not enough parameters'
+        print("   Usage:   %s  year1 [year2]"%sys.argv[0])
+        print("Examples:   %s   2003  2005"%sys.argv[0])
+        print("            %s   2003"%sys.argv[0])
+        raise RuntimeError('not enough parameters')
 
     year1, year2 = int(year1), int(year2)    
 
