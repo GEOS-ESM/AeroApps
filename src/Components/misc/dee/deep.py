@@ -84,7 +84,7 @@ class DEEP(MxD04_L2):
                              ssa = self.ssa)
 
         if Verb >=1:
-            print "[w] Wrote file "+filename
+            print("[w] Wrote file "+filename)
 
 #---
     def writeg(self,filename=None,dirn='.',expid=None,refine=8,res=None,
@@ -195,7 +195,7 @@ class DEEP(MxD04_L2):
        os.system('n4zip -v '+filename)
 
        if Verb >=1:
-           print "[w] Wrote file "+filename
+           print("[w] Wrote file "+filename)
 
 #....................................................................
 def GranulesSyn ( path, prod, syn_time, coll='006', nsyn=24):
@@ -288,7 +288,7 @@ def Granules_(path,prod,coll,t1,t2):
         t += dt
 
     if len(Granules) == 0:
-        print "WARNING: no %s collection %s granules found for"%(prod,coll), t1, t2
+        print("WARNING: no %s collection %s granules found for"%(prod,coll), t1, t2)
 
     return Granules
 
