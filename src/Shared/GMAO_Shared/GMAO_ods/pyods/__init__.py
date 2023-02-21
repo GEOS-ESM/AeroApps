@@ -77,7 +77,7 @@ class ODS(object):
          self.fid, rc = pyods_open(filename)
          if rc:
             self.fid = None
-            raise IOError, "cannot open ODS file" + filename
+            raise IOError("cannot open ODS file" + filename)
       else:
          self._Read(filename,nymd,nhms,only_good) 
          self.fid=None
@@ -86,33 +86,33 @@ class ODS(object):
       if self.fid is not None:
          rc = pyods_close(fid)
          if rc:
-            raise IOError, "could not close file"
+            raise IOError("could not close file")
       self.fid = None
 
    def nget(self,nymd,nhms,rc):
       """ Returns number of observations for this date/time."""
       if self.fid is None:
-         raise IOError, "ODS file is not open"
+         raise IOError("ODS file is not open")
       self.nobs, rc = pyods_nget(self.fid,nymd,nhms)
       if rc:
-         raise IOError, "could not determine NOBS"
+         raise IOError("could not determine NOBS")
  
    def getInt(self,name,nymd,nhms):
       if self.fid is None:
-         raise IOError, "ODS file is not open"
+         raise IOError("ODS file is not open")
       self.nget(nymd,nhms)
       v, rc = pyods_getint(self.fid,name,nymd,nhms,self.nobs)
       if rc:
-         raise IOError, "cannot get "+name
+         raise IOError("cannot get "+name)
       return v
 
    def getFloat(self,name,nymd,nhms):
       if self.fid is None:
-         raise IOError, "ODS file is not open"
+         raise IOError("ODS file is not open")
       self.nget(nymd,nhms)
       v, rc = pyods_getfloat(self.fid,name,nymd,nhms,self.nobs)
       if rc:
-         raise IOError, "cannot get "+name
+         raise IOError("cannot get "+name)
       return v
 
    def select(self,kt=None,kx=None,qcx=None,qch=None,ks=None,lev=None):
@@ -127,7 +127,7 @@ class ODS(object):
       if (self.kid is None) or (self.nobs==0):
          return None
 
-      I = (range(self.nobs) >  -1) # all True
+      I = (list(range(self.nobs)) >  -1) # all True
       I = (I & _getMatchingIndices(self.kt,kt,  'kt'))
       I = (I & _getMatchingIndices(self.kx,kx,  'kx'))
       I = (I & _getMatchingIndices(self.ks,ks,  'ks'))
@@ -148,7 +148,7 @@ class ODS(object):
       if only_good:
          I = (self.qcx[0:nobs] == 0)
       else:
-         I = range(self.nobs)
+         I = list(range(self.nobs))
 
       kid  = self.kid[I]
       lat  = self.lat[I]
@@ -171,8 +171,8 @@ class ODS(object):
                         obs,omf,oma,xvec,qcx,qch)
 
       if rc:
-         print "On return from pyods_putall, rc = ", rc
-         raise IOError, "cannot write ODS file "
+         print("On return from pyods_putall, rc = ", rc)
+         raise IOError("cannot write ODS file ")
 
 #---
    def addVar(self,ga,expr='mag(u10m,v10m)',vname=None,clmYear=None,tight=True):
@@ -231,8 +231,8 @@ class ODS(object):
       obs, omf, oma, xvec, qcx, qch, rc \
       = pyods_getall(filename,nymd,nhms)
       if rc:
-         print "On return from pyods_getall, rc = ", rc
-         raise IOError, "cannot read ODS file "
+         print("On return from pyods_getall, rc = ", rc)
+         raise IOError("cannot read ODS file ")
  
       self.nobs = nobs
       self.nymd = nymd
@@ -241,7 +241,7 @@ class ODS(object):
       if only_good:
          I = (qcx[0:nobs] == 0)
       else:
-         I = range(self.nobs)
+         I = list(range(self.nobs))
 
       self.kid  = kid[I]
       self.lat  = lat[I]
@@ -308,7 +308,7 @@ class ODS(object):
       if nobs > 0:
 
          if Indices is None:
-            I = range(nobs)
+            I = list(range(nobs))
          else:
             I = Indices
 
@@ -347,14 +347,14 @@ def _getMatchingIndices(att,kt,name):
    """ Return a tuple."""
    if kt is None:
       kt_list = ()
-      J = ( range(att.size) >  -1) # all True
+      J = ( list(range(att.size)) >  -1) # all True
       return J
    if type(kt) is TupleType or type(kt) is ListType:
       kt_list = kt
    else:
       kt_list = (kt,)
 
-   J = (range(att.size) <  0) # all False
+   J = (list(range(att.size)) <  0) # all False
    for k in kt_list:
       J = (J | (att==k) ) # True if matching kt
    return J
