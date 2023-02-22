@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to create GEOS-5 Collections on MODIS Level 2 granule.
@@ -52,7 +52,7 @@ class MODIS(object):
         if type(Path) is list:
             if len(Path) == 0:
                self.nobs = 0
-               print "WARNING: Empty MxD04_L2 object created"
+               print("WARNING: Empty MxD04_L2 object created")
                return
             else:
                 self.nobs = len(Path)
@@ -91,7 +91,7 @@ class MODIS(object):
             if os.path.isdir(item):      self._readDir(item)
             elif os.path.isfile(item):   self._readGranule(item)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print("%s is not a valid file or directory, ignoring it"%item)
 
 #---
     def _readDir(self,dir):
@@ -101,7 +101,7 @@ class MODIS(object):
             if os.path.isdir(path):      self._readDir(path)
             elif os.path.isfile(path):   self._readGranule(path)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print("%s is not a valid file or directory, ignoring it"%item)
 
 #---
     def _readGranule(self,filename):
@@ -111,11 +111,11 @@ class MODIS(object):
         # ---------------------------------------
         try:
             if self.verb:
-                print "[] Working on "+filename
+                print("[] Working on "+filename)
             hfile = SD(filename)
         except HDF4Error:
             if self.verb > 2:
-                print "- %s: not recognized as an HDF file"%filename
+                print("- %s: not recognized as an HDF file"%filename)
             return 
 
         # Read select variables (do not reshape)
@@ -180,7 +180,7 @@ def granules ( path, prod, t1, t2, coll='006'):
         t += dt
 
     if len(Granules) == 0:
-        print "WARNING: no %s collection %s granules found for %s through %s"%(prod,coll, str(t1), str(t2))
+        print("WARNING: no %s collection %s granules found for %s through %s"%(prod,coll, str(t1), str(t2)))
 
     return Granules
 
@@ -247,7 +247,7 @@ def getVars(rcFile):
     Vars = dict()
     levUnits = 'none'
     levs = []
-    for V in cf.keys():
+    for V in list(cf.keys()):
         path = cf(V)
         f = Open(path)
         varList = []
@@ -283,7 +283,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False):
     elif rank == 3:
         y[:,:,:] = x[:,:,:]
     else:
-        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
+        raise ValueError("invalid rank of <%s>: %d"%(name,rank))
 
 #---
 def shave(q,options,undef=MAPL_UNDEF,has_undef=1,nbits=12):
@@ -306,13 +306,13 @@ def shave(q,options,undef=MAPL_UNDEF,has_undef=1,nbits=12):
     elif rank == 3: # zyx
         chunksize = shp[1]*shp[2]
     else:
-        raise ValueError, "invalid rank=%d"%rank
+        raise ValueError("invalid rank=%d"%rank)
 
     # Shave it
     # --------
     qs, rc = shave32(q.ravel(),xbits,has_undef,undef,chunksize)
     if rc:
-        raise ValueError, "error on return from shave32, rc=%d"%rc
+        raise ValueError("error on return from shave32, rc=%d"%rc)
 
     return qs.reshape(shp)
 
@@ -436,7 +436,7 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         # --------------------------------------------------
         for path in Vars:
             if options.verbose:
-                print " <> opening "+path
+                print(" <> opening "+path)
             g = Open(path)
             for var in Vars[path]:
                 if var.km == 0:
@@ -463,14 +463,14 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
                 else:
                     name = var.name
                 if options.verbose:
-                    print " [] Interpolating <%s>"%name.upper()
+                    print(" [] Interpolating <%s>"%name.upper())
 
                 # Use NC4ctl for linear interpolation
                 # -----------------------------------
                 I = (~mxd.Longitude[i].mask)&(~mxd.Latitude[i].mask)&(~mxd.tyme[i].mask)
                 Z = g.nc4.sample(name,array(mxd.Longitude[i][I]),array(mxd.Latitude[i][I]),array(mxd.tyme[i][I]),
                                  Transpose=False,squeeze=True,Verbose=options.verbose)
-                if options.verbose: print " <> Writing <%s> "%name
+                if options.verbose: print(" <> Writing <%s> "%name)
                 if rank == 3:
                    W[I] = Z
                    W = np.ma.masked_array(shave(W[:,:],options))
@@ -487,7 +487,7 @@ def writeNC ( mxd, Vars, levs, levUnits, options,
         nc.close()
 
         if options.verbose:
-            print " <> wrote %s file %s"%(options.format,outdir+'/'+filename)
+            print(" <> wrote %s file %s"%(options.format,outdir+'/'+filename))
     
 #------------------------------------ M A I N ------------------------------------
 
@@ -571,12 +571,12 @@ if __name__ == "__main__":
     elif 'NETCDF3' in options.format:
         options.ext = 'nc'
     else:
-        raise ValueError, 'invalid extension <%s>'%ext
+        raise ValueError('invalid extension <%s>'%ext)
     options.zlib = not options.nozip
 
     if not os.path.exists(options.outdir): 
-        print 'outdir does not exist:',options.outdir
-        print 'check path. exiting'
+        print('outdir does not exist:',options.outdir)
+        print('check path. exiting')
         raise
 
 
