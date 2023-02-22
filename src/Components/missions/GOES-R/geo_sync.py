@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 	Utility to make one scantime file from decomposed
@@ -18,9 +18,9 @@ def getCoords(options, inst='GOES-R'):
   """
   nc = Dataset(options.geoFile)
 
-  lon = nc.variables[u'clon'][:,:]
-  lat = nc.variables[u'clat'][:,:]
-  missing = nc.variables[u'clon'].missing_value
+  lon = nc.variables['clon'][:,:]
+  lat = nc.variables['clat'][:,:]
+  missing = nc.variables['clon'].missing_value
   return (nc,lon,lat,missing)
 #------------------------------------ M A I N ------------------------------------
 
@@ -100,7 +100,7 @@ if __name__ == "__main__":
 	for t,start in enumerate(starti):
 		end   = endi[t]
 		ncin  = Dataset('sync/goes-r.lg1.scantime.'+str(start).zfill(4)+'-'+str(end).zfill(4)+'.nc4')
-		scanTime[:,start-1:end]  = ncin.variables[u'scanTime'][:,:]
+		scanTime[:,start-1:end]  = ncin.variables['scanTime'][:,:]
 		ncin.close()
 
 	ncout.close()
