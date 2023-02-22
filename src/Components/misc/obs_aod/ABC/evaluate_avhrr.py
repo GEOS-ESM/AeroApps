@@ -50,16 +50,16 @@ if __name__ == "__main__":
         a.Input = net.InputNames
         a.Target = net.TargetNames
 
-        for s in Species.keys():
+        for s in list(Species.keys()):
 
             figFile = '%s.%s.%d.%s.png'%(ident,expid,year,s)
             statFile = '%s.%s.%d.%s.txt'%(ident,expid,year,s)
 
             if os.path.exists(figFile):
-                print "Skipping <%s> ..."%Species[s]
+                print("Skipping <%s> ..."%Species[s])
                 continue
             else:
-                print "Working on <%s> for %s ..."%(Species[s],expid)
+                print("Working on <%s> for %s ..."%(Species[s],expid))
 
             if s == 'all':
                 I = a.iValid 
