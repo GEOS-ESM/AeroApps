@@ -26,7 +26,7 @@ def plot_decades():
     c90 = NPZ('NPZ/kawasaki_japan.climatology.1990-1999.npz')
     c00 = NPZ('NPZ/kawasaki_japan.climatology.2000-2010.npz')
 
-    month = range(12)
+    month = list(range(12))
     figure(dpi=120)
 
     # Full counts
@@ -116,7 +116,7 @@ def plot_seasonal():
     taso, aso = yearly(m1=8,m2=10,npzWrite=False)
     tndj, ndj = yearly(m1=11,m2=13,npzWrite=False)
 
-    year = range(1969,2011)
+    year = list(range(1969,2011))
     
     plot(year,ndj,'-',linewidth=1.5,label='NOV-JAN')
     plot(year,fma,'-',linewidth=1.5,label='FEB-MAY')
@@ -138,7 +138,7 @@ def plot_population():
     Pop04 = array([1573824,1898242,1883710,1839328,1843664,1442620,1913757,2028786,2063827,2020504,1973733,1586504,1636235,1706055,1749163,1837459,1429658,1488363,1504910,1508715,1527617,1213685,1260478,1301517,1343438,1373779,1191578,1201008,1185263,1208065,1209340,1171652,1166160,1192157,1189303,1184826,1056800,1091316,1115649,1149450,1164872,NaN],dtype=float)
 
     y = NPZ('NPZ/kawasaki_japan.yearly.01-12.npz')
-    year = range(1969,2011)
+    year = list(range(1969,2011))
 
     figure(dpi=120,figsize=(11,11*9./16))
     plot(year,y.all/1000.,'b-o',linewidth=1.5,label='KD Cases (K)')
