@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Simple script to test Pete's new phase funcion loolup tables.
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     ibin = 0
     p11, p12, p33, p34 = (zeros(m),zeros(m),zeros(m),zeros(m))
     for n in range(255):
-        print "Adding moment ", n
+        print("Adding moment ", n)
         P = legendre(n)
         p11 += pmom[0,n,ibin,irh,ich] * P(mu)
         p12 += pmom[1,n,ibin,irh,ich] * P(mu)
