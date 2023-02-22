@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper for aeronet_vlidort.py
@@ -178,22 +178,22 @@ if __name__ == "__main__":
 
         # Initialize VLIDORT class getting aerosol optical properties
         # -----------------------------------------------------------
-        print '++++Running VLIDORT with the following arguments+++'
-        print '>>>inFile:    ',inFile
-        print '>>>outFileAL:   ',outFileAL
-        print '>>>outFilePP:   ',outFilePP
-        print '>>>outFileEXT:   ',outFileEXT
-        print '>>>outFileADD:   ',outFileADD
-        print '>>>rcFile:    ',rcFile
-        print '>>>albedoType:',albedoType
-        print '>>>channel:   ',channel
-        print '>>>brdfFile:  ',brdfFile
-        print '>>>ndviFile:  ',ndviFile
-        print '>>>lcFile:    ',lcFile
-        print '>>>lerFile:    ',lerFile
-        print '>>>extcol:    ',extcol
-        print '>>>verbose:   ',args.verbose
-        print '++++End of arguments+++'
+        print('++++Running VLIDORT with the following arguments+++')
+        print('>>>inFile:    ',inFile)
+        print('>>>outFileAL:   ',outFileAL)
+        print('>>>outFilePP:   ',outFilePP)
+        print('>>>outFileEXT:   ',outFileEXT)
+        print('>>>outFileADD:   ',outFileADD)
+        print('>>>rcFile:    ',rcFile)
+        print('>>>albedoType:',albedoType)
+        print('>>>channel:   ',channel)
+        print('>>>brdfFile:  ',brdfFile)
+        print('>>>ndviFile:  ',ndviFile)
+        print('>>>lcFile:    ',lcFile)
+        print('>>>lerFile:    ',lerFile)
+        print('>>>extcol:    ',extcol)
+        print('>>>verbose:   ',args.verbose)
+        print('++++End of arguments+++')
         if not args.dryrun:
             vlidort = AERONET_VLIDORT(inFile,rcFile,channel,
                                     invFile=invFile,

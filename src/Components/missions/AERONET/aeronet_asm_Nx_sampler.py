@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Wrapper to call run_g5nr_stn_sampler_invariant.py for asm_Nx
 """
@@ -28,5 +28,5 @@ if __name__ == "__main__":
 
     command += ' {}'.format(args.prep_config)
 
-    print command
+    print(command)
     os.system(command)
