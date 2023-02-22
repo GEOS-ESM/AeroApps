@@ -13,8 +13,8 @@ ecbuild_add_executable(
     LIBS ${this}
     )
 
-find_package(F2PY2 REQUIRED)
-esma_add_f2py2_module (sgp4_orbits_
+find_package(F2PY3 REQUIRED)
+esma_add_f2py3_module (sgp4_orbits_
     SOURCES sgp4_orbits_py.F90
     DESTINATION lib/Python/${this}
     LIBRARIES ${this}
