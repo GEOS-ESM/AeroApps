@@ -45,7 +45,7 @@ def vlidort_vector (m, tau, ssa, g, pmom, pe, he, te, albedo,U10m, V10m,mr, I=No
 						    MISSING, verbose)
         
         if rc != 0:
-            raise ValueError, "on return from VLIDORT_BRDF_.scalar/vector, rc = "+str(rc)
+            raise ValueError("on return from VLIDORT_BRDF_.scalar/vector, rc = "+str(rc))
 
         return reflectance,refl_cx, BRDF
 
@@ -68,7 +68,7 @@ def getAlbedo(albe_fn,channels,u10m,v10m):
     # Interpolate albedo
     # ------------------
     albedo = zeros((len(w10m),len(channels)))
-    for ch,i in zip(channels,range(len(channels))):
+    for ch,i in zip(channels,list(range(len(channels)))):
         j = list(npz.channels).index(ch)
         albedo[:,i] = interp(w10m,npz.speed,npz.albedo[:,j])
 
@@ -88,16 +88,16 @@ def gridBox(m,dLon=0.3125,dLat=0.25,Verbose=False):
     G = dict()
     for n in N:
 	G[n] = True
-    for n in G.keys():
+    for n in list(G.keys()):
 	if Verbose:
 	   N_ = (N==n)
 	   i = I[N_][0]
 	   j = J[N_][0]
 	   lon = round(-180 + i * dLon,2)
 	   lat = round( -90 + j * dLat,2)
-	   print "Grid box at (%7.2f,%6.2f) has %2d observations"%(lon,lat,size(I[N_]))
+	   print("Grid box at (%7.2f,%6.2f) has %2d observations"%(lon,lat,size(I[N_])))
 
-    return dict(G=G.keys(),N=N,I=I,J=J) 
+    return dict(G=list(G.keys()),N=N,I=I,J=J) 
 
 #-------------------------------------------------------------------------------
 if __name__ == "__main__":
@@ -112,12 +112,12 @@ if __name__ == "__main__":
     sat = 'MYD04'
     Algo = 'OCEAN'
     path = '/nobackup/MODIS/Level2'
-    syn_time = datetime(2007,07,10,0)
+    syn_time = datetime(2007,0o7,10,0)
 
     # Read MODIS L2 data for this synoptic time
     # -----------------------------------------
     Files = mxd04.granules(path,sat,syn_time,nsyn=24) 
-    print 'files', Files   
+    print('files', Files)   
     m = mxd04.MxD04_L2(Files,Algo,nsyn=24)
 
 #    G = gridBox(m,Verbose=True)
@@ -157,8 +157,8 @@ if __name__ == "__main__":
     refl_cx_ = ones((nobs,nch))
     BRDF_ = ones((nobs,nch))
     for i in range(0,nobs,mobs):
-        I = range(i,min(i+mobs,nobs))
-        print 'I', i, i+mobs, 'nobs=', nobs
+        I = list(range(i,min(i+mobs,nobs)))
+        print('I', i, i+mobs, 'nobs=', nobs)
         tau_, ssa_, g_, pmom_ = getAOPvector(a,m.channels,\
         I=I,nMom=nMom,rcfile='Aod_MODIS.rc')
 
@@ -170,7 +170,7 @@ if __name__ == "__main__":
         t0 = time()
         reflectance,refl_cx,BRDF = vlidort_vector (m, tau_, ssa_, g_,pmom_, pe_, he_, te_,\
         albedo,w.U10M,w.V10M,mr,I=I,verbose=1)
-        print 'VLIDORT (Vector): %4.2f minutes/1000 obs'%((time()-t0)/(60.*m.nobs/1000.))
+        print('VLIDORT (Vector): %4.2f minutes/1000 obs'%((time()-t0)/(60.*m.nobs/1000.)))
         reflectance_[I,:] = reflectance.astype('float32') 
         refl_cx_[I,:] = refl_cx.astype('float32')
         BRDF_[I,:] = BRDF.astype('float32')
