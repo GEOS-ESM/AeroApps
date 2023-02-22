@@ -153,8 +153,8 @@ class AQC_DEEP(NN):
                 ga.flush()
 
             if U[i] >= 0.0:
-                print self.time[i], "%8.3f %8.3f %6.3f  ...%8.3f%%"\
-                      %(x,y,U[i],100.*i/float(N))
+                print(self.time[i], "%8.3f %8.3f %6.3f  ...%8.3f%%"\
+                      %(x,y,U[i],100.*i/float(N)))
 
         self.__dict__[vname] = U
 
@@ -221,7 +221,7 @@ class AQC_DEEP(NN):
         # Train the classifier
         # --------------------
         if Verbose:
-            print "- Training SVM classifier with %d samples"%y.size
+            print("- Training SVM classifier with %d samples"%y.size)
         self.svc = svm.SVC(**kwopts)
         self.svc.fit(X,y)
 
@@ -238,10 +238,10 @@ class AQC_DEEP(NN):
         # Calculate scores
         # ----------------
         if Verbose:
-            print "- Calculating Cross Validated scores..."
+            print("- Calculating Cross Validated scores...")
         self.svcScores = cross_validation.cross_val_score(self.svc, X, y, n_jobs=1)
         if Verbose:
-            print "- Cross Validated scores are ", self.svcScores
+            print("- Cross Validated scores are ", self.svcScores)
 
     def getNNR(self):
         """
@@ -363,17 +363,17 @@ def _deepNNR():
     topology = (len(Input), nHidden, len(Target))
     biases = True
         
-    print " "
-    print "        AOD Neural Net Retrieval"
-    print "        ------------------------"
-    print " "
-    print "  No. Valid Data:  ", m.aTau550[m.iValid].size,  \
-                                 int(100.*m.aTau550[m.iValid].size/m.aTau550.size),'%'
-    print " No. Hidden Nodes: ", nHidden
-    print "         Topology: ", topology
-    print "   Input Features: ", Input[:]
-    print "           Target: ", Target[:]
-    print " "
+    print(" ")
+    print("        AOD Neural Net Retrieval")
+    print("        ------------------------")
+    print(" ")
+    print("  No. Valid Data:  ", m.aTau550[m.iValid].size,  \
+                                 int(100.*m.aTau550[m.iValid].size/m.aTau550.size),'%')
+    print(" No. Hidden Nodes: ", nHidden)
+    print("         Topology: ", topology)
+    print("   Input Features: ", Input[:])
+    print("           Target: ", Target[:])
+    print(" ")
 
     m.train(Input=Input,Target=Target,nHidden=nHidden,
             topology=topology,biases=biases)
