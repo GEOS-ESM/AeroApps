@@ -24,7 +24,7 @@ class myGrADS(GrADS):
 def plot_clm(trange,clm):
 
     c = NPZ('NPZ/kawasaki_japan.climatology.2000-2010.npz')
-    month = range(12)
+    month = list(range(12))
 
     # 16:9 Figure
     # -----------
@@ -73,7 +73,7 @@ def plot_clm2(trange,clm,showKD=True):
     if showKD:
         c = NPZ('NPZ/kawasaki_japan.climatology.%s.npz'%trange)
 
-    month = range(12)
+    month = list(range(12))
 
     # 16:9 Figure
     # -----------
@@ -149,7 +149,7 @@ def plot_clm_stack(trange,clm,showKD=True):
     if showKD:
         c = NPZ('NPZ/kawasaki_japan.climatology.%s.npz'%trange)
 
-    month = range(12)
+    month = list(range(12))
 
     # 16:9 Figure
     # -----------
@@ -263,7 +263,7 @@ if __name__ == "__main__":
               'dusmass25','so4smass','bcsmass','ocsmass','so2smass','sssmass25',
               'duexttau','suexttau','bcexttau','ocexttau','ssexttau' ):
  
-        print '[] working on <%s>'%q
+        print('[] working on <%s>'%q)
         
         d['q'] = q
 
