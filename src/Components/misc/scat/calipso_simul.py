@@ -144,9 +144,9 @@ def vlidort_scalar (c, channels, sza, albedo, tau, ssa, g, pe, he, te, verbose=0
                                                      albedo,solar_zenith,
                                                      relat_azymuth,
                                                      sensor_zenith, MISSING,verbose)
-        print 'rad', radiance_
+        print('rad', radiance_)
         if rc != 0:
-            raise ValueError, "on return from VLIDORT_OMI_.scalar, rc = "+str(rc)
+            raise ValueError("on return from VLIDORT_OMI_.scalar, rc = "+str(rc))
 
         return (radiance_, reflectance_)
 
@@ -194,9 +194,9 @@ def vlidort_vector (c, channels, sza, albedo, tau, ssa, g,pmom, pe, he, te,I=Non
                                                      albedo,solar_zenith,
                                                      relat_azymuth,
                                                      sensor_zenith,MISSING, verbose)
-        print 'rad', radiance_, Q, U
+        print('rad', radiance_, Q, U)
         if rc != 0:
-            raise ValueError, "on return from VLIDORT_OMI.vector/vector, rc = "+str(rc)
+            raise ValueError("on return from VLIDORT_OMI.vector/vector, rc = "+str(rc))
 
         return (radiance_, Q, U)
 #----------------------------
@@ -214,12 +214,12 @@ def get_Ocean_Albedo(albe_fn,channels,u10m,v10m):
     w10m = sqrt(u10m*u10m+v10m*v10m)
     w10m[w10m<0] = 0
     w10m[w10m>50.] = 50.
-    print 'len wind', len(w10m)
+    print('len wind', len(w10m))
     # Interpolate albedo
     # ------------------
-    print 'len lambda',len(channels)
+    print('len lambda',len(channels))
     albedo = zeros((len(w10m),len(channels)))
-    for ch,i in zip(channels,range(len(channels))):
+    for ch,i in zip(channels,list(range(len(channels)))):
         j = list(npz.channels).index(ch)
         albedo[:,i] = interp(w10m,npz.speed,npz.albedo[:,j])
 
@@ -256,14 +256,14 @@ def get_ALBEDO(lat,lon,time,vtype,channels,month,path):
                                               onlyVars=['U10M','V10M'],Verbose=True)
               
         albedo_ocean = get_Ocean_Albedo(albe_fn,channels,w.U10M,w.V10M)
-        print albedo_ocean.shape
+        print(albedo_ocean.shape)
 
         # Albedo for each wavelength (355, 532, 1064 nm)
         #------------------
         for ch in channels :
 
           if (ch == 355.) :
-              print 'ok channels'
+              print('ok channels')
               TOMS = load(path+'TOMS_clim_360nm.npz') # shape lat, lon, month 
               
               for l in range(nobs): 
@@ -362,7 +362,7 @@ def get_ALBEDO(lat,lon,time,vtype,channels,month,path):
 if __name__ == "__main__":
 
     channels = [355.]
-    month = [07]    
+    month = [0o7]    
 
     topo_fn  = '/nobackup/1/VLIDORT/topo/topography.1152x721.nc'
     albedo_dir = '/nobackup/2/vbuchard/LIDAR/ALBEDO/'
@@ -421,7 +421,7 @@ if __name__ == "__main__":
     nMom = 300
     mobs = 200
     for i in range(0,N,mobs):
-        Irange = range(i,min(i+mobs,N))
+        Irange = list(range(i,min(i+mobs,N)))
         
         tau_, ssa_, g_, pmom_ = getAOPvector(a,channels, I= Irange,nMom=nMom,rcfile='Aod_EOS.rc')
         asol_=asol[Irange]    
@@ -434,7 +434,7 @@ if __name__ == "__main__":
         rad_[Irange,:] = rad
         Q_[Irange,:] = Q
         U_[Irange,:]= U
-    print 'save in a file'
+    print('save in a file')
 #    savez(c_dn+'radiances_1064nm_20090715_vector_U_Q_0.npz',\
 #          lon=c.lon,lat=c.lat,rads=rad_,Q=Q_,U=U_,sza=asol,phi=phi)
 #def HOLD():
