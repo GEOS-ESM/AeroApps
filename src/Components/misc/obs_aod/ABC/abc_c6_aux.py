@@ -173,7 +173,7 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='rmse'):
     nblocks = [len(group) for group in mxd.combgroups]
     nblocks.insert(0,0)
 
-    print "MASTERLIST", masterlist
+    print("MASTERLIST", masterlist)
 
     #--------------
     # Default sort by mean RMSE of first target
@@ -431,8 +431,8 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
       mod04RMSE.append(rmse(original[k],targets[k]))
       nnrRMSE.append(rmse(results[k],targets[k]))
 
-    print 'mod04RMSE',mod04RMSE
-    print 'nnrRMSE',nnrRMSE
+    print('mod04RMSE',mod04RMSE)
+    print('nnrRMSE',nnrRMSE)
     mod04RMSE = np.mean(mod04RMSE)
     nnrRMSE   = np.mean(nnrRMSE)
 
@@ -576,9 +576,9 @@ def make_error_pdfs_int(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRo
       dbmod04RMSE.append(rmse(dboriginal[k],targets[k]))
       nnrRMSE.append(rmse(results[k],targets[k]))
 
-    print 'mod04RMSE',mod04RMSE
-    print 'dbmod04RMSE',dbmod04RMSE
-    print 'nnrRMSE',nnrRMSE
+    print('mod04RMSE',mod04RMSE)
+    print('dbmod04RMSE',dbmod04RMSE)
+    print('nnrRMSE',nnrRMSE)
     mod04RMSE   = np.mean(mod04RMSE)
     dbmod04RMSE = np.mean(dbmod04RMSE)
     nnrRMSE     = np.mean(nnrRMSE)
@@ -753,10 +753,10 @@ def make_error_pdfs_dbdt(mxd,mxd2,Input,expid,ident,K=None,I=None,Title=None,
       nnrRMSE.append(rmse(results[k],targets[k]))
       nnrRMSE2.append(rmse(results2[k],targets[k]))
 
-    print 'mod04RMSE',mod04RMSE
-    print 'dbmod04RMSE',dbmod04RMSE
-    print 'nnrRMSE',nnrRMSE
-    print 'nnrRMSE2',nnrRMSE2
+    print('mod04RMSE',mod04RMSE)
+    print('dbmod04RMSE',dbmod04RMSE)
+    print('nnrRMSE',nnrRMSE)
+    print('nnrRMSE2',nnrRMSE2)
     mod04RMSE   = np.mean(mod04RMSE)
     dbmod04RMSE = np.mean(dbmod04RMSE)
     nnrRMSE     = np.mean(nnrRMSE)
