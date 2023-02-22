@@ -61,7 +61,7 @@ def daily():
          Male.append(male)
          Fem.append(fem)
 
-         print '[] Got %s with %5d cases '%(str(t),all)
+         print('[] Got %s with %5d cases '%(str(t),all))
          
          t += day
 
@@ -104,7 +104,7 @@ def monthly():
             Male.append(male)
             Fem.append(fem)
 
-            print '[] Got %s with %5d cases '%(str(t),all)
+            print('[] Got %s with %5d cases '%(str(t),all))
          
     savez('NPZ/kawasaki_japan.monthly.1969-2010.npz',
           Header=n.Header,
@@ -143,7 +143,7 @@ def climatology(y1=1969,y2=2010):
         Male.append(male)
         Fem.append(fem)
 
-        print '[] Got %s with %5d cases '%(str(t),all+male+fem)
+        print('[] Got %s with %5d cases '%(str(t),all+male+fem))
          
     savez('NPZ/kawasaki_japan.climatology.%d-%d.npz'%(y1,y2),
           Header=n.Header,
@@ -186,7 +186,7 @@ def yearly(m1=1,m2=12,npzWrite=True):
         Male.append(male)
         Fem.append(fem)
 
-        print '[] Got %s with %5d cases '%(str(t),all)
+        print('[] Got %s with %5d cases '%(str(t),all))
 
     tyme=array(Tyme),
     all=array(All,dtype='int16')
