@@ -138,7 +138,7 @@ class Curtain(object):
             self.Longitude, self.Latitude, self.tyme = _getTrackCSV(coords)
             self.Altitude = self.hs
         else:
-            raise ValueError, 'invalid coords file %s'%coords
+            raise ValueError('invalid coords file %s'%coords)
 
         #print 'Altitude',self.Altitude
 
@@ -190,7 +190,7 @@ class Curtain(object):
         elif nh == self.nh_met:
             return _zInterp(self.z,self.H_met,v5)
         else:
-            raise ValueError, "invalid vertical dimension, nh=%d"%nh
+            raise ValueError("invalid vertical dimension, nh=%d"%nh)
             
 #---
     def contourf(self,q,Title=None,Alt=False,N=None,figFile=None,pblc='m',**kwopts):
@@ -212,7 +212,7 @@ class Curtain(object):
 
         if self.aircraft.upper() != 'ER2':
             plot(self.Hour,self.Altitude,'b',linewidth=2,label=self.aircraft+' Altitude')
-        if 'pblz' in self.__dict__.keys():
+        if 'pblz' in list(self.__dict__.keys()):
             plot(self.Hour,self.pblz,pblc+'-',linewidth=2,label='PBL Height')
         legend(loc='upper right')
             
