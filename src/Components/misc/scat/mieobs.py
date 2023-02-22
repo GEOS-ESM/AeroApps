@@ -31,7 +31,7 @@ def getMieDims(rcfile='Aod_EOS.rc'):
     dutable = cf('filename_optical_properties_DU')
     nCh, nRh, nBin, nMom, nPol, rc = scat_MieObs_.getmiedims(dutable) 
     if rc != 0:
-       raise ValueError, "on return from getMieDims, rc = %d"%rc
+       raise ValueError("on return from getMieDims, rc = %d"%rc)
 
     return (nMom, nPol)
 
@@ -51,7 +51,7 @@ def aerToUpper(aer):
     Create upper case aliases for aer variables to cope with changes
     in filename.
     """
-    vnames = aer.__dict__.keys()
+    vnames = list(aer.__dict__.keys())
     for v in vnames:
         V = v.upper()
         if v != V:
@@ -103,7 +103,7 @@ def getAOPscalar(aer,channels,Verbose=False,rcfile='Aod_EOS.rc'):
         qm = ones((km,nq,nobs),dtype=float32)
         rh = aer.RH.T
 #        rh = zeros((km,nobs))
-        for n, v in zip(range(nq),vnames):
+        for n, v in zip(list(range(nq)),vnames):
             V = v.upper()
             qm[:,n,:] = aer.__dict__[V].T * aer.DELP.T / 9.81 
     else:                    # aer is (km,nobs)
@@ -111,7 +111,7 @@ def getAOPscalar(aer,channels,Verbose=False,rcfile='Aod_EOS.rc'):
         qm = ones((km,nq,nobs),dtype=float32)
         rh = aer.RH
 #        rh = zeros((km,nobs))
-        for n, v in zip(range(nq),vnames):
+        for n, v in zip(list(range(nq)),vnames):
             V = v.upper()
             qm[:,n,:] = aer.__dict__[V] * aer.DELP / 9.81 
 
@@ -120,8 +120,8 @@ def getAOPscalar(aer,channels,Verbose=False,rcfile='Aod_EOS.rc'):
     tau,ssa,g,rc = scat_MieObs_.getaopscalar(rcfile,channels,pad(vnames),Verbose,qm,rh)
 
     if rc!=0:
-        print "<<<ERROR>>> on return from scat_MieObs_.getaopscalar, rc = ", rc
-        raise ValueError, 'cannot get Aerosol Optical Properties (scalar version)'
+        print("<<<ERROR>>> on return from scat_MieObs_.getaopscalar, rc = ", rc)
+        raise ValueError('cannot get Aerosol Optical Properties (scalar version)')
 
     return (tau,ssa,g)
 #--
@@ -150,7 +150,7 @@ def getAOPvector(aer,channels,I=None,Verbose=False,rcfile='Aod_EOS.rc',nMom=301)
     nq, nch = len(vnames), len(channels) 
     if I is None:
         nobs = size(aer.PS)
-        I = range(0,nobs)
+        I = list(range(0,nobs))
     else :
         nobs = len(I)
     
@@ -159,14 +159,14 @@ def getAOPvector(aer,channels,I=None,Verbose=False,rcfile='Aod_EOS.rc',nMom=301)
         
         qm = ones((km,nq,nobs),dtype=float32)
         rh = aer.RH[I].T
-        for n, v in zip(range(nq),vnames):
+        for n, v in zip(list(range(nq)),vnames):
             V = v.upper()
             qm[:,n,:] = aer.__dict__[V][I].T * aer.DELP[I].T / 9.81 
     else:                    # aer is (km,nobs)
         km = aer.DELP.shape[0]
         qm = ones((km,nq,nobs),dtype=float32)
         rh = aer.RH[:,I]
-        for n, v in zip(range(nq),vnames):
+        for n, v in zip(list(range(nq)),vnames):
             V = v.upper()
             qm[:,n,:] = aer.__dict__[V][:,I] * aer.DELP[:,I] / 9.81 
     
@@ -178,8 +178,8 @@ def getAOPvector(aer,channels,I=None,Verbose=False,rcfile='Aod_EOS.rc',nMom=301)
     tau,ssa,g,pmom,rc = scat_MieObs_.getaopvector(rcfile,channels,pad(vnames),Verbose,qm,rh,nMom,nPol)
 
     if rc!=0:
-        print "<<<ERROR>>> on return from scat_MieObs_.getaopvector, rc = ", rc
-        raise ValueError, 'cannot get Aerosol Optical Properties (vector version)'
+        print("<<<ERROR>>> on return from scat_MieObs_.getaopvector, rc = ", rc)
+        raise ValueError('cannot get Aerosol Optical Properties (vector version)')
 
     return (tau,ssa,g,pmom)
 #---
@@ -208,7 +208,7 @@ def getO3tau(aer,channels,Verbose=False,I=None,OMPS=False,):
     nch = len(channels) 
     if I is None:
         nobs = size(aer.PS)
-        I = range(0,nobs)
+        I = list(range(0,nobs))
     else :
         nobs = len(I)
     
@@ -255,7 +255,7 @@ def getSO2tau(aer,channels,Verbose=False,I=None,OMPS=False,):
     nch = len(channels) 
     if I is None:
         nobs = size(aer.PS)
-        I = range(0,nobs)
+        I = list(range(0,nobs))
     else :
         nobs = len(I)
     
@@ -304,7 +304,7 @@ def getAOPext(aer,channels,I=None,vnames=None,Verbose=False):
 
     if I is None:
         nobs = size(aer.PS)
-        I = range(0,nobs)
+        I = list(range(0,nobs))
     else :
         nobs = len(I)
     
@@ -315,7 +315,7 @@ def getAOPext(aer,channels,I=None,vnames=None,Verbose=False):
         qm = ones((km,nq,nobs),dtype=float32)
         rh = aer.RH[I].T
 #        rh = zeros((km,nobs))
-        for n, v in zip(range(nq),vnames):
+        for n, v in zip(list(range(nq)),vnames):
             V = v.upper()
             qc[:,n,:] = aer.__dict__[V][I].T * aer.AIRDENS[I].T 
             qm[:,n,:] = aer.__dict__[V][I].T * aer.DELP[I].T / 9.81 
@@ -326,7 +326,7 @@ def getAOPext(aer,channels,I=None,vnames=None,Verbose=False):
         qm = ones((km,nq,nobs),dtype=float32)
         rh = aer.RH[I]
 #        rh = zeros((km,nobs))
-        for n, v in zip(range(nq),vnames):
+        for n, v in zip(list(range(nq)),vnames):
             V = v.upper()
             qc[:,n,:] = aer.__dict__[V][:,I] * aer.AIRDENS[:,I] 
             qm[:,n,:] = aer.__dict__[V][:,I] * aer.DELP[:,I] / 9.81 
@@ -337,8 +337,8 @@ def getAOPext(aer,channels,I=None,vnames=None,Verbose=False):
     ext,sca,backscat,aback_sfc,aback_toa,rc = scat_MieObs_.getext(channels,pad(vnames),Verbose,qc,qm,rh)
 
     if rc!=0:
-        print "<<<ERROR>>> on return from scat_MieObs_.getaopvector, rc = ", rc
-        raise ValueError, 'cannot get Aerosol Optical Properties (vector version)'
+        print("<<<ERROR>>> on return from scat_MieObs_.getaopvector, rc = ", rc)
+        raise ValueError('cannot get Aerosol Optical Properties (vector version)')
 
     return (ext,sca,backscat,aback_sfc,aback_toa)
 
