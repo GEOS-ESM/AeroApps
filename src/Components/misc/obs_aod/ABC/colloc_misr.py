@@ -28,11 +28,11 @@ if __name__ == "__main__":
     for year in range(2000,2015):
         for month in range(1,13):
 
-            print " "
-            print "Processing ", year, month
+            print(" ")
+            print("Processing ", year, month)
 
             if os.path.isfile('mapss.misr_maod.%04d%02d.npz'%(year,month)):
-                print "  ... already processed, skipping"
+                print("  ... already processed, skipping")
                 continue
 
 
@@ -54,11 +54,11 @@ if __name__ == "__main__":
                 if  (len(a_file)!=len(g_file)) or \
                     (len(a_file)!=len(r_file)) or \
                     (len(a_file)!=len(m_file)):
-                    print "- No matching 4-plets for this day ", year, month, day
+                    print("- No matching 4-plets for this day ", year, month, day)
                     continue
 
                 if len(a_file)==0:
-                    print "- No data for this day ", year, month, day
+                    print("- No data for this day ", year, month, day)
                     continue
 
                 a_files += a_file
@@ -69,7 +69,7 @@ if __name__ == "__main__":
             # Read files for this month
             # -------------------------
             if len(a_files)==0:
-                 print "- No data for this month ", year, month
+                 print("- No data for this month ", year, month)
                  continue
             else:
                  a, g, r, m = (ANET(a_files),MISR_GEOM(g_files),
@@ -79,19 +79,19 @@ if __name__ == "__main__":
             # Make sure d and r files are collocated
             # --------------------------------------
             if any(g.lon!=m.lon):
-                raise ValueError, '>>> Inconsistent D and M files for %d %d'%(year,month)
+                raise ValueError('>>> Inconsistent D and M files for %d %d'%(year,month))
             if any(g.lon!=r.lon):
-                raise ValueError, '>>> Inconsistent G and R files for %d %d'%(year,month)
+                raise ValueError('>>> Inconsistent G and R files for %d %d'%(year,month))
 
             # Collocate r and a files
             # -----------------------
-            print '- Collocating %d reflectances with %d AERONET obs (%d files)'\
-                  %(r.nobs,a.nobs,len(a_files))
+            print('- Collocating %d reflectances with %d AERONET obs (%d files)'\
+                  %(r.nobs,a.nobs,len(a_files)))
             Cndx = r.collocate(a)
 
             # Colapse objects to collocated points only
             # -----------------------------------------
-            print '- Colapsing with %d collocations'%Cndx[Cndx>0].size
+            print('- Colapsing with %d collocations'%Cndx[Cndx>0].size)
             I = Cndx>=0
             J = Cndx[I]
             a.colapse(J)
@@ -108,7 +108,7 @@ if __name__ == "__main__":
             
             # Save collocated files
             # ---------------------
-            print '- Saving files with %d collocations'%Cndx[Cndx>0].size
+            print('- Saving files with %d collocations'%Cndx[Cndx>0].size)
             a.savez('mapss.anet_misr.%04d%02d.npz'%(year,month))
             g.savez('mapss.misr_geom.%04d%02d.npz'%(year,month))
             r.savez('mapss.misr_mref.%04d%02d.npz'%(year,month))
