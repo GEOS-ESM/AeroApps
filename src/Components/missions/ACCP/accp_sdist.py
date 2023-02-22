@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Calculates the column size distribution for
@@ -84,7 +84,7 @@ class ACCP_SDIST(SDIST):
         """
         col = 'aer_Nv'
         if self.verbose:
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nc       = Dataset(self.inFile.replace('%col',col))
 
         for sds in self.SDS_AER:
@@ -161,12 +161,12 @@ if __name__ == "__main__":
 
         # Initialize VLIDORT class getting aerosol optical properties
         # -----------------------------------------------------------
-        print '++++Running VLIDORT with the following arguments+++'
-        print '>>>inFile:    ',inFile
-        print '>>>outFile:   ',outFile
-        print '>>>rcFile:    ',rcFile
-        print '>>>verbose:   ',args.verbose
-        print '++++End of arguments+++'
+        print('++++Running VLIDORT with the following arguments+++')
+        print('>>>inFile:    ',inFile)
+        print('>>>outFile:   ',outFile)
+        print('>>>rcFile:    ',rcFile)
+        print('>>>verbose:   ',args.verbose)
+        print('++++End of arguments+++')
         if not args.dryrun:
             sdist = ACCP_SDIST(inFile,outFile,rcFile,verbose=args.verbose)
             sdist = None

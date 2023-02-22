@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 class to do size distribution calculations
 """
@@ -574,12 +574,12 @@ class SDIST(object):
         r  = nc.createDimension('r',len(self.R))
         l  = nc.createDimension('lev',nlev)
 
-        _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'time', dtype='i4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'isotime', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'x',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'y',dtype='f4',zlib=False,verbose=self.verbose)
 
         nctrj.close()
 
@@ -608,7 +608,7 @@ class SDIST(object):
         dim = ('time','lev','r',)
         for spc in self.AERdistNAMES+['TOT']:
             spcdist = spc+'dist'
-            print spcdist
+            print(spcdist)
             this = nc.createVariable(spcdist,'f4',dim,zlib=True)
             this.long_name = spc + ' size distribution (dV/dr)'
             this.units = 'm^3/m'

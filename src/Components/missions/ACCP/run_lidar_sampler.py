@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper for trj_sampler.py
@@ -51,7 +51,7 @@ def StartNew(processes,cmds,nextdate,lendate):
 
    if nextdate < lendate:
       proc = subprocess.Popen(cmds[nextdate], shell=True)
-      print cmds[nextdate]
+      print(cmds[nextdate])
       nextdate += 1
       processes.append(proc)
 
@@ -205,9 +205,9 @@ if __name__ == "__main__":
                 fix_time(filelist,Date)
                 #Concatenate outfiles into one
                 cmd = nccat + ' -h -A ' + ' '.join(filelist) +' -o ' + filelist[0]
-                print cmd
+                print(cmd)
                 if os.system(cmd):
-                    raise ValueError, "nccat failed for {}".format(nymd)
+                    raise ValueError("nccat failed for {}".format(nymd))
 
                 for filename in filelist[1:]:
                     os.remove(filename)
