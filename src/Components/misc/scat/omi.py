@@ -60,7 +60,7 @@ class OMI(object):
         elif ext == '.npz':
             self._ReadNPZ (filename)
         else:
-            raise IOError, "Unknown extension %s, it must be either .ods or .npz"%ext 
+            raise IOError("Unknown extension %s, it must be either .ods or .npz"%ext) 
 
 #       Create space for simulations (ODS does not have it)
 #       ---------------------------------------------------
@@ -97,8 +97,8 @@ class OMI(object):
         nch  = self.radiance.nobs / self.ps.nobs 
         
         if self.radiance.nobs%self.ps.nobs != 0:
-            raise ValueError, "radiance.size=% is not a multiple of ps.size=%d"%\
-             (self.radiance.nobs,self.ps.nobs)
+            raise ValueError("radiance.size=% is not a multiple of ps.size=%d"%\
+             (self.radiance.nobs,self.ps.nobs))
  
 #       Pull out relevant arrays out of ODS object
 #       ------------------------------------------
@@ -184,7 +184,7 @@ class OMI(object):
 
         nch = self.nch
         if I is None:
-            I = range(self.lon.shape[0])
+            I = list(range(self.lon.shape[0]))
 
 #       Scalar calculation
 #       ------------------
@@ -206,7 +206,7 @@ class OMI(object):
                                            self.ai[I],verbose)
 
         if rc != 0:
-            raise ValueError, "on return from OMI_.scalar/vector, rc = "+str(rc)
+            raise ValueError("on return from OMI_.scalar/vector, rc = "+str(rc))
 
 #       Save results in object
 #       ----------------------
@@ -249,7 +249,7 @@ class OMI(object):
                              ai_ = self.ai_)
 
         if Verb >=1:
-            print "[w] Wrote file "+filename
+            print("[w] Wrote file "+filename)
 
 #---
     def writeg(self,filename=None,dir='.',expid='vlidort',refine=4,res=None,Verb=1):
@@ -350,7 +350,7 @@ class OMI(object):
            pass
 
        if Verb >=1:
-           print "[w] Wrote file "+filename
+           print("[w] Wrote file "+filename)
 
 #--
 
@@ -408,7 +408,7 @@ if __name__ == "__main__":
     mobs = 100
     for i in range(0, omi.nobs, mobs):
 
-             I = range(i,min(i+mobs,omi.nobs))
+             I = list(range(i,min(i+mobs,omi.nobs)))
              nMom, nPol, tau, ssa, pe, ze, te, g, pmom = getMieVect(aerosols,omi.channels,\
              omi.lon[I],omi.lat[I],nymd,nhms)
             
