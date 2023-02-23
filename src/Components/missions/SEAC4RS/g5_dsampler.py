@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from datetime import datetime, timedelta
 from pyobs.dragon import DRAGON
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     for fname in sort(glob("%s/dragon_aod_*[123]?-JUL*.txt"%anet_dir)):
 
         
-        print "[] Processing ", fname
+        print("[] Processing ", fname)
         d = DRAGON(fname)
         d.sample_N_writeICARTT(coll_names = coll_names,
                                template=template, top_url=top_url,

@@ -34,7 +34,7 @@ class Curtain(object):
             Vars = [Vars,]
         for var in Vars:
             if Verbose:
-                print ' Working on <%s>'%var
+                print(' Working on <%s>'%var)
             q = ga.sampleXYT(var,self.Longitude,self.Latitude,self.Tyme,Verbose=Verbose).data
             self.__dict__[var] = ma.MaskedArray(q,mask=q>=UNDEF)
                
@@ -116,7 +116,7 @@ class CurtainFP(FlightPlan,Curtain):
         elif vmaxmin != None:
             ## Linearly spaced levels between vmaxmin[0] and vmaxmin[1]
             if len(vmaxmin) < 2:
-                print 'vmaxmin should be a 2-element list'
+                print('vmaxmin should be a 2-element list')
                 sys.exit()
             clevs = linspace(vmaxmin[0],vmaxmin[1],32)
             contourf(self.Hour,h,q.T,**kwopts)
@@ -124,7 +124,7 @@ class CurtainFP(FlightPlan,Curtain):
         _colorbar()
         if Alt:
             plot(self.Hour,self.Altitude,'w',linewidth=2,label=self.aircraft+' Altitude')
-        if 'pblz' in self.__dict__.keys():
+        if 'pblz' in list(self.__dict__.keys()):
             plot(self.Hour,self.pblz,'w--',linewidth=2,label='PBL Height')
         legend(loc='upper right')
             
@@ -173,7 +173,7 @@ class CurtainDC8(DC8,Curtain):
         _colorbar()
         if Alt:
             plot(self.Hour,self.Altitude,'k',linewidth=2,label=self.aircraft+' Altitude')
-        if 'pblz' in f.__dict__.keys():
+        if 'pblz' in list(f.__dict__.keys()):
             plot(self.Hour,self.pblz,'k--',linewidth=2,label='PBL Height')
         legend(loc='upper right')
             
