@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Plot curtain from FlightPlan text files.
 """
@@ -21,12 +21,12 @@ if __name__ == "__main__":
     flp   =  nav  + '/WECAN-PLAN_C130_DATE_R0.npz'
 
     if len(sys.argv) < 2:
-        print "Usage: "
-        print "       curtain_plan date [rev]"
-        print "Revision rev defaults to R0."
-        print "Examples:" 
-        print "       curtain_plan 20160918 R1"
-        raise SystemExit, "Error: not enough arguments"
+        print("Usage: ")
+        print("       curtain_plan date [rev]")
+        print("Revision rev defaults to R0.")
+        print("Examples:") 
+        print("       curtain_plan 20160918 R1")
+        raise SystemExit("Error: not enough arguments")
     else:
         date = sys.argv[1]
         if len(sys.argv) > 2:
