@@ -60,7 +60,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
     """
     x = ncIn.variables[name]
     if verbose:
-        print 'copy variable ',name,x.dimensions
+        print('copy variable ',name,x.dimensions)
     y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
     if hasattr(x,'long_name'): y.long_name = x.long_name
     if hasattr(x,'units'): y.units = x.units
@@ -77,7 +77,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
     elif rank == 3:
         y[:,:,:] = x[:,:,:]
     else:
-        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
+        raise ValueError("invalid rank of <%s>: %d"%(name,rank))
 
 class LC(object):
     def __init__(self,nscan,npixel):
@@ -152,11 +152,11 @@ class MCD12C(object):
 
         # Save lon/lat
         # --------------------------
-        _copyVar(nctrj,nc,u'ccd_pixels',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'number_of_scans',dtype='f4',zlib=False,verbose=verbose)            
-        _copyVar(nctrj,nc,u'longitude',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'latitude',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'time', dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,'ccd_pixels',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,'number_of_scans',dtype='f4',zlib=False,verbose=verbose)            
+        _copyVar(nctrj,nc,'longitude',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,'latitude',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,'time', dtype='f4',zlib=False,verbose=verbose)
 
  
         # Write land cover to file
@@ -208,7 +208,7 @@ class MCD12C(object):
         self.nscan  = nscan
         for ut in utyme:
             if Verbose:
-                print 'Working on '+ str(ut.date())
+                print('Working on '+ str(ut.date()))
             self.readFile(ut)
 
             Ityme = dtyme == ut

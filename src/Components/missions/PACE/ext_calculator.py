@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to compute optical properties along a sampled file.
@@ -68,7 +68,7 @@ def getVars(inFile):
 
     Vars       = MieCalc()
     file       = Dataset(inFile)
-    names      = file.variables.keys()
+    names      = list(file.variables.keys())
     MIENAMES   = names
     for n, name in enumerate(MIENAMES):
         var = file.variables[name]
@@ -229,7 +229,7 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
         lev.units = 'km'
         lev.positive = 'down'
         lev.axis = 'z'
-        lev[:] = range(1,km+1)
+        lev[:] = list(range(1,km+1))
 
     # Add fake dimensions for GrADS compatibility
     # -------------------------------------------
@@ -246,7 +246,7 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
         e.long_name = 'Station Ensemble Dimension'
         e.axis = 'e'
         e.grads_dim = 'e'
-        e[:] = range(len(stations))
+        e[:] = list(range(len(stations)))
     
     # Lat/Lon Coordinates
     # ----------------------
@@ -330,7 +330,7 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames, MieV
     nc.close()
 
     if options.verbose:
-        print " <> wrote %s file %s"%(options.format,options.outFile)
+        print(" <> wrote %s file %s"%(options.format,options.outFile))
     
     
 #------------------------------------ M A I N ------------------------------------
@@ -410,7 +410,7 @@ if __name__ == "__main__":
     elif 'EXCEL' in options.format:
         options.outFile = name + '.xls'
     else:
-        raise ValueError, 'invalid extension <%s>'%ext
+        raise ValueError('invalid extension <%s>'%ext)
     
     # Get Variables
     # --------------------------
