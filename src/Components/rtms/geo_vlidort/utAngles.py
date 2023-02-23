@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
    Unit testing for Geostationary angles.
 """
@@ -28,11 +28,11 @@ if __name__ == "__main__":
 
     vaa, vza, saa, sza = satangles(yr,mo,day,hr,min,sec,latp,lonp,lonss)
 
-    print "Angles:"
-    print "Viewing azimuth: ", vaa
-    print "Viewing  zenith: ", vza
-    print "Solar   azimuth: ", saa
-    print "Solar    zenith: ", sza
+    print("Angles:")
+    print("Viewing azimuth: ", vaa)
+    print("Viewing  zenith: ", vza)
+    print("Solar   azimuth: ", saa)
+    print("Solar    zenith: ", sza)
 
     nEW,nNS = 5, 3
 
