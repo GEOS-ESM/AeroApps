@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 
 """
@@ -77,10 +77,10 @@ if __name__ == "__main__":
         
     if options.verbose:
         Verb=1
-        print ""
-        print "                          QFED Level 3B Processing"
-        print "                          ------------------------"
-        print ""
+        print("")
+        print("                          QFED Level 3B Processing")
+        print("                          ------------------------")
+        print("")
     else:
         Verb=0
 
@@ -110,11 +110,11 @@ if __name__ == "__main__":
                 ifn = glob(pat)[0]
                 f = GFIO(ifn)
             except:
-                print "[x] cannot find/read input FRP file for %s, ignoring it"%d
+                print("[x] cannot find/read input FRP file for %s, ignoring it"%d)
                 continue
 
             if Verb:
-                print "[] Reading ", ifn 
+                print("[] Reading ", ifn) 
 
             Land[sat]  = f.read('land')
             Water[sat] = f.read('water')
@@ -140,7 +140,7 @@ if __name__ == "__main__":
         for MxD14 in Products:
             sat = Sat[MxD14]
  
-            if sat in FRP.keys():
+            if sat in list(FRP.keys()):
                 l3a_dir  = os.path.join(options.level3a_dir, MxD14, 'Y%04d'%d_.year, 'M%02d'%d_.month)
                 l3a_file = '%s_%s.frp.%s.%04d%02d%02d.nc4'%(options.expid, MxD14, col, d_.year, d_.month, d_.day)
             
@@ -152,7 +152,7 @@ if __name__ == "__main__":
         dir = os.path.join(options.level3b_dir, 'QFED')
         rc = os.system("/bin/mkdir -p %s"%dir)
         if rc:
-            raise IOError, 'cannot create output directory'
+            raise IOError('cannot create output directory')
 
 #       Write output file
 #       -----------------
