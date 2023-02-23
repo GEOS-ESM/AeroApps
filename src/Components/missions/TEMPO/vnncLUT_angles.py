@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Makes netcdf files of input data for NN trainig dataset
 """
