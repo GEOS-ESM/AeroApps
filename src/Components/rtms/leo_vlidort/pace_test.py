@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Does some simple calculations to benchmark PACE calculations
@@ -189,7 +189,7 @@ def level_1(geos,SZA,VZA,RAA,channel,rcFile):
     ROT, depol_ratio, rc = vlidortWrapper(*args) 
     ROD = np.sum(ROT)
 
-    print 'starting ROD',ROD
+    print('starting ROD',ROD)
 
     # wrapper function based on albedo
     vlidortWrapper = WrapperFuncs[albedoType]
@@ -204,7 +204,7 @@ def level_1(geos,SZA,VZA,RAA,channel,rcFile):
         nrod = rod[iwav]
         ndepol = depol[iwav]
     ROT = ROT*nrod/ROT.sum()
-    print 'standard rod',nrod
+    print('standard rod',nrod)
     # use surface pressure for scaling
     ROT = ROT*geos.pe[-1,0]/101300.0
     depol_ratio = ndepol
