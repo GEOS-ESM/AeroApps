@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Creates a trj_sampler resource file for a given bounding box.
 # Some named cross-sections are defined internally for consistency.
@@ -82,9 +82,9 @@ if __name__ == "__main__":
     # Bounding box on input
     # ---------------------
     if len(sys.argv) < 4:
-        print "Usage:     %s  out_filename iso_t0 lon1 lat1 lon2 lat2"
-        print "           %s  out_filename iso_t0 section_name"
-        print "Sections: ", Sections.keys()
+        print("Usage:     %s  out_filename iso_t0 lon1 lat1 lon2 lat2")
+        print("           %s  out_filename iso_t0 section_name")
+        print("Sections: ", list(Sections.keys()))
         sys.exit(1)
 
     if len(sys.argv) == 7:
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         filename, iso_t0, section = sys.argv[1:]
         bbox = Sections[section]
     else:
-        raise ValueError, "not enough parameters on input"
+        raise ValueError("not enough parameters on input")
 
     t0 = isoparser(iso_t0) # take-off time
     

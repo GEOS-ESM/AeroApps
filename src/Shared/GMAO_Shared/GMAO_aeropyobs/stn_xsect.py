@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Creates a stn_sampler resource file for a given bounding box.
 #
@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     # Bounding box on input
     if len(sys.argv) < 6:
-        print "Usage:   %s  filename lon1 lat1 lon2 lat2 [N]"
+        print("Usage:   %s  filename lon1 lat1 lon2 lat2 [N]")
         sys.exit(1)
 
     if len(sys.argv) == 7:

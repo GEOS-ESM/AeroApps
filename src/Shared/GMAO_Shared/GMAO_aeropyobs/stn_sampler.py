@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to sample GEOS-5  files at fixed station locations.
@@ -100,7 +100,7 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
     Sample file at station locations.
     """
     if options.verbose:
-        print " [] Interpolating <%s>"%V.name
+        print(" [] Interpolating <%s>"%V.name)
     ns, nt, nz = (len(stnLon), len(tyme), V.km)
     if f.lower:
         name = V.name.lower() # GDS always uses lower case
@@ -116,7 +116,7 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
             z = f.interp(name,stnLon,stnLat,tyme=t,algorithm=options.algo,
                          Transpose=True,squeeze=squeeze)
         except:
-            print "    - Interpolation failed for <%s> on %s"%(V.name,str(t))
+            print("    - Interpolation failed for <%s> on %s"%(V.name,str(t)))
             if nz>0:
                 z = MAPL_UNDEF * ones((ns,nz))
             else:
@@ -185,7 +185,7 @@ def writeXLS ( stnName, stnLon, stnLat, tyme, f, options,
         for v in Vars:
             var = f.Vars[v.upper()]
             if var.km > 0:
-                print 'Warning: ignoring <%s>, only single-level variables supported for now'
+                print('Warning: ignoring <%s>, only single-level variables supported for now')
                 continue 
             sheet.write(0,j,var.name.upper())
             sheet.write(1,j,var.title.replace('_',' ').replace('ensemble',''))
@@ -211,7 +211,7 @@ def writeXLS ( stnName, stnLon, stnLat, tyme, f, options,
         if options.dryrun:
             this = zeros(shp)
             if options.verbose:
-                print "[] Zero-filling <%s>"%var.name
+                print("[] Zero-filling <%s>"%var.name)
         else:
             this = stnSample(f,var,stnLon,stnLat,tyme,options)
 
@@ -229,7 +229,7 @@ def writeXLS ( stnName, stnLon, stnLat, tyme, f, options,
     book.save(options.outFile)
 
     if options.verbose:
-        print " <> wrote %s file %s"%(options.format,options.outFile)
+        print(" <> wrote %s file %s"%(options.format,options.outFile))
     
 #---
 def writeNC ( stnName, stnLon, stnLat, tyme, f, options,
@@ -308,7 +308,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, f, options,
     e.long_name = 'Station Ensemble Dimension'
     e.axis = 'e'
     e.grads_dim = 'e'
-    e[:] = range(ns_)
+    e[:] = list(range(ns_))
     
     if f.km > 0:
         lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
@@ -354,7 +354,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, f, options,
         if options.dryrun:
             this_ = zeros(shp)
             if options.verbose:
-                print "[] Zero-filling <%s>"%var.name
+                print("[] Zero-filling <%s>"%var.name)
         else:
             this_ = stnSample(f,var,stnLon,stnLat,tyme,options)
         this[:] = this_[:]
@@ -364,7 +364,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, f, options,
     nc.close()
 
     if options.verbose:
-        print " <> wrote %s file %s"%(options.format,options.outFile)
+        print(" <> wrote %s file %s"%(options.format,options.outFile))
     
 #------------------------------------ M A I N ------------------------------------
 
@@ -432,7 +432,7 @@ if __name__ == "__main__":
     elif 'EXCEL' in options.format:
         options.outFile = name + '.xls'
     else:
-        raise ValueError, 'invalid extension <%s>'%ext
+        raise ValueError('invalid extension <%s>'%ext)
         
     # Open the file and gather metadata
     # ---------------------------------

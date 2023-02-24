@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to generate a orbital trajectory and sample model
@@ -145,7 +145,7 @@ def getTrackNPZ(npzFile):
     elif 'tyme' in n.__dict__:
         return ( n.lon, n.lat, n.tyme)
     else:
-        raise ValueError, 'NPZ file has neither *time* nor *tyme* attribut.e'
+        raise ValueError('NPZ file has neither *time* nor *tyme* attribut.e')
 
 def getVars(rcFile):
     """
@@ -158,19 +158,19 @@ def getVars(rcFile):
     AllVars = dict()
     levUnits = 'none'
     levs = []
-    for V in cf.keys():
+    for V in list(cf.keys()):
         path = cf(V)
         f = Open(path)
         varList = []
         if '*' in V:
-            VARS = f.Vars.keys()
+            VARS = list(f.Vars.keys())
         else:
             VARS = V.split(',') 
         for v in VARS:
             v = v.strip()
             var = f.Vars[v]
             if AllVars.__contains__(v): # unique variable names for output
-                print " >< Skipping duplicate variable <%s> in %s"%(v,path)
+                print(" >< Skipping duplicate variable <%s> in %s"%(v,path))
                 continue
             elif v.upper() == "TAITIME":
                 continue # annoying HDFEOS crap
@@ -285,7 +285,7 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
     # --------------------------------------------------
     for path in Vars:
         if options.verbose:
-            print " <> opening "+path
+            print(" <> opening "+path)
         g = Open(path) 
         for var in Vars[path]:
             if var.km == 0:
@@ -302,8 +302,8 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
             else:
                 name = var.name
             if options.verbose:
-                print " [] %s interpolating <%s>"%\
-                        (options.algo.capitalize(),name.upper())        
+                print(" [] %s interpolating <%s>"%\
+                        (options.algo.capitalize(),name.upper()))        
             Z = g.sample(name,lons,lats,tyme,algorithm=options.algo,
                          Transpose=True,squeeze=True)
             Z[abs(Z)>MAPL_UNDEF/1000.] = MAPL_UNDEF # detect undef contaminated interp
@@ -314,7 +314,7 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
     nc.close()
 
     if options.verbose:
-        print " <> wrote %s file %s"%(options.format,options.outFile)
+        print(" <> wrote %s file %s"%(options.format,options.outFile))
     
 #---
 def writeXLS ( lons, lats, tyme, Vars, trjFile, options,
@@ -387,11 +387,11 @@ def writeXLS ( lons, lats, tyme, Vars, trjFile, options,
     for path in Vars:
         
         if options.verbose:
-            print " <> opening "+path
+            print(" <> opening "+path)
         g = Open(path) 
         for var in Vars[path]:
             if var.km > 0:
-                print 'Warning: ignoring <%s>, only single-level variables supported for now'%var.name
+                print('Warning: ignoring <%s>, only single-level variables supported for now'%var.name)
                 continue # no profiles for now
             if g.lower:
                 name = var.name.lower() # GDS always uses lower case
@@ -407,7 +407,7 @@ def writeXLS ( lons, lats, tyme, Vars, trjFile, options,
             # Interpolate
             # -----------
             if options.verbose:
-                print " [] Interpolating <%s>"%name.upper()
+                print(" [] Interpolating <%s>"%name.upper())
             Z = g.sample(name,lons,lats,tyme,Transpose=True,squeeze=True)
             Z[abs(Z)>MAPL_UNDEF/1000.] = MAPL_UNDEF # detect undef contaminated interp
 
@@ -424,7 +424,7 @@ def writeXLS ( lons, lats, tyme, Vars, trjFile, options,
     book.save(options.outFile)
 
     if options.verbose:
-        print " <> wrote %s file %s"%(options.format,options.outFile)
+        print(" <> wrote %s file %s"%(options.format,options.outFile))
     
 #------------------------------------ M A I N ------------------------------------
 
@@ -499,7 +499,7 @@ if __name__ == "__main__":
     elif 'EXCEL' in options.format:
         options.outFile = name + '.xls'
     else:
-        raise ValueError, 'invalid extension <%s>'%ext
+        raise ValueError('invalid extension <%s>'%ext)
   
     # Get Variables and Metadata
     # --------------------------
@@ -509,7 +509,7 @@ if __name__ == "__main__":
     # -----------------
     if options.traj == 'TLE':
         if t1 is None:
-            raise ValueError, 'time range (t1,t2) must be specified when doing TLE sampling.'
+            raise ValueError('time range (t1,t2) must be specified when doing TLE sampling.')
         lon, lat, tyme = getTrackTLE(trjFile, t1, t2, options.dt_secs)
     elif options.traj == 'ICT':
         lon, lat, tyme = getTrackICT(trjFile,options.dt_secs)
@@ -522,7 +522,7 @@ if __name__ == "__main__":
     elif options.traj == 'ORACLES':
         lon, lat, tyme = getTrackORACLES(trjFile,options.dt_secs)
     else:
-        raise ValueError, 'cannot handle trajectory file format <%s>'%options.traj
+        raise ValueError('cannot handle trajectory file format <%s>'%options.traj)
 
     # Make sure longitudes in [-180,180]
     # ----------------------------------
