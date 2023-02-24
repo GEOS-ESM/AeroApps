@@ -1,4 +1,5 @@
-
+file (GLOB python_files pyobs/*.py)
+install (FILES ${python_files} DESTINATION lib/Python/pyobs)
 
 # Python executables
 # ------------------
