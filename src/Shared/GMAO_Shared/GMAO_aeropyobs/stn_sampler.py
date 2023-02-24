@@ -14,7 +14,7 @@ from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 from csv             import DictReader
 
-from MAPL           import Config
+from MAPL.config    import Config
 from MAPL.constants import *
 
 class StnVar(object):

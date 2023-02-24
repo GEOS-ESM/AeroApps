@@ -23,7 +23,8 @@ from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 from csv             import DictReader
 
-from MAPL           import Config, eta
+from MAPL.config    import Config
+from MAPL           import eta
 from MAPL.constants import *
 from pyobs          import ICARTT
 from pyobs.sgp4     import getTrack 
