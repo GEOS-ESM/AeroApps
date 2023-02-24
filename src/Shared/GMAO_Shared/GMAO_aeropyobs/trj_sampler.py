@@ -21,7 +21,8 @@ from MAPL.config    import Config
 from MAPL           import eta
 from MAPL.constants import *
 from pyobs.sgp4     import getTrack as getTrackTLE
-from pyobs          import ICARTT, NPZ, HSRL, ORACLES
+from pyobs          import ICARTT, NPZ, HSRL
+from pyobs.oracles  import ORACLES
 
 class TleVar(object):
     """                                                                                  
