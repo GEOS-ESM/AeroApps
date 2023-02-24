@@ -3,7 +3,6 @@ Simple classes to read merge and other NetCDF from ORACLES.
 
 """
 
-from types    import ListType
 from datetime import datetime, timedelta
 from dateutil.parser import parse as isoparser
 
