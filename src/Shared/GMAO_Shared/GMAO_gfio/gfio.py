@@ -454,7 +454,7 @@ class GFIO(object):
         """Closes a GFIO file."""
         if self.fid is not None:
             rc = gfioclose(self.fid)
-	    self.fid=None
+        self.fid=None
 
 #---
     def __del__(self):
