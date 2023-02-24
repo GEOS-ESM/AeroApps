@@ -703,7 +703,7 @@ class GFIOctl(object):
         self.gfio = gfio
         v = gfio.interp(vname,lon,lat,nymd=nymd,nhms=nhms,
                         algorithm=algorithm,**kwds)
-	if Transpose: v = v.T  # transpose to (nobs,km)
+        if Transpose: v = v.T  # transpose to (nobs,km)
 
         return v
 
@@ -754,7 +754,7 @@ class GFIOctl(object):
                 v = self.interpXY(vname, lon[i], lat[i],tyme=now,
 				  Transpose=True, # shape will be (nobs,km)
 				  squeeze=False,algorithm=algorithm,**kwopts)
-		shp = list(v.shape)
+                shp = list(v.shape)
             else:
                 v = None
             V.append(v)
@@ -791,11 +791,11 @@ class GFIOctl(object):
           v = V[0]
           v.shape = shp
           
-	if Transpose == False: v = v.T # back to GFIO's (km,nobs)
+        if Transpose == False: v = v.T # back to GFIO's (km,nobs)
         if squeeze == True:    v = v.squeeze()
 
 
-	return v
+        return v
 
 #---
     def sampleVars(self, lon, lat, tyme, npzFile=None, onlyVars=None,
