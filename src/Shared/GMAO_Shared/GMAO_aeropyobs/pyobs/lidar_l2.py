@@ -86,7 +86,7 @@ class LIDAR_L2(object):
         # ---------------------------
         for v in onlyVars:
             if Verbose:
-                print "<> Sampling ", v
+                print("<> Sampling ", v)
             var = fh.sample(v,lons,lats,tymes,Verbose=Verbose)
             if len(var.shape) == 1:
                 self.sample.__dict__[v] = var
@@ -94,7 +94,7 @@ class LIDAR_L2(object):
                 var = var.T # shape should be (nobs,nz)
                 self.sample.__dict__[v] = var
             else:
-                raise IndexError, 'variable <%s> has rannk = %d'%len(var.shape)
+                raise IndexError('variable <%s> has rannk = %d'%len(var.shape))
 
         if npzFile is not None:
             savez(npzFile,**self.sample.__dict__)            
@@ -107,7 +107,7 @@ class LIDAR_L2(object):
         from grads.gahandle import GaHandle
         self.sample = GaHandle(npzFile)
         npz = load(npzFile)
-        for v in npz.keys():
+        for v in list(npz.keys()):
             self.sample.__dict__[v] = npz[v]
                 
     def addVar(self,ga,expr='albedo',vname=None,clmYear=None,tight=True):

@@ -55,7 +55,7 @@ class FPL(object):
         self.n = len(self.waypoints)
         self.identifier, self.lon, self.lat = [], [], []
         for wp in self.waypoints:
-            print wp
+            print(wp)
             self.identifier += [wp['identifier'],]
             self.lon += [float(wp['lon']),]
             self.lat += [float(wp['lat']),]
@@ -108,7 +108,7 @@ class FPL(object):
         # --------------------------------------
         rLon = interp(rTime_secs, t_secs, f.lon)
         rLat = interp(rTime_secs, t_secs, f.lat)
-        print rTime_secs[-1], t_secs[-1]
+        print(rTime_secs[-1], t_secs[-1])
         
         f.time = time
 
@@ -161,13 +161,13 @@ def _xml2obj(src):
             # treat single element as a list of 1
             return 1
         def __getitem__(self, key):
-            if isinstance(key, basestring):
+            if isinstance(key, str):
                 return self._attrs.get(key,None)
             else:
                 return [self][key]
         def __contains__(self, name):
-            return self._attrs.has_key(name)
-        def __nonzero__(self):
+            return name in self._attrs
+        def __bool__(self):
             return bool(self._attrs or self.data)
         def __getattr__(self, name):
             if name.startswith('__'):
@@ -190,7 +190,7 @@ def _xml2obj(src):
             items = sorted(self._attrs.items())
             if self.data:
                 items.append(('data', self.data))
-            return u'{%s}' % ', '.join([u'%s:%s' % (k,repr(v)) for k,v in items])
+            return '{%s}' % ', '.join(['%s:%s' % (k,repr(v)) for k,v in items])
 
     class TreeBuilder(xml.sax.handler.ContentHandler):
         def __init__(self):
@@ -203,7 +203,7 @@ def _xml2obj(src):
             self.current = DataNode()
             self.text_parts = []
             # xml attributes --> python attributes
-            for k, v in attrs.items():
+            for k, v in list(attrs.items()):
                 self.current._add_xml_attr(_name_mangle(k), v)
         def endElement(self, name):
             text = ''.join(self.text_parts).strip()
@@ -220,11 +220,11 @@ def _xml2obj(src):
             self.text_parts.append(content)
 
     builder = TreeBuilder()
-    if isinstance(src,basestring):
+    if isinstance(src,str):
         xml.sax.parseString(src, builder)
     else:
         xml.sax.parse(src, builder)
-    return builder.root._attrs.values()[0]
+    return list(builder.root._attrs.values())[0]
 
 #...........................................................................................
 
@@ -232,9 +232,9 @@ if __name__ == "__main__":
 
     f = FPL('wecan_2018-08-23.fpl')
 
-    print 'Waypoints: ', f.identifier[:]
-    print '      lon: ', f.lon[:]
-    print '      lat: ', f.lat[:]
+    print('Waypoints: ', f.identifier[:])
+    print('      lon: ', f.lon[:])
+    print('      lat: ', f.lat[:])
     
     lon,lat,time = f.getCoords(t0=datetime(2018,8,23,18,30,0),
                                npzFile='wecan.plan.2018-08-23.npz')

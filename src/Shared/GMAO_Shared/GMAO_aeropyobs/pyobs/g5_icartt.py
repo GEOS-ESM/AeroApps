@@ -131,7 +131,7 @@ class G5_ICARTT(object):
         sample() before doing a write().
         """
         if self.Verbose:
-            print ""
+            print("")
         s = 0
         for site in self.Sites:
             _writeICARTT ( self.Sites[site], self.Collection, self.Table[:,:,s], self.date,
@@ -283,7 +283,7 @@ class G5_AIRCRAFT(object):
                Nav['Longitude']==None or \
                Nav['Latitude'] ==None or \
                Nav['Altitude'] ==None:
-            raise ValueError, 'Invalid or imcomplet navigation in '+ict_flight 
+            raise ValueError('Invalid or imcomplet navigation in '+ict_flight) 
        
         self.tyme = Nav['Time']
         self.lon = Nav['Longitude']
@@ -302,7 +302,7 @@ def _parseSites ( rc_Sites ):
     """
     cf = Config(rc_Sites)
     Sites = {}
-    for site in cf.keys():
+    for site in list(cf.keys()):
         Info = {}        
         for token in cf(site).replace(' ','').split(';'):
             att, value = token.split('=')
@@ -320,7 +320,7 @@ def _parseColl ( rc_Collection, name, url ):
        url           --- url/filename for opening the collection
     """
     cf = Config(rc_Collection)
-    Shorts = cf.keys()
+    Shorts = list(cf.keys())
     del Shorts[Shorts.index('__TITLE__')]
     Variables = {}
     for short in Shorts:
@@ -397,28 +397,28 @@ def _getTable ( Sites, Collection, when,
 
     # Type of Sites determin whether we are in aircraft mode or not
     # -------------------------------------------------------------
-    if len(Sites) == 1 and isinstance(Sites.values()[0]['lon'],ndarray):
+    if len(Sites) == 1 and isinstance(list(Sites.values())[0]['lon'],ndarray):
         Aircraft_mode = True
-        aircraft = Sites.keys()[0]
+        aircraft = list(Sites.keys())[0]
         Site = Sites[aircraft]
     else:
         Aircraft_mode = False
 
     if Verbose:
-        print ""
-        print "             GEOS-5 ICARTT Sampler"
-        print "             ---------------------"
-        print ""
-        print "Collection: ", Collection['name']
-        print "            ", Collection['title']
+        print("")
+        print("             GEOS-5 ICARTT Sampler")
+        print("             ---------------------")
+        print("")
+        print("Collection: ", Collection['name'])
+        print("            ", Collection['title'])
         if type(when) in (ListType,TupleType):
-            print "      When: ", when[0], ' to ', when[1]
+            print("      When: ", when[0], ' to ', when[1])
         else:
-            print "      When: ", when.date()
-        print "     Sites: "
+            print("      When: ", when.date())
+        print("     Sites: ")
         for s in Sites:
-            print "            ", s
-        print ""
+            print("            ", s)
+        print("")
 
     # Guess ftype
     # -----------
@@ -447,16 +447,16 @@ def _getTable ( Sites, Collection, when,
         try:
             nlevs = fhh.var_levs[fhh.vars.index(AltVar.split('.')[0])]
             if nlevs != fhh.nz:
-                raise ValueError, "Strange, altitude not defined in all levels"
+                raise ValueError("Strange, altitude not defined in all levels")
         except:
-            raise ValueError, "Altitude variable no present"
+            raise ValueError("Altitude variable no present")
 
     # otherwise, cannot yet handle 3D variables
     # ------------------------------------------
     else:
         for var in Collection['vars']:
             if fh.var_levs[fh.vars.index(var.lower())]>0:
-                raise ValueError, "cannot yet handle 3D variables unless in aircraft mode"
+                raise ValueError("cannot yet handle 3D variables unless in aircraft mode")
 
     # Serialize lat/lon coordinates
     # -----------------------------
@@ -521,7 +521,7 @@ def _getTable ( Sites, Collection, when,
         if Ghosted:
             tbeg, tend = tbeg-1,tend+1 # needed for time interpolation
 
-    T = range(tbeg,tend+1) 
+    T = list(range(tbeg,tend+1)) 
 
     # Sample variables at site locations
     # ----------------------------------
@@ -540,7 +540,7 @@ def _getTable ( Sites, Collection, when,
        time_ = _gatime2dt(ga.rword(1,3))
        dt = time_ - t0
        if Verbose:
-          print "[] Sampling", time_, '-->', dt.total_seconds(), 'secs'
+          print("[] Sampling", time_, '-->', dt.total_seconds(), 'secs')
 
        # Fill in time variable (by convention the first one in Table)
        # ------------------------------------------------------------
@@ -562,9 +562,9 @@ def _getTable ( Sites, Collection, when,
        # Loop over variables in Collection
        # ---------------------------------
        j = 1 # variable index
-       for var in Collection['vars'].keys():
+       for var in list(Collection['vars'].keys()):
           if Verbose>1:
-             print "   - Doing <%s>"%var
+             print("   - Doing <%s>"%var)
              
           # Interpolate variable to la/lon
           # ------------------------------
@@ -647,7 +647,7 @@ def _writeICARTT ( Site, Collection, Table, date,
     else:
         Coords = ['UTC_start',]
 
-    vnames = str(Coords + Collection['vars'].keys())\
+    vnames = str(Coords + list(Collection['vars'].keys()))\
                  .replace('[','')\
                  .replace(']','')\
                  .replace("'","")\
@@ -675,7 +675,7 @@ def _writeICARTT ( Site, Collection, Table, date,
                 )
         
     if Verbose:
-        print "<> Writing <%s>"%filename
+        print("<> Writing <%s>"%filename)
 
     # Create directory and write out the header
     # -----------------------------------------
@@ -764,8 +764,8 @@ def _ut():
     # Sample date
     # -----------
     dt = timedelta(seconds=86400)
-    t     = datetime(2011,07,01)
-    t_max = datetime(2011,07,17)
+    t     = datetime(2011,0o7,0o1)
+    t_max = datetime(2011,0o7,17)
     while t <= t_max:
         for c in Collections:
             _g5_icartt ( Sites, Collections[c], 
@@ -778,13 +778,13 @@ if __name__ == "__main__":
 
     # Sample collection
     # -----------------
-    t = datetime(2011,07,01)
+    t = datetime(2011,0o7,0o1)
     g = G5_ICARTT('./d-aq_sites.rc', Verbose=True)
     g.sample(COLLECTIONS[0],t)
     g.write()
 
     # All collections
     # ---------------
-    t = datetime(2011,07,02)
+    t = datetime(2011,0o7,0o2)
     g.Sample_N_Write(t)
     

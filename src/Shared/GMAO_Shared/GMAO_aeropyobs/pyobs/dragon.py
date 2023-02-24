@@ -137,7 +137,7 @@ class DRAGON(object):
             dd, mm, yy = d.split(':')
             h, m, s = t.split(':')
             if yy=="1900":
-                raise ValueError, 'Invalid date on file: '+d
+                raise ValueError('Invalid date on file: '+d)
             else:
                 tyme = datetime(int(yy),int(mm),int(dd),int(h),int(m),int(s))
             self.tyme.append(tyme)
@@ -221,7 +221,7 @@ class DRAGON(object):
 
         # Determine AERONET and GEOS-5 variables
         # --------------------------------------
-        allVars = Sites.values()[0]['data'].__dict__.keys()
+        allVars = list(list(Sites.values())[0]['data'].__dict__.keys())
         anetVars = [ 'Date', 'Time', 'Site', 'Lat', 'Long', 'Elevation(m)',
                      'an_AOD_550','an_T2m', 'an_TQV' ]
         xVars = [ 'tnum', 'I', 'tyme', 'N' ]
@@ -246,7 +246,7 @@ class DRAGON(object):
                 f.write("\n")
         f.close()
         if Verbose:
-            print "[] wrote %s"%filename
+            print("[] wrote %s"%filename)
 
 #---
     def sample_N_writeICARTT (self, 
@@ -265,7 +265,7 @@ class DRAGON(object):
         # Assumes single date
         # -------------------
         if self.tyme[0].date() != self.tyme[-1].date():
-            raise ValueError, "time range span multiple days, cannot proceed"
+            raise ValueError("time range span multiple days, cannot proceed")
         t0 = self.tyme[0]
         date = t0.replace(hour=0,minute=0,second=0,microsecond=0)
 
@@ -280,7 +280,7 @@ class DRAGON(object):
 
         # Determine AERONET and GEOS-5 variables
         # --------------------------------------
-        allVars = Sites.values()[0]['data'].__dict__.keys()
+        allVars = list(list(Sites.values())[0]['data'].__dict__.keys())
         anetVars = [ 'an_AOD_550','an_T2m', 'an_TQV' ]
         xVars = [ 'Date', 'Time', 'Site', 'Lat', 'Long', 'Elevation(m)', 'tnum', 'I', 'tyme', 'N' ]
         g5Vars = []
@@ -295,11 +295,11 @@ class DRAGON(object):
 
         # For AERONET, hardwire it
         # ------------------------
-        Vars['an_AOD_550'] = dict ( long = 'Aeronet AOD at 550 nm (interpolated from 500/675 nm)' ,
+        Vars['an_AOD_550'] = dict ( int = 'Aeronet AOD at 550 nm (interpolated from 500/675 nm)' ,
                                     units = 'none' )
-        Vars['an_T2m']     = dict ( long = 'Aeronet 2m Temperature',
+        Vars['an_T2m']     = dict ( int = 'Aeronet 2m Temperature',
                                     units = 'C' )
-        Vars['an_TQV']     = dict ( long = 'Aeronet column water vapor' ,
+        Vars['an_TQV']     = dict ( int = 'Aeronet column water vapor' ,
                                     units = 'cm' )
         
         # For GEOS-5 variables, get this info from Collections
@@ -360,7 +360,7 @@ class DRAGON(object):
         # Assumes single date
         # -------------------
         if self.tyme[0].date() != self.tyme[-1].date():
-            raise ValueError, "time range span multiple days, cannot proceed"
+            raise ValueError("time range span multiple days, cannot proceed")
         t0 = self.tyme[0]
         date = t0.replace(hour=0,minute=0,second=0,microsecond=0)
 
@@ -384,7 +384,7 @@ class DRAGON(object):
             for s in Sites:
                 d = Sites[s]['data']
                 j = 1 # first in table is time
-                for v in Collections[c]['vars'].keys():
+                for v in list(Collections[c]['vars'].keys()):
                     if v in Alias:
                         v = Alias[v]
                     d.__dict__[v] = interp(d.tnum,Table[:,0,i],Table[:,j,i])
@@ -402,7 +402,7 @@ class DRAGON(object):
         is nearest neighbours.)
         """
 
-        raise ValueError, "method addVar not tested yet"
+        raise ValueError("method addVar not tested yet")
 
         N = self.N
         U = ones(N)
@@ -486,7 +486,7 @@ def _writeICARTT ( Site, date, Vars,
     missing = str(list((icartt.MISSING*ones(nv)).astype('int')))\
                   .replace('[','')\
                   .replace(']','')
-    vnames = str(['UTC_start',] + list(sort(Vars.keys())))\
+    vnames = str(['UTC_start',] + list(sort(list(Vars.keys()))))\
                  .replace('[','')\
                  .replace(']','')\
                  .replace("'","")\
@@ -510,7 +510,7 @@ def _writeICARTT ( Site, date, Vars,
                 )
         
     if Verbose:
-        print "<> Writing <%s>"%filename
+        print("<> Writing <%s>"%filename)
 
     # Create directory and write out the header
     # -----------------------------------------
@@ -518,7 +518,7 @@ def _writeICARTT ( Site, date, Vars,
     f = open(outDir+'/'+filename,'w')
     for line in Header:
         if line.count('__VARIABLE_METADATA__')>0:
-            for v in sort(Vars.keys()):
+            for v in sort(list(Vars.keys())):
                 f.write('%s, %s, %s\n'%(v,Vars[v]['units'],
                                             Vars[v]['long']))
         else:
@@ -531,7 +531,7 @@ def _writeICARTT ( Site, date, Vars,
     for n in range(d.N):
         utc_secs = (d.tyme[n] - t0).total_seconds()
         f.write("%s"%utc_secs)
-        for v in sort(Vars.keys()):
+        for v in sort(list(Vars.keys())):
             f.write(",%f"%d.__dict__[v][n])
         f.write("\n")
 

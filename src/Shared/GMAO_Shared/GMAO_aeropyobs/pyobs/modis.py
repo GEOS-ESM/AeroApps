@@ -72,7 +72,7 @@ class MODIS(object):
 #       Read in the data
 #       ----------------
         if not os.path.exists(filename):
-            raise IOError, "cannot find file <%s>"%filename
+            raise IOError("cannot find file <%s>"%filename)
         self.nymd = -1
         self.nhms = -1
         ext = os.path.splitext(filename)[1] 
@@ -81,7 +81,7 @@ class MODIS(object):
         elif ext == '.npz':
             self._readNPZ (filename)
         else:
-            raise IOError, "Unknown extension %s, it must be either .ods or .npz"%ext 
+            raise IOError("Unknown extension %s, it must be either .ods or .npz"%ext) 
 
 #---
     def readODS (self, filename, nymd, nhms, kx=None, only_good=True):
@@ -110,7 +110,7 @@ class MODIS(object):
 #       Consistency check
 #       -----------------
         if any(ods.kx!=ods.kx[0]):
-            raise ValueError, "more than one kx in ods; in this case must specify kx"
+            raise ValueError("more than one kx in ods; in this case must specify kx")
             
 #       Keep this as ODS for now
 #       ------------------------
@@ -126,9 +126,8 @@ class MODIS(object):
         nch  = self.reflectance.nobs / self.SolarZenith.nobs 
         
         if self.reflectance.nobs%self.SolarZenith.nobs != 0:
-            raise ValueError, \
-                  "reflectance.size=% is not a multiple of SolarZenith.size=%d"%\
-             (self.reflectance.nobs,self.SolarZenith.nobs)
+            raise ValueError("reflectance.size=% is not a multiple of SolarZenith.size=%d"%\
+             (self.reflectance.nobs,self.SolarZenith.nobs))
  
 #       Pull out relevant arrays out of ODS object
 #       ------------------------------------------
@@ -158,7 +157,7 @@ class MODIS(object):
             id_ = str(self.ks[k]) + str(self.time[k]) # Because of a bug, ks is not unique
             KS[id_] = k 
         if len(KS) != self.ks.size:
-            raise ValueError, 'Strange, len(KS)=%d but len(ks)=%d'%(len(KS),self.ks.size)
+            raise ValueError('Strange, len(KS)=%d but len(ks)=%d'%(len(KS),self.ks.size))
 
 #       Get obs, adding missing if sounding is missing
 #       ----------------------------------------------
@@ -228,7 +227,7 @@ class MODIS(object):
                      reflectance = self.reflectance)
 
         if Verb >=1:
-            print "[w] Wrote file "+filename
+            print("[w] Wrote file "+filename)
 #---
 
     def writeODS(self,filename=None,dir='.',expid='modis',channels=None,
@@ -258,7 +257,7 @@ class MODIS(object):
         ods = ODS(nobs=nobs, kx=self.kx, kt=ktAOD)
         i = 0
         for ch in channels:
-            I = range(i,i+ns)
+            I = list(range(i,i+ns))
             j = channels.index(ch)
             ods.ks[I]  = i+1
             ods.lat[I] = self.lat[:]
@@ -282,7 +281,7 @@ class MODIS(object):
         ods.write(filename,self.nymd,self.nhms)
         
         if Verb >=1:
-            print "[w] Wrote file "+filename
+            print("[w] Wrote file "+filename)
 
 #---
     def writeg(self,filename=None,dir='.',expid='modis',refine=8,res=None,
@@ -407,7 +406,7 @@ class MODIS(object):
 #           pass
 
        if Verb >=1:
-           print "[w] Wrote file "+filename
+           print("[w] Wrote file "+filename)
 
 #---
     def addVar(self,ga,expr='mag(u10m,v10m)',vname='wind',clmYear=None):

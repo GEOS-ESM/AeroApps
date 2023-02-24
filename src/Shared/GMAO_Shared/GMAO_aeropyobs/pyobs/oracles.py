@@ -46,11 +46,11 @@ class ORACLES(object):
         for name in nc.variables:
             if name in Vars:
                 if Verbose:
-                    print '[] reading ', name
+                    print('[] reading ', name)
                 self.__dict__[name] = nc.variables[name][:]
             else:
                 if Verbose:
-                    print '<> referencing ', name
+                    print('<> referencing ', name)
                 self.__dict__[name] = nc.variables[name]
 
 #--------------------------------------------------------------------------------------
