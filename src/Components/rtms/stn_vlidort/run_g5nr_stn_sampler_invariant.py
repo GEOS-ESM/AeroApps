@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper for stn_sampler.py
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     instname = cf('INSTNAME')
     stnFile  = cf('STNFILE')
 
-    Date = datetime(2006,01,01,00)
+    Date = datetime(2006,0o1,0o1,00)
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
@@ -85,4 +85,4 @@ if __name__ == "__main__":
 
         if not args.dryrun:
             if os.system(cmd):
-                raise ValueError, "g5nr_stn_sampler failed for {}".format(colname)
+                raise ValueError("g5nr_stn_sampler failed for {}".format(colname))
