@@ -87,6 +87,10 @@ def getVars(inFile):
             setattr(Vars,name,var[:,:])
         if size == 1:
             setattr(Vars,name,var[:])
+
+        # convert byte to unicode when needed
+        if var.dtype == np.dtype('S1'):
+            Vars.__dict__[name] = Vars.__dict__[name].astype(str)
     return Vars        
 
 #---
