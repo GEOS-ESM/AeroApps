@@ -189,6 +189,9 @@ class WORKSPACE(JOBS):
 
                 os.makedirs(workpath)
 
+                # link over setup_env script
+                os.symlink('{}/setup_env'.format(self.cwd),'{}/setup_env'.format(workpath))
+
                 # copy over slurm scipt
                 outfile = '{}/{}'.format(workpath,self.slurm)
                 shutil.copyfile(self.slurm,outfile)
@@ -201,9 +204,9 @@ class WORKSPACE(JOBS):
                 shutil.copyfile(self.orbit_pcf,outfile)
 
                 #link over needed python scripts
-                source = ['mp_lidar_vlidort.py'] 
+                source = [os.getenv('AERODIR')+'/install/lib/Python/py_leo_vlidort/mp_lidar_vlidort.py'] 
                 for src in source:
-                    os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
+                    os.symlink('{}'.format(src),'{}/{}'.format(workpath,os.path.basename(src)))
 
                 # Copy over rc and edit
                 outfile = '{}/{}'.format(workpath,self.rcFile)                
@@ -277,7 +280,7 @@ class WORKSPACE(JOBS):
             os.remove(self.rcFile)
 
         # remove symlinks
-        source = ['mp_lidar_vlidort.py'] 
+        source = ['mp_lidar_vlidort.py','setup_env'] 
         for src in source:
             os.remove(src)
 

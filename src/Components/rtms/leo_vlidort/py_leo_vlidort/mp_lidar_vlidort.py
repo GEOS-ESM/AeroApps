@@ -20,7 +20,7 @@ from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 
 from MAPL.constants import *
-from py_leo_vlidort import LidarAngles_    
+from leo_vlidort import LidarAngles_    
  
 from .copyvar  import _copyVar
 from scipy import interpolate
