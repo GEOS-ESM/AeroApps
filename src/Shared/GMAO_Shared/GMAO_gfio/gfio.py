@@ -75,10 +75,6 @@ class GFIO(object):
         self.valid_range, self.packing_range,rc                             \
             = gfioinquire(self.fid,self.im,self.jm,km_,self.lm,self.nvars)
 
-#       Convert byte string to unicode
-        strlist = ['title','source','contact','levunits','vname','vtitle','vunits']
-        for strname in strlist:
-            self.__dict__[strname] = self.__dict__[strname].decode()
         if rc==3:
             raise GFIOError("cannot get COARDS metadata for GFIO file " \
                            + filename + ", rc = " + str(rc))
@@ -935,14 +931,14 @@ def _strTemplate(templ,expid=None,nymd=None,nhms=None,
 
     if nymd is not None:
         nymd = int(nymd)
-        yy = nymd//10000
-        mm = (nymd - yy*10000)//100
+        yy = nymd/10000
+        mm = (nymd - yy*10000)/100
         dd = nymd - (10000*yy + 100*mm )
 
     if nhms is not None:
         nhms = int(nhms)
-        h = nhms//10000
-        m = (nhms - h * 10000)//100
+        h = nhms/10000
+        m = (nhms - h * 10000)/100
         s = nhms - (10000*h + 100*m)
 
     if expid is not None: 
