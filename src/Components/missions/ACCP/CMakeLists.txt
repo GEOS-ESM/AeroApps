@@ -41,7 +41,6 @@ set (PYSCRIPTS
     merge_lidar.py
     merge_random_mp.py
     merge_random.py
-    mp_lidar_vlidort.py
     plt_maxscat.py
     plt_nadirscat.py
     plt_nadirsolar.py

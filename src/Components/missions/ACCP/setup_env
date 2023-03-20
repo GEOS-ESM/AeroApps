@@ -1,0 +1,30 @@
+#!/usr/bin/sh
+#=======================================================================
+# name - setup_env
+# purpose -
+#   This script can be "sourced" from the c shell to set environment
+#   variables and modules needed for building and running the ACCP applicatoin.
+#
+#   It should be copied over to the working directory where you are running executables from
+#----------------
+setenv AERODIR /discover/nobackup/pcastell/workspace/AeroApps_accp_lidar_vlidort/AeroApps
+setenv PATH ${AERODIR}/install/bin/leo_vlidort:${PATH}
+
+# set path for extdata directory
+#--------------------------------
+setenv x /discover/nobackup/pcastell/x/ACCP
+# Set Python PATH
+#-----------------
+setenv PYTHONPATH ${AERODIR}/install/lib
+setenv PYTHONPATH ${AERODIR}/install/lib/Python:$PYTHONPATH
+setenv PYTHONPATH ${AERODIR}/install/bin/missions/ACCP:$PYTHONPATH
+setenv PYTHONPATH ${AERODIR}/install/lib/Python/leo_vlidort:$PYTHONPATH
+setenv PYTHONPATH ${AERODIR}/install/lib/Python/py_leo_vlidort:$PYTHONPATH
+
+# source AeroApps modules
+source ${AERODIR}/env@/g5_modules
+
+# Path for shared object libraries
+#------------------
+setenv LD_LIBRARY_PATH ${AERODIR}/install/lib:$LD_LIBRARY_PATH
+setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${BASEDIR}/`uname -s`/lib
