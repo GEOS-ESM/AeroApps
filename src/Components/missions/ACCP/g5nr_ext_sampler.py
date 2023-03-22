@@ -253,12 +253,12 @@ class WORKSPACE(JOBS):
 
             # replace one line
             if len(self.case) == 0:
-                command = 'python -u ./run_ext_sampler.py --DT_hours {} --rc Aod_EOS.rc {} {} '.format(self.DT_hours,isodate,isoedate)
+                command = 'python3 -u ./run_ext_sampler.py --DT_hours {} --rc Aod_EOS.rc {} {} '.format(self.DT_hours,isodate,isoedate)
             else:
                 options = ''
                 for case in self.case:
                     options = options + ' --' + case
-                command = 'python -u ./run_ext_sampler.py {} --DT_hours {} --rc Aod_EOS.rc {} {} '.format(options,self.DT_hours,isodate,isoedate)
+                command = 'python3 -u ./run_ext_sampler.py {} --DT_hours {} --rc Aod_EOS.rc {} {} '.format(options,self.DT_hours,isodate,isoedate)
 
             command = command + " '" + inFile + "' "
             command = command + " '" + outFile + "' "
