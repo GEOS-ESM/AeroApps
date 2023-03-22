@@ -12,7 +12,7 @@ from   dateutil.parser import parse         as isoparser
 import argparse
 import numpy as np
 import time
-from MAPL     import Config
+from MAPL.config     import Config
 
 class JOBS(object):
     def handle_jobs(self):
@@ -37,7 +37,7 @@ class JOBS(object):
             s = self.dirstring[i]
             os.chdir(s)
             result = subprocess.check_output(['sbatch',self.slurm])
-            jobid = np.append(jobid,result.split()[-1])
+            jobid = np.append(jobid,result.split()[-1].decode())
             
         os.chdir(self.cwd)
 
