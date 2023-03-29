@@ -14,7 +14,7 @@ import argparse
 import numpy           as np
 import time
 from   netCDF4         import Dataset
-from   MAPL            import Config
+from   MAPL.config     import Config
 from py_leo_vlidort.vlidort import get_chd
 from glob import glob
 

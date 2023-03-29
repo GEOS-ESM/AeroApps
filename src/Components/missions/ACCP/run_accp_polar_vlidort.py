@@ -12,7 +12,7 @@ from   dateutil.parser import parse         as isoparser
 import argparse
 import numpy as np
 import time
-from   MAPL            import Config
+from   MAPL.config     import Config
 
 class JOBS(object):
     def handle_jobs(self):

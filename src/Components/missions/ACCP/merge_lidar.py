@@ -11,7 +11,7 @@ import os
 import argparse
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
-from   MAPL            import Config
+from   MAPL.config     import Config
 from   py_leo_vlidort.lidar_vlidort   import get_chd
 import numpy  as np
 from   netCDF4 import Dataset

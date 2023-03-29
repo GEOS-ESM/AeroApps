@@ -15,7 +15,7 @@ import argparse
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
 from   dateutil.relativedelta import relativedelta
-from   MAPL            import Config
+from   MAPL.config     import Config
 from   netCDF4 import Dataset
 import numpy   as np
 

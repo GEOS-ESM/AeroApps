@@ -12,7 +12,7 @@ import argparse
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
 from   pyobs.sgp4      import getTrack as getTrackTLE
-from   MAPL            import Config
+from   MAPL.config     import Config
 import numpy  as np
 from netCDF4 import Dataset
 from  py_leo_vlidort import LidarAngles_ 

@@ -13,7 +13,7 @@ import argparse
 import numpy           as np
 import time
 from   netCDF4         import Dataset
-from   MAPL            import Config
+from   MAPL.config     import Config
 from py_leo_vlidort.vlidort import get_chd
 
 mr =  [1.396,1.362,1.349,1.345,1.339,1.335,1.334,1.333,1.332,1.331,1.329,1.326,

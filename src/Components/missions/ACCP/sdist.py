@@ -5,7 +5,7 @@ class to do size distribution calculations
 import os
 from netCDF4 import Dataset
 import numpy as np
-from   MAPL  import config
+from   MAPL.config  import config
 from scipy import interpolate
 from   py_leo_vlidort.copyvar  import _copyVar
 
