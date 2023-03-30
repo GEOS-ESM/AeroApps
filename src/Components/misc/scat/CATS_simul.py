@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from numpy import savez, load, tile,zeros,interp, transpose
 from numpy import loadtxt, ones, array
@@ -50,7 +50,7 @@ def vlidort_scalar (channels, sza, albedo, tau, ssa, g, pe, he, te, verbose=0 ):
         sensor_zenith = zeros(N)         # sensor zenith angle
 #        sensor_zenith = 0.03 * ones(N)    # 0.03 deg like CALIPSO (keep the same option (DO_SSCORR_OUTGOING -> True in VLIDORT_Lambmod.F if sensor_zenith = 0 -> DO_SSCORR_OUTGOING -> False and DO_SSCORR_NADIR - > True )
 
-        print ' essai', channels, sza.shape,albedo.shape,tau.shape,ssa.shape, g.shape,pe.shape,he.shape, te.shape  
+        print(' essai', channels, sza.shape,albedo.shape,tau.shape,ssa.shape, g.shape,pe.shape,he.shape, te.shape)  
 
         radiance_, reflectance_, rc = VLIDORT_OMI_.scalar(channels,
                                                      tau, ssa, g, pe, he, te, 
@@ -59,7 +59,7 @@ def vlidort_scalar (channels, sza, albedo, tau, ssa, g, pe, he, te, verbose=0 ):
                                                      sensor_zenith, MISSING,verbose)
 #        print 'rad', radiance_
         if rc != 0:
-            raise ValueError, "on return from VLIDORT_OMI_.scalar, rc = "+str(rc)
+            raise ValueError("on return from VLIDORT_OMI_.scalar, rc = "+str(rc))
 
         return (radiance_, reflectance_)
 
@@ -98,7 +98,7 @@ def radiances_scalar(ssa_du,ssa_ss,g_du,g_ss,albedo_):
 
     z_=z[::-1]         # array croissant
     t_=t[::-1]
-    new_z = range(0,20500,500)
+    new_z = list(range(0,20500,500))
           
     t_interp = ones(41)
     p_interp = ones(41)

@@ -18,8 +18,8 @@ def _exponential_CF(r):
   return np.exp(-r)
 
 def _Gaussian_CF(r):
-  print 'corr: %s seems to trigger a non-positive def error' % corr
-  raise RuntimeError, 'corr: %s currently disallowed' % corr
+  print('corr: %s seems to trigger a non-positive def error' % corr)
+  raise RuntimeError('corr: %s currently disallowed' % corr)
   return np.exp(-0.5*r**2)
 
 def _SOAR_CF(r):
@@ -98,20 +98,20 @@ def genICA(ncols,DELP,T,QV,QL,QI,CLOUD,PTOP,mode,
     if mode == 'TOTWPDF-GCOP-SKEWT':
       plim_,Lp_ = (100.*plim,100.*Lp) # hPa->Pa
       QV_,QL_,QI_,rc = genica(ncols,PTOP,DELP,T,QV,QL,QI,CLOUD,plim_,Lp_,Ls)
-      if rc: print 'Error on return from genICA, rc %d'%rc
+      if rc: print('Error on return from genICA, rc %d'%rc)
     elif mode == 'HOMOCLD-MAXRAN':
       pref = getPe(len(DELP))
       QV_,QL_,QI_,rc = genica_geos5like(ncols,PTOP,DELP,T,QV,QL,QI,CLOUD,pref)
-      if rc: print 'Error on return from genICA_GEOS5like, rc %d'%rc
+      if rc: print('Error on return from genICA_GEOS5like, rc %d'%rc)
     elif mode == 'HOMOCLD-COSP':
       QV_,QL_,QI_,rc = genica_cosp(ncols,PTOP,DELP,T,QV,QL,QI,CLOUD)
-      if rc: print 'Error on return from genICA_COSP, rc %d'%rc
+      if rc: print('Error on return from genICA_COSP, rc %d'%rc)
     else:
-      raise ValueError, 'unknown ICA mode %s'%mode
+      raise ValueError('unknown ICA mode %s'%mode)
 
     # handle errors more gently
     if rc:
-      print '  ... dropping this generation'
+      print('  ... dropping this generation')
       return (None, None, None, rc)
 
     # Optional spatial clumping
@@ -156,12 +156,12 @@ def clumpICA(ncols,QV_,QL_,QI_,
 
     # sanity checks
     if not (QV_.shape == QL_.shape == QI_.shape):
-      raise ValueError, 'spatial: QV_,QL_,QI_ not same shape!'
+      raise ValueError('spatial: QV_,QL_,QI_ not same shape!')
     if QV_.shape[0] != ncols or QV_.ndim != 2:
-      raise ValueError, 'spatial: QV_,QL_,QI_ need shape (ncols,nlayers)'
+      raise ValueError('spatial: QV_,QL_,QI_ need shape (ncols,nlayers)')
     if not (Longitude.shape == Latitude.shape == svar.shape == (ncols,)):
-      raise ValueError, 'spatial: Lon, Lat and svar need shape (ncols,)'
-    if not (Lh > 0.): raise ValueError, 'spatial: require Lh > 0.'
+      raise ValueError('spatial: Lon, Lat and svar need shape (ncols,)')
+    if not (Lh > 0.): raise ValueError('spatial: require Lh > 0.')
 
     # distances between input locations [m]
     R = _rdist(Longitude,Latitude,
@@ -248,7 +248,7 @@ def _rdist(lon,lat,Chordal=False):
        """
 
     if lon.ndim != 1 or lat.ndim != 1:
-      raise ValueError, 'LON, LAT must each be 1D arrays'
+      raise ValueError('LON, LAT must each be 1D arrays')
     n = lon.size
 
 #   Cartesian coords on unit sphere

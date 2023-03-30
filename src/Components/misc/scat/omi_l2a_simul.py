@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 
 """
@@ -31,7 +31,7 @@ def makethis_dir(filename):
     if path != '':
         rc = os.system('mkdir -p '+path)
         if rc:
-            raise IOError, "could not create directory "+path
+            raise IOError("could not create directory "+path)
 #---------------------------------------------------------------------
 def vlidort_scalar (c,tau, ssa, g, pe, he, te,iGood=None, verbose=0 ):
         """
@@ -71,7 +71,7 @@ def vlidort_scalar (c,tau, ssa, g, pe, he, te,iGood=None, verbose=0 ):
                                                      c.ai[iGood], verbose)
         
         if rc != 0:
-            raise ValueError, "on return from OMI_.scalar/vector, rc = "+str(rc)
+            raise ValueError("on return from OMI_.scalar/vector, rc = "+str(rc))
 
         return (radiance, ai, reflectivity)
         
@@ -106,7 +106,7 @@ def vlidort_vector (c,tau, ssa, g, pmom, pe, he, te, I=None,iGood=None,verbose=0
         nch = len(c.channels)               # wavelength number
   
         if I is None:
-            I = range(c.ps[iGood].shape[0])
+            I = list(range(c.ps[iGood].shape[0]))
         
         radiance, ai, reflectivity, rc = VLIDORT_OMI_.ai_vector(c.channels,
                                                      tau, ssa, g,pmom, pe, he, te, 
@@ -117,7 +117,7 @@ def vlidort_vector (c,tau, ssa, g, pmom, pe, he, te, I=None,iGood=None,verbose=0
                                                      MISSING,c.radiance[iGood][I], 
                                                      c.ai[iGood][I], verbose)
         if rc != 0:
-            raise ValueError, "on return from OMI_.scalar/vector, rc = "+str(rc)
+            raise ValueError("on return from OMI_.scalar/vector, rc = "+str(rc))
         
 
         return (radiance, ai, reflectivity)
@@ -217,22 +217,22 @@ if __name__ == "__main__":
 
 
     if options.verbose:
-        print ""
-        print "                          VLIDORT/OMI Level 2A Processing"
-        print "                          -------------------------------"
-        print ""
+        print("")
+        print("                          VLIDORT/OMI Level 2A Processing")
+        print("                          -------------------------------")
+        print("")
         t0 = clock()
             
     if options.skipVLIDORT:
-        print "IMPORTANT: Skipping VLIDORT"
+        print("IMPORTANT: Skipping VLIDORT")
 
 #   Output ungridded file
 #   -------------------
     out_file = strTemplate(options.out_dir+'/'+options.out_fname,
                            expid=options.expid, dtime=t)
     if os.path.exists(out_file) and (options.force is not True):
-        print "omi_l2a: Output file <%s> exists --- cannot proceed."%out_file
-        raise IOError, "Specify --force to overwrite existing output file."
+        print("omi_l2a: Output file <%s> exists --- cannot proceed."%out_file)
+        raise IOError("Specify --force to overwrite existing output file.")
     else:
         makethis_dir(out_file) # make sure directory exists
 
@@ -240,7 +240,7 @@ if __name__ == "__main__":
 #   -------------
     if options.verbose:
         t = clock() - t0
-        print "- Reading OMI measurements at t=%f"%t
+        print("- Reading OMI measurements at t=%f"%t)
 
     omi = OMAERUV_L2(omi_file)
     omi.sampleLoadz(aer_file)
@@ -253,7 +253,7 @@ if __name__ == "__main__":
         rank = len(omi.sample.delp.shape)
         if rank > 2 :
            nt, nr, nz = omi.sample.delp.shape 
-           raise IOError, "rank > 2 to do - > code not adapted for this case"
+           raise IOError("rank > 2 to do - > code not adapted for this case")
         else :
            nobs, nz = omi.sample.delp.shape 
 
@@ -285,10 +285,10 @@ if __name__ == "__main__":
 
               if options.verbose:
                 t = clock() - t0
-                print "- Processing batch number %d"%i
-                print "  [] Reading and interpolating IOPs at t=%f"%t
+                print("- Processing batch number %d"%i)
+                print("  [] Reading and interpolating IOPs at t=%f"%t)
 
-              I = range(i,min(i+mobs,nobs))
+              I = list(range(i,min(i+mobs,nobs)))
 
               tau_, ssa_, g_, pmom_=  getAOPvector(omi.sample,omi.channels,\
                                               I=I,nMom=nMom,rcfile='Aod_EOS.rc')
@@ -307,7 +307,7 @@ if __name__ == "__main__":
             
               if options.verbose:
                 t = clock() - t0
-                print "  [] Doing RT calculation with VLIDORT at t=%f"%t
+                print("  [] Doing RT calculation with VLIDORT at t=%f"%t)
 
               radiance, ai,reflectivity=vlidort_vector(omi,tau_, ssa_, g_,pmom_,\
                                                  pe_, he_, te_,I,omi.sample.iGood)
@@ -323,7 +323,7 @@ if __name__ == "__main__":
            radiance_[:,:] = radiance.astype('float32')
            ai_[:]=ai.astype('float32')
 
-    print 'ai', ai_.shape, 'ssa', ssa_.shape
+    print('ai', ai_.shape, 'ssa', ssa_.shape)
 
 #   Results :
 #   ---------

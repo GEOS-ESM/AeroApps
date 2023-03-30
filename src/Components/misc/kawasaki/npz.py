@@ -19,13 +19,13 @@ class NPZ(object):
             npzFiles = sorted(glob(npzFiles))
 
         if Verbose:
-            print '[] Loading ', npzFiles[0] 
+            print('[] Loading ', npzFiles[0]) 
 
         # Single file
         # -----------
         if len(npzFiles) == 1:
             f = load(npzFiles[0])
-            for v in f.keys():
+            for v in list(f.keys()):
                 self.__dict__[v] = f[v]
 
         # Multiple files
@@ -36,7 +36,7 @@ class NPZ(object):
             # ------------------------------------------
             f = load(npzFiles[0])
             V = dict()
-            for v in f.keys():
+            for v in list(f.keys()):
                 if len(shape(f[v])) == 0: 
                     V[v] = [[f[v],],]
                 else:
@@ -46,7 +46,7 @@ class NPZ(object):
             # ----------------------
             for npzFile in npzFiles[1:]:
                 if Verbose:
-                    print '[] Loading ', npzFile
+                    print('[] Loading ', npzFile)
                 f = load(npzFile)
                 for v in V:
                     if len(shape(f[v])) == 0: 

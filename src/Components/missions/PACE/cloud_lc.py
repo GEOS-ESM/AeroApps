@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Cloud Simulator for PACE
 """
@@ -83,13 +83,13 @@ def shave(q,undef=MAPL_UNDEF,has_undef=1,nbits=12):
     elif rank == 3: # zyx
         chunksize = shp[1]*shp[2]
     else:
-        raise ValueError, "invalid rank=%d"%rank
+        raise ValueError("invalid rank=%d"%rank)
 
     # Shave it
     # --------
     qs, rc = shave32(q.ravel(),xbits,has_undef,undef,chunksize)
     if rc:
-        raise ValueError, "error on return from shave32, rc=%d"%rc
+        raise ValueError("error on return from shave32, rc=%d"%rc)
 
     return qs.reshape(shp)
 
@@ -139,7 +139,7 @@ class PCS(LEVELBCS,GCS03):
         self.linear.offview3d = self.offview3d
         self.linear.nobs = self.nobs
         self.linear.km   = self.km
-        print 'Reading Linear...'
+        print('Reading Linear...')
         LEVELBCS.__init__(self.linear,linearFiles,lSDS,)
 
         # Hack: to avoid extrapolation issues, pretend the GEOS-5 top is
@@ -148,8 +148,8 @@ class PCS(LEVELBCS,GCS03):
         self._fixPTOP('linear')
 
 
-        print 'warning: QILS, QIAN not available in NatureRun output'           
-        print '         Disabling anvil specific effective radii weighting'     
+        print('warning: QILS, QIAN not available in NatureRun output')           
+        print('         Disabling anvil specific effective radii weighting')     
         # see reff() in mod_reff: setting QILS=QIAN=0 disables anvil Re weighting  
         # if available, these should be nearest neighbor sampled 
         QILS = np.zeros_like(self.linear.T)                
@@ -175,7 +175,7 @@ class PCS(LEVELBCS,GCS03):
         self.nearest.offview3d = self.offview3d 
         self.nearest.nobs = self.nobs
         self.nearest.km   = self.km
-        print 'Reading Nearest...'
+        print('Reading Nearest...')
         LEVELBCS.__init__(self.nearest,nearestFiles,nSDS)
 
 
@@ -190,7 +190,7 @@ class PCS(LEVELBCS,GCS03):
         Calculate TAU, RE, and RH using ICA generated subcolumns.
         """
         if self.verb:
-            print " <> Performing ICA calculations"
+            print(" <> Performing ICA calculations")
 
         n = self.nearest
         ica = self.ica
@@ -217,7 +217,7 @@ class PCS(LEVELBCS,GCS03):
             if ekey > len(ica.Indices):
                 ekey = len(ica.Indices)
 
-            keys = ica.Indices.keys()[skey:ekey]
+            keys = list(ica.Indices.keys())[skey:ekey]
             nkeys = len(keys)
         
             DELP  = []
@@ -258,10 +258,10 @@ class PCS(LEVELBCS,GCS03):
 
             # launch on multiple processors
             if clump:
-                args = zip(ncols,DELP,T,QV,QL,QI,CLOUD,PTOP,modeList,lon,lat)
+                args = list(zip(ncols,DELP,T,QV,QL,QI,CLOUD,PTOP,modeList,lon,lat))
                 result = pool.map(unwrap_CallgenICAClump,args)
             else:
-                args = zip(ncols,DELP,T,QV,QL,QI,CLOUD,PTOP,modeList)
+                args = list(zip(ncols,DELP,T,QV,QL,QI,CLOUD,PTOP,modeList))
                 result = pool.map(unwrap_CallgenICA,args)
 
 
@@ -278,7 +278,7 @@ class PCS(LEVELBCS,GCS03):
 
         # warning
         # -------
-        if any(~ok): print 'warning: ICA procedure failed to generate {} subcolumns'.format(np.sum(~ok))
+        if any(~ok): print('warning: ICA procedure failed to generate {} subcolumns'.format(np.sum(~ok)))
 
 
         # Tau -- use ICA sampled QL/QI with linear interp RE
@@ -295,7 +295,7 @@ class PCS(LEVELBCS,GCS03):
         """
 
         if self.nearest is None:
-          raise RuntimeError, 'must sample first using getGEOS()'
+          raise RuntimeError('must sample first using getGEOS()')
 
         # Calulate TAU and RE
         # -------------------
@@ -433,7 +433,7 @@ class PCS(LEVELBCS,GCS03):
         """
         for var in sort(Names):
             if Verbose:
-                print "[] Writing %s"%var
+                print("[] Writing %s"%var)
             rank = len(data.__dict__[var].shape)
             long_name, units = cf(var).split(';')
             if rank == 1:
@@ -443,7 +443,7 @@ class PCS(LEVELBCS,GCS03):
                 v = hf.createVariable(var,'f4',('lev','number_of_scans','ccd_pixels'),
                                       fill_value=MAPL_UNDEF,zlib=zlib)
             else:
-                raise GCSError, 'Invalid rank for variable <%s>'%var
+                raise GCSError('Invalid rank for variable <%s>'%var)
             v.long_name = long_name
             v.units = units.strip()
             v.missing_value = MAPL_UNDEF
@@ -494,7 +494,7 @@ def albedo_dE_cons(tauc,mu0,g,f):
     f    --- forward scattering fraction
   Suggest using g = 0.85 and f = g**2
   """
-  if mu0 <= 0.: raise ValueError, 'require mu0 > 0'
+  if mu0 <= 0.: raise ValueError('require mu0 > 0')
   cmu0 = 1.5*mu0; efac = exp(-tauc*(1.-f)/mu0)
   return 1. - 2.*((1+cmu0)+(1-cmu0)*efac)/(4.+3.*(1.-g)*tauc)
 
@@ -555,7 +555,7 @@ if __name__ == "__main__":
         outdir  = os.sep.join((options.levelC,'Y'+tyme.strftime('%Y'),'M'+tyme.strftime('%m'),'D'+tyme.strftime('%d')))
         if not os.path.exists(outdir): os.makedirs(outdir)
 
-        print '<> Working on ',tyme
+        print('<> Working on ',tyme)
 
         # instantiate PACE granule
         coll = 'aer_Nv','asm_Nx','met_Nv','chm_Nv'
@@ -566,7 +566,7 @@ if __name__ == "__main__":
 
         # do the simulation and write out results
         ofile = os.sep.join((outdir,'pace-g5nr.'+mode+'.'+tyme.strftime('%Y%m%d_%H%M00')+'.nc4'))
-        print '<> creating ',ofile
+        print('<> creating ',ofile)
         g.doICA(ofile,mode,clump=True)
 
         tyme += dt

@@ -121,12 +121,12 @@ class MCD12C(object):
 
         # Save lon/lat
         # --------------------------
-        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=verbose)            
-        _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,'time', dtype='i4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,'x',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,'y',dtype='f4',zlib=False,verbose=verbose)            
+        _copyVar(nctrj,nc,'trjLon',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,'trjLat',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,'isotime', dtype='S1',zlib=False,verbose=verbose)
 
         # Write land cover to file
         #---------------------------------------
@@ -174,7 +174,7 @@ class MCD12C(object):
         self.trjLat = trjLat
         for ut in utyme:
             if Verbose:
-                print 'Working on '+ str(ut.date())
+                print('Working on '+ str(ut.date()))
             self.readFile(ut)
 
             Ityme = dtyme == ut

@@ -24,7 +24,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
     """
     x = ncIn.variables[name]
     if verbose:
-        print 'copy variable ',name,x.dimensions
+        print('copy variable ',name,x.dimensions)
 
     try:
         fill_value = x.fill_value
@@ -46,7 +46,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
     elif rank == 3:
         y[:,:,:] = x[:,:,:]
     else:
-        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
+        raise ValueError("invalid rank of <%s>: %d"%(name,rank))
 
 class NDVI(object):
     def __init__(self):
@@ -131,11 +131,11 @@ class MYD13C2(object):
 
         # Save lon/lat
         # --------------------------
-        _copyVar(nctrj,nc,u'ccd_pixels',dtype='f4',zlib=zlib,verbose=verbose)
-        _copyVar(nctrj,nc,u'number_of_scans',dtype='f4',zlib=zlib,verbose=verbose)            
-        _copyVar(nctrj,nc,u'longitude',dtype='f4',zlib=zlib,verbose=verbose)
-        _copyVar(nctrj,nc,u'latitude',dtype='f4',zlib=zlib,verbose=verbose)
-        _copyVar(nctrj,nc,u'time', dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'ccd_pixels',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'number_of_scans',dtype='f4',zlib=zlib,verbose=verbose)            
+        _copyVar(nctrj,nc,'longitude',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'latitude',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'time', dtype='f4',zlib=zlib,verbose=verbose)
 
 
         # Loop over variables writing each dataset
@@ -189,7 +189,7 @@ class MYD13C2(object):
             data = self.__dict__[sds]
             self.ndvi.__dict__[sds] = np.zeros((nscan,npixel))
 
-            print 'sampling sds',sds
+            print('sampling sds',sds)
             templin      = np.ma.zeros((nscan,npixel))
             templin.mask = np.ones((nscan,npixel)).astype(bool)
             tempnn       = np.ma.zeros((nscan,npixel))
@@ -197,7 +197,7 @@ class MYD13C2(object):
             for ut in utyme:  
                 
                 if Verbose:
-                    print 'Working on '+ str(ut.date())
+                    print('Working on '+ str(ut.date()))
 
                 Ityme = dtyme == ut
 

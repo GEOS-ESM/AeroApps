@@ -11,5 +11,5 @@ if __name__ == "__main__":
             sigO_ = mean(f['Alpha'],0)[0] 
             sigF_ = mean(f['Alpha'],0)[1] 
             sigO = sigO + (round(sigO_*sigF/sigF_,2),)
-        print "%s %6.2f %6.2f %6.2f %6.2f"%(inst,sigO[0],sigO[1],sigO[2],sigO[3])
+        print("%s %6.2f %6.2f %6.2f %6.2f"%(inst,sigO[0],sigO[1],sigO[2],sigO[3]))
 

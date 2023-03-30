@@ -162,17 +162,17 @@ def _avhrrNNR(a):
 #    topology = (len(Input), 4, len(Target))
     biases = True
         
-    print " "
-    print "        AOD Neural Net Retrieval"
-    print "        ------------------------"
-    print " "
-    print "  No. Valid Data:  ", len(a.lon[a.iValid]),  \
-                                 int(100.*len(a.lon[a.iValid])/len(a.lon)),'%'
-    print " No. Hidden Nodes: ", nHidden
-    print "         Topology: ", topology
-    print "   Input Features: ", Input[:]
-    print "           Target: ", Target[:]
-    print " "
+    print(" ")
+    print("        AOD Neural Net Retrieval")
+    print("        ------------------------")
+    print(" ")
+    print("  No. Valid Data:  ", len(a.lon[a.iValid]),  \
+                                 int(100.*len(a.lon[a.iValid])/len(a.lon)),'%')
+    print(" No. Hidden Nodes: ", nHidden)
+    print("         Topology: ", topology)
+    print("   Input Features: ", Input[:])
+    print("           Target: ", Target[:])
+    print(" ")
 
     a.train(Input=Input,Target=Target,nHidden=nHidden,
             topology=topology,biases=biases,nproc=8)

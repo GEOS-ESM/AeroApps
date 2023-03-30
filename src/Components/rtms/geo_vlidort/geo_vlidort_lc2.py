@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 """ 
 Runscript for running geo_vlidort.x on NCCS
@@ -113,12 +113,12 @@ class JOBS(object):
                     if (errcheck is False):
                         self.destroy_workspace(i,s)
                     else:
-                        print 'Jobid ',s,' exited with errors'
+                        print('Jobid ',s,' exited with errors')
 
             # finished checking up on all the jobs
             # Remove finished jobs from the currently working list
             if len(finishedJobs) != 0:
-                print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
+                print('deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]])
                 if self.nodemax is not None:
                     node_tally  = node_tally - sum(self.nodemax_list[workingJobs[finishedJobs]])
                 else:
@@ -157,12 +157,12 @@ class JOBS(object):
                 stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
 
 
-            print 'Waiting 1 minutes'
+            print('Waiting 1 minutes')
             time.sleep(60)
             
 
         # Exited while loop
-        print 'All jobs done'
+        print('All jobs done')
 
 
     def check_for_errors(self,i,jobid):
@@ -250,7 +250,7 @@ class WORKSPACE(JOBS):
 
         # save run directory
         if self.verbose:
-            print '++Saving run directory',os.getcwd()
+            print('++Saving run directory',os.getcwd())
         self.cwd     = os.getcwd()
 
         #initialize arrays to hold directory names
@@ -325,7 +325,7 @@ class WORKSPACE(JOBS):
         try:
             shutil.copyfile(archive,path) 
         except IOError:
-            print 'Could not find archive ',archive, ' to put in ', path
+            print('Could not find archive ',archive, ' to put in ', path)
             sys.exit()
 
     def put_in_archive(self,path):
@@ -337,13 +337,13 @@ class WORKSPACE(JOBS):
         try:
             shutil.copyfile(path,archive) 
         except IOError:
-            print 'Could not put '+path+' in archive ',archive
+            print('Could not put '+path+' in archive ',archive)
             sys.exit()
 
 
     def prefilter(self,date,layout=None):
         if self.verbose:
-            print '++Checking for good pixels in prefilter'
+            print('++Checking for good pixels in prefilter')
         g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
         nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
         hour  = str(date.hour).zfill(2)
@@ -362,12 +362,12 @@ class WORKSPACE(JOBS):
 
 
         if self.verbose:
-            print '++Opening metfile ',met
+            print('++Opening metfile ',met)
 
         if not os.path.exists(met):
             self.get_from_archive(met)
         ncMet = Dataset(met)
-        Cld   = np.squeeze(ncMet.variables[u'CLDTOT'][:])
+        Cld   = np.squeeze(ncMet.variables['CLDTOT'][:])
         f     = np.where(Cld <= float(self.CLDMAX))
         ncMet.close()
         if len(f[0]) == 0:
@@ -376,14 +376,14 @@ class WORKSPACE(JOBS):
         if not os.path.exists(geom):
             self.get_from_archive(geom)
         ncGeom = Dataset(geom)
-        SZA    = np.squeeze(ncGeom.variables[u'solar_zenith'][:])
-        VZA    = np.squeeze(ncGeom.variables[u'sensor_zenith'][:])
+        SZA    = np.squeeze(ncGeom.variables['solar_zenith'][:])
+        VZA    = np.squeeze(ncGeom.variables['sensor_zenith'][:])
         ncGeom.close()
 
         if not os.path.exists(land):
             self.get_from_archive(land)        
         ncLand = Dataset(land)
-        FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
+        FRLAND = np.squeeze(ncLand.variables['FRLAND'][:])
         ncLand.close()
 
         SZA = SZA[f]
@@ -763,8 +763,8 @@ class WORKSPACE(JOBS):
                     errfile = 'slurm_' +jobid + '_' + str(a) + '.err'                    
                     outfile = 'slurm_' +jobid + '_' + str(a) + '.out'
                     if self.verbose:
-                        print '++cleaning up errfile', errfile
-                        print '++cleaning up outfile', outfile
+                        print('++cleaning up errfile', errfile)
+                        print('++cleaning up outfile', outfile)
                     os.remove(errfile)
                     os.remove(outfile)
                 os.remove('slurm_%A_%a.out')
@@ -988,7 +988,7 @@ if __name__ == "__main__":
         workspace.handle_jobs()
         workspace.final_cleanup()
     else:
-        print 'No model hours to run'
+        print('No model hours to run')
 
     
 

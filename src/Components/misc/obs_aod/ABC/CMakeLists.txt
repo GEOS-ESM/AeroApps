@@ -1,7 +1,7 @@
 esma_set_this ()
 
-find_package(F2PY2 REQUIRED)
-esma_add_f2py2_module (VLIDORT_BRDF_ABC_
+find_package(F2PY3 REQUIRED)
+esma_add_f2py3_module (VLIDORT_BRDF_ABC_
   SOURCES VLIDORT_BRDF_ABC_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES VLIDORT90

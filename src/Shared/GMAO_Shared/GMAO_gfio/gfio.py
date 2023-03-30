@@ -57,13 +57,13 @@ class GFIO(object):
             self.fid, rc = gfioopen(filename,0)
 
         if rc:
-            raise GFIOError, "cannot open GFIO file " + filename
+            raise GFIOError("cannot open GFIO file " + filename)
 
 #       Fetch dimensions
 #       ----------------
         self.im,self.jm,self.km,self.lm,self.nvars,self.ngatts,rc = gfiodiminquire(self.fid)
         if rc:
-            raise GFIOError, "cannot get dimensions for GFIO file " + filename
+            raise GFIOError("cannot get dimensions for GFIO file " + filename)
 
 #       Fetch metadata
 #       --------------
@@ -75,9 +75,13 @@ class GFIO(object):
         self.valid_range, self.packing_range,rc                             \
             = gfioinquire(self.fid,self.im,self.jm,km_,self.lm,self.nvars)
 
+#       Convert byte string to unicode
+        strlist = ['title','source','contact','levunits','vname','vtitle','vunits']
+        for strname in strlist:
+            self.__dict__[strname] = self.__dict__[strname].decode()
         if rc==3:
-            raise GFIOError, "cannot get COARDS metadata for GFIO file " \
-                           + filename + ", rc = " + str(rc)
+            raise GFIOError("cannot get COARDS metadata for GFIO file " \
+                           + filename + ", rc = " + str(rc))
 
 #       Create  variable property dictionaries
 #       --------------------------------------
@@ -135,14 +139,14 @@ class GFIO(object):
         if nymd is None:
             nymd, nhms, dt, rc = gfiogetbegdatetime(self.fid)
             if rc:
-                raise GFIOError, "cannot get initial date/time for GFIO file "+self.filename
+                raise GFIOError("cannot get initial date/time for GFIO file "+self.filename)
 
         if kbeg is None:
             try:
                 kmv = self.kmvar_name[vname] 
             except:
                 # print self.vname
-                raise GFIOError, "variable <"+vname+"> not present in GFIO file"
+                raise GFIOError("variable <"+vname+"> not present in GFIO file")
             if kmv == 0:
                 kbeg = 0 # 2D
                 kount = 1
@@ -152,7 +156,7 @@ class GFIO(object):
                 
         var, rc = gfiogetvar(self.fid,vname,nymd,nhms,self.im,self.jm,kbeg,kount)
         if rc:
-            raise IOError, "cannot read <"+vname+"> from GFIO file "+self.filename+' at %d %d'%(nymd,nhms)
+            raise IOError("cannot read <"+vname+"> from GFIO file "+self.filename+' at %d %d'%(nymd,nhms))
 
         if squeeze:
             var = var.squeeze()
@@ -293,7 +297,7 @@ class GFIO(object):
                 if res=='e': refine = 16
                 
             if refine is None:
-                raise IOError, 'must specify either lat/lon, res or refine'
+                raise IOError('must specify either lat/lon, res or refine')
 
             dx = 5. / refine
             dy = 4. / refine
@@ -327,7 +331,7 @@ class GFIO(object):
                                   valid_range,packing_range,prec)
         
         if rc:
-            raise GFIOError, "cannot create "+self.filename+", rc=%d"%rc
+            raise GFIOError("cannot create "+self.filename+", rc=%d"%rc)
 
 #       Save relevant metadata
 #       ----------------------
@@ -373,8 +377,8 @@ class GFIO(object):
 
         rc = gfioputvar(self.fid,vname,nymd,nhms,kbeg,var)
         if rc:
-            raise GFIOError, "cannot write <%s> to file %s, rc=%d "%\
-                  (vname,self.filename,rc)
+            raise GFIOError("cannot write <%s> to file %s, rc=%d "%\
+                  (vname,self.filename,rc))
 
 #---
     def interp(self,vname,lon,lat,nymd=None,nhms=None,kbeg=None,kount=None,
@@ -407,12 +411,10 @@ class GFIO(object):
 #       -------------------------------
         if any(lon<0):
             if any(self.lon>180.):
-                raise GFIOError, \
-                  "inconsistent longitudes, obs in [-180,180] but grid in [0,360]"
+                raise GFIOError("inconsistent longitudes, obs in [-180,180] but grid in [0,360]")
         elif any(lon>180):
             if any(self.lon<0.):
-                raise ValueError, \
-                   "inconsistent longitudes, obs in [0,360] but grid in [-180,180]"
+                raise ValueError("inconsistent longitudes, obs in [0,360] but grid in [-180,180]")
 
 #       Next interpolate (assumes global, zonally periodic grids)
 #       ---------------------------------------------------------
@@ -421,7 +423,7 @@ class GFIO(object):
         elif algorithm == 'nearest':
             ivar = gfiointerpnn(lon,lat,self.lon[0],var)
         else:
-            raise ValueError, 'Unknown algorithm <%s>, expecting "linear" or "nearest"'%algorithm 
+            raise ValueError('Unknown algorithm <%s>, expecting "linear" or "nearest"'%algorithm) 
 
         if squeeze:
             ivar = ivar.squeeze()
@@ -440,12 +442,10 @@ class GFIO(object):
 #       -------------------------------
         if any(lon<0):
             if any(self.lon>180.):
-                raise GFIOError, \
-                  "inconsistent longitudes, obs in [-180,180] but grid in [0,360]"
+                raise GFIOError("inconsistent longitudes, obs in [-180,180] but grid in [0,360]")
         elif any(lon>180):
             if any(self.lon<0.):
-                raise ValueError, \
-                   "inconsistent longitudes, obs in [0,360] but grid in [-180,180]"
+                raise ValueError("inconsistent longitudes, obs in [0,360] but grid in [-180,180]")
 
 #       Get the coordinates
 #       --------------------
@@ -458,7 +458,7 @@ class GFIO(object):
         """Closes a GFIO file."""
         if self.fid is not None:
             rc = gfioclose(self.fid)
-	    self.fid=None
+        self.fid=None
 
 #---
     def __del__(self):
@@ -476,21 +476,21 @@ class GFIO(object):
             history, rc = gfiogetcharatt( self.fid, name, count )
             if rc == 0:
                 return history.tostring()
-        raise GFIOError, 'could not retrieve character global attribute <%s>'%name
+        raise GFIOError('could not retrieve character global attribute <%s>'%name)
 
     def getvarmissing( self, varname ):
         missingvalue, rc =  gfiogetvarmissvalue( self.fid, varname, 1 )
         if rc == 0:
             return missingvalue[0]
         else:
-            raise GFIOError, 'could not retrieve missing value for variable <%s>'%varname
+            raise GFIOError('could not retrieve missing value for variable <%s>'%varname)
 
     def getvarcharatt( self, varname, att ):
         type,count,rc = gfiovarattinquire ( self.fid, varname, att )
         if( rc == 0 ):
             bufc, rc =  gfiogetvarcharatt( self.fid, varname, att, count )
             return bufc.tostring()
-        raise GFIOError, 'could not retrieve character attribute <%s> for variable "%s"'%(att,varname)
+        raise GFIOError('could not retrieve character attribute <%s> for variable "%s"'%(att,varname))
 
 #.........................................................................................................
 
@@ -523,18 +523,18 @@ class GFIOctl(object):
                 elif len(tokens) == 6:
                     tdef, dim, nt, linear, t0, dt = tokens
                 else:
-                    raise ValueError, 'Invalid TDEF record: '+line
+                    raise ValueError('Invalid TDEF record: '+line)
 
         # Consistency check
         # -----------------
         if dset is None or nt is None:
-            raise ValueError, '<%s> does not seem to be a valid GrADS control file'%ctlfile
+            raise ValueError('<%s> does not seem to be a valid GrADS control file'%ctlfile)
         else:
             if '^' in dset:
                 dirn = os.path.dirname(ctlfile)
                 dset = dset.replace('^',dirn+'/')
         if template is False:
-            raise ValueError, '<%s> does not seem to be templated'%ctlfile
+            raise ValueError('<%s> does not seem to be templated'%ctlfile)
 
         # Handle time attributes
         # ----------------------
@@ -548,7 +548,7 @@ class GFIOctl(object):
         elif 'mo' in dt:
             mons = int(dt.replace('mo',''))
         else:
-            raise ValueError, 'invalid time step <%s>'%dt 
+            raise ValueError('invalid time step <%s>'%dt) 
 
         if 'mo' in dt:
           dt = relativedelta(months=+mons)
@@ -587,7 +587,7 @@ class GFIOctl(object):
         # Close 1 file if too many files are open
         # ---------------------------------------
         if len(self.Files)  > __MAXFILES__:
-            first = self.Files.keys()[0]
+            first = list(self.Files.keys())[0]
             self.Files[first].close() # close this file
             del self.Files[first]     # delete this entry
             #print '------- deleted %s ----------'%first
@@ -612,7 +612,7 @@ class GFIOctl(object):
             gfio = self.gfio
         else:
             filename = _strTemplate(self.dset,nymd=nymd,nhms=nhms)
-            if self.Files.has_key(filename) == False:
+            if (filename in self.Files) == False:
                 gfio = GFIO(filename)
                 #self.Files[filename] = gfio
                 self._fifo(filename,gfio)
@@ -628,9 +628,9 @@ class GFIOctl(object):
         Given (t1,t2) find bracketing times on file.
         """
         if t<self.tbeg:
-            raise ValueError, '%s before %s'%(str(t),str(self.tbeg))
+            raise ValueError('%s before %s'%(str(t),str(self.tbeg)))
         elif t>self.tend:
-            raise ValueError, '%s after %s'%(str(t),str(self.tend))
+            raise ValueError('%s after %s'%(str(t),str(self.tend)))
 
         # dt = t - self.tbeg
         # i = int(dt.total_seconds() / self.dt.total_seconds())
@@ -697,7 +697,7 @@ class GFIOctl(object):
             gfio = self.gfio
         else:
             filename = _strTemplate(self.dset,nymd=nymd,nhms=nhms)
-            if self.Files.has_key(filename) == False:
+            if (filename in self.Files) == False:
                 gfio = GFIO(filename)
                 #self.Files[filename] = gfio
                 self._fifo(filename,gfio)
@@ -707,7 +707,7 @@ class GFIOctl(object):
         self.gfio = gfio
         v = gfio.interp(vname,lon,lat,nymd=nymd,nhms=nhms,
                         algorithm=algorithm,**kwds)
-	if Transpose: v = v.T  # transpose to (nobs,km)
+        if Transpose: v = v.T  # transpose to (nobs,km)
 
         return v
 
@@ -740,7 +740,7 @@ class GFIOctl(object):
         # Inputs must be 1D arrays
         # ------------------------
         if len(lon.shape)!=1 or len(lat.shape)!=1 or len(time.shape)!=1:
-            raise ValueError, "lons, lats, time must be 1D arrays"
+            raise ValueError("lons, lats, time must be 1D arrays")
         
         # Find times bracketing the input time array
         # ------------------------------------------
@@ -752,13 +752,13 @@ class GFIOctl(object):
         # -------------------------------------------------------
         V, I = [], []
         for now in Times:
-            if Verbose: print " [] XY Interpolating <%s> at "%vname,now
+            if Verbose: print(" [] XY Interpolating <%s> at "%vname,now)
             i = (time>=now-dt) & (time<=now+dt)
             if any(i):
                 v = self.interpXY(vname, lon[i], lat[i],tyme=now,
 				  Transpose=True, # shape will be (nobs,km)
 				  squeeze=False,algorithm=algorithm,**kwopts)
-		shp = list(v.shape)
+                shp = list(v.shape)
             else:
                 v = None
             V.append(v)
@@ -795,11 +795,11 @@ class GFIOctl(object):
           v = V[0]
           v.shape = shp
           
-	if Transpose == False: v = v.T # back to GFIO's (km,nobs)
+        if Transpose == False: v = v.T # back to GFIO's (km,nobs)
         if squeeze == True:    v = v.squeeze()
 
 
-	return v
+        return v
 
 #---
     def sampleVars(self, lon, lat, tyme, npzFile=None, onlyVars=None,
@@ -871,7 +871,7 @@ class GFIOurl(GFIOctl):
             self.__dict__[att] = self.gfio.__dict__[att]
 
         if self.lm < 2:
-            raise ValueError, "only one time step on file; use GFIO class instead"
+            raise ValueError("only one time step on file; use GFIO class instead")
             
         # Save this
         # ---------
@@ -935,14 +935,14 @@ def _strTemplate(templ,expid=None,nymd=None,nhms=None,
 
     if nymd is not None:
         nymd = int(nymd)
-        yy = nymd/10000
-        mm = (nymd - yy*10000)/100
+        yy = nymd//10000
+        mm = (nymd - yy*10000)//100
         dd = nymd - (10000*yy + 100*mm )
 
     if nhms is not None:
         nhms = int(nhms)
-        h = nhms/10000
-        m = (nhms - h * 10000)/100
+        h = nhms//10000
+        m = (nhms - h * 10000)//100
         s = nhms - (10000*h + 100*m)
 
     if expid is not None: 
@@ -1037,23 +1037,23 @@ if __name__ == "__main__":
     # ----------------
     t_ = now()
     ps = f.sample('ps',lons,lats,times,Verbose=True)
-    print "---> Interpolating <ps> with GFIO took ", now()-t_
+    print("---> Interpolating <ps> with GFIO took ", now()-t_)
     t_ = now()
     ps_ = ga.sampleXYT('ps',lons,lats,tyme=times,Verbose=True)
-    print "---> Interpolating <ps> with PyGrADS took ", now()-t_
+    print("---> Interpolating <ps> with PyGrADS took ", now()-t_)
 
     # Interpolating RH
     # ----------------
-    print ""
+    print("")
     t_ = now()
     rh = f.sample('RH',lons,lats,times,Verbose=True)
-    print "---> Interpolating RH with GFIO took ", now()-t_
+    print("---> Interpolating RH with GFIO took ", now()-t_)
     t_ = now()
     ga('set z 1 72')
     rh_ = ga.sampleXYT('rh',lons,lats,tyme=times,Verbose=True)
     rh_ = rh_.T         # transpose
     rh_ = rh_[-1::-1,:] # flip vertical
-    print "---> Interpolating <RH> with PyGrADS took ", now()-t_
+    print("---> Interpolating <RH> with PyGrADS took ", now()-t_)
 
 
 def HOLD():

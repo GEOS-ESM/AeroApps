@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper to submit jobs to sbatch
@@ -13,7 +13,7 @@ from   dateutil.relativedelta import relativedelta
 import argparse
 import numpy as np
 import time
-from   MAPL            import Config
+from   MAPL.config      import Config
 
 class JOBS(object):
     def handle_jobs(self):
@@ -73,12 +73,12 @@ class JOBS(object):
                         # Clean up workspaces
                         self.destroy_workspace(i,s)        
                     else:
-                        print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
+                        print('Jobid ',s,' in ',self.dirstring[i],' exited with errors')
 
             # finished checking up on all the jobs
             # Remove finished jobs from the currently working list
             if len(finishedJobs) != 0:
-                print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
+                print('deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]])
                 node_tally  = node_tally - len(finishedJobs)
 
                 workingJobs = np.delete(workingJobs,finishedJobs)
@@ -110,15 +110,15 @@ class JOBS(object):
             if countDone == numjobs:
                 stat = 1
             else:
-                print 'Waiting 30 minutes'
+                print('Waiting 30 minutes')
                 time.sleep(60*30)
 
 
         # Exited while loop
-        print 'All jobs done'
+        print('All jobs done')
 
         # Postprocessing done
-        print 'Cleaned Up Worksapces'
+        print('Cleaned Up Worksapces')
         devnull.close()
 
 

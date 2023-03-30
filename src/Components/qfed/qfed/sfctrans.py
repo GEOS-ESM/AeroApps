@@ -38,7 +38,7 @@ def getSfcTrans(sample):
                                coefpath='/users/adasilva/data/crtm/rel-2.1.3/crtm_coeffs/little_endian/')
 
     if rc:
-        raise ValueError, 'on return from getsfctrans, rc=<%d>'%rc
+        raise ValueError('on return from getsfctrans, rc=<%d>'%rc)
 
     tau_21, tau_31 = sfctrans
 
@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     from pyobs import NPZ
     
-    print "ok"
+    print("ok")
 
     sample = NPZ('/Users/adasilva/workspace/Data_Analysis/AGU-2014/seac4rs_01.npz')
 

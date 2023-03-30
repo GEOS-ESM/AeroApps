@@ -67,4 +67,4 @@ if __name__ == "__main__":
     m = ODSreader('nnr_002.MOD04_L2a.land.20140119_0300z.ods')
 
     for i in range(m.nobs):
-        print "%6.2f %6.2f %s %7.4f"%(m.lon[i],m.lat[i],m.time[i].isoformat(),m.obs[i]) 
+        print("%6.2f %6.2f %s %7.4f"%(m.lon[i],m.lat[i],m.time[i].isoformat(),m.obs[i])) 

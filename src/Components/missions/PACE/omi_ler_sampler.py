@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Samples OMI LER data  on a pace trajectory.

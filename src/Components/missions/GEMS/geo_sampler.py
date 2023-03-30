@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to GEOS-5 Collections on TEMPO's domain.
@@ -122,8 +122,8 @@ def GOESRscanTimes(scanTimeFile,nNS,nEW,tBeg):
     """
     nc = Dataset(scanTimeFile)   
 
-    seconds = nc.variables[u'scanTime'][:]
-    MISSING = nc.variables[u'scanTime'].missing_value
+    seconds = nc.variables['scanTime'][:]
+    MISSING = nc.variables['scanTime'].missing_value
 
     seconds[where(abs(seconds-MISSING)/MISSING < 0.1)] = ma.masked
 
@@ -139,11 +139,11 @@ def getCoords(geoFile,verbose):
     Assumes the file has albed been tighten in the E-W domain
     """
     if verbose:
-       print " <> Getting GEO coordinates from ", geoFile
+       print(" <> Getting GEO coordinates from ", geoFile)
     nc = Dataset(geoFile)
-    lon = nc.variables[u'clon'][:,:]
-    lat = nc.variables[u'clat'][:,:]
-    missing = nc.variables[u'clon'].missing_value
+    lon = nc.variables['clon'][:,:]
+    lat = nc.variables['clat'][:,:]
+    missing = nc.variables['clon'].missing_value
     return (nc,lon,lat,missing)
 
 def getVars(rcFile):
@@ -155,7 +155,7 @@ def getVars(rcFile):
     Vars = dict()
     levUnits = 'none'
     levs = []
-    for V in cf.keys():
+    for V in list(cf.keys()):
         path = cf(V)
         f = Open(path)
         varList = []
@@ -176,7 +176,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',layout=None,zlib=False):
     content over,
     """
     x = ncIn.variables[name]
-    print x.dimensions
+    print(x.dimensions)
     y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
     y.long_name = x.long_name
     y.units = x.units 
@@ -193,7 +193,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',layout=None,zlib=False):
 
         i_ = i%nX
         j_ = int(i/nX) 
-        print '_copyVar',nX,nY,i,i_,j_
+        print('_copyVar',nX,nY,i,i_,j_)
 
 
     if rank == 1:
@@ -227,7 +227,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',layout=None,zlib=False):
 
             y[:,:,:] = x[:,Ystart:Yend,Xstart:Xend]
     else:
-        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
+        raise ValueError("invalid rank of <%s>: %d"%(name,rank))
 
 #---
 def shave(q,options,undef=MISSING,has_undef=1,nbits=12):
@@ -250,13 +250,13 @@ def shave(q,options,undef=MISSING,has_undef=1,nbits=12):
     elif rank == 3: # zyx
         chunksize = shp[1]*shp[2]
     else:
-        raise ValueError, "invalid rank=%d"%rank
+        raise ValueError("invalid rank=%d"%rank)
 
     # Shave it
     # --------
     qs, rc = shave32(q.ravel(),xbits,has_undef,undef,chunksize)
     if rc:
-        raise ValueError, "error on return from shave32, rc=%d"%rc
+        raise ValueError("error on return from shave32, rc=%d"%rc)
 
     return qs.reshape(shp)
 
@@ -336,11 +336,11 @@ def writeNC ( ncGeo, clon, clat, ctyme, tBeg, Vars, levs, levUnits, options,
 
         i_ = i%nX
         j_ = int(i/nX) 
-        _copyVar(ncGeo,nc,u'ew',dtype='f4',zlib=False, layout = layout[0]+'1'+str(i_))
-        _copyVar(ncGeo,nc,u'ns',dtype='f4',zlib=False, layout = layout[1]+'1'+str(j_))
+        _copyVar(ncGeo,nc,'ew',dtype='f4',zlib=False, layout = layout[0]+'1'+str(i_))
+        _copyVar(ncGeo,nc,'ns',dtype='f4',zlib=False, layout = layout[1]+'1'+str(j_))
     else:
-         _copyVar(ncGeo,nc,u'ew',dtype='f4',zlib=False)
-         _copyVar(ncGeo,nc,u'ns',dtype='f4',zlib=False)
+         _copyVar(ncGeo,nc,'ew',dtype='f4',zlib=False)
+         _copyVar(ncGeo,nc,'ns',dtype='f4',zlib=False)
     dt = nc.createVariable('scanTime','f4',('ew',),zlib=False)
     dt.long_name = 'Time of Scan'
     dt.units = 'seconds since %s'%tBeg.isoformat(' ')
@@ -351,14 +351,14 @@ def writeNC ( ncGeo, clon, clat, ctyme, tBeg, Vars, levs, levUnits, options,
     # Save lon/lat if so desired
     # --------------------------
     if options.coords:
-        _copyVar(ncGeo,nc,u'clon',dtype='f4',zlib=False, layout=layout)
-        _copyVar(ncGeo,nc,u'clat',dtype='f4',zlib=False, layout=layout)            
+        _copyVar(ncGeo,nc,'clon',dtype='f4',zlib=False, layout=layout)
+        _copyVar(ncGeo,nc,'clat',dtype='f4',zlib=False, layout=layout)            
         
     # Loop over datasets, sample and write each variable
     # --------------------------------------------------
     for path in Vars:
         if options.verbose:
-            print " <> opening "+path
+            print(" <> opening "+path)
         g = Open(path)
         for var in Vars[path]:
             if var.km == 0:
@@ -385,14 +385,14 @@ def writeNC ( ncGeo, clon, clat, ctyme, tBeg, Vars, levs, levUnits, options,
             else:
                 name = var.name
             if options.verbose:
-                print " [] Interpolating <%s>"%name.upper()
+                print(" [] Interpolating <%s>"%name.upper())
 
             # Use NC4ctl for linear interpolation
             # -----------------------------------
             I = (clon<0.1*MISSING)&(clat<0.1*MISSING)
             Z = g.nc4.sample(name,clon[I],clat[I],ctyme[I],
                              Transpose=False,squeeze=True,Verbose=options.verbose)
-            if options.verbose: print " <> Writing <%s> "%name
+            if options.verbose: print(" <> Writing <%s> "%name)
             if rank == 3:
                W[I] = Z
                this[0,:,:] = shave(W[:,:],options)
@@ -405,7 +405,7 @@ def writeNC ( ncGeo, clon, clat, ctyme, tBeg, Vars, levs, levUnits, options,
     nc.close()
 
     if options.verbose:
-        print " <> wrote %s file %s"%(options.format,options.outFile)
+        print(" <> wrote %s file %s"%(options.format,options.outFile))
     
 #------------------------------------ M A I N ------------------------------------
 
@@ -511,7 +511,7 @@ if __name__ == "__main__":
     elif 'NETCDF3' in options.format:
         options.outFile = name + '.nc'
     else:
-        raise ValueError, 'invalid extension <%s>'%ext
+        raise ValueError('invalid extension <%s>'%ext)
     options.zlib = not options.nozip
 
     # Get Variables and Metadata
@@ -541,12 +541,12 @@ if __name__ == "__main__":
             i_ = i%nX
             j_ = int(i/nX) 
 
-            print i_, j_
+            print(i_, j_)
             Xstart = i_*nEW/nX
             Xend   = Xstart + nEW/nX
             Ystart = j_*nNS/nY
             Yend   = Ystart + nNS/nY
-            print Xstart, Xend, Ystart, Yend
+            print(Xstart, Xend, Ystart, Yend)
             writeNC ( ncGeo, clon[Ystart:Yend,Xstart:Xend], clat[Ystart:Yend,Xstart:Xend], 
                       ctyme[Ystart:Yend,Xstart:Xend], t1, Vars, levs, levUnits, options, 
                       layout = options.layout+str(i), doAkBk=False )

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # This can be made more robust...
 #
@@ -11,11 +11,11 @@ def configuration(parent_package='',top_path=None):
     odslib  = os.environ.get("ODSLIB")
 
     if (baselib is None) or (esmalib is None) or (odslib is None):
-        raise ValueError, "BASELIB, ESMALIB or ODSLIB environment variables not set; run this from GNUmakefile"
+        raise ValueError("BASELIB, ESMALIB or ODSLIB environment variables not set; run this from GNUmakefile")
 
-    print "Using BASELIB = ", baselib
-    print "Using ESMALIB = ", esmalib
-    print "Using ODSLIB = ",  odslib
+    print("Using BASELIB = ", baselib)
+    print("Using ESMALIB = ", esmalib)
+    print("Using ODSLIB = ",  odslib)
 
     config = Configuration('pyods',package_path='pyods')
     config.add_extension('pyods_',['pyods_.F90',], \

@@ -173,7 +173,7 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='rmse'):
     nblocks = [len(group) for group in mxd.combgroups]
     nblocks.insert(0,0)
 
-    print "MASTERLIST", masterlist
+    print("MASTERLIST", masterlist)
 
     #--------------
     # Default sort by mean RMSE of first target
@@ -574,6 +574,7 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
   if I is None:
     I = [mxd.iValid]
 
+<<<<<<< HEAD
   # Plot PDF of Error
   # -------------------------
   # loop through targets
@@ -589,6 +590,12 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
     if name in mxd.__dict__:
       if K is None:
         targets  = mxd.getTargets(I[0])[:,t]
+=======
+    print('mod04RMSE',mod04RMSE)
+    print('nnrRMSE',nnrRMSE)
+    mod04RMSE = np.mean(mod04RMSE)
+    nnrRMSE   = np.mean(nnrRMSE)
+>>>>>>> origin/feature/pcastell/everything_to_py3
 
         inputs = mxd.getInputs(I[0],Input=Input)
         knet = mxd.loadnet(netfileRoot+'_Tau.net')
@@ -793,9 +800,9 @@ def make_error_pdfs_int(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRo
       dbmod04RMSE.append(rmse(dboriginal[k],targets[k]))
       nnrRMSE.append(rmse(results[k],targets[k]))
 
-    print 'mod04RMSE',mod04RMSE
-    print 'dbmod04RMSE',dbmod04RMSE
-    print 'nnrRMSE',nnrRMSE
+    print('mod04RMSE',mod04RMSE)
+    print('dbmod04RMSE',dbmod04RMSE)
+    print('nnrRMSE',nnrRMSE)
     mod04RMSE   = np.mean(mod04RMSE)
     dbmod04RMSE = np.mean(dbmod04RMSE)
     nnrRMSE     = np.mean(nnrRMSE)
@@ -970,10 +977,10 @@ def make_error_pdfs_dbdt(mxd,mxd2,Input,expid,ident,K=None,I=None,Title=None,
       nnrRMSE.append(rmse(results[k],targets[k]))
       nnrRMSE2.append(rmse(results2[k],targets[k]))
 
-    print 'mod04RMSE',mod04RMSE
-    print 'dbmod04RMSE',dbmod04RMSE
-    print 'nnrRMSE',nnrRMSE
-    print 'nnrRMSE2',nnrRMSE2
+    print('mod04RMSE',mod04RMSE)
+    print('dbmod04RMSE',dbmod04RMSE)
+    print('nnrRMSE',nnrRMSE)
+    print('nnrRMSE2',nnrRMSE2)
     mod04RMSE   = np.mean(mod04RMSE)
     dbmod04RMSE = np.mean(dbmod04RMSE)
     nnrRMSE     = np.mean(nnrRMSE)

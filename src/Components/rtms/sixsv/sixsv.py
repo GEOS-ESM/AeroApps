@@ -49,7 +49,7 @@ def ocnAlbedo (speed, channels,
     
     albedo = zeros((Nc,N))
     for i in range(Nc):
-        print channels[i]
+        print(channels[i])
         albedo[i] = sixsv_.ocnalbedo(speed, channels[i], del_azim, salinity, pigment)
     
     return albedo.T # (nobs.nch)

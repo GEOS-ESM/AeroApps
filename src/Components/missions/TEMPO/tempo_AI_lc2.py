@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 
 """
@@ -71,6 +71,6 @@ if __name__ == "__main__":
 
     command += ' ' + pcfFile + ' ' + isoStartTime + ' ' + isoEndTime
 
-    print command
+    print(command)
     if system(command):
-        raise ValueError, "run_geo_vlidort_AI_lc2.py failed for %s to %s "%(isoStartTime,isoEndTime)
+        raise ValueError("run_geo_vlidort_AI_lc2.py failed for %s to %s "%(isoStartTime,isoEndTime))

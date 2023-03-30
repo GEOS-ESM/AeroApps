@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Calculates polarized TOA radiance for a lidar track.
@@ -22,7 +22,7 @@ from dateutil.parser import parse         as isoparser
 from MAPL.constants import *
 from leo_vlidort import LidarAngles_    
  
-from copyvar  import _copyVar
+from .copyvar  import _copyVar
 from scipy import interpolate
 from   MAPL  import Config
 from multiprocessing import Pool
@@ -225,7 +225,7 @@ class LIDAR_VLIDORT(VLIDORT):
         p = Pool(27) 
         # loop though LAND and SEA
         for surface in surfList:
-            print 'Working on ', surface
+            print('Working on ', surface)
             iGood = self.__dict__['i'+surface]
             nobs = len(iGood)
             sza  = self.SZA[iGood]
@@ -399,15 +399,15 @@ class LIDAR_VLIDORT(VLIDORT):
         # --------------------
         col = 'aer_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nctrj       = Dataset(self.inFile.replace('%col',col))        
-        _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'lev', dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)   
+        _copyVar(nctrj,nc,'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'time', dtype='i4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'lev', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'isotime', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'x',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'y',dtype='f4',zlib=False,verbose=self.verbose)   
         nctrj.close()
 
 
@@ -511,7 +511,7 @@ class LIDAR_VLIDORT(VLIDORT):
         nc.close()
 
         if self.verbose:
-            print " <> wrote %s"%(self.outFile)
+            print(" <> wrote %s"%(self.outFile))
 
     
 def get_chd(channel):
@@ -642,19 +642,19 @@ if __name__ == "__main__":
 
         # Initialize VLIDORT class getting aerosol optical properties
         # -----------------------------------------------------------
-        print '++++Running VLIDORT with the following arguments+++'
-        print '>>>inFile:    ',inFile
-        print '>>>outFile:   ',outFile
-        print '>>>rcFile:    ',rcFile
-        print '>>>albedoType:',albedoType
-        print '>>>channel:   ',channel
-        print '>>>HGT:       ',HGT
-        print '>>>brdfFile:  ',brdfFile
-        print '>>>ndviFile:  ',ndviFile
-        print '>>>lcFile:    ',lcFile
-        print '>>>lerFile    ',lerFile
-        print '>>>verbose:   ',args.verbose
-        print '++++End of arguments+++'
+        print('++++Running VLIDORT with the following arguments+++')
+        print('>>>inFile:    ',inFile)
+        print('>>>outFile:   ',outFile)
+        print('>>>rcFile:    ',rcFile)
+        print('>>>albedoType:',albedoType)
+        print('>>>channel:   ',channel)
+        print('>>>HGT:       ',HGT)
+        print('>>>brdfFile:  ',brdfFile)
+        print('>>>ndviFile:  ',ndviFile)
+        print('>>>lcFile:    ',lcFile)
+        print('>>>lerFile    ',lerFile)
+        print('>>>verbose:   ',args.verbose)
+        print('++++End of arguments+++')
         if not args.dryrun:
             vlidort = LIDAR_VLIDORT(inFile,outFile,rcFile,
                                     albedoType,

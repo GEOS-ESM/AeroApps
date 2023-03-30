@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Splits AVHRR into synoptic chunks.
 """
@@ -18,7 +18,7 @@ def makethis_dir(filename):
     if path != '':
         rc = os.system('mkdir -p '+path)
         if rc:
-            raise IOError, "could not create directory "+path
+            raise IOError("could not create directory "+path)
         
 #---------------------------------------------------------------------
 if __name__ == "__main__":
@@ -33,8 +33,8 @@ if __name__ == "__main__":
     Verb = False
 
     if len(sys.argv)<2:
-        print "Usage:"
-        print "        synoptic_avhrr.py  year1 [year2 year3 ...]"
+        print("Usage:")
+        print("        synoptic_avhrr.py  year1 [year2 year3 ...]")
         sys.exit(1)
     else:
         Years = array(sys.argv[1:]).astype(int)
@@ -55,10 +55,10 @@ if __name__ == "__main__":
                            (tyme.year,tyme.month,tyme.day,ident,orb,tyme.year,tyme.month,tyme.day)
 
             if os.path.exists(fname):
-                print "<> Skipping ", tyme.date()
+                print("<> Skipping ", tyme.date())
                 continue
             else:
-                print "<> Processing ", tyme.date(), doy
+                print("<> Processing ", tyme.date(), doy)
 
             # Read the bracketing data for this day
             # -------------------------------------
@@ -68,7 +68,7 @@ if __name__ == "__main__":
             else:
                 for syn_hour in range(0,24,3):
                     t = tyme + timedelta(seconds=syn_hour*60*60)
-                    print "   x Writing placeholder file on", t
+                    print("   x Writing placeholder file on", t)
                     fname = NpzDir+'/Y%d/M%02d/D%02d/%s.%s.%d%02d%02d_%02dz.npz'%\
                             (t.year,t.month,t.day,ident,orb,t.year,t.month,t.day,t.hour)
                     makethis_dir(fname)
@@ -107,13 +107,13 @@ if __name__ == "__main__":
                                (t.year,t.month,t.day,ident,orb,t.year,t.month,t.day,t.hour)
 
                 if os.path.exists(fname):
-                    print "   - Skipping writing %d obs on "%nobs,t
+                    print("   - Skipping writing %d obs on "%nobs,t)
                     continue
 
                 makethis_dir(fname)
                 if any(I):
-                    print "   + Writing %d obs on "%nobs,t
+                    print("   + Writing %d obs on "%nobs,t)
                     a.writeNPZ(fname,I=I)
                 else:
-                    print "   o Writing empty file on",t
+                    print("   o Writing empty file on",t)
                     savez(fname,nobs=0)

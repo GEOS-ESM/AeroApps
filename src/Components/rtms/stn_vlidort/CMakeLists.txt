@@ -1,8 +1,8 @@
 esma_set_this ()
-find_package(F2PY2 REQUIRED)
+find_package(F2PY3 REQUIRED)
 
-# MAT: Note uses add_f2py2 because I can't figure out the import test for netCDF f2py code
-add_f2py2_module (VLIDORT_STN_
+# MAT: Note uses add_f2py3 because I can't figure out the import test for netCDF f2py code
+add_f2py3_module (VLIDORT_STN_
     SOURCES VLIDORT_STN_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES geo_vlidort
@@ -10,7 +10,7 @@ add_f2py2_module (VLIDORT_STN_
   )
 add_dependencies(VLIDORT_STN_ geo_vlidort)
 
-esma_add_f2py2_module (stnAngles_
+esma_add_f2py3_module (stnAngles_
     SOURCES stnAngles_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper to loop through channels and submit pace_lc.j jobs to sbatch for one pace granule
@@ -113,12 +113,12 @@ class JOBS(object):
                     if (errcheck is False):
                         self.errTally[i] = False
                     else:
-                        print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
+                        print('Jobid ',s,' in ',self.dirstring[i],' exited with errors')
 
             # finished checking up on all the jobs
             # Remove finished jobs from the currently working list
             if len(finishedJobs) != 0:
-                print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
+                print('deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]])
                 if self.nodemax is not None:
                     node_tally = node_tally - self.nodemax*len(finishedJobs)
                 else:                
@@ -160,12 +160,12 @@ class JOBS(object):
             if countDone == runlen:
                 stat = 1
             else:
-                print 'Waiting 30 minutes'
+                print('Waiting 30 minutes')
                 time.sleep(60*3)
             
 
         # Exited while loop
-        print 'All jobs done'
+        print('All jobs done')
 
         # Clean up workspaces for completed jobs
         for i,s in enumerate(jobid):
@@ -179,7 +179,7 @@ class JOBS(object):
                 self.compress(i,devnull)
 
         # Postprocessing done
-        print 'Cleaned Up Worksapces'
+        print('Cleaned Up Worksapces')
         devnull.close()
 
 
@@ -248,24 +248,24 @@ class WORKSPACE(JOBS):
             self.get_channels()
         elif args.channels is not None:
             if ',' in args.channels:
-                makelist=lambda s: map(int, s.split(","))
+                makelist=lambda s: list(map(int, s.split(",")))
                 self.channels = makelist(args.channels)
             elif ':' in args.channels:
-                makelist=lambda s: map(int, s.split(":"))
+                makelist=lambda s: list(map(int, s.split(":")))
                 start,stop,delta = makelist(args.channels)
-                self.channels = range(start,stop+delta,delta)
+                self.channels = list(range(start,stop+delta,delta))
             else:
                 self.channels = [float(args.channels)]
 
             self.get_ichannels()
         elif args.ichannels is not None:
             if ',' in args.ichannels:
-                makelist=lambda s: map(int, s.split(","))
+                makelist=lambda s: list(map(int, s.split(",")))
                 self.ichannels = makelist(args.ichannels)
             elif ':' in args.ichannels:
-                makelist=lambda s: map(int, s.split(":"))
+                makelist=lambda s: list(map(int, s.split(":")))
                 start,stop,delta = makelist(args.ichannels)
-                self.ichannels = range(start,stop+delta,delta)
+                self.ichannels = list(range(start,stop+delta,delta))
             else:
                 self.ichannels = [int(args.ichannels)]
 
@@ -682,8 +682,8 @@ class WORKSPACE(JOBS):
                     errfile = 'slurm_' +jobid + '_' + str(a) + '.err'                    
                     outfile = 'slurm_' +jobid + '_' + str(a) + '.out'
                     if self.verbose:
-                        print '++cleaning up errfile', errfile
-                        print '++cleaning up outfile', outfile
+                        print('++cleaning up errfile', errfile)
+                        print('++cleaning up outfile', outfile)
                     os.remove(errfile)
                     os.remove(outfile)
                 os.remove('slurm_%A_%a.out')                    
@@ -837,7 +837,7 @@ if __name__ == '__main__':
     parser.add_argument("--ichannels", default=None,
                         help="index of channels to get TOA radiance. Can be a list (1,2) or a range (1:2:1) (default=None - read in from PACE L1B File)")
 
-    parser.add_argument("-e","--extch", default=None,type=lambda s: map(int, s.split(",")),
+    parser.add_argument("-e","--extch", default=None,type=lambda s: list(map(int, s.split(","))),
                         help="channels to run extinction sampler (default=None - read in from PACE L1B File)")  
 
     parser.add_argument('--version',default=version,

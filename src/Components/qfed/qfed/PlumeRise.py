@@ -14,7 +14,7 @@ from scipy import optimize as opt
 from datetime   import datetime, date, timedelta
 from glob       import glob
 
-from dozier     import DOZIER, granules
+from .dozier     import DOZIER, granules
 from PlumeRise_ import *       # f2py extension
 from gfio       import GFIO
 
@@ -23,7 +23,7 @@ from pyobs.binObs_   import binareas
 from pyobs.minx      import MINXs
 from MAPL.constants  import *
 
-import eta
+from . import eta
 
 __VERSION__ = 2.1
 __CVSTAG__  = '@CVSTAG'
@@ -140,7 +140,7 @@ class MINXs_PR(MINXs):
         delp = self.sample.delp[i]
 
         if delp.min()<=0 or T.min()<=0:
-            print "out of range: ", delp.min(), T.min() 
+            print("out of range: ", delp.min(), T.min()) 
             return NaN
 
         # Ensure arrays are top-down as in GEOS-5
@@ -162,7 +162,7 @@ class MINXs_PR(MINXs):
         # p,z,k,rc = plume(u,v,T,q,delp,ptop,hflux_kW,area)
         z_i,z_d,z_a,z_f,z,w,rc = plumevmd(u,v,T,q,delp,ptop,hflux_kW,area)
         if rc:
-            raise ValueError, "error on return from <plume>, rc = %d"%rc
+            raise ValueError("error on return from <plume>, rc = %d"%rc)
 
         if z_i==-1.: 
              z_i,z_d,z_a,z_f = (NaN,self.sample.pblh[i],NaN,NaN)
@@ -174,8 +174,8 @@ class MINXs_PR(MINXs):
         else:              z = (z_i,z_d,z_a,z_f,z,w)
         
         if Verbose:
-            print " ", self.tyme[i], "| %8.2f | %8.2f %8.2f | %8.2f %8.2f %8.2f %8.2f | %03d"%\
-                (self.mod14.fdist[i], area/1e4, hflux_kW, z_i,z_d,z_a,z_f,i)
+            print(" ", self.tyme[i], "| %8.2f | %8.2f %8.2f | %8.2f %8.2f %8.2f %8.2f | %03d"%\
+                (self.mod14.fdist[i], area/1e4, hflux_kW, z_i,z_d,z_a,z_f,i))
 
         return z
 
@@ -193,26 +193,26 @@ class MINXs_PR(MINXs):
             R = R[I]
 
         if Verbose:
-            print ""
-            print "                    Plume Height Estimates"
-            print ""
-            print "  --------------------|----------|-------------------|-------------------------------------------"
-            print "                      | Distance |   Fire Properties |             Plume Height"
-            print "    MINX Date/Time    |  to Fire |   Area   Heat Flx |    z_i      z_d      z_a      z_f"
-            print "                      |    km    |    ha      kW     |    km       km       km       km"
-            print "  --------------------|----------|-------------------|-------------------------------------------"
+            print("")
+            print("                    Plume Height Estimates")
+            print("")
+            print("  --------------------|----------|-------------------|-------------------------------------------")
+            print("                      | Distance |   Fire Properties |             Plume Height")
+            print("    MINX Date/Time    |  to Fire |   Area   Heat Flx |    z_i      z_d      z_a      z_f")
+            print("                      |    km    |    ha      kW     |    km       km       km       km")
+            print("  --------------------|----------|-------------------|-------------------------------------------")
             
 #       Loop over time
 #       --------------
         for i in R:
             z_plume[i] = self.getPlume1(i,Verbose=Verbose,**kwopts)
         if Verbose:
-            print "  --------------------|----------|-------------------|-------------------------------------------"
+            print("  --------------------|----------|-------------------|-------------------------------------------")
 
         return array(z_plume)
 
         if Verbose:
-            print "  --------------------|----------|-------------------|----------"
+            print("  --------------------|----------|-------------------|----------")
 
 #---
     def getFires(self,mod14_path='/home/adasilva/iesa/aerosol/data/MODIS/Level2/MOD14',
@@ -221,7 +221,7 @@ class MINXs_PR(MINXs):
         """
         Retrieves Level2 MOD14 fire data for each MINX fire.
         """
-        from dozier import DOZIER
+        from .dozier import DOZIER
 
         self.mod14 = []
         d2r = pi / 180.
@@ -231,14 +231,14 @@ class MINXs_PR(MINXs):
         self.mod14 = MOD14(self.N)
         
         if Verbose:
-            print ""
-            print "                   Fire Heat Flux Estimates"
-            print ""
-            print "  --------------------|----------|-------------------|----------"
-            print "                      | Distance |    FRP Estimates  |   Fire"
-            print "    MINX Date/Time    |  to Fire |   MINX      MODIS | Heat Flux"
-            print "                      |    km    |    MW         MW  |  kW/m2"
-            print "  --------------------|----------|-------------------|----------"
+            print("")
+            print("                   Fire Heat Flux Estimates")
+            print("")
+            print("  --------------------|----------|-------------------|----------")
+            print("                      | Distance |    FRP Estimates  |   Fire")
+            print("    MINX Date/Time    |  to Fire |   MINX      MODIS | Heat Flux")
+            print("                      |    km    |    MW         MW  |  kW/m2")
+            print("  --------------------|----------|-------------------|----------")
 
         for i in range(self.N):
 
@@ -278,9 +278,9 @@ class MINXs_PR(MINXs):
                 self.mod14.farea[i] = m.farea[j]
                 self.mod14.qa[i] = m.m[j] # bolean
             if Verbose:
-                print " ", t, "| %8.2f | %8.2f %8.2f | %8.2f"%\
+                print(" ", t, "| %8.2f | %8.2f %8.2f | %8.2f"%\
                     (self.mod14.fdist[i], self.mod14.frp[i], self.mod14.frp[i], \
-                     self.mod14.hflux[i] )
+                     self.mod14.hflux[i] ))
 
         # Save fire properties in NPZ file for later
         # ------------------------------------------
@@ -288,7 +288,7 @@ class MINXs_PR(MINXs):
             savez(npzFile,**self.mod14.__dict__)
                   
         if Verbose:
-            print "  --------------------|----------|-------------------|----------"
+            print("  --------------------|----------|-------------------|----------")
 
 #---
     def getOptBrute(self,I=None,Verbose=True,**kwopts):
@@ -309,18 +309,18 @@ class MINXs_PR(MINXs):
         Hflux_kW = linspace(1,100,10)
         Area = linspace(0.1e4,2e4,10)
 
-        print Hflux_kW
-        print Area
+        print(Hflux_kW)
+        print(Area)
 
         if Verbose:
-            print ""
-            print "                    Plume Height Estimates"
-            print ""
-            print "  --------------------|----------|-------------------|----------"
-            print "                      | Observed |    Opt Properties |  Optimal "
-            print "    MINX Date/Time    |  Height  |   Area   Heat Flx |  Height"
-            print "                      |    km    |    ha      kW     |    km"
-            print "  --------------------|----------|-------------------|----------"
+            print("")
+            print("                    Plume Height Estimates")
+            print("")
+            print("  --------------------|----------|-------------------|----------")
+            print("                      | Observed |    Opt Properties |  Optimal ")
+            print("    MINX Date/Time    |  Height  |   Area   Heat Flx |  Height")
+            print("                      |    km    |    ha      kW     |    km")
+            print("  --------------------|----------|-------------------|----------")
             
 
 #       Loop over time
@@ -340,11 +340,11 @@ class MINXs_PR(MINXs):
                             a_opt[i] = area
             if e<1e20:
                 if Verbose:
-                    print " ", self.tyme[i], "| %8.2f | %8.2f %8.2f | %8.2f"%\
-                          (z, a_opt[i]/1e4, h_opt[i], z_opt[i])
+                    print(" ", self.tyme[i], "| %8.2f | %8.2f %8.2f | %8.2f"%\
+                          (z, a_opt[i]/1e4, h_opt[i], z_opt[i]))
                                         
         if Verbose:
-            print "  --------------------|----------|-------------------|----------"
+            print("  --------------------|----------|-------------------|----------")
 
         return (z_opt,h_opt,a_opt)
 
@@ -355,11 +355,11 @@ class MINXs_PR(MINXs):
         """
 
         if Verbose:
-            print ""
-            print "    Fire Modified bstar Optimization"
-            print ""
-            print "Plume | f_opt  |    J     |  Ni | Nf"
-            print "------|--------|----------|-----|-----"
+            print("")
+            print("    Fire Modified bstar Optimization")
+            print("")
+            print("Plume | f_opt  |    J     |  Ni | Nf")
+            print("------|--------|----------|-----|-----")
 
         self.f_opt = ones(self.N)
         self.z_opt = ones(self.N)
@@ -375,10 +375,10 @@ class MINXs_PR(MINXs):
                 self.z_opt[i] = self.getPlume1(i,rad2conv=self.f_opt[i],area_m2=area_m2)
 
             if Verbose:
-                print "%5d | %6.2f | %8.2f | %3d | %3d "%(i, rad2conv, fval, iter, fcalls)
+                print("%5d | %6.2f | %8.2f | %3d | %3d "%(i, rad2conv, fval, iter, fcalls))
 
         if Verbose:
-            print "------|--------|----------|-----|-----"
+            print("------|--------|----------|-----|-----")
 
 #---
     def getOptA(self,Verbose=True,rad2conv=5):
@@ -387,11 +387,11 @@ class MINXs_PR(MINXs):
         """
 
         if Verbose:
-            print ""
-            print "    Fire Modified afac Optimization"
-            print ""
-            print "Plume | f_opt  |    J     |  Ni | Nf"
-            print "------|--------|----------|-----|-----"
+            print("")
+            print("    Fire Modified afac Optimization")
+            print("")
+            print("Plume | f_opt  |    J     |  Ni | Nf")
+            print("------|--------|----------|-----|-----")
 
         self.a_opt = ones(self.N)
         self.z_opt = ones(self.N)
@@ -401,10 +401,10 @@ class MINXs_PR(MINXs):
             self.a_opt[i] = afac
             self.z_opt[i] = self.getPlume1(i,afac=self.a_opt[i],rad2conv=rad2conv)
             if Verbose:
-                print "%5d | %6.2f | %8.2f | %3d | %3d "%(i, afac, fval, iter, fcalls)
+                print("%5d | %6.2f | %8.2f | %3d | %3d "%(i, afac, fval, iter, fcalls))
 
         if Verbose:
-            print "------|--------|----------|-----|-----"
+            print("------|--------|----------|-----|-----")
 
 #---
     def getOptFanneal(self,Verbose=True):
@@ -413,11 +413,11 @@ class MINXs_PR(MINXs):
         """
 
         if Verbose:
-            print ""
-            print "    Fire Modified bstar Optimization"
-            print ""
-            print "Plume | f_opt  |    J     |  Ni | Nf"
-            print "------|--------|----------|-----|-----"
+            print("")
+            print("    Fire Modified bstar Optimization")
+            print("")
+            print("Plume | f_opt  |    J     |  Ni | Nf")
+            print("------|--------|----------|-----|-----")
 
         self.f_opt = ones(self.N)
         self.z_opt = ones(self.N)
@@ -427,10 +427,10 @@ class MINXs_PR(MINXs):
             self.f_opt[i] = ffac
             self.z_opt[i] = self.getPlume1(i,ffac=self.f_opt[i])
             if Verbose:
-                print "%5d | %6.2f | %8.2f | %3d | %3d "%(i, ffac, fval, iter, fcalls)
+                print("%5d | %6.2f | %8.2f | %3d | %3d "%(i, ffac, fval, iter, fcalls))
 
         if Verbose:
-            print "------|--------|----------|-----|-----"
+            print("------|--------|----------|-----|-----")
 
 #---
     def getOptFbnd(self,Verbose=True):
@@ -439,11 +439,11 @@ class MINXs_PR(MINXs):
         """
 
         if Verbose:
-            print ""
-            print "    Fire Modified bstar Optimization"
-            print ""
-            print "Plume | f_opt  |    J     |  Ni | Nf"
-            print "------|--------|----------|-----|-----"
+            print("")
+            print("    Fire Modified bstar Optimization")
+            print("")
+            print("Plume | f_opt  |    J     |  Ni | Nf")
+            print("------|--------|----------|-----|-----")
 
         self.f_opt = ones(self.N)
         self.z_opt = ones(self.N)
@@ -453,10 +453,10 @@ class MINXs_PR(MINXs):
             self.f_opt[i] = ffac
             self.z_opt[i] = self.getPlume1(i,rad2conv=self.f_opt[i])
             if Verbose:
-                print "%5d | %6.2f | %8.2f | %3d | %3d "%(i, ffac, fval, fcalls, fcalls)
+                print("%5d | %6.2f | %8.2f | %3d | %3d "%(i, ffac, fval, fcalls, fcalls))
 
         if Verbose:
-            print "------|--------|----------|-----|-----"
+            print("------|--------|----------|-----|-----")
 
 #----
 def CostFuncF(f,m,i,area_m2):
@@ -514,7 +514,7 @@ class PLUME_L2(DOZIER):
         delp = self.sample.delp[i]
 
         if delp.min()<=0 or T.min()<=0:
-            print "out of range: ", delp.min(), T.min() 
+            print("out of range: ", delp.min(), T.min()) 
             return None
 
         # Ensure arrays are top-down as in GEOS-5
@@ -530,11 +530,11 @@ class PLUME_L2(DOZIER):
         # --------------------        
         z_i,z_d,z_a,z_f,z,w,rc = plumevmd(u,v,T,q,delp,ptop,hflux_kW,area)
         if rc:
-            raise ValueError, "error on return from <plume>, rc = %d"%rc
+            raise ValueError("error on return from <plume>, rc = %d"%rc)
 
         if Verbose:
-            print "| %8.2f %8.2f %s | %8.2f %8.2f | %8.2f %8.2f %8.2f %8.2f | %03d"%\
-                (self.lon[i],self.lat[i], str(self.tyme[i]), area/1e4, hflux_kW, z_i,z_d,z_a,z_f,i)
+            print("| %8.2f %8.2f %s | %8.2f %8.2f | %8.2f %8.2f %8.2f %8.2f | %03d"%\
+                (self.lon[i],self.lat[i], str(self.tyme[i]), area/1e4, hflux_kW, z_i,z_d,z_a,z_f,i))
         
         return (z_i,z_d,z_a,z_f,z,w)
 
@@ -550,7 +550,7 @@ class PLUME_L2(DOZIER):
 
         I = self.sample.I             # spatial subsetting
         if len(I) != self.lon.size:
-                raise ValueError, 'sampling data appear inconsistent'
+                raise ValueError('sampling data appear inconsistent')
             
         N = len(self.lon)     # all obs
         n = len(self.lon[I])  # reduced set in case of regional subsetting
@@ -570,17 +570,17 @@ class PLUME_L2(DOZIER):
         if algo is not None:
             self.sample.farea = self.farea[I]
             if self.algo != algo:
-                raise ValueError, 'only dozier algorithm supportted'
+                raise ValueError('only dozier algorithm supportted')
 
         if Verbose:
-            print ""
-            print "                         Plume Height Estimates"
-            print ""
-            print "  --------------------|-----------------------|-------------------------------------------"
-            print "                      |    Fire Properties    |             Plume Height"
-            print "    Lon  Lat  Time    |   Area     Conv Pwr   |    z_i      z_d      z_a      z_f"
-            print "                      |    ha         kW      |    km       km       km       km"
-            print "  --------------------|-----------------------|-------------------------------------------"
+            print("")
+            print("                         Plume Height Estimates")
+            print("")
+            print("  --------------------|-----------------------|-------------------------------------------")
+            print("                      |    Fire Properties    |             Plume Height")
+            print("    Lon  Lat  Time    |   Area     Conv Pwr   |    z_i      z_d      z_a      z_f")
+            print("                      |    ha         kW      |    km       km       km       km")
+            print("  --------------------|-----------------------|-------------------------------------------")
             
 
 #       Loop over time
@@ -611,10 +611,10 @@ class PLUME_L2(DOZIER):
 	"""
 
         if self.algo != 'dozier':
-            raise ValueError, 'only Dozier algorithm supported for now'
+            raise ValueError('only Dozier algorithm supported for now')
 
         if self.veg is None:
-            raise ValueError, 'veg attribute with biome type has not been defined'
+            raise ValueError('veg attribute with biome type has not been defined')
 
 
 #       Initialize Plume Rise ranges
@@ -789,7 +789,7 @@ class PLUME_L3(object):
 #           -------------------------------------
             if self.idx[i] is None:
                 if self.verb>0:
-                    print "[x] no data for %s"%Bioma[i] 
+                    print("[x] no data for %s"%Bioma[i]) 
                 continue
 
             lon = self.lon[i]
@@ -803,7 +803,7 @@ class PLUME_L3(object):
             k_plume = zeros((ntd,2,N))
                             
             if self.verb>0:
-                print "[ ] got %d burning gridboxes in %s"%(N,Bioma[i]) 
+                print("[ ] got %d burning gridboxes in %s"%(N,Bioma[i])) 
 
 #           Loop over time 
 #           --------------
@@ -866,10 +866,10 @@ class PLUME_L3(object):
        Vname  = []
        Vtitle = []
        Vunits = []
-       for v in vtitle.keys():
+       for v in list(vtitle.keys()):
            vt = vtitle[v]
            vu = vunits[v]
-           for b in btitle.keys(): 
+           for b in list(btitle.keys()): 
                bt = btitle[b]
                Vname.append(v+'_'+b)
                Vtitle.append(vt+' ('+bt+')')
@@ -884,15 +884,15 @@ class PLUME_L3(object):
 #      Time/date handling
 #      ------------------
        if self.date is None:
-           print "[x] did not find matching files, skipped writing an output file"
+           print("[x] did not find matching files, skipped writing an output file")
            return
 
        if 24%self.ntd != 0:
-           raise ValueError,"invalid number of times per day (%d),"%self.ntd\
-                 +"it must be a divisor of 24."
+           raise ValueError("invalid number of times per day (%d),"%self.ntd\
+                 +"it must be a divisor of 24.")
        else:
            dT = 240000/self.ntd # timestep in hhmmss format
-           NHMS = range(0,240000,dT)
+           NHMS = list(range(0,240000,dT))
 
        nymd = 10000*self.date.year + 100*self.date.month + self.date.day
        nhms = NHMS[0]
@@ -916,7 +916,7 @@ class PLUME_L3(object):
        for t in range(self.ntd):
            nhms = NHMS[t]
            b = 0
-           for bn in btitle.keys():
+           for bn in list(btitle.keys()):
                I = self.idx[b]
                f_area  = self.area[b]
                f_frac  = self.r_F[b]
@@ -940,7 +940,7 @@ class PLUME_L3(object):
            pass
 
        if self.verb >=1:
-           print "[w] Wrote file "+filename
+           print("[w] Wrote file "+filename)
 
 #..............................................................................
 
@@ -960,7 +960,7 @@ def _writeOne(f,vname,nymd,nhms,I,S,t,k,d):
         elif len(S.shape)==1:
             A[I] = S[:]
         else:
-            raise ValueError, 'invalid S rank = %d'%len(S.shape)
+            raise ValueError('invalid S rank = %d'%len(S.shape))
             
     f.write(vname,nymd,nhms,A)
 
@@ -988,18 +988,18 @@ def getPlumeDeprecated(farea,veg,met,t,ntd,Verb=0):
 
     if Verb:
         if N>100:
-            Np = range(0,N,N/10)
+            Np = list(range(0,N,N/10))
         elif N>10:
-            Np = range(0,N,N/10)
+            Np = list(range(0,N,N/10))
         else:
-            Np = range(N)
-        print ""
-        print "                   Plume Rise Estimation for t=%d"%t
-        print "                   ------------------------------"
-        print ""
-        print "  %  |    Lon    Lat  b |   p_bot    p_top  |  z_bot z_top  |  k   k"     
-        print "     |    deg    deg    |    mb       mb    |   km     km   | bot top"
-        print "---- |  ------ ------ - | -------- -------- | ------ ------ | --- ---"
+            Np = list(range(N))
+        print("")
+        print("                   Plume Rise Estimation for t=%d"%t)
+        print("                   ------------------------------")
+        print("")
+        print("  %  |    Lon    Lat  b |   p_bot    p_top  |  z_bot z_top  |  k   k")     
+        print("     |    deg    deg    |    mb       mb    |   km     km   | bot top")
+        print("---- |  ------ ------ - | -------- -------- | ------ ------ | --- ---")
 
 #   Allocate space
 #   --------------
@@ -1047,9 +1047,9 @@ def getPlumeDeprecated(farea,veg,met,t,ntd,Verb=0):
         if Verb:
             if i in Np:
                 ip = int(0.5+100.*i/N)
-                print "%3d%% | %7.2f %6.2f %d | %8.2f %8.2f | %6.2f %6.2f | %3d %3d "%\
+                print("%3d%% | %7.2f %6.2f %d | %8.2f %8.2f | %6.2f %6.2f | %3d %3d "%\
                       (ip,met.lon[i],met.lat[i],veg[i], \
-                       p2/100,p1/100,z2/1000,z1/1000,k2,k1)
+                       p2/100,p1/100,z2/1000,z1/1000,k2,k1))
 
     return (p_plume, z_plume, k_plume)
 
@@ -1092,7 +1092,7 @@ def plotMINX(m,imfile=None,Title=None):
     plot(m.sample.pblh[I]/1000,m.z[I]/1000, 'co',label='Mode Height > PBL')
     plot(m.sample.pblh[K]/1000,m.zt[K]/1000, 'ro',label='95%-ile Height > PBL')
 
-    print "Percent above PBL: ",100.*len(m.z[I])/len(m.z[I_])
+    print("Percent above PBL: ",100.*len(m.z[I])/len(m.z[I_]))
     
     
     x, ya, yb = m.sample.pblh[K]/1000, m.zt[K]/1000, m.z[K]/1000
@@ -1337,7 +1337,7 @@ if __name__ == "__main__":
 
 def _allfires():
     
-    print "ok"
+    print("ok")
     topdir = '/Volumes/ArlindoSD' # SDXC card
 
     t1 = datetime(2013,8,2)
@@ -1346,13 +1346,13 @@ def _allfires():
     #for p in ( 'MOD14', 'MYD14'):
     for p in ( 'MYD14',):
 
-        print "Loading fires"
+        print("Loading fires")
         f = PLUME_L2(None)
         f.restart('%s.fires_nam.%4d-%02d.npz'%(p,t1.year,t1.month))
 
         f.m = f.qc>0
         
-        print "Loading Meteorology"
+        print("Loading Meteorology")
         f.sampleLoadz('%s/AGU-2014/%s.sample_nam.%4d-%02d.npz'%(topdir,p,t1.year,t1.month))
 
         I_na = (f.lon>-170)&(f.lon<-50)&(f.lat>15)&(f.lat<80)
@@ -1369,13 +1369,13 @@ def xxxxx():
                 
         Files = granules(t1,t2,product=p,rootdir=topdir+'/MODIS')
 
-        print 'Number of files: ', len(Files)
+        print('Number of files: ', len(Files))
         f = PLUME_L2(Files,Verb=1)
 
-        print "Computing fire properties"
+        print("Computing fire properties")
         ###f.classic_var()
 
-        print "Checkpointing"
+        print("Checkpointing")
         f.checkpoint('%s.fires_nam.%4d-%02d.npz'%(p,t1.year,t1.month))
 
 def minx_test():

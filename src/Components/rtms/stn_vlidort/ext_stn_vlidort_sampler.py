@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to compute optical properties along a sampled file.
@@ -70,7 +70,7 @@ def getVars(inFile):
 
     Vars       = MieCalc()
     file       = Dataset(inFile)
-    names      = file.variables.keys()
+    names      = list(file.variables.keys())
     MIENAMES   = names
     for n, name in enumerate(MIENAMES):
         var = file.variables[name]
@@ -154,7 +154,7 @@ def computeMie(Vars, channel, varnames, rcFile, options):
         MieVars['g']         = []
         
         pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5))     
-        args = zip([Vars]*nobs,range(nobs),[NAMES]*nobs,[channel]*nobs,[varnames]*nobs,[rcFile]*nobs)
+        args = list(zip([Vars]*nobs,list(range(nobs)),[NAMES]*nobs,[channel]*nobs,[varnames]*nobs,[rcFile]*nobs))
         result = pool.map(unwrap_Vars_doMie,args)
 
         for r in result:
@@ -178,7 +178,7 @@ def computeMie(Vars, channel, varnames, rcFile, options):
             MieVars['reff'] = []    
 
             pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5))   
-            args = zip([Vars]*nobs,range(nstn),[NAMES]*nobs,[channel]*nobs,[varnames]*nobs,[rcFile]*nobs) 
+            args = list(zip([Vars]*nobs,list(range(nstn)),[NAMES]*nobs,[channel]*nobs,[varnames]*nobs,[rcFile]*nobs)) 
             result = pool.map(unwrap_Vars_doMieInt,args) 
 
             for r in result:
@@ -266,7 +266,7 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
         lev.units = 'km'
         lev.positive = 'down'
         lev.axis = 'z'
-        lev[:] = range(1,km+1)
+        lev[:] = list(range(1,km+1))
 
     # Add fake dimensions for GrADS compatibility
     # -------------------------------------------
@@ -283,7 +283,7 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
         e.long_name = 'Station Ensemble Dimension'
         e.axis = 'e'
         e.grads_dim = 'e'
-        e[:] = range(len(stations))
+        e[:] = list(range(len(stations)))
     
     # Lat/Lon Coordinates
     # ----------------------
@@ -365,7 +365,7 @@ def writeNC ( stations, lons, lats, tyme, isotimeIn, MieVars, MieVarsNames,
     nc.close()
 
     if options.verbose:
-        print " <> wrote %s file %s"%(options.format,options.outFile)
+        print(" <> wrote %s file %s"%(options.format,options.outFile))
     
     
 #------------------------------------ M A I N ------------------------------------
@@ -445,7 +445,7 @@ if __name__ == "__main__":
     elif 'EXCEL' in options.format:
         options.outFile = name + '.xls'
     else:
-        raise ValueError, 'invalid extension <%s>'%ext
+        raise ValueError('invalid extension <%s>'%ext)
     
     # Get Variables
     # --------------------------

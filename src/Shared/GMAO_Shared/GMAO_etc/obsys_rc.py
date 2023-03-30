@@ -105,7 +105,7 @@ class ObsysRc(object):
                         begin_found = True
 
                     if begin_found:
-                        if count.has_key(obsclass):
+                        if obsclass in count:
                             msg = "Duplicate obsclass found: {0}"
                             raise ValueError(msg.format(obsclass))
                         else:
@@ -142,14 +142,14 @@ class ObsysRc(object):
         """
         Return list of classes from the file
         """
-        return dict(self.__obsinfo).keys()
+        return list(dict(self.__obsinfo).keys())
 
     #.......................................................................
     def has(self, obsclass):
         """
         Return True if obsclass listed in self.__obsinfo; otherwise False.
         """
-        return dict(self.__obsinfo).has_key(obsclass)
+        return obsclass in dict(self.__obsinfo)
 
     #.......................................................................
     def obsinfo(self):

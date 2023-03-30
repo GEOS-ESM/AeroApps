@@ -31,7 +31,7 @@ def vlidort_scalar (c, channels, ps, albedo, tau, ssa, g, pe, ze, te, verbose=0 
                                                      sensor_zenith, MISSING, radiance, 
                                                      ai, verbose)
         if rc != 0:
-            raise ValueError, "on return from OMI_.scalar/vector, rc = "+str(rc)
+            raise ValueError("on return from OMI_.scalar/vector, rc = "+str(rc))
 
         return (radiance, ai, reflectivity)
 

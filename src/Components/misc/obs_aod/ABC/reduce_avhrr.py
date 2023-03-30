@@ -32,7 +32,7 @@ if __name__ == "__main__":
             fname = 'AVHRR_NPZ/%d/avhrr.%d_%03d.npz'%(year,year,doy)
 
             if os.path.exists(fname):
-                print "<> Skipping ", fname
+                print("<> Skipping ", fname)
                 continue
 
             Files = sorted(glob(RootDir+'/%d/%03d/*_asc_*.hdf'%(year,doy)))
@@ -59,8 +59,8 @@ if __name__ == "__main__":
             if a.nobs>10:
                 a.sampleG5(gas_x=gas_x,int_x=int_x,slv_x=slv_x)
             else:
-                print '%d %3d | %7d %5d | %5d %5d %5d %5d | %5d'%\
-                    (year,doy,nobs_,a.nobs,0,0,0,0,0)
+                print('%d %3d | %7d %5d | %5d %5d %5d %5d | %5d'%\
+                    (year,doy,nobs_,a.nobs,0,0,0,0,0))
                 continue
 
             ndu = len(a.lon[a.fdu>0.60])
@@ -68,8 +68,8 @@ if __name__ == "__main__":
             ncc = len(a.lon[a.fcc>0.60])
             nsu = len(a.lon[a.fsu>0.60])
 
-            print '%d %3d | %7d %5d | %5d %5d %5d %5d | %5d'%\
-                (year,doy,nobs_,a.nobs,ndu,nss,ncc,nsu,ndu+nss+ncc+nsu)
+            print('%d %3d | %7d %5d | %5d %5d %5d %5d | %5d'%\
+                (year,doy,nobs_,a.nobs,ndu,nss,ncc,nsu,ndu+nss+ncc+nsu))
 
             # Save NPZ file
             # -------------

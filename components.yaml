@@ -11,7 +11,7 @@ env:
 cmake:
   local: ./cmake@
   remote: ../ESMA_cmake.git
-  tag: v3.24.0
+  tag: v3.28.0
   develop: develop
 
 ecbuild:
@@ -22,6 +22,11 @@ ecbuild:
 MAPL:
   local: ./src/Shared/GMAO_Shared/MAPL@
   remote: ../MAPL.git
-  branch: feature/mathomp4/add-shavemantissa-python
+  tag: v2.36.0
   develop: develop
 
+GMAOpyobs:
+  local: ./src/Shared/GMAO_Shared/GMAO_pyobs@
+  remote: ../GMAOpyobs.git
+  branch: develop
+  develop: develop

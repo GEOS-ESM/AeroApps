@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Parent class with utilities needed to 
@@ -92,7 +92,7 @@ class VLIDORT(object):
         """
         col = 'asm_Nx'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nc       = Dataset(self.inFile.replace('%col',col))
 
         for sds in self.SDS_INV:
@@ -119,7 +119,7 @@ class VLIDORT(object):
         Read in NDVI and Landuse Coefficient- should have been sampled already
         """
         if self.verbose:
-            print 'opening file',self.ndviFile
+            print('opening file',self.ndviFile)
 
         nc = Dataset(self.ndviFile)
         NDVI = nc.variables['NDVI'][:]
@@ -128,7 +128,7 @@ class VLIDORT(object):
         nc.close()
 
         if self.verbose:
-            print 'opening file',self.lcFile
+            print('opening file',self.lcFile)
         nc = Dataset(self.lcFile)
         BPDFcoef = nc.variables['BPDFcoef'][:]
         I = BPDFcoef < -900
@@ -151,7 +151,7 @@ class VLIDORT(object):
         """
         col = 'aer_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nc       = Dataset(self.inFile.replace('%col',col))
 
         for sds in self.SDS_AER:
@@ -164,7 +164,7 @@ class VLIDORT(object):
         if len(self.SDS_MET) > 0:
             col = 'met_Nv'
             if self.verbose: 
-                print 'opening file',self.inFile.replace('%col',col)        
+                print('opening file',self.inFile.replace('%col',col))        
             nc       = Dataset(self.inFile.replace('%col',col))
 
             for sds in self.SDS_MET:
@@ -177,7 +177,7 @@ class VLIDORT(object):
     def readSampledWindCX(self):
         col = 'met_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)        
+            print('opening file',self.inFile.replace('%col',col))        
         nc       = Dataset(self.inFile.replace('%col',col))
 
         for sds in self.SDS_CX:
@@ -212,7 +212,7 @@ class VLIDORT(object):
             SDS = 'Riso'+chmin,'Rgeo'+chmin,'Rvol'+chmin,'Riso'+chmax,'Rgeo'+chmax,'Rvol'+chmax
 
         if self.verbose:
-            print 'opening BRDF file ',self.brdfFile
+            print('opening BRDF file ',self.brdfFile)
         nc = Dataset(self.brdfFile)
 
         for sds in SDS:
@@ -278,7 +278,7 @@ class VLIDORT(object):
         chs = str(int(self.channel))
 
         if self.verbose:
-            print 'opening BRDF abledo file ',self.brdfFile
+            print('opening BRDF abledo file ',self.brdfFile)
         nc = Dataset(self.brdfFile)
 
         for sds in mSDS:
@@ -289,7 +289,7 @@ class VLIDORT(object):
         nc.close()
 
         if self.verbose:
-            print 'opening LER albedo file ',self.lerFile
+            print('opening LER albedo file ',self.lerFile)
         nc = Dataset(self.lerFile)
 
         self.__dict__[lSDS] = nc.variables[lSDS][:]
@@ -362,7 +362,7 @@ class VLIDORT(object):
             SDS.append('SRFLER'+lchs)
 
         if self.verbose:
-            print 'opening LER albedo file ',self.lerFile
+            print('opening LER albedo file ',self.lerFile)
         nc = Dataset(self.lerFile)
 
         for sds in SDS:

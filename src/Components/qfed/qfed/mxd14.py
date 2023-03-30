@@ -168,7 +168,7 @@ class MxD14_L2(object):
             if os.path.isdir(item):      self._readDir(item,RoundHour)
             elif os.path.isfile(item):   self._readGranule(item,RoundHour)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print("%s is not a valid file or directory, ignoring it"%item)
 #---
     def _readDir(self,dir,RoundHour=False):
         """Recursively, look for files in directory."""
@@ -177,7 +177,7 @@ class MxD14_L2(object):
             if os.path.isdir(path):      self._readDir(path,RoundHour)
             elif os.path.isfile(path):   self._readGranule(path,RoundHour)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print("%s is not a valid file or directory, ignoring it"%item)
 
 #---
     def _readGranule(self,filename,RoundHour=False):
@@ -189,14 +189,14 @@ class MxD14_L2(object):
             hfile = SD(filename)
         except HDF4Error:
             if self.verb > 2:
-                print "- %s: not recognized as an HDF file"%filename
+                print("- %s: not recognized as an HDF file"%filename)
             return 
 
 #       No fires, nothing to do
 #       ----------------------
         if hfile.select('FP_longitude').checkempty():
             if self.verb > 2:
-                print "- %s:  no  fires"%filename
+                print("- %s:  no  fires"%filename)
             return
 
 #       Read select variables
@@ -223,7 +223,7 @@ class MxD14_L2(object):
             elif sat == "MOD":
                 sat = 'Terra'
             else:
-                raise ValueError, 'Unknown MOD03 file type: '+sat
+                raise ValueError('Unknown MOD03 file type: '+sat)
 
             self.sat = sat
 
@@ -261,7 +261,7 @@ class MxD14_L2(object):
         self.tloc.append(tloc)
     
         if self.verb > 1:
-            print "- %s: %4d fires"%(filename,n)
+            print("- %s: %4d fires"%(filename,n))
 
 #---
 
@@ -299,9 +299,9 @@ class MxD14_L2(object):
                 if v in Vars:
                     vinfo.append((v,k,l))
             if len(vinfo)==0:
-                print "IndexError: requested variables - ", Vars
-                raise IndexError, "cannot find any matchig variable in file %f"\
-                    %filename
+                print("IndexError: requested variables - ", Vars)
+                raise IndexError("cannot find any matchig variable in file %f"\
+                    %filename)
 
 #       For each observation, find the correspondng time on file
 #       --------------------------------------------------------
@@ -329,7 +329,7 @@ class MxD14_L2(object):
                 ga('set z %d %d'%(1,nlevs),Quiet=True)
                 m = (self.tgaf == tgaf) # gather obs for this time
                 lon_, lat_ = (self.lon[m], self.lat[m])
-                print "- Interpolating %5d %s obs at %s"%(lon_.size,v,tgaf)
+                print("- Interpolating %5d %s obs at %s"%(lon_.size,v,tgaf))
                 y_f[m], levs = ga.interp(v,lon_,lat_) # interp & scatter
             self.met[v] = y_f
         self.met['levs'] = levs # record vertical levels
@@ -369,7 +369,7 @@ class MxD14_L2(object):
             onlyVars = fh.vars
 
         if I is None:
-            I = range(len(self.lon))
+            I = list(range(len(self.lon)))
 
         self.sample.I = I  # save for consistency check
         
@@ -381,7 +381,7 @@ class MxD14_L2(object):
         # ---------------------------
         for v in onlyVars:
             if Verbose:
-                print "<> Sampling ", v
+                print("<> Sampling ", v)
             var = ga.sampleXYT(v,lons,lats,tymes,Verbose=Verbose)
             self.sample.__dict__[v] = var.data
 
@@ -395,7 +395,7 @@ class MxD14_L2(object):
         """
         self.sample = Sample()
         npz = load(npzFile)
-        for v in npz.keys():
+        for v in list(npz.keys()):
             self.sample.__dict__[v] = npz[v]
 
 #----
@@ -410,7 +410,7 @@ class MxD14_L2(object):
         Retrieve attributes from disk file.
         """
         f = load(npzFile)
-        for v in f.keys():
+        for v in list(f.keys()):
             self.__dict__[v] = f[v]
 
 #......................................................................................
@@ -527,25 +527,25 @@ def print_stats(name,x=None):
         x = name
         name = 'mean,stdv,rms,min,25%,median,75%,max: '
     if name == '__header__':
-        print ''
+        print('')
         n = (80 - len(x))/2
-        print n * ' ' + x
-        print n * ' ' + len(x) * '-'
-        print ''
-        print '   Name       mean      stdv      rms      min     25%    median     75%      max'
-        print ' ---------  -------  -------  -------  -------  -------  -------  -------  -------'
+        print(n * ' ' + x)
+        print(n * ' ' + len(x) * '-')
+        print('')
+        print('   Name       mean      stdv      rms      min     25%    median     75%      max')
+        print(' ---------  -------  -------  -------  -------  -------  -------  -------  -------')
     elif name == '__sep__':
-        print ' ---------  -------  -------  -------  -------  -------  -------  -------  -------'
+        print(' ---------  -------  -------  -------  -------  -------  -------  -------  -------')
     elif name == '__footer__':
-        print ' ---------  -------  -------  -------  -------  -------  -------  -------  -------'
-        print ''
+        print(' ---------  -------  -------  -------  -------  -------  -------  -------  -------')
+        print('')
     else:
         ave = x.mean()
         std = x.std()
         rms = sqrt(ave*ave+std*std)
         prc = prctile(x)
-        print '%10s  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  '%\
-            (name,ave,std,rms,prc[0],prc[1],prc[2],prc[3],prc[4])
+        print('%10s  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  '%\
+            (name,ave,std,rms,prc[0],prc[1],prc[2],prc[3],prc[4]))
 
 
 #............................................................................

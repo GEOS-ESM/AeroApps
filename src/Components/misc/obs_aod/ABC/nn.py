@@ -86,8 +86,8 @@ class NN(object):
         # -----
         bounds = [bounds]*self.net.get_params()['conec'].shape[0]
         if self.verbose>0:
-            print "Starting training with %s inputs and %s targets"\
-                  %(str(inputs.shape),str(targets.shape))
+            print("Starting training with %s inputs and %s targets"\
+                  %(str(inputs.shape),str(targets.shape)))
         self.net.train_tnc(inputs,targets, maxfun=maxfun,bounds=bounds,**kwargs)
 #        self.net.train_bfgs(inputs,targets, maxfun=maxfun)
 
@@ -160,22 +160,22 @@ class NN(object):
         Returns: inputs
         """
         if self.verbose:
-            print " "
-            print "       Feature          Min      Max"
-            print "  ------------------  -------  -------"
+            print(" ")
+            print("       Feature          Min      Max")
+            print("  ------------------  -------  -------")
         if Input==None:
             Input = self.Input
         inputs = self.__dict__[Input[0]][I]
         if self.verbose:
-            print "%20s %8.4f %8.4f"%(Input[0],inputs.min(),inputs.max())
+            print("%20s %8.4f %8.4f"%(Input[0],inputs.min(),inputs.max()))
         for var in Input[1:]:
             q = self.__dict__[var][I]
             inputs = cat[inputs,q]
             if self.verbose:
-                print "%20s %8.4f %8.4f"%(var,q.min(),q.max())
+                print("%20s %8.4f %8.4f"%(var,q.min(),q.max()))
         if self.verbose:
-            print "  ------------------  -------  -------"
-            print ""
+            print("  ------------------  -------  -------")
+            print("")
 
         if len(inputs.shape) == 1:
             inputs.shape = (inputs.shape[0],1)            
@@ -275,7 +275,7 @@ def _plotKDE(x_values,y_values,x_bins=None,y_bins=None,
         Nx = len(x_bins)
         Ny = len(y_bins)
 
-        print "Evaluating 2D kernel on grid with (Nx,Ny)=(%d,%d) ..."%(Nx,Ny)
+        print("Evaluating 2D kernel on grid with (Nx,Ny)=(%d,%d) ..."%(Nx,Ny))
         kernel = stats.kde.gaussian_kde(_cat2(x_values,y_values))
         X, Y = meshgrid(x_bins,y_bins)   # each has shape (Ny,Nx)
         Z = kernel(_cat2(X,Y))           # shape is (Ny*Nx)

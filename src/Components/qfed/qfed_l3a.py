@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 
 """
@@ -91,10 +91,10 @@ if __name__ == "__main__":
         
     if options.verbose:
         Verb=1
-        print ""
-        print "                          QFED Level 3A Processing"
-        print "                          ------------------------"
-        print ""
+        print("")
+        print("                          QFED Level 3A Processing")
+        print("                          ------------------------")
+        print("")
     else:
         Verb=0
 
@@ -126,10 +126,10 @@ if __name__ == "__main__":
             dir_f = os.path.join(options.level3_dir, MxD14, 'Y%04d'%d_.year, 'M%02d'%d_.month)
 
             dir = {'ana': dir_a, 'bkg': dir_f}
-            for k in dir.keys():
+            for k in list(dir.keys()):
                 rc  = os.system("/bin/mkdir -p %s"%dir[k])
                 if rc:
-                    raise IOError, "Cannot create output directory '%s'" % dir[k]
+                    raise IOError("Cannot create output directory '%s'" % dir[k])
 
 
 #           Quality Control

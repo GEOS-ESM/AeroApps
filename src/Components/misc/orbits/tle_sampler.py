@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to generate a orbital trajectory and sample model
@@ -75,7 +75,7 @@ def getVars(rcFile):
     cf = Config(rcFile)
     Vars = dict()
     km = 0
-    for V in cf.keys():
+    for V in list(cf.keys()):
         path = cf(V)
         f = Open(path)
         varList = []
@@ -171,7 +171,7 @@ def writeNC ( lons, lats, tyme, Vars, km, filename, tle,
     # --------------------------------------------------
     for path in Vars:
         if Verbose:
-            print " <> opening "+path
+            print(" <> opening "+path)
         g = Open(path) 
         for var in Vars[path]:
             if var.km == 0:
@@ -196,7 +196,7 @@ def writeNC ( lons, lats, tyme, Vars, km, filename, tle,
     nc.close()
 
     if Verbose:
-        print " <> wrote %s file %s"%(format,filename)
+        print(" <> wrote %s file %s"%(format,filename))
     
 #------------------------------------ M A I N ------------------------------------
 

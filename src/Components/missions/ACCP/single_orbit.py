@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Subset the geometry for one orbit
@@ -69,8 +69,8 @@ class ORBITS(object):
                     peak = i
 
         if peak is None:
-            print "coulnd't find peak! Exiting"
-            print date.isoformat()
+            print("coulnd't find peak! Exiting")
+            print(date.isoformat())
             sys.exit()
       
         self.peak   = peak
@@ -92,7 +92,7 @@ class ORBITS(object):
 
         outName = 'ss450-g5nr.orbit.polar07.{}.nc4'.format(date.strftime('%Y%m%d'))
         outFile = '{}/{}'.format(self.inDir,outName)
-        print outFile
+        print(outFile)
         nc = Dataset(outFile,'w')
 
         ntime = self.iend - self.istart
@@ -108,7 +108,7 @@ class ORBITS(object):
             else:
                 nc.createDimension(dim,len(nci.dimensions[dim]))
 
-        sds = nci.variables.keys()
+        sds = list(nci.variables.keys())
         sds.remove('time')
         sds.remove('time_ss')
         nci.close()
@@ -156,8 +156,8 @@ class ORBITS(object):
 
 if __name__ == "__main__":
     rootDir   = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/SS450/LevelB/'
-    startdate = datetime(2006,07,03,00)
-    enddate   = datetime(2007,01,01,00)
+    startdate = datetime(2006,0o7,0o3,00)
+    enddate   = datetime(2007,0o1,0o1,00)
     DT        = timedelta(days=1)
 
     date = startdate

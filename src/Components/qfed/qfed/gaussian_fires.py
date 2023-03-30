@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Checks the effects of temperature variance inside a fire.
 """
 
-from planck import *
+from .planck import *
 from pylab import *
 
 

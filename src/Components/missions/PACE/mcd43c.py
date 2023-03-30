@@ -51,7 +51,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
     """
     x = ncIn.variables[name]
     if verbose:
-        print 'copy variable ',name,x.dimensions
+        print('copy variable ',name,x.dimensions)
     y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
     if hasattr(x,'long_name'): y.long_name = x.long_name
     if hasattr(x,'units'): y.units = x.units
@@ -68,7 +68,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
     elif rank == 3:
         y[:,:,:] = x[:,:,:]
     else:
-        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
+        raise ValueError("invalid rank of <%s>: %d"%(name,rank))
 
 class BRDF(object):
     def __init__(self,nscan,npixel):
@@ -123,7 +123,7 @@ class MCD43C(object):
         if len(inFileList) != 1:
             Outdir = "{}/Y{}/M{}/".format(self.inDir,tyme.year,MM)
             dd = '{}.{}.{}'.format(tyme.year,str(tyme.month).zfill(2),str(tyme.day).zfill(2))
-            print 'Downloading '+dd
+            print('Downloading '+dd)
             subprocess.call(self.command+Outdir+' '+self.HTTP+dd+'/',shell=True)        
             inFileList = glob("{}/Y{}/M{}/*A{}{}*.hdf".format(self.inDir,tyme.year,MM,tyme.year,doy))
             if len(inFileList) != 1:
@@ -172,11 +172,11 @@ class MCD43C(object):
 
         # Save lon/lat
         # --------------------------
-        _copyVar(nctrj,nc,u'ccd_pixels',dtype='f4',zlib=zlib,verbose=verbose)
-        _copyVar(nctrj,nc,u'number_of_scans',dtype='f4',zlib=zlib,verbose=verbose)            
-        _copyVar(nctrj,nc,u'longitude',dtype='f4',zlib=zlib,verbose=verbose)
-        _copyVar(nctrj,nc,u'latitude',dtype='f4',zlib=zlib,verbose=verbose)
-        _copyVar(nctrj,nc,u'time', dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'ccd_pixels',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'number_of_scans',dtype='f4',zlib=zlib,verbose=verbose)            
+        _copyVar(nctrj,nc,'longitude',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'latitude',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'time', dtype='f4',zlib=zlib,verbose=verbose)
 
         # Loop over Bands writing each dataset
         #---------------------------------------
@@ -225,7 +225,7 @@ class MCD43C(object):
 
         for ut in utyme:
             if Verbose:
-                print 'Working on '+ str(ut.date())
+                print('Working on '+ str(ut.date()))
             inFile = self.downloadFile(ut)
             self.readFile(inFile)
 

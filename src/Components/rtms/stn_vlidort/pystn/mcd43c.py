@@ -99,7 +99,7 @@ class MCD43C(object):
         if len(inFileList) != 1:
             Outdir = "{}/Y{}/M{}/".format(self.inDir,tyme.year,MM)
             dd = '{}.{}.{}'.format(tyme.year,str(tyme.month).zfill(2),str(tyme.day).zfill(2))
-            print 'Downloading '+dd
+            print('Downloading '+dd)
             subprocess.call(self.command+Outdir+' '+self.HTTP+dd+'/',shell=True)        
             inFileList = glob("{}/Y{}/M{}/*A{}{}*.hdf".format(self.inDir,tyme.year,MM,tyme.year,doy))
             if len(inFileList) != 1:
@@ -151,13 +151,13 @@ class MCD43C(object):
 
         # Save lon/lat
         # --------------------------
-        _copyVar(ncstn,nc,u'time', dtype='i4',zlib=False,verbose=verbose)
-        _copyVar(ncstn,nc,u'x',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(ncstn,nc,u'y',dtype='f4',zlib=False,verbose=verbose)      
-        _copyVar(ncstn,nc,u'station',dtype='f4',zlib=False,verbose=verbose)            
-        _copyVar(ncstn,nc,u'stnLon',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(ncstn,nc,u'stnLat',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(ncstn,nc,u'isotime', dtype='S1',zlib=False,verbose=verbose)
+        _copyVar(ncstn,nc,'time', dtype='i4',zlib=False,verbose=verbose)
+        _copyVar(ncstn,nc,'x',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(ncstn,nc,'y',dtype='f4',zlib=False,verbose=verbose)      
+        _copyVar(ncstn,nc,'station',dtype='f4',zlib=False,verbose=verbose)            
+        _copyVar(ncstn,nc,'stnLon',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(ncstn,nc,'stnLat',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(ncstn,nc,'isotime', dtype='S1',zlib=False,verbose=verbose)
 
         # Loop over Bands writing each dataset
         #---------------------------------------
@@ -210,7 +210,7 @@ class MCD43C(object):
             with pymp.Parallel(10) as p:
                 for ut in p.iterate(utyme):
                     if Verbose:
-                        print 'Working on '+ str(ut.date())
+                        print('Working on '+ str(ut.date()))
                     inFile = self.downloadFile(ut)
                     self.readFile(inFile)
 
@@ -225,7 +225,7 @@ class MCD43C(object):
         else:
             for ut in utyme:
                 if Verbose:
-                    print 'Working on '+ str(ut.date())
+                    print('Working on '+ str(ut.date()))
                 inFile = self.downloadFile(ut)
                 self.readFile(inFile)
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # REVISION HISTORY:
 #
@@ -10,10 +10,10 @@ import sys
 from f90nml import Parser 
 
 def my_usage():
-    print 
-    print "Usage: ";
-    print "nmlread.py  rcfile namelist variable";
-    print 
+    print() 
+    print("Usage: ");
+    print("nmlread.py  rcfile namelist variable");
+    print() 
     exit(1)
 
 n = len(sys.argv)
@@ -27,6 +27,6 @@ nmlarg_  = sys.argv[3]
 parser = Parser()
 nml = parser.read(rcfile_)
 var=nml[nmlname_][nmlarg_]
-print var
+print(var)
 
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Calculates polarized BOA direct sun radiance at ground stations.
@@ -150,7 +150,7 @@ class STN_VLIDORT(object):
         Read in NDVI and Landuse Coefficient- should have been sampled already
         """
         if self.verbose:
-            print 'opening file',self.ndviFile
+            print('opening file',self.ndviFile)
 
         nc = Dataset(self.ndviFile)
         NDVI = np.array(nc.variables['NDVI'][:])
@@ -162,7 +162,7 @@ class STN_VLIDORT(object):
         nc.close()
 
         if self.verbose:
-            print 'opening file',self.lcFile
+            print('opening file',self.lcFile)
         nc = Dataset(self.lcFile)
         BPDFcoef = nc.variables['BPDFcoef'][:]
         I = BPDFcoef < -900
@@ -187,7 +187,7 @@ class STN_VLIDORT(object):
         """
         col = 'asm_Nx'
         if self.verbose: 
-            print 'opening file',self.invFile.replace('%col',col)
+            print('opening file',self.invFile.replace('%col',col))
         nc       = Dataset(self.invFile.replace('%col',col))
 
         for sds in self.SDS_INV:
@@ -277,7 +277,7 @@ class STN_VLIDORT(object):
         """
         col = 'aer_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nc       = Dataset(self.inFile.replace('%col',col))
 
         for sds in self.SDS_AER:
@@ -319,7 +319,7 @@ class STN_VLIDORT(object):
             SDS = 'Riso'+chmin,'Rgeo'+chmin,'Rvol'+chmin,'Riso'+chmax,'Rgeo'+chmax,'Rvol'+chmax
 
         if self.verbose:
-            print 'opening BRDF file ',self.brdfFile
+            print('opening BRDF file ',self.brdfFile)
         nc = Dataset(self.brdfFile)
 
         for sds in SDS:
@@ -389,7 +389,7 @@ class STN_VLIDORT(object):
         chs = str(int(self.channel))
 
         if self.verbose:
-            print 'opening BRDF file ',self.brdfFile
+            print('opening BRDF file ',self.brdfFile)
         nc = Dataset(self.brdfFile)
 
         for sds in mSDS:
@@ -399,7 +399,7 @@ class STN_VLIDORT(object):
         nc.close()
 
         if self.verbose:
-            print 'opening LER albedo file ',self.lerFile
+            print('opening LER albedo file ',self.lerFile)
         nc = Dataset(self.lerFile)
 
         self.__dict__[lSDS] = np.array(np.squeeze(nc.variables[lSDS][:]))
@@ -476,7 +476,7 @@ class STN_VLIDORT(object):
             SDS.append('SRFLER'+lchs)
 
         if self.verbose:
-            print 'opening LER albedo file ',self.lerFile
+            print('opening LER albedo file ',self.lerFile)
         nc = Dataset(self.lerFile)
 
         for sds in SDS:
@@ -541,7 +541,7 @@ class STN_VLIDORT(object):
         self.pmom = []
 
         pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5))     
-        args = zip([self]*self.ntyme,range(self.ntyme))
+        args = list(zip([self]*self.ntyme,list(range(self.ntyme))))
         result = pool.map(unwrap_self_doMie,args)
         
         for r in result:
@@ -576,7 +576,7 @@ class STN_VLIDORT(object):
         """
         col = 'aer_Nv'
         if self.verbose: 
-            print 'running ext_sampler on file',self.inFile.replace('%col',col)
+            print('running ext_sampler on file',self.inFile.replace('%col',col))
 
         outDir = os.path.dirname(self.outFile)
         instname = os.path.basename(self.inFile).split('.')[0]
@@ -595,9 +595,9 @@ class STN_VLIDORT(object):
             os.makedirs(os.path.dirname(outFile))
 
         cmd = './ext_sampler.py {} '.format(Options)  
-        print cmd
+        print(cmd)
         if os.system(cmd):
-            raise ValueError, "ext_sampler.py failed for %s "%(self.inFile.replace('%col',col))       
+            raise ValueError("ext_sampler.py failed for %s "%(self.inFile.replace('%col',col)))       
 
 
     def runVLIDORT(self):
@@ -791,17 +791,17 @@ class STN_VLIDORT(object):
         # --------------------
         col = 'aer_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nctrj       = Dataset(self.inFile.replace('%col',col))     
-        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)   
-        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)  
-        _copyVar(nctrj,nc,u'station',dtype='f4',zlib=False,verbose=self.verbose)     
-        _copyVar(nctrj,nc,u'lev',dtype='f4',zlib=False,verbose=self.verbose)       
-        _copyVar(nctrj,nc,u'stnLon',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'stnLat',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'stnName',dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'time', dtype='i4',zlib=False,verbose=self.verbose)   
+        _copyVar(nctrj,nc,'x',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'y',dtype='f4',zlib=False,verbose=self.verbose)  
+        _copyVar(nctrj,nc,'station',dtype='f4',zlib=False,verbose=self.verbose)     
+        _copyVar(nctrj,nc,'lev',dtype='f4',zlib=False,verbose=self.verbose)       
+        _copyVar(nctrj,nc,'stnLon',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'stnLat',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'stnName',dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'isotime', dtype='S1',zlib=False,verbose=self.verbose)
 
         nctrj.close()
 
@@ -869,13 +869,13 @@ class STN_VLIDORT(object):
         nc.close()
 
         if self.verbose:
-            print " <> wrote %s"%(self.outFile)
+            print(" <> wrote %s"%(self.outFile))
     
     
 #------------------------------------ M A I N ------------------------------------
 
 if __name__ == "__main__":
-    date     = datetime(2006,01,01,00)
+    date     = datetime(2006,0o1,0o1,00)
     nymd     = str(date.date()).replace('-','')
     hour     = str(date.hour).zfill(2)
     format   = 'NETCDF4_CLASSIC'

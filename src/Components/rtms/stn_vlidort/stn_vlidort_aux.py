@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Calculates polarized BOA direct sun radiance at ground stations.
@@ -20,7 +20,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
     """
     x = ncIn.variables[name]
     if verbose:
-        print 'copy variable ',name,x.dimensions
+        print('copy variable ',name,x.dimensions)
     y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
     if hasattr(x,'long_name'): y.long_name = x.long_name
     if hasattr(x,'units'): y.units = x.units 
@@ -37,7 +37,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
     elif rank == 3:
         y[:,:,:] = x[:,:,:]
     else:
-        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
+        raise ValueError("invalid rank of <%s>: %d"%(name,rank))
 
 def extrap1d(interpolator):
     """ extrapolator wrapper for an interpolator"""
@@ -53,7 +53,7 @@ def extrap1d(interpolator):
             return interpolator(x)
 
     def ufunclike(xs):
-        return np.array(map(pointwise, np.array(xs)))
+        return np.array(list(map(pointwise, np.array(xs))))
 
     return ufunclike
 

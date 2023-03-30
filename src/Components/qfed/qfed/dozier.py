@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Implements Dozier type algorihms for estimating fire size/temperature.
@@ -10,8 +10,8 @@ Arlindo.daSilva@nasa.gov
 
 import sys
 
-from mxd14  import *
-from planck import *
+from .mxd14  import *
+from .planck import *
 
 from math               import pi
 from pylab              import pcolor, plot, colorbar, axis, savefig, subplot, clf, \
@@ -210,19 +210,19 @@ class DOZIER(MxD14_L2):
 
         if Verbose:
             if N>100:
-                Np = range(0,N,N/100)
-                Np = range(N)
+                Np = list(range(0,N,N/100))
+                Np = list(range(N))
             elif N>10:
-                Np = range(0,N,N/10)
+                Np = list(range(0,N,N/10))
             else:
-                Np = range(N)
-            print ""
-            print "      Unconstrained Bimodal Dozier"
-            print "      ----------------------------"
-            print ""
-            print "  %  |    Lon    Lat  b |    r_F     h_F"
-            print "     |    deg    deg    |     %     kW/m2" 
-            print "---- |  ------ ------ - | -------- --------"
+                Np = list(range(N))
+            print("")
+            print("      Unconstrained Bimodal Dozier")
+            print("      ----------------------------")
+            print("")
+            print("  %  |    Lon    Lat  b |    r_F     h_F")
+            print("     |    deg    deg    |     %     kW/m2") 
+            print("---- |  ------ ------ - | -------- --------")
 
 #       Estimate parameters for each fire
 #       ---------------------------------
@@ -260,9 +260,9 @@ class DOZIER(MxD14_L2):
             if Verbose:
                 if n in Np:
                     ip = int(0.5+100.*n/N)
-                    print "%3d%% | %7.2f %6.2f   | %8.2f %8.2f"%\
+                    print("%3d%% | %7.2f %6.2f   | %8.2f %8.2f"%\
                          (ip,self.lon[n],self.lat[n], \
-                          self.r_F[n],self.h_F[n])
+                          self.r_F[n],self.h_F[n]))
 
  #........................................................................
 
@@ -628,7 +628,7 @@ def utBayesian():
     return fires
 
 def utBimodal():
-    import VegType
+    from . import VegType
     fires = DOZIER('182',Verb=1,qc_thresh=50.)
     fires.veg = VegType.getSimpleVeg(fires.lon,fires.lat,Path=igbp_dir)
     fires.bimodal_u(Verbose=True)

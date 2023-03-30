@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Wrapper to call mcd43c_stn_sampler.py
 """
@@ -38,5 +38,5 @@ if __name__ == "__main__":
 
     command += ' {} {} {}'.format(args.iso_t1,args.iso_t2,args.prep_config)
 
-    print command
+    print(command)
     os.system(command)

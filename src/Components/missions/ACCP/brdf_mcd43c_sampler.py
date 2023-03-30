@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper for mcd43c.py
@@ -13,7 +13,7 @@ import os
 import argparse
 from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
-from MAPL            import Config
+from MAPL.config     import Config
 from py_leo_vlidort.mcd43c          import MCD43C
 
 #------------------------------------ M A I N ------------------------------------

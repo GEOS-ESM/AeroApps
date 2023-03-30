@@ -109,12 +109,12 @@ class MCS(MxD03):
         # Save NPZ files, if desired (useful for debugging)
         # -------------------------------------------------
         if npzLinear is not None:
-            if self.verb: print "Saving Linear NPZ file ",npzLinear
+            if self.verb: print("Saving Linear NPZ file ",npzLinear)
             self.linear.PTOP = self.PTOP
             savez(npzLinear,**self.linear.__dict__)
 
         if npzNearest is not None:
-            if self.verb: print "Saving Nearest NPZ file ",npzNearest
+            if self.verb: print("Saving Nearest NPZ file ",npzNearest)
             self.nearest.PTOP = self.PTOP
             savez(npzNearest,**self.nearest.__dict__)
 
@@ -132,7 +132,7 @@ class MCS(MxD03):
 
         # validate and store globals
         if not (self.linear.PTOP == self.nearest.PTOP):
-          raise ValueError, 'inconsistent <PTOP> between NPZ files'
+          raise ValueError('inconsistent <PTOP> between NPZ files')
         else:
           self.PTOP = self.linear.PTOP
 
@@ -158,13 +158,13 @@ class MCS(MxD03):
             ica.__dict__[v] = MAPL_UNDEF * ones(shp[:-1])
 
         if self.verb:
-            print " <> Performing ICA calculations"
+            print(" <> Performing ICA calculations")
 
         # Loop over unique gridboxes
         # --------------------------
-        m, ng = 0, len(ica.Indices.keys())
+        m, ng = 0, len(list(ica.Indices.keys()))
         p_ = -1
-        for gi,gj in ica.Indices.values():
+        for gi,gj in list(ica.Indices.values()):
 
             I = (ica.iCoord==gi) & (ica.jCoord==gj)
             ii, jj = I.nonzero()        # pixels on this gridbox
@@ -183,7 +183,7 @@ class MCS(MxD03):
             if self.verb:
               m += 1; p = int(100.*m/ng)
               if p > p_:
-                print '    - working on (%4d,%4d) with ncols = %4d, %3d%%'%(gi,gj,ncols,p)
+                print('    - working on (%4d,%4d) with ncols = %4d, %3d%%'%(gi,gj,ncols,p))
               p_ = p
 
             # Generate condensate subcolumns
@@ -203,7 +203,7 @@ class MCS(MxD03):
         # Consistency check
         # -----------------
         if any(ica.QV==MAPL_UNDEF) or any(ica.QL==MAPL_UNDEF) or any(ica.QI==MAPL_UNDEF):
-            raise MCSError, "Very strange: ICA procedure failed to generate some subcolumns"
+            raise MCSError("Very strange: ICA procedure failed to generate some subcolumns")
 
         # Effective radius -- use linear interp fields
         # --------------------------------------------
@@ -216,12 +216,12 @@ class MCS(MxD03):
         # extra diagnostic variables for debugging
         if debug:
 
-          if self.verb: print " <> extra degugging diagnostics"
+          if self.verb: print(" <> extra degugging diagnostics")
 
           # average the ICA results back to the grid-box
           # --------------------------------------------
           m, p_ = 0, -1
-          for gi,gj in ica.Indices.values():
+          for gi,gj in list(ica.Indices.values()):
 
             I = (ica.iCoord==gi) & (ica.jCoord==gj)
             ncols = I.nonzero()[0].size
@@ -229,7 +229,7 @@ class MCS(MxD03):
             if self.verb:
               m += 1; p = int(100.*m/ng)
               if p > p_:
-                print '    - working on (%4d,%4d) with ncols = %4d, %3d%%'%(gi,gj,ncols,p)
+                print('    - working on (%4d,%4d) with ncols = %4d, %3d%%'%(gi,gj,ncols,p))
               p_ = p
 
             # water content means
@@ -271,7 +271,7 @@ class MCS(MxD03):
         # Get GEOS-Edge coordinates
         # -------------------------
         if self.verb:
-            print " - Getting GEOS-5 edge coordinates"
+            print(" - Getting GEOS-5 edge coordinates")
         g5.PE, g5.ZE = getedgecoords(g5.T,g5.QV,g5.DELP,g5.ZS,self.PTOP)
 
         g5.logPE = None # compute this on demand later
@@ -279,11 +279,11 @@ class MCS(MxD03):
         # Get DISORT edge pressure
         # ------------------------
         if self.verb:
-            print " - Getting DISORT edge pressure"
+            print(" - Getting DISORT edge pressure")
         di.ZE = 1000 * DISORT_LEVELS  # in meters
         di.PE,di.PS,di.KS,rc = interppressure(di.ZE,self.ZS,g5.PE,g5.ZE)
         if rc:
-            raise MCSError, 'Error on return from interpPressure(), rc = <%d>'%rc
+            raise MCSError('Error on return from interpPressure(), rc = <%d>'%rc)
 
         di.DELP = di.PE[:,:,1:]-di.PE[:,:,0:-1]
 
@@ -304,7 +304,7 @@ class MCS(MxD03):
         """
         
         if self.verb:
-            print " - Getting GEOS-5 edge variables"
+            print(" - Getting GEOS-5 edge variables")
 
         di = self.di
         g5 = self.linear
@@ -313,13 +313,13 @@ class MCS(MxD03):
         # ----------------
         di.TE, rc = edget(di.KS,di.PE,g5.PE,g5.T,g5.TS)
         if rc:
-            raise MCSError, 'Error on return from edgeT(), rc = <%d>'%rc
+            raise MCSError('Error on return from edgeT(), rc = <%d>'%rc)
 
         # Edge specific humidity
         # ----------------------
         di.QE, rc = edgeq(di.KS,di.PE,g5.PE,g5.QV)
         if rc:
-            raise MCSError, 'Error on return from edgeQ() for QV, rc = <%d>'%rc
+            raise MCSError('Error on return from edgeQ() for QV, rc = <%d>'%rc)
             
         # Convert O3 from mass mixing ratio to volume mixing ratio (ppmv)
         # ---------------------------------------------------------------
@@ -332,7 +332,7 @@ class MCS(MxD03):
         # ----------
         di.O3E, rc = edgeq(di.KS,di.PE,g5.PE,g5.O3)
         if rc:
-            raise MCSError, 'Error on return from edgeQ() for O3, rc = <%d>'%rc
+            raise MCSError('Error on return from edgeQ() for O3, rc = <%d>'%rc)
             
 
     def regridTracer(self,q):
@@ -398,7 +398,7 @@ class MCS(MxD03):
         """
 
         if self.linear == None:
-          raise RuntimeError, 'must sample first using getGEOS()'
+          raise RuntimeError('must sample first using getGEOS()')
 
         # Calulate TAU and RE
         # -------------------
@@ -620,7 +620,7 @@ class MCS(MxD03):
         """
         for var in sort(Names):
             if Verbose:
-                print "[] Writing %s"%var
+                print("[] Writing %s"%var)
             rank = len(data.__dict__[var].shape)
             long_name, units = cf(var).split(';')
             if rank == 2:
@@ -630,7 +630,7 @@ class MCS(MxD03):
                 v = nc.createVariable(var,'f4',('nscans','nframes','height'),
                                       fill_value=MAPL_UNDEF,zlib=zlib)
             else:
-                raise MCSError, 'Invalid rank for variable <%s>'%var
+                raise MCSError('Invalid rank for variable <%s>'%var)
             v.long_name = long_name
             v.units = units.strip()
             v.missing_value = MAPL_UNDEF
@@ -689,7 +689,7 @@ def albedo_dE_cons(tauc,mu0,g,f):
     f    --- forward scattering fraction
   Suggest using g = 0.85 and f = g**2
   """
-  if mu0 <= 0.: raise ValueError, 'require mu0 > 0'
+  if mu0 <= 0.: raise ValueError('require mu0 > 0')
   cmu0 = 1.5*mu0; efac = exp(-tauc*(1.-f)/mu0)
   return 1. - 2.*((1+cmu0)+(1-cmu0)*efac)/(4.+3.*(1.-g)*tauc)
 

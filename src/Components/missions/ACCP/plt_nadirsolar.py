@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 
 import numpy as np
@@ -75,8 +75,8 @@ if __name__ == "__main__":
         aa = m.contourf(xx,yy,saa,levels=np.linspace(0,360,37),cmap=plt.get_cmap('jet'))
         plt.colorbar(aa,orientation='horizontal')
         m.drawcoastlines()
-        m.drawparallels(range(-80,90,10),labels=np.ones(17))
-        m.drawmeridians(range(-170,180,10),labels=np.ones(len(range(-170,180,10))))
+        m.drawparallels(list(range(-80,90,10)),labels=np.ones(17))
+        m.drawmeridians(list(range(-170,180,10)),labels=np.ones(len(list(range(-170,180,10)))))
         plt.title('{} SAA'.format(sat))
         plt.savefig('{}_saa90nadir.pdf'.format(sat))
         plt.show()
@@ -84,8 +84,8 @@ if __name__ == "__main__":
         aa = m.contourf(xx,yy,sza,levels=np.linspace(0,90,19),cmap=plt.get_cmap('jet'))
         plt.colorbar(aa,orientation='horizontal')
         m.drawcoastlines()
-        m.drawparallels(range(-80,90,10),labels=np.ones(17))
-        m.drawmeridians(range(-170,180,10),labels=np.ones(len(range(-170,180,10))))
+        m.drawparallels(list(range(-80,90,10)),labels=np.ones(17))
+        m.drawmeridians(list(range(-170,180,10)),labels=np.ones(len(list(range(-170,180,10)))))
         plt.title('{} SZA'.format(sat))
         plt.savefig('{}_sza90nadir.pdf'.format(sat))
         plt.show()
@@ -94,8 +94,8 @@ if __name__ == "__main__":
         aa = m.scatter(xx[:,mid],yy[:,mid],c=hr,cmap=plt.get_cmap('jet'))
         plt.colorbar(aa,orientation='horizontal')
         m.drawcoastlines()
-        m.drawparallels(range(-80,90,10),labels=np.ones(17))
-        m.drawmeridians(range(-170,180,10),labels=np.ones(len(range(-170,180,10))))
+        m.drawparallels(list(range(-80,90,10)),labels=np.ones(17))
+        m.drawmeridians(list(range(-170,180,10)),labels=np.ones(len(list(range(-170,180,10)))))
         plt.title('{} UTC'.format(sat))
         plt.savefig('{}_utc90nadir.pdf'.format(sat))
         plt.show()

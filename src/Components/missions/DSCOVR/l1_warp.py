@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to project a GEOPS-5 global image file on a geostationary
@@ -140,7 +140,7 @@ if __name__ == "__main__":
         #        continue
 
         if options.verbose:
-            print "[ ] Reading %s"%os.path.basename(imFile)
+            print("[ ] Reading %s"%os.path.basename(imFile))
 
         # Time interpolating
         # ------------------
@@ -158,7 +158,7 @@ if __name__ == "__main__":
         dlat = 180./float(nlats-1)
         lons = arange(-180,180.,dlon)
         lats = arange(-90.,90+dlat,dlat)
-        I = range(nlons)
+        I = list(range(nlons))
         if options.prime: # notice 17.5W, not quite prime meridian
             Lons = arange(-17.5,360.-17.5,dlon)
             J = Lons>180
@@ -184,11 +184,11 @@ if __name__ == "__main__":
 
             if not options.force:
                 if os.path.exists(outfile):
-                    print "[x] Output file exists, skipping %s"%outfile
+                    print("[x] Output file exists, skipping %s"%outfile)
                     continue
 
             if options.verbose:
-                print "    Working on %s"%outfile
+                print("    Working on %s"%outfile)
 
             # Get central (lon,lat) from time
             # -------------------------------
@@ -214,7 +214,7 @@ if __name__ == "__main__":
             rgb = zeros((options.Ny,options.Nx,nc))
             for k in range(nc):
                 if options.verbose:
-                    print "    - Remapping Layer ", k, options.Nx, options.Ny, lon_0[0], lat_0[0]
+                    print("    - Remapping Layer ", k, options.Nx, options.Ny, lon_0[0], lat_0[0])
                 rgb_ = m.transform_scalar(RGB[:,I,k],lons,lats,
                                                 options.Nx, options.Ny,
                                                 masked=False)

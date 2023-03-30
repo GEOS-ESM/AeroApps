@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Sample GEOS-5 collections at OMI Level 2 orbits.
 #
@@ -15,7 +15,7 @@ def makethis_dir(filename):
     if path != '':
         rc = os.system('mkdir -p '+path)
         if rc:
-            raise IOError, "could not create directory "+path
+            raise IOError("could not create directory "+path)
 
 if __name__ == "__main__":
 
