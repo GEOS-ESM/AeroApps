@@ -34,6 +34,11 @@ esma_add_f2py2_module (LidarAngles_
   )
 
 
+install (
+    FILES __init__.py
+    DESTINATION lib/Python/${this}
+    )
+
 file (GLOB python_files CONFIGURE_DEPENDS py_leo_vlidort/*.py)
 install (FILES ${python_files} DESTINATION lib/Python/py_leo_vlidort)
 
