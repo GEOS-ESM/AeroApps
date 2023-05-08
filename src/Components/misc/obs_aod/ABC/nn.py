@@ -84,7 +84,7 @@ class NN(object):
 
         # Train
         # -----
-        bounds = [bounds]*self.net.get_params()['conec'].shape[0]
+        bounds = [bounds]*self.net.conec.shape[0]
         if self.verbose>0:
             print("Starting training with %s inputs and %s targets"\
                   %(str(inputs.shape),str(targets.shape)))
