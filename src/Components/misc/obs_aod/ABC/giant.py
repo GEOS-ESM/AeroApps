@@ -277,7 +277,10 @@ class GIANT(object):
       # new files use masked arrays
       # convert everythong to regular array filling with -9999.0
       # make sure _fill_value is -9999.0
-      self.__dict__[name] = np.array(data)
+      if data.dtype == np.dtype('S1'):
+        self.__dict__[name] = np.array(data).astype(str)
+      else:
+        self.__dict__[name] = np.array(data)
       self.giantList.append(name)
     nc.close()
 
@@ -287,7 +290,7 @@ class GIANT(object):
     nc = Dataset(filename)
     if 'ISO_DateTime' in list(nc.variables.keys()):
         try:
-            iso = nc.variables['ISO_DateTime'][:]
+            iso = np.array(nc.variables['ISO_DateTime'][:]).astype(str)
             self.tyme = array([isoparse(''.join(array(t))) for t in iso])
         except:
         # old file only have Date and Time variables
