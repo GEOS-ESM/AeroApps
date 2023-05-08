@@ -34,17 +34,17 @@ def boxplot_imshow(data,plottype,blocks,masterlist,title,filename,
     params = {'mathtext.default': 'regular' }          
     plt.rcParams.update(params)
 
-    if plottype is 'box':
+    if plottype == 'box':
       bp = plt.boxplot(data,showfliers=False,showbox=True,whis='range',
                 whiskerprops={'linestyle':'-'})
       plt.setp(bp['boxes'], color='black')
       plt.setp(bp['whiskers'], color='black')
       plt.plot([0,ncomb+0.5],[np.median(data[:,0]),np.median(data[:,0])],color='b',ls='--',zorder=5)
-    elif plottype is 'scatter':
+    elif plottype == 'scatter':
       scat = np.mean(data,axis=0)
       plt.plot(np.arange(ncomb)+1,scat,'rD')
       plt.plot([0,ncomb+0.5],[np.mean(data[:,0]),np.mean(data[:,0])],color='b',ls='--',zorder=5,markersize=5)
-    elif plottype is 'errorbar':
+    elif plottype == 'errorbar':
       scat = np.mean(data,axis=0)
       yerr_max = np.abs(np.max(data,axis=0)-scat)
       yerr_min = np.abs(np.min(data,axis=0)-scat)
@@ -391,7 +391,7 @@ def make_plots(mxd,expid,ident,I=None):
       for t in range(mxd.nTarget):
           name = mxd.Target[t][1:]
           if name != refname:
-              print 't,wav',t,name[3:]
+              print('t,wav',t,name[3:])
               wav = float(name[3:])
               tt = np.exp(targets[:,t]) # keep the + 0.01 to handle negatives in MODIS data
               rr = np.exp(results[:,t]) # keep the + 0.01 to handle negatives in MODIS data
@@ -417,7 +417,7 @@ def make_plots(mxd,expid,ident,I=None):
           name = 'm'+mxd.Target[t][1:]
           if name in mxd.__dict__:
               if name != refname:
-                  print 'orig t,wav',t,name[4:]
+                  print('orig t,wav',t,name[4:])
                   wav = float(name[4:])
                   oo = mxd.__dict__[name][I] + 0.01 # add 0.01 to handle negatives
                   tt = np.exp(targets[:,t]) # keep + 0.01 to handle negatives
@@ -522,7 +522,7 @@ def make_plots_angstrom(mxd,expid,ident,I=None):
           else:         
               name = mxd.Target[t][1:]
           if name != refname:
-              print 't,wav',t,name[3:]
+              print('t,wav',t,name[3:])
               wav = float(name[3:])
               tt = np.exp(targets[:,t]) # keep the + 0.01 to handle negatives in MODIS data
               rr = np.exp(results[:,t]) # keep the + 0.01 to handle negatives in MODIS data
@@ -553,7 +553,7 @@ def make_plots_angstrom(mxd,expid,ident,I=None):
               name = 'm'+mxd.Target[t][1:]
           if name in mxd.__dict__:
               if name != refname:
-                  print 'orig t,wav',t,name[4:]
+                  print('orig t,wav',t,name[4:])
                   wav = float(name[4:])
                   oo = mxd.__dict__[name][I] + 0.01 # add 0.01 to handle negatives
                   tt = np.exp(targets[:,t]) # keep + 0.01 to handle negatives
@@ -574,7 +574,6 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
   if I is None:
     I = [mxd.iValid]
 
-<<<<<<< HEAD
   # Plot PDF of Error
   # -------------------------
   # loop through targets
@@ -590,13 +589,6 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
     if name in mxd.__dict__:
       if K is None:
         targets  = mxd.getTargets(I[0])[:,t]
-=======
-    print('mod04RMSE',mod04RMSE)
-    print('nnrRMSE',nnrRMSE)
-    mod04RMSE = np.mean(mod04RMSE)
-    nnrRMSE   = np.mean(nnrRMSE)
->>>>>>> origin/feature/pcastell/everything_to_py3
-
         inputs = mxd.getInputs(I[0],Input=Input)
         knet = mxd.loadnet(netfileRoot+'_Tau.net')
         results = knet(inputs)[:,t]
@@ -655,8 +647,8 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
           mod04RMSE.append(rmse(original[k],targets[k]))
           nnrRMSE.append(rmse(results[k],targets[k]))
 
-        print 'mod04RMSE',mod04RMSE
-        print 'nnrRMSE',nnrRMSE
+        print('mod04RMSE',mod04RMSE)
+        print('nnrRMSE',nnrRMSE)
         mod04RMSE = np.mean(mod04RMSE)
         nnrRMSE   = np.mean(nnrRMSE)
 
