@@ -59,8 +59,8 @@ class MCD43C(object):
         self.nEW = 360./self.dlon
         self.nNS = 180./self.dlat
 
-        self.lon = np.linspace(-180 + 0.5*self.dlon,180 - 0.5*self.dlon,self.nEW)
-        self.lat = np.linspace(-90 + 0.5*self.dlat,90 - 0.5*self.dlat,self.nNS)
+        self.lon = np.linspace(-180 + 0.5*self.dlon,180 - 0.5*self.dlon,int(self.nEW))
+        self.lat = np.linspace(-90 + 0.5*self.dlat,90 - 0.5*self.dlat,int(self.nNS))
         
         if inDir is None:
             self.inDir  = '/nobackup/3/pcastell/MODIS/MCD43C1/061'
