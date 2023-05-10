@@ -24,7 +24,7 @@ import subprocess
 from optparse        import OptionParser   # Command-line args  
 from dateutil.parser import parse as isoparse
 from mxd04_nnr       import MxD04_NNR
-from MAPL            import strTemplate
+from MAPL.config     import strTemplate
 
 Ident = dict( modo = ('MOD04','ocean'),
               modl = ('MOD04','land'),
