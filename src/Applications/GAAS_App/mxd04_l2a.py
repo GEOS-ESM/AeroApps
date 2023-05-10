@@ -21,7 +21,6 @@ import os
 import sys
 import subprocess
 
-from time            import clock
 from optparse        import OptionParser   # Command-line args  
 from dateutil.parser import parse as isoparse
 from mxd04_nnr       import MxD04_NNR
@@ -139,7 +138,6 @@ if __name__ == "__main__":
         print("                          MODIS Level 2A Processing")
         print("                          -------------------------")
         print("")
-        t0 = clock()
 
 #   Time variables
 #   --------------
