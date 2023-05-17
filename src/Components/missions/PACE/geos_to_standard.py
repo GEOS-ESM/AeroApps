@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Interpolates GEOS profile variables to standard PACE trace gas atmosphere
@@ -222,7 +222,7 @@ class REGRID(object):
 #        elif col == 'chm_Nv':
 #            SDS = SDS_CHM
         elif SDS is None:
-            SDS = nci.variables.keys()
+            SDS = list(nci.variables.keys())
 
         for sds in SDS:
             var = nci.variables[sds]
@@ -254,11 +254,11 @@ class REGRID(object):
                         varo[:] = np.tile(outdata,[1,1,self.nalong,self.ncross])
                         outdata.shape = (self.km,)
                 elif sds == 'lev':
-                    print 'sds',sds
+                    print('sds',sds)
                     if not readonly:
                         varo[:] = np.arange(self.km)+1
                 else:
-                    print 'sds',sds
+                    print('sds',sds)
                     data = var[:]
                     datanew = np.zeros([1,self.km,self.nalong,self.ncross])
                     for i in range(self.nalong):
@@ -293,7 +293,7 @@ class REGRID(object):
 
     def get_sds(self,fname):
         nc = Dataset(fname)
-        sdslist = nc.variables.keys()
+        sdslist = list(nc.variables.keys())
         levlist = []
         for sds in sdslist:
             var = nc.variables[sds]

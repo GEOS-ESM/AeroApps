@@ -192,38 +192,38 @@ def prepAncillary(year, month, npzDir='/nobackup/MAPSS/Collocation/MISR',
     # ---------------
     npzFile = 'mapss.xtra_misr.%d4%02d.npz'%(year,month)
     if os.path.exists(npzFile):
-        print ">< Skipping ancillaries on ", year, month
+        print(">< Skipping ancillaries on ", year, month)
         return
     else:
-        print "<> Creatig ancillaries on ", year, month
+        print("<> Creatig ancillaries on ", year, month)
     a = MAPSS(npzDir+'/mapss.anet_misr.%4d%02d.npz'%(year,month))
 
     a.sample = None
 
     # Vegetation type
     # ---------------
-    print "   o Sampling vegetation type"
+    print("   o Sampling vegetation type")
     veg = a.detailedVeg(Path=igbp_dir)
 
     # Speciate
     # --------
-    print "   o Speciating aerosols..."
+    print("   o Speciating aerosols...")
     a.speciate(aer_x)
     
     # Wind speed
     # ----------
-    print "   o Sampling 10M wind..."
+    print("   o Sampling 10M wind...")
     a.sampleFile(slv_Nx,onlyVars=('U10M','V10M'))
     a.wind = a.sample.U10M**2 + a.sample.V10M**2 
 
     # Ocean Albedo (still neds to be water masked later)
     # --------------------------------------------------
-    print "<> Doing Cox Munk..."
+    print("<> Doing Cox Munk...")
     a.getCoxMunk()
 
     # Land Albedo
     # -----------
-    print "   o Sampling surface albedo..."
+    print("   o Sampling surface albedo...")
     a.AlbedoSample(Verbose = True,
                    root=AlbedoGF_Root)
 
@@ -328,17 +328,17 @@ def _deepNNR():
     topology = (len(Input), nHidden, len(Target))
     biases = True
         
-    print " "
-    print "        AOD Neural Net Retrieval"
-    print "        ------------------------"
-    print " "
-    print "  No. Valid Data:  ", m.aTau550[m.iValid].size,  \
-                                 int(100.*m.aTau550[m.iValid].size/m.aTau550.size),'%'
-    print " No. Hidden Nodes: ", nHidden
-    print "         Topology: ", topology
-    print "   Input Features: ", Input[:]
-    print "           Target: ", Target[:]
-    print " "
+    print(" ")
+    print("        AOD Neural Net Retrieval")
+    print("        ------------------------")
+    print(" ")
+    print("  No. Valid Data:  ", m.aTau550[m.iValid].size,  \
+                                 int(100.*m.aTau550[m.iValid].size/m.aTau550.size),'%')
+    print(" No. Hidden Nodes: ", nHidden)
+    print("         Topology: ", topology)
+    print("   Input Features: ", Input[:])
+    print("           Target: ", Target[:])
+    print(" ")
 
     m.train(Input=Input,Target=Target,nHidden=nHidden,
             topology=topology,biases=biases)

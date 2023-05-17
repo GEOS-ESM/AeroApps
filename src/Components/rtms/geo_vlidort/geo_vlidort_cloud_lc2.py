@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 """ 
 Runscript for running geo_vlidort.x on NCCS
@@ -87,7 +87,7 @@ class CLD_WORKSPACE(WORKSPACE):
 
         # save run directory
         if self.verbose:
-            print '++Saving run directory',os.getcwd()
+            print('++Saving run directory',os.getcwd())
         self.cwd     = os.getcwd()
 
         #initialize arrays to hold directory names
@@ -154,7 +154,7 @@ class CLD_WORKSPACE(WORKSPACE):
 
     def prefilter(self,date,layout=None):
         if self.verbose:
-            print '++Checking for good pixels in prefilter'
+            print('++Checking for good pixels in prefilter')
         g5dir = self.indir + '/LevelB/'+ 'Y'+ str(date.year) + '/M' + str(date.month).zfill(2) + '/D' + str(date.day).zfill(2) 
         nymd  = str(date.year) + str(date.month).zfill(2) + str(date.day).zfill(2)
         hour  = str(date.hour).zfill(2)
@@ -170,20 +170,20 @@ class CLD_WORKSPACE(WORKSPACE):
  
 
         if self.verbose:
-            print '++Opening geometry file ',geom
-            print '++Opening land file', land
+            print('++Opening geometry file ',geom)
+            print('++Opening land file', land)
 
         if not os.path.exists(geom):
             self.get_from_archive(geom)
         ncGeom = Dataset(geom)
-        SZA    = np.squeeze(ncGeom.variables[u'solar_zenith'][:])
-        VZA    = np.squeeze(ncGeom.variables[u'sensor_zenith'][:])
+        SZA    = np.squeeze(ncGeom.variables['solar_zenith'][:])
+        VZA    = np.squeeze(ncGeom.variables['sensor_zenith'][:])
         ncGeom.close()
 
         if not os.path.exists(land):
             self.get_from_archive(land)        
         ncLand = Dataset(land)
-        FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
+        FRLAND = np.squeeze(ncLand.variables['FRLAND'][:])
         ncLand.close()
 
 
@@ -284,8 +284,8 @@ class CLD_WORKSPACE(WORKSPACE):
                     errfile = 'slurm_' +jobid + '_' + str(a) + '.err'                    
                     outfile = 'slurm_' +jobid + '_' + str(a) + '.out'
                     if self.verbose:
-                        print '++cleaning up errfile', errfile
-                        print '++cleaning up outfile', outfile
+                        print('++cleaning up errfile', errfile)
+                        print('++cleaning up outfile', outfile)
                     os.remove(errfile)
                     os.remove(outfile)
                 os.remove('slurm_%A_%a.out')
@@ -744,7 +744,7 @@ if __name__ == "__main__":
         workspace.handle_jobs()
         workspace.final_cleanup()
     else:
-        print 'No model hours to run'
+        print('No model hours to run')
 
     
 

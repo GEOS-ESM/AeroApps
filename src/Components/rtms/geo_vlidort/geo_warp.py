@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to project a GEOPS-5 global image file on a geostationary
@@ -170,8 +170,8 @@ if __name__ == "__main__":
     # --------------------------------------------------
     if False:
         nc = Dataset('/nobackup/TEMPO/LevelG/invariant/tempo.lg1.invariant.nc4')
-        Lons = nc.variables[u'clon'][:,124:1374]
-        Lats = nc.variables[u'clat'][:,124:1374]
+        Lons = nc.variables['clon'][:,124:1374]
+        Lats = nc.variables['clat'][:,124:1374]
         Lons = Lons[-1::-1,-1::-1]
         Lats = Lats[-1::-1,-1::-1]
         m.makegrid_grid = (Lons, Lats, x, y )
@@ -189,11 +189,11 @@ if __name__ == "__main__":
         # ------------------------------------
         if not options.force:
             if os.path.exists(outFile):
-                print "[x] Output file exists, skipping %s"%outFile
+                print("[x] Output file exists, skipping %s"%outFile)
                 continue
 
         if options.verbose:
-            print "[ ] Reading %s"%os.path.basename(imFile)
+            print("[ ] Reading %s"%os.path.basename(imFile))
 
         # Use PIL to read image
         # ---------------------
@@ -212,13 +212,13 @@ if __name__ == "__main__":
         rgb = ma.zeros((Ny,Nx,nc))
         for k in range(nc):
             if options.verbose:
-                print "   - Remapping Layer ", k
+                print("   - Remapping Layer ", k)
             rgb[:,:,k] = m.transform_scalar(RGB[-1::-1,:,k],lons,lats,
                                             Nx, Ny,
                                             masked=True)
         # Save the image
         # --------------
         if options.verbose:
-            print "   - Writing %s"%outFile
+            print("   - Writing %s"%outFile)
         imsave(outFile,rgb)
         

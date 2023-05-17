@@ -41,13 +41,13 @@ def shave(q,undef=MAPL_UNDEF,has_undef=1,nbits=12):
     elif rank == 3: # zyx
         chunksize = shp[1]*shp[2]
     else:
-        raise ValueError, "invalid rank=%d"%rank
+        raise ValueError("invalid rank=%d"%rank)
 
     # Shave it
     # --------
     qs, rc = shave32(q.ravel(),xbits,has_undef,undef,chunksize)
     if rc:
-        raise ValueError, "error on return from shave32, rc=%d"%rc
+        raise ValueError("error on return from shave32, rc=%d"%rc)
 
     return qs.reshape(shp)
 
@@ -61,7 +61,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
     """
     x = ncIn.variables[name]
     if verbose:
-        print 'copy variable ',name,x.dimensions
+        print('copy variable ',name,x.dimensions)
 
     try:
         fill_value = x.fill_value
@@ -89,7 +89,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False):
         else:
             y[:,:,:] = shave(x[:,:,:],undef=fill_value)
     else:
-        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
+        raise ValueError("invalid rank of <%s>: %d"%(name,rank))
 
 class SLEAVE(object):
     def __init__(self):
@@ -114,8 +114,8 @@ class NOBM(object):
                     self.channels = np.linspace(250,775,self.nch)
 
                 if not hasattr(self,'fill_value'):
-                    print 'inFile',inFile
-                    print 'sds',sds
+                    print('inFile',inFile)
+                    print('sds',sds)
                     var = nc.variables[sds]
                     self.fill_value = var._FillValue
 
@@ -184,11 +184,11 @@ class NOBM(object):
 
         # Save lon/lat
         # --------------------------
-        _copyVar(nctrj,nc,u'ccd_pixels',dtype='f4',zlib=zlib,verbose=verbose)
-        _copyVar(nctrj,nc,u'number_of_scans',dtype='f4',zlib=zlib,verbose=verbose)            
-        _copyVar(nctrj,nc,u'longitude',dtype='f4',zlib=zlib,verbose=verbose)
-        _copyVar(nctrj,nc,u'latitude',dtype='f4',zlib=zlib,verbose=verbose)
-        _copyVar(nctrj,nc,u'time', dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'ccd_pixels',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'number_of_scans',dtype='f4',zlib=zlib,verbose=verbose)            
+        _copyVar(nctrj,nc,'longitude',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'latitude',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'time', dtype='f4',zlib=zlib,verbose=verbose)
 
         # Wavelenghts
         dim = ('wavelength',)
@@ -261,7 +261,7 @@ class NOBM(object):
                 self.sleave.__dict__[sds] = np.zeros((nch,nscan,npixel))
 
 
-            print 'sampling sds',sds,nch
+            print('sampling sds',sds,nch)
             for ich in range(nch):
                 templin      = np.ma.zeros((nscan,npixel))
                 templin.mask = np.ones((nscan,npixel)).astype(bool)
@@ -270,7 +270,7 @@ class NOBM(object):
                 for ut in utyme:  
                     
                     if Verbose:
-                        print 'Working on '+ str(ut.date())
+                        print('Working on '+ str(ut.date()))
 
                     Ityme = dtyme == ut
 

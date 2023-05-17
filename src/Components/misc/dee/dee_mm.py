@@ -32,7 +32,7 @@ def mflux_o(path,filename,prod,gatime):
 
     if not Force:
         if os.path.exists(filename):
-            print '<> File exists, skipping <%s>'%filename
+            print('<> File exists, skipping <%s>'%filename)
             return
 
     d = dict(path=path, prod=prod, filename=filename, 
@@ -53,7 +53,7 @@ def mflux_o(path,filename,prod,gatime):
     rc = os.system(cmd)
 
     if rc:
-        raise RuntimeError, 'error on return from %s'%cmd
+        raise RuntimeError('error on return from %s'%cmd)
 
 def mflux_m(path,filename,prod,gatime):
     """
@@ -67,7 +67,7 @@ def mflux_m(path,filename,prod,gatime):
 
     if not Force:
         if os.path.exists(filename):
-            print '<> File exists, skipping <%s>'%filename
+            print('<> File exists, skipping <%s>'%filename)
             return
 
     d = dict(path=path, prod=prod, filename=filename, 
@@ -86,7 +86,7 @@ def mflux_m(path,filename,prod,gatime):
     cmd = Template(tmpl).substitute(d)
 
     if os.system(cmd):
-        raise RuntimeError, 'error on return from %s'%cmd
+        raise RuntimeError('error on return from %s'%cmd)
 
 #....................................................................
 def removal(path,filename,prod,gatime):
@@ -101,7 +101,7 @@ def removal(path,filename,prod,gatime):
 
     if not Force:
         if os.path.exists(filename):
-            print '<> File exists, skipping <%s>'%filename
+            print('<> File exists, skipping <%s>'%filename)
             return
 
     d = dict(path=path, prod=prod, filename=filename, 
@@ -123,7 +123,7 @@ def removal(path,filename,prod,gatime):
     rc = os.system(cmd)
 
     if rc:
-        raise RuntimeError, 'error on return from %s'%cmd
+        raise RuntimeError('error on return from %s'%cmd)
 
 #....................................................................
 def aod_o(path,filename,prod,gatime):
@@ -137,7 +137,7 @@ def aod_o(path,filename,prod,gatime):
 
     if not Force:
         if os.path.exists(filename):
-            print '<> File exists, skipping <%s>'%filename
+            print('<> File exists, skipping <%s>'%filename)
             return
 
     d = dict(path=path, prod=prod, filename=filename, 
@@ -168,7 +168,7 @@ def aod_o(path,filename,prod,gatime):
     rc = os.system(cmd)
 
     if rc:
-        raise RuntimeError, 'error on return from %s'%cmd
+        raise RuntimeError('error on return from %s'%cmd)
 
 def xxx_m(path,filename,prod,gatime,inFile,var):
     """
@@ -181,7 +181,7 @@ def xxx_m(path,filename,prod,gatime,inFile,var):
 
     if not Force:
         if os.path.exists(filename):
-            print '<> File exists, skipping <%s>'%filename
+            print('<> File exists, skipping <%s>'%filename)
             return
 
     d = dict(path=path, prod=prod, filename=filename, 
@@ -200,12 +200,12 @@ def xxx_m(path,filename,prod,gatime,inFile,var):
 
     cmd = Template(tmpl).substitute(d)
 
-    print 30*'-'
-    print cmd
-    print 30*'-'
+    print(30*'-')
+    print(cmd)
+    print(30*'-')
     
     if os.system(cmd):
-        raise RuntimeError, 'error on return from %s'%cmd
+        raise RuntimeError('error on return from %s'%cmd)
 
 #....................................................................
 def wx_modulation(path,filename,prod,gatime):
@@ -220,7 +220,7 @@ def wx_modulation(path,filename,prod,gatime):
 
     if not Force:
         if os.path.exists(filename):
-            print '<> File exists, skipping <%s>'%filename
+            print('<> File exists, skipping <%s>'%filename)
             return
 
     d = dict(path=path, prod=prod, filename=filename, 
@@ -239,11 +239,11 @@ def wx_modulation(path,filename,prod,gatime):
 
     cmd = Template(tmpl).substitute(d)
     if os.system(cmd):
-        raise RuntimeError, 'error on return from <%s>'%cmd
+        raise RuntimeError('error on return from <%s>'%cmd)
 
     cmd = "ncrename %s -v w10m,duwx"%filename
     if os.system(cmd):
-        raise RuntimeError, 'error on return from <%s>'%cmd
+        raise RuntimeError('error on return from <%s>'%cmd)
 
 #....................................................................
 
@@ -259,7 +259,7 @@ def nobs(path,filename,prod,gatime):
 
     if not Force:
         if os.path.exists(filename):
-            print '<> File exists, skipping <%s>'%filename
+            print('<> File exists, skipping <%s>'%filename)
             return
 
     d = dict(path=path, prod=prod, filename=filename, 
@@ -276,11 +276,11 @@ def nobs(path,filename,prod,gatime):
 
     cmd = Template(tmpl).substitute(d)
     if os.system(cmd):
-        raise RuntimeError, 'error on return from <%s>'%cmd
+        raise RuntimeError('error on return from <%s>'%cmd)
 
     cmd = "ncrename %s -v aod,nobs"%filename
     if os.system(cmd):
-        raise RuntimeError, 'error on return from <%s>'%cmd
+        raise RuntimeError('error on return from <%s>'%cmd)
 
 #....................................................................
 
@@ -296,7 +296,7 @@ def foo(path,filename,prod,gatime):
 
     if not Force:
         if os.path.exists(filename):
-            print '<> File exists, skipping <%s>'%filename
+            print('<> File exists, skipping <%s>'%filename)
             return
 
     d = dict(path=path, prod=prod, filename=filename, 
@@ -324,11 +324,11 @@ def foo(path,filename,prod,gatime):
 
     cmd = Template(tmpl).substitute(d)
     if os.system(cmd):
-        raise RuntimeError, 'error on return from <%s>'%cmd
+        raise RuntimeError('error on return from <%s>'%cmd)
 
     cmd = "ncrename %s -v aod,foo"%filename
     if os.system(cmd):
-        raise RuntimeError, 'error on return from <%s>'%cmd
+        raise RuntimeError('error on return from <%s>'%cmd)
 
 #....................................................................
 
@@ -345,10 +345,10 @@ if __name__ == "__main__":
         year1 = sys.argv[1]
         year2 = year1
     else:
-        print "   Usage:   %s  year1 [year2]"%sys.argv[0]
-        print "Examples:   %s   2003  2005"%sys.argv[0]
-        print "            %s   2003"%sys.argv[0]
-        raise RuntimeError, 'not enough parameters'
+        print("   Usage:   %s  year1 [year2]"%sys.argv[0])
+        print("Examples:   %s   2003  2005"%sys.argv[0])
+        print("            %s   2003"%sys.argv[0])
+        raise RuntimeError('not enough parameters')
 
     year1, year2 = int(year1), int(year2)    
 

@@ -3,8 +3,8 @@ esma_check_if_debug()
 set (subdirectories   
   GMAO_mpeu    GMAO_etc   GEOS_Shared
   GMAO_hermes  GMAO_ods
-  GMAO_psas    GMAO_pyobs Chem_Base
-  GMAO_pilgrim MAPL
+  GMAO_psas    GMAO_pyobs   GMAO_aeropyobs
+  Chem_Base    GMAO_pilgrim MAPL
   )
 foreach (subdir ${subdirectories})
   esma_add_subdirectory (${subdir})

@@ -77,7 +77,7 @@ class MAN(object):
             try:
                 i = Names.index(name)
             except:
-                raise ValueError, "cannot find <%s> in file"%name
+                raise ValueError("cannot find <%s> in file"%name)
             iVars = iVars + (i,)
             if name=='Date':
                 formats = formats + ('S8',)
@@ -159,8 +159,8 @@ class MAN(object):
 
             U[i] = ga.expr(expr).data # nearest neighbor
 
-            print "%s %s %8.3f %8.3f %6.3f  ...%8.3f%%"\
-                %(self.Date[i],self.Time[i],x,y,U[i],100.*i/float(N))
+            print("%s %s %8.3f %8.3f %6.3f  ...%8.3f%%"\
+                %(self.Date[i],self.Time[i],x,y,U[i],100.*i/float(N)))
 
         self.__dict__[vname] = U
 

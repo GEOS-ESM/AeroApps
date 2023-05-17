@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper to loop through channels and submit pace_lc.j jobs to sbatch for one pace granule
@@ -136,13 +136,13 @@ def shave(q,undef=MAPL_UNDEF,has_undef=1,nbits=12):
     elif rank == 3: # zyx
         chunksize = shp[1]*shp[2]
     else:
-        raise ValueError, "invalid rank=%d"%rank
+        raise ValueError("invalid rank=%d"%rank)
 
     # Shave it
     # --------
     qs, rc = shave32(q.ravel(),xbits,has_undef,undef,chunksize)
     if rc:
-        raise ValueError, "error on return from shave32, rc=%d"%rc
+        raise ValueError("error on return from shave32, rc=%d"%rc)
 
     return qs.reshape(shp)
 
@@ -531,7 +531,7 @@ class LEVELC(object):
         # interpolate to OCI center wavelengths
         # but only for OCI channels covered by CK bins
         istart = 53
-        ich = range(istart,self.noci)
+        ich = list(range(istart,self.noci))
         ck_center = np.ones([self.noci-istart,nscan,nccd])*MISSING
         if self.do_single_xtrack:
             iscan = 600
@@ -627,7 +627,7 @@ class LEVELC(object):
             for ich,ch in enumerate(self.wav_uv):
                 for i,pch in enumerate(pchannels):
                     if float(ch) == pch:
-                        print 'inserting ',ch
+                        print('inserting ',ch)
                         data = self.varuv[ich,:,:]
                         ii = data == -500.0
                         if np.sum(ii) > 0:
@@ -645,7 +645,7 @@ class LEVELC(object):
             for ich, ch in enumerate(self.wav_oci[istart:]):
                 for i,pch in enumerate(pchannels):
                     if float(ch) == pch:
-                        print 'inserting ',ch
+                        print('inserting ',ch)
                         data = self.varck[ich,:,:]
                         ii = data == -500.0
                         if np.sum(ii) > 0:
@@ -747,7 +747,7 @@ class LEVELC(object):
             for ich,ch in enumerate(self.wav_uv):
                 for i,pch in enumerate(pchannels):
                     if float(ch) == pch:
-                        print 'inserting ',ch, ' to ',sds
+                        print('inserting ',ch, ' to ',sds)
                         data = self.varuv[ich,:,:]
                         pvar[:,:,i] = data
 
@@ -756,7 +756,7 @@ class LEVELC(object):
             for ich, ch in enumerate(self.wav_oci[istart:]):
                 for i,pch in enumerate(pchannels):
                     if float(ch) == pch:
-                        print 'inserting ',ch, ' to ',sds
+                        print('inserting ',ch, ' to ',sds)
                         data = self.varck[ich,:,:]
                         pvar[:,:,i] = data
 
@@ -839,9 +839,9 @@ def create_condenseFile(L1B_file,outfile,Date,SDS):
 
     # Open NC file
     # ------------
-    print 'create outfile',outfile
+    print('create outfile',outfile)
     nc = Dataset(outfile,'w',format='NETCDF4_CLASSIC')
-    print 'copy from',L1B_file
+    print('copy from',L1B_file)
     nctrj = Dataset(L1B_file)
 
     # Get Dimensions
@@ -877,15 +877,15 @@ def create_condenseFile(L1B_file,outfile,Date,SDS):
 
     # Save lon/lat
     # --------------------------
-    _copyVar(nctrj,nc,u'longitude','geolocation_data',dtype='f4',zlib=True,verbose=True)
-    _copyVar(nctrj,nc,u'latitude','geolocation_data',dtype='f4',zlib=True,verbose=True)
-    if 'ev_mid_time' in nctrj.groups['scan_line_attributes'].variables.keys():
-        _copyVar(nctrj,nc,u'ev_mid_time','scan_line_attributes', dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,'longitude','geolocation_data',dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,'latitude','geolocation_data',dtype='f4',zlib=True,verbose=True)
+    if 'ev_mid_time' in list(nctrj.groups['scan_line_attributes'].variables.keys()):
+        _copyVar(nctrj,nc,'ev_mid_time','scan_line_attributes', dtype='f4',zlib=True,verbose=True)
     else:
-        _copyVar(nctrj,nc,u'time','scan_line_attributes', dtype='f4',zlib=True,verbose=True)
-    _copyVar(nctrj,nc,u'blue_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
-    _copyVar(nctrj,nc,u'red_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
-    _copyVar(nctrj,nc,u'SWIR_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
+        _copyVar(nctrj,nc,'time','scan_line_attributes', dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,'blue_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,'red_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,'SWIR_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
 
 
     # Loop over SDS creating each dataset
@@ -942,7 +942,7 @@ def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False,verbose=False):
     """
     x = ncIn.groups[group].variables[name]
     if verbose:
-        print 'copy variable ',name,x.dimensions
+        print('copy variable ',name,x.dimensions)
     y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
     if hasattr(x,'long_name'): y.long_name = x.long_name
     if hasattr(x,'units'): y.units = x.units
@@ -962,7 +962,7 @@ def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False,verbose=False):
         else:
             y[:,:,:] = shave(x[:,:,:],has_undef=0)
     else:
-        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
+        raise ValueError("invalid rank of <%s>: %d"%(name,rank))
 
 
 if __name__ == '__main__':

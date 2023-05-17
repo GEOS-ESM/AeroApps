@@ -1,4 +1,4 @@
-#!/bin/python
+#!/bin/python3
 # -*- coding: utf-8 -*-
 """ Runscript for geo_sampler"""
 
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     	command = 'geo_sampler.py -C -N -v -r geo_sampler_omi_ler.rc -o ' + outdir + \
     					'/gems-'+ instname + '.' + dataname + '.'+ date + '.nc4 ' +\
     					str(startdate.date()) + 'T' + str(startdate.time())
-    	print command
+    	print(command)
     	os.system(command)    					
     	
     	if (startdate.month < 12):

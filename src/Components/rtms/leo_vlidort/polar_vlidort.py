@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Calculates polarized TOA radiance for a multiangle polarimeter on a lidar track.
@@ -833,7 +833,7 @@ class POLAR_VLIDORT(VLIDORT):
         """
         col = 'aer_Nv'
         if self.verbose: 
-            print 'running ext_sampler on file',self.inFile.replace('%col',col)
+            print('running ext_sampler on file',self.inFile.replace('%col',col))
 
         outDir = os.path.dirname(self.outFile)
         instname = os.path.basename(self.inFile).split('.')[0]
@@ -854,7 +854,7 @@ class POLAR_VLIDORT(VLIDORT):
         cmd = 'ext_sampler.py {} '.format(Options)  
 
         if os.system(cmd):
-            raise ValueError, "ext_sampler.py failed for %s "%(self.inFile.replace('%col',col))      
+            raise ValueError("ext_sampler.py failed for %s "%(self.inFile.replace('%col',col)))      
 
 
     def runVLIDORT(self):
@@ -990,15 +990,15 @@ class POLAR_VLIDORT(VLIDORT):
         # --------------------
         col = 'aer_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nctrj       = Dataset(self.inFile.replace('%col',col))        
-        _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'lev', dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)   
+        _copyVar(nctrj,nc,'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'time', dtype='i4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'lev', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'isotime', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'x',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'y',dtype='f4',zlib=False,verbose=self.verbose)   
         nctrj.close()
 
 
@@ -1099,7 +1099,7 @@ class POLAR_VLIDORT(VLIDORT):
         nc.close()
 
         if self.verbose:
-            print " <> wrote %s"%(self.outFile)
+            print(" <> wrote %s"%(self.outFile))
 
     #---
     def writeNCdist (self,zlib=True):
@@ -1139,15 +1139,15 @@ class POLAR_VLIDORT(VLIDORT):
         # --------------------
         col = 'aer_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nctrj       = Dataset(self.inFile.replace('%col',col))        
-        _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'lev', dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)   
+        _copyVar(nctrj,nc,'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'time', dtype='i4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'lev', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'isotime', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'x',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'y',dtype='f4',zlib=False,verbose=self.verbose)   
         nctrj.close()
 
         rad = nc.createVariable('radius','f4',('radius',),zlib=False)
@@ -1173,13 +1173,13 @@ class POLAR_VLIDORT(VLIDORT):
         nc.close()
 
         if self.verbose:
-            print " <> wrote %s"%(self.outFileDist)
+            print(" <> wrote %s"%(self.outFileDist))
     
     
 #------------------------------------ M A I N ------------------------------------
 
 if __name__ == "__main__":
-    date     = datetime(2006,8,01,00)
+    date     = datetime(2006,8,0o1,00)
     nymd     = str(date.date()).replace('-','')
     hour     = str(date.hour).zfill(2)
     format   = 'NETCDF4_CLASSIC'

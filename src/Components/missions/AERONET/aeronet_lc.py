@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper to submit aeronet_lc.j jobs to sbatch
@@ -63,12 +63,12 @@ class JOBS(object):
                     if (errcheck is False):
                         self.destroy_workspace(i,s)
                     else:
-                        print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
+                        print('Jobid ',s,' in ',self.dirstring[i],' exited with errors')
 
             # finished checking up on all the jobs
             # Remove finished jobs from the currently working list
             if len(finishedJobs) != 0:
-                print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
+                print('deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]])
                 node_tally  = node_tally - len(finishedJobs)
 
                 workingJobs = np.delete(workingJobs,finishedJobs)
@@ -97,12 +97,12 @@ class JOBS(object):
                 stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
 
 
-            print 'Waiting 20 minutes'
+            print('Waiting 20 minutes')
             time.sleep(60*20)
             
 
         # Exited while loop
-        print 'All jobs done'
+        print('All jobs done')
 
 
     def check_for_errors(self,i,jobid):

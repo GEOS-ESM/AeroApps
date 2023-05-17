@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Wrapper to do all sampling leo_sampler.py
 """
@@ -69,7 +69,7 @@ if __name__ == "__main__":
             command += ' --algo {}'.format(a)
             command += ' {} {}'.format(piso_t1,piso_t2)
 
-            print command
+            print(command)
             os.system(command)
 
     # MCD12C (Land Cover Type) Sampling 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
         command += ' {} {} {}'.format(giso_t1,giso_t2,mcd12cPCF)
 
-        print command
+        print(command)
         os.system(command)
 
     # MCD43C (BRDF) Sampling
@@ -109,7 +109,7 @@ if __name__ == "__main__":
 
         command += ' {} {} {}'.format(giso_t1,giso_t2,mcd43cPCF)
 
-        print command
+        print(command)
         os.system(command)
 
     # NOBM (Water Leaving Radiance) Sampling
@@ -129,7 +129,7 @@ if __name__ == "__main__":
 
         command += ' {} {} {}'.format(giso_t1,giso_t2,nobmPCF)
 
-        print command
+        print(command)
         os.system(command)
 
 
@@ -149,7 +149,7 @@ if __name__ == "__main__":
 
         command += ' {} {} {}'.format(giso_t1,giso_t2,myd13c2PCF)
 
-        print command
+        print(command)
         os.system(command)
 
     # OMI LER Sampling
@@ -168,7 +168,7 @@ if __name__ == "__main__":
 
         command += ' {} {} {}'.format(giso_t1,giso_t2,lerPCF)
 
-        print command
+        print(command)
         os.system(command)
 
 

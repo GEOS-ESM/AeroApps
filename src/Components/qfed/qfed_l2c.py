@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
   A Python scrpipt to create QFED Level 2c files.
@@ -79,10 +79,10 @@ if __name__ == "__main__":
         
     if options.verbose:
         Verb=1
-        print ""
-        print "                          QFED Level 2c Processing"
-        print "                          ------------------------"
-        print ""
+        print("")
+        print("                          QFED Level 2c Processing")
+        print("                          ------------------------")
+        print("")
     else:
         Verb=0
 

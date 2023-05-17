@@ -1,5 +1,5 @@
 
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 	Puts together the GOES-R tiles into 1 file
 """
@@ -64,7 +64,7 @@ if __name__ == '__main__':
 	grid   = indir + 'LevelG/invariant/'+instnamel+'.lg1.invariant.nc4'
 	ncGrid = Dataset(grid)
 	ncTyme = Dataset(tyme)
-	clon = ncGrid.variables[u'clon'][:,:]
+	clon = ncGrid.variables['clon'][:,:]
 	nX = int(layout[0])
 	nY = int(layout[1])
 	nNS, nEW = clon.shape		
@@ -93,8 +93,8 @@ if __name__ == '__main__':
 
 			outfile = outdir + g5name + runname + nymd + '_' + hour + '_' + ch + 'nm.nc4'
 
-			print 'data: ', data
-			print 'outfile: ', outfile
+			print('data: ', data)
+			print('outfile: ', outfile)
 
 			try:
 				template = glob.glob(data+'*')[0]
@@ -129,10 +129,10 @@ if __name__ == '__main__':
 						setattr(ncOut,att,getattr(ncTemplate,att))
 
 				# -- Define dimensions
-				time  = ncOut.createDimension('time', len(ncTemplate.dimensions[u'time']))
-				lev   = ncOut.createDimension('lev', len(ncTemplate.dimensions[u'lev']))		
-				ew    = ncOut.createDimension('ew', len(ncGrid.dimensions[u'ew']))
-				ns    = ncOut.createDimension('ns', len(ncGrid.dimensions[u'ns']))		
+				time  = ncOut.createDimension('time', len(ncTemplate.dimensions['time']))
+				lev   = ncOut.createDimension('lev', len(ncTemplate.dimensions['lev']))		
+				ew    = ncOut.createDimension('ew', len(ncGrid.dimensions['ew']))
+				ns    = ncOut.createDimension('ns', len(ncGrid.dimensions['ns']))		
 
 				# # Read in Data and put fields back together
 				# # -------------------------------------------

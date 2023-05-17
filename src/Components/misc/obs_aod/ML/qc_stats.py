@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 
@@ -35,8 +35,8 @@ if __name__ == "__main__":
 
     clf()
 
-    print " kx   mean   stdv  |    0    25%    50%    75%    100%"
-    print "---- ------ ------ | ------ ------ ------ ------ ------ "
+    print(" kx   mean   stdv  |    0    25%    50%    75%    100%")
+    print("---- ------ ------ | ------ ------ ------ ------ ------ ")
     x = linspace(-5,2,100)
     i = 0
     for kx in ( 301, 302, 313,  311, 312, 320 ):
@@ -64,6 +64,6 @@ if __name__ == "__main__":
             title("%s [%dnm]"%(kx_names[str(kx)],ch),fontsize=12)
             args = (kx,d_f.mean(),d_f.std())+tuple(prctile(d_f))
 
-            print " %d %6.3f %6.3f | %6.3f %6.3f %6.3f %6.3f %6.3f "%args
+            print(" %d %6.3f %6.3f | %6.3f %6.3f %6.3f %6.3f %6.3f "%args)
 
         savefig(basen+"-%dnm.png"%ch)

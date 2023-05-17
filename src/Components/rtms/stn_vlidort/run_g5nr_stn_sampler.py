@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper for stn_sampler.py
@@ -101,7 +101,7 @@ if __name__ == "__main__":
                 Options += " --verbose" 
 
             cmd = 'python -u /discover/nobackup/pcastell/workspace/GAAS/Linux/bin/g5nr_stn_sampler.py {} {} {} {} {}'.format(Options,stnFile,rc,date.isoformat(),edate.isoformat())
-            print cmd
+            print(cmd)
             if not args.dryrun:
                 os.system(cmd)
 

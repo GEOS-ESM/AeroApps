@@ -6,7 +6,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',zlib=False,verbose=False,rename=None):
     """
     x = ncIn.variables[name]
     if verbose:
-        print 'copy variable ',name,x.dimensions
+        print('copy variable ',name,x.dimensions)
     if rename is None:
         outname = name
     else:

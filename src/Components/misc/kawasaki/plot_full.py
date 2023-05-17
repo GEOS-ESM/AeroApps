@@ -50,7 +50,7 @@ def _getYearly(y1,y2):
     Year = array([t.year for t in tyme])
     clm = dict()
     for q in n:
-        print "[] working on <%s>"%q
+        print("[] working on <%s>"%q)
         clm[q] = _toYearly(Year,n[q])
     return clm
 
@@ -134,7 +134,7 @@ def plot_Japan_stack(trange,clm,showKD=True,Yearly=False):
     y1, y2 = trange.split('-')
     y1, y2 = int(y1), int(y2)
     if Yearly:
-        tyme = range(y1,y2+1)
+        tyme = list(range(y1,y2+1))
         tag = 'yy'
     else:
         tag = 'mm'
@@ -143,7 +143,7 @@ def plot_Japan_stack(trange,clm,showKD=True,Yearly=False):
     if showKD:
         if Yearly:
             c = NPZ('NPZ/kawasaki_japan.yearly.01-12.npz')
-            c.tyme = array(range(1969,2011))
+            c.tyme = array(list(range(1969,2011)))
             I = (c.tyme>=y1)
         else:
             c = NPZ('NPZ/kawasaki_japan.monthly.1969-2010.npz')
@@ -266,7 +266,7 @@ else:
               'dusmass25','so4smass','bcsmass','ocsmass','so2smass','sssmass25',
               'duexttau','suexttau','bcexttau','ocexttau','ssexttau' ):
  
-        print '[] working on <%s>'%q
+        print('[] working on <%s>'%q)
         
         d['q'] = q
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
   Uses grads to compute merra-2 anomalies.
@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
         for var in Vars:
 
-            print " [] Working on <%s>"%var
+            print(" [] Working on <%s>"%var)
 
             clim_anom(ga,coll,var,year1,year2)
 

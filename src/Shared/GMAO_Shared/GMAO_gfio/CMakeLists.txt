@@ -45,10 +45,10 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories (${include_${this}})
 
 if (precision STREQUAL "r4")
-  find_package(F2PY2)
-  if (F2PY2_FOUND)
+  find_package(F2PY3)
+  if (F2PY3_FOUND)
     # Using add_ here as the import test threw an SSL error on GMAO desktop
-    esma_add_f2py2_module(GFIO_ SOURCES GFIO_py.F90
+    esma_add_f2py3_module(GFIO_ SOURCES GFIO_py.F90
       DESTINATION lib/Python
       ONLY gfioopen gfiocreate gfiodiminquire gfioinquire
       gfiogetvar gfiogetvart gfioputvar gfiogetbegdatetime

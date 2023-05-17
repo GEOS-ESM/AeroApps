@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Calculates polarized BOA radiance at ground stations.
@@ -218,7 +218,7 @@ class AERONET_VLIDORT(object):
         Read in NDVI and Landuse Coefficient- should have been sampled already
         """
         if self.verbose:
-            print 'opening file',self.ndviFile
+            print('opening file',self.ndviFile)
 
         nc = Dataset(self.ndviFile)
         NDVI = np.array(nc.variables['NDVI'][:])
@@ -230,7 +230,7 @@ class AERONET_VLIDORT(object):
         nc.close()
 
         if self.verbose:
-            print 'opening file',self.lcFile
+            print('opening file',self.lcFile)
         nc = Dataset(self.lcFile)
         BPDFcoef = nc.variables['BPDFcoef'][:]
         I = BPDFcoef < -900
@@ -255,7 +255,7 @@ class AERONET_VLIDORT(object):
         """
         col = 'asm_Nx'
         if self.verbose: 
-            print 'opening file',self.invFile.replace('%col',col)
+            print('opening file',self.invFile.replace('%col',col))
         nc       = Dataset(self.invFile.replace('%col',col))
 
         for sds in self.SDS_INV:
@@ -343,7 +343,7 @@ class AERONET_VLIDORT(object):
         """
         col = 'aer_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nc       = Dataset(self.inFile.replace('%col',col))
 
         for sds in self.SDS_AER:
@@ -1045,7 +1045,7 @@ class AERONET_VLIDORT(object):
             SDS = 'Riso'+chmin,'Rgeo'+chmin,'Rvol'+chmin,'Riso'+chmax,'Rgeo'+chmax,'Rvol'+chmax
 
         if self.verbose:
-            print 'opening BRDF file ',self.brdfFile
+            print('opening BRDF file ',self.brdfFile)
         nc = Dataset(self.brdfFile)
 
         for sds in SDS:
@@ -1115,7 +1115,7 @@ class AERONET_VLIDORT(object):
         chs = str(int(self.channel))
 
         if self.verbose:
-            print 'opening BRDF file ',self.brdfFile
+            print('opening BRDF file ',self.brdfFile)
         nc = Dataset(self.brdfFile)
 
         for sds in mSDS:
@@ -1125,7 +1125,7 @@ class AERONET_VLIDORT(object):
         nc.close()
 
         if self.verbose:
-            print 'opening LER albedo file ',self.lerFile
+            print('opening LER albedo file ',self.lerFile)
         nc = Dataset(self.lerFile)
 
         self.__dict__[lSDS] = np.array(nc.variables[lSDS][:,:,0])
@@ -1208,7 +1208,7 @@ class AERONET_VLIDORT(object):
             SDS.append('SRFLER'+lchs)
 
         if self.verbose:
-            print 'opening LER albedo file ',self.lerFile
+            print('opening LER albedo file ',self.lerFile)
         nc = Dataset(self.lerFile)
 
         for sds in SDS:
@@ -1273,7 +1273,7 @@ class AERONET_VLIDORT(object):
         self.channel = 440
         self.rcFile = 'Aod_EOS.440.rc'
         pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5))     
-        args = zip([self]*self.ntyme,range(self.ntyme))
+        args = list(zip([self]*self.ntyme,list(range(self.ntyme))))
         result = pool.map(unwrap_self_doMie,args)
 
         tau440 = []        
@@ -1290,7 +1290,7 @@ class AERONET_VLIDORT(object):
         self.channel = 870
         self.rcFile = 'Aod_EOS.870.rc'
         pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5))     
-        args = zip([self]*self.ntyme,range(self.ntyme))
+        args = list(zip([self]*self.ntyme,list(range(self.ntyme))))
         result = pool.map(unwrap_self_doMie,args)
 
         tau870 = []        
@@ -1322,7 +1322,7 @@ class AERONET_VLIDORT(object):
         self.vol  = []
 
         pool = multiprocessing.Pool(int(multiprocessing.cpu_count()*0.5))     
-        args = zip([self]*self.ntyme,range(self.ntyme))
+        args = list(zip([self]*self.ntyme,list(range(self.ntyme))))
         result = pool.map(unwrap_self_doMie,args)
         
         for r in result:
@@ -1369,7 +1369,7 @@ class AERONET_VLIDORT(object):
         run ext_sampler.py 
         """
         if self.verbose: 
-            print 'running ext_sampler on file',self.inFile.replace('%col',self.extcol)
+            print('running ext_sampler on file',self.inFile.replace('%col',self.extcol))
 
         Options =     " --input=" + self.inFile.replace('%col',self.extcol)      + \
                       " --output=" + self.outFileext.replace('%col',self.extcol)       + \
@@ -1389,9 +1389,9 @@ class AERONET_VLIDORT(object):
             os.makedirs(os.path.dirname(self.outFileext))
 
         cmd = 'ext_stn_vlidort_sampler.py {} '.format(Options)  
-        print cmd
+        print(cmd)
         if os.system(cmd):
-            raise ValueError, "ext_stn_vlidort_sampler.py failed for %s "%(self.inFile.replace('%col',self.extcol))       
+            raise ValueError("ext_stn_vlidort_sampler.py failed for %s "%(self.inFile.replace('%col',self.extcol)))       
 
 
     def runALMUCANTAR(self):
@@ -1794,23 +1794,23 @@ class AERONET_VLIDORT(object):
         # --------------------
         col = 'aer_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nctrj       = Dataset(self.inFile.replace('%col',col))     
-        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)   
-        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)  
-        _copyVar(nctrj,nc,u'station',dtype='f4',zlib=False,verbose=self.verbose)   
+        _copyVar(nctrj,nc,'time', dtype='i4',zlib=False,verbose=self.verbose)   
+        _copyVar(nctrj,nc,'x',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'y',dtype='f4',zlib=False,verbose=self.verbose)  
+        _copyVar(nctrj,nc,'station',dtype='f4',zlib=False,verbose=self.verbose)   
 
         aa = nc.createVariable('angle','f4',('angle',),zlib=False)
         aa.long_name     = 'azimuth angle relative to sun'
         aa.units         = 'degrees'
         aa[:]            = np.array(self.al_angles)
 
-        _copyVar(nctrj,nc,u'lev',dtype='f4',zlib=False,verbose=self.verbose)       
-        _copyVar(nctrj,nc,u'stnLon',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'stnLat',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'stnName',dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'lev',dtype='f4',zlib=False,verbose=self.verbose)       
+        _copyVar(nctrj,nc,'stnLon',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'stnLat',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'stnName',dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'isotime', dtype='S1',zlib=False,verbose=self.verbose)
 
         nctrj.close()
 
@@ -1970,7 +1970,7 @@ class AERONET_VLIDORT(object):
         nc.close()
 
         if self.verbose:
-            print " <> wrote %s"%(self.outFileal)
+            print(" <> wrote %s"%(self.outFileal))
     
 
     #---
@@ -2013,23 +2013,23 @@ class AERONET_VLIDORT(object):
         # --------------------
         col = 'aer_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nctrj       = Dataset(self.inFile.replace('%col',col))     
-        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)   
-        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)  
-        _copyVar(nctrj,nc,u'station',dtype='f4',zlib=False,verbose=self.verbose)   
+        _copyVar(nctrj,nc,'time', dtype='i4',zlib=False,verbose=self.verbose)   
+        _copyVar(nctrj,nc,'x',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'y',dtype='f4',zlib=False,verbose=self.verbose)  
+        _copyVar(nctrj,nc,'station',dtype='f4',zlib=False,verbose=self.verbose)   
 
         aa = nc.createVariable('angle','f4',('angle',),zlib=False)
         aa.long_name     = 'Scattering Angle from sun (negative is below the sun) '
         aa.units         = 'degrees'
         aa[:]            = np.array(self.pp_angles)
 
-        _copyVar(nctrj,nc,u'lev',dtype='f4',zlib=False,verbose=self.verbose)       
-        _copyVar(nctrj,nc,u'stnLon',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'stnLat',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'stnName',dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'lev',dtype='f4',zlib=False,verbose=self.verbose)       
+        _copyVar(nctrj,nc,'stnLon',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'stnLat',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'stnName',dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'isotime', dtype='S1',zlib=False,verbose=self.verbose)
 
         nctrj.close()
 
@@ -2182,7 +2182,7 @@ class AERONET_VLIDORT(object):
         nc.close()
 
         if self.verbose:
-            print " <> wrote %s"%(self.outFilepp)
+            print(" <> wrote %s"%(self.outFilepp))
 
 
     #---
@@ -2226,13 +2226,13 @@ class AERONET_VLIDORT(object):
         # --------------------
         col = 'aer_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nctrj       = Dataset(self.inFile.replace('%col',col))     
-        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)   
-        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)  
-        _copyVar(nctrj,nc,u'station',dtype='f4',zlib=False,verbose=self.verbose)   
-        _copyVar(nctrj,nc,u'lev',dtype='f4',zlib=False,verbose=self.verbose)       
+        _copyVar(nctrj,nc,'time', dtype='i4',zlib=False,verbose=self.verbose)   
+        _copyVar(nctrj,nc,'x',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'y',dtype='f4',zlib=False,verbose=self.verbose)  
+        _copyVar(nctrj,nc,'station',dtype='f4',zlib=False,verbose=self.verbose)   
+        _copyVar(nctrj,nc,'lev',dtype='f4',zlib=False,verbose=self.verbose)       
 
         leve = nc.createVariable('leve','f4',('leve',),zlib=False)
         leve.long_name   = 'Vertical Level Edge'
@@ -2245,10 +2245,10 @@ class AERONET_VLIDORT(object):
         rad[:]          = self.aeronet_r*1e6
 
 
-        _copyVar(nctrj,nc,u'stnLon',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'stnLat',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'stnName',dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'stnLon',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'stnLat',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'stnName',dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'isotime', dtype='S1',zlib=False,verbose=self.verbose)
 
         nctrj.close()
 
@@ -2313,7 +2313,7 @@ class AERONET_VLIDORT(object):
         nc.close()
 
         if self.verbose:
-            print " <> wrote %s"%(self.outFileadd)
+            print(" <> wrote %s"%(self.outFileadd))
 
 
 
@@ -2321,7 +2321,7 @@ class AERONET_VLIDORT(object):
 #------------------------------------ M A I N ------------------------------------
 
 if __name__ == "__main__":
-    date     = datetime(2006,01,01,00)
+    date     = datetime(2006,0o1,0o1,00)
     nymd     = str(date.date()).replace('-','')
     hour     = str(date.hour).zfill(2)
     format   = 'NETCDF4_CLASSIC'

@@ -9,7 +9,7 @@ from pylab import find
 from numpy import zeros, ones
 from grads import GrADS
 from datetime import date, timedelta
-from eta   import getPm, getEdge
+from .eta   import getPm, getEdge
 
 DAY = timedelta(seconds=60*60*24)
 
@@ -43,9 +43,9 @@ class MET(object):
                     vinfo.append((v,k,l,fh.fid))
 
         if len(vinfo)==0:
-            print >>sys.stderr, "IndexError: requested variables - ", Vars
-            raise IndexError, "cannot find any matchig variable in file %f"\
-                  %filename
+            print("IndexError: requested variables - ", Vars, file=sys.stderr)
+            raise IndexError("cannot find any matchig variable in file %f"\
+                  %filename)
 
 #       Find the appropriate level range
 #       --------------------------------
@@ -117,9 +117,9 @@ class MET(object):
                     missing = False
                     self.vinfo.append((v,k,l,fh.fid))
         if missing:
-            print >>sys.stderr, "IndexError: requested variables - ", Vars
-            raise IndexError, "cannot find any matchig variable in file %f"\
-                  %filename
+            print("IndexError: requested variables - ", Vars, file=sys.stderr)
+            raise IndexError("cannot find any matchig variable in file %f"\
+                  %filename)
         
         
 #---
@@ -140,10 +140,10 @@ class MET(object):
 
         ntd = self.ntd
         if t < 1 or t > ntd:
-            raise ValueError, "invalid time index %d, maximum value is %d"%(t,ntd)
+            raise ValueError("invalid time index %d, maximum value is %d"%(t,ntd))
 
         if Cache:
-            raise NotImplementedError, "cache not implemented yet, sorry."
+            raise NotImplementedError("cache not implemented yet, sorry.")
 
         ga = self.ga
 
@@ -154,7 +154,7 @@ class MET(object):
         if lat is not None:
             self.lat = lat
         if self.lon is None or self.lat is None:
-            raise ValueError, 'missing lon/lat, cannot proceed'
+            raise ValueError('missing lon/lat, cannot proceed')
 
 #       Set the requested time
 #       ----------------------
@@ -168,10 +168,10 @@ class MET(object):
         vinfo = self.vinfo
 
         if self.verb > 0:
-            print ""
-            print "                 Met Fields' Interpolation"
-            print "                 -------------------------"
-            print ""
+            print("")
+            print("                 Met Fields' Interpolation")
+            print("                 -------------------------")
+            print("")
 
 #       Loop over each desired variable and interpolate it to
 #        fire location at this time
@@ -180,7 +180,7 @@ class MET(object):
         nobs = self.lon.size
         for v,nlevs,l,fid in vinfo:
             if self.verb > 0:
-                print "- Interpolating %6s to %5d fire locations on %s"%('<'+v+'>',nobs,now)
+                print("- Interpolating %6s to %5d fire locations on %s"%('<'+v+'>',nobs,now))
             ga('set dfile %d'%fid)
             self.fields[v], levs = ga.interp(v,self.lon,self.lat) # interp 
             self.fields[v] = self.fields[v].data

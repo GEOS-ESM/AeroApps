@@ -6,6 +6,17 @@
 
 ### Fixed
 
+
+### Changed [2023-03]
+
+- Wholesale conversion to python3. Changes to all python scripts, and CMakelists with f2py compilation
+- the components.yaml now imports the GMAOpyobs repository, which replaces the legacy GMAO_pyobs directory
+- The GMAO_pyobs3 directory is no longer needed
+- A new directory called GMAO_aeropyobs has been added to share. This includes python utilities that require MAPL or GFIO that were previously in GMAO_pyobs. 
+- There may still be issues related to byte-to-string conversions that require fixing, but will need to be fixed as they are encountered.
+- Added GMAOpyobs v1.0.1 to components.yaml
+- Updated MAPL to v2.39.9
+
 ### Changed
 
 - Updated to use latest components (matching GEOSgcm v10.25.0)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Gets geometry for the polarimeter swath
@@ -12,7 +12,7 @@ import argparse
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
 from   pyobs.sgp4      import getTrack as getTrackTLE
-from   MAPL            import Config
+from   MAPL.config     import Config
 import numpy  as np
 from netCDF4 import Dataset
 from  py_leo_vlidort import LidarAngles_ 
@@ -37,7 +37,7 @@ def distance(lon0,lat0,lon,lat,Re):
     # get index of closest lon and lat to lon0, lat0
 
     # use haversine formula for distance
-    phi0, phi, lam0, lam = map(np.radians,[lat0,lat,lon0,lon])
+    phi0, phi, lam0, lam = list(map(np.radians,[lat0,lat,lon0,lon]))
     dphi = phi - phi0
     dlam = lam - lam0
 
@@ -534,7 +534,7 @@ class SWATH(object):
         # get index of closest lon and lat to lon0, lat0
 
         # use haversine formula for distance
-        phi0, phi, lam0, lam = map(np.radians,[lat0,lat,lon0,lon])
+        phi0, phi, lam0, lam = list(map(np.radians,[lat0,lat,lon0,lon]))
         dphi = phi - phi0
         dlam = lam - lam0
 
@@ -737,11 +737,11 @@ class SWATH(object):
             # check if going from +180 to -180
             if (SLON > 179) and (CLON < 0):
                 vaa = 360. - vaa
-                print 'here',SLON,CLON,vaa,i
+                print('here',SLON,CLON,vaa,i)
             # check if going from -180 to +180
             if (SLON < -179) and (CLON > 0):
                 vaa = 360. - vaa
-                print 'here again',SLON,CLON,vaa,i
+                print('here again',SLON,CLON,vaa,i)
             if i == self.ntymeTotal-1:
                 # add 180 to look forward
                 vaa = vaa + 180.0
@@ -845,14 +845,14 @@ if __name__ == "__main__":
 
         # Initialize SWATH class and create outfile
         # -----------------------------------------------------------
-        print '++++Getting polarimeter swath with the following arguments+++'
-        print '>>>starttyme: ',date.isoformat()
-        print '>>>outFile:   ',outFile
-        print '>>>HGT:       ',HGT
-        print '>>>TLEFILE:   ',trjFile
-        print '>>>verbose:   ',args.verbose
-        print '>>>no_ss:     ',args.no_ss
-        print '++++End of arguments+++'
+        print('++++Getting polarimeter swath with the following arguments+++')
+        print('>>>starttyme: ',date.isoformat())
+        print('>>>outFile:   ',outFile)
+        print('>>>HGT:       ',HGT)
+        print('>>>TLEFILE:   ',trjFile)
+        print('>>>verbose:   ',args.verbose)
+        print('>>>no_ss:     ',args.no_ss)
+        print('++++End of arguments+++')
         if not args.dryrun:
             swath = SWATH(date,edate,args.dt_secs,trjFile,outFile,HGT,along_track_deg,
                           cross_track_km=cross_track_km,

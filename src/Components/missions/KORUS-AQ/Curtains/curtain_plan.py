@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Plot curtain from FlightPlan text files.
 """
@@ -17,13 +17,13 @@ if __name__ == "__main__":
     csv = '../Plans/xsect_SECTION_isoT0.csv'
 
     if len(sys.argv) < 3:
-        print "Usage: "
-        print "       curtain_plan aircraft date"
-        print "       curtain_plan section  iso_time"
-        print "Example:" 
-        print "       curtain_plan DC8 20160503"
-        print "       curtain_plan jeju2seoul 2016-05-24T00:00:00"
-        raise SystemExit, "Error: not enough arguments"
+        print("Usage: ")
+        print("       curtain_plan aircraft date")
+        print("       curtain_plan section  iso_time")
+        print("Example:") 
+        print("       curtain_plan DC8 20160503")
+        print("       curtain_plan jeju2seoul 2016-05-24T00:00:00")
+        raise SystemExit("Error: not enough arguments")
     else:
         aircraft = sys.argv[1]
         date = sys.argv[2]

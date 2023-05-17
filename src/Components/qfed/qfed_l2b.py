@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
   A Python scrpipt to create QFED Level 2b files.
@@ -52,9 +52,9 @@ if __name__ == "__main__":
 
     if options.verbose:
         Verb=1
-        print ""
-        print "                          QFED Level 2b Processing"
-        print ""
+        print("")
+        print("                          QFED Level 2b Processing")
+        print("")
     else:
         Verb=0
 
@@ -84,8 +84,8 @@ if __name__ == "__main__":
                                 farea = fires.farea[m],
                                 hflux = fires.hflux[m],
                                 pixar = fires.pixar[m])
-        print ""
-        print "[] wrote "+options.npz_file
+        print("")
+        print("[] wrote "+options.npz_file)
 
 
     

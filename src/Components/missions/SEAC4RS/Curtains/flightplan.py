@@ -34,7 +34,7 @@ class FlightPlan(object):
             elif 'Takeoff' in tokens[0]: 
                 self.Takeoff = tokens[2]
                 self.takeoff = dateutil.parser.parse(self.Takeoff)
-                print 'Takeoff: ',self.takeoff
+                print('Takeoff: ',self.takeoff)
             elif 'Elapsed' in tokens[0]:
                 gotit = True
             elif '(hrs)' in tokens[0]:

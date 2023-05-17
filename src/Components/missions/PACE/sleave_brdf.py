@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Calculates correction to nobm water leaving radiance
@@ -168,11 +168,11 @@ class SLEAVE_BRDF(object):
 
         # Save lon/lat
         # --------------------------
-        _copyVar(nctrj,nc,u'ccd_pixels',dtype='f4',zlib=zlib,verbose=verbose)
-        _copyVar(nctrj,nc,u'number_of_scans',dtype='f4',zlib=zlib,verbose=verbose)
-        _copyVar(nctrj,nc,u'longitude',dtype='f4',zlib=zlib,verbose=verbose)
-        _copyVar(nctrj,nc,u'latitude',dtype='f4',zlib=zlib,verbose=verbose)
-        _copyVar(nctrj,nc,u'time', dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'ccd_pixels',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'number_of_scans',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'longitude',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'latitude',dtype='f4',zlib=zlib,verbose=verbose)
+        _copyVar(nctrj,nc,'time', dtype='f4',zlib=zlib,verbose=verbose)
 
         nctrj.close()
 

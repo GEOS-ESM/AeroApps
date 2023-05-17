@@ -110,7 +110,7 @@ def vlidort_vector (channels, solar_zenith, relat_azymuth, sensor_zenith,
                                                       relat_azymuth,
                                                       sensor_zenith, MISSING, verbose)
         if rc != 0:
-            raise ValueError, "on return from VLIDORT_.vector/vector, rc = "+str(rc)
+            raise ValueError("on return from VLIDORT_.vector/vector, rc = "+str(rc))
 
         return (radiance_, reflectance_)
 
@@ -122,7 +122,7 @@ def synthLegendre(pmom,scat_angles=None,N=None):
     """
     if scat_angles==None:
         if N==None:
-            raise ValueError, "scattering angles not specified"
+            raise ValueError("scattering angles not specified")
         else:
             scat_angles = linspace(-180.,180.,N)
 
@@ -171,7 +171,7 @@ def toFortran():
 
     # Transpose phase function
     # ------------------------
-    km, nch, nobs, nscat, npol = range(5) # axis ordering for P
+    km, nch, nobs, nscat, npol = list(range(5)) # axis ordering for P
     naxes = (nobs,npol,km,nscat,nch)      # new axis ordering
     P = transpose(npz.P,axes=naxes)
 
@@ -223,7 +223,7 @@ if __name__ == "__main__":
         aer_fn = '/nobackup/MERRAero/inst3d_aer_v.ddf'
         topo_fn  = '/nobackup/1/VLIDORT/topo/topography.1152x721.nc'
     else:
-        raise ValueError, 'unknown site <%s>'%site
+        raise ValueError('unknown site <%s>'%site)
 
     # Channels, moments
     # -----------------
@@ -244,11 +244,11 @@ if __name__ == "__main__":
                  22.5,
                  15.,
                   ])
-    tyme = array([datetime(2011,07,12,0),
-                  datetime(2011,07,12,6),
-                  datetime(2011,07,17,12),
-                  datetime(2011,07,17,12),
-                  datetime(2011,07,17,12),
+    tyme = array([datetime(2011,0o7,12,0),
+                  datetime(2011,0o7,12,6),
+                  datetime(2011,0o7,17,12),
+                  datetime(2011,0o7,17,12),
+                  datetime(2011,0o7,17,12),
                   ])
     
     # Get aer_Nv variables interpolated to obs location

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import idlsave 
 #from netCDF4 import Dataset,date2num 
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     ew[:] = linspace(-130,-70,1500)  # assumed lon min = -174 and lon max = -70 (ew=1500)
 
     time = file.createVariable('time','f8',('time'),zlib=False)
-    t = datetime(2006,06,01,12,00)   # just an example
+    t = datetime(2006,0o6,0o1,12,00)   # just an example
     time_increment          = int('{hours}{minutes}{seconds}'.format(hours='01', minutes='00',
  seconds='00'))
     begin_date              = int(t.strftime('%Y%m%d'))

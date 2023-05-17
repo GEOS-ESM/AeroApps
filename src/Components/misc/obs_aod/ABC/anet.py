@@ -133,7 +133,7 @@ class ANET(object):
         elif csvVersion == 2:
             cols = _getCols2()
         else:
-            raise ValueError, 'Invalid csvVersion %d'%csvVersion
+            raise ValueError('Invalid csvVersion %d'%csvVersion)
 
         Names, NewName = _getNames(cols)
 
@@ -155,7 +155,7 @@ class ANET(object):
             try:
                 i = Names.index(name)
             except:
-                raise ValueError, "cannot find <%s> in file"%name
+                raise ValueError("cannot find <%s> in file"%name)
             iVars = iVars + (i,)
             if name=='Date':
                 formats = formats + ('S10',)
@@ -266,8 +266,8 @@ class ANET(object):
                 ga.flush()
 
             if U[i] >= 0.0:
-                print "%s %s %8.3f %8.3f %6.3f  ...%8.3f%%"\
-                      %(self.Date[i],self.Time[i],x,y,U[i],100.*i/float(N))
+                print("%s %s %8.3f %8.3f %6.3f  ...%8.3f%%"\
+                      %(self.Date[i],self.Time[i],x,y,U[i],100.*i/float(N)))
 
         self.__dict__[vname] = U
 
@@ -312,8 +312,8 @@ class ANET(object):
             U[i] = ga.expr(expr).data # nearest neighbor
 
             if U[i]>=-1:
-                print "%s %s %8.3f %8.3f %6.3f  ...%8.3f%%"\
-                      %(self.Date[i],self.Time[i],x,y,U[i],100.*i/float(N))
+                print("%s %s %8.3f %8.3f %6.3f  ...%8.3f%%"\
+                      %(self.Date[i],self.Time[i],x,y,U[i],100.*i/float(N)))
             else:
                 U[i] = MISSING
 

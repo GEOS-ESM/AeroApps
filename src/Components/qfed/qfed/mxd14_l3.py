@@ -195,17 +195,17 @@ class MxD14_L3(object):
                              'MW km-2', 'MW km-2', 'MW km-2', 'MW km-2'),
                   title   = 'QFED Level3a v%3.1f (%s) Gridded FRP Estimates'%(__VERSION__, _getTagName(tag)),
                   source  = 'NASA/GSFC/GMAO GEOS Aerosol Group',
-                  contact = ('%s; %s') % ('arlindo.dasilva@nasa.gov', 'anton.darmenov@nasa.gov')
+                  contact = ('%s; %s') % ('arlindo.dasilva@nasa.gov', 'anton.darmenov@nasa.gov'))
 
 
        if self.date is None:
-           print "[x] did not find matching files, skipped writing an output file"
+           print("[x] did not find matching files, skipped writing an output file")
            return
 
        if qc == True:
            self.qualityControl()
        else:
-           print '[!] skipping QC procedures'
+           print('[!] skipping QC procedures')
 
        self._write_ana(filename=filename,dir=dir['ana'],expid=expid,file_meta=meta,bootstrap=bootstrap)
     
@@ -225,9 +225,9 @@ class MxD14_L3(object):
 
 
        if bootstrap:
-           print 
-           print '[i] Bootstrapping FRP forecast!'
-           print
+           print() 
+           print('[i] Bootstrapping FRP forecast!')
+           print()
 
            f = GFIO()
 
@@ -259,7 +259,7 @@ class MxD14_L3(object):
            pass
 
        if self.verb >=1:
-           print "[w] Wrote file %s" % self.filename
+           print("[w] Wrote file %s" % self.filename)
 
 
     def _write_bkg(self,filename=None,dir='.',expid='qfed2',file_meta=None, FillValue=1.0e20):
@@ -298,7 +298,7 @@ class MxD14_L3(object):
            pass
 
        if self.verb >=1:
-           print "[w] Wrote file %s" % _filename
+           print("[w] Wrote file %s" % _filename)
 
 
 #     ......................................................................
@@ -313,7 +313,7 @@ class MxD14_L3(object):
             if os.path.isdir(item):      self._readDir(item)
             elif os.path.isfile(item):   self._readGranule(item)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print("%s is not a valid file or directory, ignoring it"%item)
 #---
     def _readDir(self,dir):
         """Recursively, look for files in directory."""
@@ -322,7 +322,7 @@ class MxD14_L3(object):
             if os.path.isdir(path):      self._readDir(path)
             elif os.path.isfile(path):   self._readGranule(path)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print("%s is not a valid file or directory, ignoring it"%item)
 
 #---
     def _readGranule(self,filename):
@@ -334,7 +334,7 @@ class MxD14_L3(object):
            mxd14 = SD(filename)
         except HDF4Error:
             if self.verb >= 1:
-                print "- %s: not recognized as an HDF file"%filename
+                print("- %s: not recognized as an HDF file"%filename)
             return 
 
 #       Figure out MxD03 pathname
@@ -357,7 +357,7 @@ class MxD14_L3(object):
         try:
             gfilename = glob(self.GeoDir+'/'+MxD03+'/'+year+'/'+doy+'/'+base+'*.hdf')[0]
         except:
-            print "[x] cannot find geo-location file for <%s>, ignoring granule"%base
+            print("[x] cannot find geo-location file for <%s>, ignoring granule"%base)
             return 
 
 #       Record date and collection
@@ -375,7 +375,7 @@ class MxD14_L3(object):
 #       -----------------------------
         if mxd14.select('FP_longitude').checkempty():
             if self.verb >= 2:
-                print "[x] no fires in granule <%s>, ignoring it <"%base
+                print("[x] no fires in granule <%s>, ignoring it <"%base)
             n_fires = 0
 
 #       There are fires in granule
@@ -388,14 +388,14 @@ class MxD14_L3(object):
                 mxd03 = SD(gfilename)
             except HDF4Error:
                 if self.verb >= 1:
-                    print "[x] cannot open geo-location file <%s>, ignoring granule"%gfilename
+                    print("[x] cannot open geo-location file <%s>, ignoring granule"%gfilename)
                 return 
 
 #           Get no-fire areas
 #           -----------------
             rc = self._readAreas(mxd14,mxd03)
             if rc:
-                print "[x] problems with geo-location file <%s>, ignoring granule"%gfilename
+                print("[x] problems with geo-location file <%s>, ignoring granule"%gfilename)
                 return # inconsistent MOD03, skip granule
 
 #           Read fire properties
@@ -417,7 +417,7 @@ class MxD14_L3(object):
             i = [n for n in range(n_fires_initial) if self.lws[fp_line[n],fp_sample[n]] == QA_WATER]
             if len(i) > 0:
                 if self.verb > 1:
-                    print "      --> found %d FIRE pixel(s) over water" % len(i)
+                    print("      --> found %d FIRE pixel(s) over water" % len(i))
 
                 self.gWater += _binareas(lon[i],lat[i],area[i],self.im,self.jm,grid_type=self.grid_type)
 
@@ -431,7 +431,7 @@ class MxD14_L3(object):
                 area = area[i] 
             else:
                 if self.verb > 1:
-                    print "      --> no FIRE pixels over land/coast"
+                    print("      --> no FIRE pixels over land/coast")
 
                 return
  
@@ -439,7 +439,7 @@ class MxD14_L3(object):
 
             if n_fires_initial != n_fires:
                 if self.verb > 1:
-                    print "      --> reduced the number of FIRE pixels from %d to %d" % (n_fires_initial, n_fires)
+                    print("      --> reduced the number of FIRE pixels from %d to %d" % (n_fires_initial, n_fires))
 
 
 #           Bin area of burning pixels
@@ -458,7 +458,7 @@ class MxD14_L3(object):
                     self.gFRP[b-1,:,:] += _binareas(blon,blat,bfrp,self.im,self.jm,grid_type=self.grid_type)
 
         if n_fires>0 and self.verb>=1:
-            print '[ ] Processed <'+os.path.basename(filename)[0:19]+'> with %4d fires'%n_fires
+            print('[ ] Processed <'+os.path.basename(filename)[0:19]+'> with %4d fires'%n_fires)
 
 #---
     def _readAreas(self,mxd14,mxd03):
@@ -531,7 +531,7 @@ class MxD14_L3(object):
 
         else:
             if self.verb > 1:
-                print "      --> no NOFIRE pixel for granule"
+                print("      --> no NOFIRE pixel for granule")
 
         # non-fire water or cloud over water
         i = logical_or(logical_and(fmask==WATER, valid), logical_and(logical_and(fmask==CLOUD, valid), i_water))
@@ -550,7 +550,7 @@ class MxD14_L3(object):
 
         else:
             if self.verb > 1:
-                print "      --> no WATER pixel for granule"
+                print("      --> no WATER pixel for granule")
 
         # cloud over land only
         i = logical_and(logical_and(fmask==CLOUD, valid), i_land)
@@ -569,7 +569,7 @@ class MxD14_L3(object):
 
         else:
             if self.verb > 1:
-                print "      --> no CLOUD pixel for granule"
+                print("      --> no CLOUD pixel for granule")
 
         return 0
     
@@ -642,11 +642,11 @@ class MxD14_L3(object):
         i_cap = aod_oc > max_aod_oc
 
         if (self.verb > 1) and any(i_cap):
-            print 'Maximum estimated AOD(OC) : %.2f' % aod_oc.max()
-            print 'Maximum FRP(TF)           : %.2f' % self.gFRP[0,:,:].max()
-            print 'Maximum FRP(XF)           : %.2f' % self.gFRP[1,:,:].max()
-            print 'Maximum FRP(SV)           : %.2f' % self.gFRP[2,:,:].max()
-            print 'Maximum FRP(GL)           : %.2f' % self.gFRP[3,:,:].max()
+            print('Maximum estimated AOD(OC) : %.2f' % aod_oc.max())
+            print('Maximum FRP(TF)           : %.2f' % self.gFRP[0,:,:].max())
+            print('Maximum FRP(XF)           : %.2f' % self.gFRP[1,:,:].max())
+            print('Maximum FRP(SV)           : %.2f' % self.gFRP[2,:,:].max())
+            print('Maximum FRP(GL)           : %.2f' % self.gFRP[3,:,:].max())
 
         q = ones_like(aod_oc)
         q[i_cap] = max_aod_oc / aod_oc[i_cap]
@@ -658,14 +658,14 @@ class MxD14_L3(object):
         n_cap = sum(i_cap)
         if n_cap > 0:
             p_cap = 100.0 * n_cap / (sum(E_total.ravel() > 0))
-            print '[!] FRPs in %d grid cells (%.1f%% of grid cells with fires) were capped.' % (n_cap, p_cap)
+            print('[!] FRPs in %d grid cells (%.1f%% of grid cells with fires) were capped.' % (n_cap, p_cap))
 
         if (self.verb > 1) and any(i_cap):
-            print 'After capping the emissions'
-            print 'Maximum FRP(TF)           : %.2f' % self.gFRP[0,:,:].max()
-            print 'Maximum FRP(XF)           : %.2f' % self.gFRP[1,:,:].max()
-            print 'Maximum FRP(SV)           : %.2f' % self.gFRP[2,:,:].max()
-            print 'Maximum FRP(GL)           : %.2f' % self.gFRP[3,:,:].max()
+            print('After capping the emissions')
+            print('Maximum FRP(TF)           : %.2f' % self.gFRP[0,:,:].max())
+            print('Maximum FRP(XF)           : %.2f' % self.gFRP[1,:,:].max())
+            print('Maximum FRP(SV)           : %.2f' % self.gFRP[2,:,:].max())
+            print('Maximum FRP(GL)           : %.2f' % self.gFRP[3,:,:].max())
 
 #..............................................................
 

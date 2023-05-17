@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Plots AOD analysis from opendap.
 """
@@ -17,7 +17,7 @@ from matplotlib.colors import LogNorm, Normalize
 def plot_aod(ga,tit,vname,fname,tyme,sub=None,
              Log=False,vmin=0.1,vmax=0.8,figFile=None,reverse=False):
 
-    print "[] Plotting <%s>"%tit
+    print("[] Plotting <%s>"%tit)
 
     clf()
     ga('reinit')
@@ -73,11 +73,11 @@ if __name__ == "__main__":
     # Parse command line
     # ------------------
     if len(sys.argv) < 3:
-        print "Usage: "
-        print "       anim_aod ending_yyyymmdd_hh ndays_back"
-        print "Example:" 
-        print "       anim_aod 20130819_21 7"
-        raise SystemExit, "Error: not enough arguments"
+        print("Usage: ")
+        print("       anim_aod ending_yyyymmdd_hh ndays_back")
+        print("Example:") 
+        print("       anim_aod 20130819_21 7")
+        raise SystemExit("Error: not enough arguments")
     else:
         dtag = sys.argv[1]
         ndays_back = int(sys.argv[2])
@@ -117,17 +117,17 @@ if __name__ == "__main__":
 		name = 'aod.'+v+'.'
 		ender = '%03d.png' % (h+1)
 		figFile = name+ender
-		print figFile
+		print(figFile)
         
 		plot_aod(ga,'GEOS-5 '+v+' fraction of AOD at %s'%tv,'('+vnames[iv]+'/totexttau)',hwl_Nx,t,figFile=figFile,vmin=imin[iv],vmax=imax[iv])
 
 		if iv == 0:
 			figFile = 'ssa.'+ender
-			print figFile
+			print(figFile)
 			plot_aod(ga,'GEOS-5 SSA at %s'%tv,'(totscatau/totexttau)',hwl_Nx,t,figFile=figFile,vmin=0.84,vmax=0.93,reverse=True)
 
 			figFile = 'ang.'+ender
-			print figFile
+			print(figFile)
 			plot_aod(ga,'GEOS-5 Angstrom parameter [470-870 nm] at %s'%tv,'totangstr',hwl_Nx,t,figFile=figFile,vmin=0.2,vmax=1.8,reverse=True)
 
         

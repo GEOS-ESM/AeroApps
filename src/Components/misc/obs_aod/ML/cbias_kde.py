@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
  Kernel density estimate.
 
@@ -20,7 +20,7 @@ from grads import GrADS
 #   -------------------------
 
 year = 2008
-month = 06
+month = 0o6
 yymm = year*100 + month
 
 #   For titles
@@ -58,9 +58,9 @@ def calculate(var,lev,units,bins=None):
 
 #   Read data, flatten it and remove undefs
 #   ---------------------------------------
-    print "Reading <%s> O-F..."%var
+    print("Reading <%s> O-F..."%var)
     omf = ga.expr("aod_"+var+'.1').data.ravel()
-    print "Reading <%s> O-A..."%var
+    print("Reading <%s> O-A..."%var)
     oma = ga.expr("aod_"+var+'.2').data.ravel()
     i = find( (abs(omf)<1e3) & (abs(oma)<1e3) )
     omf = omf[i]
@@ -88,13 +88,13 @@ def calculate(var,lev,units,bins=None):
     do_2d = True
 
     if N==0:
-        print "Nothing to do for "+var
+        print("Nothing to do for "+var)
         return
 
 #   1-D calculation
 #   ---------------
     if do_1d:
-        print "Starting 1D kernel density estimation with %d points..."%N
+        print("Starting 1D kernel density estimation with %d points..."%N)
         figure()
         kernel = stats.kde.gaussian_kde(x_values)
         z = kernel(x_bins)
@@ -113,20 +113,20 @@ def calculate(var,lev,units,bins=None):
 #   2D calculation
 #   --------------
     if do_2d:
-        print "Starting the 2D kernel density estimation with %d points..."%N
+        print("Starting the 2D kernel density estimation with %d points..."%N)
         kernel = stats.kde.gaussian_kde(cat(x_values,y_values))
 
-        print "Evaluating 2D kernel on grid with (Nx,Ny)=(%d,%d) ..."%(Nx,Ny)
+        print("Evaluating 2D kernel on grid with (Nx,Ny)=(%d,%d) ..."%(Nx,Ny))
         X, Y = meshgrid(x_bins,y_bins) # each has shape (Ny,Nx)
         Z = kernel(cat(X,Y))           # shape is (Ny*Nx)
         Z = reshape(Z,X.shape)
         
-        print "X, Y, Z shapes: ", X.shape, Y.shape, Z.shape
+        print("X, Y, Z shapes: ", X.shape, Y.shape, Z.shape)
 
         #   Save to file
         #   ------------
         fname = 'kde_2d-'+var+'-'+str(lev)+'.npy'
-        print "Saving to file <"+fname+"> ..."
+        print("Saving to file <"+fname+"> ...")
         save(fname,Z)
 
     return N
@@ -148,7 +148,7 @@ def plot_kde(var,lev,bins=None):
 
     #   Plot results with 2 different colormaps
     #   ---------------------------------------
-    print "Plotting..."
+    print("Plotting...")
 
     fig = figure()
     ax = fig.add_axes([0.1,0.1,0.75,0.75])
@@ -201,6 +201,6 @@ if __name__ == '__main__':
             if N>0:
                 plot_kde(var,lev,bins=bins)
         except:
-            print "Problems with "+var+", ignoring it"
+            print("Problems with "+var+", ignoring it")
 
-    print "All done."
+    print("All done.")

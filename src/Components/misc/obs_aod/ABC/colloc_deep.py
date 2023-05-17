@@ -27,8 +27,8 @@ if __name__ == "__main__":
     for year in range(2002,2011):
         for month in range(1,13):
 
-            print " "
-            print "Processing ", year, month
+            print(" ")
+            print("Processing ", year, month)
 
             # Collect list of matching files for this month
             # ---------------------------------------------
@@ -47,11 +47,11 @@ if __name__ == "__main__":
                 if (len(a_file)!=len(d_file)) or \
                     (len(a_file)!=len(r_file)) or \
                     (len(a_file)!=len(s_file)):
-                    print "- No matching 4-plets for this day ", year, month, day
+                    print("- No matching 4-plets for this day ", year, month, day)
                     continue
 
                 if len(a_file)==0:
-                    print "- No data for this day ", year, month, day
+                    print("- No data for this day ", year, month, day)
                     continue
 
                 a_files += a_file
@@ -62,7 +62,7 @@ if __name__ == "__main__":
             # Read files for this month
             # -------------------------
             if len(a_files)==0:
-                 print "- No data for this month ", year, month
+                 print("- No data for this month ", year, month)
                  continue
             else:
                  a, d, r, s = (ANET(a_files),DEEP_AOD(d_files),
@@ -72,19 +72,19 @@ if __name__ == "__main__":
             # Make sure d and r files are collocated
             # --------------------------------------
             if any(d.lon!=r.lon):
-                raise ValueError, '>>> Inconsistent R and D files for %d %d'%(year,month)
+                raise ValueError('>>> Inconsistent R and D files for %d %d'%(year,month))
             if any(s.lon!=r.lon):
-                raise ValueError, '>>> Inconsistent S and D files for %d %d'%(year,month)
+                raise ValueError('>>> Inconsistent S and D files for %d %d'%(year,month))
 
             # Collocate r and a files
             # -----------------------
-            print '- Collocating %d reflectances with %d AERONET obs (%d files)'\
-                  %(d.nobs,a.nobs,len(a_files))
+            print('- Collocating %d reflectances with %d AERONET obs (%d files)'\
+                  %(d.nobs,a.nobs,len(a_files)))
             Cndx = r.collocate(a)
 
             # Colapse objects to collocated points only
             # -----------------------------------------
-            print '- Colapsing with %d collocations'%Cndx[Cndx>0].size
+            print('- Colapsing with %d collocations'%Cndx[Cndx>0].size)
             I = Cndx>=0
             J = Cndx[I]
             a.colapse(J)
@@ -101,7 +101,7 @@ if __name__ == "__main__":
             
             # Save collocated files
             # ---------------------
-            print '- Saving files with %d collocations'%Cndx[Cndx>0].size
+            print('- Saving files with %d collocations'%Cndx[Cndx>0].size)
             a.savez('mapss.anet.%04d%02d.npz'%(year,month))
             d.savez('mapss.dtau.%04d%02d.npz'%(year,month))
             r.savez('mapss.dref.%04d%02d.npz'%(year,month))
