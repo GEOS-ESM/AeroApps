@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 interpolate o3 spectra to C-K bin centers
 """

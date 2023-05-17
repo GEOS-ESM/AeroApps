@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Makes a polar plot of a typical scene - for benchmarking purposes
@@ -400,8 +400,8 @@ class BENCHMARK(POLAR_VLIDORT):
 
                     # Call VLIDORT wrapper function
                     I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)      
-                    print 'I',I
-                    print 'rc',rc                    
+                    print('I',I)
+                    print('rc',rc)                    
 
                 elif self.albedoType == 'MODIS_BRDF_BPDF':
                     kernel_wt = self.kernel_wt[:,:,0]
@@ -417,8 +417,8 @@ class BENCHMARK(POLAR_VLIDORT):
 
                     # Call VLIDORT wrapper function
                     I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)
-                    print 'I',I
-                    print 'rc',rc
+                    print('I',I)
+                    print('rc',rc)
 
                 elif ('CX' in self.albedoType) and (self.albedoType != 'OCIGissCX_NOBM_CLOUD'):
                     args = [self.channel, self.nstreams, self.plane_parallel, ROT, depol_ratio, alpha, tau, ssa, pmom,
@@ -431,8 +431,8 @@ class BENCHMARK(POLAR_VLIDORT):
 
                     # Call VLIDORT wrapper function
                     I, reflectance, surf_reflectance, Q, U, BR_Q, BR_U, rc = vlidortWrapper(*args)
-                    print 'I',I
-                    print 'rc',rc                    
+                    print('I',I)
+                    print('rc',rc)                    
                 elif self.albedoType == 'LAMBERTIAN':
                     albedo = self.albedo
                     
@@ -447,8 +447,8 @@ class BENCHMARK(POLAR_VLIDORT):
                     # Call VLIDORT wrapper function
                     I, reflectance, Q, U, rc = vlidortWrapper(*args)  
                     surf_reflectance = albedo
-                    print 'I',I
-                    print 'rc',rc
+                    print('I',I)
+                    print('rc',rc)
 
                 self.I[ivza,iraa] = np.squeeze(I)
                 self.reflectance[ivza,iraa] = np.squeeze(reflectance)
@@ -595,7 +595,7 @@ class BENCHMARK(POLAR_VLIDORT):
         nc.close()
 
         if self.verbose:
-            print " <> wrote %s"%(self.outFile)
+            print(" <> wrote %s"%(self.outFile))
 
     
 

@@ -80,10 +80,10 @@ if __name__ == "__main__":
             statFile = '%s.%s.%d.%s.txt'%(ident,expid,year,s)
 
             if os.path.exists(figFile):
-                print "Skipping <%s> ..."%Species[s]
+                print("Skipping <%s> ..."%Species[s])
                 continue
             else:
-                print "Working on <%s> for %s ..."%(Species[s],expid)
+                print("Working on <%s> for %s ..."%(Species[s],expid))
 
             if s == 'all':
                 I = a.iValid 

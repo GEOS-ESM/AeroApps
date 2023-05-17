@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper for polar_vlidort.py
@@ -127,18 +127,18 @@ if __name__ == "__main__":
 
         # Initialize VLIDORT class getting aerosol optical properties
         # -----------------------------------------------------------
-        print '++++Running VLIDORT with the following arguments+++'
-        print '>>>inFile:    ',inFile
-        print '>>>outFile:   ',outFile
-        print '>>>rcFile:    ',rcFile
-        print '>>>albedoType:',cf('albedoType')
-        print '>>>channel:   ',channel
-        print '>>>brdfFile:  ',brdfFile
-        print '>>>ndviFile:  ',ndviFile
-        print '>>>lcFile:    ',lcFile
-        print '>>>lerFile    ',lerFile
-        print '>>>verbose:   ',args.verbose
-        print '++++End of arguments+++'
+        print('++++Running VLIDORT with the following arguments+++')
+        print('>>>inFile:    ',inFile)
+        print('>>>outFile:   ',outFile)
+        print('>>>rcFile:    ',rcFile)
+        print('>>>albedoType:',cf('albedoType'))
+        print('>>>channel:   ',channel)
+        print('>>>brdfFile:  ',brdfFile)
+        print('>>>ndviFile:  ',ndviFile)
+        print('>>>lcFile:    ',lcFile)
+        print('>>>lerFile    ',lerFile)
+        print('>>>verbose:   ',args.verbose)
+        print('++++End of arguments+++')
         if not args.dryrun:
             vlidort = STN_VLIDORT(inFile,invFile,outFile,rcFile,
                                     cf('albedoType'),

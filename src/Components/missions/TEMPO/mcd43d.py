@@ -123,7 +123,7 @@ class McD43D(object):
        self.dy = (0.5+(lat-Lat0)/dLat).astype(int)
 
        if self.verb:
-          print 'dx','dy', self.dx,self.dy
+          print('dx','dy', self.dx,self.dy)
       
 #---
     def read_BRDF(self):
@@ -136,28 +136,28 @@ class McD43D(object):
 
         BRDF = MISSING * ones((len(self.SDS),self.nobs)) 
         for fn in self.Files:        
-            print '<>Reading ',fn
+            print('<>Reading ',fn)
             try:
                 if self.verb:
-                    print "[] Working on "+fn
+                    print("[] Working on "+fn)
                 hfile = SD(fn)
             except HDF4Error:
                 if self.verb > 2:
-                    print "- %s: not recognized as an HDF file"%filename
+                    print("- %s: not recognized as an HDF file"%filename)
                 return 
 
             # Read select variables (reshape to allow concatenation later)
             # ------------------------------------------------------------
             for sds in self.SDS:  
                 if self.verb:
-                  print 'sds',self.SDS.index(sds) 
+                  print('sds',self.SDS.index(sds)) 
                 try:                
                   v = hfile.select(sds).get()           
                   a = hfile.select(sds).attributes()
                   if a['scale_factor']!=1.0 or a['add_offset']!=0.0:
                       v = a['scale_factor'] * v + a['add_offset']
                   if self.verb:
-                    print array(self.dx), BRDF.shape, BRDF[self.SDS.index(sds),:], v.shape 
+                    print(array(self.dx), BRDF.shape, BRDF[self.SDS.index(sds),:], v.shape) 
 
                   v = flipud(v)
                   if self.qa[array(self.dy), array(self.dx)] < 1:
@@ -170,7 +170,7 @@ class McD43D(object):
 
         for sds in self.SDS:  
            self.__dict__[sds] = BRDF[self.SDS.index(sds),:]  
-           if sds in ALIAS.keys():
+           if sds in list(ALIAS.keys()):
                self.__dict__[ALIAS[sds]] = self.__dict__[sds] 
          
 #---
@@ -178,14 +178,14 @@ class McD43D(object):
         """Reads MCD43D file with QA Flag for Level 3 BRDF kernels for all MODIS bands."""
 
         fn = self.qFile        
-        print '<>Reading ',fn
+        print('<>Reading ',fn)
         try:
             if self.verb:
-                print "[] Working on "+fn
+                print("[] Working on "+fn)
             hfile = SD(fn)
         except HDF4Error:
             if self.verb > 2:
-                print "- %s: not recognized as an HDF file"%filename
+                print("- %s: not recognized as an HDF file"%filename)
             return 
 
         # Read QA variable

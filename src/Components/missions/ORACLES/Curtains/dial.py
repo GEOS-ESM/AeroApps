@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/bin/env python3
 """
    Implements Python interface to the DIAL L2 data.
 """
@@ -79,8 +79,8 @@ class DIAL(object):
         # ----------------------------------------------
         f = h5py.File(dial_filename,mode='r+')
         if self.verb:
-           print "[] Opening DIAL file <%s>"%dial_filename
-        for sds in SDS.keys():
+           print("[] Opening DIAL file <%s>"%dial_filename)
+        for sds in list(SDS.keys()):
           g = f.get(sds)
           for v in SDS[sds]:
             try:
@@ -88,7 +88,7 @@ class DIAL(object):
             except:
               name = v
             if self.verb:
-                  print "   + Reading <%s> as <%s>"%(v,name)
+                  print("   + Reading <%s> as <%s>"%(v,name))
             data = g.get(v)
             self.__dict__[name] = data
   
@@ -160,7 +160,7 @@ class DIAL(object):
             Vars = [Vars,]
         for var in Vars:
             if Verbose:
-                print ' Working on <%s>'%var
+                print(' Working on <%s>'%var)
             if fh.Vars[var.lower()].levs == 0:
                   ga('set lev 1') # 2D variable
             else:
@@ -205,7 +205,7 @@ class DIAL(object):
             """
             
             if len(v5.shape) != 2:
-                  raise ValueError, 'variable to be interpolated must have rank 2'
+                  raise ValueError('variable to be interpolated must have rank 2')
 
             nt, nz = v5.shape
 
@@ -215,10 +215,10 @@ class DIAL(object):
                   reverse = False
              
             if self.nt != nt:
-                  raise ValueError, 'inconsistent time dimension'
+                  raise ValueError('inconsistent time dimension')
 
             if self.H.shape[1] != nz:
-                  raise ValueError, 'inconsistent GEOS-5 vertical dimension'
+                  raise ValueError('inconsistent GEOS-5 vertical dimension')
 
             v = ones((self.nt,self.nz)) # same size as DIAL arrays
             for t in range(self.nt):
@@ -308,11 +308,11 @@ if __name__ == "__main__":
     asm_Nv = dirn+'/inst3_3d_asm_Nv'
     aer_Nv = dirn+'/inst3_3d_aer_Nv'
     
-    print "Loading DIAL:"
+    print("Loading DIAL:")
     #d = DIAL('/Users/adasilva/data/SEAC4RS/Revised/seac4rs-DIAL_DC8_20130819_RT.h5')
     d = DIAL('/home/adasilva/iesa/aerosol/data/DIAL/seac4rs-DIAL_DC8_20130819_RT.h5')
 
-    print 'Simulating DIAL:'
+    print('Simulating DIAL:')
     d.simul(asm_Nv,aer_Nv,Levels='40 72')
 
     # Plot DIAL

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Reverse engineering of basemap GEO coordinates from lat/lon arrays.
 """
@@ -36,11 +36,11 @@ def getCoords(m,lon,lat,name):
     Bbox = (xa,ya,xb,yb)
     bbox = (xa_,ya_,xb_,yb_)
 
-    print
-    print name
-    print 'Native     Bounding box: ', BBOX 
-    print 'Recentered Bounding box: ', Bbox 
-    print 'Normalized Bounding box: ', bbox 
+    print()
+    print(name)
+    print('Native     Bounding box: ', BBOX) 
+    print('Recentered Bounding box: ', Bbox) 
+    print('Normalized Bounding box: ', bbox) 
 
     return (X,Y,BBOX,Bbox)
 
@@ -59,10 +59,10 @@ if __name__ == '__main__':
 
     # Read and Tighten the E-W domain
     # -------------------------------
-    clon = nc.variables[u'clon'][:]#[:,124:1374]
-    clat = nc.variables[u'clat'][:]#[:,124:1374]
-    elon = nc.variables[u'elon'][:]#[:,124:1374]
-    elat = nc.variables[u'elat'][:]#[:,124:1374]
+    clon = nc.variables['clon'][:]#[:,124:1374]
+    clat = nc.variables['clat'][:]#[:,124:1374]
+    elon = nc.variables['elon'][:]#[:,124:1374]
+    elat = nc.variables['elat'][:]#[:,124:1374]
 
     mx, my = elon.shape
     nx, ny = clon.shape

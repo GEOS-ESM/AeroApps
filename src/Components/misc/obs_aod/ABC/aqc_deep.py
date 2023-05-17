@@ -160,7 +160,7 @@ class AQC_DEEP(DEEP):
         # ------------------------------
         if self.lnTau550==None:
             if Verbose:
-                print "- Evaluating NNR"
+                print("- Evaluating NNR")
             self.getNNR()
         
         # Features and class labels
@@ -175,7 +175,7 @@ class AQC_DEEP(DEEP):
         # Train the classifier
         # --------------------
         if Verbose:
-            print "- Training SVM classifier with %d samples"%y.size
+            print("- Training SVM classifier with %d samples"%y.size)
         self.svc = svm.SVC(**kwopts)
         self.svc.fit(X,y)
 
@@ -189,7 +189,7 @@ class AQC_DEEP(DEEP):
         # Calculate scores
         # ----------------
         if Verbose:
-            print "- Calculating Cross Validated scores..."
+            print("- Calculating Cross Validated scores...")
         self.svc.Score = cross_validation.cross_val_score(self.svc, X, y, n_jobs=1)
         
     def getNNR(self):

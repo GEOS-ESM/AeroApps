@@ -1,4 +1,4 @@
-#!/bin/python
+#!/bin/python3
 # -*- coding: utf-8 -*-
 """ Runscript for geo_vlidort episodes"""
 from datetime import datetime, timedelta 
@@ -434,7 +434,7 @@ def prefilter(date,indir,instname,layout=None):
 
 
     ncMet = Dataset(met)
-    Cld   = np.squeeze(ncMet.variables[u'CLDTOT'][:])
+    Cld   = np.squeeze(ncMet.variables['CLDTOT'][:])
     mask  = Cld.mask
     Cld   = Cld[~mask]
     f     = np.where(Cld <= 0.01)
@@ -443,11 +443,11 @@ def prefilter(date,indir,instname,layout=None):
         return False, 0
 
     ncGeom = Dataset(geom)
-    SZA    = np.squeeze(ncGeom.variables[u'solar_zenith'][:])
-    VZA    = np.squeeze(ncGeom.variables[u'sensor_zenith'][:])
+    SZA    = np.squeeze(ncGeom.variables['solar_zenith'][:])
+    VZA    = np.squeeze(ncGeom.variables['sensor_zenith'][:])
     ncGeom.close()
     ncLand = Dataset(land)
-    FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
+    FRLAND = np.squeeze(ncLand.variables['FRLAND'][:])
     ncLand.close()
 
     SZA = SZA[~mask]
@@ -708,12 +708,12 @@ if __name__ == "__main__":
                             destroy_workspace(s,dirstring[i],outdirstring[i],
                                           addoutdir=None,nodemax=nodemax_list[i],profile=profile)                       
                     else:
-                        print 'Jobid ',s,' exited with errors'
+                        print('Jobid ',s,' exited with errors')
 
             # finished checking up on all the jobs
             # Remove finished jobs from the currently working list
             if len(finishedJobs) != 0:
-                print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
+                print('deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]])
                 if nodemax is not None:
                     node_tally  = node_tally - sum(nodemax_list[workingJobs[finishedJobs]])
                 else:
@@ -752,15 +752,15 @@ if __name__ == "__main__":
                 stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
 
 
-            print 'Waiting 1 minutes'
+            print('Waiting 1 minutes')
             time.sleep(60)
             
 
         # Exited while loop
-        print 'All jobs done'
+        print('All jobs done')
 
     else:
-        print 'No model hours to run'
+        print('No model hours to run')
 
     
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 
 import numpy as np
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     aa = m.contourf(xx,yy,scat,levels=np.linspace(0,180,13),cmap=plt.get_cmap('jet'))
     plt.colorbar(aa,orientation='horizontal')
     m.drawcoastlines()
-    m.drawparallels(range(-80,90,10),labels=np.ones(17))
+    m.drawparallels(list(range(-80,90,10)),labels=np.ones(17))
     plt.title('{} SZA<90'.format(sat))
     plt.savefig('{}_scat90nadir.pdf'.format(sat))
 #    plt.show()

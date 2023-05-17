@@ -123,13 +123,13 @@ class MCD12C(object):
 
         # Save lon/lat
         # --------------------------
-        _copyVar(ncstn,nc,u'time', dtype='i4',zlib=False,verbose=verbose)
-        _copyVar(ncstn,nc,u'x',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(ncstn,nc,u'y',dtype='f4',zlib=False,verbose=verbose)   
-        _copyVar(ncstn,nc,u'station',dtype='f4',zlib=False,verbose=verbose)          
-        _copyVar(ncstn,nc,u'stnLon',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(ncstn,nc,u'stnLat',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(ncstn,nc,u'isotime', dtype='S1',zlib=False,verbose=verbose)
+        _copyVar(ncstn,nc,'time', dtype='i4',zlib=False,verbose=verbose)
+        _copyVar(ncstn,nc,'x',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(ncstn,nc,'y',dtype='f4',zlib=False,verbose=verbose)   
+        _copyVar(ncstn,nc,'station',dtype='f4',zlib=False,verbose=verbose)          
+        _copyVar(ncstn,nc,'stnLon',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(ncstn,nc,'stnLat',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(ncstn,nc,'isotime', dtype='S1',zlib=False,verbose=verbose)
 
         # Write land cover to file
         #---------------------------------------
@@ -181,7 +181,7 @@ class MCD12C(object):
         for LAT,LON in zip(stnLat,stnLon): pts.append([LAT,LON])        
         for ut in utyme:
             if Verbose:
-                print 'Working on '+ str(ut.date())
+                print('Working on '+ str(ut.date()))
             self.readFile(ut)
 
             Ityme = dtyme == ut

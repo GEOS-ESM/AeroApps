@@ -14,7 +14,7 @@ def getDims(filename):
     (tm,km,jm,im)."""
     im, jm, km, tm, rc = getdims(filename)
     if rc != 0:
-        raise ValueError, "on return from getDIms, rc = %d"%rc
+        raise ValueError("on return from getDIms, rc = %d"%rc)
 
     return (tm, km, jm, im)
 
@@ -24,7 +24,7 @@ def getMieDims(rcfilename='Aod_EOS.rc'):
     dutable = cf('filename_optical_properties_DU')
     nCh, nRh, nBin, nMom_mieTab, nPol_mieTab, rc = getmiedims(dutable) 
     if rc != 0:
-       raise ValueError, "on return from getMieDIms, rc = %d"%rc
+       raise ValueError("on return from getMieDIms, rc = %d"%rc)
 
     return (nMom_mieTab, nPol_mieTab)
 
@@ -73,7 +73,7 @@ def getMieGriddedScal(filename,channels,nymd=-1,nhms=-1,verbose=0):
           getmiegridded(filename,im,jm,km,nMom,nPol,nymd,nhms,channels,verbose)
 
     if rc != 0:
-        raise ValueError, "on return from getMie extension, rc = "+str(rc)
+        raise ValueError("on return from getMie extension, rc = "+str(rc))
 
 #   Transpose the array, converting it to C order in the process;
 #   remove dimensions of length 1, most like the channel dimension
@@ -127,7 +127,7 @@ def getMieGriddedVect(filename,channels,nymd=-1,nhms=-1,verbose=0):
           getmiegridded(filename,im,jm,km,nMom,nPol_mieTab,nymd,nhms,channels,verbose)
 
     if rc != 0:
-        raise ValueError, "on return from getMie extension, rc = "+str(rc)
+        raise ValueError("on return from getMie extension, rc = "+str(rc))
 
 #   Transpose the array, converting it to C order in the process;
 #   remove dimensions of length 1, most like the channel dimension
@@ -186,7 +186,7 @@ def getMieScal(filename,channels,lon,lat,nymd=-1,nhms=-1,verbose=0):
     tau, ssa, pe, ze, te, g, rc =scalar(filename,km,nMom,nPol_mieTab,nymd,nhms,channels,lon,lat,verbose)
     
     if rc != 0:
-        raise ValueError, "on return from getMie extension, rc = "+str(rc)
+        raise ValueError("on return from getMie extension, rc = "+str(rc))
 
     return (tau, ssa, pe, ze, te, g)
 
@@ -238,7 +238,7 @@ def getMieVect(filename,channels,lon,lat,nymd=-1,nhms=-1,verbose=0):
          vector(filename,km,nMom,nPol_mieTab,nymd,nhms,channels,lon,lat,verbose)
     
     if rc != 0:
-        raise ValueError, "on return from getMie extension, rc = "+str(rc)
+        raise ValueError("on return from getMie extension, rc = "+str(rc))
 
     return (nMom, nPol, tau, ssa, pe, ze, te, g, pmom)
 
@@ -256,7 +256,7 @@ def getTopo(filename,lon,lat):
          gettopobs(filename,lon,lat)
 
     if rc != 0:
-        raise ValueError, "on return from getTopObs extension, rc = "+str(rc)
+        raise ValueError("on return from getTopObs extension, rc = "+str(rc))
 
     return zs
 

@@ -1,4 +1,4 @@
-#!/bin/python
+#!/bin/python3
 # -*- coding: utf-8 -*-
 """ Wrapper script to create the input files needed to run geo_vlidort"""
 
@@ -64,11 +64,11 @@ class SCENARIO(object):
 
                     make_rcfile(date,layout=laycode)
                     
-                    print command
+                    print(command)
                     os.system(command)
             else:
                 make_rcfile(date)
-                print command
+                print(command)
                 os.system(command)
 
 
@@ -93,7 +93,7 @@ class SCENARIO(object):
                     climfile  = '{}/tempo.mcd43c1_climatology.{}.nc4'.format(climdir,laycode)
                     command = './mcd43d_sampler.py -v -C -g {} -o {} -l {} -i TEMPO -c {} {}'.format(invariant,outfile,landfile,climfile,date.strftime('%Y%j'))
 
-                    print command
+                    print(command)
                     os.system(command)
 
                     date += self.dt
@@ -109,7 +109,7 @@ class SCENARIO(object):
                 climfile  = '{}/tempo.mcd43c1_climatology.nc4'.format(climdir)
                 command = './mcd43d_sampler.py -v -C -g {} -o {} -l {} -i TEMPO -c {} {}'.format(invariant,outfile,landfile,climfile,date.strftime('%Y%j'))
 
-                print command
+                print(command)
                 os.system(command)
 
                 date += self.dt
@@ -126,7 +126,7 @@ class SCENARIO(object):
 
             command = './geo_sampler.py -v -C -g {} -o {} -r {} {} {}'.format(invariant,outfile,rcfile,date.isoformat(),date.isoformat())
 
-            print command
+            print(command)
             os.system(command)              
 
             date += self.dt
@@ -142,7 +142,7 @@ class SCENARIO(object):
             command = 'geo_sampler.py -C -N -v -r geo_sampler_omi_ler.rc -o ' + outdir + \
                             '/tempo-omi.SurfLER.' + MM + '.nc4 ' +\
                             date.isoformat()
-            print command
+            print(command)
             os.system(command)                      
             
             if (date.month < 12):

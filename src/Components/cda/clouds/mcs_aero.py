@@ -87,12 +87,12 @@ class MCS(MxD03):
         # Save NPZ files, if desired (useful for debugging)
         # -------------------------------------------------
         if npzLinear is not None:
-            if self.verb: print " - Saving Linear NPZ file ",npzLinear
+            if self.verb: print(" - Saving Linear NPZ file ",npzLinear)
             self.linear.PTOP = self.PTOP
             savez(npzLinear,**self.linear.__dict__)
 
         if npzNearest is not None:
-            if self.verb: print " - Saving Nearest NPZ file ",npzNearest
+            if self.verb: print(" - Saving Nearest NPZ file ",npzNearest)
             self.nearest.PTOP = self.PTOP
             savez(npzNearest,**self.nearest.__dict__)
 
@@ -105,13 +105,13 @@ class MCS(MxD03):
         self.getICAindx(rootdir + '/inst3_2d_asm_Nx')
 
         # read npz files from earlier run
-        if self.verb: print " - Reading NPZ files"
+        if self.verb: print(" - Reading NPZ files")
         self.linear  = NPZ(npzLinear)
         self.nearest = NPZ(npzNearest)
 
         # validate and store globals
         if not (self.linear.PTOP == self.nearest.PTOP):
-          raise ValueError, 'inconsistent <PTOP> between NPZ files'
+          raise ValueError('inconsistent <PTOP> between NPZ files')
         else:
           self.PTOP = self.linear.PTOP
 
@@ -128,18 +128,17 @@ class MCS(MxD03):
 
         # Get GEOS-Edge coordinates
         # -------------------------
-        if self.verb: print " - Getting GEOS-5 edge coordinates"
+        if self.verb: print(" - Getting GEOS-5 edge coordinates")
         g5.PE, g5.ZE = getedgecoords(g5.T,g5.QV,g5.DELP,g5.ZS,self.PTOP)
 
         g5.logPE = None # compute this on demand later
 
         # Get DISORT edge pressure
         # ------------------------
-        if self.verb: print " - Getting DISORT edge pressure"
+        if self.verb: print(" - Getting DISORT edge pressure")
         di.ZE = 1000 * DISORT_LEVELS  # in meters
         di.PE,di.PS,di.KS,rc = interppressure(di.ZE,self.ZS,g5.PE,g5.ZE)
-        if rc: raise MCSError, \
-          'Error on return from interpPressure(), rc = <%d>'%rc
+        if rc: raise MCSError('Error on return from interpPressure(), rc = <%d>'%rc)
         # *ks* is the surface level, 1-offset as in Fortran
         # ps is the surface pressure which has been adjusted for terrain height
 
@@ -204,7 +203,7 @@ class MCS(MxD03):
       for var in Names:
         # never regrid linear.PE, which is needed itself for the regridding
         if data is self.linear and var == 'PE': continue
-        if self.verb: print "[] Regridding %s"%var
+        if self.verb: print("[] Regridding %s"%var)
         if len(data.__dict__[var].shape) == 3:
           data.__dict__[var] = self.regridTracer(data.__dict__[var])
 
@@ -213,17 +212,17 @@ class MCS(MxD03):
       '''calculate simple optical properties: ATAU,ASSA,AASM'''
       from netCDF4 import Dataset
       # retrieve RH
-      if self.verb: print "[] Retrieve Relative Humidity"
+      if self.verb: print("[] Retrieve Relative Humidity")
       nc = Dataset(RHfile,'r',format='NETCDF4')
       he = nc.variables['height_edge'][:]
       RH = nc.variables[RHname][:,:,:]
       nc.close()
       if RH.shape != self.di.DELP.shape:
-        raise ValueError, 'RH on file of different dimensions'
+        raise ValueError('RH on file of different dimensions')
       if any(abs(he-DISORT_LEVELS) > 1e-4):
-        raise ValueError, 'RH file has different edge heights'
+        raise ValueError('RH file has different edge heights')
       # do optical calculation
-      if self.verb: print "[] Calculating optical properties"
+      if self.verb: print("[] Calculating optical properties")
       sn = self.nearest
       sn.ATAU,sn.ASSA,sn.AASM = getAOPscalar(self.di.DELP,RH,sn,CHANNELS)
 
@@ -365,7 +364,7 @@ class MCS(MxD03):
         """
         for var in sort(Names):
             if Verbose:
-                print "[] Writing %s"%var
+                print("[] Writing %s"%var)
             rank = len(data.__dict__[var].shape)
             long_name, units = cf(var).split(';')
             if rank == 2:
@@ -378,7 +377,7 @@ class MCS(MxD03):
                 v = nc.createVariable(var,'f4',('wavelength','nscans','nframes','height'),
                                       fill_value=MAPL_UNDEF,zlib=zlib)
             else:
-                raise MCSError, 'Invalid rank for variable <%s>'%var
+                raise MCSError('Invalid rank for variable <%s>'%var)
             v.long_name = long_name
             v.units = units.strip()
             v.missing_value = MAPL_UNDEF
@@ -451,15 +450,15 @@ def getAOPscalar(delp,rh,species,channels,
     dm = delp.reshape((nobs,nk)).T / 9.81
     qm = ones((nk,nq,nobs),dtype=float32)
     rhx = rh.reshape((nobs,nk)).T
-    for n, v in zip(range(nq),vnames):
+    for n, v in zip(list(range(nq)),vnames):
       qm[:,n,:] = dm * species.__dict__[v.upper()].reshape((nobs,nk)).T
  
     # Do the Mie calculation
     # ----------------------
     tau,ssa,g,rc = MieObs_.getaopscalar(rcfile,channels,pad(vnames),Verbose,qm,rhx)
     if rc != 0:
-      print "<<<ERROR>>> on return from MieObs_.getaopscalar, rc = ", rc
-      raise ValueError, 'cannot get Aerosol Optical Properties (scalar version)'
+      print("<<<ERROR>>> on return from MieObs_.getaopscalar, rc = ", rc)
+      raise ValueError('cannot get Aerosol Optical Properties (scalar version)')
 
     # outputs currently (nk,nch,nobs)
     # put into (nch,ns,nf,nk) order
@@ -525,7 +524,7 @@ if __name__ == "__main__":
 
     # check all OK
     if m.linear == None and m.nearest == None:
-      raise RuntimeError, 'must sample first using getGEOS()'
+      raise RuntimeError('must sample first using getGEOS()')
 
     # Prepare for vertical regridding
     m.regridCoords()

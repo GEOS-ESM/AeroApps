@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to generate a orbital trajectory and sample model
@@ -131,7 +131,7 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
     # --------------------------------------------------
     for path in Vars:
         if options.verbose:
-            print " <> opening "+path
+            print(" <> opening "+path)
         g = Open(path) 
         g.nc4 = NC4ctl_(path)
         for var in Vars[path]:
@@ -149,8 +149,8 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
             else:
                 name = var.name
             if options.verbose:
-                print " [] %s interpolating <%s>"%\
-                        (options.algo.capitalize(),name.upper())   
+                print(" [] %s interpolating <%s>"%\
+                        (options.algo.capitalize(),name.upper()))   
 
             # Use NC4ctl for linear interpolation
             # -----------------------------------
@@ -167,7 +167,7 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
     nc.close()
 
     if options.verbose:
-        print " <> wrote %s file %s"%(options.format,options.outFile)
+        print(" <> wrote %s file %s"%(options.format,options.outFile))
     
 #---
 
@@ -252,7 +252,7 @@ if __name__ == "__main__":
     elif 'EXCEL' in options.format:
         options.outFile = name + '.xls'
     else:
-        raise ValueError, 'invalid extension <%s>'%ext
+        raise ValueError('invalid extension <%s>'%ext)
   
     # Get Variables and Metadata
     # --------------------------
@@ -262,7 +262,7 @@ if __name__ == "__main__":
     # -----------------
     if options.traj == 'TLE':
         if t1 is None:
-            raise ValueError, 'time range (t1,t2) must be specified when doing TLE sampling.'
+            raise ValueError('time range (t1,t2) must be specified when doing TLE sampling.')
         if options.tle_year is not None:
             t1_ = isoparser(options.tle_year + iso_t1[4:])
             t2_ = isoparser(options.tle_year + iso_t2[4:])
@@ -279,7 +279,7 @@ if __name__ == "__main__":
     elif options.traj == 'HSRL' or options.traj == 'H5':
         lon, lat, tyme = getTrackHSRL(trjFile)
     else:
-        raise ValueError, 'cannot handle trajectory file format <%s>'%options.traj
+        raise ValueError('cannot handle trajectory file format <%s>'%options.traj)
     # Make sure longitudes in [-180,180]
     # ----------------------------------
     if lon.max()>180.:

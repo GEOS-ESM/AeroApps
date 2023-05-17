@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Download MCD43C data for a date range
 """
@@ -30,13 +30,13 @@ def downloadFile(args,tyme):
     if len(inFileList) != 1:
         Outdir = "{}/Y{}/M{}/".format(args.rootDir,YY,MM)
         dd = '{}.{}.{}'.format(YY,MM,DD)
-        print 'Downloading '+dd
+        print('Downloading '+dd)
         cmd = command + Outdir + ' ' + HTTP + dd + '/'
         subprocess.call(cmd,shell=True)        
         inFileList = glob("{}/Y{}/M{}/*A{}{}*.hdf".format(args.rootDir,YY,MM,YY,doy))
         if len(inFileList) != 1:
-            print cmd
-            print 'problem downloading '+ dd
+            print(cmd)
+            print('problem downloading '+ dd)
 #            raise Exception('problem downloading '+ dd)
             
         

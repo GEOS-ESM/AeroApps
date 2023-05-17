@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Puts all needed lidar signal simulator variables in one file
@@ -12,7 +12,7 @@ import argparse
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
 from   dateutil.relativedelta import relativedelta
-from   MAPL            import Config
+from   MAPL.config     import Config
 from   py_leo_vlidort.lidar_vlidort   import get_chd
 import numpy  as np
 from   netCDF4 import Dataset
@@ -53,7 +53,7 @@ def getRandom(args):
             else:
                 data = nci.variables[varname][:,:,:,index:index+1]
         else:
-            print 'Dimension error.  Add another dimension'
+            print('Dimension error.  Add another dimension')
 
     nci.close()
 
@@ -145,7 +145,7 @@ class MERGE(object):
             inTemplate  = inTemplate.replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
             outTemplate = outTemplate.replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
             for col in cols:
-                print 'Working on ',col
+                print('Working on ',col)
                 inFile = inTemplate.replace('%col',col)
                 outFile = outTemplate.replace('%col',col+'.random')
 
@@ -174,7 +174,7 @@ class MERGE(object):
                     inTemplate = None
         
                 if inTemplate is not None:
-                    print 'Working on ',col
+                    print('Working on ',col)
                     inFile  = inTemplate.replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
                     outFile = outTemplate.replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
             
@@ -201,7 +201,7 @@ class MERGE(object):
         outTemplate = outTemplate.replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
         if do_ext:
             for ch in channels:
-                print 'Working on ext ',ch
+                print('Working on ext ',ch)
                 inFile = inTemplate.replace('%ch',ch)
                 outFile = outTemplate.replace('%ch',ch)
 
@@ -226,7 +226,7 @@ class MERGE(object):
             outTemplate = outTemplate.replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
             for spc in species:
                 for ch in channels:
-                    print 'Working on ext ',ch,' ',spc
+                    print('Working on ext ',ch,' ',spc)
                     inFile = inTemplate.replace('%ch',ch).replace('%spc',spc)
                     outFile = outTemplate.replace('%ch',ch).replace('%spc',spc)
 
@@ -251,7 +251,7 @@ class MERGE(object):
         outTemplate = outTemplate.replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
         if do_ext_fine:
             for ch in channels:
-                print 'Working on extfine ',ch
+                print('Working on extfine ',ch)
                 inFile = inTemplate.replace('%ch',ch)
                 outFile = outTemplate.replace('%ch',ch)
 
@@ -277,7 +277,7 @@ class MERGE(object):
         if do_ext_spc_fine:
             for spc in species:
                 for ch in channels:
-                    print 'Working on extfine ',ch,' ',spc
+                    print('Working on extfine ',ch,' ',spc)
                     inFile = inTemplate.replace('%ch',ch).replace('%spc',spc)
                     outFile = outTemplate.replace('%ch',ch).replace('%spc',spc)
 
@@ -307,7 +307,7 @@ class MERGE(object):
             if args.merged != 'all':
                 channels = [args.merged]
             for ch in channels:
-                print 'working on merged ',ch
+                print('working on merged ',ch)
                 inFile = inTemplate.replace('%ch',ch)
                 outFile = outTemplate.replace('%ch',ch)
 
@@ -317,8 +317,8 @@ class MERGE(object):
                 inFiled = inFile.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour)
                 hour = '00'
                 outFile = outFile.replace('%year',year).replace('%month',month).replace('%nymd',nymd).replace('%hour',hour)
-                print 'inFiled',inFiled
-                print 'outFile',outFile
+                print('inFiled',inFiled)
+                print('outFile',outFile)
                 self.make_outFile(inFiled,outFile)
                 self.copyRandom(inFile,outFile)
 
@@ -333,7 +333,7 @@ class MERGE(object):
 
         # loop through variables with a time dimension
         for varname in nco.variables:
-            print 'var ',varname
+            print('var ',varname)
             var = nco.variables[varname]
             dim = var.dimensions
             if 'time' in dim:
@@ -573,9 +573,9 @@ if __name__ == "__main__":
 
         # Initialize MERGE class and write new outfile
         # -----------------------------------------------------------
-        print '++++Merging from random draws+++'
-        print '>>>randomFile:    ',randomFile
-        print '++++End of arguments+++'
+        print('++++Merging from random draws+++')
+        print('>>>randomFile:    ',randomFile)
+        print('++++End of arguments+++')
         if not args.dryrun:
             merge = MERGE(date,randomFile,args)
 #            merge.writenc()

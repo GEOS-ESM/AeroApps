@@ -11,7 +11,7 @@ import numpy                  as     np
 from   glob                   import glob
 from   scipy.interpolate      import RegularGridInterpolator
 from   netCDF4                import Dataset
-from   copyvar                import _copyVar
+from   .copyvar                import _copyVar
 
 nkernels = 3
 SDS = { 'BRDF_Albedo_Parameter1_vis'                 : 'Risovis',
@@ -99,7 +99,7 @@ class MCD43C(object):
         if len(inFileList) != 1:
             Outdir = "{}/Y{}/M{}/".format(self.inDir,tyme.year,MM)
             dd = '{}.{}.{}'.format(tyme.year,str(tyme.month).zfill(2),str(tyme.day).zfill(2))
-            print 'Downloading '+dd
+            print('Downloading '+dd)
             subprocess.call(self.command+Outdir+' '+self.HTTP+dd+'/',shell=True)        
             inFileList = glob("{}/Y{}/M{}/*A{}{}*.hdf".format(self.inDir,tyme.year,MM,tyme.year,doy))
             if len(inFileList) != 1:
@@ -149,12 +149,12 @@ class MCD43C(object):
 
         # Save lon/lat
         # --------------------------
-        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=verbose)            
-        _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,'time', dtype='i4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,'x',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,'y',dtype='f4',zlib=False,verbose=verbose)            
+        _copyVar(nctrj,nc,'trjLon',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,'trjLat',dtype='f4',zlib=False,verbose=verbose)
+        _copyVar(nctrj,nc,'isotime', dtype='S1',zlib=False,verbose=verbose)
 
         # Loop over Bands writing each dataset
         #---------------------------------------
@@ -205,7 +205,7 @@ class MCD43C(object):
             with pymp.Parallel(10) as p:
                 for ut in p.iterate(utyme):
                     if Verbose:
-                        print 'Working on '+ str(ut.date())
+                        print('Working on '+ str(ut.date()))
                     inFile = self.downloadFile(ut)
                     self.readFile(inFile)
 
@@ -223,7 +223,7 @@ class MCD43C(object):
         else:
             for ut in utyme:
                 if Verbose:
-                    print 'Working on '+ str(ut.date())
+                    print('Working on '+ str(ut.date()))
                 inFile = self.downloadFile(ut)
                 self.readFile(inFile)
 

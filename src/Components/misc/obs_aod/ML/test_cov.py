@@ -12,11 +12,11 @@ if __name__ == "__main__":
     fname = 'misr.200806.ods'
     fname = 'modo550.200806.ods'
 
-    NYMD = range(nymd_beg,nymd_end+1)
+    NYMD = list(range(nymd_beg,nymd_end+1))
 
 #   Regional box
 #   ------------
-    NHMS = range(0,240000,30000)
+    NHMS = list(range(0,240000,30000))
     BBox = (-40.,6,-20.,26.)
 
 #   Latitude band for a given orbit

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to create GEOS-5 Collections on PACE L1B granule.
@@ -104,7 +104,7 @@ def getVars(rcFile):
     Vars = dict()
     levUnits = 'none'
     levs = []
-    for V in cf.keys():
+    for V in list(cf.keys()):
         path = cf(V)
         f = Open(path)
         varList = []
@@ -149,7 +149,7 @@ def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False):
     elif rank == 3:
         y[:,:,:] = x[:,:,:]
     else:
-        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
+        raise ValueError("invalid rank of <%s>: %d"%(name,rank))
 
 #---
 def shave(q,options,undef=MAPL_UNDEF,has_undef=1,nbits=12):
@@ -172,13 +172,13 @@ def shave(q,options,undef=MAPL_UNDEF,has_undef=1,nbits=12):
     elif rank == 3: # zyx
         chunksize = shp[1]*shp[2]
     else:
-        raise ValueError, "invalid rank=%d"%rank
+        raise ValueError("invalid rank=%d"%rank)
 
     # Shave it
     # --------
     qs, rc = shave32(q.ravel(),xbits,has_undef,undef,chunksize)
     if rc:
-        raise ValueError, "error on return from shave32, rc=%d"%rc
+        raise ValueError("error on return from shave32, rc=%d"%rc)
 
     return qs.reshape(shp)
 
@@ -292,7 +292,7 @@ def writeNC ( pace, Vars, levs, levUnits, options,
         # --------------------------------------------------
         for path in Vars:
             if options.verbose:
-                print " <> opening "+path
+                print(" <> opening "+path)
             g = Open(path)
             for var in Vars[path]:
                 if var.km == 0:
@@ -319,7 +319,7 @@ def writeNC ( pace, Vars, levs, levUnits, options,
                 else:
                     name = var.name
                 if options.verbose:
-                    print " [] Interpolating <%s>"%name.upper()
+                    print(" [] Interpolating <%s>"%name.upper())
 
                 # Use NC4ctl for linear interpolation
                 # -----------------------------------
@@ -331,7 +331,7 @@ def writeNC ( pace, Vars, levs, levUnits, options,
                     Z = g.sample(name,np.array(pace.longitude[i][I]),np.array(pace.latitude[i][I]),np.array(pace.tyme[i][I]),
                                  Transpose=False,squeeze=True,Verbose=options.verbose,algorithm=options.algo)
 
-                if options.verbose: print " <> Writing <%s> "%name
+                if options.verbose: print(" <> Writing <%s> "%name)
                 if rank == 3:
                    W[I] = Z
                    W = np.ma.masked_array(shave(W[:,:],options))
@@ -348,7 +348,7 @@ def writeNC ( pace, Vars, levs, levUnits, options,
         nc.close()
 
         if options.verbose:
-            print " <> wrote %s file %s"%(options.format,outFile)
+            print(" <> wrote %s file %s"%(options.format,outFile))
     
 #------------------------------------ M A I N ------------------------------------
 
@@ -430,12 +430,12 @@ if __name__ == "__main__":
     elif 'NETCDF3' in options.format:
         options.ext = 'nc'
     else:
-        raise ValueError, 'invalid extension <%s>'%ext
+        raise ValueError('invalid extension <%s>'%ext)
     options.zlib = not options.nozip
 
     if not os.path.exists(options.outdir): 
-        print 'outdir does not exist:',options.outdir
-        raise ValueError, 'check path. exiting'
+        print('outdir does not exist:',options.outdir)
+        raise ValueError('check path. exiting')
 
 
     # Get Granules to work on

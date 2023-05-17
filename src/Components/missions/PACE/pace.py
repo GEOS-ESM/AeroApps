@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to create GEOS-5 Collections on PACE L1B granule.
@@ -42,7 +42,7 @@ class PACE(object):
         if type(Path) is list:
             if len(Path) == 0:
                self.nobs = 0
-               print "WARNING: Empty PACE_L1B object created"
+               print("WARNING: Empty PACE_L1B object created")
                return
             else:
                 self.nobs = len(Path)
@@ -54,7 +54,7 @@ class PACE(object):
         # -----------------------------------------------
         self.granules = Path
         self.verb = verb
-        self.SDS  = SDS.keys()
+        self.SDS  = list(SDS.keys())
         self.SDSg = SDS
 
         for name in self.SDS:
@@ -95,7 +95,7 @@ class PACE(object):
             if os.path.isdir(item):      self._readDir(item)
             elif os.path.isfile(item):   self._readGranule(item)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print("%s is not a valid file or directory, ignoring it"%item)
 
 #---
     def _readDir(self,dir):
@@ -105,7 +105,7 @@ class PACE(object):
             if os.path.isdir(path):      self._readDir(path)
             elif os.path.isfile(path):   self._readGranule(path)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print("%s is not a valid file or directory, ignoring it"%item)
 
 #---
     def _readGranule(self,filename):
@@ -115,11 +115,11 @@ class PACE(object):
         # ---------------------------------------
         try:
             if self.verb:
-                print "[] Working on "+filename
+                print("[] Working on "+filename)
             nc = Dataset(filename)
         except:
             if self.verb > 2:
-                print "- %s: not recognized as an netCDF file"%filename
+                print("- %s: not recognized as an netCDF file"%filename)
             return 
 
         # Read select variables (do not reshape)
@@ -189,7 +189,7 @@ class LEVELBCS(PACE):
         # ---------------------------------------
         try:
             if self.verb:
-                print "[] Working on "+filename
+                print("[] Working on "+filename)
             nc = Dataset(filename)
         except:
             raise Exception("- %s: not recognized as an netCDF file"%filename)
@@ -218,7 +218,7 @@ class LEVELBCS(PACE):
                             v.mask = np.zeros(v.shape).astype('bool')
 
                     self.__dict__[sds] = v
-                    print 'Read ',sds
+                    print('Read ',sds)
                 except:
                     pass
             
@@ -253,7 +253,7 @@ def granules ( path, t1, t2):
         t += dt
 
     if len(Granules) == 0:
-        print "WARNING: no PACE granules found for %s through %s"%(str(t1), str(t2))
+        print("WARNING: no PACE granules found for %s through %s"%(str(t1), str(t2)))
 
     return Granules
 
@@ -291,7 +291,7 @@ def granulesLB ( path, t1, t2, coll):
             t += dt
 
     if len(Granules) == 0:
-        print "WARNING: no PACE LevelB granules found for %s through %s"%(str(t1), str(t2))
+        print("WARNING: no PACE LevelB granules found for %s through %s"%(str(t1), str(t2)))
 
     return Granules
 
@@ -329,7 +329,7 @@ def granulesLBN ( path, t1, t2, coll):
             t += dt
 
     if len(Granules) == 0:
-        print "WARNING: no PACE LevelB granules found for %s through %s"%(str(t1), str(t2))
+        print("WARNING: no PACE LevelB granules found for %s through %s"%(str(t1), str(t2)))
 
     return Granules
     

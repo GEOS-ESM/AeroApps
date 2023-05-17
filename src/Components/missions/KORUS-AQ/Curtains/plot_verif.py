@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Plots AOD analysis from opendap.
 """
@@ -17,7 +17,7 @@ from matplotlib.colors import LogNorm, Normalize
 def plot_aod(ga,tit,vname,fname,tyme,sub=None,
              Log=False,vmin=0.1,vmax=0.8,figFile=None):
 
-    print "[] Plotting <%s>"%tit
+    print("[] Plotting <%s>"%tit)
 
     # clf()
     ga('reinit')
@@ -63,11 +63,11 @@ if __name__ == "__main__":
     # Parse command line
     # ------------------
     if len(sys.argv) < 2:
-        print "Usage: "
-        print "       plot_verif yyyymmdd_hh"
-        print "Example:" 
-        print "       plot_verif 20130814_12"
-        raise SystemExit, "Error: not enough arguments"
+        print("Usage: ")
+        print("       plot_verif yyyymmdd_hh")
+        print("Example:") 
+        print("       plot_verif 20130814_12")
+        raise SystemExit("Error: not enough arguments")
     else:
         dtag = sys.argv[1]
         year, month, day, hour = dtag[0:4], dtag[4:6], dtag[6:8], dtag[9:11] 

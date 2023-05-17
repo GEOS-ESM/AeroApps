@@ -1,6 +1,6 @@
 esma_add_subdirectories (Expansion_Coefs)
 esma_set_this ()
-find_package(F2PY2 REQUIRED)
+find_package(F2PY3 REQUIRED)
 
 ecbuild_add_executable (
   TARGET leo_vlidort_cloud.x
@@ -8,8 +8,8 @@ ecbuild_add_executable (
   LIBS GMAO_mpeu GMAO_gfio_r4 MAPL_cfio_r4 Chem_Base MAPL ${VLIDORT_LIBRARY} geo_vlidort ${NETCDF_LIBRARIES} MPI::MPI_Fortran
   )
 
-# MAT: Note uses add_f2py2 because I can't figure out the import test for netCDF f2py code
-add_f2py2_module (VLIDORT_POLAR_
+# MAT: Note uses add_f2py3 because I can't figure out the import test for netCDF f2py code
+add_f2py3_module (VLIDORT_POLAR_
   SOURCES VLIDORT_POLAR_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES geo_vlidort ${VLIDORT_LIBRARY}
@@ -17,8 +17,8 @@ add_f2py2_module (VLIDORT_POLAR_
   )
 add_dependencies(VLIDORT_POLAR_ geo_vlidort ${VLIDORT_LIBRARY})
 
-# MAT: Note uses add_f2py2 because I can't figure out the import test for netCDF f2py code
-add_f2py2_module (READ_NC_
+# MAT: Note uses add_f2py3 because I can't figure out the import test for netCDF f2py code
+add_f2py3_module (READ_NC_
   SOURCES READ_NC_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES geo_vlidort 
@@ -26,13 +26,18 @@ add_f2py2_module (READ_NC_
   )
 add_dependencies(READ_NC_ geo_vlidort)
 
-esma_add_f2py2_module (LidarAngles_
+esma_add_f2py3_module (LidarAngles_
     SOURCES LidarAngles_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES 
   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}
   )
 
+
+install (
+    FILES __init__.py
+    DESTINATION lib/Python/${this}
+    )
 
 file (GLOB python_files CONFIGURE_DEPENDS py_leo_vlidort/*.py)
 install (FILES ${python_files} DESTINATION lib/Python/py_leo_vlidort)

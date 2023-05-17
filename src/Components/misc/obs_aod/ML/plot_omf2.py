@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from grads import *
 from pylab import *
@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
     channel = 470
     yy = 2008
-    mm = 06
+    mm = 0o6
     yymm = 2008*100 + mm
 
     
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     for q in ( 'aod_modo', 'aod_modl', 'aod_mydo', 'aod_mydl',
                'aod_misr', 'aod_deep', 'aod_omi' ):
 
-        print "Plotting "+q
+        print("Plotting "+q)
 
         ga('clear')
         ga("d %s.1"%q)

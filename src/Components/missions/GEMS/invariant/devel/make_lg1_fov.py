@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Make the lg1 file for GEMS
 """
@@ -84,11 +84,11 @@ def getCoords(m,lon,lat,name):
     Bbox = (xa,ya,xb,yb)
     bbox = (xa_,ya_,xb_,yb_)
 
-    print
-    print name
-    print 'Native     Bounding box: ', BBOX 
-    print 'Recentered Bounding box: ', Bbox 
-    print 'Normalized Bounding box: ', bbox 
+    print()
+    print(name)
+    print('Native     Bounding box: ', BBOX) 
+    print('Recentered Bounding box: ', Bbox) 
+    print('Normalized Bounding box: ', bbox) 
 
     return (X,Y,BBOX,Bbox)
 #---

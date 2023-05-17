@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Make the lg1 file for GOES-R type resolution overlaid on TEMPO with GEOS-R parking spot
 """
@@ -18,7 +18,7 @@ def haversine(lat1, lon1, lat2, lon2):
         on the earth (specified in decimal degrees)
         """
         # convert decimal degrees to radians 
-        lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+        lon1, lat1, lon2, lat2 = list(map(radians, [lon1, lat1, lon2, lat2]))
 
         # haversine formula 
         dlon = lon2 - lon1 
@@ -115,11 +115,11 @@ def getCoords(m,lon,lat,name):
         Bbox = (xa,ya,xb,yb)
         bbox = (xa_,ya_,xb_,yb_)
 
-        print
-        print name
-        print 'Native     Bounding box: ', BBOX 
-        print 'Recentered Bounding box: ', Bbox 
-        print 'Normalized Bounding box: ', bbox 
+        print()
+        print(name)
+        print('Native     Bounding box: ', BBOX) 
+        print('Recentered Bounding box: ', Bbox) 
+        print('Normalized Bounding box: ', bbox) 
 
         return (X,Y,BBOX,Bbox)
 
@@ -255,7 +255,7 @@ if __name__ == '__main__':
     # Read in TEMPO
     ntiles = int(layout[0])*int(layout[1])
     for tile in range(ntiles):
-        print 'Reading file',inFile + layout + str(tile) + '.nc4'
+        print('Reading file',inFile + layout + str(tile) + '.nc4')
         ncTempo = Dataset(inFile + layout + str(tile) + '.nc4')
         clon = ncTempo.variables['clon'][:]
         clat = ncTempo.variables['clat'][:]
@@ -265,7 +265,7 @@ if __name__ == '__main__':
         pixel_left   = np.squeeze(ncTempo.variables['pix_size'][3,:,:])
 
         if not hasattr(clon,'mask'):
-            print 'tile',tile
+            print('tile',tile)
             clon = np.ma.array(clon,mask=np.zeros(clon.shape).astype(bool))
 
         if not hasattr(clat,'mask'):
@@ -336,7 +336,7 @@ if __name__ == '__main__':
 
 
         DT = ncTempo.variables['scanTime'][:]
-        print 'writing file',outFile + layout + str(tile) + '.nc4'
+        print('writing file',outFile + layout + str(tile) + '.nc4')
         writeNC (elon, elat, clon, clat, pixel_top, pixel_bottom, pixel_right, pixel_left, DT,
                   fname = outFile + layout + str(tile) + '.nc4')
 

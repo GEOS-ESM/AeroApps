@@ -16,8 +16,8 @@ def laod_estimate(expid,channel,nymd_beg,nymd_end,inst,BBOX=None,N=500,qch=None)
 
 #   Date and time ranges
 #   --------------------
-    NYMD = range(nymd_beg,nymd_end+1)
-    NHMS = range(0,240000,30000)
+    NYMD = list(range(nymd_beg,nymd_end+1))
+    NHMS = list(range(0,240000,30000))
 
 #   Regional box
 #   ------------
@@ -59,13 +59,13 @@ def laod_estimate(expid,channel,nymd_beg,nymd_end,inst,BBOX=None,N=500,qch=None)
 #   ------------------
     k = 0
     alphan = ( 'sigO', 'sigF', '   L')
-    print " "
-    print "Input ODS File: ", odsfn
+    print(" ")
+    print("Input ODS File: ", odsfn)
     for BBox in BBOX:
         alpha, sigalpha = (Alpha[k], sigAlpha[k])
-        print "Latitude Band: %d %d"%(BBox[1],BBox[3])
+        print("Latitude Band: %d %d"%(BBox[1],BBox[3]))
         for j in range(alpha.size):
-            print "    %s = %7.3f +/- %4.3f"%(alphan[j], alpha[j], sigalpha[j])
+            print("    %s = %7.3f +/- %4.3f"%(alphan[j], alpha[j], sigalpha[j]))
         k = k + 1
 
     return Alpha, sigAlpha
@@ -93,7 +93,7 @@ if __name__ == "__main1__":
             try:
                 Alpha, sigAlpha = laod_estimate(expid,channel,nymd_beg,nymd_end,inst)
             except:
-                print ">>>>>>> Something wrong with "+inst
+                print(">>>>>>> Something wrong with "+inst)
 
 #....................................................
 
@@ -110,4 +110,4 @@ if __name__ == "__main__":
                 Alpha, sigAlpha = laod_estimate(expid,channel,nymd_beg,
                                                 nymd_end,inst,qch=qch)
             except:
-                print ">>>>>>> Something wrong with "+inst
+                print(">>>>>>> Something wrong with "+inst)

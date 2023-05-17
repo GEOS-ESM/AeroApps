@@ -92,7 +92,7 @@ class P3_Profiles:
             if var in exclude:
                 continue
             if Verbose:
-                print "<> Processing %s"%var
+                print("<> Processing %s"%var)
             V = MISSING * ones((self.Np,self.Nz))
             for i in range(self.Np):
                 p = self.Profile[i]
@@ -170,19 +170,19 @@ class P3_Profiles:
         time.standard_name = 'time'
         time.long_name = 'Average UTC time of profile'
         time.units = 'seconds since 2011-06-01 00:00:00'
-        time[:] = _secondsSince(self.Time, t_ref=datetime(2011,06,15))
+        time[:] = _secondsSince(self.Time, t_ref=datetime(2011,0o6,15))
             
         time_start = nc.createVariable('time_start','i4',('profile',))
         time_start.standard_name = 'time'
         time_start.long_name = 'Starting UTC time of profile'
         time_start.units = 'seconds since 2011-06-01 00:00:00'
-        time_start[:] = _secondsSince(self.Time_start, t_ref=datetime(2011,06,15))
+        time_start[:] = _secondsSince(self.Time_start, t_ref=datetime(2011,0o6,15))
 
         time_stop = nc.createVariable('time_stop','i4',('profile',))
         time_stop.standard_name = 'time'
         time_stop.long_name = 'End UTC time of profile'
         time_stop.units = 'seconds since 2011-06-01 00:00:00'
-        time_stop[:] = _secondsSince(self.Time_stop, t_ref=datetime(2011,06,15))
+        time_stop[:] = _secondsSince(self.Time_stop, t_ref=datetime(2011,0o6,15))
 
         year = nc.createVariable('year','i1',('profile',),zlib=zlib)
         year.long_name = 'Average UTC year of profile'
@@ -216,9 +216,9 @@ class P3_Profiles:
 
         # Create data variables
         # ---------------------
-        for var in sort(self.Variables.keys()):
+        for var in sort(list(self.Variables.keys())):
             if Verbose:
-                print "[] Writing %s"%var
+                print("[] Writing %s"%var)
             v = nc.createVariable(var,'f4',('profile','altitude',),fill_value=NaN,zlib=zlib)
             v.standard_name = self.Std_name[var]
             v.long_name = self.Long_name[var]

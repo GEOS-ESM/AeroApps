@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Makes a polar plot of a typical scene - for benchmarking purposes
@@ -480,7 +480,7 @@ class BENCHMARK(POLAR_VLIDORT):
             SDS = 'Riso'+chmin,'Rgeo'+chmin,'Rvol'+chmin,'Riso'+chmax,'Rgeo'+chmax,'Rvol'+chmax
 
         if self.verbose:
-            print 'opening BRDF file ',self.brdfFile
+            print('opening BRDF file ',self.brdfFile)
         nc = Dataset(self.brdfFile)
 
         for sds in SDS:
@@ -543,7 +543,7 @@ class BENCHMARK(POLAR_VLIDORT):
         chs = str(int(self.channel))
 
         if self.verbose:
-            print 'opening BRDF abledo file ',self.brdfFile
+            print('opening BRDF abledo file ',self.brdfFile)
         nc = Dataset(self.brdfFile)
 
         for sds in mSDS:
@@ -553,7 +553,7 @@ class BENCHMARK(POLAR_VLIDORT):
         nc.close()
 
         if self.verbose:
-            print 'opening LER albedo file ',self.lerFile
+            print('opening LER albedo file ',self.lerFile)
         nc = Dataset(self.lerFile)
 
         self.__dict__[lSDS] = np.array([nc.variables[lSDS][pixel]])
@@ -1320,7 +1320,7 @@ class BENCHMARK(POLAR_VLIDORT):
         nc.close()
 
         if self.verbose:
-            print " <> wrote %s"%(self.outFile)
+            print(" <> wrote %s"%(self.outFile))
 
     
 

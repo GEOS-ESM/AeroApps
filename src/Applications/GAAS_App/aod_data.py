@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os, sys
 
 def aod_type(dataID, stdoutFLG=True):
@@ -115,19 +115,19 @@ if __name__ == "__main__":
     scriptname = os.path.basename(sys.argv[0])
 
     if len(sys.argv) < 2:
-        print("\nusage: {0} routineName input_parameters".format(scriptname))
-        print( " routineName options = {0}\n\n".format(routineList.keys()))
+        print(("\nusage: {0} routineName input_parameters".format(scriptname)))
+        print(( " routineName options = {0}\n\n".format(list(routineList.keys()))))
         exit()
 
     routineName = sys.argv[1]
-    if routineName not in routineList.keys():
+    if routineName not in list(routineList.keys()):
         raise Exception("Error. Unknown routine name: {0}".format(routineName))
     routine = routineList[routineName]
 
     if len(sys.argv) < 3:
         scriptname = os.path.basename(sys.argv[0])
-        print("\nusage: {0} {1} input_parameters".format(scriptname, routineName))
-        print(routineList[routineName].__doc__)
+        print(("\nusage: {0} {1} input_parameters".format(scriptname, routineName)))
+        print((routineList[routineName].__doc__))
         exit()
 
     routineList[routineName](*sys.argv[2:])

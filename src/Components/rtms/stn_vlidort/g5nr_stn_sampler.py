@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to sample GEOS-5  files at fixed station locations.
@@ -46,7 +46,7 @@ def stnSample(f,V,stnLon,stnLat,tyme,options,squeeze=True):
     Sample file at station locations.
     """
     if options.verbose:
-        print " [] Interpolating <%s>"%V.name
+        print(" [] Interpolating <%s>"%V.name)
     ns, nt, nz = (len(stnLon), len(tyme), V.km)
     if f.lower:
         name = V.name.lower() # GDS always uses lower case
@@ -140,7 +140,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     e.long_name = 'Station Ensemble Dimension'
     e.axis = 'e'
     e.grads_dim = 'e'
-    e[:] = range(ns_)
+    e[:] = list(range(ns_))
 
     if nz_ > 0:
         lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
@@ -186,7 +186,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     # --------------------------------
     for path in Vars:
         if options.verbose:
-            print " <> opening "+path
+            print(" <> opening "+path)
         f = Open(path) 
         f.nc4 = NC4ctl_(path)
         for var in Vars[path]:
@@ -204,7 +204,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
             if options.dryrun:
                 this_ = zeros(shp)
                 if options.verbose:
-                    print "[] Zero-filling <%s>"%var.name
+                    print("[] Zero-filling <%s>"%var.name)
             else:
                 this_ = stnSample(f,var,stnLon,stnLat,tyme,options)
             this[:] = this_[:]
@@ -214,7 +214,7 @@ def writeNC ( stnName, stnLon, stnLat, tyme, Vars, levs, levUnits, options,
     nc.close()
 
     if options.verbose:
-        print " <> wrote %s file %s"%(options.format,options.outFile)
+        print(" <> wrote %s file %s"%(options.format,options.outFile))
     
 #------------------------------------ M A I N ------------------------------------
 

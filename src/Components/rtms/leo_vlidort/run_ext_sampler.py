@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper for ext_sampler.py
@@ -37,7 +37,7 @@ def StartNew(processes,cmds,nextdate,lendate):
 
    if nextdate < lendate:
       proc = subprocess.Popen(cmds[nextdate], shell=True)
-      print cmds[nextdate]
+      print(cmds[nextdate])
       nextdate += 1
       processes.append(proc)
 
@@ -212,5 +212,5 @@ if __name__ == "__main__":
             processes, nextdate = CheckRunning(processes,cmds,nextdate,lendate,args)
     else:
         for cmd in cmds:
-            print cmd
+            print(cmd)
 

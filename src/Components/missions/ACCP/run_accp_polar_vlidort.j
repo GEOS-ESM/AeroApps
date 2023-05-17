@@ -22,29 +22,19 @@ limit stacksize unlimited
 #######################################################################
 #           Architecture Specific Environment Variables
 #######################################################################
-setenv G5DIR /discover/nobackup/pcastell/workspace/GAAS/src
-setenv BIN $PWD 
+source $HOME/.cshrc
+source setup_env
 setenv TMPDIR $LOCAL_TMPDIR 
 
 mkdir -p $LOCAL_TMPDIR/ExtData
-cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/ExtData/ $LOCAL_TMPDIR
+cp -r ${x}/ExtData/ $LOCAL_TMPDIR
 ln -s $LOCAL_TMPDIR/ExtData ./ExtData
 
-cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/ExtDataOsku/ $LOCAL_TMPDIR
+cp -r ${x}/ExtDataOsku/ $LOCAL_TMPDIR
 ln -s $LOCAL_TMPDIR/ExtDataOsku ./ExtDataOsku
 
-cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/Chem_MieRegistry.rc $LOCAL_TMPDIR
+cp -r ${AERODIR}/install/bin/missions/ACCP/Chem_MieRegistry.rc $LOCAL_TMPDIR
 ln -s $LOCAL_TMPDIR/Chem_MieRegistry.rc ./Chem_MieRegistry.rc
-
-
-source $HOME/.cshrc
-cd $G5DIR
-source g5_modules
-
-#######################################################################
-#   Move to Run Directory
-#######################################################################
-cd $BIN
 
 ##################################################################
 ######

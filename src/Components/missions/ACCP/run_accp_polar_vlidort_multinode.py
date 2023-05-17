@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper to loop through channels and submit pace_lc.j jobs to sbatch for one pace granule
@@ -13,7 +13,7 @@ import argparse
 import numpy           as np
 import time
 from   netCDF4         import Dataset
-from   MAPL            import Config
+from   MAPL.config     import Config
 from py_leo_vlidort.vlidort import get_chd
 
 mr =  [1.396,1.362,1.349,1.345,1.339,1.335,1.334,1.333,1.332,1.331,1.329,1.326,
@@ -82,12 +82,12 @@ class JOBS(object):
                         self.destroy_workspace(i,s)
 
                     else:
-                        print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
+                        print('Jobid ',s,' in ',self.dirstring[i],' exited with errors')
 
             # finished checking up on all the jobs
             # Remove finished jobs from the currently working list
             if len(finishedJobs) != 0:
-                print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
+                print('deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]])
                 node_tally  = node_tally - len(finishedJobs)
 
                 workingJobs = np.delete(workingJobs,finishedJobs)
@@ -116,12 +116,12 @@ class JOBS(object):
                 stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
 
 
-            print 'Waiting 5 minutes'
+            print('Waiting 5 minutes')
             time.sleep(60*2)
             
 
         # Exited while loop
-        print 'All jobs done'
+        print('All jobs done')
 
         # Compress Files
         for i,s in enumerate(jobid):
@@ -131,7 +131,7 @@ class JOBS(object):
                 self.compress(i,devnull)
 
         # Postprocessing done
-        print 'Cleaned Up Worksapces'
+        print('Cleaned Up Worksapces')
         devnull.close()
 
 

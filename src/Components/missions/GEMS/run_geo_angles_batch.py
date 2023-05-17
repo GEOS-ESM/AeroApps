@@ -1,4 +1,4 @@
-#!/bin/python
+#!/bin/python3
 # -*- coding: utf-8 -*-
 """ Runscript for geo_angles"""
 from datetime import datetime, timedelta 

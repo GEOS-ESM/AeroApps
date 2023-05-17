@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper for run_aeronet_vlidort.py
@@ -68,8 +68,8 @@ if __name__ == "__main__":
 
     # Run additional output calculation
     #------------------------------------
-    print ' '
-    print '++++Running VLIDORT Additional Output+++'
+    print(' ')
+    print('++++Running VLIDORT Additional Output+++')
 
     if args.dryrun:
         command = bin + '-r '
@@ -79,16 +79,16 @@ if __name__ == "__main__":
 
     command = command + ' -D {} {} {} {}/stn_vlidort_add.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform)
 
-    print command
+    print(command)
     if os.system(command):
-        raise ValueError, "%s failed "%(bin)
+        raise ValueError("%s failed "%(bin))
 
 
     if not args.norad:
         for ch in args.channels:
             # Run aeronet_vlidort
             # -----------------------------------------------------------
-            print '++++Running VLIDORT {} nm+++'.format(ch)
+            print('++++Running VLIDORT {} nm+++'.format(ch))
 
             if args.dryrun:
                 command = bin + '-r '
@@ -98,9 +98,9 @@ if __name__ == "__main__":
 
             command = command + ' -D {} {} {} {}/stn_vlidort_{}.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform,ch)
 
-            print command
+            print(command)
             if os.system(command):
-                raise ValueError, "%s failed "%(bin)
+                raise ValueError("%s failed "%(bin))
 
             if args.dryrun:
                 command = bin + '-r '
@@ -108,16 +108,16 @@ if __name__ == "__main__":
                 command = bin
 
             command = command + ' -D {} {} {} {}/stn_vlidort_{}extC.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform,ch)
-            print command
+            print(command)
             if os.system(command):
-                raise ValueError, "%s failed "%(bin)
+                raise ValueError("%s failed "%(bin))
 
 
     if not args.noext:
         for ch in args.extch:
             # Run extinction sampler
             # -----------------------------------------------------------
-            print '++++Running EXT_SAMPLER {} nm+++'.format(ch)
+            print('++++Running EXT_SAMPLER {} nm+++'.format(ch))
 
             if args.dryrun:
                 command = bin + '-r '
@@ -128,8 +128,8 @@ if __name__ == "__main__":
             command = command + ' -D {} {} {} {}/stn_vlidort_{}ext.pcf'.format(args.DT_hours,args.iso_t1,args.iso_t2,args.platform,ch)
 
 
-            print command
+            print(command)
             if os.system(command):
-                raise ValueError, "%s failed "%(bin)
+                raise ValueError("%s failed "%(bin))
 
 

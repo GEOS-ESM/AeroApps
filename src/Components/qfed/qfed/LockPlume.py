@@ -16,7 +16,7 @@ from pyobs.minx     import MINXs
 
 from pyobs import NPZ
 
-import eta
+from . import eta
 
 __VERSION__ = 1.0
 __CVSTAG__  = '@CVSTAG'
@@ -103,11 +103,11 @@ class MINXs_PR(MINXs):
         """
 
         if Verbose:
-            print ""
-            print "    Scaled bstar Optimization"
-            print ""
-            print "Plume | b_opt  |    J     |  Ni | Nf"
-            print "------|--------|----------|-----|-----"
+            print("")
+            print("    Scaled bstar Optimization")
+            print("")
+            print("Plume | b_opt  |    J     |  Ni | Nf")
+            print("------|--------|----------|-----|-----")
 
         self.b_opt = ones(self.N)
         self.z_opt = ones(self.N)
@@ -115,12 +115,12 @@ class MINXs_PR(MINXs):
             xmin, fval, iter, fcalls = opt.brent(CostFuncB,args=(self,i),brack=(1.,5.),full_output=True)
             bfac = xmin**2
             if Verbose:
-               print "%5d | %6.2f | %8.2f | %3d | %3d "%(i, bfac, fval, iter, fcalls)
+               print("%5d | %6.2f | %8.2f | %3d | %3d "%(i, bfac, fval, iter, fcalls))
             self.b_opt[i] = bfac
             self.z_opt[i] = self.getPlume1(i,bfac=self.b_opt[i])
 
         if Verbose:
-            print "------|--------|----------|-----|-----"
+            print("------|--------|----------|-----|-----")
 
 #---
     def getOptF(self,Verbose=True):
@@ -129,11 +129,11 @@ class MINXs_PR(MINXs):
         """
 
         if Verbose:
-            print ""
-            print "    Fire Modified bstar Optimization"
-            print ""
-            print "Plume | f_opt  |    J     |  Ni | Nf"
-            print "------|--------|----------|-----|-----"
+            print("")
+            print("    Fire Modified bstar Optimization")
+            print("")
+            print("Plume | f_opt  |    J     |  Ni | Nf")
+            print("------|--------|----------|-----|-----")
 
         self.f_opt = ones(self.N)
         self.z_opt = ones(self.N)
@@ -144,13 +144,13 @@ class MINXs_PR(MINXs):
                 self.f_opt[i] = ffac
                 self.z_opt[i] = self.getPlume1(i,ffac=self.f_opt[i])
                 if Verbose:
-                    print "%5d | %6.2f | %8.2f | %3d | %3d "%(i, ffac, fval, iter, fcalls)
+                    print("%5d | %6.2f | %8.2f | %3d | %3d "%(i, ffac, fval, iter, fcalls))
             else:
                 self.f_opt[i] = -99.
                 self.z_opt[i] = -99.
 
         if Verbose:
-            print "------|--------|----------|-----|-----"
+            print("------|--------|----------|-----|-----")
 
 #---
     def getOptGfrp(self,AbovePBL=False,Verbose=True):
@@ -159,11 +159,11 @@ class MINXs_PR(MINXs):
         """
 
         if Verbose:
-            print ""
-            print "    FRP Modified bstar Global Optimization"
-            print ""
-            print "Plume | f_opt  |    J     |  Ni | Nf"
-            print "------|--------|----------|-----|-----"
+            print("")
+            print("    FRP Modified bstar Global Optimization")
+            print("")
+            print("Plume | f_opt  |    J     |  Ni | Nf")
+            print("------|--------|----------|-----|-----")
 
         self.ffac_opt = -99. * ones(self.N)
         self.zfrp_opt = -99. * ones(self.N)
@@ -178,10 +178,10 @@ class MINXs_PR(MINXs):
         self.ffac_opt = ffac
         self.zfrp_opt = self.getPlume(ffac=ffac,I=I)
         if Verbose:
-            print "%5d | %6.2f | %8.2f | %3d | %3d "%(0, ffac, fval, iter, fcalls)
+            print("%5d | %6.2f | %8.2f | %3d | %3d "%(0, ffac, fval, iter, fcalls))
 
         if Verbose:
-            print "------|--------|----------|-----|-----"
+            print("------|--------|----------|-----|-----")
 
 #---
     def getOptGhf(self,AbovePBL=False,dtol=30.,Verbose=True):
@@ -193,11 +193,11 @@ class MINXs_PR(MINXs):
         """
 
         if Verbose:
-            print ""
-            print "    Fire Heat Flux Modified bstar Global Optimization"
-            print ""
-            print "Plume | f_opt  |    J     |  Ni | Nf"
-            print "------|--------|----------|-----|-----"
+            print("")
+            print("    Fire Heat Flux Modified bstar Global Optimization")
+            print("")
+            print("Plume | f_opt  |    J     |  Ni | Nf")
+            print("------|--------|----------|-----|-----")
 
         self.hfac_opt = -99. * ones(self.N)
         self.zhf_opt = -99. * ones(self.N)
@@ -212,10 +212,10 @@ class MINXs_PR(MINXs):
         self.hfac_opt = hfac
         self.zhf_opt = self.getPlume(hfac=hfac,I=I)
         if Verbose:
-            print "%5d | %6.2f | %8.2f | %3d | %3d "%(0, hfac, fval, iter, fcalls)
+            print("%5d | %6.2f | %8.2f | %3d | %3d "%(0, hfac, fval, iter, fcalls))
 
         if Verbose:
-            print "------|--------|----------|-----|-----"
+            print("------|--------|----------|-----|-----")
 
 #----
     def getFires(self,mod14_path='/home/adasilva/iesa/aerosol/data/MODIS/Level2/MOD14',
@@ -223,7 +223,7 @@ class MINXs_PR(MINXs):
         """
         Retrieves Level2 MOD14 fire data for each MINX fire.
         """
-        from dozier import DOZIER
+        from .dozier import DOZIER
 
         self.mod14 = []
         d2r = pi / 180.
@@ -233,14 +233,14 @@ class MINXs_PR(MINXs):
         self.mod14 = MOD14(self.N)
         
         if Verbose:
-            print ""
-            print "                   Fire Heat Flux Estimates"
-            print ""
-            print "  --------------------|----------|-------------------|----------"
-            print "                      | Distance |    FRP Estimates  |   Fire"
-            print "    MINX Date/Time    |  to Fire |   MINX      MODIS | Heat Flux"
-            print "                      |    km    |    MW         MW  |  kW/m2"
-            print "  --------------------|----------|-------------------|----------"
+            print("")
+            print("                   Fire Heat Flux Estimates")
+            print("")
+            print("  --------------------|----------|-------------------|----------")
+            print("                      | Distance |    FRP Estimates  |   Fire")
+            print("    MINX Date/Time    |  to Fire |   MINX      MODIS | Heat Flux")
+            print("                      |    km    |    MW         MW  |  kW/m2")
+            print("  --------------------|----------|-------------------|----------")
 
         for i in range(self.N):
 
@@ -271,9 +271,9 @@ class MINXs_PR(MINXs):
             self.mod14.farea[i] = m.farea[j]
             self.mod14.qa[i] = m.m[j] # bolean
             if Verbose:
-                print " ", t, "| %8.2f | %8.2f %8.2f | %8.2f"%\
+                print(" ", t, "| %8.2f | %8.2f %8.2f | %8.2f"%\
                     (self.mod14.fdist[i], self.mod14.frp[i], self.mod14.frp[i], \
-                     self.mod14.hflux[i] )
+                     self.mod14.hflux[i] ))
 
         # Save fire properties in NPZ file for later
         # ------------------------------------------
@@ -281,14 +281,14 @@ class MINXs_PR(MINXs):
             savez(npzFile,**self.mod14.__dict__)
                   
         if Verbose:
-            print "  --------------------|----------|-------------------|----------"
+            print("  --------------------|----------|-------------------|----------")
 
 
     def getFiresOld(self,mod14_path='/nobackup/MODIS/Level2/MOD14', Verbose=True):
         """
         Retrieves Level2 MOD14 fire data for each MINX fire.
         """
-        from dozier import DOZIER
+        from .dozier import DOZIER
 
         self.mod14 = []
         d2r = pi / 180.
@@ -301,14 +301,14 @@ class MINXs_PR(MINXs):
         self.pixar = -99. * ones(self.N)  # nearest MODIS FRP
 
         if Verbose:
-            print ""
-            print "                   Fire Heat Flux Estimates"
-            print ""
-            print "  --------------------|----------|-------------------|----------"
-            print "                      | Distance |    FRP Estimates  |   Fire"
-            print "    MINX Date/Time    |  to Fire |   MINX      MODIS | Heat Flux"
-            print "                      |    km    |    MW         MW  |  kW/m2"
-            print "  --------------------|----------|-------------------|----------"
+            print("")
+            print("                   Fire Heat Flux Estimates")
+            print("")
+            print("  --------------------|----------|-------------------|----------")
+            print("                      | Distance |    FRP Estimates  |   Fire")
+            print("    MINX Date/Time    |  to Fire |   MINX      MODIS | Heat Flux")
+            print("                      |    km    |    MW         MW  |  kW/m2")
+            print("  --------------------|----------|-------------------|----------")
 
         for i in range(self.N):
 
@@ -337,10 +337,10 @@ class MINXs_PR(MINXs):
             self.mfrp[i] = m.pow[j]
             self.pixar[i] = m.pixar[j]
             if Verbose:
-                print " ", t, "| %8.2f | %8.2f %8.2f | %8.2f"%(s[j], self.frp[i], m.pow[j], m.hflux[j] )
+                print(" ", t, "| %8.2f | %8.2f %8.2f | %8.2f"%(s[j], self.frp[i], m.pow[j], m.hflux[j] ))
 
         if Verbose:
-            print "  --------------------|----------|-------------------|----------"
+            print("  --------------------|----------|-------------------|----------")
 #----
 def _getGran(t,mod14_path):
     doy = t.date().toordinal() - date(t.year-1,12,31).toordinal()
@@ -402,7 +402,7 @@ class Gridded_PR(object):
             x = ga.exp('re(%s,1.25,1)'%q) 
             self.__dict__[q] = x.data[:,:]
             if self.Verbose:
-                print '          [2d] Read ', q, x.shape
+                print('          [2d] Read ', q, x.shape)
         ga('close 1')
 
         fh = ga.open('http://goldsmr1.sci.gsfc.nasa.gov:80/dods/MAT3FVCHM') # 3D fields
@@ -412,7 +412,7 @@ class Gridded_PR(object):
             x = ga.exp(q)
             self.__dict__[q] = x.data[:,:,:]
             if self.Verbose:
-                print '          <3d> Read ', q, x.shape
+                print('          <3d> Read ', q, x.shape)
         ga('close 1')
         
  #---
@@ -502,7 +502,7 @@ class Gridded_PR(object):
 
 if __name__ == "__main__":
 
-    print "ok"
+    print("ok")
     
     #def hold():
     n = MINXs_PR('/home/adasilva/workspace/misrPlumes/western_fires_2013/*.txt')

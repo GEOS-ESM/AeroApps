@@ -8,13 +8,13 @@ from numpy import minmax
 class ALBEDO(object):
 
     def __init__(self,filename='albedo_clim.ctl'):
-        """Start grads and open albedo file."
+        """Start grads and open albedo file."""
         
         self.ga = GrADS(Echo=0,Window=False)
         self.ga('open %s'%filename)
 
     def interp(self,lons,lats,gatime):
-        """ Given date/time, interpolate albedo to lons, lats."""
+        """Given date/time, interpolate albedo to lons, lats."""
 
         # Restrict domain to save memory and I/O
         # --------------------------------------
@@ -34,7 +34,7 @@ class ALBEDO(object):
 
 if __name__ == "__main__":
 
-    import anet import LAND
+    from anet import LAND
     
     a = ALBEDO()
 

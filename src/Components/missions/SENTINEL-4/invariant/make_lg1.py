@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Make the lg1 file for SENTINEL-4
 """
@@ -17,7 +17,7 @@ def haversine(lat1, lon1, lat2, lon2):
 		on the earth (specified in decimal degrees)
 		"""
 		# convert decimal degrees to radians 
-		lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+		lon1, lat1, lon2, lat2 = list(map(radians, [lon1, lat1, lon2, lat2]))
 
 		# haversine formula 
 		dlon = lon2 - lon1 
@@ -113,11 +113,11 @@ def getCoords(m,lon,lat,name):
 		Bbox = (xa,ya,xb,yb)
 		bbox = (xa_,ya_,xb_,yb_)
 
-		print
-		print name
-		print 'Native     Bounding box: ', BBOX 
-		print 'Recentered Bounding box: ', Bbox 
-		print 'Normalized Bounding box: ', bbox 
+		print()
+		print(name)
+		print('Native     Bounding box: ', BBOX) 
+		print('Recentered Bounding box: ', Bbox) 
+		print('Normalized Bounding box: ', bbox) 
 
 		return (X,Y,BBOX,Bbox)
 #---
@@ -249,13 +249,13 @@ if __name__ == '__main__':
 	time = ncOut.createDimension('time',1)
 
 	var = elon[-1,:]
-	print 'E-W TOP ',var[var<1e14].min(),var[var<1e14].max()
+	print('E-W TOP ',var[var<1e14].min(),var[var<1e14].max())
 	var = elon[0,:]
-	print 'E-W BOTTOM ',var[var<1e14].min(),var[var<1e14].max()
+	print('E-W BOTTOM ',var[var<1e14].min(),var[var<1e14].max())
 	var = elat[:,0]
-	print 'N-S LEFT ',var[var<1e14].min(),var[var<1e14].max()	
+	print('N-S LEFT ',var[var<1e14].min(),var[var<1e14].max())	
 	var = elat[:,-1]
-	print 'N-S RIGHT ',var[var<1e14].min(),var[var<1e14].max()		
+	print('N-S RIGHT ',var[var<1e14].min(),var[var<1e14].max())		
 
 	# clat
 	varobj = ncOut.createVariable('clat','f4',('ns','ew',))

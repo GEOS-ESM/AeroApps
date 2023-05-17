@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 
 """
@@ -70,8 +70,8 @@ if __name__ == "__main__":
 
         run_command = command + ' -o' + outfile + ' ' + startdate.isoformat()
 
-        print run_command
+        print(run_command)
         if system(run_command):
-            raise ValueError, "%s failed for %s to %s "%(bin,startdate.isoformat(),rcFile)
+            raise ValueError("%s failed for %s to %s "%(bin,startdate.isoformat(),rcFile))
 
         startdate += timedelta(hours=1)
