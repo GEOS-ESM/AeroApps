@@ -4,8 +4,9 @@
 
 ### Added
 
-### Fixed
+- Added changelog enforcer
 
+### Fixed
 
 ### Changed [2023-03]
 
