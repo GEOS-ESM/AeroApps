@@ -22,11 +22,11 @@ ecbuild:
 MAPL:
   local: ./src/Shared/GMAO_Shared/MAPL@
   remote: ../MAPL.git
-  tag: v2.36.0
+  tag: v2.39.0
   develop: develop
 
 GMAOpyobs:
   local: ./src/Shared/GMAO_Shared/GMAO_pyobs@
   remote: ../GMAOpyobs.git
-  branch: develop
+  tag: v1.0.1
   develop: develop
