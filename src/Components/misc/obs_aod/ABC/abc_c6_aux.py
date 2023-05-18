@@ -34,17 +34,17 @@ def boxplot_imshow(data,plottype,blocks,masterlist,title,filename,
     params = {'mathtext.default': 'regular' }          
     plt.rcParams.update(params)
 
-    if plottype is 'box':
+    if plottype == 'box':
       bp = plt.boxplot(data,showfliers=False,showbox=True,whis='range',
                 whiskerprops={'linestyle':'-'})
       plt.setp(bp['boxes'], color='black')
       plt.setp(bp['whiskers'], color='black')
       plt.plot([0,ncomb+0.5],[np.median(data[:,0]),np.median(data[:,0])],color='b',ls='--',zorder=5)
-    elif plottype is 'scatter':
+    elif plottype == 'scatter':
       scat = np.mean(data,axis=0)
       plt.plot(np.arange(ncomb)+1,scat,'rD')
       plt.plot([0,ncomb+0.5],[np.mean(data[:,0]),np.mean(data[:,0])],color='b',ls='--',zorder=5,markersize=5)
-    elif plottype is 'errorbar':
+    elif plottype == 'errorbar':
       scat = np.mean(data,axis=0)
       yerr_max = np.abs(np.max(data,axis=0)-scat)
       yerr_min = np.abs(np.min(data,axis=0)-scat)
@@ -83,7 +83,7 @@ def boxplot_imshow(data,plottype,blocks,masterlist,title,filename,
         axis='y',          # changes apply to the y-axis
         which='major',     # major ticks are affected
         direction='out',
-        right='off') 
+        right=False) 
 
 
     axblocks = plt.subplot(212)
@@ -101,11 +101,11 @@ def boxplot_imshow(data,plottype,blocks,masterlist,title,filename,
     plt.tick_params(
         axis='both',          # changes apply to both
         which='major',     # major ticks are affected
-        bottom='off',      # ticks along the bottom edge are off
-        top='off',         # ticks along the top edge are off
-        left='off',
-        right='off',
-        labelbottom='off') # labels along the bottom edge are off 
+        bottom=False,      # ticks along the bottom edge are off
+        top=False,         # ticks along the top edge are off
+        left=False,
+        right=False,
+        labelbottom=False) # labels along the bottom edge are off 
     plt.grid(True,which='minor',color='0.5',linestyle='-')
     axblocks.set_axisbelow(True)  #Grid lines go to the back.
     xlim = axblocks.get_xlim()
@@ -117,7 +117,7 @@ def boxplot_imshow(data,plottype,blocks,masterlist,title,filename,
     plt.tight_layout()
     plt.subplots_adjust(right=0.99,hspace=0.001)
     fig.set_size_inches(10.5, 5.5)   
-    plt.savefig(filename, transparent='true',dpi=300)
+    plt.savefig(filename, transparent=True,dpi=300)
     #plt.show()
     plt.close(fig)
 
@@ -349,9 +349,10 @@ def make_plots(mxd,expid,ident,I=None):
   results = mxd.eval(I)
   # loop through targets
   for t in range(mxd.nTarget):
-      _plotKDE(targets[:,t],results[:,t],y_label='NNR')
+      fig = _plotKDE(targets[:,t],results[:,t],y_label='NNR')
       title("Log("+mxd.Target[t][1:]+"+0.01)- "+ident)
       savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[t][1:]+'-corrected.png')
+      plt.close(fig)
 
   # Plot KDE of uncorrected AOD
   # ---------------------------  
@@ -361,14 +362,207 @@ def make_plots(mxd,expid,ident,I=None):
       name = 'm'+mxd.Target[t][1:]
       if name in mxd.__dict__:
           original = log(mxd.__dict__[name][I]+0.01)
-          _plotKDE(targets[:,t],original,y_label='Original MODIS')
+          fig = _plotKDE(targets[:,t],original,y_label='Original MODIS')
           title("Log("+mxd.Target[t][1:]+"+0.01)- "+ident)
           savefig(outdir+"/"+expid+"."+ident+"_kde-"+mxd.Target[t][1:]+'.png')
+          plt.close(fig)
 
           # Scatter diagram for testing
           # ---------------------------
           mxd.plotScat(iTarget=t,I=I,figfile=outdir+"/"+expid+"."+ident+"_scat-"+mxd.Target[t][1:]+'.png')
 
+  # If more than one target
+  # Plot KDE of Angstrom Exponent
+  # Implicitly requires AOD 550
+  # -------------------------------
+  if mxd.nTarget > 1:
+      bins = np.arange(0., 3., 0.05 )
+      # AE from Corrected AOD
+      # ----------------------
+      refname = 'Tau550'
+      refwav  = 550.
+      # find index of reference
+      for t in range(mxd.nTarget):
+          name = mxd.Target[t][1:]
+          if name == refname:
+              reft = np.exp(targets[:,t]) # keep the + 0.01 to handle negatives in MODIS data
+              refr = np.exp(results[:,t]) # keep the + 0.01 to handle negatives in MODIS data
+      # calculate AE with respect to 550
+      for t in range(mxd.nTarget):
+          name = mxd.Target[t][1:]
+          if name != refname:
+              print('t,wav',t,name[3:])
+              wav = float(name[3:])
+              tt = np.exp(targets[:,t]) # keep the + 0.01 to handle negatives in MODIS data
+              rr = np.exp(results[:,t]) # keep the + 0.01 to handle negatives in MODIS data
+              AEt = -1.*np.log(reft/tt)/np.log(refwav/wav)
+              AEr = -1.*np.log(refr/rr)/np.log(refwav/wav)
+
+              fig = _plotKDE(AEt,AEr,y_label='NNR',x_bins=bins,y_bins=bins)
+              title("AE 550/"+name[4:])
+              savefig(outdir+"/"+expid+"."+ident+"_kde-AE"+name[3:]+'-corrected.png')
+              plt.close(fig)
+      
+      # AE from uncorrected AOD
+      # ------------------------
+      # find index of reference
+      refname = 'm' + refname
+      for t in range(mxd.nTarget):
+          name = 'm'+mxd.Target[t][1:]
+          if name in mxd.__dict__:
+              if name == refname:
+                  refo = mxd.__dict__[name][I] + 0.01 # add 0.01 to handle negatives
+      # calculate AE with respect to 550
+      for t in range(mxd.nTarget):
+          name = 'm'+mxd.Target[t][1:]
+          if name in mxd.__dict__:
+              if name != refname:
+                  print('orig t,wav',t,name[4:])
+                  wav = float(name[4:])
+                  oo = mxd.__dict__[name][I] + 0.01 # add 0.01 to handle negatives
+                  tt = np.exp(targets[:,t]) # keep + 0.01 to handle negatives
+                  AEo = -1.*np.log(refo/oo)/np.log(refwav/wav)
+                  AEt = -1.*np.log(reft/tt)/np.log(refwav/wav)
+                  fig = _plotKDE(AEt,AEo,y_label='Original MODIS',x_bins=bins,y_bins=bins)
+                  title("AE 550/"+name[3:])
+                  savefig(outdir+"/"+expid+"."+ident+"_kde-AE"+name[4:]+'.png')
+                  plt.close(fig)
+
+#---------------------------------------------------------------------
+
+def make_plots_angstrom(mxd,expid,ident,I=None):
+  outdir = mxd.plotdir
+  if not os.path.exists(outdir):
+    os.makedirs(outdir)
+  if I is None:
+    I = ones(mxd.lon.shape).astype(bool)
+
+  # get the AOD from the predicted angstrom exponent
+  # ------------------------------------------------
+  targets  = mxd.getTargets(I)
+  results = mxd.eval(I)
+  base_wav = mxd.AE_base_wav
+  for t in range(mxd.nTarget):
+      tname = mxd.Target[t]
+      if 'Tau' in tname:
+          base_name = tname
+          base_tau_t  = np.exp(targets[:,t]) - 0.01
+          base_tau_r  = np.exp(results[:,t]) - 0.01
+
+  for t in range(mxd.nTarget):
+      tname = mxd.Target[t]
+      if 'AE' in tname:
+          wav = float(tname.split('AE')[-1])
+          tau = base_tau_t*np.exp(-1.*np.log(wav/base_wav)*targets[:,t])
+          targets[:,t] = np.log(tau + 0.01)
+
+          tau = base_tau_r*np.exp(-1.*np.log(wav/base_wav)*results[:,t])
+          results[:,t] = np.log(tau + 0.01)
+
+  # Plot KDE of corrected AOD
+  # -------------------------
+  # loop through targets
+  for t in range(mxd.nTarget):
+      fig = _plotKDE(targets[:,t],results[:,t],y_label='NNR')
+      title("Log("+mxd.Target[t][1:]+"+0.01)- "+ident)
+      tname = mxd.Target[t]
+      if 'AE' in tname:
+          wavs = tname.split('AE')[-1]
+          name = 'Tau'+wavs
+      else:
+          name = tname[1:]
+      savefig(outdir+"/"+expid+"."+ident+"_kde-"+name+'-corrected.png')
+      plt.close(fig)
+
+  # Plot KDE of uncorrected AOD
+  # ---------------------------
+  # loop through targets
+  # plot if there's a corresponding MODIS retrieval
+  for t in range(mxd.nTarget):
+      tname = mxd.Target[t]
+      if 'AE' in tname:
+          wavs = tname.split('AE')[-1]
+          name = 'mTau'+ wavs
+      else:
+          name = 'm'+mxd.Target[t][1:]
+      if name in mxd.__dict__:
+          original = log(mxd.__dict__[name][I]+0.01)
+          fig = _plotKDE(targets[:,t],original,y_label='Original MODIS')
+          title("Log("+mxd.Target[t][1:]+"+0.01)- "+ident)
+          savefig(outdir+"/"+expid+"."+ident+"_kde-"+name[1:]+'.png')
+          plt.close(fig)
+
+          if name == 'mTau550':
+              # Scatter diagram for testing
+              # ---------------------------
+              mxd.plotScat(iTarget=t,I=I,figfile=outdir+"/"+expid+"."+ident+"_scat-"+name+'.png')
+
+  # If more than one target
+  # Plot KDE of Angstrom Exponent
+  # Implicitly requires AOD 550
+  # -------------------------------
+  if mxd.nTarget > 1:
+      bins = np.arange(0., 3., 0.05 )
+      # AE from Corrected AOD
+      # ----------------------
+      refname = 'Tau550'
+      refwav  = 550.
+      # find index of reference
+      for t in range(mxd.nTarget):
+          name = mxd.Target[t][1:]
+          if name == refname:
+              reft = np.exp(targets[:,t]) # keep the + 0.01 to handle negatives in MODIS data
+              refr = np.exp(results[:,t]) # keep the + 0.01 to handle negatives in MODIS data
+      # calculate AE with respect to 550
+      for t in range(mxd.nTarget):
+          tname = mxd.Target[t]
+          if 'AE' in tname:
+              wavs = tname.split('AE')[-1]
+              name = 'Tau'+wavs
+          else:         
+              name = mxd.Target[t][1:]
+          if name != refname:
+              print('t,wav',t,name[3:])
+              wav = float(name[3:])
+              tt = np.exp(targets[:,t]) # keep the + 0.01 to handle negatives in MODIS data
+              rr = np.exp(results[:,t]) # keep the + 0.01 to handle negatives in MODIS data
+              AEt = -1.*np.log(reft/tt)/np.log(refwav/wav)
+              AEr = -1.*np.log(refr/rr)/np.log(refwav/wav)
+
+              fig = _plotKDE(AEt,AEr,y_label='NNR',x_bins=bins,y_bins=bins)
+              title("AE 550/"+name[4:])
+              savefig(outdir+"/"+expid+"."+ident+"_kde-AE"+wavs+'-corrected.png')
+              plt.close(fig)
+
+      # AE from uncorrected AOD
+      # ------------------------
+      # find index of reference
+      refname = 'm' + refname
+      for t in range(mxd.nTarget):
+          name = 'm'+mxd.Target[t][1:]
+          if name in mxd.__dict__:
+              if name == refname:
+                  refo = mxd.__dict__[name][I] + 0.01 # add 0.01 to handle negatives
+      # calculate AE with respect to 550
+      for t in range(mxd.nTarget):
+          tname = mxd.Target[t]
+          if 'AE' in tname:
+              wavs = tname.split('AE')[-1]
+              name = 'mTau'+wavs
+          else:
+              name = 'm'+mxd.Target[t][1:]
+          if name in mxd.__dict__:
+              if name != refname:
+                  print('orig t,wav',t,name[4:])
+                  wav = float(name[4:])
+                  oo = mxd.__dict__[name][I] + 0.01 # add 0.01 to handle negatives
+                  tt = np.exp(targets[:,t]) # keep + 0.01 to handle negatives
+                  AEo = -1.*np.log(refo/oo)/np.log(refwav/wav)
+                  AEt = -1.*np.log(reft/tt)/np.log(refwav/wav)
+                  fig = _plotKDE(AEt,AEo,y_label='Original MODIS',x_bins=bins,y_bins=bins)
+                  title("AE 550/"+name[3:])
+                  savefig(outdir+"/"+expid+"."+ident+"_kde-AE"+name[4:]+'.png')
+                  plt.close(fig)
 
 #---------------------------------------------------------------------
 def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=None,
@@ -382,130 +576,152 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
 
   # Plot PDF of Error
   # -------------------------
-  if K is None:
-    targets  = [mxd.getTargets(I[0])]
-    if len(targets[0].shape) > 1:
-      targets[0] = targets[0][:,0]
+  # loop through targets
+  # plot if there's a corresponding MODIS retrieval 
+  for t in range(mxd.nTarget):
+    tname = 'm'+mxd.Target[t][1:]
+    if 'Tau' not in tname:
+        wavs = tname.split('AE')[-1]
+        wav = float(wavs)
+        name = 'mTau'+wavs
+    else:
+        name = tname
+    if name in mxd.__dict__:
+      if K is None:
+        targets  = mxd.getTargets(I[0])[:,t]
+        inputs = mxd.getInputs(I[0],Input=Input)
+        knet = mxd.loadnet(netfileRoot+'_Tau.net')
+        results = knet(inputs)[:,t]
 
-    # results  = [mxd.eval(I)[:,0]]
-    inputs = mxd.getInputs(I[0],Input=Input)
-    knet = mxd.loadnet(netfileRoot+'_Tau.net')
-    out = knet(inputs)[:,0]
-    results = [out]
+        if 'Tau' not in tname:
+            base_tau_t = np.exp(mxd.getTargets(I[0])[:,mxd.AE_base_wav_i]) - 0.01
+            tau = base_tau_t*np.exp(-1.*np.log(wav/mxd.AE_base_wav)*targets)
+            targets = np.log(tau + 0.01)
+
+            base_tau_r = np.exp(knet(inputs)[:,mxd.AE_base_wav_i]) - 0.01
+            tau = base_tau_r*np.exp(-1.*np.log(wav/mxd.AE_base_wav)*results)
+            results = np.log(tau + 0.01)
+
+        original = mxd.__dict__[name][I[0]]
+
+        if mxd.laod:
+          original = log(original + 0.01)
+
+        mod04RMSE = rmse(original,targets)
+        nnrRMSE   = rmse(results,targets)
+
+        targets = [targets]
+        results = [results]
+        original = [original]
+      else:
+        targets   = []
+        original  = []
+        results   = []
+        mod04RMSE = []
+        nnrRMSE   = []
+        for k,iTest in enumerate(I):
+          mxd.iTest    = iTest
+
+          targets.append(mxd.getTargets(mxd.iTest)[:,t])
+
+          inputs = mxd.getInputs(mxd.iTest,Input=Input)
+
+          knet = mxd.loadnet(netfileRoot+'.k={}_Tau.net'.format(str(k+1)))
+          out = knet(inputs)[:,t]
+          results.append(out)
+
+          if 'Tau' not in tname:
+              base_tau_t = np.exp(mxd.getTargets(mxd.iTest)[:,mxd.AE_base_wav_i]) - 0.01
+              tau = base_tau_t*np.exp(-1.*np.log(wav/mxd.AE_base_wav)*targets[k])
+              targets[k] = np.log(tau + 0.01)
+
+              base_tau_r = np.exp(knet(inputs)[:,mxd.base_wav_i]) - 0.01
+              tau = base_tau_r*np.exp(-1.*np.log(wav/mxd.AE_base_wav)*results[k])
+              results[k] = np.log(tau + 0.01)
+
+          original.append(mxd.__dict__[name][mxd.iTest])
+
+          if mxd.laod:
+            original[k] = log(original[k] + 0.01)
+
+          mod04RMSE.append(rmse(original[k],targets[k]))
+          nnrRMSE.append(rmse(results[k],targets[k]))
+
+        print('mod04RMSE',mod04RMSE)
+        print('nnrRMSE',nnrRMSE)
+        mod04RMSE = np.mean(mod04RMSE)
+        nnrRMSE   = np.mean(nnrRMSE)
+
+      eorig = []
+      ecorr = []
+      for o,tar,r in zip(original,targets,results):
+        eorig.append(o - tar)
+        ecorr.append(r - tar)
+
+      if emax is None:
+        emax  = np.array([[e.max() for e in eorig],[e.max() for e in ecorr]]).max()
+      if emin is None:
+        emin  = np.array([[e.min() for e in eorig],[e.min() for e in ecorr]]).min()
+
+      nbins        = 100
+      corrected = []
+      orig      = []
+      x = np.linspace(emin,emax,nbins+1)
+      xcen = x[:-1] + 0.5*(x[1:] - x[:-1])
+      if K is None:
+        # cc, x = np.histogram(ecorr[0],bins=np.linspace(emin,emax,nbins+1),density=True)
+        # oo, x = np.histogram(eorig[0],bins=np.linspace(emin,emax,nbins+1),denstiry=True)
+
+        kernel = stats.gaussian_kde(ecorr[0])
+        cc     = kernel(xcen)
+
+        kernel = stats.gaussian_kde(eorig[0])
+        oo     = kernel(xcen)    
+
+        corrected.append(cc)
+        orig.append(oo)
+      else:
+        for k,iTest in enumerate(I):
+          # cc, x = np.histogram(ecorr[k],bins=np.linspace(emin,emax,nbins+1),density=True)
+          # oo, x = np.histogram(eorig[k],bins=np.linspace(emin,emax,nbins+1),density=True)
+
+          kernel = stats.gaussian_kde(ecorr[k])
+          cc     = kernel(xcen)
+
+          kernel = stats.gaussian_kde(eorig[k])
+          oo     = kernel(xcen)          
+
+          corrected.append(cc)
+          orig.append(oo)
+
+      corrected = np.array(corrected).T
+      orig      = np.array(orig).T
 
 
-    original = [mxd.mTau550[I[0]]]
+      if K is not None:
+         xcen = np.tile(xcen,(K,1)).T
 
-    if mxd.laod:
-      original[0] = log(original[0] + 0.01)
+      fig = plt.figure()
+      ax  = plt.subplot(111)  
+      ax.plot(xcen,orig,color='k')
+      ax.plot(xcen,corrected,color='r')
+      ax.set_xlim(emin,emax)
 
-    mod04RMSE = rmse(original[0],targets[0])
-    nnrRMSE   = rmse(results[0],targets[0])
-  else:
-    targets   = []
-    original  = []
-    results   = []
-    mod04RMSE = []
-    nnrRMSE   = []
-    for k,iTest in enumerate(I):
-      # Irange     = arange(mxd.nobs)
-      # iValid     = Irange[mxd.iValid]
-      # mxd.iTest  = iValid[iTest]
-      mxd.iTest    = iTest
+      if mxd.surface == 'ocean':
+        ax.set_ylim(0,3.5)
+      else:
+        ax.set_ylim(0,2.0)
+      orig_patch      = mpatches.Patch(color='k', label='MOD04 RMSE={:1.2F}'.format(mod04RMSE))
+      corrected_patch = mpatches.Patch(color='r', label='NNR RMSE={:1.2F}'.format(nnrRMSE) )
+      ax.legend(handles=[orig_patch,corrected_patch])
+      plt.grid(True, which='major',axis='both',color='0.50',linestyle='-')
 
-      targets.append(mxd.getTargets(mxd.iTest))
-      if len(targets[k].shape) > 1:
-            targets[k] = targets[k][:,0]
-
-      original.append(mxd.mTau550[mxd.iTest])
-
-      inputs = mxd.getInputs(mxd.iTest,Input=Input)
-
-      knet = mxd.loadnet(netfileRoot+'.k={}_Tau.net'.format(str(k+1)))
-      out = knet(inputs)[:,0]
-      results.append(out)
-
-      if mxd.laod:
-        original[k] = log(original[k] + 0.01)
-
-      mod04RMSE.append(rmse(original[k],targets[k]))
-      nnrRMSE.append(rmse(results[k],targets[k]))
-
-    print('mod04RMSE',mod04RMSE)
-    print('nnrRMSE',nnrRMSE)
-    mod04RMSE = np.mean(mod04RMSE)
-    nnrRMSE   = np.mean(nnrRMSE)
-
-  eorig = []
-  ecorr = []
-  for o,t,r in zip(original,targets,results):
-    eorig.append(o - t)
-    ecorr.append(r - t)
-
-  if emax is None:
-    emax  = np.array([[e.max() for e in eorig],[e.max() for e in ecorr]]).max()
-  if emin is None:
-    emin  = np.array([[e.min() for e in eorig],[e.min() for e in ecorr]]).min()
-
-  nbins        = 100
-  corrected = []
-  orig      = []
-  x = np.linspace(emin,emax,nbins+1)
-  xcen = x[:-1] + 0.5*(x[1:] - x[:-1])
-  if K is None:
-    # cc, x = np.histogram(ecorr[0],bins=np.linspace(emin,emax,nbins+1),density=True)
-    # oo, x = np.histogram(eorig[0],bins=np.linspace(emin,emax,nbins+1),denstiry=True)
-
-    kernel = stats.gaussian_kde(ecorr[0])
-    cc     = kernel(xcen)
-
-    kernel = stats.gaussian_kde(eorig[0])
-    oo     = kernel(xcen)    
-
-    corrected.append(cc)
-    orig.append(oo)
-  else:
-    for k,iTest in enumerate(I):
-      # cc, x = np.histogram(ecorr[k],bins=np.linspace(emin,emax,nbins+1),density=True)
-      # oo, x = np.histogram(eorig[k],bins=np.linspace(emin,emax,nbins+1),density=True)
-
-      kernel = stats.gaussian_kde(ecorr[k])
-      cc     = kernel(xcen)
-
-      kernel = stats.gaussian_kde(eorig[k])
-      oo     = kernel(xcen)          
-
-      corrected.append(cc)
-      orig.append(oo)
-
-  corrected = np.array(corrected).T
-  orig      = np.array(orig).T
-
-
-  if K is not None:
-    xcen = np.tile(xcen,(K,1)).T
-
-  fig = plt.figure()
-  ax  = plt.subplot(111)  
-  ax.plot(xcen,orig,color='k')
-  ax.plot(xcen,corrected,color='r')
-  ax.set_xlim(emin,emax)
-
-  if mxd.surface == 'ocean':
-    ax.set_ylim(0,3.5)
-  else:
-    ax.set_ylim(0,2.0)
-  orig_patch      = mpatches.Patch(color='k', label='MOD04 RMSE={:1.2F}'.format(mod04RMSE))
-  corrected_patch = mpatches.Patch(color='r', label='NNR RMSE={:1.2F}'.format(nnrRMSE) )
-  ax.legend(handles=[orig_patch,corrected_patch])
-  plt.grid(True, which='major',axis='both',color='0.50',linestyle='-')
-
-  if Title is None:
-    title("Error Log("+mxd.Target[0][1:]+"+0.01)")
-  else:
-    title(Title)
-  savefig(outdir+"/error_pdf-"+expid+"."+ident+"-"+mxd.Target[0][1:]+'.png')  
-  plt.close(fig)
+      if Title is None:
+        title("Error Log("+name[1:]+"+0.01)")
+      else:
+        title(Title)
+      savefig(outdir+"/error_pdf-"+expid+"."+ident+"-"+name[1:]+'.png')  
+      plt.close(fig)
 #---------------------------------------------------------------------  
 #---------------------------------------------------------------------
 def make_error_pdfs_int(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=None,
@@ -880,9 +1096,10 @@ def TestStats(mxd,K,C):
     # out.shape = [ntestobs,nTarget]
     out, reg = mxd.test(iprint=False)
 
-    mxd.nnr.slope[k,c,:]     = reg[:][0]
-    mxd.nnr.intercept[k,c,:] = reg[:][1]
-    mxd.nnr.R[k,c,:]         = reg[:][2]
+    reg = np.array(reg)
+    mxd.nnr.slope[k,c,:]     = reg[:,0]
+    mxd.nnr.intercept[k,c,:] = reg[:,1]
+    mxd.nnr.R[k,c,:]         = reg[:,2]
 
     targets  = mxd.getTargets(mxd.iTest)
 
@@ -969,7 +1186,8 @@ def SummaryPDFs(mxdx,mxdx2=None,varnames=['mRef870','mSre470'],doInt=False):
 
     for c,Input in enumerate(mxdx.comblist):
       if len(mxdx.comblist) == 1:
-        netfileRoot = mxdx.outdir+"/"+mxdx.expid+'_Tau.net'
+        invars = mxdx.comblist[0]
+        netfileRoot = mxdx.outdir+"/"+'.'.join(invars)
       else:
         for invars in itertools.permutations(Input):
           netfileRoot = mxdx.outdir+"/"+'.'.join(invars)
@@ -986,7 +1204,8 @@ def SummaryPDFs(mxdx,mxdx2=None,varnames=['mRef870','mSre470'],doInt=False):
       netfileRoot2 = None
       if mxdx2 is not None:
         if len(mxdx.comblist) == 1:
-          netfileRoot2 = mxdx2.outdir+"/"+mxdx2.expid+'_Tau.net'
+          invars = mxdx2.comblist[0]
+          netfileRoot2 = mxdx2.outdir+"/"+'.'.join(invars)
           Input2 = mxdx2.comblist[0]
         else:        
           Input2 = mxdx2.comblist[c]

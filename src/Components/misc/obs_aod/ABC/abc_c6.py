@@ -22,7 +22,7 @@ import itertools
 from   sklearn.linear_model import LinearRegression
 from   multiprocessing      import cpu_count
 from   abc_c6_aux           import SummarizeCombinations, get_Iquartiles, get_Ispecies, get_ImRef
-from   abc_c6_aux           import make_plots, make_error_pdfs, TestStats, SummaryPDFs
+from   abc_c6_aux           import make_plots, make_plots_angstrom, TestStats, SummaryPDFs
 from   brdf                 import rtlsReflectance
 from   mcd43c               import BRDF
 from functools import reduce
@@ -88,7 +88,42 @@ class SETUP(object):
     self.nTarget = len(Target)
     self.K       = K
     self.nHidden = nHidden
-      
+
+    # figure out if you need to calculate angstrom exponent
+    angstrom = False
+    for tname in Target:
+        if not angstrom:
+            if 'AE' in tname:
+                angstrom = True
+    self.angstrom = angstrom
+
+    # if angstrom is being trained
+    # find the base wavelength
+    # calculate angstrom with respect to the base wavelength
+    # -------------------------------------------------------
+    if angstrom:
+        # find base wavelength
+        for i,tname in enumerate(Target):
+            if 'Tau' in tname:
+                base_name = tname
+                base_wavs = tname.split('Tau')[-1]
+                base_wav = float(base_wavs)
+                base_tau = self.__dict__[tname]
+                base_wav_i = i
+
+        self.AE_base_wav = base_wav
+        self.AE_base_wav_i = base_wav_i
+
+        # Calculate the angstrom exponent
+        # with respect to the base wavelength
+        for tname in Target:
+            if 'Tau' not in tname:
+                wavs = tname.split('AE')[-1]
+                wav  = float(wavs)
+                tau  = self.__dict__['aTau'+wavs]
+                AE = -1.*np.log(tau/base_tau)/np.log(wav/base_wav)
+                self.__dict__['aAE'+wavs] = AE
+
     # Balance the dataset before splitting
     # No aerosol type should make up more that 35% 
     # of the total number of obs
@@ -151,19 +186,12 @@ class ABC(object):
     def __init__(self,fname,Albedo,coxmunk_lut=None,NDVI=False):
 
         # Get Auxiliary Data
-        self.setfnameRoot(fname)
+        self.fnameRoot = fname[:-3]
         self.setWind()
         self.setAlbedo(Albedo,coxmunk_lut=coxmunk_lut)
         self.setSpec()
         if NDVI:
             self.setNDVI()
-
-    def setfnameRoot(self,fname):
-        if self.sat == 'Aqua':
-            self.fnameRoot = 'myd_' + fname.split('/')[-1].split('.')[0]
-        elif self.sat == 'Terra':
-            self.fnameRoot = 'mod_' + fname.split('/')[-1].split('.')[0]
-        
 
     def setWind(self):
         # Read in wind
@@ -1135,12 +1163,17 @@ def _test(mxd,expid,c,plotting=True):
         print('{} not found.  Need to train this combinatin of inputs'.format(netFile))
         raise
     else:
-      netFile = outdir+"/"+expid+'_Tau.net'
+      invars = mxd.comblist[0]
+      netFile = outdir+"/"+".".join(invars)+'_Tau.net'
 
     mxd.net = mxd.loadnet(netFile)
     mxd.Input = mxd.comblist[c]
     TestStats(mxd,mxd.K,c)
-    if plotting: make_plots(mxd,expid,ident,I=mxd.iTest)
+    if plotting: 
+        if mxd.angstrom:
+            make_plots_angstrom(mxd,expid,ident,I=mxd.iTest)
+        else:
+            make_plots(mxd,expid,ident,I=mxd.iTest)
   else:
     k = 1
     for iTrain, iTest in mxd.kf:
@@ -1166,20 +1199,26 @@ def _test(mxd,expid,c,plotting=True):
           print('{} not found.  Need to train this combinatin of inputs'.format(netFile))
           raise
       else:
-        netFile = outdir+"/"+expid+'.k={}_Tau.net'.format(str(k))
+        invars = mxd.comblist[0]
+        netFile = outdir+"/"+".".join(invars)+'.k={}_Tau.net'.format(str(k))
 
 
       mxd.net = mxd.loadnet(netFile)
       mxd.Input = mxd.comblist[c]      
       TestStats(mxd,k-1,c)
-      if plotting: make_plots(mxd,expid,'.k={}'.format(str(k)),I=mxd.iTest)
+      if plotting: 
+          if mxd.angstrom:
+              make_plots_angstrom(mxd,expid,'.k={}'.format(str(k)),I=mxd.iTest)
+          else:
+              make_plots(mxd,expid,'.k={}'.format(str(k)),I=mxd.iTest)
       k = k + 1    
 
 #---------------------------------------------------------------------
 def _trainMODIS(mxdx):
 
   if not mxdx.combinations:
-    _train(mxdx,mxdx.expid,0)
+    Input = mxdx.comblist[0]
+    _train(mxdx,'.'.join(Input),0)
   else:
     for c,Input in enumerate(mxdx.comblist):
       _train(mxdx,'.'.join(Input),c)

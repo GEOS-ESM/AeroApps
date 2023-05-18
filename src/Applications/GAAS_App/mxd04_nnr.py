@@ -99,6 +99,11 @@ TranslateTarget = dict ( aTau440 = ( 'aod_', 440 ),
                          aTau550 = ( 'aod_', 550 ),
                          aTau660 = ( 'aod_', 660 ),
                          aTau870 = ( 'aod_', 870 ),
+                         aAE440  = ( 'aod_', 440 ),
+                         aAE470  = ( 'aod_', 470 ),
+                         aAE500  = ( 'aod_', 500 ),
+                         aAE660  = ( 'aod_', 660 ),
+                         aAE870  = ( 'aod_', 870 ),
                          )
 
 class MxD04_NNR(MxD04_L2):
@@ -114,7 +119,9 @@ class MxD04_NNR(MxD04_L2):
                  scat_thresh=170.0,
                  cloudFree=None,
                  aodmax=1.0,
-                 coll='006',verbose=0):
+                 coll='006',
+                 nsyn=8,
+                 verbose=0):
         """
         Contructs a MXD04 object from MODIS Aerosol Level 2
         granules. On input,
@@ -129,7 +136,9 @@ class MxD04_NNR(MxD04_L2):
         cloud_tresh --- cloud fraction treshhold
         cloudFree   --- cloud fraction threshhold for assuring no cloud contaminations when aod is > aodmax
                         if None, no cloud free check is made
-              
+        coll         --- MODIS data collection
+        nsyn         --- number of synoptic times              
+
         The following attributes are also defined:
            fractions dust, sea salt, BC+OC, sulfate
            aod_coarse
@@ -148,15 +157,15 @@ class MxD04_NNR(MxD04_L2):
         
         # Initialize superclass
         # ---------------------
-        Files = granules(l2_path,prod,syn_time,coll=coll)
+        Files = granules(l2_path,prod,syn_time,coll=coll,nsyn=nsyn)
         if algo != "DEEP":
-            MxD04_L2.__init__(self,Files,algo,syn_time,
+            MxD04_L2.__init__(self,Files,algo,syn_time=syn_time,nsyn=nsyn,
                               only_good=True,
                               SDS=SDS,
                               alias={'Deep_Blue_Cloud_Fraction_Land':'cloud_deep'},
                               Verb=verbose)            
         else:        
-            MxD04_L2.__init__(self,Files,algo,syn_time,
+            MxD04_L2.__init__(self,Files,algo,syn_time=syn_time,nsyn=nsyn,
                               only_good=False,
                               SDS=SDS,                            
                               alias=ALIAS,
@@ -304,6 +313,14 @@ class MxD04_NNR(MxD04_L2):
         except:
             pass   # ignore it for systems without nitrates
 
+        # Handle brown carbon
+        # --------------------
+        try:
+            self.sampleFile(aer_x,onlyVars=('BREXTTAU',),Verbose=Verbose)
+            self.fcc += self.sample.BRCEXTTAU / s.TOTEXTTAU
+        except:
+            pass   # ignore it for systems without brown carbon
+
         del self.sample
 
 #---
@@ -437,6 +454,32 @@ class MxD04_NNR(MxD04_L2):
         # ---------------------
         targets = self.net(self._getInputs())
 
+        # If target is angstrom exponent
+        # calculate AOD 
+        # ------------------------------
+        doAE = False
+        for targetName in self.net.TargetNames:
+            if 'AE' in targetName:
+                doAE = True
+
+        if doAE:
+            for i,targetName in enumerate(self.net.TargetNames):
+                if 'Tau' in targetName:
+                    name, base_wav = TranslateTarget[targetName]
+                    base_wav = np.float(base_wav)
+                    base_tau = targets[:,i]
+                    if self.net.laod:
+                        base_tau = exp(base_tau) - 0.01 # inverse
+            for i,targetName in enumerate(self.net.TargetNames):
+                if 'AE' in targetName:
+                    AE = targets[:,i]
+                    name, wav = TranslateTarget[targetName]
+                    wav = np.float(wav)
+                    data = base_tau*np.exp(-1.*AE*np.log(wav/base_wav))
+                    if self.net.laod:
+                        targets[:,i] = np.log(data + 0.01)
+                    else:
+                        targets[:,i] = data
 
         # Targets do not have to be in MODIS retrieval
         # ----------------------------------------------

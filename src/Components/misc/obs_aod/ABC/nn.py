@@ -84,7 +84,7 @@ class NN(object):
 
         # Train
         # -----
-        bounds = [bounds]*self.net.get_params()['conec'].shape[0]
+        bounds = [bounds]*self.net.conec.shape[0]
         if self.verbose>0:
             print("Starting training with %s inputs and %s targets"\
                   %(str(inputs.shape),str(targets.shape)))
@@ -187,11 +187,18 @@ class NN(object):
         targets for a neural net evaluation:
         Returns: tagets
         """
-        targets = self.__dict__[self.Target[0]][I]
+        var = self.Target[0]
+        if self.laod and ('Tau' in var):
+            targets = log(self.__dict__[var][I] + 0.01)
+        else:
+            targets = self.__dict__[var][I]
+
         for var in self.Target[1:]:
-            targets = cat[targets,self.__dict__[var][I]]
-        if self.laod:
-            targets = log(targets + 0.01)
+            if self.laod and ('Tau' in var):
+                targets = cat[targets,log(self.__dict__[var][I] + 0.01)]
+            else:
+                targets = cat[targets,self.__dict__[var][I]]
+
         return targets
  
     def plotKDE(self,bins=None,I=None,figfile=None,
@@ -286,3 +293,5 @@ def _plotKDE(x_values,y_values,x_bins=None,y_bins=None,
         xlabel(x_label)
         ylabel(y_label)
         grid()
+
+        return fig
