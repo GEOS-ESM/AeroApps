@@ -8,6 +8,21 @@
 
 ### Changed
 
+## [v2.0.1] - 2023-05-17
+
+### Added
+
+
+### Fixed
+
+- fix in trj_sampler for ICARTT files that have missing values in the location/time
+- fix in py_ods that was trying to do element wise comparisons on tuples and lists
+
+### Changed
+
+- updated GMAOpyobs to v1.0.2
+- updates to NNR training code to handle angstrom exponent targets
+- some other minor changes to NNR training code to be python3 compliant
 
 ## [v2.0.0] - 2023-05-17
 

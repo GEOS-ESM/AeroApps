@@ -84,7 +84,7 @@ def getTrackICT(ictFile,dt_secs):
     """
     Get trajectory from ICART (.ict) file.
     """
-    m = ICARTT(ictFile)
+    m = ICARTT(ictFile,only_good=True)
     lon, lat, tyme = m.Nav['Longitude'], m.Nav['Latitude'], m.Nav['Time']
     mdt = (tyme[-1] - tyme[0]).total_seconds()/float(len(tyme)-1) # in seconds
     idt = int(dt_secs/mdt+0.5)

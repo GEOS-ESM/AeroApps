@@ -11,7 +11,7 @@
 
 from os       import system
 from optparse import OptionParser
-from MAPL     import Config
+from MAPL.config     import Config
 
 if __name__ == "__main__":
     

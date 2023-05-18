@@ -35,7 +35,6 @@ set (PYFILES
     evaluate_avhrr.py
     evaluate_cdr.py
     giant.py
-    man.py
     mcd43c.py
     nn.py
     reduce_avhrr.py
