@@ -40,7 +40,7 @@ def makethis_dir(filename):
     if path != '':
         rc = os.system('mkdir -p '+path)
         if rc:
-            raise IOError, "could not create directory "+path
+            raise IOError("could not create directory "+path)
         
 #---------------------------------------------------------------------
 
@@ -137,10 +137,10 @@ if __name__ == "__main__":
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
         
     if options.verbose:
-        print ""
-        print "                          VIIRS Level 2A Processing"
-        print "                          -------------------------"
-        print ""
+        print("")
+        print("                          VIIRS Level 2A Processing")
+        print("                          -------------------------")
+        print("")
         t0 = clock()
 
 #   Time variables
@@ -156,8 +156,8 @@ if __name__ == "__main__":
     out_file = strTemplate(out_tmpl,expid=options.expid,nymd=nymd,nhms=nhms)
     name, ext = os.path.splitext(out_file)
     if os.path.exists(out_file) and (options.force is not True):
-        print "vx04_l2a: Output Gridded file <%s> exists --- cannot proceed."%out_file
-        raise IOError, "Specify --force to overwrite existing output file."    
+        print("vx04_l2a: Output Gridded file <%s> exists --- cannot proceed."%out_file)
+        raise IOError("Specify --force to overwrite existing output file.")    
     if os.path.exists(out_file) and options.force:
         os.remove(out_file)    
 
@@ -167,8 +167,8 @@ if __name__ == "__main__":
     ods_tmpl = ods_tmpl.replace('%coll',options.coll).replace('%prod',prod).replace('%algo',algo).replace('%lev','2').replace('%ext','ods')
     ods_file = strTemplate(ods_tmpl,expid=options.expid,nymd=nymd,nhms=nhms)
     if os.path.exists(ods_file) and (options.force is not True):
-        print "vxd04_l2a: Output ODS file <%s> exists --- cannot proceed."%ods_file
-        raise IOError, "Specify --force to overwrite existing output file."
+        print("vxd04_l2a: Output ODS file <%s> exists --- cannot proceed."%ods_file)
+        raise IOError("Specify --force to overwrite existing output file.")
     if os.path.exists(ods_file) and options.force:
         os.remove(ods_file)
 
@@ -183,7 +183,7 @@ if __name__ == "__main__":
 #   VIIRS Level 2 NNR Aerosol Retrievals
 #   ------------------------------------
     if options.verbose:
-        print "NNR Retrieving %s %s on "%(sat,algo.upper()),syn_time
+        print("NNR Retrieving %s %s on "%(sat,algo.upper()),syn_time)
 
     viirs = Vx04_NNR(options.l2_path,sat,algo.upper(),syn_time,aer_x,
                       coll=options.coll,
@@ -193,11 +193,11 @@ if __name__ == "__main__":
                       verbose=options.verbose)
     if viirs.nobs < 1:
         if options.verbose:
-            print 'WARNING: no observation for this time in file <%s>'%ods_file
+            print('WARNING: no observation for this time in file <%s>'%ods_file)
     
     elif any(viirs.iGood) == False:
         if options.verbose:
-            print 'WARNING: no GOOD observation for this time in file <%s>'%ods_file
+            print('WARNING: no GOOD observation for this time in file <%s>'%ods_file)
         viirs.nobs = 0
 
     nn_file = options.nn_file.replace('%ident',ident)
@@ -213,7 +213,7 @@ if __name__ == "__main__":
             warnings.warn('cannot create empty output file <%s>'%ods_file)
         else:
             if options.verbose:
-                print "[w] Wrote empty ODS file "+ods_file
+                print("[w] Wrote empty ODS file "+ods_file)
 
 #   Write gridded output file (revised channels only)
 #   -------------------------------------------------
