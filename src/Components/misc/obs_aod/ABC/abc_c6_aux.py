@@ -173,7 +173,7 @@ def SummarizeCombinations(mxd,Input_nnr,yrange=None,sortname='rmse'):
     nblocks = [len(group) for group in mxd.combgroups]
     nblocks.insert(0,0)
 
-    print "MASTERLIST", masterlist
+    print("MASTERLIST", masterlist)
 
     #--------------
     # Default sort by mean RMSE of first target
@@ -393,7 +393,7 @@ def make_plots(mxd,expid,ident,I=None):
       for t in range(mxd.nTarget):
           name = mxd.Target[t][1:]
           if name != refname:
-              print 't,wav',t,name[3:]
+              print('t,wav',t,name[3:])
               wav = float(name[3:])
               tt = np.exp(targets[:,t]) # keep the + 0.01 to handle negatives in MODIS data
               rr = np.exp(results[:,t]) # keep the + 0.01 to handle negatives in MODIS data
@@ -419,7 +419,7 @@ def make_plots(mxd,expid,ident,I=None):
           name = 'm'+mxd.Target[t][1:]
           if name in mxd.__dict__:
               if name != refname:
-                  print 'orig t,wav',t,name[4:]
+                  print('orig t,wav',t,name[4:])
                   wav = float(name[4:])
                   oo = mxd.__dict__[name][I] + 0.01 # add 0.01 to handle negatives
                   tt = np.exp(targets[:,t]) # keep + 0.01 to handle negatives
@@ -528,7 +528,7 @@ def make_plots_angstrom(mxd,expid,ident,I=None):
           else:         
               name = mxd.Target[t][1:]
           if name != refname:
-              print 't,wav',t,name[3:]
+              print('t,wav',t,name[3:])
               wav = float(name[3:])
               tt = np.exp(targets[:,t]) # keep the + 0.01 to handle negatives in MODIS data
               rr = np.exp(results[:,t]) # keep the + 0.01 to handle negatives in MODIS data
@@ -559,7 +559,7 @@ def make_plots_angstrom(mxd,expid,ident,I=None):
               name = 'm'+mxd.Target[t][1:]
           if name in mxd.__dict__:
               if name != refname:
-                  print 'orig t,wav',t,name[4:]
+                  print('orig t,wav',t,name[4:])
                   wav = float(name[4:])
                   oo = mxd.__dict__[name][I] + 0.01 # add 0.01 to handle negatives
                   # protect against interpolated wavelengths that might have -9999
@@ -667,8 +667,8 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
           mod04RMSE.append(rmse(original[k],targets[k]))
           nnrRMSE.append(rmse(results[k],targets[k]))
 
-        print 'mod04RMSE',mod04RMSE
-        print 'nnrRMSE',nnrRMSE
+        print('mod04RMSE',mod04RMSE)
+        print('nnrRMSE',nnrRMSE)
         mod04RMSE = np.mean(mod04RMSE)
         nnrRMSE   = np.mean(nnrRMSE)
 
@@ -812,9 +812,9 @@ def make_error_pdfs_int(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRo
       dbmod04RMSE.append(rmse(dboriginal[k],targets[k]))
       nnrRMSE.append(rmse(results[k],targets[k]))
 
-    print 'mod04RMSE',mod04RMSE
-    print 'dbmod04RMSE',dbmod04RMSE
-    print 'nnrRMSE',nnrRMSE
+    print('mod04RMSE',mod04RMSE)
+    print('dbmod04RMSE',dbmod04RMSE)
+    print('nnrRMSE',nnrRMSE)
     mod04RMSE   = np.mean(mod04RMSE)
     dbmod04RMSE = np.mean(dbmod04RMSE)
     nnrRMSE     = np.mean(nnrRMSE)
@@ -989,10 +989,10 @@ def make_error_pdfs_dbdt(mxd,mxd2,Input,expid,ident,K=None,I=None,Title=None,
       nnrRMSE.append(rmse(results[k],targets[k]))
       nnrRMSE2.append(rmse(results2[k],targets[k]))
 
-    print 'mod04RMSE',mod04RMSE
-    print 'dbmod04RMSE',dbmod04RMSE
-    print 'nnrRMSE',nnrRMSE
-    print 'nnrRMSE2',nnrRMSE2
+    print('mod04RMSE',mod04RMSE)
+    print('dbmod04RMSE',dbmod04RMSE)
+    print('nnrRMSE',nnrRMSE)
+    print('nnrRMSE2',nnrRMSE2)
     mod04RMSE   = np.mean(mod04RMSE)
     dbmod04RMSE = np.mean(dbmod04RMSE)
     nnrRMSE     = np.mean(nnrRMSE)
