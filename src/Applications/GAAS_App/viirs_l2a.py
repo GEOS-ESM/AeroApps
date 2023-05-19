@@ -57,10 +57,10 @@ if __name__ == "__main__":
     for ident in cf('VIIRS_L2A_IDENTS').split(','):
         coll = Coll[i] 
         cmd = "vx04_l2a.py %s --collection=%s %s %s "%(Options,Coll[i],ident,isotime)
-        print cmd
+        print(cmd)
         if not options.dryrun:
             if system(cmd):
-                raise ValueError, "vx04_l2a.py failed for %s on %s "%(ident,isotime)
+                raise ValueError("vx04_l2a.py failed for %s on %s "%(ident,isotime))
 
         i += 1
     
