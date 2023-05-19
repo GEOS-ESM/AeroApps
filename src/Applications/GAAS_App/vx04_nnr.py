@@ -130,7 +130,7 @@ class Vx04_NNR(Vx04_L2):
             self.iGood = self.iGood & (self.GlintAngle > glint_thresh)
 
         if np.any(self.iGood) == False:
-            print "WARNING: Strange, no good obs left to work with"
+            print("WARNING: Strange, no good obs left to work with")
             return
 
         # Create attribute for holding NNR predicted AOD
@@ -214,7 +214,7 @@ class Vx04_NNR(Vx04_L2):
           if fh.lm == 1:
             timeInterp = False    # no time interpolation in this case
           else:
-            raise ValueError, "cannot handle files with more tha 1 time, use ctl instead"
+            raise ValueError("cannot handle files with more tha 1 time, use ctl instead")
         else:
           fh = GFIOctl(inFile)  # open timeseries
           timeInterp = True     # perform time interpolation
@@ -233,7 +233,7 @@ class Vx04_NNR(Vx04_L2):
         # ---------------------------
         for v in onlyVars:
             if Verbose:
-                print "<> Sampling ", v
+                print("<> Sampling ", v)
             if timeInterp:
               var = fh.sample(v,lons,lats,tymes,Verbose=Verbose)
             else:
@@ -246,7 +246,7 @@ class Vx04_NNR(Vx04_L2):
                 var = var.T # shape should be (nobs,nz)
                 self.sample.__dict__[v] = var
             else:
-                raise IndexError, 'variable <%s> has rank = %d'%(v,len(var.shape))
+                raise IndexError('variable <%s> has rank = %d'%(v,len(var.shape)))
 
         if npzFile is not None:
             savez(npzFile,**self.sample.__dict__)            
@@ -270,7 +270,7 @@ class Vx04_NNR(Vx04_L2):
             iName = TranslateInput(inputName)
 
             if self.verbose>0:
-                print 'Getting NN input ',iName
+                print('Getting NN input ',iName)
 
             # Retrieve input
             # --------------
@@ -288,7 +288,7 @@ class Vx04_NNR(Vx04_L2):
                 input = self.__dict__[name][:]
                 
             else:
-                raise ValueError, "strange, len(iName)=%d"%len(iName)
+                raise ValueError("strange, len(iName)=%d"%len(iName))
 
             # Concatenate Inputs
             # ------------------
@@ -369,9 +369,9 @@ class Vx04_NNR(Vx04_L2):
             name, ch = TranslateTarget(targetName)
             if self.verbose>0:
                 if self.net.laod:
-                    print "NN Retrieving log(AOD+0.01) at %dnm "%ch
+                    print("NN Retrieving log(AOD+0.01) at %dnm "%ch)
                 else:
-                    print "NN Retrieving AOD at %dnm "%ch
+                    print("NN Retrieving AOD at %dnm "%ch)
             k = list(self.channels).index(ch) # index of channel            
             self.channels_ = self.channels_ + [ch,]
             if self.net.laod:
@@ -421,7 +421,7 @@ if __name__ == "__main__":
     coll    = '002'
     aer_x   = '/nobackup/NNR/Misc/tavg1_2d_aer_Nx'
 
-    syn_time = datetime(2012,03,01,00,0,0)
+    syn_time = datetime(2012,0o3,0o1,00,0,0)
 
     if algo == 'DB_LAND':
         nn_file = '/nobackup/NNR/Net/VIIRS/nnr_001.vsnppdbl_Tau.net'
