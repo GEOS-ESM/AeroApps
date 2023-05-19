@@ -200,7 +200,7 @@ def plot(ipath, station, lat, lon, fcst, opath):
         ax1.set_xlim([fcst, cldhgh_t[-1]])
         ax1.set_ylim(-1.5,1.5)
         ax1.xaxis.set_ticks_position('top')
-        ax1.tick_params(axis=u'both', which=u'both', length=0)
+        ax1.tick_params(axis='both', which='both', length=0)
         ax1.set_ylabel('High', rotation=0)
         ax1.yaxis.set_label_coords(-0.03, 0.1)
         del cldhgh_t
@@ -213,7 +213,7 @@ def plot(ipath, station, lat, lon, fcst, opath):
         ax2.axhline(0, color='b')
         ax2.set_ylim(-2,2)
         ax2.yaxis.set_ticks([])
-        ax2.tick_params(axis=u'both', which=u'both', length=0)
+        ax2.tick_params(axis='both', which='both', length=0)
         ax2.set_ylabel('Mid', rotation=0)
         ax2.yaxis.set_label_coords(-0.03, 0.1)
         del cldmid_t
@@ -225,7 +225,7 @@ def plot(ipath, station, lat, lon, fcst, opath):
         ax3.bar(cldlow_t, np.negative(np.absolute(cldlow['data'])), width=width, color='w', align='center', linewidth=linewidth)
         ax3.axhline(0, color='b')
         ax3.yaxis.set_ticks([])
-        ax3.tick_params(axis=u'both', which=u'both', length=0)
+        ax3.tick_params(axis='both', which='both', length=0)
         ax3.set_ylim(-2,2)
         ax3.set_ylabel('Low', rotation=0)
         ax3.yaxis.set_label_coords(-0.03, 0.1)
@@ -334,7 +334,7 @@ def plot(ipath, station, lat, lon, fcst, opath):
             ax5.yaxis.grid(True)
             ax6 = ax5.twinx()
             ax6.plot(slp_t, (t2m['data']-273.15)*1.8+32., color='r')
-            ax5.tick_params(axis=u'both', which=u'both', length=0)
+            ax5.tick_params(axis='both', which='both', length=0)
             ax5.locator_params(axis='y', nbins=3)
             ax6.locator_params(axis='y', nbins=3)
             for t1 in ax6.get_yticklabels():
@@ -350,7 +350,7 @@ def plot(ipath, station, lat, lon, fcst, opath):
             ax5.bar(tau_t, _c, color='k', width=width*.2, align='center', linewidth=linewidth)
             ax5.bar(tau_t, _su, color='y', width=width*.2, align='center', linewidth=linewidth)
             ax5.yaxis.grid(True)
-            ax5.tick_params(axis=u'both', which=u'both', length=0)
+            ax5.tick_params(axis='both', which='both', length=0)
             ax5.locator_params(axis='y', nbins=3)
 
         # Text

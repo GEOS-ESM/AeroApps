@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Utility to regrid and gap fill MCD43D Collections onto GEO satellite domain.
@@ -58,7 +58,7 @@ for i, b in enumerate(outbands):
 #---
 def download_data(inDir,date,options,version=6):
 
-  varlist = range(7,22) + [31]
+  varlist = list(range(7,22)) + [31]
 
   # Get data
   commandhttp = 'https://ladsweb.modaps.eosdis.nasa.gov/archive/allData'
@@ -69,7 +69,7 @@ def download_data(inDir,date,options,version=6):
 
   for var in varlist:
     command = '{}/{}/MCD43D{}/{}/{}/'.format(commandRoot,version,str(var).zfill(2),date.year,date.strftime('%j')) 
-    print command
+    print(command)
 
     os.system(command)
 
@@ -82,11 +82,11 @@ def getCoords(geoFile,verbose):
     Assumes the file has albed been tighten in the E-W domain
     """
     if verbose:
-       print " <> Getting GEO coordinates from ", geoFile
+       print(" <> Getting GEO coordinates from ", geoFile)
     nc = Dataset(geoFile)
-    lon = nc.variables[u'clon'][:,:]
-    lat = nc.variables[u'clat'][:,:]
-    missing = nc.variables[u'clon'].missing_value
+    lon = nc.variables['clon'][:,:]
+    lat = nc.variables['clat'][:,:]
+    missing = nc.variables['clon'].missing_value
     return (nc,lon,lat,missing)
 
 #----
@@ -96,7 +96,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',layout=None,zlib=False):
     content over,
     """
     x = ncIn.variables[name]
-    print x.dimensions
+    print(x.dimensions)
     y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
     y.long_name = x.long_name
     y.units = x.units 
@@ -113,7 +113,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',layout=None,zlib=False):
 
         i_ = i%nX
         j_ = int(i/nX) 
-        print '_copyVar',nX,nY,i,i_,j_
+        print('_copyVar',nX,nY,i,i_,j_)
 
 
     if rank == 1:
@@ -147,7 +147,7 @@ def _copyVar(ncIn,ncOut,name,dtype='f4',layout=None,zlib=False):
 
             y[:,:,:] = x[:,Ystart:Yend,Xstart:Xend]
     else:
-        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
+        raise ValueError("invalid rank of <%s>: %d"%(name,rank))
 
 
 #----
@@ -191,14 +191,14 @@ def writenc(mcdData,ncGeo,clon,clat,options,xchunk=150, ychunk=200):
 
     # Add pseudo dimensions for GrADS compatibility
     # -------------------------------------------
-    _copyVar(ncGeo,nc,u'ew',dtype='f4',zlib=False)
-    _copyVar(ncGeo,nc,u'ns',dtype='f4',zlib=False)
+    _copyVar(ncGeo,nc,'ew',dtype='f4',zlib=False)
+    _copyVar(ncGeo,nc,'ns',dtype='f4',zlib=False)
 
     # Save lon/lat if so desired
     # --------------------------
     if options.coords:
-        _copyVar(ncGeo,nc,u'clon',dtype='f4',zlib=False)
-        _copyVar(ncGeo,nc,u'clat',dtype='f4',zlib=False)
+        _copyVar(ncGeo,nc,'clon',dtype='f4',zlib=False)
+        _copyVar(ncGeo,nc,'clat',dtype='f4',zlib=False)
 
     # Loop over Bands writing each dataset
     #---------------------------------------
@@ -360,7 +360,7 @@ if __name__ == "__main__":
   elif 'NETCDF3' in options.format:
       options.outFile = name + '.nc'
   else:
-      raise ValueError, 'invalid extension <%s>'%ext
+      raise ValueError('invalid extension <%s>'%ext)
   options.zlib = not options.nozip
 
   # Create (x,y,t) coordinates
@@ -376,7 +376,7 @@ if __name__ == "__main__":
   # Get Land Fraction
   #---------------------
   ncLand = Dataset(options.landFile)
-  FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
+  FRLAND = np.squeeze(ncLand.variables['FRLAND'][:])
   ncLand.close()  
 
   ncClim = Dataset(options.climFile)     

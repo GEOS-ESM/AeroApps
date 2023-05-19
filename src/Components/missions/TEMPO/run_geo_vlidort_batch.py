@@ -1,4 +1,4 @@
-#!/bin/python
+#!/bin/python3
 # -*- coding: utf-8 -*-
 """ Runscript for geo_vlidort episodes"""
 from datetime import datetime, timedelta 
@@ -160,18 +160,18 @@ def prefilter(date,indir):
     land  = indir + '/LevelB/invariant/tempo-g5nr.lb2.asm_Nx.nc4'  
 
     ncMet = Dataset(met)
-    Cld   = np.squeeze(ncMet.variables[u'CLDTOT'][:])
+    Cld   = np.squeeze(ncMet.variables['CLDTOT'][:])
     f     = np.where(Cld > 0.01)
     ncMet.close()
     if len(f[0]) == 0:
         return False
 
     ncGeom = Dataset(geom)
-    SZA    = np.squeeze(ncGeom.variables[u'solar_zenith'][:])
-    VZA    = np.squeeze(ncGeom.variables[u'sensor_zenith'][:])
+    SZA    = np.squeeze(ncGeom.variables['solar_zenith'][:])
+    VZA    = np.squeeze(ncGeom.variables['sensor_zenith'][:])
     ncGeom.close()
     ncLand = Dataset(land)
-    FRLAND = np.squeeze(ncLand.variables[u'FRLAND'][:])
+    FRLAND = np.squeeze(ncLand.variables['FRLAND'][:])
     ncLand.close()
 
     SZA = SZA[f]
@@ -279,7 +279,7 @@ if __name__ == "__main__":
                     jobid = int(subprocess.check_output(['qsub','-W','depend=afterok:'+str(jobid),runstring[i+j]]))
                     #print 'qsub -W depend=afterok:str(jobid)' +' '+runstring[i+j]
     else:
-        print 'No model hours to run'
+        print('No model hours to run')
 
     
 

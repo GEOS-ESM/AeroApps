@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper to loop through channels and submit pace_lc.j jobs to sbatch for one pace granule
@@ -106,13 +106,13 @@ def shave(q,undef=MAPL_UNDEF,has_undef=1,nbits=12):
     elif rank == 3: # zyx
         chunksize = shp[1]*shp[2]
     else:
-        raise ValueError, "invalid rank=%d"%rank
+        raise ValueError("invalid rank=%d"%rank)
 
     # Shave it
     # --------
     qs, rc = shave32(q.ravel(),xbits,has_undef,undef,chunksize)
     if rc:
-        raise ValueError, "error on return from shave32, rc=%d"%rc
+        raise ValueError("error on return from shave32, rc=%d"%rc)
 
     return qs.reshape(shp)
 
@@ -196,12 +196,12 @@ class JOBS(object):
                     if (errcheck is False):
                         self.errTally[i] = False
                     else:
-                        print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
+                        print('Jobid ',s,' in ',self.dirstring[i],' exited with errors')
 
             # finished checking up on all the jobs
             # Remove finished jobs from the currently working list
             if len(finishedJobs) != 0:
-                print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
+                print('deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]])
                 if self.nodemax is not None:
                     node_tally = node_tally - self.nodemax*len(finishedJobs)
                 else:                
@@ -240,12 +240,12 @@ class JOBS(object):
                 stat = subprocess.call(['qstat -u pcastell'], shell=True, stdout=devnull)
 
 
-            print 'Waiting 5 minutes'
+            print('Waiting 5 minutes')
             time.sleep(60*2)
             
 
         # Exited while loop
-        print 'All jobs done'
+        print('All jobs done')
 
         # Clean up workspaces for completed jobs
         for i,s in enumerate(jobid):
@@ -259,7 +259,7 @@ class JOBS(object):
                     self.compress(i,devnull)
 
         # Postprocessing done
-        print 'Cleaned Up Worksapces'
+        print('Cleaned Up Worksapces')
         devnull.close()
 
 
@@ -323,12 +323,12 @@ class WORKSPACE(JOBS):
             self.get_channels(self.Date)
         else:
             if ',' in args.channels:
-                makelist=lambda s: map(int, s.split(","))
+                makelist=lambda s: list(map(int, s.split(",")))
                 self.channels = makelist(args.channels)
             elif ':' in args.channels:
-                makelist=lambda s: map(int, s.split(":"))
+                makelist=lambda s: list(map(int, s.split(":")))
                 start,stop,delta = makelist(args.channels)
-                self.channels = range(start,stop+delta,delta)
+                self.channels = list(range(start,stop+delta,delta))
             else:
                 self.channels = [int(args.channels)]
 
@@ -700,8 +700,8 @@ class WORKSPACE(JOBS):
                     errfile = 'slurm_' +jobid + '_' + str(a) + '.err'                    
                     outfile = 'slurm_' +jobid + '_' + str(a) + '.out'
                     if self.verbose:
-                        print '++cleaning up errfile', errfile
-                        print '++cleaning up outfile', outfile
+                        print('++cleaning up errfile', errfile)
+                        print('++cleaning up outfile', outfile)
                     os.remove(errfile)
                     os.remove(outfile)
                 os.remove('slurm_%A_%a.out')                    
@@ -839,7 +839,7 @@ def populate_L1B(outfilelist,rootdir,channels,Date,force=False,run_name=None):
             for ch,filename in zip(channels,outfilelist):
                 for i,pch in enumerate(pchannels):
                     if float(ch) == pch:
-                        print 'inserting ',filename
+                        print('inserting ',filename)
                         nc = Dataset(filename)
                         fch = "{:.2f}".format(ch)
                         data = np.squeeze(nc.variables['I_'+fch][:])
@@ -979,7 +979,7 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
                 for i,pch in enumerate(pchannels):
                     if float(ch) == pch:
                         pvar      = ncmerge.variables[sds]
-                        print 'inserting ',oname, filename, ' to ',sds
+                        print('inserting ',oname, filename, ' to ',sds)
                         nc = Dataset(filename)
                         fch = "{:.2f}".format(ch)
                         ovar = nc.variables[oname + '_'+fch]
@@ -999,7 +999,7 @@ def insert_condenseVar(outfile,SDS,channels,outfilelist):
         if pchannels is None:
             pvar      = ncmerge.variables[sds]
             filename = outfilelist[0]
-            print 'inserting ',oname,filename, ' to ',sds
+            print('inserting ',oname,filename, ' to ',sds)
             nc = Dataset(filename)
             ovar = nc.variables[oname]
             data = np.squeeze(ovar[:])
@@ -1019,9 +1019,9 @@ def create_condenseFile(L1B_file,outfile,Date,SDS):
 
     # Open NC file
     # ------------
-    print 'create outfile',outfile
+    print('create outfile',outfile)
     nc = Dataset(outfile,'w',format='NETCDF4_CLASSIC')
-    print 'copy from',L1B_file
+    print('copy from',L1B_file)
     nctrj = Dataset(L1B_file)
 
     # Get Dimensions
@@ -1057,12 +1057,12 @@ def create_condenseFile(L1B_file,outfile,Date,SDS):
 
     # Save lon/lat
     # --------------------------
-    _copyVar(nctrj,nc,u'longitude','geolocation_data',dtype='f4',zlib=True,verbose=True)
-    _copyVar(nctrj,nc,u'latitude','geolocation_data',dtype='f4',zlib=True,verbose=True)
-    _copyVar(nctrj,nc,u'time','scan_line_attributes', dtype='f4',zlib=True,verbose=True)
-    _copyVar(nctrj,nc,u'blue_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
-    _copyVar(nctrj,nc,u'red_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
-    _copyVar(nctrj,nc,u'SWIR_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,'longitude','geolocation_data',dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,'latitude','geolocation_data',dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,'time','scan_line_attributes', dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,'blue_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,'red_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
+    _copyVar(nctrj,nc,'SWIR_wavelength','sensor_band_parameters', dtype='f4',zlib=True,verbose=True)
 
 
     # Loop over SDS creating each dataset
@@ -1119,7 +1119,7 @@ def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False,verbose=False):
     """
     x = ncIn.groups[group].variables[name]
     if verbose:
-        print 'copy variable ',name,x.dimensions
+        print('copy variable ',name,x.dimensions)
     y = ncOut.createVariable(name,dtype,x.dimensions,zlib=zlib)
     if hasattr(x,'long_name'): y.long_name = x.long_name
     if hasattr(x,'units'): y.units = x.units
@@ -1139,7 +1139,7 @@ def _copyVar(ncIn,ncOut,name,group,dtype='f4',zlib=False,verbose=False):
         else:
             y[:,:,:] = shave(x[:,:,:],has_undef=0)
     else:
-        raise ValueError, "invalid rank of <%s>: %d"%(name,rank)
+        raise ValueError("invalid rank of <%s>: %d"%(name,rank))
 
 
 if __name__ == '__main__':
@@ -1177,7 +1177,7 @@ if __name__ == '__main__':
     parser.add_argument("-c","--channels", default=None,
                         help="channels to get TOA radiance. Can be a list (1,2) or a range (1:2:1) (default=None - read in from PACE L1B File)")                            
 
-    parser.add_argument("-e","--extch", default=None,type=lambda s: map(int, s.split(",")),
+    parser.add_argument("-e","--extch", default=None,type=lambda s: list(map(int, s.split(","))),
                         help="channels to run extinction sampler (default=None - read in from PACE L1B File)")  
 
     parser.add_argument('--run_name',default=None,

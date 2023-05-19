@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Does some simple calculations look at trace gas impacts on RT calculations
@@ -203,7 +203,7 @@ def level_1(outFile,Iscan,ixtrack,SZA,VZA,RAA,channels,km,pe,te,ze,U10m,V10m,air
     for ich,channel in enumerate(channels):
         channel = float(channel)
         rcFile   = '../rc/Aod_EOS_{}.rc'.format(int(channel))
-        print 'rcFile',rcFile
+        print('rcFile',rcFile)
         verbose  = True
 
         # Initialize VLIDORT class
@@ -236,7 +236,7 @@ def level_1(outFile,Iscan,ixtrack,SZA,VZA,RAA,channels,km,pe,te,ze,U10m,V10m,air
         vlidortWrapper = WrapperFuncs[albedoType]
 
         # run vlidort
-        print 'xtrack',ixtrack
+        print('xtrack',ixtrack)
         sza = np.array(SZA[Iscan,ixtrack])
         vza = np.array(VZA[Iscan,ixtrack])
         raa = np.array(RAA[Iscan,ixtrack])
@@ -255,7 +255,7 @@ def level_1(outFile,Iscan,ixtrack,SZA,VZA,RAA,channels,km,pe,te,ze,U10m,V10m,air
         Igranule[0,0,ich] = np.squeeze(I)
         Rgranule[0,0,ich] = np.squeeze(reflectance)
         BR[0,0,ich] = np.squeeze(surf_reflectance)
-        print 'BR',np.squeeze(surf_reflectance)
+        print('BR',np.squeeze(surf_reflectance))
 
     return Igranule,Rgranule,BR,ROD
 def writenc(outFile,channels,SZA,SAA,VZA,VAA,I,BR,ROD,Iscan,reflectance=None):

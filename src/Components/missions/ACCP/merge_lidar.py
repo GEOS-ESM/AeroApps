@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Puts all needed lidar signal simulator variables in one file
@@ -11,7 +11,7 @@ import os
 import argparse
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
-from   MAPL            import Config
+from   MAPL.config     import Config
 from   py_leo_vlidort.lidar_vlidort   import get_chd
 import numpy  as np
 from   netCDF4 import Dataset
@@ -94,13 +94,13 @@ class MERGE(object):
         y  = nc.createDimension('y',1)
         ch  = nc.createDimension('channel',1)
 
-        _copyVar(nctrj,nc,u'longitude',dtype='f4',zlib=zlib,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'latitude',dtype='f4',zlib=zlib,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=zlib,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'lev', dtype='S1',zlib=zlib,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=zlib,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=zlib,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=zlib,verbose=self.verbose)   
+        _copyVar(nctrj,nc,'longitude',dtype='f4',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,'latitude',dtype='f4',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,'time', dtype='i4',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,'lev', dtype='S1',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,'isotime', dtype='S1',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,'x',dtype='f4',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,'y',dtype='f4',zlib=zlib,verbose=self.verbose)   
 
         # Ext variables
         for var in EXT:
@@ -240,15 +240,15 @@ if __name__ == "__main__":
 
             # Initialize MERGE class and write new outfile
             # -----------------------------------------------------------
-            print '++++Merging with the following arguments+++'
-            print '>>>extFile:    ',extFile
-            print '>>>vlidortFile:   ',vlidortFile
-            print '>>>asmFile:    ',asmFile
-            print '>>>metFile:  ',metFile
-            print '>>>naerile:  ',aerFile
-            print '>>>chmFile:    ',chmFile
-            print '>>>outFile:    ',outFile
-            print '++++End of arguments+++'
+            print('++++Merging with the following arguments+++')
+            print('>>>extFile:    ',extFile)
+            print('>>>vlidortFile:   ',vlidortFile)
+            print('>>>asmFile:    ',asmFile)
+            print('>>>metFile:  ',metFile)
+            print('>>>naerile:  ',aerFile)
+            print('>>>chmFile:    ',chmFile)
+            print('>>>outFile:    ',outFile)
+            print('++++End of arguments+++')
             if not args.dryrun:
                 merge = MERGE(vlidortFile,extFile,aerFile,metFile,asmFile,chmFile,outFile)
                 merge.writenc()

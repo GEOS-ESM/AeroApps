@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
   A Python script to create VLIDORT/OMI Level 3a files.
@@ -20,7 +20,7 @@ if __name__ == "__main__":
             omi_file = strTemplate(ods_template,nymd=nymd,nhms=nhms)
             try:
                 omi = OMI(omi_file,nymd,nhms)    
-                print "%d %6d [ok] --- nobs = %d"%(nymd,nhms,omi.nobs)
+                print("%d %6d [ok] --- nobs = %d"%(nymd,nhms,omi.nobs))
             except:
-                print "%d %6d [not ok]"%(nymd,nhms)
+                print("%d %6d [not ok]"%(nymd,nhms))
 

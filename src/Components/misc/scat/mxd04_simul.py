@@ -47,7 +47,7 @@ def vlidort_scalar (m, tau, ssa, g, pe, he, te, albedo,U10m, V10m,mr,verbose=0):
 						    MISSING, verbose)
         
         if rc != 0:
-            raise ValueError, "on return from VLIDORT_.scalar/vector, rc = "+str(rc)
+            raise ValueError("on return from VLIDORT_.scalar/vector, rc = "+str(rc))
 
         return reflectance, refl_cx, BRDF
 
@@ -70,7 +70,7 @@ def getAlbedo(albe_fn,channels,u10m,v10m):
     # Interpolate albedo
     # ------------------
     albedo = zeros((len(w10m),len(channels)))
-    for ch,i in zip(channels,range(len(channels))):
+    for ch,i in zip(channels,list(range(len(channels)))):
         j = list(npz.channels).index(ch)
         albedo[:,i] = interp(w10m,npz.speed,npz.albedo[:,j])
 
@@ -90,16 +90,16 @@ def gridBox(m,dLon=0.3125,dLat=0.25,Verbose=False):
     G = dict()
     for n in N:
 	G[n] = True
-    for n in G.keys():
+    for n in list(G.keys()):
 	if Verbose:
 	   N_ = (N==n)
 	   i = I[N_][0]
 	   j = J[N_][0]
 	   lon = round(-180 + i * dLon,2)
 	   lat = round( -90 + j * dLat,2)
-	   print "Grid box at (%7.2f,%6.2f) has %2d observations"%(lon,lat,size(I[N_]))
+	   print("Grid box at (%7.2f,%6.2f) has %2d observations"%(lon,lat,size(I[N_])))
 
-    return dict(G=G.keys(),N=N,I=I,J=J) 
+    return dict(G=list(G.keys()),N=N,I=I,J=J) 
 
 #-------------------------------------------------------------------------------
 if __name__ == "__main__":
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     sat = 'MYD04'
     Algo = 'OCEAN'
     path = '/nobackup/MODIS/Level2'
-    syn_time = datetime(2007,06,28,0)
+    syn_time = datetime(2007,0o6,28,0)
 
     # Read MODIS L2 data for this synoptic time
     # -----------------------------------------
@@ -157,7 +157,7 @@ if __name__ == "__main__":
 #    reflectance = vlidort_scalar (m, tau, ssa, g, pe, he, te, albedo, verbose=1)
     # Using my Cox Munk
     reflectance,refl_cx,BRDF = vlidort_scalar (m, tau, ssa, g, pe, he, te, albedo,w.U10M,w.V10M,mr,verbose=1)
-    print 'VLIDORT (Scalar): %4.2f minutes/1000 obs'%((time()-t0)/(60.*m.nobs/1000.))
+    print('VLIDORT (Scalar): %4.2f minutes/1000 obs'%((time()-t0)/(60.*m.nobs/1000.)))
     path = '/nobackup/2/vbuchard/VLIDORT_TEST/MODIS_refl'
     savez(path+'reflectance_scalar_MODIS_Giss_Cox_Munk_VL_f90_all.npz',\
     refl_MODIS=m.reflectance[m.qa_flag==3],refl_VL=reflectance,refl_cx=refl_cx,\

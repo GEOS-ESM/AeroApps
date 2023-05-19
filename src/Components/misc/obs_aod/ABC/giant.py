@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/bin/env python3
 
 import os
 import sys
@@ -15,6 +15,7 @@ from pyobs.npz       import NPZ
 
 META =  ( "Date",
           "Time",
+          "Location",
           "Latitude",
           "Longitude",
           "SolarZenith",
@@ -263,9 +264,9 @@ class GIANT(object):
 
     # Read in variables
     # -----------------
-    print 'filename ',filename
+    print('filename ',filename)
     nc = Dataset(filename)
-    Alias = self.ALIAS.keys()
+    Alias = list(self.ALIAS.keys())
     self.giantList =[]
     for name in Names:
       data = nc.variables[name][:]
@@ -276,7 +277,10 @@ class GIANT(object):
       # new files use masked arrays
       # convert everythong to regular array filling with -9999.0
       # make sure _fill_value is -9999.0
-      self.__dict__[name] = np.array(data)
+      if data.dtype == np.dtype('S1'):
+        self.__dict__[name] = np.array(data).astype(str)
+      else:
+        self.__dict__[name] = np.array(data)
       self.giantList.append(name)
     nc.close()
 
@@ -284,9 +288,9 @@ class GIANT(object):
     # ----------------
     # new files have an ISO_DateTime variable
     nc = Dataset(filename)
-    if 'ISO_DateTime' in nc.variables.keys():
+    if 'ISO_DateTime' in list(nc.variables.keys()):
         try:
-            iso = nc.variables['ISO_DateTime'][:]
+            iso = np.array(nc.variables['ISO_DateTime'][:]).astype(str)
             self.tyme = array([isoparse(''.join(array(t))) for t in iso])
         except:
         # old file only have Date and Time variables
@@ -350,7 +354,7 @@ class GIANT(object):
     """
     for name in self.giantList:
       q = self.__dict__[name]
-      print "{} Reducing "+name,q.shape
+      print("{} Reducing "+name,q.shape)
       self.__dict__[name] = q[I]
 
     self.nobs = len(self.lon)
@@ -539,7 +543,7 @@ class GIANT(object):
           if fh.lm == 1:
             timeInterp = False    # no time interpolation in this case
           else:
-            raise ValueError, "cannot handle files with more tha 1 time, use ctl instead"
+            raise ValueError("cannot handle files with more tha 1 time, use ctl instead")
         else:
           fh = GFIOctl(inFile)  # open timeseries
           timeInterp = True     # perform time interpolation
@@ -557,12 +561,12 @@ class GIANT(object):
         else:
           tymes = array([t + timedelta(days=365*(clmYear-t.year)) for t in self.tyme])
 
-        print 'trange',tymes.min(),tymes.max()
+        print('trange',tymes.min(),tymes.max())
         # Loop over variables on file
         # ---------------------------
         for v in onlyVars:
             if Verbose:
-                print "<> Sampling ", v
+                print("<> Sampling ", v)
             if timeInterp:
               var = fh.sample(v,lons,lats,tymes,Verbose=Verbose)
             else:
@@ -573,7 +577,7 @@ class GIANT(object):
                 var = var.T # shape should be (nobs,nz)
                 self.sample.__dict__[v] = var
             else:
-                raise IndexError, 'variable <%s> has rank = %d'%(v,len(var.shape))
+                raise IndexError('variable <%s> has rank = %d'%(v,len(var.shape)))
 
         if npzFile is not None:
             savez(npzFile,**self.sample.__dict__)            
@@ -585,7 +589,7 @@ class GIANT(object):
         from grads.gahandle import GaHandle
         self.sample = GaHandle(npzFile)
         npz = load(npzFile)
-        for v in npz.keys():
+        for v in list(npz.keys()):
             self.sample.__dict__[v] = npz[v]
                 
 #---

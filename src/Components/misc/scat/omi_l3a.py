@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 
 """
@@ -25,7 +25,7 @@ def makethis_dir(filename):
     if path != '':
         rc = os.system('mkdir -p '+path)
         if rc:
-            raise IOError, "could not create directory "+path
+            raise IOError("could not create directory "+path)
         
 #---------------------------------------------------------------------
 
@@ -115,22 +115,22 @@ if __name__ == "__main__":
         parser.error("must have 2 arguments: date and time")
         
     if options.verbose:
-        print ""
-        print "                          VLIDORT/OMI Level 3A Processing"
-        print "                          -------------------------------"
-        print ""
+        print("")
+        print("                          VLIDORT/OMI Level 3A Processing")
+        print("                          -------------------------------")
+        print("")
         t0 = clock()
             
     if options.skipVLIDORT:
-        print "IMPORTANT: Skipping VLIDORT"
+        print("IMPORTANT: Skipping VLIDORT")
 
 #   Output gridded file
 #   -------------------
     out_file = strTemplate(options.out_dir+'/'+options.out_fname,
                            expid=options.expid,nymd=nymd,nhms=nhms)
     if os.path.exists(out_file) and (options.force is not True):
-        print "omi_l3a: Output file <%s> exists --- cannot proceed."%out_file
-        raise IOError, "Specify --force to overwrite existing output file."
+        print("omi_l3a: Output file <%s> exists --- cannot proceed."%out_file)
+        raise IOError("Specify --force to overwrite existing output file.")
     else:
         makethis_dir(out_file) # make sure directory exists
 
@@ -138,7 +138,7 @@ if __name__ == "__main__":
 #   -------------
     if options.verbose:
         t = clock() - t0
-        print "- Reading OMI measurements at t=%f"%t
+        print("- Reading OMI measurements at t=%f"%t)
     omi_file = strTemplate(options.ods_template,nymd=nymd,nhms=nhms)
     omi = OMI(omi_file,nymd,nhms)
 
@@ -154,10 +154,10 @@ if __name__ == "__main__":
 
             if options.verbose:
                 t = clock() - t0
-                print "- Processing batch number %d"%i
-                print "  [] Reading and interpolating IOPs at t=%f"%t
+                print("- Processing batch number %d"%i)
+                print("  [] Reading and interpolating IOPs at t=%f"%t)
 
-            I = range(i,min(i+mobs,omi.nobs))
+            I = list(range(i,min(i+mobs,omi.nobs)))
 
             nMom, nPol, tau, ssa, \
             pe, ze, te, g, pmom =  getMieVect(aerosols,omi.channels,\
@@ -168,7 +168,7 @@ if __name__ == "__main__":
 
             if options.verbose:
                 t = clock() - t0
-                print "  [] Doing RT calculation with VLIDORT at t=%f"%t
+                print("  [] Doing RT calculation with VLIDORT at t=%f"%t)
 
             omi.vlidort(nMom,nPol,tau,ssa,g,pmom,pe,he,te,verbose=2,
                         scalar=options.scalar, I=I)

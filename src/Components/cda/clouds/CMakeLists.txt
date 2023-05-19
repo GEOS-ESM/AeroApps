@@ -22,18 +22,18 @@ esma_add_library (${this}
   )
 
 
-find_package(F2PY2 REQUIRED)
+find_package(F2PY3 REQUIRED)
 
-esma_add_f2py2_module (Aero_
+esma_add_f2py3_module (Aero_
   SOURCES Aero_py.F90
-  LIBRARIES MAPL.shared MAPL.base
+  LIBRARIES MAPL.constants MAPL.base
   DESTINATION lib/Python/${this}
-  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/MAPL.shared ${esma_include}/MAPL.base
+  INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/MAPL.constants ${esma_include}/MAPL.base
   )
-add_dependencies(Aero_ MAPL.shared MAPL.base)
+add_dependencies(Aero_ MAPL.constants MAPL.base)
 
-# MAT: Using add_f2py2 as I haven't figured out how to add MKL to python import test (needs vscdfnorm_)
-add_f2py2_module (ICA_
+# MAT: Using add_f2py3 as I haven't figured out how to add MKL to python import test (needs vscdfnorm_)
+add_f2py3_module (ICA_
   SOURCES ICA_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES ${this} MAPL.base
@@ -41,7 +41,7 @@ add_f2py2_module (ICA_
   )
 add_dependencies(ICA_ MAPL.base ${this})
 
-esma_add_f2py2_module (mcsRegrid_
+esma_add_f2py3_module (mcsRegrid_
   SOURCES mcsRegrid_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES ${this}

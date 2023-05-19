@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper to submit jobs to sbatch
@@ -12,7 +12,6 @@ from   dateutil.parser import parse         as isoparser
 import argparse
 import numpy as np
 import time
-from   MAPL            import Config
 
 class JOBS(object):
     def handle_jobs(self):
@@ -73,12 +72,12 @@ class JOBS(object):
                         self.destroy_workspace(i,s)
 
                     else:
-                        print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
+                        print('Jobid ',s,' in ',self.dirstring[i],' exited with errors')
 
             # finished checking up on all the jobs
             # Remove finished jobs from the currently working list
             if len(finishedJobs) != 0:
-                print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
+                print('deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]])
                 node_tally  = node_tally - len(finishedJobs)
 
                 workingJobs = np.delete(workingJobs,finishedJobs)
@@ -110,12 +109,12 @@ class JOBS(object):
             if countDone == numjobs:
                 stat = 1
             else:
-                print 'Waiting 30 minutes'
+                print('Waiting 30 minutes')
                 time.sleep(60*30)
             
 
         # Exited while loop
-        print 'All jobs done'
+        print('All jobs done')
 
         devnull.close()
 
@@ -189,6 +188,9 @@ class WORKSPACE(JOBS):
 
                 os.makedirs(workpath)
 
+                # link over setup_env script
+                os.symlink('{}/setup_env'.format(self.cwd),'{}/setup_env'.format(workpath))
+
                 # copy over slurm scipt
                 outfile = '{}/{}'.format(workpath,self.slurm)
                 shutil.copyfile(self.slurm,outfile)
@@ -201,9 +203,9 @@ class WORKSPACE(JOBS):
                 shutil.copyfile(self.orbit_pcf,outfile)
 
                 #link over needed python scripts
-                source = ['mp_lidar_vlidort.py'] 
+                source = [os.getenv('AERODIR')+'/install/lib/Python/py_leo_vlidort/mp_lidar_vlidort.py'] 
                 for src in source:
-                    os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
+                    os.symlink('{}'.format(src),'{}/{}'.format(workpath,os.path.basename(src)))
 
                 # Copy over rc and edit
                 outfile = '{}/{}'.format(workpath,self.rcFile)                
@@ -277,7 +279,7 @@ class WORKSPACE(JOBS):
             os.remove(self.rcFile)
 
         # remove symlinks
-        source = ['mp_lidar_vlidort.py'] 
+        source = ['mp_lidar_vlidort.py','setup_env'] 
         for src in source:
             os.remove(src)
 

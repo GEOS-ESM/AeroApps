@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 
 """
@@ -72,10 +72,10 @@ if __name__ == "__main__":
     # Generate LC2 products
     # ---------------------
     cmd = "geo_vlidort_cloud_lc2.py %s %s %s "%(Options,start_isotime,end_isotime)
-    print cmd
+    print(cmd)
     if not options.dryrun:
         if system(cmd):
-            raise ValueError, "geo_vlidort_cloud_lc2.py failed for %s to %s "%(start_isotime, end_isotime)
+            raise ValueError("geo_vlidort_cloud_lc2.py failed for %s to %s "%(start_isotime, end_isotime))
 
 
 

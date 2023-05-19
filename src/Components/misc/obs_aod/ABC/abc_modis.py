@@ -91,8 +91,8 @@ class NN(object):
         # Train
         # -----
         if self.verbose>0:
-            print "Starting training with %s inputs and %s targets"\
-                  %(str(inputs.shape),str(targets.shape))
+            print("Starting training with %s inputs and %s targets"\
+                  %(str(inputs.shape),str(targets.shape)))
         self.net.train_tnc(inputs,targets, maxfun=maxfun, **kwargs)
 #        self.net.train_bfgs(inputs,targets, maxfun=maxfun)
 
@@ -152,22 +152,22 @@ class NN(object):
         Returns: inputs
         """
         if self.verbose:
-            print " "
-            print "       Feature          Min      Max"
-            print "  ------------------  -------  -------"
+            print(" ")
+            print("       Feature          Min      Max")
+            print("  ------------------  -------  -------")
         if Input==None:
             Input = self.Input
         inputs = self.__dict__[Input[0]][I]
         if self.verbose:
-            print "%20s %8.4f %8.4f"%(Input[0],inputs.min(),inputs.max())
+            print("%20s %8.4f %8.4f"%(Input[0],inputs.min(),inputs.max()))
         for var in Input[1:]:
             q = self.__dict__[var][I]
             inputs = cat[inputs,q]
             if self.verbose:
-                print "%20s %8.4f %8.4f"%(var,q.min(),q.max())
+                print("%20s %8.4f %8.4f"%(var,q.min(),q.max()))
         if self.verbose:
-            print "  ------------------  -------  -------"
-            print ""
+            print("  ------------------  -------  -------")
+            print("")
         return inputs
     
     def getTargets(self,I):
@@ -285,8 +285,8 @@ class ABC_Ocean (OCEAN,NN):
                 self.wind = load(self.ident + "2_" + Wind + ".npz")['var']
         else:
             self.wind = zeros(self.N)
-            print "WARNING: No longer using *ncep_windspd* because of too many undefs" 
-            print "WARNING: wind attribute being set to zero"
+            print("WARNING: No longer using *ncep_windspd* because of too many undefs") 
+            print("WARNING: wind attribute being set to zero")
 
         # Define wind speed dependent ocean albedo
         # ----------------------------------------
@@ -310,12 +310,12 @@ class ABC_Ocean (OCEAN,NN):
             d = log(self.mTau550+0.01) - log(self.aTau550+0.01)
             dg = d[self.iValid]
             if self.verbose>0:
-                print "Outlier removal: %d   sig_d = %f  nGood=%d "%(-1,std(dg),dg.size)
+                print("Outlier removal: %d   sig_d = %f  nGood=%d "%(-1,std(dg),dg.size))
             for iter in range(3):
                 self.iValid = self.iValid & (abs(d)<outliers*std(d[self.iValid]))
                 if self.verbose>0:
                     dg = d[self.iValid]
-                    print "Outlier removal: %d   sig_d = %f  nGood=%d "%(iter,std(dg),dg.size)
+                    print("Outlier removal: %d   sig_d = %f  nGood=%d "%(iter,std(dg),dg.size))
             
         # Angle transforms: for NN work we work with cosine of angles
         # -----------------------------------------------------------
@@ -360,7 +360,7 @@ class ABC_Land (LAND,NN):
         """
 
         if csvVersion != 1:
-            raise ValueError, 'must use CVS Version 1 for land because of QA flags'
+            raise ValueError('must use CVS Version 1 for land because of QA flags')
 
         self.Input = Input
         self.Target = Target
@@ -391,7 +391,7 @@ class ABC_Land (LAND,NN):
                       (self.albedo>0)             & \
                       (self.albedo<alb_min)
 
-        print self.qa[self.iValid].shape
+        print(self.qa[self.iValid].shape)
         
         # Outlier removal based on log-transformed AOD
         # --------------------------------------------
@@ -399,14 +399,14 @@ class ABC_Land (LAND,NN):
             d = log(self.mTau550+0.01) - log(self.aTau550+0.01)
             dg = d[self.iValid]
             if self.verbose>0:
-                print "Outlier removal: %d   sig_d = %f  nGood=%d "%\
-                      (-1,std(dg),dg.size)
+                print("Outlier removal: %d   sig_d = %f  nGood=%d "%\
+                      (-1,std(dg),dg.size))
             for iter in range(3):
                 self.iValid = self.iValid & (abs(d)<outliers*std(d[self.iValid]))
                 if self.verbose>0:
                     dg = d[self.iValid]
-                    print "Outlier removal: %d   sig_d = %f  nGood=%d "\
-                          %(iter,std(dg),dg.size)
+                    print("Outlier removal: %d   sig_d = %f  nGood=%d "\
+                          %(iter,std(dg),dg.size))
             
         # Angle transforms: for NN work we work with cosine of angles
         # -----------------------------------------------------------
@@ -444,7 +444,7 @@ def _plotKDE(x_values,y_values,x_bins=None,y_bins=None,
         Nx = len(x_bins)
         Ny = len(y_bins)
 
-        print "Evaluating 2D kernel on grid with (Nx,Ny)=(%d,%d) ..."%(Nx,Ny)
+        print("Evaluating 2D kernel on grid with (Nx,Ny)=(%d,%d) ..."%(Nx,Ny))
         kernel = stats.kde.gaussian_kde(_cat2(x_values,y_values))
         X, Y = meshgrid(x_bins,y_bins)   # each has shape (Ny,Nx)
         Z = kernel(_cat2(X,Y))           # shape is (Ny*Nx)
@@ -479,20 +479,20 @@ def _remove1():
     mydo = ABC_Ocean('SUPER_ocean.Aqua.csv',ustar=False,verbose=1)
     mydo.split()
 
-    for i in [-1,]+range(len(Input_all)):
+    for i in [-1,]+list(range(len(Input_all))):
 
-        print "------------------------------------------------------------------------------"
+        print("------------------------------------------------------------------------------")
         Input = Input_all[:] # make a copy of it
         if i<0:
-            print "--> Excluding: (nothing)"
+            print("--> Excluding: (nothing)")
         else:
-            print "--> Excluding: ", Input_all[i]
+            print("--> Excluding: ", Input_all[i])
             del Input[i]         # delete ith item
 
         nHidden = len(Input)
 
-        print "--> nHidden = ", nHidden
-        print "-->  Inputs = ", Input
+        print("--> nHidden = ", nHidden)
+        print("-->  Inputs = ", Input)
         
         mydo.train(Input=Input,Target=Target,nHidden=nHidden)
         out, reg = mydo.test()
@@ -542,9 +542,9 @@ def _testOcean(filename):
         nHidden = len(Input)
         topology = (len(Input), nHidden, len(Target))
         
-        print "-"*80
-        print "--> nHidden = ", nHidden
-        print "-->  Inputs = ", Input
+        print("-"*80)
+        print("--> nHidden = ", nHidden)
+        print("-->  Inputs = ", Input)
         
         mxdo.train(Input=Input,Target=Target,nHidden=nHidden,topology=topology)
         out, reg = mxdo.test()
@@ -614,9 +614,9 @@ def _testLand(filename):
 
         nHidden = len(Input)
         
-        print "-"*80
-        print "--> nHidden = ", nHidden
-        print "-->  Inputs = ", Input
+        print("-"*80)
+        print("--> nHidden = ", nHidden)
+        print("-->  Inputs = ", Input)
         
         mxdl.train(Input=Input,Target=Target,nHidden=nHidden)
         out, reg = mxdl.test()
@@ -688,7 +688,7 @@ def _svrLand(filename):
         X = mxdl.getInputs(I=mxdl.iValid,Input=Input)
         y = log(mxdl.aTau550[mxdl.iValid]+0.01)
 
-        print X.shape, y.shape
+        print(X.shape, y.shape)
 
         # SVR fitting
         # -----------

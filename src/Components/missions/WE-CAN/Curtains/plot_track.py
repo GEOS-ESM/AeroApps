@@ -1,5 +1,5 @@
 
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Plot flight track on a background map
 """
@@ -15,11 +15,11 @@ if __name__ == "__main__":
 
     nav = '/home/adasilva/iesa/aerosol/data/WE-CAN/Nav'
     if len(sys.argv) < 2:
-        print "Usage: "
-        print "       plot_track flight_number"
-        print "Example:" 
-        print "       plot_track 01"
-        raise SystemExit, "Error: not enough arguments"
+        print("Usage: ")
+        print("       plot_track flight_number")
+        print("Example:") 
+        print("       plot_track 01")
+        raise SystemExit("Error: not enough arguments")
     else:
         rf = sys.argv[1]
         track = nav + '/WECANrf'+rf+'.ict.gz'

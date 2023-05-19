@@ -48,7 +48,7 @@ def vlidort_scalar (c,tau, ssa, g, pe, he, te,iGood=None, verbose=0 ):
                                                      MISSING,verbose)
         
         if rc != 0:
-            raise ValueError, "on return from VLIDORT_OMI_.scalar/vector, rc = "+str(rc)
+            raise ValueError("on return from VLIDORT_OMI_.scalar/vector, rc = "+str(rc))
 
         return (radiance_, reflectance_)
 #---------------------------------------------------------------------
@@ -82,7 +82,7 @@ def vlidort_ai_vector (c,tau, ssa, g, pmom, pe, he, te, I=None,iGood=None,verbos
         nch = len(c.channels)               # wavelength number
   
         if I is None:
-            I = range(c.ps[iGood].shape[0])
+            I = list(range(c.ps[iGood].shape[0]))
         
         radiance,AI, reflectivity,rc = VLIDORT_OMI_.ai_vector(c.channels,
                                                      tau, ssa, g,pmom, pe, he, te, 
@@ -93,7 +93,7 @@ def vlidort_ai_vector (c,tau, ssa, g, pmom, pe, he, te, I=None,iGood=None,verbos
                                                      MISSING,c.radiance[iGood][I],
                                                      c.ai[iGood][I],verbose)
         if rc != 0:
-            raise ValueError, "on return from VLIDORT_OMI_.scalar/vector, rc = "+str(rc)
+            raise ValueError("on return from VLIDORT_OMI_.scalar/vector, rc = "+str(rc))
         
 
         return (radiance, reflectivity,AI)
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     rank = len(omi.sample.delp.shape)
     if rank > 2 :
        nt, nr, nz = omi.sample.delp.shape 
-       raise IOError, "rank > 2 to do - > code not adapted for this case"
+       raise IOError("rank > 2 to do - > code not adapted for this case")
     else :
        nobs, nz = omi.sample.delp.shape 
 
@@ -138,7 +138,7 @@ if __name__ == "__main__":
 
     # call vlidort scalar       all in one time
     # -----------------
-    print 'rh', omi.sample.RH[0], omi.sample.RH.shape
+    print('rh', omi.sample.RH[0], omi.sample.RH.shape)
 #    print 'qm', omi.sample.qm[0], omi.sample.qm.shape
     tau, ssa, g= getAOPscalar(omi.sample,omi.channels)
 #    radiance_,reflectance_=vlidort_scalar(omi,tau, ssa, g, pe, he, te,omi.sample.iGood)

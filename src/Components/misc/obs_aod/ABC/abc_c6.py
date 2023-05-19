@@ -25,6 +25,7 @@ from   abc_c6_aux           import SummarizeCombinations, get_Iquartiles, get_Is
 from   abc_c6_aux           import make_plots, make_plots_angstrom, TestStats, SummaryPDFs
 from   brdf                 import rtlsReflectance
 from   mcd43c               import BRDF
+from functools import reduce
 
 # ------
 MODVARNAMES = {'mRef470': 'MOD04 470 nm Reflectance',
@@ -269,13 +270,13 @@ class ABC(object):
         if outliers > 0.:
             d = log(self.mTau550[self.iValid]+0.01) - log(self.aTau550[self.iValid]+0.01)
             if self.verbose>0:
-                print "Outlier removal: %d   sig_d = %f  nGood=%d "%(-1,std(d),d.size)
+                print("Outlier removal: %d   sig_d = %f  nGood=%d "%(-1,std(d),d.size))
             for iter in range(3):
                 iValid = (abs(d)<outliers*std(d))
                 self.iValid[self.iValid] = iValid
                 d = log(self.mTau550[self.iValid]+0.01) - log(self.aTau550[self.iValid]+0.01)
                 if self.verbose>0:
-                    print "Outlier removal: %d   sig_d = %f  nGood=%d "%(iter,std(d),d.size)
+                    print("Outlier removal: %d   sig_d = %f  nGood=%d "%(iter,std(d),d.size))
               
     def angleTranform(self):            
         # Angle transforms: for NN work we work with cosine of angles
@@ -1119,9 +1120,9 @@ def _train(mxd,expid,c):
   Input    = mxd.comblist[c]
   Target   = mxd.Target
   
-  print "-"*80
-  print "--> nHidden = ", nHidden
-  print "-->  Inputs = ", Input
+  print("-"*80)
+  print("--> nHidden = ", nHidden)
+  print("-->  Inputs = ", Input)
   
   n = cpu_count()
   kwargs = {'nproc' : n}
@@ -1159,7 +1160,7 @@ def _test(mxd,expid,c,plotting=True):
         if found: break
 
       if not found:
-        print '{} not found.  Need to train this combinatin of inputs'.format(netFile)
+        print('{} not found.  Need to train this combinatin of inputs'.format(netFile))
         raise
     else:
       invars = mxd.comblist[0]
@@ -1189,13 +1190,13 @@ def _test(mxd,expid,c,plotting=True):
             netFile = outdir+"/"+".".join(invars)+'.k={}_Tau.net'.format(str(k))
             mxd.loadnet(netFile)
             found = True
-            print 'found file',netFile
+            print('found file',netFile)
             break
           except:
             pass
 
         if not found:
-          print '{} not found.  Need to train this combinatin of inputs'.format(netFile)
+          print('{} not found.  Need to train this combinatin of inputs'.format(netFile))
           raise
       else:
         invars = mxd.comblist[0]

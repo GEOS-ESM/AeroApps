@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 
@@ -45,7 +45,7 @@ if __name__ == "__main__":
                 OMF = OMF + (ods.omf,)
             except:
                 nobs = 0
-            print nymd, nhms, nobs
+            print(nymd, nhms, nobs)
 
 #   Concatenate and undo log-transform
 #   ----------------------------------

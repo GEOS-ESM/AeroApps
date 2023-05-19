@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Samples MYD13C2 (NDVI) on a pace trajectory.

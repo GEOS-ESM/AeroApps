@@ -255,7 +255,7 @@ def cov_plaw(alpha,v):
       L    = alphap[2]
     """
     if len(alpha) != 3:
-        raise ValueError, "alpha must have size 3"
+        raise ValueError("alpha must have size 3")
     return cov_generic(alpha,v,powerlaw)
 
 #--
@@ -268,7 +268,7 @@ def cov_winplaw(alpha,v):
       L    = alphap[2]
     """
     if len(alpha) != 3:
-        raise ValueError, "alpha must have size 3"
+        raise ValueError("alpha must have size 3")
     return cov_generic(alpha,v,winplaw)
 
 #--
@@ -280,7 +280,7 @@ def cor_plaw(alpha,v):
       L    = alphap[1]
     """
     if len(alpha) != 2:
-        raise ValueError, "alpha must have size 2"
+        raise ValueError("alpha must have size 2")
     sigO = cos(alpha[0])
     sigF = sin(alpha[0])
     alpha_ = (sigO,sigF,alpha[1])
@@ -296,7 +296,7 @@ def cor_winplaw(alpha,v):
       L    = alphap[1]
     """
     if len(alpha) != 2:
-        raise ValueError, "alpha must have size 2"
+        raise ValueError("alpha must have size 2")
     sigO = cos(alpha[0])
     sigF = sin(alpha[0])
     alpha_ = (sigO,sigF,alpha[1])
@@ -328,8 +328,8 @@ def llfun(alpha, covmodel, V):
 
     if verbose:
         k = 0
-        print 'Evaluating Log-likelihood at sigO=%6.3f, sigF=%6.3f, L=%5.1f'\
-               %(alpha[0],alpha[1],1000.*alpha[2])
+        print('Evaluating Log-likelihood at sigO=%6.3f, sigF=%6.3f, L=%5.1f'\
+               %(alpha[0],alpha[1],1000.*alpha[2]))
 
 #   Loop over time
 #   --------------
@@ -448,13 +448,13 @@ def estimate(alpha0,ods_ts,covmodel,**kwopts):
 
 #   display the results:
 #   -------------------
-    print "Minimum cost function value: %6.4f"%f
-    print "Parameter estimates and standard errors: "
+    print("Minimum cost function value: %6.4f"%f)
+    print("Parameter estimates and standard errors: ")
     alpha[2] = alpha[2] * 1000. 
     sigalpha[2] = sigalpha[2] * 1000. 
     alphan = ( 'sigO', 'sigF', '   L')
     for j in range(alpha.size):
-        print "    %s = %6.2f +/- %4.3f"%(alphan[j], alpha[j], sigalpha[j])
+        print("    %s = %6.2f +/- %4.3f"%(alphan[j], alpha[j], sigalpha[j]))
     alpha[2] = alpha[2] / 1000. 
     sigalpha[2] = sigalpha[2] / 1000. 
 
@@ -473,8 +473,8 @@ def getODSts(ods_tmpl,NYMD,NHMS,N=0,BBox=None,qch=None):
     # ods = pyods.ODS(ods_tmpl) # make sure this is a bonafide ODS file
 
     if verbose:
-        print "  Date    Time    NOBS     nobs      N"
-        print "-------- ------ -------- -------- --------"
+        print("  Date    Time    NOBS     nobs      N")
+        print("-------- ------ -------- -------- --------")
 
     V = ()
     for nymd in NYMD:
@@ -501,10 +501,10 @@ def getODSts(ods_tmpl,NYMD,NHMS,N=0,BBox=None,qch=None):
             if N > 0:
                 if ods.nobs < N: continue # must have at least N observations
                 n = min(ods.nobs,N)
-                ods = ods.shuffle().__copy__(Indices=range(n))
+                ods = ods.shuffle().__copy__(Indices=list(range(n)))
             if ods.nobs > 10:
                 if verbose:
-                    print "%8d %6d %8d %8d %8d"%(nymd,nhms,nobs,nobs2,ods.nobs)
+                    print("%8d %6d %8d %8d %8d"%(nymd,nhms,nobs,nobs2,ods.nobs))
                 V = V + (ods,)
 
     return V

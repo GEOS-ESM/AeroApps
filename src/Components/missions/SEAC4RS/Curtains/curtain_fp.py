@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Plot curtain from FlightPlan text files.
 """
@@ -16,12 +16,12 @@ if __name__ == "__main__":
     start = 'latest'
 
     if len(sys.argv) < 2:
-        print "Usage: "
-        print "       curtain_fp flight_path.txt [fcast_start]"
-        print "Example:" 
-        print "       curtain_fp SEAC4RS_130816_s3_dc8_1c_table_path.txt latest"
-        print "       curtain_fp SEAC4RS_130816_s3_dc8_1c_table_path.txt 20130814_12"
-        raise SystemExit, "Error: not enough arguments"
+        print("Usage: ")
+        print("       curtain_fp flight_path.txt [fcast_start]")
+        print("Example:") 
+        print("       curtain_fp SEAC4RS_130816_s3_dc8_1c_table_path.txt latest")
+        print("       curtain_fp SEAC4RS_130816_s3_dc8_1c_table_path.txt 20130814_12")
+        raise SystemExit("Error: not enough arguments")
     else:
         fname = sys.argv[1]
         if len(sys.argv)>=3:

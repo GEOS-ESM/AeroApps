@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
   A Python scrpipt to create QFED Level 3C files.
@@ -93,10 +93,10 @@ if __name__ == "__main__":
         
     if options.verbose:
         Verb=1
-        print ""
-        print "                          QFED Level 3C Processing"
-        print "                          ------------------------"
-        print ""
+        print("")
+        print("                          QFED Level 3C Processing")
+        print("                          ------------------------")
+        print("")
     else:
         Verb=0
 
@@ -158,7 +158,7 @@ if __name__ == "__main__":
             dir = options.level3_dir+'/'+MxD14+'/Y'+year+'/M%02d'%date.month
             rc = os.system("/bin/mkdir -p %s"%dir)
             if rc:
-                raise IOError, 'cannot create output directory'
+                raise IOError('cannot create output directory')
             
 #           Write output file
 #           -----------------

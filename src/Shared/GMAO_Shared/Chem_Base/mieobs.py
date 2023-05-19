@@ -25,7 +25,7 @@ def getMieDims(rcfile='Aod_EOS.rc'):
     dutable = cf('filename_optical_properties_DU')
     nCh, nRh, nBin, nMom, nPol, rc = MieObs_.getmiedims(dutable) 
     if rc != 0:
-       raise ValueError, "on return from getMieDims, rc = %d"%rc
+       raise ValueError("on return from getMieDims, rc = %d"%rc)
 
     return (nMom, nPol)
 
@@ -45,7 +45,7 @@ def aerToUpper(aer):
     Create upper case aliases for aer variables to cope with changes
     in filename.
     """
-    vnames = aer.__dict__.keys()
+    vnames = list(aer.__dict__.keys())
     for v in vnames:
         V = v.upper()
         if v != V:
@@ -96,7 +96,7 @@ def getAOPscalar(aer,channels,vnames=VNAMES,vtypes=None,Verbose=False,rcfile='Ao
         qm = ones((km,nq,nobs),dtype=float32)
         rh = aer.RH.T
 #        rh = zeros((km,nobs))
-        for n, v in zip(range(nq),vnames):
+        for n, v in zip(list(range(nq)),vnames):
             V = v.upper()
             qm[:,n,:] = aer.__dict__[V].T * aer.DELP.T / 9.81 
     else:                    # aer is (km,nobs)
@@ -104,7 +104,7 @@ def getAOPscalar(aer,channels,vnames=VNAMES,vtypes=None,Verbose=False,rcfile='Ao
         qm = ones((km,nq,nobs),dtype=float32)
         rh = aer.RH
 #        rh = zeros((km,nobs))
-        for n, v in zip(range(nq),vnames):
+        for n, v in zip(list(range(nq)),vnames):
             V = v.upper()
             qm[:,n,:] = aer.__dict__[V] * aer.DELP / 9.81 
 
@@ -113,8 +113,8 @@ def getAOPscalar(aer,channels,vnames=VNAMES,vtypes=None,Verbose=False,rcfile='Ao
     tau,ssa,g,rc = MieObs_.getaopscalar(rcfile,channels,pad(vtypes),Verbose,qm,rh)
 
     if rc!=0:
-        print "<<<ERROR>>> on return from MieObs_.getaopscalar, rc = ", rc
-        raise ValueError, 'cannot get Aerosol Optical Properties (scalar version)'
+        print("<<<ERROR>>> on return from MieObs_.getaopscalar, rc = ", rc)
+        raise ValueError('cannot get Aerosol Optical Properties (scalar version)')
 
     return (tau,ssa,g)
 #--
@@ -143,7 +143,7 @@ def getAOPvector(aer,channels,I=None,vnames=VNAMES,vtypes=None,
     nq, nch = len(vnames), len(channels) 
     if I is None:
         nobs = size(aer.PS)
-        I = range(0,nobs)
+        I = list(range(0,nobs))
     else :
         nobs = len(I)
     
@@ -152,14 +152,14 @@ def getAOPvector(aer,channels,I=None,vnames=VNAMES,vtypes=None,
         
         qm = ones((km,nq,nobs),dtype=float32)
         rh = aer.RH[I].T
-        for n, v in zip(range(nq),vnames):
+        for n, v in zip(list(range(nq)),vnames):
             V = v.upper()
             qm[:,n,:] = aer.__dict__[V][I].T * aer.DELP[I].T / 9.81 
     else:                    # aer is (km,nobs)
         km = aer.DELP.shape[0]
         qm = ones((km,nq,nobs),dtype=float32)
         rh = aer.RH[:,I]
-        for n, v in zip(range(nq),vnames):
+        for n, v in zip(list(range(nq)),vnames):
             V = v.upper()
             qm[:,n,:] = aer.__dict__[V][:,I] * aer.DELP[:,I] / 9.81 
     
@@ -171,8 +171,8 @@ def getAOPvector(aer,channels,I=None,vnames=VNAMES,vtypes=None,
     tau,ssa,g,pmom,rc = MieObs_.getaopvector(rcfile,channels,pad(vtypes),Verbose,qm,rh,nMom,nPol)
 
     if rc!=0:
-        print "<<<ERROR>>> on return from MieObs_.getaopvector, rc = ", rc
-        raise ValueError, 'cannot get Aerosol Optical Properties (vector version)'
+        print("<<<ERROR>>> on return from MieObs_.getaopvector, rc = ", rc)
+        raise ValueError('cannot get Aerosol Optical Properties (vector version)')
 
     return (tau,ssa,g,pmom)
 #---
@@ -201,7 +201,7 @@ def getAOPext(aer,channels,I=None,vnames=VNAMES,vtypes=None,Verbose=False,rcfile
 
     if I is None:
         nobs = size(aer.PS)
-        I = range(0,nobs)
+        I = list(range(0,nobs))
     else :
         nobs = len(I)
     
@@ -212,7 +212,7 @@ def getAOPext(aer,channels,I=None,vnames=VNAMES,vtypes=None,Verbose=False,rcfile
         qm = ones((km,nq,nobs),dtype=float32)
         rh = aer.RH[I].T
 #        rh = zeros((km,nobs))
-        for n, v in zip(range(nq),vnames):
+        for n, v in zip(list(range(nq)),vnames):
             V = v.upper()
             qc[:,n,:] = aer.__dict__[V][I].T * aer.AIRDENS[I].T 
             qm[:,n,:] = aer.__dict__[V][I].T * aer.DELP[I].T / 9.81 
@@ -223,7 +223,7 @@ def getAOPext(aer,channels,I=None,vnames=VNAMES,vtypes=None,Verbose=False,rcfile
         qm = ones((km,nq,nobs),dtype=float32)
         rh = aer.RH[:,I]
 #        rh = zeros((km,nobs))
-        for n, v in zip(range(nq),vnames):
+        for n, v in zip(list(range(nq)),vnames):
             V = v.upper()
             qc[:,n,:] = aer.__dict__[V][:,I] * aer.AIRDENS[:,I] 
             qm[:,n,:] = aer.__dict__[V][:,I] * aer.DELP[:,I] / 9.81 
@@ -234,8 +234,8 @@ def getAOPext(aer,channels,I=None,vnames=VNAMES,vtypes=None,Verbose=False,rcfile
         MieObs_.getext(rcfile,channels,pad(vtypes),Verbose,qc,qm,rh)
 
     if rc!=0:
-        print "<<<ERROR>>> on return from MieObs_.getaopvector, rc = ", rc
-        raise ValueError, 'cannot get Aerosol Optical Properties (vector version)'
+        print("<<<ERROR>>> on return from MieObs_.getaopvector, rc = ", rc)
+        raise ValueError('cannot get Aerosol Optical Properties (vector version)')
 
     return (ext,sca,backscat,aback_sfc,aback_toa,depol)
 
@@ -268,7 +268,7 @@ def getAOPint(aer,channels,I=None,vnames=VNAMES,vtypes=None,Verbose=False,rcfile
 
     if I is None:
         nobs = size(aer.PS)
-        I = range(0,nobs)
+        I = list(range(0,nobs))
     else :
         nobs = len(I)
     
@@ -279,7 +279,7 @@ def getAOPint(aer,channels,I=None,vnames=VNAMES,vtypes=None,Verbose=False,rcfile
         qm = ones((km,nq,nobs),dtype=float32)
         rh = aer.RH[I].T
 #        rh = zeros((km,nobs))
-        for n, v in zip(range(nq),vnames):
+        for n, v in zip(list(range(nq)),vnames):
             V = v.upper()
             qc[:,n,:] = aer.__dict__[V][I].T * aer.AIRDENS[I].T 
             qm[:,n,:] = aer.__dict__[V][I].T * aer.DELP[I].T / 9.81 
@@ -290,7 +290,7 @@ def getAOPint(aer,channels,I=None,vnames=VNAMES,vtypes=None,Verbose=False,rcfile
         qm = ones((km,nq,nobs),dtype=float32)
         rh = aer.RH[:,I]
 #        rh = zeros((km,nobs))
-        for n, v in zip(range(nq),vnames):
+        for n, v in zip(list(range(nq)),vnames):
             V = v.upper()
             qc[:,n,:] = aer.__dict__[V][:,I] * aer.AIRDENS[:,I] 
             qm[:,n,:] = aer.__dict__[V][:,I] * aer.DELP[:,I] / 9.81 
@@ -301,8 +301,8 @@ def getAOPint(aer,channels,I=None,vnames=VNAMES,vtypes=None,Verbose=False,rcfile
         MieObs_.getint(rcfile,channels,pad(vtypes),Verbose,qc,qm,rh)
 
     if rc!=0:
-        print "<<<ERROR>>> on return from MieObs_.getaopvector, rc = ", rc
-        raise ValueError, 'cannot get Aerosol Optical Properties (vector version)'
+        print("<<<ERROR>>> on return from MieObs_.getaopvector, rc = ", rc)
+        raise ValueError('cannot get Aerosol Optical Properties (vector version)')
 
     return (vol, area, refr, refi, reff)
 

@@ -59,8 +59,8 @@ class MCD43C(object):
         self.nEW = 360./self.dlon
         self.nNS = 180./self.dlat
 
-        self.lon = np.linspace(-180 + 0.5*self.dlon,180 - 0.5*self.dlon,self.nEW)
-        self.lat = np.linspace(-90 + 0.5*self.dlat,90 - 0.5*self.dlat,self.nNS)
+        self.lon = np.linspace(-180 + 0.5*self.dlon,180 - 0.5*self.dlon,int(self.nEW))
+        self.lat = np.linspace(-90 + 0.5*self.dlat,90 - 0.5*self.dlat,int(self.nNS))
         
         if inDir is None:
             self.inDir  = '/nobackup/3/pcastell/MODIS/MCD43C1/061'
@@ -95,7 +95,7 @@ class MCD43C(object):
         inFileList = glob("{}/Y{}/M{}/*A{}{}*.hdf".format(self.inDir,tyme.year,MM,tyme.year,doy))
 
         if len(inFileList) != 1:
-            print 'Missing Files on {}'.format(tyme.strftime('%Y-%m-%d'))
+            print('Missing Files on {}'.format(tyme.strftime('%Y-%m-%d')))
             inFileList = [None] 
         
         return inFileList[0]
@@ -115,7 +115,7 @@ class MCD43C(object):
             with pymp.Parallel(10) as p:
                 for ut in p.iterate(utyme):
                     if Verbose:
-                        print 'Working on '+ str(ut.date())
+                        print('Working on '+ str(ut.date()))
                     inFile = self.getFileName(ut)
                     if inFile is not None:
                         self.readFile(inFile)
@@ -133,7 +133,7 @@ class MCD43C(object):
         else:
             for ut in utyme:
                 if Verbose:
-                    print 'Working on '+ str(ut.date())
+                    print('Working on '+ str(ut.date()))
                 inFile = self.getFileName(ut)
                 if inFile is not None:
                     self.readFile(inFile)

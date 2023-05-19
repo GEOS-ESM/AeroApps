@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 from dateutils import *
 import random
@@ -10,4 +10,4 @@ yyyy,mm,dd,hh = splitdate(verifdate)
 verifdate = datetime.datetime(yyyy,mm,dd,hh)
 diff = verifdate - analdate
 hours = diff.seconds/3600
-print '%s' % diff.days, '%s' % hours
+print('%s' % diff.days, '%s' % hours)

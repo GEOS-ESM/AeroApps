@@ -764,7 +764,7 @@ subroutine getInt ( km, nobs, nch, nq, rcfile, channels, vname, verbose, &
 
   ! Normalize refractive index
   ! ---------------------------
-  refr = refr/vol
-  refi = refi/vol
+  where( vol > 0.0 ) refr = refr/vol
+  where( vol > 0.0 ) refi = refi/vol
  
 end subroutine getInt

@@ -1,9 +1,9 @@
 esma_set_this ()
 
-find_package(F2PY2 REQUIRED)
+find_package(F2PY3 REQUIRED)
 
-# MAT: Note uses add_f2py2 because I can't figure out the import test for netCDF f2py code
-add_f2py2_module (Mie_
+# MAT: Note uses add_f2py3 because I can't figure out the import test for netCDF f2py code
+add_f2py3_module (Mie_
   SOURCES Mie_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES Chem_Base GMAO_mpeu MAPL GMAO_gfio_r4 ${NETCDF_LIBRARIES}
@@ -12,8 +12,8 @@ add_f2py2_module (Mie_
   )
 add_dependencies(Mie_ Chem_Base GMAO_mpeu MAPL GMAO_gfio_r4)
 
-# MAT: Note uses add_f2py2 because I can't figure out the import test for netCDF f2py code
-add_f2py2_module (scat_MieObs_
+# MAT: Note uses add_f2py3 because I can't figure out the import test for netCDF f2py code
+add_f2py3_module (scat_MieObs_
   SOURCES scat_MieObs_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES Chem_Base GMAO_mpeu MAPL ${NETCDF_LIBRARIES}
@@ -21,7 +21,7 @@ add_f2py2_module (scat_MieObs_
   )
 add_dependencies(scat_MieObs_ Chem_Base GMAO_mpeu MAPL)
 
-esma_add_f2py2_module (OMI_
+esma_add_f2py3_module (OMI_
   SOURCES OMI_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES Chem_Base VLIDORT
@@ -29,21 +29,21 @@ esma_add_f2py2_module (OMI_
   )
 add_dependencies(OMI_ Chem_Base VLIDORT)
 
-esma_add_f2py2_module (VLIDORT_BRDF_
+esma_add_f2py3_module (VLIDORT_BRDF_
   SOURCES VLIDORT_BRDF_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES VLIDORT90
   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}} ${esma_include}/VLIDORT90)
 add_dependencies(VLIDORT_BRDF_ VLIDORT90)
 
-esma_add_f2py2_module (VLIDORT_OMI_
+esma_add_f2py3_module (VLIDORT_OMI_
   SOURCES VLIDORT_OMI_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES VLIDORT90
   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}  ${esma_include}/VLIDORT90)
 add_dependencies(VLIDORT_OMI_ VLIDORT90)
 
-esma_add_f2py2_module (VLIDORT_cloud_
+esma_add_f2py3_module (VLIDORT_cloud_
   SOURCES VLIDORT_cloud_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES Chem_Base VLIDORT90
@@ -51,8 +51,8 @@ esma_add_f2py2_module (VLIDORT_cloud_
   )
 add_dependencies(VLIDORT_cloud_ Chem_Base VLIDORT90)
 
-# Using add_f2py2_module here as I can't get the built-in import test to work
-esma_add_f2py2_module (qsat_
+# Using add_f2py3_module here as I can't get the built-in import test to work
+esma_add_f2py3_module (qsat_
   SOURCES qsat_py.F90
   DESTINATION lib/Python/${this}
   LIBRARIES MAPL.base
@@ -60,7 +60,7 @@ esma_add_f2py2_module (qsat_
   )
 add_dependencies(qsat_ MAPL.base)
 
-esma_add_f2py2_module (scat_binObs_
+esma_add_f2py3_module (scat_binObs_
   SOURCES scat_binObs_py.F
   DESTINATION lib/Python/${this}
   INCLUDEDIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/lib ${include_${this}}

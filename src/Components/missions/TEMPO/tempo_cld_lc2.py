@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 
 """
@@ -77,6 +77,6 @@ if __name__ == "__main__":
 
     command += ' ' + pcfFile + ' ' + isoStartTime + ' ' + isoEndTime
 
-    print command
+    print(command)
     if system(command):
-        raise ValueError, "%s failed for %s to %s "%(bin,isoStartTime,isoEndTime)
+        raise ValueError("%s failed for %s to %s "%(bin,isoStartTime,isoEndTime))

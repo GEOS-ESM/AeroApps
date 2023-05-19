@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Plot flight track on a background map
 """
@@ -12,11 +12,11 @@ from grads import GrADS
 if __name__ == "__main__":
 
     if len(sys.argv) < 2:
-        print "Usage: "
-        print "       plot_track track.ict"
-        print "Example:" 
-        print "       plot_track ../Tracks/routine/ACEPOL-Flt-plan_p3_20160901_RA.ict "
-        raise SystemExit, "Error: not enough arguments"
+        print("Usage: ")
+        print("       plot_track track.ict")
+        print("Example:") 
+        print("       plot_track ../Tracks/routine/ACEPOL-Flt-plan_p3_20160901_RA.ict ")
+        raise SystemExit("Error: not enough arguments")
     else:
         track = sys.argv[1]
 

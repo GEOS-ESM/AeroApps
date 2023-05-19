@@ -122,4 +122,4 @@ if __name__ == "__main__":
 #   ----------------------
     rc = os.system("mpirun -np %d ext_calculator.xx"%nPE)
     if rc:
-        raise RuntimeError, "rc=%d on return from 'ext_calculator.xx'"%rc
+        raise RuntimeError("rc=%d on return from 'ext_calculator.xx'"%rc)

@@ -7,7 +7,7 @@ well as GSI binary diag output.
 from types   import *
 from pyods_  import *   # Fortran extension using f2py
 from odsmeta import *   # useful constants
-from numpy   import zeros, ones, arange, shape
+import numpy as np
 
 __VERSION__ = '1.0.3'
 
@@ -77,7 +77,7 @@ class ODS(object):
          self.fid, rc = pyods_open(filename)
          if rc:
             self.fid = None
-            raise IOError, "cannot open ODS file" + filename
+            raise IOError("cannot open ODS file" + filename)
       else:
          self._Read(filename,nymd,nhms,only_good) 
          self.fid=None
@@ -86,33 +86,33 @@ class ODS(object):
       if self.fid is not None:
          rc = pyods_close(fid)
          if rc:
-            raise IOError, "could not close file"
+            raise IOError("could not close file")
       self.fid = None
 
    def nget(self,nymd,nhms,rc):
       """ Returns number of observations for this date/time."""
       if self.fid is None:
-         raise IOError, "ODS file is not open"
+         raise IOError("ODS file is not open")
       self.nobs, rc = pyods_nget(self.fid,nymd,nhms)
       if rc:
-         raise IOError, "could not determine NOBS"
+         raise IOError("could not determine NOBS")
  
    def getInt(self,name,nymd,nhms):
       if self.fid is None:
-         raise IOError, "ODS file is not open"
+         raise IOError("ODS file is not open")
       self.nget(nymd,nhms)
       v, rc = pyods_getint(self.fid,name,nymd,nhms,self.nobs)
       if rc:
-         raise IOError, "cannot get "+name
+         raise IOError("cannot get "+name)
       return v
 
    def getFloat(self,name,nymd,nhms):
       if self.fid is None:
-         raise IOError, "ODS file is not open"
+         raise IOError("ODS file is not open")
       self.nget(nymd,nhms)
       v, rc = pyods_getfloat(self.fid,name,nymd,nhms,self.nobs)
       if rc:
-         raise IOError, "cannot get "+name
+         raise IOError("cannot get "+name)
       return v
 
    def select(self,kt=None,kx=None,qcx=None,qch=None,ks=None,lev=None):
@@ -127,13 +127,13 @@ class ODS(object):
       if (self.kid is None) or (self.nobs==0):
          return None
 
-      I = (range(self.nobs) >  -1) # all True
-      I = (I & _getMatchingIndices(self.kt,kt,  'kt'))
-      I = (I & _getMatchingIndices(self.kx,kx,  'kx'))
-      I = (I & _getMatchingIndices(self.ks,ks,  'ks'))
-      I = (I & _getMatchingIndices(self.qcx,qcx,'qcx'))
-      I = (I & _getMatchingIndices(self.qch,qch,'qch'))
-      I = (I & _getMatchingIndices(self.lev,lev,'lev'))
+      I = np.arange(self.nobs) >  -1 # all True
+      I = (I & _getMatchingIndices(self.kt,kt))
+      I = (I & _getMatchingIndices(self.kx,kx))
+      I = (I & _getMatchingIndices(self.ks,ks))
+      I = (I & _getMatchingIndices(self.qcx,qcx))
+      I = (I & _getMatchingIndices(self.qch,qch))
+      I = (I & _getMatchingIndices(self.lev,lev))
 
       return self.__copy__(I)
 
@@ -148,7 +148,7 @@ class ODS(object):
       if only_good:
          I = (self.qcx[0:nobs] == 0)
       else:
-         I = range(self.nobs)
+         I = np.arange(self.nobs)
 
       kid  = self.kid[I]
       lat  = self.lat[I]
@@ -171,8 +171,8 @@ class ODS(object):
                         obs,omf,oma,xvec,qcx,qch)
 
       if rc:
-         print "On return from pyods_putall, rc = ", rc
-         raise IOError, "cannot write ODS file "
+         print("On return from pyods_putall, rc = ", rc)
+         raise IOError("cannot write ODS file ")
 
 #---
    def addVar(self,ga,expr='mag(u10m,v10m)',vname=None,clmYear=None,tight=True):
@@ -185,7 +185,7 @@ class ODS(object):
         has proven somewhat unstable for reasons yet TBD.
         """
 
-        U = ODS_UNDEF * ones(self.nobs)
+        U = ODS_UNDEF * np.ones(self.nobs)
         if vname is None:
             vname = expr
 
@@ -214,8 +214,8 @@ class ODS(object):
             expr_ = ga.expr(expr)
         u, levs = ga.interp(expr_, self.lon, self.lat )
         U = u.data
-        if len(shape(U)) == 0:
-             U = U * ones(1) # so that we can slice it later
+        if len(np.shape(U)) == 0:
+             U = U * np.ones(1) # so that we can slice it later
 
         self.__dict__[vname] = U
 
@@ -231,8 +231,8 @@ class ODS(object):
       obs, omf, oma, xvec, qcx, qch, rc \
       = pyods_getall(filename,nymd,nhms)
       if rc:
-         print "On return from pyods_getall, rc = ", rc
-         raise IOError, "cannot read ODS file "
+         print("On return from pyods_getall, rc = ", rc)
+         raise IOError("cannot read ODS file ")
  
       self.nobs = nobs
       self.nymd = nymd
@@ -241,7 +241,7 @@ class ODS(object):
       if only_good:
          I = (qcx[0:nobs] == 0)
       else:
-         I = range(self.nobs)
+         I = np.arange(self.nobs)
 
       self.kid  = kid[I]
       self.lat  = lat[I]
@@ -270,22 +270,22 @@ class ODS(object):
       if kx is None: kx = 0
       if kt is None: kt = 0
       self.nobs = nobs
-      self.kid  = (1+arange(nobs)).astype('int')
-      self.kx   = (kx * ones(nobs)).astype('int')
-      self.kt   = (kt * ones(nobs)).astype('int')
-      self.xm   = zeros(nobs)
-      self.time = zeros(nobs).astype('int')
-      self.omf  = zeros(nobs)
-      self.oma  = zeros(nobs)
-      self.xvec = zeros(nobs)
-      self.qcx  = zeros(nobs).astype('int')
-      self.qch  = zeros(nobs).astype('int')
+      self.kid  = (1+np.arange(nobs)).astype('int')
+      self.kx   = (kx * np.ones(nobs)).astype('int')
+      self.kt   = (kt * np.ones(nobs)).astype('int')
+      self.xm   = np.zeros(nobs)
+      self.time = np.zeros(nobs).astype('int')
+      self.omf  = np.zeros(nobs)
+      self.oma  = np.zeros(nobs)
+      self.xvec = np.zeros(nobs)
+      self.qcx  = np.zeros(nobs).astype('int')
+      self.qch  = np.zeros(nobs).astype('int')
       
-      self.ks   = zeros(nobs).astype('int')
-      self.lat  = zeros(nobs)
-      self.lon  = zeros(nobs)
-      self.lev  = zeros(nobs)
-      self.obs  = zeros(nobs)
+      self.ks   = np.zeros(nobs).astype('int')
+      self.lat  = np.zeros(nobs)
+      self.lon  = np.zeros(nobs)
+      self.lev  = np.zeros(nobs)
+      self.obs  = np.zeros(nobs)
       
 #---
    def __copy__(self,Indices=None):
@@ -308,7 +308,7 @@ class ODS(object):
       if nobs > 0:
 
          if Indices is None:
-            I = range(nobs)
+            I = np.arange(nobs)
          else:
             I = Indices
 
@@ -343,18 +343,18 @@ def _gatime(nymd,nhms):
             cymd[6:8]+Months[int(cymd[4:6])-1]+cymd[0:4]
         return t
 
-def _getMatchingIndices(att,kt,name):
-   """ Return a tuple."""
+def _getMatchingIndices(att,kt):
+   """ Return an array."""
    if kt is None:
       kt_list = ()
-      J = ( range(att.size) >  -1) # all True
+      J = np.arange(att.size) >  -1 # all True
       return J
-   if type(kt) is TupleType or type(kt) is ListType:
+   if type(kt) is tuple or type(kt) is list:
       kt_list = kt
    else:
       kt_list = (kt,)
 
-   J = (range(att.size) <  0) # all False
+   J = np.arange(att.size) <  0 # all False
    for k in kt_list:
       J = (J | (att==k) ) # True if matching kt
    return J

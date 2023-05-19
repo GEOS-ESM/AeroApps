@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper to submit jobs to sbatch
@@ -12,7 +12,7 @@ from   dateutil.parser import parse         as isoparser
 import argparse
 import numpy as np
 import time
-from MAPL     import Config
+from MAPL.config     import Config
 
 class JOBS(object):
     def handle_jobs(self):
@@ -37,7 +37,7 @@ class JOBS(object):
             s = self.dirstring[i]
             os.chdir(s)
             result = subprocess.check_output(['sbatch',self.slurm])
-            jobid = np.append(jobid,result.split()[-1])
+            jobid = np.append(jobid,result.split()[-1].decode())
             
         os.chdir(self.cwd)
 
@@ -72,12 +72,12 @@ class JOBS(object):
                         #clean up workspaces
                         self.destroy_workspace(i,s)
                     else:
-                        print 'Jobid ',s,' in ',self.dirstring[i],' exited with errors'
+                        print('Jobid ',s,' in ',self.dirstring[i],' exited with errors')
 
             # finished checking up on all the jobs
             # Remove finished jobs from the currently working list
             if len(finishedJobs) != 0:
-                print 'deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]]
+                print('deleting finishedJobs',finishedJobs,jobid[workingJobs[finishedJobs]])
                 node_tally  = node_tally - len(finishedJobs)
 
                 workingJobs = np.delete(workingJobs,finishedJobs)
@@ -110,12 +110,12 @@ class JOBS(object):
             if countDone == numjobs:
                 stat = 1
             else:
-                print 'Waiting 30 minutes'
+                print('Waiting 30 minutes')
                 time.sleep(60*30)
             
 
         # Exited while loop
-        print 'All jobs done'
+        print('All jobs done')
 
         devnull.close()
 
@@ -253,12 +253,12 @@ class WORKSPACE(JOBS):
 
             # replace one line
             if len(self.case) == 0:
-                command = 'python -u ./run_ext_sampler.py --DT_hours {} --rc Aod_EOS.rc {} {} '.format(self.DT_hours,isodate,isoedate)
+                command = 'python3 -u ./run_ext_sampler.py --DT_hours {} --rc Aod_EOS.rc {} {} '.format(self.DT_hours,isodate,isoedate)
             else:
                 options = ''
                 for case in self.case:
                     options = options + ' --' + case
-                command = 'python -u ./run_ext_sampler.py {} --DT_hours {} --rc Aod_EOS.rc {} {} '.format(options,self.DT_hours,isodate,isoedate)
+                command = 'python3 -u ./run_ext_sampler.py {} --DT_hours {} --rc Aod_EOS.rc {} {} '.format(options,self.DT_hours,isodate,isoedate)
 
             command = command + " '" + inFile + "' "
             command = command + " '" + outFile + "' "

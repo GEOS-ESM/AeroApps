@@ -83,7 +83,7 @@ eB_f['CH4']  = (    2.00,       1.90,     0.90,        0.90  )
 # Scaling of C6 based on C5 (based on OC tuning)
 # ----------------------------------------------
 alpha = array([0.96450253,1.09728882,1.12014982,1.22951496,1.21702972])
-for s in B_f.keys():
+for s in list(B_f.keys()):
     B_f[s] = list(array(B_f[s]) * alpha[1:])
     
 # Combustion rate constant
@@ -180,7 +180,7 @@ class Emissions(object):
         self.Cloud = Cloud
         self.FRP   = FRP
         self.F     = F
-        self.Sat   = Land.keys()
+        self.Sat   = list(Land.keys())
         self.date  = date
         self.verb  = Verb
 
@@ -201,7 +201,7 @@ class Emissions(object):
                 m = logical_or(m, FRP[sat][b][:,:] > (1 - eps)*FillValue)
 
             if any(m): 
-                print '[w] Detected missing area or FRP values in %s QFED/L3A file on %s' % (sat, self.date)
+                print('[w] Detected missing area or FRP values in %s QFED/L3A file on %s' % (sat, self.date))
            
             Land[sat][m]  = 0.0
             Water[sat][m] = 0.0 
@@ -377,7 +377,7 @@ class Emissions(object):
        dir = os.path.join(dir, 'Y%04d'%self.date.year, 'M%02d'%self.date.month)
        rc = os.system("/bin/mkdir -p %s"%dir)
        if rc:
-           raise IOError, 'cannot create output directory'
+           raise IOError('cannot create output directory')
 
 
        nymd = 10000*self.date.year + 100*self.date.month + self.date.day
@@ -431,7 +431,7 @@ class Emissions(object):
                pass
 
            if self.verb >=1:
-               print "[w] Wrote file "+filename
+               print("[w] Wrote file "+filename)
 
 
 #---
@@ -532,7 +532,7 @@ class Emissions(object):
 #          Compress the files by default
 #          -----------------------------
            if not uncompressed:
-               for s in self.filename.keys():
+               for s in list(self.filename.keys()):
                    rc = os.system("n4zip %s"%self.filename[s])
                    if rc:
                        warnings.warn('cannot compress output file <%s>'%self.filename[s])

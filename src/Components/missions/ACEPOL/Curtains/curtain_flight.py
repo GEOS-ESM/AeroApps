@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Plot curtain from actual aircraft tracks given in ICARTT files.
 """
@@ -17,11 +17,11 @@ if __name__ == "__main__":
     ict = '../Tracks/ACEPOL-AIRCRAFT_PLAN_DATE_RA.ict'
 
     if len(sys.argv) < 3:
-        print "Usage: "
-        print "       curtain_flight aircraft date"
-        print "Example:" 
-        print "       curtain_flight DC8 20160503"
-        raise SystemExit, "Error: not enough arguments"
+        print("Usage: ")
+        print("       curtain_flight aircraft date")
+        print("Example:") 
+        print("       curtain_flight DC8 20160503")
+        raise SystemExit("Error: not enough arguments")
     else:
         aircraft = sys.argv[1]
         date = sys.argv[2]

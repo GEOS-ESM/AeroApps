@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Calculates polarized TOA radiance for a lidar track.
@@ -21,7 +21,7 @@ from dateutil.parser import parse         as isoparser
 from MAPL.constants import *
 import LidarAngles_    
 import VLIDORT_POLAR_ 
-from copyvar  import _copyVar
+from .copyvar  import _copyVar
 from scipy import interpolate
 from   MAPL  import config
 
@@ -155,7 +155,7 @@ class LIDAR_VLIDORT(object):
         Read in NDVI and Landuse Coefficient- should have been sampled already
         """
         if self.verbose:
-            print 'opening file',self.ndviFile
+            print('opening file',self.ndviFile)
 
         nc = Dataset(self.ndviFile)
         NDVI = nc.variables['NDVI'][:]
@@ -164,7 +164,7 @@ class LIDAR_VLIDORT(object):
         nc.close()
 
         if self.verbose:
-            print 'opening file',self.lcFile
+            print('opening file',self.lcFile)
         nc = Dataset(self.lcFile)
         BPDFcoef = nc.variables['BPDFcoef'][:]
         I = BPDFcoef < -900
@@ -187,7 +187,7 @@ class LIDAR_VLIDORT(object):
         """
         col = 'asm_Nx'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nc       = Dataset(self.inFile.replace('%col',col))
 
         for sds in self.SDS_INV:
@@ -263,7 +263,7 @@ class LIDAR_VLIDORT(object):
         """
         col = 'aer_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nc       = Dataset(self.inFile.replace('%col',col))
 
         for sds in self.SDS_AER:
@@ -276,7 +276,7 @@ class LIDAR_VLIDORT(object):
         if len(self.SDS_MET) > 0:
             col = 'met_Nv'
             if self.verbose: 
-                print 'opening file',self.inFile.replace('%col',col)        
+                print('opening file',self.inFile.replace('%col',col))        
             nc       = Dataset(self.inFile.replace('%col',col))
 
             for sds in self.SDS_MET:
@@ -289,7 +289,7 @@ class LIDAR_VLIDORT(object):
     def readSampledWindCX(self):
         col = 'met_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)        
+            print('opening file',self.inFile.replace('%col',col))        
         nc       = Dataset(self.inFile.replace('%col',col))
 
         for sds in self.SDS_CX:
@@ -325,7 +325,7 @@ class LIDAR_VLIDORT(object):
             SDS = 'Riso'+chmin,'Rgeo'+chmin,'Rvol'+chmin,'Riso'+chmax,'Rgeo'+chmax,'Rvol'+chmax
 
         if self.verbose:
-            print 'opening BRDF file ',self.brdfFile
+            print('opening BRDF file ',self.brdfFile)
         nc = Dataset(self.brdfFile)
 
         for sds in SDS:
@@ -391,7 +391,7 @@ class LIDAR_VLIDORT(object):
         chs = str(int(self.channel))
 
         if self.verbose:
-            print 'opening BRDF abledo file ',self.brdfFile
+            print('opening BRDF abledo file ',self.brdfFile)
         nc = Dataset(self.brdfFile)
 
         for sds in mSDS:
@@ -401,7 +401,7 @@ class LIDAR_VLIDORT(object):
         nc.close()
 
         if self.verbose:
-            print 'opening LER albedo file ',self.lerFile
+            print('opening LER albedo file ',self.lerFile)
         nc = Dataset(self.lerFile)
 
         self.__dict__[lSDS] = nc.variables[lSDS][:]
@@ -473,7 +473,7 @@ class LIDAR_VLIDORT(object):
             SDS.append('SRFLER'+lchs)
 
         if self.verbose:
-            print 'opening LER albedo file ',self.lerFile
+            print('opening LER albedo file ',self.lerFile)
         nc = Dataset(self.lerFile)
 
         for sds in SDS:
@@ -781,15 +781,15 @@ class LIDAR_VLIDORT(object):
         # --------------------
         col = 'aer_Nv'
         if self.verbose: 
-            print 'opening file',self.inFile.replace('%col',col)
+            print('opening file',self.inFile.replace('%col',col))
         nctrj       = Dataset(self.inFile.replace('%col',col))        
-        _copyVar(nctrj,nc,u'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'time', dtype='i4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'lev', dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'isotime', dtype='S1',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'x',dtype='f4',zlib=False,verbose=self.verbose)
-        _copyVar(nctrj,nc,u'y',dtype='f4',zlib=False,verbose=self.verbose)   
+        _copyVar(nctrj,nc,'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'time', dtype='i4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'lev', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'isotime', dtype='S1',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'x',dtype='f4',zlib=False,verbose=self.verbose)
+        _copyVar(nctrj,nc,'y',dtype='f4',zlib=False,verbose=self.verbose)   
         nctrj.close()
 
 
@@ -893,7 +893,7 @@ class LIDAR_VLIDORT(object):
         nc.close()
 
         if self.verbose:
-            print " <> wrote %s"%(self.outFile)
+            print(" <> wrote %s"%(self.outFile))
 
     
 def get_chd(channel):
@@ -905,7 +905,7 @@ def get_chd(channel):
 #------------------------------------ M A I N ------------------------------------
 
 if __name__ == "__main__":
-    date     = datetime(2006,01,01,00)
+    date     = datetime(2006,0o1,0o1,00)
     nymd     = str(date.date()).replace('-','')
     hour     = str(date.hour).zfill(2)
     format   = 'NETCDF4_CLASSIC'

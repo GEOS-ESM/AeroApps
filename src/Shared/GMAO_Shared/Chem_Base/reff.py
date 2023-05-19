@@ -153,4 +153,4 @@ if __name__ == "__main__":
 #   ----------------------
     rc = os.system("mpirun -np %d ana_lde.x"%nPE)
     if rc:
-        raise RuntimeError, "rc=%d on return from 'ana_lde.x'"%rc
+        raise RuntimeError("rc=%d on return from 'ana_lde.x'"%rc)

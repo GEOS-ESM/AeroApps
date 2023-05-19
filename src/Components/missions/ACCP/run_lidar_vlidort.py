@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Wrapper for lidar_vlidort.py
@@ -12,7 +12,7 @@ import os
 import argparse
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
-from   MAPL            import Config
+from   MAPL.config     import Config
 from   py_leo_vlidort.lidar_vlidort   import LIDAR_VLIDORT, get_chd
 import numpy  as np
 
@@ -152,19 +152,19 @@ if __name__ == "__main__":
 
         # Initialize VLIDORT class getting aerosol optical properties
         # -----------------------------------------------------------
-        print '++++Running VLIDORT with the following arguments+++'
-        print '>>>inFile:    ',inFile
-        print '>>>outFile:   ',outFile
-        print '>>>rcFile:    ',rcFile
-        print '>>>albedoType:',albedoType
-        print '>>>channel:   ',channel
-        print '>>>HGT:       ',HGT
-        print '>>>brdfFile:  ',brdfFile
-        print '>>>ndviFile:  ',ndviFile
-        print '>>>lcFile:    ',lcFile
-        print '>>>lerFile    ',lerFile
-        print '>>>verbose:   ',args.verbose
-        print '++++End of arguments+++'
+        print('++++Running VLIDORT with the following arguments+++')
+        print('>>>inFile:    ',inFile)
+        print('>>>outFile:   ',outFile)
+        print('>>>rcFile:    ',rcFile)
+        print('>>>albedoType:',albedoType)
+        print('>>>channel:   ',channel)
+        print('>>>HGT:       ',HGT)
+        print('>>>brdfFile:  ',brdfFile)
+        print('>>>ndviFile:  ',ndviFile)
+        print('>>>lcFile:    ',lcFile)
+        print('>>>lerFile    ',lerFile)
+        print('>>>verbose:   ',args.verbose)
+        print('++++End of arguments+++')
         if not args.dryrun:
             vlidort = LIDAR_VLIDORT(inFile,outFile,rcFile,
                                     albedoType,
