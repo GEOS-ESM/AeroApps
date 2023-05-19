@@ -4,7 +4,6 @@
 
 import os
 import sys
-from   types    import *
 from   numpy    import loadtxt, ones, zeros, savez, pi, log, concatenate, \
                        arange, savez, shape, array, linspace
 from   datetime import datetime, timedelta
@@ -22,7 +21,7 @@ VARS = ( 'AERONET_Site',
          'Latitude',
          'Elevation',
          'Date',
-         'Time',         
+         'Time', 
          'AOT_1640' , 
          'AOT_1020', 
          'AOT_870', 
@@ -86,13 +85,13 @@ class AERONET_L2(object):
                 self.Vars[i] = 'Site_Latitude'
             if 'Elevation' in self.Vars:
                 i = self.Vars.index('Elevation')
-                self.Vars[i] = 'Site_Elevation'    
+                self.Vars[i] = 'Site_Elevation'
 
             self.Vars = tuple(self.Vars)
 
         # Past is string or list
         # ----------------------
-        if type(Path) is ListType:
+        if isinstance(Path, (list, tuple)):
             if len(Path) == 0:
                 print("WARNING: Empty AERONET object created")
                 return
@@ -164,7 +163,7 @@ class AERONET_L2(object):
         aot_670 = _updAOT(aot_670,self.AOT_667) # close enough
         aot_670 = _updAOT(aot_670,self.AOT_675) # close enough
 
-        self.AOT_670 = aot_670[:] # update undefs with interpolated values       
+        self.AOT_670 = aot_670[:] # update undefs with interpolated values
 
         # Interpolate AOT to 660 nm
         # -----------------------------------
@@ -180,7 +179,7 @@ class AERONET_L2(object):
         aot_660 = _updAOT(aot_660,aot_660b)
         aot_660 = _updAOT(aot_660,aot_660a)
 
-        self.AOT_660 = aot_660[:] # update undefs with interpolated values        
+        self.AOT_660 = aot_660[:] # update undefs with interpolated values
 
         # Interpolate AOT to 470 nm if needed
         # -----------------------------------
@@ -286,11 +285,11 @@ class AERONET_L2(object):
                     raise ValueError("cannot find <%s> in file <%s>"%(name,filename))
                 self.iVars += (i,)
                 if name=='Date':
-                    self.formats += ('S10',)
+                    self.formats += ('U10',)
                 elif name=='Time':
-                    self.formats += ('S8',)
+                    self.formats += ('U8',)
                 elif name=='AERONET_Site':
-                    self.formats += ('S20',)
+                    self.formats += ('U20',)
                 else:
                     self.converters[i] = _convert2Float
                     self.formats += ('f4',)
