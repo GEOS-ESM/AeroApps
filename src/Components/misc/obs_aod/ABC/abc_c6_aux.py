@@ -34,17 +34,17 @@ def boxplot_imshow(data,plottype,blocks,masterlist,title,filename,
     params = {'mathtext.default': 'regular' }          
     plt.rcParams.update(params)
 
-    if plottype is 'box':
+    if plottype == 'box':
       bp = plt.boxplot(data,showfliers=False,showbox=True,whis='range',
                 whiskerprops={'linestyle':'-'})
       plt.setp(bp['boxes'], color='black')
       plt.setp(bp['whiskers'], color='black')
       plt.plot([0,ncomb+0.5],[np.median(data[:,0]),np.median(data[:,0])],color='b',ls='--',zorder=5)
-    elif plottype is 'scatter':
+    elif plottype == 'scatter':
       scat = np.mean(data,axis=0)
       plt.plot(np.arange(ncomb)+1,scat,'rD')
       plt.plot([0,ncomb+0.5],[np.mean(data[:,0]),np.mean(data[:,0])],color='b',ls='--',zorder=5,markersize=5)
-    elif plottype is 'errorbar':
+    elif plottype == 'errorbar':
       scat = np.mean(data,axis=0)
       yerr_max = np.abs(np.max(data,axis=0)-scat)
       yerr_min = np.abs(np.min(data,axis=0)-scat)
@@ -1115,6 +1115,7 @@ def TestStats(mxd,K,C):
     # regression[*][0:2] = slope, intercept, r-value
     # out.shape = [ntestobs,nTarget]
     out, reg = mxd.test(iprint=False)
+
     reg = np.array(reg)
     mxd.nnr.slope[k,c,:]     = reg[:,0]
     mxd.nnr.intercept[k,c,:] = reg[:,1]
