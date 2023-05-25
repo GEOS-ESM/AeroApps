@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 
 """
@@ -15,7 +15,7 @@
 
 from os       import system
 from optparse import OptionParser
-from MAPL     import Config
+from MAPL.config     import Config
 
 if __name__ == "__main__":
     
