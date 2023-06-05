@@ -22,6 +22,7 @@
 - fix pyods __ini__.py to use relative imports. needed for python3
 ### Changed
 
+- add VIIRS aerosol products to GMAO_ods kx list
 - update GMAOpyobs to v1.0.3 
 
 ## [v2.0.1] - 2023-05-17
