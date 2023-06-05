@@ -341,6 +341,14 @@ kx_list::
   330 GOES-17 Aerosol (Dark Target Land Algorithm)
   331 Himawari Aerosol (Dark Target Ocean Algorithm)
   332 Himawari Aerosol (Dark Target Land Algorithm)
+  333 VIIRS SNPP Aerosol (Deep Blue Land Algorithm)
+  334 VIIRS SNPP Aerosol (Deep Blue Ocean Algorithm)
+  335 VIIRS SNPP Aerosol (Dark Target Land Algorithm)
+  336 VIIRS SNPP Aerosol (Dark Target Ocean Algorithm)
+  337 VIIRS NOAA-20 Aerosol (Deep Blue Land Algorithm)
+  338 VIIRS NOAA-20 Aerosol (Deep Blue Ocean Algorithm)
+  339 VIIRS NOAA-20 Aerosol (Dark Target Land Algorithm)
+  340 VIIRS NOAA-20 Aerosol (Dark Target Ocean Algorithm)
 ::
 
 # Notes:
