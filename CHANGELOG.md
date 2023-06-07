@@ -10,6 +10,8 @@
 
 ### Changed
 
+- Update GMAOpyobs to v1.0.4
+
 ## [v2.0.2] - 2023-05-25
 
 ### Added
@@ -25,7 +27,7 @@
 ### Changed
 
 - add VIIRS aerosol products to GMAO_ods kx list
-- update GMAOpyobs to v1.0.4 
+- update GMAOpyobs to v1.0.3 
 
 ## [v2.0.1] - 2023-05-17
 
