@@ -4,6 +4,8 @@
 
 ### Added
 
+- pyabc module added in GAAS_App. the snket class is needed for loading ffnet .net files
+
 ### Fixed
 
 ### Changed
