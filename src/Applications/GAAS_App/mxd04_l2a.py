@@ -58,12 +58,14 @@ if __name__ == "__main__":
         nn_file = '/nobackup/NNR/Net/nnr_003.%ident_Tau.net'
         blank_ods = '/nobackup/NNR/Misc/blank.ods'
         aer_x   = '/nobackup/NNR/Misc/tavg1_2d_aer_Nx'
+        slv_x   = '/nobackup/NNR/Misc/tavg1_2d_slv_Nx'
     else: # Must be somewhere else, no good defaults
         out_dir      = './'
         l2_path = './'
         nn_file = '%ident_Tau.net'
         blank_ods = 'blank.ods'
         aer_x   = 'tavg1_2d_aer_Nx'        
+        slv_x   = 'tavg1_2d_slv_Nx'
 
     out_tmpl = '%s.%prod_l%leva.%algo.%y4%m2%d2_%h2%n2z.%ext'
     coll = '006'
@@ -86,6 +88,10 @@ if __name__ == "__main__":
     parser.add_option("-A", "--aer_x", dest="aer_x", default=aer_x,
                       help="GrADS ctl for speciated AOD file (default=%s)"\
                            %aer_x )
+
+    parser.add_option("-S", "--slv_x", dest="slv_x", default=slv_x,
+                      help="GrADS ctl for column absorbers file (default=%s)"\
+                           %slv_x )    
 
     parser.add_option("-B", "--blank_ods", dest="blank_ods", default=blank_ods,
                       help="Blank ODS file name for fillers  (default=%s)"\
@@ -175,13 +181,19 @@ if __name__ == "__main__":
     else:
       aer_x = options.aer_x
 
+#   Column absorbers
+#   ----------------
+    if options.slv_x[-3:] == 'nc4':
+      slv_x = strTemplate(options.slv_x,expid=options.expid,nymd=nymd,nhms=nhms)
+    else:
+      slv_x = options.slv_x
         
 #   MODIS Level 2 NNR Aerosol Retrievals
 #   ------------------------------------
     if options.verbose:
         print("NNR Retrieving %s %s on "%(prod,algo.upper()),syn_time)
 
-    modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,aer_x,
+    modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,aer_x,slv_x,
                       coll=options.coll,
                       cloud_thresh=0.7,
                       cloudFree = 0.0,

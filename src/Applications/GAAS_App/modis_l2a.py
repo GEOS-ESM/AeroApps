@@ -41,6 +41,7 @@ if __name__ == "__main__":
                   " --fname=" + cf('MODIS_L2A_OUT_TEMPLATE') + \
                     " --net=" + cf('MODIS_L2A_NN_FILE')      + \
                  " --aer_x="  + cf('MODIS_L2A_AER_X')  + \
+                 " --slv_x="  + cf('MODIS_L2A_SLV_X')  + \
               " --blank_ods=" + cf('MODIS_L2A_BLANK_ODS')   
 
     if cf('MODIS_L2A_OVERWRITE').upper() == 'YES': Options += " --force"
