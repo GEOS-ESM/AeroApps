@@ -150,7 +150,7 @@ class NN(object):
         Only data with an iValid Q/C flag is considered.
         """
         n = self.lon.size
-        self.kf = KFold(np.sum(self.iValid), n_folds=K, shuffle=True, random_state=n)
+        self.kf = KFold(n_splits=K, shuffle=True, random_state=n)
 
 
     def getInputs(self,I,Input=None):
@@ -238,7 +238,9 @@ class NN(object):
         """
         if I is None: I = self.iTest # Testing data by default
         results = self.eval(I)[:,iTarget]
-        targets = self.getTargets(I)[:,iTarget]
+        targets = self.getTargets(I)
+        if self.nTarget > 1:
+            targets = targets[:,iTarget]
         original = log(self.__dict__['m'+self.Target[iTarget][1:]][I] + 0.01)
         if bins == None:
             bins = arange(-5., 1., 0.1 )

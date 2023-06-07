@@ -7,7 +7,7 @@ from   numpy import pi, tan, cos, sin
 from   numpy import arctan, sqrt, arccos
 import numpy as np
 
-def rtlsReflectance(Kiso,Kgeo,Kvol,sza,vza,saa,vaa):
+def rtlsReflectance(Kiso,Kgeo,Kvol,sza,vza,saa,vaa,raa=None):
     """ 
     Lucht et al. (2000) IEEE Transactions on Geoscience and Remote Sensing
     """
@@ -16,7 +16,8 @@ def rtlsReflectance(Kiso,Kgeo,Kvol,sza,vza,saa,vaa):
     h_b  = 2.0
     b_r  = 1.0
 
-    raa  = vaa - saa  # raa = 0 is back scattering direction
+    if raa is None:
+        raa  = vaa - saa  # raa = 0 is back scattering direction
 
     # degrees to radians
     raa = raa*pi/180.0

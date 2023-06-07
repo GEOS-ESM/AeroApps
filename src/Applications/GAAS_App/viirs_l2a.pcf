@@ -1,0 +1,22 @@
+#VIIRS_L2A  processing
+
+VIIRS_L2A_VERBOSE         = YES
+
+VIIRS_L2A_EXPID           = nnr_001
+VIIRS_L2A_IDENTS          = vsnppdbl
+VIIRS_L2A_COLLECTION      = 002
+
+VIIRS_L2A_L2_DIR          = /nobackup/VIIRS
+VIIRS_L2A_OUT_DIR         = /nobackup/NNR/VIIRS/%coll_nnr_001/Level%lev/%prod/Y%y4/M%m2
+
+VIIRS_L2A_OVERWRITE       = YES
+VIIRS_L2A_OUT_TEMPLATE    = '%s.%prod_L%leva.%algo.%y4%m2%d2_%h2%n2z.%ext'
+VIIRS_L2A_RESOLUTION      = 16
+
+VIIRS_L2A_AER_X           = /nobackup/NNR/Misc/tavg1_2d_aer_Nx  
+
+
+VIIRS_L2A_NN_FILE         = nnr_001.%ident_TauAE.net
+VIIRS_L2A_BLANK_ODS       = /nobackup/NNR/Misc/blank.ods
+
+#END VIIRS_L2A  processing
