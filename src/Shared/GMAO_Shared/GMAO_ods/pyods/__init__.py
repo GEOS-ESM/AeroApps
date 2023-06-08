@@ -5,8 +5,8 @@ well as GSI binary diag output.
 
 """
 from types   import *
-from pyods_  import *   # Fortran extension using f2py
-from odsmeta import *   # useful constants
+from .pyods_  import *   # Fortran extension using f2py
+from .odsmeta import *   # useful constants
 import numpy as np
 
 __VERSION__ = '1.0.3'

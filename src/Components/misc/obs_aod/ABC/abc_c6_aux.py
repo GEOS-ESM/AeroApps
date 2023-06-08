@@ -346,6 +346,8 @@ def make_plots(mxd,expid,ident,I=None):
   # -------------------------
   # mxd.plotKDE(I=I,figfile=expid+"."+ident+"_kde-"+mxd.Target[0][1:]+"-corrected.png")
   targets  = mxd.getTargets(I)
+  if mxd.nTarget == 1:
+      targets.shape = targets.shape + (1,)
   results = mxd.eval(I)
   # loop through targets
   for t in range(mxd.nTarget):
@@ -487,7 +489,11 @@ def make_plots_angstrom(mxd,expid,ident,I=None):
           name = 'm'+mxd.Target[t][1:]
       if name in mxd.__dict__:
           original = log(mxd.__dict__[name][I]+0.01)
-          fig = _plotKDE(targets[:,t],original,y_label='Original MODIS')
+
+          # protect against some of the othe wavelengths having negative values
+          ii = mxd.__dict__[name][I] > -0.01
+
+          fig = _plotKDE(targets[:,t][ii],original[ii],y_label='Original MODIS')
           title("Log("+mxd.Target[t][1:]+"+0.01)- "+ident)
           savefig(outdir+"/"+expid+"."+ident+"_kde-"+name[1:]+'.png')
           plt.close(fig)
@@ -556,9 +562,12 @@ def make_plots_angstrom(mxd,expid,ident,I=None):
                   print('orig t,wav',t,name[4:])
                   wav = float(name[4:])
                   oo = mxd.__dict__[name][I] + 0.01 # add 0.01 to handle negatives
-                  tt = np.exp(targets[:,t]) # keep + 0.01 to handle negatives
-                  AEo = -1.*np.log(refo/oo)/np.log(refwav/wav)
-                  AEt = -1.*np.log(reft/tt)/np.log(refwav/wav)
+                  # protect against interpolated wavelengths that might have -9999
+                  ii = oo > 0
+                  oo = oo[ii]
+                  tt = np.exp(targets[:,t][ii]) # keep + 0.01 to handle negatives
+                  AEo = -1.*np.log(refo[ii]/oo)/np.log(refwav/wav)
+                  AEt = -1.*np.log(reft[ii]/tt)/np.log(refwav/wav)
                   fig = _plotKDE(AEt,AEo,y_label='Original MODIS',x_bins=bins,y_bins=bins)
                   title("AE 550/"+name[3:])
                   savefig(outdir+"/"+expid+"."+ident+"_kde-AE"+name[4:]+'.png')
@@ -588,7 +597,10 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
         name = tname
     if name in mxd.__dict__:
       if K is None:
-        targets  = mxd.getTargets(I[0])[:,t]
+        targets  = mxd.getTargets(I[0])
+        if mxd.nTarget > 1: 
+            targets = targets[:,t]
+
         inputs = mxd.getInputs(I[0],Input=Input)
         knet = mxd.loadnet(netfileRoot+'_Tau.net')
         results = knet(inputs)[:,t]
@@ -603,6 +615,11 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
             results = np.log(tau + 0.01)
 
         original = mxd.__dict__[name][I[0]]
+        # Protect against -999 in interpolated values
+        ii = original > -0.01
+        original = original[ii]
+        targets = targets[ii]
+        results = results[ii]
 
         if mxd.laod:
           original = log(original + 0.01)
@@ -622,7 +639,10 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
         for k,iTest in enumerate(I):
           mxd.iTest    = iTest
 
-          targets.append(mxd.getTargets(mxd.iTest)[:,t])
+          targets_ = mxd.getTargets(mxd.iTest)
+          if mxd.nTarget > 1:
+              targets_ = targets_[:,t]
+          targets.append(targets_)
 
           inputs = mxd.getInputs(mxd.iTest,Input=Input)
 
@@ -635,7 +655,7 @@ def make_error_pdfs(mxd,Input,expid,ident,K=None,I=None,Title=None,netfileRoot=N
               tau = base_tau_t*np.exp(-1.*np.log(wav/mxd.AE_base_wav)*targets[k])
               targets[k] = np.log(tau + 0.01)
 
-              base_tau_r = np.exp(knet(inputs)[:,mxd.base_wav_i]) - 0.01
+              base_tau_r = np.exp(knet(inputs)[:,mxd.AE_base_wav_i]) - 0.01
               tau = base_tau_r*np.exp(-1.*np.log(wav/mxd.AE_base_wav)*results[k])
               results[k] = np.log(tau + 0.01)
 
@@ -1102,6 +1122,8 @@ def TestStats(mxd,K,C):
     mxd.nnr.R[k,c,:]         = reg[:,2]
 
     targets  = mxd.getTargets(mxd.iTest)
+    if mxd.nTarget == 1:
+        targets.shape = targets.shape + (1,)
 
     # get other NNR STATS
     mxd.nnr.rmse[k,c,:] = rmse(out,targets)
@@ -1168,7 +1190,7 @@ def SummaryPDFs(mxdx,mxdx2=None,varnames=['mRef870','mSre470'],doInt=False):
       I = [Irange]
     else:
       I = []
-      for iTrain, iTest in mxdx.kf:          
+      for iTrain, iTest in mxdx.kf.split(arange(np.sum(mxdx.iValid))):
         I.append(iValid[iTest])
 
     I1, I2, I3, I4 = get_Iquartiles(mxdx,I=I)

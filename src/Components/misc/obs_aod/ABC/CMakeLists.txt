@@ -23,6 +23,7 @@ set (PYFILES
     abc_avhrr.py
     abc_c6_aux.py
     abc_c6.py
+    abc_viirs.py
     abc_misr.py
     abc_modis.py
     albedo.py
@@ -35,6 +36,7 @@ set (PYFILES
     evaluate_avhrr.py
     evaluate_cdr.py
     giant.py
+    giant_viirs.py
     mcd43c.py
     nn.py
     reduce_avhrr.py
