@@ -30,13 +30,6 @@ ecbuild_add_executable (
   LIBS ${this}
   )
 
-# Install 'abc' package
-# ---------------------
-file (GLOB abc_files pyabc/*.py)
-install (
-    FILES ${abc_files}
-    DESTINATION lib/Python/pyabc
-    )
 
 # these are executable scripts
 set (PYSCRIPTS
