@@ -70,6 +70,7 @@ if __name__ == "__main__":
     out_tmpl = '%s.%prod_l%leva.%algo.%y4%m2%d2_%h2%n2z.%ext'
     coll = '006'
     res = 'c'
+    nsyn = 8
     
 #   Parse command line options
 #   --------------------------
@@ -92,6 +93,10 @@ if __name__ == "__main__":
     parser.add_option("-S", "--slv_x", dest="slv_x", default=slv_x,
                       help="GrADS ctl for column absorbers file (default=%s)"\
                            %slv_x )    
+
+    parser.add_option("--nsyn", dest="nsyn", default=nsyn,type="int",
+                      help="Number of synoptic times (default=%d)"\
+                           %nsyn )
 
     parser.add_option("-B", "--blank_ods", dest="blank_ods", default=blank_ods,
                       help="Blank ODS file name for fillers  (default=%s)"\
@@ -198,6 +203,7 @@ if __name__ == "__main__":
                       cloud_thresh=0.7,
                       cloudFree = 0.0,
                       aodmax = 1.0,
+                      nsyn=options.nsyn,
                       verbose=options.verbose)
     if modis.nobs < 1:
         if options.verbose:
@@ -215,7 +221,7 @@ if __name__ == "__main__":
 #   ---------
     makethis_dir(ods_file)
     if modis.nobs>0:
-        modis.writeODS(ods_file,revised=True)
+        modis.writeODS(ods_file,revised=True,nsyn=options.nsyn)
     else:
         if os.system('ods_blank.x %s %s %s %s'%(options.blank_ods,nymd,nhms,ods_file)):
             warnings.warn('cannot create empty output file <%s>'%ods_file)

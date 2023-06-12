@@ -37,6 +37,7 @@ if __name__ == "__main__":
     Options =     " --expid=" + cf('MODIS_L2A_EXPID')        + \
                  " --l2_dir=" + cf('MODIS_L2A_L2_DIR')       + \
                     " --res=" + cf('MODIS_L2A_RESOLUTION')   + \
+                   " --nsyn=" + cf('MODIS_L2A_NSYN')   + \
                    "  --dir=" + cf('MODIS_L2A_OUT_DIR')      + \
                   " --fname=" + cf('MODIS_L2A_OUT_TEMPLATE') + \
                     " --net=" + cf('MODIS_L2A_NN_FILE')      + \
