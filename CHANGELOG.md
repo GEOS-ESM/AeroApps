@@ -5,7 +5,7 @@
 ### Added
 
 - pyabc module added in GMAO_aeropybs. the snket class is needed in pyabc for loading ffnet .net files
-
+- NNR ods files of AOD can be generated from angstrom exponent fit coefficients
 
 ### Fixed
 
