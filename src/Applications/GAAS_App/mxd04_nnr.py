@@ -472,9 +472,32 @@ class MxD04_NNR(MxD04_L2):
         # calculate AOD 
         # ------------------------------
         doAE = False
+        doAEfit = False
         for targetName in self.net.TargetNames:
-            if 'AE' in targetName:
+            if 'AEfit' in targetName:
+                doAEfit = True
+            elif 'AE' in targetName:
                 doAE = True
+
+        if doAEfit:
+            wavs = ['440','470','550','660','870']
+            wav  = np.array(wavs).astype(float)
+            nwav = len(wavs)
+            for i,targetName in enumerate(self.net.TargetNames):
+                    if 'AEfitm' in targetName:
+                        AEfitm = targets[:,i]
+                    if 'AEfitb' in targetName:
+                        AEfitb = targets[:,i]
+            nobs = targets.shape[0]
+            targets_ = np.zeros([nobs,nwav])
+            targetName = []
+            for i in range(nwav):
+                targets_[:,i] = -1.*(AEfitm*np.log(wav[i]) + AEfitb)
+                targetName.append('aTau'+wavs[i])
+
+            targets = targets_
+            self.net.TargetNames = targetName
+
 
         if doAE:
             for i,targetName in enumerate(self.net.TargetNames):
