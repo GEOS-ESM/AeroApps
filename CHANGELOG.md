@@ -4,7 +4,8 @@
 
 ### Added
 
-- pyabc module added in GAAS_App. the snket class is needed for loading ffnet .net files
+- pyabc module added in GMAO_aeropybs. the snket class is needed in pyabc for loading ffnet .net files
+
 
 ### Fixed
 
