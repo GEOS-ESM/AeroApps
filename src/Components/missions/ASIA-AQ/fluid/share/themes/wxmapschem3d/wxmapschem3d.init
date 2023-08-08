@@ -1,6 +1,0 @@
-config: [wxmapschem3d]
-
-default:
-  region: nam
-  field: du
-  level: '850'

@@ -1,4 +1,0 @@
-
-wxmap.py --theme classic_ensemble --field slp --region natl --time_dt 20180405T000000 --stream X0034ANA
-
-wxmap.py --theme classic_ensemble --field slp --region natl --time_dt 20180406T000000 --stream X0034ANA

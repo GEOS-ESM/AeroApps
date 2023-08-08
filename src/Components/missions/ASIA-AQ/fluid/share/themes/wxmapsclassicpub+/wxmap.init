@@ -1,6 +1,0 @@
-config: [wxmapsclassicpub+]
-
-default:
-  region: nam
-  field: precip
-  level: '0'

@@ -1,8 +1,0 @@
-field:
-
-  G5FPFC:
-
-    _co2:
-      long_name: Carbon Dioxide (All Sources)
-      units: kg m-2
-      expression: co2.inst3_3d_chm_Np

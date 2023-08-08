@@ -1,5 +1,0 @@
-reset: [region, annotate, playlist]
-config: [missions, CAMP2EX]
-
-default:
-  region: camp2ex_lg

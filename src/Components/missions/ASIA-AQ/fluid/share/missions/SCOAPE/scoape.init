@@ -1,5 +1,0 @@
-reset: [region, annotate, playlist]
-config: [missions, SCOAPE]
-
-default:
-  region: scoape_lg

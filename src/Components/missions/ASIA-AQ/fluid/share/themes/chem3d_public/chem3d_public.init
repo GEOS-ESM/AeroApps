@@ -1,8 +1,0 @@
-theme: [wxmapschem3d]
-config: [chem3d_public]
-streams: [G5FPFC]
-
-default:
-  region: nam
-  field: du
-  level: '850'

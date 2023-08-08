@@ -1,8 +1,0 @@
-theme: [weather, missions]
-config: [weather_mission]
-streams: [G5FPFC]
-
-default:
-  region: nam
-  field: pblh
-  level: '0'

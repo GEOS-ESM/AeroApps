@@ -1,5 +1,0 @@
-reset: [region, annotate, playlist]
-config: [FIREX-AQ]
-
-default:
-  region: firex-aq

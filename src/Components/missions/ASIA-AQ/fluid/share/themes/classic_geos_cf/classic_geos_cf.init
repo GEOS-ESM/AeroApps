@@ -1,8 +1,0 @@
-theme: [custom]
-config: [classic_geos_cf]
-streams: [GEOSCF]
-
-default:
-  field: default
-  region: default
-  level: '0'

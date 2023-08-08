@@ -1,8 +1,0 @@
-theme: [custom-2, missions]
-config: [custom-2_mission]
-streams: [G5FPFC]
-
-default:
-  field: default
-  region: default
-  level: '0'

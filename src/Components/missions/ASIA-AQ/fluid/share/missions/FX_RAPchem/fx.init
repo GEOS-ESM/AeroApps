@@ -1,7 +1,0 @@
-reset: [region, playlist]
-config: [FIREX-AQ, FX_RAPchem]
-
-default:
-  field: aod
-  region: fx-central
-  level: '0'

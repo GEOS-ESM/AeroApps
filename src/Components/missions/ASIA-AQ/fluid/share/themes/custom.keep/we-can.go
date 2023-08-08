@@ -1,1 +1,0 @@
-wxmap.py --theme custom --theme WE-CAN --fcst_dt 20180628T000000 --start_dt 20180628T000000 --end_dt 20180703T000000 --t_deltat 1 --region we-can --field bcocsmass --level 0 --oname '/discover/nobackup/jardizzo/FLUID/WE-CAN/model.NASA_GEOS-5.%%Y%%m%%d%%H00.${tau}_$field_name.png' --geometry 800x618

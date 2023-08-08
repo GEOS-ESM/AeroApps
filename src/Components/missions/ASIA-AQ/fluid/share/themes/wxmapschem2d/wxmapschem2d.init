@@ -1,6 +1,0 @@
-config: [wxmapschem2d]
-
-default:
-  field: duaot
-  region: atlantic
-  level: '0'

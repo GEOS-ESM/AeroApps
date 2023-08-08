@@ -1,6 +1,0 @@
-wxmap.py --theme chem2d_mission --theme WE-CAN --fcst_dt 20180611T000000 --start_dt 20180611T000000 --end_dt 20180615T000000 --t_deltat 1 --region we-can --field bcocsmass --level 0 --oname '/discover/nobackup/jardizzo/FLUID/WE-CAN/model.NASA_GEOS-5.201806110000.${tau}_$field_name.png'
-
-wxmap.py --theme chem2d_mission --theme WE-CAN --fcst_dt 20180611T000000 --start_dt 20180611T000000 --end_dt 20180614T000000 --t_deltat 1 --region we-can --field bcocaot --level 0 --oname '/discover/nobackup/jardizzo/FLUID/WE-CAN/model.NASA_GEOS-5.201806110000.${tau}_$field_name.png' --geometry 800x618
-
-
- wxmap.py --theme weather_mission --theme WE-CAN --fcst_dt 20180611T000000 --start_dt 20180611T000000 --end_dt 20180612T000000 --t_deltat 1 --region we-can --field precip --level 0 --geometry 800x618

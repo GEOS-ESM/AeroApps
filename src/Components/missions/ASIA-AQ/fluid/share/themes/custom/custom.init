@@ -1,6 +1,0 @@
-config: [custom]
-
-default:
-  field: bcocsmass
-  region: we-can
-  level: '0'

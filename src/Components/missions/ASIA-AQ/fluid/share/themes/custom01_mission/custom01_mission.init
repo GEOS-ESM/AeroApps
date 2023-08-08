@@ -1,8 +1,0 @@
-theme: [custom01, missions]
-config: [custom01_mission]
-streams: [G5FPFC]
-
-default:
-  field: duaot
-  region: nam
-  level: '0'

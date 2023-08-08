@@ -1,6 +1,0 @@
-config: [weather]
- 
-default:
-  field: precip
-  region: nam
-  level: '0'

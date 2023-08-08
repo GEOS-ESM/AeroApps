@@ -1,7 +1,0 @@
-config: [snowstorms_merra2]
-streams: [MERRA2]
-
-default:
-  field: prec
-  region: nam
-  level: '0'

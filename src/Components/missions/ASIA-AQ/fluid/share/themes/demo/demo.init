@@ -1,6 +1,0 @@
-config: [demo]
-
-default:
-  region: nam
-  field: precip
-  level: '0'

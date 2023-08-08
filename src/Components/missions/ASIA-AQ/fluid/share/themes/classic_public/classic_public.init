@@ -1,8 +1,0 @@
-theme: [wxmapsclassicpub+]
-config: [classic_public]
-streams: [G5FPFC]
-
-default:
-  field: precip
-  region: nam
-  level: '0'

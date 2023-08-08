@@ -1,5 +1,0 @@
-reset: [region, annotate, playlist]
-config: [CAMP2EX]
-
-default:
-  region: camp2ex_lg

@@ -1,7 +1,0 @@
-reset: [region, annotate, playlist]
-config: [FIREX-AQ]
-
-default:
-  field: aod_all
-  region: fx-central
-  level: '0'
