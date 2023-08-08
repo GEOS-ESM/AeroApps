@@ -1,0 +1,6564 @@
+wxmapscustom:
+
+  plot:
+
+    co_gram000: &CO
+      long_name: 'co'
+      header: Ames_AERO (93.77W,42.02N)
+      tag: Ames_AERO
+      xlabel: ''
+      levels: [0]
+      layers: [co]
+      title: 'CO'
+      parea:  1 10 1 7.5
+      lev:  1000 100
+      lat:  42.0213623047
+      lon:  266.225219727
+      time: '$tbeg $t5day'
+      ylab: 'Pressure (mb)'
+      shape: 'off'
+
+    co_gram001:
+      <<: *CO
+      header: Appalachian_State_AERO (81.69W,36.21N)
+      tag: Appalachian_State_AERO
+      lat:  36.2145996094
+      lon:  278.30619812
+
+    co_gram002:
+      <<: *CO
+      header: ARM_Oliktok_AK_AERO (149.88W,70.50N)
+      tag: ARM_Oliktok_AK_AERO
+      lat:  70.49949646
+      lon:  210.119995117
+
+    co_gram003:
+      <<: *CO
+      header: ARM_SGP_AERO (97.49W,36.61N)
+      tag: ARM_SGP_AERO
+      lat:  36.6051750183
+      lon:  262.514381409
+
+    co_gram004:
+      <<: *CO
+      header: Bakersfield_AERO (119.00W,35.33N)
+      tag: Bakersfield_AERO
+      lat:  35.3315048218
+      lon:  240.999992371
+
+    co_gram005:
+      <<: *CO
+      header: Barrow_AERO (156.80W,71.30N)
+      tag: Barrow_AERO
+      lat:  71.3
+      lon:  203.2
+
+    co_gram006:
+      <<: *CO
+      header: Billerica_AERO (71.27W,42.53N)
+      tag: Billerica_AERO
+      lat:  42.5283470154
+      lon:  288.731384277
+
+    co_gram007:
+      <<: *CO
+      header: Bonanza_Creek_AERO (148.32W,64.74N)
+      tag: Bonanza_Creek_AERO
+      lat:  64.742805481
+      lon:  211.683731079
+
+    co_gram008:
+      <<: *CO
+      header: BONDVILLE_AERO (88.37W,40.05N)
+      tag: BONDVILLE_AERO
+      lat:  40.0533332825
+      lon:  271.628059387
+
+    co_gram009:
+      <<: *CO
+      header: Bozeman_AERO (111.05W,45.66N)
+      tag: Bozeman_AERO
+      lat:  45.6622047424
+      lon:  248.954986572
+
+    co_gram010:
+      <<: *CO
+      header: Brookhaven_AERO (72.88W,40.87N)
+      tag: Brookhaven_AERO
+      lat:  40.8660011292
+      lon:  287.11530304
+
+    co_gram011:
+      <<: *CO
+      header: CalTech_AERO (118.13W,34.14N)
+      tag: CalTech_AERO
+      lat:  34.1367301941
+      lon:  241.873832703
+
+    co_gram012:
+      <<: *CO
+      header: Cape_San_Juan_AERO (65.62W,18.38N)
+      tag: Cape_San_Juan_AERO
+      lat:  18.3845005035
+      lon:  294.380096435
+
+    co_gram013:
+      <<: *CO
+      header: CARTEL_AERO (71.93W,45.38N)
+      tag: CARTEL_AERO
+      lat:  45.3797531128
+      lon:  288.06867218
+
+    co_gram014:
+      <<: *CO
+      header: Chapais_AERO (74.98W,49.82N)
+      tag: Chapais_AERO
+      lat:  49.8224334717
+      lon:  285.024597168
+
+    co_gram015:
+      <<: *CO
+      header: Churchill_AERO (93.82W,58.74N)
+      tag: Churchill_AERO
+      lat:  58.736000061
+      lon:  266.18183136
+
+    co_gram016:
+      <<: *CO
+      header: Cold_Lake_AERO (110.28W,54.42N)
+      tag: Cold_Lake_AERO
+      lat:  54.4169998169
+      lon:  249.717002869
+
+    co_gram017:
+      <<: *CO
+      header: Dayton_AERO (84.11W,39.78N)
+      tag: Dayton_AERO
+      lat:  39.7759780884
+      lon:  275.890380859
+
+    co_gram018:
+      <<: *CO
+      header: Denver_LaCasa_AERO (105.01W,39.78N)
+      tag: Denver_LaCasa_AERO
+      lat:  39.7794914246
+      lon:  254.994819641
+
+    co_gram019:
+      <<: *CO
+      header: DigitalGlobe_Cal_AERO (105.14W,40.14N)
+      tag: DigitalGlobe_Cal_AERO
+      lat:  40.1388893127
+      lon:  254.86277771
+
+    co_gram020:
+      <<: *CO
+      header: EastMalling_MO_AERO (0.44E,51.29N)
+      tag: EastMalling_MO_AERO
+      lat:  51.2900009155
+      lon:  0.439999997616
+
+    co_gram021:
+      <<: *CO
+      header: Easton-MDE_AERO (76.08W,38.79N)
+      tag: Easton-MDE_AERO
+      lat:  38.7949714661
+      lon:  283.915748596
+
+    co_gram022:
+      <<: *CO
+      header: Egbert_AERO (79.78W,44.23N)
+      tag: Egbert_AERO
+      lat:  44.2315444946
+      lon:  280.218589783
+
+    co_gram023:
+      <<: *CO
+      header: EPA-Res_Triangle_Pk_AERO (78.87W,35.88N)
+      tag: EPA-Res_Triangle_Pk_AERO
+      lat:  35.8800010681
+      lon:  281.129997253
+
+    co_gram024:
+      <<: *CO
+      header: Fort_McMurray_AERO (111.48W,56.75N)
+      tag: Fort_McMurray_AERO
+      lat:  56.7523078918
+      lon:  248.523864746
+
+    co_gram025:
+      <<: *CO
+      header: Fresno_2_AERO (119.77W,36.79N)
+      tag: Fresno_2_AERO
+      lat:  36.785369873
+      lon:  240.226982117
+
+    co_gram026:
+      <<: *CO
+      header: Georgia_Tech_AERO (84.40W,33.78N)
+      tag: Georgia_Tech_AERO
+      lat:  33.7802009583
+      lon:  275.600463867
+
+    co_gram027:
+      <<: *CO
+      header: Goldstone_AERO (116.79W,35.23N)
+      tag: Goldstone_AERO
+      lat:  35.2333335876
+      lon:  243.208335876
+
+    co_gram028:
+      <<: *CO
+      header: Grand_Forks_AERO (97.33W,47.91N)
+      tag: Grand_Forks_AERO
+      lat:  47.9117507935
+      lon:  262.674552918
+
+    co_gram029:
+      <<: *CO
+      header: Granite_Island_AERO (87.41W,46.72N)
+      tag: Granite_Island_AERO
+      lat:  46.7207984924
+      lon:  272.587997437
+
+    co_gram030:
+      <<: *CO
+      header: GSFC_AERO (76.84W,38.99N)
+      tag: GSFC_AERO
+      lat:  38.9925003052
+      lon:  283.160163879
+
+    co_gram031:
+      <<: *CO
+      header: Halifax_AERO (63.59W,44.64N)
+      tag: Halifax_AERO
+      lat:  44.6380004883
+      lon:  296.40599823
+
+    co_gram032:
+      <<: *CO
+      header: Hart_Miller_Island_AERO (76.36W,39.24N)
+      tag: Hart_Miller_Island_AERO
+      lat:  39.2419013977
+      lon:  283.637199402
+
+    co_gram033:
+      <<: *CO
+      header: IMPROVE-MammothCave_AERO (86.15W,37.13N)
+      tag: IMPROVE-MammothCave_AERO
+      lat:  37.1318016052
+      lon:  273.852096558
+
+    co_gram034:
+      <<: *CO
+      header: Kangerlussuaq_AERO (50.62W,67.00N)
+      tag: Kangerlussuaq_AERO
+      lat:  66.9957962036
+      lon:  309.378601074
+
+    co_gram035:
+      <<: *CO
+      header: Kellogg_LTER_AERO (85.37W,42.41N)
+      tag: Kellogg_LTER_AERO
+      lat:  42.4079818726
+      lon:  274.62828064
+
+    co_gram036:
+      <<: *CO
+      header: Kelowna_UAS_AERO (119.40W,49.94N)
+      tag: Kelowna_UAS_AERO
+      lat:  49.9412956238
+      lon:  240.599891663
+
+    co_gram037:
+      <<: *CO
+      header: Key_Biscayne_AERO (80.16W,25.73N)
+      tag: Key_Biscayne_AERO
+      lat:  25.7319660187
+      lon:  279.836669922
+
+    co_gram038:
+      <<: *CO
+      header: Kluane_Lake_AERO (138.41W,61.03N)
+      tag: Kluane_Lake_AERO
+      lat:  61.0270004272
+      lon:  221.589996338
+
+    co_gram039:
+      <<: *CO
+      header: La_Parguera_AERO (67.05W,17.97N)
+      tag: La_Parguera_AERO
+      lat:  17.9704494476
+      lon:  292.954620361
+
+    co_gram040:
+      <<: *CO
+      header: LISCO_AERO (73.34W,40.95N)
+      tag: LISCO_AERO
+      lat:  40.9545173645
+      lon:  286.658233643
+
+    co_gram041:
+      <<: *CO
+      header: Mauna_Loa_AERO (155.58W,19.54N)
+      tag: Mauna_Loa_AERO
+      lat:  19.5360069275
+      lon:  204.423248291
+
+    co_gram042:
+      <<: *CO
+      header: MD_Science_Center_AERO (76.61W,39.28N)
+      tag: MD_Science_Center_AERO
+      lat:  39.2812309265
+      lon:  283.387947082
+
+    co_gram043:
+      <<: *CO
+      header: Mingo_AERO (90.14W,36.97N)
+      tag: Mingo_AERO
+      lat:  36.971698761
+      lon:  269.856796265
+
+    co_gram044:
+      <<: *CO
+      header: Missoula_AERO (114.08W,46.92N)
+      tag: Missoula_AERO
+      lat:  46.9166679382
+      lon:  245.916664124
+
+    co_gram045:
+      <<: *CO
+      header: Modesto_AERO (120.99W,37.64N)
+      tag: Modesto_AERO
+      lat:  37.6421699524
+      lon:  239.005783081
+
+    co_gram046:
+      <<: *CO
+      header: Monterey_AERO (121.80W,36.60N)
+      tag: Monterey_AERO
+      lat:  36.6
+      lon:  238.2
+
+    co_gram047:
+      <<: *CO
+      header: MVCO_AERO (70.57W,41.33N)
+      tag: MVCO_AERO
+      lat:  41.3250007629
+      lon:  289.433296204
+
+    co_gram048:
+      <<: *CO
+      header: Narsarsuaq_AERO (45.42W,61.16N)
+      tag: Narsarsuaq_AERO
+      lat:  61.1559524536
+      lon:  314.580619812
+
+    co_gram049:
+      <<: *CO
+      header: NASA_KSC_AERO (80.66W,28.46N)
+      tag: NASA_KSC_AERO
+      lat:  28.4637622833
+      lon:  279.336524963
+
+    co_gram050:
+      <<: *CO
+      header: NASA_LaRC_AERO (76.38W,37.10N)
+      tag: NASA_LaRC_AERO
+      lat:  37.1049613953
+      lon:  283.621360779
+
+    co_gram051:
+      <<: *CO
+      header: NEON_Bartlett_AERO (71.29W,44.06N)
+      tag: NEON_Bartlett_AERO
+      lat:  44.0638809204
+      lon:  288.712799072
+
+    co_gram052:
+      <<: *CO
+      header: NEON_CLBJ_AERO (97.57W,33.40N)
+      tag: NEON_CLBJ_AERO
+      lat:  33.4012298584
+      lon:  262.430000305
+
+    co_gram053:
+      <<: *CO
+      header: NEON-CPER_AERO (104.74W,40.81N)
+      tag: NEON-CPER_AERO
+      lat:  40.8124427795
+      lon:  255.255760193
+
+    co_gram054:
+      <<: *CO
+      header: NEON_CVALLA_AERO (105.17W,40.16N)
+      tag: NEON_CVALLA_AERO
+      lat:  40.1606292725
+      lon:  254.832748413
+
+    co_gram055:
+      <<: *CO
+      header: NEON_DEJU_AERO (145.75W,63.88N)
+      tag: NEON_DEJU_AERO
+      lat:  63.8811187744
+      lon:  214.248641968
+
+    co_gram056:
+      <<: *CO
+      header: NEON-Disney_AERO (81.44W,28.13N)
+      tag: NEON-Disney_AERO
+      lat:  28.125038147
+      lon:  278.563796997
+
+    co_gram057:
+      <<: *CO
+      header: NEON_GRSM_AERO (83.50W,35.69N)
+      tag: NEON_GRSM_AERO
+      lat:  35.6889610291
+      lon:  276.498046875
+
+    co_gram058:
+      <<: *CO
+      header: NEON_GUAN_AERO (66.87W,17.97N)
+      tag: NEON_GUAN_AERO
+      lat:  17.9695491791
+      lon:  293.13130188
+
+    co_gram059:
+      <<: *CO
+      header: NEON_Harvard_AERO (72.17W,42.54N)
+      tag: NEON_Harvard_AERO
+      lat:  42.5368995667
+      lon:  287.827339172
+
+    co_gram060:
+      <<: *CO
+      header: NEON_HEAL_AERO (149.21W,63.88N)
+      tag: NEON_HEAL_AERO
+      lat:  63.8756904602
+      lon:  210.78666687
+
+    co_gram061:
+      <<: *CO
+      header: NEON_MLBS_AERO (80.52W,37.38N)
+      tag: NEON_MLBS_AERO
+      lat:  37.3783073425
+      lon:  279.475166321
+
+    co_gram062:
+      <<: *CO
+      header: NEON_MOAB_AERO (109.39W,38.25N)
+      tag: NEON_MOAB_AERO
+      lat:  38.2483291626
+      lon:  250.611732483
+
+    co_gram063:
+      <<: *CO
+      header: NEON_NOGP_AERO (100.92W,46.77N)
+      tag: NEON_NOGP_AERO
+      lat:  46.7697181702
+      lon:  259.084648132
+
+    co_gram064:
+      <<: *CO
+      header: NEON_OAES_AERO (99.06W,35.41N)
+      tag: NEON_OAES_AERO
+      lat:  35.4105911255
+      lon:  260.941207886
+
+    co_gram065:
+      <<: *CO
+      header: NEON_ONAQ_AERO (112.45W,40.18N)
+      tag: NEON_ONAQ_AERO
+      lat:  40.1775894165
+      lon:  247.547561646
+
+    co_gram066:
+      <<: *CO
+      header: NEON_ORNL_AERO (84.28W,35.96N)
+      tag: NEON_ORNL_AERO
+      lat:  35.9641265869
+      lon:  275.717414856
+
+    co_gram067:
+      <<: *CO
+      header: NEON_OSBS_AERO (81.99W,29.69N)
+      tag: NEON_OSBS_AERO
+      lat:  29.6892681122
+      lon:  278.006568909
+
+    co_gram068:
+      <<: *CO
+      header: NEON_RMNP_AERO (105.55W,40.28N)
+      tag: NEON_RMNP_AERO
+      lat:  40.2759017944
+      lon:  254.454025269
+
+    co_gram069:
+      <<: *CO
+      header: NEON_SCBI_AERO (78.14W,38.89N)
+      tag: NEON_SCBI_AERO
+      lat:  38.8929176331
+      lon:  281.860496521
+
+    co_gram070:
+      <<: *CO
+      header: NEON_SERC_AERO (76.56W,38.89N)
+      tag: NEON_SERC_AERO
+      lat:  38.8901176453
+      lon:  283.439979553
+
+    co_gram071:
+      <<: *CO
+      header: NEON_SRER_AERO (110.84W,31.91N)
+      tag: NEON_SRER_AERO
+      lat:  31.9106807709
+      lon:  249.164512634
+
+    co_gram072:
+      <<: *CO
+      header: NEON_Sterling_AERO (103.03W,40.46N)
+      tag: NEON_Sterling_AERO
+      lat:  40.4619026184
+      lon:  256.970703125
+
+    co_gram073:
+      <<: *CO
+      header: NEON_TALL_AERO (87.39W,32.95N)
+      tag: NEON_TALL_AERO
+      lat:  32.9504623413
+      lon:  272.6067276
+
+    co_gram074:
+      <<: *CO
+      header: NEON_TEAK_AERO (119.01W,37.01N)
+      tag: NEON_TEAK_AERO
+      lat:  37.0058326721
+      lon:  240.993980408
+
+    co_gram075:
+      <<: *CO
+      header: NEON_TOOL_AERO (149.37W,68.66N)
+      tag: NEON_TOOL_AERO
+      lat:  68.6610870361
+      lon:  210.62953186
+
+    co_gram076:
+      <<: *CO
+      header: NEON_UKFS_AERO (95.19W,39.04N)
+      tag: NEON_UKFS_AERO
+      lat:  39.0404319763
+      lon:  264.807853699
+
+    co_gram077:
+      <<: *CO
+      header: NEON_UNDE_AERO (89.54W,46.23N)
+      tag: NEON_UNDE_AERO
+      lat:  46.2338829041
+      lon:  270.462753296
+
+    co_gram078:
+      <<: *CO
+      header: NEON_WOOD_AERO (99.24W,47.13N)
+      tag: NEON_WOOD_AERO
+      lat:  47.1282272339
+      lon:  260.758644104
+
+    co_gram079:
+      <<: *CO
+      header: NEON_WREF_AERO (121.95W,45.82N)
+      tag: NEON_WREF_AERO
+      lat:  45.82
+      lon:  238.048
+
+    co_gram080:
+      <<: *CO
+      header: ORS_Hermosillo_AERO (111.15W,29.03N)
+      tag: ORS_Hermosillo_AERO
+      lat:  29.0275001526
+      lon:  248.854446411
+
+    co_gram081:
+      <<: *CO
+      header: Pickle_Lake_AERO (90.22W,51.45N)
+      tag: Pickle_Lake_AERO
+      lat:  51.4494438171
+      lon:  269.782501221
+
+    co_gram082:
+      <<: *CO
+      header: Ragged_Point_AERO (59.43W,13.17N)
+      tag: Ragged_Point_AERO
+      lat:  13.1650180817
+      lon:  300.567966461
+
+    co_gram083:
+      <<: *CO
+      header: Railroad_Valley_AERO (116.00W,38.50N)
+      tag: Railroad_Valley_AERO
+      lat:  38.5
+      lon:  244.0
+
+    co_gram084:
+      <<: *CO
+      header: Red_Mountain_Pass_AERO (107.71W,37.91N)
+      tag: Red_Mountain_Pass_AERO
+      lat:  37.9074478149
+      lon:  252.289085388
+
+    co_gram085:
+      <<: *CO
+      header: Resolute_Bay_AERO (94.97W,74.71N)
+      tag: Resolute_Bay_AERO
+      lat:  74.7051239014
+      lon:  265.030593872
+
+    co_gram086:
+      <<: *CO
+      header: Rexburg_Idaho_AERO (111.78W,43.82N)
+      tag: Rexburg_Idaho_AERO
+      lat:  43.820110321
+      lon:  248.21698761
+
+    co_gram087:
+      <<: *CO
+      header: Rimrock_AERO (116.99W,46.49N)
+      tag: Rimrock_AERO
+      lat:  46.4874992371
+      lon:  243.008331299
+
+    co_gram088:
+      <<: *CO
+      header: Sandia_NM_PSEL_AERO (106.54W,35.05N)
+      tag: Sandia_NM_PSEL_AERO
+      lat:  35.0545845032
+      lon:  253.45993042
+
+    co_gram089:
+      <<: *CO
+      header: Saturn_Island_AERO (76.84W,38.99N)
+      tag: Saturn_Island_AERO
+      lat:  38.992
+      lon:  283.16
+
+    co_gram090:
+      <<: *CO
+      header: Santa_Monica_Colg_AERO (118.47W,34.02N)
+      tag: Santa_Monica_Colg_AERO
+      lat:  34.0168495178
+      lon:  241.528869629
+
+    co_gram091:
+      <<: *CO
+      header: SDSU_IPLab_AERO (96.79W,44.31N)
+      tag: SDSU_IPLab_AERO
+      lat:  44.3148269653
+      lon:  263.213928223
+
+    co_gram092:
+      <<: *CO
+      header: Sevilleta_AERO (106.90W,34.30N)
+      tag: Sevilleta_AERO
+      lat:  34.3
+      lon:  253.1
+
+    co_gram093:
+      <<: *CO
+      header: Sigma_Space_Corp_AERO (76.84W,38.95N)
+      tag: Sigma_Space_Corp_AERO
+      lat:  38.952999115
+      lon:  283.163528442
+
+    co_gram094:
+      <<: *CO
+      header: Sioux_Falls_AERO (96.63W,43.74N)
+      tag: Sioux_Falls_AERO
+      lat:  43.7364807129
+      lon:  263.374008179
+
+    co_gram095:
+      <<: *CO
+      header: SP_Bayboro_AERO (82.63W,27.76N)
+      tag: SP_Bayboro_AERO
+      lat:  27.7615509033
+      lon:  277.366996765
+
+    co_gram096:
+      <<: *CO
+      header: TABLE_MOUNTAIN_CA_AERO (117.68W,34.38N)
+      tag: TABLE_MOUNTAIN_CA_AERO
+      lat:  34.3800010681
+      lon:  242.319999695
+
+    co_gram097:
+      <<: *CO
+      header: Tallahassee_AERO (84.30W,30.45N)
+      tag: Tallahassee_AERO
+      lat:  30.4458332062
+      lon:  275.700653076
+
+    co_gram098:
+      <<: *CO
+      header: Taylor_Ranch_TWRS_AERO (114.85W,45.10N)
+      tag: Taylor_Ranch_TWRS_AERO
+      lat:  45.1035003662
+      lon:  245.150047302
+
+    co_gram099:
+      <<: *CO
+      header: Thompson_Farm_AERO (70.95W,43.11N)
+      tag: Thompson_Farm_AERO
+      lat:  43.1087722778
+      lon:  289.05165863
+
+    co_gram100:
+      <<: *CO
+      header: Thule_AERO (68.77W,76.52N)
+      tag: Thule_AERO
+      lat:  76.5161056519
+      lon:  291.231002808
+
+    co_gram101:
+      <<: *CO
+      header: Toronto_AERO (79.40W,43.60N)
+      tag: Toronto_AERO
+      lat:  43.6
+      lon:  280.6
+
+    co_gram102:
+      <<: *CO
+      header: Tucson_AERO (111.00W,32.10N)
+      tag: Tucson_AERO
+      lat:  32.1
+      lon:  249.0
+
+    co_gram103:
+      <<: *CO
+      header: Tudor_Hill_AERO (64.88W,32.26N)
+      tag: Tudor_Hill_AERO
+      lat:  32.263999939
+      lon:  295.121002197
+
+    co_gram104:
+      <<: *CO
+      header: UAHuntsville_AERO (86.64W,34.73N)
+      tag: UAHuntsville_AERO
+      lat:  34.7253303528
+      lon:  273.355270386
+
+    co_gram105:
+      <<: *CO
+      header: UCSB_AERO (119.85W,34.42N)
+      tag: UCSB_AERO
+      lat:  34.4154281616
+      lon:  240.154640198
+
+    co_gram106:
+      <<: *CO
+      header: UMBC_AERO (76.71W,39.25N)
+      tag: UMBC_AERO
+      lat:  39.2546272278
+      lon:  283.290649414
+
+    co_gram107:
+      <<: *CO
+      header: Univ_of_Houston_AERO (95.34W,29.72N)
+      tag: Univ_of_Houston_AERO
+      lat:  29.7176990509
+      lon:  264.658401489
+
+    co_gram108:
+      <<: *CO
+      header: Univ_of_Lethbridge_AERO (112.87W,49.68N)
+      tag: Univ_of_Lethbridge_AERO
+      lat:  49.6816711426
+      lon:  247.131034851
+
+    co_gram109:
+      <<: *CO
+      header: USC_SEAPRISM_AERO (118.12W,33.56N)
+      tag: USC_SEAPRISM_AERO
+      lat:  33.563709259
+      lon:  241.88217926
+
+    co_gram110:
+      <<: *CO
+      header: USGS_Flagstaff_ROLO_AERO (111.63W,35.21N)
+      tag: USGS_Flagstaff_ROLO_AERO
+      lat:  35.2148399353
+      lon:  248.365577698
+
+    co_gram111:
+      <<: *CO
+      header: Wallops_AERO (75.47W,37.93N)
+      tag: Wallops_AERO
+      lat:  37.932849884
+      lon:  284.528053284
+
+    co_gram112:
+      <<: *CO
+      header: WaveCIS_Site_CSI_6_AERO (90.48W,28.87N)
+      tag: WaveCIS_Site_CSI_6_AERO
+      lat:  28.8666667938
+      lon:  269.516670227
+
+    co_gram113:
+      <<: *CO
+      header: White_Sands_HELSTF_AERO (106.34W,32.63N)
+      tag: White_Sands_HELSTF_AERO
+      lat:  32.6349411011
+      lon:  253.66192627
+
+    co_gram114:
+      <<: *CO
+      header: Yale_Coastal_AERO (72.73W,41.26N)
+      tag: Yale_Coastal_AERO
+      lat:  41.2583007812
+      lon:  287.268798828
+
+    co_gram115:
+      <<: *CO
+      header: Yellowknife_Aurora_AERO (114.38W,62.45N)
+      tag: Yellowknife_Aurora_AERO
+      lat:  62.4513015747
+      lon:  245.623748779
+
+    co_gram116:
+      <<: *CO
+      header: Yuma_AERO (114.58W,32.64N)
+      tag: Yuma_AERO
+      lat:  32.6441383362
+      lon:  245.417221069
+
+    co_gram117:
+      <<: *CO
+      header: U_of_Wisconsin_SSEC_AERO (89.40W,43.10N)
+      tag: U_of_Wisconsin_SSEC_AERO
+      lat:  43.1
+      lon:  270.6
+
+    co_gram118:
+      <<: *CO
+      header: AMOLITE_AERO (111.60W,57.20N)
+      tag: AMOLITE_AERO
+      lat:  57.2
+      lon:  248.4
+
+    co_gram119:
+      <<: *CO
+      header: RO3QET (86.64W,34.73N)
+      tag: RO3QET
+      lat:  34.725
+      lon:  273.355
+
+    co_gram120:
+      <<: *CO
+      header: TMF (117.68W,34.38N)
+      tag: TMF
+      lat:  34.38
+      lon:  242.32
+
+    co_gram121:
+      <<: *CO
+      header: TROPOZ (76.84W,38.99N)
+      tag: TROPOZ
+      lat:  38.99
+      lon:  283.16
+
+    co_gram122:
+      <<: *CO
+      header: TOPAZ (105.26W,39.99N)
+      tag: TOPAZ
+      lat:  39.993
+      lon:  254.738
+
+    co_gram123:
+      <<: *CO
+      header: LMOL (76.38W,37.10N)
+      tag: LMOL
+      lat:  37.096
+      lon:  283.615
+
+    co_gram124:
+      <<: *CO
+      header: Anchorage (149.90W,61.20N)
+      tag: Anchorage
+      lat:  61.2
+      lon:  210.1
+
+    co_gram125:
+      <<: *CO
+      header: Atlanta (84.40W,33.70N)
+      tag: Atlanta
+      lat:  33.7
+      lon:  275.6
+
+    co_gram126:
+      <<: *CO
+      header: Beltsville (76.90W,39.10N)
+      tag: Beltsville
+      lat:  39.1
+      lon:  283.1
+
+    co_gram127:
+      <<: *CO
+      header: Bismarck (100.80W,46.80N)
+      tag: Bismarck
+      lat:  46.8
+      lon:  259.2
+
+    co_gram128:
+      <<: *CO
+      header: Boise (116.20W,43.60N)
+      tag: Boise
+      lat:  43.6
+      lon:  243.8
+
+    co_gram129:
+      <<: *CO
+      header: Boston (71.00W,42.30N)
+      tag: Boston
+      lat:  42.3
+      lon:  289.0
+
+    co_gram130:
+      <<: *CO
+      header: Buffalo (78.80W,42.90N)
+      tag: Buffalo
+      lat:  42.9
+      lon:  281.2
+
+    co_gram131:
+      <<: *CO
+      header: Conroe (95.40W,30.30N)
+      tag: Conroe
+      lat:  30.3
+      lon:  264.6
+
+    co_gram132:
+      <<: *CO
+      header: Chicago (87.60W,41.90N)
+      tag: Chicago
+      lat:  41.9
+      lon:  272.4
+
+    co_gram133:
+      <<: *CO
+      header: Cincinnati (84.50W,39.10N)
+      tag: Cincinnati
+      lat:  39.1
+      lon:  275.5
+
+    co_gram134:
+      <<: *CO
+      header: Cleveland (81.70W,41.50N)
+      tag: Cleveland
+      lat:  41.5
+      lon:  278.3
+
+    co_gram135:
+      <<: *CO
+      header: Dallas (96.80W,32.70N)
+      tag: Dallas
+      lat:  32.7
+      lon:  263.2
+
+    co_gram136:
+      <<: *CO
+      header: Denver (105.00W,39.70N)
+      tag: Denver
+      lat:  39.7
+      lon:  255.0
+
+    co_gram137:
+      <<: *CO
+      header: Detroit (83.00W,42.30N)
+      tag: Detroit
+      lat:  42.3
+      lon:  277.0
+
+    co_gram138:
+      <<: *CO
+      header: Fairbanks (147.70W,64.80N)
+      tag: Fairbanks
+      lat:  64.8
+      lon:  212.3
+
+    co_gram139:
+      <<: *CO
+      header: Fairhill (75.90W,39.70N)
+      tag: Fairhill
+      lat:  39.7
+      lon:  284.1
+
+    co_gram140:
+      <<: *CO
+      header: Fargo (96.80W,46.90N)
+      tag: Fargo
+      lat:  46.9
+      lon:  263.2
+
+    co_gram141:
+      <<: *CO
+      header: Hartford (72.70W,41.70N)
+      tag: Hartford
+      lat:  41.7
+      lon:  287.3
+
+    co_gram142:
+      <<: *CO
+      header: Honolulu (157.80W,21.30N)
+      tag: Honolulu
+      lat:  21.3
+      lon:  202.2
+
+    co_gram143:
+      <<: *CO
+      header: Houston (95.40W,29.70N)
+      tag: Houston
+      lat:  29.7
+      lon:  264.6
+
+    co_gram144:
+      <<: *CO
+      header: Indianapolis (86.10W,39.70N)
+      tag: Indianapolis
+      lat:  39.7
+      lon:  273.9
+
+    co_gram145:
+      <<: *CO
+      header: Jacksonville (81.70W,30.30N)
+      tag: Jacksonville
+      lat:  30.3
+      lon:  278.3
+
+    co_gram146:
+      <<: *CO
+      header: Kansas_City (94.60W,39.10N)
+      tag: Kansas_City
+      lat:  39.1
+      lon:  265.4
+
+    co_gram147:
+      <<: *CO
+      header: Las_Vegas (115.10W,36.20N)
+      tag: Las_Vegas
+      lat:  36.2
+      lon:  244.9
+
+    co_gram148:
+      <<: *CO
+      header: Little_Rock (92.30W,34.70N)
+      tag: Little_Rock
+      lat:  34.7
+      lon:  267.7
+
+    co_gram149:
+      <<: *CO
+      header: Louisville (85.70W,38.20N)
+      tag: Louisville
+      lat:  38.2
+      lon:  274.3
+
+    co_gram150:
+      <<: *CO
+      header: Los_Angeles (118.20W,34.00N)
+      tag: Los_Angeles
+      lat:  34.0
+      lon:  241.8
+
+    co_gram151:
+      <<: *CO
+      header: Memphis (90.00W,35.10N)
+      tag: Memphis
+      lat:  35.1
+      lon:  270.0
+
+    co_gram152:
+      <<: *CO
+      header: Miami (80.20W,25.80N)
+      tag: Miami
+      lat:  25.8
+      lon:  279.8
+
+    co_gram153:
+      <<: *CO
+      header: Milwaukee (88.00W,43.00N)
+      tag: Milwaukee
+      lat:  43.0
+      lon:  272.0
+
+    co_gram154:
+      <<: *CO
+      header: Minneapolis (93.20W,45.00N)
+      tag: Minneapolis
+      lat:  45.0
+      lon:  266.8
+
+    co_gram155:
+      <<: *CO
+      header: Nashville (86.80W,36.20N)
+      tag: Nashville
+      lat:  36.2
+      lon:  273.2
+
+    co_gram156:
+      <<: *CO
+      header: New_Orleans (90.10W,30.00N)
+      tag: New_Orleans
+      lat:  30.0
+      lon:  269.9
+
+    co_gram157:
+      <<: *CO
+      header: New_York (74.00W,40.30N)
+      tag: New_York
+      lat:  40.3
+      lon:  286.0
+
+    co_gram158:
+      <<: *CO
+      header: Oklahoma_City (97.50W,35.50N)
+      tag: Oklahoma_City
+      lat:  35.5
+      lon:  262.5
+
+    co_gram159:
+      <<: *CO
+      header: Omaha (96.00W,41.20N)
+      tag: Omaha
+      lat:  41.2
+      lon:  264.0
+
+    co_gram160:
+      <<: *CO
+      header: Orlando (81.30W,28.50N)
+      tag: Orlando
+      lat:  28.5
+      lon:  278.7
+
+    co_gram161:
+      <<: *CO
+      header: Philadelphia (75.20W,40.00N)
+      tag: Philadelphia
+      lat:  40.0
+      lon:  284.8
+
+    co_gram162:
+      <<: *CO
+      header: Phoenix (112.00W,33.50N)
+      tag: Phoenix
+      lat:  33.5
+      lon:  248.0
+
+    co_gram163:
+      <<: *CO
+      header: Pittsburgh (80.00W,40.50N)
+      tag: Pittsburgh
+      lat:  40.5
+      lon:  280.0
+
+    co_gram164:
+      <<: *CO
+      header: Portland OR (122.70W,45.50N)
+      tag: Portland OR
+      lat:  45.5
+      lon:  237.3
+
+    co_gram165:
+      <<: *CO
+      header: Raleigh (78.60W,35.80N)
+      tag: Raleigh
+      lat:  35.8
+      lon:  281.4
+
+    co_gram166:
+      <<: *CO
+      header: Richmond (77.50W,37.50N)
+      tag: Richmond
+      lat:  37.5
+      lon:  282.5
+
+    co_gram167:
+      <<: *CO
+      header: Salt_Lake_City (111.90W,40.70N)
+      tag: Salt_Lake_City
+      lat:  40.7
+      lon:  248.1
+
+    co_gram168:
+      <<: *CO
+      header: San_Diego (117.20W,32.70N)
+      tag: San_Diego
+      lat:  32.7
+      lon:  242.8
+
+    co_gram169:
+      <<: *CO
+      header: San_Francisco (122.40W,37.70N)
+      tag: San_Francisco
+      lat:  37.7
+      lon:  237.6
+
+    co_gram170:
+      <<: *CO
+      header: San_Joaquin_Valley (119.30E,35.30N)
+      tag: San_Joaquin_Valley
+      lat:  35.3
+      lon:  119.3
+
+    co_gram171:
+      <<: *CO
+      header: San_Juan PR (66.20W,18.50N)
+      tag: San_Juan PR
+      lat:  18.5
+      lon:  293.8
+
+    co_gram172:
+      <<: *CO
+      header: Seattle (122.30W,47.60N)
+      tag: Seattle
+      lat:  47.6
+      lon:  237.7
+
+    co_gram173:
+      <<: *CO
+      header: Smith_Point (94.80W,29.50N)
+      tag: Smith_Point
+      lat:  29.5
+      lon:  265.2
+
+    co_gram174:
+      <<: *CO
+      header: Spokane (117.50W,47.60N)
+      tag: Spokane
+      lat:  47.6
+      lon:  242.5
+
+    co_gram175:
+      <<: *CO
+      header: Tampa (82.50W,28.00N)
+      tag: Tampa
+      lat:  28.0
+      lon:  277.5
+
+    co_gram176:
+      <<: *CO
+      header: Washington_DC (77.00W,38.90N)
+      tag: Washington_DC
+      lat:  38.9
+      lon:  283.0
+
+    co_gram177:
+      <<: *CO
+      header: Wichita (97.20W,37.60N)
+      tag: Wichita
+      lat:  37.6
+      lon:  262.8
+
+    co_gram178:
+      <<: *CO
+      header: Armstrong_FRC (117.90W,34.90N)
+      tag: Armstrong_FRC
+      lat:  34.9
+      lon:  242.1
+
+    co_gram179:
+      <<: *CO
+      header: Aldino (76.20W,39.60N)
+      tag: Aldino
+      lat:  39.6
+      lon:  283.8
+
+    co_gram180:
+      <<: *CO
+      header: Fresno (119.80W,36.80N)
+      tag: Fresno
+      lat:  36.8
+      lon:  240.2
+
+    co_gram181:
+      <<: *CO
+      header: Dallas Ft_Worth (97.00W,32.90N)
+      tag: Dallas Ft_Worth
+      lat:  32.9
+      lon:  263.0
+
+    co_gram182:
+      <<: *CO
+      header: Sevilleta (106.90W,34.30N)
+      tag: Sevilleta
+      lat:  34.3
+      lon:  253.1
+
+    co_gram183:
+      <<: *CO
+      header: San_Antonio (98.50W,29.50N)
+      tag: San_Antonio
+      lat:  29.5
+      lon:  261.5
+
+    co_gram184:
+      <<: *CO
+      header: Corpus_Christi (97.50W,27.80N)
+      tag: Corpus_Christi
+      lat:  27.8
+      lon:  262.5
+
+    co_gram185:
+      <<: *CO
+      header: Tucson (111.00W,32.10N)
+      tag: Tucson
+      lat:  32.1
+      lon:  249.0
+
+    co_gram186:
+      <<: *CO
+      header: West_Houston (95.66W,29.80N)
+      tag: West_Houston
+      lat:  29.8
+      lon:  264.343
+
+    co_gram187:
+      <<: *CO
+      header: Essex (76.50W,39.30N)
+      tag: Essex
+      lat:  39.3
+      lon:  283.5
+
+    co_gram188:
+      <<: *CO
+      header: Croix_Rd Manvel (95.40W,29.50N)
+      tag: Croix_Rd Manvel
+      lat:  29.5
+      lon:  264.6
+
+    co_gram189:
+      <<: *CO
+      header: Deer_Park TX (95.10W,29.70N)
+      tag: Deer_Park TX
+      lat:  29.7
+      lon:  264.9
+
+    co_gram190:
+      <<: *CO
+      header: White_Sands NM (106.30E,32.60N)
+      tag: White_Sands NM
+      lat:  32.6
+      lon:  106.3
+
+    co_gram191:
+      <<: *CO
+      header: Lake_Charles (93.20W,30.10N)
+      tag: Lake_Charles
+      lat:  30.1
+      lon:  266.8
+
+    co_gram192:
+      <<: *CO
+      header: Shreveport (93.80W,32.40N)
+      tag: Shreveport
+      lat:  32.4
+      lon:  266.2
+
+    co_gram193:
+      <<: *CO
+      header: Channelview (95.10W,29.80N)
+      tag: Channelview
+      lat:  29.8
+      lon:  264.9
+
+    co_gram194:
+      <<: *CO
+      header: Austin (97.70W,30.20N)
+      tag: Austin
+      lat:  30.2
+      lon:  262.3
+
+    co_gram195:
+      <<: *CO
+      header: Monterey (121.80W,36.60N)
+      tag: Monterey
+      lat:  36.6
+      lon:  238.2
+
+    co_gram196:
+      <<: *CO
+      header: S_Cent OR (120.00E,43.00N)
+      tag: S_Cent OR
+      lat:  43.0
+      lon:  120.0
+
+    co_gram197:
+      <<: *CO
+      header: Padonia (76.60W,39.50N)
+      tag: Padonia
+      lat:  39.5
+      lon:  283.4
+
+    co_gram198:
+      <<: *CO
+      header: Caltech (118.10W,34.10N)
+      tag: Caltech
+      lat:  34.1
+      lon:  241.9
+
+    co_gram199:
+      <<: *CO
+      header: Edgewood MD (76.30W,39.40N)
+      tag: Edgewood MD
+      lat:  39.4
+      lon:  283.7
+
+    co_gram200:
+      <<: *CO
+      header: La_Parguera PR (67.00W,18.00N)
+      tag: La_Parguera PR
+      lat:  18.0
+      lon:  293.0
+
+    co_gram201:
+      <<: *CO
+      header: Railroad_Valley (116.00W,38.50N)
+      tag: Railroad_Valley
+      lat:  38.5
+      lon:  244.0
+
+    co_gram202:
+      <<: *CO
+      header: Moody_Tower (95.30W,29.70N)
+      tag: Moody_Tower
+      lat:  29.7
+      lon:  264.7
+
+    co_gram203:
+      <<: *CO
+      header: Cape_Cod (70.20W,41.10N)
+      tag: Cape_Cod
+      lat:  41.1
+      lon:  289.8
+
+    co_gram204:
+      <<: *CO
+      header: Wallops_Island VA (75.50W,37.80N)
+      tag: Wallops_Island VA
+      lat:  37.8
+      lon:  284.5
+
+    co_gram205:
+      <<: *CO
+      header: Galveston (94.80W,29.20N)
+      tag: Galveston
+      lat:  29.2
+      lon:  265.2
+
+    co_gram206:
+      <<: *CO
+      header: Frenchman_Flat NV (116.00W,36.80N)
+      tag: Frenchman_Flat NV
+      lat:  36.8
+      lon:  244.0
+
+    co_gram207:
+      <<: *CO
+      header: Calgary (114.10W,51.00N)
+      tag: Calgary
+      lat:  51.0
+      lon:  245.9
+
+    co_gram208:
+      <<: *CO
+      header: Edmonton (113.50W,53.50N)
+      tag: Edmonton
+      lat:  53.5
+      lon:  246.5
+
+    co_gram209:
+      <<: *CO
+      header: Ottawa (75.70W,45.40N)
+      tag: Ottawa
+      lat:  45.4
+      lon:  284.3
+
+    co_gram210:
+      <<: *CO
+      header: Winnipeg (97.10W,49.90N)
+      tag: Winnipeg
+      lat:  49.9
+      lon:  262.9
+
+    co_gram211:
+      <<: *CO
+      header: Quebec City (71.20W,46.80N)
+      tag: Quebec City
+      lat:  46.8
+      lon:  288.8
+
+    co_gram212:
+      <<: *CO
+      header: Toronto (79.38W,43.65N)
+      tag: Toronto
+      lat:  43.6532
+      lon:  280.6168
+
+    co_gram213:
+      <<: *CO
+      header: Montreal (73.57W,45.50N)
+      tag: Montreal
+      lat:  45.5017
+      lon:  286.4327
+
+    co_gram214:
+      <<: *CO
+      header: Vancouver (123.12W,49.28N)
+      tag: Vancouver
+      lat:  49.2827
+      lon:  236.8793
+
+    co_gram215:
+      <<: *CO
+      header: McCall_MPL (116.09W,44.93N)
+      tag: McCall_MPL
+      lat:  44.9267
+      lon:  243.9109
+
+    co_gram216:
+      <<: *CO
+      header: Eugene (123.09W,44.05N)
+      tag: Eugene
+      lat:  44.052071
+      lon:  236.913246
+
+    co_gram217:
+      <<: *CO
+      header: Bend (121.32W,44.06N)
+      tag: Bend
+      lat:  44.058174
+      lon:  238.684692
+
+    co_gram218:
+      <<: *CO
+      header: Malheur_NWR (118.84W,43.27N)
+      tag: Malheur_NWR
+      lat:  43.265587
+      lon:  241.155925
+
+    co_gram219:
+      <<: *CO
+      header: LaGrande (118.09W,45.32N)
+      tag: LaGrande
+      lat:  45.324607
+      lon:  241.91213
+
+    co_gram220:
+      <<: *CO
+      header: Winnemucca (117.74W,40.97N)
+      tag: Winnemucca
+      lat:  40.972958
+      lon:  242.264313
+
+    co_gram221:
+      <<: *CO
+      header: Elko (115.76W,40.84N)
+      tag: Elko
+      lat:  40.835732
+      lon:  244.24054
+
+    co_gram222:
+      <<: *CO
+      header: Redding (122.38W,40.57N)
+      tag: Redding
+      lat:  40.574638
+      lon:  237.618912
+
+    co_gram223:
+      <<: *CO
+      header: Yreka (122.64W,41.73N)
+      tag: Yreka
+      lat:  41.731579
+      lon:  237.364349
+
+    co_gram224:
+      <<: *CO
+      header: Chico (121.84W,39.73N)
+      tag: Chico
+      lat:  39.728493
+      lon:  238.162521
+
+    co_gram225:
+      <<: *CO
+      header: MosesLake (119.28W,47.13N)
+      tag: MosesLake
+      lat:  47.131649
+      lon:  240.722237
+
+    co_gram226:
+      <<: *CO
+      header: GreatFalls (111.29W,47.50N)
+      tag: GreatFalls
+      lat:  47.504887
+      lon:  248.708107
+
+    co_gram227:
+      <<: *CO
+      header: MilesCity (105.84W,46.41N)
+      tag: MilesCity
+      lat:  46.408527
+      lon:  254.159019
+
+    co_gram228:
+      <<: *CO
+      header: TwinFalls (114.46W,42.56N)
+      tag: TwinFalls
+      lat:  42.563179
+      lon:  245.539719
+
+    co_gram229:
+      <<: *CO
+      header: Casper (106.33W,42.85N)
+      tag: Casper
+      lat:  42.850079
+      lon:  253.674828
+
+    co_gram230:
+      <<: *CO
+      header: RockSprings (109.22W,41.59N)
+      tag: RockSprings
+      lat:  41.590481
+      lon:  250.776627
+
+    co_gram231:
+      <<: *CO
+      header: St George (113.58W,37.11N)
+      tag: St George
+      lat:  37.10828
+      lon:  246.416718
+
+    co_gram232:
+      <<: *CO
+      header: Regina (104.62W,50.45N)
+      tag: Regina
+      lat:  50.451191
+      lon:  255.383377
+
+    no2_gram000: &NO2
+      long_name: 'no2'
+      header: Ames_AERO (93.77W,42.02N)
+      tag: Ames_AERO
+      xlabel: ''
+      levels: [0]
+      layers: [no2]
+      title: 'NO2'
+      parea:  1 10 1 7.5
+      lev:  1000 100
+      lat:  42.0213623047
+      lon:  266.225219727
+      time: '$tbeg $t5day'
+      ylab: 'Pressure (mb)'
+      shape: 'off'
+
+    no2_gram001:
+      <<: *NO2
+      header: Appalachian_State_AERO (81.69W,36.21N)
+      tag: Appalachian_State_AERO
+      lat:  36.2145996094
+      lon:  278.30619812
+
+    no2_gram002:
+      <<: *NO2
+      header: ARM_Oliktok_AK_AERO (149.88W,70.50N)
+      tag: ARM_Oliktok_AK_AERO
+      lat:  70.49949646
+      lon:  210.119995117
+
+    no2_gram003:
+      <<: *NO2
+      header: ARM_SGP_AERO (97.49W,36.61N)
+      tag: ARM_SGP_AERO
+      lat:  36.6051750183
+      lon:  262.514381409
+
+    no2_gram004:
+      <<: *NO2
+      header: Bakersfield_AERO (119.00W,35.33N)
+      tag: Bakersfield_AERO
+      lat:  35.3315048218
+      lon:  240.999992371
+
+    no2_gram005:
+      <<: *NO2
+      header: Barrow_AERO (156.80W,71.30N)
+      tag: Barrow_AERO
+      lat:  71.3
+      lon:  203.2
+
+    no2_gram006:
+      <<: *NO2
+      header: Billerica_AERO (71.27W,42.53N)
+      tag: Billerica_AERO
+      lat:  42.5283470154
+      lon:  288.731384277
+
+    no2_gram007:
+      <<: *NO2
+      header: Bonanza_Creek_AERO (148.32W,64.74N)
+      tag: Bonanza_Creek_AERO
+      lat:  64.742805481
+      lon:  211.683731079
+
+    no2_gram008:
+      <<: *NO2
+      header: BONDVILLE_AERO (88.37W,40.05N)
+      tag: BONDVILLE_AERO
+      lat:  40.0533332825
+      lon:  271.628059387
+
+    no2_gram009:
+      <<: *NO2
+      header: Bozeman_AERO (111.05W,45.66N)
+      tag: Bozeman_AERO
+      lat:  45.6622047424
+      lon:  248.954986572
+
+    no2_gram010:
+      <<: *NO2
+      header: Brookhaven_AERO (72.88W,40.87N)
+      tag: Brookhaven_AERO
+      lat:  40.8660011292
+      lon:  287.11530304
+
+    no2_gram011:
+      <<: *NO2
+      header: CalTech_AERO (118.13W,34.14N)
+      tag: CalTech_AERO
+      lat:  34.1367301941
+      lon:  241.873832703
+
+    no2_gram012:
+      <<: *NO2
+      header: Cape_San_Juan_AERO (65.62W,18.38N)
+      tag: Cape_San_Juan_AERO
+      lat:  18.3845005035
+      lon:  294.380096435
+
+    no2_gram013:
+      <<: *NO2
+      header: CARTEL_AERO (71.93W,45.38N)
+      tag: CARTEL_AERO
+      lat:  45.3797531128
+      lon:  288.06867218
+
+    no2_gram014:
+      <<: *NO2
+      header: Chapais_AERO (74.98W,49.82N)
+      tag: Chapais_AERO
+      lat:  49.8224334717
+      lon:  285.024597168
+
+    no2_gram015:
+      <<: *NO2
+      header: Churchill_AERO (93.82W,58.74N)
+      tag: Churchill_AERO
+      lat:  58.736000061
+      lon:  266.18183136
+
+    no2_gram016:
+      <<: *NO2
+      header: Cold_Lake_AERO (110.28W,54.42N)
+      tag: Cold_Lake_AERO
+      lat:  54.4169998169
+      lon:  249.717002869
+
+    no2_gram017:
+      <<: *NO2
+      header: Dayton_AERO (84.11W,39.78N)
+      tag: Dayton_AERO
+      lat:  39.7759780884
+      lon:  275.890380859
+
+    no2_gram018:
+      <<: *NO2
+      header: Denver_LaCasa_AERO (105.01W,39.78N)
+      tag: Denver_LaCasa_AERO
+      lat:  39.7794914246
+      lon:  254.994819641
+
+    no2_gram019:
+      <<: *NO2
+      header: DigitalGlobe_Cal_AERO (105.14W,40.14N)
+      tag: DigitalGlobe_Cal_AERO
+      lat:  40.1388893127
+      lon:  254.86277771
+
+    no2_gram020:
+      <<: *NO2
+      header: EastMalling_MO_AERO (0.44E,51.29N)
+      tag: EastMalling_MO_AERO
+      lat:  51.2900009155
+      lon:  0.439999997616
+
+    no2_gram021:
+      <<: *NO2
+      header: Easton-MDE_AERO (76.08W,38.79N)
+      tag: Easton-MDE_AERO
+      lat:  38.7949714661
+      lon:  283.915748596
+
+    no2_gram022:
+      <<: *NO2
+      header: Egbert_AERO (79.78W,44.23N)
+      tag: Egbert_AERO
+      lat:  44.2315444946
+      lon:  280.218589783
+
+    no2_gram023:
+      <<: *NO2
+      header: EPA-Res_Triangle_Pk_AERO (78.87W,35.88N)
+      tag: EPA-Res_Triangle_Pk_AERO
+      lat:  35.8800010681
+      lon:  281.129997253
+
+    no2_gram024:
+      <<: *NO2
+      header: Fort_McMurray_AERO (111.48W,56.75N)
+      tag: Fort_McMurray_AERO
+      lat:  56.7523078918
+      lon:  248.523864746
+
+    no2_gram025:
+      <<: *NO2
+      header: Fresno_2_AERO (119.77W,36.79N)
+      tag: Fresno_2_AERO
+      lat:  36.785369873
+      lon:  240.226982117
+
+    no2_gram026:
+      <<: *NO2
+      header: Georgia_Tech_AERO (84.40W,33.78N)
+      tag: Georgia_Tech_AERO
+      lat:  33.7802009583
+      lon:  275.600463867
+
+    no2_gram027:
+      <<: *NO2
+      header: Goldstone_AERO (116.79W,35.23N)
+      tag: Goldstone_AERO
+      lat:  35.2333335876
+      lon:  243.208335876
+
+    no2_gram028:
+      <<: *NO2
+      header: Grand_Forks_AERO (97.33W,47.91N)
+      tag: Grand_Forks_AERO
+      lat:  47.9117507935
+      lon:  262.674552918
+
+    no2_gram029:
+      <<: *NO2
+      header: Granite_Island_AERO (87.41W,46.72N)
+      tag: Granite_Island_AERO
+      lat:  46.7207984924
+      lon:  272.587997437
+
+    no2_gram030:
+      <<: *NO2
+      header: GSFC_AERO (76.84W,38.99N)
+      tag: GSFC_AERO
+      lat:  38.9925003052
+      lon:  283.160163879
+
+    no2_gram031:
+      <<: *NO2
+      header: Halifax_AERO (63.59W,44.64N)
+      tag: Halifax_AERO
+      lat:  44.6380004883
+      lon:  296.40599823
+
+    no2_gram032:
+      <<: *NO2
+      header: Hart_Miller_Island_AERO (76.36W,39.24N)
+      tag: Hart_Miller_Island_AERO
+      lat:  39.2419013977
+      lon:  283.637199402
+
+    no2_gram033:
+      <<: *NO2
+      header: IMPROVE-MammothCave_AERO (86.15W,37.13N)
+      tag: IMPROVE-MammothCave_AERO
+      lat:  37.1318016052
+      lon:  273.852096558
+
+    no2_gram034:
+      <<: *NO2
+      header: Kangerlussuaq_AERO (50.62W,67.00N)
+      tag: Kangerlussuaq_AERO
+      lat:  66.9957962036
+      lon:  309.378601074
+
+    no2_gram035:
+      <<: *NO2
+      header: Kellogg_LTER_AERO (85.37W,42.41N)
+      tag: Kellogg_LTER_AERO
+      lat:  42.4079818726
+      lon:  274.62828064
+
+    no2_gram036:
+      <<: *NO2
+      header: Kelowna_UAS_AERO (119.40W,49.94N)
+      tag: Kelowna_UAS_AERO
+      lat:  49.9412956238
+      lon:  240.599891663
+
+    no2_gram037:
+      <<: *NO2
+      header: Key_Biscayne_AERO (80.16W,25.73N)
+      tag: Key_Biscayne_AERO
+      lat:  25.7319660187
+      lon:  279.836669922
+
+    no2_gram038:
+      <<: *NO2
+      header: Kluane_Lake_AERO (138.41W,61.03N)
+      tag: Kluane_Lake_AERO
+      lat:  61.0270004272
+      lon:  221.589996338
+
+    no2_gram039:
+      <<: *NO2
+      header: La_Parguera_AERO (67.05W,17.97N)
+      tag: La_Parguera_AERO
+      lat:  17.9704494476
+      lon:  292.954620361
+
+    no2_gram040:
+      <<: *NO2
+      header: LISCO_AERO (73.34W,40.95N)
+      tag: LISCO_AERO
+      lat:  40.9545173645
+      lon:  286.658233643
+
+    no2_gram041:
+      <<: *NO2
+      header: Mauna_Loa_AERO (155.58W,19.54N)
+      tag: Mauna_Loa_AERO
+      lat:  19.5360069275
+      lon:  204.423248291
+
+    no2_gram042:
+      <<: *NO2
+      header: MD_Science_Center_AERO (76.61W,39.28N)
+      tag: MD_Science_Center_AERO
+      lat:  39.2812309265
+      lon:  283.387947082
+
+    no2_gram043:
+      <<: *NO2
+      header: Mingo_AERO (90.14W,36.97N)
+      tag: Mingo_AERO
+      lat:  36.971698761
+      lon:  269.856796265
+
+    no2_gram044:
+      <<: *NO2
+      header: Missoula_AERO (114.08W,46.92N)
+      tag: Missoula_AERO
+      lat:  46.9166679382
+      lon:  245.916664124
+
+    no2_gram045:
+      <<: *NO2
+      header: Modesto_AERO (120.99W,37.64N)
+      tag: Modesto_AERO
+      lat:  37.6421699524
+      lon:  239.005783081
+
+    no2_gram046:
+      <<: *NO2
+      header: Monterey_AERO (121.80W,36.60N)
+      tag: Monterey_AERO
+      lat:  36.6
+      lon:  238.2
+
+    no2_gram047:
+      <<: *NO2
+      header: MVCO_AERO (70.57W,41.33N)
+      tag: MVCO_AERO
+      lat:  41.3250007629
+      lon:  289.433296204
+
+    no2_gram048:
+      <<: *NO2
+      header: Narsarsuaq_AERO (45.42W,61.16N)
+      tag: Narsarsuaq_AERO
+      lat:  61.1559524536
+      lon:  314.580619812
+
+    no2_gram049:
+      <<: *NO2
+      header: NASA_KSC_AERO (80.66W,28.46N)
+      tag: NASA_KSC_AERO
+      lat:  28.4637622833
+      lon:  279.336524963
+
+    no2_gram050:
+      <<: *NO2
+      header: NASA_LaRC_AERO (76.38W,37.10N)
+      tag: NASA_LaRC_AERO
+      lat:  37.1049613953
+      lon:  283.621360779
+
+    no2_gram051:
+      <<: *NO2
+      header: NEON_Bartlett_AERO (71.29W,44.06N)
+      tag: NEON_Bartlett_AERO
+      lat:  44.0638809204
+      lon:  288.712799072
+
+    no2_gram052:
+      <<: *NO2
+      header: NEON_CLBJ_AERO (97.57W,33.40N)
+      tag: NEON_CLBJ_AERO
+      lat:  33.4012298584
+      lon:  262.430000305
+
+    no2_gram053:
+      <<: *NO2
+      header: NEON-CPER_AERO (104.74W,40.81N)
+      tag: NEON-CPER_AERO
+      lat:  40.8124427795
+      lon:  255.255760193
+
+    no2_gram054:
+      <<: *NO2
+      header: NEON_CVALLA_AERO (105.17W,40.16N)
+      tag: NEON_CVALLA_AERO
+      lat:  40.1606292725
+      lon:  254.832748413
+
+    no2_gram055:
+      <<: *NO2
+      header: NEON_DEJU_AERO (145.75W,63.88N)
+      tag: NEON_DEJU_AERO
+      lat:  63.8811187744
+      lon:  214.248641968
+
+    no2_gram056:
+      <<: *NO2
+      header: NEON-Disney_AERO (81.44W,28.13N)
+      tag: NEON-Disney_AERO
+      lat:  28.125038147
+      lon:  278.563796997
+
+    no2_gram057:
+      <<: *NO2
+      header: NEON_GRSM_AERO (83.50W,35.69N)
+      tag: NEON_GRSM_AERO
+      lat:  35.6889610291
+      lon:  276.498046875
+
+    no2_gram058:
+      <<: *NO2
+      header: NEON_GUAN_AERO (66.87W,17.97N)
+      tag: NEON_GUAN_AERO
+      lat:  17.9695491791
+      lon:  293.13130188
+
+    no2_gram059:
+      <<: *NO2
+      header: NEON_Harvard_AERO (72.17W,42.54N)
+      tag: NEON_Harvard_AERO
+      lat:  42.5368995667
+      lon:  287.827339172
+
+    no2_gram060:
+      <<: *NO2
+      header: NEON_HEAL_AERO (149.21W,63.88N)
+      tag: NEON_HEAL_AERO
+      lat:  63.8756904602
+      lon:  210.78666687
+
+    no2_gram061:
+      <<: *NO2
+      header: NEON_MLBS_AERO (80.52W,37.38N)
+      tag: NEON_MLBS_AERO
+      lat:  37.3783073425
+      lon:  279.475166321
+
+    no2_gram062:
+      <<: *NO2
+      header: NEON_MOAB_AERO (109.39W,38.25N)
+      tag: NEON_MOAB_AERO
+      lat:  38.2483291626
+      lon:  250.611732483
+
+    no2_gram063:
+      <<: *NO2
+      header: NEON_NOGP_AERO (100.92W,46.77N)
+      tag: NEON_NOGP_AERO
+      lat:  46.7697181702
+      lon:  259.084648132
+
+    no2_gram064:
+      <<: *NO2
+      header: NEON_OAES_AERO (99.06W,35.41N)
+      tag: NEON_OAES_AERO
+      lat:  35.4105911255
+      lon:  260.941207886
+
+    no2_gram065:
+      <<: *NO2
+      header: NEON_ONAQ_AERO (112.45W,40.18N)
+      tag: NEON_ONAQ_AERO
+      lat:  40.1775894165
+      lon:  247.547561646
+
+    no2_gram066:
+      <<: *NO2
+      header: NEON_ORNL_AERO (84.28W,35.96N)
+      tag: NEON_ORNL_AERO
+      lat:  35.9641265869
+      lon:  275.717414856
+
+    no2_gram067:
+      <<: *NO2
+      header: NEON_OSBS_AERO (81.99W,29.69N)
+      tag: NEON_OSBS_AERO
+      lat:  29.6892681122
+      lon:  278.006568909
+
+    no2_gram068:
+      <<: *NO2
+      header: NEON_RMNP_AERO (105.55W,40.28N)
+      tag: NEON_RMNP_AERO
+      lat:  40.2759017944
+      lon:  254.454025269
+
+    no2_gram069:
+      <<: *NO2
+      header: NEON_SCBI_AERO (78.14W,38.89N)
+      tag: NEON_SCBI_AERO
+      lat:  38.8929176331
+      lon:  281.860496521
+
+    no2_gram070:
+      <<: *NO2
+      header: NEON_SERC_AERO (76.56W,38.89N)
+      tag: NEON_SERC_AERO
+      lat:  38.8901176453
+      lon:  283.439979553
+
+    no2_gram071:
+      <<: *NO2
+      header: NEON_SRER_AERO (110.84W,31.91N)
+      tag: NEON_SRER_AERO
+      lat:  31.9106807709
+      lon:  249.164512634
+
+    no2_gram072:
+      <<: *NO2
+      header: NEON_Sterling_AERO (103.03W,40.46N)
+      tag: NEON_Sterling_AERO
+      lat:  40.4619026184
+      lon:  256.970703125
+
+    no2_gram073:
+      <<: *NO2
+      header: NEON_TALL_AERO (87.39W,32.95N)
+      tag: NEON_TALL_AERO
+      lat:  32.9504623413
+      lon:  272.6067276
+
+    no2_gram074:
+      <<: *NO2
+      header: NEON_TEAK_AERO (119.01W,37.01N)
+      tag: NEON_TEAK_AERO
+      lat:  37.0058326721
+      lon:  240.993980408
+
+    no2_gram075:
+      <<: *NO2
+      header: NEON_TOOL_AERO (149.37W,68.66N)
+      tag: NEON_TOOL_AERO
+      lat:  68.6610870361
+      lon:  210.62953186
+
+    no2_gram076:
+      <<: *NO2
+      header: NEON_UKFS_AERO (95.19W,39.04N)
+      tag: NEON_UKFS_AERO
+      lat:  39.0404319763
+      lon:  264.807853699
+
+    no2_gram077:
+      <<: *NO2
+      header: NEON_UNDE_AERO (89.54W,46.23N)
+      tag: NEON_UNDE_AERO
+      lat:  46.2338829041
+      lon:  270.462753296
+
+    no2_gram078:
+      <<: *NO2
+      header: NEON_WOOD_AERO (99.24W,47.13N)
+      tag: NEON_WOOD_AERO
+      lat:  47.1282272339
+      lon:  260.758644104
+
+    no2_gram079:
+      <<: *NO2
+      header: NEON_WREF_AERO (121.95W,45.82N)
+      tag: NEON_WREF_AERO
+      lat:  45.82
+      lon:  238.048
+
+    no2_gram080:
+      <<: *NO2
+      header: ORS_Hermosillo_AERO (111.15W,29.03N)
+      tag: ORS_Hermosillo_AERO
+      lat:  29.0275001526
+      lon:  248.854446411
+
+    no2_gram081:
+      <<: *NO2
+      header: Pickle_Lake_AERO (90.22W,51.45N)
+      tag: Pickle_Lake_AERO
+      lat:  51.4494438171
+      lon:  269.782501221
+
+    no2_gram082:
+      <<: *NO2
+      header: Ragged_Point_AERO (59.43W,13.17N)
+      tag: Ragged_Point_AERO
+      lat:  13.1650180817
+      lon:  300.567966461
+
+    no2_gram083:
+      <<: *NO2
+      header: Railroad_Valley_AERO (116.00W,38.50N)
+      tag: Railroad_Valley_AERO
+      lat:  38.5
+      lon:  244.0
+
+    no2_gram084:
+      <<: *NO2
+      header: Red_Mountain_Pass_AERO (107.71W,37.91N)
+      tag: Red_Mountain_Pass_AERO
+      lat:  37.9074478149
+      lon:  252.289085388
+
+    no2_gram085:
+      <<: *NO2
+      header: Resolute_Bay_AERO (94.97W,74.71N)
+      tag: Resolute_Bay_AERO
+      lat:  74.7051239014
+      lon:  265.030593872
+
+    no2_gram086:
+      <<: *NO2
+      header: Rexburg_Idaho_AERO (111.78W,43.82N)
+      tag: Rexburg_Idaho_AERO
+      lat:  43.820110321
+      lon:  248.21698761
+
+    no2_gram087:
+      <<: *NO2
+      header: Rimrock_AERO (116.99W,46.49N)
+      tag: Rimrock_AERO
+      lat:  46.4874992371
+      lon:  243.008331299
+
+    no2_gram088:
+      <<: *NO2
+      header: Sandia_NM_PSEL_AERO (106.54W,35.05N)
+      tag: Sandia_NM_PSEL_AERO
+      lat:  35.0545845032
+      lon:  253.45993042
+
+    no2_gram089:
+      <<: *NO2
+      header: Saturn_Island_AERO (76.84W,38.99N)
+      tag: Saturn_Island_AERO
+      lat:  38.992
+      lon:  283.16
+
+    no2_gram090:
+      <<: *NO2
+      header: Santa_Monica_Colg_AERO (118.47W,34.02N)
+      tag: Santa_Monica_Colg_AERO
+      lat:  34.0168495178
+      lon:  241.528869629
+
+    no2_gram091:
+      <<: *NO2
+      header: SDSU_IPLab_AERO (96.79W,44.31N)
+      tag: SDSU_IPLab_AERO
+      lat:  44.3148269653
+      lon:  263.213928223
+
+    no2_gram092:
+      <<: *NO2
+      header: Sevilleta_AERO (106.90W,34.30N)
+      tag: Sevilleta_AERO
+      lat:  34.3
+      lon:  253.1
+
+    no2_gram093:
+      <<: *NO2
+      header: Sigma_Space_Corp_AERO (76.84W,38.95N)
+      tag: Sigma_Space_Corp_AERO
+      lat:  38.952999115
+      lon:  283.163528442
+
+    no2_gram094:
+      <<: *NO2
+      header: Sioux_Falls_AERO (96.63W,43.74N)
+      tag: Sioux_Falls_AERO
+      lat:  43.7364807129
+      lon:  263.374008179
+
+    no2_gram095:
+      <<: *NO2
+      header: SP_Bayboro_AERO (82.63W,27.76N)
+      tag: SP_Bayboro_AERO
+      lat:  27.7615509033
+      lon:  277.366996765
+
+    no2_gram096:
+      <<: *NO2
+      header: TABLE_MOUNTAIN_CA_AERO (117.68W,34.38N)
+      tag: TABLE_MOUNTAIN_CA_AERO
+      lat:  34.3800010681
+      lon:  242.319999695
+
+    no2_gram097:
+      <<: *NO2
+      header: Tallahassee_AERO (84.30W,30.45N)
+      tag: Tallahassee_AERO
+      lat:  30.4458332062
+      lon:  275.700653076
+
+    no2_gram098:
+      <<: *NO2
+      header: Taylor_Ranch_TWRS_AERO (114.85W,45.10N)
+      tag: Taylor_Ranch_TWRS_AERO
+      lat:  45.1035003662
+      lon:  245.150047302
+
+    no2_gram099:
+      <<: *NO2
+      header: Thompson_Farm_AERO (70.95W,43.11N)
+      tag: Thompson_Farm_AERO
+      lat:  43.1087722778
+      lon:  289.05165863
+
+    no2_gram100:
+      <<: *NO2
+      header: Thule_AERO (68.77W,76.52N)
+      tag: Thule_AERO
+      lat:  76.5161056519
+      lon:  291.231002808
+
+    no2_gram101:
+      <<: *NO2
+      header: Toronto_AERO (79.40W,43.60N)
+      tag: Toronto_AERO
+      lat:  43.6
+      lon:  280.6
+
+    no2_gram102:
+      <<: *NO2
+      header: Tucson_AERO (111.00W,32.10N)
+      tag: Tucson_AERO
+      lat:  32.1
+      lon:  249.0
+
+    no2_gram103:
+      <<: *NO2
+      header: Tudor_Hill_AERO (64.88W,32.26N)
+      tag: Tudor_Hill_AERO
+      lat:  32.263999939
+      lon:  295.121002197
+
+    no2_gram104:
+      <<: *NO2
+      header: UAHuntsville_AERO (86.64W,34.73N)
+      tag: UAHuntsville_AERO
+      lat:  34.7253303528
+      lon:  273.355270386
+
+    no2_gram105:
+      <<: *NO2
+      header: UCSB_AERO (119.85W,34.42N)
+      tag: UCSB_AERO
+      lat:  34.4154281616
+      lon:  240.154640198
+
+    no2_gram106:
+      <<: *NO2
+      header: UMBC_AERO (76.71W,39.25N)
+      tag: UMBC_AERO
+      lat:  39.2546272278
+      lon:  283.290649414
+
+    no2_gram107:
+      <<: *NO2
+      header: Univ_of_Houston_AERO (95.34W,29.72N)
+      tag: Univ_of_Houston_AERO
+      lat:  29.7176990509
+      lon:  264.658401489
+
+    no2_gram108:
+      <<: *NO2
+      header: Univ_of_Lethbridge_AERO (112.87W,49.68N)
+      tag: Univ_of_Lethbridge_AERO
+      lat:  49.6816711426
+      lon:  247.131034851
+
+    no2_gram109:
+      <<: *NO2
+      header: USC_SEAPRISM_AERO (118.12W,33.56N)
+      tag: USC_SEAPRISM_AERO
+      lat:  33.563709259
+      lon:  241.88217926
+
+    no2_gram110:
+      <<: *NO2
+      header: USGS_Flagstaff_ROLO_AERO (111.63W,35.21N)
+      tag: USGS_Flagstaff_ROLO_AERO
+      lat:  35.2148399353
+      lon:  248.365577698
+
+    no2_gram111:
+      <<: *NO2
+      header: Wallops_AERO (75.47W,37.93N)
+      tag: Wallops_AERO
+      lat:  37.932849884
+      lon:  284.528053284
+
+    no2_gram112:
+      <<: *NO2
+      header: WaveCIS_Site_CSI_6_AERO (90.48W,28.87N)
+      tag: WaveCIS_Site_CSI_6_AERO
+      lat:  28.8666667938
+      lon:  269.516670227
+
+    no2_gram113:
+      <<: *NO2
+      header: White_Sands_HELSTF_AERO (106.34W,32.63N)
+      tag: White_Sands_HELSTF_AERO
+      lat:  32.6349411011
+      lon:  253.66192627
+
+    no2_gram114:
+      <<: *NO2
+      header: Yale_Coastal_AERO (72.73W,41.26N)
+      tag: Yale_Coastal_AERO
+      lat:  41.2583007812
+      lon:  287.268798828
+
+    no2_gram115:
+      <<: *NO2
+      header: Yellowknife_Aurora_AERO (114.38W,62.45N)
+      tag: Yellowknife_Aurora_AERO
+      lat:  62.4513015747
+      lon:  245.623748779
+
+    no2_gram116:
+      <<: *NO2
+      header: Yuma_AERO (114.58W,32.64N)
+      tag: Yuma_AERO
+      lat:  32.6441383362
+      lon:  245.417221069
+
+    no2_gram117:
+      <<: *NO2
+      header: U_of_Wisconsin_SSEC_AERO (89.40W,43.10N)
+      tag: U_of_Wisconsin_SSEC_AERO
+      lat:  43.1
+      lon:  270.6
+
+    no2_gram118:
+      <<: *NO2
+      header: AMOLITE_AERO (111.60W,57.20N)
+      tag: AMOLITE_AERO
+      lat:  57.2
+      lon:  248.4
+
+    no2_gram119:
+      <<: *NO2
+      header: RO3QET (86.64W,34.73N)
+      tag: RO3QET
+      lat:  34.725
+      lon:  273.355
+
+    no2_gram120:
+      <<: *NO2
+      header: TMF (117.68W,34.38N)
+      tag: TMF
+      lat:  34.38
+      lon:  242.32
+
+    no2_gram121:
+      <<: *NO2
+      header: TROPOZ (76.84W,38.99N)
+      tag: TROPOZ
+      lat:  38.99
+      lon:  283.16
+
+    no2_gram122:
+      <<: *NO2
+      header: TOPAZ (105.26W,39.99N)
+      tag: TOPAZ
+      lat:  39.993
+      lon:  254.738
+
+    no2_gram123:
+      <<: *NO2
+      header: LMOL (76.38W,37.10N)
+      tag: LMOL
+      lat:  37.096
+      lon:  283.615
+
+    no2_gram124:
+      <<: *NO2
+      header: Anchorage (149.90W,61.20N)
+      tag: Anchorage
+      lat:  61.2
+      lon:  210.1
+
+    no2_gram125:
+      <<: *NO2
+      header: Atlanta (84.40W,33.70N)
+      tag: Atlanta
+      lat:  33.7
+      lon:  275.6
+
+    no2_gram126:
+      <<: *NO2
+      header: Beltsville (76.90W,39.10N)
+      tag: Beltsville
+      lat:  39.1
+      lon:  283.1
+
+    no2_gram127:
+      <<: *NO2
+      header: Bismarck (100.80W,46.80N)
+      tag: Bismarck
+      lat:  46.8
+      lon:  259.2
+
+    no2_gram128:
+      <<: *NO2
+      header: Boise (116.20W,43.60N)
+      tag: Boise
+      lat:  43.6
+      lon:  243.8
+
+    no2_gram129:
+      <<: *NO2
+      header: Boston (71.00W,42.30N)
+      tag: Boston
+      lat:  42.3
+      lon:  289.0
+
+    no2_gram130:
+      <<: *NO2
+      header: Buffalo (78.80W,42.90N)
+      tag: Buffalo
+      lat:  42.9
+      lon:  281.2
+
+    no2_gram131:
+      <<: *NO2
+      header: Conroe (95.40W,30.30N)
+      tag: Conroe
+      lat:  30.3
+      lon:  264.6
+
+    no2_gram132:
+      <<: *NO2
+      header: Chicago (87.60W,41.90N)
+      tag: Chicago
+      lat:  41.9
+      lon:  272.4
+
+    no2_gram133:
+      <<: *NO2
+      header: Cincinnati (84.50W,39.10N)
+      tag: Cincinnati
+      lat:  39.1
+      lon:  275.5
+
+    no2_gram134:
+      <<: *NO2
+      header: Cleveland (81.70W,41.50N)
+      tag: Cleveland
+      lat:  41.5
+      lon:  278.3
+
+    no2_gram135:
+      <<: *NO2
+      header: Dallas (96.80W,32.70N)
+      tag: Dallas
+      lat:  32.7
+      lon:  263.2
+
+    no2_gram136:
+      <<: *NO2
+      header: Denver (105.00W,39.70N)
+      tag: Denver
+      lat:  39.7
+      lon:  255.0
+
+    no2_gram137:
+      <<: *NO2
+      header: Detroit (83.00W,42.30N)
+      tag: Detroit
+      lat:  42.3
+      lon:  277.0
+
+    no2_gram138:
+      <<: *NO2
+      header: Fairbanks (147.70W,64.80N)
+      tag: Fairbanks
+      lat:  64.8
+      lon:  212.3
+
+    no2_gram139:
+      <<: *NO2
+      header: Fairhill (75.90W,39.70N)
+      tag: Fairhill
+      lat:  39.7
+      lon:  284.1
+
+    no2_gram140:
+      <<: *NO2
+      header: Fargo (96.80W,46.90N)
+      tag: Fargo
+      lat:  46.9
+      lon:  263.2
+
+    no2_gram141:
+      <<: *NO2
+      header: Hartford (72.70W,41.70N)
+      tag: Hartford
+      lat:  41.7
+      lon:  287.3
+
+    no2_gram142:
+      <<: *NO2
+      header: Honolulu (157.80W,21.30N)
+      tag: Honolulu
+      lat:  21.3
+      lon:  202.2
+
+    no2_gram143:
+      <<: *NO2
+      header: Houston (95.40W,29.70N)
+      tag: Houston
+      lat:  29.7
+      lon:  264.6
+
+    no2_gram144:
+      <<: *NO2
+      header: Indianapolis (86.10W,39.70N)
+      tag: Indianapolis
+      lat:  39.7
+      lon:  273.9
+
+    no2_gram145:
+      <<: *NO2
+      header: Jacksonville (81.70W,30.30N)
+      tag: Jacksonville
+      lat:  30.3
+      lon:  278.3
+
+    no2_gram146:
+      <<: *NO2
+      header: Kansas_City (94.60W,39.10N)
+      tag: Kansas_City
+      lat:  39.1
+      lon:  265.4
+
+    no2_gram147:
+      <<: *NO2
+      header: Las_Vegas (115.10W,36.20N)
+      tag: Las_Vegas
+      lat:  36.2
+      lon:  244.9
+
+    no2_gram148:
+      <<: *NO2
+      header: Little_Rock (92.30W,34.70N)
+      tag: Little_Rock
+      lat:  34.7
+      lon:  267.7
+
+    no2_gram149:
+      <<: *NO2
+      header: Louisville (85.70W,38.20N)
+      tag: Louisville
+      lat:  38.2
+      lon:  274.3
+
+    no2_gram150:
+      <<: *NO2
+      header: Los_Angeles (118.20W,34.00N)
+      tag: Los_Angeles
+      lat:  34.0
+      lon:  241.8
+
+    no2_gram151:
+      <<: *NO2
+      header: Memphis (90.00W,35.10N)
+      tag: Memphis
+      lat:  35.1
+      lon:  270.0
+
+    no2_gram152:
+      <<: *NO2
+      header: Miami (80.20W,25.80N)
+      tag: Miami
+      lat:  25.8
+      lon:  279.8
+
+    no2_gram153:
+      <<: *NO2
+      header: Milwaukee (88.00W,43.00N)
+      tag: Milwaukee
+      lat:  43.0
+      lon:  272.0
+
+    no2_gram154:
+      <<: *NO2
+      header: Minneapolis (93.20W,45.00N)
+      tag: Minneapolis
+      lat:  45.0
+      lon:  266.8
+
+    no2_gram155:
+      <<: *NO2
+      header: Nashville (86.80W,36.20N)
+      tag: Nashville
+      lat:  36.2
+      lon:  273.2
+
+    no2_gram156:
+      <<: *NO2
+      header: New_Orleans (90.10W,30.00N)
+      tag: New_Orleans
+      lat:  30.0
+      lon:  269.9
+
+    no2_gram157:
+      <<: *NO2
+      header: New_York (74.00W,40.30N)
+      tag: New_York
+      lat:  40.3
+      lon:  286.0
+
+    no2_gram158:
+      <<: *NO2
+      header: Oklahoma_City (97.50W,35.50N)
+      tag: Oklahoma_City
+      lat:  35.5
+      lon:  262.5
+
+    no2_gram159:
+      <<: *NO2
+      header: Omaha (96.00W,41.20N)
+      tag: Omaha
+      lat:  41.2
+      lon:  264.0
+
+    no2_gram160:
+      <<: *NO2
+      header: Orlando (81.30W,28.50N)
+      tag: Orlando
+      lat:  28.5
+      lon:  278.7
+
+    no2_gram161:
+      <<: *NO2
+      header: Philadelphia (75.20W,40.00N)
+      tag: Philadelphia
+      lat:  40.0
+      lon:  284.8
+
+    no2_gram162:
+      <<: *NO2
+      header: Phoenix (112.00W,33.50N)
+      tag: Phoenix
+      lat:  33.5
+      lon:  248.0
+
+    no2_gram163:
+      <<: *NO2
+      header: Pittsburgh (80.00W,40.50N)
+      tag: Pittsburgh
+      lat:  40.5
+      lon:  280.0
+
+    no2_gram164:
+      <<: *NO2
+      header: Portland OR (122.70W,45.50N)
+      tag: Portland OR
+      lat:  45.5
+      lon:  237.3
+
+    no2_gram165:
+      <<: *NO2
+      header: Raleigh (78.60W,35.80N)
+      tag: Raleigh
+      lat:  35.8
+      lon:  281.4
+
+    no2_gram166:
+      <<: *NO2
+      header: Richmond (77.50W,37.50N)
+      tag: Richmond
+      lat:  37.5
+      lon:  282.5
+
+    no2_gram167:
+      <<: *NO2
+      header: Salt_Lake_City (111.90W,40.70N)
+      tag: Salt_Lake_City
+      lat:  40.7
+      lon:  248.1
+
+    no2_gram168:
+      <<: *NO2
+      header: San_Diego (117.20W,32.70N)
+      tag: San_Diego
+      lat:  32.7
+      lon:  242.8
+
+    no2_gram169:
+      <<: *NO2
+      header: San_Francisco (122.40W,37.70N)
+      tag: San_Francisco
+      lat:  37.7
+      lon:  237.6
+
+    no2_gram170:
+      <<: *NO2
+      header: San_Joaquin_Valley (119.30E,35.30N)
+      tag: San_Joaquin_Valley
+      lat:  35.3
+      lon:  119.3
+
+    no2_gram171:
+      <<: *NO2
+      header: San_Juan PR (66.20W,18.50N)
+      tag: San_Juan PR
+      lat:  18.5
+      lon:  293.8
+
+    no2_gram172:
+      <<: *NO2
+      header: Seattle (122.30W,47.60N)
+      tag: Seattle
+      lat:  47.6
+      lon:  237.7
+
+    no2_gram173:
+      <<: *NO2
+      header: Smith_Point (94.80W,29.50N)
+      tag: Smith_Point
+      lat:  29.5
+      lon:  265.2
+
+    no2_gram174:
+      <<: *NO2
+      header: Spokane (117.50W,47.60N)
+      tag: Spokane
+      lat:  47.6
+      lon:  242.5
+
+    no2_gram175:
+      <<: *NO2
+      header: Tampa (82.50W,28.00N)
+      tag: Tampa
+      lat:  28.0
+      lon:  277.5
+
+    no2_gram176:
+      <<: *NO2
+      header: Washington_DC (77.00W,38.90N)
+      tag: Washington_DC
+      lat:  38.9
+      lon:  283.0
+
+    no2_gram177:
+      <<: *NO2
+      header: Wichita (97.20W,37.60N)
+      tag: Wichita
+      lat:  37.6
+      lon:  262.8
+
+    no2_gram178:
+      <<: *NO2
+      header: Armstrong_FRC (117.90W,34.90N)
+      tag: Armstrong_FRC
+      lat:  34.9
+      lon:  242.1
+
+    no2_gram179:
+      <<: *NO2
+      header: Aldino (76.20W,39.60N)
+      tag: Aldino
+      lat:  39.6
+      lon:  283.8
+
+    no2_gram180:
+      <<: *NO2
+      header: Fresno (119.80W,36.80N)
+      tag: Fresno
+      lat:  36.8
+      lon:  240.2
+
+    no2_gram181:
+      <<: *NO2
+      header: Dallas Ft_Worth (97.00W,32.90N)
+      tag: Dallas Ft_Worth
+      lat:  32.9
+      lon:  263.0
+
+    no2_gram182:
+      <<: *NO2
+      header: Sevilleta (106.90W,34.30N)
+      tag: Sevilleta
+      lat:  34.3
+      lon:  253.1
+
+    no2_gram183:
+      <<: *NO2
+      header: San_Antonio (98.50W,29.50N)
+      tag: San_Antonio
+      lat:  29.5
+      lon:  261.5
+
+    no2_gram184:
+      <<: *NO2
+      header: Corpus_Christi (97.50W,27.80N)
+      tag: Corpus_Christi
+      lat:  27.8
+      lon:  262.5
+
+    no2_gram185:
+      <<: *NO2
+      header: Tucson (111.00W,32.10N)
+      tag: Tucson
+      lat:  32.1
+      lon:  249.0
+
+    no2_gram186:
+      <<: *NO2
+      header: West_Houston (95.66W,29.80N)
+      tag: West_Houston
+      lat:  29.8
+      lon:  264.343
+
+    no2_gram187:
+      <<: *NO2
+      header: Essex (76.50W,39.30N)
+      tag: Essex
+      lat:  39.3
+      lon:  283.5
+
+    no2_gram188:
+      <<: *NO2
+      header: Croix_Rd Manvel (95.40W,29.50N)
+      tag: Croix_Rd Manvel
+      lat:  29.5
+      lon:  264.6
+
+    no2_gram189:
+      <<: *NO2
+      header: Deer_Park TX (95.10W,29.70N)
+      tag: Deer_Park TX
+      lat:  29.7
+      lon:  264.9
+
+    no2_gram190:
+      <<: *NO2
+      header: White_Sands NM (106.30E,32.60N)
+      tag: White_Sands NM
+      lat:  32.6
+      lon:  106.3
+
+    no2_gram191:
+      <<: *NO2
+      header: Lake_Charles (93.20W,30.10N)
+      tag: Lake_Charles
+      lat:  30.1
+      lon:  266.8
+
+    no2_gram192:
+      <<: *NO2
+      header: Shreveport (93.80W,32.40N)
+      tag: Shreveport
+      lat:  32.4
+      lon:  266.2
+
+    no2_gram193:
+      <<: *NO2
+      header: Channelview (95.10W,29.80N)
+      tag: Channelview
+      lat:  29.8
+      lon:  264.9
+
+    no2_gram194:
+      <<: *NO2
+      header: Austin (97.70W,30.20N)
+      tag: Austin
+      lat:  30.2
+      lon:  262.3
+
+    no2_gram195:
+      <<: *NO2
+      header: Monterey (121.80W,36.60N)
+      tag: Monterey
+      lat:  36.6
+      lon:  238.2
+
+    no2_gram196:
+      <<: *NO2
+      header: S_Cent OR (120.00E,43.00N)
+      tag: S_Cent OR
+      lat:  43.0
+      lon:  120.0
+
+    no2_gram197:
+      <<: *NO2
+      header: Padonia (76.60W,39.50N)
+      tag: Padonia
+      lat:  39.5
+      lon:  283.4
+
+    no2_gram198:
+      <<: *NO2
+      header: Caltech (118.10W,34.10N)
+      tag: Caltech
+      lat:  34.1
+      lon:  241.9
+
+    no2_gram199:
+      <<: *NO2
+      header: Edgewood MD (76.30W,39.40N)
+      tag: Edgewood MD
+      lat:  39.4
+      lon:  283.7
+
+    no2_gram200:
+      <<: *NO2
+      header: La_Parguera PR (67.00W,18.00N)
+      tag: La_Parguera PR
+      lat:  18.0
+      lon:  293.0
+
+    no2_gram201:
+      <<: *NO2
+      header: Railroad_Valley (116.00W,38.50N)
+      tag: Railroad_Valley
+      lat:  38.5
+      lon:  244.0
+
+    no2_gram202:
+      <<: *NO2
+      header: Moody_Tower (95.30W,29.70N)
+      tag: Moody_Tower
+      lat:  29.7
+      lon:  264.7
+
+    no2_gram203:
+      <<: *NO2
+      header: Cape_Cod (70.20W,41.10N)
+      tag: Cape_Cod
+      lat:  41.1
+      lon:  289.8
+
+    no2_gram204:
+      <<: *NO2
+      header: Wallops_Island VA (75.50W,37.80N)
+      tag: Wallops_Island VA
+      lat:  37.8
+      lon:  284.5
+
+    no2_gram205:
+      <<: *NO2
+      header: Galveston (94.80W,29.20N)
+      tag: Galveston
+      lat:  29.2
+      lon:  265.2
+
+    no2_gram206:
+      <<: *NO2
+      header: Frenchman_Flat NV (116.00W,36.80N)
+      tag: Frenchman_Flat NV
+      lat:  36.8
+      lon:  244.0
+
+    no2_gram207:
+      <<: *NO2
+      header: Calgary (114.10W,51.00N)
+      tag: Calgary
+      lat:  51.0
+      lon:  245.9
+
+    no2_gram208:
+      <<: *NO2
+      header: Edmonton (113.50W,53.50N)
+      tag: Edmonton
+      lat:  53.5
+      lon:  246.5
+
+    no2_gram209:
+      <<: *NO2
+      header: Ottawa (75.70W,45.40N)
+      tag: Ottawa
+      lat:  45.4
+      lon:  284.3
+
+    no2_gram210:
+      <<: *NO2
+      header: Winnipeg (97.10W,49.90N)
+      tag: Winnipeg
+      lat:  49.9
+      lon:  262.9
+
+    no2_gram211:
+      <<: *NO2
+      header: Quebec City (71.20W,46.80N)
+      tag: Quebec City
+      lat:  46.8
+      lon:  288.8
+
+    no2_gram212:
+      <<: *NO2
+      header: Toronto (79.38W,43.65N)
+      tag: Toronto
+      lat:  43.6532
+      lon:  280.6168
+
+    no2_gram213:
+      <<: *NO2
+      header: Montreal (73.57W,45.50N)
+      tag: Montreal
+      lat:  45.5017
+      lon:  286.4327
+
+    no2_gram214:
+      <<: *NO2
+      header: Vancouver (123.12W,49.28N)
+      tag: Vancouver
+      lat:  49.2827
+      lon:  236.8793
+
+    no2_gram215:
+      <<: *NO2
+      header: McCall_MPL (116.09W,44.93N)
+      tag: McCall_MPL
+      lat:  44.9267
+      lon:  243.9109
+
+    no2_gram216:
+      <<: *NO2
+      header: Eugene (123.09W,44.05N)
+      tag: Eugene
+      lat:  44.052071
+      lon:  236.913246
+
+    no2_gram217:
+      <<: *NO2
+      header: Bend (121.32W,44.06N)
+      tag: Bend
+      lat:  44.058174
+      lon:  238.684692
+
+    no2_gram218:
+      <<: *NO2
+      header: Malheur_NWR (118.84W,43.27N)
+      tag: Malheur_NWR
+      lat:  43.265587
+      lon:  241.155925
+
+    no2_gram219:
+      <<: *NO2
+      header: LaGrande (118.09W,45.32N)
+      tag: LaGrande
+      lat:  45.324607
+      lon:  241.91213
+
+    no2_gram220:
+      <<: *NO2
+      header: Winnemucca (117.74W,40.97N)
+      tag: Winnemucca
+      lat:  40.972958
+      lon:  242.264313
+
+    no2_gram221:
+      <<: *NO2
+      header: Elko (115.76W,40.84N)
+      tag: Elko
+      lat:  40.835732
+      lon:  244.24054
+
+    no2_gram222:
+      <<: *NO2
+      header: Redding (122.38W,40.57N)
+      tag: Redding
+      lat:  40.574638
+      lon:  237.618912
+
+    no2_gram223:
+      <<: *NO2
+      header: Yreka (122.64W,41.73N)
+      tag: Yreka
+      lat:  41.731579
+      lon:  237.364349
+
+    no2_gram224:
+      <<: *NO2
+      header: Chico (121.84W,39.73N)
+      tag: Chico
+      lat:  39.728493
+      lon:  238.162521
+
+    no2_gram225:
+      <<: *NO2
+      header: MosesLake (119.28W,47.13N)
+      tag: MosesLake
+      lat:  47.131649
+      lon:  240.722237
+
+    no2_gram226:
+      <<: *NO2
+      header: GreatFalls (111.29W,47.50N)
+      tag: GreatFalls
+      lat:  47.504887
+      lon:  248.708107
+
+    no2_gram227:
+      <<: *NO2
+      header: MilesCity (105.84W,46.41N)
+      tag: MilesCity
+      lat:  46.408527
+      lon:  254.159019
+
+    no2_gram228:
+      <<: *NO2
+      header: TwinFalls (114.46W,42.56N)
+      tag: TwinFalls
+      lat:  42.563179
+      lon:  245.539719
+
+    no2_gram229:
+      <<: *NO2
+      header: Casper (106.33W,42.85N)
+      tag: Casper
+      lat:  42.850079
+      lon:  253.674828
+
+    no2_gram230:
+      <<: *NO2
+      header: RockSprings (109.22W,41.59N)
+      tag: RockSprings
+      lat:  41.590481
+      lon:  250.776627
+
+    no2_gram231:
+      <<: *NO2
+      header: St George (113.58W,37.11N)
+      tag: St George
+      lat:  37.10828
+      lon:  246.416718
+
+    no2_gram232:
+      <<: *NO2
+      header: Regina (104.62W,50.45N)
+      tag: Regina
+      lat:  50.451191
+      lon:  255.383377
+
+    o3_gram000: &O3
+      long_name: 'o3'
+      header: Ames_AERO (93.77W,42.02N)
+      tag: Ames_AERO
+      xlabel: ''
+      levels: [0]
+      layers: [o3]
+      title: 'O3'
+      parea:  1 10 1 7.5
+      lev:  1000 100
+      lat:  42.0213623047
+      lon:  266.225219727
+      time: '$tbeg $t5day'
+      ylab: 'Pressure (mb)'
+      shape: 'off'
+
+    o3_gram001:
+      <<: *O3
+      header: Appalachian_State_AERO (81.69W,36.21N)
+      tag: Appalachian_State_AERO
+      lat:  36.2145996094
+      lon:  278.30619812
+
+    o3_gram002:
+      <<: *O3
+      header: ARM_Oliktok_AK_AERO (149.88W,70.50N)
+      tag: ARM_Oliktok_AK_AERO
+      lat:  70.49949646
+      lon:  210.119995117
+
+    o3_gram003:
+      <<: *O3
+      header: ARM_SGP_AERO (97.49W,36.61N)
+      tag: ARM_SGP_AERO
+      lat:  36.6051750183
+      lon:  262.514381409
+
+    o3_gram004:
+      <<: *O3
+      header: Bakersfield_AERO (119.00W,35.33N)
+      tag: Bakersfield_AERO
+      lat:  35.3315048218
+      lon:  240.999992371
+
+    o3_gram005:
+      <<: *O3
+      header: Barrow_AERO (156.80W,71.30N)
+      tag: Barrow_AERO
+      lat:  71.3
+      lon:  203.2
+
+    o3_gram006:
+      <<: *O3
+      header: Billerica_AERO (71.27W,42.53N)
+      tag: Billerica_AERO
+      lat:  42.5283470154
+      lon:  288.731384277
+
+    o3_gram007:
+      <<: *O3
+      header: Bonanza_Creek_AERO (148.32W,64.74N)
+      tag: Bonanza_Creek_AERO
+      lat:  64.742805481
+      lon:  211.683731079
+
+    o3_gram008:
+      <<: *O3
+      header: BONDVILLE_AERO (88.37W,40.05N)
+      tag: BONDVILLE_AERO
+      lat:  40.0533332825
+      lon:  271.628059387
+
+    o3_gram009:
+      <<: *O3
+      header: Bozeman_AERO (111.05W,45.66N)
+      tag: Bozeman_AERO
+      lat:  45.6622047424
+      lon:  248.954986572
+
+    o3_gram010:
+      <<: *O3
+      header: Brookhaven_AERO (72.88W,40.87N)
+      tag: Brookhaven_AERO
+      lat:  40.8660011292
+      lon:  287.11530304
+
+    o3_gram011:
+      <<: *O3
+      header: CalTech_AERO (118.13W,34.14N)
+      tag: CalTech_AERO
+      lat:  34.1367301941
+      lon:  241.873832703
+
+    o3_gram012:
+      <<: *O3
+      header: Cape_San_Juan_AERO (65.62W,18.38N)
+      tag: Cape_San_Juan_AERO
+      lat:  18.3845005035
+      lon:  294.380096435
+
+    o3_gram013:
+      <<: *O3
+      header: CARTEL_AERO (71.93W,45.38N)
+      tag: CARTEL_AERO
+      lat:  45.3797531128
+      lon:  288.06867218
+
+    o3_gram014:
+      <<: *O3
+      header: Chapais_AERO (74.98W,49.82N)
+      tag: Chapais_AERO
+      lat:  49.8224334717
+      lon:  285.024597168
+
+    o3_gram015:
+      <<: *O3
+      header: Churchill_AERO (93.82W,58.74N)
+      tag: Churchill_AERO
+      lat:  58.736000061
+      lon:  266.18183136
+
+    o3_gram016:
+      <<: *O3
+      header: Cold_Lake_AERO (110.28W,54.42N)
+      tag: Cold_Lake_AERO
+      lat:  54.4169998169
+      lon:  249.717002869
+
+    o3_gram017:
+      <<: *O3
+      header: Dayton_AERO (84.11W,39.78N)
+      tag: Dayton_AERO
+      lat:  39.7759780884
+      lon:  275.890380859
+
+    o3_gram018:
+      <<: *O3
+      header: Denver_LaCasa_AERO (105.01W,39.78N)
+      tag: Denver_LaCasa_AERO
+      lat:  39.7794914246
+      lon:  254.994819641
+
+    o3_gram019:
+      <<: *O3
+      header: DigitalGlobe_Cal_AERO (105.14W,40.14N)
+      tag: DigitalGlobe_Cal_AERO
+      lat:  40.1388893127
+      lon:  254.86277771
+
+    o3_gram020:
+      <<: *O3
+      header: EastMalling_MO_AERO (0.44E,51.29N)
+      tag: EastMalling_MO_AERO
+      lat:  51.2900009155
+      lon:  0.439999997616
+
+    o3_gram021:
+      <<: *O3
+      header: Easton-MDE_AERO (76.08W,38.79N)
+      tag: Easton-MDE_AERO
+      lat:  38.7949714661
+      lon:  283.915748596
+
+    o3_gram022:
+      <<: *O3
+      header: Egbert_AERO (79.78W,44.23N)
+      tag: Egbert_AERO
+      lat:  44.2315444946
+      lon:  280.218589783
+
+    o3_gram023:
+      <<: *O3
+      header: EPA-Res_Triangle_Pk_AERO (78.87W,35.88N)
+      tag: EPA-Res_Triangle_Pk_AERO
+      lat:  35.8800010681
+      lon:  281.129997253
+
+    o3_gram024:
+      <<: *O3
+      header: Fort_McMurray_AERO (111.48W,56.75N)
+      tag: Fort_McMurray_AERO
+      lat:  56.7523078918
+      lon:  248.523864746
+
+    o3_gram025:
+      <<: *O3
+      header: Fresno_2_AERO (119.77W,36.79N)
+      tag: Fresno_2_AERO
+      lat:  36.785369873
+      lon:  240.226982117
+
+    o3_gram026:
+      <<: *O3
+      header: Georgia_Tech_AERO (84.40W,33.78N)
+      tag: Georgia_Tech_AERO
+      lat:  33.7802009583
+      lon:  275.600463867
+
+    o3_gram027:
+      <<: *O3
+      header: Goldstone_AERO (116.79W,35.23N)
+      tag: Goldstone_AERO
+      lat:  35.2333335876
+      lon:  243.208335876
+
+    o3_gram028:
+      <<: *O3
+      header: Grand_Forks_AERO (97.33W,47.91N)
+      tag: Grand_Forks_AERO
+      lat:  47.9117507935
+      lon:  262.674552918
+
+    o3_gram029:
+      <<: *O3
+      header: Granite_Island_AERO (87.41W,46.72N)
+      tag: Granite_Island_AERO
+      lat:  46.7207984924
+      lon:  272.587997437
+
+    o3_gram030:
+      <<: *O3
+      header: GSFC_AERO (76.84W,38.99N)
+      tag: GSFC_AERO
+      lat:  38.9925003052
+      lon:  283.160163879
+
+    o3_gram031:
+      <<: *O3
+      header: Halifax_AERO (63.59W,44.64N)
+      tag: Halifax_AERO
+      lat:  44.6380004883
+      lon:  296.40599823
+
+    o3_gram032:
+      <<: *O3
+      header: Hart_Miller_Island_AERO (76.36W,39.24N)
+      tag: Hart_Miller_Island_AERO
+      lat:  39.2419013977
+      lon:  283.637199402
+
+    o3_gram033:
+      <<: *O3
+      header: IMPROVE-MammothCave_AERO (86.15W,37.13N)
+      tag: IMPROVE-MammothCave_AERO
+      lat:  37.1318016052
+      lon:  273.852096558
+
+    o3_gram034:
+      <<: *O3
+      header: Kangerlussuaq_AERO (50.62W,67.00N)
+      tag: Kangerlussuaq_AERO
+      lat:  66.9957962036
+      lon:  309.378601074
+
+    o3_gram035:
+      <<: *O3
+      header: Kellogg_LTER_AERO (85.37W,42.41N)
+      tag: Kellogg_LTER_AERO
+      lat:  42.4079818726
+      lon:  274.62828064
+
+    o3_gram036:
+      <<: *O3
+      header: Kelowna_UAS_AERO (119.40W,49.94N)
+      tag: Kelowna_UAS_AERO
+      lat:  49.9412956238
+      lon:  240.599891663
+
+    o3_gram037:
+      <<: *O3
+      header: Key_Biscayne_AERO (80.16W,25.73N)
+      tag: Key_Biscayne_AERO
+      lat:  25.7319660187
+      lon:  279.836669922
+
+    o3_gram038:
+      <<: *O3
+      header: Kluane_Lake_AERO (138.41W,61.03N)
+      tag: Kluane_Lake_AERO
+      lat:  61.0270004272
+      lon:  221.589996338
+
+    o3_gram039:
+      <<: *O3
+      header: La_Parguera_AERO (67.05W,17.97N)
+      tag: La_Parguera_AERO
+      lat:  17.9704494476
+      lon:  292.954620361
+
+    o3_gram040:
+      <<: *O3
+      header: LISCO_AERO (73.34W,40.95N)
+      tag: LISCO_AERO
+      lat:  40.9545173645
+      lon:  286.658233643
+
+    o3_gram041:
+      <<: *O3
+      header: Mauna_Loa_AERO (155.58W,19.54N)
+      tag: Mauna_Loa_AERO
+      lat:  19.5360069275
+      lon:  204.423248291
+
+    o3_gram042:
+      <<: *O3
+      header: MD_Science_Center_AERO (76.61W,39.28N)
+      tag: MD_Science_Center_AERO
+      lat:  39.2812309265
+      lon:  283.387947082
+
+    o3_gram043:
+      <<: *O3
+      header: Mingo_AERO (90.14W,36.97N)
+      tag: Mingo_AERO
+      lat:  36.971698761
+      lon:  269.856796265
+
+    o3_gram044:
+      <<: *O3
+      header: Missoula_AERO (114.08W,46.92N)
+      tag: Missoula_AERO
+      lat:  46.9166679382
+      lon:  245.916664124
+
+    o3_gram045:
+      <<: *O3
+      header: Modesto_AERO (120.99W,37.64N)
+      tag: Modesto_AERO
+      lat:  37.6421699524
+      lon:  239.005783081
+
+    o3_gram046:
+      <<: *O3
+      header: Monterey_AERO (121.80W,36.60N)
+      tag: Monterey_AERO
+      lat:  36.6
+      lon:  238.2
+
+    o3_gram047:
+      <<: *O3
+      header: MVCO_AERO (70.57W,41.33N)
+      tag: MVCO_AERO
+      lat:  41.3250007629
+      lon:  289.433296204
+
+    o3_gram048:
+      <<: *O3
+      header: Narsarsuaq_AERO (45.42W,61.16N)
+      tag: Narsarsuaq_AERO
+      lat:  61.1559524536
+      lon:  314.580619812
+
+    o3_gram049:
+      <<: *O3
+      header: NASA_KSC_AERO (80.66W,28.46N)
+      tag: NASA_KSC_AERO
+      lat:  28.4637622833
+      lon:  279.336524963
+
+    o3_gram050:
+      <<: *O3
+      header: NASA_LaRC_AERO (76.38W,37.10N)
+      tag: NASA_LaRC_AERO
+      lat:  37.1049613953
+      lon:  283.621360779
+
+    o3_gram051:
+      <<: *O3
+      header: NEON_Bartlett_AERO (71.29W,44.06N)
+      tag: NEON_Bartlett_AERO
+      lat:  44.0638809204
+      lon:  288.712799072
+
+    o3_gram052:
+      <<: *O3
+      header: NEON_CLBJ_AERO (97.57W,33.40N)
+      tag: NEON_CLBJ_AERO
+      lat:  33.4012298584
+      lon:  262.430000305
+
+    o3_gram053:
+      <<: *O3
+      header: NEON-CPER_AERO (104.74W,40.81N)
+      tag: NEON-CPER_AERO
+      lat:  40.8124427795
+      lon:  255.255760193
+
+    o3_gram054:
+      <<: *O3
+      header: NEON_CVALLA_AERO (105.17W,40.16N)
+      tag: NEON_CVALLA_AERO
+      lat:  40.1606292725
+      lon:  254.832748413
+
+    o3_gram055:
+      <<: *O3
+      header: NEON_DEJU_AERO (145.75W,63.88N)
+      tag: NEON_DEJU_AERO
+      lat:  63.8811187744
+      lon:  214.248641968
+
+    o3_gram056:
+      <<: *O3
+      header: NEON-Disney_AERO (81.44W,28.13N)
+      tag: NEON-Disney_AERO
+      lat:  28.125038147
+      lon:  278.563796997
+
+    o3_gram057:
+      <<: *O3
+      header: NEON_GRSM_AERO (83.50W,35.69N)
+      tag: NEON_GRSM_AERO
+      lat:  35.6889610291
+      lon:  276.498046875
+
+    o3_gram058:
+      <<: *O3
+      header: NEON_GUAN_AERO (66.87W,17.97N)
+      tag: NEON_GUAN_AERO
+      lat:  17.9695491791
+      lon:  293.13130188
+
+    o3_gram059:
+      <<: *O3
+      header: NEON_Harvard_AERO (72.17W,42.54N)
+      tag: NEON_Harvard_AERO
+      lat:  42.5368995667
+      lon:  287.827339172
+
+    o3_gram060:
+      <<: *O3
+      header: NEON_HEAL_AERO (149.21W,63.88N)
+      tag: NEON_HEAL_AERO
+      lat:  63.8756904602
+      lon:  210.78666687
+
+    o3_gram061:
+      <<: *O3
+      header: NEON_MLBS_AERO (80.52W,37.38N)
+      tag: NEON_MLBS_AERO
+      lat:  37.3783073425
+      lon:  279.475166321
+
+    o3_gram062:
+      <<: *O3
+      header: NEON_MOAB_AERO (109.39W,38.25N)
+      tag: NEON_MOAB_AERO
+      lat:  38.2483291626
+      lon:  250.611732483
+
+    o3_gram063:
+      <<: *O3
+      header: NEON_NOGP_AERO (100.92W,46.77N)
+      tag: NEON_NOGP_AERO
+      lat:  46.7697181702
+      lon:  259.084648132
+
+    o3_gram064:
+      <<: *O3
+      header: NEON_OAES_AERO (99.06W,35.41N)
+      tag: NEON_OAES_AERO
+      lat:  35.4105911255
+      lon:  260.941207886
+
+    o3_gram065:
+      <<: *O3
+      header: NEON_ONAQ_AERO (112.45W,40.18N)
+      tag: NEON_ONAQ_AERO
+      lat:  40.1775894165
+      lon:  247.547561646
+
+    o3_gram066:
+      <<: *O3
+      header: NEON_ORNL_AERO (84.28W,35.96N)
+      tag: NEON_ORNL_AERO
+      lat:  35.9641265869
+      lon:  275.717414856
+
+    o3_gram067:
+      <<: *O3
+      header: NEON_OSBS_AERO (81.99W,29.69N)
+      tag: NEON_OSBS_AERO
+      lat:  29.6892681122
+      lon:  278.006568909
+
+    o3_gram068:
+      <<: *O3
+      header: NEON_RMNP_AERO (105.55W,40.28N)
+      tag: NEON_RMNP_AERO
+      lat:  40.2759017944
+      lon:  254.454025269
+
+    o3_gram069:
+      <<: *O3
+      header: NEON_SCBI_AERO (78.14W,38.89N)
+      tag: NEON_SCBI_AERO
+      lat:  38.8929176331
+      lon:  281.860496521
+
+    o3_gram070:
+      <<: *O3
+      header: NEON_SERC_AERO (76.56W,38.89N)
+      tag: NEON_SERC_AERO
+      lat:  38.8901176453
+      lon:  283.439979553
+
+    o3_gram071:
+      <<: *O3
+      header: NEON_SRER_AERO (110.84W,31.91N)
+      tag: NEON_SRER_AERO
+      lat:  31.9106807709
+      lon:  249.164512634
+
+    o3_gram072:
+      <<: *O3
+      header: NEON_Sterling_AERO (103.03W,40.46N)
+      tag: NEON_Sterling_AERO
+      lat:  40.4619026184
+      lon:  256.970703125
+
+    o3_gram073:
+      <<: *O3
+      header: NEON_TALL_AERO (87.39W,32.95N)
+      tag: NEON_TALL_AERO
+      lat:  32.9504623413
+      lon:  272.6067276
+
+    o3_gram074:
+      <<: *O3
+      header: NEON_TEAK_AERO (119.01W,37.01N)
+      tag: NEON_TEAK_AERO
+      lat:  37.0058326721
+      lon:  240.993980408
+
+    o3_gram075:
+      <<: *O3
+      header: NEON_TOOL_AERO (149.37W,68.66N)
+      tag: NEON_TOOL_AERO
+      lat:  68.6610870361
+      lon:  210.62953186
+
+    o3_gram076:
+      <<: *O3
+      header: NEON_UKFS_AERO (95.19W,39.04N)
+      tag: NEON_UKFS_AERO
+      lat:  39.0404319763
+      lon:  264.807853699
+
+    o3_gram077:
+      <<: *O3
+      header: NEON_UNDE_AERO (89.54W,46.23N)
+      tag: NEON_UNDE_AERO
+      lat:  46.2338829041
+      lon:  270.462753296
+
+    o3_gram078:
+      <<: *O3
+      header: NEON_WOOD_AERO (99.24W,47.13N)
+      tag: NEON_WOOD_AERO
+      lat:  47.1282272339
+      lon:  260.758644104
+
+    o3_gram079:
+      <<: *O3
+      header: NEON_WREF_AERO (121.95W,45.82N)
+      tag: NEON_WREF_AERO
+      lat:  45.82
+      lon:  238.048
+
+    o3_gram080:
+      <<: *O3
+      header: ORS_Hermosillo_AERO (111.15W,29.03N)
+      tag: ORS_Hermosillo_AERO
+      lat:  29.0275001526
+      lon:  248.854446411
+
+    o3_gram081:
+      <<: *O3
+      header: Pickle_Lake_AERO (90.22W,51.45N)
+      tag: Pickle_Lake_AERO
+      lat:  51.4494438171
+      lon:  269.782501221
+
+    o3_gram082:
+      <<: *O3
+      header: Ragged_Point_AERO (59.43W,13.17N)
+      tag: Ragged_Point_AERO
+      lat:  13.1650180817
+      lon:  300.567966461
+
+    o3_gram083:
+      <<: *O3
+      header: Railroad_Valley_AERO (116.00W,38.50N)
+      tag: Railroad_Valley_AERO
+      lat:  38.5
+      lon:  244.0
+
+    o3_gram084:
+      <<: *O3
+      header: Red_Mountain_Pass_AERO (107.71W,37.91N)
+      tag: Red_Mountain_Pass_AERO
+      lat:  37.9074478149
+      lon:  252.289085388
+
+    o3_gram085:
+      <<: *O3
+      header: Resolute_Bay_AERO (94.97W,74.71N)
+      tag: Resolute_Bay_AERO
+      lat:  74.7051239014
+      lon:  265.030593872
+
+    o3_gram086:
+      <<: *O3
+      header: Rexburg_Idaho_AERO (111.78W,43.82N)
+      tag: Rexburg_Idaho_AERO
+      lat:  43.820110321
+      lon:  248.21698761
+
+    o3_gram087:
+      <<: *O3
+      header: Rimrock_AERO (116.99W,46.49N)
+      tag: Rimrock_AERO
+      lat:  46.4874992371
+      lon:  243.008331299
+
+    o3_gram088:
+      <<: *O3
+      header: Sandia_NM_PSEL_AERO (106.54W,35.05N)
+      tag: Sandia_NM_PSEL_AERO
+      lat:  35.0545845032
+      lon:  253.45993042
+
+    o3_gram089:
+      <<: *O3
+      header: Saturn_Island_AERO (76.84W,38.99N)
+      tag: Saturn_Island_AERO
+      lat:  38.992
+      lon:  283.16
+
+    o3_gram090:
+      <<: *O3
+      header: Santa_Monica_Colg_AERO (118.47W,34.02N)
+      tag: Santa_Monica_Colg_AERO
+      lat:  34.0168495178
+      lon:  241.528869629
+
+    o3_gram091:
+      <<: *O3
+      header: SDSU_IPLab_AERO (96.79W,44.31N)
+      tag: SDSU_IPLab_AERO
+      lat:  44.3148269653
+      lon:  263.213928223
+
+    o3_gram092:
+      <<: *O3
+      header: Sevilleta_AERO (106.90W,34.30N)
+      tag: Sevilleta_AERO
+      lat:  34.3
+      lon:  253.1
+
+    o3_gram093:
+      <<: *O3
+      header: Sigma_Space_Corp_AERO (76.84W,38.95N)
+      tag: Sigma_Space_Corp_AERO
+      lat:  38.952999115
+      lon:  283.163528442
+
+    o3_gram094:
+      <<: *O3
+      header: Sioux_Falls_AERO (96.63W,43.74N)
+      tag: Sioux_Falls_AERO
+      lat:  43.7364807129
+      lon:  263.374008179
+
+    o3_gram095:
+      <<: *O3
+      header: SP_Bayboro_AERO (82.63W,27.76N)
+      tag: SP_Bayboro_AERO
+      lat:  27.7615509033
+      lon:  277.366996765
+
+    o3_gram096:
+      <<: *O3
+      header: TABLE_MOUNTAIN_CA_AERO (117.68W,34.38N)
+      tag: TABLE_MOUNTAIN_CA_AERO
+      lat:  34.3800010681
+      lon:  242.319999695
+
+    o3_gram097:
+      <<: *O3
+      header: Tallahassee_AERO (84.30W,30.45N)
+      tag: Tallahassee_AERO
+      lat:  30.4458332062
+      lon:  275.700653076
+
+    o3_gram098:
+      <<: *O3
+      header: Taylor_Ranch_TWRS_AERO (114.85W,45.10N)
+      tag: Taylor_Ranch_TWRS_AERO
+      lat:  45.1035003662
+      lon:  245.150047302
+
+    o3_gram099:
+      <<: *O3
+      header: Thompson_Farm_AERO (70.95W,43.11N)
+      tag: Thompson_Farm_AERO
+      lat:  43.1087722778
+      lon:  289.05165863
+
+    o3_gram100:
+      <<: *O3
+      header: Thule_AERO (68.77W,76.52N)
+      tag: Thule_AERO
+      lat:  76.5161056519
+      lon:  291.231002808
+
+    o3_gram101:
+      <<: *O3
+      header: Toronto_AERO (79.40W,43.60N)
+      tag: Toronto_AERO
+      lat:  43.6
+      lon:  280.6
+
+    o3_gram102:
+      <<: *O3
+      header: Tucson_AERO (111.00W,32.10N)
+      tag: Tucson_AERO
+      lat:  32.1
+      lon:  249.0
+
+    o3_gram103:
+      <<: *O3
+      header: Tudor_Hill_AERO (64.88W,32.26N)
+      tag: Tudor_Hill_AERO
+      lat:  32.263999939
+      lon:  295.121002197
+
+    o3_gram104:
+      <<: *O3
+      header: UAHuntsville_AERO (86.64W,34.73N)
+      tag: UAHuntsville_AERO
+      lat:  34.7253303528
+      lon:  273.355270386
+
+    o3_gram105:
+      <<: *O3
+      header: UCSB_AERO (119.85W,34.42N)
+      tag: UCSB_AERO
+      lat:  34.4154281616
+      lon:  240.154640198
+
+    o3_gram106:
+      <<: *O3
+      header: UMBC_AERO (76.71W,39.25N)
+      tag: UMBC_AERO
+      lat:  39.2546272278
+      lon:  283.290649414
+
+    o3_gram107:
+      <<: *O3
+      header: Univ_of_Houston_AERO (95.34W,29.72N)
+      tag: Univ_of_Houston_AERO
+      lat:  29.7176990509
+      lon:  264.658401489
+
+    o3_gram108:
+      <<: *O3
+      header: Univ_of_Lethbridge_AERO (112.87W,49.68N)
+      tag: Univ_of_Lethbridge_AERO
+      lat:  49.6816711426
+      lon:  247.131034851
+
+    o3_gram109:
+      <<: *O3
+      header: USC_SEAPRISM_AERO (118.12W,33.56N)
+      tag: USC_SEAPRISM_AERO
+      lat:  33.563709259
+      lon:  241.88217926
+
+    o3_gram110:
+      <<: *O3
+      header: USGS_Flagstaff_ROLO_AERO (111.63W,35.21N)
+      tag: USGS_Flagstaff_ROLO_AERO
+      lat:  35.2148399353
+      lon:  248.365577698
+
+    o3_gram111:
+      <<: *O3
+      header: Wallops_AERO (75.47W,37.93N)
+      tag: Wallops_AERO
+      lat:  37.932849884
+      lon:  284.528053284
+
+    o3_gram112:
+      <<: *O3
+      header: WaveCIS_Site_CSI_6_AERO (90.48W,28.87N)
+      tag: WaveCIS_Site_CSI_6_AERO
+      lat:  28.8666667938
+      lon:  269.516670227
+
+    o3_gram113:
+      <<: *O3
+      header: White_Sands_HELSTF_AERO (106.34W,32.63N)
+      tag: White_Sands_HELSTF_AERO
+      lat:  32.6349411011
+      lon:  253.66192627
+
+    o3_gram114:
+      <<: *O3
+      header: Yale_Coastal_AERO (72.73W,41.26N)
+      tag: Yale_Coastal_AERO
+      lat:  41.2583007812
+      lon:  287.268798828
+
+    o3_gram115:
+      <<: *O3
+      header: Yellowknife_Aurora_AERO (114.38W,62.45N)
+      tag: Yellowknife_Aurora_AERO
+      lat:  62.4513015747
+      lon:  245.623748779
+
+    o3_gram116:
+      <<: *O3
+      header: Yuma_AERO (114.58W,32.64N)
+      tag: Yuma_AERO
+      lat:  32.6441383362
+      lon:  245.417221069
+
+    o3_gram117:
+      <<: *O3
+      header: U_of_Wisconsin_SSEC_AERO (89.40W,43.10N)
+      tag: U_of_Wisconsin_SSEC_AERO
+      lat:  43.1
+      lon:  270.6
+
+    o3_gram118:
+      <<: *O3
+      header: AMOLITE_AERO (111.60W,57.20N)
+      tag: AMOLITE_AERO
+      lat:  57.2
+      lon:  248.4
+
+    o3_gram119:
+      <<: *O3
+      header: RO3QET (86.64W,34.73N)
+      tag: RO3QET
+      lat:  34.725
+      lon:  273.355
+
+    o3_gram120:
+      <<: *O3
+      header: TMF (117.68W,34.38N)
+      tag: TMF
+      lat:  34.38
+      lon:  242.32
+
+    o3_gram121:
+      <<: *O3
+      header: TROPOZ (76.84W,38.99N)
+      tag: TROPOZ
+      lat:  38.99
+      lon:  283.16
+
+    o3_gram122:
+      <<: *O3
+      header: TOPAZ (105.26W,39.99N)
+      tag: TOPAZ
+      lat:  39.993
+      lon:  254.738
+
+    o3_gram123:
+      <<: *O3
+      header: LMOL (76.38W,37.10N)
+      tag: LMOL
+      lat:  37.096
+      lon:  283.615
+
+    o3_gram124:
+      <<: *O3
+      header: Anchorage (149.90W,61.20N)
+      tag: Anchorage
+      lat:  61.2
+      lon:  210.1
+
+    o3_gram125:
+      <<: *O3
+      header: Atlanta (84.40W,33.70N)
+      tag: Atlanta
+      lat:  33.7
+      lon:  275.6
+
+    o3_gram126:
+      <<: *O3
+      header: Beltsville (76.90W,39.10N)
+      tag: Beltsville
+      lat:  39.1
+      lon:  283.1
+
+    o3_gram127:
+      <<: *O3
+      header: Bismarck (100.80W,46.80N)
+      tag: Bismarck
+      lat:  46.8
+      lon:  259.2
+
+    o3_gram128:
+      <<: *O3
+      header: Boise (116.20W,43.60N)
+      tag: Boise
+      lat:  43.6
+      lon:  243.8
+
+    o3_gram129:
+      <<: *O3
+      header: Boston (71.00W,42.30N)
+      tag: Boston
+      lat:  42.3
+      lon:  289.0
+
+    o3_gram130:
+      <<: *O3
+      header: Buffalo (78.80W,42.90N)
+      tag: Buffalo
+      lat:  42.9
+      lon:  281.2
+
+    o3_gram131:
+      <<: *O3
+      header: Conroe (95.40W,30.30N)
+      tag: Conroe
+      lat:  30.3
+      lon:  264.6
+
+    o3_gram132:
+      <<: *O3
+      header: Chicago (87.60W,41.90N)
+      tag: Chicago
+      lat:  41.9
+      lon:  272.4
+
+    o3_gram133:
+      <<: *O3
+      header: Cincinnati (84.50W,39.10N)
+      tag: Cincinnati
+      lat:  39.1
+      lon:  275.5
+
+    o3_gram134:
+      <<: *O3
+      header: Cleveland (81.70W,41.50N)
+      tag: Cleveland
+      lat:  41.5
+      lon:  278.3
+
+    o3_gram135:
+      <<: *O3
+      header: Dallas (96.80W,32.70N)
+      tag: Dallas
+      lat:  32.7
+      lon:  263.2
+
+    o3_gram136:
+      <<: *O3
+      header: Denver (105.00W,39.70N)
+      tag: Denver
+      lat:  39.7
+      lon:  255.0
+
+    o3_gram137:
+      <<: *O3
+      header: Detroit (83.00W,42.30N)
+      tag: Detroit
+      lat:  42.3
+      lon:  277.0
+
+    o3_gram138:
+      <<: *O3
+      header: Fairbanks (147.70W,64.80N)
+      tag: Fairbanks
+      lat:  64.8
+      lon:  212.3
+
+    o3_gram139:
+      <<: *O3
+      header: Fairhill (75.90W,39.70N)
+      tag: Fairhill
+      lat:  39.7
+      lon:  284.1
+
+    o3_gram140:
+      <<: *O3
+      header: Fargo (96.80W,46.90N)
+      tag: Fargo
+      lat:  46.9
+      lon:  263.2
+
+    o3_gram141:
+      <<: *O3
+      header: Hartford (72.70W,41.70N)
+      tag: Hartford
+      lat:  41.7
+      lon:  287.3
+
+    o3_gram142:
+      <<: *O3
+      header: Honolulu (157.80W,21.30N)
+      tag: Honolulu
+      lat:  21.3
+      lon:  202.2
+
+    o3_gram143:
+      <<: *O3
+      header: Houston (95.40W,29.70N)
+      tag: Houston
+      lat:  29.7
+      lon:  264.6
+
+    o3_gram144:
+      <<: *O3
+      header: Indianapolis (86.10W,39.70N)
+      tag: Indianapolis
+      lat:  39.7
+      lon:  273.9
+
+    o3_gram145:
+      <<: *O3
+      header: Jacksonville (81.70W,30.30N)
+      tag: Jacksonville
+      lat:  30.3
+      lon:  278.3
+
+    o3_gram146:
+      <<: *O3
+      header: Kansas_City (94.60W,39.10N)
+      tag: Kansas_City
+      lat:  39.1
+      lon:  265.4
+
+    o3_gram147:
+      <<: *O3
+      header: Las_Vegas (115.10W,36.20N)
+      tag: Las_Vegas
+      lat:  36.2
+      lon:  244.9
+
+    o3_gram148:
+      <<: *O3
+      header: Little_Rock (92.30W,34.70N)
+      tag: Little_Rock
+      lat:  34.7
+      lon:  267.7
+
+    o3_gram149:
+      <<: *O3
+      header: Louisville (85.70W,38.20N)
+      tag: Louisville
+      lat:  38.2
+      lon:  274.3
+
+    o3_gram150:
+      <<: *O3
+      header: Los_Angeles (118.20W,34.00N)
+      tag: Los_Angeles
+      lat:  34.0
+      lon:  241.8
+
+    o3_gram151:
+      <<: *O3
+      header: Memphis (90.00W,35.10N)
+      tag: Memphis
+      lat:  35.1
+      lon:  270.0
+
+    o3_gram152:
+      <<: *O3
+      header: Miami (80.20W,25.80N)
+      tag: Miami
+      lat:  25.8
+      lon:  279.8
+
+    o3_gram153:
+      <<: *O3
+      header: Milwaukee (88.00W,43.00N)
+      tag: Milwaukee
+      lat:  43.0
+      lon:  272.0
+
+    o3_gram154:
+      <<: *O3
+      header: Minneapolis (93.20W,45.00N)
+      tag: Minneapolis
+      lat:  45.0
+      lon:  266.8
+
+    o3_gram155:
+      <<: *O3
+      header: Nashville (86.80W,36.20N)
+      tag: Nashville
+      lat:  36.2
+      lon:  273.2
+
+    o3_gram156:
+      <<: *O3
+      header: New_Orleans (90.10W,30.00N)
+      tag: New_Orleans
+      lat:  30.0
+      lon:  269.9
+
+    o3_gram157:
+      <<: *O3
+      header: New_York (74.00W,40.30N)
+      tag: New_York
+      lat:  40.3
+      lon:  286.0
+
+    o3_gram158:
+      <<: *O3
+      header: Oklahoma_City (97.50W,35.50N)
+      tag: Oklahoma_City
+      lat:  35.5
+      lon:  262.5
+
+    o3_gram159:
+      <<: *O3
+      header: Omaha (96.00W,41.20N)
+      tag: Omaha
+      lat:  41.2
+      lon:  264.0
+
+    o3_gram160:
+      <<: *O3
+      header: Orlando (81.30W,28.50N)
+      tag: Orlando
+      lat:  28.5
+      lon:  278.7
+
+    o3_gram161:
+      <<: *O3
+      header: Philadelphia (75.20W,40.00N)
+      tag: Philadelphia
+      lat:  40.0
+      lon:  284.8
+
+    o3_gram162:
+      <<: *O3
+      header: Phoenix (112.00W,33.50N)
+      tag: Phoenix
+      lat:  33.5
+      lon:  248.0
+
+    o3_gram163:
+      <<: *O3
+      header: Pittsburgh (80.00W,40.50N)
+      tag: Pittsburgh
+      lat:  40.5
+      lon:  280.0
+
+    o3_gram164:
+      <<: *O3
+      header: Portland OR (122.70W,45.50N)
+      tag: Portland OR
+      lat:  45.5
+      lon:  237.3
+
+    o3_gram165:
+      <<: *O3
+      header: Raleigh (78.60W,35.80N)
+      tag: Raleigh
+      lat:  35.8
+      lon:  281.4
+
+    o3_gram166:
+      <<: *O3
+      header: Richmond (77.50W,37.50N)
+      tag: Richmond
+      lat:  37.5
+      lon:  282.5
+
+    o3_gram167:
+      <<: *O3
+      header: Salt_Lake_City (111.90W,40.70N)
+      tag: Salt_Lake_City
+      lat:  40.7
+      lon:  248.1
+
+    o3_gram168:
+      <<: *O3
+      header: San_Diego (117.20W,32.70N)
+      tag: San_Diego
+      lat:  32.7
+      lon:  242.8
+
+    o3_gram169:
+      <<: *O3
+      header: San_Francisco (122.40W,37.70N)
+      tag: San_Francisco
+      lat:  37.7
+      lon:  237.6
+
+    o3_gram170:
+      <<: *O3
+      header: San_Joaquin_Valley (119.30E,35.30N)
+      tag: San_Joaquin_Valley
+      lat:  35.3
+      lon:  119.3
+
+    o3_gram171:
+      <<: *O3
+      header: San_Juan PR (66.20W,18.50N)
+      tag: San_Juan PR
+      lat:  18.5
+      lon:  293.8
+
+    o3_gram172:
+      <<: *O3
+      header: Seattle (122.30W,47.60N)
+      tag: Seattle
+      lat:  47.6
+      lon:  237.7
+
+    o3_gram173:
+      <<: *O3
+      header: Smith_Point (94.80W,29.50N)
+      tag: Smith_Point
+      lat:  29.5
+      lon:  265.2
+
+    o3_gram174:
+      <<: *O3
+      header: Spokane (117.50W,47.60N)
+      tag: Spokane
+      lat:  47.6
+      lon:  242.5
+
+    o3_gram175:
+      <<: *O3
+      header: Tampa (82.50W,28.00N)
+      tag: Tampa
+      lat:  28.0
+      lon:  277.5
+
+    o3_gram176:
+      <<: *O3
+      header: Washington_DC (77.00W,38.90N)
+      tag: Washington_DC
+      lat:  38.9
+      lon:  283.0
+
+    o3_gram177:
+      <<: *O3
+      header: Wichita (97.20W,37.60N)
+      tag: Wichita
+      lat:  37.6
+      lon:  262.8
+
+    o3_gram178:
+      <<: *O3
+      header: Armstrong_FRC (117.90W,34.90N)
+      tag: Armstrong_FRC
+      lat:  34.9
+      lon:  242.1
+
+    o3_gram179:
+      <<: *O3
+      header: Aldino (76.20W,39.60N)
+      tag: Aldino
+      lat:  39.6
+      lon:  283.8
+
+    o3_gram180:
+      <<: *O3
+      header: Fresno (119.80W,36.80N)
+      tag: Fresno
+      lat:  36.8
+      lon:  240.2
+
+    o3_gram181:
+      <<: *O3
+      header: Dallas Ft_Worth (97.00W,32.90N)
+      tag: Dallas Ft_Worth
+      lat:  32.9
+      lon:  263.0
+
+    o3_gram182:
+      <<: *O3
+      header: Sevilleta (106.90W,34.30N)
+      tag: Sevilleta
+      lat:  34.3
+      lon:  253.1
+
+    o3_gram183:
+      <<: *O3
+      header: San_Antonio (98.50W,29.50N)
+      tag: San_Antonio
+      lat:  29.5
+      lon:  261.5
+
+    o3_gram184:
+      <<: *O3
+      header: Corpus_Christi (97.50W,27.80N)
+      tag: Corpus_Christi
+      lat:  27.8
+      lon:  262.5
+
+    o3_gram185:
+      <<: *O3
+      header: Tucson (111.00W,32.10N)
+      tag: Tucson
+      lat:  32.1
+      lon:  249.0
+
+    o3_gram186:
+      <<: *O3
+      header: West_Houston (95.66W,29.80N)
+      tag: West_Houston
+      lat:  29.8
+      lon:  264.343
+
+    o3_gram187:
+      <<: *O3
+      header: Essex (76.50W,39.30N)
+      tag: Essex
+      lat:  39.3
+      lon:  283.5
+
+    o3_gram188:
+      <<: *O3
+      header: Croix_Rd Manvel (95.40W,29.50N)
+      tag: Croix_Rd Manvel
+      lat:  29.5
+      lon:  264.6
+
+    o3_gram189:
+      <<: *O3
+      header: Deer_Park TX (95.10W,29.70N)
+      tag: Deer_Park TX
+      lat:  29.7
+      lon:  264.9
+
+    o3_gram190:
+      <<: *O3
+      header: White_Sands NM (106.30E,32.60N)
+      tag: White_Sands NM
+      lat:  32.6
+      lon:  106.3
+
+    o3_gram191:
+      <<: *O3
+      header: Lake_Charles (93.20W,30.10N)
+      tag: Lake_Charles
+      lat:  30.1
+      lon:  266.8
+
+    o3_gram192:
+      <<: *O3
+      header: Shreveport (93.80W,32.40N)
+      tag: Shreveport
+      lat:  32.4
+      lon:  266.2
+
+    o3_gram193:
+      <<: *O3
+      header: Channelview (95.10W,29.80N)
+      tag: Channelview
+      lat:  29.8
+      lon:  264.9
+
+    o3_gram194:
+      <<: *O3
+      header: Austin (97.70W,30.20N)
+      tag: Austin
+      lat:  30.2
+      lon:  262.3
+
+    o3_gram195:
+      <<: *O3
+      header: Monterey (121.80W,36.60N)
+      tag: Monterey
+      lat:  36.6
+      lon:  238.2
+
+    o3_gram196:
+      <<: *O3
+      header: S_Cent OR (120.00E,43.00N)
+      tag: S_Cent OR
+      lat:  43.0
+      lon:  120.0
+
+    o3_gram197:
+      <<: *O3
+      header: Padonia (76.60W,39.50N)
+      tag: Padonia
+      lat:  39.5
+      lon:  283.4
+
+    o3_gram198:
+      <<: *O3
+      header: Caltech (118.10W,34.10N)
+      tag: Caltech
+      lat:  34.1
+      lon:  241.9
+
+    o3_gram199:
+      <<: *O3
+      header: Edgewood MD (76.30W,39.40N)
+      tag: Edgewood MD
+      lat:  39.4
+      lon:  283.7
+
+    o3_gram200:
+      <<: *O3
+      header: La_Parguera PR (67.00W,18.00N)
+      tag: La_Parguera PR
+      lat:  18.0
+      lon:  293.0
+
+    o3_gram201:
+      <<: *O3
+      header: Railroad_Valley (116.00W,38.50N)
+      tag: Railroad_Valley
+      lat:  38.5
+      lon:  244.0
+
+    o3_gram202:
+      <<: *O3
+      header: Moody_Tower (95.30W,29.70N)
+      tag: Moody_Tower
+      lat:  29.7
+      lon:  264.7
+
+    o3_gram203:
+      <<: *O3
+      header: Cape_Cod (70.20W,41.10N)
+      tag: Cape_Cod
+      lat:  41.1
+      lon:  289.8
+
+    o3_gram204:
+      <<: *O3
+      header: Wallops_Island VA (75.50W,37.80N)
+      tag: Wallops_Island VA
+      lat:  37.8
+      lon:  284.5
+
+    o3_gram205:
+      <<: *O3
+      header: Galveston (94.80W,29.20N)
+      tag: Galveston
+      lat:  29.2
+      lon:  265.2
+
+    o3_gram206:
+      <<: *O3
+      header: Frenchman_Flat NV (116.00W,36.80N)
+      tag: Frenchman_Flat NV
+      lat:  36.8
+      lon:  244.0
+
+    o3_gram207:
+      <<: *O3
+      header: Calgary (114.10W,51.00N)
+      tag: Calgary
+      lat:  51.0
+      lon:  245.9
+
+    o3_gram208:
+      <<: *O3
+      header: Edmonton (113.50W,53.50N)
+      tag: Edmonton
+      lat:  53.5
+      lon:  246.5
+
+    o3_gram209:
+      <<: *O3
+      header: Ottawa (75.70W,45.40N)
+      tag: Ottawa
+      lat:  45.4
+      lon:  284.3
+
+    o3_gram210:
+      <<: *O3
+      header: Winnipeg (97.10W,49.90N)
+      tag: Winnipeg
+      lat:  49.9
+      lon:  262.9
+
+    o3_gram211:
+      <<: *O3
+      header: Quebec City (71.20W,46.80N)
+      tag: Quebec City
+      lat:  46.8
+      lon:  288.8
+
+    o3_gram212:
+      <<: *O3
+      header: Toronto (79.38W,43.65N)
+      tag: Toronto
+      lat:  43.6532
+      lon:  280.6168
+
+    o3_gram213:
+      <<: *O3
+      header: Montreal (73.57W,45.50N)
+      tag: Montreal
+      lat:  45.5017
+      lon:  286.4327
+
+    o3_gram214:
+      <<: *O3
+      header: Vancouver (123.12W,49.28N)
+      tag: Vancouver
+      lat:  49.2827
+      lon:  236.8793
+
+    o3_gram215:
+      <<: *O3
+      header: McCall_MPL (116.09W,44.93N)
+      tag: McCall_MPL
+      lat:  44.9267
+      lon:  243.9109
+
+    o3_gram216:
+      <<: *O3
+      header: Eugene (123.09W,44.05N)
+      tag: Eugene
+      lat:  44.052071
+      lon:  236.913246
+
+    o3_gram217:
+      <<: *O3
+      header: Bend (121.32W,44.06N)
+      tag: Bend
+      lat:  44.058174
+      lon:  238.684692
+
+    o3_gram218:
+      <<: *O3
+      header: Malheur_NWR (118.84W,43.27N)
+      tag: Malheur_NWR
+      lat:  43.265587
+      lon:  241.155925
+
+    o3_gram219:
+      <<: *O3
+      header: LaGrande (118.09W,45.32N)
+      tag: LaGrande
+      lat:  45.324607
+      lon:  241.91213
+
+    o3_gram220:
+      <<: *O3
+      header: Winnemucca (117.74W,40.97N)
+      tag: Winnemucca
+      lat:  40.972958
+      lon:  242.264313
+
+    o3_gram221:
+      <<: *O3
+      header: Elko (115.76W,40.84N)
+      tag: Elko
+      lat:  40.835732
+      lon:  244.24054
+
+    o3_gram222:
+      <<: *O3
+      header: Redding (122.38W,40.57N)
+      tag: Redding
+      lat:  40.574638
+      lon:  237.618912
+
+    o3_gram223:
+      <<: *O3
+      header: Yreka (122.64W,41.73N)
+      tag: Yreka
+      lat:  41.731579
+      lon:  237.364349
+
+    o3_gram224:
+      <<: *O3
+      header: Chico (121.84W,39.73N)
+      tag: Chico
+      lat:  39.728493
+      lon:  238.162521
+
+    o3_gram225:
+      <<: *O3
+      header: MosesLake (119.28W,47.13N)
+      tag: MosesLake
+      lat:  47.131649
+      lon:  240.722237
+
+    o3_gram226:
+      <<: *O3
+      header: GreatFalls (111.29W,47.50N)
+      tag: GreatFalls
+      lat:  47.504887
+      lon:  248.708107
+
+    o3_gram227:
+      <<: *O3
+      header: MilesCity (105.84W,46.41N)
+      tag: MilesCity
+      lat:  46.408527
+      lon:  254.159019
+
+    o3_gram228:
+      <<: *O3
+      header: TwinFalls (114.46W,42.56N)
+      tag: TwinFalls
+      lat:  42.563179
+      lon:  245.539719
+
+    o3_gram229:
+      <<: *O3
+      header: Casper (106.33W,42.85N)
+      tag: Casper
+      lat:  42.850079
+      lon:  253.674828
+
+    o3_gram230:
+      <<: *O3
+      header: RockSprings (109.22W,41.59N)
+      tag: RockSprings
+      lat:  41.590481
+      lon:  250.776627
+
+    o3_gram231:
+      <<: *O3
+      header: St George (113.58W,37.11N)
+      tag: St George
+      lat:  37.10828
+      lon:  246.416718
+
+    o3_gram232:
+      <<: *O3
+      header: Regina (104.62W,50.45N)
+      tag: Regina
+      lat:  50.451191
+      lon:  255.383377
+
+    so2_gram000: &SO2
+      long_name: 'so2'
+      header: Ames_AERO (93.77W,42.02N)
+      tag: Ames_AERO
+      xlabel: ''
+      levels: [0]
+      layers: [so2]
+      title: 'SO2'
+      parea:  1 10 1 7.5
+      lev:  1000 100
+      lat:  42.0213623047
+      lon:  266.225219727
+      time: '$tbeg $t5day'
+      ylab: 'Pressure (mb)'
+      shape: 'off'
+
+    so2_gram001:
+      <<: *SO2
+      header: Appalachian_State_AERO (81.69W,36.21N)
+      tag: Appalachian_State_AERO
+      lat:  36.2145996094
+      lon:  278.30619812
+
+    so2_gram002:
+      <<: *SO2
+      header: ARM_Oliktok_AK_AERO (149.88W,70.50N)
+      tag: ARM_Oliktok_AK_AERO
+      lat:  70.49949646
+      lon:  210.119995117
+
+    so2_gram003:
+      <<: *SO2
+      header: ARM_SGP_AERO (97.49W,36.61N)
+      tag: ARM_SGP_AERO
+      lat:  36.6051750183
+      lon:  262.514381409
+
+    so2_gram004:
+      <<: *SO2
+      header: Bakersfield_AERO (119.00W,35.33N)
+      tag: Bakersfield_AERO
+      lat:  35.3315048218
+      lon:  240.999992371
+
+    so2_gram005:
+      <<: *SO2
+      header: Barrow_AERO (156.80W,71.30N)
+      tag: Barrow_AERO
+      lat:  71.3
+      lon:  203.2
+
+    so2_gram006:
+      <<: *SO2
+      header: Billerica_AERO (71.27W,42.53N)
+      tag: Billerica_AERO
+      lat:  42.5283470154
+      lon:  288.731384277
+
+    so2_gram007:
+      <<: *SO2
+      header: Bonanza_Creek_AERO (148.32W,64.74N)
+      tag: Bonanza_Creek_AERO
+      lat:  64.742805481
+      lon:  211.683731079
+
+    so2_gram008:
+      <<: *SO2
+      header: BONDVILLE_AERO (88.37W,40.05N)
+      tag: BONDVILLE_AERO
+      lat:  40.0533332825
+      lon:  271.628059387
+
+    so2_gram009:
+      <<: *SO2
+      header: Bozeman_AERO (111.05W,45.66N)
+      tag: Bozeman_AERO
+      lat:  45.6622047424
+      lon:  248.954986572
+
+    so2_gram010:
+      <<: *SO2
+      header: Brookhaven_AERO (72.88W,40.87N)
+      tag: Brookhaven_AERO
+      lat:  40.8660011292
+      lon:  287.11530304
+
+    so2_gram011:
+      <<: *SO2
+      header: CalTech_AERO (118.13W,34.14N)
+      tag: CalTech_AERO
+      lat:  34.1367301941
+      lon:  241.873832703
+
+    so2_gram012:
+      <<: *SO2
+      header: Cape_San_Juan_AERO (65.62W,18.38N)
+      tag: Cape_San_Juan_AERO
+      lat:  18.3845005035
+      lon:  294.380096435
+
+    so2_gram013:
+      <<: *SO2
+      header: CARTEL_AERO (71.93W,45.38N)
+      tag: CARTEL_AERO
+      lat:  45.3797531128
+      lon:  288.06867218
+
+    so2_gram014:
+      <<: *SO2
+      header: Chapais_AERO (74.98W,49.82N)
+      tag: Chapais_AERO
+      lat:  49.8224334717
+      lon:  285.024597168
+
+    so2_gram015:
+      <<: *SO2
+      header: Churchill_AERO (93.82W,58.74N)
+      tag: Churchill_AERO
+      lat:  58.736000061
+      lon:  266.18183136
+
+    so2_gram016:
+      <<: *SO2
+      header: Cold_Lake_AERO (110.28W,54.42N)
+      tag: Cold_Lake_AERO
+      lat:  54.4169998169
+      lon:  249.717002869
+
+    so2_gram017:
+      <<: *SO2
+      header: Dayton_AERO (84.11W,39.78N)
+      tag: Dayton_AERO
+      lat:  39.7759780884
+      lon:  275.890380859
+
+    so2_gram018:
+      <<: *SO2
+      header: Denver_LaCasa_AERO (105.01W,39.78N)
+      tag: Denver_LaCasa_AERO
+      lat:  39.7794914246
+      lon:  254.994819641
+
+    so2_gram019:
+      <<: *SO2
+      header: DigitalGlobe_Cal_AERO (105.14W,40.14N)
+      tag: DigitalGlobe_Cal_AERO
+      lat:  40.1388893127
+      lon:  254.86277771
+
+    so2_gram020:
+      <<: *SO2
+      header: EastMalling_MO_AERO (0.44E,51.29N)
+      tag: EastMalling_MO_AERO
+      lat:  51.2900009155
+      lon:  0.439999997616
+
+    so2_gram021:
+      <<: *SO2
+      header: Easton-MDE_AERO (76.08W,38.79N)
+      tag: Easton-MDE_AERO
+      lat:  38.7949714661
+      lon:  283.915748596
+
+    so2_gram022:
+      <<: *SO2
+      header: Egbert_AERO (79.78W,44.23N)
+      tag: Egbert_AERO
+      lat:  44.2315444946
+      lon:  280.218589783
+
+    so2_gram023:
+      <<: *SO2
+      header: EPA-Res_Triangle_Pk_AERO (78.87W,35.88N)
+      tag: EPA-Res_Triangle_Pk_AERO
+      lat:  35.8800010681
+      lon:  281.129997253
+
+    so2_gram024:
+      <<: *SO2
+      header: Fort_McMurray_AERO (111.48W,56.75N)
+      tag: Fort_McMurray_AERO
+      lat:  56.7523078918
+      lon:  248.523864746
+
+    so2_gram025:
+      <<: *SO2
+      header: Fresno_2_AERO (119.77W,36.79N)
+      tag: Fresno_2_AERO
+      lat:  36.785369873
+      lon:  240.226982117
+
+    so2_gram026:
+      <<: *SO2
+      header: Georgia_Tech_AERO (84.40W,33.78N)
+      tag: Georgia_Tech_AERO
+      lat:  33.7802009583
+      lon:  275.600463867
+
+    so2_gram027:
+      <<: *SO2
+      header: Goldstone_AERO (116.79W,35.23N)
+      tag: Goldstone_AERO
+      lat:  35.2333335876
+      lon:  243.208335876
+
+    so2_gram028:
+      <<: *SO2
+      header: Grand_Forks_AERO (97.33W,47.91N)
+      tag: Grand_Forks_AERO
+      lat:  47.9117507935
+      lon:  262.674552918
+
+    so2_gram029:
+      <<: *SO2
+      header: Granite_Island_AERO (87.41W,46.72N)
+      tag: Granite_Island_AERO
+      lat:  46.7207984924
+      lon:  272.587997437
+
+    so2_gram030:
+      <<: *SO2
+      header: GSFC_AERO (76.84W,38.99N)
+      tag: GSFC_AERO
+      lat:  38.9925003052
+      lon:  283.160163879
+
+    so2_gram031:
+      <<: *SO2
+      header: Halifax_AERO (63.59W,44.64N)
+      tag: Halifax_AERO
+      lat:  44.6380004883
+      lon:  296.40599823
+
+    so2_gram032:
+      <<: *SO2
+      header: Hart_Miller_Island_AERO (76.36W,39.24N)
+      tag: Hart_Miller_Island_AERO
+      lat:  39.2419013977
+      lon:  283.637199402
+
+    so2_gram033:
+      <<: *SO2
+      header: IMPROVE-MammothCave_AERO (86.15W,37.13N)
+      tag: IMPROVE-MammothCave_AERO
+      lat:  37.1318016052
+      lon:  273.852096558
+
+    so2_gram034:
+      <<: *SO2
+      header: Kangerlussuaq_AERO (50.62W,67.00N)
+      tag: Kangerlussuaq_AERO
+      lat:  66.9957962036
+      lon:  309.378601074
+
+    so2_gram035:
+      <<: *SO2
+      header: Kellogg_LTER_AERO (85.37W,42.41N)
+      tag: Kellogg_LTER_AERO
+      lat:  42.4079818726
+      lon:  274.62828064
+
+    so2_gram036:
+      <<: *SO2
+      header: Kelowna_UAS_AERO (119.40W,49.94N)
+      tag: Kelowna_UAS_AERO
+      lat:  49.9412956238
+      lon:  240.599891663
+
+    so2_gram037:
+      <<: *SO2
+      header: Key_Biscayne_AERO (80.16W,25.73N)
+      tag: Key_Biscayne_AERO
+      lat:  25.7319660187
+      lon:  279.836669922
+
+    so2_gram038:
+      <<: *SO2
+      header: Kluane_Lake_AERO (138.41W,61.03N)
+      tag: Kluane_Lake_AERO
+      lat:  61.0270004272
+      lon:  221.589996338
+
+    so2_gram039:
+      <<: *SO2
+      header: La_Parguera_AERO (67.05W,17.97N)
+      tag: La_Parguera_AERO
+      lat:  17.9704494476
+      lon:  292.954620361
+
+    so2_gram040:
+      <<: *SO2
+      header: LISCO_AERO (73.34W,40.95N)
+      tag: LISCO_AERO
+      lat:  40.9545173645
+      lon:  286.658233643
+
+    so2_gram041:
+      <<: *SO2
+      header: Mauna_Loa_AERO (155.58W,19.54N)
+      tag: Mauna_Loa_AERO
+      lat:  19.5360069275
+      lon:  204.423248291
+
+    so2_gram042:
+      <<: *SO2
+      header: MD_Science_Center_AERO (76.61W,39.28N)
+      tag: MD_Science_Center_AERO
+      lat:  39.2812309265
+      lon:  283.387947082
+
+    so2_gram043:
+      <<: *SO2
+      header: Mingo_AERO (90.14W,36.97N)
+      tag: Mingo_AERO
+      lat:  36.971698761
+      lon:  269.856796265
+
+    so2_gram044:
+      <<: *SO2
+      header: Missoula_AERO (114.08W,46.92N)
+      tag: Missoula_AERO
+      lat:  46.9166679382
+      lon:  245.916664124
+
+    so2_gram045:
+      <<: *SO2
+      header: Modesto_AERO (120.99W,37.64N)
+      tag: Modesto_AERO
+      lat:  37.6421699524
+      lon:  239.005783081
+
+    so2_gram046:
+      <<: *SO2
+      header: Monterey_AERO (121.80W,36.60N)
+      tag: Monterey_AERO
+      lat:  36.6
+      lon:  238.2
+
+    so2_gram047:
+      <<: *SO2
+      header: MVCO_AERO (70.57W,41.33N)
+      tag: MVCO_AERO
+      lat:  41.3250007629
+      lon:  289.433296204
+
+    so2_gram048:
+      <<: *SO2
+      header: Narsarsuaq_AERO (45.42W,61.16N)
+      tag: Narsarsuaq_AERO
+      lat:  61.1559524536
+      lon:  314.580619812
+
+    so2_gram049:
+      <<: *SO2
+      header: NASA_KSC_AERO (80.66W,28.46N)
+      tag: NASA_KSC_AERO
+      lat:  28.4637622833
+      lon:  279.336524963
+
+    so2_gram050:
+      <<: *SO2
+      header: NASA_LaRC_AERO (76.38W,37.10N)
+      tag: NASA_LaRC_AERO
+      lat:  37.1049613953
+      lon:  283.621360779
+
+    so2_gram051:
+      <<: *SO2
+      header: NEON_Bartlett_AERO (71.29W,44.06N)
+      tag: NEON_Bartlett_AERO
+      lat:  44.0638809204
+      lon:  288.712799072
+
+    so2_gram052:
+      <<: *SO2
+      header: NEON_CLBJ_AERO (97.57W,33.40N)
+      tag: NEON_CLBJ_AERO
+      lat:  33.4012298584
+      lon:  262.430000305
+
+    so2_gram053:
+      <<: *SO2
+      header: NEON-CPER_AERO (104.74W,40.81N)
+      tag: NEON-CPER_AERO
+      lat:  40.8124427795
+      lon:  255.255760193
+
+    so2_gram054:
+      <<: *SO2
+      header: NEON_CVALLA_AERO (105.17W,40.16N)
+      tag: NEON_CVALLA_AERO
+      lat:  40.1606292725
+      lon:  254.832748413
+
+    so2_gram055:
+      <<: *SO2
+      header: NEON_DEJU_AERO (145.75W,63.88N)
+      tag: NEON_DEJU_AERO
+      lat:  63.8811187744
+      lon:  214.248641968
+
+    so2_gram056:
+      <<: *SO2
+      header: NEON-Disney_AERO (81.44W,28.13N)
+      tag: NEON-Disney_AERO
+      lat:  28.125038147
+      lon:  278.563796997
+
+    so2_gram057:
+      <<: *SO2
+      header: NEON_GRSM_AERO (83.50W,35.69N)
+      tag: NEON_GRSM_AERO
+      lat:  35.6889610291
+      lon:  276.498046875
+
+    so2_gram058:
+      <<: *SO2
+      header: NEON_GUAN_AERO (66.87W,17.97N)
+      tag: NEON_GUAN_AERO
+      lat:  17.9695491791
+      lon:  293.13130188
+
+    so2_gram059:
+      <<: *SO2
+      header: NEON_Harvard_AERO (72.17W,42.54N)
+      tag: NEON_Harvard_AERO
+      lat:  42.5368995667
+      lon:  287.827339172
+
+    so2_gram060:
+      <<: *SO2
+      header: NEON_HEAL_AERO (149.21W,63.88N)
+      tag: NEON_HEAL_AERO
+      lat:  63.8756904602
+      lon:  210.78666687
+
+    so2_gram061:
+      <<: *SO2
+      header: NEON_MLBS_AERO (80.52W,37.38N)
+      tag: NEON_MLBS_AERO
+      lat:  37.3783073425
+      lon:  279.475166321
+
+    so2_gram062:
+      <<: *SO2
+      header: NEON_MOAB_AERO (109.39W,38.25N)
+      tag: NEON_MOAB_AERO
+      lat:  38.2483291626
+      lon:  250.611732483
+
+    so2_gram063:
+      <<: *SO2
+      header: NEON_NOGP_AERO (100.92W,46.77N)
+      tag: NEON_NOGP_AERO
+      lat:  46.7697181702
+      lon:  259.084648132
+
+    so2_gram064:
+      <<: *SO2
+      header: NEON_OAES_AERO (99.06W,35.41N)
+      tag: NEON_OAES_AERO
+      lat:  35.4105911255
+      lon:  260.941207886
+
+    so2_gram065:
+      <<: *SO2
+      header: NEON_ONAQ_AERO (112.45W,40.18N)
+      tag: NEON_ONAQ_AERO
+      lat:  40.1775894165
+      lon:  247.547561646
+
+    so2_gram066:
+      <<: *SO2
+      header: NEON_ORNL_AERO (84.28W,35.96N)
+      tag: NEON_ORNL_AERO
+      lat:  35.9641265869
+      lon:  275.717414856
+
+    so2_gram067:
+      <<: *SO2
+      header: NEON_OSBS_AERO (81.99W,29.69N)
+      tag: NEON_OSBS_AERO
+      lat:  29.6892681122
+      lon:  278.006568909
+
+    so2_gram068:
+      <<: *SO2
+      header: NEON_RMNP_AERO (105.55W,40.28N)
+      tag: NEON_RMNP_AERO
+      lat:  40.2759017944
+      lon:  254.454025269
+
+    so2_gram069:
+      <<: *SO2
+      header: NEON_SCBI_AERO (78.14W,38.89N)
+      tag: NEON_SCBI_AERO
+      lat:  38.8929176331
+      lon:  281.860496521
+
+    so2_gram070:
+      <<: *SO2
+      header: NEON_SERC_AERO (76.56W,38.89N)
+      tag: NEON_SERC_AERO
+      lat:  38.8901176453
+      lon:  283.439979553
+
+    so2_gram071:
+      <<: *SO2
+      header: NEON_SRER_AERO (110.84W,31.91N)
+      tag: NEON_SRER_AERO
+      lat:  31.9106807709
+      lon:  249.164512634
+
+    so2_gram072:
+      <<: *SO2
+      header: NEON_Sterling_AERO (103.03W,40.46N)
+      tag: NEON_Sterling_AERO
+      lat:  40.4619026184
+      lon:  256.970703125
+
+    so2_gram073:
+      <<: *SO2
+      header: NEON_TALL_AERO (87.39W,32.95N)
+      tag: NEON_TALL_AERO
+      lat:  32.9504623413
+      lon:  272.6067276
+
+    so2_gram074:
+      <<: *SO2
+      header: NEON_TEAK_AERO (119.01W,37.01N)
+      tag: NEON_TEAK_AERO
+      lat:  37.0058326721
+      lon:  240.993980408
+
+    so2_gram075:
+      <<: *SO2
+      header: NEON_TOOL_AERO (149.37W,68.66N)
+      tag: NEON_TOOL_AERO
+      lat:  68.6610870361
+      lon:  210.62953186
+
+    so2_gram076:
+      <<: *SO2
+      header: NEON_UKFS_AERO (95.19W,39.04N)
+      tag: NEON_UKFS_AERO
+      lat:  39.0404319763
+      lon:  264.807853699
+
+    so2_gram077:
+      <<: *SO2
+      header: NEON_UNDE_AERO (89.54W,46.23N)
+      tag: NEON_UNDE_AERO
+      lat:  46.2338829041
+      lon:  270.462753296
+
+    so2_gram078:
+      <<: *SO2
+      header: NEON_WOOD_AERO (99.24W,47.13N)
+      tag: NEON_WOOD_AERO
+      lat:  47.1282272339
+      lon:  260.758644104
+
+    so2_gram079:
+      <<: *SO2
+      header: NEON_WREF_AERO (121.95W,45.82N)
+      tag: NEON_WREF_AERO
+      lat:  45.82
+      lon:  238.048
+
+    so2_gram080:
+      <<: *SO2
+      header: ORS_Hermosillo_AERO (111.15W,29.03N)
+      tag: ORS_Hermosillo_AERO
+      lat:  29.0275001526
+      lon:  248.854446411
+
+    so2_gram081:
+      <<: *SO2
+      header: Pickle_Lake_AERO (90.22W,51.45N)
+      tag: Pickle_Lake_AERO
+      lat:  51.4494438171
+      lon:  269.782501221
+
+    so2_gram082:
+      <<: *SO2
+      header: Ragged_Point_AERO (59.43W,13.17N)
+      tag: Ragged_Point_AERO
+      lat:  13.1650180817
+      lon:  300.567966461
+
+    so2_gram083:
+      <<: *SO2
+      header: Railroad_Valley_AERO (116.00W,38.50N)
+      tag: Railroad_Valley_AERO
+      lat:  38.5
+      lon:  244.0
+
+    so2_gram084:
+      <<: *SO2
+      header: Red_Mountain_Pass_AERO (107.71W,37.91N)
+      tag: Red_Mountain_Pass_AERO
+      lat:  37.9074478149
+      lon:  252.289085388
+
+    so2_gram085:
+      <<: *SO2
+      header: Resolute_Bay_AERO (94.97W,74.71N)
+      tag: Resolute_Bay_AERO
+      lat:  74.7051239014
+      lon:  265.030593872
+
+    so2_gram086:
+      <<: *SO2
+      header: Rexburg_Idaho_AERO (111.78W,43.82N)
+      tag: Rexburg_Idaho_AERO
+      lat:  43.820110321
+      lon:  248.21698761
+
+    so2_gram087:
+      <<: *SO2
+      header: Rimrock_AERO (116.99W,46.49N)
+      tag: Rimrock_AERO
+      lat:  46.4874992371
+      lon:  243.008331299
+
+    so2_gram088:
+      <<: *SO2
+      header: Sandia_NM_PSEL_AERO (106.54W,35.05N)
+      tag: Sandia_NM_PSEL_AERO
+      lat:  35.0545845032
+      lon:  253.45993042
+
+    so2_gram089:
+      <<: *SO2
+      header: Saturn_Island_AERO (76.84W,38.99N)
+      tag: Saturn_Island_AERO
+      lat:  38.992
+      lon:  283.16
+
+    so2_gram090:
+      <<: *SO2
+      header: Santa_Monica_Colg_AERO (118.47W,34.02N)
+      tag: Santa_Monica_Colg_AERO
+      lat:  34.0168495178
+      lon:  241.528869629
+
+    so2_gram091:
+      <<: *SO2
+      header: SDSU_IPLab_AERO (96.79W,44.31N)
+      tag: SDSU_IPLab_AERO
+      lat:  44.3148269653
+      lon:  263.213928223
+
+    so2_gram092:
+      <<: *SO2
+      header: Sevilleta_AERO (106.90W,34.30N)
+      tag: Sevilleta_AERO
+      lat:  34.3
+      lon:  253.1
+
+    so2_gram093:
+      <<: *SO2
+      header: Sigma_Space_Corp_AERO (76.84W,38.95N)
+      tag: Sigma_Space_Corp_AERO
+      lat:  38.952999115
+      lon:  283.163528442
+
+    so2_gram094:
+      <<: *SO2
+      header: Sioux_Falls_AERO (96.63W,43.74N)
+      tag: Sioux_Falls_AERO
+      lat:  43.7364807129
+      lon:  263.374008179
+
+    so2_gram095:
+      <<: *SO2
+      header: SP_Bayboro_AERO (82.63W,27.76N)
+      tag: SP_Bayboro_AERO
+      lat:  27.7615509033
+      lon:  277.366996765
+
+    so2_gram096:
+      <<: *SO2
+      header: TABLE_MOUNTAIN_CA_AERO (117.68W,34.38N)
+      tag: TABLE_MOUNTAIN_CA_AERO
+      lat:  34.3800010681
+      lon:  242.319999695
+
+    so2_gram097:
+      <<: *SO2
+      header: Tallahassee_AERO (84.30W,30.45N)
+      tag: Tallahassee_AERO
+      lat:  30.4458332062
+      lon:  275.700653076
+
+    so2_gram098:
+      <<: *SO2
+      header: Taylor_Ranch_TWRS_AERO (114.85W,45.10N)
+      tag: Taylor_Ranch_TWRS_AERO
+      lat:  45.1035003662
+      lon:  245.150047302
+
+    so2_gram099:
+      <<: *SO2
+      header: Thompson_Farm_AERO (70.95W,43.11N)
+      tag: Thompson_Farm_AERO
+      lat:  43.1087722778
+      lon:  289.05165863
+
+    so2_gram100:
+      <<: *SO2
+      header: Thule_AERO (68.77W,76.52N)
+      tag: Thule_AERO
+      lat:  76.5161056519
+      lon:  291.231002808
+
+    so2_gram101:
+      <<: *SO2
+      header: Toronto_AERO (79.40W,43.60N)
+      tag: Toronto_AERO
+      lat:  43.6
+      lon:  280.6
+
+    so2_gram102:
+      <<: *SO2
+      header: Tucson_AERO (111.00W,32.10N)
+      tag: Tucson_AERO
+      lat:  32.1
+      lon:  249.0
+
+    so2_gram103:
+      <<: *SO2
+      header: Tudor_Hill_AERO (64.88W,32.26N)
+      tag: Tudor_Hill_AERO
+      lat:  32.263999939
+      lon:  295.121002197
+
+    so2_gram104:
+      <<: *SO2
+      header: UAHuntsville_AERO (86.64W,34.73N)
+      tag: UAHuntsville_AERO
+      lat:  34.7253303528
+      lon:  273.355270386
+
+    so2_gram105:
+      <<: *SO2
+      header: UCSB_AERO (119.85W,34.42N)
+      tag: UCSB_AERO
+      lat:  34.4154281616
+      lon:  240.154640198
+
+    so2_gram106:
+      <<: *SO2
+      header: UMBC_AERO (76.71W,39.25N)
+      tag: UMBC_AERO
+      lat:  39.2546272278
+      lon:  283.290649414
+
+    so2_gram107:
+      <<: *SO2
+      header: Univ_of_Houston_AERO (95.34W,29.72N)
+      tag: Univ_of_Houston_AERO
+      lat:  29.7176990509
+      lon:  264.658401489
+
+    so2_gram108:
+      <<: *SO2
+      header: Univ_of_Lethbridge_AERO (112.87W,49.68N)
+      tag: Univ_of_Lethbridge_AERO
+      lat:  49.6816711426
+      lon:  247.131034851
+
+    so2_gram109:
+      <<: *SO2
+      header: USC_SEAPRISM_AERO (118.12W,33.56N)
+      tag: USC_SEAPRISM_AERO
+      lat:  33.563709259
+      lon:  241.88217926
+
+    so2_gram110:
+      <<: *SO2
+      header: USGS_Flagstaff_ROLO_AERO (111.63W,35.21N)
+      tag: USGS_Flagstaff_ROLO_AERO
+      lat:  35.2148399353
+      lon:  248.365577698
+
+    so2_gram111:
+      <<: *SO2
+      header: Wallops_AERO (75.47W,37.93N)
+      tag: Wallops_AERO
+      lat:  37.932849884
+      lon:  284.528053284
+
+    so2_gram112:
+      <<: *SO2
+      header: WaveCIS_Site_CSI_6_AERO (90.48W,28.87N)
+      tag: WaveCIS_Site_CSI_6_AERO
+      lat:  28.8666667938
+      lon:  269.516670227
+
+    so2_gram113:
+      <<: *SO2
+      header: White_Sands_HELSTF_AERO (106.34W,32.63N)
+      tag: White_Sands_HELSTF_AERO
+      lat:  32.6349411011
+      lon:  253.66192627
+
+    so2_gram114:
+      <<: *SO2
+      header: Yale_Coastal_AERO (72.73W,41.26N)
+      tag: Yale_Coastal_AERO
+      lat:  41.2583007812
+      lon:  287.268798828
+
+    so2_gram115:
+      <<: *SO2
+      header: Yellowknife_Aurora_AERO (114.38W,62.45N)
+      tag: Yellowknife_Aurora_AERO
+      lat:  62.4513015747
+      lon:  245.623748779
+
+    so2_gram116:
+      <<: *SO2
+      header: Yuma_AERO (114.58W,32.64N)
+      tag: Yuma_AERO
+      lat:  32.6441383362
+      lon:  245.417221069
+
+    so2_gram117:
+      <<: *SO2
+      header: U_of_Wisconsin_SSEC_AERO (89.40W,43.10N)
+      tag: U_of_Wisconsin_SSEC_AERO
+      lat:  43.1
+      lon:  270.6
+
+    so2_gram118:
+      <<: *SO2
+      header: AMOLITE_AERO (111.60W,57.20N)
+      tag: AMOLITE_AERO
+      lat:  57.2
+      lon:  248.4
+
+    so2_gram119:
+      <<: *SO2
+      header: RO3QET (86.64W,34.73N)
+      tag: RO3QET
+      lat:  34.725
+      lon:  273.355
+
+    so2_gram120:
+      <<: *SO2
+      header: TMF (117.68W,34.38N)
+      tag: TMF
+      lat:  34.38
+      lon:  242.32
+
+    so2_gram121:
+      <<: *SO2
+      header: TROPOZ (76.84W,38.99N)
+      tag: TROPOZ
+      lat:  38.99
+      lon:  283.16
+
+    so2_gram122:
+      <<: *SO2
+      header: TOPAZ (105.26W,39.99N)
+      tag: TOPAZ
+      lat:  39.993
+      lon:  254.738
+
+    so2_gram123:
+      <<: *SO2
+      header: LMOL (76.38W,37.10N)
+      tag: LMOL
+      lat:  37.096
+      lon:  283.615
+
+    so2_gram124:
+      <<: *SO2
+      header: Anchorage (149.90W,61.20N)
+      tag: Anchorage
+      lat:  61.2
+      lon:  210.1
+
+    so2_gram125:
+      <<: *SO2
+      header: Atlanta (84.40W,33.70N)
+      tag: Atlanta
+      lat:  33.7
+      lon:  275.6
+
+    so2_gram126:
+      <<: *SO2
+      header: Beltsville (76.90W,39.10N)
+      tag: Beltsville
+      lat:  39.1
+      lon:  283.1
+
+    so2_gram127:
+      <<: *SO2
+      header: Bismarck (100.80W,46.80N)
+      tag: Bismarck
+      lat:  46.8
+      lon:  259.2
+
+    so2_gram128:
+      <<: *SO2
+      header: Boise (116.20W,43.60N)
+      tag: Boise
+      lat:  43.6
+      lon:  243.8
+
+    so2_gram129:
+      <<: *SO2
+      header: Boston (71.00W,42.30N)
+      tag: Boston
+      lat:  42.3
+      lon:  289.0
+
+    so2_gram130:
+      <<: *SO2
+      header: Buffalo (78.80W,42.90N)
+      tag: Buffalo
+      lat:  42.9
+      lon:  281.2
+
+    so2_gram131:
+      <<: *SO2
+      header: Conroe (95.40W,30.30N)
+      tag: Conroe
+      lat:  30.3
+      lon:  264.6
+
+    so2_gram132:
+      <<: *SO2
+      header: Chicago (87.60W,41.90N)
+      tag: Chicago
+      lat:  41.9
+      lon:  272.4
+
+    so2_gram133:
+      <<: *SO2
+      header: Cincinnati (84.50W,39.10N)
+      tag: Cincinnati
+      lat:  39.1
+      lon:  275.5
+
+    so2_gram134:
+      <<: *SO2
+      header: Cleveland (81.70W,41.50N)
+      tag: Cleveland
+      lat:  41.5
+      lon:  278.3
+
+    so2_gram135:
+      <<: *SO2
+      header: Dallas (96.80W,32.70N)
+      tag: Dallas
+      lat:  32.7
+      lon:  263.2
+
+    so2_gram136:
+      <<: *SO2
+      header: Denver (105.00W,39.70N)
+      tag: Denver
+      lat:  39.7
+      lon:  255.0
+
+    so2_gram137:
+      <<: *SO2
+      header: Detroit (83.00W,42.30N)
+      tag: Detroit
+      lat:  42.3
+      lon:  277.0
+
+    so2_gram138:
+      <<: *SO2
+      header: Fairbanks (147.70W,64.80N)
+      tag: Fairbanks
+      lat:  64.8
+      lon:  212.3
+
+    so2_gram139:
+      <<: *SO2
+      header: Fairhill (75.90W,39.70N)
+      tag: Fairhill
+      lat:  39.7
+      lon:  284.1
+
+    so2_gram140:
+      <<: *SO2
+      header: Fargo (96.80W,46.90N)
+      tag: Fargo
+      lat:  46.9
+      lon:  263.2
+
+    so2_gram141:
+      <<: *SO2
+      header: Hartford (72.70W,41.70N)
+      tag: Hartford
+      lat:  41.7
+      lon:  287.3
+
+    so2_gram142:
+      <<: *SO2
+      header: Honolulu (157.80W,21.30N)
+      tag: Honolulu
+      lat:  21.3
+      lon:  202.2
+
+    so2_gram143:
+      <<: *SO2
+      header: Houston (95.40W,29.70N)
+      tag: Houston
+      lat:  29.7
+      lon:  264.6
+
+    so2_gram144:
+      <<: *SO2
+      header: Indianapolis (86.10W,39.70N)
+      tag: Indianapolis
+      lat:  39.7
+      lon:  273.9
+
+    so2_gram145:
+      <<: *SO2
+      header: Jacksonville (81.70W,30.30N)
+      tag: Jacksonville
+      lat:  30.3
+      lon:  278.3
+
+    so2_gram146:
+      <<: *SO2
+      header: Kansas_City (94.60W,39.10N)
+      tag: Kansas_City
+      lat:  39.1
+      lon:  265.4
+
+    so2_gram147:
+      <<: *SO2
+      header: Las_Vegas (115.10W,36.20N)
+      tag: Las_Vegas
+      lat:  36.2
+      lon:  244.9
+
+    so2_gram148:
+      <<: *SO2
+      header: Little_Rock (92.30W,34.70N)
+      tag: Little_Rock
+      lat:  34.7
+      lon:  267.7
+
+    so2_gram149:
+      <<: *SO2
+      header: Louisville (85.70W,38.20N)
+      tag: Louisville
+      lat:  38.2
+      lon:  274.3
+
+    so2_gram150:
+      <<: *SO2
+      header: Los_Angeles (118.20W,34.00N)
+      tag: Los_Angeles
+      lat:  34.0
+      lon:  241.8
+
+    so2_gram151:
+      <<: *SO2
+      header: Memphis (90.00W,35.10N)
+      tag: Memphis
+      lat:  35.1
+      lon:  270.0
+
+    so2_gram152:
+      <<: *SO2
+      header: Miami (80.20W,25.80N)
+      tag: Miami
+      lat:  25.8
+      lon:  279.8
+
+    so2_gram153:
+      <<: *SO2
+      header: Milwaukee (88.00W,43.00N)
+      tag: Milwaukee
+      lat:  43.0
+      lon:  272.0
+
+    so2_gram154:
+      <<: *SO2
+      header: Minneapolis (93.20W,45.00N)
+      tag: Minneapolis
+      lat:  45.0
+      lon:  266.8
+
+    so2_gram155:
+      <<: *SO2
+      header: Nashville (86.80W,36.20N)
+      tag: Nashville
+      lat:  36.2
+      lon:  273.2
+
+    so2_gram156:
+      <<: *SO2
+      header: New_Orleans (90.10W,30.00N)
+      tag: New_Orleans
+      lat:  30.0
+      lon:  269.9
+
+    so2_gram157:
+      <<: *SO2
+      header: New_York (74.00W,40.30N)
+      tag: New_York
+      lat:  40.3
+      lon:  286.0
+
+    so2_gram158:
+      <<: *SO2
+      header: Oklahoma_City (97.50W,35.50N)
+      tag: Oklahoma_City
+      lat:  35.5
+      lon:  262.5
+
+    so2_gram159:
+      <<: *SO2
+      header: Omaha (96.00W,41.20N)
+      tag: Omaha
+      lat:  41.2
+      lon:  264.0
+
+    so2_gram160:
+      <<: *SO2
+      header: Orlando (81.30W,28.50N)
+      tag: Orlando
+      lat:  28.5
+      lon:  278.7
+
+    so2_gram161:
+      <<: *SO2
+      header: Philadelphia (75.20W,40.00N)
+      tag: Philadelphia
+      lat:  40.0
+      lon:  284.8
+
+    so2_gram162:
+      <<: *SO2
+      header: Phoenix (112.00W,33.50N)
+      tag: Phoenix
+      lat:  33.5
+      lon:  248.0
+
+    so2_gram163:
+      <<: *SO2
+      header: Pittsburgh (80.00W,40.50N)
+      tag: Pittsburgh
+      lat:  40.5
+      lon:  280.0
+
+    so2_gram164:
+      <<: *SO2
+      header: Portland OR (122.70W,45.50N)
+      tag: Portland OR
+      lat:  45.5
+      lon:  237.3
+
+    so2_gram165:
+      <<: *SO2
+      header: Raleigh (78.60W,35.80N)
+      tag: Raleigh
+      lat:  35.8
+      lon:  281.4
+
+    so2_gram166:
+      <<: *SO2
+      header: Richmond (77.50W,37.50N)
+      tag: Richmond
+      lat:  37.5
+      lon:  282.5
+
+    so2_gram167:
+      <<: *SO2
+      header: Salt_Lake_City (111.90W,40.70N)
+      tag: Salt_Lake_City
+      lat:  40.7
+      lon:  248.1
+
+    so2_gram168:
+      <<: *SO2
+      header: San_Diego (117.20W,32.70N)
+      tag: San_Diego
+      lat:  32.7
+      lon:  242.8
+
+    so2_gram169:
+      <<: *SO2
+      header: San_Francisco (122.40W,37.70N)
+      tag: San_Francisco
+      lat:  37.7
+      lon:  237.6
+
+    so2_gram170:
+      <<: *SO2
+      header: San_Joaquin_Valley (119.30E,35.30N)
+      tag: San_Joaquin_Valley
+      lat:  35.3
+      lon:  119.3
+
+    so2_gram171:
+      <<: *SO2
+      header: San_Juan PR (66.20W,18.50N)
+      tag: San_Juan PR
+      lat:  18.5
+      lon:  293.8
+
+    so2_gram172:
+      <<: *SO2
+      header: Seattle (122.30W,47.60N)
+      tag: Seattle
+      lat:  47.6
+      lon:  237.7
+
+    so2_gram173:
+      <<: *SO2
+      header: Smith_Point (94.80W,29.50N)
+      tag: Smith_Point
+      lat:  29.5
+      lon:  265.2
+
+    so2_gram174:
+      <<: *SO2
+      header: Spokane (117.50W,47.60N)
+      tag: Spokane
+      lat:  47.6
+      lon:  242.5
+
+    so2_gram175:
+      <<: *SO2
+      header: Tampa (82.50W,28.00N)
+      tag: Tampa
+      lat:  28.0
+      lon:  277.5
+
+    so2_gram176:
+      <<: *SO2
+      header: Washington_DC (77.00W,38.90N)
+      tag: Washington_DC
+      lat:  38.9
+      lon:  283.0
+
+    so2_gram177:
+      <<: *SO2
+      header: Wichita (97.20W,37.60N)
+      tag: Wichita
+      lat:  37.6
+      lon:  262.8
+
+    so2_gram178:
+      <<: *SO2
+      header: Armstrong_FRC (117.90W,34.90N)
+      tag: Armstrong_FRC
+      lat:  34.9
+      lon:  242.1
+
+    so2_gram179:
+      <<: *SO2
+      header: Aldino (76.20W,39.60N)
+      tag: Aldino
+      lat:  39.6
+      lon:  283.8
+
+    so2_gram180:
+      <<: *SO2
+      header: Fresno (119.80W,36.80N)
+      tag: Fresno
+      lat:  36.8
+      lon:  240.2
+
+    so2_gram181:
+      <<: *SO2
+      header: Dallas Ft_Worth (97.00W,32.90N)
+      tag: Dallas Ft_Worth
+      lat:  32.9
+      lon:  263.0
+
+    so2_gram182:
+      <<: *SO2
+      header: Sevilleta (106.90W,34.30N)
+      tag: Sevilleta
+      lat:  34.3
+      lon:  253.1
+
+    so2_gram183:
+      <<: *SO2
+      header: San_Antonio (98.50W,29.50N)
+      tag: San_Antonio
+      lat:  29.5
+      lon:  261.5
+
+    so2_gram184:
+      <<: *SO2
+      header: Corpus_Christi (97.50W,27.80N)
+      tag: Corpus_Christi
+      lat:  27.8
+      lon:  262.5
+
+    so2_gram185:
+      <<: *SO2
+      header: Tucson (111.00W,32.10N)
+      tag: Tucson
+      lat:  32.1
+      lon:  249.0
+
+    so2_gram186:
+      <<: *SO2
+      header: West_Houston (95.66W,29.80N)
+      tag: West_Houston
+      lat:  29.8
+      lon:  264.343
+
+    so2_gram187:
+      <<: *SO2
+      header: Essex (76.50W,39.30N)
+      tag: Essex
+      lat:  39.3
+      lon:  283.5
+
+    so2_gram188:
+      <<: *SO2
+      header: Croix_Rd Manvel (95.40W,29.50N)
+      tag: Croix_Rd Manvel
+      lat:  29.5
+      lon:  264.6
+
+    so2_gram189:
+      <<: *SO2
+      header: Deer_Park TX (95.10W,29.70N)
+      tag: Deer_Park TX
+      lat:  29.7
+      lon:  264.9
+
+    so2_gram190:
+      <<: *SO2
+      header: White_Sands NM (106.30E,32.60N)
+      tag: White_Sands NM
+      lat:  32.6
+      lon:  106.3
+
+    so2_gram191:
+      <<: *SO2
+      header: Lake_Charles (93.20W,30.10N)
+      tag: Lake_Charles
+      lat:  30.1
+      lon:  266.8
+
+    so2_gram192:
+      <<: *SO2
+      header: Shreveport (93.80W,32.40N)
+      tag: Shreveport
+      lat:  32.4
+      lon:  266.2
+
+    so2_gram193:
+      <<: *SO2
+      header: Channelview (95.10W,29.80N)
+      tag: Channelview
+      lat:  29.8
+      lon:  264.9
+
+    so2_gram194:
+      <<: *SO2
+      header: Austin (97.70W,30.20N)
+      tag: Austin
+      lat:  30.2
+      lon:  262.3
+
+    so2_gram195:
+      <<: *SO2
+      header: Monterey (121.80W,36.60N)
+      tag: Monterey
+      lat:  36.6
+      lon:  238.2
+
+    so2_gram196:
+      <<: *SO2
+      header: S_Cent OR (120.00E,43.00N)
+      tag: S_Cent OR
+      lat:  43.0
+      lon:  120.0
+
+    so2_gram197:
+      <<: *SO2
+      header: Padonia (76.60W,39.50N)
+      tag: Padonia
+      lat:  39.5
+      lon:  283.4
+
+    so2_gram198:
+      <<: *SO2
+      header: Caltech (118.10W,34.10N)
+      tag: Caltech
+      lat:  34.1
+      lon:  241.9
+
+    so2_gram199:
+      <<: *SO2
+      header: Edgewood MD (76.30W,39.40N)
+      tag: Edgewood MD
+      lat:  39.4
+      lon:  283.7
+
+    so2_gram200:
+      <<: *SO2
+      header: La_Parguera PR (67.00W,18.00N)
+      tag: La_Parguera PR
+      lat:  18.0
+      lon:  293.0
+
+    so2_gram201:
+      <<: *SO2
+      header: Railroad_Valley (116.00W,38.50N)
+      tag: Railroad_Valley
+      lat:  38.5
+      lon:  244.0
+
+    so2_gram202:
+      <<: *SO2
+      header: Moody_Tower (95.30W,29.70N)
+      tag: Moody_Tower
+      lat:  29.7
+      lon:  264.7
+
+    so2_gram203:
+      <<: *SO2
+      header: Cape_Cod (70.20W,41.10N)
+      tag: Cape_Cod
+      lat:  41.1
+      lon:  289.8
+
+    so2_gram204:
+      <<: *SO2
+      header: Wallops_Island VA (75.50W,37.80N)
+      tag: Wallops_Island VA
+      lat:  37.8
+      lon:  284.5
+
+    so2_gram205:
+      <<: *SO2
+      header: Galveston (94.80W,29.20N)
+      tag: Galveston
+      lat:  29.2
+      lon:  265.2
+
+    so2_gram206:
+      <<: *SO2
+      header: Frenchman_Flat NV (116.00W,36.80N)
+      tag: Frenchman_Flat NV
+      lat:  36.8
+      lon:  244.0
+
+    so2_gram207:
+      <<: *SO2
+      header: Calgary (114.10W,51.00N)
+      tag: Calgary
+      lat:  51.0
+      lon:  245.9
+
+    so2_gram208:
+      <<: *SO2
+      header: Edmonton (113.50W,53.50N)
+      tag: Edmonton
+      lat:  53.5
+      lon:  246.5
+
+    so2_gram209:
+      <<: *SO2
+      header: Ottawa (75.70W,45.40N)
+      tag: Ottawa
+      lat:  45.4
+      lon:  284.3
+
+    so2_gram210:
+      <<: *SO2
+      header: Winnipeg (97.10W,49.90N)
+      tag: Winnipeg
+      lat:  49.9
+      lon:  262.9
+
+    so2_gram211:
+      <<: *SO2
+      header: Quebec City (71.20W,46.80N)
+      tag: Quebec City
+      lat:  46.8
+      lon:  288.8
+
+    so2_gram212:
+      <<: *SO2
+      header: Toronto (79.38W,43.65N)
+      tag: Toronto
+      lat:  43.6532
+      lon:  280.6168
+
+    so2_gram213:
+      <<: *SO2
+      header: Montreal (73.57W,45.50N)
+      tag: Montreal
+      lat:  45.5017
+      lon:  286.4327
+
+    so2_gram214:
+      <<: *SO2
+      header: Vancouver (123.12W,49.28N)
+      tag: Vancouver
+      lat:  49.2827
+      lon:  236.8793
+
+    so2_gram215:
+      <<: *SO2
+      header: McCall_MPL (116.09W,44.93N)
+      tag: McCall_MPL
+      lat:  44.9267
+      lon:  243.9109
+
+    so2_gram216:
+      <<: *SO2
+      header: Eugene (123.09W,44.05N)
+      tag: Eugene
+      lat:  44.052071
+      lon:  236.913246
+
+    so2_gram217:
+      <<: *SO2
+      header: Bend (121.32W,44.06N)
+      tag: Bend
+      lat:  44.058174
+      lon:  238.684692
+
+    so2_gram218:
+      <<: *SO2
+      header: Malheur_NWR (118.84W,43.27N)
+      tag: Malheur_NWR
+      lat:  43.265587
+      lon:  241.155925
+
+    so2_gram219:
+      <<: *SO2
+      header: LaGrande (118.09W,45.32N)
+      tag: LaGrande
+      lat:  45.324607
+      lon:  241.91213
+
+    so2_gram220:
+      <<: *SO2
+      header: Winnemucca (117.74W,40.97N)
+      tag: Winnemucca
+      lat:  40.972958
+      lon:  242.264313
+
+    so2_gram221:
+      <<: *SO2
+      header: Elko (115.76W,40.84N)
+      tag: Elko
+      lat:  40.835732
+      lon:  244.24054
+
+    so2_gram222:
+      <<: *SO2
+      header: Redding (122.38W,40.57N)
+      tag: Redding
+      lat:  40.574638
+      lon:  237.618912
+
+    so2_gram223:
+      <<: *SO2
+      header: Yreka (122.64W,41.73N)
+      tag: Yreka
+      lat:  41.731579
+      lon:  237.364349
+
+    so2_gram224:
+      <<: *SO2
+      header: Chico (121.84W,39.73N)
+      tag: Chico
+      lat:  39.728493
+      lon:  238.162521
+
+    so2_gram225:
+      <<: *SO2
+      header: MosesLake (119.28W,47.13N)
+      tag: MosesLake
+      lat:  47.131649
+      lon:  240.722237
+
+    so2_gram226:
+      <<: *SO2
+      header: GreatFalls (111.29W,47.50N)
+      tag: GreatFalls
+      lat:  47.504887
+      lon:  248.708107
+
+    so2_gram227:
+      <<: *SO2
+      header: MilesCity (105.84W,46.41N)
+      tag: MilesCity
+      lat:  46.408527
+      lon:  254.159019
+
+    so2_gram228:
+      <<: *SO2
+      header: TwinFalls (114.46W,42.56N)
+      tag: TwinFalls
+      lat:  42.563179
+      lon:  245.539719
+
+    so2_gram229:
+      <<: *SO2
+      header: Casper (106.33W,42.85N)
+      tag: Casper
+      lat:  42.850079
+      lon:  253.674828
+
+    so2_gram230:
+      <<: *SO2
+      header: RockSprings (109.22W,41.59N)
+      tag: RockSprings
+      lat:  41.590481
+      lon:  250.776627
+
+    so2_gram231:
+      <<: *SO2
+      header: St George (113.58W,37.11N)
+      tag: St George
+      lat:  37.10828
+      lon:  246.416718
+
+    so2_gram232:
+      <<: *SO2
+      header: Regina (104.62W,50.45N)
+      tag: Regina
+      lat:  50.451191
+      lon:  255.383377
+

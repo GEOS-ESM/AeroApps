@@ -1,0 +1,7 @@
+config: [SThin2_CLDCLR]
+streams: [SThin2_CLDCLR]
+
+default:
+  field: wind
+  region: natl
+  level: '700'

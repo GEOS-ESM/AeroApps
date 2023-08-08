@@ -1,0 +1,233 @@
+  - -93.7747802734 42.0213623047 Ames AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_42.0213623047_-93.7747802734.png
+  - 266.225219727 42.0213623047 Ames AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_42.0213623047_-93.7747802734.png
+  - -81.6938018799 36.2145996094 Appalachian State AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_36.2145996094_-81.6938018799.png
+  - 278.30619812 36.2145996094 Appalachian State AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_36.2145996094_-81.6938018799.png
+  - -149.880004883 70.49949646 ARM Oliktok AK AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_70.49949646_-149.880004883.png
+  - 210.119995117 70.49949646 ARM Oliktok AK AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_70.49949646_-149.880004883.png
+  - -97.4856185913 36.6051750183 ARM SGP AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_36.6051750183_-97.4856185913.png
+  - 262.514381409 36.6051750183 ARM SGP AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_36.6051750183_-97.4856185913.png
+  - -119.000007629 35.3315048218 Bakersfield AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.3315048218_-119.000007629.png
+  - 240.999992371 35.3315048218 Bakersfield AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.3315048218_-119.000007629.png
+  - -156.8 71.3 Barrow AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_71.3_-156.8.png
+  - 203.2 71.3 Barrow AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_71.3_-156.8.png
+  - -71.2686157227 42.5283470154 Billerica AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_42.5283470154_-71.2686157227.png
+  - 288.731384277 42.5283470154 Billerica AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_42.5283470154_-71.2686157227.png
+  - -148.316268921 64.742805481 Bonanza Creek AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_64.742805481_-148.316268921.png
+  - 211.683731079 64.742805481 Bonanza Creek AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_64.742805481_-148.316268921.png
+  - -88.3719406128 40.0533332825 BONDVILLE AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.0533332825_-88.3719406128.png
+  - 271.628059387 40.0533332825 BONDVILLE AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.0533332825_-88.3719406128.png
+  - -111.045013428 45.6622047424 Bozeman AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_45.6622047424_-111.045013428.png
+  - 248.954986572 45.6622047424 Bozeman AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_45.6622047424_-111.045013428.png
+  - -72.8846969604 40.8660011292 Brookhaven AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.8660011292_-72.8846969604.png
+  - 287.11530304 40.8660011292 Brookhaven AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.8660011292_-72.8846969604.png
+  - -118.126167297 34.1367301941 CalTech AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_34.1367301941_-118.126167297.png
+  - 241.873832703 34.1367301941 CalTech AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_34.1367301941_-118.126167297.png
+  - -65.6199035645 18.3845005035 Cape San Juan AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_18.3845005035_-65.6199035645.png
+  - 294.380096435 18.3845005035 Cape San Juan AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_18.3845005035_-65.6199035645.png
+  - -71.9313278198 45.3797531128 CARTEL AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_45.3797531128_-71.9313278198.png
+  - 288.06867218 45.3797531128 CARTEL AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_45.3797531128_-71.9313278198.png
+  - -74.975402832 49.8224334717 Chapais AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_49.8224334717_-74.975402832.png
+  - 285.024597168 49.8224334717 Chapais AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_49.8224334717_-74.975402832.png
+  - -93.8181686401 58.736000061 Churchill AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_58.736000061_-93.8181686401.png
+  - 266.18183136 58.736000061 Churchill AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_58.736000061_-93.8181686401.png
+  - -110.282997131 54.4169998169 Cold Lake AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_54.4169998169_-110.282997131.png
+  - 249.717002869 54.4169998169 Cold Lake AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_54.4169998169_-110.282997131.png
+  - -84.1096191406 39.7759780884 Dayton AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_39.7759780884_-84.1096191406.png
+  - 275.890380859 39.7759780884 Dayton AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_39.7759780884_-84.1096191406.png
+  - -105.005180359 39.7794914246 Denver LaCasa AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_39.7794914246_-105.005180359.png
+  - 254.994819641 39.7794914246 Denver LaCasa AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_39.7794914246_-105.005180359.png
+  - -105.13722229 40.1388893127 DigitalGlobe Cal AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.1388893127_-105.13722229.png
+  - 254.86277771 40.1388893127 DigitalGlobe Cal AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.1388893127_-105.13722229.png
+  - 0.439999997616 51.2900009155 EastMalling MO AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_51.2900009155_0.439999997616.png
+  - -76.0842514038 38.7949714661 Easton-MDE AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.7949714661_-76.0842514038.png
+  - 283.915748596 38.7949714661 Easton-MDE AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.7949714661_-76.0842514038.png
+  - -79.7814102173 44.2315444946 Egbert AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_44.2315444946_-79.7814102173.png
+  - 280.218589783 44.2315444946 Egbert AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_44.2315444946_-79.7814102173.png
+  - -78.8700027466 35.8800010681 EPA-Res Triangle Pk AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.8800010681_-78.8700027466.png
+  - 281.129997253 35.8800010681 EPA-Res Triangle Pk AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.8800010681_-78.8700027466.png
+  - -111.476135254 56.7523078918 Fort McMurray AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_56.7523078918_-111.476135254.png
+  - 248.523864746 56.7523078918 Fort McMurray AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_56.7523078918_-111.476135254.png
+  - -119.773017883 36.785369873 Fresno 2 AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_36.785369873_-119.773017883.png
+  - 240.226982117 36.785369873 Fresno 2 AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_36.785369873_-119.773017883.png
+  - -84.3995361328 33.7802009583 Georgia Tech AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_33.7802009583_-84.3995361328.png
+  - 275.600463867 33.7802009583 Georgia Tech AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_33.7802009583_-84.3995361328.png
+  - -116.791664124 35.2333335876 Goldstone AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.2333335876_-116.791664124.png
+  - 243.208335876 35.2333335876 Goldstone AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.2333335876_-116.791664124.png
+  - -97.3254470825 47.9117507935 Grand Forks AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_47.9117507935_-97.3254470825.png
+  - 262.674552918 47.9117507935 Grand Forks AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_47.9117507935_-97.3254470825.png
+  - -87.4120025635 46.7207984924 Granite Island AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_46.7207984924_-87.4120025635.png
+  - 272.587997437 46.7207984924 Granite Island AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_46.7207984924_-87.4120025635.png
+  - -76.8398361206 38.9925003052 GSFC AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.9925003052_-76.8398361206.png
+  - 283.160163879 38.9925003052 GSFC AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.9925003052_-76.8398361206.png
+  - -63.59400177 44.6380004883 Halifax AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_44.6380004883_-63.59400177.png
+  - 296.40599823 44.6380004883 Halifax AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_44.6380004883_-63.59400177.png
+  - -76.3628005981 39.2419013977 Hart Miller Island AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_39.2419013977_-76.3628005981.png
+  - 283.637199402 39.2419013977 Hart Miller Island AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_39.2419013977_-76.3628005981.png
+  - -86.1479034424 37.1318016052 IMPROVE-MammothCave AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_37.1318016052_-86.1479034424.png
+  - 273.852096558 37.1318016052 IMPROVE-MammothCave AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_37.1318016052_-86.1479034424.png
+  - -50.6213989258 66.9957962036 Kangerlussuaq AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_66.9957962036_-50.6213989258.png
+  - 309.378601074 66.9957962036 Kangerlussuaq AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_66.9957962036_-50.6213989258.png
+  - -85.3717193604 42.4079818726 Kellogg LTER AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_42.4079818726_-85.3717193604.png
+  - 274.62828064 42.4079818726 Kellogg LTER AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_42.4079818726_-85.3717193604.png
+  - -119.400108337 49.9412956238 Kelowna UAS AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_49.9412956238_-119.400108337.png
+  - 240.599891663 49.9412956238 Kelowna UAS AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_49.9412956238_-119.400108337.png
+  - -80.1633300781 25.7319660187 Key Biscayne AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_25.7319660187_-80.1633300781.png
+  - 279.836669922 25.7319660187 Key Biscayne AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_25.7319660187_-80.1633300781.png
+  - -138.410003662 61.0270004272 Kluane Lake AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_61.0270004272_-138.410003662.png
+  - 221.589996338 61.0270004272 Kluane Lake AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_61.0270004272_-138.410003662.png
+  - -67.0453796387 17.9704494476 La Parguera AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_17.9704494476_-67.0453796387.png
+  - 292.954620361 17.9704494476 La Parguera AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_17.9704494476_-67.0453796387.png
+  - -73.3417663574 40.9545173645 LISCO AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.9545173645_-73.3417663574.png
+  - 286.658233643 40.9545173645 LISCO AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.9545173645_-73.3417663574.png
+  - -155.576751709 19.5360069275 Mauna Loa AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_19.5360069275_-155.576751709.png
+  - 204.423248291 19.5360069275 Mauna Loa AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_19.5360069275_-155.576751709.png
+  - -76.6120529175 39.2812309265 MD Science Center AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_39.2812309265_-76.6120529175.png
+  - 283.387947082 39.2812309265 MD Science Center AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_39.2812309265_-76.6120529175.png
+  - -90.1432037354 36.971698761 Mingo AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_36.971698761_-90.1432037354.png
+  - 269.856796265 36.971698761 Mingo AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_36.971698761_-90.1432037354.png
+  - -114.083335876 46.9166679382 Missoula AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_46.9166679382_-114.083335876.png
+  - 245.916664124 46.9166679382 Missoula AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_46.9166679382_-114.083335876.png
+  - -120.994216919 37.6421699524 Modesto AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_37.6421699524_-120.994216919.png
+  - 239.005783081 37.6421699524 Modesto AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_37.6421699524_-120.994216919.png
+  - -121.8 36.6 Monterey AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_36.6_-121.8.png
+  - 238.2 36.6 Monterey AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_36.6_-121.8.png
+  - -70.5667037964 41.3250007629 MVCO AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_41.3250007629_-70.5667037964.png
+  - 289.433296204 41.3250007629 MVCO AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_41.3250007629_-70.5667037964.png
+  - -45.419380188 61.1559524536 Narsarsuaq AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_61.1559524536_-45.419380188.png
+  - 314.580619812 61.1559524536 Narsarsuaq AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_61.1559524536_-45.419380188.png
+  - -80.6634750366 28.4637622833 NASA KSC AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_28.4637622833_-80.6634750366.png
+  - 279.336524963 28.4637622833 NASA KSC AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_28.4637622833_-80.6634750366.png
+  - -76.3786392212 37.1049613953 NASA LaRC AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_37.1049613953_-76.3786392212.png
+  - 283.621360779 37.1049613953 NASA LaRC AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_37.1049613953_-76.3786392212.png
+  - -71.2872009277 44.0638809204 NEON Bartlett AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_44.0638809204_-71.2872009277.png
+  - 288.712799072 44.0638809204 NEON Bartlett AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_44.0638809204_-71.2872009277.png
+  - -97.5699996948 33.4012298584 NEON CLBJ AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_33.4012298584_-97.5699996948.png
+  - 262.430000305 33.4012298584 NEON CLBJ AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_33.4012298584_-97.5699996948.png
+  - -104.744239807 40.8124427795 NEON-CPER AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.8124427795_-104.744239807.png
+  - 255.255760193 40.8124427795 NEON-CPER AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.8124427795_-104.744239807.png
+  - -105.167251587 40.1606292725 NEON CVALLA AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.1606292725_-105.167251587.png
+  - 254.832748413 40.1606292725 NEON CVALLA AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.1606292725_-105.167251587.png
+  - -145.751358032 63.8811187744 NEON DEJU AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_63.8811187744_-145.751358032.png
+  - 214.248641968 63.8811187744 NEON DEJU AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_63.8811187744_-145.751358032.png
+  - -81.4362030029 28.125038147 NEON-Disney AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_28.125038147_-81.4362030029.png
+  - 278.563796997 28.125038147 NEON-Disney AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_28.125038147_-81.4362030029.png
+  - -83.501953125 35.6889610291 NEON GRSM AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.6889610291_-83.501953125.png
+  - 276.498046875 35.6889610291 NEON GRSM AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.6889610291_-83.501953125.png
+  - -66.8686981201 17.9695491791 NEON GUAN AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_17.9695491791_-66.8686981201.png
+  - 293.13130188 17.9695491791 NEON GUAN AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_17.9695491791_-66.8686981201.png
+  - -72.1726608276 42.5368995667 NEON Harvard AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_42.5368995667_-72.1726608276.png
+  - 287.827339172 42.5368995667 NEON Harvard AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_42.5368995667_-72.1726608276.png
+  - -149.21333313 63.8756904602 NEON HEAL AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_63.8756904602_-149.21333313.png
+  - 210.78666687 63.8756904602 NEON HEAL AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_63.8756904602_-149.21333313.png
+  - -80.5248336792 37.3783073425 NEON MLBS AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_37.3783073425_-80.5248336792.png
+  - 279.475166321 37.3783073425 NEON MLBS AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_37.3783073425_-80.5248336792.png
+  - -109.388267517 38.2483291626 NEON MOAB AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.2483291626_-109.388267517.png
+  - 250.611732483 38.2483291626 NEON MOAB AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.2483291626_-109.388267517.png
+  - -100.915351868 46.7697181702 NEON NOGP AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_46.7697181702_-100.915351868.png
+  - 259.084648132 46.7697181702 NEON NOGP AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_46.7697181702_-100.915351868.png
+  - -99.0587921143 35.4105911255 NEON OAES AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.4105911255_-99.0587921143.png
+  - 260.941207886 35.4105911255 NEON OAES AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.4105911255_-99.0587921143.png
+  - -112.452438354 40.1775894165 NEON ONAQ AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.1775894165_-112.452438354.png
+  - 247.547561646 40.1775894165 NEON ONAQ AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.1775894165_-112.452438354.png
+  - -84.282585144 35.9641265869 NEON ORNL AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.9641265869_-84.282585144.png
+  - 275.717414856 35.9641265869 NEON ORNL AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.9641265869_-84.282585144.png
+  - -81.9934310913 29.6892681122 NEON OSBS AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_29.6892681122_-81.9934310913.png
+  - 278.006568909 29.6892681122 NEON OSBS AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_29.6892681122_-81.9934310913.png
+  - -105.545974731 40.2759017944 NEON RMNP AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.2759017944_-105.545974731.png
+  - 254.454025269 40.2759017944 NEON RMNP AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.2759017944_-105.545974731.png
+  - -78.139503479 38.8929176331 NEON SCBI AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.8929176331_-78.139503479.png
+  - 281.860496521 38.8929176331 NEON SCBI AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.8929176331_-78.139503479.png
+  - -76.5600204468 38.8901176453 NEON SERC AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.8901176453_-76.5600204468.png
+  - 283.439979553 38.8901176453 NEON SERC AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.8901176453_-76.5600204468.png
+  - -110.835487366 31.9106807709 NEON SRER AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_31.9106807709_-110.835487366.png
+  - 249.164512634 31.9106807709 NEON SRER AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_31.9106807709_-110.835487366.png
+  - -103.029296875 40.4619026184 NEON Sterling AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.4619026184_-103.029296875.png
+  - 256.970703125 40.4619026184 NEON Sterling AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_40.4619026184_-103.029296875.png
+  - -87.3932723999 32.9504623413 NEON TALL AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_32.9504623413_-87.3932723999.png
+  - 272.6067276 32.9504623413 NEON TALL AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_32.9504623413_-87.3932723999.png
+  - -119.006019592 37.0058326721 NEON TEAK AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_37.0058326721_-119.006019592.png
+  - 240.993980408 37.0058326721 NEON TEAK AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_37.0058326721_-119.006019592.png
+  - -149.37046814 68.6610870361 NEON TOOL AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_68.6610870361_-149.37046814.png
+  - 210.62953186 68.6610870361 NEON TOOL AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_68.6610870361_-149.37046814.png
+  - -95.1921463013 39.0404319763 NEON UKFS AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_39.0404319763_-95.1921463013.png
+  - 264.807853699 39.0404319763 NEON UKFS AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_39.0404319763_-95.1921463013.png
+  - -89.5372467041 46.2338829041 NEON UNDE AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_46.2338829041_-89.5372467041.png
+  - 270.462753296 46.2338829041 NEON UNDE AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_46.2338829041_-89.5372467041.png
+  - -99.241355896 47.1282272339 NEON WOOD AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_47.1282272339_-99.241355896.png
+  - 260.758644104 47.1282272339 NEON WOOD AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_47.1282272339_-99.241355896.png
+  - -121.952 45.820 NEON WREF AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_45.820_-121.952.png
+  - 238.048 45.820 NEON WREF AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_45.820_-121.952.png
+  - -111.145553589 29.0275001526 ORS Hermosillo AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_29.0275001526_-111.145553589.png
+  - 248.854446411 29.0275001526 ORS Hermosillo AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_29.0275001526_-111.145553589.png
+  - -90.2174987793 51.4494438171 Pickle Lake AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_51.4494438171_-90.2174987793.png
+  - 269.782501221 51.4494438171 Pickle Lake AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_51.4494438171_-90.2174987793.png
+  - -59.4320335388 13.1650180817 Ragged Point AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_13.1650180817_-59.4320335388.png
+  - 300.567966461 13.1650180817 Ragged Point AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_13.1650180817_-59.4320335388.png
+  - -116.0 38.5 Railroad Valley AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.5_-116.0.png
+  - 244.0 38.5 Railroad Valley AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.5_-116.0.png
+  - -107.710914612 37.9074478149 Red Mountain Pass AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_37.9074478149_-107.710914612.png
+  - 252.289085388 37.9074478149 Red Mountain Pass AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_37.9074478149_-107.710914612.png
+  - -94.9694061279 74.7051239014 Resolute Bay AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_74.7051239014_-94.9694061279.png
+  - 265.030593872 74.7051239014 Resolute Bay AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_74.7051239014_-94.9694061279.png
+  - -111.78301239 43.820110321 Rexburg Idaho AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_43.820110321_-111.78301239.png
+  - 248.21698761 43.820110321 Rexburg Idaho AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_43.820110321_-111.78301239.png
+  - -116.991668701 46.4874992371 Rimrock AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_46.4874992371_-116.991668701.png
+  - 243.008331299 46.4874992371 Rimrock AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_46.4874992371_-116.991668701.png
+  - -106.54006958 35.0545845032 Sandia NM PSEL AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.0545845032_-106.54006958.png
+  - 253.45993042 35.0545845032 Sandia NM PSEL AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.0545845032_-106.54006958.png
+  - -76.840 38.992 Saturn Island AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.992_-76.840.png
+  - 283.16 38.992 Saturn Island AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.992_-76.840.png
+  - -118.471130371 34.0168495178 Santa Monica Colg AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_34.0168495178_-118.471130371.png
+  - 241.528869629 34.0168495178 Santa Monica Colg AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_34.0168495178_-118.471130371.png
+  - -96.7860717773 44.3148269653 SDSU IPLab AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_44.3148269653_-96.7860717773.png
+  - 263.213928223 44.3148269653 SDSU IPLab AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_44.3148269653_-96.7860717773.png
+  - -106.9 34.3 Sevilleta AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_34.3_-106.9.png
+  - 253.1 34.3 Sevilleta AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_34.3_-106.9.png
+  - -76.8364715576 38.952999115 Sigma Space Corp AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.952999115_-76.8364715576.png
+  - 283.163528442 38.952999115 Sigma Space Corp AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_38.952999115_-76.8364715576.png
+  - -96.6259918213 43.7364807129 Sioux Falls AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_43.7364807129_-96.6259918213.png
+  - 263.374008179 43.7364807129 Sioux Falls AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_43.7364807129_-96.6259918213.png
+  - -82.6330032349 27.7615509033 SP Bayboro AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_27.7615509033_-82.6330032349.png
+  - 277.366996765 27.7615509033 SP Bayboro AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_27.7615509033_-82.6330032349.png
+  - -117.680000305 34.3800010681 TABLE MOUNTAIN CA AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_34.3800010681_-117.680000305.png
+  - 242.319999695 34.3800010681 TABLE MOUNTAIN CA AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_34.3800010681_-117.680000305.png
+  - -84.2993469238 30.4458332062 Tallahassee AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_30.4458332062_-84.2993469238.png
+  - 275.700653076 30.4458332062 Tallahassee AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_30.4458332062_-84.2993469238.png
+  - -114.849952698 45.1035003662 Taylor Ranch TWRS AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_45.1035003662_-114.849952698.png
+  - 245.150047302 45.1035003662 Taylor Ranch TWRS AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_45.1035003662_-114.849952698.png
+  - -70.9483413696 43.1087722778 Thompson Farm AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_43.1087722778_-70.9483413696.png
+  - 289.05165863 43.1087722778 Thompson Farm AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_43.1087722778_-70.9483413696.png
+  - -68.7689971924 76.5161056519 Thule AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_76.5161056519_-68.7689971924.png
+  - 291.231002808 76.5161056519 Thule AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_76.5161056519_-68.7689971924.png
+  - -79.4 43.6 Toronto AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_43.6_-79.4.png
+  - 280.6 43.6 Toronto AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_43.6_-79.4.png
+  - -111.0 32.1 Tucson AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_32.1_-111.0.png
+  - 249.0 32.1 Tucson AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_32.1_-111.0.png
+  - -64.8789978027 32.263999939 Tudor Hill AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_32.263999939_-64.8789978027.png
+  - 295.121002197 32.263999939 Tudor Hill AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_32.263999939_-64.8789978027.png
+  - -86.6447296143 34.7253303528 UAHuntsville AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_34.7253303528_-86.6447296143.png
+  - 273.355270386 34.7253303528 UAHuntsville AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_34.7253303528_-86.6447296143.png
+  - -119.845359802 34.4154281616 UCSB AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_34.4154281616_-119.845359802.png
+  - 240.154640198 34.4154281616 UCSB AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_34.4154281616_-119.845359802.png
+  - -76.7093505859 39.2546272278 UMBC AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_39.2546272278_-76.7093505859.png
+  - 283.290649414 39.2546272278 UMBC AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_39.2546272278_-76.7093505859.png
+  - -95.3415985107 29.7176990509 Univ of Houston AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_29.7176990509_-95.3415985107.png
+  - 264.658401489 29.7176990509 Univ of Houston AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_29.7176990509_-95.3415985107.png
+  - -112.868965149 49.6816711426 Univ of Lethbridge AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_49.6816711426_-112.868965149.png
+  - 247.131034851 49.6816711426 Univ of Lethbridge AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_49.6816711426_-112.868965149.png
+  - -118.11782074 33.563709259 USC SEAPRISM AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_33.563709259_-118.11782074.png
+  - 241.88217926 33.563709259 USC SEAPRISM AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_33.563709259_-118.11782074.png
+  - -111.634422302 35.2148399353 USGS Flagstaff ROLO AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.2148399353_-111.634422302.png
+  - 248.365577698 35.2148399353 USGS Flagstaff ROLO AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_35.2148399353_-111.634422302.png
+  - -75.4719467163 37.932849884 Wallops AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_37.932849884_-75.4719467163.png
+  - 284.528053284 37.932849884 Wallops AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_37.932849884_-75.4719467163.png
+  - -90.4833297729 28.8666667938 WaveCIS Site CSI 6 AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_28.8666667938_-90.4833297729.png
+  - 269.516670227 28.8666667938 WaveCIS Site CSI 6 AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_28.8666667938_-90.4833297729.png
+  - -106.33807373 32.6349411011 White Sands HELSTF AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_32.6349411011_-106.33807373.png
+  - 253.66192627 32.6349411011 White Sands HELSTF AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_32.6349411011_-106.33807373.png
+  - -72.7312011719 41.2583007812 Yale Coastal AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_41.2583007812_-72.7312011719.png
+  - 287.268798828 41.2583007812 Yale Coastal AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_41.2583007812_-72.7312011719.png
+  - -114.376251221 62.4513015747 Yellowknife Aurora AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_62.4513015747_-114.376251221.png
+  - 245.623748779 62.4513015747 Yellowknife Aurora AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_62.4513015747_-114.376251221.png
+  - -114.582778931 32.6441383362 Yuma AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_32.6441383362_-114.582778931.png
+  - 245.417221069 32.6441383362 Yuma AERO https://fluid.nccs.nasa.gov/gram/static/plots/total_32.6441383362_-114.582778931.png

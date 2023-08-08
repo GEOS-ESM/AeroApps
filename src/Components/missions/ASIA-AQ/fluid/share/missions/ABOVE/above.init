@@ -1,0 +1,13 @@
+reset: [region, playlist]
+
+config: [ABOVE]
+
+playlist:
+
+  default:
+    config: []
+  other:
+    config: [missions]
+
+default:
+  region: above_lg

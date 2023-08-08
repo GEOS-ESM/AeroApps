@@ -1,0 +1,91 @@
+wxmapscustom:
+
+  layer:
+
+    ground:
+      expr: const(const(_bc,1.0),0.0,'-u')
+      gxout: grfill
+      cmin: 0
+      cmax: 1
+      cint: 1
+      cbar: BW
+      skip: --auto
+      nsub: 1
+
+    barbs:
+      gxout: barb
+      uexpr: _uwnd*1.94384
+      vexpr: _vwnd*1.94384
+      skip: 1 1
+      size: 0.05
+      ccolor: 130 130 130
+      cthick: 3
+
+    puffy_cloud:
+      gxout: shaded
+      expr: (_qi+_ql) * 1000
+      cbar: allgray
+      cbunits: 'Cloud Water [g/kg]'
+      nsub: 1
+      skip: 1
+      type: linear
+      clevs: 0.01 0.08 0.16 0.24 0.32
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.010 0.000 0.400
+        - 0.333 0.400 0.400
+        - 0.667 0.400 0.400
+        - 1.000 0.400 0.400
+
+    rh:
+      gxout: shaded
+      expr: _rh
+      cbar: MRedBlues
+      cbunits: '[%]'
+      clevs: 10 20 30 40 50 60 70 80 90
+      scale:
+      cmin:
+      cmax:
+      cint:
+      scale:
+      nsub: 1
+      skip: 1
+
+    cloud_water:
+      gxout: contour
+      expr: (_qi+_ql) * 1000
+      ccolor: 0 0 255
+      cthick: 8
+      clab: masked
+      clsize: 0.06
+      clevs: 0.01 0.08 0.16 0.24 0.32
+
+    pbltop:
+      gxout: contour
+      expr: _pbltop / 100
+      vrange: 1000 100
+      cint: 100000
+      ccolor: 215 0 0
+      cstyle: 1
+      cthick: 8
+      cmark: 0
+      clab: 'off'
+      z: 1
+
+    bc:
+      gxout: shaded
+      expr: _bc
+      cbar: Warm01_cmap
+      clevs: 0 0.05 0.1 0.2 0.5 1 2 5 10 20 50 100
+      cmin:
+      cmax:
+      cint:
+      cbunits: 'ug m`a-3'
+      nsub: 10
+      skip: 10
+      scale:
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.113 0.000 0.000
+        - 0.170 1.000 1.000
+        - 1.000 1.000 1.000

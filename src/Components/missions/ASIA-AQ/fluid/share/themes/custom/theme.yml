@@ -1,0 +1,10 @@
+wxmapscustom:
+
+  long_name: Custom
+  service: !!python/object/apply:wxmapstheme.Service []
+
+  plot: {}
+
+  layer: {}
+
+  attribute: {}

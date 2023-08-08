@@ -1,0 +1,286 @@
+wxmapsmission:
+
+  plot:
+
+    precip:
+      long_name: "Precipitation"
+      levels: [0]
+      layers: [cloud_low, cloud_mid, cloud_hgh, precip]
+      title: '\\ Precipitation, Cloud Fraction'
+      map:
+        layers: [shader-GrnBlu]
+
+    cldprs:
+      long_name: "Cloud Top Pressure"
+      levels: [0]
+      layers: [cldprs]
+      title: '\\ Cloud Top Pressure'
+      map:
+        layers: [shader-BrnWht]
+
+    cldlow:
+      long_name: "Low Cloud Fraction"
+      levels: [0]
+      layers: [cloud_low]
+      title: '\\ Low Cloud Fraction'
+      cloud_low:
+        cbar: grayscale01
+        cbunits: Cloud Fraction
+      map:
+        layers: [shader-GrnBlu]
+
+    cldmid:
+      long_name: "Middle Cloud Fraction"
+      levels: [0]
+      layers: [cloud_mid]
+      title: '\\ Middle Cloud Fraction'
+      cloud_mid:
+        cbar: grayscale01
+        cbunits: Cloud Fraction
+      map:
+        layers: [shader-GrnBlu]
+
+    cldhgh:
+      long_name: "High Cloud Fraction"
+      levels: [0]
+      layers: [cloud_hgh]
+      title: '\\ High Cloud Fraction'
+      cloud_hgh:
+        cbar: grayscale01
+        cbunits: Cloud Fraction
+      map:
+        layers: [shader-GrnBlu]
+
+    cldtot:
+      long_name: "Total Cloud Fraction"
+      levels: [0]
+      layers: [cloud_tot]
+      title: '\\ Total Cloud Fraction'
+      cloud_tot:
+        cbar: grayscale01
+        cbunits: Cloud Fraction
+      map:
+        layers: [shader-GrnBlu]
+
+    cldwat:
+      long_name: "Cloud Water"
+      levels: [925, 850, 700, 600, 500, 400, 300, 200, 150, 100, 70, 50]
+      layers: [cldwat]
+      title: '\\ $level hPa Cloud Water [g kg`a-1`n]'
+      map:
+        layers: [shader-BrnWht]
+
+    taulow:
+      long_name: "In-Cld Opt Thk Low"
+      levels: [0]
+      layers: [tau_cloud_low]
+      title: '\\ In-Cloud Optical Thickness of Low Cloud Where Coverage > 10%'
+      map:
+        layers: [shader-BrnWht]
+
+    taumid:
+      long_name: "In-Cld Opt Thk Mid"
+      levels: [0]
+      layers: [tau_cloud_mid]
+      title: '\\ In-Cloud Optical Thickness of Middle Cloud Where Coverage > 10%'
+      map:
+        layers: [shader-BrnWht]
+
+    tauhgh:
+      long_name: "In-Cld Opt Thk Hgh"
+      levels: [0]
+      layers: [tau_cloud_hgh]
+      title: '\\ In-Cloud Optical Thickness of High Cloud Where Coverage > 10%'
+      map:
+        layers: [shader-BrnWht]
+
+  layer:
+
+    precip:
+      gxout: shaded
+      expr: prectot.tavg1_2d_flx_Nx*60*60
+      cbar: EPRainbow
+      cbunits: '[mm/hr]'
+      clevs:
+      cmin: 0
+      cmax: 10
+      cint: 1
+      nsub: 10
+      skip: 10
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.010 0.000 0.000
+        - 0.050 1.000 1.000
+        - 1.000 1.000 1.000
+
+    cldprs:
+      gxout: shaded
+      expr: _cldprs/100
+      cbar: Rainbow02
+      cbunits: '[mb]'
+      clevs:
+      cmin: 100
+      cmax: 1000
+      cint: 100
+      nsub: 10
+      skip: 10
+      reverse: 1
+
+    cloud_low:
+      gxout: shaded
+      expr: _cldlow
+      cbar: Clouds_Low
+      cbunits: Low
+      nsub: 5
+      skip: 5
+      type: linear
+      clevs:
+      cmin: 0
+      cmax: 1
+      cint: 0.1
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.333 0.314 0.314
+        - 0.667 0.627 0.627
+        - 1.000 1.000 1.000
+
+    cloud_mid:
+      gxout: shaded
+      expr: _cldmid
+      cbar: Clouds_Mid
+      cbunits: Middle
+      nsub: 5
+      skip: 5
+      type: linear
+      clevs:
+      cmin: 0
+      cmax: 1
+      cint: 0.1
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.333 0.314 0.314
+        - 0.667 0.627 0.627
+        - 1.000 1.000 1.000
+
+    cloud_hgh:
+      gxout: shaded
+      expr: _cldhgh
+      cbar: Clouds_Hgh
+      cbunits: High
+      nsub: 5
+      skip: 5
+      type: linear
+      clevs:
+      cmin: 0
+      cmax: 1
+      cint: 0.1
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.333 0.314 0.314
+        - 0.667 0.627 0.627
+        - 1.000 1.000 1.000
+
+    cloud_tot:
+      gxout: shaded
+      expr: _cldtot
+      cbar: grayscale01
+      cbunits: Total Cloud Fraction
+      nsub: 5
+      skip: 5
+      type: linear
+      clevs:
+      cmin: 0
+      cmax: 1
+      cint: 0.1
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.333 0.314 0.314
+        - 0.667 0.627 0.627
+        - 1.000 1.000 1.000
+
+    q_liquid:
+      gxout: shaded
+      expr: _ql_nz*1000
+      cbar: EPRainbow
+      cbunits: '[g kg`a-1`n]'
+      clevs:
+      cmin: 0
+      cmax: 0.24
+      cint: 0.02
+      nsub: 8
+      skip: 8
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.010 0.000 0.000
+        - 0.050 1.000 1.000
+        - 1.000 1.000 1.000
+
+    cldwat:
+      gxout: shaded
+      expr: (_qi+_ql)*1000
+      cbar: EPRainbow
+      cbunits: '[g kg`a-1`n]'
+      clevs:
+      cmin: 0
+      cmax: 0.24
+      cint: 0.02
+      nsub: 8
+      skip: 8
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.010 0.000 0.000
+        - 0.050 1.000 1.000
+        - 1.000 1.000 1.000
+
+    tau_cloud_low:
+      gxout: shaded
+      expr: _taulow10
+      cbar: EPRainbow
+      clevs:
+      cmin: 0
+      cmax: 120
+      cint: 10
+      nsub: 8
+      skip: 8
+
+    tau_cloud_mid:
+      gxout: shaded
+      expr: _taumid10
+      cbar: EPRainbow
+      clevs:
+      scale: exp_scale
+      cmin: 0
+      cmax: 90
+      cint: 10
+      nsub: 10
+      skip: 10
+
+    tau_cloud_hgh:
+      gxout: shaded
+      expr: _tauhgh10
+      cbar: EPRainbow
+      clevs:
+      scale: exp_scale
+      cmin: 0
+      cmax: 35
+      cint: 5
+      nsub: 10
+      skip: 10
+
+    qfed1:
+      gxout: grid
+      cmark: 9
+      digsiz: 0.1
+      ccolor: 255 165 0
+      cthick: 5
+      expr: maskout(_biomass, _biomass-0.0000001)
+
+    qfed2:
+      gxout: grid
+      cmark: 8
+      digsiz: 0.1
+      ccolor: 0 0 0
+      cthick: 5
+      expr: maskout(_biomass, _biomass-0.0000001)
+
+

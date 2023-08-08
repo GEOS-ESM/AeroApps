@@ -1,0 +1,19 @@
+stream:
+
+  M2LTM:
+
+    long_name: MERRA-2 LTM
+    type: analysis
+    institution: NASA Global Modeling and Assimilation Office
+    description: MERRA-2 Long-Term Mean
+    uri: /discover/nobackup/mbosilov/MERRA2/Climate/$collection/MERRA2.clim.$collection.ctl
+    logos: [nasa-logo-ul, gmao-logo-ur]
+
+  M2ANOM:
+
+    long_name: MERRA-2 Anomaly
+    type: analysis
+    institution: Global Modeling and Assimilation Office (GMAO)
+    description: Modern-Era Retrospective Analysis (MERRA-2)
+    uri: /discover/nobackup/projects/gmao/merra2/data/products/opendap/$collection
+    logos: [nasa-logo-ul, gmao-logo-ur]

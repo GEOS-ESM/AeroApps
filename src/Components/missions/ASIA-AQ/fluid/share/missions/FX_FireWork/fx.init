@@ -1,0 +1,7 @@
+reset: [region, playlist]
+config: [FIREX-AQ, FX_FireWork]
+
+default:
+  field: co_lml
+  region: fx-central
+  level: '0'

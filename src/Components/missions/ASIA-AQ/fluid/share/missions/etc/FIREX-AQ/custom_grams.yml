@@ -1,0 +1,1502 @@
+wxmapscustom-2:
+
+  plot:
+
+    bc_gram000: &BC_GRAM
+      long_name: BC
+      header: Anchorage
+      tag: Anchorage
+      xlabel: ''
+      levels: [0]
+      layers: [ground,bc,puffy_cloud,barbs,cloud_water,pbltop]
+      title: 'Black Carbon [ug m`a-3`n], Cloud Water [g/kg], PBLTOP [mb, red]'
+      parea:  1 10 1 7.5
+      lev:  1000 100
+      lat:  61.2
+      lon:  210.1
+      time: '$tbeg $t5day'
+      ylab: 'Pressure (mb)'
+      shape: 'off'
+
+    bc_gram001:
+      <<: *BC_GRAM
+      header: Atlanta
+      tag: Atlanta
+      lat:  33.7
+      lon:  275.6
+
+    bc_gram002:
+      <<: *BC_GRAM
+      header: Beltsville
+      tag: Beltsville
+      lat:  39.1
+      lon:  283.1
+
+    bc_gram003:
+      <<: *BC_GRAM
+      header: Bismarck
+      tag: Bismarck
+      lat:  46.8
+      lon:  259.2
+
+    bc_gram004:
+      <<: *BC_GRAM
+      header: Boise
+      tag: Boise
+      lat:  43.6
+      lon:  243.8
+
+    bc_gram005:
+      <<: *BC_GRAM
+      header: Boston
+      tag: Boston
+      lat:  42.3
+      lon:  289.0
+
+    bc_gram006:
+      <<: *BC_GRAM
+      header: Buffalo
+      tag: Buffalo
+      lat:  42.9
+      lon:  281.2
+
+    bc_gram007:
+      <<: *BC_GRAM
+      header: Conroe
+      tag: Conroe
+      lat:  30.3
+      lon:  264.6
+
+    bc_gram008:
+      <<: *BC_GRAM
+      header: Chicago
+      tag: Chicago
+      lat:  41.9
+      lon:  272.4
+
+    bc_gram009:
+      <<: *BC_GRAM
+      header: Cincinnati
+      tag: Cincinnati
+      lat:  39.1
+      lon:  275.5
+
+    bc_gram010:
+      <<: *BC_GRAM
+      header: Cleveland
+      tag: Cleveland
+      lat:  41.5
+      lon:  278.3
+
+    bc_gram011:
+      <<: *BC_GRAM
+      header: Dallas
+      tag: Dallas
+      lat:  32.7
+      lon:  263.2
+
+    bc_gram012:
+      <<: *BC_GRAM
+      header: Denver
+      tag: Denver
+      lat:  39.7
+      lon:  255.0
+
+    bc_gram013:
+      <<: *BC_GRAM
+      header: Detroit
+      tag: Detroit
+      lat:  42.3
+      lon:  277.0
+
+    bc_gram014:
+      <<: *BC_GRAM
+      header: Fairbanks
+      tag: Fairbanks
+      lat:  64.8
+      lon:  212.3
+
+    bc_gram015:
+      <<: *BC_GRAM
+      header: Fairhill
+      tag: Fairhill
+      lat:  39.7
+      lon:  284.1
+
+    bc_gram016:
+      <<: *BC_GRAM
+      header: Fargo
+      tag: Fargo
+      lat:  46.9
+      lon:  263.2
+
+    bc_gram017:
+      <<: *BC_GRAM
+      header: Hartford
+      tag: Hartford
+      lat:  41.7
+      lon:  287.3
+
+    bc_gram018:
+      <<: *BC_GRAM
+      header: Honolulu
+      tag: Honolulu
+      lat:  21.3
+      lon:  202.2
+
+    bc_gram019:
+      <<: *BC_GRAM
+      header: Houston
+      tag: Houston
+      lat:  29.7
+      lon:  264.6
+
+    bc_gram020:
+      <<: *BC_GRAM
+      header: Indianapolis
+      tag: Indianapolis
+      lat:  39.7
+      lon:  273.9
+
+    bc_gram021:
+      <<: *BC_GRAM
+      header: Jacksonville
+      tag: Jacksonville
+      lat:  30.3
+      lon:  278.3
+
+    bc_gram022:
+      <<: *BC_GRAM
+      header: Kansas City
+      tag: Kansas City
+      lat:  39.1
+      lon:  265.4
+
+    bc_gram023:
+      <<: *BC_GRAM
+      header: Las Vegas
+      tag: Las Vegas
+      lat:  36.2
+      lon:  244.9
+
+    bc_gram024:
+      <<: *BC_GRAM
+      header: Little Rock
+      tag: Little Rock
+      lat:  34.7
+      lon:  267.7
+
+    bc_gram025:
+      <<: *BC_GRAM
+      header: Louisville
+      tag: Louisville
+      lat:  38.2
+      lon:  274.3
+
+    bc_gram026:
+      <<: *BC_GRAM
+      header: Los Angeles
+      tag: Los Angeles
+      lat:  34.0
+      lon:  241.8
+
+    bc_gram027:
+      <<: *BC_GRAM
+      header: Memphis
+      tag: Memphis
+      lat:  35.1
+      lon:  270.0
+
+    bc_gram028:
+      <<: *BC_GRAM
+      header: Miami
+      tag: Miami
+      lat:  25.8
+      lon:  279.8
+
+    bc_gram029:
+      <<: *BC_GRAM
+      header: Milwaukee
+      tag: Milwaukee
+      lat:  43.0
+      lon:  272.0
+
+    bc_gram030:
+      <<: *BC_GRAM
+      header: Minneapolis
+      tag: Minneapolis
+      lat:  45.0
+      lon:  266.8
+
+    bc_gram031:
+      <<: *BC_GRAM
+      header: Nashville
+      tag: Nashville
+      lat:  36.2
+      lon:  273.2
+
+    bc_gram032:
+      <<: *BC_GRAM
+      header: New Orleans
+      tag: New Orleans
+      lat:  30.0
+      lon:  269.9
+
+    bc_gram033:
+      <<: *BC_GRAM
+      header: New York
+      tag: New York
+      lat:  40.3
+      lon:  286.0
+
+    bc_gram034:
+      <<: *BC_GRAM
+      header: Oklahoma City
+      tag: Oklahoma City
+      lat:  35.5
+      lon:  262.5
+
+    bc_gram035:
+      <<: *BC_GRAM
+      header: Omaha
+      tag: Omaha
+      lat:  41.2
+      lon:  264.0
+
+    bc_gram036:
+      <<: *BC_GRAM
+      header: Orlando
+      tag: Orlando
+      lat:  28.5
+      lon:  278.7
+
+    bc_gram037:
+      <<: *BC_GRAM
+      header: Philadelphia
+      tag: Philadelphia
+      lat:  40.0
+      lon:  284.8
+
+    bc_gram038:
+      <<: *BC_GRAM
+      header: Phoenix
+      tag: Phoenix
+      lat:  33.5
+      lon:  248.0
+
+    bc_gram039:
+      <<: *BC_GRAM
+      header: Pittsburgh
+      tag: Pittsburgh
+      lat:  40.5
+      lon:  280.0
+
+    bc_gram040:
+      <<: *BC_GRAM
+      header: Portland OR
+      tag: Portland OR
+      lat:  45.5
+      lon:  237.3
+
+    bc_gram041:
+      <<: *BC_GRAM
+      header: Raleigh
+      tag: Raleigh
+      lat:  35.8
+      lon:  281.4
+
+    bc_gram042:
+      <<: *BC_GRAM
+      header: Richmond
+      tag: Richmond
+      lat:  37.5
+      lon:  282.5
+
+    bc_gram043:
+      <<: *BC_GRAM
+      header: Salt Lake City
+      tag: Salt Lake City
+      lat:  40.7
+      lon:  248.1
+
+    bc_gram044:
+      <<: *BC_GRAM
+      header: San Diego
+      tag: San Diego
+      lat:  32.7
+      lon:  242.8
+
+    bc_gram045:
+      <<: *BC_GRAM
+      header: San Francisco
+      tag: San Francisco
+      lat:  37.7
+      lon:  237.6
+
+    bc_gram046:
+      <<: *BC_GRAM
+      header: San Joaquin Valley
+      tag: San Joaquin Valley
+      lat:  35.3
+      lon:  119.3
+
+    bc_gram047:
+      <<: *BC_GRAM
+      header: San Juan PR
+      tag: San Juan PR
+      lat:  18.5
+      lon:  293.8
+
+    bc_gram048:
+      <<: *BC_GRAM
+      header: Seattle
+      tag: Seattle
+      lat:  47.6
+      lon:  237.7
+
+    bc_gram049:
+      <<: *BC_GRAM
+      header: Smith Point
+      tag: Smith Point
+      lat:  29.5
+      lon:  265.2
+
+    bc_gram050:
+      <<: *BC_GRAM
+      header: Spokane
+      tag: Spokane
+      lat:  47.6
+      lon:  242.5
+
+    bc_gram051:
+      <<: *BC_GRAM
+      header: Tampa
+      tag: Tampa
+      lat:  28.0
+      lon:  277.5
+
+    bc_gram052:
+      <<: *BC_GRAM
+      header: Washington DC
+      tag: Washington DC
+      lat:  38.9
+      lon:  283.0
+
+    bc_gram053:
+      <<: *BC_GRAM
+      header: Wichita
+      tag: Wichita
+      lat:  37.6
+      lon:  262.8
+
+    bc_gram054:
+      <<: *BC_GRAM
+      header: Armstrong FRC
+      tag: Armstrong FRC
+      lat:  34.9
+      lon:  242.1
+
+    bc_gram055:
+      <<: *BC_GRAM
+      header: Aldino
+      tag: Aldino
+      lat:  39.6
+      lon:  283.8
+
+    bc_gram056:
+      <<: *BC_GRAM
+      header: Fresno
+      tag: Fresno
+      lat:  36.8
+      lon:  240.2
+
+    bc_gram057:
+      <<: *BC_GRAM
+      header: Dallas Ft Worth
+      tag: Dallas Ft Worth
+      lat:  32.9
+      lon:  263.0
+
+    bc_gram058:
+      <<: *BC_GRAM
+      header: Sevilleta
+      tag: Sevilleta
+      lat:  34.3
+      lon:  253.1
+
+    bc_gram059:
+      <<: *BC_GRAM
+      header: San Antonio
+      tag: San Antonio
+      lat:  29.5
+      lon:  261.5
+
+    bc_gram060:
+      <<: *BC_GRAM
+      header: Corpus Christi
+      tag: Corpus Christi
+      lat:  27.8
+      lon:  262.5
+
+    bc_gram061:
+      <<: *BC_GRAM
+      header: Tucson
+      tag: Tucson
+      lat:  32.1
+      lon:  249.0
+
+    bc_gram062:
+      <<: *BC_GRAM
+      header: West Houston
+      tag: West Houston
+      lat:  29.8
+      lon:  264.343
+
+    bc_gram063:
+      <<: *BC_GRAM
+      header: Essex
+      tag: Essex
+      lat:  39.3
+      lon:  283.5
+
+    bc_gram064:
+      <<: *BC_GRAM
+      header: Croix Rd Manvel
+      tag: Croix Rd Manvel
+      lat:  29.5
+      lon:  264.6
+
+    bc_gram065:
+      <<: *BC_GRAM
+      header: Deer Park TX
+      tag: Deer Park TX
+      lat:  29.7
+      lon:  264.9
+
+    bc_gram066:
+      <<: *BC_GRAM
+      header: White Sands NM
+      tag: White Sands NM
+      lat:  32.6
+      lon:  106.3
+
+    bc_gram067:
+      <<: *BC_GRAM
+      header: Lake Charles
+      tag: Lake Charles
+      lat:  30.1
+      lon:  266.8
+
+    bc_gram068:
+      <<: *BC_GRAM
+      header: Shreveport
+      tag: Shreveport
+      lat:  32.4
+      lon:  266.2
+
+    bc_gram069:
+      <<: *BC_GRAM
+      header: Channelview
+      tag: Channelview
+      lat:  29.8
+      lon:  264.9
+
+    bc_gram070:
+      <<: *BC_GRAM
+      header: Austin
+      tag: Austin
+      lat:  30.2
+      lon:  262.3
+
+    bc_gram071:
+      <<: *BC_GRAM
+      header: Monterey
+      tag: Monterey
+      lat:  36.6
+      lon:  238.2
+
+    bc_gram072:
+      <<: *BC_GRAM
+      header: S Cent OR
+      tag: S Cent OR
+      lat:  43.0
+      lon:  120.0
+
+    bc_gram073:
+      <<: *BC_GRAM
+      header: Padonia
+      tag: Padonia
+      lat:  39.5
+      lon:  283.4
+
+    bc_gram074:
+      <<: *BC_GRAM
+      header: Caltech
+      tag: Caltech
+      lat:  34.1
+      lon:  241.9
+
+    bc_gram075:
+      <<: *BC_GRAM
+      header: Edgewood MD
+      tag: Edgewood MD
+      lat:  39.4
+      lon:  283.7
+
+    bc_gram076:
+      <<: *BC_GRAM
+      header: La Parguera PR
+      tag: La Parguera PR
+      lat:  18.0
+      lon:  293.0
+
+    bc_gram077:
+      <<: *BC_GRAM
+      header: Railroad Valley
+      tag: Railroad Valley
+      lat:  38.5
+      lon:  244.0
+
+    bc_gram078:
+      <<: *BC_GRAM
+      header: Moody Tower
+      tag: Moody Tower
+      lat:  29.7
+      lon:  264.7
+
+    bc_gram079:
+      <<: *BC_GRAM
+      header: Cape Cod
+      tag: Cape Cod
+      lat:  41.1
+      lon:  289.8
+
+    bc_gram080:
+      <<: *BC_GRAM
+      header: Wallops Island VA
+      tag: Wallops Island VA
+      lat:  37.8
+      lon:  284.5
+
+    bc_gram081:
+      <<: *BC_GRAM
+      header: Galveston
+      tag: Galveston
+      lat:  29.2
+      lon:  265.2
+
+    bc_gram082:
+      <<: *BC_GRAM
+      header: Frenchman Flat NV
+      tag: Frenchman Flat NV
+      lat:  36.8
+      lon:  244.0
+
+    bc_gram083:
+      <<: *BC_GRAM
+      header: Ames AERO
+      tag: Ames AERO
+      lat:  42.0213623047
+      lon:  266.225219727
+
+    bc_gram084:
+      <<: *BC_GRAM
+      header: Appalachian State AERO
+      tag: Appalachian State AERO
+      lat:  36.2145996094
+      lon:  278.30619812
+
+    bc_gram085:
+      <<: *BC_GRAM
+      header: ARM Oliktok AK AERO
+      tag: ARM Oliktok AK AERO
+      lat:  70.49949646
+      lon:  210.119995117
+
+    bc_gram086:
+      <<: *BC_GRAM
+      header: ARM SGP AERO
+      tag: ARM SGP AERO
+      lat:  36.6051750183
+      lon:  262.514381409
+
+    bc_gram087:
+      <<: *BC_GRAM
+      header: Bakersfield AERO
+      tag: Bakersfield AERO
+      lat:  35.3315048218
+      lon:  240.999992371
+
+    bc_gram088:
+      <<: *BC_GRAM
+      header: Barrow AERO
+      tag: Barrow AERO
+      lat:  71.3
+      lon:  203.2
+
+    bc_gram089:
+      <<: *BC_GRAM
+      header: Billerica AERO
+      tag: Billerica AERO
+      lat:  42.5283470154
+      lon:  288.731384277
+
+    bc_gram090:
+      <<: *BC_GRAM
+      header: Bonanza Creek AERO
+      tag: Bonanza Creek AERO
+      lat:  64.742805481
+      lon:  211.683731079
+
+    bc_gram091:
+      <<: *BC_GRAM
+      header: BONDVILLE AERO
+      tag: BONDVILLE AERO
+      lat:  40.0533332825
+      lon:  271.628059387
+
+    bc_gram092:
+      <<: *BC_GRAM
+      header: Bozeman AERO
+      tag: Bozeman AERO
+      lat:  45.6622047424
+      lon:  248.954986572
+
+    bc_gram093:
+      <<: *BC_GRAM
+      header: Brookhaven AERO
+      tag: Brookhaven AERO
+      lat:  40.8660011292
+      lon:  287.11530304
+
+    bc_gram094:
+      <<: *BC_GRAM
+      header: CalTech AERO
+      tag: CalTech AERO
+      lat:  34.1367301941
+      lon:  241.873832703
+
+    bc_gram095:
+      <<: *BC_GRAM
+      header: Cape San Juan AERO
+      tag: Cape San Juan AERO
+      lat:  18.3845005035
+      lon:  294.380096435
+
+    bc_gram096:
+      <<: *BC_GRAM
+      header: CARTEL AERO
+      tag: CARTEL AERO
+      lat:  45.3797531128
+      lon:  288.06867218
+
+    bc_gram097:
+      <<: *BC_GRAM
+      header: Chapais AERO
+      tag: Chapais AERO
+      lat:  49.8224334717
+      lon:  285.024597168
+
+    bc_gram098:
+      <<: *BC_GRAM
+      header: Churchill AERO
+      tag: Churchill AERO
+      lat:  58.736000061
+      lon:  266.18183136
+
+    bc_gram099:
+      <<: *BC_GRAM
+      header: Cold Lake AERO
+      tag: Cold Lake AERO
+      lat:  54.4169998169
+      lon:  249.717002869
+
+    bc_gram100:
+      <<: *BC_GRAM
+      header: Dayton AERO
+      tag: Dayton AERO
+      lat:  39.7759780884
+      lon:  275.890380859
+
+    bc_gram101:
+      <<: *BC_GRAM
+      header: Denver LaCasa AERO
+      tag: Denver LaCasa AERO
+      lat:  39.7794914246
+      lon:  254.994819641
+
+    bc_gram102:
+      <<: *BC_GRAM
+      header: DigitalGlobe Cal AERO
+      tag: DigitalGlobe Cal AERO
+      lat:  40.1388893127
+      lon:  254.86277771
+
+    bc_gram103:
+      <<: *BC_GRAM
+      header: EastMalling MO AERO
+      tag: EastMalling MO AERO
+      lat:  51.2900009155
+      lon:  0.439999997616
+
+    bc_gram104:
+      <<: *BC_GRAM
+      header: Easton-MDE AERO
+      tag: Easton-MDE AERO
+      lat:  38.7949714661
+      lon:  283.915748596
+
+    bc_gram105:
+      <<: *BC_GRAM
+      header: Egbert AERO
+      tag: Egbert AERO
+      lat:  44.2315444946
+      lon:  280.218589783
+
+    bc_gram106:
+      <<: *BC_GRAM
+      header: EPA-Res Triangle Pk AERO
+      tag: EPA-Res Triangle Pk AERO
+      lat:  35.8800010681
+      lon:  281.129997253
+
+    bc_gram107:
+      <<: *BC_GRAM
+      header: Fort McMurray AERO
+      tag: Fort McMurray AERO
+      lat:  56.7523078918
+      lon:  248.523864746
+
+    bc_gram108:
+      <<: *BC_GRAM
+      header: Fresno 2 AERO
+      tag: Fresno 2 AERO
+      lat:  36.785369873
+      lon:  240.226982117
+
+    bc_gram109:
+      <<: *BC_GRAM
+      header: Georgia Tech AERO
+      tag: Georgia Tech AERO
+      lat:  33.7802009583
+      lon:  275.600463867
+
+    bc_gram110:
+      <<: *BC_GRAM
+      header: Goldstone AERO
+      tag: Goldstone AERO
+      lat:  35.2333335876
+      lon:  243.208335876
+
+    bc_gram111:
+      <<: *BC_GRAM
+      header: Grand Forks AERO
+      tag: Grand Forks AERO
+      lat:  47.9117507935
+      lon:  262.674552918
+
+    bc_gram112:
+      <<: *BC_GRAM
+      header: Granite Island AERO
+      tag: Granite Island AERO
+      lat:  46.7207984924
+      lon:  272.587997437
+
+    bc_gram113:
+      <<: *BC_GRAM
+      header: GSFC AERO
+      tag: GSFC AERO
+      lat:  38.9925003052
+      lon:  283.160163879
+
+    bc_gram114:
+      <<: *BC_GRAM
+      header: Halifax AERO
+      tag: Halifax AERO
+      lat:  44.6380004883
+      lon:  296.40599823
+
+    bc_gram115:
+      <<: *BC_GRAM
+      header: Hart Miller Island AERO
+      tag: Hart Miller Island AERO
+      lat:  39.2419013977
+      lon:  283.637199402
+
+    bc_gram116:
+      <<: *BC_GRAM
+      header: IMPROVE-MammothCave AERO
+      tag: IMPROVE-MammothCave AERO
+      lat:  37.1318016052
+      lon:  273.852096558
+
+    bc_gram117:
+      <<: *BC_GRAM
+      header: Kangerlussuaq AERO
+      tag: Kangerlussuaq AERO
+      lat:  66.9957962036
+      lon:  309.378601074
+
+    bc_gram118:
+      <<: *BC_GRAM
+      header: Kellogg LTER AERO
+      tag: Kellogg LTER AERO
+      lat:  42.4079818726
+      lon:  274.62828064
+
+    bc_gram119:
+      <<: *BC_GRAM
+      header: Kelowna UAS AERO
+      tag: Kelowna UAS AERO
+      lat:  49.9412956238
+      lon:  240.599891663
+
+    bc_gram120:
+      <<: *BC_GRAM
+      header: Key Biscayne AERO
+      tag: Key Biscayne AERO
+      lat:  25.7319660187
+      lon:  279.836669922
+
+    bc_gram121:
+      <<: *BC_GRAM
+      header: Kluane Lake AERO
+      tag: Kluane Lake AERO
+      lat:  61.0270004272
+      lon:  221.589996338
+
+    bc_gram122:
+      <<: *BC_GRAM
+      header: La Parguera AERO
+      tag: La Parguera AERO
+      lat:  17.9704494476
+      lon:  292.954620361
+
+    bc_gram123:
+      <<: *BC_GRAM
+      header: LISCO AERO
+      tag: LISCO AERO
+      lat:  40.9545173645
+      lon:  286.658233643
+
+    bc_gram124:
+      <<: *BC_GRAM
+      header: Mauna Loa AERO
+      tag: Mauna Loa AERO
+      lat:  19.5360069275
+      lon:  204.423248291
+
+    bc_gram125:
+      <<: *BC_GRAM
+      header: MD Science Center AERO
+      tag: MD Science Center AERO
+      lat:  39.2812309265
+      lon:  283.387947082
+
+    bc_gram126:
+      <<: *BC_GRAM
+      header: Mingo AERO
+      tag: Mingo AERO
+      lat:  36.971698761
+      lon:  269.856796265
+
+    bc_gram127:
+      <<: *BC_GRAM
+      header: Missoula AERO
+      tag: Missoula AERO
+      lat:  46.9166679382
+      lon:  245.916664124
+
+    bc_gram128:
+      <<: *BC_GRAM
+      header: Modesto AERO
+      tag: Modesto AERO
+      lat:  37.6421699524
+      lon:  239.005783081
+
+    bc_gram129:
+      <<: *BC_GRAM
+      header: Monterey AERO
+      tag: Monterey AERO
+      lat:  36.6
+      lon:  238.2
+
+    bc_gram130:
+      <<: *BC_GRAM
+      header: MVCO AERO
+      tag: MVCO AERO
+      lat:  41.3250007629
+      lon:  289.433296204
+
+    bc_gram131:
+      <<: *BC_GRAM
+      header: Narsarsuaq AERO
+      tag: Narsarsuaq AERO
+      lat:  61.1559524536
+      lon:  314.580619812
+
+    bc_gram132:
+      <<: *BC_GRAM
+      header: NASA KSC AERO
+      tag: NASA KSC AERO
+      lat:  28.4637622833
+      lon:  279.336524963
+
+    bc_gram133:
+      <<: *BC_GRAM
+      header: NASA LaRC AERO
+      tag: NASA LaRC AERO
+      lat:  37.1049613953
+      lon:  283.621360779
+
+    bc_gram134:
+      <<: *BC_GRAM
+      header: NEON Bartlett AERO
+      tag: NEON Bartlett AERO
+      lat:  44.0638809204
+      lon:  288.712799072
+
+    bc_gram135:
+      <<: *BC_GRAM
+      header: NEON CLBJ AERO
+      tag: NEON CLBJ AERO
+      lat:  33.4012298584
+      lon:  262.430000305
+
+    bc_gram136:
+      <<: *BC_GRAM
+      header: NEON-CPER AERO
+      tag: NEON-CPER AERO
+      lat:  40.8124427795
+      lon:  255.255760193
+
+    bc_gram137:
+      <<: *BC_GRAM
+      header: NEON CVALLA AERO
+      tag: NEON CVALLA AERO
+      lat:  40.1606292725
+      lon:  254.832748413
+
+    bc_gram138:
+      <<: *BC_GRAM
+      header: NEON DEJU AERO
+      tag: NEON DEJU AERO
+      lat:  63.8811187744
+      lon:  214.248641968
+
+    bc_gram139:
+      <<: *BC_GRAM
+      header: NEON-Disney AERO
+      tag: NEON-Disney AERO
+      lat:  28.125038147
+      lon:  278.563796997
+
+    bc_gram140:
+      <<: *BC_GRAM
+      header: NEON GRSM AERO
+      tag: NEON GRSM AERO
+      lat:  35.6889610291
+      lon:  276.498046875
+
+    bc_gram141:
+      <<: *BC_GRAM
+      header: NEON GUAN AERO
+      tag: NEON GUAN AERO
+      lat:  17.9695491791
+      lon:  293.13130188
+
+    bc_gram142:
+      <<: *BC_GRAM
+      header: NEON Harvard AERO
+      tag: NEON Harvard AERO
+      lat:  42.5368995667
+      lon:  287.827339172
+
+    bc_gram143:
+      <<: *BC_GRAM
+      header: NEON HEAL AERO
+      tag: NEON HEAL AERO
+      lat:  63.8756904602
+      lon:  210.78666687
+
+    bc_gram144:
+      <<: *BC_GRAM
+      header: NEON MLBS AERO
+      tag: NEON MLBS AERO
+      lat:  37.3783073425
+      lon:  279.475166321
+
+    bc_gram145:
+      <<: *BC_GRAM
+      header: NEON MOAB AERO
+      tag: NEON MOAB AERO
+      lat:  38.2483291626
+      lon:  250.611732483
+
+    bc_gram146:
+      <<: *BC_GRAM
+      header: NEON NOGP AERO
+      tag: NEON NOGP AERO
+      lat:  46.7697181702
+      lon:  259.084648132
+
+    bc_gram147:
+      <<: *BC_GRAM
+      header: NEON OAES AERO
+      tag: NEON OAES AERO
+      lat:  35.4105911255
+      lon:  260.941207886
+
+    bc_gram148:
+      <<: *BC_GRAM
+      header: NEON ONAQ AERO
+      tag: NEON ONAQ AERO
+      lat:  40.1775894165
+      lon:  247.547561646
+
+    bc_gram149:
+      <<: *BC_GRAM
+      header: NEON ORNL AERO
+      tag: NEON ORNL AERO
+      lat:  35.9641265869
+      lon:  275.717414856
+
+    bc_gram150:
+      <<: *BC_GRAM
+      header: NEON OSBS AERO
+      tag: NEON OSBS AERO
+      lat:  29.6892681122
+      lon:  278.006568909
+
+    bc_gram151:
+      <<: *BC_GRAM
+      header: NEON RMNP AERO
+      tag: NEON RMNP AERO
+      lat:  40.2759017944
+      lon:  254.454025269
+
+    bc_gram152:
+      <<: *BC_GRAM
+      header: NEON SCBI AERO
+      tag: NEON SCBI AERO
+      lat:  38.8929176331
+      lon:  281.860496521
+
+    bc_gram153:
+      <<: *BC_GRAM
+      header: NEON SERC AERO
+      tag: NEON SERC AERO
+      lat:  38.8901176453
+      lon:  283.439979553
+
+    bc_gram154:
+      <<: *BC_GRAM
+      header: NEON SRER AERO
+      tag: NEON SRER AERO
+      lat:  31.9106807709
+      lon:  249.164512634
+
+    bc_gram155:
+      <<: *BC_GRAM
+      header: NEON Sterling AERO
+      tag: NEON Sterling AERO
+      lat:  40.4619026184
+      lon:  256.970703125
+
+    bc_gram156:
+      <<: *BC_GRAM
+      header: NEON TALL AERO
+      tag: NEON TALL AERO
+      lat:  32.9504623413
+      lon:  272.6067276
+
+    bc_gram157:
+      <<: *BC_GRAM
+      header: NEON TEAK AERO
+      tag: NEON TEAK AERO
+      lat:  37.0058326721
+      lon:  240.993980408
+
+    bc_gram158:
+      <<: *BC_GRAM
+      header: NEON TOOL AERO
+      tag: NEON TOOL AERO
+      lat:  68.6610870361
+      lon:  210.62953186
+
+    bc_gram159:
+      <<: *BC_GRAM
+      header: NEON UKFS AERO
+      tag: NEON UKFS AERO
+      lat:  39.0404319763
+      lon:  264.807853699
+
+    bc_gram160:
+      <<: *BC_GRAM
+      header: NEON UNDE AERO
+      tag: NEON UNDE AERO
+      lat:  46.2338829041
+      lon:  270.462753296
+
+    bc_gram161:
+      <<: *BC_GRAM
+      header: NEON WOOD AERO
+      tag: NEON WOOD AERO
+      lat:  47.1282272339
+      lon:  260.758644104
+
+    bc_gram162:
+      <<: *BC_GRAM
+      header: NEON WREF AERO
+      tag: NEON WREF AERO
+      lat:  45.82
+      lon:  238.048
+
+    bc_gram163:
+      <<: *BC_GRAM
+      header: ORS Hermosillo AERO
+      tag: ORS Hermosillo AERO
+      lat:  29.0275001526
+      lon:  248.854446411
+
+    bc_gram164:
+      <<: *BC_GRAM
+      header: Pickle Lake AERO
+      tag: Pickle Lake AERO
+      lat:  51.4494438171
+      lon:  269.782501221
+
+    bc_gram165:
+      <<: *BC_GRAM
+      header: Ragged Point AERO
+      tag: Ragged Point AERO
+      lat:  13.1650180817
+      lon:  300.567966461
+
+    bc_gram166:
+      <<: *BC_GRAM
+      header: Railroad Valley AERO
+      tag: Railroad Valley AERO
+      lat:  38.5
+      lon:  244.0
+
+    bc_gram167:
+      <<: *BC_GRAM
+      header: Red Mountain Pass AERO
+      tag: Red Mountain Pass AERO
+      lat:  37.9074478149
+      lon:  252.289085388
+
+    bc_gram168:
+      <<: *BC_GRAM
+      header: Resolute Bay AERO
+      tag: Resolute Bay AERO
+      lat:  74.7051239014
+      lon:  265.030593872
+
+    bc_gram169:
+      <<: *BC_GRAM
+      header: Rexburg Idaho AERO
+      tag: Rexburg Idaho AERO
+      lat:  43.820110321
+      lon:  248.21698761
+
+    bc_gram170:
+      <<: *BC_GRAM
+      header: Rimrock AERO
+      tag: Rimrock AERO
+      lat:  46.4874992371
+      lon:  243.008331299
+
+    bc_gram171:
+      <<: *BC_GRAM
+      header: Sandia NM PSEL AERO
+      tag: Sandia NM PSEL AERO
+      lat:  35.0545845032
+      lon:  253.45993042
+
+    bc_gram172:
+      <<: *BC_GRAM
+      header: Saturn Island AERO
+      tag: Saturn Island AERO
+      lat:  38.992
+      lon:  283.16
+
+    bc_gram173:
+      <<: *BC_GRAM
+      header: Santa Monica Colg AERO
+      tag: Santa Monica Colg AERO
+      lat:  34.0168495178
+      lon:  241.528869629
+
+    bc_gram174:
+      <<: *BC_GRAM
+      header: SDSU IPLab AERO
+      tag: SDSU IPLab AERO
+      lat:  44.3148269653
+      lon:  263.213928223
+
+    bc_gram175:
+      <<: *BC_GRAM
+      header: Sevilleta AERO
+      tag: Sevilleta AERO
+      lat:  34.3
+      lon:  253.1
+
+    bc_gram176:
+      <<: *BC_GRAM
+      header: Sigma Space Corp AERO
+      tag: Sigma Space Corp AERO
+      lat:  38.952999115
+      lon:  283.163528442
+
+    bc_gram177:
+      <<: *BC_GRAM
+      header: Sioux Falls AERO
+      tag: Sioux Falls AERO
+      lat:  43.7364807129
+      lon:  263.374008179
+
+    bc_gram178:
+      <<: *BC_GRAM
+      header: SP Bayboro AERO
+      tag: SP Bayboro AERO
+      lat:  27.7615509033
+      lon:  277.366996765
+
+    bc_gram179:
+      <<: *BC_GRAM
+      header: TABLE MOUNTAIN CA AERO
+      tag: TABLE MOUNTAIN CA AERO
+      lat:  34.3800010681
+      lon:  242.319999695
+
+    bc_gram180:
+      <<: *BC_GRAM
+      header: Tallahassee AERO
+      tag: Tallahassee AERO
+      lat:  30.4458332062
+      lon:  275.700653076
+
+    bc_gram181:
+      <<: *BC_GRAM
+      header: Taylor Ranch TWRS AERO
+      tag: Taylor Ranch TWRS AERO
+      lat:  45.1035003662
+      lon:  245.150047302
+
+    bc_gram182:
+      <<: *BC_GRAM
+      header: Thompson Farm AERO
+      tag: Thompson Farm AERO
+      lat:  43.1087722778
+      lon:  289.05165863
+
+    bc_gram183:
+      <<: *BC_GRAM
+      header: Thule AERO
+      tag: Thule AERO
+      lat:  76.5161056519
+      lon:  291.231002808
+
+    bc_gram184:
+      <<: *BC_GRAM
+      header: Toronto AERO
+      tag: Toronto AERO
+      lat:  43.6
+      lon:  280.6
+
+    bc_gram185:
+      <<: *BC_GRAM
+      header: Tucson AERO
+      tag: Tucson AERO
+      lat:  32.1
+      lon:  249.0
+
+    bc_gram186:
+      <<: *BC_GRAM
+      header: Tudor Hill AERO
+      tag: Tudor Hill AERO
+      lat:  32.263999939
+      lon:  295.121002197
+
+    bc_gram187:
+      <<: *BC_GRAM
+      header: UAHuntsville AERO
+      tag: UAHuntsville AERO
+      lat:  34.7253303528
+      lon:  273.355270386
+
+    bc_gram188:
+      <<: *BC_GRAM
+      header: UCSB AERO
+      tag: UCSB AERO
+      lat:  34.4154281616
+      lon:  240.154640198
+
+    bc_gram189:
+      <<: *BC_GRAM
+      header: UMBC AERO
+      tag: UMBC AERO
+      lat:  39.2546272278
+      lon:  283.290649414
+
+    bc_gram190:
+      <<: *BC_GRAM
+      header: Univ of Houston AERO
+      tag: Univ of Houston AERO
+      lat:  29.7176990509
+      lon:  264.658401489
+
+    bc_gram191:
+      <<: *BC_GRAM
+      header: Univ of Lethbridge AERO
+      tag: Univ of Lethbridge AERO
+      lat:  49.6816711426
+      lon:  247.131034851
+
+    bc_gram192:
+      <<: *BC_GRAM
+      header: USC SEAPRISM AERO
+      tag: USC SEAPRISM AERO
+      lat:  33.563709259
+      lon:  241.88217926
+
+    bc_gram193:
+      <<: *BC_GRAM
+      header: USGS Flagstaff ROLO AERO
+      tag: USGS Flagstaff ROLO AERO
+      lat:  35.2148399353
+      lon:  248.365577698
+
+    bc_gram194:
+      <<: *BC_GRAM
+      header: Wallops AERO
+      tag: Wallops AERO
+      lat:  37.932849884
+      lon:  284.528053284
+
+    bc_gram195:
+      <<: *BC_GRAM
+      header: WaveCIS Site CSI 6 AERO
+      tag: WaveCIS Site CSI 6 AERO
+      lat:  28.8666667938
+      lon:  269.516670227
+
+    bc_gram196:
+      <<: *BC_GRAM
+      header: White Sands HELSTF AERO
+      tag: White Sands HELSTF AERO
+      lat:  32.6349411011
+      lon:  253.66192627
+
+    bc_gram197:
+      <<: *BC_GRAM
+      header: Yale Coastal AERO
+      tag: Yale Coastal AERO
+      lat:  41.2583007812
+      lon:  287.268798828
+
+    bc_gram198:
+      <<: *BC_GRAM
+      header: Yellowknife Aurora AERO
+      tag: Yellowknife Aurora AERO
+      lat:  62.4513015747
+      lon:  245.623748779
+
+    bc_gram199:
+      <<: *BC_GRAM
+      header: Yuma AERO
+      tag: Yuma AERO
+      lat:  32.6441383362
+      lon:  245.417221069
+
+  layer:
+
+    ground:
+      expr: const(const(_bc,1.0),0.0,'-u')
+      gxout: grfill
+      cmin: 0
+      cmax: 1
+      cint: 1
+      cbar: BW
+      skip: --auto
+      nsub: 1
+
+    barbs:
+      gxout: barb
+      uexpr: _uwnd*1.94384
+      vexpr: _vwnd*1.94384
+      skip: 1 1
+      size: 0.05
+      ccolor: 130 130 130
+      cthick: 3
+
+    puffy_cloud:
+      gxout: shaded
+      expr: (_qi+_ql) * 1000
+      cbar: allgray
+      cbunits: 'Cloud Water [g/kg]'
+      nsub: 1
+      skip: 1
+      type: linear
+      clevs: 0.01 0.08 0.16 0.24 0.32
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.010 0.000 0.400
+        - 0.333 0.400 0.400
+        - 0.667 0.400 0.400
+        - 1.000 0.400 0.400
+
+    rh:
+      gxout: shaded
+      expr: _rh
+      cbar: MRedBlues
+      cbunits: '[%]'
+      clevs: 10 20 30 40 50 60 70 80 90
+      scale:
+      cmin:
+      cmax:
+      cint:
+      scale:
+      nsub: 1
+      skip: 1
+
+    cloud_water:
+      gxout: contour
+      expr: (_qi+_ql) * 1000
+      ccolor: 0 0 255
+      cthick: 8
+      clab: masked
+      clsize: 0.06
+      clevs: 0.01 0.08 0.16 0.24 0.32
+
+    pbltop:
+      gxout: contour
+      expr: _pbltop / 100
+      vrange: 1000 100
+      cint: 100000
+      ccolor: 215 0 0
+      cstyle: 1
+      cthick: 8
+      cmark: 0
+      clab: 'off'
+      z: 1
+
+    bc:
+      gxout: shaded
+      expr: _bc
+      cbar: Warm01_cmap
+      clevs: 0 0.05 0.1 0.2 0.5 1 2 5 10 20 50 100
+      cmin:
+      cmax:
+      cint:
+      cbunits: 'ug m`a-3'
+      nsub: 10
+      skip: 10
+      scale:
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.113 0.000 0.000
+        - 0.170 1.000 1.000
+        - 1.000 1.000 1.000

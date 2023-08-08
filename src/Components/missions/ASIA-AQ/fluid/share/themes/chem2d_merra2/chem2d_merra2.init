@@ -1,0 +1,9 @@
+theme: [wxmapschem2d]
+config: [chem2d_merra2]
+streams: [MERRA2]
+fields: [duaot, totaot, ssaot, ocaot, bcaot, suaot, fineaot, to3, so2cmass, so2smass, ocsmass, bcsmass, cocl, cosc]
+
+default:
+  field: duaot
+  region: nam
+  level: '0'

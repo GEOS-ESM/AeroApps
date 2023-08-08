@@ -1,0 +1,8 @@
+theme: [wxmapschem2d, missions]
+config: [chem2d_mission]
+streams: [G5FPFC]
+
+default:
+  field: duaot
+  region: nam
+  level: '0'

@@ -1,0 +1,210 @@
+n_lines: &N_LINES
+
+  - 100 27.5  140 27.5
+  - 100 25.03 140 25.03
+  - 100 22.32 140 22.32
+  - 100 20.04 140 20.04
+  - 100 17.98 140 17.98
+  - 100 15.18 140 15.18
+  - 100 13.76 140 13.76
+
+s_lines: &S_LINES
+
+  - 100     1.84 119.18 16.64
+  - 100    -1.6  120.98 14.6 
+  - 100    -3.53 122.39 13.01
+  - 100.03 -5    123.02 12.3 
+  - 102.03 -5    123.81 11.4 
+  - 104.02 -5    124.49 10.49
+
+connectors: &CONNECTORS
+  - 95 1.84 100   1.84
+  - 95 -1.6 100  -1.6
+  - 95 -3.53 100 -3.53
+  - 95 -5 100.03 -5
+  - 102.03 -5  102.03 -6.55
+  - 104.02 -5  104.02 -6.55
+
+p_lines: &P_LINES
+
+  - 107.39 30    138.29 -5   
+  - 110.65 30    140    -3.24
+  - 113.92 30    140     0.45
+  - 117.18 30    140     4.15
+  - 121.57 31.23 140    10.35
+  - 116.41 39.9  140    13.18
+
+n_labels: &N_LABELS 
+
+  - 140 27.5  N1
+  - 140 25.03 2
+  - 140 22.32 3
+  - 140 20.04 4
+  - 140 17.98 5
+  - 140 15.18 6
+  - 140 13.76 7
+
+s_labels: &S_LABELS
+
+  - 95      1.98 SC1
+  - 95     -1.6  2
+  - 95     -3.53 3
+  - 95     -5    4
+  - 102.03 -6.55 5
+  - 104.02 -6.55 6
+
+p_labels: &P_LABELS
+
+  - 107.39 30    PS1
+  - 110.65 30    2
+  - 114.17 30    3
+  - 117.18 30    4
+  - 122.5  30    5
+  - 125.0  30    6
+
+places: &PLACES
+
+  - 100.5 13.76 Bangkok
+  - 116.41 39.9 Beijing
+  - 120.56 15.19 Clark Airport
+  - 110.2 20.04 Haikou
+  - 114.17 22.32 Hong Kong
+  - 101.69 3.14 Kuala Lumpur
+  - 120.98 14.6 Manila
+  - 103.82 1.35 Singapore
+  - 121.47 31.2 Shanghai
+  - 121.57 25.03 Taipei
+  - 102.63 17.98 Vientiane
+
+stations: &STATIONS
+  - 76.916 28.317 Amity Univ Gurgaon https://fluid.nccs.nasa.gov/gram/total/28.317x76.916/?region=camp2ex
+  - 105.73 9.28 Bac Lieu https://fluid.nccs.nasa.gov/gram/total/9.28x105.73/?region=camp2ex
+  - 33.56 15.76 Baler https://fluid.nccs.nasa.gov/gram/total/15.76x33.56/?region=camp2ex
+  - 107.61 -6.888 Bandung https://fluid.nccs.nasa.gov/gram/total/-6.888x107.61/?region=camp2ex
+  - 100.518 13.749 Bangkok https://fluid.nccs.nasa.gov/gram/total/13.749x100.518/?region=camp2ex
+  - 90.756 22.227 Bhola https://fluid.nccs.nasa.gov/gram/total/22.227x90.756/?region=camp2ex
+  - 85.14 27.895 Bidur https://fluid.nccs.nasa.gov/gram/total/27.895x85.14/?region=camp2ex
+  - 113.04 3.17 Bintulu https://fluid.nccs.nasa.gov/gram/total/3.17x113.04/?region=camp2ex
+  - 120.183 -1.65 BMKG GAW PALU https://fluid.nccs.nasa.gov/gram/total/-1.65x120.183/?region=camp2ex
+  - 100.318 -0.202 Bukit Kototabang https://fluid.nccs.nasa.gov/gram/total/-0.202x100.318/?region=camp2ex
+  - 119.98 12.16 Busuanga https://fluid.nccs.nasa.gov/gram/total/12.16x119.98/?region=camp2ex
+  - 121.538 25.297 Cape Fuguei Station https://fluid.nccs.nasa.gov/gram/total/25.297x121.538/?region=camp2ex
+  - 98.972 18.771 Chiang Mai Met Sta https://fluid.nccs.nasa.gov/gram/total/18.771x98.972/?region=camp2ex
+  - 120.56 15.19 Clark Airport https://fluid.nccs.nasa.gov/gram/total/15.19x120.56/?region=camp2ex
+  - 90.398 23.728 Dhaka University https://fluid.nccs.nasa.gov/gram/total/23.728x90.398/?region=camp2ex
+  - 94.897 27.451 Dibrugarh Univ https://fluid.nccs.nasa.gov/gram/total/27.451x94.897/?region=camp2ex
+  - 99.045 19.932 Doi Ang Khang https://fluid.nccs.nasa.gov/gram/total/19.932x99.045/?region=camp2ex
+  - 121.185 24.968 EPA-NCU https://fluid.nccs.nasa.gov/gram/total/24.968x121.185/?region=camp2ex
+  - 99.206 19.913 Fang https://fluid.nccs.nasa.gov/gram/total/19.913x99.206/?region=camp2ex
+  - 84.128 25.871 Gandhi College https://fluid.nccs.nasa.gov/gram/total/25.871x84.128/?region=camp2ex
+  - 114.117 22.483 Hong Kong Sheung https://fluid.nccs.nasa.gov/gram/total/22.483x114.117/?region=camp2ex
+  - 76.983 42.623 Issyk-Kul https://fluid.nccs.nasa.gov/gram/total/42.623x76.983/?region=camp2ex
+  - 75.806 26.906 Jaipur https://fluid.nccs.nasa.gov/gram/total/26.906x75.806/?region=camp2ex
+  - 103.642 -1.632 Jambi https://fluid.nccs.nasa.gov/gram/total/-1.632x103.642/?region=camp2ex
+  - 80.232 26.513 Kanpur https://fluid.nccs.nasa.gov/gram/total/26.513x80.232/?region=camp2ex
+  - 120.292 22.676 Kaohsiung https://fluid.nccs.nasa.gov/gram/total/22.676x120.292/?region=camp2ex
+  - 67.136 24.946 Karachi https://fluid.nccs.nasa.gov/gram/total/24.946x67.136/?region=camp2ex
+  - 110.349 1.491 Kuching https://fluid.nccs.nasa.gov/gram/total/1.491x110.349/?region=camp2ex
+  - 167.743 8.847 Kwajalein Atoll https://fluid.nccs.nasa.gov/gram/total/8.847x167.743/?region=camp2ex
+  - 85.566 28.211 Kyanjin Gompa https://fluid.nccs.nasa.gov/gram/total/28.211x85.566/?region=camp2ex
+  - 74.264 31.48 Lahore https://fluid.nccs.nasa.gov/gram/total/31.48x74.264/?region=camp2ex
+  - 128.749 -16.108 Lake Argyle https://fluid.nccs.nasa.gov/gram/total/-16.108x128.749/?region=camp2ex
+  - 85.61 28.214 Langtang BC https://fluid.nccs.nasa.gov/gram/total/28.214x85.61/?region=camp2ex
+  - 120.53 18.18 Laog Airport https://fluid.nccs.nasa.gov/gram/total/18.18x120.53/?region=camp2ex
+  - 114.097 -22.241 Learmonth https://fluid.nccs.nasa.gov/gram/total/-22.241x114.097/?region=camp2ex
+  - 123.73 13.13 Legazpi https://fluid.nccs.nasa.gov/gram/total/13.13x123.73/?region=camp2ex
+  - 101.187 15.267 Lopburi https://fluid.nccs.nasa.gov/gram/total/15.267x101.187/?region=camp2ex
+  - 101.416 20.931 Luang Namtha https://fluid.nccs.nasa.gov/gram/total/20.931x101.416/?region=camp2ex
+  - 120.874 23.469 Lulin https://fluid.nccs.nasa.gov/gram/total/23.469x120.874/?region=camp2ex
+  - 99.171 19.83 Maeson https://fluid.nccs.nasa.gov/gram/total/19.83x99.171/?region=camp2ex
+  - 119.572 -4.998 Makassar https://fluid.nccs.nasa.gov/gram/total/-4.998x119.572/?region=camp2ex
+  - 96.186 21.973 Mandalay MTU https://fluid.nccs.nasa.gov/gram/total/21.973x96.186/?region=camp2ex
+  - 121.078 14.635 Manila Observatory https://fluid.nccs.nasa.gov/gram/total/14.635x121.078/?region=camp2ex
+  - 73.183 6.776 MCO-Hanimaadhoo https://fluid.nccs.nasa.gov/gram/total/6.776x73.183/?region=camp2ex
+  - 124.843 6.496 ND Marbel Univ https://fluid.nccs.nasa.gov/gram/total/6.496x124.843/?region=camp2ex
+  - 105.8 21.048 NGHIA DO https://fluid.nccs.nasa.gov/gram/total/21.048x105.8/?region=camp2ex
+  - 109.206 12.205 NhaTrang https://fluid.nccs.nasa.gov/gram/total/12.205x109.206/?region=camp2ex
+  - 102.717 17.877 Nong Khai https://fluid.nccs.nasa.gov/gram/total/17.877x102.717/?region=camp2ex
+  - 128.249 26.867 Okinawa Hedo https://fluid.nccs.nasa.gov/gram/total/26.867x128.249/?region=camp2ex
+  - 135.591 34.651 Osaka https://fluid.nccs.nasa.gov/gram/total/34.651x135.591/?region=camp2ex
+  - 120.02 16.04 PAGASA Aparri https://fluid.nccs.nasa.gov/gram/total/16.04x120.02/?region=camp2ex
+  - 113.946 -2.228 Palangkaraya https://fluid.nccs.nasa.gov/gram/total/-2.228x113.946/?region=camp2ex
+  - 83.975 28.187 Pokhara https://fluid.nccs.nasa.gov/gram/total/28.187x83.975/?region=camp2ex
+  - 109.191 0.075 Pontianak https://fluid.nccs.nasa.gov/gram/total/0.075x109.191/?region=camp2ex
+  - 118.76 9.74 Puerto Princesa Airport https://fluid.nccs.nasa.gov/gram/total/9.74x118.76/?region=camp2ex
+  - 73.805 18.537 Pune https://fluid.nccs.nasa.gov/gram/total/18.537x73.805/?region=camp2ex
+  - 86.948 28.365 QOMS CAS https://fluid.nccs.nasa.gov/gram/total/28.365x86.948/?region=camp2ex
+  - 100.041 13.819 Silpakorn Univ https://fluid.nccs.nasa.gov/gram/total/13.819x100.041/?region=camp2ex
+  - 103.78 1.298 Singapore https://fluid.nccs.nasa.gov/gram/total/1.298x103.78/?region=camp2ex
+  - 103.905 21.332 Son La https://fluid.nccs.nasa.gov/gram/total/21.332x103.905/?region=camp2ex
+  - 100.605 7.184 Songkhla Met Sta https://fluid.nccs.nasa.gov/gram/total/7.184x100.605/?region=camp2ex
+  - 131.268 -0.875 Sorong https://fluid.nccs.nasa.gov/gram/total/-0.875x131.268/?region=camp2ex
+  - 102.504 13.689 Sra Kaeo https://fluid.nccs.nasa.gov/gram/total/13.689x102.504/?region=camp2ex
+  - 121.538 25.015 Taipei CWB https://fluid.nccs.nasa.gov/gram/total/25.015x121.538/?region=camp2ex
+  - 114.362 10.376 Tai Ping https://fluid.nccs.nasa.gov/gram/total/10.376x114.362/?region=camp2ex
+  - 106.65 10.82 Tan Son Nhat Airport https://fluid.nccs.nasa.gov/gram/total/10.82x106.65/?region=camp2ex
+  - 89.639 27.473 Thimphu https://fluid.nccs.nasa.gov/gram/total/27.473x89.639/?region=camp2ex
+  - 104.871 15.246 Ubon Ratchathani https://fluid.nccs.nasa.gov/gram/total/15.246x104.871/?region=camp2ex
+  - 100.302 5.358 USM Penang https://fluid.nccs.nasa.gov/gram/total/5.358x100.302/?region=camp2ex
+  - 120.617 24.162 Xitun https://fluid.nccs.nasa.gov/gram/total/24.162x120.617/?region=camp2ex
+
+region:
+
+  camp2ex_lg: &CAMP2EX_LG
+
+    long_name: CAMP2EX Lg
+    lon: 65 160
+    lat: -15 50
+    mpdset: hires
+    mproj: latlon
+
+    stations: *STATIONS
+
+  camp2ex_sm: &CAMP2EX_SM
+
+    long_name: CAMP2EX Sm
+    lon: 100 140
+    lat: -5 30
+    mpdset: hires
+    mproj: latlon
+
+    stations: *STATIONS
+
+  camp2ex_ilg:
+
+    <<: *CAMP2EX_LG
+
+    long_name: CAMP2EX iLg
+
+    stations: *STATIONS
+    places: *PLACES
+    n_lines: *N_LINES
+    p_lines: *P_LINES
+    s_lines: *S_LINES
+    connectors: *CONNECTORS
+    n_labels: *N_LABELS
+    p_labels: *P_LABELS
+    s_labels: *S_LABELS
+
+    rectangle:
+      iSm:
+        line_color: 0 0 0
+        line_width: 3
+        line_style: 2
+        data: [100.000000 -5.000000 140.000000 30.000000]
+
+  camp2ex_ism:
+
+    <<: *CAMP2EX_SM
+
+    long_name: CAMP2EX iSm
+
+    stations: *STATIONS
+    places: *PLACES
+    n_lines: *N_LINES
+    p_lines: *P_LINES
+    s_lines: *S_LINES
+    connectors: *CONNECTORS
+    n_labels: *N_LABELS
+    p_labels: *P_LABELS
+    s_labels: *S_LABELS

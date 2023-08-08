@@ -1,0 +1,96 @@
+playlist:
+
+  SLP_TENDENCY:
+    stream: MERRA2
+    time_dt: 19930313T180000
+    field: slptend
+    level: 0
+    region: midatl
+    oname: snow_storm_01.png
+
+stream:
+
+  MERRA2:
+
+    long_name: MERRA-2
+    description: Modern-Era Retrospective Analysis (MERRA-2)
+    uri: /discover/nobackup/projects/gmao/merra2/data/products/opendap/$collection
+
+field:
+
+  MERRA2:
+
+    _slp:
+      long_name: Sea Level Pressure
+      units: mb
+      expression: slp.inst1_2d_asm_Nx
+
+    _slptend6:
+      long_name: 6Hr Pressure Tendency at Sea Level
+      units: mb
+      expression: (_slp - _slp(td=-6))
+
+theme:
+
+  plot:
+
+    slptend:
+      long_name: "6-Hr Pressure Tendency"
+      level: [0]
+      layers: [slptend, slp]
+      title: '\\ 6-Hr Pressure Tendency at Sea Level [mb]'
+      map:
+        line_color: 0 0 0
+
+  layer:
+
+    slptend:
+      gxout: shaded
+      expr: _slptend6/100
+      cbar: RedBlues
+      nsub: 1
+      skip: 1
+      type: linear
+      cmin: -14
+      cmax: 14
+      cint: 2
+
+    slp:
+      gxout: contour
+      expr: smth9(_slp/100)
+      cint: 4
+      ccolor: 0 0 0
+      cstyle: 1
+      cthick: 7
+      clsize: 0.09
+      clthick: 7
+      clab: masked
+
+region:
+
+  midatl:
+
+    long_name: Mid Atlantic
+    lon: -110 -50
+    lat: 20 50
+    mpdset: hires
+    mproj: latlon
+
+attribute:
+
+  colorbar:
+
+    RedBlues:
+      - 130   60    60
+      - 170   70    70
+      - 190  115   115
+      - 230  150   150
+      - 240  180   180
+      - 255  235   235
+      - 255  255   255
+      - 235  235   255
+      - 180  180   245
+      - 150  150   230
+      - 115  115   190
+      -  70   70   170
+      -  60   60   130

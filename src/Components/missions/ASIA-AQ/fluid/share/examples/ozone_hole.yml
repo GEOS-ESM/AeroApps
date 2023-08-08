@@ -1,0 +1,246 @@
+
+#                          2006 OZONE HOLE PANEL
+#
+# This file contains configuration settings used to generate a shaded image
+# of Total Ozone over Antarctica on September 24, 2006.
+#
+# wxmap.py --config ozone_hole
+#
+#------------------------------------------------------------------------------
+#
+#                          PLAYLIST DEFINITION BLOCK
+#
+# A playlist contains one or more sets of requests. The parameters correspond
+# to command-line arguments. The command-line equivalent to this playlist is:
+#
+# wxmap.py --config ozone_hole --stream MERRA2 --time_dt 20060924T000000 \
+#          --field to3 --level 0 --region sps --oname ozone_hole.png
+
+playlist:
+
+  OzoneHole:
+    region: sps
+    field: to3
+    level: 0
+    time_dt: 20060924T000000
+    stream: MERRA2
+    oname: ozone_hole.png
+
+#------------------------------------------------------------------------------
+#
+#                          STREAM DEFINITION BLOCK
+#
+# This setting overrides the default settings in "share/wxmap/stream.yml".
+# Other parameters are inherited if not overridden here. This is only for
+# demonstration. You typically do not need to override default stream values.
+#
+# Notice that "$collection" is a resolvable token that receives the collection
+# name as requested. Time tokens are also valid and will resolve to the forecast
+# start date/time or actual time for non-prognostic files.
+#------------------------------------------------------------------------------
+
+stream:
+
+  MERRA2:
+
+    uri: /discover/nobackup/projects/gmao/merra2/data/products/opendap/$collection
+  
+
+#------------------------------------------------------------------------------
+#
+#                         FIELD DEFINITION BLOCK
+#
+# Define the fields needed to plot total ozone. The definitions defined here
+# will override the default definitions in "share/wxmap/field.yml".
+#
+# Note that the defined field names are like aliases. Each name associates with
+# the expression parameter. Expressions can be any valid GrADS expression.
+# The syntax, however, is augmented to include the actual field name,
+# stream name and collection name. The following forms are valid:
+#
+#              field
+#              field.collection
+#              field.stream.collection
+#
+# The stream name is not necessary if referencing the containing stream for
+# the definitions. See the stream definition block for more information on
+# defining a stream.
+#
+# Lastly, units are specified here and intended to be the desired units.
+# Add appropriate scaling to achieve these units. udunits() will eventually be
+# employed to render this unnecessary. Scaling can also be deferred to the
+# expression parameters defined within layers (see theme definition block).
+#
+#------------------------------------------------------------------------------
+
+field:
+
+  MERRA2:
+
+    _to3:
+      long_name: Total Column Ozone
+      units: Dobson
+      expression: to3.inst1_2d_asm_Nx
+
+#------------------------------------------------------------------------------
+#
+#                         REGION DEFINITION BLOCK
+#
+# Define a region to be used for this application. This definition will be
+# appended to the default definitions (or override a definition with the
+# same name) contained in "share/wxmap/region.yml".
+#------------------------------------------------------------------------------
+
+region:
+
+  sps:
+
+    long_name: S Polar
+    lon: -180 180
+    lat: -90 -30
+    mpdset: hires
+    mproj: sps
+    mpvals: -180 180
+
+#------------------------------------------------------------------------------
+#
+#                 COLORBARS / GLOBAL ATTRIBUTES DEFINITION BLOCK
+#
+# Define some new colorbars for this application. These definitions will be
+# appended to the default definitions (or override definitions with the same
+# name) contained in "share/wxmap/attribute.yml".
+#
+# Also, please note that colorbars can be specified in three different forms:
+#
+# (1) List of RGBA or RGB values
+# (2) Colormap Dictionary of tuples
+# (3) Matplotlib Built-In Colormap Name
+#
+# (2) and (3) make use if the pygrads gacm.SegmentedColormap() class.
+#------------------------------------------------------------------------------
+
+attribute:
+
+  colorbar:
+
+    TotOzone:
+      - 254.605 253.99 254.864 0
+      - 243.626 234.614 253.893 50
+      - 228.65 217.431 254.382 100
+      - 211.475 202.933 254.928 150
+      - 193.339 191.299 254.86 200
+      - 175.19 182.533 253.829 255
+      - 157.812 176.523 251.662 255
+      - 141.947 173.079 248.296 255
+      - 128.934 171.958 243.736 255
+      - 120.16 172.887 238.034 255
+      - 114.111 175.573 231.27 255
+      - 110.374 179.715 223.543 255
+      - 108.669 185.018 214.963 255
+      - 108.749 191.191 205.646 255
+      - 110.386 197.962 195.71 255
+      - 113.366 205.073 185.269 255
+      - 117.486 212.289 174.436 255
+      - 122.558 219.397 163.319 255
+      - 128.406 226.208 152.02 255
+      - 134.869 232.556 140.633 255
+      - 141.8 238.301 129.248 255
+      - 149.064 243.324 117.947 255
+      - 156.54 247.529 106.804 255
+      - 164.122 250.844 95.8891 255
+      - 171.712 253.214 85.266 255
+      - 179.227 254.603 74.9928 255
+      - 186.592 254.994 65.1233 255
+      - 193.744 254.383 55.7083 255
+      - 200.629 252.781 46.7962 255
+      - 207.199 250.211 38.4354 255
+      - 213.418 246.707 30.6769 255
+      - 219.254 242.311 23.5782 255
+      - 224.681 237.075 17.2117 255
+      - 229.68 231.054 11.6818 255
+      - 234.238 224.312 7.17634 255
+      - 238.345 216.914 4.44469 255
+      - 241.994 208.929 6.05457 255
+      - 245.183 200.428 8.99398 255
+      - 247.914 191.484 12.7444 255
+      - 250.189 182.169 17.0995 255
+      - 252.015 172.555 21.9318 255
+      - 253.398 162.713 27.1497 255
+      - 254.348 152.715 32.6817 255
+      - 254.875 142.627 38.4695 255
+      - 254.991 132.517 44.4641 255
+      - 254.708 122.448 50.6238 255
+      - 254.038 112.482 56.912 255
+      - 252.997 102.675 63.2966 255
+      - 251.598 93.0845 69.7495 255
+      - 249.854 83.761 76.2457 255
+      - 247.782 74.7536 82.7626 255
+      - 245.395 66.1075 89.2804 255
+      - 242.709 57.8645 95.7811 255
+      - 239.737 50.0632 102.249 255
+      - 236.496 42.7383 108.668 255
+      - 232.999 35.9215 115.027 255
+      - 229.261 29.6405 121.313 255
+      - 225.296 23.9202 127.516 255
+      - 221.12 18.7813 133.626 255
+      - 216.746 14.2417 139.634 255
+      - 212.188 10.3156 145.533 255
+      - 207.46 7.01397 151.314 255
+
+#------------------------------------------------------------------------------
+#
+#                         THEME DEFINITION BLOCK
+#
+# Define the scientific theme or instance describing the plot and associated
+# layers to be displayed. This example uses the default name, "theme". This is
+# a special instance that inherits default settings. However, users are free to
+# define new themes (details not described here).
+#
+# A theme contains a definition block for (1) plots, (2) layers and
+# (3) local attributes. There are many shortcut options that can also be used.
+# However, this example explicitly defines most parameters for demonstration.
+#
+# A theme can have many plots. There is only one defined in this example.
+#------------------------------------------------------------------------------
+
+theme:
+
+  plot:
+
+    to3:
+      long_name: Total Ozone
+      levels: [0]
+      layers: [total_ozone]
+      title: '\\\\ Total Ozone [Dobson Units]'
+
+#     A map definition block it attached here to override default settings in
+#     "share/wxmap/map.yml".
+
+      map:
+        land_color: 230 230 230
+        water_color: 0 0 100
+        layers: [standard]
+
+  layer:
+
+    total_ozone:
+      gxout: shaded
+      expr: '_to3'
+      cbar: TotOzone
+      clevs:
+      cmin: 220
+      cmax: 440
+      cint: 4
+      nsub: 1
+      skip: 2
+      type: linear
+
+  attribute:
+
+#   Note: The values assigned to this parameter could also be assigned to the
+#   "clevs" parameter in the layer definition blocks. This parameter can also
+#   be a dictionary of regions or levels with values that vary accordingly.
+#   More advanced keys can be used to create temporal dependencies such as 
+#   monthly or seasonal.
+
+    to3clevs: 220 224 228 232 236 240 244 248 252 256 260 264 268 272 276 280 284 288 292 296 300 304 308 312 316 320 324 328 332 336 340 344 348 352 356 360 364 368 372 376 380 384 388 392 396 400 404 408 412 416 420 424 428 432 436 440

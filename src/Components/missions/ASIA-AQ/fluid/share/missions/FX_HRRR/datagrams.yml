@@ -1,0 +1,1646 @@
+wxmapscustom:
+
+  plot:
+
+    pm25_smoke_gram000: &PM25_SMOKE
+      long_name: 'pm25_smoke'
+      header: Ames_AERO (93.77W,42.02N)
+      tag: Ames_AERO
+      xlabel: ''
+      levels: [0]
+      layers: [pm25]
+      title: 'Smoke PM2.5'
+      parea:  1 10 1 7.5
+      lev:  1000 100
+      lat:  42.0213623047
+      lon:  -93.7747802734
+      time: '$tbeg $t5day'
+      ylab: 'Pressure (mb)'
+      shape: 'off'
+      pm25:
+        expr: '_pm25_smoke'
+
+    pm25_smoke_gram001:
+      <<: *PM25_SMOKE
+      header: Appalachian_State_AERO (81.69W,36.21N)
+      tag: Appalachian_State_AERO
+      lat:  36.2145996094
+      lon:  -81.6938018799
+
+    pm25_smoke_gram002:
+      <<: *PM25_SMOKE
+      header: ARM_Oliktok_AK_AERO (149.88W,70.50N)
+      tag: ARM_Oliktok_AK_AERO
+      lat:  70.49949646
+      lon:  -149.880004883
+
+    pm25_smoke_gram003:
+      <<: *PM25_SMOKE
+      header: ARM_SGP_AERO (97.49W,36.61N)
+      tag: ARM_SGP_AERO
+      lat:  36.6051750183
+      lon:  -97.4856185913
+
+    pm25_smoke_gram004:
+      <<: *PM25_SMOKE
+      header: Bakersfield_AERO (119.00W,35.33N)
+      tag: Bakersfield_AERO
+      lat:  35.3315048218
+      lon:  -119.000007629
+
+    pm25_smoke_gram005:
+      <<: *PM25_SMOKE
+      header: Barrow_AERO (156.80W,71.30N)
+      tag: Barrow_AERO
+      lat:  71.3
+      lon:  -156.8
+
+    pm25_smoke_gram006:
+      <<: *PM25_SMOKE
+      header: Billerica_AERO (71.27W,42.53N)
+      tag: Billerica_AERO
+      lat:  42.5283470154
+      lon:  -71.2686157227
+
+    pm25_smoke_gram007:
+      <<: *PM25_SMOKE
+      header: Bonanza_Creek_AERO (148.32W,64.74N)
+      tag: Bonanza_Creek_AERO
+      lat:  64.742805481
+      lon:  -148.316268921
+
+    pm25_smoke_gram008:
+      <<: *PM25_SMOKE
+      header: BONDVILLE_AERO (88.37W,40.05N)
+      tag: BONDVILLE_AERO
+      lat:  40.0533332825
+      lon:  -88.3719406128
+
+    pm25_smoke_gram009:
+      <<: *PM25_SMOKE
+      header: Bozeman_AERO (111.05W,45.66N)
+      tag: Bozeman_AERO
+      lat:  45.6622047424
+      lon:  -111.045013428
+
+    pm25_smoke_gram010:
+      <<: *PM25_SMOKE
+      header: Brookhaven_AERO (72.88W,40.87N)
+      tag: Brookhaven_AERO
+      lat:  40.8660011292
+      lon:  -72.8846969604
+
+    pm25_smoke_gram011:
+      <<: *PM25_SMOKE
+      header: CalTech_AERO (118.13W,34.14N)
+      tag: CalTech_AERO
+      lat:  34.1367301941
+      lon:  -118.126167297
+
+    pm25_smoke_gram012:
+      <<: *PM25_SMOKE
+      header: Cape_San_Juan_AERO (65.62W,18.38N)
+      tag: Cape_San_Juan_AERO
+      lat:  18.3845005035
+      lon:  -65.6199035645
+
+    pm25_smoke_gram013:
+      <<: *PM25_SMOKE
+      header: CARTEL_AERO (71.93W,45.38N)
+      tag: CARTEL_AERO
+      lat:  45.3797531128
+      lon:  -71.9313278198
+
+    pm25_smoke_gram014:
+      <<: *PM25_SMOKE
+      header: Chapais_AERO (74.98W,49.82N)
+      tag: Chapais_AERO
+      lat:  49.8224334717
+      lon:  -74.975402832
+
+    pm25_smoke_gram015:
+      <<: *PM25_SMOKE
+      header: Churchill_AERO (93.82W,58.74N)
+      tag: Churchill_AERO
+      lat:  58.736000061
+      lon:  -93.8181686401
+
+    pm25_smoke_gram016:
+      <<: *PM25_SMOKE
+      header: Cold_Lake_AERO (110.28W,54.42N)
+      tag: Cold_Lake_AERO
+      lat:  54.4169998169
+      lon:  -110.282997131
+
+    pm25_smoke_gram017:
+      <<: *PM25_SMOKE
+      header: Dayton_AERO (84.11W,39.78N)
+      tag: Dayton_AERO
+      lat:  39.7759780884
+      lon:  -84.1096191406
+
+    pm25_smoke_gram018:
+      <<: *PM25_SMOKE
+      header: Denver_LaCasa_AERO (105.01W,39.78N)
+      tag: Denver_LaCasa_AERO
+      lat:  39.7794914246
+      lon:  -105.005180359
+
+    pm25_smoke_gram019:
+      <<: *PM25_SMOKE
+      header: DigitalGlobe_Cal_AERO (105.14W,40.14N)
+      tag: DigitalGlobe_Cal_AERO
+      lat:  40.1388893127
+      lon:  -105.13722229
+
+    pm25_smoke_gram020:
+      <<: *PM25_SMOKE
+      header: EastMalling_MO_AERO (0.44E,51.29N)
+      tag: EastMalling_MO_AERO
+      lat:  51.2900009155
+      lon:  0.439999997616
+
+    pm25_smoke_gram021:
+      <<: *PM25_SMOKE
+      header: Easton-MDE_AERO (76.08W,38.79N)
+      tag: Easton-MDE_AERO
+      lat:  38.7949714661
+      lon:  -76.0842514038
+
+    pm25_smoke_gram022:
+      <<: *PM25_SMOKE
+      header: Egbert_AERO (79.78W,44.23N)
+      tag: Egbert_AERO
+      lat:  44.2315444946
+      lon:  -79.7814102173
+
+    pm25_smoke_gram023:
+      <<: *PM25_SMOKE
+      header: EPA-Res_Triangle_Pk_AERO (78.87W,35.88N)
+      tag: EPA-Res_Triangle_Pk_AERO
+      lat:  35.8800010681
+      lon:  -78.8700027466
+
+    pm25_smoke_gram024:
+      <<: *PM25_SMOKE
+      header: Fort_McMurray_AERO (111.48W,56.75N)
+      tag: Fort_McMurray_AERO
+      lat:  56.7523078918
+      lon:  -111.476135254
+
+    pm25_smoke_gram025:
+      <<: *PM25_SMOKE
+      header: Fresno_2_AERO (119.77W,36.79N)
+      tag: Fresno_2_AERO
+      lat:  36.785369873
+      lon:  -119.773017883
+
+    pm25_smoke_gram026:
+      <<: *PM25_SMOKE
+      header: Georgia_Tech_AERO (84.40W,33.78N)
+      tag: Georgia_Tech_AERO
+      lat:  33.7802009583
+      lon:  -84.3995361328
+
+    pm25_smoke_gram027:
+      <<: *PM25_SMOKE
+      header: Goldstone_AERO (116.79W,35.23N)
+      tag: Goldstone_AERO
+      lat:  35.2333335876
+      lon:  -116.791664124
+
+    pm25_smoke_gram028:
+      <<: *PM25_SMOKE
+      header: Grand_Forks_AERO (97.33W,47.91N)
+      tag: Grand_Forks_AERO
+      lat:  47.9117507935
+      lon:  -97.3254470825
+
+    pm25_smoke_gram029:
+      <<: *PM25_SMOKE
+      header: Granite_Island_AERO (87.41W,46.72N)
+      tag: Granite_Island_AERO
+      lat:  46.7207984924
+      lon:  -87.4120025635
+
+    pm25_smoke_gram030:
+      <<: *PM25_SMOKE
+      header: GSFC_AERO (76.84W,38.99N)
+      tag: GSFC_AERO
+      lat:  38.9925003052
+      lon:  -76.8398361206
+
+    pm25_smoke_gram031:
+      <<: *PM25_SMOKE
+      header: Halifax_AERO (63.59W,44.64N)
+      tag: Halifax_AERO
+      lat:  44.6380004883
+      lon:  -63.59400177
+
+    pm25_smoke_gram032:
+      <<: *PM25_SMOKE
+      header: Hart_Miller_Island_AERO (76.36W,39.24N)
+      tag: Hart_Miller_Island_AERO
+      lat:  39.2419013977
+      lon:  -76.3628005981
+
+    pm25_smoke_gram033:
+      <<: *PM25_SMOKE
+      header: IMPROVE-MammothCave_AERO (86.15W,37.13N)
+      tag: IMPROVE-MammothCave_AERO
+      lat:  37.1318016052
+      lon:  -86.1479034424
+
+    pm25_smoke_gram034:
+      <<: *PM25_SMOKE
+      header: Kangerlussuaq_AERO (50.62W,67.00N)
+      tag: Kangerlussuaq_AERO
+      lat:  66.9957962036
+      lon:  -50.6213989258
+
+    pm25_smoke_gram035:
+      <<: *PM25_SMOKE
+      header: Kellogg_LTER_AERO (85.37W,42.41N)
+      tag: Kellogg_LTER_AERO
+      lat:  42.4079818726
+      lon:  -85.3717193604
+
+    pm25_smoke_gram036:
+      <<: *PM25_SMOKE
+      header: Kelowna_UAS_AERO (119.40W,49.94N)
+      tag: Kelowna_UAS_AERO
+      lat:  49.9412956238
+      lon:  -119.400108337
+
+    pm25_smoke_gram037:
+      <<: *PM25_SMOKE
+      header: Key_Biscayne_AERO (80.16W,25.73N)
+      tag: Key_Biscayne_AERO
+      lat:  25.7319660187
+      lon:  -80.1633300781
+
+    pm25_smoke_gram038:
+      <<: *PM25_SMOKE
+      header: Kluane_Lake_AERO (138.41W,61.03N)
+      tag: Kluane_Lake_AERO
+      lat:  61.0270004272
+      lon:  -138.410003662
+
+    pm25_smoke_gram039:
+      <<: *PM25_SMOKE
+      header: La_Parguera_AERO (67.05W,17.97N)
+      tag: La_Parguera_AERO
+      lat:  17.9704494476
+      lon:  -67.0453796387
+
+    pm25_smoke_gram040:
+      <<: *PM25_SMOKE
+      header: LISCO_AERO (73.34W,40.95N)
+      tag: LISCO_AERO
+      lat:  40.9545173645
+      lon:  -73.3417663574
+
+    pm25_smoke_gram041:
+      <<: *PM25_SMOKE
+      header: Mauna_Loa_AERO (155.58W,19.54N)
+      tag: Mauna_Loa_AERO
+      lat:  19.5360069275
+      lon:  -155.576751709
+
+    pm25_smoke_gram042:
+      <<: *PM25_SMOKE
+      header: MD_Science_Center_AERO (76.61W,39.28N)
+      tag: MD_Science_Center_AERO
+      lat:  39.2812309265
+      lon:  -76.6120529175
+
+    pm25_smoke_gram043:
+      <<: *PM25_SMOKE
+      header: Mingo_AERO (90.14W,36.97N)
+      tag: Mingo_AERO
+      lat:  36.971698761
+      lon:  -90.1432037354
+
+    pm25_smoke_gram044:
+      <<: *PM25_SMOKE
+      header: Missoula_AERO (114.08W,46.92N)
+      tag: Missoula_AERO
+      lat:  46.9166679382
+      lon:  -114.083335876
+
+    pm25_smoke_gram045:
+      <<: *PM25_SMOKE
+      header: Modesto_AERO (120.99W,37.64N)
+      tag: Modesto_AERO
+      lat:  37.6421699524
+      lon:  -120.994216919
+
+    pm25_smoke_gram046:
+      <<: *PM25_SMOKE
+      header: Monterey_AERO (121.80W,36.60N)
+      tag: Monterey_AERO
+      lat:  36.6
+      lon:  -121.8
+
+    pm25_smoke_gram047:
+      <<: *PM25_SMOKE
+      header: MVCO_AERO (70.57W,41.33N)
+      tag: MVCO_AERO
+      lat:  41.3250007629
+      lon:  -70.5667037964
+
+    pm25_smoke_gram048:
+      <<: *PM25_SMOKE
+      header: Narsarsuaq_AERO (45.42W,61.16N)
+      tag: Narsarsuaq_AERO
+      lat:  61.1559524536
+      lon:  -45.419380188
+
+    pm25_smoke_gram049:
+      <<: *PM25_SMOKE
+      header: NASA_KSC_AERO (80.66W,28.46N)
+      tag: NASA_KSC_AERO
+      lat:  28.4637622833
+      lon:  -80.6634750366
+
+    pm25_smoke_gram050:
+      <<: *PM25_SMOKE
+      header: NASA_LaRC_AERO (76.38W,37.10N)
+      tag: NASA_LaRC_AERO
+      lat:  37.1049613953
+      lon:  -76.3786392212
+
+    pm25_smoke_gram051:
+      <<: *PM25_SMOKE
+      header: NEON_Bartlett_AERO (71.29W,44.06N)
+      tag: NEON_Bartlett_AERO
+      lat:  44.0638809204
+      lon:  -71.2872009277
+
+    pm25_smoke_gram052:
+      <<: *PM25_SMOKE
+      header: NEON_CLBJ_AERO (97.57W,33.40N)
+      tag: NEON_CLBJ_AERO
+      lat:  33.4012298584
+      lon:  -97.5699996948
+
+    pm25_smoke_gram053:
+      <<: *PM25_SMOKE
+      header: NEON-CPER_AERO (104.74W,40.81N)
+      tag: NEON-CPER_AERO
+      lat:  40.8124427795
+      lon:  -104.744239807
+
+    pm25_smoke_gram054:
+      <<: *PM25_SMOKE
+      header: NEON_CVALLA_AERO (105.17W,40.16N)
+      tag: NEON_CVALLA_AERO
+      lat:  40.1606292725
+      lon:  -105.167251587
+
+    pm25_smoke_gram055:
+      <<: *PM25_SMOKE
+      header: NEON_DEJU_AERO (145.75W,63.88N)
+      tag: NEON_DEJU_AERO
+      lat:  63.8811187744
+      lon:  -145.751358032
+
+    pm25_smoke_gram056:
+      <<: *PM25_SMOKE
+      header: NEON-Disney_AERO (81.44W,28.13N)
+      tag: NEON-Disney_AERO
+      lat:  28.125038147
+      lon:  -81.4362030029
+
+    pm25_smoke_gram057:
+      <<: *PM25_SMOKE
+      header: NEON_GRSM_AERO (83.50W,35.69N)
+      tag: NEON_GRSM_AERO
+      lat:  35.6889610291
+      lon:  -83.501953125
+
+    pm25_smoke_gram058:
+      <<: *PM25_SMOKE
+      header: NEON_GUAN_AERO (66.87W,17.97N)
+      tag: NEON_GUAN_AERO
+      lat:  17.9695491791
+      lon:  -66.8686981201
+
+    pm25_smoke_gram059:
+      <<: *PM25_SMOKE
+      header: NEON_Harvard_AERO (72.17W,42.54N)
+      tag: NEON_Harvard_AERO
+      lat:  42.5368995667
+      lon:  -72.1726608276
+
+    pm25_smoke_gram060:
+      <<: *PM25_SMOKE
+      header: NEON_HEAL_AERO (149.21W,63.88N)
+      tag: NEON_HEAL_AERO
+      lat:  63.8756904602
+      lon:  -149.21333313
+
+    pm25_smoke_gram061:
+      <<: *PM25_SMOKE
+      header: NEON_MLBS_AERO (80.52W,37.38N)
+      tag: NEON_MLBS_AERO
+      lat:  37.3783073425
+      lon:  -80.5248336792
+
+    pm25_smoke_gram062:
+      <<: *PM25_SMOKE
+      header: NEON_MOAB_AERO (109.39W,38.25N)
+      tag: NEON_MOAB_AERO
+      lat:  38.2483291626
+      lon:  -109.388267517
+
+    pm25_smoke_gram063:
+      <<: *PM25_SMOKE
+      header: NEON_NOGP_AERO (100.92W,46.77N)
+      tag: NEON_NOGP_AERO
+      lat:  46.7697181702
+      lon:  -100.915351868
+
+    pm25_smoke_gram064:
+      <<: *PM25_SMOKE
+      header: NEON_OAES_AERO (99.06W,35.41N)
+      tag: NEON_OAES_AERO
+      lat:  35.4105911255
+      lon:  -99.0587921143
+
+    pm25_smoke_gram065:
+      <<: *PM25_SMOKE
+      header: NEON_ONAQ_AERO (112.45W,40.18N)
+      tag: NEON_ONAQ_AERO
+      lat:  40.1775894165
+      lon:  -112.452438354
+
+    pm25_smoke_gram066:
+      <<: *PM25_SMOKE
+      header: NEON_ORNL_AERO (84.28W,35.96N)
+      tag: NEON_ORNL_AERO
+      lat:  35.9641265869
+      lon:  -84.282585144
+
+    pm25_smoke_gram067:
+      <<: *PM25_SMOKE
+      header: NEON_OSBS_AERO (81.99W,29.69N)
+      tag: NEON_OSBS_AERO
+      lat:  29.6892681122
+      lon:  -81.9934310913
+
+    pm25_smoke_gram068:
+      <<: *PM25_SMOKE
+      header: NEON_RMNP_AERO (105.55W,40.28N)
+      tag: NEON_RMNP_AERO
+      lat:  40.2759017944
+      lon:  -105.545974731
+
+    pm25_smoke_gram069:
+      <<: *PM25_SMOKE
+      header: NEON_SCBI_AERO (78.14W,38.89N)
+      tag: NEON_SCBI_AERO
+      lat:  38.8929176331
+      lon:  -78.139503479
+
+    pm25_smoke_gram070:
+      <<: *PM25_SMOKE
+      header: NEON_SERC_AERO (76.56W,38.89N)
+      tag: NEON_SERC_AERO
+      lat:  38.8901176453
+      lon:  -76.5600204468
+
+    pm25_smoke_gram071:
+      <<: *PM25_SMOKE
+      header: NEON_SRER_AERO (110.84W,31.91N)
+      tag: NEON_SRER_AERO
+      lat:  31.9106807709
+      lon:  -110.835487366
+
+    pm25_smoke_gram072:
+      <<: *PM25_SMOKE
+      header: NEON_Sterling_AERO (103.03W,40.46N)
+      tag: NEON_Sterling_AERO
+      lat:  40.4619026184
+      lon:  -103.029296875
+
+    pm25_smoke_gram073:
+      <<: *PM25_SMOKE
+      header: NEON_TALL_AERO (87.39W,32.95N)
+      tag: NEON_TALL_AERO
+      lat:  32.9504623413
+      lon:  -87.3932723999
+
+    pm25_smoke_gram074:
+      <<: *PM25_SMOKE
+      header: NEON_TEAK_AERO (119.01W,37.01N)
+      tag: NEON_TEAK_AERO
+      lat:  37.0058326721
+      lon:  -119.006019592
+
+    pm25_smoke_gram075:
+      <<: *PM25_SMOKE
+      header: NEON_TOOL_AERO (149.37W,68.66N)
+      tag: NEON_TOOL_AERO
+      lat:  68.6610870361
+      lon:  -149.37046814
+
+    pm25_smoke_gram076:
+      <<: *PM25_SMOKE
+      header: NEON_UKFS_AERO (95.19W,39.04N)
+      tag: NEON_UKFS_AERO
+      lat:  39.0404319763
+      lon:  -95.1921463013
+
+    pm25_smoke_gram077:
+      <<: *PM25_SMOKE
+      header: NEON_UNDE_AERO (89.54W,46.23N)
+      tag: NEON_UNDE_AERO
+      lat:  46.2338829041
+      lon:  -89.5372467041
+
+    pm25_smoke_gram078:
+      <<: *PM25_SMOKE
+      header: NEON_WOOD_AERO (99.24W,47.13N)
+      tag: NEON_WOOD_AERO
+      lat:  47.1282272339
+      lon:  -99.241355896
+
+    pm25_smoke_gram079:
+      <<: *PM25_SMOKE
+      header: NEON_WREF_AERO (121.95W,45.82N)
+      tag: NEON_WREF_AERO
+      lat:  45.82
+      lon:  -121.952
+
+    pm25_smoke_gram080:
+      <<: *PM25_SMOKE
+      header: ORS_Hermosillo_AERO (111.15W,29.03N)
+      tag: ORS_Hermosillo_AERO
+      lat:  29.0275001526
+      lon:  -111.145553589
+
+    pm25_smoke_gram081:
+      <<: *PM25_SMOKE
+      header: Pickle_Lake_AERO (90.22W,51.45N)
+      tag: Pickle_Lake_AERO
+      lat:  51.4494438171
+      lon:  -90.2174987793
+
+    pm25_smoke_gram082:
+      <<: *PM25_SMOKE
+      header: Ragged_Point_AERO (59.43W,13.17N)
+      tag: Ragged_Point_AERO
+      lat:  13.1650180817
+      lon:  -59.4320335388
+
+    pm25_smoke_gram083:
+      <<: *PM25_SMOKE
+      header: Railroad_Valley_AERO (116.00W,38.50N)
+      tag: Railroad_Valley_AERO
+      lat:  38.5
+      lon:  -116.0
+
+    pm25_smoke_gram084:
+      <<: *PM25_SMOKE
+      header: Red_Mountain_Pass_AERO (107.71W,37.91N)
+      tag: Red_Mountain_Pass_AERO
+      lat:  37.9074478149
+      lon:  -107.710914612
+
+    pm25_smoke_gram085:
+      <<: *PM25_SMOKE
+      header: Resolute_Bay_AERO (94.97W,74.71N)
+      tag: Resolute_Bay_AERO
+      lat:  74.7051239014
+      lon:  -94.9694061279
+
+    pm25_smoke_gram086:
+      <<: *PM25_SMOKE
+      header: Rexburg_Idaho_AERO (111.78W,43.82N)
+      tag: Rexburg_Idaho_AERO
+      lat:  43.820110321
+      lon:  -111.78301239
+
+    pm25_smoke_gram087:
+      <<: *PM25_SMOKE
+      header: Rimrock_AERO (116.99W,46.49N)
+      tag: Rimrock_AERO
+      lat:  46.4874992371
+      lon:  -116.991668701
+
+    pm25_smoke_gram088:
+      <<: *PM25_SMOKE
+      header: Sandia_NM_PSEL_AERO (106.54W,35.05N)
+      tag: Sandia_NM_PSEL_AERO
+      lat:  35.0545845032
+      lon:  -106.54006958
+
+    pm25_smoke_gram089:
+      <<: *PM25_SMOKE
+      header: Saturn_Island_AERO (76.84W,38.99N)
+      tag: Saturn_Island_AERO
+      lat:  38.992
+      lon:  -76.84
+
+    pm25_smoke_gram090:
+      <<: *PM25_SMOKE
+      header: Santa_Monica_Colg_AERO (118.47W,34.02N)
+      tag: Santa_Monica_Colg_AERO
+      lat:  34.0168495178
+      lon:  -118.471130371
+
+    pm25_smoke_gram091:
+      <<: *PM25_SMOKE
+      header: SDSU_IPLab_AERO (96.79W,44.31N)
+      tag: SDSU_IPLab_AERO
+      lat:  44.3148269653
+      lon:  -96.7860717773
+
+    pm25_smoke_gram092:
+      <<: *PM25_SMOKE
+      header: Sevilleta_AERO (106.90W,34.30N)
+      tag: Sevilleta_AERO
+      lat:  34.3
+      lon:  -106.9
+
+    pm25_smoke_gram093:
+      <<: *PM25_SMOKE
+      header: Sigma_Space_Corp_AERO (76.84W,38.95N)
+      tag: Sigma_Space_Corp_AERO
+      lat:  38.952999115
+      lon:  -76.8364715576
+
+    pm25_smoke_gram094:
+      <<: *PM25_SMOKE
+      header: Sioux_Falls_AERO (96.63W,43.74N)
+      tag: Sioux_Falls_AERO
+      lat:  43.7364807129
+      lon:  -96.6259918213
+
+    pm25_smoke_gram095:
+      <<: *PM25_SMOKE
+      header: SP_Bayboro_AERO (82.63W,27.76N)
+      tag: SP_Bayboro_AERO
+      lat:  27.7615509033
+      lon:  -82.6330032349
+
+    pm25_smoke_gram096:
+      <<: *PM25_SMOKE
+      header: TABLE_MOUNTAIN_CA_AERO (117.68W,34.38N)
+      tag: TABLE_MOUNTAIN_CA_AERO
+      lat:  34.3800010681
+      lon:  -117.680000305
+
+    pm25_smoke_gram097:
+      <<: *PM25_SMOKE
+      header: Tallahassee_AERO (84.30W,30.45N)
+      tag: Tallahassee_AERO
+      lat:  30.4458332062
+      lon:  -84.2993469238
+
+    pm25_smoke_gram098:
+      <<: *PM25_SMOKE
+      header: Taylor_Ranch_TWRS_AERO (114.85W,45.10N)
+      tag: Taylor_Ranch_TWRS_AERO
+      lat:  45.1035003662
+      lon:  -114.849952698
+
+    pm25_smoke_gram099:
+      <<: *PM25_SMOKE
+      header: Thompson_Farm_AERO (70.95W,43.11N)
+      tag: Thompson_Farm_AERO
+      lat:  43.1087722778
+      lon:  -70.9483413696
+
+    pm25_smoke_gram100:
+      <<: *PM25_SMOKE
+      header: Thule_AERO (68.77W,76.52N)
+      tag: Thule_AERO
+      lat:  76.5161056519
+      lon:  -68.7689971924
+
+    pm25_smoke_gram101:
+      <<: *PM25_SMOKE
+      header: Toronto_AERO (79.40W,43.60N)
+      tag: Toronto_AERO
+      lat:  43.6
+      lon:  -79.4
+
+    pm25_smoke_gram102:
+      <<: *PM25_SMOKE
+      header: Tucson_AERO (111.00W,32.10N)
+      tag: Tucson_AERO
+      lat:  32.1
+      lon:  -111.0
+
+    pm25_smoke_gram103:
+      <<: *PM25_SMOKE
+      header: Tudor_Hill_AERO (64.88W,32.26N)
+      tag: Tudor_Hill_AERO
+      lat:  32.263999939
+      lon:  -64.8789978027
+
+    pm25_smoke_gram104:
+      <<: *PM25_SMOKE
+      header: UAHuntsville_AERO (86.64W,34.73N)
+      tag: UAHuntsville_AERO
+      lat:  34.7253303528
+      lon:  -86.6447296143
+
+    pm25_smoke_gram105:
+      <<: *PM25_SMOKE
+      header: UCSB_AERO (119.85W,34.42N)
+      tag: UCSB_AERO
+      lat:  34.4154281616
+      lon:  -119.845359802
+
+    pm25_smoke_gram106:
+      <<: *PM25_SMOKE
+      header: UMBC_AERO (76.71W,39.25N)
+      tag: UMBC_AERO
+      lat:  39.2546272278
+      lon:  -76.7093505859
+
+    pm25_smoke_gram107:
+      <<: *PM25_SMOKE
+      header: Univ_of_Houston_AERO (95.34W,29.72N)
+      tag: Univ_of_Houston_AERO
+      lat:  29.7176990509
+      lon:  -95.3415985107
+
+    pm25_smoke_gram108:
+      <<: *PM25_SMOKE
+      header: Univ_of_Lethbridge_AERO (112.87W,49.68N)
+      tag: Univ_of_Lethbridge_AERO
+      lat:  49.6816711426
+      lon:  -112.868965149
+
+    pm25_smoke_gram109:
+      <<: *PM25_SMOKE
+      header: USC_SEAPRISM_AERO (118.12W,33.56N)
+      tag: USC_SEAPRISM_AERO
+      lat:  33.563709259
+      lon:  -118.11782074
+
+    pm25_smoke_gram110:
+      <<: *PM25_SMOKE
+      header: USGS_Flagstaff_ROLO_AERO (111.63W,35.21N)
+      tag: USGS_Flagstaff_ROLO_AERO
+      lat:  35.2148399353
+      lon:  -111.634422302
+
+    pm25_smoke_gram111:
+      <<: *PM25_SMOKE
+      header: Wallops_AERO (75.47W,37.93N)
+      tag: Wallops_AERO
+      lat:  37.932849884
+      lon:  -75.4719467163
+
+    pm25_smoke_gram112:
+      <<: *PM25_SMOKE
+      header: WaveCIS_Site_CSI_6_AERO (90.48W,28.87N)
+      tag: WaveCIS_Site_CSI_6_AERO
+      lat:  28.8666667938
+      lon:  -90.4833297729
+
+    pm25_smoke_gram113:
+      <<: *PM25_SMOKE
+      header: White_Sands_HELSTF_AERO (106.34W,32.63N)
+      tag: White_Sands_HELSTF_AERO
+      lat:  32.6349411011
+      lon:  -106.33807373
+
+    pm25_smoke_gram114:
+      <<: *PM25_SMOKE
+      header: Yale_Coastal_AERO (72.73W,41.26N)
+      tag: Yale_Coastal_AERO
+      lat:  41.2583007812
+      lon:  -72.7312011719
+
+    pm25_smoke_gram115:
+      <<: *PM25_SMOKE
+      header: Yellowknife_Aurora_AERO (114.38W,62.45N)
+      tag: Yellowknife_Aurora_AERO
+      lat:  62.4513015747
+      lon:  -114.376251221
+
+    pm25_smoke_gram116:
+      <<: *PM25_SMOKE
+      header: Yuma_AERO (114.58W,32.64N)
+      tag: Yuma_AERO
+      lat:  32.6441383362
+      lon:  -114.582778931
+
+    pm25_smoke_gram117:
+      <<: *PM25_SMOKE
+      header: U_of_Wisconsin_SSEC_AERO (89.40W,43.10N)
+      tag: U_of_Wisconsin_SSEC_AERO
+      lat:  43.1
+      lon:  -89.4
+
+    pm25_smoke_gram118:
+      <<: *PM25_SMOKE
+      header: AMOLITE_AERO (111.60W,57.20N)
+      tag: AMOLITE_AERO
+      lat:  57.2
+      lon:  -111.6
+
+    pm25_smoke_gram119:
+      <<: *PM25_SMOKE
+      header: RO3QET (86.64W,34.73N)
+      tag: RO3QET
+      lat:  34.725
+      lon:  -86.645
+
+    pm25_smoke_gram120:
+      <<: *PM25_SMOKE
+      header: TMF (117.68W,34.38N)
+      tag: TMF
+      lat:  34.38
+      lon:  -117.68
+
+    pm25_smoke_gram121:
+      <<: *PM25_SMOKE
+      header: TROPOZ (76.84W,38.99N)
+      tag: TROPOZ
+      lat:  38.99
+      lon:  -76.84
+
+    pm25_smoke_gram122:
+      <<: *PM25_SMOKE
+      header: TOPAZ (105.26W,39.99N)
+      tag: TOPAZ
+      lat:  39.993
+      lon:  -105.262
+
+    pm25_smoke_gram123:
+      <<: *PM25_SMOKE
+      header: LMOL (76.39W,37.10N)
+      tag: LMOL
+      lat:  37.096
+      lon:  -76.385
+
+    pm25_smoke_gram124:
+      <<: *PM25_SMOKE
+      header: Anchorage (149.90W,61.20N)
+      tag: Anchorage
+      lat:  61.2
+      lon:  -149.9
+
+    pm25_smoke_gram125:
+      <<: *PM25_SMOKE
+      header: Atlanta (84.40W,33.70N)
+      tag: Atlanta
+      lat:  33.7
+      lon:  -84.4
+
+    pm25_smoke_gram126:
+      <<: *PM25_SMOKE
+      header: Beltsville (76.90W,39.10N)
+      tag: Beltsville
+      lat:  39.1
+      lon:  -76.9
+
+    pm25_smoke_gram127:
+      <<: *PM25_SMOKE
+      header: Bismarck (100.80W,46.80N)
+      tag: Bismarck
+      lat:  46.8
+      lon:  -100.8
+
+    pm25_smoke_gram128:
+      <<: *PM25_SMOKE
+      header: Boise (116.20W,43.60N)
+      tag: Boise
+      lat:  43.6
+      lon:  -116.2
+
+    pm25_smoke_gram129:
+      <<: *PM25_SMOKE
+      header: Boston (71.00W,42.30N)
+      tag: Boston
+      lat:  42.3
+      lon:  -71.0
+
+    pm25_smoke_gram130:
+      <<: *PM25_SMOKE
+      header: Buffalo (78.80W,42.90N)
+      tag: Buffalo
+      lat:  42.9
+      lon:  -78.8
+
+    pm25_smoke_gram131:
+      <<: *PM25_SMOKE
+      header: Conroe (95.40W,30.30N)
+      tag: Conroe
+      lat:  30.3
+      lon:  -95.4
+
+    pm25_smoke_gram132:
+      <<: *PM25_SMOKE
+      header: Chicago (87.60W,41.90N)
+      tag: Chicago
+      lat:  41.9
+      lon:  -87.6
+
+    pm25_smoke_gram133:
+      <<: *PM25_SMOKE
+      header: Cincinnati (84.50W,39.10N)
+      tag: Cincinnati
+      lat:  39.1
+      lon:  -84.5
+
+    pm25_smoke_gram134:
+      <<: *PM25_SMOKE
+      header: Cleveland (81.70W,41.50N)
+      tag: Cleveland
+      lat:  41.5
+      lon:  -81.7
+
+    pm25_smoke_gram135:
+      <<: *PM25_SMOKE
+      header: Dallas (96.80W,32.70N)
+      tag: Dallas
+      lat:  32.7
+      lon:  -96.8
+
+    pm25_smoke_gram136:
+      <<: *PM25_SMOKE
+      header: Denver (105.00W,39.70N)
+      tag: Denver
+      lat:  39.7
+      lon:  -105.0
+
+    pm25_smoke_gram137:
+      <<: *PM25_SMOKE
+      header: Detroit (83.00W,42.30N)
+      tag: Detroit
+      lat:  42.3
+      lon:  -83.0
+
+    pm25_smoke_gram138:
+      <<: *PM25_SMOKE
+      header: Fairbanks (147.70W,64.80N)
+      tag: Fairbanks
+      lat:  64.8
+      lon:  -147.7
+
+    pm25_smoke_gram139:
+      <<: *PM25_SMOKE
+      header: Fairhill (75.90W,39.70N)
+      tag: Fairhill
+      lat:  39.7
+      lon:  -75.9
+
+    pm25_smoke_gram140:
+      <<: *PM25_SMOKE
+      header: Fargo (96.80W,46.90N)
+      tag: Fargo
+      lat:  46.9
+      lon:  -96.8
+
+    pm25_smoke_gram141:
+      <<: *PM25_SMOKE
+      header: Hartford (72.70W,41.70N)
+      tag: Hartford
+      lat:  41.7
+      lon:  -72.7
+
+    pm25_smoke_gram142:
+      <<: *PM25_SMOKE
+      header: Honolulu (157.80W,21.30N)
+      tag: Honolulu
+      lat:  21.3
+      lon:  -157.8
+
+    pm25_smoke_gram143:
+      <<: *PM25_SMOKE
+      header: Houston (95.40W,29.70N)
+      tag: Houston
+      lat:  29.7
+      lon:  -95.4
+
+    pm25_smoke_gram144:
+      <<: *PM25_SMOKE
+      header: Indianapolis (86.10W,39.70N)
+      tag: Indianapolis
+      lat:  39.7
+      lon:  -86.1
+
+    pm25_smoke_gram145:
+      <<: *PM25_SMOKE
+      header: Jacksonville (81.70W,30.30N)
+      tag: Jacksonville
+      lat:  30.3
+      lon:  -81.7
+
+    pm25_smoke_gram146:
+      <<: *PM25_SMOKE
+      header: Kansas_City (94.60W,39.10N)
+      tag: Kansas_City
+      lat:  39.1
+      lon:  -94.6
+
+    pm25_smoke_gram147:
+      <<: *PM25_SMOKE
+      header: Las_Vegas (115.10W,36.20N)
+      tag: Las_Vegas
+      lat:  36.2
+      lon:  -115.1
+
+    pm25_smoke_gram148:
+      <<: *PM25_SMOKE
+      header: Little_Rock (92.30W,34.70N)
+      tag: Little_Rock
+      lat:  34.7
+      lon:  -92.3
+
+    pm25_smoke_gram149:
+      <<: *PM25_SMOKE
+      header: Louisville (85.70W,38.20N)
+      tag: Louisville
+      lat:  38.2
+      lon:  -85.7
+
+    pm25_smoke_gram150:
+      <<: *PM25_SMOKE
+      header: Los_Angeles (118.20W,34.00N)
+      tag: Los_Angeles
+      lat:  34.0
+      lon:  -118.2
+
+    pm25_smoke_gram151:
+      <<: *PM25_SMOKE
+      header: Memphis (90.00W,35.10N)
+      tag: Memphis
+      lat:  35.1
+      lon:  -90.0
+
+    pm25_smoke_gram152:
+      <<: *PM25_SMOKE
+      header: Miami (80.20W,25.80N)
+      tag: Miami
+      lat:  25.8
+      lon:  -80.2
+
+    pm25_smoke_gram153:
+      <<: *PM25_SMOKE
+      header: Milwaukee (88.00W,43.00N)
+      tag: Milwaukee
+      lat:  43.0
+      lon:  -88.0
+
+    pm25_smoke_gram154:
+      <<: *PM25_SMOKE
+      header: Minneapolis (93.20W,45.00N)
+      tag: Minneapolis
+      lat:  45.0
+      lon:  -93.2
+
+    pm25_smoke_gram155:
+      <<: *PM25_SMOKE
+      header: Nashville (86.80W,36.20N)
+      tag: Nashville
+      lat:  36.2
+      lon:  -86.8
+
+    pm25_smoke_gram156:
+      <<: *PM25_SMOKE
+      header: New_Orleans (90.10W,30.00N)
+      tag: New_Orleans
+      lat:  30.0
+      lon:  -90.1
+
+    pm25_smoke_gram157:
+      <<: *PM25_SMOKE
+      header: New_York (74.00W,40.30N)
+      tag: New_York
+      lat:  40.3
+      lon:  -74.0
+
+    pm25_smoke_gram158:
+      <<: *PM25_SMOKE
+      header: Oklahoma_City (97.50W,35.50N)
+      tag: Oklahoma_City
+      lat:  35.5
+      lon:  -97.5
+
+    pm25_smoke_gram159:
+      <<: *PM25_SMOKE
+      header: Omaha (96.00W,41.20N)
+      tag: Omaha
+      lat:  41.2
+      lon:  -96.0
+
+    pm25_smoke_gram160:
+      <<: *PM25_SMOKE
+      header: Orlando (81.30W,28.50N)
+      tag: Orlando
+      lat:  28.5
+      lon:  -81.3
+
+    pm25_smoke_gram161:
+      <<: *PM25_SMOKE
+      header: Philadelphia (75.20W,40.00N)
+      tag: Philadelphia
+      lat:  40.0
+      lon:  -75.2
+
+    pm25_smoke_gram162:
+      <<: *PM25_SMOKE
+      header: Phoenix (112.00W,33.50N)
+      tag: Phoenix
+      lat:  33.5
+      lon:  -112.0
+
+    pm25_smoke_gram163:
+      <<: *PM25_SMOKE
+      header: Pittsburgh (80.00W,40.50N)
+      tag: Pittsburgh
+      lat:  40.5
+      lon:  -80.0
+
+    pm25_smoke_gram164:
+      <<: *PM25_SMOKE
+      header: Portland OR (122.70W,45.50N)
+      tag: Portland OR
+      lat:  45.5
+      lon:  -122.7
+
+    pm25_smoke_gram165:
+      <<: *PM25_SMOKE
+      header: Raleigh (78.60W,35.80N)
+      tag: Raleigh
+      lat:  35.8
+      lon:  -78.6
+
+    pm25_smoke_gram166:
+      <<: *PM25_SMOKE
+      header: Richmond (77.50W,37.50N)
+      tag: Richmond
+      lat:  37.5
+      lon:  -77.5
+
+    pm25_smoke_gram167:
+      <<: *PM25_SMOKE
+      header: Salt_Lake_City (111.90W,40.70N)
+      tag: Salt_Lake_City
+      lat:  40.7
+      lon:  -111.9
+
+    pm25_smoke_gram168:
+      <<: *PM25_SMOKE
+      header: San_Diego (117.20W,32.70N)
+      tag: San_Diego
+      lat:  32.7
+      lon:  -117.2
+
+    pm25_smoke_gram169:
+      <<: *PM25_SMOKE
+      header: San_Francisco (122.40W,37.70N)
+      tag: San_Francisco
+      lat:  37.7
+      lon:  -122.4
+
+    pm25_smoke_gram170:
+      <<: *PM25_SMOKE
+      header: San_Joaquin_Valley (119.30E,35.30N)
+      tag: San_Joaquin_Valley
+      lat:  35.3
+      lon:  119.3
+
+    pm25_smoke_gram171:
+      <<: *PM25_SMOKE
+      header: San_Juan PR (66.20W,18.50N)
+      tag: San_Juan PR
+      lat:  18.5
+      lon:  -66.2
+
+    pm25_smoke_gram172:
+      <<: *PM25_SMOKE
+      header: Seattle (122.30W,47.60N)
+      tag: Seattle
+      lat:  47.6
+      lon:  -122.3
+
+    pm25_smoke_gram173:
+      <<: *PM25_SMOKE
+      header: Smith_Point (94.80W,29.50N)
+      tag: Smith_Point
+      lat:  29.5
+      lon:  -94.8
+
+    pm25_smoke_gram174:
+      <<: *PM25_SMOKE
+      header: Spokane (117.50W,47.60N)
+      tag: Spokane
+      lat:  47.6
+      lon:  -117.5
+
+    pm25_smoke_gram175:
+      <<: *PM25_SMOKE
+      header: Tampa (82.50W,28.00N)
+      tag: Tampa
+      lat:  28.0
+      lon:  -82.5
+
+    pm25_smoke_gram176:
+      <<: *PM25_SMOKE
+      header: Washington_DC (77.00W,38.90N)
+      tag: Washington_DC
+      lat:  38.9
+      lon:  -77.0
+
+    pm25_smoke_gram177:
+      <<: *PM25_SMOKE
+      header: Wichita (97.20W,37.60N)
+      tag: Wichita
+      lat:  37.6
+      lon:  -97.2
+
+    pm25_smoke_gram178:
+      <<: *PM25_SMOKE
+      header: Armstrong_FRC (117.90W,34.90N)
+      tag: Armstrong_FRC
+      lat:  34.9
+      lon:  -117.9
+
+    pm25_smoke_gram179:
+      <<: *PM25_SMOKE
+      header: Aldino (76.20W,39.60N)
+      tag: Aldino
+      lat:  39.6
+      lon:  -76.2
+
+    pm25_smoke_gram180:
+      <<: *PM25_SMOKE
+      header: Fresno (119.80W,36.80N)
+      tag: Fresno
+      lat:  36.8
+      lon:  -119.8
+
+    pm25_smoke_gram181:
+      <<: *PM25_SMOKE
+      header: Dallas Ft_Worth (97.00W,32.90N)
+      tag: Dallas Ft_Worth
+      lat:  32.9
+      lon:  -97.0
+
+    pm25_smoke_gram182:
+      <<: *PM25_SMOKE
+      header: Sevilleta (106.90W,34.30N)
+      tag: Sevilleta
+      lat:  34.3
+      lon:  -106.9
+
+    pm25_smoke_gram183:
+      <<: *PM25_SMOKE
+      header: San_Antonio (98.50W,29.50N)
+      tag: San_Antonio
+      lat:  29.5
+      lon:  -98.5
+
+    pm25_smoke_gram184:
+      <<: *PM25_SMOKE
+      header: Corpus_Christi (97.50W,27.80N)
+      tag: Corpus_Christi
+      lat:  27.8
+      lon:  -97.5
+
+    pm25_smoke_gram185:
+      <<: *PM25_SMOKE
+      header: Tucson (111.00W,32.10N)
+      tag: Tucson
+      lat:  32.1
+      lon:  -111.0
+
+    pm25_smoke_gram186:
+      <<: *PM25_SMOKE
+      header: West_Houston (95.66W,29.80N)
+      tag: West_Houston
+      lat:  29.8
+      lon:  -95.657
+
+    pm25_smoke_gram187:
+      <<: *PM25_SMOKE
+      header: Essex (76.50W,39.30N)
+      tag: Essex
+      lat:  39.3
+      lon:  -76.5
+
+    pm25_smoke_gram188:
+      <<: *PM25_SMOKE
+      header: Croix_Rd Manvel (95.40W,29.50N)
+      tag: Croix_Rd Manvel
+      lat:  29.5
+      lon:  -95.4
+
+    pm25_smoke_gram189:
+      <<: *PM25_SMOKE
+      header: Deer_Park TX (95.10W,29.70N)
+      tag: Deer_Park TX
+      lat:  29.7
+      lon:  -95.1
+
+    pm25_smoke_gram190:
+      <<: *PM25_SMOKE
+      header: White_Sands NM (106.30E,32.60N)
+      tag: White_Sands NM
+      lat:  32.6
+      lon:  106.3
+
+    pm25_smoke_gram191:
+      <<: *PM25_SMOKE
+      header: Lake_Charles (93.20W,30.10N)
+      tag: Lake_Charles
+      lat:  30.1
+      lon:  -93.2
+
+    pm25_smoke_gram192:
+      <<: *PM25_SMOKE
+      header: Shreveport (93.80W,32.40N)
+      tag: Shreveport
+      lat:  32.4
+      lon:  -93.8
+
+    pm25_smoke_gram193:
+      <<: *PM25_SMOKE
+      header: Channelview (95.10W,29.80N)
+      tag: Channelview
+      lat:  29.8
+      lon:  -95.1
+
+    pm25_smoke_gram194:
+      <<: *PM25_SMOKE
+      header: Austin (97.70W,30.20N)
+      tag: Austin
+      lat:  30.2
+      lon:  -97.7
+
+    pm25_smoke_gram195:
+      <<: *PM25_SMOKE
+      header: Monterey (121.80W,36.60N)
+      tag: Monterey
+      lat:  36.6
+      lon:  -121.8
+
+    pm25_smoke_gram196:
+      <<: *PM25_SMOKE
+      header: S_Cent OR (120.00E,43.00N)
+      tag: S_Cent OR
+      lat:  43.0
+      lon:  120.0
+
+    pm25_smoke_gram197:
+      <<: *PM25_SMOKE
+      header: Padonia (76.60W,39.50N)
+      tag: Padonia
+      lat:  39.5
+      lon:  -76.6
+
+    pm25_smoke_gram198:
+      <<: *PM25_SMOKE
+      header: Caltech (118.10W,34.10N)
+      tag: Caltech
+      lat:  34.1
+      lon:  -118.1
+
+    pm25_smoke_gram199:
+      <<: *PM25_SMOKE
+      header: Edgewood MD (76.30W,39.40N)
+      tag: Edgewood MD
+      lat:  39.4
+      lon:  -76.3
+
+    pm25_smoke_gram200:
+      <<: *PM25_SMOKE
+      header: La_Parguera PR (67.00W,18.00N)
+      tag: La_Parguera PR
+      lat:  18.0
+      lon:  -67.0
+
+    pm25_smoke_gram201:
+      <<: *PM25_SMOKE
+      header: Railroad_Valley (116.00W,38.50N)
+      tag: Railroad_Valley
+      lat:  38.5
+      lon:  -116.0
+
+    pm25_smoke_gram202:
+      <<: *PM25_SMOKE
+      header: Moody_Tower (95.30W,29.70N)
+      tag: Moody_Tower
+      lat:  29.7
+      lon:  -95.3
+
+    pm25_smoke_gram203:
+      <<: *PM25_SMOKE
+      header: Cape_Cod (70.20W,41.10N)
+      tag: Cape_Cod
+      lat:  41.1
+      lon:  -70.2
+
+    pm25_smoke_gram204:
+      <<: *PM25_SMOKE
+      header: Wallops_Island VA (75.50W,37.80N)
+      tag: Wallops_Island VA
+      lat:  37.8
+      lon:  -75.5
+
+    pm25_smoke_gram205:
+      <<: *PM25_SMOKE
+      header: Galveston (94.80W,29.20N)
+      tag: Galveston
+      lat:  29.2
+      lon:  -94.8
+
+    pm25_smoke_gram206:
+      <<: *PM25_SMOKE
+      header: Frenchman_Flat NV (116.00W,36.80N)
+      tag: Frenchman_Flat NV
+      lat:  36.8
+      lon:  -116.0
+
+    pm25_smoke_gram207:
+      <<: *PM25_SMOKE
+      header: Calgary (114.10W,51.00N)
+      tag: Calgary
+      lat:  51.0
+      lon:  -114.1
+
+    pm25_smoke_gram208:
+      <<: *PM25_SMOKE
+      header: Edmonton (113.50W,53.50N)
+      tag: Edmonton
+      lat:  53.5
+      lon:  -113.5
+
+    pm25_smoke_gram209:
+      <<: *PM25_SMOKE
+      header: Ottawa (75.70W,45.40N)
+      tag: Ottawa
+      lat:  45.4
+      lon:  -75.7
+
+    pm25_smoke_gram210:
+      <<: *PM25_SMOKE
+      header: Winnipeg (97.10W,49.90N)
+      tag: Winnipeg
+      lat:  49.9
+      lon:  -97.1
+
+    pm25_smoke_gram211:
+      <<: *PM25_SMOKE
+      header: Quebec City (71.20W,46.80N)
+      tag: Quebec City
+      lat:  46.8
+      lon:  -71.2
+
+    pm25_smoke_gram212:
+      <<: *PM25_SMOKE
+      header: Toronto (79.38W,43.65N)
+      tag: Toronto
+      lat:  43.6532
+      lon:  -79.3832
+
+    pm25_smoke_gram213:
+      <<: *PM25_SMOKE
+      header: Montreal (73.57W,45.50N)
+      tag: Montreal
+      lat:  45.5017
+      lon:  -73.5673
+
+    pm25_smoke_gram214:
+      <<: *PM25_SMOKE
+      header: Vancouver (123.12W,49.28N)
+      tag: Vancouver
+      lat:  49.2827
+      lon:  -123.1207
+
+    pm25_smoke_gram215:
+      <<: *PM25_SMOKE
+      header: McCall_MPL (116.09W,44.93N)
+      tag: McCall_MPL
+      lat:  44.9267
+      lon:  -116.0891
+
+    pm25_smoke_gram216:
+      <<: *PM25_SMOKE
+      header: Eugene (123.09W,44.05N)
+      tag: Eugene
+      lat:  44.052071
+      lon:  -123.086754
+
+    pm25_smoke_gram217:
+      <<: *PM25_SMOKE
+      header: Bend (121.32W,44.06N)
+      tag: Bend
+      lat:  44.058174
+      lon:  -121.315308
+
+    pm25_smoke_gram218:
+      <<: *PM25_SMOKE
+      header: Malheur_NWR (118.84W,43.27N)
+      tag: Malheur_NWR
+      lat:  43.265587
+      lon:  -118.844075
+
+    pm25_smoke_gram219:
+      <<: *PM25_SMOKE
+      header: LaGrande (118.09W,45.32N)
+      tag: LaGrande
+      lat:  45.324607
+      lon:  -118.08787
+
+    pm25_smoke_gram220:
+      <<: *PM25_SMOKE
+      header: Winnemucca (117.74W,40.97N)
+      tag: Winnemucca
+      lat:  40.972958
+      lon:  -117.735687
+
+    pm25_smoke_gram221:
+      <<: *PM25_SMOKE
+      header: Elko (115.76W,40.84N)
+      tag: Elko
+      lat:  40.835732
+      lon:  -115.75946
+
+    pm25_smoke_gram222:
+      <<: *PM25_SMOKE
+      header: Redding (122.38W,40.57N)
+      tag: Redding
+      lat:  40.574638
+      lon:  -122.381088
+
+    pm25_smoke_gram223:
+      <<: *PM25_SMOKE
+      header: Yreka (122.64W,41.73N)
+      tag: Yreka
+      lat:  41.731579
+      lon:  -122.635651
+
+    pm25_smoke_gram224:
+      <<: *PM25_SMOKE
+      header: Chico (121.84W,39.73N)
+      tag: Chico
+      lat:  39.728493
+      lon:  -121.837479
+
+    pm25_smoke_gram225:
+      <<: *PM25_SMOKE
+      header: MosesLake (119.28W,47.13N)
+      tag: MosesLake
+      lat:  47.131649
+      lon:  -119.277763
+
+    pm25_smoke_gram226:
+      <<: *PM25_SMOKE
+      header: GreatFalls (111.29W,47.50N)
+      tag: GreatFalls
+      lat:  47.504887
+      lon:  -111.291893
+
+    pm25_smoke_gram227:
+      <<: *PM25_SMOKE
+      header: MilesCity (105.84W,46.41N)
+      tag: MilesCity
+      lat:  46.408527
+      lon:  -105.840981
+
+    pm25_smoke_gram228:
+      <<: *PM25_SMOKE
+      header: TwinFalls (114.46W,42.56N)
+      tag: TwinFalls
+      lat:  42.563179
+      lon:  -114.460281
+
+    pm25_smoke_gram229:
+      <<: *PM25_SMOKE
+      header: Casper (106.33W,42.85N)
+      tag: Casper
+      lat:  42.850079
+      lon:  -106.325172
+
+    pm25_smoke_gram230:
+      <<: *PM25_SMOKE
+      header: RockSprings (109.22W,41.59N)
+      tag: RockSprings
+      lat:  41.590481
+      lon:  -109.223373
+
+    pm25_smoke_gram231:
+      <<: *PM25_SMOKE
+      header: St George (113.58W,37.11N)
+      tag: St George
+      lat:  37.10828
+      lon:  -113.583282
+
+    pm25_smoke_gram232:
+      <<: *PM25_SMOKE
+      header: Regina (104.62W,50.45N)
+      tag: Regina
+      lat:  50.451191
+      lon:  -104.616623
+

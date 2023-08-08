@@ -1,0 +1,171 @@
+theme:
+
+  plot:
+
+    prectotcorr:
+      long_name: Precip PCNTL
+      levels: [0]
+      layers: [gridfill]
+      header: 'Total Precipitation Percentiles'
+      subheader: 'Data: MERRA2 bias corrected total monthly precipitation. Period: 1980-2016'
+      gridfill:
+        cbar: Basic
+        cbunits: '%'
+        expr: percent.M2PERCMON.tavgM_2d_flx_Nx(z=1,t=1)
+        clevs: 0 10 20 30 40 50 60 70 80 90 100
+        nsub: 2
+        skip: 2
+
+    prectotcorrM:
+      long_name: Precip Mean
+      levels: [0]
+      layers: [gridfill]
+      header: 'Monthly Mean Precipitation Rate'
+      subheader: 'Data: MERRA2 bias corrected precipitation'
+      gridfill:
+        cbar: MeanPrecip
+        cbunits: mm/hr
+        expr: prectotcorr.MERRA2.tavgM_2d_flx_Nx(z=1) * 3600
+        clevs: pmean
+        nsub: 4
+        skip: 4
+
+    t2m:
+      long_name: T2M PCNTL
+      levels: [0]
+      layers: [gridfill]
+      header: '2-Meter Temperature Percentiles'
+      subheader: 'Modern-Era Retrospective Analysis (MERRA-2)'
+      main: 'Period: 1980-2016' 
+      gridfill:
+        cbar: Basic_r
+        cbunits: '%'
+        expr: percent.M2PERCMONT2M.tavgM_2d_slv_Nx(z=1,t=1)
+        clevs: 0 10 20 30 40 50 60 70 80 90 100
+        nsub: 2
+        skip: 2
+
+    t2mM:
+      long_name: T2M Mean
+      levels: [0]
+      layers: [gridfill]
+      header: '2-Meter Temperature Monthly Mean'
+      subheader: 'Modern-Era Retrospective Analysis (MERRA-2)'
+      gridfill:
+        cbar: BillT2m
+        cbunits: C
+        expr: t2m.MERRA2.tavgM_2d_slv_Nx(z=1)-273.15
+        clevs: -40 -30 -20 -10 0 10 20 30 40
+        nsub: 5
+        skip: 2
+
+    w10m:
+      long_name: W10M PCNTL
+      levels: [0]
+      layers: [gridfill]
+      header: '10-Meter Wind Speed Percentiles'
+      subheader: 'Modern-Era Retrospective Analysis (MERRA-2)'
+      main: 'Period: 1980-2016'
+      gridfill:
+        cbar: Basic_r
+        cbunits: '%'
+        expr: percent.M2PERCMONW10M.tavgM_2d_slv_Nx(z=1,t=1)
+        clevs: 0 10 20 30 40 50 60 70 80 90 100
+        nsub: 2
+        skip: 2
+
+    w10mM:
+      long_name: W10M Mean
+      levels: [0]
+      layers: [gridfill]
+      header: '10-Meter Wind Speed Monthly Mean'
+      subheader: 'Modern-Era Retrospective Analysis (MERRA-2)'
+      gridfill:
+        cbar: WindSpeed
+        cbunits: m/s
+        expr: w10m.M2MONW10M.tavgM_2d_slv_Nx
+        clevs: wmean
+        nsub: 8
+        skip: 8
+
+    wetdays:
+      long_name: Wet Days
+      levels: [0]
+      layers: [gridfill]
+      header: 'Number of Extreme Wet Days'
+      subheader: 'Days with rainfall >= 90th percentile'
+      main: 'Data: MERRA2 bias corrected total monthly precipitation. Period: 1980-2016'
+      gridfill:
+        cbar: Basic
+        cbunits: Days
+        expr: n90th.M2PERCDLY.tavgM_2d_flx_Nx(z=1,t=1)
+        clevs: 0 1 2 3 4 5 6 7 8 9
+        nsub: 2
+        skip: 2
+
+    drydays:
+      long_name: Dry Days
+      levels: [0]
+      layers: [gridfill]
+      header: 'Number of Extreme Dry Days'
+      subheader: 'Days with rainfall less than or equal to 0.1 mm/hr'
+      main: 'Data: MERRA2 bias corrected total monthly precipitation'
+      gridfill:
+        cbar: Basic_r
+        cbunits: Days
+        expr: nZero.M2PERCDLY.tavgM_2d_flx_Nx(z=1,t=1)
+        clevs:
+        cmin: 0
+        cmax: 30
+        cint: 3
+        nsub: 2
+        skip: 2
+
+  layer:
+
+    shading: &SHADING
+      gxout: shaded
+      cbar: Rainbow
+      nsub: 4
+      skip: 4
+      type: linear
+
+    gridfill:
+      gxout: grfill
+      cbar: Rainbow
+      nsub: 4
+      skip: 4
+      type: linear
+
+  attribute:
+
+#   Basic:
+#     default: Basic
+#     pacific: BrBG
+#     atlantic: BrBG
+#     indian: BrBG
+
+#   Basic_r:
+#     default: Basic_r
+#     pacific: BrBG_r
+#     atlantic: BrBG_r
+#     indian: BrBG_r
+
+    pmean:
+#     default: 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0
+      default: 0 0.06 0.12 0.18 0.24 0.30 0.36 0.42 0.48 0.54 0.60
+      mideast: 0 0.03 0.06 0.09 0.12 0.15 0.18 0.21 0.24 0.27 0.30
+      eastasia: 0 0.03 0.06 0.09 0.12 0.15 0.18 0.21 0.24 0.27 0.30
+      europe: 0 0.03 0.06 0.09 0.12 0.15 0.18 0.21 0.24 0.27 0.30
+      nam: 0 0.03 0.06 0.09 0.12 0.15 0.18 0.21 0.24 0.27 0.30
+      carib: 0 0.06 0.12 0.18 0.24 0.30 0.36 0.42 0.48 0.54 0.60
+      global: 0 0.06 0.12 0.18 0.24 0.30 0.36 0.42 0.48 0.54 0.60
+      global_ocean: 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0
+
+    wmean:
+      default: 1 2 3 4 5 6 7 8
+      global: 1 2 3 4 5 6 7 8 9 10 11 12 13
+      global_ocean: 1 2 3 4 5 6 7 8 9 10 11 12 13
+      indian: 1 2 3 4 5 6 7 8 9 10 11 12 13
+      atlantic: 1 2 3 4 5 6 7 8 9 10 11 12 13
+      pacific: 1 2 3 4 5 6 7 8 9 10 11 12 13

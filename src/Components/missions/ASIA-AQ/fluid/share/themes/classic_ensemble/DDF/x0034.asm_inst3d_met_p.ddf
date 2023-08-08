@@ -1,0 +1,5 @@
+DSET /archive/u/dao_it/x0034/ana/Y%y4/M%m2/x0034.asm.inst3d_met_p.%y4%m2%d2_%h2z.nc4
+OPTIONS template
+XDEF lon 1152 LINEAR -180.0 0.3125
+YDEF lat 721 LINEAR  -90.0 0.25
+TDEF time 1200 LINEAR 00Z01apr2018 6hr

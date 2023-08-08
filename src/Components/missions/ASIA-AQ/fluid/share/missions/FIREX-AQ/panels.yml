@@ -1,0 +1,704 @@
+layout12: &LAYOUT12
+
+  geometry: 256x192
+  layout: 4x3
+  label: '$stream ($tau)'
+  no_logo: 1
+  no_cbar: 1
+  no_title: 1
+  no_label: 1
+  shape: 0
+  qfed1: 'off'
+  qfed2: 'off'
+  bbox: 60 60 964 675
+
+layout6: &LAYOUT6
+
+  geometry: 320x240
+  layout: 3x2
+  label: $stream
+  no_logo: 1
+  no_cbar: 1
+  no_title: 1
+  no_label: 1
+  shape: 0
+  qfed1: 'off'
+  qfed2: 'off'
+# bbox: 60 60 964 680
+  bbox: 60 130 964 610
+
+layout4: &LAYOUT4
+
+  geometry: 400x300
+  layout: 2x2
+  label: $stream
+  no_logo: 1
+  no_cbar: 1
+  no_title: 1
+  no_label: 1
+  shape: 0
+  qfed1: 'off'
+  qfed2: 'off'
+# bbox: 60 60 964 680
+  bbox: 60 60 964 680
+
+wxmapscustom:
+
+  plot:
+
+
+    bc_lml_all:
+      long_name: 'BC'
+      title: 'Surface Black Carbon'
+      layers: ['bc']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=bc_lml&$region&$fcst&$tau', 'field': 'bc_lml', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=bc_lml&$region&$fcst&$tau', 'field': 'bc_lml', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=bc_lml&$region&$fcst&$tau', 'field': 'bc_lml', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=bc_lml&$region&$fcst&$tau', 'field': 'bc_lml', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=bc_lml&$region&$fcst&$tau', 'field': 'bc_lml', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=bc_lml&$region&$fcst&$tau', 'field': 'bc_lml', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=bc_lml&$region&$fcst&$tau', 'field': 'bc_lml', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_WRFchem/?one_click=1&stream=WRFchem&$level&field=bc_lml&$region&$fcst&$tau', 'field': 'bc_lml', 'pos': 12, 'stream': 'WRFchem'}
+        - {'no_cbar': 0, 'stream': 'WRFchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'bc_lml', 'cbar_only': 1}
+
+    aod_smoke_all:
+      long_name: 'AOD Smoke'
+      title: 'Aerosol Optical Thickness (Smoke)'
+      layers: ['aod']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_HRRR/?one_click=1&stream=HRRR&$level&field=aod_smoke&$region&$fcst&$tau', 'field': 'aod_smoke', 'pos': 32, 'stream': 'HRRR'}
+        - {'no_cbar': 0, 'stream': 'HRRR', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'aod_smoke', 'cbar_only': 1}
+
+    co_all:
+      long_name: 'CO'
+      title: '$level hPa CO'
+      layers: ['co']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=co&$region&$fcst&$tau', 'field': 'co', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=co&$region&$fcst&$tau', 'field': 'co', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=co&$region&$fcst&$tau', 'field': 'co', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=co&$region&$fcst&$tau', 'field': 'co', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=co&$region&$fcst&$tau', 'field': 'co', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_FireWork/?one_click=1&stream=FireWork&$level&field=co&$region&$fcst&$tau', 'field': 'co', 'pos': 33, 'stream': 'FireWork'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=co&$region&$fcst&$tau', 'field': 'co', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=co&$region&$fcst&$tau', 'field': 'co', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOSCF/?one_click=1&stream=GEOSCF&$level&field=co&$region&$fcst&$tau', 'field': 'co', 'shift_dt': -12, 'pos': 21, 'stream': 'GEOSCF'}
+        - {'shift_dt': -12, 'no_cbar': 0, 'stream': 'GEOSCF', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'co', 'cbar_only': 1}
+
+    o3_lml_all:
+      long_name: 'O3'
+      title: 'Surface O3'
+      layers: ['o3']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=o3_lml&$region&$fcst&$tau', 'field': 'o3_lml', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=o3_lml&$region&$fcst&$tau', 'field': 'o3_lml', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=o3_lml&$region&$fcst&$tau', 'field': 'o3_lml', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_FireWork/?one_click=1&stream=FireWork&$level&field=o3_lml&$region&$fcst&$tau', 'field': 'o3_lml', 'pos': 33, 'stream': 'FireWork'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=o3_lml&$region&$fcst&$tau', 'field': 'o3_lml', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=o3_lml&$region&$fcst&$tau', 'field': 'o3_lml', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOSCF/?one_click=1&stream=GEOSCF&$level&field=o3_lml&$region&$fcst&$tau', 'field': 'o3_lml', 'shift_dt': -12, 'pos': 21, 'stream': 'GEOSCF'}
+        - {'shift_dt': -12, 'no_cbar': 0, 'stream': 'GEOSCF', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'o3_lml', 'cbar_only': 1}
+
+    so2_lml_all:
+      long_name: 'SO2'
+      title: 'Surface SO2'
+      layers: ['so2']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=so2_lml&$region&$fcst&$tau', 'field': 'so2_lml', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=so2_lml&$region&$fcst&$tau', 'field': 'so2_lml', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=so2_lml&$region&$fcst&$tau', 'field': 'so2_lml', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=so2_lml&$region&$fcst&$tau', 'field': 'so2_lml', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=so2_lml&$region&$fcst&$tau', 'field': 'so2_lml', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_FireWork/?one_click=1&stream=FireWork&$level&field=so2_lml&$region&$fcst&$tau', 'field': 'so2_lml', 'pos': 33, 'stream': 'FireWork'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=so2_lml&$region&$fcst&$tau', 'field': 'so2_lml', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOSCF/?one_click=1&stream=GEOSCF&$level&field=so2_lml&$region&$fcst&$tau', 'field': 'so2_lml', 'shift_dt': -12, 'pos': 21, 'stream': 'GEOSCF'}
+        - {'shift_dt': -12, 'no_cbar': 0, 'stream': 'GEOSCF', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'so2_lml', 'cbar_only': 1}
+
+    am_all:
+      long_name: 'Ammonium'
+      title: '$level hPa ammonium aerosol'
+      layers: ['su']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=am&$region&$fcst&$tau', 'field': 'am', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=am&$region&$fcst&$tau', 'field': 'am', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=am&$region&$fcst&$tau', 'field': 'am', 'pos': 41, 'stream': 'CAMchem'}
+        - {'no_cbar': 0, 'stream': 'CAMchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'am', 'cbar_only': 1}
+
+    co_lml_all:
+      long_name: 'CO'
+      title: 'Surface CO'
+      layers: ['co']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=co_lml&$region&$fcst&$tau', 'field': 'co_lml', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=co_lml&$region&$fcst&$tau', 'field': 'co_lml', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=co_lml&$region&$fcst&$tau', 'field': 'co_lml', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=co_lml&$region&$fcst&$tau', 'field': 'co_lml', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_FireWork/?one_click=1&stream=FireWork&$level&field=co_lml&$region&$fcst&$tau', 'field': 'co_lml', 'pos': 33, 'stream': 'FireWork'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=co_lml&$region&$fcst&$tau', 'field': 'co_lml', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=co_lml&$region&$fcst&$tau', 'field': 'co_lml', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOSCF/?one_click=1&stream=GEOSCF&$level&field=co_lml&$region&$fcst&$tau', 'field': 'co_lml', 'shift_dt': -12, 'pos': 21, 'stream': 'GEOSCF'}
+        - {'shift_dt': -12, 'no_cbar': 0, 'stream': 'GEOSCF', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'co_lml', 'cbar_only': 1}
+
+    co_smoke_all:
+      long_name: 'CO'
+      title: '$level hPa CO tracer of biomass burning'
+      layers: ['co']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=co_smoke&$region&$fcst&$tau', 'field': 'co_smoke', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=co_smoke&$region&$fcst&$tau', 'field': 'co_smoke', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UCLAWRFchem/?one_click=1&stream=UCLAWRFchem&$level&field=co_smoke&$region&$fcst&$tau', 'field': 'co_smoke', 'pos': 42, 'stream': 'UCLAWRFchem'}
+        - {'no_cbar': 0, 'stream': 'UCLAWRFchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'co_smoke', 'cbar_only': 1}
+
+    tcno_all:
+      long_name: 'Total column NO'
+      title: 'Total column NO'
+      layers: ['tcno']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=tcno&$region&$fcst&$tau', 'field': 'tcno', 'pos': 31, 'stream': 'CAMS'}
+        - {'no_cbar': 0, 'stream': 'CAMS', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'tcno', 'cbar_only': 1}
+
+    no1_all:
+      long_name: 'NO'
+      title: '$level hPa NO'
+      layers: ['no1']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=no1&$region&$fcst&$tau', 'field': 'no1', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=no1&$region&$fcst&$tau', 'field': 'no1', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=no1&$region&$fcst&$tau', 'field': 'no1', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=no1&$region&$fcst&$tau', 'field': 'no1', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_FireWork/?one_click=1&stream=FireWork&$level&field=no1&$region&$fcst&$tau', 'field': 'no1', 'pos': 33, 'stream': 'FireWork'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=no1&$region&$fcst&$tau', 'field': 'no1', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=no1&$region&$fcst&$tau', 'field': 'no1', 'pos': 41, 'stream': 'CAMchem'}
+        - {'no_cbar': 0, 'stream': 'CAMchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'no1', 'cbar_only': 1}
+
+    no2_all:
+      long_name: 'NO2'
+      title: '$level hPa NO2'
+      layers: ['no2']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=no2&$region&$fcst&$tau', 'field': 'no2', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=no2&$region&$fcst&$tau', 'field': 'no2', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=no2&$region&$fcst&$tau', 'field': 'no2', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=no2&$region&$fcst&$tau', 'field': 'no2', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_FireWork/?one_click=1&stream=FireWork&$level&field=no2&$region&$fcst&$tau', 'field': 'no2', 'pos': 33, 'stream': 'FireWork'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=no2&$region&$fcst&$tau', 'field': 'no2', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=no2&$region&$fcst&$tau', 'field': 'no2', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOSCF/?one_click=1&stream=GEOSCF&$level&field=no2&$region&$fcst&$tau', 'field': 'no2', 'shift_dt': -12, 'pos': 21, 'stream': 'GEOSCF'}
+        - {'shift_dt': -12, 'no_cbar': 0, 'stream': 'GEOSCF', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'no2', 'cbar_only': 1}
+
+    ni_all:
+      long_name: 'Nitrate'
+      title: '$level hPa ammonium aerosol'
+      layers: ['su']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=ni&$region&$fcst&$tau', 'field': 'ni', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=ni&$region&$fcst&$tau', 'field': 'ni', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=ni&$region&$fcst&$tau', 'field': 'ni', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=ni&$region&$fcst&$tau', 'field': 'ni', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'no_cbar': 0, 'stream': 'NCARWRFchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'ni', 'cbar_only': 1}
+
+    co_smoke_lml_all:
+      long_name: 'CO'
+      title: 'Surface CO tracer for biomass burning'
+      layers: ['co']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=co_smoke_lml&$region&$fcst&$tau', 'field': 'co_smoke_lml', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UCLAWRFchem/?one_click=1&stream=UCLAWRFchem&$level&field=co_smoke_lml&$region&$fcst&$tau', 'field': 'co_smoke_lml', 'pos': 42, 'stream': 'UCLAWRFchem'}
+        - {'no_cbar': 0, 'stream': 'UCLAWRFchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'co_smoke_lml', 'cbar_only': 1}
+
+    no1_lml_all:
+      long_name: 'NO'
+      title: 'Surface NO'
+      layers: ['no1']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=no1_lml&$region&$fcst&$tau', 'field': 'no1_lml', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=no1_lml&$region&$fcst&$tau', 'field': 'no1_lml', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=no1_lml&$region&$fcst&$tau', 'field': 'no1_lml', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=no1_lml&$region&$fcst&$tau', 'field': 'no1_lml', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_FireWork/?one_click=1&stream=FireWork&$level&field=no1_lml&$region&$fcst&$tau', 'field': 'no1_lml', 'pos': 33, 'stream': 'FireWork'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=no1_lml&$region&$fcst&$tau', 'field': 'no1_lml', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=no1_lml&$region&$fcst&$tau', 'field': 'no1_lml', 'pos': 41, 'stream': 'CAMchem'}
+        - {'no_cbar': 0, 'stream': 'CAMchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'no1_lml', 'cbar_only': 1}
+
+    tcco_all:
+      long_name: 'Total column CO'
+      title: 'Total column CO'
+      layers: ['tcco']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=tcco&$region&$fcst&$tau', 'field': 'tcco', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=tcco&$region&$fcst&$tau', 'field': 'tcco', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=tcco&$region&$fcst&$tau', 'field': 'tcco', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=tcco&$region&$fcst&$tau', 'field': 'tcco', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=tcco&$region&$fcst&$tau', 'field': 'tcco', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_FireWork/?one_click=1&stream=FireWork&$level&field=tcco&$region&$fcst&$tau', 'field': 'tcco', 'pos': 33, 'stream': 'FireWork'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=tcco&$region&$fcst&$tau', 'field': 'tcco', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UCLAWRFchem/?one_click=1&stream=UCLAWRFchem&$level&field=tcco&$region&$fcst&$tau', 'field': 'tcco', 'pos': 42, 'stream': 'UCLAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=tcco&$region&$fcst&$tau', 'field': 'tcco', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOSCF/?one_click=1&stream=GEOSCF&$level&field=tcco&$region&$fcst&$tau', 'field': 'tcco', 'shift_dt': -12, 'pos': 21, 'stream': 'GEOSCF'}
+        - {'shift_dt': -12, 'no_cbar': 0, 'stream': 'GEOSCF', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'tcco', 'cbar_only': 1}
+
+    pm25_smoke_all:
+      long_name: 'PM2.5'
+      title: '$level hPa Smoke PM2.5'
+      layers: ['pm25']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_HRRR/?one_click=1&stream=HRRR&$level&field=pm25_smoke&$region&$fcst&$tau', 'field': 'pm25_smoke', 'pos': 32, 'stream': 'HRRR'}
+        - {'no_cbar': 0, 'stream': 'HRRR', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'pm25_smoke', 'cbar_only': 1}
+
+    tcpm25_all:
+      long_name: 'Total column PM2.5'
+      title: 'Total column PM2.5'
+      layers: ['tcoc']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=tcpm25&$region&$fcst&$tau', 'field': 'tcpm25', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=tcpm25&$region&$fcst&$tau', 'field': 'tcpm25', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=tcpm25&$region&$fcst&$tau', 'field': 'tcpm25', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=tcpm25&$region&$fcst&$tau', 'field': 'tcpm25', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_HRRR/?one_click=1&stream=HRRR&$level&field=tcpm25&$region&$fcst&$tau', 'field': 'tcpm25', 'pos': 32, 'stream': 'HRRR'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_FireWork/?one_click=1&stream=FireWork&$level&field=tcpm25&$region&$fcst&$tau', 'field': 'tcpm25', 'pos': 33, 'stream': 'FireWork'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=tcpm25&$region&$fcst&$tau', 'field': 'tcpm25', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UCLAWRFchem/?one_click=1&stream=UCLAWRFchem&$level&field=tcpm25&$region&$fcst&$tau', 'field': 'tcpm25', 'pos': 42, 'stream': 'UCLAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=tcpm25&$region&$fcst&$tau', 'field': 'tcpm25', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_WRFchem/?one_click=1&stream=WRFchem&$level&field=tcpm25&$region&$fcst&$tau', 'field': 'tcpm25', 'pos': 12, 'stream': 'WRFchem'}
+        - {'no_cbar': 0, 'stream': 'WRFchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'tcpm25', 'cbar_only': 1}
+
+    o3_all:
+      long_name: 'O3'
+      title: '$level hPa O3'
+      layers: ['o3']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=o3&$region&$fcst&$tau', 'field': 'o3', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=o3&$region&$fcst&$tau', 'field': 'o3', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=o3&$region&$fcst&$tau', 'field': 'o3', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_FireWork/?one_click=1&stream=FireWork&$level&field=o3&$region&$fcst&$tau', 'field': 'o3', 'pos': 33, 'stream': 'FireWork'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=o3&$region&$fcst&$tau', 'field': 'o3', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=o3&$region&$fcst&$tau', 'field': 'o3', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOSCF/?one_click=1&stream=GEOSCF&$level&field=o3&$region&$fcst&$tau', 'field': 'o3', 'shift_dt': -12, 'pos': 21, 'stream': 'GEOSCF'}
+        - {'shift_dt': -12, 'no_cbar': 0, 'stream': 'GEOSCF', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'o3', 'cbar_only': 1}
+
+    pm25_all:
+      long_name: 'PM2.5'
+      title: '$level hPa PM2.5'
+      layers: ['pm25']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=pm25&$region&$fcst&$tau', 'field': 'pm25', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=pm25&$region&$fcst&$tau', 'field': 'pm25', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=pm25&$region&$fcst&$tau', 'field': 'pm25', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=pm25&$region&$fcst&$tau', 'field': 'pm25', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_FireWork/?one_click=1&stream=FireWork&$level&field=pm25&$region&$fcst&$tau', 'field': 'pm25', 'pos': 33, 'stream': 'FireWork'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=pm25&$region&$fcst&$tau', 'field': 'pm25', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UCLAWRFchem/?one_click=1&stream=UCLAWRFchem&$level&field=pm25&$region&$fcst&$tau', 'field': 'pm25', 'pos': 42, 'stream': 'UCLAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=pm25&$region&$fcst&$tau', 'field': 'pm25', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_WRFchem/?one_click=1&stream=WRFchem&$level&field=pm25&$region&$fcst&$tau', 'field': 'pm25', 'pos': 12, 'stream': 'WRFchem'}
+        - {'no_cbar': 0, 'stream': 'WRFchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'pm25', 'cbar_only': 1}
+
+    aod_all:
+      long_name: 'AOD'
+      title: 'Aerosol Optical Thickness'
+      layers: ['aod']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=aod&$region&$fcst&$tau', 'field': 'aod', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=aod&$region&$fcst&$tau', 'field': 'aod', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=aod&$region&$fcst&$tau', 'field': 'aod', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=aod&$region&$fcst&$tau', 'field': 'aod', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=aod&$region&$fcst&$tau', 'field': 'aod', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=aod&$region&$fcst&$tau', 'field': 'aod', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UCLAWRFchem/?one_click=1&stream=UCLAWRFchem&$level&field=aod&$region&$fcst&$tau', 'field': 'aod', 'pos': 42, 'stream': 'UCLAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=aod&$region&$fcst&$tau', 'field': 'aod', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_WRFchem/?one_click=1&stream=WRFchem&$level&field=aod&$region&$fcst&$tau', 'field': 'aod', 'pos': 12, 'stream': 'WRFchem'}
+        - {'no_cbar': 0, 'stream': 'WRFchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'aod', 'cbar_only': 1}
+
+    am_lml_all:
+      long_name: 'Ammonium'
+      title: 'Surafce ammonium aerosol'
+      layers: ['su']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=am_lml&$region&$fcst&$tau', 'field': 'am_lml', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=am_lml&$region&$fcst&$tau', 'field': 'am_lml', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=am_lml&$region&$fcst&$tau', 'field': 'am_lml', 'pos': 41, 'stream': 'CAMchem'}
+        - {'no_cbar': 0, 'stream': 'CAMchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'am_lml', 'cbar_only': 1}
+
+    bc_all:
+      long_name: 'BC'
+      title: '$level hPa Black Carbon'
+      layers: ['bc']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=bc&$region&$fcst&$tau', 'field': 'bc', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=bc&$region&$fcst&$tau', 'field': 'bc', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=bc&$region&$fcst&$tau', 'field': 'bc', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=bc&$region&$fcst&$tau', 'field': 'bc', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=bc&$region&$fcst&$tau', 'field': 'bc', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=bc&$region&$fcst&$tau', 'field': 'bc', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=bc&$region&$fcst&$tau', 'field': 'bc', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_WRFchem/?one_click=1&stream=WRFchem&$level&field=bc&$region&$fcst&$tau', 'field': 'bc', 'pos': 12, 'stream': 'WRFchem'}
+        - {'no_cbar': 0, 'stream': 'WRFchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'bc', 'cbar_only': 1}
+
+    pm25sfc_all:
+      long_name: 'PM2.5'
+      title: 'Surface PM2.5'
+      layers: ['pm25']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=pm25sfc&$region&$fcst&$tau', 'field': 'pm25sfc', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=pm25sfc&$region&$fcst&$tau', 'field': 'pm25sfc', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=pm25sfc&$region&$fcst&$tau', 'field': 'pm25sfc', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=pm25sfc&$region&$fcst&$tau', 'field': 'pm25sfc', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_FireWork/?one_click=1&stream=FireWork&$level&field=pm25sfc&$region&$fcst&$tau', 'field': 'pm25sfc', 'pos': 33, 'stream': 'FireWork'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=pm25sfc&$region&$fcst&$tau', 'field': 'pm25sfc', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UCLAWRFchem/?one_click=1&stream=UCLAWRFchem&$level&field=pm25sfc&$region&$fcst&$tau', 'field': 'pm25sfc', 'pos': 42, 'stream': 'UCLAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=pm25sfc&$region&$fcst&$tau', 'field': 'pm25sfc', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOSCF/?one_click=1&stream=GEOSCF&$level&field=pm25sfc&$region&$fcst&$tau', 'field': 'pm25sfc', 'shift_dt': -12, 'pos': 21, 'stream': 'GEOSCF'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_WRFchem/?one_click=1&stream=WRFchem&$level&field=pm25sfc&$region&$fcst&$tau', 'field': 'pm25sfc', 'pos': 12, 'stream': 'WRFchem'}
+        - {'no_cbar': 0, 'stream': 'WRFchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'pm25sfc', 'cbar_only': 1}
+
+    tcoc_all:
+      long_name: 'Total column OC'
+      title: 'Total column OC'
+      layers: ['tcoc']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=tcoc&$region&$fcst&$tau', 'field': 'tcoc', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=tcoc&$region&$fcst&$tau', 'field': 'tcoc', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=tcoc&$region&$fcst&$tau', 'field': 'tcoc', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=tcoc&$region&$fcst&$tau', 'field': 'tcoc', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=tcoc&$region&$fcst&$tau', 'field': 'tcoc', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=tcoc&$region&$fcst&$tau', 'field': 'tcoc', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=tcoc&$region&$fcst&$tau', 'field': 'tcoc', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_WRFchem/?one_click=1&stream=WRFchem&$level&field=tcoc&$region&$fcst&$tau', 'field': 'tcoc', 'pos': 12, 'stream': 'WRFchem'}
+        - {'no_cbar': 0, 'stream': 'WRFchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'tcoc', 'cbar_only': 1}
+
+    so2_all:
+      long_name: 'SO2'
+      title: '$level hPa SO2'
+      layers: ['so2']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=so2&$region&$fcst&$tau', 'field': 'so2', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=so2&$region&$fcst&$tau', 'field': 'so2', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=so2&$region&$fcst&$tau', 'field': 'so2', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=so2&$region&$fcst&$tau', 'field': 'so2', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=so2&$region&$fcst&$tau', 'field': 'so2', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_FireWork/?one_click=1&stream=FireWork&$level&field=so2&$region&$fcst&$tau', 'field': 'so2', 'pos': 33, 'stream': 'FireWork'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=so2&$region&$fcst&$tau', 'field': 'so2', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOSCF/?one_click=1&stream=GEOSCF&$level&field=so2&$region&$fcst&$tau', 'field': 'so2', 'shift_dt': -12, 'pos': 21, 'stream': 'GEOSCF'}
+        - {'shift_dt': -12, 'no_cbar': 0, 'stream': 'GEOSCF', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'so2', 'cbar_only': 1}
+
+    oc_lml_all:
+      long_name: 'OC'
+      title: 'Surface Organic Carbon'
+      layers: ['oc']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=oc_lml&$region&$fcst&$tau', 'field': 'oc_lml', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=oc_lml&$region&$fcst&$tau', 'field': 'oc_lml', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=oc_lml&$region&$fcst&$tau', 'field': 'oc_lml', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=oc_lml&$region&$fcst&$tau', 'field': 'oc_lml', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=oc_lml&$region&$fcst&$tau', 'field': 'oc_lml', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=oc_lml&$region&$fcst&$tau', 'field': 'oc_lml', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=oc_lml&$region&$fcst&$tau', 'field': 'oc_lml', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_WRFchem/?one_click=1&stream=WRFchem&$level&field=oc_lml&$region&$fcst&$tau', 'field': 'oc_lml', 'pos': 12, 'stream': 'WRFchem'}
+        - {'no_cbar': 0, 'stream': 'WRFchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'oc_lml', 'cbar_only': 1}
+
+    du_all:
+      long_name: 'Dust'
+      title: '$level hPa dust aerosol'
+      layers: ['du']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=du&$region&$fcst&$tau', 'field': 'du', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=du&$region&$fcst&$tau', 'field': 'du', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=du&$region&$fcst&$tau', 'field': 'du', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=du&$region&$fcst&$tau', 'field': 'du', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=du&$region&$fcst&$tau', 'field': 'du', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=du&$region&$fcst&$tau', 'field': 'du', 'pos': 41, 'stream': 'CAMchem'}
+        - {'no_cbar': 0, 'stream': 'CAMchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'du', 'cbar_only': 1}
+
+    pm25_smoke_lml_all:
+      long_name: 'PM2.5'
+      title: 'Surface Smoke PM2.5'
+      layers: ['pm25']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_HRRR/?one_click=1&stream=HRRR&$level&field=pm25_smoke_lml&$region&$fcst&$tau', 'field': 'pm25_smoke_lml', 'pos': 32, 'stream': 'HRRR'}
+        - {'no_cbar': 0, 'stream': 'HRRR', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'pm25_smoke_lml', 'cbar_only': 1}
+
+    su_lml_all:
+      long_name: 'Sulphate'
+      title: 'Surface sulphate aerosol'
+      layers: ['su']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=su_lml&$region&$fcst&$tau', 'field': 'su_lml', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=su_lml&$region&$fcst&$tau', 'field': 'su_lml', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=su_lml&$region&$fcst&$tau', 'field': 'su_lml', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=su_lml&$region&$fcst&$tau', 'field': 'su_lml', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=su_lml&$region&$fcst&$tau', 'field': 'su_lml', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=su_lml&$region&$fcst&$tau', 'field': 'su_lml', 'pos': 41, 'stream': 'CAMchem'}
+        - {'no_cbar': 0, 'stream': 'CAMchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'su_lml', 'cbar_only': 1}
+
+    ss_all:
+      long_name: 'Sea salt'
+      title: '$level hPa sea salt aerosol'
+      layers: ['ss']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=ss&$region&$fcst&$tau', 'field': 'ss', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=ss&$region&$fcst&$tau', 'field': 'ss', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=ss&$region&$fcst&$tau', 'field': 'ss', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=ss&$region&$fcst&$tau', 'field': 'ss', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=ss&$region&$fcst&$tau', 'field': 'ss', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=ss&$region&$fcst&$tau', 'field': 'ss', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=ss&$region&$fcst&$tau', 'field': 'ss', 'pos': 41, 'stream': 'CAMchem'}
+        - {'no_cbar': 0, 'stream': 'CAMchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'ss', 'cbar_only': 1}
+
+    ss_lml_all:
+      long_name: 'Sea salt'
+      title: 'Surface sea salt aerosol'
+      layers: ['ss']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=ss_lml&$region&$fcst&$tau', 'field': 'ss_lml', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=ss_lml&$region&$fcst&$tau', 'field': 'ss_lml', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=ss_lml&$region&$fcst&$tau', 'field': 'ss_lml', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=ss_lml&$region&$fcst&$tau', 'field': 'ss_lml', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=ss_lml&$region&$fcst&$tau', 'field': 'ss_lml', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=ss_lml&$region&$fcst&$tau', 'field': 'ss_lml', 'pos': 41, 'stream': 'CAMchem'}
+        - {'no_cbar': 0, 'stream': 'CAMchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'ss_lml', 'cbar_only': 1}
+
+    oc_all:
+      long_name: 'OC'
+      title: '$level hPa Organic Carbon'
+      layers: ['oc']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=oc&$region&$fcst&$tau', 'field': 'oc', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=oc&$region&$fcst&$tau', 'field': 'oc', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=oc&$region&$fcst&$tau', 'field': 'oc', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=oc&$region&$fcst&$tau', 'field': 'oc', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=oc&$region&$fcst&$tau', 'field': 'oc', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=oc&$region&$fcst&$tau', 'field': 'oc', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=oc&$region&$fcst&$tau', 'field': 'oc', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_WRFchem/?one_click=1&stream=WRFchem&$level&field=oc&$region&$fcst&$tau', 'field': 'oc', 'pos': 12, 'stream': 'WRFchem'}
+        - {'no_cbar': 0, 'stream': 'WRFchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'oc', 'cbar_only': 1}
+
+    su_all:
+      long_name: 'Sulphate'
+      title: '$level hPa sulphate aerosol'
+      layers: ['su']
+      levels: [925, 850, 700, 600]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=su&$region&$fcst&$tau', 'field': 'su', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=su&$region&$fcst&$tau', 'field': 'su', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=su&$region&$fcst&$tau', 'field': 'su', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=su&$region&$fcst&$tau', 'field': 'su', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=su&$region&$fcst&$tau', 'field': 'su', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=su&$region&$fcst&$tau', 'field': 'su', 'pos': 41, 'stream': 'CAMchem'}
+        - {'no_cbar': 0, 'stream': 'CAMchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'su', 'cbar_only': 1}
+
+    no2_lml_all:
+      long_name: 'NO2'
+      title: 'Surface NO2'
+      layers: ['no2']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=no2_lml&$region&$fcst&$tau', 'field': 'no2_lml', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=no2_lml&$region&$fcst&$tau', 'field': 'no2_lml', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=no2_lml&$region&$fcst&$tau', 'field': 'no2_lml', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=no2_lml&$region&$fcst&$tau', 'field': 'no2_lml', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_FireWork/?one_click=1&stream=FireWork&$level&field=no2_lml&$region&$fcst&$tau', 'field': 'no2_lml', 'pos': 33, 'stream': 'FireWork'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=no2_lml&$region&$fcst&$tau', 'field': 'no2_lml', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=no2_lml&$region&$fcst&$tau', 'field': 'no2_lml', 'pos': 41, 'stream': 'CAMchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOSCF/?one_click=1&stream=GEOSCF&$level&field=no2_lml&$region&$fcst&$tau', 'field': 'no2_lml', 'shift_dt': -12, 'pos': 21, 'stream': 'GEOSCF'}
+        - {'shift_dt': -12, 'no_cbar': 0, 'stream': 'GEOSCF', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'no2_lml', 'cbar_only': 1}
+
+    du_lml_all:
+      long_name: 'Dust'
+      title: 'Surface dust aerosol'
+      layers: ['du']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_RAQMS/?one_click=1&stream=RAQMS&$level&field=du_lml&$region&$fcst&$tau', 'field': 'du_lml', 'pos': 22, 'stream': 'RAQMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMS/?one_click=1&stream=CAMS&$level&field=du_lml&$region&$fcst&$tau', 'field': 'du_lml', 'pos': 31, 'stream': 'CAMS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=du_lml&$region&$fcst&$tau', 'field': 'du_lml', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=du_lml&$region&$fcst&$tau', 'field': 'du_lml', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_CAMchem/?one_click=1&stream=CAMchem&$level&field=du_lml&$region&$fcst&$tau', 'field': 'du_lml', 'pos': 41, 'stream': 'CAMchem'}
+        - {'no_cbar': 0, 'stream': 'CAMchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'du_lml', 'cbar_only': 1}
+
+    ni_lml_all:
+      long_name: 'Nitrate'
+      title: 'Surafce ammonium aerosol'
+      layers: ['su']
+      levels: [0]
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT12
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_UIOWAWRFchem/?one_click=1&stream=UIOWAWRFchem&$level&field=ni_lml&$region&$fcst&$tau', 'field': 'ni_lml', 'shift_dt': -12, 'pos': 13, 'stream': 'UIOWAWRFchem'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_GEOS/?one_click=1&stream=GEOS&$level&field=ni_lml&$region&$fcst&$tau', 'field': 'ni_lml', 'pos': 11, 'stream': 'GEOS'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_ARQI/?one_click=1&stream=ARQI&$level&field=ni_lml&$region&$fcst&$tau', 'field': 'ni_lml', 'shift_dt': 12, 'pos': 23, 'stream': 'ARQI'}
+        - {'url': 'https://fluid.nccs.nasa.gov/missions/custom_mission%2BFX_NCARWRFchem/?one_click=1&stream=NCARWRFchem&$level&field=ni_lml&$region&$fcst&$tau', 'field': 'ni_lml', 'pos': 43, 'stream': 'NCARWRFchem'}
+        - {'no_cbar': 0, 'stream': 'NCARWRFchem', 'geometry': '1024x768', 'region': 'fx-central', 'pos': 'cbar', 'field': 'ni_lml', 'cbar_only': 1}

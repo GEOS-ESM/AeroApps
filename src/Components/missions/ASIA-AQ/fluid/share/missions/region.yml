@@ -1,0 +1,25 @@
+
+region:
+
+  nam:
+
+    long_name: North America
+    lon: 0 360
+    lat: 0 90
+    mpdset: mres
+    mproj: nps
+    mpvals: 210 300 25 71
+    addlayers: [Canada_Province]
+
+  global:
+
+    long_name: Global
+    lon: -180 180
+    lat: -90 90
+    mpdset: mres
+    mproj: latlon
+    mpvals:
+    barbs: 'off'
+    streamlines: 'off'
+    thick_above: 'off'
+    thick_below: 'off'

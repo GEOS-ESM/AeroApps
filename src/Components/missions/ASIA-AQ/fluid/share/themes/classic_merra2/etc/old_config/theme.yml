@@ -1,0 +1,115 @@
+
+wxmapsclassicpub:
+
+  plot:
+
+    t2m:
+      long_name: T2M
+      levels: [0]
+      layers: [shading]
+      title: '\\ 2-Meter Temperature (C)'
+      shading:
+        cbar: Rainbow
+        expr: _t2m-273.15
+        clevs: -35 -25 -15 -10 -5 0 5 10 15 25 35 55
+      map:
+        line_color: 0 0 0
+        line_width: 5
+
+    w10m:
+      long_name: 10m Wind
+      levels: [0]
+      layers: [shading, barbs]
+      title: '\\ 10-Meter Wind [m/s] and Barbs [knots]'
+      shading:
+        cbar: Rain
+        expr: _w10m
+        clevs: 0 1 2 4 6 10 15 20 25
+      barbs:
+        uexpr: _u10m*1.9438
+        vexpr: _v10m*1.9438
+        ccolor: 0 0 0
+      map:
+        line_width: 8
+
+    cldlow:
+      long_name: "Low Cloud Fraction"
+      levels: [0]
+      layers: [clouds]
+      title: '\\ Low Cloud Fraction'
+      clouds:
+        expr: _cldlow
+      map:
+        line_color: 0 255 255
+        line_width: 8
+
+    cldmid:
+      long_name: "Middle Cloud Fraction"
+      levels: [0]
+      layers: [clouds]
+      title: '\\ Middle Cloud Fraction'
+      clouds:
+        expr: _cldmid
+      map:
+        line_color: 0 255 255
+        line_width: 8
+
+    cldhgh:
+      long_name: "High Cloud Fraction"
+      levels: [0]
+      layers: [clouds]
+      title: '\\ High Cloud Fraction'
+      clouds:
+        expr: _cldhgh
+      map:
+        line_color: 0 255 255
+        line_width: 8
+
+    cldtot:
+      long_name: "Total Cloud Fraction"
+      levels: [0]
+      layers: [clouds]
+      title: '\\ Total Cloud Fraction'
+      clouds:
+        expr: _cldtot
+      map:
+        line_color: 0 255 255
+        line_width: 8
+
+    cldtrop:
+      long_name: "Clouds & Wspd"
+      levels: [0]
+      layers: [clouds, high_speed]
+      title: '\\ Clouds and Wind Speed [m/s]'
+      clouds:
+        expr: _cldlow + _cldmid
+        skip: '--auto'
+      map:
+        line_color: 0 255 255
+        line_width: 8
+
+  layer:
+
+    shading: &SHADING
+      gxout: shaded
+      cbar: Rainbow
+      nsub: 4
+      skip: 4
+      type: linear
+
+    clouds:
+      gxout: shaded
+      cbar: Clouds
+      nsub: 1
+      type: linear
+      clevs: .1 .2 .3 .4 .5 .6 .7 .8 .9 1
+
+    high_speed:
+      gxout: shaded
+      expr: maskout(_w10m,_cldlow+_cldmid-0.1)
+      cbar: HighSpeed
+      nsub: 1
+      skip: 1
+      type: linear
+      clevs: 8 8.5 9 9.5 10 10.5 11 11.5 12 12.5 13 13.5
+      mask: 8

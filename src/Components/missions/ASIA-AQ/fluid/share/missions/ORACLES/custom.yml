@@ -1,0 +1,481 @@
+wxmapscustom:
+
+  plot:
+
+    cocl:
+      long_name: CO Column
+      levels: [0]
+      layers: [co_total_column, qfed1, qfed2]
+      title: '\\\\ Total CO [10`a18 `n molecules cm`a-2 `n]'
+      map:
+        line_color: 0 0 0
+        line_width: 2
+        land_tint_color: 253 237 227
+        layers: [clearmap, shaderelief-tint]
+
+    coclbbaf:
+      long_name: CO Column Biomass Burning
+      levels: [0]
+      layers: [coclbbaf, qfed1, qfed2]
+      title: '\\\\ Africa CO Biomass Burning [10`a18`n molecules cm`a-2`n]'
+      map:
+        line_color: 0 0 0
+        line_width: 2
+        land_tint_color: 253 237 227
+        layers: [clearmap, shaderelief-tint]
+
+    bcocsmass:
+      long_name: BC+OC Sfc Mass
+      levels: [0]
+      layers: [bcoc_surface_mass, qfed1, qfed2]
+      title: '\\\\ BC + OC Surface Mass [`3m`f13g/m`a3`n]'
+      map:
+        line_color: 0 0 0
+        line_width: 2
+        land_tint_color: 253 237 227
+        layers: [clearmap, shaderelief-tint]
+
+    bcoccmass:
+      long_name: BC+OC Col Mass
+      levels: [0]
+      layers: [bcoc_column_mass, streamlines, qfed1, qfed2]
+      title: '\\\\ BC + OC Column Mass [mg/m`a2`n]'
+      streamlines:
+        uexpr: (_bcfluxu+_ocfluxu)/(_bccmass+_occmass)
+        vexpr: (_bcfluxv+_ocfluxv)/(_bccmass+_occmass)
+      map:
+        line_color: 30 30 30
+        line_width: 2
+        land_tint_color: 253 237 227
+        layers: [clearmap, shaderelief-tint]
+
+    bcocaot:
+      long_name: BC+OC AOT
+      levels: [0]
+      layers: [blackorganic_carbon_aot, streamlines, qfed1, qfed2]
+      title: '\\\\ Black + Organic Carbon AOT'
+      streamlines:
+        uexpr: (_bcfluxu+_ocfluxu)/(_bccmass+_occmass)
+        vexpr: (_bcfluxv+_ocfluxv)/(_bccmass+_occmass)
+      map:
+        line_color: 0 0 0
+        line_width: 2
+        land_tint_color: 253 237 227
+        layers: [clearmap, shaderelief-tint]
+
+    bcoc_z:
+      long_name: BC+OC
+      title: '\\ $level ft BCOC [`3m`f13g/m`a3`n], Wind Barbs [knots]'
+      levels: [1000,2000,4000,6000]
+      layers: [bcoc_nz, barbs, qfed1, qfed2]
+      map:
+        line_color: 0 0 0
+        line_width: 2
+        land_tint_color: 253 237 227
+        layers: [clearmap, shaderelief-tint]
+      bcoc_nz:
+        expr: _bcoc_nh*1.0e+9
+      barbs:
+        uexpr: _uwnd_nh*1.94384
+        vexpr: _vwnd_nh*1.94384
+
+    pm25_z:
+      long_name: PM2.5
+      title: '\\ $level ft PM2.5 [`3m`f13g/m`a3`n], Wind Barbs [knots]'
+      levels: [1000,2000,4000,6000]
+      layers: [pm_nz, barbs, qfed1, qfed2]
+      map:
+        line_color: 0 0 0
+        line_width: 2
+        land_tint_color: 253 237 227
+        layers: [clearmap, shaderelief-tint]
+      pm_nz:
+        expr: _pm25_nh*1.0e+9
+      barbs:
+        uexpr: _uwnd_nh*1.94384
+        vexpr: _vwnd_nh*1.94384
+
+    bcoc01: &BCOCLON
+      long_name: BCOC 5E
+      levels: [0]
+      layers: [ground, bcoc_nz, puffy_cloud, barbs_nz, cloud_water_nz, agl_nz, theta_nz]
+      title: '\\ BCOC [`3m`f13g/m`a3`n], Theta [K], Cloud Water [g/kg] (Longitude: $lon)'
+      parea: 1 10 1 7.5
+      lev: 0 10000
+      lat: -40 10
+      lon: 5
+      ylab: 'Altitude (m)'
+
+    bcoc02:
+      <<: *BCOCLON
+      long_name: BCOC 5W
+      lev: 0 10000
+      lat: -40 10
+      lon: -5
+
+    bcoc03:
+      <<: *BCOCLON
+      long_name: BCOC 15W
+      lev: 0 10000
+      lat: -40 10
+      lon: -15
+
+    bcoc04: &BCOCLAT
+      long_name: BCOC EQ
+      levels: [0]
+      layers: [ground, bcoc_nz, puffy_cloud, barbs_nz, cloud_water_nz, agl_nz, theta_nz]
+      title: '\\ BCOC [`3m`f13g/m`a3`n], Theta [K], Cloud Water [g/kg] (Latitude: $lat)'
+      parea: 1 10 1 7.5
+      lev: 0 10000
+      lat: 0
+      lon: -30 40
+      ylab: 'Altitude (m)'
+
+    bcoc05:
+      <<: *BCOCLAT
+      long_name: BCOC 5S
+      lev: 0 10000
+      lat: -5
+      lon: -30 40
+
+    bcoc06:
+      <<: *BCOCLAT
+      long_name: BCOC 10S
+      lev: 0 10000
+      lat: -10
+      lon: -30 40
+
+    bcoc07:
+      <<: *BCOCLAT
+      long_name: BCOC 15S
+      lev: 0 10000
+      lat: -15
+      lon: -30 40
+
+    pm01: &PM25LON
+      long_name: PM25 5E
+      levels: [0]
+      layers: [ground, pm_nz, puffy_cloud, barbs_nz, cloud_water_nz, agl_nz, theta_nz]
+      title: '\\ PM2.5 [`3m`f13g/m`a3`n], Theta [K], Cloud Water [g/kg] (Longitude: $lon)'
+      parea: 1 10 1 7.5
+      lev: 0 10000
+      lat: -40 10
+      lon: 5
+      ylab: 'Altitude (m)'
+
+    pm02:
+      <<: *PM25LON
+      long_name: PM25 5W
+      lev: 0 10000
+      lat: -40 10
+      lon: -5
+
+    pm03:
+      <<: *PM25LON
+      long_name: PM25 15W
+      lev: 0 10000
+      lat: -40 10
+      lon: -15
+
+    pm04: &PM25LAT
+      long_name: PM25 EQ
+      title: '\\ PM2.5 [`3m`f13g/m`a3`n], Theta [K], Cloud Water [g/kg] (Latitude: $lat)'
+      levels: [0]
+      layers: [ground, pm_nz, puffy_cloud, barbs_nz, cloud_water_nz, agl_nz, theta_nz]
+      parea: 1 10 1 7.5
+      lev: 0 10000
+      lat: 0
+      lon: -30 40
+      ylab: 'Altitude (m)'
+
+    pm05:
+      <<: *PM25LAT
+      long_name: PM25 5S
+      lev: 0 10000
+      lat: -5
+      lon: -30 40
+
+    pm06:
+      <<: *PM25LAT
+      long_name: PM25 10S
+      lev: 0 10000
+      lat: -10
+      lon: -30 40
+
+    pm07:
+      <<: *PM25LAT
+      long_name: PM25 15S
+      lev: 0 10000
+      lat: -15
+      lon: -30 40
+
+    rh01: &RHLON
+      long_name: RH 5E
+      levels: [0]
+      layers: [ground, rh_nz, puffy_cloud, barbs_nz, cloud_water_nz, agl_nz, theta_nz, pblh]
+      title: '\\ Relative Humidity [%], Theta [K], Cloud Water [g/kg] (Longitude: $lon)'
+      parea: 1 10 1 7.5
+      lev: 0 10000
+      lat: -40 10
+      lon: 5
+      ylab: 'Altitude (m)'
+
+    default: *BCOCLON
+
+  layer:
+
+    ground:
+      expr: const(const(_agl_nz,1.0),0.0,'-u')
+      gxout: grfill
+      cmin: 0
+      cmax: 1
+      cint: 1
+      cbar: BW
+      skip: --auto
+      nsub: 1
+
+    shading: &SHADING
+      gxout: shaded
+      cbar: EPRainbow
+      nsub: 4
+      skip: 4
+      type: linear
+
+    streamlines:
+      gxout: stream
+      uexpr: _uwnd
+      vexpr: _vwnd
+      ccolor: 0 0 0
+      cthick: 3
+      strmden: 1
+
+    barbs:
+      gxout: barb
+      uexpr: _uwnd*1.94384
+      vexpr: _vwnd*1.94384
+      ccolor: 0 0 0
+      cthick: 3
+      size: 0.05
+
+    barbs_nz:
+      gxout: barb
+      uexpr: _uwnd_nz*1.94384
+      vexpr: _vwnd_nz*1.94384
+      skip: 4 1
+      size: 0.05
+      ccolor: 130 130 130
+      cthick: 3
+
+    rh_nz:
+      gxout: shaded
+      expr: maskout(_rh_nz*100,_agl_nz)
+      cbar: MRedBlues
+      cbunits: '[%]'
+      clevs: 10 20 30 40 50 60 70 80 90
+      scale:
+      cmin:
+      cmax:
+      cint:
+      scale:
+      nsub: 1
+      skip: 1
+
+    co_total_column:
+      gxout: shaded
+      expr: _cocl*2150
+      cbar: smoke01
+      clevs:
+      cmin: 1.5
+      cmax: 5
+      cint: 0.05
+      nsub: 1
+      skip: 10
+      scale: exp_scale30
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.010 0.000 0.000
+        - 0.100 1.000 1.000
+        - 1.000 1.000 1.000
+
+    coclbbaf:
+      gxout: shaded
+      expr: _coclbbaf*2150
+      cbar: smoke01
+      clevs:
+      cmin: 0.0
+      cmax: 5
+      cint: 0.5
+      nsub: 10
+      skip: 10
+      scale: exp_scale
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.080 0.000 1.000
+        - 0.100 1.000 1.000
+        - 1.000 1.000 1.000
+
+    blackorganic_carbon_aot:
+      gxout: shaded
+      expr: _bcexttau+_ocexttau
+      cbar: smoke01
+      clevs:
+      cmin: 0
+      cmax: 2
+      cint: 0.2
+      scale: exp_scale30
+      nsub: 10
+      skip: 10
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.050 0.000 0.000
+        - 0.200 1.000 1.000
+        - 1.000 1.000 1.000
+
+    bcoc_surface_mass:
+      gxout: shaded
+      expr: (_bcsmass+_ocsmass)*1.0e+9
+      cbar: smoke01
+      cbunits: '`n[`3m`f13g/m`a3`n]'
+      clevs: 2 5 8 11 15 20 25 30 40 50 75 150 250 500
+      scale:
+      cmin:
+      cmax:
+      cint:
+      scale:
+      nsub: 1
+      skip: 1
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.070 0.000 1.000
+        - 0.100 1.000 1.000
+        - 1.000 1.000 1.000
+
+    bcoc_column_mass:
+      gxout: shaded
+      expr: (_bccmass+_occmass)*1.0e+6
+      cbar: smoke01
+      cbunits: '[mg/m`a2`n]'
+      clevs: 2 5 8 11 15 20 25 30 40 50 75 150 250 500
+      scale:
+      cmin:
+      cmax:
+      cint:
+      scale:
+      nsub: 1
+      skip: 1
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.070 0.000 1.000
+        - 0.100 1.000 1.000
+        - 1.000 1.000 1.000
+
+    bcoc_nz:
+      gxout: shaded
+      expr: maskout(1.0e+9*(_bcoc_nz),_agl_nz)
+      cbar: smoke01
+      cbunits: '`n[`3m`f13g/m`a3`n]'
+      clevs: 1 2 4 6 8 12 16 20 25 30 40 60 100 200
+      scale:
+      cmin:
+      cmax:
+      cint:
+      scale:
+      nsub: 1
+      skip: 1
+#     alpha:
+#       - 0.000 0.000 0.000
+#       - 0.040 0.000 0.000
+#       - 0.100 1.000 1.000
+#       - 1.000 1.000 1.000
+
+    pm_nz:
+      gxout: shaded
+      expr: maskout(1.0e+9*(_pm25_nz),_agl_nz)
+      cbar: smoke01
+      cbunits: '`n[`3m`f13g/m`a3`n]'
+      clevs: 1 2 4 6 8 12 16 20 25 30 40 60 100 200
+      scale:
+      cmin:
+      cmax:
+      cint:
+      scale:
+      nsub: 1
+      skip: 1
+#     alpha:
+#       - 0.000 0.000 0.000
+#       - 0.040 0.000 0.000
+#       - 0.100 1.000 1.000
+#       - 1.000 1.000 1.000
+
+    agl_nz:
+      gxout: contour
+      expr: _agl_nz
+      cmin: 800
+      cmax: 1600
+      cint: 200
+      ccolor: 0 0 0
+      cstyle: 3
+      clab: masked
+
+    theta_nz:
+      gxout: contour
+      expr: maskout(smth9(_theta_nz),_agl_nz)
+      cint: 5
+      ccolor: 0 0 0
+      cstyle: 1
+      clab: masked
+
+    cloud_water_nz:
+      gxout: contour
+      expr: (_qi_nz+_ql_nz) * 1000
+      ccolor: 0 0 255
+      cthick: 8
+      clab: masked
+      clsize: 0.06
+      clevs: 0.01 0.08 0.16 0.24 0.32
+
+    puffy_cloud:
+      gxout: shaded
+      expr: (_qi_nz+_ql_nz) * 1000
+      cbar: allgray
+      cbunits: 'Cloud Water [g/kg]'
+      nsub: 1
+      skip: 1
+      type: linear
+      clevs: 0.01 0.08 0.16 0.24 0.32
+      alpha:
+        - 0.000 0.000 0.000
+        - 0.010 0.000 0.400
+        - 0.333 0.400 0.400
+        - 0.667 0.400 0.400
+        - 1.000 0.400 0.400
+
+    pblh:
+      gxout: contour
+      expr: _phis/9.80665+_pblh
+      cint: 100000
+      ccolor: 255 0 0
+      cstyle: 1
+      cthick: 8
+      cmark: 0
+      clab: 'off'
+      vrange: 0 10000
+      z: 1
+
+    qfed1:
+      gxout: grid
+      cmark: 9
+      digsiz: 0.1
+      ccolor: 255 165 0
+      cthick: 5
+      expr: maskout(_biomass, _biomass-0.0000001)
+
+    qfed2:
+      gxout: grid
+      cmark: 8
+      digsiz: 0.1
+      ccolor: 0 0 0
+      cthick: 5
+      expr: maskout(_biomass, _biomass-0.0000001)
+
+  attribute:

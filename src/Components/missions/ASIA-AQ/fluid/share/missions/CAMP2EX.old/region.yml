@@ -1,0 +1,170 @@
+camp2ex_lines: &CAMP2EX_LINES
+
+  A:
+    data: [122.5 30 140 30]
+  B:
+    data: [122.5 27.5 140 27.5]
+  C:
+    data: [122.5 25.0 140 25.0]
+  D:
+    data: [122.5 22.5 140 22.5]
+  E:
+    data: [122.5 20.0 140 20.0]
+
+  F:
+    data: [110 20 120.56 20]
+  G:
+    data: [110 17.5 120.56 17.5]
+  H:
+    data: [110 15.19 120.56 15.19]
+  I:
+    data: [110 12.5 120.56 12.5]
+
+  J:
+    data: [120.56 15.19 130 5]
+    zorder: 5
+  K:
+    data: [123.56 16.25 133 6.06]
+    zorder: 5
+  L:
+    data: [126.56 17.31 136.0 7.12]
+    zorder: 5
+  M:
+    data: [129.56 18.37 139 8.18]
+    zorder: 5
+
+  N:
+    data: [116.67 7.5 122.5 13]
+  O:
+    data: [117.92 6.25 123.75 11.75]
+  P:
+    data: [119.17 5 125 10.5]
+
+camp2ex_labels: &CAMP2EX_LABELS
+
+  A:
+    position: 'tr'
+    data: [140 30 A]
+  B:
+    position: 'tr'
+    data: [140 27.5 B]
+  C:
+    position: 'tr'
+    data: [140 25.0 C]
+  D:
+    position: 'tr'
+    data: [140 22.5 D]
+  E:
+    position: 'tr'
+    data: [140 20.0 E]
+
+  F:
+    position: 'bl'
+    data: [110 20 F]
+  G:
+    position: 'bl'
+    data: [110 17.5 G]
+  H:
+    position: 'bl'
+    data: [110 15.19 H]
+  I:
+    position: 'bl'
+    data: [110 12.5 I]
+
+  J:
+    position: 'bl'
+    data: [130 5 J]
+  K:
+    position: 'bl'
+    data: [133 6.06 K]
+  L:
+    position: 'bl'
+    data: [136 7.12 L]
+  M:
+    position: 'bl'
+    data: [138 9.1 M]
+
+  N:
+    position: 'br'
+    data: [116.67 7.5 N]
+  O:
+    position: 'br'
+    data: [117.92 6.25 O]
+  P:
+    position: 'br'
+    data: [119.17 5 P]
+
+camp2ex_places: &CAMP2EX_PLACES
+
+  Clark_Airport:
+    str_size: 0.1
+    position: 'bl'
+    data: [120.56 15.19 Clark Airport]
+
+camp2ex_stations: &CAMP2EX_STATIONS
+
+  stations:
+    inner_size: 0.07
+    outer_size: 0.07
+    outer_line: ''
+    line_width: 4
+    mark_type: 3 2
+
+    data: [76.916 28.317,105.73 9.28,33.56 15.76,107.610 -6.888,110.518 13.749,90.756 22.227,85.140 27.895,113.04 3.17,120.183 -1.65,100.318 -0.202,119.98 12.16,121.538 25.297,98.972 18.771,120.56 15.19,90.398 23.728,94.897 27.451,99.045 19.932,121.185 24.968,99.206 19.913,84.128 25.871,114.117 22.483,76.983 42.623,75.806 26.906,103.642 -1.632,80.232 26.513,120.292 22.676,67.136 24.946,110.349 1.491,167.743 8.847,85.566 28.211,74.264 31.48,128.749 -16.108,85.610 28.214,120.53 18.18,114.097 -22.241,123.73 13.13,101.187 15.267,101.416 20.931,120.874 23.469,99.171 19.83,119.572 -4.998,96.186 21.973,121.078 14.635,73.183 6.776,124.843 6.496,105.800 21.048,109.206 12.205,102.717 17.877,128.249 26.867,135.591 34.651,120.02 16.04,113.946 -2.228,83.975 28.187,109.191 0.075,118.76 9.74,73.805 18.537,86.948 28.365,100.041 13.819,103.780 1.298,103.905 21.332,100.605 7.184,131.268 -0.875,102.504 13.689,121.538 25.015,114.362 10.376,106.65 10.82,89.639 27.473,104.871 15.246,100.302 5.358,120.617 24.162]
+
+
+region:
+
+  camp2ex_lg: &CAMP2EX_LG
+
+    long_name: CAMP2EX Lg
+    lon: 65 160
+    lat: -15 50
+    mpdset: hires
+    mproj: latlon
+
+    station_mark:
+      <<: *CAMP2EX_STATIONS
+
+  camp2ex_sm: &CAMP2EX_SM
+
+    long_name: CAMP2EX Sm
+    lon: 110 140
+    lat: 0 30
+    mpdset: hires
+    mproj: latlon
+
+    station_mark:
+      <<: *CAMP2EX_STATIONS
+
+  camp2ex_ilg:
+
+    <<: *CAMP2EX_LG
+
+    long_name: CAMP2EX iLg
+    map_only: 1
+    layers: [shader-GryWht]
+
+    line:
+      <<: *CAMP2EX_LINES
+    station_mark:
+      <<: *CAMP2EX_STATIONS
+    string:
+      <<: *CAMP2EX_LABELS
+      <<: *CAMP2EX_PLACES
+
+  camp2ex_ism:
+
+    <<: *CAMP2EX_SM
+
+    long_name: CAMP2EX iSm
+    map_only: 1
+    layers: [shader-GryWht]
+
+    line:
+      <<: *CAMP2EX_LINES
+    station_mark:
+      <<: *CAMP2EX_STATIONS
+    string:
+      <<: *CAMP2EX_LABELS
+      <<: *CAMP2EX_PLACES

@@ -1,0 +1,7 @@
+map:
+
+  default:
+
+    line_color: 0 0 0
+    land_color: 255 255 255
+    line_width: 5

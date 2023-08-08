@@ -1,0 +1,145 @@
+field:
+  
+  G5FPFC:
+    
+    _prectot:
+      long_name: Total Precipitation
+      units: kg m-2 s-1
+      expression: prectot.G5FPWX.tavg3_2d_wxme_Nx(z=1)
+
+    _prectot3:
+      long_name: Total Precipitation
+      units: kg m-2 s-1
+      expression: _prectot(td=-1)*3*60*60
+  
+    _uwnd:
+      long_name: East-West Wind
+      units: m s-1
+      expression: u.G5FPWX.inst3_3d_wxme_Np
+  
+    _vwnd:
+      long_name: North-South Wind
+      units: m s-1
+      expression: v.G5FPWX.inst3_3d_wxme_Np
+
+    _epv:
+      long_name: Ertels Potential Vorticity
+      units: m s-1
+      expression: epv.G5FPWX.inst3_3d_wxme_Np
+  
+    _slp:
+      long_name: Sea Level Pressure
+      units: mb
+      expression: slp.G5FPWX.inst3_3d_wxmc_Cp
+
+    _thick:
+      long_name: 500mb Thickness
+      units: m
+      expression: (h500.G5FPWX.inst3_3d_wxmc_Cp - h1000.G5FPWX.inst3_3d_wxmc_Cp)
+  
+    _tmpu:
+      long_name: Temperature
+      units: K
+      expression: t.G5FPWX.inst3_3d_wxmc_Cp
+  
+    _hght:
+      long_name: Heights
+      units: m
+      expression: h.G5FPWX.inst3_3d_wxmc_Cp
+  
+    _omega:
+      long_name: Vertical Pressure Velocity
+      units: Pa/sec
+#     expression: omega.G5FPWX.inst3_3d_wxmc_Cp
+      expression: omega.G5FPWX.inst3_3d_wxme_Np
+  
+    _rh:
+      long_name: Relative Humidity
+      units: percent
+      expression: rh.G5FPWX.inst3_3d_wxme_Np * 100
+
+    _cldlow:
+      long_name: Low Cloud Fraction
+      units: 1
+      expression: cldlow.G5FPWX.inst3_3d_wxme_Np(z=1)
+
+    _cldmid:
+      long_name: Mid Cloud Fraction
+      units: 1
+      expression: cldmid.G5FPWX.inst3_3d_wxme_Np(z=1)
+
+    _cldhgh:
+      long_name: High Cloud Fraction
+      units: 1
+      expression: cldhgh.G5FPWX.inst3_3d_wxme_Np(z=1)
+
+    _cldtot:
+      long_name: Total Cloud Fraction
+      units: 1
+      expression: (_cldlow + _cldmid + _cldhgh)
+
+    _cloud:
+      long_name: Cloud Fraction
+      units: 1
+      expression: cloud.G5FPWX.inst3_3d_wxme_Np
+
+    _taulow10:
+      long_name: In-Cloud Optical Thickness of Low Clouds Where Coverage > 10%
+      units: 1
+      expression: maskout(taulow.G5FPWX.inst3_3d_wxme_Np,cldlow.G5FPWX.inst3_3d_wxme_Np-0.1)
+
+    _taumid10:
+      long_name: In-Cloud Optical Thickness of Mid Clouds Where Coverage > 10%
+      units: 1
+      expression: maskout(taumid.G5FPWX.inst3_3d_wxme_Np,cldmid.G5FPWX.inst3_3d_wxme_Np-0.1)
+
+    _tauhgh10:
+      long_name: In-Cloud Optical Thickness of High Clouds Where Coverage > 10%
+      units: 1
+      expression: maskout(tauhgh.G5FPWX.inst3_3d_wxme_Np,cldhgh.G5FPWX.inst3_3d_wxme_Np-0.1)
+
+    _troppb:
+      long_name: Tropopause Pressure Based on Blended Estimate
+      units: Pa
+      expression: troppb.G5FPWX.inst3_3d_wxme_Np(z=1)
+
+    _duexttau:
+      long_name: Dust Extinction AOT [550 nm]
+      units: '1'
+      expression: duexttau.G5FPWX.inst3_3d_wxme_Np(z=1)
+
+    _suexttau:
+      long_name: SO4 Extinction AOT [550 nm]
+      units: '1'
+      expression: suexttau.G5FPWX.inst3_3d_wxme_Np(z=1)
+
+    _ssexttau:
+      long_name: Sea Salt Extinction AOT [550 nm]
+      units: '1'
+      expression: ssexttau.G5FPWX.inst3_3d_wxme_Np(z=1)
+
+    _ocexttau:
+      long_name: Organic Carbon Extinction AOT [550 nm]
+      units: '1'
+      expression: ocexttau.G5FPWX.inst3_3d_wxme_Np(z=1)
+
+    _bcexttau:
+      long_name: Black Carbon Extinction AOT [550 nm]
+      units: '1'
+      expression: bcexttau.G5FPWX.inst3_3d_wxme_Np(z=1)
+
+    _fineaot:
+      long_name: Fine Aerosol Optical Thickness
+      units: '1'
+      expression: _suexttau + _ocexttau + _bcexttau
+
+    _pblh:
+      long_name: Planetary Boundary Layer Height
+      units: 'm'
+      expression: pblh.G5FPWX.inst3_3d_wxme_Np(z=1)
+
+    _du:
+      long_name: Dust Mass
+      units: '1'
+      expression: du.G5FPWX.inst3_3d_wxme_Np
+

@@ -1,0 +1,133 @@
+wxmapschem2d:
+
+  interface:
+
+    field:
+
+      long_name: VARIABLES
+      groups: [CO, Gases, Aerosols]
+
+      CO:
+        long_name: Carbon Monoxide
+        type: button
+        items:
+          - cosc
+          - cocl
+          - cobbae
+          - cobbna
+          - cobbla
+          - cobbaf
+          - conbas
+          - conbeu
+          - conbna
+
+      Gases:
+        long_name: Other Gases
+        type: button
+        items:
+          - to3
+          - so2cmass
+          - so2smass
+
+      Aerosols:
+        long_name: Aerosols
+        type: button
+        items:
+          - ssaot
+          - ocaot
+          - bcaot
+          - suaot
+          - niaot
+          - fineaot
+          - ocsmass
+          - bcsmass
+          - nismass
+
+wxmapscustom:
+
+  interface:
+
+    field:
+
+      long_name: VARIABLES
+      groups: [CO, BCOC, PM25]
+
+      CO:
+        long_name: CO
+        type: button
+        items:
+          - cocl: CO Column
+          - coclbbaf: CO Column Biomass Burning
+
+      BCOC:
+        long_name: BC+OC Carbon
+        type: button
+        items:
+          - bcocaot: BC+OC AOT
+          - bcocsmass: BC+OC Sfc Mass
+          - bcoc_z: BC+OC Mass (z-coord)
+          - bcoc01
+          - bcoc02
+          - bcoc03
+          - bcoc04
+          - bcoc05
+          - bcoc06
+          - bcoc07
+
+      PM25:
+        long_name: PM 2.5
+        type: button
+        items:
+          - pm25_z: PM2.5 Mass (z-coord)
+          - pm01
+          - pm02
+          - pm03
+          - pm04
+          - pm05
+          - pm06
+          - pm07
+
+wxmapsmission:
+
+  interface:
+
+    field:
+
+      long_name: VARIABLES
+      groups: [Precip, Aerosols, Other]
+
+      Precip:
+        long_name: Precip/Clouds
+        type: button
+        items:
+          - precip
+          - cldlow
+          - cldmid
+          - cldhgh
+          - cldtot
+          - cldprs
+          - cldwat
+          - taulow
+          - taumid
+          - tauhgh
+
+      Aerosols:
+        long_name: Aerosols
+        type: button
+        items:
+          - fineaot
+          - dustaot
+          - dumass
+
+      Other:
+        long_name: Other
+        type: button
+        items:
+          - rh
+          - tmpu
+          - wspd
+          - vort
+          - omega
+          - epv
+          - pblh
+          - tropp

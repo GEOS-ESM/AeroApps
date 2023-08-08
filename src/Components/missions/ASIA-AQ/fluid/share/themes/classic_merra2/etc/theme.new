@@ -1,0 +1,213 @@
+wxmapsclassicpub:
+
+  plot:
+
+    slptend:
+      long_name: "3-Hr Pressure Tendency"
+      level: [0]
+      layers: [slptend, slp]
+      title: '\\ 3-Hr Pressure Tendency at Sea Level [mb]'
+      map:
+        line_color: 0 0 0
+        layers: [quickmap]
+
+    tmpu:
+      long_name: Temperature
+      levels: [10, 30, 50, 100, 200, 300, 500, 700, 850]
+      layers: [temperature, heights]
+      title: '\\\\ $level hPa Temperature [C] and Heights [dam]'
+      heights:
+        ccolor: 255 255 255
+      map:
+        line_color: 0 0 0
+        land_color: 255 255 255
+        water_color: 255 255 255
+        line_width: 3
+        layers: [quickmap]
+
+    ptype:
+      long_name: Precipitation Type
+      levels: [0]
+      layers: [rain, snow, ice, slp, tfreeze]
+      title: '\\\\ Precipitation'
+      map:
+        line_color: 90 90 90
+        line_width: 2
+        land_tint_color: 229 255 234
+        water_color: 43 108 168
+        layers: [clearmap, shaderelief-tint]
+      slp:
+        cint: 4
+        ccolor: 255 255 255
+
+
+  layer:
+
+    slp:
+      gxout: contour
+      expr: _slp / 100
+      cint: 4
+      clab: clab_attr
+      cthick: 4
+      ccolor: 0 0 0
+      clsize: 0.12
+
+    rain:
+      gxout: shaded
+      expr: _prectot3
+      mask: 0.0
+      cbar: Rain
+      cbunits: 'Rain [mm/hr]'
+      nsub: 1
+      skip: 1
+      type: linear
+      clevs: 0.0 0.2 0.3 0.4 0.5 0.6 0.8 1. 2. 4. 6. 8. 10 20 40 60 80 100
+      alpha:
+        - 0.000 0.0 0.0
+        - 0.090 0.0 0.0
+        - 0.200 1.0 1.0
+        - 1.000 1.0 1.0
+
+    snow:
+      gxout: shaded
+      expr: _precsno3*10/25.4
+      mask: 0.0
+      cbar: Snow
+      cbunits: 'Snow [in/hr]'
+      nsub: 1
+      skip: 1
+      type: linear
+      clevs: 0.0 0.025 0.05 0.075 0.1 0.25 0.5 1.0 2.0 3.0 4.0
+      alpha:
+        - 0.000 0.0 0.0
+        - 0.090 0.0 0.0
+        - 0.200 1.0 1.0
+        - 1.000 1.0 1.0
+
+    ice:
+      gxout: grfill
+      method: ice_maker
+      snow: _precsno3*10/25.4
+      phis: _phis
+      thick: _thick
+      mask: 0.0
+      cbar: Ice
+      cbunits: 'Mixed [in/hr]'
+      nsub: 1
+      skip: 1
+      type: linear
+      clevs: 0.0 0.05 0.1 0.5 2.0 4.0
+      alpha:
+        - 0.000 0.0 0.0
+        - 0.090 0.0 0.0
+        - 0.200 1.0 1.0
+        - 1.000 1.0 1.0
+
+    slptend:
+      gxout: shaded
+      expr: _slptend3/100
+      cbar: RedBlues
+      nsub: 1
+      skip: 1
+      type: linear
+      cmin: -14
+      cmax: 14
+      cint: 2
+
+    precip:
+      gxout: shaded
+      expr: _prectot3
+      csmooth: 'on'
+      cbar: Precip
+      cbunits: "Accum Precip [mm]"
+      nsub: 1
+      type: linear
+      skip: 1
+      clevs: 0.1 0.5 1 2 4 6 8 10 15 20 25 50 75 100 150 200
+      alpha:
+        - 0.000 0.0 0.0
+        - 0.050 0.0 1.0
+        - 0.200 1.0 1.0
+        - 1.000 1.0 1.0
+
+    temperature:
+      gxout: shaded
+      expr: _tmpu-273.15
+#     cbar: EPRainbow02
+      cbar: Temperature
+      cbunits: Celsius
+      nsub: 10
+      type: linear
+      skip: 10
+      cdict: tmpuclevscelsius
+
+
+    heights:
+      gxout: contour
+      expr: _hght/10
+      cint: htcint
+      csmooth: 'on'
+      clab: clab_attr
+      cthick: 5
+      ccolor: 0 0 0
+      clsize: 0.12
+      clskip: 2
+
+  attribute:
+
+    tmpuclevscelsius:
+      - {cmin: -80, cmax: 40, cint: 10}
+      - {'$level': 10, '$region': 'atlantic', cmin: -85, cmax: -10, cint: 5}
+      - {'$level': 30, '$region': 'atlantic', cmin: -85, cmax: -35, cint: 5}
+      - {'$level': 50, '$region': 'atlantic', cmin: -85, cmax: -35, cint: 5}
+      - {'$level': 100, '$region': 'atlantic', cmin: -90, cmax: -35, cint: 5}
+      - {'$level': 200, '$region': 'atlantic', cmin: -75, cmax: -35, cint: 5}
+      - {'$level': 300, '$region': 'atlantic', cmin: -60, cmax: -25, cint: 5}
+      - {'$level': 500, '$region': 'atlantic', cmin: -45, cmax: 0, cint: 5, scale: log_scale}
+      - {'$level': 700, '$region': 'atlantic', cmin: -40, cmax: 25, cint: 5}
+      - {'$level': 850, '$region': 'atlantic', cmin: -35, cmax: 40, cint: 5}
+      - {'$level': 10, '$region': 'midatl', cmin: -75, cmax: -25, cint: 5}
+      - {'$level': 30, '$region': 'midatl', cmin: -70, cmax: -45, cint: 5}
+      - {'$level': 50, '$region': 'midatl', cmin: -70, cmax: -50, cint: 5}
+      - {'$level': 100, '$region': 'midatl', cmin: -85, cmax: -40, cint: 5}
+      - {'$level': 200, '$region': 'midatl', cmin: -70, cmax: -35, cint: 5}
+      - {'$level': 300, '$region': 'midatl', cmin: -60, cmax: -20, cint: 5}
+      - {'$level': 500, '$region': 'midatl', cmin: -45, cmax: 5, cint: 5}
+      - {'$level': 700, '$region': 'midatl', cmin: -35, cmax: 15, cint: 5}
+      - {'$level': 850, '$region': 'midatl', cmin: -35, cmax: 25, cint: 5}
+      - {'$level': 10, '$region': 'australia', cmin: -80, cmax: -25, cint: 5}
+      - {'$level': 30, '$region': 'australia', cmin: -75, cmax: -35, cint: 5}
+      - {'$level': 50, '$region': 'australia', cmin: -70, cmax: -40, cint: 5}
+      - {'$level': 100, '$region': 'australia', cmin: -95, cmax: -35, cint: 5}
+      - {'$level': 200, '$region': 'australia', cmin: -70, cmax: -35, cint: 5}
+      - {'$level': 300, '$region': 'australia', cmin: -60, cmax: -20, cint: 5}
+      - {'$level': 500, '$region': 'australia', cmin: -45, cmax: 0, cint: 5}
+      - {'$level': 700, '$region': 'australia', cmin: -25, cmax: 15, cint: 5}
+      - {'$level': 850, '$region': 'australia', cmin: -15, cmax: 30, cint: 5}
+      - {'$level': 10, '$region': 'sevseas', cmin: -70, cmax: -10, cint: 5}
+      - {'$level': 30, '$region': 'sevseas', cmin: -80, cmax: -35, cint: 5}
+      - {'$level': 50, '$region': 'sevseas', cmin: -75, cmax: -40, cint: 5}
+      - {'$level': 100, '$region': 'sevseas', cmin: -90, cmax: -40, cint: 5}
+      - {'$level': 200, '$region': 'sevseas', cmin: -70, cmax: -35, cint: 5}
+      - {'$level': 300, '$region': 'sevseas', cmin: -65, cmax: -15, cint: 5}
+      - {'$level': 500, '$region': 'sevseas', cmin: -50, cmax: 10, cint: 5, scale: log_scale}
+      - {'$level': 700, '$region': 'sevseas', cmin: -35, cmax: 30, cint: 5}
+      - {'$level': 850, '$region': 'sevseas', cmin: -35, cmax: 40, cint: 5}
+      - {'$level': 10, '$region': 'pac', cmin: -80, cmax: 20, cint: 5}
+      - {'$level': 30, '$region': 'pac', cmin: -80, cmax: -25, cint: 5}
+      - {'$level': 50, '$region': 'pac', cmin: -80, cmax: -30, cint: 5}
+      - {'$level': 100, '$region': 'pac', cmin: -90, cmax: -40, cint: 5}
+      - {'$level': 200, '$region': 'pac', cmin: -70, cmax: -35, cint: 5}
+      - {'$level': 300, '$region': 'pac', cmin: -65, cmax: -15, cint: 5}
+      - {'$level': 500, '$region': 'pac', cmin: -50, cmax: 5, cint: 5}
+      - {'$level': 700, '$region': 'pac', cmin: -40, cmax: 30, cint: 5}
+      - {'$level': 850, '$region': 'pac', cmin: -45, cmax: 40, cint: 5}
+      - {'$level': 10, '$region': 'nps', cmin: -90, cmax: 20, cint: 5}
+      - {'$level': 30, '$region': 'nps', cmin: -90, cmax: -25, cint: 5}
+      - {'$level': 50, '$region': 'nps', cmin: -80, cmax: -30, cint: 5}
+      - {'$level': 100, '$region': 'nps', cmin: -90, cmax: -35, cint: 5}
+      - {'$level': 200, '$region': 'nps', cmin: -75, cmax: -35, cint: 5}
+      - {'$level': 300, '$region': 'nps', cmin: -65, cmax: -15, cint: 5}
+      - {'$level': 500, '$region': 'nps', cmin: -50, cmax: 10, cint: 5}
+      - {'$level': 700, '$region': 'nps', cmin: -50, cmax: 30, cint: 5}
+      - {'$level': 850, '$region': 'nps', cmin: -45, cmax: 40, cint: 5}

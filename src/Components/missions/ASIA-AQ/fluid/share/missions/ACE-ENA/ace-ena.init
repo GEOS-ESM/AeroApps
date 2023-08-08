@@ -1,0 +1,13 @@
+reset: [region, playlist]
+
+config: [ACE-ENA]
+
+playlist:
+
+  default:
+    config: []
+  other:
+    config: [missions]
+
+default:
+  region: ace_ena

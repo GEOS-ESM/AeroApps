@@ -1,0 +1,13 @@
+reset: [region, playlist]
+
+config: [ORACLES]
+
+#playlist:
+
+#  default:
+#    config: []
+#  other:
+#    config: [missions]
+
+default:
+  region: oracles_lg

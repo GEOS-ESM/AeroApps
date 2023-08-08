@@ -1,0 +1,1 @@
+wxstat.py --theme classic_merra2 --stream MERRA2 --start_dt 20170101T000000 --end_dt 20171231T000000 --t_deltat 360 --oname '%H:00,06,12,18' --field tmpu --layer temperature --region midatl | grep '^{'

@@ -1,0 +1,56 @@
+wxmapscustom:
+
+  interface:
+
+    field:
+
+      long_name: VARIABLES
+      groups: [Aerosols, CO, Clouds, Winds]
+
+      Winds:
+        long_name: Winds
+        type: button
+        items:
+          - wind01
+          - wind02
+          - wind03
+          - wind04
+          - wind05
+          - wind06
+          - wind10
+          - wind11
+          - wind12
+          - wind13
+
+      Clouds:
+        long_name: Clouds
+        type: button
+        items:
+          - cldlow
+          - cldmid
+          - cldhgh
+          - cldtot
+          - cldprs
+          - taulow
+          - taumid
+          - tauhgh
+          - precip
+          - ql
+          - qi
+
+      Aerosols:
+        long_name: Aerosols
+        type: button
+        items:
+          - bcoc
+          - bcocsmass
+          - bcocaot
+
+      CO:
+        long_name: CO
+        type: button
+        items:
+          - co
+          - cocl
+          - cobbna
+          - coclbbna

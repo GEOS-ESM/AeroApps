@@ -1,0 +1,30 @@
+wxmapsclassicpub:
+
+  interface:
+
+    field:
+
+      long_name: VARIABLES
+      groups: [surface, upper]
+
+      surface:
+        long_name: Surface
+        type: button
+        items:
+          - precip
+          - ptype
+          - tpw
+          - olr
+          - t2m
+
+      upper:
+        long_name: Upper Air
+        type: button
+        items:
+          - humid
+          - tmpu
+          - winds
+          - wspd
+          - vort
+          - epv
+          - vvel

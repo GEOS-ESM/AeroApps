@@ -1,0 +1,96 @@
+field:
+  
+  GEOSCFAN: &GEOSCFANref
+
+    _no2sfc:
+      long_name: NO2_volume_mixing_ratio_dry_air
+      units: mol mol-1
+      expression: no2.inst0_2d_htf_Nx(z=1)
+
+    _so2sfc:
+      long_name: SO2_volume_mixing_ratio_dry_air
+      units: mol mol-1
+      expression: so2.inst0_2d_htf_Nx(z=1)
+
+    _o3sfc:
+      long_name: O3_volume_mixing_ratio_dry_air
+      units: mol mol-1
+      expression: o3.inst0_2d_htf_Nx(z=1)
+
+    _cosfc:
+      long_name: CO_volume_mixing_ratio_dry_air
+      units: mol mol-1
+      expression: co.inst0_2d_htf_Nx(z=1)
+
+    _pm25sfc:
+      long_name: Particulate_matter_with_diameter_below_2.5_um
+      units: ug m-3
+      expression: pm25_rh35_gcc.inst0_2d_htf_Nx(z=1)
+
+    _o3:
+      long_name: O3_volume_mixing_ratio_dry_air
+      units: mol mol-1
+      expression: o3.GEOSCFAN2.inst1_3d_chm_Np(t=1)
+
+    _co:
+      long_name: CO_volume_mixing_ratio_dry_air
+      units: mol mol-1
+      expression: co.inst1_3d_chm_Np
+
+    _totcol_no2:
+      long_name: NO2_total_column_density
+      units: 1.0e15 molec cm-2
+      expression: totcol_no2.tavg1_2d_xgc_Nx(z=1)
+
+    _totcol_so2:
+      long_name: SO2_total_column_density
+      units: 1.0e15 molec cm-2
+      expression: totcol_so2.tavg1_2d_xgc_Nx(z=1)
+
+    _totcol_co:
+      long_name: CO_total_column_density
+      units: 1.0e15 molec cm-2
+      expression: totcol_co.tavg1_2d_xgc_Nx(z=1)
+
+    _totcol_o3:
+      long_name: O3_total_column_density
+      units: dobsons
+      expression: totcol_o3.tavg1_2d_xgc_Nx(z=1)
+
+    _totcol_ch2o:
+      long_name: CH2O_total_column_density
+      units: 1.0e15 molec cm-2
+      expression: totcol_ch2o.tavg1_2d_xgc_Nx(z=1)
+
+    _biomass:
+      long_name: Biomass
+      units: 1
+      expression: biomass.QFED.QFED(z=1,t=1)
+
+    _th:
+      long_name: Potential Temperature
+      units: K
+      expression: th.GEOSCFAN2.inst1_3d_met_Np(t=1)
+
+    _troppb:
+      long_name: Tropopause Pressure Based On Blended Estimate
+      units: Pa
+      expression: troppb.GEOSCFAN3.tavg1_2d_met_Nx(t=1)
+
+  GEOSCFFC:
+    <<: *GEOSCFANref
+
+    _o3:
+      long_name: O3_volume_mixing_ratio_dry_air
+      units: mol mol-1
+      expression: o3.GEOSCFFC2.inst1_3d_chm_Np(t=1)
+
+    _th:
+      long_name: Potential Temperature
+      units: K
+      expression: th.GEOSCFFC2.inst1_3d_met_Np(t=1)
+
+    _troppb:
+      long_name: Tropopause Pressure Based On Blended Estimate
+      units: Pa
+      expression: troppb.GEOSCFFC3.tavg1_2d_met_Nx(t=1)

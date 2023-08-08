@@ -1,0 +1,32 @@
+reset: [annotate]
+
+annotate:
+
+  tm_valid: '%B %Y'
+  tm_verif: '%B %Y'
+  tm_start: '%B %Y'
+
+  header:
+    string: ''
+    color: 0 0 0
+    size: 0.16 0.17
+    position: 'c'
+    margin: 0.07
+  subheader:
+    string: ''
+    color: 0 0 255
+    size: 0.125
+    position: 'c'
+    margin: 0.07
+  main:
+    string: ''
+    color: 0 0 255
+    size: 0.125
+    position: 'c'
+    margin: 0.15
+  xlabel:
+    string: $tm_string
+    color: 0 0 0
+    size: 0.16 0.17
+    position: 'c'
+    margin: 0.4

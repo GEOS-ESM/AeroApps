@@ -1,0 +1,186 @@
+playlist:
+
+  Aerosol:
+    fcst_dt: 20170814T120000
+    time_dt: 20170814T120000
+    region: global
+    field: aot
+    level: 0
+    oname: aot.png
+
+stream:
+  
+  G5FPFC:
+  
+    long_name: GEOS FP
+    description: GEOS Forecast
+    uri: /archive/u/gmao_ops/GEOS-5.16/GEOSadas-5_16/f516_fp/forecast/Y2017/M08/D12/H12/GEOS.fp.fcst.inst1_2d_hwl_Nx.20170812_12+20170814_1200.V01.nc4
+    institution: NASA - Global Modeling and Assimilation Office (GMAO)
+
+field:
+
+  G5FPFC:
+
+    _niexttau:
+      long_name: Nitrate Extinction AOT [550 nm]
+      units: '1'
+      expression: niexttau.inst1_2d_hwl_Nx
+  
+    _duexttau:
+      long_name: Dust Extinction AOT [550 nm]
+      units: '1'
+      expression: duexttau.inst1_2d_hwl_Nx
+
+    _totexttau:
+      long_name: Total Aerosol Extinction AOT [550 nm]
+      units: '1'
+      expression: totexttau.inst1_2d_hwl_Nx
+  
+    _suexttau:
+      long_name: SO4 Extinction AOT [550 nm]
+      units: '1'
+      expression: suexttau.inst1_2d_hwl_Nx
+  
+    _ssexttau:
+      long_name: Sea Salt Extinction AOT [550 nm]
+      units: '1'
+      expression: ssexttau.inst1_2d_hwl_Nx
+  
+    _ocexttau:
+      long_name: Organic Carbon Extinction AOT [550 nm]
+      units: '1'
+      expression: ocexttau.inst1_2d_hwl_Nx
+  
+    _bcexttau:
+      long_name: Black Carbon Extinction AOT [550 nm]
+      units: '1'
+      expression: bcexttau.inst1_2d_hwl_Nx
+
+theme:
+
+  plot:
+
+    aot:
+      long_name: AOT
+      level: [0]
+      layers: [ss, oc, bc, du, su]
+      title: '\\\\ Aerosol Optical Thickness'
+      map:
+        land_color: 118 100 68
+        line_color: 118 100 68
+        water_color: 11 17 49
+
+  layer:
+
+    du:
+      gxout: shaded
+      expr: _duexttau
+      cbar: Dust
+      clevs: 0.02 0.05 0.1 0.2 0.5 1.0 2.0
+      nsub: 4
+      skip: --auto
+      type: linear
+
+    ss:
+      gxout: shaded
+      expr: _ssexttau
+      cbar: Sea_Salt
+      clevs: 0.01 0.02 0.05 0.1 0.2 0.5 1.0
+      nsub: 4
+      skip: --auto
+      type: linear
+
+    su:
+      gxout: shaded
+      expr: _suexttau 
+      cbar: Sulfates
+      clevs: 0.01 0.02 0.05 0.1 0.2 0.5 1.0
+      nsub: 4
+      skip: --auto
+      type: linear
+
+    oc:
+      gxout: shaded
+      expr: _ocexttau
+      cbar: Organic_Carbon
+      clevs: 0.01 0.02 0.05 0.1 0.2 0.5 1.0
+      nsub: 4
+      skip: --auto
+      type: linear
+
+    bc:
+      gxout: shaded
+      expr: _bcexttau
+      cbar: Black_Carbon
+      clevs: 0.002 0.005 0.01 0.02 0.05 0.1 0.2
+      nsub: 4
+      skip: --auto
+      type: linear
+
+attribute:
+
+  colorbar:
+
+    Dust:
+
+      cmap: YlOrBr_r
+
+      alpha:
+        - 0.00 0.0 0.0
+        - 0.01 0.0 0.0
+        - 0.50 1.0 1.0
+        - 1.00 1.0 1.0
+
+    Sea_Salt:
+
+      cmap: Blues_r
+
+      alpha:
+        - 0.00 0.0 0.0
+        - 0.20 0.0 0.0
+        - 0.50 1.0 1.0
+        - 1.00 1.0 1.0
+
+    Sulfates:
+
+      cmap: Greys_r
+
+      alpha:
+        - 0.00 0.0 0.0
+        - 0.20 0.0 0.0
+        - 0.50 1.0 1.0
+        - 1.00 1.0 1.0
+
+    Organic_Carbon:
+
+      cmap: Greens
+
+      alpha:
+        - 0.00 0.0 0.0
+        - 0.01 0.0 0.0
+        - 0.50 1.0 1.0
+        - 1.00 1.0 1.0
+
+    Black_Carbon:
+
+      cmap: Greens
+
+      alpha:
+        - 0.00 0.0 0.0
+        - 0.01 0.0 0.0
+        - 0.50 1.0 1.0
+        - 1.00 1.0 1.0
+
+  global:
+
+    long_name: Global
+    lon: -180 180
+    lat: -90 90
+    mpdset: mres
+    mproj: 'off'
+    mpvals:
+    layers: [standard]
+    barbs: 'off'
+    streamlines: 'off'
+    thick_above: 'off'
+    thick_below: 'off'

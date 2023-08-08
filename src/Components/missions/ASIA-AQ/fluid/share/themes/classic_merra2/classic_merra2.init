@@ -1,0 +1,7 @@
+config: [classic_merra2]
+streams: [MERRA2]
+
+default:
+  field: precip
+  region: nam
+  level: '0'

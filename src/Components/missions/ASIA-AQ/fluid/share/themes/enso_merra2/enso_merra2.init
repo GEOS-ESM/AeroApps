@@ -1,0 +1,7 @@
+config: [enso_merra2]
+streams: [MERRA2]
+
+default:
+  field: nzero_sd_jfm
+  region: nam
+  level: '0'

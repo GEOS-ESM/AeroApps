@@ -1,0 +1,85 @@
+theme:
+
+  plot:
+
+    winds:
+      long_name: Winds
+      title: '700 and 150 hPa Wind Speed [m/s]'
+      levels: [0]
+      layers: [wind700, wind150, wind150c, wind150v]
+      map:
+        layers: [bluemarble01]
+
+  layer:
+
+    wind700:
+      gxout: shaded
+      expr: mag(u.inst3d_met_p(lev=700),v.inst3d_met_p(lev=700))
+      cbar: Blues_r
+      cbunits: '700 hPa'
+#     clevs: 3 6 9 12 15 16 20 22 24 27 30 35 40 45 50 55 60 65 70 75 80 85 90 100 105 110 120 135
+      cmin: 0
+      cmax: 48
+      cint: 3
+      scale:
+      nsub: 8
+      skip: 8
+      alpha:
+        - 0.00 0.00 0.00
+        - 0.14 0.00 0.60
+        - 0.50 1.00 1.00
+        - 1.00 1.00 1.00
+
+    wind150-2:
+      gxout: shaded
+      expr: smth9(mag(u.inst3d_met_p(lev=150),v.inst3d_met_p(lev=150)))
+      mask: 20
+      cbar: Reds_r
+      cbunits: '150 hPa'
+      cmin: 0
+      cmax: 50
+      cint: 5
+      scale:
+      nsub: 5
+      skip: 5
+      alpha:
+        - 0.00 0.00 0.00
+        - 0.06 0.00 0.30
+        - 0.50 0.30 0.30
+        - 1.00 0.30 0.30
+
+    wind150:
+      gxout: shaded
+      expr: mag(u.inst3d_met_p(lev=150),v.inst3d_met_p(lev=150))
+      mask: 20
+      cbar: reds
+      cbunits: '150 hPa'
+      clevs: 20 30 40 50
+      cmin:
+      cmax:
+      cint:
+      scale:
+      nsub: 1
+      skip: 1
+      alpha:
+        - 0.00 0.30 0.30
+        - 1.00 0.30 0.30
+
+    wind150c:
+      gxout: contour
+      expr: mag(u.inst3d_met_p(lev=150),v.inst3d_met_p(lev=150))
+      cmin: 20
+      cmax: 50
+      cint: 10
+      ccolor: 255 255 255
+      cthick: 8
+      clab: 'off'
+
+    wind150v:
+      gxout: vector
+      uexpr: u.inst3d_met_p(lev=150)
+      vexpr: maskout(v.inst3d_met_p(lev=150),mag(u.inst3d_met_p(lev=150),v.inst3d_met_p(lev=150))-20)
+      ccolor: 255 255 255
+      cthick: 5
+      arrlab: 'off'
+      arrscl: 0.2

@@ -1,0 +1,23 @@
+reset: [region]
+
+# Western wildfire Experiment for Cloud chemistry, Aerosol
+# absorption and Nitrogen
+
+region:
+
+  we-can:
+
+    long_name: WE-CAN
+    lon: 232 262
+    lat: 35 50
+    mpdset: hires
+    mproj: latlon
+
+  curtain01:
+
+    long_name: Curtain-01
+    lev: 1000 10
+    lat: 35 49
+    lon: -122.5 -122.5
+    mpdset: hires
+    mproj: latlon

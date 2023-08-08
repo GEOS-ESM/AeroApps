@@ -1,0 +1,34 @@
+region:
+
+  mike:
+
+    long_name: N Polar
+    lat: 30 90
+    lon: -270 90
+    mpdset: lowres
+    mproj: nps
+    mpvals: -270 90
+    frame: 'off'
+
+wxmapsclassicpub:
+
+  plot:
+
+    slp:
+      long_name: SLP
+      levels: [0]
+      layers: [slp]
+      title: 'Sea Level Pressure [mb]'
+      map:
+        layers: [clearmap, bluemarble1]
+
+  layer:
+
+    slp:
+      gxout: contour
+      expr: _slp / 100
+      cint: 4
+      clab: masked
+      cthick: 4
+      ccolor: 0 0 0
+      clsize: 0.12

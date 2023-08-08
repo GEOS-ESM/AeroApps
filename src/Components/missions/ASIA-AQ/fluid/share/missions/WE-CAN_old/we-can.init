@@ -1,0 +1,13 @@
+reset: [region, playlist]
+
+config: [WE-CAN]
+
+#playlist:
+
+# default:
+#   config: [ATOM]
+# other:
+#   config: [missions]
+
+default:
+  region: we-can

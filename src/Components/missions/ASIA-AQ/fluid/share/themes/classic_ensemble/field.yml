@@ -1,0 +1,16 @@
+field:
+  
+  X0034ANA:
+
+    _slp:
+      long_name: Sea Level Pressure
+      units: mb
+      expression: slp.inst3d_met_p(z=1)
+
+
+  X0034ENS:
+
+    _slp:
+      long_name: Sea Level Pressure
+      units: mb
+      expression: slp.inst3d_met_p(z=1)

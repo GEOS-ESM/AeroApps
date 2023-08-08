@@ -1,0 +1,13 @@
+reset: [region, playlist]
+
+config: [ATOM]
+
+#playlist:
+
+# default:
+#   config: [ATOM]
+# other:
+#   config: [missions]
+
+default:
+  region: bkpmd_panc

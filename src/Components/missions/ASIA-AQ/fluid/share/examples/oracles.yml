@@ -1,0 +1,43 @@
+config: [wxmapschem2d]
+
+playlist:
+
+  Oracles:
+    stream: G5FPFC
+    fcst_dt: 20180130T000000
+    time_dt: 20180204T000000
+    field: duaot
+    region: oracles_lg
+    level: 0
+    oname: oracles.png
+    config: [ORACLES]
+
+shape:
+
+  default:
+    line_color: 255 0 0
+    line_width: 5
+    line_style: 1
+
+  flight_path:
+    line_color: 255 0 0
+    line_width: 7
+    line_style: 1
+
+  station_mark:
+    line_color: 255 0 0
+    fill_color: 255 255 255
+    line_width: 5
+    line_style: 1
+
+region:
+
+  oracles_lg:
+
+    long_name: ORACLES Large
+    lon: -30 40
+    lat:  -40 10
+    mpdset: mres
+    mproj: latlon
+    flight_path: [5 -15 5 0]
+    station_mark: [-14.4 -8.0, -5.6 -16.0, 6.712222 0.378056]

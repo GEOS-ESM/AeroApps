@@ -1,0 +1,91 @@
+
+layout6: &LAYOUT6
+
+  geometry: 320x240
+  label: $stream
+  no_logo: 1
+  no_cbar: 1
+  no_title: 1
+  no_label: 1
+  shape: 0
+  qfed1: 'off'
+  qfed2: 'off'
+# bbox: 60 60 964 680
+  bbox: 60 130 964 610
+
+layout4: &LAYOUT4
+
+  geometry: 400x300
+  label: $stream
+  no_logo: 1
+  no_cbar: 1
+  no_title: 1
+  no_label: 1
+  shape: 0
+  qfed1: 'off'
+  qfed2: 'off'
+# bbox: 60 60 964 680
+  bbox: 60 60 964 680
+
+wxmapscustom:
+
+  plot:
+
+    aod_all_test:
+      long_name: AOD
+      levels: [0]
+      layers: [aod]
+      title: 'Aerosol Optical Thickness'
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT6
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {field: aod, stream: GEOS,  pos: 11}
+        - {field: aod, stream: CAMS,    pos: 12}
+        - {field: aod, stream: RAQMS,   pos: 13}
+#       - {field: aod, stream: HRRR,    pos: 21}
+        - {field: aod, stream: WRFchem, pos: 22}
+        - {field: aod, stream: GEOS,  pos: cbar, no_cbar: 0, cbar_only: 1, geometry: 1024x768}
+
+    aod_all:
+      long_name: AOD
+      levels: [0]
+      layers: [aod]
+      title: 'Aerosol Optical Thickness'
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT6
+      map:
+        layers: [bluemarble01]
+      panels2:
+        - {field: aod, stream: RAQMS,   pos: 11}
+        - {field: aod, stream: CAMS,    pos: 12}
+        - {field: aod, stream: GEOS,  pos: 13}
+        - {field: aod, stream: CAMchem, pos: 21}
+        - {field: aod, stream: WRFchem, pos: 22}
+        - {field: aod, stream: GEOS,  pos: cbar, no_cbar: 0, cbar_only: 1, geometry: 1024x768}
+      panels:
+        - {field: aod, stream: RAQMS, pos: 11}
+        - {field: aod, stream: CAMS, pos: 12}
+        - {field: aod, stream: GEOS, pos: 13}
+        - {field: aod, stream: CAMchem, pos: 21}
+        - {field: aod, stream: WRFchem, pos: 22}
+        - {field: aod, stream: GEOS,  pos: cbar, no_cbar: 0, cbar_only: 1, geometry: 1024x768}
+#       - {field: aod, stream: GEOS, pos: cbar, no_bar: 0, cbar_only: 1, geometry: 1024x768}
+
+    oc_lml_all:
+      long_name: OC
+      levels: [0]
+      layers: [oc]
+      field: oc_lml
+      title: 'Surface Organic Carbon'
+      header: Forecast Initialized on $tm_start
+      layout: *LAYOUT4
+      map:
+        layers: [bluemarble01]
+      panels:
+        - {field: oc_lml, stream: GEOS,  pos: 11}
+        - {field: oc_lml, stream: CAMS,    pos: 12}
+        - {field: oc_lml, stream: RAQMS,   pos: 21}
+        - {field: oc_lml, stream: WRFchem, pos: 22}
+        - {field: oc_lml, stream: GEOS,  pos: cbar, no_cbar: 0, cbar_only: 1, geometry: 1024x768}

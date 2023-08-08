@@ -1,0 +1,77 @@
+    pm01: &PM25LON
+      long_name: PM25 122p5W
+      levels: [0]
+      layers: [ground, pm_nz, puffy_cloud, barbs_nz, cloud_water_nz, agl_nz, theta_nz]
+      title: '\\ PM2.5 [`3m`f13g/m`a3`n], Theta [K], Cloud Water [g/kg] (Longitude: $lon)'
+      parea: 1 10 1 7.5
+      lev: 0 10000
+      lat: 35 49
+      lon: -122.5
+      ylab: 'Altitude (m)'
+
+    pm02:
+      <<: *PM25LON
+      long_name: PM25 120W
+      lev: 0 10000
+      lat: 35 49
+      lon: -120.0
+
+    pm03:
+      <<: *PM25LON
+      long_name: PM25 117p5W
+      lev: 0 10000
+      lat: 35 49
+      lon: -117.5
+
+    pm04:
+      <<: *PM25LON
+      long_name: PM25 116W
+      lev: 0 10000
+      lat: 35 49
+      lon: -116.0
+
+    pm05:
+      <<: *PM25LON
+      long_name: PM25 114p5W
+      lev: 0 10000
+      lat: 35 49
+      lon: -114.5
+
+    pm06:
+      <<: *PM25LON
+      long_name: PM25 112p5W
+      lev: 0 10000
+      lat: 35 49
+      lon: -112.5
+
+    pm10: &PM25LAT
+      long_name: PM25 41N
+      levels: [0]
+      layers: [ground, pm_nz, puffy_cloud, barbs_nz, cloud_water_nz, agl_nz, theta_nz]
+      title: '\\ PM2.5 [`3m`f13g/m`a3`n], Theta [K], Cloud Water [g/kg] (Latitude: $lat)'
+      parea: 1 10 1 7.5
+      lev: 0 10000
+      lat: 41
+      lon: -125 -100
+      ylab: 'Altitude (m)'
+
+    pm11:
+      <<: *PM25LAT
+      long_name: PM25 43N
+      lev: 0 10000
+      lat: 43
+      lon: -125 -100
+
+    pm12:
+      <<: *PM25LAT
+      long_name: PM25 45N
+      lev: 0 10000
+      lat: 45
+      lon: -125 -100
+
+    pm13:
+      <<: *PM25LAT
+      long_name: PM25 47N
+      lev: 0 10000
+      lat: 47
+      lon: -125 -100

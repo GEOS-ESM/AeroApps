@@ -1,0 +1,25 @@
+wxmapscustom:
+
+  interface:
+
+    field:
+
+      long_name: VARIABLES
+      groups: ['surface', 'upper']
+
+      surface:
+        long_name: Surface
+        type: button
+        items:
+          - aod
+          - co_smoke_lml
+          - pm25sfc
+          - tcco
+          - tcpm25
+
+      upper:
+        long_name: Pressure Level
+        type: button
+        items:
+          - co_smoke
+          - pm25

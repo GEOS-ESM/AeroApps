@@ -1,0 +1,590 @@
+  plot:
+
+    bc_gram000: &BC_GRAM
+      long_name: BC Anchorage
+      label: Anchorage
+      levels: [0]
+      layers: [ground,puffy_cloud,barbs,cloud_water,pbltop]
+      title: '[$label] &b&b&b Relative Humidity [%], Cloud Water [g/kg], PBLTOP [mb, red]'
+      parea:  1 10 1 7.5
+      lev:  1000 100
+      lat:  61.2
+      lon:  210.1
+      time: '$tbeg $t5day'
+      ylab: 'Pressure (mb)'
+      shape: 'off'
+
+    bc_gram001:
+      << *BC_GRAM
+      long_name: BC Atlanta
+      label: Atlanta
+      lat:  33.7
+      lon:  275.6
+
+    bc_gram002:
+      << *BC_GRAM
+      long_name: BC Beltsville
+      label: Beltsville
+      lat:  39.1
+      lon:  283.1
+
+    bc_gram003:
+      << *BC_GRAM
+      long_name: BC Bismarck
+      label: Bismarck
+      lat:  46.8
+      lon:  259.2
+
+    bc_gram004:
+      << *BC_GRAM
+      long_name: BC Boise
+      label: Boise
+      lat:  43.6
+      lon:  243.8
+
+    bc_gram005:
+      << *BC_GRAM
+      long_name: BC Boston
+      label: Boston
+      lat:  42.3
+      lon:  289.0
+
+    bc_gram006:
+      << *BC_GRAM
+      long_name: BC Buffalo
+      label: Buffalo
+      lat:  42.9
+      lon:  281.2
+
+    bc_gram007:
+      << *BC_GRAM
+      long_name: BC Conroe
+      label: Conroe
+      lat:  30.3
+      lon:  264.6
+
+    bc_gram008:
+      << *BC_GRAM
+      long_name: BC Chicago
+      label: Chicago
+      lat:  41.9
+      lon:  272.4
+
+    bc_gram009:
+      << *BC_GRAM
+      long_name: BC Cincinnati
+      label: Cincinnati
+      lat:  39.1
+      lon:  275.5
+
+    bc_gram010:
+      << *BC_GRAM
+      long_name: BC Cleveland
+      label: Cleveland
+      lat:  41.5
+      lon:  278.3
+
+    bc_gram011:
+      << *BC_GRAM
+      long_name: BC Dallas
+      label: Dallas
+      lat:  32.7
+      lon:  263.2
+
+    bc_gram012:
+      << *BC_GRAM
+      long_name: BC Denver
+      label: Denver
+      lat:  39.7
+      lon:  255.0
+
+    bc_gram013:
+      << *BC_GRAM
+      long_name: BC Detroit
+      label: Detroit
+      lat:  42.3
+      lon:  277.0
+
+    bc_gram014:
+      << *BC_GRAM
+      long_name: BC Fairbanks
+      label: Fairbanks
+      lat:  64.8
+      lon:  212.3
+
+    bc_gram015:
+      << *BC_GRAM
+      long_name: BC Fairhill
+      label: Fairhill
+      lat:  39.7
+      lon:  284.1
+
+    bc_gram016:
+      << *BC_GRAM
+      long_name: BC Fargo
+      label: Fargo
+      lat:  46.9
+      lon:  263.2
+
+    bc_gram017:
+      << *BC_GRAM
+      long_name: BC Hartford
+      label: Hartford
+      lat:  41.7
+      lon:  287.3
+
+    bc_gram018:
+      << *BC_GRAM
+      long_name: BC Honolulu
+      label: Honolulu
+      lat:  21.3
+      lon:  202.2
+
+    bc_gram019:
+      << *BC_GRAM
+      long_name: BC Houston
+      label: Houston
+      lat:  29.7
+      lon:  264.6
+
+    bc_gram020:
+      << *BC_GRAM
+      long_name: BC Indianapolis
+      label: Indianapolis
+      lat:  39.7
+      lon:  273.9
+
+    bc_gram021:
+      << *BC_GRAM
+      long_name: BC Jacksonville
+      label: Jacksonville
+      lat:  30.3
+      lon:  278.3
+
+    bc_gram022:
+      << *BC_GRAM
+      long_name: BC Kansas City
+      label: Kansas City
+      lat:  39.1
+      lon:  265.4
+
+    bc_gram023:
+      << *BC_GRAM
+      long_name: BC Las Vegas
+      label: Las Vegas
+      lat:  36.2
+      lon:  244.9
+
+    bc_gram024:
+      << *BC_GRAM
+      long_name: BC Little Rock
+      label: Little Rock
+      lat:  34.7
+      lon:  267.7
+
+    bc_gram025:
+      << *BC_GRAM
+      long_name: BC Louisville
+      label: Louisville
+      lat:  38.2
+      lon:  274.3
+
+    bc_gram026:
+      << *BC_GRAM
+      long_name: BC Los Angeles
+      label: Los Angeles
+      lat:  34.0
+      lon:  241.8
+
+    bc_gram027:
+      << *BC_GRAM
+      long_name: BC Memphis
+      label: Memphis
+      lat:  35.1
+      lon:  270.0
+
+    bc_gram028:
+      << *BC_GRAM
+      long_name: BC Miami
+      label: Miami
+      lat:  25.8
+      lon:  279.8
+
+    bc_gram029:
+      << *BC_GRAM
+      long_name: BC Milwaukee
+      label: Milwaukee
+      lat:  43.0
+      lon:  272.0
+
+    bc_gram030:
+      << *BC_GRAM
+      long_name: BC Minneapolis
+      label: Minneapolis
+      lat:  45.0
+      lon:  266.8
+
+    bc_gram031:
+      << *BC_GRAM
+      long_name: BC Nashville
+      label: Nashville
+      lat:  36.2
+      lon:  273.2
+
+    bc_gram032:
+      << *BC_GRAM
+      long_name: BC New Orleans
+      label: New Orleans
+      lat:  30.0
+      lon:  269.9
+
+    bc_gram033:
+      << *BC_GRAM
+      long_name: BC New York
+      label: New York
+      lat:  40.3
+      lon:  286.0
+
+    bc_gram034:
+      << *BC_GRAM
+      long_name: BC Oklahoma City
+      label: Oklahoma City
+      lat:  35.5
+      lon:  262.5
+
+    bc_gram035:
+      << *BC_GRAM
+      long_name: BC Omaha
+      label: Omaha
+      lat:  41.2
+      lon:  264.0
+
+    bc_gram036:
+      << *BC_GRAM
+      long_name: BC Orlando
+      label: Orlando
+      lat:  28.5
+      lon:  278.7
+
+    bc_gram037:
+      << *BC_GRAM
+      long_name: BC Philadelphia
+      label: Philadelphia
+      lat:  40.0
+      lon:  284.8
+
+    bc_gram038:
+      << *BC_GRAM
+      long_name: BC Phoenix
+      label: Phoenix
+      lat:  33.5
+      lon:  248.0
+
+    bc_gram039:
+      << *BC_GRAM
+      long_name: BC Pittsburgh
+      label: Pittsburgh
+      lat:  40.5
+      lon:  280.0
+
+    bc_gram040:
+      << *BC_GRAM
+      long_name: BC Portland OR
+      label: Portland OR
+      lat:  45.5
+      lon:  237.3
+
+    bc_gram041:
+      << *BC_GRAM
+      long_name: BC Raleigh
+      label: Raleigh
+      lat:  35.8
+      lon:  281.4
+
+    bc_gram042:
+      << *BC_GRAM
+      long_name: BC Richmond
+      label: Richmond
+      lat:  37.5
+      lon:  282.5
+
+    bc_gram043:
+      << *BC_GRAM
+      long_name: BC Salt Lake City
+      label: Salt Lake City
+      lat:  40.7
+      lon:  248.1
+
+    bc_gram044:
+      << *BC_GRAM
+      long_name: BC San Diego
+      label: San Diego
+      lat:  32.7
+      lon:  242.8
+
+    bc_gram045:
+      << *BC_GRAM
+      long_name: BC San Francisco
+      label: San Francisco
+      lat:  37.7
+      lon:  237.6
+
+    bc_gram046:
+      << *BC_GRAM
+      long_name: BC San Joaquin Valley
+      label: San Joaquin Valley
+      lat:  35.3
+      lon:  119.3
+
+    bc_gram047:
+      << *BC_GRAM
+      long_name: BC San Juan PR
+      label: San Juan PR
+      lat:  18.5
+      lon:  293.8
+
+    bc_gram048:
+      << *BC_GRAM
+      long_name: BC Seattle
+      label: Seattle
+      lat:  47.6
+      lon:  237.7
+
+    bc_gram049:
+      << *BC_GRAM
+      long_name: BC Smith Point
+      label: Smith Point
+      lat:  29.5
+      lon:  265.2
+
+    bc_gram050:
+      << *BC_GRAM
+      long_name: BC Spokane
+      label: Spokane
+      lat:  47.6
+      lon:  242.5
+
+    bc_gram051:
+      << *BC_GRAM
+      long_name: BC Tampa
+      label: Tampa
+      lat:  28.0
+      lon:  277.5
+
+    bc_gram052:
+      << *BC_GRAM
+      long_name: BC Washington DC
+      label: Washington DC
+      lat:  38.9
+      lon:  283.0
+
+    bc_gram053:
+      << *BC_GRAM
+      long_name: BC Wichita
+      label: Wichita
+      lat:  37.6
+      lon:  262.8
+
+    bc_gram054:
+      << *BC_GRAM
+      long_name: BC Armstrong FRC
+      label: Armstrong FRC
+      lat:  34.9
+      lon:  242.1
+
+    bc_gram055:
+      << *BC_GRAM
+      long_name: BC Aldino
+      label: Aldino
+      lat:  39.6
+      lon:  283.8
+
+    bc_gram056:
+      << *BC_GRAM
+      long_name: BC Fresno
+      label: Fresno
+      lat:  36.8
+      lon:  240.2
+
+    bc_gram057:
+      << *BC_GRAM
+      long_name: BC Dallas Ft Worth
+      label: Dallas Ft Worth
+      lat:  32.9
+      lon:  263.0
+
+    bc_gram058:
+      << *BC_GRAM
+      long_name: BC Sevilleta
+      label: Sevilleta
+      lat:  34.3
+      lon:  253.1
+
+    bc_gram059:
+      << *BC_GRAM
+      long_name: BC San Antonio
+      label: San Antonio
+      lat:  29.5
+      lon:  261.5
+
+    bc_gram060:
+      << *BC_GRAM
+      long_name: BC Corpus Christi
+      label: Corpus Christi
+      lat:  27.8
+      lon:  262.5
+
+    bc_gram061:
+      << *BC_GRAM
+      long_name: BC Tucson
+      label: Tucson
+      lat:  32.1
+      lon:  249.0
+
+    bc_gram062:
+      << *BC_GRAM
+      long_name: BC West Houston
+      label: West Houston
+      lat:  29.8
+      lon:  264.343
+
+    bc_gram063:
+      << *BC_GRAM
+      long_name: BC Essex
+      label: Essex
+      lat:  39.3
+      lon:  283.5
+
+    bc_gram064:
+      << *BC_GRAM
+      long_name: BC Croix Rd Manvel
+      label: Croix Rd Manvel
+      lat:  29.5
+      lon:  264.6
+
+    bc_gram065:
+      << *BC_GRAM
+      long_name: BC Deer Park TX
+      label: Deer Park TX
+      lat:  29.7
+      lon:  264.9
+
+    bc_gram066:
+      << *BC_GRAM
+      long_name: BC White Sands NM
+      label: White Sands NM
+      lat:  32.6
+      lon:  106.3
+
+    bc_gram067:
+      << *BC_GRAM
+      long_name: BC Lake Charles
+      label: Lake Charles
+      lat:  30.1
+      lon:  266.8
+
+    bc_gram068:
+      << *BC_GRAM
+      long_name: BC Shreveport
+      label: Shreveport
+      lat:  32.4
+      lon:  266.2
+
+    bc_gram069:
+      << *BC_GRAM
+      long_name: BC Channelview
+      label: Channelview
+      lat:  29.8
+      lon:  264.9
+
+    bc_gram070:
+      << *BC_GRAM
+      long_name: BC Austin
+      label: Austin
+      lat:  30.2
+      lon:  262.3
+
+    bc_gram071:
+      << *BC_GRAM
+      long_name: BC Monterey
+      label: Monterey
+      lat:  36.6
+      lon:  238.2
+
+    bc_gram072:
+      << *BC_GRAM
+      long_name: BC S Cent OR
+      label: S Cent OR
+      lat:  43.0
+      lon:  120.0
+
+    bc_gram073:
+      << *BC_GRAM
+      long_name: BC Padonia
+      label: Padonia
+      lat:  39.5
+      lon:  283.4
+
+    bc_gram074:
+      << *BC_GRAM
+      long_name: BC Caltech
+      label: Caltech
+      lat:  34.1
+      lon:  241.9
+
+    bc_gram075:
+      << *BC_GRAM
+      long_name: BC Edgewood MD
+      label: Edgewood MD
+      lat:  39.4
+      lon:  283.7
+
+    bc_gram076:
+      << *BC_GRAM
+      long_name: BC La Parguera PR
+      label: La Parguera PR
+      lat:  18.0
+      lon:  293.0
+
+    bc_gram077:
+      << *BC_GRAM
+      long_name: BC Railroad Valley
+      label: Railroad Valley
+      lat:  38.5
+      lon:  244.0
+
+    bc_gram078:
+      << *BC_GRAM
+      long_name: BC Moody Tower
+      label: Moody Tower
+      lat:  29.7
+      lon:  264.7
+
+    bc_gram079:
+      << *BC_GRAM
+      long_name: BC Cape Cod
+      label: Cape Cod
+      lat:  41.1
+      lon:  289.8
+
+    bc_gram080:
+      << *BC_GRAM
+      long_name: BC Wallops Island VA
+      label: Wallops Island VA
+      lat:  37.8
+      lon:  284.5
+
+    bc_gram081:
+      << *BC_GRAM
+      long_name: BC Galveston
+      label: Galveston
+      lat:  29.2
+      lon:  265.2
+
+    bc_gram082:
+      << *BC_GRAM
+      long_name: BC Frenchman Flat NV
+      label: Frenchman Flat NV
+      lat:  36.8
+      lon:  244.0
+

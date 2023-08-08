@@ -1,0 +1,88 @@
+logo:
+
+  default:
+    layers: [nasa-logo, gmao-logo]
+
+  nasa-logo: &NASA
+    file: nasa-logo.png
+    position: ul
+    size: 6
+    margin: 1
+
+  nasa-logo-dark: *NASA
+
+  gmao-logo:
+    file: gmao-logo-no-text.png
+    position: ur
+    size: 10
+    margin: 1
+
+  gmao-logo-dark:
+    file: gmao-logo-white.png
+    position: ur
+    size: 10
+    margin: 1
+
+  merra2-logo: &MERRA2
+    file: merra2-logo.png
+    position: ur
+    size: 10
+    margin: 1
+
+  merra2-logo-dark: *MERRA2
+
+  atom-logo: &ATOM
+    file: atom-logo.png
+    position: ur
+    size: 6
+    margin: 1
+
+  atom-logo-dark: *ATOM
+
+  noaa-logo: &NOAA
+    file: noaa-logo.png
+    position: ul
+    size: 6
+    margin: 1
+
+  noaa-logo-dark:
+    file: noaa-logo-light.png
+    position: ul
+    size: 6
+    margin: 1
+
+  ecmwf-logo: &ECMWF
+    file: ecmwf-logo.png
+    position: ul
+    size: 10
+    margin: 1
+
+  ecmwf-logo-dark:
+    file: ecmwf-logo-light.png
+    position: ul
+    size: 10
+    margin: 1
+
+  ncar-logo: &NCAR
+    file: ncar-logo.png
+    position: ul
+    size: 10
+    margin: 1
+
+  ncar-logo-dark:
+    file: ncar-logo.png
+    position: ul
+    size: 10
+    margin: 1
+
+  canada-logo: &CANADA
+    file: canada-logo.png
+    position: ul
+    size: 6
+    margin: 1
+
+  canada-logo-dark:
+    file: canada-logo.png
+    position: ul
+    size: 6
+    margin: 1

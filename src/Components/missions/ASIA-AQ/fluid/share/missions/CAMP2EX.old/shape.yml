@@ -1,0 +1,16 @@
+shape:
+
+  default:
+    line_color: 0 0 0
+    line_width: 5
+    line_style: 1
+
+  string:
+    line_color: 255 0 0
+    str_size: 0.12
+
+  mark:
+    line_color: 255 0 0
+    fill_color: 255 0 0
+    size: 0.1
+    mark: 3

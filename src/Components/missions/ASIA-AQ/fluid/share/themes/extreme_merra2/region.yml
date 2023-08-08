@@ -1,0 +1,310 @@
+reset: [region]
+
+region:
+
+  lasic:
+
+    long_name: LASIC
+    lon: -20 20
+    lat: -30 5
+    mpdset: hires
+    mproj: latlon
+    station_mark: [-14.4 -8.0]
+
+  nam:
+
+    long_name: North America
+    lon: 0 360
+    lat: 0 90
+    mpdset: mres
+    mproj: nps
+    mpvals: 210 300 25 71
+    addlayers: [Canada_Province]
+
+  usa:
+
+    long_name: United States
+    lon: 0 360
+    lat: 0 90
+    mpdset: hires
+    mproj: nps
+    mpvals: 230 290 25 55
+
+  midatl:
+  
+    long_name: Mid Atlantic
+    lon: -85 -70
+    lat: 33 43
+    mpdset: hires
+    mproj: latlon
+    addlayers: [US_Counties]
+#   addlayers: [Roads]
+  
+  conus:
+  
+    long_name: CONUS
+    lon: -125 -65
+    lat: 24 50
+    mpdset: hires
+    mproj: latlon
+#   addlayers: [US_Counties]
+#   addlayers: [Roads]
+
+  npac:
+  
+    long_name: North Pacific
+    lon: 100 230
+    lat: 0 65
+    mpdset: mres
+    mproj: latlon
+  
+  nps:
+  
+    long_name: N Polar
+    lon: -180 180
+    lat: 30 90
+    mpdset: lowres
+    mproj: nps
+    mpvals: -180 180
+    frame: circle
+    barbs: 'off'
+    streamlines: 'off'
+    thick_above: 'off'
+    thick_below: 'off'
+  
+  sps:
+  
+    long_name: S Polar
+    lon: -180 180
+    lat: -90 -30
+    mpdset: lowres
+    mproj: sps
+    mpvals: -180 180
+    frame: circle
+    barbs: 'off'
+    streamlines: 'off'
+    thick_above: 'off'
+    thick_below: 'off'
+  
+  australia:
+  
+    long_name: Australia
+    lon: 100 180
+    lat: -50 -10
+    mpdset: hires
+    mproj: latlon
+    addlayers: [States_Provinces]
+  
+  sevseas:
+  
+    long_name: Seven Seas
+    lon: 65 160
+    lat: -15 50
+    mpdset: mres
+    mproj: latlon
+  
+  natl:
+  
+    long_name: North Atlantic
+    lon: -115 0
+    lat:  -10 50
+    mpdset: mres
+    mproj: latlon
+
+  sam:
+
+    long_name: South America
+    lon: 260 330
+    lat: -60 15
+    mpdset: mres
+    mproj: latlon
+    mpvals:
+
+  carib:
+
+    long_name: Caribbean
+    lon: 270 300
+    lat: 7 27
+    mpdset: hires
+    mproj: latlon
+    mpvals:
+
+  camer:
+    long_name: Central America
+    lon: 244 320
+    lat: -8 30
+    mpdset: hires
+    mproj: latlon
+    mpvals:
+
+  africa:
+
+    long_name: Africa
+    lon: -20 52
+    lat: -40 38
+    mpdset: hires
+    mproj: latlon
+    mpvals:
+    thick_below: 'off'
+    thick_above: 'off'
+
+  europe:
+
+    long_name: Europe
+    lon: -180 180
+    lat: 5 90
+    mpdset: mres
+    mproj: nps
+    mpvals: -28 36 29 75
+
+  eastasia:
+
+    long_name: East Asia
+    lon: 70 148
+    lat: 16 53
+    mpdset: hires
+    mproj: latlon
+    mpvals:
+
+  india:
+
+    long_name: India
+    lon: 60 95
+    lat: 2 34
+    mpdset: hires
+    mproj: latlon
+    mpvals:
+
+  mideast:
+
+    long_name: Middle East
+    lon: 24 68
+    lat: 10 42
+    mpdset: hires
+    mproj: latlon
+    mpvals:
+
+  indonesia:
+
+    long_name: Indonesia
+    lon: 94 152
+    lat: -11 16
+    mpdset: hires
+    mproj: latlon
+    mpvals:
+
+  global:
+
+    long_name: Global
+    lon: -180 180
+    lat: -90 90
+    mpdset: mres
+    mproj: latlon
+    mpvals:
+    barbs: 'off'
+    streamlines: 'off'
+    thick_above: 'off'
+    thick_below: 'off'
+    hilo: 'off'
+
+  pacific:
+  
+    long_name: Pacific Ocean
+    lon: 107 290
+    lat: -60 72
+    mpdset: mres
+    mproj: latlon
+
+  atlantic:
+
+    long_name: Atlantic Ocean
+    lon: -97 36
+    lat: -60 60
+    mpdset: mres
+    mproj: latlon
+
+  indian:
+
+    long_name: Indian Ocean
+    lon: 26 144
+    lat: -60 28
+    mpdset: mres
+    mproj: latlon
+
+  ortho:
+
+    long_name: Orthographic East
+    lon: -160 20
+    lat: -90 90
+    mpdset: mres
+    mproj: orthogr
+    mpvals:
+    grid: 'off'
+    barbs: 'off'
+    streamlines: 'off'
+    thick_above: 'off'
+    thick_below: 'off'
+    hilo: 'off'
+
+  greenland:
+    long_name: Greenland
+    lon: 0 360
+    lat: 0 90
+    mpdset: hires
+    mproj: nps
+    mpvals: 285 350 58 84
+
+  nasia:
+    long_name: North Asia
+    lon: 0 360
+    lat: 0 90
+    mpdset: hires
+    mproj: nps
+    mpvals: 50 110 20 50
+    addlayers: [States_Provinces]
+
+# siberia:
+#   long_name: Siberia
+#   lon: 0 360
+#   lat: 0 90
+#   mpdset: hires
+#   mproj: nps
+#   mpvals: 55 192 47 82
+#   addlayers: [States_Provinces]
+
+  brazil:
+
+    long_name: Brazil
+    lon: -80 -30
+    lat: -36 9
+    mpdset: hires
+    mproj: latlon
+    addlayers: [States_Provinces]
+
+  siberia:
+
+    long_name: Siberia
+    lon: 0 360 
+    lat: 0 90 
+    mpdset: hires
+    mproj: nps
+    mpvals: 47 180 43 77
+    addlayers: [States_Provinces]
+
+  alaska:
+
+    long_name: Alaska
+    lon: 0 360 
+    lat: 0 90 
+    mpdset: hires
+    mproj: nps
+    mpvals: 180 230 50 75
+    addlayers: [States_Provinces]
+
+  hawaii:
+
+    long_name: Hawaii
+    lon: 190 220
+    lat: 10 30
+    mpdset: hires
+    mproj: latlon

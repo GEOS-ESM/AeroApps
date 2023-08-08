@@ -1,0 +1,92 @@
+import os
+import ftplib
+from string import *
+from multiprocessing import Pool
+
+def get_handler(protocol):
+
+    handlers = { 'ftp': FTPHandler }
+
+    return handlers.get(protocol, FileHandler)()
+
+def ftp_upload(request):
+
+    machine     = request['machine']
+    login       = request['login']
+    password    = request['password']
+    remote_file = os.path.basename(request['remote_file'])
+    remote_dir  = os.path.dirname(request['remote_file'])
+    local_file  = os.path.basename(request['local_file'])
+    local_dir   = os.path.dirname(request['local_file'])
+
+    return
+
+    try:
+        os.makedirs(local_dir, 0755)
+    except:
+        pass
+
+    ftp = ftplib.FTP(machine)
+    ftp.login(login,password)
+    ftp.cwd(remote_dir)
+    f = open(local_file,'wb')
+    ftp.retrbinary('RETR ' + remote_file, f.write)
+    f.close()
+    ftp.quit()
+
+class FileHandler(object):
+
+    def __init__(self): pass
+
+    def list(self, request):
+
+        req        = dict(request)
+
+        time_dt    = request['time_dt']
+        start_dt   = request['start_dt']
+        end_dt     = request['end_dt']
+        fcst_dt    = request['fcst_dt']
+        t_deltat   = request['t_deltat']
+
+        if not fcst_dt: fcst_dt = time_dt
+
+        local_dir  = request.get('local_dir',  '')
+        remote_dir = request.get('remote_dir', '')
+
+        t = start_dt
+        while t <= end_dt:
+
+            tau  = t - start_dt
+            if fcst_dt: tau  = t - fcst_dt
+            hour = int(tau.total_seconds() / 3600)
+            defs = {'tau':"%03d"%(hour,)}
+
+            for name in request['remote_files']:
+
+                local  = os.path.join(local_dir, name)
+                remote = os.path.join(remote_dir, name)
+
+                files = remote + ' ' + local
+
+                files = t.strftime(files)
+                files = fcst_dt.strftime(files)
+
+                files = Template(files).safe_substitute(defs)
+                files = tuple(files.split())
+
+                req['remote_file'] = files[0]
+                req['local_file']  = files[1]
+
+                print files[1]
+                if not os.path.isfile(files[1]): yield dict(req)
+
+            t += t_deltat
+
+class FTPHandler(FileHandler):
+
+    def get(self, request):
+
+        sockets = request.get('sockets', 4)
+
+        pool = Pool(1)
+        pool.map(ftp_upload, self.list(request))

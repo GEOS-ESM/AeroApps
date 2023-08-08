@@ -1,0 +1,175 @@
+wxmapschem2d:
+
+  interface:
+
+    field:
+
+      long_name: VARIABLES
+      groups: [CO, Gases, Aerosols]
+
+      CO:
+        long_name: Carbon Monoxide
+        type: button
+        items:
+          - cosc
+          - cocl
+          - cobbae
+          - cobbna
+          - cobbla
+          - cobbaf
+          - conbas
+          - conbeu
+          - conbna
+
+      Gases:
+        long_name: Other Gases
+        type: button
+        items:
+          - to3
+          - so2cmass
+          - so2smass
+
+      Aerosols:
+        long_name: Aerosols
+        type: button
+        items:
+          - ssaot
+          - ocaot
+          - bcaot
+          - suaot
+          - niaot
+          - fineaot
+          - ocsmass
+          - bcsmass
+          - nismass
+
+wxmapscustom:
+
+  interface:
+
+    field:
+
+      long_name: VARIABLES
+      groups: [CO, BCOC, PM25]
+
+      CO:
+        long_name: CO
+        type: button
+        items:
+          - cocl: CO Column
+          - coclbbaf: CO Column Biomass Burning
+
+      BCOC:
+        long_name: BC+OC Carbon
+        type: button
+        items:
+          - bcocaot: BC+OC AOT
+          - bcocsmass: BC+OC Sfc Mass
+          - bcoc_z: BC+OC Mass (z-coord)
+          - bcoc_A
+
+      PM25:
+        long_name: PM 2.5
+        type: button
+        items:
+          - pm25_z: PM2.5 Mass (z-coord)
+          - pm25_A
+
+      RH:
+        long_name: Relative Humidity
+        type: button
+        items:
+          - rh_A
+
+wxmapscustom-2:
+
+  interface:
+
+    field:
+
+      long_name: VARIABLES
+      groups: [SURFACE, TOTCOL, TROPCOL, XSEC]
+
+      SURFACE:
+        long_name: Surface
+        type: button
+        items:
+          - no2sfc: NO2
+          - so2sfc: SO2
+          - cosfc: CO
+          - o3sfc: O3
+          - hchosfc: HCHO
+          - pm25sfc: PM2.5
+
+      TOTCOL:
+        long_name: Total Column
+        type: button
+        items:
+          - totcol_no2: NO2
+          - totcol_so2: SO2
+          - totcol_co: CO
+          - totcol_o3: O3
+          - totcol_hcho: HCHO
+
+      TROPCOL:
+        long_name: Troposheric Column
+        type: button
+        items:
+          - tropcol_no2: NO2
+          - tropcol_so2: SO2
+          - tropcol_co: CO
+          - tropcol_o3: O3
+          - tropcol_hcho: HCHO
+
+      XSEC:
+        long_name: Cross Sections
+        type: button
+        items:
+          - no2_A: NO2
+          - co_A: CO
+          - o3_A: O3
+
+wxmapsmission:
+
+  interface:
+
+    field:
+
+      long_name: VARIABLES
+      groups: [Precip, Aerosols, Other]
+
+      Precip:
+        long_name: Precip/Clouds
+        type: button
+        items:
+          - precip
+          - cldlow
+          - cldmid
+          - cldhgh
+          - cldtot
+          - cldprs
+          - cldwat
+          - taulow
+          - taumid
+          - tauhgh
+
+      Aerosols:
+        long_name: Aerosols
+        type: button
+        items:
+          - fineaot
+          - dustaot
+          - dumass
+
+      Other:
+        long_name: Other
+        type: button
+        items:
+          - rh
+          - tmpu
+          - wspd
+          - vort
+          - omega
+          - epv
+          - pblh
+          - tropp

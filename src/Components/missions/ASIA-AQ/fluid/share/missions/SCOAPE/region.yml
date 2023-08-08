@@ -1,0 +1,49 @@
+scoape_stations: &SCOAPE_STATIONS
+
+  stations:
+    inner_size: 0.07
+    outer_size: 0.07
+    outer_line: ''
+    line_width: 4
+    mark_type: 3 2
+
+    data: [-90.27 30.04, -90.66 29.25, -90.19 29.11, -90.02 28.88, -89.24 28.16, -90.65 27.79, -90.03 27.2, -88 27, 6.712222 0.378056, 28.99 1000]
+
+scoape_lines: &SCOAPE_LINES
+
+  cocodrie:
+    line_color: 255 0 0
+    line_width: 4
+    data: [-90.66 25 -90.66 30]
+
+region:
+
+  scoape_lg:
+
+    long_name: SCOAPE Lg
+    lon: -98 -82
+    lat:  23 31
+    mpdset: hires
+    mproj: latlon
+    labsiz: 0.1
+
+    station_mark:
+      <<: *SCOAPE_STATIONS
+
+    line:
+      <<: *SCOAPE_LINES
+
+  scoape_sm:
+
+    long_name: SCOAPE Sm
+    lon: -98 -87
+    lat:  25 32
+    mpdset: hires
+    mproj: latlon
+    labsiz: 0.1
+
+    station_mark:
+      <<: *SCOAPE_STATIONS
+
+    line:
+      <<: *SCOAPE_LINES

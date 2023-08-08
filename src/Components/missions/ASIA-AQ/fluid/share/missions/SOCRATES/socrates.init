@@ -1,0 +1,13 @@
+reset: [region, playlist]
+
+config: [SOCRATES]
+
+playlist:
+
+  default:
+    config: []
+  other:
+    config: [missions]
+
+default:
+  region: socrates

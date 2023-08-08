@@ -1,0 +1,343 @@
+theme:
+
+  plot:
+
+    tn10p:
+      long_name: TN10P
+      levels: [0]
+      layers: [tn10p]
+      title: '% of Days with Maximum Temperature < 10th Percentile'
+    tx10p:
+      long_name: tx10p
+      levels: [0]
+      layers: [tx10p]
+      title: '% of Days with Maximum Temperature < 10th Percentile'
+
+    tn90p:
+      long_name: tn90p
+      levels: [0]
+      layers: [tn90p]
+      title: '% of Days with Minimum Temperature > 90th Percentile'
+
+    tx90p:
+      long_name: tx90p
+      levels: [0]
+      layers: [tx90p]
+      title: '% of Days with Maximum Temperature > 90th Percentile'
+
+    dtr:
+      long_name: dtr
+      levels: [0]
+      layers: [dtr]
+      title: 'Diurnal Temperature Range [K]'
+
+    r90p:
+      long_name: R90p
+      levels: [0]
+      layers: [r90p]
+      title: 'Precipitation on Days Exceeding the 90th Percentile [mm/day]'
+
+    r95p:
+      long_name: r95p
+      levels: [0]
+      layers: [r95p]
+      title: 'Precipitation on Days Exceeding the 95th Percentile [mm/day]'
+
+    r99p:
+      long_name: r99p
+      levels: [0]
+      layers: [r99p]
+      title: 'Precipitation on Days Exceeding the 99th Percentile [mm/day]'
+
+    r90d:
+      long_name: r90d
+      levels: [0]
+      layers: [r90d]
+      title: '# Days > 90th Percentile of Precipitation'
+
+    r95d:
+      long_name: r95d
+      levels: [0]
+      layers: [r95d]
+      title: '# Days > 95th Percentile of Precipitation'
+
+    r99d:
+      long_name: r99d
+      levels: [0]
+      layers: [r99d]
+      title: '# Days > 99th Percentile of Precipitation'
+
+    cdd:
+      long_name: cdd
+      levels: [0]
+      layers: [cdd]
+      title: 'Consectutive Dry Days [days]'
+
+    cwd:
+      long_name: cwd
+      levels: [0]
+      layers: [cwd]
+      title: 'Consectutive Wet Days [days]'
+
+    rx5dhighest:
+      long_name: rx5day highest period
+      levels: [0]
+      layers: [rx5dayhighest]
+      title: 'Maximum 5 Day Precipitation [mm/5 days]'
+    
+    rx5dnumber:
+      long_name: Number of 5 day heavy rainfall
+      levels: [0]
+      layers: [rx5daynumber] 
+      title: 'Number of 5 Day Periods with Heavy Rainfall'
+
+    pcntl_prec:
+      long_name: Precip PCNTL
+      levels: [0]
+      layers: [gridfill]
+      header: 'Total Precipitation Percentiles'
+      subheader: 'Data: MERRA2 bias corrected total monthly precipitation. Period: 1980-2016'
+      gridfill:
+        cbar: Basic
+        cbunits: '%'
+        expr: percent.M2PERCMON.tavgM_2d_flx_Nx(z=1,t=1)
+        clevs: 0 10 20 30 40 50 60 70 80 90 100
+        nsub: 2
+        skip: 2
+
+    pcntl_t2m:
+      long_name: T2M PCNTL
+      levels: [0]
+      layers: [gridfill]
+      header: '2-Meter Temperature Percentiles'
+      subheader: 'Modern-Era Retrospective Analysis (MERRA-2)'
+      main: 'Period: 1980-2016'
+      gridfill:
+        cbar: Basic_r
+        cbunits: '%'
+        expr: percent.M2PERCMONT2M.tavgM_2d_slv_Nx(z=1,t=1)
+        clevs: 0 10 20 30 40 50 60 70 80 90 100
+        nsub: 2
+        skip: 2
+
+    pcntl_w10m:
+      long_name: W10M PCNTL
+      levels: [0]
+      layers: [gridfill]
+      header: '10-Meter Wind Speed Percentiles'
+      subheader: 'Modern-Era Retrospective Analysis (MERRA-2)'
+      main: 'Period: 1980-2016'
+      gridfill:
+        cbar: Basic_r
+        cbunits: '%'
+        expr: percent.M2PERCMONW10M.tavgM_2d_slv_Nx(z=1,t=1)
+        clevs: 0 10 20 30 40 50 60 70 80 90 100
+        nsub: 2
+        skip: 2
+
+    drydays:
+      long_name: Dry Days
+      levels: [0]
+      layers: [gridfill]
+      header: 'Number of Extreme Dry Days'
+      subheader: 'Days with rainfall less than or equal to 0.1 mm/hr'
+      main: 'Data: MERRA2 bias corrected total monthly precipitation'
+      gridfill:
+        cbar: Basic_r
+        cbunits: Days
+        expr: nZero.M2PERCDLY.tavgM_2d_flx_Nx(z=1,t=1)
+        clevs:
+        cmin: 0
+        cmax: 30
+        cint: 3
+        nsub: 2
+        skip: 2
+
+  layer:
+
+    gridfill:
+      gxout: grfill
+      cbar: Rainbow
+      nsub: 4
+      skip: 4
+      type: linear
+
+    tn10p:
+      gxout: shaded
+      expr: tn10p
+      cbar: parula
+      clevs:
+      cmin: 0
+      cmax: 70
+      cint: 10
+      nsub: 10
+      skip: 10
+      cbunits: '%'
+
+    tn90p:
+      gxout: shaded
+      expr: tn90p
+      cbar: parula
+      clevs:
+      cmin: 0
+      cmax: 70
+      cint: 10
+      nsub: 10
+      skip: 10
+      cbunits: '%'
+
+    dtr:
+      gxout: shaded
+      expr: dtr
+      cbar: parula
+      clevs:
+      cmin: 0
+      cmax: 18
+      cint: 1
+      nsub: 10
+      skip: 10
+      cbunits: 'K'
+
+    tx10p:
+      gxout: shaded
+      expr: tx10p
+      cbar: parula
+      clevs:
+      cmin: 0
+      cmax: 70
+      cint: 10
+      nsub: 10
+      skip: 10
+      cbunits: '%'
+
+    tx90p:
+      gxout: shaded
+      expr: tx90p
+      cbar: DustAOT
+      clevs:
+      cmin: 0
+      cmax: 90
+      cint: 10
+      nsub: 10
+      skip: 10
+      cbunits: '%'
+
+    r90p:
+      gxout: shaded
+      expr: r90p
+      cbar: Precip
+      clevs:
+      cmin: 0
+      cmax: 200
+      cint: 10
+      nsub: 10
+      skip: 10
+      cbunits: 'mm day`a-1`n'
+
+    r95p:
+      gxout: shaded
+      expr: r95p
+      cbar: Precip
+      clevs:
+      cmin: 0
+      cmax: 200
+      cint: 10
+      nsub: 10
+      skip: 10
+      cbunits: 'mm day`a-1`n'
+
+    r99p:
+      gxout: shaded
+      expr: r99p
+      cbar: Precip
+      clevs:
+      cmin: 0
+      cmax: 200
+      cint: 10
+      nsub: 10
+      skip: 10
+      cbunits: 'mm day`a-1`n'
+
+    r90d:
+      gxout: shaded
+      expr: r90d
+      cbar: parula
+      clevs:
+      cmin: 0
+      cmax: 12
+      cint: 1
+      nsub: 10
+      skip: 10
+      cbunits: 'days'
+
+    r95d:
+      gxout: shaded
+      expr: r95d
+      cbar: parula
+      clevs:
+      cmin: 0
+      cmax: 12
+      cint: 1
+      nsub: 10
+      skip: 10
+      cbunits: 'days'
+
+    r99d:
+      gxout: shaded
+      expr: r99d
+      cbar: parula
+      clevs:
+      cmin: 0
+      cmax: 6
+      cint: 1
+      nsub: 10
+      skip: 10
+      cbunits: 'days'
+
+    cdd:
+      gxout: shaded
+      expr: cdd
+      cbar: parula
+      clevs:
+      cmin: 0
+      cmax: 31
+      cint: 2
+      nsub: 10
+      skip: 10
+      cbunits: 'days'
+
+    cwd:
+      gxout: shaded
+      expr: cwd
+      cbar: parula
+      clevs:
+      cmin: 0
+      cmax: 31
+      cint: 2
+      nsub: 10
+      skip: 10
+      cbunits: 'days'
+
+    rx5daynumber:
+      gxout: shaded
+      expr: number.RX5Day.none
+      cbar: parula
+      clevs:
+      cmin: 0
+      cmax: 20
+      cint: 2
+      nsub: 10
+      skip: 10
+      cbunits: 'Days'
+
+    rx5dayhighest:
+      gxout: shaded
+      expr: highest.RX5Day.none
+      cbar: Precip
+      clevs:
+      cmin: 0
+      cmax: 300
+      cint: 30
+      nsub: 10
+      skip: 10
+      cbunits: 'mm per 5 days'

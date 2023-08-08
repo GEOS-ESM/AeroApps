@@ -1,0 +1,138 @@
+reset: [region]
+
+region:
+
+  nam:
+
+    long_name: North America
+    lon: 0 360
+    lat: 0 90
+    mpdset: mres
+    mproj: nps
+    mpvals: 210 300 25 71
+
+  sam:
+
+    long_name: South America
+    lon: 260 330
+    lat: -60 15
+    mpdset: mres
+    mproj: latlon
+    mpvals:
+
+  carib:
+
+    long_name: Caribbean
+    lon: 270 300
+    lat: 7 27
+    mpdset: hires
+    mproj: latlon
+    mpvals:
+
+  africa:
+
+    long_name: Africa
+    lon: -20 52
+    lat: -40 38
+    mpdset: mres
+    mproj: latlon
+    mpvals:
+
+  europe:
+
+    long_name: Europe
+    lon: -180 180
+    lat: 5 90
+    mpdset: mres
+    mproj: nps
+    mpvals: -28 36 29 75
+
+  eastasia:
+
+    long_name: East Asia
+    lon: 70 148
+    lat: 16 53
+    mpdset: hires
+    mproj: latlon
+    mpvals:
+
+  mideast:
+
+    long_name: Middle East
+    lon: 24 68
+    lat: 10 42
+    mpdset: hires
+    mproj: latlon
+    mpvals:
+
+  indonesia:
+
+    long_name: Indonesia
+    lon: 94 142
+    lat: -11 6
+    mpdset: hires
+    mproj: latlon
+    mpvals:
+
+  global: &GLOBAL
+
+    long_name: Global
+    lon: -180 180
+    lat: -90 90
+    mpdset: mres
+    mproj: latlon
+    mpvals:
+    layers: [standard]
+    barbs: 'off'
+    streamlines: 'off'
+    thick_above: 'off'
+    thick_below: 'off'
+    masks: []
+
+
+  global_land:
+
+    <<: *GLOBAL
+    long_name: Global Land
+    masks: [water_mask]
+
+  global_ocean:
+
+    <<: *GLOBAL
+    long_name: Global Ocean
+    masks: [land_mask]
+
+  pacific:
+  
+    long_name: Pacific
+    lon: 107 290
+    lat: -60 72
+    mpdset: mres
+    mproj: latlon
+    masks: [land_mask]
+
+  atlantic:
+
+    long_name: Atlantic
+    lon: -97 36
+    lat: -60 60
+    mpdset: mres
+    mproj: latlon
+    masks: [land_mask]
+
+  indian:
+
+    long_name: Indian Ocean
+    lon: 26 144
+    lat: -60 28
+    mpdset: mres
+    mproj: latlon
+    masks: [land_mask]
+  
+  australia:
+  
+    long_name: Australia
+    lon: 100 180
+    lat: -50 -10
+    mpdset: hires
+    mproj: latlon

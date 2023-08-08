@@ -1,0 +1,8 @@
+theme: [wxmapschem2d]
+config: [chem2d_public]
+streams: [G5FPFC]
+
+default:
+  field: duaot
+  region: atlantic
+  level: '0'

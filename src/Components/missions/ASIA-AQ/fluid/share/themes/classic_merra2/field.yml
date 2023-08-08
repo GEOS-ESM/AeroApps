@@ -1,0 +1,148 @@
+field:
+
+  MERRA2:
+
+    _t2m:
+      long_name: 2m Air Temperature
+      units: K
+      expression: t2m.tavg1_2d_slv_Nx(z=1)
+
+    _u10m:
+      long_name: 10-Meter Eastward Wind
+      units: m s-1
+      expression: u10m.tavg1_2d_slv_Nx(z=1)
+
+    _v10m:
+      long_name: 10-Meter Northward Wind
+      units: m s-1
+      expression: v10m.tavg1_2d_slv_Nx(z=1)
+
+    _w10m:
+      long_name: 10-Meter Wind Speed
+      units: m s-1
+      expression: mag(_u10m, _v10m)
+
+    _ql:
+      long_name: Mass Fraction of Cloud Liquid Water
+      units: kg kg-1
+      expression: ql.inst3_3d_asm_Np
+
+    _qi:
+      long_name: Mass Fraction of Cloud Ice Water
+      units: kg kg-1
+      expression: qi.inst3_3d_asm_Np
+
+    _slp:
+      long_name: Sea Level Pressure
+      units: mb
+      expression: slp.inst1_2d_asm_Nx
+
+    _slptend3:
+      long_name: 3Hr Pressure Tendency at Sea Level
+      units: mb
+      expression: (_slp - _slp(td=-3))
+
+    _slptend6:
+      long_name: 6Hr Pressure Tendency at Sea Level
+      units: mb
+      expression: (_slp - _slp(td=-6))
+
+    _tql:
+      long_name: Total Precipitable Liquid Water
+      units: kg m-2
+      expression: tql.tavg1_2d_slv_Nx(td=-1)
+
+    _tqv:
+      long_name: Total Precipitable Water Vapor
+      units: kg m-2
+      expression: tqv.tavg1_2d_slv_Nx(td=-1)
+
+    _tqi:
+      long_name: Total Precipitable Ice Water
+      units: kg m-2
+      expression: tqi.tavg1_2d_slv_Nx(td=-1)
+
+    _lwgem:
+      long_name: Longwave Flux Emitted From Surface
+      units: W m-2
+      expression: lwgem.tavg1_2d_rad_Nx(td=-1)
+
+    _lwgab:
+      long_name: Surface Absorbed Longwave Radiation
+      units: W m-2
+      expression: lwgab.tavg1_2d_rad_Nx(td=-1)
+
+    _lwgnt:
+      long_name: Surface Net Downward Longwave Flux
+      units: W m-2
+      expression: lwgnt.tavg1_2d_rad_Nx(td=-1)
+
+    _lwtup:
+      long_name: Upwelling Longwave Flux at TOA
+      units: W m-2
+      expression: lwtup.tavg1_2d_rad_Nx(td=-1)
+
+    _prectot:
+      long_name: Total Precipitation
+      units: kg m-2 s-1
+      expression: prectot.tavg1_2d_flx_Nx(z=1)
+
+    _prectot3:
+      long_name: Total Precipitation
+      units: kg m-2 s-1
+      expression: (_prectot(td=-1) + _prectot(td=-2) + _prectot(td=-3))*60*60
+
+    _precsno:
+      long_name: Snowfall
+      units: kg m-2 s-1
+      expression: precsno.tavg1_2d_flx_Nx(z=1)
+
+    _precsno3:
+      long_name: Snowfall
+      units: kg m-2 s-1
+      expression: (_precsno(td=-1) + _precsno(td=-2) + _precsno(td=-3))*60*60
+
+    _phis:
+      long_name: Surface Geopotential Height
+      units: m2 s-2
+      expression: phis.inst3_3d_asm_Np
+
+    _hght:
+      long_name: Heights
+      units: m
+      expression: h.inst3_3d_asm_Np
+
+    _tmpu:
+      long_name: Temperature
+      units: K
+      expression: t.inst3_3d_asm_Np
+
+    _thick:
+      long_name: 500mb Thickness
+      units: m
+      expression: (h500.tavg1_2d_slv_Nx(td=-1) - h1000.tavg1_2d_slv_Nx(td=-1))
+
+    _uwnd:
+      long_name: East-West Wind
+      units: m s-1
+      expression: u.inst3_3d_asm_Np
+
+    _vwnd:
+      long_name: North-South Wind
+      units: m s-1
+      expression: v.inst3_3d_asm_Np
+
+    _omega:
+      long_name: Vertical Pressure Velocity
+      units: Pa/sec
+      expression: omega.inst3_3d_asm_Np
+
+    _rh:
+      long_name: Relative Humidity
+      units: percent
+      expression: rh.inst3_3d_asm_Np * 100
+
+    _epv:
+      long_name: Ertels Potential Vorticity
+      units: m s-1
+      expression: epv.inst3_3d_asm_Np

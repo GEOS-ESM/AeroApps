@@ -1,0 +1,60 @@
+# ACEPOL: Aerosol Characterization from Polarimeter and Lidar
+
+region:
+
+  acepol:
+
+    long_name: ACEPOL
+    lon: -135 -100
+#   lat: 27.5 50
+    lat: 25.0 55
+    mpdset: hires
+    mproj: latlon
+    layers: [standard]
+    station_mark:
+#     AERONET:
+#       data: [-119.8 36.8, -121.0 37.6, -119.0 35.3, -121.8 36.6, -119.8 34.4, -118.1 33.6, -118.5 34.0, -118.1 34.1, -111.6 35.2, -116.0 38.5, -119.8 39.5]
+#       line_color: 0 255 0
+#       fill_color: 255 255 255 0
+#       inner_size: 0.15
+#       outer_size: 0.15
+#     OTHER:
+#       data: [-119.1 34.1, -121.9 36.8, -120.0 39.1, -119.2 33.6, -116.0 38.5, -118.1 34.9, -118.1 34.6, -117.9 35.0]
+#       line_color: 255 0 0
+#       fill_color: 255 255 255 0
+#       inner_size: 0.15
+#       outer_size: 0.15
+      SELECT:
+        data: [-119.8 36.8, -111.6 35.2, -116.0 38.5, -120.0 39.1, -118.1 34.9]
+        line_color: 255 0 0
+        fill_color: 255 255 255
+        inner_size: 0.1
+        outer_size: 0.1
+
+wxmapsclassicpub:
+
+  attribute:
+  
+    resolution:
+      acepol: 0.25
+  
+wxmapschem2d:
+
+  attribute:
+  
+    duaotclevs:
+      acepol: .005 0.006 0.007 0.008 0.009 0.01 0.011 0.012 0.013 0.014 0.015 0.016 0.017 0.018 0.019 0.02 0.021 0.022 0.023 0.024 0.025 0.026 0.027 0.028 0.029 0.03 0.031 0.032 0.033 0.034 0.035 0.036 0.037 0.038 0.039 0.04 0.041 0.042 0.044 0.045 0.046 0.048 0.049 0.05 0.051 0.052 0.053 0.054 0.055
+  
+    ocaotclevs:
+      acepol: .04 .07 .1 .17 .26 .4 .6 .9 1.5 2 3 4
+  
+    bcaotclevs:
+      acepol: .002 .004 .006 .008 .0100 .012 .014 .016 .018 .020 .022 .024
+  
+    so4aotclevs: &so4levs
+      acepol: .02 .03 .04 0.05 .06 .07 .08 .09 0.1 .15 .2 .25
+  
+    niaotclevs: *so4levs
+  
+    cobbaeclevs:
+      acepol: .005 .006 .007 .008 .01 0.02 0.03 0.04 0.05 0.1  0.25 0.5 1 1.5

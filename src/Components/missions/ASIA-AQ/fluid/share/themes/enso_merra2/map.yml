@@ -1,0 +1,13 @@
+map:
+
+  default:
+    ocean_color:
+    lake_color:
+    line_color: 0 0 0
+    land_color: 255 255 255
+    water_color: 255 255 255
+    line_width: 3
+    line_style: 1
+    layers: [standard, Canada_Province]
+    masks: [water_mask]
+

@@ -1,0 +1,393 @@
+field:
+
+  MERRA2:
+
+    _t2m:
+      long_name: 2m Air Temperature
+      units: K
+      expression: t2m.tavg1_2d_slv_Nx(z=1)
+
+    _u10m:
+      long_name: 10-Meter Eastward Wind
+      units: m s-1
+      expression: u10m.inst1_2d_asm_Nx(z=1)
+
+    _v10m:
+      long_name: 10-Meter Northward Wind
+      units: m s-1
+      expression: v10m.inst1_2d_asm_Nx(z=1)
+
+    _w10m:
+      long_name: 10-Meter Wind Speed
+      units: m s-1
+      expression: mag(_u10m, _v10m)
+
+    _u50m:
+      long_name: 50-Meter Eastward Wind
+      units: m s-1
+      expression: u50m.inst1_2d_asm_Nx(z=1)
+
+    _v50m:
+      long_name: 50-Meter Northward Wind
+      units: m s-1
+      expression: v50m.inst1_2d_asm_Nx(z=1)
+
+    _w50m:
+      long_name: 50-Meter Wind Speed
+      units: m s-1
+      expression: mag(_u50m, _v50m)
+
+    _ql:
+      long_name: Mass Fraction of Cloud Liquid Water
+      units: kg kg-1
+      expression: ql.inst3_3d_asm_Np
+
+    _qi:
+      long_name: Mass Fraction of Cloud Ice Water
+      units: kg kg-1
+      expression: qi.inst3_3d_asm_Np
+
+    _slp:
+      long_name: Sea Level Pressure
+      units: mb
+      expression: slp.inst1_2d_asm_Nx
+
+    _slptend3:
+      long_name: 3Hr Pressure Tendency at Sea Level
+      units: mb
+      expression: (_slp - _slp(td=-3))
+
+    _slptend6:
+      long_name: 6Hr Pressure Tendency at Sea Level
+      units: mb
+      expression: (_slp - _slp(td=-6))
+
+    _tql:
+      long_name: Total Precipitable Liquid Water
+      units: kg m-2
+      expression: tql.tavg1_2d_slv_Nx(td=-1)
+
+    _tqv:
+      long_name: Total Precipitable Water Vapor
+      units: kg m-2
+      expression: tqv.tavg1_2d_slv_Nx(td=-1)
+
+    _tqi:
+      long_name: Total Precipitable Ice Water
+      units: kg m-2
+      expression: tqi.tavg1_2d_slv_Nx(td=-1)
+
+    _lwgem:
+      long_name: Longwave Flux Emitted From Surface
+      units: W m-2
+      expression: lwgem.tavg1_2d_rad_Nx(td=-1)
+
+    _lwgab:
+      long_name: Surface Absorbed Longwave Radiation
+      units: W m-2
+      expression: lwgab.tavg1_2d_rad_Nx(td=-1)
+
+    _swgnt:
+      long_name: Surface Net Downward Shortwave Flux
+      units: W m-2
+      expression: swgnt.tavg1_2d_rad_Nx(td=-1)
+
+    _lwgnt:
+      long_name: Surface Net Downward Longwave Flux
+      units: W m-2
+      expression: lwgnt.tavg1_2d_rad_Nx(td=-1)
+
+    _lwtup:
+      long_name: Upwelling Longwave Flux at TOA
+      units: W m-2
+      expression: lwtup.tavg1_2d_rad_Nx(td=-1)
+
+    _prectot:
+      long_name: Total Precipitation
+      units: kg m-2 s-1
+      expression: prectot.tavg1_2d_flx_Nx(z=1)
+
+    _prectot3:
+      long_name: Total Precipitation
+      units: kg m-2 s-1
+      expression: (_prectot(td=-1) + _prectot(td=-2) + _prectot(td=-3))*60*60
+
+    _preccon:
+      long_name: Convetive Precipitation
+      units: kg m-2 s-1
+      expression: preccon.tavg1_2d_flx_Nx(z=1)
+
+    _precsno:
+      long_name: Snowfall
+      units: kg m-2 s-1
+      expression: precsno.tavg1_2d_flx_Nx(z=1)
+
+    _precsno3:
+      long_name: Snowfall
+      units: kg m-2 s-1
+      expression: (_precsno(td=-1) + _precsno(td=-2) + _precsno(td=-3))*60*60
+
+    _aprcp06:
+      long_name: 6-Hour Accumulated Precipitation
+      units: mm
+      expression: sum(prectot.tavg1_2d_flx_Nx,td=-6,td=-1)*60*60
+
+    _aprcp24:
+      long_name: 24-Hour Accumulated Precipitation
+      units: mm
+      expression: sum(prectot.tavg1_2d_flx_Nx,td=-24,td=-1)*60*60
+
+    _aprcp48:
+      long_name: 48-Hour Accumulated Precipitation
+      units: mm
+      expression: sum(prectot.tavg1_2d_flx_Nx,td=-48,td=-1)*60*60
+
+    _phis:
+      long_name: Surface Geopotential Height
+      units: m2 s-2
+      expression: phis.inst3_3d_asm_Np
+
+    _hght:
+      long_name: Heights
+      units: m
+      expression: h.inst3_3d_asm_Np
+
+    _tmpu:
+      long_name: Temperature
+      units: K
+      expression: t.inst3_3d_asm_Np
+
+    _thick:
+      long_name: 500mb Thickness
+      units: m
+      expression: (h500.tavg1_2d_slv_Nx(td=-1) - h1000.tavg1_2d_slv_Nx(td=-1))
+
+    _uwnd:
+      long_name: East-West Wind
+      units: m s-1
+      expression: u.inst3_3d_asm_Np
+
+    _vwnd:
+      long_name: North-South Wind
+      units: m s-1
+      expression: v.inst3_3d_asm_Np
+
+    _omega:
+      long_name: Vertical Pressure Velocity
+      units: Pa/sec
+      expression: omega.inst3_3d_asm_Np
+
+    _rh:
+      long_name: Relative Humidity
+      units: percent
+      expression: rh.inst3_3d_asm_Np * 100
+
+    _epv:
+      long_name: Ertels Potential Vorticity
+      units: m s-1
+      expression: epv.inst3_3d_asm_Np
+
+    _uflxqv:
+      long_name: Eastward Flux of Atmospheric Water Vapor
+      units: kg m-1 s-1
+      expression: uflxqv.tavg1_2d_int_Nx(td=-1)
+
+    _vflxqv:
+      long_name: Northward Flux of Atmospheric Water Vapor
+      units: kg m-1 s-1
+      expression: vflxqv.tavg1_2d_int_Nx(td=-1)
+
+    _cldlow:
+      long_name: Low Cloud Fraction
+      units: 1
+      expression: cldlow.tavg1_2d_rad_Nx(z=1)
+
+    _cldmid:
+      long_name: Mid Cloud Fraction
+      units: 1
+      expression: cldmid.tavg1_2d_rad_Nx(z=1)
+
+    _cldhgh:
+      long_name: High Cloud Fraction
+      units: 1
+      expression: cldhgh.tavg1_2d_rad_Nx(z=1)
+
+    _cldtot:
+      long_name: Total Cloud Fraction
+      units: 1
+      expression: cldtot.tavg1_2d_rad_Nx(z=1)
+
+    _cloud:
+      long_name: Cloud Fraction
+      units: 1
+      expression: cloud.tavg3_3d_rad_Np
+
+    _taulow10:
+      long_name: In-Cloud Optical Thickness of Low Clouds Where Coverage > 10%
+      units: 1
+      expression: maskout(taulow.tavg1_2d_rad_Nx,cldlow.tavg1_2d_rad_Nx-0.1)
+
+    _taumid10:
+      long_name: In-Cloud Optical Thickness of Mid Clouds Where Coverage > 10%
+      units: 1
+      expression: maskout(taumid.tavg1_2d_rad_Nx,cldmid.tavg1_2d_rad_Nx-0.1)
+
+    _tauhgh10:
+      long_name: In-Cloud Optical Thickness of High Clouds Where Coverage > 10%
+      units: 1
+      expression: maskout(tauhgh.tavg1_2d_rad_Nx,cldhgh.tavg1_2d_rad_Nx-0.1)
+
+    _troppb:
+      long_name: Tropopause Pressure Based on Blended Estimate
+      units: Pa
+      expression: troppb.tavg1_2d_slv_Nx(z=1)
+
+    _dufluxu:
+      long_name: Dust Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: dufluxu.tavg1_2d_aer_Nx
+
+    _dufluxv:
+      long_name: Dust Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: dufluxv.tavg1_2d_aer_Nx
+
+    _ducmass:
+      long_name: Dust Column Mass Density
+      units: kg m-2
+      expression: ducmass.tavg1_2d_aer_Nx
+
+    _ssfluxu:
+      long_name: Sea Salt Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ssfluxu.tavg1_2d_aer_Nx
+
+    _ssfluxv:
+      long_name: Sea Salt Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ssfluxv.tavg1_2d_aer_Nx
+
+    _sscmass:
+      long_name: Sea Salt Column Mass Density
+      units: kg m-2
+      expression: sscmass.tavg1_2d_aer_Nx
+
+    _ocfluxu:
+      long_name: Organic Carbon Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ocfluxu.tavg1_2d_aer_Nx
+
+    _ocfluxv:
+      long_name: Organic Carbon Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ocfluxv.tavg1_2d_aer_Nx
+
+    _occmass:
+      long_name: Organic Carbon Column Mass Density
+      units: kg m-2
+      expression: occmass.tavg1_2d_aer_Nx
+
+    _bcfluxu:
+      long_name: Black Carbon Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: bcfluxu.tavg1_2d_aer_Nx
+
+    _bcfluxv:
+      long_name: Black Carbon Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: bcfluxv.tavg1_2d_aer_Nx
+
+    _bccmass:
+      long_name: Black Carbon Column Mass Density
+      units: kg m-2
+      expression: bccmass.tavg1_2d_aer_Nx
+
+    _sufluxu:
+      long_name: SO4 Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: sufluxu.tavg1_2d_aer_Nx
+
+    _sufluxv:
+      long_name: SO4 Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: sufluxv.tavg1_2d_aer_Nx
+
+    _so4:
+      long_name: Sulphate Mixing Ratio
+      units: kg kg-1
+      expression: so4.inst3_3d_aer_Nv
+
+    _so4cmass:
+      long_name: SO4 Column Mass Density
+      units: kg m-2
+      expression: so4cmass.tavg1_2d_aer_Nx
+
+    _duexttau:
+      long_name: Dust Extinction AOT [550 nm]
+      units: '1'
+      expression: duexttau.tavg1_2d_aer_Nx
+
+    _suexttau:
+      long_name: SO4 Extinction AOT [550 nm]
+      units: '1'
+      expression: suexttau.tavg1_2d_aer_Nx
+
+    _ssexttau:
+      long_name: Sea Salt Extinction AOT [550 nm]
+      units: '1'
+      expression: ssexttau.tavg1_2d_aer_Nx
+
+    _ocexttau:
+      long_name: Organic Carbon Extinction AOT [550 nm]
+      units: '1'
+      expression: ocexttau.tavg1_2d_aer_Nx
+
+    _bcexttau:
+      long_name: Black Carbon Extinction AOT [550 nm]
+      units: '1'
+      expression: bcexttau.tavg1_2d_aer_Nx
+
+    _fineaot:
+      long_name: Fine Aerosol Optical Thickness
+      units: '1'
+      expression: _suexttau + _ocexttau + _bcexttau
+
+    _pblh:
+      long_name: Planetary Boundary Layer Height
+      units: 'm'
+      expression: pblh.tavg1_2d_flx_Nx(z=1)
+
+    _to3:
+      long_name: Total Column Ozone
+      units: Dobson
+      expression: to3.inst1_2d_asm_Nx
+
+    _so2cmass:
+      long_name: SO2 Column Mass Density
+      units: kg m-2
+      expression: so2cmass.tavg1_2d_aer_Nx
+
+    _so2smass:
+      long_name: SO2 Surface Mass Concentration
+      units: kg m-3
+      expression: so2smass.tavg1_2d_aer_Nx
+
+    _ocsmass:
+      long_name: Organic Carbon Surface Mass Concentration
+      units: kg m-3
+      expression: ocsmass.tavg1_2d_aer_Nx
+
+    _bcsmass:
+      long_name: Black Carbon Surface Mass Concentration
+      units: kg m-3
+      expression: bcsmass.tavg1_2d_aer_Nx
+
+    _cocl:
+      long_name: CO Column Burden
+      units: kg m-2
+      expression: cocl.tavg1_2d_chm_Nx
+
+    _cosc:
+      long_name: CO Surface Concentration in ppbv
+      units: 1e-9
+      expression: cosc.tavg1_2d_chm_Nx

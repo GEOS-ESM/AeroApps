@@ -1,0 +1,17 @@
+shape:
+
+  default:
+    line_color: 255 0 0
+    line_width: 5
+    line_style: 1
+
+  flight_path:
+    line_color: 255 0 0
+    line_width: 7
+    line_style: 1
+
+  station_mark:
+    line_color: 255 0 0
+    fill_color: 255 255 255
+    line_width: 5
+    line_style: 1

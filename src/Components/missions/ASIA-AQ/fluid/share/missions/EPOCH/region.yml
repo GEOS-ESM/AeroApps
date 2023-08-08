@@ -1,0 +1,13 @@
+
+# East Pacific Origins and Characteristics of Hurricanes - EPOCH
+
+region:
+
+  epoch:
+
+    long_name: EPOCH
+    lon: -150 -73
+    lat: 0 38
+    mpdset: hires
+    mproj: latlon
+    layers: [standard]

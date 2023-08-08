@@ -1,0 +1,38 @@
+
+annotate:
+
+  tm_valid: '%a %Hz %Y-%m-%d'
+  tm_verif: '%A %d %B %Y %HUTC'
+  tm_start: '%Hz %m/%d/%Y'
+  tm_string: '$tau hr forecast valid $tm_valid'
+
+  header:
+#   string: 'NASA/GMAO - GEOS Forecast Initialized on $tm_start'
+    string: '$model Forecast Initialized on $tm_start'
+    color: 1
+    size: 0.125
+    position: 'c'
+    margin: 0.15
+    font: variable
+  subheader:
+    string: ''
+  main:
+    string: $title
+    color: 1
+    size: 0.2 0.2
+    position: 'c'
+    margin: 0.1
+    font: regular
+  xlabel:
+    string: $tm_string
+    color: 1
+    size: 0.16 0.17
+    position: 'c'
+    margin: 0.4
+    font: fixed
+  label:
+    color: 1
+    size: 0.5 0.5
+    position: 'c'
+    margin: 0.15
+    font: regular

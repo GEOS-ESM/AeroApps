@@ -1,0 +1,7 @@
+reset: [region, playlist]
+config: [FIREX-AQ, FX_UIOWAWRFchem]
+
+default:
+  field: aod
+  region: fx-central
+  level: '0'

@@ -1,0 +1,83 @@
+  - 210.1 61.2 Anchorage https://fluid.nccs.nasa.gov/gram/static/plots/total_61.2_210.1.png
+  - 275.6 33.7 Atlanta https://fluid.nccs.nasa.gov/gram/static/plots/total_33.7_275.6.png
+  - 283.1 39.1 Beltsville https://fluid.nccs.nasa.gov/gram/static/plots/total_39.1_283.1.png
+  - 259.2 46.8 Bismarck https://fluid.nccs.nasa.gov/gram/static/plots/total_46.8_259.2.png
+  - 243.8 43.6 Boise https://fluid.nccs.nasa.gov/gram/static/plots/total_43.6_243.8.png
+  - 289.0 42.3 Boston https://fluid.nccs.nasa.gov/gram/static/plots/total_42.3_289.0.png
+  - 281.2 42.9 Buffalo https://fluid.nccs.nasa.gov/gram/static/plots/total_42.9_281.2.png
+  - 264.6 30.3 Conroe https://fluid.nccs.nasa.gov/gram/static/plots/total_30.3_264.6.png
+  - 272.4 41.9 Chicago https://fluid.nccs.nasa.gov/gram/static/plots/total_41.9_272.4.png
+  - 275.5 39.1 Cincinnati https://fluid.nccs.nasa.gov/gram/static/plots/total_39.1_275.5.png
+  - 278.3 41.5 Cleveland https://fluid.nccs.nasa.gov/gram/static/plots/total_41.5_278.3.png
+  - 263.2 32.7 Dallas https://fluid.nccs.nasa.gov/gram/static/plots/total_32.7_263.2.png
+  - 255.0 39.7 Denver https://fluid.nccs.nasa.gov/gram/static/plots/total_39.7_255.0.png
+  - 277.0 42.3 Detroit https://fluid.nccs.nasa.gov/gram/static/plots/total_42.3_277.0.png
+  - 212.3 64.8 Fairbanks https://fluid.nccs.nasa.gov/gram/static/plots/total_64.8_212.3.png
+  - 284.1 39.7 Fairhill https://fluid.nccs.nasa.gov/gram/static/plots/total_39.7_284.1.png
+  - 263.2 46.9 Fargo https://fluid.nccs.nasa.gov/gram/static/plots/total_46.9_263.2.png
+  - 287.3 41.7 Hartford https://fluid.nccs.nasa.gov/gram/static/plots/total_41.7_287.3.png
+  - 202.2 21.3 Honolulu https://fluid.nccs.nasa.gov/gram/static/plots/total_21.3_202.2.png
+  - 264.6 29.7 Houston https://fluid.nccs.nasa.gov/gram/static/plots/total_29.7_264.6.png
+  - 273.9 39.7 Indianapolis https://fluid.nccs.nasa.gov/gram/static/plots/total_39.7_273.9.png
+  - 278.3 30.3 Jacksonville https://fluid.nccs.nasa.gov/gram/static/plots/total_30.3_278.3.png
+  - 265.4 39.1 Kansas City https://fluid.nccs.nasa.gov/gram/static/plots/total_39.1_265.4.png
+  - 244.9 36.2 Las Vegas https://fluid.nccs.nasa.gov/gram/static/plots/total_36.2_244.9.png
+  - 267.7 34.7 Little Rock https://fluid.nccs.nasa.gov/gram/static/plots/total_34.7_267.7.png
+  - 274.3 38.2 Louisville https://fluid.nccs.nasa.gov/gram/static/plots/total_38.2_274.3.png
+  - 241.8 34.0 Los Angeles https://fluid.nccs.nasa.gov/gram/static/plots/total_34.0_241.8.png
+  - 270.0 35.1 Memphis https://fluid.nccs.nasa.gov/gram/static/plots/total_35.1_270.0.png
+  - 279.8 25.8 Miami https://fluid.nccs.nasa.gov/gram/static/plots/total_25.8_279.8.png
+  - 272.0 43.0 Milwaukee https://fluid.nccs.nasa.gov/gram/static/plots/total_43.0_272.0.png
+  - 266.8 45.0 Minneapolis https://fluid.nccs.nasa.gov/gram/static/plots/total_45.0_266.8.png
+  - 273.2 36.2 Nashville https://fluid.nccs.nasa.gov/gram/static/plots/total_36.2_273.2.png
+  - 269.9 30.0 New Orleans https://fluid.nccs.nasa.gov/gram/static/plots/total_30.0_269.9.png
+  - 286.0 40.3 New York https://fluid.nccs.nasa.gov/gram/static/plots/total_40.3_286.0.png
+  - 262.5 35.5 Oklahoma City https://fluid.nccs.nasa.gov/gram/static/plots/total_35.5_262.5.png
+  - 264.0 41.2 Omaha https://fluid.nccs.nasa.gov/gram/static/plots/total_41.2_264.0.png
+  - 278.7 28.5 Orlando https://fluid.nccs.nasa.gov/gram/static/plots/total_28.5_278.7.png
+  - 284.8 40.0 Philadelphia https://fluid.nccs.nasa.gov/gram/static/plots/total_40.0_284.8.png
+  - 248.0 33.5 Phoenix https://fluid.nccs.nasa.gov/gram/static/plots/total_33.5_248.0.png
+  - 280.0 40.5 Pittsburgh https://fluid.nccs.nasa.gov/gram/static/plots/total_40.5_280.0.png
+  - 237.3 45.5 Portland.OR https://fluid.nccs.nasa.gov/gram/static/plots/total_45.5_237.3.png
+  - 281.4 35.8 Raleigh https://fluid.nccs.nasa.gov/gram/static/plots/total_35.8_281.4.png
+  - 282.5 37.5 Richmond https://fluid.nccs.nasa.gov/gram/static/plots/total_37.5_282.5.png
+  - 248.1 40.7 Salt Lake City https://fluid.nccs.nasa.gov/gram/static/plots/total_40.7_248.1.png
+  - 242.8 32.7 San Diego https://fluid.nccs.nasa.gov/gram/static/plots/total_32.7_242.8.png
+  - 237.6 37.7 San Francisco https://fluid.nccs.nasa.gov/gram/static/plots/total_37.7_237.6.png
+  - 119.3 35.3 San Joaquin Valley https://fluid.nccs.nasa.gov/gram/static/plots/total_35.3_119.3.png
+  - 293.8 18.5 San Juan.PR https://fluid.nccs.nasa.gov/gram/static/plots/total_18.5_293.8.png
+  - 237.7 47.6 Seattle https://fluid.nccs.nasa.gov/gram/static/plots/total_47.6_237.7.png
+  - 265.2 29.5 Smith Point https://fluid.nccs.nasa.gov/gram/static/plots/total_29.5_265.2.png
+  - 242.5 47.6 Spokane https://fluid.nccs.nasa.gov/gram/static/plots/total_47.6_242.5.png
+  - 277.5 28.0 Tampa https://fluid.nccs.nasa.gov/gram/static/plots/total_28.0_277.5.png
+  - 283.0 38.9 Washington DC https://fluid.nccs.nasa.gov/gram/static/plots/total_38.9_283.0.png
+  - 262.8 37.6 Wichita https://fluid.nccs.nasa.gov/gram/static/plots/total_37.6_262.8.png
+  - 242.1 34.9 Armstrong FRC https://fluid.nccs.nasa.gov/gram/static/plots/total_34.9_242.1.png
+  - 283.8 39.6 Aldino https://fluid.nccs.nasa.gov/gram/static/plots/total_39.6_283.8.png
+  - 240.2 36.8 Fresno https://fluid.nccs.nasa.gov/gram/static/plots/total_36.8_240.2.png
+  - 263.0 32.9 Dallas.Ft Worth https://fluid.nccs.nasa.gov/gram/static/plots/total_32.9_263.0.png
+  - 253.1 34.3 Sevilleta https://fluid.nccs.nasa.gov/gram/static/plots/total_34.3_253.1.png
+  - 261.5 29.5 San Antonio https://fluid.nccs.nasa.gov/gram/static/plots/total_29.5_261.5.png
+  - 262.5 27.8 Corpus Christi https://fluid.nccs.nasa.gov/gram/static/plots/total_27.8_262.5.png
+  - 249.0 32.1 Tucson https://fluid.nccs.nasa.gov/gram/static/plots/total_32.1_249.0.png
+  - 264.343 29.8 West Houston https://fluid.nccs.nasa.gov/gram/static/plots/total_29.8_264.343.png
+  - 283.5 39.3 Essex https://fluid.nccs.nasa.gov/gram/static/plots/total_39.3_283.5.png
+  - 264.6 29.5 Croix Rd.Manvel https://fluid.nccs.nasa.gov/gram/static/plots/total_29.5_264.6.png
+  - 264.9 29.7 Deer Park.TX https://fluid.nccs.nasa.gov/gram/static/plots/total_29.7_264.9.png
+  - 106.3 32.6 White Sands.NM https://fluid.nccs.nasa.gov/gram/static/plots/total_32.6_106.3.png
+  - 266.8 30.1 Lake Charles https://fluid.nccs.nasa.gov/gram/static/plots/total_30.1_266.8.png
+  - 266.2 32.4 Shreveport https://fluid.nccs.nasa.gov/gram/static/plots/total_32.4_266.2.png
+  - 264.9 29.8 Channelview https://fluid.nccs.nasa.gov/gram/static/plots/total_29.8_264.9.png
+  - 262.3 30.2 Austin https://fluid.nccs.nasa.gov/gram/static/plots/total_30.2_262.3.png
+  - 238.2 36.6 Monterey https://fluid.nccs.nasa.gov/gram/static/plots/total_36.6_238.2.png
+  - 120.0 43.0 S Cent.OR https://fluid.nccs.nasa.gov/gram/static/plots/total_43.0_120.0.png
+  - 283.4 39.5 Padonia https://fluid.nccs.nasa.gov/gram/static/plots/total_39.5_283.4.png
+  - 241.9 34.1 Caltech https://fluid.nccs.nasa.gov/gram/static/plots/total_34.1_241.9.png
+  - 283.7 39.4 Edgewood.MD https://fluid.nccs.nasa.gov/gram/static/plots/total_39.4_283.7.png
+  - 293.0 18.0 La Parguera.PR https://fluid.nccs.nasa.gov/gram/static/plots/total_18.0_293.0.png
+  - 244.0 38.5 Railroad Valley https://fluid.nccs.nasa.gov/gram/static/plots/total_38.5_244.0.png
+  - 264.7 29.7 Moody Tower https://fluid.nccs.nasa.gov/gram/static/plots/total_29.7_264.7.png
+  - 289.8 41.1 Cape Cod https://fluid.nccs.nasa.gov/gram/static/plots/total_41.1_289.8.png
+  - 284.5 37.8 Wallops Island.VA https://fluid.nccs.nasa.gov/gram/static/plots/total_37.8_284.5.png
+  - 265.2 29.2 Galveston https://fluid.nccs.nasa.gov/gram/static/plots/total_29.2_265.2.png
+  - 244.0 36.8 Frenchman Flat.NV https://fluid.nccs.nasa.gov/gram/static/plots/total_36.8_244.0.png

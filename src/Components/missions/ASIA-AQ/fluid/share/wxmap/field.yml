@@ -1,0 +1,1165 @@
+field:
+  
+  G5FPFC: &geos
+    
+    _prectot:
+      long_name: Total Precipitation
+      units: kg m-2 s-1
+      expression: prectot.tavg3_2d_smp_Nx(z=1)
+#     expression: prectot.inst3_2d_met_Nx(z=1)
+#     expression: prectot.tavg1_2d_flx_Nx(z=1)
+
+    _prectot3:
+      long_name: 3-Hour Accumulated Precipitation
+      units: kg m-2 s-1
+      expression: _prectot(td=-1)*3*60*60
+
+    _prectot2:
+      long_name: Total Precipitation
+      units: kg m-2 s-1
+      expression: prectot.tavg1_2d_flx_Nx(z=1)
+    
+    _precsno:
+      long_name: Snowfall
+      units: kg m-2 s-1
+      expression: precsno.tavg1_2d_flx_Nx(z=1)
+
+    _precsno3:
+      long_name: 3hr Snowfall
+      units: kg m-2 s-1
+      expression: (_precsno(td=-3) + _precsno(td=-2) + _precsno(td=-1))*60*60
+  
+    _preccon:
+      long_name: Convetive Precipitation
+      units: kg m-2 s-1
+      expression: preccon.tavg1_2d_flx_Nx(z=1)
+
+    _cldlow:
+      long_name: Low Cloud Fraction
+      units: 1
+      expression: cldlow.inst3_2d_met_Nx(z=1)
+
+    _cldmid:
+      long_name: Mid Cloud Fraction
+      units: 1
+      expression: cldmid.inst3_2d_met_Nx(z=1)
+
+    _cldhgh:
+      long_name: High Cloud Fraction
+      units: 1
+      expression: cldhgh.inst3_2d_met_Nx(z=1)
+
+    _cldtot:
+      long_name: Total Cloud Fraction
+      units: 1
+      expression: (_cldlow + _cldmid + _cldhgh)
+
+    _cloud:
+      long_name: Cloud Fraction
+      units: 1
+      expression: cloud.G5FPWX.inst3_3d_wxme_Np
+
+    _taulow10:
+      long_name: In-Cloud Optical Thickness of Low Clouds Where Coverage > 10%
+      units: 1
+      expression: maskout(taulow.tavg1_2d_rad_Nx,cldlow.tavg1_2d_rad_Nx-0.1)
+
+    _taumid10:
+      long_name: In-Cloud Optical Thickness of Mid Clouds Where Coverage > 10%
+      units: 1
+      expression: maskout(taumid.tavg1_2d_rad_Nx,cldmid.tavg1_2d_rad_Nx-0.1)
+
+    _tauhgh10:
+      long_name: In-Cloud Optical Thickness of High Clouds Where Coverage > 10%
+      units: 1
+      expression: maskout(tauhgh.tavg1_2d_rad_Nx,cldhgh.tavg1_2d_rad_Nx-0.1)
+
+    _uwnd:
+      long_name: East-West Wind
+      units: m s-1
+      expression: u.inst3_3d_asm_Np
+  
+    _vwnd:
+      long_name: North-South Wind
+      units: m s-1
+      expression: v.inst3_3d_asm_Np
+
+    _troppb:
+      long_name: Tropopause Pressure Based on Blended Estimate
+      units: Pa
+      expression: troppb.tavg1_2d_slv_Nx(z=1)
+
+    _epv:
+      long_name: Ertels Potential Vorticity
+      units: m s-1
+      expression: epv.inst3_3d_asm_Np
+  
+    _slp:
+      long_name: Sea Level Pressure
+      units: mb
+      expression: slp.inst3_3d_asm_Np
+  
+    _tmpu:
+      long_name: Temperature
+      units: K
+      expression: t.inst3_3d_asm_Np
+  
+    _hght:
+      long_name: Heights
+      units: m
+      expression: h.inst3_3d_asm_Np
+  
+    _thick:
+      long_name: 500mb Thickness
+      units: m
+      expression: (h500.tavg1_2d_slv_Nx(td=-1) - h1000.tavg1_2d_slv_Nx(td=-1))
+
+    _phis:
+      long_name: Surface Geopotential Height
+      units: m2 s-2
+      expression: phis.inst3_3d_asm_Np
+  
+    _omega:
+      long_name: Vertical Pressure Velocity
+      units: Pa/sec
+      expression: omega.inst3_3d_asm_Np
+  
+    _rh:
+      long_name: Relative Humidity
+      units: percent
+      expression: rh.inst3_3d_asm_Np * 100
+  
+    _du:
+      long_name: Dust Mass Mixing Ratio
+      units: kg kg-1
+      expression: du.inst3_3d_aer_Np
+  
+    _dufluxu:
+      long_name: Dust Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: dufluxu.inst1_2d_hwl_Nx
+  
+    _dufluxv:
+      long_name: Dust Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: dufluxv.inst1_2d_hwl_Nx
+  
+    _ducmass:
+      long_name: Dust Column Mass Density
+      units: kg m-2
+      expression: ducmass.inst1_2d_hwl_Nx
+  
+    _niexttau:
+      long_name: Nitrate Extinction AOT [550 nm]
+      units: '1'
+      expression: niexttau.inst1_2d_hwl_Nx
+  
+    _nifluxu:
+      long_name: Nitrate Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: nifluxu.inst1_2d_hwl_Nx
+  
+    _nifluxv:
+      long_name: Nitrate Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: nifluxv.inst1_2d_hwl_Nx
+  
+    _nicmass:
+      long_name: Nitrate Column Mass Density
+      units: kg m-2
+      expression: nicmass.inst1_2d_hwl_Nx
+  
+    _nismass25:
+      long_name: Nitrate Surface Mass Concentration
+      units: kg m-3
+      expression: nismass25.inst1_2d_hwl_Nx
+  
+    _ss:
+      long_name: Sea Salt Mixing Ratio
+      units: kg kg-1
+      expression: ss.inst3_3d_aer_Np
+  
+    _ssfluxu:
+      long_name: Sea Salt Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ssfluxu.inst1_2d_hwl_Nx
+  
+    _ssfluxv:
+      long_name: Sea Salt Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ssfluxv.inst1_2d_hwl_Nx
+  
+    _sscmass:
+      long_name: Sea Salt Column Mass Density
+      units: kg m-2
+      expression: sscmass.inst1_2d_hwl_Nx
+  
+    _oc:
+      long_name: Organic Carbon Mass Mixing Ratio
+      units: kg kg-1
+      expression: oc.inst3_3d_aer_Np
+  
+    _ocfluxu:
+      long_name: Organic Carbon Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ocfluxu.inst1_2d_hwl_Nx
+  
+    _ocfluxv:
+      long_name: Organic Carbon Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ocfluxv.inst1_2d_hwl_Nx
+  
+    _occmass:
+      long_name: Organic Carbon Column Mass Density
+      units: kg m-2
+      expression: occmass.inst1_2d_hwl_Nx
+  
+    _bc:
+      long_name: Black Carbon Mass Mixing Ratio
+      units: kg kg-1
+      expression: bc.inst3_3d_aer_Np
+  
+    _bcfluxu:
+      long_name: Black Carbon Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: bcfluxu.inst1_2d_hwl_Nx
+  
+    _bcfluxv:
+      long_name: Black Carbon Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: bcfluxv.inst1_2d_hwl_Nx
+  
+    _bccmass:
+      long_name: Black Carbon Column Mass Density
+      units: kg m-2
+      expression: bccmass.inst1_2d_hwl_Nx
+  
+    _sufluxu:
+      long_name: SO4 Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: sufluxu.inst1_2d_hwl_Nx
+  
+    _sufluxv:
+      long_name: SO4 Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: sufluxv.inst1_2d_hwl_Nx
+  
+    _so4:
+      long_name: Sulphate Mixing Ratio
+      units: kg kg-1
+      expression: so4.inst3_3d_aer_Np
+  
+    _so4cmass:
+      long_name: SO4 Column Mass Density
+      units: kg m-2
+      expression: so4cmass.inst1_2d_hwl_Nx
+  
+    _duexttau:
+      long_name: Dust Extinction AOT [550 nm]
+      units: '1'
+      expression: duexttau.inst1_2d_hwl_Nx
+
+    _totexttau:
+      long_name: Total Aerosol Extinction AOT [550 nm]
+      units: '1'
+      expression: totexttau.inst1_2d_hwl_Nx
+  
+    _suexttau:
+      long_name: SO4 Extinction AOT [550 nm]
+      units: '1'
+      expression: suexttau.inst1_2d_hwl_Nx
+  
+    _ssexttau:
+      long_name: Sea Salt Extinction AOT [550 nm]
+      units: '1'
+      expression: ssexttau.inst1_2d_hwl_Nx
+  
+    _ocexttau:
+      long_name: Organic Carbon Extinction AOT [550 nm]
+      units: '1'
+      expression: ocexttau.inst1_2d_hwl_Nx
+  
+    _bcexttau:
+      long_name: Black Carbon Extinction AOT [550 nm]
+      units: '1'
+      expression: bcexttau.inst1_2d_hwl_Nx
+
+    _fineaot:
+      long_name: Fine Aerosol Optical Thickness
+      units: '1'
+      expression: _suexttau + _ocexttau + _bcexttau
+
+    _pblh:
+      long_name: Planetary Boundary Layer Height
+      units: 'm'
+      expression: pblh.tavg1_2d_flx_Nx(z=1)
+  
+    _to3:
+      long_name: Total Column Ozone
+      units: Dobson
+      expression: to3.inst1_2d_hwl_Nx
+  
+    _so2:
+      long_name: Sulphur Dioxide Mixing Ratio
+      units: kg kg-1
+      expression: so2.inst3_3d_aer_Np
+  
+    _so2cmass:
+      long_name: SO2 Column Mass Density
+      units: kg m-2
+      expression: so2cmass.inst1_2d_hwl_Nx
+  
+    _so2smass:
+      long_name: SO2 Surface Mass Concentration
+      units: kg m-3
+      expression: so2smass.inst1_2d_hwl_Nx
+  
+    _ocsmass:
+      long_name: Organic Carbon Surface Mass Concentration
+      units: kg m-3
+      expression: ocsmass.inst1_2d_hwl_Nx
+  
+    _bcsmass:
+      long_name: Black Carbon Surface Mass Concentration
+      units: kg m-3
+      expression: bcsmass.inst1_2d_hwl_Nx
+
+    _nismass:
+      long_name: Nitrate Surface Mass Concentration
+      units: kg m-3
+      expression: nismass.inst1_2d_hwl_Nx
+  
+    _cocl:
+      long_name: CO Column Burden
+      units: kg m-2
+      expression: cocl.inst1_2d_hwl_Nx
+  
+    _coclbbae:
+      long_name: CO Column Burden (Asia and Europe Biomass Burning)
+      units: kg m-2
+      expression: coclbbae.inst1_2d_hwl_Nx
+  
+    _coclbbaf:
+      long_name: CO Column Burden (Africa Biomass Burning)
+      units: kg m-2
+      expression: coclbbaf.inst1_2d_hwl_Nx
+  
+    _coclbbla:
+      long_name: CO Column Burden (Central and South America Biomass Burning)
+      units: kg m-2
+      expression: coclbbla.inst1_2d_hwl_Nx
+  
+    _coclbbna:
+      long_name: CO Column Burden (North America Biomass Burning)
+      units: kg m-2
+      expression: coclbbna.inst1_2d_hwl_Nx
+  
+    _coclnbas:
+      long_name: CO Column Burden (Asia Non-Biomass Burning)
+      units: kg m-2
+      expression: coclnbas.inst1_2d_hwl_Nx
+  
+    _coclnbeu:
+      long_name: CO Column Burden (Asia Non-Biomass Burning)
+      units: kg m-2
+      expression: coclnbeu.inst1_2d_hwl_Nx
+  
+    _coclnbna:
+      long_name: CO Column Burden (North American Non-Biomass Burning)
+      units: kg m-2
+      expression: coclnbna.inst1_2d_hwl_Nx
+  
+    _cosc:
+      long_name: CO Surface Concentration in ppbv
+      units: 1e-9
+      expression: cosc.inst1_2d_hwl_Nx
+  
+    _co:
+      long_name: CO
+      units: kg m-2
+      expression: co.inst3_3d_chm_Np
+  
+    _cobbaf:
+      long_name: CO Africa Biomass Burning
+      units: unknown
+      expression: cobbaf.inst3_3d_tag_Np
+  
+    _cobbla:
+      long_name: CO South America Biomass Burning
+      units: unknown
+      expression: cobbla.inst3_3d_tag_Np
+  
+    _cobbna:
+      long_name: CO North America Biomass Burning
+      units: unknown
+      expression: cobbna.inst3_3d_tag_Np
+  
+    _cobbae:
+      long_name: CO Asia and Europe Biomass Burning
+      units: unknown
+      expression: cobbae.inst3_3d_tag_Np
+  
+    _cobbot:
+      long_name: CO Other Biomass Burning
+      units: unknown
+      expression: (_cobbgl-(_cobbaf+_cobbla+_cobbna+_cobbae))
+  
+    _conbas:
+      long_name: CO Asia Non-Biomass Burning
+      units: unknown
+      expression: conbas.inst3_3d_tag_Np
+  
+    _conbna:
+      long_name: CO North America Non-Biomass Burning
+      units: unknown
+      expression: conbna.inst3_3d_tag_Np
+  
+    _conbeu:
+      long_name: CO Europe Non-Biomass Burning
+      units: unknown
+      expression: conbeu.inst3_3d_tag_Np
+  
+    _conbgl:
+      long_name: CO Global Non-Biomass Burning
+      units: unknown
+      expression: conbgl.inst3_3d_tag_Np
+  
+    _cobbgl:
+      long_name: CO Global Biomass Burning
+      units: unknown
+      expression: cobbgl.inst3_3d_tag_Np
+  
+    _airdens:
+      long_name: Moist Air Density
+      units: unknown
+      expression: airdens.inst3_3d_tag_Np
+  
+    _cfc12strat:
+      long_name: Stratospheric CFC-12 (CCl2F2)
+      units: unknown
+      expression: cfc12strat.inst3_3d_tag_Np
+  
+    _cfc12trop:
+      long_name: Tropospheric CFC-12 (CCl2F2)
+      units: unknown
+      expression: cfc12trop.inst3_3d_tag_Np
+
+  GEOSANA:
+
+    <<: *geos
+
+    _cloud:
+      long_name: Cloud Fraction
+      units: 1
+      expression: cloud.tavg3_3d_rad_Cp(td=-1)
+
+    _cldlow:
+      long_name: Low Cloud Fraction
+      units: 1
+      expression: cldlow.tavg1_2d_rad_Nx(td=-1,z=1)
+
+    _cldmid:
+      long_name: Mid Cloud Fraction
+      units: 1
+      expression: cldmid.tavg1_2d_rad_Nx(td=-1,z=1)
+
+    _cldhgh:
+      long_name: High Cloud Fraction
+      units: 1
+      expression: cldhgh.tavg1_2d_rad_Nx(td=-1,z=1)
+
+    _du001:
+      long_name: Dust Mass Mixing Ratio (Bin 001)
+      units: kg kg-1
+      expression: du001.inst3_3d_aer_Np
+
+    _du002:
+      long_name: Dust Mass Mixing Ratio (Bin 002)
+      units: kg kg-1
+      expression: du002.inst3_3d_aer_Np
+
+    _du003:
+      long_name: Dust Mass Mixing Ratio (Bin 003)
+      units: kg kg-1
+      expression: du003.inst3_3d_aer_Np
+
+    _du004:
+      long_name: Dust Mass Mixing Ratio (Bin 004)
+      units: kg kg-1
+      expression: du004.inst3_3d_aer_Np
+
+    _du005:
+      long_name: Dust Mass Mixing Ratio (Bin 005)
+      units: kg kg-1
+      expression: du005.inst3_3d_aer_Np
+
+    _du:
+      long_name: Dust Mass Mixing Ratio
+      units: kg kg-1
+      expression: (_du001 + _du002 + _du003 + _du004 + _du005)
+
+    _ss001:
+      long_name: Sea Salt Mixing Ratio
+      units: kg kg-1
+      expression: ss001.inst3_3d_aer_Np
+
+    _ss002:
+      long_name: Sea Salt Mixing Ratio
+      units: kg kg-1
+      expression: ss002.inst3_3d_aer_Np
+
+    _ss003:
+      long_name: Sea Salt Mixing Ratio
+      units: kg kg-1
+      expression: ss003.inst3_3d_aer_Np
+
+    _ss004:
+      long_name: Sea Salt Mixing Ratio
+      units: kg kg-1
+      expression: ss004.inst3_3d_aer_Np
+
+    _ss005:
+      long_name: Sea Salt Mixing Ratio
+      units: kg kg-1
+      expression: ss005.inst3_3d_aer_Np
+
+    _ss:
+      long_name: Sea Salt Mixing Ratio
+      units: kg kg-1
+      expression: (_ss001 + _ss002 + _ss003 + _ss004 + _ss005)
+
+    _bcphilic:
+      long_name: Hydrophilic Black Carbon
+      units: kg kg-1
+      expression: bcphilic.inst3_3d_aer_Np
+
+    _bcphobic:
+      long_name: Hydrophobic Black Carbon
+      units: kg kg-1
+      expression: bcphobic.inst3_3d_aer_Np
+
+    _bc:
+      long_name: Black Carbon Mixing Ratio
+      units: kg kg-1
+      expression: (_bcphobic + _bcphilic)
+
+    _ocphilic:
+      long_name: Hydrophilic Organic Carbon
+      units: kg kg-1
+      expression: ocphilic.inst3_3d_aer_Np
+
+    _ocphobic:
+      long_name: Hydrophobic Organic Carbon
+      units: kg kg-1
+      expression: ocphobic.inst3_3d_aer_Np
+
+    _oc:
+      long_name: Organic Carbon Mixing Ratio
+      units: kg kg-1
+      expression: (_ocphobic + _ocphilic)
+
+  GEOSTEMP:
+
+    <<: *geos
+
+    _dufluxu:
+      long_name: Dust Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: dufluxu.tavg3_2d_aer_Nx
+
+    _dufluxv:
+      long_name: Dust Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: dufluxv.tavg3_2d_aer_Nx
+
+    _ducmass:
+      long_name: Dust Column Mass Density
+      units: kg m-2
+      expression: ducmass.tavg3_2d_aer_Nx
+
+    _ssfluxu:
+      long_name: Sea Salt Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ssfluxu.tavg3_2d_aer_Nx
+
+    _ssfluxv:
+      long_name: Sea Salt Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ssfluxv.tavg3_2d_aer_Nx
+
+    _sscmass:
+      long_name: Sea Salt Column Mass Density
+      units: kg m-2
+      expression: sscmass.tavg3_2d_aer_Nx
+
+    _ocfluxu:
+      long_name: Organic Carbon Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ocfluxu.tavg3_2d_aer_Nx
+
+    _ocfluxv:
+      long_name: Organic Carbon Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ocfluxv.tavg3_2d_aer_Nx
+
+    _occmass:
+      long_name: Organic Carbon Column Mass Density
+      units: kg m-2
+      expression: occmass.tavg3_2d_aer_Nx
+
+    _bcfluxu:
+      long_name: Black Carbon Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: bcfluxu.tavg3_2d_aer_Nx
+
+    _bcfluxv:
+      long_name: Black Carbon Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: bcfluxv.tavg3_2d_aer_Nx
+
+    _bccmass:
+      long_name: Black Carbon Column Mass Density
+      units: kg m-2
+      expression: bccmass.tavg3_2d_aer_Nx
+
+    _sufluxu:
+      long_name: SO4 Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: sufluxu.tavg3_2d_aer_Nx
+
+    _sufluxv:
+      long_name: SO4 Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: sufluxv.tavg3_2d_aer_Nx
+
+    _so4cmass:
+      long_name: SO4 Column Mass Density
+      units: kg m-2
+      expression: so4cmass.tavg3_2d_aer_Nx
+
+  MERRA2:
+
+    <<: *geos
+    
+    _prectot:
+      long_name: Total Precipitation
+      units: kg m-2 s-1
+      expression: prectot.tavg1_2d_flx_Nx(z=1)
+
+    _prectot3:
+      long_name: Total Precipitation
+      units: kg m-2 s-1
+      expression: (_prectot(td=-1) + _prectot(td=-2) + _prectot(td=-3))*60*60
+
+    _precsno:
+      long_name: Snowfall
+      units: kg m-2 s-1
+      expression: precsno.tavg1_2d_flx_Nx(z=1)
+
+    _precsno3:
+      long_name: Snowfall
+      units: kg m-2 s-1
+      expression: (_precsno(td=-1) + _precsno(td=-2) + _precsno(td=-3))*60*60
+
+    _preccon:
+      long_name: Convetive Precipitation
+      units: kg m-2 s-1
+      expression: preccon.tavg1_2d_flx_Nx(z=1)
+
+    _cldlow:
+      long_name: Low Cloud Fraction
+      units: 1
+      expression: cldlow.tavg1_2d_rad_Nx(z=1)
+
+    _cldmid:
+      long_name: Mid Cloud Fraction
+      units: 1
+      expression: cldmid.tavg1_2d_rad_Nx(z=1)
+
+    _cldhgh:
+      long_name: High Cloud Fraction
+      units: 1
+      expression: cldhgh.tavg1_2d_rad_Nx(z=1)
+
+    _cldtot:
+      long_name: Total Cloud Fraction
+      units: 1
+      expression: cldtot.tavg1_2d_rad_Nx(z=1)
+
+    _cloud:
+      long_name: Cloud Fraction
+      units: 1
+      expression: cloud.tavg3_3d_rad_Np
+
+    _taulow10:
+      long_name: In-Cloud Optical Thickness of Low Clouds Where Coverage > 10%
+      units: 1
+      expression: maskout(taulow.tavg1_2d_rad_Nx,cldlow.tavg1_2d_rad_Nx-0.1)
+
+    _taumid10:
+      long_name: In-Cloud Optical Thickness of Mid Clouds Where Coverage > 10%
+      units: 1
+      expression: maskout(taumid.tavg1_2d_rad_Nx,cldmid.tavg1_2d_rad_Nx-0.1)
+
+    _tauhgh10:
+      long_name: In-Cloud Optical Thickness of High Clouds Where Coverage > 10%
+      units: 1
+      expression: maskout(tauhgh.tavg1_2d_rad_Nx,cldhgh.tavg1_2d_rad_Nx-0.1)
+
+    _uwnd:
+      long_name: East-West Wind
+      units: m s-1
+      expression: u.inst3_3d_asm_Np
+  
+    _vwnd:
+      long_name: North-South Wind
+      units: m s-1
+      expression: v.inst3_3d_asm_Np
+
+    _troppb:
+      long_name: Tropopause Pressure Based on Blended Estimate
+      units: Pa
+      expression: troppb.tavg1_2d_slv_Nx(z=1)
+
+    _epv:
+      long_name: Ertels Potential Vorticity
+      units: m s-1
+      expression: epv.inst3_3d_asm_Np
+  
+    _slp:
+      long_name: Sea Level Pressure
+      units: mb
+      expression: slp.inst3_3d_asm_Np
+
+    _t2m:
+      long_name: 2-meter Air Temperature
+      units: K
+      expression: t2m.inst1_2d_asm_Nx
+
+    _tmpu:
+      long_name: Temperature
+      units: K
+      expression: t.inst3_3d_asm_Np
+  
+    _hght:
+      long_name: Heights
+      units: m
+      expression: h.inst3_3d_asm_Np
+  
+    _thick:
+      long_name: 500mb Thickness
+      units: m
+#     expression: (h500.tavg1_2d_slv_Nx - h1000.tavg1_2d_slv_Nx)
+      expression: (h500.tavg1_2d_slv_Nx(td=-1) - h1000.tavg1_2d_slv_Nx(td=-1))
+
+    _phis:
+      long_name: Surface Geopotential Height
+      units: m2 s-2
+      expression: phis.inst3_3d_asm_Np
+  
+    _omega:
+      long_name: Vertical Pressure Velocity
+      units: Pa/sec
+      expression: omega.inst3_3d_asm_Np
+  
+    _rh:
+      long_name: Relative Humidity
+      units: percent
+      expression: rh.inst3_3d_asm_Np * 100
+  
+#   _du:
+#     long_name: Dust Mass Mixing Ratio
+#     units: kg kg-1
+#     expression: du.inst3_3d_aer_Np
+  
+    _dufluxu:
+      long_name: Dust Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: dufluxu.tavg1_2d_aer_Nx
+  
+    _dufluxv:
+      long_name: Dust Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: dufluxv.tavg1_2d_aer_Nx
+  
+    _ducmass:
+      long_name: Dust Column Mass Density
+      units: kg m-2
+      expression: ducmass.tavg1_2d_aer_Nx
+  
+#   _niexttau:
+#     long_name: Nitrate Extinction AOT [550 nm]
+#     units: '1'
+#     expression: niexttau.inst1_2d_hwl_Nx
+  
+#   _nifluxu:
+#     long_name: Nitrate Column U-wind Mass Flux
+#     units: kg m-1 s-1
+#     expression: nifluxu.inst1_2d_hwl_Nx
+  
+#   _nifluxv:
+#     long_name: Nitrate Column V-wind Mass Flux
+#     units: kg m-1 s-1
+#     expression: nifluxv.inst1_2d_hwl_Nx
+  
+#   _nicmass:
+#     long_name: Nitrate Column Mass Density
+#     units: kg m-2
+#     expression: nicmass.inst1_2d_hwl_Nx
+  
+#   _nismass25:
+#     long_name: Nitrate Surface Mass Concentration
+#     units: kg m-3
+#     expression: nismass25.inst1_2d_hwl_Nx
+  
+#   _ss:
+#     long_name: Sea Salt Mixing Ratio
+#     units: kg kg-1
+#     expression: ss.inst3_3d_aer_Np
+  
+    _ssfluxu:
+      long_name: Sea Salt Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ssfluxu.tavg1_2d_aer_Nx
+  
+    _ssfluxv:
+      long_name: Sea Salt Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ssfluxv.tavg1_2d_aer_Nx
+  
+    _sscmass:
+      long_name: Sea Salt Column Mass Density
+      units: kg m-2
+      expression: sscmass.tavg1_2d_aer_Nx
+  
+#   _oc:
+#     long_name: Organic Carbon Mass Mixing Ratio
+#     units: kg kg-1
+#     expression: oc.inst3_3d_aer_Np
+  
+    _ocfluxu:
+      long_name: Organic Carbon Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ocfluxu.tavg1_2d_aer_Nx
+  
+    _ocfluxv:
+      long_name: Organic Carbon Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: ocfluxv.tavg1_2d_aer_Nx
+  
+    _occmass:
+      long_name: Organic Carbon Column Mass Density
+      units: kg m-2
+      expression: occmass.tavg1_2d_aer_Nx
+  
+#   _bc:
+#     long_name: Black Carbon Mass Mixing Ratio
+#     units: kg kg-1
+#     expression: bc.inst3_3d_aer_Np
+  
+    _bcfluxu:
+      long_name: Black Carbon Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: bcfluxu.tavg1_2d_aer_Nx
+  
+    _bcfluxv:
+      long_name: Black Carbon Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: bcfluxv.tavg1_2d_aer_Nx
+  
+    _bccmass:
+      long_name: Black Carbon Column Mass Density
+      units: kg m-2
+      expression: bccmass.tavg1_2d_aer_Nx
+  
+    _sufluxu:
+      long_name: SO4 Column U-wind Mass Flux
+      units: kg m-1 s-1
+      expression: sufluxu.tavg1_2d_aer_Nx
+  
+    _sufluxv:
+      long_name: SO4 Column V-wind Mass Flux
+      units: kg m-1 s-1
+      expression: sufluxv.tavg1_2d_aer_Nx
+  
+    _so4:
+      long_name: Sulphate Mixing Ratio
+      units: kg kg-1
+      expression: so4.inst3_3d_aer_Nv
+  
+    _so4cmass:
+      long_name: SO4 Column Mass Density
+      units: kg m-2
+      expression: so4cmass.tavg1_2d_aer_Nx
+  
+    _duexttau:
+      long_name: Dust Extinction AOT [550 nm]
+      units: '1'
+      expression: duexttau.tavg1_2d_aer_Nx
+  
+    _suexttau:
+      long_name: SO4 Extinction AOT [550 nm]
+      units: '1'
+      expression: suexttau.tavg1_2d_aer_Nx
+  
+    _ssexttau:
+      long_name: Sea Salt Extinction AOT [550 nm]
+      units: '1'
+      expression: ssexttau.tavg1_2d_aer_Nx
+  
+    _ocexttau:
+      long_name: Organic Carbon Extinction AOT [550 nm]
+      units: '1'
+      expression: ocexttau.tavg1_2d_aer_Nx
+  
+    _bcexttau:
+      long_name: Black Carbon Extinction AOT [550 nm]
+      units: '1'
+      expression: bcexttau.tavg1_2d_aer_Nx
+
+    _fineaot:
+      long_name: Fine Aerosol Optical Thickness
+      units: '1'
+      expression: _suexttau + _ocexttau + _bcexttau
+
+    _pblh:
+      long_name: Planetary Boundary Layer Height
+      units: 'm'
+      expression: pblh.tavg1_2d_flx_Nx(z=1)
+  
+    _to3:
+      long_name: Total Column Ozone
+      units: Dobson
+      expression: to3.inst1_2d_asm_Nx
+  
+#   _so2:
+#     long_name: Sulphur Dioxide Mixing Ratio
+#     units: kg kg-1
+#     expression: so2.inst3_3d_aer_Np
+  
+    _so2cmass:
+      long_name: SO2 Column Mass Density
+      units: kg m-2
+      expression: so2cmass.tavg1_2d_aer_Nx
+  
+    _so2smass:
+      long_name: SO2 Surface Mass Concentration
+      units: kg m-3
+      expression: so2smass.tavg1_2d_aer_Nx
+  
+    _ocsmass:
+      long_name: Organic Carbon Surface Mass Concentration
+      units: kg m-3
+      expression: ocsmass.tavg1_2d_aer_Nx
+  
+    _bcsmass:
+      long_name: Black Carbon Surface Mass Concentration
+      units: kg m-3
+      expression: bcsmass.tavg1_2d_aer_Nx
+
+#   _nismass:
+#     long_name: Nitrate Surface Mass Concentration
+#     units: kg m-3
+#     expression: nismass.inst1_2d_hwl_Nx
+  
+    _cocl:
+      long_name: CO Column Burden
+      units: kg m-2
+      expression: cocl.tavg1_2d_chm_Nx
+  
+#   _coclbbae:
+#     long_name: CO Column Burden (Asia and Europe Biomass Burning)
+#     units: kg m-2
+#     expression: coclbbae.inst1_2d_hwl_Nx
+  
+#   _coclbbaf:
+#     long_name: CO Column Burden (Africa Biomass Burning)
+#     units: kg m-2
+#     expression: coclbbaf.inst1_2d_hwl_Nx
+  
+#   _coclbbla:
+#     long_name: CO Column Burden (Central and South America Biomass Burning)
+#     units: kg m-2
+#     expression: coclbbla.inst1_2d_hwl_Nx
+  
+#   _coclbbna:
+#     long_name: CO Column Burden (North America Biomass Burning)
+#     units: kg m-2
+#     expression: coclbbna.inst1_2d_hwl_Nx
+  
+#   _coclnbas:
+#     long_name: CO Column Burden (Asia Non-Biomass Burning)
+#     units: kg m-2
+#     expression: coclnbas.inst1_2d_hwl_Nx
+  
+#   _coclnbeu:
+#     long_name: CO Column Burden (Asia Non-Biomass Burning)
+#     units: kg m-2
+#     expression: coclnbeu.inst1_2d_hwl_Nx
+  
+#   _coclnbna:
+#     long_name: CO Column Burden (North American Non-Biomass Burning)
+#     units: kg m-2
+#     expression: coclnbna.inst1_2d_hwl_Nx
+  
+    _cosc:
+      long_name: CO Surface Concentration in ppbv
+      units: 1e-9
+      expression: cosc.tavg1_2d_chm_Nx
+  
+#   _co:
+#     long_name: CO
+#     units: kg m-2
+#     expression: co.inst3_3d_chm_Np
+  
+#   _cobbaf:
+#     long_name: CO Africa Biomass Burning
+#     units: unknown
+#     expression: cobbaf.inst3_3d_tag_Np
+  
+#   _cobbla:
+#     long_name: CO South America Biomass Burning
+#     units: unknown
+#     expression: cobbla.inst3_3d_tag_Np
+  
+#   _cobbna:
+#     long_name: CO North America Biomass Burning
+#     units: unknown
+#     expression: cobbna.inst3_3d_tag_Np
+  
+#   _cobbae:
+#     long_name: CO Asia and Europe Biomass Burning
+#     units: unknown
+#     expression: cobbae.inst3_3d_tag_Np
+  
+#   _cobbot:
+#     long_name: CO Other Biomass Burning
+#     units: unknown
+#     expression: (_cobbgl-(_cobbaf+_cobbla+_cobbna+_cobbae))
+  
+#   _conbas:
+#     long_name: CO Asia Non-Biomass Burning
+#     units: unknown
+#     expression: conbas.inst3_3d_tag_Np
+  
+#   _conbna:
+#     long_name: CO North America Non-Biomass Burning
+#     units: unknown
+#     expression: conbna.inst3_3d_tag_Np
+  
+#   _conbeu:
+#     long_name: CO Europe Non-Biomass Burning
+#     units: unknown
+#     expression: conbeu.inst3_3d_tag_Np
+  
+#   _conbgl:
+#     long_name: CO Global Non-Biomass Burning
+#     units: unknown
+#     expression: conbgl.inst3_3d_tag_Np
+  
+#   _cobbgl:
+#     long_name: CO Global Biomass Burning
+#     units: unknown
+#     expression: cobbgl.inst3_3d_tag_Np
+  
+#   _airdens:
+#     long_name: Moist Air Density
+#     units: unknown
+#     expression: airdens.inst3_3d_tag_Np
+  
+#   _cfc12strat:
+#     long_name: Stratospheric CFC-12 (CCl2F2)
+#     units: unknown
+#     expression: cfc12strat.inst3_3d_tag_Np
+  
+#   _cfc12trop:
+#     long_name: Tropospheric CFC-12 (CCl2F2)
+#     units: unknown
+#     expression: cfc12trop.inst3_3d_tag_Np
+
+  
+  NCEPGFS:
+  
+    _prectot:
+      long_name: Surface Precipitation Rate
+      units: kg m-2 s-1
+      expression: pratesfc(z=1)
+
+    _prectot3:
+      long_name: Total Precipitation
+      units: kg m-2 s-1
+      expression: _prectot*3*60*60
+  
+    _uwnd:
+      long_name: East-West Wind
+      units: m s-1
+      expression: ugrdprs
+  
+    _vwnd:
+      long_name: North-South Wind
+      units: m s-1
+      expression: vgrdprs
+  
+    _slp:
+      long_name: Sea Level Pressure
+      units: mb
+      expression: prmslmsl(z=1)
+  
+    _tmpu:
+      long_name: Temperature
+      units: K
+      expression: tmpprs
+  
+    _hght:
+      long_name: Heights
+      units: m
+      expression: hgtprs
+  
+    _thick:
+      long_name: 500mb Thickness
+      units: m
+      expression: hgtprs(lev=500) - hgtprs(lev=1000)
+  
+    _omega:
+      long_name: Vertical Pressure Velocity
+      units: Pa/sec
+      expression: vvelprs
+  
+    _rh:
+      long_name: Relative Humidity
+      units: percent
+      expression: rhprs
+
+# Global Definitions
+  
+  _wspd:
+    long_name: Wind Speed
+    units: m s-1
+    expression: mag(_uwnd,_vwnd)
+  
+  _wvec:
+    long_name: Wind Vector
+    units: m s-1
+    expression: _uwnd;_vwnd
+    gxout: vector
+  
+  _wbrb:
+    long_name: Wind Barb
+    units: knots
+    expression: _uwnd*1.94384;_vwnd*1.94384
+    gxout: barb
+  
+  _vort:
+    long_name: Vorticity
+    units: s-1
+    expression: hcurl(_uwnd,_vwnd)
+  
+  _lwmask:
+    long_name: Land/Water Mask
+    units: 1
+    expression: lwmask.MASKDATA.land_water(t=1,z=1)
+
+  _ireast:
+    long_name: Infrared
+    units: 1
+    expression: ir.GOESEAST.GOES(z=1)

@@ -1,0 +1,40 @@
+stream:
+
+  MERRA2: &merra
+  
+    long_name: MERRA-2
+    description: Modern-Era Retrospective Analysis (MERRA-2)
+    type: analysis
+    uri: /discover/nobackup/projects/gmao/merra2/data/products/opendap/$collection
+    institution: Global Modeling and Assimilation Office (GMAO)
+    reference: https://gmao.gsfc.nasa.gov/reanalysis/MERRA-2
+    link: https://gmao.gsfc.nasa.gov/reanalysis/MERRA-2
+    logos: [nasa-logo-ul, gmao-logo-ur]
+
+  NCA_indices:
+
+    <<: *merra
+
+    long_name: NCA Indices
+    uri: /discover/nobackup/acollow/MERRA2/NCA_indices/MERRA2.CCDI.global.ctl
+
+  RX5Day:
+
+    <<: *merra
+
+    long_name: RX5Day
+    uri: /discover/nobackup/acollow/MERRA2/NCA_indices/MERRA2_RX5DAY_prectotcorr.ctl
+
+  M2PERCMON:
+
+    <<: *merra
+
+    long_name: Monthly Percentiles
+    uri: /discover/nobackup/projects/gmao/merra2/data/pub/supplemental/perc_PRECTOTCORR_MERRA2.tavgM_2d_flx_Nx.%Y%m.nc4
+
+  M2PERCDLY:
+
+    <<: *merra
+
+    long_name: Daily Percentiles
+    uri: /discover/nobackup/projects/gmao/merra2/data/pub/supplemental/perc_daily_PRECTOTCORR_MERRA2.tavg1_2d_flx_Nx.%Y%m.nc4

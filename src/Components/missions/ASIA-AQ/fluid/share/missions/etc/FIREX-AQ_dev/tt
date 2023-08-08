@@ -1,0 +1,136 @@
+    _aod:
+      long_name: Aerosol Optical Depth
+      units: '1'
+      expression: aod550(z=1)
+    _pm25sfc:
+      long_name: surface PM2.5
+      units: 'ugm-3'
+      expression: pm2p5(z=1)*1e9
+    _pm25:
+      long_name: PM2.5 pressure levels
+      units: 'ugm-3'
+      expression: pm2p5_3d*1e9
+    _bcaod550:
+      long_name: Black Carbon Aerosol Optical Depth at 550nm
+      units: '1'
+      expression: bcaod550(z=1)
+    _duaod550:
+      longname: Dust Aerosol Optical Depth at 550nm
+      units: '1'
+      expression: duaod550(z=1)
+    _omaod550:
+      long_name: Organic Matter Aerosol Optical Depth at 550nm
+      units: '1'
+      expression: omaod550(z=1)
+    _pm1:
+      long_name: Particulate matter d < 1 um
+      units: 'ugm-3'
+      expression: pm1(z=1)*1e9
+    _pm10:
+      long_name: Particulate matter d < 10 um
+      units: 'ugm-3'
+      expression: pm10(z=1)*1e9
+    _ssaod550:
+      long_name: Sea Salt Aerosol Optical Depth at 550nm
+      units: '1'
+      expression: ssaod550(z=1)
+    _suaod550:
+      long_name: Sulphate Aerosol Optical Depth at 550nm
+      units: '1'
+      expression: suaod550(z=1)
+    _tcno:
+      long_name: Total column nitrogen monoxide
+      units: 'kgm-2'
+      expression: tc_no(z=1)
+    _tcpan:
+      long_name: Total column peroxyacetyl nitrate
+      units: 'kgm-2'
+      expression: tc_pan(z=1)
+    _tcco:
+      long_name: Total column Carbon monoxide
+      units: 'kgm-2'
+      expression: tcco(z=1)
+    _tcno2:
+      long_name: Total column Nitrogen dioxide
+      units:     'kgm-2'
+      expression: tcno2(z=1)
+    _tcpm25:
+      long_name: Total column PM2.5
+      units:     'kgm-2'
+      expression: tcpm2p5(z=1)
+    _tcoc:
+      long_name: Total column organic carbon 
+      units:     'kgm-2'
+      expression: tcom(z=1)
+    _su_lml:
+      long_name: Sulphate aerosol mixing ratio
+      units: 'ugm-3'
+      expression:  aermr11(lev=1000)*p3089(lev=1000)*1e9
+    _du_lml:
+      long_name: Dust aerosol mixing ratio
+      units: 'ugm-3'
+      expression:  (aermr04(lev=1000)+aermr05(lev=1000)+aermr06(lev=1000))*p3089(lev=1000)*1e9
+    _ss_lml:
+      long_name: Sea salt aerosol mixing ratio
+      units: 'ugm-3'
+      expression:  (aermr01(lev=1000)+aermr02(lev=1000)+aermr03(lev=1000))*p3089(lev=1000)*1e9
+    _oc_lml:
+      long_name: OC mixing ratio
+      units: 'ugm-3'
+      expression:  (aermr07(lev=1000)+aermr08(lev=1000))*p3089(lev=1000)*1e9
+    _bc_lml:
+      long_name: BC mixing ratio
+      units: 'ugm-3'
+      expression:  (aermr09(lev=1000)+aermr10(lev=1000))*p3089(lev=1000)*1e9
+    _co_lml:
+      long_name: Carbon monixide
+      units: 'ppbv'
+      expression: co(lev=1000)*1e9*28.97/28.0
+    _no1_lml:
+      long_name: Nitric oxide
+      units: 'ppbv'
+      expression: no(lev=1000)*1e9*28.97/30.0
+    _no2_lml:
+      long_name: Nitrogen dioxide
+      units: 'ppbv'
+      expression: no2(lev=1000)*1e9*28.97/46.0
+    _so2_lml:
+      long_name: Sulfur dioxide
+      units: 'ppbv'
+      expression: so2(lev=1000)*1e9*28.97/64.06
+    _su:
+      long_name: Sulphate aerosol mixing ratio
+      units: 'ugm-3'
+      expression:  aermr11*p3089*1e9
+    _du:
+      long_name: Dust aerosol mixing ratio
+      units: 'ugm-3'
+      expression:  (aermr04+aermr05+aermr06)*p3089*1e9
+    _ss:
+      long_name: Sea salt aerosol mixing ratio
+      units: 'ugm-3'
+      expression:  (aermr01+aermr02+aermr03)*p3089*1e9
+    _oc:
+      long_name: OC mixing ratio
+      units: 'ugm-3'
+      expression:  (aermr07+aermr08)*p3089*1e9
+    _bc:
+      long_name: BC mixing ratio
+      units: 'ugm-3'
+      expression:  (aermr09+aermr10)*p3089*1e9
+    _co:
+      long_name: Carbon monixide
+      units: 'ppbv'
+      expression: co*1e9*28.97/28.0
+    _no1:
+      long_name: Nitric oxide
+      units: 'ppbv'
+      expression: no*1e9*28.97/30.0
+    _no2:
+      long_name: Nitrogen dioxide
+      units: 'ppbv'
+      expression: no2*1e9*28.97/46.0
+    _so2:
+      long_name: Sulfur dioxide
+      units: 'ppbv'
+      expression: so2*1e9*28.97/64.06

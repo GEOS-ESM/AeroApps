@@ -1,0 +1,16 @@
+inst1_2d_hwl_Nx:BCFLUXV=>bcfluxv 0 t,y,x Black Carbon column v-wind mass flux 
+inst1_2d_hwl_Nx:BCCMASS=>bccmass 0 t,y,x Black Carbon Column Mass Density 
+inst1_2d_hwl_Nx:BCEXTTAU=>bcexttau 0 t,y,x Black Carbon Extinction AOT [550 nm] 
+inst1_2d_hwl_Nx:BCSMASS=>bcsmass 0 t,y,x Black Carbon Surface Mass Concentration 
+inst1_2d_hwl_Nx:BCFLUXU=>bcfluxu 0 t,y,x Black Carbon column u-wind mass flux 
+inst3_3d_aer_Np:BC=>bc 26 t,z,y,x Black Carbon Mass Mixing Ratio 
+inst3_3d_aer_Nv:BCPHOBIC=>bcphobic 72 t,z,y,x Hydrophobic Black Carbon
+inst3_3d_aer_Nv:BCPHILIC=>bcphilic 72 t,z,y,x Hydrophilic Black Carbon
+inst3_3d_ext_Np:BCEXT=>bcext 26 t,z,y,x Black Carbon Extinction Coefficient [550 nm] 
+tavg3_2d_aer_Nx:BCFLUXV=>bcfluxv 0 t,y,x Black Carbon column v-wind mass flux 
+tavg3_2d_aer_Nx:BCCMASS=>bccmass 0 t,y,x Black Carbon Column Mass Density 
+tavg3_2d_aer_Nx:BCEXTTAU=>bcexttau 0 t,y,x Black Carbon Extinction AOT [550 nm] 
+tavg3_2d_aer_Nx:BCSMASS=>bcsmass 0 t,y,x Black Carbon Surface Mass Concentration 
+tavg3_2d_aer_Nx:BCSCATAU=>bcscatau 0 t,y,x Black Carbon Scattering AOT [550 nm] 
+tavg3_2d_aer_Nx:BCFLUXU=>bcfluxu 0 t,y,x Black Carbon column u-wind mass flux 
+tavg3_2d_aer_Nx:BCANGSTR=>bcangstr 0 t,y,x Black Carbon Angstrom parameter [470-870 nm] 

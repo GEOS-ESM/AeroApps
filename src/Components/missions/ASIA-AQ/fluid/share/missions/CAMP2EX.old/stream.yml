@@ -1,0 +1,17 @@
+stream:
+  
+  GEOSHGT:
+  
+    long_name: GEOS FP
+    description: GEOS $cycle
+    type: forecast
+    downloading: enabled
+    access: public
+    uri: /gpfsm/dnb02/projects/p53/merra2/data/pub/supplemental/f517_fp/opendap/fcast/$collection/$collection.%%Y%%m%%d_%%H
+    service: !!python/object/apply:dataservice.GEOSDDF []
+    animation: enabled
+    max_frames: 20
+    institution: NASA - Global Modeling and Assimilation Office (GMAO)
+    reference: http://gmao.gsfc.nasa.gov/GEOS/geos5/index_pubs.php
+    link: http://gmao.gsfc.nasa.gov/GEOS
+    logos: [nasa-logo-ul, gmao-logo-ur]

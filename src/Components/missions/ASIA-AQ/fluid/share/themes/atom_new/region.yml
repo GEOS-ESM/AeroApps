@@ -1,0 +1,102 @@
+reset: [region]
+
+region:
+
+  akpmd_kpmd:
+  
+    long_name: akpmd_kpmd
+    lon: 220 260
+    lat: 0 40
+    mpdset: hires
+    mproj: latlon
+    station_mark: [241.9 34.6]
+
+  bkpmd_panc:
+  
+    long_name: bkpmd_panc
+    lon: 180 260
+    lat: 30 85
+    mpdset: mres
+    mproj: latlon
+    station_mark: [241.9 34.6, 210.0 61.2]
+
+  cpanc_nkoa:
+  
+    long_name: cpanc_nkoa
+    lon: 180 260
+    lat: 15 65
+    mpdset: mres
+    mproj: latlon
+    station_mark: [210 61.2, 204.0 19.7]
+
+  dnkoa_nffn:
+  
+    long_name: dnkoa_nffn
+    lon: 160 230
+    lat: -20 25
+    mpdset: hires
+    mproj: latlon
+    station_mark: [204.0 19.7, 177.4 -17.75]
+
+  enffn_nzch:
+  
+    long_name: enffn_nzch
+    lon: 125 230
+    lat: -85 -15
+    mpdset: hires
+    mproj: latlon
+    station_mark: [177.4 -17.75, 172.5 -43.5]
+  
+  fnzch_scci:
+  
+    long_name: fnzch_scci
+    lon: 160 300
+    lat: -70 -15
+    mpdset: hires
+    mproj: latlon
+    station_mark: [172.5 -43.5, 289.15 -53.0]
+
+  fscci_scci:
+
+    long_name: fscci_scci
+    lon: 280 320
+    lat: -85 -45
+    mpdset: hires
+    mproj: latlon
+    station_mark: [289.15 -53.0 ]
+
+  gscci_sbrf:
+ 
+    long_name: gscci_sbrf
+    lon: 280 350
+    lat: -60 0
+    mpdset: hires
+    mproj: latlon
+    station_mark: [289.15 -53.0, 325.1 -8.1]
+
+  hsbrf_lpla:
+
+    long_name: hsbrf_lpla
+    lon: 280 360
+    lat: -13 50
+    mpdset: hires
+    mproj: latlon
+    station_mark: [325.1 -8.1, 332.9 38.8]
+
+  ilpla_bgtl:
+ 
+    long_name: ilpla_bgtl
+    lon: 272 340
+    lat: 35 82
+    mpdset: hires
+    mproj: latlon
+    station_mark: [332.9 38.8, 291.3 76.5]
+
+  jbgtl_panc:
+
+    long_name: jbgtl_panc
+    lon: 180 340
+    lat: 40 90
+    mpdset: hires
+    mproj: latlon
+    station_mark: [291.3 76.5, 210.0 61.2]

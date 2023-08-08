@@ -1,0 +1,41 @@
+
+annotate:
+
+  tm_valid: '%B %Y'
+  tm_verif: '%B %Y'
+  tm_start: '%B %Y'
+
+  header:
+    string: ''
+    color: 1
+    size: 0.125
+    position: 'c'
+    margin: 0.05
+    font: variable
+  subheader:
+    string: $model
+    color: 1
+    size: 0.125
+    position: 'c'
+    margin: 0.15
+    font: variable
+  main:
+    string: $title
+    color: 1
+    size: 0.2
+    position: 'c'
+    margin: 0.1
+    font: variable
+  xlabel:
+    string: $tm_string
+    color: 1
+    size: 0.13 0.13
+    position: 'c'
+    margin: 0.3
+    font: fixed
+  title:
+    color: 1
+    size: 0.25 0.25
+    position: 'c'
+    margin: 0.15
+    font: regular

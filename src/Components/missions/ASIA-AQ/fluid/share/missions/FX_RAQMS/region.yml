@@ -1,0 +1,276 @@
+cities: &CITIES
+
+  -  210.1 61.2 Anchorage https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Anchorage.png
+  -  275.6 33.7 Atlanta https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Atlanta.png
+  -  283.1 39.1 Beltsville https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Beltsville.png
+  -  259.2 46.8 Bismarck https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Bismarck.png
+  -  243.8 43.6 Boise https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Boise.png
+  -  289.0 42.3 Boston https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Boston.png
+  -  281.2 42.9 Buffalo https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Buffalo.png
+  -  264.6 30.3 Conroe https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Conroe.png
+  -  272.4 41.9 Chicago https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Chicago.png
+  -  275.5 39.1 Cincinnati https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Cincinnati.png
+  -  278.3 41.5 Cleveland https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Cleveland.png
+  -  263.2 32.7 Dallas https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Dallas.png
+  -  255.0 39.7 Denver https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Denver.png
+  -  277.0 42.3 Detroit https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Detroit.png
+  -  212.3 64.8 Fairbanks https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Fairbanks.png
+  -  284.1 39.7 Fairhill https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Fairhill.png
+  -  263.2 46.9 Fargo https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Fargo.png
+  -  287.3 41.7 Hartford https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Hartford.png
+  -  202.2 21.3 Honolulu https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Honolulu.png
+  -  264.6 29.7 Houston https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Houston.png
+  -  273.9 39.7 Indianapolis https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Indianapolis.png
+  -  278.3 30.3 Jacksonville https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Jacksonville.png
+  -  265.4 39.1 Kansas_City https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Kansas_City.png
+  -  244.9 36.2 Las_Vegas https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Las_Vegas.png
+  -  267.7 34.7 Little_Rock https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Little_Rock.png
+  -  274.3 38.2 Louisville https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Louisville.png
+  -  241.8 34.0 Los_Angeles https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Los_Angeles.png
+  -  270.0 35.1 Memphis https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Memphis.png
+  -  279.8 25.8 Miami https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Miami.png
+  -  272.0 43.0 Milwaukee https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Milwaukee.png
+  -  266.8 45.0 Minneapolis https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Minneapolis.png
+  -  273.2 36.2 Nashville https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Nashville.png
+  -  269.9 30.0 New_Orleans https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.New_Orleans.png
+  -  286.0 40.3 New_York https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.New_York.png
+  -  262.5 35.5 Oklahoma_City https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Oklahoma_City.png
+  -  264.0 41.2 Omaha https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Omaha.png
+  -  278.7 28.5 Orlando https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Orlando.png
+  -  284.8 40.0 Philadelphia https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Philadelphia.png
+  -  248.0 33.5 Phoenix https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Phoenix.png
+  -  280.0 40.5 Pittsburgh https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Pittsburgh.png
+  -  237.3 45.5 Portland OR https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Portland_OR.png
+  -  281.4 35.8 Raleigh https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Raleigh.png
+  -  282.5 37.5 Richmond https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Richmond.png
+  -  248.1 40.7 Salt_Lake_City https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Salt_Lake_City.png
+  -  242.8 32.7 San_Diego https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.San_Diego.png
+  -  237.6 37.7 San_Francisco https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.San_Francisco.png
+  -  119.3 35.3 San_Joaquin_Valley https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.San_Joaquin_Valley.png
+  -  293.8 18.5 San_Juan PR https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.San_Juan_PR.png
+  -  237.7 47.6 Seattle https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Seattle.png
+  -  265.2 29.5 Smith_Point https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Smith_Point.png
+  -  242.5 47.6 Spokane https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Spokane.png
+  -  277.5 28.0 Tampa https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Tampa.png
+  -  283.0 38.9 Washington_DC https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Washington_DC.png
+  -  262.8 37.6 Wichita https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Wichita.png
+  -  242.1 34.9 Armstrong_FRC https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Armstrong_FRC.png
+  -  283.8 39.6 Aldino https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Aldino.png
+  -  240.2 36.8 Fresno https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Fresno.png
+  -  263.0 32.9 Dallas Ft_Worth https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Dallas_Ft_Worth.png
+  -  253.1 34.3 Sevilleta https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Sevilleta.png
+  -  261.5 29.5 San_Antonio https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.San_Antonio.png
+  -  262.5 27.8 Corpus_Christi https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Corpus_Christi.png
+  -  249.0 32.1 Tucson https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Tucson.png
+  -  264.343 29.8 West_Houston https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.West_Houston.png
+  -  283.5 39.3 Essex https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Essex.png
+  -  264.6 29.5 Croix_Rd Manvel https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Croix_Rd_Manvel.png
+  -  264.9 29.7 Deer_Park TX https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Deer_Park_TX.png
+  -  106.3 32.6 White_Sands NM https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.White_Sands_NM.png
+  -  266.8 30.1 Lake_Charles https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Lake_Charles.png
+  -  266.2 32.4 Shreveport https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Shreveport.png
+  -  264.9 29.8 Channelview https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Channelview.png
+  -  262.3 30.2 Austin https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Austin.png
+  -  238.2 36.6 Monterey https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Monterey.png
+  -  120.0 43.0 S_Cent OR https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.S_Cent_OR.png
+  -  283.4 39.5 Padonia https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Padonia.png
+  -  241.9 34.1 Caltech https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Caltech.png
+  -  283.7 39.4 Edgewood MD https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Edgewood_MD.png
+  -  293.0 18.0 La_Parguera PR https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.La_Parguera_PR.png
+  -  244.0 38.5 Railroad_Valley https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Railroad_Valley.png
+  -  264.7 29.7 Moody_Tower https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Moody_Tower.png
+  -  289.8 41.1 Cape_Cod https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Cape_Cod.png
+  -  284.5 37.8 Wallops_Island VA https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Wallops_Island_VA.png
+  -  265.2 29.2 Galveston https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Galveston.png
+  -  244.0 36.8 Frenchman_Flat NV https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Frenchman_Flat_NV.png
+  -  245.9 51.0 Calgary https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Calgary.png
+  -  246.5 53.5 Edmonton https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Edmonton.png
+  -  284.3 45.4 Ottawa https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Ottawa.png
+  -  262.9 49.9 Winnipeg https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Winnipeg.png
+  -  288.8 46.8 Quebec City https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Quebec_City.png
+  -  280.6168 43.6532 Toronto https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Toronto.png
+  -  286.4327 45.5017 Montreal https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Montreal.png
+  -  236.8793 49.2827 Vancouver https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Vancouver.png
+  -  243.9109 44.9267 McCall_MPL https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.McCall_MPL.png
+  -  236.913246 44.052071 Eugene https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Eugene.png
+  -  238.684692 44.058174 Bend https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Bend.png
+  -  241.155925 43.265587 Malheur_NWR https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Malheur_NWR.png
+  -  241.91213 45.324607 LaGrande https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.LaGrande.png
+  -  242.264313 40.972958 Winnemucca https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Winnemucca.png
+  -  244.24054 40.835732 Elko https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Elko.png
+  -  237.618912 40.574638 Redding https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Redding.png
+  -  237.364349 41.731579 Yreka https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Yreka.png
+  -  238.162521 39.728493 Chico https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Chico.png
+  -  240.722237 47.131649 MosesLake https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.MosesLake.png
+  -  248.708107 47.504887 GreatFalls https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.GreatFalls.png
+  -  254.159019 46.408527 MilesCity https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.MilesCity.png
+  -  245.539719 42.563179 TwinFalls https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.TwinFalls.png
+  -  253.674828 42.850079 Casper https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Casper.png
+  -  250.776627 41.590481 RockSprings https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.RockSprings.png
+  -  246.416718 37.10828 St George https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.St_George.png
+  -  255.383377 50.451191 Regina https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Regina.png
+
+aeronet: &AERONET
+
+  -  266.225219727 42.0213623047 Ames_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Ames_AERO.png
+  -  278.30619812 36.2145996094 Appalachian_State_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Appalachian_State_AERO.png
+  -  210.119995117 70.49949646 ARM_Oliktok_AK_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.ARM_Oliktok_AK_AERO.png
+  -  262.514381409 36.6051750183 ARM_SGP_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.ARM_SGP_AERO.png
+  -  240.999992371 35.3315048218 Bakersfield_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Bakersfield_AERO.png
+  -  203.2 71.3 Barrow_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Barrow_AERO.png
+  -  288.731384277 42.5283470154 Billerica_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Billerica_AERO.png
+  -  211.683731079 64.742805481 Bonanza_Creek_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Bonanza_Creek_AERO.png
+  -  271.628059387 40.0533332825 BONDVILLE_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.BONDVILLE_AERO.png
+  -  248.954986572 45.6622047424 Bozeman_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Bozeman_AERO.png
+  -  287.11530304 40.8660011292 Brookhaven_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Brookhaven_AERO.png
+  -  241.873832703 34.1367301941 CalTech_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.CalTech_AERO.png
+  -  294.380096435 18.3845005035 Cape_San_Juan_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Cape_San_Juan_AERO.png
+  -  288.06867218 45.3797531128 CARTEL_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.CARTEL_AERO.png
+  -  285.024597168 49.8224334717 Chapais_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Chapais_AERO.png
+  -  266.18183136 58.736000061 Churchill_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Churchill_AERO.png
+  -  249.717002869 54.4169998169 Cold_Lake_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Cold_Lake_AERO.png
+  -  275.890380859 39.7759780884 Dayton_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Dayton_AERO.png
+  -  254.994819641 39.7794914246 Denver_LaCasa_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Denver_LaCasa_AERO.png
+  -  254.86277771 40.1388893127 DigitalGlobe_Cal_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.DigitalGlobe_Cal_AERO.png
+  -  0.439999997616 51.2900009155 EastMalling_MO_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.EastMalling_MO_AERO.png
+  -  283.915748596 38.7949714661 Easton-MDE_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Easton-MDE_AERO.png
+  -  280.218589783 44.2315444946 Egbert_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Egbert_AERO.png
+  -  281.129997253 35.8800010681 EPA-Res_Triangle_Pk_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.EPA-Res_Triangle_Pk_AERO.png
+  -  248.523864746 56.7523078918 Fort_McMurray_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Fort_McMurray_AERO.png
+  -  240.226982117 36.785369873 Fresno_2_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Fresno_2_AERO.png
+  -  275.600463867 33.7802009583 Georgia_Tech_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Georgia_Tech_AERO.png
+  -  243.208335876 35.2333335876 Goldstone_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Goldstone_AERO.png
+  -  262.674552918 47.9117507935 Grand_Forks_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Grand_Forks_AERO.png
+  -  272.587997437 46.7207984924 Granite_Island_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Granite_Island_AERO.png
+  -  283.160163879 38.9925003052 GSFC_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.GSFC_AERO.png
+  -  296.40599823 44.6380004883 Halifax_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Halifax_AERO.png
+  -  283.637199402 39.2419013977 Hart_Miller_Island_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Hart_Miller_Island_AERO.png
+  -  273.852096558 37.1318016052 IMPROVE-MammothCave_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.IMPROVE-MammothCave_AERO.png
+  -  309.378601074 66.9957962036 Kangerlussuaq_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Kangerlussuaq_AERO.png
+  -  274.62828064 42.4079818726 Kellogg_LTER_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Kellogg_LTER_AERO.png
+  -  240.599891663 49.9412956238 Kelowna_UAS_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Kelowna_UAS_AERO.png
+  -  279.836669922 25.7319660187 Key_Biscayne_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Key_Biscayne_AERO.png
+  -  221.589996338 61.0270004272 Kluane_Lake_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Kluane_Lake_AERO.png
+  -  292.954620361 17.9704494476 La_Parguera_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.La_Parguera_AERO.png
+  -  286.658233643 40.9545173645 LISCO_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.LISCO_AERO.png
+  -  204.423248291 19.5360069275 Mauna_Loa_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Mauna_Loa_AERO.png
+  -  283.387947082 39.2812309265 MD_Science_Center_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.MD_Science_Center_AERO.png
+  -  269.856796265 36.971698761 Mingo_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Mingo_AERO.png
+  -  245.916664124 46.9166679382 Missoula_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Missoula_AERO.png
+  -  239.005783081 37.6421699524 Modesto_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Modesto_AERO.png
+  -  238.2 36.6 Monterey_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Monterey_AERO.png
+  -  289.433296204 41.3250007629 MVCO_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.MVCO_AERO.png
+  -  314.580619812 61.1559524536 Narsarsuaq_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Narsarsuaq_AERO.png
+  -  279.336524963 28.4637622833 NASA_KSC_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NASA_KSC_AERO.png
+  -  283.621360779 37.1049613953 NASA_LaRC_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NASA_LaRC_AERO.png
+  -  288.712799072 44.0638809204 NEON_Bartlett_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_Bartlett_AERO.png
+  -  262.430000305 33.4012298584 NEON_CLBJ_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_CLBJ_AERO.png
+  -  255.255760193 40.8124427795 NEON-CPER_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON-CPER_AERO.png
+  -  254.832748413 40.1606292725 NEON_CVALLA_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_CVALLA_AERO.png
+  -  214.248641968 63.8811187744 NEON_DEJU_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_DEJU_AERO.png
+  -  278.563796997 28.125038147 NEON-Disney_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON-Disney_AERO.png
+  -  276.498046875 35.6889610291 NEON_GRSM_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_GRSM_AERO.png
+  -  293.13130188 17.9695491791 NEON_GUAN_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_GUAN_AERO.png
+  -  287.827339172 42.5368995667 NEON_Harvard_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_Harvard_AERO.png
+  -  210.78666687 63.8756904602 NEON_HEAL_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_HEAL_AERO.png
+  -  279.475166321 37.3783073425 NEON_MLBS_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_MLBS_AERO.png
+  -  250.611732483 38.2483291626 NEON_MOAB_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_MOAB_AERO.png
+  -  259.084648132 46.7697181702 NEON_NOGP_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_NOGP_AERO.png
+  -  260.941207886 35.4105911255 NEON_OAES_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_OAES_AERO.png
+  -  247.547561646 40.1775894165 NEON_ONAQ_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_ONAQ_AERO.png
+  -  275.717414856 35.9641265869 NEON_ORNL_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_ORNL_AERO.png
+  -  278.006568909 29.6892681122 NEON_OSBS_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_OSBS_AERO.png
+  -  254.454025269 40.2759017944 NEON_RMNP_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_RMNP_AERO.png
+  -  281.860496521 38.8929176331 NEON_SCBI_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_SCBI_AERO.png
+  -  283.439979553 38.8901176453 NEON_SERC_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_SERC_AERO.png
+  -  249.164512634 31.9106807709 NEON_SRER_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_SRER_AERO.png
+  -  256.970703125 40.4619026184 NEON_Sterling_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_Sterling_AERO.png
+  -  272.6067276 32.9504623413 NEON_TALL_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_TALL_AERO.png
+  -  240.993980408 37.0058326721 NEON_TEAK_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_TEAK_AERO.png
+  -  210.62953186 68.6610870361 NEON_TOOL_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_TOOL_AERO.png
+  -  264.807853699 39.0404319763 NEON_UKFS_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_UKFS_AERO.png
+  -  270.462753296 46.2338829041 NEON_UNDE_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_UNDE_AERO.png
+  -  260.758644104 47.1282272339 NEON_WOOD_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_WOOD_AERO.png
+  -  238.048 45.82 NEON_WREF_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.NEON_WREF_AERO.png
+  -  248.854446411 29.0275001526 ORS_Hermosillo_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.ORS_Hermosillo_AERO.png
+  -  269.782501221 51.4494438171 Pickle_Lake_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Pickle_Lake_AERO.png
+  -  300.567966461 13.1650180817 Ragged_Point_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Ragged_Point_AERO.png
+  -  244.0 38.5 Railroad_Valley_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Railroad_Valley_AERO.png
+  -  252.289085388 37.9074478149 Red_Mountain_Pass_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Red_Mountain_Pass_AERO.png
+  -  265.030593872 74.7051239014 Resolute_Bay_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Resolute_Bay_AERO.png
+  -  248.21698761 43.820110321 Rexburg_Idaho_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Rexburg_Idaho_AERO.png
+  -  243.008331299 46.4874992371 Rimrock_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Rimrock_AERO.png
+  -  253.45993042 35.0545845032 Sandia_NM_PSEL_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Sandia_NM_PSEL_AERO.png
+  -  283.16 38.992 Saturn_Island_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Saturn_Island_AERO.png
+  -  241.528869629 34.0168495178 Santa_Monica_Colg_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Santa_Monica_Colg_AERO.png
+  -  263.213928223 44.3148269653 SDSU_IPLab_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.SDSU_IPLab_AERO.png
+  -  253.1 34.3 Sevilleta_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Sevilleta_AERO.png
+  -  283.163528442 38.952999115 Sigma_Space_Corp_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Sigma_Space_Corp_AERO.png
+  -  263.374008179 43.7364807129 Sioux_Falls_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Sioux_Falls_AERO.png
+  -  277.366996765 27.7615509033 SP_Bayboro_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.SP_Bayboro_AERO.png
+  -  242.319999695 34.3800010681 TABLE_MOUNTAIN_CA_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.TABLE_MOUNTAIN_CA_AERO.png
+  -  275.700653076 30.4458332062 Tallahassee_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Tallahassee_AERO.png
+  -  245.150047302 45.1035003662 Taylor_Ranch_TWRS_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Taylor_Ranch_TWRS_AERO.png
+  -  289.05165863 43.1087722778 Thompson_Farm_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Thompson_Farm_AERO.png
+  -  291.231002808 76.5161056519 Thule_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Thule_AERO.png
+  -  280.6 43.6 Toronto_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Toronto_AERO.png
+  -  249.0 32.1 Tucson_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Tucson_AERO.png
+  -  295.121002197 32.263999939 Tudor_Hill_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Tudor_Hill_AERO.png
+  -  273.355270386 34.7253303528 UAHuntsville_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.UAHuntsville_AERO.png
+  -  240.154640198 34.4154281616 UCSB_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.UCSB_AERO.png
+  -  283.290649414 39.2546272278 UMBC_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.UMBC_AERO.png
+  -  264.658401489 29.7176990509 Univ_of_Houston_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Univ_of_Houston_AERO.png
+  -  247.131034851 49.6816711426 Univ_of_Lethbridge_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Univ_of_Lethbridge_AERO.png
+  -  241.88217926 33.563709259 USC_SEAPRISM_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.USC_SEAPRISM_AERO.png
+  -  248.365577698 35.2148399353 USGS_Flagstaff_ROLO_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.USGS_Flagstaff_ROLO_AERO.png
+  -  284.528053284 37.932849884 Wallops_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Wallops_AERO.png
+  -  269.516670227 28.8666667938 WaveCIS_Site_CSI_6_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.WaveCIS_Site_CSI_6_AERO.png
+  -  253.66192627 32.6349411011 White_Sands_HELSTF_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.White_Sands_HELSTF_AERO.png
+  -  287.268798828 41.2583007812 Yale_Coastal_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Yale_Coastal_AERO.png
+  -  245.623748779 62.4513015747 Yellowknife_Aurora_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Yellowknife_Aurora_AERO.png
+  -  245.417221069 32.6441383362 Yuma_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.Yuma_AERO.png
+  -  270.6 43.1 U_of_Wisconsin_SSEC_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.U_of_Wisconsin_SSEC_AERO.png
+  -  248.4 57.2 AMOLITE_AERO https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.AMOLITE_AERO.png
+  -  273.355 34.725 RO3QET https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.RO3QET.png
+  -  242.32 34.38 TMF https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.TMF.png
+  -  283.16 38.99 TROPOZ https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.TROPOZ.png
+  -  254.738 39.993 TOPAZ https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.TOPAZ.png
+  -  283.615 37.096 LMOL https://portal.nccs.nasa.gov/datashare/gmao_ops/pub/fp/.internal/FIREX-AQ/$fcst/RAQMS/datagrams/$field/model.RAQMS.$fcst.000.$field.0.LMOL.png
+
+region:
+
+  fx-west:
+
+    long_name: West US Canada
+    lon: 230 256
+    lat: 32 57
+    mpdset: hires
+    mproj: latlon
+    addlayers: [Canada_Province]
+
+    aeronet: *AERONET
+    cities: *CITIES
+
+  fx-se:
+
+    long_name: Southeast US
+    lon: 258 285
+    lat: 25 43
+    mpdset: hires
+    mproj: latlon
+    addlayers: [Canada_Province]
+
+    aeronet: *AERONET
+    cities: *CITIES
+
+  fx-central:
+
+    long_name: North America
+    lon: 220 290
+    lat: 15 65
+    mpdset: hires
+    mproj: latlon
+    addlayers: [Canada_Province]
+
+    aeronet: *AERONET
+    cities: *CITIES

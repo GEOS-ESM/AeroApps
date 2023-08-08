@@ -1,0 +1,89 @@
+wxmapscustom:
+
+  interface:
+
+    field:
+
+      long_name: VARIABLES
+      groups: [BCOC, PM25]
+
+      BCOC:
+        long_name: Black+Organic Carbon
+        type: button
+        items:
+          - bcoc01
+          - bcoc02
+          - bcoc03
+          - bcoc04
+          - bcoc05
+          - bcoc06
+          - bcoc10
+          - bcoc11
+          - bcoc12
+          - bcoc13
+
+wxmapsmission:
+
+  interface:
+
+    field:
+
+      long_name: VARIABLES
+      groups: [Precip, Upper, Aerosols]
+
+      Precip:
+        long_name: Precip/Clouds
+        type: button
+        items:
+          - precip
+          - cldlow
+          - cldmid
+          - cldhgh
+          - cldtot
+          - cldprs
+          - taulow
+          - taumid
+          - tauhgh
+          - ql
+          - qi
+
+      Upper:
+        long_name: Upper Air
+        type: button
+        items:
+          - rh
+          - tmpu
+          - wspd
+          - vort
+          - omega
+          - epv
+          - pblh
+          - tropp
+
+      Aerosols:
+        long_name: Aerosols
+        type: button
+        items:
+          - fineaot
+          - dustaot
+          - dumass
+
+wxmapschem2d:
+
+
+      Aerosols:
+        long_name: Aerosols
+        type: button
+        items:
+          - bcoc
+          - bcocsmass
+          - bcocaot
+
+      CO:
+        long_name: CO
+        type: button
+        items:
+          - co
+          - cocl
+          - cobbna
+          - coclbbna

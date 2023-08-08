@@ -1,0 +1,11 @@
+theme:
+
+  long_name: Classic Weather Maps (Public)
+  service: !!python/object/apply:wxmapstheme.Service []
+  
+  attribute:
+  
+    tm_valid: '%m/%d/%Y %HZ'
+    tm_verif: '%A %d %B %Y %HUTC'
+    tm_start: '%m/%d/%Y %HZ'
+    tm_string: 'Initial: $tm_start &b&b&b Hour: $tau &b&b&b Valid: $tm_valid'
