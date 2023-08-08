@@ -1,0 +1,47 @@
+handlers: 'wget:arqi'
+
+shift_dt: 36
+
+tau_start: 1
+tau_end: 24
+tau_inc: 1
+
+wget:
+
+  url: http://research.atmos.ucla.edu
+  remote_dir: saide/firex-aq/ARQI
+  local_dir: $FX_NATIVE_DIR/ARQI/Y%iy4/M%im2/D%id2/H%ih2
+
+  sockets: 4
+
+  tau_start: 1
+  tau_end: 24
+  tau_inc: 1
+
+  remote_files: &FILENAMES
+
+    - '%iy4%im2%id2%ih2_%h3'
+
+arqi:
+
+  tau_start: 1
+  tau_end: 24
+  tau_inc: 1
+
+  tasks: 4
+
+  input_dir: $FX_NATIVE_DIR/ARQI/Y%iy4/M%im2/D%id2/H%ih2
+  output_dir: $FX_DATA_DIR/ARQI/Y%iy4/M%im2/D%id2/H%ih2
+  output_file: ARQI.%y4%m2%d2_%h2.nc4
+# ncl_script: /home/dao_ops/jardizzo/FLUID/firex-aq/bin/arqi_regrid.ncl
+  ncl_script: /home/dao_ops/jardizzo/FLUID/firex-aq/bin/arqi_regrid_latlon.ncl
+
+  grads_dir: $FX_OPENDAP_DIR/ARQI
+  grads_file: ARQI.%iy4%im2%id2_%ih2.ddf
+  grads_latest: ARQI.latest.ddf
+  files: *FILENAMES
+
+  grads_records:
+      - DSET $output_dir/$output_file
+      - OPTIONS template
+      - TDEF time 24 linear $gstart 1hr

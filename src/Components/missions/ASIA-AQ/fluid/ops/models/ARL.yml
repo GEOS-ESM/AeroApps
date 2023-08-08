@@ -1,0 +1,60 @@
+handlers: 'wget'
+
+tau_start: 1
+tau_end: 24
+tau_inc: 1
+
+wget:
+
+  url: https://ftp.emc.ncep.noaa.gov
+  remote_dir: mmb/aq/ARL-GBBEPX1
+  local_dir: $FX_NATIVE_DIR/ARL/Y%iy4/M%im2/D%id2/H%ih2
+
+  sockets: 4
+
+  AOD:
+
+    tau_start: 0
+    tau_end: 0
+    tau_inc: 1
+
+    remote_files:
+
+      - aqm.%iy4%im2%id2.t%ih2z.aod.ncf
+
+  OTHER:
+
+    tau_start: 1
+    tau_end: 72 
+    tau_inc: 1
+
+    remote_files: &FILENAMES
+
+      - aqm.%iy4%im2%id2.t%ih2z.conc-subset.%y4%m2%d2_%h2z.ncf
+      - aqm.%iy4%im2%id2.t%ih2z.metcro2d-subset.%y4%m2%d2_%h2z.ncf
+      - aqm.%iy4%im2%id2.t%ih2z.metcro3d-subset.%y4%m2%d2_%h2z.ncf
+      - aqm.%iy4%im2%id2.t%ih2z.metdot3d-subset.%y4%m2%d2_%h2z.ncf
+
+arl:
+
+  tau_start: 1
+  tau_end: 24
+  tau_inc: 1
+
+  tasks: 4
+
+  input_dir: $FX_NATIVE_DIR/ARL/Y%iy4/M%im2/D%id2/H%ih2
+  output_dir: $FX_DATA_DIR/ARL/Y%iy4/M%im2/D%id2/H%ih2
+
+  merged_file: aqm.%iy4%im2%id2.t%ih2z.merged.%y4%m2%d2_%h2z.nc
+  prep_file: aqm.%iy4%im2%id2.t%ih2z.prep.%y4%m2%d2_%h2z.nc4
+  grads_dir: $FX_OPENDAP_DIR/ARL
+  grads_file: ARL.%iy4%im2%id2_%ih2.ddf
+  grads_latest: ARL.latest.ddf
+  files: *FILENAMES
+  vars: [TFLAG,ANH4I,ANH4J,ANH4K,ANO3I,ANO3J,ANO3K,ASO4I,ASO4J,ASO4K,APOCI,APOCJ,AECI,AECJ,ASOIL,ASEACAT,CO,ISOP,NO2,NO,O3,SO2,PAN,PM25_TOT,PMC_TOT,VOC]
+
+  grads_records:
+      - DSET $output_dir/$output_file
+      - OPTIONS template
+      - TDEF time 24 linear 01:00z%id2%imc%iy4 1hr

@@ -1,0 +1,48 @@
+handlers: 'wget:cam_chem'
+model: CAMchem
+
+tau_start: 0
+tau_end: 120
+tau_inc: 3
+
+wget:
+
+  url: https://www.acom.ucar.edu
+  remote_dir: waccm/DATA/FIREX-AQ/waccm
+  local_dir: $FX_NATIVE_DIR/CAM-Chem/Y%iy4/M%im2/D%id2/H%ih2
+
+  sockets: 5
+
+  tau_start: 0
+  tau_end: 120
+  tau_inc: 24
+
+  remote_files: &FILENAMES
+
+#   - f.e21.FWSD.f09_f09_mg17.forecast.001.cam.h4.%y4-%m2-%d2-00000.nc
+#   - f.e21.FWSD.f09_f09_mg17.forecast.002.cam.h3.%y4-%m2-%d2-00000.nc
+    - f.e22.beta02.FWSD.f09_f09_mg17.cesm2_2_beta02.forecast.001.cam.h4.%y4-%m2-%d2-00000.nc
+
+cam_chem:
+
+  tau_start: 0
+  tau_end: 120
+  tau_inc: 24
+
+  tasks: 5
+
+  input_dir: $FX_NATIVE_DIR/CAM-Chem/Y%iy4/M%im2/D%id2/H%ih2
+  output_dir: $FX_DATA_DIR/CAM-Chem/Y%iy4/M%im2/D%id2/H%ih2
+  output_file: forecast.cam.na.%y4-%m2-%d2-00000.nc4
+
+  grads_dir: $FX_OPENDAP_DIR/CAM-Chem
+  grads_file: CAM-Chem.%iy4%im2%id2_%ih2.ddf
+  grads_latest: CAM-Chem.latest.ddf
+  dummy_file: $FX_DATA_DIR/dummy.ddf
+  files: *FILENAMES
+
+  grads_records:
+      - DSET $output_dir/$output_file
+      - OPTIONS template
+      - TDEF time 41 linear %ih2:00z%id2%imc%iy4 3hr
+

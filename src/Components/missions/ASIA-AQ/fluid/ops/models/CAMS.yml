@@ -1,0 +1,78 @@
+handlers: 'ftp:cams'
+
+tau_start: 0
+tau_end: 120
+tau_inc: 3
+
+ftp:
+
+  machine: dissemination.ecmwf.int
+  login: xinxin.ye
+  password: e3fp20JX
+  remote_dir: DATA/CAMS_GLOBAL/%iy4%im2%id2%ih2
+  local_dir: $FX_NATIVE_DIR/CAMS/Y%iy4/M%im2/D%id2/H%ih2
+
+  sockets: 6
+
+  tau_start: 0
+  tau_end: 120
+  tau_inc: 3
+
+  remote_files: &FILENAMES
+
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_sfc_%h3_aod550.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_sfc_%h3_pm2p5.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_sfc_%h3_bcaod550.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_sfc_%h3_duaod550.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_sfc_%h3_omaod550.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_sfc_%h3_pm1.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_sfc_%h3_pm10.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_sfc_%h3_ssaod550.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_sfc_%h3_suaod550.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_sfc_%h3_tc_no.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_sfc_%h3_tc_pan.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_sfc_%h3_tcco.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_sfc_%h3_tcno2.nc
+
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_aermr01.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_aermr02.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_aermr03.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_aermr04.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_aermr05.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_aermr06.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_aermr07.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_aermr08.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_aermr09.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_aermr10.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_aermr11.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_co.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_den.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_no.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_no2.nc
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_pl_%h3_so2.nc
+
+    - z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_ml_%h3_lnsp.nc
+
+cams:
+
+  tasks: 4
+
+  tau_start: 0
+  tau_end: 120
+  tau_inc: 3
+
+  input_dir: $FX_NATIVE_DIR/CAMS/Y%iy4/M%im2/D%id2/H%ih2
+  output_dir: $FX_DATA_DIR/CAMS/Y%iy4/M%im2/D%id2/H%ih2
+
+  merged_file: z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_merged_%h3.nc
+  prep_file: z_cams_c_ecmf_%iy4%im2%id2%ih20000_prod_fc_prep_%f3.nc4
+  grads_dir: $FX_OPENDAP_DIR/CAMS
+  grads_file: CAMS.%iy4%im2%id2_%ih2.ddf
+  grads_latest: CAMS.latest.ddf
+  dummy_file: $FX_DATA_DIR/dummy.ddf
+  files: *FILENAMES
+
+  grads_records:
+      - DSET $output_dir/$prep_file
+      - OPTIONS template
+      - TDEF time 41 linear %ih2:00z%id2%imc%iy4 3hr

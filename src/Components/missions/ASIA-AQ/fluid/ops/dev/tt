@@ -1,0 +1,13 @@
+#!/bin/csh -fx
+#SBATCH --job-name=firex_catalog_TEST
+#SBATCH --account=s1321
+#SBATCH --time=2:00:00
+#SBATCH --qos=daohi
+#SBATCH --ntasks=28
+#SBATCH --export=NONE
+#SBATCH --constraint=hasw
+#SBATCH --output=/discover/nobackup/dao_ops/jardizzo/FLUID/firex_catalog_TEST_20190809_00.log
+limit stacksize unlimited
+source /home/dao_ops/jardizzo/FLUID/firex-aq/utils/pyg_modules
+cd /home/dao_ops/jardizzo/FLUID/firex-aq/utils
+echo firex_catalog.sh TEST 2019080900 2019081112 3
