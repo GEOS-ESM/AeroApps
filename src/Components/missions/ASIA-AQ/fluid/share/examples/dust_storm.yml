@@ -2,7 +2,7 @@
 #            DUST STORM OVER AUSTRALIA ON SEPTEMBER 23, 2009
 #
 # This file plots dust AOT over Australia for September 23, 2009. It uses the
-# colormap dictionary method to specify the color scheme for shading. 
+# colormap dictionary method to specify the color scheme for shading.
 #
 # wxmap.py --config colors/example_003
 

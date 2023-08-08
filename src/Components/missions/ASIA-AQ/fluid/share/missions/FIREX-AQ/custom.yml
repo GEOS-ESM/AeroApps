@@ -39,7 +39,7 @@ wxmapscustom:
       levels: [925,850,700,600]
       layers:    [pm25]
       title:     '$level hPa Smoke PM2.5'
-      pm25: 
+      pm25:
         expr: _pm25_smoke
       map:
         layers:  [bluemarble01]
@@ -50,7 +50,7 @@ wxmapscustom:
       navigate: 'off'
       layers: [pm25]
       title:     'Surface Smoke PM2.5'
-      pm25: 
+      pm25:
         expr: _pm25_smoke_lml(z=1)
       map:
         layers:  [bluemarble01]
@@ -64,57 +64,57 @@ wxmapscustom:
       map:
         layers: [bluemarble01]
 
-    tcco:    
+    tcco:
       long_name: Total column CO
       levels:  [0]
       navigate: 'off'
-      layers:  [tcco]  
+      layers:  [tcco]
       title: 'Total column CO'
       map:
         layers:   [bluemarble01]
 
-    tcno:    
+    tcno:
       long_name: Total column NO
       levels:  [0]
       navigate: 'off'
-      layers:  [tcno]  
+      layers:  [tcno]
       title: 'Total column NO'
       map:
         layers:   [bluemarble01]
 
-    tcoc:    
+    tcoc:
       long_name: Total column OC
       levels:  [0]
       navigate: 'off'
-      layers:  [tcoc]  
+      layers:  [tcoc]
       title: 'Total column OC'
       map:
         layers:   [bluemarble01]
 
-    tcpm25:    
+    tcpm25:
       long_name: Total column PM2.5
       levels:  [0]
       navigate: 'off'
-      layers:  [tcoc]  
+      layers:  [tcoc]
       title: 'Total column PM2.5'
-      tcoc: 
+      tcoc:
         clevs: 0 0.02 0.05 0.1 0.2 0.5 1 2 5
         expr: _tcpm25*1e+3
-        cmin: 
-        cmax: 
-        cint: 
+        cmin:
+        cmax:
+        cint:
         nsub: 20
         skip: 20
       map:
         layers:   [bluemarble01]
 
-    tcpm25_smoke:    
+    tcpm25_smoke:
       long_name: Total Column PM2.5 Smoke
       levels:  [0]
       navigate: 'off'
-      layers:  [tcoc]  
+      layers:  [tcoc]
       title: 'Total column PM2.5'
-      tcoc: 
+      tcoc:
         clevs: 0 0.0001 0.002 0.005 0.01 0.02 0.05 0.1
         expr: _tcpm25*1e+3
         nsub: 20
@@ -133,7 +133,7 @@ wxmapscustom:
       levels: [925,850,700,600]
       layers: [su]
       title: '$level hPa ammonium aerosol'
-      su: 
+      su:
         expr: _am
       map:
         layers: [bluemarble01]
@@ -143,7 +143,7 @@ wxmapscustom:
       levels: [925,850,700,600]
       layers: [su]
       title: '$level hPa ammonium aerosol'
-      su: 
+      su:
         expr: _ni
       map:
         layers: [bluemarble01]
@@ -193,7 +193,7 @@ wxmapscustom:
       levels: [925,850,700,600]
       layers: [co]
       title: '$level hPa CO tracer of biomass burning'
-      co: 
+      co:
         expr: _co_smoke
         clevs: 0 0.5 1.0 2.0 5.0 10.0 15.0 20.0 50.0 100.00 150.0
       map:
@@ -236,12 +236,12 @@ wxmapscustom:
         layers: [bluemarble01]
 
     am_lml:
-      long_name: Ammonium 
+      long_name: Ammonium
       levels: [0]
       navigate: 'off'
       layers: [su]
       title: 'Surafce ammonium aerosol'
-      su: 
+      su:
         expr: _am_lml
       map:
         layers: [bluemarble01]
@@ -251,7 +251,7 @@ wxmapscustom:
       navigate: 'off'
       layers: [su]
       title: 'Surafce ammonium aerosol'
-      su: 
+      su:
         expr: _ni_lml
       map:
         layers: [bluemarble01]
@@ -262,7 +262,7 @@ wxmapscustom:
       navigate: 'off'
       layers: [su]
       title: 'Surface sulphate aerosol'
-      su: 
+      su:
         expr: _su_lml
       map:
         layers: [bluemarble01]
@@ -273,7 +273,7 @@ wxmapscustom:
       navigate: 'off'
       layers: [du]
       title: 'Surface dust aerosol'
-      du: 
+      du:
         expr: _du_lml
       map:
         layers: [bluemarble01]
@@ -284,7 +284,7 @@ wxmapscustom:
       navigate: 'off'
       layers: [ss]
       title: 'Surface sea salt aerosol'
-      ss: 
+      ss:
         expr: _ss_lml
       map:
         layers: [bluemarble01]
@@ -295,7 +295,7 @@ wxmapscustom:
       navigate: 'off'
       layers: [oc]
       title: 'Surface Organic Carbon'
-      oc: 
+      oc:
         expr: _oc_lml
       map:
         layers: [bluemarble01]
@@ -306,7 +306,7 @@ wxmapscustom:
       navigate: 'off'
       layers: [bc]
       title: 'Surface Black Carbon'
-      bc: 
+      bc:
         expr: _bc_lml
       map:
         layers: [bluemarble01]
@@ -317,7 +317,7 @@ wxmapscustom:
       navigate: 'off'
       layers: [co]
       title: 'Surface CO'
-      co: 
+      co:
         expr: _co_lml
       map:
         layers: [bluemarble01]
@@ -327,7 +327,7 @@ wxmapscustom:
       navigate: 'off'
       layers: [co]
       title: 'Surface CO tracer for biomass burning'
-      co: 
+      co:
         expr: _co_smoke_lml
         clevs: 0 0.5 1.0 2.0 5.0 10.0 15.0 20.0 50.0 100.00 150.0
       map:
@@ -338,7 +338,7 @@ wxmapscustom:
       navigate: 'off'
       layers: [smoke]
       title: 'Surface Smoke Tracer'
-      smoke: 
+      smoke:
         expr: _smoke_lml
       map:
         layers: [bluemarble01]
@@ -348,7 +348,7 @@ wxmapscustom:
       navigate: 'off'
       layers: [no1]
       title: 'Surface NO'
-      no1: 
+      no1:
         expr: _no1_lml
       map:
         layers: [bluemarble01]
@@ -358,7 +358,7 @@ wxmapscustom:
       navigate: 'off'
       layers: [no2]
       title: 'Surface NO2'
-      no2: 
+      no2:
         expr: _no2_lml
       map:
         layers: [bluemarble01]
@@ -368,7 +368,7 @@ wxmapscustom:
       navigate: 'off'
       layers: [so2]
       title: 'Surface SO2'
-      so2: 
+      so2:
         expr: _so2_lml
       map:
         layers: [bluemarble01]
@@ -378,7 +378,7 @@ wxmapscustom:
       navigate: 'off'
       layers: [o3]
       title: 'Surface O3'
-      o3: 
+      o3:
         expr: _o3_lml
       map:
         layers: [bluemarble01]
@@ -390,13 +390,13 @@ wxmapscustom:
       gxout: shaded
       expr: _aod
       cbar: Warm01_cmap
-      clevs: 0 0.04 0.07 0.1 0.15 0.2 0.3 0.4 0.6 0.8 1 1.2 1.5 1.8 
-      cmin: 
+      clevs: 0 0.04 0.07 0.1 0.15 0.2 0.3 0.4 0.6 0.8 1 1.2 1.5 1.8
+      cmin:
       cmax:
-      cint: 
+      cint:
       nsub: 5
       skip: 5
-      scale: 
+      scale:
       alpha:
         - 0.000 0.000 0.000
         - 0.103 0.000 0.000
@@ -407,14 +407,14 @@ wxmapscustom:
       gxout: shaded
       expr: _pm25
       cbar: Warm01_cmap
-      cbunits: 'ugm`a-3`' 
-      clevs: 0 0.1 0.2 0.5 10 20 40 60 100 150 200 
-      cmin: 
+      cbunits: 'ugm`a-3`'
+      clevs: 0 0.1 0.2 0.5 10 20 40 60 100 150 200
+      cmin:
       cmax:
-      cint: 
+      cint:
       nsub: 10
       skip: 10
-      scale: 
+      scale:
       alpha:
         - 0.000 0.000 0.000
         - 0.103 0.000 0.000
@@ -425,13 +425,13 @@ wxmapscustom:
       gxout: shaded
       expr: _tcco*1e+3
       cbar: Warm01_cmap
-      cbunits: 'gm`a-2' 
+      cbunits: 'gm`a-2'
       cmin: 0.5
       cmax: 2.5
       cint: 0.25
       nsub: 10
       skip: 5
-      scale: exp_scale 
+      scale: exp_scale
       alpha:
         - 0.000 0.000 0.000
         - 0.143 0.000 0.000
@@ -442,11 +442,11 @@ wxmapscustom:
       gxout: shaded
       expr: _tcno*1e+9
       cbar: Warm01_cmap
-      cbunits: 'ugm`a-2' 
-      clevs: 2 5 10 20 50 100 200 500 1000 
-      cmin: 
-      cmax: 
-      cint: 
+      cbunits: 'ugm`a-2'
+      clevs: 2 5 10 20 50 100 200 500 1000
+      cmin:
+      cmax:
+      cint:
       nsub: 10
       skip: 10
       scale: exp_scale
@@ -460,11 +460,11 @@ wxmapscustom:
       gxout: shaded
       expr: _tcoc*1e+3
       cbar: Warm01_cmap
-      cbunits: 'gm`a-2' 
+      cbunits: 'gm`a-2'
       clevs: 0 0.002 0.005 0.01 0.02 0.05 0.1 0.2 0.5 1 2 5
-      cmin: 
-      cmax: 
-      cint: 
+      cmin:
+      cmax:
+      cint:
       nsub: 10
       skip: 10
       alpha:
@@ -480,7 +480,7 @@ wxmapscustom:
       cmin: 0
       cmax: 5.0
       cint: 0.05
-      cbunits: ' ' 
+      cbunits: ' '
       nsub: 2
       skip: 10
       scale: exp_scale
@@ -494,11 +494,11 @@ wxmapscustom:
       gxout: shaded
       expr: _su
       cbar: Warm01_cmap
-      clevs:  0.1 0.2 0.5 1 2 5 10 20 50 80 
-      cmin: 
-      cmax: 
-      cint: 
-      cbunits: 'ug m`a-3' 
+      clevs:  0.1 0.2 0.5 1 2 5 10 20 50 80
+      cmin:
+      cmax:
+      cint:
+      cbunits: 'ug m`a-3'
       nsub: 10
       skip: 10
       scale:
@@ -512,11 +512,11 @@ wxmapscustom:
       gxout: shaded
       expr: _du
       cbar: Warm01_cmap
-      clevs: 0 0.05 0.1 0.2 0.5 1 2 5 10 20 50 100 200 
-      cmin: 
-      cmax: 
-      cint: 
-      cbunits: 'ug m`a-3' 
+      clevs: 0 0.05 0.1 0.2 0.5 1 2 5 10 20 50 100 200
+      cmin:
+      cmax:
+      cint:
+      cbunits: 'ug m`a-3'
       nsub: 10
       skip: 10
       scale:
@@ -530,11 +530,11 @@ wxmapscustom:
       gxout: shaded
       expr: _ss
       cbar: Warm01_cmap
-      clevs: 0 0.02 0.05 0.1 0.2 0.5 1 2 5 10 20 50 100 200 300   
-      cmin: 
-      cmax: 
-      cint: 
-      cbunits: 'ug m`a-3' 
+      clevs: 0 0.02 0.05 0.1 0.2 0.5 1 2 5 10 20 50 100 200 300
+      cmin:
+      cmax:
+      cint:
+      cbunits: 'ug m`a-3'
       nsub: 10
       skip: 10
       scale:
@@ -549,10 +549,10 @@ wxmapscustom:
       expr: _oc
       cbar: Warm01_cmap
       clevs: 0 0.1 0.2 0.5 1 2 5 10 20 50 100
-      cmin: 
-      cmax: 
-      cint: 
-      cbunits: 'ug m`a-3' 
+      cmin:
+      cmax:
+      cint:
+      cbunits: 'ug m`a-3'
       nsub: 10
       skip: 10
       scale:
@@ -567,10 +567,10 @@ wxmapscustom:
       expr: _bc
       cbar: Warm01_cmap
       clevs: 0 0.05 0.1 0.2 0.5 1 2 5 10 20 50 100
-      cmin: 
-      cmax: 
-      cint: 
-      cbunits: 'ug m`a-3' 
+      cmin:
+      cmax:
+      cint:
+      cbunits: 'ug m`a-3'
       nsub: 10
       skip: 10
       scale:
@@ -584,14 +584,14 @@ wxmapscustom:
       gxout: shaded
       expr: _co
       cbar: Warm01_cmap
-      clevs: 0 60 80 100 120 140 150 200 250 300 400 500 700 
-      cmin: 
-      cmax: 
-      cint: 
-      cbunits: 'ppbv' 
+      clevs: 0 60 80 100 120 140 150 200 250 300 400 500 700
+      cmin:
+      cmax:
+      cint:
+      cbunits: 'ppbv'
       nsub: 10
       skip: 10
-      scale: 
+      scale:
       alpha:
         - 0.000 0.000 0.000
         - 0.113 0.000 0.000
@@ -602,11 +602,11 @@ wxmapscustom:
       gxout: shaded
       expr: _no1
       cbar: Warm01_cmap
-      clevs: 0 0.001 0.002 0.005 0.01 0.02 0.05 0.1 0.2 0.5 1 2 5 10 20 50 
-      cmin: 
-      cmax: 
-      cint: 
-      cbunits: 'ppbv' 
+      clevs: 0 0.001 0.002 0.005 0.01 0.02 0.05 0.1 0.2 0.5 1 2 5 10 20 50
+      cmin:
+      cmax:
+      cint:
+      cbunits: 'ppbv'
       nsub: 10
       skip: 10
       scale:
@@ -620,11 +620,11 @@ wxmapscustom:
       gxout: shaded
       expr: _no2
       cbar: Warm01_cmap
-      clevs: 0 0.02 0.05 0.1 0.2 0.5 1 2 5 10 20 50 
-      cmin: 
-      cmax: 
-      cint: 
-      cbunits: 'ppbv' 
+      clevs: 0 0.02 0.05 0.1 0.2 0.5 1 2 5 10 20 50
+      cmin:
+      cmax:
+      cint:
+      cbunits: 'ppbv'
       nsub: 10
       skip: 10
       scale:
@@ -638,11 +638,11 @@ wxmapscustom:
       gxout: shaded
       expr: _so2
       cbar: Warm01_cmap
-      clevs: 0 0.02 0.05 0.1 0.2 0.5 1 2 5 10 20 50 
-      cmin: 
-      cmax: 
-      cint: 
-      cbunits: 'ppbv' 
+      clevs: 0 0.02 0.05 0.1 0.2 0.5 1 2 5 10 20 50
+      cmin:
+      cmax:
+      cint:
+      cbunits: 'ppbv'
       nsub: 10
       skip: 10
       scale:
@@ -659,7 +659,7 @@ wxmapscustom:
       cmin: 50.0
       cmax: 200.0
       cint: 2.5
-      cbunits: 'ppbv' 
+      cbunits: 'ppbv'
       nsub: 2
       skip: 10
       scale: exp_scale

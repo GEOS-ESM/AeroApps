@@ -103,7 +103,7 @@ region:
     masks: [land_mask]
 
   pacific:
-  
+
     long_name: Pacific
     lon: 107 290
     lat: -60 72
@@ -128,9 +128,9 @@ region:
     mpdset: mres
     mproj: latlon
     masks: [land_mask]
-  
+
   australia:
-  
+
     long_name: Australia
     lon: 100 180
     lat: -50 -10

@@ -378,4 +378,4 @@ wxmapscustom:
       cthick: 5
       expr: maskout(_biomass, _biomass-0.0000001)
 
-  attribute: 
+  attribute:

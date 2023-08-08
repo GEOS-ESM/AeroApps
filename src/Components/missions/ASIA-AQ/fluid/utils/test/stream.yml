@@ -1,7 +1,7 @@
 stream:
-  
+
   WRFchem:
-  
+
     long_name: WRFCHEM
     description: Weather Research and Forecasting (WRF) model coupled with Chemistry
     type: forecast
@@ -54,7 +54,7 @@ stream:
   HRRRX:
 
     long_name: HRRRX
-    description: High-Resolution Rapid Refresh- Experimental 
+    description: High-Resolution Rapid Refresh- Experimental
     type: forecast
     uri: /gpfsm/dnb04/projects/p109/FIREX-AQ/sample_forecasts2/HRRRX/hrrrx.ctl
     institution: NOAA/ESRL
@@ -90,7 +90,7 @@ stream:
     institution: Environment Canada
     logos: []
 
-  RAPchem: 
+  RAPchem:
 
     long_name: Rapid Refresh with Chemistry
     description: Rapid Refresh with Chemistry (RAP-Chem)
@@ -100,7 +100,7 @@ stream:
     reference: https://rapidrefresh.noaa.gov/RAPchem/RAP-Chem_desc.html
     logos: [noaa-logo-ul]
 
-  NAAPS: 
+  NAAPS:
 
     long_name: Navy Aerosol Analysis and Prediction System
     description: Navy Aerosol Analysis and Prediction System (NAAPS)
@@ -119,23 +119,23 @@ stream:
     institution: NASA/NOAA
     reference: http://raqms-ops.ssec.wisc.edu
     logos: [noaa-logo-ul]
-  
-  NCARWRFchem: 
 
-    long_name: NCAR WRF-Chem 
+  NCARWRFchem:
+
+    long_name: NCAR WRF-Chem
     description: NCAR WRF-Chem
     type: forecast
-    uri: /gpfsm/dnb04/projects/p109/FIREX-AQ/sample_forecasts2/PrsLatLon/ncarwrfchem.llp.%Y%m%d_%Hz.nc4 
+    uri: /gpfsm/dnb04/projects/p109/FIREX-AQ/sample_forecasts2/PrsLatLon/ncarwrfchem.llp.%Y%m%d_%Hz.nc4
     institution: NOAA
     reference: https://
     logos: [ ]
 
-  UCLAWRFchem: 
+  UCLAWRFchem:
 
-    long_name: UCLA WRF-Chem 
+    long_name: UCLA WRF-Chem
     description: UCLA WRF-Chem
     type: forecast
-    uri: /gpfsm/dnb04/projects/p109/FIREX-AQ/sample_forecasts2/PrsLatLon/uclawrfchem.llp.%Y%m%d_%Hz.nc4 
+    uri: /gpfsm/dnb04/projects/p109/FIREX-AQ/sample_forecasts2/PrsLatLon/uclawrfchem.llp.%Y%m%d_%Hz.nc4
     institution: NOAA
     reference: https://
     logos: [ ]
@@ -152,7 +152,7 @@ stream:
 
   UIOWAWRFchem:
 
-    long_name: UIOWA WRF-Chem 
+    long_name: UIOWA WRF-Chem
     description: UIOWA WRF-Chem
     type: forecast
     uri: /gpfsm/dnb04/projects/p109/FIREX-AQ/sample_forecasts2/PrsLatLon/uiowawrf.llp.%Y%m%d_%Hz.nc4

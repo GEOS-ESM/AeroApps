@@ -22,7 +22,7 @@ region:
     mpvals: 230 290 25 55
 
   midatl:
-  
+
     long_name: Mid Atlantic
     lon: -85 -70
     lat: 33 43
@@ -30,17 +30,17 @@ region:
     mproj: latlon
     addlayers: [US_Counties]
 #   addlayers: [Roads]
-  
+
   npac:
-  
+
     long_name: North Pacific
     lon: 100 230
     lat: 0 65
     mpdset: mres
     mproj: latlon
-  
+
   nps:
-  
+
     long_name: N Polar
     lon: -180 180
     lat: 30 90
@@ -52,9 +52,9 @@ region:
     streamlines: 'off'
     thick_above: 'off'
     thick_below: 'off'
-  
+
   sps:
-  
+
     long_name: S Polar
     lon: -180 180
     lat: -90 -30
@@ -66,26 +66,26 @@ region:
     streamlines: 'off'
     thick_above: 'off'
     thick_below: 'off'
-  
+
   australia:
-  
+
     long_name: Australia
     lon: 100 180
     lat: -50 -10
     mpdset: hires
     mproj: latlon
     addlayers: [States_Provinces]
-  
+
   sevseas:
-  
+
     long_name: Seven Seas
     lon: 65 160
     lat: -15 50
     mpdset: mres
     mproj: latlon
-  
+
   natl:
-  
+
     long_name: North Atlantic
     lon: -115 0
     lat:  -10 50
@@ -189,7 +189,7 @@ region:
     hilo: 'off'
 
   pacific:
-  
+
     long_name: Pacific Ocean
     lon: 107 290
     lat: -60 72
@@ -265,8 +265,8 @@ region:
   siberia:
 
     long_name: Siberia
-    lon: 0 360 
-    lat: 0 90 
+    lon: 0 360
+    lat: 0 90
     mpdset: hires
     mproj: nps
     mpvals: 47 180 43 77
@@ -275,8 +275,8 @@ region:
   alaska:
 
     long_name: Alaska
-    lon: 0 360 
-    lat: 0 90 
+    lon: 0 360
+    lat: 0 90
     mpdset: hires
     mproj: nps
     mpvals: 180 230 50 75

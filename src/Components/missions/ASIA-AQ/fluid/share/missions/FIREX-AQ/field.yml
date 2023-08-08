@@ -26,12 +26,12 @@ field:
     _bc:
       long_name: Black Carbon Mass Mixing Ratio
       units: ug m-3
-      expression: bc.inst3_3d_aer_Np*airdens.inst3_3d_tag_Np*1e+9 
+      expression: bc.inst3_3d_aer_Np*airdens.inst3_3d_tag_Np*1e+9
 
     _oc:
       long_name: Organic Carbon Mass Mixing Ratio
       units: ug m-3
-      expression: oc.inst3_3d_aer_Np*airdens.inst3_3d_tag_Np*1e+9 
+      expression: oc.inst3_3d_aer_Np*airdens.inst3_3d_tag_Np*1e+9
 
     _du:
       long_name: Dust Mass Mixing Ratio
@@ -42,7 +42,7 @@ field:
       long_name: Sea Salt Mixing Ratio
       units: ug m-3
       expression: ss.inst3_3d_aer_Np*airdens.inst3_3d_tag_Np*1e+9
-  
+
     _so4:
       long_name: Sulphate Mixing Ratio
       units: ug m-3
@@ -91,13 +91,13 @@ field:
     _so2:
       long_name: Sulphur Dioxide Mixing Ratio
       units: 'ppbv'
-      expression: so2.inst3_3d_aer_Np/64.0*28.97*1e+9 
+      expression: so2.inst3_3d_aer_Np/64.0*28.97*1e+9
 
     _so2_lml:
       long_name: SO2 Surface Mass Concentration
       units: 'ppbv'
-      expression: so2smass.inst1_2d_hwl_Nx/airdens.inst3_3d_tag_Np(z=1)/64.0*28.97*1e+9 
-  
+      expression: so2smass.inst1_2d_hwl_Nx/airdens.inst3_3d_tag_Np(z=1)/64.0*28.97*1e+9
+
     _tcco:
       long_name: CO Column Burden
       units: kg m-2
@@ -117,12 +117,12 @@ field:
       long_name: North-South Wind
       units: m s-1
       expression: v.inst3_3d_asm_Np
- 
+
     _tmpu:
       long_name: Temperature
       units: K
       expression: t.inst3_3d_asm_Np
-  
+
     _rh:
       long_name: Relative Humidity
       units: percent
@@ -138,17 +138,17 @@ field:
       units: kg kg-1
       expression: qi.inst3_3d_asm_Np
 
-  GEOSCF: 
+  GEOSCF:
 
     _no2_lml:
       long_name: NO2_volume_mixing_ratio_dry_air
       units: ppbv
-      expression: no2.htf_inst_15mn_g1440x721_x1(z=1)*1e+9 
+      expression: no2.htf_inst_15mn_g1440x721_x1(z=1)*1e+9
 
     _so2_lml:
       long_name: SO2_volume_mixing_ratio_dry_air
       units: ppbv
-      expression: so2.htf_inst_15mn_g1440x721_x1(z=1)*1e+9 
+      expression: so2.htf_inst_15mn_g1440x721_x1(z=1)*1e+9
 
     _o3_lml:
       long_name: O3_volume_mixing_ratio_dry_air
@@ -158,7 +158,7 @@ field:
     _co_lml:
       long_name: CO_volume_mixing_ratio_dry_air
       units: ppbv
-      expression: co.htf_inst_15mn_g1440x721_x1(z=1)*1e+9 
+      expression: co.htf_inst_15mn_g1440x721_x1(z=1)*1e+9
 
     _pm25sfc:
       long_name: Particulate_matter_with_diameter_below_2.5_um
@@ -168,22 +168,22 @@ field:
     _no2:
       long_name: NO2_volume_mixing_ratio_dry_air
       units: ppbv
-      expression: no2.chm_inst_1hr_g1440x721_p23*1e+9 
+      expression: no2.chm_inst_1hr_g1440x721_p23*1e+9
 
     _so2:
       long_name: SO2_volume_mixing_ratio_dry_air
-      units: ppbv 
-      expression: so2.chm_inst_1hr_g1440x721_p23*1e+9 
+      units: ppbv
+      expression: so2.chm_inst_1hr_g1440x721_p23*1e+9
 
     _co:
       long_name: CO_volume_mixing_ratio_dry_air
       units: ppbv
-      expression: co.chm_inst_1hr_g1440x721_p23*1e+9 
+      expression: co.chm_inst_1hr_g1440x721_p23*1e+9
 
     _tcco:
       long_name: CO_total_column_density
       units: kg m-2
-#     expression: totcol_co.xgc_tavg_1hr_g1440x721_x1(z=1)*28.01*1e+16 
+#     expression: totcol_co.xgc_tavg_1hr_g1440x721_x1(z=1)*28.01*1e+16
       expression: (totcol_co.xgc_tavg_1hr_g1440x721_x1(z=1)*1.e+15)/(6.022*1e+23)*28.01*10
 
     _biomass:
@@ -194,7 +194,7 @@ field:
     _o3:
       long_name: O3_volume_mixing_ratio_dry_air
       units: ppbv
-      expression: o3.chm_inst_1hr_g1440x721_p23*1e+9 
+      expression: o3.chm_inst_1hr_g1440x721_p23*1e+9
 
 
   WRFchem:
@@ -258,7 +258,7 @@ field:
       long_name: Total column Organic Carbon
       units: 'kgm-2'
       expression: tcoc(z=1)
-    _tcpm25: 
+    _tcpm25:
       long_name: total column PM2.5
       units: 'kg m-2'
       expression: tcpm25(z=1)
@@ -562,7 +562,7 @@ field:
       units:     'kgm-2'
       expression: tcpm2p5(z=1)
     _tcoc:
-      long_name: Total column organic carbon 
+      long_name: Total column organic carbon
       units:     'kgm-2'
       expression: tcom(z=1)
     _su_lml:
@@ -640,7 +640,7 @@ field:
 
 
   ARQI:
- 
+
     _aod:
       long_name: Aerosol Optical Dpeth
       units: '1'
@@ -653,31 +653,31 @@ field:
       long_name: Sulphate aerosol mixing ratio (<10 um)
       units: 'ugm-3'
       expression: SUAC
-    _ni: 
+    _ni:
       long_name: Nitrate aerosol (<10 um)
       units: 'ug m-3'
-      expression: NIAC 
-    _pm25: 
-      long_name: PM2.5 
+      expression: NIAC
+    _pm25:
+      long_name: PM2.5
       units: 'ug m-3'
-      expression: AF 
-    _pm10: 
-      long_name: PM10 
+      expression: AF
+    _pm10:
+      long_name: PM10
       units: 'ug m-3'
-      expression: AC 
-    _oc: 
+      expression: AC
+    _oc:
       long_name: OC mixing ratio
       units: 'ugm-3'
-      expression: PCAC+OCAC 
-    _bc: 
+      expression: PCAC+OCAC
+    _bc:
       long_name: EC mixing ratio
       units: 'ugm-3'
       expression: ECAC
-    _du: 
+    _du:
       long_name: dust mixing ratio
       units: 'ugm-3'
       expression: CMAC
-    _ss: 
+    _ss:
       long_name: sea salt mixing ratio
       units: 'ugm-3'
       expression: SSAC
@@ -708,28 +708,28 @@ field:
     _am_lml:
       long_name: Ammonium aerosol mixing ratio (<10 um)
       units: 'ugm-3'
-      expression: AMAC_lml(z=1) 
+      expression: AMAC_lml(z=1)
     _su_lml:
       long_name: Sulphate aerosol mixing ratio (<10 um)
       units: 'ugm-3'
       expression: SUAC_lml(z=1)
-    _ni_lml: 
+    _ni_lml:
       long_name: Nitrate aerosol (<10 um)
       units: 'ug m-3'
-      expression: NIAC_lml(z=1) 
-    _oc_lml: 
+      expression: NIAC_lml(z=1)
+    _oc_lml:
       long_name: OC mixing ratio
       units: 'ugm-3'
-      expression: PCAC_lml(z=1)+OCAC_lml(z=1) 
-    _bc_lml: 
+      expression: PCAC_lml(z=1)+OCAC_lml(z=1)
+    _bc_lml:
       long_name: EC mixing ratio
       units: 'ugm-3'
-      expression: ECAC_lml(z=1) 
-    _du_lml: 
+      expression: ECAC_lml(z=1)
+    _du_lml:
       long_name: dust mixing ratio
       units: 'ugm-3'
       expression: CMAC_lml(z=1)
-    _ss_lml: 
+    _ss_lml:
       long_name: sea salt mixing ratio
       units: 'ugm-3'
       expression: SSAC_lml(z=1)
@@ -753,38 +753,38 @@ field:
        long_name: O3 mixing ratio
        units: 'ppbv'
        expression: O3_lml(z=1)
-    _tcpm25: 
+    _tcpm25:
       long_name: total column PM2.5
       units: 'kg m-2'
       expression: tcpm25(z=1)
-    _tcoc: 
+    _tcoc:
       long_name: total column OC
       units: 'kg m-2'
       expression: tcoc(z=1)
-    _tcco: 
+    _tcco:
       long_name: total column CO
       units: 'kg m-2'
       expression: tcco(z=1)
 
-       
+
   CAMchem:
-   
-    _pm25: 
+
+    _pm25:
       long_name: PM2.5
       units: 'ug m-3'
-      expression: PM25*1e+9 
-    _pm25sfc: 
+      expression: PM25*1e+9
+    _pm25sfc:
       long_name: PM2.5
       units: 'ug m-3'
-      expression: PM25(z=3)*1e+9 
-    _tcpm25: 
+      expression: PM25(z=3)*1e+9
+    _tcpm25:
       long_name: total column PM2.5
       units: 'kg m-2'
       expression: tcpm25(z=1)
-    _aod: 
+    _aod:
       long_name: AOD
       units: ' '
-      expression: AODVISdn(z=1) 
+      expression: AODVISdn(z=1)
     _am:
       long_name: Ammonium aerosol mixing ratio
       units: 'ugm-3'
@@ -938,7 +938,7 @@ field:
 
 
   NCARWRFchem:
-    
+
     _aod:
       long_name: Aerosol Optical Depth
       units: '1'
@@ -959,7 +959,7 @@ field:
       long_name: Total column Organic Carbon
       units: 'kgm-2'
       expression: tcoc(z=1)
-    _tcpm25: 
+    _tcpm25:
       long_name: total column PM2.5
       units: 'kg m-2'
       expression: tcpm25(z=1)
@@ -970,43 +970,43 @@ field:
     _bc:
       long_name: BC
       units: 'ug m-3'
-      expression: (BC_1+BC_2)*rho 
+      expression: (BC_1+BC_2)*rho
     _oc:
       long_name: OC
       units: 'ug m-3'
-      expression: (OC_1+OC_2)*rho 
+      expression: (OC_1+OC_2)*rho
     _ss:
       long_name: sea salt
       units: 'ug m-3'
-      expression: (SEAS_1+SEAS_2+SEAS_3+SEAS_4)*rho 
+      expression: (SEAS_1+SEAS_2+SEAS_3+SEAS_4)*rho
     _su:
       long_name: sulfate (so4)
       units: 'ug m-3'
-      expression: sulf*1e+-6*96.0/28.97*rho*1e+9  
+      expression: sulf*1e+-6*96.0/28.97*rho*1e+9
     _ni:
       long_name: nitrate (no3)
       units: 'ug m-3'
-      expression: no3*1e+-6*62.0/28.97*rho*1e+9  
+      expression: no3*1e+-6*62.0/28.97*rho*1e+9
     _co:
       long_name: CO
       units: 'ppb'
-      expression: co*1e+3  
+      expression: co*1e+3
     _co_smoke:
       long_name: CO fire
       units: 'ppb'
-      expression: co_fire*1e+3  
+      expression: co_fire*1e+3
     _no1:
       long_name: 'NO'
       units: 'ppb'
-      expression: no*1e+3  
+      expression: no*1e+3
     _no2:
       long_name: NO2
       units: 'ppb'
-      expression: no2*1e+3  
+      expression: no2*1e+3
     _o3:
       long_name: O3
       units: 'ppb'
-      expression: o3*1e+3  
+      expression: o3*1e+3
     _du_lml:
       long_name: Dust
       units: 'ug m-3'
@@ -1014,7 +1014,7 @@ field:
     _bc_lml:
       long_name: BC
       units: 'ug m-3'
-      expression: (BC_1_lml(z=1)+BC_2_lml(z=1))*rho_lml(z=1) 
+      expression: (BC_1_lml(z=1)+BC_2_lml(z=1))*rho_lml(z=1)
     _oc_lml:
       long_name: OC
       units: 'ug m-3'
@@ -1022,35 +1022,35 @@ field:
     _ss_lml:
       long_name: sea salt
       units: 'ug m-3'
-      expression: (SEAS_1_lml(z=1)+SEAS_2_lml(z=1)+SEAS_3_lml(z=1)+SEAS_4_lml(z=1))*rho_lml(z=1) 
+      expression: (SEAS_1_lml(z=1)+SEAS_2_lml(z=1)+SEAS_3_lml(z=1)+SEAS_4_lml(z=1))*rho_lml(z=1)
     _su_lml:
       long_name: sulfate (so4)
       units: 'ug m-3'
-      expression: sulf_lml(z=1)*1e+-6*96.0/28.97*rho_lml(z=1)*1e+9  
+      expression: sulf_lml(z=1)*1e+-6*96.0/28.97*rho_lml(z=1)*1e+9
     _ni_lml:
       long_name: nitrate (no3)
       units: 'ug m-3'
-      expression: no3_lml(z=1)*1e+-6*62.0/28.97*rho_lml(z=1)*1e+9  
+      expression: no3_lml(z=1)*1e+-6*62.0/28.97*rho_lml(z=1)*1e+9
     _co_lml:
       long_name: CO
       units: 'ppb'
-      expression: co_lml(z=1)*1e+3  
+      expression: co_lml(z=1)*1e+3
     _co_smoke_lml:
       long_name: CO fire
       units: 'ppb'
-      expression: co_fire_lml(z=1)*1e+3  
+      expression: co_fire_lml(z=1)*1e+3
     _no1_lml:
       long_name: 'NO'
       units: 'ppb'
-      expression: no_lml(z=1)*1e+3  
+      expression: no_lml(z=1)*1e+3
     _no2_lml:
       long_name: NO2
       units: 'ppb'
-      expression: no2_lml(z=1)*1e+3  
+      expression: no2_lml(z=1)*1e+3
     _o3_lml:
       long_name: O3
       units: 'ppb'
-      expression: o3_lml(z=1)*1e+3  
+      expression: o3_lml(z=1)*1e+3
 
   ARL:
     _su:
@@ -1168,7 +1168,7 @@ field:
       long_name: Total column Organic Carbon
       units: 'kgm-2'
       expression: tcoc(z=1)
-    _tcpm25: 
+    _tcpm25:
       long_name: total column PM2.5
       units: 'kg m-2'
       expression: tcpm25(z=1)
@@ -1180,13 +1180,13 @@ field:
       long_name: Total column Carbon monoxide
       units: 'kgm-2'
       expression: tcco(z=1)
-    _tcpm25: 
+    _tcpm25:
       long_name: total column PM2.5
       units: 'kg m-2'
       expression: tcpm25(z=1)
 
-    _pm25: 
-      long_name: PM2.5 
+    _pm25:
+      long_name: PM2.5
       units: 'ug m-3'
       expression: pm25
 
@@ -1211,36 +1211,36 @@ field:
       expression: TAOD5502D(z=1)
 
     _co_smoke:
-      long_name: CO biomass burning 
+      long_name: CO biomass burning
       units: 'ppbv'
-      expression: (tr17_1+tr17_2+tr17_3+tr17_4+tr17_5+tr17_6+tr17_7)*1e+3 
-  
+      expression: (tr17_1+tr17_2+tr17_3+tr17_4+tr17_5+tr17_6+tr17_7)*1e+3
+
     _co_smoke_lml:
-      long_name: CO biomass burning 
+      long_name: CO biomass burning
       units: 'ppbv'
-      expression: (tr17_1_lml(z=1)+tr17_2_lml(z=1)+tr17_3_lml(z=1)+tr17_4_lml(z=1)+tr17_5_lml(z=1)+tr17_6_lml(z=1)+tr17_7_lml(z=1))*1e+3 
-  
+      expression: (tr17_1_lml(z=1)+tr17_2_lml(z=1)+tr17_3_lml(z=1)+tr17_4_lml(z=1)+tr17_5_lml(z=1)+tr17_6_lml(z=1)+tr17_7_lml(z=1))*1e+3
+
     _pm25sfc:
       long_name: PM2.5 at lowest model level
       units: 'ugm-3'
       expression: pm25sfc(z=1)
-  
+
   UIOWAWRFchem:
 
     _tcco:
       long_name: Total column Carbon monoxide
       units: 'kgm-2'
       expression: tcco(z=1)
-    _tcpm25: 
+    _tcpm25:
       long_name: total column PM2.5
       units: 'kg m-2'
       expression: tcpm25(z=1)
-    _tcoc: 
+    _tcoc:
       long_name: total column OC
       units: 'kg m-2'
       expression: tcoc(z=1)
-    _pm25: 
-      long_name: PM2.5 
+    _pm25:
+      long_name: PM2.5
       units: 'ug m-3'
       expression: pm25
     _uwnd:
@@ -1287,10 +1287,10 @@ field:
       long_name: Sulphate aerosol mixing ratio
       units: 'ugm-3'
       expression: SULF*RHO/(1+QVAPOR)
-    _ni: 
+    _ni:
       long_name: Nitrate aerosol
       units: 'ug m-3'
-      expression: NITRATE*RHO/(1+QVAPOR) 
+      expression: NITRATE*RHO/(1+QVAPOR)
     _oc:
        long_name: OC mixing ratio
        units: 'ug m-3'
@@ -1302,7 +1302,7 @@ field:
     _ss:
        long_name: Sea salt aerosol mixing ratio
        units: 'ug m-3'
-       expression: OIN*RHO/(1+QVAPOR) 
+       expression: OIN*RHO/(1+QVAPOR)
     _co_lml:
        long_name: Carbon monixide
        units: 'ppbv'
@@ -1331,10 +1331,10 @@ field:
       long_name: Sulphate aerosol mixing ratio
       units: 'ugm-3'
       expression: SULF_lml(z=1)*RHO_lml(z=1)/(1+QVAPOR_lml(z=1))
-    _ni_lml: 
+    _ni_lml:
       long_name: Nitrate aerosol
       units: 'ug m-3'
-      expression: NITRATE_lml(z=1)*RHO_lml(z=1)/(1+QVAPOR_lml(z=1)) 
+      expression: NITRATE_lml(z=1)*RHO_lml(z=1)/(1+QVAPOR_lml(z=1))
     _oc_lml:
        long_name: OC mixing ratio
        units: 'ug m-3'
@@ -1346,9 +1346,9 @@ field:
     _ss_lml:
        long_name: Sea salt aerosol mixing ratio
        units: 'ug m-3'
-       expression: OIN_lml(z=1)*RHO_lml(z=1)/(1+QVAPOR_lml(z=1)) 
+       expression: OIN_lml(z=1)*RHO_lml(z=1)/(1+QVAPOR_lml(z=1))
     _pm25sfc:
-      long_name: PM2.5 at lowest model level 
+      long_name: PM2.5 at lowest model level
       units: 'ugm-3'
       expression: PM25_lml(z=1)
 
@@ -1362,14 +1362,14 @@ field:
       long_name: Total column PM2.5
       units: 'kgm-2'
       expression: tcpm25(z=1)
-    _pm25: 
-      long_name: PM2.5 
+    _pm25:
+      long_name: PM2.5
       units: 'ug m-3'
-      expression: AF 
-    _pm10: 
-      long_name: PM10 
+      expression: AF
+    _pm10:
+      long_name: PM10
       units: 'ug m-3'
-      expression: AC 
+      expression: AC
     _co:
       long_name: Carbon monixide
       units: 'ppbv'
@@ -1417,7 +1417,7 @@ field:
 
 
   NCARWRFchem:
-    
+
     _aod:
       long_name: Aerosol Optical Depth
       units: '1'
@@ -1427,7 +1427,7 @@ field:
       units: 'ugm-3'
       expression: PM2_5_DRY
     _pm25sfc:
-      long_name: PM2.5 at surface 
+      long_name: PM2.5 at surface
       units: 'ug m-3'
       expression: PM2_5_DRY_lml(z=1)
     _tcco:
@@ -1438,7 +1438,7 @@ field:
       long_name: Total column Organic Carbon
       units: 'kgm-2'
       expression: tcoc(z=1)
-    _tcpm25: 
+    _tcpm25:
       long_name: total column PM2.5
       units: 'kg m-2'
       expression: tcpm25(z=1)
@@ -1449,43 +1449,43 @@ field:
     _bc:
       long_name: BC
       units: 'ug m-3'
-      expression: (BC1+BC2)*rho 
+      expression: (BC1+BC2)*rho
     _oc:
       long_name: OC
       units: 'ug m-3'
-      expression: (OC1+OC2)*rho 
+      expression: (OC1+OC2)*rho
     _ss:
       long_name: sea salt
       units: 'ug m-3'
-      expression: (SEAS_1+SEAS_2+SEAS_3+SEAS_4)*rho 
+      expression: (SEAS_1+SEAS_2+SEAS_3+SEAS_4)*rho
     _su:
       long_name: sulfate (so4)
       units: 'ug m-3'
-      expression: sulf*1e-6*96.0/28.97*rho*1e9  
+      expression: sulf*1e-6*96.0/28.97*rho*1e9
     _ni:
       long_name: nitrate (no3)
       units: 'ug m-3'
-      expression: no3*1e-6*62.0/28.97*rho*1e9  
+      expression: no3*1e-6*62.0/28.97*rho*1e9
     _co:
       long_name: CO
       units: 'ppb'
-      expression: co*1e3  
+      expression: co*1e3
     _co_smoke:
       long_name: CO fire
       units: 'ppb'
-      expression: co_fire*1e3  
+      expression: co_fire*1e3
     _no1:
       long_name: NO
       units: 'ppb'
-      expression: no*1e3  
+      expression: no*1e3
     _no2:
       long_name: NO2
       units: 'ppb'
-      expression: no2*1e3  
+      expression: no2*1e3
     _o3:
       long_name: O3
       units: 'ppb'
-      expression: o3*1e3  
+      expression: o3*1e3
     _du_lml:
       long_name: Dust
       units: 'ug m-3'
@@ -1493,7 +1493,7 @@ field:
     _bc_lml:
       long_name: BC
       units: 'ug m-3'
-      expression: (BC1_lml(z=1)+BC2_lml(z=1))*rho_lml(z=1) 
+      expression: (BC1_lml(z=1)+BC2_lml(z=1))*rho_lml(z=1)
     _oc_lml:
       long_name: OC
       units: 'ug m-3'
@@ -1501,32 +1501,32 @@ field:
     _ss_lml:
       long_name: sea salt
       units: 'ug m-3'
-      expression: (SEAS_1_lml(z=1)+SEAS_2_lml(z=1)+SEAS_3_lml(z=1)+SEAS_4_lml(z=1))*rho_lml(z=1) 
+      expression: (SEAS_1_lml(z=1)+SEAS_2_lml(z=1)+SEAS_3_lml(z=1)+SEAS_4_lml(z=1))*rho_lml(z=1)
     _su_lml:
       long_name: sulfate (so4)
       units: 'ug m-3'
-      expression: sulf_lml(z=1)*1e-6*96.0/28.97*rho_lml(z=1)*1e9  
+      expression: sulf_lml(z=1)*1e-6*96.0/28.97*rho_lml(z=1)*1e9
     _ni_lml:
       long_name: nitrate (no3)
       units: 'ug m-3'
-      expression: no3_lml(z=1)*1e-6*62.0/28.97*rho_lml(z=1)*1e9  
+      expression: no3_lml(z=1)*1e-6*62.0/28.97*rho_lml(z=1)*1e9
     _co_lml:
       long_name: CO
       units: 'ppb'
-      expression: co_lml(z=1)*1e3  
+      expression: co_lml(z=1)*1e3
     _co_smoke_lml:
       long_name: CO fire
       units: 'ppb'
-      expression: co_fire_lml(z=1)*1e3  
+      expression: co_fire_lml(z=1)*1e3
     _no1_lml:
       long_name: NO
       units: 'ppb'
-      expression: no_lml(z=1)*1e3  
+      expression: no_lml(z=1)*1e3
     _no2_lml:
       long_name: NO2
       units: 'ppb'
-      expression: no2_lml(z=1)*1e3  
+      expression: no2_lml(z=1)*1e3
     _o3_lml:
       long_name: O3
       units: 'ppb'
-      expression: o3_lml(z=1)*1e3  
+      expression: o3_lml(z=1)*1e3

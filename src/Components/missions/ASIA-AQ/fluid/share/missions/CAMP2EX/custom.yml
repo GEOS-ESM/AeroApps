@@ -307,7 +307,7 @@ wxmapscustom:
 
     suaot:
       long_name: Sulfate AOT
-      levels: [0] 
+      levels: [0]
       layers: [sulfate_aot, streamlines]
       title: '\\\\ Sulfate AOT'
       streamlines:
@@ -1326,7 +1326,7 @@ wxmapscustom:
       clevs: fineaotclevs
       cmin: 0.01
       cmax: 2.5
-      cint: 
+      cint:
       expr: _suexttau + _ocexttau + _bcexttau
       nsub: 10
       skip: 10
@@ -1391,7 +1391,7 @@ wxmapscustom:
       cthick: 5
       expr: maskout(_biomass, _biomass-0.0000001)
 
-  attribute: 
+  attribute:
 
     fineaotclevs: 0.01 0.05 0.1 0.16 0.23 0.32 0.41 0.52 0.66 0.81 1. 1.21 1.46 1.75 2.1 2.5
 

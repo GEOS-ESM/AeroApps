@@ -129,7 +129,7 @@ theme:
       expr: mag(_u,_v)*1.94384449
 #      expr: 're($spd,$res,$res,"bl")'
       cbar: cool
-      clevs: 50 70 90 110 130 150 170 
+      clevs: 50 70 90 110 130 150 170
       nsub: 4
       skip: 4
       type: linear

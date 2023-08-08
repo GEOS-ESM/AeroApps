@@ -36,7 +36,7 @@ theme:
       layers: [gridfill]
       header: '2-Meter Temperature Percentiles'
       subheader: 'Modern-Era Retrospective Analysis (MERRA-2)'
-      main: 'Period: 1980-2016' 
+      main: 'Period: 1980-2016'
       gridfill:
         cbar: Basic_r
         cbunits: '%'

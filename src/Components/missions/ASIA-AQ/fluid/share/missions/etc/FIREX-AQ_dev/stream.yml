@@ -1,7 +1,7 @@
 stream:
-  
+
   WRFchem:
-  
+
     long_name: WRFCHEM
     description: Weather Research and Forecasting (WRF) model coupled with Chemistry
     type: forecast
@@ -54,7 +54,7 @@ stream:
   HRRRX:
 
     long_name: HRRRX
-    description: High-Resolution Rapid Refresh- Experimental 
+    description: High-Resolution Rapid Refresh- Experimental
     type: forecast
     uri: /gpfsm/dnb04/projects/p109/FIREX-AQ/sample_forecasts2/HRRRX/hrrrx.ctl
     institution: NOAA/ESRL
@@ -91,7 +91,7 @@ stream:
     institution: Environment Canada
     logos: []
 
-  RAPchem: 
+  RAPchem:
 
     long_name: Rapid Refresh with Chemistry
     description: Rapid Refresh with Chemistry (RAP-Chem)
@@ -100,7 +100,7 @@ stream:
     institution: NOAA
     reference: https://rapidrefresh.noaa.gov/RAPchem/RAP-Chem_desc.html
 
-  NAAPS: 
+  NAAPS:
 
     long_name: Navy Aerosol Analysis and Prediction System
     description: Navy Aerosol Analysis and Prediction System (NAAPS)

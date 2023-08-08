@@ -9,9 +9,9 @@ playlist:
     oname: totaot.png
 
 stream:
-  
+
   G5FPFC:
-  
+
     long_name: GEOS FP
     description: GEOS Forecast
     uri: /archive/u/gmao_ops/GEOS-5.16/GEOSadas-5_16/f516_fp/forecast/Y2017/M08/D12/H12/GEOS.fp.fcst.inst1_2d_hwl_Nx.20170812_12+20170814_1200.V01.nc4
@@ -25,7 +25,7 @@ field:
       long_name: Nitrate Extinction AOT [550 nm]
       units: '1'
       expression: niexttau.inst1_2d_hwl_Nx
-  
+
     _duexttau:
       long_name: Dust Extinction AOT [550 nm]
       units: '1'
@@ -35,22 +35,22 @@ field:
       long_name: Total Aerosol Extinction AOT [550 nm]
       units: '1'
       expression: totexttau.inst1_2d_hwl_Nx
-  
+
     _suexttau:
       long_name: SO4 Extinction AOT [550 nm]
       units: '1'
       expression: suexttau.inst1_2d_hwl_Nx
-  
+
     _ssexttau:
       long_name: Sea Salt Extinction AOT [550 nm]
       units: '1'
       expression: ssexttau.inst1_2d_hwl_Nx
-  
+
     _ocexttau:
       long_name: Organic Carbon Extinction AOT [550 nm]
       units: '1'
       expression: ocexttau.inst1_2d_hwl_Nx
-  
+
     _bcexttau:
       long_name: Black Carbon Extinction AOT [550 nm]
       units: '1'

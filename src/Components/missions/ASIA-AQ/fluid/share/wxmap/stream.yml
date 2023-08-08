@@ -25,9 +25,9 @@ stream:
 
 #   uri: /discover/nobackup/dao_ops/jardizzo/CAMP2EX/f516_fp.inst3_3d_aer_Np.%Y%m%d_%H00z.nc4
     uri: /gpfsm/dnb02/jardizzo/assim/opendap/assim/$collection
-  
+
   G5FPFC:
-  
+
     long_name: GEOS FP
     description: GEOS $cycle
     type: forecast
@@ -41,9 +41,9 @@ stream:
     reference: http://gmao.gsfc.nasa.gov/GEOS/geos5/index_pubs.php
     link: http://gmao.gsfc.nasa.gov/GEOS
     logos: [nasa-logo-ul, gmao-logo-ur]
-  
+
   NCEPGFS:
-  
+
     long_name: NCEP GFS
     description: GFS Forecast
     type: forecast
@@ -57,9 +57,9 @@ stream:
     reference: http://www.emc.ncep.noaa.gov/GFS/doc.php
     link: https://www.ncdc.noaa.gov/data-access/model-data/model-datasets/global-forcast-system-gfs
     logos: [noaa-logo-ul]
-  
+
   MERRA2: &merra
-  
+
     long_name: MERRA-2
     description: Modern-Era Retrospective Analysis (MERRA-2)
     type: analysis
@@ -146,7 +146,7 @@ stream:
     uri: /discover/nobackup/projects/gmao/merra2/data/pub/supplemental/w10m_tavgM_2d_slv_Nx.ctl
 
   MASKDATA:
-  
+
     long_name: Masking Data
     description: Land/Water Mask
     type: static

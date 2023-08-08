@@ -84,11 +84,11 @@ theme:
       levels: [0]
       layers: [rx5dayhighest]
       title: 'Maximum 5 Day Precipitation [mm/5 days]'
-    
+
     rx5dnumber:
       long_name: Number of 5 day heavy rainfall
       levels: [0]
-      layers: [rx5daynumber] 
+      layers: [rx5daynumber]
       title: 'Number of 5 Day Periods with Heavy Rainfall'
 
     pcntl_prec:

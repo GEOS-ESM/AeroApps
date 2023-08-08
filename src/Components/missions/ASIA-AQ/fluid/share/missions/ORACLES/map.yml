@@ -116,7 +116,7 @@ map:
   etopo-gray:
     service: etopo
     grayscale: 1
-    
+
   etopo1:
     water_color: 220 240 253
     land_color: 0 0 0 0
@@ -163,6 +163,6 @@ map:
     land_color: 0 0 0 0
     water_color: 0 0 0 0
     layers: [standard, water, land]
-  
+
   quickmap:
     layers: [standard, water, land]

@@ -25,7 +25,7 @@ wget:
   OTHER:
 
     tau_start: 1
-    tau_end: 72 
+    tau_end: 72
     tau_inc: 1
 
     remote_files: &FILENAMES

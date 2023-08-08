@@ -1,7 +1,7 @@
 field:
-  
+
   G5FPFC:
-    
+
     _prectot:
       long_name: Total Precipitation
       units: kg m-2 s-1
@@ -11,12 +11,12 @@ field:
       long_name: Total Precipitation
       units: kg m-2 s-1
       expression: _prectot(td=-1)*3*60*60
-  
+
     _uwnd:
       long_name: East-West Wind
       units: m s-1
       expression: u.G5FPWX.inst3_3d_wxme_Np
-  
+
     _vwnd:
       long_name: North-South Wind
       units: m s-1
@@ -26,7 +26,7 @@ field:
       long_name: Ertels Potential Vorticity
       units: m s-1
       expression: epv.G5FPWX.inst3_3d_wxme_Np
-  
+
     _slp:
       long_name: Sea Level Pressure
       units: mb
@@ -36,23 +36,23 @@ field:
       long_name: 500mb Thickness
       units: m
       expression: (h500.G5FPWX.inst3_3d_wxmc_Cp - h1000.G5FPWX.inst3_3d_wxmc_Cp)
-  
+
     _tmpu:
       long_name: Temperature
       units: K
       expression: t.G5FPWX.inst3_3d_wxmc_Cp
-  
+
     _hght:
       long_name: Heights
       units: m
       expression: h.G5FPWX.inst3_3d_wxmc_Cp
-  
+
     _omega:
       long_name: Vertical Pressure Velocity
       units: Pa/sec
 #     expression: omega.G5FPWX.inst3_3d_wxmc_Cp
       expression: omega.G5FPWX.inst3_3d_wxme_Np
-  
+
     _rh:
       long_name: Relative Humidity
       units: percent

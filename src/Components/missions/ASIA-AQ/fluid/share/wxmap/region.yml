@@ -23,23 +23,23 @@ region:
     thick_below: 'off'
 
   midatl:
-  
+
     long_name: Mid Atlantic
     lon: -85 -70
     lat: 33 43
     mpdset: hires
     mproj: latlon
-  
+
   pac:
-  
+
     long_name: Pacific
     lon: 100 230
     lat: 0 65
     mpdset: mres
     mproj: latlon
-  
+
   nps:
-  
+
     long_name: N Polar
     lon: -180 180
     lat: 30 90
@@ -51,9 +51,9 @@ region:
     streamlines: 'off'
     thick_above: 'off'
     thick_below: 'off'
-  
+
   sps:
-  
+
     long_name: S Polar
     lon: -180 180
     lat: -90 -30
@@ -65,25 +65,25 @@ region:
     streamlines: 'off'
     thick_above: 'off'
     thick_below: 'off'
-  
+
   australia:
-  
+
     long_name: Australia
     lon: 100 180
     lat: -50 -10
     mpdset: mres
     mproj: latlon
-  
+
   sevseas:
-  
+
     long_name: Seven Seas
     lon: 65 160
     lat: -15 50
     mpdset: mres
     mproj: latlon
-  
+
   atlantic:
-  
+
     long_name: Atlantic
     lon: -115 0
     lat:  -10 50

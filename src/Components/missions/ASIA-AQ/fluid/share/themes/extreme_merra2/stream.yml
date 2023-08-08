@@ -1,7 +1,7 @@
 stream:
 
   MERRA2: &merra
-  
+
     long_name: MERRA-2
     description: Modern-Era Retrospective Analysis (MERRA-2)
     type: analysis

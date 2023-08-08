@@ -158,7 +158,7 @@ field:
       expression: bcexttau.inst1_2d_hwl_Nx
 
     _bcembb:
-      long_name: Black Carbon Biomass Burning Emissions 
+      long_name: Black Carbon Biomass Burning Emissions
       units: kg m-2 s-1
       expression: bcembb.MERRA2.tavg1_2d_adg_Nx(z=1)
 

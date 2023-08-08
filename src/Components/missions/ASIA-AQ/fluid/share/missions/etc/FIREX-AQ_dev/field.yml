@@ -503,7 +503,7 @@ field:
       units:     'kgm-2'
       expression: tcpm2p5(z=1)
     _tcoc:
-      long_name: Total column organic carbon 
+      long_name: Total column organic carbon
       units:     'kgm-2'
       expression: tcom(z=1)
     _su_lml:

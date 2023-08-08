@@ -24,7 +24,7 @@ playlist:
 #
 # Modify the stream definition block for GEOS FP to directly reference the
 # archived NetCDF-4 granule needed to generate the image. This setting overrides
-# the default settings in "share/wxmap/stream.yml". Other parameters are 
+# the default settings in "share/wxmap/stream.yml". Other parameters are
 # inherited if not overridden here.
 #
 # The standard filename template setting is commented out but included here
@@ -35,9 +35,9 @@ playlist:
 #------------------------------------------------------------------------------
 
 stream:
-  
+
   G5FPFC:
-  
+
     uri: /archive/projects/gmao/dao_ops/GEOS-5.16/GEOSadas-5_16/f516_fp/forecast/Y2017/M08/D21/H12/GEOS.fp.fcst.tavg1_2d_rad_Nx.20170821_12+20170821_1730.V01.nc4
 
 
@@ -98,7 +98,7 @@ field:
 #
 # Define a map layer for the path of totality. The path is described by a shape
 # file acquired from the NASA SVS: https://svs.gsfc.nasa.gov/4518. The shape
-# file install location is defined in the default wxmap.rc file: 
+# file install location is defined in the default wxmap.rc file:
 #
 #                shape_path: /discover/nobackup/jardizzo/maps
 #
@@ -247,7 +247,7 @@ theme:
 #   Note: The values assigned to this parameter could also be assigned to the
 #   "clevs" parameter in the layer definition blocks. This parameter can also
 #   be a dictionary of regions or levels with values that vary accordingly.
-#   More advanced keys can be used to create temporal dependencies such as 
+#   More advanced keys can be used to create temporal dependencies such as
 #   monthly or seasonal.
 
     cloudclevs: 0.05 .1 .2 .3 .4 .5 .6 .7 .8 .9 1

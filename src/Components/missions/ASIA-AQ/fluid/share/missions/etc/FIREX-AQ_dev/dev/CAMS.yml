@@ -54,7 +54,7 @@ ftp:
 
     tau_start: 0
     tau_end: 0
-    
+
     remote_files:
 
       - z_cams_c_ecmf_%%Y%%m%%d%%H0000_prod_an_pl_000_den.nc
