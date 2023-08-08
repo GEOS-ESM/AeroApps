@@ -1,0 +1,29 @@
+region:
+
+  nam:
+
+    long_name: North America
+    lon: -180 180
+    lat: 0 90
+    mpdset: mres
+    mproj: nps
+    mpvals: -150 -60 25 71
+    addlayers: [Canada_Province]
+
+  usa:
+
+    long_name: United States
+    lon: -180 180
+    lat: 0 90
+    mpdset: hires
+    mproj: nps
+    mpvals: -130 -60 25 55
+
+  usa2:
+
+    long_name: United States
+    lon: 0 360
+    lat: 0 90
+    mpdset: hires
+    mproj: nps
+    mpvals: 230 300 25 55
