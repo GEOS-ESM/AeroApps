@@ -4,6 +4,8 @@
 
 ### Added
 
+- ASIA-AQ mission directory initialized with FLUID instance from FIREX-AQ
+
 ### Fixed
 
 ### Changed

@@ -1,0 +1,57 @@
+handlers: 'copy:geoscf'
+
+shift_dt: -12
+
+tau_start: 0
+tau_end: 120
+tau_inc: 3
+
+copy:
+
+  machine:
+  login:
+  password:
+  remote_dir: /discover/nobackup/projects/gmao/geos_cf/pub/GEOS-CF_NRT/forecast/Y%iy4/M%im2/D%id2/H%ih2
+  local_dir: $FX_DATA_DIR/GEOSCF/Y%iy4/M%im2/D%id2/H%ih2
+
+  sockets: 4
+
+  inst1:
+
+    tau_start: 0
+    tau_end: 120
+    tau_inc: 1
+
+    remote_files:
+
+      - GEOS-CF.v01.fcst.htf_inst_15mn_g1440x721_x1.%iy4%im2%id2_%ih2z+%y4%m2%d2_%h2%n2z.nc4
+      - GEOS-CF.v01.fcst.chm_inst_1hr_g1440x721_p23.%iy4%im2%id2_%ih2z+%y4%m2%d2_%h2%n2z.nc4
+
+  tavg1:
+
+    tau_start: 0
+    tau_end: 119
+    tau_inc: 1
+
+    remote_files:
+
+      - GEOS-CF.v01.fcst.xgc_tavg_1hr_g1440x721_x1.%iy4%im2%id2_%ih2z+%y4%m2%d2_%h230z.nc4
+
+geoscf:
+
+  tasks: 1
+
+  tau_start: 0
+  tau_end: 0
+  tau_inc: 3
+
+  data_dir: $FX_DATA_DIR/GEOSCF/Y%iy4/M%im2/D%id2/H%ih2
+  input_dir: /discover/nobackup/projects/gmao/geos_cf/pub/GEOS-CF_NRT/opendap/fcast
+  output_dir: $FX_OPENDAP_DIR/GEOSCF
+  dummy_file: $FX_DATA_DIR/dummy.ctl
+
+  collections:
+
+    - htf_inst_15mn_g1440x721_x1
+    - chm_inst_1hr_g1440x721_p23
+    - xgc_tavg_1hr_g1440x721_x1

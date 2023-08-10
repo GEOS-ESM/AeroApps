@@ -1,0 +1,45 @@
+PDR_NAME = SPL1CTB.*.PDR;
+PDR_SHORT_NAME = SPL1CTB;
+PDR_LONG_NAME = SMAP_L1C_TB;
+PDR_REMOTE_LOGIN = scp://gsfcxfer@smap-sds-pgw.jpl.nasa.gov
+PDR_REMOTE_DIR = /home/gsfc/ops/PDR;
+PAN_REMOTE_LOGIN = <PDR_REMOTE_LOGIN>;
+PAN_REMOTE_DIR   = /home/gsfc/ops/PAN;
+PDRD_REMOTE_LOGIN = <PDR_REMOTE_LOGIN>;
+PDRD_REMOTE_DIR   = /home/gsfc/ops/PDRD;
+
+CLOCK_METHOD   = smap_old_time;
+MIN_FILE_COUNT = 1;
+WAIT_TIME      = 14400;
+
+ORIGINATING_SYSTEM = SMAP_JPL;
+TOTAL_FILE_COUNT = 3;
+
+OBJECT = FILE_GROUP;
+   DATA_TYPE = SPL1CTB;
+   DATA_VERSION = <DATA_VERSION>;
+   NODE_NAME = SMAP-SDS-PGW.jpl.nasa.gov;
+   OBJECT = FILE_SPEC;
+      DIRECTORY_ID = /home/gsfc/ops/data/L1C_TB/SPL1CTB.*;
+      FILE_ID = SMAP_L1C_TB_.*.h5;
+      FILE_TYPE = HDF;
+      FILE_SIZE =
+      FILE_CKSUM_TYPE = MD5;
+      FILE_CKSUM_VALUE =
+      FILE_LOCAL_DIR = <L4_DATA_directoryID>/SMAP/OPS/L1C_TB/Y%Y/M%m/D%d;
+   END_OBJECT = FILE_SPEC;
+   OBJECT = FILE_SPEC;
+      DIRECTORY_ID = /home/gsfc/ops/data/L1C_TB/SPL1CTB.*;
+      FILE_ID = SMAP_L1C_TB_.*.h5.iso.xml;
+      FILE_TYPE = METADATA;
+      FILE_SIZE =
+      FILE_LOCAL_DIR = <L4_DATA_directoryID>/SMAP/OPS/L1C_TB/Y%Y/M%m/D%d;
+   END_OBJECT = FILE_SPEC;
+   OBJECT = FILE_SPEC;
+      DIRECTORY_ID = /home/gsfc/ops/data/L1C_TB/SPL1CTB.*;
+      FILE_ID = SMAP_L1C_TB_.*.qa;
+      FILE_TYPE = QA;
+      FILE_SIZE =
+      FILE_LOCAL_DIR = <L4_DATA_directoryID>/SMAP/OPS/L1C_TB/Y%Y/M%m/D%d;
+   END_OBJECT = FILE_SPEC;
+END_OBJECT = FILE_GROUP;

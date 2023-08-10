@@ -1,0 +1,46 @@
+handlers: 'wget:uiowawrf'
+
+shift_dt: -12
+
+tau_start: 0
+tau_end: 96
+tau_inc: 3
+
+wget:
+
+  url: http://bio.cgrer.uiowa.edu/FIREX-AQ
+  remote_dir: '%iy4%im2%id2'
+  local_dir: $FX_NATIVE_DIR/UIOWAWRFchem/Y%iy4/M%im2/D%id2/H%ih2
+
+  sockets: 4
+
+  tau_start: 0
+  tau_end: 96
+  tau_inc: 3
+
+  remote_files: &FILENAMES
+
+    - WRFCHEM_UIOWA_%y4-%m2-%d2_%h2.nc
+
+uiowawrf:
+
+  tau_start: 0
+  tau_end: 96
+  tau_inc: 3
+
+  tasks: 1
+
+  input_dir: $FX_NATIVE_DIR/UIOWAWRFchem/Y%iy4/M%im2/D%id2/H%ih2
+  output_dir: $FX_DATA_DIR/UIOWAWRFchem/Y%iy4/M%im2/D%id2/H%ih2
+  output_file: uiowawrf.llp.%y4%m2%d2_%h2z.nc4
+
+  grads_dir: $FX_OPENDAP_DIR/UIOWAWRFchem
+  grads_file: UIOWAWRFchem.%iy4%im2%id2_%ih2.ddf
+  grads_latest: UIOWAWRFchem.latest.ddf
+  dummy_file: $FX_DATA_DIR/dummy.ddf
+  files: *FILENAMES
+
+  grads_records:
+      - DSET $output_dir/$output_file
+      - OPTIONS template
+      - TDEF time 33 linear %ih2:00z%id2%imc%iy4 3hr

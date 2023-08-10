@@ -1,0 +1,45 @@
+handlers: 'wget:ncarwrfchem'
+
+tau_start: 0
+tau_end: 48
+tau_inc: 1
+
+wget:
+
+  url: https://www.acom.ucar.edu/waccm/DATA/FIREX-AQ/wrf
+  remote_dir: '%iy4%im2%id2'
+  local_dir: $FX_NATIVE_DIR/NCARWRFchem/Y%iy4/M%im2/D%id2/H%ih2
+
+  sockets: 4
+
+  tau_start: 0
+  tau_end: 48
+  tau_inc: 1
+
+  remote_files: &FILENAMES
+
+    - wrfout_hourly_d01_%y4-%m2-%d2_%h2:00:00
+
+ncarwrfchem:
+
+  tau_start: 0
+  tau_end: 48
+  tau_inc: 1
+
+  tasks: 1
+
+  input_dir: $FX_NATIVE_DIR/NCARWRFchem/Y%iy4/M%im2/D%id2/H%ih2
+  output_dir: $FX_DATA_DIR/NCARWRFchem/Y%iy4/M%im2/D%id2/H%ih2
+  output_file: ncarwrfchem.llp.%y4%m2%d2_%h2z.nc4
+  ncl_script: /home/dao_ops/jardizzo/FLUID/firex-aq/bin/ncar_wrfchem_subset.ncl
+
+  grads_dir: $FX_OPENDAP_DIR/NCARWRFchem
+  grads_file: NCARWRFchem.%iy4%im2%id2_%ih2.ddf
+  grads_latest: NCARWRFchem.latest.ddf
+  dummy_file: $FX_DATA_DIR/dummy.ddf
+  files: *FILENAMES
+
+  grads_records:
+      - DSET $output_dir/$output_file
+      - OPTIONS template
+      - TDEF time 49 linear %ih2:00z%id2%imc%iy4 1hr

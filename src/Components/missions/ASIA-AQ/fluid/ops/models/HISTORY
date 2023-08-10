@@ -1,0 +1,18 @@
+   129  10:45   cat ../../dev/share/wxmap/field.yml | grep expression
+   130  10:45   cat ../../dev/share/wxmap/field.yml | grep expression | cut -d':' -f3
+   131  10:45   cat ../../dev/share/wxmap/field.yml | grep expression | cut -d':' -f2
+   132  10:45   cat ../../dev/share/wxmap/field.yml | grep expression | cut -d':' -f2 | cut -d'.' -f2
+   133  10:45   cat ../../dev/share/wxmap/field.yml | grep expression | cut -d':' -f2 | cut -d'.' -f2 | sort -u
+   134  10:46   cat ../../dev/share/wxmap/field.yml | grep expression | cut -d':' -f2 | cut -d'.' -f2 | sort -u | grep '1_'
+   135  10:46   cat ../../dev/share/wxmap/field.yml | grep expression | cut -d':' -f2 | cut -d'.' -f2 | cut -d'(' -f1 | sort -u | grep '1_'
+   136  10:49   vi GEOSFP.yml
+   137  10:49   find /discover/nobackup/projects/gmao/gmao_ops/pub/f522_fp/forecast -mtime -1
+   138  10:50   vi GEOSFP.yml
+   139  10:50   find /discover/nobackup/projects/gmao/gmao_ops/pub/f522_fp/forecast -mtime -1 -name "*inst1_2d_hwl_Nx*"
+   140  10:51   find /discover/nobackup/projects/gmao/gmao_ops/pub/f522_fp/forecast -mtime -1 -name "*inst1_2d_hwl_Nx.20190702_00+*"
+   141  10:51   find /discover/nobackup/projects/gmao/gmao_ops/pub/f522_fp/forecast -mtime -1 -name "*inst1_2d_hwl_Nx.20190702_00+*" | head -1
+   142  10:51   find /discover/nobackup/projects/gmao/gmao_ops/pub/f522_fp/forecast -mtime -1 -name "*inst1_2d_hwl_Nx.20190702_00+*" | sort | head -1
+   143  10:52   find /discover/nobackup/projects/gmao/gmao_ops/pub/f522_fp/forecast -mtime -1 -name "*inst1_2d_hwl_Nx.20190702_00+*" | sort | tail -1
+   144  10:53   vi GEOSFP.yml
+   145  10:55   find /discover/nobackup/projects/gmao/gmao_ops/pub/f522_fp/forecast -mtime -1 -name "*inst1_2d_asm_Nx.20190702_00+*" | sort | tail -1
+   146  10:56   find /discover/nobackup/projects/gmao/gmao_ops/pub/f522_fp/forecast -name "*inst1_2d_asm_Nx.20190702_00+*"

@@ -1,0 +1,23 @@
+FX_NATIVE_DIR: /discover/nobackup/dao_ops/firex-aq/native
+FX_DATA_DIR: /discover/nobackup/dao_ops/firex-aq/data
+FX_OPENDAP_DIR: /discover/nobackup/dao_ops/firex-aq/opendap
+
+BATCH:
+
+  - '#!/bin/csh -fx'
+
+  - '#SBATCH --job-name=firex_catalog_$model'
+  - '#SBATCH --account=s1321'
+  - '#SBATCH --time=2:00:00'
+  - '#SBATCH --qos=daohi'
+  - '#SBATCH --ntasks=28'
+  - '#SBATCH --export=NONE'
+  - '#SBATCH --constraint=hasw'
+  - '#SBATCH --output=/discover/nobackup/dao_ops/jardizzo/FLUID/firex_catalog_${model}_%iy4%im2%id2_%ih2.log'
+
+  - 'limit stacksize unlimited'
+  - 'source /home/dao_ops/jardizzo/FLUID/firex-aq/utils/pyg_modules'
+  - 'cd /home/dao_ops/jardizzo/FLUID/firex-aq/utils'
+
+# - 'firex_catalog.sh $model %iy4%im2%id2%ih2 %y4%m2%d2%h2 $tau_inc'
+  - 'echo firex_catalog.sh $model %iy4%im2%id2%ih2 %y4%m2%d2%h2 $tau_inc'

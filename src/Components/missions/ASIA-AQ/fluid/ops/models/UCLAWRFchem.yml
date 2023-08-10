@@ -1,0 +1,45 @@
+handlers: 'copy:uclawrf'
+
+tau_start: 0
+tau_end: 84
+tau_inc: 3
+
+copy:
+
+  machine:
+  login:
+  password:
+  remote_dir: /gpfsm/dnb04/projects/p109/FIREX-AQ/wrfout/analysis/%iy4%im2%id2
+  local_dir: $FX_DATA_DIR/UCLAWRFchem/Y%iy4/M%im2/D%id2/H%ih2
+
+  sockets: 1
+
+  tau_start: 0
+  tau_end: 84
+  tau_inc: 3
+
+  remote_files: &FILENAMES
+
+    - uclawrfchem.llp.%y4%m2%d2_%h2z.nc4
+
+uclawrf:
+
+  tau_start: 0
+  tau_end: 84
+  tau_inc: 3
+
+  tasks: 1
+
+  input_dir: $FX_NATIVE_DIR/UCLAWRFchem/Y%iy4/M%im2/D%id2/H%ih2
+  output_dir: $FX_DATA_DIR/UCLAWRFchem/Y%iy4/M%im2/D%id2/H%ih2
+  output_file: uclawrfchem.llp.%y4%m2%d2_%h2z.nc4
+
+  grads_dir: $FX_OPENDAP_DIR/UCLAWRFchem
+  grads_file: UCLAWRFchem.%iy4%im2%id2_%ih2.ddf
+  grads_latest: UCLAWRFchem.latest.ddf
+  files: *FILENAMES
+
+  grads_records:
+      - DSET $output_dir/$output_file
+      - OPTIONS template
+      - TDEF time 29 linear 00:00z%id2%imc%iy4 3hr
