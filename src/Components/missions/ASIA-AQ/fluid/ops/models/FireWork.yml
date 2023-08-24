@@ -1,0 +1,44 @@
+handlers: 'wget:firework'
+
+tau_start: 1
+tau_end: 65
+tau_inc: 1
+
+wget:
+
+  url: http://research.atmos.ucla.edu
+  remote_dir: saide/firex-aq/FireWork
+  local_dir: $FX_NATIVE_DIR/FireWork/Y%iy4/M%im2/D%id2/H%ih2
+
+  sockets: 4
+
+  tau_start: 1
+  tau_end: 65
+  tau_inc: 1
+
+  remote_files: &FILENAMES
+
+    - '%iy4%im2%id2%ih2_%h3'
+
+firework:
+
+  tau_start: 1
+  tau_end: 65
+  tau_inc: 1
+
+  tasks: 4
+
+  input_dir: $FX_NATIVE_DIR/FireWork/Y%iy4/M%im2/D%id2/H%ih2
+  output_dir: $FX_DATA_DIR/FireWork/Y%iy4/M%im2/D%id2/H%ih2
+  output_file: FireWork.%y4%m2%d2_%h2.nc4
+  ncl_script: /home/dao_ops/jardizzo/FLUID/firex-aq/bin/firework_regrid_latlon.ncl
+
+  grads_dir: $FX_OPENDAP_DIR/FireWork
+  grads_file: FireWork.%iy4%im2%id2_%ih2.ddf
+  grads_latest: FireWork.latest.ddf
+  files: *FILENAMES
+
+  grads_records:
+      - DSET $output_dir/$output_file
+      - OPTIONS template
+      - TDEF time 65 linear $gstart 1hr

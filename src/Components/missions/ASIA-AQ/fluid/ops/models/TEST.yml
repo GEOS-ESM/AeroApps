@@ -1,0 +1,47 @@
+handlers: 'ftp:wrf-chem'
+
+batch_job: /home/dao_ops/jardizzo/FLUID/firex-aq/utils/batch.j
+
+tau_start: 0
+tau_end: 60
+tau_inc: 3
+
+ftp:
+
+  machine: ftp.ssec.wisc.edu
+  login: anonymous
+  password: joseph.v.ardizzone@nasa.gov
+  remote_dir: pub/raqms/DC3/HU
+  local_dir: $FX_NATIVE_DIR/TEST/Y%iy4/M%im2/D%id2/H%ih2
+
+  sockets: 4
+
+  tau_start: 0
+  tau_end: 60
+  tau_inc: 3
+
+  remote_files: &FILENAMES
+
+    - wrfout_d01_%y4-%m2-%d2_%h2.conus.subsetted.nc
+
+wrf-chem:
+
+  tau_start: 0
+  tau_end: 60
+  tau_inc: 3
+
+  tasks: 1
+
+  input_dir: $FX_NATIVE_DIR/TEST/Y%iy4/M%im2/D%id2/H%ih2
+  output_dir: $FX_DATA_DIR/TEST/Y%iy4/M%im2/D%id2/H%ih2
+  output_file: wrfout_d01_%y4-%m2-%d2_%h2.conus.subsetted.nc4
+
+  grads_dir: $FX_OPENDAP_DIR/TEST
+  grads_file: TEST.%iy4%im2%id2_%ih2.ddf
+  grads_latest: TEST.latest.ddf
+  files: *FILENAMES
+
+  grads_records:
+      - DSET $output_dir/$output_file
+      - OPTIONS template
+      - TDEF time 21 linear %ih2:00z%id2%imc%iy4 3hr

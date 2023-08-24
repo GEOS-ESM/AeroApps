@@ -1,0 +1,49 @@
+handlers: 'ftp:hrrr-smoke'
+model: HRRR
+
+tau_start: 0
+tau_end: 48
+tau_inc: 3
+
+ftp:
+
+  machine: gsdftp.fsl.noaa.gov
+  login: anonymous
+  password: xinxinye@g.ucla.edu
+  remote_dir: hrrr/conus/wrfprs
+  local_dir: $FX_NATIVE_DIR/HRRR-Smoke/Y%iy4/M%im2/D%id2/H%ih2
+
+  sockets: 4
+
+  tau_start: 0
+  tau_end: 48
+# tau_end: 21
+  tau_inc: 3
+
+  remote_files: &FILENAMES
+
+      - '%iy2%ij3%ih200%f200'
+#     - '%iy2%ij3%f2000000'
+
+hrrr-smoke:
+
+  tau_start: 0
+  tau_end: 48
+  tau_inc: 3
+
+  tasks: 5
+
+  input_dir: $FX_NATIVE_DIR/HRRR-Smoke/Y%iy4/M%im2/D%id2/H%ih2
+  output_dir: $FX_DATA_DIR/HRRR-Smoke/Y%iy4/M%im2/D%id2/H%ih2
+  output_file: '%iy2%ij3%ih200%f200'
+
+  grads_dir: $FX_OPENDAP_DIR/HRRR-Smoke
+  grads_file: HRRR-Smoke.%iy4%im2%id2_%ih2
+  grads_latest: HRRR-Smoke.latest
+  dummy_file: $FX_DATA_DIR/dummy.ctl
+  files: *FILENAMES
+
+  grads_records:
+      dset: $output_dir/$output_file
+      index: $grads_dir/$grads_file.idx
+      tdef: 17 linear %ih2:00z%id2%imc%iy4 3hr

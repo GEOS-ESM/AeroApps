@@ -1,0 +1,32 @@
+handlers: wget:cam_chem
+
+wget:
+
+  url: https://www.acom.ucar.edu
+  remote_dir: waccm/DATA
+  local_dir: /discover/nobackup/projects/gmao/nca/FIREX-AQ/CAM-Chem/Y%%Y/M%%m
+
+  sockets: 5
+
+  tau_start: 0
+  tau_end: 120
+  tau_inc: 24
+
+  remote_files: &FILENAMES
+
+    - f.e21.FWSD.f09_f09_mg17.forecast.001.cam.h4.%Y-%m-%d-00000.nc
+#   - f.e21.FWSD.f09_f09_mg17.forecast.002.cam.h3.%Y-%m-%d-00000.nc
+
+cam_chem:
+
+  tau_start: 0
+  tau_end: 120
+  tau_inc: 24
+
+  tasks: 5
+
+  input_dir: /discover/nobackup/projects/gmao/nca/FIREX-AQ/CAM-Chem/Y%%Y/M%%m
+  output_dir: /discover/nobackup/projects/gmao/nca/FIREX-AQ/fluid/CAM-Chem/Y%%Y/M%%m/D%%d/H%%H
+
+  output_file: forecast.cam.na.%Y-%m-%d-00000.nc
+  files: *FILENAMES

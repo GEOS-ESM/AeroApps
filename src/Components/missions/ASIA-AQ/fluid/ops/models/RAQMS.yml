@@ -1,0 +1,46 @@
+handlers: 'ftp:raqms'
+
+tau_start: 0
+tau_end: 84
+tau_inc: 6
+
+ftp:
+
+  machine: ftp.ssec.wisc.edu
+  login: anonymous
+  password: joseph.v.ardizzone@nasa.gov
+  remote_dir: pub/raqms/DC3/HU
+  local_dir: $FX_NATIVE_DIR/RAQMS/Y%iy4/M%im2/D%id2/H%ih2
+
+  sockets: 4
+
+  tau_start: 0
+  tau_end: 84
+  tau_inc: 6
+
+  remote_files: &FILENAMES
+
+    - uwhyb_%m2_%d2_%y4_%h2Z.chem.assim.firex.nc
+
+raqms:
+
+  tau_start: 0
+  tau_end: 84
+  tau_inc: 6
+
+  tasks: 5
+
+  input_dir: $FX_NATIVE_DIR/RAQMS/Y%iy4/M%im2/D%id2/H%ih2
+  output_dir: $FX_DATA_DIR/RAQMS/Y%iy4/M%im2/D%id2/H%ih2
+  output_file: uwhyb_%m2_%d2_%y4_%h2Z.chem.assim.firex.nc4
+
+  grads_dir: $FX_OPENDAP_DIR/RAQMS
+  grads_file: RAQMS.%iy4%im2%id2_%ih2.ddf
+  grads_latest: RAQMS.latest.ddf
+  dummy_file: $FX_DATA_DIR/dummy.ddf
+  files: *FILENAMES
+
+  grads_records:
+      - DSET $output_dir/$output_file
+      - OPTIONS template
+      - TDEF time 15 linear %ih2:00z%id2%imc%iy4 6hr

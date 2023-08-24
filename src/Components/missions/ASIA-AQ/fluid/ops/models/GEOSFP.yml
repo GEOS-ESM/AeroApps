@@ -1,0 +1,91 @@
+handlers: 'copy:geosfp'
+model: GEOS
+
+tau_start: 0
+tau_end: 120
+tau_inc: 3
+
+copy:
+
+  machine:
+  login:
+  password:
+  remote_dir: /discover/nobackup/projects/gmao/gmao_ops/pub/f522_fp/forecast/Y%iy4/M%im2/D%id2/H%ih2
+  local_dir: $FX_DATA_DIR/GEOSFP/Y%iy4/M%im2/D%id2/H%ih2
+
+  sockets: 4
+
+  inst1:
+
+    tau_start: -2
+    tau_end: 120
+    tau_inc: 1
+
+    remote_files:
+
+      - GEOS.fp.fcst.inst1_2d_hwl_Nx.%iy4%im2%id2_%ih2+%y4%m2%d2_%h2%n2.V01.nc4
+
+  tavg1:
+
+    tau_start: 0
+    tau_end: 119
+    tau_inc: 1
+
+    remote_files:
+
+      - GEOS.fp.fcst.tavg1_2d_flx_Nx.%iy4%im2%id2_%ih2+%y4%m2%d2_%h230.V01.nc4
+      - GEOS.fp.fcst.tavg1_2d_rad_Nx.%iy4%im2%id2_%ih2+%y4%m2%d2_%h230.V01.nc4
+      - GEOS.fp.fcst.tavg1_2d_slv_Nx.%iy4%im2%id2_%ih2+%y4%m2%d2_%h230.V01.nc4
+
+  inst3:
+
+    tau_start: 0
+    tau_end: 120
+    tau_inc: 3
+
+    remote_files:
+
+      - GEOS.fp.fcst.inst3_2d_met_Nx.%iy4%im2%id2_%ih2+%y4%m2%d2_%h2%n2.V01.nc4
+      - GEOS.fp.fcst.inst3_3d_aer_Np.%iy4%im2%id2_%ih2+%y4%m2%d2_%h2%n2.V01.nc4
+      - GEOS.fp.fcst.inst3_3d_asm_Np.%iy4%im2%id2_%ih2+%y4%m2%d2_%h2%n2.V01.nc4
+      - GEOS.fp.fcst.inst3_3d_chm_Np.%iy4%im2%id2_%ih2+%y4%m2%d2_%h2%n2.V01.nc4
+      - GEOS.fp.fcst.inst3_3d_tag_Np.%iy4%im2%id2_%ih2+%y4%m2%d2_%h2%n2.V01.nc4
+#     - GEOS.fp.fcst.inst3_3d_aer_Nv.%iy4%im2%id2_%ih2+%y4%m2%d2_%h2%n2.V01.nc4
+
+  tavg3:
+
+    tau_start: -2
+    tau_end: 118
+    tau_inc: 3
+
+    remote_files:
+
+      - GEOS.fp.fcst.tavg3_2d_smp_Nx.%iy4%im2%id2_%ih2+%y4%m2%d2_%h230.V01.nc4
+      - GEOS.fp.fcst.tavg3_2d_adg_Nx.%iy4%im2%id2_%ih2+%y4%m2%d2_%h230.V01.nc4
+
+geosfp:
+
+  tasks: 1
+
+  tau_start: 0
+  tau_end: 0
+  tau_inc: 3
+
+  data_dir: $FX_DATA_DIR/GEOSFP/Y%iy4/M%im2/D%id2/H%ih2
+  input_dir: /discover/nobackup/projects/gmao/yotc/pub/fp/opendap/fcast
+  output_dir: $FX_OPENDAP_DIR/GEOSFP
+  dummy_file: $FX_DATA_DIR/dummy.ctl
+
+  collections:
+
+    - inst1_2d_hwl_Nx
+    - tavg1_2d_flx_Nx
+    - tavg1_2d_rad_Nx
+    - tavg1_2d_slv_Nx
+    - inst3_2d_met_Nx
+    - inst3_3d_aer_Np
+    - inst3_3d_asm_Np
+    - inst3_3d_chm_Np
+    - inst3_3d_tag_Np
+#   - inst3_3d_aer_Nv
+    - tavg3_2d_adg_Nx
