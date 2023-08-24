@@ -13,6 +13,7 @@
 ### Changed
 
 - Update GMAOpyobs to v1.0.4
+- Update GMAOpyobs to v1.0.5
 
 ## [v2.0.2] - 2023-05-25
 
