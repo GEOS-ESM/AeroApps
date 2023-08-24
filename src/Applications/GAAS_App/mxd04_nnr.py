@@ -113,7 +113,7 @@ class MxD04_NNR(MxD04_L2):
     with class *abc_c6*.
     """
 
-    def __init__(self,l2_path,prod,algo,syn_time,aer_x,
+    def __init__(self,l2_path,prod,algo,syn_time,aer_x,slv_x,
                  cloud_thresh=0.70,
                  glint_thresh=40.0,
                  scat_thresh=170.0,
@@ -281,6 +281,20 @@ class MxD04_NNR(MxD04_L2):
         # ------------------------------
         self.speciate(aer_x,Verbose=verbose)
 
+        # Get TQV and TO3
+        # ------------------------------
+        self.getabsorbers(slv_x,Verbose=verbose)
+
+    def getabsorbers(self,slv_x,Verbose=False):
+        """
+        Get column absorbers amounts
+        """
+        self.sampleFile(slv_x,onlyVars=('TQV','TO3'),Verbose=Verbose)
+
+        self.tqv = self.sample.TQV*0.01
+        self.to3 = self.sample.TO3*0.01
+
+        del self.sample
 
     def speciate(self,aer_x,Verbose=False):
         """
@@ -458,9 +472,32 @@ class MxD04_NNR(MxD04_L2):
         # calculate AOD 
         # ------------------------------
         doAE = False
+        doAEfit = False
         for targetName in self.net.TargetNames:
-            if 'AE' in targetName:
+            if 'AEfit' in targetName:
+                doAEfit = True
+            elif 'AE' in targetName:
                 doAE = True
+
+        if doAEfit:
+            wavs = ['440','470','550','660','870']
+            wav  = np.array(wavs).astype(float)
+            nwav = len(wavs)
+            for i,targetName in enumerate(self.net.TargetNames):
+                    if 'AEfitm' in targetName:
+                        AEfitm = targets[:,i]
+                    if 'AEfitb' in targetName:
+                        AEfitb = targets[:,i]
+            nobs = targets.shape[0]
+            targets_ = np.zeros([nobs,nwav])
+            targetName = []
+            for i in range(nwav):
+                targets_[:,i] = -1.*(AEfitm*np.log(wav[i]) + AEfitb)
+                targetName.append('aTau'+wavs[i])
+
+            targets = targets_
+            self.net.TargetNames = targetName
+
 
         if doAE:
             for i,targetName in enumerate(self.net.TargetNames):

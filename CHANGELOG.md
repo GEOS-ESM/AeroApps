@@ -5,10 +5,15 @@
 ### Added
 
 - ASIA-AQ mission directory initialized with FLUID instance from FIREX-AQ
+- pyabc module added in GMAO_aeropybs. the snket class is needed in pyabc for loading ffnet .net files
+- NNR ods files of AOD can be generated from angstrom exponent fit coefficients
 
 ### Fixed
 
 ### Changed
+
+- Update GMAOpyobs to v1.0.4
+- Update GMAOpyobs to v1.0.5
 
 ## [v2.0.2] - 2023-05-25
 
@@ -25,7 +30,7 @@
 ### Changed
 
 - add VIIRS aerosol products to GMAO_ods kx list
-- update GMAOpyobs to v1.0.4 
+- update GMAOpyobs to v1.0.3 
 
 ## [v2.0.1] - 2023-05-17
 
