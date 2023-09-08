@@ -28,5 +28,6 @@ MAPL:
 GMAOpyobs:
   local: ./src/Shared/GMAO_Shared/GMAO_pyobs@
   remote: ../GMAOpyobs.git
-  tag: v1.0.5
+#  tag: v1.0.5
+  branch: feature/pcastell/nnr_output_ae
   develop: develop
