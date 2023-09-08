@@ -381,6 +381,21 @@ class Vx04_NNR(Vx04_L2):
 
             self.__dict__[name][self.iGood,k] = result
 
+        if doAEfit:
+            # Save predicted angstrom exponent
+            self.ae_ = MISSING*ones(self.nobs)
+            self.ae_[self.iGood] = AEfitm
+
+            # calculate standard retrieval AE
+            # ------------------------------------
+            I = []
+            for ch in self.channels_:
+                i = list(self.channels).index(ch)
+                I = I + [i,]
+            aodT = self.aod[:,I].T
+            fit = np.polyfit(np.log(self.channels_),-1.*np.log(aodT[:,self.iGood]+0.01),1)
+            self.ae = MISSING*ones(self.nobs)
+            self.ae[self.iGood] = fit[0,:]
 
         # Do extra cloud filtering if required
         if self.cloudFree is not None:                 
@@ -397,6 +412,10 @@ class Vx04_NNR(Vx04_L2):
                 name, ch = TranslateTarget(targetName)
                 k = list(self.channels).index(ch) # index of channel
                 self.__dict__[name][self.iGood,k][contaminated] = MISSING
+
+            if doAEfit:
+                self.ae[self.iGood][contaminated] = MISSING
+                self.ae_[self.iGood][contaminated] = MISSING
 
             self.iGood[self.iGood][contaminated] = False
 
