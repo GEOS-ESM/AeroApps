@@ -486,6 +486,7 @@ class MxD04_NNR(MxD04_L2):
             for i,targetName in enumerate(self.net.TargetNames):
                     if 'AEfitm' in targetName:
                         AEfitm = targets[:,i]
+                        self.ae_ = AEfitm
                     if 'AEfitb' in targetName:
                         AEfitb = targets[:,i]
             nobs = targets.shape[0]
@@ -497,6 +498,11 @@ class MxD04_NNR(MxD04_L2):
 
             targets = targets_
             self.net.TargetNames = targetName
+
+            # calculate MODIS standard retrieval AE
+            # ------------------------------------
+            fit = np.polyfit(np.log(self.channels),-1.*np.log(self.aod+0.01),1)
+            self.ae = fit[0,:]
 
 
         if doAE:
