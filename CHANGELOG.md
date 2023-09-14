@@ -6,8 +6,9 @@
 
 - ASIA-AQ mission directory initialized with FLUID instance from FIREX-AQ
 - pyabc module added in GMAO_aeropybs. the snket class is needed in pyabc for loading ffnet .net files
-- NNR ods files of AOD can be generated from angstrom exponent fit coefficients
-- NNR angstrom exponent predictions are now saved in gridded output files (Level 3)
+- VIIRS and MODIS NNR angstrom exponent predictions are now saved in gridded output files (Level 3)
+- VIIRS and MODIS NNR ods files of AOD can be generated from angstrom exponent fit coefficients
+- VIIRS NNR ods file generator now takes nsyn (number of synoptic times) as an input.
 
 ### Fixed
 
