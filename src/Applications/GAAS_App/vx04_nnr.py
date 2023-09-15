@@ -353,6 +353,20 @@ class Vx04_NNR(Vx04_L2):
             targets = targets_
             self.net.TargetNames = targetName
 
+            # Save predicted angstrom exponent
+            self.ae_ = MISSING*np.ones(self.nobs)
+            self.ae_[self.iGood] = AEfitm
+
+            # calculate standard retrieval AE
+            # ------------------------------------
+            I = np.array(self.channels) < 900 # only visible channels, this is relevant for ocean
+            aechannels = np.array(self.channels)[I]
+            aodT = self.aod[:,I].T
+            fit = np.polyfit(np.log(aechannels),-1.*np.log(aodT[:,self.iGood]+0.01),1)
+            self.ae = MISSING*np.ones(self.nobs)
+            self.ae[self.iGood] = fit[0,:]
+            bad = np.isnan(self.ae)
+            self.ae[bad] = MISSING
 
         if doAE:
             for i,targetName in enumerate(self.net.TargetNames):
@@ -420,6 +434,10 @@ class Vx04_NNR(Vx04_L2):
                 name, ch = TranslateTarget(targetName)
                 k = list(self.channels).index(ch) # index of channel
                 self.__dict__[name][self.iGood,k][contaminated] = MISSING
+
+            if doAEfit:
+                self.ae[self.iGood][contaminated] = MISSING
+                self.ae_[self.iGood][contaminated] = MISSING
 
             self.iGood[self.iGood][contaminated] = False
 
