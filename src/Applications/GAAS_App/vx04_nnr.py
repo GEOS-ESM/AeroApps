@@ -429,17 +429,18 @@ class Vx04_NNR(Vx04_L2):
                 k = list(self.channels).index(ch) # index of channel
                 result = self.__dict__[name][self.iGood,k]
                 contaminated = contaminated | ( (result > self.aodmax) & cloudy[self.iGood] )
-                
+            
+            icontaminated = np.arange(self.nobs)[self.iGood][contaminated]
             for targetName in self.net.TargetNames:
                 name, ch = TranslateTarget(targetName)
                 k = list(self.channels).index(ch) # index of channel
-                self.__dict__[name][self.iGood,k][contaminated] = MISSING
+                self.__dict__[name][icontaminated,k] = MISSING
 
             if doAEfit:
-                self.ae[self.iGood][contaminated] = MISSING
-                self.ae_[self.iGood][contaminated] = MISSING
+                self.ae[icontaminated] = MISSING
+                self.ae_[icontaminated] = MISSING
 
-            self.iGood[self.iGood][contaminated] = False
+            self.iGood[icontaminated] = False
 
 
 
