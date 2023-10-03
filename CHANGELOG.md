@@ -12,6 +12,8 @@
 
 ### Fixed
 
+- bug in NNR cloud contamination check. Was not setting suspected too cloudy pixels to MISSING.
+
 ### Changed
 
 - Update GMAOpyobs to v1.0.4
