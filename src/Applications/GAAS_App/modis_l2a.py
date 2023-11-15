@@ -47,7 +47,25 @@ if __name__ == "__main__":
 
     if cf('MODIS_L2A_OVERWRITE').upper() == 'YES': Options += " --force"
     if   cf('MODIS_L2A_VERBOSE').upper() == 'YES': Options += " -v"
-              
+
+    try:
+        aodmax = cf('MODIS_L2A_AODMAX')
+        Options += " --aodmax=" + aodmax
+    except:
+        pass
+
+    try:
+        cloudFree = cf('MODIS_L2A_CLOUDFREE')
+        Options += " --cloudFree=" + cloudFree
+    except:
+        pass
+
+    try:
+        cloud_thresh = cf('MODIS_L2A_CLOUD_THRESH')
+        Options += " --cloud_thresh=" + cloud_thresh
+    except:
+        pass
+
     # Generate products
     # -----------------
     i = 0

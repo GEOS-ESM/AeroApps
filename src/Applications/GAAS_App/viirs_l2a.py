@@ -46,11 +46,29 @@ if __name__ == "__main__":
                   " --fname=" + cf('VIIRS_L2A_OUT_TEMPLATE') + \
                     " --net=" + cf('VIIRS_L2A_NN_FILE')      + \
                  " --aer_x="  + cf('VIIRS_L2A_AER_X')        + \
-              " --blank_ods=" + cf('VIIRS_L2A_BLANK_ODS')   
+              " --blank_ods=" + cf('VIIRS_L2A_BLANK_ODS')     
 
     if cf('VIIRS_L2A_OVERWRITE').upper() == 'YES': Options += " --force"
     if   cf('VIIRS_L2A_VERBOSE').upper() == 'YES': Options += " -v"
-              
+    
+    try:
+        aodmax = cf('VIIRS_L2A_AODMAX')
+        Options += " --aodmax=" + aodmax
+    except:
+        pass
+
+    try:
+        cloudFree = cf('VIIRS_L2A_CLOUDFREE')
+        Options += " --cloudFree=" + cloudFree
+    except:
+        pass
+
+    try:
+        cloud_thresh = cf('VIIRS_L2A_CLOUD_THRESH')
+        Options += " --cloud_thresh=" + cloud_thresh
+    except:
+        pass
+
     # Generate products
     # -----------------
     i = 0

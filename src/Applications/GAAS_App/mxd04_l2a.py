@@ -71,6 +71,9 @@ if __name__ == "__main__":
     coll = '006'
     res = 'c'
     nsyn = 8
+    aodmax = 1.0
+    cloud_thresh = 0.7
+    cloudFree = None
     
 #   Parse command line options
 #   --------------------------
@@ -120,7 +123,19 @@ if __name__ == "__main__":
 
     parser.add_option("-r", "--res", dest="res", default=res,
                       help="Resolution for gridded output (default=%s)"\
-                           %out_tmpl )
+                           %res )
+
+    parser.add_option("--cloud_thresh", dest="cloud_thresh", default=cloud_thresh,type='float',
+                      help="Cloud fractions threshhold for good data (default=%f)"\
+                           %cloud_thresh )
+
+    parser.add_option("--cloudFree", dest="cloudFree", default=cloudFree,
+                      help="Extra check for cloudiness when high AOD values are predicted. If not provided, no check is performed. (default=%s)"\
+                           %cloudFree )
+
+    parser.add_option("--aodmax", dest="aodmax", default=aodmax,type='float',
+                      help="max AOD value that will be accepted when cloud fraction is greater than cloudFree (default=%f)"\
+                           %aodmax )
 
     parser.add_option("-u", "--uncompressed",
                       action="store_true", dest="uncompressed",default=False,
@@ -198,11 +213,16 @@ if __name__ == "__main__":
     if options.verbose:
         print("NNR Retrieving %s %s on "%(prod,algo.upper()),syn_time)
 
+    if options.cloudFree == 'None':
+        options.cloudFree = None
+    else:
+        options.cloudFree = float(options.cloudFree)
+
     modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,aer_x,slv_x,
                       coll=options.coll,
-                      cloud_thresh=0.7,
-                      cloudFree = 0.0,
-                      aodmax = 1.0,
+                      cloud_thresh=options.cloud_thresh,
+                      cloudFree = options.cloudFree,
+                      aodmax = options.aodmax,
                       nsyn=options.nsyn,
                       verbose=options.verbose)
     if modis.nobs < 1:
