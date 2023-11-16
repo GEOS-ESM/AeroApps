@@ -483,11 +483,17 @@ class MxD04_NNR(MxD04_L2):
             wavs = ['440','470','550','660','870']
             wav  = np.array(wavs).astype(float)
             nwav = len(wavs)
+            AEfitb = None
             for i,targetName in enumerate(self.net.TargetNames):
                     if 'AEfitm' in targetName:
                         AEfitm = targets[:,i]
                     if 'AEfitb' in targetName:
                         AEfitb = targets[:,i]
+                    if 'aTau550' in targetName:
+                        tau550 = targets[:,i]
+
+            if AEfitb == None:
+                AEfitb = -1.*(tau550 + AEfitm*np.log(550.))
             nobs = targets.shape[0]
             targets_ = np.zeros([nobs,nwav])
             targetName = []
