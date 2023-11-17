@@ -626,7 +626,7 @@ class MxD04_NNR(MxD04_L2):
             aod550.mask = np.zeros(len(aod550)).astype(bool)
             Lon = self.Longitude[self.iGood]
             Lat = self.Latitude[self.iGood]
-            gIndex = np.arange(len(self.iGood))[self.iGood]
+            gIndex = np.arange(self.nobs)[self.iGood]
             iOutliers = []
             while find_outliers:
                 maxaod = aod550.max()
