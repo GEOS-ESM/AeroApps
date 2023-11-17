@@ -519,11 +519,13 @@ class MxD04_NNR(MxD04_L2):
             I = np.array(self.channels) < 900 # only visible channels, this is relevant for ocean
             aechannels = np.array(self.channels)[I]
             aodT = self.aod[:,I].T
-            fit = np.polyfit(np.log(aechannels),-1.*np.log(aodT[:,self.iGood]+0.01),1)
+            iIndex = np.arange(len(self.iGood))[self.iGood]
+            aodT = aodT[:,iIndex] + 0.01
+            mask = aodT.min(axis=0) > 0
+            posIndex = iIndex[mask]
+            fit = np.polyfit(np.log(aechannels),-1.*np.log(aodT[:,mask]+0.01),1)
             self.ae = MISSING*ones(self.nobs)
-            self.ae[self.iGood] = fit[0,:]
-            bad = np.isnan(self.ae)
-            self.ae[bad] = MISSING
+            self.ae[posIndex] = fit[0,:]
 
 
         if doAE:
