@@ -118,7 +118,9 @@ class MxD04_NNR(MxD04_L2):
                  glint_thresh=40.0,
                  scat_thresh=170.0,
                  cloudFree=None,
-                 aodmax=1.0,
+                 aodmax=2.0,
+                 aodSTD=3.0,
+                 aodLength=0.5,
                  coll='006',
                  nsyn=8,
                  verbose=0):
@@ -136,6 +138,8 @@ class MxD04_NNR(MxD04_L2):
         cloud_tresh --- cloud fraction treshhold
         cloudFree   --- cloud fraction threshhold for assuring no cloud contaminations when aod is > aodmax
                         if None, no cloud free check is made
+        aodSTD      --- number of standard deviations for checking for outliers
+        aodLength   --- length scale (degrees) to look for outliers
         coll         --- MODIS data collection
         nsyn         --- number of synoptic times              
 
@@ -154,7 +158,9 @@ class MxD04_NNR(MxD04_L2):
         self.algo    = algo
         self.cloudFree = cloudFree
         self.aodmax = aodmax
-        
+        self.aodSTD = aodSTD
+        self.aodLength = aodLength
+
         # Initialize superclass
         # ---------------------
         Files = granules(l2_path,prod,syn_time,coll=coll,nsyn=nsyn)
@@ -573,6 +579,7 @@ class MxD04_NNR(MxD04_L2):
 
         # Do extra cloud filtering if required
         if self.cloudFree is not None:                 
+            # start by checking the cloud masks
             if self.algo == "LAND":
                 cloudy = (self.cloud_deep>=self.cloudFree) & (self.cloud>=self.cloudFree)
             elif self.algo == "DEEP":
@@ -580,23 +587,74 @@ class MxD04_NNR(MxD04_L2):
             elif self.algo == "OCEAN":
                 cloudy = (self.cloud>=self.cloudFree)
     
+            # if cloud fraction exceeds cloudFree and the aod exceeds aodmax, filter out
             contaminated = np.zeros(np.sum(self.iGood)).astype(bool)
             for targetName in self.net.TargetNames:
                 name, ch = TranslateTarget[targetName]
                 k = list(self.channels).index(ch) # index of channel
                 result = self.__dict__[name][self.iGood,k]
                 contaminated = contaminated | ( (result > self.aodmax) & cloudy[self.iGood] )
-                
+               
+            if self.verbose:
+                print('Filtering out ',np.sum(contaminated),' suspected cloud contaminated pixels')
+
             for targetName in self.net.TargetNames:
                 name, ch = TranslateTarget[targetName]
                 k = list(self.channels).index(ch) # index of channel
                 self.__dict__[name][self.iGood,k][contaminated] = MISSING
 
             if doAEfit:
-                self.ae[self.iGood][contaminated] = MISSING
                 self.ae_[self.iGood][contaminated] = MISSING
 
             self.iGood[self.iGood][contaminated] = False
+
+            # check for outliers
+            # start with highest AOD550 value
+            # find all the pixels within a 1 degree neighborhood
+            # check if it is outside of mean + N*sigma of the other pixels
+            # aodSTD parameter is equal to N
+            # continue until no outliers are found
+            find_outliers = True
+            k = list(self.channels).index(550)
+            aod550 = np.ma.array(self.aod_[self.iGood,k])
+            aod550.mask = np.zeros(len(aod550)).astype(bool)
+            Lon = self.Longitude[self.iGood]
+            Lat = self.Latitude[self.iGood]
+            gIndex = np.arange(len(self.iGood))[self.iGood]
+            iOutliers = []
+            while find_outliers:
+                maxaod = aod550.max()
+                imax   = np.argmax(aod550)
+                aod550.mask[imax] = True
+                lon = Lon[imax]
+                lat = Lat[imax]
+
+                # find the neighborhood of pixels
+                iHood = (Lon<=lon+self.aodLength) & (Lon>=lon-self.aodLength) & (Lat<=lat+self.aodLength) & (Lat>=lat-self.aodLength)
+                if np.sum(iHood) <= 1:
+                    #this pixel has no neighbors and is high. Filter it.
+                    iOutliers.append(gIndex[imax])
+                else:
+                    aodHood = aod550[iHood]
+                    if maxaod > (aodHood.mean() + self.aodSTD*aodHood.std()):
+                        iOutliers.append(gIndex[imax])
+                    else:
+                        find_outliers = False  # done looking for outliers
+            if self.verbose:
+                print("Filtering out ",len(iOutliers)," outlier pixels")
+
+            self.iOutliers = iOutliers 
+
+            if len(iOutliers) > 0:
+                for targetName in self.net.TargetNames:
+                    name, ch = TranslateTarget[targetName]
+                    k = list(self.channels).index(ch) # index of channel
+                    self.__dict__[name][iOutliers,k] = MISSING
+
+                if doAEfit:
+                    self.ae_[iOutliers] = MISSING
+
+                self.iGood[iOutliers] = False                
 
 
 #---
