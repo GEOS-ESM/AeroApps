@@ -44,7 +44,8 @@ def makethis_dir(filename):
             raise IOError("could not create directory "+path)
         
 #---------------------------------------------------------------------
-
+def wavs_callback(option, opt, value, parser):
+    setattr(parser.values, option.dest, value.split(','))
 if __name__ == "__main__":
 
     expid = 'nnr3'
@@ -71,9 +72,12 @@ if __name__ == "__main__":
     coll = '006'
     res = 'c'
     nsyn = 8
-    aodmax = 1.0
+    aodmax = 2.0
     cloud_thresh = 0.7
     cloudFree = None
+    aodSTD = 3.0
+    aodLength = 0.5
+    wavs = '440,470,550,660,870'
     
 #   Parse command line options
 #   --------------------------
@@ -137,6 +141,18 @@ if __name__ == "__main__":
                       help="max AOD value that will be accepted when cloud fraction is greater than cloudFree (default=%f)"\
                            %aodmax )
 
+    parser.add_option("--aodSTD", dest="aodSTD", default=aodSTD,type='float',
+                      help="number of standard deviations to check for AOD outliers (default=%f)"\
+                           %aodSTD )
+
+    parser.add_option("--aodLength", dest="aodLength", default=aodLength,type='float',
+                      help="length scale (degrees) to check for AOD outliers (default=%f)"\
+                           %aodLength )
+
+    parser.add_option("--wavs", dest="wavs", default=wavs,type='string',action='callback',callback=wavs_callback,
+                      help="wavelength to output AOD from predicted Angstrom Exponent (default=%s)"\
+                           %wavs )
+        
     parser.add_option("-u", "--uncompressed",
                       action="store_true", dest="uncompressed",default=False,
                       help="Do not use n4zip to compress gridded/ODS output file (default=False)")
@@ -215,6 +231,8 @@ if __name__ == "__main__":
 
     if options.cloudFree == 'None':
         options.cloudFree = None
+    elif options.cloudFree == None:
+        pass
     else:
         options.cloudFree = float(options.cloudFree)
 
@@ -223,6 +241,9 @@ if __name__ == "__main__":
                       cloud_thresh=options.cloud_thresh,
                       cloudFree = options.cloudFree,
                       aodmax = options.aodmax,
+                      aodSTD = options.aodSTD,
+                      aodLength = options.aodLength,
+                      wavs = options.wavs,
                       nsyn=options.nsyn,
                       verbose=options.verbose)
     if modis.nobs < 1:

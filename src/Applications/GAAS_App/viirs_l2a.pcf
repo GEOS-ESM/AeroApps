@@ -20,7 +20,10 @@ VIIRS_L2A_NN_FILE         = nnr_001.%ident_TauAE.net
 VIIRS_L2A_BLANK_ODS       = /nobackup/NNR/Misc/blank.ods
 
 VIIRS_L2A_CLOUD_THRESH    = 0.7
-VIIRS_L2A_CLOUDFREE       = 0.1
-VIIRS_L2A_AODMAX          = 10
+VIIRS_L2A_CLOUDFREE       = 0.5
+VIIRS_L2A_AODMAX          = 2.0
+VIIRS_L2A_AODSTD          = 3.0
+VIIRS_L2A_AODLENGTH       = 0.5
+VIIRS_L2A_WAVS            = 440,470,550,660,870
 
 #END VIIRS_L2A  processing
