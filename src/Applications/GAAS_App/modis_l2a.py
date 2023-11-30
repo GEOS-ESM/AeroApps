@@ -47,7 +47,44 @@ if __name__ == "__main__":
 
     if cf('MODIS_L2A_OVERWRITE').upper() == 'YES': Options += " --force"
     if   cf('MODIS_L2A_VERBOSE').upper() == 'YES': Options += " -v"
-              
+
+
+    try:
+        cloud_thresh = cf('MODIS_L2A_CLOUD_THRESH')
+        Options += " --cloud_thresh=" + cloud_thresh
+    except:
+        pass
+
+    try:
+        cloudFree = cf('MODIS_L2A_CLOUDFREE')
+        Options += " --cloudFree=" + cloudFree
+    except:
+        pass
+
+    try:
+        aodmax = cf('MODIS_L2A_AODMAX')
+        Options += " --aodmax=" + aodmax
+    except:
+        pass
+
+    try:
+        aodSTD = cf('MODIS_L2A_AODSTD')
+        Options += " --aodSTD=" + aodSTD
+    except:
+        pass
+
+    try:
+        aodLenth = cf('MODIS_L2A_AODLENGTH')
+        Options += " --aodLength=" + aodLength
+    except:
+        pass    
+
+    try:
+        wavs = cf('MODIS_L2A_WAVS')
+        Options += " --wavs=" + wavs
+    except:
+        pass    
+
     # Generate products
     # -----------------
     i = 0

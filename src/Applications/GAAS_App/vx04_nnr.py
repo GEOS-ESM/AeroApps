@@ -61,7 +61,10 @@ class Vx04_NNR(Vx04_L2):
                  glint_thresh=40.0,
                  scat_thresh=170.0,
                  cloudFree=None,
-                 aodmax=1.0,
+                 aodmax=2.0,
+                 aodSTD=3.0,
+                 aodLength=0.5,
+                 wavs=['440','470','550','660','870'],                 
                  coll='002',
                  nsyn=8,
                  verbose=0):
@@ -82,6 +85,8 @@ class Vx04_NNR(Vx04_L2):
         cloud_tresh  --- cloud fraction threshhold
         cloudFree    --- cloud fraction threshhold for assuring no cloud contaminations when aod is > aodmax
                         if None, no cloud free check is made
+        aodSTD      --- number of standard deviations for checking for outliers
+        aodLength   --- length scale (degrees) to look for outliers                        
         coll         --- VIIRS data collection
         nsyn         --- number of synoptic times
               
@@ -98,6 +103,9 @@ class Vx04_NNR(Vx04_L2):
         self.algo    = algo
         self.cloudFree = cloudFree
         self.aodmax = aodmax
+        self.aodSTD = aodSTD
+        self.aodLength = aodLength
+        self.wavs = wavs        
         
         # Initialize superclass
         # set anet_wav to True so MODIS wavelengths align with AERONET
@@ -335,20 +343,25 @@ class Vx04_NNR(Vx04_L2):
                 doAE = True
 
         if doAEfit:
-            wavs = ['440','470','550','660','870']
-            wav  = np.array(wavs).astype(float)
-            nwav = len(wavs)
+            wav  = np.array(self.wavs).astype(float)
+            nwav = len(self.wavs)
+            AEfitb = None
             for i,targetName in enumerate(self.net.TargetNames):
                     if 'AEfitm' in targetName:
                         AEfitm = targets[:,i]
                     if 'AEfitb' in targetName:
                         AEfitb = targets[:,i]
+                    if 'aTau550' in targetName:
+                        tau550 = targets[:,i]
+
+            if AEfitb == None:
+                AEfitb = -1.*(tau550 + AEfitm*np.log(550.))
             nobs = targets.shape[0]
             targets_ = np.zeros([nobs,nwav])
             targetName = []
             for i in range(nwav):
                 targets_[:,i] = -1.*(AEfitm*np.log(wav[i]) + AEfitb)
-                targetName.append('aTau'+wavs[i])
+                targetName.append('aTau'+self.wavs[i])
 
             targets = targets_
             self.net.TargetNames = targetName
@@ -362,11 +375,14 @@ class Vx04_NNR(Vx04_L2):
             I = np.array(self.channels) < 900 # only visible channels, this is relevant for ocean
             aechannels = np.array(self.channels)[I]
             aodT = self.aod[:,I].T
-            fit = np.polyfit(np.log(aechannels),-1.*np.log(aodT[:,self.iGood]+0.01),1)
+            iIndex = np.arange(len(self.iGood))[self.iGood]
+            aodT = aodT[:,iIndex] + 0.01
+            mask = aodT.min(axis=0) > 0
+            posIndex = iIndex[mask]            
+            fit = np.polyfit(np.log(aechannels),-1.*np.log(aodT[:,mask]+0.01),1)
             self.ae = MISSING*np.ones(self.nobs)
-            self.ae[self.iGood] = fit[0,:]
-            bad = np.isnan(self.ae)
-            self.ae[bad] = MISSING
+            self.ae[posIndex] = fit[0,:]
+
 
         if doAE:
             for i,targetName in enumerate(self.net.TargetNames):
@@ -420,7 +436,8 @@ class Vx04_NNR(Vx04_L2):
 
 
         # Do extra cloud filtering if required
-        if self.cloudFree is not None:                 
+        if self.cloudFree is not None:                
+            # start by checking the cloud masks
             cloudy = (self.cloud>=self.cloudFree)
     
             contaminated = np.zeros(np.sum(self.iGood)).astype(bool)
@@ -431,18 +448,70 @@ class Vx04_NNR(Vx04_L2):
                 contaminated = contaminated | ( (result > self.aodmax) & cloudy[self.iGood] )
             
             icontaminated = np.arange(self.nobs)[self.iGood][contaminated]
+
+            if self.verbose:
+                print('Filtering out ',np.sum(contaminated),' suspected cloud contaminated pixels')
+
+
             for targetName in self.net.TargetNames:
                 name, ch = TranslateTarget(targetName)
                 k = list(self.channels).index(ch) # index of channel
                 self.__dict__[name][icontaminated,k] = MISSING
 
             if doAEfit:
-                self.ae[icontaminated] = MISSING
                 self.ae_[icontaminated] = MISSING
 
             self.iGood[icontaminated] = False
 
+            # check for outliers
+            # start with highest AOD550 value
+            # find all the pixels within a 1 degree neighborhood
+            # check if it is outside of mean + N*sigma of the other pixels
+            # aodSTD parameter is equal to N
+            # continue until no outliers are found
+            find_outliers = True
+            k = list(self.channels).index(550)
+            aod550 = np.ma.array(self.aod_[self.iGood,k])
+            aod550.mask = np.zeros(len(aod550)).astype(bool)
+            Lon = self.Longitude[self.iGood]
+            Lat = self.Latitude[self.iGood]
+            gIndex = np.arange(self.nobs)[self.iGood]
+            iOutliers = []
+            count = 0
+            while find_outliers & (count<len(aod550)):
+                maxaod = aod550.max()
+                imax   = np.argmax(aod550)
+                aod550.mask[imax] = True
+                lon = Lon[imax]
+                lat = Lat[imax]
 
+                # find the neighborhood of pixels
+                iHood = (Lon<=lon+self.aodLength) & (Lon>=lon-self.aodLength) & (Lat<=lat+self.aodLength) & (Lat>=lat-self.aodLength)
+                if (np.sum(iHood) <= 1) & (maxaod > self.aodmax):
+                    #this pixel has no neighbors and is high. Filter it.
+                    iOutliers.append(gIndex[imax])
+                else:
+                    aodHood = aod550[iHood]
+                    if maxaod > (aodHood.mean() + self.aodSTD*aodHood.std()):
+                        iOutliers.append(gIndex[imax])
+                    else:
+                        find_outliers = False  # done looking for outliers
+                count +=1
+            if self.verbose:
+                print("Filtering out ",len(iOutliers)," outlier pixels")
+
+            self.iOutliers = iOutliers
+
+            if len(iOutliers) > 0:
+                for targetName in self.net.TargetNames:
+                    name, ch = TranslateTarget(targetName)
+                    k = list(self.channels).index(ch) # index of channel
+                    self.__dict__[name][iOutliers,k] = MISSING
+
+                if doAEfit:
+                    self.ae_[iOutliers] = MISSING
+
+                self.iGood[iOutliers] = False
 
 
 

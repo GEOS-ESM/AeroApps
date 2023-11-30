@@ -22,4 +22,11 @@ MODIS_L2A_AER_X           = %s.gaas_bkg.sfc.%y4%m2%d2_%h2z.nc4
 MODIS_L2A_NN_FILE         = ExtData/g5chem/x/NN/nnr_003.%ident_Tau.net
 MODIS_L2A_BLANK_ODS       = ExtData/g5chem/x/blank_syn8.ods
 
+MODIS_L2A_CLOUD_THRESH    = 0.7
+MODIS_L2A_CLOUDFREE       = 0.5
+MODIS_L2A_AODMAX          = 2.0
+MODIS_L2A_AODSTD          = 3.0
+MODIS_L2A_AODLENGTH       = 0.5
+MODIS_L2A_WAVS            = 440,470,550,660,870
+
 #END MODIS_L2A  processing

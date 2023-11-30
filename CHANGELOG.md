@@ -9,6 +9,7 @@
 - VIIRS and MODIS NNR angstrom exponent predictions are now saved in gridded output files (Level 3)
 - VIIRS and MODIS NNR ods files of AOD can be generated from angstrom exponent fit coefficients
 - VIIRS NNR ods file generator now takes nsyn (number of synoptic times) as an input.
+- VIIRS & MODIS NNR codes have an improved cloud filter and analomaly detection algorithm. There parameters for this can be inputs in the pcf file.
 
 ### Fixed
 
