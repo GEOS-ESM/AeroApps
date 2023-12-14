@@ -500,7 +500,7 @@ class MxD04_NNR(MxD04_L2):
                     if 'aTau550' in targetName:
                         tau550 = targets[:,i]
 
-            if AEfitb == None:
+            if AEfitb is None:
                 AEfitb = -1.*(tau550 + AEfitm*np.log(550.))
             nobs = targets.shape[0]
             targets_ = np.zeros([nobs,nwav])
