@@ -33,6 +33,7 @@
 - fix in NNR code for new syntax of the Kfold generator in sklearn
 - fix in NNR testing code to protect against cases where VIIRS standard product may not retrieve multiple wavelengths 
 - fix pyods __ini__.py to use relative imports. needed for python3
+- fix for check if AEfitb is None is mxd04_nnr and vx04_nnr. Using == gives error when AEfitb is initialized to an array
 ### Changed
 
 - add VIIRS aerosol products to GMAO_ods kx list
