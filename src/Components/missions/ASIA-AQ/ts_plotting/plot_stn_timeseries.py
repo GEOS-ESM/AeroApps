@@ -29,7 +29,8 @@ if __name__ == "__main__":
     sd = datetime(2024,1,1,1,30)
 
     # end of time series
-    # today's date + 5 day forecast, rounded to closest synoptic mid time
+    # today's date + 4 day forecast, rounded to closest synoptic mid time
+    # or end of available forecasts
     today = datetime.today()
     ed = today + timedelta(days=4)
     hour = 3*(ed.hour//3)
@@ -65,6 +66,9 @@ if __name__ == "__main__":
     assim_edate = assim_sdate + timedelta(hours=(3*int(assim_e)))
 
     forec_sdate = assim_sdate + timedelta(hours=(3*int(forec_s)))
+    forec_edate = assim_sdate + timedelta(hours=(3*(int(forec_e)-1)))
+
+    ed = min([ed,forec_edate])
 
     f.close()
 
