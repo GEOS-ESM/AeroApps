@@ -36,6 +36,14 @@ foreach fname (${climatology}/*20*nc)
   endif
 end
 
+foreach fname (${climatology}/*clim*nc)
+  set basename=`basename $fname`
+  if ( ! -l $basename )  then
+    ln -s $fname .
+  endif
+end
+
+
 # links to fp and MERRA2 data
 set files=(${climatology}/fp ${climatology}/MERRA2_all)
 foreach fname (${files})
