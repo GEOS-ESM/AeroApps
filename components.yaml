@@ -29,4 +29,4 @@ GMAOpyobs:
   local: ./src/Shared/GMAO_Shared/GMAO_pyobs@
   remote: ../GMAOpyobs.git
   tag: v1.0.6
-  develop: develop
+  branch: feature/pcastell/debug_viirs_paths
