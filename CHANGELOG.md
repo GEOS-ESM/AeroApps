@@ -4,6 +4,7 @@
 
 ### Added
 
+- scripts to plot satellite tracks for each day - focused on ASIA-AQ regions, but can be extended.
 - ASIA-AQ mission directory initialized with FLUID instance from FIREX-AQ
 - pyabc module added in GMAO_aeropybs. the snket class is needed in pyabc for loading ffnet .net files
 - VIIRS and MODIS NNR angstrom exponent predictions are now saved in gridded output files (Level 3)
