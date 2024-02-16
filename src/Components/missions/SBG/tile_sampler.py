@@ -1,50 +1,151 @@
 #!/usr/bin/env python3
 
 """
-    Utility to generate a orbital trajectory and sample model
-    output along it.
+    Utility to sample G5NR model output in a SBG tile
 
-    Adapted from trj_sampler, but using NC4ctl to do interpolation
-    as this is faster.
+    Adapted from ACCP/lidar_sampler.py
+    Trying to modernize to use xarray
 
-    P. Castellanos May 2017
+    P. Castellanos Feb 2024
 
 """
 
 import os
 import sys
-if os.path.exists('/discover/nobackup'):
-    sys.path.append(os.environ["NOBACKUP"]+'/workspace/GAAS/src/GMAO_Shared/GMAO_pyobs')
-else:
-    sys.path.append(os.environ["HOME"]+'/workspace/GAAS/src/GMAO_Shared/GMAO_pyobs')
 
-from   trj_sampler     import Open, getVars, getTrackICT, getTrackCSV, getTrackNPZ, getTrackHSRL, writeXLS
-from   optparse        import OptionParser
+import argparse
 from   dateutil.parser import parse         as isoparser
+from   datetime        import datetime, timedelta
 from   pyobs.sgp4      import getTrack as getTrackTLE
-from   numpy           import zeros, arange, array
 import numpy           as np
 from   MAPL            import eta
 from   MAPL.constants  import *
 from   pyobs.nc4ctl    import NC4ctl  
+import xarray          as xr
 
 class NC4ctl_(NC4ctl):
     interpXY = NC4ctl.interpXY_LatLon # select this as the default XY interpolation
 #---
-def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
+
+class TleVar(object):
+    """
+    Generic container for Variables
+    """
+    def __init__(self,name):
+        self.name = name
+
+#---
+def Open(filename):
+    """
+    Uses GFIO or GFIOctl to open either a NetCDF-4 or a control file.
+    Very heuristic.
+    """
+    from gfio import GFIOurl, GFIOctl
+    name, ext = os.path.splitext(filename)
+
+    # Open the GFIO dataset
+    # ---------------------
+    f = None
+    if 'HTTP://' == name[:7].upper():
+        f = GFIOurl(filename)
+        f.lower = True # force variable names to be lower case when sampling.
+    elif ext.upper() in ('.NC4','.NC','.HDF','.H5'):
+        f = GFIOurl(filename)
+        f.lower = False
+    else:
+        f = GFIOctl(filename)
+        f.lower = False
+
+    # Create variable dictionary
+    # --------------------------
+    Vars = dict()
+    if len(f.vtitle)<len(f.vname):
+        f.vtitle = f.vname[:]      # In case vtitle is not filled (hack)
+    for i in range(len(f.vname)):
+        if f.lower:
+            v = f.vname[i].upper()
+        else:
+            v = f.vname[i]
+        var = TleVar(v)
+        var.title = f.vtitle[i]
+        var.km = f.kmvar[i]
+        if var.km>0:
+            var.levunits = f.levunits[:]
+            var.levs = f.levs[:]
+        try:
+            var.units = f.vunits[i]
+        except:
+            var.units = 'unknown'  # opendap currently lacks units
+        Vars[v] = var
+
+    f.Vars = Vars
+
+    return f
+
+def getVars(rcFile):
+    """
+    Parse reource file, create variable dictionary with relevant
+    metadata.
+    """
+    from MAPL.config    import Config
+
+    cf = Config(rcFile)
+    Vars = dict()
+    AllVars = dict()
+    levUnits = 'none'
+    levs = []
+    for V in list(cf.keys()):
+        path = cf(V)
+        f = Open(path)
+        varList = []
+        if '*' in V:
+            VARS = list(f.Vars.keys())
+        else:
+            VARS = V.split(',')
+        for v in VARS:
+            v = v.strip()
+            var = f.Vars[v]
+            if AllVars.__contains__(v): # unique variable names for output
+                print(" >< Skipping duplicate variable <%s> in %s"%(v,path))
+                continue
+            elif v.upper() == "TAITIME":
+                continue # annoying HDFEOS crap
+            else:
+                AllVars[v] = True
+            if var.km>0:
+                levUnits = var.levunits
+                levs = var.levs
+            varList += [var,]
+        Vars[path] = varList
+
+    return (Vars, levs, levUnits)
+
+
+def writeNC ( args, tyme, Vars, levs, levUnits, 
               title='GEOS-5 Trajectory Sampler',
               doAkBk=False, zlib=False):
     """
-    Write a NetCDF file with sampled GEOS-5 variables along the satellite track
+    Write a NetCDF file with sampled GEOS-5 variables on a satellite tile
     described by (lon,lat,tyme).
     """
+
+    # read lons/lats
+    # ----------------
+    ds = xr.open_dataset(args.tileFile,group='ancillary')
+
+    # Make sure longitudes in [-180,180]
+    # ----------------------------------
+    if ds.lon.max()>180.:
+        ds.lon[ds.lon>180] = ds.lon[ds.lon>180] - 360.
+
+
     from netCDF4 import Dataset
 
     km = len(levs)
     
     # Open NC file
     # ------------
-    nc = Dataset(options.outFile,'w',format=options.format)
+    nc = Dataset(args.outFile,'w',format=args.format)
 
     # Set global attributes
     # ---------------------
@@ -56,18 +157,19 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
     nc.comment = 'This file contains GEOS-5 related parameters along a satellite or aircraft track.'
     nc.contact = 'Arlindo da Silva <arlindo.dasilva@nasa.gov>'
     nc.Conventions = 'CF'
-    nc.trjFile = trjFile
+    nc.tileFile = args.tileFile
  
     # Create dimensions
     # -----------------
-    nt = nc.createDimension('time',None) #len(tyme)
+    nt = nc.createDimension('time',None) 
     ls = nc.createDimension('ls',19)
+    x = nc.createDimension('lon',len(ds.lon))
+    y = nc.createDimension('lat',len(ds.lat))
     if km>0:
         nz = nc.createDimension('lev',km)
         if doAkBk:
             ne = nc.createDimension('ne',km+1)
-    x = nc.createDimension('x',1)
-    y = nc.createDimension('y',1)
+
 
     # Coordinate variables
     # --------------------
@@ -75,7 +177,7 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
     time.long_name = 'Time'
     t0 = tyme[0]
     time.units = 'seconds since %s'%t0.isoformat(' ')
-    time[:] = array([(t-t0).total_seconds() for t in tyme])
+    time[:] = np.array([(t-t0).total_seconds() for t in tyme])
     if km > 0: # pressure level not supported yet
         lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
         lev.long_name = 'Vertical Level'
@@ -95,50 +197,42 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
             bk.units = '1'
             bk = be[:]
     
-    # Add fake dimensions for GrADS compatibility
-    # -------------------------------------------
-    x = nc.createVariable('x','f4',('x',),zlib=zlib)
-    x.long_name = 'Fake Longitude for GrADS Compatibility'
-    x.units = 'degrees_east'
-    x[:] = zeros(1)
-    y = nc.createVariable('y','f4',('y',),zlib=zlib)
-    y.long_name = 'Fake Latitude for GrADS Compatibility'
-    y.units = 'degrees_north'
-    y[:] = zeros(1)
     
     # Trajectory coordinates
     # ----------------------
-    lon = nc.createVariable('trjLon','f4',('time',),zlib=zlib)
-    lon.long_name = 'Trajectory Longitude'
+    lon = nc.createVariable('trjLon','f4',('lon',),zlib=zlib)
+    lon.long_name = 'Tile Longitude'
     lon.units = 'degrees_east'
-    lon[:] = lons[:]
-    lat = nc.createVariable('trjLat','f4',('time',),zlib=zlib)
-    lat.long_name = 'Trajectory Latitude'
+    lon[:] = ds.lon
+    lat = nc.createVariable('trjLat','f4',('lat',),zlib=zlib)
+    lat.long_name = 'Tile Latitude'
     lat.units = 'degrees_north'
-    lat[:] = lats[:]
+    lat[:] = ds.lat
     
     # Time in ISO format if so desired
     # ---------------------------------
-    if options.isoTime:
+    if args.isoTime:
         isotime = nc.createVariable('isotime','S1',('time','ls'),zlib=zlib)
         isotime.long_name = 'Time (ISO Format)'
-        isotmp = zeros((len(lons),19),dtype='S1')
-        for i in range(len(lons)):
+        isotmp = zeros((len(tyme),19),dtype='S1')
+        for i in range(len(tyme)):
             isotmp[i][:] = list(tyme[i].isoformat())
         isotime[:] = isotmp[:]
       
     # Loop over datasets, sample and write each variable
     # --------------------------------------------------
+    glon,glat = np.meshgrid(ds.lon,ds.lat)
+    nlon,nlat = len(ds.lon),len(ds.lat)
     for path in Vars:
-        if options.verbose:
+        if args.verbose:
             print(" <> opening "+path)
         g = Open(path) 
         g.nc4 = NC4ctl_(path)
         for var in Vars[path]:
             if var.km == 0:
-                dim = ('time',)
+                dim = ('time','lat','lon')
             else:
-                dim = ('time','lev')
+                dim = ('time','lat','lon','lev')
             this = nc.createVariable(var.name,'f4',dim,zlib=zlib)
             this.standard_name = var.title
             this.long_name = var.title.replace('_',' ')
@@ -148,26 +242,31 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
                 name = var.name.lower() # GDS always uses lower case
             else:
                 name = var.name
-            if options.verbose:
+            if args.verbose:
                 print(" [] %s interpolating <%s>"%\
-                        (options.algo.capitalize(),name.upper()))   
+                        (args.algo.capitalize(),name.upper()))   
 
             # Use NC4ctl for linear interpolation
             # -----------------------------------
-            Z = g.nc4.sample(name,lons,lats,tyme,
+            Z = g.nc4.sample(name,glon.ravel(),glat.ravel(),tyme.repeat(nlon*nlat),
                              Transpose=True,squeeze=True)
 
-            # Z = g.sample(name,lons,lats,tyme,algorithm=options.algo,
-            #              Transpose=True,squeeze=True)
             Z[abs(Z)>MAPL_UNDEF/1000.] = MAPL_UNDEF # detect undef contaminated interp
+
+            if var.km == 0:
+                Z = Z.reshape([1,nlat,nlon])
+            else:
+                Z = Z.reshape([1,nlat,nlon,var.km])
+            
             this[:] = Z
             
     # Close the file
     # --------------
     nc.close()
+    ds.close()
 
-    if options.verbose:
-        print(" <> wrote %s file %s"%(options.format,options.outFile))
+    if args.verbose:
+        print(" <> wrote %s file %s"%(args.format,args.outFile))
     
 #---
 
@@ -176,119 +275,76 @@ def writeNC ( lons, lats, tyme, Vars, levs, levUnits, trjFile, options,
 if __name__ == "__main__":
     
     format = 'NETCDF3_CLASSIC'
-    rcFile  = 'trj_sampler.rc'
-    outFile = 'trj_sampler.nc'
-    dt_secs = 60
+    outFile = 'tile_sampler.nc'
+    dt_days = 8
     algo = 'linear'
     
 
 #   Parse command line options
 #   --------------------------
-    parser = OptionParser(usage="Usage: %prog [OPTIONS] tleFile|ictFile|csvFile|npzFile [iso_t1 iso_t2]",
-                          version='1.0.1' )
+    parser = argparse.ArgumentParser()
+    parser.add_argument("tileFile",
+                        help="SBG tile file with lat/lons")
 
-    parser.add_option("-a", "--algorithm", dest="algo", default=algo,
+
+    parser.add_argument("rcFile",
+                        help="model collection rcFile")
+
+    parser.add_argument("-a", "--algorithm", default=algo,
               help="Interpolation algorithm, one of linear, nearest (default=%s)"\
                           %algo)
 
-    parser.add_option("-r", "--rcFile", dest="rcFile", default=rcFile,
-              help="Resource file defining parameters to sample (default=%s)"\
-                          %rcFile )
-
-    parser.add_option("-o", "--output", dest="outFile", default=outFile,
+    parser.add_argument("-o", "--outFile", default=outFile,
               help="Output NetCDF file (default=%s)"\
                           %outFile )
 
-    parser.add_option("-f", "--format", dest="format", default=format,
-              help="Output file format: one of NETCDF4, NETCDF4_CLASSIC, NETCDF3_CLASSIC, NETCDF3_64BIT or EXCEL (default=%s)"%format )
+    parser.add_argument("-f", "--format", default=format,
+              help="Output file format: one of NETCDF4, NETCDF4_CLASSIC, NETCDF3_CLASSIC, NETCDF3_64BIT(default=%s)"%format )
 
-    parser.add_option("-t", "--trajectory", dest="traj", default=None,
-              help="Trajectory file format: one of tle, ict, csv, npz, hsrl (default=trjFile extension)" )
+    parser.add_argument("-d", "--dt_days", default=dt_days,type=int,
+              help="Timesetp in days for TLE sampling (default=%s)"%dt_days )
 
-    parser.add_option("-d", "--dt_secs", dest="dt_secs", default=dt_secs,
-              type='int',
-              help="Timesetp in seconds for TLE sampling (default=%s)"%dt_secs )
-
-    parser.add_option("--tle_year", dest="tle_year", 
-              help="Year for TLE calculations (default=None)")
-
-    parser.add_option("-I", "--isoTime",
-                      action="store_true", dest="isoTime",
+    parser.add_argument("-I", "--isoTime", action="store_true", 
                       help="Include ISO format time in output file.")
 
-    parser.add_option("-v", "--verbose",
+    parser.add_argument("-v", "--verbose",
                       action="store_true", dest="verbose",
                       help="Verbose mode.")
 
-    parser.add_option("-z", "--no_zlib",
-                      action="store_false", dest="zlib", default=True,
-                      help="no zlib compression for netcdf files")
+    args = parser.parse_args()
 
-    (options, args) = parser.parse_args()
+    # get julian day from file name
+    jday = args.tileFile.split('_')[-2][4:]
+
+    # need lon to get the UTC time
+    # use the center lon
+    # assume satellite passes at 1300 local solar time
+    with  xr.open_dataset(args.tileFile, group="ancillary") as ds:
+        lon0 = float(ds.lon.mean()) 
+
+    dmin = int(60.*lon0/15.)
     
-    if len(args) == 3:
-        trjFile, iso_t1, iso_t2 = args
-        t1, t2 = (isoparser(iso_t1), isoparser(iso_t2))
-    elif len(args) == 1:
-        trjFile = args[0]
-        t1, t2 = None, None
-    else:
-        parser.error("must have 1 or 3 arguments: tleFile|ictFile [iso_t1 iso_t2]")
+    # get date
+    tyme  = datetime.strptime('2006-{}T13'.format(jday),'%Y-%jT%H')
+    tyme  += timedelta(minutes=dmin)
+    tyme  = np.array([tyme])
 
-    if options.traj is None:
-        name, ext = os.path.splitext(trjFile)
-        options.traj = ext[1:]
-    options.traj = options.traj.upper()
-        
+    
     # Create consistent file name extension
     # -------------------------------------
-    name, ext = os.path.splitext(options.outFile)
-    if ext.upper() == '.XLS':
-        options.format = 'EXCEL'
-    if 'NETCDF4' in options.format:
-        options.outFile = name + '.nc4'
-    elif 'NETCDF3' in options.format:
-        options.outFile = name + '.nc'
-    elif 'EXCEL' in options.format:
-        options.outFile = name + '.xls'
+    name, ext = os.path.splitext(args.outFile)
+    if 'NETCDF4' in args.format:
+        args.outFile = name + '.nc4'
+    elif 'NETCDF3' in args.format:
+        args.outFile = name + '.nc'
     else:
         raise ValueError('invalid extension <%s>'%ext)
   
     # Get Variables and Metadata
     # --------------------------
-    Vars, levs, levUnits = getVars(options.rcFile)
+    Vars, levs, levUnits = getVars(args.rcFile)
 
-    # Create trajectory
-    # -----------------
-    if options.traj == 'TLE':
-        if t1 is None:
-            raise ValueError('time range (t1,t2) must be specified when doing TLE sampling.')
-        if options.tle_year is not None:
-            t1_ = isoparser(options.tle_year + iso_t1[4:])
-            t2_ = isoparser(options.tle_year + iso_t2[4:])
-            lon, lat, tyme_ = getTrackTLE(trjFile, t1_, t2_, options.dt_secs)
-            lon_, lat_, tyme = getTrackTLE(trjFile, t1, t2, options.dt_secs)
-        else:
-            lon, lat, tyme = getTrackTLE(trjFile, t1, t2, options.dt_secs)
-    elif options.traj == 'ICT':
-        lon, lat, tyme = getTrackICT(trjFile,options.dt_secs)
-    elif options.traj == 'CSV':
-        lon, lat, tyme = getTrackCSV(trjFile)
-    elif options.traj == 'NPZ':
-        lon, lat, tyme = getTrackNPZ(trjFile)
-    elif options.traj == 'HSRL' or options.traj == 'H5':
-        lon, lat, tyme = getTrackHSRL(trjFile)
-    else:
-        raise ValueError('cannot handle trajectory file format <%s>'%options.traj)
-    # Make sure longitudes in [-180,180]
-    # ----------------------------------
-    if lon.max()>180.:
-        lon[lon>180] = lon[lon>180] - 360.
-    
     # Write output file
     # -----------------
-    if options.format == 'EXCEL':
-        writeXLS(lon,lat,tyme,Vars,trjFile,options)
-    else:
-        writeNC(lon,lat,tyme,Vars,levs,levUnits,trjFile,options,zlib=options.zlib)
+    writeNC(args,tyme,Vars,levs,levUnits)
     
