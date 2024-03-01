@@ -24,17 +24,17 @@ if __name__ == "__main__":
    
     ctlFile = 'fp/opendap/seamless/tavg3_2d_aer_Nx.latest'
     plt_Variables= ['TOTEXTTAU','DUEXTTAU','SSEXTTAU','SUEXTTAU','PM25','CCEXTTAU']
+#    plt_Variables= ['TOTEXTTAU']
 
     # start of timeseries
     sd = datetime(2024,1,1,1,30)
 
     # end of time series
-    # today's date + 4 day forecast, rounded to closest synoptic mid time
-    # or end of available forecasts
+    # today's date + 5 day forecast, rounded to closest synoptic mid time
     today = datetime.today()
     ed = today + timedelta(days=4)
     hour = 3*(ed.hour//3)
-    ed = datetime(ed.year,ed.month,ed.day,ed.hour+1,30)
+    ed = datetime(ed.year,ed.month,ed.day,min((ed.hour+1,23)),30)
 
     # create a directory for figures
     opath = 'plots_{}'.format(today.strftime('%Y%m%d'))
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     clim = {}
     for stat in stats:
         dataset = sorted(glob('{}_clim_{}.nc'.format(stations,stat)))
-        clim[stat] = xr.open_mfdataset(dataset,parallel=True)
+        clim[stat] = xr.open_mfdataset(dataset,parallel=True).sortby('time')
 
     Variables = list(clim['mean'].keys())
     Variables.remove('PM25')
@@ -66,6 +66,7 @@ if __name__ == "__main__":
     assim_edate = assim_sdate + timedelta(hours=(3*int(assim_e)))
 
     forec_sdate = assim_sdate + timedelta(hours=(3*int(forec_s)))
+
     forec_edate = assim_sdate + timedelta(hours=(3*(int(forec_e)-1)))
 
     ed = min([ed,forec_edate])
@@ -141,6 +142,8 @@ if __name__ == "__main__":
 
         ax.set_ylabel(title)
         ax.tick_params(axis='x', labelrotation=25)
+        ax.xaxis.set_major_locator(plt.MaxNLocator(15))
+        ax.set_xlim(pd.Timestamp('2024-02-25'), pd.Timestamp('2024-03-10'))
 
         plt.legend()
         plt.savefig('{}/{}_{}_{}.png'.format(opath,stations,var,today.strftime('%Y%m%d_%H')))
