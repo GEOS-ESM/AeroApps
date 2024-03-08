@@ -29,3 +29,4 @@ GMAOpyobs:
   local: ./src/Shared/GMAO_Shared/GMAO_pyobs@
   remote: ../GMAOpyobs.git
   tag: v1.0.8
+  develop: develop
