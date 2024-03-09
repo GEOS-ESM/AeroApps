@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added DB_DEEP data stream for VIIRS NNR
 - scripts to plot satellite tracks for each day - focused on ASIA-AQ regions, but can be extended.
 - ASIA-AQ mission directory initialized with FLUID instance from FIREX-AQ
 - pyabc module added in GMAO_aeropybs. the snket class is needed in pyabc for loading ffnet .net files
@@ -21,6 +22,7 @@
 - Update GMAOpyobs to v1.0.4
 - Update GMAOpyobs to v1.0.5
 - Update GMAOpyobs to v1.0.6
+- Update GMAOpyobs to v1.0.8
 
 ## [v2.0.2] - 2023-05-25
 
