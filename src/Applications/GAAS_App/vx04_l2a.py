@@ -29,7 +29,8 @@ from MAPL.config            import strTemplate
 Ident = dict( vsnppdto = ('SNPP','dt_ocean'),
               vsnppdtl = ('SNPP','dt_land'),
               vsnppdbo = ('SNPP','db_ocean'),
-              vsnppdbl = ('SNPP','db_land')
+              vsnppdbl = ('SNPP','db_land'),
+              vsnppdbd = ('SNPP','db_deep')
             )
 
 #---------------------------------------------------------------------

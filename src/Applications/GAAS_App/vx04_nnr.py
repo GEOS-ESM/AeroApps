@@ -105,7 +105,10 @@ class Vx04_NNR(Vx04_L2):
         self.aodmax = aodmax
         self.aodSTD = aodSTD
         self.aodLength = aodLength
-        self.wavs = wavs        
+        if type(wavs) is str:
+            self.wavs = wavs.split(',')
+        else:
+            self.wavs = wavs        
         
         # Initialize superclass
         # set anet_wav to True so MODIS wavelengths align with AERONET
@@ -117,7 +120,9 @@ class Vx04_NNR(Vx04_L2):
                               SDS=SDS,
                               alias=ALIAS,
                               Verb=verbose,
-                              anet_wav=True)            
+                              anet_wav=True)           
+        if "pixel_elevation" in self.__dict__:
+            self.pixel_elevation = self.pixel_elevation*1e-4
 
         if self.nobs < 1:
             return # no obs, nothing to do
@@ -129,10 +134,15 @@ class Vx04_NNR(Vx04_L2):
         for i,c in enumerate(self.rChannels):
             self.iGood = self.iGood & (self.reflectance[:,i]>0)
 
-        if "LAND" in algo:
+        if ("LAND" in algo) or ("DEEP" in algo):
             self.iGood = self.iGood & (self.ScatteringAngle < scat_thresh)
-            for i,c in enumerate(self.sChannels):
-                self.iGood = self.iGood & (self.sfc_reflectance[:,i]>0)
+            if "LAND" in algo:
+                # 412 surface reflectance not used for vegetated surfaces
+                self.iGood = self.iGood & self.sfc_reflectance[:,0].mask & ~self.sfc_reflectance[:,1].mask & ~self.sfc_reflectance[:,2].mask
+
+            elif "DEEP" in algo:
+                for i,c in enumerate(self.sChannels):
+                    self.iGood = self.iGood & ~self.sfc_reflectance[:,i].mask
 
         if "OCEAN" in algo:
             self.iGood = self.iGood & (self.GlintAngle > glint_thresh)
