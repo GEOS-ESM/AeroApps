@@ -1,0 +1,11 @@
+#
+# Resource file for GEO sampler
+#
+
+AREA, FRLAKE, FRLAND, FRLANDICE, FROCEAN, PHIS, SGH:  /home/pcastell/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/const/const_2d_asm_Nx
+#FRLAKE: /home/pcastell/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/const/const_2d_asm_Nx
+#FRLAND: /home/pcastell/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/const/const_2d_asm_Nx
+#FRLANDICE: /home/pcastell/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/const/const_2d_asm_Nx
+#FROCEAN: /home/pcastell/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/const/const_2d_asm_Nx
+#PHIS:  /home/pcastell/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/const/const_2d_asm_Nx
+#SGH:  /home/pcastell/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/const/const_2d_asm_Nx
