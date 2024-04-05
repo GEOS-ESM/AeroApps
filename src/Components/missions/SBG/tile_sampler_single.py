@@ -125,7 +125,7 @@ def getVars(rcFile):
 
 def writeNC ( args, tyme, Vars, levs, levUnits, 
               title='GEOS-5 Trajectory Sampler',
-              doAkBk=False, zlib=False):
+              doAkBk=False, zlib=True):
     """
     Write a NetCDF file with sampled GEOS-5 variables on a satellite tile
     described by (lon,lat,tyme).
@@ -280,7 +280,7 @@ def writeNC ( args, tyme, Vars, levs, levUnits,
 
 if __name__ == "__main__":
     
-    format = 'NETCDF3_CLASSIC'
+    format = 'NETCDF4'
     outFile = 'tile_sampler.nc'
     
 
@@ -335,7 +335,7 @@ if __name__ == "__main__":
         
         # get date
         tyme  = datetime.strptime('2006-{}T13'.format(jday),'%Y-%jT%H')
-        tyme  += timedelta(minutes=dmin)
+        tyme  -= timedelta(minutes=dmin)
         tyme  = np.array([tyme])
 
     
