@@ -527,10 +527,11 @@ class LIDAR_VLIDORT(object):
         self.tau = tau  #(km,nch,nobs)
         self.ssa = ssa  #(km,nch,nobs)
         self.g   = g    #(km,nch,nobs)
-        self.pmom = pmom  #(km,nch,nobs,nMom,nPol)
+
         # Multiply by -1 to go from Mischenko convention to VLIDORT
         pmom[:,:,:,:,1] = -1.*pmom[:,:,:,:,1]
         pmom[:,:,:,:,3] = -1.*pmom[:,:,:,:,3]
+        self.pmom = pmom #(km,nch,nobs,nMom,nPol)
 
 
     def runVLIDORT(self):
