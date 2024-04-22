@@ -1,0 +1,6 @@
+# FILENAMES
+    brdfDir  = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/LevelB/surface/BRDF/ames-brdf/version2.0/2019/h%Hv%V
+    brdfFile = sbg_mdl_h%Hv%V_2019%J_brdf.nc4
+    nlon     = 600
+    nlat     = 600
+# FILENAMES
