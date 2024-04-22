@@ -23,7 +23,7 @@ from   MAPL.constants  import *
 from   pyobs.nc4ctl    import NC4ctl  
 import xarray          as xr
 from   glob            import glob
-
+from scipy.interpolate import griddata
 
 def writeNC ( args, tyme, Vars, levs, levUnits, 
               title='GEOS-5 Trajectory Sampler',
@@ -225,8 +225,11 @@ if __name__ == "__main__":
     nlon,nlat = int(cf_tile('nlon')), int(cf_tile('nlat'))
     H,V = int(args.tile[1:3]),int(args.tile[4:])
 
-    lats = 60.0 - (V*6 + np.arange(nlat)*0.01) - 0.005
-    lons = -180.0 + (H*6 + np.arange(nlon)*0.01) + 0.005
+    tlats = 60.0 - (V*6 + np.arange(nlat)*0.01) - 0.005
+    tlons = -180.0 + (H*6 + np.arange(nlon)*0.01) + 0.005
+    tlonmin,tlonmax = tlons.min(),tlons.max()
+    tlatmin,tlatmax = tlats.min(),tlats.max()
+    grid_x,grid_y = np.meshgrid(tlons,tlats)
 
     # loop through start to end time
     sdate = isoparser(args.start_isotime)
@@ -247,16 +250,35 @@ if __name__ == "__main__":
         for hh in range(24):
             swathFile = inDir + '/' + cf_swath('inFile').replace('%orbitname',args.orbit.lower()).replace('%col',args.col).replace('%nymd',nymd).replace('%hour',"{:02d}".format(hh))
 
-        swath = xr.open_mfdataset(swathList)
+            swath = xr.open_dataset(swathFile)
+            slons = swath.longitude.values
+            slats = swath.latitude.values
+            nalong = swath.dims['nalong']
+            
 
-        # Find the part of the swath that intersect with the tile
-        # ---------------------------------------
+            # check to see if swath intersetcts with the  tile
+            # --------------------------------------------------
+            check = (slons <= tlonmax) & (slons >= tlonmin) & (slats <= tlatmax) & (slats >= tlatmin)
+            if check.any():
+                for var in list(swath.variables):
+                    if (swath.variables[var].ndim == 3) & (var not in ['latitude','longitude']):
+                        for ialong in swath.nalong:
+                            sys.exit()
+                            
+                            indata = swath.sel(nalong=ialong).variables[var].values
+                            x_points = swath.sel(nalong=ialong).longitude.values
+                            y_points = swath.sel(nalong=ialong).latitude.values
+                            sub    = check[:,ialong,:]
+
+                            interp = griddata((x_points[sub], y_points[sub]), indata[sub],(grid_x,grid_y))
+                    
+
         
 
 
-#        # Write output file
-#        # -----------------
-#        writeNC(args,tyme,Vars,levs,levUnits)
+    #        # Write output file
+    #        # -----------------
+    #        writeNC(args,tyme,Vars,levs,levUnits)
     
 
         sdate += dt
