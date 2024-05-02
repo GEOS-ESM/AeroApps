@@ -134,7 +134,7 @@ class TILE(object):
         time.missing_value = 999999
         t0 = self.date
         time.units = 'seconds since %s'%t0.isoformat(' ')
-        time[0,:] = self.dt
+        time[0,:] = np.ma.array(self.dt)
 
         
         # Time in ISO format if so desired
