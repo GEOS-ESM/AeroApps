@@ -1,6 +1,6 @@
 # FILENAMES
     inDir    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%ORBITNAME/LevelBtile/Y%year/M%month/D%day
-    inFile   = %orbitname-%tile-g5nr.lb2.%col.%nymd_%hour00z.o%overpass.nc4
+    inFile   = %orbitname-%tile-g5nr.lb2.%col.%nymd_%hour00z.nc4
 
     brdfDir  = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/LevelB/surface/BRDF/ames-brdf/version2.0/2019/h%Hv%V
     brdfFile = sbg_mdl_h%Hv%V_2019%J_brdf.nc4

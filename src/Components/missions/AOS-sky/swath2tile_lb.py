@@ -131,6 +131,7 @@ class TILE(object):
         # ----------------------
         time = nc.createVariable('time','i4',('date','along','lat','lon',),zlib=zlib)
         time.long_name = 'Time'
+        time.missing_value = 999999
         t0 = self.date
         time.units = 'seconds since %s'%t0.isoformat(' ')
         time[0,:] = self.dt
@@ -265,8 +266,8 @@ if __name__ == "__main__":
         # Get Filenames 
         # -------------
         inDir = cf_swath('inDir').replace('%ORBITNAME',args.orbit.upper()).replace('%year',year).replace('%month',month).replace('%day',day)
-        overpass = 0
         for hh in range(24):
+            
             swathFile = inDir + '/' + cf_swath('inFile').replace('%orbitname',args.orbit.lower()).replace('%col',args.col).replace('%nymd',nymd).replace('%hour',"{:02d}".format(hh))
 
             swath = xr.open_dataset(swathFile)
@@ -279,7 +280,7 @@ if __name__ == "__main__":
             # --------------------------------------------------
             check = (slons <= tlonmax) & (slons >= tlonmin) & (slats <= tlatmax) & (slats >= tlatmin)
             if check.any():
-                overpass += 1
+            
                 # initialize tile class
                 tile = TILE(args,sdate,tlons,tlats,nalong)
                 
@@ -288,7 +289,7 @@ if __name__ == "__main__":
                 if not os.path.exists(outDir):
                     os.makedirs(outDir)
 
-                tileFile = outDir + '/' + cf_tile('inFile').replace('%tile',args.tile.lower()).replace('%orbitname',args.orbit.lower()).replace('%col',args.col).replace('%nymd',nymd).replace('%hour',"{:02d}".format(hh)).replace('%overpass',"{:02d}".format(overpass))
+                tileFile = outDir + '/' + cf_tile('inFile').replace('%tile',args.tile.lower()).replace('%orbitname',args.orbit.lower()).replace('%col',args.col).replace('%nymd',nymd).replace('%hour',"{:02d}".format(hh))
 
                 tile.outFile = tileFile
 
