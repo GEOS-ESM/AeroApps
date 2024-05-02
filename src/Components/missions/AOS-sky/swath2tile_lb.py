@@ -20,159 +20,165 @@ import numpy           as np
 from   MAPL            import eta
 from   MAPL.config     import Config
 from   MAPL.constants  import *
-from   pyobs.nc4ctl    import NC4ctl  
 import xarray          as xr
 from   glob            import glob
 from scipy.interpolate import griddata
+from netCDF4 import Dataset
+import pandas as pd
 
-def writeNC ( args, tyme, Vars, levs, levUnits, 
-              title='GEOS-5 Trajectory Sampler',
-              doAkBk=False, zlib=False):
+class HOLDER(object):
+    def __init__(self,name):
+        self.name = name
+
+class TILE(object):
     """
-    Write a NetCDF file with sampled GEOS-5 variables on a satellite tile
-    described by (lon,lat,tyme).
+    class to hold dataset on tile
     """
-
-    # read lons/lats
-    # ----------------
-    ds = xr.open_dataset(args.tileFile,group='ancillary')
-
-    # Make sure longitudes in [-180,180]
-    # ----------------------------------
-    if ds.lon.max()>180.:
-        ds.lon[ds.lon>180] = ds.lon[ds.lon>180] - 360.
-
-
-    from netCDF4 import Dataset
-
-    km = len(levs)
-    
-    # Open NC file
-    # ------------
-    nc = Dataset(args.outFile,'w',format=args.format)
-
-    # Set global attributes
-    # ---------------------
-    nc.title = title
-    nc.institution = 'NASA/Goddard Space Flight Center'
-    nc.source = 'Global Model and Assimilation Office'
-    nc.history = 'Created from GEOS-5 standard collections by trj_sampler.py'
-    nc.references = 'n/a'
-    nc.comment = 'This file contains GEOS-5 related parameters along a satellite or aircraft track.'
-    nc.contact = 'Arlindo da Silva <arlindo.dasilva@nasa.gov>'
-    nc.Conventions = 'CF'
-    nc.tileFile = args.tileFile
- 
-    # Create dimensions
-    # -----------------
-    nt = nc.createDimension('time',None) 
-    ls = nc.createDimension('ls',19)
-    x = nc.createDimension('lon',len(ds.lon))
-    y = nc.createDimension('lat',len(ds.lat))
-    if km>0:
-        nz = nc.createDimension('lev',km)
-        if doAkBk:
-            ne = nc.createDimension('ne',km+1)
+    def __init__(self,args,date,lon,lat,nalong):
+        self.tile = args.tile
+        self.isoTime = args.isoTime
+        self.date = date
+        self.lon = lon
+        self.lat = lat
+        self.nalong = nalong
+        self.variables = []
 
 
-    # Coordinate variables
-    # --------------------
-    time = nc.createVariable('time','i4',('time',),zlib=zlib)
-    time.long_name = 'Time'
-    t0 = tyme[0]
-    time.units = 'seconds since %s'%t0.isoformat(' ')
-    time[:] = np.array([(t-t0).total_seconds() for t in tyme])
-    if km > 0: # pressure level not supported yet
-        lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
-        lev.long_name = 'Vertical Level'
-        lev.units = levUnits.strip()
-        lev.positive = 'down'
-        lev.axis = 'z'
-        lev[:] = levs[:]
 
-        if doAkBk:
-            ae, be = eta.getEdge(km) # Coefficients for Hybrid coordinates
-            ak = nc.createVariable('ak','f4',('ne',),zlib=zlib)
-            ak.long_name = 'Eta coordinate coefficient ak (p = ak + bk * ps)'
-            ak.units = 'Pa'
-            ak = ae[:]
-            bk = nc.createVariable('bk','f4',('ne',),zlib=zlib)
-            bk.long_name = 'Eta coordinate coefficient bk (p = ak + bk * ps)'
-            bk.units = '1'
-            bk = be[:]
-    
-    
-    # Trajectory coordinates
-    # ----------------------
-    lon = nc.createVariable('trjLon','f4',('lon',),zlib=zlib)
-    lon.long_name = 'Tile Longitude'
-    lon.units = 'degrees_east'
-    lon[:] = ds.lon
-    lat = nc.createVariable('trjLat','f4',('lat',),zlib=zlib)
-    lat.long_name = 'Tile Latitude'
-    lat.units = 'degrees_north'
-    lat[:] = ds.lat
-    
-    # Time in ISO format if so desired
-    # ---------------------------------
-    if args.isoTime:
-        isotime = nc.createVariable('isotime','S1',('time','ls'),zlib=zlib)
-        isotime.long_name = 'Time (ISO Format)'
-        isotmp = zeros((len(tyme),19),dtype='S1')
-        for i in range(len(tyme)):
-            isotmp[i][:] = list(tyme[i].isoformat())
-        isotime[:] = isotmp[:]
-      
-    # Loop over datasets, sample and write each variable
-    # --------------------------------------------------
-    glon,glat = np.meshgrid(ds.lon,ds.lat)
-    nlon,nlat = len(ds.lon),len(ds.lat)
-    for path in Vars:
+    def writeNC (self,doAkBk=False,zlib=True):
+        """
+        Write a NetCDF file with re-sampled variables on a satellite tile
+        described by (lon,lat).
+        """
+
+        # Open NC file
+        # ------------
+        nc = Dataset(self.outFile,'w',format='NETCDF4')
+
+        # Set global attributes
+        # ---------------------
+        nc.title = 'GEOS sampled on tile'
+        nc.institution = 'NASA/Goddard Space Flight Center'
+        nc.source = 'Global Model and Assimilation Office'
+        nc.history = 'Created from GEOS-5 OSSE collections by swath2tile_lb.py'
+        nc.references = 'n/a'
+        nc.comment = 'This file contains GEOS-5 related parameters along a satellite or aircraft track.'
+        nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
+        nc.Conventions = 'CF'
+        
+     
+        # Create dimensions
+        # -----------------
+        d = nc.createDimension('date',None)
+        n = nc.createDimension('along',self.nalong)
+        y = nc.createDimension('lat',len(self.lat))
+        x = nc.createDimension('lon',len(self.lon))
+        ls = nc.createDimension('ls',19)
+
+        # keep this in for now.  not used.
+        km = 0
+        if km>0:
+            nz = nc.createDimension('lev',km)
+            if doAkBk:
+                ne = nc.createDimension('ne',km+1)
+
+
+        # Coordinate variables
+        # --------------------
+        date = nc.createVariable('date','i4',('date',),zlib=zlib)
+        date.long_name = 'Date'
+        t0 = self.date
+        date.units = 'seconds since %s'%t0.isoformat(' ')
+        date[:] = [0]
+
+        along = nc.createVariable('along','f4',('along',),zlib=zlib)
+        along.long_name = 'Along Track View'
+        along.units = 'None'
+        along[:] = np.arange(self.nalong)
+
+        lat = nc.createVariable('lat','f4',('lat',),zlib=zlib)
+        lat.long_name = 'Tile Latitude'
+        lat.units = 'degrees_north'
+        lat[:] = self.lat
+
+        lon = nc.createVariable('lon','f4',('lon',),zlib=zlib)
+        lon.long_name = 'Tile Longitude'
+        lon.units = 'degrees_east'
+        lon[:] = self.lon
+
+
+        if km > 0: # pressure level not supported yet
+            lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
+            lev.long_name = 'Vertical Level'
+            lev.units = levUnits.strip()
+            lev.positive = 'down'
+            lev.axis = 'z'
+            lev[:] = levs[:]
+
+            if doAkBk:
+                ae, be = eta.getEdge(km) # Coefficients for Hybrid coordinates
+                ak = nc.createVariable('ak','f4',('ne',),zlib=zlib)
+                ak.long_name = 'Eta coordinate coefficient ak (p = ak + bk * ps)'
+                ak.units = 'Pa'
+                ak = ae[:]
+                bk = nc.createVariable('bk','f4',('ne',),zlib=zlib)
+                bk.long_name = 'Eta coordinate coefficient bk (p = ak + bk * ps)'
+                bk.units = '1'
+                bk = be[:]
+        
+        
+        # Trajectory time coordinates
+        # ----------------------
+        time = nc.createVariable('time','i4',('date','along','lat','lon',),zlib=zlib)
+        time.long_name = 'Time'
+        t0 = self.date
+        time.units = 'seconds since %s'%t0.isoformat(' ')
+        time[0,:] = self.dt
+
+        
+        # Time in ISO format if so desired
+        # ---------------------------------
+        if self.isoTime:
+            isotime = nc.createVariable('isotime','S1',('date','along','lat','lon','ls'),zlib=zlib)
+            isotime.long_name = 'Time (ISO Format)'
+            for n in range(self.nalong):
+                for i in range(len(self.lat)):        
+                    isotmp = np.ma.masked_all((len(self.lon),19),dtype='S1')
+                    for j in range(len(self.lon)):
+                        if not self.tyme[n].mask[i,j]:
+                            isotmp[j,:] = list(pd.to_datetime(self.tyme[n][i,j]).isoformat()[0:19])
+                            isotmp.mask[i,:] = False
+                    isotime[0,n,i,:,:] = isotmp
+
+        # Loop over varaibles and write 
+        # --------------------------------------------------
+        for var in self.variables:
+            Var = self.__dict__[var]
+            if Var.km == 0:
+                dim = ('date','along','lat','lon')
+            else:
+                dim = ('date','along','lat','lon','lev')
+            if Var.name != 'time':
+                this = nc.createVariable(Var.name,'f4',dim,zlib=zlib)
+                this.long_name = Var.long_name
+                this.missing_value = np.float32(MAPL_UNDEF)
+                this.units = Var.units
+
+                
+                this[:] = Var.data
+                
+        # Close the file
+        # --------------
+        nc.close()
+
+
         if args.verbose:
-            print(" <> opening "+path)
-        g = Open(path) 
-        g.nc4 = NC4ctl_(path)
-        for var in Vars[path]:
-            if var.km == 0:
-                dim = ('time','lat','lon')
-            else:
-                dim = ('time','lat','lon','lev')
-            this = nc.createVariable(var.name,'f4',dim,zlib=zlib)
-            this.standard_name = var.title
-            this.long_name = var.title.replace('_',' ')
-            this.missing_value = np.float32(MAPL_UNDEF)
-            this.units = var.units
-            if g.lower:
-                name = var.name.lower() # GDS always uses lower case
-            else:
-                name = var.name
-            if args.verbose:
-                print(" [] %s interpolating <%s>"%\
-                        (args.algo.capitalize(),name.upper()))   
+            print(" <> wrote %s file %s"%(args.format,args.outFile))
+        
+    #---
 
-            # Use NC4ctl for linear interpolation
-            # -----------------------------------
-            Z = g.nc4.sample(name,glon.ravel(),glat.ravel(),tyme.repeat(nlon*nlat),
-                             Transpose=True,squeeze=True)
 
-            Z[abs(Z)>MAPL_UNDEF/1000.] = MAPL_UNDEF # detect undef contaminated interp
 
-            if var.km == 0:
-                Z = Z.reshape([1,nlat,nlon])
-            else:
-                Z = Z.reshape([1,nlat,nlon,var.km])
-            
-            this[:] = Z
-            
-    # Close the file
-    # --------------
-    nc.close()
-    ds.close()
-
-    if args.verbose:
-        print(" <> wrote %s file %s"%(args.format,args.outFile))
-    
-#---
 
 #------------------------------------ M A I N ------------------------------------
 
@@ -180,6 +186,7 @@ if __name__ == "__main__":
     
     algo   = 'linear'
     dt_days = 1
+    col = 'polar07'
 
 #   Parse command line options
 #   --------------------------
@@ -189,9 +196,6 @@ if __name__ == "__main__":
 
     parser.add_argument("orbit",
                         help="orbit name")
-
-    parser.add_argument("col",
-                        help="collection name")
 
     parser.add_argument("swath_pcf",
                         help="swath filenames pcf input file")
@@ -204,6 +208,13 @@ if __name__ == "__main__":
 
     parser.add_argument("end_isotime",
                         help="end isotime")
+
+    parser.add_argument("--col",default=col,
+              help="collection name - only works with polar07 right now (default=%s)"\
+                        %col)
+
+    parser.add_argument("--isoTime",action="store_true",
+              help="write isoTime to out file (default=False)")
 
     parser.add_argument("-a", "--algorithm", default=algo,
               help="Interpolation algorithm, one of linear, nearest (default=%s)"\
@@ -227,14 +238,21 @@ if __name__ == "__main__":
 
     tlats = 60.0 - (V*6 + np.arange(nlat)*0.01) - 0.005
     tlons = -180.0 + (H*6 + np.arange(nlon)*0.01) + 0.005
+    # Make sure longitudes in [-180,180]
+    # ----------------------------------
+    if tlons.max()>180.:
+        tlons[tlons>180] = tlons[tlons>180] - 360.
+
+
+
     tlonmin,tlonmax = tlons.min(),tlons.max()
     tlatmin,tlatmax = tlats.min(),tlats.max()
-    grid_x,grid_y = np.meshgrid(tlons,tlats)
+    grid_x,grid_y = np.meshgrid(tlons,tlats)  #nlat,nlon
 
     # loop through start to end time
     sdate = isoparser(args.start_isotime)
     edate = isoparser(args.end_isotime)
-    dt    = timedelta(days=args.dt_days)
+    DT    = timedelta(days=args.dt_days)
 
 
     while sdate < edate:
@@ -247,6 +265,7 @@ if __name__ == "__main__":
         # Get Filenames 
         # -------------
         inDir = cf_swath('inDir').replace('%ORBITNAME',args.orbit.upper()).replace('%year',year).replace('%month',month).replace('%day',day)
+        overpass = 0
         for hh in range(24):
             swathFile = inDir + '/' + cf_swath('inFile').replace('%orbitname',args.orbit.lower()).replace('%col',args.col).replace('%nymd',nymd).replace('%hour',"{:02d}".format(hh))
 
@@ -254,16 +273,31 @@ if __name__ == "__main__":
             slons = swath.longitude.values
             slats = swath.latitude.values
             nalong = swath.dims['nalong']
-            
+            ncross = swath.dims['ncross']
 
-            # check to see if swath intersetcts with the  tile
+            # check to see if swath intersetcts with the tile
             # --------------------------------------------------
             check = (slons <= tlonmax) & (slons >= tlonmin) & (slats <= tlatmax) & (slats >= tlatmin)
             if check.any():
+                overpass += 1
+                # initialize tile class
+                tile = TILE(args,sdate,tlons,tlats,nalong)
+                
+                # output filename
+                outDir = cf_tile('inDir').replace('%ORBITNAME',args.orbit.upper()).replace('%year',year).replace('%month',month).replace('%day',day)
+                if not os.path.exists(outDir):
+                    os.makedirs(outDir)
+
+                tileFile = outDir + '/' + cf_tile('inFile').replace('%tile',args.tile.lower()).replace('%orbitname',args.orbit.lower()).replace('%col',args.col).replace('%nymd',nymd).replace('%hour',"{:02d}".format(hh)).replace('%overpass',"{:02d}".format(overpass))
+
+                tile.outFile = tileFile
+
+                # loop through variables in swath, and interpolate the 3-D (swath level) vars 
+                # to the tile
                 for var in list(swath.variables):
                     if (swath.variables[var].ndim == 3) & (var not in ['latitude','longitude']):
+                        
                         for ialong in swath.nalong:
-                            sys.exit()
                             
                             indata = swath.sel(nalong=ialong).variables[var].values
                             x_points = swath.sel(nalong=ialong).longitude.values
@@ -271,14 +305,50 @@ if __name__ == "__main__":
                             sub    = check[:,ialong,:]
 
                             interp = griddata((x_points[sub], y_points[sub]), indata[sub],(grid_x,grid_y))
+                            interp = np.ma.array(interp,mask=np.isnan(interp))
+                            if var in tile.variables:
+                                tile.__dict__[var].data.append(interp)
+                            else:
+                                tile.variables.append(var)
+                                tile.__dict__[var] = HOLDER(var)
+                                tile.__dict__[var].long_name = swath.variables[var].attrs['long_name']
+                                tile.__dict__[var].units = swath.variables[var].attrs['units']
+                                tile.__dict__[var].km = 0
+                                tile.__dict__[var].data = [interp]
+                            
+                    # special handling for time variable
+                    elif var == 'time_ss':
+                        for ialong in swath.nalong:
+
+                            indata = swath.sel(nalong=ialong).variables[var].values
+                            # copy time along the cross track
+                            indata.shape = indata.shape + (1,)
+                            indata = np.repeat(indata,ncross,axis=1)
+                            dt = indata - np.datetime64(sdate) 
+                            x_points = swath.sel(nalong=ialong).longitude.values
+                            y_points = swath.sel(nalong=ialong).latitude.values
+                            sub    = check[:,ialong,:]
+
+                            interp = griddata((x_points[sub], y_points[sub]), dt[sub],(grid_x,grid_y))
+                            # griddata returns float, convert back to timedelta
+                            interp = np.ma.array(interp,mask=np.isnan(interp))
+                            dt     = interp.astype(np.dtype('timedelta64[ns]'))
+                            tyme  = np.datetime64(sdate) + dt
+
+                            if 'tyme' in tile.__dict__:
+                                tile.tyme.append(tyme)
+                                tile.dt.append((interp*1e-9).astype(int)) #seconds
+                            else:
+                                tile.dt = [(interp*1e-9).astype(int)]  #seconds
+                                tile.tyme = [tyme]
                     
 
         
 
 
-    #        # Write output file
-    #        # -----------------
-    #        writeNC(args,tyme,Vars,levs,levUnits)
+                # Write output file
+                # -----------------
+                tile.writeNC()
     
 
-        sdate += dt
+        sdate += DT
