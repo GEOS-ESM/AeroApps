@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
 """
-    Gets geometry for the polarimeter swath
+    Gets geometry for an imager swath
+    Adapted from the ACCP polarimeter_swath code
 
     Patricia Castellanos, Dec, 2019
+    Patricia Castellanos, May, 2024
 
 """
 
@@ -15,7 +17,7 @@ from   pyobs.sgp4      import getTrack as getTrackTLE
 from   MAPL.config     import Config
 import numpy  as np
 from netCDF4 import Dataset
-from  py_leo_vlidort import LidarAngles_ 
+from  leo_vlidort import LidarAngles_ 
 from mpl_toolkits.basemap import Basemap
 from   py_leo_vlidort.copyvar  import _copyVar
 from multiprocessing import Pool
