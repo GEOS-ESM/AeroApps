@@ -2,7 +2,7 @@
     instname        = sbg 
     cross_track_km  = 180
     cross_track_dkm = 0.03
-    hgtssref        = 650
+    hgtssRef        = 650
     along_track_deg = 0
     channels        = 380:2500:10
 # POLARIMETER
