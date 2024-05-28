@@ -31,7 +31,6 @@ ncALIAS = {'LONGITUDE': 'trjLon',
 
 #radius of the earth km
 Re = 6378.0
-hgtssRef = 500.
 
 
 # --
@@ -235,6 +234,7 @@ class SWATH(object):
     def __init__(self,starttyme,endtyme,dt_secs,trjFile,outFile,hgtss,along_track_deg,
                  verbose=True,
                  cross_track_km=None,cross_track_dkm=None,
+                 hgtssRef=None,
                  no_ss=False):
         self.starttyme = starttyme
         self.endtyme   = endtyme
@@ -813,7 +813,7 @@ if __name__ == "__main__":
 
     cf             = Config(args.inst_pcf,delim=' = ')
     instname       = cf('instname')
-
+    hgtssRef       = cf('hgtssRef')
     try:
         cross_track_km = float(cf('cross_track_km'))
         cross_track_dkm = float(cf('cross_track_dkm'))
@@ -859,6 +859,7 @@ if __name__ == "__main__":
             swath = SWATH(date,edate,args.dt_secs,trjFile,outFile,HGT,along_track_deg,
                           cross_track_km=cross_track_km,
                           cross_track_dkm=cross_track_dkm,
+                          hgtssRef=hgtssRef,
                           no_ss=args.no_ss)
             swath = None
         date += Dt
