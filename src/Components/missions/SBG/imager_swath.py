@@ -807,7 +807,7 @@ class SWATH(object):
 if __name__ == "__main__":
 
     # Defaults
-    DT_hours = 1
+    DT_mins = 60
     dt_secs  = 1
     dt_units = 'seconds'
     year     = None
@@ -836,8 +836,8 @@ if __name__ == "__main__":
     parser.add_argument("--dt_units", default=dt_units, 
                         help="Units for timestep for the trajectory. Options are seconds, milliseconds, microseconds (default=%s)"%dt_units)
 
-    parser.add_argument("-D","--DT_hours", default=DT_hours, type=int,
-                        help="Timestep in hours for each file (default=%i)"%DT_hours)
+    parser.add_argument("-D","--DT_mins", default=DT_mins, type=int,
+                        help="Timestep in minutes for each file (default=%i)"%DT_mins)
 
     parser.add_argument("--out_year", type=int,
                         help="include this if you want the output files to be a different year than iso_t1, iso_t2. relevant if your TLE is valid for a different year than the one you want to simulate (default=use iso_t1 year)")
@@ -891,7 +891,7 @@ if __name__ == "__main__":
         dt        = timedelta(milliseconds=args.dt_secs)
     elif args.dt_units == 'microseconds':
         dt        = timedelta(microseconds=args.dt_secs)
-    Dt        = timedelta(hours=args.DT_hours)
+    Dt        = timedelta(minutes=args.DT_mins)
 
     while date < enddate:
         edate = date + Dt - dt
@@ -899,13 +899,14 @@ if __name__ == "__main__":
         year  = str(date.year)
         month = str(date.month).zfill(2)
         day   = str(date.day).zfill(2)
-        hour  = str(date.hour).zfill(2)    
+        hour  = str(date.hour).zfill(2)   
+        minute = str(date.minute).zfill(2) 
 
         if args.out_year is not None:
             year = str(args.out_year)
             nymd = year + nymd[4:]
 
-        outFile    = inTemplate.replace('%col',instname).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+        outFile    = inTemplate.replace('%col',instname).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
 
         # Initialize SWATH class and create outfile
@@ -925,5 +926,5 @@ if __name__ == "__main__":
                           hgtssRef=hgtssRef,
                           no_ss=args.no_ss,
                           out_year=args.out_year)
-#            swath = None
+            swath = None
         date += Dt
