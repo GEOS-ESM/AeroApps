@@ -262,6 +262,10 @@ class SWATH(object):
 
             self.vna_along = np.linspace(vnamin,vnamax,nalong)
             self.nalong    = int(nalong)
+        else:
+            # single value
+            self.vna_along = np.array([along_track_deg]).astype(float)
+            self.nalong    = len(self.vna_along)
 
         # calculate trajectory from TLE file
         t1 = starttyme
