@@ -9,11 +9,12 @@
 
 """
 
-import os
+import os, sys
 import argparse
 from   datetime        import datetime, timedelta
+from   dateutil.relativedelta import relativedelta
 from   dateutil.parser import parse         as isoparser
-from   pyobs.sgp4      import getTrack as getTrackTLE
+from   pyobs.tle       import TLE
 from   MAPL.config     import Config
 import numpy  as np
 from netCDF4 import Dataset
@@ -231,15 +232,23 @@ class SWATH(object):
     """
     get polarimeter swath
     """
-    def __init__(self,starttyme,endtyme,dt_secs,trjFile,outFile,hgtss,along_track_deg,
+    def __init__(self,starttyme,endtyme,dt_secs,dt_units,trjFile,outFile,hgtss,along_track_deg,
                  verbose=True,
                  cross_track_km=None,cross_track_dkm=None,
                  hgtssRef=None,
-                 no_ss=False):
+                 no_ss=False,
+                 out_year=None):
         self.starttyme = starttyme
         self.endtyme   = endtyme
         self.dt_secs   = dt_secs
-        self.dt        = timedelta(seconds=dt_secs)
+        self.dt_units  = dt_units
+        if dt_units == 'seconds':
+            dt = timedelta(seconds=dt_secs)
+        elif dt_units == 'milliseconds':
+            dt = timedelta(milliseconds=dt_secs)
+        elif dt_units == 'microseconds':
+            dt = timedelta(microseconds=dt_secs)
+        self.dt        = dt
         self.trjFile   = trjFile
         self.outFile  = outFile
         self.hgtss    = hgtss
@@ -250,6 +259,7 @@ class SWATH(object):
         self.Re       = Re
         self.hgtssRef = hgtssRef
         self.no_ss    = no_ss
+        self.out_year = out_year
 
         # Parse along_track_deg variable
         # vna == view nadir angle.  view angle between satellite subpoint and target at the satellite 
@@ -270,12 +280,14 @@ class SWATH(object):
         # calculate trajectory from TLE file
         t1 = starttyme
         t2 = endtyme
-        LONGITUDE, LATITUDE, tyme = getTrackTLE(trjFile, t1, t2, dt_secs)
+        tle = TLE(trjFile)
+        tyme, LONGITUDE, LATITUDE = tle.getSubpoint(t1,t2,self.dt)
         self.ntyme = len(LONGITUDE)
 
+         
         isotime = []
         for tt in tyme:
-            iso = list(tt.isoformat())
+            iso = list(tt.isoformat(timespec=self.dt_units))
             isotime.append(iso)
 
         self.isotime = np.array(isotime)
@@ -283,7 +295,7 @@ class SWATH(object):
         # get a few minutes prior to start
         t1 = starttyme-200*dt
         t2 = starttyme-self.dt
-        lon, lat, ptyme = getTrackTLE(trjFile, t1, t2, dt_secs)
+        ptyme, lon, lat = tle.getSubpoint(t1,t2,self.dt)
         self.Istyme = len(ptyme)
         LONGITUDE = np.append(lon,LONGITUDE)
         LATITUDE  = np.append(lat,LATITUDE)
@@ -292,7 +304,8 @@ class SWATH(object):
         # get a few minutes after start
         t1 = endtyme+self.dt
         t2 = endtyme+200*dt
-        lon, lat, atyme = getTrackTLE(trjFile, t1, t2, dt_secs)
+        tle = TLE(trjFile)
+        atyme, lon, lat = tle.getSubpoint(t1, t2, self.dt)
         LONGITUDE = np.append(LONGITUDE,lon)
         LATITUDE  = np.append(LATITUDE,lat)
         tyme      = np.append(tyme,np.array(atyme))
@@ -329,6 +342,13 @@ class SWATH(object):
             # satellite points at the satellite sub-point
             self.subpointViewAngles()
 
+        # get delta year for writing to output file if needed
+        if self.out_year is None:
+            self.dt_years = relativedelta(years=0)
+        else:
+            dt_years = self.out_year - self.starttyme.year
+            self.dt_years = relativedelta(years=dt_years) 
+
         # write to file
         self.writenc()
 
@@ -358,7 +378,13 @@ class SWATH(object):
         # Create dimensions
         # -----------------
         nt = nc.createDimension('time',self.ntyme)
-        ls = nc.createDimension('ls',19)
+        if self.dt_units == 'seconds':
+            l = 19
+        elif self.dt_units == 'milliseconds':
+            l = 23
+        elif self.dt_units == 'microseconds':
+            l = 26
+        ls = nc.createDimension('ls',l)
         x  = nc.createDimension('x',1)
         y  = nc.createDimension('y',1)
         nalong = nc.createDimension('nalong',self.nalong)
@@ -368,10 +394,14 @@ class SWATH(object):
         # --------------------
         time = nc.createVariable('time','i4',('time',),zlib=True)
         time.long_name = 'Time'
-        t0 = self.starttyme
-        time.units = 'seconds since %s'%t0.isoformat(' ')
-        tyme = self.tyme[self.Istyme:self.Istyme+self.ntyme]
-        time[:] = np.array([(t-t0).total_seconds() for t in tyme])
+        t0 = self.starttyme + self.dt_years
+        tyme = self.tyme[self.Istyme:self.Istyme+self.ntyme] + self.dt_years
+        if self.dt_units == 'seconds':
+            time.units = 'seconds since %s'%t0.isoformat(' ')
+            time[:] = np.array([(t-t0).total_seconds() for t in tyme])
+        else:
+            time.units = 'microseconds since %s'%t0.isoformat(' ')
+            time[:] = np.array([(t-t0).total_seconds()*1e6 for t in tyme])
 
         # Add fake dimensions for GrADS compatibility
         # -------------------------------------------
@@ -400,16 +430,25 @@ class SWATH(object):
         # ------------------
         isotime = nc.createVariable('isotime','S1',('time','ls'),zlib=True)
         isotime.long_name = 'Time (ISO Format)'
-        isotime[:] = self.isotime
+        if self.out_year is None:
+            isotime[:] = self.isotime
+        else:
+            iso = self.isotime.copy()
+            iso[:,0:4] = np.array(list(str(self.out_year)))
+            isotime[:] = iso
 
         # Create Variables
         # ------------------
         if self.no_ss is False:
             dim = ('time','nalong',)
             this = nc.createVariable('time_ss','i4',dim,zlib=True)
-            this[:] = self.time
+            this[:] = self.time + self.dt_years
             this.long_name = 'time when polarimeter views satellite subpoint'
-            this.units = 'seconds since ' + self.starttyme.isoformat()
+            if self.dt_units == 'seconds':
+                this.units = 'seconds since ' + t0.isoformat()
+            else:
+                this.units = 'microseconds since ' + t0.isoformat()
+
 
             this = nc.createVariable('sza_ss','f4',dim,zlib=True)
             this[:] = self.sza
@@ -525,6 +564,8 @@ class SWATH(object):
                 vza[ityme,ialong] = self.vza_granule[:,ialong,:][self.Itymeview[ityme,ialong],self.Icrossview[ityme,ialong]]
                 vaa[ityme,ialong] = self.vaa_granule[:,ialong,:][self.Itymeview[ityme,ialong],self.Icrossview[ityme,ialong]]
                 time[ityme,ialong] = dtyme[ityme].total_seconds()
+                if self.dt_units != 'seconds':
+                    time[ityme,ialong] = time[ityme,ialong]*1e6
 
         self.sza = np.ma.array(sza)
         self.saa = np.ma.array(saa)
@@ -768,6 +809,8 @@ if __name__ == "__main__":
     # Defaults
     DT_hours = 1
     dt_secs  = 1
+    dt_units = 'seconds'
+    year     = None
 
 #   Parse command line options
 #   --------------------------
@@ -788,10 +831,16 @@ if __name__ == "__main__":
                         help="prep config file with instrument variables")
 
     parser.add_argument("-d","--dt_secs", default=dt_secs, type=int,
-                        help="Timestep in seconds for the trajectory (default=%i)"%dt_secs)
+                        help="Timestep for the trajectory (default=%i)"%dt_secs)
+
+    parser.add_argument("--dt_units", default=dt_units, 
+                        help="Units for timestep for the trajectory. Options are seconds, milliseconds, microseconds (default=%s)"%dt_units)
 
     parser.add_argument("-D","--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
+
+    parser.add_argument("--out_year", type=int,
+                        help="include this if you want the output files to be a different year than iso_t1, iso_t2. relevant if your TLE is valid for a different year than the one you want to simulate (default=use iso_t1 year)")
 
     parser.add_argument("-v", "--verbose",action="store_true",
                         help="Verbose mode (default=False).")
@@ -803,6 +852,7 @@ if __name__ == "__main__":
                         help="don't do satellite subpoint aggregation (default=False).")
 
     args = parser.parse_args()
+
 
     # Parse prep config
     # -----------------
@@ -817,7 +867,7 @@ if __name__ == "__main__":
 
     cf             = Config(args.inst_pcf,delim=' = ')
     instname       = cf('instname')
-    hgtssRef       = cf('hgtssRef')
+    hgtssRef       = float(cf('hgtssRef'))
     try:
         cross_track_km = float(cf('cross_track_km'))
         cross_track_dkm = float(cf('cross_track_dkm'))
@@ -835,7 +885,12 @@ if __name__ == "__main__":
     # ------------------------------------
     date      = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
-    dt        = timedelta(seconds=args.dt_secs)
+    if args.dt_units == 'seconds':
+        dt        = timedelta(seconds=args.dt_secs)
+    elif args.dt_units == 'milliseconds':
+        dt        = timedelta(milliseconds=args.dt_secs)
+    elif args.dt_units == 'microseconds':
+        dt        = timedelta(microseconds=args.dt_secs)
     Dt        = timedelta(hours=args.DT_hours)
 
     while date < enddate:
@@ -845,6 +900,10 @@ if __name__ == "__main__":
         month = str(date.month).zfill(2)
         day   = str(date.day).zfill(2)
         hour  = str(date.hour).zfill(2)    
+
+        if args.out_year is not None:
+            year = str(args.out_year)
+            nymd = year + nymd[4:]
 
         outFile    = inTemplate.replace('%col',instname).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
@@ -860,10 +919,11 @@ if __name__ == "__main__":
         print('>>>no_ss:     ',args.no_ss)
         print('++++End of arguments+++')
         if not args.dryrun:
-            swath = SWATH(date,edate,args.dt_secs,trjFile,outFile,HGT,along_track_deg,
+            swath = SWATH(date,edate,args.dt_secs,args.dt_units,trjFile,outFile,HGT,along_track_deg,
                           cross_track_km=cross_track_km,
                           cross_track_dkm=cross_track_dkm,
                           hgtssRef=hgtssRef,
-                          no_ss=args.no_ss)
-            swath = None
+                          no_ss=args.no_ss,
+                          out_year=args.out_year)
+#            swath = None
         date += Dt
