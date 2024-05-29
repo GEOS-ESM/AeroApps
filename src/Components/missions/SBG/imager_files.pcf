@@ -1,20 +1,20 @@
 # FILENAMES
     inDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/%ORBITNAME/LevelB/Y%year/M%month/D%day
-    inFile       = %orbitname-g5nr.lb2.%col.%nymd_%hour00z.nc4
+    inFile       = %orbitname-g5nr.lb2.%col.%nymd_%hour%minutez.nc4
 
     brdfDir    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/%ORBITNAME/LevelB/surface/BRDF/MCD43C1/006/Y%year/M%month/D%day
-    brdfFile     = %orbitname-g5nr.lb2.brdf.%nymd_%hour00z.nc4
+    brdfFile     = %orbitname-g5nr.lb2.brdf.%nymd_%hour%minutez.nc4
 
     ndviDir      = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/%ORBITNAME/LevelB/surface/BPDF/NDVI/MYD13C2/006/Y%year/M%month/D%day
-    ndviFile     = %orbitname-g5nr.lb2.ndvi.%nymd_%hour00z.nc4
+    ndviFile     = %orbitname-g5nr.lb2.ndvi.%nymd_%hour%minutez.nc4
 
     lcDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/%ORBITNAME/LevelB/surface/BPDF/LAND_COVER/MCD12C1/051/Y%year/M%month/D%day
-    lcFile       = %orbitname-g5nr.lb2.land_cover.%nymd_%hour00z.nc4    
+    lcFile       = %orbitname-g5nr.lb2.land_cover.%nymd_%hour%minutez.nc4    
 
     lerDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/%ORBITNAME/LevelB/surface/LER/OMI/Y%year/M%month/D%day   
-    lerFile      = %orbitname-g5nr.lb2.ler.%nymd_%hour00z.nc4
+    lerFile      = %orbitname-g5nr.lb2.ler.%nymd_%hour%minutez.nc4
 
     outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/%ORBITNAME/LevelC/Y%year/M%month/D%day
-    outFile      = %orbitname-%instname-g5nr.lc.vlidort.%nymd_%hour00z_%chdnm.nc4
+    outFile      = %orbitname-%instname-g5nr.lc.vlidort.%nymd_%hour%minutez_%chdnm.nc4
 
 # FILENAMES
