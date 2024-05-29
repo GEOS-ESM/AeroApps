@@ -1,5 +1,5 @@
 # ORBIT
-    TLEFILE  = tle/sbg.2024.nodrag.tle
+    TLEFILE  = tle/sbg.2024.nodrag.pyorbit.tle
     orbitname    = ssd650   
     HGT          = 650
     TLEYEAR      = 2024
