@@ -5,8 +5,9 @@ AeroApps:
 env:
   local: ./env@
   remote: ../ESMA_env.git
-  tag: v4.8.0
+#  tag: v4.8.0
   develop: main
+  branch: feature/mathomp4/update-geospyd
 
 cmake:
   local: ./cmake@
