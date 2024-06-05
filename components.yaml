@@ -12,8 +12,9 @@ env:
 cmake:
   local: ./cmake@
   remote: ../ESMA_cmake.git
-  tag: v3.45.2
+#  tag: v3.45.2
   develop: develop
+  branch: bugfix/mathomp4/meson-f2py-v3
 
 ecbuild:
   local: ./cmake@/ecbuild@
