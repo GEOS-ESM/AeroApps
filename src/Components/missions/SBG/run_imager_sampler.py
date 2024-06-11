@@ -54,7 +54,6 @@ if __name__ == "__main__":
     DT_mins = 5
     algo    = "linear"
     nproc    = 120
-    exp     = 'g5nr'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",
@@ -67,10 +66,6 @@ if __name__ == "__main__":
 
     parser.add_argument("sampler_pcf",
                         help="prep config file with collections to sample")
-
-    parser.add_argument("-e", "--exp", default=exp,
-              help="GEOS experiment name (default=%s)"\
-                          %exp)
 
     parser.add_argument("-a", "--algo", default=algo,
               help="Interpolation algorithm, one of linear, nearest (default=%s)"\
