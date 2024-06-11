@@ -139,7 +139,7 @@ class WORKSPACE(JOBS):
         self.Date      = isoparser(args.iso_t1)
         self.enddate   = isoparser(args.iso_t2)
         self.Dt        = args.DT_hours
-        self.dt        = timedelta(days=args.dt_days)
+        self.dt        = timedelta(hours=args.dt_hours)
 
         if not os.path.exists(args.tmp):
             os.makedirs(args.tmp)
@@ -151,8 +151,6 @@ class WORKSPACE(JOBS):
         self.tmp         = args.tmp
         self.profile     = args.profile
         self.nproc       = args.nproc
-        self.exp         = args.exp
-        self.tle_year    = args.tle_year
 
         # create working directories
         self.create_workdir()
@@ -186,7 +184,7 @@ class WORKSPACE(JOBS):
             shutil.copyfile(self.sampler_pcf,outfile)
 
             #link over needed python scripts
-            source = ['imager_sampler.py','run_imager_sampler.py'] #,'sampling','tle']
+            source = ['imager_sampler.py','run_imager_sampler.py','setup_env']
             for src in source:
                 os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
@@ -215,8 +213,8 @@ class WORKSPACE(JOBS):
             # replace one line
             iso1 = sdate.isoformat()
             iso2 = edate.isoformat()
-            newline = 'nohup python -u run_imager_sampler.py -v --exp {} --nproc {} --DT_hours {} {} {} {} {} >'.format(self.exp,self.nproc,self.Dt,iso1,iso2,self.track_pcf,self.sampler_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
-            text[-4] = newline
+            newline = 'nohup python -u run_imager_sampler.py -v --nproc {} --DT_hours {} {} {} {} {} >'.format(self.nproc,self.Dt,iso1,iso2,self.track_pcf,self.sampler_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
+            text[-3] = newline
             f.close()
 
             #  write out
@@ -244,7 +242,7 @@ class WORKSPACE(JOBS):
             os.remove(self.sampler_pcf)
 
         # remove symlinks
-        source = ['imager_sampler.py','run_imager_sampler.py'] #'sampling','tle']
+        source = ['imager_sampler.py','run_imager_sampler.py','setup_env'] 
         for src in source:
             os.remove(src)
 
@@ -257,12 +255,10 @@ if __name__ == '__main__':
     
     #Defaults
     DT_mins  = 5
-    dt_days  = 10
+    dt_hours  = 10
     nproc    = 120
     slurm    = 'run_imager_sampler.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/workdir/imager_sampler'
-    exp      = 'g5nr'
-    tle_year = None
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
@@ -273,9 +269,6 @@ if __name__ == '__main__':
 
     parser.add_argument("sampler_pcf",
                         help="prep config file with collections to be sampled")
-
-    parser.add_argument('-e',"--exp", default=exp,
-                        help="GEOS experiment name for outfiles (default=%s)"%exp)
 
     parser.add_argument('-D',"--DT_mins", default=DT_hours, type=int,
                         help="Timestep in minutes for each granule file (default=%i)"%DT_mins)
