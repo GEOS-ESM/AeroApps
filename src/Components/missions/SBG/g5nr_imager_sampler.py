@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-    Wrapper to submit jobs to sbatch
+    Wrapper to submit jobs to sbatch for imager_sampler.py
 """
 
 import os
@@ -133,7 +133,7 @@ class JOBS(object):
         return error
 
 class WORKSPACE(JOBS):
-    """ Create slurm scripts for running run_lidar_sampler.py """
+    """ Create slurm scripts for running run_imager_sampler.py """
     def __init__(self,args):
 
         self.Date      = isoparser(args.iso_t1)
@@ -146,7 +146,8 @@ class WORKSPACE(JOBS):
 
         self.cwd         = os.getcwd()
         self.slurm       = args.slurm
-        self.prep_config = args.prep_config
+        self.track_pcf   = args.track_pcf
+        self.sampler_pcf = args.sampler_pcf
         self.tmp         = args.tmp
         self.profile     = args.profile
         self.nproc       = args.nproc
@@ -178,11 +179,14 @@ class WORKSPACE(JOBS):
             shutil.copyfile(self.slurm,outfile)
 
             # copy over pcf file
-            outfile = '{}/{}'.format(workpath,self.prep_config)
-            shutil.copyfile(self.prep_config,outfile)
+            outfile = '{}/{}'.format(workpath,self.track_pcf)
+            shutil.copyfile(self.track_pcf,outfile)
+
+            outfile = '{}/{}'.format(workpath,self.sampler_pcf)
+            shutil.copyfile(self.sampler_pcf,outfile)
 
             #link over needed python scripts
-            source = ['lidar_sampler.py','run_lidar_sampler.py'] #,'sampling','tle']
+            source = ['imager_sampler.py','run_imager_sampler.py'] #,'sampling','tle']
             for src in source:
                 os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
@@ -211,10 +215,7 @@ class WORKSPACE(JOBS):
             # replace one line
             iso1 = sdate.isoformat()
             iso2 = edate.isoformat()
-            if self.tle_year is not None:
-                newline = 'nohup python -u run_lidar_sampler.py -v --exp {} --tle_year {} --nproc {} --DT_hours {} {} {} {} >'.format(self.exp,self.tle_year,self.nproc,self.Dt,iso1,iso2,self.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
-            else:
-                newline = 'nohup python -u run_lidar_sampler.py -v --exp {} --nproc {} --DT_hours {} {} {} {} >'.format(self.exp,self.nproc,self.Dt,iso1,iso2,self.prep_config) + ' slurm_${SLURM_JOBID}_py.out\n'
+            newline = 'nohup python -u run_imager_sampler.py -v --exp {} --nproc {} --DT_hours {} {} {} {} {} >'.format(self.exp,self.nproc,self.Dt,iso1,iso2,self.track_pcf,self.sampler_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
             text[-4] = newline
             f.close()
 
@@ -239,10 +240,11 @@ class WORKSPACE(JOBS):
             os.remove(outfile)     
 
             os.remove(self.slurm)
-            os.remove(self.prep_config)
+            os.remove(self.track_pcf)
+            os.remove(self.sampler_pcf)
 
         # remove symlinks
-        source = ['lidar_sampler.py','run_lidar_sampler.py'] #'sampling','tle']
+        source = ['imager_sampler.py','run_imager_sampler.py'] #'sampling','tle']
         for src in source:
             os.remove(src)
 
@@ -254,31 +256,32 @@ class WORKSPACE(JOBS):
 if __name__ == '__main__':
     
     #Defaults
-    DT_hours = 1
-    dt_days  = 75
-    nproc    = 8
-    slurm    = 'run_lidar_sampler.j'
-    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir/lidar_sampler'
+    DT_mins  = 5
+    dt_days  = 10
+    nproc    = 120
+    slurm    = 'run_imager_sampler.j'
+    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/workdir/imager_sampler'
     exp      = 'g5nr'
     tle_year = None
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
     parser.add_argument("iso_t2",help='ending iso time')
-    parser.add_argument("prep_config",
-                        help="prep config filename")
+
+    parser.add_argument("track_pcf",
+                        help="prep config file with track input file names")
+
+    parser.add_argument("sampler_pcf",
+                        help="prep config file with collections to be sampled")
 
     parser.add_argument('-e',"--exp", default=exp,
                         help="GEOS experiment name for outfiles (default=%s)"%exp)
 
-    parser.add_argument("--tle_year", default=tle_year,
-                        help="Year for TLE calc (default=None)")
+    parser.add_argument('-D',"--DT_mins", default=DT_hours, type=int,
+                        help="Timestep in minutes for each granule file (default=%i)"%DT_mins)
 
-    parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
-                        help="Timestep in hours for each file (default=%i)"%DT_hours)
-
-    parser.add_argument('-d',"--dt_days", default=dt_days, type=int,
-                        help="Timestep in days for each job (default=%i)"%dt_days)
+    parser.add_argument('-d',"--dt_hours", default=dt_hours, type=int,
+                        help="Timestep in hours for each job (default=%i)"%dt_hours)
 
     parser.add_argument('-s',"--slurm",default=slurm,
                         help="slurm script template (default=%s)"%slurm)           
