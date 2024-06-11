@@ -24,6 +24,7 @@ from   MAPL            import eta
 from   MAPL.constants  import *
 from   pyobs.nc4ctl    import NC4ctl  
 import xarray          as xr
+from   netCDF4 import Dataset
 
 class NC4ctl_(NC4ctl):
     interpXY = NC4ctl.interpXY_LatLon # select this as the default XY interpolation
@@ -123,25 +124,44 @@ def getVars(rcFile):
     return (Vars, levs, levUnits)
 
 
-def writeNC ( args, tyme, Vars, levs, levUnits, 
-              title='GEOS-5 Trajectory Sampler',
-              doAkBk=False, zlib=False):
+def to_datetime(date):
     """
-    Write a NetCDF file with sampled GEOS-5 variables on a satellite tile
+    Converts a numpy datetime64 object to a python datetime object 
+    Input:
+      date - a np.datetime64 object
+    Output:
+      DATE - a python datetime object
+    """
+    timestamp = ((date - np.datetime64('1970-01-01T00:00:00'))/ np.timedelta64(1, 's'))
+
+    tyme = [datetime.utcfromtimestamp(tt) for tt in timestamp]
+    return np.array(tyme)
+
+
+def writeNC ( args, Vars, levs, levUnits, 
+              title='GEOS-5 Imager Sampler',
+              doAkBk=False, zlib=True):
+    """
+    Write a NetCDF file with sampled GEOS-5 variables on a satellite swath
     described by (lon,lat,tyme).
     """
 
-    # read lons/lats
+    # read lons/lats & tyme
     # ----------------
-    ds = xr.open_dataset(args.tileFile,group='ancillary')
+    ds = xr.open_dataset(args.swathFile)
+    
+    # convert numpy datetime to datetime
+    tyme = to_datetime(ds.time.values)
+
+    # get time units
+    nc = Dataset(args.swathFile)
+    dt_units = nc.variables['time'].units
+    nc.close()
 
     # Make sure longitudes in [-180,180]
     # ----------------------------------
-    if ds.lon.max()>180.:
-        ds.lon[ds.lon>180] = ds.lon[ds.lon>180] - 360.
-
-
-    from netCDF4 import Dataset
+    if ds.longitude.max()>180.:
+        ds.longitude[ds.longitude>180] = ds.longitude[ds.longitude>180] - 360.
 
     km = len(levs)
     
@@ -154,19 +174,19 @@ def writeNC ( args, tyme, Vars, levs, levUnits,
     nc.title = title
     nc.institution = 'NASA/Goddard Space Flight Center'
     nc.source = 'Global Model and Assimilation Office'
-    nc.history = 'Created from GEOS-5 standard collections by trj_sampler.py'
+    nc.history = 'Created from GEOS-5 standard collections by imager_sampler.py'
     nc.references = 'n/a'
-    nc.comment = 'This file contains GEOS-5 related parameters along a satellite or aircraft track.'
-    nc.contact = 'Arlindo da Silva <arlindo.dasilva@nasa.gov>'
+    nc.comment = 'This file contains GEOS-5 related parameters along a satellite swath'
+    nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
     nc.Conventions = 'CF'
-    nc.tileFile = args.tileFile
+    nc.swathFile = args.swathFile
  
     # Create dimensions
     # -----------------
-    nt = nc.createDimension('time',None) 
-    ls = nc.createDimension('ls',19)
-    x = nc.createDimension('lon',len(ds.lon))
-    y = nc.createDimension('lat',len(ds.lat))
+    nt = nc.createDimension('time',ds.dims['time']) 
+    ls = nc.createDimension('ls',int(str(ds.isotime.dtype)[-2:]))
+    nalong = nc.createDimension('nalong',ds.dims['nalong'])
+    ncross = nc.createDimension('ncross',ds.dims['ncross'])
     if km>0:
         nz = nc.createDimension('lev',km)
         if doAkBk:
@@ -178,8 +198,12 @@ def writeNC ( args, tyme, Vars, levs, levUnits,
     time = nc.createVariable('time','i4',('time',),zlib=zlib)
     time.long_name = 'Time'
     t0 = tyme[0]
-    time.units = 'seconds since %s'%t0.isoformat(' ')
-    time[:] = np.array([(t-t0).total_seconds() for t in tyme])
+    time.units = dt_units
+    if 'microseconds' in dt_units:
+        time[:] = np.array([(t-t0).total_seconds()*1e6 for t in tyme])
+    else:
+        time[:] = np.array([(t-t0).total_seconds() for t in tyme])
+
     if km > 0: # pressure level not supported yet
         lev = nc.createVariable('lev','f4',('lev',),zlib=zlib)
         lev.long_name = 'Vertical Level'
@@ -202,29 +226,38 @@ def writeNC ( args, tyme, Vars, levs, levUnits,
     
     # Trajectory coordinates
     # ----------------------
-    lon = nc.createVariable('trjLon','f4',('lon',),zlib=zlib)
-    lon.long_name = 'Tile Longitude'
+    lon = nc.createVariable('trjLon','f4',('time',),zlib=zlib)
+    lon.long_name = 'Trajectory Longitude'
     lon.units = 'degrees_east'
-    lon[:] = ds.lon
-    lat = nc.createVariable('trjLat','f4',('lat',),zlib=zlib)
-    lat.long_name = 'Tile Latitude'
+    lon[:] = ds.trjLon.values
+    lat = nc.createVariable('trjLat','f4',('time',),zlib=zlib)
+    lat.long_name = 'Trajectory Latitude'
     lat.units = 'degrees_north'
-    lat[:] = ds.lat
+    lat[:] = ds.trjLat.values
     
     # Time in ISO format if so desired
     # ---------------------------------
     if args.isoTime:
         isotime = nc.createVariable('isotime','S1',('time','ls'),zlib=zlib)
         isotime.long_name = 'Time (ISO Format)'
-        isotmp = zeros((len(tyme),19),dtype='S1')
-        for i in range(len(tyme)):
-            isotmp[i][:] = list(tyme[i].isoformat())
-        isotime[:] = isotmp[:]
+        iso = [np.fromiter(t.decode(),(np.compat.unicode,1)) for t in ds.isotime.values]
+        isotime[:] = iso
+
+    # swath cooredinates
+    lon = nc.createVariable('longitude','f4',('time','nalong','ncross'),zlib=zlib)
+    lon.long_name = 'longitude of granule pixel centers'
+    lon.units     = 'degrees_east'
+    lon[:] = ds.longitude.values
+
+    lat = nc.createVariable('latitude','f4',('time','nalong','ncross'),zlib=zlib)
+    lat.long_name = 'latitude of granule pixel centers'
+    lat.units     = 'degrees_north'
+    lat[:] = ds.latitude.values
+
       
     # Loop over datasets, sample and write each variable
     # --------------------------------------------------
-    glon,glat = np.meshgrid(ds.lon,ds.lat)
-    nlon,nlat = len(ds.lon),len(ds.lat)
+    ntime,nalong,ncross  = ds.longitude.shape
     for path in Vars:
         if args.verbose:
             print(" <> opening "+path)
@@ -232,9 +265,9 @@ def writeNC ( args, tyme, Vars, levs, levUnits,
         g.nc4 = NC4ctl_(path)
         for var in Vars[path]:
             if var.km == 0:
-                dim = ('time','lat','lon')
+                dim = ('time','nalong','ncross')
             else:
-                dim = ('time','lat','lon','lev')
+                dim = ('time','lev','nalong','ncross')
             this = nc.createVariable(var.name,'f4',dim,zlib=zlib)
             this.standard_name = var.title
             this.long_name = var.title.replace('_',' ')
@@ -246,21 +279,21 @@ def writeNC ( args, tyme, Vars, levs, levUnits,
                 name = var.name
             if args.verbose:
                 print(" [] %s interpolating <%s>"%\
-                        (args.algo.capitalize(),name.upper()))   
+                        (args.algorithm.capitalize(),name.upper()))   
 
             # Use NC4ctl for linear interpolation
             # -----------------------------------
-            Z = g.nc4.sample(name,glon.ravel(),glat.ravel(),tyme.repeat(nlon*nlat),
+            for a in range(nalong):
+                for c in range(ncross):
+                    Z = g.nc4.sample(name,ds.isel(ncross=c,nalong=a).longitude.values,ds.isel(ncross=c,nalong=a).latitude.values,tyme,
                              Transpose=True,squeeze=True)
 
-            Z[abs(Z)>MAPL_UNDEF/1000.] = MAPL_UNDEF # detect undef contaminated interp
+                    Z[abs(Z)>MAPL_UNDEF/1000.] = MAPL_UNDEF # detect undef contaminated interp
 
-            if var.km == 0:
-                Z = Z.reshape([1,nlat,nlon])
-            else:
-                Z = Z.reshape([1,nlat,nlon,var.km])
-            
-            this[:] = Z
+                    if var.km > 0:
+                        this[:,:,a,c] = Z
+                    else:
+                        this[:,a,c] = Z
             
     # Close the file
     # --------------
@@ -277,7 +310,7 @@ def writeNC ( args, tyme, Vars, levs, levUnits,
 if __name__ == "__main__":
     
     format = 'NETCDF4_CLASSIC'
-    outFile = 'imager_sampler.nc'
+    outFile = 'imager_sampler.nc4'
     dt_days = 8
     algo = 'linear'
     
@@ -285,9 +318,8 @@ if __name__ == "__main__":
 #   Parse command line options
 #   --------------------------
     parser = argparse.ArgumentParser()
-    parser.add_argument("tileFile",
-                        help="SBG tile file with lat/lons")
-
+    parser.add_argument("swathFile",
+                        help="SBG swath file with lat/lons")
 
     parser.add_argument("rcFile",
                         help="model collection rcFile")
@@ -303,9 +335,6 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--format", default=format,
               help="Output file format: one of NETCDF4, NETCDF4_CLASSIC, NETCDF3_CLASSIC, NETCDF3_64BIT(default=%s)"%format )
 
-    parser.add_argument("-d", "--dt_days", default=dt_days,type=int,
-              help="Timesetp in days for TLE sampling (default=%s)"%dt_days )
-
     parser.add_argument("-I", "--isoTime", action="store_true", 
                       help="Include ISO format time in output file.")
 
@@ -314,22 +343,6 @@ if __name__ == "__main__":
                       help="Verbose mode.")
 
     args = parser.parse_args()
-
-    # get julian day from file name
-    jday = args.tileFile.split('_')[-2][4:]
-
-    # need lon to get the UTC time
-    # use the center lon
-    # assume satellite passes at 1300 local solar time
-    with  xr.open_dataset(args.tileFile, group="ancillary") as ds:
-        lon0 = float(ds.lon.mean()) 
-
-    dmin = int(60.*lon0/15.)
-    
-    # get date
-    tyme  = datetime.strptime('2006-{}T13'.format(jday),'%Y-%jT%H')
-    tyme  += timedelta(minutes=dmin)
-    tyme  = np.array([tyme])
 
     
     # Create consistent file name extension
@@ -348,5 +361,5 @@ if __name__ == "__main__":
 
     # Write output file
     # -----------------
-    writeNC(args,tyme,Vars,levs,levUnits)
+    writeNC(args,Vars,levs,levUnits)
     
