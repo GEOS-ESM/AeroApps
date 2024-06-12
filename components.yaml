@@ -7,14 +7,14 @@ env:
   remote: ../ESMA_env.git
 #  tag: v4.8.0
   develop: main
-  branch: feature/mathomp4/update-geospyd
+  branch: feature/mathomp4/update-geospyd-v4
 
 cmake:
   local: ./cmake@
   remote: ../ESMA_cmake.git
-#  tag: v3.28.0
+  tag: v3.45.2
   develop: develop
-  branch: bugfix/mathomp4/meson-f2py-v3
+#  branch: bugfix/mathomp4/meson-f2py-v3
 
 ecbuild:
   local: ./cmake@/ecbuild@
