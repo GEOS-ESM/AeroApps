@@ -183,10 +183,10 @@ def writeNC ( args, Vars, levs, levUnits,
  
     # Create dimensions
     # -----------------
-    nt = nc.createDimension('time',ds.dims['time']) 
+    nt = nc.createDimension('time',ds.sizes['time']) 
     ls = nc.createDimension('ls',int(str(ds.isotime.dtype)[-2:]))
-    nalong = nc.createDimension('nalong',ds.dims['nalong'])
-    ncross = nc.createDimension('ncross',ds.dims['ncross'])
+    nalong = nc.createDimension('nalong',ds.sizes['nalong'])
+    ncross = nc.createDimension('ncross',ds.sizes['ncross'])
     if km>0:
         nz = nc.createDimension('lev',km)
         if doAkBk:
@@ -285,7 +285,13 @@ def writeNC ( args, Vars, levs, levUnits,
             # -----------------------------------
             for a in range(nalong):
                 for c in range(ncross):
-                    Z = g.nc4.sample(name,ds.isel(ncross=c,nalong=a).longitude.values,ds.isel(ncross=c,nalong=a).latitude.values,tyme,
+                    if g.tbeg == g.tend:
+                        # this is a constant file
+                        tconst = np.repeat(g.tbeg,ntime)
+                        Z = g.nc4.sample(name,ds.isel(ncross=c,nalong=a).longitude.values,ds.isel(ncross=c,nalong=a).latitude.values,tconst,
+                            Transpose=True,squeeze=True)
+                    else:
+                        Z = g.nc4.sample(name,ds.isel(ncross=c,nalong=a).longitude.values,ds.isel(ncross=c,nalong=a).latitude.values,tyme,
                              Transpose=True,squeeze=True)
 
                     Z[abs(Z)>MAPL_UNDEF/1000.] = MAPL_UNDEF # detect undef contaminated interp
