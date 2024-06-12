@@ -5,6 +5,7 @@
 #######################################################################
 #SBATCH --time=12:00:00
 #SBATCH --ntasks=120 --cpus-per-task=1 --ntasks-per-node=120
+#SBATCH --constraint=mil
 #SBATCH --job-name=lidar_sampler
 #SBATCH -A s2190
 #SBATCH --mail-type=FAIL
