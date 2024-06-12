@@ -9,14 +9,14 @@
 
 # Add AeroApps to the path
 #----------------
-setenv AERODIR ${HOME}/workspace/AeroApps_aist/AeroApps
+setenv AERODIR ${NOBACKUP}/workspace/AeroApps_aist/AeroApps
 set PATH = ${AERODIR}/install/bin/:$PATH
 
 # Set Python PATH
 #-----------------
 setenv PYTHONPATH ${AERODIR}/install/lib
 setenv PYTHONPATH ${AERODIR}/install/lib/Python:$PYTHONPATH
-setenv PYTHONPATH /discover/nobackup/pcastell/pip/ephem:$PYTHONPATH
+#setenv PYTHONPATH /discover/nobackup/pcastell/pip/ephem:$PYTHONPATH
 
 # source AeroApps modules
 source ${AERODIR}/env@/g5_modules
