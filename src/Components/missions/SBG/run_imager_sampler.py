@@ -44,9 +44,9 @@ def CheckRunning(processes,cmds,nextproc,totalproc,args):
          del processes[p] # Remove from list - this is why we needed reverse order
 
    while (len(processes) < args.nproc) and (nextproc < totalproc): # More to do and some spare slots
-      processes, nextdate = StartNew(processes,cmds,nextproc,totalproc)
+      processes, nextproc = StartNew(processes,cmds,nextproc,totalproc)
 
-   return processes,nextdate
+   return processes,nextproc
 #------------------------------------ M A I N ------------------------------------
 if __name__ == "__main__":
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     # Parse prep config
     # -----------------
-    cf = Config(args.sampler_config,delim=' = ')
+    cf = Config(args.sampler_pcf,delim=' = ')
 
     rcFiles = cf('RCFILES')
     if ',' in rcFiles:
@@ -105,17 +105,17 @@ if __name__ == "__main__":
 
     cf             = Config(args.track_pcf,delim=' = ')
     inTemplate     = cf('inDir')     + '/' + cf('inFile')
-    inTemplate     = inTemplate.replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+    inTemplate     = inTemplate.replace('%orbitname',orbitname).replace('%ORBITNAME',orbitname.upper())
 
     cmds      = []
     filelist  = []
 
-    Date = isoparser(args.iso_t1)
+    date = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
     dt   = timedelta(minutes=args.DT_mins)
 
     # make a list of proccesses to run
-    while Date < enddate:
+    while date < enddate:
         nymd   = str(date.date()).replace('-','')
         year  = str(date.year)
         month = str(date.month).zfill(2)
@@ -146,18 +146,18 @@ if __name__ == "__main__":
             cmds.append(cmd)
             filelist.append(outFile)
 
-        Date += dt
+        date += dt
 
-        totalproc = len(cmds)
+    totalproc = len(cmds)
 
-        # run trajectory sampler on model fields
-        # split across multiple processors 
-        # This next bit of code manages the processes
-        # This will start the max processes running  
-        processes = [] 
-        processes, nextproc = CheckRunning(processes,cmds,0,totalproc,args)
-        while len(processes)>0: # Some things still going on
-            time.sleep(10)      # Wait
-            # add more processes as other ones finish
-            processes, nextproc = CheckRunning(processes,cmds,nextproc,totalproc,args)
+    # run trajectory sampler on model fields
+    # split across multiple processors 
+    # This next bit of code manages the processes
+    # This will start the max processes running  
+    processes = [] 
+    processes, nextproc = CheckRunning(processes,cmds,0,totalproc,args)
+    while len(processes)>0: # Some things still going on
+        time.sleep(10)      # Wait
+        # add more processes as other ones finish
+        processes, nextproc = CheckRunning(processes,cmds,nextproc,totalproc,args)
 
