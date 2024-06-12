@@ -23,6 +23,7 @@ limit stacksize unlimited
 #######################################################################
 #           Architecture Specific Environment Variables
 #######################################################################
+source $HOME/.cshrc
 source ./setup_env
 
 setenv TMPDIR $LOCAL_TMPDIR 
