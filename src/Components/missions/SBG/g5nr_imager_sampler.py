@@ -138,7 +138,7 @@ class WORKSPACE(JOBS):
 
         self.Date      = isoparser(args.iso_t1)
         self.enddate   = isoparser(args.iso_t2)
-        self.Dt        = args.DT_hours
+        self.Dt        = args.DT_mins
         self.dt        = timedelta(hours=args.dt_hours)
 
         if not os.path.exists(args.tmp):
@@ -213,7 +213,7 @@ class WORKSPACE(JOBS):
             # replace one line
             iso1 = sdate.isoformat()
             iso2 = edate.isoformat()
-            newline = 'nohup python -u run_imager_sampler.py -v --nproc {} --DT_hours {} {} {} {} {} >'.format(self.nproc,self.Dt,iso1,iso2,self.track_pcf,self.sampler_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
+            newline = 'nohup python -u run_imager_sampler.py -v --nproc {} --DT_mins {} {} {} {} {} >'.format(self.nproc,self.Dt,iso1,iso2,self.track_pcf,self.sampler_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
             text[-3] = newline
             f.close()
 
@@ -270,7 +270,7 @@ if __name__ == '__main__':
     parser.add_argument("sampler_pcf",
                         help="prep config file with collections to be sampled")
 
-    parser.add_argument('-D',"--DT_mins", default=DT_hours, type=int,
+    parser.add_argument('-D',"--DT_mins", default=DT_mins, type=int,
                         help="Timestep in minutes for each granule file (default=%i)"%DT_mins)
 
     parser.add_argument('-d',"--dt_hours", default=dt_hours, type=int,
