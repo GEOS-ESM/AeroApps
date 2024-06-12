@@ -2,9 +2,9 @@
 # Resource file for geo sampler: met_Nv files for TEMPO
 #
 
-TROPPB,TROPT,TROPQ,IWP,LWP,U10M,V10M,PS,TS,PBLH,CLDLOW,CLDMID,CLDHGH,CLDTOT,TAULOW,TAUMID,TAUHGH,TAUTOT: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_2d_met1_Nx
-FRSNO,FRSEAICE: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/tavg/tavg30mn_2d_met2_Nx
-T: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_T_Nv
-U: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_U_Nv
-V: /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_V_Nv
-QV:  /home/adasilva/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_QV_Nv
+TROPPB,TROPT,TROPQ,IWP,LWP,U10M,V10M,PS,TS,PBLH,CLDLOW,CLDMID,CLDHGH,CLDTOT,TAULOW,TAUMID,TAUHGH,TAUTOT: /home/pcastell/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_2d_met1_Nx
+FRSNO,FRSEAICE: /home/pcastell/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/tavg/tavg30mn_2d_met2_Nx
+T: /home/pcastell/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_T_Nv
+U: /home/pcastell/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_U_Nv
+V: /home/pcastell/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_V_Nv
+QV:  /home/pcastell/opendap/nr/Ganymed/7km/c1440_NR/opendap/0.0625_deg/inst/inst30mn_3d_QV_Nv
