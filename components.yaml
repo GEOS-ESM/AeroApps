@@ -24,7 +24,7 @@ ecbuild:
 MAPL:
   local: ./src/Shared/GMAO_Shared/MAPL@
   remote: ../MAPL.git
-  tag: v2.39.0
+  tag: v2.46.2
   develop: develop
 
 GMAOpyobs:
