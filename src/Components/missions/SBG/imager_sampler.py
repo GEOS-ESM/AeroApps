@@ -160,8 +160,11 @@ def writeNC ( args, Vars, levs, levUnits,
 
     # Make sure longitudes in [-180,180]
     # ----------------------------------
-    if ds.longitude.max()>180.:
-        ds.longitude[ds.longitude>180] = ds.longitude[ds.longitude>180] - 360.
+    lon = ds.longitude.values  # this is a pointer - changes to lon will occur in ds.longitude too, allows me to do numpy type indexing
+    if lon.max()>180.:
+        lon[lon>180] = lon[lon>180] - 360
+    if lon.min()<-180.:
+        lon[lon<-180] = lon[lon<-180] + 360
 
     km = len(levs)
     
