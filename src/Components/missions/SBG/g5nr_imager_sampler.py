@@ -35,7 +35,7 @@ class JOBS(object):
         for i in workingJobs:
             s = self.dirstring[i]
             os.chdir(s)
-            result = subprocess.check_output(['sbatch',self.slurm])
+            result = subprocess.check_output(['sbatch',self.slurm]).decode() # this returns byte, need to decode
             jobid = np.append(jobid,result.split()[-1])
 
         os.chdir(self.cwd)
@@ -98,7 +98,7 @@ class JOBS(object):
                 for i in newjobs:
                     s = self.dirstring[i]
                     os.chdir(s)
-                    result = subprocess.check_output(['sbatch',self.slurm])
+                    result = subprocess.check_output(['sbatch',self.slurm]).decode() # this returns byte, need to decode
                     jobid = np.append(jobid,result.split()[-1])
                     
 
