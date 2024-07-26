@@ -313,7 +313,7 @@ def pad(names):
     """
     Make all strings in list *names* the same size for f2py's benefit.
     """
-    return [ "%-16s"%v for v in names ]
+    return [ list("%-16s"%v) for v in names ]
 
 #........................................................................
 def needs_transpose(aer):
