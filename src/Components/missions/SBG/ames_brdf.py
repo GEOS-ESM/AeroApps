@@ -60,6 +60,7 @@ class AMES_BRDF(object):
         # only read wavelength once
         if not hasattr(self, 'wavelength'):
             self.wavelength = nc.groups['ancillary'].variables['wavelength'][:]
+            self.nwav       = len(self.wavelength)
 
         # read is sds        
         for sds in self.SDS:
@@ -85,6 +86,7 @@ class AMES_BRDF(object):
             if not hasattr(self, 'wavelength'):
                 nc = Dataset(fname)
                 self.wavelength = nc.groups['ancillary'].variables['wavelength'][:]
+                self.nwav       = len(self.wavelength)
                 nc.close()
 
         # stich together the tiles
