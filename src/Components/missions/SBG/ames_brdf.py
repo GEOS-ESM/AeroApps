@@ -35,10 +35,13 @@ class AMES_BRDF(object):
     must provide either H & V that defines the tile, 
     or a numpy boolean array (grid) of shape nH,nV with the indeces of the tiles desired set to True
     desired tiles must be continuous
+
+    return_ds = return an xarray dataset rather than individual numpy arrays. Right now only works is grid
     """
 
-    def __init__(self,Path,doy,H=None,V=None,grid=None,SDS=SDS):
+    def __init__(self,Path,doy,H=None,V=None,grid=None,SDS=SDS,return_ds=False):
         self.SDS = SDS
+        self.return_ds = return_ds
 
         if H is not None:
             self.readTile(Path,doy,H,V)
@@ -92,8 +95,11 @@ class AMES_BRDF(object):
         # stich together the tiles
         combined = xr.combine_by_coords(DS)
 
-        for sds in self.SDS:
-            self.__dict__[sds] = combined.variables[sds].values
+        if self.return_ds:
+            self.ds = combined
+        else:
+            for sds in self.SDS:
+                self.__dict__[sds] = combined.variables[sds].values
 
         self.flist = flist
     def getCoords(self,H,V):
