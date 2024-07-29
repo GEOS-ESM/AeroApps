@@ -117,6 +117,15 @@ def tiles(box):
     from shapely import intersects
 
     blonmin,blonmax,blatmin,blatmax = box
+    # check to see if box crosses the antimerdian
+    recenter = False
+    if (blonmin < 0) and (blonmax > 100):
+        recenter = True
+        blonmin += 180.0
+        blonmax += 180.0
+        if blonmax >= 360.0:
+            blonmax -= 360.0
+
     coords = ((blonmin,blatmin),(blonmin,blatmax),(blonmax,blatmax),(blonmax,blatmin))
     boxpoly = Polygon(coords)
 
@@ -124,6 +133,11 @@ def tiles(box):
     for H in range(nH):
         for V in range(nV):
             lonmin,lonmax,latmin,latmax = textent['H{}V{}'.format(H,V)]
+            if recenter:
+                lonmin += 180.0
+                lonmax += 180.0
+                if lonmax >= 360.0:
+                    lonmax -= 360.0
             coords = ((lonmin,latmin),(lonmin,latmax),(lonmax,latmax),(lonmax,latmin))
             tilepoly = Polygon(coords)
             grid[H,V] = intersects(boxpoly,tilepoly)
