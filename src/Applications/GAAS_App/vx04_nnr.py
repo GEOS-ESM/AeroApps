@@ -21,11 +21,11 @@ ALIAS = dict( TOA_NDVI = 'ndvi',
 def TranslateInput(key):
     if 'mRef' in key:
         prefix = 'reflectance'
-        channel = int(key[4:])
+        channel = int(key[key.find('Ref')+3:])
         output = (prefix,channel)
     elif 'mSre' in key:
         prefix = 'sfc_reflectance'
-        channel = int(key[4:])
+        channel = int(key[key.find('Sre')+3:])
         output = (prefix,channel)
     else:
         output = (key,)
@@ -308,7 +308,7 @@ class Vx04_NNR(Vx04_L2):
             elif len(iName) == 1:
                 name = iName[0]
                 if inputName[0] == 'l':
-                    feature = self.__dict__[name][:]
+                    feature = self.__dict__[name[1:]][:]
                     input = self.net.__dict__['scaler_'+inputName].transform(feature.reshape(-1,1)).squeeze()
                 else:
                     input = self.__dict__[name][:]
