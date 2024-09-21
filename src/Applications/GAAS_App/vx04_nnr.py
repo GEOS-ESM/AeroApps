@@ -299,11 +299,20 @@ class Vx04_NNR(Vx04_L2):
                 elif 'mRef' in inputName: # TOA reflectances
                     k = list(self.rChannels).index(ch) # index of channel 
 
-                input = self.__dict__[name][:,k]
+                if inputName[0] == 'l':
+                    feature = self.__dict__[name][:,k]
+                    input = self.net.__dict__['scaler_'+inputName].transform(feature.reshape(-1,1)).squeeze()
+                else:
+                    input = self.__dict__[name][:,k]
                 
             elif len(iName) == 1:
                 name = iName[0]
-                input = self.__dict__[name][:]
+                if inputName[0] == 'l':
+                    feature = self.__dict__[name][:]
+                    input = self.net.__dict__['scaler_'+inputName].transform(feature.reshape(-1,1)).squeeze()
+                else:
+                    input = self.__dict__[name][:]
+
                 
             else:
                 raise ValueError("strange, len(iName)=%d"%len(iName))
@@ -340,6 +349,12 @@ class Vx04_NNR(Vx04_L2):
         # Evaluate NN on inputs
         # ---------------------
         targets = self.net(self._getInputs())
+        if hasattr(self.net,"scale"):
+            if self.net.scale:
+                if len(self.net.TargetNames) == 1:
+                    targets = self.net.scaler.inverse_transform(targets.reshape(-1,1)).squeeze()
+                else:
+                    targets = self.net.scaler.inverse_transform(targets)        
 
         # If target is angstrom exponent
         # calculate AOD
