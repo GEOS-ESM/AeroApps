@@ -91,8 +91,9 @@ for var in ( 'ScatteringAngle','GlintAngle',
              'cloud','qa_flag'  ):
     TranslateInput[var] = (var,)
 
-for var in TranslateInput:
-    TranslateInput['l'+var] = TranslateInput[var]
+for var in list(TranslateInput.keys()):
+    name = TranslateInput[var]
+    TranslateInput['l'+var] = name
 
 # Translate Targets between ANET and MODIS classes
 # ------------------------------------------------
@@ -433,7 +434,7 @@ class MxD04_NNR(MxD04_L2):
             # --------------
             if type(iName) is str:
                 if inputName[0] == 'l':
-                    feature = self.__dict__[iName]
+                    feature = self.__dict__[inputName[1:]]
                     input = self.net.__dict__['scaler_'+inputName].transform(feature.reshape(-1,1)).squeeze()
                 else:
                     input = self.__dict__[iName][:]
@@ -497,9 +498,9 @@ class MxD04_NNR(MxD04_L2):
         if hasattr(self.net,"scale"):
             if self.net.scale:
                 if len(self.net.TargetNames) == 1:
-                    targets = self.net.scaler.transform(targets.reshape(-1,1)).squeeze()
+                    targets = self.net.scaler.inverse_transform(targets.reshape(-1,1)).squeeze()
                 else:
-                    targets = self.net.scaler.transform(targets)            
+                    targets = self.net.scaler.inverse_transform(targets)            
 
         # If target is angstrom exponent
         # calculate AOD 
