@@ -27,6 +27,10 @@ def TranslateInput(key):
         prefix = 'sfc_reflectance'
         channel = int(key[key.find('Sre')+3:])
         output = (prefix,channel)
+    elif 'mTau' in key:
+        prefix = 'aod'
+        channel = int(key[key.find('Tau')+3:])
+        output = (prefix,channel)
     else:
         output = (key,)
 
@@ -190,13 +194,20 @@ class Vx04_NNR(Vx04_L2):
 
         s = self.sample
         I = (s.TOTEXTTAU<=0)
-        s.TOTEXTTAU[I] = 1.E30
+        s.TOTEXTTAU[I] = 1.E-30
         self.fdu  = s.DUEXTTAU / s.TOTEXTTAU
         self.fss  = s.SSEXTTAU / s.TOTEXTTAU
         self.fbc  = s.BCEXTTAU / s.TOTEXTTAU
         self.foc  = s.OCEXTTAU / s.TOTEXTTAU
         self.fcc  = self.fbc + self.foc
         self.fsu  = s.SUEXTTAU / s.TOTEXTTAU
+
+        for spc in ['fdu','fss','fbc','foc','fcc','fss']:
+            i = np.isnan(self.__dict__[spc])
+            self.__dict__[spc][i] = 0.0
+
+            i = np.isinf(self.__dict__[spc])
+            self.__dict__[spc][i] = 0.0
 
         # Special handle nitrate (treat it as it were sulfate)
         # ----------------------------------------------------
@@ -297,7 +308,9 @@ class Vx04_NNR(Vx04_L2):
                 if 'mSre' in inputName: # LAND surface reflectivity
                     k = list(self.sChannels).index(ch) # index of channel 
                 elif 'mRef' in inputName: # TOA reflectances
-                    k = list(self.rChannels).index(ch) # index of channel 
+                    k = list(self.rChannels).index(ch) # index of channel
+                elif 'mTau' in inputName: # Predicted AOD
+                    k = list(self.channels).index(ch) 
 
                 if inputName[0] == 'l':
                     feature = self.__dict__[name][:,k]
