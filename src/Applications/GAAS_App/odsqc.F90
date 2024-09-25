@@ -13,6 +13,7 @@
 !
 ! !USES:
 !
+      use  m_mpif90, only : mp_init
       use  m_odsmeta
       use  m_ods
       use  m_sqc
@@ -56,6 +57,9 @@
 !     storage for ODS:
 !     ---------------
       type (ods_vect) :: ods
+
+      Call mp_init(ier)
+      if ( ier /= 0) call mp_die ( myname, 'MP_INIT()',ier)
 
       call zeit_ci ( 'odsqc' )
 

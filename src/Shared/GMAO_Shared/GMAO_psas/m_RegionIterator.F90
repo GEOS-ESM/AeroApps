@@ -66,7 +66,15 @@ Module m_RegionIterator
   Integer, Parameter :: coef(base_refinement:max_refinement) = &
        & (/ 1, 5, 21, 85, 341, 1365, 5461, 21845, 87381 /)
 
-  Integer :: err ! used for error conditions
+  integer :: err ! used for error conditions
+
+  interface new
+     module procedure new_
+  end interface new
+
+  interface clean
+     module procedure clean_
+  end interface clean
 
 ! !REVISION HISTORY:
 !        1Dec00 - Tom CLune and Peter Lyster <lys@dao.gsfc.nasa.gov>
@@ -120,7 +128,7 @@ Contains
 
   End Function RefinementToRegionIndex
 
-  Subroutine new(iter, level)
+  subroutine new_(iter, level)
     Implicit None
     Type (RegionIterator), Intent(Out) :: iter
     Integer, Intent(In) :: level
@@ -136,9 +144,9 @@ Contains
     iter%refinement_path(base_refinement) = 0
     iter%index = DONE
 
-  End Subroutine new
+  end subroutine new_
 
-  Subroutine clean(iter)
+  Subroutine clean_(iter)
     Type (RegionIterator), Intent(InOut) :: iter
 
     ALWAYS_ASSERT_NOMSG(Associated(iter%refinement_path))
@@ -147,7 +155,7 @@ Contains
     ASSERT(err == 0)
     Nullify(iter%refinement_path)
 
-  End Subroutine clean
+  End Subroutine clean_
 
   Integer Function reset(iter, level, index)
     Implicit None
