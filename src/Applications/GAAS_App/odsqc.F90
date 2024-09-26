@@ -92,11 +92,11 @@
 
          do isyn = 1, 4
 
-           print *, 'Working on ... ', trim(infile(ifile)), nymd, nhms
-
 !          6-hourly files
 !          --------------
            nhms = (isyn-1) * 060000
+
+           print *, 'Working on ... ', trim(infile(ifile)), nymd, nhms
 
 !         Read all data for this synoptic time
 !         ------------------------------------
