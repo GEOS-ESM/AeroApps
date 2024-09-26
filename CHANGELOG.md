@@ -16,6 +16,7 @@
 ### Fixed
 
 - bug in NNR cloud contamination check. Was not setting suspected too cloudy pixels to MISSING.
+- Fix missing MPI initialization
 
 ### Changed
 
