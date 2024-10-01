@@ -49,7 +49,7 @@
 ! !INTERFACE:
 !
       subroutine psas_init(I_AM_ROOT, comm, topology)
-	Use m_mpif90, only : MP_COMM_WORLD, MP_INIT, MP_COMM_RANK
+	Use m_mpif90, only : MP_COMM_WORLD, MP_INIT, MP_COMM_RANK, MP_initialized
         Use m_die, only : die, mp_die
 	Integer, Optional, Intent(Out) :: I_AM_ROOT
         Integer, Optional, Intent(Out) :: comm
@@ -71,12 +71,16 @@
         Integer :: rank
         Integer :: ier
         Integer :: topology_
+        Logical :: init_mpi
 
 
 !     Initialize MPI - must be done first
 !     -----------------------------------
-      Call MP_INIT(ier)
-         if ( ier /= 0) call mp_die ( myname_, 'MP_INIT()',ier)
+      call MP_initialized (init_mpi,ier)
+      if (.not.init_mpi) then
+         Call MP_INIT(ier)
+            if ( ier /= 0) call mp_die ( myname_, 'MP_INIT()',ier)
+      endif
       Call MP_COMM_RANK(MP_COMM_WORLD, rank, ier)
          if ( ier /= 0) call mp_die ( myname_, 'MP_COMM_RANK()',ier)	
       If (Present(comm)) comm = MP_COMM_WORLD
