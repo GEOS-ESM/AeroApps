@@ -1,0 +1,7 @@
+# POLARIMETER 
+    instname        = polar07    
+    cross_track_km  = 550
+    cross_track_dkm = 0.5
+    along_track_deg = -57:57:10
+    channels        = 360,380,410,550,670,870,940,1230,1380,1550,1650
+# POLARIMETER
