@@ -11,7 +11,7 @@ import os
 import argparse
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
-from   pyobs.sgp4      import getTrack as getTrackTLE
+from   pyobs.tle       import TLE
 from   MAPL.config     import Config
 import numpy  as np
 from netCDF4 import Dataset
@@ -264,7 +264,8 @@ class SWATH(object):
         # calculate trajectory from TLE file
         t1 = starttyme
         t2 = endtyme
-        LONGITUDE, LATITUDE, tyme = getTrackTLE(trjFile, t1, t2, dt_secs)
+        tle = TLE(trjFile)
+        tyme, LONGITUDE, LATITUDE = tle.getSubpoint(t1,t2,self.dt)
         self.ntyme = len(LONGITUDE)
 
         isotime = []
@@ -277,7 +278,7 @@ class SWATH(object):
         # get a few minutes prior to start
         t1 = starttyme-200*dt
         t2 = starttyme-self.dt
-        lon, lat, ptyme = getTrackTLE(trjFile, t1, t2, dt_secs)
+        ptyme, lon, lat = tle.getSubpoint(t1,t2,self.dt)
         self.Istyme = len(ptyme)
         LONGITUDE = np.append(lon,LONGITUDE)
         LATITUDE  = np.append(lat,LATITUDE)
@@ -286,7 +287,7 @@ class SWATH(object):
         # get a few minutes after start
         t1 = endtyme+self.dt
         t2 = endtyme+200*dt
-        lon, lat, atyme = getTrackTLE(trjFile, t1, t2, dt_secs)
+        atyme, lon, lat = tle.getSubpoint(t1, t2, self.dt)        
         LONGITUDE = np.append(LONGITUDE,lon)
         LATITUDE  = np.append(LATITUDE,lat)
         tyme      = np.append(tyme,np.array(atyme))
@@ -781,9 +782,6 @@ if __name__ == "__main__":
     parser.add_argument("inst_pcf",
                         help="prep config file with instrument variables")
 
-    parser.add_argument("-d","--dt_secs", default=dt_secs, type=int,
-                        help="Timestep in seconds for the trajectory (default=%i)"%dt_secs)
-
     parser.add_argument("-D","--DT_hours", default=DT_hours, type=int,
                         help="Timestep in hours for each file (default=%i)"%DT_hours)
 
@@ -811,6 +809,7 @@ if __name__ == "__main__":
 
     cf             = Config(args.inst_pcf,delim=' = ')
     instname       = cf('instname')
+    dt_secs        = int(cf('sampling_rate'))
 
     try:
         cross_track_km = float(cf('cross_track_km'))
@@ -829,7 +828,7 @@ if __name__ == "__main__":
     # ------------------------------------
     date      = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
-    dt        = timedelta(seconds=args.dt_secs)
+    dt        = timedelta(milliseconds=dt_secs)
     Dt        = timedelta(hours=args.DT_hours)
 
     while date < enddate:
