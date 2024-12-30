@@ -138,19 +138,18 @@ class WORKSPACE(JOBS):
 
         self.Date      = isoparser(args.iso_t1)
         self.enddate   = isoparser(args.iso_t2)
-        self.Dt        = timedelta(hours=args.DT_hours)
+        self.Dt        = timedelta(minutes=args.DT_mins)
         self.dt        = timedelta(days=args.dt_days)
         
         self.track_pcf   = args.track_pcf
         self.orbit_pcf   = args.orbit_pcf
         self.inst_pcf    = args.inst_pcf
-        self.DT_hours    = args.DT_hours
+        self.DT_mins    = args.DT_mins
         self.dryrun      = args.dryrun
 
         self.slurm       = args.slurm
         self.tmp         = args.tmp
         self.profile     = args.profile
-        self.single      = args.single
 
         if not os.path.exists(args.tmp):
             os.makedirs(args.tmp)
@@ -217,15 +216,12 @@ class WORKSPACE(JOBS):
         iso1 = sdate.isoformat()
         iso2 = edate.isoformat()
         Options = ' -v' +\
-                  ' --DT_hours {}'.format(self.DT_hours) 
+                  ' --DT_mins {}'.format(self.DT_mins) 
 
         if self.dryrun:
             Options += ' -r'
 
-        if self.single:
-            Options += ' --single'
-
-        newline = 'python -u ./polarimeter_swath_single.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
+        newline = 'python -u ./polarimeter_swath.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
         text[-3] = newline
         f.close()
 
@@ -266,10 +262,10 @@ class WORKSPACE(JOBS):
 if __name__ == '__main__':
     
     #Defaults
-    DT_hours = 1
+    DT_mins = 5
     dt_days  = 10
     slurm    = 'run_polarimeter_swath.j'
-    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/workdir/swath'
+    tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AOS-SKY/workdir/swath'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
@@ -286,8 +282,8 @@ if __name__ == '__main__':
     parser.add_argument('-d',"--dt_days", default=dt_days, type=int,
                         help="Timestep in days for each job (default=%i)"%dt_days)
 
-    parser.add_argument('-D',"--DT_hours", default=DT_hours, type=int,
-                        help="Timestep in hours for each file (default=%i)"%DT_hours)
+    parser.add_argument('-D',"--DT_mins", default=DT_mins, type=int,
+                        help="Timestep in minutes for each file (default=%i)"%DT_mins)
 
     parser.add_argument('-s',"--slurm",default=slurm,
                         help="slurm script template (default=%s)"%slurm)           
@@ -301,12 +297,8 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--profile",action="store_true",
                         help="Don't cleanup slurm files (default=False).")   
 
-    parser.add_argument("--single",action="store_true",
-                        help="Only do 1 orbit per day (default=False).")
 
     args = parser.parse_args()
-    if args.single:
-        args.DT_hours = 24
 
     workspace = WORKSPACE(args)
 
