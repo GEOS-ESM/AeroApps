@@ -1,5 +1,5 @@
 # ORBIT
-    TLEFILE  = tle/Sun_Synch_1330cross_Ascending_Generated_TLE.tle
-    orbitname     = ss450   
-    HGT          = 450
+    TLEFILE  = tle/AOS_Sky_Descending_v20241107_Epoch2019.tle
+    orbitname     = ss475d
+    HGT          = 475
 # ORBIT
