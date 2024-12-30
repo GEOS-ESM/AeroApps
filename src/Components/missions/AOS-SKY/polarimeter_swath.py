@@ -237,7 +237,7 @@ class SWATH(object):
         self.starttyme = starttyme
         self.endtyme   = endtyme
         self.dt_secs   = dt_secs
-        self.dt        = timedelta(seconds=dt_secs)
+        self.dt        = timedelta(milliseconds=dt_secs)
         self.trjFile   = trjFile
         self.outFile  = outFile
         self.hgtss    = hgtss
@@ -258,7 +258,7 @@ class SWATH(object):
         elif ':' in along_track_deg:
             vnamin,vnamax,nalong = np.array(along_track_deg.split(':')).astype(float)
 
-            self.vna_along = np.linspace(vnamin,vnamax,nalong)
+            self.vna_along = np.linspace(vnamin,vnamax,int(nalong))
             self.nalong    = int(nalong)
 
         # calculate trajectory from TLE file
@@ -270,7 +270,7 @@ class SWATH(object):
 
         isotime = []
         for tt in tyme:
-            iso = list(tt.isoformat())
+            iso = list(tt.isoformat(timespec='milliseconds'))
             isotime.append(iso)
 
         self.isotime = np.array(isotime)
@@ -324,8 +324,6 @@ class SWATH(object):
             # satellite points at the satellite sub-point
             self.subpointViewAngles()
 
-        # write to file
-        self.writenc()
 
     def writenc(self):
         """
@@ -353,7 +351,7 @@ class SWATH(object):
         # Create dimensions
         # -----------------
         nt = nc.createDimension('time',self.ntyme)
-        ls = nc.createDimension('ls',19)
+        ls = nc.createDimension('ls',23)
         x  = nc.createDimension('x',1)
         y  = nc.createDimension('y',1)
         nalong = nc.createDimension('nalong',self.nalong)
@@ -364,7 +362,7 @@ class SWATH(object):
         time = nc.createVariable('time','i4',('time',),zlib=True)
         time.long_name = 'Time'
         t0 = self.starttyme
-        time.units = 'seconds since %s'%t0.isoformat(' ')
+        time.units = 'milliseconds since %s'%t0.isoformat(' ')
         tyme = self.tyme[self.Istyme:self.Istyme+self.ntyme]
         time[:] = np.array([(t-t0).total_seconds() for t in tyme])
 
@@ -404,7 +402,7 @@ class SWATH(object):
             this = nc.createVariable('time_ss','i4',dim,zlib=True)
             this[:] = self.time
             this.long_name = 'time when polarimeter views satellite subpoint'
-            this.units = 'seconds since ' + self.starttyme.isoformat()
+            this.units = 'milliseconds since ' + self.starttyme.isoformat()
 
             this = nc.createVariable('sza_ss','f4',dim,zlib=True)
             this[:] = self.sza
@@ -852,9 +850,12 @@ if __name__ == "__main__":
         print('>>>no_ss:     ',args.no_ss)
         print('++++End of arguments+++')
         if not args.dryrun:
-            swath = SWATH(date,edate,args.dt_secs,trjFile,outFile,HGT,along_track_deg,
+            swath = SWATH(date,edate,dt_secs,trjFile,outFile,HGT,along_track_deg,
                           cross_track_km=cross_track_km,
                           cross_track_dkm=cross_track_dkm,
                           no_ss=args.no_ss)
+
+            # write to file
+            swath.writenc()
             swath = None
         date += Dt
