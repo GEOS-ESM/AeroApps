@@ -1,0 +1,28 @@
+#!/usr/bin/sh
+#=======================================================================
+# name - setup_env.sh
+# purpose -
+#   This script can be "sourced" from the bash shell to set environment
+#   variables and modules needed for building and running in the
+#   AeroApps environment
+#
+
+# Add AeroApps to the path
+#----------------
+setenv AERODIR /discover/nobackup/pcastell/workspace/AeroApps_aist/AeroApps
+set PATH = ${AERODIR}/install/bin/:$PATH
+
+# Set Python PATH
+#-----------------
+setenv PYTHONPATH ${AERODIR}/install/lib
+setenv PYTHONPATH ${AERODIR}/install/lib/Python:$PYTHONPATH
+#setenv PYTHONPATH /discover/nobackup/pcastell/pip/ephem:$PYTHONPATH
+
+# source AeroApps modules
+source ${AERODIR}/env@/g5_modules
+
+# Path for shared object libraries
+#------------------
+setenv LD_LIBRARY_PATH ${AERODIR}/install/lib:$LD_LIBRARY_PATH
+setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${BASEDIR}/`uname -s`/lib
+
