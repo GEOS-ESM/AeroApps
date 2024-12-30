@@ -1,24 +1,24 @@
 # FILENAMES
-    inDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%ORBITNAME/LevelB/Y%year/M%month/D%day
+    inDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AOS-SKY/%ORBITNAME/LevelB/Y%year/M%month/D%day
     inFile       = %orbitname-g5nr.lb2.%col.%nymd_%hour00z.nc4
 
-    brdfDir    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%ORBITNAME/LevelB/surface/BRDF/MCD43C1/006/Y%y
+    brdfDir    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AOS-SKY/%ORBITNAME/LevelB/surface/BRDF/MCD43C1/006/Y%y
 ear/M%month/D%day
     brdfFile     = %orbitname-g5nr.lb2.brdf.%nymd_%hour00z.nc4
 
-    ndviDir      = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%ORBITNAME/LevelB/surface/BPDF/NDVI/MYD13C2/
+    ndviDir      = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AOS-SKY/%ORBITNAME/LevelB/surface/BPDF/NDVI/MYD13C2/
 006/Y%year/M%month/D%day
     ndviFile     = %orbitname-g5nr.lb2.ndvi.%nymd_%hour00z.nc4
 
-    lcDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%ORBITNAME/LevelB/surface/BPDF/LAND_COVER/MC
+    lcDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AOS-SKY/%ORBITNAME/LevelB/surface/BPDF/LAND_COVER/MC
 D12C1/051/Y%year/M%month/D%day
     lcFile       = %orbitname-g5nr.lb2.land_cover.%nymd_%hour00z.nc4
 
-    lerDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%ORBITNAME/LevelB/surface/LER/OMI/Y%year/M%m
+    lerDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AOS-SKY/%ORBITNAME/LevelB/surface/LER/OMI/Y%year/M%m
 onth/D%day
     lerFile      = %orbitname-g5nr.lb2.ler.%nymd_%hour00z.nc4
 
-    outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/%ORBITNAME/LevelC/Y%year/M%month/D%day
+    outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AOS-SKY/%ORBITNAME/LevelC/Y%year/M%month/D%day
     outFile      = %orbitname-%instname-g5nr.lc.vlidort.%nymd_%hour00z_%chdnm.nc4
 
 # FILENAMES
