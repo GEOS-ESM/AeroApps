@@ -761,8 +761,7 @@ class SWATH(object):
 if __name__ == "__main__":
 
     # Defaults
-    DT_hours = 1
-    dt_secs  = 1
+    DT_mins = 5
 
 #   Parse command line options
 #   --------------------------
@@ -782,8 +781,8 @@ if __name__ == "__main__":
     parser.add_argument("inst_pcf",
                         help="prep config file with instrument variables")
 
-    parser.add_argument("-D","--DT_hours", default=DT_hours, type=int,
-                        help="Timestep in hours for each file (default=%i)"%DT_hours)
+    parser.add_argument("-D","--DT_mins", default=DT_mins, type=int,
+                        help="Timestep in minutes for each file (default=%i)"%DT_mins)
 
     parser.add_argument("-v", "--verbose",action="store_true",
                         help="Verbose mode (default=False).")
@@ -829,7 +828,7 @@ if __name__ == "__main__":
     date      = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
     dt        = timedelta(milliseconds=dt_secs)
-    Dt        = timedelta(hours=args.DT_hours)
+    Dt        = timedelta(minutes=args.DT_mins)
 
     while date < enddate:
         edate = date + Dt - dt
