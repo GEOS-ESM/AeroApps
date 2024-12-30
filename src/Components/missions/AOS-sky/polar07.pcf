@@ -3,5 +3,7 @@
     cross_track_km  = 550
     cross_track_dkm = 0.5
     along_track_deg = -57:57:10
+# sampling_rate in milliseconds. this gives a nominal along track resolution of 0.5 km
+    sampling_rate   = 80
     channels        = 360,380,410,550,670,870,940,1230,1380,1550,1650
 # POLARIMETER
