@@ -11,7 +11,7 @@ set (PYSCRIPTS
 
 set (SCRIPTS
     setup_env
-    run_polarimeter_sampler.j
+    run_polarimeter_swath.j
     )
 
 install (
