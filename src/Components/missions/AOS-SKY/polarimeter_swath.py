@@ -50,7 +50,7 @@ def distance(lon0,lat0,lon,lat,Re):
     return d
 
 def get_imin(args):
-    lon,lat,lon_granule,lat_granule,Re,Istyme = args
+    icross,lon,lat,lon_granule,lat_granule,Re,Istyme = args
     #lon, lat have dims ntyme
     # lon_granule have dims ntymetotal, ncross 
     ntyme = len(lon)
@@ -63,15 +63,18 @@ def get_imin(args):
         # pick a window to search around to speed things up
         styme = np.max([ityme+Istyme-200,0])
         etyme = np.min([ityme+Istyme+200,ntymeTotal])
+
+        scross = np.max([icross-10,0])
+        ecross = np.min([icross+10,ncross])
         
-        d = distance(lon0,lat0,lon_granule[styme:etyme,:],lat_granule[styme:etyme,:],Re)
+        d = distance(lon0,lat0,lon_granule[styme:etyme,scross:ecross],lat_granule[styme:etyme,scross:ecross],Re)
         imin = np.argmin(d)
 
         itymemin, icrossmin = np.unravel_index(imin,d.shape)
         itymemin = itymemin + styme
 
         IMIN[ityme,0] = itymemin
-        IMIN[ityme,1] = icrossmin
+        IMIN[ityme,1] = icrossmin + scross
 
     return IMIN
 
@@ -233,7 +236,8 @@ class SWATH(object):
     def __init__(self,starttyme,endtyme,dt_secs,trjFile,outFile,hgtss,along_track_deg,
                  verbose=True,
                  cross_track_km=None,cross_track_dkm=None,
-                 no_ss=False):
+                 no_ss=False,
+                 outFile_lb2=None):
         self.starttyme = starttyme
         self.endtyme   = endtyme
         self.dt_secs   = dt_secs
@@ -248,6 +252,7 @@ class SWATH(object):
         self.Re       = Re
         self.hgtssRef = hgtssRef
         self.no_ss    = no_ss
+        self.outFile_lb2 = outFile_lb2
 
         # Parse along_track_deg variable
         # vna == view nadir angle.  view angle between satellite subpoint and target at the satellite 
@@ -305,6 +310,9 @@ class SWATH(object):
         if self.cross_track_km is not None:
             self.get_vna_cross()
 
+        # Calculate locations of the satellite subpoint cross track
+        self.ssCrossTrackPixels()
+
         # Calculate Full Pixel Locations and view angles
         self.granulePixels()
 
@@ -327,7 +335,7 @@ class SWATH(object):
 
     def writenc(self):
         """
-        write a netcdf File of nadir view angles
+        write a netcdf File of granule view angles (level 1b)
         """
         if not os.path.exists(os.path.dirname(self.outFile)):
             os.makedirs(os.path.dirname(self.outFile))
@@ -338,7 +346,7 @@ class SWATH(object):
 
         # Set global attributes
         # ---------------------
-        nc.title = 'Multiangle viewing geometry for satellite nadir pixel'
+        nc.title = 'Multiangle viewing geometry for satellite granule'
         nc.institution = 'NASA/Goddard Space Flight Center'
         nc.source = 'Global Model and Assimilation Office'
         nc.history = ''
@@ -366,6 +374,16 @@ class SWATH(object):
         tyme = self.tyme[self.Istyme:self.Istyme+self.ntyme]
         time[:] = np.array([(t-t0).total_seconds() for t in tyme])
 
+        along = nc.createVariable('nalong','i4',('nalong',),zlib=True)
+        along.long_name = 'view nadir angle along track'
+        along.units = 'view angle between satellite subpoint and target of the satellites [degrees] in the along track direction'
+        along[:] = self.vna_along
+
+        cross = nc.createVariable('ncross','i4',('ncross',),zlib=True)
+        cross.long_name = 'view nadir angle across track'
+        cross.units = 'view angle between satellite subpoint and target of the satellites [degrees] in the across track direction'
+        cross[:] = self.vna_cross
+
         # Add fake dimensions for GrADS compatibility
         # -------------------------------------------
         x = nc.createVariable('x','f4',('x',),zlib=True)
@@ -377,14 +395,14 @@ class SWATH(object):
         y.units = 'degrees_north'
         y[:] = np.zeros(1)
 
-        # Trajectory coordinates
+        # Trajectory (satellite subpoint) coordinates
         # ----------------------
         lon = nc.createVariable('trjLon','f4',('time',),zlib=True)
-        lon.long_name = 'Trajectory Longitude'
+        lon.long_name = 'Trajectory (satellite subpoint) Longitude'
         lon.units = 'degrees_east'
         lon[:] = self.LONGITUDE[self.Istyme:self.Istyme+self.ntyme]
         lat = nc.createVariable('trjLat','f4',('time',),zlib=True)
-        lat.long_name = 'Trajectory Latitude'
+        lat.long_name = 'Trajectory (satellite subpoint) Latitude'
         lat.units = 'degrees_north'
         lat[:] = self.LATITUDE[self.Istyme:self.Istyme+self.ntyme]
 
@@ -397,38 +415,6 @@ class SWATH(object):
 
         # Create Variables
         # ------------------
-        if self.no_ss is False:
-            dim = ('time','nalong',)
-            this = nc.createVariable('time_ss','i4',dim,zlib=True)
-            this[:] = self.time
-            this.long_name = 'time when polarimeter views satellite subpoint'
-            this.units = 'milliseconds since ' + self.starttyme.isoformat()
-
-            this = nc.createVariable('sza_ss','f4',dim,zlib=True)
-            this[:] = self.sza
-            this.long_name = 'SZA when polarimeter views satellite subpoint'
-            this.units = 'degrees, >90 is below horizon'
-
-            this = nc.createVariable('saa_ss','f4',dim,zlib=True)
-            this[:] = self.saa
-            this.long_name = 'SAA when polarimeter views satellite subpoint'
-            this.units = 'degrees, clockwise from north 0-360'
-
-            this = nc.createVariable('vza_ss','f4',dim,zlib=True)
-            this[:] = self.vza
-            this.long_name = 'VZA when polarimeter views satellite subpoint'
-            this.units = 'degrees'
-
-            this = nc.createVariable('vaa_ss','f4',dim,zlib=True)
-            this[:] = self.vaa
-            this.long_name = 'VAA when polarimeter views satellite subpoint'
-            this.units = 'degrees, clockwise from north 0-360'
-
-            this = nc.createVariable('scatAngle_ss','f4',dim,zlib=True)
-            this[:] = self.scatAngle
-            this.long_name = 'scattering angle when polarimeter view satellite subpoint'
-            this.units = 'degrees, 0 = forward scattering'
-
         dim = ('time','nalong','ncross',)
         istart = self.Istyme 
         iend   = self.Istyme + self.ntyme
@@ -470,7 +456,120 @@ class SWATH(object):
 
         nc.close()
 
+    def writenc_ss(self):
+        """
+        write a netcdf File of co-located nadir view angles (Level 1c)
+        """
+        if not os.path.exists(os.path.dirname(self.outFile_lb2)):
+            os.makedirs(os.path.dirname(self.outFile_lb2))
 
+        # Open NC file
+        # ------------
+        nc = Dataset(self.outFile_lb2,'w')
+
+        # Set global attributes
+        # ---------------------
+        nc.title = 'Multiangle viewing geometry for satellite nadir pixels'
+        nc.institution = 'NASA/Goddard Space Flight Center'
+        nc.source = 'Global Model and Assimilation Office'
+        nc.history = ''
+        nc.references = 'n/a'
+        nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
+        nc.Conventions = 'CF'
+        nc.satellite_alt = self.hgtss
+        nc.cross_track_full_deg = self.cross_track_deg
+
+        # Create dimensions
+        # -----------------
+        nt = nc.createDimension('time',self.ntyme)
+        ls = nc.createDimension('ls',23)
+        x  = nc.createDimension('x',1)
+        y  = nc.createDimension('y',1)
+        nangle = nc.createDimension('nangle',self.nalong)
+        ncross = nc.createDimension('ncross',self.ncross)
+
+        # Coordinate variables
+        # --------------------
+        time = nc.createVariable('time','i4',('time',),zlib=True)
+        time.long_name = 'Time'
+        t0 = self.starttyme
+        time.units = 'milliseconds since %s'%t0.isoformat(' ')
+        tyme = self.tyme[self.Istyme:self.Istyme+self.ntyme]
+        time[:] = np.array([(t-t0).total_seconds() for t in tyme])
+
+        along = nc.createVariable('nangle','i4',('nangle',),zlib=True)
+        along.long_name = 'view nadir angle along track'
+        along.units = 'view angle between satellite subpoint and target of the satellites [degrees] in the along track direction'
+        along[:] = self.vna_along
+
+        cross = nc.createVariable('ncross','i4',('ncross',),zlib=True)
+        cross.long_name = 'view nadir angle across track'
+        cross.units = 'view angle between satellite subpoint and target of the satellites [degrees] in the across track direction'
+        cross[:] = self.vna_cross
+
+        # Add fake dimensions for GrADS compatibility
+        # -------------------------------------------
+        x = nc.createVariable('x','f4',('x',),zlib=True)
+        x.long_name = 'Fake Longitude for GrADS Compatibility'
+        x.units = 'degrees_east'
+        x[:] = np.zeros(1)
+        y = nc.createVariable('y','f4',('y',),zlib=True)
+        y.long_name = 'Fake Latitude for GrADS Compatibility'
+        y.units = 'degrees_north'
+        y[:] = np.zeros(1)
+
+        # Nadir coordinates
+        # ----------------------
+        lon = nc.createVariable('longitude','f4',('time','ncross',),zlib=True)
+        lon.long_name = 'Longitude'
+        lon.units = 'degrees_east'
+        lon[:] = self.lon_ss_cross[self.Istyme:self.Istyme+self.ntyme,:]
+        lat = nc.createVariable('latitude','f4',('time','ncross'),zlib=True)
+        lat.long_name = 'Latitude'
+        lat.units = 'degrees_north'
+        lat[:] = self.lat_ss_cross[self.Istyme:self.Istyme+self.ntyme,:]
+
+
+        # Time in ISO format
+        # ------------------
+        isotime = nc.createVariable('isotime','S1',('time','ls'),zlib=True)
+        isotime.long_name = 'Time (ISO Format)'
+        isotime[:] = self.isotime
+
+        # Create Variables
+        # ------------------
+        dim = ('time','ncross','nangle',)
+        this = nc.createVariable('time_ss','i4',dim,zlib=True)
+        this[:] = self.time
+        this.long_name = 'time when polarimeter views satellite subpoint'
+        this.units = 'milliseconds since ' + self.starttyme.isoformat()
+
+        this = nc.createVariable('sza','f4',dim,zlib=True)
+        this[:] = self.sza
+        this.long_name = 'SZA when polarimeter views satellite subpoint'
+        this.units = 'degrees, >90 is below horizon'
+
+        this = nc.createVariable('saa','f4',dim,zlib=True)
+        this[:] = self.saa
+        this.long_name = 'SAA when polarimeter views satellite subpoint'
+        this.units = 'degrees, clockwise from north 0-360'
+
+        this = nc.createVariable('vza','f4',dim,zlib=True)
+        this[:] = self.vza
+        this.long_name = 'VZA when polarimeter views satellite subpoint'
+        this.units = 'degrees'
+
+        this = nc.createVariable('vaa','f4',dim,zlib=True)
+        this[:] = self.vaa
+        this.long_name = 'VAA when polarimeter views satellite subpoint'
+        this.units = 'degrees, clockwise from north 0-360'
+
+        this = nc.createVariable('scatAngle','f4',dim,zlib=True)
+        this[:] = self.scatAngle
+        this.long_name = 'scattering angle when polarimeter view satellite subpoint'
+        this.units = 'degrees, 0 = forward scattering'
+
+        nc.close()
 
     def getScatAngle(self,sza,saa,vza,vaa):
         """
@@ -503,21 +602,22 @@ class SWATH(object):
 
     # --
     def subpointViewAngles(self):
-        sza = np.zeros([self.ntyme,self.nalong])
-        saa = np.zeros([self.ntyme,self.nalong])
-        vza = np.zeros([self.ntyme,self.nalong])
-        vaa = np.zeros([self.ntyme,self.nalong])
-        scatAngle = np.zeros([self.ntyme,self.nalong])
-        time = np.zeros([self.ntyme,self.nalong]).astype(int)
+        sza = np.zeros([self.ntyme,self.ncross,self.nalong])
+        saa = np.zeros([self.ntyme,self.ncross,self.nalong])
+        vza = np.zeros([self.ntyme,self.ncross,self.nalong])
+        vaa = np.zeros([self.ntyme,self.ncross,self.nalong])
+        scatAngle = np.zeros([self.ntyme,self.ncross,self.nalong])
+        time = np.zeros([self.ntyme,self.ncross,self.nalong]).astype(int)
 
-        for ialong in range(self.nalong):
-            dtyme = self.tyme[self.Itymeview[:,ialong]] - self.starttyme
-            for ityme in range(self.ntyme):
-                sza[ityme,ialong] = self.sza_granule[:,ialong,:][self.Itymeview[ityme,ialong],self.Icrossview[ityme,ialong]]
-                saa[ityme,ialong] = self.saa_granule[:,ialong,:][self.Itymeview[ityme,ialong],self.Icrossview[ityme,ialong]]
-                vza[ityme,ialong] = self.vza_granule[:,ialong,:][self.Itymeview[ityme,ialong],self.Icrossview[ityme,ialong]]
-                vaa[ityme,ialong] = self.vaa_granule[:,ialong,:][self.Itymeview[ityme,ialong],self.Icrossview[ityme,ialong]]
-                time[ityme,ialong] = dtyme[ityme].total_seconds()
+        for icross in range(self.ncross):
+            for ialong in range(self.nalong):
+                dtyme = self.tyme[self.Itymeview[:,icross,ialong]] - self.starttyme
+                for ityme in range(self.ntyme):
+                    sza[ityme,icross,ialong] = self.sza_granule[:,ialong,:][self.Itymeview[ityme,icross,ialong],self.Icrossview[ityme,icross,ialong]]
+                    saa[ityme,icross,ialong] = self.saa_granule[:,ialong,:][self.Itymeview[ityme,icross,ialong],self.Icrossview[ityme,icross,ialong]]
+                    vza[ityme,icross,ialong] = self.vza_granule[:,ialong,:][self.Itymeview[ityme,icross,ialong],self.Icrossview[ityme,icross,ialong]]
+                    vaa[ityme,icross,ialong] = self.vaa_granule[:,ialong,:][self.Itymeview[ityme,icross,ialong],self.Icrossview[ityme,icross,ialong]]
+                    time[ityme,icross,ialong] = dtyme[ityme].total_seconds()
 
         self.sza = np.ma.array(sza)
         self.saa = np.ma.array(saa)
@@ -552,17 +652,18 @@ class SWATH(object):
         # figure out which satellite pixel gets closest to each satellite sub-point
         # where and when is the satellite when it points to the satellite sub-point
         # with each along track viewing angle
-        self.Itymeview    = np.zeros([self.ntyme,self.nalong]).astype(int)
-        self.Icrossview    = np.zeros([self.ntyme,self.nalong]).astype(int)
+        self.Itymeview    = np.zeros([self.ntyme,self.ncross,self.nalong]).astype(int)
+        self.Icrossview    = np.zeros([self.ntyme,self.ncross,self.nalong]).astype(int)
         p = Pool(self.nalong)
         
-        lon = self.LONGITUDE[self.Istyme:self.Istyme+self.ntyme]
-        lat = self.LATITUDE[self.Istyme:self.Istyme+self.ntyme]
-        args = [(lon,lat,self.lon_granule[:,ialong,:],self.lat_granule[:,ialong,:],self.Re,self.Istyme) for ialong in range(self.nalong)]
-        result = p.map(get_imin,args)
-        for ialong,r in enumerate(result):
-            self.Itymeview[:,ialong] = r[:,0]
-            self.Icrossview[:,ialong] = r[:,1]
+        for icross in np.arange(self.ncross):
+            lon = self.lon_ss_cross[self.Istyme:self.Istyme+self.ntyme,icross]
+            lat = self.lat_ss_cross[self.Istyme:self.Istyme+self.ntyme,icross]
+            args = [(icross,lon,lat,self.lon_granule[:,ialong,:],self.lat_granule[:,ialong,:],self.Re,self.Istyme) for ialong in range(self.nalong)]
+            result = p.map(get_imin,args)
+            for ialong,r in enumerate(result):
+                self.Itymeview[:,icross,ialong] = r[:,0]
+                self.Icrossview[:,icross,ialong] = r[:,1]
         
         p.close()
         p.join()
@@ -653,6 +754,34 @@ class SWATH(object):
         p.join()
 
         self.vaa_granule = np.concatenate(vaa_granule,axis=1)
+    # --
+    def ssCrossTrackPixels(self):
+        """
+        Calculate full Locations of the satellite sub-point cross track
+        """
+
+        self.lon_ss_cross = np.zeros([self.ntymeTotal,self.ncross])
+        self.lat_ss_cross = np.zeros([self.ntymeTotal,self.ncross])
+
+        # get vna and az - azimuth of satellite measured from North at SSP
+        srho = self.Re/(self.Re+self.hgtss)
+        along_deg = 0
+        args = [srho,along_deg,self.vna_cross,self.ntymeTotal,self.HEAD]
+        result = get_az_vna_vza_lambrview(args)
+
+        az_granule,vna_granule,vza_granule,lambr_view = result
+
+        # given vna and az, get lat/lon of pixel
+        lon0 = self.LONGITUDE
+        lat0 = self.LATITUDE
+        for icross,cross_deg in enumerate(self.vna_cross):
+            # given vna and az, get lat/lon of pixel
+            vna  = vna_granule[:,icross]
+            az   = az_granule[:,icross]
+            lon,lat = self.pixel_loc(lon0,lat0,vna,az)
+
+            self.lon_ss_cross[:,icross] = lon
+            self.lat_ss_cross[:,icross] = lat
         
     # --
     def granuleSolarAngles(self):
@@ -836,8 +965,9 @@ if __name__ == "__main__":
         day   = str(date.day).zfill(2)
         hour  = str(date.hour).zfill(2)    
 
-        outFile    = inTemplate.replace('%col',instname).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+        outFile    = inTemplate.replace('%col',instname).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME).replace('lb2','lb1')
 
+        outFile_lb2 = inTemplate.replace('%col',instname).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
         # Initialize SWATH class and create outfile
         # -----------------------------------------------------------
@@ -853,9 +983,12 @@ if __name__ == "__main__":
             swath = SWATH(date,edate,dt_secs,trjFile,outFile,HGT,along_track_deg,
                           cross_track_km=cross_track_km,
                           cross_track_dkm=cross_track_dkm,
-                          no_ss=args.no_ss)
+                          no_ss=args.no_ss,
+                          outFile_lb2=outFile_lb2)
 
             # write to file
             swath.writenc()
-            swath = None
+            if swath.no_ss is False:
+                swath.writenc_ss()
+#            swath = None
         date += Dt
