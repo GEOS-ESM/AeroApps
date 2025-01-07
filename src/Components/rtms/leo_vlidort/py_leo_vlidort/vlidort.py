@@ -9,7 +9,7 @@
 import os
 from   netCDF4 import Dataset
 from   mieobs  import  getAOPvector, getEdgeVars
-import VLIDORT_POLAR_ 
+from   leo_vlidort import VLIDORT_POLAR_ 
 import numpy   as np
 from MAPL.constants import *
 from scipy import interpolate
