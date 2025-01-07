@@ -130,10 +130,6 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         if 'BPDF' in albedoType:
             self.BPDFinputs()
 
-        # Ocean
-        albedoReader = getattr(self,SurfaceFuncs['CX'])
-        albedoReader()
-
         # Calculate aerosol optical properties
         self.computeMie()
 
