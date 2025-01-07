@@ -996,7 +996,7 @@ if __name__ == "__main__":
     row      = 85
     format   = 'NETCDF4_CLASSIC'
 
-    rootDir  = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG'
+    rootDir  = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/0.01tile'
 
     inDir        = '{}/LevelB/Y{}'.format(rootDir,date.year)
     inFile       = '{}/{}/sbg-g5nr.lb2.%col.{}.r{}c{}.{}_{}00z.nc4'.format(inDir,date.strftime('M%m/D%d'),tile,row,col,nymd,hour)
