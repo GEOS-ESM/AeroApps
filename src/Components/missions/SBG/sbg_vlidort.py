@@ -100,6 +100,9 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         for sds in self.SDS_AER+self.SDS_MET:
             self.__dict__[sds] = np.concatenate(self.__dict__[sds])
 
+            if sds == 'isotime':
+                tt = np.array([t.decode('utf-8') for t in self.isotime.ravel()]).reshape(self.isotime.shape)
+                self.isotime = tt
         # convert isotime to datetime
         self.tyme = []
         for isotime in self.isotime:
