@@ -372,7 +372,7 @@ class SWATH(object):
         t0 = self.starttyme
         time.units = 'milliseconds since %s'%t0.isoformat(' ')
         tyme = self.tyme[self.Istyme:self.Istyme+self.ntyme]
-        time[:] = np.array([(t-t0).total_seconds() for t in tyme])
+        time[:] = np.array([(t-t0).total_seconds()*1e3 for t in tyme])
 
         along = nc.createVariable('nalong','i4',('nalong',),zlib=True)
         along.long_name = 'view nadir angle along track'
@@ -495,7 +495,7 @@ class SWATH(object):
         t0 = self.starttyme
         time.units = 'milliseconds since %s'%t0.isoformat(' ')
         tyme = self.tyme[self.Istyme:self.Istyme+self.ntyme]
-        time[:] = np.array([(t-t0).total_seconds() for t in tyme])
+        time[:] = np.array([(t-t0).total_seconds()*1e3 for t in tyme])
 
         along = nc.createVariable('nangle','i4',('nangle',),zlib=True)
         along.long_name = 'view nadir angle along track'
@@ -617,7 +617,7 @@ class SWATH(object):
                     saa[ityme,icross,ialong] = self.saa_granule[:,ialong,:][self.Itymeview[ityme,icross,ialong],self.Icrossview[ityme,icross,ialong]]
                     vza[ityme,icross,ialong] = self.vza_granule[:,ialong,:][self.Itymeview[ityme,icross,ialong],self.Icrossview[ityme,icross,ialong]]
                     vaa[ityme,icross,ialong] = self.vaa_granule[:,ialong,:][self.Itymeview[ityme,icross,ialong],self.Icrossview[ityme,icross,ialong]]
-                    time[ityme,icross,ialong] = dtyme[ityme].total_seconds()
+                    time[ityme,icross,ialong] = dtyme[ityme].total_seconds()*1e3 #milliseconds
 
         self.sza = np.ma.array(sza)
         self.saa = np.ma.array(saa)
