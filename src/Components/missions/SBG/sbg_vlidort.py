@@ -602,10 +602,6 @@ if __name__ == "__main__":
         ndviTemplate = None
         lcTemplate   = None
 
-    try:
-        lerTemplate    = cf('lerDir')    + '/' + cf('lerFile')
-    except:
-        lerTemplate    = None
 
     # Loop through dates, running VLIDORT
     # ------------------------------------
@@ -619,26 +615,23 @@ if __name__ == "__main__":
         month = str(date.month).zfill(2)
         day   = str(date.day).zfill(2)
         hour  = str(date.hour).zfill(2)
+        minute = str(date.minute).zfill(2)
 
-        inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
-        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%chd',get_chd(channel)).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME).replace('%instname',instname)
+        inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%chd',get_chd(channel)).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME).replace('%instname',instname)
 
         if brdfTemplate is None:
             brdfFile = None
         else:
-            brdfFile = brdfTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+            brdfFile = brdfTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
         if ndviTemplate is None:
             ndviFile = None
             lcFile   = None
         else:
-            ndviFile   = ndviTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
-            lcFile     = lcTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+            ndviFile   = ndviTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+            lcFile     = lcTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
-        if lerTemplate is None:
-            lerFile = None
-        else:
-            lerFile   = lerTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
 
         # Initialize VLIDORT class getting aerosol optical properties
@@ -652,7 +645,6 @@ if __name__ == "__main__":
         print('>>>brdfFile:  ',brdfFile)
         print('>>>ndviFile:  ',ndviFile)
         print('>>>lcFile:    ',lcFile)
-        print('>>>lerFile    ',lerFile)
         print('>>>verbose:   ',args.verbose)
         print('++++End of arguments+++')
         
@@ -663,7 +655,6 @@ if __name__ == "__main__":
                             brdfFile=brdfFile,
                             ndviFile=ndviFile,
                             lcFile=lcFile,
-                            lerFile=lerFile,
                             verbose=args.verbose)
 
         if not args.dryrun: 
