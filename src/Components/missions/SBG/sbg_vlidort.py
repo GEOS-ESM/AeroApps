@@ -161,19 +161,19 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         self.Rvol = nc.variables['Kv'][:]
 
 
-        self.Riso.shape = (1,self.nch,self.nobs
-        self.Rgeo.shape = (1,self.nch,1)
-        self.Rvol.shape = (1,self.nch,1)
+        self.Riso.shape = (1,self.nch,self.nobs)
+        self.Rgeo.shape = (1,self.nch,self.nobs)
+        self.Rvol.shape = (1,self.nch,self.nobs)
 
         # [nkernel,nch,nobs]
         self.kernel_wt = np.append(self.Riso,self.Rgeo,axis=0)
         self.kernel_wt = np.append(self.kernel_wt,self.Rvol,axis=0)
 
-        param1 = np.array([2]*self.nch)
-        param2 = np.array([1]*self.nch)
+        param1 = np.array([2]*self.nch*self.nobs)
+        param2 = np.array([1]*self.nch*self.nobs)
 
-        param1.shape = (1,self.nch,1)
-        param2.shape = (1,self.nch,1)
+        param1.shape = (1,self.nch,self.nobs)
+        param2.shape = (1,self.nch,self.nobs)
 
         # [nparam,nch,nobs]
         self.RTLSparam = np.append(param1,param2,axis=0)
