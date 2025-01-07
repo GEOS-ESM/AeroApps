@@ -97,6 +97,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         self.readSampledGEOS()
 
         # Make lists into arrays
+        # [ntyme,nlev,nalong,nacross]
         for sds in self.SDS_AER+self.SDS_MET:
             self.__dict__[sds] = np.concatenate(self.__dict__[sds])
 
@@ -110,12 +111,12 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
 
         self.tyme = np.array(self.tyme)
         self.ntyme  = len(self.tyme)
+        ntyme,nlev,nalong,nacross = self.DELP.shape
+        self.nacross = nacross
 
         # Start out with all good obs
-        self.nobs  = len(self.tyme)
-        self.iGood = np.ones([self.nobs]).astype(bool)
-        self.nobsLand  = len(self.tyme)
-        self.iGoodLand = np.ones([self.nobs]).astype(bool)
+        self.nobs  = self.ntyme
+        self.iGood = np.ones([self.ntyme]).astype(bool)
 
         # Read in surface data
         # Intensity
