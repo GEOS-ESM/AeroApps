@@ -2,8 +2,8 @@
     inDir        = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/%ORBITNAME/LevelB/Y%year/M%month/D%day
     inFile       = %orbitname-g5nr.lb2.%col.%nymd_%hour%minutez.nc4
 
-    brdfDir    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/%ORBITNAME/LevelB/surface/BRDF/MCD43C1/006/Y%year/M%month/D%day
-    brdfFile     = %orbitname-g5nr.lb2.brdf.%nymd_%hour%minutez.nc4
+    brdfDir    = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/%ORBITNAME/LevelB/Y%year/M%month/D%day
+    brdfFile     = %orbitname-g5nr.lb2.ames_brdf.%nymd_%hour%minutez.nc4
 
     ndviDir      = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/%ORBITNAME/LevelB/surface/BPDF/NDVI/MYD13C2/006/Y%year/M%month/D%day
     ndviFile     = %orbitname-g5nr.lb2.ndvi.%nymd_%hour%minutez.nc4
