@@ -575,7 +575,7 @@ if __name__ == "__main__":
         if channel <= 388:
             albedoType = 'LAMBERTIAN'
         else:
-            albedoType = 'MODIS_BRDF'
+            albedoType = 'AMES_BRDF'
 
     # Parse prep config
     # -----------------
