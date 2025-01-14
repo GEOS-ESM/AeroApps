@@ -120,7 +120,6 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
             if len(self.__dict__[sds].shape) == 3:
                 self.__dict__[sds] = self.__dict__[sds].reshape([self.nlev,self.nobs])
             elif (len(self.__dict__[sds].shape) == 2) & (sds != 'isotime'):
-                print(sds) 
                 self.__dict__[sds] = self.__dict__[sds].reshape([self.nobs])
 
         # Start out with all good obs
@@ -135,7 +134,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
             self.BPDFinputs()
 
         # Calculate aerosol optical properties
-        self.computeMie()
+#        self.computeMie()
 
         # Calculate atmospheric profile properties needed for Rayleigh calc
         self.computeAtmos()    
@@ -147,6 +146,35 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         if self.nobs > 0:
             # Land-Sea Mask
             self.LandSeaMask()        
+
+    # ---
+    def LandSeaMask(self):
+        """
+        Read in invariant dataset
+        """
+        col = 'asm_Nx'
+        if self.verbose:
+            print('opening file',self.inFile.replace('%col',col))
+        nc       = Dataset(self.inFile.replace('%col',col))
+
+        for sds in self.SDS_INV:
+            sds_ = sds
+            if sds in ncALIAS:
+                sds_ = ncALIAS[sds]
+            var = nc.variables[sds_][:]
+            self.__dict__[sds].append(var)
+
+        # Make lists into arrays
+        for sds in self.SDS_INV:
+            self.__dict__[sds] = np.concatenate(self.__dict__[sds]).squeeze().reshape(self.nobs)
+
+        self.iLand = self.FRLAND >= 0.99
+        self.iSea  = self.FRLAND < 0.99
+
+        # self.iGood = self.iGood & iGood
+        self.nobsLand  = np.sum(self.iGood & self.iLand)
+        self.nobsSea   = np.sum(self.iGood & self.iSea)
+
 
     #---
     def readSampledAMESBRDF(self):
@@ -203,10 +231,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
             self.__dict__[sds].append(var)
 
         for sds in self.SDS_ANG:
-            self.__dict__[sds] = np.concatenate(self.__dict__[sds])
-
-        # number of VZA
-        self.nangles = self.VZA.shape[1]
+            self.__dict__[sds] = np.concatenate(self.__dict__[sds]).squeeze().reshape(self.nobs)
 
         # define RAA according to photon travel direction
         saa = self.SAA + 180.0
@@ -218,8 +243,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         self.RAA = RAA
 
         # Limit SZAs
-        for i in range(self.ntyme):
-            self.iGood[i] = self.iGood[i] & np.all(self.SZA[i,:] < 80)
+        self.iGood = self.iGood & (self.SZA < 80)
         self.nobs = np.sum(self.iGood)         
 
     def runVLIDORT(self):
