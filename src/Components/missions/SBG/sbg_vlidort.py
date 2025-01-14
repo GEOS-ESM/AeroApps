@@ -62,7 +62,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
     GEOS-5 has already been sampled on satellite track
     """
     def __init__(self,inFile,outFile,rcFile,albedoType,
-                channel,polarname,
+                polarname,
                 nstreams=12,
                 plane_parallel=True,
                 brdfFile=None,
@@ -79,7 +79,6 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         self.outFile     = outFile
         self.albedoType  = albedoType
         self.rcFile      = rcFile
-        self.channel     = channel
         self.verbose     = verbose
         self.nMom        = nMom
         self.brdfFile    = brdfFile
@@ -118,12 +117,8 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         self.nobs  = self.ntyme
         self.iGood = np.ones([self.ntyme]).astype(bool)
 
-        # Read in surface data
-        # Intensity
-        if (self.channel < 470) & ("MODIS_BRDF" in albedoType):
-            albedoReader = getattr(self,'readHybridMODISBRDF')
-        else:
-            albedoReader = getattr(self,SurfaceFuncs[albedoType])
+       # Read in surface data
+        albedoReader = getattr(self,SurfaceFuncs[albedoType])
         albedoReader()
 
         # Polarization
@@ -154,26 +149,27 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
             print('opening BRDF file ',self.brdfFile)
         nc = Dataset(self.brdfFile)
 
-        self.channel = nc.variables['wavelength'][:]
+        self.channel = nc.variables['nwav'][:]  # microns
         self.nch = len(self.channel)
-        self.Riso = nc.variables['Ki'][:]
-        self.Rgeo = nc.variables['Kg'][:]
-        self.Rvol = nc.variables['Kv'][:]
+        self.channel = self.channel*1e3  # nm
+        self.Riso = nc.variables['Ki'][:].squeeze()
+        self.Rgeo = nc.variables['Kg'][:].squeeze()
+        self.Rvol = nc.variables['Kv'][:].squeeze()
 
 
-        self.Riso.shape = (1,self.nch,self.nobs)
-        self.Rgeo.shape = (1,self.nch,self.nobs)
-        self.Rvol.shape = (1,self.nch,self.nobs)
+        self.Riso.shape = (1,self.nch,self.nobs,self.nacross)
+        self.Rgeo.shape = (1,self.nch,self.nobs,self.nacross)
+        self.Rvol.shape = (1,self.nch,self.nobs,self.nacross)
 
-        # [nkernel,nch,nobs]
+        # [nkernel,nch,nobs,nacross]
         self.kernel_wt = np.append(self.Riso,self.Rgeo,axis=0)
         self.kernel_wt = np.append(self.kernel_wt,self.Rvol,axis=0)
 
-        param1 = np.array([2]*self.nch*self.nobs)
-        param2 = np.array([1]*self.nch*self.nobs)
+        param1 = np.array([2]*self.nch*self.nobs*self.nacross)
+        param2 = np.array([1]*self.nch*self.nobs*self.nacross)
 
-        param1.shape = (1,self.nch,self.nobs)
-        param2.shape = (1,self.nch,self.nobs)
+        param1.shape = (1,self.nch,self.nobs,self.nacross)
+        param2.shape = (1,self.nch,self.nobs,self.nacross)
 
         # [nparam,nch,nobs]
         self.RTLSparam = np.append(param1,param2,axis=0)
@@ -546,9 +542,6 @@ if __name__ == "__main__":
     parser.add_argument("inst_pcf",
                         help="prep config file with instrument variables")
 
-    parser.add_argument("channel", type=int,
-                        help="channel in nm")
-
     parser.add_argument("-a","--albedotype", default=albedoType,
                         help="albedo type keyword. default is to figure out according to channel")
 
@@ -566,16 +559,12 @@ if __name__ == "__main__":
                         help="do a dry run (default=False).")
 
     args = parser.parse_args()
-    channel        = args.channel
     rcFile         = args.rcfile
     albedoType     = args.albedotype
 
     # figure out albedoType keyword
     if albedoType is None:
-        if channel <= 388:
-            albedoType = 'LAMBERTIAN'
-        else:
-            albedoType = 'AMES_BRDF'
+        albedoType = 'AMES_BRDF'
 
     # Parse prep config
     # -----------------
@@ -618,7 +607,7 @@ if __name__ == "__main__":
         minute = str(date.minute).zfill(2)
 
         inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
-        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%chd',get_chd(channel)).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME).replace('%instname',instname)
+        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME).replace('%instname',instname)
 
         if brdfTemplate is None:
             brdfFile = None
@@ -641,7 +630,6 @@ if __name__ == "__main__":
         print('>>>outFile:   ',outFile)
         print('>>>rcFile:    ',rcFile)
         print('>>>albedoType:',albedoType)
-        print('>>>channel:   ',channel)
         print('>>>brdfFile:  ',brdfFile)
         print('>>>ndviFile:  ',ndviFile)
         print('>>>lcFile:    ',lcFile)
@@ -649,8 +637,7 @@ if __name__ == "__main__":
         print('++++End of arguments+++')
         
         vlidort = ACCP_POLAR_VLIDORT(inFile,outFile,rcFile,
-                            albedoType,
-                            channel,                            
+                            albedoType, 
                             instname,
                             brdfFile=brdfFile,
                             ndviFile=ndviFile,
