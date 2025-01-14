@@ -39,12 +39,12 @@ SDS_MET = [] #[CLDTOT]
 SDS_INV = ['FRLAND']
 SDS_CX = ['U10M','V10M']
 SDS_ANG = ['SZA','SAA','VZA','VAA']
-ncALIAS = {'LONGITUDE': 'trjLon',
-           'LATITUDE' : 'trjLat',
-           'SZA'      : 'sza_ss',
-           'SAA'      : 'saa_ss',
-           'VZA'      : 'vza_ss',
-           'VAA'      : 'vaa_ss'}
+ncALIAS = {'LONGITUDE': 'longitude',
+           'LATITUDE' : 'latitude',
+           'SZA'      : 'sza',
+           'SAA'      : 'saa',
+           'VZA'      : 'vza',
+           'VAA'      : 'vaa'}
 
 nMom     = 300
 
@@ -96,9 +96,12 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         self.readSampledGEOS()
 
         # Make lists into arrays
-        # [ntyme,nlev,nalong,nacross]
+        # start as [ntyme,nlev,nalong,nacross]
+        # end as [nlev,ntyme,nacross]
         for sds in self.SDS_AER+self.SDS_MET:
-            self.__dict__[sds] = np.concatenate(self.__dict__[sds])
+            self.__dict__[sds] = np.concatenate(self.__dict__[sds]).squeeze()
+            if len(self.__dict__[sds].shape) == 3: 
+                self.__dict__[sds] = self.__dict__[sds].transpose(1,0,2)
 
             if sds == 'isotime':
                 tt = np.array([t.decode('utf-8') for t in self.isotime.ravel()]).reshape(self.isotime.shape)
@@ -109,15 +112,21 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
             self.tyme.append(isoparser(''.join(isotime)))
 
         self.tyme = np.array(self.tyme)
-        self.ntyme  = len(self.tyme)
-        ntyme,nlev,nalong,nacross = self.DELP.shape
-        self.nacross = nacross
+        self.nlev,self.ntyme,self.nacross = self.DELP.shape
+        self.nobs = self.ntyme*self.nacross
+
+        # make arrays [nlev,nobs]
+        for sds in self.SDS_AER+self.SDS_MET:
+            if len(self.__dict__[sds].shape) == 3:
+                self.__dict__[sds] = self.__dict__[sds].reshape([self.nlev,self.nobs])
+            elif (len(self.__dict__[sds].shape) == 2) & (sds != 'isotime'):
+                print(sds) 
+                self.__dict__[sds] = self.__dict__[sds].reshape([self.nobs])
 
         # Start out with all good obs
-        self.nobs  = self.ntyme
-        self.iGood = np.ones([self.ntyme]).astype(bool)
+        self.iGood = np.ones([self.nobs]).astype(bool)
 
-       # Read in surface data
+        # Read in surface data
         albedoReader = getattr(self,SurfaceFuncs[albedoType])
         albedoReader()
 
@@ -157,23 +166,24 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         self.Rvol = nc.variables['Kv'][:].squeeze()
 
 
-        self.Riso.shape = (1,self.nch,self.nobs,self.nacross)
-        self.Rgeo.shape = (1,self.nch,self.nobs,self.nacross)
-        self.Rvol.shape = (1,self.nch,self.nobs,self.nacross)
+        self.Riso.shape = (1,self.nch,self.ntyme,self.nacross)
+        self.Rgeo.shape = (1,self.nch,self.ntyme,self.nacross)
+        self.Rvol.shape = (1,self.nch,self.ntyme,self.nacross)
 
         # [nkernel,nch,nobs,nacross]
         self.kernel_wt = np.append(self.Riso,self.Rgeo,axis=0)
         self.kernel_wt = np.append(self.kernel_wt,self.Rvol,axis=0)
+        self.kernel_wt = self.kernel_wt.reshape(3,self.nch,self.nobs)
 
-        param1 = np.array([2]*self.nch*self.nobs*self.nacross)
-        param2 = np.array([1]*self.nch*self.nobs*self.nacross)
+        param1 = np.array([2]*self.nch*self.ntyme*self.nacross)
+        param2 = np.array([1]*self.nch*self.ntyme*self.nacross)
 
-        param1.shape = (1,self.nch,self.nobs,self.nacross)
-        param2.shape = (1,self.nch,self.nobs,self.nacross)
+        param1.shape = (1,self.nch,self.ntyme,self.nacross)
+        param2.shape = (1,self.nch,self.ntyme,self.nacross)
 
         # [nparam,nch,nobs]
         self.RTLSparam = np.append(param1,param2,axis=0)
-
+        self.RTLSparam = self.RTLSparam.reshape(2,self.nch,self.nobs)
 
     def readAngles(self):
         """
