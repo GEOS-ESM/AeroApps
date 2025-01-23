@@ -374,12 +374,12 @@ class SWATH(object):
         tyme = self.tyme[self.Istyme:self.Istyme+self.ntyme]
         time[:] = np.array([(t-t0).total_seconds()*1e3 for t in tyme])
 
-        along = nc.createVariable('nalong','i4',('nalong',),zlib=True)
+        along = nc.createVariable('nalong','f4',('nalong',),zlib=True)
         along.long_name = 'view nadir angle along track'
         along.units = 'view angle between satellite subpoint and target of the satellites [degrees] in the along track direction'
         along[:] = self.vna_along
 
-        cross = nc.createVariable('ncross','i4',('ncross',),zlib=True)
+        cross = nc.createVariable('ncross','f4',('ncross',),zlib=True)
         cross.long_name = 'view nadir angle across track'
         cross.units = 'view angle between satellite subpoint and target of the satellites [degrees] in the across track direction'
         cross[:] = self.vna_cross
@@ -469,14 +469,14 @@ class SWATH(object):
 
         # Set global attributes
         # ---------------------
-        nc.title = 'Multiangle viewing geometry for satellite nadir pixels'
+        nc.title = 'Multiangle viewing geometry'
         nc.institution = 'NASA/Goddard Space Flight Center'
         nc.source = 'Global Model and Assimilation Office'
         nc.history = ''
         nc.references = 'n/a'
         nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
         nc.Conventions = 'CF'
-        nc.satellite_alt = self.hgtss
+        nc.satellite_alt_km = self.hgtss
         nc.cross_track_full_deg = self.cross_track_deg
 
         # Create dimensions
@@ -492,12 +492,12 @@ class SWATH(object):
         along.units = 'none'
         along[:] = np.arange(self.ntyme)
 
-        cross = nc.createVariable('across','i4',('across',),zlib=True)
+        cross = nc.createVariable('across','f4',('across',),zlib=True)
         cross.long_name = 'view angle in the cross track direction'
         cross.units = 'degrees'
         cross[:] = self.vna_cross
 
-        angle = nc.createVariable('angle','i4',('angle',),zlib=True)
+        angle = nc.createVariable('angle','f4',('angle',),zlib=True)
         angle.long_name = 'view angle in the along track direction'
         angle.units = 'degrees'
         angle[:] = self.vna_along
