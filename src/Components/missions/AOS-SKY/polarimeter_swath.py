@@ -481,92 +481,79 @@ class SWATH(object):
 
         # Create dimensions
         # -----------------
-        nt = nc.createDimension('time',self.ntyme)
-        ls = nc.createDimension('ls',23)
-        x  = nc.createDimension('x',1)
-        y  = nc.createDimension('y',1)
-        nangle = nc.createDimension('nangle',self.nalong)
-        ncross = nc.createDimension('ncross',self.ncross)
+        nt = nc.createDimension('along',self.ntyme)
+        ncross = nc.createDimension('across',self.ncross)
+        nangle = nc.createDimension('angle',self.nalong)
 
         # Coordinate variables
         # --------------------
-        time = nc.createVariable('time','i4',('time',),zlib=True)
+        along = nc.createVariable('along','i4',('along',),zlib=True)
+        along.long_name = 'along track index'
+        along.units = 'none'
+        along[:] = np.arange(self.ntyme)
+
+        cross = nc.createVariable('across','i4',('across',),zlib=True)
+        cross.long_name = 'view angle in the cross track direction'
+        cross.units = 'degrees'
+        cross[:] = self.vna_cross
+
+        angle = nc.createVariable('angle','i4',('angle',),zlib=True)
+        angle.long_name = 'view angle in the along track direction'
+        angle.units = 'degrees'
+        angle[:] = self.vna_along
+
+
+        # Pixel coordinates
+        # ----------------------
+        time = nc.createVariable('time','i4',('along',),zlib=True)
         time.long_name = 'Time'
         t0 = self.starttyme
         time.units = 'milliseconds since %s'%t0.isoformat(' ')
         tyme = self.tyme[self.Istyme:self.Istyme+self.ntyme]
         time[:] = np.array([(t-t0).total_seconds()*1e3 for t in tyme])
 
-        along = nc.createVariable('nangle','i4',('nangle',),zlib=True)
-        along.long_name = 'view nadir angle along track'
-        along.units = 'view angle between satellite subpoint and target of the satellites [degrees] in the along track direction'
-        along[:] = self.vna_along
-
-        cross = nc.createVariable('ncross','i4',('ncross',),zlib=True)
-        cross.long_name = 'view nadir angle across track'
-        cross.units = 'view angle between satellite subpoint and target of the satellites [degrees] in the across track direction'
-        cross[:] = self.vna_cross
-
-        # Add fake dimensions for GrADS compatibility
-        # -------------------------------------------
-        x = nc.createVariable('x','f4',('x',),zlib=True)
-        x.long_name = 'Fake Longitude for GrADS Compatibility'
-        x.units = 'degrees_east'
-        x[:] = np.zeros(1)
-        y = nc.createVariable('y','f4',('y',),zlib=True)
-        y.long_name = 'Fake Latitude for GrADS Compatibility'
-        y.units = 'degrees_north'
-        y[:] = np.zeros(1)
-
-        # Nadir coordinates
-        # ----------------------
-        lon = nc.createVariable('longitude','f4',('time','ncross',),zlib=True)
+        lon = nc.createVariable('longitude','f4',('along','across',),zlib=True)
         lon.long_name = 'Longitude'
         lon.units = 'degrees_east'
         lon[:] = self.lon_ss_cross[self.Istyme:self.Istyme+self.ntyme,:]
-        lat = nc.createVariable('latitude','f4',('time','ncross'),zlib=True)
+
+        lat = nc.createVariable('latitude','f4',('along','across'),zlib=True)
         lat.long_name = 'Latitude'
         lat.units = 'degrees_north'
         lat[:] = self.lat_ss_cross[self.Istyme:self.Istyme+self.ntyme,:]
 
 
-        # Time in ISO format
-        # ------------------
-        isotime = nc.createVariable('isotime','S1',('time','ls'),zlib=True)
-        isotime.long_name = 'Time (ISO Format)'
-        isotime[:] = self.isotime
-
         # Create Variables
         # ------------------
-        dim = ('time','ncross','nangle',)
-        this = nc.createVariable('time_ss','i4',dim,zlib=True)
+        dim = ('along','across','angle',)
+        this = nc.createVariable('multiangle_time','i4',dim,zlib=True)
         this[:] = self.time
-        this.long_name = 'time when polarimeter views satellite subpoint'
+        this.long_name = 'time when the polarimeters multiple angles view the pixel'
         this.units = 'milliseconds since ' + self.starttyme.isoformat()
 
         this = nc.createVariable('sza','f4',dim,zlib=True)
         this[:] = self.sza
-        this.long_name = 'SZA when polarimeter views satellite subpoint'
+        this.long_name = 'solar zenith angle'
         this.units = 'degrees, >90 is below horizon'
 
         this = nc.createVariable('saa','f4',dim,zlib=True)
         this[:] = self.saa
-        this.long_name = 'SAA when polarimeter views satellite subpoint'
+        this.long_name = 'solar azimuth angle'
         this.units = 'degrees, clockwise from north 0-360'
 
         this = nc.createVariable('vza','f4',dim,zlib=True)
         this[:] = self.vza
-        this.long_name = 'VZA when polarimeter views satellite subpoint'
+        this.long_name = 'view zenith angle'
         this.units = 'degrees'
 
         this = nc.createVariable('vaa','f4',dim,zlib=True)
         this[:] = self.vaa
-        this.long_name = 'VAA when polarimeter views satellite subpoint'
+        this.long_name = 'view azimuth angle'
         this.units = 'degrees, clockwise from north 0-360'
 
-        this = nc.createVariable('scatAngle','f4',dim,zlib=True)
+        this = nc.createVariable('scatangle','f4',dim,zlib=True)
         this[:] = self.scatAngle
-        this.long_name = 'scattering angle when polarimeter view satellite subpoint'
+        this.long_name = 'scattering angle'
         this.units = 'degrees, 0 = forward scattering'
 
         nc.close()
