@@ -4,15 +4,18 @@
 #                     Batch Parameters for Run Job
 #######################################################################
 #SBATCH --time=12:00:00
-#SBATCH --ntasks=8 --cpus-per-task=1 --ntasks-per-node=8
+#SBATCH --ntasks=120 --cpus-per-task=1 --ntasks-per-node=120
 #SBATCH --job-name=swath
+#SBATCH --constraint=mil
 #SBATCH -A s2190
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=patricia.castellanos@nasa.gov
 #SBATCH --output=slurm_%j.out
 #SBATCH --error=slurm_%j.err
 #######################################################################
+#
 #                  System Environment Variables
+#
 #######################################################################
 
 umask 022
@@ -20,30 +23,27 @@ umask 022
 limit stacksize unlimited
 
 #######################################################################
+#
 #           Architecture Specific Environment Variables
+#
 #######################################################################
-setenv G5DIR /discover/nobackup/pcastell/workspace/GAAS/src
 setenv BIN $PWD 
 setenv TMPDIR $LOCAL_TMPDIR 
+setenv RUNDIR /discover/nobackup/pcastell/workspace/aero_work/aist/aos-sky
 
-mkdir -p $LOCAL_TMPDIR/tle
-cp -r /discover/nobackup/pcastell/workspace/GAAS/src/Components/missions/A-CCP/tle/ $LOCAL_TMPDIR
-ln -s $LOCAL_TMPDIR/tle ./tle
+mkdir -p ${LOCAL_TMPDIR}/tle
+cp -r ${RUNDIR}/tle/ ${LOCAL_TMPDIR}
+ln -s ${LOCAL_TMPDIR}/tle ./tle
 
 source $HOME/.cshrc
-cd $G5DIR
-source g5_modules
+source ./setup_env
 
-#######################################################################
-#   Move to Run Directory
-#######################################################################
-cd $BIN
 
 ##################################################################
 ######
-######         Do Sampling
+######         Do Calculations
 ######
 ##################################################################
-python -u run_accp_polarimeter_swath.py -v --DT_hours 1 2006-01-01T00:00 2006-01-02T00:00 lidar_files.pcf gpm.pcf polar07.pcf  > slurm_${SLURM_JOBID}_py.out &
-rm -rf $LOCAL_TMPDIR/*
-rm tle
+#python -u run_accp_polarimeter_swath.py -v --DT_hours 1 2006-01-01T00:00 2006-01-02T00:00 lidar_files.pcf gpm.pcf polar07.pcf  > slurm_${SLURM_JOBID}_py.out &
+#rm -rf $LOCAL_TMPDIR/*
+#rm tle
