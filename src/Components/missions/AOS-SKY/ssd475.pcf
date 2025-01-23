@@ -1,5 +1,5 @@
 # ORBIT
     TLEFILE  = tle/AOS_Sky_Descending_v20241107_Epoch2019.tle
-    orbitname     = ss475d
+    orbitname     = ssd475
     HGT          = 475
 # ORBIT
