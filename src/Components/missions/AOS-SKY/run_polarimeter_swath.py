@@ -139,7 +139,7 @@ class WORKSPACE(JOBS):
         self.Date      = isoparser(args.iso_t1)
         self.enddate   = isoparser(args.iso_t2)
         self.Dt        = timedelta(minutes=args.DT_mins)
-        self.dt        = timedelta(days=args.dt_days)
+        self.dt        = timedelta(hours=args.dt_hours)
         
         self.track_pcf   = args.track_pcf
         self.orbit_pcf   = args.orbit_pcf
@@ -188,7 +188,7 @@ class WORKSPACE(JOBS):
             shutil.copyfile(self.inst_pcf,outfile)
 
             #link over needed python scripts
-            source = ['polarimeter_swath.py'] 
+            source = ['polarimeter_swath.py','setup_env'] 
             for src in source:
                 os.symlink('{}/{}'.format(self.cwd,src),'{}/{}'.format(workpath,src))
 
@@ -212,18 +212,29 @@ class WORKSPACE(JOBS):
         for l in f:
             text.append(l)
 
-        # replace one line
-        iso1 = sdate.isoformat()
-        iso2 = edate.isoformat()
-        Options = ' -v' +\
-                  ' --DT_mins {}'.format(self.DT_mins) 
-
-        if self.dryrun:
-            Options += ' -r'
-
-        newline = 'python -u ./polarimeter_swath.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + ' slurm_${SLURM_JOBID}_py.out\n'
-        text[-3] = newline
         f.close()
+
+        # add lines to the end
+        rsdate = sdate
+        while rsdate < edate:
+            redate = rsdate + self.Dt
+            iso1 = rsdate.isoformat()
+            iso2 = redate.isoformat()
+            Options = ' -v' +\
+                      ' --DT_mins {}'.format(self.DT_mins) 
+
+            newline = 'python3 -u ./polarimeter_swath.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + \
+                            ' slurm_${SLURM_JOBID}_py' + '_{}.out &\n'.format(iso1)
+            text.append(newline)
+
+            rsdate += self.Dt
+
+        newline = 'wait\n'
+        text.append(newline)
+        newline = 'rm -rf $LOCAL_TMPDIR/*\n'
+        text.append(newline)
+        newline = 'rm tle\n'
+        text.append(newline)
 
         #  write out
         f = open(outpath,'w')
@@ -250,7 +261,7 @@ class WORKSPACE(JOBS):
             os.remove(self.inst_pcf)
 
         # remove symlinks
-        source = ['polarimeter_swath.py'] 
+        source = ['polarimeter_swath.py','setup_env'] 
         for src in source:
             os.remove(src)
 
@@ -263,7 +274,7 @@ if __name__ == '__main__':
     
     #Defaults
     DT_mins = 5
-    dt_days  = 10
+    dt_hours  = 10
     slurm    = 'run_polarimeter_swath.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AOS-SKY/workdir/swath'
 
@@ -279,8 +290,8 @@ if __name__ == '__main__':
     parser.add_argument("inst_pcf",
                         help="prep config file with instrument variables")
 
-    parser.add_argument('-d',"--dt_days", default=dt_days, type=int,
-                        help="Timestep in days for each job (default=%i)"%dt_days)
+    parser.add_argument('-d',"--dt_hours", default=dt_hours, type=int,
+                        help="Timestep in hours for each job (default=%i)"%dt_hours)
 
     parser.add_argument('-D',"--DT_mins", default=DT_mins, type=int,
                         help="Timestep in minutes for each file (default=%i)"%DT_mins)
