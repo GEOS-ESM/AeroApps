@@ -3,7 +3,7 @@
 #######################################################################
 #                     Batch Parameters for Run Job
 #######################################################################
-#SBATCH --time=12:00:00
+#SBATCH --time=5:00:00
 #SBATCH --ntasks=120 --cpus-per-task=1 --ntasks-per-node=120
 #SBATCH --job-name=swath
 #SBATCH --constraint=mil

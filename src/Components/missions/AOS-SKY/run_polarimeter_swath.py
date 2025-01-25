@@ -274,7 +274,7 @@ if __name__ == '__main__':
     
     #Defaults
     DT_mins = 5
-    dt_hours  = 10
+    dt_hours  = 2
     slurm    = 'run_polarimeter_swath.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/AOS-SKY/workdir/swath'
 
