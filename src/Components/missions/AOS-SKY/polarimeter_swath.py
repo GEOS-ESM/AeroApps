@@ -505,12 +505,14 @@ class SWATH(object):
 
         # Pixel coordinates
         # ----------------------
-        time = nc.createVariable('time','i4',('along',),zlib=True)
+        time = nc.createVariable('time','i4',('along','across'),zlib=True)
         time.long_name = 'Time'
         t0 = self.starttyme
         time.units = 'milliseconds since %s'%t0.isoformat(' ')
         tyme = self.tyme[self.Istyme:self.Istyme+self.ntyme]
-        time[:] = np.array([(t-t0).total_seconds()*1e3 for t in tyme])
+        ta = np.array([(t-t0).total_seconds()*1e3 for t in tyme])
+        for a in range(self.ncross):
+            time[:,a] = ta
 
         lon = nc.createVariable('longitude','f4',('along','across',),zlib=True)
         lon.long_name = 'Longitude'
@@ -950,11 +952,12 @@ if __name__ == "__main__":
         year  = str(date.year)
         month = str(date.month).zfill(2)
         day   = str(date.day).zfill(2)
-        hour  = str(date.hour).zfill(2)    
+        hour  = str(date.hour).zfill(2)   
+        minute = str(date.minute).zfill(2) 
 
-        outFile    = inTemplate.replace('%col',instname).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME).replace('lb2','lb1')
+        outFile    = inTemplate.replace('%col',instname).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME).replace('lb2','lb1')
 
-        outFile_lb2 = inTemplate.replace('%col',instname).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
+        outFile_lb2 = inTemplate.replace('%col',instname).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
         # Initialize SWATH class and create outfile
         # -----------------------------------------------------------
