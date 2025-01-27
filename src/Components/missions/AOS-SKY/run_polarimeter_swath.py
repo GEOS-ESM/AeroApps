@@ -36,7 +36,7 @@ class JOBS(object):
             s = self.dirstring[i]
             os.chdir(s)
             result = subprocess.check_output(['sbatch',self.slurm])
-            jobid = np.append(jobid,result.split()[-1])
+            jobid = np.append(jobid,result.split()[-1].decode())
         os.chdir(self.cwd)
 
         # launch subprocess that will monitor queue
@@ -100,7 +100,7 @@ class JOBS(object):
                     s = self.dirstring[i]
                     os.chdir(s)
                     result = subprocess.check_output(['sbatch',self.slurm])
-                    jobid = np.append(jobid,result.split()[-1])
+                    jobid = np.append(jobid,result.split()[-1].decode())
 
                 os.chdir(self.cwd)
                 countRun = countRun + newRun
