@@ -223,7 +223,7 @@ class WORKSPACE(JOBS):
             Options = ' -v' +\
                       ' --DT_mins {}'.format(self.DT_mins) 
 
-            newline = 'python3 -u ./polarimeter_swath.py {} {} {} {} {} {}  >'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + \
+            newline = 'python3 -u ./polarimeter_swath.py {} {} {} {} {} {}  &>'.format(Options,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf) + \
                             ' slurm_${SLURM_JOBID}_py' + '_{}.out &\n'.format(iso1)
             text.append(newline)
 
