@@ -28,5 +28,6 @@ MAPL:
 GMAOpyobs:
   local: ./src/Shared/GMAO_Shared/GMAO_pyobs@
   remote: ../GMAOpyobs.git
-  tag: v1.0.8
+  #tag: v1.0.8
+  branch: feature/sgassoumd/tropomi_l2_reader 
   develop: develop
