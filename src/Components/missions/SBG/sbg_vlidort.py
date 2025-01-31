@@ -19,9 +19,17 @@ from   dateutil.parser import parse         as isoparser
 from   MAPL.config     import Config
 from   netCDF4 import Dataset
 import numpy   as np
+import xarray  as xr
+from pyobs import mietable as mt
+from pyobs.aop import G2GAOP
+import yaml
+from pyobs.constants import MAPL_GRAV as GRAV
+from pyobs.constants import MAPL_RDRY as RGAS
+from pyobs.constants import MAPL_KAPPA as KAPPA
+
 
 from MAPL.constants import *
-from py_leo_vlidort.vlidort import VLIDORT, get_chd, WrapperFuncs, CX_run, MODIS_BRDF_run
+from py_leo_vlidort.vlidort import VLIDORT, get_chd, WrapperFuncs, MODIS_BRDF_run
 from py_leo_vlidort.copyvar  import _copyVar
 from multiprocessing import Pool
 
@@ -37,7 +45,6 @@ AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
 SDS_AER = META + AERNAMES
 SDS_MET = [] #[CLDTOT]
 SDS_INV = ['FRLAND']
-SDS_CX = ['U10M','V10M']
 SDS_ANG = ['SZA','SAA','VZA','VAA']
 ncALIAS = {'LONGITUDE': 'longitude',
            'LATITUDE' : 'latitude',
@@ -46,17 +53,10 @@ ncALIAS = {'LONGITUDE': 'longitude',
            'VZA'      : 'vza',
            'VAA'      : 'vaa'}
 
-nMom     = 300
-
-SurfaceFuncs = {'AMES_BRDF'      : 'readSampledAMESBRDF',
-                'MODIS_BRDF'     : 'readSampledMODISBRDF',
-                'MODIS_BRDF_BPDF': 'readSampledMODISBRDF',
-                'LAMBERTIAN'     : 'readSampledLER',
-                'CX'             : 'readSampledWindCX'}
-
 MISSING = -1.e+20
 
-class ACCP_POLAR_VLIDORT(VLIDORT):
+
+class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
     """
     Everything needed for calling VLIDORT
     GEOS-5 has already been sampled on satellite track
@@ -66,13 +66,10 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
                 nstreams=12,
                 plane_parallel=True,
                 brdfFile=None,
-                ndviFile=None,
-                lcFile=None,
                 verbose=False):
         self.SDS_AER     = SDS_AER
         self.SDS_MET     = SDS_MET
         self.SDS_INV     = SDS_INV
-        self.SDS_CX      = SDS_CX
         self.SDS_ANG     = SDS_ANG
         self.AERNAMES    = AERNAMES
         self.inFile      = inFile
@@ -80,93 +77,149 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         self.albedoType  = albedoType
         self.rcFile      = rcFile
         self.verbose     = verbose
-        self.nMom        = nMom
         self.brdfFile    = brdfFile
-        self.lcFile      = lcFile
-        self.ndviFile    = ndviFile
         self.nstreams    = nstreams
         self.plane_parallel = plane_parallel
         self.polarname   = polarname
 
-        # initialize empty lists
-        for sds in self.SDS_AER+self.SDS_MET+self.SDS_INV+self.SDS_CX+self.SDS_ANG:
-            self.__dict__[sds] = []
 
-        # Read in model data
-        self.readSampledGEOS()
+        # load optics tables
+        self.getMie()
 
-        # Make lists into arrays
-        # start as [ntyme,nlev,nalong,nacross]
-        # end as [nlev,ntyme,nacross]
-        for sds in self.SDS_AER+self.SDS_MET:
-            self.__dict__[sds] = np.concatenate(self.__dict__[sds]).squeeze()
-            if len(self.__dict__[sds].shape) == 3: 
-                self.__dict__[sds] = self.__dict__[sds].transpose(1,0,2)
-
-            if sds == 'isotime':
-                tt = np.array([t.decode('utf-8') for t in self.isotime.ravel()]).reshape(self.isotime.shape)
-                self.isotime = tt
-        # convert isotime to datetime
-        self.tyme = []
-        for isotime in self.isotime:
-            self.tyme.append(isoparser(''.join(isotime)))
-
-        self.tyme = np.array(self.tyme)
-        self.nlev,self.ntyme,self.nacross = self.DELP.shape
-        self.nobs = self.ntyme*self.nacross
-
-        # make arrays [nlev,nobs]
-        for sds in self.SDS_AER+self.SDS_MET:
-            if len(self.__dict__[sds].shape) == 3:
-                self.__dict__[sds] = self.__dict__[sds].reshape([self.nlev,self.nobs])
-            elif (len(self.__dict__[sds].shape) == 2) & (sds != 'isotime'):
-                self.__dict__[sds] = self.__dict__[sds].reshape([self.nobs])
+        # get granule dimensions
+        self.getDims()
 
         # Start out with all good obs
         self.iGood = np.ones([self.nobs]).astype(bool)
 
-        # Read in surface data
-        albedoReader = getattr(self,SurfaceFuncs[albedoType])
-        albedoReader()
+        # do one scanline at a time
+        for ityme in range(self.ntyme)[10:11]:
 
-        # Polarization
-        if 'BPDF' in albedoType:
-            self.BPDFinputs()
+            # Read in precalculated Scene Geometry
+            # limit iGood to sza < 80
+            self.readAngles(ityme)
 
-        # Calculate aerosol optical properties
-#        self.computeMie()
+            if self.nobs > 0:
 
-        # Calculate atmospheric profile properties needed for Rayleigh calc
-        self.computeAtmos()    
+                # Read in model data
+                self.readSampledGEOS(ityme)
 
-        # Read in precalculated Scene Geometry
-        # limit iGood to sza < 80
-        self.readAngles()
+                # Read in surface data
+                self.readSampledAMESBRDF(ityme)
 
-        if self.nobs > 0:
-            # Land-Sea Mask
-            self.LandSeaMask()        
+#                # Calculate atmospheric profile properties needed for Rayleigh calc
+                self.getEdgeVars()    
+
+                # Read in precalculated Scene Geometry
+                # limit iGood to sza < 80
+                self.readAngles(ityme)
+
+                # Land-Sea Mask
+                self.LandSeaMask(ityme)        
+    #---
+    def getEdgeVars(self):
+        """
+        Get altitude, pressure, and temperature and edge of layers
+        """
+
+        # Get layer thicnkness from DELP & AIRDENS
+        # DELP: Pa = kg m-1 s-2
+        # AIRDENS: kg m-3
+        # GRAV: m s-2
+        # -----------------------------------------
+        rhodz = self.aer['DELP'] / GRAV
+        dz = rhodz / self.aer['AIRDENS']       # column thickness in m
+
+        # add up the thicknesses to get edge level altitudes and pressures
+        npts, nlev = dz.shape
+        ze = np.array([dz[:,i:].sum(axis=1) for i in range(nlev)])
+        # append surface level, altitude = 0
+        # [nlev+1,nacross]
+        self.ze = np.append(ze,np.zeros([1,npts]),axis=0)
+
+        ptop = 1. # Pa
+        pe = np.zeros([self.nlev+1,self.nacross])
+        pe[0,:] = ptop
+        for ilev in range(self.nlev):
+            pe[ilev+1,:] = pe[ilev,:] + self.aer['DELP'][:,ilev]
+
+        self.pe = pe
+
+        # get the mid-level pressures and temperatures
+        
+
+    #---
+    def getMie(self):
+        """
+        Use pyobs utilities to load mietables
+        """
+        self.mieTable = yaml.safe_load(open(self.rcFile))
+        self.vector = True
+
+        # load mietables
+        # ---------------------------
+        self.p, self.m = 0,0
+        for s in self.mieTable:
+            m = self.mieTable[s]
+            m['mie'] = mt.MIETABLE(m['monoFile'])
+
+        
+            dims = dict(self.mieTable[s]['mie'].ds.sizes)
+            self.p = max(self.p,dims['p'])
+            self.m = max(self.m,dims['m'])
+
+    #--
+    def getDims(self):
+        """
+        Get granule dimensions
+        """
+        col = 'aer_Nv'
+        if self.verbose:
+            print('opening file',self.inFile.replace('%col',col))
+        ds = xr.open_dataset(self.inFile.replace('%col',col)) 
+        self.ntyme,self.nlev,self.nacross = ds.sizes['time'],ds.sizes['lev'],ds.sizes['ncross']
+        self.nobs = self.nacross
+        
+
+    #---
+    def readSampledGEOS(self,ityme):
+        """
+        Read in model sampled track
+        """
+        col = 'aer_Nv'
+        if self.verbose:
+            print('opening file',self.inFile.replace('%col',col))
+
+        inList = [self.inFile.replace('%col',col)]
+
+        if len(self.SDS_MET) > 0:
+            col = 'met_Nv'
+            inList.append(self.inFile.replace('%col',col))
+            if self.verbose:
+                print('opening file',self.inFile.replace('%col',col))
+
+        self.aer = xr.open_mfdataset(inList)
+        # make arrays [nobs,nlev]
+        self.aer = self.aer.squeeze()
+        self.aer = self.aer.isel(time=ityme)
+        self.aer = self.aer.transpose()
 
     # ---
-    def LandSeaMask(self):
+    def LandSeaMask(self,ityme):
         """
         Read in invariant dataset
         """
         col = 'asm_Nx'
         if self.verbose:
             print('opening file',self.inFile.replace('%col',col))
-        nc       = Dataset(self.inFile.replace('%col',col))
+        ds = xr.open_dataset(self.inFile.replace('%col',col))
 
         for sds in self.SDS_INV:
             sds_ = sds
             if sds in ncALIAS:
                 sds_ = ncALIAS[sds]
-            var = nc.variables[sds_][:]
-            self.__dict__[sds].append(var)
-
-        # Make lists into arrays
-        for sds in self.SDS_INV:
-            self.__dict__[sds] = np.concatenate(self.__dict__[sds]).squeeze().reshape(self.nobs)
+            var = ds[sds_].isel(time=ityme).squeeze().values
+            self.__dict__[sds] = var
 
         self.iLand = self.FRLAND >= 0.99
         self.iSea  = self.FRLAND < 0.99
@@ -177,43 +230,43 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
 
 
     #---
-    def readSampledAMESBRDF(self):
+    def readSampledAMESBRDF(self,ityme):
         """
         Read in AMES BRDF kernel weights
         that have already been sampled on swath
         """
         if self.verbose:
             print('opening BRDF file ',self.brdfFile)
-        nc = Dataset(self.brdfFile)
+        ds = xr.open_dataset(self.brdfFile)
 
-        self.channel = nc.variables['nwav'][:]  # microns
-        self.nch = len(self.channel)
-        self.channel = self.channel*1e3  # nm
-        self.Riso = nc.variables['Ki'][:].squeeze()
-        self.Rgeo = nc.variables['Kg'][:].squeeze()
-        self.Rvol = nc.variables['Kv'][:].squeeze()
+        self.channels = ds.nwav.values  # microns
+        self.nch = len(self.channels)
+        self.channels = self.channels*1e3  # nm
+        self.Riso = ds.Ki.isel(time=ityme).squeeze().values
+        self.Rgeo = ds.Kg.isel(time=ityme).squeeze().values
+        self.Rvol = ds.Kv.isel(time=ityme).squeeze().values
 
 
-        self.Riso.shape = (1,self.nch,self.ntyme,self.nacross)
-        self.Rgeo.shape = (1,self.nch,self.ntyme,self.nacross)
-        self.Rvol.shape = (1,self.nch,self.ntyme,self.nacross)
+        self.Riso.shape = (1,self.nch,self.nacross)
+        self.Rgeo.shape = (1,self.nch,self.nacross)
+        self.Rvol.shape = (1,self.nch,self.nacross)
 
-        # [nkernel,nch,nobs,nacross]
+        # [nkernel,nch,nacross]
         self.kernel_wt = np.append(self.Riso,self.Rgeo,axis=0)
         self.kernel_wt = np.append(self.kernel_wt,self.Rvol,axis=0)
-        self.kernel_wt = self.kernel_wt.reshape(3,self.nch,self.nobs)
+        self.kernel_wt = self.kernel_wt.reshape(3,self.nch,self.nacross)
 
-        param1 = np.array([2]*self.nch*self.ntyme*self.nacross)
-        param2 = np.array([1]*self.nch*self.ntyme*self.nacross)
+        param1 = np.array([2]*self.nch*self.nacross)
+        param2 = np.array([1]*self.nch*self.nacross)
 
-        param1.shape = (1,self.nch,self.ntyme,self.nacross)
-        param2.shape = (1,self.nch,self.ntyme,self.nacross)
+        param1.shape = (1,self.nch,self.nacross)
+        param2.shape = (1,self.nch,self.nacross)
 
         # [nparam,nch,nobs]
         self.RTLSparam = np.append(param1,param2,axis=0)
-        self.RTLSparam = self.RTLSparam.reshape(2,self.nch,self.nobs)
+        self.RTLSparam = self.RTLSparam.reshape(2,self.nch,self.nacross)
 
-    def readAngles(self):
+    def readAngles(self,ityme):
         """
         Read in viewing and solar Geometry from angFile
         """
@@ -221,17 +274,14 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         col = self.polarname
         if self.verbose: 
             print('opening file',self.inFile.replace('%col',col))
-        nc       = Dataset(self.inFile.replace('%col',col))
+        ds = xr.open_dataset(self.inFile.replace('%col',col))
 
         for sds in self.SDS_ANG:
             sds_ = sds
             if sds in ncALIAS:
                 sds_ = ncALIAS[sds]
-            var = nc.variables[sds_][:]
-            self.__dict__[sds].append(var)
-
-        for sds in self.SDS_ANG:
-            self.__dict__[sds] = np.concatenate(self.__dict__[sds]).squeeze().reshape(self.nobs)
+            var = ds[sds_].isel(time=ityme).squeeze().values
+            self.__dict__[sds] = var
 
         # define RAA according to photon travel direction
         saa = self.SAA + 180.0
@@ -262,153 +312,158 @@ class ACCP_POLAR_VLIDORT(VLIDORT):
         self.iGood = np.arange(len(self.iGood))[self.iGood]
 
         # Initiate output arrays
-        nangles = self.nangles
-        ntime   = self.ntyme
-        nlev    = self.tau.shape[0]
-        self.I = np.ones([ntime,nangles])*MISSING
-        self.Q = np.ones([ntime,nangles])*MISSING
-        self.U = np.ones([ntime,nangles])*MISSING
-        self.reflectance = np.ones([ntime,nangles])*MISSING
-        self.surf_reflectance = np.ones([ntime,nangles])*MISSING
-        self.BR_Q = np.ones([ntime,nangles])*MISSING
-        self.BR_U = np.ones([ntime,nangles])*MISSING
-        self.ROT = np.ones([ntime,nlev])*MISSING
+        nobs   = self.nobs
+        nlev   = self.nlev
+        nch    = self.nch
+        self.I = np.ones([nch,nobs])*MISSING
+        self.Q = np.ones([nch,nobs])*MISSING
+        self.U = np.ones([nch,nobs])*MISSING
+        self.reflectance = np.ones([nch,nobs])*MISSING
+        self.surf_reflectance = np.ones([nch,nobs])*MISSING
+        self.BR_Q = np.ones([nch,nobs])*MISSING
+        self.BR_U = np.ones([nch,nobs])*MISSING
+        self.ROT = np.ones([nch,nlev,nobs])*MISSING
 
         # Calculate ROT
-        args = [self.channel, self.pe.astype('float64'), self.ze.astype('float64'), self.te.astype('float64'), MISSING, self.verbose]
+        args = [self.channels, self.pe.astype('float64'), self.ze.astype('float64'), self.te.astype('float64'), MISSING, self.verbose]
         vlidortWrapper = WrapperFuncs['ROT_CALC']
         ROT, depol_ratio, rc = vlidortWrapper(*args)  
         #nlev,ntime,nch
-        self.ROT = np.squeeze(ROT).T 
+        self.ROT = ROT.transpose(0,2,1)
         self.depol_ratio = depol_ratio          
 
         p = Pool(27)
-        # loop though LAND and SEA
-        for surface in surfList:
-            print('Working on ',surface)
-            iGood = self.__dict__['i'+surface]
-            nobs = len(iGood)
-            tau = self.tau[:,:,iGood].astype('float64')
-            ssa = self.ssa[:,:,iGood].astype('float64')
-            pmom = self.pmom[:,:,iGood,:,:].astype('float64')
-            pe   = self.pe[:,iGood].astype('float64')
-            ze   = self.ze[:,iGood].astype('float64')
-            te   = self.te[:,iGood].astype('float64')
-            rot  = ROT[:,iGood,:]
+        # loop through channels
+        for ich in self.channels:
+            self.channel = [self.channels[ich]]
+            self.aop = self.getAOPrt(wavelength=self.channels[ich],vector=True)
 
-            if surface == 'Land':        
-                albedoType = self.albedoType
+            # loop though LAND and SEA
+            for surface in surfList:
+                print('Working on ',surface)
+                iGood = self.__dict__['i'+surface]
+                nobs = len(iGood)
+                tau = self.aop.AOT[iGood,:].astype('float64')
+                ssa = self.aop.SSA[iGood,:,].astype('float64')
+                pmom = self.aop.pmom[:,:,iGood,:,:].astype('float64')
+                pe   = self.pe[:,iGood].astype('float64')
+                ze   = self.ze[:,iGood].astype('float64')
+                te   = self.te[:,iGood].astype('float64')
+                rot  = ROT[:,iGood,:]
 
-            else:
-                albedoType = 'CX'
+                if surface == 'Land':        
+                    albedoType = self.albedoType
 
-            # Get surface data
-            if albedoType == 'MODIS_BRDF':
-                param     = self.RTLSparam[:,:,iGood].astype('float64')
-                kernel_wt = self.kernel_wt[:,:,iGood].astype('float64')
-            elif albedoType == 'LAMBERTIAN':
-                albedo = self.albedo[iGood,:].astype('float64')
-            elif albedoType == 'CX':
-                u10m = self.U10M[iGood].astype('float64')
-                v10m = self.V10M[iGood].astype('float64')
+                else:
+                    albedoType = 'CX'
 
-            # loop through view angles
-            for ivza in range(nangles):
-                print('ivza ',ivza, ' of ',nangles)
-                vza = self.VZA[iGood,ivza].astype('float64')
-                sza = self.SZA[iGood,ivza].astype('float64')
-                raa = self.RAA[iGood,ivza].astype('float64')
-                
-                I = []
-                Q = []
-                U = []
-                reflectance = []
-                surf_reflectance = []
-                BR_Q = []
-                BR_U = []
+                # Get surface data
                 if albedoType == 'MODIS_BRDF':
-                    args = [(self.channel, self.nstreams, self.plane_parallel, rot[:,i:i+1,:], depol_ratio, 
-                            tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
-                            pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
-                            kernel_wt[:,:,i:i+1], param[:,:,i:i+1],
-                            sza[i:i+1], raa[i:i+1], vza[i:i+1],
-                            MISSING,
-                            self.verbose) for i in range(nobs)]
-                    result = p.map(MODIS_BRDF_run,args)
-                    for r in result:
-                        I_r,Q_r,U_r,reflectance_r,surf_reflectance_r,BR_Q_r,BR_U_r = r
-                        I.append(I_r)
-                        Q.append(Q_r)
-                        U.append(U_r)
-                        reflectance.append(reflectance_r)
-                        surf_reflectance.append(surf_reflectance_r)
-                        BR_Q.append(BR_Q_r)
-                        BR_U.append(BR_U_r)
-                    I = np.concatenate(I)
-                    Q = np.concatenate(Q)
-                    U = np.concatenate(U)
-                    reflectance = np.concatenate(reflectance)
-                    surf_reflectance = np.concatenate(surf_reflectance)
-                    BR_Q = np.concatenate(BR_Q)
-                    BR_U = np.concatenate(BR_U)
+                    param     = self.RTLSparam[:,:,iGood].astype('float64')
+                    kernel_wt = self.kernel_wt[:,:,iGood].astype('float64')
                 elif albedoType == 'LAMBERTIAN':
-                    args = [(self.channel, self.nstreams, self.plane_parallel, rot[:,i:i+1,:], depol_ratio,
-                            tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
-                            pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
-                            albedo[i:i+1,:],
-                            sza[i:i+1], raa[i:i+1], vza[i:i+1],
-                            MISSING,
-                            self.verbose) for i in range(nobs)] 
-                    result = p.map(LAMBERTIAN_run,args)
-                    for r in result:
-                        I_r,Q_r,U_r,reflectance_r,surf_reflectance_r,BR_Q_r,BR_U_r = r
-                        I.append(I_r)
-                        Q.append(Q_r)
-                        U.append(U_r)
-                        reflectance.append(reflectance_r)
-                    surf_reflectance = albedo
-                    BR_Q = np.zeros(nobs)
-                    BR_U = np.zeros(nobs)
-                    I = np.concatenate(I)
-                    Q = np.concatenate(Q)
-                    U = np.concatenate(U)
-                    reflectance = np.concatenate(reflectance)
+                    albedo = self.albedo[iGood,:].astype('float64')
                 elif albedoType == 'CX':
-                    args = [(self.channel, self.nstreams, self.plane_parallel, rot[:,i:i+1,:], depol_ratio,
-                            tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
-                            pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
-                            u10m[i:i+1], v10m[i:i+1], self.mr,
-                            sza[i:i+1], raa[i:i+1], vza[i:i+1],
-                            MISSING,
-                            self.verbose) for i in range(nobs)]
-                    result = p.map(CX_run,args)
-                    for r in result:
-                        I_r,Q_r,U_r,reflectance_r,surf_reflectance_r,BR_Q_r,BR_U_r = r
-                        I.append(I_r)
-                        Q.append(Q_r)
-                        U.append(U_r)
-                        reflectance.append(reflectance_r)
-                        surf_reflectance.append(surf_reflectance_r)
-                        BR_Q.append(BR_Q_r)
-                        BR_U.append(BR_U_r)
-                    I = np.concatenate(I)
-                    Q = np.concatenate(Q)
-                    U = np.concatenate(U)
-                    reflectance = np.concatenate(reflectance)
-                    surf_reflectance = np.concatenate(surf_reflectance)
-                    BR_Q = np.concatenate(BR_Q)
-                    BR_U = np.concatenate(BR_U)
+                    u10m = self.U10M[iGood].astype('float64')
+                    v10m = self.V10M[iGood].astype('float64')
 
-                self.I[iGood,ivza] = np.squeeze(I)
-                self.reflectance[iGood,ivza] = np.squeeze(reflectance)
-                self.surf_reflectance[iGood,ivza] = np.squeeze(surf_reflectance)
-                self.Q[iGood,ivza] = np.squeeze(Q)
-                self.U[iGood,ivza] = np.squeeze(U) 
-                self.BR_Q[iGood,ivza] = np.squeeze(BR_Q)
-                self.BR_U[iGood,ivza] = np.squeeze(BR_U) 
+                # loop through view angles
+                for ivza in range(nangles):
+                    print('ivza ',ivza, ' of ',nangles)
+                    vza = self.VZA[iGood,ivza].astype('float64')
+                    sza = self.SZA[iGood,ivza].astype('float64')
+                    raa = self.RAA[iGood,ivza].astype('float64')
+                    
+                    I = []
+                    Q = []
+                    U = []
+                    reflectance = []
+                    surf_reflectance = []
+                    BR_Q = []
+                    BR_U = []
+                    if albedoType == 'MODIS_BRDF':
+                        args = [(self.channel, self.nstreams, self.plane_parallel, rot[:,i:i+1,:], depol_ratio, 
+                                tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
+                                pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
+                                kernel_wt[:,:,i:i+1], param[:,:,i:i+1],
+                                sza[i:i+1], raa[i:i+1], vza[i:i+1],
+                                MISSING,
+                                self.verbose) for i in range(nobs)]
+                        result = p.map(MODIS_BRDF_run,args)
+                        for r in result:
+                            I_r,Q_r,U_r,reflectance_r,surf_reflectance_r,BR_Q_r,BR_U_r = r
+                            I.append(I_r)
+                            Q.append(Q_r)
+                            U.append(U_r)
+                            reflectance.append(reflectance_r)
+                            surf_reflectance.append(surf_reflectance_r)
+                            BR_Q.append(BR_Q_r)
+                            BR_U.append(BR_U_r)
+                        I = np.concatenate(I)
+                        Q = np.concatenate(Q)
+                        U = np.concatenate(U)
+                        reflectance = np.concatenate(reflectance)
+                        surf_reflectance = np.concatenate(surf_reflectance)
+                        BR_Q = np.concatenate(BR_Q)
+                        BR_U = np.concatenate(BR_U)
+                    elif albedoType == 'LAMBERTIAN':
+                        args = [(self.channel, self.nstreams, self.plane_parallel, rot[:,i:i+1,:], depol_ratio,
+                                tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
+                                pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
+                                albedo[i:i+1,:],
+                                sza[i:i+1], raa[i:i+1], vza[i:i+1],
+                                MISSING,
+                                self.verbose) for i in range(nobs)] 
+                        result = p.map(LAMBERTIAN_run,args)
+                        for r in result:
+                            I_r,Q_r,U_r,reflectance_r,surf_reflectance_r,BR_Q_r,BR_U_r = r
+                            I.append(I_r)
+                            Q.append(Q_r)
+                            U.append(U_r)
+                            reflectance.append(reflectance_r)
+                        surf_reflectance = albedo
+                        BR_Q = np.zeros(nobs)
+                        BR_U = np.zeros(nobs)
+                        I = np.concatenate(I)
+                        Q = np.concatenate(Q)
+                        U = np.concatenate(U)
+                        reflectance = np.concatenate(reflectance)
+                    elif albedoType == 'CX':
+                        args = [(self.channel, self.nstreams, self.plane_parallel, rot[:,i:i+1,:], depol_ratio,
+                                tau[:,:,i:i+1], ssa[:,:,i:i+1], pmom[:,:,i:i+1,:,:],
+                                pe[:,i:i+1], ze[:,i:i+1], te[:,i:i+1],
+                                u10m[i:i+1], v10m[i:i+1], self.mr,
+                                sza[i:i+1], raa[i:i+1], vza[i:i+1],
+                                MISSING,
+                                self.verbose) for i in range(nobs)]
+                        result = p.map(CX_run,args)
+                        for r in result:
+                            I_r,Q_r,U_r,reflectance_r,surf_reflectance_r,BR_Q_r,BR_U_r = r
+                            I.append(I_r)
+                            Q.append(Q_r)
+                            U.append(U_r)
+                            reflectance.append(reflectance_r)
+                            surf_reflectance.append(surf_reflectance_r)
+                            BR_Q.append(BR_Q_r)
+                            BR_U.append(BR_U_r)
+                        I = np.concatenate(I)
+                        Q = np.concatenate(Q)
+                        U = np.concatenate(U)
+                        reflectance = np.concatenate(reflectance)
+                        surf_reflectance = np.concatenate(surf_reflectance)
+                        BR_Q = np.concatenate(BR_Q)
+                        BR_U = np.concatenate(BR_U)
+
+                    self.I[iGood,ivza] = np.squeeze(I)
+                    self.reflectance[iGood,ivza] = np.squeeze(reflectance)
+                    self.surf_reflectance[iGood,ivza] = np.squeeze(surf_reflectance)
+                    self.Q[iGood,ivza] = np.squeeze(Q)
+                    self.U[iGood,ivza] = np.squeeze(U) 
+                    self.BR_Q[iGood,ivza] = np.squeeze(BR_Q)
+                    self.BR_U[iGood,ivza] = np.squeeze(BR_U) 
 
 
-        self.writeNC()
+            self.writeNC()
 
     #---
     def writeNC (self,zlib=True):
@@ -555,7 +610,7 @@ if __name__ == "__main__":
 
     # Defaults
     DT_hours   = 1
-    rcFile     = 'Aod_EOS.rc'
+    rcFile     = 'm2_aop.yaml'
     albedoType = None
 
 #   Parse command line options
@@ -618,13 +673,6 @@ if __name__ == "__main__":
     except:
         brdfTemplate = None
 
-    try:
-        ndviTemplate   = cf('ndviDir')   + '/' + cf('ndviFile')
-        lcTemplate     = cf('lcDir')     + '/' + cf('lcFile')
-    except:
-        ndviTemplate = None
-        lcTemplate   = None
-
 
     # Loop through dates, running VLIDORT
     # ------------------------------------
@@ -648,13 +696,6 @@ if __name__ == "__main__":
         else:
             brdfFile = brdfTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
-        if ndviTemplate is None:
-            ndviFile = None
-            lcFile   = None
-        else:
-            ndviFile   = ndviTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
-            lcFile     = lcTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
-
 
 
         # Initialize VLIDORT class getting aerosol optical properties
@@ -665,8 +706,6 @@ if __name__ == "__main__":
         print('>>>rcFile:    ',rcFile)
         print('>>>albedoType:',albedoType)
         print('>>>brdfFile:  ',brdfFile)
-        print('>>>ndviFile:  ',ndviFile)
-        print('>>>lcFile:    ',lcFile)
         print('>>>verbose:   ',args.verbose)
         print('++++End of arguments+++')
         
@@ -674,8 +713,6 @@ if __name__ == "__main__":
                             albedoType, 
                             instname,
                             brdfFile=brdfFile,
-                            ndviFile=ndviFile,
-                            lcFile=lcFile,
                             verbose=args.verbose)
 
         if not args.dryrun: 
