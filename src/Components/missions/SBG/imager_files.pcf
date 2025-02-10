@@ -15,6 +15,6 @@
     lerFile      = %orbitname-g5nr.lb2.ler.%nymd_%hour%minutez.nc4
 
     outDir       = /discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/%ORBITNAME/LevelC/Y%year/M%month/D%day
-    outFile      = %orbitname-%instname-g5nr.lc.vlidort.%nymd_%hour%minutez_%chdnm.nc4
+    outFile      = %orbitname-%instname-g5nr.lc.vlidort.%nymd_%hour%minutez.nc4
 
 # FILENAMES
