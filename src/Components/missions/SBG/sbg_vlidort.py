@@ -92,8 +92,8 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         self.iGood = np.ones([self.nobs]).astype(bool)
 
         # do one scanline at a time
-        for ityme in range(self.ntyme):
-
+        for ityme in range(self.ntyme)[0:1]:
+            print('ityme ',ityme,self.ntyme)
             # Read in precalculated Scene Geometry
             # limit iGood to sza < 80
             self.readAngles(ityme)
@@ -350,13 +350,12 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         p = Pool(120) 
         # loop through channels
         for ich in np.arange(self.nch):
-            print('ich ',ich)
+            print('ich ',ich,self.nch)            
             self.channel = [self.channels[ich]]
             self.aop = self.getAOPrt(wavelength=self.channels[ich],vector=True)
             rot  = ROT[:,iGood,ich:ich+1]
             depol_ratio = [self.depol_ratio[ich]]
 
-            nobs = len(iGood)
             # need to reshape these to [nlev,nch,nobs]
             tau = self.aop.AOT[iGood,:].astype('float64').expand_dims(dim={"ch": 1},axis=1).transpose().to_numpy()
             ssa = self.aop.SSA[iGood,:,].astype('float64').expand_dims(dim={"ch": 1},axis=1).transpose().to_numpy()
