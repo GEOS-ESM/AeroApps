@@ -21,6 +21,7 @@
 ### Changed
 
 - Update GMAOpyobs to v1.0.8
+- Update GMAOpyobs to v1.2.1
 - Update to ESMA_env v4.8.2 (fixes for RHEL8 GMAO machines)
 
 ## [v2.0.2] - 2023-05-25
