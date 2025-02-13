@@ -583,8 +583,8 @@ if __name__ == "__main__":
     parser.add_argument("--rcFile",default=rcFile,
                         help="rcFile (default=%s)"%rcFile)
 
-    parser.add_argument("-D","--DT_hours", default=DT_hours, type=int,
-                        help="Timestep in hours for each file (default=%i)"%DT_hours)
+    parser.add_argument("-D","--DT_mins", default=DT_mins, type=int,
+                        help="Timestep in minutes for each file (default=%i)"%DT_mins)
 
 
     parser.add_argument("-v", "--verbose",action="store_true",
@@ -623,7 +623,7 @@ if __name__ == "__main__":
     # ------------------------------------
     date      = isoparser(args.iso_t1)
     enddate   = isoparser(args.iso_t2)
-    Dt        = timedelta(hours=args.DT_hours)
+    Dt        = timedelta(minutes=args.DT_mins)
 
     while date < enddate:
         nymd  = str(date.date()).replace('-','')
