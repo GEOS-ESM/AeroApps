@@ -187,7 +187,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         ds = xr.open_dataset(self.inFile.replace('%col',col)) 
         self.ntyme,self.nlev,self.nacross = ds.sizes['time'],ds.sizes['lev'],ds.sizes['ncross']
         self.nobs = self.nacross*self.ntyme
-        self.nbatch = 120
+        self.nbatch = 125
         self.nMom = 300 
 
     #---
