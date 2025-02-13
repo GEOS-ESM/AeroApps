@@ -61,7 +61,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
     GEOS-5 has already been sampled on satellite track
     """
     def __init__(self,inFile,outFile,rcFile,albedoType,
-                instname,dryrun,
+                instname,ich,dryrun,
                 nstreams=12,
                 plane_parallel=True,
                 brdfFile=None,
@@ -79,11 +79,9 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         self.brdfFile    = brdfFile
         self.nstreams    = nstreams
         self.plane_parallel = plane_parallel
-        self.instname   = instname
+        self.instname    = instname
+        self.ich         = ich
 
-
-        # load optics tables
-        self.getMie()
 
         # get granule dimensions
         self.getDims()
@@ -91,39 +89,50 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         # Start out with all good obs
         self.iGood = np.ones([self.nobs]).astype(bool)
 
-        # do one scanline at a time
-        for ityme in range(self.ntyme)[0:1]:
-            print('ityme ',ityme,self.ntyme)
-            # Read in precalculated Scene Geometry
-            # limit iGood to sza < 80
-            self.readAngles(ityme)
+        # Read in precalculated Scene Geometry
+        # limit iGood to sza < 80
+        self.readAngles()
 
-            if self.nobs > 0:
+        # Land-Sea Mask
+        # limit iGood to land pixels
+        self.LandSeaMask()
 
-                # Read in model data
-                self.readSampledGEOS(ityme)
+        if self.nobs > 0:
 
-                # Read in surface data
-                self.readSampledAMESBRDF(ityme)
+            # Read in model data
+            self.readSampledGEOS()
 
-                # Calculate atmospheric profile properties needed for Rayleigh calc
-                self.getEdgeVars()    
+            # Read in surface data
+            self.readSampledAMESBRDF()
 
-                # Read in precalculated Scene Geometry
-                # limit iGood to sza < 80
-                self.readAngles(ityme)
+            # Set up AOP rcFile
+            self.getrcFile()
 
-                # Land-Sea Mask
-                # limit iGood to land pixels
-                self.LandSeaMask(ityme)       
+            if not dryrun:
+                # Run VLIDORT
+                self.runVLIDORT()
+                self.writeNC() 
 
-
-                if not dryrun:
-                    # Run VLIDORT
-                    self.runVLIDORT()
-                    self.writeNC(ityme) 
     #---
-    def getEdgeVars(self):
+    def getrcFile(self):
+        """
+        Update the rcFile if needed
+        """
+
+        # Copy over rc and edit
+        source = open('Aod_EOS.rc','r')
+        destination = open(self.rcFile,'w')
+        a = self.channels[self.ich]*1e-3
+        for line in source:
+            if (line[0:11] == 'r_channels:'):
+                destination.write('r_channels: '+'{:0.10f}e-6'.format(a)+'\n')
+            else:
+                destination.write(line)
+        source.close()
+        destination.close()
+
+    #---
+    def getEdgeVars(self,sob,eob):
         """
         Get altitude, pressure, and temperature and edge of layers
         """
@@ -133,8 +142,10 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         # AIRDENS: kg m-3
         # GRAV: m s-2
         # -----------------------------------------
-        rhodz = self.aer['DELP'] / GRAV
-        dz = rhodz / self.aer['AIRDENS']       # column thickness in m
+        DELP = self.aer['DELP'].isel(nobs=slice(sob,eob)).values
+        AIRDENS = self.aer['AIRDENS'].isel(nobs=slice(sob,eob)).values
+        rhodz = DELP / GRAV
+        dz = rhodz / AIRDENS       # column thickness in m
 
         # add up the thicknesses to get edge level altitudes and pressures
         npts, nlev = dz.shape
@@ -144,19 +155,19 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         self.ze = np.append(ze,np.zeros([1,npts]),axis=0)
 
         ptop = 1. # Pa
-        pe = np.zeros([self.nlev+1,self.nacross])
+        pe = np.zeros([self.nlev+1,npts])
         pe[0,:] = ptop
         for ilev in range(self.nlev):
-            pe[ilev+1,:] = pe[ilev,:] + self.aer['DELP'][:,ilev]
+            pe[ilev+1,:] = pe[ilev,:] + DELP[:,ilev]
 
         self.pe = pe
 
         # get the mid-level pressures and temperatures
         self.pm = (self.pe[:-1,:] + self.pe[1:,:])*0.5
-        self.tm = self.pm/(self.aer['AIRDENS'].T*RGAS)
+        self.tm = self.pm/(AIRDENS.T*RGAS)
 
         # get the edge level temperature
-        self.te = np.zeros([self.nlev+1,self.nacross])
+        self.te = np.zeros([self.nlev+1,npts])
         self.te[0,:] = self.tm[0,:]  #isothermal a highest level
         for ilev in range(1,self.nlev):
             alpha = np.log(self.pe[ilev,:]/self.pm[ilev-1,:])/np.log(self.pm[ilev,:]/self.pm[ilev-1,:])
@@ -164,26 +175,6 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
 
         # dry adiabatic
         self.te[self.nlev,:] = self.tm[self.nlev-1,:]*(self.pe[self.nlev,:]/self.pm[self.nlev-1,:])**KAPPA
-
-    #---
-    def getMie(self):
-        """
-        Use pyobs utilities to load mietables
-        """
-        self.mieTable = yaml.safe_load(open(self.rcFile))
-        self.vector = True
-
-        # load mietables
-        # ---------------------------
-        self.p, self.m = 0,0
-        for s in self.mieTable:
-            m = self.mieTable[s]
-            m['mie'] = mt.MIETABLE(m['monoFile'])
-
-        
-            dims = dict(self.mieTable[s]['mie'].ds.sizes)
-            self.p = max(self.p,dims['p'])
-            self.m = max(self.m,dims['m'])
 
     #--
     def getDims(self):
@@ -195,13 +186,15 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
             print('opening file',self.inFile.replace('%col',col))
         ds = xr.open_dataset(self.inFile.replace('%col',col)) 
         self.ntyme,self.nlev,self.nacross = ds.sizes['time'],ds.sizes['lev'],ds.sizes['ncross']
-        self.nobs = self.nacross
-        
+        self.nobs = self.nacross*self.ntyme
+        self.nbatch = 120
+        self.nMom = 300 
 
     #---
-    def readSampledGEOS(self,ityme):
+    def readSampledGEOS(self):
         """
         Read in model sampled track
+        Use xarray to lazy load
         """
         col = 'aer_Nv'
         if self.verbose:
@@ -215,31 +208,34 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
             if self.verbose:
                 print('opening file',self.inFile.replace('%col',col))
 
-        self.aer = xr.open_mfdataset(inList)
+        self.aer = xr.open_mfdataset(inList,chunks="auto")
         # make arrays [nobs,nlev]
         self.aer = self.aer.squeeze()
-        self.aer = self.aer.isel(time=ityme)
-        self.aer = self.aer.transpose()
+        self.aer = self.aer.stack(nobs=("time","ncross"))
+        self.aer = self.aer.transpose("nobs","lev")
+
 
     # ---
-    def LandSeaMask(self,ityme):
+    def LandSeaMask(self):
         """
         Read in invariant dataset
         """
         col = 'asm_Nx'
         if self.verbose:
             print('opening file',self.inFile.replace('%col',col))
-        ds = xr.open_dataset(self.inFile.replace('%col',col))
+        ds = xr.open_dataset(self.inFile.replace('%col',col),chunks="auto")
 
         for sds in self.SDS_INV:
             sds_ = sds
             if sds in ncALIAS:
                 sds_ = ncALIAS[sds]
-            var = ds[sds_].isel(time=ityme).squeeze().values
+            var = ds[sds_].squeeze().stack(nobs=("time","ncross"))
             self.__dict__[sds] = var
 
-        self.iLand = self.FRLAND >= 0.99
-        self.iSea  = self.FRLAND < 0.99
+        iGood = self.FRLAND >= 0.99
+        self.iLand = iGood.values
+        iGood = self.FRLAND < 0.99
+        self.iSea  = iGood.values
 
         # self.iGood = self.iGood & iGood
         self.nobsLand  = np.sum(self.iGood & self.iLand)
@@ -250,48 +246,45 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
 
 
     #---
-    def readSampledAMESBRDF(self,ityme):
+    def readSampledAMESBRDF(self):
         """
         Read in AMES BRDF kernel weights
         that have already been sampled on swath
         """
         if self.verbose:
             print('opening BRDF file ',self.brdfFile)
-        ds = xr.open_dataset(self.brdfFile)
+        ds = xr.open_dataset(self.brdfFile,chunks="auto")
 
         self.channels = ds.nwav.values  # microns
         self.nch = len(self.channels)
         self.channels = self.channels*1e3  # nm
-        self.Riso = ds.Ki.isel(time=ityme).squeeze().values
-        self.Rgeo = ds.Kg.isel(time=ityme).squeeze().values
-        self.Rvol = ds.Kv.isel(time=ityme).squeeze().values
 
+        # concatenate kernel weights into one data array
+        da = xr.concat([ds.Ki,ds.Kg,ds.Kv],dim="nalong")
+        da = da.rename("kernel_wt")
 
-        self.Riso.shape = (1,self.nch,self.nacross)
-        self.Rgeo.shape = (1,self.nch,self.nacross)
-        self.Rvol.shape = (1,self.nch,self.nacross)
+        # reshape to [nkernel,nch,nobs]
+        self.kernel_wt = da.squeeze().stack(nobs=("time","ncross")).transpose("nalong","nwav","nobs")
+        self.kernel_wt = self.kernel_wt.isel(nwav=slice(self.ich,self.ich+1))
 
-        # [nkernel,nch,nacross]
-        self.kernel_wt = np.append(self.Riso,self.Rgeo,axis=0)
-        self.kernel_wt = np.append(self.kernel_wt,self.Rvol,axis=0)
-        self.kernel_wt = self.kernel_wt.reshape(3,self.nch,self.nacross)
+        # make an array of the params, just big enough for a batch
+        param1 = np.array([2]*self.nbatch)
+        param2 = np.array([1]*self.nbatch)
 
-        param1 = np.array([2]*self.nch*self.nacross)
-        param2 = np.array([1]*self.nch*self.nacross)
-
-        param1.shape = (1,self.nch,self.nacross)
-        param2.shape = (1,self.nch,self.nacross)
+        #[nparam,nch,nobs]
+        param1.shape = (1,1,self.nbatch)
+        param2.shape = (1,1,self.nbatch)
 
         # [nparam,nch,nobs]
         self.RTLSparam = np.append(param1,param2,axis=0)
-        self.RTLSparam = self.RTLSparam.reshape(2,self.nch,self.nacross)
+        self.RTLSparam = self.RTLSparam.reshape(2,1,self.nbatch)
 
         # filter for nans
         iGood = ~np.isnan(self.kernel_wt[0,0,:])
-        self.iGood = self.iGood & iGood
+        self.iGood = self.iGood & iGood.values
         self.nobs = np.sum(self.iGood)
 
-    def readAngles(self,ityme):
+    def readAngles(self):
         """
         Read in viewing and solar Geometry from angFile
         """
@@ -299,26 +292,28 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         col = self.instname
         if self.verbose: 
             print('opening file',self.inFile.replace('%col',col))
-        ds = xr.open_dataset(self.inFile.replace('%col',col))
+        ds = xr.open_dataset(self.inFile.replace('%col',col),chunks="auto")
 
         for sds in self.SDS_ANG:
             sds_ = sds
             if sds in ncALIAS:
                 sds_ = ncALIAS[sds]
-            var = ds[sds_].isel(time=ityme).squeeze().values
+            var = ds[sds_].squeeze().stack(nobs=("time","ncross"))
             self.__dict__[sds] = var
 
         # define RAA according to photon travel direction
         saa = self.SAA + 180.0
         I = saa >= 360.
-        saa[I] = saa[I] - 360.
+        saa[I.compute()] = saa[I.compute()] - 360.
 
         RAA = self.VAA - saa
-        RAA[RAA < 0] = RAA[RAA<0]+360.0
+        I = RAA < 0
+        RAA[I.compute()] = RAA[I.compute()]+360.0
         self.RAA = RAA
 
         # Limit SZAs
-        self.iGood = self.iGood & (self.SZA < 80)
+        iGood = self.SZA < 80
+        self.iGood = self.iGood & iGood.values
         self.nobs = np.sum(self.iGood)         
 
     def runVLIDORT(self):
@@ -327,52 +322,55 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         """
 
         # Initiate output arrays
-        iGood  = np.arange(self.nacross)[self.iGood]
+        iGood = self.iGood
         nobs   = self.nobs
         nlev   = self.nlev
-        nch    = self.nch
-        nacross = self.nacross
-        self.I = np.ones([nacross,nch])*MISSING
-        self.Q = np.ones([nacross,nch])*MISSING
-        self.U = np.ones([nacross,nch])*MISSING
-        self.reflectance = np.ones([nacross,nch])*MISSING
-        self.surf_reflectance = np.ones([nacross,nch])*MISSING
-        self.BR_Q = np.ones([nacross,nch])*MISSING
-        self.BR_U = np.ones([nacross,nch])*MISSING
+        nch    = 1
+        self.I = np.ones([nobs,nch])*MISSING
+        self.Q = np.ones([nobs,nch])*MISSING
+        self.U = np.ones([nobs,nch])*MISSING
+        self.reflectance = np.ones([nobs,nch])*MISSING
+        self.surf_reflectance = np.ones([nobs,nch])*MISSING
+        self.BR_Q = np.ones([nobs,nch])*MISSING
+        self.BR_U = np.ones([nobs,nch])*MISSING
+        self.ROT  = np.ones([nlev,nobs,nch])*MISSING
 
-        # Calculate ROT
-        args = [self.channels, self.pe.astype('float64'), self.ze.astype('float64'), self.te.astype('float64'), MISSING, self.verbose]
-        vlidortWrapper = WrapperFuncs['ROT_CALC']
-        ROT, depol_ratio, rc = vlidortWrapper(*args)  
-        self.depol_ratio = depol_ratio         
-        self.ROT = ROT 
+        p = Pool(self.nbatch)
+        # loop through nobs in batches
+        for sob in range(0,self.nobs,self.nbatch):
+            print('sob, nobs',sob, self.nobs)
+            eob = min([self.nobs,sob + self.nbatch])
+            self.channel = [self.channels[self.ich]]
 
-        p = Pool(120) 
-        # loop through channels
-        for ich in np.arange(self.nch):
-            print('ich ',ich,self.nch)            
-            self.channel = [self.channels[ich]]
-            self.aop = self.getAOPrt(wavelength=self.channels[ich],vector=True)
-            rot  = ROT[:,iGood,ich:ich+1]
-            depol_ratio = [self.depol_ratio[ich]]
+            # Calculate ROT
+            self.getEdgeVars(sob,eob)
+            args = [self.channel, self.pe.astype('float64'), self.ze.astype('float64'), self.te.astype('float64'), MISSING, self.verbose]
+            vlidortWrapper = WrapperFuncs['ROT_CALC']
+            # [lev,nobs,ch], [ch]
+            rot, depol_ratio, rc = vlidortWrapper(*args) 
+            pe   = self.pe.astype('float64')
+            ze   = self.ze.astype('float64')
+            te   = self.te.astype('float64') 
 
-            # need to reshape these to [nlev,nch,nobs]
-            tau = self.aop.AOT[iGood,:].astype('float64').expand_dims(dim={"ch": 1},axis=1).transpose().to_numpy()
-            ssa = self.aop.SSA[iGood,:,].astype('float64').expand_dims(dim={"ch": 1},axis=1).transpose().to_numpy()
-            pmom = self.aop.PMOM[iGood,:,:,:].astype('float64').transpose('lev','ncross','m','p').expand_dims(dim={"ch": 1},axis=1).to_numpy()
+            # calculate AOPs
+            for sds in self.AERNAMES + ['PS','DELP','RH']:
+                self.__dict__[sds] = self.aer[sds].isel(nobs=slice(sob,eob))
 
-            pe   = self.pe[:,iGood].astype('float64')
-            ze   = self.ze[:,iGood].astype('float64')
-            te   = self.te[:,iGood].astype('float64')
+            self.computeMie()
+            tau = self.tau.astype('float64')
+            ssa = self.ssa.astype('float64')
+            pmom = self.pmom.astype('float64')
 
 
             # Get surface data
-            param     = self.RTLSparam[:,ich:ich+1,iGood].astype('float64')
-            kernel_wt = self.kernel_wt[:,ich:ich+1,iGood].astype('float64')
+            npts = eob - sob
+            param     = self.RTLSparam[:,:,0:npts]
+            kernel_wt = self.kernel_wt.isel(nobs=slice(sob,eob)).astype('float64')
 
-            vza = self.VZA[iGood].astype('float64')
-            sza = self.SZA[iGood].astype('float64')
-            raa = self.RAA[iGood].astype('float64')
+            # get angles
+            vza = self.VZA.isel(nobs=slice(sob,eob)).astype('float64')
+            sza = self.SZA.isel(nobs=slice(sob,eob)).astype('float64')
+            raa = self.RAA.isel(nobs=slice(sob,eob)).astype('float64')
             
             I = []
             Q = []
@@ -387,7 +385,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
                     kernel_wt[:,:,i:i+1], param[:,:,i:i+1],
                     sza[i:i+1], raa[i:i+1], vza[i:i+1],
                     MISSING,
-                    self.verbose) for i in range(nobs)]
+                    self.verbose) for i in range(npts)]
             result = p.map(MODIS_BRDF_run,args)
             
             for r in result:
@@ -407,144 +405,140 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
             BR_Q = np.concatenate(BR_Q)
             BR_U = np.concatenate(BR_U)
 
-            self.I[iGood,ich] = np.squeeze(I)
-            self.reflectance[iGood,ich] = np.squeeze(reflectance)
-            self.surf_reflectance[iGood,ich] = np.squeeze(surf_reflectance)
-            self.Q[iGood,ich] = np.squeeze(Q)
-            self.U[iGood,ich] = np.squeeze(U) 
-            self.BR_Q[iGood,ich] = np.squeeze(BR_Q)
-            self.BR_U[iGood,ich] = np.squeeze(BR_U) 
+            self.I[sob:eob,:] = I
+            self.reflectance[sob:eob,:] = reflectance
+            self.surf_reflectance[sob:eob,:] = surf_reflectance
+            self.Q[sob:eob,:] = Q
+            self.U[sob:eob,:] = U 
+            self.BR_Q[sob:eob,:] = BR_Q
+            self.BR_U[sob:eob,:] = BR_U
+            self.ROT[:,sob:eob,:] = rot
+            self.depol_ratio = depol_ratio
         p.close()
     #---
-    def writeNC (self,ityme,zlib=True):
+    def writeNC (self,zlib=True):
         """
         Write a NetCDF file vlidort output
         """
 
-        if ityme == 0:
-            if not os.path.exists(os.path.dirname(self.outFile)):
-                os.makedirs(os.path.dirname(self.outFile))
+        if not os.path.exists(os.path.dirname(self.outFile)):
+            os.makedirs(os.path.dirname(self.outFile))
 
-            # Open NC file
-            # ------------
-            nc = Dataset(self.outFile,'w',format='NETCDF4_CLASSIC')
+        # Open NC file
+        # ------------
+        nc = Dataset(self.outFile,'w',format='NETCDF4_CLASSIC')
 
-            # Set global attributes
-            # ---------------------
-            nc.title = 'VLIDORT-GEOS-SBG Simulator'
-            nc.institution = 'NASA/Goddard Space Flight Center'
-            nc.source = 'Global Model and Assimilation Office'
-            nc.history = 'VLIDORT simulation run on sampled GEOS'
-            nc.references = 'n/a'
-            nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
-            nc.Conventions = 'CF'
-            nc.inFile = self.inFile
-         
-            # Create dimensions
-            # -----------------
-            nt = nc.createDimension('time',self.ntyme)
-            nz = nc.createDimension('lev',self.nlev)
-            nh = nc.createDimension('ch',self.nch)
-            nx = nc.createDimension('across',self.nacross)
+        # Set global attributes
+        # ---------------------
+        nc.title = 'VLIDORT-GEOS-SBG Simulator'
+        nc.institution = 'NASA/Goddard Space Flight Center'
+        nc.source = 'Global Model and Assimilation Office'
+        nc.history = 'VLIDORT simulation run on sampled GEOS'
+        nc.references = 'n/a'
+        nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
+        nc.Conventions = 'CF'
+        nc.inFile = self.inFile
+     
+        # Create dimensions
+        # -----------------
+        nch = 1
+        nt = nc.createDimension('time',self.ntyme)
+        nz = nc.createDimension('lev',self.nlev)
+        nh = nc.createDimension('ch',nch)
+        nx = nc.createDimension('across',self.nacross)
 
-            # Coordinate variables
-            # --------------------
-            col = 'aer_Nv'
-            if self.verbose: 
-                print('opening file',self.inFile.replace('%col',col))
-            nctrj       = Dataset(self.inFile.replace('%col',col))        
-            _copyVar(nctrj,nc,'trjLon',dtype='f4',zlib=False,verbose=self.verbose)
-            _copyVar(nctrj,nc,'trjLat',dtype='f4',zlib=False,verbose=self.verbose)
-            _copyVar(nctrj,nc,'time', dtype='i4',zlib=False,verbose=self.verbose)
-            _copyVar(nctrj,nc,'lev', dtype='f4',zlib=False,verbose=self.verbose)
-            nctrj.close()
+        # Coordinate variables
+        # --------------------
+        col = 'aer_Nv'
+        if self.verbose: 
+            print('opening file',self.inFile.replace('%col',col))
+        nctrj       = Dataset(self.inFile.replace('%col',col))        
+        _copyVar(nctrj,nc,'trjLon',dtype='f4',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,'trjLat',dtype='f4',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,'time', dtype='i4',zlib=zlib,verbose=self.verbose)
+        _copyVar(nctrj,nc,'lev', dtype='f4',zlib=zlib,verbose=self.verbose)
+        nctrj.close()
 
-        else:
-            # Open NC file
-            # ------------
-            nc = Dataset(self.outFile,'a')            
 
         # Write VLIDORT Outputs
         # ---------------------
-        if ityme == 0:
-            dim = ('time','across','ch')
-            ref = nc.createVariable('toa_reflectance','f4',dim,zlib=zlib,fill_value=MISSING)
-            ref.standard_name = 'TOA Reflectance' 
-            ref.long_name     = 'reflectance at the top of the atmosphere' 
-            ref.missing_value = MISSING
-            ref.units         = "None"
-        else:
-            ref = nc.variables['toa_reflectance']
-        ref[ityme,:,:]            = self.reflectance
+        dim = ('time','across','ch')
+        ref = nc.createVariable('toa_reflectance','f4',dim,zlib=zlib,fill_value=MISSING)
+        ref.standard_name = 'TOA Reflectance' 
+        ref.long_name     = 'reflectance at the top of the atmosphere' 
+        ref.missing_value = MISSING
+        ref.units         = "None"
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+        temp[self.iGood,:] = self.reflectance
+        ref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
-        if ityme == 0:
-            i = nc.createVariable('I','f4',dim,zlib=zlib,fill_value=MISSING)
-            i.standard_name = 'TOA I' 
-            i.long_name     = 'intensity at the top of the atmosphere' 
-            i.missing_value = MISSING
-            i.units         = "W m-2 sr-1 nm-1"
-        else:
-            i = nc.variables['I']
-        i[ityme,:,:]            = self.I
+        i = nc.createVariable('I','f4',dim,zlib=zlib,fill_value=MISSING)
+        i.standard_name = 'TOA I' 
+        i.long_name     = 'intensity at the top of the atmosphere' 
+        i.missing_value = MISSING
+        i.units         = "W m-2 sr-1 nm-1"
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+        temp[self.iGood,:] = self.I
+        i[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
-        if ityme == 0:
-            q = nc.createVariable('Q','f4',dim,zlib=zlib,fill_value=MISSING)
-            q.standard_name = 'TOA Q' 
-            q.long_name     = 'Q-component of the stokes vector at the top of the atmopshere' 
-            q.missing_value = MISSING
-            q.units         = "W m-2 sr-1 nm-1"
-        else:
-            q = nc.variables['Q']
-        q[ityme,:,:]            = self.Q    
+        q = nc.createVariable('Q','f4',dim,zlib=zlib,fill_value=MISSING)
+        q.standard_name = 'TOA Q' 
+        q.long_name     = 'Q-component of the stokes vector at the top of the atmopshere' 
+        q.missing_value = MISSING
+        q.units         = "W m-2 sr-1 nm-1"
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+        temp[self.iGood,:] = self.Q
+        q[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
-        if ityme == 0:
-            u = nc.createVariable('U','f4',dim,zlib=zlib,fill_value=MISSING)
-            u.standard_name = 'TOA U'
-            u.long_name     = 'U-component of the stokes vector at the top of the atmopshere' 
-            u.missing_value = MISSING
-            u.units         = "W m-2 sr-1 nm-1"
-        else:
-            u = nc.variables['U']
-        u[ityme,:,:]            = self.U
+        u = nc.createVariable('U','f4',dim,zlib=zlib,fill_value=MISSING)
+        u.standard_name = 'TOA U'
+        u.long_name     = 'U-component of the stokes vector at the top of the atmopshere' 
+        u.missing_value = MISSING
+        u.units         = "W m-2 sr-1 nm-1"
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+        temp[self.iGood,:] = self.U
+        u[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
-        if ityme == 0:
-            sref = nc.createVariable('surf_reflectance','f4',dim,zlib=zlib,fill_value=MISSING)
-            sref.standard_name = 'Surface Reflectance' 
-            sref.long_name     = 'Bi-Directional Surface Reflectance' 
-            sref.missing_value = MISSING
-            sref.units         = "None"
-        else:
-            sref = nc.variables['surf_reflectance']
-        sref[ityme,:,:]            = self.surf_reflectance
+        sref = nc.createVariable('surf_reflectance','f4',dim,zlib=zlib,fill_value=MISSING)
+        sref.standard_name = 'Surface Reflectance' 
+        sref.long_name     = 'Bi-Directional Surface Reflectance' 
+        sref.missing_value = MISSING
+        sref.units         = "None"
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+        temp[self.iGood,:] = self.surf_reflectance
+        sref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
-        if ityme == 0:
-            sref = nc.createVariable('surf_reflectance_Q','f4',dim,zlib=zlib,fill_value=MISSING)
-            sref.standard_name = 'Surface Reflectance Q' 
-            sref.long_name     = 'Bi-Directional Surface Reflectance Q'
-            sref.missing_value = MISSING
-            sref.units         = "None"
-        else:
-            sref = nc.variables['surf_reflectance_Q']
-        sref[ityme,:,:]            = self.BR_Q
+        sref = nc.createVariable('surf_reflectance_Q','f4',dim,zlib=zlib,fill_value=MISSING)
+        sref.standard_name = 'Surface Reflectance Q' 
+        sref.long_name     = 'Bi-Directional Surface Reflectance Q'
+        sref.missing_value = MISSING
+        sref.units         = "None"
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+        temp[self.iGood,:] = self.BR_Q
+        sref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
-        if ityme == 0:
-            sref = nc.createVariable('surf_reflectance_U','f4',dim,zlib=zlib,fill_value=MISSING)
-            sref.standard_name = 'Surface Reflectance U' 
-            sref.long_name     = 'Bi-Directional Surface Reflectance U' 
-            sref.missing_value = MISSING
-            sref.units         = "None"
-        else:
-            sref = nc.variables['surf_reflectance_U']
-        sref[ityme,:,:]            = self.BR_U
+        sref = nc.createVariable('surf_reflectance_U','f4',dim,zlib=zlib,fill_value=MISSING)
+        sref.standard_name = 'Surface Reflectance U' 
+        sref.long_name     = 'Bi-Directional Surface Reflectance U' 
+        sref.missing_value = MISSING
+        sref.units         = "None"
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+        temp[self.iGood,:] = self.BR_U
+        sref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
-        if ityme == 0:
-            rot = nc.createVariable('ROT','f4',('time','lev','across','ch',),zlib=zlib,fill_value=MISSING)
-            rot.long_name = 'Rayleigh Optical Thickness'
-            rot.missing_value = MISSING
-            rot.units         = "None"
-        else:
-            rot = nc.variables['ROT']
-        rot[ityme,:,:,:]            = self.ROT
+        rot = nc.createVariable('ROT','f4',('lev','time','across','ch',),zlib=zlib,fill_value=MISSING)
+        rot.long_name = 'Rayleigh Optical Thickness'
+        rot.missing_value = MISSING
+        rot.units         = "None"
+        temp = np.ones([self.nlev,self.ntyme*self.nacross,nch])*MISSING
+        temp[:,self.iGood,:] = self.ROT
+        rot[:]            = temp.reshape([self.nlev,self.ntyme,self.nacross,nch])
+
+        d = nc.createVariable('depol_ratio','f4',('ch',),zlib=zlib,fill_value=MISSING)
+        d.long_name = 'depolarization ratio'
+        d.missing_value = MISSING
+        d.units         = "None"
+        d[:]            = self.depol_ratio
 
         # Close the file
         # --------------
@@ -559,7 +553,7 @@ if __name__ == "__main__":
 
     # Defaults
     DT_hours   = 1
-    rcFile     = 'm2_aop.yaml'
+    rcFile     = 'rc/Aod_EOS_%ich.rc'
     albedoType = None
 
 #   Parse command line options
@@ -580,10 +574,13 @@ if __name__ == "__main__":
     parser.add_argument("inst_pcf",
                         help="prep config file with instrument variables")
 
+    parser.add_argument("ich",type=int,
+                        help="channel index")
+
     parser.add_argument("-a","--albedotype", default=albedoType,
                         help="albedo type keyword. default is to figure out according to channel")
 
-    parser.add_argument("--rcfile",default=rcFile,
+    parser.add_argument("--rcFile",default=rcFile,
                         help="rcFile (default=%s)"%rcFile)
 
     parser.add_argument("-D","--DT_hours", default=DT_hours, type=int,
@@ -597,7 +594,6 @@ if __name__ == "__main__":
                         help="do a dry run (default=False).")
 
     args = parser.parse_args()
-    rcFile         = args.rcfile
     albedoType     = args.albedotype
 
     # figure out albedoType keyword
@@ -638,7 +634,7 @@ if __name__ == "__main__":
         minute = str(date.minute).zfill(2)
 
         inFile     = inTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
-        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME).replace('%instname',instname)
+        outFile    = outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME).replace('%instname',instname).replace('%band',str(args.ich).zfill(3))
 
         if brdfTemplate is None:
             brdfFile = None
@@ -646,10 +642,12 @@ if __name__ == "__main__":
             brdfFile = brdfTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
 
+        rcFile = args.rcFile.replace('%ich',str(args.ich).zfill(3))
 
         # Initialize VLIDORT class getting aerosol optical properties
         # -----------------------------------------------------------
         print('++++Running VLIDORT with the following arguments+++')
+        print('>>>channel:   ',args.ich)
         print('>>>inFile:    ',inFile)
         print('>>>outFile:   ',outFile)
         print('>>>rcFile:    ',rcFile)
@@ -661,6 +659,7 @@ if __name__ == "__main__":
         vlidort = ACCP_POLAR_VLIDORT(inFile,outFile,rcFile,
                             albedoType, 
                             instname,
+                            args.ich,
                             args.dryrun,
                             brdfFile=brdfFile,
                             verbose=args.verbose)
