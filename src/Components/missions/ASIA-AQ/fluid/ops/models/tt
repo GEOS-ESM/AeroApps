@@ -1,0 +1,126 @@
+  UIOWAWRFchem:
+
+    _tcco:
+      long_name: Total column Carbon monoxide
+      units: 'kgm-2'
+      expression: tcco(z=1)
+    _tcpm25: 
+      long_name: total column PM2.5
+      units: 'kg m-2'
+      expression: tcpm25(z=1)
+    _tcoc: 
+      long_name: total column OC
+      units: 'kg m-2'
+      expression: tcoc(z=1)
+    _pm25: 
+      long_name: PM2.5 
+      units: 'ug m-3'
+      expression: pm25
+    _uwnd:
+      long_name: East-West Wind
+      units: m s-1
+      expression: U
+    _vwnd:
+      long_name: North-South Wind
+      units: m s-1
+      expression: V
+    _pblh:
+      long_name: Planetary Boundary Layer Height
+      units: 'm'
+      expression: PBLH(z=1)
+    _aod:
+      long_name: Aerosol Optical Depth
+      units: '1'
+      expression: AOD550(z=1)
+    _co:
+       long_name: Carbon monixide
+       units: 'ppbv'
+       expression: CO*1e+3
+    _no1:
+       long_name: Nitric Oxide
+       units: 'ppbv'
+       expression: NO*1e+3
+    _no2:
+       long_name: Nitrogen dioxide
+       units: 'ppbv'
+       expression: NO2*1e+3
+    _so2:
+       long_name: Sulfur dioxide
+       units: 'ppbv'
+       expression: SO2*1e+3
+    _o3:
+       long_name: O3 mixing ratio
+       units: 'ppbv'
+       expression: O3*1e+3
+    _am:
+      long_name: Ammonium aerosol mixing ratio
+      units: 'ugm-3'
+      expression: AMMONIUM*RHO/(1+QVAPOR)
+    _su:
+      long_name: Sulphate aerosol mixing ratio
+      units: 'ugm-3'
+      expression: SULF*RHO/(1+QVAPOR)
+    _ni: 
+      long_name: Nitrate aerosol
+      units: 'ug m-3'
+      expression: NITRATE*RHO/(1+QVAPOR) 
+    _oc:
+       long_name: OC mixing ratio
+       units: 'ug m-3'
+       expression:  OC*RHO/(1+QVAPOR)
+    _bc:
+       long_name: BC mixing ratio
+       units: 'ug m-3'
+       expression:  BC*RHO/(1+QVAPOR)
+    _ss:
+       long_name: Sea salt aerosol mixing ratio
+       units: 'ug m-3'
+       expression: OIN*RHO/(1+QVAPOR) 
+    _co_lml:
+       long_name: Carbon monixide
+       units: 'ppbv'
+       expression: CO_lml(z=1)*1e+3
+    _no1_lml:
+       long_name: Nitric Oxide
+       units: 'ppbv'
+       expression: NO_lml(z=1)*1e+3
+    _no2_lml:
+       long_name: Nitrogen dioxide
+       units: 'ppbv'
+       expression: NO2_lml(z=1)*1e+3
+    _so2_lml:
+       long_name: Sulfur dioxide
+       units: 'ppbv'
+       expression: SO2_lml(z=1)*1e+3
+    _o3_lml:
+       long_name: O3 mixing ratio
+       units: 'ppbv'
+       expression: O3_lml(z=1)*1e+3
+    _am_lml:
+      long_name: Ammonium aerosol mixing ratio
+      units: 'ugm-3'
+      expression: AMMONIUM_lml(z=1)*RHO_lml(z=1)/(1+QVAPOR_lml(z=1))
+    _su_lml:
+      long_name: Sulphate aerosol mixing ratio
+      units: 'ugm-3'
+      expression: SULF_lml(z=1)*RHO_lml(z=1)/(1+QVAPOR_lml(z=1))
+    _ni_lml: 
+      long_name: Nitrate aerosol
+      units: 'ug m-3'
+      expression: NITRATE_lml(z=1)*RHO_lml(z=1)/(1+QVAPOR_lml(z=1)) 
+    _oc_lml:
+       long_name: OC mixing ratio
+       units: 'ug m-3'
+       expression:  OC_lml(z=1)*RHO_lml(z=1)/(1+QVAPOR_lml(z=1))
+    _bc_lml:
+       long_name: BC mixing ratio
+       units: 'ug m-3'
+       expression:  BC_lml(z=1)*RHO_lml(z=1)/(1+QVAPOR_lml(z=1))
+    _ss_lml:
+       long_name: Sea salt aerosol mixing ratio
+       units: 'ug m-3'
+       expression: OIN_lml(z=1)*RHO_lml(z=1)/(1+QVAPOR_lml(z=1)) 
+    _pm25sfc:
+      long_name: PM2.5 at lowest model level 
+      units: 'ugm-3'
+      expression: PM25_lml(z=1)

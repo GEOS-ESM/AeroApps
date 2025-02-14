@@ -389,7 +389,7 @@ Contains
 
     mpirun = ' '
     call getenv('MPIRUN',mpirun)             ! Unix binding
-    if(mpirun.eq.' ') Call die(myname_,'env var MPIRUN not set', 99)
+    !if(mpirun.eq.' ') Call die(myname_,'env var MPIRUN not set', 99)
 
 !   Invoke 'solve.x'
 !   ----------------

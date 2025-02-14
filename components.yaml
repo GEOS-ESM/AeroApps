@@ -5,7 +5,7 @@ AeroApps:
 env:
   local: ./env@
   remote: ../ESMA_env.git
-  tag: v4.8.0
+  tag: v4.8.2
   develop: main
 
 cmake:
@@ -28,5 +28,5 @@ MAPL:
 GMAOpyobs:
   local: ./src/Shared/GMAO_Shared/GMAO_pyobs@
   remote: ../GMAOpyobs.git
-  tag: v1.0.3
+  tag: v1.2.1
   develop: develop

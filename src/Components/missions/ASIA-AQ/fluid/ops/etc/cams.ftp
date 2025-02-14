@@ -1,0 +1,7 @@
+binary
+prompt
+cd DATA/CAMS_GLOBAL/%Y%m%d00/
+mget z_cams_c_ecmf_%Y%m%d000000_prod_fc_pl_*_*.nc
+mget z_cams_c_ecmf_%Y%m%d000000_prod_fc_sfc_*_*.nc
+mget z_cams_c_ecmf_%Y%m%d000000_prod_fc_ml_*_*.nc
+quit

@@ -1,0 +1,5 @@
+model: ALL
+
+tau_start: 0
+tau_end: 120
+tau_inc: 3

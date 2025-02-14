@@ -8,6 +8,30 @@
 
 ### Changed
 
+## [v2.1.0] - 2025-02-14
+
+### Added
+
+- Added DB_DEEP data stream for VIIRS NNR
+- scripts to plot satellite tracks for each day - focused on ASIA-AQ regions, but can be extended.
+- ASIA-AQ mission directory initialized with FLUID instance from FIREX-AQ
+- pyabc module added in GMAO_aeropybs. the snket class is needed in pyabc for loading ffnet .net files
+- VIIRS and MODIS NNR angstrom exponent predictions are now saved in gridded output files (Level 3)
+- VIIRS and MODIS NNR ods files of AOD can be generated from angstrom exponent fit coefficients
+- VIIRS NNR ods file generator now takes nsyn (number of synoptic times) as an input.
+- VIIRS & MODIS NNR codes have an improved cloud filter and analomaly detection algorithm. There parameters for this can be inputs in the pcf file.
+
+### Fixed
+
+- bug in NNR cloud contamination check. Was not setting suspected too cloudy pixels to MISSING.
+- Fix missing MPI initialization
+
+### Changed
+
+- Update GMAOpyobs to v1.0.8
+- Update GMAOpyobs to v1.2.1
+- Update to ESMA_env v4.8.2 (fixes for RHEL8 GMAO machines)
+
 ## [v2.0.2] - 2023-05-25
 
 ### Added
@@ -20,10 +44,11 @@
 - fix in NNR code for new syntax of the Kfold generator in sklearn
 - fix in NNR testing code to protect against cases where VIIRS standard product may not retrieve multiple wavelengths 
 - fix pyods __ini__.py to use relative imports. needed for python3
+- fix for check if AEfitb is None is mxd04_nnr and vx04_nnr. Using == gives error when AEfitb is initialized to an array
 ### Changed
 
 - add VIIRS aerosol products to GMAO_ods kx list
-- update GMAOpyobs to v1.0.4 
+- update GMAOpyobs to v1.0.3 
 
 ## [v2.0.1] - 2023-05-17
 

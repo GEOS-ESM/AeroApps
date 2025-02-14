@@ -13,6 +13,7 @@
 !
 ! !USES:
 !
+      use  m_mpif90, only : mp_init
       use  m_odsmeta
       use  m_ods
       use  m_sqc
@@ -57,6 +58,9 @@
 !     ---------------
       type (ods_vect) :: ods
 
+      Call mp_init(ier)
+      if ( ier /= 0) call mp_die ( myname, 'MP_INIT()',ier)
+
       call zeit_ci ( 'odsqc' )
 
 !     Option flags:
@@ -88,11 +92,11 @@
 
          do isyn = 1, 4
 
-           print *, 'Working on ... ', trim(infile(ifile)), nymd, nhms
-
 !          6-hourly files
 !          --------------
            nhms = (isyn-1) * 060000
+
+           print *, 'Working on ... ', trim(infile(ifile)), nymd, nhms
 
 !         Read all data for this synoptic time
 !         ------------------------------------

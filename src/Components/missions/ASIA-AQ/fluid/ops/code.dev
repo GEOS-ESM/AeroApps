@@ -1,0 +1,27 @@
+def wget_upload(request):
+
+    url         = request['url']
+    remote_file = os.path.join(url,request['remote_file'])
+    local_file  = request['local_file']
+    local_dir   = os.path.dirname(local_file)
+
+    try:
+        os.makedirs(local_dir, 0755)
+    except:
+        pass
+
+    print remote_file
+#   r = requests.get(remote_file)
+#   with open(local_file, 'wb') as f:
+#       f.write(r.content)
+
+#   context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+#   fh = urllib2.urlopen(remote_file, context=context)
+#   fhd = fh.read()
+
+#   with open(local_file, 'wb') as f:
+#       f.write(fhd)
+
+#   print remote_file, local_file
+#   urllib.urlretrieve(remote_file, local_file)
+
