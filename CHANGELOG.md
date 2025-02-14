@@ -4,6 +4,14 @@
 
 ### Added
 
+### Fixed
+
+### Changed
+
+## [v2.1.0] - 2025-02-14
+
+### Added
+
 - Added DB_DEEP data stream for VIIRS NNR
 - scripts to plot satellite tracks for each day - focused on ASIA-AQ regions, but can be extended.
 - ASIA-AQ mission directory initialized with FLUID instance from FIREX-AQ
