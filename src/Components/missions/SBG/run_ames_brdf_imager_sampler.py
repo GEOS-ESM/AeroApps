@@ -20,6 +20,7 @@ from datetime        import datetime, timedelta
 from dateutil.parser import parse         as isoparser
 from netCDF4         import Dataset
 import numpy         as np
+from MAPL.config     import Config
 
 if os.path.exists('/discover/nobackup'):
     nccat = '/usr/local/other/nco/4.8.1/bin/ncrcat'
@@ -54,7 +55,7 @@ if __name__ == "__main__":
     # Defaults
     DT_mins = 5
     algo    = "linear"
-    nproc    = 120
+    nproc   = 120 
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",
@@ -89,17 +90,8 @@ if __name__ == "__main__":
     # -----------------
     cf = Config(args.sampler_pcf,delim=' = ')
 
-    rcFiles = cf('RCFILES')
-    if ',' in rcFiles:
-        rcFiles = rcFiles.replace(' ','').split(',')
-    else:
-        rcFiles = (rcFiles.replace(' ',''),)
-
-    colNames = cf('COLNAMES')
-    if ',' in colNames:
-        colNames = colNames.replace(' ','').split(',')
-    else:
-        colNames = (colNames.replace(' ',''),)
+    rcFile = cf('RCFILES')
+    colName = cf('COLNAMES')
 
     orbitname = cf('ORBITNAME')
     instname  = cf('INSTNAME')
@@ -107,6 +99,9 @@ if __name__ == "__main__":
     cf             = Config(args.track_pcf,delim=' = ')
     inTemplate     = cf('inDir')     + '/' + cf('inFile')
     inTemplate     = inTemplate.replace('%orbitname',orbitname).replace('%ORBITNAME',orbitname.upper())
+
+    cf             = Config(rcFile,delim=' = ')
+    brdfPath       = cf('brdfPath')
 
     cmds      = []
     filelist  = []
@@ -125,27 +120,27 @@ if __name__ == "__main__":
         minute = str(date.minute).zfill(2)
 
         swathFile = inTemplate.replace('%col',instname).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute)
-        for rc,colname in zip(rcFiles,colNames):
-            nymd   = str(date.date()).replace('-','')
-            year  = str(date.year)
-            month = str(date.month).zfill(2)
-            day   = str(date.day).zfill(2)
-            hour   = str(date.hour).zfill(2)
-            minute = str(date.minute).zfill(2)
 
-            outFile = inTemplate.replace('%col',colname).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute)
+        nymd   = str(date.date()).replace('-','')
+        year  = str(date.year)
+        month = str(date.month).zfill(2)
+        day   = str(date.day).zfill(2)
+        hour   = str(date.hour).zfill(2)
+        minute = str(date.minute).zfill(2)
 
-            Options =     " --outFile=" + outFile       + \
-                          " --format=NETCDF4_CLASSIC"      + \
-                          " --isoTime"  +\
-                          " --algorithm=" + args.algo
+        outFile = inTemplate.replace('%col',colName).replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute)
 
-            if args.verbose:
-                Options += " --verbose"
+        Options =     " --outFile=" + outFile       + \
+                      " --format=NETCDF4_CLASSIC"      + \
+                      " --isoTime"  +\
+                      " --algorithm=" + args.algo
 
-            cmd = './imager_sampler.py {} {} {}'.format(Options,swathFile,rc)
-            cmds.append(cmd)
-            filelist.append(outFile)
+        if args.verbose:
+            Options += " --verbose"
+
+        cmd = './ames_brdf_imager_sampler.py {} {} {}'.format(Options,swathFile,brdfPath)
+        cmds.append(cmd)
+        filelist.append(outFile)
 
         date += dt
 
