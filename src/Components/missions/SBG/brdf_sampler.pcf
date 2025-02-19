@@ -1,0 +1,6 @@
+# LIDAR SAMPLING
+ORBITNAME  = ssd650 
+INSTNAME   = sbg 
+RCFILES  = sampling/ames_brdf.pcf
+COLNAMES = ames_brdf
+# LIDAR SAMPLING
