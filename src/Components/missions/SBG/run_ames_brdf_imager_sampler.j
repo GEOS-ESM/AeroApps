@@ -31,4 +31,4 @@ source ./setup_env
 ######         Do Sampling
 ######
 ##################################################################
-python -u run_ames_brdf_imager_sampler.py -v --nproc 120 -D 1 2006-01-16T18 2006-01-16T19 imager_files.pcf brdf_sampler.pcf > slurm_${SLURM_JOBID}_py.out
+python3 -u run_ames_brdf_imager_sampler.py -v --nproc 2 -D 1 2006-01-16T17:00 2006-01-16T18:00 imager_files.pcf brdf_sampler.pcf > slurm_${SLURM_JOBID}_py.out
