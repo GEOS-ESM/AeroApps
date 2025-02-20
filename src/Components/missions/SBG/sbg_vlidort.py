@@ -110,6 +110,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
 
             if not dryrun:
                 # Run VLIDORT
+                print('++++ Running VLIDORT ++++')
                 self.runVLIDORT()
                 self.writeNC() 
 
@@ -552,7 +553,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
 if __name__ == "__main__":
 
     # Defaults
-    DT_hours   = 1
+    DT_mins   = 1
     rcFile     = 'rc/Aod_EOS_%ich.rc'
     albedoType = None
 
