@@ -22,7 +22,7 @@ install (
 # these are non-executaables
 set (RCFILES
     polar07.pcf
-    ssd475.pcf
+    ssd450.pcf
     swath_files.pcf
     tile_files.pcf
     )
