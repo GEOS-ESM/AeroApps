@@ -22,11 +22,6 @@ from netCDF4         import Dataset
 import numpy         as np
 from MAPL.config     import Config
 
-if os.path.exists('/discover/nobackup'):
-    nccat = '/usr/local/other/nco/4.8.1/bin/ncrcat'
-else:
-    nccat = '/ford1/share/dasilva/bin/ncrcat'
-
 def StartNew(processes,cmds,nextproc,totalproc):
    """ Start a new subprocess if there is work to do """
 
@@ -146,14 +141,16 @@ if __name__ == "__main__":
 
     totalproc = len(cmds)
 
-    # run trajectory sampler on model fields
-    # split across multiple processors 
-    # This next bit of code manages the processes
-    # This will start the max processes running  
-    processes = [] 
-    processes, nextproc = CheckRunning(processes,cmds,0,totalproc,args)
-    while len(processes)>0: # Some things still going on
-        time.sleep(10)      # Wait
-        # add more processes as other ones finish
-        processes, nextproc = CheckRunning(processes,cmds,nextproc,totalproc,args)
+
+    if not args.dryrun:
+        # run trajectory sampler on model fields
+        # split across multiple processors 
+        # This next bit of code manages the processes
+        # This will start the max processes running  
+        processes = [] 
+        processes, nextproc = CheckRunning(processes,cmds,0,totalproc,args)
+        while len(processes)>0: # Some things still going on
+            time.sleep(10)      # Wait
+            # add more processes as other ones finish
+            processes, nextproc = CheckRunning(processes,cmds,nextproc,totalproc,args)
 
