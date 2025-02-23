@@ -65,7 +65,8 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
                 nstreams=12,
                 plane_parallel=True,
                 brdfFile=None,
-                verbose=False):
+                verbose=False,
+                nproc=125):
         self.SDS_AER     = SDS_AER
         self.SDS_MET     = SDS_MET
         self.SDS_INV     = SDS_INV
@@ -81,7 +82,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         self.plane_parallel = plane_parallel
         self.instname    = instname
         self.ich         = ich
-
+        self.nproc       = nproc
 
         # get granule dimensions
         self.getDims()
@@ -188,7 +189,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         ds = xr.open_dataset(self.inFile.replace('%col',col)) 
         self.ntyme,self.nlev,self.nacross = ds.sizes['time'],ds.sizes['lev'],ds.sizes['ncross']
         self.nobs = self.nacross*self.ntyme
-        self.nbatch = 125
+        self.nbatch = self.nproc
         self.nMom = 300 
 
     #---
@@ -555,6 +556,7 @@ if __name__ == "__main__":
 
     # Defaults
     DT_mins   = 1
+    nproc     = 125
     rcFile     = 'rc/Aod_EOS_%ich.rc'
     albedoType = None
 
@@ -594,6 +596,9 @@ if __name__ == "__main__":
 
     parser.add_argument("-r", "--dryrun",action="store_true",
                         help="do a dry run (default=False).")
+
+    parser.add_argument("-n", "--nproc",default=nproc,
+                        help="Number of processors (default=%i)"%nproc)
 
     args = parser.parse_args()
     albedoType     = args.albedotype
@@ -664,7 +669,8 @@ if __name__ == "__main__":
                             args.ich,
                             args.dryrun,
                             brdfFile=brdfFile,
-                            verbose=args.verbose)
+                            verbose=args.verbose,
+                            nproc=args.nproc)
 
 
         date += Dt
