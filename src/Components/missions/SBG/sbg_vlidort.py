@@ -133,7 +133,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         destination.close()
 
     #---
-    def getEdgeVars(self,sob,eob):
+    def getEdgeVars(self,iobs):
         """
         Get altitude, pressure, and temperature and edge of layers
         """
@@ -143,8 +143,8 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         # AIRDENS: kg m-3
         # GRAV: m s-2
         # -----------------------------------------
-        DELP = self.aer['DELP'].isel(nobs=slice(sob,eob)).values
-        AIRDENS = self.aer['AIRDENS'].isel(nobs=slice(sob,eob)).values
+        DELP = self.aer['DELP'].isel(nobs=iobs).values
+        AIRDENS = self.aer['AIRDENS'].isel(nobs=iobs).values
         rhodz = DELP / GRAV
         dz = rhodz / AIRDENS       # column thickness in m
 
@@ -323,7 +323,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         """
 
         # Initiate output arrays
-        iGood = self.iGood
+        iGood = np.arange(len(self.iGood))[self.iGood]
         nobs   = self.nobs
         nlev   = self.nlev
         nch    = 1
@@ -341,10 +341,11 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         for sob in range(0,self.nobs,self.nbatch):
             print('sob, nobs',sob, self.nobs)
             eob = min([self.nobs,sob + self.nbatch])
+            iobs = iGood[sob:eob]
             self.channel = [self.channels[self.ich]]
 
             # Calculate ROT
-            self.getEdgeVars(sob,eob)
+            self.getEdgeVars(iobs)
             args = [self.channel, self.pe.astype('float64'), self.ze.astype('float64'), self.te.astype('float64'), MISSING, self.verbose]
             vlidortWrapper = WrapperFuncs['ROT_CALC']
             # [lev,nobs,ch], [ch]
@@ -355,7 +356,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
 
             # calculate AOPs
             for sds in self.AERNAMES + ['PS','DELP','RH']:
-                self.__dict__[sds] = self.aer[sds].isel(nobs=slice(sob,eob))
+                self.__dict__[sds] = self.aer[sds].isel(nobs=iobs)
 
             self.computeMie()
             tau = self.tau.astype('float64')
@@ -366,12 +367,12 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
             # Get surface data
             npts = eob - sob
             param     = self.RTLSparam[:,:,0:npts]
-            kernel_wt = self.kernel_wt.isel(nobs=slice(sob,eob)).astype('float64')
+            kernel_wt = self.kernel_wt.isel(nobs=iobs).astype('float64')
 
             # get angles
-            vza = self.VZA.isel(nobs=slice(sob,eob)).astype('float64')
-            sza = self.SZA.isel(nobs=slice(sob,eob)).astype('float64')
-            raa = self.RAA.isel(nobs=slice(sob,eob)).astype('float64')
+            vza = self.VZA.isel(nobs=iobs).astype('float64')
+            sza = self.SZA.isel(nobs=iobs).astype('float64')
+            raa = self.RAA.isel(nobs=iobs).astype('float64')
             
             I = []
             Q = []
