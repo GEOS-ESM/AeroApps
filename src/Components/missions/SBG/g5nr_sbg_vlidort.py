@@ -153,7 +153,6 @@ class WORKSPACE(JOBS):
         self.tmp         = args.tmp
         self.profile     = args.profile
         self.nproc       = args.nproc
-        self.rcFile      = args.rcFile
         
         # get number of channels
         cf        = Config(args.inst_pcf,delim=' = ')
@@ -175,7 +174,7 @@ class WORKSPACE(JOBS):
         # create directory
         while sdate < self.enddate:
             for ich in np.arange(self.nch):
-                workpath = '{}/{}.{3d}'.format(self.tmp,sdate.isoformat(),ich)
+                workpath = '{}/{}.{:03d}'.format(self.tmp,sdate.isoformat(),ich)
                 if os.path.exists(workpath):
                     shutil.rmtree(workpath)
 
@@ -196,7 +195,7 @@ class WORKSPACE(JOBS):
                 shutil.copyfile(self.inst_pcf,outfile)
 
                 outfile = '{}/Aod_EOS.rc'.format(workpath)
-                shutil.copyfile('Aod_EOS.rc',outFile)
+                shutil.copyfile('Aod_EOS.rc',outfile)
 
                 #link over needed python scripts
                 source = ['sbg_vlidort.py','setup_env']
@@ -229,8 +228,8 @@ class WORKSPACE(JOBS):
             # replace one line
             iso1 = sdate.isoformat()
             iso2 = edate.isoformat()
-            newline = 'nohup python3 -u sbg_vlidort.py -v --nproc {} --DT_mins {} {} {} {} {} {} {} >&'.format(self.nproc,self.Dt,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf,ich) + ' slurm_${SLURM_JOBID}_py.out\n'
-            text[-3] = newline
+            newline = 'nohup python3 -u sbg_vlidort.py  --nproc {} --DT_mins {} {} {} {} {} {} {} >&'.format(self.nproc,self.Dt,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf,ich) + ' slurm_${SLURM_JOBID}_py.out\n'
+            text[-6] = newline
             f.close()
 
             #  write out
@@ -277,7 +276,6 @@ if __name__ == '__main__':
     nproc    = 125
     slurm    = 'run_sbg_vlidort.j'
     tmp      = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/SBG/workdir/sbg_vlidort'
-    rcFile     = 'rc/Aod_EOS_%ich.rc'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
@@ -291,9 +289,6 @@ if __name__ == '__main__':
 
     parser.add_argument("inst_pcf",
                         help="prep config file with instrument variables")
-
-    parser.add_argument("--rcFile",default=rcFile,
-                        help="rcFile (default=%s)"%rcFile)
 
     parser.add_argument('-D',"--DT_mins", default=DT_mins, type=int,
                         help="Timestep in minutes for each granule file (default=%i)"%DT_mins)
