@@ -120,6 +120,9 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         """
         Update the rcFile if needed
         """
+        rcDir = os.path.dirname(self.rcFile)
+        if not os.path.exists(rcDir):
+            os.makedirs(rcDir)
 
         # Copy over rc and edit
         source = open('Aod_EOS.rc','r')
@@ -548,7 +551,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         nc.close()
 
         if self.verbose:
-            print(" <> wrote %s %d %d"%(self.outFile,ityme,self.ntyme))
+            print(" <> wrote %s "%(self.outFile))
 
 #------------------------------------ M A I N ------------------------------------
 
@@ -597,7 +600,7 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--dryrun",action="store_true",
                         help="do a dry run (default=False).")
 
-    parser.add_argument("-n", "--nproc",default=nproc,
+    parser.add_argument("-n", "--nproc",default=nproc, type=int,
                         help="Number of processors (default=%i)"%nproc)
 
     args = parser.parse_args()
