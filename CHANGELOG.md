@@ -1,7 +1,8 @@
 # ChangeLog
 
 ## [Unreleased]
-
+### Added
+- Script to read MPL Aerosol parameters and display profiles
 ### Added
 
 - Added DB_DEEP data stream for VIIRS NNR
