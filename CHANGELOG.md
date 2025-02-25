@@ -1,7 +1,8 @@
 # ChangeLog
 
 ## [Unreleased]
-
+### Added
+- Script to read MPL Aerosol parameters and display profiles
 ### Added
 
 ### Fixed

@@ -24,9 +24,3 @@ MAPL:
   remote: ../MAPL.git
   tag: v2.39.0
   develop: develop
-
-GMAOpyobs:
-  local: ./src/Shared/GMAO_Shared/GMAO_pyobs@
-  remote: ../GMAOpyobs.git
-  tag: v1.2.1
-  develop: develop
