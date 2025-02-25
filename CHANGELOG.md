@@ -5,6 +5,14 @@
 - Script to read MPL Aerosol parameters and display profiles
 ### Added
 
+### Fixed
+
+### Changed
+
+## [v2.1.0] - 2025-02-14
+
+### Added
+
 - Added DB_DEEP data stream for VIIRS NNR
 - scripts to plot satellite tracks for each day - focused on ASIA-AQ regions, but can be extended.
 - ASIA-AQ mission directory initialized with FLUID instance from FIREX-AQ
@@ -22,6 +30,7 @@
 ### Changed
 
 - Update GMAOpyobs to v1.0.8
+- Update GMAOpyobs to v1.2.1
 - Update to ESMA_env v4.8.2 (fixes for RHEL8 GMAO machines)
 
 ## [v2.0.2] - 2023-05-25
