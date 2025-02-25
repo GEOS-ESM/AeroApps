@@ -204,7 +204,7 @@ class WORKSPACE(JOBS):
 
                 self.dirstring.append(workpath)
 
-                sdate += self.dt
+            sdate += self.dt
 
     def edit_slurm(self):
         for workpath in self.dirstring:
