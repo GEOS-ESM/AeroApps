@@ -24,10 +24,3 @@ MAPL:
   remote: ../MAPL.git
   tag: v2.39.0
   develop: develop
-
-GMAOpyobs:
-  local: ./src/Shared/GMAO_Shared/GMAO_pyobs@
-  remote: ../GMAOpyobs.git
-  #tag: v1.0.8
-  branch: feature/sgassoumd/tropomi_l2_reader 
-  develop: develop
