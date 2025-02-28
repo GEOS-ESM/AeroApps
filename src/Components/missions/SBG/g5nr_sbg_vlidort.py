@@ -109,8 +109,8 @@ class JOBS(object):
             if countDone == numjobs:
                 stat = 1
             else:
-                print('Waiting 30 minutes')
-                time.sleep(60*30)
+                print('Waiting 10 minutes')
+                time.sleep(60*10)
             
 
         # Exited while loop
@@ -228,7 +228,7 @@ class WORKSPACE(JOBS):
             # replace one line
             iso1 = sdate.isoformat()
             iso2 = edate.isoformat()
-            newline = 'nohup python3 -u sbg_vlidort.py  --nproc {} --DT_mins {} {} {} {} {} {} {} >&'.format(self.nproc,self.Dt,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf,ich) + ' slurm_${SLURM_JOBID}_py.out\n'
+            newline = 'python3 -u ./sbg_vlidort.py  --nproc {} --DT_mins {} {} {} {} {} {} {} >'.format(self.nproc,self.Dt,iso1,iso2,self.track_pcf,self.orbit_pcf,self.inst_pcf,ich) + ' slurm_${SLURM_JOBID}_py.out\n'
             text[-6] = newline
             f.close()
 
