@@ -98,7 +98,9 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         # limit iGood to land pixels
         self.LandSeaMask()
 
-        if self.nobs > 0:
+        if self.nobs == 0:
+            self.writeNC(empty=True)
+        elif self.nobs > 0:
 
             # Read in model data
             self.readSampledGEOS()
@@ -422,7 +424,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
             self.depol_ratio = depol_ratio
         p.close()
     #---
-    def writeNC (self,zlib=True):
+    def writeNC (self,zlib=True,empty=False):
         """
         Write a NetCDF file vlidort output
         """
@@ -432,7 +434,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
 
         # Open NC file
         # ------------
-        nc = Dataset(self.outFile,'w',format='NETCDF4_CLASSIC')
+        nc = Dataset(self.outFile,'w',format='NETCDF4')
 
         # Set global attributes
         # ---------------------
@@ -448,9 +450,9 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         # Create dimensions
         # -----------------
         nch = 1
-        nt = nc.createDimension('time',self.ntyme)
+        nt = nc.createDimension('time',None)
         nz = nc.createDimension('lev',self.nlev)
-        nh = nc.createDimension('ch',nch)
+        nh = nc.createDimension('ch',None)
         nx = nc.createDimension('across',self.nacross)
 
         # Coordinate variables
@@ -465,7 +467,14 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         _copyVar(nctrj,nc,'lev', dtype='f4',zlib=zlib,verbose=self.verbose)
         nctrj.close()
 
-
+        dim = ('ch')
+        v = nc.createVariable('channel','f4',dim,zlib=zlib,fill_value=MISSING)
+        v.standard_name = 'channel'
+        v.long_name     = 'channel index'
+        v.missing_value = MISSING
+        v.units         = "None"
+        v[:] = self.ich       
+ 
         # Write VLIDORT Outputs
         # ---------------------
         dim = ('time','across','ch')
@@ -474,77 +483,88 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         ref.long_name     = 'reflectance at the top of the atmosphere' 
         ref.missing_value = MISSING
         ref.units         = "None"
-        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
-        temp[self.iGood,:] = self.reflectance
-        ref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        if not empty:
+            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+            temp[self.iGood,:] = self.reflectance
+            ref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
         i = nc.createVariable('I','f4',dim,zlib=zlib,fill_value=MISSING)
         i.standard_name = 'TOA I' 
         i.long_name     = 'intensity at the top of the atmosphere' 
         i.missing_value = MISSING
         i.units         = "W m-2 sr-1 nm-1"
-        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
-        temp[self.iGood,:] = self.I
-        i[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        if not empty:
+            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+            temp[self.iGood,:] = self.I
+            i[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
         q = nc.createVariable('Q','f4',dim,zlib=zlib,fill_value=MISSING)
         q.standard_name = 'TOA Q' 
         q.long_name     = 'Q-component of the stokes vector at the top of the atmopshere' 
         q.missing_value = MISSING
         q.units         = "W m-2 sr-1 nm-1"
-        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
-        temp[self.iGood,:] = self.Q
-        q[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        if not empty:
+            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+            temp[self.iGood,:] = self.Q
+            q[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
         u = nc.createVariable('U','f4',dim,zlib=zlib,fill_value=MISSING)
         u.standard_name = 'TOA U'
         u.long_name     = 'U-component of the stokes vector at the top of the atmopshere' 
         u.missing_value = MISSING
         u.units         = "W m-2 sr-1 nm-1"
-        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
-        temp[self.iGood,:] = self.U
-        u[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        if not empty:
+            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+            temp[self.iGood,:] = self.U
+            u[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
         sref = nc.createVariable('surf_reflectance','f4',dim,zlib=zlib,fill_value=MISSING)
         sref.standard_name = 'Surface Reflectance' 
         sref.long_name     = 'Bi-Directional Surface Reflectance' 
         sref.missing_value = MISSING
         sref.units         = "None"
-        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
-        temp[self.iGood,:] = self.surf_reflectance
-        sref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        if not empty:
+            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+            temp[self.iGood,:] = self.surf_reflectance
+            sref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
         sref = nc.createVariable('surf_reflectance_Q','f4',dim,zlib=zlib,fill_value=MISSING)
         sref.standard_name = 'Surface Reflectance Q' 
         sref.long_name     = 'Bi-Directional Surface Reflectance Q'
         sref.missing_value = MISSING
         sref.units         = "None"
-        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
-        temp[self.iGood,:] = self.BR_Q
-        sref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        if not empty:
+            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+            temp[self.iGood,:] = self.BR_Q
+            sref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
         sref = nc.createVariable('surf_reflectance_U','f4',dim,zlib=zlib,fill_value=MISSING)
         sref.standard_name = 'Surface Reflectance U' 
         sref.long_name     = 'Bi-Directional Surface Reflectance U' 
         sref.missing_value = MISSING
         sref.units         = "None"
-        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
-        temp[self.iGood,:] = self.BR_U
-        sref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        if not empty:
+            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+            temp[self.iGood,:] = self.BR_U
+            sref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
         rot = nc.createVariable('ROT','f4',('lev','time','across','ch',),zlib=zlib,fill_value=MISSING)
         rot.long_name = 'Rayleigh Optical Thickness'
         rot.missing_value = MISSING
         rot.units         = "None"
-        temp = np.ones([self.nlev,self.ntyme*self.nacross,nch])*MISSING
-        temp[:,self.iGood,:] = self.ROT
-        rot[:]            = temp.reshape([self.nlev,self.ntyme,self.nacross,nch])
+        if not empty:
+            temp = np.ones([self.nlev,self.ntyme*self.nacross,nch])*MISSING
+            temp[:,self.iGood,:] = self.ROT
+            rot[:]            = temp.reshape([self.nlev,self.ntyme,self.nacross,nch])
 
-        d = nc.createVariable('depol_ratio','f4',('ch',),zlib=zlib,fill_value=MISSING)
+        d = nc.createVariable('depol_ratio','f4',('time','across','ch',),zlib=zlib,fill_value=MISSING)
         d.long_name = 'depolarization ratio'
         d.missing_value = MISSING
         d.units         = "None"
-        d[:]            = self.depol_ratio
+        if not empty:
+            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
+            temp[self.iGood,:] = self.depol_ratio[:]
+            d[:]            = temp.reshape([self.ntyme,self.nacross,nch])
 
         # Close the file
         # --------------
@@ -560,7 +580,7 @@ if __name__ == "__main__":
     # Defaults
     DT_mins   = 1
     nproc     = 125
-    rcFile     = 'rc/Aod_EOS_%ich.rc'
+    rcFile     = 'rc/Aod_EOS_ich.rc'
     albedoType = None
 
 #   Parse command line options
@@ -588,11 +608,10 @@ if __name__ == "__main__":
                         help="albedo type keyword. default is to figure out according to channel")
 
     parser.add_argument("--rcFile",default=rcFile,
-                        help="rcFile (default=%s)"%rcFile)
+                        help="rcFile (default={})".format(rcFile))
 
     parser.add_argument("-D","--DT_mins", default=DT_mins, type=int,
                         help="Timestep in minutes for each file (default=%i)"%DT_mins)
-
 
     parser.add_argument("-v", "--verbose",action="store_true",
                         help="Verbose mode (default=False).")
@@ -652,7 +671,7 @@ if __name__ == "__main__":
             brdfFile = brdfTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',orbitname).replace('%ORBITNAME',ORBITNAME)
 
 
-        rcFile = args.rcFile.replace('%ich',str(args.ich).zfill(3))
+        rcFile = args.rcFile.replace('ich',str(args.ich).zfill(3))
 
         # Initialize VLIDORT class getting aerosol optical properties
         # -----------------------------------------------------------
