@@ -13,7 +13,9 @@ import argparse
 import numpy as np
 import time
 from   MAPL.config     import Config
-
+from   glob import glob
+from netCDF4 import Dataset
+import xarray as xr
 
 class WORKSPACE(object):
     """ Create slurm scripts for running run_imager_sampler.py """
@@ -22,7 +24,6 @@ class WORKSPACE(object):
         self.Date      = isoparser(args.iso_t1)
         self.enddate   = isoparser(args.iso_t2)
         self.dti       = timedelta(minutes=args.dti_mins)
-        self.dto       = timedelta(minutes=args.dto_mins)
 
         self.track_pcf   = args.track_pcf
         self.orbit_pcf   = args.orbit_pcf
@@ -47,17 +48,13 @@ class WORKSPACE(object):
         cf             = Config(args.inst_pcf,delim=' = ')
         self.instname       = cf('instname')
 
-        # get list of outfiles
-        self.concat_time_outfiles()
+        # concat by channel
+        self.concat_by_ch()
 
-        # concat by time
-        self.concat_time()
 
-    def concat_time_outfiles(self):
+    def concat_by_ch(self):
         sdate = self.Date
-        self.outfiles = []
-        self.outdates = []
-        # create directory
+        self.ch_outfiles = []
         while sdate < self.enddate:
             nymd  = str(sdate.date()).replace('-','')
             year  = str(sdate.year)
@@ -66,78 +63,63 @@ class WORKSPACE(object):
             hour  = str(sdate.hour).zfill(2)
             minute = str(sdate.minute).zfill(2)
 
+            inFile = self.outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',self.orbitname).replace('%ORBITNAME',self.ORBITNAME).replace('%instname',self.instname).replace('%band','*')
 
-            outFile    = self.outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',self.orbitname).replace('%ORBITNAME',self.ORBITNAME).replace('%instname',self.instname)
+            infiles = sorted(glob(inFile))
 
-            self.outfiles.append(outFile)
-            self.outdates.append(sdate)
+            if len(infiles) != self.nch:
+                raise ValueError('not the right number of infiles, got {}, should be {}'.format(len(infiles),self.nch))
 
-            sdate += self.dto
+            outFile    = self.outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',self.orbitname).replace('%ORBITNAME',self.ORBITNAME).replace('%instname',self.instname).replace('_%band','')
 
-    def concat_time(self):
-        for ich in np.arange(self.nch):
-            for outfile,sdate in zip(self.outfiles,self.outdates):
-                edate = sdate + self.dto
-                infiles = []
-                while sdate < edate:
-                    nymd  = str(sdate.date()).replace('-','')
-                    year  = str(sdate.year)
-                    month = str(sdate.month).zfill(2)
-                    day   = str(sdate.day).zfill(2)
-                    hour  = str(sdate.hour).zfill(2)
-                    minute = str(sdate.minute).zfill(2)
+            # copy over first file
+            shutil.copyfile(infiles[0],outFile)
+            nc = Dataset(outFile,'a')
 
-                    inFile = self.outTemplate.replace('%year',year).replace('%month',month).replace('%day',day).replace('%nymd',nymd).replace('%hour',hour).replace('%minute',minute).replace('%orbitname',self.orbitname).replace('%ORBITNAME',self.ORBITNAME).replace('%instname',self.instname).replace('%band',str(ich).zfill(3))
+            # figure out which vars we're working with
+            varlist = []
+            for v in nc.variables.keys():
+                if 'ch' in nc.variables[v].dimensions:
+                    varlist.append(v)    
 
-                    infiles.append(inFile) 
-                    sdate += self.dti
-                self.infile = infiles
-                self.outfile = outfile 
-                # make time the record dimension
-                devnull = open(os.devnull, 'w')
-                for fname in infiles:
-                    cmd = '$BASEDIR/Linux/bin/ncks -O --mk_rec_dmn time {} {}'.format(fname,fname)
-                    stat = subprocess.call(cmd, shell=True, stdout=devnull)
+            varlist.remove("channel")
+            ch = nc.variables['channel']
 
-                # concantenate the files
-                self.outfile = outfile.replace('%band',str(ich).zfill(3))
-#                cmd = '$BASEDIR/Linux/bin/ncrcat {} {}'.format(' '.join(infiles),outfile)
-#                stat = subprocess.call(cmd, shell=True, stdout=devnull)
-   
-    def destroy_workspace(self,i,jobid):
-        os.chdir(self.dirstring[i])
+            # concat the along ch dimension
+            for ich,infile in enumerate(infiles[1:]):
+                nci = Dataset(infile)
+                ch[ich+1] = ich+1
+                for varname in varlist:
+                    v = nci.variables[varname][:]
+                    vo = nc.variables[varname]
+                    dim = np.array(vo.dimensions)
+                    ndim = len(dim)
 
-        if self.profile is False:
+                    if ndim == 3:
+                        vo[:,:,ich+1] = v
+                    elif ndim == 4:
+                        vo[:,:,:,ich+1] = v
+                nci.close()
 
-            errfile = 'slurm_' +jobid + '.err'
-            os.remove(errfile)        
-            outfile = 'slurm_' +jobid + '.out'
-            os.remove(outfile)        
+            nc.close()
 
-            outfile = 'slurm_' +jobid + '_py.out'
-            os.remove(outfile)     
+            # clean up inputs
+            for infile in infiles:
+                dirname = os.path.dirname(infile)
+                fname = os.path.basename(infile)
+                if not os.path.exists(dirname+'/ch'):
+                    os.makedirs(dirname+'/ch')
+                os.rename(infile,dirname+'/ch/'+fname)
+            
+            self.ch_outfiles.append(outFile)
 
-            os.remove(self.slurm)
-            os.remove(self.track_pcf)
-            os.remove(self.orbit_pcf)
-            os.remove(self.inst_pcf)
-            os.remove('Aod_EOS.rc')
-
-        # remove symlinks
-        source = ['sbg_vlidort.py','setup_env'] 
-        for src in source:
-            os.remove(src)
-
-        os.chdir(self.cwd)
-        if self.profile is False:
-            os.rmdir(self.dirstring[i])
+            sdate += self.dti
 
 
 if __name__ == '__main__':
     
     #Defaults
     dti_mins  = 1
-    dto_mins  = 5
 
     parser = argparse.ArgumentParser()
     parser.add_argument("iso_t1",help='starting iso time')
@@ -154,9 +136,6 @@ if __name__ == '__main__':
 
     parser.add_argument("--dti_mins", default=dti_mins, type=int,
                         help="Timestep in minutes for each input file (default=%i)"%dti_mins)
-
-    parser.add_argument("--dto_mins", default=dto_mins, type=int,
-                        help="Timestep in minutes for each output file (default=%i)"%dto_mins)
 
     parser.add_argument("-r", "--dryrun",action="store_true",
                         help="do a dry run (default=False).") 
