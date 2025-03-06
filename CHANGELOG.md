@@ -1,9 +1,9 @@
 # ChangeLog
 
 ## [Unreleased]
+
 ### Added
-- Script to read MPL Aerosol parameters and display profiles
-### Added
+- A new script to collocate TROPOMI over MPL sites 
 
 ### Fixed
 
