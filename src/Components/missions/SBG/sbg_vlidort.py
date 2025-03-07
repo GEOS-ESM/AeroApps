@@ -341,6 +341,9 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         self.BR_Q = np.ones([nobs,nch])*MISSING
         self.BR_U = np.ones([nobs,nch])*MISSING
         self.ROT  = np.ones([nlev,nobs,nch])*MISSING
+        self.SSA  = np.ones([nlev,nobs,nch])*MISSING
+        self.TAU  = np.ones([nlev,nobs,nch])*MISSING
+        self.G    = np.ones([nlev,nobs,nch])*MISSING
 
         p = Pool(self.nbatch)
         # loop through nobs in batches
@@ -365,9 +368,9 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
                 self.__dict__[sds] = self.aer[sds].isel(nobs=iobs)
 
             self.computeMie()
-            tau = self.tau.astype('float64')
-            ssa = self.ssa.astype('float64')
-            pmom = self.pmom.astype('float64')
+            tau = self.tau.astype('float64')  #(km,nch,nobs)
+            ssa = self.ssa.astype('float64')  #(km,nch,nobs)
+            pmom = self.pmom.astype('float64') #(km,nch,nobs,nMom,nPol)
 
 
             # Get surface data
@@ -422,6 +425,9 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
             self.BR_U[sob:eob,:] = BR_U
             self.ROT[:,sob:eob,:] = rot
             self.depol_ratio = depol_ratio
+            self.TAU[:,sob:eob,:] = np.transpose(tau,[0,2,1])
+            self.SSA[:,sob:eob,:] = np.transpose(ssa,[0,2,1])
+            self.G[:,sob:eob,:] = np.transpose(self.g,[0,2,1])
         p.close()
     #---
     def writeNC (self,zlib=True,empty=False):
@@ -470,10 +476,10 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         dim = ('ch')
         v = nc.createVariable('channel','f4',dim,zlib=zlib,fill_value=MISSING)
         v.standard_name = 'channel'
-        v.long_name     = 'channel index'
+        v.long_name     = 'channel wavelength'
         v.missing_value = MISSING
-        v.units         = "None"
-        v[:] = self.ich       
+        v.units         = "nm"
+        v[:] = self.channel 
  
         # Write VLIDORT Outputs
         # ---------------------
@@ -565,6 +571,33 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
             temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
             temp[self.iGood,:] = self.depol_ratio[:]
             d[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+
+        aop = nc.createVariable('TAU','f4',('lev','time','across','ch',),zlib=zlib,fill_value=MISSING)
+        aop.long_name = 'Aerosol Optical Thickness'
+        aop.missing_value = MISSING
+        aop.units         = "None"
+        if not empty:
+            temp = np.ones([self.nlev,self.ntyme*self.nacross,nch])*MISSING
+            temp[:,self.iGood,:] = self.TAU
+            aop[:]            = temp.reshape([self.nlev,self.ntyme,self.nacross,nch])
+
+        aop = nc.createVariable('SSA','f4',('lev','time','across','ch',),zlib=zlib,fill_value=MISSING)
+        aop.long_name = 'Aerosol Single Scattering Albedo'
+        aop.missing_value = MISSING
+        aop.units         = "None"
+        if not empty:
+            temp = np.ones([self.nlev,self.ntyme*self.nacross,nch])*MISSING
+            temp[:,self.iGood,:] = self.SSA
+            aop[:]            = temp.reshape([self.nlev,self.ntyme,self.nacross,nch])
+
+        aop = nc.createVariable('G','f4',('lev','time','across','ch',),zlib=zlib,fill_value=MISSING)
+        aop.long_name = 'aerosol assymetry parameter'
+        aop.missing_value = MISSING
+        aop.units         = "None"
+        if not empty:
+            temp = np.ones([self.nlev,self.ntyme*self.nacross,nch])*MISSING
+            temp[:,self.iGood,:] = self.G
+            aop[:]            = temp.reshape([self.nlev,self.ntyme,self.nacross,nch])
 
         # Close the file
         # --------------
