@@ -17,7 +17,6 @@ import argparse
 from   datetime        import datetime, timedelta
 from   dateutil.parser import parse         as isoparser
 from   MAPL.config     import Config
-from   netCDF4 import Dataset
 import numpy   as np
 import xarray  as xr
 from pyobs import mietable as mt
@@ -430,7 +429,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
             self.G[:,sob:eob,:] = np.transpose(self.g,[0,2,1])
         p.close()
     #---
-    def writeNC (self,zlib=True,empty=False):
+    def writeNC (self,empty=False):
         """
         Write a NetCDF file vlidort output
         """
@@ -438,170 +437,237 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         if not os.path.exists(os.path.dirname(self.outFile)):
             os.makedirs(os.path.dirname(self.outFile))
 
-        # Open NC file
-        # ------------
-        nc = Dataset(self.outFile,'w',format='NETCDF4')
-
-        # Set global attributes
-        # ---------------------
-        nc.title = 'VLIDORT-GEOS-SBG Simulator'
-        nc.institution = 'NASA/Goddard Space Flight Center'
-        nc.source = 'Global Model and Assimilation Office'
-        nc.history = 'VLIDORT simulation run on sampled GEOS'
-        nc.references = 'n/a'
-        nc.contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>'
-        nc.Conventions = 'CF'
-        nc.inFile = self.inFile
-     
-        # Create dimensions
-        # -----------------
+        # create xarray data arrays of outputs
+        # ------------------------------------
         nch = 1
-        nt = nc.createDimension('time',None)
-        nz = nc.createDimension('lev',self.nlev)
-        nh = nc.createDimension('ch',None)
-        nx = nc.createDimension('across',self.nacross)
-
-        # Coordinate variables
-        # --------------------
         col = 'aer_Nv'
-        if self.verbose: 
-            print('opening file',self.inFile.replace('%col',col))
-        nctrj       = Dataset(self.inFile.replace('%col',col))        
-        _copyVar(nctrj,nc,'trjLon',dtype='f4',zlib=zlib,verbose=self.verbose)
-        _copyVar(nctrj,nc,'trjLat',dtype='f4',zlib=zlib,verbose=self.verbose)
-        _copyVar(nctrj,nc,'time', dtype='i4',zlib=zlib,verbose=self.verbose)
-        _copyVar(nctrj,nc,'lev', dtype='f4',zlib=zlib,verbose=self.verbose)
-        nctrj.close()
+        dsaer = xr.open_dataset(self.inFile.replace('%col',col))
 
-        dim = ('ch')
-        v = nc.createVariable('channel','f4',dim,zlib=zlib,fill_value=MISSING)
-        v.standard_name = 'channel'
-        v.long_name     = 'channel wavelength'
-        v.missing_value = MISSING
-        v.units         = "nm"
-        v[:] = self.channel 
- 
-        # Write VLIDORT Outputs
-        # ---------------------
-        dim = ('time','across','ch')
-        ref = nc.createVariable('toa_reflectance','f4',dim,zlib=zlib,fill_value=MISSING)
-        ref.standard_name = 'TOA Reflectance' 
-        ref.long_name     = 'reflectance at the top of the atmosphere' 
-        ref.missing_value = MISSING
-        ref.units         = "None"
+        # Define attributes
+        toa_att = dict(
+                    standard_name="TOA Reflectance",
+                    long_name="reflectance at the top of the atmosphere",
+                    units="None",
+                    missing_value=MISSING,
+                    )
+
+        I_att = dict(
+                    standard_name="TOA I",
+                    long_name="intensity at the top of the atmosphere",
+                    units="W m-2 sr-1 nm-1",
+                    missing_value=MISSING,
+                    ) 
+        Q_att = dict(
+                    standard_name="TOA Q",
+                    long_name="Q-component of the stokes vector at the top of the atmopshere",
+                    units="W m-2 sr-1 nm-1",
+                    missing_value=MISSING,
+                    )
+
+        U_att = dict(
+                    standard_name="TOA U",
+                    long_name="U-component of the stokes vector at the top of the atmopshere",
+                    units="W m-2 sr-1 nm-1",
+                    missing_value=MISSING,
+                    )
+
+        sref_att = dict(
+                    standard_name="Surface Reflectance",
+                    long_name="Bi-Directional Surface Reflectance",
+                    units="None",
+                    missing_value=MISSING,
+                    )
+        srefq_att = dict(
+                    standard_name="Surface Reflectance Q",
+                    long_name="Bi-Directional Surface Reflectance Q",
+                    units="None",
+                    missing_value=MISSING,
+                    )
+
+        srefu_att = dict(
+                    standard_name="Surface Reflectance U",
+                    long_name="Bi-Directional Surface Reflectance U",
+                    units="None",
+                    missing_value=MISSING,
+                    )
+
+        depol_att = dict(
+                    standard_name="depolarization ratio",
+                    long_name="Rayleigh depolarization ratio",
+                    units="None",
+                    missing_value=MISSING,
+                    )
+
+        rot_att = dict(
+                    standard_name="Rayleigh optical thickness",
+                    long_name="Rayleigh optical thickness",
+                    units="None",
+                    missing_value=MISSING,
+                    )
+
+        ch_att = dict(
+                    standard_name="wavelength",
+                    long_name="wavelength",
+                    units="nm",
+                    missing_value=MISSING,
+                    )
+
+        aot_att = dict(
+                    standard_name="Aerosol Optical Thickness",
+                    long_name="Aerosol Optical Thickness",
+                    units="None",
+                    missing_value=MISSING,
+                    )
+
+        ssa_att = dict(
+                    standard_name="Aerosol Single Scattering Albedo",
+                    long_name="Aerosol Single Scattering Albedo",
+                    units="None",
+                    missing_value=MISSING,
+                    )
+
+        g_att = dict(
+                    standard_name="Aerosol Assymetry Parameter",
+                    long_name="Aerosol Assymetry Parameter",
+                    units="None",
+                    missing_value=MISSING,
+                    )
+
+        # Create dataset
+        ds = xr.Dataset(
+            data_vars=dict(
+                longitude=(['time','across'],dsaer['longitude'].squeeze().values,dsaer['longitude'].attrs),
+                latitude=(['time','across'],dsaer['latitude'].squeeze().values,dsaer['latitude'].attrs),
+                wavelength=(['ch'],self.channel,ch_att),
+            ),
+            coords=dict(
+                time=dsaer['time'],
+                lev=dsaer['lev'],
+                across=np.arange(self.nacross),
+                ch=[self.ich],
+            ),
+            attrs=dict(
+                title='VLIDORT-GEOS-SBG Simulator',
+                institution = 'NASA/Goddard Space Flight Center',
+                source = 'Global Model and Assimilation Office',
+                history = 'VLIDORT simulation run on sampled GEOS',
+                references = 'n/a',
+                contact = 'Patricia Castellanos <patricia.castellanos@nasa.gov>',
+                Conventions = 'CF',
+                inFile = self.inFile,
+                ),
+        )
+
+
+        # Add 2-D Variables
+        dims = ["time", "across", "ch"]
+        coords = dict(
+                time=dsaer['time'],
+                across=np.arange(self.nacross),
+                ch=[self.ich],
+            )
+
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
         if not empty:
-            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
             temp[self.iGood,:] = self.reflectance
-            ref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        da = xr.DataArray(temp.reshape([self.ntyme,self.nacross,nch]),dims=dims,coords=coords,attrs=toa_att)
+        ds['toa_reflectance'] = da
 
-        i = nc.createVariable('I','f4',dim,zlib=zlib,fill_value=MISSING)
-        i.standard_name = 'TOA I' 
-        i.long_name     = 'intensity at the top of the atmosphere' 
-        i.missing_value = MISSING
-        i.units         = "W m-2 sr-1 nm-1"
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
         if not empty:
-            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
             temp[self.iGood,:] = self.I
-            i[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        da = xr.DataArray(temp.reshape([self.ntyme,self.nacross,nch]),dims=dims,coords=coords,attrs=I_att)
+        ds['I'] = da
 
-        q = nc.createVariable('Q','f4',dim,zlib=zlib,fill_value=MISSING)
-        q.standard_name = 'TOA Q' 
-        q.long_name     = 'Q-component of the stokes vector at the top of the atmopshere' 
-        q.missing_value = MISSING
-        q.units         = "W m-2 sr-1 nm-1"
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
         if not empty:
-            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
             temp[self.iGood,:] = self.Q
-            q[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        da = xr.DataArray(temp.reshape([self.ntyme,self.nacross,nch]),dims=dims,coords=coords,attrs=Q_att)
+        ds['Q'] = da
 
-        u = nc.createVariable('U','f4',dim,zlib=zlib,fill_value=MISSING)
-        u.standard_name = 'TOA U'
-        u.long_name     = 'U-component of the stokes vector at the top of the atmopshere' 
-        u.missing_value = MISSING
-        u.units         = "W m-2 sr-1 nm-1"
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
         if not empty:
-            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
             temp[self.iGood,:] = self.U
-            u[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        da = xr.DataArray(temp.reshape([self.ntyme,self.nacross,nch]),dims=dims,coords=coords,attrs=U_att)
+        ds['U'] = da
 
-        sref = nc.createVariable('surf_reflectance','f4',dim,zlib=zlib,fill_value=MISSING)
-        sref.standard_name = 'Surface Reflectance' 
-        sref.long_name     = 'Bi-Directional Surface Reflectance' 
-        sref.missing_value = MISSING
-        sref.units         = "None"
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
         if not empty:
-            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
             temp[self.iGood,:] = self.surf_reflectance
-            sref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        da = xr.DataArray(temp.reshape([self.ntyme,self.nacross,nch]),dims=dims,coords=coords,attrs=sref_att)
+        ds['surf_reflectance'] = da
 
-        sref = nc.createVariable('surf_reflectance_Q','f4',dim,zlib=zlib,fill_value=MISSING)
-        sref.standard_name = 'Surface Reflectance Q' 
-        sref.long_name     = 'Bi-Directional Surface Reflectance Q'
-        sref.missing_value = MISSING
-        sref.units         = "None"
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
         if not empty:
-            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
             temp[self.iGood,:] = self.BR_Q
-            sref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        da = xr.DataArray(temp.reshape([self.ntyme,self.nacross,nch]),dims=dims,coords=coords,attrs=srefq_att)
+        ds['surf_reflectance_Q'] = da
 
-        sref = nc.createVariable('surf_reflectance_U','f4',dim,zlib=zlib,fill_value=MISSING)
-        sref.standard_name = 'Surface Reflectance U' 
-        sref.long_name     = 'Bi-Directional Surface Reflectance U' 
-        sref.missing_value = MISSING
-        sref.units         = "None"
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
         if not empty:
-            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
             temp[self.iGood,:] = self.BR_U
-            sref[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        da = xr.DataArray(temp.reshape([self.ntyme,self.nacross,nch]),dims=dims,coords=coords,attrs=srefu_att)
+        ds['surf_reflectance_U'] = da
 
-        rot = nc.createVariable('ROT','f4',('lev','time','across','ch',),zlib=zlib,fill_value=MISSING)
-        rot.long_name = 'Rayleigh Optical Thickness'
-        rot.missing_value = MISSING
-        rot.units         = "None"
+        temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
         if not empty:
-            temp = np.ones([self.nlev,self.ntyme*self.nacross,nch])*MISSING
-            temp[:,self.iGood,:] = self.ROT
-            rot[:]            = temp.reshape([self.nlev,self.ntyme,self.nacross,nch])
-
-        d = nc.createVariable('depol_ratio','f4',('time','across','ch',),zlib=zlib,fill_value=MISSING)
-        d.long_name = 'depolarization ratio'
-        d.missing_value = MISSING
-        d.units         = "None"
-        if not empty:
-            temp = np.ones([self.ntyme*self.nacross,nch])*MISSING
             temp[self.iGood,:] = self.depol_ratio[:]
-            d[:]            = temp.reshape([self.ntyme,self.nacross,nch])
+        da = xr.DataArray(temp.reshape([self.ntyme,self.nacross,nch]),dims=dims,coords=coords,attrs=depol_att)
+        ds['depol_ratio'] = da
 
-        aop = nc.createVariable('TAU','f4',('lev','time','across','ch',),zlib=zlib,fill_value=MISSING)
-        aop.long_name = 'Aerosol Optical Thickness'
-        aop.missing_value = MISSING
-        aop.units         = "None"
+
+        # Add 3-D varaibles
+        dims = ["lev","time", "across", "ch"]
+        coords=dict(
+                time=dsaer['time'],
+                lev=dsaer['lev'],
+                across=np.arange(self.nacross),
+                ch=[self.ich],
+            )
+
+        temp = np.ones([self.nlev,self.ntyme*self.nacross,nch])*MISSING
         if not empty:
-            temp = np.ones([self.nlev,self.ntyme*self.nacross,nch])*MISSING
+            temp[:,self.iGood,:] = self.ROT
+        da = xr.DataArray(temp.reshape([self.nlev,self.ntyme,self.nacross,nch]),dims=dims,coords=coords,attrs=rot_att)
+        ds['ROT'] = da
+
+        temp = np.ones([self.nlev,self.ntyme*self.nacross,nch])*MISSING
+        if not empty:
             temp[:,self.iGood,:] = self.TAU
-            aop[:]            = temp.reshape([self.nlev,self.ntyme,self.nacross,nch])
+        da = xr.DataArray(temp.reshape([self.nlev,self.ntyme,self.nacross,nch]),dims=dims,coords=coords,attrs=aot_att)
+        ds['TAU'] = da
 
-        aop = nc.createVariable('SSA','f4',('lev','time','across','ch',),zlib=zlib,fill_value=MISSING)
-        aop.long_name = 'Aerosol Single Scattering Albedo'
-        aop.missing_value = MISSING
-        aop.units         = "None"
+        temp = np.ones([self.nlev,self.ntyme*self.nacross,nch])*MISSING
         if not empty:
-            temp = np.ones([self.nlev,self.ntyme*self.nacross,nch])*MISSING
             temp[:,self.iGood,:] = self.SSA
-            aop[:]            = temp.reshape([self.nlev,self.ntyme,self.nacross,nch])
+        da = xr.DataArray(temp.reshape([self.nlev,self.ntyme,self.nacross,nch]),dims=dims,coords=coords,attrs=ssa_att)
+        ds['SSA'] = da
 
-        aop = nc.createVariable('G','f4',('lev','time','across','ch',),zlib=zlib,fill_value=MISSING)
-        aop.long_name = 'aerosol assymetry parameter'
-        aop.missing_value = MISSING
-        aop.units         = "None"
+        temp = np.ones([self.nlev,self.ntyme*self.nacross,nch])*MISSING
         if not empty:
-            temp = np.ones([self.nlev,self.ntyme*self.nacross,nch])*MISSING
             temp[:,self.iGood,:] = self.G
-            aop[:]            = temp.reshape([self.nlev,self.ntyme,self.nacross,nch])
+        da = xr.DataArray(temp.reshape([self.nlev,self.ntyme,self.nacross,nch]),dims=dims,coords=coords,attrs=g_att)
+        ds['G'] = da
 
-        # Close the file
-        # --------------
-        nc.close()
+        
+        # Write netcdf file
+        encoding = dict(
+            longitude={"zlib":True,"_FillValue":MISSING,"dtype":"f4",},
+            latitude={"zlib":True,"_FillValue":MISSING,"dtype":"f4",},
+            toa_reflectance={"zlib":True,"_FillValue":MISSING,"dtype":"f4",},
+            I={"zlib":True,"_FillValue":MISSING,"dtype":"f4",},
+            Q={"zlib":True,"_FillValue":MISSING,"dtype":"f4",},
+            U={"zlib":True,"_FillValue":MISSING,"dtype":"f4",},
+            surf_reflectance={"zlib":True,"_FillValue":MISSING,"dtype":"f4",},
+            surf_reflectance_Q={"zlib":True,"_FillValue":MISSING,"dtype":"f4",},
+            surf_reflectance_U={"zlib":True,"_FillValue":MISSING,"dtype":"f4",},
+            depol_ratio={"zlib":True,"_FillValue":MISSING,"dtype":"f4",},
+            ROT={"zlib":True,"_FillValue":MISSING,"dtype":"f4",},
+            TAU={"zlib":True,"_FillValue":MISSING,"dtype":"f4",},
+            SSA={"zlib":True,"_FillValue":MISSING,"dtype":"f4",},
+            G={"zlib":True,"_FillValue":MISSING,"dtype":"f4",},
+            )
+        ds.to_netcdf(path=self.outFile,format='NETCDF4',engine='netcdf4',encoding=encoding,unlimited_dims=['ch'])
 
         if self.verbose:
             print(" <> wrote %s "%(self.outFile))
