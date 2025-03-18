@@ -98,6 +98,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         self.LandSeaMask()
 
         if self.nobs == 0:
+            self.getChannels()
             self.writeNC(empty=True)
         elif self.nobs > 0:
 
@@ -250,7 +251,19 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
         self.iGood = self.iGood & self.iLand
         self.nobs = np.sum(self.iGood)
 
+    #---
+    def getChannels(self):
+        """
+        Read in AMES BRDF to get the channels
+        """
+        if self.verbose:
+            print('opening BRDF file ',self.brdfFile)
+        ds = xr.open_mfdataset(os.path.dirname(self.brdfFile)+'/*ames*',chunks="auto")
 
+        self.channels = ds.nwav.values  # microns
+        self.nch = len(self.channels)
+        self.channels = self.channels*1e3  # nm
+        ds.close()
     #---
     def readSampledAMESBRDF(self):
         """
@@ -538,7 +551,7 @@ class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
             data_vars=dict(
                 longitude=(['time','across'],dsaer['longitude'].squeeze().values,dsaer['longitude'].attrs),
                 latitude=(['time','across'],dsaer['latitude'].squeeze().values,dsaer['latitude'].attrs),
-                wavelength=(['ch'],self.channel,ch_att),
+                wavelength=(['ch'],self.channels[self.ich],ch_att),
             ),
             coords=dict(
                 time=dsaer['time'],
