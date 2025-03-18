@@ -19,7 +19,6 @@ from   dateutil.parser import parse         as isoparser
 from   MAPL.config     import Config
 import numpy   as np
 import xarray  as xr
-import yaml
 from pyobs.constants import MAPL_GRAV as GRAV
 from pyobs.constants import MAPL_RDRY as RGAS
 from pyobs.constants import MAPL_KAPPA as KAPPA
