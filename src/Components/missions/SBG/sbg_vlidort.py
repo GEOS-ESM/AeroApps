@@ -27,7 +27,7 @@ from pyobs.constants import MAPL_RDRY as RGAS
 from pyobs.constants import MAPL_KAPPA as KAPPA
 
 
-from py_leo_vlidort.vlidort import VLIDORT, get_chd, WrapperFuncs, MODIS_BRDF_run
+from py_leo_vlidort.vlidort import VLIDORT, WrapperFuncs, MODIS_BRDF_run
 from multiprocessing import Pool
 
 # Generic Lists of Varnames and Units
