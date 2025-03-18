@@ -20,7 +20,6 @@ from   MAPL.config     import Config
 import numpy   as np
 import xarray  as xr
 from pyobs import mietable as mt
-from pyobs.aop import G2GAOP
 import yaml
 from pyobs.constants import MAPL_GRAV as GRAV
 from pyobs.constants import MAPL_RDRY as RGAS
@@ -53,7 +52,7 @@ ncALIAS = {'LONGITUDE': 'longitude',
 MISSING = np.float32(-1.e+20)
 
 
-class ACCP_POLAR_VLIDORT(VLIDORT,G2GAOP):
+class ACCP_POLAR_VLIDORT(VLIDORT):
     """
     Everything needed for calling VLIDORT
     GEOS-5 has already been sampled on satellite track
