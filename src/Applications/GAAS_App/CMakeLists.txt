@@ -1,5 +1,7 @@
 esma_set_this()
 
+esma_add_subdirectories(f2py)
+
 set(srcs aod_util.F90  m_ana.F90  m_duplicate.F  m_obs.F90  m_simul.F90  m_sqc.F90)
 set_property(SOURCE ${srcs} PROPERTY COMPILE_FLAGS ${EXTENDED_SOURCE})
 
