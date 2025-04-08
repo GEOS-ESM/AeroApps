@@ -21,7 +21,7 @@ import time
 import matplotlib.pyplot as plt
 from scipy.special.orthogonal import legendre
 from math import sqrt, cos, factorial
-import eval_gsfun
+from accp_aop_comparison import calcP11, calcP12, calcP22_P33, calcP34
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
@@ -31,7 +31,7 @@ VNAMES_OC = ['OCPHOBIC','OCPHILIC']
 VNAMES_SU = ['SO4']
 
 META    = ['DELP','PS','RH','AIRDENS','LONGITUDE','LATITUDE','isotime']
-AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
+AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC #+ VNAMES_DU
 SDS_AER = META + AERNAMES
 SDS_MET = [] #[CLDTOT]
 SDS_INV = ['FRLAND']
@@ -96,7 +96,7 @@ class OPTICS_VLIDORT(VLIDORT,G2GAOP):
         """
         use pyobs utilities to get AOP
         """
-        aop = self.getAOPrt(wavelength=self.channels[ich],vector=True,m=self.nMom)
+        aop = self.getAOPrt(wavelength=self.channels[ich],vector=True,Species=['SU','SS','OC','BC'])
 
         # need to reshape these to [nlev,nobs]
         self.pyobstau.append(aop.AOT.astype('float64').transpose().to_numpy())
@@ -217,8 +217,6 @@ class OPTICS_VLIDORT(VLIDORT,G2GAOP):
         # Define Angles
         angle  = np.linspace(0,180,int(180/0.1)+1)
         theta  = np.radians(angle)
-        mu    = np.cos(theta)
-        ntheta = len(theta)
 
 
         fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(8, 6))
@@ -227,15 +225,12 @@ class OPTICS_VLIDORT(VLIDORT,G2GAOP):
         do_p11 = True
         if do_p11:
             ipol = 0
-            p11pyobs = np.zeros(ntheta)
-            p11mie   = np.zeros(ntheta)
             
             miepmom = self.miepmom[0].squeeze()[0,:,ipol]
             pyobspmom = self.pyobspmom[0].squeeze()[0,:,ipol]
-            for s in range(self.nMom):
-                P = legendre(s)
-                p11pyobs += pyobspmom[s]* P(mu)
-                p11mie += miepmom[s]* P(mu)
+
+            p11pyobs = calcP11(pyobspmom,theta,self.m)
+            p11mie   = calcP11(miepmom,theta,self.nMom)
 
             ax = axes[0,0]
             ax.plot(angle, p11pyobs,label='pyobs') 
@@ -248,35 +243,11 @@ class OPTICS_VLIDORT(VLIDORT,G2GAOP):
         do_P12 = True
         if do_P12:
             ipol = 1
-            m = 0
-            n = 2
-            gsf_coef = self.miepmom[0].squeeze()[0,:,ipol]
-            leg_coef = self.pyobspmom[0].squeeze()[0,:,ipol]
+            miepmom = self.miepmom[0].squeeze()[0,:,ipol]
+            pyobspmom = self.pyobspmom[0].squeeze()[0,:,ipol]
 
-            p12 = np.zeros(ntheta)
-            for i,t in enumerate(theta):
-                d0, dneg1 = eval_gsfun.d_mn(m,n,0,t)
-                pfunc = d0/(1j**(n-m)).real
-                p12[i] = gsf_coef[0]*pfunc
-                d1, d0 = eval_gsfun.d_mn(m,n,1,t,dm1=d0,dm2=dneg1)
-                pfunc = d1/(1j**(n-m)).real
-                p12[i] = p12[i] + gsf_coef[1]*pfunc
-
-                dm2 = d0
-                dm1 = d1
-                for s in range(2,self.nMom):
-                    dfunc, dm2 = eval_gsfun.d_mn(m,n,s,t,dm1=dm1,dm2=dm2)
-                    pfunc = dfunc/(1j**(n-m)).real
-
-                    p12[i] = p12[i] + gsf_coef[s]*pfunc
-
-                    dm1 = dfunc
-            p12mie = p12
-
-            p12pyobs = np.zeros(ntheta)
-            for s in range(self.nMom):
-                P = legendre(s)
-                p12pyobs += leg_coef[s]* P(mu)
+            p12mie = calcP11(miepmom,theta,self.nMom)
+            p12pyobs = calcP12(pyobspmom,theta,self.m)
 
             ax = axes[0,1] 
             ax.plot(angle,p12pyobs/p11pyobs,label='pyobs')
@@ -288,73 +259,24 @@ class OPTICS_VLIDORT(VLIDORT,G2GAOP):
         # ordered over nPol as P11, P12, P33, P34, P22, P44
         do_P33_P22 = True
         if do_P33_P22:
-            # first get a2 + a3
-            m = 2
-            n = 2
             ipol = 4
-            gsf_coef22 = self.miepmom[0].squeeze()[0,:,ipol]
-            leg_coef22 = self.pyobspmom[0].squeeze()[0,:,ipol]
+            miepmom22 = self.miepmom[0].squeeze()[0,:,ipol]
+            pyobspmom22 = self.pyobspmom[0].squeeze()[0,:,ipol]
 
             ipol = 2
-            gsf_coef33 = self.miepmom[0].squeeze()[0,:,ipol]
-            leg_coef33 = self.pyobspmom[0].squeeze()[0,:,ipol]
+            miepmom33 = self.miepmom[0].squeeze()[0,:,ipol]
+            pyobspmom33 = self.pyobspmom[0].squeeze()[0,:,ipol]
 
-            a2p3 = np.zeros(ntheta)
-            for i,t in enumerate(theta):
-                d0, dneg1 = eval_gsfun.d_mn(m,n,0,t)
-                pfunc = d0/(1j**(n-m)).real
-                a2p3[i] = (gsf_coef22[0]+gsf_coef33[0])*pfunc
-                d1, d0 = eval_gsfun.d_mn(m,n,1,t,dm1=d0,dm2=dneg1)
-                pfunc = d1/(1j**(n-m)).real
-                a2p3[i] = a2p3[i] + (gsf_coef22[1]+gsf_coef33[1])*pfunc
 
-                dm2 = d0
-                dm1 = d1
-                for s in range(2,self.nMom):
-                    dfunc, dm2 = eval_gsfun.d_mn(m,n,s,t,dm1=dm1,dm2=dm2)
-                    pfunc = dfunc/(1j**(n-m)).real
-
-                    a2p3[i] = a2p3[i] + (gsf_coef22[s]+gsf_coef33[s])*pfunc
-
-                    dm1 = dfunc
-
-            # next get a2 - a3
-            m = 2
-            n = -2
-            a2m3 = np.zeros(ntheta)
-            for i,t in enumerate(theta):
-                d0, dneg1 = eval_gsfun.d_mn(m,n,0,t)
-                pfunc = d0/(1j**(n-m)).real
-                a2m3[i] = (gsf_coef22[0]-gsf_coef33[0])*pfunc
-                d1, d0 = eval_gsfun.d_mn(m,n,1,t,dm1=d0,dm2=dneg1)
-                pfunc = d1/(1j**(n-m)).real
-                a2m3[i] = a2m3[i] + (gsf_coef22[1]-gsf_coef33[1])*pfunc
-
-                dm2 = d0
-                dm1 = d1
-                for s in range(2,self.nMom):
-                    dfunc, dm2 = eval_gsfun.d_mn(m,n,s,t,dm1=dm1,dm2=dm2)
-                    pfunc = dfunc/(1j**(n-m)).real
-
-                    a2m3[i] = a2m3[i] + (gsf_coef22[s]-gsf_coef33[s])*pfunc
-
-                    dm1 = dfunc
-
-            # now combine a2 + a3 = a2p3 with a2 - a3 = a2m3
-            p22mie = 0.5*(a2p3 + a2m3)
-            p33mie = a2p3 - p22mie
-
-            p22pyobs = np.zeros(ntheta)
-            p33pyobs = np.zeros(ntheta)
-            for s in range(self.nMom):
-                P = legendre(s)
-                p22pyobs += leg_coef22[s]* P(mu)
-                p33pyobs += leg_coef33[s]* P(mu)
+            p22pyobs,p33pyobs = calcP22_P33(pyobspmom22,pyobspmom33,theta,self.m)
+            p22mie = calcP11(miepmom22,theta,self.nMom)
+            p33mie = calcP11(miepmom33,theta,self.nMom)
 
             ax = axes[1,1]
             ax.plot(angle, p22pyobs/p11pyobs,label='pyobs')
             ax.plot(angle,p22mie/p11mie,label='mieobs')
             ax.legend()
+            ax.set_ylim([0.5,1.1])
             ax.set_title('P22 = P5')
 
             ax = axes[0,2]
@@ -368,37 +290,12 @@ class OPTICS_VLIDORT(VLIDORT,G2GAOP):
         do_P34 = True
         if do_P34:
             ipol = 3
-            m = 0
-            n = 2
-            gsf_coef = self.miepmom[0].squeeze()[0,:,ipol]
-            leg_coef = self.pyobspmom[0].squeeze()[0,:,ipol]
+            miepmom = self.miepmom[0].squeeze()[0,:,ipol]
+            pyobspmom = self.pyobspmom[0].squeeze()[0,:,ipol]
 
-            p34 = np.zeros(ntheta)
-            for i,t in enumerate(theta):
-                d0, dneg1 = eval_gsfun.d_mn(m,n,0,t)
-                pfunc = d0/(1j**(n-m)).real
-                p34[i] = gsf_coef[0]*pfunc
-                d1, d0 = eval_gsfun.d_mn(m,n,1,t,dm1=d0,dm2=dneg1)
-                pfunc = d1/(1j**(n-m)).real
-                p34[i] = p34[i] + gsf_coef[1]*pfunc
-
-                dm2 = d0
-                dm1 = d1
-                for s in range(2,self.nMom):
-                    dfunc, dm2 = eval_gsfun.d_mn(m,n,s,t,dm1=dm1,dm2=dm2)
-                    pfunc = dfunc/(1j**(n-m)).real
-
-                    p34[i] = p34[i] + gsf_coef[s]*pfunc
-
-                    dm1 = dfunc
-
-            p34mie = p34
-
-            p34pyobs = np.zeros(ntheta)
-            for s in range(self.nMom):
-                P = legendre(s)
-                p34pyobs += leg_coef[s]* P(mu)
-
+            p34mie = calcP11(miepmom,theta,self.nMom)
+            p34pyobs = calcP34(pyobspmom,theta,self.m)
+            
             ax = axes[1,0]
             ax.plot(angle, p34pyobs/p11pyobs,label='pyobs')
             ax.plot(angle,p34mie/p11mie,label='mieobs')
@@ -410,15 +307,12 @@ class OPTICS_VLIDORT(VLIDORT,G2GAOP):
         do_p44 = True
         if do_p44:
             ipol = 5
-            p44pyobs = np.zeros(ntheta)
-            p44mie   = np.zeros(ntheta)
 
             miepmom = self.miepmom[0].squeeze()[0,:,ipol]
             pyobspmom = self.pyobspmom[0].squeeze()[0,:,ipol]
-            for s in range(self.nMom):
-                P = legendre(s)
-                p44pyobs += pyobspmom[s]* P(mu)
-                p44mie += miepmom[s]* P(mu)
+
+            p44mie = calcP11(miepmom,theta,self.nMom)
+            p44pyobs = calcP11(pyobspmom,theta,self.m)
 
             ax = axes[1,2]
             ax.plot(angle, p44pyobs/p11pyobs,label='pyobs')
@@ -434,8 +328,8 @@ class OPTICS_VLIDORT(VLIDORT,G2GAOP):
 if __name__ == "__main__":
 
     # Defaults
-    miercFile     = 'rc/Aod_EOS_ich.rc'
-    pyobsrcFile   = 'm2_aop.yaml'
+    miercFile     = 'rc/Aod_EOS.m2_ich.rc'
+    pyobsrcFile   = 'm2_aop.geosmie.yaml'
     channels      = '360:380:5'
 #   Parse command line options
 #   --------------------------
