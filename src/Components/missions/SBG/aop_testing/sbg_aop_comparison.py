@@ -19,7 +19,9 @@ from pyobs.constants import MAPL_RDRY as RGAS
 from pyobs.constants import MAPL_KAPPA as KAPPA
 import time
 import matplotlib.pyplot as plt
-
+from scipy.special.orthogonal import legendre
+from math import sqrt, cos, factorial
+import eval_gsfun
 
 # Generic Lists of Varnames and Units
 VNAMES_DU = ['DU001','DU002','DU003','DU004','DU005']
@@ -29,7 +31,7 @@ VNAMES_OC = ['OCPHOBIC','OCPHILIC']
 VNAMES_SU = ['SO4']
 
 META    = ['DELP','PS','RH','AIRDENS','LONGITUDE','LATITUDE','isotime']
-AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC #+ VNAMES_DU
+AERNAMES = VNAMES_SU + VNAMES_SS + VNAMES_OC + VNAMES_BC + VNAMES_DU
 SDS_AER = META + AERNAMES
 SDS_MET = [] #[CLDTOT]
 SDS_INV = ['FRLAND']
@@ -191,23 +193,242 @@ class OPTICS_VLIDORT(VLIDORT,G2GAOP):
         """
         get back the full phase function from the moments
         """
-        for i in np.arange(self.p):
-            x_data,y_data = self.pyobspmom[0].squeeze()[0,:,i],self.miepmom[0].squeeze()[0,:,i]
-            fig, ax = plt.subplots()
-            ax.scatter(x_data, y_data)
 
-            # Add the 1:1 line
-            ax.axline((0, 0), slope=1, color='r', linestyle='--', label='1:1 line')
+        # compare the coefficients directly
+        do_direct = False
+        if do_direct:
+            for i in np.arange(self.p):
+                x_data,y_data = self.pyobspmom[0].squeeze()[0,:,i],self.miepmom[0].squeeze()[0,:,i]
+                fig, ax = plt.subplots()
+                ax.scatter(x_data, y_data)
 
-            # Set axis limits to make sure the 1:1 line spans the plot
-            min_val = min(min(x_data), min(y_data))
-            max_val = max(max(x_data), max(y_data))
-            ax.set_xlim(min_val, max_val)
-            ax.set_ylim(min_val, max_val)
-            ax.set_title(i)
+                # Add the 1:1 line
+                ax.axline((0, 0), slope=1, color='r', linestyle='--', label='1:1 line')
 
-            plt.show()
+                # Set axis limits to make sure the 1:1 line spans the plot
+                min_val = min(min(x_data), min(y_data))
+                max_val = max(max(x_data), max(y_data))
+                ax.set_xlim(min_val, max_val)
+                ax.set_ylim(min_val, max_val)
+                ax.set_title(i)
 
+                plt.show()
+
+        # Define Angles
+        angle  = np.linspace(0,180,int(180/0.1)+1)
+        theta  = np.radians(angle)
+        mu    = np.cos(theta)
+        ntheta = len(theta)
+
+
+        fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(8, 6))
+        # Reconstruct P11
+        # ordered over nPol as P11, P12, P33, P34, P22, P44
+        do_p11 = True
+        if do_p11:
+            ipol = 0
+            p11pyobs = np.zeros(ntheta)
+            p11mie   = np.zeros(ntheta)
+            
+            miepmom = self.miepmom[0].squeeze()[0,:,ipol]
+            pyobspmom = self.pyobspmom[0].squeeze()[0,:,ipol]
+            for s in range(self.nMom):
+                P = legendre(s)
+                p11pyobs += pyobspmom[s]* P(mu)
+                p11mie += miepmom[s]* P(mu)
+
+            ax = axes[0,0]
+            ax.plot(angle, p11pyobs,label='pyobs') 
+            ax.plot(angle,p11mie,label='mieobs')
+            ax.legend()
+            ax.set_title('P11=P1')
+
+        # Reconstruct P12
+        # ordered over nPol as P11, P12, P33, P34, P22, P44
+        do_P12 = True
+        if do_P12:
+            ipol = 1
+            m = 0
+            n = 2
+            gsf_coef = self.miepmom[0].squeeze()[0,:,ipol]
+            leg_coef = self.pyobspmom[0].squeeze()[0,:,ipol]
+
+            p12 = np.zeros(ntheta)
+            for i,t in enumerate(theta):
+                d0, dneg1 = eval_gsfun.d_mn(m,n,0,t)
+                pfunc = d0/(1j**(n-m)).real
+                p12[i] = gsf_coef[0]*pfunc
+                d1, d0 = eval_gsfun.d_mn(m,n,1,t,dm1=d0,dm2=dneg1)
+                pfunc = d1/(1j**(n-m)).real
+                p12[i] = p12[i] + gsf_coef[1]*pfunc
+
+                dm2 = d0
+                dm1 = d1
+                for s in range(2,self.nMom):
+                    dfunc, dm2 = eval_gsfun.d_mn(m,n,s,t,dm1=dm1,dm2=dm2)
+                    pfunc = dfunc/(1j**(n-m)).real
+
+                    p12[i] = p12[i] + gsf_coef[s]*pfunc
+
+                    dm1 = dfunc
+            p12mie = p12
+
+            p12pyobs = np.zeros(ntheta)
+            for s in range(self.nMom):
+                P = legendre(s)
+                p12pyobs += leg_coef[s]* P(mu)
+
+            ax = axes[0,1] 
+            ax.plot(angle,p12pyobs/p11pyobs,label='pyobs')
+            ax.plot(angle,p12mie/p11mie,label='mie')
+            ax.legend()
+            ax.set_title('P12 = P2')
+
+        # Reconstruct P33 & P22
+        # ordered over nPol as P11, P12, P33, P34, P22, P44
+        do_P33_P22 = True
+        if do_P33_P22:
+            # first get a2 + a3
+            m = 2
+            n = 2
+            ipol = 4
+            gsf_coef22 = self.miepmom[0].squeeze()[0,:,ipol]
+            leg_coef22 = self.pyobspmom[0].squeeze()[0,:,ipol]
+
+            ipol = 2
+            gsf_coef33 = self.miepmom[0].squeeze()[0,:,ipol]
+            leg_coef33 = self.pyobspmom[0].squeeze()[0,:,ipol]
+
+            a2p3 = np.zeros(ntheta)
+            for i,t in enumerate(theta):
+                d0, dneg1 = eval_gsfun.d_mn(m,n,0,t)
+                pfunc = d0/(1j**(n-m)).real
+                a2p3[i] = (gsf_coef22[0]+gsf_coef33[0])*pfunc
+                d1, d0 = eval_gsfun.d_mn(m,n,1,t,dm1=d0,dm2=dneg1)
+                pfunc = d1/(1j**(n-m)).real
+                a2p3[i] = a2p3[i] + (gsf_coef22[1]+gsf_coef33[1])*pfunc
+
+                dm2 = d0
+                dm1 = d1
+                for s in range(2,self.nMom):
+                    dfunc, dm2 = eval_gsfun.d_mn(m,n,s,t,dm1=dm1,dm2=dm2)
+                    pfunc = dfunc/(1j**(n-m)).real
+
+                    a2p3[i] = a2p3[i] + (gsf_coef22[s]+gsf_coef33[s])*pfunc
+
+                    dm1 = dfunc
+
+            # next get a2 - a3
+            m = 2
+            n = -2
+            a2m3 = np.zeros(ntheta)
+            for i,t in enumerate(theta):
+                d0, dneg1 = eval_gsfun.d_mn(m,n,0,t)
+                pfunc = d0/(1j**(n-m)).real
+                a2m3[i] = (gsf_coef22[0]-gsf_coef33[0])*pfunc
+                d1, d0 = eval_gsfun.d_mn(m,n,1,t,dm1=d0,dm2=dneg1)
+                pfunc = d1/(1j**(n-m)).real
+                a2m3[i] = a2m3[i] + (gsf_coef22[1]-gsf_coef33[1])*pfunc
+
+                dm2 = d0
+                dm1 = d1
+                for s in range(2,self.nMom):
+                    dfunc, dm2 = eval_gsfun.d_mn(m,n,s,t,dm1=dm1,dm2=dm2)
+                    pfunc = dfunc/(1j**(n-m)).real
+
+                    a2m3[i] = a2m3[i] + (gsf_coef22[s]-gsf_coef33[s])*pfunc
+
+                    dm1 = dfunc
+
+            # now combine a2 + a3 = a2p3 with a2 - a3 = a2m3
+            p22mie = 0.5*(a2p3 + a2m3)
+            p33mie = a2p3 - p22mie
+
+            p22pyobs = np.zeros(ntheta)
+            p33pyobs = np.zeros(ntheta)
+            for s in range(self.nMom):
+                P = legendre(s)
+                p22pyobs += leg_coef22[s]* P(mu)
+                p33pyobs += leg_coef33[s]* P(mu)
+
+            ax = axes[1,1]
+            ax.plot(angle, p22pyobs/p11pyobs,label='pyobs')
+            ax.plot(angle,p22mie/p11mie,label='mieobs')
+            ax.legend()
+            ax.set_title('P22 = P5')
+
+            ax = axes[0,2]
+            ax.plot(angle, p33pyobs/p11pyobs,label='pyobs')
+            ax.plot(angle,p33mie/p11mie,label='mieobs')
+            ax.legend()
+            ax.set_title('33 = P3')
+
+        # P34
+        # ordered over nPol as P11, P12, P33, P34, P22, P44
+        do_P34 = True
+        if do_P34:
+            ipol = 3
+            m = 0
+            n = 2
+            gsf_coef = self.miepmom[0].squeeze()[0,:,ipol]
+            leg_coef = self.pyobspmom[0].squeeze()[0,:,ipol]
+
+            p34 = np.zeros(ntheta)
+            for i,t in enumerate(theta):
+                d0, dneg1 = eval_gsfun.d_mn(m,n,0,t)
+                pfunc = d0/(1j**(n-m)).real
+                p34[i] = gsf_coef[0]*pfunc
+                d1, d0 = eval_gsfun.d_mn(m,n,1,t,dm1=d0,dm2=dneg1)
+                pfunc = d1/(1j**(n-m)).real
+                p34[i] = p34[i] + gsf_coef[1]*pfunc
+
+                dm2 = d0
+                dm1 = d1
+                for s in range(2,self.nMom):
+                    dfunc, dm2 = eval_gsfun.d_mn(m,n,s,t,dm1=dm1,dm2=dm2)
+                    pfunc = dfunc/(1j**(n-m)).real
+
+                    p34[i] = p34[i] + gsf_coef[s]*pfunc
+
+                    dm1 = dfunc
+
+            p34mie = p34
+
+            p34pyobs = np.zeros(ntheta)
+            for s in range(self.nMom):
+                P = legendre(s)
+                p34pyobs += leg_coef[s]* P(mu)
+
+            ax = axes[1,0]
+            ax.plot(angle, p34pyobs/p11pyobs,label='pyobs')
+            ax.plot(angle,p34mie/p11mie,label='mieobs')
+            ax.legend()
+            ax.set_title('34 = P4')
+
+
+        # Resonctruct P44
+        do_p44 = True
+        if do_p44:
+            ipol = 5
+            p44pyobs = np.zeros(ntheta)
+            p44mie   = np.zeros(ntheta)
+
+            miepmom = self.miepmom[0].squeeze()[0,:,ipol]
+            pyobspmom = self.pyobspmom[0].squeeze()[0,:,ipol]
+            for s in range(self.nMom):
+                P = legendre(s)
+                p44pyobs += pyobspmom[s]* P(mu)
+                p44mie += miepmom[s]* P(mu)
+
+            ax = axes[1,2]
+            ax.plot(angle, p44pyobs/p11pyobs,label='pyobs')
+            ax.plot(angle,p44mie/p11mie,label='mieobs')
+            ax.legend()
+            ax.set_title('P44 = P6')
+
+        # Adjust layout and display
+        plt.tight_layout()
+        plt.show()
 #------------------------------------ M A I N ------------------------------------
 
 if __name__ == "__main__":
