@@ -8,10 +8,10 @@
 
 In your `.bashrc` or `.tcshrc` or other rc file add a line:
 
-##### NCCS (SLES12)
+##### NCCS
 
 ```
-module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES12
+module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES15
 ```
 
 ##### NAS
@@ -47,6 +47,16 @@ git clone git@github.com:GEOS-ESM/AeroApps.git
 cd AeroApps
 mepo clone
 ```
+
+##### Slow clones
+
+If you notice your clone is taking a while, we recommend running:
+
+```
+mepo config set clone.partial blobless
+```
+
+This is a one-time command that tells mepo to use blobless clones for all future clones. Blobless clones are much faster than the default clone method, especially for repositories with a large history like MAPL.
 
 #### Build the Model
 
