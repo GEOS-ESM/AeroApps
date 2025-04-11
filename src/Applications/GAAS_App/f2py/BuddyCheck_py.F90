@@ -1,43 +1,64 @@
-!***********
-! Fortran wrapper for the Python interface
-! Use of openMP
-!***********
+! Direct f2py interface for buddy check functionality
 
-subroutine Icosahedron_regions(nobs, xobs, yobs, zobs, kr)
+!f2py intent(in) nobs, xobs, yobs, zobs
+!f2py intent(out) kr, maxreg
+!f2py depend(nobs) xobs, yobs, zobs, kr
+subroutine py_icosahedron_regions(nobs, xobs, yobs, zobs, kr, maxreg)
+    use BuddyCheck_Mod
+    implicit none
+    
+    ! Arguments:
+    ! ----------
+    integer, intent(in) :: nobs
+    real*8, intent(in) :: xobs(nobs)
+    real*8, intent(in) :: yobs(nobs)
+    real*8, intent(in) :: zobs(nobs)
+    integer, intent(out) :: kr(nobs)
+    integer, intent(out) :: maxreg
+    
+    ! Call the actual implementation
+    call icosahedron_regions(nobs, xobs, yobs, zobs, kr, maxreg)
+    
+end subroutine py_icosahedron_regions
 
-use m_Spherical_Partition, only : NumberOfRegions, Initialize, Clean
-use m_Spherical_Partition, only : Spherical_Partition, GetRegion
-use m_Spherical_Partition, only : xyz2reg
+!f2py intent(in) nobs, n_susp, ki_susp, kr_susp, xobs, yobs, zobs, lev, omf, varF, varO
+!f2py intent(in) ls_h, ls_v, search_rad, single_level, nbuddy_max, iregbeg, ireglen, maxreg, seplim
+!f2py intent(out) reaccept
+!f2py depend(n_susp) ki_susp, kr_susp
+!f2py depend(nobs) xobs, yobs, zobs, lev, omf, varF, varO, reaccept
+!f2py depend(maxreg) iregbeg, ireglen
+subroutine py_find_buddies(nobs, n_susp, ki_susp, kr_susp, &
+                          xobs, yobs, zobs, lev, omf, varF, varO, &
+                          ls_h, ls_v, search_rad, single_level, nbuddy_max, &
+                          iregbeg, ireglen, maxreg, seplim, &
+                          reaccept)
+    use BuddyCheck_Mod
+    implicit none
+    
+    ! Input parameters
+    integer, intent(in) :: nobs, n_susp, maxreg, nbuddy_max
+    integer, intent(in) :: ki_susp(n_susp), kr_susp(n_susp)
+    real, intent(in) :: xobs(nobs), yobs(nobs), zobs(nobs), lev(nobs)
+    real, intent(in) :: omf(nobs), varF(nobs), varO(nobs)
+    real, intent(in) :: ls_h, ls_v, search_rad, seplim
+    logical, intent(in) :: single_level
+    integer, intent(in) :: iregbeg(maxreg), ireglen(maxreg)
+    
+    ! Output parameters
+    logical, intent(out) :: reaccept(nobs)
+    
+    ! Call the actual implementation
+    call find_buddies(nobs, n_susp, ki_susp, kr_susp, &
+                     xobs, yobs, zobs, lev, omf, varF, varO, &
+                     ls_h, ls_v, search_rad, single_level, nbuddy_max, &
+                     iregbeg, ireglen, maxreg, seplim, &
+                     reaccept)
+    
+end subroutine py_find_buddies
 
-   implicit none
-
-! Arguments:
-! ----------
-
-integer, intent(in) :: nobs
-real*8, intent(in) :: xobs(nobs)
-real*8, intent(in) :: yobs(nobs)
-real*8, intent(in) :: zobs(nobs)
-integer, intent(out) :: kr(nobs)
-
-
-! Region pointers
-! ---------------
-Type (Spherical_Partition) :: partition
-integer, allocatable :: iregbeg(:)     ! Pointer to first ob in region
-integer, allocatable :: ireglen(:)     ! No. of obs in region
-
-integer:: n_levels, nregions
-
-n_levels = 0
-
-!Initialize Partitioner
-!     ----------------------
-call Initialize ( n_levels=0, partition=partition, compress=.true. )
-nregions = NumberOfRegions(partition)  
-
-! Compute index region from (x,y,z) after bin obs
-! -------------------------
-call XYZ2REG ( nobs, xobs, yobs, zobs, kr, partition )  ! bin obs into regions
-
-end subroutine Icosahedron_regions
+!f2py 
+subroutine py_cleanup_buddy_check()
+    use BuddyCheck_Mod
+    implicit none
+    call cleanup_buddy_check()
+end subroutine py_cleanup_buddy_check    
