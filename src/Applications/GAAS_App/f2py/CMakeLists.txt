@@ -28,7 +28,7 @@ target_link_libraries(${this} PRIVATE OpenMP::OpenMP_Fortran)
 # --------------------
 esma_add_f2py3_module(BuddyCheck_
     SOURCES        BuddyCheck_py.F90
-    DESTINATION    lib/Python/${this}
+    DESTINATION    lib/Python/
     LIBRARIES      ${this} GMAO_mpeu GMAO_psas
     INCLUDEDIRS    ${CMAKE_CURRENT_BINARY_DIR}
                    ${CMAKE_BINARY_DIR}/lib
@@ -39,5 +39,5 @@ esma_add_f2py3_module(BuddyCheck_
     USE_MPI
 )
 
-add_dependencies(BuddyCheck_ ${this} GMAO_mpeu GMAO_psas)
+#add_dependencies(BuddyCheck_ ${this} GMAO_mpeu GMAO_psas)
 

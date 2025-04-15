@@ -4,8 +4,10 @@ module BuddyCheck_Mod
     use omp_lib
     
     implicit none
-    
-    public 
+    private 
+    public icosahedron_regions
+    public find_buddies
+    public cleanup_buddy_check 
     
     ! Keep internal variables private
     type(Spherical_Partition), save :: partition

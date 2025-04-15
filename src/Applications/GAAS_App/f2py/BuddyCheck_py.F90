@@ -1,8 +1,5 @@
 ! Direct f2py interface for buddy check functionality
 
-!f2py intent(in) nobs, xobs, yobs, zobs
-!f2py intent(out) kr, maxreg
-!f2py depend(nobs) xobs, yobs, zobs, kr
 subroutine py_icosahedron_regions(nobs, xobs, yobs, zobs, kr, maxreg)
     use BuddyCheck_Mod
     implicit none
@@ -21,12 +18,6 @@ subroutine py_icosahedron_regions(nobs, xobs, yobs, zobs, kr, maxreg)
     
 end subroutine py_icosahedron_regions
 
-!f2py intent(in) nobs, n_susp, ki_susp, kr_susp, xobs, yobs, zobs, lev, omf, varF, varO
-!f2py intent(in) ls_h, ls_v, search_rad, single_level, nbuddy_max, iregbeg, ireglen, maxreg, seplim
-!f2py intent(out) reaccept
-!f2py depend(n_susp) ki_susp, kr_susp
-!f2py depend(nobs) xobs, yobs, zobs, lev, omf, varF, varO, reaccept
-!f2py depend(maxreg) iregbeg, ireglen
 subroutine py_find_buddies(nobs, n_susp, ki_susp, kr_susp, &
                           xobs, yobs, zobs, lev, omf, varF, varO, &
                           ls_h, ls_v, search_rad, single_level, nbuddy_max, &
@@ -36,14 +27,15 @@ subroutine py_find_buddies(nobs, n_susp, ki_susp, kr_susp, &
     implicit none
     
     ! Input parameters
-    integer, intent(in) :: nobs, n_susp, maxreg, nbuddy_max
+    integer, intent(in) :: nobs, n_susp
     integer, intent(in) :: ki_susp(n_susp), kr_susp(n_susp)
     real, intent(in) :: xobs(nobs), yobs(nobs), zobs(nobs), lev(nobs)
     real, intent(in) :: omf(nobs), varF(nobs), varO(nobs)
     real, intent(in) :: ls_h, ls_v, search_rad, seplim
     logical, intent(in) :: single_level
+    integer, intent(in) :: nbuddy_max
     integer, intent(in) :: iregbeg(maxreg), ireglen(maxreg)
-    
+    integer, intent(in) :: maxreg
     ! Output parameters
     logical, intent(out) :: reaccept(nobs)
     
@@ -56,7 +48,6 @@ subroutine py_find_buddies(nobs, n_susp, ki_susp, kr_susp, &
     
 end subroutine py_find_buddies
 
-!f2py 
 subroutine py_cleanup_buddy_check()
     use BuddyCheck_Mod
     implicit none
