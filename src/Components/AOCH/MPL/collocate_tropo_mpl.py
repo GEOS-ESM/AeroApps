@@ -24,8 +24,11 @@ is an arbitrary label defined by user.
 4) Code requires the module f_collocate_2 to be located in the same directory
 5) Customize this code at will 
 
-Apr/9/2025 - updated script get_orbit_site_matches to deal with missing folder or missing files 
-Apr/8/2025 - added loop over years
+--------------------------------------------
+Apr/15/2025 - Additional runs to include sites with operations in just few months (listed in list_mpl_sites_misc.txt)
+Apr/14/2025- Additional runs to include 2018 for yearly sites
+Apr/9/2025 - Updated script get_orbit_site_matches to deal with missing folder or missing files 
+Apr/8/2025 - Added loop over years
 
 @author: sgasso@umd.edu
 """
@@ -38,19 +41,30 @@ from datetime import datetime, timedelta
 
 ### Load specific modules. 
 #from pyobs.tropomi_l2_reader import TROPOAER_L2 # need to read TROPOMI data
-import WIP_f_collocate  as fc #needed for finding pixels that contain site 
+import f_collocate  as fc #needed for finding pixels that contain site 
 
 if __name__ == "__main__":
     # 
-    
+
+
     #### User Input , Most of the codes can operate with yyyy and Julian day
     #### But I haven''t tested. I do need to change how julian1 and julian2 are set.
-    for iyear in [2019,2020,2021,2022,2023,2024]:
-    #for iyear in [2020]:    
-        verb = 0
-        #yyyy0,mm0,dd0=[2020,12,5]; yyyy1,mm1,dd1=[2020,12,6]
-        yyyy0,mm0,dd0=[iyear,1,1]; yyyy1,mm1,dd1=[iyear,12,31]
-        user_string = "complete" # additional string to add to output file SiteName_yyyy_<user_string>.txt
+    ## note to individual site runs the user must set the start and end dates by hand
+    # see dates in https://mplnet.gsfc.nasa.gov/data?v=V3
+    # filename_list_sites = 'list_mpl_sites.txt' 
+    #filename_list_sites = 'site_Sao_Paolo.txt' #set the start and end dates by hand
+    #filename_list_sites = 'site_AAQ13_Kx_Wanluan.txt' #set the start and end dates by hand
+    #filename_list_sites = 'site_Tazacorte.txt' #set the start and end dates by hand
+    filename_list_sites = 'site_Kuching.txt' #set the start and end dates by hand
+    #filename_list_sites = 'site_McCall.txt' #set the start and end dates by hand
+    
+    
+    #for iyear in [2019,2020,2021,2022,2023,2024]:
+    for iyear in [2019]:    
+        verb = 0  # Verbose output flag (default: 0,0: minimal print ,1: some print 2: print all)
+        yyyy0,mm0,dd0=[iyear,7,16]; yyyy1,mm1,dd1=[iyear,10,30]
+        #yyyy0,mm0,dd0=[iyear,1,1]; yyyy1,mm1,dd1=[iyear,12,31]
+        user_string = "MiscSites" # additional string to add to output file SiteName_yyyy_<user_string>.txt
         
         output_path='/nobackup/2/MPL/Collocations/'  # location of collocation files
         #julian=359 
@@ -91,7 +105,9 @@ if __name__ == "__main__":
             if verb>1: print(f"Current date: {yyyy}-{mm:02d}-{dd:02d}")
             
             #### Get user defined text file with MPL sites
-            pth_site_list  = current_working_directory + '/' + 'list_mpl_sites.txt'
+            #pth_site_list  = current_working_directory + '/' + 'list_mpl_sites.txt'
+            pth_site_list  = current_working_directory + '/' + filename_list_sites
+
             mpl_sites_list = fc.read_mpl_site_list(pth_site_list)
             SEL_DATE = datetime(yyyy,mm,dd) # 
 

@@ -1,0 +1,7 @@
+Name_MPL_sites               , lat, lon, altitude(km)
+AAQ13_Kx_Wanluan            , 22.5790, 120.5750,0.022
+Kuching                     ,  1.4910, 110.3490,0.028
+McCall                      , 44.9270,-116.0890,1.537
+Sao_Paolo                   ,-23.5620, -46.7350,0.865
+Tazacorte                   , 28.6410, -17.9330,0.140
+

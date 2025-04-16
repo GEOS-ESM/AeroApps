@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Apr/14/2025 - Added path to pyobs (I could not get to work my env path setting)
 Apr/8/2025 Added an output path for output files
 
 Mar/3/2025 . Set of subroutines called by collocate_tropo_mpl_2.py . Code requires the module pyobs.tropomi_l2_reader
@@ -14,11 +15,13 @@ import numpy as np
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from src.pyobs.tropoaer import TROPOAER_L2 # need to read TROPOMI data
-#from tropoaer import TROPOAER_L2 # need to read TROPOMI data
+#------------ Path to troporeader
+pyobs_path = os.path.expanduser("~/REPOS/AOCH/GMAOpyobs/src/pyobs")
+if pyobs_path not in sys.path: sys.path.append(pyobs_path)
+#from src.pyobs.tropoaer import TROPOAER_L2 # need to read TROPOMI data
+#from pyobs.tropoaer import TROPOAER_L2 # need to read TROPOMI data
+from tropoaer import TROPOAER_L2 # need to read TROPOMI data
 
-
-#------------ Functions related to reach the files 
 
 def find_hdf5_files(folder_path):
     ##### Find all HDF5 files in the specified folder
@@ -69,49 +72,6 @@ def read_mpl_site_list(filename):
             sites.append(site)
     return sites
 
-
-# def get_orbit_site_matches(list_mpl_sites,yyyy, mm=None, dd=None, julian=None, verb=0):
-# #--------------------------------------------------------------------------------------------
-# #     Inputs:
-# #     list_mpl_sites : 
-# #     yyyy : int , Year
-# #     mm : int, optional ,  Month (1-12)
-# #     dd : int, optional ,  Day (1-31)
-# #     julian : int, optional , Julian day (alternative to mm/dd)
-# #     verb : int, optional ,  Verbose output flag (default: 0,0: minimal print ,1: some print 2: print all)
-# #         
-# #     Returns: List containing files with files in selected directory and the path to the folder
-# #--------------------------------------------------------------------------------------------
-    
-    # if not yyyy:
-        # raise ValueError('Input year must be provided')
-    # if not mm and not julian:
-        # raise ValueError('Either Month and day or Julian day must be provided')
-
-    # # Set correct paths according to the current computer and OS
-    # current_working_directory = os.getcwd()
-    # current_os           = platform.system()
-    # computer_name        = platform.node()
-    # current_pth, pth_fig = get_path(current_os.lower(), computer_name)
-    
-    # # Convert mm/dd to julian if needed
-    # if mm:
-        # date_obj = datetime(yyyy, mm, dd)
-        # julian = (date_obj - datetime(yyyy, 1, 1)).days + 1
-    # julian_str = f"{julian:03d}"
-
-    # if verb>-1:print(f'   Year is {yyyy}, julian {julian_str}, {date_obj:%Y-%m-%d}')
-
-    # # Get list of files for selected date
-    # path_2_folder_with_orbits = current_pth+str(yyyy)+'/'+julian_str +'/'
-    # file_list = glob.glob(path_2_folder_with_orbits+'*.nc')
-    
-    # # Process orbit information
-    # orbits_list = []
-    # for full_pathname in file_list:
-        # orbits_list.append(full_pathname[-80:])
-
-    # return orbits_list,path_2_folder_with_orbits
 
 def get_orbit_site_matches(list_mpl_sites, yyyy, mm=None, dd=None, julian=None, verb=0):
     #--------------------------------------------------------------------------------------------
