@@ -27,14 +27,25 @@ subroutine py_find_buddies(nobs, n_susp, ki_susp, kr_susp, &
     implicit none
     
     ! Input parameters
-    integer, intent(in) :: nobs, n_susp
-    integer, intent(in) :: ki_susp(n_susp), kr_susp(n_susp)
-    real, intent(in) :: xobs(nobs), yobs(nobs), zobs(nobs), lev(nobs)
-    real, intent(in) :: omf(nobs), varF(nobs), varO(nobs)
-    real, intent(in) :: ls_h, ls_v, search_rad, seplim
+    integer, intent(in) :: nobs
+    integer, intent(in) :: n_susp
+    integer, intent(in) :: ki_susp(n_susp)
+    integer, intent(in) :: kr_susp(n_susp)
+    real, intent(in) :: xobs(nobs)
+    real, intent(in) :: yobs(nobs)
+    real, intent(in) :: zobs(nobs)
+    real, intent(in) :: lev(nobs)
+    real, intent(in) :: omf(nobs)
+    real, intent(in) :: varF(nobs)
+    real, intent(in) :: varO(nobs)
+    real, intent(in) :: ls_h
+    real, intent(in) :: ls_v
+    real, intent(in) :: search_rad
+    real, intent(in) :: seplim
     logical, intent(in) :: single_level
     integer, intent(in) :: nbuddy_max
-    integer, intent(in) :: iregbeg(maxreg), ireglen(maxreg)
+    integer, intent(in) :: iregbeg(maxreg)
+    integer, intent(in) :: ireglen(maxreg)
     integer, intent(in) :: maxreg
     ! Output parameters
     logical, intent(out) :: reaccept(nobs)

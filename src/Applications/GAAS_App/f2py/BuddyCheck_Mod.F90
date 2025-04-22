@@ -64,34 +64,50 @@ contains
         implicit none
         
         ! Input parameters
-        integer, intent(in) :: nobs, n_susp, maxreg, nbuddy_max
-        integer, intent(in) :: ki_susp(n_susp), kr_susp(n_susp)
-        real, intent(in) :: xobs(nobs), yobs(nobs), zobs(nobs), lev(nobs)
-        real, intent(in) :: omf(nobs), varF(nobs), varO(nobs)
-        real, intent(in) :: ls_h, ls_v, search_rad, seplim
+        integer, intent(in) :: nobs
+        integer, intent(in) :: n_susp
+        integer, intent(in) :: ki_susp(n_susp)
+        integer, intent(in) :: kr_susp(n_susp)
+        real, intent(in) :: xobs(nobs)
+        real, intent(in) :: yobs(nobs)
+        real, intent(in) :: zobs(nobs)
+        real, intent(in) :: lev(nobs)
+        real, intent(in) :: omf(nobs)
+        real, intent(in) :: varF(nobs)
+        real, intent(in) :: varO(nobs)
+        real, intent(in) :: ls_h
+        real, intent(in) :: ls_v
+        real, intent(in) :: search_rad
+        real, intent(in) :: seplim
         logical, intent(in) :: single_level
-        integer, intent(in) :: iregbeg(maxreg), ireglen(maxreg)
-        
+        integer, intent(in) :: nbuddy_max
+        integer, intent(in) :: iregbeg(maxreg)
+        integer, intent(in) :: ireglen(maxreg)
+        integer, intent(in) :: maxreg
+       
         ! Output parameters
-        logical, intent(out) :: reaccept(nobs)
-        
+        logical, intent(out) :: reaccept(nobs) 
+       
         ! Local variables
         integer :: i, j, nbuddy, ireg, ibeg, iend, kis, krs, lvs
         real :: exponent, scgain, dist2, z_dist2
-        real :: tol_rel = 1.0e-6  ! Small tolerance value
+        real :: tol_rel = 1.0e-5  ! Small tolerance value
         real, parameter :: radius_earth = 6371000.0  ! Earth radius in meters
         integer :: is, ib, ibb
         real :: weight_sum, weighted_sum, diff, std_dev, accum_del, accum_de2, accum_wgt, accum_var
         
         ! Temporary arrays for all potential buddies (before sorting)
-        integer :: temp_buddy_indices(100)
-        real :: temp_buddy_weights(100)
-        integer :: indx(100)
+        integer :: temp_buddy_indices(nobs)
+        real :: temp_buddy_weights(nobs)
+        integer :: indx(nobs)
         
         ! Allocate buddy arrays if not already allocated
         if (.not. allocated(buddy_indices)) allocate(buddy_indices(nobs, nbuddy_max))
         if (.not. allocated(buddy_weights)) allocate(buddy_weights(nobs, nbuddy_max))
         
+        print*, 'nobs, nsusp', shape(xobs), shape(ki_susp)
+
+
         ! Mark suspect observations
         do is = 1, n_susp
             suspect(ki_susp(is)) = .true.
@@ -135,6 +151,7 @@ contains
                             
                             ! Add vertical distance component if applicable
                             if (ls_v > tol_rel) then  ! upper-air data
+             !                   print*, 'I am in the vertical'
                                 z_dist2 = (lev(kis) - lev(i))**2
                                 exponent = exponent + z_dist2 / ls_v**2
                             end if
@@ -142,30 +159,34 @@ contains
                             ! only if not too far (search_rad length scales):
                             if (exponent < search_rad**2) then ! found a candidate buddy:
                                 nbuddy = nbuddy + 1
-                                if (nbuddy <= 100) then  ! Ensure we don't exceed array bounds
-                                    ! Store in temporary arrays
-                                    temp_buddy_indices(nbuddy) = i
+                                ! Store in temporary arrays
+                                temp_buddy_indices(nbuddy) = i
                                     
-                                    ! associate weight with this candidate:
-                                    scgain = varF(i) / (varF(i) + varO(i))
-                                    temp_buddy_weights(nbuddy) = scgain * exp(-0.5*exponent)
-                                end if
+                                ! associate weight with this candidate:
+                                scgain = varF(i) / (varF(i) + varO(i))
+                                temp_buddy_weights(nbuddy) = scgain * exp(-0.5*exponent)
                             end if  ! not too far
                         end if  ! not suspect
                     end do  ! within a region
                 end if  ! nearby regions
             end do  ! over regions
+            !$OMP MASTER
+             if (mod(is, 10) == 0) then  ! Print every 100th iteration
+                 print *, "Progress: iteration", is, "of", nbuddy
+             end if
+            !$OMP END MASTER 
+             !   print*, 'region', krs, nbuddy, 'for supsect', is
             
             ! Process buddies if we found any
             if (nbuddy > 0) then
                 ! Sort buddies by weight (descending order)
-                do i = 1, min(nbuddy, 100)
+                do i = 1, nbuddy
                     indx(i) = i  ! Initialize index array
                 end do
                 
                 ! Index sort
-                do i = 1, min(nbuddy, 100)-1
-                    do j = i+1, min(nbuddy, 100)
+                do i = 1, nbuddy-1
+                    do j = i+1, nbuddy
                         if (temp_buddy_weights(indx(j)) > temp_buddy_weights(indx(i))) then
                             ! Swap indices
                             ibb = indx(i)
@@ -176,7 +197,7 @@ contains
                 end do
                 
                 ! Limit number of buddies to nbuddy_max
-                nbuddy = min(nbuddy, nbuddy_max, 100)
+                nbuddy = min(nbuddy, nbuddy_max)
                 
                 ! Store the best buddies in the output arrays
                 do ib = 1, nbuddy
