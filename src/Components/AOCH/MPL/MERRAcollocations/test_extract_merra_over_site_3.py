@@ -3,6 +3,11 @@
 Test code that ingests tropomi & mpl collocations, check date and location of site and pulls the MERRA data for respective
 model grid cell. Then it computes AOCH  and saves in output file. 
 -------------------------------------
+Apr/21/2025 - 
+ver 3 works . it computes MERRA AOCH for 3 times, satellite overpass and +/- 30 min to create some sort of error bar.
+But the standard deviation over the period is zero. So, I will remove this and make a version that only extracts data 
+at the satellite time.
+
 Apr/3/2025 test_extract_merra_over_site_2.py .This code is based on ver *_1
 1) it incorporates a loop to go over all dates according to input file. 
 2) it save calculated MERRA AOCh in output file.
@@ -82,7 +87,7 @@ file_path  ='test_input_trop_overpass_1.txt'# File with tropomi orbit over mpl s
 site_xy = [38.9930,-76.8400] # Lat/Lon MPL site
 ### # set up some filenames, for now make sure they are the same directory where G2GAOP is executed
 config = 'm2_pm25.yaml' # this configuration file can be found in src/config
-m2data = 'inst3_3d_aer_Nv' # do not change this 
+m2data = 'inst3_3d_aer_Nv' # keep this file in same dir where script is exectured , do not change this 
 
 ### Output name for MERRA2 data along CAL track
 # out_MERRA = 'm2_calipso_sampled_'+CAL_IOWA_File[12:-3]+'.nc'
@@ -134,11 +139,12 @@ for i in [0,1,2]:
     traj_ds = traj.sample()
     print("DONE extracting MERRA data ")
     #sys.exit()
+    #### Save optical properties?
     if save_merra == 'True':
        print('\n Saving MERRA data file.... ', out_MERRA)
        traj_ds.to_netcdf(out_MERRA)
        print(" Done Savings!\n")
-    #sys.exit()
+    
     # ####### -------------------
     # # read the sampled aerosol profile data and optical tables
     optics = G2GAOP(out_MERRA,config=config)
@@ -156,9 +162,10 @@ for i in [0,1,2]:
     B3=np.sum(me_text532,axis=1)
     me_hw532[:,i]=np.divide(A3 , B3) # km , size=Nrecords x 1
 
-
+ 
 # ##### Done computing weighted heights
-
+filename='test_merra_collocated.txt'
+np.savetxt(filename, me_hw532,fmt='%.4f')
 sys.exit()
 
 # #### NOW save output
