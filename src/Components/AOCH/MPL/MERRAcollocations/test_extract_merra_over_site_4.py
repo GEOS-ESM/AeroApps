@@ -38,9 +38,16 @@ import matplotlib.pyplot as plt
 import shutil ### use to copy input file and then add new arrays
 
 
+# def parse_datetime(date_string):
+#     return datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S.%f')
 def parse_datetime(date_string):
-    return datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S.%f')
-
+    try:
+        # Try with microseconds format first
+        return datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S.%f')
+    except ValueError:
+        # If that fails, try without microseconds
+        return datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S')
+        
 def process_file(file_path):
     # Read the entire file
     with open(file_path, 'r') as file:
@@ -82,7 +89,8 @@ def process_file(file_path):
 #pth_out   ='/discover/nobackup/sgasso/Files/Satellite/Triple/'      # OUPUT w/MERRA-CAL-TROP collocations
 
 ############# Setup inputs
-file_path  ='test_input_trop_overpass_1.txt'# File with tropomi orbit over mpl site
+#file_path  ='test_input_trop_overpass_1.txt'# File with tropomi orbit over mpl site
+file_path='/discover/nobackup/sgasso/Files/MPL/TROPO_MPL/GSFC_2018_FullYearSites.txt'
 site_xy = [38.9930,-76.8400] # Lat/Lon MPL site
 ### # set up some filenames, for now make sure they are the same directory where G2GAOP is executed
 config = 'm2_pm25.yaml' # this configuration file can be found in src/config
@@ -97,7 +105,7 @@ out_MERRA = 'm2_test2.nc' # it may not be used depending whether to save_merra=T
 
 # Get collocations dates and time of TROPO over MPL site 
 data_dict = process_file(file_path)
-
+sys.exit()
 #####
 ##### now do the same for MERRA-2
 #####
