@@ -129,7 +129,8 @@ for input_file in matching_files:
         remaining_part  = base_filename.split(f"{site_string}_{year}_", 1)[1]
         output_filename = f"{site_string}_{year}_MERRA_{remaining_part}"
         output_path     = os.path.join(pth_out, output_filename)
-        
+        ###
+        print("   Working with year " , year)
         # Get collocations dates and time of TROPO over MPL site 
         data_dict = process_file(input_file)
         
@@ -152,7 +153,7 @@ for input_file in matching_files:
         
         ### sample the MERRA-2 dataset along the trajectory, and return an xarray dataset
         traj_ds = traj.sample()
-        print("DONE extracting MERRA data ")
+        print("   DONE extracting MERRA data ")
         #sys.exit()
         ### Save optical properties?
         if save_merra == 'True':
