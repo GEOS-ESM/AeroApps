@@ -51,21 +51,22 @@ if __name__ == "__main__":
     #### But I haven''t tested. I do need to change how julian1 and julian2 are set.
     ## note to individual site runs the user must set the start and end dates by hand
     # see dates in https://mplnet.gsfc.nasa.gov/data?v=V3
-    # filename_list_sites = 'list_mpl_sites.txt' 
+    filename_list_sites = 'list_mpl_sites.txt' 
     #filename_list_sites = 'site_Sao_Paolo.txt' #set the start and end dates by hand
     #filename_list_sites = 'site_AAQ13_Kx_Wanluan.txt' #set the start and end dates by hand
     #filename_list_sites = 'site_Tazacorte.txt' #set the start and end dates by hand
-    filename_list_sites = 'site_Kuching.txt' #set the start and end dates by hand
+    #filename_list_sites = 'site_Kuching.txt' #set the start and end dates by hand
     #filename_list_sites = 'site_McCall.txt' #set the start and end dates by hand
     
     
-    #for iyear in [2019,2020,2021,2022,2023,2024]:
-    for iyear in [2019]:    
+    for iyear in [2018,2019,2020,2021,2022,2023,2024]:
+    #for iyear in [2019]:    
         verb = 0  # Verbose output flag (default: 0,0: minimal print ,1: some print 2: print all)
-        yyyy0,mm0,dd0=[iyear,7,16]; yyyy1,mm1,dd1=[iyear,10,30]
-        #yyyy0,mm0,dd0=[iyear,1,1]; yyyy1,mm1,dd1=[iyear,12,31]
-        user_string = "MiscSites" # additional string to add to output file SiteName_yyyy_<user_string>.txt
+        #yyyy0,mm0,dd0=[iyear,7,16]; yyyy1,mm1,dd1=[iyear,7,16]
+        yyyy0,mm0,dd0=[iyear,1,1]; yyyy1,mm1,dd1=[iyear,12,31]
+        user_string = "_UVAI" # additional string to add to output file SiteName_yyyy_<user_string>.txt
         
+        #output_path='/home/sgasso/PROJECTS/AOCH-new/src/Components/AOCH/MPL/'  # location of collocation files
         output_path='/nobackup/2/MPL/Collocations/'  # location of collocation files
         #julian=359 
 

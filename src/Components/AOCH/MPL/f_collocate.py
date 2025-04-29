@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Apr/29/2025 - Added Aerosol Index to the standard ouput. I had to swith GEO=False
 Apr/14/2025 - Added path to pyobs (I could not get to work my env path setting)
 Apr/8/2025 Added an output path for output files
 
@@ -179,7 +180,7 @@ def find_nearest_point_haversine(lat_array, lon_array, lat0, lon0):
     return row, col,dist0
     
 def create_output_files(output_path,output_array, year, userstring):
-    header = 'yyyy-mm-dd hh:mm:ss.d,orbit_number,source_filename     ,line,column'
+    header = 'yyyy-mm-dd hh:mm:ss.d,orbit_number,source_filename     ,line,column,uvai'
     # get the key with the site name
     for key in output_array.keys():
         # Create filename using the specified format
@@ -222,7 +223,7 @@ def process_matching_orbits(orbits_list, \
             if verb>1:print(f"   Loading new file for orbit {orbit_num}: {filename_tro}")
             file_pth = current_pth+filename_tro
             # Extract only GEO data
-            TROP = TROPOAER_L2(file_pth,GEO=True,Verbose=0)
+            TROP = TROPOAER_L2(file_pth,GEO=False,Verbose=0)
             # saving for next loop
             current_orbit = orbit_num 
         else:
@@ -241,6 +242,7 @@ def process_matching_orbits(orbits_list, \
             else:
                 found_lat = TROP.lat[line, col]
                 found_lon = TROP.lon[line, col]
+                site_ai   = TROP.uvai[line, col]
                 refday_sec= int(TROP.time[0])
                 found_time= float(TROP.dtime[line])
                 date1     = (REF_DATE + timedelta(seconds=int(TROP.time[0]))) # reference time from global time.
@@ -255,9 +257,9 @@ def process_matching_orbits(orbits_list, \
                     print(f"    MPL site located at {lat0:.4f},{lon0:.4f}")
                 
                 if not output_array[site_name]:  # checks if the list is empty
-                    output_array[site_name] = [(date2, orbit_num, filename_tro, line, col)]
+                    output_array[site_name] = [(date2, orbit_num, filename_tro, line, col, f"{site_ai:.4f}")]
                 else:
-                    output_array[site_name].append((date2, orbit_num, filename_tro, line, col))
+                    output_array[site_name].append((date2, orbit_num, filename_tro, line, col,f"{site_ai:.4f}"))
                     
     end_time = datetime.now()
     time_diff = (end_time - start_time2).total_seconds()
