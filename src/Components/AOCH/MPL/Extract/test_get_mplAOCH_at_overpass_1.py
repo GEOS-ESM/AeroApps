@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
 
         # Read the data
-        data = MPL_L15.read_file(file_path, variables=variables_to_read, verb=0)
+        mpl_data = MPL_L15.read_file(file_path, variables=variables_to_read, verb=0)
         
             # ### now print some misc data directly
         # print(data.extinction.shape)
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         # datetime does not have a way to deal with this reference point .
         # I used a different approach based on the date in the filename.
 
-        x     =data.time
+        x     =mpl_data.time
         base_date = datetime(v.year, v.month, v.day,0,0,0) ## Your base date
         xtime = []
         for jd in x:
@@ -101,19 +101,19 @@ if __name__ == "__main__":
             # Create datetime by adding the time to base date
             dt = base_date + timedelta(minutes=minutes)
             xtime.append(dt)
-        ### Because MPL data is reported every 60 min,
+        ### Because MPL mpl_data is reported every 60 min,
         ### one could create a time array of size 60*24 = 1440 and it should be the same.
         # Convert the list to a numpy array
         xtime = np.array(xtime)
         
         ### Assign inputs to module
         #site_name = station_str
-        z_in      = data.altitude[0,:]*1000 # convert to meters
+        z_in      = mpl_data.altitude[0,:]*1000 # convert to meters
 
         ### Now select variable of interest and transpose so it is compatible
         ### with plotting routine
-        varin       =1e-3*data.extinction[0,:].T # 1440 x 400 to 400 x 1440
-        varin_err   =1e-3*data.extinction_err[0,:].T # 1440 x 400 to 400 x 1440
+        varin       =1e-3*mpl_data.extinction[0,:].T # 1440 x 400 to 400 x 1440
+        varin_err   =1e-3*mpl_data.extinction_err[0,:].T # 1440 x 400 to 400 x 1440
 
 
         ##### Set time frame of satellite overpass
@@ -148,7 +148,7 @@ if __name__ == "__main__":
         # Print results for Method 1
         print("  Method 1 : Average Bext in each layer and then compute AOCH")
         if np.isnan(result1):
-            print("  AOCH (km): No valid data for integration")
+            print("  AOCH (km): No valid MPL data for integration")
         else:
             print(f"  AOCH (km): {result1/1000:.2f} ± {error1/1000:.2f}")
             print(f"    Total Profiles: {total_obs1}")
@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
         print("\n  Method 2: Compute AOCH in each profiles and then take mean:")
         if np.isnan(result2):
-            print("  AOCH (km): No valid data for integration")
+            print("  AOCH (km): No valid MPL data for integration")
         else:
             print(f"  AOCH (km): {result2/1000:.2f} ± {error2/1000:.2f}")
             print(f"    Total Profile: {total_obs2}")
