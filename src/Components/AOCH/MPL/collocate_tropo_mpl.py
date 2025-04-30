@@ -64,7 +64,7 @@ if __name__ == "__main__":
         verb = 0  # Verbose output flag (default: 0,0: minimal print ,1: some print 2: print all)
         #yyyy0,mm0,dd0=[iyear,7,16]; yyyy1,mm1,dd1=[iyear,7,16]
         yyyy0,mm0,dd0=[iyear,1,1]; yyyy1,mm1,dd1=[iyear,12,31]
-        user_string = "_UVAI" # additional string to add to output file SiteName_yyyy_<user_string>.txt
+        user_string = "UVAI" # additional string to add to output file SiteName_yyyy_<user_string>.txt
         
         #output_path='/home/sgasso/PROJECTS/AOCH-new/src/Components/AOCH/MPL/'  # location of collocation files
         output_path='/nobackup/2/MPL/Collocations/'  # location of collocation files
