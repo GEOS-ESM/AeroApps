@@ -3,11 +3,6 @@
 Test code that ingests tropomi & mpl collocations, check date and location of site and pulls the MERRA data for respective
 model grid cell. Then it computes AOCH  and saves in output file. 
 -------------------------------------
-Apr/21/2025 - 
-ver 3 works . it computes MERRA AOCH for 3 times, satellite overpass and +/- 30 min to create some sort of error bar.
-But the standard deviation over the period is zero. So, I will remove this and make a version that only extracts data 
-at the satellite time.
-
 Apr/3/2025 test_extract_merra_over_site_2.py .This code is based on ver *_1
 1) it incorporates a loop to go over all dates according to input file. 
 2) it save calculated MERRA AOCh in output file.
@@ -16,7 +11,7 @@ Local folder /discover/nobackup/sgasso/PROJECTS/AOCH
 Mar/21/2025 
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import netCDF4 as nc
 
 import numpy as np
@@ -87,7 +82,7 @@ file_path  ='test_input_trop_overpass_1.txt'# File with tropomi orbit over mpl s
 site_xy = [38.9930,-76.8400] # Lat/Lon MPL site
 ### # set up some filenames, for now make sure they are the same directory where G2GAOP is executed
 config = 'm2_pm25.yaml' # this configuration file can be found in src/config
-m2data = 'inst3_3d_aer_Nv' # keep this file in same dir where script is exectured , do not change this 
+m2data = 'inst3_3d_aer_Nv' # do not change this 
 
 ### Output name for MERRA2 data along CAL track
 # out_MERRA = 'm2_calipso_sampled_'+CAL_IOWA_File[12:-3]+'.nc'
@@ -117,56 +112,94 @@ data = process_file(file_path)
 # lat_array = np.array(lat_list)
 
 # Create time_array from the datetimes in the dictionary
-time_array0 = np.array(data['datetimes'])
-Nrecords   =len(time_array0)
-# create time array to store window of time similar to mpl sampling
-#time_array =np.full((Nrecords, 1), None, dtype=object)
-me_hw532   =np.zeros([Nrecords,1])
-#time_array[:,1]=time_array0 
+time_array = np.array(data['datetimes'])
+Nrecords=len(time_array)
 # Create lon_array by repeating the first element of site_xy
 lon_array = np.full(Nrecords, site_xy[1])
 lat_array = np.full(Nrecords, site_xy[0])
 
-# Define early and later arrays
-# delta_30_minutes = timedelta(minutes=30)
-# time_array[:,0] = time_array0 - delta_30_minutes
-# time_array[:,2] = time_array0 + delta_30_minutes
- 
-#for i in [0,1,2]:
-traj = TRAJECTORY(time_array0,lon_array,lat_array,m2data) # sample the MERRA-2 dataset along the trajectory, and return an xarray dataset
-#traj2 = STATION(['GSFC','GSFC'],lon_array,lat_array,m2data,time_array)
+#me_hw532=np.zeros([Nrecords])
+# for i in range(Nrecords):
+    # traj = TRAJECTORY(time_array[i],lon_array[i],lat_array[i],m2data) # sample the MERRA-2 dataset along the trajectory, and return an xarray dataset
+    # #traj2 = STATION(['GSFC','GSFC'],lon_array,lat_array,m2data,time_array)
+    # # sample the MERRA-2 dataset along the trajectory, and return an xarray dataset
+    # traj_ds = traj.sample()
+    # print("DONE extracting MERRA data ")
+    # #sys.exit()
+    # # if save_merra == 'True':
+       # # print('\n Saving MERRA data file.... ', out_MERRA)
+       # # traj_ds.to_netcdf(out_MERRA)
+       # # print(" Done Savings!\n")
 
-### sample the MERRA-2 dataset along the trajectory, and return an xarray dataset
+    # # ####### -------------------
+    # # # read the sampled aerosol profile data and optical tables
+    # optics = G2GAOP(out_MERRA,config=config)
+    # # Get BEXT at 532 nm and 1064nm
+    # # breakpoint()
+    # ext532  = optics.getAOPext(wavelength=532)
+
+    # # # Get MERRA-2 vertical coordinate
+    # ext532.pipe(addVertCoord)
+
+    # ### Get time coordinate
+    # # time  = ext532.time.values
+    # # ntime = ext532.dims['time']
+    # # nlev  = ext532.dims['lev']
+    # #time  = np.repeat(time.reshape(ntime,1),nlev,axis=1)
+
+    # # ## Sanity check. Just to make sure the ingested EXT are same lenght as CALIPSO
+    # # if npts != ext532.EXT.shape[0] : sys.exit('Number of points from MERRA do not match Npixels from CALIPSO')
+
+    # # ### Now compute MERRA weighted height
+    # me_zlayer =ext532.Z[0].values   # in km
+    # me_text532 =ext532.EXT.values # in km-1
+    # if len(np.where(me_text532<0)[0])>1 : sys.exit('Some EXT are <0 in MERRA. Check')
+    # A3=np.sum(me_zlayer * me_text532,axis=1)
+    # B3=np.sum(me_text532,axis=1)
+    # me_hw532[i]=np.divide(A3 , B3) # km
+
+
+traj = TRAJECTORY(time_array,lon_array,lat_array,m2data) # sample the MERRA-2 dataset along the trajectory, and return an xarray dataset
+#traj2 = STATION(['GSFC','GSFC'],lon_array,lat_array,m2data,time_array)
+# sample the MERRA-2 dataset along the trajectory, and return an xarray dataset
 traj_ds = traj.sample()
 print("DONE extracting MERRA data ")
 #sys.exit()
-### Save optical properties?
 if save_merra == 'True':
    print('\n Saving MERRA data file.... ', out_MERRA)
    traj_ds.to_netcdf(out_MERRA)
    print(" Done Savings!\n")
-
-####### -------------------
-##### read the sampled aerosol profile data and optical tables
+#sys.exit()
+# ####### -------------------
+# # read the sampled aerosol profile data and optical tables
 optics = G2GAOP(out_MERRA,config=config)
-###Get BEXT at 532 nm and 1064nm
-### breakpoint()
+# Get BEXT at 532 nm and 1064nm
+# breakpoint()
 ext532  = optics.getAOPext(wavelength=532)
 
-##### Get MERRA-2 vertical coordinate
+# # Get MERRA-2 vertical coordinate
 ext532.pipe(addVertCoord)
-### Now compute MERRA weighted height
+
+### Get time coordinate
+# time  = ext532.time.values
+# ntime = ext532.dims['time']
+# nlev  = ext532.dims['lev']
+#time  = np.repeat(time.reshape(ntime,1),nlev,axis=1)
+
+# ## Sanity check. Just to make sure the ingested EXT are same lenght as CALIPSO
+# if npts != ext532.EXT.shape[0] : sys.exit('Number of points from MERRA do not match Npixels from CALIPSO')
+
+# ### Now compute MERRA weighted height
 me_zlayer =ext532.Z[0].values   # in km
 me_text532 =ext532.EXT.values # in km-1
 if len(np.where(me_text532<0)[0])>1 : sys.exit('Some EXT are <0 in MERRA. Check')
 A3=np.sum(me_zlayer * me_text532,axis=1)
 B3=np.sum(me_text532,axis=1)
-me_hw532=np.divide(A3 , B3) # km , size=Nrecords x 1
+me_hw532=np.divide(A3 , B3) # km
 
- 
+
 # ##### Done computing weighted heights
-filename='test_merra_collocated.txt'
-np.savetxt(filename, me_hw532,fmt='%.4f')
+
 sys.exit()
 
 # #### NOW save output

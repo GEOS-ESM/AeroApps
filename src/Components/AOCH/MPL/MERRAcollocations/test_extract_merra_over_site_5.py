@@ -95,7 +95,7 @@ m2data = 'inst3_3d_aer_Nv' # keep this file in same dir where script is execture
 
 ### Output name for MERRA2 data along CAL track
 # out_MERRA = 'm2_calipso_sampled_'+CAL_IOWA_File[12:-3]+'.nc'
-save_merra='False'
+save_merra='True'
 out_MERRA = 'm2_test2.nc' # it may not be used depending whether to save_merra=True
 ### Now set output filename for triple collocation 
 #output_filename = 'AlongTrack_MERRA-IOWA-CALIOP_' + caldata.cal_filename[35:-15] + '_3.1.nc'
@@ -157,6 +157,8 @@ for input_file in matching_files:
         #sys.exit()
         ### Save optical properties?
         if save_merra == 'True':
+            #out_MERRA = 'm2_test2_' + site_string + str(yyyy) .nc' # it may not be used depending whether to save_merra=True
+            out_MERRA = f"m2_test2_{site_string}_{year}.nc"
             print('\n Saving MERRA data file.... ', out_MERRA)
             traj_ds.to_netcdf(out_MERRA)
             print(" Done Savings!\n")
