@@ -1,0 +1,2 @@
+Name_MPL_sites               , lat, lon, altitude(km)
+McCall                      , 44.9270,-116.0890,1.537

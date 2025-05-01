@@ -1,0 +1,2 @@
+Name_MPL_sites               , lat, lon, altitude(km)
+Sao_Paolo                   ,-23.5620, -46.7350,0.865
