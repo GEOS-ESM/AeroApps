@@ -21,12 +21,13 @@ Backg_Check:
 
 Buddy_Check:
   tau_buddy: 0.1
-  niter_max: 5
+  niter_max: 2
   search_rad: 1
   nbuddy_max: 100
   nstar: 0
   ls_h: 150000.0
-  ls_v: 1000.0     
+  ls_v: 100.0     
+  seplim: 26.5  
 """
 
 # sigO, sigF for LAOD:
@@ -310,7 +311,7 @@ class QC(object):
         ls_v = self.sqc['Buddy_Check'].get('ls_v', 0.0)  # Vertical length scale
         single_level = self.sqc['Buddy_Check'].get('single_level', False)
         nbuddy_max = self.sqc['Buddy_Check'].get('nbuddy_max', 100)
-        seplim = self.sqc['Buddy_Check'].get('seplim', 0.2)  # Separation limit between regions
+        seplim = self.sqc['Buddy_Check'].get('seplim', 26.5)  # Separation limit between regions
 
         # Initialize arrays for buddy check results
         reaccept = np.zeros((self.nobs, self.nchannels), dtype=bool)
@@ -369,17 +370,17 @@ class QC(object):
                 print("VarO:", type(self.VarO), self.VarO.shape)
                 print("ls_h:", type(ls_h))
                 print("ls_v:", type(ls_v))
-                print("search_rad:", type(search_rad))
+                print("search_rad:", type(search_rad), search_rad)
                 print("single_level:", type(single_level))
-                print("nbuddy_max:", type(nbuddy_max))
+                print("nbuddy_max:", type(nbuddy_max), nbuddy_max)
                 print("iregbeg:", type(self.iregbeg), self.iregbeg.shape)
                 print("ireglen:", type(self.ireglen), self.ireglen.shape)
-                print("seplim:", type(seplim))
+                print("seplim:", type(seplim), seplim)
                 reaccept = BuddyCheck_.py_find_buddies(ki_susp, kr_susp, self.xobs, self.yobs, self.zobs, self.lev, self.ioda.omf,
                         self.VarF, self.VarO, ls_h, ls_v, search_rad, single_level, nbuddy_max, self.iregbeg, self.ireglen, 
                         seplim)
             
-         
+                print('reaccept', np.where(reaccept==True))         
     print(f'[x] Buddy check completed')
 
           
