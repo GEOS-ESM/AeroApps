@@ -14,11 +14,15 @@ module BuddyCheck_Mod
     
     ! Variables for buddy statistics
     integer, allocatable, save :: n_buddies(:)
-    real, allocatable, save :: weighted_pred(:), var_scaling_factor(:)
-    real, allocatable, save :: tol2(:), obs_dev_squared(:)
+    real*8, allocatable, save :: weighted_pred(:), var_scaling_factor(:)
+    real*8, allocatable, save :: tol2(:), obs_dev_squared(:)
     integer, allocatable, save :: buddy_indices(:,:)
-    real, allocatable, save :: buddy_weights(:,:)
-    real, allocatable, save :: omf_buddy(:,:)
+    real*8, allocatable, save :: buddy_weights(:,:)
+    real*8, allocatable, save :: omf_buddy(:,:)
+    real*8, allocatable, save :: buddy_dist2(:,:)
+    real*8, allocatable, save :: buddy_distz2(:,:)
+    real*8, allocatable, save :: buddy_lats(:,:)
+    real*8, allocatable, save :: buddy_lons(:,:)
 
     logical, allocatable, save :: suspect(:)
     
@@ -52,7 +56,7 @@ contains
     end subroutine icosahedron_regions
     
     subroutine find_buddies(nobs, n_susp, ki_susp, kr_susp, &
-                           xobs, yobs, zobs, lev, omf, varF, varO, &
+                           xobs, yobs, zobs, lats, lons,lev, omf, varF, varO, qcx,&
                            ls_h, ls_v, search_rad, single_level, nbuddy_max, &
                            iregbeg, ireglen, maxreg, seplim, &
                            reaccept)
@@ -63,17 +67,20 @@ contains
         integer, intent(in) :: n_susp
         integer, intent(in) :: ki_susp(n_susp)
         integer, intent(in) :: kr_susp(n_susp)
-        real, intent(in) :: xobs(nobs)
-        real, intent(in) :: yobs(nobs)
-        real, intent(in) :: zobs(nobs)
-        real, intent(in) :: lev(nobs)
-        real, intent(in) :: omf(nobs)
-        real, intent(in) :: varF(nobs)
-        real, intent(in) :: varO(nobs)
-        real, intent(in) :: ls_h
-        real, intent(in) :: ls_v
-        real, intent(in) :: search_rad
-        real, intent(in) :: seplim
+        real*8, intent(in) :: xobs(nobs)
+        real*8, intent(in) :: yobs(nobs)
+        real*8, intent(in) :: zobs(nobs)
+        real*8, intent(in) :: lats(nobs)
+        real*8, intent(in) :: lons(nobs)
+        real*8, intent(in) :: lev(nobs)
+        real*8, intent(in) :: omf(nobs)
+        real*8, intent(in) :: varF(nobs)
+        real*8, intent(in) :: varO(nobs)
+        integer, intent(in) :: qcx(nobs)
+        real*8, intent(in) :: ls_h
+        real*8, intent(in) :: ls_v
+        real*8, intent(in) :: search_rad
+        real*8, intent(in) :: seplim
         logical, intent(in) :: single_level
         integer, intent(in) :: nbuddy_max
         integer, intent(in) :: iregbeg(maxreg)
@@ -85,22 +92,30 @@ contains
        
         ! Local variables
         integer :: i, j, nbuddy, ireg, ibeg, iend, kis, krs, lvs
-        real :: exponent, scgain, dist2, z_dist2
-        real :: tol_rel = 1.0e-5  ! Small tolerance value
-        real :: tau_buddy = 1   ! buddy tol param
-        real, parameter :: radius_earth = 6371000.0  ! Earth radius in meters
+        real*8 :: exponent, scgain, dist2, z_dist2
+        real*8 :: tol_rel = 1.0e-5  ! Small tolerance value
+        real*8 :: tau_buddy = 0.1   ! buddy tol param
+        real*8, parameter :: radius_earth = 6371000.0  ! Earth radius in meters
         integer :: is, ib, ibb, n_reacc
-        real ::  accum_de1, accum_de2, accum_wgt, accum_var
+        real*8 ::  accum_de1, accum_de2, accum_wgt, accum_var
         
         ! Temporary arrays for all potential buddies (before sorting)
-        integer :: temp_buddy_indices(nobs)
-        real :: temp_buddy_weights(nobs)
+        integer:: temp_buddy_indices(nobs)
+        real*8 :: temp_buddy_weights(nobs)
+        real*8 :: temp_dist2(nobs)
+        real*8 :: temp_distz2(nobs)
         integer :: indx(nobs)
+      !  real*8 :: min_weight, max_weight, min_omf, max_omf
         
         ! Allocate buddy arrays if not already allocated
         if (.not. allocated(buddy_indices)) allocate(buddy_indices(nobs, nbuddy_max))
         if (.not. allocated(buddy_weights)) allocate(buddy_weights(nobs, nbuddy_max))
         if (.not. allocated(omf_buddy)) allocate(omf_buddy(nobs, nbuddy_max))
+        if (.not. allocated(buddy_dist2)) allocate(buddy_dist2(nobs, nbuddy_max))
+        if (.not. allocated(buddy_distz2)) allocate(buddy_distz2(nobs, nbuddy_max))
+        if (.not. allocated(buddy_lats)) allocate(buddy_lats(nobs, nbuddy_max))
+        if (.not. allocated(buddy_lons)) allocate(buddy_lons(nobs, nbuddy_max))
+        
         
         print*, 'nobs, nsusp', shape(xobs), shape(ki_susp)
 
@@ -128,6 +143,12 @@ contains
         !$omp reduction(+:n_reacc)
         do is = 1, n_susp  ! for each suspect obs
             kis = ki_susp(is)   ! this suspect's index
+            !$OMP MASTER
+             if (mod(is, 1) == 0) then  ! Print
+                 print *, "Progress: iteration", is, "of", kis
+             end if
+            !$OMP END MASTER
+           
             krs = kr_susp(is)   ! this suspect's region
             lvs = lev(kis)      ! this suspect's level
             
@@ -140,24 +161,23 @@ contains
                     
                     ibeg = iregbeg(ireg)
                     iend = ibeg + ireglen(ireg) - 1
-                    
+                     !$OMP MASTER
+                    if (mod(is, 1) == 0) then  ! Print
+                       print*, 'ibeg', is, kis, krs, ibeg, iend
+                    endif
+                     !$OMP END MASTER   
                     do i = ibeg, iend  ! look within a region
                         ! Skip other levels if doing single level
                         if (single_level .and. (abs(lvs-lev(i)) > tol_rel*lvs)) cycle
                         
                         ! only if not suspect, not excluded:
-                        if (.not. suspect(i)) then
+                        if (.not. suspect(i) .and. qcx(i) ==0) then
                             ! Calculate horizontal distance squared
                             dist2 = (radius_earth**2) * ((xobs(kis)-xobs(i))**2 + &
                                                         (yobs(kis)-yobs(i))**2 + &
                                                         (zobs(kis)-zobs(i))**2)
                             
                             exponent = dist2 / ls_h**2
-                             !$OMP MASTER
-                                if (mod(is, 10000) == 0) then  ! Print
-                                 print *, "exponent for suspect:", is, "and buddy index", i, "value=", exponent
-                                 end if
-                                 !$OMP END MASTER 
 
                             ! Add vertical distance component if applicable
                             if (ls_v > tol_rel) then  ! upper-air data
@@ -171,35 +191,16 @@ contains
                                 nbuddy = nbuddy + 1
                                 ! Store in temporary arrays
                                 temp_buddy_indices(nbuddy) = i
-                                    
+                                temp_dist2(nbuddy) = dist2
+                                temp_distz2(nbuddy) = z_dist2    
                                 ! associate weight with this candidate:
                                 scgain = varF(i) / (varF(i) + varO(i))
-
-                                 !$OMP MASTER
-                                if (mod(is, 10000) == 0) then  ! Print
-                                 print *, "scgain  for suspect:", is, "of", nbuddy, "value=", scgain
-                                 end if
-                                 !$OMP END MASTER 
-
                                 temp_buddy_weights(nbuddy) = scgain * exp(-0.5*exponent)
-                                !$OMP MASTER
-                                if (mod(is, 10000) == 0) then  ! Print
-                                 print *, "Poids for suspect:", is, "of", nbuddy, "value=", temp_buddy_weights(nbuddy)
-                                 end if
-                                !$OMP END MASTER  
-
-
                             end if  ! not too far
                         end if  ! not suspect
                     end do  ! within a region
                 end if  ! nearby regions
             end do  ! over regions
-            !$OMP MASTER
-             if (mod(is, 1000) == 0) then  ! Print
-                 print *, "Progress: iteration", is, "of", nbuddy
-             end if
-            !$OMP END MASTER 
-             !   print*, 'region', krs, nbuddy, 'for supsect', is
             
             ! Process buddies if we found any
             if (nbuddy > 0) then
@@ -219,24 +220,43 @@ contains
                         end if
                     end do
                 end do
-                
-                ! Limit number of buddies to nbuddy_max
+                 !$OMP MASTER
+                    if (mod(is, 1) == 0) then  ! Print
+                       print*, 'nbuddy', is, nbuddy
+                    endif   
+                 !$OMP END MASTER      
+                            
+                            
                 nbuddy = min(nbuddy, nbuddy_max)
                 
                 ! Store the best buddies in the output arrays
                 do ib = 1, nbuddy
                     ibb = indx(ib)
+                    i = buddy_indices(kis, ib)
                     buddy_indices(kis, ib) = temp_buddy_indices(ibb)
                     buddy_weights(kis, ib) = temp_buddy_weights(ibb)
-                    omf_buddy(kis, ib) = omf(ibb)
-                end do
-                 
-                
-                  !$OMP MASTER
-                  if (mod(is, 100) == 0) then  ! Print
-                  print *, "buddy weight 10:", is, "of", kis, "value=", buddy_weights(kis, 1:10), 'omf bud',omf_buddy(kis,1:10)
-                  end if
-                  !$OMP END MASTER 
+                !    buddy_dist2(kis, ib) = temp_dist2(ibb)
+                !    buddy_distz2(kis, ib) = temp_distz2(ibb)
+                    omf_buddy(kis,ib) = omf(i)
+                    buddy_lats(kis, ib) = lats(i)
+                    buddy_lons(kis, ib) = lons(i)
+                enddo 
+
+                !$OMP MASTER
+                    if (mod(is, 1) == 0) then  ! Print
+               !        print*, 'buddy indices', is, kis, buddy_indices(kis,1:10)
+               !        print*, 'buddy weights', is, kis, buddy_weights(kis,1:10)
+               !        print*, 'buddy dist2', is, kis, buddy_dist2(kis,1:20)
+               !        print*, 'buddy end dist2', is, kis, buddy_dist2(kis,80:100)
+                       print*, 'buddy omf', is, kis, omf_buddy(kis,1:10)
+               !        print*, 'buddy omf test', is, kis, omf_buddy_(kis,1:10)
+                       print*, 'buddy lats', is, kis, buddy_lats(kis,1:20)
+                       print*, 'buddy lons', is, kis, buddy_lons(kis,1:20) 
+               !        print*, 'buddy end lats', is, kis, buddy_lats(kis,80:100)
+               !        print*, 'buddy end lons', is, kis, buddy_lons(kis,80:100)
+                    endif
+                 !$OMP END MASTER   
+
 
                 ! Calculate statistics using the best buddies
                 accum_de1 = 0.0
@@ -248,46 +268,51 @@ contains
                     i = buddy_indices(kis, ib)
                     accum_wgt = accum_wgt + buddy_weights(kis, ib)
                     accum_de1 = accum_de1 + buddy_weights(kis, ib) * omf(i)
-                    accum_var = accum_var + buddy_weights(kis, ib) * (varF(i) + varO(i))
-                    accum_de2 = accum_de2 + (omf(i))**2
+                    accum_var = accum_var + (varF(i) + varO(i))
+                    accum_de2 = accum_de2 + omf(i)**2
                 end do
                 
                     
                     ! Calculate weighted prediction (expected value for a suspect) calculate from its buddies based
                     ! on obs minus forecast value
                     
-                    weighted_pred(kis) = accum_de1 / accum_wgt
                     !$OMP MASTER
-                    if (mod(is, 100) == 0) then  ! Print
+                    if (mod(is, 1) == 0) then  ! Print
+                       print *, "LAT LON for ind", is, kis, "value of", lats(kis), lons(kis)
+                    end if
+                    !$OMP END MASTER
+                    weighted_pred(kis) = (accum_de1 / accum_wgt)
+                    !$OMP MASTER
+                    if (mod(is, 1) == 0) then  ! Print
                        print *, "Progress2: weighted pred for ind", is, kis, "value of", weighted_pred(kis)
                     end if
-                    !$OMP END MASTER 
+                    !$OMP END MASTER
                     ! variance scaling factor used to adjust the tolerance for accepting/rejectig obs 
                     !(derived from the buddies var)
-                    var_scaling_factor(kis) = accum_de2 / accum_var
-                    !$OMP MASTER
-                    if (mod(is, 100) == 0) then  ! Print
+                    var_scaling_factor(kis) = (accum_de2 / accum_var)
+                     !$OMP MASTER
+                    if (mod(is, 1) == 0) then  ! Print
                        print *, "Progress3: var for scale factor for ind", is, kis, "value of", var_scaling_factor(kis)
                     end if
                     !$OMP END MASTER
-                    
                     ! Decide whether to reaccept based on criteria-> tolerance squared
                     tol2(kis) = tau_buddy**2 * var_scaling_factor(kis)  * (varF(kis) + varO(kis))
-                     !$OMP MASTER
-                    if (mod(is, 100) == 0) then  ! Print
-                       print *, "Progress4: tol function of tau_buddy", is, kis, "value of", tol2(kis)
-                    end if
-                    !$OMP END MASTER
 
                     obs_dev_squared(kis) = (omf(kis) - weighted_pred(kis))**2 
-
-                     !$OMP MASTER
-                    if (mod(is, 100) == 0) then  ! Print
-                       print *, "Progress45: obs dev squared", is, kis, "value of", omf(kis), weighted_pred(kis), obs_dev_squared(kis)
+                    !$OMP MASTER
+                    if (mod(is, 1) == 0) then  ! Print
+                       print *, "Progress5: obs dev squared", is, kis, "value of omf susp", omf(kis)
+                   !    print *, "Progress5: obs dev squared", is, kis, "value of obs_dev_squared", obs_dev_squared(kis)
+                   !    print *, "Progress5: obs dev squared compared to", is, kis, "value of tolerance", tol2(kis)
                     end if
                     !$OMP END MASTER
                     if (obs_dev_squared(kis) < tol2(kis)) then
                         reaccept(kis) = .true.
+                        !$OMP MASTER
+             if (mod(is, 1) == 0) then  ! Print
+                 print *, "Reaccept", is, "of", kis
+             end if
+            !$OMP END MASTER
                         n_reacc = n_reacc +1
                     end if
             end if
@@ -306,6 +331,10 @@ contains
         if (allocated(buddy_indices)) deallocate(buddy_indices)
         if (allocated(buddy_weights)) deallocate(buddy_weights)
         if (allocated(omf_buddy)) deallocate(omf_buddy)
+        if (allocated(buddy_dist2)) deallocate(buddy_dist2)
+        if (allocated(buddy_distz2)) deallocate(buddy_distz2)
+        if (allocated(buddy_lats)) deallocate(buddy_lats)
+        if (allocated(buddy_lons)) deallocate(buddy_lons)
         if (allocated(suspect)) deallocate(suspect)
         
         ! Clean up partition
