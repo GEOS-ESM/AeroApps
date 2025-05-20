@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# coding: utf-8
+
+
 
 import xarray as xr
 import numpy as np
@@ -7,6 +10,8 @@ import yaml
 import sys
 
 sys.path.append('/home/vbuchard/workspace/JEDI/OBS_IODA/GMAOpyobs/install/lib/Python/')
+
+
 
 
 # Default YAML file for SQC parameters
@@ -21,13 +26,12 @@ Backg_Check:
 
 Buddy_Check:
   tau_buddy: 0.1
-  niter_max: 2
+  niter_max: 5
   search_rad: 1
   nbuddy_max: 100
   nstar: 0
   ls_h: 150000.0
-  ls_v: 100.0     
-  seplim: 26.5  
+  ls_v: 1000.0     
 """
 
 # sigO, sigF for LAOD:
@@ -61,6 +65,10 @@ LAOD_sigs = """
    sigF: 0.45
 """
 
+
+# In[3]:
+
+
 class QC(object):
     def __init__(self, iodaFiles, config=None, log=True, verbose=True):
         if config is None:
@@ -93,21 +101,39 @@ class QC(object):
         obs_wavelength = self.ioda.MetaData['obs_wavelength'].data
         print('obs wavelength', obs_wavelength)
         # reshape lev as (nlocs, nch) for the buddy check, repeating the same value for each obs if 2D variable
-        self.lev = np.tile(obs_wavelength, (self.nobs,1))
-        print('lev', self.lev.shape,self.lev[0:5,0:1])
-
-        self._reset_qc()
-        self._getErrVar()
-        self._backgCheck()
-        self._reorder_arrays(message="Reordering by exclusion status")
-        # next regions divisions, call fortran code
-        lons, lats = self.ioda.MetaData['longitude'], self.ioda.MetaData['latitude']
-        xobs, yobs, zobs = self.ll2xyz(lons, lats)
+        self.lev = np.tile(obs_wavelength, self.nobs)
+        self.lons, self.lats = self.ioda.MetaData['longitude'], self.ioda.MetaData['latitude']
+        xobs, yobs, zobs = self.ll2xyz(self.lons, self.lats)
         self.xobs = np.array(xobs, dtype=np.float64)
         self.yobs = np.array(yobs, dtype=np.float64)
         self.zobs  = np.array(zobs, dtype=np.float64)
+   
+        self.I_old = ((self.qcexcl==0) & (self.qchist==17))
+        print('I old reaccept', self.I_old, self.I_old.shape)
+        self.reac_old = np.where((self.qcexcl==0) & (self.qchist==17))[0]
+        print('find index reaccepted values in old code:', np.where((self.qcexcl==0) & (self.qchist==17))[0])
+   #     print('parameters for comparisons:', 'lat =', self.ioda.MetaData['latitude'][self.reac_old].data, ' lon = ', self.ioda.MetaData['longitude'][self.reac_old].data,
+   #           'omf =', self.ioda.omf[self.reac_old].data, 'obs value=', self.ioda.ObsValue['aerosolOpticalDepth'][self.reac_old].data, 'xobs = ', self.xobs[self.reac_old], 'qchi= ', self.qchist[self.reac_old])
+    
+        self._reset_qc()
+        self._getErrVar()
+        self._backgCheck()
+     
+        
+   #     print('find index reaccepted values in old code after background:', np.where((self.qcexcl==0) & (self.qchist==17))[0])
+   #     print('parameters for comparisons after background check:', 'lat =', self.ioda.MetaData['latitude'][self.reac_old].data, ' lon = ', self.ioda.MetaData['longitude'][self.reac_old].data,
+   #          'omf =', self.ioda.omf[self.reac_old].data, 'obs value=', self.ioda.ObsValue['aerosolOpticalDepth'][self.reac_old].data, 'xobs = ', self.xobs[self.reac_old], 'qchi= ', self.qchist[self.reac_old])
+             
+        self._reorder_arrays(message="Reordering by exclusion status")
+   
         self.regions, self.nmaxregions, self.iregbeg, self.ireglen = self._getregions()
-        print('regions', self.regions)
+#        print('regions', self.regions)
+        self.reac_old = np.where(self.I_old == True)[0]
+        print('find index reaccepted values in old code after region reorder:', np.where((self.qcexcl==0) & (self.qchist==17))[0])
+ #       print('parameters for comparisons after region binning:', 'lat =', self.ioda.MetaData['latitude'][self.reac_old].data, ' lon = ', self.ioda.MetaData['longitude'][self.reac_old].data,
+ #            'omf =', self.ioda.omf[self.reac_old].data, self.regions[self.reac_old], 'obs value=', 
+ #             self.ioda.ObsValue['aerosolOpticalDepth'][self.reac_old].data, 'xobs = ', self.xobs[self.reac_old], 'qchi= ', self.qchist[self.reac_old])
+        
         self._buddyCheck()
 
     def _reset_qc(self):
@@ -147,6 +173,23 @@ class QC(object):
     
         print(f'[x] {message}')
 
+        test_index = self.reac_old[0]  # Take first reaccepted observation as test case
+        print("BEFORE REORDERING:")
+        print(f"Test index {test_index}:")
+        print(f"  Lat: {self.ioda.MetaData['latitude'][test_index].data}")
+        print(f"  Lon: {self.ioda.MetaData['longitude'][test_index].data}")
+        print(f"  OMF: {self.ioda.omf[test_index].data}")
+        print(f"  XObs: {self.xobs[test_index]}")
+
+        # Store omf array before reordering
+        if hasattr(self.ioda, 'omf'):
+           omf_array = self.ioda.omf.copy()
+           print(f"  OMF: {omf_array[test_index].data}")
+        else:
+           # If omf is stored elsewhere, adjust this accordingly
+           omf_array = None
+           print("  OMF: Not found as direct attribute")
+        
         # Determine the sort indices
         if sort_indices is None:
            if sort_by_key is None:
@@ -161,38 +204,35 @@ class QC(object):
               n_valid = None
         else:
            n_valid = None
-        
-
-        # Function to reorder a single DataArray
-        def reorder_dataarray(da):
-           if 'Location' in da.dims:
-               return da.isel(Location=sort_indices)
-           return da
-
-        # Reorder the entire DataTree
-        reordered_tree = xr.DataTree()
-        for path, data_array in self.ioda.items():
-            if isinstance(data_array, xr.DataArray):
-               reordered_tree[path] = reorder_dataarray(data_array)
-            else:
-               reordered_tree[path] = data_array
-
-        # Handle omf separately if it exists
-        if hasattr(self.ioda, 'omf'):
-           omf = reorder_dataarray(self.ioda.omf)
-        else:
-           omf = None
-
-        # Replace the original DataTree with the reordered one
-        self.ioda = reordered_tree
-
-        # Add omf back to the reordered DataTree if it existed
-        if omf is not None:
-           self.ioda.omf= omf
             
+        # Track where our test index moves to
+        new_position = np.where(sort_indices == test_index)[0][0]
+        print(f"After reordering, index {test_index} will move to position {new_position}")
+
+        # Create new DataTree
+        new_tree = xr.DataTree()
+
+        # Process each top-level group
+        for group_name, group in self.ioda.items():
+        # Create a corresponding group in the new tree
+           new_tree[group_name] = xr.DataTree()    
+           # Process variables in this group
+           for var_name, var in group.items():
+               if isinstance(var, xr.DataArray) and 'Location' in var.dims:
+                  # Reorder arrays with Location dimension
+                  new_tree[group_name][var_name] = var.isel(Location=sort_indices)
+               else:
+                  # Copy other arrays directly
+                  new_tree[group_name][var_name] = var
+
+        # Replace the original tree
+        self.ioda = new_tree
+      
         # Reorder qcexcl and qchist
         self.qcexcl = self.qcexcl[sort_indices]
         self.qchist = self.qchist[sort_indices]
+        self.I_old = self.I_old[sort_indices]
+        
         
         # Reorder VarO and VarF if they exist
         if hasattr(self, 'VarO'):
@@ -204,12 +244,41 @@ class QC(object):
         for attr in ['xobs', 'yobs', 'zobs']:
             if hasattr(self, attr):
                setattr(self, attr, getattr(self, attr)[sort_indices])
+        # Reattach omf after reordering if it existed
+        if omf_array is not None:
+        # Reorder omf array
+           self.ioda.omf = omf_array.isel(Location=sort_indices)
+
+        # After reordering
+        print("AFTER REORDERING:")
+        print(f"Original test index {test_index} is now at {new_position}:")
+        print(f"  Lat: {self.ioda.MetaData['latitude'][new_position].data}")
+        print(f"  Lon: {self.ioda.MetaData['longitude'][new_position].data}")
+        print(f"  OMF: {self.ioda.omf[new_position].data}")
+        print(f"  XObs: {self.xobs[new_position]}")
+       
     
         if n_valid is not None:
            print(f'[x] {message} complete: {n_valid} valid observations moved to the front')
         else:
            print(f'[x] {message} complete')
-        
+
+         # Check if our boolean mask tracking works
+  #      reac_indices = np.where(self.I_old)[0]
+ #       if len(self.I_old.shape) > 1:
+  #      # Flatten or use the first column
+  #        reac_indices = np.where(self.I_old[:, 0])[0]
+  #      else:
+  #        reac_indices = np.where(self.I_old)[0]
+  #      print(f"Reaccepted indices after reordering: {reac_indices[:5]}...")
+  #      print("First reaccepted observation values:")
+  #      if len(reac_indices) > 0:
+  #         idx = reac_indices[0]
+  #         print(f"  Lat: {self.ioda.MetaData['latitude'][idx].data}")
+  #         print(f"  Lon: {self.ioda.MetaData['longitude'][idx].data}")
+  #         print(f"  OMF: {self.ioda.omf[idx].data}")
+  #         print(f"  XObs: {self.xobs[idx]}")
+      
         # Return the number of valid observations for future reference
         return n_valid
   
@@ -276,13 +345,22 @@ class QC(object):
         import BuddyCheck_
         regions = np.zeros(self.nobs, dtype=np.int32)
               
-        print(BuddyCheck_.py_icosahedron_regions.__doc__)
+   #     print(BuddyCheck_.py_icosahedron_regions.__doc__)
         
         (regions, nmaxregions) = BuddyCheck_.py_icosahedron_regions(self.xobs, self.yobs, self.zobs)
         # Sort by region (the size of regions is nobs for the sorting and reordering compared to 
         # original fortran code)
+
+        # Store a copy of regions before reordering
+        original_regions = regions.copy()
+      
         self._reorder_arrays(sort_by_key=regions, message="Sorting observations by region")
-        print('regions',regions)
+  #      print('regions',regions)
+        # Reorder the regions array to match the other arrays
+       
+        indx = np.arange(len(original_regions), dtype=np.int32)
+        sort_indices = indx[np.argsort(original_regions[indx], kind='mergesort')]
+        regions = original_regions[sort_indices]
         print('nregions', nmaxregions) 
         
          # Set integer region pointers      
@@ -293,23 +371,22 @@ class QC(object):
         np.add.at(ireglen, regions - 1, 1)
     
         # Set region beginning indices
-        iregbeg[0] = 1
-        iregbeg[1:] = np.cumsum(ireglen[:-1]) + 1 # (for fortran compatibility)
+        iregbeg[1:] = np.cumsum(ireglen[:-1]) # 0 based for python
         print('region beg and len', iregbeg, ireglen)
-        print('number of regions with obs', len(np.unique(regions))) # number of regions with data
+   #     print('number of regions with obs', len(np.unique(regions))) # number of regions with data
         
         return regions, nmaxregions, iregbeg, ireglen
 
+#    def _issuspect(self):
     def _buddyCheck(self):
         import BuddyCheck_
        
-        print(BuddyCheck_.py_find_buddies.__doc__)
         print(f'[x] Starting the buddy check')
         
         search_rad = self.sqc['Buddy_Check']['search_rad']  # unit length scale
         ls_h = self.sqc['Buddy_Check']['ls_h']  # 0.15e6 (m) in original code -> combined 150km search
-        ls_v = self.sqc['Buddy_Check'].get('ls_v', 0.0)  # Vertical length scale
-        single_level = self.sqc['Buddy_Check'].get('single_level', False)
+        ls_v = self.sqc['Buddy_Check'].get('ls_v', 1000.0)  # Vertical length scale
+        single_level = self.sqc['Buddy_Check'].get('single_level', True)
         nbuddy_max = self.sqc['Buddy_Check'].get('nbuddy_max', 100)
         seplim = self.sqc['Buddy_Check'].get('seplim', 26.5)  # Separation limit between regions
 
@@ -319,8 +396,6 @@ class QC(object):
         for channel in range(self.nchannels):
             print(f'[x] Processing wavelength {channel}')
 
-            # note: after the reorderring(reorder_dataarray), the dimensions are now stored within each group rather 
-            # than at the top level of the datatree
             suspect = (self.qchist[:, channel] > 0) & (self.qcexcl[:, channel] == 0)
             print(f"Suspect indices for channel {channel}:", np.where(suspect)[0])
 
@@ -346,41 +421,71 @@ class QC(object):
                        iend = ibeg + self.ireglen[ireg-1] - 1
                        obs_regions[ibeg:iend+1] = ireg
 
-                # Find all suspect observations
-                suspect_indices = np.where(suspect)[0]
-                # will add + 1 to handle not having 0 in fortran
+                # Find indices where I_old is True (reaccepted observations)
+                reaccepted_indices = np.where(self.I_old)[0]
+                print(f"Reaccepted indices old code before BC: {reaccepted_indices[:5]}...")
 
-                ki_susp = suspect_indices + 1 
-                print('ki_susp', ki_susp[0:10])
-                kr_susp = obs_regions[suspect_indices] # keep using 0-based when accessing python array
+                
+                # Find which of the reaccepted observations are also suspect
+                suspect_mask = suspect[reaccepted_indices]
+                suspect_indices = reaccepted_indices[suspect_mask]
+                print(f"Suspect indices before BC: {suspect_indices[:5]}...")
+                #suspect_indices = np.where(suspect)[0]
+                # print(f"Suspect indices: {suspect_indices[:5]}...")
+
+                # Get the regions for these suspect observations
+                ki_susp = suspect_indices  + 1 # These are the actual indices in the dataset, + 1 if index 0 in python -> 1 in fortran, f2py handles the return of reaccept indices with -1
+                kr_susp = obs_regions[suspect_indices]  # These are the region numbers
+
+                print(f"ki_susp shape: {ki_susp.shape}")
+                print(f"First few ki_susp: {ki_susp[:10]}")
+                print(f"First few kr_susp: {kr_susp[:10]}")
 
                 n_susp = len(ki_susp)
                 print(f'[x] number of suspects for channel {channel} at iteration {iteration} is {n_susp}')
                 # note: lev is pressure level of obs--> AOD single level will put lev arrays to 1 for now, original
                 # code has the wavelengths in it
-        
-                print("ki_susp:", type(ki_susp), ki_susp.shape)
-                print("kr_susp:", type(kr_susp), kr_susp.shape)
-                print("xobs:", type(self.xobs), self.xobs.shape)
-                print("yobs:", type(self.yobs), self.yobs.shape)
-                print("zobs:", type(self.zobs), self.zobs.shape)
-                print("lev:", type(self.lev), self.lev.shape)
-                print("omf:", type(self.ioda.omf), self.ioda.omf.shape)
-                print("VarF:", type(self.VarF), self.VarF.shape)
-                print("VarO:", type(self.VarO), self.VarO.shape)
-                print("ls_h:", type(ls_h))
-                print("ls_v:", type(ls_v))
-                print("search_rad:", type(search_rad), search_rad)
-                print("single_level:", type(single_level))
-                print("nbuddy_max:", type(nbuddy_max), nbuddy_max)
-                print("iregbeg:", type(self.iregbeg), self.iregbeg.shape)
-                print("ireglen:", type(self.ireglen), self.ireglen.shape)
-                print("seplim:", type(seplim), seplim)
-                reaccept = BuddyCheck_.py_find_buddies(ki_susp, kr_susp, self.xobs, self.yobs, self.zobs, self.lev, self.ioda.omf,
-                        self.VarF, self.VarO, ls_h, ls_v, search_rad, single_level, nbuddy_max, self.iregbeg, self.ireglen, 
+                self.iregbeg = self.iregbeg + 1 # for fortran based index starting at 1
+                print('beg', self.iregbeg)
+                print('before buddy check call', 'lat =', self.ioda.MetaData['latitude'][self.reac_old].data, ' lon = ', self.ioda.MetaData['longitude'][self.reac_old].data)
+     #           'omf =', self.ioda.omf[self.reac_old].data, self.regions[self.reac_old], 'xobs = ', self.xobs[self.reac_old], 'yobs = ',self.yobs[self.reac_old], 
+     #           'ki_susp', ki_susp, 'kr_susp', kr_susp)
+                lats, lons = self.ioda.MetaData['latitude'].data, self.ioda.MetaData['longitude'].data    
+                reaccept[:, channel] = BuddyCheck_.py_find_buddies(ki_susp, kr_susp, self.xobs, 
+                        self.yobs, self.zobs, lats, lons, self.lev, self.ioda.omf,
+                        self.VarF, self.VarO, self.qcexcl, ls_h, ls_v, search_rad, single_level, nbuddy_max, self.iregbeg, self.ireglen, 
                         seplim)
-            
-                print('reaccept', np.where(reaccept==True))         
+             
+
+            #    reaccepted_obs = np.where(reaccept[:,channel])[0]
+            #    if len(reaccepted_obs) > 0:
+            #        print(f"[x] Reaccepted {len(reaccepted_obs)} observations for channel {channel}")
+            #        # Update qch to 17 for reaccepted observations
+            #        self.qchist[reaccepted_obs, channel] = 17
+
+                    # Update qcexcl to 0 for reaccepted observations
+            #        self.qcexcl[reaccepted_obs, channel] = 0
+
+                    # Update suspect list for next iteration
+            #        suspect = (self.qchist[:, channel] > 0) & (self.qcexcl[:, channel] == 0)
+            #    else:
+            #        print(f"[x] No observations reaccepted for channel {channel} at iteration {iteration}")
+            #        break  # No observations reaccepted, so stop iterating
+                
+         
     print(f'[x] Buddy check completed')
 
           
+        
+
+
+
+
+
+
+
+
+
+
+
+
