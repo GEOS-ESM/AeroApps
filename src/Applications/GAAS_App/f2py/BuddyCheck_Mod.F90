@@ -134,7 +134,7 @@ contains
         
         ! Initialize output arrays
         reaccept = .false.
-        
+        n_reacc = 0 
         ! Now do buddy check for each suspect obs
         !$omp parallel do default(shared) &
         !$omp private(is, kis, krs, lvs, nbuddy, ireg, ibeg, iend, i, j, exponent, scgain, &
@@ -143,12 +143,6 @@ contains
         !$omp reduction(+:n_reacc)
         do is = 1, n_susp  ! for each suspect obs
             kis = ki_susp(is)   ! this suspect's index
-            !$OMP MASTER
-             if (mod(is, 1) == 0) then  ! Print
-                 print *, "Progress: iteration", is, "of", kis
-             end if
-            !$OMP END MASTER
-           
             krs = kr_susp(is)   ! this suspect's region
             lvs = lev(kis)      ! this suspect's level
             
@@ -161,11 +155,6 @@ contains
                     
                     ibeg = iregbeg(ireg)
                     iend = ibeg + ireglen(ireg) - 1
-                     !$OMP MASTER
-                    if (mod(is, 1) == 0) then  ! Print
-                       print*, 'ibeg', is, kis, krs, ibeg, iend
-                    endif
-                     !$OMP END MASTER   
                     do i = ibeg, iend  ! look within a region
                         ! Skip other levels if doing single level
                         if (single_level .and. (abs(lvs-lev(i)) > tol_rel*lvs)) cycle
@@ -220,12 +209,6 @@ contains
                         end if
                     end do
                 end do
-                 !$OMP MASTER
-                    if (mod(is, 1) == 0) then  ! Print
-                       print*, 'nbuddy', is, nbuddy
-                    endif   
-                 !$OMP END MASTER      
-                            
                             
                 nbuddy = min(nbuddy, nbuddy_max)
                 
@@ -242,20 +225,20 @@ contains
                     buddy_lons(kis, ib) = lons(i)
                 enddo 
 
-                !$OMP MASTER
-                    if (mod(is, 1) == 0) then  ! Print
+           !     !$OMP MASTER
+            !        if (mod(is, 1) == 0) then  ! Print
                !        print*, 'buddy indices', is, kis, buddy_indices(kis,1:10)
                !        print*, 'buddy weights', is, kis, buddy_weights(kis,1:10)
                !        print*, 'buddy dist2', is, kis, buddy_dist2(kis,1:20)
                !        print*, 'buddy end dist2', is, kis, buddy_dist2(kis,80:100)
-                       print*, 'buddy omf', is, kis, omf_buddy(kis,1:10)
+             !          print*, 'buddy omf', is, kis, omf_buddy(kis,1:10)
                !        print*, 'buddy omf test', is, kis, omf_buddy_(kis,1:10)
-                       print*, 'buddy lats', is, kis, buddy_lats(kis,1:20)
-                       print*, 'buddy lons', is, kis, buddy_lons(kis,1:20) 
+              !         print*, 'buddy lats', is, kis, buddy_lats(kis,1:20)
+              !         print*, 'buddy lons', is, kis, buddy_lons(kis,1:20) 
                !        print*, 'buddy end lats', is, kis, buddy_lats(kis,80:100)
                !        print*, 'buddy end lons', is, kis, buddy_lons(kis,80:100)
-                    endif
-                 !$OMP END MASTER   
+              !      endif
+              !   !$OMP END MASTER   
 
 
                 ! Calculate statistics using the best buddies
@@ -277,13 +260,13 @@ contains
                     ! on obs minus forecast value
                     
                     !$OMP MASTER
-                    if (mod(is, 1) == 0) then  ! Print
+                    if (mod(is, 100) == 0) then  ! Print
                        print *, "LAT LON for ind", is, kis, "value of", lats(kis), lons(kis)
                     end if
                     !$OMP END MASTER
                     weighted_pred(kis) = (accum_de1 / accum_wgt)
                     !$OMP MASTER
-                    if (mod(is, 1) == 0) then  ! Print
+                    if (mod(is, 100) == 0) then  ! Print
                        print *, "Progress2: weighted pred for ind", is, kis, "value of", weighted_pred(kis)
                     end if
                     !$OMP END MASTER
@@ -291,7 +274,7 @@ contains
                     !(derived from the buddies var)
                     var_scaling_factor(kis) = (accum_de2 / accum_var)
                      !$OMP MASTER
-                    if (mod(is, 1) == 0) then  ! Print
+                    if (mod(is, 100) == 0) then  ! Print
                        print *, "Progress3: var for scale factor for ind", is, kis, "value of", var_scaling_factor(kis)
                     end if
                     !$OMP END MASTER
@@ -300,7 +283,7 @@ contains
 
                     obs_dev_squared(kis) = (omf(kis) - weighted_pred(kis))**2 
                     !$OMP MASTER
-                    if (mod(is, 1) == 0) then  ! Print
+                    if (mod(is, 100) == 0) then  ! Print
                        print *, "Progress5: obs dev squared", is, kis, "value of omf susp", omf(kis)
                    !    print *, "Progress5: obs dev squared", is, kis, "value of obs_dev_squared", obs_dev_squared(kis)
                    !    print *, "Progress5: obs dev squared compared to", is, kis, "value of tolerance", tol2(kis)
@@ -308,16 +291,11 @@ contains
                     !$OMP END MASTER
                     if (obs_dev_squared(kis) < tol2(kis)) then
                         reaccept(kis) = .true.
-                        !$OMP MASTER
-             if (mod(is, 1) == 0) then  ! Print
-                 print *, "Reaccept", is, "of", kis
-             end if
-            !$OMP END MASTER
                         n_reacc = n_reacc +1
                     end if
             end if
-            
         end do  ! for each suspect obs
+
         !$omp end parallel do
         
     end subroutine find_buddies

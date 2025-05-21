@@ -395,7 +395,8 @@ class QC(object):
     
         for channel in range(self.nchannels):
             print(f'[x] Processing wavelength {channel}')
-
+            
+            # first list of suspect after the background check
             suspect = (self.qchist[:, channel] > 0) & (self.qcexcl[:, channel] == 0)
             print(f"Suspect indices for channel {channel}:", np.where(suspect)[0])
 
@@ -422,13 +423,14 @@ class QC(object):
                        obs_regions[ibeg:iend+1] = ireg
 
                 # Find indices where I_old is True (reaccepted observations)
-                reaccepted_indices = np.where(self.I_old)[0]
-                print(f"Reaccepted indices old code before BC: {reaccepted_indices[:5]}...")
+                #reaccepted_indices = np.where(self.I_old)[0]
+                #print(f"Reaccepted indices old code before BC: {reaccepted_indices[:5]}...")
 
                 
                 # Find which of the reaccepted observations are also suspect
-                suspect_mask = suspect[reaccepted_indices]
-                suspect_indices = reaccepted_indices[suspect_mask]
+                #suspect_mask = suspect[reaccepted_indices]
+                #suspect_indices = reaccepted_indices[suspect_mask]
+                suspect_indices = np.where(suspect)[0]
                 print(f"Suspect indices before BC: {suspect_indices[:5]}...")
                 #suspect_indices = np.where(suspect)[0]
                 # print(f"Suspect indices: {suspect_indices[:5]}...")
@@ -447,7 +449,7 @@ class QC(object):
                 # code has the wavelengths in it
                 self.iregbeg = self.iregbeg + 1 # for fortran based index starting at 1
                 print('beg', self.iregbeg)
-                print('before buddy check call', 'lat =', self.ioda.MetaData['latitude'][self.reac_old].data, ' lon = ', self.ioda.MetaData['longitude'][self.reac_old].data)
+                #print('before buddy check call', 'lat =', self.ioda.MetaData['latitude'][self.reac_old].data, ' lon = ', self.ioda.MetaData['longitude'][self.reac_old].data)
      #           'omf =', self.ioda.omf[self.reac_old].data, self.regions[self.reac_old], 'xobs = ', self.xobs[self.reac_old], 'yobs = ',self.yobs[self.reac_old], 
      #           'ki_susp', ki_susp, 'kr_susp', kr_susp)
                 lats, lons = self.ioda.MetaData['latitude'].data, self.ioda.MetaData['longitude'].data    
@@ -456,21 +458,15 @@ class QC(object):
                         self.VarF, self.VarO, self.qcexcl, ls_h, ls_v, search_rad, single_level, nbuddy_max, self.iregbeg, self.ireglen, 
                         seplim)
              
-
-            #    reaccepted_obs = np.where(reaccept[:,channel])[0]
-            #    if len(reaccepted_obs) > 0:
-            #        print(f"[x] Reaccepted {len(reaccepted_obs)} observations for channel {channel}")
-            #        # Update qch to 17 for reaccepted observations
-            #        self.qchist[reaccepted_obs, channel] = 17
-
-                    # Update qcexcl to 0 for reaccepted observations
-            #        self.qcexcl[reaccepted_obs, channel] = 0
-
+                print("reaccept:", reaccept[0:10,0])
+                reaccepted_obs = np.where(reaccept[:,channel])[0]
+                if len(reaccepted_obs) > 0:
+                    print(f"[x] Reaccepted {len(reaccepted_obs)} observations for channel {channel}")
                     # Update suspect list for next iteration
-            #        suspect = (self.qchist[:, channel] > 0) & (self.qcexcl[:, channel] == 0)
-            #    else:
-            #        print(f"[x] No observations reaccepted for channel {channel} at iteration {iteration}")
-            #        break  # No observations reaccepted, so stop iterating
+                    suspect[reaccept[:,channel]] = False
+                else:
+                    print(f"[x] No observations reaccepted for channel {channel} at iteration {iteration}")
+                    break  # No observations reaccepted, so stop iterating
                 
          
     print(f'[x] Buddy check completed')

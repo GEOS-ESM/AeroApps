@@ -35,7 +35,8 @@ esma_add_f2py3_module(BuddyCheck_
                    ${esma_include}/GMAO_psas
                    ${esma_include}/GMAO_mpeu
                    ${include_${this}}
-    USE_OPENMP
+    DEPENDS        ${this}		   
+        USE_OPENMP
     USE_MPI
 )
 
