@@ -5,24 +5,24 @@ AeroApps:
 env:
   local: ./env@
   remote: ../ESMA_env.git
-  tag: v4.8.2
+  tag: v4.38.0
   develop: main
 
 cmake:
   local: ./cmake@
   remote: ../ESMA_cmake.git
-  tag: v3.28.0
+  tag: v3.62.1
   develop: develop
 
 ecbuild:
   local: ./cmake@/ecbuild@
   remote: ../ecbuild.git
-  tag: geos/v1.3.0
+  tag: geos/v1.4.0
 
 MAPL:
   local: ./src/Shared/GMAO_Shared/MAPL@
   remote: ../MAPL.git
-  tag: v2.39.0
+  tag: v2.55.1
   develop: develop
 
 GMAOpyobs:
