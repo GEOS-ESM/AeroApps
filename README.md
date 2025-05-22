@@ -20,6 +20,7 @@ module use -a /nobackup/gmao_SIteam/modulefiles
 ```
 
 ##### GMAO Desktops
+
 On the GMAO desktops, the SI Team modulefiles should automatically be
 part of running `module avail` but if not, they are in:
 
@@ -61,6 +62,7 @@ This is a one-time command that tells mepo to use blobless clones for all future
 #### Build the Model
 
 ##### Load Compiler, MPI Stack, and Baselibs
+
 On tcsh:
 ```
 source env@/g5_modules
@@ -71,35 +73,45 @@ source env@/g5_modules.sh
 ```
 
 ##### Create Build Directory
-We currently do not allow in-source builds of GEOSgcm. So we must make a directory:
-```
-mkdir build
-```
-The advantages of this is that you can build both a Debug and Release version with the same clone if desired.
 
 ##### Run CMake
+
 CMake generates the Makefiles needed to build the model.
+
+On bash you can run:
+
 ```
-cd build
-cmake .. -DBASEDIR=$BASEDIR/Linux -DCMAKE_Fortran_COMPILER=ifort -DCMAKE_INSTALL_PREFIX=../install
+cmake -B build -S . --install-prefix=$(pwd)/install
 ```
-This will install to a directory parallel to your `build` directory. If you prefer to install elsewhere change the path in:
+
+and on tcsh:
+
 ```
--DCMAKE_INSTALL_PREFIX=<path>
+cmake -B build -S . --install-prefix=`pwd`/install
 ```
-and CMake will install there.
+
+This will build the code in `build/` and will install in `install`.
+
+NOTE: You can choose any directory for your build and install. That
+said, what you pass to `--install-prefix=` *MUST* be a full path.
 
 ###### Building with Debugging Flags
+
 To build with debugging flags add:
+
 ```
 -DCMAKE_BUILD_TYPE=Debug
 ```
 to the cmake line.
 
 ##### Build and Install with Make
+
 ```
-make -j6 install
+cmake --build build --target install -j 6
 ```
+
+If you put your build in a directory other than `build` use that in the
+above command.
 
 ## Contributing
 
