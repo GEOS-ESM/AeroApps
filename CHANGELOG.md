@@ -17,7 +17,7 @@
   - MAPL: Updated tag from v2.39.0 to v2.55.1
 - Modified `src/Shared/GMAO_Shared/GMAO_etc/argopt.c`:
   - Added include for `<unistd.h>` to access `getopt` function 
-- Updated `README.md` to modern CMake
+- Updated `README.md` and `cmake_it` to modern CMake
 - Updated `.gitignore` to ignore more Python detritus
 
 ## [v2.1.0] - 2025-02-14
