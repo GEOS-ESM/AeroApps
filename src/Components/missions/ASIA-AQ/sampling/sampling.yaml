@@ -1,0 +1,7 @@
+#
+# Configuration file for sampling a GEOS experiment
+
+# Location of the aerosol optical property configuration file
+large_config: g2g_large.yaml
+ams_config: g2g_ams.yaml
+
