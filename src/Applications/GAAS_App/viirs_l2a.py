@@ -76,7 +76,7 @@ if __name__ == "__main__":
         pass
 
     try:
-        aodLenth = cf('VIIRS_L2A_AODLENGTH')
+        aodLength = cf('VIIRS_L2A_AODLENGTH')
         Options += " --aodLength=" + aodLength
     except:
         pass

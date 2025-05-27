@@ -59,6 +59,7 @@ Module m_Spherical_Partition
 
     interface new   ; module procedure new_   ; end interface
     interface delete; module procedure delete_; end interface
+    interface clean; module procedure clean_; end interface
 
 #ifndef F95
   ! f95 allows default components in derived types and poiner initialization.
@@ -264,14 +265,14 @@ Contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: clean - clean a partition
+! !IROUTINE: clean_ - clean a partition
 !
 ! !DESCRIPTION:
 !    This subroutine cleans up what initialize creates
 !
 ! !INTERFACE:
 
-  Subroutine clean(partition)
+  Subroutine clean_(partition)
     Use m_mall, only: mall_co, mall_ison
     Type (Spherical_Partition), Intent(InOut), Target, Optional :: partition
 ! !REVISION HISTORY:
@@ -287,7 +288,7 @@ Contains
         ALWAYS_ASSERT(err == 0)
     p_%refinement_level = INVALID
 
-  End Subroutine clean
+  End Subroutine clean_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !

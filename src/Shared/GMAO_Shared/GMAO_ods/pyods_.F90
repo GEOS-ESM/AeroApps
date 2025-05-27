@@ -632,12 +632,15 @@ subroutine pyods_putAll(filename, ftype, nymd,nhms, nsyn, nobs, &
   ods%meta%kx_names(332) = 'Himawari Aerosol (Dark Target Land Algorithm)'
   ods%meta%kx_names(333) = 'VIIRS SNPP Aerosol (Deep Blue Land Algorithm)'
   ods%meta%kx_names(334) = 'VIIRS SNPP Aerosol (Deep Blue Ocean Algorithm)'
-  ods%meta%kx_names(335) = 'VIIRS SNPP Aerosol (Dark Target Land Algorithm)'
-  ods%meta%kx_names(336) = 'VIIRS SNPP Aerosol (Dark Target Ocean Algorithm)'
-  ods%meta%kx_names(337) = 'VIIRS NOAA-20 Aerosol (Deep Blue Land Algorithm)'
-  ods%meta%kx_names(338) = 'VIIRS NOAA-20 Aerosol (Deep Blue Ocean Algorithm)'
-  ods%meta%kx_names(339) = 'VIIRS NOAA-20 Aerosol (Dark Target Land Algorithm)'
-  ods%meta%kx_names(340) = 'VIIRS NOAA-20 Aerosol (Dark Target Ocean Algorithm)'
+  ods%meta%kx_names(335) = 'VIIRS SNPP Aerosol (Deep Blue Deep Algorithm)'
+  ods%meta%kx_names(336) = 'VIIRS SNPP Aerosol (Dark Target Land Algorithm)'
+  ods%meta%kx_names(337) = 'VIIRS SNPP Aerosol (Dark Target Ocean Algorithm)'
+  ods%meta%kx_names(338) = 'VIIRS NOAA-20 Aerosol (Deep Blue Land Algorithm)'
+  ods%meta%kx_names(339) = 'VIIRS NOAA-20 Aerosol (Deep Blue Deep Algorithm)'
+  ods%meta%kx_names(340) = 'VIIRS NOAA-20 Aerosol (Deep Blue Ocean Algorithm)'
+  ods%meta%kx_names(341) = 'VIIRS NOAA-20 Aerosol (Dark Target Land Algorithm)'
+  ods%meta%kx_names(342) = 'VIIRS NOAA-20 Aerosol (Dark Target Ocean Algorithm)'
+
 
   call ods_put (filename, ftype, nymd, nhms, ods, rc)
   if ( rc .ne. 0 ) return

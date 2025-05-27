@@ -58,7 +58,7 @@ ALIAS = dict( Deep_Blue_Aerosol_Optical_Depth_550_Land = 'aod550',
 # -----------------------------
 CHANNELS  = dict (
                    LAND  = ( 470, 550, 660, 870, 1200, 1600, 2100, 412, 440),
-                   OCEAN = ( 470, 550, 660, 870, 1200, 1600, 2100 ),
+                   OCEAN = ( 470, 550, 660, 870, 1200, 1600, 2100, 412, 440 ),
                    DEEP  = ( 412, 470, 660 ),
                  )
 
@@ -162,7 +162,10 @@ class MxD04_NNR(MxD04_L2):
         self.aodmax = aodmax
         self.aodSTD = aodSTD
         self.aodLength = aodLength
-        self.wavs = wavs
+        if type(wavs) is str:
+            self.wavs = wavs.split(',')
+        else:
+            self.wavs = wavs
 
         # Initialize superclass
         # ---------------------
@@ -190,7 +193,7 @@ class MxD04_NNR(MxD04_L2):
             self.sChannels = SCHANNELS[algo]
 
         if algo == "OCEAN":
-            self.reflectance = self.reflectance[:,0:7]  #not using 412, 443, and 745 for now
+            self.reflectance = self.reflectance[:,0:-1]  #not using 745 for now
         if algo == "LAND":
             self.reflectance = self.reflectance[:,0:-1]  #not using 745 for now
 
