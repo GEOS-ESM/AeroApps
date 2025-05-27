@@ -23,12 +23,17 @@ from datetime import datetime, timedelta
 import netCDF4 as nc
 
 import numpy as np
-import sys, os
+import sys, os, time
+
+##### Add the repository path to Python's sys.path
+# repo_path = os.path.expandvars("${NOBACKUP}/REPOS/AOCH/GMAOpyobs/src")
+# if repo_path not in sys.path:
+    # sys.path.insert(0, repo_path)
 
 from pyobs.sampler import TRAJECTORY   #for extracting MERRA along track
-from pyobs.sampler import STATION   #for extracting MERRA along track
-
+from pyobs.sampler import STATION      #for extracting MERRA along track
 from pyobs.sampler import addVertCoord #for getting MERRA-2 vertical coordinate
+
 from pyobs.aop import G2GAOP #For getting MERRA2 AOPs 
 
 
@@ -89,8 +94,8 @@ def process_file(file_path):
 #pth_out   ='/discover/nobackup/sgasso/Files/Satellite/Triple/'      # OUPUT w/MERRA-CAL-TROP collocations
 
 ############# Setup inputs
-file_path  ='test_input_trop_overpass_1.txt'# File with tropomi orbit over mpl site
-#file_path='/discover/nobackup/sgasso/Files/MPL/TROPO_MPL/GSFC_2018_FullYearSites.txt'
+#file_path  ='test_input_trop_overpass_2lines.txt'# File with tropomi orbit over mpl site
+file_path='/discover/nobackup/sgasso/Files/MPL/TROPO_MPL/GSFC_2018__UVAI.txt'
 site_xy = [38.9930,-76.8400] # Lat/Lon MPL site
 ### # set up some filenames, for now make sure they are the same directory where G2GAOP is executed
 config = 'm2_pm25.yaml' # this configuration file can be found in src/config
@@ -132,16 +137,35 @@ if save_merra == 'True':
    print('\n Saving MERRA data file.... ', out_MERRA)
    traj_ds.to_netcdf(out_MERRA)
    print(" Done Savings!\n")
-
+#sys.exit()
 ####### -------------------
 ##### read the sampled aerosol profile data and optical tables
-optics = G2GAOP(out_MERRA,config=config)
+print('Now creating optics')
+#optics = G2GAOP(out_MERRA,config=config)
+start_time = time.perf_counter()
+optics = G2GAOP(traj_ds,config=config)
+end_time = time.perf_counter()
+elapsed_time = end_time - start_time
+print(f"G2GAOP time: {elapsed_time:.4f} seconds")
+
+
 ###Get BEXT at 532 nm and 1064nm
 ### breakpoint()
+start_time = time.perf_counter()
 ext532  = optics.getAOPext(wavelength=532)
+end_time = time.perf_counter()
+elapsed_time = end_time - start_time
+print(f"optics.getAOPext time: {elapsed_time:.4f} seconds")
+
+
 
 ##### Get MERRA-2 vertical coordinate
+start_time = time.perf_counter()
 ext532.pipe(addVertCoord)
+end_time = time.perf_counter()
+elapsed_time = end_time - start_time
+print(f"ext532.pipe time: {elapsed_time:.4f} seconds")
+
 ### Now compute MERRA weighted height
 me_zlayer =ext532.Z[0].values   # in km
 me_text532 =ext532.EXT.values # in km-1
@@ -150,7 +174,8 @@ A3=np.sum(me_zlayer * me_text532,axis=1)
 B3=np.sum(me_text532,axis=1)
 me_hw532=np.divide(A3 , B3) # km , size=Nrecords x 1
 
- 
+sys.exit()
+
 # ##### Done computing weighted heights
 #### Now prepare data for saving in output file
 # Create a header

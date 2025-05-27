@@ -4,6 +4,8 @@ Test code that ingests tropomi & mpl collocations, check date and location of si
 model grid cell. Then it computes AOCH  and saves in output file. 
 -------------------------------------
 April/30/2025 - ver 6 . It implements suggestions sent by Patricia on Apr29 to sgasso@umd.edu
+NOTE: starting May/2 Pat's suggestion takes forever to run. Not clear why. Myabe the pull that I did is not working? . Not sure. For not this code doesn't work. 
+
 April/24/2025 - ver 4 - 
 -Added a loop to extract data for all years of input MPL site
 -Output data is stored with TROPO and MERRA together
@@ -136,13 +138,17 @@ print("DONE extracting MERRA data ")
    # traj_ds.to_netcdf(out_MERRA)
    # print(" Done Savings!\n")
 
+sys.exit()
+
 ####### -------------------
 ##### read the sampled aerosol profile data and optical tables
-optics = G2GAOP(out_MERRA,config=config)
+#optics = G2GAOP(out_MERRA,config=config)
+optics = G2GAOP(traj_ds,config=config)
+
 ###Get BEXT at 532 nm and 1064nm
 ### breakpoint()
 ext532  = optics.getAOPext(wavelength=532)
-sys.exit()
+
 ##### Get MERRA-2 vertical coordinate
 ext532.pipe(addVertCoord)
 ### Now compute MERRA weighted height
@@ -153,7 +159,7 @@ A3=np.sum(me_zlayer * me_text532,axis=1)
 B3=np.sum(me_text532,axis=1)
 me_hw532=np.divide(A3 , B3) # km , size=Nrecords x 1
 
- 
+sys.exit()
 # ##### Done computing weighted heights
 #### Now prepare data for saving in output file
 # Create a header
