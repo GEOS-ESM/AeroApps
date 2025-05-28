@@ -42,13 +42,13 @@ if __name__ == '__main__':
         ctl = config['model_aer_ctl'] 
         chunks = {'time':1, 'lev':-1, 'lat':-1, 'lon': -1}
         traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks)
-        traj_ds = traj.sample()
-        traj_ds = traj_ds.compute()
+#        traj_ds = traj.sample()
+#        traj_ds = traj_ds.compute()
 
         # write out the native sampled model fields
         outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + ctl + '.nc4'
-        traj_ds.to_netcdf(outFile,engine='netcdf4')
-
+#        traj_ds.to_netcdf(outFile,engine='netcdf4')
+        traj_ds = xr.open_dataset(outFile)
 
         # calculate AMS PM
         # ----------------
@@ -59,8 +59,8 @@ if __name__ == '__main__':
 
         # speciated PM
         for spc in optics.mieTable:
-            results = optics.getPM(pmsize=1.5,Species=spc,vacuum_aerodynamic=True,fixrh=0.0)
-            pm = pm.assign({spc:pm['PM']})
+            pm_spc = optics.getPM(pmsize=1.5,Species=spc,vacuum_aerodynamic=True,fixrh=0.0)
+            pm = pm.assign({spc:pm_spc['PM']})
             
 
         # AMS observes at STP (273 K & 1013 mb)
@@ -68,12 +68,20 @@ if __name__ == '__main__':
         # using the density of Air at STP = 1.2754 kg/m3
         pm_ams = {}
         for spc in ['PM'] + list(optics.mieTable.keys()):
-            result  = pm[spc]*(1.2754/pm['AIRDENS'])
-            result.attrs.update(pm[spc].attrs)
-            pm_ams[spc] = result
+            pm_stp  = pm[spc]*(1.2754/pm['AIRDENS'])
+            pm_stp.attrs.update(pm[spc].attrs)
+            pm_ams[spc] = pm_stp
+
+        # Do MSA seperately.  Assume total  is below 1.5 micron
+        q_conc = (traj_ds['AIRDENS'] * traj_ds['MSA']*1e9)  # Aerosol mass concentration in ug/m3
+        pm_ams['MSA'] = q_conc*(1.2754/pm['AIRDENS'])
+        attrs = {'long_name':'Particulate Matter', 'units':'microgram m-3'}
+        pm_ams['MSA'].attrs.update(attrs)
 
         # write AMS PM to netcdf file
         pm_ams = xr.Dataset(pm_ams)
         outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + 'pm_ams.nc4'
         pm_ams.to_netcdf(outFile,engine='netcdf4')
-         
+        
+        # calculate extinction and scattering
+        
