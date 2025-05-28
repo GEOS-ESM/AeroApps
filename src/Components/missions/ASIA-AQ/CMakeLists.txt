@@ -1,5 +1,6 @@
 install(DIRECTORY fluid/ DESTINATION bin/fluid)
 install(DIRECTORY ts_plotting DESTINATION bin/missions/ASIAAQ)
+install(DIRECTORY sampling DESTINATION bin/missions/ASIAAQ)
 
 # this is executable
 install (
