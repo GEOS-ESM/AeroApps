@@ -1,6 +1,6 @@
 install(DIRECTORY fluid/ DESTINATION bin/fluid)
 install(DIRECTORY ts_plotting DESTINATION bin/missions/ASIAAQ)
-install(DIRECTORY sampling DESTINATION bin/missions/ASIAAQ)
+install(DIRECTORY sampling DESTINATION bin/missions/ASIAAQ USE_SOURCE_PERMISSIONS)
 
 # this is executable
 install (
