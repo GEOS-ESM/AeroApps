@@ -55,7 +55,7 @@ NI:
   monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_NI.v2_5.nc4
   bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_NI.v2_5.RRTMG.nc4
   tracers:
-    - NI001
-    - NI002
-    - NI003
+    - NO3an1
+    - NO3an2
+    - NO3an3
 
