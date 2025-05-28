@@ -33,7 +33,7 @@ if __name__ == '__main__':
     
 
     # loop through icartt files
-    for ict in ictFiles[0:1]:
+    for ict in ictFiles:
         m = ICARTT(ict)
         lon, lat, tyme = m.Longitude_BENNETT, m.Latitude_BENNETT, m.Nav['Time']
 
@@ -43,13 +43,13 @@ if __name__ == '__main__':
         ctl = config['model_aer_ctl'] 
         chunks = {'time':1, 'lev':-1, 'lat':-1, 'lon': -1}
         traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks)
-#        traj_ds = traj.sample()
-#        traj_ds = traj_ds.compute()
+        traj_ds = traj.sample()
+        traj_ds = traj_ds.compute()
 
         # write out the native sampled model fields
         outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + ctl + '.nc4'
-#        traj_ds.to_netcdf(outFile,engine='netcdf4')
-        traj_ds = xr.open_dataset(outFile)
+        traj_ds.to_netcdf(outFile,engine='netcdf4')
+#        traj_ds = xr.open_dataset(outFile)
 
         # calculate AMS PM
         # ----------------
