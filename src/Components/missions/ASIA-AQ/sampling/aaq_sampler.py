@@ -38,7 +38,8 @@ if __name__ == '__main__':
         lon, lat, tyme = m.Longitude_BENNETT, m.Latitude_BENNETT, m.Nav['Time']
 
         # Sample Aerosol Collection
-        # --------------------------
+        # and do some addtional transformations
+        # --------------------------------------
         ctl = config['model_aer_ctl'] 
         chunks = {'time':1, 'lev':-1, 'lat':-1, 'lon': -1}
         traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks)
@@ -121,7 +122,18 @@ if __name__ == '__main__':
             outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_aop_dry.nc4'
             aop.to_netcdf(outFile,engine='netcdf4')
 
+        # If other model collections are provided
+        # sample those and write out
+        # -----------------------------
+        for ctl in config['model_other_ctl']:
+            if ctl is not None:
+                traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks)
+                traj_ds = traj.sample()
+                traj_ds = traj_ds.compute()
 
+                # write out the native sampled model fields
+                outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + ctl + '.nc4'
+                traj_ds.to_netcdf(outFile,engine='netcdf4')
 
 
         
