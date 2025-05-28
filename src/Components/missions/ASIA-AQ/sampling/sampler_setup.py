@@ -1,7 +1,7 @@
 #!/usr/bin/env python 
 
 """
-  This script is expected to be run from the AeroApps/install/bin/asia-aq folder.
+  This script is expected to be run from the AeroApps/install/bin/missions/ASIAAQ folder.
   It assumes that the template file sample_run.j is available in the folder.
 
   The script asks the user to provide:
@@ -80,9 +80,9 @@ def create_experiment_directory():
 
     # Determine the source code main directory
     # Will be FULL_PATH/GEOSAQcGAN
-    source_directory = current_directory.parent.parent.parent 
+    source_directory = current_directory.parent.parent.parent.parent 
 
-    reference_directory = source_directory.parent.parent
+    reference_directory = source_directory.parent.parent.parent
 
     # Obtain the experiment name
     experiment_name = input("Provide the experiment name (one word):  ")
