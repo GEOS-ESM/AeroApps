@@ -28,4 +28,7 @@ source $SRC_DIR/env@/g5_modules
 #######################################################################
 #          Run Sampler 
 #######################################################################
+
+ln -s /home/pcastell/opendap/dasilva_fvinput/ExtData/ .
+
 python3 aaq_sampler.py sampling.yaml
