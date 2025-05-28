@@ -80,8 +80,50 @@ if __name__ == '__main__':
 
         # write AMS PM to netcdf file
         pm_ams = xr.Dataset(pm_ams)
+        pm_ams['H'] = traj_ds['H']
+        pm_ams['PS'] = traj_ds['PS']
+        pm_ams['delp'] = pm['DELP']
+        pm_ams['AIRDENS'] = pm['AIRDENS']
         outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + 'pm_ams.nc4'
         pm_ams.to_netcdf(outFile,engine='netcdf4')
         
-        # calculate extinction and scattering
+        # calculate AOPs
+        # at 450, 470, 532, 550, 660, 700 nm
+        # at model RH, RH=0, and aircraft measured RH
+        # ---------------------------------------------
+        optics = G2GAOP(traj_ds,config=config['large_config'])
+        wavs = ['450','470','532','550','660','700']
+        varlist = ['EXT','SCA','BSC','DEPOL']
+        for wl in wavs:
+            # wet
+            aop = optics.getAOPext(wavelength=float(wl),doaback=False)
+
+            for spc in optics.mieTable:
+                aop_spc = optics.getAOPext(wavelength=float(wl),Species=spc,doaback=False)
+                for var in varlist:
+                    aop = aop.assign({var+'_'+spc:aop_spc[var]})
+
+            aop['H'] = traj_ds['H']
+            aop['PS'] = traj_ds['PS']
+            outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_aop.nc4'
+            aop.to_netcdf(outFile,engine='netcdf4')
+
+            # dry
+            aop = optics.getAOPext(wavelength=float(wl),doaback=False,fixrh=0.0)
+
+            for spc in optics.mieTable:
+                aop_spc = optics.getAOPext(wavelength=float(wl),Species=spc,doaback=False,fixrh=0.0)
+                for var in varlist:
+                    aop = aop.assign({var+'_'+spc:aop_spc[var]})
+
+            aop['H'] = traj_ds['H']
+            aop['PS'] = traj_ds['PS']
+            outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_aop_dry.nc4'
+            aop.to_netcdf(outFile,engine='netcdf4')
+
+
+
+
         
+
+            
