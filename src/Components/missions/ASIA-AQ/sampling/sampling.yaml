@@ -3,6 +3,8 @@
 
 # model control files
 model_aer_ctl: inst3_aer_Nv
+model_other_ctl: 
+    -
 
 # location of merged dc-8 files
 dc8_merge: /discover/nobackup/projects/gmao/iesa/aerosol/campaigns/ASIA-AQ/archive/merges/v20250423
