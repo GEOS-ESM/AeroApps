@@ -28,6 +28,7 @@ def print_message():
     The script is interactive and asks the user to provide:
 
         - an experiment name (exp_name)
+        - an experiment directory (experiment_directory)
         - the group id (group_id), i.e., the NCCS sponsor code to be used in SLURM.
  
     It will then create an experiment directory that has a self-contained and ready
@@ -75,14 +76,14 @@ def search_reaplace_in_file(loc_filename: str,
 def create_experiment_directory():
 
     # Get the current directory
-    # Will be in the form FULL_PATH/AeroApps/install/bin/asia-aq
+    # Will be in the form FULL_PATH/AeroApps/install/bin/missions/ASIAAQ
     current_directory = Path.cwd()
 
     # Determine the source code main directory
-    # Will be FULL_PATH/GEOSAQcGAN
-    source_directory = current_directory.parent.parent.parent.parent 
+    # Will be FULL_PATH/AeroApps
+    source_directory = current_directory.parent.parent.parent.parent.parent 
 
-    reference_directory = source_directory.parent.parent.parent
+    reference_directory = source_directory.parent
 
     # Obtain the experiment name
     experiment_name = input("Provide the experiment name (one word):  ")
@@ -97,8 +98,16 @@ def create_experiment_directory():
         sys.exit()
 
     # Create the experiment directory
-
     experiment_directory = reference_directory / experiment_name
+    print()
+    exp_dir = input(f"Provide the experiment directory you want to use (default: {experiment_directory}): ")
+    exp_dir = exp_dir.strip()
+
+    if not exp_dir:
+        pass
+    else:
+        experiment_directory = exp_dir
+
     print(f"The following experiment directory will be created: \n\n\t {experiment_directory}")
     print()
 
