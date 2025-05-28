@@ -29,5 +29,5 @@ GMAOpyobs:
   local: ./src/Shared/GMAO_Shared/GMAO_pyobs@
   remote: ../GMAOpyobs.git
 #  tag: v1.2.1
-  branch: feature/pcastell/update_notebooks
+  branch: feature/pcastell/ams_trans
   develop: develop
