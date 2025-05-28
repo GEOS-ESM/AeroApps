@@ -32,7 +32,7 @@ DU:
     - 2650
     - 2650
     - 2650
-  pmconversion: AMS
+  pmconversion: 1.0
 
 
 SS:
@@ -51,7 +51,7 @@ SS:
     - 2200
     - 2200
     - 2200
-  pmconversion: AMS
+  pmconversion: 1.0
 
 
 OC:
@@ -64,7 +64,7 @@ OC:
   rhod:
     - 1800
     - 1800
-  pmconversion: AMS
+  pmconversion: 1.0
 
 BC:
   monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_BC.v1_3.nc4
@@ -76,7 +76,7 @@ BC:
   rhod:
     - 1800
     - 1800
-  pmconversion: AMS
+  pmconversion: 1.0
 
 BR:
   monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_BRC.v1_5.nc4
@@ -88,7 +88,7 @@ BR:
   rhod:
     - 1800
     - 1800
-  pmconversion: AMS
+  pmconversion: 1.0
 
 SU:
   monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_SU.v1_3.nc4
@@ -98,17 +98,17 @@ SU:
   shapefactor: 1
   rhod:
     - 1700
-  pmconversion: AMS
+  pmconversion: 1.0
 
 NI:
   monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_NI.v2_5.nc4
   bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_NI.v2_5.RRTMG.nc4
   tracers:
-    - NI001
+    - NO3an1
   shapefactor: 1
   rhod:
     - 1725
-  pmconversion: AMS
+  pmconversion: 1.0
 
 NH4:
   monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_NI.v2_5.nc4
@@ -118,4 +118,4 @@ NH4:
   shapefactor: 1
   rhod:
     - 1725
-  pmconversion: AMS
+  pmconversion: 1.0
