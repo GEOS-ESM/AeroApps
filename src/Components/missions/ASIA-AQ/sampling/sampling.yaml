@@ -2,13 +2,16 @@
 # Configuration file for sampling a GEOS experiment
 
 # model control files
-model_ctl: 
-    - inst3d_aer_v
+model_aer_ctl: inst3_aer_Nv
+
 # location of merged dc-8 files
 dc8_merge: /discover/nobackup/projects/gmao/iesa/aerosol/campaigns/ASIA-AQ/archive/merges/v20250423
 
 # label to give output files
 expname: baseline
+
+# output directory for sampled files
+sampled_outdir: ./test
 
 # Location of the aerosol property configuration file
 large_config: g2g_large.yaml
