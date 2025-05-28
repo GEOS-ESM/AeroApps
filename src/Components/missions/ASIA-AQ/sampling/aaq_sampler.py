@@ -12,6 +12,7 @@ from glob import glob
 import numpy as np
 from pyobs.sampler import TRAJECTORY
 from pyobs.icartt import ICARTT
+from pyobs.aop import G2GAOP
 
 if __name__ == '__main__':
 
@@ -19,20 +20,60 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("config",help='configuration yaml file')
 
+    args = parser.parse_args()
+
     config = yaml.safe_load(open(args.config))
 
     # get dc-8 files
-    ictFiles = sorted(glob(config['dc8_merge']+'/*'))
+    ictFiles = sorted(glob(config['dc8_merge']+'/*ict'))
 
-    sys.exit()
+    # create output directory
+    if not os.path.exists(config['sampled_outdir']):
+        os.makedirs(config['sampled_outdir'])
+    
 
     # loop through icartt files
-    for ict in ictFiles:
-        m = ICARTT(ictFile)
-        lon, lat, tyme = m.Nav['Longitude'], m.Nav['Latitude'], m.Nav['Time']
+    for ict in ictFiles[0:1]:
+        m = ICARTT(ict)
+        lon, lat, tyme = m.Longitude_BENNETT, m.Latitude_BENNETT, m.Nav['Time']
 
-        for ctl in config['model_ctl']:
-            traj = TRAJECTORY(tyme,lon,lat,ctl)
+        # Sample Aerosol Collection
+        # --------------------------
+        ctl = config['model_aer_ctl'] 
+        chunks = {'time':1, 'lev':-1, 'lat':-1, 'lon': -1}
+        traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks)
+        traj_ds = traj.sample()
+        traj_ds = traj_ds.compute()
 
-            traj_ds = traj.sample()
-            traj_ds.to_netcdf(outFile)
+        # write out the native sampled model fields
+        outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + ctl + '.nc4'
+        traj_ds.to_netcdf(outFile,engine='netcdf4')
+
+
+        # calculate AMS PM
+        # ----------------
+        optics = G2GAOP(traj_ds,config=config['ams_config'])
+
+        # total PM
+        pm = optics.getPM(pmsize=1.5,vacuum_aerodynamic=True,fixrh=0.0)
+
+        # speciated PM
+        for spc in optics.mieTable:
+            results = optics.getPM(pmsize=1.5,Species=spc,vacuum_aerodynamic=True,fixrh=0.0)
+            pm = pm.assign({spc:pm['PM']})
+            
+
+        # AMS observes at STP (273 K & 1013 mb)
+        # so need to convert ambient concentration to STP 
+        # using the density of Air at STP = 1.2754 kg/m3
+        pm_ams = {}
+        for spc in ['PM'] + list(optics.mieTable.keys()):
+            result  = pm[spc]*(1.2754/pm['AIRDENS'])
+            result.attrs.update(pm[spc].attrs)
+            pm_ams[spc] = result
+
+        # write AMS PM to netcdf file
+        pm_ams = xr.Dataset(pm_ams)
+        outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + 'pm_ams.nc4'
+        pm_ams.to_netcdf(outFile,engine='netcdf4')
+         
