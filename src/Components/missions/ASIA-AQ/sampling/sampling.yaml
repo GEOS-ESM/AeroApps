@@ -14,6 +14,7 @@ sampled_outdir: ./sampled
 
 # Location of the aerosol property configuration file
 large_config: g2g_large.yaml
+large_submicron_config: g2g_large_submicron.yaml
 ams_config: g2g_ams.yaml
 
 
