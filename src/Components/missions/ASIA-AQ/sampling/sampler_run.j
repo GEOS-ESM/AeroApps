@@ -33,3 +33,4 @@ if (! -d ExtData) then
 endif
 
 python3 aaq_sampler.py sampling.yaml
+python3 aap_derived.py sampling.yaml
