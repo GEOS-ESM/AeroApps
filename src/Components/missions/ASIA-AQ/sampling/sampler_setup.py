@@ -131,6 +131,9 @@ def create_experiment_directory():
     config_filepath = current_directory / "aaq_sampler.py"
     shutil.copy(config_filepath, experiment_directory / config_filepath.name)
 
+    config_filepath = current_directory / "aaq_derived.py"
+    shutil.copy(config_filepath, experiment_directory / config_filepath.name)
+
     # Get the sponsor code id
 
     result = subprocess.run(["groups"], shell=True, capture_output=True, text=True)
