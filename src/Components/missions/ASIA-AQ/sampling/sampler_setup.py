@@ -118,21 +118,16 @@ def create_experiment_directory():
     shutil.copy(config_filepath, experiment_directory / config_filepath.name)
 
     # Copy the config yaml files to the experiment directory
-    config_filepath = current_directory / "g2g_ams.yaml"
-    shutil.copy(config_filepath, experiment_directory / config_filepath.name)
-
-    config_filepath = current_directory / "g2g_large.yaml"
-    shutil.copy(config_filepath, experiment_directory / config_filepath.name)
-
-    config_filepath = current_directory / "sampling.yaml"
-    shutil.copy(config_filepath, experiment_directory / config_filepath.name)
+    configs = ["g2g_ams.yaml","g2g_large.yaml","g2g_large_submicron.yaml","sampling.yaml"]
+    for cf in configs:
+        config_filepath = current_directory / cf
+        shutil.copy(config_filepath, experiment_directory / config_filepath.name)
 
     # Copy script to the experiment directory.
-    config_filepath = current_directory / "aaq_sampler.py"
-    shutil.copy(config_filepath, experiment_directory / config_filepath.name)
-
-    config_filepath = current_directory / "aaq_derived.py"
-    shutil.copy(config_filepath, experiment_directory / config_filepath.name)
+    scripts = ["aaq_sampler.py","aaq_derived.py"]
+    for sc in scripts:
+        config_filepath = current_directory / sc
+        shutil.copy(config_filepath, experiment_directory / config_filepath.name)
 
     # Get the sponsor code id
 
