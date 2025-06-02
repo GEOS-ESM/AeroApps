@@ -8,12 +8,14 @@ import yaml
 from glob import glob
 from pyobs.sampler import TRAJECTORY
 from pyobs.icartt import ICARTT
-
+from dask.distributed import performance_report
+from dask.distributed import Client, LocalCluster
 if __name__ == '__main__':
 
 
     parser = argparse.ArgumentParser()
     parser.add_argument("config",help='configuration yaml file')
+    parser.add_argument("--profile",action="store_true")
 
     args = parser.parse_args()
 
@@ -25,7 +27,10 @@ if __name__ == '__main__':
     # create output directory
     if not os.path.exists(config['sampled_outdir']):
         os.makedirs(config['sampled_outdir'])
-    
+
+    if args.profile:
+        cluster = LocalCluster()
+        client = Client(cluster)    
 
     # loop through icartt files
     for ict in ictFiles:
@@ -38,7 +43,11 @@ if __name__ == '__main__':
         chunks = {'time':1, 'lev':-1, 'lat':-1, 'lon': -1}
         traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks)
         traj_ds = traj.sample()
-        traj_ds = traj_ds.compute()
+        if args.profile:
+            with performance_report(filename="dask-report.html"):
+                traj_ds = traj_ds.compute()
+        else:
+            traj_ds = traj_ds.compute()
 
         # write out the native sampled model fields
         outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + ctl + '.nc4'
