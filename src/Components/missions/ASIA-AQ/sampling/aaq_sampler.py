@@ -5,7 +5,6 @@
 import os, sys
 import argparse
 import yaml
-from glob import glob
 from pyobs.sampler import TRAJECTORY
 from pyobs.icartt import ICARTT
 from dask.distributed import performance_report
@@ -14,6 +13,7 @@ if __name__ == '__main__':
 
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("ictFile",help='ict File to sample on')
     parser.add_argument("config",help='configuration yaml file')
     parser.add_argument("--profile",action="store_true")
 
@@ -21,19 +21,10 @@ if __name__ == '__main__':
 
     config = yaml.safe_load(open(args.config))
 
-    # get dc-8 files
-    ictFiles = sorted(glob(config['dc8_merge']+'/*ict'))
+    kwargs = dict(n_workers=120, threads_per_worker=1, memory_limit='4GB')
+    with LocalCluster(**kwargs) as cluster, Client(cluster) as cluster:
 
-    # create output directory
-    if not os.path.exists(config['sampled_outdir']):
-        os.makedirs(config['sampled_outdir'])
-
-    if args.profile:
-        cluster = LocalCluster()
-        client = Client(cluster)    
-
-    # loop through icartt files
-    for ict in ictFiles:
+        ict = args.ictFile
         m = ICARTT(ict)
         lon, lat, tyme = m.Longitude_BENNETT, m.Latitude_BENNETT, m.Nav['Time']
 
@@ -41,7 +32,7 @@ if __name__ == '__main__':
         # --------------------------------------
         ctl = config['model_aer_ctl'] 
         chunks = {'time':1, 'lev':-1, 'lat':-1, 'lon': -1}
-        traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks)
+        traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks,engine='h5netcdf')
         traj_ds = traj.sample()
         if args.profile:
             with performance_report(filename="dask-report.html"):
@@ -66,7 +57,3 @@ if __name__ == '__main__':
                 outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + ctl + '.nc4'
                 traj_ds.to_netcdf(outFile,engine='netcdf4')
 
-
-        
-
-            
