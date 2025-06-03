@@ -4,6 +4,7 @@
 """
 import os, sys
 import subprocess
+import argparse
 import yaml
 from glob import glob
 import time
@@ -26,7 +27,7 @@ def CheckRunning(processes,cmds,nextdate,lendate,args):
       if processes[p].poll() is not None: # If the process hasn't finished will return None
          del processes[p] # Remove from list - this is why we needed reverse order
 
-   while (len(processes) < args.nproc) and (nextdate < lendate): # More to do and some spare slots
+   while (len(processes) < int(args.nproc)) and (nextdate < lendate): # More to do and some spare slots
       processes, nextdate = StartNew(processes,cmds,nextdate,lendate)
 
    return processes,nextdate
@@ -43,12 +44,16 @@ if __name__ == "__main__":
 
     config = yaml.safe_load(open(args.config))
 
+    # create output directory
+    if not os.path.exists(config['sampled_outdir']):
+        os.makedirs(config['sampled_outdir'])
+
     # get dc-8 files
     ictFiles = sorted(glob(config['dc8_merge']+'/*ict'))
 
     cmds = []
     for ict in ictFiles:
-        cmd = f'./aaq_samper.py {ict} {args.config}'
+        cmd = f'./aaq_sampler.py {ict} {args.config}'
         cmds.append(cmd)
     
     lendate = len(cmds)    
