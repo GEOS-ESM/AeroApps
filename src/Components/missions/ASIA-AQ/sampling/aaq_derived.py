@@ -52,7 +52,8 @@ if __name__ == '__main__':
         pm_stp.attrs.update(pm[spc].attrs)
         pm_ams[spc] = pm_stp
 
-    # Do MSA seperately.  Assume total  is below 1.5 micron
+    # MSA doesn't have an optics file, so need to do it MSA seperately.  
+    # Assume total mass is below 1.5 micron
     q_conc = (traj_ds['AIRDENS'] * traj_ds['MSA']*1e9)  # Aerosol mass concentration in ug/m3
     pm_ams['MSA'] = q_conc*(1.2754/pm['AIRDENS'])
     attrs = {'long_name':'Particulate Matter', 'units':'microgram m-3'}
