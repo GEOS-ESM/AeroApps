@@ -124,7 +124,7 @@ def create_experiment_directory():
         shutil.copy(config_filepath, experiment_directory / config_filepath.name)
 
     # Copy script to the experiment directory.
-    scripts = ["aaq_sampler.py","aaq_derived.py"]
+    scripts = ["aaq_sampler.py","aaq_derived.py","sampler_run.py","derived_run.py"]
     for sc in scripts:
         config_filepath = current_directory / sc
         shutil.copy(config_filepath, experiment_directory / config_filepath.name)
