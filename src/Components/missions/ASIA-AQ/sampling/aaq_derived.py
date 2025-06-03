@@ -67,7 +67,31 @@ if __name__ == '__main__':
     pm_ams['AIRDENS'] = pm['AIRDENS']
     outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + 'pm_ams.nc4'
     pm_ams.to_netcdf(outFile,engine='netcdf4')
-    
+
+    # --------------------   
+    # calculate SP2 BC Mass
+    # --------------------
+    optics = G2GAOP(traj_ds,config=config['sp2_config'])
+    pm = optics.getPM(pmsize=0.3,fixrh=0.0)
+
+    # SP2 observes at STP (273 K & 1013 mb)
+    # so need to convert ambient concentration to STP
+    # using the density of Air at STP = 1.2754 kg/m3   
+    pm_sp2 = {}
+    for spc in ['PM']: 
+        pm_stp = pm[spc]*(1.2754/pm['AIRDENS'])
+        pm_stp.attrs.update(pm[spc].attrs)
+        pm_sp2['BC'] = pm_stp
+
+    # write SP2 PM to netcdf file
+    pm_sp2 = xr.Dataset(pm_sp2)
+    pm_sp2['H'] = traj_ds['H']
+    pm_sp2['PS'] = traj_ds['PS']
+    pm_sp2['delp'] = pm['DELP']
+    pm_sp2['AIRDENS'] = pm['AIRDENS']
+    outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + 'bc_sp2.nc4'
+    pm_sp2.to_netcdf(outFile,engine='netcdf4')    
+ 
     # --------------------
     # calculate LARGE AOPs
     # --------------------
