@@ -16,6 +16,6 @@ sampled_outdir: ./sampled
 large_config: g2g_large.yaml
 large_submicron_config: g2g_large_submicron.yaml
 ams_config: g2g_ams.yaml
-
+sp2_config: g2g_sp2.yaml
 
 
