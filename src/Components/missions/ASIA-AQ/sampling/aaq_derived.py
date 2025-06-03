@@ -125,6 +125,19 @@ if __name__ == '__main__':
         outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_aop_STP_rh20.nc4'
         aop.to_netcdf(outFile,engine='netcdf4')
 
+        # RH = 40
+        aop = optics.getAOPext(wavelength=float(wl),doaback=False,fixrh=0.40)
+
+        for spc in optics.mieTable:
+            aop_spc = optics.getAOPext(wavelength=float(wl),Species=spc,doaback=False,fixrh=0.40)
+            for var in varlist:
+                aop = aop.assign({var+'_'+spc:aop_spc[var]})
+
+        aop['H'] = traj_STP['H']
+        aop['PS'] = traj_STP['PS']
+        outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_aop_STP_rh40.nc4'
+        aop.to_netcdf(outFile,engine='netcdf4')
+
         # RH = 80
         aop = optics.getAOPext(wavelength=float(wl),doaback=False,fixrh=0.80)
 
@@ -192,6 +205,19 @@ if __name__ == '__main__':
         aop['H'] = traj_STP['H']
         aop['PS'] = traj_STP['PS']
         outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_aop_STP_submicron_rh20.nc4'
+        aop.to_netcdf(outFile,engine='netcdf4')
+
+        # RH = 40
+        aop = optics.getAOPext(wavelength=float(wl),doaback=False,fixrh=0.40)
+
+        for spc in optics.mieTable:
+            aop_spc = optics.getAOPext(wavelength=float(wl),Species=spc,doaback=False,fixrh=0.40)
+            for var in varlist:
+                aop = aop.assign({var+'_'+spc:aop_spc[var]})
+
+        aop['H'] = traj_STP['H']
+        aop['PS'] = traj_STP['PS']
+        outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_aop_STP_submicron_rh40.nc4'
         aop.to_netcdf(outFile,engine='netcdf4')
 
         # RH = 80
