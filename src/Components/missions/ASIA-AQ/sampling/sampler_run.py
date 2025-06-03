@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("config",help='configuration yaml file')
-    parser.add_argument("--nproc",default=10)
+    parser.add_argument("--nproc",default=1)
 
     args = parser.parse_args()
 
