@@ -40,64 +40,59 @@ if __name__ == '__main__':
             # --------------------------------------
             ctl = config['model_aer_ctl'] 
             chunks = {'time':1, 'lev':-1, 'lat':-1, 'lon': -1}
-            try:
-                # check that all files exist
-                time_range = [tyme.min(),tyme.max()]
-                paths = parse_ctl(ctl,time_range)
-                exists = True
-                for p in paths:
-                    if not os.path.exists(p): exists = False
-
-                if exists:
-                    traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks,engine='h5netcdf')
-                else:
-                    print(f"Model input files missing for {ict}")
-                    print("Skipping...")
-                    continue
-            except:
-                print(f"Error reading model for {ict}")
-                print("Skipping....")
-                continue
+            # check that all files exist
+            time_range = [tyme.min(),tyme.max()]
+            paths = parse_ctl(ctl,time_range)
+            exists = True
+            for p in paths:
+                if not os.path.exists(p): exists = False
+            
+            if exists:
+                traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks,engine='h5netcdf')
                 
-            traj_ds = traj.sample()
-            if args.profile:
-                with performance_report(filename="dask-report.html"):
+                traj_ds = traj.sample()
+                if args.profile:
+                    with performance_report(filename="dask-report.html"):
+                        traj_ds = traj_ds.compute()
+                else:
                     traj_ds = traj_ds.compute()
-            else:
-                traj_ds = traj_ds.compute()
 
-            # write out the native sampled model fields
-            outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + ctl + '.nc4'
-            traj_ds.to_netcdf(outFile,engine='netcdf4')
+                # write out the native sampled model fields
+                outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + ctl + '.nc4'
+                traj_ds.to_netcdf(outFile,engine='netcdf4')
 
-            # If other model collections are provided
-            # sample those and write out
-            # -----------------------------
-            for ctl in config['model_other_ctl']:
-                if ctl is not None:
-                    try:
-                        # check that all files exist
-                        time_range = [tyme.min(),tyme.max()]
-                        paths = parse_ctl(ctl,time_range)
-                        exists = True
-                        for p in paths:
-                            if not os.path.exists(p): exists = False
+                # If other model collections are provided
+                # sample those and write out
+                # -----------------------------
+                for ctl in config['model_other_ctl']:
+                    if ctl is not None:
+                        try:
+                            # check that all files exist
+                            time_range = [tyme.min(),tyme.max()]
+                            paths = parse_ctl(ctl,time_range)
+                            exists = True
+                            for p in paths:
+                                if not os.path.exists(p): exists = False
 
-                        if exists:
-                            traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks,engine='h5netcdf')
-                        else:
-                            print(f"Model input files missing for {ict}")
-                            print("Skipping...")
+                            if exists:
+                                traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks,engine='h5netcdf')
+                            else:
+                                print(f"Model input files missing for {ict}")
+                                print("Skipping...")
+                                continue
+                        except:
+                            print(f"Error reading model for {ict}")
+                            print("Skipping....")
                             continue
-                    except:
-                        print(f"Error reading model for {ict}")
-                        print("Skipping....")
-                        continue
 
-                    traj_ds = traj.sample()
-                    traj_ds = traj_ds.compute()
+                        traj_ds = traj.sample()
+                        traj_ds = traj_ds.compute()
 
-                    # write out the native sampled model fields
-                    outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + ctl + '.nc4'
-                    traj_ds.to_netcdf(outFile,engine='netcdf4')
+                        # write out the native sampled model fields
+                        outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + ctl + '.nc4'
+                        traj_ds.to_netcdf(outFile,engine='netcdf4')
 
+            else:
+                print(f"Model input files missing for {ict}")
+                print("Skipping...")
+                continue
