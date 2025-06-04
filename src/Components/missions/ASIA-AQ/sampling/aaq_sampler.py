@@ -75,7 +75,25 @@ if __name__ == '__main__':
             # -----------------------------
             for ctl in config['model_other_ctl']:
                 if ctl is not None:
-                    traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks)
+                    try:
+                        # check that all files exist
+                        time_range = [tyme.min(),tyme.max()]
+                        paths = parse_ctl(ctl,time_range)
+                        exists = True
+                        for p in paths:
+                            if not os.path.exists(p): exists = False
+
+                        if exists:
+                            traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks,engine='h5netcdf')
+                        else:
+                            print(f"Model input files missing for {ict}")
+                            print("Skipping...")
+                            continue
+                    except:
+                        print(f"Error reading model for {ict}")
+                        print("Skipping....")
+                        continue
+
                     traj_ds = traj.sample()
                     traj_ds = traj_ds.compute()
 
