@@ -33,5 +33,5 @@ if (! -d ExtData) then
     ln -s /home/pcastell/opendap/dasilva_fvinput/ExtData/ .
 endif
 
-./sampler_run.py sampling.yaml
-./derived_run.py sampling.yaml
+python3 -u ./aaq_sampler.py sampling.yaml >& aaq_sampler-${SLURM_JOB_ID}.log
+python3 -u ./aaq_derived.py sampling.yaml >& aaq_derived-${SLURM_JOB_ID}.log
