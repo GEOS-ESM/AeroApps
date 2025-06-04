@@ -8,6 +8,7 @@ import yaml
 from glob import glob
 from pyobs.sampler import TRAJECTORY
 from pyobs.icartt import ICARTT
+from pyobs.xrctl import parse_ctl
 from dask.distributed import performance_report
 from dask.distributed import Client, LocalCluster
 if __name__ == '__main__':
@@ -40,7 +41,19 @@ if __name__ == '__main__':
             ctl = config['model_aer_ctl'] 
             chunks = {'time':1, 'lev':-1, 'lat':-1, 'lon': -1}
             try:
-                traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks,engine='h5netcdf')
+                # check that all files exist
+                time_range = [tyme.min(),tyme.max()]
+                paths = parse_ctl(ctl,time_range)
+                exists = True
+                for p in paths:
+                    if not os.path.exists(p): exists = False
+
+                if exists:
+                    traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks,engine='h5netcdf')
+                else:
+                    print(f"Model input files missing for {ict}")
+                    print("Skipping...")
+                    continue
             except:
                 print(f"Error reading model for {ict}")
                 print("Skipping....")
