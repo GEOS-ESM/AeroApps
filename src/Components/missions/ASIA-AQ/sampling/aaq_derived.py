@@ -31,7 +31,12 @@ if __name__ == '__main__':
         ctl = config['model_aer_ctl']
         outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + ctl + '.nc4'
         try:
-            traj_ds = xr.open_dataset(outFile)
+            if os.path.exists(outFile):
+                traj_ds = xr.open_dataset(outFile)
+            else:
+                print(f"Sampled file {outFile} does not exist")
+                print("Skipping....")
+                continue
         except:
             print(f"Problem with reading {outFile}")
             print("Skipping....")
