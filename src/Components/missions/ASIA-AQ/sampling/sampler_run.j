@@ -7,13 +7,13 @@
 #SBATCH -J aaq_sampler
 #SBATCH --nodes=1
 #SBATCH --constraint=mil
-#SBATCH --time=1:00:00
+#SBATCH --time=2:00:00
 #SBATCH -A @GROUPID
 #SBATCH -o output_aaq_sampler-%j.log
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
-#SBATCH --qos=debug
+##SBATCH --qos=debug
 #######################################################################
 #  Run sampler code for ASIA-AQ
 #######################################################################
