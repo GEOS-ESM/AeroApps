@@ -11,10 +11,10 @@
 #               GMAO Office Note No. 22 (Version 1.1):
 #               Collow, A., V. Buchard, M. Chin, P. Colarco, A. Darmenov, and A. da Silva, 2023.
 #               Supplemental Documentation for GEOS Aerosol Products
-#   pmconversion: set to AMS to indicate using AMS transmission function.  
-#                 This was derived from a figure from Jose Jimenez wherein the 
+#   pmconversion: set to AMS to indicate using AMS transmission function.
+#                 This was derived from a figure from Jose Jimenez wherein the
 #                 AMS transmission linearly decreases between 0.3 and 0.8 microns.
-#                 
+#
 
 DU001:
   monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_DU.v15_3.nc4
