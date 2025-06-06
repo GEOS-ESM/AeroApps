@@ -20,7 +20,7 @@ end subroutine py_icosahedron_regions
 
 subroutine py_find_buddies(nobs, n_susp, ki_susp, kr_susp, &
                           xobs, yobs, zobs, lats, lons,lev, omf, varF, varO, qcx,&
-                          ls_h, ls_v, search_rad, single_level, nbuddy_max, &
+                          ls_h, ls_v, search_rad, tau_buddy, single_level, nbuddy_max, &
                           iregbeg, ireglen, maxreg, seplim, &
                           reaccept)
     use BuddyCheck_Mod
@@ -44,6 +44,7 @@ subroutine py_find_buddies(nobs, n_susp, ki_susp, kr_susp, &
     real*8, intent(in) :: ls_h
     real*8, intent(in) :: ls_v
     real*8, intent(in) :: search_rad
+    real*8, intent(in) :: tau_buddy
     real*8, intent(in) :: seplim
     logical, intent(in) :: single_level
     integer, intent(in) :: nbuddy_max
@@ -56,7 +57,7 @@ subroutine py_find_buddies(nobs, n_susp, ki_susp, kr_susp, &
     ! Call the actual implementation
     call find_buddies(nobs, n_susp, ki_susp, kr_susp, &
                      xobs, yobs, zobs, lats, lons, lev, omf, varF, varO,qcx, & 
-                     ls_h, ls_v, search_rad, single_level, nbuddy_max, &
+                     ls_h, ls_v, search_rad, tau_buddy,single_level, nbuddy_max, &
                      iregbeg, ireglen, maxreg, seplim, &
                      reaccept)
     

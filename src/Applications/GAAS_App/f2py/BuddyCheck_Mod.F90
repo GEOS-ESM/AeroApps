@@ -57,7 +57,7 @@ contains
     
     subroutine find_buddies(nobs, n_susp, ki_susp, kr_susp, &
                            xobs, yobs, zobs, lats, lons,lev, omf, varF, varO, qcx,&
-                           ls_h, ls_v, search_rad, single_level, nbuddy_max, &
+                           ls_h, ls_v, search_rad,tau_buddy, single_level, nbuddy_max, &
                            iregbeg, ireglen, maxreg, seplim, &
                            reaccept)
         implicit none
@@ -80,6 +80,7 @@ contains
         real*8, intent(in) :: ls_h
         real*8, intent(in) :: ls_v
         real*8, intent(in) :: search_rad
+        real*8, intent(in) :: tau_buddy
         real*8, intent(in) :: seplim
         logical, intent(in) :: single_level
         integer, intent(in) :: nbuddy_max
@@ -94,7 +95,6 @@ contains
         integer :: i, j, nbuddy, ireg, ibeg, iend, kis, krs, lvs
         real*8 :: exponent, scgain, dist2, z_dist2
         real*8 :: tol_rel = 1.0e-5  ! Small tolerance value
-        real*8 :: tau_buddy = 0.1   ! buddy tol param
         real*8, parameter :: radius_earth = 6371000.0  ! Earth radius in meters
         integer :: is, ib, ibb, n_reacc
         real*8 ::  accum_de1, accum_de2, accum_wgt, accum_var

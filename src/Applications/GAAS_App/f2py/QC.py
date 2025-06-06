@@ -1,18 +1,9 @@
 #!/usr/bin/env python
-# coding: utf-8
-
-
 
 import xarray as xr
 import numpy as np
-from numba import jit, prange
 import yaml
 import sys
-
-sys.path.append('/home/vbuchard/workspace/JEDI/OBS_IODA/GMAOpyobs/install/lib/Python/')
-
-
-
 
 # Default YAML file for SQC parameters
 SQC_Param = """
@@ -42,6 +33,9 @@ LAOD_sigs = """
  388:   
    sigO: 0.18  
    sigF: 0.45
+ 440:   
+   sigO: 0.18  
+   sigF: 0.45
  470:   
    sigO: 0.18  
    sigF: 0.45
@@ -66,77 +60,84 @@ LAOD_sigs = """
 """
 
 
-# In[3]:
-
-
 class QC(object):
-    def __init__(self, iodaFiles, config=None, log=True, verbose=True):
+
+    def __init__(self, iodaFiles, config=None, log=True, transform_log=True, verbose=True):
         if config is None:
             config = SQC_Param
 
         self.log = log
+        self.transform = transform_log
+
         self.verbose = verbose
-    
          
         if isinstance(iodaFiles, xr.Dataset):
             self.ioda = iodaFiles
         else:
             self.ioda = xr.open_datatree(iodaFiles)
 
-        # add condition for omf
-        
-        self.ioda.omf = self.ioda.ObsValue['aerosolOpticalDepth'] - self.ioda.HofX['aerosolOpticalDepth']
-        print('type omf', self.ioda.omf)
+        # Check if the 'omf' attribute exists in self.ioda
+        if not hasattr(self.ioda, 'omf'):
+           # If it doesn't exist, create it by computing the difference
+            try:
+                if self.transform:  
+                   self.ioda.omf = np.log(self.ioda.ObsValue['aerosolOpticalDepth']+0.01) - np.log(1000*self.ioda.hofx['aerosolOpticalDepth']+0.01)
+                   print('ok', self.ioda.ObsValue['aerosolOpticalDepth'],self.ioda.hofx['aerosolOpticalDepth']) 
+                else:
+                   self.ioda.omf = self.ioda.ObsValue['aerosolOpticalDepth'] - self.ioda.hofx['aerosolOpticalDepth']  #already in log in file 
+            except (AttributeError, KeyError) as e:
+                print(f"Couldn't create omf field: {e}")
+       
+        # Handle the case where the required attributes/keys don't exist
         if (self.ioda.dims['Location'] == 0):
             raise ValueError("No observation %s, nothing to do" % self.ioda.dims['Location']) 
         self.nobs, self.nchannels  = self.ioda.dims['Location'], self.ioda.dims['Channel']
-        print('nobs', self.nobs)
+        print(f" [x]: The observation file had {self.nobs} observations and {self.nchannels} wavelengths")
+        
+        # Get the sqc parameters from yaml file
         self.sqc = yaml.safe_load(config)
         
+        # Get QCexcl and QChist
         self.qcexcl = self.ioda.PreQc['aerosolOpticalDepth'].data
         self.qchist = self.ioda.HistQc['aerosolOpticalDepth'].data
 
-        # use lev in buddy check (original code has the wavelength) but BC could be used for vertically resolved 
-        # obs 
-        obs_wavelength = self.ioda.MetaData['obs_wavelength'].data
-        print('obs wavelength', obs_wavelength)
+        # use lev in buddy check (original code has the wavelength) but BC could be used for vertically resolved obs 
+        self.obs_wavelength = self.ioda.MetaData['obs_wavelength'].data
+        print('obs wavelength', self.obs_wavelength)
         # reshape lev as (nlocs, nch) for the buddy check, repeating the same value for each obs if 2D variable
-        self.lev = np.tile(obs_wavelength, self.nobs)
+        self.lev = np.tile(np.array([self.obs_wavelength]), (self.nobs, 1))
+        print('lev values', self.lev.shape)        
+
+        # Compute the cartesians coordinates
         self.lons, self.lats = self.ioda.MetaData['longitude'], self.ioda.MetaData['latitude']
         xobs, yobs, zobs = self.ll2xyz(self.lons, self.lats)
         self.xobs = np.array(xobs, dtype=np.float64)
         self.yobs = np.array(yobs, dtype=np.float64)
         self.zobs  = np.array(zobs, dtype=np.float64)
    
-        self.I_old = ((self.qcexcl==0) & (self.qchist==17))
-        print('I old reaccept', self.I_old, self.I_old.shape)
-        self.reac_old = np.where((self.qcexcl==0) & (self.qchist==17))[0]
-        print('find index reaccepted values in old code:', np.where((self.qcexcl==0) & (self.qchist==17))[0])
-   #     print('parameters for comparisons:', 'lat =', self.ioda.MetaData['latitude'][self.reac_old].data, ' lon = ', self.ioda.MetaData['longitude'][self.reac_old].data,
-   #           'omf =', self.ioda.omf[self.reac_old].data, 'obs value=', self.ioda.ObsValue['aerosolOpticalDepth'][self.reac_old].data, 'xobs = ', self.xobs[self.reac_old], 'qchi= ', self.qchist[self.reac_old])
-    
+        # Reset the QC flag if needed according to yaml
         self._reset_qc()
+
+        # Get Obs and background variances
         self._getErrVar()
+
+        # First, select the observation with a Background check - statistical outliers, qchist and qcexcl are updated
         self._backgCheck()
      
-        
-   #     print('find index reaccepted values in old code after background:', np.where((self.qcexcl==0) & (self.qchist==17))[0])
-   #     print('parameters for comparisons after background check:', 'lat =', self.ioda.MetaData['latitude'][self.reac_old].data, ' lon = ', self.ioda.MetaData['longitude'][self.reac_old].data,
-   #          'omf =', self.ioda.omf[self.reac_old].data, 'obs value=', self.ioda.ObsValue['aerosolOpticalDepth'][self.reac_old].data, 'xobs = ', self.xobs[self.reac_old], 'qchi= ', self.qchist[self.reac_old])
-             
+        # Reordering foloowing the background check with non-excluded data moved to the front      
         self._reorder_arrays(message="Reordering by exclusion status")
    
+        # Bining the observation using the icosahedron geometry regions
         self.regions, self.nmaxregions, self.iregbeg, self.ireglen = self._getregions()
-#        print('regions', self.regions)
-        self.reac_old = np.where(self.I_old == True)[0]
-        print('find index reaccepted values in old code after region reorder:', np.where((self.qcexcl==0) & (self.qchist==17))[0])
- #       print('parameters for comparisons after region binning:', 'lat =', self.ioda.MetaData['latitude'][self.reac_old].data, ' lon = ', self.ioda.MetaData['longitude'][self.reac_old].data,
- #            'omf =', self.ioda.omf[self.reac_old].data, self.regions[self.reac_old], 'obs value=', 
- #             self.ioda.ObsValue['aerosolOpticalDepth'][self.reac_old].data, 'xobs = ', self.xobs[self.reac_old], 'qchi= ', self.qchist[self.reac_old])
-        
+
+        # Finally doing the buddy check using suspect observations  
         self._buddyCheck()
 
+        # Updating the QC values in the IODA file
+
+#---------------  
     def _reset_qc(self):
+
         if self.sqc['reset_allqc']:
             self.qcexcl[:] = 0
             self.qchist[:] = 0
@@ -144,7 +145,7 @@ class QC(object):
         elif self.sqc['reset_sqc']:
             self.qchist[:] = 0
             print('[x] reset all history marks')
-                
+#---------------                
     def _reorder_arrays(self,sort_indices=None, sort_by_key=None, descend=False, message=None):
         """
         Reorder all arrays based on provided indices or a key to sort by.
@@ -173,7 +174,7 @@ class QC(object):
     
         print(f'[x] {message}')
 
-        test_index = self.reac_old[0]  # Take first reaccepted observation as test case
+        test_index = 2  # Take a supsect observation as test case
         print("BEFORE REORDERING:")
         print(f"Test index {test_index}:")
         print(f"  Lat: {self.ioda.MetaData['latitude'][test_index].data}")
@@ -186,7 +187,7 @@ class QC(object):
            omf_array = self.ioda.omf.copy()
            print(f"  OMF: {omf_array[test_index].data}")
         else:
-           # If omf is stored elsewhere, adjust this accordingly
+           # If omf is stored elsewhere
            omf_array = None
            print("  OMF: Not found as direct attribute")
         
@@ -231,8 +232,6 @@ class QC(object):
         # Reorder qcexcl and qchist
         self.qcexcl = self.qcexcl[sort_indices]
         self.qchist = self.qchist[sort_indices]
-        self.I_old = self.I_old[sort_indices]
-        
         
         # Reorder VarO and VarF if they exist
         if hasattr(self, 'VarO'):
@@ -256,35 +255,19 @@ class QC(object):
         print(f"  Lon: {self.ioda.MetaData['longitude'][new_position].data}")
         print(f"  OMF: {self.ioda.omf[new_position].data}")
         print(f"  XObs: {self.xobs[new_position]}")
-       
     
         if n_valid is not None:
            print(f'[x] {message} complete: {n_valid} valid observations moved to the front')
         else:
            print(f'[x] {message} complete')
 
-         # Check if our boolean mask tracking works
-  #      reac_indices = np.where(self.I_old)[0]
- #       if len(self.I_old.shape) > 1:
-  #      # Flatten or use the first column
-  #        reac_indices = np.where(self.I_old[:, 0])[0]
-  #      else:
-  #        reac_indices = np.where(self.I_old)[0]
-  #      print(f"Reaccepted indices after reordering: {reac_indices[:5]}...")
-  #      print("First reaccepted observation values:")
-  #      if len(reac_indices) > 0:
-  #         idx = reac_indices[0]
-  #         print(f"  Lat: {self.ioda.MetaData['latitude'][idx].data}")
-  #         print(f"  Lon: {self.ioda.MetaData['longitude'][idx].data}")
-  #         print(f"  OMF: {self.ioda.omf[idx].data}")
-  #         print(f"  XObs: {self.xobs[idx]}")
-      
         # Return the number of valid observations for future reference
         return n_valid
-  
-
+#-------------  
     def _getErrVar(self):
         print(f'[x] Getting Error Variances')
+
+        # May add an option if VarO is available in ioda file
         self.sigs = yaml.safe_load(LAOD_sigs if self.log else AOD_sigs)
         
         self.VarO = np.full((self.ioda.dims['Location'], self.ioda.dims['Channel']), -999.)
@@ -299,9 +282,19 @@ class QC(object):
                     found = True
                     break
             if not found:
-                print(f'[x] Warning: no sigO sigF provided for the observed wavelength {channel}')
-
+                print(f'[x] Warning: no sigO sigF provided for the observed wavelength {self.obs_wavelength[channel]}')
+#-------------
     def _backgCheck(self):
+
+        """ 
+        Checks for statistical outliers:
+        Parameters: - Obs and background variances ( self.VarO and self.VarF ) 
+        Returns: suspect (qch = 17) and rejected obs (qcx = 21)   
+
+        Marks observations for which the squared omf residual exceeds a pre-defined
+        multiple of the presumed variance of the residual defined in yaml (tau_bgx and tau_bgh)
+        """
+        
         var = self.VarF + self.VarO
         if np.any(var <= 0):
            raise ValueError("Prescribed O-F Variance is zero")
@@ -324,46 +317,45 @@ class QC(object):
         for channel in range(nexcl_per_channel.size):
             nexcl = nexcl_per_channel[channel].item()  # Convert to Python scalar
             nsuspect = nsuspect_per_channel[channel].item()  # Convert to Python scalar
-            print(f'[x] number of exclusions after background_check for channel {channel} is {nexcl}')
-            print(f'[x] number of suspects after background_check for channel {channel} is {nsuspect}')
+            print(f'[x] number of exclusions after background_check for channel {self.obs_wavelength[channel]} is {nexcl}')
+            print(f'[x] number of suspects after background_check for channel {self.obs_wavelength[channel]} is {nsuspect}')
 
         print('shape qc after background check:', self.qchist.shape)
 
-        # Return suspect_outliers for use in buddy check
-        return suspect_outliers
-        
+#---------------        
     @staticmethod
-    def ll2xyz(lon, lat): # for one obs lat-lon, the original code loop over nobs to create vectors
+    def ll2xyz(lon, lat): 
         """Convert longitude and latitude to Cartesian coordinates (x, y, z) on the unit sphere."""
         xobs = np.cos(np.radians(lat)) * np.cos(np.radians(lon))
         yobs = np.cos(np.radians(lat)) * np.sin(np.radians(lon))
         zobs = np.sin(np.radians(lat))
-        print('xobs', xobs.shape)
         return xobs, yobs, zobs
 
+#---------------
     def _getregions(self): 
+        """ Uses Icosahedron fortran subroutine to return the region number, max regions and  
+        the index of the start of a region and the number of obs in each region
+        """
+        
         import BuddyCheck_
         regions = np.zeros(self.nobs, dtype=np.int32)
               
-   #     print(BuddyCheck_.py_icosahedron_regions.__doc__)
-        
         (regions, nmaxregions) = BuddyCheck_.py_icosahedron_regions(self.xobs, self.yobs, self.zobs)
-        # Sort by region (the size of regions is nobs for the sorting and reordering compared to 
-        # original fortran code)
+        
+        # Sort the datatree and all parameters(qc, Var.. ) by region (the size of regions is nobs for the sorting and reordering)
 
         # Store a copy of regions before reordering
         original_regions = regions.copy()
       
         self._reorder_arrays(sort_by_key=regions, message="Sorting observations by region")
-  #      print('regions',regions)
+        
         # Reorder the regions array to match the other arrays
-       
         indx = np.arange(len(original_regions), dtype=np.int32)
         sort_indices = indx[np.argsort(original_regions[indx], kind='mergesort')]
         regions = original_regions[sort_indices]
-        print('nregions', nmaxregions) 
+        print(f'[x] Total number of regions is {nmaxregions} and the number of regions with obs is {len(np.unique(regions))}') 
         
-         # Set integer region pointers      
+        # Set integer region pointers      
         iregbeg = np.zeros(nmaxregions, dtype=np.int32)  # beginning of a region
         ireglen = np.zeros(nmaxregions, dtype=np.int32)  # number of obs in a region
     
@@ -372,21 +364,25 @@ class QC(object):
     
         # Set region beginning indices
         iregbeg[1:] = np.cumsum(ireglen[:-1]) # 0 based for python
-        print('region beg and len', iregbeg, ireglen)
-   #     print('number of regions with obs', len(np.unique(regions))) # number of regions with data
         
         return regions, nmaxregions, iregbeg, ireglen
-
-#    def _issuspect(self):
+#----------------
     def _buddyCheck(self):
         import BuddyCheck_
-       
+        """
+        Checks each suspect observation (with any nonzero history mark) against its "buddies" 
+        (nearby observations of the same variable with a zero history mark). If a suspect observation passes the buddy check, it joins the 
+        pool of buddies for the next round. This procedure is iterated until the pool stabilizes, or until a maximum number of iterations
+        is reached.
+
+        """
         print(f'[x] Starting the buddy check')
         
         search_rad = self.sqc['Buddy_Check']['search_rad']  # unit length scale
         ls_h = self.sqc['Buddy_Check']['ls_h']  # 0.15e6 (m) in original code -> combined 150km search
         ls_v = self.sqc['Buddy_Check'].get('ls_v', 1000.0)  # Vertical length scale
         single_level = self.sqc['Buddy_Check'].get('single_level', True)
+        tau_buddy = self.sqc['Buddy_Check'].get('tau_buddy', 0.1) # tolerance parameter: 0.1->stringent the obs O-F needs to be close to the predicted O-F from the buddies
         nbuddy_max = self.sqc['Buddy_Check'].get('nbuddy_max', 100)
         seplim = self.sqc['Buddy_Check'].get('seplim', 26.5)  # Separation limit between regions
 
@@ -394,18 +390,18 @@ class QC(object):
         reaccept = np.zeros((self.nobs, self.nchannels), dtype=bool)
     
         for channel in range(self.nchannels):
-            print(f'[x] Processing wavelength {channel}')
+            print(f'[x] Processing wavelength {self.obs_wavelength[channel]}')
             
             # first list of suspect after the background check
             suspect = (self.qchist[:, channel] > 0) & (self.qcexcl[:, channel] == 0)
-            print(f"Suspect indices for channel {channel}:", np.where(suspect)[0])
+            print(f"Suspect indices for channel {self.obs_wavelength[channel]}:", np.where(suspect)[0])
 
             for iteration in range(1, self.sqc['Buddy_Check']['niter_max'] + 1): 
-                print(f'[x] Iteration {iteration} for channel {channel}')
+                print(f'[x] Iteration {iteration} for channel {self.obs_wavelength[channel]}')
             
                 # Skip if no suspect observations
                 if not np.any(suspect):
-                   print(f'[x] No suspect observations for channel {channel} at iteration {iteration}')
+                   print(f'[x] No suspect observations for channel {self.obs_wavelength[channel]} at iteration {iteration}')
                    break     
                     
                 # Vectorized preparation of suspect data
@@ -421,19 +417,10 @@ class QC(object):
                        ibeg = self.iregbeg[ireg-1]
                        iend = ibeg + self.ireglen[ireg-1] - 1
                        obs_regions[ibeg:iend+1] = ireg
-
-                # Find indices where I_old is True (reaccepted observations)
-                #reaccepted_indices = np.where(self.I_old)[0]
-                #print(f"Reaccepted indices old code before BC: {reaccepted_indices[:5]}...")
-
                 
-                # Find which of the reaccepted observations are also suspect
-                #suspect_mask = suspect[reaccepted_indices]
-                #suspect_indices = reaccepted_indices[suspect_mask]
+                self.iregbeg = self.iregbeg + 1 # for fortran based index starting at 1
                 suspect_indices = np.where(suspect)[0]
                 print(f"Suspect indices before BC: {suspect_indices[:5]}...")
-                #suspect_indices = np.where(suspect)[0]
-                # print(f"Suspect indices: {suspect_indices[:5]}...")
 
                 # Get the regions for these suspect observations
                 ki_susp = suspect_indices  + 1 # These are the actual indices in the dataset, + 1 if index 0 in python -> 1 in fortran, f2py handles the return of reaccept indices with -1
@@ -444,31 +431,29 @@ class QC(object):
                 print(f"First few kr_susp: {kr_susp[:10]}")
 
                 n_susp = len(ki_susp)
-                print(f'[x] number of suspects for channel {channel} at iteration {iteration} is {n_susp}')
+                print(f'[x] number of suspects for channel {self.obs_wavelength[channel]} at iteration {iteration} is {n_susp}')
                 # note: lev is pressure level of obs--> AOD single level will put lev arrays to 1 for now, original
                 # code has the wavelengths in it
-                self.iregbeg = self.iregbeg + 1 # for fortran based index starting at 1
-                print('beg', self.iregbeg)
-                #print('before buddy check call', 'lat =', self.ioda.MetaData['latitude'][self.reac_old].data, ' lon = ', self.ioda.MetaData['longitude'][self.reac_old].data)
-     #           'omf =', self.ioda.omf[self.reac_old].data, self.regions[self.reac_old], 'xobs = ', self.xobs[self.reac_old], 'yobs = ',self.yobs[self.reac_old], 
-     #           'ki_susp', ki_susp, 'kr_susp', kr_susp)
+                
                 lats, lons = self.ioda.MetaData['latitude'].data, self.ioda.MetaData['longitude'].data    
+
                 reaccept[:, channel] = BuddyCheck_.py_find_buddies(ki_susp, kr_susp, self.xobs, 
-                        self.yobs, self.zobs, lats, lons, self.lev, self.ioda.omf,
-                        self.VarF, self.VarO, self.qcexcl, ls_h, ls_v, search_rad, single_level, nbuddy_max, self.iregbeg, self.ireglen, 
-                        seplim)
+                        self.yobs, self.zobs, lats, lons, self.lev[:,channel], self.ioda.omf[:,channel],
+                        self.VarF[:,channel], self.VarO[:,channel], self.qcexcl[:,channel], ls_h, ls_v, search_rad, tau_buddy,
+                        single_level, nbuddy_max, self.iregbeg, self.ireglen,seplim)
              
                 print("reaccept:", reaccept[0:10,0])
                 reaccepted_obs = np.where(reaccept[:,channel])[0]
                 if len(reaccepted_obs) > 0:
-                    print(f"[x] Reaccepted {len(reaccepted_obs)} observations for channel {channel}")
+                    print(f"[x] Reaccepted {len(reaccepted_obs)} observations for channel {self.obs_wavelength[channel]}")
                     # Update suspect list for next iteration
                     suspect[reaccept[:,channel]] = False
                 else:
-                    print(f"[x] No observations reaccepted for channel {channel} at iteration {iteration}")
+                    print(f"[x] No observations reaccepted for channel {self.obs_wavelength[channel]} at iteration {iteration}")
                     break  # No observations reaccepted, so stop iterating
-                
-         
+
+            # Update QC flags after BC, all supected obs not reaccepted have QCX = 17 
+            self.qcexcl[suspect, channel] = 17
     print(f'[x] Buddy check completed')
 
           
