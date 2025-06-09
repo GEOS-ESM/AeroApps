@@ -1,0 +1,31 @@
+SU:
+  geosvar: 'SU'
+  obsvar: 'Sulfate_PM15_AMS_60s_JIMENEZ'
+  sampling: 'ams'
+  units: '($\mu$g m$^{-3}$)'
+  fullname: 'Sulfate'
+NH4:
+  geosvar: 'NH4'
+  obsvar: 'Ammonium_PM15_AMS_60s_JIMENEZ'
+  sampling: 'ams'
+  units: '($\mu$g m$^{-3}$)'
+  fullname: 'Ammonium'
+NI:
+  geosvar: 'NI'
+  obsvar: 'Nitrate_PM15_AMS_60s_JIMENEZ'
+  sampling: 'ams'  
+  units: '($\mu$g m$^{-3}$)'
+  fullname: 'Nitrate'
+OC:
+  geosvar: 'OC'
+  obsvar: 'OA_PM15_AMS_60s_JIMENEZ'
+  sampling: 'ams'
+  units: '($\mu$g m$^{-3}$)'
+  fullname: 'Organic Carbon'
+SS:
+  geosvar: 'SS'
+  obsvar: 'Seasalt_PM15_AMS_60s_JIMENEZ'
+  sampling: 'ams'
+  units: '($\mu$g m$^{-3}$)'
+  fullname: 'Sea Salt'
+
