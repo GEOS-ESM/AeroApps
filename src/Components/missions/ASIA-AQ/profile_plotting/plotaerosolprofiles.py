@@ -30,7 +30,10 @@ ictfile=glob(config['ictpath'] + '/asiaaq-mrg60_dc8_*' + flightdate + '*ict')
 ds = xr.open_dataset(sampledfile[0], engine='netcdf4')
 alt_geos = ds['H'].values
 vardata_geos= ds[var[yamlkey_var]['geosvar']].values
+if yamlkey_var=='OC':
+        vardata_geos=vardata_geos+ds['BR'].values
 ds.close
+vardata_geos=vardata_geos*var[yamlkey_var]['unitconversion']
 
 m = ICARTT(ictfile)
 #print([key for key in m.__dict__.keys()])
@@ -78,4 +81,4 @@ datestr = config['flightdate'][int(flightdate)]['datestring']
 plt.title(f"{country}, {datestr}")
 
 plt.savefig(config['expname'] + '_' + var[yamlkey_var]['geosvar'] + flightdate + '.png')
-#plt.show()
+plt.show()
