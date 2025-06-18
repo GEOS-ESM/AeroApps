@@ -1,0 +1,52 @@
+geospath: '/discover/nobackup/acollow/AeroApps/c360R_v11.6.1_asiaaqbaseline/sampled'
+ictpath: '/discover/nobackup/projects/gmao/iesa/aerosol/campaigns/ASIA-AQ/archive/merges/v20250423'
+expname: 'c360R_v11.6.1_asiaaqbaseline'
+flightdate:
+  20240206:
+    country: 'Philippines'
+    datestring: '2/6/24'
+  20240207:
+    country: 'Philippines'
+    datestring: '2/7/24'
+  20240211:
+    country: 'Philippines'
+    datestring: '2/11/24'
+  20240213:
+    country: 'Philippines'
+    datestring: '2/13/24'
+  20240215:
+    country: 'Taiwan Overpass'
+    datestring: '2/15/24'
+  20240217:
+    country: 'South Korea'
+    datestring: '2/17/24'
+  20240226:
+    country: 'South Korea'
+    datestring: '2/26/24'
+  20240308:
+    country: 'South Korea'
+    datestring: '3/8/24'
+  20240310:
+    country: 'South Korea'
+    datestring: '3/10/24'
+  20240311:
+    country: 'South Korea'
+    datestring: '3/11/24'
+  20240313:
+    country: 'Taiwan Overpass'
+    datestring: '3/13/24'
+  20240316:
+    country: 'Thailand'
+    datestring: '3/16/24'
+  20240318:
+    country: 'Thailand'
+    datestring: '3/18/24'
+  20240321:
+    country: 'Thailand'
+    datestring: '3/21/24'
+  20240325:
+    country: 'Thailand'
+    datestring: '3/25/24'
+  20240327:
+    country: 'Taiwan Overpass'
+    datestring: '3/27/24'
