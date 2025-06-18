@@ -15,7 +15,7 @@ NH4:
 NI:
   geosvar: 'NI'
   obsvar: 'Nitrate_PM15_AMS_60s_JIMENEZ'
-  sampling: 'ams'  
+  sampling: 'ams'
   units: '($\mu$g m$^{-3}$)'
   fullname: 'Nitrate'
   unitconversion: 1
