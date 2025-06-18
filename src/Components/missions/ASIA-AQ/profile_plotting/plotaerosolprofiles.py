@@ -9,6 +9,12 @@ import os, sys
 from glob import glob
 import netCDF4 as nc
 
+#This code will generate a flight average vertical profile for a single ASIA-AQ flight. The syntax for running
+#is ./plotaerosolprofiles.py VAR yyyymmdd where VAR must be a configuration listed in variablemap.yaml and the
+#date must be a date in which an ASIA-AQ DC8 flight occurred as listed in plotconfig.yaml. Prior to running the
+#python path needs to be set using "export PYTHONPATH=../AeroApps/install/lib/Python/" (or the full path to your
+#AeroApps build).
+
 yamlkey_var=sys.argv[1]
 flightdate=sys.argv[2]
 
@@ -27,7 +33,7 @@ vardata_geos= ds[var[yamlkey_var]['geosvar']].values
 ds.close
 
 m = ICARTT(ictfile)
-print([key for key in m.__dict__.keys()])
+#print([key for key in m.__dict__.keys()])
 ALT,obs_ts=m.Altitude_AGL_m_DIGANGI, m.__dict__[var[yamlkey_var]['obsvar']]
 
 # Get the indices of minimum distances for all columns at once
@@ -71,5 +77,5 @@ country = config['flightdate'][int(flightdate)]['country']
 datestr = config['flightdate'][int(flightdate)]['datestring']
 plt.title(f"{country}, {datestr}")
 
-plt.show()
 plt.savefig(config['expname'] + '_' + var[yamlkey_var]['geosvar'] + flightdate + '.png')
+#plt.show()
