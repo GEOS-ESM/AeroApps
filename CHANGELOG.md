@@ -4,6 +4,8 @@
 
 ### Added
 
+- Add budget plotting code
+
 - Add idl code to plot curtain figures
 
 - Extract TROPOMI pixels over MPL sites
