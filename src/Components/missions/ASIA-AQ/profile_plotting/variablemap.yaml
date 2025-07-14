@@ -1,0 +1,49 @@
+SU:
+  geosvar: 'SU'
+  obsvar: 'Sulfate_PM15_AMS_60s_JIMENEZ'
+  sampling: 'ams'
+  units: '($\mu$g m$^{-3}$)'
+  fullname: 'Sulfate'
+  unitconversion: 1
+NH4:
+  geosvar: 'NH4'
+  obsvar: 'Ammonium_PM15_AMS_60s_JIMENEZ'
+  sampling: 'ams'
+  units: '($\mu$g m$^{-3}$)'
+  fullname: 'Ammonium'
+  unitconversion: 1
+NI:
+  geosvar: 'NI'
+  obsvar: 'Nitrate_PM15_AMS_60s_JIMENEZ'
+  sampling: 'ams'
+  units: '($\mu$g m$^{-3}$)'
+  fullname: 'Nitrate'
+  unitconversion: 1
+OC:
+  geosvar: 'OC'
+  obsvar: 'OA_PM15_AMS_60s_JIMENEZ'
+  sampling: 'ams'
+  units: '($\mu$g m$^{-3}$)'
+  fullname: 'Organic Carbon'
+  unitconversion: 1
+SS:
+  geosvar: 'SS'
+  obsvar: 'Seasalt_PM15_AMS_60s_JIMENEZ'
+  sampling: 'ams'
+  units: '($\mu$g m$^{-3}$)'
+  fullname: 'Sea Salt'
+  unitconversion: 1
+BC:
+  geosvar: 'BC'
+  obsvar: 'BC_mass_MOORE'
+  sampling: 'bc_sp2'
+  units: '(ng m$^{-3})'
+  fullname: 'Black Carbon'
+  unitconversion: 1000
+RH:
+  geosvar: 'RH'
+  obsvar: 'RHw_DLH_DISKIN'
+  sampling: 'inst3_aer_Nv'
+  units: '(%)'
+  fullname: 'Relative Humidity'
+  unitconversion: 100

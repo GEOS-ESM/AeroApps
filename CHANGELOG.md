@@ -4,6 +4,31 @@
 
 ### Added
 
+- Add budget plotting code
+
+- Add idl code to plot curtain figures
+
+- Extract TROPOMI pixels over MPL sites
+- ASIA-AQ mission scripts
+- capability to produce flight averaged vertical profile plots for ASIA-AQ
+### Fixed
+
+### Changed
+
+- Update `components.yaml`
+  - ESMA_env: Updated tag from v4.8.2 to v4.38.0
+  - ESMA_cmake: Updated tag from v3.28.0 to v3.62.1
+  - ecbuild: Updated tag from geos/v1.3.0 to geos/v1.4.0
+  - MAPL: Updated tag from v2.39.0 to v2.55.1
+- Modified `src/Shared/GMAO_Shared/GMAO_etc/argopt.c`:
+  - Added include for `<unistd.h>` to access `getopt` function 
+- Updated `README.md` and `cmake_it` to modern CMake
+- Updated `.gitignore` to ignore more Python detritus
+
+## [v2.1.0] - 2025-02-14
+
+### Added
+
 - Added DB_DEEP data stream for VIIRS NNR
 - scripts to plot satellite tracks for each day - focused on ASIA-AQ regions, but can be extended.
 - ASIA-AQ mission directory initialized with FLUID instance from FIREX-AQ
@@ -16,13 +41,13 @@
 ### Fixed
 
 - bug in NNR cloud contamination check. Was not setting suspected too cloudy pixels to MISSING.
+- Fix missing MPI initialization
 
 ### Changed
 
-- Update GMAOpyobs to v1.0.4
-- Update GMAOpyobs to v1.0.5
-- Update GMAOpyobs to v1.0.6
 - Update GMAOpyobs to v1.0.8
+- Update GMAOpyobs to v1.2.1
+- Update to ESMA_env v4.8.2 (fixes for RHEL8 GMAO machines)
 
 ## [v2.0.2] - 2023-05-25
 
