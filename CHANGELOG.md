@@ -24,6 +24,7 @@
   - Added include for `<unistd.h>` to access `getopt` function 
 - Updated `README.md` and `cmake_it` to modern CMake
 - Updated `.gitignore` to ignore more Python detritus
+- Update NNR code to use scaling options implemented with sklearn StandardScaler
 
 ## [v2.1.0] - 2025-02-14
 
