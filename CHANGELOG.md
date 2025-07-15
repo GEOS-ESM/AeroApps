@@ -4,13 +4,20 @@
 
 ### Added
 
+### Fixed
+
+### Changed
+
+## [v2.2.0] - 2025-07-15
+
+### Added
+
 - Add budget plotting code
-
 - Add idl code to plot curtain figures
-
 - Extract TROPOMI pixels over MPL sites
 - ASIA-AQ mission scripts
 - capability to produce flight averaged vertical profile plots for ASIA-AQ
+  
 ### Fixed
 
 ### Changed
