@@ -21,11 +21,15 @@ ALIAS = dict( TOA_NDVI = 'ndvi',
 def TranslateInput(key):
     if 'mRef' in key:
         prefix = 'reflectance'
-        channel = int(key[4:])
+        channel = int(key[key.find('Ref')+3:])
         output = (prefix,channel)
     elif 'mSre' in key:
         prefix = 'sfc_reflectance'
-        channel = int(key[4:])
+        channel = int(key[key.find('Sre')+3:])
+        output = (prefix,channel)
+    elif 'mTau' in key:
+        prefix = 'aod'
+        channel = int(key[key.find('Tau')+3:])
         output = (prefix,channel)
     else:
         output = (key,)
@@ -190,13 +194,20 @@ class Vx04_NNR(Vx04_L2):
 
         s = self.sample
         I = (s.TOTEXTTAU<=0)
-        s.TOTEXTTAU[I] = 1.E30
+        s.TOTEXTTAU[I] = 1.E-30
         self.fdu  = s.DUEXTTAU / s.TOTEXTTAU
         self.fss  = s.SSEXTTAU / s.TOTEXTTAU
         self.fbc  = s.BCEXTTAU / s.TOTEXTTAU
         self.foc  = s.OCEXTTAU / s.TOTEXTTAU
         self.fcc  = self.fbc + self.foc
         self.fsu  = s.SUEXTTAU / s.TOTEXTTAU
+
+        for spc in ['fdu','fss','fbc','foc','fcc','fss']:
+            i = np.isnan(self.__dict__[spc])
+            self.__dict__[spc][i] = 0.0
+
+            i = np.isinf(self.__dict__[spc])
+            self.__dict__[spc][i] = 0.0
 
         # Special handle nitrate (treat it as it were sulfate)
         # ----------------------------------------------------
@@ -297,13 +308,24 @@ class Vx04_NNR(Vx04_L2):
                 if 'mSre' in inputName: # LAND surface reflectivity
                     k = list(self.sChannels).index(ch) # index of channel 
                 elif 'mRef' in inputName: # TOA reflectances
-                    k = list(self.rChannels).index(ch) # index of channel 
+                    k = list(self.rChannels).index(ch) # index of channel
+                elif 'mTau' in inputName: # Predicted AOD
+                    k = list(self.channels).index(ch) 
 
-                input = self.__dict__[name][:,k]
+                if inputName[0] == 'l':
+                    feature = self.__dict__[name][:,k]
+                    input = self.net.__dict__['scaler_'+inputName].transform(feature.reshape(-1,1)).squeeze()
+                else:
+                    input = self.__dict__[name][:,k]
                 
             elif len(iName) == 1:
                 name = iName[0]
-                input = self.__dict__[name][:]
+                if inputName[0] == 'l':
+                    feature = self.__dict__[name[1:]][:]
+                    input = self.net.__dict__['scaler_'+inputName].transform(feature.reshape(-1,1)).squeeze()
+                else:
+                    input = self.__dict__[name][:]
+
                 
             else:
                 raise ValueError("strange, len(iName)=%d"%len(iName))
@@ -340,6 +362,12 @@ class Vx04_NNR(Vx04_L2):
         # Evaluate NN on inputs
         # ---------------------
         targets = self.net(self._getInputs())
+        if hasattr(self.net,"scale"):
+            if self.net.scale:
+                if len(self.net.TargetNames) == 1:
+                    targets = self.net.scaler.inverse_transform(targets.reshape(-1,1)).squeeze()
+                else:
+                    targets = self.net.scaler.inverse_transform(targets)        
 
         # If target is angstrom exponent
         # calculate AOD

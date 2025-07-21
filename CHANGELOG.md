@@ -8,6 +8,31 @@
 
 ### Changed
 
+## [v2.2.0] - 2025-07-15
+
+### Added
+
+- Add budget plotting code
+- Add idl code to plot curtain figures
+- Extract TROPOMI pixels over MPL sites
+- ASIA-AQ mission scripts
+- capability to produce flight averaged vertical profile plots for ASIA-AQ
+  
+### Fixed
+
+### Changed
+
+- Update `components.yaml`
+  - ESMA_env: Updated tag from v4.8.2 to v4.38.0
+  - ESMA_cmake: Updated tag from v3.28.0 to v3.62.1
+  - ecbuild: Updated tag from geos/v1.3.0 to geos/v1.4.0
+  - MAPL: Updated tag from v2.39.0 to v2.55.1
+- Modified `src/Shared/GMAO_Shared/GMAO_etc/argopt.c`:
+  - Added include for `<unistd.h>` to access `getopt` function 
+- Updated `README.md` and `cmake_it` to modern CMake
+- Updated `.gitignore` to ignore more Python detritus
+- Update NNR code to use scaling options implemented with sklearn StandardScaler
+
 ## [v2.1.0] - 2025-02-14
 
 ### Added
