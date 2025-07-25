@@ -8,6 +8,15 @@
 
 ### Changed
 
+## [v2.3.0] - 2025-07-25
+
+### Added
+
+### Fixed
+
+### Changed
+- removed all NNR scripts from GAAS_App and relocated them in AeroML repository
+
 ## [v2.2.0] - 2025-07-15
 
 ### Added
