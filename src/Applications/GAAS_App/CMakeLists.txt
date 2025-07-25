@@ -33,16 +33,7 @@ ecbuild_add_executable (
 
 # these are executable scripts
 set (PYSCRIPTS
-    aeronet_all.py
     aod_data.py
-    avhrr_all.py
-    avhrr_l2a.py
-    misr_land.py
-    modis_l2a.py
-    mxd04_l2a.py
-    patmosx_l2a.py
-    viirs_l2a.py
-    vx04_l2a.py
     )
 
 set (SCRIPTS
@@ -59,14 +50,6 @@ install (
     DESTINATION bin/${this}
     )
 
-# these are non-executaables
-set (PYFILES
-    avhrr_nnr.py
-    geo04_nnr.py
-    mxd04_nnr.py
-    vx04_nnr.py
-    )
-
 set (RCFILES
     ana_aodens.rc
     ana.rc
@@ -76,14 +59,8 @@ set (RCFILES
     sqc.rc
     )
 
-set (PCFFILES
-    avhrr_l2a.pcf
-    modis_l2a.pcf
-    viirs_l2a.pcf
-    )
-
 install (
-    FILES ${PYFILES} ${RCFILES} ${PCFFILES}
+    FILES ${RCFILES}
     DESTINATION bin/${this}
     )
 
