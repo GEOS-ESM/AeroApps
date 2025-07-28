@@ -7,6 +7,7 @@
 ### Fixed
 
 ### Changed
+- updates to v1.2.6 of pyobs that contains a hotfix for aeronet.py
 
 ## [v2.3.0] - 2025-07-25
 
