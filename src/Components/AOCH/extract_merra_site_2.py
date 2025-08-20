@@ -134,13 +134,16 @@ site_xy = [38.9930,-76.8400] # Lat/Lon MPL site
 site='GSFC'
 
 # Create a pattern to search for files containing the string
-search_pattern = os.path.join('/discover/nobackup/sgasso/PROJECTS/TEST/IN/', f"*{site}*.csv")
+#search_pattern = os.path.join('/discover/nobackup/sgasso/PROJECTS/TEST/IN/', f"*{site}*.csv")
+search_pattern = os.path.join('/discover/nobackup/sgasso/PROJECTS/AOCH/AeroApps/src/Components/AOCH/IN/', f"*{site}*.csv")
 file_list = glob.glob(search_pattern)
 if not file_list : sys.exit('Stop . no input files found') 
 
 start_time_main0 = timer.perf_counter()
 # file_list=file_list[0:1]
 
+
+#sys.exit('exiting')
 for file_path in file_list: 
     # Extract just the filename from the full path
     filename = os.path.basename(file_path)
