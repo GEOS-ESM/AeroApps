@@ -31,10 +31,11 @@ def sample(model='c180R_arcsix', collection='inst3d_aer_v', date0='20240501'):
     do_optics = 1
     fpdata = ['./'+model+'.'+collection+'.ddf','./'+model+'.prog.eta.ddf',
               './'+model+'.inst2d_hwl_x.ddf']
+    config = './g2g_pm25.yaml'
     if(model == 'fp'):
         fpdata = ['./'+model+'.'+collection+'.ddf','./'+model+'.inst3_3d_asm_Nv.ddf',
                   './'+model+'.inst1_2d_hwl_Nx.ddf']
-        config = './m2_pm25.yaml'
+        config = './geos529_pm25.yaml'
     if(model == 'MERRA2'):
         fpdata = ['./'+model+'.'+collection+'.ddf','./'+model+'.inst3_3d_asm_Nv.ddf']
         config = './m2_pm25.yaml'
