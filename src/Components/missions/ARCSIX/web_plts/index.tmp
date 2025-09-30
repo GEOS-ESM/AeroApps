@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Forecast Initialization: YYYY-MM-DD HHz</title>
+    </head>
+    <body>
+    <h1>NASA GSFC ARCSIX Aerosol and Meteorology Forecasting Support</h1>
+    <h2>Forecast Initialization: YYYY-MM-DD HHz</h2>
+    <p>These plots are from the GEOS-FP model run produced by
+       the NASA Global Modeling and Assimilation Office.
+       Details are available 
+       <a href="https://gmao.gsfc.nasa.gov/GMAO_products/NRT_products.php">
+       here</a>. Most plots are available on the
+       <a href="https://fluid.nccs.nasa.gov/missions/mission_ARCSIX/">
+       FLUID website</a>.</p>
+       <p>This page curated by Peter.R.Colarco at nasa.gov.</p>
+
+       <p><a href="plots">A large collection of plots are available here.</a></p>
+       <p><a href="datagrams">Datagrams are available here.</a></p>
+
+    <hr>
+    <h2>Prototype Custom Animations (click to enlarge)</h2>
+    <table>
+     <tr width=100%>
+      <h3>Aerosol Optical Depth (AOD)</h3>
+     </tr>
+     <tr>
+      <td width=25%>
+      <center>Total AOD (550 nm)<br>
+      <a href="fp.TOTEXTTAU.YYYYMMDD_HHz.mp4">
+      <img src="fp.TOTEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=25%>
+      <center>Sea Salt AOD (550 nm)<br>
+      <a href="fp.SSEXTTAU.YYYYMMDD_HHz.mp4">
+      <img src="fp.SSEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=25%>
+      <center>Organic Carbon AOD (550 nm)<br>
+      <a href="fp.OCEXTTAU.YYYYMMDD_HHz.mp4">
+      <img src="fp.OCEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=25%>
+      <center>Dust AOD (550 nm)<br>
+      <a href="fp.DUEXTTAU.YYYYMMDD_HHz.mp4">
+      <img src="fp.DUEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+     </tr>
+     </table>
+
+     <table>
+     <tr width=100%>
+      <h3>Aerosol Optical Depth (AOD) with clouds</h3> (white = high cloud,
+      grey = low cloud)
+     </tr>
+     <tr>
+      <td width=25%>
+      <center>Total AOD (550 nm)<br>
+      <a href="fp.TOTEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
+      <img src="fp.TOTEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=25%>
+      <center>Sea Salt AOD (550 nm)<br>
+      <a href="fp.SSEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
+      <img src="fp.SSEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=25%>
+      <center>Organic Carbon AOD (550 nm)<br>
+      <a href="fp.OCEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
+      <img src="fp.OCEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=25%>
+      <center>Dust AOD (550 nm)<br>
+      <a href="fp.DUEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
+      <img src="fp.DUEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+     </tr>
+    </table>
+
+    <h3>Cross Sections (click to enlarge)</h3>
+    <table>
+     <tr>
+      <td width=25%>
+      <center>Alert to North Pole Transect<br>
+      <a href="alert.forecast_OC.YYYYMMDD_HHz.png">
+      <img src="alert.forecast_OC.YYYYMMDD_HHz.png" width="260">
+      </a>
+      </td>
+      <td width=25%>
+      <center>Thule to North Pole Transect<br>
+      <a href="greenland.forecast_OC.YYYYMMDD_HHz.png">
+      <img src="greenland.forecast_OC.YYYYMMDD_HHz.png" width="260">
+      </a>
+      </td>
+      <td width=25%>
+      <center>Svalbard to North Pole Transect<br>
+      <a href="svalbard.forecast_OC.YYYYMMDD_HHz.png">
+      <img src="svalbard.forecast_OC.YYYYMMDD_HHz.png" width="260">
+      </a>
+      </td>
+      <td width=25%>
+      <center>Alert to Svalbard Transect<br>
+      <a href="alert_svalbard.forecast_OC.YYYYMMDD_HHz.png">
+      <img src="alert_svalbard.forecast_OC.YYYYMMDD_HHz.png" width="260">
+      </a>
+      </td>
+     </tr>
+    </table>
+
+
+    <hr>
+    <h2>Pre-generated FLUID Animations (click to enlarge and animate)</h2>
+
+    <table>
+     <tr>
+      <h3>ARCSIX Region Aerosol Optical Depth (AOD)</h3>
+     </tr>
+     <tr>
+      <td width=33%>
+      <center>Total AOD (zoom)<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.totaot.ARCSIX.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.totaot.ARCSIX.png" width="260">
+      </a>
+      </td>
+      <td width=33%>
+      <center>Organic Carbon AOD (zoom)<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.ocaot.ARCSIX.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.ocaot.ARCSIX.png" width="260">
+      </a>
+      </td>
+      <td width=33%>
+      <center>Sea Salt AOD(zoom)<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.ssaot.ARCSIX.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.ssaot.ARCSIX.png" width="260">
+      </a>
+      </td>
+     </tr>
+     </table>
+
+     <p>
+     <table>
+     <tr>
+      <h3>Polar Projection Aerosol Optical Depth (AOD)</h3>
+     </tr>
+     <tr>
+      <td width=33%>
+      <center>Total AOD<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.totaot.nps.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.totaot.nps.png" width="260">
+      </a>
+      </td>
+      <td width=33%>
+      <center>Organic Carbon AOD<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.ocaot.nps.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.ocaot.nps.png" width="260">
+      </a>
+      </td>
+      <td width=33%>
+      <center>Sea Salt AOD<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.ssaot.nps.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.ssaot.nps.png" width="260">
+      </a>
+      </td>
+     </tr>
+     </table>
+
+     <p>
+     <table>
+     <tr>
+      <h3>Organic Carbon Concentration on various levels</h3>
+     </tr>
+     <tr>
+      <td width=33%>
+      <center>Organic Carbon 500 hPa<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.OC.500hpa.nps.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.OC.500hpa.nps.png" width="260">
+      </a>
+      </td>
+      <td width=33%>
+      <center>Organic Carbon 600 hPa<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.OC.600hpa.nps.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.OC.600hpa.nps.png" width="260">
+      </a>
+      </td>
+      <td width=33%>
+      <center>Organic Carbon 850 hPa<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.OC.850hpa.nps.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.OC.850hpa.nps.png" width="260">
+      </a>
+      </td>
+     </tr>
+     </table>
+
+     <p>
+     <table>
+     <tr>
+      <h3>Carbon Monoxide Mixing Ratio on various levels</h3>
+     </tr>
+     <tr>
+      <td width=33%>
+      <center>Carbon Monoxide 500 hPa<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.CO.500hpa.nps.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.CO.500hpa.nps.png" width="260">
+      </a>
+      </td>
+      <td width=33%>
+      <center>Carbon Monoxide 600 hPa<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.CO.600hpa.nps.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.CO.600hpa.nps.png" width="260">
+      </a>
+      </td>
+      <td width=33%>
+      <center>Carbon Monoxide 850 hPa<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.CO.850hpa.nps.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.CO.850hpa.nps.png" width="260">
+      </a>
+      </td>
+     </tr>
+     </table>
+
+     <p>
+     <table>
+     <tr>
+      <h3>North American Biomass Burning Carbon Monoxide Mixing Ratio on various levels</h3>
+     </tr>
+     <tr>
+      <td width=33%>
+      <center>Carbon Monoxide 500 hPa<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.COBBNA.500hpa.nps.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.COBBNA.500hpa.nps.png" width="260">
+      </a>
+      </td>
+      <td width=33%>
+      <center>Carbon Monoxide 600 hPa<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.COBBNA.600hpa.nps.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.COBBNA.600hpa.nps.png" width="260">
+      </a>
+      </td>
+      <td width=33%>
+      <center>Carbon Monoxide 850 hPa<br>
+      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.COBBNA.850hpa.nps.mp4">
+      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.COBBNA.850hpa.nps.png" width="260">
+      </a>
+      </td>
+     </tr>
+    </table>
+
+    </body>
+</html>
