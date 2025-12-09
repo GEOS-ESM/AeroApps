@@ -8,6 +8,7 @@
     GrADS control file
 """
 
+import os
 import yaml
 import xarray as xr
 from pyobs import xrctl     as xc
@@ -368,6 +369,9 @@ class AEROSOL(object):
                   otherwise subset of emissions.
         """ 
 
+        months = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December']
+
         # All species on file or a subset
         # -------------------------------
         if Species is None:
@@ -386,6 +390,8 @@ class AEROSOL(object):
         output = (np.zeros(space))
         output_t = np.zeros(13)  # last entry is total or average
 
+        str_out = []
+
 #       Need mod for leap year...
         nday = [31,28,31,30,31,30,31,31,30,31,30,31]
 
@@ -395,6 +401,25 @@ class AEROSOL(object):
         units_t = ''
 
         allok = True
+
+#       Levels for plotting in units assigned
+        for s in Species: # defaults per species
+            if s == 'DU':
+                levs = [.1,10,1]
+            elif s == 'BC':
+                levs = [.001,.1,1]
+            else:
+                levs = [.1,10,1]
+
+#       Override for specific fields
+        if Field == 'tau':
+            levs=[0,1,0]
+        elif Field == 'taufrac':
+            levs = [0,1.,0]
+        elif Field == 'tauabs':
+            levs = [0,.1,0]
+
+
         
 #       If SSA assume first is scattering and second is extinction
 #       Output_t is area and extinction weighted SSA
@@ -410,7 +435,7 @@ class AEROSOL(object):
                 for fld in Fields:
                     if fld not in vars:
                         allok = False
-                        print('%s not found; setting to zero'%(fld))
+                        fldnot = fld
                 if allok:
                     sca = a[Fields[0]].compute()
                     tau = a[Fields[1]].compute()
@@ -420,7 +445,15 @@ class AEROSOL(object):
                         ssa  = np.squeeze(output[i,:,:])
                         tau_ = np.squeeze(tau[i,:,:])
                         output_t[i] = np.sum(tau_*ssa*self.area)/np.sum(tau_*self.area)
+                        txt = '{month} ({val:.3f})'
+                        str_out.append(txt.format(month=months[i],val=output_t[i]))
                     output_t[12] = np.mean(output_t[0:12])
+                    txt = 'Annual Average SSA ({val:.3f})'
+                    str_out.append(txt.format(val=output_t[12]))
+                    if s == 'BC':
+                        levs = [0.2,0.4,0]
+                    else:
+                        levs = [0.9,1,0]
 
 #       For AOD use simple area weighted averaging in totals
         elif Field == 'tau':
@@ -434,14 +467,18 @@ class AEROSOL(object):
                 for fld in Fields:
                     if fld not in vars:
                         allok = False
-                        print('%s not found; setting to zero'%(fld))
+                        fldnot = fld
                 if allok:
                     output_ = a[Fields[0]].compute()
                     output  = output_.values
                     for i in range(12):
                         val  = np.squeeze(output[i,:,:])
                         output_t[i] = np.sum(val*self.area)/np.sum(self.area)
+                        txt = '{month} ({val:.3f})'
+                        str_out.append(txt.format(month=months[i],val=output_t[i]))
                     output_t[12] = np.mean(output_t[0:12])
+                    txt = 'Annual Average AOD ({val:.3f})'
+                    str_out.append(txt.format(val=output_t[12]))
 
 #       For Load use integrated area weighted averaging in totals
         elif Field == 'load' or Field == 'load25':
@@ -455,14 +492,29 @@ class AEROSOL(object):
                 for fld in Fields:
                     if fld not in vars:
                         allok = False
-                        print('%s not found; setting to zero'%(fld))
+                        fldnot = fld
                 if allok:
                     output_ = a[Fields[0]].compute()*1000. # g m-2
                     output  = output_.values
                     for i in range(12):
                         val  = np.squeeze(output[i,:,:])
                         output_t[i] = np.sum(val*self.area)/1.e12
+                        txt = '{month} ({val:4.2f} Tg)'
+                        str_out.append(txt.format(month=months[i],val=output_t[i]))
                     output_t[12] = np.mean(output_t[0:12])
+                    if Field == 'load':
+                        txt = 'Annual Average Total Burden ({val:4.2f} Tg)'
+                        if (s == 'DU') | (s == 'SS'):
+                            levs = [0.01,2,1]
+                        else:
+                            levs = [0.001,1,1]
+                    else:
+                        txt = 'Annual Average PM2.5 Burden ({val:4.2f} Tg)'
+                        if (s == 'DU') | (s == 'SS'):
+                            levs = [0.01,.5,1]
+                        else:
+                            levs = [0.001,.1,1]
+                    str_out.append(txt.format(val=output_t[12]))
                 
 #       If Tauabs assume first is scattering and second is extinction
 #       or if taufrac first is species and second is total
@@ -478,14 +530,24 @@ class AEROSOL(object):
                 for fld in Fields:
                     if fld not in vars:
                         allok = False
-                        print('%s not found; setting to zero'%(fld))
+                        fldnot = fld
                 if allok:
-                    output_ = a[Fields[1]].compute()-a[Fields[0]].compute()
+                    if Field == 'tauabs':
+                        output_ = a[Fields[1]].compute()-a[Fields[0]].compute()
+                    else:
+                        output_ = a[Fields[0]].compute()/a[Fields[1]].compute()
                     output  = output_.values
                     for i in range(12):
                         val  = np.squeeze(output[i,:,:])
                         output_t[i] = np.sum(val*self.area)/np.sum(self.area)
+                        txt = '{month} ({val:.4f})'
+                        str_out.append(txt.format(month=months[i],val=output_t[i]))
                     output_t[12] = np.mean(output_t[0:12])
+                    if Field == 'tauabs':
+                        txt = 'Annual Average AAOD ({val:.4f})'
+                    else:
+                        txt = 'Annual Average Fraction of Total AOD ({val:.4f})'
+                    str_out.append(txt.format(val=output_t[12]))
 
 #       Else treat like a flux [kg m-2 mon-1] (total is area integrated sum)
         else:
@@ -498,52 +560,43 @@ class AEROSOL(object):
                 for fld in Fields:
                     if fld not in vars:
                         allok = False
-                        print('%s not found; setting to zero'%(fld))
+                        fldnot = fld
                 if allok:
                     for q in Fields:
                         if self.verbose:
                             print('   -',q)
                             output_ = a[q].compute()
                             output += output_.values
+#                   Fix sign if scavenging
+                    if Field == 'scavenging':
+                        output   = -1.*output
 #                   Rescale to g m-2 mon-1 and make totals
                     for i in range(12):
                         output[i,:,:] = output[i,:,:]*1000.*nday[i]*86400.
                         val = np.squeeze(output[i,:,:])
                         output_t[i] = np.sum(val*self.area)/1.e12  # Tg
-                        units   = ' g m-2'
-                        units_t = ' Tg'
+                        txt = '{month} ({val:7.3f} Tg)'
+                        str_out.append(txt.format(month=months[i],val=output_t[i]))
                     output_t[12] = np.sum(output_t[0:12])
+                    fldname = Field.split("_")
+                    if len(fldname) == 2:
+                        field_name = fldname[0].capitalize()+' '+fldname[1].capitalize()
+                    else:
+                        field_name = Field.capitalize()
+                    txt = 'Annual Total {field} ({val:.2f} Tg)'
+                    str_out.append(txt.format(field=field_name,val=output_t[12]))
+                    units = 'g m-2 mon-1'
                     
-#       Fix sign if scavenging
-        if Field == 'scavenging':
-            output   = -1.*output
-            output_t = -1.*output_t
-
-#       Levels for plotting in units assigned
-        for s in Species: # defaults per species
-            if s == 'DU':
-                levs = [.1,10,1]
-            elif s == 'BC':
-                levs = [.001,.1,1]
-            else:
-                levs = [.1,10,1]
-
-#       Override for specific fields
-        if Field == 'tau':
-            levs=[0,1,0]
-        elif Field == 'ssa':
-            levs=[.5,1,0]
-        elif Field == 'taufrac':
-            levs = [0,.5,0]
-        elif Field == 'tauabs':
-            levs = [0,.2,0]
-
+        if not allok:
+            print('%s not found; setting to zero'%(fldnot))
+            str_out = ["","","","","","","","","","","","",""]
+            
 #       Append the last entry of output_t to the list for the Field
         self.table[s][Field].append(output_t[12])
         
-        return output, output_t, levs, units, units_t
+        return output, output_t, levs, str_out, units
 
-    def plotField(self,Field=None,Species=None,verbose=False):
+    def plotField(self,expid,Field=None,Species=None,verbose=False):
         """
         Given a field and species. read the field and make a simple plot
         Assumes 12 months
@@ -553,14 +606,14 @@ class AEROSOL(object):
                   'July','August','September','October','November','December']
 
         
-        val, val_t, levs, units, units_t = self.getField(Field,Species,verbose=True)
+        val, val_t, levs, str_out, units  = self.getField(Field,Species,verbose=True)
 
         lon = self.lon.values
         lat = self.lat.values
 
         map_projection = ccrs.PlateCarree()
-        fig = plt.figure(constrained_layout=True, figsize=(24,14))
-        axs = []
+        fig, axs = plt.subplots(3,4,figsize=(24,14),layout='constrained',
+                                subplot_kw={'projection': ccrs.PlateCarree()})
         if levs[2] == 1:
             a = np.log10(levs[0])
             b = np.log10(levs[1])
@@ -571,67 +624,82 @@ class AEROSOL(object):
             b = levs[1]
             d = (b-a)/50.
             clevs = np.arange(a,b,d)
-        for i in range(3):
-            for j in range(4):
-                k = j*3+i
-                pout = np.squeeze(val[k,:,:])
-                ax = plt.subplot(3,4,k+1,projection=map_projection)
-                im = ax.contourf(lon,lat,pout,levels=clevs,cmap='YlOrBr')
-                ax.set_title('%s (%3d%s)'%(months[k],val_t[k],units_t),size=24)
-                ax.add_feature(cfeature.BORDERS, linestyle='-')
-                ax.add_feature(cfeature.COASTLINE, linestyle='-')
-                axs.append(ax)
+#        for i in range(3):
+#            for j in range(4):
+#                k = j*3+i
+#                print(k)
+        k = 0
+        for ax in axs.flat:
+            pout = np.squeeze(val[k,:,:])
+            im = ax.contourf(lon,lat,pout,levels=clevs,cmap='YlOrBr',extend='max')
+            ax.set_title(str_out[k],size=24)
+            ax.add_feature(cfeature.BORDERS, linestyle='-')
+            ax.add_feature(cfeature.COASTLINE, linestyle='-')
+            k += 1
 
-#        cb = fig.colorbar(im,ax=[axs[8],axs[9],axs[10],axs[11]], location='bottom',
-        cb = fig.colorbar(im, location='bottom',
-                          shrink=0.6)#,aspect=.4
-        fig.suptitle('%s %s (%4d%s)'%(Species,Field,val_t[12],units_t), size=30)
-        plt.savefig('%s.%s.png'%(Species,Field))
+        cb = fig.colorbar(im, ax=axs, location='bottom',shrink=.8)
+        cb.ax.tick_params(labelsize=24)
+        fig.suptitle('%s %s '%(expid,Species)+str_out[12], size=30)
+        plt.savefig('%s/%s.%s.%s.png'%(expid,expid,Species,Field))
         plt.close()
 
-    def plotAll(self,verbose=False):
+    def plotAll(self,expid,verbose=False):
         Species = list(self.table.keys())
         for s in Species:
             Fields = list(self.table[s].keys())
             for fld in Fields:
-                self.plotField(Field=fld,Species=s,verbose=True)
+                self.plotField(expid,Field=fld,Species=s,verbose=True)
 
-    def printBudget(self,verbose=False):
+    def printBudget(self,expid,verbose=False):
+        f = open('%s/%s.budget.txt'%(expid,expid),'w')
         Species = list(self.table.keys())
         for s in Species:
-            print('')
-            print(s)
-            print('Emissions [Tg]:         ', self.table[s]['emissions'][-1])
+            print(expid, file=f)
+            print(s, file=f)
+            print('Emissions [Tg]:         ', self.table[s]['emissions'][-1], file=f)
             if s == 'SU':
-                print('Emissions (SO2) [Tg]:    ', self.table[s]['emissions_so2'][-1])
-                print('Emissions (DMS) [Tg]:    ', self.table[s]['emissions_dms'][-1])
-                print('Production (SO4) [Tg]:   ', self.table[s]['prod_so4'][-1])
-                print('Production (SO2) [Tg]:   ', self.table[s]['prod_so2'][-1])
+                print('Emissions (SO2) [Tg]:    ', self.table[s]['emissions_so2'][-1], file=f)
+                print('Emissions (DMS) [Tg]:    ', self.table[s]['emissions_dms'][-1], file=f)
+                print('Production (SO4) [Tg]:   ', self.table[s]['prod_so4'][-1], file=f)
+                print('Production (SO2) [Tg]:   ', self.table[s]['prod_so2'][-1], file=f)
             if s == 'NI':
-                print('Production (AQ) [Tg]:    ', self.table[s]['prod_aq'][-1])
-                print('Production (HET) [Tg]:   ', self.table[s]['prod_het'][-1])
+                print('Production (AQ) [Tg]:    ', self.table[s]['prod_aq'][-1], file=f)
+                print('Production (HET) [Tg]:   ', self.table[s]['prod_het'][-1], file=f)
             wet  = self.table[s]['wet_deposition'][-1]
             scav = self.table[s]['scavenging'][-1]
             dep  = self.table[s]['dry_deposition'][-1]
             sed  = self.table[s]['sedimentation'][-1]
             loss = dep + wet + sed + scav
-            print('Losses [Tg]:            ', loss)
-            print('-Dry [Tg]:              ',dep+sed)
-            print('-Wet [Tg]:              ',wet+scav)
-            print('Burden [Tg]:            ',self.table[s]['load'][-1])
+            print('Losses [Tg]:            ', loss, file=f)
+            print('-Dry [Tg]:              ',dep+sed, file=f)
+            print('-Wet [Tg]:              ',wet+scav, file=f)
+            print('Burden [Tg]:            ',self.table[s]['load'][-1], file=f)
             life = self.table[s]['load'][-1] / loss * 365.
-            print('Lifetime [days]:        ',life)
-            print('-Wet Removal [1/days]:  ', (wet+scav)/365. /self.table[s]['load'][-1])
-            print(' -Large Scale [1/days]: ', wet/365. /self.table[s]['load'][-1])
-            print(' -Scavenging [1/days]:  ', scav/365. /self.table[s]['load'][-1])
-            print('-Dry Removal [1/days]:  ', (dep+sed)/365. /self.table[s]['load'][-1])
-            print(' -Settling [1/days]:    ', sed/365. /self.table[s]['load'][-1])
-            print(' -Deposition [1/days]:  ', dep/365. /self.table[s]['load'][-1])
-            print('AOT:                    ',self.table[s]['tau'][-1])
-    
+            print('Lifetime [days]:        ',life, file=f)
+            print('-Wet Removal [1/days]:  ', (wet+scav)/365. /self.table[s]['load'][-1], file=f)
+            print(' -Large Scale [1/days]: ', wet/365. /self.table[s]['load'][-1], file=f)
+            print(' -Scavenging [1/days]:  ', scav/365. /self.table[s]['load'][-1], file=f)
+            print('-Dry Removal [1/days]:  ', (dep+sed)/365. /self.table[s]['load'][-1], file=f)
+            print(' -Settling [1/days]:    ', sed/365. /self.table[s]['load'][-1], file=f)
+            print(' -Deposition [1/days]:  ', dep/365. /self.table[s]['load'][-1], file=f)
+            print('AOT:                    ',self.table[s]['tau'][-1], file=f)
+        f.close()    
 
 if __name__ == "__main__":
-    aer_Nx = './c180R_arcsix.tavg2d_aer_x.ctl'
+    expid = 'c180R_v11.8.0_develop'
+    aer_Nx = '%s.tavg2d_aer_x.ctl'%(expid)
     b = AEROSOL(aer_Nx,verbose=True)
-    b.plotAll(verbose=True)
-    b.printBudget(verbose=True)
+#   Make an output directory
+    directory_name = expid
+    try:
+        os.mkdir(directory_name)
+        print(f"Directory '{directory_name}' created successfully.")
+    except FileExistsError:
+        print(f"Directory '{directory_name}' already exists.")
+    except PermissionError:
+        print(f"Permission denied: Unable to create '{directory_name}'.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        
+    b.plotAll(expid,verbose=True)
+    b.printBudget(expid,verbose=True)
