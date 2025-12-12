@@ -34,227 +34,539 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 G2G_BudgetMap = """
 DU:
   emissions:
+   vars:
     - DUEM001
     - DUEM002
     - DUEM003
     - DUEM004
     - DUEM005
+   plotvars:
+    - [0,20,0]
+    - Total Annual Emissions
   sedimentation:
+   vars:
     - DUSD001
     - DUSD002
     - DUSD003
     - DUSD004
     - DUSD005
+   plotvars:
+    - [0,5,0]
+    - Total Annual Sedimentation
   dry_deposition:
+   vars:
     - DUDP001
     - DUDP002
     - DUDP003
     - DUDP004
     - DUDP005
+   plotvars:
+    - [0,2,0]
+    - Total Annual Dry Deposition
   wet_deposition:
+   vars:
     - DUWT001
     - DUWT002
     - DUWT003
     - DUWT004
     - DUWT005
+   plotvars:
+    - [0,2,0]
+    - Total Annual Wet Deposition
   scavenging:
+   vars:
     - DUSV
+   plotvars:
+    - [0,2,0]
+    - Total Annual Scavenging
   load:
+   vars:
     - DUCMASS
+   plotvars:
+    - [0,2,0]
+    - Total Annual Average Burden
   load25:
+   vars:
     - DUCMASS25
+   plotvars:
+    - [0,0.5,0]
+    - Total Annual Average PM2.5 Burden
   tau:
+   vars:
     - DUEXTTAU550
+   plotvars:
+    - [0,1,0]
+    - Annual Average AOD
   ssa:
+   vars:
     - DUSCATAU550
     - DUEXTTAU550
+   plotvars:
+    - [.91,.93,0]
+    - Annual Average SSA
   tauabs:
+   vars:
     - DUSCATAU550
     - DUEXTTAU550
+   plotvars:
+    - [0,.1,0]
+    - Annual Average AAOD
   taufrac:
+   vars:
     - DUEXTTAU550
     - TOTEXTTAU550
+   plotvars:
+    - [0,1,0]
+    - Annual Average Fraction of AOD
 SS:
   emissions:
+   vars:
     - SSEM001
     - SSEM002
     - SSEM003
     - SSEM004
     - SSEM005
+   plotvars:
+    - [0,5,0]
+    - Total Annual Emissions
   sedimentation:
+   vars:
     - SSSD001
     - SSSD002
     - SSSD003
     - SSSD004
     - SSSD005
+   plotvars:
+    - [0,2,0]
+    - Total Annual Sedimentation
   dry_deposition:
+   vars:
     - SSDP001
     - SSDP002
     - SSDP003
     - SSDP004
     - SSDP005
+   plotvars:
+    - [0,.5,0]
+    - Total Annual Dry Deposition
   wet_deposition:
+   vars:
     - SSWT001
     - SSWT002
     - SSWT003
     - SSWT004
     - SSWT005
+   plotvars:
+    - [0,1,0]
+    - Total Annual Wet Deposition
   scavenging:
+   vars:
     - SSSV
+   plotvars:
+    - [0,1,0]
+    - Total Annual Scavenging
   load:
+   vars:
     - SSCMASS
+   plotvars:
+    - [0,.1,0]
+    - Total Annual Average Burden
   load25:
+   vars:
     - SSCMASS25
+   plotvars:
+    - [0,0.01,0]
+    - Total Annual Average PM2.5 Burden
   tau:
+   vars:
     - SSEXTTAU550
+   plotvars:
+    - [0,.2,0]
+    - Annual Average AOD
   ssa:
+   vars:
     - SSSCATAU550
     - SSEXTTAU550
+   plotvars:
+    - [.99,1,0]
+    - Annual Average SSA
   tauabs:
+   vars:
     - SSSCATAU550
     - SSEXTTAU550
+   plotvars:
+    - [0,.01,0]
+    - Annual Average AAOD
   taufrac:
+   vars:
     - SSEXTTAU550
     - TOTEXTTAU550
+   plotvars:
+    - [0,1,0]
+    - Annual Average Fraction of AOD
 BC:
   emissions:
+   vars:
     - BCEM001
     - BCEM002
+   plotvars:
+    - [0,0.04,0]
+    - Total Annual Emissions
   emissions_bioburn:
+   vars:
     - BCEMBB
+   plotvars:
+    - [0,0.04,0]
+    - Total Annual Biomass Burning Emissions
   emissions_anthro:
+   vars:
     - BCEMAN
+   plotvars:
+    - [0,0.04,0]
+    - Total Annual Anthropogenic Emissions
   emissions_biofuel:
+   vars:
     - BCEMBF
+   plotvars:
+    - [0,0.04,0]
+    - Total Annual Biofuel Emissions
   prod_hyphil:
+   vars:
     - BCHYPHIL
+   plotvars:
+    - [0,0.05,0]
+    - Total Annual Hydrophilic Production
   sedimentation:
+   vars:
     - BCSD001
     - BCSD002
+   plotvars:
+    - [0,0.01,0]
+    - Total Annual Sedimentation
   dry_deposition:
+   vars:
     - BCDP001
     - BCDP002
+   plotvars:
+    - [0,0.01,0]
+    - Total Annual Dry Deposition
   wet_deposition:
+   vars:
     - BCWT002
+   plotvars:
+    - [0,0.04,0]
+    - Total Annual Wet Deposition
   scavenging:
+   vars:
     - BCSV
+   plotvars:
+    - [0,0.04,0]
+    - Total Annual Scavenging
   load:
+   vars:
     - BCCMASS
+   plotvars:
+    - [0,0.01,0]
+    - Total Annual Average Burden
   tau:
+   vars:
     - BCEXTTAU550
+   plotvars:
+    - [0,0.1,0]
+    - Annual Average AOD
   ssa:
+   vars:
     - BCSCATAU550
     - BCEXTTAU550
+   plotvars:
+    - [0.2,0.4,0]
+    - Annual Average SSA
   tauabs:
+   vars:
     - BCSCATAU550
     - BCEXTTAU550
+   plotvars:
+    - [0,.1,0]
+    - Annual Average AAOD
   taufrac:
+   vars:
     - BCEXTTAU550
     - TOTEXTTAU550
+   plotvars:
+    - [0,0.2,0]
+    - Annual Average Fraction of AOD
 OC:
   emissions:
+   vars:
     - OCEM001
     - OCEM002
+   plotvars:
+    - [0,0.4,0]
+    - Total Annual Emissions
   emissions_bioburn:
+   vars:
     - OCEMBB
+   plotvars:
+    - [0,0.4,0]
+    - Total Annual Biomass Burning Emissions
   emissions_anthro:
+   vars:
     - OCEMAN
+   plotvars:
+    - [0,0.2,0]
+    - Total Annual Anthropogenic Emissions
   emissions_biofuel:
+   vars:
     - OCEMBF
+   plotvars:
+    - [0,0.4,0]
+    - Total Annual Biofuel Emissions
   emissions_biogenic:
+   vars:
     - OCEMBG
+   plotvars:
+    - [0,0.2,0]
+    - Total Annual Biogenic Emissions
   prod_hyphil:
+   vars:
     - OCHYPHIL
+   plotvars:
+    - [0,0.1,0]
+    - Total Annual Hydrophilic Production
   prod_SOA:
+   vars:
     - OCPSOA
+   plotvars:
+    - [0,0.5,0]
+    - Total Annual Secondary Organic Production
   sedimentation:
+   vars:
     - OCSD001
     - OCSD002
+   plotvars:
+    - [0,0.01,0]
+    - Total Annual Sedimentation
   dry_deposition:
+   vars:
     - OCDP001
     - OCDP002
+   plotvars:
+    - [0,0.1,0]
+    - Total Annual Dry Deposition
   wet_deposition:
+   vars:
     - OCWT002
+   plotvars:
+    - [0,0.2,0]
+    - Total Annual Wet Deposition
   scavenging:
+   vars:
     - OCSV
+   plotvars:
+    - [0,0.2,0]
+    - Total Annual Scavenging
   load:
+   vars:
     - OCCMASS
+   plotvars:
+    - [0,0.05,0]
+    - Total Annual Average Burden
   tau:
+   vars:
     - OCEXTTAU550
+   plotvars:
+    - [0,0.5,0]
+    - Annual Average AOD
   ssa:
+   vars:
     - OCSCATAU550
     - OCEXTTAU550
+   plotvars:
+    - [0.95,1,0]
+    - Annual Average SSA
   tauabs:
+   vars:
     - OCSCATAU550
     - OCEXTTAU550
+   plotvars:
+    - [0,.05,0]
+    - Annual Average AAOD
   taufrac:
+   vars:
     - OCEXTTAU550
     - TOTEXTTAU550
+   plotvars:
+    - [0,1,0]
+    - Annual Average Fraction of AOD
 SU:
   emissions:
+   vars:
     - SUEM003
+   plotvars:
+    - [0,0.1,0]
+    - Total Annual SO4 Emissions
   emissions_so2:
+   vars:
     - SUEM002
+   plotvars:
+    - [0,1,0]
+    - Total Annual SO2 Emissions
   emissions_dms:
-    - SUEM
+   vars:
+    - SUEM001
+   plotvars:
+    - [0,0.05,0]
+    - Total Annual DMS Emissions
   prod_so4:
+   vars:
     - SUPSO4G
     - SUPSO4AQ
     - SUPSO4WT
+   plotvars:
+    - [0,0.5,0]
+    - Total Annual Chemical Production of SO4
   prod_so2:
+   vars:
     - SUPSO2
+   plotvars:
+    - [0,0.05,0]
+    - Total Annual Chemical Production of SO2
   sedimentation:
+   vars:
     - SUSD003
+   plotvars:
+    - [0,0.01,0]
+    - Total Annual Sedimentation
   dry_deposition:
+   vars:
     - SUDP003
+   plotvars:
+    - [0,0.1,0]
+    - Total Annual Dry Deposition
   wet_deposition:
+   vars:
     - SUWT003
+   plotvars:
+    - [0,0.5,0]
+    - Total Annual Wet Deposition
   scavenging:
+   vars:
     - SUSV
+   plotvars:
+    - [0,0.2,0]
+    - Total Annual Scavenging
   load:
+   vars:
     - SO4CMASS
+   plotvars:
+    - [0,0.02,0]
+    - Total Annual Average Burden
   tau:
+   vars:
     - SUEXTTAU550
+   plotvars:
+    - [0,0.5,0]
+    - Annual Average AOD
   ssa:
+   vars:
     - SUSCATAU550
     - SUEXTTAU550
+   plotvars:
+    - [0.95,1,0]
+    - Annual Average SSA
   tauabs:
+   vars:
     - SUSCATAU550
     - SUEXTTAU550
+   plotvars:
+    - [0,.05,0]
+    - Annual Average AAOD
   taufrac:
+   vars:
     - SUEXTTAU550
     - TOTEXTTAU550
+   plotvars:
+    - [0,1,0]
+    - Annual Average Fraction of AOD
 BR:
   emissions:
+   vars:
     - BREM001
     - BREM002
+   plotvars:
+    - [0,0.5,0]
+    - Total Annual Emissions
   prod_hyphil:
+   vars:
     - BRHYPHIL
+   plotvars:
+    - [0,0.5,0]
+    - Total Annual Hydrophilic Production
   prod_SOA:
+   vars:
     - BRPSOA
+   plotvars:
+    - [0,0.1,0]
+    - Total Annual Secondary Organic Production
   sedimentation:
+   vars:
     - BRSD001
     - BRSD002
+   plotvars:
+    - [0,0.01,0]
+    - Total Annual Sedimentation
   dry_deposition:
+   vars:
     - BRDP001
     - BRDP002
+   plotvars:
+    - [0,0.2,0]
+    - Total Annual Dry Deposition
   wet_deposition:
+   vars:
     - BRWT002
+   plotvars:
+    - [0,0.2,0]
+    - Total Annual Wet Deposition
   scavenging:
+   vars:
     - BRSV
+   plotvars:
+    - [0,0.2,0]
+    - Total Annual Scavenging
   load:
+   vars:
     - BRCMASS
+   plotvars:
+    - [0,0.2,0]
+    - Total Annual Average Burden
   tau:
+   vars:
     - BREXTTAU550
+   plotvars:
+    - [0,0.75,0]
+    - Annual Average AOD
   ssa:
+   vars:
     - BRSCATAU550
     - BREXTTAU550
+   plotvars:
+    - [0.95,1,0]
+    - Annual Average SSA
   tauabs:
+   vars:
     - BRSCATAU550
     - BREXTTAU550
+   plotvars:
+    - [0,.02,0]
+    - Annual Average AAOD
   taufrac:
+   vars:
     - BREXTTAU550
     - TOTEXTTAU550
+   plotvars:
+    - [0,1,0]
+    - Annual Average Fraction of AOD
 NI:
   emissions:
     - NH3EM
@@ -267,32 +579,96 @@ NI:
   sedimentation:
     - NISD
     - NISD002
+NI:
+  emissions:
+   vars:
+    - NH3EM
+   plotvars:
+    - [0,1,0]
+    - Total Annual Ammonia Emissions
+  prod_aq:
+   vars:
+    - NIPNO3AQ
+   plotvars:
+    - [-0.05,0.05,0]
+    - Total Annual Aqueous Production of Nitrate
+  prod_het:
+   vars:
+    - NIHT001
+    - NIHT002
+    - NIHT003
+   plotvars:
+    - [0,0.5,0]
+    - Total Annual Heterogeneous Production of Nitrate
+  sedimentation:
+   vars:
+    - NISD001
+    - NISD002
     - NISD003
+   plotvars:
+    - [0,0.1,0]
+    - Total Annual Sedimentation
   dry_deposition:
-    - NIDP
+   vars:
+    - NIDP001
     - NIDP002
     - NIDP003
+   plotvars:
+    - [0,0.1,0]
+    - Total Annual Dry Deposition
   wet_deposition:
-    - NIWT
+   vars:
+    - NIWT001
     - NIWT002
     - NIWT003
+   plotvars:
+    - [0,0.2,0]
+    - Total Annual Wet Deposition
   scavenging:
+   vars:
     - NISV
+   plotvars:
+    - [0,0.2,0]
+    - Total Annual Scavenging
   load:
+   vars:
     - NICMASS
+   plotvars:
+    - [0,0.05,0]
+    - Total Annual Average Burden
   load25:
+   vars:
     - NICMASS25
+   plotvars:
+    - [0,0.05,0]
+    - Total Annual Average Burden
   tau:
+   vars:
     - NIEXTTAU550
+   plotvars:
+    - [0,0.5,0]
+    - Annual Average AOD
   ssa:
+   vars:
     - NISCATAU550
     - NIEXTTAU550
+   plotvars:
+    - [0.95,1,0]
+    - Annual Average SSA
   tauabs:
+   vars:
     - NISCATAU550
     - NIEXTTAU550
+   plotvars:
+    - [0,.05,0]
+    - Annual Average AAOD
   taufrac:
+   vars:
     - NIEXTTAU550
     - TOTEXTTAU550
+   plotvars:
+    - [0,.5,0]
+    - Annual Average Fraction of AOD
 """
 
 
@@ -315,6 +691,12 @@ def Area(lon,lat):
         area[:,j] = 2.*pi*rearth**2.*dx/360. *(np.sin((lat[j]+dy/2.)*pi/180.)-np.sin((lat[j]-dy/2.)*pi/180.))
 
     return area, nx, ny, dx, dy
+
+def printString(f,field,val):
+    txt = '{field}{val:.4f}'
+    print(txt.format(field=field,val=val), file=f)
+    return
+
 
 class AEROSOL(object):
 
@@ -402,25 +784,6 @@ class AEROSOL(object):
 
         allok = True
 
-#       Levels for plotting in units assigned
-        for s in Species: # defaults per species
-            if s == 'DU':
-                levs = [.1,10,1]
-            elif s == 'BC':
-                levs = [.001,.1,1]
-            else:
-                levs = [.1,10,1]
-
-#       Override for specific fields
-        if Field == 'tau':
-            levs=[0,1,0]
-        elif Field == 'taufrac':
-            levs = [0,1.,0]
-        elif Field == 'tauabs':
-            levs = [0,.1,0]
-
-
-        
 #       If SSA assume first is scattering and second is extinction
 #       Output_t is area and extinction weighted SSA
         if Field == 'ssa':
@@ -428,7 +791,8 @@ class AEROSOL(object):
                 if self.verbose:
                     print('[] working on',s)
 
-                Fields = self.table[s][Field]
+                Fields = self.table[s][Field]['vars']
+                levs   = self.table[s][Field]['plotvars'][0]
                 if self.verbose:
                     print('   -',Field)
 
@@ -450,10 +814,6 @@ class AEROSOL(object):
                     output_t[12] = np.mean(output_t[0:12])
                     txt = 'Annual Average SSA ({val:.3f})'
                     str_out.append(txt.format(val=output_t[12]))
-                    if s == 'BC':
-                        levs = [0.2,0.4,0]
-                    else:
-                        levs = [0.9,1,0]
 
 #       For AOD use simple area weighted averaging in totals
         elif Field == 'tau':
@@ -461,7 +821,8 @@ class AEROSOL(object):
                 if self.verbose:
                     print('[] working on',s)
 
-                Fields = self.table[s][Field]
+                Fields = self.table[s][Field]['vars']
+                levs   = self.table[s][Field]['plotvars'][0]
                 if self.verbose:
                     print('   -',Field)
                 for fld in Fields:
@@ -477,8 +838,9 @@ class AEROSOL(object):
                         txt = '{month} ({val:.3f})'
                         str_out.append(txt.format(month=months[i],val=output_t[i]))
                     output_t[12] = np.mean(output_t[0:12])
-                    txt = 'Annual Average AOD ({val:.3f})'
-                    str_out.append(txt.format(val=output_t[12]))
+                    field_name = self.table[s][Field]['plotvars'][1]
+                    txt = '{field} ({val:.3f} Tg)'
+                    str_out.append(txt.format(field=field_name,val=output_t[12]))
 
 #       For Load use integrated area weighted averaging in totals
         elif Field == 'load' or Field == 'load25':
@@ -486,7 +848,8 @@ class AEROSOL(object):
                 if self.verbose:
                     print('[] working on',s)
 
-                Fields = self.table[s][Field]
+                Fields = self.table[s][Field]['vars']
+                levs   = self.table[s][Field]['plotvars'][0]
                 if self.verbose:
                     print('   -',Field)
                 for fld in Fields:
@@ -502,19 +865,9 @@ class AEROSOL(object):
                         txt = '{month} ({val:4.2f} Tg)'
                         str_out.append(txt.format(month=months[i],val=output_t[i]))
                     output_t[12] = np.mean(output_t[0:12])
-                    if Field == 'load':
-                        txt = 'Annual Average Total Burden ({val:4.2f} Tg)'
-                        if (s == 'DU') | (s == 'SS'):
-                            levs = [0.01,2,1]
-                        else:
-                            levs = [0.001,1,1]
-                    else:
-                        txt = 'Annual Average PM2.5 Burden ({val:4.2f} Tg)'
-                        if (s == 'DU') | (s == 'SS'):
-                            levs = [0.01,.5,1]
-                        else:
-                            levs = [0.001,.1,1]
-                    str_out.append(txt.format(val=output_t[12]))
+                    field_name = self.table[s][Field]['plotvars'][1]
+                    txt = '{field} ({val:.4f} Tg)'
+                    str_out.append(txt.format(field=field_name,val=output_t[12]))
                 
 #       If Tauabs assume first is scattering and second is extinction
 #       or if taufrac first is species and second is total
@@ -524,7 +877,8 @@ class AEROSOL(object):
                 if self.verbose:
                     print('[] working on',s)
 
-                Fields = self.table[s][Field]
+                Fields = self.table[s][Field]['vars']
+                levs   = self.table[s][Field]['plotvars'][0]
                 if self.verbose:
                     print('   -',Field)
                 for fld in Fields:
@@ -543,11 +897,9 @@ class AEROSOL(object):
                         txt = '{month} ({val:.4f})'
                         str_out.append(txt.format(month=months[i],val=output_t[i]))
                     output_t[12] = np.mean(output_t[0:12])
-                    if Field == 'tauabs':
-                        txt = 'Annual Average AAOD ({val:.4f})'
-                    else:
-                        txt = 'Annual Average Fraction of Total AOD ({val:.4f})'
-                    str_out.append(txt.format(val=output_t[12]))
+                    field_name = self.table[s][Field]['plotvars'][1]
+                    txt = '{field} ({val:.4f})'
+                    str_out.append(txt.format(field=field_name,val=output_t[12]))
 
 #       Else treat like a flux [kg m-2 mon-1] (total is area integrated sum)
         else:
@@ -556,7 +908,8 @@ class AEROSOL(object):
                 if self.verbose:
                     print('[] working on',s)
 
-                Fields = self.table[s][Field]
+                Fields = self.table[s][Field]['vars']
+                levs   = self.table[s][Field]['plotvars'][0]
                 for fld in Fields:
                     if fld not in vars:
                         allok = False
@@ -578,22 +931,18 @@ class AEROSOL(object):
                         txt = '{month} ({val:7.3f} Tg)'
                         str_out.append(txt.format(month=months[i],val=output_t[i]))
                     output_t[12] = np.sum(output_t[0:12])
-                    fldname = Field.split("_")
-                    if len(fldname) == 2:
-                        field_name = fldname[0].capitalize()+' '+fldname[1].capitalize()
-                    else:
-                        field_name = Field.capitalize()
-                    txt = 'Annual Total {field} ({val:.2f} Tg)'
+                    field_name = self.table[s][Field]['plotvars'][1]
+                    txt = '{field} ({val:.2f} Tg)'
                     str_out.append(txt.format(field=field_name,val=output_t[12]))
                     units = 'g m-2 mon-1'
                     
         if not allok:
             print('%s not found; setting to zero'%(fldnot))
             str_out = ["","","","","","","","","","","","",""]
-            
+
 #       Append the last entry of output_t to the list for the Field
-        self.table[s][Field].append(output_t[12])
-        
+        self.table[s][Field]['vars'].append(output_t[12])
+                    
         return output, output_t, levs, str_out, units
 
     def plotField(self,expid,Field=None,Species=None,verbose=False):
@@ -642,6 +991,7 @@ class AEROSOL(object):
         fig.suptitle('%s %s '%(expid,Species)+str_out[12], size=30)
         plt.savefig('%s/%s.%s.%s.png'%(expid,expid,Species,Field))
         plt.close()
+        return
 
     def plotAll(self,expid,verbose=False):
         Species = list(self.table.keys())
@@ -649,6 +999,7 @@ class AEROSOL(object):
             Fields = list(self.table[s].keys())
             for fld in Fields:
                 self.plotField(expid,Field=fld,Species=s,verbose=True)
+        return
 
     def printBudget(self,expid,verbose=False):
         f = open('%s/%s.budget.txt'%(expid,expid),'w')
@@ -656,37 +1007,38 @@ class AEROSOL(object):
         for s in Species:
             print(expid, file=f)
             print(s, file=f)
-            print('Emissions [Tg]:         ', self.table[s]['emissions'][-1], file=f)
+            printString(f,'Emissions [Tg]:         ', self.table[s]['emissions']['vars'][-1])
             if s == 'SU':
-                print('Emissions (SO2) [Tg]:    ', self.table[s]['emissions_so2'][-1], file=f)
-                print('Emissions (DMS) [Tg]:    ', self.table[s]['emissions_dms'][-1], file=f)
-                print('Production (SO4) [Tg]:   ', self.table[s]['prod_so4'][-1], file=f)
-                print('Production (SO2) [Tg]:   ', self.table[s]['prod_so2'][-1], file=f)
+                printString(f,'Emissions (SO2) [Tg]:   ', self.table[s]['emissions_so2']['vars'][-1])
+                printString(f,'Emissions (DMS) [Tg]:   ', self.table[s]['emissions_dms']['vars'][-1])
+                printString(f,'Production (SO4) [Tg]:  ', self.table[s]['prod_so4']['vars'][-1])
+                printString(f,'Production (SO2) [Tg]:  ', self.table[s]['prod_so2']['vars'][-1])
             if s == 'NI':
-                print('Production (AQ) [Tg]:    ', self.table[s]['prod_aq'][-1], file=f)
-                print('Production (HET) [Tg]:   ', self.table[s]['prod_het'][-1], file=f)
-            wet  = self.table[s]['wet_deposition'][-1]
-            scav = self.table[s]['scavenging'][-1]
-            dep  = self.table[s]['dry_deposition'][-1]
-            sed  = self.table[s]['sedimentation'][-1]
+                printString(f,'Production (AQ) [Tg]:   ', self.table[s]['prod_aq']['vars'][-1])
+                printString(f,'Production (HET) [Tg]:  ', self.table[s]['prod_het']['vars'][-1])
+            wet  = self.table[s]['wet_deposition']['vars'][-1]
+            scav = self.table[s]['scavenging']['vars'][-1]
+            dep  = self.table[s]['dry_deposition']['vars'][-1]
+            sed  = self.table[s]['sedimentation']['vars'][-1]
             loss = dep + wet + sed + scav
-            print('Losses [Tg]:            ', loss, file=f)
-            print('-Dry [Tg]:              ',dep+sed, file=f)
-            print('-Wet [Tg]:              ',wet+scav, file=f)
-            print('Burden [Tg]:            ',self.table[s]['load'][-1], file=f)
-            life = self.table[s]['load'][-1] / loss * 365.
-            print('Lifetime [days]:        ',life, file=f)
-            print('-Wet Removal [1/days]:  ', (wet+scav)/365. /self.table[s]['load'][-1], file=f)
-            print(' -Large Scale [1/days]: ', wet/365. /self.table[s]['load'][-1], file=f)
-            print(' -Scavenging [1/days]:  ', scav/365. /self.table[s]['load'][-1], file=f)
-            print('-Dry Removal [1/days]:  ', (dep+sed)/365. /self.table[s]['load'][-1], file=f)
-            print(' -Settling [1/days]:    ', sed/365. /self.table[s]['load'][-1], file=f)
-            print(' -Deposition [1/days]:  ', dep/365. /self.table[s]['load'][-1], file=f)
-            print('AOT:                    ',self.table[s]['tau'][-1], file=f)
-        f.close()    
+            printString(f,'Losses [Tg]:            ', loss)
+            printString(f,'-Dry [Tg]:              ',dep+sed)
+            printString(f,'-Wet [Tg]:              ',wet+scav)
+            printString(f,'Burden [Tg]:            ',self.table[s]['load']['vars'][-1])
+            life = self.table[s]['load']['vars'][-1] / loss * 365.
+            printString(f,'Lifetime [days]:        ',life)
+            printString(f,'-Wet Removal [1/days]:  ', (wet+scav)/365. /self.table[s]['load']['vars'][-1])
+            printString(f,' -Large Scale [1/days]: ', wet/365. /self.table[s]['load']['vars'][-1])
+            printString(f,' -Scavenging [1/days]:  ', scav/365. /self.table[s]['load']['vars'][-1])
+            printString(f,'-Dry Removal [1/days]:  ', (dep+sed)/365. /self.table[s]['load']['vars'][-1])
+            printString(f,' -Settling [1/days]:    ', sed/365. /self.table[s]['load']['vars'][-1])
+            printString(f,' -Deposition [1/days]:  ', dep/365. /self.table[s]['load']['vars'][-1])
+            printString(f,'AOT:                    ',self.table[s]['tau']['vars'][-1])
+        f.close()
+        return
 
 if __name__ == "__main__":
-    expid = 'c180R_v11.8.0_develop'
+    expid = 'c180R_v11.8.0_newbrcoptics'
     aer_Nx = '%s.tavg2d_aer_x.ctl'%(expid)
     b = AEROSOL(aer_Nx,verbose=True)
 #   Make an output directory
@@ -700,6 +1052,6 @@ if __name__ == "__main__":
         print(f"Permission denied: Unable to create '{directory_name}'.")
     except Exception as e:
         print(f"An error occurred: {e}")
-        
+
     b.plotAll(expid,verbose=True)
     b.printBudget(expid,verbose=True)
