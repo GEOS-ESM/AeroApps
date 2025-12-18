@@ -90,8 +90,6 @@ NI:
   bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_NI.v2_5.RRTMG.nc4
   tracers:
     - NO3an1
-    - NO3an2
-    - NO3an3
   shapefactor: 1
   rhod:
     - 1725
