@@ -16,14 +16,19 @@ improve_years:
     - 2019
     - 2024
 
+# output directory for reference json and parq files
+individual_references: ./individual_references
+combined_references: ./combined_references
+
 # output directory for sampled files
-sampled_outdir: ./sampled
+sampled_outdir: ./sampled 
 
 # Location of the aerosol property configuration file
 large_config: g2g_large.yaml
 large_submicron_config: g2g_large_submicron.yaml
 ams_config: g2g_ams.yaml
 sp2_config: g2g_sp2.yaml
+improve_config: g2g_improve.yaml
 
 # flags for which calculations you want to do
 do_large_aop: True
