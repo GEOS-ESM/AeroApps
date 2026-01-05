@@ -164,10 +164,11 @@ def create_experiment_directory():
     print("-"*70)
     print(f"The experiment directory was created: \n\n\t {experiment_directory}")
     print()
-    print(f"Go to the folder and if necessary edit the file {loc_filename}.")
+    print(f"Go to the folder and if necessary edit the files {slurm}.")
     print()
-    print("From the experiment directory, issue the command: ")
-    print(f"   sbatch {loc_filename}")
+    print("From the experiment directory, issue the commands: ")
+    for loc_filename in slurm
+        print(f"   sbatch {loc_filename}")
     print("-"*70)
     print()
 
