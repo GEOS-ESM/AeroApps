@@ -2,7 +2,7 @@
 # Configuration file for sampling a GEOS experiment
 
 # model control files
-model_aer_ctl: inst3_aer_Nv
+model_aer_ctl: inst3d_aer_v
 model_other_ctl:
     -
 
