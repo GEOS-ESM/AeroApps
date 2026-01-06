@@ -8,6 +8,74 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
 
+def plot_4_panel_comparison(lon, lat, model_aod_mean_baseline, obs_aod_mean, model_aod_mean, EXPID,EXPID_baseline,sat_name):
+    """
+    Plots a 4-panel figure comparing:
+    Panel A: Baseline Observed AOD (obs_aod_mean_baseline)
+    Panel B: Current Observed AOD (obs_aod_mean)
+    Panel C: Modeled AOD (model_aod_mean)
+    Panel D: Closeness metric = |model AOD - obs AOD| - |baseline - obs AOD|
+
+    Parameters:
+        lon, lat (2D or 1D arrays): Longitude and Latitude data for the global grid
+        obs_aod_mean_baseline (array): Baseline observational data (AOD)
+        obs_aod_mean (array): Experimental observational data (AOD)
+        model_aod_mean (array): AOD data from the simulation model
+        EXPID (str): Experiment ID used for figure title
+    """
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
+    
+    # Compute Panel D: Closeness metric
+    closeness = np.abs(model_aod_mean - obs_aod_mean) - np.abs(model_aod_mean_baseline - obs_aod_mean)
+    
+    # Create the figure with a 2x2 grid of panels
+    fig, axes = plt.subplots(2, 2, figsize=(10, 6.5), subplot_kw={'projection': ccrs.PlateCarree()})
+    
+    # Common color settings for AOD plots
+    vmin_aod = 0
+    vmax_aod = 1
+    vmin_closeness = -0.25
+    vmax_closeness = 0.25
+    cmap_aod = 'viridis'
+    cmap_closeness = 'RdBu_r'
+    
+    # --- Panel A: Baseline Observed AOD ---
+    im_a = axes[0, 0].pcolormesh(lon, lat, model_aod_mean_baseline, cmap=cmap_aod, vmin=vmin_aod, vmax=vmax_aod, transform=ccrs.PlateCarree())
+    axes[0, 0].set_title(EXPID_baseline, fontsize=12)
+    axes[0, 0].add_feature(cfeature.COASTLINE, edgecolor='black', linewidth=0.8)
+
+    # --- Panel B: Current Observed AOD ---
+    im_b = axes[0, 1].pcolormesh(lon, lat, obs_aod_mean, cmap=cmap_aod, vmin=vmin_aod, vmax=vmax_aod, transform=ccrs.PlateCarree())
+    axes[0, 1].set_title(f"MODIS NNR ({sat_name})", fontsize=12)
+    axes[0, 1].add_feature(cfeature.COASTLINE, edgecolor='black', linewidth=0.8)
+
+    # --- Panel C: Modeled AOD ---
+    im_c = axes[1, 0].pcolormesh(lon, lat, model_aod_mean, cmap=cmap_aod, vmin=vmin_aod, vmax=vmax_aod, transform=ccrs.PlateCarree())
+    axes[1, 0].set_title(EXPID, fontsize=12)
+    axes[1, 0].add_feature(cfeature.COASTLINE, edgecolor='black', linewidth=0.8)
+
+    # --- Panel D: Closeness Analysis ---
+    im_d = axes[1, 1].pcolormesh(lon, lat, closeness, cmap=cmap_closeness, vmin=vmin_closeness, vmax=vmax_closeness, transform=ccrs.PlateCarree())
+    axes[1, 1].set_title("Closeness", fontsize=12)
+    axes[1, 1].add_feature(cfeature.COASTLINE, edgecolor='black', linewidth=0.8)
+    
+    # Add colorbars for each row
+    cax_c = fig.add_axes([0.1, 0.03, 0.3, 0.02])  # Colorbar for AOD rows
+    cbar_c = fig.colorbar(im_c, cax=cax_c, orientation='horizontal', extend='both')
+    cbar_c.set_label("AOD at 550 nm")
+
+    cax_d = fig.add_axes([0.6, 0.03, 0.3, 0.02])  # Colorbar for closeness row
+    cbar_d = fig.colorbar(im_d, cax=cax_d, orientation='horizontal', extend='both')
+    cbar_d.set_label("|new-obs|-|baseline-obs|")
+
+    # Main title for the figure
+    #plt.suptitle(f"4-Panel Comparison: {EXPID}", fontsize=16, y=0.95)
+    
+    # Adjust layout
+    plt.tight_layout(rect=[0, 0, 1, 0.93])
+    plt.show()
+
 def plot_GEOS_single_exp_compare(lon, lat, baseline_aod_mean,EXPID_baseline,target_aod_mean,EXPID,):
     fig, axes = plt.subplots(1, 3, figsize=(20, 6), subplot_kw={'projection': ccrs.PlateCarree()})
     
@@ -108,4 +176,5 @@ if __name__ == "__main__":
     obsaod, lono, lato = read_sat(sat,yy,mm)
     #plot_GEOS_single_exp_compare(lon, lat, baseaod.values,baseline,pertaod.values,perturb,)
     obsaodi = obsaod.interp_like(baseaod,method="nearest",assume_sorted=True)
-    plot_GEOS_single_exp_compare(lon, lat, baseaod.values,baseline,np.squeeze(obsaodi.values),sat,)
+    #plot_GEOS_single_exp_compare(lon, lat, baseaod.values,baseline,np.squeeze(obsaodi.values),sat,)
+    plot_4_panel_comparison(lon, lat, baseaod.values, np.squeeze(obsaodi.values), pertaod.values, perturb,baseline,sat)
