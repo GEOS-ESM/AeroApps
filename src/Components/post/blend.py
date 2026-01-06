@@ -17,7 +17,7 @@ import xarray as xr
 
 
 def file_list(sat,yy,mm,atype="ocean",obsdir='/css/gmao/dp/gds/AeroObs/'):
-#   Return a list of file names (per month) in the MODIS NNR directory
+#   Return a list of file names (per month) in the obsdir directory
 #   Only capture hour dated files (e.g., *_0000z.nc4)
     rc = 0
     obs_files=None
