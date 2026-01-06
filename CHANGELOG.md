@@ -4,6 +4,7 @@
 
 ### Added
 - Add ARCSIX mission directories
+- Add INSPYRE mission directories
 
 ### Fixed
 

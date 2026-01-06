@@ -1,0 +1,44 @@
+#!/bin/csh -f
+    
+    if ( $#argv < 1 ) then
+            echo "usage:"
+            echo "       $0:r [-o outfilename.mp4]  [glob expression]"
+            exit 1
+    endif
+
+    # Output file
+    # ----------- 
+    if ( "$1" == "-o" ) then
+        shift
+        set mp4File = $1
+        shift
+    else
+        set mp4File = "movie.mp4"
+    endif
+
+    # Images
+    # ------ 
+    if ( $#argv < 1 ) then
+        echo $0": missing image file glob expression"
+        exit 2
+    endif
+
+    source /usr/share/modules/init/csh
+    module purge
+  # module load ffmpeg/4.3.1
+    module load ffmpeg/5.0
+
+    ulimit -Ss unlimited
+
+    # Quality values range from 18 (high quality) to 28 (low quality)
+
+    set frameRate = 12
+    set quality   = 25
+    set movieWth  = 1024
+    set movieHgt  = 768
+    set movieRes  = "1080p"
+    set frameSize = "${movieWth}x${movieHgt}"
+
+    ffmpeg -loglevel debug -threads 6 -pattern_type glob -r $frameRate -i "$argv" -y -r $frameRate -s "$frameSize" -c:v libx264 -pix_fmt yuv420p -preset ultrafast -crf $quality ${mp4File}
+
+    exit 0
