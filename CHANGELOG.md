@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Added
-- Add MAGPIE and ARCSIX mission directories
+- Add ARCSIX mission directories
 
 ### Fixed
 
