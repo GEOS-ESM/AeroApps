@@ -6,6 +6,12 @@ model_aer_ctl: inst3d_aer_v
 model_other_ctl:
     -
 
+# model control files you want to create a reference store for
+reference_ctl_list:
+    - inst3d_aer_v
+# output directory for reference stores
+combined_references_dir: ./combined_references
+
 # location of merged dc-8 files
 dc8_merge: /discover/nobackup/projects/gmao/iesa/aerosol/campaigns/ASIA-AQ/archive/merges/v20250423
 
@@ -15,10 +21,6 @@ improve_data_dir: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/IMP
 improve_years: 
     - 2019
     - 2024
-
-# output directory for reference json and parq files
-individual_references: ./individual_references
-combined_references: ./combined_references
 
 # output directory for sampled files
 sampled_outdir: ./sampled 
