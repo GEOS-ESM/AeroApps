@@ -7,9 +7,9 @@
 #SBATCH -J ctl2kerchunk
 #SBATCH --nodes=1
 #SBATCH --constraint=mil
-#SBATCH --time=1:00:00
+#SBATCH --time=12:00:00
 #SBATCH -A s2942
-#SBATCH -o ctl2kerchunk-%j.log
+#SBATCH -o output_ctl2kerchunk-%j.log
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
@@ -30,4 +30,4 @@ source $SRC_DIR/env@/g5_modules
 #          Run CTL2KERCHUNK 
 #######################################################################
 
-python3 -u ./ctl2kerchunk.py sampling.yaml >& clt2kerchunk-${SLURM_JOB_ID}.log
+python3 -u ./ctl2kerchunk.py sampling.yaml >& ctl2kerchunk-${SLURM_JOB_ID}.log
