@@ -22,6 +22,7 @@
 
 setenv SRC_DIR @SRCDIR
 setenv PYTHONPATH ${SRC_DIR}/install/lib/Python
+setenv PATH ${PATH}:${SRC_DIR}/install/bin
 
 source $SRC_DIR/env@/g5_modules
 
@@ -30,4 +31,4 @@ source $SRC_DIR/env@/g5_modules
 #          Run CTL2KERCHUNK 
 #######################################################################
 
-python3 -u ./ctl2reference.py sampling.yaml >& ctl2reference-${SLURM_JOB_ID}.log
+python3 -u ./ctl2reference.py ctl2reference.yaml >& ctl2reference-${SLURM_JOB_ID}.log
