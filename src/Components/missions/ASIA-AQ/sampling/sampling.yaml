@@ -18,12 +18,12 @@ dc8_merge: /discover/nobackup/projects/gmao/iesa/aerosol/campaigns/ASIA-AQ/archi
 # location and years of of IMPROVE data
 improve_site_map: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/IMPROVE/IMPROVE_locations.txt
 improve_data_dir: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/IMPROVE/
-improve_years: 
+improve_years:
     - 2019
     - 2024
 
 # output directory for sampled files
-sampled_outdir: ./sampled 
+sampled_outdir: ./sampled
 
 # Location of the aerosol property configuration file
 large_config: g2g_large.yaml
