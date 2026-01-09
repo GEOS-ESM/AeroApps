@@ -27,8 +27,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("config",help='configuration yaml file')
     parser.add_argument("--append",action='store_true',help='append to an existing parquet file')
-    parser.add_argument("--n_workers",type=int,default=120,
-                        help='number of pool workers to use (default=120)')
+    parser.add_argument("--n_workers",type=int,default=50,
+                        help='number of pool workers to use (default=50)')
+    parser.add_argument("--max_batches",type=int,default=6,
+                        help='max number of batches (default=6)')
+
 
     args = parser.parse_args()
 
@@ -76,8 +79,8 @@ if __name__ == '__main__':
             keep = date_list > last_time
             path_list = path_list[keep]
             if len(path_list) == 0:
-                raise ValueError(f'No {ctl} files found to append on disk. Cannot proceed.')
-
+                print(f'No {ctl} files found to append on disk. Nothing to be done.')
+                sys.exit(2)
 
         # define function to convert HDF5 to Zarr
         def process_single_file(path):
@@ -92,7 +95,10 @@ if __name__ == '__main__':
 
  
         # split the list of files into chunks
-        path_split = np.array_split(path_list,int(len(path_list)/2)) #<- create smaller lists of individual files
+        path_split = np.array_split(path_list,max([1,len(path_list)//args.n_workers])) #<- create smaller lists of individual files
+        if len(path_split) > args.max_batches:
+            print(f'{len(path_split)} batches found on disk. Limiting to {args.max_batches}')
+            path_split = path_split[:args.max_batches]
         path_split = [list(x) for x in path_split]
 
         # Define the dimension you want to concatenate along (e.g., 'time')
@@ -109,6 +115,11 @@ if __name__ == '__main__':
         else:
             identical_dims = ['lat', 'lon']
 
+        # 'cf:time' decodes internal 'time' variable using CF-conventions
+        coo_map={"time": "cf:time"}
+        # 'M8[ns]' forces the result to NumPy datetime64 nanoseconds
+        coo_dtypes={"time": "M8[ns]"}
+
         if not args.append:
             # write the first MZZ
             out = LazyReferenceMapper.create(root=mzzoutparq, fs=fs_local, record_size=100000)
@@ -117,11 +128,6 @@ if __name__ == '__main__':
             n_workers = min([args.n_workers,len(first_batch)])
             with multiprocessing.Pool(n_workers) as pool:
                 single_refs = pool.map(process_single_file, first_batch)            
-
-            # 'cf:time' decodes internal 'time' variable using CF-conventions
-            coo_map={"time": "cf:time"}
-            # 'M8[ns]' forces the result to NumPy datetime64 nanoseconds
-            coo_dtypes={"time": "M8[ns]"}
 
             mzz = kerchunk.combine.MultiZarrToZarr(
                 path=single_refs,
@@ -135,64 +141,36 @@ if __name__ == '__main__':
 
             out.flush() #make sure everything is written out
 
-        # define a generic MZZ function
-        def multi_multizarr(single_refs,concat_dims,identical_dims):
-            coo_map = {"time": "cf:time"}
-            coo_dtypes={"time": "M8[ns]"}
-            mzz = kerchunk.combine.MultiZarrToZarr(
-                path=single_refs,
-                remote_protocol='file',
-                concat_dims=concat_dims,
-                identical_dims=identical_dims,
-                coo_map=coo_map,
-                coo_dtypes=coo_dtypes
-            )
+            print(f"Successfully created combined mzz file: {mzzoutparq}")
 
+        # process the rest in batches and append
+        i = 0
+        nbatches = len(path_split)
+        with multiprocessing.Pool(args.n_workers) as pool:
+            for current_batch in path_split:
 
-            return mzz.translate()
+                single_refs = pool.map(process_single_file, current_batch)
+                print(f'Batch {i+1} of {nbatches} single references created')
 
-
-        # combine the rest in batches and append
-        kwargs = dict(n_workers=args.n_workers)
-        with LocalCluster(**kwargs) as cluster, Client(cluster) as client:
-            for istart in range(0,len(path_split),args.n_workers):
-
-                iend = min([istart + args.n_workers,len(path_split)])
-
-                current_batch = path_split[istart:iend]
-                flat_batch = [item for sublist in current_batch for item in sublist]
-
-                intermediates = db.from_sequence(flat_batch)
-                single_refs   = intermediates.map(process_single_file).compute()
-
-                singles_batch = np.array_split(np.array(single_refs),len(current_batch))
-                singles_batch = [list(x) for x in singles_batch]
-                # upload the data to the workers' memory once and return Dask Futures
-                singles_batch = [client.scatter(batch) for batch in singles_batch]
-
-                # package together inputs for each batch
-                batch_info = []
-                for batch in singles_batch:
-                    batch_info.append((batch, concat_dims, identical_dims))
-
-
-                intermediates = db.from_sequence(batch_info)
-                results = intermediates.starmap(multi_multizarr).compute()
-
-                # append to existing out
                 out = LazyReferenceMapper(root=mzzoutparq, fs=fs_local)
                 mzz = kerchunk.combine.MultiZarrToZarr.append(
-                    path=results,
+                    path=single_refs,
                     original_refs=out,
                     remote_protocol='file',
                     concat_dims=concat_dims,
                     identical_dims=identical_dims,
+                    coo_map=coo_map,
+                    coo_dtypes=coo_dtypes
                 ).translate()
+                out.flush()
 
-                out.flush()  #make sure everything is written out
-                client.wait_for_workers(args.n_workers)
+                print(f"Batch {i+1} of {nbatches} completed: Processed files and appended to {mzzoutparq}")
+                i += 1
+                del single_refs
+                del mzz
 
-        print(f"Successfully created combined mzz file: {mzzoutparq}")
+
+        print(f"Successfully completed combined mzz file: {mzzoutparq}")
 
 
 
