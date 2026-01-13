@@ -7,10 +7,8 @@
 import os, sys
 import argparse
 import yaml
-from glob import glob
 from datetime import datetime, timedelta
 import pytz
-from pyobs.sampler import STATION
 from pyobs.improve import SITE_MAP
 from pyobs.xrctl import parse_ctl
 from pyobs.aop import G2GAOP
@@ -29,9 +27,6 @@ if __name__ == '__main__':
     # get IMPROVE site locations
     site_path = config['improve_site_map']
     sites = SITE_MAP(site_path)
-
-    # get improve data 
-    imp_path = config['improve_data_dir']
 
     # get sampled data
     outdir = config['sampled_outdir'] + '/improve'

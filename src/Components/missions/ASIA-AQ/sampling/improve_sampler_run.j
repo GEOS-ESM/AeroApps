@@ -7,7 +7,7 @@
 #SBATCH -J improve_sampler
 #SBATCH --nodes=1
 #SBATCH --constraint=mil
-#SBATCH --time=2:00:00
+#SBATCH --time=12:00:00
 #SBATCH -A @GROUPID
 #SBATCH -o output_aaq_sampler-%j.log
 #SBATCH --mail-type=BEGIN
@@ -34,4 +34,4 @@ if (! -d ExtData) then
 endif
 
 python3 -u ./improve_sampler.py sampling.yaml >& improve_sampler-${SLURM_JOB_ID}.log
-#python3 -u ./improve_derived.py sampling.yaml >& improve_derived-${SLURM_JOB_ID}.log
+python3 -u ./improve_derived.py sampling.yaml >& improve_derived-${SLURM_JOB_ID}.log
