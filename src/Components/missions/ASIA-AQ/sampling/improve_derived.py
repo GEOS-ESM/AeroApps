@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-    Sampler for IMPROVE surface PM2.5 obs for a modeling experiment
-    This uses a parquet reference store to read the dataset
-    Run ctl2kerchunk_run.j followed by kerchunk2parquet_run.j to create it
+    Script to calcualate daily mean PM2.5 comparable to IMPROVE surface observations
+    Reads in the outputs from improve_sampler.py
 """
 import os, sys
 import argparse
@@ -100,12 +99,13 @@ if __name__ == '__main__':
                     time_utc_start = time_aware_local.astimezone(pytz.utc).replace(tzinfo=None)
                     time_utc_end = time_utc_start + timedelta(hours=24)
                         
-                    ds_new = ds.sel(station=site).sel(time=slice(time_utc_start,time_utc_end)).mean(dim='time')
+                    ds_new = ds.sel(station=site,time=slice(time_utc_start,time_utc_end),lev=72).mean(dim='time').drop_vars('lev')
+
                     ds_new = ds_new.assign_coords(time=[tstart_iter])
 
-                    ntimes = ds.sel(station=site).sel(time=slice(time_utc_start,time_utc_end)).sizes['time']
+                    ntimes = ds.sel(station=site,time=slice(time_utc_start,time_utc_end)).sizes['time']
 
-                    if (ntimes < ndt_per_day):
+                    if (ntimes <= ndt_per_day):
                         # complete day not available
                         ds_new =xr.full_like(ds_new, fill_value=np.nan)
 
@@ -124,6 +124,6 @@ if __name__ == '__main__':
     for spc in pm25:
         outFile = f'{outdir}/improve.{ctl}.pm25_{spc}.nc4'
         print('writing ',outFile)
-        encoding = {var: comp for var in pm25[spc].data_vars}
-        pm25[spc].to_netcdf(outFile,engine='netcdf4',encoding=encoding)
+        encoding = {var: comp for var in pm25_daily[spc].data_vars}
+        pm25_daily[spc].to_netcdf(outFile,engine='netcdf4',encoding=encoding)
 
