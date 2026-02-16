@@ -14,9 +14,11 @@ from matplotlib.dates import MonthLocator, WeekdayLocator, DateFormatter
 import matplotlib.ticker as ticker
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+from shapely.geometry import Polygon
+from cartopy.geodesic import Geodesic  # from geographiclib
 
 
-def plot(lev='0',varn='TOTEXTTAU',cbarmax=1.,title='Total AOT', 
+def plot(lev='0',varn='TOTEXTTAU',cbarmax=2.,title='Total AOT', 
          filename='/dev/null'):
 
     levz = -1
@@ -35,17 +37,19 @@ def plot(lev='0',varn='TOTEXTTAU',cbarmax=1.,title='Total AOT',
     lat=lat[np.where(lat>20)]
     lonx, latsx = np.meshgrid(lon,lat)
 
-    fig = plt.figure(figsize=(12,9))
+    fig = plt.figure(figsize=(14,9))
     ax = plt.axes(projection=ccrs.PlateCarree())
     ax.coastlines(resolution='50m')
     ax.gridlines()
     ax.add_feature(cfeature.STATES, linestyle=':', edgecolor='black', linewidth=0.5)
     
-    ax.set_xlim([-140,-60])
+    ax.set_xlim([-140,-80])
     ax.set_ylim([20,70])
 
-    clevs = np.arange(0,cbarmax,cbarmax/40)
-    cf = plt.contourf(lonx, latsx, ext, clevs, cmap='Spectral_r',
+#    clevs = np.arange(0,cbarmax,cbarmax/40)
+#   Plot on log scale
+    clevs = np.arange(-1.5,0.5,0.05)
+    cf = plt.contourf(lonx, latsx, np.log10(ext), clevs, cmap='YlOrBr',
                       extend='both',transform=ccrs.PlateCarree())
 
     cf3 = plt.contourf(lonx, latsx, cldl, [.99,10],colors='0',
@@ -53,14 +57,15 @@ def plot(lev='0',varn='TOTEXTTAU',cbarmax=1.,title='Total AOT',
     cf2 = plt.contourf(lonx, latsx, cldh, [.99,10],colors='1',
                        transform=ccrs.PlateCarree(), alpha=.6)
     cbar1=plt.colorbar(cf, ax=ax, orientation='vertical', 
-                       pad=0.1, extend="max")
+                       pad=0.1, extend="max", ticks=np.log10([0.05,0.1,0.2,0.5,1,2]),
+                       format=ticker.FixedFormatter(['0.05', '0.1', '0.2','0.5','1','2']))
     cbar1.ax.tick_params(labelsize=12)
     cbar1.set_label(label='%s'%(title),size=12)
 
 #   Some markers
     markernames = ['Great Falls','Boulder']
-    x = [-111.3,-105.2705]
-    y = [47.5,40.015]
+    x = [-111.3008,-105.118]
+    y = [47.5053,39.909]
     labels = ['1','2']
     ax.plot(x,y,markersize=14, marker="o", color="k", transform=ccrs.PlateCarree(),linestyle='')
     ax.plot(x,y,markersize=12, marker="o", color="red", transform=ccrs.PlateCarree(),linestyle='')
@@ -68,6 +73,25 @@ def plot(lev='0',varn='TOTEXTTAU',cbarmax=1.,title='Total AOT',
         ax.text(x[i],y[i],labels[i],color="k", transform=ccrs.PlateCarree(),
                 ha="center", va="center", size=8, fontweight='black')
 
+
+#   Some range rings
+#   ER-2
+    for radius in [550,925,1295,1650,2000]:  #km
+        n_samples = 80
+
+        circles = Polygon(Geodesic().circle(x[0], y[0], radius*1000., n_samples=n_samples))
+        feature = cfeature.ShapelyFeature([circles], ccrs.PlateCarree(), fc='None', ec="black", lw=1, linestyle="-")
+
+        circle = ax.add_feature(feature)
+
+#   GV
+    for radius in [926,1389,1852]:  #km
+        n_samples = 80
+
+        circles = Polygon(Geodesic().circle(x[1], y[1], radius*1000., n_samples=n_samples))
+        feature = cfeature.ShapelyFeature([circles], ccrs.PlateCarree(), fc='None', ec="black", lw=1, linestyle="dotted")
+
+        circle = ax.add_feature(feature)
 
 #   Get the buoy locations from file
 #    labels = ['J','K','L','M','N','O','P','Q','R']
