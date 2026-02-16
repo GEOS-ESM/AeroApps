@@ -7,6 +7,7 @@
 - Add INSPYRE mission directories and updated web plotting package
 - Add ASIA-AQ mission scripts
 - Add a post processing script that creates a zarr virtual data store for a model run to Applications
+- Add a model_utils directory structure with some basic eval, post, and utils scripts
 
 ### Fixed
 
