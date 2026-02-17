@@ -52,8 +52,10 @@ sed "s/YYYY/$YYYY/g;s/MM/$MM/g;s/DD/$DD/g;s/HH/$HH/g" index.tmp > $start/index.h
 # ===============
 # python plotting
 # Update buoy locations
-sed "s/YYYY/'$YYYY'/g;s/MM/'$MM'/g;s/DD/'$DD'/g;s/HH/'$HH'/g" inspyre_plots.csh > inspyre_plots.csh.$YYYY$MM${DD}_$HH
-qsub inspyre_plots.csh.$YYYY$MM${DD}_$HH
+sed "s/YYYY/'$YYYY'/g;s/MM/'$MM'/g;s/DD/'$DD'/g;s/HH/'$HH'/g" inspyre_plots.csh > $start/inspyre_plots.csh.$YYYY$MM${DD}_$HH
+\cp -f *.py $start/
+\cp -f mp4_encode $start/
+qsub $start/inspyre_plots.csh.$YYYY$MM${DD}_$HH
 rsync -auPv $start/ $web
 exit
 # ===============
