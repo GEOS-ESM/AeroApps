@@ -1,8 +1,4 @@
 #!/bin/csh
-#SBATCH --time=1:00:00
-#SBATCH --nodes=1 --ntasks-per-node=125
-#SBATCH --job-name=omi_simul
-#SBATCH --account=s1148
 
 # Set base location
   cd /home/pcolarco/ARCSIX/eval
@@ -17,10 +13,11 @@
 
 # run sampling scripts
   set tracks = `\ls -1 ../data/*R0.ict`
-  echo $tracks
-
   prund.pl -H `hostname` -d `echo $tracks` &
-  mpirun -np 48 prund.pl -H `hostname` ./sample_trajectory.py fp inst3_3d_aer_Nv %s
-#  mpirun -np 48 prund.pl -H `hostname` ./sample_trajectory.py fp tavg1_2d_lfo_Nx %s
-#  mpirun -np 48 prund.pl -H `hostname` ./sample_trajectory.py MERRA2 inst3_3d_aer_Nv %s
+  mpirun -np 48 prund.pl -H `hostname` ./plot_trj_mass_along.py %s fp
+
+#  foreach track (`\ls -1 ../data/*R0.ict`)
+#    echo $track
+#    ./plot_mass_curtain.py $track >> /dev/null
+#   end
 

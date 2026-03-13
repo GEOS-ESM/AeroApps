@@ -1,7 +1,8 @@
 #!/bin/csh
-#SBATCH --time=1:00:00
-#SBATCH --nodes=1 --ntasks-per-node=125
-#SBATCH --job-name=omi_simul
+#SBATCH --time=2:00:00
+#SBATCH --nodes=2 --ntasks-per-node=125
+#SBATCH --job-name=eval
+#SBATCH --constraint=mil
 #SBATCH --account=s1148
 
 # Set base location
@@ -27,5 +28,5 @@
   echo $dates
   prund.pl -H `hostname` -d `echo $dates` &
 #  mpirun -np 60 prund.pl -H `hostname` ./sample_stations.py c180R_arcsix inst3d_aerdms_v %s
-  mpirun -np 40 prund.pl -H `hostname` ./sample_stations.py MERRA2 tavg1_2d_aer_Nx %s
+  mpirun -np 63 prund.pl -H `hostname` ./sample_stations.py fp inst3_3d_aer_Nv %s
 
