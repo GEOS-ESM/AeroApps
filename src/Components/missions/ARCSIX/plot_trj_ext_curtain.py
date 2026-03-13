@@ -13,10 +13,12 @@ import matplotlib.dates as mdates
 import matplotlib.colors as colors
 import matplotlib.ticker as mticker
 import matplotlib
+import datetime
 matplotlib.use('agg')
 
 import xarray as xr
 import pyobs.xrctl  as xc
+from optparse   import OptionParser   # Command-line args
 
 #Get the HALO RGB colors
 import csv
@@ -30,19 +32,39 @@ with open('/home/pcolarco/lib/halo_colorbar.csv', newline='') as csvfile:
 cm = LinearSegmentedColormap.from_list(
         'my_map', rgb)
 
-def plotext(yyyymmdd,species=None,model='fp',aircraft='G3'):
+
+# Plot the aerosol species mass concentration along a flight track
+# for an already computed trajectory file
+def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv",species=None):
+
+#   Get the ICARTT file describing the trajectory
+    if ictFile.find('P3B') > 0:
+        aircraft = 'P3B'
+        i0 = ictFile.find('P3B')+4
+    if ictFile.find('G3')  > 0:
+        aircraft = 'G3'
+        i0 = ictFile.find('G3')+3
+    if ictFile.find('Learjet') > 0:
+        aircraft = 'Learjet'
+        i0 = ictFile.find('Learjet')+8
+    m = ICARTT(ictFile)
+    yyyymmdd = ictFile[i0:i0+11]
+    dateout  = ictFile[i0:i0+4]+"-"+ictFile[i0+4:i0+6]+"-"+ictFile[i0+6:i0+8]
+    print(ictFile, aircraft, yyyymmdd)
 
     modeltitle='GEOS-FP'
-    if(model == 'geosit'):
-        modeltitle='GEOS-IT'
-    if(model == 'res'):
-        modeltitle='RESEARCH'
+    modname = model
+    if(model == 'fp'):
+        modname = "GEOS-FP"
 
     Species = None
     speciestitle = ''
     if(species == 'du'):
         Species = ['DU']
         speciestitle = 'Dust '
+    if(species == 'ss'):
+        Species = ['SS']
+        speciestitle = 'Sea Salt '
     if(species == 'su'):
         Species = ['SU']
         speciestitle = 'Sulfate '
@@ -53,15 +75,12 @@ def plotext(yyyymmdd,species=None,model='fp',aircraft='G3'):
         speciestitle = 'Carbonaceous '
 
 #   Get the ICARTT file for the aircraft altitude
-    ictFile = '/home/pcolarco/ARCSIX/data/ARCSIX-MetNav_%s_'%(aircraft)+yyyymmdd+'_R0.ict'
-    if(aircraft == 'Learjet'):
-        ictFile = '/home/pcolarco/ARCSIX/data/ARCSIX-NAVM300_Learjet_'+yyyymmdd+'_R0.ict'
-    print(ictFile)
     m = ICARTT(ictFile)
     alt, lon, lat, tyme = m.Nav['Altitude'], m.Nav['Longitude'], m.Nav['Latitude'], m.Nav['Time']
 
 #   Get the sampled file
-    sampleFile = '%s.inst3_3d_aer_Nv.%s.'%(model,aircraft)+yyyymmdd+'.nc'
+    dirname = f"samples/ARCSIX/sampled/{aircraft}/{modname}/{dateout}"
+    sampleFile = f"./{dirname}/ARCSIX-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.nc"
     config = '/home/pcolarco/silo/GMAOpyobs/src/config/m2_pm25.yaml'
 
     if(model == 'res'):
@@ -70,39 +89,33 @@ def plotext(yyyymmdd,species=None,model='fp',aircraft='G3'):
     print(sampleFile)
     optics = G2GAOP(sampleFile,config=config)
 
-    if(model=='res'):
-        asmfile = sampleFile
-        if isinstance(asmfile,xr.Dataset):
-            asm = asmfile
-        else:
-            asm = xc.open_mfdataset(asmfile)
-            z   = asm['H']
+    asmfile = sampleFile
+    if isinstance(asmfile,xr.Dataset):
+        asm = asmfile
     else:
-        asmfile = '%s.inst3_3d_asm_Nv.%s.'%(model,aircraft)+yyyymmdd+'.nc'
-        if isinstance(asmfile,xr.Dataset):
-            asm = asmfile
-        else:
-            asm = xc.open_mfdataset(asmfile)
-            z   = asm['H']
-            cld = asm['CLOUD']
+        asm = xc.open_mfdataset(asmfile)
+    z   = asm['H']
+#    cld = asm['CLOUD']
     
 #   Get the extinction profile
     ext = optics.getAOPext(wavelength=532,Species=Species)
     
     fig, ax = plt.subplots(figsize=(20, 6))
     time = ext.time.values
-    ntime = ext.dims['time']
-    nlev = ext.dims['lev']
+    ntime = ext.sizes['time']
+    nlev = ext.sizes['level']
     time = np.repeat(time.reshape(ntime,1),nlev,axis=1)
-    ax.set_ylim(0,12)
     plt.ylabel('GPS Altitude [km]')
     dtFmt = mdates.DateFormatter('%H:%M') # define the formatting
     plt.gca().xaxis.set_major_formatter(dtFmt) # apply the format to the desired axis
     clevs = np.arange(-2,0.,.02)
     im  = ax.contourf(time,z/1000.,np.log10(ext.EXT),clevs,cmap=cm,extend='max')
     cf  = ax.plot(tyme,alt/1000.,color='magenta',linewidth=4)
-    if(model != 'res'):
-        im2 = ax.contour(time,z/1000.,cld,[0.49,0.5],colors='slategray')
+    ax.set_ylim(0,12)
+#    ax.set_ylim(0,4)
+#    ax.set_xlim([datetime.datetime(2024, 6, 7, 15, 45,0), datetime.datetime(2024, 6, 7, 15, 27,0)])
+#    if(model != 'res'):
+#        im2 = ax.contour(time,z/1000.,cld,[0.49,0.5],colors='slategray')
     ax.set_facecolor('black')
 
     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
@@ -115,39 +128,34 @@ def plotext(yyyymmdd,species=None,model='fp',aircraft='G3'):
     cbar1.set_label(label='%s %sAerosol Extinction [532 nm, km-1]'%(modeltitle,speciestitle),
                     size=16,rotation=270.,labelpad=25)
     plt.title('%s track: '%(aircraft)+yyyymmdd, size=20)
-    species_ = ''
-    if(species != None):
-        species_ = species+'_'
-    plt.savefig('ARCSIX-MetNav_%s_'%(aircraft)+yyyymmdd+'_R0.%s_%sext_curtain.png'%(model,species_))
+    if species == None:
+        species = "Total"
+    ofname = f"{dirname}/ARCSIX-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.{species}_extinction_curtain.png"
+#    ofname = f"ARCSIX-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.{species}_extinction_curtain.png"
+    print(ofname)
+#    plt.show()
+    plt.savefig(ofname)
     plt.close(fig)
 
 if __name__ == "__main__":
 
-    plotext('20240607',aircraft='P3B')
-    plotext('20240607',aircraft='P3B',species='du')
-    plotext('20240607',aircraft='P3B',species='su')
-    plotext('20240607',aircraft='P3B',species='cc')
-    sys.exit()
-#   Learjet
-    mmdd = ['0725','0729','0730','0801','0802','0807','0808']
-    for date in mmdd:
-        plotext('2024%s'%(date),aircraft='Learjet')
-#        plotext('2024%s'%(date),model='geosit',aircraft='Learjet')
-#        plotext('2024%s'%(date),model='res',aircraft='Learjet')
+    parser = OptionParser(usage="Usage: %prog [options] modelname date0",
+                          version='xxx' )
+    (options, args) = parser.parse_args()
+ 
+#  GET OMI FILE FROM INPUT ARGUMENT LIST
+    if len(args) == 2:
+        ict        = args[0]
+        model      = args[1]
+    else:
+        parser.error("must have 0 argument: icartt filename")
+        
+    plotext(ict,model=model)
+    plotext(ict,model=model,species='cc')
+    plotext(ict,model=model,species='du')
+    plotext(ict,model=model,species='ss')
+    plotext(ict,model=model,species='su')
 
-#   P3B
-    mmdd = ['0524','0528','0530','0531','0603','0605','0606','0607','0610','0611','0613',
-            '0722','0725','0729','0730','0801','0802','0807','0808','0809','0815']
-    for date in mmdd:
-        plotext('2024%s'%(date),aircraft='P3B')
-#        plotext('2024%s'%(date),model='geosit',aircraft='P3B')
-#        plotext('2024%s'%(date),model='res',aircraft='P3B')
+
 
     sys.exit()
-#   G3
-    mmdd = ['0530','0531','0603','0605','0606','0607','0610','0611','0613',
-            '0806','0807','0808','0809','0815']
-    for date in mmdd:
-        plotext('2024%s'%(date))
-        plotext('2024%s'%(date),model='geosit')
-        plotext('2024%s'%(date),model='res')
