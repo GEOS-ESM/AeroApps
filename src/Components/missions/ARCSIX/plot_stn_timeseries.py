@@ -12,10 +12,17 @@ import matplotlib
 matplotlib.use('agg')
 
 
-def plot(model='c180R_arcsix.inst2d_hwl_x', varn='TOTEXTTAU550',station='Pituffik',
-         y0=0,y1=1.,scale=1.,units='',title=''):
+def plot(model="fp", collection="inst3-3d-AER-Nv",
+         varn="TOTEXTTAU550",station="Pituffik",
+         y0=0,y1=1.,scale=1.,units="",title=""):
 
-    fp_dataset = 'stn_samples/%s.stations.2024????.nc'%(model)
+    modeltitle='GEOS-FP'
+    modname = model
+    if(model == 'fp'):
+        modname = "GEOS-FP"
+
+    dirname = f"samples/ARCSIX/sampled/stations/{modname}"
+    fp_dataset = f"{dirname}/ARCSIX-{modname}-{collection}-stations_Model_2024????.nc"
     ds = xr.open_mfdataset(fp_dataset)
     stn_list = ds['station'].values.tolist()
 #   Find station index
@@ -53,7 +60,7 @@ def plot(model='c180R_arcsix.inst2d_hwl_x', varn='TOTEXTTAU550',station='Pituffi
         ax.legend()
     plt.title('%s, %s'%(station,titlestr), size=20)
     plt.ylabel('%s %s'%(titlestr,unitstr))
-    plt.savefig('stn_plots/%s.%s.%s.png'%(model,station,varn))
+    plt.savefig(f"{dirname}/ARCSIX-{modname}-{collection}-stations_Model_{station}_{varn}.png")
     plt.close(fig)
 
 if __name__ == "__main__":
@@ -63,14 +70,10 @@ if __name__ == "__main__":
                 'Svalbard_Zeppelin']
     for station in stations:
         print(station)
-        model   = 'c180R_arcsix.inst3d_aer_v'
-        aodvar = 'TOTEXTTAU550'
-        model   = 'fp.inst3_3d_aer_Nv'
-        aodvar = 'TOTEXTTAU'
-        model   = 'MERRA2.tavg1_2d_aer_Nx'
+        model   = 'fp'
         aodvar = 'TOTEXTTAU'
         plot(model=model,station=station,varn=aodvar,units='550 nm',title='AOD')
 #        plot(model=model,station=station,varn='PM',scale=1.e9,units='ug m-3',title='Particulate Matter')
 #        plot(model=model,station=station,varn='PLS',scale=86400.,units='mm day-1',title='Precipitation')
-#        plot(model=model,station=station,varn='SLP',scale=0.01,units='hPa',title='Sea Level Pressure')
+        plot(model=model,station=station,varn='SLP',scale=0.01,units='hPa',title='Sea Level Pressure')
 
