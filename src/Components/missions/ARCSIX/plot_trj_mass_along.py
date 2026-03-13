@@ -106,8 +106,8 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv"):
 
     fig, ax = plt.subplots(figsize=(20, 6))
     time = ext.time.values
-    ntime = ext.dims['time']
-    nlev = ext.dims['level']
+    ntime = ext.sizes['time']
+    nlev = ext.sizes['level']
     time = np.repeat(time.reshape(ntime,1),nlev,axis=1)
 #    ax.set_ylim(0,12)
     plt.ylabel('GPS Altitude [km]')
