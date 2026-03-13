@@ -131,7 +131,7 @@ def sample(model='c180R_arcsix', collection='inst3d_aer_v', date0='20240501'):
         stn_ds["DEPOL532nm"] = ext["DEPOL"]
 
 # write data to a netcdf file
-    outFile = f"./{dirname}/ARCSIX-{modname}-{collname}-stations_Model_{date0}.nc"
+    outFile = f"./{dirname}/ARCSIX-{modname}-{collname}-stations_Model_{date0}_R0.nc"
     print(outFile)
     stn_ds.to_netcdf(path=outFile.format(stations),engine='h5netcdf')
 

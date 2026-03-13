@@ -36,7 +36,7 @@ def plot(model="fp", collection="inst3-3d-AER-Nv", varn="T",station="Pituffik",
         modname = model
         
     dirname = f"samples/ARCSIX/sampled/stations/{modname}"
-    fp_dataset = f"{dirname}/ARCSIX-{modname}-{collection}-stations_Model_2024????.nc"
+    fp_dataset = f"{dirname}/ARCSIX-{modname}-{collection}-stations_Model_2024????_R0.nc"
     print(fp_dataset)
     ds = xr.open_mfdataset(fp_dataset)
     stn_list = ds['station'].values.tolist()
