@@ -28,5 +28,5 @@
   echo $dates
   prund.pl -H `hostname` -d `echo $dates` &
 #  mpirun -np 60 prund.pl -H `hostname` ./sample_stations.py c180R_arcsix inst3d_aerdms_v %s
-  mpirun -np 63 prund.pl -H `hostname` ./sample_stations.py fp tavg1_2d_lfo_Nx %s
+  mpirun -np 63 prund.pl -H `hostname` ./sample_stations.py fp inst3_3d_aer_Nv %s
 

@@ -20,7 +20,7 @@
   echo $tracks
 
   prund.pl -H `hostname` -d `echo $tracks` &
-#  mpirun -np 48 prund.pl -H `hostname` ./sample_trajectory.py fp inst3_3d_aer_Nv %s
-  mpirun -np 48 prund.pl -H `hostname` ./sample_trajectory.py fp tavg1_2d_lfo_Nx %s
+  mpirun -np 48 prund.pl -H `hostname` ./sample_trajectory.py fp inst3_3d_aer_Nv %s
+#  mpirun -np 48 prund.pl -H `hostname` ./sample_trajectory.py fp tavg1_2d_lfo_Nx %s
 #  mpirun -np 48 prund.pl -H `hostname` ./sample_trajectory.py MERRA2 inst3_3d_aer_Nv %s
 
