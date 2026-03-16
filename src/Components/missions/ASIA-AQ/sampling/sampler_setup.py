@@ -114,7 +114,7 @@ def create_experiment_directory():
     experiment_directory.mkdir(parents=True, exist_ok=True)
 
     # Copy the model ctl files to the experiment directory.
-    config_filepath = current_directory / "inst3_aer_Nv"
+    config_filepath = current_directory / "inst3d_aer_v"
     shutil.copy(config_filepath, experiment_directory / config_filepath.name)
 
     # Copy the config yaml files to the experiment directory
@@ -167,7 +167,7 @@ def create_experiment_directory():
     print(f"Go to the folder and if necessary edit the files {slurm}.")
     print()
     print("From the experiment directory, issue the commands: ")
-    for loc_filename in slurm
+    for loc_filename in slurm:
         print(f"   sbatch {loc_filename}")
     print("-"*70)
     print()
