@@ -28,5 +28,6 @@ MAPL:
 GMAOpyobs:
   local: ./src/Shared/GMAO_Shared/GMAO_pyobs@
   remote: ../GMAOpyobs.git
-  tag: v1.2.6
+#  tag: v1.2.6
+  branch: feature/pcastell/improve_update
   develop: develop
