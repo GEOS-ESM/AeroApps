@@ -15,13 +15,15 @@
 
 #  module load python/GEOSpyD/Ana2019.10_py3.7
 
-  cd $NOBACKUP/AeroApps/src/Components/missions/INSPYRE/web_plts
   which python
   
   set yy = YYYY
   set mm = MM
   set dd = DD
   set hh = HH
+
+  set start = $yy$mm${dd}T$hh
+  cd $NOBACKUP/AeroApps/src/Components/missions/INSPYRE/web_plts/$start
 
 # run sampling scripts
    set files = `ls -1 /home/pcolarco/fp/forecast/Y$yy/M$mm/D$dd/H${hh}/GEOS.fp.fcst.inst1_2d_hwl_Nx.*.V01.nc4`
@@ -50,7 +52,6 @@ module load ffmpeg
   rm -f fp.$COLL.???.png
   end
 
-set start = $yy$mm${dd}T$hh
 set web = "/discover/nobackup/projects/gmao/iesa/pub/aerosol/inspyre/$start"
 
 \cp -f fp.*.$yy$mm${dd}_${hh}z.mp4 $web/

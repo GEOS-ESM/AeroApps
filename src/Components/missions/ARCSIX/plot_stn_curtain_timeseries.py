@@ -13,7 +13,7 @@ import matplotlib
 matplotlib.use('agg')
 
     
-config = '/home/pcolarco/silo/GMAOpyobs/src/config/m2_pm25.yaml'
+config = './g2g_pm25.yaml'
 
 #Get the HALO RGB colors
 import csv
@@ -28,10 +28,16 @@ cm = LinearSegmentedColormap.from_list(
         'my_map', rgb)
 
 
-def plot(model='c180R_arcsix.inst3d_aer_v', varn='T',station='Pituffik',
-         y0=250,y1=310.,scale=1.,units='',title='',species=None):
+def plot(model="fp", collection="inst3-3d-AER-Nv", varn="T",station="Pituffik",
+         y0=250,y1=310.,scale=1.,units="",title="",species=None):
 
-    fp_dataset = 'stn_samples/%s.stations.2024????.nc'%(model)
+    modname = "GEOS-FP"
+    if model == "MERRA2":
+        modname = model
+        
+    dirname = f"samples/ARCSIX/sampled/stations/{modname}"
+    fp_dataset = f"{dirname}/ARCSIX-{modname}-{collection}-stations_Model_2024????.nc"
+    print(fp_dataset)
     ds = xr.open_mfdataset(fp_dataset)
     stn_list = ds['station'].values.tolist()
 #   Find station index
@@ -105,12 +111,11 @@ def plot(model='c180R_arcsix.inst3d_aer_v', varn='T',station='Pituffik',
                     size=16,rotation=270.,labelpad=25)
     ax.set_facecolor('black')
     plt.title('%s, %s'%(station,titlestr), size=20)
-    plt.savefig('stn_plots/%s.%s.%s.png'%(model,station,varn))
+    plt.savefig(f"{dirname}/ARCSIX-{modname}-{collection}-stations_Model_{station}_{varn}.png")
     plt.close(fig)
 
 if __name__ == "__main__":
-    model   = 'c180R_arcsix.inst3d_aer_v'
-    model   = 'fp.inst3_3d_aer_Nv'
+    model        = 'fp'
     stations = ['Resolute_Bay', 'Pituffik', 'Kaffeklubben_Island', 'Eureka',
                 'Alert', 'Baffin_Bay', 'Belle', 'Fram_Strait', 'Lisee',
                 'Northern_Arctic_Ocean', 'Station_Nord', 'Summit_Greenland',

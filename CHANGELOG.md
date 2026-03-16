@@ -4,7 +4,7 @@
 
 ### Added
 - Add ARCSIX mission directories
-- Add INSPYRE mission directories
+- Add INSPYRE mission directories and updated web plotting package
 - Add ASIA-AQ mission scripts
 - Add a post processing script that creates a zarr virtual data store for a model run to Applications
 
@@ -13,6 +13,8 @@
 ### Changed
 - updates to v1.2.6 of pyobs that contains a hotfix for aeronet.py
 - move model utils to Shared directory. Rename module to aeroeval
+- refactored ARCSIX mission post-processing code for suitability for archive upload
+
 
 ## [v2.3.0] - 2025-07-25
 
