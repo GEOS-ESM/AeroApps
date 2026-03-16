@@ -146,6 +146,15 @@ def calc_large_submicron_aop(traj_ds,config):
         pm = pm.assign({spc:pm_spc['PM']*1e-9/pm_spc['AIRDENS']})  # back to kg/kg
 
     pm['RH'] = traj_STP['RH'].copy()
+    pm['NO3an2'] = xr.zeros_like(pm['NO3an2'])
+    pm['NO3an3'] = xr.zeros_like(pm['NO3an3'])
+
+    # write out the PM used to submicron large AOP calculations
+    outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + 'submicron_pm_STP_LARGE.nc4'
+    pm.to_netcdf(outFile,engine='netcdf4')
+
+    # now get the submicron masses and assign it to the optics
+    optics = G2GAOP(traj_STP,config=config['large_config'])
     optics.aer = pm
 
     # loop through wavelengths
@@ -161,7 +170,7 @@ def calc_large_submicron_aop(traj_ds,config):
 
         aop['H'] = traj_STP['H']
         aop['PS'] = traj_STP['PS']
-        outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_submicron_aop_STP.nc4'
+        outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_submicron_aop_STP_LARGE.nc4'
         aop.to_netcdf(outFile,engine='netcdf4')        
 
         # loop through RH = 0,20,40,80
@@ -177,7 +186,7 @@ def calc_large_submicron_aop(traj_ds,config):
             aop['H'] = traj_STP['H']
             aop['PS'] = traj_STP['PS']
             irh = int(10*rh)
-            outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_submicron_aop_STP_rh{irh}.nc4'
+            outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_submicron_aop_STP_rh{irh}_LARGE.nc4'
             aop.to_netcdf(outFile,engine='netcdf4')
 
 
