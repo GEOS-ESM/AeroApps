@@ -1,0 +1,17 @@
+#
+# Configuration file for sampling a GEOS experiment
+
+# model control files
+model_aer_ctl: inst3d_aer_v_aaqoxgmi_2019
+
+
+# location and years of of IMPROVE data
+improve_site_map: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/IMPROVE/IMPROVE_locations.txt
+improve_data_dir: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/IMPROVE/
+
+# directory for sampled files
+sampled_outdir: ./sampled/improve
+
+# directory for plot files
+plot_outdir: ./plots/improve
+
