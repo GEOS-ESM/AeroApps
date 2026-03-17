@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-
+from ts_plot_diff import ts_plot_diff
 def ts_plot(plot_df,spcname,outdir):
 
     plt.figure(figsize=(12, 6))
@@ -33,7 +33,7 @@ def ts_plot(plot_df,spcname,outdir):
     plt.ylabel(r"Concentration ($\mu g/m^3$)")
     plt.xlabel("Date")
     plt.grid(True, alpha=0.3)
-    outf = f'{outdir}/spc.png'
+    outf = f'{outdir}/{spcname}.png'
     plt.savefig(outf)
     plt.show()
 
@@ -93,15 +93,16 @@ if __name__ == '__main__':
 
     # subset geos and improve for the dates that are available in both
     for spc in spcs:
-        # align coordinates
-        geos_sync, imp_sync = xr.align(stn_ds[spc], imp_ds, join="inner")
+        # Find the common times between both datasets
+        common_times = stn_ds[spc].time.values[np.isin(stn_ds[spc].time.values, imp_ds.time.values)]
 
-        
+        # align coordinates
+        geos_sync = stn_ds[spc].sel(time=common_times,station=imp_ds.station.values)
         stn_ds[spc] = geos_sync
 
 
 
-    stn_ds['improve'] = imp_sync
+    stn_ds['improve'] = imp_ds
    
     # create a datatree of the two datasets
     dt = xr.DataTree.from_dict(stn_ds) 
@@ -112,31 +113,17 @@ if __name__ == '__main__':
             'SOILf': dt['DU'],
             'ECf': dt['BC'],
             'OMCf': dt['OC'] + dt['BR'],
-            'ammSO4f': dt['SU']
+            'ammSO4f': dt['SU'],
+            'ammNO3f': dt['NI'],
             }
 
     for spc in imspc:
-        df_geos = imspc[spc].PMDRY.to_dataframe(name="PM25").reset_index()
+        ds_imp  = dt['improve'].pm25.sel(ParamCode=spc,drop=True)
+        ds_geos = imspc[spc].PMDRY.where(ds_imp.notnull())
+        df_geos = ds_geos.to_dataframe(name="PM25").reset_index()
         df_geos["Source"] = "GEOS"
-        df_imp   = dt['improve'].pm25.sel(ParamCode=spc,drop=True).to_dataframe(name="PM25").reset_index()
+        df_imp   = ds_imp.to_dataframe(name="PM25").reset_index()
         df_imp["Source"] = 'IMPROVE'
-
-        # Merge on time and station to align them
-        merged = df_geos[['time', 'station', 'PM25']].merge(
-            df_imp[['time', 'station', 'PM25']], 
-            on=['time', 'station'], 
-            how='inner',  # Only keep time-station pairs that exist in both
-            suffixes=('_geos', '_imp')
-        )
-
-        # Drop rows where either PM25_geos or PM25_imp is NaN
-        merged = merged.dropna(subset=['PM25_geos', 'PM25_imp'])
-
-        # Now filter the original dataframes to keep only these valid pairs
-        valid_pairs = merged[['time', 'station']]
-
-        df_geos = df_geos.merge(valid_pairs, on=['time', 'station'], how='inner')
-        df_imp = df_imp.merge(valid_pairs, on=['time', 'station'], how='inner')
 
         # concatenate
         plot_df = pd.concat([df_geos, df_imp],ignore_index=True) 
