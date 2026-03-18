@@ -6,9 +6,13 @@ model_baseline: inst3d_aer_v_aaqoxgmi_2019
 model_oxh     : inst3d_aer_v_aaqoxh24crt_2019
 model_oxm     : inst3d_aer_v_aaqoxm24crt_2019
 
+# do preprocessing, if false reads in from zarr file
+do_preprocess: False
+
+
 # which plots to make
-do_ts_delta: False
-do_kde: True
+do_ts_delta: True
+do_kde: False
 do_scatter: False
 
 
