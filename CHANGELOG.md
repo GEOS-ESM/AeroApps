@@ -15,6 +15,8 @@
 - updates to v1.2.6 of pyobs that contains a hotfix for aeronet.py
 - move model utils to Shared directory. Rename module to aeroeval
 - Rearranged and renamed some of the ARCSIX codes
+- refactored ARCSIX mission post-processing code for suitability for archive upload
+
 
 ## [v2.3.0] - 2025-07-25
 
