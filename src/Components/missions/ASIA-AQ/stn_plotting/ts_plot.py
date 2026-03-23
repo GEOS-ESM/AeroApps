@@ -1,3 +1,6 @@
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 def ts_plot(plot_df,spcname,outdir):
 
     plt.figure(figsize=(12, 6))
