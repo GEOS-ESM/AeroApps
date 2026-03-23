@@ -5,10 +5,9 @@ set (PYSCRIPTS
     blend.py
     monthly_mod.py
     monthly_obs.py
-    __init__.py
     )
 
 install (
     PROGRAMS  ${PYSCRIPTS}
-    DESTINATION lib/Python/${this}
+    DESTINATION lib/Python/model_utils/${this}
     )

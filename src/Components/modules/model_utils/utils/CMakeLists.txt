@@ -5,10 +5,9 @@ set (PYSCRIPTS
     dust_utils.py
     plot_utils.py
     carma_utils.py
-    __init__.py
     )
 
 install (
     PROGRAMS  ${PYSCRIPTS}
-    DESTINATION lib/Python/${this}
+    DESTINATION lib/Python/model_utils/${this}
     )
