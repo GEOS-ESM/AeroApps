@@ -58,66 +58,75 @@ if __name__ == '__main__':
 
     # IMPROVE measures 24 hour average PM2.5 from midnight to midnight local time
     # get the daily averages at each site
-    tstart = stn_ds.time[0].values.astype('datetime64[us]').item() # convert to datetime
-    tend = stn_ds.time[-1].values.astype('datetime64[us]').item()  # convert to datetime
-
-    tstart = tstart.replace(hour=0,minute=0)
-    tstart_iter = tstart
-    tend   = tend.replace(hour=0,minute=0)
-
-
-    # figure out how to convert local times to UTC for each site
-    localizer = []
-    for site in sites.df['SiteCode']:
-        timezone_name = sites.df[sites.df['SiteCode'] == site]['tz_name'].item()
-        if timezone_name:
-            localizer.append(pytz.timezone(timezone_name))
-        else:
-            localizer.append(None)
-
-    # infer time frequency of files
-    dt = xr.infer_freq(pm25['TOTAL'].time)
-    if dt == 'h':
-        ndt_per_day = 24
-    else:
-        dthours = int(dt[0])
-        ndt_per_day = 24/dthours
-
-    
+    # Count valid obs per day, then mask days with fewer than 8 (3-hourly = 8/day)
     pm25_daily = {}
     for spc in pm25:
-        print(spc)
-        ds = pm25[spc]
-        ds_daily = []
-        tstart_iter = tstart
-        while tstart_iter < tend:
-            print(tstart_iter)
-            ds_sites = []
-            for site, site_localizer in zip(sites.df['SiteCode'],localizer):
-                if site_localizer:
-                    time_aware_local = site_localizer.localize(tstart_iter, is_dst=False)
-                    time_utc_start = time_aware_local.astimezone(pytz.utc).replace(tzinfo=None)
-                    time_utc_end = time_utc_start + timedelta(hours=24)
-                        
-                    ds_new = ds.sel(station=site,time=slice(time_utc_start,time_utc_end),lev=72).mean(dim='time').drop_vars('lev')
+        pm25_daily[spc] = pm25[spc].sel(lev=72).resample(time='1D').mean()
+        pm25_count  = pm25[spc].sel(lev=72).resample(time='1D').count()
 
-                    ds_new = ds_new.assign_coords(time=[tstart_iter])
+        pm25_daily[spc] = pm25_daily[spc].where(pm25_count['PM'] >= 8)
 
-                    ntimes = ds.sel(station=site,time=slice(time_utc_start,time_utc_end)).sizes['time']
+#    sys.exit()
+#    tstart = stn_ds.time[0].values.astype('datetime64[us]').item() # convert to datetime
+#    tend = stn_ds.time[-1].values.astype('datetime64[us]').item()  # convert to datetime
 
-                    if (ntimes <= ndt_per_day):
-                        # complete day not available
-                        ds_new =xr.full_like(ds_new, fill_value=np.nan)
+#    tstart = tstart.replace(hour=0,minute=0)
+#    tstart_iter = tstart
+#    tend   = tend.replace(hour=0,minute=0)
 
 
-                    ds_sites.append(ds_new)
+#    # figure out how to convert local times to UTC for each site
+#    localizer = []
+#    for site in sites.df['SiteCode']:
+#        timezone_name = sites.df[sites.df['SiteCode'] == site]['tz_name'].item()
+#        if timezone_name:
+#            localizer.append(pytz.timezone(timezone_name))
+#        else:
+#            localizer.append(None)
 
-            ds_sites = xr.concat(ds_sites,dim='station',coords="different",compat='equals')
-            ds_daily.append(ds_sites)
+#    # infer time frequency of files
+#    dt = xr.infer_freq(pm25['TOTAL'].time)
+#    if dt == 'h':
+#        ndt_per_day = 24
+#    else:
+#        dthours = int(dt[0])
+#        ndt_per_day = 24/dthours
 
-            tstart_iter += timedelta(days=1)
-
-        pm25_daily[spc] = xr.concat(ds_daily,dim='time',coords="different",compat='equals',data_vars='all')
+    
+#    pm25_daily = {}
+#    for spc in pm25:
+#        print(spc)
+#        ds = pm25[spc]
+#        ds_daily = []
+#        tstart_iter = tstart
+#        while tstart_iter < tend:
+#            print(tstart_iter)
+#            ds_sites = []
+#            for site, site_localizer in zip(sites.df['SiteCode'],localizer):
+#                if site_localizer:
+#                    time_aware_local = site_localizer.localize(tstart_iter, is_dst=False)
+#                    time_utc_start = time_aware_local.astimezone(pytz.utc).replace(tzinfo=None)
+#                    time_utc_end = time_utc_start + timedelta(hours=24)
+#                        
+#                    ds_new = ds.sel(station=site,time=slice(time_utc_start,time_utc_end),lev=72).mean(dim='time').drop_vars('lev')
+#
+#                    ds_new = ds_new.assign_coords(time=[tstart_iter])
+#
+#                    ntimes = ds.sel(station=site,time=slice(time_utc_start,time_utc_end)).sizes['time']
+#
+#                    if (ntimes <= ndt_per_day):
+#                        # complete day not available
+#                        ds_new =xr.full_like(ds_new, fill_value=np.nan)
+#
+#
+#                    ds_sites.append(ds_new)
+#
+#            ds_sites = xr.concat(ds_sites,dim='station',coords="different",compat='equals')
+#            ds_daily.append(ds_sites)
+#
+#            tstart_iter += timedelta(days=1)
+#
+#        pm25_daily[spc] = xr.concat(ds_daily,dim='time',coords="different",compat='equals',data_vars='all')
 
     # Write the speciated daily means to a netcdf file
     comp = dict(zlib=True)
