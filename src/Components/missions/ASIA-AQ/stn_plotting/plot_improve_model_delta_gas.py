@@ -51,6 +51,13 @@ if __name__ == '__main__':
     spcs = ['NH3','HNO3CONC']
     units = ['kg kg-1','kg m-3']
 
+    # --- Molecular weights (g/mol) ---
+    M_air = 28.97   # dry air
+
+    M_gas = {'NH3': 17.03,
+             'HNO3CONC': 63.01}
+
+
     # get output directory
     plot_outdir = config['plot_outdir'] + '/' + baseline_ctl
     os.makedirs(plot_outdir,exist_ok=True)
@@ -59,23 +66,50 @@ if __name__ == '__main__':
     oxh_ds      = xr.open_dataset(f'{outdir}/improve.{oxh_ctl}.nc4')
     oxm_ds      = xr.open_dataset(f'{outdir}/improve.{oxm_ctl}.nc4')
 
-    for spc,unit in zip(spcs,units):
+    for spc in spcs:
         # Get baseline data
         ds_baseline = baseline_ds[spc]
         ds_oxh = oxh_ds[spc]
         ds_oxm = oxm_ds[spc]
-        
-        
+
+        # convert to pptv
+        if spc == 'NH3':
+            ds_baseline = ds_baseline*baseline_ds['AIRDENS']
+            ds_ohx      = ds_oxh*oxh_ds['AIRDENS']
+            ds_oxm      = ds_oxm*oxm_ds['AIRDENS']
+
+        mw_gas = M_gas[spc]
+        # kg/m3 -> mol/m3 (divide by molecular weight in kg/mol)
+        ds_baseline = ds_baseline / (mw_gas / 1000.0)        
+        ds_oxh = ds_oxh / (mw_gas / 1000.0)
+        ds_oxm = ds_oxm / (mw_gas / 1000.0)
+
+        # mol/m3 -> mol/mol 
+        # air molar density = airdens / (M_air/1000) mol/m3
+        air_mol_m3 = baseline_ds['AIRDENS'] / (M_air / 1000.0)
+        ds_baseline = ds_baseline / air_mol_m3
+
+        air_mol_m3 = oxh_ds['AIRDENS'] / (M_air / 1000.0)
+        ds_oxh = ds_oxh / air_mol_m3
+
+        air_mol_m3 = oxm_ds['AIRDENS'] / (M_air / 1000.0)
+        ds_oxm = ds_oxm / air_mol_m3        
+       
+        # mol/mol -> pptv
+        ds_baseline = ds_baseline * 1e12
+        ds_oxh = ds_oxh * 1e12
+        ds_oxm = ds_oxm * 1e12
+ 
         # Create dataframes for baseline vs obs (top subplot)
-        monthly_mean = ds_baseline.groupby('time.month').mean(skipna=True).rename({'month': 'time'})
+        monthly_mean = ds_baseline.sel(lev=72).groupby('time.month').mean(skipna=True).rename({'month': 'time'})
         df_baseline = monthly_mean.to_dataframe(name=spc).reset_index()
         df_baseline["Source"] = "Baseline"
         
-        monthly_mean = ds_oxh.groupby('time.month').mean(skipna=True).rename({'month': 'time'})
+        monthly_mean = ds_oxh.sel(lev=72).groupby('time.month').mean(skipna=True).rename({'month': 'time'})
         df_oxh = monthly_mean.to_dataframe(name=spc).reset_index()
         df_oxh["Source"] = 'OxH'
 
-        monthly_mean = ds_oxm.groupby('time.month').mean(skipna=True).rename({'month': 'time'})
+        monthly_mean = ds_oxm.sel(lev=72).groupby('time.month').mean(skipna=True).rename({'month': 'time'})
         df_oxm = monthly_mean.to_dataframe(name=spc).reset_index()
         df_oxm["Source"] = 'OxM'
         
@@ -84,6 +118,7 @@ if __name__ == '__main__':
         
         
         # Create the plot
+        unit = 'pptv'
         ts_plot(plot_df_top, spc, unit, plot_outdir)
 
          
