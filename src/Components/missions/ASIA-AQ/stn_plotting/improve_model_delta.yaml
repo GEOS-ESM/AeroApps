@@ -11,9 +11,11 @@ do_preprocess: False
 
 
 # which plots to make
-do_ts_delta: True
+do_ts_delta: False
 do_kde: False
 do_scatter: False
+do_map_mae: True
+do_map_mb: True
 
 
 # location and years of of IMPROVE data
