@@ -1,6 +1,7 @@
 #!/bin/tcsh
 
-cd /discover/nobackup/pcolarco/AeroApps/src/Components/missions/INSPYRE/web_plts
+cd /discover/nobackup/projects/INSPYRE_25/pcolarco/inspyre/
+set ROOTDIR = "\/discover\/nobackup\/projects\/INSPYRE\_25\/pcolarco\/inspyre"
 
 if($1 == "") then
 # No arguments: Get the current date
@@ -52,11 +53,13 @@ sed "s/YYYY/$YYYY/g;s/MM/$MM/g;s/DD/$DD/g;s/HH/$HH/g" index.tmp > $start/index.h
 # ===============
 # python plotting
 # Update buoy locations
-sed "s/YYYY/'$YYYY'/g;s/MM/'$MM'/g;s/DD/'$DD'/g;s/HH/'$HH'/g" inspyre_plots.csh > $start/inspyre_plots.csh.$YYYY$MM${DD}_$HH
+sed "s/ROOTDIR/'$ROOTDIR'/g;s/YYYY/'$YYYY'/g;s/MM/'$MM'/g;s/DD/'$DD'/g;s/HH/'$HH'/g" inspyre_plots.csh > $start/inspyre_plots.csh.$YYYY$MM${DD}_$HH
 \cp -f *.py $start/
+\cp -f *.yaml $start/
 \cp -f mp4_encode $start/
+ln -s /home/pcolarco/ExtData $start/ExtData
 qsub $start/inspyre_plots.csh.$YYYY$MM${DD}_$HH
-rsync -auPv $start/ $web
+#rsync -auPv $start/ $web
 exit
 # ===============
 
