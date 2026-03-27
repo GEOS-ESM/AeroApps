@@ -18,6 +18,9 @@ dc8_merge: /discover/nobackup/projects/gmao/iesa/aerosol/campaigns/ASIA-AQ/archi
 # location and years of of IMPROVE data
 improve_site_map: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/IMPROVE/IMPROVE_locations.txt
 
+# locatin of AMoN data
+amon_site_map: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/AMoN/amon_silte_list.csv
+
 # output directory for sampled files
 sampled_outdir: ./sampled
 
