@@ -24,10 +24,23 @@ custom_cmap = mcolors.LinearSegmentedColormap.from_list(
     'density_cmap', colors, N=256
 )
 
+colors = ['#08306B',   # dark blue
+     '#2171B5',   # medium blue
+     '#6BAED6',   # light blue
+     '#74C476',   # light green
+     '#238B45',   # medium green
+     '#FFFFFF',   # white (center)
+     '#9E9AC8',   # light purple
+     '#6A51A3',   # medium purple
+     '#F16913',   # light red/orange
+     '#D62728',   # medium red
+     '#67000D']  # dark red
+custom_cmap = mcolors.LinearSegmentedColormap.from_list(
+    'blue_green_white_purple_red', colors, N=256)
 
 def plot_station_map_mb(df_list, spcname, lon_col='Longitude', lat_col='Latitude', 
                      val_col='PM25', titles=['','',''], units=r'$\mu g/m^3$',
-                     cmap=plt.cm.gist_earth_r, vmin=None, vmax=None,
+                     cmap=custom_cmap, vmin=None, vmax=None,
                      figsize=(9, 12), outdir=None):
     """
     Plot a map scatter plot where the color of each point 
@@ -61,10 +74,10 @@ def plot_station_map_mb(df_list, spcname, lon_col='Longitude', lat_col='Latitude
     # --- Set colorbar limits ---
     if vmin is None:
 #        vmin = min(sm['abs_mean'].min() for sm in station_means)
-        vmin = 0
+        vmin = -5
     if vmax is None:
 #        vmax = max(sm['abs_mean'].max() for sm in station_means)
-        vmax = 10
+        vmax = 5
 
     # --- Compute map extent across all 3 dataframes ---
     all_lons = np.concatenate([sm[lon_col].values for sm in station_means])
