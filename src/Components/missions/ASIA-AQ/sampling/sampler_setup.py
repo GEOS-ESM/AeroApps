@@ -154,7 +154,7 @@ def create_experiment_directory():
         print(f"You can change the group id in the SLURM script available in the experiment directory")
         print()
 
-    slurm = ["aaq_sampler_run.j","improve_sampler_run.j","ctl2reference_run.j"]
+    slurm = ["aaq_sampler_run.j","improve_sampler_run.j","amon_sampler.j","ctl2reference_run.j"]
     for loc_filename in slurm:
         target_dir = experiment_directory
         dict_words = {"@SRCDIR": str(source_directory), "@GROUPID": my_group}
