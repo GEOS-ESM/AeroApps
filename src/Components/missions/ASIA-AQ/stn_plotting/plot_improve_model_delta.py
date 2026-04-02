@@ -14,8 +14,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy import stats
 from ts_plot_delta import ts_plot_delta
-from kde_plot import kde_plot
-from scatter_plot import scatter_plot
 
 def clean_node(ds):
     if ds is None:
@@ -206,9 +204,3 @@ if __name__ == '__main__':
         if config.get('do_ts_delta', False):
             ts_plot_delta(plot_df_top, plot_df_bottom, spc, plot_outdir)
 
-        if config.get('do_scatter', False):
-            scatter_plot(df_baseline, df_imp, df_oxh, df_oxm, spc, plot_outdir)
-
-        if config.get('do_kde', False):
-            kde_plot(df_baseline, df_imp, df_oxh, df_oxm, spc, plot_outdir)        
-         
