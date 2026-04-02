@@ -15,6 +15,7 @@ import dask
 import pandas as pd
 import logging
 from distributed import wait
+import gc
 import time
 import psutil
 import json
@@ -180,3 +181,7 @@ if __name__ == '__main__':
                 logger.info(f"Wrote {vn} in {time.time()-t0:.2f}s")
 
             logger.info(f"Successfully wrote {outFile} for {ctl} control file")
+
+            # give workers time to shut down cleanly
+            client.run(gc.collect)
+            client.shutdown()   # explicitly shut down workers before cluster exits
