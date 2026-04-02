@@ -10,7 +10,7 @@ def kde_plot(df_baseline, df_imp, df_oxh, df_oxm, spcname, outdir):
     - Middle: OxH vs IMPROVE observations
     - Right: OxM vs IMPROVE observations
     """
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
     
     # Common plot settings
     plot_configs = [
@@ -85,12 +85,13 @@ def kde_plot(df_baseline, df_imp, df_oxh, df_oxm, spcname, outdir):
         ax.set_title(f"{label} vs IMPROVE")
         ax.legend(loc='lower right', fontsize=8)
         ax.grid(True, alpha=0.3)
-        
-        # Set equal aspect ratio
-        ax.set_aspect('equal', adjustable='box')
+
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 10)
+
     
-    plt.suptitle(f"Surface {spcname} PM2.5 Density Plots", fontsize=14, y=1.02)
-    plt.tight_layout()
+    plt.suptitle(f"Surface {spcname} PM2.5 Density Plots", fontsize=14, y=0.99)
+    plt.tight_layout(rect=[0, 0, 0.99, 0.99])
     outf = f'{outdir}/{spcname}_kde.png'
     plt.savefig(outf, dpi=150, bbox_inches='tight')
     plt.show()
