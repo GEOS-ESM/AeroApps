@@ -1,0 +1,44 @@
+#
+# Configuration file for sampling a GEOS experiment
+
+# model control files
+model_aer_ctl: inst3d_aer_v_aaqoxm24crt_2019
+model_other_ctl:
+    -
+
+# model control files you want to create a reference store for
+reference_ctl_list:
+    - inst3d_aer_v_aaqoxm24crt_2019
+# output directory for reference stores
+combined_references_dir: ./combined_references
+
+# location of merged dc-8 files
+dc8_merge: /discover/nobackup/projects/gmao/iesa/aerosol/campaigns/ASIA-AQ/archive/merges/v20250423
+
+# location and years of of IMPROVE data
+improve_site_map: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/IMPROVE/IMPROVE_locations.txt
+improve_data_dir: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/IMPROVE/
+improve_years: 
+    - 2019
+    - 2024
+
+# locatin of AMoN data
+amon_site_map: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/AMoN/amon_silte_list.csv
+
+# output directory for sampled files
+sampled_outdir: ./sampled 
+
+# Location of the aerosol property configuration file
+large_config: g2g_large.yaml
+large_submicron_config: g2g_large_submicron.yaml
+ams_config: g2g_ams.yaml
+sp2_config: g2g_sp2.yaml
+improve_config: g2g_improve.yaml
+
+# flags for which calculations you want to do
+do_large_aop: True
+do_large_submicron_aop: True
+do_ams: True
+do_sp2: True
+
+
