@@ -15,8 +15,6 @@
 #SBATCH --mail-type=FAIL
 ##SBATCH --qos=debug
 #######################################################################
-#  Run sampler code for ASIA-AQ model runs at IMPROVE surface stations
-#######################################################################
 #           Architecture Specific Environment Variables
 #######################################################################
 
