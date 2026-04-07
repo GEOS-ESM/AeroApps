@@ -9,6 +9,7 @@ import sys
 from xml.etree import ElementTree as ET
 from datetime import datetime
 from html.parser import HTMLParser
+import argparse
 
 class TableParser(HTMLParser):
     """Parse HTML table from KML description field."""
@@ -228,8 +229,19 @@ def write_csv(sites, output_file):
 
 if __name__ == '__main__':
 
-    kml_file = 'amon_sites.kml'
-    csv_file = 'amon_sites.kml.csv'
+    parser = argparse.ArgumentParser(
+        description='Convert AMoN KML file to CSV format.'
+    )
+    parser.add_argument('kml_file',
+                        help='input KML file')
+    parser.add_argument('csv_file',
+                        help='output CSV file')
+
+    args = parser.parse_args()
+
+
+    kml_file = args.kml_file
+    csv_file = args.csv_file
 
     if len(sys.argv) >= 2:
         kml_file = sys.argv[1]
