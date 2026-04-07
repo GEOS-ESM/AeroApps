@@ -23,7 +23,7 @@ improve_years:
     - 2024
 
 # locatin of AMoN data
-amon_site_map: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/AMoN/amon_silte_list.csv
+amon_site_map: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/AMoN/amon_site_list.kml.csv
 
 # output directory for sampled files
 sampled_outdir: ./sampled 
