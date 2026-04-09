@@ -127,6 +127,12 @@ def create_experiment_directory():
             shutil.copy(p, experiment_directory)
         elif os.path.isdir(p):
             shutil.copytree(p, experiment_directory / os.path.basename(p),dirs_exist_ok=True)
+    config_filepath = current_directory / "run_plots.py"
+    for p in glob.glob(str(config_filepath)):
+        if os.path.isfile(p):
+            shutil.copy(p, experiment_directory)
+        elif os.path.isdir(p):
+            shutil.copytree(p, experiment_directory / os.path.basename(p),dirs_exist_ok=True)
 
     print()
     print("-"*70)
