@@ -24,6 +24,9 @@ improve_years:
 # locatin of AMoN data
 amon_site_map: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/AMoN/amon_site_list.kml.csv
 
+# location of CASTNET data
+castnet_site_map: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/CASTNET/site/site.csv
+
 # output directory for sampled files
 sampled_outdir: ./sampled 
 
