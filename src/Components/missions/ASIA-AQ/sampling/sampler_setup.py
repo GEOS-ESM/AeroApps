@@ -119,7 +119,9 @@ def create_experiment_directory():
 
     # Copy the config yaml files to the experiment directory
     configs = ["g2g_ams.yaml","g2g_sp2.yaml","g2g_large.yaml",
-               "g2g_large_submicron.yaml","g2g_improve.yaml","sampling.yaml"]
+               "g2g_large_submicron.yaml","g2g_improve.yaml","sampling.yaml",
+               "sampling_aaqoxgmi_2019.yaml","sampling_aaqoxh24crt_2019.yaml",
+               "sampling_aaqoxm24crt_2019.yaml"]
     for cf in configs:
         config_filepath = current_directory / cf
         shutil.copy(config_filepath, experiment_directory / config_filepath.name)
