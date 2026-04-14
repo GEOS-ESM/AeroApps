@@ -9,7 +9,7 @@
 #SBATCH --constraint=mil
 #SBATCH --time=12:00:00
 #SBATCH -A @GROUPID
-#SBATCH -o output_amon_sampler-%j.log
+#SBATCH -o output_castnet_sampler-%j.log
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
@@ -30,4 +30,4 @@ source $SRC_DIR/env@/g5_modules
 #          Run Sampler 
 #######################################################################
 
-python3 -u ./amon_sampler.py sampling.yaml >& amon_sampler-${SLURM_JOB_ID}.log
+python3 -u ./castnet_sampler.py sampling.yaml >& castnet_sampler-${SLURM_JOB_ID}.log
