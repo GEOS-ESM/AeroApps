@@ -121,13 +121,15 @@ def create_experiment_directory():
     configs = ["g2g_ams.yaml","g2g_sp2.yaml","g2g_large.yaml",
                "g2g_large_submicron.yaml","g2g_improve.yaml","sampling.yaml",
                "sampling_aaqoxgmi_2019.yaml","sampling_aaqoxh24crt_2019.yaml",
-               "sampling_aaqoxm24crt_2019.yaml"]
+               "sampling_aaqoxm24crt_2019.yaml", 'sampling_m2_g3_hsrl.yaml']
     for cf in configs:
         config_filepath = current_directory / cf
         shutil.copy(config_filepath, experiment_directory / config_filepath.name)
 
     # Copy script to the experiment directory.
-    scripts = ["aaq_sampler.py","aaq_derived.py","improve_sampler.py","improve_derived.py","amon_sampler.py","castnet_sampler.py"]
+    scripts = ["aaq_sampler.py","aaq_derived.py","improve_sampler.py",
+                "improve_derived.py","amon_sampler.py","castnet_sampler.py",
+                "aaq_g3_hsrl_sampler.py"]
     for sc in scripts:
         config_filepath = current_directory / sc
         shutil.copy(config_filepath, experiment_directory / config_filepath.name)
@@ -156,7 +158,9 @@ def create_experiment_directory():
         print(f"You can change the group id in the SLURM script available in the experiment directory")
         print()
 
-    slurm = ["aaq_sampler_run.j","improve_sampler_run.j","amon_sampler_run.j","castnet_sampler_run.j","ctl2reference_run.j"]
+    slurm = ["aaq_sampler_run.j","improve_sampler_run.j",
+             "amon_sampler_run.j","castnet_sampler_run.j","ctl2reference_run.j",
+             "aaq_g3_hsrl_sampler_run.j"]
     for loc_filename in slurm:
         target_dir = experiment_directory
         dict_words = {"@SRCDIR": str(source_directory), "@GROUPID": my_group}

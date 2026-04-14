@@ -1,0 +1,21 @@
+#
+# Configuration file for sampling a GEOS experiment
+
+# model control files
+model_aer_ctl: inst3d_aer_v_m2
+model_other_ctl:
+    -
+
+# location of G3 files
+g3_h5: /discover/nobackup/projects/gmao/iesa/aerosol/campaigns/ASIA-AQ/archive/G3/HAIR.JOHN
+
+# output directory for sampled files
+sampled_outdir: ./sampled_g3 
+
+# Location of the aerosol property configuration file
+hsrl_pm25_config: gocart_hsrl_pm25.yaml
+
+# flags for which calculations you want to do
+do_hsrl_pm25: True
+
+
