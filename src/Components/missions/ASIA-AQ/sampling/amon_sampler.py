@@ -64,8 +64,7 @@ if __name__ == '__main__':
 
     # create output directory
     outdir = config['sampled_outdir'] + '/amon'
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
+    os.makedirs(outdir,exist_ok=True)
 
     # get reference parquet location
     refdir = config['combined_references_dir']
