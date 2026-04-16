@@ -1,0 +1,29 @@
+#
+# Configuration file for sampling a GEOS experiment
+
+# model control files
+model_baseline: inst3d_aer_v_aaqoxgmi_2019
+model_oxh     : inst3d_aer_v_aaqoxh24crt_2019
+model_oxm     : inst3d_aer_v_aaqoxm24crt_2019
+
+# do preprocessing, if false reads in from zarr file
+do_preprocess: False
+
+
+# which plots to make
+do_ts_delta: False
+do_kde: False
+do_scatter: False
+do_map_mae: False
+do_map_mb: True
+
+# location and years of of AMoN data
+castnet_data_dir: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/CASTNET/drychem/drychem.csv
+castnet_site_map: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/CASTNET/site/site.csv
+
+# directory for sampled files
+sampled_outdir: ./sampled/amon
+
+# directory for plot files
+plot_outdir: ./plots/castenet
+
