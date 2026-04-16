@@ -18,7 +18,7 @@ do_map_mae: False
 do_map_mb: True
 
 # location and years of of AMoN data
-amon_site_map: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/AMoN/amon_silte_list.csv
+amon_site_map: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/AMoN/amon_site_list.csv
 amon_data_dir: /discover/nobackup/projects/gmao/iesa/aerosol/data/AeroObs/AMoN/AMoN-ALL-W-s.csv
 
 # directory for sampled files
