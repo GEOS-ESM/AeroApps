@@ -151,4 +151,4 @@ def LOAD_AMON(config,model_name='ALL'):
     df_amon = df_amon[df_amon['REPLICATE'] != 'T'].reset_index(drop=True)
 
 
-    return df_amon
+    return df_amon, sites
