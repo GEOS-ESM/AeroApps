@@ -52,7 +52,7 @@ def get_mean_between_dates(ds, station, startDate, endDate, var='NH3'):
 def LOAD_AMON(config,model_name='ALL'):
 
     config = yaml.safe_load(open(config))
-
+    outdir = config['sampled_outdir']
     ctls = {
         'baseline': None,
         'oxm':      None,
@@ -68,9 +68,9 @@ def LOAD_AMON(config,model_name='ALL'):
 
 
     datasets = {
-        'baseline': baseline_ds,
-        'oxm':      oxm_ds,
-        'oxh':      oxh_ds,
+        'baseline': None,
+        'oxm':      None,
+        'oxh':      None,
     }
     for key in ctls:
         if ctls[key] is not None:
