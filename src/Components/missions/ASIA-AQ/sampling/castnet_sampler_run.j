@@ -4,7 +4,7 @@
 #                     Batch Parameters for Run Job
 #######################################################################
  
-#SBATCH -J amon_sampler
+#SBATCH -J castnet_sampler
 #SBATCH --nodes=1
 #SBATCH --constraint=mil
 #SBATCH --time=12:00:00
