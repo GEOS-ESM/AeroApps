@@ -64,7 +64,8 @@ if __name__ == '__main__':
 
     # create output directory
     outdir = config['sampled_outdir'] + '/amon'
-    os.makedirs(outdir,exist_ok=True)
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
 
     # get reference parquet location
     refdir = config['combined_references_dir']
@@ -174,7 +175,7 @@ if __name__ == '__main__':
                 stn_ds = xr.Dataset({vn: stn_da}).assign_coords({'station': station})
                 if First:
                     stn_ds.to_netcdf(outFile, format='NETCDF4_CLASSIC')
-                    first = False
+                    First = False
                 else:
                     stn_ds.to_netcdf(outFile, format='NETCDF4_CLASSIC', mode='a')
                 logger.info(f"Wrote {vn} in {time.time()-t0:.2f}s")
