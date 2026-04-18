@@ -1,5 +1,5 @@
 #!/bin/csh
-#SBATCH --time=01:00:00
+#SBATCH --time=01:30:00
 #SBATCH --nodes=1 --ntasks-per-node=42
 #SBATCH --job-name=arcsix_plots
 #SBATCH --account=s3339
@@ -59,7 +59,7 @@ module load ffmpeg
   rm -f fp.$COLL.???.png
   end
 
-  foreach COLL (lon80W lon100W lon120W lat040N)
+  foreach COLL (lon80W lon100W lon110W lon120W lat040N lat050N)
   set i = 0
   foreach file (`\ls -1 *$COLL*png`)
    set iii = $i
