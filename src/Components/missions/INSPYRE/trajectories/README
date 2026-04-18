@@ -1,4 +1,15 @@
-2026-03-27 Peter.R.Colarco@nasa.gov
+2026-04-18 Peter.R.Colarco@nasa.gov
 Example scripts to run gigatraj trajectory code
 The idea is you edit the fire_table.txt and
 then run do_trajectories.csh
+The ROOT directory points to where gigatraj is
+installed and right now is pointed to something
+in my own space; change in do_trajectories.csh
+if you have your own build.
+There is a dependency on local MetGEOSfp.cat
+file which specifies the path to the FP
+data to run the trajectories against. You can
+edit this to point to a different FP version
+(right now set up for an older FP for the dryrun
+cases). Or remove entirely and should revert
+to OpenDap access to current FP and forecasts.
