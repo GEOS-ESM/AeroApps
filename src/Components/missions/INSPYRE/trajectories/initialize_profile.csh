@@ -17,7 +17,7 @@
 set outstring = $1
 
 # define the disc
-set R   = 100.0
+set R   = 50.0
 set Lat = $3
 set Lon = $2
 
@@ -29,8 +29,8 @@ set z      = $4
 #Found this here:
 #https://earthsci.stanford.edu/computing/unix/programming/shell/expressions.php
 alias MATH 'set \!:1 = `echo "\!:3-$" | bc -l`'
-MATH VMin = $z - 1
-MATH VMax = $z + 1
+MATH VMin = $z - 0.5
+MATH VMax = $z + 0.5
 
 # The name of the output text file
 set OutputFile="parcel_init.$outstring.nc"

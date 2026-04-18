@@ -65,7 +65,6 @@ set OFreq = "1.0"
 set T0 = `date +'%s'`
 
 # run the model
-module list
 echo $BASEDIR
 echo $ROOT
 ${ROOT}/bin/gtmodel_s01 \
