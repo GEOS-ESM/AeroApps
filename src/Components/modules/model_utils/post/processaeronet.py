@@ -5,124 +5,75 @@ This code subsamples a single GEOS model experiment according to hourly means of
 The output is a CSV file with high-level statistics for all sites with observations for the 
 requested date range including means, standard deviations, RMSE, and correlations as well as
 a time series CSV file at the requested temporal frequency (hourly, daily, monthly).
+Since this utilizes aeronet.py from GMAOpyobs, the python path must be se first (export PYTHONPATH="/discover/nobackup/acollow/GMAOpyobs/src/:$PYTHONPATH")
 '''
 
 import os
-import glob
 import numpy as np
 import pandas as pd
 import xarray as xr
-from datetime import datetime
+from datetime import datetime, timedelta
 import warnings
 import multiprocessing as mp
 from functools import partial
 import time
+from pyobs.aeronet import AERONET_L2, VARS 
+
 warnings.filterwarnings('ignore')
 
-def parse_aeronet_file(filepath, start_date, end_date):
-    """Reads a single AERONET file, computes AOD 550, applies QC, and returns hourly mean AOD 550 and 440-870 AE."""
-    station = os.path.basename(filepath).split("_", 2)[2].replace(".lev20", "")
-    
+def parse_aeronet_daily_file(filepath, start_date, end_date):
+    """Reads a daily global AERONET file using AERONET_L2 class, applies QC, and returns hourly means per station."""
     try:
-        try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-                header_line = lines[6].strip()
-            df = pd.read_csv(filepath, skiprows=7, header=None, sep=',', encoding='utf-8')
-        except UnicodeDecodeError:
-            with open(filepath, 'r', encoding='latin-1') as f:
-                lines = f.readlines()
-                header_line = lines[6].strip()
-            df = pd.read_csv(filepath, skiprows=7, header=None, sep=',', encoding='latin-1')
-            
-        column_names = header_line.split(',')
+        custom_vars = list(VARS) + ['440_870_Angstrom_Exponent']
         
-        if len(column_names) > len(df.columns):
-            column_names = column_names[:len(df.columns)]
-        elif len(df.columns) > len(column_names):
-            column_names.extend([f"Unnamed_{i}" for i in range(len(df.columns) - len(column_names))])
-            
-        df.columns = column_names
-        df = df.loc[:, ~df.columns.duplicated()].copy()
-            
-        if 'Date(dd:mm:yyyy)' not in df.columns or 'Time(hh:mm:ss)' not in df.columns:
-            return None, f"Missing Date/Time columns"
-            
-        df['DateTime'] = pd.to_datetime(df['Date(dd:mm:yyyy)'] + ' ' + df['Time(hh:mm:ss)'], format='%d:%m:%Y %H:%M:%S', errors='coerce')
-        df = df.dropna(subset=['DateTime'])
+        aero = AERONET_L2(filepath, version=3, Vars=custom_vars, Verbose=False)
         
-        # Filter by specific date range
+        if aero.nobs == 0:
+            return None, "No data loaded"
+
+        df = pd.DataFrame({
+            'DateTime': aero.tyme,
+            'lat': aero.Latitude,
+            'lon': aero.Longitude,
+            'station': aero.Location, 
+            'aod_550': aero.AOT_550,
+            'angstrom': getattr(aero, '440_870_Angstrom_Exponent', np.nan) 
+        })
+
         df = df[(df['DateTime'] >= start_date) & (df['DateTime'] <= end_date)]
         if df.empty: 
             return None, "No data in specified date range"
-        
-        lat = float(df['Site_Latitude(Degrees)'].iloc[0])
-        lon = float(df['Site_Longitude(Degrees)'].iloc[0])
-        
-        # QUALITY CONTROL: Angstrom Exponents between -1 and 3
-        ang_440_675 = None
-        if '440-675_Angstrom_Exponent' in df.columns:
-            df['440-675_Angstrom_Exponent'] = pd.to_numeric(df['440-675_Angstrom_Exponent'], errors='coerce')
-            valid_mask_675 = (df['440-675_Angstrom_Exponent'] >= -1) & (df['440-675_Angstrom_Exponent'] <= 3)
-            ang_440_675 = df['440-675_Angstrom_Exponent'].where(valid_mask_675)
-            
-        ang_440_870 = None
-        if '440-870_Angstrom_Exponent' in df.columns:
-            df['440-870_Angstrom_Exponent'] = pd.to_numeric(df['440-870_Angstrom_Exponent'], errors='coerce')
-            valid_mask_870 = (df['440-870_Angstrom_Exponent'] >= -1) & (df['440-870_Angstrom_Exponent'] <= 3)
-            ang_440_870 = df['440-870_Angstrom_Exponent'].where(valid_mask_870)
 
-        if ang_440_870 is None or ang_440_870.isna().all():
-            return None, "Missing valid 440-870 Angstrom Exponent"
+        df.replace(-999.0, np.nan, inplace=True)
 
-        # QUALITY CONTROL: AOD between 0 and 10
-        aod_columns = ['AOD_551nm', 'AOD_550nm', 'AOD_532nm', 'AOD_531nm', 'AOD_555nm', 'AOD_560nm']
-        aod_550 = None
-        
-        for col in aod_columns:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-                valid_aod = df[col][(df[col] >= 0) & (df[col] < 10)]
-                if len(valid_aod) > 0:
-                    aod_550 = df[col].copy()
-                    aod_550[(df[col] < 0) | (df[col] >= 10)] = np.nan
-                    break
-        
-        # Fallback to computing AOD at 550nm using 440nm and 440-675 AE
-        if aod_550 is None:
-            if 'AOD_440nm' in df.columns and ang_440_675 is not None:
-                df['AOD_440nm'] = pd.to_numeric(df['AOD_440nm'], errors='coerce')
-                aod_440 = df['AOD_440nm']
-                
-                valid_mask = (aod_440 >= 0) & (aod_440 < 10) & (~aod_440.isna()) & (~ang_440_675.isna())
-                
-                if valid_mask.sum() > 0:
-                    aod_550 = pd.Series(np.nan, index=df.index)
-                    aod_550[valid_mask] = aod_440[valid_mask] * (0.550 / 0.440) ** (-ang_440_675[valid_mask])
-            
-        if aod_550 is None or aod_550.isna().all():
-            return None, "Cannot obtain or compute AOD at 550nm"
-            
-        df['aod_550'] = aod_550
-        df['angstrom'] = ang_440_870
+        df.loc[(df['aod_550'] < 0) | (df['aod_550'] >= 10), 'aod_550'] = np.nan
+
+        valid_mask_870 = (df['angstrom'] >= -1) & (df['angstrom'] <= 3)
+        df.loc[~valid_mask_870, 'angstrom'] = np.nan
+
+        df = df.dropna(subset=['aod_550', 'angstrom'])
+
+        if df.empty:
+            return None, "No valid paired AOD/Angstrom data after QC"
+
         df['hour'] = df['DateTime'].dt.floor('H')
         
-        hourly = df.groupby('hour').agg({'aod_550':'mean', 'angstrom':'mean'}).dropna().reset_index()
-        
-        if hourly.empty:
-            return None, "No valid paired AOD/Angstrom data"
-            
-        hourly['station'] = station
-        hourly['lat'] = lat
-        hourly['lon'] = lon
+        hourly = df.groupby(['station', 'hour']).agg({
+            'aod_550': 'mean', 
+            'angstrom': 'mean',
+            'lat': 'first',
+            'lon': 'first'
+        }).reset_index()
         
         return hourly, "Success"
         
+    except ValueError as e:
+        return None, f"Parsing Error: {str(e)}"
     except Exception as e:
         return None, f"Exception: {type(e).__name__} - {str(e)}"
 
 def processmodel(date_tuple, model_path_template):
-    """Processes all stations for a single day"""
+    """Processes all stations for a single day against the GEOS model data"""
     date, daily_df = date_tuple
     
     for hour_val, group in daily_df.groupby('hour'):
@@ -134,7 +85,6 @@ def processmodel(date_tuple, model_path_template):
         if os.path.exists(model_file):
             with xr.open_dataset(model_file) as ds_mod:
                 for idx, row in group.iterrows():
-                    # Handle longitude wrapping if model is 0-360 and AERONET is -180 to 180
                     mlon = row['lon'] + 360 if (ds_mod.lon.min() >= 0 and row['lon'] < 0) else row['lon']
                     
                     pt = ds_mod.sel(lat=row['lat'], lon=mlon, method='nearest')
@@ -152,19 +102,40 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
     n_procs = max(1, mp.cpu_count() - 1)
     os.makedirs(output_dir, exist_ok=True)
     
-    # Generate the model path template dynamically
     model_path_template = os.path.join(base_path, experiment_name, "holding", "inst2d_hwl_x", "{YYYYMM}", f"{experiment_name}.inst2d_hwl_x.{{YYYYMMDD}}_{{HH}}00z.nc4")
     
-    aeronet_dir = "/discover/nobackup/acollow/aeroeval/aeronet/m21c/AOD/AOD20/ALL_POINTS/"
+    aeronet_dir_base = "/css/gmao/dp/gds/AeroObs/AERONET.v3/Level2"
     
-    print(f" Parsing AERONET files between {start_date.strftime('%Y-%m-%d')} and {end_date.strftime('%Y-%m-%d')}...")
-    files = glob.glob(os.path.join(aeronet_dir, "*.lev20"))
+    print(f" Locating AERONET daily files between {start_date.strftime('%Y-%m-%d')} and {end_date.strftime('%Y-%m-%d')}...")
+    
+    files = []
+    current_date = start_date.replace(hour=0, minute=0, second=0)
+    while current_date <= end_date:
+        YYYY = current_date.strftime('%Y')
+        MM = current_date.strftime('%m')
+        YYYYMMDD = current_date.strftime('%Y%m%d')
+        #Aeronet switches filename formats in 2024!
+        possible_filenames = [
+            f"aeronet_v30.{YYYYMMDD}.txt",
+            f"aeronet_v3.aod.{YYYYMMDD}.txt"
+        ]
+        
+        for fname in possible_filenames:
+            file_path = f"{aeronet_dir_base}/Y{YYYY}/M{MM}/{fname}"
+            
+            if os.path.exists(file_path):
+                files.append(file_path)
+                break 
+        
+        current_date += timedelta(days=1)
     
     if not files:
-        print(f"No files found in {aeronet_dir}")
+        print(f"No AERONET files found in the specified date range at {aeronet_dir_base}!")
         return
         
-    parse_func = partial(parse_aeronet_file, start_date=start_date, end_date=end_date)
+    print(f"Found {len(files)} daily AERONET files. Parsing...")
+        
+    parse_func = partial(parse_aeronet_daily_file, start_date=start_date, end_date=end_date)
     dfs = []
     error_counts = {}
     
@@ -176,7 +147,7 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
                 error_counts[msg] = error_counts.get(msg, 0) + 1
 
     print("\n--- AERONET Parse Summary ---")
-    print(f"Successfully loaded {len(dfs)} stations.")
+    print(f"Successfully loaded {len(dfs)} days of data.")
     
     if error_counts:
         print("\nReasons for skipped files:")
@@ -207,10 +178,8 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
                 
     final_df = pd.concat(processed_dfs, ignore_index=True)
     
-    # Sample for available AERONET Obs
     final_df = final_df.dropna(subset=['model_aod', 'model_ang'])
     
-    # Filter for stations meeting the min_points threshold
     valid_stations = final_df['station'].value_counts()[final_df['station'].value_counts() >= min_points].index
     final_df = final_df[final_df['station'].isin(valid_stations)].copy()
     
@@ -244,7 +213,7 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
     date_str = f"{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
     
     if stats:
-        out_df = pd.DataFrame(stats)  # Rounding removed
+        out_df = pd.DataFrame(stats)  
         output_file = os.path.join(output_dir, f"{experiment_name}_aeronet_comparison_stats_{date_str}.csv")
         out_df.to_csv(output_file, index=False)
         print(f"Stats saved to {output_file}")
@@ -254,20 +223,18 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
     if ts_freq != 'none' and not final_df.empty:
         print(f"\nGenerating {ts_freq} timeseries data...")
         
-        # Select and rename columns for clarity
         cols_to_keep = ['hour', 'station', 'lat', 'lon', 'aod_550', 'model_aod', 'angstrom', 'model_ang']
         ts_df = final_df[cols_to_keep].copy()
         ts_df.rename(columns={'hour': 'time', 'aod_550': 'aeronet_aod', 'angstrom': 'aeronet_angstrom'}, inplace=True)
         
         ts_df.insert(0, 'experiment', experiment_name)
         
-        # Apply Temporal Aggregation
         if ts_freq == 'daily':
             ts_df['time'] = ts_df['time'].dt.floor('D')
-            ts_df = ts_df.groupby(['experiment', 'station', 'time', 'lat', 'lon']).mean().reset_index()
+            ts_df = ts_df.groupby(['experiment', 'station', 'time', 'lat', 'lon']).mean(numeric_only=True).reset_index()
         elif ts_freq == 'monthly':
             ts_df['time'] = ts_df['time'].dt.to_period('M').dt.to_timestamp()
-            ts_df = ts_df.groupby(['experiment', 'station', 'time', 'lat', 'lon']).mean().reset_index()
+            ts_df = ts_df.groupby(['experiment', 'station', 'time', 'lat', 'lon']).mean(numeric_only=True).reset_index()
             
         ts_output_file = os.path.join(output_dir, f"{experiment_name}_aeronet_timeseries_{ts_freq}_{date_str}.csv")
         
@@ -284,12 +251,10 @@ if __name__ == "__main__":
     base_path = "/discover/nobackup/projects/gmao/geos_aerosols/acollow/"
     experiment_name = "c180R_qfed3-2_scaled"
     
-    # Optional Output configuration
     output_dir = os.path.join(base_path, experiment_name, "AERONETsampled")
-    min_points = 10  # of required hourly data points to be included in high-level stats
-    ts_freq = 'daily' # Set to 'hourly', 'daily', or 'monthly' 
+    min_points = 10   # of required hourly data points to be included in high-level stats
+    ts_freq = 'daily' 
     
-    # =========================================================================
     
     main(
         start_date=start_date,
