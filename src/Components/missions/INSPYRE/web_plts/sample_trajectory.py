@@ -267,12 +267,16 @@ if __name__ == "__main__":
         parser.error("must have 1 argument: filename")
         
     sample(fname,trj=-100.)
+    sample(fname,trj=-110.)
     sample(fname,trj=-120.)
     sample(fname,trj=-80.)
     sample(fname,trj=40.)
+    sample(fname,trj=50.)
     plot_curtain(fname,trj=-80.)
     plot_curtain(fname,trj=-100.)
+    plot_curtain(fname,trj=-110.)
     plot_curtain(fname,trj=-120.)
     plot_curtain(fname,trj=40.)
+    plot_curtain(fname,trj=50.)
 
     sys.exit()
