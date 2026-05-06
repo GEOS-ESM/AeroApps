@@ -39,15 +39,15 @@
       </a>
       </td>
       <td width=25%>
-      <center>Organic Carbon AOD (550 nm)<br>
-      <a href="fp.OCEXTTAU.YYYYMMDD_HHz.mp4">
-      <img src="fp.OCEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      <center>Brown Carbon AOD (550 nm)<br>
+      <a href="fp.BREXTTAU.YYYYMMDD_HHz.mp4">
+      <img src="fp.BREXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
       </a>
       </td>
       <td width=25%>
-      <center>Dust AOD (550 nm)<br>
-      <a href="fp.DUEXTTAU.YYYYMMDD_HHz.mp4">
-      <img src="fp.DUEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      <center>Organic Carbon AOD (550 nm)<br>
+      <a href="fp.OCEXTTAU.YYYYMMDD_HHz.mp4">
+      <img src="fp.OCEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
       </a>
       </td>
      </tr>
@@ -72,15 +72,15 @@
       </a>
       </td>
       <td width=25%>
-      <center>Organic Carbon AOD (550 nm)<br>
-      <a href="fp.OCEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
-      <img src="fp.OCEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      <center>Brown Carbon AOD (550 nm)<br>
+      <a href="fp.BREXTTAU_wcloud.YYYYMMDD_HHz.mp4">
+      <img src="fp.BREXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
       </a>
       </td>
       <td width=25%>
-      <center>Dust AOD (550 nm)<br>
-      <a href="fp.DUEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
-      <img src="fp.DUEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      <center>Organic Carbon AOD (550 nm)<br>
+      <a href="fp.OCEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
+      <img src="fp.OCEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
       </a>
       </td>
      </tr>

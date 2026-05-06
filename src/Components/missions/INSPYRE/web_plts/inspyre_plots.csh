@@ -6,7 +6,7 @@
 
   source ~/.cshrc
 
-  setenv AEROAPPS $NOBACKUP/AeroApps/
+  setenv AEROAPPS /home/pcolarco/geos_aerosols/pcolarco/AeroApps/
   source $AEROAPPS/env@/g5_modules
   setenv PYTHONPATH ./:$AEROAPPS/install/lib/Python/scat:$AEROAPPS/install/lib/Python/:$AEROAPPS/install/lib/Python/pyobs:$AEROAPPS/install/lib/Python/pyods
   set path = ( . $AEROAPPS/install/bin $path )
@@ -45,8 +45,9 @@
 module load ffmpeg
 
 # Post process
-  foreach COLL (TOTEXTTAU OCEXTTAU SSEXTTAU DUEXTTAU SUEXTTAU \
-                TOTEXTTAU_wcloud OCEXTTAU_wcloud SSEXTTAU_wcloud DUEXTTAU_wcloud SUEXTTAU_wcloud)
+  foreach COLL (TOTEXTTAU BREXTTAU OCEXTTAU SSEXTTAU DUEXTTAU SUEXTTAU \
+                TOTEXTTAU_wcloud BREXTTAU_wcloud OCEXTTAU_wcloud SSEXTTAU_wcloud \
+		DUEXTTAU_wcloud SUEXTTAU_wcloud)
   set i = 0
   foreach file (`\ls -1 fp.$COLL.$yy$mm${dd}_$hh*png`)
    set iii = $i

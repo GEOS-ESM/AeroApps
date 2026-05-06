@@ -25,6 +25,11 @@ def plot(lev='0',varn='TOTEXTTAU',cbarmax=2.,title='Total AOT',
     print(varn,filename)
     tokens = os.path.basename(filename).split('.')
     cldfilename = os.path.dirname(filename) + '/GEOS.fp.fcst.tavg1_2d_rad_Nx.'+tokens[4][0:23]+'30.V01.nc4'
+    if os.path.exists(cldfilename):
+        print(cldfilename)
+    else:
+        print(f"File does not exist: {cldfilename}")
+        return
 
     cldh,lon,lat,lev,rc = model.read1(cldfilename,varn='CLDHGH')
     cldh = np.squeeze(cldh[np.where(lat>20),:])
@@ -128,6 +133,7 @@ if __name__ == "__main__":
         parser.error("must have 1 argument: filename")
     print('main:',filename)
     plot(filename=filename)
+    plot(varn='BREXTTAU',cbarmax=.5,title='Brown Carbon AOT',filename=filename)
     plot(varn='OCEXTTAU',cbarmax=.5,title='Organic Carbon AOT',filename=filename)
     plot(varn='SSEXTTAU',cbarmax=.2,title='Sea Salt AOT',filename=filename)
     plot(varn='DUEXTTAU',cbarmax=.2,title='Dust AOT',filename=filename)

@@ -43,7 +43,7 @@ def plot_curtain(fname,trj=-100.,model="fp",species=None):
     modname = model
     if(model == 'fp'):
         modname = "GEOS-FP"
-        config = './geos529_pm25.yaml'
+        config = './geos543_pm25.yaml'
     elif(model == 'MERRA2'):
         config = './m2_pm25.yaml'
     else:
@@ -87,7 +87,7 @@ def plot_curtain(fname,trj=-100.,model="fp",species=None):
         Species = ['SU']
         speciestitle = 'Sulfate '
     if(species == 'cc'):
-        Species = ['OC','BC']
+        Species = ['OC','BR','BC']
         if(model == 'res'):
             Species = ['OC','BR','BC']
         speciestitle = 'Carbonaceous '
@@ -170,7 +170,7 @@ def sample(fname,trj=-100.,model='fp'):
     modname = model
     if(model == 'fp'):
         modname = "GEOS-FP"
-        config = './geos529_pm25.yaml'
+        config = './geos543_pm25.yaml'
     elif(model == 'MERRA2'):
         config = './m2_pm25.yaml'
     else:
@@ -191,7 +191,9 @@ def sample(fname,trj=-100.,model='fp'):
         print(f"An error occurred: {e}")
         sys.exit()
 
-    traj = TRAJECTORY(tyme,lon,lat,fpdata)
+    print(fpdata)
+    kwargs = {'compat':'override'}
+    traj = TRAJECTORY(tyme,lon,lat,fpdata,**kwargs)
 # sample the dataset along the trajectory, and return an xarray dataset
     traj_ds = traj.sample()
 
