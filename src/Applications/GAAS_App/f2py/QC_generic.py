@@ -9,7 +9,7 @@ import xarray as xr
 
 # Default YAML file for SQC parameters
 SQC_Param = """
-reset_allqc: yes
+reset_allqc: no
 reset_passive: no
 reset_sqc: yes
 
@@ -79,7 +79,7 @@ class QC(object):
         if isinstance(iodaFiles, xr.Dataset):
             self.ioda = iodaFiles
         else:
-            self.ioda = xr.open_datatree(iodaFiles)
+            self.ioda = xr.open_datatree(iodaFiles, decode_times=False)
             
         if self.verbose: print(f'[x] Loaded IODA file. Target variable: {self.var_name}') 
         
@@ -173,17 +173,43 @@ class QC(object):
         else:
            n_valid = None
 
-        # Create new DataTree to preserve untouched variables
-        new_tree = xr.DataTree()
-        for group_name, group in self.ioda.items():
-           new_tree[group_name] = xr.DataTree()    
-           for var, da in group.items():
-               if isinstance(da, xr.DataArray) and 'Location' in da.dims:
-                  new_tree[group_name][var] = da.isel(Location=sort_indices)
-               else:
-                  new_tree[group_name][var] = da
+        # --- FIX: Preserve ROOT coordinates, variables, and attributes ---
+        # Get root dataset
+        if hasattr(self.ioda, 'dataset'):
+            root_ds = self.ioda.dataset.copy()
+        else:
+            root_ds = self.ioda.to_dataset().copy() if hasattr(self.ioda, 'to_dataset') else self.ioda.copy()
+
+        # Reindex variables in the root dataset
+        for var in root_ds.variables:
+            if 'Location' in root_ds[var].dims:
+                root_ds[var] = root_ds[var].isel(Location=sort_indices)
+
+        # Initialize the new DataTree using the reindexed root dataset
+        new_tree = xr.DataTree(dataset=root_ds)
+        new_tree.attrs = self.ioda.attrs
+
+        # Get child groups (compatability across DataTree versions)
+        children = self.ioda.children if hasattr(self.ioda, 'children') else {k: v for k, v in self.ioda.items() if k != '/'}
+
+        # Process each child group
+        for group_name, group in children.items():
+            if hasattr(group, 'dataset'):
+                group_ds = group.dataset.copy()
+            else:
+                group_ds = group.to_dataset().copy() if hasattr(group, 'to_dataset') else group.copy()
+                
+            # Reindex variables in the child group
+            for var in group_ds.variables:
+                if 'Location' in group_ds[var].dims:
+                    group_ds[var] = group_ds[var].isel(Location=sort_indices)
+            
+            # Add child dataset to tree and preserve group attributes
+            new_tree[group_name] = xr.DataTree(dataset=group_ds)
+            new_tree[group_name].attrs = group.attrs
 
         self.ioda = new_tree
+        # ----------------------------------------------------------------
       
         # Reorder numpy arrays
         self.qcexcl = self.qcexcl[sort_indices]
@@ -352,15 +378,50 @@ class QC(object):
             self.qcexcl[suspect, channel] = 17
             
         print(f'[x] Buddy check completed')
-
+        
     def _save_ioda(self, output_filename):
+        print(f'[x] Updating Fill Values to JEDI standards...')
+        
+        # Standard JEDI / NetCDF Fill Values
+        JEDI_FILL_FLOAT = 9.969209968386869e+36
+        JEDI_FILL_INT32 = -2147483647
+        JEDI_FILL_INT64 = -9223372036854775806
+
+        # Gather all nodes (root + children) in the Datatree
+        nodes = [self.ioda]
+        if hasattr(self.ioda, 'children'):
+            nodes.extend(self.ioda.children.values())
+        else:
+            nodes.extend([v for k, v in self.ioda.items() if k != '/'])
+
+        # Apply JEDI compliant fill values to all variables
+        for node in nodes:
+            ds = node.dataset if hasattr(node, 'dataset') else node
+            for var_name, da in ds.variables.items():
+                
+                # 1. Remove _FillValue from attributes to prevent xarray conflicts
+                if '_FillValue' in da.attrs:
+                    del da.attrs['_FillValue']
+    
+                # 2. Determine the TARGET dtype (what it will actually be saved as on disk), 
+                # because xarray might have promoted ints to floats in memory due to NaNs.
+                target_dtype = np.dtype(da.encoding.get('dtype', da.dtype))
+
+
+                # 3. Set the correct _FillValue in the encoding dictionary based on data type
+                if target_dtype.kind == 'f':  # float32, float64
+                    da.encoding['_FillValue'] = target_dtype.type(JEDI_FILL_FLOAT)
+                elif target_dtype == np.int64:
+                    da.encoding['_FillValue'] = np.int64(JEDI_FILL_INT64)
+                elif target_dtype.kind in ['i', 'u']: # int32, int16, etc.
+                    da.encoding['_FillValue'] = np.int32(JEDI_FILL_INT32)
+
         print(f'[x] Saving updated IODA file to {output_filename}...')
         try:
             self.ioda.to_netcdf(output_filename)
             print(f'[x] Successfully saved: {output_filename}')
         except Exception as e:
             print(f'[x] Error saving IODA file: {e}')
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Perform Background and Buddy Check on IODA observations.")
