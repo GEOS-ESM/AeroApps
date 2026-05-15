@@ -34,10 +34,15 @@ if __name__ == '__main__':
     kwargs = dict(n_workers=6, threads_per_worker=1, memory_limit='4GB')
     with LocalCluster(**kwargs) as cluster, Client(cluster) as client:
         
-        h5_file = f"{config['obs_dir']}/{campaign.lower()}-{instrument}_{plane}_{date_str}_{obs_revision}.h5"
+        h5_file_lower = f"{config['obs_dir']}/{campaign.lower()}-{instrument}_{plane}_{date_str}_{obs_revision}.h5"
+        h5_file_upper = f"{config['obs_dir']}/{campaign.upper()}-{instrument}_{plane}_{date_str}_{obs_revision}.h5"
         
-        if not os.path.exists(h5_file):
-            print(f"Observation file missing: {h5_file}. Skipping sampling...")
+        if os.path.exists(h5_file_lower):
+            h5_file = h5_file_lower
+        elif os.path.exists(h5_file_upper):
+            h5_file = h5_file_upper
+        else:
+            print(f"Observation file missing (checked both lower and upper case). Skipping sampling...")
             sys.exit(0)
             
         print(f"+++++++ Sampling on {h5_file}")
@@ -45,6 +50,9 @@ if __name__ == '__main__':
         try:
             if instrument.upper() == 'DIAL':
                 obs_obj = DIAL(h5_file, verbose=False)
+            elif instrument.upper() == 'HALO':
+                from pyobs.hsrl import SDS_HALO
+                obs_obj = HSRL(h5_file, Nav_only=True, verbose=False, SDS=SDS_HALO)
             else:
                 obs_obj = HSRL(h5_file, Nav_only=True, verbose=False)
                 

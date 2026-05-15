@@ -112,7 +112,7 @@ for base_date in $FLIGHT_DATES; do
         # Compute AOP for MERRA-2
         if [ -f "$m2_in" ]; then
             if [ ! -f "$m2_out" ]; then
-                echo "  -> Running aop for MERRA-2 | WL: ${wl}"
+                echo "  -> Running aop for MERRA-2 | Wavelength: ${wl}"
                 ${AOP_EXEC} -c ${AOP_CONF_M2} -r ${FVINPUT_DIR} --noaback -v -a ext -w ${wl} -o ${m2_out} ${m2_in}
             else
                 echo "  -> aop output exists for MERRA-2 | WL: ${wl}"
@@ -124,7 +124,7 @@ for base_date in $FLIGHT_DATES; do
         # Compute AOP for MERRA-21C
         if [ -f "$m21c_in" ]; then
             if [ ! -f "$m21c_out" ]; then
-                echo "  -> Running aop for MERRA-21C | WL: ${wl}"
+                echo "  -> Running aop for MERRA-21C | Wavelength: ${wl}"
                 ${AOP_EXEC} -c ${AOP_CONF_M21C} -r ${FVINPUT_DIR} --noaback -v -a ext -w ${wl} -o ${m21c_out} ${m21c_in}
             else
                 echo "  -> aop output exists for MERRA-21C | WL: ${wl}"
