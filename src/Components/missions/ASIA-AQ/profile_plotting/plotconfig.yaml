@@ -20,7 +20,7 @@ flightdate:
     datestring: '2/11/24'
   20240213:
     country: 'Philippines'
-    datestring: '2/13/24'    
+    datestring: '2/13/24'
   20240215:
     country: 'Taiwan Overpass'
     datestring: '2/15/24'
@@ -29,16 +29,16 @@ flightdate:
     datestring: '2/17/24'
   20240226:
     country: 'South Korea'
-    datestring: '2/26/24'    
+    datestring: '2/26/24'
   20240308:
     country: 'South Korea'
-    datestring: '3/8/24' 
+    datestring: '3/8/24'
   20240310:
     country: 'South Korea'
-    datestring: '3/10/24'    
+    datestring: '3/10/24'
   20240311:
     country: 'South Korea'
-    datestring: '3/11/24' 
+    datestring: '3/11/24'
   20240313:
     country: 'Taiwan Overpass'
     datestring: '3/13/24'
@@ -47,7 +47,7 @@ flightdate:
     datestring: '3/16/24'
   20240318:
     country: 'Thailand'
-    datestring: '3/18/24' 
+    datestring: '3/18/24'
   20240321:
     country: 'Thailand'
     datestring: '3/21/24'
@@ -57,6 +57,3 @@ flightdate:
   20240327:
     country: 'Taiwan Overpass'
     datestring: '3/27/24'
-    
-    
-    
