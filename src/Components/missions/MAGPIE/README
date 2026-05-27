@@ -1,0 +1,16 @@
+2025-09-29
+Peter.R.Colarco@nasa.gov
+
+Example codes to generate station sampled files for the
+2024 Barbados MAGPIE campaign.
+
+DDF files are provided for FP, MERRA2, and an experimental
+model run (c180R_arcsix).
+
+Samples may be processed by running the sample_stations.csh
+in an interactive queue (uses multiple streams). Default
+sampling produces daily files. Concatenate these to a single
+file using the concatenate.csh script.
+
+Some simple plotting routines are also provided.
+

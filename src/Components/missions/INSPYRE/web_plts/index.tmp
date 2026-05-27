@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Forecast Initialization: YYYY-MM-DD HHz</title>
+    </head>
+    <body>
+    <h1>NASA GSFC INSPYRE Aerosol and Meteorology Forecasting Support</h1>
+    <h2>Forecast Initialization: YYYY-MM-DD HHz</h2>
+    <p>These plots are from the GEOS-FP model run produced by
+       the NASA Global Modeling and Assimilation Office.
+       Details are available 
+       <a href="https://gmao.gsfc.nasa.gov/GMAO_products/NRT_products.php">
+       here</a>. Most plots are available on the
+       <a href="https://fluid.nccs.nasa.gov/missions/mission_ARCSIX/">
+       FLUID website</a>.</p>
+       <p>This page curated by Peter.R.Colarco at nasa.gov.</p>
+
+       <p><a href="plots">A large collection of plots are available here.</a></p>
+       <p><a href="datagrams">Datagrams are available here.</a></p>
+
+    <hr>
+    <h2>Prototype Custom Animations (click to enlarge)</h2>
+    <table>
+     <tr width=100%>
+      <h3>Aerosol Optical Depth (AOD)</h3>
+     </tr>
+     <tr>
+      <td width=25%>
+      <center>Total AOD (550 nm)<br>
+      <a href="fp.TOTEXTTAU.YYYYMMDD_HHz.mp4">
+      <img src="fp.TOTEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=25%>
+      <center>Sulfate AOD (550 nm)<br>
+      <a href="fp.SUEXTTAU.YYYYMMDD_HHz.mp4">
+      <img src="fp.SUEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=25%>
+      <center>Organic Carbon AOD (550 nm)<br>
+      <a href="fp.OCEXTTAU.YYYYMMDD_HHz.mp4">
+      <img src="fp.OCEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=25%>
+      <center>Dust AOD (550 nm)<br>
+      <a href="fp.DUEXTTAU.YYYYMMDD_HHz.mp4">
+      <img src="fp.DUEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+     </tr>
+     </table>
+
+     <table>
+     <tr width=100%>
+      <h3>Aerosol Optical Depth (AOD) with clouds</h3> (white = high cloud,
+      grey = low cloud)
+     </tr>
+     <tr>
+      <td width=25%>
+      <center>Total AOD (550 nm)<br>
+      <a href="fp.TOTEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
+      <img src="fp.TOTEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=25%>
+      <center>Sulfate AOD (550 nm)<br>
+      <a href="fp.SUEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
+      <img src="fp.SUEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=25%>
+      <center>Organic Carbon AOD (550 nm)<br>
+      <a href="fp.OCEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
+      <img src="fp.OCEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=25%>
+      <center>Dust AOD (550 nm)<br>
+      <a href="fp.DUEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
+      <img src="fp.DUEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+     </tr>
+    </table>
+
+    <h3>Cross Sections (click to enlarge)</h3>
+    <table>
+     <tr>
+      <td width=25%>
+      <center>N-S Profile at 120W<br>
+      <a href="fp.lon120W.YYYYMMDD_HHz.mp4">
+      <img src="fp.Total_extinction_curtain.lon120W.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
+      </a>
+      </td>
+      <td width=25%>
+      <center>N-S Profile at 110W<br>
+      <a href="fp.lon110W.YYYYMMDD_HHz.mp4">
+      <img src="fp.Total_extinction_curtain.lon110W.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
+      </a>
+      </td>
+      <td width=25%>
+      <center>N-S Profile at 100W<br>
+      <a href="fp.lon100W.YYYYMMDD_HHz.mp4">
+      <img src="fp.Total_extinction_curtain.lon100W.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
+      </a>
+      </td>
+      <td width=25%>
+      <center>N-S Profile at 80W<br>
+      <a href="fp.lon80W.YYYYMMDD_HHz.mp4">
+      <img src="fp.Total_extinction_curtain.lon80W.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
+      </a>
+      </td>
+     </tr>
+     <tr> 
+      <td width=25%>
+      <center>E-W Profile at 40N<br>
+      <a href="fp.lat040N.YYYYMMDD_HHz.mp4">
+      <img src="fp.Total_extinction_curtain.lat040N.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
+      </a>
+      </td>
+      <td width=25%>
+      <center>E-W Profile at 50N<br>
+      <a href="fp.lat050N.YYYYMMDD_HHz.mp4">
+      <img src="fp.Total_extinction_curtain.lat050N.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
+      </a>
+      </td>
+     </tr>
+    </table>
+
+    </body>
+</html>

@@ -3,15 +3,44 @@
 ## [Unreleased]
 
 ### Added
+- Add ARCSIX mission directories
+- Add INSPYRE mission directories and updated web plotting package
+- Add ASIA-AQ mission scripts
+- Add a post processing script that creates a zarr virtual data store for a model run to Applications
+- Add a modules directory with a model_utils sub-directory with some basic eval, post, and utils modules
+- Add codes to sample according to AERONET for a general GEOS experiment and for MERRA-21C evaluation
+
+### Fixed
+
+### Changed
+- updates to v1.2.6 of pyobs that contains a hotfix for aeronet.py
+- move model utils to Shared directory. Rename module to aeroeval
+- Rearranged and renamed some of the ARCSIX codes
+- refactored ARCSIX mission post-processing code for suitability for archive upload
+- refactored INSPYRE trajectory preparation and plotting scripts
+- Expanded capability for ASIA-AQ vertical profile plots
+- updated monthly_mod.py to reduce the time it takes to run
+
+## [v2.3.0] - 2025-07-25
+
+### Added
+
+### Fixed
+
+### Changed
+- removed all NNR scripts from GAAS_App and relocated them in AeroML repository
+
+
+## [v2.2.0] - 2025-07-15
+
+### Added
 
 - Add budget plotting code
-
 - Add idl code to plot curtain figures
-
 - Extract TROPOMI pixels over MPL sites
 - ASIA-AQ mission scripts
 - capability to produce flight averaged vertical profile plots for ASIA-AQ
-- Expanded capability for ASIA-AQ vertical profile plots
+  
 ### Fixed
 
 ### Changed
