@@ -90,165 +90,41 @@
     <table>
      <tr>
       <td width=25%>
-      <center>Alert to North Pole Transect<br>
-      <a href="alert.forecast_OC.YYYYMMDD_HHz.png">
-      <img src="alert.forecast_OC.YYYYMMDD_HHz.png" width="260">
+      <center>N-S Profile at 120W<br>
+      <a href="fp.lon120W.YYYYMMDD_HHz.mp4">
+      <img src="fp.Total_extinction_curtain.lon120W.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
       </a>
       </td>
       <td width=25%>
-      <center>Thule to North Pole Transect<br>
-      <a href="greenland.forecast_OC.YYYYMMDD_HHz.png">
-      <img src="greenland.forecast_OC.YYYYMMDD_HHz.png" width="260">
+      <center>N-S Profile at 110W<br>
+      <a href="fp.lon110W.YYYYMMDD_HHz.mp4">
+      <img src="fp.Total_extinction_curtain.lon110W.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
       </a>
       </td>
       <td width=25%>
-      <center>Svalbard to North Pole Transect<br>
-      <a href="svalbard.forecast_OC.YYYYMMDD_HHz.png">
-      <img src="svalbard.forecast_OC.YYYYMMDD_HHz.png" width="260">
+      <center>N-S Profile at 100W<br>
+      <a href="fp.lon100W.YYYYMMDD_HHz.mp4">
+      <img src="fp.Total_extinction_curtain.lon100W.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
       </a>
       </td>
       <td width=25%>
-      <center>Alert to Svalbard Transect<br>
-      <a href="alert_svalbard.forecast_OC.YYYYMMDD_HHz.png">
-      <img src="alert_svalbard.forecast_OC.YYYYMMDD_HHz.png" width="260">
+      <center>N-S Profile at 80W<br>
+      <a href="fp.lon80W.YYYYMMDD_HHz.mp4">
+      <img src="fp.Total_extinction_curtain.lon80W.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
       </a>
       </td>
      </tr>
-    </table>
-
-
-    <hr>
-    <h2>Pre-generated FLUID Animations (click to enlarge and animate)</h2>
-
-    <table>
-     <tr>
-      <h3>INSPYRE Region Aerosol Optical Depth (AOD)</h3>
-     </tr>
-     <tr>
-      <td width=33%>
-      <center>Total AOD (zoom)<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.totaot.ARCSIX.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.totaot.ARCSIX.png" width="260">
+     <tr> 
+      <td width=25%>
+      <center>E-W Profile at 40N<br>
+      <a href="fp.lat040N.YYYYMMDD_HHz.mp4">
+      <img src="fp.Total_extinction_curtain.lat040N.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
       </a>
       </td>
-      <td width=33%>
-      <center>Organic Carbon AOD (zoom)<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.ocaot.ARCSIX.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.ocaot.ARCSIX.png" width="260">
-      </a>
-      </td>
-      <td width=33%>
-      <center>Sulfate AOD(zoom)<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.suaot.ARCSIX.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.ssaot.ARCSIX.png" width="260">
-      </a>
-      </td>
-     </tr>
-     </table>
-
-     <p>
-     <table>
-     <tr>
-      <h3>Polar Projection Aerosol Optical Depth (AOD)</h3>
-     </tr>
-     <tr>
-      <td width=33%>
-      <center>Total AOD<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.totaot.nps.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.totaot.nps.png" width="260">
-      </a>
-      </td>
-      <td width=33%>
-      <center>Organic Carbon AOD<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.ocaot.nps.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.ocaot.nps.png" width="260">
-      </a>
-      </td>
-      <td width=33%>
-      <center>Sulfate AOD<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.suaot.nps.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.ssaot.nps.png" width="260">
-      </a>
-      </td>
-     </tr>
-     </table>
-
-     <p>
-     <table>
-     <tr>
-      <h3>Organic Carbon Concentration on various levels</h3>
-     </tr>
-     <tr>
-      <td width=33%>
-      <center>Organic Carbon 500 hPa<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.OC.500hpa.nps.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.OC.500hpa.nps.png" width="260">
-      </a>
-      </td>
-      <td width=33%>
-      <center>Organic Carbon 600 hPa<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.OC.600hpa.nps.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.OC.600hpa.nps.png" width="260">
-      </a>
-      </td>
-      <td width=33%>
-      <center>Organic Carbon 850 hPa<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.OC.850hpa.nps.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.OC.850hpa.nps.png" width="260">
-      </a>
-      </td>
-     </tr>
-     </table>
-
-     <p>
-     <table>
-     <tr>
-      <h3>Carbon Monoxide Mixing Ratio on various levels</h3>
-     </tr>
-     <tr>
-      <td width=33%>
-      <center>Carbon Monoxide 500 hPa<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.CO.500hpa.nps.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.CO.500hpa.nps.png" width="260">
-      </a>
-      </td>
-      <td width=33%>
-      <center>Carbon Monoxide 600 hPa<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.CO.600hpa.nps.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.CO.600hpa.nps.png" width="260">
-      </a>
-      </td>
-      <td width=33%>
-      <center>Carbon Monoxide 850 hPa<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.CO.850hpa.nps.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.CO.850hpa.nps.png" width="260">
-      </a>
-      </td>
-     </tr>
-     </table>
-
-     <p>
-     <table>
-     <tr>
-      <h3>North American Biomass Burning Carbon Monoxide Mixing Ratio on various levels</h3>
-     </tr>
-     <tr>
-      <td width=33%>
-      <center>Carbon Monoxide 500 hPa<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.COBBNA.500hpa.nps.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.COBBNA.500hpa.nps.png" width="260">
-      </a>
-      </td>
-      <td width=33%>
-      <center>Carbon Monoxide 600 hPa<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.COBBNA.600hpa.nps.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.COBBNA.600hpa.nps.png" width="260">
-      </a>
-      </td>
-      <td width=33%>
-      <center>Carbon Monoxide 850 hPa<br>
-      <a href="model.NASA_GEOS-5.YYYYMMDDTHH.COBBNA.850hpa.nps.mp4">
-      <img src="plots/model.NASA_GEOS-5.YYYYMMDDHH00.0HH.COBBNA.850hpa.nps.png" width="260">
+      <td width=25%>
+      <center>E-W Profile at 50N<br>
+      <a href="fp.lat050N.YYYYMMDD_HHz.mp4">
+      <img src="fp.Total_extinction_curtain.lat050N.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
       </a>
       </td>
      </tr>
