@@ -39,7 +39,6 @@ BC:
     - BCPHILIC
 
 BR:
-BR:
   monoFile: /home/pcolarco/silo/fvInput/chemistry/AerosolOptics/oracles_brc/x/optics_BR.oracles_brc.nc4
   bandFile: /home/pcolarco/silo/fvInput/chemistry/AerosolOptics/oracles_brc/x/opticsBands_BR.oracles_brc.RRTMG.nc4
   tracers:
