@@ -40,7 +40,7 @@ def plot(lev='0',varn='TOTEXTTAU',cbarmax=2.,title='Total AOT',
     fig = plt.figure(figsize=(14,9))
     ax = plt.axes(projection=ccrs.PlateCarree())
     ax.coastlines(resolution='50m')
-    ax.gridlines()
+    ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False)
     ax.add_feature(cfeature.STATES, linestyle=':', edgecolor='black', linewidth=0.5)
     
     ax.set_xlim([-140,-80])

@@ -12,7 +12,7 @@ def plot(x, xtitle, lev, var, vmax, title, figure, yyyymmdd, hh, yyyymmddt):
     #ax1.set_yscale("log")
     plt.ylim(1000,100)
     oc_lev = np.arange(0,vmax,vmax/50)
-    im2 = ax1.contourf(x, lev, var*1e9,levels=oc_lev,extend = 'both',cmap=plt.cm.get_cmap('Spectral_r'))
+    im2 = ax1.contourf(x, lev, var*1e9,levels=oc_lev,extend = 'both',cmap='Spectral_r')
     #im2.cmap.set_over('m')
     im2.cmap.set_under('w')
     plt.xlabel(xtitle)
@@ -21,11 +21,9 @@ def plot(x, xtitle, lev, var, vmax, title, figure, yyyymmdd, hh, yyyymmddt):
     cbar2=plt.colorbar(im2, ax=ax1, orientation='vertical', ticks=[0,1,2,3,4,5])
     #cbar2.ax.set_yticks([0,1,2,3,4,5])
     #cbar2.ax.set_yticklabels(['0','1','2','3','4','>5'])
-#    ax1.set_title('Forecast Organic Carbon Mixing Ratio [ppbm] @ 62.3$^\circ$ W (Alert to North Pole)')
     ax1.set_title(title)
     plt.text(76,150,'Forecast: %s_%sz'%(yyyymmdd,hh),color='w')
     plt.text(76,175,'Valid:       %s_12z'%(yyyymmddt),color='w')
-#    fig.savefig('alert.forecast_OC.%s_%sz.png'%(yyyymmdd,hh))
     fig.savefig(figure)
     plt.figure().clear()
     plt.close()
@@ -33,20 +31,19 @@ def plot(x, xtitle, lev, var, vmax, title, figure, yyyymmdd, hh, yyyymmddt):
     plt.clf()
 
 if __name__ == "__main__":
-   yyyy = 'YYYY'
-   mm   = 'MM'
-   dd   = 'DD'
-   hh   = 'HH'
+   yyyy = '2025'
+   mm   = '07'
+   dd   = '26'
+   hh   = '00'
    yyyymmdd = '%s%s%s'%(yyyy,mm,dd)
 
-   yyyyt = 'YYYT'
-   mmt   = 'MT'
-   ddt   = 'DT'
+   yyyyt = '2025'
+   mmt   = '07'
+   ddt   = '27'
    yyyymmddt = '%s%s%s'%(yyyyt,mmt,ddt)
 
 # READ THE DATA
 
-#filen = 'https://opendap.nccs.nasa.gov/dods/GEOS-5/fp/0.25_deg/fcast/inst3_3d_aer_Np/inst3_3d_aer_Np.%s%s%s_00'%(yyyy,mm,dd)
    filen = '/home/pcolarco/fp/forecast/Y%s/M%s/D%s/H%s/GEOS.fp.fcst.inst3_3d_aer_Np.%s_%s+%s_1200.V01.nc4'%(yyyy,mm,dd,hh,yyyymmdd,hh,yyyymmddt)
    with Dataset(filen,'r') as ncid:
     lon  = ncid.variables['lon'][:] # longitude points
@@ -59,29 +56,29 @@ if __name__ == "__main__":
 # SUBSETS
 # -------
 # Alert to NP
-   j = np.where((lat >= 75.) & (lat <= 90))[0]
-   i = np.where((lon >= -62.5) & (lon <= -62.25))
+   j = np.where((lat >= 30.) & (lat <= 70))[0]
+   i = np.where((lon >= -110.) & (lon <= -110.))
    oc2  = np.squeeze(oc[:,j,i])
    du2  = np.squeeze(du[:,j,i])
    lat2 = lat[j]
 
 # Greenland to NP
-   j = np.where((lat >= 75.) & (lat <= 90))[0]
-   i = np.where((lon >= -60.15) & (lon <= -59.85))
+   j = np.where((lat >= 30.) & (lat <= 70))[0]
+   i = np.where((lon >= -120.) & (lon <= -120.))
    oc3  = np.squeeze(oc[:,j,i])
    du3  = np.squeeze(du[:,j,i])
    lat3 = lat[j]
 
 # Svalbard to NP
-   j = np.where((lat >= 75.) & (lat <= 90))[0]
-   i = np.where((lon >= 15.5) & (lon <= 15.7))
+   j = np.where((lat >= 30.) & (lat <= 70))[0]
+   i = np.where((lon >= -100.) & (lon <= -100.))
    oc4  = np.squeeze(oc[:,j,i])
    du4  = np.squeeze(du[:,j,i])
    lat4 = lat[j]
 
 # EW Alert to Svalbard
-   j = np.where((lat >= 80.) & (lat <= 80.1))[0]
-   i = np.where((lon >= -70.) & (lon <= 20))
+   j = np.where((lat >= 40.) & (lat <= 40.1))[0]
+   i = np.where((lon >= -120.) & (lon <= -80))
    oc5  = np.squeeze(oc[:,j,i])
    du5  = np.squeeze(du[:,j,i])
    lon5 = lon[i]
