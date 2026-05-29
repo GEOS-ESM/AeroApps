@@ -8,7 +8,7 @@
 # 1. Environment Setup
 source /discover/nobackup/acollow/AeroApps/AeroApps/install/bin/g5_modules.sh
 
-export PYTHONPATH="/discover/nobackup/acollow/GMAOpyobs/install/lib/Python:/discover/nobackup/acollow/GMAOpyobs/src:${PYTHONPATH}"
+export PYTHONPATH="/discover/nobackup/acollow/AeroApps/AeroApps/install/lib/Python"
 
 ulimit -s unlimited
 export OMP_STACKSIZE=4G
