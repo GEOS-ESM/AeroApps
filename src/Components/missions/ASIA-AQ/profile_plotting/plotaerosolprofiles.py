@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 import sys
-sys.path.insert(0, '/discover/nobackup/acollow/GMAOpyobs/src')
-
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
