@@ -98,8 +98,9 @@ BCPHILIC:
   pmconversion: 1.0
 
 BRPHOBIC:
-  monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_BRC.v1_5.nc4
-  bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_BRC.v1_5.RRTMG.nc4
+BR:
+  monoFile: /home/pcolarco/silo/fvInput/chemistry/AerosolOptics/oracles_brc/x/optics_BR.oracles_brc.nc4
+  bandFile: /home/pcolarco/silo/fvInput/chemistry/AerosolOptics/oracles_brc/x/opticsBands_BR.oracles_brc.RRTMG.nc4
   tracers:
     - BRPHOBIC
   shapefactor: 1

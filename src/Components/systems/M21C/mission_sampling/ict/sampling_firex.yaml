@@ -55,7 +55,7 @@ flight_dates:
 #  - "20190831"
 #  - "20190903"
 #  - "20190905"
-  
+
 exp_id: "e5303_m21c_jan18"
 tmp_dir: "/discover/nobackup/acollow/temp_regrid"
 merra21c_archive: "/discover/nobackup/projects/gmao/merra21c/archive"

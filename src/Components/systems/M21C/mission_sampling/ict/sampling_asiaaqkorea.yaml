@@ -49,7 +49,7 @@ flight_dates:
 #  - "20240321"
 #  - "20240325"
 #  - "20240327"
-  
+
 exp_id: "e5303_m21c_jan18"
 tmp_dir: "/discover/nobackup/acollow/temp_regrid"
 merra21c_archive: "/discover/nobackup/projects/gmao/merra21c/archive"
@@ -65,7 +65,7 @@ oc:
 nitrate:
   obs: Nitrate_PM15_AMS_60s_JIMENEZ
   m21c: NI
-altitude: 
+altitude:
   obs: Altitude_AGL_m_DIGANGI
   m21c: H
 
