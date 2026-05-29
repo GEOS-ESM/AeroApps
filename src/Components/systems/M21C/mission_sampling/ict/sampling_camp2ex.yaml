@@ -53,7 +53,7 @@ oc:
 nitrate:
   obs: NO3_Ave_IsoK_STP_ZIEMBA
   m21c: NI
-altitude: 
+altitude:
   obs: Altitude_AGL_m_DIGANGI
   obsunits: m
   m21c: H

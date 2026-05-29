@@ -71,7 +71,7 @@ oc:
 nitrate:
   obs: Nitrate_PM1_AMS
   m21c: NI
-altitude: 
+altitude:
   obs: HAE_GPS_Altitude
   obsunits: m
   m21c: H

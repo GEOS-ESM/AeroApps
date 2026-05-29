@@ -33,22 +33,10 @@ do_ams: True
 do_sp2: True
 
 flight_dates:
-#  - "20240206"
-#  - "20240207"
-#  - "20240211"
-#  - "20240213"
-#  - "20240215"
-#  - "20240217"
-#  - "20240226"
-#  - "20240308"
-#  - "20240310"
-#  - "20240311"
-#  - "20240313"
   - "20240316"
   - "20240318"
   - "20240321"
   - "20240325"
-#  - "20240327"
   
 exp_id: "e5303_m21c_jan18"
 tmp_dir: "/discover/nobackup/acollow/temp_regrid"
@@ -65,8 +53,6 @@ oc:
 nitrate:
   obs: Nitrate_PM15_AMS_60s_JIMENEZ
   m21c: NI
-altitude: 
+altitude:
   obs: Altitude_AGL_m_DIGANGI
   m21c: H
-
-
