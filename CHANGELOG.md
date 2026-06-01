@@ -9,6 +9,7 @@
 - Add a post processing script that creates a zarr virtual data store for a model run to Applications
 - Add a modules directory with a model_utils sub-directory with some basic eval, post, and utils modules
 - Add codes to sample according to AERONET for a general GEOS experiment and for MERRA-21C evaluation
+- Add codes to sample MERRA-21C according to field campaign HSRL and icartt files, then plot results
 
 ### Fixed
 
