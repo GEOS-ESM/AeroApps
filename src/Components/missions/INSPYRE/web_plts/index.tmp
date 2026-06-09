@@ -26,28 +26,34 @@
       <h3>Aerosol Optical Depth (AOD)</h3>
      </tr>
      <tr>
-      <td width=25%>
+      <td width=20%>
       <center>Total AOD (550 nm)<br>
       <a href="fp.TOTEXTTAU.YYYYMMDD_HHz.mp4">
       <img src="fp.TOTEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
       </a>
       </td>
-      <td width=25%>
-      <center>Sulfate AOD (550 nm)<br>
-      <a href="fp.SUEXTTAU.YYYYMMDD_HHz.mp4">
-      <img src="fp.SUEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
-      </a>
-      </td>
-      <td width=25%>
+      <td width=20%>
       <center>Brown Carbon AOD (550 nm)<br>
       <a href="fp.BREXTTAU.YYYYMMDD_HHz.mp4">
       <img src="fp.BREXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
       </a>
       </td>
-      <td width=25%>
+      <td width=20%>
       <center>Organic Carbon AOD (550 nm)<br>
       <a href="fp.OCEXTTAU.YYYYMMDD_HHz.mp4">
       <img src="fp.OCEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=20%>
+      <center>Sulfate AOD (550 nm)<br>
+      <a href="fp.SUEXTTAU.YYYYMMDD_HHz.mp4">
+      <img src="fp.SUEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=20%>
+      <center>Dust AOD (550 nm)<br>
+      <a href="fp.DUEXTTAU.YYYYMMDD_HHz.mp4">
+      <img src="fp.DUEXTTAU.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
       </a>
       </td>
      </tr>
@@ -59,28 +65,34 @@
       grey = low cloud)
      </tr>
      <tr>
-      <td width=25%>
+      <td width=20%>
       <center>Total AOD (550 nm)<br>
       <a href="fp.TOTEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
       <img src="fp.TOTEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
       </a>
       </td>
-      <td width=25%>
-      <center>Sulfate AOD (550 nm)<br>
-      <a href="fp.SUEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
-      <img src="fp.SUEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
-      </a>
-      </td>
-      <td width=25%>
+      <td width=20%>
       <center>Brown Carbon AOD (550 nm)<br>
       <a href="fp.BREXTTAU_wcloud.YYYYMMDD_HHz.mp4">
       <img src="fp.BREXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
       </a>
       </td>
-      <td width=25%>
+      <td width=20%>
       <center>Organic Carbon AOD (550 nm)<br>
       <a href="fp.OCEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
       <img src="fp.OCEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=20%>
+      <center>Sulfate AOD (550 nm)<br>
+      <a href="fp.SUEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
+      <img src="fp.SUEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
+      </a>
+      </td>
+      <td width=20%>
+      <center>Dust AOD (550 nm)<br>
+      <a href="fp.DUEXTTAU_wcloud.YYYYMMDD_HHz.mp4">
+      <img src="fp.DUEXTTAU_wcloud.YYYYMMDD_HH+YYYYMMDD_HH00.png" width=260>
       </a>
       </td>
      </tr>

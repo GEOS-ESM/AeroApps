@@ -1,5 +1,5 @@
 #!/bin/csh
-#SBATCH --time=01:30:00
+#SBATCH --time=02:00:00
 #SBATCH --nodes=1 --ntasks-per-node=42
 #SBATCH --job-name=arcsix_plots
 #SBATCH --account=s3339
@@ -29,6 +29,11 @@
    set files = `ls -1 /home/pcolarco/fp/forecast/Y$yy/M$mm/D$dd/H${hh}/GEOS.fp.fcst.inst1_2d_hwl_Nx.*.V01.nc4`
    prund.pl -H `hostname` -d `echo $files` &
    mpirun -np 42 prund.pl -H `hostname` simple_plot.py %s
+
+# run sampling scripts
+   set files = `ls -1 /home/pcolarco/fp/forecast/Y$yy/M$mm/D$dd/H${hh}/GEOS.fp.fcst.inst1_2d_hwl_Nx.*_0[0,3,6,9]00.V01.nc4 /home/pcolarco/fp/forecast/Y$yy/M$mm/D$dd/H${hh}/GEOS.fp.fcst.inst1_2d_hwl_Nx.*_1[2,5,8]00.V01.nc4 /home/pcolarco/fp/forecast/Y$yy/M$mm/D$dd/H${hh}/GEOS.fp.fcst.inst1_2d_hwl_Nx.*_2100.V01.nc4 `
+   prund.pl -H `hostname` -d `echo $files` &
+   mpirun -np 42 prund.pl -H `hostname` simple_plot.mercator.py %s
 
 # run sampling scripts
    set files = `ls -1 /home/pcolarco/fp/forecast/Y$yy/M$mm/D$dd/H${hh}/GEOS.fp.fcst.inst1_2d_hwl_Nx.*.V01.nc4`
@@ -78,6 +83,8 @@ set web = "/discover/nobackup/projects/gmao/iesa/pub/aerosol/inspyre/$start"
 \cp -f index.html $web
 \cp -f fp.*.$yy$mm${dd}_${hh}z.mp4 $web/
 \cp -f fp.*.$yy$mm${dd}_${hh}+$yy$mm${dd}_${hh}00.png $web/
+mkdir -p $web/mercator
+\cp -f *.mercator.png $web/mercator
 \cp -f fp.*.$yy$mm${dd}_${hh}+*_0000.png $web/plots
 \cp -f fp.*.$yy$mm${dd}_${hh}+*_1200.png $web/plots
 mkdir -p ROOTDIR/samples/INSPYRE/sampled/GEOS-FP/$start
