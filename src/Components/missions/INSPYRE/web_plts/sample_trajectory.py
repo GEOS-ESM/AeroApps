@@ -106,14 +106,20 @@ def plot_curtain(fname,trj=-100.,model="fp",species=None):
     else:
         x = ext.longitude.values
     
-    fig, ax = plt.subplots(figsize=(20, 6))
+    fig, ax = plt.subplots(figsize=(18, 8))
+    plt.subplots_adjust(left=0.1,bottom=0.1,right=0.99,top=0.9)
+    ax.set_facecolor("white")
     nx = len(x)
     nlev = ext.sizes['level']
-    x = np.repeat(x.reshape(nx,1),nlev,axis=1)
+    xx = np.repeat(x.reshape(nx,1),nlev,axis=1)
     plt.ylabel('Altitude [km]')
     plt.xlabel(xstr)
     clevs = np.arange(-2,0.,.02)
-    im  = ax.contourf(x,z/1000.,np.log10(ext.EXT),clevs,cmap=cm,extend='max')
+    im  = ax.contourf(xx,z/1000.,np.log10(ext.EXT),clevs,cmap=cm,extend='max')
+    y = np.squeeze(z[:,71]/1000.)
+    im2 = ax.plot(x,y,color="grey",lw=2)
+    d = np.zeros(len(x))
+    ax.fill_between(x,y,where=y>=d,color="beige")
     ax.set_ylim(0,20)
     ax.set_facecolor('black')
 
@@ -271,6 +277,7 @@ if __name__ == "__main__":
     sample(fname,trj=-100.)
     sample(fname,trj=-110.)
     sample(fname,trj=-120.)
+    sample(fname,trj=-130.)
     sample(fname,trj=-80.)
     sample(fname,trj=40.)
     sample(fname,trj=50.)
@@ -278,7 +285,15 @@ if __name__ == "__main__":
     plot_curtain(fname,trj=-100.)
     plot_curtain(fname,trj=-110.)
     plot_curtain(fname,trj=-120.)
+    plot_curtain(fname,trj=-130.)
     plot_curtain(fname,trj=40.)
     plot_curtain(fname,trj=50.)
+    plot_curtain(fname,trj=-80.,species="cc")
+    plot_curtain(fname,trj=-100.,species="cc")
+    plot_curtain(fname,trj=-110.,species="cc")
+    plot_curtain(fname,trj=-120.,species="cc")
+    plot_curtain(fname,trj=-130.,species="cc")
+    plot_curtain(fname,trj=40.,species="cc")
+    plot_curtain(fname,trj=50.,species="cc")
 
     sys.exit()
