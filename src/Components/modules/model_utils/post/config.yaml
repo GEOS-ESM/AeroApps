@@ -1,0 +1,20 @@
+# This yaml file is used to identify what the forecasts are being evaluated against,
+# the date range for the evaluation,
+# and the temproral resolution of the evaluation.
+paths:
+  forecast    : "/discover/nobackup/projects/gmao/osse2/HWT/CONUS02KM/Feature-c2160_L137/forecasts/"
+  aeronet     : "/css/gmao/dp/gds/AeroObs/AERONET.v3/Level1_5/"
+  fp_forecast : "/discover/nobackup/projects/gmao/geos_fp_arch/f5430_fp/chem/Y2026"
+
+dates:
+  start       : "2026-05-16 12:00:00"
+  end         : "2026-05-18 00:00:00"
+
+evaluation:
+  # To change the datasets evaluated, comment out unwanted dataset
+  - "aeronet"
+  - "forecast"
+  - "analysis"
+  
+temporal_resolution: "monthly" # can be hourly, daily, or monthly
+  
