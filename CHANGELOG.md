@@ -8,6 +8,8 @@
 - Add ASIA-AQ mission scripts
 - Add a post processing script that creates a zarr virtual data store for a model run to Applications
 - Add a modules directory with a model_utils sub-directory with some basic eval, post, and utils modules
+- Add codes to sample according to AERONET for a general GEOS experiment and for MERRA-21C evaluation
+- Add codes to sample MERRA-21C according to field campaign HSRL and icartt files, then plot results
 
 ### Fixed
 
@@ -18,7 +20,8 @@
 - refactored ARCSIX mission post-processing code for suitability for archive upload
 - refactored INSPYRE trajectory preparation and plotting scripts
 - added total and carbon extinction plots to INSPYRE package
-
+- Expanded capability for ASIA-AQ vertical profile plots
+- updated monthly_mod.py to reduce the time it takes to run
 
 ## [v2.3.0] - 2025-07-25
 
@@ -28,6 +31,7 @@
 
 ### Changed
 - removed all NNR scripts from GAAS_App and relocated them in AeroML repository
+
 
 ## [v2.2.0] - 2025-07-15
 

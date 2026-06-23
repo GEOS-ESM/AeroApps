@@ -1,0 +1,59 @@
+#
+# Configuration file for sampling a GEOS experiment
+
+# model control files
+model_aer_ctl: inst3_aer_Nv
+model_other_ctl:
+    -
+
+# location of merged dc-8 files
+mergefiles: /discover/nobackup/acollow/CAMP2Ex/p3_LARGE/merge9dec2021
+
+# output directory for sampled files
+sampled_outdir: /discover/nobackup/projects/gmao/iesa/aerosol/campaigns/CAMP2EX/sampled/merge/MERRA-21C
+
+# Location of the aerosol property configuration file
+large_config: g2g_large.yaml
+large_submicron_config: g2g_large_submicron.yaml
+ams_config: g2g_ams.yaml
+sp2_config: g2g_sp2.yaml
+
+#Inlet cutoff size
+pmsize: 0.6
+sp2size: 0.7
+
+#Nav Variable Names
+lon: Longitude
+lat: Latitude
+
+# flags for which calculations you want to do
+do_large_aop: False
+do_large_submicron_aop: False
+do_ams: True
+do_sp2: True
+
+flight_dates:
+  - "20190906"
+  - "20190908"
+  - "20190915"
+  - "20190916"
+
+exp_id: "e5303_m21c_jan18"
+tmp_dir: "/discover/nobackup/acollow/temp_regrid"
+merra21c_archive: "/discover/nobackup/projects/gmao/merra21c/archive"
+
+sulfate:
+  obs: SO4_Ave_IsoK_STP_ZIEMBA
+  m21c: SU
+  m2: SU
+oc:
+  obs: Org_Ave_IsoK_STP_ZIEMBA
+  m21c: OC+BR
+  m2: OC
+nitrate:
+  obs: NO3_Ave_IsoK_STP_ZIEMBA
+  m21c: NI
+altitude:
+  obs: Altitude_AGL_m_DIGANGI
+  obsunits: m
+  m21c: H

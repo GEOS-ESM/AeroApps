@@ -1,0 +1,39 @@
+campaign: "ORACLES"
+exp_id: "e5303_m21c_jan18"
+output_dir: "/discover/nobackup/projects/gmao/iesa/aerosol/campaigns/ORACLES/sampled"
+tmp_dir: "/discover/nobackup/acollow/temp_regrid"
+merra2_archive: "/discover/nobackup/projects/gmao/merra2/data/products/MERRA2_all"
+merra21c_archive: "/discover/nobackup/projects/gmao/merra21c/archive"
+obs_dir: "/discover/nobackup/projects/gmao/iesa/aerosol/campaigns/ORACLES/HSRL2"
+
+# Observation file naming parameters
+instrument: "HSRL2"
+plane: "P3"
+obs_revision: "R2"
+
+# AOP Settings
+wavelengths: [355, 532, 1064]
+aop_config_m2: "/discover/nobackup/acollow/GMAOpyobs/src/config/m2_pm25.yaml"
+aop_config_m21c: "/discover/nobackup/acollow/GMAOpyobs/src/config/g2g.yaml"
+
+# Flight dates
+flight_dates:
+#  - "20180921"
+#  - "20180922"
+#  - "20180924"
+#  - "20180927"
+#  - "20180930"
+#  - "20181002"
+#  - "20181003"
+#  - "20181005"
+#  - "20181007"
+#  - "20181010"
+#  - "20181012"
+#  - "20181015"
+#  - "20181017"
+#  - "20181019"
+#  - "20181021"
+  - "20181023"
+  - "20181025"
+  - "20181026"
+  - "20181027"
