@@ -65,16 +65,27 @@ module load ffmpeg
   rm -f fp.$COLL.???.png
   end
 
-  foreach COLL (lon80W lon100W lon110W lon120W lat040N lat050N)
+  foreach COLL (lon80W lon100W lon110W lon120W lon130W lat040N lat050N)
   set i = 0
-  foreach file (`\ls -1 *$COLL*png`)
+  foreach file (`\ls -1 fp.Total*$COLL*png`)
    set iii = $i
    if($i < 10)  set iii = '0'$iii
    if($i < 100) set iii = '0'$iii
    ln -s $file fp.$COLL.$iii.png
    @ i = $i + 1
   end
-  ./mp4_encode -o fp.$COLL.$yy$mm${dd}_${hh}z.mp4 "fp.$COLL.???.png"
+  ./mp4_encode -o fp.Total_extinction.$COLL.$yy$mm${dd}_${hh}z.mp4 "fp.$COLL.???.png"
+  rm -f fp.$COLL.???.png
+
+  set i = 0
+  foreach file (`\ls -1 fp.cc*$COLL*png`)
+   set iii = $i
+   if($i < 10)  set iii = '0'$iii
+   if($i < 100) set iii = '0'$iii
+   ln -s $file fp.$COLL.$iii.png
+   @ i = $i + 1
+  end
+  ./mp4_encode -o fp.cc_extinction.$COLL.$yy$mm${dd}_${hh}z.mp4 "fp.$COLL.???.png"
   rm -f fp.$COLL.???.png
   end  
   
