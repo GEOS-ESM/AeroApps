@@ -16,7 +16,8 @@
 - move model utils to Shared directory. Rename module to aeroeval
 - Rearranged and renamed some of the ARCSIX codes
 - refactored ARCSIX mission post-processing code for suitability for archive upload
-- updated INSPYRE trajectory preparation and plotting scripts
+- refactored INSPYRE trajectory preparation and plotting scripts
+- added total and carbon extinction plots to INSPYRE package
 
 
 ## [v2.3.0] - 2025-07-25
