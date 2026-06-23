@@ -43,7 +43,7 @@ def plot_curtain(fname,trj=-100.,model="fp",species=None):
     modname = model
     if(model == 'fp'):
         modname = "GEOS-FP"
-        config = './geos529_pm25.yaml'
+        config = './geos543_pm25.yaml'
     elif(model == 'MERRA2'):
         config = './m2_pm25.yaml'
     else:
@@ -72,7 +72,7 @@ def plot_curtain(fname,trj=-100.,model="fp",species=None):
         xstr = "Latitude"
     dd   = f"{f0dateout}+{fvdateout}"
     dirname = f"samples/INSPYRE/sampled/{modname}/{datedir}"
-    samplefile = f"./{dirname}/INSPYRE-{modname}_Model_{dd}.traj_{trjstr}.nc"
+    samplefile = f"./{dirname}/INSPYRE-{modname}_Model_{dd}.vtraj_{trjstr}.nc"
     print(samplefile)
 
     Species = None
@@ -87,7 +87,7 @@ def plot_curtain(fname,trj=-100.,model="fp",species=None):
         Species = ['SU']
         speciestitle = 'Sulfate '
     if(species == 'cc'):
-        Species = ['OC','BC']
+        Species = ['OC','BR','BC']
         if(model == 'res'):
             Species = ['OC','BR','BC']
         speciestitle = 'Carbonaceous '
@@ -99,6 +99,16 @@ def plot_curtain(fname,trj=-100.,model="fp",species=None):
     else:
         asm = xc.open_mfdataset(asmfile)
     z   = asm['H']
+
+#   Get the tropopause altitude
+    slvfile = samplefile.replace("vtraj","straj")
+    slv     = xr.open_mfdataset(slvfile)
+    troppb  = slv["TROPPB"].values
+    print(troppb)
+    # Pa->km per https://en.wikipedia.org/wiki/Pressure_altitude
+    troph   = 145366.45*(1.-(troppb/101325.)**0.190284)*0.3048/1000.
+    print(troph)
+    
 #   Get the extinction profile
     ext = optics.getAOPext(wavelength=532,Species=Species)
     if trj < 0:
@@ -106,16 +116,23 @@ def plot_curtain(fname,trj=-100.,model="fp",species=None):
     else:
         x = ext.longitude.values
     
-    fig, ax = plt.subplots(figsize=(20, 6))
+    fig, ax = plt.subplots(figsize=(18, 8))
+    plt.subplots_adjust(left=0.1,bottom=0.1,right=0.99,top=0.9)
+    ax.set_facecolor("white")
     nx = len(x)
     nlev = ext.sizes['level']
-    x = np.repeat(x.reshape(nx,1),nlev,axis=1)
+    xx = np.repeat(x.reshape(nx,1),nlev,axis=1)
     plt.ylabel('Altitude [km]')
     plt.xlabel(xstr)
     clevs = np.arange(-2,0.,.02)
-    im  = ax.contourf(x,z/1000.,np.log10(ext.EXT),clevs,cmap=cm,extend='max')
+    im  = ax.contourf(xx,z/1000.,np.log10(ext.EXT),clevs,cmap=cm,extend='max')
+    y = np.squeeze(z[:,71]/1000.)
+    im2 = ax.plot(x,y,color="grey",lw=2)
+    d = np.zeros(len(x))
+    ax.fill_between(x,y,where=y>=d,color="beige")
     ax.set_ylim(0,20)
     ax.set_facecolor('black')
+    im3 = ax.plot(x,troph,lw=3,color="white")
 
     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
              ax.get_xticklabels() + ax.get_yticklabels()):
@@ -136,10 +153,17 @@ def plot_curtain(fname,trj=-100.,model="fp",species=None):
     plt.close(fig)
     return
 
-def sample(fname,trj=-100.,model='fp'):
+def sample(fname,trj=-100.,model='fp',three_d=True):
 
-    fname2 = fname.replace("_aer_","_asm_")
-    fpdata = [fname,fname2]
+    if three_d:
+        fname2 = fname.replace("_aer_","_asm_")
+        fpdata = [fname,fname2]
+        sv     = "v"
+        do_optics = True
+    else:
+        fpdata = [fname]
+        sv     = "s"
+        do_optics = False
 
 #   From the filename get the forecast init and valid time
     f0dateout = fname[-33:-22]  # forecast init time
@@ -153,24 +177,23 @@ def sample(fname,trj=-100.,model='fp'):
     if trj > 0:
         lon  = np.arange(-120.,-79.25,0.25)
         lat  = np.full(len(lon),trj)
-        alt  = np.full(len(lon),0.)
-        tyme = np.full(len(lon),datetime.strptime(fvdateout,"%Y%m%d_%H"))
         trjstr = f"lat0{abs(int(trj)):0d}N"
     else:
         lat  = np.arange(30.,70.25,0.25)
         lon  = np.full(len(lat),trj)
-        alt  = np.full(len(lon),0.)
-        tyme = np.full(len(lon),datetime.strptime(fvdateout,"%Y%m%d_%H"))
         trjstr = f"lon{abs(int(trj)):0d}W"
+    if three_d:
+        tyme = np.full(len(lon),datetime.strptime(fvdateout,"%Y%m%d_%H"))
+    else:
+        tyme = np.full(len(lon),datetime.strptime(fvdateout+"30","%Y%m%d_%H%M"))
 
     
     
 # Get the model configuration
-    do_optics = 1
     modname = model
     if(model == 'fp'):
         modname = "GEOS-FP"
-        config = './geos529_pm25.yaml'
+        config = './geos543_pm25.yaml'
     elif(model == 'MERRA2'):
         config = './m2_pm25.yaml'
     else:
@@ -191,14 +214,18 @@ def sample(fname,trj=-100.,model='fp'):
         print(f"An error occurred: {e}")
         sys.exit()
 
-    traj = TRAJECTORY(tyme,lon,lat,fpdata)
+    print(fpdata)
+    kwargs = {'compat':'override'}
+    traj = TRAJECTORY(tyme,lon,lat,fpdata,**kwargs)
 # sample the dataset along the trajectory, and return an xarray dataset
     traj_ds = traj.sample()
 
-#   Rename dimensions
-    traj_ds = traj_ds.rename_dims(lev="level")
-#   Rename variables
-    traj_ds = traj_ds.rename_vars(lev="level", lon="longitude", lat="latitude")
+#   Rename dimensions and variables
+    if three_d:
+        traj_ds = traj_ds.rename_dims(lev="level")
+        traj_ds = traj_ds.rename_vars(lev="level", lon="longitude", lat="latitude")
+    else:
+        traj_ds = traj_ds.rename_vars(lon="longitude", lat="latitude")
     
 #   Add global attributes
     dd   = f"{f0dateout}+{fvdateout}"
@@ -234,7 +261,7 @@ def sample(fname,trj=-100.,model='fp'):
                                    
 
 # create a nominal optics profile
-    if(do_optics):
+    if do_optics:
         Species = None
         optics = G2GAOP(traj_ds,config=config)
         ext = optics.getAOPext(wavelength=532,Species=Species)
@@ -244,7 +271,7 @@ def sample(fname,trj=-100.,model='fp'):
         traj_ds["DEPOL532nm"] = ext["DEPOL"]
 
 # Preferred ICARTT name
-    outFile = f"./{dirname}/INSPYRE-{modname}_Model_{dd}.traj_{trjstr}.nc"
+    outFile = f"./{dirname}/INSPYRE-{modname}_Model_{dd}.{sv}traj_{trjstr}.nc"
     traj_ds.to_netcdf(outFile)
     print(f"Wrote: {outFile}")
     traj_ds.close()
@@ -266,13 +293,35 @@ if __name__ == "__main__":
     else:
         parser.error("must have 1 argument: filename")
         
+    fsname = fname.replace("inst3_3d_aer_Nv","tavg1_2d_slv_Nx")
+    fsname = fsname.replace("00.V01","30.V01")
+    sample(fsname,trj=-100.,three_d=False)
+    sample(fsname,trj=-110.,three_d=False)
+    sample(fsname,trj=-120.,three_d=False)
+    sample(fsname,trj=-130.,three_d=False)
+    sample(fsname,trj=-80.,three_d=False)
+    sample(fsname,trj=40.,three_d=False)
+    sample(fsname,trj=50.,three_d=False)
     sample(fname,trj=-100.)
+    sample(fname,trj=-110.)
     sample(fname,trj=-120.)
+    sample(fname,trj=-130.)
     sample(fname,trj=-80.)
     sample(fname,trj=40.)
+    sample(fname,trj=50.)
     plot_curtain(fname,trj=-80.)
     plot_curtain(fname,trj=-100.)
+    plot_curtain(fname,trj=-110.)
     plot_curtain(fname,trj=-120.)
+    plot_curtain(fname,trj=-130.)
     plot_curtain(fname,trj=40.)
+    plot_curtain(fname,trj=50.)
+    plot_curtain(fname,trj=-80.,species="cc")
+    plot_curtain(fname,trj=-100.,species="cc")
+    plot_curtain(fname,trj=-110.,species="cc")
+    plot_curtain(fname,trj=-120.,species="cc")
+    plot_curtain(fname,trj=-130.,species="cc")
+    plot_curtain(fname,trj=40.,species="cc")
+    plot_curtain(fname,trj=50.,species="cc")
 
     sys.exit()

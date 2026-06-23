@@ -19,6 +19,7 @@
 - Rearranged and renamed some of the ARCSIX codes
 - refactored ARCSIX mission post-processing code for suitability for archive upload
 - refactored INSPYRE trajectory preparation and plotting scripts
+- added total and carbon extinction plots to INSPYRE package
 - Expanded capability for ASIA-AQ vertical profile plots
 - updated monthly_mod.py to reduce the time it takes to run
 

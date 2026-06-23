@@ -13,3 +13,5 @@ edit this to point to a different FP version
 (right now set up for an older FP for the dryrun
 cases). Or remove entirely and should revert
 to OpenDap access to current FP and forecasts.
+You may need to load a module on discover:
+module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES15

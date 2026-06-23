@@ -37,8 +37,8 @@ name_of_uwind/S = "U"
 name_of_vwind/S = "V"
 
 # the system version
-#SYSVER/S = "f5295_fp"
-SYSVER/S = "f5430_fp"
+SYSVER/S = "f5295_fp"
+#SYSVER/S = "f5430_fp"
 BASEURL/S = "/discover/nobackup/projects/gmao/geos_fp_arch/${SYSVER}/diag/"
 Fcst_BASEURL/S = "/discover/nobackup/projects/gmao/geos_fp_arch/${SYSVER}/forecast/"
 START/S = "2026-01"
