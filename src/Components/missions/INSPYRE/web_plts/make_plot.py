@@ -66,11 +66,11 @@ def make_plot():
 
 def make_plot_mercator():
     proj = ccrs.epsg(3857)
-    fig = plt.figure(figsize=(19,24))
+    fig = plt.figure(figsize=(19,16.5))
     gs = GridSpec(1, 1)
 
     ax  = fig.add_subplot(gs[0],projection=proj)
-    ax.set_extent([-130,-70,22.5,70],crs=ccrs.PlateCarree())
+    ax.set_extent([-130,-70,22.5,60],crs=ccrs.PlateCarree())
     ax.coastlines(resolution="50m")
     ax.gridlines(dms=True, x_inline=False, y_inline=False)
     ax.add_feature(cfeature.BORDERS, edgecolor='black',linewidth=1)
