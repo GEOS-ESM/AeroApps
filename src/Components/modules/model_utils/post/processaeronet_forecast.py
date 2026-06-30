@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from datetime import datetime, timedelta
-import warnings
+import warningGEOS.hwt_slv
 import multiprocessing as mp
 from functools import partial
 import time
@@ -63,9 +63,9 @@ def parse_aeronet_daily_file(filepath, start_date, end_date):
         if df.empty:
             return None, "No valid paired AOD/Angstrom data after QC"
 
-        df['hour'] = df['DateTime'].dt.floor('h')
+        df['obs hour'] = df['DateTime'].dt.floor('h')
         
-        hourly = df.groupby(['station', 'hour']).agg({
+        hourly = df.groupby(['station', 'obs hour']).agg({
             'aod_550': 'mean', 
             'angstrom': 'mean',
             'lats': 'first',
@@ -85,7 +85,7 @@ def processanalysis(date_tuple, analysis_path_template):
 
     date, daily_df = date_tuple
 
-    for hour_val, group in daily_df.groupby('hour'):
+    for hour_val, group in daily_df.groupby('obs hour'):
         YYYYMM = hour_val.strftime('%Y%m')
         YYYYMMDD = hour_val.strftime('%Y%m%d')
         MM = hour_val.strftime('%m')
@@ -116,21 +116,35 @@ def processmodel(date_tuple, model_path_template):
     date, daily_df = date_tuple
     processed_records = []
     
-    initiation_date = start_date
-    for initiation_date in pd.date_range(start = start_date, end = end_date, freq = time_step):
-        initiation_YYYYMMDD = datetime.strftime(initiation_date, '%Y%m%d')
-        initiation_HH = datetime.strftime(initiation_date, '%H')
-        for hour_val, group in daily_df.groupby('hour'):
+    # initiation_date = start_date
+    for initiation_time in pd.date_range(start = start_date, end = end_date, freq = time_step):
+        initiation_YYYYMMDD = datetime.strftime(initiation_time, '%Y%m%d')
+        initiation_HH = datetime.strftime(initiation_time, '%H')
+        for hour_val, group in daily_df.groupby('obs hour'):
             YYYYMM = hour_val.strftime('%Y%m')
             YYYYMMDD = hour_val.strftime('%Y%m%d')
-            HH = datetime.strftime(start_date, '%H') # model initiation time
+            
+            MM = hour_val.strftime('%m')
+            # HH = datetime.strftime(start_date, '%H') # model initiation time
             HHmm = hour_val.strftime('%H%M') # model forecast hour
-            fcst_time= datetime.combine(datetime.strptime(YYYYMMDD,'%Y%m%d'), datetime.strptime(HHmm, '%H%M').time())
+            fcst_length = hour_val - initiation_time
+            if fcst_length < pd.Timedelta(0):
+                continue
+            if fcst_length > pd.Timedelta(hours=fcst_period):
+                continue
+            # fcst_time= datetime.combine(datetime.strptime(YYYYMMDD,'%Y%m%d'), datetime.strptime(HHmm, '%H%M').time())
             model_file = model_path_template.format(initiation_YYYYMMDD = initiation_YYYYMMDD, initiation_HH = initiation_HH,
-                                                    YYYYMM=YYYYMM, YYYYMMDD=YYYYMMDD, HH=HH, HHmm = HHmm)
-            if os.path.exists(model_file):
-                with xr.open_dataset(model_file) as ds_mod:
-                    fcst_length = fcst_time - initiation_date
+                                                    YYYYMM=YYYYMM, YYYYMMDD=YYYYMMDD, HH=initiation_HH, HHmm = HHmm)
+
+            climate_path = '/discover/nobackup/acollow/aeroeval/geosit/monthly_climatologies/'
+            climate_hour = (hour_val.hour // 6) *6
+            climate_file = f'{climate_path}geos_it_climatology_{climate_hour:02d}z_{MM}_2003_2022.nc'
+            # print(climate_file)
+            if os.path.exists(model_file) and os.path.exists(climate_file):
+                # print(model_file)
+                with xr.open_dataset(model_file) as ds_mod, xr.open_dataset(climate_file) as ds_climate:
+                    # print(ds_climate.dims)
+                    # fcst_length = fcst_time - initiation_date
                     for idx, row in group.iterrows():
                         new_row = row.copy()
                         mlon = row['lons'] + 360 if (ds_mod.lons.min() >= 0 and row['lons'] < 0) else row['lons']
@@ -138,17 +152,28 @@ def processmodel(date_tuple, model_path_template):
                         if 'time' in pt.dims:
                             pt = pt.isel(time=0)
 
-                        new_row['model_aod'] = float(pt['TOTEXTTAU'].values) 
-                        new_row['model_ang'] = float(pt['TOTANGSTR'].values) 
-                        new_row[ 'initialization hour'] = initiation_HH
-                        new_row['fcst length'] = fcst_length
+                        # print(model_file)
+                        # print('Initiation time:', initiation_time)
+                        # print('Fcst time:', hour_val)
+                        # print('Fcst Length:', fcst_length)
+                        # print('')
 
+                        
+                        pt_climate = ds_climate.sel(lat=row['lats'], lon = mlon, method='nearest')
+                        new_row['model_aod'] = float(pt['TOTEXTTAU'].values) 
+                        new_row['model_ang'] = float(pt['TOTANGSTR'].values)
+                        new_row['climatology_aod'] = float(pt_climate['TOTEXTTAU'].values)
+                        new_row['initialization time'] = initiation_time
+                        new_row['initialization hour'] = initiation_HH
+                        new_row['fcst length'] = fcst_length
+                        
                         processed_records.append(new_row)
 
+    # print(processed_records)
     if processed_records:
         return pd.DataFrame(processed_records)
     else:
-        return pd.DataFrame(columns= list(daily_df.columns) + ['model_aod', 'model_ang', 'initialization time', 'fcst length'])
+        return pd.DataFrame(columns= list(daily_df.columns) + ['model_aod', 'model_ang', 'initialization time', 'initialization hour',  'fcst length'])
 
 
 
@@ -157,18 +182,15 @@ def processmodel(date_tuple, model_path_template):
 #####################################################################################
 def displayStats(data):
 
-    data['climate_aod_mean'] = 0.11252546896123224 #calcualtedc from MERRA2 in plot_dieoff_fig.py
 
     
     
     stats = []
     for fcst in data:
 
-        obs_aod_anom = data[fcst]['aod_550'] - data[fcst]['climate_aod_mean']
-        model_aod_anom = data[fcst]['model_aod'] - data[fcst]['climate_aod_mean']
-        analysis_aod_anom = data[fcst]['analysis_aod'] - data[fcst]['climate_aod_mean']
-        model_aod_acc = model_aod_anom.corr(obs_aod_anom)
-        analysis_aod_acc = analysis_aod_anom.corr(obs_aod_anom)
+        model_aod_anom = data[fcst]['model_aod'] - data[fcst]['climatology_aod']
+        obs_aod_anom = data[fcst]['aod_550'] - data[fcst]['climatology_aod']
+        analysis_aod_anom = data[fcst]['analysis_aod'] - data[fcst]['climatology_aod']
         
         
         stats.append({
@@ -197,6 +219,10 @@ def displayStats(data):
             'MODEL_Angstrom_Correlation': data[fcst]['model_ang'].corr(data[fcst]['angstrom']),
             'ANALYSIS_AOD_Correlation': data[fcst]['analysis_aod'].corr(data[fcst]['aod_550']),
             'ANALYSIS_Angstrom_Correlation': data[fcst]['analysis_ang'].corr(data[fcst]['angstrom']),
+
+            'MODEL_ANALYSIS_AOD_RMSE': np.sqrt(((data[fcst]['model_aod'] - data[fcst]['analysis_aod'])**2).mean()),
+            'MODEL_ANALYSIS_AOD_Correlation': data[fcst]['model_aod'].corr(data[fcst]['analysis_aod']),
+            
 
             'MODEL_AOD_ACC': model_aod_anom.corr(obs_aod_anom),
             'ANALYSIS_AOD_ACC': analysis_aod_anom.corr(obs_aod_anom),
@@ -285,7 +311,7 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
         return
         
     master_df = pd.concat(dfs, ignore_index=True)
-    master_df['date'] = master_df['hour'].dt.floor('D')
+    master_df['obs date'] = master_df['obs hour'].dt.floor('D')
     print(f"\nTotal valid AERONET hours across all stations: {len(master_df)}")
     
     print(f"\nSampling {experiment_name}...")
@@ -296,7 +322,7 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
 
 
 
-    grouped = [(date, group) for date, group in master_df.groupby('date')]
+    grouped = [(date, group) for date, group in master_df.groupby('obs date')]
 
     ### Processing model data
 
@@ -333,7 +359,7 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
                 analysis_processed_dfs.append(result_df)
                 if (i+1) % 10 == 0 or (i+1) == len(grouped):
                     print(f"Processed {i+1}/{len(grouped)} analysis days...")
-
+        
         analysis_df = pd.concat(analysis_processed_dfs, ignore_index = True)
         analysis_df = analysis_df.dropna(subset=['analysis_aod', 'analysis_ang'])
         try:
@@ -343,8 +369,25 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
     valid_stations = final_df['station'].value_counts()[final_df['station'].value_counts() >= min_points].index
 
     final_df = final_df[final_df['station'].isin(valid_stations)].copy()
-    print('Final DF:', final_df['initialization hour'])
+   
+    print('Making nc file')
+    nc_df = final_df.copy()
+    nc_df['fcst_length'] = nc_df['fcst length'].dt.total_seconds()/ 3600
+    nc_df = nc_df.rename(columns={'initialization time':'init_time', 'obs hour':'obs_hour'})
+    nc_cols = ['station', 'init_time', 'fcst_length', 'obs_hour', 'lats', 'lons', 'aod_550', 'angstrom', 'model_aod', 'model_ang', 'analysis_aod', 'analysis_ang']
+    
+    nc_df = nc_df[nc_cols]
+    nc_df = nc_df.groupby(['fcst_length', 'station','init_time']).first()
+    # nc_df = nc_df.set_index(['fcst_length', 'station', 'init_time' ])
+    ds = nc_df.to_xarray()
+    # ds = xr.Dataset.from_dataframe(nc_df)
+    # ds = ds.set_coords(['lats', 'lons', 'obs hour'])
+    date_str = f"{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
+    nc_output_file = os.path.join(output_dir[:19],output_dir[28:], f"{experiment_name}_{file_comparison}_measurements_{date_str}.nc")
+    ds.to_netcdf(nc_output_file)
+    print(f"NetCDF saved to: {nc_output_file}\n")
 
+    print('About to calculate stats')
     ### Calculating Stats
 
 
@@ -352,9 +395,7 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
     date_str = f"{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
     # print('made date string')
     for hour in np.arange(0,24,int(config['time_step'][:-1])):
-        # print('hour set to:', hour)
-        # print('hour type:', type(hour))
-        # print('Houred DF made:\n', houred_df)
+ 
         houred_df = final_df.loc[final_df['initialization hour'] == f'{hour:02d}']
         # print(houred_df)
         for i in range(len(eval_bins)-1):
@@ -368,7 +409,7 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
         hourly_stats = displayStats(binned_eval)
         if hourly_stats:
             hourly_stats_df = pd.DataFrame(hourly_stats)
-            output_file = os.path.join(output_dir[:19], output_dir[28:], f"{experiment_name}_{file_comparison}_{config['eval_bins']}hourly_{hour:02d}z_stats_{date_str}.csv")
+            output_file = os.path.join(output_dir[:19], output_dir[28:], f"{experiment_name}_{file_comparison}_{int(config['eval_bins']):02d}hourly_{hour:02d}z_stats_{date_str}.csv")
             hourly_stats_df.to_csv(output_file, index =False)
             # print(hourly_stats)
             print('\nHourly stats saved to', output_file, '\n')
@@ -415,16 +456,6 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
 
 
 
-    # date_str = f"{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
-
-
-    # hourly_stats = displayStats(binned_eval)
-    # if hourly_stats:
-    #     hourly_stats_df = pd.DataFrame(hourly_stats)
-    #     output_file = os.path.join(output_dir[:19], output_dir[28:], f"{experiment_name}_{file_comparison}_{config['eval_bins']}hourly_stats_{date_str}.csv")
-    #     hourly_stats_df.to_csv(output_file, index =False)
-    #     print(hourly_stats)
-    #     print('\nHourly stats saved to', output_file, '\n')
     
 
     if stats:
@@ -439,10 +470,10 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
     if ts_freq != 'none' and not final_df.empty:
         print(f"\nGenerating {ts_freq} timeseries data...")
         
-        cols_to_keep = ['hour', 'station', 'lats', 'lons', 'aod_550', 'model_aod', 'analysis_aod', 
+        cols_to_keep = ['obs hour', 'station', 'lats', 'lons', 'aod_550', 'model_aod', 'analysis_aod', 
                         'angstrom', 'model_ang', 'analysis_ang']
         ts_df = final_df[cols_to_keep].copy()
-        ts_df.rename(columns={'hour': 'time', 'aod_550': 'aeronet_aod', 'angstrom': 'aeronet_angstrom'}, inplace=True)
+        ts_df.rename(columns={'obs hour': 'time', 'aod_550': 'aeronet_aod', 'angstrom': 'aeronet_angstrom'}, inplace=True)
         
         ts_df.insert(0, 'experiment', experiment_name)
         
@@ -487,13 +518,13 @@ if __name__ == "__main__":
     evaluation = config['evaluation']
     time_step = config['time_step']
   
-    col_names = ['hour','aod_550','angstrom','lats','lons','date','model_aod','model_ang',
+    col_names = ['obs hour','aod_550','angstrom','lats','lons','obs date','model_aod','model_ang',
                  'analysis_aod','analysis_ang','initialization time' ,'fcst length']
     
 
     time_period =  datetime.strptime(config['dates']['end'], '%Y-%m-%d %H:%M:%S') - datetime.strptime(config['dates']['start'],'%Y-%m-%d %H:%M:%S')
     time_period = int(time_period.total_seconds())/3600
-    if timedelta(time_period) < timedelta(int(config['fcst_period'])):
+    if timedelta(hours = time_period) < timedelta(hours=int(config['fcst_period'])):
         fcst_period = int(time_period)
     else:
         fcst_period = int(config['fcst_period'])
