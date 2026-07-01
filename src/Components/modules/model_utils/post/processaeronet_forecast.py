@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from datetime import datetime, timedelta
-import warningGEOS.hwt_slv
+import warnings
 import multiprocessing as mp
 from functools import partial
 import time
@@ -362,8 +362,9 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
         
         analysis_df = pd.concat(analysis_processed_dfs, ignore_index = True)
         analysis_df = analysis_df.dropna(subset=['analysis_aod', 'analysis_ang'])
+        analysis_subset = analysis_df[['station', 'obs hour', 'analysis_aod', 'analysis_ang']]
         try:
-            final_df = model_df.combine_first(analysis_df)
+            final_df = pd.merge(model_df, analysis_subset, on = ['station', 'obs hour'], how = 'left')
         except:
             final_df = analysis_df
     valid_stations = final_df['station'].value_counts()[final_df['station'].value_counts() >= min_points].index
