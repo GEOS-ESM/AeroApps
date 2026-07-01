@@ -94,7 +94,7 @@ def processmodel(date_tuple, model_path_template):
                         
                     daily_df.at[idx, 'model_aod'] = float(pt['TOTEXTTAU'].values)
                     daily_df.at[idx, 'model_ang'] = float(pt['TOTANGSTR'].values)
-
+    print('Daily DF Columns:', daily_df.columns)
     return daily_df
 
 def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet_model_comparison/", min_points=50, ts_freq='none'):
@@ -245,8 +245,8 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
 
 if __name__ == "__main__":
     
-    start_date = datetime(2024, 1, 1, 0, 0, 0)
-    end_date = datetime(2024, 1, 31, 23, 59, 59)
+    start_date = datetime(2026, 1, 1, 0, 0, 0)
+    end_date = datetime(2026, 1, 2, 23, 59, 59)
     
     base_path = "/discover/nobackup/projects/gmao/geos_aerosols/acollow/"
     experiment_name = "c180R_qfed3-2_scaled"
