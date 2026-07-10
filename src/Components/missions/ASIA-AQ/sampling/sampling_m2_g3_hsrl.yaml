@@ -13,9 +13,10 @@ g3_h5: /discover/nobackup/projects/gmao/iesa/aerosol/campaigns/ASIA-AQ/archive/G
 sampled_outdir: ./sampled_g3 
 
 # Location of the aerosol property configuration file
-hsrl_pm25_config: gocart_hsrl_pm25.yaml
+hsrl_pm25_config: gocart_hsrl_pm.yaml
+hsrl_pm10_config: gocart_hsrl_pm.yaml
 
 # flags for which calculations you want to do
 do_hsrl_pm25: True
-
+do_hsrl_pm10: True
 
