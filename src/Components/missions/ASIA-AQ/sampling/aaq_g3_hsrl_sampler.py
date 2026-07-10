@@ -36,13 +36,12 @@ if __name__ == '__main__':
     SDS_DIAL.pop('State_Parameters')
     SDS_DIAL['header'] = ('date',)
 
-    sys.exit()
     kwargs = dict(n_workers=120, threads_per_worker=1, memory_limit='4GB')
     with LocalCluster(**kwargs) as cluster, Client(cluster) as cluster:
         for h5f in h5Files:
             print(f"+++++++ AAQ Sampling on {h5f}")
             m = HSRL(h5f,SDS=SDS_DIAL,Nav_only=True)
-            lon, lat, tyme = m.lon, m.lat, m.tyme
+            lon, lat, tyme = m.lon, m.lat, m.tyme.squeeze()
 
             # Sample Aerosol Collection
             # --------------------------------------
@@ -66,7 +65,7 @@ if __name__ == '__main__':
                     traj_ds = traj_ds.compute()
 
                 # write out the native sampled model fields
-                outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + ctl + '.nc4'
+                outFile = config['sampled_outdir'] + '/' + os.path.basename(h5f)[:-3] +'_' + ctl + '.nc4'
                 traj_ds.to_netcdf(outFile,engine='netcdf4')
 
                 # If other model collections are provided
@@ -85,11 +84,11 @@ if __name__ == '__main__':
                             if exists:
                                 traj = TRAJECTORY(tyme,lon,lat,ctl,verbose=True,chunks=chunks,engine='h5netcdf')
                             else:
-                                print(f"Model input files missing for {ict}")
+                                print(f"Model input files missing for {h5f}")
                                 print("Skipping...")
                                 continue
                         except:
-                            print(f"Error reading model for {ict}")
+                            print(f"Error reading model for {h5f}")
                             print("Skipping....")
                             continue
 
@@ -97,10 +96,10 @@ if __name__ == '__main__':
                         traj_ds = traj_ds.compute()
 
                         # write out the native sampled model fields
-                        outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + ctl + '.nc4'
+                        outFile = config['sampled_outdir'] + '/' + os.path.basename(h5f)[:-3] +'_' +  ctl + '.nc4'
                         traj_ds.to_netcdf(outFile,engine='netcdf4')
 
             else:
-                print(f"Model input files missing for {ict}")
+                print(f"Model input files missing for {h5f}")
                 print("Skipping...")
                 continue
