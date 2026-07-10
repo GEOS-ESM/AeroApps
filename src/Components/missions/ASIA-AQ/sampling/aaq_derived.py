@@ -10,7 +10,7 @@ from glob import glob
 import numpy as np
 from pyobs.aop import G2GAOP
 
-def calc_ams(traj_ds,config):
+def calc_ams(traj_ds,config,ict):
     
     # ----------------
     # calculate AMS PM
@@ -48,10 +48,10 @@ def calc_ams(traj_ds,config):
     pm_ams['PS'] = traj_ds['PS']
     pm_ams['delp'] = pm['DELP']
     pm_ams['AIRDENS'] = pm['AIRDENS']
-    outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + 'pm_ams.nc4'
+    outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + '_pm_ams.nc4'
     pm_ams.to_netcdf(outFile,engine='netcdf4')
 
-def calc_sp2(traj_ds,config):
+def calc_sp2(traj_ds,config,ict):
     # --------------------
     # calculate SP2 BC Mass
     # --------------------
@@ -73,10 +73,10 @@ def calc_sp2(traj_ds,config):
     pm_sp2['PS'] = traj_ds['PS']
     pm_sp2['delp'] = pm['DELP']
     pm_sp2['AIRDENS'] = pm['AIRDENS']
-    outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + 'bc_sp2.nc4'
+    outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + '_bc_sp2.nc4'
     pm_sp2.to_netcdf(outFile,engine='netcdf4')
 
-def calc_large_aop(traj_ds,config):
+def calc_large_aop(traj_ds,config,ict):
     # --------------------
     # calculate LARGE AOPs
     # --------------------
@@ -105,7 +105,7 @@ def calc_large_aop(traj_ds,config):
 
         aop['H'] = traj_STP['H']
         aop['PS'] = traj_STP['PS']
-        outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_aop_STP.nc4'
+        outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'_{wl}_aop_STP.nc4'
         aop.to_netcdf(outFile,engine='netcdf4')
 
         # loop through RH = 0,20,40,80
@@ -120,10 +120,10 @@ def calc_large_aop(traj_ds,config):
             aop['H'] = traj_STP['H']
             aop['PS'] = traj_STP['PS']
             rhi = int(rh*10)
-            outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_aop_STP_rh{rhi}.nc4'
+            outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'_{wl}_aop_STP_rh{rhi}.nc4'
             aop.to_netcdf(outFile,engine='netcdf4')
 
-def calc_large_submicron_aop(traj_ds,config):
+def calc_large_submicron_aop(traj_ds,config,ict):
 
     # calculate LARGE SUBMICRON AOPs
     # ------------------------------
@@ -150,7 +150,7 @@ def calc_large_submicron_aop(traj_ds,config):
     pm['NO3an3'] = xr.zeros_like(pm['NO3an3'])
 
     # write out the PM used to submicron large AOP calculations
-    outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + 'submicron_pm_STP_LARGE.nc4'
+    outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + '_submicron_pm_STP_LARGE.nc4'
     pm.to_netcdf(outFile,engine='netcdf4')
 
     # now get the submicron masses and assign it to the optics
@@ -170,7 +170,7 @@ def calc_large_submicron_aop(traj_ds,config):
 
         aop['H'] = traj_STP['H']
         aop['PS'] = traj_STP['PS']
-        outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_submicron_aop_STP_LARGE.nc4'
+        outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'_{wl}_submicron_aop_STP_LARGE.nc4'
         aop.to_netcdf(outFile,engine='netcdf4')        
 
         # loop through RH = 0,20,40,80
@@ -186,7 +186,7 @@ def calc_large_submicron_aop(traj_ds,config):
             aop['H'] = traj_STP['H']
             aop['PS'] = traj_STP['PS']
             irh = int(10*rh)
-            outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'{wl}_submicron_aop_STP_rh{irh}_LARGE.nc4'
+            outFile = config['sampled_outdir'] + '/' + os.path.basename(ict)[:-3] + f'_{wl}_submicron_aop_STP_rh{irh}_LARGE.nc4'
             aop.to_netcdf(outFile,engine='netcdf4')
 
 
@@ -222,8 +222,8 @@ if __name__ == '__main__':
             print("Skipping....")
             continue
 
-        if config['do_ams']: calc_ams(traj_ds,config)
-        if config['do_sp2']: calc_sp2(traj_ds,config)
-        if config['do_large_aop']: calc_large_aop(traj_ds,config) 
-        if config['do_large_submicron_aop']: calc_large_submicron_aop(traj_ds,config)
+        if config['do_ams']: calc_ams(traj_ds,config,ict)
+        if config['do_sp2']: calc_sp2(traj_ds,config,ict)
+        if config['do_large_aop']: calc_large_aop(traj_ds,config,ict) 
+        if config['do_large_submicron_aop']: calc_large_submicron_aop(traj_ds,config,ict)
 
