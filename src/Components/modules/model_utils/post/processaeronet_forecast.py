@@ -153,16 +153,29 @@ def processmodel(date_tuple, model_path_template):
                 with xr.open_dataset(model_file) as ds_mod, xr.open_dataset(climate_file) as ds_climate:
                     for idx, row in group.iterrows():
                         new_row = row.copy()
-                        mlon = row['lons'] + 360 if (ds_mod.lons.min() >= 0 and row['lons'] < 0) else row['lons']
-                        pt = ds_mod.sel(Ydim=row['lats'], Xdim=mlon, method='nearest')
+                        target_lat = row['lats']
+                        target_lon = row['lons']
+
+                        lon_diff = (ds_mod['lons'] - target_lon +180)%360-180
+                        dist = (ds_mod['lats'] - target_lat)**2 + lon_diff**2
+                        nearest_point = dist.compute().argmin(dim=['Xdim', 'Ydim'])
+                        found_lat = ds_mod['lats'].isel(nearest_point).values.flatten()[0]
+                        found_lon = ds_mod['lons'].isel(nearest_point).values.flatten()[0]
+
+
+
+
+                        
+                        pt = ds_mod.isel(nearest_point)
                         if 'time' in pt.dims:
                             pt = pt.isel(time=0)
+                        mlon = target_lon + 360 if (ds_mod.lons.min() >= 0 and row['lons'] < 0) else row['lons']
 
                         # gathering values for stats
                         pt_climate = ds_climate.sel(lat=row['lats'], lon = mlon, method='nearest')
-                        new_row['model_aod'] = float(pt['TOTEXTTAU'].values) 
-                        new_row['model_ang'] = float(pt['TOTANGSTR'].values)
-                        new_row['climatology_aod'] = float(pt_climate['TOTEXTTAU'].values)
+                        new_row['model_aod'] = float(pt['TOTEXTTAU'].squeeze().values.flatten()[0]) 
+                        new_row['model_ang'] = float(pt['TOTANGSTR'].squeeze().values.flatten()[0])
+                        new_row['climatology_aod'] = float(pt_climate['TOTEXTTAU'].squeeze().values.flatten()[0])
                         new_row['initialization time'] = initiation_time
                         new_row['initialization hour'] = initiation_HH
                         new_row['fcst length'] = fcst_length
@@ -314,6 +327,10 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
     print(f"\nSampling {experiment_name}...")
     master_df['model_aod'] = np.nan
     master_df['model_ang'] = np.nan
+    master_df['climatology_aod'] = np.nan
+    master_df['initialization time'] = pd.NaT
+    master_df['initialization hour'] = '00'
+    master_df['fcst length'] = pd.Timedelta(hours=0)
 
     grouped = [(date, group) for date, group in master_df.groupby('obs date')]
 
@@ -336,6 +353,9 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
         # combining dataframes and cleaning data
         model_df = pd.concat(processed_dfs, ignore_index=True)
         final_df = model_df.dropna(subset=['model_aod', 'model_ang'])
+    else:
+        model_df = master_df.copy()
+        final_df = master_df.copy()
         
         
     ############################
@@ -361,9 +381,10 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
         analysis_df = analysis_df.dropna(subset=['analysis_aod', 'analysis_ang'])
         analysis_subset = analysis_df[['station', 'obs hour', 'analysis_aod', 'analysis_ang']]
         try:
-            final_df = pd.merge(model_df, analysis_subset, on = ['station', 'obs hour'], how = 'left')
-        except:
-            final_df = analysis_df
+            final_df = pd.merge(model_df, analysis_subset, on = ['station', 'obs hour'], how = 'inner')
+        except Exception as e:
+            # print(f"Merge error: {e}")
+            final_df = pd.merge(master_df, analysis_subset, on = ['station', 'obs hour'], how = 'inner')
 
     valid_stations = final_df['station'].value_counts()[final_df['station'].value_counts() >= min_points].index
     final_df = final_df[final_df['station'].isin(valid_stations)].copy()
@@ -381,7 +402,7 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
     nc_df = nc_df.groupby(['fcst_length', 'station','init_time']).first()
     ds = nc_df.to_xarray()
     date_str = f"{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
-    nc_output_file = os.path.join(output_dir , f"{experiment_name}_{file_comparison}_measurements_{date_str}_term1.nc")
+    nc_output_file = os.path.join(output_dir , f"{experiment_name}_{file_comparison}_measurements_{date_str}.nc")
     ds.to_netcdf(nc_output_file)
     print(f"NetCDF saved to: {nc_output_file}\n")
 
@@ -401,7 +422,7 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
             lower_bound = int(eval_bins[i])
             binned_eval[fcst_hr] = houred_df.loc[(houred_df['fcst length'] >= timedelta(hours=lower_bound)) & (houred_df['fcst length'] <  timedelta(hours=upper_bound))]
 
-        # Get stats for each forecast hour and save .csv
+        # Get stats for each forecast hour and save *{x}hourly_{init_time}_stats*.csv
         hourly_stats = displayStats(binned_eval)
         if hourly_stats:
             hourly_stats_df = pd.DataFrame(hourly_stats)
@@ -410,7 +431,7 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
             print('\nHourly stats saved to', output_file, '\n')
 
 
-    # get stats for each station and save .csv
+    # get stats for each station and save *comparison_stats*.csv
     stats = []
     for station, grp in final_df.groupby('station'):
         stats.append({
@@ -459,7 +480,7 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
     else:
         print(f"No stations met the minimum threshold of {min_points} valid matched points to calculate statistics.")
 
-    # create a timeseries for each station based on observation hour 
+    # create a *timeseries*.csv for each station based on observation hour 
     if ts_freq != 'none' and not final_df.empty:
         print(f"\nGenerating {ts_freq} timeseries data...")
         
@@ -477,7 +498,7 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
             ts_df = ts_df.groupby(['experiment', 'station', 'time', 'lats', 'lons']).mean(numeric_only=True).reset_index()
             
         ts_output_file = os.path.join(output_dir , 
-                                      f"{experiment_name}_{file_comparison}_timeseries_{ts_freq}_{date_str}.csv")
+                                      f"experiment_name}_{file_comparison}_timeseries_{ts_freq}_{date_str}.csv")
         
         ts_df.to_csv(ts_output_file, index=False)
         print(f"Time series data saved to {ts_output_file}")
@@ -498,12 +519,15 @@ if __name__ == "__main__":
     
     base_path = config['paths']['base']
     experiment_name = config['paths']['experiment']
+    output_path = config['paths']['output']
 
     aeronet_path = config['paths']['observations']
     forecast_path = config['paths']['model1']
     FPanalysis_path = config['paths']['model2']
 
-    output_dir = os.path.join(base_path, experiment_name, "comparison")
+    output_dir = os.path.join(base_path, output_path, experiment_name)
+    print(base_path)
+    print('Output Dir:', output_dir)
     min_points = config['min_station_obs']   # of required hourly data points to be included in high-level stats
     ts_freq = config['temporal_res']
     evaluation = config['evaluation']
