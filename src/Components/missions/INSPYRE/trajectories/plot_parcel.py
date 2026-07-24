@@ -48,4 +48,4 @@ if __name__ == "__main__":
     for i in range(0,2500,25):
         cs = ax2.plot(time,alt[:,i],color="blue")
 
-    plt.savefig(f"trajectories.{timestr}:00_{firestr}.png")
+    plt.savefig(f"{timestr}:00_{firestr}.png")

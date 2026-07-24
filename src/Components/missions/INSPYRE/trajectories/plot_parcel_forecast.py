@@ -60,4 +60,4 @@ if __name__ == "__main__":
             cs2 = ax.scatter(x=lon[48,i],y=lat[48,i],c=mcolor[j],marker="^",transform=ccrs.PlateCarree(),zorder=100)
             cs2 = ax.scatter(x=lon[72,i],y=lat[72,i],c=mcolor[j],marker="P",transform=ccrs.PlateCarree(),zorder=100)
 
-    plt.savefig(f"trajectories.{timestr}:00_{firestr}.png")
+    plt.savefig(f"{timestr}:00_{firestr}.png")
