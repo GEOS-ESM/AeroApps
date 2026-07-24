@@ -66,13 +66,23 @@ def make_plot():
 
 def make_plot_mercator():
     proj = ccrs.epsg(3857)
-    fig = plt.figure(figsize=(19,16.5))
-    gs = GridSpec(1, 1)
+    pc   = ccrs.PlateCarree()
+    extent = [-130,-70,22.5,60]
 
-    ax  = fig.add_subplot(gs[0],projection=proj)
-    ax.set_extent([-130,-70,22.5,60],crs=ccrs.PlateCarree())
+    # Calculate the exact aspect ratio by transforming bottom-left
+    # and top-right coordinates from degrees to Mercator
+    bottom_left = proj.transform_point(extent[0], extent[2], pc)
+    top_right = proj.transform_point(extent[1], extent[3], pc)
+    map_width = top_right[0] - bottom_left[0]
+    map_height = top_right[1] - bottom_left[1]
+    aspect_ratio = map_height / map_width
+
+    fig = plt.figure(figsize=(19,19*aspect_ratio))
+
+    ax  = fig.add_axes([0,0,1,1],projection=proj)
+    ax.set_extent([-130,-70,22.5,60],crs=pc)
     ax.coastlines(resolution="50m")
-    ax.gridlines(dms=True, x_inline=False, y_inline=False)
+    ax.gridlines(draw_labels=False, x_inline=False, y_inline=False) # Turned off labels for exact edge alignment
     ax.add_feature(cfeature.BORDERS, edgecolor='black',linewidth=1)
     ax.add_feature(cfeature.STATES, linestyle='--', edgecolor='black', linewidth=1)
     provinc_bodr = cfeature.NaturalEarthFeature(category='cultural',
