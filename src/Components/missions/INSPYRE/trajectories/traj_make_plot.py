@@ -27,7 +27,7 @@ def make_plot(parcel):
     ax  = fig.add_subplot(gs[0],projection=projLcc)
     ax.set_extent([-120,-70,22.5,70],crs=ccrs.PlateCarree())
     ax.coastlines(resolution="50m")
-    ax.gridlines()
+    ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False, linewidth=2, color='brown')
     ax.add_feature(cfeature.BORDERS, edgecolor='black',linewidth=2)
     ax.add_feature(cfeature.STATES, linestyle='--', edgecolor='black', linewidth=1)
     provinc_bodr = cfeature.NaturalEarthFeature(category='cultural',
