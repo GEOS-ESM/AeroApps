@@ -1,0 +1,19 @@
+{
+  "Classifier": 0,
+  "Regressor": 1,
+  "brightness_difference_threshold": 50,
+  "use_sat": true,
+  "GOES_read_workers": 8,
+  "netcdf_complevel": 1,
+  "PathSave": "/discover/nobackup/projects/INSPYRE_25/pcolarco/tobac/Save",
+  "PlotSave": "/discover/nobackup/projects/INSPYRE_25/pcolarco/tobac/Plot",
+  "events": [
+    {
+      "Name": "FIRE_TYM1",
+      "Lat": LAT,
+      "Lon": LON,
+      "start_time": "TYM1",
+      "end_time":   "TYM2"
+    }
+  ]
+}

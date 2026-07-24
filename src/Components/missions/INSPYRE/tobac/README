@@ -1,0 +1,12 @@
+TOBAC README
+Peter.R.Colarco@nasa.gov - 24Jul2026
+
+Presumes a discover working environment per Fei Liu
+Update the "fire_table.txt" file
+Run ./do_tobac.csh
+This reads the fire table and generates individual
+JSON files for each event and then generates a run
+script "run_cases.csh" that submits the jobs to the
+queue. "do_tobac.csh" will then run the run-cases.csh
+When jobs finish (successfully) the plots appear in
+the Plots folder.
