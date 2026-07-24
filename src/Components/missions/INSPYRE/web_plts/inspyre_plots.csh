@@ -101,3 +101,5 @@ mkdir -p $web/mercator
 mkdir -p ROOTDIR/samples/INSPYRE/sampled/GEOS-FP/$start
 \mv -f samples/INSPYRE/sampled/GEOS-FP/$start/* ROOTDIR/samples/INSPYRE/sampled/GEOS-FP/$start
 \rm -f *.png *.mp4
+chgrp -R s3339 $web
+chmod -R g+w $web
