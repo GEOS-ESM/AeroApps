@@ -16,11 +16,14 @@ import os
 
 os.environ['CARTOPY_USER_BACKGROUNDS'] = "/home/pcolarco/silo/python/"
 
-def make_plot():
+def make_plot(parcel):
+    timestr = parcel[-19:-3]
+    firestr = parcel[0:-20]
     projLcc = ccrs.LambertConformal(central_longitude=-100, central_latitude=40)
-    fig = plt.figure(figsize=(16,24))
+    fig = plt.figure(figsize=(16,26))
     gs = GridSpec(2, 1, height_ratios=[3.5, 1])
-
+    plt.subplots_adjust(left=0.05,bottom=0.05,right=0.95,top=0.95,hspace=0.05)
+    
     ax  = fig.add_subplot(gs[0],projection=projLcc)
     ax.set_extent([-120,-70,22.5,70],crs=ccrs.PlateCarree())
     ax.coastlines(resolution="50m")
@@ -30,8 +33,7 @@ def make_plot():
     provinc_bodr = cfeature.NaturalEarthFeature(category='cultural',
                    name='admin_1_states_provinces_lines', scale="50m", facecolor='none', edgecolor='k')
     ax.add_feature(provinc_bodr, linestyle='--', linewidth=1, edgecolor="k", zorder=10)
-
-#    ax.stock_img()
+    ax.set_title(f"Fire: {firestr}     Init Time: {timestr}:00",fontsize=28)
     ax.background_img(name='NE', resolution='high')
 
 #   Some markers
@@ -63,10 +65,11 @@ def make_plot():
 #   Add height axis
     ax2 = fig.add_subplot(gs[1])
     ax2.set_ylim(6,16)
-    ax2.set_ylabel("Altitude [km]",fontsize=20)
-    ax2.set_xlabel("Days Since Init",fontsize=20)
-    ax2.tick_params(axis='x', labelsize=16)
-    ax2.tick_params(axis='y', labelsize=16)
+    ax2.set_ylabel("Altitude [km]",fontsize=24)
+    ax2.set_xlabel("Days Since Init",fontsize=24)
+    ax2.set_title("Parcel Altitude Over Time",fontsize=26)
+    ax2.tick_params(axis='x', labelsize=20)
+    ax2.tick_params(axis='y', labelsize=20)
     
     return ax, ax2
 
