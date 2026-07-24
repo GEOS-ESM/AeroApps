@@ -39,7 +39,7 @@ def plot(lev='0',varn='TOTEXTTAU',cbarmax=2.,title='Total AOT',
 
     tokens = os.path.basename(filename).split('.')
     ax.set_position([0,0,1,1])
-    plt.savefig('fp.%s.%s.mercator.png'%(varn,tokens[4]))
+    plt.savefig('fp.%s.%s.mercator.png'%(varn,tokens[4]),pad_inches=0)
 
 
 if __name__ == "__main__":
