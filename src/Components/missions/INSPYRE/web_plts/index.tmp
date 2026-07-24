@@ -18,7 +18,7 @@
 
        <p><a href="https://fluid.nccs.nasa.gov/missions/INSPYRE/">GMAO INSPYRE
        FLUID portal of meteorology, aerosol, and chemistry forecasts</a></p>
-       <p><a href="../trajectories">Trajectories from active campaign fires are available here.</a></p>
+       <p><a href="../trajectories/?C=N&O=D">Trajectories from active campaign fires are available here.</a></p>
        <p><a href="plots">A large collection of plots are available here.</a></p>
        <p><a href="datagrams">Datagrams are available here.</a></p>
 
