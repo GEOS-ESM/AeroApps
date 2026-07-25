@@ -65,7 +65,7 @@ module load ffmpeg
   rm -f fp.$COLL.???.png
   end
 
-  foreach COLL (lon80W lon100W lon110W lon120W lon130W lat040N lat050N)
+  foreach COLL (lon80W lon100W lon110W lon120W lon130W lat040N lat045N lat050N)
   set i = 0
   foreach file (`\ls -1 fp.Total*$COLL*png`)
    set iii = $i
@@ -96,8 +96,7 @@ set web = "/discover/nobackup/projects/gmao/iesa/pub/aerosol/inspyre/$start"
 \cp -f fp.*.$yy$mm${dd}_${hh}+$yy$mm${dd}_${hh}00.png $web/
 mkdir -p $web/mercator
 \cp -f *.mercator.png $web/mercator
-\cp -f fp.*.$yy$mm${dd}_${hh}+*_0000.png $web/plots
-\cp -f fp.*.$yy$mm${dd}_${hh}+*_1200.png $web/plots
+\cp -f fp.*.$yy$mm${dd}_${hh}+*_2100.png $web/plots
 mkdir -p ROOTDIR/samples/INSPYRE/sampled/GEOS-FP/$start
 \mv -f samples/INSPYRE/sampled/GEOS-FP/$start/* ROOTDIR/samples/INSPYRE/sampled/GEOS-FP/$start
 \rm -f *.png *.mp4

@@ -159,6 +159,12 @@
       </a>
       </td>
       <td width=25%>
+      <center>E-W Profile at 45N<br>
+      <a href="fp.Total_extinction.lat045N.YYYYMMDD_HHz.mp4">
+      <img src="fp.Total_extinction_curtain.lat045N.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
+      </a>
+      </td>
+      <td width=25%>
       <center>E-W Profile at 50N<br>
       <a href="fp.Total_extinction.lat050N.YYYYMMDD_HHz.mp4">
       <img src="fp.Total_extinction_curtain.lat050N.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
@@ -206,6 +212,12 @@
       <center>E-W Profile at 40N<br>
       <a href="fp.cc_extinction.lat040N.YYYYMMDD_HHz.mp4">
       <img src="fp.cc_extinction_curtain.lat040N.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
+      </a>
+      </td>
+      <td width=25%>
+      <center>E-W Profile at 45N<br>
+      <a href="fp.cc_extinction.lat045N.YYYYMMDD_HHz.mp4">
+      <img src="fp.cc_extinction_curtain.lat045N.YYYYMMDD_HH+YYYYMMDD_HH00.png" width="260">
       </a>
       </td>
       <td width=25%>
