@@ -8,3 +8,4 @@ setenv ROOT "/home/pcolarco/INSPYRE_25/pcolarco/gigatraj/installed/"
 
 ./proc_fire_table.py
 ./run_cases.csh
+./plot_cases.csh
