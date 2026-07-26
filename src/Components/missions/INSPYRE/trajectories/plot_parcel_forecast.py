@@ -40,6 +40,8 @@ if __name__ == "__main__":
 
         for i in range(0,2500,25):
             cs = ax.plot(lon[:,i],lat[:,i],c=colors[j],transform=ccrs.PlateCarree())
+        if j == 0:
+            ax.plot(lon[0],lat[0],marker="p",c="k",transform=ccrs.PlateCarree(),zorder=100)
 
     for j,h in enumerate(alts):
         parcel = f"{parcel_}_{h}.nc"

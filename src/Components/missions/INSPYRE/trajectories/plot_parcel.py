@@ -44,6 +44,7 @@ if __name__ == "__main__":
         cs2 = ax.scatter(x=lon[24,i],y=lat[24,i],c="k",marker="o",transform=ccrs.PlateCarree(),zorder=100)
         cs2 = ax.scatter(x=lon[48,i],y=lat[48,i],c="k",marker="^",transform=ccrs.PlateCarree(),zorder=100)
         cs2 = ax.scatter(x=lon[72,i],y=lat[72,i],c="k",marker="P",transform=ccrs.PlateCarree(),zorder=100)
+    ax.plot(lon[0],lat[0],marker="p",c="k",transform=ccrs.PlateCarree(),zorder=100)
 
     for i in range(0,2500,25):
         cs = ax2.plot(time,alt[:,i],color="blue")
