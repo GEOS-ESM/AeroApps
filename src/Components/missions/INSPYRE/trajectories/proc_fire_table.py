@@ -49,15 +49,17 @@ with open("run_cases.csh","w") as f:
         date_ = date+timedelta(days=3)
         time2 = date_.isoformat()
         if(alt != "Y"):
-            cmd = f"./run_kinematic.csh {fire}_{time} \"{time}\" \"{time2}\"\n"
+            cmd = f"./run_kinematic.csh {fire}_{time} \"{time}\" \"{time2}\" &\n"
             f.write(cmd)
         else:
-            cmd = f"./run_kinematic.csh {fire}_{time}_10km \"{time}\" \"{time2}\"\n"
+            cmd = f"./run_kinematic.csh {fire}_{time}_10km \"{time}\" \"{time2}\" &\n"
             f.write(cmd)
-            cmd = f"./run_kinematic.csh {fire}_{time}_12km \"{time}\" \"{time2}\"\n"
+            cmd = f"./run_kinematic.csh {fire}_{time}_12km \"{time}\" \"{time2}\" &\n"
             f.write(cmd)
-            cmd = f"./run_kinematic.csh {fire}_{time}_14km \"{time}\" \"{time2}\"\n"
+            cmd = f"./run_kinematic.csh {fire}_{time}_14km \"{time}\" \"{time2}\" &\n"
             f.write(cmd)
+    cmd = "wait"
+    f.write(cmd)
 f.close()
 os.system("chmod 755 run_cases.csh")
 
@@ -74,11 +76,16 @@ with open("plot_cases.csh","w") as f:
         time  = items[3]
         alt   = items[4]
         if(alt != "Y"):
-            cmd = f"./plot_parcel.py parcel_traj.{fire}_{time}.nc\n"
+            cmd = f"./plot_parcel.py parcel_traj.{fire}_{time}.nc &\n"
+            f.write(cmd)
+            cmd = f"./plot_parcel_density.py parcel_traj.{fire}_{time}.nc &\n"
             f.write(cmd)
         else:
-            cmd = f"./plot_parcel_forecast.py parcel_traj.{fire}_{time}\n"
+            cmd = f"./plot_parcel_forecast.py parcel_traj.{fire}_{time} &\n"
             f.write(cmd)
+            cmd = f"./plot_parcel_forecast_density.py parcel_traj.{fire}_{time} &\n"
+            f.write(cmd)
+    f.write("wait")
 f.close()
 os.system("chmod 755 plot_cases.csh")
 
