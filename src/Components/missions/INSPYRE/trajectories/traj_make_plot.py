@@ -12,9 +12,29 @@ from shapely.geometry import Polygon
 from cartopy.geodesic import Geodesic  # from geographiclib
 from matplotlib.gridspec import GridSpec
 import numpy as np
+from scipy.stats import gaussian_kde
 import os
 
 os.environ['CARTOPY_USER_BACKGROUNDS'] = "/home/pcolarco/silo/python/"
+
+def kdeplot(ax,it,lon,lat,cmap,zorder=99):
+#   KDE
+#   This is inspired by https://www.iditect.com/faq/python/how-to-plot-a-density-map-in-python.html
+#   ToDo: how do do this not explicitly specifying the times but using datetime to get
+#   +/- around 21z each of the days in the output?
+    xx = np.squeeze(lon[it,:])
+    yy = np.squeeze(lat[it,:])
+    x  = xx.flatten()
+    y  = yy.flatten()
+    k = gaussian_kde(np.vstack([x,y]))
+#   Create a contour plat
+    xi, yi = np.mgrid[x.min():x.max():100j,y.min():y.max():100j]
+    zi_ = k(np.vstack([xi.flatten(),yi.flatten()]))
+    zi = np.ma.masked_array(zi_, zi_<0.001)
+    ax.contourf(xi,yi,zi.reshape(xi.shape),transform=ccrs.PlateCarree(), cmap=cmap,zorder=zorder)
+    #print(np.min(zi),np.max(zi))
+    return
+
 
 def make_plot(parcel):
     timestr = parcel[-19:-3]
