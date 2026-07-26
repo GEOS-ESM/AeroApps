@@ -54,7 +54,7 @@ if __name__ == "__main__":
     for i,it in enumerate(ind):
         cmap = "YlOrRd"
         kdeplot(ax,it,lon,lat,cmap)
-        ax.plot(lon[0],lat[0],marker="p",c="k",transform=ccrs.PlateCarree())
+    ax.plot(lon[0],lat[0],marker="p",c="k",transform=ccrs.PlateCarree(),zorder=100)
 
     for i in range(0,2500,25):
         cs = ax2.plot(time,alt[:,i],color="blue")
