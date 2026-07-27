@@ -35,12 +35,15 @@ if __name__ == "__main__":
 #   This converts np.datetime64 -> datetime.datetime; note [us] is microseconds
     time = ds["time"].values.astype('datetime64[us]').astype('O')
     now  = time[0]
+#   Hack: use today (when running today) and look 2 days ahead
+    now  = datetime.now()
     now0 = datetime(now.year,now.month,now.day)
     dp1  = now0+timedelta(days=0)
     dp2  = now0+timedelta(days=1)
     dp3  = now0+timedelta(days=2)
     ind  = []
-    for dp in [dp1,dp2,dp3]:
+#    for dp in [dp1,dp2,dp3]:
+    for dp in [dp3]:
         dstart = datetime(dp.year,dp.month,dp.day,19,59)
         dend   = datetime(dp.year,dp.month,dp.day,22,59)
         ind_   = [i for i,d in enumerate(time.tolist()) if (d>=dstart) & (d<=dend)]
@@ -54,6 +57,8 @@ if __name__ == "__main__":
     for i,it in enumerate(ind):
         cmap = "YlOrRd"
         kdeplot(ax,it,lon,lat,cmap)
+    for i in range(0,2500,25):
+        cs = ax.plot(lon[:,i],lat[:,i],c="blue",transform=ccrs.PlateCarree(),alpha=0.5,zorder=50)
     ax.plot(lon[0],lat[0],marker="p",c="k",transform=ccrs.PlateCarree(),zorder=100)
 
     for i in range(0,2500,25):
