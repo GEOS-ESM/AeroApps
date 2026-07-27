@@ -63,6 +63,7 @@ def plot(lev='0',varn='TOTEXTTAU',cbarmax=2.,title='Total AOT',
 
     tokens = os.path.basename(filename).split('.')
 
+    plt.subplots_adjust(left=0.1,bottom=0.1,right=0.99,top=0.9)
     plt.title('GEOS FP %s %s'%(varn,tokens[4]),size=24)
     plt.savefig('fp.%s_wcloud.%s.png'%(varn,tokens[4]))
 
