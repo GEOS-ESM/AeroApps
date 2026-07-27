@@ -5,8 +5,8 @@
   "use_sat": true,
   "GOES_read_workers": 8,
   "netcdf_complevel": 1,
-  "PathSave": "/discover/nobackup/projects/INSPYRE_25/pcolarco/tobac/Save",
-  "PlotSave": "/discover/nobackup/projects/INSPYRE_25/pcolarco/tobac/Plot",
+  "PathSave": "./Save",
+  "PlotSave": "./Plot",
   "events": [
     {
       "Name": "FIRE_TYM1",
