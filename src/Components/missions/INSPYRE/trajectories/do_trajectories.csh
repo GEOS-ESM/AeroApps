@@ -10,3 +10,7 @@ setenv ROOT "/home/pcolarco/INSPYRE_25/pcolarco/gigatraj/installed/"
 ./initialize_cases.csh
 ./run_cases.csh
 ./plot_cases.csh
+
+chgrp s3339 *png
+chmod g+w *png
+\mv -f *png /discover/nobackup/projects/gmao/iesa/pub/aerosol/inspyre/trajectories/
