@@ -10,4 +10,4 @@ mkdir -p Plot
 mkdir -p Save
 ./proc_fire_table.py
 ./run_cases.csh
-./plot_cases.csh
+./plot_tracks.csh
