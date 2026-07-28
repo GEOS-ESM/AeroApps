@@ -11,6 +11,7 @@ from datetime import timezone
 from astral import Observer
 from astral.sun import sun
 import os
+import sys
 os.environ['CARTOPY_USER_BACKGROUNDS'] = "/home/pcolarco/silo/python/"
 
 import warnings
@@ -68,7 +69,7 @@ def main():
     if num_tracks == 0:
         print("No valid tracks found matching the criteria!")
         ds.close()
-        return
+        sys.exit(2)
 
     cmap = plt.get_cmap('turbo')
     track_colors = [cmap(i) for i in np.linspace(0, 1, num_tracks)]
@@ -88,6 +89,7 @@ def main():
     ax.coastlines(linewidth=1)
     ax.add_feature(cfeature.BORDERS, linestyle='-', edgecolor='black')
     ax.add_feature(cfeature.STATES, linestyle='--', edgecolor='gray')
+    ax.background_img(name='NE', resolution='highest')
 
     gl = ax.gridlines(draw_labels=True, linestyle='--', alpha=0.5)
     gl.top_labels = False
@@ -149,7 +151,7 @@ def main():
         # Add sequential number
         ax.text(lons[0] + 0.3, lats[0] + 0.3, str(track_num), color='black', 
                 fontsize=10, weight='bold', transform=ccrs.PlateCarree(), zorder=6)
-        ax.background_img(name='NE', resolution='highest')
+        #ax.background_img(name='NE', resolution='highest')
 
     plt.title(f'Event: {event_name} | {num_tracks} Tracks (> 2 Hrs, > 2° Dist)\nSolid=Day | Dashed=Night (Local Sun) | Numbered at Start', fontsize=14, pad=10)
     plt.tight_layout()
@@ -160,7 +162,7 @@ def main():
     # 7. PRINT SUMMARY TO SCREEN AND SAVE TO TEXT FILE
     with open(output_text, 'w') as file:
         for line in summary_lines:
-            print(line)
+            #print(line)
             file.write(line + "\n")  
 
     print(f"Text summary successfully saved to: {output_text}")
