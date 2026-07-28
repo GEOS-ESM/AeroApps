@@ -36,7 +36,7 @@ def kdeplot(ax,it,lon,lat,cmap,zorder=99):
     return
 
 
-def make_plot(parcel):
+def make_plot(parcel,vtime):
     timestr = parcel[-19:-3]
     firestr = parcel[0:-20]
     projLcc = ccrs.LambertConformal(central_longitude=-100, central_latitude=40)
@@ -53,7 +53,7 @@ def make_plot(parcel):
     provinc_bodr = cfeature.NaturalEarthFeature(category='cultural',
                    name='admin_1_states_provinces_lines', scale="50m", facecolor='none', edgecolor='k')
     ax.add_feature(provinc_bodr, linestyle='--', linewidth=1, edgecolor="k", zorder=10)
-    ax.set_title(f"Fire: {firestr}     Init Time: {timestr}:00",fontsize=28)
+    ax.set_title(f"Fire: {firestr}  Init Time: {timestr}:00  Valid Time: {vtime}",fontsize=24)
     ax.background_img(name='NE', resolution='high')
 
 #   Some markers

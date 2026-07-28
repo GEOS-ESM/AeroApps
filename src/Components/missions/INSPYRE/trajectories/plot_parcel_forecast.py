@@ -27,7 +27,7 @@ if __name__ == "__main__":
     firestr = label[0:-20]
 
     alts = ["10km","12km","14km"]
-    ax, ax2 = make_plot(label)
+    ax, ax2 = make_plot(label,'0')
     nt = 73
     colors=["blue","red","green"]
     mcolor=["cornflowerblue","maroon","lime"]

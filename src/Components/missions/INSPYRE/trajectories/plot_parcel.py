@@ -27,7 +27,7 @@ if __name__ == "__main__":
     timestr = label[-19:-3]
     firestr = label[0:-20]
 
-    ax, ax2 = make_plot(label)
+    ax, ax2 = make_plot(label,'0')
     nt = 73
     print(parcel)
     ds = xr.open_mfdataset(parcel)

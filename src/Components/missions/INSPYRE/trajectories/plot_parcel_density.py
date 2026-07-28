@@ -44,6 +44,7 @@ if __name__ == "__main__":
     ind  = []
 #    for dp in [dp1,dp2,dp3]:
     for dp in [dp3]:
+        vtime = dp.strftime("%Y-%m-%dT21:00:00")
         dstart = datetime(dp.year,dp.month,dp.day,19,59)
         dend   = datetime(dp.year,dp.month,dp.day,22,59)
         ind_   = [i for i,d in enumerate(time.tolist()) if (d>=dstart) & (d<=dend)]
@@ -53,7 +54,7 @@ if __name__ == "__main__":
     ds.close()
 
 #   KDE
-    ax, ax2 = make_plot(label)
+    ax, ax2 = make_plot(label,vtime)
     for i,it in enumerate(ind):
         cmap = "YlOrRd"
         kdeplot(ax,it,lon,lat,cmap)
@@ -63,4 +64,4 @@ if __name__ == "__main__":
 
     for i in range(0,2500,25):
         cs = ax2.plot(time,alt[:,i],color="blue")
-    plt.savefig(f"{timestr}:00_{firestr}.density.png")
+    plt.savefig(f"{timestr}:00+{vtime}_{firestr}.density.png")
