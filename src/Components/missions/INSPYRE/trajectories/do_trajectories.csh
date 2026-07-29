@@ -13,4 +13,4 @@ setenv ROOT "/home/pcolarco/INSPYRE_25/pcolarco/gigatraj/installed/"
 
 chgrp s3339 *png
 chmod g+w *png
-\mv -f *png /discover/nobackup/projects/gmao/iesa/pub/aerosol/inspyre/trajectories/
+\cp -f *png /discover/nobackup/projects/gmao/iesa/pub/aerosol/inspyre/trajectories/

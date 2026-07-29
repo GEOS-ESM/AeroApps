@@ -43,7 +43,7 @@ if __name__ == "__main__":
     dp3  = now0+timedelta(days=2)
     ind  = []
 #    for dp in [dp1,dp2,dp3]:
-    for dp in [dp3]:
+    for dp in [dp1]:
         vtime = dp.strftime("%Y-%m-%dT21:00:00")
         dstart = datetime(dp.year,dp.month,dp.day,19,59)
         dend   = datetime(dp.year,dp.month,dp.day,22,59)
@@ -56,7 +56,7 @@ if __name__ == "__main__":
 #   KDE
     ax, ax2 = make_plot(label,vtime)
     for i,it in enumerate(ind):
-        cmap = "YlOrRd"
+        cmap = "Blues"
         kdeplot(ax,it,lon,lat,cmap)
     for i in range(0,2500,25):
         cs = ax.plot(lon[:,i],lat[:,i],c="blue",transform=ccrs.PlateCarree(),alpha=0.5,zorder=50)

@@ -76,13 +76,13 @@ with open("plot_cases.csh","w") as f:
         time  = items[3]
         alt   = items[4]
         if(alt != "Y"):
-            cmd = f"./plot_parcel.py parcel_traj.{fire}_{time}.nc &\n"
-            f.write(cmd)
+#            cmd = f"./plot_parcel.py parcel_traj.{fire}_{time}.nc &\n"
+#            f.write(cmd)
             cmd = f"./plot_parcel_density.py parcel_traj.{fire}_{time}.nc &\n"
             f.write(cmd)
         else:
-            cmd = f"./plot_parcel_forecast.py parcel_traj.{fire}_{time} &\n"
-            f.write(cmd)
+#            cmd = f"./plot_parcel_forecast.py parcel_traj.{fire}_{time} &\n"
+#            f.write(cmd)
             cmd = f"./plot_parcel_forecast_density.py parcel_traj.{fire}_{time} &\n"
             f.write(cmd)
     f.write("wait")
