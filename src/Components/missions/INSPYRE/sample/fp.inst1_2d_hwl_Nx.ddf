@@ -1,0 +1,3 @@
+dset /home/pcolarco/fp/chem/Y%y4/M%m2/f5430_fp.inst1_2d_hwl_Nx.%y4%m2%d2_%h200z.nc4
+options template
+tdef time 2500 linear 0z1feb2026 3hr
