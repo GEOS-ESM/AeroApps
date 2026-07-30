@@ -84,7 +84,7 @@ def sample(model='c180R_arcsix', collection='inst3d_aer_v', date0='20240501'):
                                     PI_contact                  ="Peter.R.Colarco@nasa.gov",
                                     PI_name                     ="Peter Colarco",
                                     ProcessingLevel             ="L4",
-                                    project                     ="ARCSIX",
+                                    project                     ="INSPYRE",
                                     source                      =modname,
                                     title                       =titlestr,
                                     VersionID                   ="R01",
@@ -105,7 +105,7 @@ def sample(model='c180R_arcsix', collection='inst3d_aer_v', date0='20240501'):
     stn_ds = stn_ds.compute()
 
 #   Make an output directory
-    dirname = f"samples/ARCSIX/sampled/stations/{modname}"
+    dirname = f"samples/INSPYRE/sampled/stations/{modname}"
     print(dirname)
     try:
         os.makedirs(dirname)
@@ -131,7 +131,7 @@ def sample(model='c180R_arcsix', collection='inst3d_aer_v', date0='20240501'):
         stn_ds["DEPOL532nm"] = ext["DEPOL"]
 
 # write data to a netcdf file
-    outFile = f"./{dirname}/ARCSIX-{modname}-{collname}-stations_Model_{date0}.nc"
+    outFile = f"./{dirname}/INSPYRE-{modname}-{collname}-stations_Model_{date0}.nc"
     print(outFile)
     stn_ds.to_netcdf(path=outFile.format(stations),engine='h5netcdf')
 

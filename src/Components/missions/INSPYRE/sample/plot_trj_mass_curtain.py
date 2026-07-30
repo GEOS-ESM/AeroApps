@@ -37,12 +37,12 @@ cm = LinearSegmentedColormap.from_list(
 def plotmass(ictFile,model="fp",collection="inst3-3d-AER-Nv",species="cc"):
 
 #   Get the ICARTT file describing the trajectory
-    if ictFile.find('P3B') > 0:
-        aircraft = 'P3B'
-        i0 = ictFile.find('P3B')+4
-    if ictFile.find('G3')  > 0:
-        aircraft = 'G3'
-        i0 = ictFile.find('G3')+3
+    if ictFile.find('ER2') > 0:
+        aircraft = 'ER2'
+        i0 = ictFile.find('ER2')+4
+    if ictFile.find('GV')  > 0:
+        aircraft = 'GV'
+        i0 = ictFile.find('GV')+3
     if ictFile.find('Learjet') > 0:
         aircraft = 'Learjet'
         i0 = ictFile.find('Learjet')+8
@@ -67,9 +67,7 @@ def plotmass(ictFile,model="fp",collection="inst3-3d-AER-Nv",species="cc"):
         speciestitle = 'Sulfate '
         clevs = np.arange(0,5,.1)
     if(species == 'cc'):
-        Species = ['OC','BC']
-        if(model == 'res'):
-            Species = ['OC','BR','BC']
+        Species = ['OC','BR','BC']
         speciestitle = 'Carbonaceous '
         clevs = np.arange(0,10,.2)
 
@@ -78,8 +76,8 @@ def plotmass(ictFile,model="fp",collection="inst3-3d-AER-Nv",species="cc"):
     alt, lon, lat, tyme = m.Nav['Altitude'], m.Nav['Longitude'], m.Nav['Latitude'], m.Nav['Time']
 
 #   Get the sampled file
-    dirname = f"samples/ARCSIX/sampled/{aircraft}/{modname}/{dateout}"
-    sampleFile = f"./{dirname}/ARCSIX-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.nc"
+    dirname = f"samples/INSPYRE/sampled/{aircraft}/{modname}/{dateout}"
+    sampleFile = f"./{dirname}/INSPYRE-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.nc"
     config = './g2g_pm25.yaml'
 
     if(model == 'res'):
@@ -107,6 +105,7 @@ def plotmass(ictFile,model="fp",collection="inst3-3d-AER-Nv",species="cc"):
         aer = (optics.aer['SO4'])*optics.aer['AIRDENS']
     if(species == 'cc'):
         aer = (optics.aer['BCPHILIC']+optics.aer['OCPHILIC']+
+               optics.aer['BRPHILIC']+optics.aer['BRPHILIC']+
                optics.aer['BCPHOBIC']+optics.aer['OCPHOBIC'])*optics.aer['AIRDENS']
         if(model == 'res'):
             aer = (optics.aer['BCPHILIC']+optics.aer['OCPHILIC']+optics.aer['BRPHILIC']+
@@ -118,7 +117,7 @@ def plotmass(ictFile,model="fp",collection="inst3-3d-AER-Nv",species="cc"):
     ntime = ext.sizes['time']
     nlev = ext.sizes['level']
     time = np.repeat(time.reshape(ntime,1),nlev,axis=1)
-    ax.set_ylim(0,12)
+    ax.set_ylim(0,16)
     plt.ylabel('GPS Altitude [km]')
     dtFmt = mdates.DateFormatter('%H:%M') # define the formatting
     plt.gca().xaxis.set_major_formatter(dtFmt) # apply the format to the desired axis
@@ -127,6 +126,10 @@ def plotmass(ictFile,model="fp",collection="inst3-3d-AER-Nv",species="cc"):
     print(z.shape)
     print(aer.shape)
     cf  = ax.plot(tyme,alt/1000.,color='magenta',linewidth=4)
+    y = np.squeeze(z[:,71]/1000.)
+    im2 = ax.plot(tyme,y,color="grey",lw=2)
+    d = np.zeros(len(tyme))
+    ax.fill_between(tyme,y,where=y>=d,color="beige")
 #    if(model != 'res'):
 #        im2 = ax.contour(time,z/1000.,cld,[0.49,0.5],colors='slategray')
     ax.set_facecolor('black')
@@ -145,7 +148,7 @@ def plotmass(ictFile,model="fp",collection="inst3-3d-AER-Nv",species="cc"):
     species_ = ''
     if(species != None):
         species_ = species+'_'
-    ofname = f"{dirname}/ARCSIX-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.{species_}mass_curtain.png"
+    ofname = f"{dirname}/INSPYRE-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.{species_}mass_curtain.png"
     print(ofname)
     plt.savefig(ofname)
     plt.close(fig)
@@ -164,6 +167,7 @@ if __name__ == "__main__":
         parser.error("must have 0 argument: icartt filename")
         
     plotmass(ict,model=model)
-    plotmass(ict,model=model,species='du')
-    plotmass(ict,model=model,species='su')
+    plotmass(ict,model=model,species='cc')
+#    plotmass(ict,model=model,species='du')
+#    plotmass(ict,model=model,species='su')
     sys.exit()

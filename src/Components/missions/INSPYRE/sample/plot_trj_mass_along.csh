@@ -1,7 +1,7 @@
 #!/bin/csh
 
 # Set base location
-  cd /home/pcolarco/ARCSIX/eval
+  cd /home/pcolarco/INSPYRE_25/pcolarco/sample
 
 # setup environment
   setenv AEROAPPS $NOBACKUP/AeroApps

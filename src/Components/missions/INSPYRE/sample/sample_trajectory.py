@@ -28,7 +28,7 @@ def sample(ictFile,model='fp',collection='inst3d_aer_v'):
             do_optics = 0
             collname = "tavg1-2d-LFO-Nx"
         modname = "GEOS-FP"
-        config = './geos529_pm25.yaml'
+        config = './g2g_pm25.yaml'
     if(model == 'MERRA2'):
         fpdata = ['./'+model+'.'+collection+'.ddf','./'+model+'.inst3_3d_asm_Nv.ddf']
         config = './m2_pm25.yaml'
@@ -37,22 +37,19 @@ def sample(ictFile,model='fp',collection='inst3d_aer_v'):
             do_optics = 0
 
 #   Get the ICARTT file describing the trajectory
-    if ictFile.find('P3B') > 0:
-        aircraft = 'P3B'
-        i0 = ictFile.find('P3B')+4
-    if ictFile.find('G3')  > 0:
-        aircraft = 'G3'
-        i0 = ictFile.find('G3')+3
-    if ictFile.find('Learjet') > 0:
-        aircraft = 'Learjet'
-        i0 = ictFile.find('Learjet')+8
+    if ictFile.find('GV') > 0:
+        aircraft = 'GV'
+        i0 = ictFile.find('GV')+3
+    if ictFile.find('ER2')  > 0:
+        aircraft = 'ER2'
+        i0 = ictFile.find('ER2')+4
     m = ICARTT(ictFile)
     yyyymmdd  = ict[i0:i0+11]
     dateout   = ict[i0:i0+4]+"-"+ict[i0+4:i0+6]+"-"+ict[i0+6:i0+8]
     print(ictFile, aircraft, yyyymmdd)
 
 #   Make an output directory
-    dirname = f"samples/ARCSIX/sampled/{aircraft}/{modname}/{dateout}"
+    dirname = f"samples/INSPYRE/sampled/{aircraft}/{modname}/{dateout}"
     print(dirname)
     try:
         os.makedirs(dirname)
@@ -94,7 +91,7 @@ def sample(ictFile,model='fp',collection='inst3d_aer_v'):
                                     PI_contact                  ="Peter.R.Colarco@nasa.gov",
                                     PI_name                     ="Peter Colarco",
                                     ProcessingLevel             ="L4",
-                                    project                     ="ARCSIX",
+                                    project                     ="INSPYRE",
                                     source                      =modname,
                                     title                       =titlestr,
                                     VersionID                   =rnum,
@@ -121,8 +118,6 @@ def sample(ictFile,model='fp',collection='inst3d_aer_v'):
 # create a nominal optics profile
     if(do_optics):
         Species = None
-        if(collection == 'inst3d_aerdms_v'):
-            Species = ['SU']
         optics = G2GAOP(traj_ds,config=config)
         ext = optics.getAOPext(wavelength=532,Species=Species)
         traj_ds["EXT532nm"] = ext["EXT"]
@@ -131,7 +126,7 @@ def sample(ictFile,model='fp',collection='inst3d_aer_v'):
         traj_ds["DEPOL532nm"] = ext["DEPOL"]
     
 # Preferred ICARTT name
-    outFile = f"./{dirname}/ARCSIX-{modname}-{collname}-{aircraft}_Model_{yyyymmdd}.nc"
+    outFile = f"./{dirname}/INSPYRE-{modname}-{collname}-{aircraft}_Model_{yyyymmdd}.nc"
     print(outFile)
     traj_ds.to_netcdf(outFile)
 

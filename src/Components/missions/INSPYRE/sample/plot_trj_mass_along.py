@@ -34,12 +34,12 @@ cm = LinearSegmentedColormap.from_list(
 def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv"):
 
 #   Get the ICARTT file describing the trajectory
-    if ictFile.find('P3B') > 0:
-        aircraft = 'P3B'
-        i0 = ictFile.find('P3B')+4
-    if ictFile.find('G3')  > 0:
-        aircraft = 'G3'
-        i0 = ictFile.find('G3')+3
+    if ictFile.find('ER2') > 0:
+        aircraft = 'ER2'
+        i0 = ictFile.find('ER2')+4
+    if ictFile.find('GV')  > 0:
+        aircraft = 'GV'
+        i0 = ictFile.find('GV')+3
     if ictFile.find('Learjet') > 0:
         aircraft = 'Learjet'
         i0 = ictFile.find('Learjet')+8
@@ -55,9 +55,9 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv"):
         modname = "GEOS-FP"
 
 #   Get the sampled file
-    dirname = f"samples/ARCSIX/sampled/{aircraft}/{modname}/{dateout}"
-    sampleFile = f"./{dirname}/ARCSIX-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.nc"
-    config = '/home/pcolarco/silo/GMAOpyobs/src/config/m2_pm25.yaml'
+    dirname = f"samples/INSPYRE/sampled/{aircraft}/{modname}/{dateout}"
+    sampleFile = f"./{dirname}/INSPYRE-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.nc"
+    config = './g2g_pm25.yaml'
 
     if(model == 'res'):
         sampleFile = '%s.inst3d_aer_v.%s.'%(model,aircraft)+yyyymmdd+'.nc'
@@ -93,11 +93,8 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv"):
     for itime in range(len(tyme)):
         aersu[itime] = np.interp(alt[itime],z[itime,:],aer[itime,:])
 
-    aer = ((optics.aer['BCPHILIC']+optics.aer['OCPHILIC']+
-           optics.aer['BCPHOBIC']+optics.aer['OCPHOBIC'])*optics.aer['AIRDENS']).values
-    if(model == 'res'):
-        aer = ((optics.aer['BCPHILIC']+optics.aer['OCPHILIC']+optics.aer['BRPHILIC']+
-               optics.aer['BCPHOBIC']+optics.aer['OCPHOBIC']+optics.aer['BRPHOBIC'])*optics.aer['AIRDENS']).values
+    aer = ((optics.aer['BCPHILIC']+optics.aer['OCPHILIC']+optics.aer['BRPHILIC']+
+           optics.aer['BCPHOBIC']+optics.aer['OCPHOBIC']+optics.aer['BRPHOBIC'])*optics.aer['AIRDENS']).values
     aer = np.flip(aer,axis=1)
     aercc = np.zeros(len(tyme))
     for itime in range(len(tyme)):
@@ -114,7 +111,6 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv"):
     dtFmt = mdates.DateFormatter('%H:%M') # define the formatting
     plt.gca().xaxis.set_major_formatter(dtFmt) # apply the format to the desired axis
     cf,  = ax.plot(tyme,alt/1000.,color='magenta',linewidth=4,label='Altitude')
-
     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
              ax.get_xticklabels() + ax.get_yticklabels()):
         item.set_fontsize(20)
@@ -141,7 +137,7 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv"):
     ax.legend(handles=[cf,p1,p2,p3])
     
     plt.title('Aerosol Concentration, %s track: '%(aircraft)+dateout, size=20)
-    ofname = f"{dirname}/ARCSIX-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.mass_along.png"
+    ofname = f"{dirname}/INSPYRE-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.mass_along.png"
     plt.savefig(ofname)
     plt.close(fig)
 

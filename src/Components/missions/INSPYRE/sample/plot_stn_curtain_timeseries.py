@@ -35,8 +35,8 @@ def plot(model="fp", collection="inst3-3d-AER-Nv", varn="T",station="Pituffik",
     if model == "MERRA2":
         modname = model
         
-    dirname = f"samples/ARCSIX/sampled/stations/{modname}"
-    fp_dataset = f"{dirname}/ARCSIX-{modname}-{collection}-stations_Model_2024????.nc"
+    dirname = f"samples/INSPYRE/sampled/stations/{modname}"
+    fp_dataset = f"{dirname}/INSPYRE-{modname}-{collection}-stations_Model_2024????.nc"
     print(fp_dataset)
     ds = xr.open_mfdataset(fp_dataset)
     stn_list = ds['station'].values.tolist()
@@ -111,7 +111,7 @@ def plot(model="fp", collection="inst3-3d-AER-Nv", varn="T",station="Pituffik",
                     size=16,rotation=270.,labelpad=25)
     ax.set_facecolor('black')
     plt.title('%s, %s'%(station,titlestr), size=20)
-    plt.savefig(f"{dirname}/ARCSIX-{modname}-{collection}-stations_Model_{station}_{varn}.png")
+    plt.savefig(f"{dirname}/INSPYRE-{modname}-{collection}-stations_Model_{station}_{varn}.png")
     plt.close(fig)
 
 if __name__ == "__main__":

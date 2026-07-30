@@ -30,7 +30,7 @@ with open('/home/pcolarco/lib/halo_colorbar.csv', newline='') as csvfile:
 cm = LinearSegmentedColormap.from_list(
         'my_map', rgb)
 
-def plotext(yyyymmdd,species='cc',model='fp',aircraft='G3'):
+def plotext(yyyymmdd,species='cc',model='fp',aircraft='GV'):
 
     modeltitle='GEOS-FP'
     if(model == 'geosit'):
@@ -58,9 +58,9 @@ def plotext(yyyymmdd,species='cc',model='fp',aircraft='G3'):
         speciestitle = 'Organics '
 
 #   Get the ICARTT file for the aircraft altitude
-    ictFile = '/home/pcolarco/ARCSIX/data/ARCSIX-MetNav_%s_'%(aircraft)+yyyymmdd+'_R0.ict'
+    ictFile = '/home/pcolarco/INSPYRE/data/INSPYRE-MetNav_%s_'%(aircraft)+yyyymmdd+'_R0.ict'
     if(aircraft == 'Learjet'):
-        ictFile = '/home/pcolarco/ARCSIX/data/ARCSIX-NAVM300_Learjet_'+yyyymmdd+'_R0.ict'
+        ictFile = '/home/pcolarco/INSPYRE/data/INSPYRE-NAVM300_Learjet_'+yyyymmdd+'_R0.ict'
     print(ictFile)
     m = ICARTT(ictFile)
     alt, lon, lat, tyme = m.Nav['Altitude'], m.Nav['Longitude'], m.Nav['Latitude'], m.Nav['Time']
@@ -142,15 +142,15 @@ def plotext(yyyymmdd,species='cc',model='fp',aircraft='G3'):
     species_ = ''
     if(species != None):
         species_ = species+'_'
-    plt.savefig('ARCSIX-MetNav_%s_'%(aircraft)+yyyymmdd+'_R0.%s_%smse_curtain.png'%(model,species_))
+    plt.savefig('INSPYRE-MetNav_%s_'%(aircraft)+yyyymmdd+'_R0.%s_%smse_curtain.png'%(model,species_))
     plt.close(fig)
 
 if __name__ == "__main__":
 
-    plotext('20240607',aircraft='P3B')
-    plotext('20240607',aircraft='P3B',species='oc')
-    plotext('20240607',aircraft='P3B',species='su')
-    plotext('20240607',aircraft='P3B',species='cc')
+    plotext('20240607',aircraft='ER2')
+    plotext('20240607',aircraft='ER2',species='oc')
+    plotext('20240607',aircraft='ER2',species='su')
+    plotext('20240607',aircraft='ER2',species='cc')
     sys.exit()
 #   Learjet
     mmdd = ['0725','0729','0730','0801','0802','0807','0808']
@@ -159,16 +159,16 @@ if __name__ == "__main__":
 #        plotext('2024%s'%(date),model='geosit',aircraft='Learjet')
 #        plotext('2024%s'%(date),model='res',aircraft='Learjet')
 
-#   P3B
+#   ER2
     mmdd = ['0524','0528','0530','0531','0603','0605','0606','0607','0610','0611','0613',
             '0722','0725','0729','0730','0801','0802','0807','0808','0809','0815']
     for date in mmdd:
-        plotext('2024%s'%(date),aircraft='P3B')
-#        plotext('2024%s'%(date),model='geosit',aircraft='P3B')
-#        plotext('2024%s'%(date),model='res',aircraft='P3B')
+        plotext('2024%s'%(date),aircraft='ER2')
+#        plotext('2024%s'%(date),model='geosit',aircraft='ER2')
+#        plotext('2024%s'%(date),model='res',aircraft='ER2')
 
     sys.exit()
-#   G3
+#   GV
     mmdd = ['0530','0531','0603','0605','0606','0607','0610','0611','0613',
             '0806','0807','0808','0809','0815']
     for date in mmdd:

@@ -38,12 +38,12 @@ cm = LinearSegmentedColormap.from_list(
 def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv",species=None):
 
 #   Get the ICARTT file describing the trajectory
-    if ictFile.find('P3B') > 0:
-        aircraft = 'P3B'
-        i0 = ictFile.find('P3B')+4
-    if ictFile.find('G3')  > 0:
-        aircraft = 'G3'
-        i0 = ictFile.find('G3')+3
+    if ictFile.find('ER2') > 0:
+        aircraft = 'ER2'
+        i0 = ictFile.find('ER2')+4
+    if ictFile.find('GV')  > 0:
+        aircraft = 'GV'
+        i0 = ictFile.find('GV')+3
     if ictFile.find('Learjet') > 0:
         aircraft = 'Learjet'
         i0 = ictFile.find('Learjet')+8
@@ -69,9 +69,7 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv",species=None):
         Species = ['SU']
         speciestitle = 'Sulfate '
     if(species == 'cc'):
-        Species = ['OC','BC']
-        if(model == 'res'):
-            Species = ['OC','BR','BC']
+        Species = ['OC','BR','BC']
         speciestitle = 'Carbonaceous '
 
 #   Get the ICARTT file for the aircraft altitude
@@ -79,9 +77,9 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv",species=None):
     alt, lon, lat, tyme = m.Nav['Altitude'], m.Nav['Longitude'], m.Nav['Latitude'], m.Nav['Time']
 
 #   Get the sampled file
-    dirname = f"samples/ARCSIX/sampled/{aircraft}/{modname}/{dateout}"
-    sampleFile = f"./{dirname}/ARCSIX-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.nc"
-    config = '/home/pcolarco/silo/GMAOpyobs/src/config/m2_pm25.yaml'
+    dirname = f"samples/INSPYRE/sampled/{aircraft}/{modname}/{dateout}"
+    sampleFile = f"./{dirname}/INSPYRE-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.nc"
+    config = './g2g_pm25.yaml'
 
     if(model == 'res'):
         sampleFile = '%s.inst3d_aer_v.%s.'%(model,aircraft)+yyyymmdd+'.nc'
@@ -111,8 +109,11 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv",species=None):
     clevs = np.arange(-2,0.,.02)
     im  = ax.contourf(time,z/1000.,np.log10(ext.EXT),clevs,cmap=cm,extend='max')
     cf  = ax.plot(tyme,alt/1000.,color='magenta',linewidth=4)
-    ax.set_ylim(0,12)
-#    ax.set_ylim(0,4)
+    y = np.squeeze(z[:,71]/1000.)
+    im2 = ax.plot(tyme,y,color="grey",lw=2)
+    d = np.zeros(len(tyme))
+    ax.fill_between(tyme,y,where=y>=d,color="beige")
+    ax.set_ylim(0,16)
 #    ax.set_xlim([datetime.datetime(2024, 6, 7, 15, 45,0), datetime.datetime(2024, 6, 7, 15, 27,0)])
 #    if(model != 'res'):
 #        im2 = ax.contour(time,z/1000.,cld,[0.49,0.5],colors='slategray')
@@ -130,8 +131,8 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv",species=None):
     plt.title('%s track: '%(aircraft)+yyyymmdd, size=20)
     if species == None:
         species = "Total"
-    ofname = f"{dirname}/ARCSIX-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.{species}_extinction_curtain.png"
-#    ofname = f"ARCSIX-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.{species}_extinction_curtain.png"
+    ofname = f"{dirname}/INSPYRE-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.{species}_extinction_curtain.png"
+#    ofname = f"INSPYRE-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.{species}_extinction_curtain.png"
     print(ofname)
 #    plt.show()
     plt.savefig(ofname)
@@ -152,8 +153,8 @@ if __name__ == "__main__":
         
     plotext(ict,model=model)
     plotext(ict,model=model,species='cc')
-    plotext(ict,model=model,species='du')
-    plotext(ict,model=model,species='ss')
+#    plotext(ict,model=model,species='du')
+#    plotext(ict,model=model,species='ss')
     plotext(ict,model=model,species='su')
 
 
