@@ -45,7 +45,8 @@ def make_plot(parcel,vtime):
     plt.subplots_adjust(left=0.05,bottom=0.05,right=0.95,top=0.95,hspace=0.05)
     
     ax  = fig.add_subplot(gs[0],projection=projLcc)
-    ax.set_extent([-120,-70,22.5,70],crs=ccrs.PlateCarree())
+#    ax.set_extent([-120,-70,22.5,70],crs=ccrs.PlateCarree())
+    ax.set_extent([240,290,22.5,70],crs=ccrs.PlateCarree())
     ax.coastlines(resolution="50m")
     ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False, linewidth=2, color='brown')
     ax.add_feature(cfeature.BORDERS, edgecolor='black',linewidth=2)

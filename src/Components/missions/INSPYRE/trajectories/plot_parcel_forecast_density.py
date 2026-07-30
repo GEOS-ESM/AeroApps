@@ -66,11 +66,11 @@ if __name__ == "__main__":
 #           This converts np.datetime64 -> datetime.datetime; note [us] is microseconds
             time = ds["time"].values.astype('datetime64[us]').astype('O')
             ds.close()
-
             ind  = []
             ind_   = [i for i,d in enumerate(time.tolist()) if (d>=dstart) & (d<=dend)]
             if ind_ != []:
                 ind.append(ind_)
+            lon[np.where(lon<0.)] = lon[np.where(lon<0.)]+360.
 
             for i,it in enumerate(ind):
                 kdeplot(ax,it,lon,lat,cmap,zorder=zorder)

@@ -41,6 +41,7 @@ if __name__ == "__main__":
     dp1  = now0+timedelta(days=0)
     dp2  = now0+timedelta(days=1)
     dp3  = now0+timedelta(days=2)
+    dp5  = now0+timedelta(days=5)
     ind  = []
 #    for dp in [dp1,dp2,dp3]:
     for dp in [dp1]:
@@ -52,6 +53,7 @@ if __name__ == "__main__":
             ind.append(ind_)
     print(ind)
     ds.close()
+    lon[np.where(lon<0.)] = lon[np.where(lon<0.)]+360.
 
 #   KDE
     ax, ax2 = make_plot(label,vtime)
