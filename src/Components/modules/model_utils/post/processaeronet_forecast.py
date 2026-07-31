@@ -58,13 +58,10 @@ def parse_aeronet_daily_file(filepath, start_date, end_date):
 
         # cleaning the data
         df.replace(-999.0, np.nan, inplace=True)
-
         df.loc[(df['aod_550'] < 0) | (df['aod_550'] >= 10), 'aod_550'] = np.nan 
-
         valid_mask_870 = (df['angstrom'] >= -1) & (df['angstrom'] <= 3)
         df.loc[~valid_mask_870, 'angstrom'] = np.nan
 
-        df = df.dropna(subset=['aod_550', 'angstrom'])
 
         if df.empty:
             return None, "No valid paired AOD/Angstrom data after QC"
@@ -91,6 +88,8 @@ def parse_aeronet_daily_file(filepath, start_date, end_date):
 def processanalysis(date_tuple, analysis_path_template):
 
     date, daily_df = date_tuple
+    
+    station_cache = {}
 
     for hour_val, group in daily_df.groupby('obs hour'):
         # creatting date variables
@@ -98,24 +97,51 @@ def processanalysis(date_tuple, analysis_path_template):
         YYYYMMDD = hour_val.strftime('%Y%m%d')
         MM = hour_val.strftime('%m')
         HH = hour_val.strftime('%H')
+        HHmm = hour_val.strftime('%H%M')
        
-        analysis_file = analysis_path_template.format(YYYYMM=YYYYMM, YYYYMMDD=YYYYMMDD, HH=HH, MM=MM)
+        analysis_file = analysis_path_template.format(YYYYMM=YYYYMM, YYYYMMDD=YYYYMMDD, HH=HH, MM=MM, HHmm = HHmm)
         if os.path.exists(analysis_file):
-            with xr.open_dataset(analysis_file) as ds_mod:
-                for idx, row in group.iterrows():
-                    mlon = row.lons + 360 if (ds_mod.lon.min() >= 0 and row.lons < 0) else row.lons
-                    pt = ds_mod.sel(lat=row['lats'], lon=mlon, method='nearest')
-                    if 'time' in pt.dims:
-                        pt = pt.isel(time=0)
-                    # gathering data for analysis
-                    daily_df.at[idx, 'analysis_aod'] = float(pt['TOTEXTTAU'].values) 
-                    daily_df.at[idx, 'analysis_ang'] = float(pt['TOTANGSTR'].values) 
+            try:
+                with xr.open_dataset(analysis_file, decode_times=False) as ds_mod:
+                    for idx, row in group.iterrows():
+                        station = row['station']
+                        
+                        if station not in station_cache:
+                            target_lat = row['lats']
+                            target_lon = row['lons']
+                            try:
+                                lon_diff = (ds_mod['lons'] - target_lon +180)%360-180
+                                dist = (ds_mod['lats'] - target_lat)**2 + lon_diff**2
+                                nearest_point = dist.compute().argmin(dim=['Xdim', 'Ydim'])
+                                mlon = target_lon + 360 if (ds_mod.lons.min() >= 0 and target_lon < 0) else target_lon
+                                station_cache[station] = {'point': nearest_point, 'mlon': mlon, 'method': 'argmin'}
+                            except Exception:
+                                mlon = target_lon + 360 if (ds_mod.lon.min() >= 0 and target_lon < 0) else target_lon
+                                station_cache[station] = {'lat': target_lat, 'mlon': mlon, 'method': 'sel'}
+                                
+                        cache = station_cache[station]
+                        
+                        if cache['method'] == 'argmin':
+                            pt = ds_mod.isel(cache['point'])
+                        else:
+                            pt = ds_mod.sel(lat=cache['lat'], lon=cache['mlon'], method='nearest')
+    
+                        try:
+                            if 'time' in pt.dims:
+                                pt = pt.isel(time=0)
+                                
+                            # gathering data for analysis
+                            daily_df.at[idx, 'analysis_aod'] = float(pt['TOTEXTTAU'].values) 
+                            daily_df.at[idx, 'analysis_ang'] = float(pt['TOTANGSTR'].values) 
+                        except IndexError:
+                            continue
+            except PermissionError as e:
+                print('Permissioin to file denied', e)
+                continue
         else:
             print(f'analysis file {analysis_file} not found')
 
     return daily_df
-
-
 
 
 #####################################################################################
@@ -125,11 +151,25 @@ def processmodel(date_tuple, model_path_template):
     """Processes all stations for a single day against the GEOS model data"""
     date, daily_df = date_tuple
     processed_records = []
+    
+    station_cache = {}
+    climate_cache = {}
+    
+    day_start = daily_df['obs hour'].min() - pd.Timedelta(hours=fcst_period)
+    day_end = daily_df['obs hour'].max()
+    day_start = max(day_start, start_date)
+    day_end = min(day_end, end_date)       
+    
+    valid_init_times = pd.date_range(start=day_start, end=day_end, freq=time_step)
 
-    for initiation_time in pd.date_range(start = start_date, end = end_date, freq = time_step):
+    for initiation_time in valid_init_times:
         # setting variables for model initalization time
         initiation_YYYYMMDD = datetime.strftime(initiation_time, '%Y%m%d')
+        initiation_YYYY = datetime.strftime(initiation_time, '%Y')
+        initiation_MM = datetime.strftime(initiation_time, '%m')
+        initiation_DD = datetime.strftime(initiation_time, '%d')
         initiation_HH = datetime.strftime(initiation_time, '%H')
+        
         for hour_val, group in daily_df.groupby('obs hour'):
             # setting variables for model forecast time
             YYYYMM = hour_val.strftime('%Y%m'), # model forecast year and month
@@ -142,53 +182,80 @@ def processmodel(date_tuple, model_path_template):
                 continue
             if fcst_length > pd.Timedelta(hours=fcst_period):
                 continue
-            model_file = model_path_template.format(initiation_YYYYMMDD = initiation_YYYYMMDD, initiation_HH = initiation_HH,
-                                                    YYYYMM=YYYYMM, YYYYMMDD=YYYYMMDD, HH=initiation_HH, HHmm = HHmm)
+                
+            try:
+                model_file = model_path_template.format(initiation_YYYYMMDD = initiation_YYYYMMDD, initiation_HH = initiation_HH,
+                                                        YYYYMM=YYYYMM, YYYYMMDD=YYYYMMDD, HH=initiation_HH, HHmm = HHmm)
+            except KeyError:
+                model_file = model_path_template.format(initiation_YYYYMMDD = initiation_YYYYMMDD,
+                                                        initiation_YYYY = initiation_YYYY, 
+                                                        initiation_MM = initiation_MM,
+                                                        initiation_DD = initiation_DD,
+                                                        initiation_HH = initiation_HH,
+                                                        YYYYMM=YYYYMM, YYYYMMDD=YYYYMMDD, 
+                                                        HH=initiation_HH, HHmm = HHmm)
+                
         # Adding Climatology
-            
             climate_path = '/discover/nobackup/acollow/aeroeval/geosit/monthly_climatologies/'
-            climate_hour = (hour_val.hour // 6) *6
+            climate_hour = (hour_val.hour // 6) * 6
             climate_file = f'{climate_path}geos_it_climatology_{climate_hour:02d}z_{MM}_2003_2022.nc'
+            
             if os.path.exists(model_file) and os.path.exists(climate_file):
-                with xr.open_dataset(model_file) as ds_mod, xr.open_dataset(climate_file) as ds_climate:
+                if climate_file not in climate_cache:
+                    climate_cache[climate_file] = xr.open_dataset(climate_file, decode_times = False)
+                ds_climate = climate_cache[climate_file]
+                with xr.open_dataset(model_file, decode_times=False) as ds_mod:
                     for idx, row in group.iterrows():
                         new_row = row.copy()
-                        target_lat = row['lats']
-                        target_lon = row['lons']
-
-                        lon_diff = (ds_mod['lons'] - target_lon +180)%360-180
-                        dist = (ds_mod['lats'] - target_lat)**2 + lon_diff**2
-                        nearest_point = dist.compute().argmin(dim=['Xdim', 'Ydim'])
-                        found_lat = ds_mod['lats'].isel(nearest_point).values.flatten()[0]
-                        found_lon = ds_mod['lons'].isel(nearest_point).values.flatten()[0]
-
-
-
-
+                        station = row['station']
                         
-                        pt = ds_mod.isel(nearest_point)
-                        if 'time' in pt.dims:
-                            pt = pt.isel(time=0)
-                        mlon = target_lon + 360 if (ds_mod.lons.min() >= 0 and row['lons'] < 0) else row['lons']
+                        if station not in station_cache:
+                            target_lat = row['lats']
+                            target_lon = row['lons']
+                            
+                            try:
+                                lon_diff = (ds_mod['lons'] - target_lon +180)%360-180
+                                dist = (ds_mod['lats'] - target_lat)**2 + lon_diff**2
+                                nearest_point = dist.compute().argmin(dim=['Xdim', 'Ydim'])
+                                mlon = target_lon + 360 if (ds_mod.lons.min() >= 0 and target_lon < 0) else target_lon
+                                
+                                station_cache[station] = {'point': nearest_point, 'mlon': mlon, 'method': 'argmin'}
+                            except Exception:
+                                # print('in Exception\n~~~~~\n')
+                                mlon = target_lon + 360 if (ds_mod.lon.min() >= 0 and target_lon < 0) else target_lon
+                                station_cache[station] = {'lat': target_lat, 'mlon': mlon, 'method': 'sel'}
 
-                        # gathering values for stats
-                        pt_climate = ds_climate.sel(lat=row['lats'], lon = mlon, method='nearest')
-                        new_row['model_aod'] = float(pt['TOTEXTTAU'].squeeze().values.flatten()[0]) 
-                        new_row['model_ang'] = float(pt['TOTANGSTR'].squeeze().values.flatten()[0])
-                        new_row['climatology_aod'] = float(pt_climate['TOTEXTTAU'].squeeze().values.flatten()[0])
-                        new_row['initialization time'] = initiation_time
-                        new_row['initialization hour'] = initiation_HH
-                        new_row['fcst length'] = fcst_length
+                        cache = station_cache[station]
                         
-                        processed_records.append(new_row)
+                        if cache['method'] == 'argmin':
+                            pt = ds_mod.isel(cache['point'])
+                            pt_climate = ds_climate.sel(lat=row['lats'], lon=cache['mlon'], method='nearest')
+                        else:
+                            pt = ds_mod.sel(lat=cache['lat'], lon=cache['mlon'], method='nearest')
+                            pt_climate = ds_climate.sel(lat=cache['lat'], lon=cache['mlon'], method='nearest')
 
+                        try: 
+                            if 'time' in pt.dims:
+                                pt = pt.isel(time=0)
+    
+                            # gathering values for stats
+                            new_row['model_aod'] = float(pt['TOTEXTTAU'].squeeze().values.flatten()[0]) 
+                            new_row['model_ang'] = float(pt['TOTANGSTR'].squeeze().values.flatten()[0])
+                            new_row['climatology_aod'] = float(pt_climate['TOTEXTTAU'].squeeze().values.flatten()[0])
+                            new_row['initialization time'] = initiation_time
+                            new_row['initialization hour'] = initiation_HH
+                            new_row['fcst length'] = fcst_length
+                            
+                            processed_records.append(new_row)
+                        except IndexError:
+                            continue
+
+    
+    
     if processed_records:
         return pd.DataFrame(processed_records)
     else:
         return pd.DataFrame(columns= list(daily_df.columns) + ['model_aod', 'model_ang', 'initialization time', 'initialization hour',  'fcst length'])
-
-
-
 #####################################################################################
 # Process the analysis data
 #####################################################################################
@@ -322,6 +389,16 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
         return
         
     master_df = pd.concat(dfs, ignore_index=True)
+
+    if all_times == True:
+        full_time_range = pd.date_range(start=start_date, end=end_date, freq = 'h')
+        station_info = master_df[['station','lats','lons']].drop_duplicates()
+        idx = pd.MultiIndex.from_product([station_info['station'], full_time_range],
+                                         names = ['station', 'obs hour'])
+        complete_grid = pd.DataFrame(index=idx).reset_index()
+        complete_grid = pd.merge(complete_grid, station_info, on='station', how='left')
+        master_df = pd.merge(complete_grid, master_df[['station', 'obs hour', 'aod_550', 'angstrom']], on=['station','obs hour'], how ='left')
+        
     master_df['obs date'] = master_df['obs hour'].dt.floor('D')
     print(f"\nTotal valid AERONET hours across all stations: {len(master_df)}")
     print(f"\nSampling {experiment_name}...")
@@ -345,14 +422,19 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
         processed_dfs = []
     
         with mp.Pool(n_procs) as pool:
+            print('This may take a while. Walk around and get a coffee while you wait.')
             for i, result_df in enumerate(pool.imap_unordered(process_func, grouped)):
                 processed_dfs.append(result_df)
                 if (i+1) % 10 == 0 or (i+1) == len(grouped):
                     print(f"Processed {i+1}/{len(grouped)} model days...")
 
-        # combining dataframes and cleaning data
-        model_df = pd.concat(processed_dfs, ignore_index=True)
-        final_df = model_df.dropna(subset=['model_aod', 'model_ang'])
+        valid_dfs = [df for df in processed_dfs if df is not None and not df.empty]
+
+        if valid_dfs:
+            model_df = pd.concat(valid_dfs, ignore_index=True)
+        else:
+            model_df = pd.DataFrame()
+        final_df = model_df.copy()
     else:
         model_df = master_df.copy()
         final_df = master_df.copy()
@@ -378,15 +460,14 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
 
         # cleaning data and combining data frames
         analysis_df = pd.concat(analysis_processed_dfs, ignore_index = True)
-        analysis_df = analysis_df.dropna(subset=['analysis_aod', 'analysis_ang'])
         analysis_subset = analysis_df[['station', 'obs hour', 'analysis_aod', 'analysis_ang']]
         try:
             final_df = pd.merge(model_df, analysis_subset, on = ['station', 'obs hour'], how = 'inner')
         except Exception as e:
-            # print(f"Merge error: {e}")
             final_df = pd.merge(master_df, analysis_subset, on = ['station', 'obs hour'], how = 'inner')
 
-    valid_stations = final_df['station'].value_counts()[final_df['station'].value_counts() >= min_points].index
+    valid_counts = final_df.dropna(subset=['aod_550'])['station'].value_counts()
+    valid_stations = valid_counts[valid_counts >= min_points].index
     final_df = final_df[final_df['station'].isin(valid_stations)].copy()
 
 
@@ -484,7 +565,7 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
     if ts_freq != 'none' and not final_df.empty:
         print(f"\nGenerating {ts_freq} timeseries data...")
         
-        cols_to_keep = ['obs hour', 'station', 'lats', 'lons', 'aod_550', 'model_aod', 'analysis_aod', 
+        cols_to_keep = ['obs hour', 'initialization time', 'station', 'lats', 'lons', 'aod_550', 'model_aod', 'analysis_aod', 
                         'angstrom', 'model_ang', 'analysis_ang']
         ts_df = final_df[cols_to_keep].copy()
         ts_df.rename(columns={'obs hour': 'time', 'aod_550': 'aeronet_aod', 'angstrom': 'aeronet_angstrom'}, inplace=True)
@@ -498,7 +579,7 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
             ts_df = ts_df.groupby(['experiment', 'station', 'time', 'lats', 'lons']).mean(numeric_only=True).reset_index()
             
         ts_output_file = os.path.join(output_dir , 
-                                      f"experiment_name}_{file_comparison}_timeseries_{ts_freq}_{date_str}.csv")
+                                      f"{experiment_name}_{file_comparison}_timeseries_{ts_freq}_{date_str}.csv")
         
         ts_df.to_csv(ts_output_file, index=False)
         print(f"Time series data saved to {ts_output_file}")
@@ -510,10 +591,10 @@ def main(start_date, end_date, base_path, experiment_name, output_dir="./aeronet
 #####################################################################################
 if __name__ == "__main__":
     # to change settings for the date, temporal frequency, and what is being evaluatated, edit config.yaml
-
     # collecting settings from config.yaml
     with open('config.yaml', 'r') as file:
         config = yaml.safe_load(file)
+        
     start_date = datetime.strptime(config['dates']['start'], '%Y-%m-%d %H:%M:%S') 
     end_date = datetime.strptime(config['dates']['end'], '%Y-%m-%d %H:%M:%S') 
     
@@ -521,9 +602,14 @@ if __name__ == "__main__":
     experiment_name = config['paths']['experiment']
     output_path = config['paths']['output']
 
+    all_times = config['save_missing_obs']
+
     aeronet_path = config['paths']['observations']
     forecast_path = config['paths']['model1']
     FPanalysis_path = config['paths']['model2']
+    
+    print(f'Settings from {file}') # When running multiple experiments, it may be useful to create multiple config files 
+    print(f'Data collected from:\n{aeronet_path}\n{forecast_path}\n{FPanalysis_path}')
 
     output_dir = os.path.join(base_path, output_path, experiment_name)
     print(base_path)
