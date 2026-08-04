@@ -117,7 +117,10 @@ def plotmass(ictFile,model="fp",collection="inst3-3d-AER-Nv",species="cc"):
     ntime = ext.sizes['time']
     nlev = ext.sizes['level']
     time = np.repeat(time.reshape(ntime,1),nlev,axis=1)
-    ax.set_ylim(0,16)
+    if aircraft == "ER2":
+        ax.set_ylim(0,22)
+    else:
+        ax.set_ylim(0,16)
     plt.ylabel('GPS Altitude [km]')
     dtFmt = mdates.DateFormatter('%H:%M') # define the formatting
     plt.gca().xaxis.set_major_formatter(dtFmt) # apply the format to the desired axis

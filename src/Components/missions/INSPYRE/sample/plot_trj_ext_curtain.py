@@ -113,7 +113,10 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv",species=None):
     im2 = ax.plot(tyme,y,color="grey",lw=2)
     d = np.zeros(len(tyme))
     ax.fill_between(tyme,y,where=y>=d,color="beige")
-    ax.set_ylim(0,16)
+    if aircraft == "ER2":
+        ax.set_ylim(0,22)
+    else:
+        ax.set_ylim(0,16)
 #    ax.set_xlim([datetime.datetime(2024, 6, 7, 15, 45,0), datetime.datetime(2024, 6, 7, 15, 27,0)])
 #    if(model != 'res'):
 #        im2 = ax.contour(time,z/1000.,cld,[0.49,0.5],colors='slategray')
