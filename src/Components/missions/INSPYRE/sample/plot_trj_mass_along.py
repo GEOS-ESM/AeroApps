@@ -14,9 +14,10 @@ import matplotlib.colors as colors
 import matplotlib.ticker as mticker
 import matplotlib
 matplotlib.use('agg')
-
+import os
 import xarray as xr
 import pyobs.xrctl  as xc
+from datetime import timedelta
 from optparse   import OptionParser   # Command-line args
 
 #Get the HALO RGB colors
@@ -74,20 +75,9 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv"):
         asm = asmfile
     else:
         asm = xc.open_mfdataset(asmfile)
-    z   = asm['H']
-
-#   Get the aerosol mass concentrations
-    aer = ((optics.aer['DU001']+optics.aer['DU002']+optics.aer['DU003']+
-           optics.aer['DU004']+optics.aer['DU005'])*optics.aer['AIRDENS']).values
-    z   = np.flip(z,axis=1)
-    aer = np.flip(aer,axis=1)
-    aerdu = np.zeros(len(tyme))
-    for itime in range(len(tyme)):
-        aerdu[itime] = np.interp(alt[itime],z[itime,:],aer[itime,:])
-
+    z   = np.flip(asm['H'],axis=1)
 
     aer = ((optics.aer['SO4'])*optics.aer['AIRDENS']).values
-#    z   = np.flip(z,axis=1)
     aer = np.flip(aer,axis=1)
     aersu = np.zeros(len(tyme))
     for itime in range(len(tyme)):
@@ -100,13 +90,21 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv"):
     for itime in range(len(tyme)):
         aercc[itime] = np.interp(alt[itime],z[itime,:],aer[itime,:])
 
+    aer = ((optics.aer['BCPHILIC']+optics.aer['BCPHOBIC'])*optics.aer['AIRDENS']).values
+    aer = np.flip(aer,axis=1)
+    aerbc = np.zeros(len(tyme))
+    for itime in range(len(tyme)):
+        aerbc[itime] = np.interp(alt[itime],z[itime,:],aer[itime,:])
 
     fig, ax = plt.subplots(figsize=(20, 6))
     time = ext.time.values
     ntime = ext.sizes['time']
     nlev = ext.sizes['level']
     time = np.repeat(time.reshape(ntime,1),nlev,axis=1)
-#    ax.set_ylim(0,12)
+    if aircraft == "ER2":
+        ax.set_ylim(0,22)
+    else:
+        ax.set_ylim(0,16)
     plt.ylabel('GPS Altitude [km]')
     dtFmt = mdates.DateFormatter('%H:%M') # define the formatting
     plt.gca().xaxis.set_major_formatter(dtFmt) # apply the format to the desired axis
@@ -116,8 +114,8 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv"):
         item.set_fontsize(20)
 
     ax2 = ax.twinx()
-    p1, = ax2.plot(tyme,aersu*1e9,color='green',label='Sulfate')
-    p2, = ax2.plot(tyme,aercc*1e9,color='black',label='Carbonaceous')
+    p1, = ax2.plot(tyme,aersu*1e9,color='green',label='Sulfate',zorder=100)
+    p2, = ax2.plot(tyme,aercc*1e9,color='red',label='Carbonaceous',zorder=100)
     ax2.set(ylabel='Sulfate / Carbonaceous [ug m-3]')
     for item in ([ax2.title, ax2.xaxis.label, ax2.yaxis.label] +
              ax2.get_xticklabels() + ax2.get_yticklabels()):
@@ -125,17 +123,29 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv"):
 
     ax3 = ax.twinx()
     ax3.spines.right.set_position(("axes", 1.075))
-    p3, = ax3.plot(tyme,aerdu*1e9,color='orange',label='Dust')
-    ax3.set(ylabel='Dust [ug m-3]')
+    p3, = ax3.plot(tyme,aerbc*1e12,color='black',label='Black Carbon',zorder=100)
+    ax3.set(ylabel="Black Carbon [ng m-3]")
+    ax3.set_yscale("log")
     for item in ([ax3.title, ax3.xaxis.label, ax3.yaxis.label] +
              ax3.get_xticklabels() + ax3.get_yticklabels()):
         item.set_fontsize(16)
 
-#    ax.yaxis.label.set_color(cf.get_color())
-#    ax2.yaxis.label.set_color(p2.get_color())
-#    ax3.yaxis.label.set_color(p3.get_color())
-    ax.legend(handles=[cf,p1,p2,p3])
-    
+
+
+#   See if there is SP2 file to read
+    if aircraft == "GV":
+        fn = f"../data/INSPYRE-SP2-BC-1Hz_GV_{yyyymmdd}.ict"
+        if os.path.exists(fn):
+            x = ICARTT(fn)
+#           Hack for time offset in first files
+            p4, = ax3.plot(x.tyme+timedelta(hours=6),x.BC_mass_90_550_nm_amb,color="dimgray",label="SP2 BC Mass",zorder=50)
+#            p4, = ax3.plot(x.tyme,x.BC_mass_90_550_nm_amb,color="black",label="SP2 BC Mass")
+            ax.legend(handles=[cf,p1,p2,p3,p4])
+        else:
+                ax.legend(handles=[cf,p1,p2,p3])
+    else:
+            ax.legend(handles=[cf,p1,p2,p3])
+
     plt.title('Aerosol Concentration, %s track: '%(aircraft)+dateout, size=20)
     ofname = f"{dirname}/INSPYRE-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.mass_along.png"
     plt.savefig(ofname)
