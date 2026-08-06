@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import numpy as np
 import os
-from traj_make_plot import make_plot, kdeplot
+from traj_make_plot import make_plot, kdeplot, add_satellite_track
 from datetime import datetime, timedelta
+satellite_colors = {"EarthCARE": "firebrick","NOAA-20": "magenta", "PACE": 'green'}
 
 if __name__ == "__main__":
     parser = OptionParser(usage="Usage: %prog [options] filename",
@@ -70,7 +71,7 @@ if __name__ == "__main__":
             ind_   = [i for i,d in enumerate(time.tolist()) if (d>=dstart) & (d<=dend)]
             if ind_ != []:
                 ind.append(ind_)
-            lon[np.where(lon<0.)] = lon[np.where(lon<0.)]+360.
+#            lon[np.where(lon<0.)] = lon[np.where(lon<0.)]+360.
 
             for i,it in enumerate(ind):
                 kdeplot(ax,it,lon,lat,cmap,zorder=zorder)
@@ -81,5 +82,18 @@ if __name__ == "__main__":
             for i in range(0,2500,25):
                 cs = ax2.plot(time,alt[:,i],color=mcolor[j])
 
+            satellite_name = "EarthCARE"
+            track, line_handle = add_satellite_track(ax=ax,
+              satellite=satellite_name,
+              start=dp,
+              stop=dp+timedelta(days=1),
+              color=satellite_colors[satellite_name],
+              interval_minutes=1.0,
+              marker_interval_minutes=5,
+              min_solar_elevation=0.0,
+              linewidth=3,
+              marker_size=100,
+              label_fontsize=25,
+              label_times=True)
             plt.savefig(f"{timestr}:00+{vtime}_{firestr}.density.png")
 #            plt.close()
