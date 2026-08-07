@@ -15,18 +15,27 @@ if __name__ == "__main__":
     parser = OptionParser(usage="Usage: %prog [options] filename",
                           version='omi_level2a-1.0.0' )
     (options, args) = parser.parse_args()
-
     if len(args) == 1:
         parcel_ = args[0]
     else:
         parser.error("must have 1 argument: filename")
 
+    # Assuming parcel_ looks like: "parcel_traj.20260804_00.Bobcat_Lakes_2026-08-07T00:00:00"
     x = parcel_.split(".")
-    label = x[1]
-    print(label)
+    
+    # x[0] is "parcel_traj"
+    # x[1] is the forecast cycle (e.g., "20260804_00")
+    # x[2] is the label (e.g., "Bobcat_Lakes_2026-08-07T00:00:00")
+    
+    fcst_cycle = x[1] 
+    label = x[2] 
+    
+    print(f"Forecast Cycle: {fcst_cycle}")
+    print(f"Label: {label}")
+    
     timestr = label[-19:-3]
     firestr = label[0:-20]
-
+    
     alts = ["10km","12km","14km"]
     nt = 73
     colors=["red","blue","green"]
@@ -95,5 +104,5 @@ if __name__ == "__main__":
               marker_size=100,
               label_fontsize=25,
               label_times=True)
-            plt.savefig(f"{timestr}:00+{vtime}_{firestr}.density.png")
+            plt.savefig(f"fcst{fcst_cycle}_{timestr}:00+{vtime}_{firestr}.density.png")
 #            plt.close()
