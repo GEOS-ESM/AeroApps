@@ -17,11 +17,10 @@ mkdir -p ${FinalOutDir}
 ./run_cases.csh
 ./plot_cases.csh
 
-#chgrp s3339 *png
-#chmod g+w *png
-#\cp -f *png /discover/nobackup/projects/gmao/iesa/pub/aerosol/inspyre/trajectories/
+chgrp s3339 *png
+chmod g+w *png
 #Copy the pngs into the specific forecast cycle folder
-\cp -f *png ${FinalOutDir}/
+\mv -f fcst${FcstCycle}*png ${FinalOutDir}/
 
 #set group permissions on the new directory itself just in case
 chgrp s3339 ${FinalOutDir}
