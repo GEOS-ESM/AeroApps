@@ -107,7 +107,7 @@ def add_satellite_track(ax, satellite, start, stop, color,
     # ----------------------------------------------------------
     # Select daytime markers
     # ----------------------------------------------------------
-    marker_time_mask = np.array([(current_time.minute% marker_interval_minutes== 0)and current_time.second == 0for current_time in times],dtype=bool)
+    marker_time_mask = np.array([(current_time.minute% marker_interval_minutes== 0) and current_time.second == 0 for current_time in times],dtype=bool)
 
     marker_mask  = daytime & marker_time_mask
     marker_lon   = longitude[marker_mask]
@@ -217,12 +217,12 @@ def make_plot(parcel,vtime):
     timestr = parcel[-19:-3]
     firestr = parcel[0:-20]
     projLcc = ccrs.LambertConformal(central_longitude=-100, central_latitude=40)
-    fig = plt.figure(figsize=(16,26))
+    fig = plt.figure(figsize=(16,20))
     gs = GridSpec(2, 1, height_ratios=[3.5, 1])
-    plt.subplots_adjust(left=0.05,bottom=0.05,right=0.95,top=0.95,hspace=0.05)
+    plt.subplots_adjust(left=0.05,bottom=0.05,right=0.95,top=0.95,hspace=0.02)
     
     ax  = fig.add_subplot(gs[0],projection=projLcc)
-    ax.set_extent([-120,-70,22.5,70],crs=ccrs.PlateCarree())
+    ax.set_extent([-120,-70,22.5,60],crs=ccrs.PlateCarree())
 #    ax.set_extent([240,290,22.5,70],crs=ccrs.PlateCarree())
     ax.coastlines(resolution="50m",zorder=100)
     ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False, linewidth=2, color='brown')

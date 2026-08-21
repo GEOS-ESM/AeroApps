@@ -64,6 +64,9 @@ f.close()
 os.system("chmod 755 run_cases.csh")
 
 # Write the plot script
+# NEW: Grab today's date to match the forecast cycle format (YYYYMMDD_00)
+fcst_cycle = datetime.now().strftime("%Y%m%d_00")
+
 with open("plot_cases.csh","w") as f:
     f.write("#!/bin/tcsh -f\n")
     for line in data:
@@ -76,16 +79,17 @@ with open("plot_cases.csh","w") as f:
         time  = items[3]
         alt   = items[4]
         if(alt != "Y"):
-#            cmd = f"./plot_parcel.py parcel_traj.{fire}_{time}.nc &\n"
+#            cmd = f"./plot_parcel.py parcel_traj.{fcst_cycle}.{fire}_{time}.nc &\n"
 #            f.write(cmd)
-            cmd = f"./plot_parcel_density.py parcel_traj.{fire}_{time}.nc &\n"
+            # NEW: Inserted {fcst_cycle}. into the filename
+            cmd = f"./plot_parcel_density.py parcel_traj.{fcst_cycle}.{fire}_{time}.nc &\n"
             f.write(cmd)
         else:
-#            cmd = f"./plot_parcel_forecast.py parcel_traj.{fire}_{time} &\n"
+#            cmd = f"./plot_parcel_forecast.py parcel_traj.{fcst_cycle}.{fire}_{time} &\n"
 #            f.write(cmd)
-            cmd = f"./plot_parcel_forecast_density.py parcel_traj.{fire}_{time} &\n"
+            # NEW: Inserted {fcst_cycle}. into the filename
+            cmd = f"./plot_parcel_forecast_density.py parcel_traj.{fcst_cycle}.{fire}_{time} &\n"
             f.write(cmd)
-    f.write("wait")
+    f.write("\nwait\n")
 f.close()
 os.system("chmod 755 plot_cases.csh")
-

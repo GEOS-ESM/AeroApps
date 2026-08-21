@@ -35,9 +35,10 @@ set InFile="parcel_init.$string.nc"
 
 # Input vertical coordinate
 set InVert = "PAlt"
-
+#Define the forecast cycle 
+set FcstCycle = `date +"%Y%m%d"`_00
 # the file of output parcel positions
-set OutFile = "parcel_traj.$string.nc"
+set OutFile = "parcel_traj.${FcstCycle}.${string}.nc"
 # the output Format:
 #  model_Time  calendar_Time parcel_Id  lOngitude  lAtitude  Vertical 
 # Note that while the trajectories are calculated using pressure
@@ -52,7 +53,8 @@ set OutFormat = "%t %T %i %o %a %v %{PAlt}m"
 set MetSrc = "MetGEOSfp"
 # Since we are running trajectories into the future, we need
 # to supply a GEOS FP model run. Choose today's 00Z run
-set MetSpec = "ModelRun=`date +"%Y%m%d"`_00"
+#set MetSpec = "ModelRun=`date +"%Y%m%d"`_00"
+set MetSpec = "ModelRun=${FcstCycle}"
 # the vertical coordinate to use in tracing the trajectories 
 # (pressure; these will be kinmatic trajectories)
 set VTrace = "P"
