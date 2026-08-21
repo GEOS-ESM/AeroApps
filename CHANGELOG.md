@@ -5,6 +5,8 @@
 ### Added
 - Add ARCSIX mission directories
 - Add INSPYRE mission directories and updated web plotting package
+- Added sampling scripts for INSPYRE
+- Updated plotting codes for INSPYRE trajectories
 - Add ASIA-AQ mission scripts
 - Add a post processing script that creates a zarr virtual data store for a model run to Applications
 - Add a modules directory with a model_utils sub-directory with some basic eval, post, and utils modules
