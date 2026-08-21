@@ -44,7 +44,7 @@ def sample(ictFile,model='fp',collection='inst3d_aer_v'):
         aircraft = 'ER2'
         i0 = ictFile.find('ER2')+4
     m = ICARTT(ictFile)
-    yyyymmdd  = ict[i0:i0+11]
+    yyyymmdd  = ict[i0:-4]
     dateout   = ict[i0:i0+4]+"-"+ict[i0+4:i0+6]+"-"+ict[i0+6:i0+8]
     print(ictFile, aircraft, yyyymmdd)
 

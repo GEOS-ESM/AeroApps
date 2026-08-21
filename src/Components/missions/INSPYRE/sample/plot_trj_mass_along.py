@@ -46,7 +46,7 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv"):
         i0 = ictFile.find('Learjet')+8
     m = ICARTT(ictFile)
     alt, lon, lat, tyme = m.Nav['Altitude'], m.Nav['Longitude'], m.Nav['Latitude'], m.Nav['Time']
-    yyyymmdd = ictFile[i0:i0+11]
+    yyyymmdd = ictFile[i0:-4]
     dateout  = ictFile[i0:i0+4]+"-"+ictFile[i0+4:i0+6]+"-"+ictFile[i0+6:i0+8]
     print(ictFile, aircraft, yyyymmdd)
 
@@ -134,7 +134,7 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv"):
 
 #   See if there is SP2 file to read
     if aircraft == "GV":
-        fn = f"../data/INSPYRE-SP2-BC-1Hz_GV_{yyyymmdd}.ict"
+        fn = f"../../data/INSPYRE-SP2-BC-1Hz_GV_{yyyymmdd}.ict"
         if os.path.exists(fn):
             x = ICARTT(fn)
 #           Hack for time offset in first files

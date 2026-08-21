@@ -47,7 +47,7 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv"):
         i0 = ictFile.find('Learjet')+8
     m = ICARTT(ictFile)
     alt, lon, lat, tyme = m.Nav['Altitude'], m.Nav['Longitude'], m.Nav['Latitude'], m.Nav['Time']
-    yyyymmdd = ictFile[i0:i0+11]
+    yyyymmdd = ictFile[i0:-4]
     dateout  = ictFile[i0:i0+4]+"-"+ictFile[i0+4:i0+6]+"-"+ictFile[i0+6:i0+8]
     print(ictFile, aircraft, yyyymmdd)
     fn = f"../data/INSPYRE-PUTLS-CAPS_GV_{yyyymmdd}.ict"
@@ -123,7 +123,7 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv"):
 
 #   See if there is CAPS file to read
     if aircraft == "GV":
-        fn = f"../data/INSPYRE-PUTLS-CAPS_GV_{yyyymmdd}.ict"
+        fn = f"../../data/INSPYRE-PUTLS-CAPS_GV_{yyyymmdd}.ict"
         if os.path.exists(fn):
             x = ICARTT(fn)
             p3, = ax2.plot(x.tyme,x.Ext_530nm_submicron/x.stdPT,color="black",label="PUTLS Extinction")

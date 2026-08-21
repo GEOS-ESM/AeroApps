@@ -48,7 +48,7 @@ def plotext(ictFile,model="fp",collection="inst3-3d-AER-Nv",species=None):
         aircraft = 'Learjet'
         i0 = ictFile.find('Learjet')+8
     m = ICARTT(ictFile)
-    yyyymmdd = ictFile[i0:i0+11]
+    yyyymmdd = ictFile[i0:-4]
     dateout  = ictFile[i0:i0+4]+"-"+ictFile[i0+4:i0+6]+"-"+ictFile[i0+6:i0+8]
     print(ictFile, aircraft, yyyymmdd)
 
