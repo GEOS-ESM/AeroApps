@@ -41,12 +41,13 @@ def plot(lev='0',varn='TOTEXTTAU',cbarmax=2.,title='Total AOT',
     cbar1=plt.colorbar(cf, ax=ax, orientation='vertical', 
                        pad=0.1, extend="max", ticks=np.log10([0.05,0.1,0.2,0.5,1,2]),
                        format=ticker.FixedFormatter(['0.05', '0.1', '0.2','0.5','1','2']))
-    cbar1.ax.tick_params(labelsize=12)
-    cbar1.set_label(label='%s'%(title),size=12)
+    cbar1.ax.tick_params(labelsize=18)
+    cbar1.set_label(label='%s'%(title),size=24)
 
     tokens = os.path.basename(filename).split('.')
 
-    plt.title('GEOS FP %s %s'%(varn,tokens[4]))
+    plt.subplots_adjust(left=0.1,bottom=0.1,right=0.99,top=0.9)
+    plt.title('GEOS FP %s %s'%(varn,tokens[4]),size=24)
     plt.savefig('fp.%s.%s.png'%(varn,tokens[4]))
 
 

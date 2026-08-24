@@ -55,7 +55,7 @@ def plot_curtain(fname,trj=-100.,model="fp",species=None):
     fvdateout = fname[-21:-10]  # forecast valid time
     datedir   = fname[-33:-25]+"T"+fname[-24:-22]
     if trj > 0:
-        lon  = np.arange(-120.,-79.25,0.25)
+        lon  = np.arange(-130.,-79.25,0.25)
         lat  = np.full(len(lon),trj)
         alt  = np.full(len(lon),0.)
         tyme = np.full(len(lon),datetime.strptime(fvdateout,"%Y%m%d_%H"))
@@ -142,8 +142,8 @@ def plot_curtain(fname,trj=-100.,model="fp",species=None):
                          format=mticker.FixedFormatter(['0.01', '0.1', '1']) )
     cbar1.ax.tick_params(labelsize=16)
     cbar1.set_label(label=f"{speciestitle} Aerosol Extinction [532 nm, km-1]",
-                    size=16,rotation=270.,labelpad=25)
-    plt.title(f"{modname} {speciestitle} Aerosol Extinction {f0dateout}+{fvdateout} at {trjtstr}", size=20)
+                    size=20,rotation=270.,labelpad=25)
+    plt.title(f"{modname} {speciestitle} Aerosol Extinction {f0dateout}+{fvdateout} at {trjtstr}", size=24)
     if species == None:
         species = "Total"
     ofname = f"{model}.{species}_extinction_curtain.{trjstr}.{f0dateout}+{fvdateout}00.png"
@@ -175,7 +175,7 @@ def sample(fname,trj=-100.,model='fp',three_d=True):
 #    if trj < 0 then asking for a plot at constant longitude
 #    if try > 0 then asking for a plot at constant latitude
     if trj > 0:
-        lon  = np.arange(-120.,-79.25,0.25)
+        lon  = np.arange(-130.,-79.25,0.25)
         lat  = np.full(len(lon),trj)
         trjstr = f"lat0{abs(int(trj)):0d}N"
     else:
@@ -301,6 +301,7 @@ if __name__ == "__main__":
     sample(fsname,trj=-130.,three_d=False)
     sample(fsname,trj=-80.,three_d=False)
     sample(fsname,trj=40.,three_d=False)
+    sample(fsname,trj=45.,three_d=False)
     sample(fsname,trj=50.,three_d=False)
     sample(fname,trj=-100.)
     sample(fname,trj=-110.)
@@ -308,6 +309,7 @@ if __name__ == "__main__":
     sample(fname,trj=-130.)
     sample(fname,trj=-80.)
     sample(fname,trj=40.)
+    sample(fname,trj=45.)
     sample(fname,trj=50.)
     plot_curtain(fname,trj=-80.)
     plot_curtain(fname,trj=-100.)
@@ -315,6 +317,7 @@ if __name__ == "__main__":
     plot_curtain(fname,trj=-120.)
     plot_curtain(fname,trj=-130.)
     plot_curtain(fname,trj=40.)
+    plot_curtain(fname,trj=45.)
     plot_curtain(fname,trj=50.)
     plot_curtain(fname,trj=-80.,species="cc")
     plot_curtain(fname,trj=-100.,species="cc")
@@ -322,6 +325,7 @@ if __name__ == "__main__":
     plot_curtain(fname,trj=-120.,species="cc")
     plot_curtain(fname,trj=-130.,species="cc")
     plot_curtain(fname,trj=40.,species="cc")
+    plot_curtain(fname,trj=45.,species="cc")
     plot_curtain(fname,trj=50.,species="cc")
 
     sys.exit()

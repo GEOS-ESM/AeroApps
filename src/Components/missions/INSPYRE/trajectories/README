@@ -10,8 +10,6 @@ There is a dependency on local MetGEOSfp.cat
 file which specifies the path to the FP
 data to run the trajectories against. You can
 edit this to point to a different FP version
-(right now set up for an older FP for the dryrun
-cases). Or remove entirely and should revert
+(right now set up for current FP). You can
+remove entirely and should revert
 to OpenDap access to current FP and forecasts.
-You may need to load a module on discover:
-module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES15

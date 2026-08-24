@@ -23,9 +23,11 @@ if __name__ == "__main__":
     x = parcel_.split(".")
     label = x[1]
     print(label)
+    timestr = label[-19:-3]
+    firestr = label[0:-20]
 
     alts = ["10km","12km","14km"]
-    ax, ax2 = make_plot()
+    ax, ax2 = make_plot(label,'0')
     nt = 73
     colors=["blue","red","green"]
     mcolor=["cornflowerblue","maroon","lime"]
@@ -38,6 +40,8 @@ if __name__ == "__main__":
 
         for i in range(0,2500,25):
             cs = ax.plot(lon[:,i],lat[:,i],c=colors[j],transform=ccrs.PlateCarree())
+        if j == 0:
+            ax.plot(lon[0],lat[0],marker="p",c="k",transform=ccrs.PlateCarree(),zorder=100)
 
     for j,h in enumerate(alts):
         parcel = f"{parcel_}_{h}.nc"
@@ -58,4 +62,4 @@ if __name__ == "__main__":
             cs2 = ax.scatter(x=lon[48,i],y=lat[48,i],c=mcolor[j],marker="^",transform=ccrs.PlateCarree(),zorder=100)
             cs2 = ax.scatter(x=lon[72,i],y=lat[72,i],c=mcolor[j],marker="P",transform=ccrs.PlateCarree(),zorder=100)
 
-    plt.savefig(f"forecast.{label}.png")
+    plt.savefig(f"{timestr}:00_{firestr}.png")
