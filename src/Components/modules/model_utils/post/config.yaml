@@ -1,0 +1,42 @@
+# config.yaml is meant to be used with processaeronet_forecast.py
+# It is used to identify where to save output files
+# what data to use for the analysis,
+# the date range for the evaluation,
+# the minimum needed observations,
+# and settings specific to different output files.
+
+
+paths       :
+  base        : "/discover/nobackup/caturne4/" # part of the output file directory
+  experiment  : "geos_cam_eval"
+  output      : "AeroApps/src/Components/modules/model_utils/post/" # directory to save analysis files to
+  observations: "/css/gmao/dp/gds/AeroObs/AERONET.v3/Level1_5/" # path with observations data
+  
+  model1      : "/discover/nobackup/projects/gmao/osse2/HWT/CONUS02KM/Feature-c2160_L137/forecasts/CYCLED_REPLAY_P10800_C21600_T21600_{initiation_YYYYMMDD}_{initiation_HH}z/GEOS.hwt_15mn_slv_LCC.{YYYYMMDD}_{HHmm}z.nc4" # path with mdoel1 data
+    # model1 currently set to geos-cam model
+  model2      : "/discover/nobackup/projects/gmao/geos_fp_arch/f5430_fp/chem/Y2026/M{MM}/f5430_fp.inst1_2d_hwl_Nx.{YYYYMMDD}_{HH}00z.nc4" # path to model2 data
+  # model2      : "/discover/nobackup/projects/gmao/osse2/HWT/CONUS02KM/Feature-c2160_L137/holding/inst1_2d_asm_Nx/202606/Feature-c2160_L137.inst1_2d_asm_Nx.{initiation_YYYYMMDD}_{HHmm}z.nc4" # path to model2 data
+    # model2 currently set to geos-fp model
+
+dates       :
+  start       : "2026-05-29 00:00:00"
+  end         : "2026-07-27 00:00:00"
+
+evaluation  :
+  # To change the datasets evaluated, comment out unwanted dataset
+  - "aeronet"
+  - "forecast"
+  - "analysis"
+
+min_station_obs : 25
+  
+temporal_res: "hourly" # can be hourly, daily, or monthly
+
+time_step   : '12h'  # time between model runs (12 or 24 hours)
+
+fcst_period : "72" # furtherest time from model run to analyze
+
+eval_bins   : "4" # number of hours in each bin for evaluation
+
+save_missing_obs: True # If this is True, forecasted AOD where AERONET was not recorded will be saved
+                       # Used when nighttime modeled values are needed for analysis
