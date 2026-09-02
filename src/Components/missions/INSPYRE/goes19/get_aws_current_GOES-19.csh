@@ -6,7 +6,8 @@
     set DAY_TABLE = ( 31 29 31 30 31 30 31 31 30 31 30 31 )
     set INST_DIR = GOES-19
     set HOST_DIR = "noaa-goes19"
-    set STORAGE_DIR = /css/geostationary/NonOptimized/L1/${INST_DIR}-ABI-L1B-FULLD
+#    set STORAGE_DIR = /css/geostationary/NonOptimized/L1/${INST_DIR}-ABI-L1B-FULLD
+    set STORAGE_DIR = ./${INST_DIR}-ABI-L1B-FULLD
 #   set STORAGE_DIR = /discover/nobackup/rgovinda/NonOptimized/L1/${INST_DIR}-ABI-L1B-FULLD
 #   set STORAGE_DIR = /css/geostationary/BackStage/${INST_DIR}-ABI-L1B-FULLD
 #   set STORAGE_DIR = /discover/nobackup/projects/eis_fire/data/${INST_DIR}-ABI-L1B-FULLD
@@ -18,13 +19,13 @@
       set   MM = `echo $nymd_beg | cut -c5-6`
       set   DD = `echo $nymd_beg | cut -c7-8`
 
-      set JUL_DAYs = `/home/rgovinda/bin/get_julday $nymd_beg`
+      set JUL_DAYs = `./get_julday $nymd_beg`
       set JDAY = $JUL_DAYs[2]
       echo $JDAY
 
 #          set SYNOP_TABLE =  ( 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 )
 
-           set SYNOP_TABLE =  `/home/rgovinda/bin/get_available_GOES-19_synoptic $HOST_DIR $YYYY $JDAY`
+           set SYNOP_TABLE =  `./get_available_GOES-19_synoptic $HOST_DIR $YYYY $JDAY`
            foreach SYNOP ( `echo $SYNOP_TABLE` )
              mkdir -p $STORAGE_DIR/$YYYY/$JDAY/$SYNOP
              cd $STORAGE_DIR/$YYYY/$JDAY/$SYNOP
