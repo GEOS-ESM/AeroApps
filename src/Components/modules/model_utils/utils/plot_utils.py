@@ -43,7 +43,7 @@ def plotcloseness(yy, mm, lon, lat, baseline, perturb, obs, baselinen, perturbn,
     closeness = np.abs(perturb - obs) - np.abs(baseline - obs)
     
     # Create the figure with a 2x2 grid of panels
-    fig, axes = plt.subplots(2, 2, figsize=(10, 6), subplot_kw={'projection': ccrs.PlateCarree()})
+    fig, axes = plt.subplots(2, 2, figsize=(10, 11), subplot_kw={'projection': ccrs.PlateCarree()})
 
     axes[0,0].set_extent(extent)
     axes[0,1].set_extent(extent)
@@ -75,7 +75,7 @@ def plotcloseness(yy, mm, lon, lat, baseline, perturb, obs, baselinen, perturbn,
 
     # --- Panel D: Closeness Analysis ---
     im_d = axes[1, 1].pcolormesh(lon, lat, closeness, cmap=cmap_closeness, vmin=vmin_closeness, vmax=vmax_closeness, transform=ccrs.PlateCarree())
-    axes[1, 1].set_title("Closeness", fontsize=12)
+    axes[1, 1].set_title(f"Closeness\n|{perturbn}-obs|-|{baselinen}-obs|", fontsize=12)
     axes[1, 1].add_feature(cfeature.COASTLINE, edgecolor='black', linewidth=0.8)
     
     # Add colorbars for each row
@@ -85,7 +85,7 @@ def plotcloseness(yy, mm, lon, lat, baseline, perturb, obs, baselinen, perturbn,
 
     cax_d = fig.add_axes([0.575, 0.05, 0.3, 0.02])  # Colorbar for closeness row
     cbar_d = fig.colorbar(im_d, cax=cax_d, orientation='horizontal', extend='both')
-    cbar_d.set_label("|new-obs|-|baseline-obs|")
+    cbar_d.set_label(f"Blue: {perturbn} closer\nRed: {baselinen} closer")
 
     if box != None:
         from matplotlib.patches import Rectangle
@@ -112,7 +112,7 @@ def plotcloseness(yy, mm, lon, lat, baseline, perturb, obs, baselinen, perturbn,
     plt.suptitle(f"{varn}: {yy:04d} {monlab}", fontsize=14, y=0.95)
     
     # Adjust layout
-#    plt.tight_layout(rect=[0, 0, 1, 0.93])
+    plt.tight_layout(rect=[0, 0, 1, 0.93])
     if saveplot:
         plt.savefig(f"{varn}_closeness.{baselinen}_{perturbn}.{sat}.{yy:04d}{montit}.png")
 #        plt.show()
@@ -120,10 +120,10 @@ def plotcloseness(yy, mm, lon, lat, baseline, perturb, obs, baselinen, perturbn,
         plt.show()
 
 
-def plotdifference(lon, lat, var1, var2, var1n, var2n,
-                   extent=[-180,180,-90,90],box=None,
-                   cbartitle="AOD at 550 nm", title=None,
-                   prange=[0,.8],drange=[-0.2,0.2],fname=None,proj="PlateCarree"):
+def plotdifference(yy, mm, lon, lat, var1, var2, var1n, var2n,
+                   extent=[-180,180,-90,90],box=None, 
+                   cbartitle="AOD at 550 nm", varn="TOTEXTTAU550",
+                   prange=[0,.8],drange=[-0.2,0.2],saveplot=True,proj="PlateCarree"):
     """
     Simple difference plot of two input maps (could be model versus satellite 
     or model versus model)
@@ -197,13 +197,21 @@ def plotdifference(lon, lat, var1, var2, var1n, var2n,
                          pad=0.05, aspect=30,extend='both',shrink=0.7,)
     cbar3.set_label("Difference")
 
-    if title:
-        plt.suptitle(title, fontsize=14, y=0.95)
+    # Main title for the figure
+    monlab=None
+    if(len(mm) == 12):
+        monlab = "(Annual)"
+        montit = "annual"
+    elif(len(mm) == 1):
+        monlab = f"({month[mm[0]-1]})"
+        montit = f"{mm[0]:02d}"
+    plt.suptitle(f"{varn}: {yy:04d} {monlab}", fontsize=14, y=0.95)
     
     # Display the plot
     plt.tight_layout()
-    if fname:
-        plt.savefig(fname)
+    if saveplot:
+        plt.savefig(f"{varn}_difference.{var1n}_{var2n}.{yy:04d}{montit}.png")
+#        plt.show()
     else:
         plt.show()
 
@@ -283,7 +291,7 @@ def read_model(EXPID,EXPDIR,yy,mm,sat,varn="TOTEXTTAU550"):
             print(f"File not found: {filen_}. Skipping...")
             continue
         filen.append(filen_)
-        print(filen)
+#        print(filen)
     
     ds = xr.open_mfdataset(filen)
     varout = ds[varn].mean(dim='time')
@@ -305,7 +313,7 @@ def read_sat(sat,yy,mm,varn="tau_",weighted=False):
             print(f"File not found: {filen_}. Skipping...")
             continue
         filen.append(filen_)
-        print(filen)
+#        print(filen)
     
     ds = xr.open_mfdataset(filen)
     varout = ds[varn].mean(dim='time')
