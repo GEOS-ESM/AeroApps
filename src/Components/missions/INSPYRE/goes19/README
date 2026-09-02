@@ -1,0 +1,18 @@
+The location of the data is
+
+/css/geostationary/NonOptimized/L1/GOES-19-ABI-L1B-FULLD
+ 
+I am running a cron job at 7Am to get available data (first 10 hours out of 24
+hours of the day)
+00  7 * * * ssh discover-cssrw /home/rgovinda/bin/get_aws_current_GOES-19.csh
+ 
+The script is in discover:/home/rgovinda/bin/get_aws_current_GOES-19.csh
+
+Remaining hours (11-23) 
+
+10  1 * * * ssh discover-cssrw /home/rgovinda/bin/get_aws_latest_GOES-19.csh
+
+/home/rgovinda/bin/get_aws_latest_GOES-19.csh
+
+Both may need couple of  other scripts are available in /home/rgovinda/bin/get_julday
+/home/rgovinda/bin/get_available_GOES-19_synoptic

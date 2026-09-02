@@ -1,0 +1,123 @@
+#!/bin/csh
+
+   if ( $#argv < 1 ) then
+    clear
+    echo " USAGE: get_julday YYYYMMDD "
+    exit
+   endif
+
+   set YYYYMMDD = $1
+
+   set DAYS = ("31" "28" "31" "30" "31" "30" "31" "31" "30" "31" "30" "31" )
+
+#  ------------------------------------------------------------
+#         Extract year,month and date.
+#  ------------------------------------------------------------
+
+   set YYYY = `echo $YYYYMMDD | cut -c1-4`
+   set MM   = `echo $YYYYMMDD | cut -c5-6`
+   set DD   = `echo $YYYYMMDD | cut -c7-8`
+
+   set NN   = 02
+   set YYYYM1 = $YYYY
+   if ( $MM == 08 ) then
+    set MM = 8
+   endif
+   if ( $MM == 09 ) then
+    set MM = 9
+   endif
+   if ( $DD == 08 ) then
+    set DD = 8
+   endif
+   if ( $DD == 09 ) then
+    set DD = 9
+   endif
+
+   set JFLAG = `/home/rgovinda/bin/get_leap $YYYY ${NN}`
+   if ( $JFLAG == 0 ) then
+     set  DAYS[$NN] = 29
+   endif
+
+#  ---------------------------------------------------
+#      Compute previous month.
+#  ---------------------------------------------------
+   @ MM1 = $MM - 1 
+   if ( $MM1 <= 0 && $DD == 01 ) then
+    set MM1 = 12
+    @ YYYYM1 = $YYYY - 1
+   endif
+
+#  if ( $MM1 < 10 ) then
+#   set MM1 = 0$MM1
+#  endif
+
+#  ----------------------------------------------
+#     Compute the julian date of the year.
+#  ----------------------------------------------
+
+   set nt = 0
+
+     set JPDAY = 0
+
+   if ( $YYYY != $YYYYM1 ) then
+    set JFLAG = `get_leap $YYYYM1 ${NN}`
+    if ( $JFLAG == 0 ) then
+     set  DAYS[$NN] = 29
+    else
+     set  DAYS[$NN] = 28
+    endif
+   endif
+
+   while ( $nt < $MM1 )
+    @ nt = $nt + 1
+    @ JPDAY = $DAYS[$nt] + $JPDAY
+   end
+
+
+   if ( $DD > 01 ) then
+     @ DDm1 = $DD - 1
+     @ JPDAY = $JPDAY + $DDm1
+   endif
+
+
+#  if ( $JPDAY < 10 ) then
+#   set JPDAY = 00${JPDAY}
+#  else if ( $JPDAY >= 10 && $JPDAY < 100 ) then
+#    set JPDAY = 0${JPDAY}
+#  endif
+
+#   ----------------------------------------
+#        Copy the previous day's modis last
+#        synoptic hour 1:30 hour window data.
+#   ----------------------------------------
+
+   set  JPDAYM1 = $JPDAY
+
+#    ---------------------------------------
+#       Copy the current day's synoptic data.
+#    ---------------------------------------
+
+    
+    if ( $JPDAYM1 < 367 && $YYYYM1 == $YYYY ) then
+     @ JPDAY = $JPDAY + 1
+      if ( $JPDAY < 10 ) then
+        set JPDAY = 00${JPDAY}
+      else if ( $JPDAY >= 10 && $JPDAY < 100 ) then
+        set JPDAY = 0${JPDAY}
+      endif
+    else
+     set JPDAY = $DD
+      if ( $JPDAY < 10 ) then
+        set JPDAY = 0${JPDAY}
+      else if ( $JPDAY >= 10 && $JPDAY < 100 ) then
+        set JPDAY = 0${JPDAY}
+      endif
+    endif
+
+      if ( $JPDAYM1 < 10 ) then
+        set JPDAYM1 = 00${JPDAYM1}
+      else if ( $JPDAYM1 >= 10 && $JPDAYM1 < 100 ) then
+        set JPDAYM1 = 0${JPDAYM1}
+      endif
+
+    echo $JPDAYM1  $JPDAY

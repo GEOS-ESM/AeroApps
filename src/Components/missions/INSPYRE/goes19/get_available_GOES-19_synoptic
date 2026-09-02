@@ -1,0 +1,11 @@
+#!/bin/csh
+    set DAY_TABLE = ( 31 29 31 30 31 30 31 31 30 31 30 31 )
+    set HOST_DIR = $1
+    set YYYY     = $2
+    set JDAY     = $3
+
+      nohup aws s3 ls --no-sign-request s3://$HOST_DIR/ABI-L1b-RadF/$YYYY/$JDAY/ > goes19.time.list0
+      set AVAIL_HOUR = `cat goes19.time.list0 | awk '{print $2}' | cut -c1-2`
+
+     echo $AVAIL_HOUR 
+
