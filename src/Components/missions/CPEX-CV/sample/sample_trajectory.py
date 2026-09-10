@@ -45,10 +45,11 @@ def sample(ictFile,model='m21c',collection='aer_inst_3hr_glo_Nv'):
 
 #   Rename dimensions
     print("Rename Dimensions", str(datetime.now()))
-#    traj_ds = traj_ds.rename_dims(lev="level")
 #   Rename variables
-#    traj_ds = traj_ds.rename_vars(lev="level", lon="longitude", lat="latitude")
-#    traj_ds = traj_ds.rename_vars(lev="level")
+    try:
+        traj_ds = traj_ds.rename_vars(lev="level", lon="longitude", lat="latitude")
+    except:
+        traj_ds = traj_ds.rename_vars(lon="longitude", lat="latitude")
     
 #   Add global attributes
     print("Add attributes", str(datetime.now()))

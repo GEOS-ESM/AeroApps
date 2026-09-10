@@ -21,6 +21,6 @@
   prund.pl -H `hostname` -d `echo $tracks` &
 #  mpirun -np 16 prund.pl -H `hostname` ./sample_trajectory.py m21c aer_inst_3hr_glo_Nv %s
 #  mpirun -np 16 prund.pl -H `hostname` ./sample_trajectory.py MERRA2 inst3_3d_aer_Nv %s
-  mpirun -np 16 prund.pl -H `hostname` ./sample_trajectory.py MERRA2 tavg1_2d_aer_Nx %s
-#  mpirun -np 16 prund.pl -H `hostname` ./sample_trajectory.py fp inst3_3d_aer_Nv %s
+#  mpirun -np 16 prund.pl -H `hostname` ./sample_trajectory.py MERRA2 tavg1_2d_aer_Nx %s
+  mpirun -np 16 prund.pl -H `hostname` ./sample_trajectory.py fp inst3_3d_aer_Nv %s
 

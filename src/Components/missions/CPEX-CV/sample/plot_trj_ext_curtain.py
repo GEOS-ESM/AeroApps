@@ -39,7 +39,7 @@ cm = LinearSegmentedColormap.from_list(
 def plotext(ictFile,model="m21c",collection="aer_inst_3hr_glo_Nv",species=None):
 
 #   Get the ICARTT file describing the trajectory
-    yyyymmdd, dateout, modname, aircraft, campaign, cs, do_optics, fpdata = get_model_configuration(ictFile,model=model,collection=collection)
+    yyyymmdd, dateout, modname, aircraft, campaign, cs, do_optics, fpdata, config, collname = get_model_configuration(ictFile,model=model,collection=collection)
 
     Species = None
     speciestitle = ''
@@ -53,17 +53,19 @@ def plotext(ictFile,model="m21c",collection="aer_inst_3hr_glo_Nv",species=None):
         Species = ['SU']
         speciestitle = 'Sulfate '
     if(species == 'cc'):
-        Species = ['OC','BR','BC']
+        if(modname == "MERRA-21C"):
+            Species = ['OC','BR','BC']
+        else:
+            Species = ['OC','BC']
         speciestitle = 'Carbonaceous '
 
 #   Get the ICARTT file for the aircraft altitude
     m = ICARTT(ictFile)
     alt, lon, lat, tyme = m.Nav['Altitude'], m.Nav['Longitude'], m.Nav['Latitude'], m.Nav['Time']
-
+    
 #   Get the sampled file
     dirname = f"samples/{campaign}/sampled/{aircraft}/{modname}/{dateout}"
-    sampleFile = f"./{dirname}/{campaign}-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.nc"
-    config = './g2g_pm25.yaml'
+    sampleFile = f"./{dirname}/{campaign}-{modname}-{collname}-{aircraft}_Model_{yyyymmdd}.nc"
 
     if(model == 'res'):
         sampleFile = '%s.inst3d_aer_v.%s.'%(model,aircraft)+yyyymmdd+'.nc'
@@ -115,7 +117,7 @@ def plotext(ictFile,model="m21c",collection="aer_inst_3hr_glo_Nv",species=None):
     plt.title('%s track: '%(aircraft)+yyyymmdd, size=20)
     if species == None:
         species = "Total"
-    ofname = f"{dirname}/{campaign}-{modname}-{collection}-{aircraft}_Model_{yyyymmdd}.{species}_extinction_curtain.png"
+    ofname = f"{dirname}/{campaign}-{modname}-{collname}-{aircraft}_Model_{yyyymmdd}.{species}_extinction_curtain.png"
     print(ofname)
     plt.savefig(ofname)
     plt.close(fig)

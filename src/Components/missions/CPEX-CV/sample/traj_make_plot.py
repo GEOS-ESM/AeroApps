@@ -41,8 +41,7 @@ def get_model_configuration(ictFile,model='m21c',collection='aer_inst_3hr_glo_Nv
     if(model == 'fp'):
         fpdata = ['./'+model+'.'+collection+'.ddf','./'+model+'.inst3_3d_asm_Nv.ddf',
                   './'+model+'.inst1_2d_hwl_Nx.ddf']
-        if(collection == "inst3_3d_aer_Nv"):
-            collname = "inst3-3d-AER-Nv"
+        collname = "inst3-3d-AER-Nv"
         if(collection == "tavg1_2d_lfo_Nx"):
             do_optics = False
             collname = "tavg1-2d-LFO-Nx"
@@ -51,7 +50,7 @@ def get_model_configuration(ictFile,model='m21c',collection='aer_inst_3hr_glo_Nv
     if(model == 'MERRA2'):
         fpdata = ['./'+model+'.'+collection+'.ddf','./'+model+'.inst3_3d_asm_Nv.ddf']
         config = './m2_pm25.yaml'
-        collname = collection
+        collname = "inst3_3d_aer_Nv"
         if(collection == 'tavg1_2d_aer_Nx'):
             fpdata = ['./'+model+'.'+collection+'.ddf','./'+model+'.tavg1_2d_adg_Nx.ddf']
             do_optics = False
