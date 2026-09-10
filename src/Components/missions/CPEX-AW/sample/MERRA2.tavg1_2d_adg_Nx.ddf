@@ -1,0 +1,245 @@
+dset /home/pcolarco/MERRA2/MERRA2_400/Y%y4/M%m2/MERRA2_400.tavg1_2d_adg_Nx.%y4%m2%d2.nc4
+OPTIONS template
+title MERRA2 tavg1_2d_adg_Nx: 2d,3-Hourly,Time-averaged,Single-Level,Assimilation,Aerosol Diagnostics (extended)
+undef 1e+15
+dtype netcdf
+CHSUB 1 105192 MERRA2_100
+CHSUB 105193 184104 MERRA2_200
+CHSUB 184105 271752 MERRA2_300
+CHSUB 271753 482088 MERRA2_400
+xdef 576 linear -180.000000 0.625000
+ydef 361 linear -90.000000 0.500000
+zdef 1 linear 0 1
+tdef 482088 linear 00:30Z01JAN1980 1hr
+vars 115
+BCDP001=>bcdp001 0 t,y,x Black Carbon Dry Deposition Bin 001 (kg m-2 s-1)
+BCDP002=>bcdp002 0 t,y,x Black Carbon Dry Deposition Bin 002 (kg m-2 s-1)
+BCEM001=>bcem001 0 t,y,x Black Carbon Emission Bin 001 (kg m-2 s-1)
+BCEM002=>bcem002 0 t,y,x Black Carbon Emission Bin 002 (kg m-2 s-1)
+BCEMAN=>bceman 0 t,y,x Black Carbon Anthropogenic Emissions (kg m-2 s-1)
+BCEMBB=>bcembb 0 t,y,x Black Carbon Biomass Burning Emissions (kg m-2 s-1)
+BCEMBF=>bcembf 0 t,y,x Black Carbon Biofuel Emissions (kg m-2 s-1)
+BCHYPHIL=>bchyphil 0 t,y,x Black Carbon Hydrophobic to Hydrophilic (kg m-2 s-1)
+BCSD001=>bcsd001 0 t,y,x Black Carbon Sedimentation Bin 001 (kg m-2 s-1)
+BCSD002=>bcsd002 0 t,y,x Black Carbon Sedimentation Bin 002 (kg m-2 s-1)
+BCSV001=>bcsv001 0 t,y,x Black Carbon Convective Scavenging Bin 001 (kg m-2 s-1)
+BCSV002=>bcsv002 0 t,y,x Black Carbon Convective Scavenging Bin 002 (kg m-2 s-1)
+BCWT001=>bcwt001 0 t,y,x Black Carbon Wet Deposition Bin 001 (kg m-2 s-1)
+BCWT002=>bcwt002 0 t,y,x Black Carbon Wet Deposition Bin 002 (kg m-2 s-1)
+DUAERIDX=>duaeridx 0 t,y,x Dust TOMS UV Aerosol Index (1)
+DUDP001=>dudp001 0 t,y,x Dust Dry Deposition Bin 001 (kg m-2 s-1)
+DUDP002=>dudp002 0 t,y,x Dust Dry Deposition Bin 002 (kg m-2 s-1)
+DUDP003=>dudp003 0 t,y,x Dust Dry Deposition Bin 003 (kg m-2 s-1)
+DUDP004=>dudp004 0 t,y,x Dust Dry Deposition Bin 004 (kg m-2 s-1)
+DUDP005=>dudp005 0 t,y,x Dust Dry Deposition Bin 005 (kg m-2 s-1)
+DUEM001=>duem001 0 t,y,x Dust Emission Bin 001 (kg m-2 s-1)
+DUEM002=>duem002 0 t,y,x Dust Emission Bin 002 (kg m-2 s-1)
+DUEM003=>duem003 0 t,y,x Dust Emission Bin 003 (kg m-2 s-1)
+DUEM004=>duem004 0 t,y,x Dust Emission Bin 004 (kg m-2 s-1)
+DUEM005=>duem005 0 t,y,x Dust Emission Bin 005 (kg m-2 s-1)
+DUEXTTFM=>duexttfm 0 t,y,x Dust Extinction AOT [550 nm] - PM 1.0 um (1)
+DUSCATFM=>duscatfm 0 t,y,x Dust Scattering AOT [550 nm] - PM 1.0 um (1)
+DUSD001=>dusd001 0 t,y,x Dust Sedimentation Bin 001 (kg m-2 s-1)
+DUSD002=>dusd002 0 t,y,x Dust Sedimentation Bin 002 (kg m-2 s-1)
+DUSD003=>dusd003 0 t,y,x Dust Sedimentation Bin 003 (kg m-2 s-1)
+DUSD004=>dusd004 0 t,y,x Dust Sedimentation Bin 004 (kg m-2 s-1)
+DUSD005=>dusd005 0 t,y,x Dust Sedimentation Bin 005 (kg m-2 s-1)
+DUSV001=>dusv001 0 t,y,x Dust Convective Scavenging Bin 001 (kg m-2 s-1)
+DUSV002=>dusv002 0 t,y,x Dust Convective Scavenging Bin 002 (kg m-2 s-1)
+DUSV003=>dusv003 0 t,y,x Dust Convective Scavenging Bin 003 (kg m-2 s-1)
+DUSV004=>dusv004 0 t,y,x Dust Convective Scavenging Bin 004 (kg m-2 s-1)
+DUSV005=>dusv005 0 t,y,x Dust Convective Scavenging Bin 005 (kg m-2 s-1)
+DUWT001=>duwt001 0 t,y,x Dust Wet Deposition Bin 001 (kg m-2 s-1)
+DUWT002=>duwt002 0 t,y,x Dust Wet Deposition Bin 002 (kg m-2 s-1)
+DUWT003=>duwt003 0 t,y,x Dust Wet Deposition Bin 003 (kg m-2 s-1)
+DUWT004=>duwt004 0 t,y,x Dust Wet Deposition Bin 004 (kg m-2 s-1)
+DUWT005=>duwt005 0 t,y,x Dust Wet Deposition Bin 005 (kg m-2 s-1)
+OCDP001=>ocdp001 0 t,y,x Organic Carbon Dry Deposition Bin 001 __ENSEMBLE__ (kg m-2 s-1)
+OCDP002=>ocdp002 0 t,y,x Organic Carbon Dry Deposition Bin 002 __ENSEMBLE__ (kg m-2 s-1)
+OCEM001=>ocem001 0 t,y,x Organic Carbon Emission Bin 001 __ENSEMBLE__ (kg m-2 s-1)
+OCEM002=>ocem002 0 t,y,x Organic Carbon Emission Bin 002 __ENSEMBLE__ (kg m-2 s-1)
+OCEMAN=>oceman 0 t,y,x Organic Carbon Anthropogenic Emissions __ENSEMBLE__ (kg m-2 s-1)
+OCEMBB=>ocembb 0 t,y,x Organic Carbon Biomass Burning Emissions __ENSEMBLE__ (kg m-2 s-1)
+OCEMBF=>ocembf 0 t,y,x Organic Carbon Biofuel Emissions __ENSEMBLE__ (kg m-2 s-1)
+OCEMBG=>ocembg 0 t,y,x Organic Carbon Biogenic Emissions __ENSEMBLE__ (kg m-2 s-1)
+OCHYPHIL=>ochyphil 0 t,y,x Organic Carbon Hydrophobic to Hydrophilic __ENSEMBLE__ (kg m-2 s-1)
+OCSD001=>ocsd001 0 t,y,x Organic Carbon Sedimentation Bin 001 __ENSEMBLE__ (kg m-2 s-1)
+OCSD002=>ocsd002 0 t,y,x Organic Carbon Sedimentation Bin 002 __ENSEMBLE__ (kg m-2 s-1)
+OCSV001=>ocsv001 0 t,y,x Organic Carbon Convective Scavenging Bin 001 __ENSEMBLE__ (kg m-2 s-1)
+OCSV002=>ocsv002 0 t,y,x Organic Carbon Convective Scavenging Bin 002 __ENSEMBLE__ (kg m-2 s-1)
+OCWT001=>ocwt001 0 t,y,x Organic Carbon Wet Deposition Bin 001 __ENSEMBLE__ (kg m-2 s-1)
+OCWT002=>ocwt002 0 t,y,x Organic Carbon Wet Deposition Bin 002 __ENSEMBLE__ (kg m-2 s-1)
+SO2EMAN=>so2eman 0 t,y,x SO2 Anthropogenic Emissions __ENSEMBLE__ (kg m-2 s-1)
+SO2EMBB=>so2embb 0 t,y,x SO2 Biomass Burning Emissions __ENSEMBLE__ (kg m-2 s-1)
+SO2EMVE=>so2emve 0 t,y,x SO2 Volcanic (explosive) Emissions __ENSEMBLE__ (kg m-2 s-1)
+SO2EMVN=>so2emvn 0 t,y,x SO2 Volcanic (non-explosive) Emissions __ENSEMBLE__ (kg m-2 s-1)
+SO4EMAN=>so4eman 0 t,y,x SO4 Anthropogenic Emissions __ENSEMBLE__ (kg m-2 s-1)
+SSAERIDX=>ssaeridx 0 t,y,x Sea Salt TOMS UV Aerosol Index (1)
+SSDP001=>ssdp001 0 t,y,x Sea Salt Dry Deposition Bin 001 (kg m-2 s-1)
+SSDP002=>ssdp002 0 t,y,x Sea Salt Dry Deposition Bin 002 (kg m-2 s-1)
+SSDP003=>ssdp003 0 t,y,x Sea Salt Dry Deposition Bin 003 (kg m-2 s-1)
+SSDP004=>ssdp004 0 t,y,x Sea Salt Dry Deposition Bin 004 (kg m-2 s-1)
+SSDP005=>ssdp005 0 t,y,x Sea Salt Dry Deposition Bin 005 (kg m-2 s-1)
+SSEM001=>ssem001 0 t,y,x Sea Salt Emission Bin 001 (kg m-2 s-1)
+SSEM002=>ssem002 0 t,y,x Sea Salt Emission Bin 002 (kg m-2 s-1)
+SSEM003=>ssem003 0 t,y,x Sea Salt Emission Bin 003 (kg m-2 s-1)
+SSEM004=>ssem004 0 t,y,x Sea Salt Emission Bin 004 (kg m-2 s-1)
+SSEM005=>ssem005 0 t,y,x Sea Salt Emission Bin 005 (kg m-2 s-1)
+SSEXTTFM=>ssexttfm 0 t,y,x Sea Salt Extinction AOT [550 nm] - PM 1.0 um (1)
+SSSCATFM=>ssscatfm 0 t,y,x Sea Salt Scattering AOT [550 nm] - PM 1.0 um (1)
+SSSD001=>sssd001 0 t,y,x Sea Salt Sedimentation Bin 001 (kg m-2 s-1)
+SSSD002=>sssd002 0 t,y,x Sea Salt Sedimentation Bin 002 (kg m-2 s-1)
+SSSD003=>sssd003 0 t,y,x Sea Salt Sedimentation Bin 003 (kg m-2 s-1)
+SSSD004=>sssd004 0 t,y,x Sea Salt Sedimentation Bin 004 (kg m-2 s-1)
+SSSD005=>sssd005 0 t,y,x Sea Salt Sedimentation Bin 005 (kg m-2 s-1)
+SSSV001=>sssv001 0 t,y,x Sea Salt Convective Scavenging Bin 001 (kg m-2 s-1)
+SSSV002=>sssv002 0 t,y,x Sea Salt Convective Scavenging Bin 002 (kg m-2 s-1)
+SSSV003=>sssv003 0 t,y,x Sea Salt Convective Scavenging Bin 003 (kg m-2 s-1)
+SSSV004=>sssv004 0 t,y,x Sea Salt Convective Scavenging Bin 004 (kg m-2 s-1)
+SSSV005=>sssv005 0 t,y,x Sea Salt Convective Scavenging Bin 005 (kg m-2 s-1)
+SSWT001=>sswt001 0 t,y,x Sea Salt Wet Deposition Bin 001 (kg m-2 s-1)
+SSWT002=>sswt002 0 t,y,x Sea Salt Wet Deposition Bin 002 (kg m-2 s-1)
+SSWT003=>sswt003 0 t,y,x Sea Salt Wet Deposition Bin 003 (kg m-2 s-1)
+SSWT004=>sswt004 0 t,y,x Sea Salt Wet Deposition Bin 004 (kg m-2 s-1)
+SSWT005=>sswt005 0 t,y,x Sea Salt Wet Deposition Bin 005 (kg m-2 s-1)
+SUDP001=>sudp001 0 t,y,x Sulfate Dry Deposition Bin 001 __ENSEMBLE__ (kg m-2 s-1)
+SUDP002=>sudp002 0 t,y,x Sulfate Dry Deposition Bin 002 __ENSEMBLE__ (kg m-2 s-1)
+SUDP003=>sudp003 0 t,y,x Sulfate Dry Deposition Bin 003 __ENSEMBLE__ (kg m-2 s-1)
+SUDP004=>sudp004 0 t,y,x Sulfate Dry Deposition Bin 004 __ENSEMBLE__ (kg m-2 s-1)
+SUEM001=>suem001 0 t,y,x Sulfate Emission Bin 001 __ENSEMBLE__ (kg m-2 s-1)
+SUEM002=>suem002 0 t,y,x Sulfate Emission Bin 002 __ENSEMBLE__ (kg m-2 s-1)
+SUEM003=>suem003 0 t,y,x Sulfate Emission Bin 003 __ENSEMBLE__ (kg m-2 s-1)
+SUEM004=>suem004 0 t,y,x Sulfate Emission Bin 004 __ENSEMBLE__ (kg m-2 s-1)
+SUPMSA=>supmsa 0 t,y,x MSA Prod from DMS Oxidation [column] __ENSEMBLE__ (kg m-2 s-1)
+SUPSO2=>supso2 0 t,y,x SO2 Prod from DMS Oxidation [column] __ENSEMBLE__ (kg m-2 s-1)
+SUPSO4AQ=>supso4aq 0 t,y,x SO4 Prod from Aqueous SO2 Oxidation [column] __ENSEMBLE__ (kg m-2 s-1)
+SUPSO4G=>supso4g 0 t,y,x SO4 Prod from Gaseous SO2 Oxidation [column] __ENSEMBLE__ (kg m-2 s-1)
+SUPSO4WT=>supso4wt 0 t,y,x SO4 Prod from Aqueous SO2 Oxidation (wet dep) [column] __ENSEMBLE__ (kg m-2 s-1)
+SUSD001=>susd001 0 t,y,x Sulfate Settling Bin 001 __ENSEMBLE__ (kg m-2 s-1)
+SUSD002=>susd002 0 t,y,x Sulfate Settling Bin 002 __ENSEMBLE__ (kg m-2 s-1)
+SUSD003=>susd003 0 t,y,x Sulfate Settling Bin 003 __ENSEMBLE__ (kg m-2 s-1)
+SUSD004=>susd004 0 t,y,x Sulfate Settling Bin 004 __ENSEMBLE__ (kg m-2 s-1)
+SUSV001=>susv001 0 t,y,x Sulfate Convective Scavenging Bin 001 __ENSEMBLE__ (kg m-2 s-1)
+SUSV002=>susv002 0 t,y,x Sulfate Convective Scavenging Bin 002 __ENSEMBLE__ (kg m-2 s-1)
+SUSV003=>susv003 0 t,y,x Sulfate Convective Scavenging Bin 003 __ENSEMBLE__ (kg m-2 s-1)
+SUSV004=>susv004 0 t,y,x Sulfate Convective Scavenging Bin 004 __ENSEMBLE__ (kg m-2 s-1)
+SUWT001=>suwt001 0 t,y,x Sulfate Wet Deposition Bin 001 __ENSEMBLE__ (kg m-2 s-1)
+SUWT002=>suwt002 0 t,y,x Sulfate Wet Deposition Bin 002 __ENSEMBLE__ (kg m-2 s-1)
+SUWT003=>suwt003 0 t,y,x Sulfate Wet Deposition Bin 003 __ENSEMBLE__ (kg m-2 s-1)
+SUWT004=>suwt004 0 t,y,x Sulfate Wet Deposition Bin 004 __ENSEMBLE__ (kg m-2 s-1)
+endvars
+@ bcdp001 String units kg m-2 s-1
+@ bcdp002 String units kg m-2 s-1
+@ bcem001 String units kg m-2 s-1
+@ bcem002 String units kg m-2 s-1
+@ bceman String units kg m-2 s-1
+@ bcembb String units kg m-2 s-1
+@ bcembf String units kg m-2 s-1
+@ bchyphil String units kg m-2 s-1
+@ bcsd001 String units kg m-2 s-1
+@ bcsd002 String units kg m-2 s-1
+@ bcsv001 String units kg m-2 s-1
+@ bcsv002 String units kg m-2 s-1
+@ bcwt001 String units kg m-2 s-1
+@ bcwt002 String units kg m-2 s-1
+@ duaeridx String units 1
+@ dudp001 String units kg m-2 s-1
+@ dudp002 String units kg m-2 s-1
+@ dudp003 String units kg m-2 s-1
+@ dudp004 String units kg m-2 s-1
+@ dudp005 String units kg m-2 s-1
+@ duem001 String units kg m-2 s-1
+@ duem002 String units kg m-2 s-1
+@ duem003 String units kg m-2 s-1
+@ duem004 String units kg m-2 s-1
+@ duem005 String units kg m-2 s-1
+@ duexttfm String units 1
+@ duscatfm String units 1
+@ dusd001 String units kg m-2 s-1
+@ dusd002 String units kg m-2 s-1
+@ dusd003 String units kg m-2 s-1
+@ dusd004 String units kg m-2 s-1
+@ dusd005 String units kg m-2 s-1
+@ dusv001 String units kg m-2 s-1
+@ dusv002 String units kg m-2 s-1
+@ dusv003 String units kg m-2 s-1
+@ dusv004 String units kg m-2 s-1
+@ dusv005 String units kg m-2 s-1
+@ duwt001 String units kg m-2 s-1
+@ duwt002 String units kg m-2 s-1
+@ duwt003 String units kg m-2 s-1
+@ duwt004 String units kg m-2 s-1
+@ duwt005 String units kg m-2 s-1
+@ ocdp001 String units kg m-2 s-1
+@ ocdp002 String units kg m-2 s-1
+@ ocem001 String units kg m-2 s-1
+@ ocem002 String units kg m-2 s-1
+@ oceman String units kg m-2 s-1
+@ ocembb String units kg m-2 s-1
+@ ocembf String units kg m-2 s-1
+@ ocembg String units kg m-2 s-1
+@ ochyphil String units kg m-2 s-1
+@ ocsd001 String units kg m-2 s-1
+@ ocsd002 String units kg m-2 s-1
+@ ocsv001 String units kg m-2 s-1
+@ ocsv002 String units kg m-2 s-1
+@ ocwt001 String units kg m-2 s-1
+@ ocwt002 String units kg m-2 s-1
+@ so2eman String units kg m-2 s-1
+@ so2embb String units kg m-2 s-1
+@ so2emve String units kg m-2 s-1
+@ so2emvn String units kg m-2 s-1
+@ so4eman String units kg m-2 s-1
+@ ssaeridx String units 1
+@ ssdp001 String units kg m-2 s-1
+@ ssdp002 String units kg m-2 s-1
+@ ssdp003 String units kg m-2 s-1
+@ ssdp004 String units kg m-2 s-1
+@ ssdp005 String units kg m-2 s-1
+@ ssem001 String units kg m-2 s-1
+@ ssem002 String units kg m-2 s-1
+@ ssem003 String units kg m-2 s-1
+@ ssem004 String units kg m-2 s-1
+@ ssem005 String units kg m-2 s-1
+@ ssexttfm String units 1
+@ ssscatfm String units 1
+@ sssd001 String units kg m-2 s-1
+@ sssd002 String units kg m-2 s-1
+@ sssd003 String units kg m-2 s-1
+@ sssd004 String units kg m-2 s-1
+@ sssd005 String units kg m-2 s-1
+@ sssv001 String units kg m-2 s-1
+@ sssv002 String units kg m-2 s-1
+@ sssv003 String units kg m-2 s-1
+@ sssv004 String units kg m-2 s-1
+@ sssv005 String units kg m-2 s-1
+@ sswt001 String units kg m-2 s-1
+@ sswt002 String units kg m-2 s-1
+@ sswt003 String units kg m-2 s-1
+@ sswt004 String units kg m-2 s-1
+@ sswt005 String units kg m-2 s-1
+@ sudp001 String units kg m-2 s-1
+@ sudp002 String units kg m-2 s-1
+@ sudp003 String units kg m-2 s-1
+@ sudp004 String units kg m-2 s-1
+@ suem001 String units kg m-2 s-1
+@ suem002 String units kg m-2 s-1
+@ suem003 String units kg m-2 s-1
+@ suem004 String units kg m-2 s-1
+@ supmsa String units kg m-2 s-1
+@ supso2 String units kg m-2 s-1
+@ supso4aq String units kg m-2 s-1
+@ supso4g String units kg m-2 s-1
+@ supso4wt String units kg m-2 s-1
+@ susd001 String units kg m-2 s-1
+@ susd002 String units kg m-2 s-1
+@ susd003 String units kg m-2 s-1
+@ susd004 String units kg m-2 s-1
+@ susv001 String units kg m-2 s-1
+@ susv002 String units kg m-2 s-1
+@ susv003 String units kg m-2 s-1
+@ susv004 String units kg m-2 s-1
+@ suwt001 String units kg m-2 s-1
+@ suwt002 String units kg m-2 s-1
+@ suwt003 String units kg m-2 s-1
+@ suwt004 String units kg m-2 s-1
