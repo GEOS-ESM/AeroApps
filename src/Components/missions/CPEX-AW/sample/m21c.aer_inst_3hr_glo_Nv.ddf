@@ -1,3 +1,3 @@
 dset ../e5303_m21c_jan18.aer_inst_3hr_glo_L1152x721_v72.%y4-%m2-%d2T%h200Z.nc4
 options template
-tdef time 2500 linear 0z1sep2022 3hr
+tdef time 2500 linear 0z10aug2021 3hr

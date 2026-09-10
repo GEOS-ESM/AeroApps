@@ -60,7 +60,7 @@ def get_model_configuration(ictFile,model='m21c',collection='aer_inst_3hr_glo_Nv
 #   Get the ICARTT file describing the trajectory
     if ictFile.find('DC8')  > 0:
         aircraft = 'DC8'
-        i0 = ictFile.find('DC8')+10
+        i0 = ictFile.find('DC8')+4
     m = ICARTT(ictFile)
     yyyymmdd  = ictFile[i0:-4]
     dateout   = ictFile[i0:i0+4]+"-"+ictFile[i0+4:i0+6]+"-"+ictFile[i0+6:i0+8]
