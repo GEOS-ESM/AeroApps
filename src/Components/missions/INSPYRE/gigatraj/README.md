@@ -60,6 +60,7 @@ These scripts are needed for downloading the necessary meteorological data when 
 
 - ``download_ifs:`` download IFS forecasts from ECMWF; it also symlinks files in the analysis directory ``(diag/)`` to enable calculation of trajectories released before the forecast initial time. This script downloads GRIB2 files from ECMWF and convert them to be GEOS-like NetCDF files using CDO and NCO utilities. These utilities can be installed from ``conda-forge.``
 
+- ``download_earthcare_quicklooks:`` download images from JAXA's site.
 
 ## Python Environment
 Python dependencies can be foundn in ``environment.yaml``. To create a dedicated conda environment do this:
