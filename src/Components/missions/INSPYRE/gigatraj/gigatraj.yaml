@@ -15,7 +15,7 @@ OUTPUT:  /shared/users-local/adasilva/data/INSPYRE
 # Fires
 # ----
 Fires:
-  
+
   2026_ON_THU_FIRE_056:
     lat: 49.35
     lon: -90.32
@@ -235,12 +235,12 @@ Fires:
     lat: 65.
     lon: 116
     altitudes_km: [10, 12, 14]
-    
+
   Siberia_003a:
     lat: 46
     lon: 137
     altitudes_km: [12.5, 13, 13.5]
-    
+ 
   Siberia_003b:
     lat: 49
     lon: 138.7
@@ -250,12 +250,12 @@ Fires:
     lat: 52
     lon: 139
     altitudes_km: [12.5, 13, 13.5]
-    
+
   Siberia_003d:
     lat: 45
     lon: 146.8
     altitudes_km: [12, 12.5, 13]
-    
+
   Siberia_003e:
     lat: 46.5
     lon: 146.5
@@ -285,7 +285,7 @@ Fires:
     lat: 55.3900
     lon: -160.5900
     altitudes_km: [10, 12]
-    
+
 # ------------
 # Trajectories
 # ------------
@@ -324,18 +324,11 @@ Trajectories:
         - Siberia_003f3
         - Siberia_003f4
         - Siberia_003f5
-        
-    #- Start: 2026-09-05T15:00:00
-    #  Fires: 
-    #    - Siberia_003d
-    #    - Siberia_003e
  
 Plots:
     CampaignFile: inspyre.yaml    
-    #Density_timestep_hours: 88           # 179, hours from start for density plots
     Density_valid_time: 2026-09-07T00:00:00
     Satellites: [EarthCARE,]
     Image_dpi: 100
-    #BoundingBox: siberia2 # [east, west, south, north] or siberia, north_america
     BoundingBox: north_america3 # [east, west, south, north] or siberia, north_america
     

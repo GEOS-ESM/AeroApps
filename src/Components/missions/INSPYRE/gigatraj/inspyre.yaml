@@ -16,17 +16,17 @@ Markers:
   Boulder: [-105.118, 39.909]
   Seatle: [-122.30, 47.53]
   Anchorage: [-150.00, 61.17]
-    
+
 # ------
 # Planes
 # ------
 Aircrafts:
-  
+
   ER2:
     airport: Great_Falls
     range_radius: [550,925,1295,1650,2000]
-    
-  GV: 
+
+  GV:
     airport: Boulder
     range_radius: [926,1389,1852]
 
