@@ -9,13 +9,13 @@ Verbose: True
 
 # File locations for this site
 SCRATCH: /shared/users-local/adasilva/data/SCRATCH/gigatraj
-OUTPUT:  /shared/users-local/adasilva/data/INSPYRE
+OUTPUT: /shared/users-local/adasilva/data/INSPYRE
 
 # ----
 # Fires
 # ----
 Fires:
-  
+
   2026_ON_THU_FIRE_056:
     lat: 49.35
     lon: -90.32
@@ -235,12 +235,12 @@ Fires:
     lat: 65.
     lon: 116
     altitudes_km: [10, 12, 14]
-    
+
   Siberia_003a:
     lat: 46
     lon: 137
     altitudes_km: [12.5, 13, 13.5]
-    
+
   Siberia_003b:
     lat: 49
     lon: 138.7
@@ -250,12 +250,12 @@ Fires:
     lat: 52
     lon: 139
     altitudes_km: [12.5, 13, 13.5]
-    
+
   Siberia_003d:
     lat: 45
     lon: 146.8
     altitudes_km: [12, 12.5, 13]
-    
+
   Siberia_003e:
     lat: 46.5
     lon: 146.5
@@ -290,10 +290,8 @@ Fires:
   EarthCARE_12938B:
     lat: None
     lon: None
-    altitudes_km: [10,]
+    altitudes_km: [10, ]
 
-    
-    
 # ------------
 # Trajectories
 # ------------
@@ -305,49 +303,48 @@ Parcels:
   Vunits: km
   Vdelta_km: 1
   Format: "%o %a %v"
-  
-Trajectories: 
+
+Trajectories:
 
   DryRun: False
   #MaxConcurrent: 14
   MaxConcurrent: 0
 
-  Duration_days: 4 
+  Duration_days: 4
   Timestep_min: 15
 
   MetSource: MetGEOSfp        # Generic cat file
-  Catalog:   MetIFS           # MetGEOS, MetIFS
-  
+  Catalog: MetIFS           # MetGEOS, MetIFS
+
   ForecastCycle: today # e.g. "20260901_00" if today, today at 0Z
   VTrace: P
   outFreq_hour: 1
   OutFormat: "%t %T %i %o %a %v %{PAlt}m"
-  
+
   Releases:
 
     - Start: 2026-09-07T10:52:00
-      Fires: 
+      Fires:
         - EarthCARE_12938B
-    
+
     #- Start: 2026-09-06T18:06:00
-    #  Fires: 
+    #  Fires:
     #    - Siberia_003f1
     #    - Siberia_003f2
     #    - Siberia_003f3
     #    - Siberia_003f4
     #    - Siberia_003f5
-        
+
     #- Start: 2026-09-05T15:00:00
-    #  Fires: 
+    #  Fires:
     #    - Siberia_003d
     #    - Siberia_003e
- 
+
 Plots:
-    CampaignFile: inspyre.yaml    
-    #Density_timestep_hours: 88           # 179, hours from start for density plots
-    Density_valid_time: 2026-09-07T21:00:00
-    Satellites: [EarthCARE,]
-    Image_dpi: 100
-    #BoundingBox: siberia2 # [east, west, south, north] or siberia, north_america
-    BoundingBox: north_america3 # [east, west, south, north] or siberia, north_america
-    
+  CampaignFile: inspyre.yaml
+  #Density_timestep_hours: 88  # 179, hours from start for density plots
+  Density_valid_time: 2026-09-07T21:00:00
+  Satellites: [EarthCARE, ]
+  Image_dpi: 100
+  #BoundingBox: siberia2 # [east, west, south, north] or name
+  BoundingBox: north_america3 # [east, west, south, north] or name
