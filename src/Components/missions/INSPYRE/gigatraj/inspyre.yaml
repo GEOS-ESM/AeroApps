@@ -24,9 +24,8 @@ Aircrafts:
 
   ER2:
     airport: Great_Falls
-    range_radius: [550,925,1295,1650,2000]
+    range_radius: [550, 925, 1295, 1650, 2000]
 
   GV:
     airport: Boulder
-    range_radius: [926,1389,1852]
-
+    range_radius: [926, 1389, 1852]

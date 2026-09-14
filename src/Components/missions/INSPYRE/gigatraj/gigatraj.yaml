@@ -9,7 +9,7 @@ Verbose: True
 
 # File locations for this site
 SCRATCH: /shared/users-local/adasilva/data/SCRATCH/gigatraj
-OUTPUT:  /shared/users-local/adasilva/data/INSPYRE
+OUTPUT: /shared/users-local/adasilva/data/INSPYRE
 
 # ----
 # Fires
@@ -240,7 +240,7 @@ Fires:
     lat: 46
     lon: 137
     altitudes_km: [12.5, 13, 13.5]
- 
+
   Siberia_003b:
     lat: 49
     lon: 138.7
@@ -297,38 +297,37 @@ Parcels:
   Vunits: km
   Vdelta_km: 1
   Format: "%o %a %v"
-  
-Trajectories: 
+
+Trajectories:
 
   DryRun: False
   #MaxConcurrent: 14
   MaxConcurrent: 14
 
-  Duration_days: 4 
+  Duration_days: 4
   Timestep_min: 15
 
   MetSource: MetGEOSfp        # Generic cat file
-  Catalog:   MetIFS           # MetGEOS, MetIFS
-  
+  Catalog: MetIFS             # MetGEOS, MetIFS
+
   ForecastCycle: today # e.g. "20260901_00" if today, today at 0Z
   VTrace: P
   outFreq_hour: 1
   OutFormat: "%t %T %i %o %a %v %{PAlt}m"
-  
+
   Releases:
-    
+
     - Start: 2026-09-06T18:06:00
-      Fires: 
+      Fires:
         - Siberia_003f1
         - Siberia_003f2
         - Siberia_003f3
         - Siberia_003f4
         - Siberia_003f5
- 
+
 Plots:
-    CampaignFile: inspyre.yaml    
-    Density_valid_time: 2026-09-07T00:00:00
-    Satellites: [EarthCARE,]
-    Image_dpi: 100
-    BoundingBox: north_america3 # [east, west, south, north] or siberia, north_america
-    
+  CampaignFile: inspyre.yaml
+  Density_valid_time: 2026-09-07T00:00:00
+  Satellites: [EarthCARE, ]
+  Image_dpi: 100
+  BoundingBox: north_america3 # [east, west, south, north] or name
