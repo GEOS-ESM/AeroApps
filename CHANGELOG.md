@@ -10,7 +10,7 @@
 - Add ASIA-AQ mission scripts
 - Add a post processing script that creates a zarr virtual data store for a model run to Applications
 - Add a modules directory with a model_utils sub-directory with some basic eval, post, and utils modules
-- Add codes to sample according to AERONET for a general GEOS experiment and for MERRA-21C evaluation
+- Add codes to sample according to AERONET for a general GEOS experiment and for MERRA-21C evaluation using solar and lunar versions as well as a couple codes to plot the output
 - Add codes to sample MERRA-21C according to field campaign HSRL and icartt files, then plot results
 - Add 2 new directories to src/Components/missions/INSPYRE:
   * ``gigatraj:`` introduces``GIGATRAJ`` python class, alongside several utilities to generate trajectories on region AWS-West-2 from the airborne SMCE environment. This is a replacement for the code under INSPYRE/trajectories. Consult this [README.md](https://github.com/Asticou-Earth/AeroApps/blob/develop/src/Components/missions/INSPYRE/gigatraj/README.md) for additional information.
