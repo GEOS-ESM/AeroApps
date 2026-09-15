@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+"""
+ Parses command line and run and plot all releases of a single fire.
+ This is meant to be run in parallel as a separate process since
+ Matplotlib/cartop are not exactly thread safe.
+"""
+
+if __name__ == "__main__":
+
+    import sys
+    from gigatraj import GIGATRAJ, MAP_REGION
+    from datetime import datetime, timedelta
+   
+    if len(sys.argv) < 2:
+        raise RuntimeError(f'Usage:\n                    {sys.argv[0]}  fire_name [region] [valid]')
+    
+    gt = GIGATRAJ()
+
+    fire = sys.argv[1]
+    if len(sys.argv) == 4:
+        r = sys.argv[2]
+        v = sys.argv[3]
+        gt.cf['Plots']['Density_valid_time'] = datetime.fromisoformat(v)
+        gt.cf['Plots']['BoundingBox'] = MAP_REGION[r]
+        gt.cf['Plots']['Region'] = r  # for file name
+
+    gt.plotTrajectories(fire=fire)
+
