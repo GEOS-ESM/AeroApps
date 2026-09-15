@@ -1,0 +1,333 @@
+#
+# GIGA Traj configuration for INSPYRE trajectories.
+#
+
+# Gigatraj binaries are installed here
+# ------------------------------
+PREFIX: /shared/users-local/adasilva/local
+Verbose: True
+
+# File locations for this site
+SCRATCH: /shared/users-local/adasilva/data/SCRATCH/gigatraj
+OUTPUT: /shared/users-local/adasilva/data/INSPYRE
+
+# ----
+# Fires
+# ----
+Fires:
+
+  2026_ON_THU_FIRE_056:
+    lat: 49.35
+    lon: -90.32
+    altitudes_km: [10, 12, 14]
+
+  4V_North:
+    lat: 35.56
+    lon: -104.3
+    altitudes_km: [10, 12, 14]
+
+  82_Mutual_Aid:
+    lat: 45.79
+    lon: -119.38
+    altitudes_km: [10, 12, 14]
+
+  AUSTIN:
+    lat: 45.03
+    lon: -122.06
+    altitudes_km: [10, 12, 14]
+
+  Black_Bear:
+    lat: 46.16
+    lon: -113.92
+    altitudes_km: [10, 12, 14]
+
+  Camp_Creek:
+    lat: 47.41
+    lon: -113.05
+    altitudes_km: [10, 12, 14]
+
+  Cascade:
+    lat: 46.11
+    lon: -115.17
+    altitudes_km: [10, 12, 14]
+
+#  COUNTRY_OAK_LN_MT_DIABLO:
+#    lat: -999
+#    lon: -999
+#    altitudes_km: [10, 12, 14]
+
+  CROOKED:
+    lat: 43.85
+    lon: -115.62
+    altitudes_km: [10, 12, 14]
+
+  Cumberland_Fair_Oaks_Road:
+    lat: 35.85
+    lon: -85.11
+    altitudes_km: [10, 12, 14]
+
+  Dudley:
+    lat: 47.54
+    lon: -115.9
+    altitudes_km: [10, 12, 14]
+
+  Frijoles:
+    lat: 35.91
+    lon: -105.82
+    altitudes_km: [10, 12, 14]
+
+  GOAT:
+    lat: 47.48
+    lon: -121.14
+    altitudes_km: [10, 12, 14]
+
+  Granger:
+    lat: 30.6
+    lon: -100.94
+    altitudes_km: [10, 12, 14]
+
+  Grotto:
+    lat: 46.32
+    lon: -115.03
+    altitudes_km: [10, 12, 14]
+
+  Hagen:
+    lat: 45.61
+    lon: -118.23
+    altitudes_km: [10, 12, 14]
+
+  KING:
+    lat: 47.49
+    lon: -121.21
+    altitudes_km: [10, 12, 14]
+
+  LITTLE_GIANT:
+    lat: 48.06
+    lon: -120.84
+    altitudes_km: [10, 12, 14]
+
+  Luna:
+    lat: 48.8
+    lon: -121.14
+    altitudes_km: [10, 12, 14]
+
+  McConnell:
+    lat: 41.68
+    lon: -117.7
+    altitudes_km: [10, 12, 14]
+
+  McCully:
+    lat: 44.84
+    lon: -118.28
+    altitudes_km: [10, 12, 14]
+
+  Moose_Mountain:
+    lat: 46.82
+    lon: -115.17
+    altitudes_km: [10, 12, 14]
+
+  Mount_Emma:
+    lat: 36.28
+    lon: -113.16
+    altitudes_km: [10, 12, 14]
+
+  Mud_Road:
+    lat: 33.17
+    lon: -95.93
+    altitudes_km: [10, 12, 14]
+
+  Nature_Grove:
+    lat: 46.17
+    lon: -113.92
+    altitudes_km: [10, 12, 14]
+
+  Paradise:
+    lat: 45.97
+    lon: -117.99
+    altitudes_km: [10, 12, 14]
+
+  Plaskett:
+    lat: 35.98
+    lon: -121.41
+    altitudes_km: [10, 12, 14]
+
+  RAILROAD_SOUTH:
+    lat: 34.65
+    lon: -98.72
+    altitudes_km: [10, 12, 14]
+
+  Ross:
+    lat: 32.89
+    lon: -98.37
+    altitudes_km: [10, 12, 14]
+
+  Sandy:
+    lat: 26.64
+    lon: -97.98
+    altitudes_km: [10, 12, 14]
+
+  Scimitar:
+    lat: 45.73
+    lon: -114.64
+    altitudes_km: [10, 12, 14]
+
+  Silver:
+    lat: 48.62
+    lon: -116.65
+    altitudes_km: [10, 12, 14]
+
+  Silvertip:
+    lat: 47.85
+    lon: -113.26
+    altitudes_km: [10, 12, 14]
+
+  Sinlahekin:
+    lat: 48.94
+    lon: -119.94
+    altitudes_km: [10, 12, 14]
+
+  SISI:
+    lat: 48.38
+    lon: -120.78
+    altitudes_km: [10, 12, 14]
+
+  Snake_Mountain:
+    lat: 34.48
+    lon: -95.18
+    altitudes_km: [10, 12, 14]
+
+  THREE_QUEENS:
+    lat: 47.4
+    lon: -121.17
+    altitudes_km: [10, 12, 14]
+
+  Timber:
+    lat: 36.26
+    lon: -121.78
+    altitudes_km: [10, 12, 14]
+
+  Upper_Smith:
+    lat: 48.89
+    lon: -116.6
+    altitudes_km: [10, 12, 14]
+
+#  West_Fork:
+#   lat: -999
+#  lon: -999
+#    altitudes_km: [10, 12, 14]
+
+  Whitetail:
+    lat: 30.04
+    lon: -100.44
+    altitudes_km: [10, 12, 14]
+
+  WRIGHT:
+    lat: 35.23
+    lon: -96.12
+    altitudes_km: [10, 12, 14]
+
+  DeepCreek:
+    lat: 43.948055
+    lon: -122.425835
+    altitudes_km: [10, 12, 14]
+
+  Siberia_003:
+    lat: 65.
+    lon: 116
+    altitudes_km: [10, 12, 14]
+
+  Siberia_003a:
+    lat: 46
+    lon: 137
+    altitudes_km: [12.5, 13, 13.5]
+
+  Siberia_003b:
+    lat: 49
+    lon: 138.7
+    altitudes_km: [12.5, 13, 13.5]
+
+  Siberia_003c:
+    lat: 52
+    lon: 139
+    altitudes_km: [12.5, 13, 13.5]
+
+  Siberia_003d:
+    lat: 45
+    lon: 146.8
+    altitudes_km: [12, 12.5, 13]
+
+  Siberia_003e:
+    lat: 46.5
+    lon: 146.5
+    altitudes_km: [12, 12.5, 13]
+
+  Siberia_003f1:
+    lat: 52.9200
+    lon: -162.1500
+    altitudes_km: [10, 12]
+
+  Siberia_003f2:
+    lat: 53.5394
+    lon: -161.7772
+    altitudes_km: [10, 12]
+
+  Siberia_003f3:
+    lat: 54.1575
+    lon: -161.3933
+    altitudes_km: [10, 12]
+
+  Siberia_003f4:
+    lat: 54.7744
+    lon: -160.9978
+    altitudes_km: [10, 12]
+
+  Siberia_003f5:
+    lat: 55.3900
+    lon: -160.5900
+    altitudes_km: [10, 12]
+
+# ------------
+# Trajectories
+# ------------
+Parcels:
+
+  Number: 2500
+  Radius_km: 50
+  Vertical: PAlt
+  Vunits: km
+  Vdelta_km: 1
+  Format: "%o %a %v"
+
+Trajectories:
+
+  DryRun: False
+  #MaxConcurrent: 14
+  MaxConcurrent: 14
+
+  Duration_days: 4
+  Timestep_min: 15
+
+  MetSource: MetGEOSfp        # Generic cat file
+  Catalog: MetIFS             # MetGEOS, MetIFS
+
+  ForecastCycle: today # e.g. "20260901_00" if today, today at 0Z
+  VTrace: P
+  outFreq_hour: 1
+  OutFormat: "%t %T %i %o %a %v %{PAlt}m"
+
+  Releases:
+
+    - Start: 2026-09-06T18:06:00
+      Fires:
+        - Siberia_003f1
+        - Siberia_003f2
+        - Siberia_003f3
+        - Siberia_003f4
+        - Siberia_003f5
+
+Plots:
+  CampaignFile: inspyre.yaml
+  Density_valid_time: 2026-09-07T00:00:00
+  Satellites: [EarthCARE, ]
+  Image_dpi: 100
+  BoundingBox: north_america3 # [east, west, south, north] or name

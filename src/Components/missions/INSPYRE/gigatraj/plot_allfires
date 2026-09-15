@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+"""
+ Parses command line and run and plot all releases of a single fire.
+ """
+
+from gigatraj import GIGATRAJ, run_cmd, parallel_execute, MAP_REGION
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import subprocess
+
+from datetime import datetime, timedelta
+
+def plot_allfires(gt,region,valid):
+    """
+    Plots all fires in parallel as separate processes since
+    Matplotlib/cartopy are not exactly thread safe.
+    """
+
+    # Get a list of fires
+    # -------------------
+    Fires = []
+    for r in gt.cf['Trajectories']['Releases']:
+        Fires += r['Fires']
+    Fires = sorted(list(set(Fires))) # unique list of Fires
+
+    #print(f"Fires to plot: {', '.join(Fires)}")
+    
+    # Create a list of commands
+    # -------------------------
+    Cmd = []
+    for fire in Fires:
+        Cmd += [ f"plot_onefire {fire} {region} {valid}", ]
+
+    return Cmd
+        
+if __name__ == "__main__":
+
+    gt = GIGATRAJ()
+
+    Regions = [ 'siberia2', 'alaska', 'north_america2']
+    Regions = [ 'north_america3']
+    Valid_times = [ '2026-09-08T21:00:00',
+                    '2026-09-09T21:00:00']
+
+#    Regions = [ 'siberia2', 'alaska', 'north_america2']
+#    Valid_times = [ '2026-09-07T00:00:00', ]
+    dry_run = False
+    
+    # Plot all trajectories
+    # ---------------------
+    Cmd = []
+    for v in Valid_times:
+
+        for r in Regions:
+
+            Cmd  += plot_allfires(gt,r,v)
+            
+    # Concurrent Run
+    # --------------
+    maxConcurrent = gt.cf['Trajectories']['MaxConcurrent']
+
+    # Execute commands in parallel
+    # ----------------------------
+    parallel_execute(Cmd, dry_run=dry_run, Verbose=gt.Verbose, maxConcurrent=maxConcurrent)
+
+                 

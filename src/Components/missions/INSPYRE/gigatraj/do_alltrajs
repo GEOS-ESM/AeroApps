@@ -1,0 +1,64 @@
+#!/usr/bin/env python
+"""
+ Parses command line and run and plot all releases of a single fire.
+ """
+
+from gigatraj import GIGATRAJ, run_cmd, parallel_execute
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import subprocess
+
+
+def plot_allfires(gt):
+    """
+    Plots all fires in parallel as separate processes since
+    Matplotlib/cartopy are not exactly thread safe.
+    """
+
+    # Get a list of fires
+    # -------------------
+    Fires = []
+    for r in gt.cf['Trajectories']['Releases']:
+        Fires += r['Fires']
+    Fires = sorted(list(set(Fires))) # unique list of Fires
+
+    print(f"Fires to plot: {', '.join(Fires)}")
+    
+    # Create a list of commands
+    # -------------------------
+    Cmd = []
+    for fire in Fires:
+        Cmd += [ f"plot_onefire {fire}", ]
+
+    # Concurrent Run
+    # --------------
+    maxConcurrent = gt.cf['Trajectories']['MaxConcurrent']
+    dry_run = gt.cf['Trajectories']['DryRun']
+
+    # Execute commands in parallel
+    # ----------------------------
+    parallel_execute(Cmd, dry_run=dry_run, Verbose=gt.Verbose, maxConcurrent=maxConcurrent)
+
+                 
+if __name__ == "__main__":
+
+    gt = GIGATRAJ()
+
+    # Initialize trajectories
+    # -----------------------
+    if gt.Verbose:
+        print('[] Initializing parcels...')
+    gt.genParcels()
+
+    # Run trajectories
+    # ----------------
+    if gt.Verbose:
+        print('[] Running trajectories in parallel...')
+    gt.genTrajectories()
+
+    # Plot all trajectories
+    # ---------------------
+    if gt.Verbose:
+        print('[] Plotting trajectories in parallel...')
+    plot_allfires(gt)
+    
