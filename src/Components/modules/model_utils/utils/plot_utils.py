@@ -12,8 +12,13 @@ import os
 import sys
 import xarray as xr
 import matplotlib.pyplot as plt
+import matplotlib
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import datetime
+
+# This probably is not the best place to put the backgrounds, but...
+os.environ['CARTOPY_USER_BACKGROUNDS'] = "/home/pcolarco/silo/python/"
 
 month = ["January","February","March","April","May","June","July",
          "August","September","October","November","December"]
@@ -269,6 +274,60 @@ def plotone(lon, lat, var, varn,
     else:
         plt.show()
 
+def niftyplot(fpdata, extent=[-180,180,-90,90],fname=None,
+              proj="PlateCarree"):
+    """
+    Fancy map of AOD components
+    fpdata = filepath to datafile to plot
+    """
+    fig, axes = plt.subplots(1, 1, figsize=(22, 12), subplot_kw={'projection': ccrs.PlateCarree()})
+    axes.set_extent(extent,ccrs.PlateCarree())
+
+    ds = xr.open_mfdataset(fpdata)
+    du  = np.ma.array(np.squeeze(ds["DUEXTTAU"].values))
+#    du  = np.log10(np.ma.masked_less(du,0.05))
+    du  = np.ma.masked_less(du,0.05)
+    ss  = np.ma.array(np.squeeze(ds["SSEXTTAU"].values))
+#    ss  = np.log10(np.ma.masked_less(ss,0.03))
+    ss  = np.ma.masked_less(ss,0.03)
+    cc  = np.ma.array(np.squeeze(ds["BREXTTAU"].values+ds["BCEXTTAU"].values+ds["OCEXTTAU"].values+ds["NIEXTTAU"].values))
+#    cc  = np.log10(np.ma.masked_less(cc,0.05))
+    cc  = np.ma.masked_less(cc,0.05)
+    lat = ds['lat'].values
+    lon = ds['lon'].values
+    time = ds['time'].values
+
+    # Common settings
+    cmap_du  = plt.get_cmap("copper")
+    cmap_ss  = plt.get_cmap("Blues").reversed()
+    cmap_cc  = plt.get_cmap("Greys").reversed()
+    cmap_du.set_over("xkcd:white")
+    cmap_ss.set_over("xkcd:white")
+    cmap_cc.set_over("xkcd:white")
+    norm_du  = matplotlib.colors.Normalize(vmin=-0.2, vmax=1, clip=False)
+    norm_ss  = matplotlib.colors.Normalize(vmin=0.03, vmax=0.25, clip=False)
+    norm_cc  = matplotlib.colors.Normalize(vmin=0., vmax=0.5, clip=False)
+
+    # Plot Baseline
+    im1 = axes.pcolormesh(lon,lat,du, cmap=cmap_du, norm=norm_du, transform=ccrs.PlateCarree(),alpha=0.75,zorder=100)
+    im2 = axes.pcolormesh(lon,lat,ss, cmap=cmap_ss, norm=norm_ss, transform=ccrs.PlateCarree(),alpha=.75,zorder=98)
+    im3 = axes.pcolormesh(lon,lat,cc, cmap=cmap_cc, norm=norm_cc, transform=ccrs.PlateCarree(),alpha=.75,zorder=99)
+#    im1 = axes.contourf(lon,lat,du,clevs,cmap=cmap_du, transform=ccrs.PlateCarree(),extend="max",alpha=.75)
+#    im2 = axes.contourf(lon,lat,ss,clevs,cmap=cmap_ss, transform=ccrs.PlateCarree(),extend="max",alpha=.75)
+#    im3 = axes.contourf(lon,lat,cc,clevs,cmap=cmap_cc, transform=ccrs.PlateCarree(),extend="max",alpha=.75)
+#    axes.add_feature(cfeature.COASTLINE, edgecolor='black', linewidth=2)
+    axes.set_extent(extent)
+#    axes.add_feature(cfeature.BORDERS, edgecolor='black', linewidth=1)
+    axes.background_img(name="BM", resolution="low")
+    axes.text(-170,-82,str(time[0])[0:19],color="k", transform=ccrs.PlateCarree(),
+                ha="left", va="center", size=16, fontweight='black')
+    # Display the plot
+    plt.tight_layout()
+    if fname:
+        plt.savefig(fname)
+#        plt.show()
+    else:
+        plt.show()
 
 def read_model(EXPID,EXPDIR,yy,mm,sat,varn="TOTEXTTAU550"):
     varout = []
