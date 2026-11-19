@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Removed
+
+### Changed
+
+### Fixed
+
+### Added
+
+
+## [v2.3.1] - 2026-11-19
+
 ### Added
 - Add ARCSIX mission directories
 - Add INSPYRE mission directories and updated web plotting package
@@ -16,8 +27,6 @@
 - Add 2 new directories to src/Components/missions/INSPYRE:
   * ``gigatraj:`` introduces``GIGATRAJ`` python class, alongside several utilities to generate trajectories on region AWS-West-2 from the airborne SMCE environment. This is a replacement for the code under INSPYRE/trajectories. Consult this [README.md](https://github.com/Asticou-Earth/AeroApps/blob/develop/src/Components/missions/INSPYRE/gigatraj/README.md) for additional information.
    * ``Notebooks:`` companion notebooks, consult this [README.md](https://github.com/Asticou-Earth/AeroApps/blob/develop/src/Components/missions/INSPYRE/gigatraj/README.md) for more information.
-
-### Fixed
 
 ### Changed
 - updates to v1.2.6 of pyobs that contains a hotfix for aeronet.py
