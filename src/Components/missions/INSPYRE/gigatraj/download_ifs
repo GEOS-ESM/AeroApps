@@ -1,0 +1,205 @@
+#!/usr/bin/env python
+#
+#  Simple python script to download GEOS FP files to AWS.
+#
+
+import os
+from ecmwf.opendata import Client
+from datetime import datetime, timedelta
+from pathlib import Path
+
+from gigatraj import GIGATRAJ, parallel_execute
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import subprocess
+
+
+
+ncdf4 = "ifs_det_pl_f120.grib2.nc4"
+SOURCES = ("ecmwf", "aws")
+
+IFS_ROOT = "/shared/users-local/adasilva/data/ifs"
+
+
+
+def getIFS(date,time,step,grib2,nc4file):
+   """
+   Retrieves ECMWF deterministic IFS forecast, with some postprocessig:
+   
+   - converts GRIB2 to NetCDF
+   - invert latitude so that it is same: from south to north
+   - rename variables so that they match GEOS conventions.
+   
+   """
+
+   ### grib2 = f"~ifs_det_pl_f{step}.tmp" # temporary file name
+   
+   # Retrieve the GRIB2 file
+   # -----------------------
+   request = dict(date=date,
+                  time=time,
+                  stream="oper",
+                  type="fc",
+                  step=step,
+                  levtype="pl",
+                  levelist=[1000, 925, 850, 700, 600, 500, 400,
+                            300, 250, 200, 150, 100, 50, 10],
+                  param=["u", "v", "w", "t", "gh"],
+                  target=grib2,
+                  )
+
+   try:
+       Client(source=SOURCES[0], model="ifs",
+              resol="0p25").retrieve(**request)
+   except Exception:
+       Client(source=SOURCES[1], model="ifs",
+              resol="0p25").retrieve(**request)
+
+   # Variable renaming
+   # -----------------
+   rename = "-chname,plev,lev,u,U,v,V,w,OMEGA,t,T,gh,H"
+
+   # Use CDO to convert GRIB2 to NETCDF
+   # ----------------------------------
+   if nc4file is not None:
+      cmd = f"cdo -f nc4 -z zip_4 {rename} -invertlat {grib2} {nc4file}"
+      if os.system(cmd):
+         raise RuntimeError(f'Cannot convert GRIB2 file {grib2} to NetCDF')
+
+   #-----------------------------------------------------------------
+
+def serial_download(time,back,dt_,dry_run=False):
+   """
+   Download IFS serially to avoid throtlle.
+   """
+   
+   date = str((datetime.now()-back).date())
+   year, month, day = date[0:4], date[5:7], date[8:10]
+   t0 = datetime(int(year),int(month),int(day),int(hour))
+
+   ForecastCycle = f"{date}_{time:02d}".replace('-','') # GEOS-like tag
+   
+   outDir = f"{IFS_ROOT}/forecast/Y{year}/M{month}/D{day}/H{hour:02d}"
+   if os.system(f"mkdir -p {outDir}"):
+      raise ValueError(f"Could not create directory {outDir}")
+
+   dt = timedelta(hours=1)
+   if dt_ == 3:
+      Steps = list(range(0, 6*24+1,dt_)) # every 3 hours till day 6
+   elif dt == 6:
+      Steps = list(range(0,10*24+1,dt_)) # every 6 hours till day 10
+   else:
+      raise RuntimeError(f'Timestep can only be 3 or 6 for now')
+
+   NC4Files, Cmd_cdo, Cmd_nco, Cmd_del = [], [], [], []
+   rename = "-chname,plev,lev,u,U,v,V,w,OMEGA,t,T,gh,H"
+   script = 'time=int(time); lev=lev/100; lev@units="hPa";' + \
+            'U@units="m s-1"; V@units="m s-1"; H@units="m"; OMEGA@units="Pa s-1"'
+   pid = os.getpid()
+   
+   for step in Steps:
+
+      valid = t0 + step * dt
+      vdate = str(valid.date()).replace('-','')
+      vhour = valid.hour
+      
+      nc4file = f"{outDir}/ECMWF.ifs.fcst.asm_Np.{ForecastCycle}+{vdate}_{vhour:02d}00.V01.nc4"
+      grib2file = nc4file.replace('.nc4','.grib2')
+      cdofile = nc4file.replace('.nc4',f'.{pid}.tmp')
+      cdofile2 = nc4file.replace('.nc4',f'.*.tmp')
+
+      NC4Files += [nc4file,]
+      
+      if not dry_run:
+         getIFS(date,time,step,grib2file,nc4file=None)
+
+      # Prepare post-processing commands to be executed in parallel
+      # -----------------------------------------------------------
+      cmd_cdo = f'cdo -f nc4 -z zip_4 {rename} -invertlat {grib2file} {cdofile}'
+      cmd_nco = f'ncap2 -4 -L 2 -O -s \' {script} \' {cdofile} {nc4file}'
+      cmd_del = f'/bin/rm -f {grib2file} {cdofile2}'
+
+      Cmd_cdo += [cmd_cdo,]
+      Cmd_nco += [cmd_nco,]
+      Cmd_del += [cmd_del,]
+
+   return Cmd_cdo, Cmd_nco, Cmd_del, NC4Files 
+
+def backfill_ana(forecast_NC4Files):
+   """
+   Make symlinks (with proper names) on the analysis directory.
+   """
+      
+   date = str((datetime.now()-back).date())
+   year, month, day = date[0:4], date[5:7], date[8:10]
+   t0 = datetime(int(year),int(month),int(day),int(hour))
+
+   ForecastCycle = f"{date}_{time:02d}".replace('-','') # GEOS-like tag
+   
+   # Remove initial condition from file names
+   # ----------------------------------------
+   for fcstFile in forecast_NC4Files:
+      fcst = os.path.basename(fcstFile) # remove diretory
+      tokens = fcst.split('+')
+      year, month, day = tokens[1][:4], tokens[1][4:6], tokens[1][6:8]
+
+      anaDir = f"{IFS_ROOT}/diag/Y{year}/M{month}/"
+      if os.system(f'mkdir -p {anaDir}'):
+         raise RuntimeError(f'Cannot create directory {anaDir}')
+   
+      anaFile = anaDir + '.'.join(tokens[0].split('.')[:-1]) + '.' \
+                       + tokens[1]
+
+      # Make symlink
+      # ------------
+      Path(anaFile).unlink(missing_ok=True)
+      print('[]  '+fcstFile+'\n--> '+anaFile)
+      Path(anaFile).symlink_to(fcstFile)
+
+#------------------------------------------------------------------------
+if __name__ == "__main__":
+
+   # Initialization time for IFS forecasts
+   # -------------------------------------
+   time = hour = 0               # forecast cycle
+   nback = 0                     # trick to get data in the past.
+   back = timedelta(days=nback)  
+   dt_ = 3
+
+   dry_run = False
+
+   # Serial download
+   # ---------------
+   Cmd_cdo, Cmd_nco, Cmd_del, NC4Files = serial_download(time,
+                                                        back,
+                                                        dt_,
+                                                        dry_run)
+
+   # Parallel netcdf convert
+   # -----------------------
+   parallel_execute(Cmd_cdo,dry_run) # Convert GRIB2 to netcdf
+   parallel_execute(Cmd_nco,dry_run) # Fix units, lev and time variables
+
+   # Make symlinks to fake analysis
+   # TO DO: If you want to create a proper IFS analysis
+   #        time series create a specialized script:
+   #        - loop over time
+   #        - download 2 files for  0Z forecast
+   #        - download 2 files for  6Z forecast
+   #        - download 2 files for 12Z forecast
+   #        - download 2 files for 18Z forecast
+   #        - back fill analysis with these
+   # ------------------------------------------------
+   if nback < 2:
+      backfill_ana(NC4Files)
+   else:
+      print('*** Skipping backfill of analysis because running in the past ****')
+
+   # Clean up GRIB2 and temporary files
+   # ----------------------------------
+   for cmd in Cmd_del:
+      if dry_run:
+         print(cmd)
+      else:
+         if os.system(cmd):
+            raise RuntimeError("Cannot execute\n {cmd}")

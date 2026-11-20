@@ -1,3 +1,5 @@
 add_subdirectory(ACCP)
 add_subdirectory(PACE)
 add_subdirectory(ASIA-AQ)
+add_subdirectory(ARCSIX)
+add_subdirectory(MAGPIE)

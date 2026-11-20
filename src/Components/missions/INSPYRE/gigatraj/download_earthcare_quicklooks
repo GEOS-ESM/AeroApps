@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+"""Download JAXA EarthCARE QuickLook PNGs into date-organized directories."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import date, datetime, time, timedelta, timezone
+from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+
+INDEX_URL = "https://www.eorc.jaxa.jp/cgi-bin/EarthCARE/quicklook/getDataList_v2.cgi"
+IMAGE_ROOT = "https://www.eorc.jaxa.jp/EARTHCARE/Quicklook/data"
+SAFE_NAME = re.compile(r"^[A-Za-z0-9_]+$")
+
+
+def utc_datetime(value: str) -> datetime:
+    """Parse an ISO-8601 datetime and return an aware UTC datetime."""
+    value = value.strip()
+    if value.endswith("Z"):
+        value = value[:-1] + "+00:00"
+    dt = datetime.fromisoformat(value)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def days_inclusive(first: date, last: date):
+    day = first
+    while day <= last:
+        yield day
+        day += timedelta(days=1)
+
+
+def fetch_json(url: str, timeout: float) -> dict:
+    request = Request(url, headers={"User-Agent": "earthcare-quicklook-downloader/1.0"})
+    with urlopen(request, timeout=timeout) as response:
+        return json.load(response)
+
+
+def daily_frames(day: date, timeout: float):
+    query = urlencode({"y": day.year, "m": day.month, "d": day.day})
+    payload = fetch_json(f"{INDEX_URL}?{query}", timeout)
+    for orbit, frames in payload.get("list", {}).items():
+        for frame, interval in frames.items():
+            start_text = interval.get("st", "")
+            end_text = interval.get("ed", "")
+            if not start_text or not end_text:
+                continue
+            start = datetime.strptime(start_text, "%Y/%m/%d %H:%M").replace(tzinfo=timezone.utc)
+            end = datetime.strptime(end_text, "%Y/%m/%d %H:%M").replace(tzinfo=timezone.utc)
+            yield orbit.zfill(5), frame, start, end
+
+
+def image_url(product: str, variable: str, day: date, orbit: str, frame: str) -> str:
+    ymd = day.strftime("%Y%m%d")
+    return (
+        f"{IMAGE_ROOT}/{product}/{variable}/{day:%Y/%m/%d}/"
+        f"{product}_{variable}_{ymd}_{orbit}{frame}.png"
+    )
+
+
+def output_directory(template: Path, day: date) -> Path:
+    """Expand date placeholders in an output-directory template."""
+    values = {
+        "year": f"{day.year:04d}",
+        "month": f"{day.month:02d}",
+        "day": f"{day.day:02d}",
+    }
+    try:
+        return Path(str(template).format_map(values))
+    except (KeyError, ValueError) as error:
+        raise ValueError(
+            "invalid --output template; supported placeholders are "
+            "{year}, {month}, and {day}"
+        ) from error
+
+
+def download_one(url: str, destination: Path, timeout: float, overwrite: bool) -> str:
+    if destination.exists() and not overwrite:
+        return "exists"
+    request = Request(url, headers={"User-Agent": "earthcare-quicklook-downloader/1.0"})
+    temporary = destination.with_suffix(destination.suffix + ".part")
+    try:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        with urlopen(request, timeout=timeout) as response, temporary.open("wb") as output:
+            while chunk := response.read(1024 * 1024):
+                output.write(chunk)
+        os.replace(temporary, destination)
+        return "downloaded"
+    except HTTPError as error:
+        temporary.unlink(missing_ok=True)
+        if error.code == 404:
+            return "unavailable"
+        raise
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("t1", help="Start datetime (ISO 8601; UTC if no offset)")
+    parser.add_argument("t2", help="End datetime (ISO 8601; UTC if no offset)")
+    parser.add_argument("product", help="Product code, e.g. ATL_CLA")
+    parser.add_argument("variable", help="Variable, e.g. cloud_backscatter_1km")
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        default=Path("quicklooks"),
+        help="output directory; may contain {year}, {month}, and {day}",
+    )
+    parser.add_argument("-j", "--workers", type=int, default=4)
+    parser.add_argument("--timeout", type=float, default=30.0)
+    parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--dry-run", action="store_true", help="Print URLs without downloading")
+    args = parser.parse_args()
+
+    t1, t2 = utc_datetime(args.t1), utc_datetime(args.t2)
+    if t2 < t1:
+        parser.error("t2 must not be earlier than t1")
+    if not SAFE_NAME.fullmatch(args.product) or not SAFE_NAME.fullmatch(args.variable):
+        parser.error("product and variable may contain only letters, digits, and underscores")
+    if args.workers < 1:
+        parser.error("--workers must be at least 1")
+    try:
+        output_directory(args.output, t1.date())
+    except ValueError as error:
+        parser.error(str(error))
+
+    # Query one extra day on each side because an orbit can cross UTC midnight.
+    first_day = t1.date() - timedelta(days=1)
+    last_day = t2.date() + timedelta(days=1)
+    candidates: dict[str, tuple[Path, datetime, datetime]] = {}
+    for day in days_inclusive(first_day, last_day):
+        try:
+            frames = daily_frames(day, args.timeout)
+            for orbit, frame, start, end in frames:
+                if start <= t2 and end >= t1:
+                    url = image_url(args.product, args.variable, day, orbit, frame)
+                    destination = output_directory(args.output, day) / url.rsplit("/", 1)[-1]
+                    candidates[url] = (destination, start, end)
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as error:
+            print(f"Warning: could not read orbit index for {day}: {error}", file=sys.stderr)
+
+    ordered = sorted(candidates.items(), key=lambda item: (item[1][1], item[0]))
+    print(f"Found {len(ordered)} overlapping orbit/frame candidates.")
+    if args.dry_run:
+        for url, (path, start, end) in ordered:
+            print(f"{start.isoformat()}  {end.isoformat()}  {path}  {url}")
+        return 0
+
+    counts = {"downloaded": 0, "exists": 0, "unavailable": 0, "failed": 0}
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        futures = {
+            pool.submit(download_one, url, path, args.timeout, args.overwrite): (url, path)
+            for url, (path, _, _) in ordered
+        }
+        for future in as_completed(futures):
+            url, path = futures[future]
+            try:
+                status = future.result()
+                counts[status] += 1
+                print(f"{status:11} {path.name}")
+            except Exception as error:
+                counts["failed"] += 1
+                print(f"failed      {url}: {error}", file=sys.stderr)
+
+    print("Summary: " + ", ".join(f"{key}={value}" for key, value in counts.items()))
+    return 1 if counts["failed"] else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

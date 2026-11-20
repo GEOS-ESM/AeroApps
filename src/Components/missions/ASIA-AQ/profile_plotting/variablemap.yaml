@@ -4,46 +4,81 @@ SU:
   sampling: 'ams'
   units: '($\mu$g m$^{-3}$)'
   fullname: 'Sulfate'
-  unitconversion: 1
 NH4:
   geosvar: 'NH4'
   obsvar: 'Ammonium_PM15_AMS_60s_JIMENEZ'
   sampling: 'ams'
   units: '($\mu$g m$^{-3}$)'
   fullname: 'Ammonium'
-  unitconversion: 1
 NI:
   geosvar: 'NI'
   obsvar: 'Nitrate_PM15_AMS_60s_JIMENEZ'
   sampling: 'ams'
   units: '($\mu$g m$^{-3}$)'
   fullname: 'Nitrate'
-  unitconversion: 1
 OC:
   geosvar: 'OC'
+  geosvar_combined: ['OC', 'BR']  # List of variables to sum
   obsvar: 'OA_PM15_AMS_60s_JIMENEZ'
   sampling: 'ams'
   units: '($\mu$g m$^{-3}$)'
   fullname: 'Organic Carbon'
-  unitconversion: 1
 SS:
   geosvar: 'SS'
   obsvar: 'Seasalt_PM15_AMS_60s_JIMENEZ'
   sampling: 'ams'
   units: '($\mu$g m$^{-3}$)'
   fullname: 'Sea Salt'
-  unitconversion: 1
 BC:
   geosvar: 'BC'
   obsvar: 'BC_mass_MOORE'
   sampling: 'bc_sp2'
-  units: '(ng m$^{-3})'
+  units: '($\mu$g m$^{-3}$)'
   fullname: 'Black Carbon'
-  unitconversion: 1000
+SO2:
+  geosvar: 'SO2'
+  obsvar: 'SO2_CIT_CROUNSE'
+  sampling: 'inst3_aer_Nv'
+  units: 'ppt'
+  fullname: 'Sulfur Dioxide'
 RH:
   geosvar: 'RH'
   obsvar: 'RHw_DLH_DISKIN'
   sampling: 'inst3_aer_Nv'
-  units: '(%)'
+  units: '%'
   fullname: 'Relative Humidity'
-  unitconversion: 100
+Ext532dry:
+  geosvar: 'EXT'
+  obsvar: 'Ext532_submicron_dry_MOORE'
+  obs_unit_conversion: 0.001  # Convert Mm^-1 to km^-1
+  sampling: '532_submicron_aop_STP_rh2'
+  units: '(km$^{-1}$)'
+  fullname: '532 nm Dry Extinction'
+fRH550:
+  geosvar: 'SCA_rh8 / SCA_rh2'
+  obsvar: 'fRH550_RH20to80_MOORE'
+  sampling:
+    SCA_rh8: '550_submicron_aop_STP_rh8'
+    SCA_rh2: '550_submicron_aop_STP_rh2'
+  units: ''
+  fullname: 'fRH at 550 nm'
+Ext532amb:
+  geosvar: 'EXT'
+  obsvar: 'Ext532_submicron_amb_MOORE'
+  obs_unit_conversion: 0.001  # Convert Mm^-1 to km^-1
+  sampling: '532_submicron_aop_STP'
+  units: '(km$^{-1}$)'
+  fullname: '532 nm Ambient Extinction'
+Scat550dry:
+  geosvar: 'SCA'
+  obsvar: 'Sc550_submicron_MOORE'
+  obs_unit_conversion: 0.001  # Convert Mm^-1 to km^-1
+  sampling: '550_submicron_aop_STP_rh2'
+  units: '(km$^{-1}$)'
+  fullname: '550 nm Dry Scattering'
+SSA550dry:
+  geosvar: 'SCA / EXT'
+  obsvar: 'SSA_dry_550nm_MOORE'
+  sampling: '550_submicron_aop_STP_rh2'
+  units: ''
+  fullname: '550 nm Dry SSA'

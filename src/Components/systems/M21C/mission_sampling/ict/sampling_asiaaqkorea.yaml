@@ -1,0 +1,72 @@
+#
+# Configuration file for sampling a GEOS experiment
+
+# model control files
+model_aer_ctl: inst3_aer_Nv
+model_other_ctl:
+    -
+
+# location of merged dc-8 files
+mergefiles: /discover/nobackup/projects/gmao/iesa/aerosol/campaigns/ASIA-AQ/archive/merges/v20260218
+
+# output directory for sampled files
+sampled_outdir: /discover/nobackup/acollow/AeroApps/AeroApps/src/Components/systems/M21C/mission_sampling/ict/ASIA-AQ
+
+# Location of the aerosol property configuration file
+large_config: g2g_large.yaml
+large_submicron_config: g2g_large_submicron.yaml
+ams_config: g2g_ams.yaml
+sp2_config: g2g_sp2.yaml
+
+#Nav Variable Names
+lon: Longitude_BENNETT
+lat: Latitude_BENNETT
+
+#Inlet cutoff size
+pmsize: 1.5
+sp2size: 0.3
+
+# flags for which calculations you want to do
+do_large_aop: False
+do_large_submicron_aop: False
+do_ams: True
+do_sp2: True
+
+flight_dates:
+#  - "20240206"
+#  - "20240207"
+#  - "20240211"
+#  - "20240213"
+#  - "20240215"
+  - "20240217"
+  - "20240226"
+  - "20240308"
+  - "20240310"
+  - "20240311"
+#  - "20240313"
+#  - "20240316"
+#  - "20240318"
+#  - "20240321"
+#  - "20240325"
+#  - "20240327"
+
+exp_id: "e5303_m21c_jan18"
+tmp_dir: "/discover/nobackup/acollow/temp_regrid"
+merra21c_archive: "/discover/nobackup/projects/gmao/merra21c/archive"
+
+sulfate:
+  obs: Sulfate_PM15_AMS_60s_JIMENEZ
+  m21c: SU
+  m2: SU
+oc:
+  obs: OA_PM15_AMS_60s_JIMENEZ
+  m21c: OC+BR
+  m2: OC
+nitrate:
+  obs: Nitrate_PM15_AMS_60s_JIMENEZ
+  m21c: NI
+altitude:
+  obs: Altitude_AGL_m_DIGANGI
+  m21c: H
+
+

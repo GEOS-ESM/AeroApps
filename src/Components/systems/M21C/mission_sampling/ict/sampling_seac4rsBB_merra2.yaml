@@ -1,0 +1,44 @@
+#
+# Configuration file for sampling a GEOS experiment
+
+# model control files
+model_aer_ctl: MERRA2.inst3_3d_aer_Nv.ctl
+model_other_ctl:
+    -
+
+# location of merged dc-8 files
+mergefiles: /discover/nobackup/acollow/AeroApps/AeroApps/src/Components/systems/M21C/mission_sampling/ict/SEAC4RS
+
+# output directory for sampled files
+sampled_outdir: /discover/nobackup/acollow/AeroApps/AeroApps/src/Components/systems/M21C/mission_sampling/ict/SEAC4RS/MERRA-2
+
+# Location of the aerosol property configuration file
+large_config: m2_large.yaml
+large_submicron_config: m2_large_submicron.yaml
+ams_config: m2_ams.yaml
+sp2_config: m2_sp2.yaml
+
+#Inlet cutoff size
+pmsize: 1
+sp2size: 0.55
+
+#Nav Variable Names
+lon: LONGITUDE
+lat: LATITUDE
+
+# flags for which calculations you want to do
+do_large_aop: False
+do_large_submicron_aop: False
+do_ams: True
+do_sp2: True
+
+flight_dates:
+  - "20130806"
+  - "20130816"
+  - "20130819"
+  - "20130826"
+  - "20130827"
+  - "20130906"
+  - "20130909"
+  - "20130911"
+  - "20130923"

@@ -1,0 +1,3 @@
+dset /home/pcolarco/ARCSIX/c180R_arcsix/holding/inst3d_aer_v/%y4%m2/c180R_arcsix.inst3d_aer_v.%y4%m2%d2_%h200z.nc4
+options template
+tdef time 2500 linear 0z1jan2024 3hr

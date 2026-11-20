@@ -2,11 +2,41 @@
 
 ## [Unreleased]
 
-### Added
+### Removed
+
+### Changed
 
 ### Fixed
 
+### Added
+
+
+## [v2.3.1] - 2026-11-19
+
+### Added
+- Add ARCSIX mission directories
+- Add INSPYRE mission directories and updated web plotting package
+- Added sampling scripts for INSPYRE
+- Updated plotting codes for INSPYRE trajectories
+- Add ASIA-AQ mission scripts
+- Add a post processing script that creates a zarr virtual data store for a model run to Applications
+- Add a modules directory with a model_utils sub-directory with some basic eval, post, and utils modules
+- Add codes to sample according to AERONET for a general GEOS experiment and for MERRA-21C evaluation using solar and lunar versions as well as a couple codes to plot the output
+- Add codes to sample MERRA-21C according to field campaign HSRL and icartt files, then plot results
+- Add sampling codes for CPEX-AW/CV experiments
+- Add 2 new directories to src/Components/missions/INSPYRE:
+  * ``gigatraj:`` introduces``GIGATRAJ`` python class, alongside several utilities to generate trajectories on region AWS-West-2 from the airborne SMCE environment. This is a replacement for the code under INSPYRE/trajectories. Consult this [README.md](https://github.com/Asticou-Earth/AeroApps/blob/develop/src/Components/missions/INSPYRE/gigatraj/README.md) for additional information.
+   * ``Notebooks:`` companion notebooks, consult this [README.md](https://github.com/Asticou-Earth/AeroApps/blob/develop/src/Components/missions/INSPYRE/gigatraj/README.md) for more information.
+
 ### Changed
+- updates to v1.2.6 of pyobs that contains a hotfix for aeronet.py
+- move model utils to Shared directory. Rename module to aeroeval
+- Rearranged and renamed some of the ARCSIX codes
+- refactored ARCSIX mission post-processing code for suitability for archive upload
+- refactored INSPYRE trajectory preparation and plotting scripts
+- added total and carbon extinction plots to INSPYRE package
+- Expanded capability for ASIA-AQ vertical profile plots
+- updated monthly_mod.py to reduce the time it takes to run
 
 ## [v2.3.0] - 2025-07-25
 
@@ -16,6 +46,7 @@
 
 ### Changed
 - removed all NNR scripts from GAAS_App and relocated them in AeroML repository
+
 
 ## [v2.2.0] - 2025-07-15
 

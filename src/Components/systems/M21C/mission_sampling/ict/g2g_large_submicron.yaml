@@ -1,0 +1,139 @@
+#
+# GEOS Aerosol Mie table Definition for each of species.
+# This example is for calculating PM0.8 concentrations to compare to AMS observations for a nominal GOCART-2G Model Configuration.
+# Note that the two largest Nitrate bins should not be included in the calculation of PM0.8
+# The order of the tracers and rhod correspond to the bins in the optics netcdf files.
+#
+#  rhod: particle density in kg m-3
+#  shapefactor: factor that accounts for aerodynamic resistance of non-spherical particles
+#               this is used to calculate the aerodynamic radius for PM calculations when the aerodymic flag is turned on
+#               see the following reference for further documentation
+#               GMAO Office Note No. 22 (Version 1.1):
+#               Collow, A., V. Buchard, M. Chin, P. Colarco, A. Darmenov, and A. da Silva, 2023.
+#               Supplemental Documentation for GEOS Aerosol Products
+#   pmconversion: set to AMS to indicate using AMS transmission function.
+#                 This was derived from a figure from Jose Jimenez wherein the
+#                 AMS transmission linearly decreases between 0.3 and 0.8 microns.
+#
+
+DU001:
+  monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_DU.v15_3.nc4
+  bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_DU.v15_3.RRTMG.nc4
+  tracers:
+    - DU001
+  shapefactor: 1.4
+  rhod:
+    - 2500
+  pmconversion: 1.0
+
+
+SS001:
+  monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_SS.v3_3.nc4
+  bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_SS.v3_3.RRTMG.nc4
+  tracers:
+    - SS001
+  shapefactor: 1
+  rhod:
+    - 2200
+  pmconversion: 1.0
+
+SS002:
+  monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_SS.v3_3.nc4
+  bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_SS.v3_3.RRTMG.nc4
+  tracers:
+    - SS002
+  shapefactor: 1
+  rhod:
+    - 2200
+  pmconversion: 1.0
+
+SS003:
+  monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_SS.v3_3.nc4
+  bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_SS.v3_3.RRTMG.nc4
+  tracers:
+    - SS003
+  shapefactor: 1
+  rhod:
+    - 2200
+  pmconversion: 1.0
+
+OCPHOBIC:
+  monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_OC.v1_3.nc4
+  bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_OC.v1_3.RRTMG.nc4
+  tracers:
+    - OCPHOBIC
+  shapefactor: 1
+  rhod:
+    - 1800
+  pmconversion: 1.0
+
+OCPHILIC:
+  monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_OC.v1_3.nc4
+  bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_OC.v1_3.RRTMG.nc4
+  tracers:
+    - OCPHILIC
+  shapefactor: 1
+  rhod:
+    - 1800
+  pmconversion: 1.0
+
+BCPHOBIC:
+  monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_BC.v1_3.nc4
+  bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_BC.v1_3.RRTMG.nc4
+  tracers:
+    - BCPHOBIC
+  shapefactor: 1
+  rhod:
+    - 1800
+  pmconversion: 1.0
+
+BCPHILIC:
+  monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_BC.v1_3.nc4
+  bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_BC.v1_3.RRTMG.nc4
+  tracers:
+    - BCPHILIC
+  shapefactor: 1
+  rhod:
+    - 1800
+  pmconversion: 1.0
+
+BRPHOBIC:
+  monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_BRC.v1_5.nc4
+  bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_BRC.v1_5.RRTMG.nc4
+  tracers:
+    - BRPHOBIC
+  shapefactor: 1
+  rhod:
+    - 1800
+  pmconversion: 1.0
+
+BRPHILIC:
+  monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_BRC.v1_5.nc4
+  bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_BRC.v1_5.RRTMG.nc4
+  tracers:
+    - BRPHILIC
+  shapefactor: 1
+  rhod:
+    - 1800
+  pmconversion: 1.0
+
+SO4:
+  monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_SU.v1_3.nc4
+  bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_SU.v1_3.RRTMG.nc4
+  tracers:
+    - SO4
+  shapefactor: 1
+  rhod:
+    - 1700
+  pmconversion: 1.0
+
+NO3an1:
+  monoFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/optics_NI.v2_5.nc4
+  bandFile: ExtData/chemistry/AerosolOptics/v1.0.0/x/opticsBands_NI.v2_5.RRTMG.nc4
+  tracers:
+    - NO3an1
+  shapefactor: 1
+  rhod:
+    - 1725
+  pmconversion: 1.0
+

@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+#
+#  Simple python script to download GEOS FP analysis files to AWS.
+#
+
+import os
+import numpy as np
+from datetime import datetime, timedelta
+
+import sat_tracks as st
+
+if __name__ == "__main__":
+
+   # Download GEOS-FP asm_Np files
+   # -----------------------------
+   nback = 3 # how many days to go back
+   today = datetime.now()
+   oneday = timedelta(days=1)
+   back = today - timedelta(days=nback)
+   Days = []
+   for n in range(nback):
+      day = today - n * oneday
+      Days += [day,]
+   
+   dry_run = False
+
+   # Back fill analysis
+   # ------------------
+   for day_ in Days:
+
+      d = (day_).isoformat()
+      year, month, day = int(d[0:4]), int(d[5:7]), int(d[8:10])
+      
+      # Analysis
+      # ---------
+      URL = f"https://portal.nccs.nasa.gov/datashare/gmao/geos-fp/das/Y{year}/M{month:02d}/D{day:02d}/"
+      outDir = f"/shared/users-local/adasilva/data/geos_fp/diag/Y{year}/M{month:02d}/"
+
+      if not dry_run:
+         if os.system(f"mkdir -p {outDir}"):
+            raise RuntimeError(f"Could not create directory {outDir}")
+
+      cmd = f"./download_url.sh --output {outDir} --jobs 8 {URL}  '*asm_Np*.nc4' "
+      print(cmd)
+      if not dry_run:
+         if os.system(cmd):
+            raise ValueError(f"Could not download {URL}")
+
+   

@@ -1,0 +1,34 @@
+name: inspyre
+channels:
+  - defaults
+dependencies:
+  - ipykernel
+  - dask=2025.4.1
+  - conda=26.1.1
+  - pypdf
+  - menuinst
+  - beautifulsoup4
+  - cartopy=0.24.1
+  - conda-anaconda-telemetry
+  - scipy
+  - requests
+  - pip
+  - xarray
+  - ipython
+  - matplotlib
+  - pytorch
+  - wheel
+  - jupyter_console
+  - openpyxl
+  - conda-libmamba-solver
+  - python=3.13
+  - conda-content-trust
+  - setuptools
+  - conda-anaconda-tos[version='>=0.2.0']
+  - netcdf4
+  - anaconda-anon-usage
+  - numpy
+  - astropy
+  - cdo
+  - nco
+  - earthaccess

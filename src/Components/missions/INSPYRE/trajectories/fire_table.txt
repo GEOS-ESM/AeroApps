@@ -1,0 +1,2 @@
+#Name        Lat   Lon     YYYY-MM-DDTHH:mm:ss  Altitude
+Saskatchewan 55.56 -111.14 2026-05-28T02:10:00  Y

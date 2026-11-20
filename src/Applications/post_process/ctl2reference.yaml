@@ -1,0 +1,12 @@
+#
+# Configuration file for ctl2reference.py
+#
+
+
+# model control files you want to create a reference store for
+reference_ctl_list:
+    - inst3d_aer_v
+
+# output directory for reference stores
+combined_references_dir: ./combined_references
+

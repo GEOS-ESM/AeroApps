@@ -1,0 +1,44 @@
+# config_seac4rs.yaml
+campaign: "SEAC4RS"
+exp_id: "e5303_m21c_jan08"
+output_dir: "/discover/nobackup/projects/gmao/iesa/aerosol/campaigns/SEAC4RS/sampled"
+tmp_dir: "/discover/nobackup/acollow/temp_regrid"
+merra2_archive: "/discover/nobackup/projects/gmao/merra2/data/products/MERRA2_all"
+merra21c_archive: "/discover/nobackup/projects/gmao/merra21c/archive"
+obs_dir: "/discover/nobackup/projects/gmao/iesa/aerosol/campaigns/SEAC4RS/Archive/DC8_AIRCRAFT/HAIR.JOHNATHAN"
+
+# Observation file naming parameters
+instrument: "DIAL"
+plane: "DC8"
+obs_revision: "R3"
+
+# AOP Settings
+wavelengths: [532, 1064]
+aop_config_m2: "/discover/nobackup/acollow/GMAOpyobs/src/config/m2_pm25.yaml"
+aop_config_m21c: "/discover/nobackup/acollow/GMAOpyobs/src/config/g2g.yaml"
+
+# Flight dates
+flight_dates:
+#  - "20130802"
+#  - "20130805"
+  - "20130806"
+#  - "20130808"
+#  - "20130812"
+#  - "20130814"
+  - "20130816"
+  - "20130819"
+#  - "20130821"
+#  - "20130823"
+  - "20130826"
+  - "20130827"
+#  - "20130830"
+#  - "20130902"
+#  - "20130904"
+  - "20130906"
+  - "20130909"
+  - "20130911"
+#  - "20130913"
+#  - "20130916"
+#  - "20130918"
+#  - "20130921"
+  - "20130923"

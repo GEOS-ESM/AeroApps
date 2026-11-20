@@ -1,0 +1,3 @@
+dset /home/pcolarco/geosit/diag/Y%y4/M%m2/d5294_geosit_jan18.asm_inst_3hr_glo_L576x361_v72.%y4-%m2-%d2T%h200Z.nc4
+options template
+tdef time 2500 linear 0z1jan2024 3hr

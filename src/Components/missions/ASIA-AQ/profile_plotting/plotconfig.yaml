@@ -1,6 +1,13 @@
-geospath: '/discover/nobackup/acollow/AeroApps/c360R_v11.6.1_asiaaqbaseline/sampled'
-ictpath: '/discover/nobackup/projects/gmao/iesa/aerosol/campaigns/ASIA-AQ/archive/merges/v20250423'
-expname: 'c360R_v11.6.1_asiaaqbaseline'
+ictpath: '/discover/nobackup/projects/gmao/iesa/aerosol/campaigns/ASIA-AQ/archive/merges/v20260218'
+
+experiments:
+  - name: 'Baseline'
+    path: '/discover/nobackup/projects/gocart/hbian/proposal/2022-AsiaAQ/aaqoxgmi/sampled'
+    color: 'red'
+  - name: 'Updated Optics'
+    path: '/discover/nobackup/projects/gocart/hbian/proposal/2022-AsiaAQ/aaqoxh24/sampled'
+    color: 'blue'
+
 flightdate:
   20240206:
     country: 'Philippines'

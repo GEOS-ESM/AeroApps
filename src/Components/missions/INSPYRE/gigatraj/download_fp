@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+#
+#  Simple python script to download GEOS FP files to AWS.
+#
+
+import os
+from datetime import datetime, timedelta
+
+import sat_tracks as st
+
+if __name__ == "__main__":
+
+   # Refresh the TLEs
+   # ----------------
+   st.refresh_all_tles("./TLE")
+
+   # Download GEOS-FP asm_Np files
+   # -----------------------------
+   back = timedelta(days=0) # trick to get data in the past.
+   d = (datetime.now()-back).isoformat()
+   year, month, day = d[0:4], d[5:7], d[8:10]
+   skip = 0
+
+   # Forecasts
+   # ---------
+   URL = f"https://portal.nccs.nasa.gov/datashare/gmao/geos-fp/forecast/Y{year}/M{month}/D{day}/H00/"
+   outDir = f"/shared/users-local/adasilva/data/geos_fp/forecast/Y{year}/M{month}/D{day}/H00"
+
+   if os.system(f"mkdir -p {outDir}"):
+      raise ValueError(f"Could not create directory {outDir}")
+
+   ###cmd = f"./download_url.sh --output {outDir} --jobs 8 --skip {skip} --numFiles 41 {URL}  '*asm_Np*.nc4' "
+   cmd = f"./download_url.sh --output {outDir} --jobs 8 {URL}  '*asm_Np*.nc4' "
+   print(cmd)
+   if os.system(cmd):
+      raise ValueError(f"Could not download {URL}")
+
+   # Backfill analysis
+   # -----------------
+   
